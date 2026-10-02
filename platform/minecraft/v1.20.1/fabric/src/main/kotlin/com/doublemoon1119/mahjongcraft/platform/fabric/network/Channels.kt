@@ -66,17 +66,19 @@ class S2CChannel<T>(id: String, private val serializer: KSerializer<T>, private 
     }
 
     /**
-     * 註冊客戶端接收器；同步讀取 buffer 後交回主執行緒。
+     * 註冊客戶端接收器；同步讀取 buffer 後交回主執行緒，連線已切換時不套用舊回覆。
      *
      * @param json 線路序列化設定。
      * @param handler 主執行緒上的接收處理。
      */
     fun registerClientReceiver(json: Json, handler: (T) -> Unit) {
-        ClientPlayNetworking.registerGlobalReceiver(channelId) { client, _, buf, _ ->
+        ClientPlayNetworking.registerGlobalReceiver(channelId) { client, connection, buf, _ ->
             if (maxPayloadBytes != null && buf.readableBytes() > maxPayloadBytes + MAX_STRING_PREFIX_BYTES) return@registerGlobalReceiver
             val raw = buf.readString(MAX_PAYLOAD_LENGTH)
             if (maxPayloadBytes != null && raw.toByteArray(Charsets.UTF_8).size > maxPayloadBytes) return@registerGlobalReceiver
-            client.execute { handler(json.decodeFromString(serializer, raw)) }
+            client.execute {
+                if (client.networkHandler === connection) handler(json.decodeFromString(serializer, raw))
+            }
         }
     }
 }

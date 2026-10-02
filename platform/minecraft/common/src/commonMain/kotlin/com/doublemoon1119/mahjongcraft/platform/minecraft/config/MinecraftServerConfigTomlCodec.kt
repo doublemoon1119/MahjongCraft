@@ -161,6 +161,9 @@ private data class MahjongTileTomlDto(
  * @property includeInterruptedMatches 是否保留無法接續的中止或部分紀錄；正常關服後可接續的對局不算中止。
  * @property queryEnabled 是否允許查詢已保存的歷史資料。
  * @property allowAdminQuery 是否允許管理員查詢全部歷史資料。
+ * @property queryMinimumIntervalMilliseconds 同一玩家歷史查詢之間的最短間隔毫秒數。
+ * @property queryMaxOutstanding 全伺服器同時執行中的歷史查詢上限。
+ * @property queryRejectionReplyIntervalMilliseconds 同一玩家收到歷史查詢拒絕回覆之間的最短間隔毫秒數。
  * @property maxMatches 最多保留的已完成牌局數量，零表示不限制數量。
  * @property retentionDays 已完成牌局的保留天數，零表示不限制天數。
  * @property maxDiskMiB 歷史資料磁碟空間上限，必須為正值。
@@ -172,6 +175,13 @@ private data class HistoryTomlDto(
     @SerialName("include-interrupted-matches") val includeInterruptedMatches: Boolean = MinecraftHistoryConfig.DEFAULT_INCLUDE_INTERRUPTED_MATCHES,
     @SerialName("query-enabled") val queryEnabled: Boolean = MinecraftHistoryConfig.DEFAULT_QUERY_ENABLED,
     @SerialName("allow-admin-query") val allowAdminQuery: Boolean = MinecraftHistoryConfig.DEFAULT_ALLOW_ADMIN_QUERY,
+    @SerialName("query-minimum-interval-ms")
+    val queryMinimumIntervalMilliseconds: Long = MinecraftHistoryConfig.DEFAULT_QUERY_MINIMUM_INTERVAL_MILLISECONDS,
+    @SerialName("query-max-outstanding")
+    val queryMaxOutstanding: Int = MinecraftHistoryConfig.DEFAULT_QUERY_MAX_OUTSTANDING,
+    @SerialName("query-rejection-reply-interval-ms")
+    val queryRejectionReplyIntervalMilliseconds: Long =
+        MinecraftHistoryConfig.DEFAULT_QUERY_REJECTION_REPLY_INTERVAL_MILLISECONDS,
     @SerialName("max-matches") val maxMatches: Int = MinecraftHistoryConfig.DEFAULT_MAX_MATCHES,
     @SerialName("retention-days") val retentionDays: Int = MinecraftHistoryConfig.DEFAULT_RETENTION_DAYS,
     @SerialName("max-disk-mib") val maxDiskMiB: Long = MinecraftHistoryConfig.DEFAULT_MAX_DISK_MIB,
@@ -179,14 +189,17 @@ private data class HistoryTomlDto(
     /** 驗證 TOML 欄位並建立歷史資料設定。 */
     fun toConfig(): MinecraftHistoryConfig = try {
         MinecraftHistoryConfig(
-            enabled,
-            includeAiMatches,
-            includeInterruptedMatches,
-            queryEnabled,
-            allowAdminQuery,
-            maxMatches,
-            retentionDays,
-            maxDiskMiB,
+            enabled = enabled,
+            includeAiMatches = includeAiMatches,
+            includeInterruptedMatches = includeInterruptedMatches,
+            queryEnabled = queryEnabled,
+            allowAdminQuery = allowAdminQuery,
+            queryMinimumIntervalMilliseconds = queryMinimumIntervalMilliseconds,
+            queryMaxOutstanding = queryMaxOutstanding,
+            queryRejectionReplyIntervalMilliseconds = queryRejectionReplyIntervalMilliseconds,
+            maxMatches = maxMatches,
+            retentionDays = retentionDays,
+            maxDiskMiB = maxDiskMiB,
         )
     } catch (exception: IllegalArgumentException) {
         throw InvalidMinecraftServerConfigException(exception.message ?: "Invalid history configuration", exception)
@@ -201,14 +214,17 @@ private data class HistoryTomlDto(
          * @return 使用穩定 TOML 欄位名稱的設定資料。
          */
         fun fromConfig(config: MinecraftHistoryConfig): HistoryTomlDto = HistoryTomlDto(
-            config.enabled,
-            config.includeAiMatches,
-            config.includeInterruptedMatches,
-            config.queryEnabled,
-            config.allowAdminQuery,
-            config.maxMatches,
-            config.retentionDays,
-            config.maxDiskMiB,
+            enabled = config.enabled,
+            includeAiMatches = config.includeAiMatches,
+            includeInterruptedMatches = config.includeInterruptedMatches,
+            queryEnabled = config.queryEnabled,
+            allowAdminQuery = config.allowAdminQuery,
+            queryMinimumIntervalMilliseconds = config.queryMinimumIntervalMilliseconds,
+            queryMaxOutstanding = config.queryMaxOutstanding,
+            queryRejectionReplyIntervalMilliseconds = config.queryRejectionReplyIntervalMilliseconds,
+            maxMatches = config.maxMatches,
+            retentionDays = config.retentionDays,
+            maxDiskMiB = config.maxDiskMiB,
         )
     }
 }

@@ -113,7 +113,11 @@ internal class HistoryArchiveService(
     }
 
     /** 將已返回房間且無待寫事件的完整對局封存；單場失敗不阻止其他場次。 */
-    fun archiveReady(database: SqliteHistoryDatabase, snapshot: AuthoritativeStateSnapshot): Int {
+    fun archiveReady(
+        database: SqliteHistoryDatabase,
+        snapshot: AuthoritativeStateSnapshot,
+        onArchived: (HistoryArchiveRecord) -> Unit = {},
+    ): Int {
         val staged = snapshot.historyRecordingState.pendingEvents.mapTo(mutableSetOf()) { it.matchId.toString() }
         val active = snapshot.games.values.mapTo(mutableSetOf()) { it.matchId.toString() } +
             snapshot.historyRecordingState.transfersByMatchId.keys.map { it.toString() }
@@ -132,7 +136,10 @@ internal class HistoryArchiveService(
                 val replay = CompactReplayCodec.encodeCompact(events, mapper, registries, json)
                 CompactReplayCodec.decodeCompact(replay)
                 val archive = buildArchive(events, replay)
-                if (database.archive(archive)) completed++
+                if (database.archive(archive)) {
+                    completed++
+                    onArchived(archive)
+                }
             } catch (error: Exception) {
                 lastArchiveError = error.message ?: "History archive validation failed"
                 logger.error("History match {} could not be archived; original events were retained", matchId, error)

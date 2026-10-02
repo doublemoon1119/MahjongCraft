@@ -16,7 +16,7 @@ class ClientHistoryQueryCoordinatorTest {
     @Test
     fun `test list query sends request and accepts response`() {
         val sender = FakeHistoryQuerySender()
-        val coordinator = ClientHistoryQueryCoordinator(sender)
+        val coordinator = ClientHistoryQueryCoordinator(sender, ClientHistoryQuerySettings())
 
         val requestId = coordinator.queryList(HistoryListRequestDto("caller-id"))
 
@@ -30,7 +30,7 @@ class ClientHistoryQueryCoordinatorTest {
     @Test
     fun `test send failure identifies failed request`() {
         val sender = FakeHistoryQuerySender(shouldFail = true)
-        val coordinator = ClientHistoryQueryCoordinator(sender)
+        val coordinator = ClientHistoryQueryCoordinator(sender, ClientHistoryQuerySettings())
 
         val requestId = coordinator.querySummary(HistorySummaryRequestDto("caller-id", "match-id"))
 
@@ -42,7 +42,7 @@ class ClientHistoryQueryCoordinatorTest {
     @Test
     fun `test matching cancellation returns idle without session change`() {
         val sender = FakeHistoryQuerySender()
-        val coordinator = ClientHistoryQueryCoordinator(sender)
+        val coordinator = ClientHistoryQueryCoordinator(sender, ClientHistoryQuerySettings())
         val requestId = coordinator.queryList(HistoryListRequestDto("caller-id"))
         val revision = coordinator.sessionRevision.value
 
@@ -56,7 +56,7 @@ class ClientHistoryQueryCoordinatorTest {
     @Test
     fun `test wrong response kind does not consume pending request`() {
         val sender = FakeHistoryQuerySender()
-        val coordinator = ClientHistoryQueryCoordinator(sender)
+        val coordinator = ClientHistoryQueryCoordinator(sender, ClientHistoryQuerySettings())
         val requestId = coordinator.queryList(HistoryListRequestDto("caller-id"))
 
         coordinator.applySummary(HistorySummaryResponseDto(requestId))
@@ -69,7 +69,7 @@ class ClientHistoryQueryCoordinatorTest {
     @Test
     fun `test clear advances session and rejects stale response`() {
         val sender = FakeHistoryQuerySender()
-        val coordinator = ClientHistoryQueryCoordinator(sender)
+        val coordinator = ClientHistoryQueryCoordinator(sender, ClientHistoryQuerySettings())
         val requestId = coordinator.queryList(HistoryListRequestDto("caller-id"))
         val previousRevision = coordinator.sessionRevision.value
 

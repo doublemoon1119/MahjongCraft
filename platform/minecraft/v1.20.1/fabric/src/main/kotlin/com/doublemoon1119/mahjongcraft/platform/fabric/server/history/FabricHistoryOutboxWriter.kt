@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryLis
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryAccess
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistorySummaryRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryArchiveStatusDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryOutboxEventPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
@@ -145,6 +146,9 @@ class FabricHistoryOutboxWriter(
     /** 最近一次非預期寫入錯誤的安全摘要。 */
     @Volatile private var lastError: String? = null
 
+    /** 近期已結束場次的最小查詢證據；避免歷史狀態查詢依賴仍存在的 Game。 */
+    private val recentMatchEvidence = LinkedHashMap<String, RecentHistoryMatchEvidence>()
+
     /** 最近一次對帳已知的序號缺口。 */
     @Volatile private var knownGaps: Map<String, Long> = emptyMap()
 
@@ -173,6 +177,20 @@ class FabricHistoryOutboxWriter(
      * @return 是否仍屬於目前 session。
      */
     internal fun isCurrentSession(id: Uuid?): Boolean = id != null && currentSessionId == id
+
+    /**
+     * 記住已結束場次的參與者與固定記錄決策，供保存尚未建立 SQL 參與者列時授權狀態查詢。
+     *
+     * @param matchId 已結束場次識別碼。
+     * @param participantIds 場次參與者 UUID。
+     * @param decision 該場權威記錄決策；已無決策證據時為 null。
+     */
+    internal fun rememberEndedMatch(matchId: Uuid, participantIds: Set<Uuid>, decision: HistoryRecordingDecision?) {
+        synchronized(recentMatchEvidence) {
+            recentMatchEvidence[matchId.toString()] = RecentHistoryMatchEvidence(participantIds, decision)
+            while (recentMatchEvidence.size > RECENT_MATCH_EVIDENCE_LIMIT) recentMatchEvidence.remove(recentMatchEvidence.keys.first())
+        }
+    }
 
     /**
      * 在同一 session 與正式資格政策下建立隔離歷史轉移。
@@ -342,14 +360,16 @@ class FabricHistoryOutboxWriter(
      * @param access 由連線提供的可信身分。
      * @param request 已通過 Flow 驗證的要求。
      * @param sessionId 收到要求時捕捉的世界 session。
+     * @param participantIds 名稱篩選解析出的玩家 UUID；null 表示不限制名稱。
      * @return 同一政策 lease 下的有界資料庫結果。
      */
     internal suspend fun queryList(
         access: HistoryQueryAccess,
         request: HistoryListRequest,
         sessionId: Uuid?,
+        participantIds: Set<String>? = null,
     ): HistoryManagementResult<SqliteHistoryQueryPage> = manage(sessionId) { activeDatabase, _ ->
-        activeDatabase.readHistoryQueryPage(request.toSqliteQuery(access, excludedHistoryMatches()))
+        activeDatabase.readHistoryQueryPage(request.toSqliteQuery(access, excludedHistoryMatches(), participantIds))
     }
 
     /**
@@ -368,6 +388,46 @@ class FabricHistoryOutboxWriter(
         activeDatabase.readHistoryQueryPage(
             HistoryListRequest(scope = request.scope, pageSize = 1)
                 .toSqliteQuery(access, excludedHistoryMatches()).copy(matchId = request.matchId.toString()),
+        )
+    }
+
+    /**
+     * 依權威記錄狀態與 SQLite 證據判定單場歷史保存狀態。
+     *
+     * @param access 可信查詢身分；管理員只在目前政策允許時可查詢未參與場次。
+     * @param matchId 欲查詢的對局識別碼。
+     * @param sessionId 收到要求時捕捉的世界 session。
+     * @return 不包含 Replay 內容或資料庫內部診斷的穩定狀態。
+     */
+    internal suspend fun archiveStatus(
+        access: HistoryQueryAccess,
+        matchId: Uuid,
+        sessionId: Uuid?,
+    ): HistoryManagementResult<HistoryArchiveStatusDto> = manage(sessionId) { activeDatabase, _ ->
+        val id = matchId.toString()
+        val snapshot = store.snapshot()
+        val recording = snapshot.historyRecordingState
+        val evidence = activeDatabase.readArchiveStatusEvidence(id)
+        val queryPolicy = configState.current.history
+        val activeGame = snapshot.games.values.firstOrNull { it.matchId == matchId }
+        val recent = synchronized(recentMatchEvidence) { recentMatchEvidence[id] }
+        val activeParticipant = activeGame?.tableState?.players?.any { it.id == access.principalId } == true
+        val recentParticipant = access.principalId in (recent?.participantIds ?: emptySet())
+        val authorized = access.isAdministrator &&
+            queryPolicy.allowAdminQuery ||
+            access.principalId.toString() in evidence.participantIds ||
+            activeParticipant ||
+            recentParticipant
+        val pendingOutbox = recording.pendingEvents.any { it.matchId == matchId } ||
+            matchId in recording.transfersByMatchId ||
+            activeGame != null &&
+            recording.decisionsByMatchId[matchId] == HistoryRecordingDecision.RECORDING
+        evidence.toDto(
+            decision = recording.decisionsByMatchId[matchId] ?: recent?.decision,
+            pendingOutbox = pendingOutbox,
+            queryEnabled = queryPolicy.queryEnabled,
+            authorized = authorized,
+            active = activeGame != null || matchId in recording.transfersByMatchId,
         )
     }
 
@@ -479,6 +539,7 @@ class FabricHistoryOutboxWriter(
     private suspend fun attachSession(path: Path, server: MinecraftServer?) = sessionMutex.withLock {
         check(currentSessionId == null && worker == null && database == null) { "History writer is already attached" }
         currentSessionId = Uuid.random()
+        synchronized(recentMatchEvidence) { recentMatchEvidence.clear() }
         attachedServer = server
         cachedStorageSnapshot = null
         attemptedStoragePolicy = null
@@ -591,6 +652,7 @@ class FabricHistoryOutboxWriter(
     /** 停止背景工作並有界嘗試提交最後的待寫事件；未提交者仍留在世界存檔。 */
     suspend fun detach() = sessionMutex.withLock {
         currentSessionId = null
+        synchronized(recentMatchEvidence) { recentMatchEvidence.clear() }
         attachedServer = null
         worker?.cancelAndJoin()
         managementJob?.cancelAndJoin()
@@ -793,6 +855,9 @@ class FabricHistoryOutboxWriter(
 
         /** 即使沒有新事件，也定期評估到期政策及可回收空間。 */
         val MAINTENANCE_INTERVAL = 1.minutes
+
+        /** 近期場次授權證據的有界數量。 */
+        const val RECENT_MATCH_EVIDENCE_LIMIT = 256
     }
 }
 

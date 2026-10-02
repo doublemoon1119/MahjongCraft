@@ -1,9 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListResponseDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryScopeDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryResponseDto
-import com.doublemoon1119.mahjongcraft.platform.fabric.network.HistoryQueryLimits
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
@@ -44,6 +44,9 @@ internal class HistoryBrowseController(
     /** 已成功到達各頁的請求游標；第一頁固定為 null。 */
     private var cursors: List<String?> = listOf(null)
 
+    /** 已成功到達各頁的累積資料偏移；不以固定 page size 推算。 */
+    private var entryOffsets: List<Int> = listOf(0)
+
     /** 是否已要求首次列表；子頁重建不重送。 */
     private var opened = false
 
@@ -71,7 +74,12 @@ internal class HistoryBrowseController(
     /** Screen 可觀察的唯讀瀏覽狀態。 */
     val state: StateFlow<HistoryBrowseState> = mutableState.asStateFlow()
 
+    /** 目前伺服器公布的有效查詢間隔。 */
+    val minimumInterval: Duration
+        get() = transport.minimumInterval.value
+
     init {
+        scope.launch { transport.minimumInterval.collect { schedule() } }
         scope.launch {
             combine(transport.state, transport.sessionRevision) { result, revision -> result to revision }
                 .collect { (result, revision) ->
@@ -114,11 +122,33 @@ internal class HistoryBrowseController(
      * @return 是否接受刷新。
      */
     fun refresh(): Boolean {
-        if (!available() || state.value.page == HistoryBrowsePage.SUMMARY || state.value.list.status == HistoryBrowseStatus.Loading) return false
+        if (!canRefresh()) return false
         generation++
         opened = true
         requestFirstPage(Duration.ZERO)
         return true
+    }
+
+    /**
+     * 判斷目前是否可以由使用者重新整理列表。
+     *
+     * @return 沒有在途或待送查詢、未處於冷卻期且目前位於列表頁時為 true。
+     */
+    fun canRefresh(): Boolean = available() &&
+        state.value.page == HistoryBrowsePage.LIST &&
+        state.value.list.status != HistoryBrowseStatus.Loading &&
+        active == null &&
+        pending == null &&
+        !isRefreshCoolingDown()
+
+    /**
+     * 判斷最近一次查詢是否仍在最短請求間隔內。
+     *
+     * @return 尚未達到下一次查詢時間時為 true。
+     */
+    fun isRefreshCoolingDown(): Boolean {
+        val sentAt = lastSentAt ?: return false
+        return now() < sentAt + minimumInterval
     }
 
     /**
@@ -130,7 +160,8 @@ internal class HistoryBrowseController(
         if (!canNavigateList()) return false
         val cursor = state.value.list.nextCursor ?: return false
         generation++
-        requestList(cursors + cursor)
+        val nextOffset = entryOffsets.last() + state.value.list.entries.size
+        requestList(cursors + cursor, entryOffsets + nextOffset)
         return true
     }
 
@@ -142,7 +173,7 @@ internal class HistoryBrowseController(
     fun previousPage(): Boolean {
         if (!canNavigateList() || cursors.size <= 1) return false
         generation++
-        requestList(cursors.dropLast(1))
+        requestList(cursors.dropLast(1), entryOffsets.dropLast(1))
         return true
     }
 
@@ -258,18 +289,20 @@ internal class HistoryBrowseController(
      */
     private fun requestFirstPage(debounce: Duration) {
         cursors = listOf(null)
+        entryOffsets = listOf(0)
         mutableState.value = state.value.copy(list = HistoryBrowseListState(status = HistoryBrowseStatus.Loading), summary = null)
-        enqueue(Intent.ListQuery(generation, state.value.query, cursors), debounce)
+        enqueue(Intent.ListQuery(generation, state.value.query, cursors, entryOffsets), debounce)
     }
 
     /**
      * 準備指定分頁，成功前不修改已到達堆疊。
      *
      * @param requestedCursors 欲成功到達的游標堆疊。
+     * @param requestedEntryOffsets 依實際回應筆數累積的各頁偏移。
      */
-    private fun requestList(requestedCursors: List<String?>) {
+    private fun requestList(requestedCursors: List<String?>, requestedEntryOffsets: List<Int>) {
         mutableState.value = state.value.copy(list = state.value.list.copy(status = HistoryBrowseStatus.Loading), summary = null)
-        enqueue(Intent.ListQuery(generation, state.value.query, requestedCursors), Duration.ZERO)
+        enqueue(Intent.ListQuery(generation, state.value.query, requestedCursors, requestedEntryOffsets), Duration.ZERO)
     }
 
     /**
@@ -289,7 +322,7 @@ internal class HistoryBrowseController(
         sendJob?.cancel()
         if (active != null || state.value.closed) return
         val next = pending ?: return
-        val readyAt = maxOf(next.readyAt, lastSentAt?.plus(HistoryQueryLimits.minimumInterval) ?: next.readyAt)
+        val readyAt = maxOf(next.readyAt, lastSentAt?.plus(minimumInterval) ?: next.readyAt)
         sendJob = scope.launch {
             delay((readyAt - now()).coerceAtLeast(Duration.ZERO))
             if (state.value.closed || active != null || pending !== next) return@launch
@@ -355,16 +388,23 @@ internal class HistoryBrowseController(
      * @param intent 此次分頁目標。
      */
     private fun acceptList(response: HistoryListResponseDto, intent: Intent.ListQuery) {
+        mutableState.value = state.value.copy(allowAll = response.allowAll)
+        if (!response.allowAll && state.value.query.scope == HistoryQueryScopeDto.ALL) {
+            updateQuery(state.value.query.copy(scope = HistoryQueryScopeDto.OWN))
+            return
+        }
         response.errorCode?.let {
             fail(it.toBrowseFailure())
             return
         }
         val changedPage = cursors != intent.cursors
         cursors = intent.cursors
+        entryOffsets = intent.entryOffsets
         mutableState.value = state.value.copy(
             list = state.value.list.copy(
                 entries = response.entries.toList(),
                 pageNumber = cursors.size,
+                firstEntryIndex = if (response.entries.isEmpty()) 0 else intent.entryOffsets.last() + 1,
                 nextCursor = response.nextCursor,
                 status = HistoryBrowseStatus.Ready,
                 scrollOffset = if (changedPage) 0.0 else state.value.list.scrollOffset,
@@ -432,6 +472,7 @@ internal class HistoryBrowseController(
         pending = null
         retryIntent = null
         cursors = listOf(null)
+        entryOffsets = listOf(0)
         scope.cancel()
     }
 
@@ -446,8 +487,14 @@ internal class HistoryBrowseController(
          * @property generation 提出意圖時的條件世代。
          * @property query 有效且正規化的查詢條件。
          * @property cursors 只有成功回應才提交的分頁目標。
+         * @property entryOffsets 各頁第一筆資料前的累積數量，依實際回應筆數計算。
          */
-        data class ListQuery(override val generation: Long, val query: HistoryBrowseQuery, val cursors: List<String?>) : Intent
+        data class ListQuery(
+            override val generation: Long,
+            val query: HistoryBrowseQuery,
+            val cursors: List<String?>,
+            val entryOffsets: List<Int>,
+        ) : Intent
 
         /**
          * 同場摘要查詢。

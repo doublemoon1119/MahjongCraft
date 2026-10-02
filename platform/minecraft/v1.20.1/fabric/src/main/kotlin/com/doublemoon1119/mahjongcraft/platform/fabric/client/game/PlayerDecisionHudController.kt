@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSu
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.AutomaticControlStatusHudRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongHudLayoutEditorScreen
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerDisplayNameResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileFaceRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
@@ -31,7 +32,19 @@ import kotlin.math.ceil
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 
-/** 管理操作介面、精簡倒數與手牌分析 HUD 的共用客戶端生命週期。 */
+/**
+ * 管理操作介面、精簡倒數與手牌分析 HUD 的共用客戶端生命週期。
+ *
+ * @property timerStore 權威決策倒數狀態。
+ * @property promptStore 玩家目前的操作提示。
+ * @property tileFaceRenderer 共用牌面繪製器。
+ * @property configStore 客戶端呈現設定。
+ * @property stateStore 玩家可見的房間與桌況。
+ * @property automaticControlStatusHudRenderer 自動操作狀態繪製器。
+ * @property playerNames 共用真人普通名稱與 AI 名稱解析器。
+ * @property decisionTexts 規則提供的動作文字解析器。
+ * @property json 決策提交的封包序列化設定。
+ */
 @Single
 class PlayerDecisionHudController(
     private val timerStore: ClientDecisionTimerStateStore,
@@ -40,9 +53,18 @@ class PlayerDecisionHudController(
     private val configStore: MahjongClientConfigStore,
     private val stateStore: ClientMahjongStateStore,
     private val automaticControlStatusHudRenderer: AutomaticControlStatusHudRenderer,
+    private val playerNames: ClientPlayerDisplayNameResolver,
     val decisionTexts: DecisionTextResolver,
     @Provided private val json: Json,
 ) {
+    /**
+     * 使用共用名稱來源解析決策的真人來源，不另行查詢外部服務。
+     *
+     * @param playerId 來源玩家的 UUID 字串。
+     * @return 已知普通名稱或本地化未知玩家名稱。
+     */
+    fun resolveTriggerPlayerName(playerId: String): String = playerNames.resolve(null, playerId, false)
+
     /** 玩家以 Esc 暫時收起的 decision key。 */
     private var dismissedDecisionKey: String? = null
 

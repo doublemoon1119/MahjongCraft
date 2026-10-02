@@ -297,6 +297,7 @@ class DtoRoundTripTest {
             actorId = player.id.toString(),
             action = GameAction.Draw.toDto(registries),
             snapshot = snapshot.toDto(registries),
+            historyMatchId = Uuid.random().toString(),
         )
         val encodedGame = json.encodeToString(GameUpdatePayloadDto.serializer(), gamePayload)
         assertEquals(gamePayload, json.decodeFromString(GameUpdatePayloadDto.serializer(), encodedGame))

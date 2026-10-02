@@ -134,8 +134,10 @@ enum class HistoryQueryErrorCodeDto {
  * @property endedAtBeforeEpochMillis 結束時間的 UTC 上界，不包含此時間。
  * @property ownRankMin 查詢玩家可接受的最小名次。
  * @property ownRankMax 查詢玩家可接受的最大名次。
+ * @property playerName 參與者名稱的大小寫不敏感部分比對文字。
+ * @property matchId 指定對局 UUID 文字；留空表示不限制對局。
  */
-data class HistoryQueryFiltersDto(val ruleId: String? = null, val outcome: HistoryOutcomeFilterDto? = null, val integrity: HistoryIntegrityFilterDto? = null, val ai: HistoryAiFilterDto? = null, val endedAtFromEpochMillis: Long? = null, val endedAtBeforeEpochMillis: Long? = null, val ownRankMin: Int? = null, val ownRankMax: Int? = null)
+data class HistoryQueryFiltersDto(val ruleId: String? = null, val outcome: HistoryOutcomeFilterDto? = null, val integrity: HistoryIntegrityFilterDto? = null, val ai: HistoryAiFilterDto? = null, val endedAtFromEpochMillis: Long? = null, val endedAtBeforeEpochMillis: Long? = null, val ownRankMin: Int? = null, val ownRankMax: Int? = null, val playerName: String? = null, val matchId: String? = null)
 
 /** 可驗證的歷史 keyset cursor 傳輸內容。
  *
@@ -266,6 +268,7 @@ data class HistoryMatchDetailDto(
  * @property entries 可安全顯示的對局摘要。
  * @property nextCursor 下一頁 keyset cursor；null 表示沒有下一頁。
  * @property errorCode 安全的查詢錯誤代碼。
+ * @property allowAll 是否允許查詢全部已保存歷史。
  */
 @Serializable
 data class HistoryListResponseDto(
@@ -273,6 +276,7 @@ data class HistoryListResponseDto(
     val entries: List<HistoryMatchSummaryDto>,
     val nextCursor: String? = null,
     val errorCode: HistoryQueryErrorCodeDto? = null,
+    val allowAll: Boolean = false,
 )
 
 /** 單場歷史摘要查詢的 C2S 請求。

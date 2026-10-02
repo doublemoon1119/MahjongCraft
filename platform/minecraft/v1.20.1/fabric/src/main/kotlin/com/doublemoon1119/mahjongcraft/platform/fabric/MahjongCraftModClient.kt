@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.command.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDomain
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAutoSortHandPreferenceService
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAutomaticControlUpdateCoordinator
@@ -18,7 +19,12 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.ClientDecisio
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.PlayerDecisionHudController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.buildMatchResultChatMessage
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.buildRoundResultChatMessage
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.history.ClientHistoryArchiveStatusCoordinator
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.history.ClientHistoryChatEntryStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.history.ClientHistoryQueryCoordinator
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.history.ClientHistoryQuerySettings
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.history.FabricHistoryScreenCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.history.HistoryScreenController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.model.MahjongTileModelLoadingPlugin
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerDisplayNameResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerProfileResolver
@@ -55,6 +61,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerIdentityPayload
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSourceRegistry
@@ -102,14 +109,21 @@ class MahjongCraftModClient : ClientModInitializer {
         koin.get<FabricHandSortCommand>().register()
         koin.get<FabricAutomaticControlCommand>().register()
         koin.get<FabricClientConfigCommand>().register()
+        koin.get<HistoryScreenController>().register()
+        koin.get<FabricHistoryScreenCommand>().register()
         val decisionHudController = koin.get<PlayerDecisionHudController>()
         decisionHudController.registerEvents()
         koin.get<MatchingTileHighlightController>().register()
 
         val json = koin.get<Json>()
         val historyQueries = koin.get<ClientHistoryQueryCoordinator>()
+        val historyQuerySettings = koin.get<ClientHistoryQuerySettings>()
+        MahjongChannels.historyQuerySettings.registerClientReceiver(json, historyQuerySettings::apply)
+        val historyArchiveStatus = koin.get<ClientHistoryArchiveStatusCoordinator>()
+        val historyChatEntries = koin.get<ClientHistoryChatEntryStore>()
         MahjongChannels.historyListResponse.registerClientReceiver(json, historyQueries::applyList)
         MahjongChannels.historySummaryResponse.registerClientReceiver(json, historyQueries::applySummary)
+        MahjongChannels.historyArchiveStatusResponse.registerClientReceiver(json, historyArchiveStatus::apply)
         val networkRegistries = koin.get<NetworkDtoRegistries>()
         val stateStore = koin.get<ClientMahjongStateStore>()
         val automaticControlUpdateCoordinator = koin.get<ClientAutomaticControlUpdateCoordinator>()
@@ -138,6 +152,13 @@ class MahjongCraftModClient : ClientModInitializer {
         val appearanceSources = koin.get<RoomMemberAppearanceSourceRegistry>()
         val playerNames = koin.get<ClientPlayerDisplayNameResolver>()
         val profileResolver = koin.get<ClientPlayerProfileResolver>()
+        MahjongChannels.playerIdentity.registerClientReceiver(json) { payload ->
+            if (payload.entries.size > PlayerIdentityPayload.MAX_ENTRIES) return@registerClientReceiver
+            payload.entries.forEach { entry ->
+                val id = runCatching { Uuid.parse(entry.playerId) }.getOrNull() ?: return@forEach
+                profileResolver.rememberServerName(id, entry.name)
+            }
+        }
         MahjongChannels.roomUpdate.registerClientReceiver(json, stateStore::apply)
         MahjongChannels.gameUpdate.registerClientReceiver(json) { payload ->
             val gameId = Uuid.parse(payload.gameId)
@@ -161,10 +182,13 @@ class MahjongCraftModClient : ClientModInitializer {
                 exhaustiveDrawReasonDisplayNameRegistry = exhaustiveDrawReasonDisplayNames,
                 playerDisplayName = { id, isAi -> playerNames.resolve(gameId, id.toString(), isAi) },
             ) ?: buildMatchResultChatMessage(
-                action,
-                newSnapshot,
-                module,
-            ) { id, isAi -> playerNames.resolve(gameId, id.toString(), isAi) } ?: return@registerClientReceiver
+                action = action,
+                newSnapshot = newSnapshot,
+                module = module,
+                playerDisplayName = { id, isAi -> playerNames.resolve(gameId, id.toString(), isAi) },
+                historyCommand = if (action is GameAction.MatchEnded) historyChatEntries.createCommand(payload.historyMatchId) else null,
+            )
+                ?: return@registerClientReceiver
             MinecraftClient.getInstance().player?.sendMessage(message)
         }
         MahjongChannels.roomSnapshot.registerClientReceiver(json) { payload ->
@@ -278,6 +302,9 @@ class MahjongCraftModClient : ClientModInitializer {
         MahjongChannels.decisionSubmissionResult.registerClientReceiver(json, decisionHudController::handleSubmissionResult)
         ClientPlayConnectionEvents.JOIN.register { _, _, _ ->
             historyQueries.clear()
+            historyArchiveStatus.clear()
+            profileResolver.clearSession()
+            historyChatEntries.clear()
             MahjongChannels.requestSnapshot.sendToServer(json, Unit)
             // 伺服器端的自動整理手牌偏好純記憶體、不撐過伺服器重啟（見 HandSortPreferenceStore KDoc），
             // 每次加入世界都重送一次 client 本地記得的偏好，確保重啟後不需要玩家手動再切一次。
@@ -285,6 +312,9 @@ class MahjongCraftModClient : ClientModInitializer {
         }
         ClientPlayConnectionEvents.DISCONNECT.register { _, _ ->
             historyQueries.clear()
+            historyArchiveStatus.clear()
+            profileResolver.clearSession()
+            historyChatEntries.clear()
             stateStore.clear()
             automaticControlUpdateCoordinator.clear()
             decisionTimerStore.clear()

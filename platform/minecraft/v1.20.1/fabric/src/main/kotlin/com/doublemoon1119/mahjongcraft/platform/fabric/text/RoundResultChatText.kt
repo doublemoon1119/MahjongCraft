@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.text
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
+import net.minecraft.text.ClickEvent
 import net.minecraft.text.MutableText
 import net.minecraft.text.Text
 
@@ -13,8 +14,14 @@ fun buildRoundResultChatText(actionText: Text, details: Text): MutableText = Tex
     .append(Text.literal(" "))
     .append(bracketedInteractiveLabel(Text.translatable(MinecraftMessageKeys.ROUND_RESULT_DETAILS_LABEL), details))
 
-/** 建立正式的單行 match-result 訊息，詳細最終排行收進中括號 hover 標籤。 */
-fun buildMatchResultChatText(details: Text): MutableText = Text
+/**
+ * 建立單行對局結果訊息，排行與選用歷史入口集中於同一標籤。
+ *
+ * @param details 完整排行與入口說明。
+ * @param historyClick 選用的本地歷史開啟命令。
+ * @return 使用既有聊天格式的結果訊息。
+ */
+fun buildMatchResultChatText(details: Text, historyClick: ClickEvent? = null): MutableText = Text
     .translatable(MinecraftMessageKeys.MATCH_RESULT_BROADCAST)
     .append(Text.literal(" "))
-    .append(bracketedInteractiveLabel(Text.translatable(MinecraftMessageKeys.ROUND_RESULT_DETAILS_LABEL), details))
+    .append(bracketedInteractiveLabel(Text.translatable(MinecraftMessageKeys.ROUND_RESULT_DETAILS_LABEL), details, historyClick))

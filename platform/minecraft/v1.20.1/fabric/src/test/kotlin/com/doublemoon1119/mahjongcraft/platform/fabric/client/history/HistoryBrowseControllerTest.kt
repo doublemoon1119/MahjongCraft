@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryMatchSumm
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryOutcomeFilterDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryParticipantSummaryDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryErrorCodeDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryScopeDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySortDirectionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySortFieldDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryRequestDto
@@ -22,6 +23,7 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
@@ -29,6 +31,67 @@ import kotlin.time.Duration.Companion.milliseconds
 /** 驗證歷史瀏覽控制器的查詢排程、導覽快取、失敗處理與生命週期。 */
 @OptIn(ExperimentalCoroutinesApi::class)
 class HistoryBrowseControllerTest {
+    /** 短頁依實際筆數累計範圍，返回上一頁及刷新後不沿用錯誤偏移。 */
+    @Test
+    fun `test page ranges count actual short pages and reset on refresh`() = runTest {
+        val transport = FakeHistoryQueryTransport()
+        val controller = controller(transport)
+        controller.open()
+        runCurrent()
+        assertFalse(controller.canRefresh())
+        transport.respondList(entries = List(7) { summary("first-$it") }, nextCursor = "second")
+        runCurrent()
+        assertEquals(1, controller.state.value.list.firstEntryIndex)
+        assertTrue(controller.nextPage())
+        advanceTimeBy(250)
+        runCurrent()
+        transport.respondList(entries = List(3) { summary("second-$it") }, nextCursor = "third")
+        runCurrent()
+        assertEquals(8, controller.state.value.list.firstEntryIndex)
+        assertTrue(controller.nextPage())
+        advanceTimeBy(250)
+        runCurrent()
+        transport.respondList(entries = List(2) { summary("third-$it") })
+        runCurrent()
+        assertEquals(11, controller.state.value.list.firstEntryIndex)
+        assertTrue(controller.previousPage())
+        advanceTimeBy(250)
+        runCurrent()
+        transport.respondList(entries = List(3) { summary("second-$it") }, nextCursor = "third")
+        runCurrent()
+        assertEquals(8, controller.state.value.list.firstEntryIndex)
+        advanceTimeBy(250)
+        runCurrent()
+        assertTrue(controller.refresh())
+        runCurrent()
+        transport.respondList(entries = listOf(summary("fresh")))
+        runCurrent()
+        assertEquals(1, controller.state.value.list.firstEntryIndex)
+    }
+
+    /** 全部紀錄入口由權威能力回覆開啟，權限撤銷後切回自己的紀錄。 */
+    @Test
+    fun `test administrator capability is revoked without retaining all scope`() = runTest {
+        val transport = FakeHistoryQueryTransport()
+        val controller = controller(transport)
+        controller.open()
+        runCurrent()
+        transport.respondList(allowAll = true)
+        runCurrent()
+        assertTrue(controller.state.value.allowAll)
+        controller.updateQuery(HistoryBrowseQuery(scope = HistoryQueryScopeDto.ALL))
+        advanceTimeBy(300)
+        runCurrent()
+        assertEquals(HistoryQueryScopeDto.ALL, transport.listRequests.last().scope)
+        transport.respondList(errorCode = HistoryQueryErrorCodeDto.ACCESS_DENIED, allowAll = false)
+        runCurrent()
+        advanceTimeBy(300)
+        runCurrent()
+        assertEquals(HistoryQueryScopeDto.OWN, controller.state.value.query.scope)
+        assertEquals(HistoryQueryScopeDto.OWN, transport.listRequests.last().scope)
+        assertEquals(false, controller.state.value.allowAll)
+    }
+
     /** 首次開啟會送出第一頁並提交成功清單。 */
     @Test
     fun `test initial open queries first page`() = runTest {
@@ -81,6 +144,7 @@ class HistoryBrowseControllerTest {
         runCurrent()
         transport.respondList(entries = listOf(summary("one")), nextCursor = "cursor-1")
         runCurrent()
+        assertEquals(1, controller.state.value.list.firstEntryIndex)
 
         assertTrue(controller.nextPage())
         advanceTimeBy(250)
@@ -96,6 +160,7 @@ class HistoryBrowseControllerTest {
         transport.respondList(entries = listOf(summary("two")), nextCursor = null)
         runCurrent()
         assertEquals(2, controller.state.value.list.pageNumber)
+        assertEquals(2, controller.state.value.list.firstEntryIndex)
         assertEquals(listOf("two"), controller.state.value.list.entries.map { it.matchId })
     }
 
@@ -129,9 +194,9 @@ class HistoryBrowseControllerTest {
         assertEquals(1, controller.state.value.list.pageNumber)
     }
 
-    /** 摘要在途返回列表後刷新會等待舊要求完成，遲到摘要不得覆蓋新清單。 */
+    /** 摘要在途返回列表後不可刷新，完成並經過冷卻後才接受新清單要求。 */
     @Test
-    fun `test back during summary request lets refresh supersede stale summary`() = runTest {
+    fun `test refresh after returning waits for active summary and cooldown`() = runTest {
         val transport = FakeHistoryQueryTransport()
         val controller = controller(transport)
         controller.open()
@@ -143,12 +208,15 @@ class HistoryBrowseControllerTest {
         runCurrent()
         val summaryRequest = transport.summaryRequests.last().requestId
         assertTrue(controller.backToList())
-        assertTrue(controller.refresh())
+        assertFalse(controller.refresh())
         runCurrent()
         transport.emit(ClientHistoryQueryState.SummaryResult(HistorySummaryResponseDto(summaryRequest, detail("match"))))
         runCurrent()
         assertEquals(1, transport.listRequests.size)
+        assertFalse(controller.refresh())
         advanceTimeBy(250)
+        runCurrent()
+        assertTrue(controller.refresh())
         runCurrent()
         transport.respondList(entries = emptyList())
         runCurrent()
@@ -178,13 +246,69 @@ class HistoryBrowseControllerTest {
         runCurrent()
         transport.respondList(entries = listOf(summary("old")))
         runCurrent()
-        assertTrue(controller.refresh())
+        assertEquals(false, controller.canRefresh())
+        assertTrue(controller.isRefreshCoolingDown())
         advanceTimeBy(249)
+        runCurrent()
+        assertEquals(false, controller.canRefresh())
+        assertEquals(1, transport.listRequests.size)
+        advanceTimeBy(1)
+        runCurrent()
+        assertEquals(false, controller.isRefreshCoolingDown())
+        assertTrue(controller.canRefresh())
+        assertTrue(controller.refresh())
+        runCurrent()
+        assertEquals(2, transport.listRequests.size)
+    }
+
+    /** 查詢冷卻設定重新載入後，控制器會立即套用縮短或延長的間隔。 */
+    @Test
+    fun `test minimum interval reload changes refresh availability`() = runTest {
+        val transport = FakeHistoryQueryTransport()
+        val controller = controller(transport)
+        controller.open()
+        runCurrent()
+        transport.respondList(entries = listOf(summary("old")))
+        runCurrent()
+
+        transport.minimumInterval.value = 500.milliseconds
+        runCurrent()
+        advanceTimeBy(250)
+        runCurrent()
+        assertFalse(controller.canRefresh())
+
+        transport.minimumInterval.value = 100.milliseconds
+        runCurrent()
+        assertTrue(controller.canRefresh())
+        assertTrue(controller.refresh())
+        runCurrent()
+    }
+
+    /** 尚未送出的最新查詢會依重新載入的間隔重新排程。 */
+    @Test
+    fun `test pending query reschedules when minimum interval changes`() = runTest {
+        val transport = FakeHistoryQueryTransport()
+        val controller = controller(transport)
+        controller.open()
+        runCurrent()
+        transport.respondList(entries = listOf(summary("old")), nextCursor = "next")
+        runCurrent()
+        assertTrue(controller.nextPage())
+        runCurrent()
+        transport.minimumInterval.value = 1_000.milliseconds
+        runCurrent()
+        advanceTimeBy(500)
+        runCurrent()
+        assertEquals(1, transport.listRequests.size)
+        transport.minimumInterval.value = 600.milliseconds
+        runCurrent()
+        advanceTimeBy(99)
         runCurrent()
         assertEquals(1, transport.listRequests.size)
         advanceTimeBy(1)
         runCurrent()
         assertEquals(2, transport.listRequests.size)
+        assertEquals("next", transport.listRequests.last().cursor)
     }
 
     /** 刷新會保留條件並從第一頁重新查詢。 */
@@ -196,8 +320,9 @@ class HistoryBrowseControllerTest {
         runCurrent()
         transport.respondList(entries = listOf(summary("old")), nextCursor = "next")
         runCurrent()
-        assertTrue(controller.refresh())
         advanceTimeBy(250)
+        runCurrent()
+        assertTrue(controller.refresh())
         runCurrent()
         assertEquals(null, transport.listRequests.last().cursor)
         transport.respondList(entries = listOf(summary("new")))
@@ -329,7 +454,6 @@ class HistoryBrowseControllerTest {
         assertTrue(controller.state.value.list.entries.isEmpty())
     }
 
-    /** 建立使用測試排程器單調時間的控制器。 */
     /** 以測試作用域建立使用虛擬單調時間的控制器。
      *
      * @param transport 模擬查詢傳輸。
@@ -365,6 +489,9 @@ class HistoryBrowseControllerTest {
 
         /** 傳輸目前的 session 世代。 */
         override val sessionRevision = MutableStateFlow(0L)
+
+        /** 模擬伺服器公布的預設查詢冷卻。 */
+        override val minimumInterval = MutableStateFlow(250.milliseconds)
 
         /** 可觀察的查詢結果。 */
         override val state: StateFlow<ClientHistoryQueryState> = mutableState.asStateFlow()
@@ -414,14 +541,16 @@ class HistoryBrowseControllerTest {
          * @param entries 回應中的清單摘要。
          * @param nextCursor 下一頁游標。
          * @param errorCode 回應中的穩定錯誤碼。
+         * @param allowAll 伺服器目前允許全部紀錄查詢。
          */
         fun respondList(
             requestId: String = listRequests.last().requestId,
             entries: List<HistoryMatchSummaryDto> = emptyList(),
             nextCursor: String? = null,
             errorCode: HistoryQueryErrorCodeDto? = null,
+            allowAll: Boolean = false,
         ) {
-            mutableState.value = ClientHistoryQueryState.ListResult(HistoryListResponseDto(requestId, entries, nextCursor, errorCode))
+            mutableState.value = ClientHistoryQueryState.ListResult(HistoryListResponseDto(requestId, entries, nextCursor, errorCode, allowAll))
         }
 
         /** 發出摘要回應。

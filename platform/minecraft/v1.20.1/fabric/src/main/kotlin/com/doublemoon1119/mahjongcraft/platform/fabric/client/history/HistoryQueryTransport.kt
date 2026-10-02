@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryRequestDto
 import kotlinx.coroutines.flow.StateFlow
+import kotlin.time.Duration
 
 /** 客戶端歷史查詢的傳輸與生命週期邊界。 */
 interface HistoryQueryTransport {
@@ -11,6 +12,9 @@ interface HistoryQueryTransport {
 
     /** 目前連線／世界工作階段的單調遞增版本。 */
     val sessionRevision: StateFlow<Long>
+
+    /** 目前伺服器公布的最短查詢間隔。 */
+    val minimumInterval: StateFlow<Duration>
 
     /**
      * 傳送歷史清單要求。

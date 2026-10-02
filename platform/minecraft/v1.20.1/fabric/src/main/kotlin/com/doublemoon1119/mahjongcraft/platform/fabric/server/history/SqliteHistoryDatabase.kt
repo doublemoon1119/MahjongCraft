@@ -282,6 +282,27 @@ internal class SqliteHistoryDatabase private constructor(
     }
 
     /**
+     * 讀取單場保存狀態所需的最小 SQL 證據，不載入 Replay payload。
+     *
+     * @param matchId 欲查詢的對局識別碼。
+     * @return 單一交易內取得的保存證據。
+     */
+    fun readArchiveStatusEvidence(matchId: String): HistoryArchiveStatusEvidence = transaction(database) {
+        val replay = HistoryReplayTable.selectAll().where { HistoryReplayTable.matchId eq matchId }.any()
+        val tombstone = HistoryTombstoneTable.selectAll().where { HistoryTombstoneTable.matchId eq matchId }.any()
+        val pending = HistoryPendingEventTable.selectAll().where { HistoryPendingEventTable.matchId eq matchId }.any()
+        val failed = HistoryGapTable.selectAll().where { HistoryGapTable.matchId eq matchId }.any() ||
+            HistoryRecordingStopTable.selectAll().where { HistoryRecordingStopTable.matchId eq matchId }.any() ||
+            HistoryTerminalTable.selectAll().where {
+                (HistoryTerminalTable.matchId eq matchId) and (HistoryTerminalTable.completed eq false)
+            }.any()
+        val participants = HistoryParticipantTable.select(HistoryParticipantTable.playerId)
+            .where { HistoryParticipantTable.matchId eq matchId }
+            .mapTo(mutableSetOf()) { it[HistoryParticipantTable.playerId] }
+        HistoryArchiveStatusEvidence(replay, tombstone, pending, failed, participants)
+    }
+
+    /**
      * 查詢至多一百個生成場次的封存及清理證據，不反序列化 Replay。
      *
      * @param matchIds 此批工作建立的場次 ID。
@@ -593,6 +614,14 @@ internal class SqliteHistoryDatabase private constructor(
         query.matchId?.let {
             conditions += "m.match_id = ?"
             bindString(it)
+        }
+        query.participantIds?.let { participantIds ->
+            if (participantIds.isEmpty()) {
+                conditions += "1 = 0"
+            } else {
+                conditions += "EXISTS (SELECT 1 FROM history_participant named WHERE named.match_id = m.match_id AND named.player_id IN (${participantIds.joinToString(",") { "?" }}))"
+                participantIds.forEach(::bindString)
+            }
         }
         if (!query.includeAll) {
             val playerId = query.playerId ?: error("Own history query requires a player ID")

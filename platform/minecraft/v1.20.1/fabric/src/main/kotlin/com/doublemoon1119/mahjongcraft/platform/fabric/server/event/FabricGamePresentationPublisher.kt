@@ -35,7 +35,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCele
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinSettlementPresentationScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationState
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinShowcaseOverride
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.resolveKnownPlayerName
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.ServerPlayerIdentityStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.PersistentTableOverlayCoordinator
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.TileAnimationSteps
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
@@ -115,8 +115,15 @@ import kotlin.uuid.toJavaUuid
  * @property tableCornerWidths 桌上物件目前佔用的副露角落寬度紀錄，手牌、胡牌演出與結算舞台依此讓開角落。
  * @property roundInfoPresenter 桌面中央局況顯示的實際呈現邏輯。
  * @property roundInfoLineDisplayRegistry 依規則模組建立局況行並查詢其翻譯資訊。
+ * @property playerInfoPresenter 座位玩家資訊的呈現邏輯。
+ * @property tileSelectionConfirmPresenter 實體選牌確認提示的呈現邏輯。
  * @property tableLocationRegistry 麻將桌最後已知位置索引。
  * @property serverHolder 目前運行中的 server，供世界／方塊狀態查詢使用。
+ * @property playerIdentities 真人最後已知普通名稱來源。
+ * @property openingOperations 開局呈現操作的生命週期追蹤器。
+ * @property spawnGateway 主執行緒實體生成閘道。
+ * @property debugWinShowcaseOverride 開發場景的胡牌展示覆寫值。
+ * @property debugWinRoundContinuationState 開發場景的胡牌後流程狀態。
  * @property busyTracker 查詢／標記該桌是否呈現動畫播放中，供輸入分派入口與自動操作心跳擋下操作，見
  *   [TablePresentationBusyTracker] KDoc。
  * @property gameRepository 讀取贏家目前的權威手牌／副露內容，供 [publishWinCelebration] 算出強制理牌
@@ -124,6 +131,13 @@ import kotlin.uuid.toJavaUuid
  *   KDoc），只讀不寫，不違反本類別 best-effort、不影響權威狀態的既有慣例。
  * @property moduleRegistry 解析對局採用的規則模組，取得 [publishWinCelebration] 算牌序需要的 `tileOrder`。
  * @property effectScheduler 胡牌慶祝演出降臨特效（粒子聚合光柱）的排程器。
+ * @property showcaseScheduler 胡牌手牌展示排程器。
+ * @property exhaustiveDrawSettlementScheduler 流局結算呈現排程器。
+ * @property winSettlementScheduler 胡牌結算呈現排程器。
+ * @property matchSettlementScheduler 整場排名結算呈現排程器。
+ * @property tableOverlayCoordinator 桌級持久面板協調器。
+ * @property tileAssetRegistry 牌面資產與材質註冊表。
+ * @property gameActionSoundPresentationRegistry 動作聲音與宣告語音呈現註冊表。
  * @property scope 承接世界／方塊狀態查詢需要切回伺服器主執行緒的工作。
  * @property dispatchers 切回伺服器主執行緒用的 dispatcher。
  */
@@ -143,6 +157,7 @@ class FabricGamePresentationPublisher(
     private val tileSelectionConfirmPresenter: MahjongTileSelectionConfirmPresenter,
     private val tableLocationRegistry: TableLocationRegistry,
     private val serverHolder: FabricServerHolder,
+    private val playerIdentities: ServerPlayerIdentityStore,
     private val busyTracker: TablePresentationBusyTracker,
     private val openingOperations: TableOpeningPresentationOperationTracker,
     private val spawnGateway: FabricEntitySpawnGateway,
@@ -558,7 +573,7 @@ class FabricGamePresentationPublisher(
             val module = moduleRegistry.getModule(game.tableState.config)
             val orderedAiPlayerIds = game.roomPlayerIds.filter { id -> game.tableState.players.any { it.id == id && it.isAi } }
             val playerInfo = MahjongPlayerInfoPresentationFactory.create(game.tableState, module) { player ->
-                if (player.isAi) aiPlayerDisplayName(player.id, orderedAiPlayerIds) else resolveKnownPlayerName(serverHolder, player.id)
+                if (player.isAi) aiPlayerDisplayName(player.id, orderedAiPlayerIds) else playerIdentities.resolveKnownName(player.id)
             }
             playerInfoPresenter.present(playerInfo, resolved.location, resolved.facing)
         }

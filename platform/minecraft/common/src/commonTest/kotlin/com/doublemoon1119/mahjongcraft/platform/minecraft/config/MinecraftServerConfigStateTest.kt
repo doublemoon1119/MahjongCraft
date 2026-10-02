@@ -16,5 +16,15 @@ class MinecraftServerConfigStateTest {
         state.replace(replacement)
 
         assertEquals(replacement, state.current)
+        assertEquals(replacement, state.updates.value)
+    }
+
+    /** 重設會同時更新即時讀值與設定同步來源。 */
+    @Test
+    fun `test reset publishes default config`() {
+        val state = MinecraftServerConfigState(MinecraftServerConfig(history = MinecraftHistoryConfig(queryMinimumIntervalMilliseconds = 1_000)))
+        state.reset()
+        assertEquals(MinecraftServerConfig(), state.current)
+        assertEquals(state.current, state.updates.value)
     }
 }

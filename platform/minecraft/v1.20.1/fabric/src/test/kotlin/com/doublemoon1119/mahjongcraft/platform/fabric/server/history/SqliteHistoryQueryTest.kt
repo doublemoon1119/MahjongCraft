@@ -185,6 +185,50 @@ class SqliteHistoryQueryTest {
         assertTrue(indexes.any { it.contains("player_id") })
     }
 
+    /** 名稱解析出的多個 UUID 必須在 SQL 中與擁有權條件取交集，且空集合不得放寬查詢。 */
+    @Test
+    fun `test participant name ids intersect ownership and empty ids match nothing`() {
+        val database = openDatabase()
+        insertMatch(database.path, "named-owner", 1L, 20L)
+        insertReplay(database.path, "named-owner", "{}")
+        insertParticipant(database.path, "named-owner", 0, "owner")
+        insertParticipant(database.path, "named-owner", 1, "other-name")
+        insertMatch(database.path, "named-other", 1L, 10L)
+        insertReplay(database.path, "named-other", "{}")
+        insertParticipant(database.path, "named-other", 0, "other-name")
+
+        val query = SqliteHistoryQuery(
+            playerId = "owner",
+            includeAll = false,
+            sortField = SqliteHistorySortField.ENDED_AT,
+            sortDirection = SqliteHistorySortDirection.DESC,
+            participantIds = setOf("other-name"),
+        )
+        assertEquals(listOf("named-owner"), database.readHistoryQueryPage(query).entries.map { it.matchId })
+        assertTrue(database.readHistoryQueryPage(query.copy(participantIds = emptySet())).entries.isEmpty())
+    }
+
+    /** 指定對局 ID 必須精確限制清單，不得受其他對局的參與者資料影響。 */
+    @Test
+    fun `test exact match id filter excludes other matches`() {
+        val database = openDatabase()
+        listOf("target-match", "other-match").forEachIndexed { index, matchId ->
+            insertMatch(database.path, matchId, 1L, (index + 1).toLong())
+            insertReplay(database.path, matchId, "{}")
+            insertParticipant(database.path, matchId, 0, "owner")
+        }
+        val page = database.readHistoryQueryPage(
+            SqliteHistoryQuery(
+                playerId = "owner",
+                includeAll = false,
+                sortField = SqliteHistorySortField.ENDED_AT,
+                sortDirection = SqliteHistorySortDirection.DESC,
+                matchId = "target-match",
+            ),
+        )
+        assertEquals(listOf("target-match"), page.entries.map { it.matchId })
+    }
+
     /** 四種排序均可使用穩定的排序值與對局 ID 接續分頁。 */
     @Test
     fun `test all supported sort fields and directions`() {

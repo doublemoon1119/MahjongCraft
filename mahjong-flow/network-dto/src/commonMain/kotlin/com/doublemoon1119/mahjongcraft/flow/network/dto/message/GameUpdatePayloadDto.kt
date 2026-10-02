@@ -11,6 +11,12 @@ import kotlinx.serialization.Serializable
  * 是因為由呼叫端組出這個 DTO 時，快照本來就已經是這次事件觸發後的最新結果（見
  * `GameEventPublisherImpl` 的說明），合併送出讓客戶端收到的 `(action, snapshot)` 永遠是自洽的一對，
  * 不需要處理兩個獨立封包分別到達的順序/遺漏問題。
+ *
+ * @property gameId 對局所屬牌桌的 UUID 字串。
+ * @property actorId 本次動作執行者的 UUID 字串。
+ * @property action 已完成的權威動作。
+ * @property snapshot 動作完成後對收件玩家可見的桌況快照。
+ * @property historyMatchId 終局事件對應的歷史場次 UUID 字串；非終局更新為 null。
  */
 @Serializable
 data class GameUpdatePayloadDto(
@@ -18,4 +24,5 @@ data class GameUpdatePayloadDto(
     val actorId: String,
     val action: GameActionDto,
     val snapshot: TableStateSnapshotDto,
+    val historyMatchId: String? = null,
 )

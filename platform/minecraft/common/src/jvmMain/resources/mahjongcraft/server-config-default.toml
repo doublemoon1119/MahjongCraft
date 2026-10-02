@@ -65,6 +65,21 @@ query-enabled = true
 # Controls whether operators may query all archived matches. Operators may still query their own matches when disabled.
 allow-admin-query = true
 
+# Minimum interval between accepted history queries from the same player, in milliseconds.
+# Allowed range: 50 to 10000. This cannot be set to 0 to disable query protection.
+query-minimum-interval-ms = 250
+
+# Maximum accepted history-query jobs awaiting completion of their replies across the whole server.
+# This is not the number of concurrent SQLite queries; database management remains serialized.
+# Allowed range: 1 to 64. This cannot be set to 0 to disable query protection.
+# Lowering the limit on reload does not cancel queries already accepted.
+query-max-outstanding = 32
+
+# Minimum interval between admission rejection replies (rate limit or full workload) to the same player, in milliseconds.
+# Responses from already accepted jobs are not throttled by this setting.
+# Allowed range: 250 to 10000. This cannot be set to 0 to disable query protection.
+query-rejection-reply-interval-ms = 1000
+
 # Maximum ended matches to retain. A new completed match is saved before the oldest ended matches are removed.
 # 0 means unlimited matches. Active matches are protected and do not count toward this limit.
 max-matches = 100

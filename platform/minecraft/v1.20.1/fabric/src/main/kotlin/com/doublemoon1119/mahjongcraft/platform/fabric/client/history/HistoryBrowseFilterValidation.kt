@@ -10,10 +10,13 @@ import java.time.DateTimeException
 import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import kotlin.uuid.Uuid
 
 /** 歷史瀏覽表單的文字篩選輸入。
  *
  * @property ruleId 規則模組的 namespaced ID；空白值表示不限制規則。
+ * @property playerName 玩家名稱包含文字；空白值表示不限制玩家名稱。
+ * @property matchId 欲精確比對的完整對局 UUID；空白值表示不限。
  * @property outcome 對局結果篩選。
  * @property integrity 對局完整性篩選。
  * @property ai AI 座位篩選。
@@ -24,6 +27,8 @@ import java.time.format.DateTimeFormatter
  */
 internal data class HistoryBrowseFilterInput(
     val ruleId: String = "",
+    val playerName: String = "",
+    val matchId: String = "",
     val outcome: HistoryOutcomeFilterDto? = null,
     val integrity: HistoryIntegrityFilterDto? = null,
     val ai: HistoryAiFilterDto? = null,
@@ -37,6 +42,12 @@ internal data class HistoryBrowseFilterInput(
 internal enum class HistoryBrowseFilterField {
     /** 規則模組欄位。 */
     RULE,
+
+    /** 玩家名稱欄位。 */
+    PLAYER_NAME,
+
+    /** 對局識別碼欄位。 */
+    MATCH_ID,
 
     /** 日期下界欄位。 */
     FROM_DATE,
@@ -61,6 +72,12 @@ internal enum class HistoryBrowseFilterError {
 
     /** 名次不是正整數。 */
     INVALID_RANK,
+
+    /** 對局識別碼不是 UUID。 */
+    INVALID_MATCH_ID,
+
+    /** 玩家名稱超過 Minecraft 名稱長度上限。 */
+    INVALID_PLAYER_NAME,
 
     /** 下界大於上界。 */
     REVERSED_RANGE,
@@ -100,6 +117,14 @@ internal object HistoryBrowseFilterValidation {
         val errors = linkedMapOf<HistoryBrowseFilterField, HistoryBrowseFilterError>()
         val ruleId = input.ruleId.trim().takeUnless { it.isEmpty() }
         if (ruleId != null && !NamespacedId.isValid(ruleId)) errors[HistoryBrowseFilterField.RULE] = HistoryBrowseFilterError.INVALID_RULE
+        val playerName = input.playerName.trim().takeUnless { it.isEmpty() }
+        val matchId = input.matchId.trim().takeUnless { it.isEmpty() }
+        if (playerName != null && (playerName.length > 16 || playerName.any(Char::isISOControl))) {
+            errors[HistoryBrowseFilterField.PLAYER_NAME] = HistoryBrowseFilterError.INVALID_PLAYER_NAME
+        }
+        if (matchId != null && runCatching { Uuid.parse(matchId) }.isFailure) {
+            errors[HistoryBrowseFilterField.MATCH_ID] = HistoryBrowseFilterError.INVALID_MATCH_ID
+        }
 
         val fromDate = parseDate(input.fromDate, zone, errors, HistoryBrowseFilterField.FROM_DATE)
         val throughDate = parseDate(input.throughDate, zone, errors, HistoryBrowseFilterField.THROUGH_DATE, exclusiveNextDay = true)
@@ -117,6 +142,8 @@ internal object HistoryBrowseFilterValidation {
         return HistoryBrowseFilterResult.Valid(
             HistoryQueryFiltersDto(
                 ruleId = ruleId,
+                playerName = playerName,
+                matchId = matchId,
                 outcome = input.outcome,
                 integrity = input.integrity,
                 ai = input.ai,

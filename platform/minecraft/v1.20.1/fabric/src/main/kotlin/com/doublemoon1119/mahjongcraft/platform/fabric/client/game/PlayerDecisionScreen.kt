@@ -5,12 +5,10 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionPr
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSelectionKindDto
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ClaimedTileMarker
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds
-import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.screen.Screen
 import net.minecraft.client.gui.widget.ButtonWidget
 import net.minecraft.text.Text
-import java.util.UUID
 
 /**
  * 透明且不暫停遊戲的權威操作選擇介面。
@@ -245,14 +243,12 @@ internal class PlayerDecisionScreen(
         drawTile(context, assetKey, tile.x, tile.y)
     }
 
-    /** 以 client player list 解析來源名稱，並使用完整本地化句型；自己回合摸牌沒有來源玩家，改顯示專用句型。 */
+    /** 使用共用玩家名稱來源與完整本地化句型；自己摸牌沒有來源玩家時使用專用句型。 */
     private fun triggerText(): Text? {
         val playerId = prompt.triggerPlayerId
             ?: return if (prompt.triggerTileAssetKey != null) Text.translatable("mahjongcraft.hud.trigger.self_draw") else null
-        val uuid = runCatching { UUID.fromString(playerId) }.getOrNull()
         val playerName = prompt.triggerPlayerName
-            ?: uuid?.let { MinecraftClient.getInstance().networkHandler?.getPlayerListEntry(it)?.profile?.name }
-            ?: playerId.take(8)
+            ?: controller.resolveTriggerPlayerName(playerId)
         val relationKey = when (prompt.triggerPlayerRelation) {
             DecisionPlayerRelationDto.LEFT -> "mahjongcraft.hud.relation.left"
             DecisionPlayerRelationDto.ACROSS -> "mahjongcraft.hud.relation.across"

@@ -44,6 +44,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.observer.FabricObs
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricAuthoritativeStatePersistence
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricTableLocationPersistence
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.PlayerConnectionLifecycleService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.ServerPlayerIdentityStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.FabricMahjongLobbyInfoLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.FabricRoomCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableRoomService
@@ -108,6 +109,7 @@ class MahjongCraftMod : ModInitializer {
         registerDecisionSelectionReceiver(koin)
 
         val serverHolder = koin.get<FabricServerHolder>()
+        val playerIdentityStore = koin.get<ServerPlayerIdentityStore>()
         val appScope = koin.get<FabricAppCoroutineScope>()
         val stateCleaner = koin.get<ServerSessionStateCleaner>()
         val statePersistence = koin.get<FabricAuthoritativeStatePersistence>()
@@ -130,6 +132,7 @@ class MahjongCraftMod : ModInitializer {
             runBlocking { historyWriter.attach(server) }
             tableLocationValidation.startSession(server)
             serverHolder.set(server)
+            playerIdentityStore.refresh()
             appScope.startSession()
             observerBroadcast.startSession()
             lobbyInfoLifecycle.startSession()
@@ -155,6 +158,7 @@ class MahjongCraftMod : ModInitializer {
             }
             configManager.detach()
             serverHolder.clear()
+            playerIdentityStore.refresh()
         }
 
         registerGameCommandReceiver(koin)

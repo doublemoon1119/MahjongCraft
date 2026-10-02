@@ -22,7 +22,15 @@ import net.minecraft.client.gui.widget.ButtonWidget
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 
-/** 原生 MahjongCraft client 設定畫面；分開編輯本機設定與本局自動操作草稿，不接觸房間規則。 */
+/**
+ * 原生 MahjongCraft client 設定畫面；分開編輯本機設定與本局自動操作草稿，不接觸房間規則。
+ *
+ * @property parent 返回時顯示的上層畫面。
+ * @property configStore 本機客戶端設定儲存區。
+ * @property automaticCoordinator 本局自動操作更新協調器。
+ * @property displayResolver 自動操作顯示解析器。
+ * @property preferenceService 手牌偏好保存服務。
+ */
 class MahjongClientConfigScreen(
     private val parent: Screen?,
     private val configStore: MahjongClientConfigStore,
@@ -681,27 +689,30 @@ class MahjongClientConfigScreen(
         AUTOMATIC(MinecraftClientConfigScreenKeys.CATEGORY_AUTOMATIC),
     }
 
-    /** 一列設定的宣告式內容與 immutable updater。 */
+    /**
+     * 一列設定的宣告式內容與不可變更新函式。
+     *
+     * @property nameKey 欄位名稱翻譯鍵。
+     * @property descriptionKey 欄位說明翻譯鍵。
+     * @property valueText 依草稿產生目前值文字。
+     * @property update 不可變更新函式；null 表示唯讀入口。
+     * @property onActivate 非設定值切換的入口動作。
+     * @property id 供呈現分類過濾使用的穩定識別字。
+     * @property nameOverride 動態 registry 名稱。
+     * @property descriptionOverride 動態 registry 說明。
+     * @property information 是否為沒有可編輯控制項的說明列。
+     * @property remote 本局權威狀態過期時不可切換。
+     */
     private data class ConfigRow(
-        /** 欄位名稱翻譯鍵。 */
         val nameKey: String,
-        /** 欄位說明翻譯鍵。 */
         val descriptionKey: String,
-        /** 依草稿產生目前值文字。 */
         val valueText: (MahjongClientConfigState) -> Text,
-        /** 不可變更新函式；`null` 表示唯讀入口。 */
         val update: ((MahjongClientConfigState) -> MahjongClientConfigState)? = null,
-        /** 非設定值切換的入口動作。 */
         val onActivate: (() -> Unit)? = null,
-        /** 供呈現分類過濾使用的穩定識別字。 */
         val id: String = nameKey,
-        /** 動態 registry 名稱。 */
         val nameOverride: Text? = null,
-        /** 動態 registry 說明。 */
         val descriptionOverride: Text? = null,
-        /** 說明列沒有可編輯控制項。 */
         val information: Boolean = false,
-        /** 本局權威狀態過期時不可切換。 */
         val remote: Boolean = false,
     ) {
         fun nameText(): Text = nameOverride ?: Text.translatable(nameKey)
@@ -709,15 +720,18 @@ class MahjongClientConfigScreen(
         fun descriptionText(): Text? = descriptionOverride ?: if (information) null else Text.translatable(descriptionKey)
     }
 
-    /** 中央面板邊界。 */
+    /**
+     * 中央面板邊界。
+     *
+     * @property left 左邊界。
+     * @property top 上邊界。
+     * @property right 右邊界。
+     * @property bottom 下邊界。
+     */
     private data class PanelBounds(
-        /** 左邊界。 */
         val left: Int,
-        /** 上邊界。 */
         val top: Int,
-        /** 右邊界。 */
         val right: Int,
-        /** 下邊界。 */
         val bottom: Int,
     ) {
         /** 面板寬度。 */

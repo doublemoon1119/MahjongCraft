@@ -4,7 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.FabricRoomConfigScreenCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.resolveKnownPlayerName
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.ServerPlayerIdentityStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.resolveDisplayText
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.bracketedInteractiveLabel
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.toDisplayText
@@ -35,10 +35,23 @@ import kotlin.uuid.Uuid
  * 不要求回饋與 translation key 一對一。若其他版本能使用新的 bar、title、音效或多種效果並行，
  * 可以在自己的實作中重新解釋同一個 [MinecraftPlayerFeedback]，不必讓共用模型列出所有版本 UI API
  * 的聯集。
+ *
+ * @property serverHolder 目前伺服器與有效收件玩家。
+ * @property playerIdentities 真人最後已知普通名稱來源。
+ * @property aiStrategyDisplayNames AI 策略的顯示名稱註冊表。
+ * @property actionVocabulary 規則動作的用語註冊表。
+ * @property exhaustiveDrawReasonDisplayNames 流局原因的顯示名稱註冊表。
+ * @property tileDisplayNames 牌種的顯示名稱註冊表。
+ * @property tileAssetRegistry 牌面資產註冊表。
+ * @property tileEmojiRegistry 聊天牌面圖示註冊表。
+ * @property gameConfigFormatter 遊戲設定的聊天文字格式化器。
+ * @property scope 玩家回饋工作的伺服器作用域。
+ * @property dispatchers 伺服器主執行緒排程。
  */
 @Single(binds = [MinecraftPlayerFeedbackPublisher::class])
 class FabricPlayerFeedbackPublisher(
     private val serverHolder: FabricServerHolder,
+    private val playerIdentities: ServerPlayerIdentityStore,
     private val aiStrategyDisplayNames: AiStrategyDisplayNameRegistry,
     private val actionVocabulary: GameActionVocabularyRegistry,
     private val exhaustiveDrawReasonDisplayNames: ExhaustiveDrawReasonDisplayNameRegistry,
@@ -205,7 +218,9 @@ class FabricPlayerFeedbackPublisher(
     }
 
     /** 用逗號串接每個玩家目前已知的名稱；查不到名稱時退回 UUID 前 8 碼，與其他玩家名稱 fallback 慣例一致。 */
-    private fun joinPlayerNames(playerIds: List<Uuid>): String = playerIds.joinToString { resolveKnownPlayerName(serverHolder, it) ?: it.toString().take(8) }
+    private fun joinPlayerNames(playerIds: List<Uuid>): String = playerIds.joinToString {
+        playerIdentities.resolveKnownName(it) ?: Text.translatable("mahjongcraft.history_screen.player_unknown").string
+    }
 
     /**
      * 建立「已更換 AI 策略」訊息，格式為「舊策略 → 新策略」，比照使用者對「舊 → 新」類訊息的配色慣例：

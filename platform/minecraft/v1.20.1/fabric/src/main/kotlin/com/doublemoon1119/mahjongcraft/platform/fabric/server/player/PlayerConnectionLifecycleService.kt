@@ -25,6 +25,17 @@ import kotlin.uuid.Uuid
 /**
  * 依伺服器政策處理玩家連線生命週期的兩端（[onConnected]／[onDisconnected]）：斷線時的離開政策、
  * 重連時取消逾時離開，以及重連時重建該玩家的快照。
+ *
+ * @property scope 執行斷線處理與快照重建工作的伺服器 coroutine scope。
+ * @property configState 提供斷線玩家處理政策的設定狀態。
+ * @property membershipRepository 查詢玩家所屬麻將桌。
+ * @property roomRepository 讀取等待室狀態。
+ * @property gameRepository 讀取進行中的對局狀態。
+ * @property leaveRoom 執行等待室離開操作。
+ * @property syncRoom 重建房間快照。
+ * @property syncGame 重建對局快照。
+ * @property automaticControlSnapshotSender 同步玩家自動操作設定。
+ * @property playerIdentityStore 保存玩家最後已知普通名稱。
  */
 @Single
 class PlayerConnectionLifecycleService(
@@ -37,6 +48,7 @@ class PlayerConnectionLifecycleService(
     private val syncRoom: SyncRoomSnapshotUseCase,
     private val syncGame: SyncGameSnapshotUseCase,
     private val automaticControlSnapshotSender: AutomaticControlSnapshotSender,
+    private val playerIdentityStore: ServerPlayerIdentityStore,
 ) {
     /** 記錄斷線政策、延遲工作與略過離開的原因。 */
     private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
@@ -47,8 +59,13 @@ class PlayerConnectionLifecycleService(
     /** 保護 [pendingLeaveJobs] 的跨 coroutine 存取。 */
     private val pendingLeaveJobsLock = Any()
 
-    /** 玩家重連時取消尚未到期的離線離開工作；快照重建改由客戶端主動請求，見 [onSnapshotRequested]。 */
+    /**
+     * 玩家重連時取消尚未到期的離線離開工作；快照重建改由客戶端主動請求，見 [onSnapshotRequested]。
+     *
+     * @param playerId 重連玩家 UUID。
+     */
     fun onConnected(playerId: Uuid) {
+        playerIdentityStore.rememberOnline(playerId)
         cancelPendingLeaveJob(playerId)
     }
 
@@ -101,7 +118,11 @@ class PlayerConnectionLifecycleService(
         }
     }
 
-    /** 玩家斷線時依政策保留座位、立即離開或安排逾時離開。 */
+    /**
+     * 玩家斷線時依政策保留座位、立即離開或安排逾時離開。
+     *
+     * @param playerId 斷線玩家 UUID。
+     */
     fun onDisconnected(playerId: Uuid) {
         cancelPendingLeaveJob(playerId)
         val config = configState.current

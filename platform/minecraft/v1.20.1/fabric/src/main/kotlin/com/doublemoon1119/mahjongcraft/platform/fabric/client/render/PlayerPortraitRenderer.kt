@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerProfileResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSource
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceContext
@@ -8,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitS
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tileTextureAssetPath
 import net.minecraft.client.MinecraftClient
+import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.render.LightmapTextureManager
 import net.minecraft.client.render.OverlayTexture
 import net.minecraft.client.render.RenderLayer
@@ -22,10 +24,16 @@ import kotlin.math.roundToInt
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 
-/** 所有世界結算與桌級面板共用的無帽子 FACE／牌面／texture portrait renderer。 */
+/**
+ * 世界結算、桌級面板及 GUI 共用的頭像來源繪製器。
+ *
+ * @property sources 規則與第三方提供的宣告式頭像來源。
+ * @property profiles 真人普通名稱與原生皮膚材質的共用解析器。
+ */
 @Single
 class PlayerPortraitRenderer(
     @Provided private val sources: PlayerPortraitSourceRegistry,
+    private val profiles: ClientPlayerProfileResolver,
 ) {
     private val logger = LoggerFactory.getLogger(PlayerPortraitRenderer::class.java)
     private val warnedProviderIds = mutableSetOf<String>()
@@ -58,6 +66,78 @@ class PlayerPortraitRenderer(
         }.isSuccess
         if (!rendered && resolved != null) {
             renderSource(fallbackSource(isAi), playerId, x, y, size, alpha, z, matrices, consumers)
+        }
+    }
+
+    /**
+     * 將同一 portrait source 繪製於 GUI；提供者失敗時使用內建來源。
+     *
+     * @param playerId 玩家識別碼。
+     * @param isAi 是否為 AI。
+     * @param context GUI 繪製上下文。
+     * @param x 左上角水平座標。
+     * @param y 左上角垂直座標。
+     * @param size 頭像邊長。
+     * @param skinTexture 已解析 profile 的原生材質，null 時交由共用 resolver 或預設材質處理。
+     */
+    fun renderGui(
+        playerId: Uuid,
+        isAi: Boolean,
+        context: DrawContext,
+        x: Int,
+        y: Int,
+        size: Int,
+        skinTexture: Identifier? = null,
+    ) {
+        val resolved = runCatching { sources.resolve(PlayerPortraitSourceContext(playerId, isAi)) }
+            .onFailure { cause ->
+                val providerId = (cause as? PlayerPortraitSourceProviderException)?.providerId ?: "registry"
+                if (warnedProviderIds.add(providerId)) logger.warn("Failed to resolve player portrait provider {}", providerId, cause)
+            }.getOrNull()
+        val source = resolved?.source ?: fallbackSource(isAi)
+        val rendered = runCatching { renderGuiSource(source, playerId, context, x, y, size, skinTexture) }
+            .onFailure { cause ->
+                val providerId = resolved?.providerId ?: "built-in-fallback"
+                if (warnedProviderIds.add(providerId)) logger.warn("Failed to render player portrait provider {}", providerId, cause)
+            }.isSuccess
+        if (!rendered && resolved != null) renderGuiSource(fallbackSource(isAi), playerId, context, x, y, size, skinTexture)
+    }
+
+    /**
+     * 繪製已解析的頭像來源，不另外查詢第三方提供者。
+     *
+     * @param source 宣告式頭像來源。
+     * @param playerId 玩家識別碼。
+     * @param context GUI 繪製上下文。
+     * @param x 左上角水平座標。
+     * @param y 左上角垂直座標。
+     * @param size 頭像邊長。
+     * @param skinTexture 已解析的原生皮膚材質。
+     */
+    private fun renderGuiSource(
+        source: PlayerPortraitSource,
+        playerId: Uuid,
+        context: DrawContext,
+        x: Int,
+        y: Int,
+        size: Int,
+        skinTexture: Identifier?,
+    ) {
+        when (source) {
+            PlayerPortraitSource.PlayerSkinFace -> {
+                val texture = skinTexture
+                    ?: profiles.resolvedSkinTexture(playerId)
+                    ?: MinecraftClient.getInstance().networkHandler?.getPlayerListEntry(playerId.toJavaUuid())?.skinTexture
+                    ?: DefaultSkinHelper.getTexture(playerId.toJavaUuid())
+                context.drawTexture(texture, x, y, size, size, 8f, 8f, 8, 8, 64, 64)
+            }
+            is PlayerPortraitSource.TileFace -> {
+                val width = (size * TILE_ASPECT_RATIO).toInt()
+                context.drawTexture(resolveTileTexture(source.assetKey), x + (size - width) / 2, y, width, size, 0f, 0f, 16, 16, 16, 16)
+            }
+            is PlayerPortraitSource.TextureRegion -> {
+                context.drawTexture(Identifier(source.resourceId), x, y, size, size, source.u0 * 256f, source.v0 * 256f, ((source.u1 - source.u0) * 256f).toInt(), ((source.v1 - source.v0) * 256f).toInt(), 256, 256)
+            }
         }
     }
 
@@ -94,7 +174,8 @@ class PlayerPortraitRenderer(
         consumers: VertexConsumerProvider,
     ) {
         val uuid = playerId.toJavaUuid()
-        val texture = MinecraftClient.getInstance().networkHandler?.getPlayerListEntry(uuid)?.skinTexture
+        val texture = profiles.resolvedSkinTexture(playerId)
+            ?: MinecraftClient.getInstance().networkHandler?.getPlayerListEntry(uuid)?.skinTexture
             ?: DefaultSkinHelper.getTexture(uuid)
         renderRegion(texture, x, y, size, size, alpha, z, 8f / 64f, 8f / 64f, 16f / 64f, 16f / 64f, true, matrices, consumers)
     }

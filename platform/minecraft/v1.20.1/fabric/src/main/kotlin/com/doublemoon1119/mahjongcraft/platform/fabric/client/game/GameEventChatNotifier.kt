@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.text.buildMatchResultChat
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.buildRoundResultChatText
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.toDisplayText
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.aiPlayerDisplayName
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
@@ -16,8 +17,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAsse
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
 import net.minecraft.client.MinecraftClient
+import net.minecraft.text.ClickEvent
 import net.minecraft.text.MutableText
 import net.minecraft.text.Text
+import net.minecraft.util.Formatting
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 
@@ -111,20 +114,30 @@ private fun rankChangeSymbol(previousRank: Int, newRank: Int): String = when {
  *
  * 排名（含同分決勝判準）交給 [module]（[MahjongRuleModule.compareForMatchRanking]），不在這裡寫死。
  *
+ * @param action 欲呈現的對局事件。
+ * @param newSnapshot 結束對局的可見桌況。
+ * @param module 提供權威排名排序的規則模組。
+ * @param playerDisplayName 選用的玩家名稱解析。
+ * @param historyCommand 選用的本地歷史畫面開啟命令，不以保存完成為前提。
  * @return 不是對局結束事件時回傳 null，代表呼叫端不需要顯示任何訊息。
  */
 fun buildMatchResultChatMessage(
     action: GameAction,
     newSnapshot: TableStateSnapshot,
     module: MahjongRuleModule<*>,
+    historyCommand: String? = null,
     playerDisplayName: ((Uuid, Boolean) -> String)? = null,
 ): Text? {
     if (action !is GameAction.MatchEnded) return null
 
     val details = Text.empty()
     appendRankingLines(details, newSnapshot.players.sortedWith(module.compareForMatchRanking()), playerDisplayName)
-    return buildMatchResultChatText(details)
+    if (historyCommand != null) details.append(Text.literal("\n").append(Text.translatable(HISTORY_OPEN_HINT_KEY).formatted(Formatting.AQUA)))
+    return buildMatchResultChatText(details, historyCommand?.let { ClickEvent(ClickEvent.Action.RUN_COMMAND, it) })
 }
+
+/** 對局歷史畫面入口說明的翻譯鍵。 */
+private const val HISTORY_OPEN_HINT_KEY = MinecraftHistoryScreenKeys.OPEN_HINT
 
 /** 把 [rankedPlayers]（已排好序）依序編號附加到 [message]，兩種排名訊息共用同一種每行格式。 */
 private fun appendRankingLines(

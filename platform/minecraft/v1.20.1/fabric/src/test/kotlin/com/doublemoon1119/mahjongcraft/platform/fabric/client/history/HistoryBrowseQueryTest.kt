@@ -58,6 +58,8 @@ class HistoryBrowseQueryTest {
         val result = HistoryBrowseFilterValidation.parse(
             HistoryBrowseFilterInput(
                 ruleId = "mahjongcraft:riichi",
+                playerName = "Player777",
+                matchId = "a3b8c1d4-e5f6-7890-abcd-ef1234567890",
                 outcome = HistoryOutcomeFilterDto.COMPLETED,
                 integrity = HistoryIntegrityFilterDto.COMPLETE,
                 ai = HistoryAiFilterDto.NO_AI,
@@ -71,6 +73,8 @@ class HistoryBrowseQueryTest {
         )
         val valid = assertIs<HistoryBrowseFilterResult.Valid>(result)
         assertEquals("mahjongcraft:riichi", valid.filters.ruleId)
+        assertEquals("Player777", valid.filters.playerName)
+        assertEquals("a3b8c1d4-e5f6-7890-abcd-ef1234567890", valid.filters.matchId)
         assertEquals(LocalDate.of(2024, 2, 29).atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli(), valid.filters.endedAtFromEpochMillis)
         assertEquals(LocalDate.of(2024, 3, 2).atStartOfDay(ZoneId.of("UTC")).toInstant().toEpochMilli(), valid.filters.endedAtBeforeEpochMillis)
         assertEquals(10000, valid.filters.ownRankMax)
@@ -158,5 +162,29 @@ class HistoryBrowseQueryTest {
         val valid = assertIs<HistoryBrowseFilterResult.Valid>(result)
         assertEquals(null, valid.filters.ownRankMin)
         assertEquals(null, valid.filters.ownRankMax)
+    }
+
+    /** Match ID 必須是完整 UUID。 */
+    @Test
+    fun `test invalid match id is reported`() {
+        val result = HistoryBrowseFilterValidation.parse(
+            HistoryBrowseFilterInput(matchId = "match-001"),
+            ZoneId.of("UTC"),
+            HistoryQueryScopeDto.OWN,
+        )
+        val invalid = assertIs<HistoryBrowseFilterResult.Invalid>(result)
+        assertEquals(HistoryBrowseFilterError.INVALID_MATCH_ID, invalid.errors[HistoryBrowseFilterField.MATCH_ID])
+    }
+
+    /** 玩家名稱不得包含控制字元或超過名稱長度上限。 */
+    @Test
+    fun `test invalid player name is reported`() {
+        val result = HistoryBrowseFilterValidation.parse(
+            HistoryBrowseFilterInput(playerName = "Player\nName"),
+            ZoneId.of("UTC"),
+            HistoryQueryScopeDto.OWN,
+        )
+        val invalid = assertIs<HistoryBrowseFilterResult.Invalid>(result)
+        assertEquals(HistoryBrowseFilterError.INVALID_PLAYER_NAME, invalid.errors[HistoryBrowseFilterField.PLAYER_NAME])
     }
 }

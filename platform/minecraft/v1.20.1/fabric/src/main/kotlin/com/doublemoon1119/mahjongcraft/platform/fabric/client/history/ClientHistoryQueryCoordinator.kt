@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import org.koin.core.annotation.Single
+import kotlin.time.Duration
 import kotlin.uuid.Uuid
 
 /** 客戶端歷史查詢的載入與配對結果。 */
@@ -48,10 +49,12 @@ sealed interface ClientHistoryQueryState {
  * 將歷史要求與反應式結果配對，不訂閱資料庫也不定期查詢。
  *
  * @property sender 實際傳送線路 DTO 的平台邊界。
+ * @property settings 目前連線伺服器公布的查詢間隔。
  */
 @Single(binds = [HistoryQueryTransport::class])
 class ClientHistoryQueryCoordinator(
     private val sender: HistoryQuerySender,
+    private val settings: ClientHistoryQuerySettings,
 ) : HistoryQueryTransport {
     /** 只接受目前連線最新要求的回應。 */
     private val correlation = HistoryQueryCorrelation()
@@ -67,6 +70,9 @@ class ClientHistoryQueryCoordinator(
 
     /** 可供外部辨識工作階段變更的唯讀版本。 */
     override val sessionRevision: StateFlow<Long> = mutableSessionRevision.asStateFlow()
+
+    /** 目前連線有效的查詢冷卻。 */
+    override val minimumInterval: StateFlow<Duration> = settings.minimumInterval
 
     /**
      * 送出新清單要求並使舊條件的回覆失效。
@@ -124,6 +130,7 @@ class ClientHistoryQueryCoordinator(
 
     /** 世界或連線切換時清除配對與資料，不接受原連線的回應。 */
     fun clear() {
+        settings.reset()
         correlation.clear()
         mutableSessionRevision.value += 1L
         mutableState.value = ClientHistoryQueryState.Idle

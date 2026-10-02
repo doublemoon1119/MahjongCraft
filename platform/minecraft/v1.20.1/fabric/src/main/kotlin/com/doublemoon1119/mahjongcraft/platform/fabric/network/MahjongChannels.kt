@@ -7,6 +7,8 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionTimerUpd
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameCommandEnvelopeDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameSnapshotSyncPayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameUpdatePayloadDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryArchiveStatusRequestDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryArchiveStatusResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryRequestDto
@@ -18,11 +20,25 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomSnapshotSync
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdatePayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.SnapshotClearedPayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.TableOccupancyPayloadDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryQuerySettingsPayload
+import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerIdentityPayload
 import kotlinx.serialization.builtins.nullable
 import kotlinx.serialization.builtins.serializer
 
 /** `mahjongcraft:` 命名空間下實際使用的命令、事件更新與主動快照同步頻道。 */
 object MahjongChannels {
+    /** 加入伺服器及設定重載後同步的歷史查詢操作間隔。 */
+    val historyQuerySettings = S2CChannel("history_query_settings", HistoryQuerySettingsPayload.serializer(), HistoryQueryLimits.REQUEST_BYTES)
+
+    /** 已授權快照／歷史參與者的有界名稱呈現資料。 */
+    val playerIdentity = S2CChannel("player_identity", PlayerIdentityPayload.serializer(), PlayerIdentityPayload.MAX_BYTES)
+
+    /** 有界保存狀態要求，伺服器驗證場次與查閱身分。 */
+    val historyArchiveStatusRequest = C2SChannel("history_archive_status_request", HistoryArchiveStatusRequestDto.serializer(), HistoryQueryLimits.REQUEST_BYTES)
+
+    /** 不包含牌面或內部診斷的保存狀態回應。 */
+    val historyArchiveStatusResponse = S2CChannel("history_archive_status_response", HistoryArchiveStatusResponseDto.serializer(), HistoryQueryLimits.RESPONSE_BYTES)
+
     /** 有界歷史清單要求，不允許攜帶他人的查詢身分。 */
     val historyListRequest = C2SChannel("history_list_request", HistoryListRequestDto.serializer(), HistoryQueryLimits.REQUEST_BYTES)
 
@@ -65,6 +81,7 @@ object MahjongChannels {
     val decisionTimerUpdate = S2CChannel("decision_timer_update", DecisionTimerUpdatePayloadDto.serializer())
     val decisionSubmissionResult = S2CChannel("decision_submission_result", PlayerDecisionSubmissionResultDto.serializer())
     val gameUpdate = S2CChannel("game_update", GameUpdatePayloadDto.serializer())
+
     val roomUpdate = S2CChannel("room_update", RoomUpdatePayloadDto.serializer())
     val gameSnapshot = S2CChannel("game_snapshot", GameSnapshotSyncPayloadDto.serializer())
     val roomSnapshot = S2CChannel("room_snapshot", RoomSnapshotSyncPayloadDto.serializer())

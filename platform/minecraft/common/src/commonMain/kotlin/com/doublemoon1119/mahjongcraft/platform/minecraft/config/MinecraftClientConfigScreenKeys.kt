@@ -32,6 +32,12 @@ object MinecraftClientConfigScreenKeys {
     /** 視覺提示類別。 */
     const val CATEGORY_VISUAL_FEEDBACK: String = "mahjongcraft.client_config.category.visual_feedback"
 
+    /** 開啟客戶端設定的快捷鍵。 */
+    const val OPEN_CLIENT_CONFIG_KEY: String = "key.mahjongcraft.open_client_config"
+
+    /** 開啟對局歷史的快捷鍵。 */
+    const val OPEN_HISTORY_KEY: String = "key.mahjongcraft.open_history"
+
     /** 自動整理手牌欄位。 */
     const val AUTO_SORT_HAND: String = "mahjongcraft.client_config.auto_sort_hand"
 
@@ -171,7 +177,7 @@ object MinecraftClientConfigScreenKeys {
     const val DRAFT_STALE: String = "mahjongcraft.client_config.draft_stale"
 
     /** 開啟設定畫面的按鍵名稱。 */
-    const val OPEN_KEY: String = "key.mahjongcraft.open_client_config"
+    const val OPEN_KEY: String = OPEN_CLIENT_CONFIG_KEY
 
     /** MahjongCraft 按鍵分類。 */
     const val KEY_CATEGORY: String = "key.category.mahjongcraft"

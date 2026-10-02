@@ -24,12 +24,20 @@ import kotlin.uuid.Uuid
  *
  * 這些 payload 只更新客戶端保存的狀態，不攜帶動作語意也不產生文字訊息。玩家不在線時直接跳過，下次
  * 再成為觀察者時會重新收到完整內容。
+ *
+ * @property serverHolder 目前伺服器與有效收件玩家。
+ * @property automaticControlSnapshotSender 自動操作偏好的權威同步器。
+ * @property analysisDtoMapper 規則中立的手牌分析線路轉換器。
+ * @property playerIdentities 已授權快照涉及的真人名稱同步器。
+ * @property json 封包序列化設定。
+ * @property networkRegistries 規則擴充資料的線路轉換註冊表。
  */
 @Single(binds = [ObserverSnapshotSender::class])
 class FabricObserverSnapshotSender(
     private val serverHolder: FabricServerHolder,
     private val automaticControlSnapshotSender: AutomaticControlSnapshotSender,
     private val analysisDtoMapper: ReadinessAnalysisDtoMapper,
+    private val playerIdentities: PlayerIdentitySender,
     @Provided private val json: Json,
     @Provided private val networkRegistries: NetworkDtoRegistries,
 ) : ObserverSnapshotSender {
@@ -37,6 +45,7 @@ class FabricObserverSnapshotSender(
         val player = serverHolder.findPlayer(observerId) ?: return
         when (snapshot) {
             is ObserverSnapshot.OfRoom -> {
+                playerIdentities.send(observerId, snapshot.room.playerIds.filterNot { it in snapshot.room.aiPlayerIds })
                 MahjongChannels.roomSnapshot.sendTo(
                     player,
                     json,
@@ -46,6 +55,7 @@ class FabricObserverSnapshotSender(
             }
 
             is ObserverSnapshot.OfGame -> {
+                playerIdentities.send(observerId, snapshot.game.players.filterNot { it.isAi }.map { it.id })
                 MahjongChannels.gameSnapshot.sendTo(
                     player,
                     json,

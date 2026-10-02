@@ -132,6 +132,18 @@ fun serverConfigSections(config: MinecraftServerConfig): List<ConfigPresentation
                 clientBooleanText(config.history.allowAdminQuery),
             ),
             ConfigPresentationEntry(
+                Text.translatable(MinecraftConfigCommandKeys.HISTORY_QUERY_MINIMUM_INTERVAL),
+                Text.literal("${config.history.queryMinimumIntervalMilliseconds} ms"),
+            ),
+            ConfigPresentationEntry(
+                Text.translatable(MinecraftConfigCommandKeys.HISTORY_QUERY_MAX_OUTSTANDING),
+                Text.literal(config.history.queryMaxOutstanding.toString()),
+            ),
+            ConfigPresentationEntry(
+                Text.translatable(MinecraftConfigCommandKeys.HISTORY_QUERY_REJECTION_REPLY_INTERVAL),
+                Text.literal("${config.history.queryRejectionReplyIntervalMilliseconds} ms"),
+            ),
+            ConfigPresentationEntry(
                 Text.translatable(MinecraftConfigCommandKeys.HISTORY_MAX_MATCHES),
                 Text.literal(config.history.maxMatches.toString()),
             ),

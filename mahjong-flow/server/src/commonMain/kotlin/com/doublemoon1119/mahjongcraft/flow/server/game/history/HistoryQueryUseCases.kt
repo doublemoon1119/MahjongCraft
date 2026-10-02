@@ -13,9 +13,11 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQue
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistorySortField
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistorySummaryRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.MAX_HISTORY_PAGE_SIZE
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.MAX_HISTORY_PLAYER_NAME_LENGTH
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.MAX_HISTORY_RULE_ID_LENGTH
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.MIN_HISTORY_PAGE_SIZE
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
+import kotlin.uuid.Uuid
 
 /** 伺服器端歷史查詢的授權與參數驗證共用邏輯。
  * @param access 可信任的發起者資訊。
@@ -46,6 +48,16 @@ private fun validateHistoryListRequest(
     }
     if (request.filters.ruleId?.let { it.length !in 1..MAX_HISTORY_RULE_ID_LENGTH || !NamespacedId.isValid(it) } == true) {
         return HistoryQueryError(HistoryQueryErrorCode.INVALID_REQUEST, "History rule ID is out of range")
+    }
+    request.filters.playerName?.let { name ->
+        if (name.isBlank() || name != name.trim() || name.length > MAX_HISTORY_PLAYER_NAME_LENGTH || name.any(Char::isISOControl)) {
+            return HistoryQueryError(HistoryQueryErrorCode.INVALID_REQUEST, "History player name filter is invalid")
+        }
+    }
+    request.filters.matchId?.let { matchId ->
+        if (runCatching { Uuid.parse(matchId) }.isFailure) {
+            return HistoryQueryError(HistoryQueryErrorCode.INVALID_REQUEST, "History match ID filter is invalid")
+        }
     }
     if (request.scope == HistoryQueryScope.ALL &&
         (

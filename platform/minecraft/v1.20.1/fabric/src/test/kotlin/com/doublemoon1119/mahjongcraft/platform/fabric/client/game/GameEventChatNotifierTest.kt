@@ -190,6 +190,31 @@ class GameEventChatNotifierTest {
         assertNull(buildMatchResultChatMessage(GameAction.Tsumo, snapshot, module))
     }
 
+    /** 保存尚未完成時也一次建立提示與可點擊入口，不修改原始排行。 */
+    @Test
+    fun `test match result contains a stable history click and hint immediately`() {
+        val command = "/mahjongcraft_client history chat_entry local-token"
+        val message = requireNotNull(
+            buildMatchResultChatMessage(GameAction.MatchEnded, fakeSnapshot(listOf(30000, 20000)), module, historyCommand = command),
+        )
+        val label = message.siblings.last()
+        assertEquals(command, label.style.clickEvent?.value)
+        val details = requireNotNull(label.hoverDetails())
+        val hintCount = details.descendants().count { (it.content as? TranslatableTextContent)?.key == "mahjongcraft.history_screen.open_hint" }
+        assertEquals(1, hintCount)
+        assertEquals(2, details.siblings.count { (it.content as? TranslatableTextContent)?.key == "mahjongcraft.message.ranking_line" })
+    }
+
+    /**
+     * 遞迴列出文字與巢狀說明，不依賴 Minecraft 的實際語系載入。
+     *
+     * @return 包含目前文字的所有後代節點。
+     */
+    private fun Text.descendants(): Sequence<Text> = sequence {
+        yield(this@descendants)
+        siblings.forEach { yieldAll(it.descendants()) }
+    }
+
     @Test
     fun `breaks tied final scores by seat proximity to the original dealer`() {
         val eastId = Uuid.random()

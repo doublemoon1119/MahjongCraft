@@ -81,6 +81,8 @@ fun HistoryQueryFiltersDto.toDomain(): HistoryQueryFilters = HistoryQueryFilters
     endedAtFromEpochMillis = endedAtFromEpochMillis,
     endedAtBeforeEpochMillis = endedAtBeforeEpochMillis,
     ownRank = if (ownRankMin == null && ownRankMax == null) null else HistoryRankRange(ownRankMin, ownRankMax),
+    playerName = playerName?.trim()?.takeIf { it.isNotEmpty() },
+    matchId = matchId?.trim()?.takeIf { it.isNotEmpty() }?.let { Uuid.parse(it).toString() },
 )
 
 /** 將網路清單要求映射為 Flow 要求；[decodeCursor] 驗證並解碼不透明游標。
@@ -144,6 +146,8 @@ fun HistoryQueryCursor.toDto(): HistoryQueryCursorDto = HistoryQueryCursorDto(
         endedAtBeforeEpochMillis = filters.endedAtBeforeEpochMillis,
         ownRankMin = filters.ownRank?.minimum,
         ownRankMax = filters.ownRank?.maximum,
+        playerName = filters.playerName,
+        matchId = filters.matchId,
     ),
 )
 

@@ -79,6 +79,7 @@ internal enum class SqliteHistoryIntegrityFilter {
  * @property cursor 上一頁最後一列的 keyset 游標。
  * @property excludedMatchIds 不可公開的活動或轉移中對局。
  * @property matchId 僅查詢指定對局時使用的 UUID；清單查詢為 null。
+ * @property participantIds 名稱篩選解析出的玩家 UUID；null 表示不限制參與者名稱。
  */
 internal data class SqliteHistoryQuery(
     val playerId: String?,
@@ -97,6 +98,7 @@ internal data class SqliteHistoryQuery(
     val cursor: SqliteHistoryCursor? = null,
     val excludedMatchIds: Set<String> = emptySet(),
     val matchId: String? = null,
+    val participantIds: Set<String>? = null,
 )
 
 /**

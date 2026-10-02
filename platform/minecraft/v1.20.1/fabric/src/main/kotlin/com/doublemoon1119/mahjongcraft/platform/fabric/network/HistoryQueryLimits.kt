@@ -1,14 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.network
 
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
-/** 歷史查詢共用的頻率、執行與線路大小限制。 */
+/** 歷史查詢不可由設定停用的執行與線路大小限制。 */
 internal object HistoryQueryLimits {
-    /** 同一連線兩次接受請求的最短間隔。 */
-    val minimumInterval: Duration = 250.milliseconds
-
     /** 單次歷史查詢的最長執行時間。 */
     val timeout: Duration = 5.seconds
 

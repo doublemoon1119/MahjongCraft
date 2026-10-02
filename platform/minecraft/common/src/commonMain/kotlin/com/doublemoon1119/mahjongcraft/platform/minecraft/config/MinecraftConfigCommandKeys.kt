@@ -296,6 +296,16 @@ object MinecraftConfigCommandKeys {
     /** 是否允許管理員查詢全部歷史欄位。 */
     const val HISTORY_ALLOW_ADMIN_QUERY: String = "mahjongcraft.server_config.history_allow_admin_query"
 
+    /** 歷史查詢最短間隔欄位。 */
+    const val HISTORY_QUERY_MINIMUM_INTERVAL: String = "mahjongcraft.server_config.history_query_minimum_interval"
+
+    /** 全伺服器歷史查詢工作上限欄位。 */
+    const val HISTORY_QUERY_MAX_OUTSTANDING: String = "mahjongcraft.server_config.history_query_max_outstanding"
+
+    /** 歷史查詢拒絕回覆間隔欄位。 */
+    const val HISTORY_QUERY_REJECTION_REPLY_INTERVAL: String =
+        "mahjongcraft.server_config.history_query_rejection_reply_interval"
+
     /** 歷史資料最多保留牌局數量欄位。 */
     const val HISTORY_MAX_MATCHES: String = "mahjongcraft.server_config.history_max_matches"
 

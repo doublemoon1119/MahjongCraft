@@ -21,6 +21,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistorySor
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistorySortField
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistorySortValue
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistorySummaryRequest
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.ServerPlayerIdentityStore
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.uuid.Uuid
 
@@ -29,10 +30,12 @@ import kotlin.uuid.Uuid
  *
  * @property writer 正式歷史資料庫生命週期。
  * @property sessionId 要求固定的世界 session，不能切換到另一個存檔。
+ * @property playerIdentities 伺服器最後已知普通名稱的唯讀索引。
  */
 internal class FabricHistoryQueryRepository(
     private val writer: FabricHistoryOutboxWriter,
     private val sessionId: Uuid?,
+    private val playerIdentities: ServerPlayerIdentityStore,
 ) : HistoryQueryRepository {
     /**
      * 讀取經 SQL 參與者條件限制的摘要頁。
@@ -41,8 +44,12 @@ internal class FabricHistoryQueryRepository(
      * @param request 已驗證清單要求。
      * @return 不含牌面或原始 payload 的結果。
      */
-    override suspend fun list(access: HistoryQueryAccess, request: HistoryListRequest): HistoryQueryResult<HistoryListPage> = writer.queryList(access, request, sessionId).mapQueryResult { page ->
-        HistoryListPage(page.entries.map { it.toDomainSummary() }, page.nextCursor?.toDomainCursor(request))
+    override suspend fun list(access: HistoryQueryAccess, request: HistoryListRequest): HistoryQueryResult<HistoryListPage> {
+        val participantIds = request.filters.playerName?.let { playerIdentities.findPlayerIdsByName(it).mapTo(mutableSetOf()) { id -> id.toString() } }
+        if (participantIds != null && participantIds.size > MAX_HISTORY_NAME_MATCHES) return queryFailure(HistoryQueryErrorCode.CONTENT_TOO_LARGE)
+        return writer.queryList(access, request, sessionId, participantIds).mapQueryResult { page ->
+            HistoryListPage(page.entries.map { it.toDomainSummary() }, page.nextCursor?.toDomainCursor(request))
+        }
     }
 
     /**
@@ -73,9 +80,14 @@ internal class FabricHistoryQueryRepository(
  *
  * @param access 可信查詢身分。
  * @param excluded 仍在進行或轉移中的對局。
+ * @param participantIds 名稱解析出的玩家 UUID；null 不限，空集合不匹配任何對局。
  * @return 同時含身分限制與游標的 SQL 要求。
  */
-internal fun HistoryListRequest.toSqliteQuery(access: HistoryQueryAccess, excluded: Set<String>): SqliteHistoryQuery = SqliteHistoryQuery(
+internal fun HistoryListRequest.toSqliteQuery(
+    access: HistoryQueryAccess,
+    excluded: Set<String>,
+    participantIds: Set<String>? = null,
+): SqliteHistoryQuery = SqliteHistoryQuery(
     playerId = access.principalId.toString(),
     includeAll = scope == HistoryQueryScope.ALL,
     sortField = when (sortField) {
@@ -111,6 +123,8 @@ internal fun HistoryListRequest.toSqliteQuery(access: HistoryQueryAccess, exclud
     pageSize = pageSize,
     cursor = cursor?.let { SqliteHistoryCursor(it.sortValue.numericValue, it.matchId.toString(), it.sortValue.nullBucket) },
     excludedMatchIds = excluded,
+    matchId = filters.matchId?.let { Uuid.parse(it).toString() },
+    participantIds = participantIds,
 )
 
 /**
@@ -173,3 +187,6 @@ private inline fun <T, R> HistoryManagementResult<T>.mapQueryResult(mapper: (T) 
  * @return 僅供 Flow 使用的英文診斷與錯誤碼。
  */
 private fun queryFailure(code: HistoryQueryErrorCode): HistoryQueryResult.Failure = HistoryQueryResult.Failure(HistoryQueryError(code, "History query failed: ${code.name}"))
+
+/** 名稱比對可展開的最大玩家數，避免 SQL 參數數量超出查詢限制。 */
+private const val MAX_HISTORY_NAME_MATCHES = 512

@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticCon
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.registerBuiltInAutomaticControlDisplays
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftConfigCommandKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigEditorSpec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
@@ -186,6 +187,7 @@ class MinecraftLanguageFilesTest {
         MinecraftRoomScreenKeys::class,
         MinecraftClientConfigScreenKeys::class,
         MinecraftConfigCommandKeys::class,
+        MinecraftHistoryScreenKeys::class,
     )
 
     /**

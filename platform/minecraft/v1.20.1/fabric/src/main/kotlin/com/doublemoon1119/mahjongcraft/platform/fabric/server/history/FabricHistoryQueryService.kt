@@ -7,6 +7,9 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQue
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryResult
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryScope
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistorySummaryRequest
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryArchiveStatusDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryArchiveStatusRequestDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryArchiveStatusResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryErrorCodeDto
@@ -21,12 +24,18 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.history.ListHistoryUseCa
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.HistoryQueryLimits
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.PlayerIdentitySender
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.ServerPlayerIdentityStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
+import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryQuerySettingsPayload
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.Json
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
@@ -45,6 +54,8 @@ import kotlin.uuid.toKotlinUuid
  * @property scope 執行非同步查詢的應用作用域；世界有效性由 writer session 另行驗證。
  * @property dispatchers 確保資料讀取及回覆分別使用 I/O 與伺服器主執行緒。
  * @property json 線路序列化設定。
+ * @property identityStore 伺服器已知的玩家名稱索引。
+ * @property playerIdentities 向已授權玩家同步參與者名稱及外觀身分。
  */
 @Single
 class FabricHistoryQueryService(
@@ -54,18 +65,118 @@ class FabricHistoryQueryService(
     private val scope: AppCoroutineScope,
     private val dispatchers: CoroutineDispatchers,
     private val json: Json,
+    private val playerIdentities: PlayerIdentitySender,
+    private val identityStore: ServerPlayerIdentityStore,
 ) {
     /** 不向玩家傳送原始查詢例外的診斷 logger。 */
     private val logger = LoggerFactory.getLogger(FabricHistoryQueryService::class.java)
 
     /** 每連線最多一份待執行工作，不累積查詢佇列。 */
-    private val admission = HistoryQueryAdmission()
+    private val admission = HistoryQueryAdmission(limits = {
+        configState.current.history.let { HistoryQueryAdmissionLimits(it.queryMinimumInterval, it.queryMaxOutstanding, it.queryRejectionReplyInterval) }
+    })
+
+    /** 伺服器生命週期發布的同步目標；背景設定通知只在主執行緒操作其玩家。 */
+    @Volatile private var settingsServer: MinecraftServer? = null
 
     /** 註冊有界要求與斷線清理，不提供歷史寫入操作。 */
     fun register() {
+        ServerLifecycleEvents.SERVER_STARTED.register { server -> settingsServer = server }
+        ServerLifecycleEvents.SERVER_STOPPED.register { server -> if (settingsServer === server) settingsServer = null }
+        ServerPlayConnectionEvents.JOIN.register { handler, _, _ -> sendQuerySettings(handler.player) }
+        scope.launch {
+            configState.updates.map { it.history.queryMinimumIntervalMilliseconds }.distinctUntilChanged().collect {
+                withContext(dispatchers.main) {
+                    settingsServer?.playerManager?.playerList?.forEach(::sendQuerySettings)
+                }
+            }
+        }
         MahjongChannels.historyListRequest.registerServerReceiver(json, ::receiveList)
         MahjongChannels.historySummaryRequest.registerServerReceiver(json, ::receiveSummary)
+        MahjongChannels.historyArchiveStatusRequest.registerServerReceiver(json, ::receiveArchiveStatus)
         ServerPlayConnectionEvents.DISCONNECT.register { handler, _ -> admission.remove(handler.player.uuid.toKotlinUuid()) }
+    }
+
+    /** 同步目前有效的間隔；不將工作上限或拒絕回覆政策交由客戶端決定。
+     *
+     * @param player 已建立連線的玩家。
+     */
+    private fun sendQuerySettings(player: ServerPlayerEntity) {
+        MahjongChannels.historyQuerySettings.sendTo(player, json, HistoryQuerySettingsPayload(configState.current.history.queryMinimumIntervalMilliseconds))
+    }
+
+    /**
+     * 接收單場保存狀態要求；狀態查詢與摘要查詢共用身分、session 與頻率限制。
+     *
+     * @param server 目前伺服器。
+     * @param player 已驗證連線玩家。
+     * @param request 有界線路要求。
+     */
+    private fun receiveArchiveStatus(server: MinecraftServer, player: ServerPlayerEntity, request: HistoryArchiveStatusRequestDto) {
+        if (!validRequestId(request.requestId)) return
+        val access = player.queryAccess()
+        val initialPolicy = policy()
+        val sessionId = writer.currentSessionId
+        val accepted = admission.acquire(access.principalId)
+        if (accepted !is HistoryQueryAdmission.Admission.Accepted) {
+            if (admission.shouldSendRejection(access.principalId)) {
+                MahjongChannels.historyArchiveStatusResponse.sendTo(
+                    player,
+                    json,
+                    HistoryArchiveStatusResponseDto(request.requestId, HistoryArchiveStatusDto.MISSING, accepted.errorCode()),
+                )
+            }
+            return
+        }
+        scope.launch {
+            try {
+                var response = withTimeoutOrNull(HistoryQueryLimits.timeout) {
+                    try {
+                        val matchId = Uuid.parse(request.matchId)
+                        when (val result = writer.archiveStatus(access, matchId, sessionId)) {
+                            is HistoryManagementResult.Success -> HistoryArchiveStatusResponseDto(request.requestId, result.value)
+                            is HistoryManagementResult.Busy -> HistoryArchiveStatusResponseDto(request.requestId, HistoryArchiveStatusDto.MISSING, HistoryQueryErrorCodeDto.BUSY)
+                            is HistoryManagementResult.Disconnected,
+                            is HistoryManagementResult.SessionChanged,
+                            -> HistoryArchiveStatusResponseDto(request.requestId, HistoryArchiveStatusDto.MISSING, HistoryQueryErrorCodeDto.DISCONNECTED)
+                            is HistoryManagementResult.Failed -> HistoryArchiveStatusResponseDto(request.requestId, HistoryArchiveStatusDto.MISSING, HistoryQueryErrorCodeDto.NOT_AVAILABLE)
+                        }
+                    } catch (_: IllegalArgumentException) {
+                        HistoryArchiveStatusResponseDto(request.requestId, HistoryArchiveStatusDto.MISSING, HistoryQueryErrorCodeDto.INVALID_REQUEST)
+                    }
+                } ?: HistoryArchiveStatusResponseDto(request.requestId, HistoryArchiveStatusDto.MISSING, HistoryQueryErrorCodeDto.TIMEOUT)
+                withContext(dispatchers.main) {
+                    if (!sameConnection(server, player, sessionId)) return@withContext
+                    val currentPolicy = policy()
+                    if (!currentPolicy.queryEnabled) {
+                        response = HistoryArchiveStatusResponseDto(request.requestId, HistoryArchiveStatusDto.DISABLED)
+                    } else if (access.isAdministrator &&
+                        (!player.queryAccess().isAdministrator || initialPolicy.allowAdministratorQuery && !currentPolicy.allowAdministratorQuery)
+                    ) {
+                        response = HistoryArchiveStatusResponseDto(request.requestId, HistoryArchiveStatusDto.DENIED, HistoryQueryErrorCodeDto.ACCESS_DENIED)
+                    }
+                    MahjongChannels.historyArchiveStatusResponse.sendTo(player, json, response)
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                logger.error("History archive status query failed", error)
+                withContext(dispatchers.main) {
+                    if (sameConnection(server, player, sessionId)) {
+                        MahjongChannels.historyArchiveStatusResponse.sendTo(
+                            player,
+                            json,
+                            HistoryArchiveStatusResponseDto(request.requestId, HistoryArchiveStatusDto.MISSING, HistoryQueryErrorCodeDto.NOT_AVAILABLE),
+                        )
+                    }
+                }
+            } finally {
+                admission.release(access.principalId, accepted.token)
+            }
+        }.invokeOnCompletion {
+            // 未開始執行便取消的工作不會進入 finally；完成通知仍須解除名額，重複解除為無操作。
+            admission.release(access.principalId, accepted.token)
+        }
     }
 
     /**
@@ -81,7 +192,9 @@ class FabricHistoryQueryService(
         val sessionId = writer.currentSessionId
         val accepted = admission.acquire(access.principalId)
         if (accepted !is HistoryQueryAdmission.Admission.Accepted) {
-            MahjongChannels.historyListResponse.sendTo(player, json, HistoryListResponseDto(request.requestId, emptyList(), errorCode = accepted.errorCode()))
+            if (admission.shouldSendRejection(access.principalId)) {
+                MahjongChannels.historyListResponse.sendTo(player, json, HistoryListResponseDto(request.requestId, emptyList(), errorCode = accepted.errorCode(), allowAll = canQueryAll(access, policy())))
+            }
             return
         }
         scope.launch {
@@ -90,7 +203,7 @@ class FabricHistoryQueryService(
                     try {
                         require((request.cursor?.length ?: 0) <= HistoryQueryLimits.CURSOR_LENGTH) { "History cursor exceeds its length limit" }
                         val domain = request.toDomain { it?.decodeHistoryCursor(json) }
-                        val repository = FabricHistoryQueryRepository(writer, sessionId)
+                        val repository = FabricHistoryQueryRepository(writer, sessionId, identityStore)
                         when (val result = ListHistoryUseCase(repository, ::policy)(access, domain)) {
                             is HistoryQueryResult.Failure -> HistoryListResponseDto(request.requestId, emptyList(), errorCode = result.error.code.toDto())
                             is HistoryQueryResult.Success -> boundedHistoryPage(request.requestId, result.value, domain, access.principalId, json, { it.encode(json) })
@@ -105,6 +218,8 @@ class FabricHistoryQueryService(
                     if (invalid != null) response = HistoryListResponseDto(request.requestId, emptyList(), errorCode = invalid)
                     val active = activeMatches()
                     if (response.entries.any { it.matchId in active }) response = HistoryListResponseDto(request.requestId, emptyList(), errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE)
+                    response = response.copy(allowAll = canQueryAll(player.queryAccess(), policy()))
+                    sendIdentities(player, response.entries.flatMap { entry -> entry.participants.filter { it.aiStrategyId == null }.map { it.playerId } })
                     MahjongChannels.historyListResponse.sendTo(player, json, response)
                 }
             } catch (cancelled: CancellationException) {
@@ -112,11 +227,14 @@ class FabricHistoryQueryService(
             } catch (error: Exception) {
                 logger.error("History list query failed", error)
                 withContext(dispatchers.main) {
-                    if (sameConnection(server, player, sessionId)) MahjongChannels.historyListResponse.sendTo(player, json, HistoryListResponseDto(request.requestId, emptyList(), errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE))
+                    if (sameConnection(server, player, sessionId)) MahjongChannels.historyListResponse.sendTo(player, json, HistoryListResponseDto(request.requestId, emptyList(), errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE, allowAll = canQueryAll(player.queryAccess(), policy())))
                 }
             } finally {
                 admission.release(access.principalId, accepted.token)
             }
+        }.invokeOnCompletion {
+            // 未開始執行便取消的工作不會進入 finally；完成通知仍須解除名額，重複解除為無操作。
+            admission.release(access.principalId, accepted.token)
         }
     }
 
@@ -133,7 +251,9 @@ class FabricHistoryQueryService(
         val sessionId = writer.currentSessionId
         val accepted = admission.acquire(access.principalId)
         if (accepted !is HistoryQueryAdmission.Admission.Accepted) {
-            MahjongChannels.historySummaryResponse.sendTo(player, json, HistorySummaryResponseDto(request.requestId, errorCode = accepted.errorCode()))
+            if (admission.shouldSendRejection(access.principalId)) {
+                MahjongChannels.historySummaryResponse.sendTo(player, json, HistorySummaryResponseDto(request.requestId, errorCode = accepted.errorCode()))
+            }
             return
         }
         scope.launch {
@@ -141,7 +261,7 @@ class FabricHistoryQueryService(
                 var response = withTimeoutOrNull(HistoryQueryLimits.timeout) {
                     try {
                         val domain = HistorySummaryRequest(Uuid.parse(request.matchId), request.scope.toDomain())
-                        val repository = FabricHistoryQueryRepository(writer, sessionId)
+                        val repository = FabricHistoryQueryRepository(writer, sessionId, identityStore)
                         when (val result = GetHistorySummaryUseCase(repository, ::policy)(access, domain)) {
                             is HistoryQueryResult.Failure -> HistorySummaryResponseDto(request.requestId, errorCode = result.error.code.toDto())
                             is HistoryQueryResult.Success -> HistorySummaryResponseDto(request.requestId, result.value.toDto())
@@ -158,6 +278,9 @@ class FabricHistoryQueryService(
                     val invalid = replyError(player.queryAccess(), policy(), request.scope.toDomain())
                     if (invalid != null) response = HistorySummaryResponseDto(request.requestId, errorCode = invalid)
                     if (response.detail?.summary?.matchId in activeMatches()) response = HistorySummaryResponseDto(request.requestId, errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE)
+                    response.detail?.let { detail ->
+                        sendIdentities(player, detail.summary.participants.filter { it.aiStrategyId == null }.map { it.playerId })
+                    }
                     MahjongChannels.historySummaryResponse.sendTo(player, json, response)
                 }
             } catch (cancelled: CancellationException) {
@@ -170,6 +293,9 @@ class FabricHistoryQueryService(
             } finally {
                 admission.release(access.principalId, accepted.token)
             }
+        }.invokeOnCompletion {
+            // 未開始執行便取消的工作不會進入 finally；完成通知仍須解除名額，重複解除為無操作。
+            admission.release(access.principalId, accepted.token)
         }
     }
 
@@ -201,6 +327,19 @@ class FabricHistoryQueryService(
         return snapshot.games.values.mapTo(mutableSetOf()) { it.matchId.toString() } +
             snapshot.historyRecordingState.transfersByMatchId.keys.map { it.toString() }
     }
+
+    /**
+     * 只同步本次已授權回應涉及的真人身分，不建立全伺服器名單。
+     *
+     * @param player 已驗證的收件玩家。
+     * @param playerIds 回應中涉及的玩家 UUID 字串。
+     */
+    private suspend fun sendIdentities(player: ServerPlayerEntity, playerIds: Collection<String>) {
+        playerIdentities.send(
+            player.uuid.toKotlinUuid(),
+            playerIds.mapNotNull { runCatching { Uuid.parse(it) }.getOrNull() },
+        )
+    }
 }
 
 /**
@@ -209,6 +348,9 @@ class FabricHistoryQueryService(
  * @return 目前 UUID 與 OP 2 資格。
  */
 private fun ServerPlayerEntity.queryAccess(): HistoryQueryAccess = HistoryQueryAccess(uuid.toKotlinUuid(), hasPermissionLevel(2))
+
+/** 判斷目前連線是否可使用全部對局查詢範圍。 */
+private fun canQueryAll(access: HistoryQueryAccess, policy: HistoryQueryPolicy): Boolean = policy.queryEnabled && access.isAdministrator && policy.allowAdministratorQuery
 
 /**
  * 驗證有界且非空的回應配對鍵。

@@ -6,6 +6,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.milliseconds
 
 /** [MinecraftServerConfigTomlCodec] 的嚴格解碼、驗證與標準輸出測試。 */
 class MinecraftServerConfigTomlCodecTest {
@@ -34,6 +35,9 @@ class MinecraftServerConfigTomlCodecTest {
             include-interrupted-matches = true
             query-enabled = false
             allow-admin-query = false
+            query-minimum-interval-ms = 500
+            query-max-outstanding = 12
+            query-rejection-reply-interval-ms = 2000
             max-matches = 250
             retention-days = 120
             max-disk-mib = 512
@@ -50,6 +54,9 @@ class MinecraftServerConfigTomlCodecTest {
         assertEquals(true, config.history.includeInterruptedMatches)
         assertEquals(false, config.history.queryEnabled)
         assertEquals(false, config.history.allowAdminQuery)
+        assertEquals(500, config.history.queryMinimumIntervalMilliseconds)
+        assertEquals(12, config.history.queryMaxOutstanding)
+        assertEquals(2000, config.history.queryRejectionReplyIntervalMilliseconds)
         assertEquals(250, config.history.maxMatches)
         assertEquals(120, config.history.retentionDays)
         assertEquals(512, config.history.maxDiskMiB)
@@ -154,6 +161,8 @@ class MinecraftServerConfigTomlCodecTest {
         val config = MinecraftHistoryConfig(retentionDays = 3)
 
         assertEquals(3.days, config.retentionDuration)
+        assertEquals(250.milliseconds, config.queryMinimumInterval)
+        assertEquals(1_000.milliseconds, config.queryRejectionReplyInterval)
         assertEquals(256L * MinecraftHistoryConfig.BYTES_PER_MIB, config.maxDiskBytes)
     }
 
@@ -175,12 +184,32 @@ class MinecraftServerConfigTomlCodecTest {
             "include-ai-matches = 1",
             "query-enabled = 1",
             "allow-admin-query = 1",
+            "query-minimum-interval-ms = 1.5",
+            "query-max-outstanding = 1.5",
+            "query-rejection-reply-interval-ms = 1.5",
             "max-matches = 1.5",
             "unknown = true",
             "max-matches = 2147483648",
             "retention-days = 2147483648",
         ).forEach { entry ->
             assertFailsWith<InvalidMinecraftServerConfigException>("Invalid history entry must be rejected: $entry") {
+                codec.decode("[history]\n$entry")
+            }
+        }
+    }
+
+    /** 歷史查詢限制超出合法邊界時應拒絕設定。 */
+    @Test
+    fun `test history query limits fail validation outside bounds`() {
+        listOf(
+            "query-minimum-interval-ms = 49",
+            "query-minimum-interval-ms = 10001",
+            "query-max-outstanding = 0",
+            "query-max-outstanding = 65",
+            "query-rejection-reply-interval-ms = 249",
+            "query-rejection-reply-interval-ms = 10001",
+        ).forEach { entry ->
+            assertFailsWith<InvalidMinecraftServerConfigException>("Invalid history query entry: $entry") {
                 codec.decode("[history]\n$entry")
             }
         }

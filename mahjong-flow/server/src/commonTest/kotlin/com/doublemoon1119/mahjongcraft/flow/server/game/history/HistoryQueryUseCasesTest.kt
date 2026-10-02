@@ -119,9 +119,13 @@ class HistoryQueryUseCasesTest {
             HistoryListRequest(filters = HistoryQueryFilters(endedAtFromEpochMillis = 20, endedAtBeforeEpochMillis = 20)),
             HistoryListRequest(filters = HistoryQueryFilters(ownRank = HistoryRankRange(minimum = 0))),
             HistoryListRequest(filters = HistoryQueryFilters(ownRank = HistoryRankRange(minimum = 3, maximum = 2))),
+            HistoryListRequest(filters = HistoryQueryFilters(playerName = " ")),
+            HistoryListRequest(filters = HistoryQueryFilters(playerName = "name\u0000")),
+            HistoryListRequest(filters = HistoryQueryFilters(matchId = "not-a-uuid")),
         )
         invalidRequests.forEach { request -> assertError(useCase(access, request), HistoryQueryErrorCode.INVALID_REQUEST) }
         assertEquals(0, repository.listCalls)
+        assertFailsWith<IllegalArgumentException> { HistoryQueryFilters(playerName = "x".repeat(17)) }
     }
 
     /** 驗證 cursor 的範圍、欄位、方向與篩選條件不一致時都會被拒絕。 */
