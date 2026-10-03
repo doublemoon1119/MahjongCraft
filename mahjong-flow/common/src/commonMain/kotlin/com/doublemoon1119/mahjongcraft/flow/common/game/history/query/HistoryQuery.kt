@@ -1,6 +1,9 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.history.query
 
 import com.doublemoon1119.mahjongcraft.flow.common.error.ApplicationError
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundEvents
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundPosition
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundState
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import kotlin.time.Duration
 import kotlin.uuid.Uuid
@@ -204,6 +207,36 @@ data class HistoryRuleSettingsRequest(
     val scope: HistoryQueryScope = HistoryQueryScope.OWN,
 )
 
+/** 歷史單局事件查詢要求。
+ *
+ * @property matchId 欲查詢的對局 UUID。
+ * @property scope 查詢範圍。
+ * @property roundNumber 欲讀取的局序號。
+ * @property startTransactionIndex 事件頁的起始交易索引。
+ * @property limit 要求的交易數量。
+ */
+data class HistoryRoundEventsRequest(
+    val matchId: Uuid,
+    val scope: HistoryQueryScope = HistoryQueryScope.OWN,
+    val roundNumber: Int,
+    val startTransactionIndex: Int = 0,
+    val limit: Int = DEFAULT_HISTORY_REPLAY_PAGE_SIZE,
+)
+
+/** 歷史單局桌況查詢要求。
+ *
+ * @property matchId 欲查詢的對局 UUID。
+ * @property scope 查詢範圍。
+ * @property roundNumber 欲讀取的局序號。
+ * @property position 欲重建的局內位置。
+ */
+data class HistoryRoundStateRequest(
+    val matchId: Uuid,
+    val scope: HistoryQueryScope = HistoryQueryScope.OWN,
+    val roundNumber: Int,
+    val position: HistoryRoundPosition = HistoryRoundPosition.Initial,
+)
+
 /** 歷史對局的參與者摘要。
  *
  * @property seatIndex 座位索引。
@@ -324,7 +357,7 @@ enum class HistoryQueryErrorCode {
     /** 目前伺服器 session 不可查詢。 */
     DISCONNECTED,
 
-    /** 回應超過傳輸大小限制。 */
+    /** 原始資料、解析工作量或回應超過資源限制。 */
     CONTENT_TOO_LARGE,
 }
 
@@ -369,6 +402,30 @@ interface HistoryQueryRepository {
         access: HistoryQueryAccess,
         request: HistoryRuleSettingsRequest,
     ): HistoryQueryResult<HistoryRuleSettings>
+
+    /** 讀取已公開單局的有界事件頁。
+     * @param access 可信任的發起者資訊。
+     * @param request 單局事件查詢要求。
+     * @return 事件頁或穩定錯誤。
+     */
+    suspend fun roundEvents(
+        access: HistoryQueryAccess,
+        request: HistoryRoundEventsRequest,
+    ): HistoryQueryResult<HistoryRoundEvents> = HistoryQueryResult.Failure(
+        HistoryQueryError(HistoryQueryErrorCode.NOT_AVAILABLE, "Round event queries are not available"),
+    )
+
+    /** 讀取已公開單局指定位置的完整桌況。
+     * @param access 可信任的發起者資訊。
+     * @param request 單局桌況查詢要求。
+     * @return 桌況或穩定錯誤。
+     */
+    suspend fun roundState(
+        access: HistoryQueryAccess,
+        request: HistoryRoundStateRequest,
+    ): HistoryQueryResult<HistoryRoundState> = HistoryQueryResult.Failure(
+        HistoryQueryError(HistoryQueryErrorCode.NOT_AVAILABLE, "Round state queries are not available"),
+    )
 }
 
 /** 歷史查詢 repository 的成功或失敗結果。 */
@@ -405,3 +462,12 @@ const val MAX_HISTORY_PLAYER_NAME_LENGTH: Int = 16
 
 /** 歷史查詢對局 ID 文字的最大長度。 */
 const val MAX_HISTORY_MATCH_ID_LENGTH: Int = 64
+
+/** 歷史事件頁允許的最小交易數量。 */
+const val MIN_HISTORY_REPLAY_PAGE_SIZE: Int = 1
+
+/** 歷史事件頁允許的最大交易數量。 */
+const val MAX_HISTORY_REPLAY_PAGE_SIZE: Int = 20
+
+/** 歷史事件頁的預設交易數量。 */
+const val DEFAULT_HISTORY_REPLAY_PAGE_SIZE: Int = 20

@@ -27,6 +27,7 @@ object MahjongExtensionRegistrar {
                 extension.registerTileTypes(registries.tileTypeRegistry)
                 extension.registerNetworkDtos(registries.networkRegistries)
                 extension.registerPersistenceDtos(registries.persistenceRegistries)
+                extension.registerHistoryReplayProjections(registries.historyReplayProjectionRegistry)
                 extension.registerWinCelebrationCueResolvers(registries.winCelebrationCueResolverRegistry)
                 extension.registerGameActionAiHandlers(registries.gameActionAiRegistry)
                 extension.registerAiStrategies(registries.aiStrategyRegistry)

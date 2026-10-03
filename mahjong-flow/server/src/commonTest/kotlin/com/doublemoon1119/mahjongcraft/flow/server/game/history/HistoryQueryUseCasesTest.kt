@@ -14,12 +14,16 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQue
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryResult
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryScope
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryRankRange
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryRoundEventsRequest
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryRoundStateRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryRuleSettings
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryRuleSettingsRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistorySortDirection
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistorySortField
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistorySortValue
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistorySummaryRequest
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundEvents
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundState
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import kotlinx.coroutines.test.runTest
@@ -31,6 +35,53 @@ import kotlin.uuid.Uuid
 
 /** [ListHistoryUseCase] 與 [GetHistorySummaryUseCase] 的授權邊界測試。 */
 class HistoryQueryUseCasesTest {
+    /** 非管理員不能查詢單局事件或桌況。 */
+    @Test
+    fun `round replay queries enforce all scope policy before repository`() = runTest {
+        val repository = RecordingHistoryQueryRepository()
+        val access = HistoryQueryAccess(Uuid.random(), isAdministrator = false)
+        val matchId = Uuid.random()
+        val events = GetHistoryRoundEventsUseCase(repository) { HistoryQueryPolicy() }(
+            access,
+            HistoryRoundEventsRequest(matchId, HistoryQueryScope.ALL, roundNumber = 1),
+        )
+        val state = GetHistoryRoundStateUseCase(repository) { HistoryQueryPolicy() }(
+            access,
+            HistoryRoundStateRequest(matchId, HistoryQueryScope.ALL, roundNumber = 1),
+        )
+        assertError(events, HistoryQueryErrorCode.ACCESS_DENIED)
+        assertError(state, HistoryQueryErrorCode.ACCESS_DENIED)
+        assertEquals(0, repository.roundEventsCalls)
+        assertEquals(0, repository.roundStateCalls)
+    }
+
+    /** 停用政策不能讓單局 Replay 查詢抵達 repository。 */
+    @Test
+    fun `round replay queries enforce disabled policy`() = runTest {
+        val repository = RecordingHistoryQueryRepository()
+        val access = HistoryQueryAccess(Uuid.random(), isAdministrator = true)
+        val request = HistoryRoundEventsRequest(Uuid.random(), roundNumber = 1)
+        val result = GetHistoryRoundEventsUseCase(repository) { HistoryQueryPolicy(queryEnabled = false) }(access, request)
+        assertError(result, HistoryQueryErrorCode.QUERY_DISABLED)
+        assertEquals(0, repository.roundEventsCalls)
+    }
+
+    /** 單局事件用例拒絕非正局序號、負起點與超過頁大小的參數。 */
+    @Test
+    fun `round event use case rejects invalid selectors`() = runTest {
+        val repository = RecordingHistoryQueryRepository()
+        val useCase = GetHistoryRoundEventsUseCase(repository) { HistoryQueryPolicy() }
+        val access = HistoryQueryAccess(Uuid.random(), isAdministrator = true)
+        listOf(
+            HistoryRoundEventsRequest(Uuid.random(), roundNumber = 0),
+            HistoryRoundEventsRequest(Uuid.random(), roundNumber = 1, startTransactionIndex = -1),
+            HistoryRoundEventsRequest(Uuid.random(), roundNumber = 1, limit = 21),
+        ).forEach { request ->
+            assertError(useCase(access, request), HistoryQueryErrorCode.INVALID_REQUEST)
+        }
+        assertEquals(0, repository.roundEventsCalls)
+    }
+
     /** 驗證非管理員不能查詢全部歷史。 */
     @Test
     fun `test all scope requires administrator`() = runTest {
@@ -256,6 +307,8 @@ class HistoryQueryUseCasesTest {
         var listCalls: Int = 0
         var summaryCalls: Int = 0
         var ruleSettingsCalls: Int = 0
+        var roundEventsCalls: Int = 0
+        var roundStateCalls: Int = 0
         var lastRuleSettingsAccess: HistoryQueryAccess? = null
         var lastListAccess: HistoryQueryAccess? = null
 
@@ -304,6 +357,22 @@ class HistoryQueryUseCasesTest {
                     GameConfig(RiichiRuleConfig()),
                 ),
             )
+        }
+
+        override suspend fun roundEvents(
+            access: HistoryQueryAccess,
+            request: HistoryRoundEventsRequest,
+        ): HistoryQueryResult<HistoryRoundEvents> {
+            roundEventsCalls++
+            return HistoryQueryResult.Failure(HistoryQueryError(HistoryQueryErrorCode.NOT_AVAILABLE, "No test history"))
+        }
+
+        override suspend fun roundState(
+            access: HistoryQueryAccess,
+            request: HistoryRoundStateRequest,
+        ): HistoryQueryResult<HistoryRoundState> {
+            roundStateCalls++
+            return HistoryQueryResult.Failure(HistoryQueryError(HistoryQueryErrorCode.NOT_AVAILABLE, "No test history"))
         }
     }
 }

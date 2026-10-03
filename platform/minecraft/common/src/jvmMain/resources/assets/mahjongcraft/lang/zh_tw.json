@@ -255,6 +255,7 @@
   "mahjongcraft.history_screen.direction.asc": "遞增",
   "mahjongcraft.history_screen.direction.desc": "遞減",
   "mahjongcraft.history_screen.empty": "找不到對局。",
+  "mahjongcraft.history_screen.failure.content_too_large": "資料量或處理工作超過伺服器查詢上限。",
   "mahjongcraft.history_screen.filter.ai": "AI 對局",
   "mahjongcraft.history_screen.filter.ai.contains_ai": "包含 AI",
   "mahjongcraft.history_screen.filter.ai.no_ai": "不含 AI",

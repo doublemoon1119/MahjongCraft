@@ -255,6 +255,7 @@
   "mahjongcraft.history_screen.direction.asc": "昇順",
   "mahjongcraft.history_screen.direction.desc": "降順",
   "mahjongcraft.history_screen.empty": "対局履歴がありません。",
+  "mahjongcraft.history_screen.failure.content_too_large": "データ量または処理量がサーバーの検索上限を超えています。",
   "mahjongcraft.history_screen.filter.ai": "AI 対局",
   "mahjongcraft.history_screen.filter.ai.contains_ai": "AI あり",
   "mahjongcraft.history_screen.filter.ai.no_ai": "AI なし",

@@ -165,6 +165,7 @@ class HistoryManagementTest {
     private fun writer(dispatcher: CoroutineDispatcher, coordinator: HistoryRetentionCoordinator): FabricHistoryOutboxWriter = FabricHistoryOutboxWriter(
         store = AuthoritativeStateStore(),
         registries = buildBuiltInPersistenceRegistries(),
+        replayProjectionRegistry = buildTestHistoryReplayProjectionRegistry(),
         json = Json,
         moduleRegistry = MahjongModuleRegistryImpl(),
         locations = TableLocationRegistry(),

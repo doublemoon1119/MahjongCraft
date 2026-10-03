@@ -255,6 +255,7 @@
   "mahjongcraft.history_screen.direction.asc": "Ascending",
   "mahjongcraft.history_screen.direction.desc": "Descending",
   "mahjongcraft.history_screen.empty": "No matches found.",
+  "mahjongcraft.history_screen.failure.content_too_large": "The data size or processing work exceeds the server query limit.",
   "mahjongcraft.history_screen.filter.ai": "AI Matches",
   "mahjongcraft.history_screen.filter.ai.contains_ai": "Contains AI",
   "mahjongcraft.history_screen.filter.ai.no_ai": "No AI",

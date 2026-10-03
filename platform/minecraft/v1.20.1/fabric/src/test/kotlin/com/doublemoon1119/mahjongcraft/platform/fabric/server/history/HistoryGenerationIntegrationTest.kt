@@ -297,6 +297,7 @@ class HistoryGenerationIntegrationTest {
     ): FabricHistoryOutboxWriter = FabricHistoryOutboxWriter(
         store = store,
         registries = buildBuiltInPersistenceRegistries(),
+        replayProjectionRegistry = buildTestHistoryReplayProjectionRegistry(),
         json = Json,
         dispatchers = TestDispatchers,
         moduleRegistry = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() },

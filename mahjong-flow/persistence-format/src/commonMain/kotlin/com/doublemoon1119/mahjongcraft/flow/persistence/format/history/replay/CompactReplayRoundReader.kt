@@ -56,7 +56,7 @@ class CompactReplayRoundReader(
             yield()
             val transaction = advance(source, round, cursor, index, budget)
             val facts = mapper.mapFacts(transaction.facts, transaction.actors, source.identity, round.number, catalog(cursor, budget), budget)
-            if (index >= startIndex) events += HistoryReplayTransaction(index, cursor.time, transaction.opening, facts)
+            if (index >= startIndex) events += HistoryReplayTransaction(index, cursor.time, transaction.opening, facts, cursor.tiles.size)
         }
         HistoryRoundEvents(source.identity, round.number, events.toList(), end.takeIf { it < round.transactions.size }, catalog(cursor, budget))
     }

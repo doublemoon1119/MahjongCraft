@@ -344,6 +344,7 @@ class FabricHistoryOutboxWriterTest {
     private fun writer(store: AuthoritativeStateStore, configState: MinecraftServerConfigState = MinecraftServerConfigState()): FabricHistoryOutboxWriter = FabricHistoryOutboxWriter(
         store = store,
         registries = buildBuiltInPersistenceRegistries(),
+        replayProjectionRegistry = buildTestHistoryReplayProjectionRegistry(),
         json = Json,
         moduleRegistry = MahjongModuleRegistryImpl(),
         locations = TableLocationRegistry(),

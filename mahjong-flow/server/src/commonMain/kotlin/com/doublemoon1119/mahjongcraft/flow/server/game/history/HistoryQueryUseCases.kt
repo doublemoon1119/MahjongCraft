@@ -10,14 +10,21 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQue
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryRepository
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryResult
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryScope
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryRoundEventsRequest
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryRoundStateRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryRuleSettings
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryRuleSettingsRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistorySortField
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistorySummaryRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.MAX_HISTORY_PAGE_SIZE
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.MAX_HISTORY_PLAYER_NAME_LENGTH
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.MAX_HISTORY_REPLAY_PAGE_SIZE
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.MAX_HISTORY_RULE_ID_LENGTH
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.MIN_HISTORY_PAGE_SIZE
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.MIN_HISTORY_REPLAY_PAGE_SIZE
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundEvents
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundPosition
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundState
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import kotlin.uuid.Uuid
 
@@ -36,6 +43,34 @@ private fun validateHistoryAccess(
     scope == HistoryQueryScope.ALL && (!access.isAdministrator || !policy.allowAdministratorQuery) ->
         HistoryQueryError(HistoryQueryErrorCode.ACCESS_DENIED, "Administrator history access is not allowed")
     else -> null
+}
+
+/** 驗證單局事件查詢的局序號、起點與頁大小。
+ * @param request 單局事件查詢要求。
+ * @return 不可執行時的錯誤；可執行時為 null。
+ */
+private fun validateHistoryRoundRequest(request: HistoryRoundEventsRequest): HistoryQueryError? {
+    if (request.roundNumber <= 0 ||
+        request.startTransactionIndex < 0 ||
+        request.limit !in MIN_HISTORY_REPLAY_PAGE_SIZE..MAX_HISTORY_REPLAY_PAGE_SIZE
+    ) {
+        return HistoryQueryError(HistoryQueryErrorCode.INVALID_REQUEST, "History round event request is invalid")
+    }
+    return null
+}
+
+/** 驗證單局桌況查詢的局序號與局內位置。
+ * @param request 單局桌況查詢要求。
+ * @return 不可執行時的錯誤；可執行時為 null。
+ */
+private fun validateHistoryRoundStateRequest(request: HistoryRoundStateRequest): HistoryQueryError? {
+    val position = request.position
+    if (request.roundNumber <= 0 ||
+        (position is HistoryRoundPosition.AfterTransaction && position.index < 0)
+    ) {
+        return HistoryQueryError(HistoryQueryErrorCode.INVALID_REQUEST, "History round state request is invalid")
+    }
+    return null
 }
 
 /** 檢查歷史清單要求的範圍、排序限制與游標一致性。
@@ -174,5 +209,53 @@ class GetHistoryRuleSettingsUseCase(
         val policy = policyProvider()
         validateHistoryAccess(access, policy, request.scope)?.let { return HistoryQueryResult.Failure(it) }
         return repository.ruleSettings(access, request)
+    }
+}
+
+/** 以授權範圍查詢單局有界事件的一次性伺服器用例。
+ * @property repository 提供已授權資料邊界的 repository。
+ * @property policyProvider 讀取當前伺服器查詢政策的函式。
+ */
+class GetHistoryRoundEventsUseCase(
+    private val repository: HistoryQueryRepository,
+    private val policyProvider: () -> HistoryQueryPolicy,
+) {
+    /** 執行一次單局事件查詢。
+     * @param access 可信任的發起者資訊。
+     * @param request 單局事件查詢要求。
+     * @return 有界事件頁或穩定錯誤。
+     */
+    suspend operator fun invoke(
+        access: HistoryQueryAccess,
+        request: HistoryRoundEventsRequest,
+    ): HistoryQueryResult<HistoryRoundEvents> {
+        val policy = policyProvider()
+        validateHistoryAccess(access, policy, request.scope)?.let { return HistoryQueryResult.Failure(it) }
+        validateHistoryRoundRequest(request)?.let { return HistoryQueryResult.Failure(it) }
+        return repository.roundEvents(access, request)
+    }
+}
+
+/** 以授權範圍查詢單局指定位置桌況的一次性伺服器用例。
+ * @property repository 提供已授權資料邊界的 repository。
+ * @property policyProvider 讀取當前伺服器查詢政策的函式。
+ */
+class GetHistoryRoundStateUseCase(
+    private val repository: HistoryQueryRepository,
+    private val policyProvider: () -> HistoryQueryPolicy,
+) {
+    /** 執行一次單局桌況查詢。
+     * @param access 可信任的發起者資訊。
+     * @param request 單局桌況查詢要求。
+     * @return 指定位置桌況或穩定錯誤。
+     */
+    suspend operator fun invoke(
+        access: HistoryQueryAccess,
+        request: HistoryRoundStateRequest,
+    ): HistoryQueryResult<HistoryRoundState> {
+        val policy = policyProvider()
+        validateHistoryAccess(access, policy, request.scope)?.let { return HistoryQueryResult.Failure(it) }
+        validateHistoryRoundStateRequest(request)?.let { return HistoryQueryResult.Failure(it) }
+        return repository.roundState(access, request)
     }
 }

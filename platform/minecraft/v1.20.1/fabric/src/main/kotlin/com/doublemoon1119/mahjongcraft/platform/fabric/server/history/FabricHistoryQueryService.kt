@@ -13,6 +13,10 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryArchiveSt
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryErrorCodeDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsRequestDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsResponseDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateRequestDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSettingsRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSettingsResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryRequestDto
@@ -22,6 +26,8 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.encode
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.server.game.history.GetHistoryRoundEventsUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.history.GetHistoryRoundStateUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.GetHistoryRuleSettingsUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.GetHistorySummaryUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.ListHistoryUseCase
@@ -101,6 +107,8 @@ class FabricHistoryQueryService(
         MahjongChannels.historySummaryRequest.registerServerReceiver(json, ::receiveSummary)
         MahjongChannels.historyRuleSettingsRequest.registerServerReceiver(json, ::receiveRuleSettings)
         MahjongChannels.historyArchiveStatusRequest.registerServerReceiver(json, ::receiveArchiveStatus)
+        MahjongChannels.historyRoundEventsRequest.registerServerReceiver(json, ::receiveRoundEvents)
+        MahjongChannels.historyRoundStateRequest.registerServerReceiver(json, ::receiveRoundState)
         ServerPlayConnectionEvents.DISCONNECT.register { handler, _ -> admission.remove(handler.player.uuid.toKotlinUuid()) }
     }
 
@@ -110,6 +118,130 @@ class FabricHistoryQueryService(
      */
     private fun sendQuerySettings(player: ServerPlayerEntity) {
         MahjongChannels.historyQuerySettings.sendTo(player, json, HistoryQuerySettingsPayload(configState.current.history.queryMinimumIntervalMilliseconds))
+    }
+
+    /**
+     * 接收單局事件要求，共用正式查詢准入與回覆驗證。
+     * @param server 目前伺服器。
+     * @param player 已驗證連線玩家。
+     * @param request 有界事件要求。
+     */
+    private fun receiveRoundEvents(server: MinecraftServer, player: ServerPlayerEntity, request: HistoryRoundEventsRequestDto) {
+        receiveRoundQuery(
+            server, player, request.requestId, request.matchId, request.scope.toDomain(),
+            failure = { HistoryRoundEventsResponseDto(request.requestId, request.matchId, request.roundNumber, request.startTransactionIndex, errorCode = it) },
+            query = { access, repository ->
+                when (val result = GetHistoryRoundEventsUseCase(repository, ::policy)(access, request.toDomain())) {
+                    is HistoryQueryResult.Failure -> HistoryRoundEventsResponseDto(request.requestId, request.matchId, request.roundNumber, request.startTransactionIndex, errorCode = result.error.code.toDto())
+                    is HistoryQueryResult.Success -> boundedHistoryRoundEvents(request, result.value, json)
+                }
+            },
+            hasContent = { it.events != null },
+            participants = { it.events?.identity?.players.orEmpty().filter { identity -> identity.aiStrategyId == null }.mapNotNull { identity -> identity.playerId } },
+            send = { MahjongChannels.historyRoundEventsResponse.sendTo(player, json, it) },
+        )
+    }
+
+    /**
+     * 接收指定交易後的桌況要求，不建立可操作的遊戲狀態。
+     * @param server 目前伺服器。
+     * @param player 已驗證連線玩家。
+     * @param request 有界狀態要求。
+     */
+    private fun receiveRoundState(server: MinecraftServer, player: ServerPlayerEntity, request: HistoryRoundStateRequestDto) {
+        receiveRoundQuery(
+            server, player, request.requestId, request.matchId, request.scope.toDomain(),
+            failure = { HistoryRoundStateResponseDto(request.requestId, request.matchId, request.roundNumber, request.position, errorCode = it) },
+            query = { access, repository ->
+                when (val result = GetHistoryRoundStateUseCase(repository, ::policy)(access, request.toDomain())) {
+                    is HistoryQueryResult.Failure -> HistoryRoundStateResponseDto(request.requestId, request.matchId, request.roundNumber, request.position, errorCode = result.error.code.toDto())
+                    is HistoryQueryResult.Success -> boundedHistoryRoundState(request, result.value, json)
+                }
+            },
+            hasContent = { it.state != null },
+            participants = { it.state?.identity?.players.orEmpty().filter { identity -> identity.aiStrategyId == null }.mapNotNull { identity -> identity.playerId } },
+            send = { MahjongChannels.historyRoundStateResponse.sendTo(player, json, it) },
+        )
+    }
+
+    /**
+     * 執行單局查詢的共同生命週期，同一 deadline 內完成讀取、預算與公開確認。
+     * @param R 線路回覆型別。
+     * @param server 原伺服器。
+     * @param player 原連線玩家。
+     * @param requestId 原要求配對鍵。
+     * @param matchId 原要求對局識別碼。
+     * @param queryScope 原要求範圍。
+     * @param failure 不含內容的錯誤回覆建構器。
+     * @param query 有界且已授權的背景查詢。
+     * @param hasContent 判斷是否需再次確認公開性。
+     * @param participants 只取成功內容中的真人身分。
+     * @param send 主執行緒送出回覆。
+     */
+    private fun <R> receiveRoundQuery(
+        server: MinecraftServer,
+        player: ServerPlayerEntity,
+        requestId: String,
+        matchId: String,
+        queryScope: HistoryQueryScope,
+        failure: (HistoryQueryErrorCodeDto) -> R,
+        query: suspend (HistoryQueryAccess, FabricHistoryQueryRepository) -> R,
+        hasContent: (R) -> Boolean,
+        participants: (R) -> Collection<String>,
+        send: (R) -> Unit,
+    ) {
+        if (!validRequestId(requestId)) return
+        val access = player.queryAccess()
+        val sessionId = writer.currentSessionId
+        val accepted = admission.acquire(access.principalId)
+        if (accepted !is HistoryQueryAdmission.Admission.Accepted) {
+            if (admission.shouldSendRejection(access.principalId)) send(failure(accepted.errorCode()))
+            return
+        }
+        scope.launch {
+            try {
+                var response = withTimeoutOrNull(HistoryQueryLimits.timeout) {
+                    try {
+                        val id = Uuid.parse(matchId)
+                        var result = query(access, FabricHistoryQueryRepository(writer, sessionId, identityStore))
+                        if (hasContent(result)) {
+                            val confirmed = writer.confirmRoundPublication(access, id, queryScope, sessionId)
+                            val invalid = when (confirmed) {
+                                is HistoryManagementResult.Success -> (confirmed.value as? HistoryQueryResult.Failure)?.error?.code?.toDto()
+                                is HistoryManagementResult.Busy -> HistoryQueryErrorCodeDto.BUSY
+                                is HistoryManagementResult.Disconnected, HistoryManagementResult.SessionChanged -> HistoryQueryErrorCodeDto.DISCONNECTED
+                                is HistoryManagementResult.Failed -> HistoryQueryErrorCodeDto.NOT_AVAILABLE
+                            }
+                            if (invalid != null) result = failure(invalid)
+                        }
+                        result
+                    } catch (_: IllegalArgumentException) {
+                        failure(HistoryQueryErrorCodeDto.INVALID_REQUEST)
+                    }
+                } ?: failure(HistoryQueryErrorCodeDto.TIMEOUT)
+                withContext(dispatchers.main) {
+                    if (!sameConnection(server, player, sessionId)) return@withContext
+                    val invalid = replyError(player.queryAccess(), policy(), queryScope)
+                    if (invalid != null) response = failure(invalid)
+                    val canonicalMatchId = runCatching { Uuid.parse(matchId).toString() }.getOrNull()
+                    if (canonicalMatchId in activeMatches()) response = failure(HistoryQueryErrorCodeDto.NOT_AVAILABLE)
+                    sendIdentities(player, participants(response))
+                    send(response)
+                }
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                logger.error("History round query failed", error)
+                withContext(dispatchers.main) {
+                    if (sameConnection(server, player, sessionId)) send(failure(HistoryQueryErrorCodeDto.NOT_AVAILABLE))
+                }
+            } finally {
+                admission.release(access.principalId, accepted.token)
+            }
+        }.invokeOnCompletion {
+            // 尚未開始便取消時仍解除名額，重複解除為無操作。
+            admission.release(access.principalId, accepted.token)
+        }
     }
 
     /**

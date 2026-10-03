@@ -118,6 +118,7 @@ internal data class SqliteHistoryCursor(
  * SQLite 查詢回傳的安全摘要。
  *
  * @property matchId 對局 UUID。
+ * @property tableId 保存 metadata 的牌桌 UUID。
  * @property state 完整或已確認中斷狀態。
  * @property startedAtEpochMillis 開始時間；無法證實時為 null。
  * @property endedAtEpochMillis 終局或中止確認時間。
@@ -131,6 +132,7 @@ internal data class SqliteHistoryCursor(
  */
 internal data class SqliteHistoryQueryEntry(
     val matchId: String,
+    val tableId: String,
     val state: HistoryStoredMatchState,
     val outcome: SqliteHistoryMatchOutcome,
     val startedAtEpochMillis: Long?,

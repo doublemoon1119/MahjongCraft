@@ -16,6 +16,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQue
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryResult
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryScope
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryResultSummary
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryRoundEventsRequest
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryRoundStateRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryRoundSummary
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryRuleSettings
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryRuleSettingsRequest
@@ -23,6 +25,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistorySor
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistorySortField
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistorySortValue
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistorySummaryRequest
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundEvents
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundState
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.ServerPlayerIdentityStore
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.uuid.Uuid
@@ -39,6 +43,24 @@ internal class FabricHistoryQueryRepository(
     private val sessionId: Uuid?,
     private val playerIdentities: ServerPlayerIdentityStore,
 ) : HistoryQueryRepository {
+    /**
+     * 查閱已公開對局的一頁交易，保留 writer 的生命週期錯誤。
+     * @param access 可信連線身分。
+     * @param request 已驗證事件要求。
+     * @return 有界交易頁或安全錯誤。
+     */
+    override suspend fun roundEvents(access: HistoryQueryAccess, request: HistoryRoundEventsRequest): HistoryQueryResult<HistoryRoundEvents> = writer.queryRoundEvents(access, request.matchId, request.scope, request.roundNumber, request.startTransactionIndex, request.limit, sessionId)
+        .mapQueryResult { it }.flattenRoundResult()
+
+    /**
+     * 查閱已公開對局的指定位置，不建立可操作的遊戲狀態。
+     * @param access 可信連線身分。
+     * @param request 已驗證狀態要求。
+     * @return 完整歷史狀態或安全錯誤。
+     */
+    override suspend fun roundState(access: HistoryQueryAccess, request: HistoryRoundStateRequest): HistoryQueryResult<HistoryRoundState> = writer.queryRoundState(access, request.matchId, request.scope, request.roundNumber, request.position, sessionId)
+        .mapQueryResult { it }.flattenRoundResult()
+
     /**
      * 讀取經 SQL 參與者條件限制的摘要頁。
      *
@@ -216,4 +238,14 @@ private fun queryFailure(code: HistoryQueryErrorCode): HistoryQueryResult.Failur
 private const val MAX_HISTORY_NAME_MATCHES = 512
 
 /** 規則設定查詢允許解析的完整 Replay 上限；不等同於線路回應大小上限。 */
-private const val MAX_RULE_SETTINGS_REPLAY_BYTES = 8 * 1024 * 1024
+private const val MAX_RULE_SETTINGS_REPLAY_BYTES = HISTORY_REPLAY_QUERY_BYTES
+
+/**
+ * 展平 writer 管理結果與資料讀取結果，保留兩層安全失敗。
+ * @param T 成功值型別。
+ * @return 完整查詢值或安全失敗。
+ */
+private fun <T> HistoryQueryResult<HistoryQueryResult<T>>.flattenRoundResult(): HistoryQueryResult<T> = when (this) {
+    is HistoryQueryResult.Failure -> this
+    is HistoryQueryResult.Success -> value
+}

@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.HistoryReplayProjectionRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
@@ -54,6 +55,9 @@ interface MahjongExtension {
 
     /** 登記所有第三方規則需要的 persistence DTO mapper。 */
     fun registerPersistenceDtos(registries: PersistenceRegistries)
+
+    /** 登記對局歷史公開投影的必要轉換器與可選規則資訊。 */
+    fun registerHistoryReplayProjections(registry: HistoryReplayProjectionRegistry) = Unit
 
     /** 登記規則擴充動作供 AI 建立命令的 handler。 */
     fun registerGameActionAiHandlers(registry: ExtensionGameActionAiRegistry) = Unit

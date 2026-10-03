@@ -47,6 +47,20 @@ class HistoryReplayProjectionContext internal constructor(
     fun charge(units: Long = 1L) = budget.charge(units)
 }
 
+/** 歷史投影註冊表目前各分類的穩定登記 key。
+ *
+ * @property discard 必要牌河轉換器的 key。
+ * @property fact 額外語意事實轉換器的 key。
+ * @property action 擴充動作轉換器的 key。
+ * @property optionalRule 可選規則公開資訊轉換器的 key。
+ */
+data class HistoryReplayProjectionRegistrationKeys(
+    val discard: Set<String>,
+    val fact: Set<String>,
+    val action: Set<String>,
+    val optionalRule: Set<String>,
+)
+
 /** 分類且強型別的歷史投影註冊表；由呼叫端註冊並明確凍結。 */
 class HistoryReplayProjectionRegistry {
     /** 必要牌河轉換器。 */
@@ -63,6 +77,15 @@ class HistoryReplayProjectionRegistry {
 
     /** 註冊是否已禁止變更。 */
     private var frozen = false
+
+    /** 取得各分類目前的穩定登記 key，供 extension bootstrap 診斷使用。 */
+    val registrationKeys: HistoryReplayProjectionRegistrationKeys
+        get() = HistoryReplayProjectionRegistrationKeys(
+            discard = discardCodecs.keys.toSet(),
+            fact = factCodecs.keys.toSet(),
+            action = actionCodecs.keys.toSet(),
+            optionalRule = optionalRuleCodecs.keys.toSet(),
+        )
 
     /** 註冊必要牌河轉換。
      * @param typeKey persistence typed envelope 的種類。

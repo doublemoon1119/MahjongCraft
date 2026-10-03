@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.HistoryReplayProjectionRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
@@ -25,6 +26,7 @@ import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
  * @property tileTypeRegistry 牌種類型 registry。
  * @property networkRegistries 網路 DTO registry 集合。
  * @property persistenceRegistries 權威狀態 persistence registry 集合。
+ * @property historyReplayProjectionRegistry 對局歷史公開投影轉換器 registry。
  * @property gameActionAiRegistry 擴充動作 AI handler registry。
  * @property aiStrategyRegistry AI 策略 registry。
  * @property opponentModelRegistry AI 對手模型 registry。
@@ -44,6 +46,7 @@ class CoreExtensionRegistries(
     // 資料交換與持久化
     val networkRegistries: NetworkDtoRegistries,
     val persistenceRegistries: PersistenceRegistries,
+    val historyReplayProjectionRegistry: HistoryReplayProjectionRegistry,
     // 胡牌呈現語意
     val winCelebrationCueResolverRegistry: WinCelebrationCueResolverRegistry,
     // 動作執行
@@ -66,6 +69,26 @@ class CoreExtensionRegistries(
             snapshotCategory("mahjongcraft:tile_type", "Tile Type", tileTypeRegistry.getAll().map { it.id.toString() }),
             snapshotCategory("mahjongcraft:network_dto", "Network DTO", networkRegistrationKeys()),
             snapshotCategory("mahjongcraft:persistence_dto", "Persistence DTO", persistenceRegistrationKeys()),
+            snapshotCategory(
+                "mahjongcraft:history_replay_discard",
+                "History Replay Discard",
+                historyReplayProjectionRegistry.registrationKeys.discard,
+            ),
+            snapshotCategory(
+                "mahjongcraft:history_replay_fact",
+                "History Replay Fact",
+                historyReplayProjectionRegistry.registrationKeys.fact,
+            ),
+            snapshotCategory(
+                "mahjongcraft:history_replay_action",
+                "History Replay Action",
+                historyReplayProjectionRegistry.registrationKeys.action,
+            ),
+            snapshotCategory(
+                "mahjongcraft:history_replay_optional_rule",
+                "History Replay Optional Rule",
+                historyReplayProjectionRegistry.registrationKeys.optionalRule,
+            ),
             snapshotCategory(
                 "mahjongcraft:win_celebration_cue_resolver",
                 "Win Celebration Cue Resolver",
@@ -114,6 +137,7 @@ class CoreExtensionRegistries(
         tileTypeRegistry.freeze()
         networkRegistries.freeze()
         persistenceRegistries.freeze()
+        historyReplayProjectionRegistry.freeze()
         winCelebrationCueResolverRegistry.freeze()
         gameActionAiRegistry.freeze()
         aiStrategyRegistry.freeze()

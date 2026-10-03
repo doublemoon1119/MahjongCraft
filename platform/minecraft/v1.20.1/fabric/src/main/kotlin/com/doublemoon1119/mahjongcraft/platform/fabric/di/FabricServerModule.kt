@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCu
 import com.doublemoon1119.mahjongcraft.flow.network.dto.di.NetworkDtoModule
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.di.PersistenceFormatModule
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.HistoryReplayProjectionRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.di.FlowServerModule
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
@@ -52,13 +53,34 @@ import org.koin.core.annotation.Single
 )
 @ComponentScan("com.doublemoon1119.mahjongcraft.platform.fabric.server")
 class FabricServerModule {
-    /** 將 Koin 管理的 core extension registry single 組成 bootstrap 專用集合。 */
+    /**
+     * 將 Koin 管理的 core extension registry single 組成 bootstrap 專用集合。
+     *
+     * @param moduleRegistry 規則模組 registry。
+     * @param tileTypeRegistry 擴充牌種 registry。
+     * @param networkRegistries 網路資料轉換 registry 集合。
+     * @param persistenceRegistries 持久化資料轉換 registry 集合。
+     * @param historyReplayProjectionRegistry 歷史讀取投影 registry。
+     * @param gameActionAiRegistry 擴充動作的 AI 決策 registry。
+     * @param aiStrategyRegistry AI 策略 registry。
+     * @param opponentModelRegistry 對手模型 registry。
+     * @param gameActionCommandFactoryRegistry 動作至命令的轉換 registry。
+     * @param gameCommandRegistry 擴充命令執行 registry。
+     * @param postReactionRoundOutcomeResolverRegistry 回應完成後的局結果判定 registry。
+     * @param postActionExhaustiveDrawResolverRegistry 動作完成後的流局判定 registry。
+     * @param roundPreparationResolverRegistry 開局準備解析 registry。
+     * @param winRoundContinuationResolverRegistry 和牌後續流程 registry。
+     * @param winSettlementDetailResolverRegistry 和牌結算明細 registry。
+     * @param winCelebrationCueResolverRegistry 和牌演出提示 registry。
+     * @return 共用 registry 的具名集合，不建立第二份實例。
+     */
     @Single
     fun provideCoreExtensionRegistries(
         @Provided moduleRegistry: MahjongModuleRegistry,
         @Provided tileTypeRegistry: TileTypeRegistry,
         @Provided networkRegistries: NetworkDtoRegistries,
         @Provided persistenceRegistries: PersistenceRegistries,
+        @Provided historyReplayProjectionRegistry: HistoryReplayProjectionRegistry,
         @Provided gameActionAiRegistry: ExtensionGameActionAiRegistry,
         @Provided aiStrategyRegistry: MahjongAiStrategyRegistry,
         @Provided opponentModelRegistry: OpponentModelRegistry,
@@ -75,6 +97,7 @@ class FabricServerModule {
         tileTypeRegistry = tileTypeRegistry,
         networkRegistries = networkRegistries,
         persistenceRegistries = persistenceRegistries,
+        historyReplayProjectionRegistry = historyReplayProjectionRegistry,
         gameActionAiRegistry = gameActionAiRegistry,
         aiStrategyRegistry = aiStrategyRegistry,
         opponentModelRegistry = opponentModelRegistry,

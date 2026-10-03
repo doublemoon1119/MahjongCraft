@@ -741,7 +741,7 @@ internal class SqliteHistoryDatabase private constructor(
         val nullOrder = "CASE WHEN $sortExpression IS NULL THEN 1 ELSE 0 END ASC"
         val valueOrder = if (query.sortDirection == SqliteHistorySortDirection.ASC) "$sortExpression ASC" else "$sortExpression DESC"
         val sql = """
-            SELECT m.match_id, m.status, m.started_at_epoch_millis, m.ended_at_epoch_millis, m.rule_id,
+            SELECT m.match_id, m.table_id, m.status, m.started_at_epoch_millis, m.ended_at_epoch_millis, m.rule_id,
                 $endedExpression AS ended_value,
                 $sortExpression AS sort_value,
                 $durationExpression AS duration_value,
@@ -791,6 +791,7 @@ internal class SqliteHistoryDatabase private constructor(
                 val started = result.getLong("started_at_epoch_millis").let { if (result.wasNull()) null else it }
                 rows += SqliteHistoryQueryEntry(
                     matchId = matchId,
+                    tableId = result.getString("table_id"),
                     state = if (result.getString("integrity") == "COMPLETE") HistoryStoredMatchState.COMPLETED else HistoryStoredMatchState.PARTIAL,
                     outcome = SqliteHistoryMatchOutcome.valueOf(result.getString("outcome")),
                     startedAtEpochMillis = started,

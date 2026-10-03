@@ -8,13 +8,24 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecording
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTransferResult
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryListRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryAccess
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryPolicy
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryResult
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryScope
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistorySummaryRequest
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundEvents
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundPosition
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundState
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryArchiveStatusDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryOutboxEventPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.CompactReplayCodec
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.CompactReplayRoundReader
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.HistoryReplayProjectionRegistry
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayJsonParseLimits
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayReadResult
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.parseBoundedReplayJson
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
@@ -35,7 +46,6 @@ import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonObject
 import net.minecraft.server.MinecraftServer
 import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single
@@ -91,6 +101,7 @@ sealed interface HistoryRetryResult {
  * @param locations 取得牌桌位置摘要；只交給封存服務。
  * @property configState 目前有效的不可變設定，供 session 初始化使用。
  * @property retentionCoordinator 將清理與有效政策更新排序的協調邊界。
+ * @property replayProjectionRegistry 已完成註冊與凍結的歷史讀取轉換表。
  */
 @Single
 class FabricHistoryOutboxWriter(
@@ -102,6 +113,7 @@ class FabricHistoryOutboxWriter(
     locations: TableLocationRegistry,
     @Provided private val configState: MinecraftServerConfigState,
     private val retentionCoordinator: HistoryRetentionCoordinator,
+    @Provided private val replayProjectionRegistry: HistoryReplayProjectionRegistry,
 ) {
     /** 記錄歷史寫入與對帳錯誤的 logger。 */
     private val logger = LoggerFactory.getLogger(FabricHistoryOutboxWriter::class.java)
@@ -413,14 +425,93 @@ class FabricHistoryOutboxWriter(
         when (val read = activeDatabase.readReplayPayload(matchId.toString(), maximumBytes)) {
             HistoryReplayPayloadRead.Missing -> throw IllegalStateException("History replay is not available")
             HistoryReplayPayloadRead.TooLarge -> throw IllegalStateException("History replay exceeds the query size limit")
-            is HistoryReplayPayloadRead.Found -> CompactReplayCodec.decodeRuleSettings(
-                document = json.parseToJsonElement(read.payload).jsonObject,
-                registries = replayRegistries,
-                json = json,
-                expectedMatchId = matchId,
-            )
+            is HistoryReplayPayloadRead.Found -> {
+                val parsed = parseBoundedReplayJson(read.payload, ReplayJsonParseLimits(maximumUtf8Bytes = maximumBytes), json)
+                val document = (parsed as? ReplayReadResult.Success)?.value
+                    ?: error("History replay cannot be parsed within query limits")
+                CompactReplayCodec.decodeRuleSettings(document, replayRegistries, matchId, json)
+            }
         }
     }
+
+    /**
+     * 在唯一 session 與政策 lease 內讀取一頁已授權交易。
+     * @param access 可信連線身分。
+     * @param matchId 對局識別碼。
+     * @param queryScope 要求範圍。
+     * @param roundNumber 保存局序號。
+     * @param startIndex 起始交易索引。
+     * @param limit 最多交易筆數。
+     * @param sessionId 收到要求時的世界 session。
+     * @return 有界事件頁或安全錯誤。
+     */
+    internal suspend fun queryRoundEvents(
+        access: HistoryQueryAccess,
+        matchId: Uuid,
+        queryScope: HistoryQueryScope,
+        roundNumber: Int,
+        startIndex: Int,
+        limit: Int,
+        sessionId: Uuid?,
+    ): HistoryManagementResult<HistoryQueryResult<HistoryRoundEvents>> = manage(sessionId) { activeDatabase, _ ->
+        readAuthorizedHistoryRound(
+            activeDatabase, access, historyQueryPolicy(), matchId, queryScope, excludedHistoryMatches(),
+            { parseBoundedReplayJson(it, json = json) },
+            { CompactReplayRoundReader(replayProjectionRegistry).readEvents(it, matchId, roundNumber, startIndex, limit) },
+            { it.identity },
+        )
+    }
+
+    /**
+     * 在唯一 session 與政策 lease 內重建已授權交易位置。
+     * @param access 可信連線身分。
+     * @param matchId 對局識別碼。
+     * @param queryScope 要求範圍。
+     * @param roundNumber 保存局序號。
+     * @param position 初始桌況或指定交易後。
+     * @param sessionId 收到要求時的世界 session。
+     * @return 完整狀態或安全錯誤。
+     */
+    internal suspend fun queryRoundState(
+        access: HistoryQueryAccess,
+        matchId: Uuid,
+        queryScope: HistoryQueryScope,
+        roundNumber: Int,
+        position: HistoryRoundPosition,
+        sessionId: Uuid?,
+    ): HistoryManagementResult<HistoryQueryResult<HistoryRoundState>> = manage(sessionId) { activeDatabase, _ ->
+        readAuthorizedHistoryRound(
+            activeDatabase, access, historyQueryPolicy(), matchId, queryScope, excludedHistoryMatches(),
+            { parseBoundedReplayJson(it, json = json) },
+            { CompactReplayRoundReader(replayProjectionRegistry).readState(it, matchId, roundNumber, position) },
+            { it.identity },
+        )
+    }
+
+    /**
+     * 在回覆前重新確認場次仍可公開，不再次讀取 Replay。
+     * @param access 目前可信身分。
+     * @param matchId 原要求對局。
+     * @param queryScope 原要求範圍。
+     * @param sessionId 原世界 session。
+     * @return 確認結果，不攜帶歷史內容。
+     */
+    internal suspend fun confirmRoundPublication(
+        access: HistoryQueryAccess,
+        matchId: Uuid,
+        queryScope: HistoryQueryScope,
+        sessionId: Uuid?,
+    ): HistoryManagementResult<HistoryQueryResult<Unit>> = manage(sessionId) { activeDatabase, _ ->
+        when (val result = authorizedHistoryReplay(activeDatabase, access, historyQueryPolicy(), matchId, queryScope, excludedHistoryMatches())) {
+            is HistoryQueryResult.Failure -> result
+            is HistoryQueryResult.Success -> HistoryQueryResult.Success(Unit)
+        }
+    }
+
+    /** 取得目前有效查詢政策，不沿用要求開始時的設定。
+     * @return 記錄政策以外的獨立查詢政策。
+     */
+    private fun historyQueryPolicy(): HistoryQueryPolicy = configState.current.history.let { HistoryQueryPolicy(it.queryEnabled, it.allowAdminQuery) }
 
     /**
      * 依權威記錄狀態與 SQLite 證據判定單場歷史保存狀態。

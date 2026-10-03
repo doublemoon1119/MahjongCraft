@@ -13,7 +13,7 @@ kotlin {
         commonMain.dependencies {
             implementation(project(":mahjong-logic"))
             implementation(project(":mahjong-flow:mahjong-flow-common"))
-            implementation(libs.kotlinx.serialization.json)
+            api(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.coroutines)
             implementation(project.dependencies.platform(libs.koin.bom))
             implementation(libs.koin.core)

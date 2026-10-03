@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExtensionGameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistryImpl
 import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.DtoRegistry
@@ -18,6 +19,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.MahjongRuleConfigDt
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.PlayerRuleStateDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.ScoreConfigDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.HistoryReplayProjectionRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.buildBuiltInPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
@@ -75,12 +77,13 @@ class MahjongExtensionRegistrarTest {
             ),
         )
 
-        assertEquals(listOf("rule", "tile", "network", "persistence", "strategy"), calls)
+        assertEquals(listOf("rule", "tile", "network", "persistence", "replay", "strategy"), calls)
         assertEquals(
             setOf(
                 "mahjongcraft:rule_module",
                 "mahjongcraft:tile_type",
                 "mahjongcraft:ai_strategy",
+                "mahjongcraft:history_replay_action",
             ),
             categories.mapTo(mutableSetOf(), ExtensionRegistrationCategory::id),
         )
@@ -167,12 +170,14 @@ private fun testCoreRegistries(
     tileTypeRegistry: TileTypeRegistry = TileTypeRegistryImpl(),
     networkRegistries: NetworkDtoRegistries = TestNetworkDtoRegistries(),
     persistenceRegistries: PersistenceRegistries = buildBuiltInPersistenceRegistries(),
+    historyReplayProjectionRegistry: HistoryReplayProjectionRegistry = HistoryReplayProjectionRegistry(),
     aiStrategyRegistry: MahjongAiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = RandomAiStrategy.KEY),
 ): CoreExtensionRegistries = CoreExtensionRegistries(
     moduleRegistry = moduleRegistry,
     tileTypeRegistry = tileTypeRegistry,
     networkRegistries = networkRegistries,
     persistenceRegistries = persistenceRegistries,
+    historyReplayProjectionRegistry = historyReplayProjectionRegistry,
     winCelebrationCueResolverRegistry = WinCelebrationCueResolverRegistryImpl(),
     gameActionAiRegistry = ExtensionGameActionAiRegistry(),
     aiStrategyRegistry = aiStrategyRegistry,
@@ -208,6 +213,11 @@ private class RecordingExtension(
 
     override fun registerPersistenceDtos(registries: PersistenceRegistries) {
         calls += "persistence"
+    }
+
+    override fun registerHistoryReplayProjections(registry: HistoryReplayProjectionRegistry) {
+        calls += "replay"
+        registry.registerAction("example:recorded_action") { _, _ -> HistoryReplayFact.Opaque("example:recorded_action") }
     }
 
     override fun registerAiStrategies(registry: MahjongAiStrategyRegistry) {

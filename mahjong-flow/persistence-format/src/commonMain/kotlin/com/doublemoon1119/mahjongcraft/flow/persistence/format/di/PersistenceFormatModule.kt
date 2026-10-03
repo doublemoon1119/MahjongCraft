@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.di
 
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.HistoryReplayProjectionRegistry
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.registerBuiltInHistoryReplayProjections
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.buildBuiltInPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.state.AuthoritativeStatePersistenceCodec
@@ -9,6 +11,14 @@ import org.koin.core.annotation.Single
 /** `:mahjong-flow-persistence-format` 擁有的 registry 與 codec Koin 定義。 */
 @Module
 class PersistenceFormatModule {
+    /** 建立已登記內建歷史投影的共用 registry；擴充完成後由 bootstrap 集中凍結。
+     * @return 可供擴充註冊及正式歷史讀取共用的唯一 registry。
+     */
+    @Single
+    fun provideHistoryReplayProjectionRegistry(): HistoryReplayProjectionRegistry = HistoryReplayProjectionRegistry().apply {
+        registerBuiltInHistoryReplayProjections(this)
+    }
+
     /** 建立供 extension 註冊與 persistence adapter 共用的 runtime registry。 */
     @Single
     fun providePersistenceRegistries(): PersistenceRegistries = buildBuiltInPersistenceRegistries()

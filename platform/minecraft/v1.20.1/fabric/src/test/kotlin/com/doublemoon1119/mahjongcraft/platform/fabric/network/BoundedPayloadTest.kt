@@ -1,6 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.network
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlUpdateRequestDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsRequestDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundPositionDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateRequestDto
 import io.netty.buffer.Unpooled
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
@@ -12,6 +15,22 @@ import kotlin.uuid.Uuid
 
 /** 驗證有界 JSON payload 的長度、編碼與封包完整性檢查。 */
 class BoundedPayloadTest {
+    /** 單局要求沿用正式 4 KiB buffer 防護，不能夾帶額外封包或超長配對鍵。
+     */
+    @Test
+    fun `round replay requests share the bounded packet decoder`() {
+        val events = HistoryRoundEventsRequestDto("events", Uuid.random().toString(), roundNumber = 1)
+        val eventPayload = Json.encodeToString(HistoryRoundEventsRequestDto.serializer(), events)
+        assertEquals(events, decodeBoundedPayload(bufferFor(eventPayload), Json, HistoryRoundEventsRequestDto.serializer(), HistoryQueryLimits.REQUEST_BYTES))
+        val trailing = bufferFor(eventPayload).also { it.writeByte(1) }
+        assertNull(decodeBoundedPayload(trailing, Json, HistoryRoundEventsRequestDto.serializer(), HistoryQueryLimits.REQUEST_BYTES))
+        val state = HistoryRoundStateRequestDto("state", events.matchId, roundNumber = 1, position = HistoryRoundPositionDto.AfterTransaction(4))
+        val statePayload = Json.encodeToString(HistoryRoundStateRequestDto.serializer(), state)
+        assertEquals(state, decodeBoundedPayload(bufferFor(statePayload), Json, HistoryRoundStateRequestDto.serializer(), HistoryQueryLimits.REQUEST_BYTES))
+        val oversized = Json.encodeToString(HistoryRoundEventsRequestDto.serializer(), events.copy(requestId = "界".repeat(2000)))
+        assertNull(decodeBoundedPayload(bufferFor(oversized), Json, HistoryRoundEventsRequestDto.serializer(), HistoryQueryLimits.REQUEST_BYTES))
+    }
+
     /** 合法的長度前綴 JSON 應能完整解碼。 */
     @Test
     fun `valid dto decodes`() {

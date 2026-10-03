@@ -11,6 +11,10 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryArchiveSt
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryArchiveStatusResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListResponseDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsRequestDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsResponseDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateRequestDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSettingsRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSettingsResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryRequestDto
@@ -29,6 +33,18 @@ import kotlinx.serialization.builtins.serializer
 
 /** `mahjongcraft:` 命名空間下實際使用的命令、事件更新與主動快照同步頻道。 */
 object MahjongChannels {
+    /** 已公開單局事件的有界查詢要求。 */
+    val historyRoundEventsRequest = C2SChannel("history_round_events_request", HistoryRoundEventsRequestDto.serializer(), HistoryQueryLimits.REQUEST_BYTES)
+
+    /** 只含已授權交易頁及截止牌目錄的回覆。 */
+    val historyRoundEventsResponse = S2CChannel("history_round_events_response", HistoryRoundEventsResponseDto.serializer(), HistoryQueryLimits.RESPONSE_BYTES)
+
+    /** 已公開單局初始或交易後桌況的有界要求。 */
+    val historyRoundStateRequest = C2SChannel("history_round_state_request", HistoryRoundStateRequestDto.serializer(), HistoryQueryLimits.REQUEST_BYTES)
+
+    /** 完整歷史狀態或安全錯誤，不傳送任意 persistence payload。 */
+    val historyRoundStateResponse = S2CChannel("history_round_state_response", HistoryRoundStateResponseDto.serializer(), HistoryQueryLimits.RESPONSE_BYTES)
+
     /** 加入伺服器及設定重載後同步的歷史查詢操作間隔。 */
     val historyQuerySettings = S2CChannel("history_query_settings", HistoryQuerySettingsPayload.serializer(), HistoryQueryLimits.REQUEST_BYTES)
 

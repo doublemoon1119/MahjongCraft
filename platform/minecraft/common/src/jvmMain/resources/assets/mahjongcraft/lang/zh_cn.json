@@ -255,6 +255,7 @@
   "mahjongcraft.history_screen.direction.asc": "升序",
   "mahjongcraft.history_screen.direction.desc": "降序",
   "mahjongcraft.history_screen.empty": "找不到对局。",
+  "mahjongcraft.history_screen.failure.content_too_large": "数据量或处理工作超过服务器查询上限。",
   "mahjongcraft.history_screen.filter.ai": "AI 对局",
   "mahjongcraft.history_screen.filter.ai.contains_ai": "包含 AI",
   "mahjongcraft.history_screen.filter.ai.no_ai": "不含 AI",

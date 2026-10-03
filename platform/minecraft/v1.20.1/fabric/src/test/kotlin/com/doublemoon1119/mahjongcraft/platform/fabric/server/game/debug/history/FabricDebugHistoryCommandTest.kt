@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryOutboxWriter
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryRetentionCoordinator
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.buildTestHistoryReplayProjectionRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.mojang.brigadier.tree.CommandNode
@@ -29,6 +30,7 @@ class FabricDebugHistoryCommandTest {
         val writer = FabricHistoryOutboxWriter(
             store = store,
             registries = buildBuiltInPersistenceRegistries(),
+            replayProjectionRegistry = buildTestHistoryReplayProjectionRegistry(),
             json = Json,
             dispatchers = TestDispatchers,
             moduleRegistry = MahjongModuleRegistryImpl(),
