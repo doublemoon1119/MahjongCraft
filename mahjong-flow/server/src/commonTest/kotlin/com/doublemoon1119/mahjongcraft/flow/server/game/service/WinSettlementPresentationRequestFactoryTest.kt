@@ -72,6 +72,69 @@ class WinSettlementPresentationRequestFactoryTest {
         }
     }
 
+    /** 一般胡牌時，不論手牌原本的順序，面板拿到的立牌都依規則牌序排好，胡牌張不在立牌裡。 */
+    @Test
+    fun `win hand tiles follow the rule tile order`() {
+        val east = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val nineCharacters = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9))
+        val twoDots = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 2))
+        val oneCharacters = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5))
+        val winner = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.EAST,
+            hand = Hand(tiles = listOf(east, nineCharacters, twoDots, oneCharacters), lastDrawn = winningTile),
+        )
+        val state = FakeTableStateFactory.create(
+            players = listOf(winner) + listOf(Wind.SOUTH, Wind.WEST, Wind.NORTH).map { FakeMahjongPlayerFactory.create(initialSeat = it) },
+            config = config,
+        )
+
+        val request = WinSettlementPresentationRequestFactory.create(
+            previousState = state,
+            currentState = state,
+            module = module,
+            outcomeId = BuiltInRoundOutcomeIds.TSUMO,
+            isTsumo = true,
+            winningTileId = winningTile.id,
+            responsiblePlayerId = null,
+            resolutions = mapOf(winner.id to resolution(payments = state.players.drop(1).map { it.id })),
+            detailResolverRegistry = detailResolverRegistry,
+        )
+
+        assertEquals(
+            listOf(oneCharacters.id, nineCharacters.id, twoDots.id, east.id),
+            request.winners.single().standingTileIds,
+        )
+    }
+
+    /** 特殊和局結果的立牌同樣依規則牌序排好。 */
+    @Test
+    fun `special outcome hand tiles follow the rule tile order`() {
+        val white = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val threeBamboo = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 3))
+        val sevenDots = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 7))
+        val winner = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.EAST,
+            hand = Hand(tiles = listOf(white, threeBamboo, sevenDots)),
+        )
+        val state = FakeTableStateFactory.create(
+            players = listOf(winner) + List(3) { FakeMahjongPlayerFactory.create() },
+            config = config,
+        )
+        val outcome = ResolvedRoundOutcome(
+            id = "mahjongcraft:test_outcome",
+            settledTableState = state,
+            beneficiaryPlayerIds = setOf(winner.id),
+            scoreDeltas = state.players.associate { it.id to 0 },
+            transitionDirective = RoundTransitionDirective.ADVANCE_DEALER,
+            presentationClassification = RoundOutcomePresentationClassification.WIN_EQUIVALENT,
+        )
+
+        val request = WinSettlementPresentationRequestFactory.createSpecialOutcome(state, outcome, module, detailResolverRegistry)
+
+        assertEquals(listOf(sevenDots.id, threeBamboo.id, white.id), request.winners.single().standingTileIds)
+    }
+
     /**
      * 流局滿貫的 outcome id 必須透過 [WinSettlementDetailResolverRegistry] 正確分派到日麻樣板與役種
      * 欄位——這條路徑在遊戲內很難自然重現（需要真的打出流局滿貫），靠這個測試取代進遊戲驗證。

@@ -43,7 +43,7 @@ data class WinSettlementDetailField(val id: String, val value: WinSettlementDeta
  * @property responsiblePlayerId 放銃／被搶槓玩家；自摸或不歸咎特定玩家的特殊 outcome（見
  * [WinSettlementPresentationRequestFactory.createSpecialOutcome]）為 `null`。
  * @property totalScore 這位贏家本次胡牌獲得的總點數。
- * @property standingTileIds 立牌 ID，**不含**副露牌——副露牌另外完整列在 [melds]，兩者不得重複，
+ * @property standingTileIds 立牌 ID，依規則的牌序排列，**不含**副露牌——副露牌另外完整列在 [melds]，兩者不得重複，
  * 否則 renderer 會把同一組副露多畫一次在手牌裡。
  * @property melds 已公開的副露。
  * @property winningTileId 胡牌張；特殊 outcome（同上）不偽造胡牌張時為 `null`。

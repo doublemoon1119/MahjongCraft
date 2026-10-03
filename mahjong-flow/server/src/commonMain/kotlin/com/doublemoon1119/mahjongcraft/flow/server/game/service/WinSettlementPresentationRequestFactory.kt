@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPresen
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementWinnerPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
+import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
@@ -35,7 +36,7 @@ object WinSettlementPresentationRequestFactory {
                     seatIndex = currentState.players.indexOf(player),
                     responsiblePlayerId = outcome.responsiblePlayerIds.singleOrNull(),
                     totalScore = outcome.scoreDeltas.getValue(winnerId),
-                    standingTileIds = player.hand.standingTiles.map { it.id },
+                    standingTileIds = sortedStandingTileIds(player.hand, module),
                     melds = player.hand.melds.map { it.toPresentation(currentState.config.revealsClosedKanTiles, module.tileOrder) },
                     winningTileId = null,
                     detailFields = resolvedDetails.fields,
@@ -87,7 +88,7 @@ object WinSettlementPresentationRequestFactory {
                     seatIndex = currentState.players.indexOf(player),
                     responsiblePlayerId = responsiblePlayerId,
                     totalScore = resolution.totalGained,
-                    standingTileIds = player.hand.standingTiles.map { it.id }.filterNot { it == winningTileId },
+                    standingTileIds = sortedStandingTileIds(player.hand, module).filterNot { it == winningTileId },
                     melds = player.hand.melds.map { it.toPresentation(currentState.config.revealsClosedKanTiles, module.tileOrder) },
                     winningTileId = winningTileId,
                     detailFields = resolvedDetails.getValue(winnerId).fields,
@@ -110,6 +111,11 @@ object WinSettlementPresentationRequestFactory {
             paymentReasonIdsByPlayerId = mergePaymentReasons(currentState, responsiblePlayerId, resolutions),
         )
     }
+
+    /** 依規則牌序排好的立牌 ID；不論玩家是否開啟自動整理手牌，面板都顯示排好的手牌。 */
+    private fun sortedStandingTileIds(hand: Hand, module: MahjongRuleModule<*>): List<Uuid> = hand.standingTiles
+        .sortedWith(compareBy(module.tileOrder) { it.tile })
+        .map { it.id }
 
     /**
      * 合併各贏家結算給出的付款原因。
