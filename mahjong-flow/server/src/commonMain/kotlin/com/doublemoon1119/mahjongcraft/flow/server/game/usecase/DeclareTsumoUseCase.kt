@@ -1,16 +1,19 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.SettledWinPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationWinner
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.acceptedActionHistoryDraft
+import com.doublemoon1119.mahjongcraft.flow.server.game.history.winSettlementHistoryDetails
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.DeclareRiichiUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
@@ -46,6 +49,9 @@ import kotlin.uuid.Uuid
  * @property snapshotSynchronizer 對局快照同步服務。
  * @property eventPublisher 對局通知服務。
  * @property presentationPublisher 對局 in-process 呈現觸發器，用於觸發胡牌慶祝演出。
+ * @property winPresentationHandoff 胡牌呈現 request 的交易後交接點。
+ * @property winCelebrationCueResolverRegistry 胡牌慶祝 cue 解析器 registry。
+ * @property winSettlementDetailResolverRegistry 胡牌詳情解析器 registry。
  */
 @Factory
 class DeclareTsumoUseCase(
@@ -71,6 +77,7 @@ class DeclareTsumoUseCase(
             gameId,
             history = { before, after, result ->
                 if (result is Outcome.Success && before != null && after != null) {
+                    val settled = result.value
                     listOf(
                         acceptedActionHistoryDraft(
                             playerId,
@@ -78,6 +85,17 @@ class DeclareTsumoUseCase(
                             before,
                             after,
                             listOfNotNull(before.players.first { it.id == playerId }.hand.lastDrawn?.id),
+                        ),
+                        HistoryEventDraft(
+                            actorPlayerId = playerId,
+                            fact = HistoryFact.WinSettled(
+                                outcomeId = BuiltInRoundOutcomeIds.TSUMO,
+                                winDetails = winSettlementHistoryDetails(
+                                    settled.settlement,
+                                    settled.ruleModuleId,
+                                    winSettlementDetailResolverRegistry,
+                                ),
+                            ),
                         ),
                     )
                 } else {
@@ -168,12 +186,24 @@ class DeclareTsumoUseCase(
                         dynamicRuleState = stickPot?.first ?: stateForSettlement.dynamicRuleState,
                     )
 
+                    val settlement = WinSettlementPresentationRequestFactory.create(
+                        previousState = stateForSettlement,
+                        currentState = newState,
+                        module = module,
+                        outcomeId = BuiltInRoundOutcomeIds.TSUMO,
+                        isTsumo = true,
+                        winningTileId = winningTile.id,
+                        responsiblePlayerId = null,
+                        resolutions = mapOf(playerId to tsumoResult),
+                        detailResolverRegistry = winSettlementDetailResolverRegistry,
+                    )
+
                     newState to Outcome.Success(
                         TsumoResult(
-                            previousTableState = stateForSettlement,
                             tableState = newState,
                             resolution = tsumoResult,
                             ruleModuleId = module.id,
+                            settlement = settlement,
                             newlyRevealedTileIds = revealResult.newlyRevealedTileIds,
                         ),
                     )
@@ -199,7 +229,6 @@ class DeclareTsumoUseCase(
         // ResolveWinRoundContinuationUseCase 詢問過規則模組才知道，由它決定要立即播放或排隊延後播放。
         val winnerSeatIndex = newState.players.indexOfFirst { it.id == playerId }
         newState.players[winnerSeatIndex].hand.lastDrawn?.let { winningTile ->
-            val module = moduleRegistry.getModule(newState.config)
             val presentation = SettledWinPresentation(
                 winnerPlayerIds = setOf(playerId),
                 celebration = WinCelebrationRequest(
@@ -212,17 +241,7 @@ class DeclareTsumoUseCase(
                         ),
                     ),
                 ),
-                settlement = WinSettlementPresentationRequestFactory.create(
-                    previousState = result.previousTableState,
-                    currentState = newState,
-                    module = module,
-                    outcomeId = BuiltInRoundOutcomeIds.TSUMO,
-                    isTsumo = true,
-                    winningTileId = winningTile.id,
-                    responsiblePlayerId = null,
-                    resolutions = mapOf(playerId to result.resolution),
-                    detailResolverRegistry = winSettlementDetailResolverRegistry,
-                ),
+                settlement = result.settlement,
             )
             winPresentationHandoff.stage(gameId, presentation)
         }
@@ -231,12 +250,15 @@ class DeclareTsumoUseCase(
         return Outcome.Success(Unit)
     }
 
-    /** 將原子更新內取得的算役結果帶到呈現發布階段。 */
+    /** 將原子更新內取得的算役結果帶到呈現發布階段。
+     *
+     * @property settlement 同一交易建立的胡牌呈現詳情。
+     */
     private data class TsumoResult(
-        val previousTableState: TableState,
         val tableState: TableState,
         val resolution: WinResolutionResult,
         val ruleModuleId: String,
+        val settlement: WinSettlementPresentationRequest,
         val newlyRevealedTileIds: Set<Uuid> = emptySet(),
     ) {
         val handValueResult get() = resolution.handValueResult

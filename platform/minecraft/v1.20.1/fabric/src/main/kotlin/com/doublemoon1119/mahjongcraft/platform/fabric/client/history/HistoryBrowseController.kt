@@ -166,6 +166,19 @@ internal class HistoryBrowseController(
         !isRefreshCoolingDown()
 
     /**
+     * 判斷單局頁查詢控制項是否可接受新的網路操作。
+     *
+     * 純快取導航仍由既有意圖排程處理；呈現端在在途、待送或冷卻期間停用查詢按鈕。
+     *
+     * @return 目前位於單局頁、沒有其他查詢且未處於冷卻期時為 true。
+     */
+    fun canQueryRound(): Boolean = available() &&
+        state.value.page in setOf(HistoryBrowsePage.ROUND_EVENTS, HistoryBrowsePage.ROUND_STATE) &&
+        active == null &&
+        pending == null &&
+        !isRefreshCoolingDown()
+
+    /**
      * 判斷最近一次查詢是否仍在最短請求間隔內。
      *
      * @return 尚未達到下一次查詢時間時為 true。
@@ -366,8 +379,7 @@ internal class HistoryBrowseController(
      */
     fun refreshRound(): Boolean {
         val round = currentRound() ?: return false
-        if (active != null || pending != null || isRefreshCoolingDown()) return false
-        if (state.value.page !in setOf(HistoryBrowsePage.ROUND_EVENTS, HistoryBrowsePage.ROUND_STATE)) return false
+        if (!canQueryRound()) return false
         abandonPending()
         state.value.summary?.matchId?.let(roundCache::evictMatch)
         if (state.value.page == HistoryBrowsePage.ROUND_EVENTS) requestRoundEvents(round.eventStartIndices) else requestRoundState(round.requestedPosition)

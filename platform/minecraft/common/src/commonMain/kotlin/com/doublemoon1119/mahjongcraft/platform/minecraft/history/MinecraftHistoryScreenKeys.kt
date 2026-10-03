@@ -224,6 +224,183 @@ object MinecraftHistoryScreenKeys {
     /** 對局局數格式。 */
     const val ROUNDS = "mahjongcraft.history_screen.rounds"
 
+    /** 摘要局列可點擊開啟單局紀錄的提示。 */
+    const val ROUND_OPEN_HINT = "mahjongcraft.history_screen.round_open_hint"
+
+    /** 單局事件畫面標題。 */
+    const val ROUND_TITLE = "mahjongcraft.history_screen.round.title"
+
+    /** 單局序號。 */
+    const val ROUND_NUMBER = "mahjongcraft.history_screen.round.number"
+
+    /** 開局交易標記。 */
+    const val ROUND_OPENING = "mahjongcraft.history_screen.round.opening"
+
+    /** 單局交易標題，參數為顯示索引與時間。 */
+    const val ROUND_TRANSACTION = "mahjongcraft.history_screen.round.transaction"
+
+    /** 單局事件中的直接牌列標籤。 */
+    const val ROUND_DIRECT_TILES = "mahjongcraft.history_screen.round.direct_tiles"
+
+    /** 單局事件中的新公開牌列標籤。 */
+    const val ROUND_REVEALED_TILES = "mahjongcraft.history_screen.round.revealed_tiles"
+
+    /** 單局事件中的玩家座位標籤。 */
+    const val ROUND_SEAT = "mahjongcraft.history_screen.round.seat"
+
+    /** 單局事件中的結算分數列。 */
+    const val ROUND_SCORE = "mahjongcraft.history_screen.round.score"
+
+    /** 單局結算原因。 */
+    const val ROUND_OUTCOME_REASON = "mahjongcraft.history_screen.round.outcome_reason"
+
+    /** 單局結算分類。 */
+    const val ROUND_OUTCOME_CLASSIFICATION = "mahjongcraft.history_screen.round.outcome_classification"
+
+    /** 單局結算受益玩家。 */
+    const val ROUND_BENEFICIARY = "mahjongcraft.history_screen.round.beneficiary"
+
+    /** 單局結算責任玩家。 */
+    const val ROUND_RESPONSIBLE = "mahjongcraft.history_screen.round.responsible"
+
+    /** 單局回應事件格式。 */
+    const val ROUND_REACTION = "mahjongcraft.history_screen.round.reaction"
+
+    /** 和牌後續流程已處理事件。 */
+    const val ROUND_EVENT_WIN_CONTINUATION = "mahjongcraft.history_screen.round.event.win_continuation"
+
+    /** 返回房間事件。 */
+    const val ROUND_EVENT_RETURNED_TO_ROOM = "mahjongcraft.history_screen.round.event.returned_to_room"
+
+    /** 對局開始事件。 */
+    const val ROUND_EVENT_MATCH_STARTED = "mahjongcraft.history_screen.round.event.match_started"
+
+    /** 本局開始事件。 */
+    const val ROUND_EVENT_ROUND_STARTED = "mahjongcraft.history_screen.round.event.round_started"
+
+    /** 遊戲開始操作。 */
+    const val ROUND_ACTION_GAME_STARTED = "mahjongcraft.history_screen.round.action.game_started"
+
+    /** 本局開始操作。 */
+    const val ROUND_ACTION_ROUND_STARTED = "mahjongcraft.history_screen.round.action.round_started"
+
+    /** 對局結束操作。 */
+    const val ROUND_ACTION_MATCH_ENDED = "mahjongcraft.history_screen.round.action.match_ended"
+
+    /** 擲骰操作。 */
+    const val ROUND_ACTION_DICE_ROLLED = "mahjongcraft.history_screen.round.action.dice_rolled"
+
+    /** 回應處理完成。 */
+    const val ROUND_REACTION_NONE = "mahjongcraft.history_screen.round.reaction.none"
+
+    /** 單局準備步驟格式。 */
+    const val ROUND_PREPARATION = "mahjongcraft.history_screen.round.preparation"
+
+    /** 準備步驟格式。 */
+    const val ROUND_PREPARATION_STEP = "mahjongcraft.history_screen.round.preparation.step"
+
+    /** 準備完成。 */
+    const val ROUND_PREPARATION_NONE = "mahjongcraft.history_screen.round.preparation.none"
+
+    /** 接續準備步驟。 */
+    const val ROUND_PREPARATION_NEXT = "mahjongcraft.history_screen.round.preparation.next"
+
+    /** 準備步驟開始。 */
+    const val ROUND_PREPARATION_STARTED = "mahjongcraft.history_screen.round.preparation.started"
+
+    /** 玩家已提交準備操作。 */
+    const val ROUND_PREPARATION_SUBMITTED = "mahjongcraft.history_screen.round.preparation.submitted"
+
+    /** 單局完成事件格式。 */
+    const val ROUND_COMPLETION = "mahjongcraft.history_screen.round.completion"
+
+    /** 和牌結算事件格式。 */
+    const val ROUND_WIN_SETTLEMENT = "mahjongcraft.history_screen.round.win_settlement"
+
+    /** 單局規則效果事件格式。 */
+    const val ROUND_RULE_EFFECT = "mahjongcraft.history_screen.round.rule_effect"
+
+    /** 其他事件。 */
+    const val ROUND_UNKNOWN_FACT = "mahjongcraft.history_screen.round.unknown_fact"
+
+    /** 整場結束格式。 */
+    const val ROUND_MATCH_COMPLETION = "mahjongcraft.history_screen.round.match_completion"
+
+    /** 已完成預定賽程。 */
+    const val ROUND_OUTCOME_SCHEDULE_COMPLETED = "mahjongcraft.history_screen.round.outcome.schedule_completed"
+
+    /** 其他結算原因。 */
+    const val ROUND_OUTCOME_OTHER = "mahjongcraft.history_screen.round.outcome.other"
+
+    /** 已達終局點數。 */
+    const val ROUND_OUTCOME_TARGET_SCORE_REACHED = "mahjongcraft.history_screen.round.outcome.target_score_reached"
+
+    /** 已達延長賽上限。 */
+    const val ROUND_OUTCOME_EXTRA_ROUND_LIMIT_REACHED = "mahjongcraft.history_screen.round.outcome.extra_round_limit_reached"
+
+    /** 最後莊家符合終局條件。 */
+    const val ROUND_OUTCOME_DEALER_TOP_FINISH = "mahjongcraft.history_screen.round.outcome.dealer_top_finish"
+
+    /** 玩家分數達到終止門檻。 */
+    const val ROUND_OUTCOME_PLAYER_BUSTED = "mahjongcraft.history_screen.round.outcome.player_busted"
+
+    /** 和牌。 */
+    const val ROUND_CLASSIFICATION_WIN = "mahjongcraft.history_screen.round.classification.win"
+
+    /** 流局。 */
+    const val ROUND_CLASSIFICATION_EXHAUSTIVE_DRAW = "mahjongcraft.history_screen.round.classification.exhaustive_draw"
+
+    /** 途中流局。 */
+    const val ROUND_CLASSIFICATION_ABORTIVE_DRAW = "mahjongcraft.history_screen.round.classification.abortive_draw"
+
+    /** 擴充規則結算。 */
+    const val ROUND_CLASSIFICATION_EXTENSION = "mahjongcraft.history_screen.round.classification.extension"
+
+    /** 其他結算。 */
+    const val ROUND_CLASSIFICATION_OTHER = "mahjongcraft.history_screen.round.classification.other"
+
+    /** 其他操作。 */
+    const val ROUND_ACTION_OTHER = "mahjongcraft.history_screen.round.action.other"
+
+    /** 沒有語意事實提示。 */
+    const val ROUND_EMPTY_FACTS = "mahjongcraft.history_screen.round.empty_facts"
+
+    /** 單局沒有事件提示。 */
+    const val ROUND_NO_EVENTS = "mahjongcraft.history_screen.round.no_events"
+
+    /** 單局尚未取得結算提示。 */
+    const val ROUND_NO_OUTCOME_YET = "mahjongcraft.history_screen.round.no_outcome_yet"
+
+    /** 單局沒有結算提示。 */
+    const val ROUND_NO_OUTCOME = "mahjongcraft.history_screen.round.no_outcome"
+
+    /** 單局頁面範圍格式。 */
+    const val ROUND_PAGE_RANGE = "mahjongcraft.history_screen.round.page_range"
+
+    /** 和牌明細標題。 */
+    const val ROUND_WIN_DETAILS = "mahjongcraft.history_screen.round.win_details"
+
+    /** 未記錄和牌明細。 */
+    const val ROUND_WIN_DETAILS_UNAVAILABLE = "mahjongcraft.history_screen.round.win_details_unavailable"
+
+    /** 單局交易時間格式。 */
+    const val ROUND_TIMING = "mahjongcraft.history_screen.round.timing"
+
+    /** 自摸結算名稱。 */
+    const val ROUND_OUTCOME_TSUMO = "mahjongcraft.history_screen.round.outcome.tsumo"
+
+    /** 榮和結算名稱。 */
+    const val ROUND_OUTCOME_RON = "mahjongcraft.history_screen.round.outcome.ron"
+
+    /** 流局滿貫結算名稱。 */
+    const val ROUND_OUTCOME_NAGASHI_MANGAN = "mahjongcraft.history_screen.round.outcome.nagashi_mangan"
+
+    /** 中立槓牌動作名稱。 */
+    const val ROUND_ACTION_KAN = "mahjongcraft.history_screen.round.action.kan"
+
+    /** 中立摸牌動作名稱。 */
+    const val ROUND_ACTION_DRAW = "mahjongcraft.history_screen.round.action.draw"
+
     /** 對局未知玩家文字。 */
     const val PLAYER_UNKNOWN = "mahjongcraft.history_screen.player_unknown"
 

@@ -206,6 +206,7 @@ internal class SimulationRuntime(defaultStrategyKey: String) {
             moduleRegistry,
             postReactionRoundOutcomeResolverRegistry,
             snapshotSynchronizer,
+            winSettlementDetailResolverRegistry,
         ),
         resolveWinRoundContinuationUseCase = ResolveWinRoundContinuationUseCase(
             gameRepository,

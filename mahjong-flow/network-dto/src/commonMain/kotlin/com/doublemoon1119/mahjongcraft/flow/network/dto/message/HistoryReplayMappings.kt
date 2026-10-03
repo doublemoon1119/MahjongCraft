@@ -12,6 +12,9 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRo
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundOutcome
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundPosition
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundState
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryWinDetailField
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryWinDetailValue
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryWinnerDetails
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDto
 import kotlinx.serialization.json.Json
@@ -102,7 +105,37 @@ private fun HistoryRoundOutcome.toDto(): HistoryRoundOutcomeDto = HistoryRoundOu
     classification = classification?.name,
     responsibleSeats = responsibleSeats,
     transitionDirective = transitionDirective?.name,
+    scoreChangesBySeat = scoreChangesBySeat,
+    winnerDetails = winnerDetails.map { it.toDto() },
+    hasEarlierWinSettlement = hasEarlierWinSettlement,
 )
+
+/** 將歷史贏家詳情映射為網路 DTO。
+ * @return 可公開傳輸的贏家詳情。
+ */
+private fun HistoryWinnerDetails.toDto(): HistoryWinnerDetailsDto = HistoryWinnerDetailsDto(
+    seatIndex = seatIndex,
+    templateKey = templateKey,
+    detailFields = detailFields.map { it.toDto() },
+)
+
+/** 將歷史胡牌詳情欄位映射為網路 DTO。
+ * @return 可公開傳輸的詳情欄位。
+ */
+private fun HistoryWinDetailField.toDto(): HistoryWinDetailFieldDto = HistoryWinDetailFieldDto(id, value.toDto())
+
+/** 將歷史胡牌詳情值映射為網路 DTO。
+ * @return 可公開傳輸的詳情值。
+ */
+private fun HistoryWinDetailValue.toDto(): HistoryWinDetailValueDto = when (this) {
+    is HistoryWinDetailValue.Text -> HistoryWinDetailValueDto.Text(translationKey, arguments)
+    is HistoryWinDetailValue.Entries -> HistoryWinDetailValueDto.Entries(
+        entries.map {
+            HistoryWinDetailValueDto.Entries.EntryDto(it.translationKey, it.trailingText, it.trailingTranslationKey, it.trailingTranslationArgument)
+        },
+    )
+    is HistoryWinDetailValue.Tiles -> HistoryWinDetailValueDto.Tiles(tiles.map { it.tileIndex })
+}
 
 /** 將 Flow 單局桌況映射為網路 DTO。
  * @return 可公開傳輸的桌況 DTO。

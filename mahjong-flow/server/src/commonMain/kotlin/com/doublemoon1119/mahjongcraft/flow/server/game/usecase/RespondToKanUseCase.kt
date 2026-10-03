@@ -7,12 +7,14 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.SettledWinPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationWinner
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.acceptedActionHistoryDraft
+import com.doublemoon1119.mahjongcraft.flow.server.game.history.winSettlementHistoryDetails
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
@@ -51,6 +53,9 @@ import kotlin.uuid.Uuid
  * @property snapshotSynchronizer 對局快照同步服務。
  * @property eventPublisher 對局通知服務。
  * @property presentationPublisher 對局 in-process 呈現觸發器。
+ * @property winPresentationHandoff 胡牌呈現 request 的交易後交接點。
+ * @property winCelebrationCueResolverRegistry 胡牌慶祝 cue 解析器 registry。
+ * @property winSettlementDetailResolverRegistry 胡牌詳情解析器 registry。
  */
 @Factory
 class RespondToKanUseCase(
@@ -87,19 +92,33 @@ class RespondToKanUseCase(
                     ) + if (before.pendingKanReaction != null && after.pendingKanReaction == null) {
                         val resolution = result.value
                         val resolvedActor = resolution.declarerId ?: resolution.ronWinnerIds.singleOrNull()
-                        listOf(
-                            HistoryEventDraft(
-                                actorPlayerId = resolvedActor,
-                                fact = HistoryFact.ReactionResolved(
-                                    resolvedAction = if (resolution.drawHappened) {
-                                        before.pendingKanReaction?.kanAction
-                                    } else {
-                                        resolution.ronWinningTileId?.let(GameAction::Ron)
-                                    },
+                        buildList {
+                            add(
+                                HistoryEventDraft(
                                     actorPlayerId = resolvedActor,
+                                    fact = HistoryFact.ReactionResolved(
+                                        resolvedAction = if (resolution.drawHappened) {
+                                            before.pendingKanReaction?.kanAction
+                                        } else {
+                                            resolution.ronWinningTileId?.let(GameAction::Ron)
+                                        },
+                                        actorPlayerId = resolvedActor,
+                                    ),
                                 ),
-                            ),
-                        )
+                            )
+                            resolution.settlement?.let { settlement ->
+                                add(
+                                    HistoryEventDraft(
+                                        actorPlayerId = resolution.ronDiscarderId,
+                                        fact = HistoryFact.WinSettled(
+                                            outcomeId = settlement.outcomeId,
+                                            winDetails = winSettlementHistoryDetails(settlement, checkNotNull(resolution.ruleModuleId), winSettlementDetailResolverRegistry),
+                                            responsiblePlayerIds = listOfNotNull(resolution.ronDiscarderId),
+                                        ),
+                                    ),
+                                )
+                            }
+                        }
                     } else {
                         emptyList()
                     }
@@ -177,6 +196,21 @@ class RespondToKanUseCase(
                         }
                         revealResult as WallRevealDecisionApplier.Result.Applied
                         val newState = revealResult.tableState
+                        val settlement = if (resolved != null) {
+                            WinSettlementPresentationRequestFactory.create(
+                                previousState = state,
+                                currentState = newState,
+                                module = module,
+                                outcomeId = BuiltInRoundOutcomeIds.RON,
+                                isTsumo = false,
+                                winningTileId = pending.robbedTile.id,
+                                responsiblePlayerId = pending.declarerId,
+                                resolutions = resolved.resolutions,
+                                detailResolverRegistry = winSettlementDetailResolverRegistry,
+                            )
+                        } else {
+                            null
+                        }
                         newState to Outcome.Success(
                             ChankanResult(
                                 tableState = newState,
@@ -185,8 +219,8 @@ class RespondToKanUseCase(
                                 ronWinningTileId = if (resolved != null) pending.robbedTile.id else null,
                                 ronResolutions = resolved?.resolutions.orEmpty(),
                                 ruleModuleId = if (resolved != null) module.id else null,
-                                previousTableState = if (resolved != null) state else null,
                                 ronDiscarderId = if (resolved != null) pending.declarerId else null,
+                                settlement = settlement,
                                 wallRevealBatches = listOf(revealResult.newlyRevealedTileIds)
                                     .filterNot { it.isEmpty() },
                             ),
@@ -282,7 +316,6 @@ class RespondToKanUseCase(
             result.ronWinnerIds.forEach { winnerId ->
                 presentationPublisher.publishGameActionSound(gameId, winnerId, GameAction.Ron(winningTileId))
             }
-            val module = moduleRegistry.getModule(newState.config)
             val presentation = SettledWinPresentation(
                 winnerPlayerIds = result.ronWinnerIds,
                 celebration = WinCelebrationRequest(
@@ -297,17 +330,7 @@ class RespondToKanUseCase(
                         )
                     },
                 ),
-                settlement = WinSettlementPresentationRequestFactory.create(
-                    previousState = checkNotNull(result.previousTableState),
-                    currentState = newState,
-                    module = module,
-                    outcomeId = BuiltInRoundOutcomeIds.RON,
-                    isTsumo = false,
-                    winningTileId = winningTileId,
-                    responsiblePlayerId = result.ronDiscarderId,
-                    resolutions = result.ronResolutions,
-                    detailResolverRegistry = winSettlementDetailResolverRegistry,
-                ),
+                settlement = checkNotNull(result.settlement),
             )
             winPresentationHandoff.stage(gameId, presentation)
         }
@@ -326,6 +349,7 @@ class RespondToKanUseCase(
      * 嶺上摸牌，需要廣播 [GameAction.Draw]；[declarerId]（槓的宣告者）也只在這種情況才有值。[ronWinnerIds]／
      * [ronWinningTileId] 只在搶槓成功時非空，供呼叫端逐一觸發胡牌慶祝演出——跟 [declarerId] 是互斥的
      * 兩個視窗，同一次結算只會有其中一種非空。
+     * @property settlement 同一搶槓榮和交易建立的胡牌呈現詳情。
      */
     private data class ChankanResult(
         val tableState: TableState,
@@ -335,8 +359,8 @@ class RespondToKanUseCase(
         val ronWinningTileId: Uuid? = null,
         val ronResolutions: Map<Uuid, WinResolutionResult> = emptyMap(),
         val ruleModuleId: String? = null,
-        val previousTableState: TableState? = null,
         val ronDiscarderId: Uuid? = null,
+        val settlement: WinSettlementPresentationRequest? = null,
         val wallRevealBatches: List<Set<Uuid>> = emptyList(),
         val physicalWallTransitionPhases: List<PhysicalWallLayoutTransitionPhase> = emptyList(),
     )

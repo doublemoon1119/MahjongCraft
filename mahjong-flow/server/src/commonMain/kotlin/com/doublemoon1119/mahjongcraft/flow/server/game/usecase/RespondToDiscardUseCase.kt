@@ -7,12 +7,14 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.SettledWinPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationWinner
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.acceptedActionHistoryDraft
+import com.doublemoon1119.mahjongcraft.flow.server.game.history.winSettlementHistoryDetails
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.CompletedGameActionContext
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.recordExhaustiveDrawForAllPlayers
@@ -60,6 +62,10 @@ import kotlin.uuid.Uuid
  * @property handSortPreferenceStore 查詢玩家是否啟用自動整理手牌，見該類別 KDoc。
  * @property eventPublisher 對局通知服務。
  * @property presentationPublisher 對局 in-process 呈現觸發器。
+ * @property winPresentationHandoff 胡牌呈現 request 的交易後交接點。
+ * @property winCelebrationCueResolverRegistry 胡牌慶祝 cue 解析器 registry。
+ * @property winSettlementDetailResolverRegistry 胡牌詳情解析器 registry。
+ * @property postActionExhaustiveDrawResolverRegistry 捨牌反應後流局解析器 registry。
  */
 @Factory
 class RespondToDiscardUseCase(
@@ -98,16 +104,34 @@ class RespondToDiscardUseCase(
                         ),
                     ) + if (before.pendingReaction != null && after.pendingReaction == null) {
                         val resolution = result.value
-                        listOf(
-                            HistoryEventDraft(
-                                actorPlayerId = resolution.winnerId ?: resolution.ronWinnerIds.singleOrNull(),
-                                fact = HistoryFact.ReactionResolved(
-                                    resolvedAction = resolution.resolvedAction
-                                        ?: resolution.ronWinningTileId?.let(GameAction::Ron),
+                        buildList {
+                            add(
+                                HistoryEventDraft(
                                     actorPlayerId = resolution.winnerId ?: resolution.ronWinnerIds.singleOrNull(),
+                                    fact = HistoryFact.ReactionResolved(
+                                        resolvedAction = resolution.resolvedAction
+                                            ?: resolution.ronWinningTileId?.let(GameAction::Ron),
+                                        actorPlayerId = resolution.winnerId ?: resolution.ronWinnerIds.singleOrNull(),
+                                    ),
                                 ),
-                            ),
-                        )
+                            )
+                            resolution.settlement?.let { settlement ->
+                                add(
+                                    HistoryEventDraft(
+                                        actorPlayerId = resolution.ronDiscarderId,
+                                        fact = HistoryFact.WinSettled(
+                                            outcomeId = settlement.outcomeId,
+                                            winDetails = winSettlementHistoryDetails(
+                                                settlement,
+                                                checkNotNull(resolution.ruleModuleId),
+                                                winSettlementDetailResolverRegistry,
+                                            ),
+                                            responsiblePlayerIds = listOfNotNull(resolution.ronDiscarderId),
+                                        ),
+                                    ),
+                                )
+                            }
+                        }
                     } else {
                         emptyList()
                     }
@@ -166,7 +190,25 @@ class RespondToDiscardUseCase(
                         resolvePendingReaction(state, playersAfterResponse, newPendingReaction, discardedTile, module)
                     }
 
-                    result.rejectionReasonId?.let { reasonId ->
+                    val settledResult = if (result.ronWinningTileId != null && result.ronResolutions.isNotEmpty()) {
+                        result.copy(
+                            settlement = WinSettlementPresentationRequestFactory.create(
+                                previousState = checkNotNull(result.previousTableState),
+                                currentState = result.tableState,
+                                module = module,
+                                outcomeId = BuiltInRoundOutcomeIds.RON,
+                                isTsumo = false,
+                                winningTileId = result.ronWinningTileId,
+                                responsiblePlayerId = result.ronDiscarderId,
+                                resolutions = result.ronResolutions,
+                                detailResolverRegistry = winSettlementDetailResolverRegistry,
+                            ),
+                        )
+                    } else {
+                        result
+                    }
+
+                    settledResult.rejectionReasonId?.let { reasonId ->
                         val error = if (reasonId == SupplementalDrawReasonIds.WALL_EXHAUSTED) {
                             GameError.WallExhausted(gameId)
                         } else {
@@ -175,7 +217,7 @@ class RespondToDiscardUseCase(
                         return@update state to Outcome.Error(error)
                     }
 
-                    result.tableState to Outcome.Success(result)
+                    settledResult.tableState to Outcome.Success(settledResult)
                 }
             }
         }
@@ -253,7 +295,6 @@ class RespondToDiscardUseCase(
             result.ronWinnerIds.forEach { winnerId ->
                 presentationPublisher.publishGameActionSound(gameId, winnerId, GameAction.Ron(winningTileId))
             }
-            val module = moduleRegistry.getModule(newState.config)
             val presentation = SettledWinPresentation(
                 winnerPlayerIds = result.ronWinnerIds,
                 celebration = WinCelebrationRequest(
@@ -271,17 +312,7 @@ class RespondToDiscardUseCase(
                         )
                     },
                 ),
-                settlement = WinSettlementPresentationRequestFactory.create(
-                    previousState = checkNotNull(result.previousTableState),
-                    currentState = newState,
-                    module = module,
-                    outcomeId = BuiltInRoundOutcomeIds.RON,
-                    isTsumo = false,
-                    winningTileId = winningTileId,
-                    responsiblePlayerId = result.ronDiscarderId,
-                    resolutions = result.ronResolutions,
-                    detailResolverRegistry = winSettlementDetailResolverRegistry,
-                ),
+                settlement = checkNotNull(result.settlement),
             )
             winPresentationHandoff.stage(gameId, presentation)
         }
@@ -308,6 +339,7 @@ class RespondToDiscardUseCase(
      * [ronWinnerIds] 只在榮和結算成立時非空（一炮多響可能不只一人），[ronWinningTileId] 是被榮和的那張
      * 捨牌，供呼叫端逐一觸發胡牌慶祝演出；跟 [winnerId]（碰/吃/明槓得標）是互斥的兩個視窗，同一次結算
      * 只會有其中一種非空。
+     * @property settlement 同一榮和交易建立的胡牌呈現詳情。
      */
     private data class RespondResult(
         val tableState: TableState,
@@ -321,6 +353,7 @@ class RespondToDiscardUseCase(
         val ruleModuleId: String? = null,
         val previousTableState: TableState? = null,
         val ronDiscarderId: Uuid? = null,
+        val settlement: WinSettlementPresentationRequest? = null,
         val wallRevealBatches: List<Set<Uuid>> = emptyList(),
         val physicalWallTransitionPhases: List<PhysicalWallLayoutTransitionPhase> = emptyList(),
         val rejectionReasonId: String? = null,

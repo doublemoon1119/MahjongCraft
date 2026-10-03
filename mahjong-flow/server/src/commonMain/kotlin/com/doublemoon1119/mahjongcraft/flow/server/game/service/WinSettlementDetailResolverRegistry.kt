@@ -17,6 +17,13 @@ interface WinSettlementDetailResolver {
     /** 解析一般胡牌（自摸／榮和）的詳情；[handValue] 一律是實際成立的胡牌結果。 */
     fun resolve(state: TableState, handValue: HandValueResult): WinSettlementResolvedDetails
 
+    /** 將已解析的呈現欄位轉為歷史欄位；不得重新計算胡牌或分數。
+     *
+     * @param fields 已解析的呈現欄位。
+     * @return 可保存的歷史欄位。
+     */
+    fun historyFields(fields: List<WinSettlementDetailField>): List<WinSettlementDetailField> = fields
+
     /**
      * 解析不含 [HandValueResult] 的特殊 win-equivalent outcome（例如流局滿貫）詳情；不認得該
      * [outcome] 時回傳 `null`，讓 registry 落回通用樣板與空欄位。
@@ -44,6 +51,14 @@ class WinSettlementDetailResolverRegistry {
 
     fun resolveSpecialOutcome(ruleModuleId: String, state: TableState, outcome: ResolvedRoundOutcome): WinSettlementResolvedDetails = resolvers[ruleModuleId]?.resolveSpecialOutcome(state, outcome)
         ?: WinSettlementResolvedDetails(WinSettlementPresentationRequestFactory.GENERIC_TEMPLATE_KEY, emptyList())
+
+    /** 使用已註冊規則將既有呈現欄位轉為歷史欄位，不重新解析權威結果。
+     *
+     * @param ruleModuleId 規則模組識別碼。
+     * @param fields 已建立的呈現欄位。
+     * @return 可保存的歷史欄位。
+     */
+    fun historyFields(ruleModuleId: String, fields: List<WinSettlementDetailField>): List<WinSettlementDetailField> = resolvers[ruleModuleId]?.historyFields(fields) ?: fields
 
     fun freeze() {
         isFrozen = true

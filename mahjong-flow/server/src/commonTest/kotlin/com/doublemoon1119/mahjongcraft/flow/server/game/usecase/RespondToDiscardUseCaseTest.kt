@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.di.createBuiltInWinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.CompletedGameActionContext
@@ -837,6 +838,8 @@ class RespondToDiscardUseCaseTest {
             fixtures.presentationPublisher.getPublishedPlayerArea(gameId),
             "Ron doesn't claim a meld, so it should never trigger the meld-claim presentation/animation.",
         )
+        val settled = fixtures.gameRepo.historyDrafts.map { it.fact }.filterIsInstance<HistoryFact.WinSettled>().single()
+        assertEquals(setOf(responderId), settled.winDetails.map { it.playerId }.toSet())
 
         // 演出寫進交接槽而非直接發布，理由見 DeclareTsumoUseCaseTest 對應案例的 KDoc。
         assertTrue(fixtures.presentationPublisher.getPublishedWinCelebrations(gameId).isEmpty())
@@ -1039,6 +1042,8 @@ class RespondToDiscardUseCaseTest {
 
         val finalDiscarder = finalState.players.first { it.id == discarderId }
         assertEquals(-80000, finalDiscarder.score, "The discarder should pay the sum of both winners' totals.")
+        val settled = fixtures.gameRepo.historyDrafts.map { it.fact }.filterIsInstance<HistoryFact.WinSettled>().single()
+        assertEquals(setOf(dealerWinnerId, responderId), settled.winDetails.map { it.playerId }.toSet())
 
         // 演出寫進交接槽而非直接發布，理由見 DeclareTsumoUseCaseTest 對應案例的 KDoc。
         val staged = assertNotNull(

@@ -75,12 +75,16 @@ internal data class SimulationFailure(
  * @property rounds 每一局每位玩家的結果，依開局順序排列。
  * @property placementsByPlayer 整場結束時每位玩家的名次，第一名為 1；對局未正常結束時為空。
  * @property failure 偵測到的問題；正常結束時為 null。
+ * @property matchEndReasonId 正式流程記錄的終局原因；未正常終局時為 null。
+ * @property finalScoresByPlayer 最後一次權威結算的玩家分數，供終局驗證與失敗診斷使用。
  */
 internal data class MatchResult(
     val strategyKeysByPlayer: Map<Uuid, String>,
     val rounds: List<List<SeatRoundResult>>,
     val placementsByPlayer: Map<Uuid, Int>,
     val failure: SimulationFailure?,
+    val matchEndReasonId: String? = null,
+    val finalScoresByPlayer: Map<Uuid, Int> = emptyMap(),
 )
 
 /**
@@ -140,6 +144,8 @@ internal class MatchSimulator(
             rounds = recordedRounds.map { roundResults(it, strategyKeysByPlayer) },
             placementsByPlayer = if (failure == null) placements(runtime, finalState) else emptyMap(),
             failure = failure,
+            matchEndReasonId = runtime.gameRepository.getGame(gameId)?.matchEndReasonId,
+            finalScoresByPlayer = finalState.players.associate { it.id to it.score },
         )
     }
 

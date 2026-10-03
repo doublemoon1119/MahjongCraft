@@ -10,6 +10,9 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRo
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundState
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundTileCatalog
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryTileReference
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryWinDetailField
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryWinDetailValue
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryWinnerDetails
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.MatchRoundPositionPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.MeldTypePersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.RelativeDirectionPersistenceDto
@@ -104,7 +107,14 @@ internal class HistoryReplayProjectionMapper(private val registry: HistoryReplay
                 "round_preparation_started", "round_preparation_submitted", "round_preparation_automatic_resolved" ->
                     HistoryReplayFact.Preparation(type, string(fact.getValue("stepId")), integer(fact.getValue("stepIndex")).also { require(it >= 0) { "Replay preparation index must not be negative" } }, fact["nextStepId"]?.takeUnless { it == JsonNull }?.let(::string))
                 "round_completed" -> HistoryReplayFact.Completion(type, outcome(obj(fact.getValue("summary")), context))
-                "rule_effect_resolved" -> HistoryReplayFact.RuleEffect(type, string(fact.getValue("reasonId")), fact.getValue("roundCompletion").takeUnless { it == JsonNull }?.let { outcome(obj(it), context) })
+                "win_settled" -> HistoryReplayFact.Completion(type, winSettledOutcome(fact, context))
+                "rule_effect_resolved" -> HistoryReplayFact.RuleEffect(
+                    type,
+                    string(fact.getValue("reasonId")),
+                    fact.getValue("roundCompletion").takeUnless { it == JsonNull }?.let {
+                        outcome(obj(it), context, winnerDetails(fact["winDetails"], context))
+                    },
+                )
                 "match_completed" -> HistoryReplayFact.Completion(type, HistoryRoundOutcome(string(fact.getValue("reasonId")), emptyList(), scores(fact.getValue("finalScoresByPlayerId"), context)))
                 else -> registry.decodeFact(type, fact, context) ?: HistoryReplayFact.Opaque(type, actor, direct, revealed)
             }
@@ -183,16 +193,94 @@ internal class HistoryReplayProjectionMapper(private val registry: HistoryReplay
      * 讀取保存的結算摘要，不重新計分。
      * @param value 完成摘要。
      * @param context 座位驗證上下文。
+     * @param savedWinnerDetails 同一結算已保存的逐位和牌明細；未提供時不補造內容。
      * @return 座位索引形式結果。
      */
-    private fun outcome(value: JsonObject, context: HistoryReplayProjectionContext): HistoryRoundOutcome = HistoryRoundOutcome(
+    private fun outcome(
+        value: JsonObject,
+        context: HistoryReplayProjectionContext,
+        savedWinnerDetails: List<HistoryWinnerDetails>? = null,
+    ): HistoryRoundOutcome = HistoryRoundOutcome(
         string(value.getValue("outcomeId")),
         array(value.getValue("beneficiaryPlayerIds")).map { context.seat(integer(it)) },
         scores(value.getValue("settledScoresByPlayerId"), context),
         RoundCompletionClassification.valueOf(string(value.getValue("classification"))),
         array(value.getValue("responsiblePlayerIds")).map { context.seat(integer(it)) },
         RoundTransitionDirective.valueOf(string(value.getValue("transitionDirective"))),
+        winnerDetails = savedWinnerDetails ?: emptyList(),
     )
+
+    /**
+     * 將保存的和牌欄位轉成局內座位與牌參照；缺少欄位時回傳空清單。
+     * @param value 已保存的逐位明細陣列。
+     * @param context 座位與牌參照驗證上下文。
+     * @return 保留原順序的和牌明細。
+     */
+    private fun winnerDetails(value: JsonElement?, context: HistoryReplayProjectionContext): List<HistoryWinnerDetails> {
+        if (value == null || value == JsonNull) return emptyList()
+        return array(value).map { raw ->
+            val item = obj(raw)
+            HistoryWinnerDetails(
+                seatIndex = context.seat(integer(item.getValue("playerId"))),
+                templateKey = string(item.getValue("templateKey")),
+                detailFields = array(item.getValue("detailFields")).map { fieldValue ->
+                    val field = obj(fieldValue)
+                    HistoryWinDetailField(
+                        id = string(field.getValue("id")),
+                        value = detailValue(obj(field.getValue("value")), context),
+                    )
+                },
+            )
+        }
+    }
+
+    /**
+     * 將和牌交易事實投影成沒有重複分數表的結算結果。
+     * @param value 已保存的和牌交易事實。
+     * @param context 座位與牌參照驗證上下文。
+     * @return 分數留待交易投影補齊的和牌結果。
+     */
+    private fun winSettledOutcome(value: JsonObject, context: HistoryReplayProjectionContext): HistoryRoundOutcome {
+        val details = winnerDetails(value["winDetails"], context)
+        return HistoryRoundOutcome(
+            reasonId = string(value.getValue("outcomeId")),
+            beneficiarySeats = details.map { it.seatIndex },
+            scoresBySeat = emptyMap(),
+            classification = RoundCompletionClassification.WIN,
+            responsibleSeats = array(value["responsiblePlayerIds"] ?: JsonArray(emptyList())).map { context.seat(integer(it)) },
+            winnerDetails = details,
+        )
+    }
+
+    /**
+     * 將持久化和牌值轉成不含 UUID 的歷史明細值。
+     * @param value 已保存的明細值。
+     * @param context 座位與牌參照驗證上下文。
+     * @return 文字、牌參照或有序條目。
+     */
+    private fun detailValue(value: JsonObject, context: HistoryReplayProjectionContext): HistoryWinDetailValue = when (string(value.getValue("type"))) {
+        "text" -> HistoryWinDetailValue.Text(string(value.getValue("translationKey")), value["arguments"]?.let(::strings) ?: emptyList())
+        "tiles" -> HistoryWinDetailValue.Tiles(refs(value.getValue("tileIds"), context))
+        "entries" -> HistoryWinDetailValue.Entries(
+            array(value.getValue("entries")).map { raw ->
+                val entry = obj(raw)
+                HistoryWinDetailValue.Entries.Entry(
+                    translationKey = string(entry.getValue("translationKey")),
+                    trailingText = entry["trailingText"]?.let(::string) ?: "",
+                    trailingTranslationKey = entry["trailingTranslationKey"]?.takeUnless { it == JsonNull }?.let(::string),
+                    trailingTranslationArgument = entry["trailingTranslationArgument"]?.takeUnless { it == JsonNull }?.let(::string),
+                )
+            },
+        )
+        else -> invalid()
+    }
+
+    /**
+     * 讀取字串陣列。
+     * @param value 待驗證的 JSON 陣列。
+     * @return 保留原順序的字串。
+     */
+    private fun strings(value: JsonElement): List<String> = array(value).map(::string)
 
     /**
      * 將索引字串鍵分數表轉為座位分數。

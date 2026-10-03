@@ -36,6 +36,27 @@ object RiichiWinSettlementDetailResolver : WinSettlementDetailResolver {
         )
     }
 
+    /** 將既有役種欄位的數字尾綴轉為可翻譯歷史 metadata，不重新計算役種或翻數。 */
+    override fun historyFields(fields: List<WinSettlementDetailField>): List<WinSettlementDetailField> = fields.map { field ->
+        if (field.id != YAKU_FIELD) return@map field
+        val entries = (field.value as? WinSettlementDetailValue.Entries)?.entries ?: return@map field
+        field.copy(
+            value = WinSettlementDetailValue.Entries(
+                entries.map { entry ->
+                    if (entry.trailingText.isNotEmpty() && entry.trailingTranslationKey == null) {
+                        entry.copy(
+                            trailingText = "",
+                            trailingTranslationKey = WinSettlementTranslationKeys.HAN,
+                            trailingTranslationArgument = entry.trailingText,
+                        )
+                    } else {
+                        entry
+                    }
+                },
+            ),
+        )
+    }
+
     internal fun riichiDetails(state: TableState, handValue: HandValueResult): List<WinSettlementDetailField> {
         val result = handValue as? RiichiHandValueResult ?: return emptyList()
         val indicators = (state.dynamicRuleState as? RiichiDynamicState)?.getDoraIndicators(state)
@@ -73,7 +94,10 @@ object RiichiWinSettlementDetailResolver : WinSettlementDetailResolver {
                 )
             }
             add(WinSettlementDetailField(DORA_FIELD, WinSettlementDetailValue.Tiles(indicators?.first.orEmpty().map { it.id })))
-            add(WinSettlementDetailField(URA_DORA_FIELD, WinSettlementDetailValue.Tiles(indicators?.second.orEmpty().map { it.id })))
+            // 只使用本次權威役種結果辨識立直資格，不從其他玩家的立直狀態推測。
+            if (!result.isYakuman && result.yakuResults.any { it.yaku == YakuType.Riichi || it.yaku == YakuType.DoubleRiichi }) {
+                add(WinSettlementDetailField(URA_DORA_FIELD, WinSettlementDetailValue.Tiles(indicators?.second.orEmpty().map { it.id })))
+            }
         }
     }
 

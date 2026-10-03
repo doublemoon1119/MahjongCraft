@@ -252,6 +252,9 @@ sealed interface HistoryReplayFactDto {
  * @property classification 局結算分類。
  * @property responsibleSeats 責任玩家座位。
  * @property transitionDirective 莊家推進決策。
+ * @property scoreChangesBySeat 該次結算相對於交易前的分數變化。
+ * @property winnerDetails 各贏家的規則專屬詳情。
+ * @property hasEarlierWinSettlement 是否已有較早的胡牌結算事實。
  */
 @Serializable
 data class HistoryRoundOutcomeDto(
@@ -261,7 +264,69 @@ data class HistoryRoundOutcomeDto(
     val classification: String?,
     val responsibleSeats: List<Int>,
     val transitionDirective: String?,
+    val scoreChangesBySeat: Map<Int, Int> = emptyMap(),
+    val winnerDetails: List<HistoryWinnerDetailsDto> = emptyList(),
+    val hasEarlierWinSettlement: Boolean = false,
 )
+
+/** 歷史贏家詳情 DTO。
+ * @property seatIndex 贏家座位。
+ * @property templateKey 規則專屬詳情模板識別碼。
+ * @property detailFields 規則專屬詳情欄位。
+ */
+@Serializable
+data class HistoryWinnerDetailsDto(
+    val seatIndex: Int,
+    val templateKey: String,
+    val detailFields: List<HistoryWinDetailFieldDto>,
+)
+
+/** 歷史胡牌詳情欄位 DTO。
+ * @property id 規則專屬欄位識別碼。
+ * @property value 欄位值。
+ */
+@Serializable
+data class HistoryWinDetailFieldDto(val id: String, val value: HistoryWinDetailValueDto)
+
+/** 歷史胡牌詳情值 DTO。 */
+@Serializable
+sealed interface HistoryWinDetailValueDto {
+    /** 可翻譯的文字值。
+     * @property translationKey 翻譯鍵。
+     * @property arguments 翻譯參數。
+     */
+    @Serializable
+    @SerialName("text")
+    data class Text(val translationKey: String, val arguments: List<String> = emptyList()) : HistoryWinDetailValueDto
+
+    /** 可翻譯的條目集合。
+     * @property entries 條目列表。
+     */
+    @Serializable
+    @SerialName("entries")
+    data class Entries(val entries: List<EntryDto>) : HistoryWinDetailValueDto {
+        /** 單一條目。
+         * @property translationKey 條目翻譯鍵。
+         * @property trailingText 尾端純文字。
+         * @property trailingTranslationKey 尾端翻譯鍵。
+         * @property trailingTranslationArgument 尾端翻譯參數。
+         */
+        @Serializable
+        data class EntryDto(
+            val translationKey: String,
+            val trailingText: String = "",
+            val trailingTranslationKey: String? = null,
+            val trailingTranslationArgument: String? = null,
+        )
+    }
+
+    /** 局內牌參照集合。
+     * @property tiles 牌索引列表。
+     */
+    @Serializable
+    @SerialName("tiles")
+    data class Tiles(val tiles: List<Int>) : HistoryWinDetailValueDto
+}
 
 /** Replay 桌況 DTO。
  * @property identity 對局與玩家識別資料。

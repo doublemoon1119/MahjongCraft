@@ -6,6 +6,23 @@ import kotlin.test.assertTrue
 
 /** 驗證歷史摘要內容與固定底列的幾何不重疊。 */
 class HistorySummaryLayoutTest {
+    /** 同一局的多個換行列可點擊，但不接受裁切區或捲軸的點擊。 */
+    @Test
+    fun `round links preserve identity across wrapped rows and scrolling`() {
+        val layout = HistorySummaryLayout.measure(320, 180)
+        val links = listOf(
+            HistorySummaryLayout.RoundLink(18, 50, 7),
+            HistorySummaryLayout.RoundLink(18, 61, 7),
+            HistorySummaryLayout.RoundLink(18, 80, 9),
+        )
+        assertEquals(7, layout.roundAt(20.0, 31.0, 20.0, links))
+        assertEquals(7, layout.roundAt(20.0, 45.0, 20.0, links))
+        assertEquals(9, layout.roundAt(20.0, 61.0, 20.0, links))
+        assertEquals(null, layout.roundAt(20.0, 54.0, 20.0, links))
+        assertEquals(null, layout.roundAt(310.0, 31.0, 20.0, links))
+        assertEquals(null, layout.roundAt(20.0, 23.0, 30.0, links))
+    }
+
     /** 可點擊列只接受自身可見部分，不接受裁切區、捲軸或列間留白。 */
     @Test
     fun `clickable rows exclude clipped areas scrollbar and spacing`() {

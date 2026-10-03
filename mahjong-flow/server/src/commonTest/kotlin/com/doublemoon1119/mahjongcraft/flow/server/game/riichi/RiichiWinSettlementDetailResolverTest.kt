@@ -4,17 +4,43 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcom
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ResolvedRoundOutcome
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundOutcomePresentationClassification
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementTranslationKeys
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueResult
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPointResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuResult
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 /** [RiichiWinSettlementDetailResolver] 的翻符顯示政策與特殊 outcome 判別測試。 */
 class RiichiWinSettlementDetailResolverTest {
     private val config = RiichiRuleConfig()
+
+    /** 立直及雙立直即使沒有裏寶牌加飜，也保留可用指示牌欄位；未立直及役滿不加入。
+     */
+    @Test
+    fun `ura indicators require an applicable winning riichi result`() {
+        val state = FakeTableStateFactory.create(config = config)
+        listOf(YakuType.Riichi, YakuType.DoubleRiichi).forEach { yaku ->
+            val result = RiichiHandValueResult(listOf(YakuResult.han(yaku, 1)), 1, 30, RiichiPointResult.Ron(1000))
+            val fields = RiichiWinSettlementDetailResolver.riichiDetails(state, result)
+            assertTrue(fields.any { it.id == RiichiWinSettlementDetailResolver.URA_DORA_FIELD })
+        }
+        listOf(
+            RiichiHandValueResult(listOf(YakuResult.han(YakuType.Tanyao, 1)), 1, 30, RiichiPointResult.Ron(1000)),
+            RiichiHandValueResult(listOf(YakuResult.han(YakuType.Riichi, 1)), -1, 0, RiichiPointResult.Ron(32000)),
+        ).forEach { result ->
+            val fields = RiichiWinSettlementDetailResolver.riichiDetails(state, result)
+            assertTrue(fields.any { it.id == RiichiWinSettlementDetailResolver.DORA_FIELD })
+            assertFalse(fields.any { it.id == RiichiWinSettlementDetailResolver.URA_DORA_FIELD })
+        }
+    }
 
     /** 未達滿貫且具有權威符數時應同時顯示翻數與符數。 */
     @Test

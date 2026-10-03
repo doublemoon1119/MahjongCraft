@@ -197,6 +197,10 @@ private fun WinSettlementPresentationTemplateRegistry.registerBuiltInRiichiWinSe
                     ),
                 ),
             ),
+            detailFieldLabelKeys = mapOf(
+                dora to WinSettlementTranslationKeys.DORA_INDICATOR,
+                uraDora to WinSettlementTranslationKeys.URA_DORA_INDICATOR,
+            ),
         ),
     )
     listOf(yaku, hanFu, yakumanTotal).forEach { id ->

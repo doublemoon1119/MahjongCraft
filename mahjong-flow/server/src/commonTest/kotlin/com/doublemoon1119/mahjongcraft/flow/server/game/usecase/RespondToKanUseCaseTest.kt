@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.di.createBuiltInWinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
@@ -161,6 +162,8 @@ class RespondToKanUseCaseTest {
             "Robbing the kan is a Ron, not a completed kan — no rinshan tile was drawn, so nothing should be presented as drawn.",
         )
         assertNull(fixtures.presentationPublisher.getPublishedRoundInfo(gameId))
+        val settled = fixtures.gameRepo.historyDrafts.map { it.fact }.filterIsInstance<HistoryFact.WinSettled>().single()
+        assertEquals(setOf(robberId), settled.winDetails.map { it.playerId }.toSet())
 
         // 演出寫進交接槽而非直接發布，理由見 DeclareTsumoUseCaseTest 對應案例的 KDoc。
         assertTrue(fixtures.presentationPublisher.getPublishedWinCelebrations(gameId).isEmpty())

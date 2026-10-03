@@ -197,6 +197,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
                 moduleRegistry,
                 PostReactionRoundOutcomeResolverRegistry().apply { freeze() },
                 snapshotSynchronizer,
+                winSettlementDetailResolverRegistry,
             ),
             resolveWinRoundContinuationUseCase = ResolveWinRoundContinuationUseCase(
                 gameRepo,

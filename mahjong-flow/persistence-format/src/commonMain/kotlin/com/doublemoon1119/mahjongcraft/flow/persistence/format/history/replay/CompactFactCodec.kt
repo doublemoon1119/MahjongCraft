@@ -32,7 +32,9 @@ object CompactFactCodec {
             while (fields.last() == JsonNull) fields.removeAt(fields.lastIndex)
             return JsonArray(fields)
         }
-        return JsonArray(listOf(typeIndex, JsonObject(fact.filterKeys { it != ReplaySourceKeys.TYPE })))
+        val payload = fact.filterKeys { it != ReplaySourceKeys.TYPE }.toMutableMap()
+        if (type in WIN_DETAIL_FACT_TYPES) payload[CompactWinDetailsCodec.WIN_DETAILS]?.let { payload[CompactWinDetailsCodec.WIN_DETAILS] = CompactWinDetailsCodec.encode(it) }
+        return JsonArray(listOf(typeIndex, JsonObject(payload)))
     }
 
     /**
@@ -50,7 +52,9 @@ object CompactFactCodec {
             require(encoded.size == 2)
             val payload = encoded[1] as? JsonObject ?: error("Fact payload must be an object")
             require(ReplaySourceKeys.TYPE !in payload) { "Fact payload must not override its type" }
-            return JsonObject(linkedMapOf(ReplaySourceKeys.TYPE to JsonPrimitive(type)) + payload)
+            val restored = payload.toMutableMap()
+            if (type in WIN_DETAIL_FACT_TYPES) restored[CompactWinDetailsCodec.WIN_DETAILS]?.let { restored[CompactWinDetailsCodec.WIN_DETAILS] = CompactWinDetailsCodec.decode(it) }
+            return JsonObject(linkedMapOf(ReplaySourceKeys.TYPE to JsonPrimitive(type)) + restored)
         }
         val actionType = requireNotNull(actionTypes.getOrNull(index(encoded[1]))) { "Invalid action type index" }
         val simple = encoded.size == 2 || (encoded.size == 3 && encoded[2] is JsonArray)
@@ -86,4 +90,7 @@ object CompactFactCodec {
         require(result >= 0)
         return result
     }
+
+    /** 由內建契約持有和牌明細的事實種類；不解析第三方任意同名欄位。 */
+    private val WIN_DETAIL_FACT_TYPES = setOf("win_settled", "rule_effect_resolved")
 }

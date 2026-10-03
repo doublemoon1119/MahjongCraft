@@ -7,8 +7,11 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecording
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingState
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingTerminal
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingTransfer
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinDetails
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinSettlementMode
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailField
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailValue
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.config.GameFlowConfigPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.config.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.config.toPersistenceDto
@@ -203,6 +206,21 @@ sealed interface HistoryFactPersistenceDto {
         val summary: RoundCompletionSummaryPersistenceDto,
     ) : HistoryFactPersistenceDto
 
+    /**
+     * 和牌結算交易內的規則詳情。
+     * @property outcomeId 和牌結算原因識別碼。
+     * @property winDetails 各贏家在結算時已確定的明細。
+     * @property responsiblePlayerIds 放銃或其他責任玩家的 UUID 字串。
+     */
+    @Serializable
+    @SerialName("win_settled")
+    data class WinSettled(
+        val outcomeId: String,
+        val winDetails: List<HistoryWinDetailsPersistenceDto>,
+        @EncodeDefault(EncodeDefault.Mode.NEVER)
+        val responsiblePlayerIds: List<String> = emptyList(),
+    ) : HistoryFactPersistenceDto
+
     /** 整場對局結束時的原因與最終分數。
      *
      * @property reasonId 對局結束原因的 namespaced key。
@@ -229,12 +247,15 @@ sealed interface HistoryFactPersistenceDto {
      *
      * @property reasonId 規則效果的識別碼。
      * @property roundCompletion 規則效果同時完成本局時的結算摘要；否則為 null。
+     * @property winDetails 規則效果產生的胡牌公開詳情；舊資料缺少時為空清單。
      */
     @Serializable
     @SerialName("rule_effect_resolved")
     data class RuleEffectResolved(
         val reasonId: String,
         val roundCompletion: RoundCompletionSummaryPersistenceDto?,
+        @EncodeDefault(EncodeDefault.Mode.NEVER)
+        val winDetails: List<HistoryWinDetailsPersistenceDto> = emptyList(),
     ) : HistoryFactPersistenceDto
 
     /** 同一權威交易內所有語意事實之後唯一的桌況結果。
@@ -251,6 +272,85 @@ sealed interface HistoryFactPersistenceDto {
     @Serializable
     @SerialName("returned_to_room")
     data object ReturnedToRoom : HistoryFactPersistenceDto
+}
+
+/** 胡牌詳情的持久化表示。
+ *
+ * @property playerId 胡牌玩家 UUID 字串。
+ * @property templateKey 規則呈現模板識別碼。
+ * @property detailFields 胡牌詳情欄位。
+ */
+@Serializable
+data class HistoryWinDetailsPersistenceDto(
+    val playerId: String,
+    val templateKey: String,
+    val detailFields: List<HistoryWinDetailFieldPersistenceDto>,
+)
+
+/** 單一胡牌詳情欄位的持久化表示。
+ *
+ * @property id 欄位識別碼。
+ * @property value 欄位值。
+ */
+@Serializable
+data class HistoryWinDetailFieldPersistenceDto(
+    val id: String,
+    val value: HistoryWinDetailValuePersistenceDto,
+)
+
+/** 胡牌詳情值的明確持久化種類。 */
+@Serializable
+sealed interface HistoryWinDetailValuePersistenceDto {
+    /** 翻譯鍵與其字串參數。
+     *
+     * @property translationKey 翻譯鍵。
+     * @property arguments 翻譯參數。
+     */
+    @Serializable
+    @SerialName("text")
+    data class Text(
+        val translationKey: String,
+        @EncodeDefault(EncodeDefault.Mode.NEVER)
+        val arguments: List<String> = emptyList(),
+    ) : HistoryWinDetailValuePersistenceDto
+
+    /** 局內牌 UUID 清單。
+     *
+     * @property tileIds 局內牌 UUID 字串。
+     */
+    @Serializable
+    @SerialName("tiles")
+    data class Tiles(
+        val tileIds: List<String>,
+    ) : HistoryWinDetailValuePersistenceDto
+
+    /**
+     * 可逐項呈現的詳情條目。
+     * @property entries 保留原順序的明細條目。
+     */
+    @Serializable
+    @SerialName("entries")
+    data class Entries(
+        val entries: List<Entry>,
+    ) : HistoryWinDetailValuePersistenceDto {
+        /** 單一詳情條目。
+         *
+         * @property translationKey 條目翻譯鍵。
+         * @property trailingText 條目尾端純文字。
+         * @property trailingTranslationKey 條目尾端翻譯鍵。
+         * @property trailingTranslationArgument 條目尾端翻譯參數。
+         */
+        @Serializable
+        data class Entry(
+            val translationKey: String,
+            @EncodeDefault(EncodeDefault.Mode.NEVER)
+            val trailingText: String = "",
+            @EncodeDefault(EncodeDefault.Mode.NEVER)
+            val trailingTranslationKey: String? = null,
+            @EncodeDefault(EncodeDefault.Mode.NEVER)
+            val trailingTranslationArgument: String? = null,
+        )
+    }
 }
 
 /** 胡牌後續決策的明確持久化表示。 */
@@ -415,7 +515,14 @@ class HistoryRecordingPersistenceMapper(
             fact.resolvedAction?.toPersistenceDto(registries.exhaustiveDrawReasons, registries.extensionGameActions, json),
             fact.actorPlayerId?.toString(),
         )
-        is HistoryFact.RoundCompleted -> HistoryFactPersistenceDto.RoundCompleted(fact.summary.toPersistenceDto())
+        is HistoryFact.RoundCompleted -> HistoryFactPersistenceDto.RoundCompleted(
+            fact.summary.toPersistenceDto(),
+        )
+        is HistoryFact.WinSettled -> HistoryFactPersistenceDto.WinSettled(
+            fact.outcomeId,
+            fact.winDetails.map(HistoryWinDetails::toPersistenceDto),
+            fact.responsiblePlayerIds.map(Uuid::toString),
+        )
         is HistoryFact.MatchCompleted -> HistoryFactPersistenceDto.MatchCompleted(
             fact.reasonId,
             fact.finalScoresByPlayerId.mapKeys { it.key.toString() },
@@ -426,6 +533,7 @@ class HistoryRecordingPersistenceMapper(
         is HistoryFact.RuleEffectResolved -> HistoryFactPersistenceDto.RuleEffectResolved(
             fact.reasonId,
             fact.roundCompletion?.toPersistenceDto(),
+            fact.winDetails.map(HistoryWinDetails::toPersistenceDto),
         )
         HistoryFact.ReturnedToRoom -> HistoryFactPersistenceDto.ReturnedToRoom
         is HistoryFact.TableChanged -> HistoryFactPersistenceDto.TableChanged(
@@ -457,7 +565,14 @@ class HistoryRecordingPersistenceMapper(
             dto.resolvedAction?.toDomain(registries.exhaustiveDrawReasons, registries.extensionGameActions, json),
             dto.actorPlayerId?.let(Uuid::parse),
         )
-        is HistoryFactPersistenceDto.RoundCompleted -> HistoryFact.RoundCompleted(dto.summary.toDomain())
+        is HistoryFactPersistenceDto.RoundCompleted -> HistoryFact.RoundCompleted(
+            dto.summary.toDomain(),
+        )
+        is HistoryFactPersistenceDto.WinSettled -> HistoryFact.WinSettled(
+            dto.outcomeId,
+            dto.winDetails.map(HistoryWinDetailsPersistenceDto::toDomain),
+            dto.responsiblePlayerIds.map(Uuid::parse),
+        )
         is HistoryFactPersistenceDto.MatchCompleted -> HistoryFact.MatchCompleted(
             dto.reasonId,
             dto.finalScoresByPlayerId.mapKeys { Uuid.parse(it.key) },
@@ -468,6 +583,7 @@ class HistoryRecordingPersistenceMapper(
         is HistoryFactPersistenceDto.RuleEffectResolved -> HistoryFact.RuleEffectResolved(
             dto.reasonId,
             dto.roundCompletion?.toDomain(),
+            dto.winDetails.map(HistoryWinDetailsPersistenceDto::toDomain),
         )
         HistoryFactPersistenceDto.ReturnedToRoom -> HistoryFact.ReturnedToRoom
         is HistoryFactPersistenceDto.TableChanged -> HistoryFact.TableChanged(
@@ -495,6 +611,64 @@ class HistoryRecordingPersistenceMapper(
         registries.exhaustiveDrawReasons,
         registries.extensionGameActions,
         json,
+    )
+}
+
+/** 將已確定的和牌明細映射為保存格式。
+ * @return 不含任意規則領域物件的明確 DTO。
+ */
+private fun HistoryWinDetails.toPersistenceDto() = HistoryWinDetailsPersistenceDto(
+    playerId = playerId.toString(),
+    templateKey = templateKey,
+    detailFields = detailFields.map { field ->
+        HistoryWinDetailFieldPersistenceDto(field.id, field.value.toPersistenceDto())
+    },
+)
+
+/** 將保存的和牌明細還原為記錄契約。
+ * @return 已解析玩家 UUID 與明細值的記錄。
+ */
+private fun HistoryWinDetailsPersistenceDto.toDomain() = HistoryWinDetails(
+    playerId = Uuid.parse(playerId),
+    templateKey = templateKey,
+    detailFields = detailFields.map { field ->
+        WinSettlementDetailField(field.id, field.value.toDomain())
+    },
+)
+
+/** 將規則中立明細值映射為明確保存種類。
+ * @return 文字、牌 UUID 或條目 DTO。
+ */
+private fun WinSettlementDetailValue.toPersistenceDto(): HistoryWinDetailValuePersistenceDto = when (this) {
+    is WinSettlementDetailValue.Text -> HistoryWinDetailValuePersistenceDto.Text(translationKey, arguments)
+    is WinSettlementDetailValue.Tiles -> HistoryWinDetailValuePersistenceDto.Tiles(tileIds.map(Uuid::toString))
+    is WinSettlementDetailValue.Entries -> HistoryWinDetailValuePersistenceDto.Entries(
+        entries.map { entry ->
+            HistoryWinDetailValuePersistenceDto.Entries.Entry(
+                entry.translationKey,
+                entry.trailingText,
+                entry.trailingTranslationKey,
+                entry.trailingTranslationArgument,
+            )
+        },
+    )
+}
+
+/** 將保存的明細值還原，不執行規則計算。
+ * @return 原有順序與翻譯參數的明細值。
+ */
+private fun HistoryWinDetailValuePersistenceDto.toDomain(): WinSettlementDetailValue = when (this) {
+    is HistoryWinDetailValuePersistenceDto.Text -> WinSettlementDetailValue.Text(translationKey, arguments)
+    is HistoryWinDetailValuePersistenceDto.Tiles -> WinSettlementDetailValue.Tiles(tileIds.map(Uuid::parse))
+    is HistoryWinDetailValuePersistenceDto.Entries -> WinSettlementDetailValue.Entries(
+        entries.map { entry ->
+            WinSettlementDetailValue.Entries.Entry(
+                entry.translationKey,
+                entry.trailingText,
+                entry.trailingTranslationKey,
+                entry.trailingTranslationArgument,
+            )
+        },
     )
 }
 

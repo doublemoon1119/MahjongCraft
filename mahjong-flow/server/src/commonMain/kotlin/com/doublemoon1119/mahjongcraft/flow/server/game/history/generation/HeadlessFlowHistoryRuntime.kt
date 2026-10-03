@@ -189,6 +189,7 @@ class HeadlessFlowHistoryRuntime private constructor(
                     moduleRegistry,
                     PostReactionRoundOutcomeResolverRegistry().apply { freeze() },
                     synchronizer,
+                    winDetails,
                 ),
                 resolveWinRoundContinuationUseCase = ResolveWinRoundContinuationUseCase(
                     gameRepository,

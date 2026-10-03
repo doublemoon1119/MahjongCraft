@@ -3,8 +3,13 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryArchiveStatusDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.concurrency.ClientThreadCoroutineDispatcher
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileFaceRenderer
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -22,6 +27,11 @@ import kotlin.time.TimeSource
  * @property ruleNames 規則顯示名稱 registry。
  * @property configResolver 以已註冊呈現定義解析歷史規則設定。
  * @property networkRegistries 解碼歷史規則設定所需的正式網路註冊表。
+ * @property actionVocabulary 歷史動作的規則專屬名稱來源。
+ * @property exhaustiveDrawReasons 流局原因名稱來源。
+ * @property settlementTemplates 結算明細欄位的規則專屬標題來源。
+ * @property tileFaces 共用 GUI 牌面 renderer。
+ * @property tileAssets 牌種與 Minecraft 素材的映射來源。
  * @param dispatcher 客戶端主執行緒排程。
  * @property parent 關閉後返回的原畫面，指令入口為 null。
  * @param initialMatchId 聊天入口指定的對局；null 表示一般列表。
@@ -34,6 +44,11 @@ internal class HistoryBrowseSession(
     val ruleNames: RuleModuleDisplayNameRegistry,
     val configResolver: GameConfigPresentationResolver,
     val networkRegistries: NetworkDtoRegistries,
+    val actionVocabulary: GameActionVocabularyRegistry,
+    val exhaustiveDrawReasons: ExhaustiveDrawReasonDisplayNameRegistry,
+    val settlementTemplates: WinSettlementPresentationTemplateRegistry,
+    val tileFaces: MahjongTileFaceRenderer,
+    val tileAssets: MinecraftTileAssetRegistry,
     dispatcher: ClientThreadCoroutineDispatcher,
     private val parent: Screen?,
     initialMatchId: String?,
@@ -45,7 +60,7 @@ internal class HistoryBrowseSession(
     /** 指定結算對局的保存狀態監看器。 */
     val archiveStatusController = HistoryArchiveStatusController(archiveStatus, scope)
 
-    /** 列表、篩選、摘要與規則設定共用的權威查詢結果。 */
+    /** 列表、摘要、規則設定與單局內容共用的權威查詢結果。 */
     val controller = HistoryBrowseController(transport, scope, beforeDetailQuery = {
         archiveMonitoringPaused = true
         archiveStatusController.pause()
@@ -133,7 +148,19 @@ internal class HistoryBrowseSession(
         return true
     }
 
-    /** 從規則設定返回摘要，保留摘要查詢與捲動位置。
+    /**
+     * 開啟摘要已公開的單局事件頁，保留同局原有分頁與捲動位置。
+     *
+     * @param roundNumber 摘要中的局序號。
+     * @return 是否已接受導航並開啟單局紀錄。
+     */
+    fun openRound(roundNumber: Int): Boolean {
+        if (closed || !controller.showRound(roundNumber)) return false
+        navigate(HistoryRoundEventsScreen(this, tileFaces, tileAssets, HistoryRoundEventPresenter(actionVocabulary, exhaustiveDrawReasons), settlementTemplates))
+        return true
+    }
+
+    /** 從歷史子頁返回摘要，保留摘要查詢與捲動位置。
      * @return 是否返回原摘要頁。
      */
     fun backToSummary(): Boolean {

@@ -12,6 +12,9 @@ import kotlin.uuid.Uuid
 class FakeGameRepository : GameRepository {
     private val games = mutableMapOf<Uuid, Game>()
 
+    /** 測試中由交易 callback 產生的歷史草稿。 */
+    val historyDrafts: MutableList<HistoryEventDraft> = mutableListOf()
+
     override suspend fun getGame(gameId: Uuid): Game? = games[gameId]
 
     override suspend fun getAllGameIds(): Set<Uuid> = games.keys.toSet()
@@ -44,8 +47,10 @@ class FakeGameRepository : GameRepository {
         history: (Game?, Game?, T) -> List<HistoryEventDraft>,
         block: suspend (Game?) -> Pair<Game?, T>,
     ): T {
-        val (next, result) = block(games[gameId])
+        val previous = games[gameId]
+        val (next, result) = block(previous)
         if (next == null) games.remove(gameId) else games[gameId] = next
+        historyDrafts += history(previous, next, result)
         return result
     }
 
@@ -53,7 +58,9 @@ class FakeGameRepository : GameRepository {
         gameId: Uuid,
         history: (TableState?, TableState?, T) -> List<HistoryEventDraft>,
         block: suspend (TableState?) -> Pair<TableState?, T>,
-    ): T = updateGame(gameId) { current ->
+    ): T = updateGame(gameId, history = { previous, next, result ->
+        history(previous?.tableState, next?.tableState, result)
+    }) { current ->
         val (nextTableState, result) = block(current?.tableState)
         val nextGame = when {
             nextTableState == null -> null

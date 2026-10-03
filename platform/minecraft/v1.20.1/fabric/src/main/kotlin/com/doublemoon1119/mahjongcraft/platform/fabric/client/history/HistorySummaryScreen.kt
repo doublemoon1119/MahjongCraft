@@ -111,6 +111,11 @@ internal class HistorySummaryScreen(
                 session.openRuleSettings()
                 return true
             }
+            val links = buildLines(detail).mapNotNull { line -> line.roundNumber?.let { HistorySummaryLayout.RoundLink(line.x, line.y, it) } }
+            layout.roundAt(mouseX, mouseY, offset.toDouble(), links)?.let { roundNumber ->
+                session.openRound(roundNumber)
+                return true
+            }
         }
         return super.mouseClicked(mouseX, mouseY, button)
     }
@@ -205,7 +210,7 @@ internal class HistorySummaryScreen(
                     context.drawTextWithShadow(textRenderer, Text.literal(name), nameX, y, row.nameColor)
                     context.drawTextWithShadow(textRenderer, row.score, scoreRight - textRenderer.getWidth(row.score), y, 0xdddddd)
                     if (name != row.name.string && !dragging && layout.containsContentRow(mouseX.toDouble(), mouseY.toDouble(), nameX, y, 11)) tooltip = listOf(row.name)
-                } ?: context.drawTextWithShadow(textRenderer, line.text, line.x, y, if ((line.copyMatchId || line.openRuleSettings) && !dragging && layout.containsContentRow(mouseX.toDouble(), mouseY.toDouble(), line.x, y, 11)) 0x8ed5df else line.color)
+                } ?: context.drawTextWithShadow(textRenderer, line.text, line.x, y, if ((line.copyMatchId || line.openRuleSettings || line.roundNumber != null) && !dragging && layout.containsContentRow(mouseX.toDouble(), mouseY.toDouble(), line.x, y, 11)) 0x8ed5df else line.color)
                 if (line.tooltip != null && !dragging && layout.containsContentRow(mouseX.toDouble(), mouseY.toDouble(), line.x, y, 11)) {
                     tooltip = if (line.copyMatchId) {
                         val copied = copiedAt?.elapsedNow()?.let { it < 2.seconds } == true
@@ -239,11 +244,12 @@ internal class HistorySummaryScreen(
          * @param tooltip 可選的完整值或說明。
          * @param copyMatchId 是否可複製對局 ID。
          * @param openRuleSettings 是否可開啟唯讀歷史規則設定。
+         * @param roundNumber 可開啟的局序號；其他資訊行為 null。
          */
-        fun add(text: Text, color: Int = 0xffffff, x: Int = layout.left + 8, tooltip: Text? = null, copyMatchId: Boolean = false, openRuleSettings: Boolean = false) {
+        fun add(text: Text, color: Int = 0xffffff, x: Int = layout.left + 8, tooltip: Text? = null, copyMatchId: Boolean = false, openRuleSettings: Boolean = false, roundNumber: Int? = null) {
             val wrapped = textRenderer.wrapLines(text, (layout.right - x - 14).coerceAtLeast(1))
             wrapped.forEach { line ->
-                lines += Line(x, y, line, color, tooltip = tooltip, copyMatchId = copyMatchId, openRuleSettings = openRuleSettings)
+                lines += Line(x, y, line, color, tooltip = tooltip, copyMatchId = copyMatchId, openRuleSettings = openRuleSettings, roundNumber = roundNumber)
                 y += 11
             }
         }
@@ -289,7 +295,11 @@ internal class HistorySummaryScreen(
         } else {
             detail.rounds.sortedBy { it.roundNumber }.forEach { round ->
                 val duration = HistoryScreenText.intervalDuration(round.startedAtEpochMillis, round.endedAtEpochMillis)
-                add(Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_ROUND_ROW, round.roundNumber, HistoryScreenText.endedAt(round.startedAtEpochMillis), HistoryScreenText.endedAt(round.endedAtEpochMillis), duration))
+                add(
+                    Text.translatable(MinecraftHistoryScreenKeys.SUMMARY_ROUND_ROW, round.roundNumber, HistoryScreenText.endedAt(round.startedAtEpochMillis), HistoryScreenText.endedAt(round.endedAtEpochMillis), duration),
+                    tooltip = Text.translatable(MinecraftHistoryScreenKeys.ROUND_OPEN_HINT).formatted(Formatting.AQUA),
+                    roundNumber = round.roundNumber,
+                )
             }
         }
         return lines
@@ -359,6 +369,7 @@ internal class HistorySummaryScreen(
      * @property tooltip 可見行的完整值或用途說明。
      * @property copyMatchId 此行是否提供對局 ID 複製。
      * @property openRuleSettings 此行是否開啟規則設定。
+     * @property roundNumber 此行可開啟的局序號；其他資訊行為 null。
      */
     private data class Line(
         val x: Int,
@@ -369,6 +380,7 @@ internal class HistorySummaryScreen(
         val tooltip: Text? = null,
         val copyMatchId: Boolean = false,
         val openRuleSettings: Boolean = false,
+        val roundNumber: Int? = null,
     )
 
     /**

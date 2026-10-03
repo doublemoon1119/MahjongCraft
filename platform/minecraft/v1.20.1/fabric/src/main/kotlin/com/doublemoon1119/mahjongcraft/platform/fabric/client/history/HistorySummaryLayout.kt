@@ -37,6 +37,32 @@ internal data class HistorySummaryLayout(
         mouseY >= rowTop &&
         mouseY < rowTop + rowHeight
 
+    /**
+     * 從摘要換行後的可見局列取得欲開啟的局序號。
+     *
+     * @param mouseX 游標水平座標。
+     * @param mouseY 游標垂直座標。
+     * @param scrollOffset 已限制範圍的內容捲動偏移。
+     * @param links 各局每個換行列的點擊位置。
+     * @return 可見局列的局序號；裁切區、列間隙或捲軸均為 null。
+     */
+    fun roundAt(mouseX: Double, mouseY: Double, scrollOffset: Double, links: List<RoundLink>): Int? = links.firstOrNull {
+        containsContentRow(mouseX, mouseY, it.x, it.y - scrollOffset.toInt(), 11)
+    }?.roundNumber
+
+    /**
+     * 同一局的一個已換行摘要列。
+     *
+     * @property x 列的左界。
+     * @property y 未捲動的列上界。
+     * @property roundNumber 該列所屬局序號。
+     */
+    data class RoundLink(
+        val x: Int,
+        val y: Int,
+        val roundNumber: Int,
+    )
+
     /** 捲軸界線，固定為可見的六像素寬。 */
     fun scrollbarBounds(): HistoryScreenLayout.Bounds = HistoryScreenLayout.Bounds(
         right - 6,

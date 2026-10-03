@@ -3,11 +3,15 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.history.replay
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableResult
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinDetails
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundEvents
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundPosition
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundState
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryWinDetailValue
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailField
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailValue
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.CompactReplayCodec
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.CompactReplayDictionary
@@ -122,7 +126,7 @@ class CompactReplayRoundReaderGenuineTest {
         assertEquals(after.players[0].handTiles.last(), after.players[0].lastDrawn)
         assertEquals(fixture.changed.players[0].hand.tiles.map { it.tile }, after.players[0].handTiles.map { after.tileCatalog.tiles[it.tileIndex] })
         val finalState = assertIs<ReplayReadResult.Success<HistoryRoundState>>(reader().readState(fixture.document, fixture.matchId, 1, HistoryRoundPosition.AfterTransaction(2))).value
-        assertEquals(fixture.changed.players.associate { it.initialSeatIndex to it.score }, finalState.outcome?.scoresBySeat)
+        assertEquals(fixture.settled.players.associate { it.initialSeatIndex to it.score }, finalState.outcome?.scoresBySeat)
         assertEquals("test:round_completed", finalState.outcome?.reasonId)
         assertEquals(RoundCompletionClassification.EXHAUSTIVE_DRAW, finalState.outcome?.classification)
     }
@@ -133,6 +137,84 @@ class CompactReplayRoundReaderGenuineTest {
         val fixture = fixture()
         val events = assertIs<ReplayReadResult.Success<HistoryRoundEvents>>(reader().readEvents(fixture.document, fixture.matchId, 1, 0, 20)).value
         assertTrue(events.transactions.last().facts.any { it is HistoryReplayFact.Completion })
+    }
+
+    /** 結算差額以該筆交易前的分數為基準，且晚於分頁起點的結算仍可取得。 */
+    @Test
+    fun `reader derives settlement delta from transaction before state`() = runTest {
+        val fixture = fixture()
+        val events = assertIs<ReplayReadResult.Success<HistoryRoundEvents>>(
+            reader().readEvents(fixture.document, fixture.matchId, 1, 2, 1),
+        ).value
+        val completion = events.transactions.single().facts.filterIsInstance<HistoryReplayFact.Completion>().single { it.typeKey == "round_completed" }
+        assertEquals(
+            fixture.settled.players.associate { settledPlayer ->
+                settledPlayer.initialSeatIndex to settledPlayer.score - fixture.changed.players.single { player -> player.initialSeatIndex == settledPlayer.initialSeatIndex }.score
+            },
+            completion.outcome?.scoreChangesBySeat,
+        )
+    }
+
+    /** 對局完成事實不應偽裝成單局結算差額。 */
+    @Test
+    fun `reader does not derive delta for match completion`() = runTest {
+        val fixture = fixture()
+        val events = assertIs<ReplayReadResult.Success<HistoryRoundEvents>>(
+            reader().readEvents(fixture.document, fixture.matchId, 1, 2, 1),
+        ).value
+        val completion = events.transactions.single().facts.filterIsInstance<HistoryReplayFact.Completion>().single { it.typeKey == "match_completed" }
+        assertEquals(emptyMap(), completion.outcome?.scoreChangesBySeat)
+    }
+
+    /** 驗證胡牌結算保存交易邊界分數，後續續局變化不會覆寫胡牌快照。 */
+    @Test
+    fun `reader preserves win settlement snapshot across continuation`() = runTest {
+        val fixture = continuingWinFixture()
+        val page = assertIs<ReplayReadResult.Success<HistoryRoundEvents>>(
+            reader().readEvents(fixture.document, fixture.matchId, 1, 2, 1),
+        ).value
+        val win = page.transactions.single().facts.filterIsInstance<HistoryReplayFact.Completion>().single().outcome
+        assertEquals(mapOf(0 to 26000, 1 to 24000), win?.scoresBySeat)
+        assertEquals(mapOf(0 to 2000, 1 to 0), win?.scoreChangesBySeat)
+        assertEquals(1, win?.winnerDetails?.size)
+        assertEquals(2, win?.winnerDetails?.single()?.detailFields?.size)
+        val tiles = win?.winnerDetails?.single()?.detailFields?.last()?.value as HistoryWinDetailValue.Tiles
+        assertEquals(1, tiles.tiles.size)
+        assertTrue(tiles.tiles.single().tileIndex in page.tileCatalog.tiles.indices)
+
+        val state = assertIs<ReplayReadResult.Success<HistoryRoundState>>(
+            reader().readState(fixture.document, fixture.matchId, 1, HistoryRoundPosition.AfterTransaction(2)),
+        ).value
+        assertEquals(mapOf(0 to 26000, 1 to 24000), state.outcome?.scoresBySeat)
+
+        val summary = assertIs<ReplayReadResult.Success<HistoryRoundEvents>>(
+            reader().readEvents(fixture.document, fixture.matchId, 1, 4, 1),
+        ).value.transactions.single().facts.filterIsInstance<HistoryReplayFact.Completion>().single { it.typeKey == "round_completed" }.outcome
+        assertEquals(emptyMap(), summary?.scoreChangesBySeat)
+        assertEquals(true, summary?.hasEarlierWinSettlement)
+    }
+
+    /** 規則效果直接完成胡牌時，同樣抑制後續局完成事實的重複差額。 */
+    @Test
+    fun `reader marks earlier win rule effect before round completion`() = runTest {
+        val fixture = continuingWinFixture(useWinRuleEffect = true)
+        val summary = assertIs<ReplayReadResult.Success<HistoryRoundEvents>>(
+            reader().readEvents(fixture.document, fixture.matchId, 1, 4, 1),
+        ).value.transactions.single().facts.filterIsInstance<HistoryReplayFact.Completion>().single { it.typeKey == "round_completed" }.outcome
+        assertEquals(true, summary?.hasEarlierWinSettlement)
+        assertEquals(emptyMap(), summary?.scoreChangesBySeat)
+    }
+
+    /** 缺少和牌結算事實時，局完成摘要不會將流程推進的零分差冒充和牌分差。 */
+    @Test
+    fun `reader does not fabricate zero win delta from completion summary`() = runTest {
+        val fixture = continuingWinFixture(recordWinSettlement = false)
+        val summary = assertIs<ReplayReadResult.Success<HistoryRoundEvents>>(
+            reader().readEvents(fixture.document, fixture.matchId, 1, 4, 1),
+        ).value.transactions.single().facts.filterIsInstance<HistoryReplayFact.Completion>().single { it.typeKey == "round_completed" }.outcome
+        assertEquals(emptyMap(), summary?.scoreChangesBySeat)
+        assertEquals(false, summary?.hasEarlierWinSettlement)
+        assertTrue(summary?.winnerDetails.orEmpty().isEmpty())
     }
 
     /** 驗證對局識別不符及容量超限皆分類失敗。 */
@@ -207,16 +289,80 @@ class CompactReplayRoundReaderGenuineTest {
         val table = base.copy(players = base.players.reversed())
         val newTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5))
         val changed = table.copy(players = table.players.mapIndexed { index, player -> if (index == 0) player.copy(score = player.score + 100, hand = player.hand.copy(tiles = player.hand.tiles + newTile, lastDrawn = newTile)) else player })
+        val settled = changed.copy(players = changed.players.map { player -> player.copy(score = player.score + if (player.initialSeatIndex == 0) 250 else -250) })
         val matchId = Uuid.random()
         val events = listOf(
             event(matchId, table.id, 1, 0L, HistoryFact.MatchStarted(table, GameFlowConfig())),
             event(matchId, table.id, 2, 125L, HistoryFact.TableChanged(HistoryTableResult.Checkpoint("test:checkpoint", changed))),
-            event(matchId, table.id, 3, 250L, HistoryFact.RoundCompleted(RoundCompletionSummary("test:round_completed", RoundCompletionClassification.EXHAUSTIVE_DRAW, emptySet(), transitionDirective = RoundTransitionDirective.ADVANCE_DEALER, settledScoresByPlayerId = changed.players.associate { it.id to it.score }))),
-            event(matchId, table.id, 4, 250L, HistoryFact.MatchCompleted("test:completed", changed.players.associate { it.id to it.score })).copy(transactionFirstSequence = 3),
+            event(matchId, table.id, 3, 250L, HistoryFact.RoundCompleted(RoundCompletionSummary("test:round_completed", RoundCompletionClassification.EXHAUSTIVE_DRAW, emptySet(), transitionDirective = RoundTransitionDirective.ADVANCE_DEALER, settledScoresByPlayerId = settled.players.associate { it.id to it.score }))),
+            event(matchId, table.id, 4, 250L, HistoryFact.MatchCompleted("test:completed", settled.players.associate { it.id to it.score })).copy(transactionFirstSequence = 3),
+            event(matchId, table.id, 5, 250L, HistoryFact.TableChanged(HistoryTableResult.Checkpoint("test:settled", settled))).copy(transactionFirstSequence = 3),
         )
         val registries = buildBuiltInPersistenceRegistries()
-        return Fixture(CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries), matchId, table, changed)
+        return Fixture(CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries), matchId, table, changed, settled)
     }
+
+    /** 建立包含立直後胡牌、續局分數變化與後續局結算的正式 Replay 文件。
+     * @param useWinRuleEffect 是否以 WIN 規則效果取代獨立胡牌結算事實。
+     * @param recordWinSettlement 是否記錄實際胡牌交易；關閉時驗證缺少明細的安全處理。
+     * @return 正式編碼的測試 Replay fixture。
+     */
+    private fun continuingWinFixture(useWinRuleEffect: Boolean = false, recordWinSettlement: Boolean = true): Fixture {
+        val base = FakeTableStateFactory.create(players = listOf(FakeMahjongPlayerFactory.create(discardPile = RiichiDiscardPile()), FakeMahjongPlayerFactory.create(discardPile = RiichiDiscardPile())), currentPlayerIndex = 1, config = RiichiRuleConfig())
+        val table = base.reversedScores(25000)
+        val winner = table.players.first()
+        val beforeWin = table.copy(players = table.players.map { player -> player.copy(score = 24000) })
+        val changed = beforeWin.copy(players = beforeWin.players.map { player -> if (player.initialSeatIndex == winner.initialSeatIndex) player.copy(score = 26000) else player })
+        val continued = changed.copy(players = changed.players.map { player -> if (player.initialSeatIndex == winner.initialSeatIndex) player.copy(score = 23000) else player })
+        val details = HistoryWinDetails(
+            winner.id,
+            "mahjongcraft:riichi",
+            listOf(
+                WinSettlementDetailField("mahjongcraft:yaku", WinSettlementDetailValue.Text("mahjongcraft.yaku.test")),
+                WinSettlementDetailField("mahjongcraft:dora", WinSettlementDetailValue.Tiles(listOf(table.tileWall.getAllTiles().first().id))),
+            ),
+        )
+        val matchId = Uuid.random()
+        val events = listOf(
+            event(matchId, table.id, 1, 0L, HistoryFact.MatchStarted(table, GameFlowConfig())),
+            event(matchId, table.id, 2, 100L, HistoryFact.TableChanged(HistoryTableResult.Checkpoint("test:riichi", beforeWin))),
+            event(matchId, table.id, 3, 200L, HistoryFact.TableChanged(HistoryTableResult.Checkpoint("test:win", changed))),
+            event(
+                matchId,
+                table.id,
+                4,
+                200L,
+                if (!recordWinSettlement) {
+                    HistoryFact.ReactionResolved(null, null)
+                } else if (useWinRuleEffect) {
+                    HistoryFact.RuleEffectResolved(
+                        "test:win_effect",
+                        RoundCompletionSummary(
+                            "test:ron",
+                            RoundCompletionClassification.WIN,
+                            setOf(winner.id),
+                            transitionDirective = RoundTransitionDirective.ADVANCE_DEALER,
+                            settledScoresByPlayerId = changed.players.associate { it.id to it.score },
+                        ),
+                        listOf(details),
+                    )
+                } else {
+                    HistoryFact.WinSettled("test:ron", listOf(details))
+                },
+            ).copy(transactionFirstSequence = 3),
+            event(matchId, table.id, 5, 300L, HistoryFact.TableChanged(HistoryTableResult.Checkpoint("test:continuation", continued))),
+            event(matchId, table.id, 6, 400L, HistoryFact.RoundCompleted(RoundCompletionSummary("test:win", RoundCompletionClassification.WIN, setOf(winner.id), transitionDirective = RoundTransitionDirective.ADVANCE_DEALER, settledScoresByPlayerId = continued.players.associate { it.id to it.score }))),
+            event(matchId, table.id, 7, 400L, HistoryFact.MatchCompleted("test:completed", continued.players.associate { it.id to it.score })).copy(transactionFirstSequence = 6),
+        )
+        val registries = buildBuiltInPersistenceRegistries()
+        return Fixture(CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries), matchId, table, changed, continued)
+    }
+
+    /** 將測試桌況的玩家分數統一設為指定值。
+     * @param score 每位玩家的新分數。
+     * @return 分數更新後的桌況。
+     */
+    private fun TableState.reversedScores(score: Int): TableState = copy(players = players.map { it.copy(score = score) })
 
     /** 建立正式編碼器需要的有序歷史事件。
      * @param matchId 對局識別碼。
@@ -246,11 +392,13 @@ class CompactReplayRoundReaderGenuineTest {
      * @property matchId 對局識別碼。
      * @property table 開局桌況。
      * @property changed 第二筆交易完成後桌況。
+     * @property settled 保存於結算摘要的分數。
      */
     private data class Fixture(
         val document: JsonObject,
         val matchId: Uuid,
         val table: TableState,
         val changed: TableState,
+        val settled: TableState,
     )
 }

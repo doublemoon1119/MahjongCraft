@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRo
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundState
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundTileCatalog
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
@@ -54,8 +55,19 @@ class CompactReplayRoundReader(
         val events = mutableListOf<HistoryReplayTransaction>()
         for (index in 0 until end) {
             yield()
+            val beforeScores = scoreSnapshot(cursor.projection, source.identity.players.size, budget)
             val transaction = advance(source, round, cursor, index, budget)
+            val afterScores = scoreSnapshot(cursor.projection, source.identity.players.size, budget)
             val facts = mapper.mapFacts(transaction.facts, transaction.actors, source.identity, round.number, catalog(cursor, budget), budget)
+                .map { fact ->
+                    val enriched = fact.withScoreChanges(beforeScores, afterScores, cursor.hasWinSettlement)
+                    if (fact.typeKey == "win_settled" ||
+                        (fact is HistoryReplayFact.RuleEffect && fact.outcome?.classification == RoundCompletionClassification.WIN)
+                    ) {
+                        cursor.hasWinSettlement = true
+                    }
+                    enriched
+                }
             if (index >= startIndex) events += HistoryReplayTransaction(index, cursor.time, transaction.opening, facts, cursor.tiles.size)
         }
         HistoryRoundEvents(source.identity, round.number, events.toList(), end.takeIf { it < round.transactions.size }, catalog(cursor, budget))
@@ -80,8 +92,19 @@ class CompactReplayRoundReader(
         val mapper = HistoryReplayProjectionMapper(registry)
         for (index in 0..last) {
             yield()
+            val beforeScores = scoreSnapshot(cursor.projection, source.identity.players.size, budget)
             val transaction = advance(source, round, cursor, index, budget)
+            val afterScores = scoreSnapshot(cursor.projection, source.identity.players.size, budget)
             val facts = mapper.mapFacts(transaction.facts, transaction.actors, source.identity, round.number, catalog(cursor, budget), budget)
+                .map { fact ->
+                    val enriched = fact.withScoreChanges(beforeScores, afterScores, cursor.hasWinSettlement)
+                    if (fact.typeKey == "win_settled" ||
+                        (fact is HistoryReplayFact.RuleEffect && fact.outcome?.classification == RoundCompletionClassification.WIN)
+                    ) {
+                        cursor.hasWinSettlement = true
+                    }
+                    enriched
+                }
             facts.mapNotNull {
                 when (it) {
                     is HistoryReplayFact.Completion -> it.outcome.takeUnless { _ -> it.typeKey == "match_completed" }
@@ -126,7 +149,78 @@ class CompactReplayRoundReader(
             ReplayReadResult.Failure(ReplayReadError.INVALID_DOCUMENT)
         } catch (_: NoSuchElementException) {
             ReplayReadResult.Failure(ReplayReadError.INVALID_DOCUMENT)
+        } catch (_: ArithmeticException) {
+            ReplayReadResult.Failure(ReplayReadError.INVALID_DOCUMENT)
         }
+    }
+
+    /** 以交易前後的完整投影計算本次結算分數變化。
+     * @param beforeScores 交易套用前的座位分數。
+     * @param afterScores 交易套用後的座位分數。
+     * @param hasPriorWinSettlement 是否已有同局胡牌結算事實。
+     * @return 帶有本次結算分數變化的事實。
+     */
+    private fun HistoryReplayFact.withScoreChanges(
+        beforeScores: Map<Int, Int>,
+        afterScores: Map<Int, Int>,
+        hasPriorWinSettlement: Boolean,
+    ): HistoryReplayFact {
+        if (typeKey == "match_completed") return this
+        val outcome = when (this) {
+            is HistoryReplayFact.Completion -> outcome
+            is HistoryReplayFact.RuleEffect -> outcome
+            else -> null
+        } ?: return this
+        // 和牌分數在較早的結算交易改變；單憑局完成摘要不能把流程推進的零變化視為和牌分差。
+        if (typeKey == "round_completed" && outcome.classification == RoundCompletionClassification.WIN) {
+            return when (this) {
+                is HistoryReplayFact.Completion -> copy(outcome = outcome.copy(hasEarlierWinSettlement = hasPriorWinSettlement))
+                is HistoryReplayFact.RuleEffect -> this
+                else -> this
+            }
+        }
+        require(beforeScores.keys == afterScores.keys)
+        val changes = afterScores.mapValues { (seat, score) ->
+            val difference = score.toLong() - beforeScores.getValue(seat).toLong()
+            require(difference in Int.MIN_VALUE.toLong()..Int.MAX_VALUE.toLong()) { "Replay score change is out of range" }
+            difference.toInt()
+        }
+        val settledScores = if (typeKey == "win_settled" && outcome.scoresBySeat.isEmpty()) afterScores else outcome.scoresBySeat
+        val updated = outcome.copy(scoresBySeat = settledScores, scoreChangesBySeat = changes)
+        return when (this) {
+            is HistoryReplayFact.Completion -> copy(outcome = updated)
+            is HistoryReplayFact.RuleEffect -> copy(outcome = updated)
+            else -> this
+        }
+    }
+
+    /** 讀取投影中每個座位的分數，避免為每筆交易複製完整桌況。
+     * @param projection 已套用至目前交易的投影。
+     * @param seatCount 對局玩家數量。
+     * @param budget 本次讀取工作預算。
+     * @return 依座位索引排列的分數。
+     */
+    private fun scoreSnapshot(projection: JsonElement, seatCount: Int, budget: ReplayReadBudget): Map<Int, Int> {
+        val players = (projection as? JsonObject)?.get(ReplayFormatKeys.PLAYERS) as? JsonArray ?: error("Replay players projection is invalid")
+        require(players.size == seatCount)
+        budget.charge(players.size.toLong())
+        val scores = players.associate { value ->
+            val player = value as? JsonObject ?: error("Replay player projection is invalid")
+            val seat = player[ReplaySourceKeys.INITIAL_SEAT_INDEX].asInt()
+            require(seat in 0 until seatCount)
+            seat to player["score"].asInt()
+        }
+        require(scores.size == seatCount)
+        return scores
+    }
+
+    /** 將 JSON 整數讀為分數使用的 Int。
+     * @return 驗證後的整數。
+     */
+    private fun JsonElement?.asInt(): Int {
+        val value = (this as? JsonPrimitive)?.longOrNull ?: error("Replay score must be an integer")
+        require(value in Int.MIN_VALUE.toLong()..Int.MAX_VALUE.toLong())
+        return value.toInt()
     }
 
     /**
@@ -247,6 +341,7 @@ class CompactReplayRoundReader(
         val tiles: MutableList<Tile>,
         var time: Long,
         var outcome: HistoryRoundOutcome? = null,
+        var hasWinSettlement: Boolean = false,
     )
 
     /**

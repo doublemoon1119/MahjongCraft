@@ -29,11 +29,14 @@ class MatchSimulationSmokeTest {
     fun `every built-in strategy plays a full east match`() = runTest(timeout = SMOKE_TIMEOUT) {
         val lineup = listOf(BuiltInAiStrategyKeys.BEGINNER, BuiltInAiStrategyKeys.INTERMEDIATE, BuiltInAiStrategyKeys.ADVANCED, RandomAiStrategy.KEY)
 
-        val result = MatchSimulator(RiichiRuleConfig(gameLength = RiichiGameLength.East)).play(lineup)
+        val config = RiichiRuleConfig(gameLength = RiichiGameLength.East)
+        val result = MatchSimulator(config).play(lineup)
+        val diagnostic = "rounds played: ${result.rounds.size}; end reason: ${result.matchEndReasonId}; final scores: ${result.finalScoresByPlayer}"
 
         assertNull(result.failure, result.failure?.describe())
-        assertTrue(result.rounds.size >= RiichiGameLength.East.totalRounds, "rounds played: ${result.rounds.size}")
-        assertEquals(setOf(1, 2, 3, 4), result.placementsByPlayer.values.toSet())
+        assertLegalRiichiMatchCompletion(config, result.rounds.size, result.matchEndReasonId, result.finalScoresByPlayer)
+        assertEquals(result.strategyKeysByPlayer.keys, result.finalScoresByPlayer.keys, diagnostic)
+        assertEquals(setOf(1, 2, 3, 4), result.placementsByPlayer.values.toSet(), diagnostic)
         assertEquals(lineup.toSet(), result.strategyKeysByPlayer.values.toSet())
         result.rounds.forEach { seats ->
             assertEquals(seats.any { it.wonByRon }, seats.any { it.dealtIn }, "ron and deal-in must match: $seats")

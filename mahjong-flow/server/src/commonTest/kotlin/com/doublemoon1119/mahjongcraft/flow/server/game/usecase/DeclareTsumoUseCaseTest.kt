@@ -2,6 +2,8 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.di.createBuiltInWinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationCue
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
@@ -147,6 +149,10 @@ class DeclareTsumoUseCaseTest {
             listOf(GameActionSoundContext(winnerId, GameAction.Tsumo)),
             fixtures.presentationPublisher.getPublishedGameActionSounds(gameId),
         )
+        val settled = fixtures.gameRepo.historyDrafts.map { it.fact }.filterIsInstance<HistoryFact.WinSettled>().single()
+        assertEquals(winnerId, settled.winDetails.single().playerId)
+        assertEquals(BuiltInRoundOutcomeIds.TSUMO, settled.outcomeId)
+        assertTrue(settled.winDetails.single().detailFields.isNotEmpty())
     }
 
     /**

@@ -3,6 +3,55 @@ package com.doublemoon1119.mahjongcraft.flow.common.game.history.replay
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 
+/** 歷史胡牌詳情值。 */
+sealed interface HistoryWinDetailValue {
+    /** 可翻譯的文字值。
+     * @property translationKey 翻譯鍵。
+     * @property arguments 翻譯參數。
+     */
+    data class Text(val translationKey: String, val arguments: List<String> = emptyList()) : HistoryWinDetailValue
+
+    /** 可翻譯的條目集合。
+     * @property entries 條目列表。
+     */
+    data class Entries(val entries: List<Entry>) : HistoryWinDetailValue {
+        /** 單一可翻譯條目。
+         * @property translationKey 條目翻譯鍵。
+         * @property trailingText 條目尾端純文字。
+         * @property trailingTranslationKey 條目尾端翻譯鍵。
+         * @property trailingTranslationArgument 條目尾端翻譯參數。
+         */
+        data class Entry(
+            val translationKey: String,
+            val trailingText: String = "",
+            val trailingTranslationKey: String? = null,
+            val trailingTranslationArgument: String? = null,
+        )
+    }
+
+    /** 局內牌參照集合。
+     * @property tiles 局內牌參照列表。
+     */
+    data class Tiles(val tiles: List<HistoryTileReference>) : HistoryWinDetailValue
+}
+
+/** 歷史胡牌詳情欄位。
+ * @property id 規則專屬欄位識別碼。
+ * @property value 欄位值。
+ */
+data class HistoryWinDetailField(val id: String, val value: HistoryWinDetailValue)
+
+/** 歷史單一贏家詳情。
+ * @property seatIndex 贏家座位。
+ * @property templateKey 規則專屬詳情模板識別碼。
+ * @property detailFields 規則專屬詳情欄位。
+ */
+data class HistoryWinnerDetails(
+    val seatIndex: Int,
+    val templateKey: String,
+    val detailFields: List<HistoryWinDetailField>,
+)
+
 /** 歷史規則專屬公開資訊。
  * @property typeKey 穩定種類識別碼。
  * @property summary 不含私有命令或原始資料的公開摘要；種類未註冊時為 null，表示資訊不可取得。
@@ -13,6 +62,9 @@ data class HistoryReplayRuleInformation(val typeKey: String, val summary: String
  * @property reasonId 結算原因識別碼。
  * @property beneficiarySeats 保存的受益玩家座位，不假設結果必為和牌。
  * @property scoresBySeat 依座位索引排列的分數。
+ * @property scoreChangesBySeat 該次結算相對於交易前的分數變化；舊紀錄缺少資料時為空。
+ * @property winnerDetails 各贏家保存的規則專屬詳情；舊紀錄缺少資料時為空。
+ * @property hasEarlierWinSettlement 是否已有較早的胡牌結算事實。
  * @property classification 保存的局結算分類；整場完成事實不含此資料。
  * @property responsibleSeats 保存的責任玩家座位；整場完成事實不含此資料。
  * @property transitionDirective 保存的莊家推進決策；整場完成事實不含此資料。
@@ -24,6 +76,9 @@ data class HistoryRoundOutcome(
     val classification: RoundCompletionClassification? = null,
     val responsibleSeats: List<Int> = emptyList(),
     val transitionDirective: RoundTransitionDirective? = null,
+    val scoreChangesBySeat: Map<Int, Int> = emptyMap(),
+    val winnerDetails: List<HistoryWinnerDetails> = emptyList(),
+    val hasEarlierWinSettlement: Boolean = false,
 )
 
 /** 歷史語意事實。 */

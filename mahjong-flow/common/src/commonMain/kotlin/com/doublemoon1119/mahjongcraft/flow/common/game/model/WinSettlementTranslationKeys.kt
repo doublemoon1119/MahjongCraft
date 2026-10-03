@@ -8,6 +8,7 @@ object WinSettlementTranslationKeys {
     private const val PREFIX = MahjongCraftMetadata.PROJECT_ID + ".settlement."
 
     const val DORA = PREFIX + "dora"
+    const val DORA_INDICATOR = PREFIX + "dora_indicator"
     const val HAN = PREFIX + "han"
     const val HAN_FU = PREFIX + "han_fu"
     const val NAGASHI_MANGAN = PREFIX + "nagashi_mangan"
@@ -21,10 +22,12 @@ object WinSettlementTranslationKeys {
     const val TSUMO = PREFIX + "tsumo"
     const val TSUMO_SUMMARY = PREFIX + "tsumo_summary"
     const val URA_DORA = PREFIX + "ura_dora"
+    const val URA_DORA_INDICATOR = PREFIX + "ura_dora_indicator"
 
     /** 平台語系資源必須提供的全部內建胡牌結算 key。 */
     val ALL: Set<String> = setOf(
         DORA,
+        DORA_INDICATOR,
         HAN,
         HAN_FU,
         NAGASHI_MANGAN,
@@ -38,5 +41,6 @@ object WinSettlementTranslationKeys {
         TSUMO,
         TSUMO_SUMMARY,
         URA_DORA,
+        URA_DORA_INDICATOR,
     )
 }

@@ -10,6 +10,10 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundOutc
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateResponseDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinDetailValueDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinnerDetailsDto
+import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
+import com.doublemoon1119.mahjongcraft.platform.fabric.network.HistoryQueryLimits
 import kotlin.uuid.Uuid
 
 /** 單局歷史回覆的可接受結果。 */
@@ -136,7 +140,7 @@ internal object HistoryRoundResponseValidator {
                 return HistoryRoundValidationResult.Invalid(HistoryRoundValidationError.TILE_INDEX_INVALID)
             }
         }
-        if (!validOutcome(state.outcome, seats)) return HistoryRoundValidationResult.Invalid(HistoryRoundValidationError.SEAT_INDEX_INVALID)
+        if (!validOutcome(state.outcome, seats, state.tileCatalog.size)) return HistoryRoundValidationResult.Invalid(HistoryRoundValidationError.SEAT_INDEX_INVALID)
         return HistoryRoundValidationResult.Success(state)
     }
 
@@ -184,7 +188,9 @@ internal object HistoryRoundResponseValidator {
                     is HistoryReplayFactDto.RuleEffect -> fact.outcome
                     else -> null
                 }
-                if (!validOutcome(outcome, seats)) return HistoryRoundValidationResult.Invalid(HistoryRoundValidationError.SEAT_INDEX_INVALID)
+                if (!validOutcome(outcome, seats, events.tileCatalog.size, transaction.declaredTileCountAfter)) {
+                    return HistoryRoundValidationResult.Invalid(HistoryRoundValidationError.CONTENT_MISMATCH)
+                }
             }
         }
         val nextTransactionIndex = events.nextTransactionIndex
@@ -225,14 +231,88 @@ internal object HistoryRoundResponseValidator {
     /** 驗證局結算結果的座位引用。
      * @param outcome 局結算結果。
      * @param seats 有效座位集合。
-     * @return 引用均有效時為 true。
+     * @param tileCatalogSize 回覆牌目錄大小。
+     * @param declaredTileCount 該交易宣告的牌數量；桌況回覆沒有交易限制時為 null。
+     * @return 引用與詳情內容均有效時為 true。
      */
-    private fun validOutcome(outcome: HistoryRoundOutcomeDto?, seats: Set<Int>): Boolean = outcome == null ||
+    private fun validOutcome(
+        outcome: HistoryRoundOutcomeDto?,
+        seats: Set<Int>,
+        tileCatalogSize: Int,
+        declaredTileCount: Int? = null,
+    ): Boolean = outcome == null ||
         (
             outcome.beneficiarySeats.all(seats::contains) &&
                 outcome.responsibleSeats.all(seats::contains) &&
-                outcome.scoresBySeat.keys.all(seats::contains)
+                outcome.scoresBySeat.keys.all(seats::contains) &&
+                outcome.scoreChangesBySeat.keys.all(seats::contains) &&
+                outcome.scoreChangesBySeat.keys.all(outcome.scoresBySeat::containsKey) &&
+                outcome.winnerDetails.map { it.seatIndex }.let { winnerSeats ->
+                    winnerSeats.distinct().size == winnerSeats.size &&
+                        winnerSeats.all(seats::contains) &&
+                        winnerSeats.all(outcome.beneficiarySeats::contains)
+                } &&
+                outcome.winnerDetails.all { winner -> validWinnerDetails(winner, tileCatalogSize, declaredTileCount) }
             )
+
+    /** 驗證贏家詳情的識別碼、翻譯資料與牌參照均可安全呈現。
+     * @param winner 贏家詳情。
+     * @param tileCatalogSize 回覆牌目錄大小。
+     * @param declaredTileCount 該交易宣告的牌數量；桌況回覆沒有交易限制時為 null。
+     * @return 詳情格式與參照均有效時為 true。
+     */
+    private fun validWinnerDetails(
+        winner: HistoryWinnerDetailsDto,
+        tileCatalogSize: Int,
+        declaredTileCount: Int?,
+    ): Boolean {
+        if (!namespaced(winner.templateKey) || winner.detailFields.map { it.id }.distinct().size != winner.detailFields.size) return false
+        var textBytes = winner.templateKey.toByteArray(Charsets.UTF_8).size.toLong()
+        for (field in winner.detailFields) {
+            if (!namespaced(field.id)) return false
+            textBytes += field.id.toByteArray(Charsets.UTF_8).size
+            when (val value = field.value) {
+                is HistoryWinDetailValueDto.Text -> {
+                    textBytes += value.translationKey.toByteArray(Charsets.UTF_8).size
+                    textBytes += value.arguments.sumOf { it.toByteArray(Charsets.UTF_8).size.toLong() }
+                    if (value.translationKey.isBlank()) return false
+                }
+                is HistoryWinDetailValueDto.Entries -> {
+                    for (entry in value.entries) {
+                        if (entry.translationKey.isBlank() ||
+                            entry.trailingText.isNotEmpty() &&
+                            entry.trailingTranslationKey != null ||
+                            entry.trailingTranslationArgument != null &&
+                            entry.trailingTranslationKey == null ||
+                            entry.trailingTranslationKey?.isBlank() == true
+                        ) {
+                            return false
+                        }
+                        textBytes += entry.translationKey.toByteArray(Charsets.UTF_8).size
+                        textBytes += entry.trailingText.toByteArray(Charsets.UTF_8).size
+                        textBytes += entry.trailingTranslationKey?.toByteArray(Charsets.UTF_8)?.size ?: 0
+                        textBytes += entry.trailingTranslationArgument?.toByteArray(Charsets.UTF_8)?.size ?: 0
+                    }
+                }
+                is HistoryWinDetailValueDto.Tiles -> {
+                    if (!validTileIndexes(tileCatalogSize, value.tiles) ||
+                        declaredTileCount != null &&
+                        value.tiles.any { it >= declaredTileCount }
+                    ) {
+                        return false
+                    }
+                    textBytes += value.tiles.size.toLong() * Int.SIZE_BYTES
+                }
+            }
+        }
+        return textBytes <= HistoryQueryLimits.RESPONSE_BYTES
+    }
+
+    /** 驗證規則識別碼具有 namespace 與 path 部分。
+     * @param value 待驗證識別碼。
+     * @return 識別碼格式有效時為 true。
+     */
+    private fun namespaced(value: String): Boolean = NamespacedId.isValid(value)
 
     /** 驗證字串是否為標準 UUID 表示。
      * @param value 待驗證字串。

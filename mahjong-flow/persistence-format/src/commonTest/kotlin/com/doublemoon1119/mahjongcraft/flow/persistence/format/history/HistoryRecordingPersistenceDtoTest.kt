@@ -8,6 +8,9 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecording
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingTerminal
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableChange
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableResult
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinDetails
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailField
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailValue
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.buildBuiltInPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardPile
@@ -164,5 +167,40 @@ class HistoryRecordingPersistenceDtoTest {
 
         assertEquals(listOf(2L), decoded.pendingEvents.map { it.sequence })
         assertEquals(1L, decoded.firstMissingSequenceByMatchId.getValue(matchId))
+    }
+
+    /** 胡牌詳情的文字、條目與牌參照均可完整往返。 */
+    @Test
+    fun `win settled details round trip`() {
+        val matchId = Uuid.random()
+        val winner = Uuid.random()
+        val tile = Uuid.random()
+        val details = HistoryWinDetails(
+            winner,
+            "mahjongcraft:riichi",
+            listOf(
+                WinSettlementDetailField("mahjongcraft:text", WinSettlementDetailValue.Text("mahjongcraft.han", listOf("3"))),
+                WinSettlementDetailField(
+                    "mahjongcraft:entries",
+                    WinSettlementDetailValue.Entries(listOf(WinSettlementDetailValue.Entries.Entry("mahjongcraft.yaku", trailingText = "1"))),
+                ),
+                WinSettlementDetailField("mahjongcraft:tiles", WinSettlementDetailValue.Tiles(listOf(tile))),
+            ),
+        )
+        val state = HistoryRecordingState(
+            pendingEvents = listOf(
+                HistoryOutboxEvent(
+                    matchId,
+                    Uuid.random(),
+                    1,
+                    1L,
+                    occurredAtEpochMillis = 1L,
+                    actorPlayerId = winner,
+                    fact = HistoryFact.WinSettled("mahjongcraft:ron", listOf(details), listOf(Uuid.random())),
+                ),
+            ),
+        )
+        val mapper = HistoryRecordingPersistenceMapper(buildBuiltInPersistenceRegistries())
+        assertEquals(state, mapper.decode(mapper.encode(state)))
     }
 }

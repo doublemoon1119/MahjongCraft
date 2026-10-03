@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.common.game.history
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSubmission
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailField
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
@@ -85,7 +86,22 @@ sealed interface HistoryFact {
      *
      * @property summary 結算原因、受益者及已結算分數的權威摘要。
      */
-    data class RoundCompleted(val summary: RoundCompletionSummary) : HistoryFact
+    data class RoundCompleted(
+        val summary: RoundCompletionSummary,
+    ) : HistoryFact
+
+    /**
+     * 胡牌結算交易內保存的規則詳情；本局稍後是否繼續不影響此事實。
+     *
+     * @property outcomeId 胡牌結算原因識別碼。
+     * @property winDetails 各贏家的已解析公開詳情。
+     * @property responsiblePlayerIds 放銃或其他責任玩家 UUID；自摸時為空清單。
+     */
+    data class WinSettled(
+        val outcomeId: String,
+        val winDetails: List<HistoryWinDetails>,
+        val responsiblePlayerIds: List<Uuid> = emptyList(),
+    ) : HistoryFact
 
     /**
      * 整場結束時的原因與最終分數；排名仍由該規則決定。
@@ -109,10 +125,12 @@ sealed interface HistoryFact {
      *
      * @property reasonId 識別這次規則效果的穩定 ID。
      * @property roundCompletion 效果直接完成本局時的結算摘要；否則為 null。
+     * @property winDetails 效果產生的胡牌公開詳情；沒有可保存詳情時為空清單。
      */
     data class RuleEffectResolved(
         val reasonId: String,
         val roundCompletion: RoundCompletionSummary?,
+        val winDetails: List<HistoryWinDetails> = emptyList(),
     ) : HistoryFact
 
     /**
@@ -126,6 +144,23 @@ sealed interface HistoryFact {
 
     /** 已結束的 Game 被移出權威狀態並返回 Room。 */
     data object ReturnedToRoom : HistoryFact
+}
+
+/**
+ * 已解析的胡牌公開詳情快照；只保存呈現所需的規則中立欄位，不保存規則領域物件。
+ *
+ * @property playerId 胡牌玩家 UUID。
+ * @property templateKey 對應規則呈現模板的穩定識別碼。
+ * @property detailFields 已解析的翻符、役種或其他規則擴充欄位。
+ */
+data class HistoryWinDetails(
+    val playerId: Uuid,
+    val templateKey: String,
+    val detailFields: List<WinSettlementDetailField>,
+) {
+    init {
+        require(detailFields.map(WinSettlementDetailField::id).distinct().size == detailFields.size)
+    }
 }
 
 /**

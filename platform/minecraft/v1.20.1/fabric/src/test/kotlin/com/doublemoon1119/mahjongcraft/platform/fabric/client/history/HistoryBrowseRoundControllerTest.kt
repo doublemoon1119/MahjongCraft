@@ -45,6 +45,54 @@ import kotlin.time.Duration.Companion.milliseconds
 /** 驗證單局歷史瀏覽的局選擇、事件分頁、牌面導航、快取與過期回應隔離。 */
 @OptIn(ExperimentalCoroutinesApi::class)
 class HistoryBrowseRoundControllerTest {
+    /** 單局查詢控制項在在途或冷卻期間停用，返回摘要不受限制。 */
+    @Test
+    fun `test round query controls reflect in flight and cooldown without blocking back`() = runTest {
+        val transport = FakeRoundHistoryTransport()
+        val controller = openRound(transport)
+        assertFalse(controller.canQueryRound())
+        transport.respondEvents(roundNumber = 1, start = 0, next = null)
+        runCurrent()
+        assertFalse(controller.canQueryRound())
+        advanceTimeBy(250)
+        runCurrent()
+        assertTrue(controller.canQueryRound())
+        assertTrue(controller.refreshRound())
+        runCurrent()
+        assertFalse(controller.canQueryRound())
+        assertTrue(controller.backToSummary())
+        assertEquals(HistoryBrowsePage.SUMMARY, controller.state.value.page)
+        assertFalse(controller.canQueryRound())
+    }
+
+    /** 摘要與單局分頁各自保留捲動位置，不會因子頁導航重置。 */
+    @Test
+    fun `test round reopening preserves summary scroll event cursor and event scroll`() = runTest {
+        val transport = FakeRoundHistoryTransport()
+        val controller = openRound(transport)
+        transport.respondEvents(roundNumber = 1, start = 0, next = 2)
+        runCurrent()
+        assertTrue(controller.nextRoundPage())
+        advanceTimeBy(250)
+        runCurrent()
+        transport.respondEvents(roundNumber = 1, start = 2, next = null)
+        runCurrent()
+        assertTrue(controller.rememberRoundPosition(73.0))
+        assertTrue(controller.backToSummary())
+        assertTrue(controller.rememberSummaryPosition(91.0))
+        assertFalse(controller.showRound(999))
+        assertEquals(HistoryBrowsePage.SUMMARY, controller.state.value.page)
+        val sent = transport.roundEventsRequests.size
+        assertTrue(controller.showRound(1))
+        runCurrent()
+        val round = controller.state.value.rounds.getValue(1)
+        assertEquals(2, round.eventPageNumber)
+        assertEquals(listOf(0, 2), round.eventStartIndices)
+        assertEquals(73.0, round.eventScrollOffset)
+        assertEquals(91.0, controller.state.value.summary?.scrollOffset)
+        assertEquals(sent, transport.roundEventsRequests.size)
+    }
+
     /** 建立列表、摘要與單局頁面的共同前置狀態。
      * @param transport 可手動回覆的模擬傳輸。
      * @param roundNumber 本次選取的局序號。

@@ -68,6 +68,23 @@ class WinSettlementPresentationTemplateRegistryTest {
         assertEquals(listOf("man_1", "man_2", "back", "back", "back"), value.assetKeys)
     }
 
+    /** 內建日麻模板明確提供兩種指示牌的本地化欄位標題。 */
+    @Test
+    fun `built in riichi template exposes localized indicator labels`() {
+        val registry = WinSettlementPresentationTemplateRegistryImpl()
+        registry.registerBuiltInWinSettlementTemplates()
+        val template = registry.findTemplate("mahjongcraft:riichi") ?: error("Missing built-in riichi template")
+
+        assertEquals(
+            "mahjongcraft.settlement.dora_indicator",
+            template.detailFieldLabelKeys[PresentationFieldId("mahjongcraft:riichi_dora")],
+        )
+        assertEquals(
+            "mahjongcraft.settlement.ura_dora_indicator",
+            template.detailFieldLabelKeys[PresentationFieldId("mahjongcraft:riichi_ura_dora")],
+        )
+    }
+
     @Test
     fun `layout exposes compose style arrangements and weighted children`() {
         assertEquals(
@@ -107,9 +124,17 @@ class WinSettlementPresentationTemplateRegistryTest {
         registry.registerFieldProvider(identity) {
             PresentationValue.PlayerIdentityValue("player", "Player", isAi = false)
         }
-        registry.registerTemplate(WinSettlementPresentationTemplate("example:animated", animated))
+        val labelField = PresentationFieldId("example:detail")
+        registry.registerTemplate(
+            WinSettlementPresentationTemplate(
+                "example:animated",
+                animated,
+                detailFieldLabelKeys = mapOf(labelField to "example.detail.label"),
+            ),
+        )
 
         assertIs<PresentationLayout.Animated>(registry.findTemplate("example:animated")?.root)
+        assertEquals("example.detail.label", registry.findTemplate("example:animated")?.detailFieldLabelKeys?.get(labelField))
     }
 
     @Test

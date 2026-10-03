@@ -2,8 +2,13 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.concurrency.ClientThreadCoroutineDispatcher
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileFaceRenderer
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.screen.Screen
@@ -19,6 +24,11 @@ import kotlin.uuid.Uuid
  * @property ruleNames 規則名稱 registry。
  * @property configResolver 將歷史開局設定轉為唯讀欄位的呈現解析器。
  * @property networkRegistries 解碼歷史規則設定的正式網路註冊表。
+ * @property actionVocabulary 歷史動作的規則專屬名稱來源。
+ * @property exhaustiveDrawReasons 流局原因名稱來源。
+ * @property settlementTemplates 結算明細欄位的規則專屬標題來源。
+ * @property tileFaces 共用 GUI 牌面 renderer。
+ * @property tileAssets 牌種與 Minecraft 素材的映射來源。
  * @property archiveStatus 保存狀態查詢。
  * @property dispatcher 客戶端主執行緒排程。
  */
@@ -29,6 +39,11 @@ class HistoryScreenController internal constructor(
     @Provided private val ruleNames: RuleModuleDisplayNameRegistry,
     @Provided private val configResolver: GameConfigPresentationResolver,
     @Provided private val networkRegistries: NetworkDtoRegistries,
+    @Provided private val actionVocabulary: GameActionVocabularyRegistry,
+    @Provided private val exhaustiveDrawReasons: ExhaustiveDrawReasonDisplayNameRegistry,
+    @Provided private val settlementTemplates: WinSettlementPresentationTemplateRegistry,
+    private val tileFaces: MahjongTileFaceRenderer,
+    @Provided private val tileAssets: MinecraftTileAssetRegistry,
     private val archiveStatus: HistoryArchiveStatusTransport,
     private val dispatcher: ClientThreadCoroutineDispatcher,
 ) {
@@ -97,6 +112,11 @@ class HistoryScreenController internal constructor(
             ruleNames,
             configResolver,
             networkRegistries,
+            actionVocabulary,
+            exhaustiveDrawReasons,
+            settlementTemplates,
+            tileFaces,
+            tileAssets,
             dispatcher,
             request.parent,
             request.matchId,

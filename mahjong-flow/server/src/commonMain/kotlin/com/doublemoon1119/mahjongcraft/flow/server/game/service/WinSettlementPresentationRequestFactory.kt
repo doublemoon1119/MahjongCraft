@@ -112,7 +112,13 @@ object WinSettlementPresentationRequestFactory {
         )
     }
 
-    /** 依規則牌序排好的立牌 ID；不論玩家是否開啟自動整理手牌，面板都顯示排好的手牌。 */
+    /**
+     * 依規則牌序建立立牌 ID 快照，不改動權威手牌順序或摸牌張。
+     *
+     * @param hand 含立牌及獨立摸牌張的權威手牌。
+     * @param module 提供牌序的規則模組。
+     * @return 依規則牌序排列的立牌 ID；不包含副露牌。
+     */
     private fun sortedStandingTileIds(hand: Hand, module: MahjongRuleModule<*>): List<Uuid> = hand.standingTiles
         .sortedWith(compareBy(module.tileOrder) { it.tile })
         .map { it.id }
