@@ -46,7 +46,7 @@ internal class HistoryBrowseSession(
     val archiveStatusController = HistoryArchiveStatusController(archiveStatus, scope)
 
     /** 列表、篩選、摘要與規則設定共用的權威查詢結果。 */
-    val controller = HistoryBrowseController(transport, scope, beforeSummaryQuery = {
+    val controller = HistoryBrowseController(transport, scope, beforeDetailQuery = {
         archiveMonitoringPaused = true
         archiveStatusController.pause()
     })

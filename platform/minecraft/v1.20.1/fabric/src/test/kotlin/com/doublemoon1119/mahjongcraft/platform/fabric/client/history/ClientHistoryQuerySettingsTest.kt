@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListRequestDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsRequestDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSettingsRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryRequestDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftHistoryConfig
@@ -48,6 +50,16 @@ class ClientHistoryQuerySettingsTest {
                 override fun sendList(request: HistoryListRequestDto) = Unit
                 override fun sendSummary(request: HistorySummaryRequestDto) = Unit
                 override fun sendRuleSettings(request: HistoryRuleSettingsRequestDto) = Unit
+
+                /** 設定測試不執行實際事件查詢。
+                 * @param request 單局事件要求。
+                 */
+                override fun sendRoundEvents(request: HistoryRoundEventsRequestDto) = Unit
+
+                /** 設定測試不執行實際牌面查詢。
+                 * @param request 單局牌面要求。
+                 */
+                override fun sendRoundState(request: HistoryRoundStateRequestDto) = Unit
             },
             settings = settings,
         )

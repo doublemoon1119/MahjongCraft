@@ -18,6 +18,12 @@ internal enum class HistoryBrowsePage {
 
     /** 已選對局的規則設定。 */
     RULE_SETTINGS,
+
+    /** 已選局的事件頁。 */
+    ROUND_EVENTS,
+
+    /** 已選局的桌況頁。 */
+    ROUND_STATE,
 }
 
 /** 歷史瀏覽資料的載入結果，不將失敗當成空資料。 */
@@ -150,6 +156,8 @@ internal data class HistoryBrowseRuleSettingsState(
  * @property ruleSettings 最近選取對局的開局規則設定。
  * @property closed 最外層瀏覽已關閉或原 session 已失效，不再接受操作。
  * @property allowAll 最近一次已配對伺服器回應是否允許查閱全部對局。
+ * @property rounds 各局獨立保存的導航位置；僅選取局保留呈現資料，其他局保留游標與捲動位置。
+ * @property selectedRoundNumber 目前選取的局序號。
  */
 internal data class HistoryBrowseState(
     val query: HistoryBrowseQuery = HistoryBrowseQuery(),
@@ -159,4 +167,6 @@ internal data class HistoryBrowseState(
     val ruleSettings: HistoryBrowseRuleSettingsState? = null,
     val closed: Boolean = false,
     val allowAll: Boolean = false,
+    val rounds: Map<Int, HistoryBrowseRoundState> = emptyMap(),
+    val selectedRoundNumber: Int? = null,
 )

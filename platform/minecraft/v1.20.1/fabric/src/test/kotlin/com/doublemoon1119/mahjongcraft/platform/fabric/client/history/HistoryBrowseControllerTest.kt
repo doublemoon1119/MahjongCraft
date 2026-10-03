@@ -12,6 +12,8 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryOutcomeFi
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryParticipantSummaryDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryErrorCodeDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryScopeDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsRequestDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSettingsRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSettingsResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySortDirectionDto
@@ -343,7 +345,7 @@ class HistoryBrowseControllerTest {
     @Test
     fun `summary waits for query coordination before sending`() = runTest {
         val transport = FakeHistoryQueryTransport()
-        val controller = HistoryBrowseController(transport, backgroundScope, now = { testScheduler.currentTime.milliseconds }, beforeSummaryQuery = { delay(500.milliseconds) })
+        val controller = HistoryBrowseController(transport, backgroundScope, now = { testScheduler.currentTime.milliseconds }, beforeDetailQuery = { delay(500.milliseconds) })
         controller.open()
         runCurrent()
         transport.respondList(entries = listOf(summary("match")))
@@ -361,7 +363,7 @@ class HistoryBrowseControllerTest {
     @Test
     fun `return during summary coordination cancels queued query`() = runTest {
         val transport = FakeHistoryQueryTransport()
-        val controller = HistoryBrowseController(transport, backgroundScope, now = { testScheduler.currentTime.milliseconds }, beforeSummaryQuery = { delay(500.milliseconds) })
+        val controller = HistoryBrowseController(transport, backgroundScope, now = { testScheduler.currentTime.milliseconds }, beforeDetailQuery = { delay(500.milliseconds) })
         controller.open()
         runCurrent()
         transport.respondList(entries = listOf(summary("match")))
@@ -775,6 +777,18 @@ class HistoryBrowseControllerTest {
             mutableState.value = ClientHistoryQueryState.Loading(actual.requestId)
             return actual.requestId
         }
+
+        /** 未在既有列表回歸測試中使用的事件頁查詢。
+         * @param request 單局事件要求。
+         * @return 配對識別碼。
+         */
+        override fun queryRoundEvents(request: HistoryRoundEventsRequestDto): String = error("Round events are not used by this fixture")
+
+        /** 未在既有列表回歸測試中使用的牌面查詢。
+         * @param request 單局牌面要求。
+         * @return 配對識別碼。
+         */
+        override fun queryRoundState(request: HistoryRoundStateRequestDto): String = error("Round states are not used by this fixture")
 
         /** 記錄控制器取消的要求。 */
         override fun cancel(requestId: String): Boolean {

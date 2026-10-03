@@ -2,6 +2,11 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListResponseDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsRequestDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsResponseDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundPositionDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateRequestDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSettingsRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSettingsResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryRequestDto
@@ -83,6 +88,26 @@ class ClientHistoryQueryCoordinatorTest {
         assertIs<ClientHistoryQueryState.RuleSettingsResult>(coordinator.state.value)
     }
 
+    /** 單局事件與桌況要求均使用獨立種類並接受對應回覆。 */
+    @Test
+    fun `test round query kinds correlate responses`() {
+        val sender = FakeHistoryQuerySender()
+        val coordinator = ClientHistoryQueryCoordinator(sender, ClientHistoryQuerySettings())
+        val eventsId = coordinator.queryRoundEvents(HistoryRoundEventsRequestDto("caller", "match", roundNumber = 1))
+        assertEquals(eventsId, sender.roundEventsRequest?.requestId)
+        coordinator.applyRoundState(HistoryRoundStateResponseDto("wrong", "match", 1, HistoryRoundPositionDto.Initial))
+        assertIs<ClientHistoryQueryState.Loading>(coordinator.state.value)
+        coordinator.applyRoundEvents(HistoryRoundEventsResponseDto(eventsId, "other-match", 1, 0))
+        assertIs<ClientHistoryQueryState.Loading>(coordinator.state.value)
+        coordinator.applyRoundEvents(HistoryRoundEventsResponseDto(eventsId, "match", 1, 0))
+        assertIs<ClientHistoryQueryState.RoundEventsResult>(coordinator.state.value)
+
+        val stateId = coordinator.queryRoundState(HistoryRoundStateRequestDto("caller", "match", roundNumber = 1))
+        assertEquals(stateId, sender.roundStateRequest?.requestId)
+        coordinator.applyRoundState(HistoryRoundStateResponseDto(stateId, "match", 1, HistoryRoundPositionDto.Initial))
+        assertIs<ClientHistoryQueryState.RoundStateResult>(coordinator.state.value)
+    }
+
     /** 斷線清理後不接受原連線的規則設定回覆。 */
     @Test
     fun `test rule settings response is discarded after session clear`() {
@@ -126,6 +151,12 @@ class ClientHistoryQueryCoordinatorTest {
         /** 最近一次送出的規則設定要求。 */
         var ruleSettingsRequest: HistoryRuleSettingsRequestDto? = null
 
+        /** 最近一次送出的單局事件要求。 */
+        var roundEventsRequest: HistoryRoundEventsRequestDto? = null
+
+        /** 最近一次送出的單局牌面要求。 */
+        var roundStateRequest: HistoryRoundStateRequestDto? = null
+
         /** 保存清單要求或模擬傳送失敗。 */
         override fun sendList(request: HistoryListRequestDto) {
             if (shouldFail) throw IllegalStateException("simulated send failure")
@@ -142,6 +173,22 @@ class ClientHistoryQueryCoordinatorTest {
         override fun sendRuleSettings(request: HistoryRuleSettingsRequestDto) {
             if (shouldFail) throw IllegalStateException("simulated send failure")
             ruleSettingsRequest = request
+        }
+
+        /** 保存事件要求或模擬傳送失敗。
+         * @param request 單局事件查詢封套。
+         */
+        override fun sendRoundEvents(request: HistoryRoundEventsRequestDto) {
+            if (shouldFail) throw IllegalStateException("simulated send failure")
+            roundEventsRequest = request
+        }
+
+        /** 保存牌面要求或模擬傳送失敗。
+         * @param request 單局牌面查詢封套。
+         */
+        override fun sendRoundState(request: HistoryRoundStateRequestDto) {
+            if (shouldFail) throw IllegalStateException("simulated send failure")
+            roundStateRequest = request
         }
     }
 }

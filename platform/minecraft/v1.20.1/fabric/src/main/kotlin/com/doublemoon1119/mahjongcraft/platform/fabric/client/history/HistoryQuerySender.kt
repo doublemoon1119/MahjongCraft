@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListRequestDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsRequestDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSettingsRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryRequestDto
 
@@ -24,4 +26,14 @@ interface HistoryQuerySender {
      * @param request 要傳送的規則設定要求。
      */
     fun sendRuleSettings(request: HistoryRuleSettingsRequestDto)
+
+    /** 傳送單局事件頁要求。
+     * @param request 已具備配對識別碼的事件頁要求。
+     */
+    fun sendRoundEvents(request: HistoryRoundEventsRequestDto)
+
+    /** 傳送單局桌況要求。
+     * @param request 已具備配對識別碼的桌況要求。
+     */
+    fun sendRoundState(request: HistoryRoundStateRequestDto)
 }

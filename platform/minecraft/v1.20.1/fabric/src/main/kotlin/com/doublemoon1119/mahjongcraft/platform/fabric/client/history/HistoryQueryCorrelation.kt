@@ -10,6 +10,12 @@ internal enum class HistoryQueryKind {
 
     /** 單場規則設定要求。 */
     RULE_SETTINGS,
+
+    /** 單局事件頁要求。 */
+    ROUND_EVENTS,
+
+    /** 單局桌況要求。 */
+    ROUND_STATE,
 }
 
 /** 保存最新查詢的配對識別碼與種類；世界切換或新條件使舊回應失效。 */

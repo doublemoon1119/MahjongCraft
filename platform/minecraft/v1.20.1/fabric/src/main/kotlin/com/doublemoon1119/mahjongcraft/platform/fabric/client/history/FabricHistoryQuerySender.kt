@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListRequestDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsRequestDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSettingsRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryRequestDto
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
@@ -39,5 +41,19 @@ class FabricHistoryQuerySender(
      */
     override fun sendRuleSettings(request: HistoryRuleSettingsRequestDto) {
         MahjongChannels.historyRuleSettingsRequest.sendToServer(json, request)
+    }
+
+    /** 將單局事件頁要求交給 Fabric 客戶端頻道。
+     * @param request 已具備配對識別碼的事件頁要求。
+     */
+    override fun sendRoundEvents(request: HistoryRoundEventsRequestDto) {
+        MahjongChannels.historyRoundEventsRequest.sendToServer(json, request)
+    }
+
+    /** 將單局桌況要求交給 Fabric 客戶端頻道。
+     * @param request 已具備配對識別碼的桌況要求。
+     */
+    override fun sendRoundState(request: HistoryRoundStateRequestDto) {
+        MahjongChannels.historyRoundStateRequest.sendToServer(json, request)
     }
 }

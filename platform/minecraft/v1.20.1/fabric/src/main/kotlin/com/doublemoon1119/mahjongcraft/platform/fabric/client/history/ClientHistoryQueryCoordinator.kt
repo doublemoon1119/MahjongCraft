@@ -2,6 +2,10 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListResponseDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsRequestDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsResponseDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateRequestDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSettingsRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSettingsResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryRequestDto
@@ -44,6 +48,16 @@ sealed interface ClientHistoryQueryState {
      */
     data class RuleSettingsResult(val response: HistoryRuleSettingsResponseDto) : ClientHistoryQueryState
 
+    /** 最新單局事件頁的成功或穩定失敗回應。
+     * @property response 已通過 request context 配對的事件頁結果。
+     */
+    data class RoundEventsResult(val response: HistoryRoundEventsResponseDto) : ClientHistoryQueryState
+
+    /** 最新單局桌況的成功或穩定失敗回應。
+     * @property response 已通過 request context 配對的桌況結果。
+     */
+    data class RoundStateResult(val response: HistoryRoundStateResponseDto) : ClientHistoryQueryState
+
     /**
      * 封包未送出，不將失敗誤認為空清單。
      *
@@ -65,6 +79,12 @@ class ClientHistoryQueryCoordinator(
 ) : HistoryQueryTransport {
     /** 只接受目前連線最新要求的回應。 */
     private val correlation = HistoryQueryCorrelation()
+
+    /** 目前單局事件要求的內容選擇器，用於拒絕同 request ID 的錯誤回覆。 */
+    private var pendingRoundEvents: HistoryRoundEventsRequestDto? = null
+
+    /** 目前單局桌況要求的內容選擇器，用於拒絕同 request ID 的錯誤回覆。 */
+    private var pendingRoundState: HistoryRoundStateRequestDto? = null
 
     /** 主執行緒更新的最新結果。 */
     private val mutableState = MutableStateFlow<ClientHistoryQueryState>(ClientHistoryQueryState.Idle)
@@ -110,6 +130,28 @@ class ClientHistoryQueryCoordinator(
         return begin(pending.requestId, HistoryQueryKind.RULE_SETTINGS) { sender.sendRuleSettings(pending) }
     }
 
+    /** 傳送單局事件頁要求。
+     * @param request 目標對局、局序號及事件頁選擇器。
+     * @return 此次要求的配對識別碼。
+     */
+    override fun queryRoundEvents(request: HistoryRoundEventsRequestDto): String {
+        val pending = request.copy(requestId = Uuid.random().toString())
+        pendingRoundEvents = pending
+        pendingRoundState = null
+        return begin(pending.requestId, HistoryQueryKind.ROUND_EVENTS) { sender.sendRoundEvents(pending) }
+    }
+
+    /** 傳送單局桌況要求。
+     * @param request 目標對局、局序號及局內位置。
+     * @return 此次要求的配對識別碼。
+     */
+    override fun queryRoundState(request: HistoryRoundStateRequestDto): String {
+        val pending = request.copy(requestId = Uuid.random().toString())
+        pendingRoundState = pending
+        pendingRoundEvents = null
+        return begin(pending.requestId, HistoryQueryKind.ROUND_STATE) { sender.sendRoundState(pending) }
+    }
+
     /**
      * 套用最新清單回應；過期或重複回應不更新狀態。
      *
@@ -141,6 +183,40 @@ class ClientHistoryQueryCoordinator(
         }
     }
 
+    /** 套用目前單局事件回覆；request ID 與查詢種類不符時忽略。
+     * @param response 伺服器線路回應。
+     */
+    fun applyRoundEvents(response: HistoryRoundEventsResponseDto) {
+        val expected = pendingRoundEvents
+        if (expected != null &&
+            response.requestId == expected.requestId &&
+            response.matchId == expected.matchId &&
+            response.roundNumber == expected.roundNumber &&
+            response.startTransactionIndex == expected.startTransactionIndex &&
+            correlation.complete(response.requestId, HistoryQueryKind.ROUND_EVENTS)
+        ) {
+            pendingRoundEvents = null
+            mutableState.value = ClientHistoryQueryState.RoundEventsResult(response)
+        }
+    }
+
+    /** 套用目前單局桌況回覆；request ID 與查詢種類不符時忽略。
+     * @param response 伺服器線路回應。
+     */
+    fun applyRoundState(response: HistoryRoundStateResponseDto) {
+        val expected = pendingRoundState
+        if (expected != null &&
+            response.requestId == expected.requestId &&
+            response.matchId == expected.matchId &&
+            response.roundNumber == expected.roundNumber &&
+            response.position == expected.position &&
+            correlation.complete(response.requestId, HistoryQueryKind.ROUND_STATE)
+        ) {
+            pendingRoundState = null
+            mutableState.value = ClientHistoryQueryState.RoundStateResult(response)
+        }
+    }
+
     /**
      * 只取消識別碼相符的待回應要求，不推進工作階段版本。
      *
@@ -149,6 +225,8 @@ class ClientHistoryQueryCoordinator(
      */
     override fun cancel(requestId: String): Boolean {
         if (!correlation.cancel(requestId)) return false
+        pendingRoundEvents = null
+        pendingRoundState = null
         mutableState.value = ClientHistoryQueryState.Idle
         return true
     }
@@ -157,6 +235,8 @@ class ClientHistoryQueryCoordinator(
     fun clear() {
         settings.reset()
         correlation.clear()
+        pendingRoundEvents = null
+        pendingRoundState = null
         mutableSessionRevision.value += 1L
         mutableState.value = ClientHistoryQueryState.Idle
     }
@@ -170,12 +250,16 @@ class ClientHistoryQueryCoordinator(
      * @return 此次要求的配對識別碼。
      */
     private fun begin(requestId: String, kind: HistoryQueryKind, send: () -> Unit): String {
+        if (kind != HistoryQueryKind.ROUND_EVENTS) pendingRoundEvents = null
+        if (kind != HistoryQueryKind.ROUND_STATE) pendingRoundState = null
         correlation.begin(requestId, kind)
         mutableState.value = ClientHistoryQueryState.Loading(requestId)
         try {
             send()
         } catch (_: RuntimeException) {
             correlation.cancel(requestId)
+            pendingRoundEvents = null
+            pendingRoundState = null
             mutableState.value = ClientHistoryQueryState.SendFailed(requestId)
         }
         return requestId

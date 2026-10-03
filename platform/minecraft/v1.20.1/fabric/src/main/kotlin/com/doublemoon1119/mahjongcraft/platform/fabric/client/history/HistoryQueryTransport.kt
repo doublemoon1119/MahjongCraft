@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListRequestDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsRequestDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSettingsRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryRequestDto
 import kotlinx.coroutines.flow.StateFlow
@@ -38,6 +40,18 @@ interface HistoryQueryTransport {
      * @return 此次要求的配對識別碼。
      */
     fun queryRuleSettings(request: HistoryRuleSettingsRequestDto): String
+
+    /** 傳送單局事件頁要求。
+     * @param request 目標對局、局序號及事件頁選擇器。
+     * @return 此次要求的配對識別碼。
+     */
+    fun queryRoundEvents(request: HistoryRoundEventsRequestDto): String
+
+    /** 傳送單局桌況要求。
+     * @param request 目標對局、局序號及局內位置。
+     * @return 此次要求的配對識別碼。
+     */
+    fun queryRoundState(request: HistoryRoundStateRequestDto): String
 
     /**
      * 取消指定的待回應要求。

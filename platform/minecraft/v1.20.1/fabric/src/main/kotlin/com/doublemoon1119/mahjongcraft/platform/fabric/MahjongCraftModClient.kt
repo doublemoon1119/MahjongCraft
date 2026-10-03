@@ -124,6 +124,8 @@ class MahjongCraftModClient : ClientModInitializer {
         MahjongChannels.historyListResponse.registerClientReceiver(json, historyQueries::applyList)
         MahjongChannels.historySummaryResponse.registerClientReceiver(json, historyQueries::applySummary)
         MahjongChannels.historyRuleSettingsResponse.registerClientReceiver(json, historyQueries::applyRuleSettings)
+        MahjongChannels.historyRoundEventsResponse.registerClientReceiver(json, historyQueries::applyRoundEvents)
+        MahjongChannels.historyRoundStateResponse.registerClientReceiver(json, historyQueries::applyRoundState)
         MahjongChannels.historyArchiveStatusResponse.registerClientReceiver(json, historyArchiveStatus::apply)
         val networkRegistries = koin.get<NetworkDtoRegistries>()
         val stateStore = koin.get<ClientMahjongStateStore>()
