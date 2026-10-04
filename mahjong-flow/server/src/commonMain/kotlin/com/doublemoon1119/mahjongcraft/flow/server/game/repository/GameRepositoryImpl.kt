@@ -10,7 +10,7 @@ import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
- * 透過權威交易讀寫對局，並依同一份場次資格建立歷史草稿。
+ * 透過權威交易讀寫對局，並在對局實際改變時建立本次交易的事實；是否寫入歷史由 [store] 依記錄政策決定。
  *
  * @property store 共用狀態、記錄資格與歷史提交的交易邊界。
  */
@@ -48,8 +48,7 @@ class GameRepositoryImpl(
             next == null -> state.games - gameId
             else -> state.games + (gameId to next)
         }
-        val recordingGame = next ?: previous
-        val recording = if (recordingGame != null && store.shouldRecordHistory(state, recordingGame) && next != previous) {
+        val recording = if ((next ?: previous) != null && next != previous) {
             runCatching { history(previous, next, result) }
         } else {
             Result.success(emptyList())

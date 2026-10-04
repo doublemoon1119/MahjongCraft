@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.state
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.CommittedGameFacts
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
@@ -14,8 +15,11 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableResu
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTransferResult
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -49,7 +53,8 @@ data class AuthoritativeStateSnapshot(
  *
  * @property state 交易完成後的完整狀態。
  * @property result 回傳給呼叫端的結果。
- * @property historyDraftsByTableId 與本次狀態變更一起提交的權威歷史事實。
+ * @property historyDraftsByTableId 與本次狀態變更一起提交的權威事實；提交後一律經 [AuthoritativeStateStore.committedFacts]
+ *   送出，是否寫入歷史由記錄政策決定。
  * @property historyRecordingFailures 歷史事件記錄失敗的桌子 ID；提交狀態時為對應場次記錄序號缺口。
  */
 data class AuthoritativeStateUpdate<T>(
@@ -101,6 +106,16 @@ class AuthoritativeStateStore(
      * 訂閱者取得的是已提交的狀態；發出時機在 [update] 的交易內，因此不會觀察到中間狀態。
      */
     val state: StateFlow<AuthoritativeStateSnapshot> = mutableState.asStateFlow()
+
+    /** 已提交事實的送出管道；緩衝不設上限，訂閱者處理較慢時不會遺失事實，也不會阻塞交易。 */
+    private val mutableCommittedFacts = MutableSharedFlow<CommittedGameFacts>(extraBufferCapacity = Int.MAX_VALUE)
+
+    /**
+     * 每次交易提交後，依桌子送出本次的已提交事實。
+     *
+     * 與歷史記錄政策及儲存端可用性無關；被拒絕或失敗的交易不會送出。只送給送出當下已訂閱的收集者。
+     */
+    val committedFacts: SharedFlow<CommittedGameFacts> = mutableCommittedFacts.asSharedFlow()
 
     /** 目前狀態的內部存取捷徑。 */
     private var currentState: AuthoritativeStateSnapshot
@@ -162,25 +177,6 @@ class AuthoritativeStateStore(
         onApplied()
         recordingPolicy = policy
         commit(currentState.copy(historyRecordingState = recording))
-    }
-
-    /**
-     * 在已持有交易鎖的 repository 中查詢同一份記錄資格，不建立歷史快照。
-     *
-     * @param snapshot 交易讀取的權威快照。
-     * @param game 交易的原有或新建立對局。
-     * @return 是否允許為這次交易建立歷史草稿。
-     */
-    internal fun shouldRecordHistory(snapshot: AuthoritativeStateSnapshot, game: Game): Boolean {
-        val decision = snapshot.historyRecordingState.decisionsByMatchId[game.matchId]
-            ?: when {
-                snapshot.games[game.id]?.matchId != game.matchId -> recordingPolicy.decide(game)
-                game.matchId in snapshot.historyRecordingState.nextSequenceByMatchId -> HistoryRecordingDecision.RECORDING
-                else -> HistoryRecordingDecision.EXCLUDED_NO_OPENING
-            }
-        return isHistoryStorageAvailable &&
-            (recordingPolicy.enabled || game.isMatchOver) &&
-            decision == HistoryRecordingDecision.RECORDING
     }
 
     /** 更新歷史儲存端容量旗標；不可用期間仍保留權威交易，但不建立待寫事件。
@@ -539,7 +535,15 @@ class AuthoritativeStateStore(
         } else {
             update.state
         }
+        val previousGames = currentState.games
         commit(nextState)
+        update.historyDraftsByTableId.forEach { (tableId, drafts) ->
+            val previousGame = previousGames[tableId]
+            val game = nextState.games[tableId]
+            if (drafts.isNotEmpty() && (previousGame != null || game != null)) {
+                mutableCommittedFacts.tryEmit(CommittedGameFacts(tableId, previousGame, game, drafts))
+            }
+        }
         update.result
     }
 }

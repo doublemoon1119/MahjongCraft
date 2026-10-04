@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.extension
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistry
@@ -50,6 +51,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
  * @property publicPlayerIndicatorDisplayRegistry 公開玩家 indicator 顯示 registry。
  * @property roomMemberAppearanceSourceRegistry 房間成員外觀來源 registry。
  * @property gameConfigPresentationRegistry 遊戲設定呈現 registry。
+ * @property gameAchievementResolverRegistry 規則專屬對局成果判定 registry。
  */
 class MinecraftPresentationRegistries(
     // 牌面呈現
@@ -78,6 +80,8 @@ class MinecraftPresentationRegistries(
     val publicPlayerIndicatorDisplayRegistry: PublicPlayerIndicatorDisplayRegistry,
     val roomMemberAppearanceSourceRegistry: RoomMemberAppearanceSourceRegistry,
     val gameConfigPresentationRegistry: GameConfigPresentationRegistry,
+    // 對局成果
+    val gameAchievementResolverRegistry: GameAchievementResolverRegistry,
 ) {
     /** 取得目前所有 Minecraft presentation registry 的不可變診斷快照。 */
     fun registrationSnapshot(): MinecraftPresentationRegistrationSnapshot = MinecraftPresentationRegistrationSnapshot(
@@ -104,6 +108,7 @@ class MinecraftPresentationRegistries(
             snapshotCategory("mahjongcraft:public_player_indicator_display", "Public Player Indicator Display", publicPlayerIndicatorDisplayRegistry.registrationKeys),
             snapshotCategory("mahjongcraft:room_member_appearance_source", "Room Member Appearance Source", roomMemberAppearanceSourceRegistry.registrationKeys),
             snapshotCategory("mahjongcraft:game_config_presentation", "Game Config Presentation", gameConfigPresentationRegistry.registrationKeys),
+            snapshotCategory("mahjongcraft:game_achievement_resolver", "Game Achievement Resolver", gameAchievementResolverRegistry.registrationKeys),
         ),
     )
 
@@ -131,6 +136,7 @@ class MinecraftPresentationRegistries(
         publicPlayerIndicatorDisplayRegistry.freeze()
         roomMemberAppearanceSourceRegistry.freeze()
         gameConfigPresentationRegistry.freeze()
+        gameAchievementResolverRegistry.freeze()
     }
 }
 

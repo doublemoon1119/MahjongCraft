@@ -2,6 +2,8 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.di
 
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
@@ -78,6 +80,7 @@ class MinecraftCommonModule {
         tileEmojiRegistry: TileEmojiRegistry,
         tileLabelRegistry: TileLabelRegistry,
         ruleCatalogueRegistry: RuleCatalogueRegistry,
+        gameAchievementResolverRegistry: GameAchievementResolverRegistry,
     ): MinecraftPresentationRegistries = MinecraftPresentationRegistries(
         tileAssetRegistry = tileAssetRegistry,
         tileDisplayNameRegistry = tileDisplayNameRegistry,
@@ -101,7 +104,12 @@ class MinecraftCommonModule {
         publicPlayerIndicatorDisplayRegistry = publicPlayerIndicatorDisplayRegistry,
         roomMemberAppearanceSourceRegistry = roomMemberAppearanceSourceRegistry,
         gameConfigPresentationRegistry = gameConfigPresentationRegistry,
+        gameAchievementResolverRegistry = gameAchievementResolverRegistry,
     )
+
+    /** 建立供內建與第三方 extension 登記規則專屬成果判定的 registry。 */
+    @Single
+    fun provideGameAchievementResolverRegistry(): GameAchievementResolverRegistry = GameAchievementResolverRegistryImpl()
 
     /** 建立供內建與第三方 extension 登記的自動操作顯示 registry。 */
     @Single

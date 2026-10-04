@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.extension
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistry
@@ -48,6 +49,15 @@ interface MinecraftMahjongExtension {
      * @param registry 與內建來源共用、於 bootstrap 結束後凍結的目錄 registry。
      */
     fun registerRuleCatalogues(registry: RuleCatalogueRegistry) = Unit
+
+    /**
+     * 登記第三方規則的專屬成果判定；成果 ID 由該規則自己的進度資料引用。
+     *
+     * 預設不登記任何判定，使既有 extension 不必加入空實作；沒有判定的規則只會取得通用成果。
+     *
+     * @param registry 與內建判定共用、於 bootstrap 結束後凍結的成果判定 registry。
+     */
+    fun registerGameAchievementResolvers(registry: GameAchievementResolverRegistry) = Unit
 
     /**
      * 登記第三方牌種對應的 Minecraft asset key；asset key 命名建議見 [MinecraftTileAssetRegistry.register]。

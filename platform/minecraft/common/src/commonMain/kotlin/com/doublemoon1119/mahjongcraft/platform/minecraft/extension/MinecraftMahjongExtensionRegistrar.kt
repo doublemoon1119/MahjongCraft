@@ -98,6 +98,7 @@ object MinecraftMahjongExtensionRegistrar {
                 extension.registerTileEmojis(registries.tileEmojiRegistry)
                 extension.registerTileLabels(registries.tileLabelRegistry)
                 extension.registerRuleCatalogues(registries.ruleCatalogueRegistry)
+                extension.registerGameAchievementResolvers(registries.gameAchievementResolverRegistry)
                 extension.registerWinCelebrationShowcases(registries.winCelebrationShowcaseRegistry)
                 extension.registerGameActionVocabulary(registries.gameActionVocabularyRegistry)
                 extension.registerDecisionStatusDisplayNames(registries.decisionStatusDisplayNameRegistry)

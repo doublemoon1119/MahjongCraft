@@ -2,12 +2,16 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.extension
 
 import com.doublemoon1119.mahjongcraft.ai.BuiltInAiStrategyKeys
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.CommittedGameFacts
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
+import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolver
+import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistryImpl
@@ -50,6 +54,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
 
 /** 驗證第三方 Minecraft extension 的統一註冊順序、錯誤診斷與 registry freeze。 */
 class MinecraftMahjongExtensionRegistrarTest {
@@ -64,6 +69,7 @@ class MinecraftMahjongExtensionRegistrarTest {
         tileLabelRegistry: TileLabelRegistry,
         automaticControlDisplayRegistry: AutomaticControlDisplayRegistry = AutomaticControlDisplayRegistryImpl(),
         ruleCatalogueRegistry: RuleCatalogueRegistryImpl = RuleCatalogueRegistryImpl(),
+        gameAchievementResolverRegistry: GameAchievementResolverRegistryImpl = GameAchievementResolverRegistryImpl(),
     ): MinecraftMahjongExtensionRegistrationResult = MinecraftMahjongExtensionRegistrar.registerAndFreeze(
         extensions = extensions,
         registries = MinecraftPresentationRegistries(
@@ -89,6 +95,7 @@ class MinecraftMahjongExtensionRegistrarTest {
             publicPlayerIndicatorDisplayRegistry = PublicPlayerIndicatorDisplayRegistryImpl(),
             roomMemberAppearanceSourceRegistry = RoomMemberAppearanceSourceRegistryImpl(),
             gameConfigPresentationRegistry = GameConfigPresentationRegistryImpl(),
+            gameAchievementResolverRegistry = gameAchievementResolverRegistry,
         ),
     )
 
@@ -304,6 +311,39 @@ class MinecraftMahjongExtensionRegistrarTest {
         }
 
         assertTrue(error.message.orEmpty().contains("example:broken"))
+    }
+
+    /** 驗證第三方規則的成果判定會登記到共用 registry，出現在診斷分類中，完成後凍結。 */
+    @Test
+    fun `extension registers game achievement resolvers before freeze`() {
+        val gameAchievementResolverRegistry = GameAchievementResolverRegistryImpl()
+        val extension = object : MinecraftMahjongExtension {
+            override val id: String = "example:achievements"
+
+            override fun registerGameAchievementResolvers(registry: GameAchievementResolverRegistry) {
+                registry.register(object : GameAchievementResolver {
+                    /** 第三方規則識別碼。 */
+                    override val ruleModuleId: String = "example:my_rule"
+
+                    /** 測試用判定不產生成果。 */
+                    override fun resolve(facts: CommittedGameFacts): Map<Uuid, Set<String>> = emptyMap()
+                })
+            }
+        }
+
+        val result = registerAndFreeze(
+            extensions = listOf(extension),
+            tileAssetRegistry = MinecraftTileAssetRegistryImpl(),
+            aiStrategyDisplayNameRegistry = AiStrategyDisplayNameRegistryImpl(),
+            tileDisplayNameRegistry = TileDisplayNameRegistryImpl(),
+            ruleModuleDisplayNameRegistry = RuleModuleDisplayNameRegistryImpl(),
+            tileEmojiRegistry = TileEmojiRegistryImpl(),
+            tileLabelRegistry = TileLabelRegistryImpl(),
+            gameAchievementResolverRegistry = gameAchievementResolverRegistry,
+        )
+
+        assertEquals(setOf("example:my_rule"), result.registrationKeys("mahjongcraft:game_achievement_resolver"))
+        assertTrue(gameAchievementResolverRegistry.isFrozen)
     }
 
     /** 驗證相同 extension ID 不會形成無法判斷來源的部分註冊結果。 */

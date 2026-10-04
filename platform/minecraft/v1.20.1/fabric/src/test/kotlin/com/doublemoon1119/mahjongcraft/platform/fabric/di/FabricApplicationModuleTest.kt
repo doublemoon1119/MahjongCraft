@@ -64,6 +64,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableL
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLocationValidationService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.OrphanedTableCleanupService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistry
@@ -223,6 +224,8 @@ class FabricApplicationModuleTest {
         assertSame(automaticControlDisplayRegistry, presentationRegistries.automaticControlDisplayRegistry)
         assertSame(koin.get<RuleCatalogueRegistry>(), presentationRegistries.ruleCatalogueRegistry)
         assertTrue(presentationRegistries.ruleCatalogueRegistry.isFrozen)
+        assertSame(koin.get<GameAchievementResolverRegistry>(), presentationRegistries.gameAchievementResolverRegistry)
+        assertTrue(presentationRegistries.gameAchievementResolverRegistry.isFrozen)
         assertEquals(RiichiTileTypes.ALL + TaiwanTileTypes.ALL, tileTypeRegistry.getAll().map { it.id })
         assertTrue(minecraftTileAssetRegistry.isFrozen)
         assertTrue(aiStrategyDisplayNameRegistry.isFrozen)

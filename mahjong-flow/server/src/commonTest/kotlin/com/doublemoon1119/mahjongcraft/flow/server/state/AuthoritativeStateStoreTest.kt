@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.state
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.CommittedGameFacts
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
@@ -16,6 +17,10 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -434,6 +439,71 @@ class AuthoritativeStateStoreTest {
 
         assertTrue(store.snapshot().historyRecordingState.pendingEvents.isEmpty())
         assertTrue(store.snapshot().historyRecordingState.firstMissingSequenceByMatchId.isEmpty())
+    }
+
+    /** 關閉歷史記錄時仍會建立並送出已提交事實，但不寫入歷史待寫佇列。 */
+    @Test
+    fun `committed facts are published even when history recording is disabled`() = runTest {
+        val store = AuthoritativeStateStore(historyRecordingEnabled = false)
+        val repository = GameRepositoryImpl(store)
+        val tableState = FakeTableStateFactory.create()
+        repository.setTableState(tableState)
+        val before = store.getGame(tableState.id)!!
+        val received = mutableListOf<CommittedGameFacts>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { store.committedFacts.toList(received) }
+
+        repository.updateGame(
+            gameId = before.id,
+            history = { _, _, _ -> listOf(HistoryEventDraft(null, HistoryFact.ReturnedToRoom)) },
+        ) { current -> current!!.copy(isMatchOver = true) to Unit }
+        runCurrent()
+
+        val facts = received.single()
+        assertEquals(before.id, facts.tableId)
+        assertEquals(before, facts.previousGame)
+        assertEquals(store.getGame(before.id), facts.game)
+        assertEquals(listOf(HistoryFact.ReturnedToRoom), facts.facts.map { it.fact })
+        assertTrue(store.snapshot().historyRecordingState.pendingEvents.isEmpty())
+    }
+
+    /** 失敗的交易不會提交，也不會送出事實。 */
+    @Test
+    fun `failed transactions publish no committed facts`() = runTest {
+        val store = AuthoritativeStateStore(historyRecordingEnabled = true)
+        val repository = GameRepositoryImpl(store)
+        val tableState = FakeTableStateFactory.create()
+        repository.setTableState(tableState)
+        val received = mutableListOf<CommittedGameFacts>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { store.committedFacts.toList(received) }
+
+        assertFailsWith<IllegalStateException> {
+            repository.updateGame(
+                gameId = tableState.id,
+                history = { _, _, _ -> listOf(HistoryEventDraft(null, HistoryFact.ReturnedToRoom)) },
+            ) { _ -> error("rejected") }
+        }
+        runCurrent()
+
+        assertTrue(received.isEmpty())
+    }
+
+    /** 沒有改變對局的交易不會送出事實。 */
+    @Test
+    fun `unchanged game updates publish no committed facts`() = runTest {
+        val store = AuthoritativeStateStore()
+        val repository = GameRepositoryImpl(store)
+        val tableState = FakeTableStateFactory.create()
+        repository.setTableState(tableState)
+        val received = mutableListOf<CommittedGameFacts>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { store.committedFacts.toList(received) }
+
+        repository.updateGame(
+            gameId = tableState.id,
+            history = { _, _, _ -> listOf(HistoryEventDraft(null, HistoryFact.ReturnedToRoom)) },
+        ) { game -> game to Unit }
+        runCurrent()
+
+        assertTrue(received.isEmpty())
     }
 
     /** 建立最小等待階段 Room。 */

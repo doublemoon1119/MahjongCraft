@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.extension
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistryImpl
@@ -53,6 +54,7 @@ class MinecraftPresentationRegistriesTest {
             publicPlayerIndicatorDisplayRegistry = PublicPlayerIndicatorDisplayRegistryImpl(),
             roomMemberAppearanceSourceRegistry = RoomMemberAppearanceSourceRegistryImpl(),
             gameConfigPresentationRegistry = GameConfigPresentationRegistryImpl(),
+            gameAchievementResolverRegistry = GameAchievementResolverRegistryImpl(),
         )
 
         registries.freezeAll()
@@ -76,5 +78,6 @@ class MinecraftPresentationRegistriesTest {
         assertTrue(registries.roomMemberAppearanceSourceRegistry.isFrozen)
         assertTrue(registries.gameConfigPresentationRegistry.isFrozen)
         assertTrue(registries.ruleCatalogueRegistry.isFrozen)
+        assertTrue(registries.gameAchievementResolverRegistry.isFrozen)
     }
 }
