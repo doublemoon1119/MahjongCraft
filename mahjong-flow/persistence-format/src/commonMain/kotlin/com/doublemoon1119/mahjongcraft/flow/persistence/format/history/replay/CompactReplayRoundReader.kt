@@ -58,9 +58,15 @@ class CompactReplayRoundReader(
             val beforeScores = scoreSnapshot(cursor.projection, source.identity.players.size, budget)
             val transaction = advance(source, round, cursor, index, budget)
             val afterScores = scoreSnapshot(cursor.projection, source.identity.players.size, budget)
+            val exhaustiveDrawAction = transaction.facts.any(::isExhaustiveDrawAction)
             val facts = mapper.mapFacts(transaction.facts, transaction.actors, source.identity, round.number, catalog(cursor, budget), budget)
                 .map { fact ->
-                    val enriched = fact.withScoreChanges(beforeScores, afterScores, cursor.hasWinSettlement)
+                    val enriched = fact.withScoreChanges(
+                        beforeScores,
+                        afterScores,
+                        cursor.hasWinSettlement,
+                        cursor.exhaustiveDrawSettlement,
+                    )
                     if (fact.typeKey == "win_settled" ||
                         (fact is HistoryReplayFact.RuleEffect && fact.outcome?.classification == RoundCompletionClassification.WIN)
                     ) {
@@ -68,6 +74,9 @@ class CompactReplayRoundReader(
                     }
                     enriched
                 }
+            if (exhaustiveDrawAction && cursor.exhaustiveDrawSettlement == null) {
+                cursor.exhaustiveDrawSettlement = ScoreSnapshot(beforeScores, afterScores)
+            }
             if (index >= startIndex) events += HistoryReplayTransaction(index, cursor.time, transaction.opening, facts, cursor.tiles.size)
         }
         HistoryRoundEvents(source.identity, round.number, events.toList(), end.takeIf { it < round.transactions.size }, catalog(cursor, budget))
@@ -95,9 +104,15 @@ class CompactReplayRoundReader(
             val beforeScores = scoreSnapshot(cursor.projection, source.identity.players.size, budget)
             val transaction = advance(source, round, cursor, index, budget)
             val afterScores = scoreSnapshot(cursor.projection, source.identity.players.size, budget)
+            val exhaustiveDrawAction = transaction.facts.any(::isExhaustiveDrawAction)
             val facts = mapper.mapFacts(transaction.facts, transaction.actors, source.identity, round.number, catalog(cursor, budget), budget)
                 .map { fact ->
-                    val enriched = fact.withScoreChanges(beforeScores, afterScores, cursor.hasWinSettlement)
+                    val enriched = fact.withScoreChanges(
+                        beforeScores,
+                        afterScores,
+                        cursor.hasWinSettlement,
+                        cursor.exhaustiveDrawSettlement,
+                    )
                     if (fact.typeKey == "win_settled" ||
                         (fact is HistoryReplayFact.RuleEffect && fact.outcome?.classification == RoundCompletionClassification.WIN)
                     ) {
@@ -105,6 +120,9 @@ class CompactReplayRoundReader(
                     }
                     enriched
                 }
+            if (exhaustiveDrawAction && cursor.exhaustiveDrawSettlement == null) {
+                cursor.exhaustiveDrawSettlement = ScoreSnapshot(beforeScores, afterScores)
+            }
             facts.mapNotNull {
                 when (it) {
                     is HistoryReplayFact.Completion -> it.outcome.takeUnless { _ -> it.typeKey == "match_completed" }
@@ -158,12 +176,14 @@ class CompactReplayRoundReader(
      * @param beforeScores 交易套用前的座位分數。
      * @param afterScores 交易套用後的座位分數。
      * @param hasPriorWinSettlement 是否已有同局胡牌結算事實。
+     * @param exhaustiveDrawSettlement 已保存的流局動作交易前後分數快照。
      * @return 帶有本次結算分數變化的事實。
      */
     private fun HistoryReplayFact.withScoreChanges(
         beforeScores: Map<Int, Int>,
         afterScores: Map<Int, Int>,
         hasPriorWinSettlement: Boolean,
+        exhaustiveDrawSettlement: ScoreSnapshot?,
     ): HistoryReplayFact {
         if (typeKey == "match_completed") return this
         val outcome = when (this) {
@@ -179,13 +199,22 @@ class CompactReplayRoundReader(
                 else -> this
             }
         }
-        require(beforeScores.keys == afterScores.keys)
-        val changes = afterScores.mapValues { (seat, score) ->
-            val difference = score.toLong() - beforeScores.getValue(seat).toLong()
+        val scoreBaseline = if (
+            typeKey == "round_completed" && outcome.classification == RoundCompletionClassification.EXHAUSTIVE_DRAW
+        ) {
+            exhaustiveDrawSettlement
+        } else {
+            null
+        }
+        val effectiveBeforeScores = scoreBaseline?.before ?: beforeScores
+        val effectiveAfterScores = scoreBaseline?.after ?: afterScores
+        require(effectiveBeforeScores.keys == effectiveAfterScores.keys)
+        val changes = effectiveAfterScores.mapValues { (seat, score) ->
+            val difference = score.toLong() - effectiveBeforeScores.getValue(seat).toLong()
             require(difference in Int.MIN_VALUE.toLong()..Int.MAX_VALUE.toLong()) { "Replay score change is out of range" }
             difference.toInt()
         }
-        val settledScores = if (typeKey == "win_settled" && outcome.scoresBySeat.isEmpty()) afterScores else outcome.scoresBySeat
+        val settledScores = if (typeKey == "win_settled" && outcome.scoresBySeat.isEmpty()) effectiveAfterScores else outcome.scoresBySeat
         val updated = outcome.copy(scoresBySeat = settledScores, scoreChangesBySeat = changes)
         return when (this) {
             is HistoryReplayFact.Completion -> copy(outcome = updated)
@@ -314,6 +343,16 @@ class CompactReplayRoundReader(
         }
     }
 
+    /** 判斷交易是否接受了會完成流局結算的動作。
+     * @param fact 已解碼的單一交易事實。
+     * @return 若事實是接受流局動作則為 true。
+     */
+    private fun isExhaustiveDrawAction(fact: JsonObject): Boolean {
+        if ((fact[ReplaySourceKeys.TYPE] as? JsonPrimitive)?.content != ReplaySourceKeys.ACTION_ACCEPTED) return false
+        val action = fact[ReplaySourceKeys.ACTION] as? JsonObject ?: return false
+        return (action[ReplaySourceKeys.TYPE] as? JsonPrimitive)?.content == "exhaustive_draw"
+    }
+
     /**
      * 套用可為負值的時間差並拒絕溢位。
      * @param time 前一筆時間。
@@ -335,6 +374,8 @@ class CompactReplayRoundReader(
      * @property tiles 截至目前位置可識別的牌。
      * @property time 全場相對時間累加結果。
      * @property outcome 截至目前交易已保存的結算結果。
+     * @property hasWinSettlement 是否已遇到較早的胡牌結算交易。
+     * @property exhaustiveDrawSettlement 流局動作交易前後的分數快照。
      */
     private data class Cursor(
         var projection: JsonElement,
@@ -342,6 +383,16 @@ class CompactReplayRoundReader(
         var time: Long,
         var outcome: HistoryRoundOutcome? = null,
         var hasWinSettlement: Boolean = false,
+        var exhaustiveDrawSettlement: ScoreSnapshot? = null,
+    )
+
+    /** 流局結算交易前後的權威分數快照。
+     * @property before 流局結算交易套用前的各座位分數。
+     * @property after 流局結算交易套用後的各座位分數。
+     */
+    private data class ScoreSnapshot(
+        val before: Map<Int, Int>,
+        val after: Map<Int, Int>,
     )
 
     /**

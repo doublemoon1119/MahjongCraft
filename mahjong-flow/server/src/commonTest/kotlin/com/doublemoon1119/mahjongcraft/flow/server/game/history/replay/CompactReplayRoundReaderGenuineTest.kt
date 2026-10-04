@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.history.replay
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryActionResult
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableResult
@@ -22,8 +23,10 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.Re
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayReadResult
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.registerBuiltInHistoryReplayProjections
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.buildBuiltInPersistenceRegistries
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
@@ -153,6 +156,48 @@ class CompactReplayRoundReaderGenuineTest {
             },
             completion.outcome?.scoreChangesBySeat,
         )
+    }
+
+    /** 流局摘要沿用前一筆流局動作交易的分數快照，不因後續交易而變成零分差。 */
+    @Test
+    fun `reader preserves exhaustive draw settlement delta across transactions`() = runTest {
+        val fixture = exhaustiveDrawFixture(listOf(26_000, 24_000))
+        val page = assertIs<ReplayReadResult.Success<HistoryRoundEvents>>(
+            reader().readEvents(fixture.document, fixture.matchId, 1, 2, 1),
+        ).value
+        val completion = page.transactions.single().facts.filterIsInstance<HistoryReplayFact.Completion>().single()
+        assertEquals(mapOf(0 to 1_000, 1 to -1_000), completion.outcome?.scoreChangesBySeat)
+
+        val state = assertIs<ReplayReadResult.Success<HistoryRoundState>>(
+            reader().readState(fixture.document, fixture.matchId, 1, HistoryRoundPosition.AfterTransaction(2)),
+        ).value
+        assertEquals(mapOf(0 to 1_000, 1 to -1_000), state.outcome?.scoreChangesBySeat)
+    }
+
+    /** 流局前後分數相同時仍保留合法的零分差，不虛構非零結算。 */
+    @Test
+    fun `reader preserves legitimate zero exhaustive draw settlement delta`() = runTest {
+        val fixture = exhaustiveDrawFixture(listOf(25_000, 25_000))
+        val completion = assertIs<ReplayReadResult.Success<HistoryRoundEvents>>(
+            reader().readEvents(fixture.document, fixture.matchId, 1, 2, 1),
+        ).value.transactions.single().facts.filterIsInstance<HistoryReplayFact.Completion>().single()
+        assertEquals(mapOf(0 to 0, 1 to 0), completion.outcome?.scoreChangesBySeat)
+    }
+
+    /** 流局結算後的其他分數變化不會污染先前保存的流局分差。 */
+    @Test
+    fun `reader ignores later score change when deriving exhaustive draw delta`() = runTest {
+        val fixture = exhaustiveDrawFixture(listOf(26_000, 24_000), listOf(25_500, 24_500))
+        val page = assertIs<ReplayReadResult.Success<HistoryRoundEvents>>(
+            reader().readEvents(fixture.document, fixture.matchId, 1, 3, 1),
+        ).value
+        val completion = page.transactions.single().facts.filterIsInstance<HistoryReplayFact.Completion>().single()
+        assertEquals(mapOf(0 to 1_000, 1 to -1_000), completion.outcome?.scoreChangesBySeat)
+
+        val state = assertIs<ReplayReadResult.Success<HistoryRoundState>>(
+            reader().readState(fixture.document, fixture.matchId, 1, HistoryRoundPosition.AfterTransaction(3)),
+        ).value
+        assertEquals(mapOf(0 to 1_000, 1 to -1_000), state.outcome?.scoreChangesBySeat)
     }
 
     /** 對局完成事實不應偽裝成單局結算差額。 */
@@ -300,6 +345,75 @@ class CompactReplayRoundReaderGenuineTest {
         )
         val registries = buildBuiltInPersistenceRegistries()
         return Fixture(CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries), matchId, table, changed, settled)
+    }
+
+    /** 建立流局動作與局完成摘要分屬不同交易的正式 Replay 文件。
+     * @param scores 流局結算交易寫入的玩家分數，依初始座位排列。
+     * @param intermediateScores 流局結算後、局完成前的額外分數；沒有時為 null。
+     * @return 正式編碼的流局測試 Replay fixture。
+     */
+    private fun exhaustiveDrawFixture(scores: List<Int>, intermediateScores: List<Int>? = null): Fixture {
+        require(scores.size == 2)
+        require(intermediateScores == null || intermediateScores.size == 2)
+        val base = FakeTableStateFactory.create(
+            players = listOf(
+                FakeMahjongPlayerFactory.create(discardPile = RiichiDiscardPile()),
+                FakeMahjongPlayerFactory.create(discardPile = RiichiDiscardPile()),
+            ),
+            currentPlayerIndex = 1,
+            config = RiichiRuleConfig(),
+        )
+        val table = base.copy(players = base.players.reversed()).reversedScores(25_000)
+        val settled = table.copy(
+            players = table.players.map { player ->
+                player.copy(score = scores[player.initialSeatIndex])
+            },
+        )
+        val intermediate = intermediateScores?.let { values ->
+            settled.copy(
+                players = settled.players.map { player ->
+                    player.copy(score = values[player.initialSeatIndex])
+                },
+            )
+        }
+        val matchId = Uuid.random()
+        val settledScores = settled.players.associate { it.id to it.score }
+        val actionResult = HistoryActionResult(
+            affectedTileIds = emptyList(),
+            newlyRevealedTileIds = emptyList(),
+            remainingWallTileCount = settled.tileWall.remainingCount,
+            reservedWallTileIds = settled.reservedWallTiles.map { it.id },
+            scoresByPlayerId = settledScores,
+            nextPlayerId = settled.currentPlayer.id,
+        )
+        val events = buildList {
+            add(event(matchId, table.id, 1, 0L, HistoryFact.MatchStarted(table, GameFlowConfig())))
+            add(event(matchId, table.id, 2, 100L, HistoryFact.ActionAccepted(GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.Normal), actionResult)))
+            add(event(matchId, table.id, 3, 100L, HistoryFact.TableChanged(HistoryTableResult.Checkpoint("test:exhaustive_draw_settled", settled))).copy(transactionFirstSequence = 2))
+            if (intermediate != null) {
+                add(event(matchId, table.id, 4, 150L, HistoryFact.TableChanged(HistoryTableResult.Checkpoint("test:intermediate_change", intermediate))))
+            }
+            add(
+                event(
+                    matchId,
+                    table.id,
+                    if (intermediate == null) 4 else 5,
+                    200L,
+                    HistoryFact.RoundCompleted(
+                        RoundCompletionSummary(
+                            "test:exhaustive_draw",
+                            RoundCompletionClassification.EXHAUSTIVE_DRAW,
+                            emptySet(),
+                            transitionDirective = RoundTransitionDirective.ADVANCE_DEALER,
+                            settledScoresByPlayerId = settledScores,
+                        ),
+                    ),
+                ),
+            )
+            add(event(matchId, table.id, if (intermediate == null) 5 else 6, 300L, HistoryFact.MatchCompleted("test:completed", settledScores)))
+        }
+        val registries = buildBuiltInPersistenceRegistries()
+        return Fixture(CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries), matchId, table, settled, settled)
     }
 
     /** 建立包含立直後胡牌、續局分數變化與後續局結算的正式 Replay 文件。

@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEven
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundOutcomeDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.SuitDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.table.BuiltInMatchEndReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds
@@ -15,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocab
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -245,6 +247,28 @@ class HistoryRoundEventPresentationTest {
         }
         val reasons = ExhaustiveDrawReasonDisplayNameRegistryImpl()
         return HistoryRoundEventPresenter(vocabulary, reasons)
+    }
+
+    /** 一般流局使用聽牌與未聽牌身分；擴充結算保留原有受益身分而不假設規則。 */
+    @Test
+    fun `normal draw status matches settlement panel without changing extension labels`() {
+        val presenter = presenter()
+        val outcome = HistoryOutcomePresentation(
+            reasonId = RiichiExhaustiveDrawReason.Normal.id,
+            reasonText = Text.literal("draw"),
+            classification = RoundCompletionClassification.EXHAUSTIVE_DRAW.name,
+            transitionDirective = null,
+            rows = emptyList(),
+        )
+        val tenpai = HistoryOutcomeRowPresentation(0, 28000, true, false, 3000)
+        val noten = HistoryOutcomeRowPresentation(1, 24000, false, false, -1000)
+        assertEquals(MinecraftMessageKeys.EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_TENPAI, presenter.settlementStatusText(outcome, tenpai)?.string)
+        assertEquals(MinecraftMessageKeys.EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_NOTEN, presenter.settlementStatusText(outcome, noten)?.string)
+        assertEquals(MinecraftHistoryScreenKeys.ROUND_BENEFICIARY, presenter.settlementStatusText(outcome.copy(reasonId = "custom:draw"), tenpai)?.string)
+        assertEquals(null, presenter.settlementStatusText(outcome.copy(reasonId = "custom:draw"), noten))
+        assertEquals("+3000", presenter.scoreChangeText(3000).string)
+        assertEquals("−1000", presenter.scoreChangeText(-1000).string)
+        assertEquals("±0", presenter.scoreChangeText(0).string)
     }
 
     /** 建立含單一交易的測試事件頁。

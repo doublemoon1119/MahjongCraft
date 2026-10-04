@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundOutc
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinDetailFieldDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinDetailValueDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.table.BuiltInMatchEndReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
@@ -14,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHisto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationFieldId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds as MinecraftBuiltInGameActionIds
@@ -187,6 +189,21 @@ internal class HistoryRoundEventPresenter(
             else -> "±0"
         },
     ).styled { it.withColor(scoreChangeColor(change)) }
+
+    /**
+     * 解析已保存的玩家結算身分；一般日麻流局沿用流局面板的聽牌與未聽牌用語。
+     * @param outcome 本次結算呈現資料。
+     * @param row 玩家結算列。
+     * @return 可翻譯的身分文字；沒有身分時為 null。
+     */
+    fun settlementStatusText(outcome: HistoryOutcomePresentation, row: HistoryOutcomeRowPresentation): Text? = when {
+        outcome.classification == RoundCompletionClassification.EXHAUSTIVE_DRAW.name &&
+            outcome.reasonId == RiichiExhaustiveDrawReason.Normal.id -> Text.translatable(
+            if (row.beneficiary) MinecraftMessageKeys.EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_TENPAI else MinecraftMessageKeys.EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_NOTEN,
+        ).styled { it.withColor(0xFFE08A) }
+        row.beneficiary -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_BENEFICIARY)
+        else -> null
+    }
 
     /**
      * 取得分數變化的柔和文字色。

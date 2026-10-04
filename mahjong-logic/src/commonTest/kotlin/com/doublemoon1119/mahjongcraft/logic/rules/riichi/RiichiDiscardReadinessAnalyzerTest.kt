@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailability
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
+import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
@@ -363,5 +364,149 @@ class RiichiDiscardReadinessAnalyzerTest {
         val tableState = FakeTableStateFactory.create(players = listOf(player), config = RiichiRuleConfig())
 
         assertNull(analyzer.analyzeCurrentHand(tableState, player))
+    }
+
+    /**
+     * 建立「789 萬、單張五筒、123 索」的無役單騎牌型，並加入 777 筒與 678 索副露。
+     *
+     * @param fiveDot 五筒立牌，可使用普通五或赤五。
+     * @param extraStandingTile 額外加入立牌的牌，供逐張假想捨牌測試使用。
+     * @return 等待五筒的測試玩家。
+     */
+    private fun createNoYakuFiveDotWaitPlayer(
+        fiveDot: Tile,
+        extraStandingTile: Tile? = null,
+    ): MahjongPlayer {
+        val melds = listOf(
+            Meld(
+                type = MeldType.PON,
+                tiles = List(3) {
+                    FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 7))
+                },
+                sourceDirection = RelativeDirection.Left,
+            ),
+            Meld(
+                type = MeldType.CHI,
+                tiles = listOf(6, 7, 8).map { value ->
+                    FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, value))
+                },
+                sourceDirection = RelativeDirection.Left,
+            ),
+        )
+        val standingTiles = buildList {
+            addAll(listOf(7, 8, 9).map { value -> Tile.Numeric(Tile.Suit.Character, value) })
+            add(fiveDot)
+            addAll(listOf(1, 2, 3).map { value -> Tile.Numeric(Tile.Suit.Bamboo, value) })
+            extraStandingTile?.let { add(it) }
+        }
+        val hand = FakeHandFactory.create(
+            tiles = standingTiles,
+            melds = melds,
+        )
+        return FakeMahjongPlayerFactory.create(hand = hand)
+    }
+
+    /** 驗證普通五與赤五都不會把寶牌當成無役牌型的起胡役。 */
+    @Test
+    fun `test ordinary and red five waits remain no yaku before the last tile`() {
+        listOf(
+            Tile.Numeric(Tile.Suit.Dot, 5),
+            RiichiTileTypes.redFive(Tile.Suit.Dot),
+        ).forEach { fiveDot ->
+            val player = createNoYakuFiveDotWaitPlayer(fiveDot)
+            val tableState = FakeTableStateFactory.create(
+                players = listOf(player),
+                tileWall = TileWall(List(14) { FakeIdentifiedTileFactory.create(Tile.Honor.White) }),
+                config = RiichiRuleConfig(),
+            )
+
+            val analysis = assertNotNull(analyzer.analyzeCurrentHand(tableState, player))
+
+            assertEquals(
+                listOf(Tile.Numeric(Tile.Suit.Dot, 5)),
+                analysis.waitingTiles.map { it.tile },
+            )
+            assertEquals(
+                RiichiDiscardReadinessAnalyzer.StatusIds.WIN_NO_YAKU,
+                analysis.waitingTiles.single().winAvailability,
+            )
+        }
+    }
+
+    /** 驗證同一副無役單騎在活牌耗盡後可透過海底／河底取得和牌資格。 */
+    @Test
+    fun `test haitei and houtei qualify the no yaku wait after the live wall is exhausted`() {
+        listOf(
+            Tile.Numeric(Tile.Suit.Dot, 5),
+            RiichiTileTypes.redFive(Tile.Suit.Dot),
+        ).forEach { fiveDot ->
+            val player = createNoYakuFiveDotWaitPlayer(fiveDot)
+            val tableState = FakeTableStateFactory.create(
+                players = listOf(player),
+                tileWall = TileWall(emptyList()),
+                config = RiichiRuleConfig(),
+            )
+
+            val analysis = assertNotNull(analyzer.analyzeCurrentHand(tableState, player))
+
+            assertEquals(
+                RiichiDiscardReadinessAnalyzer.StatusIds.WIN_AVAILABLE,
+                analysis.waitingTiles.single().winAvailability,
+            )
+        }
+    }
+
+    /** 驗證逐張假想捨牌會保留普通五與赤五的無役判定。 */
+    @Test
+    fun `test projected discard keeps ordinary and red five waits as no yaku`() {
+        listOf(
+            Tile.Numeric(Tile.Suit.Dot, 5),
+            RiichiTileTypes.redFive(Tile.Suit.Dot),
+        ).forEach { fiveDot ->
+            val player = createNoYakuFiveDotWaitPlayer(
+                fiveDot = fiveDot,
+                extraStandingTile = Tile.Honor.East,
+            )
+            val tableState = FakeTableStateFactory.create(
+                players = listOf(player),
+                tileWall = TileWall(List(14) { FakeIdentifiedTileFactory.create(Tile.Honor.White) }),
+                config = RiichiRuleConfig(),
+            )
+            val eastId = player.hand.standingTiles.single { it.tile == Tile.Honor.East }.id
+
+            val analysis = analyzer.analyze(tableState, player).single { it.discardTileId == eastId }
+
+            assertEquals(
+                RiichiDiscardReadinessAnalyzer.StatusIds.WIN_NO_YAKU,
+                analysis.waitingTiles.single().winAvailability,
+            )
+        }
+    }
+
+    /** 驗證逐張假想捨牌在活牌耗盡時，普通五與赤五等待都可取得海底／河底資格。 */
+    @Test
+    fun `test projected discard qualifies ordinary and red five waits after the live wall is exhausted`() {
+        listOf(
+            Tile.Numeric(Tile.Suit.Dot, 5),
+            RiichiTileTypes.redFive(Tile.Suit.Dot),
+        ).forEach { fiveDot ->
+            val player = createNoYakuFiveDotWaitPlayer(
+                fiveDot = fiveDot,
+                extraStandingTile = Tile.Honor.East,
+            )
+            val tableState = FakeTableStateFactory.create(
+                players = listOf(player),
+                tileWall = TileWall(emptyList()),
+                config = RiichiRuleConfig(),
+            )
+            val eastId = player.hand.standingTiles.single { it.tile == Tile.Honor.East }.id
+
+            val analysis = analyzer.analyze(tableState, player).single { it.discardTileId == eastId }
+
+            assertEquals(
+                RiichiDiscardReadinessAnalyzer.StatusIds.WIN_AVAILABLE,
+                analysis.waitingTiles.single().winAvailability,
+            )
+        }
     }
 }

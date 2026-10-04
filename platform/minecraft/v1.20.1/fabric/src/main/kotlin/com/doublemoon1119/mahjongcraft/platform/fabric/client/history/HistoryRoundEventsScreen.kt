@@ -247,9 +247,10 @@ internal class HistoryRoundEventsScreen(
                     outcome.rows.forEach { row ->
                         val score = Text.translatable(MinecraftHistoryScreenKeys.ROUND_SCORE, actorText(events.identity, row.seatIndex), row.score?.toString() ?: "—")
                         row.scoreChange?.let { score.append(" (").append(eventPresenter.scoreChangeText(it)).append(")") }
-                        if (row.beneficiary) score.append(" • ").append(Text.translatable(MinecraftHistoryScreenKeys.ROUND_BENEFICIARY))
+                        eventPresenter.settlementStatusText(outcome, row)?.let { score.append(" • ").append(it) }
                         if (row.responsible) score.append(" • ").append(Text.translatable(MinecraftHistoryScreenKeys.ROUND_RESPONSIBLE))
-                        addText(score, if (row.beneficiary) ACCENT_COLOR else TEXT_COLOR, 24, participant(events.identity, row.seatIndex))
+                        val scoreColor = if (row.beneficiary && outcome.classification != RoundCompletionClassification.EXHAUSTIVE_DRAW.name) ACCENT_COLOR else TEXT_COLOR
+                        addText(score, scoreColor, 24, participant(events.identity, row.seatIndex))
                         savedOutcome?.winnerDetails?.firstOrNull { it.seatIndex == row.seatIndex }?.let { winner ->
                             addText(Text.translatable(MinecraftHistoryScreenKeys.STATE_WINNING_HAND), MUTED_COLOR, 38)
                             val round = currentRound()
