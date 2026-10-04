@@ -123,7 +123,7 @@ class CompactReplayRoundReaderGenuineTest {
         assertEquals(listOf(1, 0), initial.players.map { it.initialSeatIndex })
         assertEquals(fixture.table.currentPlayer.initialSeatIndex, initial.currentPlayerSeat)
         assertEquals(initial.tileCatalog.tiles.size + 1, after.tileCatalog.tiles.size)
-        assertEquals(after.players[0].handTiles.last(), after.players[0].lastDrawn)
+        assertEquals(fixture.changed.players[0].hand.lastDrawn?.tile, after.players[0].lastDrawn?.let { after.tileCatalog.tiles[it.tileIndex] })
         assertEquals(fixture.changed.players[0].hand.tiles.map { it.tile }, after.players[0].handTiles.map { after.tileCatalog.tiles[it.tileIndex] })
         val finalState = assertIs<ReplayReadResult.Success<HistoryRoundState>>(reader().readState(fixture.document, fixture.matchId, 1, HistoryRoundPosition.AfterTransaction(2))).value
         assertEquals(fixture.settled.players.associate { it.initialSeatIndex to it.score }, finalState.outcome?.scoresBySeat)
@@ -288,7 +288,7 @@ class CompactReplayRoundReaderGenuineTest {
         val base = FakeTableStateFactory.create(players = listOf(FakeMahjongPlayerFactory.create(discardPile = RiichiDiscardPile()), FakeMahjongPlayerFactory.create(discardPile = RiichiDiscardPile())), currentPlayerIndex = 1, config = RiichiRuleConfig())
         val table = base.copy(players = base.players.reversed())
         val newTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5))
-        val changed = table.copy(players = table.players.mapIndexed { index, player -> if (index == 0) player.copy(score = player.score + 100, hand = player.hand.copy(tiles = player.hand.tiles + newTile, lastDrawn = newTile)) else player })
+        val changed = table.copy(players = table.players.mapIndexed { index, player -> if (index == 0) player.copy(score = player.score + 100, hand = player.hand.copy(lastDrawn = newTile)) else player })
         val settled = changed.copy(players = changed.players.map { player -> player.copy(score = player.score + if (player.initialSeatIndex == 0) 250 else -250) })
         val matchId = Uuid.random()
         val events = listOf(

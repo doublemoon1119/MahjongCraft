@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay
 
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlin.test.Test
@@ -61,6 +62,20 @@ class CompactWinDetailsCodecTest {
         assertEquals(details, CompactWinDetailsCodec.decode(CompactWinDetailsCodec.encode(details)))
     }
 
+    /** 可選胡牌手牌描述應保留立牌順序、和牌張與特殊結算的 null。 */
+    @Test
+    fun `winning hand descriptor round trips`() {
+        val details = json.parseToJsonElement(
+            """
+            [{"playerId":0,"templateKey":"test:template","detailFields":[],
+              "hand":{"standingTileIds":[2,1],"winningTileId":3}},
+             {"playerId":1,"templateKey":"test:template","detailFields":[],
+              "hand":{"standingTileIds":[4],"winningTileId":null}}]
+            """.trimIndent(),
+        )
+        assertEquals(details, CompactWinDetailsCodec.decode(CompactWinDetailsCodec.encode(details)))
+    }
+
     /** 固定代碼或欄位長度錯誤時應拒絕精簡資料。 */
     @Test
     fun `corrupt codes and lengths are rejected`() {
@@ -74,6 +89,12 @@ class CompactWinDetailsCodecTest {
 
         val wrongFieldLength = JsonArray(listOf(JsonArray(listOf(JsonPrimitive(0), JsonPrimitive("test:template"), JsonArray(listOf(JsonArray(listOf(JsonPrimitive("test:field")))))))))
         assertFailsWith<IllegalArgumentException> { CompactWinDetailsCodec.decode(wrongFieldLength) }
+
+        val duplicateStanding = JsonArray(listOf(JsonArray(listOf(JsonPrimitive(0), JsonPrimitive("test:template"), JsonArray(emptyList()), JsonArray(listOf(JsonArray(listOf(JsonPrimitive(1), JsonPrimitive(1))), JsonNull))))))
+        assertFailsWith<IllegalArgumentException> { CompactWinDetailsCodec.decode(duplicateStanding) }
+
+        val winningInStanding = JsonArray(listOf(JsonArray(listOf(JsonPrimitive(0), JsonPrimitive("test:template"), JsonArray(emptyList()), JsonArray(listOf(JsonArray(listOf(JsonPrimitive(1))), JsonPrimitive(1)))))))
+        assertFailsWith<IllegalArgumentException> { CompactWinDetailsCodec.decode(winningInStanding) }
     }
 
     /** 非內建事實即使含有 winDetails 欄位，也不得套用和牌明細精簡格式。 */

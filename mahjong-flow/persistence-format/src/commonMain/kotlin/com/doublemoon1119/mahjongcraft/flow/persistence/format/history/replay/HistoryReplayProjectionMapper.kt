@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRe
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayMeld
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayPlayerState
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayRuleInformation
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayWinningHand
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundOutcome
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundPosition
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundState
@@ -59,7 +60,9 @@ internal class HistoryReplayProjectionMapper(private val registry: HistoryReplay
         require(roundPosition.prevalentWind == wind && roundPosition.roundNumber == roundNumber) { "Replay round position is inconsistent" }
         val wall = refs(obj(root.getValue("tileWall")).getValue("tiles"), context)
         val reserved = refs(root.getValue("initialDeadWall"), context)
-        val held = wall + reserved + players.flatMap { player -> player.handTiles + player.melds.flatMap { it.tiles } + player.discards.filterNot { it.isTaken }.map { it.tile } }
+        val held = wall + reserved + players.flatMap { player ->
+            player.handTiles + listOfNotNull(player.lastDrawn) + player.melds.flatMap { it.tiles } + player.discards.filterNot { it.isTaken }.map { it.tile }
+        }
         require(held.map { it.tileIndex }.distinct().size == held.size) { "Replay tile appears in multiple holding areas" }
         return HistoryRoundState(
             identity, roundNumber, position, tileCatalog, players, wall, reserved,
@@ -132,7 +135,7 @@ internal class HistoryReplayProjectionMapper(private val registry: HistoryReplay
         val hand = obj(value.getValue("hand"))
         val tiles = refs(hand.getValue("tiles"), context)
         val lastDrawn = hand.getValue("lastDrawn").takeUnless { it == JsonNull }?.let { context.tile(integer(it)) }
-        require(lastDrawn == null || lastDrawn in tiles) { "Replay last drawn tile must belong to the hand" }
+        require(lastDrawn == null || lastDrawn !in tiles) { "Replay last drawn tile must be separate from standing hand tiles" }
         val pile = obj(value.getValue("discardPile"))
         val typeKey = string(pile.getValue(ReplaySourceKeys.TYPE_KEY))
         val discards = registry.decodeDiscard(typeKey, pile.getValue(ReplayFormatKeys.PAYLOAD), context) ?: throw ReplayReadException(ReplayReadError.UNSUPPORTED_CONTENT)
@@ -229,6 +232,14 @@ internal class HistoryReplayProjectionMapper(private val registry: HistoryReplay
                         id = string(field.getValue("id")),
                         value = detailValue(obj(field.getValue("value")), context),
                     )
+                },
+                hand = item[ReplaySourceKeys.WINNING_HAND]?.takeUnless { it == JsonNull }?.let { handValue ->
+                    val hand = obj(handValue)
+                    val standing = refs(hand.getValue(ReplaySourceKeys.WINNING_STANDING_TILES), context)
+                    val winning = hand.getValue(ReplaySourceKeys.WINNING_TILE).takeUnless { it == JsonNull }?.let { context.tile(integer(it)) }
+                    require(standing.map { it.tileIndex }.distinct().size == standing.size) { "Replay winning hand contains duplicate standing tiles" }
+                    require(winning == null || winning !in standing) { "Replay winning tile must be separate from standing tiles" }
+                    HistoryReplayWinningHand(standing, winning)
                 },
             )
         }

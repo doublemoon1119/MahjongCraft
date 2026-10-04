@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRe
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayPlayerState
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayRuleInformation
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayTransaction
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayWinningHand
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundEvents
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundOutcome
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundPosition
@@ -117,6 +118,13 @@ private fun HistoryWinnerDetails.toDto(): HistoryWinnerDetailsDto = HistoryWinne
     seatIndex = seatIndex,
     templateKey = templateKey,
     detailFields = detailFields.map { it.toDto() },
+    hand = hand?.toDto(),
+)
+
+/** 將歷史胡牌手牌映射為網路 DTO。 */
+private fun HistoryReplayWinningHand.toDto(): HistoryReplayWinningHandDto = HistoryReplayWinningHandDto(
+    standingTiles = standingTiles.map { it.tileIndex },
+    winningTile = winningTile?.tileIndex,
 )
 
 /** 將歷史胡牌詳情欄位映射為網路 DTO。

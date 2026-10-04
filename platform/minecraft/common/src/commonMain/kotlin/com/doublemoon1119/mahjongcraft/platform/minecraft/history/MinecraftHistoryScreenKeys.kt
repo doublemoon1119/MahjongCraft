@@ -230,6 +230,99 @@ object MinecraftHistoryScreenKeys {
     /** 單局事件畫面標題。 */
     const val ROUND_TITLE = "mahjongcraft.history_screen.round.title"
 
+    /** 單局牌面狀態畫面標題。 */
+    const val STATE_TITLE = "mahjongcraft.history_screen.state.title"
+
+    /** 初始牌面狀態標籤。 */
+    const val STATE_INITIAL = "mahjongcraft.history_screen.state.initial"
+
+    /** 交易完成後牌面狀態標籤。 */
+    const val STATE_AFTER_TRANSACTION = "mahjongcraft.history_screen.state.after_transaction"
+
+    /** 開啟交易完成後完整牌面。 */
+    const val STATE_OPEN = "mahjongcraft.history_screen.state.open"
+
+    /** 開啟交易完成後完整牌面提示。 */
+    const val STATE_OPEN_TOOLTIP = "mahjongcraft.history_screen.state.open_tooltip"
+
+    /** 開啟初始牌面。 */
+    const val STATE_INITIAL_OPEN = "mahjongcraft.history_screen.state.initial_open"
+
+    /** 手牌區標籤。 */
+    const val STATE_HAND = "mahjongcraft.history_screen.state.hand"
+
+    /** 保存順序的可點擊狀態文字。 */
+    const val STATE_SORT_ORIGINAL = "mahjongcraft.history_screen.state.sort_original"
+
+    /** 理牌順序的可點擊狀態文字。 */
+    const val STATE_SORT_SORTED = "mahjongcraft.history_screen.state.sort_sorted"
+
+    /** 點擊後切換目標的操作提示。 */
+    const val STATE_SORT_TOOLTIP = "mahjongcraft.history_screen.state.sort_tooltip"
+
+    /** 無法解析規則牌序時的保留順序提示。 */
+    const val STATE_SORT_UNAVAILABLE = "mahjongcraft.history_screen.state.sort_unavailable"
+
+    /** 保存順序的狀態名稱。 */
+    const val STATE_SORT_MODE_ORIGINAL = "mahjongcraft.history_screen.state.sort_mode_original"
+
+    /** 理牌順序的狀態名稱。 */
+    const val STATE_SORT_MODE_SORTED = "mahjongcraft.history_screen.state.sort_mode_sorted"
+
+    /** 牌河標題與累計捨牌張數。 */
+    const val STATE_DISCARDS_COUNT = "mahjongcraft.history_screen.state.discards_count"
+
+    /** 牌河張數包含被鳴走捨牌的說明。 */
+    const val STATE_DISCARDS_COUNT_TOOLTIP = "mahjongcraft.history_screen.state.discards_count_tooltip"
+
+    /** 副露區標籤。 */
+    const val STATE_MELDS = "mahjongcraft.history_screen.state.melds"
+
+    /** 牌河區標籤。 */
+    const val STATE_DISCARDS = "mahjongcraft.history_screen.state.discards"
+
+    /** 活牌區標籤。 */
+    const val STATE_WALL = "mahjongcraft.history_screen.state.wall"
+
+    /** 保留牌區標籤。 */
+    const val STATE_RESERVED = "mahjongcraft.history_screen.state.reserved"
+
+    /** 和牌手牌標籤。 */
+    const val STATE_WINNING_HAND = "mahjongcraft.history_screen.state.winning_hand"
+
+    /** 在事件明細展開完整和牌手牌的入口。 */
+    const val STATE_LOAD_WINNING_HAND = "mahjongcraft.history_screen.state.load_winning_hand"
+
+    /** 展開和牌手牌所需查詢與呈現位置的提示。 */
+    const val STATE_LOAD_WINNING_HAND_TOOLTIP = "mahjongcraft.history_screen.state.load_winning_hand_tooltip"
+
+    /** 未記錄完整和牌牌組提示。 */
+    const val STATE_WINNING_HAND_UNAVAILABLE = "mahjongcraft.history_screen.state.winning_hand_unavailable"
+
+    /** 局內牌索引標籤。 */
+    const val STATE_TILE_INDEX = "mahjongcraft.history_screen.state.tile_index"
+
+    /** 已被取走標籤。 */
+    const val STATE_TAKEN = "mahjongcraft.history_screen.state.taken"
+
+    /** 牌牆展開區塊與兩區剩餘數量。 */
+    const val STATE_WALL_SECTION = "mahjongcraft.history_screen.state.wall_section"
+
+    /** 展開牌牆區塊的操作提示。 */
+    const val STATE_WALL_EXPAND_TOOLTIP = "mahjongcraft.history_screen.state.wall_expand_tooltip"
+
+    /** 收合牌牆區塊的操作提示。 */
+    const val STATE_WALL_COLLAPSE_TOOLTIP = "mahjongcraft.history_screen.state.wall_collapse_tooltip"
+
+    /** 空內容標籤。 */
+    const val STATE_EMPTY = "mahjongcraft.history_screen.state.empty"
+
+    /** 目前回合標籤。 */
+    const val STATE_CURRENT = "mahjongcraft.history_screen.state.current"
+
+    /** 莊家標籤。 */
+    const val STATE_DEALER = "mahjongcraft.history_screen.state.dealer"
+
     /** 單局序號。 */
     const val ROUND_NUMBER = "mahjongcraft.history_screen.round.number"
 

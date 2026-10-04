@@ -1,8 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryParticipantSummaryDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayFactDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayIdentityDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundPositionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinDetailValueDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDomain
@@ -19,6 +21,7 @@ import net.minecraft.client.gui.widget.ButtonWidget
 import net.minecraft.text.OrderedText
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
+import kotlin.math.ceil
 
 /**
  * 顯示已授權的單局交易及保存結果，不在客戶端重算規則或計分。
@@ -60,10 +63,16 @@ internal class HistoryRoundEventsScreen(
     /** 重新整理或重試控制項。 */
     private var refreshButton: ButtonWidget? = null
 
+    /** 初始牌面導航。 */
+    private var initialButton: ButtonWidget? = null
+
+    /** 完整手牌與狀態頁共用的牌組繪製。 */
+    private val tileGroups = HistoryTileGroupRenderer(tileFaceRenderer, tileAssetRegistry)
+
     /** 建立固定控制項並恢復此局位置。 */
     override fun init() {
         val timingLines = textRenderer.wrapLines(timingText(), (width - 112).coerceAtLeast(1)).size
-        layout = HistoryRoundEventsLayout.measure(width, height, 28 + timingLines * LINE_HEIGHT)
+        layout = HistoryRoundEventsLayout.measure(width, height, 52 + timingLines * LINE_HEIGHT)
         scroll = currentRound()?.eventScrollOffset ?: 0.0
         displayedStart = currentRound()?.events?.transactions?.firstOrNull()?.index
         dragging = false
@@ -86,6 +95,9 @@ internal class HistoryRoundEventsScreen(
                 session.controller.refreshRound()
             }
         }.dimensions((width - 88).coerceAtLeast(8), 16, 80.coerceAtMost((width - 16).coerceAtLeast(1)), 20).build().also(::addDrawableChild)
+        initialButton = ButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.STATE_INITIAL_OPEN)) {
+            if (session.controller.canQueryRound()) session.openRoundState(HistoryRoundPositionDto.Initial)
+        }.dimensions(8, 16, (width - 104).coerceIn(1, 100), 20).build().also(::addDrawableChild)
     }
 
     /** 歷史瀏覽不暫停整合伺服器。 */
@@ -116,7 +128,7 @@ internal class HistoryRoundEventsScreen(
         val heading = title.copy().append(" • ").append(Text.translatable(MinecraftHistoryScreenKeys.ROUND_NUMBER, round?.roundNumber ?: "—"))
         context.drawCenteredTextWithShadow(textRenderer, heading, width / 2, 2, TEXT_COLOR)
         textRenderer.wrapLines(timingText(), (width - 112).coerceAtLeast(1)).forEachIndexed { index, line ->
-            context.drawTextWithShadow(textRenderer, line, 10, 18 + index * LINE_HEIGHT, MUTED_COLOR)
+            context.drawTextWithShadow(textRenderer, line, 10, 40 + index * LINE_HEIGHT, MUTED_COLOR)
         }
         updateButtons(status)
         val events = round?.events?.takeIf { status == HistoryBrowseStatus.Ready }
@@ -172,6 +184,8 @@ internal class HistoryRoundEventsScreen(
         previousButton?.tooltip = tooltip
         nextButton?.tooltip = tooltip
         refreshButton?.tooltip = tooltip
+        initialButton?.active = canQuery && status == HistoryBrowseStatus.Ready
+        initialButton?.tooltip = tooltip
     }
 
     /**
@@ -212,9 +226,16 @@ internal class HistoryRoundEventsScreen(
             val heading = Text.translatable(MinecraftHistoryScreenKeys.ROUND_TRANSACTION, transaction.index + 1, HistoryScreenText.endedAt(transaction.occurredAtEpochMillis))
             if (transaction.isOpening) heading.append(" • ").append(Text.translatable(MinecraftHistoryScreenKeys.ROUND_OPENING))
             addText(heading, ACCENT_COLOR)
+            rows += Row.StateLink(transaction.index, inline = false)
             rows += Row.Space(4)
             if (transaction.facts.isEmpty()) addText(Text.translatable(MinecraftHistoryScreenKeys.ROUND_EMPTY_FACTS), MUTED_COLOR, 16)
-            transaction.facts.forEach { fact ->
+            transaction.facts.forEachIndexed { factIndex, fact ->
+                val savedFact = events.transactions.first { it.index == transaction.index }.facts[factIndex]
+                val savedOutcome = when (savedFact) {
+                    is HistoryReplayFactDto.Completion -> savedFact.outcome
+                    is HistoryReplayFactDto.RuleEffect -> savedFact.outcome
+                    else -> null
+                }
                 val participant = fact.actorSeat?.let { participant(events.identity, it) }
                 val label = fact.actorSeat?.let { actorText(events.identity, it).copy().append(": ").append(fact.text) } ?: fact.text
                 addText(label, TEXT_COLOR, 16, participant, fact.identifiers)
@@ -229,6 +250,26 @@ internal class HistoryRoundEventsScreen(
                         if (row.beneficiary) score.append(" • ").append(Text.translatable(MinecraftHistoryScreenKeys.ROUND_BENEFICIARY))
                         if (row.responsible) score.append(" • ").append(Text.translatable(MinecraftHistoryScreenKeys.ROUND_RESPONSIBLE))
                         addText(score, if (row.beneficiary) ACCENT_COLOR else TEXT_COLOR, 24, participant(events.identity, row.seatIndex))
+                        savedOutcome?.winnerDetails?.firstOrNull { it.seatIndex == row.seatIndex }?.let { winner ->
+                            addText(Text.translatable(MinecraftHistoryScreenKeys.STATE_WINNING_HAND), MUTED_COLOR, 38)
+                            val round = currentRound()
+                            val position = HistoryRoundPositionDto.AfterTransaction(transaction.index)
+                            val state = round?.state?.takeIf { round.stateStatus == HistoryBrowseStatus.Ready && it.position == position }
+                            val hand = state?.let { HistoryRoundStatePresenter.winningHand(it, winner, (layout.contentWidth - 54).coerceAtLeast(1).toFloat()) }
+                            when {
+                                winner.hand == null -> addText(Text.translatable(MinecraftHistoryScreenKeys.STATE_WINNING_HAND_UNAVAILABLE), MUTED_COLOR, 46)
+                                hand != null -> rows += Row.Hand(hand, state.tileCatalog)
+                                state != null -> addText(Text.translatable(MinecraftHistoryScreenKeys.STATE_WINNING_HAND_UNAVAILABLE), MUTED_COLOR, 46)
+                                round?.requestedPosition == position && round.stateStatus == HistoryBrowseStatus.Loading -> addText(Text.translatable(MinecraftHistoryScreenKeys.LOADING), MUTED_COLOR, 46)
+                                else -> {
+                                    val failure = round?.stateStatus as? HistoryBrowseStatus.Failed
+                                    if (round?.requestedPosition == position && failure != null) {
+                                        addText(Text.translatable("${MinecraftHistoryScreenKeys.FAILURE_PREFIX}${failure.reason.name.lowercase()}"), ERROR_COLOR, 46)
+                                    }
+                                    rows += Row.StateLink(transaction.index, inline = true)
+                                }
+                            }
+                        }
                         if (row.detailFields.isNotEmpty()) {
                             addText(Text.translatable(MinecraftHistoryScreenKeys.ROUND_WIN_DETAILS), MUTED_COLOR, 38)
                             row.detailFields.forEach detailField@{ field ->
@@ -303,6 +344,27 @@ internal class HistoryRoundEventsScreen(
                             if (hovered && mouseX >= x && mouseX < x + TILE_WIDTH && mouseY >= y && mouseY < y + TILE_HEIGHT) tooltip = listOf(Text.literal(asset))
                         }
                         is Row.Space -> Unit
+                        is Row.StateLink -> {
+                            val enabled = session.controller.canQueryRound()
+                            val linkHover = hovered && mouseY >= y && mouseY < y + row.height
+                            val text = Text.translatable(if (row.inline) MinecraftHistoryScreenKeys.STATE_LOAD_WINNING_HAND else MinecraftHistoryScreenKeys.STATE_OPEN).styled { it.withUnderline(true) }
+                            context.drawTextWithShadow(
+                                textRenderer,
+                                text,
+                                layout.left + row.indent,
+                                y,
+                                when {
+                                    !enabled -> MUTED_COLOR
+                                    linkHover -> LINK_HOVER_COLOR
+                                    else -> LINK_COLOR
+                                },
+                            )
+                            if (linkHover) tooltip = listOf(Text.translatable(if (row.inline) MinecraftHistoryScreenKeys.STATE_LOAD_WINNING_HAND_TOOLTIP else MinecraftHistoryScreenKeys.STATE_OPEN_TOOLTIP))
+                        }
+                        is Row.Hand -> {
+                            val hit = tileGroups.render(context, row.layout, row.catalog, layout.left + 46, y, mouseX, mouseY)
+                            if (hovered) hit?.let { tooltip = it }
+                        }
                     }
                     y += row.height
                 }
@@ -434,6 +496,21 @@ internal class HistoryRoundEventsScreen(
             updateDrag(mouseY)
             return true
         }
+        val events = currentRound()?.takeIf { it.eventsStatus == HistoryBrowseStatus.Ready }?.events
+        if (button == 0 && events != null && session.controller.canQueryRound()) {
+            var top = layout.contentTop + 4 - scroll.toInt()
+            buildCards(events).forEach { card ->
+                var y = top + 4
+                card.rows.forEach { row ->
+                    if (row is Row.StateLink && layout.containsCard(mouseX, mouseY, y, row.height)) {
+                        val handled = if (row.inline) session.controller.loadRoundStateForDetails(row.index) else session.openRoundState(HistoryRoundPositionDto.AfterTransaction(row.index))
+                        if (handled) return true
+                    }
+                    y += row.height
+                }
+                top += card.height
+            }
+        }
         return super.mouseClicked(mouseX, mouseY, button)
     }
 
@@ -532,6 +609,33 @@ internal class HistoryRoundEventsScreen(
         data class Space(
             override val height: Int,
         ) : Row
+
+        /** 完整狀態或和牌手牌的單筆查詢入口。
+         * @property index 已確認交易索引。
+         * @property inline 是否留在事件頁展開手牌。
+         */
+        data class StateLink(
+            val index: Int,
+            val inline: Boolean,
+        ) : Row {
+            /** 控制列高度。 */
+            override val height: Int = LINE_HEIGHT + 4
+
+            /** 控制列縮排。 */
+            val indent: Int = if (inline) 46 else 16
+        }
+
+        /** 完整和牌手牌群組。
+         * @property layout 共用群組排列。
+         * @property catalog 經驗證的同筆牌目錄。
+         */
+        data class Hand(
+            val layout: HistoryTileGroupLayout,
+            val catalog: List<TileDto>,
+        ) : Row {
+            /** 牌組完整高度與段落間距。 */
+            override val height: Int = ceil(layout.height).toInt() + 8
+        }
     }
 
     /** 共用尺寸與配色。 */
@@ -556,6 +660,12 @@ internal class HistoryRoundEventsScreen(
 
         /** 重要資訊。 */
         const val ACCENT_COLOR = 0x8ed5df
+
+        /** 牌面狀態連結。 */
+        const val LINK_COLOR = 0xe8c878
+
+        /** 牌面狀態連結游標提示。 */
+        const val LINK_HOVER_COLOR = 0xffe7a8
 
         /** 失敗訊息。 */
         const val ERROR_COLOR = 0xff6666

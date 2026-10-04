@@ -45,11 +45,13 @@ data class HistoryWinDetailField(val id: String, val value: HistoryWinDetailValu
  * @property seatIndex 贏家座位。
  * @property templateKey 規則專屬詳情模板識別碼。
  * @property detailFields 規則專屬詳情欄位。
+ * @property hand 保存結算順序的立牌與和牌張；未記錄時為 null。
  */
 data class HistoryWinnerDetails(
     val seatIndex: Int,
     val templateKey: String,
     val detailFields: List<HistoryWinDetailField>,
+    val hand: HistoryReplayWinningHand? = null,
 )
 
 /** 歷史規則專屬公開資訊。

@@ -137,6 +137,15 @@ internal object ReplaySourceKeys {
     /** 精簡事實中的新公開牌。 */
     const val REVEALED_TILES = "revealedTiles"
 
+    /** 胡牌詳情中的手牌描述。 */
+    const val WINNING_HAND = "hand"
+
+    /** 胡牌詳情中的有序立牌參照。 */
+    const val WINNING_STANDING_TILES = "standingTileIds"
+
+    /** 胡牌詳情中的獨立和牌參照。 */
+    const val WINNING_TILE = "winningTileId"
+
     /** 玩家或牌的識別碼。 */
     const val ID = "id"
 

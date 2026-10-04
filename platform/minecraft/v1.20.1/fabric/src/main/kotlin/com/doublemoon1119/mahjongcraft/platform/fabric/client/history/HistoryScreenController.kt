@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.concurrency.ClientThreadCoroutineDispatcher
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileFaceRenderer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
@@ -24,6 +25,7 @@ import kotlin.uuid.Uuid
  * @property ruleNames 規則名稱 registry。
  * @property configResolver 將歷史開局設定轉為唯讀欄位的呈現解析器。
  * @property networkRegistries 解碼歷史規則設定的正式網路註冊表。
+ * @property moduleRegistry 解析歷史規則的牌面顯示順序。
  * @property actionVocabulary 歷史動作的規則專屬名稱來源。
  * @property exhaustiveDrawReasons 流局原因名稱來源。
  * @property settlementTemplates 結算明細欄位的規則專屬標題來源。
@@ -39,6 +41,7 @@ class HistoryScreenController internal constructor(
     @Provided private val ruleNames: RuleModuleDisplayNameRegistry,
     @Provided private val configResolver: GameConfigPresentationResolver,
     @Provided private val networkRegistries: NetworkDtoRegistries,
+    @Provided private val moduleRegistry: MahjongModuleRegistry,
     @Provided private val actionVocabulary: GameActionVocabularyRegistry,
     @Provided private val exhaustiveDrawReasons: ExhaustiveDrawReasonDisplayNameRegistry,
     @Provided private val settlementTemplates: WinSettlementPresentationTemplateRegistry,
@@ -112,6 +115,7 @@ class HistoryScreenController internal constructor(
             ruleNames,
             configResolver,
             networkRegistries,
+            moduleRegistry,
             actionVocabulary,
             exhaustiveDrawReasons,
             settlementTemplates,

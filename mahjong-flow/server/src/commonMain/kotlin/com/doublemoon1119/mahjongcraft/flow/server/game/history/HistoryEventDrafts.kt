@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryActionRes
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinDetails
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinningHand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
@@ -62,5 +63,6 @@ fun winSettlementHistoryDetails(
         playerId = winner.playerId,
         templateKey = request.templateKey,
         detailFields = resolverRegistry.historyFields(ruleModuleId, winner.detailFields),
+        hand = HistoryWinningHand(winner.standingTileIds, winner.winningTileId),
     )
 }

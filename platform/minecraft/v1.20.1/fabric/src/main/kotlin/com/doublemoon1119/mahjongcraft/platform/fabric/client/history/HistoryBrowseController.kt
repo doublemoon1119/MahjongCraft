@@ -179,6 +179,27 @@ internal class HistoryBrowseController(
         !isRefreshCoolingDown()
 
     /**
+     * 確保牌面狀態頁已排程取得同一對局的規則設定。
+     *
+     * 牌面狀態頁不因背景補查而離開目前頁面；已載入、載入中、失敗或屬於其他對局的結果
+     * 都不會被自動覆寫，也不會因失敗而自動重試。
+     *
+     * @return 是否已接受新的規則設定查詢。
+     */
+    fun ensureRoundStateRuleSettings(): Boolean {
+        val round = currentRound() ?: return false
+        if (!available() || state.value.page != HistoryBrowsePage.ROUND_STATE || round.stateStatus != HistoryBrowseStatus.Ready || !canQueryRound()) return false
+        val matchId = state.value.summary?.matchId ?: return false
+        val existing = state.value.ruleSettings
+        if (existing != null) return false
+        mutableState.value = state.value.copy(
+            ruleSettings = HistoryBrowseRuleSettingsState(matchId, status = HistoryBrowseStatus.Loading),
+        )
+        enqueue(Intent.RuleSettings(generation, matchId, state.value.query), Duration.ZERO)
+        return true
+    }
+
+    /**
      * 判斷最近一次查詢是否仍在最短請求間隔內。
      *
      * @return 尚未達到下一次查詢時間時為 true。
@@ -341,6 +362,18 @@ internal class HistoryBrowseController(
      * @return 是否接受前進。
      */
     fun nextRoundState(): Boolean = navigateRoundState(1)
+
+    /** 查詢事件明細的完整牌組而不離開事件頁，沿用相同在途限制與快取。
+     * @param transactionIndex 已確認存在的交易索引。
+     * @return 是否接受查詢。
+     */
+    fun loadRoundStateForDetails(transactionIndex: Int): Boolean {
+        val round = currentRound() ?: return false
+        if (state.value.page != HistoryBrowsePage.ROUND_EVENTS || !canQueryRound() || transactionIndex !in round.knownTransactionIndices) return false
+        abandonPending()
+        requestRoundState(HistoryRoundPositionDto.AfterTransaction(transactionIndex))
+        return true
+    }
 
     /** 前往上一筆，第一筆交易之前為初始牌面。
      * @return 是否接受後退。

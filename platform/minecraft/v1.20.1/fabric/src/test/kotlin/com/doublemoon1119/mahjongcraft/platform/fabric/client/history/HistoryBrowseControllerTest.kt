@@ -12,16 +12,28 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryOutcomeFi
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryParticipantSummaryDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryErrorCodeDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryScopeDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayIdentityDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayPlayerIdentityDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayPlayerStateDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsRequestDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsResponseDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundPositionDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateRequestDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateResponseDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundSummaryDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSettingsRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSettingsResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySortDirectionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySortFieldDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryResponseDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.WindDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.registerBuiltInRuleConfigDtos
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.MatchRoundPhaseDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.MatchRoundPositionDto
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -545,6 +557,44 @@ class HistoryBrowseControllerTest {
         assertEquals(config, controller.state.value.ruleSettings?.config)
     }
 
+    /** 牌面狀態頁會補查同場規則設定，且不重複排程或離開目前頁面。 */
+    @Test
+    fun `round state ensures same match rule settings without navigation`() = runTest {
+        val transport = FakeHistoryQueryTransport()
+        val controller = controller(transport)
+        val matchId = "00000000-0000-0000-0000-000000000001"
+        controller.open()
+        runCurrent()
+        transport.respondList(entries = listOf(summary(matchId)))
+        runCurrent()
+        assertTrue(controller.showSummary(matchId))
+        advanceTimeBy(250)
+        runCurrent()
+        transport.respondSummary(HistoryMatchDetailDto(summary(matchId), listOf(HistoryRoundSummaryDto(1, null, null))))
+        runCurrent()
+        assertTrue(controller.showRound(1))
+        advanceTimeBy(250)
+        runCurrent()
+        transport.respondRoundEvents(matchId)
+        runCurrent()
+        assertTrue(controller.showRoundState(HistoryRoundPositionDto.Initial))
+        advanceTimeBy(250)
+        runCurrent()
+        transport.respondRoundState(matchId)
+        runCurrent()
+
+        assertFalse(controller.ensureRoundStateRuleSettings())
+        advanceTimeBy(250)
+        runCurrent()
+        assertTrue(controller.ensureRoundStateRuleSettings())
+        assertEquals(HistoryBrowsePage.ROUND_STATE, controller.state.value.page)
+        assertEquals(HistoryBrowseStatus.Loading, controller.state.value.ruleSettings?.status)
+        assertFalse(controller.ensureRoundStateRuleSettings())
+        advanceTimeBy(250)
+        runCurrent()
+        assertEquals(1, transport.ruleSettingsRequests.size)
+    }
+
     /** 規則設定失敗保留手動重試，冷卻期間不能重送。 */
     @Test
     fun `test rule settings retry waits for cooldown and preserves selected match`() = runTest {
@@ -778,17 +828,33 @@ class HistoryBrowseControllerTest {
             return actual.requestId
         }
 
-        /** 未在既有列表回歸測試中使用的事件頁查詢。
+        /** 已發出的事件頁要求。 */
+        val roundEventsRequests = mutableListOf<HistoryRoundEventsRequestDto>()
+
+        /** 發出事件頁查詢並記錄要求。
          * @param request 單局事件要求。
          * @return 配對識別碼。
          */
-        override fun queryRoundEvents(request: HistoryRoundEventsRequestDto): String = error("Round events are not used by this fixture")
+        override fun queryRoundEvents(request: HistoryRoundEventsRequestDto): String {
+            val actual = request.copy(requestId = "events-${roundEventsRequests.size + 1}")
+            roundEventsRequests += actual
+            mutableState.value = ClientHistoryQueryState.Loading(actual.requestId)
+            return actual.requestId
+        }
 
-        /** 未在既有列表回歸測試中使用的牌面查詢。
+        /** 已發出的牌面要求。 */
+        val roundStateRequests = mutableListOf<HistoryRoundStateRequestDto>()
+
+        /** 發出牌面查詢並記錄要求。
          * @param request 單局牌面要求。
          * @return 配對識別碼。
          */
-        override fun queryRoundState(request: HistoryRoundStateRequestDto): String = error("Round states are not used by this fixture")
+        override fun queryRoundState(request: HistoryRoundStateRequestDto): String {
+            val actual = request.copy(requestId = "state-${roundStateRequests.size + 1}")
+            roundStateRequests += actual
+            mutableState.value = ClientHistoryQueryState.Loading(actual.requestId)
+            return actual.requestId
+        }
 
         /** 記錄控制器取消的要求。 */
         override fun cancel(requestId: String): Boolean {
@@ -829,6 +895,61 @@ class HistoryBrowseControllerTest {
          */
         fun respondSummary(detail: HistoryMatchDetailDto?, requestId: String = summaryRequests.last().requestId) {
             mutableState.value = ClientHistoryQueryState.SummaryResult(HistorySummaryResponseDto(requestId, detail))
+        }
+
+        /** 回覆最小有效事件頁。
+         * @param matchId 對局識別碼。
+         * @param requestId 要配對的要求識別碼。
+         */
+        fun respondRoundEvents(matchId: String, requestId: String = roundEventsRequests.last().requestId) {
+            val identity = HistoryReplayIdentityDto(
+                matchId,
+                "00000000-0000-0000-0000-000000000002",
+                listOf(HistoryReplayPlayerIdentityDto(0, null, null)),
+            )
+            mutableState.value = ClientHistoryQueryState.RoundEventsResult(
+                HistoryRoundEventsResponseDto(
+                    requestId,
+                    matchId,
+                    1,
+                    0,
+                    HistoryRoundEventsDto(identity, 1, emptyList(), null, emptyList()),
+                ),
+            )
+        }
+
+        /** 回覆最小有效初始牌面。
+         * @param matchId 對局識別碼。
+         * @param requestId 要配對的要求識別碼。
+         */
+        fun respondRoundState(matchId: String, requestId: String = roundStateRequests.last().requestId) {
+            val identity = HistoryReplayIdentityDto(
+                matchId,
+                "00000000-0000-0000-0000-000000000002",
+                listOf(HistoryReplayPlayerIdentityDto(0, null, null)),
+            )
+            val state = HistoryRoundStateDto(
+                identity = identity,
+                roundNumber = 1,
+                position = HistoryRoundPositionDto.Initial,
+                tileCatalog = emptyList(),
+                players = listOf(HistoryReplayPlayerStateDto(0, emptyList(), emptyList(), null, emptyList(), 0, WindDto.EAST, null)),
+                wallTiles = emptyList(),
+                reservedTiles = emptyList(),
+                currentPlayerSeat = 0,
+                dealerSeat = 0,
+                prevalentWind = WindDto.EAST,
+                roundPosition = MatchRoundPositionDto(0, WindDto.EAST, 1, MatchRoundPhaseDto.REGULAR),
+                comboCount = 0,
+                finishedPlayerSeats = emptySet(),
+                dynamicRuleState = null,
+                hasPendingReaction = false,
+                hasPendingKanReaction = false,
+                outcome = null,
+            )
+            mutableState.value = ClientHistoryQueryState.RoundStateResult(
+                HistoryRoundStateResponseDto(requestId, matchId, 1, HistoryRoundPositionDto.Initial, state),
+            )
         }
 
         /** 發出規則設定回應。

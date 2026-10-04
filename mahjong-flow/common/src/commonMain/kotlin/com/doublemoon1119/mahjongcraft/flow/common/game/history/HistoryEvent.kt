@@ -152,11 +152,13 @@ sealed interface HistoryFact {
  * @property playerId 胡牌玩家 UUID。
  * @property templateKey 對應規則呈現模板的穩定識別碼。
  * @property detailFields 已解析的翻符、役種或其他規則擴充欄位。
+ * @property hand 結算時的立牌順序及和牌張；未記錄時為 null。
  */
 data class HistoryWinDetails(
     val playerId: Uuid,
     val templateKey: String,
     val detailFields: List<WinSettlementDetailField>,
+    val hand: HistoryWinningHand? = null,
 ) {
     init {
         require(detailFields.map(WinSettlementDetailField::id).distinct().size == detailFields.size)

@@ -273,12 +273,24 @@ data class HistoryRoundOutcomeDto(
  * @property seatIndex 贏家座位。
  * @property templateKey 規則專屬詳情模板識別碼。
  * @property detailFields 規則專屬詳情欄位。
+ * @property hand 保存結算順序的立牌與獨立和牌張；未記錄時為 null。
  */
 @Serializable
 data class HistoryWinnerDetailsDto(
     val seatIndex: Int,
     val templateKey: String,
     val detailFields: List<HistoryWinDetailFieldDto>,
+    val hand: HistoryReplayWinningHandDto? = null,
+)
+
+/** 歷史胡牌手牌 DTO。
+ * @property standingTiles 不含和牌張的有序立牌索引。
+ * @property winningTile 獨立和牌索引；特殊結算時為 null。
+ */
+@Serializable
+data class HistoryReplayWinningHandDto(
+    val standingTiles: List<Int>,
+    val winningTile: Int? = null,
 )
 
 /** 歷史胡牌詳情欄位 DTO。

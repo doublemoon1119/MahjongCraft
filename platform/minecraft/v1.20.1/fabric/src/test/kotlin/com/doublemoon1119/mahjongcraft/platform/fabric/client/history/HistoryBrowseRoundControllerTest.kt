@@ -183,6 +183,71 @@ class HistoryBrowseRoundControllerTest {
         assertEquals(2, transport.roundEventsRequests.last().startTransactionIndex)
     }
 
+    /** 和牌明細僅接受已確認交易，並保持事件頁與捲動位置。 */
+    @Test
+    fun `test inline detail lookup keeps event page and event scroll`() = runTest {
+        val transport = FakeRoundHistoryTransport()
+        val controller = openRound(transport)
+        transport.respondEvents(roundNumber = 1, start = 0, next = null)
+        runCurrent()
+        assertTrue(controller.rememberRoundPosition(42.0))
+        advanceTimeBy(250)
+        runCurrent()
+
+        assertTrue(controller.loadRoundStateForDetails(0))
+        assertEquals(HistoryBrowsePage.ROUND_EVENTS, controller.state.value.page)
+        advanceTimeBy(250)
+        runCurrent()
+        assertEquals(HistoryRoundPositionDto.AfterTransaction(0), transport.roundStateRequests.last().position)
+        transport.respondState(roundNumber = 1, position = HistoryRoundPositionDto.AfterTransaction(0))
+        runCurrent()
+
+        val round = controller.state.value.rounds.getValue(1)
+        assertEquals(HistoryBrowsePage.ROUND_EVENTS, controller.state.value.page)
+        assertEquals(42.0, round.eventScrollOffset)
+        assertEquals(HistoryBrowseStatus.Ready, round.eventsStatus)
+        assertEquals(HistoryBrowseStatus.Ready, round.stateStatus)
+        assertEquals(HistoryRoundPositionDto.AfterTransaction(0), round.state?.position)
+    }
+
+    /** 未知交易、冷卻期間與已有在途工作時拒絕明細查詢。 */
+    @Test
+    fun `test inline detail lookup rejects unknown cooling and in flight requests`() = runTest {
+        val transport = FakeRoundHistoryTransport()
+        val controller = openRound(transport)
+        transport.respondEvents(roundNumber = 1, start = 0, next = null)
+        runCurrent()
+
+        assertFalse(controller.loadRoundStateForDetails(99))
+        assertFalse(controller.loadRoundStateForDetails(-1))
+        advanceTimeBy(250)
+        runCurrent()
+        assertTrue(controller.loadRoundStateForDetails(0))
+        assertFalse(controller.loadRoundStateForDetails(0))
+    }
+
+    /** 同筆交易的多名贏家共用一次成功的桌況查詢。 */
+    @Test
+    fun `test inline detail state is shared for multiple winner expansions`() = runTest {
+        val transport = FakeRoundHistoryTransport()
+        val controller = openRound(transport)
+        transport.respondEvents(roundNumber = 1, start = 0, next = null)
+        runCurrent()
+        advanceTimeBy(250)
+        runCurrent()
+
+        assertTrue(controller.loadRoundStateForDetails(0))
+        advanceTimeBy(250)
+        runCurrent()
+        assertEquals(1, transport.roundStateRequests.count { it.position == HistoryRoundPositionDto.AfterTransaction(0) })
+        transport.respondState(roundNumber = 1, position = HistoryRoundPositionDto.AfterTransaction(0))
+        runCurrent()
+
+        val sharedState = controller.state.value.rounds.getValue(1).state
+        assertEquals(HistoryRoundPositionDto.AfterTransaction(0), sharedState?.position)
+        assertEquals(HistoryBrowsePage.ROUND_EVENTS, controller.state.value.page)
+    }
+
     /** 事件與牌面位置分別保存捲動值，返回局頁時不遺失。 */
     @Test
     fun `test round positions are retained across state and summary navigation`() = runTest {

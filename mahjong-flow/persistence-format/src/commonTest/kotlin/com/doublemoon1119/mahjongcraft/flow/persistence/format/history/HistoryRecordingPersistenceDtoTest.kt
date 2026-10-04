@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecording
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableChange
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableResult
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinDetails
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinningHand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailField
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailValue
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.buildBuiltInPersistenceRegistries
@@ -175,6 +176,7 @@ class HistoryRecordingPersistenceDtoTest {
         val matchId = Uuid.random()
         val winner = Uuid.random()
         val tile = Uuid.random()
+        val standing = listOf(Uuid.random(), Uuid.random())
         val details = HistoryWinDetails(
             winner,
             "mahjongcraft:riichi",
@@ -186,6 +188,7 @@ class HistoryRecordingPersistenceDtoTest {
                 ),
                 WinSettlementDetailField("mahjongcraft:tiles", WinSettlementDetailValue.Tiles(listOf(tile))),
             ),
+            hand = HistoryWinningHand(standing, tile),
         )
         val state = HistoryRecordingState(
             pendingEvents = listOf(

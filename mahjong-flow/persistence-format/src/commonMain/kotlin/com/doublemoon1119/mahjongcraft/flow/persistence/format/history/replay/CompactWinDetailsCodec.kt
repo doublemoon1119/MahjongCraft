@@ -23,7 +23,7 @@ internal object CompactWinDetailsCodec {
                     val field = obj(fieldRaw)
                     JsonArray(listOf(field.getValue(ID), encodeValue(obj(field.getValue(VALUE)))))
                 },
-            ),
+            ) + winner[ReplaySourceKeys.WINNING_HAND]?.takeUnless { it == JsonNull }?.let { listOf(encodeHand(obj(it))) }.orEmpty(),
         )
     }
 
@@ -34,9 +34,10 @@ internal object CompactWinDetailsCodec {
      */
     fun decode(details: JsonElement): JsonArray = array(details).mapArray { raw ->
         val winner = array(raw)
-        require(winner.size == 3) { "Compact winner detail must contain three fields" }
+        require(winner.size in 3..4) { "Compact winner detail must contain three or four fields" }
+        val hand = winner.getOrNull(3)?.let { decodeHand(array(it)) }
         JsonObject(
-            mapOf(
+            linkedMapOf(
                 PLAYER_ID to winner[0],
                 TEMPLATE_KEY to winner[1],
                 DETAIL_FIELDS to array(winner[2]).mapArray { fieldRaw ->
@@ -44,8 +45,41 @@ internal object CompactWinDetailsCodec {
                     require(field.size == 2) { "Compact winner field must contain two fields" }
                     JsonObject(mapOf(ID to field[0], VALUE to decodeValue(array(field[1]))))
                 },
-            ),
+            ) + hand?.let { mapOf(ReplaySourceKeys.WINNING_HAND to it) }.orEmpty(),
         )
+    }
+
+    /** 將可選的胡牌手牌描述編碼為立牌索引陣列與獨立和牌索引。
+     * @param value 明確保存的手牌描述。
+     * @return 精簡立牌參照與和牌參照陣列。
+     */
+    private fun encodeHand(value: JsonObject): JsonArray {
+        val standing = array(value.getValue(ReplaySourceKeys.WINNING_STANDING_TILES))
+        validateUniqueRefs(standing, "Standing tile")
+        val winning = value[ReplaySourceKeys.WINNING_TILE] ?: JsonNull
+        require(winning == JsonNull || winning !in standing) { "Winning tile must be separate from standing tiles" }
+        return JsonArray(listOf(standing, winning))
+    }
+
+    /** 解碼並驗證可選的胡牌手牌描述。
+     * @param value 精簡手牌描述。
+     * @return 明確的有序立牌與和牌張物件。
+     */
+    private fun decodeHand(value: JsonArray): JsonObject {
+        require(value.size == 2) { "Compact winning hand must contain two fields" }
+        val standing = array(value[0])
+        validateUniqueRefs(standing, "Standing tile")
+        val winning = value[1]
+        require(winning == JsonNull || winning !in standing) { "Winning tile must be separate from standing tiles" }
+        return JsonObject(mapOf(ReplaySourceKeys.WINNING_STANDING_TILES to standing, ReplaySourceKeys.WINNING_TILE to winning))
+    }
+
+    /** 驗證牌參照列表不含重複實體。
+     * @param value 待驗證參照列表。
+     * @param label 英文診斷名稱。
+     */
+    private fun validateUniqueRefs(value: JsonArray, label: String) {
+        require(value.distinct().size == value.size) { "$label list contains duplicate tiles" }
     }
 
     /**

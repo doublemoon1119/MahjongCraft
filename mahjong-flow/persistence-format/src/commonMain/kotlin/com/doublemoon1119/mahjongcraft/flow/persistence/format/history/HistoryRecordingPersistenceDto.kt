@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecording
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingTerminal
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingTransfer
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinDetails
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinningHand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinSettlementMode
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailField
@@ -279,12 +280,26 @@ sealed interface HistoryFactPersistenceDto {
  * @property playerId 胡牌玩家 UUID 字串。
  * @property templateKey 規則呈現模板識別碼。
  * @property detailFields 胡牌詳情欄位。
+ * @property hand 結算時的立牌順序與和牌張；未記錄時為 null。
  */
 @Serializable
 data class HistoryWinDetailsPersistenceDto(
     val playerId: String,
     val templateKey: String,
     val detailFields: List<HistoryWinDetailFieldPersistenceDto>,
+    @EncodeDefault(EncodeDefault.Mode.NEVER)
+    val hand: HistoryWinningHandPersistenceDto? = null,
+)
+
+/** 胡牌手牌的持久化表示。
+ *
+ * @property standingTileIds 不含和牌張的有序立牌 UUID 字串。
+ * @property winningTileId 和牌張 UUID 字串；特殊結算時為 null。
+ */
+@Serializable
+data class HistoryWinningHandPersistenceDto(
+    val standingTileIds: List<String>,
+    val winningTileId: String? = null,
 )
 
 /** 單一胡牌詳情欄位的持久化表示。
@@ -623,6 +638,7 @@ private fun HistoryWinDetails.toPersistenceDto() = HistoryWinDetailsPersistenceD
     detailFields = detailFields.map { field ->
         HistoryWinDetailFieldPersistenceDto(field.id, field.value.toPersistenceDto())
     },
+    hand = hand?.let { HistoryWinningHandPersistenceDto(it.standingTileIds.map(Uuid::toString), it.winningTileId?.toString()) },
 )
 
 /** 將保存的和牌明細還原為記錄契約。
@@ -634,6 +650,7 @@ private fun HistoryWinDetailsPersistenceDto.toDomain() = HistoryWinDetails(
     detailFields = detailFields.map { field ->
         WinSettlementDetailField(field.id, field.value.toDomain())
     },
+    hand = hand?.let { HistoryWinningHand(it.standingTileIds.map(Uuid::parse), it.winningTileId?.let(Uuid::parse)) },
 )
 
 /** 將規則中立明細值映射為明確保存種類。

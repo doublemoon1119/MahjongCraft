@@ -135,7 +135,12 @@ internal object HistoryRoundResponseValidator {
                 !validTileIndexes(state.tileCatalog.size, player.handTiles) ||
                 player.lastDrawn?.let { !validTileIndex(state.tileCatalog.size, it) } == true ||
                 !validTileIndexes(state.tileCatalog.size, player.discards.map { it.tile }) ||
-                player.melds.any { !validTileIndexes(state.tileCatalog.size, it.tiles) || !validTileIndexOrNull(state.tileCatalog.size, it.sourceTile) }
+                player.melds.any {
+                    !validTileIndexes(state.tileCatalog.size, it.tiles) ||
+                        !validTileIndexOrNull(state.tileCatalog.size, it.sourceTile) ||
+                        it.tiles.distinct().size != it.tiles.size ||
+                        it.sourceTile?.let { source -> source !in it.tiles } == true
+                }
             ) {
                 return HistoryRoundValidationResult.Invalid(HistoryRoundValidationError.TILE_INDEX_INVALID)
             }
@@ -267,6 +272,16 @@ internal object HistoryRoundResponseValidator {
         declaredTileCount: Int?,
     ): Boolean {
         if (!namespaced(winner.templateKey) || winner.detailFields.map { it.id }.distinct().size != winner.detailFields.size) return false
+        winner.hand?.let { hand ->
+            val refs = hand.standingTiles + listOfNotNull(hand.winningTile)
+            if (!validTileIndexes(tileCatalogSize, refs) ||
+                refs.distinct().size != refs.size ||
+                declaredTileCount != null &&
+                refs.any { it >= declaredTileCount }
+            ) {
+                return false
+            }
+        }
         var textBytes = winner.templateKey.toByteArray(Charsets.UTF_8).size.toLong()
         for (field in winner.detailFields) {
             if (!namespaced(field.id)) return false

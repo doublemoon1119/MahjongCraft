@@ -2,7 +2,9 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableResult
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinDetails
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinningHand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailField
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailValue
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
@@ -56,27 +58,58 @@ class HistoryWinDetailsCapacityTest {
     private fun withDetails(events: List<HistoryOutboxEvent>, maxSettlements: Int = 2, entryCount: Int = 3): List<HistoryOutboxEvent> {
         var sequence = 1L
         var settlements = 0
+        var tableState = events.asSequence().map { it.fact }.filterIsInstance<HistoryFact.MatchStarted>().firstOrNull()?.tableState
         return events.groupBy { it.transactionFirstSequence }.values.flatMap { transaction ->
             val first = sequence
+            val transactionState = transaction.fold(tableState) { state, event ->
+                when (val fact = event.fact) {
+                    is HistoryFact.RoundStarted -> fact.tableState
+                    is HistoryFact.TableChanged -> when (val result = fact.result) {
+                        is HistoryTableResult.Change -> state?.let { result.change.applyTo(it) }
+                        is HistoryTableResult.Checkpoint -> result.tableState
+                    }
+                    else -> state
+                }
+            }
+            tableState = transactionState
+            val summary = transaction.mapNotNull { (it.fact as? HistoryFact.RoundCompleted)?.summary }.firstOrNull()
+            val winners = if (summary != null && settlements < maxSettlements) {
+                settlements++
+                val winnerIds = summary.beneficiaryPlayerIds.toList().ifEmpty { listOf(summary.settledScoresByPlayerId.keys.first()) }
+                winnerIds.mapNotNull { playerId ->
+                    val player = transactionState?.players?.firstOrNull { it.id == playerId } ?: return@mapNotNull null
+                    val winningTileId = player.hand.lastDrawn?.id
+                    HistoryWinDetails(
+                        playerId = playerId,
+                        templateKey = "capacity:rule",
+                        detailFields = fields(entryCount),
+                        hand = HistoryWinningHand(
+                            standingTileIds = player.hand.standingTiles.map { it.id }.filter { it != winningTileId },
+                            winningTileId = winningTileId,
+                        ),
+                    )
+                }
+            } else {
+                emptyList()
+            }
             buildList {
+                var inserted = false
                 transaction.forEach { event ->
-                    add(event.copy(sequence = sequence++, transactionFirstSequence = first))
-                    val summary = (event.fact as? HistoryFact.RoundCompleted)?.summary
-                    if (summary != null && settlements < maxSettlements) {
-                        settlements++
-                        val winners = summary.beneficiaryPlayerIds.toList().ifEmpty { listOf(summary.settledScoresByPlayerId.keys.first()) }
+                    if (!inserted &&
+                        summary != null &&
+                        winners.isNotEmpty() &&
+                        (event.fact is HistoryFact.TableChanged || event.fact is HistoryFact.RoundCompleted)
+                    ) {
                         add(
                             event.copy(
                                 sequence = sequence++,
                                 transactionFirstSequence = first,
-                                fact = HistoryFact.WinSettled(
-                                    summary.outcomeId,
-                                    winners.map { playerId -> HistoryWinDetails(playerId, "capacity:rule", fields(entryCount)) },
-                                    summary.responsiblePlayerIds.toList(),
-                                ),
+                                fact = HistoryFact.WinSettled(summary.outcomeId, winners, summary.responsiblePlayerIds.toList()),
                             ),
                         )
+                        inserted = true
                     }
+                    add(event.copy(sequence = sequence++, transactionFirstSequence = first))
                 }
             }
         }

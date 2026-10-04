@@ -383,8 +383,6 @@ interface GamePresentationPublisher {
  * @property settlement 結算面板；詳細或精簡由
  * [ContinuingWinSettlementMode] 決定，反映在
  * [WinSettlementPresentationRequest.isBrief] 上。
- * @property celebration 胡牌及役滿展示請求。
- * @property settlement 結算面板請求。
  * @property roundContinues 本局是否在這次胡牌之後仍然繼續（已完成玩家退出、其他人續打）。
  *
  * `false`（本局就此結束）時整段演出都獨佔全桌，維持既有行為——反正沒有人還要繼續打。
