@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerInd
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.registerBuiltInGameConfigPresentations
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.registerBuiltInRuleModuleDisplayNames
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.achievement.registerBuiltInRiichiAchievements
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.catalogue.registerBuiltInRuleCatalogues
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.registerBuiltInRiichiActionSounds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.registerBuiltInRiichiReasons
@@ -79,6 +80,7 @@ object MinecraftMahjongExtensionRegistrar {
         registries.decisionStatusDisplayNameRegistry.registerRiichiDecisionStatusDisplayNames()
         registries.tablePropDescriberRegistry.registerBuiltInRiichiTableProps()
         registries.ruleCatalogueRegistry.registerBuiltInRuleCatalogues()
+        registries.gameAchievementResolverRegistry.registerBuiltInRiichiAchievements()
         val baseline = registries.registrationSnapshot()
 
         val registeredExtensionIds = mutableSetOf<String>()
