@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFactTypeKeys
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryActionTypeKeys
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayFactDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsDto
@@ -11,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawRe
 import com.doublemoon1119.mahjongcraft.logic.table.BuiltInMatchEndReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.MinecraftKanActionTokenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationFieldId
@@ -95,8 +98,8 @@ internal class HistoryRoundEventPresenter(
 
             is HistoryReplayFactDto.Completion -> HistoryFactPresentation(
                 text = when (typeKey) {
-                    "match_completed" -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_MATCH_COMPLETION, outcome?.let { outcomeText(it.reasonId, ruleId) } ?: Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_OTHER))
-                    "win_settled" -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_WIN_SETTLEMENT, outcome?.let { outcomeText(it.reasonId, ruleId) } ?: Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_OTHER))
+                    HistoryFactTypeKeys.MATCH_COMPLETED -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_MATCH_COMPLETION, outcome?.let { outcomeText(it.reasonId, ruleId) } ?: Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_OTHER))
+                    HistoryFactTypeKeys.WIN_SETTLED -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_WIN_SETTLEMENT, outcome?.let { outcomeText(it.reasonId, ruleId) } ?: Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_OTHER))
                     else -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_COMPLETION, outcome?.let { outcomeText(it.reasonId, ruleId) } ?: Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_OTHER), outcome?.classification?.let(::classificationText) ?: "—")
                 },
                 actorSeat = null,
@@ -141,10 +144,10 @@ internal class HistoryRoundEventPresenter(
      */
     private fun eventText(typeKey: String): Text = Text.translatable(
         when (typeKey) {
-            "win_continuation_resolved" -> MinecraftHistoryScreenKeys.ROUND_EVENT_WIN_CONTINUATION
-            "returned_to_room" -> MinecraftHistoryScreenKeys.ROUND_EVENT_RETURNED_TO_ROOM
-            "match_started" -> MinecraftHistoryScreenKeys.ROUND_EVENT_MATCH_STARTED
-            "round_started" -> MinecraftHistoryScreenKeys.ROUND_EVENT_ROUND_STARTED
+            HistoryFactTypeKeys.WIN_CONTINUATION_RESOLVED -> MinecraftHistoryScreenKeys.ROUND_EVENT_WIN_CONTINUATION
+            HistoryFactTypeKeys.RETURNED_TO_ROOM -> MinecraftHistoryScreenKeys.ROUND_EVENT_RETURNED_TO_ROOM
+            HistoryFactTypeKeys.MATCH_STARTED -> MinecraftHistoryScreenKeys.ROUND_EVENT_MATCH_STARTED
+            HistoryFactTypeKeys.ROUND_STARTED -> MinecraftHistoryScreenKeys.ROUND_EVENT_ROUND_STARTED
             else -> MinecraftHistoryScreenKeys.ROUND_UNKNOWN_FACT
         },
     )
@@ -156,9 +159,9 @@ internal class HistoryRoundEventPresenter(
      */
     private fun preparationText(typeKey: String, nextStepId: String?): Text = Text.translatable(
         when (typeKey) {
-            "round_preparation_started" -> MinecraftHistoryScreenKeys.ROUND_PREPARATION_STARTED
-            "round_preparation_submitted" -> MinecraftHistoryScreenKeys.ROUND_PREPARATION_SUBMITTED
-            "round_preparation_automatic_resolved" -> if (nextStepId == null) MinecraftHistoryScreenKeys.ROUND_PREPARATION_NONE else MinecraftHistoryScreenKeys.ROUND_PREPARATION_NEXT
+            HistoryFactTypeKeys.ROUND_PREPARATION_STARTED -> MinecraftHistoryScreenKeys.ROUND_PREPARATION_STARTED
+            HistoryFactTypeKeys.ROUND_PREPARATION_SUBMITTED -> MinecraftHistoryScreenKeys.ROUND_PREPARATION_SUBMITTED
+            HistoryFactTypeKeys.ROUND_PREPARATION_AUTOMATIC_RESOLVED -> if (nextStepId == null) MinecraftHistoryScreenKeys.ROUND_PREPARATION_NONE else MinecraftHistoryScreenKeys.ROUND_PREPARATION_NEXT
             else -> MinecraftHistoryScreenKeys.ROUND_UNKNOWN_FACT
         },
     )
@@ -250,13 +253,13 @@ internal class HistoryRoundEventPresenter(
      */
     private fun actionText(ruleId: String?, actionType: String, extensionTypeId: String?): Text {
         when (actionType) {
-            "kan" -> return Text.translatable(MinecraftHistoryScreenKeys.ROUND_ACTION_KAN)
-            "draw" -> return Text.translatable(MinecraftHistoryScreenKeys.ROUND_ACTION_DRAW)
-            "exhaustive_draw" -> return Text.translatable(MinecraftHistoryScreenKeys.ROUND_CLASSIFICATION_EXHAUSTIVE_DRAW)
-            "game_started" -> return Text.translatable(MinecraftHistoryScreenKeys.ROUND_ACTION_GAME_STARTED)
-            "round_started" -> return Text.translatable(MinecraftHistoryScreenKeys.ROUND_ACTION_ROUND_STARTED)
-            "match_ended" -> return Text.translatable(MinecraftHistoryScreenKeys.ROUND_ACTION_MATCH_ENDED)
-            "dice_rolled" -> return Text.translatable(MinecraftHistoryScreenKeys.ROUND_ACTION_DICE_ROLLED)
+            HistoryActionTypeKeys.KAN -> return Text.translatable(MinecraftHistoryScreenKeys.ROUND_ACTION_KAN)
+            HistoryActionTypeKeys.DRAW -> return Text.translatable(MinecraftHistoryScreenKeys.ROUND_ACTION_DRAW)
+            HistoryActionTypeKeys.EXHAUSTIVE_DRAW -> return Text.translatable(MinecraftHistoryScreenKeys.ROUND_CLASSIFICATION_EXHAUSTIVE_DRAW)
+            HistoryActionTypeKeys.GAME_STARTED -> return Text.translatable(MinecraftHistoryScreenKeys.ROUND_ACTION_GAME_STARTED)
+            HistoryActionTypeKeys.ROUND_STARTED -> return Text.translatable(MinecraftHistoryScreenKeys.ROUND_ACTION_ROUND_STARTED)
+            HistoryActionTypeKeys.MATCH_ENDED -> return Text.translatable(MinecraftHistoryScreenKeys.ROUND_ACTION_MATCH_ENDED)
+            HistoryActionTypeKeys.DICE_ROLLED -> return Text.translatable(MinecraftHistoryScreenKeys.ROUND_ACTION_DICE_ROLLED)
         }
         val actionId = normalizeActionId(actionType, extensionTypeId)
         val translationKey = actionVocabulary.find(ruleId, actionId)?.labelKey
@@ -294,16 +297,16 @@ internal class HistoryRoundEventPresenter(
      * @return registry 使用的動作 ID。
      */
     private fun normalizeActionId(actionType: String, extensionTypeId: String?): String = when (actionType) {
-        "chi", MinecraftBuiltInGameActionIds.CHI -> MinecraftBuiltInGameActionIds.CHI
-        "pon", MinecraftBuiltInGameActionIds.PON -> MinecraftBuiltInGameActionIds.PON
-        "kan_open", MinecraftBuiltInGameActionIds.KAN_OPEN -> MinecraftBuiltInGameActionIds.KAN_OPEN
-        "kan_closed", MinecraftBuiltInGameActionIds.KAN_CLOSED -> MinecraftBuiltInGameActionIds.KAN_CLOSED
-        "kan_added", MinecraftBuiltInGameActionIds.KAN_ADDED -> MinecraftBuiltInGameActionIds.KAN_ADDED
-        "ron", MinecraftBuiltInGameActionIds.RON -> MinecraftBuiltInGameActionIds.RON
-        "tsumo", MinecraftBuiltInGameActionIds.TSUMO -> MinecraftBuiltInGameActionIds.TSUMO
-        "pass", MinecraftBuiltInGameActionIds.PASS -> MinecraftBuiltInGameActionIds.PASS
-        "discard", MinecraftBuiltInGameActionIds.DISCARD -> MinecraftBuiltInGameActionIds.DISCARD
-        "extension" -> extensionTypeId ?: actionType
+        HistoryActionTypeKeys.CHI, MinecraftBuiltInGameActionIds.CHI -> MinecraftBuiltInGameActionIds.CHI
+        HistoryActionTypeKeys.PON, MinecraftBuiltInGameActionIds.PON -> MinecraftBuiltInGameActionIds.PON
+        MinecraftKanActionTokenKeys.OPEN, MinecraftBuiltInGameActionIds.KAN_OPEN -> MinecraftBuiltInGameActionIds.KAN_OPEN
+        MinecraftKanActionTokenKeys.CLOSED, MinecraftBuiltInGameActionIds.KAN_CLOSED -> MinecraftBuiltInGameActionIds.KAN_CLOSED
+        MinecraftKanActionTokenKeys.ADDED, MinecraftBuiltInGameActionIds.KAN_ADDED -> MinecraftBuiltInGameActionIds.KAN_ADDED
+        HistoryActionTypeKeys.RON, MinecraftBuiltInGameActionIds.RON -> MinecraftBuiltInGameActionIds.RON
+        HistoryActionTypeKeys.TSUMO, MinecraftBuiltInGameActionIds.TSUMO -> MinecraftBuiltInGameActionIds.TSUMO
+        HistoryActionTypeKeys.PASS, MinecraftBuiltInGameActionIds.PASS -> MinecraftBuiltInGameActionIds.PASS
+        HistoryActionTypeKeys.DISCARD, MinecraftBuiltInGameActionIds.DISCARD -> MinecraftBuiltInGameActionIds.DISCARD
+        HistoryActionTypeKeys.EXTENSION -> extensionTypeId ?: actionType
         else -> actionType
     }
 }

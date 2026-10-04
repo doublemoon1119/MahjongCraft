@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.history.replay
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryActionResult
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFactTypeKeys
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableResult
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinDetails
@@ -149,7 +150,7 @@ class CompactReplayRoundReaderGenuineTest {
         val events = assertIs<ReplayReadResult.Success<HistoryRoundEvents>>(
             reader().readEvents(fixture.document, fixture.matchId, 1, 2, 1),
         ).value
-        val completion = events.transactions.single().facts.filterIsInstance<HistoryReplayFact.Completion>().single { it.typeKey == "round_completed" }
+        val completion = events.transactions.single().facts.filterIsInstance<HistoryReplayFact.Completion>().single { it.typeKey == HistoryFactTypeKeys.ROUND_COMPLETED }
         assertEquals(
             fixture.settled.players.associate { settledPlayer ->
                 settledPlayer.initialSeatIndex to settledPlayer.score - fixture.changed.players.single { player -> player.initialSeatIndex == settledPlayer.initialSeatIndex }.score
@@ -207,7 +208,7 @@ class CompactReplayRoundReaderGenuineTest {
         val events = assertIs<ReplayReadResult.Success<HistoryRoundEvents>>(
             reader().readEvents(fixture.document, fixture.matchId, 1, 2, 1),
         ).value
-        val completion = events.transactions.single().facts.filterIsInstance<HistoryReplayFact.Completion>().single { it.typeKey == "match_completed" }
+        val completion = events.transactions.single().facts.filterIsInstance<HistoryReplayFact.Completion>().single { it.typeKey == HistoryFactTypeKeys.MATCH_COMPLETED }
         assertEquals(emptyMap(), completion.outcome?.scoreChangesBySeat)
     }
 
@@ -234,7 +235,7 @@ class CompactReplayRoundReaderGenuineTest {
 
         val summary = assertIs<ReplayReadResult.Success<HistoryRoundEvents>>(
             reader().readEvents(fixture.document, fixture.matchId, 1, 4, 1),
-        ).value.transactions.single().facts.filterIsInstance<HistoryReplayFact.Completion>().single { it.typeKey == "round_completed" }.outcome
+        ).value.transactions.single().facts.filterIsInstance<HistoryReplayFact.Completion>().single { it.typeKey == HistoryFactTypeKeys.ROUND_COMPLETED }.outcome
         assertEquals(emptyMap(), summary?.scoreChangesBySeat)
         assertEquals(true, summary?.hasEarlierWinSettlement)
     }
@@ -245,7 +246,7 @@ class CompactReplayRoundReaderGenuineTest {
         val fixture = continuingWinFixture(useWinRuleEffect = true)
         val summary = assertIs<ReplayReadResult.Success<HistoryRoundEvents>>(
             reader().readEvents(fixture.document, fixture.matchId, 1, 4, 1),
-        ).value.transactions.single().facts.filterIsInstance<HistoryReplayFact.Completion>().single { it.typeKey == "round_completed" }.outcome
+        ).value.transactions.single().facts.filterIsInstance<HistoryReplayFact.Completion>().single { it.typeKey == HistoryFactTypeKeys.ROUND_COMPLETED }.outcome
         assertEquals(true, summary?.hasEarlierWinSettlement)
         assertEquals(emptyMap(), summary?.scoreChangesBySeat)
     }
@@ -256,7 +257,7 @@ class CompactReplayRoundReaderGenuineTest {
         val fixture = continuingWinFixture(recordWinSettlement = false)
         val summary = assertIs<ReplayReadResult.Success<HistoryRoundEvents>>(
             reader().readEvents(fixture.document, fixture.matchId, 1, 4, 1),
-        ).value.transactions.single().facts.filterIsInstance<HistoryReplayFact.Completion>().single { it.typeKey == "round_completed" }.outcome
+        ).value.transactions.single().facts.filterIsInstance<HistoryReplayFact.Completion>().single { it.typeKey == HistoryFactTypeKeys.ROUND_COMPLETED }.outcome
         assertEquals(emptyMap(), summary?.scoreChangesBySeat)
         assertEquals(false, summary?.hasEarlierWinSettlement)
         assertTrue(summary?.winnerDetails.orEmpty().isEmpty())

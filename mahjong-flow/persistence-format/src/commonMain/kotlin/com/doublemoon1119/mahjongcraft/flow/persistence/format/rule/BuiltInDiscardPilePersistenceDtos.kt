@@ -37,14 +37,14 @@ data class TaiwanDiscardPilePersistenceDto(val entries: List<DiscardEntryPersist
 fun buildDiscardPilePersistenceRegistry(): PersistenceDtoRegistry<DiscardPile<*>> = PersistenceDtoRegistry<DiscardPile<*>>()
     .apply {
         register(
-            typeKey = "builtin:riichi_discard_pile",
+            typeKey = BuiltInDiscardPilePersistenceKeys.RIICHI,
             domainClass = RiichiDiscardPile::class,
             serializer = RiichiDiscardPilePersistenceDto.serializer(),
             toDto = RiichiDiscardPile::toPersistenceDto,
             toDomain = RiichiDiscardPilePersistenceDto::toDomain,
         )
         register(
-            typeKey = "builtin:taiwan_discard_pile",
+            typeKey = BuiltInDiscardPilePersistenceKeys.TAIWAN,
             domainClass = TaiwanDiscardPile::class,
             serializer = TaiwanDiscardPilePersistenceDto.serializer(),
             toDto = TaiwanDiscardPile::toPersistenceDto,

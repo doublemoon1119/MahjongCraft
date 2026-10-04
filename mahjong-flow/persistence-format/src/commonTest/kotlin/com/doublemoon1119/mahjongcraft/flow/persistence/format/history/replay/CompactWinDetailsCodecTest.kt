@@ -112,6 +112,6 @@ class CompactWinDetailsCodecTest {
         val restored = CompactFactCodec.decode(encoded, factTypes.keys.toList(), actionTypes.keys.toList())
 
         assertEquals(fact, restored)
-        assertEquals(fact[CompactWinDetailsCodec.WIN_DETAILS], encoded[1].let { (it as JsonObject)[CompactWinDetailsCodec.WIN_DETAILS] })
+        assertEquals(fact[ReplaySourceKeys.WIN_DETAILS], encoded[1].let { (it as JsonObject)[ReplaySourceKeys.WIN_DETAILS] })
     }
 }

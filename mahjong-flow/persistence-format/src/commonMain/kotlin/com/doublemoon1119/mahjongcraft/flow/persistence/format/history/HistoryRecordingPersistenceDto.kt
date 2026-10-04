@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.persistence.format.history
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryActionResult
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFactTypeKeys
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingDecision
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingState
@@ -9,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecording
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingTransfer
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinDetails
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinningHand
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryDetailValueTypeKeys
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinSettlementMode
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailField
@@ -115,7 +117,7 @@ sealed interface HistoryFactPersistenceDto {
      * @property flowConfig 對局使用的流程設定。
      */
     @Serializable
-    @SerialName("match_started")
+    @SerialName(HistoryFactTypeKeys.MATCH_STARTED)
     data class MatchStarted(
         val state: TableStatePersistenceDto,
         val flowConfig: GameFlowConfigPersistenceDto,
@@ -126,7 +128,7 @@ sealed interface HistoryFactPersistenceDto {
      * @property state 新局開始時的桌況。
      */
     @Serializable
-    @SerialName("round_started")
+    @SerialName(HistoryFactTypeKeys.ROUND_STARTED)
     data class RoundStarted(
         val state: TableStatePersistenceDto,
     ) : HistoryFactPersistenceDto
@@ -137,7 +139,7 @@ sealed interface HistoryFactPersistenceDto {
      * @property stepIndex 準備步驟在流程中的索引。
      */
     @Serializable
-    @SerialName("round_preparation_started")
+    @SerialName(HistoryFactTypeKeys.ROUND_PREPARATION_STARTED)
     data class RoundPreparationStarted(
         val stepId: String,
         val stepIndex: Int,
@@ -151,7 +153,7 @@ sealed interface HistoryFactPersistenceDto {
      * @property nextStepId 下一個準備步驟識別碼；沒有下一步時為 null。
      */
     @Serializable
-    @SerialName("round_preparation_submitted")
+    @SerialName(HistoryFactTypeKeys.ROUND_PREPARATION_SUBMITTED)
     data class RoundPreparationSubmitted(
         val stepId: String,
         val stepIndex: Int,
@@ -166,7 +168,7 @@ sealed interface HistoryFactPersistenceDto {
      * @property nextStepId 下一個準備步驟識別碼；沒有下一步時為 null。
      */
     @Serializable
-    @SerialName("round_preparation_automatic_resolved")
+    @SerialName(HistoryFactTypeKeys.ROUND_PREPARATION_AUTOMATIC_RESOLVED)
     data class RoundPreparationAutomaticallyResolved(
         val stepId: String,
         val stepIndex: Int,
@@ -179,7 +181,7 @@ sealed interface HistoryFactPersistenceDto {
      * @property result 動作套用後的權威結果。
      */
     @Serializable
-    @SerialName("action_accepted")
+    @SerialName(HistoryFactTypeKeys.ACTION_ACCEPTED)
     data class ActionAccepted(
         val action: GameActionPersistenceDto,
         val result: HistoryActionResultPersistenceDto,
@@ -191,7 +193,7 @@ sealed interface HistoryFactPersistenceDto {
      * @property actorPlayerId 單一得標玩家的 UUID 字串；全員過牌或多家和牌時為 null。
      */
     @Serializable
-    @SerialName("reaction_resolved")
+    @SerialName(HistoryFactTypeKeys.REACTION_RESOLVED)
     data class ReactionResolved(
         val resolvedAction: GameActionPersistenceDto?,
         val actorPlayerId: String?,
@@ -202,7 +204,7 @@ sealed interface HistoryFactPersistenceDto {
      * @property summary 本局結算摘要。
      */
     @Serializable
-    @SerialName("round_completed")
+    @SerialName(HistoryFactTypeKeys.ROUND_COMPLETED)
     data class RoundCompleted(
         val summary: RoundCompletionSummaryPersistenceDto,
     ) : HistoryFactPersistenceDto
@@ -214,7 +216,7 @@ sealed interface HistoryFactPersistenceDto {
      * @property responsiblePlayerIds 放銃或其他責任玩家的 UUID 字串。
      */
     @Serializable
-    @SerialName("win_settled")
+    @SerialName(HistoryFactTypeKeys.WIN_SETTLED)
     data class WinSettled(
         val outcomeId: String,
         val winDetails: List<HistoryWinDetailsPersistenceDto>,
@@ -228,7 +230,7 @@ sealed interface HistoryFactPersistenceDto {
      * @property finalScoresByPlayerId 各玩家最終分數，鍵為玩家 UUID 字串。
      */
     @Serializable
-    @SerialName("match_completed")
+    @SerialName(HistoryFactTypeKeys.MATCH_COMPLETED)
     data class MatchCompleted(
         val reasonId: String,
         val finalScoresByPlayerId: Map<String, Int>,
@@ -239,7 +241,7 @@ sealed interface HistoryFactPersistenceDto {
      * @property directive 胡牌後決定的本局後續。
      */
     @Serializable
-    @SerialName("win_continuation_resolved")
+    @SerialName(HistoryFactTypeKeys.WIN_CONTINUATION_RESOLVED)
     data class WinContinuationResolved(
         val directive: WinRoundDirectivePersistenceDto,
     ) : HistoryFactPersistenceDto
@@ -251,7 +253,7 @@ sealed interface HistoryFactPersistenceDto {
      * @property winDetails 規則效果產生的胡牌公開詳情；舊資料缺少時為空清單。
      */
     @Serializable
-    @SerialName("rule_effect_resolved")
+    @SerialName(HistoryFactTypeKeys.RULE_EFFECT_RESOLVED)
     data class RuleEffectResolved(
         val reasonId: String,
         val roundCompletion: RoundCompletionSummaryPersistenceDto?,
@@ -264,14 +266,14 @@ sealed interface HistoryFactPersistenceDto {
      * @property result 可重建的結構差異，或標示原因的完整檢查點。
      */
     @Serializable
-    @SerialName("table_changed")
+    @SerialName(HistoryFactTypeKeys.TABLE_CHANGED)
     data class TableChanged(
         val result: HistoryTableResultPersistenceDto,
     ) : HistoryFactPersistenceDto
 
     /** 對局移除並返回房間。 */
     @Serializable
-    @SerialName("returned_to_room")
+    @SerialName(HistoryFactTypeKeys.RETURNED_TO_ROOM)
     data object ReturnedToRoom : HistoryFactPersistenceDto
 }
 
@@ -322,7 +324,7 @@ sealed interface HistoryWinDetailValuePersistenceDto {
      * @property arguments 翻譯參數。
      */
     @Serializable
-    @SerialName("text")
+    @SerialName(HistoryDetailValueTypeKeys.TEXT)
     data class Text(
         val translationKey: String,
         @EncodeDefault(EncodeDefault.Mode.NEVER)
@@ -334,7 +336,7 @@ sealed interface HistoryWinDetailValuePersistenceDto {
      * @property tileIds 局內牌 UUID 字串。
      */
     @Serializable
-    @SerialName("tiles")
+    @SerialName(HistoryDetailValueTypeKeys.TILES)
     data class Tiles(
         val tileIds: List<String>,
     ) : HistoryWinDetailValuePersistenceDto
@@ -344,7 +346,7 @@ sealed interface HistoryWinDetailValuePersistenceDto {
      * @property entries 保留原順序的明細條目。
      */
     @Serializable
-    @SerialName("entries")
+    @SerialName(HistoryDetailValueTypeKeys.ENTRIES)
     data class Entries(
         val entries: List<Entry>,
     ) : HistoryWinDetailValuePersistenceDto {

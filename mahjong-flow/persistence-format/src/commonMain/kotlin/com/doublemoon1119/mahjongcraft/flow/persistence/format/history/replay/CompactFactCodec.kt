@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFactTypeKeys
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
@@ -19,7 +20,7 @@ object CompactFactCodec {
     fun encode(fact: JsonObject, factTypes: MutableMap<String, Int>, actionTypes: MutableMap<String, Int>): JsonArray {
         val type = (fact[ReplaySourceKeys.TYPE] as? JsonPrimitive)?.content ?: error("Fact is missing a string type")
         val typeIndex = JsonPrimitive(factTypes.getOrPut(type) { factTypes.size })
-        if (type == ReplaySourceKeys.ACTION_ACCEPTED) {
+        if (type == HistoryFactTypeKeys.ACTION_ACCEPTED) {
             val action = fact[ReplaySourceKeys.ACTION] as? JsonObject ?: error("Fact is missing an action object")
             val actionType = (action[ReplaySourceKeys.TYPE] as? JsonPrimitive)?.content ?: error("Action is missing a string type")
             val actionIndex = JsonPrimitive(actionTypes.getOrPut(actionType) { actionTypes.size })
@@ -33,7 +34,7 @@ object CompactFactCodec {
             return JsonArray(fields)
         }
         val payload = fact.filterKeys { it != ReplaySourceKeys.TYPE }.toMutableMap()
-        if (type in WIN_DETAIL_FACT_TYPES) payload[CompactWinDetailsCodec.WIN_DETAILS]?.let { payload[CompactWinDetailsCodec.WIN_DETAILS] = CompactWinDetailsCodec.encode(it) }
+        if (type in WIN_DETAIL_FACT_TYPES) payload[ReplaySourceKeys.WIN_DETAILS]?.let { payload[ReplaySourceKeys.WIN_DETAILS] = CompactWinDetailsCodec.encode(it) }
         return JsonArray(listOf(typeIndex, JsonObject(payload)))
     }
 
@@ -48,12 +49,12 @@ object CompactFactCodec {
     fun decode(encoded: JsonArray, factTypes: List<String>, actionTypes: List<String>): JsonObject {
         require(encoded.size >= 2)
         val type = requireNotNull(factTypes.getOrNull(index(encoded[0]))) { "Invalid fact type index" }
-        if (type != ReplaySourceKeys.ACTION_ACCEPTED) {
+        if (type != HistoryFactTypeKeys.ACTION_ACCEPTED) {
             require(encoded.size == 2)
             val payload = encoded[1] as? JsonObject ?: error("Fact payload must be an object")
             require(ReplaySourceKeys.TYPE !in payload) { "Fact payload must not override its type" }
             val restored = payload.toMutableMap()
-            if (type in WIN_DETAIL_FACT_TYPES) restored[CompactWinDetailsCodec.WIN_DETAILS]?.let { restored[CompactWinDetailsCodec.WIN_DETAILS] = CompactWinDetailsCodec.decode(it) }
+            if (type in WIN_DETAIL_FACT_TYPES) restored[ReplaySourceKeys.WIN_DETAILS]?.let { restored[ReplaySourceKeys.WIN_DETAILS] = CompactWinDetailsCodec.decode(it) }
             return JsonObject(linkedMapOf(ReplaySourceKeys.TYPE to JsonPrimitive(type)) + restored)
         }
         val actionType = requireNotNull(actionTypes.getOrNull(index(encoded[1]))) { "Invalid action type index" }
@@ -92,5 +93,5 @@ object CompactFactCodec {
     }
 
     /** 由內建契約持有和牌明細的事實種類；不解析第三方任意同名欄位。 */
-    private val WIN_DETAIL_FACT_TYPES = setOf("win_settled", "rule_effect_resolved")
+    private val WIN_DETAIL_FACT_TYPES = setOf(HistoryFactTypeKeys.WIN_SETTLED, HistoryFactTypeKeys.RULE_EFFECT_RESOLVED)
 }

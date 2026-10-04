@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.network.dto.message
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryDetailValueTypeKeys
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.GameConfigDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.MeldTypeDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.RelativeDirectionDto
@@ -308,14 +309,14 @@ sealed interface HistoryWinDetailValueDto {
      * @property arguments 翻譯參數。
      */
     @Serializable
-    @SerialName("text")
+    @SerialName(HistoryDetailValueTypeKeys.TEXT)
     data class Text(val translationKey: String, val arguments: List<String> = emptyList()) : HistoryWinDetailValueDto
 
     /** 可翻譯的條目集合。
      * @property entries 條目列表。
      */
     @Serializable
-    @SerialName("entries")
+    @SerialName(HistoryDetailValueTypeKeys.ENTRIES)
     data class Entries(val entries: List<EntryDto>) : HistoryWinDetailValueDto {
         /** 單一條目。
          * @property translationKey 條目翻譯鍵。
@@ -336,7 +337,7 @@ sealed interface HistoryWinDetailValueDto {
      * @property tiles 牌索引列表。
      */
     @Serializable
-    @SerialName("tiles")
+    @SerialName(HistoryDetailValueTypeKeys.TILES)
     data class Tiles(val tiles: List<Int>) : HistoryWinDetailValueDto
 }
 

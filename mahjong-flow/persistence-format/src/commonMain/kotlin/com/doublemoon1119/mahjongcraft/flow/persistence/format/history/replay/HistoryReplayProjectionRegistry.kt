@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRe
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayRuleInformation
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryTileReference
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.BuiltInDiscardPilePersistenceKeys
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.BuiltinHistoryReplayDiscardCodecs
 import kotlinx.serialization.json.JsonElement
 
@@ -166,6 +167,6 @@ class HistoryReplayProjectionRegistry {
  * @param registry 呼叫端提供的可註冊分類。
  */
 fun registerBuiltInHistoryReplayProjections(registry: HistoryReplayProjectionRegistry) {
-    registry.registerDiscard("builtin:riichi_discard_pile", BuiltinHistoryReplayDiscardCodecs.riichi)
-    registry.registerDiscard("builtin:taiwan_discard_pile", BuiltinHistoryReplayDiscardCodecs.taiwan)
+    registry.registerDiscard(BuiltInDiscardPilePersistenceKeys.RIICHI, BuiltinHistoryReplayDiscardCodecs.riichi)
+    registry.registerDiscard(BuiltInDiscardPilePersistenceKeys.TAIWAN, BuiltinHistoryReplayDiscardCodecs.taiwan)
 }

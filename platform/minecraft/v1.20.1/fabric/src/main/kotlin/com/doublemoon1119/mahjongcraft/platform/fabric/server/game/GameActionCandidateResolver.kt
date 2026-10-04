@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.logic.judgment.DiscardReadinessAnalysis
 import com.doublemoon1119.mahjongcraft.logic.judgment.TileSelectionRequirement
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.MinecraftKanActionTokenKeys
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
@@ -162,9 +163,9 @@ private fun GameAction.baseToken(): String = when (this) {
     is GameAction.Chi -> "chi"
     is GameAction.Pon -> "pon"
     is GameAction.Kan -> when (type) {
-        GameAction.KanType.OPEN_KAN -> "kan_open"
-        GameAction.KanType.CLOSED_KAN -> "kan_closed"
-        GameAction.KanType.ADDED_KAN -> "kan_added"
+        GameAction.KanType.OPEN_KAN -> MinecraftKanActionTokenKeys.OPEN
+        GameAction.KanType.CLOSED_KAN -> MinecraftKanActionTokenKeys.CLOSED
+        GameAction.KanType.ADDED_KAN -> MinecraftKanActionTokenKeys.ADDED
     }
 
     is GameAction.Ron -> "ron"

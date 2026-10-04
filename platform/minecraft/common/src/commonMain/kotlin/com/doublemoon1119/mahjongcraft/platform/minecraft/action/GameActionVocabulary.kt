@@ -169,15 +169,15 @@ fun GameActionVocabularyRegistry.registerBuiltInGameActionVocabulary() {
     )
     registerDefault(
         BuiltInGameActionIds.KAN_OPEN,
-        GameActionVocabulary(HUD_ACTION_PREFIX + "kan_open", MinecraftMessageKeys.GAME_ACTION_KAN_OPEN, order = 2),
+        GameActionVocabulary(HUD_ACTION_PREFIX + MinecraftKanActionTokenKeys.OPEN, MinecraftMessageKeys.GAME_ACTION_KAN_OPEN, order = 2),
     )
     registerDefault(
         BuiltInGameActionIds.KAN_CLOSED,
-        GameActionVocabulary(HUD_ACTION_PREFIX + "kan_closed", MinecraftMessageKeys.GAME_ACTION_KAN_CLOSED, order = 2),
+        GameActionVocabulary(HUD_ACTION_PREFIX + MinecraftKanActionTokenKeys.CLOSED, MinecraftMessageKeys.GAME_ACTION_KAN_CLOSED, order = 2),
     )
     registerDefault(
         BuiltInGameActionIds.KAN_ADDED,
-        GameActionVocabulary(HUD_ACTION_PREFIX + "kan_added", MinecraftMessageKeys.GAME_ACTION_KAN_ADDED, order = 2),
+        GameActionVocabulary(HUD_ACTION_PREFIX + MinecraftKanActionTokenKeys.ADDED, MinecraftMessageKeys.GAME_ACTION_KAN_ADDED, order = 2),
     )
     registerDefault(
         BuiltInGameActionIds.RON,

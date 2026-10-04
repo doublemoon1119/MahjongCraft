@@ -149,6 +149,9 @@ internal object ReplaySourceKeys {
     /** 玩家或牌的識別碼。 */
     const val ID = "id"
 
+    /** 結算明細中的玩家識別碼。 */
+    const val PLAYER_ID = "playerId"
+
     /** 擴充資料的類型識別碼。 */
     const val TYPE_KEY = "typeKey"
 
@@ -173,8 +176,161 @@ internal object ReplaySourceKeys {
     /** 動作直接涉及的牌。 */
     const val DIRECT_TILES = "directTiles"
 
-    /** 已接受動作的序列化種類識別碼。 */
-    const val ACTION_ACCEPTED = "action_accepted"
+    /** 玩家目前座位。 */
+    const val CURRENT_PLAYER_INDEX = "currentPlayerIndex"
+
+    /** 莊家玩家座位。 */
+    const val DEALER_PLAYER_ID = "dealerPlayerId"
+
+    /** 局內風圈與局序位置。 */
+    const val ROUND_POSITION = "roundPosition"
+
+    /** 場風。 */
+    const val PREVALENT_WIND = "prevalentWind"
+
+    /** 活牌區。 */
+    const val TILE_WALL = "tileWall"
+
+    /** 牌牆中的牌。 */
+    const val WALL_TILES = "tiles"
+
+    /** 開局保留牌區。 */
+    const val INITIAL_DEAD_WALL = "initialDeadWall"
+
+    /** 本場數。 */
+    const val COMBO_COUNT = "comboCount"
+
+    /** 已完成玩家座位。 */
+    const val FINISHED_PLAYER_IDS = "finishedPlayerIds"
+
+    /** 規則的動態桌況。 */
+    const val DYNAMIC_RULE_STATE = "dynamicRuleState"
+
+    /** 目前等待中的一般反應。 */
+    const val PENDING_REACTION = "pendingReaction"
+
+    /** 目前等待中的槓牌反應。 */
+    const val PENDING_KAN_REACTION = "pendingKanReaction"
+
+    /** 動作使用的牌。 */
+    const val TILE_ID = "tileId"
+
+    /** 動作搭配的牌。 */
+    const val WITH_TILE_IDS = "withTileIds"
+
+    /** 擴充動作的值。 */
+    const val VALUE = "value"
+
+    /** 反應裁定後套用的動作。 */
+    const val RESOLVED_ACTION = "resolvedAction"
+
+    /** 反應裁定的行為者座位。 */
+    const val ACTOR_PLAYER_ID = "actorPlayerId"
+
+    /** 開局準備步驟識別碼。 */
+    const val STEP_ID = "stepId"
+
+    /** 開局準備步驟索引。 */
+    const val STEP_INDEX = "stepIndex"
+
+    /** 下一個開局準備步驟識別碼。 */
+    const val NEXT_STEP_ID = "nextStepId"
+
+    /** 局完成摘要。 */
+    const val SUMMARY = "summary"
+
+    /** 完成或效果原因識別碼。 */
+    const val REASON_ID = "reasonId"
+
+    /** 結算結果識別碼。 */
+    const val OUTCOME_ID = "outcomeId"
+
+    /** 局完成結果。 */
+    const val ROUND_COMPLETION = "roundCompletion"
+
+    /** 最終玩家分數。 */
+    const val FINAL_SCORES_BY_PLAYER_ID = "finalScoresByPlayerId"
+
+    /** 結算後玩家分數。 */
+    const val SETTLED_SCORES_BY_PLAYER_ID = "settledScoresByPlayerId"
+
+    /** 結算受益玩家。 */
+    const val BENEFICIARY_PLAYER_IDS = "beneficiaryPlayerIds"
+
+    /** 結算責任玩家。 */
+    const val RESPONSIBLE_PLAYER_IDS = "responsiblePlayerIds"
+
+    /** 結算分類。 */
+    const val CLASSIFICATION = "classification"
+
+    /** 局流程轉移指示。 */
+    const val TRANSITION_DIRECTIVE = "transitionDirective"
+
+    /** 玩家手牌封套。 */
+    const val HAND = "hand"
+
+    /** 手牌中的牌。 */
+    const val HAND_TILES = "tiles"
+
+    /** 手牌中最後摸入的牌。 */
+    const val LAST_DRAWN = "lastDrawn"
+
+    /** 玩家副露清單。 */
+    const val MELDS = "melds"
+
+    /** 玩家分數。 */
+    const val SCORE = "score"
+
+    /** 玩家座風。 */
+    const val SEAT_WIND = "seatWind"
+
+    /** 玩家規則狀態。 */
+    const val PLAYER_RULE_STATE = "playerRuleState"
+
+    /** 玩家牌河資料。 */
+    const val DISCARD_PILE = "discardPile"
+
+    /** 副露中的牌。 */
+    const val MELD_TILES = "tiles"
+
+    /** 副露來源牌。 */
+    const val SOURCE_TILE = "sourceTile"
+
+    /** 副露來源方向。 */
+    const val SOURCE_DIRECTION = "sourceDirection"
+
+    /** 結算明細清單。 */
+    const val DETAIL_FIELDS = "detailFields"
+
+    /** 胡牌明細封套。 */
+    const val WIN_DETAILS = "winDetails"
+
+    /** 明細模板識別碼。 */
+    const val TEMPLATE_KEY = "templateKey"
+
+    /** 明細翻譯鍵。 */
+    const val TRANSLATION_KEY = "translationKey"
+
+    /** 明細翻譯參數。 */
+    const val ARGUMENTS = "arguments"
+
+    /** 明細牌參照陣列。 */
+    const val TILE_IDS = "tileIds"
+
+    /** 明細條目清單。 */
+    const val ENTRIES = "entries"
+
+    /** 條目尾端文字。 */
+    const val TRAILING_TEXT = "trailingText"
+
+    /** 條目尾端翻譯鍵。 */
+    const val TRAILING_TRANSLATION_KEY = "trailingTranslationKey"
+
+    /** 條目尾端翻譯參數。 */
+    const val TRAILING_TRANSLATION_ARGUMENT = "trailingTranslationArgument"
+
+    /** 動作中的擴充動作資料。 */
+    const val EXTENSION = "extension"
 
     /** 內建規則資料的類型前綴。 */
     const val BUILTIN_TYPE_PREFIX = "builtin:"

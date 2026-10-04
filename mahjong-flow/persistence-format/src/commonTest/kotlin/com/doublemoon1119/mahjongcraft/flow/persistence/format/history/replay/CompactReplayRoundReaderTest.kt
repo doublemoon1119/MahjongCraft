@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFactTypeKeys
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryActionTypeKeys
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayDiscard
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayIdentity
@@ -146,16 +148,16 @@ class CompactReplayRoundReaderTest {
         val identity = HistoryReplayIdentity(Uuid.random(), Uuid.random(), listOf(HistoryReplayPlayerIdentity(0, Uuid.random(), null), HistoryReplayPlayerIdentity(1, Uuid.random(), null)))
         val summary = JsonObject(
             mapOf(
-                "outcomeId" to JsonPrimitive("test:win"),
-                "classification" to JsonPrimitive("WIN"),
-                "beneficiaryPlayerIds" to JsonArray(listOf(JsonPrimitive(0))),
-                "responsiblePlayerIds" to JsonArray(listOf(JsonPrimitive(1))),
-                "settledScoresByPlayerId" to JsonObject(mapOf("0" to JsonPrimitive(26000), "1" to JsonPrimitive(24000))),
-                "transitionDirective" to JsonPrimitive("ADVANCE_DEALER"),
+                ReplaySourceKeys.OUTCOME_ID to JsonPrimitive("test:win"),
+                ReplaySourceKeys.CLASSIFICATION to JsonPrimitive("WIN"),
+                ReplaySourceKeys.BENEFICIARY_PLAYER_IDS to JsonArray(listOf(JsonPrimitive(0))),
+                ReplaySourceKeys.RESPONSIBLE_PLAYER_IDS to JsonArray(listOf(JsonPrimitive(1))),
+                ReplaySourceKeys.SETTLED_SCORES_BY_PLAYER_ID to JsonObject(mapOf("0" to JsonPrimitive(26000), "1" to JsonPrimitive(24000))),
+                ReplaySourceKeys.TRANSITION_DIRECTIVE to JsonPrimitive("ADVANCE_DEALER"),
             ),
         )
         val mapper = HistoryReplayProjectionMapper(HistoryReplayProjectionRegistry())
-        val result = mapper.mapFacts(listOf(JsonObject(mapOf("type" to JsonPrimitive("round_completed"), "summary" to summary)), JsonObject(mapOf("type" to JsonPrimitive("rule_effect_resolved"), "reasonId" to JsonPrimitive("test:effect"), "roundCompletion" to summary))), listOf(null, null), identity, 1, HistoryRoundTileCatalog(emptyList()), ReplayReadBudget(ReplayReadLimits()) {})
+        val result = mapper.mapFacts(listOf(JsonObject(mapOf(ReplaySourceKeys.TYPE to JsonPrimitive(HistoryFactTypeKeys.ROUND_COMPLETED), ReplaySourceKeys.SUMMARY to summary)), JsonObject(mapOf(ReplaySourceKeys.TYPE to JsonPrimitive(HistoryFactTypeKeys.RULE_EFFECT_RESOLVED), ReplaySourceKeys.REASON_ID to JsonPrimitive("test:effect"), ReplaySourceKeys.ROUND_COMPLETION to summary))), listOf(null, null), identity, 1, HistoryRoundTileCatalog(emptyList()), ReplayReadBudget(ReplayReadLimits()) {})
         val completed = assertIs<HistoryReplayFact.Completion>(result[0]).outcome
         assertEquals(RoundCompletionClassification.WIN, completed?.classification)
         assertEquals(listOf(1), completed?.responsibleSeats)
@@ -170,18 +172,18 @@ class CompactReplayRoundReaderTest {
         val identity = HistoryReplayIdentity(Uuid.random(), Uuid.random(), listOf(HistoryReplayPlayerIdentity(0, Uuid.random(), null)))
         val budget = ReplayReadBudget(ReplayReadLimits()) {}
         val mapper = HistoryReplayProjectionMapper(registry)
-        val action = JsonObject(mapOf("type" to JsonPrimitive("extension"), "value" to JsonObject(mapOf("typeKey" to JsonPrimitive("test:spell"), "payload" to JsonObject(mapOf("private" to JsonPrimitive("secret")))))))
+        val action = JsonObject(mapOf(ReplaySourceKeys.TYPE to JsonPrimitive(HistoryActionTypeKeys.EXTENSION), ReplaySourceKeys.VALUE to JsonObject(mapOf(ReplaySourceKeys.TYPE_KEY to JsonPrimitive("test:spell"), ReplayFormatKeys.PAYLOAD to JsonObject(mapOf("private" to JsonPrimitive("secret")))))))
 
         /** 映射一筆動作事實。
          * @param value 動作 envelope。
          * @return 公開歷史事實。
          */
-        fun facts(value: JsonObject) = mapper.mapFacts(listOf(JsonObject(mapOf("type" to JsonPrimitive("action_accepted"), "action" to value))), listOf(0), identity, 1, HistoryRoundTileCatalog(emptyList()), budget)
-        assertEquals(HistoryReplayFact.KnownAction("action_accepted", 0, "extension", emptyList(), emptyList(), "test:spell"), facts(action).single())
+        fun facts(value: JsonObject) = mapper.mapFacts(listOf(JsonObject(mapOf(ReplaySourceKeys.TYPE to JsonPrimitive(HistoryFactTypeKeys.ACTION_ACCEPTED), ReplaySourceKeys.ACTION to value))), listOf(0), identity, 1, HistoryRoundTileCatalog(emptyList()), budget)
+        assertEquals(HistoryReplayFact.KnownAction(HistoryFactTypeKeys.ACTION_ACCEPTED, 0, HistoryActionTypeKeys.EXTENSION, emptyList(), emptyList(), "test:spell"), facts(action).single())
         registry.registerAction("test:spell") { _, scope -> HistoryReplayFact.Reaction("test:spell", "public", scope.seat(0)) }
         registry.freeze()
         assertEquals(HistoryReplayFact.Reaction("test:spell", "public", 0), facts(action).single())
-        assertFailsWith<NoSuchElementException> { facts(JsonObject(mapOf("type" to JsonPrimitive("extension")))) }
+        assertFailsWith<NoSuchElementException> { facts(JsonObject(mapOf(ReplaySourceKeys.TYPE to JsonPrimitive(HistoryActionTypeKeys.EXTENSION)))) }
     }
 
     /** 重複註冊不會取代已登記的 codec，凍結後不能新增。 */
@@ -242,51 +244,51 @@ class CompactReplayRoundReaderTest {
         reservedTiles: List<Int> = emptyList(),
     ): JsonObject = buildJsonObject {
         put(
-            "players",
+            ReplayFormatKeys.PLAYERS,
             JsonArray(
                 listOf(
                     buildJsonObject {
                         put("initialSeatIndex", 0)
                         put(
-                            "hand",
+                            ReplaySourceKeys.HAND,
                             buildJsonObject {
-                                put("tiles", JsonArray(standingTiles.map(::JsonPrimitive)))
-                                put("melds", JsonArray(emptyList()))
-                                put("lastDrawn", lastDrawn?.let(::JsonPrimitive) ?: JsonNull)
+                                put(ReplaySourceKeys.HAND_TILES, JsonArray(standingTiles.map(::JsonPrimitive)))
+                                put(ReplaySourceKeys.MELDS, JsonArray(emptyList()))
+                                put(ReplaySourceKeys.LAST_DRAWN, lastDrawn?.let(::JsonPrimitive) ?: JsonNull)
                             },
                         )
                         put(
-                            "discardPile",
+                            ReplaySourceKeys.DISCARD_PILE,
                             buildJsonObject {
-                                put("typeKey", "builtin:riichi_discard_pile")
-                                put("payload", buildJsonObject { put("entries", JsonArray(emptyList())) })
+                                put(ReplaySourceKeys.TYPE_KEY, "builtin:riichi_discard_pile")
+                                put(ReplayFormatKeys.PAYLOAD, buildJsonObject { put(ReplaySourceKeys.ENTRIES, JsonArray(emptyList())) })
                             },
                         )
-                        put("score", 25000)
-                        put("seatWind", "EAST")
-                        put("playerRuleState", JsonNull)
+                        put(ReplaySourceKeys.SCORE, 25000)
+                        put(ReplaySourceKeys.SEAT_WIND, "EAST")
+                        put(ReplaySourceKeys.PLAYER_RULE_STATE, JsonNull)
                     },
                 ),
             ),
         )
-        put("tileWall", buildJsonObject { put("tiles", JsonArray(wallTiles.map(::JsonPrimitive))) })
-        put("initialDeadWall", JsonArray(reservedTiles.map(::JsonPrimitive)))
-        put("dealerPlayerId", 0)
-        put("currentPlayerIndex", 0)
+        put(ReplaySourceKeys.TILE_WALL, buildJsonObject { put(ReplaySourceKeys.WALL_TILES, JsonArray(wallTiles.map(::JsonPrimitive))) })
+        put(ReplaySourceKeys.INITIAL_DEAD_WALL, JsonArray(reservedTiles.map(::JsonPrimitive)))
+        put(ReplaySourceKeys.DEALER_PLAYER_ID, 0)
+        put(ReplaySourceKeys.CURRENT_PLAYER_INDEX, 0)
         put(
-            "roundPosition",
+            ReplaySourceKeys.ROUND_POSITION,
             buildJsonObject {
                 put("sequenceIndex", 0)
-                put("prevalentWind", "EAST")
+                put(ReplaySourceKeys.PREVALENT_WIND, "EAST")
                 put("localRoundNumber", 1)
                 put("phase", "REGULAR")
             },
         )
-        put("prevalentWind", "EAST")
-        put("comboCount", 0)
-        put("finishedPlayerIds", JsonArray(emptyList()))
+        put(ReplaySourceKeys.PREVALENT_WIND, "EAST")
+        put(ReplaySourceKeys.COMBO_COUNT, 0)
+        put(ReplaySourceKeys.FINISHED_PLAYER_IDS, JsonArray(emptyList()))
         put("dynamicRuleState", JsonNull)
-        put("pendingReaction", JsonNull)
-        put("pendingKanReaction", JsonNull)
+        put(ReplaySourceKeys.PENDING_REACTION, JsonNull)
+        put(ReplaySourceKeys.PENDING_KAN_REACTION, JsonNull)
     }
 }

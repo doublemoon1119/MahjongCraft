@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFactTypeKeys
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryActionTypeKeys
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayFactDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayIdentityDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayPlayerIdentityDto
@@ -14,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabulary
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.MinecraftKanActionTokenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
@@ -61,9 +64,9 @@ class HistoryRoundEventPresentationTest {
         val tile = TileDto.Numeric(SuitDto.CHARACTER, 5)
         val events = events(
             HistoryReplayFactDto.KnownAction(
-                typeKey = "action_accepted",
+                typeKey = HistoryFactTypeKeys.ACTION_ACCEPTED,
                 actorSeat = 2,
-                actionType = "discard",
+                actionType = HistoryActionTypeKeys.DISCARD,
                 directTiles = listOf(0, 0),
                 revealedTiles = listOf(1),
                 extensionTypeId = null,
@@ -96,9 +99,9 @@ class HistoryRoundEventPresentationTest {
     fun `non action facts retain their category and identifiers`() {
         val presenter = presenter()
         val facts = listOf(
-            HistoryReplayFactDto.Reaction("reaction_resolved", "custom:reaction", 0),
-            HistoryReplayFactDto.Preparation("round_preparation_started", "custom:step", 1, null),
-            HistoryReplayFactDto.RuleEffect("rule_effect_resolved", "custom:effect", null),
+            HistoryReplayFactDto.Reaction(HistoryFactTypeKeys.REACTION_RESOLVED, "custom:reaction", 0),
+            HistoryReplayFactDto.Preparation(HistoryFactTypeKeys.ROUND_PREPARATION_STARTED, "custom:step", 1, null),
+            HistoryReplayFactDto.RuleEffect(HistoryFactTypeKeys.RULE_EFFECT_RESOLVED, "custom:effect", null),
             HistoryReplayFactDto.Opaque("custom:opaque", 0, emptyList(), emptyList()),
         )
         val presentation = presenter.present(
@@ -119,7 +122,7 @@ class HistoryRoundEventPresentationTest {
     /** 內建流程事件即使經由 opaque DTO 傳送，也不能誤標為未知事件。 */
     @Test
     fun `built in opaque events have player wording`() {
-        val mappings = mapOf("win_continuation_resolved" to MinecraftHistoryScreenKeys.ROUND_EVENT_WIN_CONTINUATION, "returned_to_room" to MinecraftHistoryScreenKeys.ROUND_EVENT_RETURNED_TO_ROOM, "match_started" to MinecraftHistoryScreenKeys.ROUND_EVENT_MATCH_STARTED, "round_started" to MinecraftHistoryScreenKeys.ROUND_EVENT_ROUND_STARTED)
+        val mappings = mapOf(HistoryFactTypeKeys.WIN_CONTINUATION_RESOLVED to MinecraftHistoryScreenKeys.ROUND_EVENT_WIN_CONTINUATION, HistoryFactTypeKeys.RETURNED_TO_ROOM to MinecraftHistoryScreenKeys.ROUND_EVENT_RETURNED_TO_ROOM, HistoryFactTypeKeys.MATCH_STARTED to MinecraftHistoryScreenKeys.ROUND_EVENT_MATCH_STARTED, HistoryFactTypeKeys.ROUND_STARTED to MinecraftHistoryScreenKeys.ROUND_EVENT_ROUND_STARTED)
         mappings.forEach { (id, key) ->
             val fact = presenter().present(events(HistoryReplayFactDto.Opaque(id, null, emptyList(), emptyList())), null).transactions.single().facts.single()
             assertEquals(key, fact.text.string)
@@ -130,18 +133,42 @@ class HistoryRoundEventPresentationTest {
     /** 系統操作與流局均使用玩家用語，不顯示保存格式名稱。 */
     @Test
     fun `system actions have localized wording`() {
-        val mappings = mapOf("game_started" to MinecraftHistoryScreenKeys.ROUND_ACTION_GAME_STARTED, "round_started" to MinecraftHistoryScreenKeys.ROUND_ACTION_ROUND_STARTED, "match_ended" to MinecraftHistoryScreenKeys.ROUND_ACTION_MATCH_ENDED, "dice_rolled" to MinecraftHistoryScreenKeys.ROUND_ACTION_DICE_ROLLED, "draw" to MinecraftHistoryScreenKeys.ROUND_ACTION_DRAW, "kan" to MinecraftHistoryScreenKeys.ROUND_ACTION_KAN, "exhaustive_draw" to MinecraftHistoryScreenKeys.ROUND_CLASSIFICATION_EXHAUSTIVE_DRAW)
+        val mappings = mapOf(HistoryActionTypeKeys.GAME_STARTED to MinecraftHistoryScreenKeys.ROUND_ACTION_GAME_STARTED, HistoryActionTypeKeys.ROUND_STARTED to MinecraftHistoryScreenKeys.ROUND_ACTION_ROUND_STARTED, HistoryActionTypeKeys.MATCH_ENDED to MinecraftHistoryScreenKeys.ROUND_ACTION_MATCH_ENDED, HistoryActionTypeKeys.DICE_ROLLED to MinecraftHistoryScreenKeys.ROUND_ACTION_DICE_ROLLED, HistoryActionTypeKeys.DRAW to MinecraftHistoryScreenKeys.ROUND_ACTION_DRAW, HistoryActionTypeKeys.KAN to MinecraftHistoryScreenKeys.ROUND_ACTION_KAN, HistoryActionTypeKeys.EXHAUSTIVE_DRAW to MinecraftHistoryScreenKeys.ROUND_CLASSIFICATION_EXHAUSTIVE_DRAW)
         mappings.forEach { (id, key) ->
-            val fact = presenter().present(events(HistoryReplayFactDto.KnownAction("action_accepted", null, id, emptyList(), emptyList(), null)), null).transactions.single().facts.single()
+            val fact = presenter().present(events(HistoryReplayFactDto.KnownAction(HistoryFactTypeKeys.ACTION_ACCEPTED, null, id, emptyList(), emptyList(), null)), null).transactions.single().facts.single()
             assertEquals(key, fact.text.string)
             assertTrue(id in fact.identifiers)
+        }
+    }
+
+    /** 槓牌簡寫與 namespaced 動作 ID 都應解析至相同的槓牌用語。 */
+    @Test
+    fun `kan action aliases resolve to the registered vocabulary`() {
+        val aliases = mapOf(
+            MinecraftKanActionTokenKeys.OPEN to BuiltInGameActionIds.KAN_OPEN,
+            MinecraftKanActionTokenKeys.CLOSED to BuiltInGameActionIds.KAN_CLOSED,
+            MinecraftKanActionTokenKeys.ADDED to BuiltInGameActionIds.KAN_ADDED,
+        )
+        val vocabulary = GameActionVocabularyRegistryImpl().apply {
+            aliases.values.forEach { actionId -> registerDefault(actionId, GameActionVocabulary("test.$actionId")) }
+        }
+        val presenter = HistoryRoundEventPresenter(vocabulary, ExhaustiveDrawReasonDisplayNameRegistryImpl())
+
+        aliases.forEach { (alias, actionId) ->
+            listOf(alias, actionId).forEach { actionType ->
+                val fact = presenter.present(
+                    events(HistoryReplayFactDto.KnownAction(HistoryFactTypeKeys.ACTION_ACCEPTED, null, actionType, emptyList(), emptyList(), null)),
+                    null,
+                ).transactions.single().facts.single()
+                assertEquals("test.$actionId", fact.text.string)
+            }
         }
     }
 
     /** 沒有鳴牌裁定結果時使用中立說明，不猜測玩家是否跳過或逾時。 */
     @Test
     fun `empty reaction uses neutral wording`() {
-        val fact = presenter().present(events(HistoryReplayFactDto.Reaction("reaction_resolved", null, null)), null).transactions.single().facts.single()
+        val fact = presenter().present(events(HistoryReplayFactDto.Reaction(HistoryFactTypeKeys.REACTION_RESOLVED, null, null)), null).transactions.single().facts.single()
         val argument = (fact.text.content as TranslatableTextContent).args.single() as Text
         assertEquals(MinecraftHistoryScreenKeys.ROUND_REACTION_NONE, argument.string)
     }
@@ -152,7 +179,7 @@ class HistoryRoundEventPresentationTest {
         val reasons = mapOf(BuiltInMatchEndReasonIds.SCHEDULE_COMPLETED to MinecraftHistoryScreenKeys.ROUND_OUTCOME_SCHEDULE_COMPLETED, BuiltInMatchEndReasonIds.TARGET_SCORE_REACHED to MinecraftHistoryScreenKeys.ROUND_OUTCOME_TARGET_SCORE_REACHED, BuiltInMatchEndReasonIds.EXTRA_ROUND_LIMIT_REACHED to MinecraftHistoryScreenKeys.ROUND_OUTCOME_EXTRA_ROUND_LIMIT_REACHED, BuiltInMatchEndReasonIds.DEALER_TOP_FINISH to MinecraftHistoryScreenKeys.ROUND_OUTCOME_DEALER_TOP_FINISH, BuiltInMatchEndReasonIds.PLAYER_BUSTED to MinecraftHistoryScreenKeys.ROUND_OUTCOME_PLAYER_BUSTED)
         reasons.forEach { (reason, key) ->
             val outcome = HistoryRoundOutcomeDto(reason, emptyList(), emptyMap(), null, emptyList(), null)
-            val fact = presenter().present(events(HistoryReplayFactDto.Completion("match_completed", outcome)), null).transactions.single().facts.single()
+            val fact = presenter().present(events(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.MATCH_COMPLETED, outcome)), null).transactions.single().facts.single()
             assertEquals(MinecraftHistoryScreenKeys.ROUND_MATCH_COMPLETION, (fact.text.content as TranslatableTextContent).key)
             assertEquals(key, checkNotNull(fact.outcome).reasonText.string)
             assertTrue(reason in fact.identifiers)
@@ -162,14 +189,14 @@ class HistoryRoundEventPresentationTest {
     /** 開始或提交準備時，沒有下一步 ID 不代表準備已完成。 */
     @Test
     fun `preparation wording respects the recorded stage`() {
-        val stages = mapOf("round_preparation_started" to MinecraftHistoryScreenKeys.ROUND_PREPARATION_STARTED, "round_preparation_submitted" to MinecraftHistoryScreenKeys.ROUND_PREPARATION_SUBMITTED, "round_preparation_automatic_resolved" to MinecraftHistoryScreenKeys.ROUND_PREPARATION_NONE)
+        val stages = mapOf(HistoryFactTypeKeys.ROUND_PREPARATION_STARTED to MinecraftHistoryScreenKeys.ROUND_PREPARATION_STARTED, HistoryFactTypeKeys.ROUND_PREPARATION_SUBMITTED to MinecraftHistoryScreenKeys.ROUND_PREPARATION_SUBMITTED, HistoryFactTypeKeys.ROUND_PREPARATION_AUTOMATIC_RESOLVED to MinecraftHistoryScreenKeys.ROUND_PREPARATION_NONE)
         stages.forEach { (type, key) ->
             val fact = presenter().present(events(HistoryReplayFactDto.Preparation(type, "custom:step", 0, null)), null).transactions.single().facts.single()
             val stage = (fact.text.content as TranslatableTextContent).args[1] as Text
             assertEquals(key, stage.string)
             assertTrue("custom:step" in fact.identifiers)
         }
-        val fact = presenter().present(events(HistoryReplayFactDto.Preparation("round_preparation_automatic_resolved", "custom:step", 0, "custom:next")), null).transactions.single().facts.single()
+        val fact = presenter().present(events(HistoryReplayFactDto.Preparation(HistoryFactTypeKeys.ROUND_PREPARATION_AUTOMATIC_RESOLVED, "custom:step", 0, "custom:next")), null).transactions.single().facts.single()
         assertEquals(MinecraftHistoryScreenKeys.ROUND_PREPARATION_NEXT, ((fact.text.content as TranslatableTextContent).args[1] as Text).string)
         assertTrue("custom:next" in fact.identifiers)
     }
@@ -201,7 +228,7 @@ class HistoryRoundEventPresentationTest {
             transitionDirective = null,
         )
         val fact = presenter().present(
-            events(HistoryReplayFactDto.Completion("round_completed", outcome)),
+            events(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.ROUND_COMPLETED, outcome)),
             null,
         ).transactions.single().facts.single()
 
@@ -216,7 +243,7 @@ class HistoryRoundEventPresentationTest {
     @Test
     fun `missing outcome scores remain unknown`() {
         val outcome = HistoryRoundOutcomeDto("custom:draw", listOf(1), emptyMap(), null, emptyList(), null)
-        val fact = presenter().present(events(HistoryReplayFactDto.Completion("round_completed", outcome)), null)
+        val fact = presenter().present(events(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.ROUND_COMPLETED, outcome)), null)
             .transactions.single().facts.single()
         val rows = checkNotNull(fact.outcome).rows
         assertEquals(listOf(0, 1), rows.map { it.seatIndex })
@@ -232,7 +259,7 @@ class HistoryRoundEventPresentationTest {
         }
         val presenter = HistoryRoundEventPresenter(vocabulary, ExhaustiveDrawReasonDisplayNameRegistryImpl())
         val fact = presenter.present(
-            events(HistoryReplayFactDto.KnownAction("action", 0, "extension", emptyList(), emptyList(), "custom:spell")),
+            events(HistoryReplayFactDto.KnownAction("action", 0, HistoryActionTypeKeys.EXTENSION, emptyList(), emptyList(), "custom:spell")),
             "custom:rule",
         ).transactions.single().facts.single()
         assertEquals("test.spell", fact.text.string)

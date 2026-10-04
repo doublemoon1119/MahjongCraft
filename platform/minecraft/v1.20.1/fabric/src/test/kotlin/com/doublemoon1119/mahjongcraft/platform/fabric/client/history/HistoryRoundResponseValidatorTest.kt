@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFactTypeKeys
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryErrorCodeDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryScopeDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayDiscardDto
@@ -135,7 +136,7 @@ class HistoryRoundResponseValidatorTest {
         val request = HistoryRoundEventsRequestDto("request", TEST_MATCH_ID, roundNumber = 1)
         val outcome = HistoryRoundOutcomeDto("test:win", listOf(0), mapOf(0 to 25000), "WIN", emptyList(), null, scoreChangesBySeat = mapOf(1 to 1000))
         val base = events()
-        val invalid = base.copy(transactions = listOf(base.transactions.single().copy(facts = listOf(HistoryReplayFactDto.Completion("round_completed", outcome)))))
+        val invalid = base.copy(transactions = listOf(base.transactions.single().copy(facts = listOf(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.ROUND_COMPLETED, outcome)))))
 
         val result = HistoryRoundResponseValidator.validateEvents(request, HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, invalid))
         assertEquals(HistoryRoundValidationError.CONTENT_MISMATCH, assertIs<HistoryRoundValidationResult.Invalid>(result).reason)
@@ -148,7 +149,7 @@ class HistoryRoundResponseValidatorTest {
         val details = listOf(HistoryWinnerDetailsDto(0, "test:template", listOf(HistoryWinDetailFieldDto("invalid", HistoryWinDetailValueDto.Text("test:label")))))
         val outcome = HistoryRoundOutcomeDto("test:win", listOf(0), mapOf(0 to 25000), "WIN", emptyList(), null, winnerDetails = details)
         val base = events()
-        val invalid = base.copy(transactions = listOf(base.transactions.single().copy(facts = listOf(HistoryReplayFactDto.Completion("round_completed", outcome)))))
+        val invalid = base.copy(transactions = listOf(base.transactions.single().copy(facts = listOf(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.ROUND_COMPLETED, outcome)))))
 
         val result = HistoryRoundResponseValidator.validateEvents(request, HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, invalid))
         assertEquals(HistoryRoundValidationError.CONTENT_MISMATCH, assertIs<HistoryRoundValidationResult.Invalid>(result).reason)
@@ -161,7 +162,7 @@ class HistoryRoundResponseValidatorTest {
         val details = listOf(HistoryWinnerDetailsDto(0, "test:template", listOf(HistoryWinDetailFieldDto("test:tiles", HistoryWinDetailValueDto.Tiles(listOf(1))))))
         val outcome = HistoryRoundOutcomeDto("test:win", listOf(0), mapOf(0 to 25000), "WIN", emptyList(), null, winnerDetails = details)
         val base = events().copy(tileCatalog = listOf(TileDto.Numeric(SuitDto.CHARACTER, 1), TileDto.Numeric(SuitDto.CHARACTER, 2)))
-        val invalid = base.copy(transactions = listOf(base.transactions.single().copy(facts = listOf(HistoryReplayFactDto.Completion("round_completed", outcome)))))
+        val invalid = base.copy(transactions = listOf(base.transactions.single().copy(facts = listOf(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.ROUND_COMPLETED, outcome)))))
 
         val result = HistoryRoundResponseValidator.validateEvents(request, HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, invalid))
         assertEquals(HistoryRoundValidationError.CONTENT_MISMATCH, assertIs<HistoryRoundValidationResult.Invalid>(result).reason)
@@ -207,7 +208,7 @@ class HistoryRoundResponseValidatorTest {
         val base = events().copy(
             identity = identity,
             tileCatalog = listOf(TileDto.Numeric(SuitDto.CHARACTER, 1), TileDto.Numeric(SuitDto.CHARACTER, 2)),
-            transactions = listOf(events().transactions.single().copy(declaredTileCountAfter = 2, facts = listOf(HistoryReplayFactDto.Completion("round_completed", outcome)))),
+            transactions = listOf(events().transactions.single().copy(declaredTileCountAfter = 2, facts = listOf(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.ROUND_COMPLETED, outcome)))),
         )
 
         assertIs<HistoryRoundValidationResult.Success<*>>(
@@ -228,7 +229,7 @@ class HistoryRoundResponseValidatorTest {
             ),
         )
         val outcome = HistoryRoundOutcomeDto("test:win", listOf(0), mapOf(0 to 25000), "WIN", emptyList(), null, winnerDetails = details)
-        val base = events().copy(transactions = listOf(events().transactions.single().copy(facts = listOf(HistoryReplayFactDto.Completion("round_completed", outcome)))))
+        val base = events().copy(transactions = listOf(events().transactions.single().copy(facts = listOf(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.ROUND_COMPLETED, outcome)))))
         val catalogInvalid = base.copy(tileCatalog = listOf(TileDto.Numeric(SuitDto.CHARACTER, 1)))
         assertEquals(
             HistoryRoundValidationError.CONTENT_MISMATCH,
@@ -258,7 +259,7 @@ class HistoryRoundResponseValidatorTest {
             ),
         )
         val outcome = HistoryRoundOutcomeDto("test:win", listOf(0), mapOf(0 to 25000), "WIN", emptyList(), null, winnerDetails = details)
-        val base = events().copy(transactions = listOf(events().transactions.single().copy(facts = listOf(HistoryReplayFactDto.Completion("round_completed", outcome)))))
+        val base = events().copy(transactions = listOf(events().transactions.single().copy(facts = listOf(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.ROUND_COMPLETED, outcome)))))
 
         assertEquals(
             HistoryRoundValidationError.CONTENT_MISMATCH,
@@ -285,7 +286,7 @@ class HistoryRoundResponseValidatorTest {
         val base = events().copy(
             identity = identity,
             tileCatalog = listOf(TileDto.Numeric(SuitDto.CHARACTER, 1), TileDto.Numeric(SuitDto.CHARACTER, 2)),
-            transactions = listOf(events().transactions.single().copy(declaredTileCountAfter = 2, facts = listOf(HistoryReplayFactDto.Completion("round_completed", outcome)))),
+            transactions = listOf(events().transactions.single().copy(declaredTileCountAfter = 2, facts = listOf(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.ROUND_COMPLETED, outcome)))),
         )
 
         assertIs<HistoryRoundValidationResult.Success<*>>(
@@ -306,7 +307,7 @@ class HistoryRoundResponseValidatorTest {
             null,
             winnerDetails = listOf(HistoryWinnerDetailsDto(0, "test:template", emptyList())),
         )
-        val base = events().copy(transactions = listOf(events().transactions.single().copy(facts = listOf(HistoryReplayFactDto.Completion("round_completed", outcome)))))
+        val base = events().copy(transactions = listOf(events().transactions.single().copy(facts = listOf(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.ROUND_COMPLETED, outcome)))))
 
         assertIs<HistoryRoundValidationResult.Success<*>>(
             HistoryRoundResponseValidator.validateEvents(request, HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, base)),

@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFactTypeKeys
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementTranslationKeys
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayFactDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayIdentityDto
@@ -113,7 +114,7 @@ class HistoryWinDetailPresentationTest {
         val events = HistoryRoundEventsDto(
             HistoryReplayIdentityDto("match", "table", (0..2).map { HistoryReplayPlayerIdentityDto(it, null, null) }),
             1,
-            listOf(HistoryReplayTransactionDto(0, 100L, false, 0, listOf(HistoryReplayFactDto.Completion("win_settled", outcome)))),
+            listOf(HistoryReplayTransactionDto(0, 100L, false, 0, listOf(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.WIN_SETTLED, outcome)))),
             null,
             emptyList(),
         )

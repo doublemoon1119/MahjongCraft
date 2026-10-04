@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFactTypeKeys
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryActionTypeKeys
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayTransaction
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundEvents
@@ -67,7 +69,7 @@ class CompactReplayRoundReader(
                         cursor.hasWinSettlement,
                         cursor.exhaustiveDrawSettlement,
                     )
-                    if (fact.typeKey == "win_settled" ||
+                    if (fact.typeKey == HistoryFactTypeKeys.WIN_SETTLED ||
                         (fact is HistoryReplayFact.RuleEffect && fact.outcome?.classification == RoundCompletionClassification.WIN)
                     ) {
                         cursor.hasWinSettlement = true
@@ -113,7 +115,7 @@ class CompactReplayRoundReader(
                         cursor.hasWinSettlement,
                         cursor.exhaustiveDrawSettlement,
                     )
-                    if (fact.typeKey == "win_settled" ||
+                    if (fact.typeKey == HistoryFactTypeKeys.WIN_SETTLED ||
                         (fact is HistoryReplayFact.RuleEffect && fact.outcome?.classification == RoundCompletionClassification.WIN)
                     ) {
                         cursor.hasWinSettlement = true
@@ -125,7 +127,7 @@ class CompactReplayRoundReader(
             }
             facts.mapNotNull {
                 when (it) {
-                    is HistoryReplayFact.Completion -> it.outcome.takeUnless { _ -> it.typeKey == "match_completed" }
+                    is HistoryReplayFact.Completion -> it.outcome.takeUnless { _ -> it.typeKey == HistoryFactTypeKeys.MATCH_COMPLETED }
                     is HistoryReplayFact.RuleEffect -> it.outcome
                     else -> null
                 }
@@ -185,14 +187,14 @@ class CompactReplayRoundReader(
         hasPriorWinSettlement: Boolean,
         exhaustiveDrawSettlement: ScoreSnapshot?,
     ): HistoryReplayFact {
-        if (typeKey == "match_completed") return this
+        if (typeKey == HistoryFactTypeKeys.MATCH_COMPLETED) return this
         val outcome = when (this) {
             is HistoryReplayFact.Completion -> outcome
             is HistoryReplayFact.RuleEffect -> outcome
             else -> null
         } ?: return this
         // 和牌分數在較早的結算交易改變；單憑局完成摘要不能把流程推進的零變化視為和牌分差。
-        if (typeKey == "round_completed" && outcome.classification == RoundCompletionClassification.WIN) {
+        if (typeKey == HistoryFactTypeKeys.ROUND_COMPLETED && outcome.classification == RoundCompletionClassification.WIN) {
             return when (this) {
                 is HistoryReplayFact.Completion -> copy(outcome = outcome.copy(hasEarlierWinSettlement = hasPriorWinSettlement))
                 is HistoryReplayFact.RuleEffect -> this
@@ -200,7 +202,7 @@ class CompactReplayRoundReader(
             }
         }
         val scoreBaseline = if (
-            typeKey == "round_completed" && outcome.classification == RoundCompletionClassification.EXHAUSTIVE_DRAW
+            typeKey == HistoryFactTypeKeys.ROUND_COMPLETED && outcome.classification == RoundCompletionClassification.EXHAUSTIVE_DRAW
         ) {
             exhaustiveDrawSettlement
         } else {
@@ -214,7 +216,7 @@ class CompactReplayRoundReader(
             require(difference in Int.MIN_VALUE.toLong()..Int.MAX_VALUE.toLong()) { "Replay score change is out of range" }
             difference.toInt()
         }
-        val settledScores = if (typeKey == "win_settled" && outcome.scoresBySeat.isEmpty()) effectiveAfterScores else outcome.scoresBySeat
+        val settledScores = if (typeKey == HistoryFactTypeKeys.WIN_SETTLED && outcome.scoresBySeat.isEmpty()) effectiveAfterScores else outcome.scoresBySeat
         val updated = outcome.copy(scoresBySeat = settledScores, scoreChangesBySeat = changes)
         return when (this) {
             is HistoryReplayFact.Completion -> copy(outcome = updated)
@@ -237,7 +239,7 @@ class CompactReplayRoundReader(
             val player = value as? JsonObject ?: error("Replay player projection is invalid")
             val seat = player[ReplaySourceKeys.INITIAL_SEAT_INDEX].asInt()
             require(seat in 0 until seatCount)
-            seat to player["score"].asInt()
+            seat to player[ReplaySourceKeys.SCORE].asInt()
         }
         require(scores.size == seatCount)
         return scores
@@ -348,9 +350,9 @@ class CompactReplayRoundReader(
      * @return 若事實是接受流局動作則為 true。
      */
     private fun isExhaustiveDrawAction(fact: JsonObject): Boolean {
-        if ((fact[ReplaySourceKeys.TYPE] as? JsonPrimitive)?.content != ReplaySourceKeys.ACTION_ACCEPTED) return false
+        if ((fact[ReplaySourceKeys.TYPE] as? JsonPrimitive)?.content != HistoryFactTypeKeys.ACTION_ACCEPTED) return false
         val action = fact[ReplaySourceKeys.ACTION] as? JsonObject ?: return false
-        return (action[ReplaySourceKeys.TYPE] as? JsonPrimitive)?.content == "exhaustive_draw"
+        return (action[ReplaySourceKeys.TYPE] as? JsonPrimitive)?.content == HistoryActionTypeKeys.EXHAUSTIVE_DRAW
     }
 
     /**

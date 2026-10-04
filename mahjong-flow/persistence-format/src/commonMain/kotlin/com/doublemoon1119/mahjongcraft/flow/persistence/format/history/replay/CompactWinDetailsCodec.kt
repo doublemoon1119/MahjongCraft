@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryDetailValueTypeKeys
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
@@ -17,11 +18,11 @@ internal object CompactWinDetailsCodec {
         val winner = obj(raw)
         JsonArray(
             listOf(
-                winner.getValue(PLAYER_ID),
-                winner.getValue(TEMPLATE_KEY),
-                array(winner.getValue(DETAIL_FIELDS)).mapArray { fieldRaw ->
+                winner.getValue(ReplaySourceKeys.PLAYER_ID),
+                winner.getValue(ReplaySourceKeys.TEMPLATE_KEY),
+                array(winner.getValue(ReplaySourceKeys.DETAIL_FIELDS)).mapArray { fieldRaw ->
                     val field = obj(fieldRaw)
-                    JsonArray(listOf(field.getValue(ID), encodeValue(obj(field.getValue(VALUE)))))
+                    JsonArray(listOf(field.getValue(ReplaySourceKeys.ID), encodeValue(obj(field.getValue(ReplaySourceKeys.VALUE)))))
                 },
             ) + winner[ReplaySourceKeys.WINNING_HAND]?.takeUnless { it == JsonNull }?.let { listOf(encodeHand(obj(it))) }.orEmpty(),
         )
@@ -38,12 +39,12 @@ internal object CompactWinDetailsCodec {
         val hand = winner.getOrNull(3)?.let { decodeHand(array(it)) }
         JsonObject(
             linkedMapOf(
-                PLAYER_ID to winner[0],
-                TEMPLATE_KEY to winner[1],
-                DETAIL_FIELDS to array(winner[2]).mapArray { fieldRaw ->
+                ReplaySourceKeys.PLAYER_ID to winner[0],
+                ReplaySourceKeys.TEMPLATE_KEY to winner[1],
+                ReplaySourceKeys.DETAIL_FIELDS to array(winner[2]).mapArray { fieldRaw ->
                     val field = array(fieldRaw)
                     require(field.size == 2) { "Compact winner field must contain two fields" }
-                    JsonObject(mapOf(ID to field[0], VALUE to decodeValue(array(field[1]))))
+                    JsonObject(mapOf(ReplaySourceKeys.ID to field[0], ReplaySourceKeys.VALUE to decodeValue(array(field[1]))))
                 },
             ) + hand?.let { mapOf(ReplaySourceKeys.WINNING_HAND to it) }.orEmpty(),
         )
@@ -87,15 +88,15 @@ internal object CompactWinDetailsCodec {
      * @param value 保存的明細值。
      * @return 精簡值。
      */
-    private fun encodeValue(value: JsonObject): JsonArray = when ((value[TYPE] as? JsonPrimitive)?.content) {
-        TEXT -> JsonArray(listOf(JsonPrimitive(TEXT_CODE), value.getValue(TRANSLATION_KEY)) + array(value[ARGUMENTS] ?: JsonArray(emptyList())))
-        TILES -> JsonArray(listOf(JsonPrimitive(TILES_CODE), value.getValue(TILE_IDS)))
-        ENTRIES -> JsonArray(
+    private fun encodeValue(value: JsonObject): JsonArray = when ((value[ReplaySourceKeys.TYPE] as? JsonPrimitive)?.content) {
+        HistoryDetailValueTypeKeys.TEXT -> JsonArray(listOf(JsonPrimitive(TEXT_CODE), value.getValue(ReplaySourceKeys.TRANSLATION_KEY)) + array(value[ReplaySourceKeys.ARGUMENTS] ?: JsonArray(emptyList())))
+        HistoryDetailValueTypeKeys.TILES -> JsonArray(listOf(JsonPrimitive(TILES_CODE), value.getValue(ReplaySourceKeys.TILE_IDS)))
+        HistoryDetailValueTypeKeys.ENTRIES -> JsonArray(
             listOf(
                 JsonPrimitive(ENTRIES_CODE),
-                array(value.getValue(ENTRIES)).mapArray { raw ->
+                array(value.getValue(ReplaySourceKeys.ENTRIES)).mapArray { raw ->
                     val entry = obj(raw)
-                    val parts = mutableListOf(entry.getValue(TRANSLATION_KEY), entry[TRAILING_TEXT]?.takeUnless { it == JsonPrimitive("") } ?: JsonNull, entry[TRAILING_KEY] ?: JsonNull, entry[TRAILING_ARGUMENT] ?: JsonNull)
+                    val parts = mutableListOf(entry.getValue(ReplaySourceKeys.TRANSLATION_KEY), entry[ReplaySourceKeys.TRAILING_TEXT]?.takeUnless { it == JsonPrimitive("") } ?: JsonNull, entry[ReplaySourceKeys.TRAILING_TRANSLATION_KEY] ?: JsonNull, entry[ReplaySourceKeys.TRAILING_TRANSLATION_ARGUMENT] ?: JsonNull)
                     while (parts.last() == JsonNull) parts.removeAt(parts.lastIndex)
                     JsonArray(parts)
                 },
@@ -112,20 +113,20 @@ internal object CompactWinDetailsCodec {
     private fun decodeValue(value: JsonArray): JsonObject {
         require(value.size >= 2) { "Compact winner value is incomplete" }
         return when (value[0]) {
-            JsonPrimitive(TEXT_CODE) -> JsonObject(mapOf(TYPE to JsonPrimitive(TEXT), TRANSLATION_KEY to value[1], ARGUMENTS to JsonArray(value.drop(2))))
+            JsonPrimitive(TEXT_CODE) -> JsonObject(mapOf(ReplaySourceKeys.TYPE to JsonPrimitive(HistoryDetailValueTypeKeys.TEXT), ReplaySourceKeys.TRANSLATION_KEY to value[1], ReplaySourceKeys.ARGUMENTS to JsonArray(value.drop(2))))
             JsonPrimitive(TILES_CODE) -> {
                 require(value.size == 2) { "Compact tile detail has unexpected fields" }
-                JsonObject(mapOf(TYPE to JsonPrimitive(TILES), TILE_IDS to array(value[1])))
+                JsonObject(mapOf(ReplaySourceKeys.TYPE to JsonPrimitive(HistoryDetailValueTypeKeys.TILES), ReplaySourceKeys.TILE_IDS to array(value[1])))
             }
             JsonPrimitive(ENTRIES_CODE) -> {
                 require(value.size == 2) { "Compact entry detail has unexpected fields" }
                 JsonObject(
                     mapOf(
-                        TYPE to JsonPrimitive(ENTRIES),
-                        ENTRIES to array(value[1]).mapArray { raw ->
+                        ReplaySourceKeys.TYPE to JsonPrimitive(HistoryDetailValueTypeKeys.ENTRIES),
+                        ReplaySourceKeys.ENTRIES to array(value[1]).mapArray { raw ->
                             val entry = array(raw)
                             require(entry.size in 1..4) { "Compact winner entry has invalid fields" }
-                            JsonObject(mapOf(TRANSLATION_KEY to entry[0], TRAILING_TEXT to (entry.getOrNull(1)?.takeUnless { it == JsonNull } ?: JsonPrimitive("")), TRAILING_KEY to (entry.getOrNull(2) ?: JsonNull), TRAILING_ARGUMENT to (entry.getOrNull(3) ?: JsonNull)))
+                            JsonObject(mapOf(ReplaySourceKeys.TRANSLATION_KEY to entry[0], ReplaySourceKeys.TRAILING_TEXT to (entry.getOrNull(1)?.takeUnless { it == JsonNull } ?: JsonPrimitive("")), ReplaySourceKeys.TRAILING_TRANSLATION_KEY to (entry.getOrNull(2) ?: JsonNull), ReplaySourceKeys.TRAILING_TRANSLATION_ARGUMENT to (entry.getOrNull(3) ?: JsonNull)))
                         },
                     ),
                 )
@@ -155,60 +156,12 @@ internal object CompactWinDetailsCodec {
      */
     private fun array(value: JsonElement): JsonArray = value as? JsonArray ?: error("Winner detail must be an array")
 
-    /** 原始保存格式的逐位明細欄位。 */
-    const val WIN_DETAILS = "winDetails"
-
-    /** 玩家參照。 */
-    private const val PLAYER_ID = "playerId"
-
-    /** 規則模板識別碼。 */
-    private const val TEMPLATE_KEY = "templateKey"
-
-    /** 有序明細欄位。 */
-    private const val DETAIL_FIELDS = "detailFields"
-
-    /** 明細欄位識別碼。 */
-    private const val ID = "id"
-
-    /** 明細值。 */
-    private const val VALUE = "value"
-
-    /** 值種類。 */
-    private const val TYPE = "type"
-
-    /** 文字值種類與固定代碼。 */
-    private const val TEXT = "text"
-
     /** 文字值固定代碼。 */
     private const val TEXT_CODE = 0
-
-    /** 牌參照值種類。 */
-    private const val TILES = "tiles"
 
     /** 牌參照值固定代碼。 */
     private const val TILES_CODE = 1
 
-    /** 條目值種類。 */
-    private const val ENTRIES = "entries"
-
     /** 條目值固定代碼。 */
     private const val ENTRIES_CODE = 2
-
-    /** 文字翻譯鍵。 */
-    private const val TRANSLATION_KEY = "translationKey"
-
-    /** 文字翻譯參數。 */
-    private const val ARGUMENTS = "arguments"
-
-    /** 牌參照陣列。 */
-    private const val TILE_IDS = "tileIds"
-
-    /** 尾端純文字。 */
-    private const val TRAILING_TEXT = "trailingText"
-
-    /** 尾端翻譯鍵。 */
-    private const val TRAILING_KEY = "trailingTranslationKey"
-
-    /** 尾端翻譯參數。 */
-    private const val TRAILING_ARGUMENT = "trailingTranslationArgument"
 }

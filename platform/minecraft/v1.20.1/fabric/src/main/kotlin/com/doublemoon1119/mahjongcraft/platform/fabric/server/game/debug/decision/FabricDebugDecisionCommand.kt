@@ -29,6 +29,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPlayerTableScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPreviewEntityLifecycle
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.MinecraftKanActionTokenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.arguments.StringArgumentType
@@ -408,8 +409,8 @@ class FabricDebugDecisionCommand(
             return when (this) {
                 CHI -> listOf(action("chi", listOf("s4", "s5", "s6"), claimedIndex = 1))
                 PON -> listOf(action("pon", listOf("p5", "p5", "p5")))
-                KAN -> listOf(action("kan_open", listOf("m9", "m9", "m9", "m9")))
-                ANKAN -> listOf(action("kan_closed", listOf("m9", "m9", "m9", "m9")))
+                KAN -> listOf(action(MinecraftKanActionTokenKeys.OPEN, listOf("m9", "m9", "m9", "m9")))
+                ANKAN -> listOf(action(MinecraftKanActionTokenKeys.CLOSED, listOf("m9", "m9", "m9", "m9")))
                 RON -> listOf(action("ron", listOf("s5")))
                 TSUMO -> listOf(action("tsumo", listOf("red_dragon")))
                 RIICHI -> listOf(riichiAction())
@@ -422,7 +423,7 @@ class FabricDebugDecisionCommand(
                 MIXED -> listOf(
                     action("chi", listOf("s4", "s5", "s6"), claimedIndex = 1),
                     action("pon", listOf("s5", "s5", "s5")),
-                    action("kan_open", listOf("s5", "s5", "s5", "s5")),
+                    action(MinecraftKanActionTokenKeys.OPEN, listOf("s5", "s5", "s5", "s5")),
                     action("ron", listOf("s5")),
                     riichiAction(),
                     action("pass", emptyList()),

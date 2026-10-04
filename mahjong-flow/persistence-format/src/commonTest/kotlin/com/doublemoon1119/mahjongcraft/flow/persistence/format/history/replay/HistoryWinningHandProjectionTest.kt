@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFactTypeKeys
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayIdentity
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayPlayerIdentity
@@ -29,14 +30,14 @@ class HistoryWinningHandProjectionTest {
         )
         val fact = JsonObject(
             mapOf(
-                "type" to JsonPrimitive("win_settled"),
-                "outcomeId" to JsonPrimitive("test:ron"),
-                "responsiblePlayerIds" to JsonArray(listOf(JsonPrimitive(2))),
-                "winDetails" to details,
+                ReplaySourceKeys.TYPE to JsonPrimitive(HistoryFactTypeKeys.WIN_SETTLED),
+                ReplaySourceKeys.OUTCOME_ID to JsonPrimitive("test:ron"),
+                ReplaySourceKeys.RESPONSIBLE_PLAYER_IDS to JsonArray(listOf(JsonPrimitive(2))),
+                ReplaySourceKeys.WIN_DETAILS to details,
             ),
         )
         val encoded = CompactFactCodec.encode(fact, linkedMapOf(), linkedMapOf())
-        val restored = CompactFactCodec.decode(encoded, listOf("win_settled"), emptyList())
+        val restored = CompactFactCodec.decode(encoded, listOf(HistoryFactTypeKeys.WIN_SETTLED), emptyList())
         val projected = mapper().mapFacts(
             listOf(restored),
             listOf(null),
@@ -59,14 +60,14 @@ class HistoryWinningHandProjectionTest {
     fun `compact win details preserve absent winning hand`() {
         val fact = JsonObject(
             mapOf(
-                "type" to JsonPrimitive("win_settled"),
-                "outcomeId" to JsonPrimitive("test:ron"),
-                "responsiblePlayerIds" to JsonArray(emptyList()),
-                "winDetails" to JsonArray(listOf(winner(0, null, null))),
+                ReplaySourceKeys.TYPE to JsonPrimitive(HistoryFactTypeKeys.WIN_SETTLED),
+                ReplaySourceKeys.OUTCOME_ID to JsonPrimitive("test:ron"),
+                ReplaySourceKeys.RESPONSIBLE_PLAYER_IDS to JsonArray(emptyList()),
+                ReplaySourceKeys.WIN_DETAILS to JsonArray(listOf(winner(0, null, null))),
             ),
         )
         val encoded = CompactFactCodec.encode(fact, linkedMapOf(), linkedMapOf())
-        val restored = CompactFactCodec.decode(encoded, listOf("win_settled"), emptyList())
+        val restored = CompactFactCodec.decode(encoded, listOf(HistoryFactTypeKeys.WIN_SETTLED), emptyList())
         val projected = mapper().mapFacts(listOf(restored), listOf(null), identity(1), 1, catalog(1), budget()).single()
         val completion = assertIs<HistoryReplayFact.Completion>(projected)
 
@@ -107,16 +108,16 @@ class HistoryWinningHandProjectionTest {
      */
     private fun winner(seat: Int, standing: List<Int>?, winning: Int?): JsonObject = JsonObject(
         buildMap {
-            put("playerId", JsonPrimitive(seat))
-            put("templateKey", JsonPrimitive("test:template"))
-            put("detailFields", JsonArray(emptyList()))
+            put(ReplaySourceKeys.PLAYER_ID, JsonPrimitive(seat))
+            put(ReplaySourceKeys.TEMPLATE_KEY, JsonPrimitive("test:template"))
+            put(ReplaySourceKeys.DETAIL_FIELDS, JsonArray(emptyList()))
             if (standing != null) {
                 put(
-                    "hand",
+                    ReplaySourceKeys.WINNING_HAND,
                     JsonObject(
                         mapOf(
-                            "standingTileIds" to JsonArray(standing.map(::JsonPrimitive)),
-                            "winningTileId" to (winning?.let(::JsonPrimitive) ?: JsonNull),
+                            ReplaySourceKeys.WINNING_STANDING_TILES to JsonArray(standing.map(::JsonPrimitive)),
+                            ReplaySourceKeys.WINNING_TILE to (winning?.let(::JsonPrimitive) ?: JsonNull),
                         ),
                     ),
                 )

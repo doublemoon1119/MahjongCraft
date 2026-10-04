@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.game
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryActionTypeKeys
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceDtoRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.TypedPersistenceDto
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
@@ -16,17 +17,17 @@ import kotlin.uuid.Uuid
 sealed interface GameActionPersistenceDto {
     /** [GameAction.GameStarted] 的 persistence DTO。 */
     @Serializable
-    @SerialName("game_started")
+    @SerialName(HistoryActionTypeKeys.GAME_STARTED)
     data object GameStarted : GameActionPersistenceDto
 
     /** [GameAction.RoundStarted] 的 persistence DTO。 */
     @Serializable
-    @SerialName("round_started")
+    @SerialName(HistoryActionTypeKeys.ROUND_STARTED)
     data object RoundStarted : GameActionPersistenceDto
 
     /** [GameAction.MatchEnded] 的 persistence DTO。 */
     @Serializable
-    @SerialName("match_ended")
+    @SerialName(HistoryActionTypeKeys.MATCH_ENDED)
     data object MatchEnded : GameActionPersistenceDto
 
     /**
@@ -35,12 +36,12 @@ sealed interface GameActionPersistenceDto {
      * @property dice 擲骰結果的點數序列。
      */
     @Serializable
-    @SerialName("dice_rolled")
+    @SerialName(HistoryActionTypeKeys.DICE_ROLLED)
     data class DiceRolled(val dice: List<Int>) : GameActionPersistenceDto
 
     /** [GameAction.Draw] 的 persistence DTO。 */
     @Serializable
-    @SerialName("draw")
+    @SerialName(HistoryActionTypeKeys.DRAW)
     data object Draw : GameActionPersistenceDto
 
     /**
@@ -49,7 +50,7 @@ sealed interface GameActionPersistenceDto {
      * @property tileId 被捨出牌張的 UUID 字串。
      */
     @Serializable
-    @SerialName("discard")
+    @SerialName(HistoryActionTypeKeys.DISCARD)
     data class Discard(val tileId: String) : GameActionPersistenceDto
 
     /**
@@ -59,7 +60,7 @@ sealed interface GameActionPersistenceDto {
      * @property withTileIds 與被吃牌張組成副露的其他牌張 UUID 字串。
      */
     @Serializable
-    @SerialName("chi")
+    @SerialName(HistoryActionTypeKeys.CHI)
     data class Chi(val tileId: String, val withTileIds: List<String>) : GameActionPersistenceDto
 
     /**
@@ -69,7 +70,7 @@ sealed interface GameActionPersistenceDto {
      * @property withTileIds 與被碰牌張組成副露的其他牌張 UUID 字串。
      */
     @Serializable
-    @SerialName("pon")
+    @SerialName(HistoryActionTypeKeys.PON)
     data class Pon(val tileId: String, val withTileIds: List<String>) : GameActionPersistenceDto
 
     /**
@@ -80,7 +81,7 @@ sealed interface GameActionPersistenceDto {
      * @property withTileIds 與主要牌張組成槓的其他牌張 UUID 字串。
      */
     @Serializable
-    @SerialName("kan")
+    @SerialName(HistoryActionTypeKeys.KAN)
     data class Kan(
         val kanType: KanTypePersistenceDto,
         val tileId: String,
@@ -93,12 +94,12 @@ sealed interface GameActionPersistenceDto {
      * @property tileId 被榮和牌張的 UUID 字串。
      */
     @Serializable
-    @SerialName("ron")
+    @SerialName(HistoryActionTypeKeys.RON)
     data class Ron(val tileId: String) : GameActionPersistenceDto
 
     /** [GameAction.Tsumo] 的 persistence DTO。 */
     @Serializable
-    @SerialName("tsumo")
+    @SerialName(HistoryActionTypeKeys.TSUMO)
     data object Tsumo : GameActionPersistenceDto
 
     /**
@@ -107,12 +108,12 @@ sealed interface GameActionPersistenceDto {
      * @property value 擴充動作的型別鍵與 payload。
      */
     @Serializable
-    @SerialName("extension")
+    @SerialName(HistoryActionTypeKeys.EXTENSION)
     data class Extension(val value: TypedPersistenceDto) : GameActionPersistenceDto
 
     /** [GameAction.Pass] 的 persistence DTO。 */
     @Serializable
-    @SerialName("pass")
+    @SerialName(HistoryActionTypeKeys.PASS)
     data object Pass : GameActionPersistenceDto
 
     /**
@@ -121,7 +122,7 @@ sealed interface GameActionPersistenceDto {
      * @property reason 流局原因的型別鍵與 payload。
      */
     @Serializable
-    @SerialName("exhaustive_draw")
+    @SerialName(HistoryActionTypeKeys.EXHAUSTIVE_DRAW)
     data class ExhaustiveDraw(val reason: TypedPersistenceDto) : GameActionPersistenceDto
 }
 
