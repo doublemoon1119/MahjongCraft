@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue
 
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
-import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
 
 /**
  * 規則的一覽說明資料；列表順序即呈現順序，不參與計分或和牌判定。
@@ -84,14 +84,14 @@ data class RuleCatalogueExample(
 }
 
 /**
- * 範例中的獨立牌組，使用穩定牌種 ID 支援第三方牌種。
+ * 範例中的獨立牌組，沿用數牌、字牌及帶有穩定 ID 的擴充牌模型。
  *
  * @property role 牌組語意，不依位置推測和牌張或副露。
  * @property tiles 牌種排列順序。
  */
 data class RuleCatalogueTileGroup(
     val role: RuleCatalogueTileGroupRole,
-    val tiles: List<TileTypeId>,
+    val tiles: List<Tile>,
 ) {
     init {
         require(tiles.isNotEmpty()) { "Catalogue tile group must not be empty" }

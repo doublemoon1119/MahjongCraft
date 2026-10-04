@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.ai.BuiltInAiStrategyKeys
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
@@ -276,7 +277,7 @@ class MinecraftMahjongExtensionRegistrarTest {
         assertNull(tileLabelRegistry.find("unknown"))
         assertNull(tileLabelRegistry.find("example_unregistered"))
         assertTrue(ruleCatalogueRegistry.isFrozen)
-        assertEquals(emptySet(), ruleCatalogueRegistry.registrationKeys)
+        assertEquals(setOf(BuiltInRuleModuleIds.RIICHI), ruleCatalogueRegistry.registrationKeys)
     }
 
     /** 驗證註冊失敗時的例外會指出第三方 extension ID。 */
