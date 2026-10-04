@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.extension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistry
@@ -38,6 +39,15 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
 interface MinecraftMahjongExtension {
     /** 第三方 extension 的穩定識別字串，用於診斷註冊錯誤。 */
     val id: String
+
+    /**
+     * 登記第三方規則的自訂說明目錄來源。
+     *
+     * 預設不登記任何來源，使既有 extension 不必加入空實作；目錄缺失不影響牌局。
+     *
+     * @param registry 與內建來源共用、於 bootstrap 結束後凍結的目錄 registry。
+     */
+    fun registerRuleCatalogues(registry: RuleCatalogueRegistry) = Unit
 
     /**
      * 登記第三方牌種對應的 Minecraft asset key；asset key 命名建議見 [MinecraftTileAssetRegistry.register]。

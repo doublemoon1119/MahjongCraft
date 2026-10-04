@@ -7,6 +7,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocab
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtensionRegistrar
@@ -75,11 +77,13 @@ class MinecraftCommonModule {
         @Provided tileDisplayNameRegistry: TileDisplayNameRegistry,
         tileEmojiRegistry: TileEmojiRegistry,
         tileLabelRegistry: TileLabelRegistry,
+        ruleCatalogueRegistry: RuleCatalogueRegistry,
     ): MinecraftPresentationRegistries = MinecraftPresentationRegistries(
         tileAssetRegistry = tileAssetRegistry,
         tileDisplayNameRegistry = tileDisplayNameRegistry,
         tileEmojiRegistry = tileEmojiRegistry,
         tileLabelRegistry = tileLabelRegistry,
+        ruleCatalogueRegistry = ruleCatalogueRegistry,
         gameActionVocabularyRegistry = gameActionVocabularyRegistry,
         automaticControlDisplayRegistry = automaticControlDisplayRegistry,
         decisionStatusDisplayNameRegistry = decisionStatusDisplayNameRegistry,
@@ -193,4 +197,8 @@ class MinecraftCommonModule {
      */
     @Single
     fun provideTileLabelRegistry(): TileLabelRegistry = TileLabelRegistryImpl()
+
+    /** 建立供內建與第三方 extension 登記規則說明目錄來源的 registry。 */
+    @Single
+    fun provideRuleCatalogueRegistry(): RuleCatalogueRegistry = RuleCatalogueRegistryImpl()
 }

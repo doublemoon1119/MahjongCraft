@@ -95,6 +95,7 @@ object MinecraftMahjongExtensionRegistrar {
                 extension.registerRuleModuleDisplayNames(registries.ruleModuleDisplayNameRegistry)
                 extension.registerTileEmojis(registries.tileEmojiRegistry)
                 extension.registerTileLabels(registries.tileLabelRegistry)
+                extension.registerRuleCatalogues(registries.ruleCatalogueRegistry)
                 extension.registerWinCelebrationShowcases(registries.winCelebrationShowcaseRegistry)
                 extension.registerGameActionVocabulary(registries.gameActionVocabularyRegistry)
                 extension.registerDecisionStatusDisplayNames(registries.decisionStatusDisplayNameRegistry)

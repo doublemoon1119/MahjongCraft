@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.extension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistryImpl
@@ -34,6 +35,7 @@ class MinecraftPresentationRegistriesTest {
             tileDisplayNameRegistry = TileDisplayNameRegistryImpl(),
             tileEmojiRegistry = TileEmojiRegistryImpl(),
             tileLabelRegistry = TileLabelRegistryImpl(),
+            ruleCatalogueRegistry = RuleCatalogueRegistryImpl(),
             gameActionVocabularyRegistry = GameActionVocabularyRegistryImpl(),
             automaticControlDisplayRegistry = AutomaticControlDisplayRegistryImpl(),
             decisionStatusDisplayNameRegistry = DecisionStatusDisplayNameRegistryImpl(),
@@ -73,5 +75,6 @@ class MinecraftPresentationRegistriesTest {
         assertTrue(registries.publicPlayerIndicatorDisplayRegistry.isFrozen)
         assertTrue(registries.roomMemberAppearanceSourceRegistry.isFrozen)
         assertTrue(registries.gameConfigPresentationRegistry.isFrozen)
+        assertTrue(registries.ruleCatalogueRegistry.isFrozen)
     }
 }

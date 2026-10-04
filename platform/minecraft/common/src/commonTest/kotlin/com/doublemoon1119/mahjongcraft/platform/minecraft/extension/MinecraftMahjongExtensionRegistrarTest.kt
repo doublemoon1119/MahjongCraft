@@ -3,6 +3,8 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.extension
 import com.doublemoon1119.mahjongcraft.ai.BuiltInAiStrategyKeys
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
+import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistryImpl
@@ -11,6 +13,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNa
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogue
+import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueProvider
+import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistryImpl
@@ -56,6 +62,7 @@ class MinecraftMahjongExtensionRegistrarTest {
         tileEmojiRegistry: TileEmojiRegistry,
         tileLabelRegistry: TileLabelRegistry,
         automaticControlDisplayRegistry: AutomaticControlDisplayRegistry = AutomaticControlDisplayRegistryImpl(),
+        ruleCatalogueRegistry: RuleCatalogueRegistryImpl = RuleCatalogueRegistryImpl(),
     ): MinecraftMahjongExtensionRegistrationResult = MinecraftMahjongExtensionRegistrar.registerAndFreeze(
         extensions = extensions,
         registries = MinecraftPresentationRegistries(
@@ -63,6 +70,7 @@ class MinecraftMahjongExtensionRegistrarTest {
             tileDisplayNameRegistry = tileDisplayNameRegistry,
             tileEmojiRegistry = tileEmojiRegistry,
             tileLabelRegistry = tileLabelRegistry,
+            ruleCatalogueRegistry = ruleCatalogueRegistry,
             gameActionVocabularyRegistry = GameActionVocabularyRegistryImpl(),
             automaticControlDisplayRegistry = automaticControlDisplayRegistry,
             decisionStatusDisplayNameRegistry = DecisionStatusDisplayNameRegistryImpl(),
@@ -127,6 +135,20 @@ class MinecraftMahjongExtensionRegistrarTest {
 
             override fun registerTileLabels(registry: TileLabelRegistry) {
                 registry.register("animal_cat", exampleLabel)
+            }
+
+            /** 登記第三方目錄來源，驗證共用 bootstrap 可發現新 hook。 */
+            override fun registerRuleCatalogues(registry: RuleCatalogueRegistry) {
+                registry.register(object : RuleCatalogueProvider {
+                    /** 第三方規則識別碼。 */
+                    override val ruleModuleId: String = "example:my_rule"
+
+                    /** 一般說明配置。 */
+                    override fun defaultRuleConfig(): MahjongRuleConfig = RiichiRuleConfig()
+
+                    /** 空的說明目錄仍是有效來源，不執行權威規則判定。 */
+                    override fun catalogue(config: MahjongRuleConfig): RuleCatalogue = RuleCatalogue(emptyList(), emptyList())
+                })
             }
         }
 
@@ -200,6 +222,8 @@ class MinecraftMahjongExtensionRegistrarTest {
         assertFailsWith<IllegalStateException> {
             tileLabelRegistry.register("late_key", exampleLabel)
         }
+
+        assertEquals(setOf("example:my_rule"), result.registrationKeys("mahjongcraft:rule_catalogue"))
     }
 
     /** 驗證未實作 [MinecraftMahjongExtension] 的清單一樣能完成內建映射與凍結。 */
@@ -211,6 +235,7 @@ class MinecraftMahjongExtensionRegistrarTest {
         val ruleModuleDisplayNameRegistry = RuleModuleDisplayNameRegistryImpl()
         val tileEmojiRegistry = TileEmojiRegistryImpl()
         val tileLabelRegistry = TileLabelRegistryImpl()
+        val ruleCatalogueRegistry = RuleCatalogueRegistryImpl()
 
         registerAndFreeze(
             extensions = emptyList(),
@@ -220,6 +245,7 @@ class MinecraftMahjongExtensionRegistrarTest {
             ruleModuleDisplayNameRegistry = ruleModuleDisplayNameRegistry,
             tileEmojiRegistry = tileEmojiRegistry,
             tileLabelRegistry = tileLabelRegistry,
+            ruleCatalogueRegistry = ruleCatalogueRegistry,
         )
 
         assertEquals("flower_spring", tileAssetRegistry.find(TaiwanTileTypes.SPRING))
@@ -249,6 +275,8 @@ class MinecraftMahjongExtensionRegistrarTest {
         assertTrue(tileLabelRegistry.isFrozen)
         assertNull(tileLabelRegistry.find("unknown"))
         assertNull(tileLabelRegistry.find("example_unregistered"))
+        assertTrue(ruleCatalogueRegistry.isFrozen)
+        assertEquals(emptySet(), ruleCatalogueRegistry.registrationKeys)
     }
 
     /** 驗證註冊失敗時的例外會指出第三方 extension ID。 */

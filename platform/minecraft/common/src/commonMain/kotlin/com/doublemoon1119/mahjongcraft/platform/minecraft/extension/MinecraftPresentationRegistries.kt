@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.extension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistry
@@ -29,6 +30,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
  * 統一凍結邊界。
  *
  * @property tileAssetRegistry 牌種 Minecraft asset registry。
+ * @property ruleCatalogueRegistry 規則說明目錄 registry。
  * @property tileDisplayNameRegistry 牌種顯示名稱 registry。
  * @property tileEmojiRegistry 牌面 emoji registry。
  * @property tileLabelRegistry 牌面輔助標籤 registry。
@@ -55,6 +57,7 @@ class MinecraftPresentationRegistries(
     val tileDisplayNameRegistry: TileDisplayNameRegistry,
     val tileEmojiRegistry: TileEmojiRegistry,
     val tileLabelRegistry: TileLabelRegistry,
+    val ruleCatalogueRegistry: RuleCatalogueRegistry,
     // 動作與局況呈現
     val gameActionVocabularyRegistry: GameActionVocabularyRegistry,
     val automaticControlDisplayRegistry: AutomaticControlDisplayRegistry,
@@ -83,6 +86,7 @@ class MinecraftPresentationRegistries(
             snapshotCategory("mahjongcraft:tile_display_name", "Tile Display Name", tileDisplayNameRegistry.registrationKeys),
             snapshotCategory("mahjongcraft:tile_emoji", "Tile Emoji", tileEmojiRegistry.registrationKeys),
             snapshotCategory("mahjongcraft:tile_label", "Tile Label", tileLabelRegistry.registrationKeys),
+            snapshotCategory("mahjongcraft:rule_catalogue", "Rule Catalogue", ruleCatalogueRegistry.registrationKeys),
             snapshotCategory("mahjongcraft:game_action_vocabulary", "Game Action Vocabulary", gameActionVocabularyRegistry.registrationKeys),
             snapshotCategory("mahjongcraft:automatic_control_display", "Automatic Control Display", automaticControlDisplayRegistry.registrationKeys),
             snapshotCategory("mahjongcraft:decision_status_display_name", "Decision Status Display Name", decisionStatusDisplayNameRegistry.registrationKeys),
@@ -109,6 +113,7 @@ class MinecraftPresentationRegistries(
         tileDisplayNameRegistry.freeze()
         tileEmojiRegistry.freeze()
         tileLabelRegistry.freeze()
+        ruleCatalogueRegistry.freeze()
         gameActionVocabularyRegistry.freeze()
         automaticControlDisplayRegistry.freeze()
         decisionStatusDisplayNameRegistry.freeze()
