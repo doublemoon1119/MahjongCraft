@@ -85,7 +85,7 @@ class WinPresentationHandoffTest {
             celebration = WinCelebrationRequest(
                 winningTileId = winningTileId,
                 isTsumo = true,
-                winners = listOf(WinCelebrationWinner(0, null)),
+                winners = listOf(WinCelebrationWinner(0)),
             ),
             settlement = WinSettlementPresentationRequest(
                 outcomeId = "mahjongcraft:tsumo",

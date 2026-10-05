@@ -1,12 +1,12 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.service
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationCue
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationWinner
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueResult
 
-/** 將指定規則的手牌價值結果解析成單一主要胡牌展示提示。 */
+/** 將指定規則的手牌價值結果解析成值得額外展示的理由 ID；順序與用途見 [WinCelebrationWinner.cueIds]。 */
 fun interface WinCelebrationCueResolver {
-    /** 無需加碼展示時回傳 `null`。 */
-    fun resolve(result: HandValueResult): WinCelebrationCue?
+    /** 不需要額外展示時回傳空清單。 */
+    fun resolve(result: HandValueResult): List<String>
 }
 
 /** 規則模組 ID 與 [WinCelebrationCueResolver] 的註冊中心。 */
@@ -20,8 +20,8 @@ interface WinCelebrationCueResolverRegistry {
     /** 凍結後不得再註冊。 */
     fun freeze()
 
-    /** 解析指定規則結果；未註冊或不適用時回傳 `null`。 */
-    fun resolve(ruleModuleId: String, result: HandValueResult): WinCelebrationCue?
+    /** 解析指定規則結果；未註冊或不適用時回傳空清單。 */
+    fun resolve(ruleModuleId: String, result: HandValueResult): List<String>
 }
 
 /** [WinCelebrationCueResolverRegistry] 的記憶體實作。 */
@@ -41,5 +41,5 @@ class WinCelebrationCueResolverRegistryImpl : WinCelebrationCueResolverRegistry 
         frozen = true
     }
 
-    override fun resolve(ruleModuleId: String, result: HandValueResult): WinCelebrationCue? = resolvers[ruleModuleId]?.resolve(result)
+    override fun resolve(ruleModuleId: String, result: HandValueResult): List<String> = resolvers[ruleModuleId]?.resolve(result).orEmpty()
 }

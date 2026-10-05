@@ -817,11 +817,11 @@ class FabricGamePresentationPublisher(
      * 兩個請求都是 null（`NONE` 模式）也一樣，否則已完成玩家的手牌會一直立在桌上。
      */
     override fun publishWinPresentation(gameId: Uuid, request: WinPresentationRequest) {
-        // 開發用的一次性 showcase 覆寫必須在 hasWatchableShowcase／blocksTable 判定之前套用，之後
+        // 開發用的一次性 showcase 覆寫必須在 blocksTable 判定之前套用，之後
         // 整段流程（阻塞判定、兩條時間軸的切分、收尾恢復可見的範圍）才會一致，見
         // DebugWinShowcaseOverride KDoc。正式產物裡這一步永遠是原樣回傳。
         val effectiveRequest = request.copy(celebration = debugWinShowcaseOverride.applyTo(gameId, request.celebration))
-        val blocksTable = !effectiveRequest.roundContinues || effectiveRequest.hasWatchableShowcase
+        val blocksTable = !effectiveRequest.roundContinues || effectiveRequest.celebration.hasShowcase
         publish(gameId, "publishWinPresentation", blocksTable) { resolved, state, startAt ->
             var cursor = startAt
             val celebration = runCelebration(gameId, resolved, state, effectiveRequest.celebration, cursor)
@@ -1022,10 +1022,10 @@ class FabricGamePresentationPublisher(
                 startGameTime = effectStartGameTime,
                 endGameTime = effectEndGameTime,
             )
-            val eligibleWings = request.winners.filter { it.cue != null }.map { requestedWinner ->
+            val eligibleWings = request.winners.filter { it.cueIds.isNotEmpty() }.map { requestedWinner ->
                 FabricWinCelebrationShowcaseScheduler.Wing(
                     seatIndex = requestedWinner.seatIndex,
-                    cueKey = requestedWinner.cue?.key,
+                    cueIds = requestedWinner.cueIds,
                     tileIdsAndAssets = organizedBySeat.getValue(requestedWinner.seatIndex)
                         .filterNot { it.id == request.winningTileId }
                         .map { it.id to it.tile.toAssetKey(tileAssetRegistry) },
@@ -1228,3 +1228,10 @@ class FabricGamePresentationPublisher(
         const val ROLL_SEQUENCE_ROUND_MULTIPLIER: Long = 1_000_000L
     }
 }
+
+/**
+ * 這次胡牌是否有贏家帶著額外展示理由；有理由時一定會播放展示（沒有對應定義時使用通用展示），
+ * 中途胡牌時這一段需要暫停全桌讓所有人看完。
+ */
+private val WinCelebrationRequest.hasShowcase: Boolean
+    get() = winners.any { it.cueIds.isNotEmpty() }

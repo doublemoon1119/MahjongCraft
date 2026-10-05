@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.showcase
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationWinner
+
 /** 展示使用的 ARGB 色盤。 */
 data class ShowcasePalette(val primary: Int, val secondary: Int, val accent: Int)
 
@@ -23,6 +25,15 @@ data class ShowcaseSound(val soundId: String, val tickOffset: Int, val volume: F
 
 /**
  * 第三方可登記的胡牌展示定義；起飛與收尾不在可自定義範圍內。
+ *
+ * @property cueKey 對應的展示理由 ID（[WinCelebrationWinner.cueIds] 中的一項）。
+ * @property titleTranslationKey 標題 translation key。
+ * @property titleImageResourceId 標題圖片資源 ID。
+ * @property palette 展示色盤。
+ * @property showcaseDurationTicks 展示階段長度。
+ * @property layers 啟用的視覺層。
+ * @property extraSounds 展示階段額外播放的音效。
+ * @property priority 一位贏家有多個展示理由時的挑選優先序；數值大者優先，相同時依規則給的順序。
  */
 data class WinCelebrationShowcaseDefinition(
     val cueKey: String,
@@ -32,6 +43,7 @@ data class WinCelebrationShowcaseDefinition(
     val showcaseDurationTicks: Int = 160,
     val layers: Set<ShowcaseVisualLayer> = ShowcaseVisualLayer.entries.toSet(),
     val extraSounds: List<ShowcaseSound> = emptyList(),
+    val priority: Int = 0,
 ) {
     init {
         require(cueKey.isNotBlank()) { "Cue key must not be blank" }

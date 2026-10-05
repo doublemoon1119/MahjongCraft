@@ -4,6 +4,9 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInWinCelebrat
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftShowcaseKeys
 
+/** 沒有對應定義的展示理由使用的通用展示 key。 */
+const val GENERIC_WIN_CELEBRATION_SHOWCASE_KEY: String = "${MinecraftModMetadata.MOD_ID}:generic"
+
 /** 宣告式胡牌展示定義註冊中心。 */
 interface WinCelebrationShowcaseRegistry {
     /** 目前已登記 cue key 的快照。 */
@@ -23,6 +26,18 @@ interface WinCelebrationShowcaseRegistry {
 
     /** 依 cue key 取得定義。 */
     fun find(cueKey: String): WinCelebrationShowcaseDefinition?
+
+    /**
+     * 從一位贏家的展示理由中挑出要播放的定義。
+     *
+     * @param cueIds 規則給的展示理由，依規則順序排列。
+     * @return 已登記定義中 [WinCelebrationShowcaseDefinition.priority] 最大者，相同時取 [cueIds] 中較前者；
+     * 都沒有登記時為 null。
+     */
+    fun select(cueIds: List<String>): WinCelebrationShowcaseDefinition? = cueIds.withIndex()
+        .mapNotNull { (index, id) -> find(id)?.let { index to it } }
+        .maxWithOrNull(compareBy<Pair<Int, WinCelebrationShowcaseDefinition>> { it.second.priority }.thenByDescending { it.first })
+        ?.second
 }
 
 /** [WinCelebrationShowcaseRegistry] 的記憶體實作。 */
@@ -48,19 +63,20 @@ class WinCelebrationShowcaseRegistryImpl : WinCelebrationShowcaseRegistry {
 
 /** 註冊所有內建役滿展示定義。 */
 fun WinCelebrationShowcaseRegistry.registerBuiltInWinCelebrationShowcases() {
-    BUILT_IN_CUES.forEach { cue ->
+    BUILT_IN_CUES.forEachIndexed { index, cue ->
         register(
             WinCelebrationShowcaseDefinition(
                 cueKey = BuiltInWinCelebrationCueIds.riichiYakuman(cue),
                 titleTranslationKey = MinecraftShowcaseKeys.fromCuePath(cue),
                 titleImageResourceId = "${MinecraftModMetadata.MOD_ID}:textures/showcase/$cue.png",
                 palette = ShowcasePalette(primary = 0xFFFFD45A.toInt(), secondary = 0xFFC32128.toInt(), accent = 0xFFFFFFFF.toInt()),
+                priority = BUILT_IN_CUES.size - index,
             ),
         )
     }
 }
 
-/** 內建役滿 cue 的固定優先順序與素材名稱。 */
+/** 內建役滿 cue 的素材名稱，依挑選優先序由高到低排列。 */
 private val BUILT_IN_CUES = listOf(
     "kokushi_musou_13",
     "churen_poto_9",

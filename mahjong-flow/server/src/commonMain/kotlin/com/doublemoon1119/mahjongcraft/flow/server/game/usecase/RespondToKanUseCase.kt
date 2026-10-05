@@ -326,7 +326,7 @@ class RespondToKanUseCase(
                             newState.players.indexOfFirst { it.id == winnerId },
                             result.ronResolutions[winnerId]?.let {
                                 winCelebrationCueResolverRegistry.resolve(result.ruleModuleId.orEmpty(), it.handValueResult)
-                            },
+                            }.orEmpty(),
                         )
                     },
                 ),

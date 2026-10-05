@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.time.MonotonicClock
 import kotlin.uuid.Uuid
 
 /**
- * 客戶端最後收到的權威決策時間與本地內插狀態。
+ * 客戶端最後收到的權威決策計時。
  *
  * @property gameId 計時所屬遊戲。
  * @property phase 目前決策階段。
@@ -19,41 +19,44 @@ data class ClientDecisionTimerState(
     val baseRemainingAtSyncMillis: Long,
     val reserveRemainingAtSyncMillis: Long,
     val receivedAtMillis: Long,
-)
+) {
+    /**
+     * 從同步時起經過 [elapsedMillis] 後的剩餘時間；先扣基本思考時間，用完後才扣保留思考時間。
+     *
+     * 只是依同步值推算，權威逾時仍由伺服器判定。
+     *
+     * @param elapsedMillis 從同步時起經過的毫秒數；負數視為 0。
+     * @return 推算的剩餘時間，不小於 0。
+     */
+    fun remainingAfter(elapsedMillis: Long): DecisionTimeRemaining {
+        val elapsed = elapsedMillis.coerceAtLeast(0L)
+        val reserveElapsed = (elapsed - baseRemainingAtSyncMillis).coerceAtLeast(0L)
+        return DecisionTimeRemaining(
+            baseMillis = (baseRemainingAtSyncMillis - elapsed).coerceAtLeast(0L),
+            reserveMillis = (reserveRemainingAtSyncMillis - reserveElapsed).coerceAtLeast(0L),
+        )
+    }
+}
 
 /**
- * 供呈現層讀取的客戶端決策時間。
+ * 推算的剩餘思考時間。
  *
- * @property gameId 計時所屬遊戲。
- * @property phase 目前決策階段。
- * @property baseRemainingMillis 內插後的基本思考時間。
- * @property reserveRemainingMillis 內插後的保留思考時間。
- * @property isSynchronizationStale 是否已超過同步容許間隔並凍結顯示。
+ * @property baseMillis 剩餘基本思考時間。
+ * @property reserveMillis 剩餘保留思考時間。
  */
-data class ClientDecisionTimerReading(
-    val gameId: Uuid,
-    val phase: PlayerDecisionPhase,
-    val baseRemainingMillis: Long,
-    val reserveRemainingMillis: Long,
-    val isSynchronizationStale: Boolean,
+data class DecisionTimeRemaining(
+    val baseMillis: Long,
+    val reserveMillis: Long,
 )
 
 /**
- * 保存客戶端最後收到的權威決策計時，並限制本地內插時間。
+ * 保存客戶端最後收到的權威決策計時；如何依本地時間顯示倒數由平台決定。
  *
- * 本地時間只用於呈現時的平滑顯示；超過 [staleAfterMillis] 後凍結，不自行宣告逾時。
- *
- * @property clock 客戶端 runtime 的單調時間。
- * @property staleAfterMillis 收不到新同步後允許繼續內插的最長時間。
+ * @property clock 客戶端 runtime 的單調時間，用來記錄收到同步的時間。
  */
 class ClientDecisionTimerStateStore(
     private val clock: MonotonicClock,
-    private val staleAfterMillis: Long = DEFAULT_STALE_AFTER_MILLIS,
 ) {
-    init {
-        require(staleAfterMillis > 0L) { "Stale interval must be positive" }
-    }
-
     /** 最後收到且仍有效的權威計時；停止或尚未同步時為 null。 */
     var state: ClientDecisionTimerState? = null
         private set
@@ -84,26 +87,5 @@ class ClientDecisionTimerStateStore(
     /** 清除離開伺服器後不再有效的計時狀態。 */
     fun clear() {
         state = null
-    }
-
-    /** 依目前客戶端單調時間產生供呈現層顯示的內插讀值。 */
-    fun reading(): ClientDecisionTimerReading? {
-        val current = state ?: return null
-        val elapsedMillis = (clock.nowMillis() - current.receivedAtMillis).coerceAtLeast(0L)
-        val interpolatedMillis = elapsedMillis.coerceAtMost(staleAfterMillis)
-        val baseRemainingMillis = (current.baseRemainingAtSyncMillis - interpolatedMillis).coerceAtLeast(0L)
-        val reserveElapsedMillis = (interpolatedMillis - current.baseRemainingAtSyncMillis).coerceAtLeast(0L)
-        return ClientDecisionTimerReading(
-            gameId = current.gameId,
-            phase = current.phase,
-            baseRemainingMillis = baseRemainingMillis,
-            reserveRemainingMillis = (current.reserveRemainingAtSyncMillis - reserveElapsedMillis).coerceAtLeast(0L),
-            isSynchronizationStale = elapsedMillis > staleAfterMillis,
-        )
-    }
-
-    private companion object {
-        /** 每秒同步下允許一次網路或 tick 抖動的預設凍結門檻。 */
-        const val DEFAULT_STALE_AFTER_MILLIS = 1_500L
     }
 }

@@ -6,21 +6,21 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
-/** 內建日麻役滿 showcase cue 的選擇規則測試。 */
+/** 內建日麻胡牌展示理由的輸出規則測試。 */
 class BuiltInWinCelebrationCuesTest {
     private val registry = createBuiltInWinCelebrationCueResolverRegistry()
 
-    /** 自然役滿會解析成對應 cue。 */
+    /** 自然役滿會解析成對應的展示理由。 */
     @Test
     fun resolvesNaturalYakuman() {
         val result = resultOf(YakuResult.yakuman(YakuType.KokushiMusou))
 
-        assertEquals("mahjongcraft:kokushi_musou", registry.resolve(RIICHI_RULE_MODULE_ID, result)?.key)
+        assertEquals(listOf("mahjongcraft:kokushi_musou"), registry.resolve(RIICHI_RULE_MODULE_ID, result))
     }
 
-    /** 累計役滿沒有自然役滿役種，因此不產生 cue。 */
+    /** 累計役滿沒有自然役滿役種，因此沒有展示理由。 */
     @Test
     fun excludesKazoeYakuman() {
         val result = RiichiHandValueResult(
@@ -30,29 +30,28 @@ class BuiltInWinCelebrationCuesTest {
             pointResult = RiichiPointResult.Ron(32_000),
         )
 
-        assertNull(registry.resolve(RIICHI_RULE_MODULE_ID, result))
+        assertTrue(registry.resolve(RIICHI_RULE_MODULE_ID, result).isEmpty())
     }
 
-    /** 多個役滿先選倍數較高者。 */
+    /** 多個役滿全部列出：倍數高者在前，同倍數依役種定義順序。 */
     @Test
-    fun prefersHigherYakumanMultiplier() {
+    fun listsAllYakumanByMultiplierThenDefinitionOrder() {
         val result = resultOf(
-            YakuResult.yakuman(YakuType.KokushiMusou),
+            YakuResult.yakuman(YakuType.Daisuushii),
+            YakuResult.yakuman(YakuType.Daisangen),
             YakuResult.doubleYakuman(YakuType.SuuankouTanki),
         )
 
-        assertEquals("mahjongcraft:suuankou_tanki", registry.resolve(RIICHI_RULE_MODULE_ID, result)?.key)
+        assertEquals(
+            listOf("mahjongcraft:suuankou_tanki", "mahjongcraft:daisangen", "mahjongcraft:daisuushii"),
+            registry.resolve(RIICHI_RULE_MODULE_ID, result),
+        )
     }
 
-    /** 倍數相同時使用固定優先序。 */
+    /** 沒有登記解析器的規則沒有展示理由。 */
     @Test
-    fun usesStablePriorityForEqualMultipliers() {
-        val result = resultOf(
-            YakuResult.yakuman(YakuType.Daisangen),
-            YakuResult.yakuman(YakuType.Daisuushii),
-        )
-
-        assertEquals("mahjongcraft:daisuushii", registry.resolve(RIICHI_RULE_MODULE_ID, result)?.key)
+    fun unregisteredRuleHasNoCues() {
+        assertTrue(registry.resolve("custom:rule", resultOf(YakuResult.yakuman(YakuType.KokushiMusou))).isEmpty())
     }
 
     private fun resultOf(vararg yakuResults: YakuResult): RiichiHandValueResult = RiichiHandValueResult(

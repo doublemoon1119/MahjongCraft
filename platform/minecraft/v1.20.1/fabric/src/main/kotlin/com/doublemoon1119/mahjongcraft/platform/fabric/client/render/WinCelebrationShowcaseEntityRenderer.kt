@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInWinCelebrationCueIds
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.ShowcaseTimelineCurves.BOB_HEIGHT
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.ShowcaseTimelineCurves.BOB_SPEED
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.ShowcaseTimelineCurves.ELYTRA_APPEAR_TICK
@@ -23,6 +22,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationCine
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationShowcaseEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongTileItem
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
+import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.GENERIC_WIN_CELEBRATION_SHOWCASE_KEY
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.ShowcasePalette
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.ShowcaseVisualLayer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseDefinition
@@ -949,7 +949,7 @@ class WinCelebrationShowcaseEntityRenderer(
     }
 
     private fun fallbackDefinition(cue: String) = WinCelebrationShowcaseDefinition(
-        cueKey = cue.ifBlank { BuiltInWinCelebrationCueIds.GENERIC },
+        cueKey = cue.ifBlank { GENERIC_WIN_CELEBRATION_SHOWCASE_KEY },
         titleTranslationKey = MinecraftShowcaseKeys.GENERIC,
         titleImageResourceId = FALLBACK_TITLE_IMAGE.toString(),
         palette = ShowcasePalette(0xFFFFD45A.toInt(), 0xFFC32128.toInt(), -1),

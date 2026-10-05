@@ -304,7 +304,7 @@ class RespondToDiscardUseCase(
                                     result.ruleModuleId.orEmpty(),
                                     it.handValueResult,
                                 )
-                            },
+                            }.orEmpty(),
                         )
                     },
                 ),

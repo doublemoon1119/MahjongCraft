@@ -573,8 +573,8 @@ class GameFlowCoordinatorTest {
         val published = fixtures.presentationPublisher.getPublishedWinPresentations(gameId).single()
         assertTrue(published.roundContinues, "A continuing win must tell the platform the round goes on.")
         assertTrue(
-            published.hasWatchableShowcase,
-            "Daisangen is a yakuman, so this continuing win still has a showcase that must be watched.",
+            published.celebration.winners.any { it.cueIds.isNotEmpty() },
+            "Daisangen is a yakuman, so this continuing win still carries a showcase reason.",
         )
         assertEquals(setOf(winnerId), published.winnerPlayerIds)
         assertEquals(
@@ -621,10 +621,10 @@ class GameFlowCoordinatorTest {
             fixtures.presentationPublisher.getWinPresentationSegmentOrder(gameId),
             "The win celebration is never skipped, whatever the settlement mode.",
         )
-        // 手牌是大三元役滿：即使面板精簡，showcase 照樣播、照樣暫停全桌。
+        // 手牌是大三元役滿：即使面板精簡，仍帶著展示理由。
         assertTrue(
-            published.hasWatchableShowcase,
-            "A yakuman showcase must still be watched even when the panel is brief.",
+            published.celebration.winners.any { it.cueIds.isNotEmpty() },
+            "A yakuman showcase reason must still be published even when the panel is brief.",
         )
     }
 
@@ -637,10 +637,7 @@ class GameFlowCoordinatorTest {
         Tile.Numeric(Tile.Suit.Bamboo, 5),
     )
 
-    /**
-     * 驗證**一般**（非役滿）中途胡牌不需要中斷遊戲：沒有 showcase cue，因此
-     * `hasWatchableShowcase == false`，平台不會暫停其他仍在本局中的玩家。
-     */
+    /** 驗證**一般**（非役滿）中途胡牌沒有展示理由，平台不需要暫停其他仍在本局中的玩家。 */
     @Test
     fun `test ordinary continuing win does not need to pause the other players`() = runTest {
         val fixtures = runContinuingWinTsumo(
@@ -655,23 +652,19 @@ class GameFlowCoordinatorTest {
         assertTrue(published.roundContinues)
         val celebration = assertNotNull(published.celebration)
         assertTrue(
-            celebration.winners.all { it.cue == null },
-            "Tanyao is not a yakuman, so no showcase cue should be resolved.",
-        )
-        assertTrue(
-            !published.hasWatchableShowcase,
-            "An ordinary continuing win must not pause the players who are still in the round.",
+            celebration.winners.all { it.cueIds.isEmpty() },
+            "Tanyao is not a yakuman, so no showcase reason should be resolved.",
         )
     }
 
     /**
-     * 驗證含役滿 cue 的中途胡牌會被標記成「需要觀看」——平台據此暫停玩家／AI／強制自動操作／決策
-     * 計時器直到 showcase 播完（見 [WinPresentationRequest] KDoc）。
+     * 驗證含役滿的中途胡牌帶著展示理由——平台據此暫停玩家／AI／強制自動操作／決策計時器直到展示播完
+     * （見 [WinPresentationRequest] KDoc）。
      *
-     * 跟上一個測試的唯一差別就是手牌：大三元是役滿，`cue` 只在役滿成立時才非 null。
+     * 跟上一個測試的唯一差別就是手牌：大三元是役滿，只有役滿成立時才有展示理由。
      */
     @Test
-    fun `test continuing win carrying a yakuman cue is marked as needing to pause play`() = runTest {
+    fun `test continuing win carrying a yakuman publishes its showcase reason`() = runTest {
         val fixtures = runContinuingWinTsumo(
             winnerId = Uuid.random(),
             otherId = Uuid.random(),
@@ -682,13 +675,10 @@ class GameFlowCoordinatorTest {
         val published = fixtures.presentationPublisher.getPublishedWinPresentations(gameId).single()
         assertTrue(published.roundContinues, "The round continues, so most of this presentation must not block.")
         val celebration = assertNotNull(published.celebration)
-        assertTrue(
-            celebration.winners.any { it.cue != null },
-            "Daisangen is a yakuman, so the celebration must carry a showcase cue.",
-        )
-        assertTrue(
-            published.hasWatchableShowcase,
-            "A continuing win with a yakuman showcase must still pause players for that segment.",
+        assertEquals(
+            listOf("mahjongcraft:daisangen"),
+            celebration.winners.single().cueIds,
+            "Daisangen is a yakuman, so the celebration must carry its showcase reason.",
         )
     }
 

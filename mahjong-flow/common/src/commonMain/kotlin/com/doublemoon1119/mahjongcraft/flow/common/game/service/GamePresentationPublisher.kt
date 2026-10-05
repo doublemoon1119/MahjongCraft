@@ -374,7 +374,7 @@ interface GamePresentationPublisher {
  * **顯示什麼**與**是否中斷遊戲**是兩個獨立的維度，刻意分開建模：
  * - 顯示什麼：[celebration]／[settlement] 各自是否為 null（對應
  *   `ContinuingWinSettlementMode` 的 FULL／SETTLEMENT_ONLY／NONE）。
- * - 是否中斷：由 [roundContinues] 與 [celebration] 本身是否帶役滿 cue 共同決定，見下方說明。
+ * - 是否中斷：由 [roundContinues] 與 [celebration] 是否帶有額外展示理由共同決定，見下方說明。
  *
  * @property winnerPlayerIds 這次一起成立的所有贏家；**不受顯示模式影響**，[roundContinues] 時實作
  * 一律要用它把這些玩家的真實手牌收尾（恢復可見、蓋成牌背），即使兩個請求都是 null 也一樣。
@@ -388,7 +388,7 @@ interface GamePresentationPublisher {
  * `false`（本局就此結束）時整段演出都獨佔全桌，維持既有行為——反正沒有人還要繼續打。
  *
  * `true` 時實作必須做到：**只有真正需要玩家停下來觀看的段落才中斷遊戲**。具體來說，
- * [celebration] 的 `winners` 中只要有任何非 null 的 `cue`，就代表這次會播役滿 showcase，那一段
+ * [celebration] 的 `winners` 中只要有任何非空的 `cueIds`，就代表這次有值得所有人觀看的額外展示，那一段
  * 必須暫停玩家輸入、AI、強制自動操作與決策計時器；其餘段落（一般倒牌特效、以及**整個結算面板**）
  * 都不得阻塞，其他仍在本局中的玩家要能照常摸打。
  *
@@ -404,16 +404,4 @@ data class WinPresentationRequest(
     init {
         require(winnerPlayerIds.isNotEmpty()) { "A win presentation must have at least one winner" }
     }
-
-    /**
-     * 這次演出是否包含需要玩家停下來觀看的役滿 showcase。
-     *
-     * `cue` 只在役滿成立時才非 null（見內建的胡牌展示提示解析器），因此這個判斷等同「這次會不會播
-     * 役滿 showcase」。
-     *
-     * [roundContinues] 時，**只有這一段**需要暫停全桌：役滿 showcase 一旦開始就必須讓所有人看完。
-     * 攤牌、降臨特效與結算面板（不論完整或精簡）都不阻塞，其他仍在局中的玩家照常摸打。
-     */
-    val hasWatchableShowcase: Boolean
-        get() = celebration.winners.any { it.cue != null }
 }

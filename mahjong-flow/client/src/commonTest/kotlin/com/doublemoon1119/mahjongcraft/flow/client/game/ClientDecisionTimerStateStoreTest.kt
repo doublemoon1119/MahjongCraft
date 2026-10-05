@@ -4,42 +4,31 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhas
 import com.doublemoon1119.mahjongcraft.flow.common.time.MonotonicClock
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertNull
-import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
-/** [ClientDecisionTimerStateStore] 的本地內插與凍結測試。 */
+/** [ClientDecisionTimerStateStore] 與剩餘時間推算的測試。 */
 class ClientDecisionTimerStateStoreTest {
-    /** 驗證基本時間耗盡後才從保留時間扣除本地內插值。 */
+    /** 驗證同步時記錄收到的本地時間。 */
     @Test
-    fun `test reading interpolates base before reserve`() {
-        val clock = MutableClientClock()
-        val store = ClientDecisionTimerStateStore(clock, staleAfterMillis = 1_500L)
-        val gameId = Uuid.random()
-        store.apply(gameId, PlayerDecisionPhase.OWN_TURN, 1_000L, 5_000L)
-        clock.nowMillis = 1_200L
+    fun `test apply records the receive time`() {
+        val clock = MutableClientClock().apply { nowMillis = 700L }
+        val store = ClientDecisionTimerStateStore(clock)
 
-        val reading = store.reading()!!
+        store.apply(Uuid.random(), PlayerDecisionPhase.OWN_TURN, 1_000L, 5_000L)
 
-        assertEquals(0L, reading.baseRemainingMillis)
-        assertEquals(4_800L, reading.reserveRemainingMillis)
-        assertFalse(reading.isSynchronizationStale)
+        assertEquals(700L, store.state?.receivedAtMillis)
     }
 
-    /** 驗證超過同步門檻後凍結顯示，不繼續在客戶端宣告逾時。 */
+    /** 驗證基本時間耗盡後才從保留時間扣除，兩者都不小於零。 */
     @Test
-    fun `test stale synchronization freezes interpolation`() {
-        val clock = MutableClientClock()
-        val store = ClientDecisionTimerStateStore(clock, staleAfterMillis = 1_500L)
-        store.apply(Uuid.random(), PlayerDecisionPhase.DISCARD_REACTION, 1_000L, 5_000L)
-        clock.nowMillis = 3_000L
+    fun `test remaining time consumes base before reserve`() {
+        val state = ClientDecisionTimerState(Uuid.random(), PlayerDecisionPhase.OWN_TURN, 1_000L, 5_000L, 0L)
 
-        val reading = store.reading()!!
-
-        assertEquals(0L, reading.baseRemainingMillis)
-        assertEquals(4_500L, reading.reserveRemainingMillis)
-        assertTrue(reading.isSynchronizationStale)
+        assertEquals(DecisionTimeRemaining(600L, 5_000L), state.remainingAfter(400L))
+        assertEquals(DecisionTimeRemaining(0L, 4_800L), state.remainingAfter(1_200L))
+        assertEquals(DecisionTimeRemaining(0L, 0L), state.remainingAfter(10_000L))
+        assertEquals(DecisionTimeRemaining(1_000L, 5_000L), state.remainingAfter(-50L))
     }
 
     /** 驗證停止事件只清除相同遊戲的有效計時。 */

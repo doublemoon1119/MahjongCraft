@@ -1,7 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInWinCelebrationCueIds
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationCue
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationWinner
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
@@ -17,7 +16,7 @@ import kotlin.uuid.Uuid
  * [DebugWinShowcaseOverride] 的一次性、以桌為範圍與「只動呈現」保證的測試。
  *
  * 最後一項特別重要：這個覆寫的整個正當性建立在「它動不到權威資料」上，因此除了驗證行為，也直接
- * 驗證被覆寫的 [WinCelebrationRequest] 除了 cue 以外一個欄位都沒變。
+ * 驗證被覆寫的 [WinCelebrationRequest] 除了展示理由以外一個欄位都沒變。
  */
 class DebugWinShowcaseOverrideTest {
     private val tableId = Uuid.random()
@@ -28,18 +27,18 @@ class DebugWinShowcaseOverrideTest {
     fun `an armed override replaces every winner's cue`() {
         override.arm(tableId, CUE_KEY)
 
-        val applied = override.applyTo(tableId, request(cues = listOf(null, null)))
+        val applied = override.applyTo(tableId, request(cues = listOf(emptyList(), emptyList())))
 
-        assertEquals(listOf(WinCelebrationCue(CUE_KEY), WinCelebrationCue(CUE_KEY)), applied.winners.map { it.cue })
+        assertEquals(listOf(listOf(CUE_KEY), listOf(CUE_KEY)), applied.winners.map { it.cueIds })
     }
 
     /** 一次性：用掉之後第二次胡牌就恢復原本的 cue。 */
     @Test
     fun `the override is consumed after a single use`() {
         override.arm(tableId, CUE_KEY)
-        override.applyTo(tableId, request(cues = listOf(null)))
+        override.applyTo(tableId, request(cues = listOf(emptyList())))
 
-        val second = request(cues = listOf(null))
+        val second = request(cues = listOf(emptyList()))
 
         assertSame(second, override.applyTo(tableId, second))
         assertEquals(emptySet(), override.armedTableIds())
@@ -48,7 +47,7 @@ class DebugWinShowcaseOverrideTest {
     /** 沒武裝時原樣回傳，連物件都不重建。 */
     @Test
     fun `an unarmed table passes the request through untouched`() {
-        val original = request(cues = listOf(null))
+        val original = request(cues = listOf(emptyList()))
 
         assertSame(original, override.applyTo(tableId, original))
     }
@@ -57,7 +56,7 @@ class DebugWinShowcaseOverrideTest {
     @Test
     fun `arming one table does not affect another`() {
         override.arm(Uuid.random(), CUE_KEY)
-        val original = request(cues = listOf(null))
+        val original = request(cues = listOf(emptyList()))
 
         assertSame(original, override.applyTo(tableId, original))
     }
@@ -76,7 +75,7 @@ class DebugWinShowcaseOverrideTest {
     @Test
     fun `a production build refuses to arm`() {
         val production = DebugWinShowcaseOverride(ProductionEnvironment)
-        val original = request(cues = listOf(null))
+        val original = request(cues = listOf(emptyList()))
 
         assertFalse(production.arm(tableId, CUE_KEY))
         assertEquals(emptySet(), production.armedTableIds())
@@ -92,7 +91,7 @@ class DebugWinShowcaseOverrideTest {
     @Test
     fun `the override touches nothing but the cue`() {
         override.arm(tableId, CUE_KEY)
-        val original = request(cues = listOf(null, WinCelebrationCue("some:other_cue")))
+        val original = request(cues = listOf(emptyList(), listOf("some:other_cue")))
 
         val applied = override.applyTo(tableId, original)
 
@@ -103,24 +102,24 @@ class DebugWinShowcaseOverrideTest {
     }
 
     /**
-     * 覆寫必須讓這次胡牌變成「有 showcase 可看」。
+     * 覆寫必須讓這次胡牌帶有展示理由。
      *
-     * 這正是 [WinPresentationRequest.hasWatchableShowcase] 讀的東西，而阻塞判定又完全靠它——覆寫如果
-     * 只換了 cue 卻沒讓這個判斷翻成 true，showcase 會播但不擋桌，剛好把這個工具想驗證的路徑跳過去。
+     * 平台的阻塞判定正是看贏家有沒有展示理由——覆寫如果只換了 cue 卻沒讓這個判斷翻成 true，
+     * showcase 會播但不擋桌，剛好把這個工具想驗證的路徑跳過去。
      */
     @Test
-    fun `an overridden celebration becomes a watchable showcase`() {
-        val celebration = request(cues = listOf(null))
-        assertFalse(celebration.winners.any { it.cue != null }, "A non-yakuman win has no showcase to watch.")
+    fun `an overridden celebration carries a showcase reason`() {
+        val celebration = request(cues = listOf(emptyList()))
+        assertFalse(celebration.winners.any { it.cueIds.isNotEmpty() }, "A non-yakuman win has no showcase to watch.")
         override.arm(tableId, CUE_KEY)
 
-        assertTrue(override.applyTo(tableId, celebration).winners.any { it.cue != null })
+        assertTrue(override.applyTo(tableId, celebration).winners.any { it.cueIds.isNotEmpty() })
     }
 
-    private fun request(cues: List<WinCelebrationCue?>): WinCelebrationRequest = WinCelebrationRequest(
+    private fun request(cues: List<List<String>>): WinCelebrationRequest = WinCelebrationRequest(
         winningTileId = Uuid.random(),
         isTsumo = true,
-        winners = cues.mapIndexed { index, cue -> WinCelebrationWinner(seatIndex = index, cue = cue) },
+        winners = cues.mapIndexed { index, ids -> WinCelebrationWinner(seatIndex = index, cueIds = ids) },
     )
 
     private companion object {

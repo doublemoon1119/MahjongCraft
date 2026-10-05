@@ -36,6 +36,7 @@ import kotlin.uuid.toKotlinUuid
  * 管理操作介面、精簡倒數與手牌分析 HUD 的共用客戶端生命週期。
  *
  * @property timerStore 權威決策倒數狀態。
+ * @property timerDisplay 依本地時間產生的倒數顯示。
  * @property promptStore 玩家目前的操作提示。
  * @property tileFaceRenderer 共用牌面繪製器。
  * @property configStore 客戶端呈現設定。
@@ -48,6 +49,7 @@ import kotlin.uuid.toKotlinUuid
 @Single
 class PlayerDecisionHudController(
     private val timerStore: ClientDecisionTimerStateStore,
+    private val timerDisplay: DecisionTimerDisplay,
     private val promptStore: ClientDecisionPromptStore,
     private val tileFaceRenderer: MahjongTileFaceRenderer,
     private val configStore: MahjongClientConfigStore,
@@ -328,7 +330,7 @@ class PlayerDecisionHudController(
     private fun renderCompactDecisionHud(context: DrawContext) {
         val client = MinecraftClient.getInstance()
         if (!configStore.current.presentationVisibility.compactPromptEnabled) return
-        if (client.options.hudHidden || timerStore.reading() == null) return
+        if (client.options.hudHidden || timerDisplay.reading() == null) return
         val prompt = promptStore.prompt
         val content = compactDecisionHudContent(
             prompt = prompt,
@@ -374,7 +376,7 @@ class PlayerDecisionHudController(
 
     /** 在一般 HUD 或操作畫面的最上層繪製同一份權威倒數，避免被 Screen 背景遮住。 */
     fun renderTimerOverlay(context: DrawContext, y: Int, centerX: Int = context.scaledWindowWidth / 2) {
-        val reading = timerStore.reading() ?: return
+        val reading = timerDisplay.reading() ?: return
         renderDecisionTimer(
             context,
             ceil(reading.baseRemainingMillis / 1_000.0).toInt(),

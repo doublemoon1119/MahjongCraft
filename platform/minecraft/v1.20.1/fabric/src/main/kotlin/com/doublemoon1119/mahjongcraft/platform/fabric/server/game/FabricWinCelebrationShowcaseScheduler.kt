@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInWinCelebrationCueIds
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ShowcaseCardSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ShowcaseSoundSnapshot
@@ -10,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationShow
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.PersistentTableOverlayCoordinator
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
+import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.GENERIC_WIN_CELEBRATION_SHOWCASE_KEY
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPlacement
 import net.minecraft.server.world.ServerWorld
@@ -30,8 +30,14 @@ class FabricWinCelebrationShowcaseScheduler(
     private val logger = LoggerFactory.getLogger(FabricWinCelebrationShowcaseScheduler::class.java)
     private val warnedUnknownCues = mutableSetOf<String>()
 
-    /** 排程用的單一贏家翼。 */
-    data class Wing(val seatIndex: Int, val cueKey: String?, val tileIdsAndAssets: List<Pair<Uuid, String>>)
+    /**
+     * 排程用的單一贏家翼。
+     *
+     * @property seatIndex 贏家座位。
+     * @property cueIds 規則給的展示理由；由 [WinCelebrationShowcaseRegistry.select] 挑出要播放的定義。
+     * @property tileIdsAndAssets 展示用的牌與牌面素材。
+     */
+    data class Wing(val seatIndex: Int, val cueIds: List<String>, val tileIdsAndAssets: List<Pair<Uuid, String>>)
 
     /**
      * 生成共享舞台；成功時隱藏局況顯示到舞台結束，並讓真實牌在 stage 起點交接為隱形。
@@ -47,9 +53,8 @@ class FabricWinCelebrationShowcaseScheduler(
         wings: List<Wing>,
     ): Long? {
         if (wings.isEmpty()) return null
-        val showcaseDurationTicks = wings.maxOf { wing ->
-            wing.cueKey?.let(showcaseRegistry::find)?.showcaseDurationTicks ?: DEFAULT_SHOWCASE_DURATION_TICKS
-        }
+        val definitions = wings.map { wing -> showcaseRegistry.select(wing.cueIds) }
+        val showcaseDurationTicks = definitions.maxOf { it?.showcaseDurationTicks ?: DEFAULT_SHOWCASE_DURATION_TICKS }
         val endGameTime = startGameTime + WinCelebrationShowcaseEntity.totalDurationTicks(showcaseDurationTicks)
         val winningTile = world.getEntity(winningTileId.toJavaUuid()) as? MahjongTileEntity ?: return null
         val winningTileSnapshot = ShowcaseWinningTileSnapshot(
@@ -60,9 +65,9 @@ class FabricWinCelebrationShowcaseScheduler(
             startYaw = winningTile.yaw,
         )
         val snapshots = wings.mapIndexed { wingIndex, wing ->
-            val cue = wing.cueKey?.takeIf { showcaseRegistry.find(it) != null } ?: BuiltInWinCelebrationCueIds.GENERIC
-            if (wing.cueKey != null && cue == BuiltInWinCelebrationCueIds.GENERIC && warnedUnknownCues.add(wing.cueKey)) {
-                logger.warn("Unknown win celebration showcase cue {}; using generic fallback", wing.cueKey)
+            val cue = definitions[wingIndex]?.cueKey ?: GENERIC_WIN_CELEBRATION_SHOWCASE_KEY
+            if (definitions[wingIndex] == null && wing.cueIds.isNotEmpty() && warnedUnknownCues.add(wing.cueIds.toString())) {
+                logger.warn("Unknown win celebration showcase cues {}; using generic fallback", wing.cueIds)
             }
             ShowcaseWingSnapshot(
                 seatIndex = wing.seatIndex,
@@ -82,7 +87,7 @@ class FabricWinCelebrationShowcaseScheduler(
             )
         }
         if (snapshots.any { it.cards.isEmpty() }) return null
-        val extraSounds = wings.mapNotNull { it.cueKey?.let(showcaseRegistry::find) }
+        val extraSounds = definitions.filterNotNull()
             .flatMap { it.extraSounds }
             .distinct()
             .map { ShowcaseSoundSnapshot(it.soundId, it.tickOffset, it.volume, it.pitch) }

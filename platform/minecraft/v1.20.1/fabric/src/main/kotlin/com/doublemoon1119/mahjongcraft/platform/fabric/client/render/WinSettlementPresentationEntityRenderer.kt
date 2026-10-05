@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingAnimation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPlayer
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPresentation
 import com.doublemoon1119.mahjongcraft.logic.module.PublicPlayerIndicator
@@ -27,6 +26,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.Presentatio
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationTextMeasurer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationTimelineAnchor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationValue
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ScoreRankingAnimation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationFieldSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementTextKeys
