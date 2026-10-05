@@ -32,7 +32,7 @@ import kotlin.uuid.Uuid
  *
  * 只負責「本局要不要繼續」這個權威決策，不碰任何呈現：[WinRoundDirective.EndRound] 不修改任何桌況；
  * [WinRoundDirective.ContinueRound] 原子套用 `finishedPlayerIds`／`currentPlayerIndex` 的變化並同步
- * 快照。呼叫端據此決定是否銜接 `AdvanceRoundUseCase`，以及這次胡牌演出要用什麼方式播放。
+ * 快照。呼叫端據此決定是否銜接 `AdvanceRoundUseCase`，以及這次胡牌要用什麼方式呈現。
  *
  * @property gameRepository 權威對局數據倉庫。
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的規則模組。

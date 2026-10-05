@@ -158,7 +158,7 @@ class RespondToKanUseCaseTest {
             "Only the Ron response should be broadcast; no rinshan draw happened.",
         )
         assertNull(
-            fixtures.presentationPublisher.getPublishedPlayerArea(gameId),
+            fixtures.presentationPublisher.getPublishedPlayerTiles(gameId),
             "Robbing the kan is a Ron, not a completed kan — no rinshan tile was drawn, so nothing should be presented as drawn.",
         )
         assertNull(fixtures.presentationPublisher.getPublishedRoundInfo(gameId))
@@ -211,7 +211,7 @@ class RespondToKanUseCaseTest {
         )
         assertEquals(
             rinshanTile.id,
-            fixtures.presentationPublisher.getPublishedPlayerArea(gameId)?.drawnTileId,
+            fixtures.presentationPublisher.getPublishedPlayerTiles(gameId)?.drawnTileId,
             "The rinshan tile drawn once the kan actually goes through should be presented as a drawn tile.",
         )
         assertTrue(

@@ -106,18 +106,18 @@ class DrawTileUseCase(
         eventPublisher.publishToTable(gameId, newState.players.map { it.id }, playerId, GameAction.Draw)
 
         // 4. 觸發平台呈現層：把摸到的牌從牌牆移到摸牌位（副露/積棒不受摸牌影響，仍要一併帶上讓手牌
-        // 讓開偏移量算得準）；animateDrawnTile 傳 true 播放摸牌動畫，理由見
-        // GamePresentationPublisher.publishPlayerAreaUpdated 的同名參數 KDoc。
+        // 讓開偏移量算得準）；這是真正的摸牌，isNewlyDrawn 傳 true，見
+        // GamePresentationPublisher.publishPlayerTilesUpdated 的同名參數 KDoc。
         val seatIndex = newState.players.indexOfFirst { it.id == playerId }
         val drawnPlayer = newState.players[seatIndex]
         val module = moduleRegistry.getModule(newState.config)
-        presentationPublisher.publishPlayerAreaUpdated(
+        presentationPublisher.publishPlayerTilesUpdated(
             gameId,
             seatIndex,
             drawnPlayer.hand.tiles.map { it.id },
             drawnPlayer.hand.lastDrawn?.id,
             drawnPlayer.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles, module.tileOrder) },
-            animateDrawnTile = true,
+            isNewlyDrawn = true,
         )
         // 牌山剩餘張數每次摸牌都會變，桌面局況顯示要跟著更新——這份呈現是「找到既有的就地更新」
         // 模式，沒帶上完整內容就會把之前顯示的內容覆蓋回空清單。

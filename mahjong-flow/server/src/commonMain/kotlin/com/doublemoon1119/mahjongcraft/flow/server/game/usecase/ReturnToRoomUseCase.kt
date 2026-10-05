@@ -98,7 +98,7 @@ class ReturnToRoomUseCase(
             deadWallTileIds = emptySet(),
             diceCount = 0,
         )
-        presentationPublisher.clearPlayerAreas(gameId)
+        presentationPublisher.clearPlayerTiles(gameId)
 
         // 3. 為每位玩家同步一份房間快照——這些玩家先前都是 Game 快照的觀察者，不是既有的房間快照
         //    觀察者，不能沿用 CreateRoomUseCase 那種「查詢既有觀察者」的寫法。

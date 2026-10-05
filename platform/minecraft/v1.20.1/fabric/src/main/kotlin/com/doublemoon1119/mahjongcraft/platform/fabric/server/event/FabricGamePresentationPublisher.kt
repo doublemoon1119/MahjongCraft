@@ -185,13 +185,13 @@ class FabricGamePresentationPublisher(
      * 開局四個階段之間的暫存資料。
      *
      * 呼叫端（`StartGameUseCase`／`AdvanceRoundUseCase`）固定先呼叫 [publishWallStructure] 才呼叫
-     * [publishDiceRoll]／[publishInitialDealAnimation]，但這裡不強制要求該順序：讀不到值時一律有安全的
+     * [publishDiceRoll]／[publishInitialDeal]，但這裡不強制要求該順序：讀不到值時一律有安全的
      * 預設行為，見 [TableOpeningPresentationState] KDoc。
      */
     private val openingState = TableOpeningPresentationState()
 
-    override fun publishGameActionSound(gameId: Uuid, actorId: Uuid, action: GameAction) {
-        publish(gameId, "publishGameActionSound", blocksTable = false) { resolved, state, _ ->
+    override fun publishGameActionDeclared(gameId: Uuid, actorId: Uuid, action: GameAction) {
+        publish(gameId, "publishGameActionDeclared", blocksTable = false) { resolved, state, _ ->
             val actorSeatIndex = state.players.indexOfFirst { player -> player.id == actorId }
             if (actorSeatIndex < 0) return@publish null
             val ruleModuleId = moduleRegistry.getModule(state.config).id
@@ -210,7 +210,7 @@ class FabricGamePresentationPublisher(
                 configure(gameId, sound.soundId, sound.volume, sound.pitch, resolved.world.time)
             }
             if (!spawnGateway.spawn(resolved.world, entity, "game-action-sound", gameId)) {
-                logger.warn("publishGameActionSound gameId={} actorId={} failed to spawn sound timeline", gameId, actorId)
+                logger.warn("publishGameActionDeclared gameId={} actorId={} failed to spawn sound timeline", gameId, actorId)
             }
             null
         }
@@ -386,7 +386,7 @@ class FabricGamePresentationPublisher(
      * 的最大 `stack + 1`），兩處必須同步，否則算出來的動畫時長會跟實際動畫時長脫鉤。
      *
      * 算出來的動畫時長寫進 [TableOpeningPresentationState.wallDropTicks]，供緊接著呼叫的 [publishDiceRoll]／
-     * [publishInitialDealAnimation] 讀取，折算進擲骰／發牌動畫每個 entity 自己動畫佇列最前面的等待
+     * [publishInitialDeal] 讀取，折算進擲骰／發牌動畫每個 entity 自己動畫佇列最前面的等待
      * step，讓它們延遲到牌牆完全落地才真正開始播放；呼叫端固定先呼叫這個方法才呼叫另外兩者，見
      * [TableOpeningPresentationState] KDoc。玩家操作／自動操作心跳不會搶在牌牆落地之前執行，現在是靠 [busyTracker] 直接查詢桌上
      * entity 是否還在動畫佇列裡，不需要另外手動標記忙碌時長，見 [TablePresentationBusyTracker] KDoc。
@@ -398,7 +398,7 @@ class FabricGamePresentationPublisher(
         dealerSeatIndex: Int,
         deadWallTileIds: Set<Uuid>,
         diceCount: Int,
-        animateOpening: Boolean,
+        isNewOpening: Boolean,
         revealedTileIds: Set<Uuid>,
     ) {
         if (serverHolder.current() == null) {
@@ -409,7 +409,7 @@ class FabricGamePresentationPublisher(
             .filter { position -> position.side == 0 }
             .maxOfOrNull { position -> position.stack + 1 } ?: 0
         val wallDropTicks = MahjongTileTableLayout.wallDropAnimationTicks(stacksPerSide)
-        val openingOperation = if (animateOpening) openingOperations.begin(gameId) else null
+        val openingOperation = if (isNewOpening) openingOperations.begin(gameId) else null
         openingState.beginWall(gameId, wallDropTicks, stacksPerSide)
         launchOpeningStage(gameId, "wall-structure", openingOperation, pendingOperation = "publishWallStructure") {
             val resolved = resolveTableContext(gameId, "publishWallStructure") ?: return@launchOpeningStage
@@ -423,11 +423,11 @@ class FabricGamePresentationPublisher(
                 finalLayout = layout,
                 deadWallTileIds = deadWallTileIds,
                 diceCount = diceCount,
-                animateOpening = animateOpening,
+                animateOpening = isNewOpening,
                 revealedTileIds = revealedTileIds,
             )
             val result = tileWallPresenter.present(presentation)
-            if (animateOpening && result == MahjongTileWallPresentationResult.PRESENTED) {
+            if (isNewOpening && result == MahjongTileWallPresentationResult.PRESENTED) {
                 openingState.armOpening(gameId, presentation)
             } else if (result != MahjongTileWallPresentationResult.PRESENTED) {
                 openingState.cancelOpening(gameId)
@@ -490,14 +490,14 @@ class FabricGamePresentationPublisher(
      * 同一份桌況算出的角落寬度記進 [tableCornerWidths]。規則沒有登記描述時，同步為空清單、寬度皆為 `0.0`。
      * 不需要 [busyTracker] 或延遲，世界／entity 存取丟回伺服器主執行緒執行。
      */
-    override fun publishTablePropsUpdated(gameId: Uuid) {
+    override fun publishRuleStateUpdated(gameId: Uuid) {
         if (serverHolder.current() == null) {
-            logger.warn("publishTablePropsUpdated gameId={} skipped: no active server", gameId)
+            logger.warn("publishRuleStateUpdated gameId={} skipped: no active server", gameId)
             return
         }
         val openingOperation = openingOperations.getRegisteringTicket(gameId)
         launchOpeningStage(gameId, "table-props", openingOperation) {
-            val resolved = resolveTableContext(gameId, "publishTablePropsUpdated") ?: return@launchOpeningStage
+            val resolved = resolveTableContext(gameId, "publishRuleStateUpdated") ?: return@launchOpeningStage
             val tableState = gameRepository.getTableState(gameId) ?: return@launchOpeningStage
             val describer = describerFor(tableState)
             tableCornerWidths.record(gameId, describer.cornerWidthsBySeat(tableState))
@@ -583,25 +583,25 @@ class FabricGamePresentationPublisher(
     }
 
     /**
-     * 一般回合動作（捨牌、摸牌、鳴牌）呼叫，不需要 [busyTracker] 或呼叫端延遲——即使 [animateDrawnTile]
+     * 一般回合動作（捨牌、摸牌、鳴牌）呼叫，不需要 [busyTracker] 或呼叫端延遲——即使 [isNewlyDrawn]
      * 為 `true` 觸發摸牌動畫，那段動畫本身的排程完全交給 `FabricMahjongPlayerAreaPresenter` 內部處理
      * （`scheduleDrawnTileAnimation`），這裡仍然是直接同步呈現，理由同其餘一般回合動作。開局/換局的
-     * 初次發牌改走 [publishInitialDealAnimation]，不會呼叫這個方法。
+     * 初次發牌改走 [publishInitialDeal]，不會呼叫這個方法。
      */
-    override fun publishPlayerAreaUpdated(
+    override fun publishPlayerTilesUpdated(
         gameId: Uuid,
         seatIndex: Int,
         standingTileIds: List<Uuid>,
         drawnTileId: Uuid?,
         melds: List<MeldPresentation>,
-        animateDrawnTile: Boolean,
-        animatedMeldClaimTileIds: Set<Uuid>,
+        isNewlyDrawn: Boolean,
+        newlyClaimedMeldTileIds: Set<Uuid>,
     ) {
         if (serverHolder.current() == null) {
-            logger.warn("publishPlayerAreaUpdated gameId={} skipped: no active server", gameId)
+            logger.warn("publishPlayerTilesUpdated gameId={} skipped: no active server", gameId)
             return
         }
-        presentPlayerArea(gameId, seatIndex, standingTileIds, drawnTileId, melds, animateDrawnTile, animatedMeldClaimTileIds)
+        presentPlayerArea(gameId, seatIndex, standingTileIds, drawnTileId, melds, isNewlyDrawn, newlyClaimedMeldTileIds)
     }
 
     /**
@@ -619,7 +619,7 @@ class FabricGamePresentationPublisher(
      * 觀看緩衝本身也已經摺進每張牌佇列尾端（見
      * `FabricMahjongPlayerAreaPresenter.OPENING_SEQUENCE_EXTRA_VIEWING_TICKS`）。
      */
-    override fun publishInitialDealAnimation(
+    override fun publishInitialDeal(
         gameId: Uuid,
         handTileIdsBySeatIndex: Map<Int, List<Uuid>>,
         postFlipHandTileIdsBySeatIndex: Map<Int, List<Uuid>>,
@@ -628,14 +628,14 @@ class FabricGamePresentationPublisher(
         diceCount: Int,
     ) {
         if (serverHolder.current() == null) {
-            logger.warn("publishInitialDealAnimation gameId={} skipped: no active server", gameId)
+            logger.warn("publishInitialDeal gameId={} skipped: no active server", gameId)
             return
         }
         val wallDropTicks = openingState.wallDropTicks(gameId)
         val diceTicks = if (diceCount > 0) MahjongDiceTableLayout.totalAnimationTicks(diceCount) else 0
         val openingOperation = openingOperations.getRegisteringTicket(gameId)
-        launchOpeningStage(gameId, "initial-deal", openingOperation, pendingOperation = "publishInitialDealAnimation") {
-            val resolved = resolveTableContext(gameId, "publishInitialDealAnimation") ?: return@launchOpeningStage
+        launchOpeningStage(gameId, "initial-deal", openingOperation, pendingOperation = "publishInitialDeal") {
+            val resolved = resolveTableContext(gameId, "publishInitialDeal") ?: return@launchOpeningStage
             // 開局發牌與這一局的桌上物件更新讀的是同一份新局桌況；直接由它算出寬度並記錄，不依賴兩個呈現
             // 工作在主執行緒上的先後順序。
             val cornerWidthBySeatIndex = gameRepository.getTableState(gameId)
@@ -690,11 +690,11 @@ class FabricGamePresentationPublisher(
         standingTileIds: List<Uuid>,
         drawnTileId: Uuid?,
         melds: List<MeldPresentation>,
-        animateDrawnTile: Boolean,
-        animatedMeldClaimTileIds: Set<Uuid>,
+        isNewlyDrawn: Boolean,
+        newlyClaimedMeldTileIds: Set<Uuid>,
     ) {
-        launchPendingPresentation(gameId, "publishPlayerAreaUpdated") {
-            val resolved = resolveTableContext(gameId, "publishPlayerAreaUpdated") ?: return@launchPendingPresentation
+        launchPendingPresentation(gameId, "publishPlayerTilesUpdated") {
+            val resolved = resolveTableContext(gameId, "publishPlayerTilesUpdated") ?: return@launchPendingPresentation
             val cornerWidthsBySeat = tableCornerWidths.find(gameId) ?: cornerWidthsBySeat(gameId, gameRepository.getTableState(gameId))
 
             val presentation = MahjongPlayerAreaPresentation(
@@ -708,8 +708,8 @@ class FabricGamePresentationPublisher(
                     MahjongMeldTileGroup(it.type, it.tileIds, it.calledTileId, it.sourceDirection, it.allTilesFaceDown)
                 },
                 cornerWidth = cornerWidthsBySeat[seatIndex] ?: 0.0,
-                animateDrawnTile = animateDrawnTile,
-                animatedMeldClaimTileIds = animatedMeldClaimTileIds,
+                animateDrawnTile = isNewlyDrawn,
+                animatedMeldClaimTileIds = newlyClaimedMeldTileIds,
             )
             playerAreaPresenter.present(presentation)
         }
@@ -721,15 +721,15 @@ class FabricGamePresentationPublisher(
      * [tablePropPresenter]／[roundInfoPresenter] 各自的 `clear()`（以 `managedTableId` 範圍搜尋清除，
      * 不需要逐座位資料）。
      */
-    override fun clearPlayerAreas(gameId: Uuid) {
+    override fun clearPlayerTiles(gameId: Uuid) {
         if (serverHolder.current() == null) {
-            logger.warn("clearPlayerAreas gameId={} skipped: no active server", gameId)
+            logger.warn("clearPlayerTiles gameId={} skipped: no active server", gameId)
             return
         }
         scope.launch(dispatchers.main) {
             val location = tableLocationRegistry.get(gameId)?.location
             if (location == null) {
-                logger.warn("clearPlayerAreas gameId={} skipped: no known table location", gameId)
+                logger.warn("clearPlayerTiles gameId={} skipped: no known table location", gameId)
                 return@launch
             }
             playerAreaPresenter.clear(gameId, location)
@@ -748,7 +748,7 @@ class FabricGamePresentationPublisher(
 
     /**
      * 一般回合動作，即使 [newlyDiscardedTileId] 非 `null` 觸發捨牌動畫，那段動畫本身的排程完全交給
-     * `FabricMahjongDiscardPresenter` 內部處理，理由同 [publishPlayerAreaUpdated] 的 `animateDrawnTile`
+     * `FabricMahjongDiscardPresenter` 內部處理，理由同 [publishPlayerTilesUpdated] 的 `isNewlyDrawn`
      * 同款設計；但這裡的 entity 操作仍是丟回伺服器主執行緒非同步執行，一樣需要
      * [busyTracker.beginPending] 的 lease 覆蓋「已排定呈現、entity 還沒真正生成/
      * 移動」那段窗口，理由同 [presentPlayerArea]。

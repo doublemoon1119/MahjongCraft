@@ -84,7 +84,7 @@ class FabricMahjongPlayerAreaPresenter(
             if (tile == null) {
                 missingTileCount++
                 logger.warn(
-                    "publishPlayerAreaUpdated tableId={} tileId={} skipped: no existing wall entity found to claim",
+                    "publishPlayerTilesUpdated tableId={} tileId={} skipped: no existing wall entity found to claim",
                     presentation.tableId,
                     tileId,
                 )
@@ -235,7 +235,7 @@ class FabricMahjongPlayerAreaPresenter(
         table.markDirty()
         if (missingTileCount > 0) {
             logger.warn(
-                "publishPlayerAreaUpdated tableId={} presented with {} missing tile(s)",
+                "publishPlayerTilesUpdated tableId={} presented with {} missing tile(s)",
                 presentation.tableId,
                 missingTileCount,
             )

@@ -293,7 +293,7 @@ class RespondToKanUseCase(
             val declarerSeatIndex = newState.players.indexOfFirst { it.id == declarerId }
             val declarer = newState.players[declarerSeatIndex]
             val module = moduleRegistry.getModule(newState.config)
-            presentationPublisher.publishPlayerAreaUpdated(
+            presentationPublisher.publishPlayerTilesUpdated(
                 gameId,
                 declarerSeatIndex,
                 declarer.hand.tiles.map { it.id },
@@ -314,7 +314,7 @@ class RespondToKanUseCase(
         // winningTileId 對每位贏家來說都是同一張被搶的加槓/暗槓牌。刻意不直接發布，理由同 DeclareTsumoUseCase。
         result.ronWinningTileId?.let { winningTileId ->
             result.ronWinnerIds.forEach { winnerId ->
-                presentationPublisher.publishGameActionSound(gameId, winnerId, GameAction.Ron(winningTileId))
+                presentationPublisher.publishGameActionDeclared(gameId, winnerId, GameAction.Ron(winningTileId))
             }
             val presentation = SettledWinPresentation(
                 winnerPlayerIds = result.ronWinnerIds,

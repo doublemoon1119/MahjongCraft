@@ -846,7 +846,7 @@ object MahjongTileTableLayout {
      * 摸牌動畫起飛階段的相對高度，跟開局發牌動畫共用同一套「起飛→隱形傳送→落下」節奏（見
      * `FabricMahjongPlayerAreaPresenter.scheduleDrawnTileAnimation`），差別只在摸牌全程姿態固定直立、
      * 不需要額外的翻牌步驟——摸牌是單張、高頻的動作，直接面向玩家出現比蓋牌後再翻更符合直覺，見
-     * `GamePresentationPublisher.publishPlayerAreaUpdated` 的 `animateDrawnTile` 參數 KDoc。起始估算值，
+     * `GamePresentationPublisher.publishPlayerTilesUpdated` 的 `isNewlyDrawn` 參數 KDoc。起始估算值，
      * 預期進遊戲後調整。
      */
     const val DRAW_LIFT_HEIGHT: Double = 0.4

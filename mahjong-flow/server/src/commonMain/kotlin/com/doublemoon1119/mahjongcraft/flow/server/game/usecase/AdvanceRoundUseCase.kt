@@ -123,8 +123,8 @@ class AdvanceRoundUseCase(
 
                     if (decision is MatchProgressionDecision.EndMatch) {
                         // 整場對局結束時，桌上未被任何人收下的供託（如立直棒）歸給最終第一名——排名
-                        // 判準交給 module.compareForMatchRanking()，跟用戶端的終局排名呈現邏輯共用
-                        // 同一支規則 hook（見 GameEventChatNotifier）。沿用既有的 collectStickPot
+                        // 判準交給 module.compareForMatchRanking()，與平台呈現終局排名時使用同一支規則
+                        // hook。沿用既有的 collectStickPot
                         // （贏家收供託也是同一支函式），不支援供託機制的規則回傳 null，維持 state 不變。
                         val stickPot = module.collectStickPot(state)
                         val finalState = if (stickPot != null && stickPot.second > 0) {
@@ -181,9 +181,8 @@ class AdvanceRoundUseCase(
                             module = module,
                         )
                         val dealtState = initializationResult.tableState
-                        // 只用來讓發牌動畫本身維持原始時間軸（哪張牌在哪一批抵達），不是實際寫回權威
-                        // 狀態的手牌順序——實際寫回的是下面整理過的 organizedState，理由同
-                        // StartGameUseCase KDoc。
+                        // 發牌順序（哪張牌在哪一批發出），只提供給呈現使用，不是實際寫回權威狀態的手牌
+                        // 順序——實際寫回的是下面整理過的 organizedState，理由同 StartGameUseCase。
                         val dealOrderHandTileIdsBySeatIndex = dealtState.players.withIndex().associate { (seatIndex, player) ->
                             seatIndex to player.hand.tiles.map { tile -> tile.id }
                         }
@@ -287,15 +286,15 @@ class AdvanceRoundUseCase(
             eventPublisher.publishToTable(gameId, seatedPlayerIds, newDealerId, GameAction.DiceRolled(diceRoll))
         }
         // 桌上由規則擺放的物件跟牌牆同時更新，緊接在 publishWallStructure 之後呼叫。
-        presentationPublisher.publishTablePropsUpdated(gameId)
+        presentationPublisher.publishRuleStateUpdated(gameId)
         val module = moduleRegistry.getModule(newState.config)
         presentationPublisher.publishRoundInfoUpdated(gameId, newState)
-        // 翻牌完成那一刻起的最終落地格位——newState 此時已經是整理過的順序，跟決定發牌動畫節奏本身的
-        // advanceOutcome.dealOrderHandTileIdsBySeatIndex 分開，見 MahjongInitialDealPresentation KDoc。
+        // 發牌完成後的最終牌序——newState 此時已經是整理過的順序，與發牌順序
+        // advanceOutcome.dealOrderHandTileIdsBySeatIndex 分開，見 GamePresentationPublisher.publishInitialDeal KDoc。
         val postFlipHandTileIdsBySeatIndex = newState.players.withIndex().associate { (seatIndex, player) ->
             seatIndex to player.hand.tiles.map { tile -> tile.id }
         }
-        presentationPublisher.publishInitialDealAnimation(
+        presentationPublisher.publishInitialDeal(
             gameId,
             advanceOutcome.dealOrderHandTileIdsBySeatIndex,
             postFlipHandTileIdsBySeatIndex,
@@ -320,7 +319,7 @@ class AdvanceRoundUseCase(
     /**
      * [invoke] 內部使用的中介結果，把只有平台呈現層需要的一次性擲骰／牌牆結構資料，跟對外公開的
      * [AdvanceRoundResult] 分開夾帶，避免污染既有呼叫端（例如 `GameFlowCoordinator`）只關心的
-     * 對外回傳形狀。[dealOrderHandTileIdsBySeatIndex] 是發牌動畫本身該用的原始時間軸順序，在
+     * 對外回傳形狀。[dealOrderHandTileIdsBySeatIndex] 是發牌順序，在
      * [result] 的手牌已經被整理過之後就無法再從它反推出來，理由同 `StartGameUseCase` KDoc；整場對局
      * 已結束（沒有開新的一局）時固定為空 map，不會被用到。
      */

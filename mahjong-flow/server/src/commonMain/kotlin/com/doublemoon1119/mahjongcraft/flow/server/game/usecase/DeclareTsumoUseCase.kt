@@ -222,7 +222,7 @@ class DeclareTsumoUseCase(
 
         // 4. 建構胡牌演出內容並寫進交接槽——手牌不受這個 use case 影響（只改分數與 actionHistory），
         // 贏家的 lastDrawn 此時仍是自摸那張牌。刻意不直接發布：本局是否就此結束，要等
-        // ResolveWinRoundContinuationUseCase 詢問過規則模組才知道，由它決定要立即播放或排隊延後播放。
+        // ResolveWinRoundContinuationUseCase 詢問過規則模組才知道，由它決定要立即呈現或排隊延後呈現。
         val winnerSeatIndex = newState.players.indexOfFirst { it.id == playerId }
         newState.players[winnerSeatIndex].hand.lastDrawn?.let { winningTile ->
             val presentation = SettledWinPresentation(
@@ -242,7 +242,7 @@ class DeclareTsumoUseCase(
             winPresentationHandoff.stage(gameId, presentation)
         }
 
-        presentationPublisher.publishGameActionSound(gameId, playerId, GameAction.Tsumo)
+        presentationPublisher.publishGameActionDeclared(gameId, playerId, GameAction.Tsumo)
         return Outcome.Success(Unit)
     }
 

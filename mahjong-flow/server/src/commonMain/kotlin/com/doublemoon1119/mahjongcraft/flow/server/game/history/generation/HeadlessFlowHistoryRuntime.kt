@@ -316,7 +316,7 @@ private class NoOpPresentation : GamePresentationPublisher {
     override fun publishDiceRoll(gameId: Uuid, dice: DiceRollResult, dealerSeatIndex: Int, roundNumber: Int, comboCount: Int) = Unit
 
     /** 丟棄牌牆呈現。 */
-    override fun publishWallStructure(gameId: Uuid, assemblyStructure: Map<Uuid, TileWallPosition>, layout: TileWallPhysicalLayout, dealerSeatIndex: Int, deadWallTileIds: Set<Uuid>, diceCount: Int, animateOpening: Boolean, revealedTileIds: Set<Uuid>) = Unit
+    override fun publishWallStructure(gameId: Uuid, assemblyStructure: Map<Uuid, TileWallPosition>, layout: TileWallPhysicalLayout, dealerSeatIndex: Int, deadWallTileIds: Set<Uuid>, diceCount: Int, isNewOpening: Boolean, revealedTileIds: Set<Uuid>) = Unit
 
     /** 丟棄牌牆轉場。 */
     override fun publishWallLayoutTransition(gameId: Uuid, phases: List<PhysicalWallLayoutTransitionPhase>) = Unit
@@ -324,20 +324,20 @@ private class NoOpPresentation : GamePresentationPublisher {
     /** 丟棄翻牌通知。 */
     override fun publishWallTilesRevealed(gameId: Uuid, revealedTileIds: Set<Uuid>) = Unit
 
-    /** 丟棄桌面物件通知。 */
-    override fun publishTablePropsUpdated(gameId: Uuid) = Unit
+    /** 丟棄規則狀態通知。 */
+    override fun publishRuleStateUpdated(gameId: Uuid) = Unit
 
     /** 丟棄局況通知。 */
     override fun publishRoundInfoUpdated(gameId: Uuid, tableState: TableState) = Unit
 
     /** 丟棄玩家區域通知。 */
-    override fun publishPlayerAreaUpdated(gameId: Uuid, seatIndex: Int, standingTileIds: List<Uuid>, drawnTileId: Uuid?, melds: List<MeldPresentation>, animateDrawnTile: Boolean, animatedMeldClaimTileIds: Set<Uuid>) = Unit
+    override fun publishPlayerTilesUpdated(gameId: Uuid, seatIndex: Int, standingTileIds: List<Uuid>, drawnTileId: Uuid?, melds: List<MeldPresentation>, isNewlyDrawn: Boolean, newlyClaimedMeldTileIds: Set<Uuid>) = Unit
 
     /** 丟棄初始發牌通知。 */
-    override fun publishInitialDealAnimation(gameId: Uuid, handTileIdsBySeatIndex: Map<Int, List<Uuid>>, postFlipHandTileIdsBySeatIndex: Map<Int, List<Uuid>>, dealerSeatIndex: Int, dealBatchSizes: List<Int>, diceCount: Int) = Unit
+    override fun publishInitialDeal(gameId: Uuid, handTileIdsBySeatIndex: Map<Int, List<Uuid>>, postFlipHandTileIdsBySeatIndex: Map<Int, List<Uuid>>, dealerSeatIndex: Int, dealBatchSizes: List<Int>, diceCount: Int) = Unit
 
     /** 清除玩家區域呈現。 */
-    override fun clearPlayerAreas(gameId: Uuid) = Unit
+    override fun clearPlayerTiles(gameId: Uuid) = Unit
 
     /** 丟棄開局通知。 */
     override fun publishGameStarted(gameId: Uuid, seatedPlayerIds: List<Uuid>) = Unit
@@ -352,7 +352,7 @@ private class NoOpPresentation : GamePresentationPublisher {
     override fun publishWinSettlement(gameId: Uuid, request: WinSettlementPresentationRequest) = Unit
 }
 
-/** 表示無呈現動畫進行中的無頭 gate。 */
+/** 表示沒有需要等待的呈現的無頭 gate。 */
 private class NoOpBusyGate : GamePresentationBusyGate {
     /** 回報沒有進行中的呈現。 */
     override fun isBusy(gameId: Uuid) = false

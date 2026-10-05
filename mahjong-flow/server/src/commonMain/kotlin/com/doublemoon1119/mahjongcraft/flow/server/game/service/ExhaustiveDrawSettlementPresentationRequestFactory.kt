@@ -36,7 +36,7 @@ object ExhaustiveDrawSettlementPresentationRequestFactory {
                 val previousPlayer = previousState.players.first { it.id == player.id }
                 val reveal = revealedByPlayer[player.id]
                 // 本局已經胡牌退場的玩家（見 TableState.finishedPlayerIds）只保留分數排行的那一列：
-                // 手牌在他胡牌時就已經收尾蓋好了，這裡不能再排一次動畫，也不該被標成聽牌／不聽——
+                // 手牌在他胡牌時就已經收尾，這裡不能再要求公開一次，也不該被標成聽牌／不聽——
                 // 他根本沒有參與這次流局。
                 val isFinished = player.id in currentState.finishedPlayerIds
                 val handDisclosure = when {

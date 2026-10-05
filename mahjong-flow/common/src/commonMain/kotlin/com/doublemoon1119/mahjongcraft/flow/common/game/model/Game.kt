@@ -27,7 +27,7 @@ import kotlin.uuid.Uuid
  *   `com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase`）。一旦成立，
  *   `tableState` 維持結束當下的樣子不再變動；`AiTurnDriver`／`ForcedAutoPlayDriver` 都會檢查這個
  *   欄位並提前跳過，避免對已經沒有牌可摸的桌況重複嘗試摸牌、重複觸發流局結算。
- * @property pendingTransition 呈現動畫結束後尚待完成的權威流程；`null` 代表沒有待收斂的流程。
+ * @property pendingTransition 呈現結束後尚待完成的權威流程；`null` 代表沒有待收斂的流程。
  * @property roundCompletion 最近一次本局結算的權威摘要；進入下一局後清除。
  * @property matchEndReasonId 整場終局的完整 namespaced 原因；尚未終局時為 null。
  * @property pendingRoundPreparation 發牌後、正常摸打前尚待完成的規則準備步驟；沒有步驟時為 null。

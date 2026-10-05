@@ -114,7 +114,7 @@ class DeclareKanUseCaseTest {
         )
         assertEquals(
             rinshanTile.id,
-            fixtures.presentationPublisher.getPublishedPlayerArea(gameId)?.drawnTileId,
+            fixtures.presentationPublisher.getPublishedPlayerTiles(gameId)?.drawnTileId,
             "The rinshan tile should be presented as a drawn tile (moved to the draw slot), same as a normal draw.",
         )
         val publishedTransitions = fixtures.presentationPublisher.getPublishedWallLayoutTransitions(gameId)

@@ -20,7 +20,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import kotlin.uuid.Uuid
 
 /**
- * 供 [GamePresentationPublisher.publishPlayerAreaUpdated] 使用的單一副露資料。
+ * 供 [GamePresentationPublisher.publishPlayerTilesUpdated] 使用的單一副露資料。
  *
  * 只帶擺放副露需要的資訊（種類、牌 ID、鳴取的牌與來源方位），不帶 [Meld] 的牌面；牌面由各玩家的可見性快照決定。
  *
@@ -72,7 +72,7 @@ fun Meld.toPresentation(revealsClosedKanTiles: Boolean, tileOrder: TileOrder): M
  */
 interface GamePresentationPublisher {
     /** 權威遊戲動作成立後通知平台；平台可據此呈現該動作，例如播放宣告語音。 */
-    fun publishGameActionSound(gameId: Uuid, actorId: Uuid, action: GameAction) = Unit
+    fun publishGameActionDeclared(gameId: Uuid, actorId: Uuid, action: GameAction) = Unit
 
     /** 通知平台呈現一次流局結算。預設 no-op。 */
     fun publishExhaustiveDrawSettlement(gameId: Uuid, request: ExhaustiveDrawSettlementPresentationRequest) = Unit
@@ -124,7 +124,8 @@ interface GamePresentationPublisher {
      * @param dealerSeatIndex 目前莊家在 `TableState.players` 的固定座位 index。
      * @param deadWallTileIds [layout] 之中屬於王牌區的牌 Uuid 子集合；空布局呼叫時可傳空集合。
      * @param diceCount 本次開門擲骰的骰子數量，供平台安排開門前的擲骰時間；未搭配擲骰的呼叫可傳 `0`。
-     * @param animateOpening 是否呈現從 [assemblyStructure] 到 [layout] 的開門過程；恢復既有桌況時傳 `false`。
+     * @param isNewOpening 這次是否剛完成開門；恢復既有桌況時傳 `false`。平台可據此決定是否呈現從 [assemblyStructure] 到
+     * [layout] 的開門過程。
      * @param revealedTileIds [deadWallTileIds] 之中，牌牆建立當下就公開的牌 Uuid 子集合（例如日麻開局就翻開的第一張
      * 寶牌指示牌，由呼叫端以 `TileWallRevealable.getVisibleTileIds` 算出）；不支援此概念的規則傳空集合。動作後才追加
      * 公開的牌屬於 [publishWallTilesRevealed]。
@@ -136,7 +137,7 @@ interface GamePresentationPublisher {
         dealerSeatIndex: Int,
         deadWallTileIds: Set<Uuid>,
         diceCount: Int,
-        animateOpening: Boolean = diceCount > 0,
+        isNewOpening: Boolean = diceCount > 0,
         revealedTileIds: Set<Uuid> = emptySet(),
     )
 
@@ -169,7 +170,7 @@ interface GamePresentationPublisher {
      *
      * @param gameId 對局 Uuid。
      */
-    fun publishTablePropsUpdated(gameId: Uuid)
+    fun publishRuleStateUpdated(gameId: Uuid)
 
     /**
      * 通知平台局況資訊需要更新為目前的權威桌況。
@@ -189,7 +190,7 @@ interface GamePresentationPublisher {
      * 通知平台某玩家目前的立牌、摸牌位與副露。
      *
      * 三者一起提供，讓平台能一併決定擺放（例如立牌要為副露讓出空間）。開局／換局的初次發牌改用
-     * [publishInitialDealAnimation]；這個方法用於一般回合動作（捨牌、摸牌、鳴牌）。
+     * [publishInitialDeal]；這個方法用於一般回合動作（捨牌、摸牌、鳴牌）。
      *
      * @param gameId 對局 Uuid。
      * @param seatIndex 這位玩家在 `TableState.players` 的固定座位 index。
@@ -198,26 +199,26 @@ interface GamePresentationPublisher {
      * @param drawnTileId 這位玩家目前摸到、尚未併入立牌或打出的那張牌 Uuid（`Hand.lastDrawn`）；
      * `null` 代表目前沒有摸牌位。
      * @param melds 這位玩家目前所有副露，依宣告順序排列。
-     * @param animateDrawnTile [drawnTileId] 是否為這次剛摸到的牌：只有真正的摸牌（`DrawTileUseCase`）傳 `true`，平台可據此
+     * @param isNewlyDrawn [drawnTileId] 是否為這次剛摸到的牌：只有真正的摸牌（`DrawTileUseCase`）傳 `true`，平台可據此
      * 呈現摸牌的過程；其餘呼叫即使摸牌位仍有牌也維持 `false`。
-     * @param animatedMeldClaimTileIds 這次新成立副露、從原本位置移入副露的牌 Uuid：吃／碰／明槓／暗槓為整組，加槓只有
+     * @param newlyClaimedMeldTileIds 這次新成立副露、從原本位置移入副露的牌 Uuid：吃／碰／明槓／暗槓為整組，加槓只有
      * 新加入的那一張。空集合（預設值）代表沒有。
      */
-    fun publishPlayerAreaUpdated(
+    fun publishPlayerTilesUpdated(
         gameId: Uuid,
         seatIndex: Int,
         standingTileIds: List<Uuid>,
         drawnTileId: Uuid?,
         melds: List<MeldPresentation>,
-        animateDrawnTile: Boolean = false,
-        animatedMeldClaimTileIds: Set<Uuid> = emptySet(),
+        isNewlyDrawn: Boolean = false,
+        newlyClaimedMeldTileIds: Set<Uuid> = emptySet(),
     )
 
     /**
      * 通知平台本局開局（或換局）的初次發牌。
      *
      * 一次帶齊所有座位的最終手牌，讓平台能讓各座位同一批的發牌同時進行；發牌完成後的手牌變化一律改用
-     * [publishPlayerAreaUpdated]。開局當下沒有摸牌位與副露，因此不帶這兩項。
+     * [publishPlayerTilesUpdated]。開局當下沒有摸牌位與副露，因此不帶這兩項。
      *
      * @param gameId 對局 Uuid。
      * @param handTileIdsBySeatIndex 每個座位最終手牌的完整牌 Uuid 列表，依發牌順序排列，鍵為 `TableState.players` 的固定
@@ -225,11 +226,11 @@ interface GamePresentationPublisher {
      * @param postFlipHandTileIdsBySeatIndex 每個座位發牌完成後的最終牌序，鍵同上；沒有啟用自動整理手牌的座位與
      * [handTileIdsBySeatIndex] 內容相同，有啟用的座位為整理後的順序。
      * @param dealerSeatIndex 目前莊家在 `TableState.players` 的固定座位 index，發牌從這個座位開始輪。
-     * @param dealBatchSizes 依序發牌的批次大小列表，由呼叫端依規則模組的 `MahjongRuleModule.dealBatchSizes` 算出；
+     * @param dealBatchSizes 依序發牌的批次大小列表，由呼叫端依規則設定的 `dealBatchSizes()` 算出；
      * 平台不驗證總和是否等於各座位手牌張數。
      * @param diceCount 本次開局擲骰的骰子數量，供平台安排發牌前的擲骰時間；規則不支援開門流程時傳 `0`。
      */
-    fun publishInitialDealAnimation(
+    fun publishInitialDeal(
         gameId: Uuid,
         handTileIdsBySeatIndex: Map<Int, List<Uuid>>,
         postFlipHandTileIdsBySeatIndex: Map<Int, List<Uuid>>,
@@ -243,7 +244,7 @@ interface GamePresentationPublisher {
      *
      * @param gameId 對局 Uuid。
      */
-    fun clearPlayerAreas(gameId: Uuid)
+    fun clearPlayerTiles(gameId: Uuid)
 
     /**
      * 通知平台本局開局的座位安排。只在開局時呼叫一次，之後連莊／過莊開新局不會再次呼叫——風位輪轉是規則概念，玩家的

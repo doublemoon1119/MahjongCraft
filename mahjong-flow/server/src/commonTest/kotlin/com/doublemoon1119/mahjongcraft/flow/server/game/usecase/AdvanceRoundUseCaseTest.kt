@@ -497,7 +497,7 @@ class AdvanceRoundUseCaseTest {
         assertNotNull(fixtures.snapshotRepo.getSnapshot(gameId, p2.id))
         assertTrue(GameAction.RoundStarted in fixtures.eventPublisher.getNotifiedActions(gameId, dealerId, dealerId))
         assertTrue(GameAction.RoundStarted in fixtures.eventPublisher.getNotifiedActions(gameId, p2.id, dealerId))
-        assertEquals(1, fixtures.presentationPublisher.getTablePropsUpdateCount(gameId))
+        assertEquals(1, fixtures.presentationPublisher.getRuleStateUpdateCount(gameId))
     }
 
     /**

@@ -204,7 +204,7 @@ class DeclareRiichiUseCaseTest {
             listOf(RIICHI_GAME_ACTION, GameAction.Discard(drawnTile.id)),
             fixtures.eventPublisher.getNotifiedActions(gameId, otherPlayerId, currentPlayerId),
         )
-        assertEquals(1, fixtures.presentationPublisher.getTablePropsUpdateCount(gameId))
+        assertEquals(1, fixtures.presentationPublisher.getRuleStateUpdateCount(gameId))
     }
 
     /**

@@ -46,7 +46,7 @@ enum class ContinuingWinSettlementDetail {
 }
 
 /**
- * 一次胡牌剛結算完成、但還沒決定該立即播放或延後播放的完整呈現內容。
+ * 一次胡牌剛結算完成、但還沒決定該立即呈現或延後呈現的完整呈現內容。
  *
  * 由 `DeclareTsumoUseCase`／`RespondToDiscardUseCase`／`RespondToKanUseCase` 建構後交給
  * `WinPresentationHandoff` 暫存（而不是直接發布），再由 `ResolveWinRoundContinuationUseCase` 依本次

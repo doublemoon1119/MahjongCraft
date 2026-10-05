@@ -259,20 +259,20 @@ class RespondToDiscardUseCase(
         // 沒有重新呈現手牌列）。
         result.winnerId?.let { winnerId ->
             result.resolvedAction?.let { resolvedAction ->
-                presentationPublisher.publishGameActionSound(gameId, winnerId, resolvedAction)
+                presentationPublisher.publishGameActionDeclared(gameId, winnerId, resolvedAction)
             }
             val winnerSeatIndex = newState.players.indexOfFirst { it.id == winnerId }
             val winner = newState.players[winnerSeatIndex]
             val module = moduleRegistry.getModule(newState.config)
-            presentationPublisher.publishPlayerAreaUpdated(
+            presentationPublisher.publishPlayerTilesUpdated(
                 gameId,
                 winnerSeatIndex,
                 winner.hand.tiles.map { it.id },
                 winner.hand.lastDrawn?.id,
                 winner.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles, module.tileOrder) },
                 // 吃/碰/明槓永遠整組一次成立新副露（附加到 exposedMelds 尾端，不是原地修改既有組），
-                // 最後一組必定就是這次剛成立的那組，組內全部牌都該播放鳴牌動畫。
-                animatedMeldClaimTileIds = winner.hand.melds.last().tiles.map { it.id }.toSet(),
+                // 最後一組必定就是這次剛成立的那組，組內全部牌都是新移入副露的牌。
+                newlyClaimedMeldTileIds = winner.hand.melds.last().tiles.map { it.id }.toSet(),
             )
         }
 
@@ -289,7 +289,7 @@ class RespondToDiscardUseCase(
         // winningTileId 對每位贏家來說都是同一張放銃的捨牌。刻意不直接發布，理由同 DeclareTsumoUseCase。
         result.ronWinningTileId?.let { winningTileId ->
             result.ronWinnerIds.forEach { winnerId ->
-                presentationPublisher.publishGameActionSound(gameId, winnerId, GameAction.Ron(winningTileId))
+                presentationPublisher.publishGameActionDeclared(gameId, winnerId, GameAction.Ron(winningTileId))
             }
             val presentation = SettledWinPresentation(
                 winnerPlayerIds = result.ronWinnerIds,

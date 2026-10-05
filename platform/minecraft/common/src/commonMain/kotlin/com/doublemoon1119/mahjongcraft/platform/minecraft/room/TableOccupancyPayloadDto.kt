@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.flow.network.dto.message
+package com.doublemoon1119.mahjongcraft.platform.minecraft.room
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.GameConfigDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.RoomSnapshotDto

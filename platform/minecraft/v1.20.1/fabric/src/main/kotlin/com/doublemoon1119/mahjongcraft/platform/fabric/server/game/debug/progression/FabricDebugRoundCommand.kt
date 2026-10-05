@@ -83,7 +83,7 @@ class FabricDebugRoundCommand(
 
     /** 重新發布桌上物件與局況顯示。 */
     private suspend fun publishStickPresentation(tableId: Uuid, state: TableState) {
-        presentationPublisher.publishTablePropsUpdated(tableId)
+        presentationPublisher.publishRuleStateUpdated(tableId)
         presentationPublisher.publishRoundInfoUpdated(tableId, state)
     }
 

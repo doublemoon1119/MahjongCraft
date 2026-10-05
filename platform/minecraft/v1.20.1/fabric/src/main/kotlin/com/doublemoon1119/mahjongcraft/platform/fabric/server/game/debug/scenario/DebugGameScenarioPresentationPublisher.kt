@@ -20,7 +20,7 @@ class DebugGameScenarioPresentationPublisher(
         val game = result.game
         val state = game.tableState
         val revealedTileIds = (state.dynamicRuleState as? TileWallRevealable)?.getVisibleTileIds(state).orEmpty()
-        publisher.clearPlayerAreas(game.id)
+        publisher.clearPlayerTiles(game.id)
         when (val presentation = result.presentation) {
             DebugGameScenarioPresentation.StaticWall -> publishStaticTable(result, revealedTileIds)
             is DebugGameScenarioPresentation.InitialRound -> {
@@ -31,7 +31,7 @@ class DebugGameScenarioPresentationPublisher(
                     dealerSeatIndex = state.dealerIndex,
                     deadWallTileIds = state.reservedWallTiles.mapTo(mutableSetOf()) { tile -> tile.id },
                     diceCount = presentation.diceRoll.values.size,
-                    animateOpening = true,
+                    isNewOpening = true,
                     revealedTileIds = revealedTileIds,
                 )
                 publisher.publishDiceRoll(
@@ -45,7 +45,7 @@ class DebugGameScenarioPresentationPublisher(
         }
         publishTableInformation(result)
         (result.presentation as? DebugGameScenarioPresentation.InitialRound)?.let { presentation ->
-            publisher.publishInitialDealAnimation(
+            publisher.publishInitialDeal(
                 gameId = game.id,
                 handTileIdsBySeatIndex = presentation.dealOrderHandTileIdsBySeatIndex,
                 postFlipHandTileIdsBySeatIndex = presentation.postFlipHandTileIdsBySeatIndex,
@@ -67,12 +67,12 @@ class DebugGameScenarioPresentationPublisher(
             dealerSeatIndex = state.dealerIndex,
             deadWallTileIds = state.reservedWallTiles.mapTo(mutableSetOf()) { tile -> tile.id },
             diceCount = 0,
-            animateOpening = false,
+            isNewOpening = false,
             revealedTileIds = revealedTileIds,
         )
         val module = moduleRegistry.getModule(state.config)
         state.players.forEachIndexed { seatIndex, player ->
-            publisher.publishPlayerAreaUpdated(
+            publisher.publishPlayerTilesUpdated(
                 gameId = game.id,
                 seatIndex = seatIndex,
                 standingTileIds = player.hand.tiles.map { tile -> tile.id },
@@ -92,7 +92,7 @@ class DebugGameScenarioPresentationPublisher(
     private fun publishTableInformation(result: DebugGameScenarioResult) {
         val game = result.game
         val state = game.tableState
-        publisher.publishTablePropsUpdated(game.id)
+        publisher.publishRuleStateUpdated(game.id)
         publisher.publishRoundInfoUpdated(game.id, state)
     }
 }

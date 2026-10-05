@@ -222,7 +222,7 @@ class DiscardTileUseCase(
         val seatIndex = newState.players.indexOfFirst { it.id == playerId }
         val discarder = newState.players[seatIndex]
         val module = moduleRegistry.getModule(newState.config)
-        presentationPublisher.publishPlayerAreaUpdated(
+        presentationPublisher.publishPlayerTilesUpdated(
             gameId,
             seatIndex,
             discarder.hand.tiles.map { it.id },

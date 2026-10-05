@@ -230,7 +230,7 @@ class DeclareRiichiUseCase(
         val module = moduleRegistry.getModule(newState.config)
         val seatIndex = newState.players.indexOfFirst { it.id == playerId }
         val discarder = newState.players[seatIndex]
-        presentationPublisher.publishPlayerAreaUpdated(
+        presentationPublisher.publishPlayerTilesUpdated(
             gameId,
             seatIndex,
             discarder.hand.tiles.map { it.id },
@@ -246,12 +246,12 @@ class DeclareRiichiUseCase(
         )
 
         // 5. 宣告成立後立直棒要出現在桌上，通知平台依目前桌況更新桌上物件。
-        presentationPublisher.publishTablePropsUpdated(gameId)
+        presentationPublisher.publishRuleStateUpdated(gameId)
 
         // 6. 通知平台呈現層更新桌面局況顯示——立直宣告當下供託支數馬上 +1，若不在這裡也更新一次，
         // 顯示要等到下一次摸牌才會跟著變，體驗不一致。
         presentationPublisher.publishRoundInfoUpdated(gameId, newState)
-        presentationPublisher.publishGameActionSound(gameId, playerId, RIICHI_GAME_ACTION)
+        presentationPublisher.publishGameActionDeclared(gameId, playerId, RIICHI_GAME_ACTION)
 
         return Outcome.Success(Unit)
     }

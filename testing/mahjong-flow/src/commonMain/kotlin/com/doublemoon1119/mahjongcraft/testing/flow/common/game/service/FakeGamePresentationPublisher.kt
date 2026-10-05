@@ -23,10 +23,10 @@ import kotlin.uuid.Uuid
  */
 class FakeGamePresentationPublisher : GamePresentationPublisher {
     /** 依對局 Uuid 紀錄所有已成立的動作語音請求。 */
-    private val gameActionSounds = mutableMapOf<Uuid, MutableList<GameActionSoundContext>>()
+    private val declaredGameActions = mutableMapOf<Uuid, MutableList<DeclaredGameActionContext>>()
 
-    override fun publishGameActionSound(gameId: Uuid, actorId: Uuid, action: GameAction) {
-        gameActionSounds.getOrPut(gameId, ::mutableListOf).add(GameActionSoundContext(actorId, action))
+    override fun publishGameActionDeclared(gameId: Uuid, actorId: Uuid, action: GameAction) {
+        declaredGameActions.getOrPut(gameId, ::mutableListOf).add(DeclaredGameActionContext(actorId, action))
     }
 
     /** 依對局 Uuid 紀錄最後一次終局結算呈現。 */
@@ -54,19 +54,19 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
     private val wallStructureContexts = mutableMapOf<Uuid, WallStructureContext>()
 
     /** 依對局 Uuid 紀錄收到桌上物件更新通知的次數。 */
-    private val tablePropsUpdateCounts = mutableMapOf<Uuid, Int>()
+    private val ruleStateUpdateCounts = mutableMapOf<Uuid, Int>()
 
     /** 依對局 Uuid 紀錄最後一次收到的局況更新快照。 */
     private val roundInfos = mutableMapOf<Uuid, TableState>()
 
     /** 依對局 Uuid 紀錄最後一次收到的桌角區域（手牌/摸牌位/副露）呈現資料。 */
-    private val playerAreas = mutableMapOf<Uuid, PlayerAreaContext>()
+    private val playerTiles = mutableMapOf<Uuid, PlayerTilesContext>()
 
     /** 依對局 Uuid 紀錄最後一次收到的開局發牌動畫資料。 */
-    private val initialDealAnimations = mutableMapOf<Uuid, InitialDealAnimationContext>()
+    private val initialDeals = mutableMapOf<Uuid, InitialDealContext>()
 
-    /** 依對局 Uuid 紀錄是否收到過 [clearPlayerAreas]。 */
-    private val clearedPlayerAreas = mutableSetOf<Uuid>()
+    /** 依對局 Uuid 紀錄是否收到過 [clearPlayerTiles]。 */
+    private val clearedPlayerTiles = mutableSetOf<Uuid>()
 
     /** 依對局 Uuid 紀錄最後一次收到的開局座位傳送清單。 */
     private val gameStartedSeatings = mutableMapOf<Uuid, List<Uuid>>()
@@ -103,7 +103,7 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
         dealerSeatIndex: Int,
         deadWallTileIds: Set<Uuid>,
         diceCount: Int,
-        animateOpening: Boolean,
+        isNewOpening: Boolean,
         revealedTileIds: Set<Uuid>,
     ) {
         wallStructures[gameId] = layout
@@ -112,7 +112,7 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
             dealerSeatIndex,
             deadWallTileIds,
             diceCount,
-            animateOpening,
+            isNewOpening,
             revealedTileIds,
         )
     }
@@ -125,27 +125,27 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
         deadWallReveals[gameId] = revealedTileIds
     }
 
-    override fun publishTablePropsUpdated(gameId: Uuid) {
-        tablePropsUpdateCounts[gameId] = getTablePropsUpdateCount(gameId) + 1
+    override fun publishRuleStateUpdated(gameId: Uuid) {
+        ruleStateUpdateCounts[gameId] = getRuleStateUpdateCount(gameId) + 1
     }
 
     override fun publishRoundInfoUpdated(gameId: Uuid, tableState: TableState) {
         roundInfos[gameId] = tableState
     }
 
-    override fun publishPlayerAreaUpdated(
+    override fun publishPlayerTilesUpdated(
         gameId: Uuid,
         seatIndex: Int,
         standingTileIds: List<Uuid>,
         drawnTileId: Uuid?,
         melds: List<MeldPresentation>,
-        animateDrawnTile: Boolean,
-        animatedMeldClaimTileIds: Set<Uuid>,
+        isNewlyDrawn: Boolean,
+        newlyClaimedMeldTileIds: Set<Uuid>,
     ) {
-        playerAreas[gameId] = PlayerAreaContext(seatIndex, standingTileIds, drawnTileId, melds, animateDrawnTile, animatedMeldClaimTileIds)
+        playerTiles[gameId] = PlayerTilesContext(seatIndex, standingTileIds, drawnTileId, melds, isNewlyDrawn, newlyClaimedMeldTileIds)
     }
 
-    override fun publishInitialDealAnimation(
+    override fun publishInitialDeal(
         gameId: Uuid,
         handTileIdsBySeatIndex: Map<Int, List<Uuid>>,
         postFlipHandTileIdsBySeatIndex: Map<Int, List<Uuid>>,
@@ -153,7 +153,7 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
         dealBatchSizes: List<Int>,
         diceCount: Int,
     ) {
-        initialDealAnimations[gameId] = InitialDealAnimationContext(
+        initialDeals[gameId] = InitialDealContext(
             handTileIdsBySeatIndex,
             postFlipHandTileIdsBySeatIndex,
             dealerSeatIndex,
@@ -162,8 +162,8 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
         )
     }
 
-    override fun clearPlayerAreas(gameId: Uuid) {
-        clearedPlayerAreas += gameId
+    override fun clearPlayerTiles(gameId: Uuid) {
+        clearedPlayerTiles += gameId
     }
 
     override fun publishGameStarted(gameId: Uuid, seatedPlayerIds: List<Uuid>) {
@@ -201,7 +201,7 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
     fun getPublishedDiceRoll(gameId: Uuid): DiceRollResult? = diceRolls[gameId]
 
     /** 取得指定對局依序收到的已成立動作語音請求。 */
-    fun getPublishedGameActionSounds(gameId: Uuid): List<GameActionSoundContext> = gameActionSounds[gameId].orEmpty()
+    fun getDeclaredGameActions(gameId: Uuid): List<DeclaredGameActionContext> = declaredGameActions[gameId].orEmpty()
 
     /** 取得指定對局最後一次收到的擲骰隨附桌況資料；若無紀錄則回傳 null。 */
     fun getPublishedDiceRollContext(gameId: Uuid): DiceRollContext? = diceRollContexts[gameId]
@@ -219,19 +219,19 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
     fun getPublishedWallStructureContext(gameId: Uuid): WallStructureContext? = wallStructureContexts[gameId]
 
     /** 取得指定對局收到桌上物件更新通知的次數；沒有收到過則為 0。 */
-    fun getTablePropsUpdateCount(gameId: Uuid): Int = tablePropsUpdateCounts[gameId] ?: 0
+    fun getRuleStateUpdateCount(gameId: Uuid): Int = ruleStateUpdateCounts[gameId] ?: 0
 
     /** 取得指定對局最後一次收到的局況更新快照；若無紀錄則回傳 null。 */
     fun getPublishedRoundInfo(gameId: Uuid): TableState? = roundInfos[gameId]
 
     /** 取得指定對局最後一次收到的桌角區域（手牌/摸牌位/副露）呈現資料；若無紀錄則回傳 null。 */
-    fun getPublishedPlayerArea(gameId: Uuid): PlayerAreaContext? = playerAreas[gameId]
+    fun getPublishedPlayerTiles(gameId: Uuid): PlayerTilesContext? = playerTiles[gameId]
 
     /** 取得指定對局最後一次收到的開局發牌動畫資料；若無紀錄則回傳 null。 */
-    fun getPublishedInitialDealAnimation(gameId: Uuid): InitialDealAnimationContext? = initialDealAnimations[gameId]
+    fun getPublishedInitialDeal(gameId: Uuid): InitialDealContext? = initialDeals[gameId]
 
-    /** 指定對局是否曾經收到過 [clearPlayerAreas]。 */
-    fun wasPlayerAreasCleared(gameId: Uuid): Boolean = gameId in clearedPlayerAreas
+    /** 指定對局是否曾經收到過 [clearPlayerTiles]。 */
+    fun werePlayerTilesCleared(gameId: Uuid): Boolean = gameId in clearedPlayerTiles
 
     /** 取得指定對局最後一次收到的開局座位傳送清單；若無紀錄則回傳 null。 */
     fun getPublishedGameStartedSeating(gameId: Uuid): List<Uuid>? = gameStartedSeatings[gameId]
@@ -262,7 +262,7 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
 }
 
 /** 單筆已成立動作語音請求。 */
-data class GameActionSoundContext(val actorId: Uuid, val action: GameAction)
+data class DeclaredGameActionContext(val actorId: Uuid, val action: GameAction)
 
 /** [FakeGamePresentationPublisher] 紀錄的 [GamePresentationPublisher.publishDiceRoll] 隨附桌況資料。 */
 data class DiceRollContext(
@@ -276,22 +276,22 @@ data class WallStructureContext(
     val dealerSeatIndex: Int,
     val deadWallTileIds: Set<Uuid>,
     val diceCount: Int,
-    val animateOpening: Boolean,
+    val isNewOpening: Boolean,
     val revealedTileIds: Set<Uuid>,
 )
 
-/** [FakeGamePresentationPublisher] 紀錄的 [GamePresentationPublisher.publishPlayerAreaUpdated] 資料。 */
-data class PlayerAreaContext(
+/** [FakeGamePresentationPublisher] 紀錄的 [GamePresentationPublisher.publishPlayerTilesUpdated] 資料。 */
+data class PlayerTilesContext(
     val seatIndex: Int,
     val standingTileIds: List<Uuid>,
     val drawnTileId: Uuid?,
     val melds: List<MeldPresentation>,
-    val animateDrawnTile: Boolean,
-    val animatedMeldClaimTileIds: Set<Uuid>,
+    val isNewlyDrawn: Boolean,
+    val newlyClaimedMeldTileIds: Set<Uuid>,
 )
 
-/** [FakeGamePresentationPublisher] 紀錄的 [GamePresentationPublisher.publishInitialDealAnimation] 資料。 */
-data class InitialDealAnimationContext(
+/** [FakeGamePresentationPublisher] 紀錄的 [GamePresentationPublisher.publishInitialDeal] 資料。 */
+data class InitialDealContext(
     val handTileIdsBySeatIndex: Map<Int, List<Uuid>>,
     val postFlipHandTileIdsBySeatIndex: Map<Int, List<Uuid>>,
     val dealerSeatIndex: Int,

@@ -68,7 +68,7 @@ class MahjongRoundInfoEntity(
     /**
      * fallback 自動清除——**不是主要清除路徑**。正常生命週期是跟牌牆同時生成、換局時由
      * `FabricMahjongRoundInfoPresenter.present()` 找到既有 entity 就地更新內容（不重新生成），或由
-     * `FabricGamePresentationPublisher.clearPlayerAreas()`（回房間等情境）顯式清除；這裡只是意外情境
+     * `FabricGamePresentationPublisher.clearPlayerTiles()`（回房間等情境）顯式清除；這裡只是意外情境
      * （伺服器崩潰、對局非正常結束導致沒有機會走到正常清除流程）的保險，門檻抓得遠大於正常一局遊戲
      * 時長，理由同 [MahjongScoringStickEntity.tick] 的同款設計——這個 entity 沒有自由放置模式（一律
      * 由牌局管理），不需要像點棒那樣額外判斷 `managedByGame`。

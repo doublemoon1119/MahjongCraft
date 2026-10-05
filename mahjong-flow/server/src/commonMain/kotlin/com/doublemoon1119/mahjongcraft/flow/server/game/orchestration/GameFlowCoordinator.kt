@@ -46,7 +46,7 @@ import kotlin.uuid.Uuid
  * 1. **最終反應後 outcome／一般流局**：任一命令的結果為 [GameError.WallExhausted] 時，先呼叫
  *    [resolvePostReactionRoundOutcomeUseCase]；沒有 extension outcome 成立才呼叫 [declareExhaustiveDrawUseCase]。
  * 2. **連莊/過莊**：任何造成本局結束的操作完成後，先將 [PendingGameTransition.AdvanceRound]
- *    寫入權威狀態；待呈現動畫結束後，再由 [resumePendingGameTransition] 呼叫 [advanceRoundUseCase]。
+ *    寫入權威狀態；待呈現結束後，再由 [resumePendingGameTransition] 呼叫 [advanceRoundUseCase]。
  *    任一命令成功後，統一從權威桌況的 `actionHistory` 判斷是否已留下胡牌或流局記錄，不依命令型別
  *    猜測規則結果，因此第三方 extension command 也能沿用相同收斂流程。
  *
@@ -72,8 +72,8 @@ import kotlin.uuid.Uuid
  * @property forcedAutoPlayDriver 找出下一個必須由伺服器固定操作的真人玩家與命令。
  * @property automaticDecisionDriver 找出下一個由真人玩家本局自動設定立即執行的命令。
  * @property decisionAvailabilityService 在呈現忙碌時暫停玩家決策，閒置時恢復或調整計時並立即同步。
- * @property winPresentationHandoff 胡牌 use case 建構好的演出內容交接點，見 [WinPresentationHandoff]。
- * @property presentationBusyGate 查詢平台呈現層是否仍在播放動畫；[driveAutomatedPlayers] 與
+ * @property winPresentationHandoff 胡牌 use case 建構好的呈現內容交接點，見 [WinPresentationHandoff]。
+ * @property presentationBusyGate 查詢平台是否仍在呈現需要等待的內容；[driveAutomatedPlayers] 與
  *   [resumePendingGameTransition] 都會在推進權威流程前檢查，忙碌時直接返回並留待後續心跳重試；
  *   實作由平台層提供，理由見 [GamePresentationBusyGate] KDoc。
  */
@@ -171,9 +171,9 @@ class GameFlowCoordinator(
      * 每次迭代前後比較 `TableState`；若命令未造成進展便立即停止。理論上這個迴圈一定會自然收斂
      * （沒有更多自動決策要做，或桌況沒有任何進展），但仍設 [MAX_ITERATIONS] 作為上限而非單純
      * `while (true)`——純粹是防呆：萬一未來出現尚未發現的收斂性 bug，讓這裡真的陷入無限迴圈，
-     * `while (true)` 會讓呼叫這個函式的心跳 tick 永遠卡住、吃滿 CPU 卻不留下任何訊號，而心跳是
-     * 依序遍歷所有對局的，一局卡住會連帶讓同一個 tick 裡其他對局的自動操作全部停擺。設上限後，
-     * 卡住會直接拋出例外，能被立即看見、定位。可由開局與逾時流程主動呼叫，確保沒有真人送出封包時
+     * `while (true)` 會讓呼叫這個函式的那次心跳永遠卡住、吃滿 CPU 卻不留下任何訊號，而心跳是
+     * 依序遍歷所有對局的，一局卡住會連帶讓同一次心跳裡其他對局的自動操作全部停擺。設上限後，
+     * 卡住會直接拋出例外，能被立即看見、定位。可由開局與逾時流程主動呼叫，確保沒有真人送出指令時
      * 仍能推進自動操作。
      *
      * 由 [forcedAutoPlayDriver] 解析出的動作在送出前會先把該玩家從[Game.forcedAutoPlayPlayerIds] 移除——
@@ -181,10 +181,10 @@ class GameFlowCoordinator(
      * [GameDecisionAvailabilityService.reconcile] 能立刻看到這位玩家重新是一般決策者，替他下一次決策
      * （例如緊接著要捨牌）建立帶有完整 `baseSeconds` 的新計時器，而不是繼續被排除在外。
      *
-     * 每次迭代開始前都會用 [presentationBusyGate] 確認這桌目前沒有正在播放呈現動畫——不是只在呼叫
-     * 這個函式之前檢查一次：連莊/過莊本身就可能在迴圈中途觸發新一局的擲骰動畫（[advanceRoundUseCase]
+     * 每次迭代開始前都會用 [presentationBusyGate] 確認這場對局目前沒有需要等待的呈現——不是只在呼叫
+     * 這個函式之前檢查一次：連莊/過莊本身就可能在迴圈中途觸發新一局的開局呈現（[advanceRoundUseCase]
      * 銜接呼叫），如果只在最外層檢查一次，迴圈仍會在同一次呼叫裡繼續驅動新莊家的自動摸牌，讓新一局的
-     * 擲骰動畫還沒播完，遊戲流程就已經搶跑；改成每次迭代都檢查，動畫開始播放後迴圈會在下一次迭代前
+     * 開局呈現還沒結束，遊戲流程就已經搶跑；改成每次迭代都檢查，呈現開始後迴圈會在下一次迭代前
      * 自然停下，等下次心跳或玩家操作再重新呼叫。
      *
      * @param gameId 欲推進的遊戲。
@@ -259,8 +259,8 @@ class GameFlowCoordinator(
      */
     suspend fun resumePendingGameTransition(gameId: Uuid): Boolean {
         if (presentationBusyGate.isBusy(gameId)) return false
-        // 中途胡牌演出不阻塞其他玩家繼續摸打（因此 driveAutomatedPlayers 刻意不查這一項），但本局要等
-        // 它播完才真的換局，否則還在播的結算面板會被新一局的發牌動畫直接蓋掉。
+        // 中途胡牌的呈現不一定阻塞其他玩家繼續摸打（因此 driveAutomatedPlayers 刻意不查這一項），但本局要等
+        // 它結束才真的換局，否則尚未呈現完的結算會被新一局的開局呈現取代。
         if (presentationBusyGate.isPresentingContinuingWin(gameId)) return false
         pendingTransitionMutex.lock()
         try {
@@ -451,15 +451,15 @@ class GameFlowCoordinator(
 
         if (presentation != null) {
             val continuing = directive as? WinRoundDirective.ContinueRound
-            // 「面板多詳細」由 settlementDetail 決定；「是否中斷遊戲」由 roundContinues 加上這次是否帶
-            // 役滿 cue 決定（見 WinPresentationRequest KDoc），兩者互不牽連。
+            // 「結算提供多少資訊」由 settlementDetail 決定；「是否暫停其他玩家」由 roundContinues 與平台
+            // 決定（見 WinPresentationRequest KDoc），兩者互不牽連。
             val detail = continuing?.settlementDetail ?: ContinuingWinSettlementDetail.WINNER_DETAILS
             presentationPublisher.publishWinPresentation(
                 gameId,
                 WinPresentationRequest(
                     winnerPlayerIds = presentation.winnerPlayerIds,
-                    // 胡牌演出在任何模式下都完整播放（見 ContinuingWinSettlementDetail KDoc）；模式
-                    // 只決定結算面板的詳細程度。
+                    // 胡牌呈現在任何模式下都完整提供（見 ContinuingWinSettlementDetail KDoc）；模式
+                    // 只決定結算提供的資訊範圍。
                     celebration = presentation.celebration,
                     settlement = presentation.settlement.copy(
                         includesWinnerDetails = detail == ContinuingWinSettlementDetail.WINNER_DETAILS,

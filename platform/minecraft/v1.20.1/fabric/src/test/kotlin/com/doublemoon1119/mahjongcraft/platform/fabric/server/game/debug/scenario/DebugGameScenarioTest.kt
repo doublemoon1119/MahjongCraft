@@ -122,14 +122,14 @@ class DebugGameScenarioTest {
 
         val gameId = result.game.id
         val wallContext = assertNotNull(publisher.getPublishedWallStructureContext(gameId))
-        val initialDeal = assertNotNull(publisher.getPublishedInitialDealAnimation(gameId))
-        assertTrue(publisher.wasPlayerAreasCleared(gameId))
-        assertTrue(wallContext.animateOpening)
+        val initialDeal = assertNotNull(publisher.getPublishedInitialDeal(gameId))
+        assertTrue(publisher.werePlayerTilesCleared(gameId))
+        assertTrue(wallContext.isNewOpening)
         assertEquals(presentation.diceRoll.values.size, wallContext.diceCount)
         assertEquals(presentation.diceRoll, publisher.getPublishedDiceRoll(gameId))
         assertEquals(presentation.dealOrderHandTileIdsBySeatIndex, initialDeal.handTileIdsBySeatIndex)
         assertEquals(presentation.postFlipHandTileIdsBySeatIndex, initialDeal.postFlipHandTileIdsBySeatIndex)
-        assertNull(publisher.getPublishedPlayerArea(gameId))
+        assertNull(publisher.getPublishedPlayerTiles(gameId))
         assertNull(publisher.getPublishedDiscardPile(gameId))
     }
 
@@ -144,12 +144,12 @@ class DebugGameScenarioTest {
 
         val gameId = result.game.id
         val wallContext = assertNotNull(publisher.getPublishedWallStructureContext(gameId))
-        assertFalse(wallContext.animateOpening)
+        assertFalse(wallContext.isNewOpening)
         assertEquals(0, wallContext.diceCount)
-        assertNotNull(publisher.getPublishedPlayerArea(gameId))
+        assertNotNull(publisher.getPublishedPlayerTiles(gameId))
         assertNotNull(publisher.getPublishedDiscardPile(gameId))
         assertNull(publisher.getPublishedDiceRoll(gameId))
-        assertNull(publisher.getPublishedInitialDealAnimation(gameId))
+        assertNull(publisher.getPublishedInitialDeal(gameId))
     }
 
     /** 重複建立同一情境時應保留語意並換用全新的牌 UUID。 */

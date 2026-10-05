@@ -348,7 +348,7 @@ class RespondToDiscardUseCaseTest {
 
         fixtures.useCase(gameId, responderId, GameAction.Pon(discardedTile.id, listOf(handTile1.id, handTile2.id)))
 
-        val publishedMelds = fixtures.presentationPublisher.getPublishedPlayerArea(gameId)
+        val publishedMelds = fixtures.presentationPublisher.getPublishedPlayerTiles(gameId)
         assertNotNull(publishedMelds)
         assertEquals(1, publishedMelds.seatIndex, "The winner (responder) sits at seat index 1.")
         val meld = publishedMelds.melds.single()
@@ -357,7 +357,7 @@ class RespondToDiscardUseCaseTest {
         assertEquals(discardedTile.id, meld.calledTileId)
         assertEquals(
             setOf(handTile1.id, handTile2.id, discardedTile.id),
-            publishedMelds.animatedMeldClaimTileIds,
+            publishedMelds.newlyClaimedMeldTileIds,
             "All tiles in a newly claimed pon should trigger the meld-claim flight animation.",
         )
     }
@@ -507,7 +507,7 @@ class RespondToDiscardUseCaseTest {
         assertTrue(newDiscarder.discardPile.entries.last().isTaken, "The claimed discard should be marked as taken.")
         assertEquals(
             rinshanTile.id,
-            fixtures.presentationPublisher.getPublishedPlayerArea(gameId)?.drawnTileId,
+            fixtures.presentationPublisher.getPublishedPlayerTiles(gameId)?.drawnTileId,
             "The rinshan tile should be presented as a drawn tile (moved to the draw slot), same as a normal draw.",
         )
         val publishedTransitions = fixtures.presentationPublisher.getPublishedWallLayoutTransitions(gameId)
@@ -835,7 +835,7 @@ class RespondToDiscardUseCaseTest {
         )
 
         assertNull(
-            fixtures.presentationPublisher.getPublishedPlayerArea(gameId),
+            fixtures.presentationPublisher.getPublishedPlayerTiles(gameId),
             "Ron doesn't claim a meld, so it should never trigger the meld-claim presentation/animation.",
         )
         val settled = fixtures.gameRepo.historyDrafts.map { it.fact }.filterIsInstance<HistoryFact.WinSettled>().single()

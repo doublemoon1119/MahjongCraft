@@ -69,7 +69,7 @@ class SetHandSortPreferenceUseCaseTest {
 
         assertTrue(fixtures.preferenceStore.isEnabled(playerId))
         assertEquals(unsortedTiles, fixtures.gameRepo.getTableState(gameId)?.players?.single()?.hand?.tiles)
-        assertNull(fixtures.presentationPublisher.getPublishedPlayerArea(gameId))
+        assertNull(fixtures.presentationPublisher.getPublishedPlayerTiles(gameId))
     }
 
     /** 停用時只更新偏好本身，不觸碰手牌，也不重新呈現。 */
@@ -81,7 +81,7 @@ class SetHandSortPreferenceUseCaseTest {
         fixtures.useCase(playerId, false, HandSortPreferenceUpdateMode.USER_CHANGE)
 
         assertFalse(fixtures.preferenceStore.isEnabled(playerId))
-        assertNull(fixtures.presentationPublisher.getPublishedPlayerArea(gameId))
+        assertNull(fixtures.presentationPublisher.getPublishedPlayerTiles(gameId))
     }
 
     /** 啟用且玩家目前沒有還沒決定的摸牌時，立即整理手牌並重新呈現這個座位。 */
@@ -108,7 +108,7 @@ class SetHandSortPreferenceUseCaseTest {
         assertNotNull(newState)
         val organizedTiles = newState.players.first { it.id == playerId }.hand.tiles
         assertEquals(unsortedTiles.sortedBy { it.tile.toString() }.size, organizedTiles.size)
-        assertNotNull(fixtures.presentationPublisher.getPublishedPlayerArea(gameId))
+        assertNotNull(fixtures.presentationPublisher.getPublishedPlayerTiles(gameId))
     }
 
     /** 啟用但玩家手上還有一張尚未決定的摸牌時，這次先不整理，不打斷還沒做的決定。 */
@@ -136,6 +136,6 @@ class SetHandSortPreferenceUseCaseTest {
         val unchangedPlayer = newState.players.first { it.id == playerId }
         assertEquals(unsortedTiles, unchangedPlayer.hand.tiles)
         assertEquals(sortedLastTile, unchangedPlayer.hand.lastDrawn)
-        assertNull(fixtures.presentationPublisher.getPublishedPlayerArea(gameId))
+        assertNull(fixtures.presentationPublisher.getPublishedPlayerTiles(gameId))
     }
 }

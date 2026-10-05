@@ -269,22 +269,22 @@ class DeclareKanUseCase(
             val declarerSeatIndex = newState.players.indexOfFirst { it.id == playerId }
             val declarer = newState.players[declarerSeatIndex]
             val module = moduleRegistry.getModule(newState.config)
-            // 暗槓是整組一次成立的新副露（附加到 exposedMelds 尾端），組內全部牌都該播放鳴牌動畫；
+            // 暗槓是整組一次成立的新副露（附加到 exposedMelds 尾端），組內全部牌都是新移入副露的牌；
             // 加槓是把新牌插進一組既有副露（Hand.upgradeToAddedKan 原地修改，不是加到尾端），只有新
-            // 插入的那一張該播放，既有三張碰的牌本來就已經在正確位置，不需要重新移動——理由見
-            // MahjongPlayerAreaPresentation.animatedMeldClaimTileIds KDoc。
-            val animatedTileIds = when (result.kanAction.type) {
+            // 插入的那一張是新移入的，既有三張碰的牌本來就在副露裡——見
+            // GamePresentationPublisher.publishPlayerTilesUpdated 的 newlyClaimedMeldTileIds KDoc。
+            val claimedTileIds = when (result.kanAction.type) {
                 GameAction.KanType.CLOSED_KAN -> (result.kanAction.withTiles + result.kanAction.tileId).toSet()
                 GameAction.KanType.ADDED_KAN -> setOf(result.kanAction.tileId)
                 GameAction.KanType.OPEN_KAN -> error("Unreachable: OPEN_KAN never reaches DeclareKanUseCase")
             }
-            presentationPublisher.publishPlayerAreaUpdated(
+            presentationPublisher.publishPlayerTilesUpdated(
                 gameId,
                 declarerSeatIndex,
                 declarer.hand.tiles.map { it.id },
                 declarer.hand.lastDrawn?.id,
                 declarer.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles, module.tileOrder) },
-                animatedMeldClaimTileIds = animatedTileIds,
+                newlyClaimedMeldTileIds = claimedTileIds,
             )
             // 依規則 checkpoint 順序發布這次新公開的牌牆資訊（例如日麻暗槓後立即翻槓寶牌）。
             result.wallRevealBatches.forEach { revealedTileIds ->
@@ -292,7 +292,7 @@ class DeclareKanUseCase(
             }
         }
 
-        presentationPublisher.publishGameActionSound(gameId, playerId, result.kanAction)
+        presentationPublisher.publishGameActionDeclared(gameId, playerId, result.kanAction)
         return Outcome.Success(Unit)
     }
 

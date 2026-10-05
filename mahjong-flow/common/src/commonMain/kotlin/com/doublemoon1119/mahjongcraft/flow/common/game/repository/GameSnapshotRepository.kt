@@ -7,7 +7,7 @@ import kotlin.uuid.Uuid
 /**
  * 桌況快照數據倉庫。
  *
- * 用於管理供不同觀察者視圖渲染或同步使用的快照數據。
+ * 用於管理供不同觀察者呈現或同步使用的快照數據。
  */
 interface GameSnapshotRepository {
     /**

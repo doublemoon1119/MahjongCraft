@@ -69,7 +69,7 @@ class StartGameUseCase(
                         aiPlayerStrategyKeys = room.aiPlayerStrategyKeys,
                     )
                     val dealtState = initializationResult.tableState
-                    // 只用來讓發牌動畫本身維持原始時間軸（哪張牌在哪一批抵達），不是實際寫回權威狀態
+                    // 發牌順序（哪張牌在哪一批發出），只提供給呈現使用，不是實際寫回權威狀態
                     // 的手牌順序——實際寫回的是下面整理過的 organizedState，讓後續所有讀取 Hand.tiles
                     // 的地方（例如摸牌後的重新呈現）自然維持排序，不需要每個呼叫點各自重新整理一次，
                     // 見 HandSortPreferenceStore KDoc。
@@ -152,15 +152,15 @@ class StartGameUseCase(
         }
         // 桌上由規則擺放的物件跟牌牆同時更新，緊接在 publishWallStructure 之後呼叫；開局時也要呼叫，
         // 確保上一場殘留的物件被清乾淨。
-        presentationPublisher.publishTablePropsUpdated(roomId)
+        presentationPublisher.publishRuleStateUpdated(roomId)
         presentationPublisher.publishRoundInfoUpdated(roomId, tableState)
-        // 翻牌完成那一刻起的最終落地格位——tableState 此時已經是整理過的順序（見上方 organizedState），
-        // 跟決定發牌動畫節奏本身的 startOutcome.dealOrderHandTileIdsBySeatIndex 分開，見
-        // MahjongInitialDealPresentation KDoc。
+        // 發牌完成後的最終牌序——tableState 此時已經是整理過的順序（見上方 organizedState），
+        // 與發牌順序 startOutcome.dealOrderHandTileIdsBySeatIndex 分開，見
+        // GamePresentationPublisher.publishInitialDeal KDoc。
         val postFlipHandTileIdsBySeatIndex = tableState.players.withIndex().associate { (seatIndex, player) ->
             seatIndex to player.hand.tiles.map { tile -> tile.id }
         }
-        presentationPublisher.publishInitialDealAnimation(
+        presentationPublisher.publishInitialDeal(
             roomId,
             startOutcome.dealOrderHandTileIdsBySeatIndex,
             postFlipHandTileIdsBySeatIndex,
@@ -175,8 +175,8 @@ class StartGameUseCase(
     }
 
     /**
-     * `update` 區塊內部使用的中繼結果，讓 [dealOrderHandTileIdsBySeatIndex]（發牌動畫本身該用的原始
-     * 時間軸順序，在 [initializationResult] 的手牌已經被整理過之後就無法再從它反推出來）能跟著
+     * `update` 區塊內部使用的中繼結果，讓 [dealOrderHandTileIdsBySeatIndex]（發牌順序，在
+     * [initializationResult] 的手牌已經被整理過之後就無法再從它反推出來）能跟著
      * [initializationResult] 一起帶出 `authoritativeStateStore.update` 的作用域。
      */
     private data class StartGameOutcome(

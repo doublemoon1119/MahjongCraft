@@ -172,12 +172,12 @@ class DrawTileUseCaseTest {
 
         fixtures.useCase(gameId, currentPlayerId)
 
-        val published = fixtures.presentationPublisher.getPublishedPlayerArea(gameId)
+        val published = fixtures.presentationPublisher.getPublishedPlayerTiles(gameId)
         assertNotNull(published)
         assertEquals(0, published.seatIndex)
         assertEquals(1, published.standingTileIds.size)
         assertEquals(drawnTile.id, published.drawnTileId)
-        assertTrue(published.animateDrawnTile)
+        assertTrue(published.isNewlyDrawn)
     }
 
     /**

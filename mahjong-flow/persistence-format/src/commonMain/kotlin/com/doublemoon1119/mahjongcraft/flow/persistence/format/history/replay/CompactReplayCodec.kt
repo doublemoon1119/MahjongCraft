@@ -216,7 +216,7 @@ object CompactReplayCodec {
      * 解碼精簡 Replay 的逐交易遊戲內容投影。
      *
      * 此方法只重建查閱所需的投影，不重新執行規則、不重建實體牌 UUID，亦不還原
-     * 實體牌牆布局或逐 tick 動畫。
+     * 實體牌牆布局或逐幀呈現。
      *
      * @param document [encodeCompact] 產生的 Replay 文件。
      * @return 每局依交易順序排列的投影、語意事實與新牌宣告。
