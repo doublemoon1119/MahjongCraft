@@ -34,6 +34,15 @@
 - Comments and KDoc may name a fully qualified declaration when the package itself is relevant to the explanation;
   otherwise, use a resolvable documentation link or short name.
 
+### Logging Conventions
+
+- Fabric code creates loggers with `mahjongCraftLogger(Owner::class)` from the `platform.fabric.logging` package
+  instead of calling `LoggerFactory.getLogger` directly. The logger is named `MahjongCraft/<OwnerClass>`, without
+  dots, so logs that print only the last segment of a logger name still show the mod and the class.
+- Declare the logger as `private val logger`. Do not use other names such as `LOGGER`.
+- Declare it as an instance member by default. Put it in the companion object only when the class creates many
+  instances (for example, one entity per tile) or when functions in the companion object also log.
+
 ## Before Committing
 
 - Run `./gradlew build` — it compiles, tests, and lints (ktlint, `intellij_idea` code style per
