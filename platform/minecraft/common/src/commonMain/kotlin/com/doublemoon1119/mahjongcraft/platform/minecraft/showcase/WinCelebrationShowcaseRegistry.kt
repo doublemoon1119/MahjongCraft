@@ -4,10 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInWinCelebrat
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftShowcaseKeys
 
-/** 沒有對應定義的展示理由使用的通用展示 key。 */
-const val GENERIC_WIN_CELEBRATION_SHOWCASE_KEY: String = "${MinecraftModMetadata.MOD_ID}:generic"
-
-/** 宣告式胡牌展示定義註冊中心。 */
+/** 宣告式胡牌展示定義註冊中心；展示理由選不出已登記的定義時，該位贏家不播放展示。 */
 interface WinCelebrationShowcaseRegistry {
     /** 目前已登記 cue key 的快照。 */
     val registrationKeys: Set<String> get() = cueKeys.toSet()
@@ -38,6 +35,16 @@ interface WinCelebrationShowcaseRegistry {
         .mapNotNull { (index, id) -> find(id)?.let { index to it } }
         .maxWithOrNull(compareBy<Pair<Int, WinCelebrationShowcaseDefinition>> { it.second.priority }.thenByDescending { it.first })
         ?.second
+
+    /**
+     * 本局在胡牌後繼續時，這次胡牌的展示是否要讓仍在本局中的玩家等它播完。
+     *
+     * @param cueIdsByWinner 每位贏家的展示理由。
+     * @return 任何一位贏家選出的定義要求等待時為 `true`；選不出定義的贏家不播放展示，不影響結果。
+     */
+    fun pausesContinuingRound(cueIdsByWinner: List<List<String>>): Boolean = cueIdsByWinner.any { cueIds ->
+        select(cueIds)?.pausesContinuingRound == true
+    }
 }
 
 /** [WinCelebrationShowcaseRegistry] 的記憶體實作。 */
@@ -61,14 +68,14 @@ class WinCelebrationShowcaseRegistryImpl : WinCelebrationShowcaseRegistry {
     override fun find(cueKey: String): WinCelebrationShowcaseDefinition? = definitions[cueKey]
 }
 
-/** 註冊所有內建役滿展示定義。 */
+/** 註冊所有內建日麻役滿展示定義；標題 key 與貼圖都放在日麻專屬的命名下。 */
 fun WinCelebrationShowcaseRegistry.registerBuiltInWinCelebrationShowcases() {
     BUILT_IN_CUES.forEachIndexed { index, cue ->
         register(
             WinCelebrationShowcaseDefinition(
                 cueKey = BuiltInWinCelebrationCueIds.riichiYakuman(cue),
-                titleTranslationKey = MinecraftShowcaseKeys.fromCuePath(cue),
-                titleImageResourceId = "${MinecraftModMetadata.MOD_ID}:textures/showcase/$cue.png",
+                titleTranslationKey = MinecraftShowcaseKeys.riichiYakuman(cue),
+                titleImageResourceId = "${MinecraftModMetadata.MOD_ID}:textures/showcase/riichi/$cue.png",
                 palette = ShowcasePalette(primary = 0xFFFFD45A.toInt(), secondary = 0xFFC32128.toInt(), accent = 0xFFFFFFFF.toInt()),
                 priority = BUILT_IN_CUES.size - index,
             ),
@@ -76,7 +83,7 @@ fun WinCelebrationShowcaseRegistry.registerBuiltInWinCelebrationShowcases() {
     }
 }
 
-/** 內建役滿 cue 的素材名稱，依挑選優先序由高到低排列。 */
+/** 內建日麻役滿 cue 的役種名稱，依挑選優先序由高到低排列。 */
 private val BUILT_IN_CUES = listOf(
     "kokushi_musou_13",
     "churen_poto_9",

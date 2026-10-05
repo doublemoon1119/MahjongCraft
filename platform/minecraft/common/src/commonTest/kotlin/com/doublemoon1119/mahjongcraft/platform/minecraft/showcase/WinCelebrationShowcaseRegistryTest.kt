@@ -13,7 +13,7 @@ class WinCelebrationShowcaseRegistryTest {
     fun registersBuiltInsWithEightSecondShowcase() {
         val registry = WinCelebrationShowcaseRegistryImpl().apply { registerBuiltInWinCelebrationShowcases() }
 
-        assertEquals(160, assertNotNull(registry.find("mahjongcraft:kokushi_musou")).showcaseDurationTicks)
+        assertEquals(160, assertNotNull(registry.find("mahjongcraft:riichi/yakuman/kokushi_musou")).showcaseDurationTicks)
     }
 
     /** cue key 快照同時包含內建與第三方 definition，且不允許呼叫端修改 registry。 */
@@ -25,7 +25,7 @@ class WinCelebrationShowcaseRegistryTest {
         }
         val snapshot = registry.cueKeys
 
-        assertEquals(true, "mahjongcraft:kokushi_musou" in snapshot)
+        assertEquals(true, "mahjongcraft:riichi/yakuman/kokushi_musou" in snapshot)
         assertEquals(true, "test:cue" in snapshot)
         registry.register(
             WinCelebrationShowcaseDefinition(
@@ -52,15 +52,56 @@ class WinCelebrationShowcaseRegistryTest {
         val registry = WinCelebrationShowcaseRegistryImpl().apply { registerBuiltInWinCelebrationShowcases() }
 
         assertEquals(
-            "mahjongcraft:daisuushii",
-            registry.select(listOf("mahjongcraft:daisangen", "mahjongcraft:daisuushii"))?.cueKey,
+            "mahjongcraft:riichi/yakuman/daisuushii",
+            registry.select(listOf("mahjongcraft:riichi/yakuman/daisangen", "mahjongcraft:riichi/yakuman/daisuushii"))?.cueKey,
         )
         assertEquals(
-            "mahjongcraft:kokushi_musou",
-            registry.select(listOf("unknown:cue", "mahjongcraft:kokushi_musou"))?.cueKey,
+            "mahjongcraft:riichi/yakuman/kokushi_musou",
+            registry.select(listOf("unknown:cue", "mahjongcraft:riichi/yakuman/kokushi_musou"))?.cueKey,
         )
         assertNull(registry.select(listOf("unknown:cue")))
         assertNull(registry.select(emptyList()))
+    }
+
+    /** 內建日麻展示的 ID、標題 key 與貼圖都放在日麻專屬的命名下。 */
+    @Test
+    fun scopesBuiltInsToRiichi() {
+        val registry = WinCelebrationShowcaseRegistryImpl().apply { registerBuiltInWinCelebrationShowcases() }
+        val definition = assertNotNull(registry.find("mahjongcraft:riichi/yakuman/daisuushii"))
+
+        assertEquals("mahjongcraft.showcase.riichi.daisuushii", definition.titleTranslationKey)
+        assertEquals("mahjongcraft:textures/showcase/riichi/daisuushii.png", definition.titleImageResourceId)
+        assertEquals(true, registry.cueKeys.all { it.startsWith("mahjongcraft:riichi/yakuman/") })
+    }
+
+    /** 沒有指定時，展示會讓仍在本局中的玩家等它播完；內建展示全部維持等待。 */
+    @Test
+    fun pausesContinuingRoundByDefault() {
+        val registry = WinCelebrationShowcaseRegistryImpl().apply { registerBuiltInWinCelebrationShowcases() }
+
+        assertEquals(true, definition().pausesContinuingRound)
+        assertEquals(true, registry.pausesContinuingRound(listOf(listOf("mahjongcraft:riichi/yakuman/daisangen"))))
+    }
+
+    /** 只有不要求等待的展示時不暫停；任何一位贏家的展示要求等待時就暫停。 */
+    @Test
+    fun pausesContinuingRoundWhenAnySelectedDefinitionRequiresIt() {
+        val registry = WinCelebrationShowcaseRegistryImpl().apply {
+            register(definition(cueKey = "test:quiet", pausesContinuingRound = false))
+            register(definition(cueKey = "test:loud"))
+        }
+
+        assertEquals(false, registry.pausesContinuingRound(listOf(listOf("test:quiet"), emptyList())))
+        assertEquals(true, registry.pausesContinuingRound(listOf(listOf("test:quiet"), listOf("test:loud"))))
+        assertEquals(false, registry.pausesContinuingRound(listOf(emptyList(), emptyList())))
+    }
+
+    /** 展示理由選不出已登記的定義時不播放展示，也不暫停。 */
+    @Test
+    fun doesNotPauseContinuingRoundForUnregisteredCues() {
+        val registry = WinCelebrationShowcaseRegistryImpl().apply { registerBuiltInWinCelebrationShowcases() }
+
+        assertEquals(false, registry.pausesContinuingRound(listOf(listOf("unknown:cue"))))
     }
 
     /** 優先序相同時取規則給的順序中較前者。 */
@@ -85,11 +126,13 @@ class WinCelebrationShowcaseRegistryTest {
     private fun definition(
         durationTicks: Int = 160,
         cueKey: String = "test:cue",
+        pausesContinuingRound: Boolean = true,
     ): WinCelebrationShowcaseDefinition = WinCelebrationShowcaseDefinition(
         cueKey = cueKey,
         titleTranslationKey = "showcase.test.cue",
         titleImageResourceId = "test:textures/showcase/cue.png",
         palette = ShowcasePalette(primary = -1, secondary = -1, accent = -1),
         showcaseDurationTicks = durationTicks,
+        pausesContinuingRound = pausesContinuingRound,
     )
 }

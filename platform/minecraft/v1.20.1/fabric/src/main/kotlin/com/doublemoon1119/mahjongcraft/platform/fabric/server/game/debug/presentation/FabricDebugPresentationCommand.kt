@@ -42,7 +42,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugVirtualTableLayoutFactory
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.TileAnimationSteps
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.GENERIC_WIN_CELEBRATION_SHOWCASE_KEY
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.ALL_TILE_ASSET_KEYS
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongMeldTileGroup
@@ -1003,9 +1002,8 @@ internal fun buildShowcaseCueSuggestions(
     val separatorIndex = if (allowMultiple) remaining.lastIndexOf(',') else -1
     val completedPrefix = remaining.takeIf { separatorIndex >= 0 }?.substring(0, separatorIndex + 1).orEmpty()
     val currentToken = remaining.substring(separatorIndex + 1)
-    return (cueKeys + GENERIC_WIN_CELEBRATION_SHOWCASE_KEY)
+    return cueKeys
         .asSequence()
-        .distinct()
         .filter { candidate -> candidate.startsWith(currentToken, ignoreCase = true) }
         .sorted()
         .map { candidate -> completedPrefix + candidate }

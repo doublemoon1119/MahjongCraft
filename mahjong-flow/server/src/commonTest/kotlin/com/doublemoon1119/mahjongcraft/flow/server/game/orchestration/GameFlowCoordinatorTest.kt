@@ -677,7 +677,7 @@ class GameFlowCoordinatorTest {
         assertTrue(published.roundContinues, "The round continues, so most of this presentation must not block.")
         val celebration = assertNotNull(published.celebration)
         assertEquals(
-            listOf("mahjongcraft:daisangen"),
+            listOf("mahjongcraft:riichi/yakuman/daisangen"),
             celebration.winners.single().cueIds,
             "Daisangen is a yakuman, so the celebration must carry its showcase reason.",
         )

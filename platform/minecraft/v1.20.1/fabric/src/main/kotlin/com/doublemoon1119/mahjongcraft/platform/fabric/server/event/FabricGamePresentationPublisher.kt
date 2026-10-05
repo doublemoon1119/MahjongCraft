@@ -50,6 +50,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.seatIndexToTableS
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.aiPlayerDisplayName
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresentationFactory
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresenter
@@ -810,8 +811,9 @@ class FabricGamePresentationPublisher(
      *
      * 阻塞策略（見 [WinPresentationRequest] KDoc）：
      * - `roundContinues == false`：整段獨佔全桌，維持既有行為。
-     * - `roundContinues == true`：只有役滿 showcase 那一段延展整桌共用時間軸（暫停玩家／AI／強制自動
-     *   操作／決策計時器）；一般倒牌特效與**整個結算面板**都只延展中途胡牌時間軸，不阻塞其他人。
+     * - `roundContinues == true`：只有選出的展示定義要求等待（[WinCelebrationShowcaseDefinition.pausesContinuingRound]）
+     *   時，showcase 那一段才延展整桌共用時間軸（暫停玩家／AI／強制自動操作／決策計時器）；一般倒牌特效、
+     *   不要求等待的 showcase 與**整個結算面板**都只延展中途胡牌時間軸，不阻塞其他人。
      *
      * `roundContinues == true` 時，整段結束後一律把贏家真實手牌收尾（恢復可見、蓋成牌背）——即使這次
      * 兩個請求都是 null（`NONE` 模式）也一樣，否則已完成玩家的手牌會一直立在桌上。
@@ -821,7 +823,8 @@ class FabricGamePresentationPublisher(
         // 整段流程（阻塞判定、兩條時間軸的切分、收尾恢復可見的範圍）才會一致，見
         // DebugWinShowcaseOverride KDoc。正式產物裡這一步永遠是原樣回傳。
         val effectiveRequest = request.copy(celebration = debugWinShowcaseOverride.applyTo(gameId, request.celebration))
-        val blocksTable = !effectiveRequest.roundContinues || effectiveRequest.celebration.hasShowcase
+        val pausesContinuingRound = showcaseScheduler.pausesContinuingRound(effectiveRequest.celebration)
+        val blocksTable = !effectiveRequest.roundContinues || pausesContinuingRound
         publish(gameId, "publishWinPresentation", blocksTable) { resolved, state, startAt ->
             var cursor = startAt
             val celebration = runCelebration(gameId, resolved, state, effectiveRequest.celebration, cursor)
@@ -830,8 +833,8 @@ class FabricGamePresentationPublisher(
             settlementEnd?.let { cursor = it }
 
             if (effectiveRequest.roundContinues) {
-                // 只有需要觀看的役滿 showcase 才擋住全桌；其餘（含結算面板）走不阻塞的那條時間軸。
-                celebration?.showcaseEndGameTime?.let { resolved.table.extendPresentationUntil(it) }
+                // 只有要求等待的 showcase 才擋住全桌；其餘（含結算面板）走不阻塞的那條時間軸。
+                if (pausesContinuingRound) celebration?.showcaseEndGameTime?.let { resolved.table.extendPresentationUntil(it) }
                 resolved.table.extendContinuingWinPresentationUntil(cursor)
                 // 這一步同時替所有牽涉到的真實牌建立「動畫不阻塞全桌」lease。lease 涵蓋整段演出（含前面
                 // 已經排好的理牌／倒牌動畫），在這裡才套用是安全的：整個 block 在伺服器主執行緒上一次
@@ -1022,7 +1025,7 @@ class FabricGamePresentationPublisher(
                 startGameTime = effectStartGameTime,
                 endGameTime = effectEndGameTime,
             )
-            val eligibleWings = request.winners.filter { it.cueIds.isNotEmpty() }.map { requestedWinner ->
+            val eligibleWings = request.winners.filter { showcaseScheduler.hasShowcase(it.cueIds) }.map { requestedWinner ->
                 FabricWinCelebrationShowcaseScheduler.Wing(
                     seatIndex = requestedWinner.seatIndex,
                     cueIds = requestedWinner.cueIds,
@@ -1228,10 +1231,3 @@ class FabricGamePresentationPublisher(
         const val ROLL_SEQUENCE_ROUND_MULTIPLIER: Long = 1_000_000L
     }
 }
-
-/**
- * 這次胡牌是否有贏家帶著額外展示理由；有理由時一定會播放展示（沒有對應定義時使用通用展示），
- * 中途胡牌時這一段需要暫停全桌讓所有人看完。
- */
-private val WinCelebrationRequest.hasShowcase: Boolean
-    get() = winners.any { it.cueIds.isNotEmpty() }

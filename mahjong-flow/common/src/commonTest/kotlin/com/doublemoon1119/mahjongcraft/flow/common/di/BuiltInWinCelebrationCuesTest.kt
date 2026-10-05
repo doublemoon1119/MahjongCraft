@@ -17,7 +17,7 @@ class BuiltInWinCelebrationCuesTest {
     fun resolvesNaturalYakuman() {
         val result = resultOf(YakuResult.yakuman(YakuType.KokushiMusou))
 
-        assertEquals(listOf("mahjongcraft:kokushi_musou"), registry.resolve(RIICHI_RULE_MODULE_ID, result))
+        assertEquals(listOf("mahjongcraft:riichi/yakuman/kokushi_musou"), registry.resolve(RIICHI_RULE_MODULE_ID, result))
     }
 
     /** 累計役滿沒有自然役滿役種，因此沒有展示理由。 */
@@ -43,7 +43,7 @@ class BuiltInWinCelebrationCuesTest {
         )
 
         assertEquals(
-            listOf("mahjongcraft:suuankou_tanki", "mahjongcraft:daisangen", "mahjongcraft:daisuushii"),
+            listOf("mahjongcraft:riichi/yakuman/suuankou_tanki", "mahjongcraft:riichi/yakuman/daisangen", "mahjongcraft:riichi/yakuman/daisuushii"),
             registry.resolve(RIICHI_RULE_MODULE_ID, result),
         )
     }

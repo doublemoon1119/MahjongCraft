@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationRequest
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ShowcaseCardSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ShowcaseSoundSnapshot
@@ -9,7 +10,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationShow
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.PersistentTableOverlayCoordinator
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
-import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.GENERIC_WIN_CELEBRATION_SHOWCASE_KEY
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPlacement
 import net.minecraft.server.world.ServerWorld
@@ -40,7 +40,32 @@ class FabricWinCelebrationShowcaseScheduler(
     data class Wing(val seatIndex: Int, val cueIds: List<String>, val tileIdsAndAssets: List<Pair<Uuid, String>>)
 
     /**
+     * [cueIds] 是否選得出已登記的展示定義；選不出時這位贏家不播放展示，並對同一組理由記錄一次警告。
+     *
+     * @param cueIds 規則給這位贏家的展示理由。
+     * @return 可以播放展示時為 `true`。
+     */
+    fun hasShowcase(cueIds: List<String>): Boolean {
+        if (cueIds.isEmpty()) return false
+        val found = showcaseRegistry.select(cueIds) != null
+        if (!found && warnedUnknownCues.add(cueIds.toString())) {
+            logger.warn("Unknown win celebration showcase cues {}; skipping the showcase", cueIds)
+        }
+        return found
+    }
+
+    /**
+     * 本局在胡牌後繼續時，[celebration] 的 showcase 是否要讓仍在本局中的玩家等它播完。
+     *
+     * @param celebration 這次胡牌的展示請求。
+     * @return 見 [WinCelebrationShowcaseRegistry.pausesContinuingRound]。
+     */
+    fun pausesContinuingRound(celebration: WinCelebrationRequest): Boolean = showcaseRegistry.pausesContinuingRound(celebration.winners.map { it.cueIds })
+
+    /**
      * 生成共享舞台；成功時隱藏局況顯示到舞台結束，並讓真實牌在 stage 起點交接為隱形。
+     *
+     * [wings] 只能包含 [hasShowcase] 為 `true` 的贏家。
      */
     fun schedule(
         world: ServerWorld,
@@ -53,8 +78,10 @@ class FabricWinCelebrationShowcaseScheduler(
         wings: List<Wing>,
     ): Long? {
         if (wings.isEmpty()) return null
-        val definitions = wings.map { wing -> showcaseRegistry.select(wing.cueIds) }
-        val showcaseDurationTicks = definitions.maxOf { it?.showcaseDurationTicks ?: DEFAULT_SHOWCASE_DURATION_TICKS }
+        val definitions = wings.map { wing ->
+            requireNotNull(showcaseRegistry.select(wing.cueIds)) { "Showcase wing has no registered definition: ${wing.cueIds}" }
+        }
+        val showcaseDurationTicks = definitions.maxOf { it.showcaseDurationTicks }
         val endGameTime = startGameTime + WinCelebrationShowcaseEntity.totalDurationTicks(showcaseDurationTicks)
         val winningTile = world.getEntity(winningTileId.toJavaUuid()) as? MahjongTileEntity ?: return null
         val winningTileSnapshot = ShowcaseWinningTileSnapshot(
@@ -65,13 +92,9 @@ class FabricWinCelebrationShowcaseScheduler(
             startYaw = winningTile.yaw,
         )
         val snapshots = wings.mapIndexed { wingIndex, wing ->
-            val cue = definitions[wingIndex]?.cueKey ?: GENERIC_WIN_CELEBRATION_SHOWCASE_KEY
-            if (definitions[wingIndex] == null && wing.cueIds.isNotEmpty() && warnedUnknownCues.add(wing.cueIds.toString())) {
-                logger.warn("Unknown win celebration showcase cues {}; using generic fallback", wing.cueIds)
-            }
             ShowcaseWingSnapshot(
                 seatIndex = wing.seatIndex,
-                cueKey = cue,
+                cueKey = definitions[wingIndex].cueKey,
                 cards = wing.tileIdsAndAssets.mapIndexedNotNull { order, (tileId, asset) ->
                     val tile = world.getEntity(tileId.toJavaUuid()) as? MahjongTileEntity ?: return@mapIndexedNotNull null
                     ShowcaseCardSnapshot(
@@ -87,7 +110,7 @@ class FabricWinCelebrationShowcaseScheduler(
             )
         }
         if (snapshots.any { it.cards.isEmpty() }) return null
-        val extraSounds = definitions.filterNotNull()
+        val extraSounds = definitions
             .flatMap { it.extraSounds }
             .distinct()
             .map { ShowcaseSoundSnapshot(it.soundId, it.tickOffset, it.volume, it.pitch) }
@@ -104,9 +127,5 @@ class FabricWinCelebrationShowcaseScheduler(
         }
         overlays.hideUntil(world, tableId, controllerPos, endGameTime)
         return endGameTime
-    }
-
-    private companion object {
-        const val DEFAULT_SHOWCASE_DURATION_TICKS = 160
     }
 }

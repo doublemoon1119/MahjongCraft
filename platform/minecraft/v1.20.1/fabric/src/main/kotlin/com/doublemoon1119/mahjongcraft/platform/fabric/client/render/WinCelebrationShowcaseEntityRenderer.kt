@@ -22,12 +22,9 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationCine
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationShowcaseEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongTileItem
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
-import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.GENERIC_WIN_CELEBRATION_SHOWCASE_KEY
-import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.ShowcasePalette
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.ShowcaseVisualLayer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftShowcaseKeys
 import net.minecraft.block.Blocks
 import net.minecraft.client.font.TextRenderer
 import net.minecraft.client.model.ModelPart
@@ -834,8 +831,7 @@ class WinCelebrationShowcaseEntityRenderer(
         consumers: VertexConsumerProvider,
         light: Int,
     ) {
-        val cue = entity.wings.firstOrNull()?.cueKey.orEmpty()
-        val definition = showcaseRegistry.find(cue) ?: fallbackDefinition(cue)
+        val definition = entity.wings.firstNotNullOfOrNull { showcaseRegistry.find(it.cueKey) }
         val fade = when {
             elapsed < fadeStart -> 1.0
             else -> 1.0 - ((elapsed - fadeStart) / (duration - fadeStart)).coerceIn(0.0, 1.0)
@@ -843,7 +839,7 @@ class WinCelebrationShowcaseEntityRenderer(
         val buffer = consumers.getBuffer(RenderLayer.getLightning())
         val matrix = matrices.peek().positionMatrix
         // 內建舞台不繪製中央 Halo；registry 仍保留該宣告值，讓 extension API 維持相容。
-        if (elapsed >= SHOWCASE_START_TICK && ShowcaseVisualLayer.SparkField in definition.layers) {
+        if (definition != null && elapsed >= SHOWCASE_START_TICK && ShowcaseVisualLayer.SparkField in definition.layers) {
             repeat(18) { index ->
                 val phase = elapsed * 0.035 + seededUnit(entity.animationSeed, index * 47) * PI * 2.0
                 val radius = 0.45 + seededUnit(entity.animationSeed, index * 83) * 0.65
@@ -854,7 +850,7 @@ class WinCelebrationShowcaseEntityRenderer(
             }
         }
         entity.wings.forEachIndexed { index, wing ->
-            val wingDefinition = showcaseRegistry.find(wing.cueKey) ?: fallbackDefinition(wing.cueKey)
+            val wingDefinition = showcaseRegistry.find(wing.cueKey) ?: return@forEachIndexed
             renderTitleImage(
                 wingDefinition,
                 elapsed,
@@ -887,7 +883,7 @@ class WinCelebrationShowcaseEntityRenderer(
         matrices: MatrixStack,
         consumers: VertexConsumerProvider,
     ) {
-        val texture = Identifier.tryParse(definition.titleImageResourceId) ?: FALLBACK_TITLE_IMAGE
+        val texture = Identifier.tryParse(definition.titleImageResourceId) ?: return
         matrices.push()
         val offset = Vector3f(localCenterX.toFloat(), 0.0f, 0.0f).rotate(billboardRotation)
         val reveal = ((elapsed - TITLE_REVEAL_START_TICK) / (SHOWCASE_START_TICK - TITLE_REVEAL_START_TICK)).coerceIn(0.0, 1.0)
@@ -947,13 +943,6 @@ class WinCelebrationShowcaseEntityRenderer(
     private fun tileStack(assetKey: String): ItemStack = tileStacks.getOrPut(assetKey) {
         ItemStack(ModItems.MAHJONG_TILE).also { MahjongTileItem.writeTileAssetKey(it, assetKey) }
     }
-
-    private fun fallbackDefinition(cue: String) = WinCelebrationShowcaseDefinition(
-        cueKey = cue.ifBlank { GENERIC_WIN_CELEBRATION_SHOWCASE_KEY },
-        titleTranslationKey = MinecraftShowcaseKeys.GENERIC,
-        titleImageResourceId = FALLBACK_TITLE_IMAGE.toString(),
-        palette = ShowcasePalette(0xFFFFD45A.toInt(), 0xFFC32128.toInt(), -1),
-    )
 
     override fun getTexture(entity: WinCelebrationShowcaseEntity): Identifier? = null
 
@@ -1049,7 +1038,6 @@ class WinCelebrationShowcaseEntityRenderer(
         val ELYTRA_TEXTURE = Identifier("minecraft", "textures/entity/elytra.png")
         val GLOW_TEXTURE = Identifier("mahjongcraft", "textures/showcase/glow.png")
         val SMOKE_TEXTURES = Array(12) { frame -> Identifier("minecraft", "textures/particle/big_smoke_$frame.png") }
-        val FALLBACK_TITLE_IMAGE = Identifier("mahjongcraft", "textures/showcase/generic.png")
         const val FULL_BRIGHT_LIGHT = 15728880
         const val ARMING_START_TICK = 0.0
         const val LIFT_END_TICK = 7.0

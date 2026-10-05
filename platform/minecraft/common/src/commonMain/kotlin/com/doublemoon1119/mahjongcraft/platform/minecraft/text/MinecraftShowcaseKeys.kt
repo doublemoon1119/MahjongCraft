@@ -2,33 +2,35 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.text
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 
-/** Minecraft 內建役滿 showcase 使用的 translation key 單一來源。 */
+/** Minecraft 內建 showcase 使用的 translation key 單一來源；規則專屬的標題依規則分開命名。 */
 object MinecraftShowcaseKeys {
     /** 所有 MahjongCraft showcase translation key 的共用前綴。 */
     private const val PREFIX = MinecraftModMetadata.MOD_ID + ".showcase."
 
-    const val CHIIHOU = PREFIX + "chiihou"
-    const val CHINROUTOU = PREFIX + "chinroutou"
-    const val CHUREN_POTO = PREFIX + "churen_poto"
-    const val CHUREN_POTO_9 = PREFIX + "churen_poto_9"
-    const val DAISANGEN = PREFIX + "daisangen"
-    const val DAISUUSHII = PREFIX + "daisuushii"
-    const val GENERIC = PREFIX + "generic"
-    const val KOKUSHI_MUSOU = PREFIX + "kokushi_musou"
-    const val KOKUSHI_MUSOU_13 = PREFIX + "kokushi_musou_13"
-    const val RYUUUIISOU = PREFIX + "ryuuuiisou"
-    const val SHOUSUUSHI = PREFIX + "shousuushi"
-    const val SUKANTSU = PREFIX + "sukantsu"
-    const val SUUANKOU = PREFIX + "suuankou"
-    const val SUUANKOU_TANKI = PREFIX + "suuankou_tanki"
-    const val TENHOU = PREFIX + "tenhou"
-    const val TSUUIISOU = PREFIX + "tsuuiisou"
+    /** 日麻役滿 showcase 標題 key 的共用前綴。 */
+    private const val RIICHI_PREFIX = PREFIX + "riichi."
 
-    /** 由內建 cue path 取得對應的 showcase 標題 key。 */
-    fun fromCuePath(path: String): String {
+    const val CHIIHOU = RIICHI_PREFIX + "chiihou"
+    const val CHINROUTOU = RIICHI_PREFIX + "chinroutou"
+    const val CHUREN_POTO = RIICHI_PREFIX + "churen_poto"
+    const val CHUREN_POTO_9 = RIICHI_PREFIX + "churen_poto_9"
+    const val DAISANGEN = RIICHI_PREFIX + "daisangen"
+    const val DAISUUSHII = RIICHI_PREFIX + "daisuushii"
+    const val KOKUSHI_MUSOU = RIICHI_PREFIX + "kokushi_musou"
+    const val KOKUSHI_MUSOU_13 = RIICHI_PREFIX + "kokushi_musou_13"
+    const val RYUUUIISOU = RIICHI_PREFIX + "ryuuuiisou"
+    const val SHOUSUUSHI = RIICHI_PREFIX + "shousuushi"
+    const val SUKANTSU = RIICHI_PREFIX + "sukantsu"
+    const val SUUANKOU = RIICHI_PREFIX + "suuankou"
+    const val SUUANKOU_TANKI = RIICHI_PREFIX + "suuankou_tanki"
+    const val TENHOU = RIICHI_PREFIX + "tenhou"
+    const val TSUUIISOU = RIICHI_PREFIX + "tsuuiisou"
+
+    /** 由日麻役滿的役種名稱取得對應的 showcase 標題 key。 */
+    fun riichiYakuman(path: String): String {
         require(path.isNotBlank()) { "Showcase cue path must not be blank" }
-        require(':' !in path && '.' !in path) { "Showcase cue path must not contain namespace separators: $path" }
-        return PREFIX + path
+        require(':' !in path && '.' !in path && '/' !in path) { "Showcase cue path must not contain namespace separators: $path" }
+        return RIICHI_PREFIX + path
     }
 
     /** Minecraft 語系資源必須提供的全部內建 showcase key。 */
@@ -39,7 +41,6 @@ object MinecraftShowcaseKeys {
         CHUREN_POTO_9,
         DAISANGEN,
         DAISUUSHII,
-        GENERIC,
         KOKUSHI_MUSOU,
         KOKUSHI_MUSOU_13,
         RYUUUIISOU,

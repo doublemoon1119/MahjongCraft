@@ -40,16 +40,16 @@ class FabricDebugPresentationCommandTest {
         )
     }
 
-    /** 所有 cue 一律使用完整 namespace，generic fallback 也不例外。 */
+    /** 只列出已登記的 cue，一律使用完整 namespace。 */
     @Test
-    fun `lists built-in extension and generic cues`() {
+    fun `lists registered built-in and extension cues`() {
         val suggestions = buildShowcaseCueSuggestions(
             remaining = "",
             cueKeys = setOf("mahjongcraft:kokushi_musou", "example:custom"),
             allowMultiple = false,
         )
 
-        assertEquals(listOf("example:custom", "mahjongcraft:generic", "mahjongcraft:kokushi_musou"), suggestions)
+        assertEquals(listOf("example:custom", "mahjongcraft:kokushi_musou"), suggestions)
     }
 
     /** 輸入 namespace 時改用完整 cue key 補全。 */
