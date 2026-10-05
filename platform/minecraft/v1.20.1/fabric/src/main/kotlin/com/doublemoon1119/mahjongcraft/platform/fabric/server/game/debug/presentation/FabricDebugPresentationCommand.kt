@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presen
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInExhaustiveDrawSettlementStatusIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInWinCelebrationCueIds
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementHandPresentation
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawHandDisclosure
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementPlayerPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.MatchSettlementPlayerPresentation
@@ -537,13 +537,13 @@ class FabricDebugPresentationCommand(
         }
         val revealedAssetsById = mutableMapOf<Uuid, String>()
         val players = List(playerCount) { seat ->
-            val handPresentation = when {
-                proof && seat == 0 -> ExhaustiveDrawSettlementHandPresentation.REVEAL_PROOF
-                seat < tenpaiCount -> ExhaustiveDrawSettlementHandPresentation.REVEAL_TENPAI
-                else -> ExhaustiveDrawSettlementHandPresentation.CONCEAL
+            val handDisclosure = when {
+                proof && seat == 0 -> ExhaustiveDrawHandDisclosure.PROOF
+                seat < tenpaiCount -> ExhaustiveDrawHandDisclosure.TENPAI
+                else -> ExhaustiveDrawHandDisclosure.CONCEALED
             }
             val handTiles = previewTilesBySeat[seat]
-            if (handPresentation != ExhaustiveDrawSettlementHandPresentation.CONCEAL) {
+            if (handDisclosure != ExhaustiveDrawHandDisclosure.CONCEALED) {
                 handTiles.forEach { (tile, asset) -> revealedAssetsById[tile.uuid.toKotlinUuid()] = asset }
             }
             ExhaustiveDrawSettlementPlayerPresentation(
@@ -558,8 +558,8 @@ class FabricDebugPresentationCommand(
                 ),
                 seatWind = Wind.entries[seat],
                 handTileIds = handTiles.map { it.first.uuid.toKotlinUuid() },
-                handPresentation = handPresentation,
-                revealedHandTileIds = if (handPresentation == ExhaustiveDrawSettlementHandPresentation.CONCEAL) emptyList() else handTiles.map { it.first.uuid.toKotlinUuid() },
+                handDisclosure = handDisclosure,
+                revealedHandTileIds = if (handDisclosure == ExhaustiveDrawHandDisclosure.CONCEALED) emptyList() else handTiles.map { it.first.uuid.toKotlinUuid() },
                 waitingTiles = emptyList(),
                 statusId = when {
                     proof && seat == 0 -> BuiltInExhaustiveDrawSettlementStatusIds.DRAW_DECLARATION
@@ -576,7 +576,7 @@ class FabricDebugPresentationCommand(
             tableFacing = layout.tableFacing,
             placement = layout.showcaseStagePlacement(),
             request = ExhaustiveDrawSettlementPresentationRequest(reasonId, players),
-            waitingTileAssetsBySeat = players.filter { it.handPresentation == ExhaustiveDrawSettlementHandPresentation.REVEAL_TENPAI }
+            waitingTileAssetsBySeat = players.filter { it.handDisclosure == ExhaustiveDrawHandDisclosure.TENPAI }
                 .associate { it.ranking.seatIndex to DEFAULT_WAITING_TILE_ASSETS },
             revealedTileAssetsById = revealedAssetsById,
             reservedCornerWidthsBySeat = reservedCornerWidths,

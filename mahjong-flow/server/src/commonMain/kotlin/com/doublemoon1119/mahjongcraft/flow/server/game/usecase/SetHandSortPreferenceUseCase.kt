@@ -11,7 +11,7 @@ import kotlin.uuid.Uuid
 
 /** 自動理牌偏好更新的來源意圖，決定是否允許立即整理並重新呈現手牌。 */
 enum class HandSortPreferenceUpdateMode {
-    /** 重新連線時只恢復伺服器端暫存偏好，不改動目前世界呈現。 */
+    /** 重新連線時只恢復伺服器端暫存偏好，不重新發布手牌。 */
     RESTORE,
 
     /** 玩家主動變更設定，允許在安全情況下立即整理並重新呈現手牌。 */
@@ -34,10 +34,10 @@ class SetHandSortPreferenceUseCase(
     @Provided private val presentationPublisher: GamePresentationPublisher,
 ) {
     /**
-     * 依 [mode] 更新 [enabled] 偏好；重連恢復只更新暫存值，玩家主動變更才會立即整理與發布世界呈現。
+     * 依 [mode] 更新 [enabled] 偏好；重連恢復只更新暫存值，玩家主動變更才會立即整理並重新發布手牌。
      *
-     * 重連可能發生在開局發牌動畫尚未完成時；若誤當成 [HandSortPreferenceUpdateMode.USER_CHANGE]，
-     * 一般 player-area 更新會把該玩家尚在牌牆中的手牌提前設為直立，破壞持久化動畫原本的蓋牌狀態。
+     * 重連可能發生在開局發牌尚未呈現完時；若誤當成 [HandSortPreferenceUpdateMode.USER_CHANGE]，重新發布手牌會打斷
+     * 尚未完成的開局發牌呈現。
      */
     suspend operator fun invoke(
         playerId: Uuid,

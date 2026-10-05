@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementHandPresentation
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawHandDisclosure
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ExhaustiveDrawSettlementPlayerSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ExhaustiveDrawSettlementPresentationEntity
@@ -83,9 +83,9 @@ class FabricExhaustiveDrawSettlementPresentationScheduler(
                     cornerYieldShift = cornerYieldShift,
                 )
                 TileAnimationSteps.scheduleReorder(tile, sortedPlacement, startGameTime + HAND_REORDER_START_TICK)
-                when (player.handPresentation) {
-                    ExhaustiveDrawSettlementHandPresentation.REVEAL_TENPAI,
-                    ExhaustiveDrawSettlementHandPresentation.REVEAL_PROOF,
+                when (player.handDisclosure) {
+                    ExhaustiveDrawHandDisclosure.TENPAI,
+                    ExhaustiveDrawHandDisclosure.PROOF,
                     -> {
                         revealedTileAssetsById[tileId]?.let { asset ->
                             tile.revealForPresentation(asset, endGameTime + PRESENTATION_REVEAL_GRACE_TICKS)
@@ -97,7 +97,7 @@ class FabricExhaustiveDrawSettlementPresentationScheduler(
                         )
                     }
 
-                    ExhaustiveDrawSettlementHandPresentation.CONCEAL -> {
+                    ExhaustiveDrawHandDisclosure.CONCEALED -> {
                         TileAnimationSteps.scheduleConceal(
                             tile,
                             startGameTime + HAND_LAYDOWN_START_TICK,

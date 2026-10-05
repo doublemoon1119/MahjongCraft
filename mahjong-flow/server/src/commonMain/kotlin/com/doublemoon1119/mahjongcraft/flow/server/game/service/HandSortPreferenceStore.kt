@@ -5,13 +5,13 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlin.uuid.Uuid
 
 /**
- * 記錄每位玩家「是否啟用自動整理手牌」這個純呈現偏好，不透過 [org.koin.core.annotation.Provided]
- * 的 client-only 疊加（不像牌角標籤那種純客戶端呈現），因為手牌的呈現實體是伺服器端共用的，
- * 排序結果必須由伺服器套用才會反映在實際世界座標上，見 [HandSortPreferenceStore] 使用端
- * `SetHandSortPreferenceUseCase` KDoc。
+ * 記錄每位玩家選擇的手牌排列方式：是否自動整理手牌。
  *
- * 刻意純記憶體、不接進 `AuthoritativeStateStore`：這只是呈現偏好，不是遊戲正確性狀態，伺服器重啟
- * 後回到預設值即可，玩家重新連線時 client 會自動重送一次目前的偏好。
+ * 其他玩家看得到牌的擺放順序，排列方式會影響可被讀出的資訊，因此由伺服器套用到權威手牌順序，而不是各用戶端各自
+ * 排序；套用時機見 `SetHandSortPreferenceUseCase`。
+ *
+ * 刻意純記憶體、不接進 `AuthoritativeStateStore`：伺服器重啟後回到預設值即可，玩家重新連線時用戶端會自動重送一次
+ * 目前的選擇。
  */
 @Single
 class HandSortPreferenceStore {

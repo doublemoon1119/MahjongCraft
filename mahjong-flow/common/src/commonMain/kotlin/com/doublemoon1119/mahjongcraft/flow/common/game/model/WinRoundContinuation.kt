@@ -12,7 +12,7 @@ import kotlin.uuid.Uuid
  * 這次一起成立的所有贏家，不逐位呼叫。
  *
  * 刻意不攜帶 `MahjongRuleModule.declareTsumo`／`declareRon` 算出的原始
- * `WinResolutionResult`（番數、役種等呈現細節）——
+ * `WinResolutionResult`（番數、役種等詳情）——
  * [settledTableState] 的分數與 `actionHistory` 已經是套用結算後的最終值，「本局是否結束」這個判斷
  * 只需要看結算後的桌況即可，不需要重新理解規則特有的算役細節。
  *
@@ -33,25 +33,16 @@ data class WinRoundContinuationContext(
 )
 
 /**
- * 中途胡牌的規則中立**結算面板**詳細程度。
+ * 中途胡牌（本局在胡牌後繼續）時，這次結算要提供給玩家的資訊範圍。
  *
- * 刻意只描述面板，不描述整段演出：胡牌演出本身（強制理牌重排、把贏家立牌倒下攤開、降臨特效，以及
- * 役滿成立時的 showcase）在任何模式下都完整播放，不可省略——它是「這個人胡了、退出本局」在世界裡
- * 唯一的視覺訊號，其他仍在局中的玩家必須看見，否則會有玩家憑空從本局消失。真正需要依情境調整的
- * 是面板：它是要**讀**的，會讓其他人乾等。
+ * 只影響結算內容；「這位玩家胡了」本身一律要讓所有玩家知道，不受此設定影響。
  */
-enum class ContinuingWinSettlementMode {
-    /** 既有的完整結算面板：役種、番符明細、手牌重現與名次變動。 */
-    FULL,
+enum class ContinuingWinSettlementDetail {
+    /** 提供贏家的完整詳情（例如役種、翻符、手牌）與分數變動。 */
+    WINNER_DETAILS,
 
-    /**
-     * 跳過贏家詳情，面板直接顯示分數變動。
-     *
-     * 手牌、胡牌張、寶牌與役種明細一律不重現——牌桌上已經攤開了，面板再畫一次只是拖時間，而
-     * 「誰放銃給誰」從分數增減本來就看得出來。中途胡牌可能一局發生好幾次，面板是唯一會讓其他仍在
-     * 局中的玩家乾等的東西，因此這裡選最快的收尾。
-     */
-    BRIEF,
+    /** 只提供分數變動；贏家的牌已經公開在桌上，詳情不再另外提供。 */
+    SCORE_CHANGES_ONLY,
 }
 
 /**
@@ -67,12 +58,11 @@ enum class ContinuingWinSettlementMode {
  * registry 的 use case 內。
  *
  * 交接點刻意**不持久化**：它只在單次指令派發內存活（use case 寫入、同一次派發的收斂階段就取走），
- * 重啟後也沒有任何路徑會去消費殘留值，持久化換不到任何恢復能力。真正需要跨重啟的是演出本身，
- * 而那已經由 `MahjongTableBlockEntity` 的呈現時間軸與各實體自己的 NBT 動畫佇列負責。
+ * 重啟後也沒有任何路徑會去消費殘留值，持久化換不到任何恢復能力。跨重啟的呈現狀態由平台自行保存。
  *
  * @property winnerPlayerIds 這次一起成立的所有贏家。
- * @property celebration 胡牌特效／役滿展示請求。
- * @property settlement 結算面板請求。
+ * @property celebration 胡牌演出請求。
+ * @property settlement 結算請求。
  */
 data class SettledWinPresentation(
     val winnerPlayerIds: Set<Uuid>,
@@ -95,12 +85,12 @@ sealed interface WinRoundDirective {
      * @property newlyFinishedPlayerIds 這次新標記為已完成的玩家；必須屬於本桌且尚未列在
      * [TableState.finishedPlayerIds]，見 [applyTo]。
      * @property nextPlayerId 套用後應輪到的玩家；必須仍是 active（不在套用後的 finished 集合內）。
-     * @property settlementMode 這次胡牌的結算面板詳細程度；整段胡牌演出不受它影響，一律完整播放。
+     * @property settlementDetail 這次胡牌結算要提供的資訊範圍。
      */
     data class ContinueRound(
         val newlyFinishedPlayerIds: Set<Uuid>,
         val nextPlayerId: Uuid,
-        val settlementMode: ContinuingWinSettlementMode,
+        val settlementDetail: ContinuingWinSettlementDetail,
     ) : WinRoundDirective
 }
 

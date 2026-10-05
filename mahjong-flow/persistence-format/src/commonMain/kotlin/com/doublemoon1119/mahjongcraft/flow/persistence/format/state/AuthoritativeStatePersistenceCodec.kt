@@ -24,7 +24,7 @@ data class DecodedAuthoritativeState(
 )
 
 /**
- * 在 Minecraft API 之外負責權威狀態 JSON、schema migration 與 DTO mapping 的 codec。
+ * 不依賴任何平台 API、負責權威狀態 JSON、schema migration 與 DTO mapping 的 codec。
  *
  * 版本／loader adapter 只需保存 [encode] 回傳的字串，並將 [decode] 結果載入共用狀態儲存。
  *

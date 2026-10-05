@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.table
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementHandPresentation
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawHandDisclosure
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementPlayerPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPlayer
@@ -201,7 +201,7 @@ class SettlementStageInputsTest {
         ),
         seatWind = Wind.entries[seatIndex],
         handTileIds = emptyList(),
-        handPresentation = ExhaustiveDrawSettlementHandPresentation.REVEAL_TENPAI,
+        handDisclosure = ExhaustiveDrawHandDisclosure.TENPAI,
         revealedHandTileIds = revealedHandTileIds,
         waitingTiles = waitingTiles,
         statusId = null,

@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinSettlementMode
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinSettlementDetail
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundContinuationContext
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
@@ -119,7 +119,7 @@ class ResolveWinRoundContinuationUseCaseTest {
                     WinRoundDirective.ContinueRound(
                         newlyFinishedPlayerIds = setOf(winner.id),
                         nextPlayerId = nextPlayer.id,
-                        settlementMode = ContinuingWinSettlementMode.FULL,
+                        settlementDetail = ContinuingWinSettlementDetail.WINNER_DETAILS,
                     ),
                 ),
             )

@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.service
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinSettlementMode
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinSettlementDetail
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.MatchSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationRequest
@@ -20,21 +20,17 @@ import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import kotlin.uuid.Uuid
 
 /**
- * 供 [GamePresentationPublisher.publishPlayerAreaUpdated] 使用的單一副露呈現資料。
+ * 供 [GamePresentationPublisher.publishPlayerAreaUpdated] 使用的單一副露資料。
  *
- * 刻意只帶位置呈現需要的最小資訊（種類、牌 Uuid 列表、鳴取來源牌 Uuid、鳴取方位），不像 [Meld] 那樣
- * 攜帶實際 `Tile` 牌面——管理中牌張的牌面完全交給 client 端依可見性快照另外呈現，平台呈現層只需要
- * 知道怎麼擺位置。
+ * 只帶擺放副露需要的資訊（種類、牌 ID、鳴取的牌與來源方位），不帶 [Meld] 的牌面；牌面由各玩家的可見性快照決定。
  *
- * @property type 副露種類，決定橫放張數與位置排列。
- * @property tileIds 組成這組副露的所有牌 Uuid，依規則牌序排列；鳴取的那張由 [calledTileId] 指出，不靠位置
- * 辨識。加槓補上的第四張固定排在最後，呈現層依此辨識要疊在鳴取牌上的那張。
- * @property calledTileId 鳴取自他家的那張牌 Uuid；暗槓沒有鳴牌來源時為 `null`。
- * @property sourceDirection 鳴取來源的相對方位，決定 [calledTileId] 在組內橫放的位置（左／中／右）；
- * 暗槓沒有鳴牌來源時為 [RelativeDirection.Self]。
- * @property allTilesFaceDown 只在 [type] 為 [MeldType.CLOSED_KAN] 時有意義：該規則是否連暗槓身份都
- * 不公開（例如台灣麻將），此時四張牌全部蓋牌呈現；日本麻將等身份公開的規則此欄位為 `false`，維持
- * 兩端蓋牌、中間兩張攤牌的傳統呈現方式。其餘副露種類固定為 `false`（一律牌面朝上，不受此欄位影響）。
+ * @property type 副露種類。
+ * @property tileIds 組成這組副露的所有牌 ID，依規則牌序排列；加槓補上的第四張固定排在最後。鳴取的牌由 [calledTileId]
+ * 指出，不靠位置辨識。
+ * @property calledTileId 鳴取自他家的牌 ID；暗槓沒有鳴牌來源時為 `null`。
+ * @property sourceDirection 鳴取來源的相對方位；暗槓沒有鳴牌來源時為 [RelativeDirection.Self]。
+ * @property allTilesFaceDown 只在 [type] 為 [MeldType.CLOSED_KAN] 時有意義：規則是否連暗槓的牌都不公開；公開暗槓牌的規則
+ * （例如日麻）為 `false`。其餘副露種類固定為 `false`。
  */
 data class MeldPresentation(
     val type: MeldType,
@@ -45,15 +41,13 @@ data class MeldPresentation(
 )
 
 /**
- * 剝除 [Meld] 的實際牌面，只保留 [MeldPresentation] 需要的位置呈現資訊。
+ * 剝除 [Meld] 的牌面，只保留 [MeldPresentation] 需要的資訊。
  *
- * 牌面順序依 [tileOrder] 排列：[Meld.tiles] 的順序來自鳴牌當下的宣告（鳴取的那張排在最後），呈現層要的是
- * 玩家讀得懂的牌序，桌面副露與鳴牌提示都依這份順序排列。鳴取的那張由 [MeldPresentation.calledTileId] 指出，
- * 不靠位置辨識；[MeldType.ADDED_KAN] 補上的第四張（[Meld.tiles] 的最後一張）則維持在最後，呈現層才找得到
- * 要疊在鳴取牌上的那張。
+ * 牌 ID 依 [tileOrder] 排列，讓玩家讀得懂；[MeldType.ADDED_KAN] 補上的第四張（[Meld.tiles] 的最後一張）維持在最後。
+ * 鳴取的牌由 [MeldPresentation.calledTileId] 指出，不靠位置辨識。
  *
- * @param revealsClosedKanTiles 該規則是否公開暗槓身份（[MahjongRuleConfig.revealsClosedKanTiles]），
- * 只影響 [MeldPresentation.allTilesFaceDown] 的計算，非暗槓時傳入的值不影響結果。
+ * @param revealsClosedKanTiles 該規則是否公開暗槓的牌（[MahjongRuleConfig.revealsClosedKanTiles]），
+ * 只影響 [MeldPresentation.allTilesFaceDown]，非暗槓時傳入的值不影響結果。
  * @param tileOrder 該規則的牌序。
  */
 fun Meld.toPresentation(revealsClosedKanTiles: Boolean, tileOrder: TileOrder): MeldPresentation = MeldPresentation(
@@ -69,54 +63,43 @@ fun Meld.toPresentation(revealsClosedKanTiles: Boolean, tileOrder: TileOrder): M
 )
 
 /**
- * 對局 in-process 呈現觸發器。
+ * 把對局中發生的事通知平台呈現層的出口：flow 決定通知的時機與語意內容，平台決定如何呈現。
  *
- * `:mahjong-flow` 對外傳遞「只有平台呈現層需要、不該進入 `TableState`／persistence／network DTO」
- * 一次性資料的出口——目前是開局／連莊重新擲骰開門時的權威骰子結果與牌牆結構座標。這些資料只在牌局
- * 剛初始化的那個當下存在，呼叫端用完即可丟棄，不需要另外保存。
+ * 與 [GameEventPublisher] 分工：[GameEventPublisher] 把權威事件通知玩家；此介面提供呈現所需、但不屬於權威狀態的資料
+ * （例如擲骰結果、牌牆布局、哪一張是剛摸到的牌）與各種結算內容。
  *
- * 與 [GameEventPublisher] 分工明確：[GameEventPublisher] 負責通知玩家（跨網路、需要序列化）；此介面
- * 負責觸發 server 端本地呈現邏輯（不跨網路、不需要序列化）。實作方必須是 best-effort——沒有平台
- * 實作、該桌不是對應平台的桌子、或呈現觸發本身失敗時，都不能拋例外，呼叫端的權威狀態變更不因此
- * 受影響。
+ * 實作必須是 best-effort：沒有平台實作、該對局不支援呈現，或呈現本身失敗時都不得拋例外，呼叫端的權威狀態變更不受影響。
  */
 interface GamePresentationPublisher {
-    /** 在權威遊戲動作成立後，從執行者座位播放規則所定義的宣告語音。 */
+    /** 權威遊戲動作成立後通知平台；平台可據此呈現該動作，例如播放宣告語音。 */
     fun publishGameActionSound(gameId: Uuid, actorId: Uuid, action: GameAction) = Unit
 
-    /**
-     * 通知平台呈現層建立統一流局結算展示。
-     *
-     * 預設 no-op，讓沒有世界呈現能力的平台仍能以自己的文字或介面呈現權威結算結果。
-     */
+    /** 通知平台呈現一次流局結算。預設 no-op。 */
     fun publishExhaustiveDrawSettlement(gameId: Uuid, request: ExhaustiveDrawSettlementPresentationRequest) = Unit
 
-    /** 通知平台在整場對局結束後顯示權威最終排行，完成後才可返回房間。 */
+    /** 通知平台在整場對局結束後呈現最終排行，完成後才可返回房間。 */
     fun publishMatchSettlement(gameId: Uuid, request: MatchSettlementPresentationRequest) = Unit
 
     /**
-     * 通知平台呈現層：[playerId] 進入了「需要選超過一張牌」的實體牌選取模式，該在其手牌上方顯示可
-     * 互動的確認面板。只有 `tileSelection`／`preparation` 的 `maxCount > 1` 才會觸發；`maxCount == 1`
-     * 維持右鍵合法牌直接自動送出，不呼叫這個方法。
+     * 通知平台 [playerId] 開始從立牌中選擇多張牌（`tileSelection`／`preparation` 的 `maxCount > 1`）；平台可據此
+     * 提供確認選擇的操作。只需要選一張時不呼叫。
      *
-     * 預設 no-op，讓沒有世界呈現能力的平台略過。
+     * 預設 no-op。
      */
     fun publishTileSelectionStarted(gameId: Uuid, playerId: Uuid) = Unit
 
     /**
-     * 通知平台呈現層清除 [playerId] 的選牌確認面板——選牌送出或情境失效後呼叫；沒有面板存在時
-     * 應為 no-op。
+     * 通知平台 [playerId] 的多張選牌已送出或已失效；沒有進行中的選牌時應為 no-op。
      *
-     * 預設 no-op，讓沒有世界呈現能力的平台略過。
+     * 預設 no-op。
      */
     fun publishTileSelectionEnded(gameId: Uuid, playerId: Uuid) = Unit
 
     /**
-     * 通知平台呈現層本局權威擲骰結果。
+     * 通知平台本局權威擲骰結果。
      *
-     * [dealerSeatIndex]／[roundNumber]／[comboCount] 是呼叫端已經持有的通用桌況資料，一併帶過去讓
-     * 平台呈現層自行決定怎麼用（例如換算成呈現用的「這是第幾次擲骰」序號、決定擲骰者的座位）——
-     * 不在這裡先算好任何平台專屬概念，維持這個介面本身跟平台無關。
+     * [dealerSeatIndex]／[roundNumber]／[comboCount] 是呼叫端已經持有的通用桌況資料，一併提供讓平台自行決定怎麼使用
+     * （例如決定擲骰者的座位）。
      *
      * @param gameId 對局 Uuid。
      * @param dice 本次開門使用的權威擲骰個別點數。
@@ -128,28 +111,23 @@ interface GamePresentationPublisher {
     fun publishDiceRoll(gameId: Uuid, dice: DiceRollResult, dealerSeatIndex: Int, roundNumber: Int, comboCount: Int)
 
     /**
-     * 通知平台呈現層本局牌牆結構座標。
+     * 通知平台本局牌牆結構。
      *
-     * [dealerSeatIndex] 跟 [publishDiceRoll] 同理，是呼叫端已經持有的通用桌況資料，一併帶過去讓平台
-     * 呈現層自行決定怎麼把牌牆面／墩／層結構換算成以莊家座位為基準的世界座標。
-     *
-     * [assemblyStructure] 是牌牆剛完成組裝時的基本格位；[layout] 是規則決定的開門後最終布局。平台可用
-     * 兩者表現開門過程，不必從王牌集合反推規則專有位移。[animateOpening] 明確決定是否播放開門，
-     * [diceCount] 只負責提供開門前的擲骰時間線長度。
+     * [assemblyStructure] 是牌牆剛完成組裝時的基本格位；[layout] 是規則決定的開門後最終布局。平台可用兩者呈現開門
+     * 過程，不必從王牌集合反推規則專有的位移。[dealerSeatIndex] 與 [publishDiceRoll] 相同，讓平台以莊家座位為基準
+     * 換算各面牌牆的位置。
      *
      * @param gameId 對局 Uuid。
      * @param assemblyStructure 本局牌牆完成組裝、尚未開門時的面／墩／層格位；牌張集合必須與 [layout]
      * 一致。空布局呼叫時傳空 map。
-     * @param layout 本局牌牆所有牌（含活牌與王牌）的完整抽象實體位置；空布局代表這局結束，只需清除
-     * 舊牌。
+     * @param layout 本局牌牆所有牌（含活牌與王牌）的完整抽象位置；空布局代表這局結束，只需清除舊牌。
      * @param dealerSeatIndex 目前莊家在 `TableState.players` 的固定座位 index。
      * @param deadWallTileIds [layout] 之中屬於王牌區的牌 Uuid 子集合；空布局呼叫時可傳空集合。
-     * @param diceCount 本次開門擲骰的骰子數量，供平台實作換算擲骰動畫總長度；未搭配擲骰的呼叫可傳 `0`。
-     * @param animateOpening 是否從 [assemblyStructure] 播放至 [layout]；恢復既有桌況時傳 `false`。
-     * @param revealedTileIds [deadWallTileIds] 之中，牌牆建立當下就該立即公開翻面的牌 Uuid 子集合
-     * （例如日麻開局就翻開的第一張寶牌指示牌，由呼叫端用 `TileWallRevealable.getVisibleTileIds`
-     * 算出）；平台實作會在王牌移出開門位置的同一個時機點翻開這些牌，不支援此概念的規則傳空集合即可。
-     * 動作後才追加公開的牌屬於 [publishWallTilesRevealed] 的職責，不是這裡。
+     * @param diceCount 本次開門擲骰的骰子數量，供平台安排開門前的擲骰時間；未搭配擲骰的呼叫可傳 `0`。
+     * @param animateOpening 是否呈現從 [assemblyStructure] 到 [layout] 的開門過程；恢復既有桌況時傳 `false`。
+     * @param revealedTileIds [deadWallTileIds] 之中，牌牆建立當下就公開的牌 Uuid 子集合（例如日麻開局就翻開的第一張
+     * 寶牌指示牌，由呼叫端以 `TileWallRevealable.getVisibleTileIds` 算出）；不支援此概念的規則傳空集合。動作後才追加
+     * 公開的牌屬於 [publishWallTilesRevealed]。
      */
     fun publishWallStructure(
         gameId: Uuid,
@@ -163,10 +141,9 @@ interface GamePresentationPublisher {
     )
 
     /**
-     * 通知平台呈現層依序播放一次已由規則驗證的實體牌牆布局 transition。
+     * 通知平台依序呈現一次已由規則驗證的牌牆布局移動。
      *
-     * 呼叫端只可在包含最終布局的權威桌況成功保存後發布；平台不得藉此回寫或重新判定桌況。
-     * 預設 no-op，讓尚未支援實體牌牆動畫的平台維持正常遊戲流程。
+     * 呼叫端只可在包含最終布局的權威桌況成功保存後發布；平台不得藉此回寫或重新判定桌況。預設 no-op。
      *
      * @param gameId 對局 Uuid。
      * @param phases 依規則決定順序排列的移動階段。
@@ -174,40 +151,34 @@ interface GamePresentationPublisher {
     fun publishWallLayoutTransition(gameId: Uuid, phases: List<PhysicalWallLayoutTransitionPhase>) = Unit
 
     /**
-     * 通知平台呈現層本局牌牆裡，本次新增公開翻面的牌集合——用於牌牆建立**之後**才追加
-     * 公開的牌，例如日麻槓牌成立後翻開的新寶牌指示牌；開局當下就該公開的牌（不需要等任何事件）
-     * 屬於 [publishWallStructure] 的 `revealedTileIds`，不是這裡，兩者是完全獨立的呈現時機。
+     * 通知平台本局牌牆中本次新增公開的牌，例如日麻開槓後翻開的新寶牌指示牌；牌牆建立當下就公開的牌屬於
+     * [publishWallStructure] 的 `revealedTileIds`。
      *
-     * 刻意用泛用的「應該公開翻面」措辭而非「寶牌」，讓這個介面本身維持規則無關——規則的
-     * `WallRevealPolicy` 提供新增集合，Flow 驗證其符合權威可見差集後才會呼叫；不支援此概念的規則
-     * 不會產生發布事件。
+     * 規則的 `WallRevealPolicy` 提供新增集合，flow 驗證其符合權威可見差集後才會呼叫；不支援此概念的規則不會發布。
      *
      * @param gameId 對局 Uuid。
-     * @param revealedTileIds 本次新增公開翻面的牌 Uuid 集合；平台實作只替這些牌播放翻面動畫。
+     * @param revealedTileIds 本次新增公開的牌 Uuid 集合，不含先前已公開的牌。
      */
     fun publishWallTilesRevealed(gameId: Uuid, revealedTileIds: Set<Uuid>)
 
     /**
-     * 通知平台：桌況在呈現流程的這個時間點更新了，規則自己負責擺在桌上的物件需要依目前桌況更新。
+     * 通知平台：規則狀態可能已改變（例如宣告成立），與規則相關的呈現需要依目前桌況更新。
      *
-     * 這裡不帶任何規則專屬的資料，也不假設桌上會有什麼物件；要不要擺、擺什麼、擺在哪，完全由平台上該規則
-     * 登記的描述決定。沒有登記描述的規則，桌上不會多出任何東西。
-     *
-     * 呼叫時機屬於呈現編排的一部分，呼叫端依既有順序在固定時間點呼叫：開局與換局緊接在 [publishWallStructure]
-     * 之後，以及規則狀態改變了桌上物件之後（例如宣告成立）。
+     * 不帶任何規則專屬資料；要呈現什麼完全由平台上該規則登記的描述決定，沒有登記描述的規則不會多出任何呈現。
+     * 呼叫端在固定時間點呼叫：開局與換局緊接在 [publishWallStructure] 之後，以及規則狀態改變之後。
      *
      * @param gameId 對局 Uuid。
      */
     fun publishTablePropsUpdated(gameId: Uuid)
 
     /**
-     * 通知平台呈現層桌面中央局況顯示需要更新為目前的權威桌況快照。
+     * 通知平台局況資訊需要更新為目前的權威桌況。
      *
-     * Flow 只傳遞遊戲狀態，不決定顯示哪些欄位、翻譯 key 或排列順序；這些屬於平台呈現層的規則
-     * provider。呼叫端應在局況改變後傳入剛保存的完整 [tableState]，讓呈現層自行建立完整局況內容。
+     * Flow 只傳遞遊戲狀態，不決定顯示哪些欄位、翻譯 key 或排列順序；這些屬於平台上的規則 provider。呼叫端應在局況改變
+     * 後傳入剛保存的完整 [tableState]。
      *
-     * 觸發時機：開局/換局（跟 [publishWallStructure] 同一批呼叫）、每次摸牌（牌山剩餘張數可能會變）、
-     * 以及任何會改變局況內容的事件（例如立直宣告後供託支數改變）。
+     * 呼叫時機：開局／換局（與 [publishWallStructure] 同一批呼叫）、每次摸牌（牌山剩餘張數可能改變），以及任何會改變
+     * 局況內容的事件（例如立直宣告後供託支數改變）。
      *
      * @param gameId 對局 Uuid。
      * @param tableState 呼叫端當下已保存的權威桌況快照。
@@ -215,33 +186,22 @@ interface GamePresentationPublisher {
     fun publishRoundInfoUpdated(gameId: Uuid, tableState: TableState)
 
     /**
-     * 通知平台呈現層某玩家目前的手牌（含摸牌位）與副露需要更新為目前狀態。
+     * 通知平台某玩家目前的立牌、摸牌位與副露。
      *
-     * 原本是 `publishHandTiles`／`publishTileDrawn`／`publishMeldsUpdated` 三個獨立方法，合併成這一個
-     * 的理由：手牌（含摸牌位）要能對副露讓開空間，前提是同一次呼叫必須同時知道「立牌、摸牌、副露」
-     * 三種狀態——平台實作才能一次算出正確的讓開偏移，不能分開觸發、各自為政。
-     *
-     * 開局/換局的初次發牌不走這個方法——那有專屬的分批動畫節奏，見 [publishInitialDealAnimation]；
-     * 這個方法固定同步呈現，適用一般回合動作（捨牌、摸牌、鳴牌）。
+     * 三者一起提供，讓平台能一併決定擺放（例如立牌要為副露讓出空間）。開局／換局的初次發牌改用
+     * [publishInitialDealAnimation]；這個方法用於一般回合動作（捨牌、摸牌、鳴牌）。
      *
      * @param gameId 對局 Uuid。
      * @param seatIndex 這位玩家在 `TableState.players` 的固定座位 index。
-     * @param standingTileIds 這位玩家目前立牌，依發牌／捨牌後的順序排列（`Hand.tiles`，不含
-     * [drawnTileId]），鍵為 [IdentifiedTile.id]；空清單代表這局結束，只需要清除舊牌。
+     * @param standingTileIds 這位玩家目前立牌，依手牌順序排列（`Hand.tiles`，不含 [drawnTileId]），鍵為
+     * [IdentifiedTile.id]；空清單代表這局結束，只需要清除舊牌。
      * @param drawnTileId 這位玩家目前摸到、尚未併入立牌或打出的那張牌 Uuid（`Hand.lastDrawn`）；
-     * `null` 代表目前沒有摸牌位要呈現。
-     * @param melds 這位玩家目前所有副露，依宣告順序排列——第一組（最早宣告）最靠近副露區的桌角，後續
-     * 每組依序往玩家自己手牌方向排開，呼叫端不需要另外傳遞位置索引。
-     * @param animateDrawnTile [drawnTileId] 非 `null` 時，是否要播放「牌從牌山原位面朝下起飛、隱形
-     * 傳送到摸牌位、傳送同一瞬間切換成面向玩家、解除隱形後落下」的動畫——只有真正的摸牌事件
-     * （`DrawTileUseCase`）該傳 `true`；其餘呼叫端（捨牌、鳴牌、副露相關回應）即使當下摸牌位仍有牌，
-     * 也維持預設 `false` 直接定格顯示，不重複播放動畫。跟 [publishInitialDealAnimation] 的差別是翻面
-     * 發生在隱形期間、玩家看不到旋轉過程，不需要落地後再另外播放一段看得見的翻牌動畫——摸牌是高頻的
-     * 單張動作，不需要像開局那樣等所有座位到齊才一起揭曉。
-     * @param animatedMeldClaimTileIds 這次鳴牌/槓牌成立，需要播放「連續飛到副露區最終格位」動畫的牌
-     * Uuid 集合——吃/碰/明槓/暗槓是整組一次成立的新副露，全部牌都該傳入；加槓只有新插入的那一張該傳入
-     * （既有三張碰的牌不需要重新移動），理由見 [MahjongPlayerAreaPresentation.animatedMeldClaimTileIds]
-     * KDoc。空集合（預設值）代表這次沒有牌需要播放這個動畫，維持既有的瞬間顯示。
+     * `null` 代表目前沒有摸牌位。
+     * @param melds 這位玩家目前所有副露，依宣告順序排列。
+     * @param animateDrawnTile [drawnTileId] 是否為這次剛摸到的牌：只有真正的摸牌（`DrawTileUseCase`）傳 `true`，平台可據此
+     * 呈現摸牌的過程；其餘呼叫即使摸牌位仍有牌也維持 `false`。
+     * @param animatedMeldClaimTileIds 這次新成立副露、從原本位置移入副露的牌 Uuid：吃／碰／明槓／暗槓為整組，加槓只有
+     * 新加入的那一張。空集合（預設值）代表沒有。
      */
     fun publishPlayerAreaUpdated(
         gameId: Uuid,
@@ -254,29 +214,20 @@ interface GamePresentationPublisher {
     )
 
     /**
-     * 通知平台呈現層本局開局（或換局）的初次發牌動畫。
+     * 通知平台本局開局（或換局）的初次發牌。
      *
-     * 跟原本逐座位呼叫 [publishPlayerAreaUpdated] 不同，這個方法一次帶齊所有座位的最終手牌，讓平台
-     * 實作能把每個座位「同一批」的牌同時排入動畫時間軸——四位玩家同時摸牌、同時落地，不是各自獨立的
-     * 時間軸。呼叫端固定在開局/換局流程裡取代原本逐座位呼叫 [publishPlayerAreaUpdated] 的那一段，只
-     * 用於初次發牌；發牌完成後的立牌張數異動（捨牌、鳴牌等）一律回到 [publishPlayerAreaUpdated]。
-     *
-     * 摸牌位／副露在開局當下必定為空／`null`——沒有人已經摸牌、也沒有任何宣告，因此不像
-     * [publishPlayerAreaUpdated] 需要收這兩項參數。
+     * 一次帶齊所有座位的最終手牌，讓平台能讓各座位同一批的發牌同時進行；發牌完成後的手牌變化一律改用
+     * [publishPlayerAreaUpdated]。開局當下沒有摸牌位與副露，因此不帶這兩項。
      *
      * @param gameId 對局 Uuid。
-     * @param handTileIdsBySeatIndex 每個座位最終手牌的完整牌 Uuid 列表，鍵為 `TableState.players` 的
-     * 固定座位 index；規則不支援開門流程（沒有牌牆／擲骰）時呼叫端不應呼叫這個方法。這份順序只決定
-     * 發牌動畫本身（哪張牌在哪一批抵達、抵達當下落在哪一格），翻牌後最終停在哪一格改看
-     * [postFlipHandTileIdsBySeatIndex]。
-     * @param postFlipHandTileIdsBySeatIndex 每個座位翻牌完成那一刻起、牌實際該停留的最終牌 Uuid 順序，
-     * 鍵同上——沒有啟用自動整理手牌的座位這裡跟 [handTileIdsBySeatIndex] 內容相同；有啟用的座位這裡是
-     * 已經整理過的順序。
+     * @param handTileIdsBySeatIndex 每個座位最終手牌的完整牌 Uuid 列表，依發牌順序排列，鍵為 `TableState.players` 的固定
+     * 座位 index；決定每一批發到哪些牌。規則不支援開門流程（沒有牌牆／擲骰）時呼叫端不應呼叫這個方法。
+     * @param postFlipHandTileIdsBySeatIndex 每個座位發牌完成後的最終牌序，鍵同上；沒有啟用自動整理手牌的座位與
+     * [handTileIdsBySeatIndex] 內容相同，有啟用的座位為整理後的順序。
      * @param dealerSeatIndex 目前莊家在 `TableState.players` 的固定座位 index，發牌從這個座位開始輪。
-     * @param dealBatchSizes 依序播放的批次大小列表，由呼叫端依規則模組的
-     * `MahjongRuleModule.dealBatchSizes` 算出；平台實作依序播放，不驗證總和是否等於各座位手牌張數。
-     * @param diceCount 本次開局擲骰的骰子數量，供平台實作換算「發牌動畫該等擲骰動畫播完才開始」的
-     * 延遲時長；規則不支援開門流程時傳 `0`。
+     * @param dealBatchSizes 依序發牌的批次大小列表，由呼叫端依規則模組的 `MahjongRuleModule.dealBatchSizes` 算出；
+     * 平台不驗證總和是否等於各座位手牌張數。
+     * @param diceCount 本次開局擲骰的骰子數量，供平台安排發牌前的擲骰時間；規則不支援開門流程時傳 `0`。
      */
     fun publishInitialDealAnimation(
         gameId: Uuid,
@@ -288,16 +239,15 @@ interface GamePresentationPublisher {
     )
 
     /**
-     * 清除整桌所有玩家的手牌/摸牌位/副露呈現——對局結束、回房間等清空情境使用，沒有座位分組
-     * 資料可傳時呼叫這個方法，取代原本 `publishHandTiles(gameId, emptyMap(), 0)` 的空 map 清空語意。
+     * 清除所有玩家的立牌、摸牌位與副露呈現；對局結束、回到房間等情境使用。
      *
      * @param gameId 對局 Uuid。
      */
     fun clearPlayerAreas(gameId: Uuid)
 
     /**
-     * 通知平台呈現層本局開局座位傳送。只在開局時呼叫一次，之後連莊/過莊開新局不會再次呼叫——風位
-     * 輪轉純粹是規則概念，玩家在平台世界裡的物理位置整場對局固定不變。
+     * 通知平台本局開局的座位安排。只在開局時呼叫一次，之後連莊／過莊開新局不會再次呼叫——風位輪轉是規則概念，玩家的
+     * 座位整場對局固定不變。
      *
      * @param gameId 對局 Uuid。
      * @param seatedPlayerIds 依 `TableState.players` 固定座位順序排列的玩家 Uuid 清單。
@@ -305,22 +255,18 @@ interface GamePresentationPublisher {
     fun publishGameStarted(gameId: Uuid, seatedPlayerIds: List<Uuid>)
 
     /**
-     * 通知平台呈現層某玩家的牌河需要更新為目前狀態。
+     * 通知平台某玩家的牌河需要更新為目前狀態。
      *
-     * 呼叫時機：該玩家捨牌後，或該玩家先前的捨牌被吃/碰/槓走、使牌河紀錄的 `isTaken` 狀態改變時
-     * （即使沒有新增捨牌，側身標記也可能因此位移，需要重新呈現）。
+     * 呼叫時機：該玩家捨牌後，或該玩家先前的捨牌被吃／碰／槓走、使牌河紀錄的 `isTaken` 狀態改變時（即使沒有新增捨牌，
+     * 側身標記的牌也可能因此改變）。
      *
      * @param gameId 對局 Uuid。
      * @param seatIndex 牌河所屬玩家在 `TableState.players` 的固定座位 index。
-     * @param discardTileIds 這位玩家目前牌河所有紀錄的牌 Uuid，依捨牌順序排列——順序本身決定牌河
-     * 排列位置，呼叫端不需要另外傳遞位置索引。
-     * @param sidewaysMarkedTileId 這位玩家牌河中應側身呈現的牌 Uuid；`null` 代表沒有任何一張需要
-     * 側身（例如非立直規則、或立直牌已被鳴走且尚無下一張捨牌）。刻意用泛用的「側身標記」措辭而非
-     * 「立直」，讓這個介面本身維持規則無關。
-     * @param newlyDiscardedTileId [discardTileIds] 之中這次呼叫真正新增的那張牌 Uuid，只有它該播放
-     * 「牌從手牌位置飛到牌河」的動畫；`null`（預設值）代表這次呼叫沒有新增捨牌，只是既有牌河重新整理
-     * （例如吃/碰/槓走某張捨牌後側身標記位移），所有牌維持定格顯示。只有 [DiscardTileUseCase] 真正
-     * 捨牌那次該傳入實際 Uuid。
+     * @param discardTileIds 這位玩家目前牌河所有紀錄的牌 Uuid，依捨牌順序排列。
+     * @param sidewaysMarkedTileId 這位玩家牌河中應標記為側身的牌 Uuid；`null` 代表沒有（例如非立直規則，或立直牌已被
+     * 鳴走且尚無下一張捨牌）。用泛用的「側身標記」措辭而非「立直」，讓這個介面維持規則無關。
+     * @param newlyDiscardedTileId [discardTileIds] 之中這次呼叫真正新增的那張牌 Uuid，平台可據此呈現捨牌的過程；
+     * `null`（預設值）代表這次只是既有牌河重新整理。只有捨牌（`DiscardTileUseCase`）那次會傳入實際 Uuid。
      */
     fun publishDiscardPileUpdated(
         gameId: Uuid,
@@ -331,39 +277,28 @@ interface GamePresentationPublisher {
     )
 
     /**
-     * 通知平台呈現層某玩家胡牌成立，觸發胡牌慶祝演出（強制理牌重排 → 倒牌 → 閃電擊中 → 接地放電與
-     * 水波紋）。
+     * 通知平台這次胡牌成立的贏家，平台據此呈現胡牌演出。
      *
-     * 呼叫時機：[gameId] 的贏家結算完成、既有事件廣播之後——自摸（`DeclareTsumoUseCase`）緊接在廣播
-     * [GameAction.Tsumo] 之後呼叫一次；榮和／搶槓
-     * （`RespondToDiscardUseCase`／`RespondToKanUseCase`）在既有事件廣播之後，對每一位贏家各自
-     * 呼叫一次（一炮多響可能不只一次）。
+     * 呼叫時機：贏家結算完成、既有事件廣播之後——自摸（`DeclareTsumoUseCase`）緊接在廣播 [GameAction.Tsumo] 之後；
+     * 榮和／搶槓（`RespondToDiscardUseCase`／`RespondToKanUseCase`）在既有事件廣播之後，一次包含這次所有贏家。
      *
-     * 這個方法本身不攜帶贏家手牌的完整內容——理牌重排的目標順序完全由平台實作依規則模組的牌序自行
-     * 算出（見 `FabricGamePresentationPublisher.publishWinCelebration`），呼叫端不需要另外算好排序後
-     * 再傳進來；符合本介面「只帶呈現層需要的最小資訊」的既有慣例。
+     * 不攜帶贏家手牌的完整內容，手牌如何排列由平台依規則模組的牌序決定。
      *
      * @param gameId 對局 Uuid。
-     * @param winnerSeatIndex 贏家在 `TableState.players` 的固定座位 index。
-     * @param winningTileId 胡的那張牌 Uuid——自摸時是原本摸牌位那張，榮和／搶槓時是放銃者打出的捨牌，
-     * 或搶槓來源的加槓/暗槓牌。
-     * @param isTsumo `true` 代表自摸，`false` 代表榮和／搶槓——決定演出時間軸是否包含「胡牌張單獨先
-     * 倒下」那一步，以及降臨特效鎖定的目標位置是贏家自己座位（自摸）還是胡牌張目前所在座標（榮和／
-     * 搶槓的牌河或副露區），見 `FabricGamePresentationPublisher.publishWinCelebration` KDoc。
+     * @param request 胡牌張、是否自摸與各贏家的展示理由；榮和／搶槓時胡牌張位在放銃者的牌河或副露。
      */
     fun publishWinCelebration(gameId: Uuid, request: WinCelebrationRequest)
 
-    /** 通知平台在既有胡牌／役滿演出之後顯示逐位贏家詳情與共用分數排行。 */
+    /** 通知平台在胡牌演出之後呈現各贏家詳情與共用分數排行。 */
     fun publishWinSettlement(gameId: Uuid, request: WinSettlementPresentationRequest) = Unit
 
     /**
-     * 通知平台播放一次完整的胡牌呈現：慶祝演出與結算面板**依序**播放。
+     * 通知平台一次完整的胡牌呈現：胡牌演出與結算**依序**呈現。
      *
      * 跟分別呼叫 [publishWinCelebration] 與 [publishWinSettlement] 的關鍵差異是**順序是 API 契約**：
-     * 實作必須保證結算面板排在慶祝演出結束之後才開始，不得依賴兩次獨立非同步呼叫的先後順序碰運氣。
-     * 呼叫端只送出一次，實作內部自行把第一段算出的結束時間交給第二段。
+     * 實作必須保證結算排在胡牌演出結束之後才開始，不得依賴兩次獨立非同步呼叫的先後順序。
      *
-     * 分別呼叫的那兩個方法保留給不成對的既有呼叫點（例如流局特殊結果只需要結算面板）。
+     * 分別呼叫的那兩個方法保留給不成對的呼叫點（例如流局特殊結果只需要結算）。
      */
     fun publishWinPresentation(gameId: Uuid, request: WinPresentationRequest) = Unit
 }
@@ -371,29 +306,20 @@ interface GamePresentationPublisher {
 /**
  * 一次胡牌的完整呈現請求。
  *
- * **顯示什麼**與**是否中斷遊戲**是兩個獨立的維度，刻意分開建模：
- * - 顯示什麼：[celebration]／[settlement] 各自是否為 null（對應
- *   `ContinuingWinSettlementMode` 的 FULL／SETTLEMENT_ONLY／NONE）。
- * - 是否中斷：由 [roundContinues] 與 [celebration] 是否帶有額外展示理由共同決定，見下方說明。
+ * 「提供哪些內容」與「是否暫停其他玩家」是兩件獨立的事：
+ * - 內容：[celebration] 與 [settlement]；中途胡牌時結算的資訊範圍見 [ContinuingWinSettlementDetail]。
+ * - 是否暫停：由 [roundContinues] 與 [celebration] 是否帶有展示理由共同決定，見下方說明。
  *
- * @property winnerPlayerIds 這次一起成立的所有贏家；**不受顯示模式影響**，[roundContinues] 時實作
- * 一律要用它把這些玩家的真實手牌收尾（恢復可見、蓋成牌背），即使兩個請求都是 null 也一樣。
- * @property celebration 胡牌演出：強制理牌重排、把贏家立牌倒下攤開（FACE_UP）、降臨特效，以及役滿
- * 成立時的 showcase。整段不可省略、也不拆開——它是「這個人胡了」在世界裡唯一的視覺訊號。
- * @property settlement 結算面板；詳細或精簡由
- * [ContinuingWinSettlementMode] 決定，反映在
- * [WinSettlementPresentationRequest.isBrief] 上。
+ * @property winnerPlayerIds 這次一起成立的所有贏家；[roundContinues] 時平台須依此收尾這些玩家的手牌呈現。
+ * @property celebration 胡牌演出請求；一律呈現、不可省略，這是其他玩家得知「這位玩家胡了」的依據。
+ * @property settlement 結算請求。
  * @property roundContinues 本局是否在這次胡牌之後仍然繼續（已完成玩家退出、其他人續打）。
  *
- * `false`（本局就此結束）時整段演出都獨佔全桌，維持既有行為——反正沒有人還要繼續打。
+ * `false`（本局就此結束）時，整段呈現期間其他玩家都在等待。
  *
- * `true` 時實作必須做到：**只有真正需要玩家停下來觀看的段落才中斷遊戲**。具體來說，
- * [celebration] 的 `winners` 中只要有任何非空的 `cueIds`，就代表這次有值得所有人觀看的額外展示，那一段
- * 必須暫停玩家輸入、AI、強制自動操作與決策計時器；其餘段落（一般倒牌特效、以及**整個結算面板**）
- * 都不得阻塞，其他仍在本局中的玩家要能照常摸打。
- *
- * `true` 時實作還必須在整段演出結束後把贏家的真實手牌收尾乾淨（恢復可見、蓋成牌背），
- * 見 `GamePresentationBusyGate.isPresentingContinuingWin`。
+ * `true` 時只有需要所有人觀看的段落才暫停遊戲：[celebration] 中任何贏家帶有展示理由（`cueIds` 不為空）時，那一段
+ * 要暫停玩家輸入、AI、強制自動操作與決策計時器；其餘段落（包括整個結算）不得阻擋仍在本局中的玩家。整段結束後，平台須
+ * 把贏家的手牌呈現收尾（見 `GamePresentationBusyGate.isPresentingContinuingWin`）。
  */
 data class WinPresentationRequest(
     val winnerPlayerIds: Set<Uuid>,

@@ -18,7 +18,7 @@ class WinRoundContinuationTest {
         val directive = WinRoundDirective.ContinueRound(
             newlyFinishedPlayerIds = setOf(fourPlayers[0].id),
             nextPlayerId = fourPlayers[1].id,
-            settlementMode = ContinuingWinSettlementMode.FULL,
+            settlementDetail = ContinuingWinSettlementDetail.WINNER_DETAILS,
         )
 
         val updated = directive.applyTo(state)
@@ -38,7 +38,7 @@ class WinRoundContinuationTest {
         val directive = WinRoundDirective.ContinueRound(
             newlyFinishedPlayerIds = setOf(fourPlayers[0].id),
             nextPlayerId = fourPlayers[1].id,
-            settlementMode = ContinuingWinSettlementMode.BRIEF,
+            settlementDetail = ContinuingWinSettlementDetail.SCORE_CHANGES_ONLY,
         )
 
         assertFailsWith<IllegalArgumentException> { directive.applyTo(state) }
@@ -51,7 +51,7 @@ class WinRoundContinuationTest {
         val directive = WinRoundDirective.ContinueRound(
             newlyFinishedPlayerIds = setOf(Uuid.random()),
             nextPlayerId = fourPlayers[1].id,
-            settlementMode = ContinuingWinSettlementMode.BRIEF,
+            settlementDetail = ContinuingWinSettlementDetail.SCORE_CHANGES_ONLY,
         )
 
         assertFailsWith<IllegalArgumentException> { directive.applyTo(state) }
@@ -68,7 +68,7 @@ class WinRoundContinuationTest {
         val directive = WinRoundDirective.ContinueRound(
             newlyFinishedPlayerIds = setOf(fourPlayers[0].id),
             nextPlayerId = fourPlayers[1].id,
-            settlementMode = ContinuingWinSettlementMode.BRIEF,
+            settlementDetail = ContinuingWinSettlementDetail.SCORE_CHANGES_ONLY,
         )
 
         assertFailsWith<IllegalArgumentException> { directive.applyTo(state) }
@@ -81,7 +81,7 @@ class WinRoundContinuationTest {
         val directive = WinRoundDirective.ContinueRound(
             newlyFinishedPlayerIds = setOf(fourPlayers[1].id),
             nextPlayerId = fourPlayers[1].id,
-            settlementMode = ContinuingWinSettlementMode.BRIEF,
+            settlementDetail = ContinuingWinSettlementDetail.SCORE_CHANGES_ONLY,
         )
 
         assertFailsWith<IllegalArgumentException> { directive.applyTo(state) }
@@ -94,7 +94,7 @@ class WinRoundContinuationTest {
         val directive = WinRoundDirective.ContinueRound(
             newlyFinishedPlayerIds = setOf(fourPlayers[0].id),
             nextPlayerId = Uuid.random(),
-            settlementMode = ContinuingWinSettlementMode.BRIEF,
+            settlementDetail = ContinuingWinSettlementDetail.SCORE_CHANGES_ONLY,
         )
 
         assertFailsWith<IllegalArgumentException> { directive.applyTo(state) }

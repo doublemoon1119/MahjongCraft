@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.service
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInExhaustiveDrawSettlementStatusIds
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementHandPresentation
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawHandDisclosure
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
@@ -39,8 +39,8 @@ class ExhaustiveDrawSettlementPresentationRequestFactoryTest {
             revealedHands = listOf(RevealedHandSettlement(tenpaiPlayer.id, setOf(Tile.Numeric(Tile.Suit.Character, 1)))),
         )
 
-        assertEquals(ExhaustiveDrawSettlementHandPresentation.REVEAL_TENPAI, request.players.first().handPresentation)
-        assertEquals(ExhaustiveDrawSettlementHandPresentation.CONCEAL, request.players[1].handPresentation)
+        assertEquals(ExhaustiveDrawHandDisclosure.TENPAI, request.players.first().handDisclosure)
+        assertEquals(ExhaustiveDrawHandDisclosure.CONCEALED, request.players[1].handDisclosure)
         assertEquals(tenpaiPlayer.hand.allTiles.map { it.id }, request.players.first().revealedHandTileIds)
         assertEquals(emptyList(), request.players[1].revealedHandTileIds)
     }
@@ -59,9 +59,9 @@ class ExhaustiveDrawSettlementPresentationRequestFactoryTest {
             revealedHands = listOf(RevealedHandSettlement(declarer.id, emptySet())),
         )
 
-        assertEquals(ExhaustiveDrawSettlementHandPresentation.REVEAL_PROOF, request.players[2].handPresentation)
+        assertEquals(ExhaustiveDrawHandDisclosure.PROOF, request.players[2].handDisclosure)
         request.players.filterNot { it.ranking.playerId == declarer.id }.forEach { player ->
-            assertEquals(ExhaustiveDrawSettlementHandPresentation.CONCEAL, player.handPresentation)
+            assertEquals(ExhaustiveDrawHandDisclosure.CONCEALED, player.handDisclosure)
         }
     }
 
@@ -81,7 +81,7 @@ class ExhaustiveDrawSettlementPresentationRequestFactoryTest {
 
             assertEquals(playerCount, request.players.size)
             request.players.forEach { player ->
-                assertEquals(ExhaustiveDrawSettlementHandPresentation.CONCEAL, player.handPresentation)
+                assertEquals(ExhaustiveDrawHandDisclosure.CONCEALED, player.handDisclosure)
             }
         }
     }

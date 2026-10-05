@@ -128,8 +128,7 @@ class StartGameUseCase(
         eventPublisher.publishToTable(roomId, seatedPlayerIds, operatorId, GameAction.GameStarted)
 
         // 4. 觸發平台呈現層：規則不支援開門流程時皆為 null，直接跳過。牌牆先建、骰子後擲——真實麻將
-        // 是先砌好牌牆才擲骰決定開門位置，呈現層（`FabricGamePresentationPublisher`）依賴這個固定
-        // 呼叫順序，把擲骰動畫延遲到牌牆完全落地才開始播放，這裡不能對調。
+        // 是先砌好牌牆才擲骰決定開門位置，呈現層依賴這個固定呼叫順序（先牌牆、後擲骰），這裡不能對調。
         val dealerSeatIndex = tableState.dealerIndex
         initializationResult.initialPhysicalWallLayout?.let { layout ->
             val deadWallTileIds = tableState.reservedWallTiles.map { tile -> tile.id }.toSet()

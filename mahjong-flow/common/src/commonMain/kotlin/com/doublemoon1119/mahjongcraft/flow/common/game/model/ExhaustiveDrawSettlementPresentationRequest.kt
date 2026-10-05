@@ -17,25 +17,25 @@ object BuiltInExhaustiveDrawSettlementStatusIds {
     val DRAW_DECLARATION: String = MahjongCraftMetadata.id("draw_declaration")
 }
 
-/** 流局結算時一副手牌應採用的公開動畫策略。 */
-enum class ExhaustiveDrawSettlementHandPresentation {
-    /** 公開聽牌手牌並顯示規則提供的等待牌。 */
-    REVEAL_TENPAI,
+/** 流局結算時規則要求如何公開一位玩家的手牌。 */
+enum class ExhaustiveDrawHandDisclosure {
+    /** 公開聽牌手牌，並公開規則算出的等待牌。 */
+    TENPAI,
 
-    /** 公開宣告手牌作為成立證明，但不顯示等待牌。 */
-    REVEAL_PROOF,
+    /** 公開手牌作為流局宣告成立的證明，不公開等待牌。 */
+    PROOF,
 
-    /** 不公開手牌，將立牌平滑蓋成牌背朝上。 */
-    CONCEAL,
+    /** 不公開手牌。 */
+    CONCEALED,
 }
 
 /**
- * 單一玩家的回合結算呈現關鍵影格。
+ * 單一玩家的流局結算資料。
  *
- * @property ranking 規則中立的分數排行關鍵影格。
+ * @property ranking 這名玩家結算前後的分數與名次。
  * @property seatWind 結算當下風位。
- * @property handTileIds 這名玩家完整手牌的 Uuid，僅供結算動畫定位，不包含副露或牌河。
- * @property handPresentation 這副手牌在結算時採用的公開動畫策略。
+ * @property handTileIds 這名玩家完整立牌的 Uuid，不包含副露或牌河。
+ * @property handDisclosure 規則要求如何公開這副手牌。
  * @property revealedHandTileIds 規則要求公開的完整手牌 Uuid；空集合代表不推牌。
  * @property waitingTiles 規則已計算完成的等待牌；空集合代表不顯示等待牌。
  * @property statusId 玩家狀態的 namespaced ID；不需要額外狀態時為 null。
@@ -44,7 +44,7 @@ data class ExhaustiveDrawSettlementPlayerPresentation(
     val ranking: ScoreRankingPlayer,
     val seatWind: Wind,
     val handTileIds: List<Uuid>,
-    val handPresentation: ExhaustiveDrawSettlementHandPresentation,
+    val handDisclosure: ExhaustiveDrawHandDisclosure,
     val revealedHandTileIds: List<Uuid>,
     val waitingTiles: List<Tile>,
     val statusId: String?,

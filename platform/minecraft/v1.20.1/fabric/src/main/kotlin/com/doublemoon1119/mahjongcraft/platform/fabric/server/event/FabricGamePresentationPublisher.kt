@@ -227,7 +227,7 @@ class FabricGamePresentationPublisher(
                     "currentScore" to ranking.currentScore,
                     "previousRank" to ranking.previousRank,
                     "currentRank" to ranking.currentRank,
-                    "handPresentation" to player.handPresentation,
+                    "handDisclosure" to player.handDisclosure,
                     "waitingTiles" to player.waitingTiles.map(Any::toString),
                 )
             },

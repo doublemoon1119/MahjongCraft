@@ -11,7 +11,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecording
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinDetails
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinningHand
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryDetailValueTypeKeys
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinSettlementMode
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinSettlementDetail
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailEntry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailField
@@ -384,14 +384,14 @@ sealed interface WinRoundDirectivePersistenceDto {
      *
      * @property newlyFinishedPlayerIds 因本次結算而完成的玩家 UUID 字串。
      * @property nextPlayerId 下一個行動玩家的 UUID 字串。
-     * @property settlementMode 結算模式的列舉名稱。
+     * @property settlementDetail 結算模式的列舉名稱。
      */
     @Serializable
     @SerialName("continue_round")
     data class ContinueRound(
         val newlyFinishedPlayerIds: Set<String>,
         val nextPlayerId: String,
-        val settlementMode: String,
+        val settlementDetail: String,
     ) : WinRoundDirectivePersistenceDto
 }
 
@@ -689,7 +689,7 @@ private fun WinRoundDirective.toPersistenceDto(): WinRoundDirectivePersistenceDt
     is WinRoundDirective.ContinueRound -> WinRoundDirectivePersistenceDto.ContinueRound(
         newlyFinishedPlayerIds.map(Uuid::toString).toSet(),
         nextPlayerId.toString(),
-        settlementMode.name,
+        settlementDetail.name,
     )
 }
 
@@ -699,7 +699,7 @@ private fun WinRoundDirectivePersistenceDto.toDomain(): WinRoundDirective = when
     is WinRoundDirectivePersistenceDto.ContinueRound -> WinRoundDirective.ContinueRound(
         newlyFinishedPlayerIds.map(Uuid::parse).toSet(),
         Uuid.parse(nextPlayerId),
-        ContinuingWinSettlementMode.valueOf(settlementMode),
+        ContinuingWinSettlementDetail.valueOf(settlementDetail),
     )
 }
 

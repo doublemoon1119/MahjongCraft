@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation
 
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinSettlementMode
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinSettlementDetail
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundContinuationContext
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.applyTo
@@ -46,7 +46,7 @@ class DebugWinRoundContinuationResolverTest {
         val continueRound = assertContinueRound(directive)
         assertEquals(setOf(table.players[0].id), continueRound.newlyFinishedPlayerIds)
         assertEquals(table.players[1].id, continueRound.nextPlayerId)
-        assertEquals(ContinuingWinSettlementMode.FULL, continueRound.settlementMode)
+        assertEquals(ContinuingWinSettlementDetail.WINNER_DETAILS, continueRound.settlementDetail)
     }
 
     /** 榮和：回合接在放銃者之後，而不是贏家之後——維持原本的順位感。 */
@@ -100,14 +100,14 @@ class DebugWinRoundContinuationResolverTest {
     fun `the selected presentation mode is passed through`() {
         val table = table(playerCount = 4)
         listOf(
-            DebugWinRoundContinuationMode.FULL to ContinuingWinSettlementMode.FULL,
-            DebugWinRoundContinuationMode.BRIEF to ContinuingWinSettlementMode.BRIEF,
+            DebugWinRoundContinuationMode.FULL to ContinuingWinSettlementDetail.WINNER_DETAILS,
+            DebugWinRoundContinuationMode.BRIEF to ContinuingWinSettlementDetail.SCORE_CHANGES_ONLY,
         ).forEach { (debugMode, expected) ->
             state.setMode(table.id, debugMode)
 
             val continueRound = assertContinueRound(resolver.resolve(tsumoContext(table, winnerIndex = 0), ruleModule))
 
-            assertEquals(expected, continueRound.settlementMode, "Debug mode $debugMode must map to $expected.")
+            assertEquals(expected, continueRound.settlementDetail, "Debug mode $debugMode must map to $expected.")
         }
     }
 

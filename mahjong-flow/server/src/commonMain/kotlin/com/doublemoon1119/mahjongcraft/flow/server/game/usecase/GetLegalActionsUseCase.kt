@@ -15,7 +15,7 @@ import kotlin.uuid.Uuid
  * 查詢指定玩家目前合法動作清單的應用層用例。
  *
  * 純查詢、無副作用，包一層 `module.createLegalActionValidator().getLegalActions(...)`，讓
- * `:mahjong-flow` 呼叫端（例如未來的 Minecraft GUI）取得目前玩家在當前情境下的合法動作清單，
+ * `:mahjong-flow` 呼叫端（例如平台的操作介面）取得目前玩家在當前情境下的合法動作清單，
  * 不需要直接依賴 `:mahjong-logic` 的規則型別自行判斷。
  *
  * 呼叫端只給 [gameId]/[playerId]，這裡會依 [TableState]

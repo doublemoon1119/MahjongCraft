@@ -44,7 +44,7 @@ class FabricWinSettlementPresentationScheduler(
         // 精簡面板直接跳過贏家段：不送任何 winner snapshot，rankingStartTick 因此是 0，面板一開場
         // 就是分數變動動畫。牌桌上贏家的牌已經攤開了，「誰放銃給誰」從分數增減就看得出來，面板再
         // 重現一次只是讓其他仍在局中的玩家乾等。
-        val winners = request.winners.takeUnless { request.isBrief }.orEmpty().map { winner ->
+        val winners = request.winners.takeIf { request.includesWinnerDetails }.orEmpty().map { winner ->
             WinSettlementWinnerSnapshot(
                 playerId = winner.playerId.toString(),
                 seatIndex = winner.seatIndex,
@@ -106,7 +106,7 @@ class FabricWinSettlementPresentationScheduler(
             refreshPositionAndAngles(placement.x, placement.y + STAGE_HEIGHT_OFFSET, placement.z, placement.yaw, 0f)
         }
         if (!spawnGateway.spawn(world, stage, "win-settlement", tableId)) return null
-        if (request.isBrief) {
+        if (!request.includesWinnerDetails) {
             overlays.hideUntil(world, tableId, controllerPos, stage.endGameTime + BRIEF_PRESENTATION_HANDOFF_GRACE_TICKS)
         } else {
             overlays.hideUntilRemoved(world, tableId, controllerPos)

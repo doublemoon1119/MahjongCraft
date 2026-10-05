@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.service
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInExhaustiveDrawSettlementStatusIds
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementHandPresentation
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawHandDisclosure
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementPlayerPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPlayer
@@ -39,10 +39,10 @@ object ExhaustiveDrawSettlementPresentationRequestFactory {
                 // 手牌在他胡牌時就已經收尾蓋好了，這裡不能再排一次動畫，也不該被標成聽牌／不聽——
                 // 他根本沒有參與這次流局。
                 val isFinished = player.id in currentState.finishedPlayerIds
-                val handPresentation = when {
-                    reveal == null -> ExhaustiveDrawSettlementHandPresentation.CONCEAL
-                    tenpaiPlayerIds != null && player.id in tenpaiPlayerIds -> ExhaustiveDrawSettlementHandPresentation.REVEAL_TENPAI
-                    else -> ExhaustiveDrawSettlementHandPresentation.REVEAL_PROOF
+                val handDisclosure = when {
+                    reveal == null -> ExhaustiveDrawHandDisclosure.CONCEALED
+                    tenpaiPlayerIds != null && player.id in tenpaiPlayerIds -> ExhaustiveDrawHandDisclosure.TENPAI
+                    else -> ExhaustiveDrawHandDisclosure.PROOF
                 }
                 ExhaustiveDrawSettlementPlayerPresentation(
                     ranking = ScoreRankingPlayer(
@@ -64,8 +64,8 @@ object ExhaustiveDrawSettlementPresentationRequestFactory {
                             .sortedWith(compareBy(module.tileOrder) { it.tile })
                             .map { it.id }
                     },
-                    handPresentation = handPresentation,
-                    revealedHandTileIds = if (handPresentation == ExhaustiveDrawSettlementHandPresentation.CONCEAL) emptyList() else player.hand.allTiles.map { it.id },
+                    handDisclosure = handDisclosure,
+                    revealedHandTileIds = if (handDisclosure == ExhaustiveDrawHandDisclosure.CONCEALED) emptyList() else player.hand.allTiles.map { it.id },
                     waitingTiles = reveal?.waitingTiles.orEmpty().toList(),
                     statusId = when {
                         isFinished -> null

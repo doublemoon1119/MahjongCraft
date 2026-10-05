@@ -19,7 +19,7 @@ import kotlin.uuid.Uuid
  *
  * 純分派，不含任何業務邏輯——每個 use case 自己的驗證、狀態套用、快照與事件同步皆維持不變，
  * 這裡只負責把 [gameId]/[playerId]/`command` 轉呼叫成正確的 use case 呼叫。讓未來的呼叫端
- * （例如 Minecraft 平台層的網路封包處理）只需要「解析請求 → 組出一個 [GameCommand] → 呼叫本路由」，
+ * （例如平台層的網路請求處理）只需要「解析請求 → 組出一個 [GameCommand] → 呼叫本路由」，
  * 不需要自己維護一份「哪個操作對應哪個 use case」的對照表。
  *
  * 系統觸發的流局與回合推進 use case 不在這裡——它們沒有 `playerId`，呼叫時機由

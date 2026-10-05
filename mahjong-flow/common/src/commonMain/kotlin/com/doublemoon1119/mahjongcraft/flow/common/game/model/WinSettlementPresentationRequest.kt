@@ -71,13 +71,11 @@ data class WinSettlementDetailField(val id: String, val value: WinSettlementDeta
  *
  * @property playerId 贏家玩家 ID。
  * @property seatIndex 贏家座位序。
- * @property responsiblePlayerId 放銃／被搶槓玩家；自摸或不歸咎特定玩家的特殊 outcome（見
- * [WinSettlementPresentationRequestFactory.createSpecialOutcome]）為 `null`。
+ * @property responsiblePlayerId 放銃／被搶槓玩家；自摸或不歸咎特定玩家的特殊結算（例如流局滿貫）為 `null`。
  * @property totalScore 這位贏家本次胡牌獲得的總點數。
- * @property standingTileIds 立牌 ID，依規則的牌序排列，**不含**副露牌——副露牌另外完整列在 [melds]，兩者不得重複，
- * 否則 renderer 會把同一組副露多畫一次在手牌裡。
+ * @property standingTileIds 立牌 ID，依規則的牌序排列，**不含**副露牌；副露牌另外完整列在 [melds]，兩者不得重複。
  * @property melds 已公開的副露。
- * @property winningTileId 胡牌張；特殊 outcome（同上）不偽造胡牌張時為 `null`。
+ * @property winningTileId 胡牌張；特殊結算（同上）沒有胡牌張時為 `null`。
  * @property detailFields 規則專屬的胡牌詳情（例如日麻的翻符、役種），欄位 id 不得重複。
  */
 data class WinSettlementWinnerPresentation(
@@ -106,11 +104,8 @@ data class WinSettlementWinnerPresentation(
  * @property paymentReasonIdsByPlayerId 排行中付款方式有別於一般結算的玩家，對應規則提供的付款原因 ID
  * （見 [WinSettlementResult.paymentReasonIdsByPlayerId]）；呈現層依 ID 查出顯示文字，不認識任何規則。
  * key 必須是 [ranking] 中的玩家。
- * @property isBrief 這次是否**跳過贏家詳情、只顯示分數變動**。
- *
- * 中途胡牌（本局在胡牌後仍繼續）用的模式：贏家的牌已經在牌桌上攤開了，面板再重現一次手牌、胡牌張、
- * 寶牌與役種明細只是讓其他仍在局中的玩家乾等，而「誰放銃給誰」從分數增減本來就看得出來。因此平台
- * 直接不建立贏家段，面板一開場就是分數變動動畫。
+ * @property includesWinnerDetails 是否提供贏家詳情；為 false 時只提供分數變動，例如中途胡牌時贏家的牌已經公開在桌上
+ * （見 [ContinuingWinSettlementDetail]）。
  */
 data class WinSettlementPresentationRequest(
     val outcomeId: String,
@@ -118,7 +113,7 @@ data class WinSettlementPresentationRequest(
     val isTsumo: Boolean,
     val winners: List<WinSettlementWinnerPresentation>,
     val ranking: ScoreRankingPresentation,
-    val isBrief: Boolean = false,
+    val includesWinnerDetails: Boolean = true,
     val paymentReasonIdsByPlayerId: Map<Uuid, String> = emptyMap(),
 ) {
     init {

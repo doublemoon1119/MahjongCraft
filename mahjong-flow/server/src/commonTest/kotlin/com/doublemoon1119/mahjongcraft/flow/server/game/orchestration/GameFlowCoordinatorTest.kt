@@ -9,7 +9,7 @@ import com.doublemoon1119.mahjongcraft.ai.riichi.registerRiichiOpponentModel
 import com.doublemoon1119.mahjongcraft.flow.common.di.createBuiltInWinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinSettlementMode
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinSettlementDetail
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
@@ -89,6 +89,7 @@ import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -556,7 +557,7 @@ class GameFlowCoordinatorTest {
             winnerId = winnerId,
             otherId = otherId,
             winningTile = winningTile,
-            settlementMode = ContinuingWinSettlementMode.FULL,
+            settlementDetail = ContinuingWinSettlementDetail.WINNER_DETAILS,
         )
         val game = fixtures.gameRepo.getGame(gameId)!!
         assertEquals(null, game.pendingTransition, "ContinueRound must not chain AdvanceRound.")
@@ -598,7 +599,7 @@ class GameFlowCoordinatorTest {
     }
 
     /**
-     * 驗證 [ContinuingWinSettlementMode.BRIEF]：胡牌演出**完全照常**（理牌、攤牌、降臨特效，役滿時還有
+     * 驗證 [ContinuingWinSettlementDetail.SCORE_CHANGES_ONLY]：胡牌演出**完全照常**（理牌、攤牌、降臨特效，役滿時還有
      * showcase），只有結算面板換成精簡版。
      *
      * 這正是這組 enum 的設計重點：胡牌演出是「這個人胡了、退出本局」在世界裡唯一的視覺訊號，其他仍在
@@ -610,11 +611,11 @@ class GameFlowCoordinatorTest {
             winnerId = Uuid.random(),
             otherId = Uuid.random(),
             winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red),
-            settlementMode = ContinuingWinSettlementMode.BRIEF,
+            settlementDetail = ContinuingWinSettlementDetail.SCORE_CHANGES_ONLY,
         )
 
         val published = fixtures.presentationPublisher.getPublishedWinPresentations(gameId).single()
-        assertTrue(published.settlement.isBrief, "BRIEF must ask the platform for the shortened panel.")
+        assertFalse(published.settlement.includesWinnerDetails, "SCORE_CHANGES_ONLY must leave out the winner details.")
         assertTrue(published.roundContinues)
         assertEquals(
             listOf(listOf(WinPresentationSegment.CELEBRATION, WinPresentationSegment.SETTLEMENT)),
@@ -644,7 +645,7 @@ class GameFlowCoordinatorTest {
             winnerId = Uuid.random(),
             otherId = Uuid.random(),
             winningTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
-            settlementMode = ContinuingWinSettlementMode.FULL,
+            settlementDetail = ContinuingWinSettlementDetail.WINNER_DETAILS,
             handTiles = tanyaoTiles,
         )
 
@@ -669,7 +670,7 @@ class GameFlowCoordinatorTest {
             winnerId = Uuid.random(),
             otherId = Uuid.random(),
             winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red),
-            settlementMode = ContinuingWinSettlementMode.FULL,
+            settlementDetail = ContinuingWinSettlementDetail.WINNER_DETAILS,
         )
 
         val published = fixtures.presentationPublisher.getPublishedWinPresentations(gameId).single()
@@ -695,7 +696,7 @@ class GameFlowCoordinatorTest {
             winnerId = firstWinnerId,
             otherId = secondWinnerId,
             winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red),
-            settlementMode = ContinuingWinSettlementMode.FULL,
+            settlementDetail = ContinuingWinSettlementDetail.WINNER_DETAILS,
         )
         // 第二位玩家接著自摸：沿用同一份 fixtures（含同一個 resolver registry）再跑一次。
         val secondWinningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
@@ -725,15 +726,15 @@ class GameFlowCoordinatorTest {
     }
 
     /**
-     * 以指定的 [settlementMode] 跑一次「規則判定本局繼續」的自摸，回傳執行後的 fixtures 供斷言。
+     * 以指定的 [settlementDetail] 跑一次「規則判定本局繼續」的自摸，回傳執行後的 fixtures 供斷言。
      *
-     * 兩種結算面板模式的測試共用同一份桌況與 resolver 設定，差別只在 [settlementMode]。
+     * 兩種結算面板模式的測試共用同一份桌況與 resolver 設定，差別只在 [settlementDetail]。
      */
     private suspend fun runContinuingWinTsumo(
         winnerId: Uuid,
         otherId: Uuid,
         winningTile: IdentifiedTile,
-        settlementMode: ContinuingWinSettlementMode,
+        settlementDetail: ContinuingWinSettlementDetail,
         handTiles: List<Tile> = daisangenTiles,
     ): Fixtures {
         val ruleModuleId = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }.getModule(RiichiRuleConfig()).id
@@ -755,7 +756,7 @@ class GameFlowCoordinatorTest {
                         return WinRoundDirective.ContinueRound(
                             newlyFinishedPlayerIds = context.winnerPlayerIds,
                             nextPlayerId = nextActive.id,
-                            settlementMode = settlementMode,
+                            settlementDetail = settlementDetail,
                         )
                     }
                 },

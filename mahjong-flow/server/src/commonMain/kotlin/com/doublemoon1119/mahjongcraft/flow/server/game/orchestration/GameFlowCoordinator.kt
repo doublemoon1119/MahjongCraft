@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinSettlementMode
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinSettlementDetail
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
@@ -451,18 +451,18 @@ class GameFlowCoordinator(
 
         if (presentation != null) {
             val continuing = directive as? WinRoundDirective.ContinueRound
-            // 「面板多詳細」由 settlementMode 決定；「是否中斷遊戲」由 roundContinues 加上這次是否帶
+            // 「面板多詳細」由 settlementDetail 決定；「是否中斷遊戲」由 roundContinues 加上這次是否帶
             // 役滿 cue 決定（見 WinPresentationRequest KDoc），兩者互不牽連。
-            val mode = continuing?.settlementMode ?: ContinuingWinSettlementMode.FULL
+            val detail = continuing?.settlementDetail ?: ContinuingWinSettlementDetail.WINNER_DETAILS
             presentationPublisher.publishWinPresentation(
                 gameId,
                 WinPresentationRequest(
                     winnerPlayerIds = presentation.winnerPlayerIds,
-                    // 胡牌演出在任何模式下都完整播放（見 ContinuingWinSettlementMode KDoc）；模式
+                    // 胡牌演出在任何模式下都完整播放（見 ContinuingWinSettlementDetail KDoc）；模式
                     // 只決定結算面板的詳細程度。
                     celebration = presentation.celebration,
                     settlement = presentation.settlement.copy(
-                        isBrief = mode == ContinuingWinSettlementMode.BRIEF,
+                        includesWinnerDetails = detail == ContinuingWinSettlementDetail.WINNER_DETAILS,
                     ),
                     roundContinues = continuing != null,
                 ),

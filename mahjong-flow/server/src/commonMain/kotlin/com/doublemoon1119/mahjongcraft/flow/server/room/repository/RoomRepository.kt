@@ -32,7 +32,7 @@ interface RoomRepository {
      */
     suspend fun removeRoom(id: Uuid)
 
-    /** 清除目前 server session 中的所有房間；平台停止或切換世界時使用。 */
+    /** 清除目前 server session 中的所有房間；平台停止或切換存檔時使用。 */
     suspend fun clearAll()
 
     /**
