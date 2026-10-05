@@ -1,0 +1,29 @@
+{
+  "parent": "mahjongcraft:riichi/yakuman",
+  "display": {
+    "icon": {
+      "item": "mahjongcraft:mahjong_tile",
+      "nbt": "{tile:\"west\"}"
+    },
+    "title": {
+      "translate": "mahjongcraft.game.yaku.chiho"
+    },
+    "description": {
+      "translate": "advancements.mahjongcraft.riichi.yakuman.chiihou.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "achieved": {
+      "trigger": "mahjongcraft:mahjong_achievement",
+      "conditions": {
+        "achievements": [
+          "mahjongcraft:riichi/yakuman/chiihou"
+        ]
+      }
+    }
+  }
+}

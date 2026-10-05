@@ -1,0 +1,28 @@
+{
+  "parent": "mahjongcraft:mahjong/root",
+  "display": {
+    "icon": {
+      "item": "minecraft:white_banner"
+    },
+    "title": {
+      "translate": "advancements.mahjongcraft.mahjong.exhaustive_draw.title"
+    },
+    "description": {
+      "translate": "advancements.mahjongcraft.mahjong.exhaustive_draw.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "achieved": {
+      "trigger": "mahjongcraft:mahjong_achievement",
+      "conditions": {
+        "achievements": [
+          "mahjongcraft:exhaustive_draw"
+        ]
+      }
+    }
+  }
+}

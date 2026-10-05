@@ -1,0 +1,29 @@
+{
+  "parent": "mahjongcraft:riichi/double_yakuman",
+  "display": {
+    "icon": {
+      "item": "mahjongcraft:mahjong_tile",
+      "nbt": "{tile:\"p1\"}"
+    },
+    "title": {
+      "translate": "mahjongcraft.game.yaku.suanko_tanki"
+    },
+    "description": {
+      "translate": "advancements.mahjongcraft.riichi.yakuman.suuankou_tanki.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "achieved": {
+      "trigger": "mahjongcraft:mahjong_achievement",
+      "conditions": {
+        "achievements": [
+          "mahjongcraft:riichi/yakuman/suuankou_tanki"
+        ]
+      }
+    }
+  }
+}

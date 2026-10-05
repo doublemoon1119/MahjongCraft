@@ -2,7 +2,9 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.suppor
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
+import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.achievement.FabricAchievementService
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import net.minecraft.server.command.ServerCommandSource
@@ -23,13 +25,19 @@ import kotlin.uuid.toKotlinUuid
  *
  * 兩者都立即回傳 Brigadier 結果碼，實際訊息稍後才非同步送出。
  *
+ * 經過這裡的 debug 指令會讓該桌執行前後的場次不再產生進度與統計。
+ *
  * @property membershipRepository 查詢玩家目前入座的牌桌。
+ * @property gameRepository 取得牌桌目前的場次。
+ * @property achievementService 排除使用過 debug 指令的場次。
  * @property scope 執行查詢與動作的協程 scope。
  * @property dispatchers 取得回到 main thread 送出回饋的 dispatcher。
  */
 @Single
 class DebugPlayerTableScope(
     private val membershipRepository: PlayerMembershipRepository,
+    private val gameRepository: GameRepository,
+    private val achievementService: FabricAchievementService,
     private val scope: AppCoroutineScope,
     private val dispatchers: CoroutineDispatchers,
 ) {
@@ -38,6 +46,7 @@ class DebugPlayerTableScope(
         val player = requirePlayer(source) ?: return COMMAND_FAILURE
         scope.launch {
             val tableId = membershipRepository.getTableId(player.uuid.toKotlinUuid())
+            tableId?.let { excludeCurrentMatch(it) }
             withContext(dispatchers.main) {
                 if (tableId == null) {
                     sendNotSeated(source)
@@ -58,7 +67,12 @@ class DebugPlayerTableScope(
         scope.launch {
             val playerId = player.uuid.toKotlinUuid()
             val tableId = membershipRepository.getTableId(playerId)
-            val message = tableId?.let { action(it, playerId) }
+            val message = tableId?.let { id ->
+                excludeCurrentMatch(id)
+                val result = action(id, playerId)
+                excludeCurrentMatch(id)
+                result
+            }
             withContext(dispatchers.main) {
                 if (message == null) {
                     sendNotSeated(source)
@@ -68,6 +82,11 @@ class DebugPlayerTableScope(
             }
         }
         return COMMAND_SUCCESS
+    }
+
+    /** 讓 [tableId] 目前的場次不再產生進度與統計。 */
+    private suspend fun excludeCurrentMatch(tableId: Uuid) {
+        gameRepository.getGame(tableId)?.let { game -> achievementService.excludeMatch(game.matchId) }
     }
 
     /** 取得執行指令的玩家；由非玩家執行時回報錯誤並回傳 `null`。 */

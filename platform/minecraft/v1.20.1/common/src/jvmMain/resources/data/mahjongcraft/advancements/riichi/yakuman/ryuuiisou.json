@@ -1,0 +1,29 @@
+{
+  "parent": "mahjongcraft:riichi/yakuman",
+  "display": {
+    "icon": {
+      "item": "mahjongcraft:mahjong_tile",
+      "nbt": "{tile:\"green_dragon\"}"
+    },
+    "title": {
+      "translate": "mahjongcraft.game.yaku.ryuiso"
+    },
+    "description": {
+      "translate": "advancements.mahjongcraft.riichi.yakuman.ryuuiisou.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "achieved": {
+      "trigger": "mahjongcraft:mahjong_achievement",
+      "conditions": {
+        "achievements": [
+          "mahjongcraft:riichi/yakuman/ryuuiisou"
+        ]
+      }
+    }
+  }
+}

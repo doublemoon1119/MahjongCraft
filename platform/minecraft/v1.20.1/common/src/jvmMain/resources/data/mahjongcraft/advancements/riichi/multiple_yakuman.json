@@ -1,0 +1,28 @@
+{
+  "parent": "mahjongcraft:riichi/yakuman",
+  "display": {
+    "icon": {
+      "item": "minecraft:enchanted_golden_apple"
+    },
+    "title": {
+      "translate": "advancements.mahjongcraft.riichi.multiple_yakuman.title"
+    },
+    "description": {
+      "translate": "advancements.mahjongcraft.riichi.multiple_yakuman.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "achieved": {
+      "trigger": "mahjongcraft:mahjong_achievement",
+      "conditions": {
+        "achievements": [
+          "mahjongcraft:riichi/multiple_yakuman"
+        ]
+      }
+    }
+  }
+}

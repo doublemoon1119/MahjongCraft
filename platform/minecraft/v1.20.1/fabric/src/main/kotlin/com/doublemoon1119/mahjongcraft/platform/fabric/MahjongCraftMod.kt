@@ -17,12 +17,14 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongEx
 import com.doublemoon1119.mahjongcraft.platform.fabric.metadata.FabricRuntimeMetadata
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.C2SChannel
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
+import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModAchievements
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModBlocks
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItemGroups
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModSounds
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.achievement.FabricAchievementService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricAppCoroutineScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigManager
@@ -91,6 +93,7 @@ class MahjongCraftMod : ModInitializer {
         ModItems.register()
         ModSounds.register()
         ModEntities.register()
+        ModAchievements.register()
         val tableLifecycleService = koin.get<FabricTableLifecycleService>()
         val tableLocationValidation = koin.get<FabricTableLocationValidationService>()
         ModBlocks.register(
@@ -122,6 +125,7 @@ class MahjongCraftMod : ModInitializer {
         val openingPresentationOperations = koin.get<TableOpeningPresentationOperationTracker>()
         val presentationBusyTracker = koin.get<TablePresentationBusyTracker>()
         val observerBroadcast = koin.get<FabricObserverSnapshotBroadcastService>()
+        val achievementService = koin.get<FabricAchievementService>()
         mahjongTileCollisionService.registerEvents()
         observerBroadcast.registerEvents()
         ServerLifecycleEvents.SERVER_STARTED.register { server ->
@@ -135,6 +139,7 @@ class MahjongCraftMod : ModInitializer {
             playerIdentityStore.refresh()
             appScope.startSession()
             observerBroadcast.startSession()
+            achievementService.startSession()
             lobbyInfoLifecycle.startSession()
         }
         ServerLifecycleEvents.SERVER_STOPPING.register {
@@ -148,6 +153,7 @@ class MahjongCraftMod : ModInitializer {
                 // 最後才解除 persistence dirty listener」。
                 appScope.shutdown()
                 observerBroadcast.stopSession()
+                achievementService.stopSession()
                 lobbyInfoLifecycle.stopSession()
                 presentationBusyTracker.clearAll()
                 openingPresentationOperations.clearAll()

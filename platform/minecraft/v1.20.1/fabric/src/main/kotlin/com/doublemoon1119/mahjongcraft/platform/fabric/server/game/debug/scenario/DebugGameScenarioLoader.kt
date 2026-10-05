@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositor
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAvailabilityService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.achievement.FabricAchievementService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TablePresentationBusyTracker
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
 import kotlinx.coroutines.delay
@@ -30,7 +31,7 @@ sealed interface DebugGameScenarioLoadResult {
     ) : DebugGameScenarioLoadResult
 }
 
-/** 驗證、原子替換並同步 development-only 權威對局情境。 */
+/** 驗證、原子替換並同步 development-only 權威對局情境；載入情境的場次不再產生進度與統計。 */
 @Single
 class DebugGameScenarioLoader(
     private val minecraftEnvironment: MinecraftEnvironment,
@@ -42,6 +43,7 @@ class DebugGameScenarioLoader(
     private val presentationSynchronizer: DebugGameScenarioPresentationSynchronizer,
     private val decisionAvailabilityService: GameDecisionAvailabilityService,
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
+    private val achievementService: FabricAchievementService,
     private val dispatchers: CoroutineDispatchers,
 ) {
     /** 將 [scenarioId] 套用到 [playerId] 目前所在的進行中遊戲。 */
@@ -70,6 +72,7 @@ class DebugGameScenarioLoader(
                 requireNotNull(currentGame) { "The table does not have a running game" }
                 require(!currentGame.isMatchOver) { "The game has already ended" }
                 require(currentGame.pendingTransition == null) { "The game has a pending transition" }
+                achievementService.excludeMatch(currentGame.matchId)
                 val context = DebugGameScenarioContext(currentGame, playerId)
                 val result = scenario.build(context).continueAutomaticControls(currentGame)
                 validator.validate(context, result)

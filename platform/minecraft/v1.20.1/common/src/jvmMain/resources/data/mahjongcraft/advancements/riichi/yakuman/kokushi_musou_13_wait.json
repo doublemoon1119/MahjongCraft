@@ -1,0 +1,29 @@
+{
+  "parent": "mahjongcraft:riichi/double_yakuman",
+  "display": {
+    "icon": {
+      "item": "mahjongcraft:mahjong_tile",
+      "nbt": "{tile:\"m9\"}"
+    },
+    "title": {
+      "translate": "mahjongcraft.game.yaku.kokushimuso_jusanmenmachi"
+    },
+    "description": {
+      "translate": "advancements.mahjongcraft.riichi.yakuman.kokushi_musou_13_wait.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "achieved": {
+      "trigger": "mahjongcraft:mahjong_achievement",
+      "conditions": {
+        "achievements": [
+          "mahjongcraft:riichi/yakuman/kokushi_musou_13_wait"
+        ]
+      }
+    }
+  }
+}
