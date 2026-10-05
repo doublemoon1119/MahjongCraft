@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.ClientDecisionPromptStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.DecisionCardLayout
@@ -14,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.ALL_TILE_ASSET_KEYS
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileMotionAnimation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileMotionAnimationFrame
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileMotionAnimationSpec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
@@ -311,19 +313,14 @@ class MahjongTileEntityRenderer(
     }
 
     /**
-     * 翻牌動畫（[MahjongTilePose.FACE_DOWN] ↔ [MahjongTilePose.STANDING]）播放期間，姿態旋轉角
-     * ([TileMotionAnimationFrame.poseRotationDegrees]) 是連續內插的，但 [poseOriginOffset] 只在三個
-     * 離散姿態各自定義了正確的補償位移——若動畫途中仍固定套用終點姿態的補償位移（原本的做法：
-     * 直接讀 `entity.tilePose`，而 [FabricMahjongPlayerAreaPresenter.scheduleDealFlipAnimation] 一開始
-     * 就把 `tilePose` 設成動畫終點姿態），旋轉角跟位移補償量會對不上，牌看起來會有一段不自然的位移、
-     * 旋轉軸心也不會落在牌底——這是遊戲內實際發現的問題。
+     * 翻牌動畫（[MahjongTilePose.FACE_DOWN] ↔ [MahjongTilePose.STANDING]）播放期間的姿態補償位移。
      *
-     * 改成依動畫進度（跟 [TileMotionAnimationFrame.poseRotationDegrees] 用同一個 `progress`，確保兩者
-     * 步調一致）在起訖姿態各自的補償位移之間線性內插，讓補償位移隨著旋轉角同步變化——起訖兩端會精確
-     * 對齊原本靜態姿態的補償量（跟播放前、播放完成後的靜態渲染結果完全連續，不會有起訖瞬間的跳動），
-     * 中間過程雖然不是嚴格意義上單一軸心的剛體旋轉（三個姿態各自的補償位移原本就是各自獨立調校、
-     * 沒有共用同一個真實幾何軸心），但比起原本「旋轉角在動、位移卻整段固定」的錯誤參照點更接近直覺
-     * 上「繞牌底翻起」的觀感，且不會有明顯的位置跳動。
+     * [poseOriginOffset] 只為三個離散姿態定義補償位移，動畫中的姿態旋轉角（[TileMotionAnimationFrame.poseRotationDegrees]）
+     * 則是連續內插的；`entity.tilePose` 只表示終點姿態，整段套用它的補償位移會讓旋轉角與位移對不上，牌會偏移，
+     * 旋轉軸心也不落在牌底。
+     *
+     * 因此依同一個 `progress` 在起訖姿態的補償位移之間線性內插：起訖兩端與靜態渲染完全一致，播放前後不會跳動；
+     * 中間過程不是嚴格的單一軸心剛體旋轉（三個姿態的補償位移各自調校、沒有共用幾何軸心），但觀感接近繞牌底翻起。
      */
     private fun lerpPoseOriginOffset(startRotationDegrees: Float, endRotationDegrees: Float, progress: Double): Triple<Double, Double, Double> {
         val (startX, startY, startZ) = poseOriginOffset(startRotationDegrees)

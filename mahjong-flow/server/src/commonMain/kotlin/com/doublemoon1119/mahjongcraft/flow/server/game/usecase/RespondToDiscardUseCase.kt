@@ -86,7 +86,7 @@ class RespondToDiscardUseCase(
      * @param gameId 對局 Uuid。
      * @param playerId 發起回應的玩家 Uuid。
      * @param action 欲執行的回應動作（[GameAction.Pass]、[GameAction.Chi]、[GameAction.Pon]，
-     *               或 [GameAction.KanType.OPEN_KAN] 型態的 [GameAction.Kan]）。
+     * 或 [GameAction.KanType.OPEN_KAN] 型態的 [GameAction.Kan]）。
      * @return 回應結果，成功時為 [Unit]，失敗時為 [GameError]。
      */
     suspend operator fun invoke(gameId: Uuid, playerId: Uuid, action: GameAction): Outcome<Unit, GameError> {

@@ -38,7 +38,7 @@ class FabricMahjongDiscardPresenter(
 
     /**
      * 牌河裡的每一張牌，UUID 都跟牌牆結構座標傳過來的那張牌完全同一個——理由跟
-     * [FabricMahjongHandTilesPresenter.present] 完全一致，這裡只用 `World.getEntity` 依 UUID 找到
+     * [FabricMahjongPlayerAreaPresenter.present] 完全一致，這裡只用 `World.getEntity` 依 UUID 找到
      * 既有 entity，直接改標記、改姿態（[MahjongTilePose.FACE_UP]，牌河牌面永遠朝上可見）、移動到牌河
      * 位置——絕對不能另外 `spawnEntity`。
      *
@@ -162,7 +162,7 @@ class FabricMahjongDiscardPresenter(
      * 1. 找出這張桌子目前所有管理中的麻將牌 entity（[findManagedTiles]，涵蓋牌牆、王牌區、手牌、
      *    摸牌位、牌河，不分子系統）。
      * 2. 篩選出姿態為 [MahjongTilePose.FACE_DOWN] 的那些——手牌／摸牌位固定 `STANDING`
-     *    （見 [FabricMahjongHandTilesPresenter]），牌河固定 `FACE_UP`（見 [present]），只有牌牆／
+     *    （見 [FabricMahjongPlayerAreaPresenter]），牌河固定 `FACE_UP`（見 [present]），只有牌牆／
      *    王牌區固定 `FACE_DOWN`（見 [FabricMahjongTileWallPresenter.present]），因此姿態本身就足以
      *    排除手牌、副露、牌河，不需要另外比對 UUID 是否還在牌牆結構裡。
      * 3. 再篩選 yaw 跟 [seatIndex] 自己那面牆的 yaw 一致——四面牆都是 `FACE_DOWN`，需要 yaw 才能

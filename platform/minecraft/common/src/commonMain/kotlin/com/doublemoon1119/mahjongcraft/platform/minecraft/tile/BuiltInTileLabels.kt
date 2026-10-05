@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
+
 /**
  * 註冊 MahjongCraft 內建 asset key（見 [ALL_TILE_ASSET_KEYS]）對應的牌面角落標籤，供非中文圈玩家
  * 開啟輔助標籤時使用。

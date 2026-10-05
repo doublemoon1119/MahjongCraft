@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.tile
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.AnimatedMahjongEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongAnimationSounds
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose

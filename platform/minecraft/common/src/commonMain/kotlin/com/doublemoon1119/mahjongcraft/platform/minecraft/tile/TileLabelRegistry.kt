@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
+
 /**
  * 管理 asset key（見 [Tile.toAssetKey]）對應牌面角落標籤（[TileLabel]）的 runtime registry。
  *

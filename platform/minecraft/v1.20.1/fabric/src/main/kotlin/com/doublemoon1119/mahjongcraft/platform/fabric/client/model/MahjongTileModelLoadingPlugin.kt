@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.model
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileItemRenderer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.ALL_TILE_ASSET_KEYS
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tileModelAssetPath

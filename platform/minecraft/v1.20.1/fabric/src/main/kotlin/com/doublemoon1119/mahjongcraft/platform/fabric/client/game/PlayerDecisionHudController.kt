@@ -8,7 +8,9 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClie
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongHudLayoutEditorScreen
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerDisplayNameResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileFaceRenderer
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileSelectionConfirmEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.MatchingTileHighlightController
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileSelectionConfirmEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels

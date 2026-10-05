@@ -537,7 +537,7 @@ class RiichiRuleModule(
     /**
      * 四家立直：全員皆已宣告立直則成立。呼叫端只在剛套用完一次立直宣告、且確定沒人反應時才會
      * 呼叫這個方法，所以「全員皆立直」這個條件只可能在恰好完成的那次宣告變成 true
-     * （玩家只能宣告立直一次，見 [declareRiichi] 的 `!isRiichi` 合法性檢查）。日麻限定，不屬於
+     * （玩家只能宣告立直一次，見 [RiichiLegalActionValidator] 的 `!isRiichi` 合法性檢查）。日麻限定，不屬於
      * 通用規則契約。
      */
     fun resolveSuuchaRiichi(tableStateAfterDeclaration: TableState): ExhaustiveDrawReason? {

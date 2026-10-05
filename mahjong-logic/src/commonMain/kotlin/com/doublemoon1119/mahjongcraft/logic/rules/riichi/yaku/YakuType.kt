@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku
 
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueCalculator
+
 /**
  * 日本麻將役種識別列舉。
  *

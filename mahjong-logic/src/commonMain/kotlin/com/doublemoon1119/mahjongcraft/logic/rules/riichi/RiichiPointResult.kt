@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuResult
+
 /**
  * 立直麻將的點數結算結果。
  *
@@ -51,10 +53,10 @@ sealed interface RiichiPointResult {
      * 由呼叫端依 [PaoLiability.direction] 決定對象。
      *
      * @property paoPayment 包牌責任者支付的點數——依觸發包牌的那個役滿本身的倍數換算（大三元 1
-     *           倍、大四喜 2 倍，見 [YakuResult.doubleYakuman]），不是整體役滿倍數。
+     * 倍、大四喜 2 倍，見 [YakuResult.doubleYakuman]），不是整體役滿倍數。
      * @property remainder 若和了同時疊加其他役滿（例如大四喜 + 四暗刻），超出包牌範圍的那部分改走
-     *           正常自摸結算（[DealerTsumo]/[NonDealerTsumo]），由呼叫端疊加進正常付款對象；沒有
-     *           疊加時為 null，全額都在包牌範圍內。
+     * 正常自摸結算（[DealerTsumo]/[NonDealerTsumo]），由呼叫端疊加進正常付款對象；沒有
+     * 疊加時為 null，全額都在包牌範圍內。
      */
     data class PaoTsumo(val paoPayment: Int, val remainder: RiichiPointResult? = null) : RiichiPointResult {
         override val total: Int get() = paoPayment + (remainder?.total ?: 0)
@@ -64,7 +66,7 @@ sealed interface RiichiPointResult {
      * 榮和包牌：因包牌責任成立，由包牌責任者與實際放銃者兩人平分包牌部分的點數。
      *
      * @property paymentEach 兩人各自支付的點數（依觸發包牌的役滿本身倍數換算，理由同
-     *           [PaoTsumo.paoPayment]）。
+     * [PaoTsumo.paoPayment]）。
      * @property remainder 若和了同時疊加其他役滿，超出包牌範圍的那部分改走正常榮和結算（[Ron]），
      *           由放銃者全額支付、疊加進正常付款對象；沒有疊加時為 null，全額都在包牌範圍內。
      */

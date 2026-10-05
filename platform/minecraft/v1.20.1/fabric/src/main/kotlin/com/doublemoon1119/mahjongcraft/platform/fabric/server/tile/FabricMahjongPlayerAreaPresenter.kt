@@ -254,7 +254,7 @@ class FabricMahjongPlayerAreaPresenter(
      *    全部共用同一個絕對起訖時刻（[reorderStartGameTime]／`reorderEndGameTime`），沒有移動的牌也照樣
      *    播放（起訖位置相同），維持這批牌步調一致的既有慣例。
      * 2. 自摸（[MahjongWinCelebrationPresentation.isTsumo]）才有的中繼步驟：自摸牌
-     *    （[MahjongWinCelebrationPresentation.winningTileId]，此時已經是 [organizedStandingTileIds] 之
+     *    （[MahjongWinCelebrationPresentation.winningTileId]，此時已經是 [MahjongWinCelebrationPresentation.organizedStandingTileIds] 之
      *    一）單獨倒下（[TileAnimationSteps.scheduleLaydown]），姿態從立牌轉平放牌面朝上，位置不變。
      * 3. 其餘立牌（自摸時排除自摸牌，榮和／搶槓時是全部）在共用的絕對時刻一起倒下——自摸要等自摸牌
      *    倒下播完、再等 [MahjongTileTableLayout.WIN_PRE_HAND_LAYDOWN_DELAY_TICKS]；榮和／搶槓省略自摸牌
@@ -401,7 +401,7 @@ class FabricMahjongPlayerAreaPresenter(
      * [present] 一樣不建立新 entity，也一樣把 [MahjongInitialDealPresentation.handTileIdsBySeatIndex]
      * 各座位清單內的順序（時間軸，非畫面左右順序）反過來對應 `tileIndex`，見 [present] KDoc。
      *
-     * 全部座位的最後一次抓取都落地後，額外統一排定一次翻牌動畫（[scheduleDealFlipAnimation]）——所有
+     * 全部座位的最後一次抓取都落地後，額外統一排定一次翻牌動畫——所有
      * 已成功領走的牌（不論哪一批、哪個座位）同一時間一起原地翻起，觸發時機由
      * [MahjongTileTableLayout.dealFlipStartDelayTicks] 依總抓取次數算出。
      */

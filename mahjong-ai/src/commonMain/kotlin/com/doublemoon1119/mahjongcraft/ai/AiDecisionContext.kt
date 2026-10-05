@@ -11,7 +11,7 @@ import kotlin.uuid.Uuid
  *           `TableState.toSnapshot(observerId = selfId)`）——只有這位 AI 自己的手牌可見，
  *           跟真人玩家的客戶端拿到的視角完全相同，AI 不會「偷看」其他玩家的手牌。
  * @property selfId 這位 AI 玩家自己的 Uuid。不靠「[snapshot] 裡哪個玩家的手牌剛好可見」這種
- *           隱式推斷取得，避免依賴 [snapshot] 建構方式的巧合。
+ * 隱式推斷取得，避免依賴 [snapshot] 建構方式的巧合。
  * @property phase 目前所處的決策情境，見 [AiDecisionPhase]。
  * @property legalActions 目前情境下的合法動作清單，直接重用
  *           `com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetLegalActionsUseCase`

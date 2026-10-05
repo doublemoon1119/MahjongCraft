@@ -18,10 +18,10 @@ object PointCalculator {
      * @param isDealer 贏家是否為莊家。
      * @param isTsumo 是否為自摸。
      * @param isPao 是否已成立包牌責任（僅大三元／大四喜適用，由呼叫端判斷後傳入）。
-     *              成立時會忽略一般自摸/榮和的分攤方式，改回傳 [RiichiPointResult.PaoTsumo]
-     *              或 [RiichiPointResult.PaoRon]。
+     * 成立時會忽略一般自摸/榮和的分攤方式，改回傳 [RiichiPointResult.PaoTsumo]
+     * 或 [RiichiPointResult.PaoRon]。
      * @param paoYakuMultiplier 觸發包牌責任的那個役滿本身的倍數（大三元 1 倍、大四喜 2 倍——見 [YakuResult.doubleYakuman]），
-     *        僅在 [isPao] 為 true 時使用，決定包牌責任者實際承擔的倍數；預設 1。
+     * 僅在 [isPao] 為 true 時使用，決定包牌責任者實際承擔的倍數；預設 1。
      * @return 依榮和/自摸（或包牌）區分的 [RiichiPointResult]。
      */
     fun calculateYakumanPoint(

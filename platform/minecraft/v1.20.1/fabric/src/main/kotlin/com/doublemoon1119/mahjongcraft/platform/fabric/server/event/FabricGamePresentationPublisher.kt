@@ -36,7 +36,9 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinSett
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationState
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinShowcaseOverride
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.ServerPlayerIdentityStore
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.PersistentTableOverlayCoordinator
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.FabricMahjongTileWallPresenter
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.TileAnimationSteps
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.WinPresentationCleanupPlan
@@ -329,7 +331,7 @@ class FabricGamePresentationPublisher(
      * （莊家自動摸牌、開始思考計時器），如果標記忙碌這件事本身也要等非同步的世界呈現跑完才發生，
      * 兩邊完全沒有因果關係、純粹看哪個先跑完，曾經真的看過自動連鎖贏過這個標記、玩家動畫都還沒播完
      * 就已經被叫著打牌。同步標記才能保證呼叫端往下走之前，忙碌狀態已經生效。代價是就算之後
-     * [present] 真的失敗（例如桌子被拆掉），這桌還是會被錯誤標記忙碌一小段時間——比起每一次擲骰都
+     * `present` 真的失敗（例如桌子被拆掉），這桌還是會被錯誤標記忙碌一小段時間——比起每一次擲骰都
      * 有機會被搶跑，這個機率很低的邊界情況划算得多。
      *
      * 呈現本身（[diceRollPresenter.present]）不再延遲呼叫——骰子 entity 立刻生成，
@@ -783,7 +785,7 @@ class FabricGamePresentationPublisher(
      * 順序（`Hand.organize`，不論贏家原本是否啟用自動整理手牌），委託
      * [playerAreaPresenter.presentWinCelebration] 排定「重排 → （自摸牌單獨倒下 →）等待 → 立牌一起
      * 倒下」序列，最後把算出來的「立牌全部倒下完成」絕對 game time 交給 [effectScheduler] 接續排定
-     * 降臨特效——特效鎖定的目標位置固定是 [winningTileId] 目前所在座標：自摸時它已經併入贏家手牌、
+     * 降臨特效——特效鎖定的目標位置固定是 [WinCelebrationRequest.winningTileId] 目前所在座標：自摸時它已經併入贏家手牌、
      * 停在整理後的格位；榮和／搶槓時它仍在放銃者的牌河或副露區，天然就是「胡牌張目前所在座標」，
      * 不需要額外判斷。
      *

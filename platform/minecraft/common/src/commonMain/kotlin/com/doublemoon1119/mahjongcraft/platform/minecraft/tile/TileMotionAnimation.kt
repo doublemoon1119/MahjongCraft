@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceAnimationVector
+import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceRollAnimation
 import kotlin.math.PI
 import kotlin.math.sin
 

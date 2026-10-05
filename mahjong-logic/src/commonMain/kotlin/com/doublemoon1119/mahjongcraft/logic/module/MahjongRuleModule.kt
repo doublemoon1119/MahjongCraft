@@ -315,7 +315,7 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * `:mahjong-flow` 的 use case）永遠不需要知道、也不需要轉型成任何規則專屬的具體型別。
      *
      * [player] 應為胡牌當下、尚未套用本次榮和任何變化的玩家實例，[winningTile] 為放銃者打出、
-     * 被榮和的那張牌。[RiichiPointResult] 這類規則特有的點數結果本身不帶玩家身分，因此需要呼叫端
+     * 被榮和的那張牌。規則特有的點數結果（例如日麻的 `RiichiPointResult`）本身不帶玩家身分，因此需要呼叫端
      * 額外透過 [discarderId] 告知放銃者是誰，實作才能把付款金額正確歸屬到實際玩家。
      *
      * [isRobbingKan] 為 `true` 時代表這次榮和是搶槓（[GameAction.KanType.ADDED_KAN] 被搶），

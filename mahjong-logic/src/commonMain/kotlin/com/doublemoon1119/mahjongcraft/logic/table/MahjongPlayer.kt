@@ -18,13 +18,13 @@ import kotlin.uuid.Uuid
  * @property hand 該玩家的手牌實體。
  * @property discardPile 該玩家的牌河實體，其具體類型由遊戲規則決定。
  * @property playerRuleState 用於儲存規則特有的玩家狀態（如立直、振聽等）。
- *                          具體類型由各規則決定，例如 [RiichiPlayerState]。
+ * 具體類型由各規則決定，例如日麻的 `RiichiPlayerState`。
  * @property score 玩家目前的總分（持點）。其初始值通常由 [TableState] 根據規則配置進行初始化。
  * @property aiStrategyKey 若該玩家由電腦（AI）操控，這裡存放其 AI 策略的登記 key（例如
- *                `"random"`）；人類玩家維持 null。由 [GameInitializer.initialize]
- *                依開局時的 AI 玩家名單標記，此後隨玩家實例透過既有的 `.copy()` 機制自然延續。實際
- *                策略的解析（key → `MahjongAiStrategy` 實例）不在這一層，見 `:mahjong-ai` 的
- *                `MahjongAiStrategyRegistry`。
+ * `"random"`）；人類玩家維持 null。由 [GameInitializer.initialize]
+ * 依開局時的 AI 玩家名單標記，此後隨玩家實例透過既有的 `.copy()` 機制自然延續。實際
+ * 策略的解析（key → `MahjongAiStrategy` 實例）不在這一層，見 `:mahjong-ai` 的
+ * `MahjongAiStrategyRegistry`。
  * @property seatWind 玩家本局由規則指派的自風／門風；不得用來反推莊家。
  * @property passedTilesInRound 玩家上次取牌（摸牌或鳴牌）後，交給玩家、但玩家沒有榮和的牌：他家每一張沒有被
  *                              榮和的捨牌，以及玩家有資格搶槓卻放過的槓牌。規則以此判斷下次取牌前的限制（例如

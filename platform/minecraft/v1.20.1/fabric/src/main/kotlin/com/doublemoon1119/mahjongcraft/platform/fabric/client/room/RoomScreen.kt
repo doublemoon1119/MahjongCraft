@@ -10,6 +10,8 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.TableOccupancyDt
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigScreen
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongHudLayoutEditorScreen
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollState
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsFooterLayout
@@ -781,7 +783,7 @@ class RoomScreen(
     /**
      * 進行中對局依權威自風排序，固定呈現東、南、西、北——卡片本身的大小與位置跟等待室
      * （[renderMembers]）共用同一套固定尺寸 grid 與捲動機制（[memberScroll]），差異只在名稱下方
-     * 顯示的是 player info（[playingInfoRows]）而不是加入狀態，且該區塊內容過長時另外用
+     * 顯示的是 player info（[resolvePlayingPlayerInfo]）而不是加入狀態，且該區塊內容過長時另外用
      * [playingInfoScroll] 捲動。
      */
     private fun renderPlayingMembers(

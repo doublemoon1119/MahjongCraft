@@ -69,6 +69,7 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.server.MinecraftServer
+import net.minecraft.server.network.ServerPlayerEntity
 import org.koin.core.Koin
 import org.koin.plugin.module.dsl.startKoin
 import org.slf4j.LoggerFactory
@@ -236,7 +237,7 @@ class MahjongCraftMod : ModInitializer {
 
     /**
      * 接收端跑在網路執行緒（見 [C2SChannel]），
-     * `registerServerReceiver` 已經把 [envelope] 解碼、丟回伺服器執行緒；這裡再用 [AppCoroutineScope]
+     * `registerServerReceiver` 已經把 `envelope` 解碼、丟回伺服器執行緒；這裡再用 [AppCoroutineScope]
      * 啟動協程呼叫 [GameFlowCoordinator]（`suspend` 函式），不阻塞伺服器主執行緒。玩家身分一律用
      * 連線本身的 [ServerPlayerEntity.getUuid]，不信任封包內容宣稱的身分。
      */

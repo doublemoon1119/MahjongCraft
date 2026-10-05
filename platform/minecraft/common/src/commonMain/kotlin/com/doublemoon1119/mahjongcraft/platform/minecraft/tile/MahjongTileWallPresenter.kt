@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionPhase
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
@@ -22,9 +23,9 @@ import kotlin.uuid.Uuid
  * @property diceCount 本次開門擲骰的骰子數量，只用來換算開門前的擲骰動畫總長度。
  * @property animateOpening 是否從 [assemblyStructure] 播放至 [finalLayout]；恢復既有桌況時傳 `false`。
  * @property revealedTileIds [deadWallTileIds] 之中，牌牆建立當下就該立即公開翻面的牌 Uuid 子集合
- *                     （例如日麻開局就翻開的第一張寶牌指示牌，見 `TileWallRevealable`）——實作會在
- *                     切換至 [finalLayout] 的同一個時機點把這些牌的姿態改成正面朝上，其餘王牌維持牌背朝上；
- *                     不支援此概念的規則（或尚未有任何牌需要公開，例如空王牌）傳空集合即可。
+ * （例如日麻開局就翻開的第一張寶牌指示牌，見 `TileWallRevealable`）——實作會在
+ * 切換至 [finalLayout] 的同一個時機點把這些牌的姿態改成正面朝上，其餘王牌維持牌背朝上；
+ * 不支援此概念的規則（或尚未有任何牌需要公開，例如空王牌）傳空集合即可。
  */
 data class MahjongTileWallPresentation(
     val tableId: Uuid,
