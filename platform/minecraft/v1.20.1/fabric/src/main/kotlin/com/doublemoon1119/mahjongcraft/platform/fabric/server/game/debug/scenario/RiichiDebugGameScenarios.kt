@@ -161,6 +161,7 @@ private object RiichiBeforeSuuchaRiichiScenario : DebugGameScenario {
             game = Game(
                 tableState = state,
                 flowConfig = currentGame.flowConfig,
+                matchId = currentGame.matchId,
                 hostId = currentGame.hostId,
                 roomPlayerIds = currentGame.roomPlayerIds,
             ),
@@ -281,6 +282,7 @@ private object RiichiBeforePaoPonScenario : DebugGameScenario {
             game = Game(
                 tableState = state,
                 flowConfig = currentGame.flowConfig,
+                matchId = currentGame.matchId,
                 hostId = currentGame.hostId,
                 roomPlayerIds = currentGame.roomPlayerIds,
             ),
@@ -332,6 +334,7 @@ private object RiichiWallOpeningScenario : DebugGameScenario {
             game = Game(
                 tableState = organizedState,
                 flowConfig = currentGame.flowConfig,
+                matchId = currentGame.matchId,
                 hostId = currentGame.hostId,
                 roomPlayerIds = currentGame.roomPlayerIds,
             ),
@@ -457,6 +460,7 @@ private class RiichiBeforeAnkanScenario(
             Game(
                 tableState = tableState,
                 flowConfig = currentGame.flowConfig,
+                matchId = currentGame.matchId,
                 hostId = currentGame.hostId,
                 roomPlayerIds = currentGame.roomPlayerIds,
             ),

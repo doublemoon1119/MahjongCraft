@@ -24,6 +24,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotEquals
@@ -59,6 +60,28 @@ class DebugGameScenarioTest {
                 id,
             )
         }
+    }
+
+    /** 所有內建情境都應沿用目前場次，讓場次層級的進度排除與歷史停止作用在同一場。 */
+    @Test
+    fun `test built in scenarios preserve the current match id`() {
+        val fixture = createFixture()
+        val registry = DebugGameScenarioRegistry()
+
+        EXPECTED_IDS.forEach { id ->
+            assertEquals(fixture.context.currentGame.matchId, registry.get(id)!!.build(fixture.context).game.matchId, id)
+        }
+    }
+
+    /** Validator 應拒絕換掉場次身分的情境結果。 */
+    @Test
+    fun `test validator rejects a changed match id`() {
+        val fixture = createFixture()
+        val result = DebugGameScenarioRegistry().get("mahjongcraft:riichi_before_pao_pon")!!.build(fixture.context)
+        val changed = result.copy(game = result.game.copy(matchId = Uuid.random()))
+
+        val error = assertFailsWith<IllegalArgumentException> { fixture.validator.validate(fixture.context, changed) }
+        assertEquals("Debug scenario must preserve the match ID", error.message)
     }
 
     /** 開門情境的牌牆、骰子與發牌資料應全部來自同一份正式初始化結果。 */

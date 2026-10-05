@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositor
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAvailabilityService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
+import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.achievement.FabricAchievementService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TablePresentationBusyTracker
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
@@ -31,7 +32,7 @@ sealed interface DebugGameScenarioLoadResult {
     ) : DebugGameScenarioLoadResult
 }
 
-/** 驗證、原子替換並同步 development-only 權威對局情境；載入情境的場次不再產生進度與統計。 */
+/** 驗證、原子替換並同步 development-only 權威對局情境；載入情境的場次不再產生進度、統計與歷史紀錄。 */
 @Single
 class DebugGameScenarioLoader(
     private val minecraftEnvironment: MinecraftEnvironment,
@@ -44,6 +45,7 @@ class DebugGameScenarioLoader(
     private val decisionAvailabilityService: GameDecisionAvailabilityService,
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
     private val achievementService: FabricAchievementService,
+    private val stateStore: AuthoritativeStateStore,
     private val dispatchers: CoroutineDispatchers,
 ) {
     /** 將 [scenarioId] 套用到 [playerId] 目前所在的進行中遊戲。 */
@@ -79,6 +81,7 @@ class DebugGameScenarioLoader(
                 result.game to result
             }
         }.getOrElse { error -> return DebugGameScenarioLoadResult.Rejected(error.message ?: "Scenario validation failed") }
+        stateStore.stopHistoryRecording(loaded.game.matchId)
 
         runCatching {
             repeat(presentationCount) { iteration ->

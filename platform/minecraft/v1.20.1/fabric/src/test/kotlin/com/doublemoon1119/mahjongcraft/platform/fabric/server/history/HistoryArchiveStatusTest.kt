@@ -52,6 +52,15 @@ class HistoryArchiveStatusTest {
         )
     }
 
+    /** 被正常流程以外的方式修改而停止的場次回報已排除，即使已留下部分紀錄與缺口。 */
+    @Test
+    fun `externally modified match reports excluded`() {
+        assertEquals(
+            HistoryArchiveStatusDto.EXCLUDED,
+            evidence(failed = true).toDto(HistoryRecordingDecision.STOPPED_EXTERNALLY_MODIFIED, pendingOutbox = true, queryEnabled = true, authorized = true, active = false),
+        )
+    }
+
     /** 權威對局仍存在時，即使已有暫存證據也只能回報處理中。 */
     @Test
     fun `active match reports pending`() {

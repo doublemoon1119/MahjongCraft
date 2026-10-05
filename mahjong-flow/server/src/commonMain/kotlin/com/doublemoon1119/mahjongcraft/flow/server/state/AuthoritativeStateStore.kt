@@ -202,6 +202,26 @@ class AuthoritativeStateStore(
     }
 
     /**
+     * 永久停止仍在記錄中的 [matchId]，保留缺口；對局被正常流程以外的方式修改（例如開發用指令）時使用。
+     *
+     * 該場不在權威狀態中或沒有在記錄時不做任何事。
+     *
+     * @param matchId 欲停止記錄的場次。
+     */
+    suspend fun stopHistoryRecording(matchId: Uuid) = mutex.withLock {
+        val recording = restoreDecisions(currentState)
+        val game = currentState.games.values.firstOrNull { it.matchId == matchId } ?: return@withLock
+        if (recording.decisionsByMatchId[matchId] != HistoryRecordingDecision.RECORDING) return@withLock
+        commit(
+            currentState.copy(
+                historyRecordingState = recording.recordMissing(game).copy(
+                    decisionsByMatchId = recording.decisionsByMatchId + (matchId to HistoryRecordingDecision.STOPPED_EXTERNALLY_MODIFIED),
+                ),
+            ),
+        )
+    }
+
+    /**
      * 確認已同步的資格診斷，只移除已離開權威狀態且沒有待寫事件的場次。
      *
      * @param matchIds 儲存端已接收診斷或完整封存的場次。
@@ -451,6 +471,9 @@ class AuthoritativeStateStore(
      * 以原子方式讀取並更新完整伺服器權威狀態。
      *
      * 只有 [AuthoritativeStateUpdate.state] 與目前狀態不同時才會標記 dirty 並通知 listener。
+     *
+     * 新場次只有在同一交易提交 [HistoryFact.MatchStarted] 時才依記錄政策決定資格；沒有開局事實的新場次一律為
+     * [HistoryRecordingDecision.EXCLUDED_NO_OPENING]，不從中途建立歷史。
      */
     suspend fun <T> update(
         block: suspend (AuthoritativeStateSnapshot) -> AuthoritativeStateUpdate<T>,
@@ -459,7 +482,9 @@ class AuthoritativeStateStore(
         var recording = restoreDecisions(update.state)
         update.state.games.values.forEach { game ->
             if (currentState.games[game.id]?.matchId != game.matchId) {
-                recording = recording.copy(decisionsByMatchId = recording.decisionsByMatchId + (game.matchId to recordingPolicy.decide(game)))
+                val hasOpening = update.historyDraftsByTableId[game.id].orEmpty().any { it.fact is HistoryFact.MatchStarted }
+                val decision = if (hasOpening) recordingPolicy.decide(game) else HistoryRecordingDecision.EXCLUDED_NO_OPENING
+                recording = recording.copy(decisionsByMatchId = recording.decisionsByMatchId + (game.matchId to decision))
             }
         }
         val nextState = if (update.state != currentState) {
@@ -475,7 +500,8 @@ class AuthoritativeStateStore(
                     old.matchId in previousHistory.firstMissingSequenceByMatchId ||
                     previousHistory.decisionsByMatchId[old.matchId] == HistoryRecordingDecision.RECORDING ||
                     previousHistory.decisionsByMatchId[old.matchId] == HistoryRecordingDecision.STOPPED_CONFIG_DISABLED ||
-                    previousHistory.decisionsByMatchId[old.matchId] == HistoryRecordingDecision.STOPPED_STORAGE_UNAVAILABLE
+                    previousHistory.decisionsByMatchId[old.matchId] == HistoryRecordingDecision.STOPPED_STORAGE_UNAVAILABLE ||
+                    previousHistory.decisionsByMatchId[old.matchId] == HistoryRecordingDecision.STOPPED_EXTERNALLY_MODIFIED
             }.associate { old ->
                 old.matchId to HistoryRecordingTerminal(timestamp, old.isMatchOver, old.id)
             }
@@ -528,7 +554,8 @@ class AuthoritativeStateStore(
                             decision == HistoryRecordingDecision.STOPPED_CONFIG_DISABLED ||
                             decision == HistoryRecordingDecision.STOPPED_STORAGE_UNAVAILABLE ||
                             decision == HistoryRecordingDecision.STOPPED_TRANSFER_INTERRUPTED ||
-                            decision == HistoryRecordingDecision.STOPPED_PRUNED
+                            decision == HistoryRecordingDecision.STOPPED_PRUNED ||
+                            decision == HistoryRecordingDecision.STOPPED_EXTERNALLY_MODIFIED
                     },
                 ),
             )

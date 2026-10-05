@@ -58,7 +58,8 @@ internal class HistoryStorageQueryService(
                 it == HistoryRecordingDecision.STOPPED_CONFIG_DISABLED ||
                 it == HistoryRecordingDecision.STOPPED_STORAGE_UNAVAILABLE ||
                 it == HistoryRecordingDecision.STOPPED_PRUNED ||
-                it == HistoryRecordingDecision.STOPPED_TRANSFER_INTERRUPTED
+                it == HistoryRecordingDecision.STOPPED_TRANSFER_INTERRUPTED ||
+                it == HistoryRecordingDecision.STOPPED_EXTERNALLY_MODIFIED
         }.keys
         return (
             recording.nextSequenceByMatchId.keys + recording.firstMissingSequenceByMatchId.keys +

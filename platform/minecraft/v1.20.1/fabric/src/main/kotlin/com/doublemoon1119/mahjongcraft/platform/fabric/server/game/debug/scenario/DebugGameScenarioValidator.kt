@@ -10,11 +10,12 @@ import org.koin.core.annotation.Single
 class DebugGameScenarioValidator(
     private val moduleRegistry: MahjongModuleRegistry,
 ) {
-    /** 驗證候選結果沒有改變遊戲身分、玩家歸屬或牌張守恆。 */
+    /** 驗證候選結果沒有改變遊戲與場次身分、玩家歸屬或牌張守恆。 */
     fun validate(context: DebugGameScenarioContext, result: DebugGameScenarioResult) {
         val previous = context.currentGame
         val candidate = result.game
         require(candidate.id == previous.id) { "Debug scenario must preserve the game ID" }
+        require(candidate.matchId == previous.matchId) { "Debug scenario must preserve the match ID" }
         require(candidate.tableState.players.map { it.id }.toSet() == previous.tableState.players.map { it.id }.toSet()) {
             "Debug scenario must preserve all game players"
         }

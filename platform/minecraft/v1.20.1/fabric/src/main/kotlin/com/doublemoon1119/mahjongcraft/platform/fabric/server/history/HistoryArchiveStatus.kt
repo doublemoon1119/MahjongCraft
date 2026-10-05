@@ -51,7 +51,8 @@ internal fun HistoryArchiveStatusEvidence.toDto(
     decision == HistoryRecordingDecision.EXCLUDED_CONFIG_DISABLED ||
         decision == HistoryRecordingDecision.STOPPED_CONFIG_DISABLED -> HistoryArchiveStatusDto.DISABLED
     decision == HistoryRecordingDecision.EXCLUDED_AI ||
-        decision == HistoryRecordingDecision.EXCLUDED_NO_OPENING -> HistoryArchiveStatusDto.EXCLUDED
+        decision == HistoryRecordingDecision.EXCLUDED_NO_OPENING ||
+        decision == HistoryRecordingDecision.STOPPED_EXTERNALLY_MODIFIED -> HistoryArchiveStatusDto.EXCLUDED
     decision == HistoryRecordingDecision.STOPPED_STORAGE_UNAVAILABLE ||
         decision == HistoryRecordingDecision.STOPPED_TRANSFER_INTERRUPTED ||
         failed -> HistoryArchiveStatusDto.FAILED

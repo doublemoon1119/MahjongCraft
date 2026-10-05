@@ -919,12 +919,14 @@ class FabricHistoryOutboxWriter(
         val stopped = recording.decisionsByMatchId.filterValues {
             it == HistoryRecordingDecision.STOPPED_CONFIG_DISABLED ||
                 it == HistoryRecordingDecision.STOPPED_STORAGE_UNAVAILABLE ||
-                it == HistoryRecordingDecision.STOPPED_TRANSFER_INTERRUPTED
+                it == HistoryRecordingDecision.STOPPED_TRANSFER_INTERRUPTED ||
+                it == HistoryRecordingDecision.STOPPED_EXTERNALLY_MODIFIED
         }
         val stops = stopped.mapKeys { it.key.toString() }.mapValues { (_, decision) ->
             when (decision) {
                 HistoryRecordingDecision.STOPPED_CONFIG_DISABLED -> PARTIAL_CONFIG_DISABLED
                 HistoryRecordingDecision.STOPPED_TRANSFER_INTERRUPTED -> PARTIAL_TRANSFER_INTERRUPTED
+                HistoryRecordingDecision.STOPPED_EXTERNALLY_MODIFIED -> PARTIAL_EXTERNALLY_MODIFIED
                 else -> PARTIAL_STORAGE_UNAVAILABLE
             }
         }
@@ -957,6 +959,9 @@ class FabricHistoryOutboxWriter(
 
         /** 容量不足造成的部分紀錄診斷，不代表管理員停用總開關。 */
         const val PARTIAL_STORAGE_UNAVAILABLE: String = "PARTIAL_STORAGE_UNAVAILABLE"
+
+        /** 對局被正常流程以外的方式修改後停止的部分紀錄診斷，之後的事件不對應正常的對局過程。 */
+        const val PARTIAL_EXTERNALLY_MODIFIED: String = "PARTIAL_EXTERNALLY_MODIFIED"
 
         /** 資料庫無法使用而暫停記錄時，log 中說明對進行中場次與既有待寫事件的影響。 */
         const val PAUSED_RECORDING_CONSEQUENCE: String =

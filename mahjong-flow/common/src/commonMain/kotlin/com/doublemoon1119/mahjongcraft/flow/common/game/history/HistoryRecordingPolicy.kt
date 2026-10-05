@@ -50,4 +50,7 @@ enum class HistoryRecordingDecision {
 
     /** 隔離歷史來源已中止，保留部分事件而不重啟生成。 */
     STOPPED_TRANSFER_INTERRUPTED,
+
+    /** 對局被正常流程以外的方式修改（例如開發用指令），之後的事件不再對應正常的對局過程；保留缺口並停止追加。 */
+    STOPPED_EXTERNALLY_MODIFIED,
 }

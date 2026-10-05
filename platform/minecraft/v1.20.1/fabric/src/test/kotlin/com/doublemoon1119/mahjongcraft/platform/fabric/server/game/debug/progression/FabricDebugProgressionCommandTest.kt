@@ -39,6 +39,7 @@ class FabricDebugProgressionCommandTest {
                 resolverRegistry = GameAchievementResolverRegistryImpl(),
                 gateway = UnusedGateway,
             ),
+            stateStore = AuthoritativeStateStore(),
             scope = UnusedScope,
             dispatchers = TestCoroutineDispatchers(),
         ),

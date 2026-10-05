@@ -9,7 +9,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecording
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingTerminal
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
-import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -184,10 +183,7 @@ class AuthoritativeHistoryRetentionTest {
     @Test
     fun `storage pause stops current match without resuming it`() = runTest {
         val store = AuthoritativeStateStore(historyRecordingEnabled = true)
-        val repository = GameRepositoryImpl(store)
-        val table = FakeTableStateFactory.create()
-        repository.setTableState(table)
-        val game = checkNotNull(store.getGame(table.id))
+        val game = store.openGame(FakeTableStateFactory.create())
 
         store.applyHistoryStorageAvailability(false)
         val changed = game.copy(remainingReserveMillisByPlayerId = game.remainingReserveMillisByPlayerId.mapValues { 1_000L })
@@ -208,8 +204,8 @@ class AuthoritativeHistoryRetentionTest {
             )
         }
         val after = store.snapshot().historyRecordingState
-        assertTrue(before.pendingEvents.isEmpty())
-        assertTrue(after.pendingEvents.isEmpty())
+        assertEquals(listOf(1L), before.pendingEvents.map { it.sequence })
+        assertEquals(listOf(1L), after.pendingEvents.map { it.sequence })
         assertEquals(HistoryRecordingDecision.STOPPED_STORAGE_UNAVAILABLE, after.decisionsByMatchId[game.matchId])
     }
 }

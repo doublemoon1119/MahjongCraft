@@ -148,6 +148,7 @@ internal class SeatSetupScenario(
             game = Game(
                 tableState = state,
                 flowConfig = currentGame.flowConfig,
+                matchId = currentGame.matchId,
                 hostId = currentGame.hostId,
                 roomPlayerIds = currentGame.roomPlayerIds,
             ),
