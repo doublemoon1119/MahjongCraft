@@ -82,6 +82,9 @@ import kotlin.uuid.Uuid
 /**
  * 不依賴平台或測試 fixture 的單場真實 Flow 執行環境。
  *
+ * 只建立內建規則所需的 registry，用來以真實流程驗證歷史記錄與封存管線。擴充規則不在支援範圍內：擴充登記的命令
+ * handler（`ExtensionGameCommandHandler`）綁定正式的權威狀態，無法在這個隔離環境中使用。
+ *
  * @property scenario 生成情境。
  * @property store 隔離權威狀態儲存。
  * @property tableId 牌桌識別碼。
