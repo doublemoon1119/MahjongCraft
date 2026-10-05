@@ -302,6 +302,7 @@ class RiichiHandValueCalculator(
         // 計算三暗刻
         calculateSanankou(
             handStructure = handStructure,
+            isTsumo = context.isTsumo,
         )?.let { standardResults.add(it) }
 
         // 計算三杠子

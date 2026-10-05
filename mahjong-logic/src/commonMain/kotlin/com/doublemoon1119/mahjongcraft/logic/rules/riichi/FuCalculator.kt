@@ -194,6 +194,10 @@ object FuCalculator {
             }
         }
 
+        // 雙碰聽牌榮和時，靠別人捨牌湊成的刻子（胡牌張所在的刻子）是明刻
+        val ronCompletedTriplet = Mentsu.Kotsu(context.winningTile.riichiCanonical)
+            .takeIf { structure.completionType is CompletionType.Shanpon && !context.isTsumo }
+
         // 手牌中面子的符數
         val handFu = structure.mentsus.sumOf { mentsu ->
             val tile = mentsu.tiles.first().riichiCanonical
@@ -211,13 +215,19 @@ object FuCalculator {
             val isSeatOrRoundWind = tile.isHonor && !isDragon && !isKaze
 
             when (mentsu) {
+                // 明刻（雙碰聽牌榮和湊成的刻子）
+                ronCompletedTriplet -> when {
+                    isSeatOrRoundWind || isDragon -> 4
+                    isTerminalOrHonor || isKaze -> 4
+                    else -> 2
+                }
                 // 暗刻
                 is Mentsu.Kotsu -> when {
                     isSeatOrRoundWind || isDragon -> 8
                     isTerminalOrHonor || isKaze -> 8
                     else -> 4
                 }
-                // 手牌當中的面子只有暗刻，其他都視為 0 符
+                // 順子為 0 符
                 else -> 0
             }
         }

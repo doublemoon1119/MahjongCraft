@@ -176,4 +176,136 @@ class SanankouTest : RiichiHandValueCalculatorTestBase() {
         val sanankouResult = result.yakuResults.find { it.yaku == YakuType.Sanankou }
         assertNull(sanankouResult, "Should not have Sanankou with only 2 ankou")
     }
+
+    /**
+     * 測試三暗刻 - 碰出去的刻子不算暗刻。
+     *
+     * 碰 + 手牌兩組暗刻只有兩組暗面子，應不成立三暗刻。
+     */
+    @Test
+    fun `test pon does not count toward sanankou`() {
+        // 副露：碰 111m
+        // 手牌：222p (暗刻), 333s (暗刻), 456m, 7z (自摸 7z 單騎)
+        val hand = FakeHandFactory.create(
+            listOf(
+                Tile.Numeric(Tile.Suit.Dot, 2),
+                Tile.Numeric(Tile.Suit.Dot, 2),
+                Tile.Numeric(Tile.Suit.Dot, 2),
+                Tile.Numeric(Tile.Suit.Bamboo, 3),
+                Tile.Numeric(Tile.Suit.Bamboo, 3),
+                Tile.Numeric(Tile.Suit.Bamboo, 3),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 5),
+                Tile.Numeric(Tile.Suit.Character, 6),
+                Tile.Honor.Red,
+            ),
+            melds = listOf(
+                Meld(
+                    type = MeldType.PON,
+                    tiles = listOf(
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
+                        FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
+                    ),
+                    sourceDirection = RelativeDirection.Left,
+                ),
+            ),
+        )
+        val winningTile = Tile.Honor.Red
+
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true, isMenzen = false)
+        val result = calculator.calculate(context)
+
+        val sanankouResult = result.yakuResults.find { it.yaku == YakuType.Sanankou }
+        assertNull(sanankouResult, "A pon is an open triplet and must not count toward Sanankou")
+    }
+
+    /**
+     * 測試三暗刻 - 雙碰聽牌榮和。
+     *
+     * 榮和湊成的刻子是明刻，手牌只剩兩組暗刻，應不成立三暗刻。
+     */
+    @Test
+    fun `test shanpon ron triplet does not count toward sanankou`() {
+        // 手牌：222p (暗刻), 333s (暗刻), 456m, 55s, 77z，榮和 5s（雙碰）
+        val hand = createShanponHand()
+        val winningTile = Tile.Numeric(Tile.Suit.Bamboo, 5)
+
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = false, isMenzen = true)
+        val result = calculator.calculate(context)
+
+        val sanankouResult = result.yakuResults.find { it.yaku == YakuType.Sanankou }
+        assertNull(sanankouResult, "The triplet completed by ron on a shanpon wait is open")
+    }
+
+    /**
+     * 測試三暗刻 - 雙碰聽牌自摸。
+     *
+     * 自摸湊成的刻子仍是暗刻，應成立三暗刻。
+     */
+    @Test
+    fun `test shanpon tsumo triplet counts toward sanankou`() {
+        // 手牌：222p (暗刻), 333s (暗刻), 456m, 55s, 77z，自摸 5s（雙碰）
+        val hand = createShanponHand()
+        val winningTile = Tile.Numeric(Tile.Suit.Bamboo, 5)
+
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = true, isMenzen = true)
+        val result = calculator.calculate(context)
+
+        val sanankouResult = result.yakuResults.find { it.yaku == YakuType.Sanankou }
+        assertEquals(2, sanankouResult?.han, "The triplet completed by tsumo on a shanpon wait is concealed")
+    }
+
+    /**
+     * 測試三暗刻 - 單騎聽牌榮和。
+     *
+     * 榮和的牌做雀頭，三組刻子都是自己湊成的暗刻，應成立三暗刻。
+     */
+    @Test
+    fun `test tanki ron keeps sanankou`() {
+        // 手牌：111m (暗刻), 222p (暗刻), 333s (暗刻), 456m, 7z，榮和 7z（單騎）
+        val hand = FakeHandFactory.create(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Dot, 2),
+                Tile.Numeric(Tile.Suit.Dot, 2),
+                Tile.Numeric(Tile.Suit.Dot, 2),
+                Tile.Numeric(Tile.Suit.Bamboo, 3),
+                Tile.Numeric(Tile.Suit.Bamboo, 3),
+                Tile.Numeric(Tile.Suit.Bamboo, 3),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Character, 5),
+                Tile.Numeric(Tile.Suit.Character, 6),
+                Tile.Honor.Red,
+            ),
+        )
+        val winningTile = Tile.Honor.Red
+
+        val context = FakeRiichiHandValueContextFactory.create(hand, winningTile, isTsumo = false, isMenzen = true)
+        val result = calculator.calculate(context)
+
+        val sanankouResult = result.yakuResults.find { it.yaku == YakuType.Sanankou }
+        assertEquals(2, sanankouResult?.han, "Ron on a tanki wait leaves every triplet concealed")
+    }
+
+    /** 222p, 333s, 456m, 55s, 77z：聽 5s 與 7z 的雙碰。 */
+    private fun createShanponHand() = FakeHandFactory.create(
+        listOf(
+            Tile.Numeric(Tile.Suit.Dot, 2),
+            Tile.Numeric(Tile.Suit.Dot, 2),
+            Tile.Numeric(Tile.Suit.Dot, 2),
+            Tile.Numeric(Tile.Suit.Bamboo, 3),
+            Tile.Numeric(Tile.Suit.Bamboo, 3),
+            Tile.Numeric(Tile.Suit.Bamboo, 3),
+            Tile.Numeric(Tile.Suit.Character, 4),
+            Tile.Numeric(Tile.Suit.Character, 5),
+            Tile.Numeric(Tile.Suit.Character, 6),
+            Tile.Numeric(Tile.Suit.Bamboo, 5),
+            Tile.Numeric(Tile.Suit.Bamboo, 5),
+            Tile.Honor.Red,
+            Tile.Honor.Red,
+        ),
+    )
 }

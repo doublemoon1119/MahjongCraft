@@ -33,9 +33,10 @@ class FuCalculatorTest {
         isTsumo: Boolean = false,
         roundWind: Wind = Wind.EAST,
         seatWind: Wind = Wind.EAST,
+        winningTile: Tile = Tile.Numeric(Tile.Suit.Character, 1),
     ): RiichiHandValueContext = FakeRiichiHandValueContextFactory.create(
         hand = FakeHandFactory.create(),
-        winningTile = Tile.Numeric(Tile.Suit.Character, 1),
+        winningTile = winningTile,
         isTsumo = isTsumo,
         isMenzen = isMenzen,
         roundWind = roundWind,
@@ -235,11 +236,7 @@ class FuCalculatorTest {
         assertTrue(result >= 20)
     }
 
-    // 雀頭固定用三元牌（白），確保 calculatePinfu 不會因為役牌雀頭而誤判為平和；順帶避開一個
-    // 探查到但不在本次範圍內的既有 bug——calculatePinfu 只檢查 structure.mentsus 是否全為順子，
-    // 完全沒有檢查 structure.fuuro（副露），導致帶有槓子/碰的副露卻只把面子放進 fuuro（而非
-    // mentsus）時，會被誤判為平和。用役牌雀頭讓 isYakuhai 提早擋下，不受這個既有 bug 影響。
-    // 三元牌雀頭固定 +2 符，已經算進下方每個測試案例的預期總符數。
+    // 雀頭固定用三元牌（白），固定 +2 符，已經算進下方每個測試案例的預期總符數。
     private fun createStructureWithFuuro(mentsu: Mentsu): HandStructure.Standard = HandStructure.Standard(
         mentsus = emptyList(),
         pair = Janto(Tile.Honor.White),
@@ -327,6 +324,43 @@ class FuCalculatorTest {
     fun `test kakan of guest wind tile adds 16 fu`() {
         val context = createContext(isMenzen = false, isTsumo = false, roundWind = Wind.EAST, seatWind = Wind.EAST)
         val handStructure = createStructureWithFuuro(Mentsu.Kakan(Tile.Honor.South))
+        val result = FuCalculator.calculateTotalFu(context, handStructure)
+        assertEquals(40, result)
+    }
+
+    /**
+     * 測試雙碰聽牌榮和時，胡牌張所在的刻子按明刻計符。
+     * 符底 20 + 門前清榮和 10 + 9m 明刻 4 + 2p 暗刻 4 + 三元牌雀頭 2 = 40
+     * （若 9m 誤算成暗刻 8 符，總計 44 → 50）
+     */
+    @Test
+    fun `test shanpon ron triplet counts as open triplet`() {
+        val context = createContext(isMenzen = true, isTsumo = false, winningTile = Tile.Numeric(Tile.Suit.Character, 9))
+        val handStructure = HandStructure.Standard(
+            mentsus = listOf(
+                Mentsu.Kotsu(Tile.Numeric(Tile.Suit.Character, 9)),
+                Mentsu.Kotsu(Tile.Numeric(Tile.Suit.Dot, 2)),
+            ),
+            pair = Janto(Tile.Honor.White),
+            completionType = CompletionType.Shanpon,
+        )
+        val result = FuCalculator.calculateTotalFu(context, handStructure)
+        assertEquals(40, result)
+    }
+
+    /**
+     * 測試雙碰聽牌自摸時，胡牌張所在的刻子仍按暗刻計符。
+     * 符底 20 + 自摸 2 + 9m 暗刻 8 + 三元牌雀頭 2 = 32 → 40
+     * （若 9m 誤算成明刻 4 符，總計 28 → 30）
+     */
+    @Test
+    fun `test shanpon tsumo triplet counts as concealed triplet`() {
+        val context = createContext(isMenzen = true, isTsumo = true, winningTile = Tile.Numeric(Tile.Suit.Character, 9))
+        val handStructure = HandStructure.Standard(
+            mentsus = listOf(Mentsu.Kotsu(Tile.Numeric(Tile.Suit.Character, 9))),
+            pair = Janto(Tile.Honor.White),
+            completionType = CompletionType.Shanpon,
+        )
         val result = FuCalculator.calculateTotalFu(context, handStructure)
         assertEquals(40, result)
     }
