@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionTileOrientationDto
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionTileOrientationDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelColor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry

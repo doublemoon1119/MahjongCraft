@@ -2,12 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 
 import com.doublemoon1119.mahjongcraft.flow.client.game.ClientDecisionTimerStateStore
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionTileOrientationDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionActionDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionPromptDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSelectionDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSelectionKindDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSubmissionResultDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDomain
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.AutomaticControlStatusHudRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongHudLayoutEditorScreen
@@ -17,6 +12,14 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjon
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileSelectionConfirmEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionTileOrientationDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionActionDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSelectionDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSelectionKindDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSubmissionResultDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
 import kotlinx.serialization.json.Json
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.event.player.UseEntityCallback
@@ -39,6 +42,7 @@ import kotlin.uuid.toKotlinUuid
  * @property timerDisplay 依本地時間產生的倒數顯示。
  * @property promptStore 玩家目前的操作提示。
  * @property tileFaceRenderer 共用牌面繪製器。
+ * @property tileAssetRegistry 牌種對應的牌面素材。
  * @property configStore 客戶端呈現設定。
  * @property stateStore 玩家可見的房間與桌況。
  * @property automaticControlStatusHudRenderer 自動操作狀態繪製器。
@@ -52,6 +56,7 @@ class PlayerDecisionHudController(
     private val timerDisplay: DecisionTimerDisplay,
     private val promptStore: ClientDecisionPromptStore,
     private val tileFaceRenderer: MahjongTileFaceRenderer,
+    private val tileAssetRegistry: MinecraftTileAssetRegistry,
     private val configStore: MahjongClientConfigStore,
     private val stateStore: ClientMahjongStateStore,
     private val automaticControlStatusHudRenderer: AutomaticControlStatusHudRenderer,
@@ -482,7 +487,7 @@ class PlayerDecisionHudController(
         }
         content.cells.forEachIndexed { index, cell ->
             val bounds = layout.tileBounds(index)
-            tileFaceRenderer.renderGui(context, cell.tileAssetKey, bounds.x, bounds.y, bounds.width, bounds.height)
+            tileFaceRenderer.renderGui(context, cell.tile.toDomain().toAssetKey(tileAssetRegistry), bounds.x, bounds.y, bounds.width, bounds.height)
             val centerX = layout.cellCenterX(index)
             context.drawCenteredTextWithShadow(renderer, cell.countText, centerX, layout.countTextTop(index), cell.countColor)
             cell.availabilityText?.let { text ->

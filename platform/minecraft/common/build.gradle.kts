@@ -15,6 +15,7 @@ kotlin {
                 implementation(project(":mahjong-logic"))
                 implementation(project(":mahjong-ai"))
                 implementation(project(":mahjong-flow:mahjong-flow-common"))
+                implementation(project(":mahjong-flow:mahjong-flow-network-dto"))
                 implementation(project.dependencies.platform(libs.koin.bom))
                 implementation(libs.koin.core)
                 implementation(libs.koin.annotations)

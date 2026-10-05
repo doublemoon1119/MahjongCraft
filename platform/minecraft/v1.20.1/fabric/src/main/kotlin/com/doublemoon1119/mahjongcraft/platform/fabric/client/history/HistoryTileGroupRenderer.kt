@@ -1,10 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.BuiltInHistoryDiscardMarkerIds
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionTileOrientationDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDomain
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileFaceRenderer
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionTileOrientationDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry

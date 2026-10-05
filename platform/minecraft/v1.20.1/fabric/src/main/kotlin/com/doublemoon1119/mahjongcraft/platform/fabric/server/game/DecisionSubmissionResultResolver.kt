@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSubmissionResultKindDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSubmissionResultKindDto
 import kotlinx.coroutines.CancellationException
 
 /** 將 final submission 的所有正常結果與非取消例外收斂成單一 ACK 結果。 */

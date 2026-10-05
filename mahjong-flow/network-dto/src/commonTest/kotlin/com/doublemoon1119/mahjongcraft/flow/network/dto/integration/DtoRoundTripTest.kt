@@ -26,6 +26,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.encode
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.JoinReasonDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.LeaveReasonDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.SuitDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDto
@@ -354,7 +355,7 @@ class DtoRoundTripTest {
                 ruleModuleId = "mahjongcraft:riichi",
                 waitingTiles = listOf(
                     WaitingTileAvailabilityDto(
-                        tileAssetKey = "mahjongcraft:riichi/man_1",
+                        tile = TileDto.Numeric(SuitDto.CHARACTER, 1),
                         remainingCount = 2,
                     ),
                 ),

@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSubmissionResultDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSubmissionResultKindDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSubmissionResultDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSubmissionResultKindDto
 
 /** 純本機追蹤單一最終決策提交，隔離 ACK 亂序與重複提交。 */
 internal class DecisionSubmissionTracker {

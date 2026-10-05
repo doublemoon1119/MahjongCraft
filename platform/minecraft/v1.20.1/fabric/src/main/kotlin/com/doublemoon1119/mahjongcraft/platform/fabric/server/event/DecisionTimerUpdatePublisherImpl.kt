@@ -2,12 +2,12 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.event
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.DecisionTimerUpdate
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.DecisionTimerUpdatePublisher
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionTimerStatusDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionTimerUpdatePayloadDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.toDto
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.PlayerDecisionPromptFactory
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionTimerStatusDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionTimerUpdatePayloadDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.toDto
 import kotlinx.serialization.json.Json
 import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single

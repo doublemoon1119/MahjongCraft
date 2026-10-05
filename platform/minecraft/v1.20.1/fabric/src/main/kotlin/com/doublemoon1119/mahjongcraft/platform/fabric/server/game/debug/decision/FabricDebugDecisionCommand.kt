@@ -6,17 +6,11 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRoundPrepar
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationInputSpec
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSubmission
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionPlayerRelationDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionTimerStatusDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionTimerUpdatePayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DiscardReadinessAnalysisDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionActionDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionActionTileSelectionDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionPhaseDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionPromptDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoundPreparationPromptDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WIN_AVAILABLE_ID
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileAvailabilityDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.SuitDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAvailabilityService
@@ -30,6 +24,14 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPlayerTableScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPreviewEntityLifecycle
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.MinecraftKanActionTokenKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionPlayerRelationDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionTimerStatusDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionTimerUpdatePayloadDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionActionDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionActionTileSelectionDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPhaseDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RoundPreparationPromptDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.arguments.StringArgumentType
@@ -447,10 +449,12 @@ class FabricDebugDecisionCommand(
         }
 
         private fun analysis(discardTileId: String): DiscardReadinessAnalysisDto {
-            val assets = if (this == DISCARD_MANY_WAITS) {
-                listOf("m1", "m2", "m3", "m4", "m5", "m6", "m7", "m8", "m9", "p1", "p9", "s1", "s9")
+            val tiles = if (this == DISCARD_MANY_WAITS) {
+                (1..9).map { TileDto.Numeric(SuitDto.CHARACTER, it) } +
+                    listOf(1, 9).map { TileDto.Numeric(SuitDto.DOT, it) } +
+                    listOf(1, 9).map { TileDto.Numeric(SuitDto.BAMBOO, it) }
             } else {
-                listOf("m2", "m5", "m8")
+                listOf(2, 5, 8).map { TileDto.Numeric(SuitDto.CHARACTER, it) }
             }
             val availability = when (this) {
                 DISCARD_NO_YAKU, DISCARD_FURITEN_UNAVAILABLE -> "mahjongcraft:win_no_yaku"
@@ -460,9 +464,9 @@ class FabricDebugDecisionCommand(
             }
             return DiscardReadinessAnalysisDto(
                 discardTileId,
-                assets.mapIndexed { index, asset ->
+                tiles.mapIndexed { index, tile ->
                     WaitingTileAvailabilityDto(
-                        asset,
+                        tile,
                         (3 - index).coerceAtLeast(0),
                         if (this == DISCARD_MIXED_AVAILABILITY) {
                             MIXED_AVAILABILITY_CYCLE[index % MIXED_AVAILABILITY_CYCLE.size]

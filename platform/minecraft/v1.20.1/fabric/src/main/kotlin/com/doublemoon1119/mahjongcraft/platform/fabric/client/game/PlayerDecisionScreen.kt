@@ -1,10 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionPlayerRelationDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionPromptDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSelectionKindDto
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ClaimedTileMarker
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionPlayerRelationDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSelectionKindDto
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.screen.Screen
 import net.minecraft.client.gui.widget.ButtonWidget

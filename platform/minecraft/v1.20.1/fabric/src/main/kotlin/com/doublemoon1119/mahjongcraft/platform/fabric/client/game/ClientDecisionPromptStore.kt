@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionPromptDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 

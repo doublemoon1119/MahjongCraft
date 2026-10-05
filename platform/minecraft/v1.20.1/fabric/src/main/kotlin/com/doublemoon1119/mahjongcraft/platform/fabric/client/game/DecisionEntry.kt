@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionActionDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionPromptDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoundPreparationPromptDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionActionDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RoundPreparationPromptDto
 import net.minecraft.text.Text
 
 /** 點擊一張操作卡後要執行的事。 */

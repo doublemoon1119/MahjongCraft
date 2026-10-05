@@ -1,10 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionTileOrientationDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayMeldDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.MeldTypeDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.RelativeDirectionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDomain
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionTileOrientationDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 
 /** 單張歷史牌面在一組牌面中的幾何位置與顯示方向。

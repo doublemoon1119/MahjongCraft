@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.flow.network.dto.message
+package com.doublemoon1119.mahjongcraft.platform.minecraft.decision
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
 import kotlinx.serialization.Serializable

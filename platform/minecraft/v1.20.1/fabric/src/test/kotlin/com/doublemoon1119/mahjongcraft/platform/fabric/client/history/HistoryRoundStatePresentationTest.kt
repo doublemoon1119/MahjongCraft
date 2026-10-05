@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionTileOrientationDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayDiscardDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayIdentityDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayMeldDto
@@ -17,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.WindDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.MatchRoundPhaseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.MatchRoundPositionDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionTileOrientationDto
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull

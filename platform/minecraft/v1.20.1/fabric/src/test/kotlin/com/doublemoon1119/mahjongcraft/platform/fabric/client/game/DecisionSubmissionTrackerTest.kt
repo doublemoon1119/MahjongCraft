@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSubmissionResultDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSubmissionResultKindDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSubmissionResultDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSubmissionResultKindDto
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse

@@ -7,12 +7,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhas
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSubmission
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionPromptDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSelectionDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSelectionKindDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSubmissionResultDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSubmissionResultKindDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoundPreparationPromptDto
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameActionCommandMapper
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
@@ -23,6 +17,12 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TablePresentationBusyTracker
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableRoomService
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSelectionDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSelectionKindDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSubmissionResultDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSubmissionResultKindDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RoundPreparationPromptDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.GameTurnStatus
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback

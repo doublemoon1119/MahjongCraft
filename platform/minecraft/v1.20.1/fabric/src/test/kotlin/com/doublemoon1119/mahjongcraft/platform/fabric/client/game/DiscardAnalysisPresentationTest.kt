@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DiscardReadinessAnalysisDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WIN_AVAILABLE_ID
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileAvailabilityDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import net.minecraft.text.TranslatableTextContent
 import kotlin.test.Test
@@ -22,7 +23,7 @@ class DiscardAnalysisPresentationTest {
     fun `builds one cell per waiting tile`() {
         val content = discardAnalysisContent(texts, BuiltInRuleModuleIds.RIICHI, analysisOf(waiting("a", 4), waiting("b", 2)))
 
-        assertEquals(listOf("a", "b"), content.cells.map { it.tileAssetKey })
+        assertEquals(listOf(tile("a"), tile("b")), content.cells.map { it.tile })
         assertEquals(
             listOf(listOf(4), listOf(2)),
             content.cells.map { assertIs<TranslatableTextContent>(it.countText.content).args.toList() },
@@ -284,7 +285,10 @@ class DiscardAnalysisPresentationTest {
     )
 
     /** 建立測試用的等待牌。 */
-    private fun waiting(assetKey: String, remainingCount: Int, availability: String = WIN_AVAILABLE_ID) = WaitingTileAvailabilityDto(assetKey, remainingCount, availability)
+    private fun waiting(label: String, remainingCount: Int, availability: String = WIN_AVAILABLE_ID) = WaitingTileAvailabilityDto(tile(label), remainingCount, availability)
+
+    /** 以標籤區分的測試牌種。 */
+    private fun tile(label: String) = TileDto.Extension("test:$label")
 
     /** 建立測試用的版面。 */
     private fun layout(

@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.flow.network.dto.message
+package com.doublemoon1119.mahjongcraft.platform.minecraft.decision
 
 import kotlinx.serialization.json.Json
 import kotlin.test.Test

@@ -2,11 +2,6 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationInputSpec
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionPlayerRelationDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionActionDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionActionTileSelectionDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionPromptDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoundPreparationPromptDto
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
@@ -17,6 +12,11 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.vocabularyActionId
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionPlayerRelationDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionActionDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionActionTileSelectionDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RoundPreparationPromptDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.aiPlayerDisplayName
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey

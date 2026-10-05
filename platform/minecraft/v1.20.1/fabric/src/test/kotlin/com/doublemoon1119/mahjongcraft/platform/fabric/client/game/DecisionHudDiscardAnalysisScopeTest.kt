@@ -2,9 +2,9 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DiscardReadinessAnalysisDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HandReadinessAnalysisDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionActionDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionActionTileSelectionDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionPromptDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionActionDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionActionTileSelectionDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs

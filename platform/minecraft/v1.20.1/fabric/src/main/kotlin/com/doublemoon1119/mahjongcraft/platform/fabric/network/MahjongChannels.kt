@@ -3,7 +3,6 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.network
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlSnapshotDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlUpdateRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlUpdateResultDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionTimerUpdatePayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameCommandEnvelopeDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameSnapshotSyncPayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameUpdatePayloadDto
@@ -19,13 +18,14 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSetti
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSettingsResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryResponseDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSelectionDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionSubmissionResultDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomActionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomSnapshotSyncPayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdatePayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.SnapshotClearedPayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.TableOccupancyPayloadDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionTimerUpdatePayloadDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSelectionDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSubmissionResultDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryQuerySettingsPayload
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerIdentityPayload
 import kotlinx.serialization.builtins.nullable

@@ -1,5 +1,9 @@
-package com.doublemoon1119.mahjongcraft.flow.network.dto.message
+package com.doublemoon1119.mahjongcraft.platform.minecraft.decision
 
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DiscardReadinessAnalysisDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileAvailabilityDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.SuitDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -41,7 +45,7 @@ class DecisionTimerUpdatePayloadDtoTest {
                                             discardTileId = Uuid.random().toString(),
                                             waitingTiles = listOf(
                                                 WaitingTileAvailabilityDto(
-                                                    "p5",
+                                                    TileDto.Numeric(SuitDto.DOT, 5),
                                                     2,
                                                     "mahjongcraft:win_available",
                                                 ),
@@ -61,7 +65,7 @@ class DecisionTimerUpdatePayloadDtoTest {
                                 discardTileId = Uuid.random().toString(),
                                 waitingTiles = listOf(
                                     WaitingTileAvailabilityDto(
-                                        "m2",
+                                        TileDto.Honor.Red,
                                         3,
                                         "mahjongcraft:win_tsumo_only",
                                     ),
@@ -79,5 +83,29 @@ class DecisionTimerUpdatePayloadDtoTest {
             val encoded = Json.encodeToString(DecisionTimerUpdatePayloadDto.serializer(), payload)
             assertEquals(payload, Json.decodeFromString(DecisionTimerUpdatePayloadDto.serializer(), encoded))
         }
+    }
+
+    /** 驗證封包的欄位名稱與列舉值維持既有格式。 */
+    @Test
+    fun `test payload keeps its wire field names`() {
+        val payload = DecisionTimerUpdatePayloadDto(
+            "game",
+            DecisionTimerStatusDto(
+                PlayerDecisionPhaseDto.OWN_TURN,
+                1_000L,
+                2_000L,
+                PlayerDecisionPromptDto(
+                    decisionKey = "key",
+                    actions = listOf(PlayerDecisionActionDto(token = "pass", actionId = "mahjongcraft:pass")),
+                    triggerPlayerRelation = DecisionPlayerRelationDto.ACROSS,
+                ),
+            ),
+        )
+
+        assertEquals(
+            """{"gameId":"game","status":{"phase":"OWN_TURN","baseRemainingMillis":1000,"reserveRemainingMillis":2000,""" +
+                """"prompt":{"decisionKey":"key","actions":[{"token":"pass","actionId":"mahjongcraft:pass"}],"triggerPlayerRelation":"ACROSS"}}}""",
+            Json.encodeToString(DecisionTimerUpdatePayloadDto.serializer(), payload),
+        )
     }
 }

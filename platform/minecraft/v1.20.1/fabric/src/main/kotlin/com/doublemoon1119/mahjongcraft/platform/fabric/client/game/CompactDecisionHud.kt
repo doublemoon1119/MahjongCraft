@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.hudCoordinate
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
 import net.minecraft.text.Text
 
 /** Prompt 是否包含需要玩家明確選擇的內容。 */

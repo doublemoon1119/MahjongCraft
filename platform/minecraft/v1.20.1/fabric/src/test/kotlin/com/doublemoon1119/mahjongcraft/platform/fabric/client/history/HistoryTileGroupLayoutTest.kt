@@ -1,9 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionTileOrientationDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayMeldDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.MeldTypeDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.RelativeDirectionDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionTileOrientationDto
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse

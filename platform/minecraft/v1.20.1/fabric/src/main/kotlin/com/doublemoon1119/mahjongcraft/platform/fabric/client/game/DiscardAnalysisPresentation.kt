@@ -2,22 +2,23 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DiscardReadinessAnalysisDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HandReadinessAnalysisDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.PlayerDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WIN_AVAILABLE_ID
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileAvailabilityDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.hudCoordinate
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
 import net.minecraft.text.Text
 
 /**
  * 捨牌分析面板中的一格等待牌。
  *
- * @property tileAssetKey 牌面資產。
+ * @property tile 等待的牌種。
  * @property countText 剩餘張數文字。
  * @property countColor 剩餘張數的顏色，張數越少越醒目。
  * @property availabilityText 這張牌專屬的和牌資格文字；整份分析共用同一種資格時為 `null`，改由狀態列呈現。
  */
 internal data class DiscardAnalysisCell(
-    val tileAssetKey: String,
+    val tile: TileDto,
     val countText: Text,
     val countColor: Int,
     val availabilityText: Text?,
@@ -106,7 +107,7 @@ private fun readinessAnalysisContent(
         ),
         cells = waitingTiles.map { waiting ->
             DiscardAnalysisCell(
-                tileAssetKey = waiting.tileAssetKey,
+                tile = waiting.tile,
                 countText = Text.translatable("mahjongcraft.hud.remaining_tiles", waiting.remainingCount),
                 countColor = when (waiting.remainingCount) {
                     0 -> 0xAA4444

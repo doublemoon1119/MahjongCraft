@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DecisionTileOrientationDto
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionTileOrientationDto
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
