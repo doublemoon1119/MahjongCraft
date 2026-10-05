@@ -7,11 +7,10 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositor
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAvailabilityService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimeoutService
-import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import kotlinx.coroutines.launch
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import org.koin.core.annotation.Single
-import org.slf4j.LoggerFactory
 
 /**
  * 以 Minecraft server tick 週期觸發權威決策逾時、自動操作心跳與時間同步的 Fabric adapter。
@@ -37,7 +36,7 @@ class FabricDecisionTimerScheduler(
     private val autoDrawService: MahjongAutoDrawService,
 ) {
     /** 決策逾時處理錯誤的專用 logger。 */
-    private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
+    private val logger = mahjongCraftLogger(FabricDecisionTimerScheduler::class)
 
     /** 距離上次處理已經過的 server tick 數。 */
     private var elapsedTicks = 0

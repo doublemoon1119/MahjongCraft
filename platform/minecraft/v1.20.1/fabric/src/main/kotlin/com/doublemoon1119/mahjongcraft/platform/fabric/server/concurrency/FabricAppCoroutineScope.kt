@@ -2,9 +2,9 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricDecisionTimerScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.MahjongTableGameActionService
-import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import kotlinx.coroutines.CompletableJob
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Job
@@ -12,7 +12,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.withTimeoutOrNull
 import org.koin.core.annotation.Single
-import org.slf4j.LoggerFactory
 import kotlin.coroutines.CoroutineContext
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -23,7 +22,7 @@ class FabricAppCoroutineScope(
 ) : AppCoroutineScope {
     /** 兜底記錄未被個別呼叫端攔截的協程例外；[SupervisorJob] 下每個 child 各自獨立，這裡不會影響
      *  其他任務繼續執行，純粹是最後一道防線的 log。 */
-    private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
+    private val logger = mahjongCraftLogger(FabricAppCoroutineScope::class)
 
     @Volatile
     private var sessionContext: CoroutineContext = newContext()

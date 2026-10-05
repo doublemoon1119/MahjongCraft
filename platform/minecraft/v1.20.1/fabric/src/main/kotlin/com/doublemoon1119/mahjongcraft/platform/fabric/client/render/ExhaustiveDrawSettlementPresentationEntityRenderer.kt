@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClie
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerDisplayNameResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ExhaustiveDrawSettlementPlayerSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ExhaustiveDrawSettlementPresentationEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ScoreRankingAnimation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
@@ -18,7 +19,6 @@ import net.minecraft.client.util.math.MatrixStack
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 import net.minecraft.util.Identifier
-import org.slf4j.LoggerFactory
 import kotlin.math.roundToInt
 import kotlin.uuid.Uuid as KotlinUuid
 
@@ -31,6 +31,8 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
     private val playerNames: ClientPlayerDisplayNameResolver,
     private val configStore: MahjongClientConfigStore,
 ) : EntityRenderer<ExhaustiveDrawSettlementPresentationEntity>(context) {
+    private val logger = mahjongCraftLogger(ExhaustiveDrawSettlementPresentationEntityRenderer::class)
+
     private val textRenderer = context.textRenderer
     private val warnedUnknownReasonIds = mutableSetOf<String>()
 
@@ -479,7 +481,6 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
     )
 
     private companion object {
-        val logger = LoggerFactory.getLogger(ExhaustiveDrawSettlementPresentationEntityRenderer::class.java)
         const val TEXT_SCALE = 0.02f
         const val TITLE_SCALE = 1.3f
         const val TITLE_Y = -49f

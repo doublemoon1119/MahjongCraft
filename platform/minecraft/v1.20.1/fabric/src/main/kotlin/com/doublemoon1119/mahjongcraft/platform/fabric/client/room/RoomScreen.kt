@@ -22,6 +22,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.PlayerPortr
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.PublicPlayerIndicatorTextResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongPlayerInfoEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.gameConfigPresentationText
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
@@ -51,7 +52,6 @@ import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Box
-import org.slf4j.LoggerFactory
 import java.util.UUID
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
@@ -73,6 +73,8 @@ class RoomScreen(
     private val profileResolver: ClientPlayerProfileResolver,
     openSettings: Boolean = false,
 ) : Screen(Text.translatable(MinecraftRoomScreenKeys.TITLE)) {
+    private val logger = mahjongCraftLogger(RoomScreen::class)
+
     private var page = if (openSettings) Page.SETTINGS else Page.ROOM
     private var selectedCategoryId: String? = null
     private val fieldScroll = ScrollState()
@@ -905,9 +907,9 @@ class RoomScreen(
         when (val warning = resolution.warning) {
             null -> Unit
             is RoomMemberAppearanceResolver.Warning.ProviderFailed ->
-                LOGGER.warn("Failed to resolve room member appearance provider {}", warning.providerId, warning.cause)
+                logger.warn("Failed to resolve room member appearance provider {}", warning.providerId, warning.cause)
             is RoomMemberAppearanceResolver.Warning.MissingActorPreviewFactory ->
-                LOGGER.warn("No room actor preview factory is registered for {}; using portrait fallback", warning.actorKey)
+                logger.warn("No room actor preview factory is registered for {}; using portrait fallback", warning.actorKey)
         }
         // 玩家離線時找不到可預覽的 entity——沒有真人模型可畫，退回畫像，不能什麼都不畫，
         // 讓那一格看起來像沒東西。
@@ -1217,7 +1219,6 @@ class RoomScreen(
     }
 
     private companion object {
-        val LOGGER = LoggerFactory.getLogger(RoomScreen::class.java)
         const val SETTINGS_FIELD_LABEL_X = 150
         const val SETTINGS_FIELD_LABEL_GAP = 8
         const val VANILLA_VISIBLE_TEXT_HEIGHT = 8

@@ -2,11 +2,11 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence
 
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.state.AuthoritativeStatePersistenceCodec
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import net.minecraft.nbt.NbtCompound
 import net.minecraft.nbt.NbtElement
 import net.minecraft.world.PersistentState
-import org.slf4j.LoggerFactory
 
 /**
  * 將完整權威狀態保存為單一 UTF-8 JSON 位元組陣列的 Minecraft 1.20.1 [PersistentState] adapter。
@@ -18,6 +18,9 @@ class MahjongAuthoritativePersistentState private constructor(
     private val codec: AuthoritativeStatePersistenceCodec,
     initialSnapshot: AuthoritativeStateSnapshot,
 ) : PersistentState() {
+    /** 權威狀態持久化的 logger。 */
+    private val logger = mahjongCraftLogger(MahjongAuthoritativePersistentState::class)
+
     /** `writeNbt` 同步讀取的最新不可變權威狀態。 */
     @Volatile
     var snapshot: AuthoritativeStateSnapshot = initialSnapshot
@@ -56,9 +59,6 @@ class MahjongAuthoritativePersistentState private constructor(
 
         /** NBT 中保存 codec JSON UTF-8 位元組的欄位名稱。 */
         internal const val NBT_KEY_STATE: String = "state"
-
-        /** 權威狀態持久化的 logger。 */
-        private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
 
         /** 建立沒有既有存檔的空狀態。 */
         fun create(codec: AuthoritativeStatePersistenceCodec): MahjongAuthoritativePersistentState = MahjongAuthoritativePersistentState(

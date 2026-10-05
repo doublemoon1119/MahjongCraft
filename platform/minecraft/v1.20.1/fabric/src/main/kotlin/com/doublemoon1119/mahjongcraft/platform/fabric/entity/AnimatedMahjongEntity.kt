@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationQueueDriver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import net.minecraft.entity.Entity
@@ -13,7 +14,6 @@ import net.minecraft.server.world.ServerWorld
 import net.minecraft.sound.SoundCategory
 import net.minecraft.util.Identifier
 import net.minecraft.world.World
-import org.slf4j.LoggerFactory
 
 /**
  * 動畫佇列共用的驅動基底：把動畫播放任務（含期間的等待）持久化掛在 entity 自己身上，透過既有的
@@ -141,7 +141,7 @@ abstract class AnimatedMahjongEntity<C>(
         val id = Identifier.tryParse(step.soundId)
         if (id == null || !Registries.SOUND_EVENT.containsId(id)) {
             if (unknownSoundIds.add(step.soundId)) {
-                LOGGER.warn("Skipped unknown animation sound ID: {}", step.soundId)
+                logger.warn("Skipped unknown animation sound ID: {}", step.soundId)
             }
             return
         }
@@ -329,6 +329,6 @@ abstract class AnimatedMahjongEntity<C>(
         private val unknownSoundIds = mutableSetOf<String>()
 
         /** 動畫聲音解析失敗時使用的 logger。 */
-        private val LOGGER = LoggerFactory.getLogger(AnimatedMahjongEntity::class.java)
+        private val logger = mahjongCraftLogger(AnimatedMahjongEntity::class)
     }
 }

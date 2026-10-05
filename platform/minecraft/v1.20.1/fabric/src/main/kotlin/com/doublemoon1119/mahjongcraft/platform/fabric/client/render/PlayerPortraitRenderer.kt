@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerProfileResolver
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSource
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceContext
@@ -19,7 +20,6 @@ import net.minecraft.client.util.math.MatrixStack
 import net.minecraft.util.Identifier
 import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single
-import org.slf4j.LoggerFactory
 import kotlin.math.roundToInt
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
@@ -35,7 +35,7 @@ class PlayerPortraitRenderer(
     @Provided private val sources: PlayerPortraitSourceRegistry,
     private val profiles: ClientPlayerProfileResolver,
 ) {
-    private val logger = LoggerFactory.getLogger(PlayerPortraitRenderer::class.java)
+    private val logger = mahjongCraftLogger(PlayerPortraitRenderer::class)
     private val warnedProviderIds = mutableSetOf<String>()
     private val tileTextures = mutableMapOf<String, Identifier>()
 

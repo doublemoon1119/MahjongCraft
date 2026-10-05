@@ -6,10 +6,10 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTablePart
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
-import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPresentationResult
@@ -24,7 +24,6 @@ import net.minecraft.util.Identifier
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Box
 import org.koin.core.annotation.Single
-import org.slf4j.LoggerFactory
 import kotlin.math.abs
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
@@ -34,7 +33,7 @@ import kotlin.uuid.toJavaUuid
 class FabricMahjongDiscardPresenter(
     private val serverHolder: FabricServerHolder,
 ) : MahjongDiscardPresenter {
-    private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
+    private val logger = mahjongCraftLogger(FabricMahjongDiscardPresenter::class)
 
     /**
      * 牌河裡的每一張牌，UUID 都跟牌牆結構座標傳過來的那張牌完全同一個——理由跟

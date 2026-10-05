@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.network
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
@@ -10,7 +11,6 @@ import net.minecraft.network.PacketByteBuf
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.util.Identifier
-import org.slf4j.LoggerFactory
 
 /** JSON 字串走 [net.minecraft.network.PacketByteBuf] 內建的 varint 長度前綴字串編碼，上限字元數。 */
 private const val MAX_PAYLOAD_LENGTH = 1 shl 20
@@ -94,7 +94,7 @@ class S2CChannel<T>(id: String, private val serializer: KSerializer<T>, private 
  */
 class C2SChannel<T>(id: String, private val serializer: KSerializer<T>, private val maxPayloadBytes: Int? = null) {
     /** 有界頻道拒絕無法解碼要求時使用的內部診斷。 */
-    private val logger = LoggerFactory.getLogger(C2SChannel::class.java)
+    private val logger = mahjongCraftLogger(C2SChannel::class)
 
     /** Fabric 網路使用的頻道識別碼。 */
     val channelId: Identifier = Identifier(MinecraftModMetadata.MOD_ID, id)

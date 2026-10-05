@@ -5,12 +5,11 @@ import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatch
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.CommittedGameFacts
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementDetector
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import kotlinx.coroutines.launch
 import org.koin.core.annotation.Single
-import org.slf4j.LoggerFactory
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.uuid.Uuid
 
@@ -34,7 +33,7 @@ class FabricAchievementService(
     resolverRegistry: GameAchievementResolverRegistry,
     private val gateway: AchievementGrantGateway,
 ) {
-    private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
+    private val logger = mahjongCraftLogger(FabricAchievementService::class)
 
     /** 通用與規則專屬成果判定。 */
     private val detector = GameAchievementDetector(moduleRegistry, resolverRegistry)

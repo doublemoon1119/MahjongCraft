@@ -3,10 +3,10 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableBlock
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTablePart
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
-import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPresentationResult
@@ -23,7 +23,6 @@ import net.minecraft.util.Identifier
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Box
 import org.koin.core.annotation.Single
-import org.slf4j.LoggerFactory
 import kotlin.uuid.Uuid
 
 /**
@@ -38,7 +37,7 @@ class FabricTablePropPresenter(
     private val spawnGateway: FabricEntitySpawnGateway,
     private val kindRegistry: FabricTablePropKindRegistry,
 ) : TablePropPresenter {
-    private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
+    private val logger = mahjongCraftLogger(FabricTablePropPresenter::class)
 
     /** 驗證 controller 後保留相符的既有物件；缺少的物件全部生成成功後，才移除多餘的舊物件。 */
     override fun present(presentation: TablePropPresentation): TablePropPresentationResult {

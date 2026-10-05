@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryOutcomeFi
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryParticipantSummaryDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryErrorCodeDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryResultSummaryDto
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.asCoroutineDispatcher
@@ -20,7 +21,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
-import org.slf4j.LoggerFactory
 import java.lang.management.ManagementFactory
 import java.sql.DriverManager
 import java.util.concurrent.Executors
@@ -42,6 +42,9 @@ import com.sun.management.OperatingSystemMXBean as ComSunOperatingSystemMXBean
  * 啟用方式為設定環境變數 `MAHJONGCRAFT_HISTORY_QUERY_LOAD_MEASUREMENT=true`。
  */
 class HistoryQueryLoadMeasurementTest {
+    /** 量測結果 logger。 */
+    private val logger = mahjongCraftLogger(HistoryQueryLoadMeasurementTest::class)
+
     /** 比較不同全伺服器准入上限下的查詢與待寫事件延遲。 */
     @Test
     fun `measure query admission caps against concurrent history writes`() = runBlocking {
@@ -637,8 +640,5 @@ class HistoryQueryLoadMeasurementTest {
 
         /** 比較的伺服器准入上限。 */
         private val CAP_VALUES = listOf(8, 16, 32, 64)
-
-        /** 量測結果 logger。 */
-        private val logger = LoggerFactory.getLogger(HistoryQueryLoadMeasurementTest::class.java)
     }
 }

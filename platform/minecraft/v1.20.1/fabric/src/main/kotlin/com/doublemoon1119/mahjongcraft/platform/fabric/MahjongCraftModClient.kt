@@ -55,6 +55,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricTileLab
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.MatchingTileHighlightController
 import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongScoringStickItem
 import com.doublemoon1119.mahjongcraft.platform.fabric.item.toModelPredicateValue
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
@@ -86,12 +87,11 @@ import net.minecraft.client.MinecraftClient
 import net.minecraft.client.item.ModelPredicateProviderRegistry
 import net.minecraft.util.Identifier
 import org.koin.core.context.GlobalContext
-import org.slf4j.LoggerFactory
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 
 class MahjongCraftModClient : ClientModInitializer {
-    private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
+    private val logger = mahjongCraftLogger(MahjongCraftModClient::class)
 
     override fun onInitializeClient() {
         val koin = GlobalContext.get()

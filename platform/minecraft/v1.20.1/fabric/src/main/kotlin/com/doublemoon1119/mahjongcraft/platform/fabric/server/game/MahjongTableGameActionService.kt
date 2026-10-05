@@ -14,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerActionCont
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerActionContextResolver
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TablePresentationBusyTracker
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableRoomService
@@ -23,7 +24,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisio
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSubmissionResultDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSubmissionResultKindDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RoundPreparationPromptDto
-import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.GameTurnStatus
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
@@ -32,7 +32,6 @@ import kotlinx.serialization.json.Json
 import net.minecraft.server.network.ServerPlayerEntity
 import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single
-import org.slf4j.LoggerFactory
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 
@@ -80,7 +79,7 @@ class MahjongTableGameActionService(
     @Provided private val json: Json,
 ) {
     /** 對局命令與自動銜接失敗時的專用 logger。 */
-    private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
+    private val logger = mahjongCraftLogger(MahjongTableGameActionService::class)
 
     /**
      * 處理實體手牌右鍵；立直等「宣告 + 選牌」動作由操作 HUD 端在進入選牌模式後直接送出

@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.MatchSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MatchSettlementPlayerSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MatchSettlementPresentationEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.PersistentTableOverlayCoordinator
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplateRegistry
@@ -10,7 +11,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPl
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.math.BlockPos
 import org.koin.core.annotation.Single
-import org.slf4j.LoggerFactory
 import kotlin.uuid.Uuid
 
 /** 終局排行舞台的生成與 round-info visibility lease 交接。 */
@@ -20,6 +20,8 @@ class FabricMatchSettlementPresentationScheduler(
     private val overlays: PersistentTableOverlayCoordinator,
     private val spawnGateway: FabricEntitySpawnGateway,
 ) {
+    private val logger = mahjongCraftLogger(FabricMatchSettlementPresentationScheduler::class)
+
     private val warnedRuleModuleIds = mutableSetOf<String>()
 
     /** 成功生成時回傳固定結束時間；失敗則不隱藏 round info。 */
@@ -59,7 +61,6 @@ class FabricMatchSettlementPresentationScheduler(
     }
 
     private companion object {
-        val logger = LoggerFactory.getLogger(FabricMatchSettlementPresentationScheduler::class.java)
         const val STAGE_HEIGHT_OFFSET = 1.6
     }
 }

@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ShowcaseSoundSnaps
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ShowcaseWingSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ShowcaseWinningTileSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationShowcaseEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.PersistentTableOverlayCoordinator
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
@@ -15,7 +16,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPl
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.math.BlockPos
 import org.koin.core.annotation.Single
-import org.slf4j.LoggerFactory
 import kotlin.random.Random
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
@@ -27,7 +27,7 @@ class FabricWinCelebrationShowcaseScheduler(
     private val overlays: PersistentTableOverlayCoordinator,
     private val spawnGateway: FabricEntitySpawnGateway,
 ) {
-    private val logger = LoggerFactory.getLogger(FabricWinCelebrationShowcaseScheduler::class.java)
+    private val logger = mahjongCraftLogger(FabricWinCelebrationShowcaseScheduler::class)
     private val warnedUnknownCues = mutableSetOf<String>()
 
     /**

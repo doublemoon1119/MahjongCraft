@@ -1,10 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistry
 import net.minecraft.text.Text
 import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single
-import org.slf4j.LoggerFactory
 
 /** Client 可直接呈現的一項自動操作顯示資料。 */
 data class ResolvedAutomaticControlDisplay(
@@ -19,6 +19,8 @@ data class ResolvedAutomaticControlDisplay(
 class AutomaticControlDisplayResolver(
     @Provided private val registry: AutomaticControlDisplayRegistry,
 ) {
+    private val logger = mahjongCraftLogger(AutomaticControlDisplayResolver::class)
+
     internal val warnedUnknownControlIds = mutableSetOf<String>()
 
     /** 解析並依顯示順序、control ID 穩定排列指定項目。 */
@@ -31,7 +33,7 @@ class AutomaticControlDisplayResolver(
     fun resolve(controlId: String): ResolvedAutomaticControlDisplay {
         val display = registry.find(controlId)
         if (display == null && warnedUnknownControlIds.add(controlId)) {
-            LOGGER.warn("Unknown automatic control display: {}", controlId)
+            logger.warn("Unknown automatic control display: {}", controlId)
         }
         return ResolvedAutomaticControlDisplay(
             controlId = controlId,
@@ -42,7 +44,6 @@ class AutomaticControlDisplayResolver(
     }
 
     private companion object {
-        val LOGGER = LoggerFactory.getLogger(AutomaticControlDisplayResolver::class.java)
         const val UNKNOWN_DISPLAY_ORDER: Int = Int.MAX_VALUE
     }
 }

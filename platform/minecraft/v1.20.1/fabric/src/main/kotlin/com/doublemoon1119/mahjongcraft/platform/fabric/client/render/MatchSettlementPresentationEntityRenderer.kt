@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClie
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerDisplayNameResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MatchSettlementPlayerSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MatchSettlementPresentationEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.BUILT_IN_MATCH_SETTLEMENT_TEMPLATE_KEY
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplate
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplateRegistry
@@ -18,7 +19,6 @@ import net.minecraft.client.util.math.MatrixStack
 import net.minecraft.text.Text
 import net.minecraft.util.Identifier
 import org.joml.Matrix4f
-import org.slf4j.LoggerFactory
 import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlin.uuid.Uuid
@@ -31,6 +31,8 @@ class MatchSettlementPresentationEntityRenderer(
     private val playerNames: ClientPlayerDisplayNameResolver,
     private val configStore: MahjongClientConfigStore,
 ) : EntityRenderer<MatchSettlementPresentationEntity>(context) {
+    private val logger = mahjongCraftLogger(MatchSettlementPresentationEntityRenderer::class)
+
     private val textRenderer = context.textRenderer
     private val warnedUnknownTemplateKeys = mutableSetOf<String>()
 
@@ -323,7 +325,6 @@ class MatchSettlementPresentationEntityRenderer(
     private data class Placement(val x: Float, val y: Float, val nameWidth: Int)
 
     private companion object {
-        val logger = LoggerFactory.getLogger(MatchSettlementPresentationEntityRenderer::class.java)
         const val TEXT_SCALE = 0.02f
         const val TITLE_SCALE = 1.3f
         const val TITLE_Y = -52f

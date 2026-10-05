@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationEntry
@@ -7,7 +8,6 @@ import net.minecraft.nbt.NbtCompound
 import net.minecraft.nbt.NbtElement
 import net.minecraft.nbt.NbtList
 import net.minecraft.world.PersistentState
-import org.slf4j.LoggerFactory
 import kotlin.uuid.Uuid
 
 /** 將 Minecraft 麻將桌位置索引保存為獨立 NBT list 的 [PersistentState]。 */
@@ -46,7 +46,7 @@ class MahjongTableLocationsPersistentState private constructor(
 
     /** 建立與讀取位置 [PersistentState] 的固定 metadata。 */
     companion object {
-        private val logger = LoggerFactory.getLogger(MahjongTableLocationsPersistentState::class.java)
+        private val logger = mahjongCraftLogger(MahjongTableLocationsPersistentState::class)
 
         /** `PersistentStateManager` 使用的世界存檔 key。 */
         const val STORAGE_KEY: String = "${MinecraftModMetadata.MOD_ID}_table_locations"

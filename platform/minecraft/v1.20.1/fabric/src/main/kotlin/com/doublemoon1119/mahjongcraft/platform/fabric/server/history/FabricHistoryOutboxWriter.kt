@@ -29,6 +29,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.pa
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import kotlinx.coroutines.CancellationException
@@ -49,7 +50,6 @@ import kotlinx.serialization.json.Json
 import net.minecraft.server.MinecraftServer
 import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single
-import org.slf4j.LoggerFactory
 import java.nio.file.Path
 import java.sql.SQLException
 import kotlin.time.Clock
@@ -116,7 +116,7 @@ class FabricHistoryOutboxWriter(
     @Provided private val replayProjectionRegistry: HistoryReplayProjectionRegistry,
 ) {
     /** 記錄歷史寫入與對帳錯誤的 logger。 */
-    private val logger = LoggerFactory.getLogger(FabricHistoryOutboxWriter::class.java)
+    private val logger = mahjongCraftLogger(FabricHistoryOutboxWriter::class)
 
     /** 將權威事件映射成歷史持久化 DTO。 */
     private val mapper = HistoryRecordingPersistenceMapper(registries, json)

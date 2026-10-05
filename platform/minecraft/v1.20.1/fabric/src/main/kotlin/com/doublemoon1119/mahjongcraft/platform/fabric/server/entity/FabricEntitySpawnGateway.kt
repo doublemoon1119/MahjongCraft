@@ -1,10 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.entity
 
-import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import net.minecraft.entity.Entity
 import net.minecraft.server.world.ServerWorld
 import org.koin.core.annotation.Single
-import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.uuid.Uuid
 
@@ -14,7 +13,7 @@ import kotlin.uuid.Uuid
  */
 @Single
 class FabricEntitySpawnGateway {
-    private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
+    private val logger = mahjongCraftLogger(FabricEntitySpawnGateway::class)
     private val activeSpawn = AtomicReference<SpawnContext?>()
 
     /**

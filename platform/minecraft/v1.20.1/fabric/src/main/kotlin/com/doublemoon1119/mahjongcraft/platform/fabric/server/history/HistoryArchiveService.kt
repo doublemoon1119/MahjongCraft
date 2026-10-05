@@ -10,11 +10,11 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.Persiste
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.HistoryResultProjector
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
-import org.slf4j.LoggerFactory
 import kotlin.uuid.Uuid
 
 /**
@@ -33,7 +33,7 @@ internal class HistoryArchiveService(
     private val locations: TableLocationRegistry,
     private val json: Json,
 ) {
-    private val logger = LoggerFactory.getLogger(HistoryArchiveService::class.java)
+    private val logger = mahjongCraftLogger(HistoryArchiveService::class)
 
     /** 最近一次逐場封存失敗的安全摘要，不包含隱藏牌或 payload。 */
     @Volatile var lastArchiveError: String? = null

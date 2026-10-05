@@ -2,13 +2,13 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.config
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryRetentionCoordinator
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.retentionPolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigTomlCodec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigUpdateResult
-import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -16,7 +16,6 @@ import kotlinx.coroutines.withContext
 import net.minecraft.server.MinecraftServer
 import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single
-import org.slf4j.LoggerFactory
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
@@ -44,7 +43,7 @@ class FabricServerConfigManager(
     private val reloadMutex = Mutex()
 
     /** 記錄設定檔建立、載入與失敗原因。 */
-    private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
+    private val logger = mahjongCraftLogger(FabricServerConfigManager::class)
 
     /** 目前 server session 的設定位置；未啟動 server 時為 `null`。 */
     private var location: FabricServerConfigLocation? = null

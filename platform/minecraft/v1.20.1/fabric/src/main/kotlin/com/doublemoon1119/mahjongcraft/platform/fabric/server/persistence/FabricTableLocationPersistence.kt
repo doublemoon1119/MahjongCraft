@@ -1,10 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence
 
-import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import net.minecraft.server.MinecraftServer
 import org.koin.core.annotation.Single
-import org.slf4j.LoggerFactory
 
 /** 將單次 Minecraft server session 與桌子位置 [MahjongTableLocationsPersistentState] 接起來。 */
 @Single
@@ -12,7 +11,7 @@ class FabricTableLocationPersistence(
     private val registry: TableLocationRegistry,
 ) {
     /** 用於回報目前無法解析的 dimension identifier。 */
-    private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
+    private val logger = mahjongCraftLogger(FabricTableLocationPersistence::class)
 
     /** 目前 server session 使用的位置 persistent state。 */
     private var persistentState: MahjongTableLocationsPersistentState? = null

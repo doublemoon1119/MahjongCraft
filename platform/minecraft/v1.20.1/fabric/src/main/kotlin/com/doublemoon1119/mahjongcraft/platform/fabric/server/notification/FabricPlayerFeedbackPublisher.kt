@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.notification
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.FabricRoomConfigScreenCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.ServerPlayerIdentityStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.resolveDisplayText
@@ -25,7 +26,6 @@ import net.minecraft.text.MutableText
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 import org.koin.core.annotation.Single
-import org.slf4j.LoggerFactory
 import kotlin.uuid.Uuid
 
 /**
@@ -63,7 +63,7 @@ class FabricPlayerFeedbackPublisher(
     private val dispatchers: CoroutineDispatchers,
 ) : MinecraftPlayerFeedbackPublisher {
     /** 記錄包含大量 hover 資訊的正式回饋原始資料。 */
-    private val logger = LoggerFactory.getLogger(FabricPlayerFeedbackPublisher::class.java)
+    private val logger = mahjongCraftLogger(FabricPlayerFeedbackPublisher::class)
 
     /** 切換至 server thread，並在玩家仍在線時傳送目前版本選定的回饋。 */
     override fun publish(playerId: Uuid, feedback: MinecraftPlayerFeedback) {

@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.config
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.CLIENT_COMMAND_ROOT
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricTileLabelCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.clientConfigEntries
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.configReloadFailureMessage
@@ -9,14 +10,12 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.text.configShowMessage
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.prefixedConfigMessage
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftConfigCommandKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
-import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 import org.koin.core.annotation.Single
-import org.slf4j.LoggerFactory
 
 /**
  * 純 client-only 指令 `/mahjongcraft_client config reload|show|screen`：跟 server 端
@@ -36,7 +35,7 @@ class FabricClientConfigCommand(
     private val minecraftEnvironment: MinecraftEnvironment,
 ) {
     /** 記錄 config 指令執行結果，對稱 server 端 `FabricServerConfigCommand` 的 logger。 */
-    private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
+    private val logger = mahjongCraftLogger(FabricClientConfigCommand::class)
 
     /** 註冊指令；只能在 client entrypoint 呼叫。 */
     fun register() {

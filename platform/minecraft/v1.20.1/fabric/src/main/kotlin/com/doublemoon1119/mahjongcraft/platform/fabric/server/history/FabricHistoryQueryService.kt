@@ -32,6 +32,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.history.GetHistoryRuleSe
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.GetHistorySummaryUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.ListHistoryUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.HistoryQueryLimits
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.PlayerIdentitySender
@@ -51,7 +52,6 @@ import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
 import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single
-import org.slf4j.LoggerFactory
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 
@@ -81,7 +81,7 @@ class FabricHistoryQueryService(
     private val identityStore: ServerPlayerIdentityStore,
 ) {
     /** 不向玩家傳送原始查詢例外的診斷 logger。 */
-    private val logger = LoggerFactory.getLogger(FabricHistoryQueryService::class.java)
+    private val logger = mahjongCraftLogger(FabricHistoryQueryService::class)
 
     /** 每連線最多一份待執行工作，不累積查詢佇列。 */
     private val admission = HistoryQueryAdmission(limits = {

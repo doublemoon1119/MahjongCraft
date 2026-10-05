@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.Headl
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessHistoryProgress
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessHistoryScenario
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryOutboxWriter
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryGenerationReceipt
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryManagementResult
@@ -34,7 +35,6 @@ import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
 import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single
-import org.slf4j.LoggerFactory
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.milliseconds
@@ -109,7 +109,7 @@ class HistoryGenerationController(
     private val dispatchers: CoroutineDispatchers,
 ) {
     /** 安全的生成診斷，不輸出玩家或牌面。 */
-    private val logger = LoggerFactory.getLogger(HistoryGenerationController::class.java)
+    private val logger = mahjongCraftLogger(HistoryGenerationController::class)
 
     /** 原子發布的最新進度。 */
     private val state = MutableStateFlow<HistoryGenerationProgress?>(null)

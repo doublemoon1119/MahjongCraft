@@ -3,11 +3,10 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.state.AuthoritativeStatePersistenceCodec
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateRestorer
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
-import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import net.minecraft.server.MinecraftServer
 import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single
-import org.slf4j.LoggerFactory
 
 /** 將單次 Minecraft server session 與其 overworld [MahjongAuthoritativePersistentState] 接起來。 */
 @Single
@@ -16,7 +15,7 @@ class FabricAuthoritativeStatePersistence(
     private val store: AuthoritativeStateStore,
     private val stateRestorer: ServerSessionStateRestorer,
 ) {
-    private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
+    private val logger = mahjongCraftLogger(FabricAuthoritativeStatePersistence::class)
 
     /** 目前 server session 使用的 Minecraft persistent state。 */
     private var persistentState: MahjongAuthoritativePersistentState? = null

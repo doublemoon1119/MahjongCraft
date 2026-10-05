@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.model.MahjongTileModelLoadingPlugin
 import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongTileItem
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tileModelAssetPath
@@ -19,7 +20,6 @@ import net.minecraft.screen.PlayerScreenHandler
 import net.minecraft.util.Identifier
 import net.minecraft.util.math.random.Random
 import org.joml.Vector3f
-import org.slf4j.LoggerFactory
 
 /**
  * 麻將牌 item 的 runtime renderer；依 NBT 存的 asset key 動態選擇材質，取代固定的 item model
@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory
  * [Identifier]，不經過 atlas；缺少材質時退回內建 unknown 牌面，不靜默顯示錯誤畫面。
  */
 object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer {
-    private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
+    private val logger = mahjongCraftLogger(MahjongTileItemRenderer::class)
 
     /** 已回報缺少材質警告的 asset key，避免同一個 key 每幀重複記錄。 */
     private val reportedMissingTextureKeys = mutableSetOf<String>()

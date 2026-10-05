@@ -16,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.Headl
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessHistoryScenario
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftHistoryConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
@@ -26,7 +27,6 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
-import org.slf4j.LoggerFactory
 import java.sql.Connection
 import java.sql.DriverManager
 import kotlin.io.path.createTempDirectory
@@ -46,7 +46,7 @@ import kotlin.uuid.Uuid
  */
 class HistoryGenerationIntegrationTest {
     /** 測試用 logger；壓力測試只輸出彙總，不逐事件污染測試 log。 */
-    private val logger = LoggerFactory.getLogger(HistoryGenerationIntegrationTest::class.java)
+    private val logger = mahjongCraftLogger(HistoryGenerationIntegrationTest::class)
 
     /** 驗證東風戰完整生成超過有界佇列容量後，SQLite replay 仍連續且沒有序號缺口。 */
     @Test

@@ -14,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.di.MahjongCraftClientApp
 import com.doublemoon1119.mahjongcraft.platform.fabric.di.MahjongCraftServerApp
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongExtensions
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.metadata.FabricRuntimeMetadata
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.C2SChannel
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
@@ -59,7 +60,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigUpdateResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftPresentationRegistries
-import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
@@ -72,13 +72,12 @@ import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
 import org.koin.core.Koin
 import org.koin.plugin.module.dsl.startKoin
-import org.slf4j.LoggerFactory
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 
 class MahjongCraftMod : ModInitializer {
 
-    private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
+    private val logger = mahjongCraftLogger(MahjongCraftMod::class)
 
     override fun onInitialize() {
         val koin = startDependencyInjection()

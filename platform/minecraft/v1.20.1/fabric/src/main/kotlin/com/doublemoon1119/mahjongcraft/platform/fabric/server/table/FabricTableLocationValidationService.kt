@@ -2,8 +2,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.table
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableBlock
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
-import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.DimensionChunkKey
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableCornerWidthTracker
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
@@ -21,7 +21,6 @@ import net.minecraft.server.MinecraftServer
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.math.BlockPos
 import org.koin.core.annotation.Single
-import org.slf4j.LoggerFactory
 
 /** 在 tick 邊界後登記已載入桌子，並定點驗證已載入 chunk 的預期位置。 */
 @Single
@@ -36,7 +35,7 @@ class FabricTableLocationValidationService(
     private val discardPresenter: MahjongDiscardPresenter,
 ) {
     /** 回報相同 UUID 移動與位置驗證結果。 */
-    private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
+    private val logger = mahjongCraftLogger(FabricTableLocationValidationService::class)
 
     /** 目前允許處理延遲工作的 server session。 */
     private var activeServer: MinecraftServer? = null

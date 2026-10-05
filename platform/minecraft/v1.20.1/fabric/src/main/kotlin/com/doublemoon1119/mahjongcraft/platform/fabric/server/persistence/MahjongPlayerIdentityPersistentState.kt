@@ -1,11 +1,11 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import net.minecraft.nbt.NbtCompound
 import net.minecraft.nbt.NbtElement
 import net.minecraft.nbt.NbtList
 import net.minecraft.world.PersistentState
-import org.slf4j.LoggerFactory
 import java.util.UUID
 
 /**
@@ -72,7 +72,7 @@ class MahjongPlayerIdentityPersistentState private constructor(
     }
 
     companion object {
-        private val logger = LoggerFactory.getLogger(MahjongPlayerIdentityPersistentState::class.java)
+        private val logger = mahjongCraftLogger(MahjongPlayerIdentityPersistentState::class)
 
         /** Minecraft PersistentStateManager 使用的伺服器級索引 key。 */
         const val STORAGE_KEY: String = "${MinecraftModMetadata.MOD_ID}_player_identity"

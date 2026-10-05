@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.config
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.MahjongTileCollisionService
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.configReloadFailureMessage
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.prefixedConfigMessage
@@ -17,7 +18,6 @@ import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 import org.koin.core.annotation.Single
-import org.slf4j.LoggerFactory
 
 /** 註冊限制管理員使用的 server config reload 與 show 指令。 */
 @Single
@@ -28,7 +28,7 @@ class FabricServerConfigCommand(
     private val dispatchers: CoroutineDispatchers,
 ) {
     /** 記錄 config 指令執行者與結果。 */
-    private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
+    private val logger = mahjongCraftLogger(FabricServerConfigCommand::class)
 
     /**
      * 將 `/mahjongcraft config reload|show` 加入 Fabric command dispatcher。

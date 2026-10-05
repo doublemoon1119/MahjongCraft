@@ -1,9 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.block
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableRoomService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLifecycleService
-import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import net.minecraft.block.Block
 import net.minecraft.block.BlockRenderType
 import net.minecraft.block.BlockState
@@ -28,7 +28,6 @@ import net.minecraft.util.shape.VoxelShape
 import net.minecraft.world.BlockView
 import net.minecraft.world.World
 import net.minecraft.world.WorldAccess
-import org.slf4j.LoggerFactory
 
 /**
  * 以底層中央為 controller 的 3×3×2 麻將桌方塊。
@@ -46,7 +45,7 @@ class MahjongTableBlock(
     private val tableLifecycleService: FabricTableLifecycleService,
 ) : BlockWithEntity(settings) {
     /** 記錄結構放置失敗或缺少 controller 等異常狀態。 */
-    private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
+    private val logger = mahjongCraftLogger(MahjongTableBlock::class)
 
     /** 目前正在由 controller 主動拆除的結構，避免 part callbacks 重複進入 cleanup。 */
     private val removingControllers = mutableSetOf<BlockPos>()
