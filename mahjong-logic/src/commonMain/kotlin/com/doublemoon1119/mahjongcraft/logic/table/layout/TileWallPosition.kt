@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.logic.table.layout
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 
 /**
- * 一張牌在實體牌牆的結構座標，供未來 3D 呈現使用。
+ * 一張牌在實體牌牆的結構座標（面、墩、層）。
  *
  * @property side 相對莊家牌牆面的零基底偏移，與 [WallOpening.wallSideOffsetFromDealer]
  *                同一套座標系（`0` 為莊家面前，依逆時針方向遞增）。

@@ -28,13 +28,12 @@ object GameInitializer {
     /**
      * 依據 [module] 建立一場新對局的初始 [TableState]。
      *
-     * @param id 對局的唯一識別碼（沿用房間的 Uuid）。
+     * @param id 對局的唯一識別碼。
      * @param playerIds 參與對局的玩家 Uuid 列表（尚未分配座位，內部會隨機排序）。
      * @param module 該對局採用的規則模組，提供牌山工廠、牌河實作與規則配置。
      * @param aiPlayerStrategyKeys 由 AI 操控的玩家 Uuid 對應到其 AI 策略 key 的映射（key 集合須為
-     * [playerIds] 的子集）。開局後 `Room` 記錄即被刪除，這是「這個玩家是不是 AI、用哪個
-     * 策略」這項資訊唯一的搬家管道，之後隨 [MahjongPlayer] 實例透過既有的 `.copy()` 機制
-     * 自然延續，不需要另外維護。
+     * [playerIds] 的子集），寫入對應 [MahjongPlayer] 後隨實例透過既有的 `.copy()` 機制自然延續，
+     * 不需要另外維護。
      * @return 已完成洗牌、（若規則支援）擲骰開門、發牌、分數初始化的新結果，含權威 [TableState] 與
      * 只有平台呈現層需要的一次性擲骰／牌牆結構資料。
      * @throws IllegalArgumentException 當玩家人數不在該規則允許的範圍內時拋出。

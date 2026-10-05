@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.logic.base
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 
 /**
- * [Meld] 的對稱快照，用於 Client 端渲染。
+ * [Meld] 對指定觀察者的可見快照。
  *
  * 除暗槓（[MeldType.CLOSED_KAN]）外，副露本質上是公開宣告的牌組，[tiles]／[sourceTile] 恆為可見，
  * 不像 [HandSnapshot.standingTiles] 依 observer 權限決定是否隱藏牌面；暗槓則依規則

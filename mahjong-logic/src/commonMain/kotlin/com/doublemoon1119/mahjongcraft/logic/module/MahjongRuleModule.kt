@@ -67,7 +67,7 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     /**
      * 回傳此規則支援的本局自動操作控制 ID。
      *
-     * 控制 ID 只宣告能力；如何依合法動作解析並提交自動決策由 Flow 層 policy 負責。沒有本局自動操作能力的
+     * 控制 ID 只宣告能力；如何依合法動作解析並提交自動決策由呼叫端負責。沒有本局自動操作能力的
      * 規則沿用空集合。
      */
     fun getSupportedAutomaticControlIds(): Set<String> = emptySet()
@@ -75,7 +75,7 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     /**
      * 建立解析本局自動操作行為的規則 policy。
      *
-     * 沒有自動操作行為的規則沿用 no-op；通用 Flow 不得自行套用其他玩法的動作分類。
+     * 沒有自動操作行為的規則沿用 no-op；通用呼叫端不得自行套用其他玩法的動作分類。
      */
     fun createAutomaticControlPolicy(): AutomaticControlPolicy = NoOpAutomaticControlPolicy
 
@@ -288,8 +288,8 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * 等因素區分），這裡不預設任何規則的具體公式。
      *
      * 呼叫前應已確認 [GameAction.Tsumo] 目前合法（例如透過 [createLegalActionValidator]）——這是
-     * 規則無關的驗證，由呼叫端負責；這裡只處理規則特有的點數計算與分攤方式，因此呼叫端（如
-     * `:mahjong-flow` 的 use case）永遠不需要知道、也不需要轉型成任何規則專屬的具體型別。
+     * 規則無關的驗證，由呼叫端負責；這裡只處理規則特有的點數計算與分攤方式，因此呼叫端
+     * 永遠不需要知道、也不需要轉型成任何規則專屬的具體型別。
      *
      * [player] 應為胡牌當下、尚未套用本次自摸任何變化的玩家實例（即 [tableState] 中對應的
      * `TableState.currentPlayer`），其 `Hand.lastDrawn` 即為胡牌張。實作內部需自行處理「胡牌張
@@ -311,8 +311,8 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * 單一玩家支付全額），這裡不預設任何規則的具體公式。
      *
      * 呼叫前應已確認 [GameAction.Ron] 目前合法（例如透過 [createLegalActionValidator]）——這是
-     * 規則無關的驗證，由呼叫端負責；這裡只處理規則特有的點數計算與分攤方式，因此呼叫端（如
-     * `:mahjong-flow` 的 use case）永遠不需要知道、也不需要轉型成任何規則專屬的具體型別。
+     * 規則無關的驗證，由呼叫端負責；這裡只處理規則特有的點數計算與分攤方式，因此呼叫端
+     * 永遠不需要知道、也不需要轉型成任何規則專屬的具體型別。
      *
      * [player] 應為胡牌當下、尚未套用本次榮和任何變化的玩家實例，[winningTile] 為放銃者打出、
      * 被榮和的那張牌。規則特有的點數結果（例如日麻的 `RiichiPointResult`）本身不帶玩家身分，因此需要呼叫端
@@ -380,7 +380,7 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     /**
      * 計算一次一般流局（牌山摸盡）的點數結算——實際如何結算完全由各規則自己的覆寫決定
      * （例如日麻的聽牌／不聽罰符拆分），這裡不預設任何規則的具體公式。應優先於普通流局成立的
-     * 特殊結果交由 Flow 的 post-reaction outcome resolver 判定，不應混入本 hook。
+     * 特殊結果交由呼叫端另外判定，不應混入本 hook。
      *
      * 不支援一般流局結算的規則應回傳 null。
      *
@@ -417,17 +417,17 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
 
     /**
      * 給定一張牌與目前已公開翻開的牌山牌張（[revealedWallTiles]，一般是各規則自訂的指示牌），判斷這張
-     * 牌目前是否該有特殊視覺強調（例如日麻的寶牌發光）——純粹牌面比對，不需要完整 [TableState]，
-     * client／server 都能呼叫。呈現層只負責「有沒有」，實際疊加什麼視覺效果由呈現層自己決定，這裡
-     * 刻意不用任何特定規則的術語命名，避免介面綁死成只有日麻會用。
+     * 牌目前是否為規則視為加值的牌（例如日麻的寶牌）——純粹牌面比對，不需要完整 [TableState]，
+     * 任何持有牌面資訊的呼叫端都能呼叫。是否以及如何呈現由呼叫端決定；這裡刻意不用任何特定規則的術語命名，
+     * 避免介面綁死成只有日麻會用。
      *
      * 不支援此概念的規則固定回傳 `false`（例如台麻沒有寶牌）。
      *
      * @param tile 欲判斷的牌面。
      * @param revealedWallTiles 目前已公開翻開的牌山牌張列表。
-     * @return 這張牌目前是否該有特殊視覺強調。
+     * @return 這張牌目前是否為加值牌。
      */
-    fun isHighlightedTile(tile: Tile, revealedWallTiles: List<Tile>): Boolean = false
+    fun isBonusTile(tile: Tile, revealedWallTiles: List<Tile>): Boolean = false
 
     /**
      * 取得規則要求玩家本次一般捨牌必須打出的牌；預設不限制。
@@ -472,7 +472,7 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     /**
      * 玩家放棄一次原本合法的和牌機會時，套用規則特有的狀態變化。
      *
-     * Flow 在玩家放過合法榮和、或摸牌後可以自摸卻選擇捨牌時呼叫，不預先篩選玩家狀態；是否產生後果完全
+     * 呼叫端在玩家放過合法榮和、或摸牌後可以自摸卻選擇捨牌時呼叫，不預先篩選玩家狀態；是否產生後果完全
      * 由規則決定。例如日麻只對立直中的玩家設定本局永久振聽，未立直的玩家維持不變。
      *
      * 沒有對應規則需求的規則直接回傳 [player] 本身。

@@ -1,14 +1,13 @@
 package com.doublemoon1119.mahjongcraft.logic.table
 
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import kotlin.uuid.Uuid
 
 /**
  * 定義規則是否具有「揭露牌山中特定牌」的能力介面。
  *
- * 實作此介面的動態狀態類別（如 [RiichiDynamicState]）
- * 負責根據當前的對局數據，計算並提供應該在客戶端快照中公開顯示的牌實體唯一識別碼。
+ * 實作此介面的動態狀態類別（例如日麻的 `RiichiDynamicState`）
+ * 負責根據當前的對局數據，計算並提供目前應該公開的牌實體唯一識別碼。
  */
 interface TileWallRevealable {
 

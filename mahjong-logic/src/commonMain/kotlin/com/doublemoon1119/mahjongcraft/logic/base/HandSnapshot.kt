@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.base
 
 /**
- * [Hand] 的對稱快照，用於 Client 端渲染。
+ * [Hand] 對指定觀察者的可見快照。
  *
  * @property standingTiles 立牌快照，可見性由建立快照時傳入的 `isVisible` 決定。
  * @property lastDrawn 剛摸到但尚未整理的牌快照，可見性同 [standingTiles]。

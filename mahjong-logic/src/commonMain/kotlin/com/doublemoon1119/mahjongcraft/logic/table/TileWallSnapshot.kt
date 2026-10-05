@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.toSnapshot
 import kotlin.uuid.Uuid
 
 /**
- * [TileWall] 的對稱快照，用於 Client 端渲染
+ * [TileWall] 對指定觀察者的可見快照。
  */
 data class TileWallSnapshot(
     val tiles: List<IdentifiedTileSnapshot>,

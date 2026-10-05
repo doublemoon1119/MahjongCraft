@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.logic.base
 import kotlin.uuid.Uuid
 
 /**
- * [IdentifiedTile] 的對稱快照，用於 Client 端渲染
+ * [IdentifiedTile] 對指定觀察者的可見快照。
  */
 data class IdentifiedTileSnapshot(
     val id: Uuid,

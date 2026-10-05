@@ -115,7 +115,7 @@ class RiichiMatchProgressionPolicy(
         )
     }
 
-    /** 依房間長度取得原定最後局與延長最後局。 */
+    /** 依對局長度取得原定最後局與延長最後局。 */
     private fun scheduleFor(gameLength: RiichiGameLength): Schedule = when (gameLength) {
         RiichiGameLength.OneGame -> Schedule(regularLastIndex = 0, extraLastIndex = 0)
         RiichiGameLength.East -> Schedule(regularLastIndex = 3, extraLastIndex = 7)
@@ -126,7 +126,7 @@ class RiichiMatchProgressionPolicy(
     private data class Schedule(val regularLastIndex: Int, val extraLastIndex: Int)
 
     private companion object {
-        /** 測試與未來規則擴充共用模型所允許的最少玩家數；正式內建日麻房間仍限制四人。 */
+        /** 測試與未來規則擴充共用模型所允許的最少玩家數；正式內建日麻仍限制四人。 */
         const val MIN_SUPPORTED_PLAYER_COUNT: Int = 2
 
         /** 目前內建日麻固定玩家數。 */

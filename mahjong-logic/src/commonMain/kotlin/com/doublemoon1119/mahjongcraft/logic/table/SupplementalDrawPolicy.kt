@@ -9,7 +9,7 @@ import kotlin.uuid.Uuid
 /**
  * 動作完成後由規則決定是否補摸額外牌張的純邏輯 policy。
  *
- * Flow 只負責建立候選桌況、驗證結果及原子套用，不得自行假設補牌來源、數量或牌牆變化；
+ * 呼叫端只負責建立候選桌況、驗證結果及原子套用，不得自行假設補牌來源、數量或牌牆變化；
  * 公開資訊另由 [WallRevealPolicy] 在明確 checkpoint 處理。
  */
 fun interface SupplementalDrawPolicy {
@@ -78,6 +78,6 @@ object SupplementalDrawReasonIds {
     /** 補牌所需的牌牆來源已耗盡。 */
     const val WALL_EXHAUSTED = "mahjongcraft:wall_exhausted"
 
-    /** Policy 結果未通過 Flow 的牌張守恆或引用驗證。 */
+    /** Policy 結果未通過呼叫端的牌張守恆或引用驗證。 */
     const val INVALID_RESULT = "mahjongcraft:invalid_supplemental_draw_result"
 }

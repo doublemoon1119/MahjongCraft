@@ -4,7 +4,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 
-/** 套用立直後交回 flow 的日麻規則狀態更新。 */
+/** 套用立直後交回呼叫端的日麻規則狀態更新。 */
 data class RiichiDeclarationResult(
     val player: MahjongPlayer,
     val dynamicRuleState: RiichiDynamicState,

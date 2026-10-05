@@ -82,7 +82,7 @@ class RiichiLegalActionValidator(
         // 全場槓子數上限（明槓/暗槓/加槓皆算）固定 4 次，不論這 4 次是不是同一位玩家達成——「同一位
         // 玩家獨得全部 4 槓」只是不觸發 resolveSuukanNagare 流局判定（見該函式 KDoc，可能正在嘗試
         // 四槓子役滿），不代表這位玩家還能繼續槓第 5 次；已達上限時完全不提供任何一種槓的候選，之後
-        // 由 GameFlowCoordinator 在下一次捨牌/立直前檢查 resolveSuukanNagare 決定是否流局。
+        // 由呼叫端在下一次捨牌/立直前檢查 resolveSuukanNagare 決定是否流局。
         val totalKanCount = tableState.players.sumOf { p ->
             p.hand.exposedMelds.count {
                 it.type == MeldType.OPEN_KAN || it.type == MeldType.ADDED_KAN || it.type == MeldType.CLOSED_KAN

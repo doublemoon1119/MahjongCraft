@@ -10,7 +10,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.WallRevealPolicy
 object RiichiWallRevealPolicy : WallRevealPolicy {
     /** 根據規則中立流程節點更新日麻槓寶牌公開狀態。 */
     override fun resolve(context: WallRevealContext): WallRevealDecision {
-        // 舊存檔與部分不涉及日麻動態狀態的測試桌況可能沒有 dynamicRuleState；此時不可能存在
+        // 沒有 dynamicRuleState 的桌況（例如部分不涉及日麻動態狀態的測試桌況）不可能存在
         // 等待中的槓寶牌公開項目，因此一般 checkpoint 可安全視為無變更。真正的槓補牌仍會先由
         // RiichiSupplementalDrawPolicy 驗證並拒絕缺少 RiichiDynamicState 的桌況。
         val state = context.tableState.dynamicRuleState as? RiichiDynamicState

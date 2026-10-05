@@ -9,7 +9,7 @@ package com.doublemoon1119.mahjongcraft.logic.base
  * @property type 副露的種類，例如 [MeldType.CHI] 或 [MeldType.PON]。
  * @property tiles 組成該副露的所有 [IdentifiedTile]。
  * @property sourceTile 從其他玩家處鳴取而來的特定牌。若為暗槓 ([MeldType.CLOSED_KAN]) 則通常為 null。
- * @property sourceDirection 鳴取來源的相對方位。用於決定渲染時哪張牌需要橫放（日麻標準）。
+ * @property sourceDirection 鳴取來源的相對方位。
  */
 data class Meld(
     val type: MeldType,

@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.toSnapshot
 import kotlin.uuid.Uuid
 
 /**
- * [MahjongPlayer] 的不可變快照，用於 Client 端渲染。
+ * [MahjongPlayer] 對指定觀察者的不可變可見快照。
  *
  * @property id 玩家的唯一識別碼
  * @property initialSeatIndex 整場固定的起家座位順位。

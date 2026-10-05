@@ -7,12 +7,10 @@ import kotlin.reflect.KClass
  * [MahjongModuleRegistry] 的預設實作。
  *
  * 建構時是空的對照表，不會預先塞入任何規則。要新增規則，直接呼叫 [register] 即可，
- * 不需要修改這個類別。連日麻/台麻這兩個內建規則，也是由 `:mahjong-flow-common` 的
- * `registerBuiltInRuleModules()` 呼叫 [register] 註冊進來，跟第三方規則走同一套流程，
+ * 不需要修改這個類別。內建規則也由外層組裝時呼叫 [register] 註冊，跟第三方規則走同一套流程，
  * 這個類別本身不知道、也不在乎誰註冊了什麼。
  *
- * `:mahjong-logic` 不依賴 Koin，所以「把這個類別綁定成 [MahjongModuleRegistry] 介面」
- * 這件事是由外層（`:mahjong-flow-common` 的 `FlowCommonModule`）的 DI 負責，不是這裡。
+ * `:mahjong-logic` 不依賴 DI 框架；把這個類別綁定成 [MahjongModuleRegistry] 由外層組裝負責。
  */
 class MahjongModuleRegistryImpl : MahjongModuleRegistry {
 

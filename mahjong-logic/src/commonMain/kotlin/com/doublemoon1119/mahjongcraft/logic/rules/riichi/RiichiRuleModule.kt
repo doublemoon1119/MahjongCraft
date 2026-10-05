@@ -524,8 +524,7 @@ class RiichiRuleModule(
      * 全場尚未有人鳴牌，且全員恰好都打過一張牌（`entries.singleOrNull()` 只有在這個情境下才會
      * 全員非 null），這些第一張捨牌若皆為同一種風牌則成立。
      *
-     * 只應在確定這次捨牌沒有任何人可以吃/碰/槓/榮和之後才呼叫；Flow 層的呼叫時機由對應的
-     * `PostActionExhaustiveDrawResolver` 掌控，這裡只負責純邏輯判定。
+     * 只應在確定這次捨牌沒有任何人可以吃/碰/槓/榮和之後才呼叫；呼叫時機由呼叫端掌控，這裡只負責純邏輯判定。
      */
     fun resolveSuufonRenda(tableStateAfterDiscard: TableState): ExhaustiveDrawReason? {
         if (tableStateAfterDiscard.players.any { it.hand.exposedMelds.isNotEmpty() }) return null
@@ -564,11 +563,11 @@ class RiichiRuleModule(
     }
 
     /**
-     * 日本麻將的特殊視覺強調對象是寶牌：赤寶牌（[RiichiTileInterpretationPolicy.isRedDora]，跟指示牌
+     * 日本麻將的加值牌是寶牌：赤寶牌（[RiichiTileInterpretationPolicy.isRedDora]，跟指示牌
      * 無關的獨立判斷）或符合任一 [revealedWallTiles]（寶牌指示牌）下一張的牌（[getNextDora]，兩張牌
      * 需先各自轉成 [riichiCanonical] 再比較，理由同 [createTileInterpretationPolicy] 的既有慣例）。
      */
-    override fun isHighlightedTile(tile: Tile, revealedWallTiles: List<Tile>): Boolean = RiichiTileInterpretationPolicy.isRedDora(tile) ||
+    override fun isBonusTile(tile: Tile, revealedWallTiles: List<Tile>): Boolean = RiichiTileInterpretationPolicy.isRedDora(tile) ||
         revealedWallTiles.any { indicator -> tile.riichiCanonical == getNextDora(indicator).riichiCanonical }
 
     /** 這位玩家目前是否立直中；直接查詢 [RiichiPlayerState.isRiichi]。 */

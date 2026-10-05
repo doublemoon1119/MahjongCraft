@@ -1297,50 +1297,50 @@ class RiichiRuleModuleTest {
 
     /** 驗證指示牌的下一張數牌被判定為寶牌，循環邊界（9 → 1）也一併驗證。 */
     @Test
-    fun `test isHighlightedTile matches the tile following a numeric dora indicator`() {
+    fun `test isBonusTile matches the tile following a numeric dora indicator`() {
         val indicator = Tile.Numeric(Tile.Suit.Character, 8)
         val dora = Tile.Numeric(Tile.Suit.Character, 9)
         val wraparoundIndicator = Tile.Numeric(Tile.Suit.Dot, 9)
         val wraparoundDora = Tile.Numeric(Tile.Suit.Dot, 1)
 
-        assertTrue(module.isHighlightedTile(dora, listOf(indicator)))
-        assertTrue(module.isHighlightedTile(wraparoundDora, listOf(wraparoundIndicator)))
-        assertFalse(module.isHighlightedTile(indicator, listOf(indicator)))
+        assertTrue(module.isBonusTile(dora, listOf(indicator)))
+        assertTrue(module.isBonusTile(wraparoundDora, listOf(wraparoundIndicator)))
+        assertFalse(module.isBonusTile(indicator, listOf(indicator)))
     }
 
     /** 驗證字牌指示牌的循環方向（東→南→西→北→東、白→發→中→白）。 */
     @Test
-    fun `test isHighlightedTile matches the tile following an honor dora indicator`() {
-        assertTrue(module.isHighlightedTile(Tile.Honor.South, listOf(Tile.Honor.East)))
-        assertTrue(module.isHighlightedTile(Tile.Honor.East, listOf(Tile.Honor.North)))
-        assertTrue(module.isHighlightedTile(Tile.Honor.Green, listOf(Tile.Honor.White)))
-        assertTrue(module.isHighlightedTile(Tile.Honor.White, listOf(Tile.Honor.Red)))
+    fun `test isBonusTile matches the tile following an honor dora indicator`() {
+        assertTrue(module.isBonusTile(Tile.Honor.South, listOf(Tile.Honor.East)))
+        assertTrue(module.isBonusTile(Tile.Honor.East, listOf(Tile.Honor.North)))
+        assertTrue(module.isBonusTile(Tile.Honor.Green, listOf(Tile.Honor.White)))
+        assertTrue(module.isBonusTile(Tile.Honor.White, listOf(Tile.Honor.Red)))
     }
 
     /** 驗證赤寶牌無論目前的寶牌指示牌是什麼都成立，判斷跟指示牌完全無關。 */
     @Test
-    fun `test isHighlightedTile matches red dora regardless of indicators`() {
+    fun `test isBonusTile matches red dora regardless of indicators`() {
         val redFive = RiichiTileTypes.redFive(Tile.Suit.Character)
 
-        assertTrue(module.isHighlightedTile(redFive, emptyList()))
-        assertTrue(module.isHighlightedTile(redFive, listOf(Tile.Numeric(Tile.Suit.Bamboo, 1))))
+        assertTrue(module.isBonusTile(redFive, emptyList()))
+        assertTrue(module.isBonusTile(redFive, listOf(Tile.Numeric(Tile.Suit.Bamboo, 1))))
     }
 
     /** 驗證赤五指示牌只會強調同花色的六，不會把普通五誤標成指示寶牌。 */
     @Test
-    fun `test isHighlightedTile canonicalizes red five dora indicators before resolving next tile`() {
+    fun `test isBonusTile canonicalizes red five dora indicators before resolving next tile`() {
         Tile.Suit.entries.forEach { suit ->
             val indicator = RiichiTileTypes.redFive(suit)
 
-            assertTrue(module.isHighlightedTile(Tile.Numeric(suit, 6), listOf(indicator)))
-            assertFalse(module.isHighlightedTile(Tile.Numeric(suit, 5), listOf(indicator)))
+            assertTrue(module.isBonusTile(Tile.Numeric(suit, 6), listOf(indicator)))
+            assertFalse(module.isBonusTile(Tile.Numeric(suit, 5), listOf(indicator)))
         }
     }
 
     /** 驗證沒有翻開任何指示牌、且不是赤寶牌時，一般的牌不成立寶牌。 */
     @Test
-    fun `test isHighlightedTile returns false when nothing matches`() {
-        assertFalse(module.isHighlightedTile(Tile.Numeric(Tile.Suit.Character, 5), emptyList()))
-        assertFalse(module.isHighlightedTile(Tile.Numeric(Tile.Suit.Character, 5), listOf(Tile.Numeric(Tile.Suit.Character, 1))))
+    fun `test isBonusTile returns false when nothing matches`() {
+        assertFalse(module.isBonusTile(Tile.Numeric(Tile.Suit.Character, 5), emptyList()))
+        assertFalse(module.isBonusTile(Tile.Numeric(Tile.Suit.Character, 5), listOf(Tile.Numeric(Tile.Suit.Character, 1))))
     }
 }

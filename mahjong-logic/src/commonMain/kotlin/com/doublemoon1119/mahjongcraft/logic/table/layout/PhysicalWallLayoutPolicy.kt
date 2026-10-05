@@ -108,7 +108,7 @@ sealed interface PhysicalWallLayoutTransitionDecision {
     /**
      * 新布局與其宣告式移動階段已成功解析。
      *
-     * @property layout 動畫完成後的唯一權威最終布局。
+     * @property layout 所有移動階段完成後的唯一權威最終布局。
      * @property phases 依序播放的移動階段；只移除牌牆成員而沒有位置移動時可以為空。
      */
     data class Completed(

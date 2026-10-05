@@ -42,7 +42,7 @@ import kotlin.uuid.toKotlinUuid
  *
  * 牌面角落輔助標籤統一交由 [tileFaceRenderer] 疊加，與 HUD、GUI、showcase 及結算面板共用相同設定。
  *
- * 特殊視覺強調（例如日麻寶牌發光，見 [MahjongRuleModule.isHighlightedTile]）也是逐幀在這裡由
+ * 特殊視覺強調（例如日麻寶牌發光，見 [MahjongRuleModule.isBonusTile]）也是逐幀在這裡由
  * client 端自行判斷，見 [isHighlighted]——理由跟牌面解析完全一致：這個判斷只能在真正解析出可見牌面
  * 之後才進行，對觀察者看不到牌面的隱藏牌天然不會觸發，不需要另外處理保密。
  */
@@ -348,8 +348,8 @@ class MahjongTileEntityRenderer(
     }
 
     /**
-     * 這張管理中的牌對目前觀察者而言，牌面是否已解析出來、且該有特殊視覺強調
-     * （[MahjongRuleModule.isHighlightedTile]，例如日麻寶牌）。自由放置的牌、或牌面對目前觀察者
+     * 這張管理中的牌對目前觀察者而言，牌面是否已解析出來、且為規則的加值牌
+     * （[MahjongRuleModule.isBonusTile]，例如日麻寶牌），需要特殊視覺強調。自由放置的牌、或牌面對目前觀察者
      * 不可見（[stateStore] 查無對應快照）的管理中牌，一律回傳 `false`——不需要另外判斷保密，理由見
      * 類別 KDoc。
      *
@@ -369,7 +369,7 @@ class MahjongTileEntityRenderer(
         val snapshot = stateStore.gameSnapshot(tableId) ?: return false
         val module = moduleRegistry.getModule(snapshot.config)
         val revealedWallTiles = snapshot.tileWall.tiles.mapNotNull { it.tile }
-        return module.isHighlightedTile(tile, revealedWallTiles)
+        return module.isBonusTile(tile, revealedWallTiles)
     }
 
     /**

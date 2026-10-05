@@ -13,7 +13,7 @@ import kotlin.uuid.Uuid
  * 本類別為不可變值物件：所有會改變玩家狀態的操作皆不會修改原實例，
  * 而是回傳一個反映變更後狀態的新 [MahjongPlayer] 實例。
  *
- * @property id 玩家的唯一識別碼（通常對應 Minecraft 玩家的 Uuid）。
+ * @property id 玩家的唯一識別碼。
  * @property initialSeatIndex 整場固定的起家座位順位，從 `0` 起算。
  * @property hand 該玩家的手牌實體。
  * @property discardPile 該玩家的牌河實體，其具體類型由遊戲規則決定。

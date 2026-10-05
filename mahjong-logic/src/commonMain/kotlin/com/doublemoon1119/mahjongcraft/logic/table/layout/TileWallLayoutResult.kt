@@ -11,8 +11,7 @@ import kotlin.uuid.Uuid
  * 活牌的 [TileWall]，再存入桌況的 `tileWall` 欄位。
  * @property initialDeadWall 牌局開始當下的規則保留牌；舊名稱為既有 API 相容性而保留。保留牌不代表
  * 實體布局必須形成日麻式獨立王牌區，通用呼叫端應改讀 [reservedWallTiles]。
- * @property structure 全部牌（含活牌與王牌）在實體牌牆的結構座標，鍵為 [IdentifiedTile.id]，供未來
- * 3D 呈現使用。
+ * @property structure 全部牌（含活牌與王牌）在實體牌牆的結構座標，鍵為 [IdentifiedTile.id]。
  */
 data class TileWallLayoutResult(
     val drawOrder: List<IdentifiedTile>,

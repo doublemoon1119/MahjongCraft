@@ -5,10 +5,10 @@ import kotlin.uuid.Uuid
 /**
  * 具有唯一身份標識的麻將牌。
  *
- * 用於將領域邏輯層的 [Tile] 與外部系統（如 Minecraft Entity Uuid）進行對接。
+ * 以 [id] 區分同一種牌的不同實體，讓呼叫端可以穩定追蹤每一張牌。
  * 藉由組合 (Composition) 而非繼承的方式，保持了 Tile 屬性的純粹性。
  *
- * @property id 唯一識別碼。在 Minecraft 環境中即為 Entity 的 Uuid。
+ * @property id 唯一識別碼，整副牌中不重複。
  * @property tile 該張牌的物理種類與屬性。
  */
 data class IdentifiedTile(

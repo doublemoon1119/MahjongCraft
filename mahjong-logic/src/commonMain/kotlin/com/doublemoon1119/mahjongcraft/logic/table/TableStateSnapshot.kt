@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import kotlin.uuid.Uuid
 
 /**
- * [TableState] 的不可變快照，用於 Client 端渲染。
+ * [TableState] 對指定觀察者的不可變可見快照。
  *
  * @property id 桌局的唯一識別碼
  * @property players 所有玩家的快照列表

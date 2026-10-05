@@ -179,7 +179,7 @@ object RiichiPhysicalWallLayoutPolicy : PhysicalWallLayoutPolicy {
         )
     }
 
-    /** 非槓動作只移除已離開牌牆的牌，不建立日麻補位動畫。 */
+    /** 非槓動作只移除已離開牌牆的牌，不建立補位移動階段。 */
     private fun unchangedOrRemoveDepartedTiles(
         context: PhysicalWallLayoutTransitionContext,
     ): PhysicalWallLayoutTransitionDecision {
