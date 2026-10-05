@@ -676,7 +676,7 @@ class FabricHistoryOutboxWriter(
         open(path)
     }
 
-    /** 開啟、驗證並對帳；失敗時保留原資料與有效記錄政策。
+    /** 開啟、驗證並對帳；失敗時保留原資料與有效記錄政策，並暫停記錄新的歷史事件。
      *
      * @param path 歷史資料庫檔案位置。
      * @return 是否成功建立背景寫入 session。
@@ -688,7 +688,8 @@ class FabricHistoryOutboxWriter(
             throw cancelled
         } catch (error: Exception) {
             lastError = error.message ?: error::class.simpleName
-            logger.error("History database could not be opened; pending events remain in the bounded outbox", error)
+            logger.error("History database could not be opened; $PAUSED_RECORDING_CONSEQUENCE", error)
+            store.applyHistoryStorageAvailability(false)
             return false
         }
         database = opened
@@ -714,7 +715,8 @@ class FabricHistoryOutboxWriter(
             database = null
             connected = false
             lastError = error.message ?: error::class.simpleName
-            logger.error("History startup reconciliation failed; pending events remain in the bounded outbox", error)
+            logger.error("History startup reconciliation failed; $PAUSED_RECORDING_CONSEQUENCE", error)
+            store.applyHistoryStorageAvailability(false)
             return false
         }
         connected = true
@@ -755,12 +757,14 @@ class FabricHistoryOutboxWriter(
                     throw cancelled
                 } catch (error: Exception) {
                     lastError = error.message ?: error::class.simpleName
-                    logger.error("History outbox write failed; pending events remain in the authoritative save", error)
                     if (error is SQLException) {
+                        logger.error("History database connection failed; $PAUSED_RECORDING_CONSEQUENCE", error)
                         connected = false
                         database = null
+                        store.applyHistoryStorageAvailability(false)
                         return@launch
                     }
+                    logger.error("History outbox write failed; pending events remain in the authoritative save", error)
                     store.applyHistoryStorageAvailability(false)
                     lastPolicy = null
                     delay(retryDelay)
@@ -953,6 +957,11 @@ class FabricHistoryOutboxWriter(
 
         /** 容量不足造成的部分紀錄診斷，不代表管理員停用總開關。 */
         const val PARTIAL_STORAGE_UNAVAILABLE: String = "PARTIAL_STORAGE_UNAVAILABLE"
+
+        /** 資料庫無法使用而暫停記錄時，log 中說明對進行中場次與既有待寫事件的影響。 */
+        const val PAUSED_RECORDING_CONSEQUENCE: String =
+            "history recording is paused and active matches are marked incomplete; " +
+                "already pending events stay in the world save until the database opens again"
 
         /** 每次提交的最大待寫事件數量。 */
         const val BATCH_SIZE = 64

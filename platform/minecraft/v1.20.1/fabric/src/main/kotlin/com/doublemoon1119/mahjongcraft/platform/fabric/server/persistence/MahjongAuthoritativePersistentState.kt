@@ -6,10 +6,12 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModM
 import net.minecraft.nbt.NbtCompound
 import net.minecraft.nbt.NbtElement
 import net.minecraft.world.PersistentState
+import org.slf4j.LoggerFactory
 
 /**
- * 將完整權威狀態保存為單一 JSON 字串的 Minecraft 1.20.1 [PersistentState] adapter。
+ * 將完整權威狀態保存為單一 UTF-8 JSON 位元組陣列的 Minecraft 1.20.1 [PersistentState] adapter。
  *
+ * NBT 字串最多只能保存 65,535 bytes，超過時原版會改寫成空字串；位元組陣列以 int 記錄長度，不受此限制。
  * schema migration 與領域 DTO mapping 全部交由 [codec]；此類別只處理 NBT 容器與 Minecraft dirty flag。
  */
 class MahjongAuthoritativePersistentState private constructor(
@@ -27,12 +29,20 @@ class MahjongAuthoritativePersistentState private constructor(
         markDirty()
     }
 
-    /** 將目前 snapshot 編碼至 [nbt]。 */
+    /** 將目前 snapshot 編碼至 [nbt]；編碼結果過大時記錄警告，仍完整寫入。 */
     override fun writeNbt(nbt: NbtCompound): NbtCompound {
-        nbt.putString(
-            NBT_KEY_STATE,
-            codec.encode(snapshot.rooms.values, snapshot.games.values, snapshot.historyRecordingState),
-        )
+        val current = snapshot
+        val encoded = codec.encode(current.rooms.values, current.games.values, current.historyRecordingState).encodeToByteArray()
+        if (encoded.size > LARGE_STATE_WARNING_BYTES) {
+            logger.warn(
+                "Authoritative state is unusually large and slows world saving: bytes={}, rooms={}, games={}, pendingHistoryEvents={}",
+                encoded.size,
+                current.rooms.size,
+                current.games.size,
+                current.historyRecordingState.pendingEvents.size,
+            )
+        }
+        nbt.putByteArray(NBT_KEY_STATE, encoded)
         return nbt
     }
 
@@ -41,8 +51,14 @@ class MahjongAuthoritativePersistentState private constructor(
         /** `PersistentStateManager` 使用的世界存檔 key。 */
         const val STORAGE_KEY: String = "${MinecraftModMetadata.MOD_ID}_authoritative_state"
 
-        /** NBT 中保存 codec JSON 的欄位名稱。 */
-        private const val NBT_KEY_STATE: String = "state"
+        /** 編碼後超過此大小時記錄警告的門檻。 */
+        internal const val LARGE_STATE_WARNING_BYTES: Int = 1024 * 1024
+
+        /** NBT 中保存 codec JSON UTF-8 位元組的欄位名稱。 */
+        internal const val NBT_KEY_STATE: String = "state"
+
+        /** 權威狀態持久化的 logger。 */
+        private val logger = LoggerFactory.getLogger(MinecraftModMetadata.MOD_ID)
 
         /** 建立沒有既有存檔的空狀態。 */
         fun create(codec: AuthoritativeStatePersistenceCodec): MahjongAuthoritativePersistentState = MahjongAuthoritativePersistentState(
@@ -55,9 +71,9 @@ class MahjongAuthoritativePersistentState private constructor(
             nbt: NbtCompound,
             codec: AuthoritativeStatePersistenceCodec,
         ): MahjongAuthoritativePersistentState {
-            if (!nbt.contains(NBT_KEY_STATE, NbtElement.STRING_TYPE.toInt())) return create(codec)
+            if (!nbt.contains(NBT_KEY_STATE, NbtElement.BYTE_ARRAY_TYPE.toInt())) return create(codec)
 
-            val decoded = codec.decode(nbt.getString(NBT_KEY_STATE))
+            val decoded = codec.decode(nbt.getByteArray(NBT_KEY_STATE).decodeToString())
             return MahjongAuthoritativePersistentState(
                 codec,
                 AuthoritativeStateSnapshot(decoded.rooms, decoded.games, decoded.historyRecordingState),

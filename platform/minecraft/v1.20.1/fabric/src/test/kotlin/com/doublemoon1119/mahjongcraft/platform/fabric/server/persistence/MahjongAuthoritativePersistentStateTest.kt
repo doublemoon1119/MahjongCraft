@@ -13,6 +13,10 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import net.minecraft.nbt.NbtCompound
+import net.minecraft.nbt.NbtElement
+import net.minecraft.nbt.NbtIo
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -20,7 +24,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
-/** 驗證 Minecraft NBT adapter 只保存 codec JSON，並維持每個世界各自的 snapshot。 */
+/** 驗證 Minecraft NBT adapter 以位元組陣列保存 codec JSON，並維持每個世界各自的 snapshot。 */
 class MahjongAuthoritativePersistentStateTest {
     /** 使用所有內建 mapper 的待測 codec。 */
     private val codec = AuthoritativeStatePersistenceCodec(buildBuiltInPersistenceRegistries())
@@ -64,10 +68,35 @@ class MahjongAuthoritativePersistentStateTest {
         assertTrue(restoredSecond.snapshot.rooms.isEmpty())
     }
 
+    /** 驗證超過 NBT 字串上限的狀態經原版壓縮寫入與讀回後完全一致。 */
+    @Test
+    fun `state larger than NBT string limit round-trips through compressed NBT`() {
+        val rooms = List(LARGE_ROOM_COUNT) { createRoom() }.associateBy { it.id }
+        val expected = AuthoritativeStateSnapshot(rooms = rooms)
+        val state = MahjongAuthoritativePersistentState.create(codec).apply { update(expected) }
+        assertTrue(codec.encode(rooms.values, emptyList()).encodeToByteArray().size > NBT_STRING_LIMIT_BYTES)
+
+        val output = ByteArrayOutputStream()
+        NbtIo.writeCompressed(state.writeNbt(NbtCompound()), output)
+        val nbt = NbtIo.readCompressed(ByteArrayInputStream(output.toByteArray()))
+        val restored = MahjongAuthoritativePersistentState.fromNbt(nbt, codec)
+
+        assertEquals(expected, restored.snapshot)
+    }
+
+    /** 驗證狀態以位元組陣列欄位寫入。 */
+    @Test
+    fun `state is written as a byte array`() {
+        val nbt = MahjongAuthoritativePersistentState.create(codec).writeNbt(NbtCompound())
+
+        assertEquals(setOf(MahjongAuthoritativePersistentState.NBT_KEY_STATE), nbt.keys)
+        assertEquals(NbtElement.BYTE_ARRAY_TYPE, nbt.getType(MahjongAuthoritativePersistentState.NBT_KEY_STATE))
+    }
+
     /** 驗證損壞 JSON 不會被當成空存檔而靜默接受。 */
     @Test
     fun `malformed payload fails loading`() {
-        val nbt = NbtCompound().apply { putString("state", "{not-json") }
+        val nbt = NbtCompound().apply { putByteArray(MahjongAuthoritativePersistentState.NBT_KEY_STATE, "{not-json".encodeToByteArray()) }
 
         assertFailsWith<SerializationException> {
             MahjongAuthoritativePersistentState.fromNbt(nbt, codec)
@@ -81,7 +110,10 @@ class MahjongAuthoritativePersistentStateTest {
         val envelope = Json.decodeFromString(PersistenceEnvelopeDto.serializer(), encoded)
             .copy(schemaVersion = Int.MAX_VALUE)
         val nbt = NbtCompound().apply {
-            putString("state", Json.encodeToString(PersistenceEnvelopeDto.serializer(), envelope))
+            putByteArray(
+                MahjongAuthoritativePersistentState.NBT_KEY_STATE,
+                Json.encodeToString(PersistenceEnvelopeDto.serializer(), envelope).encodeToByteArray(),
+            )
         }
 
         assertFailsWith<UnsupportedPersistenceSchemaVersionException> {
@@ -98,7 +130,7 @@ class MahjongAuthoritativePersistentStateTest {
             ruleConfigs = PersistenceDtoRegistry<MahjongRuleConfig>(),
         )
         val codecWithoutRules = AuthoritativeStatePersistenceCodec(registriesWithoutRules)
-        val nbt = NbtCompound().apply { putString("state", encoded) }
+        val nbt = NbtCompound().apply { putByteArray(MahjongAuthoritativePersistentState.NBT_KEY_STATE, encoded.encodeToByteArray()) }
 
         assertFailsWith<IllegalStateException> {
             MahjongAuthoritativePersistentState.fromNbt(nbt, codecWithoutRules)
@@ -114,5 +146,14 @@ class MahjongAuthoritativePersistentStateTest {
             gameConfig = GameConfig(RiichiRuleConfig()),
             playerIds = listOf(hostId),
         )
+    }
+
+    /** 測試共用的固定值。 */
+    private companion object {
+        /** 原版 NBT 字串可保存的最大 UTF-8 位元組數。 */
+        const val NBT_STRING_LIMIT_BYTES: Int = 65_535
+
+        /** 讓編碼結果超過 NBT 字串上限的房間數。 */
+        const val LARGE_ROOM_COUNT: Int = 500
     }
 }

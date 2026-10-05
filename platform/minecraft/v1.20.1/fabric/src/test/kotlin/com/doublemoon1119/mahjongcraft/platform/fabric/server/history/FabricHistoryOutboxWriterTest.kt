@@ -25,6 +25,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
+import java.nio.file.Path
+import java.sql.DriverManager
 import kotlin.io.path.createTempDirectory
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -311,27 +313,110 @@ class FabricHistoryOutboxWriterTest {
         )
     }
 
-    /** 無法連線時仍記錄新對局，但佇列容量耗盡後只保存缺口。 */
+    /** 資料庫缺少必要的表而無法開啟時暫停記錄，新對局只留缺口，不累積待寫事件。 */
     @Test
-    fun `disconnected writer preserves bounded recording for new games`() = runBlocking {
-        val store = AuthoritativeStateStore(historyRecordingEnabled = true, maxPendingHistoryEvents = 1)
+    fun `failed open pauses recording for new games`() = runBlocking {
+        val store = AuthoritativeStateStore(historyRecordingEnabled = true)
         val writer = writer(store)
-        writer.attach(createTempDirectory("mahjongcraft-history-unavailable-"))
-        val repository = GameRepositoryImpl(store)
-        val table = FakeTableStateFactory.create()
-        repository.updateGame(table.id, history = { _, _, _ ->
-            listOf(
-                HistoryEventDraft(null, HistoryFact.MatchStarted(table, GameFlowConfig())),
-                HistoryEventDraft(null, HistoryFact.ReturnedToRoom),
-            )
-        }) { Game(table, GameFlowConfig()) to Unit }
+        writer.attach(databaseMissingResultTables())
+        val game = startMatch(store)
 
-        val game = checkNotNull(store.getGame(table.id))
         val recording = store.snapshot().historyRecordingState
         assertTrue(store.isHistoryRecordingEnabled, "Connection failure must not change policy")
-        assertEquals(1, recording.pendingEvents.size)
-        assertEquals(2L, recording.firstMissingSequenceByMatchId[game.matchId])
+        assertFalse(store.isHistoryStorageAvailable)
+        assertTrue(writer.status().storagePaused)
+        assertTrue(recording.pendingEvents.isEmpty())
+        assertEquals(1L, recording.firstMissingSequenceByMatchId[game.matchId])
+        assertEquals(HistoryRecordingDecision.STOPPED_STORAGE_UNAVAILABLE, recording.decisionsByMatchId[game.matchId])
         writer.detach()
+    }
+
+    /** 開啟失敗時保留的待寫事件，在之後成功開啟的 session 寫入資料庫並恢復記錄。 */
+    @Test
+    fun `pending events from failed open are written once a later session opens`() = runBlocking {
+        val pending = event()
+        val store = AuthoritativeStateStore(historyRecordingEnabled = true)
+        store.load(AuthoritativeStateSnapshot(historyRecordingState = HistoryRecordingState(pendingEvents = listOf(pending))))
+        val writer = writer(store)
+        writer.attach(databaseMissingResultTables())
+        assertEquals(listOf(pending), store.snapshot().historyRecordingState.pendingEvents)
+        writer.detach()
+
+        val path = createTempDirectory("history-reopen-").resolve("history.sqlite")
+        writer.attach(path)
+        try {
+            withTimeout(5.seconds) {
+                while (store.snapshot().historyRecordingState.pendingEvents.isNotEmpty()) delay(10.milliseconds)
+            }
+            assertTrue(store.isHistoryStorageAvailable)
+            assertEquals(1, SqliteHistoryDatabase.open(path).readPending(pending.matchId.toString()).size)
+        } finally {
+            writer.detach()
+        }
+    }
+
+    /** 背景寫入遇到 SQL 錯誤而停止時暫停記錄，之後的對局不再累積待寫事件。 */
+    @Test
+    fun `SQL failure during writing pauses recording`() = runBlocking {
+        val store = AuthoritativeStateStore(historyRecordingEnabled = true)
+        val writer = writer(store)
+        val path = createTempDirectory("history-sql-failure-").resolve("history.sqlite")
+        writer.attach(path)
+        try {
+            assertTrue(writer.status().databaseConnected)
+            dropTable(path, "history_pending_event")
+            startMatch(store)
+            withTimeout(5.seconds) {
+                while (writer.status().databaseConnected) delay(10.milliseconds)
+            }
+
+            assertFalse(store.isHistoryStorageAvailable)
+            val later = startMatch(store)
+            val recording = store.snapshot().historyRecordingState
+            assertTrue(recording.pendingEvents.none { it.matchId == later.matchId })
+            assertEquals(HistoryRecordingDecision.STOPPED_STORAGE_UNAVAILABLE, recording.decisionsByMatchId[later.matchId])
+        } finally {
+            writer.detach()
+        }
+    }
+
+    /**
+     * 建立缺少結果相關表的歷史資料庫，模擬較舊格式建立的資料庫。
+     *
+     * @return 無法通過結構驗證的資料庫檔案位置。
+     */
+    private fun databaseMissingResultTables(): Path {
+        val path = createTempDirectory("history-missing-tables-").resolve("history.sqlite")
+        SqliteHistoryDatabase.open(path)
+        dropTable(path, "history_participant_result")
+        dropTable(path, "history_result_projection")
+        return path
+    }
+
+    /**
+     * 以獨立連線直接刪除資料庫中的一張表。
+     *
+     * @param path 歷史資料庫檔案位置。
+     * @param table 要刪除的表名稱。
+     */
+    private fun dropTable(path: Path, table: String) {
+        DriverManager.getConnection("jdbc:sqlite:$path").use { connection ->
+            connection.createStatement().use { statement -> statement.execute("DROP TABLE $table") }
+        }
+    }
+
+    /**
+     * 透過正式 repository 開始一場會產生歷史事件的新對局。
+     *
+     * @param store 受測的權威歷史來源。
+     * @return 已提交的對局。
+     */
+    private suspend fun startMatch(store: AuthoritativeStateStore): Game {
+        val table = FakeTableStateFactory.create()
+        GameRepositoryImpl(store).updateGame(table.id, history = { _, _, _ ->
+            listOf(HistoryEventDraft(null, HistoryFact.MatchStarted(table, GameFlowConfig())))
+        }) { Game(table, GameFlowConfig()) to Unit }
+        return checkNotNull(store.getGame(table.id))
     }
 
     /**
