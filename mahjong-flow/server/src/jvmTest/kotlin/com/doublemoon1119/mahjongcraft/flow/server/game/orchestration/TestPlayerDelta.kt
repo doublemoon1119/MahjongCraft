@@ -99,7 +99,6 @@ internal sealed interface TestDiscardDelta {
  * @property passedTiles 同巡放過的牌種變化。
  * @property actions 動作紀錄的中間片段變化。
  * @property seatWind 自風變化。
- * @property aiStrategyKey AI 策略標記變化。
  */
 internal data class TestPlayerDelta(
     val standing: TestListSplice<IdentifiedTile>? = null,
@@ -111,7 +110,6 @@ internal data class TestPlayerDelta(
     val passedTiles: Set<Tile>? = null,
     val actions: TestListSplice<GameAction>? = null,
     val seatWind: Wind? = null,
-    val aiStrategyKey: TestChanged<String?>? = null,
 ) {
     /** 將所有有變更的玩家欄位套用至前一權威狀態。 */
     fun applyTo(before: MahjongPlayer): MahjongPlayer = before.copy(
@@ -126,7 +124,6 @@ internal data class TestPlayerDelta(
         passedTilesInRound = passedTiles ?: before.passedTilesInRound,
         actionHistory = actions?.applyTo(before.actionHistory) ?: before.actionHistory,
         seatWind = seatWind ?: before.seatWind,
-        aiStrategyKey = if (aiStrategyKey != null) aiStrategyKey.value else before.aiStrategyKey,
     )
 
     /** 建立同一玩家的狀態差異；玩家身分及初始座位不得改變。 */
@@ -156,7 +153,6 @@ internal data class TestPlayerDelta(
                 passedTiles = after.passedTilesInRound.takeIf { it != before.passedTilesInRound },
                 actions = TestListSplice.between(before.actionHistory, after.actionHistory),
                 seatWind = after.seatWind.takeIf { it != before.seatWind },
-                aiStrategyKey = if (after.aiStrategyKey != before.aiStrategyKey) TestChanged(after.aiStrategyKey) else null,
             )
         }
     }

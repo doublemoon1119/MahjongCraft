@@ -50,7 +50,7 @@ class ServerSessionStateRestorer(
             room.humanPlayerIds.forEach { playerId -> roomSnapshots.setSnapshot(playerId, room.toSnapshot(playerId)) }
         }
         state.games.values.forEach { game ->
-            game.tableState.players.filter { it.aiStrategyKey == null }.forEach { player ->
+            game.tableState.players.filterNot { game.isAi(it.id) }.forEach { player ->
                 gameSnapshots.setSnapshot(player.id, gameVisibilityPolicy.snapshotFor(game, player.id))
                 gameSnapshots.setRoundPreparationSnapshot(
                     gameId = game.id,
@@ -75,7 +75,7 @@ class ServerSessionStateRestorer(
 
         state.rooms.values.forEach { room -> room.humanPlayerIds.forEach { playerId -> add(playerId, room.id) } }
         state.games.values.forEach { game ->
-            game.tableState.players.filter { it.aiStrategyKey == null }.forEach { player -> add(player.id, game.id) }
+            game.tableState.players.filterNot { game.isAi(it.id) }.forEach { player -> add(player.id, game.id) }
         }
         val conflicts = venueIdsByPlayerId
             .filterValues { it.size > 1 }

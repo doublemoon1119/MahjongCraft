@@ -28,7 +28,7 @@ class GameAchievementDetector(
         val generic = GenericAchievementDetector.detect(facts, module)
         val rule = resolverRegistry.resolve(module.id, facts)
         return game.tableState.players
-            .filterNot { it.isAi }
+            .filterNot { game.isAi(it.id) }
             .mapNotNull { player ->
                 val ids = generic[player.id].orEmpty() + rule[player.id].orEmpty()
                 if (ids.isEmpty()) null else PlayerAchievements(player.id, facts.matchId, module.id, ids)

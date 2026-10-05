@@ -73,6 +73,8 @@ class DeclareTsumoUseCase(
      */
     suspend operator fun invoke(gameId: Uuid, playerId: Uuid): Outcome<Unit, GameError> {
         // 1. 以原子方式讀取桌況、驗證業務規則並寫回
+        // AI 名單整場對局不變，先取出供結算呈現使用。
+        val aiPlayerIds = gameRepository.getGame(gameId)?.aiPlayerIds.orEmpty()
         val outcome = gameRepository.update(
             gameId,
             history = { before, after, result ->
@@ -186,6 +188,7 @@ class DeclareTsumoUseCase(
                         previousState = stateForSettlement,
                         currentState = newState,
                         module = module,
+                        aiPlayerIds = aiPlayerIds,
                         outcomeId = BuiltInRoundOutcomeIds.TSUMO,
                         isTsumo = true,
                         winningTileId = winningTile.id,

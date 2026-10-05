@@ -16,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDto
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.TableOccupancyDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.TableOccupancyPayloadDto
@@ -55,12 +56,38 @@ class ClientMahjongStateStoreTest {
             actorId = playerB.id.toString(),
             action = GameAction.Draw.toDto(registries),
             snapshot = snapshotB.toDto(registries),
+            aiPlayerIds = emptyList(),
         )
         store.apply(gameUpdateB)
 
         assertEquals(occupancyA, store.tableOccupancy(tableAId), "Table B's game update must not affect table A's lobby state")
         assertEquals(snapshotB, store.gameSnapshot(tableBId))
         assertNull(store.gameSnapshot(tableAId))
+    }
+
+    /** 遊戲更新附帶的 AI 玩家清單會跟著快照一起保存，下一次更新會整份取代。 */
+    @Test
+    fun `game updates store and replace the ai player list alongside the snapshot`() {
+        val store = ClientMahjongStateStore(registries)
+        val tableId = Uuid.random()
+        val human = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST, discardPile = RiichiDiscardPile())
+        val ai = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH, discardPile = RiichiDiscardPile())
+        val snapshot = FakeTableStateFactory.create(id = tableId, players = listOf(human, ai), config = RiichiRuleConfig())
+            .toSnapshot(visibleHandPlayerIds = emptySet())
+
+        store.apply(
+            GameUpdatePayloadDto(
+                gameId = tableId.toString(),
+                actorId = human.id.toString(),
+                action = GameAction.Draw.toDto(registries),
+                snapshot = snapshot.toDto(registries),
+                aiPlayerIds = listOf(ai.id.toString()),
+            ),
+        )
+        assertEquals(setOf(ai.id), store.gameAiPlayerIds(tableId))
+
+        store.applyGameSnapshot(tableId, snapshot, aiPlayerIds = emptySet())
+        assertEquals(emptySet(), store.gameAiPlayerIds(tableId))
     }
 
     @Test
@@ -86,9 +113,10 @@ class ClientMahjongStateStoreTest {
         )
         val otherPlayer = FakeMahjongPlayerFactory.create()
         store.applyGameSnapshot(
-            spectatedTableId,
-            FakeTableStateFactory.create(id = spectatedTableId, players = listOf(otherPlayer), config = RiichiRuleConfig())
+            gameId = spectatedTableId,
+            snapshot = FakeTableStateFactory.create(id = spectatedTableId, players = listOf(otherPlayer), config = RiichiRuleConfig())
                 .toSnapshot(visibleHandPlayerIds = emptySet()),
+            aiPlayerIds = emptySet(),
         )
 
         assertEquals(seatedTableId, store.findTableWhereSeated(localPlayerId))
@@ -138,7 +166,7 @@ class ClientMahjongStateStoreTest {
         val snapshot = FakeTableStateFactory.create(id = tableId, players = listOf(player), config = RiichiRuleConfig())
             .toSnapshot(visibleHandPlayerIds = setOf(player.id))
         val analysis = HandReadinessAnalysisDto("mahjongcraft:riichi", emptyList())
-        store.applyGameSnapshot(tableId, snapshot, handReadinessAnalysis = analysis)
+        store.applyGameSnapshot(tableId, snapshot, aiPlayerIds = emptySet(), handReadinessAnalysis = analysis)
 
         assertEquals(analysis, store.handReadinessAnalysis(tableId))
 
@@ -148,6 +176,7 @@ class ClientMahjongStateStoreTest {
                 actorId = player.id.toString(),
                 action = GameAction.Draw.toDto(registries),
                 snapshot = snapshot.toDto(registries),
+                aiPlayerIds = emptyList(),
             ),
         )
 

@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceE
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceSchema
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.GameRuntimeStatePersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.TableStatePersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toAiPlayerStrategyKeys
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toEnabledAutomaticControlIdsByPlayerId
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toForcedAutoPlayPlayerIds
@@ -70,6 +71,9 @@ data class AuthoritativeStatePersistenceDto(
             }
             require(gameRuntimeStates.getValue(gameId).forcedAutoPlayPlayerIds.all { it in playerIds }) {
                 "Forced auto-play players must belong to the game"
+            }
+            require(gameRuntimeStates.getValue(gameId).aiPlayerStrategyKeys.keys.all { it in playerIds }) {
+                "AI players must belong to the game"
             }
             require(gameRuntimeStates.getValue(gameId).enabledAutomaticControlIdsByPlayerId.keys.all { it in playerIds }) {
                 "Automatic control players must belong to the game"
@@ -178,6 +182,7 @@ fun AuthoritativeStatePersistenceDto.toGames(
         pendingRoundPreparation = runtimeState.pendingRoundPreparation?.toDomain(),
         hostId = runtimeState.hostId?.let { Uuid.parse(it) } ?: tableState.players.first().id,
         roomPlayerIds = runtimeState.roomPlayerIds?.map(Uuid::parse) ?: tableState.players.map { it.id },
+        aiPlayerStrategyKeys = runtimeState.toAiPlayerStrategyKeys(),
         interruptedBaseMillisByPlayerId = runtimeState.toInterruptedBaseMillisByPlayerId(),
         matchId = runtimeState.matchId?.let(Uuid::parse) ?: id,
     )

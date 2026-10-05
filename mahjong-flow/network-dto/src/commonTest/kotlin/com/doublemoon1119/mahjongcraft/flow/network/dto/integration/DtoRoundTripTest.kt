@@ -318,6 +318,7 @@ class DtoRoundTripTest {
             actorId = player.id.toString(),
             action = GameAction.Draw.toDto(registries),
             snapshot = snapshot.toDto(registries),
+            aiPlayerIds = listOf(Uuid.random().toString()),
             historyMatchId = Uuid.random().toString(),
         )
         val encodedGame = json.encodeToString(GameUpdatePayloadDto.serializer(), gamePayload)
@@ -351,6 +352,7 @@ class DtoRoundTripTest {
         val gamePayload = GameSnapshotSyncPayloadDto(
             gameId = gameSnapshot.id.toString(),
             snapshot = gameSnapshot.toDto(registries),
+            aiPlayerIds = listOf(Uuid.random().toString()),
             handReadinessAnalysis = HandReadinessAnalysisDto(
                 ruleModuleId = "mahjongcraft:riichi",
                 waitingTiles = listOf(

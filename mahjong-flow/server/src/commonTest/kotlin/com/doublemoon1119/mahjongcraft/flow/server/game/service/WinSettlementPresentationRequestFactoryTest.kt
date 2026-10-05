@@ -60,7 +60,7 @@ class WinSettlementPresentationRequestFactoryTest {
             presentationClassification = RoundOutcomePresentationClassification.WIN_EQUIVALENT,
         )
 
-        val request = WinSettlementPresentationRequestFactory.createSpecialOutcome(state, outcome, module, detailResolverRegistry)
+        val request = WinSettlementPresentationRequestFactory.createSpecialOutcome(state, outcome, module, emptySet(), detailResolverRegistry)
 
         val winnerPresentation = request.winners.first()
         assertEquals(listOf(standing.id), winnerPresentation.standingTileIds)
@@ -93,6 +93,7 @@ class WinSettlementPresentationRequestFactoryTest {
             previousState = state,
             currentState = state,
             module = module,
+            aiPlayerIds = emptySet(),
             outcomeId = BuiltInRoundOutcomeIds.TSUMO,
             isTsumo = true,
             winningTileId = winningTile.id,
@@ -130,7 +131,7 @@ class WinSettlementPresentationRequestFactoryTest {
             presentationClassification = RoundOutcomePresentationClassification.WIN_EQUIVALENT,
         )
 
-        val request = WinSettlementPresentationRequestFactory.createSpecialOutcome(state, outcome, module, detailResolverRegistry)
+        val request = WinSettlementPresentationRequestFactory.createSpecialOutcome(state, outcome, module, emptySet(), detailResolverRegistry)
 
         assertEquals(listOf(sevenDots.id, threeBamboo.id, white.id), request.winners.single().standingTileIds)
     }
@@ -156,7 +157,7 @@ class WinSettlementPresentationRequestFactoryTest {
             presentationClassification = RoundOutcomePresentationClassification.WIN_EQUIVALENT,
         )
 
-        val request = WinSettlementPresentationRequestFactory.createSpecialOutcome(state, outcome, module, registry)
+        val request = WinSettlementPresentationRequestFactory.createSpecialOutcome(state, outcome, module, emptySet(), registry)
 
         assertEquals(module.id, request.ruleModuleId)
         assertEquals(RiichiWinSettlementIds.YAKU_FIELD, request.winners.single().detailFields.single().id)
@@ -230,6 +231,22 @@ class WinSettlementPresentationRequestFactoryTest {
     }
 
     /** 建立四人桌況。 */
+    /** 排名只把傳入的 AI 玩家標成 AI。 */
+    @Test
+    fun `ranking marks only the given players as ai`() {
+        val state = fourPlayerState()
+        val winner = state.players[0]
+        val aiPlayer = state.players[2]
+        val request = createRequest(
+            state = state,
+            responsiblePlayerId = state.players[1].id,
+            resolutions = mapOf(winner.id to resolution(payments = listOf(state.players[1].id))),
+            aiPlayerIds = setOf(aiPlayer.id),
+        )
+
+        assertEquals(listOf(aiPlayer.id), request.ranking.players.filter { it.isAi }.map { it.playerId })
+    }
+
     private fun fourPlayerState(): TableState = FakeTableStateFactory.create(
         players = listOf(Wind.EAST, Wind.SOUTH, Wind.WEST, Wind.NORTH).map { FakeMahjongPlayerFactory.create(initialSeat = it) },
         config = config,
@@ -240,10 +257,12 @@ class WinSettlementPresentationRequestFactoryTest {
         state: TableState,
         responsiblePlayerId: Uuid?,
         resolutions: Map<Uuid, WinResolutionResult>,
+        aiPlayerIds: Set<Uuid> = emptySet(),
     ) = WinSettlementPresentationRequestFactory.create(
         previousState = state,
         currentState = state,
         module = module,
+        aiPlayerIds = aiPlayerIds,
         outcomeId = BuiltInRoundOutcomeIds.RON,
         isTsumo = responsiblePlayerId == null,
         winningTileId = Uuid.random(),

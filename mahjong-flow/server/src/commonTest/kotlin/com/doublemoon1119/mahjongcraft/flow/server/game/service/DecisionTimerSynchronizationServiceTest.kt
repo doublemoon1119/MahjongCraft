@@ -27,10 +27,11 @@ class DecisionTimerSynchronizationServiceTest {
             tableState = FakeTableStateFactory.create(
                 players = listOf(
                     FakeMahjongPlayerFactory.create(id = humanId),
-                    FakeMahjongPlayerFactory.create(id = aiId, aiStrategyKey = "test"),
+                    FakeMahjongPlayerFactory.create(id = aiId),
                 ),
             ),
             flowConfig = GameFlowConfig(),
+            aiPlayerStrategyKeys = mapOf(aiId to "test"),
         )
         fixtures.repository.setGame(game)
         val statuses = mapOf(

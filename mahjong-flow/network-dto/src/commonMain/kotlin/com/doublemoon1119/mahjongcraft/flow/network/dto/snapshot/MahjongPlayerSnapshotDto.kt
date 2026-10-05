@@ -22,7 +22,6 @@ data class MahjongPlayerSnapshotDto(
     val discardPile: DiscardPileDto,
     val playerRuleState: PlayerRuleStateDto?,
     val score: Int,
-    val isAi: Boolean,
 )
 
 fun MahjongPlayerSnapshot.toDto(registries: NetworkDtoRegistries): MahjongPlayerSnapshotDto = MahjongPlayerSnapshotDto(
@@ -33,7 +32,6 @@ fun MahjongPlayerSnapshot.toDto(registries: NetworkDtoRegistries): MahjongPlayer
     discardPile = discardPile.toDto(registries),
     playerRuleState = playerRuleState?.toDto(registries),
     score = score,
-    isAi = isAi,
 )
 
 fun MahjongPlayerSnapshotDto.toDomain(registries: NetworkDtoRegistries): MahjongPlayerSnapshot = MahjongPlayerSnapshot(
@@ -44,5 +42,4 @@ fun MahjongPlayerSnapshotDto.toDomain(registries: NetworkDtoRegistries): Mahjong
     discardPile = discardPile.toDomain(registries),
     playerRuleState = playerRuleState?.toDomain(registries),
     score = score,
-    isAi = isAi,
 )

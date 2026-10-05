@@ -125,7 +125,6 @@ private object RiichiBeforeSuuchaRiichiScenario : DebugGameScenario {
                     discardPile = RiichiDiscardPile(),
                     playerRuleState = RiichiPlayerState(),
                     score = config.scoreConfig.initialScore,
-                    aiStrategyKey = oldPlayer.aiStrategyKey,
                     seatWind = Wind.entries[(index - invokingPlayerIndex + PLAYER_COUNT) % PLAYER_COUNT],
                 )
             } else {
@@ -138,7 +137,6 @@ private object RiichiBeforeSuuchaRiichiScenario : DebugGameScenario {
                     discardPile = RiichiDiscardPile().discard(RiichiDiscardEntry(riichiTile, isRiichi = true)),
                     playerRuleState = RiichiPlayerState(riichiTile = riichiTile),
                     score = config.scoreConfig.initialScore - RIICHI_STICK_SCORE,
-                    aiStrategyKey = oldPlayer.aiStrategyKey,
                     actionHistory = listOf(RIICHI_GAME_ACTION, discardAction),
                     seatWind = Wind.entries[(index - invokingPlayerIndex + PLAYER_COUNT) % PLAYER_COUNT],
                 ).also { opponentIndex++ }
@@ -162,6 +160,7 @@ private object RiichiBeforeSuuchaRiichiScenario : DebugGameScenario {
                 tableState = state,
                 flowConfig = currentGame.flowConfig,
                 matchId = currentGame.matchId,
+                aiPlayerStrategyKeys = currentGame.aiPlayerStrategyKeys,
                 hostId = currentGame.hostId,
                 roomPlayerIds = currentGame.roomPlayerIds,
             ),
@@ -242,7 +241,6 @@ private object RiichiBeforePaoPonScenario : DebugGameScenario {
                     discardPile = RiichiDiscardPile(),
                     playerRuleState = RiichiPlayerState(),
                     score = config.scoreConfig.initialScore,
-                    aiStrategyKey = oldPlayer.aiStrategyKey,
                     seatWind = seatWind,
                 )
             } else {
@@ -254,7 +252,6 @@ private object RiichiBeforePaoPonScenario : DebugGameScenario {
                     discardPile = if (discards) RiichiDiscardPile().discardTile(calledTile) else RiichiDiscardPile(),
                     playerRuleState = RiichiPlayerState(),
                     score = config.scoreConfig.initialScore,
-                    aiStrategyKey = oldPlayer.aiStrategyKey,
                     actionHistory = if (discards) listOf(GameAction.Discard(calledTile.id)) else emptyList(),
                     seatWind = seatWind,
                 ).also { opponentIndex++ }
@@ -283,6 +280,7 @@ private object RiichiBeforePaoPonScenario : DebugGameScenario {
                 tableState = state,
                 flowConfig = currentGame.flowConfig,
                 matchId = currentGame.matchId,
+                aiPlayerStrategyKeys = currentGame.aiPlayerStrategyKeys,
                 hostId = currentGame.hostId,
                 roomPlayerIds = currentGame.roomPlayerIds,
             ),
@@ -302,14 +300,10 @@ private object RiichiWallOpeningScenario : DebugGameScenario {
             ?: error("Riichi debug scenarios require a Riichi game")
         val module = RiichiRuleModule(BuiltInRuleModuleIds.RIICHI, config)
         val playerIds = currentGame.tableState.players.map { player -> player.id }
-        val aiPlayerStrategyKeys = currentGame.tableState.players.mapNotNull { player ->
-            player.aiStrategyKey?.let { strategyKey -> player.id to strategyKey }
-        }.toMap()
         val initialization = GameInitializer.initialize(
             id = currentGame.id,
             playerIds = playerIds,
             module = module,
-            aiPlayerStrategyKeys = aiPlayerStrategyKeys,
         )
         val dealtState = initialization.tableState
         val dealOrderHandTileIdsBySeatIndex = dealtState.players.withIndex().associate { (seatIndex, player) ->
@@ -335,6 +329,7 @@ private object RiichiWallOpeningScenario : DebugGameScenario {
                 tableState = organizedState,
                 flowConfig = currentGame.flowConfig,
                 matchId = currentGame.matchId,
+                aiPlayerStrategyKeys = currentGame.aiPlayerStrategyKeys,
                 hostId = currentGame.hostId,
                 roomPlayerIds = currentGame.roomPlayerIds,
             ),
@@ -432,7 +427,6 @@ private class RiichiBeforeAnkanScenario(
                 discardPile = discardPile,
                 playerRuleState = module.createInitialPlayerRuleState(),
                 score = config.scoreConfig.initialScore,
-                aiStrategyKey = oldPlayer.aiStrategyKey,
                 seatWind = Wind.entries[(index - dealerIndex + PLAYER_COUNT) % PLAYER_COUNT],
             )
         }
@@ -461,6 +455,7 @@ private class RiichiBeforeAnkanScenario(
                 tableState = tableState,
                 flowConfig = currentGame.flowConfig,
                 matchId = currentGame.matchId,
+                aiPlayerStrategyKeys = currentGame.aiPlayerStrategyKeys,
                 hostId = currentGame.hostId,
                 roomPlayerIds = currentGame.roomPlayerIds,
             ),

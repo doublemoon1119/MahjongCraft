@@ -11,17 +11,18 @@ import com.doublemoon1119.mahjongcraft.logic.module.RevealedHandSettlement
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlin.uuid.Uuid
 
-/** 建立規則中立的流局結算呈現關鍵影格。 */
+/** 建立規則中立的流局結算資料。 */
 object ExhaustiveDrawSettlementPresentationRequestFactory {
     /**
      * 依結算前後桌況及規則公開結果建立 request。
      *
-     * [tenpaiPlayerIds] 為 null 代表途中流局，不顯示一般荒牌流局的聽牌／未聽狀態。
+     * [tenpaiPlayerIds] 為 null 代表途中流局，不顯示一般荒牌流局的聽牌／未聽狀態；[aiPlayerIds] 為由 AI 操控的玩家。
      */
     fun create(
         previousState: TableState,
         currentState: TableState,
         module: MahjongRuleModule<*>,
+        aiPlayerIds: Set<Uuid>,
         reason: ExhaustiveDrawReason,
         tenpaiPlayerIds: Set<Uuid>?,
         revealedHands: List<RevealedHandSettlement>,
@@ -48,7 +49,7 @@ object ExhaustiveDrawSettlementPresentationRequestFactory {
                     ranking = ScoreRankingPlayer(
                         playerId = player.id,
                         seatIndex = seatIndex,
-                        isAi = player.isAi,
+                        isAi = player.id in aiPlayerIds,
                         previousScore = previousPlayer.score,
                         currentScore = player.score,
                         previousRank = previousRanks.getValue(player.id),

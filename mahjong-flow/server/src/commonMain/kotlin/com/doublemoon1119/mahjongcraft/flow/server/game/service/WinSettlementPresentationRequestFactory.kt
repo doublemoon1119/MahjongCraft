@@ -14,11 +14,15 @@ import kotlin.uuid.Uuid
 
 /** 建立胡牌詳情與共用分數排行的權威快照。 */
 object WinSettlementPresentationRequestFactory {
-    /** 建立不偽造翻符或胡牌張的 win-equivalent 特殊 outcome request；規則專屬欄位交由 [detailResolverRegistry] 解析。 */
+    /**
+     * 建立不偽造翻符或胡牌張的 win-equivalent 特殊 outcome request；規則專屬欄位交由 [detailResolverRegistry] 解析，
+     * [aiPlayerIds] 為由 AI 操控的玩家。
+     */
     fun createSpecialOutcome(
         previousState: TableState,
         outcome: ResolvedRoundOutcome,
         module: MahjongRuleModule<*>,
+        aiPlayerIds: Set<Uuid>,
         detailResolverRegistry: WinSettlementDetailResolverRegistry,
     ): WinSettlementPresentationRequest {
         val currentState = outcome.settledTableState
@@ -48,7 +52,7 @@ object WinSettlementPresentationRequestFactory {
                     ScoreRankingPlayer(
                         player.id,
                         seatIndex,
-                        player.isAi,
+                        player.id in aiPlayerIds,
                         previous.score,
                         player.score,
                         previousRanks.getValue(player.id),
@@ -59,11 +63,12 @@ object WinSettlementPresentationRequestFactory {
         )
     }
 
-    /** 建立一般自摸／榮和 request；規則專屬欄位交由 [detailResolverRegistry] 解析。 */
+    /** 建立一般自摸／榮和 request；規則專屬欄位交由 [detailResolverRegistry] 解析，[aiPlayerIds] 為由 AI 操控的玩家。 */
     fun create(
         previousState: TableState,
         currentState: TableState,
         module: MahjongRuleModule<*>,
+        aiPlayerIds: Set<Uuid>,
         outcomeId: String,
         isTsumo: Boolean,
         winningTileId: Uuid,
@@ -99,7 +104,7 @@ object WinSettlementPresentationRequestFactory {
                     ScoreRankingPlayer(
                         player.id,
                         seatIndex,
-                        player.isAi,
+                        player.id in aiPlayerIds,
                         previous.score,
                         player.score,
                         previousRanks.getValue(player.id),

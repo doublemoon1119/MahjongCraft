@@ -20,7 +20,7 @@ data class HistoryRecordingPolicy(
      */
     fun decide(game: Game): HistoryRecordingDecision = when {
         !enabled -> HistoryRecordingDecision.EXCLUDED_CONFIG_DISABLED
-        !includeAiMatches && game.tableState.players.any { it.isAi } -> HistoryRecordingDecision.EXCLUDED_AI
+        !includeAiMatches && game.aiPlayerIds.isNotEmpty() -> HistoryRecordingDecision.EXCLUDED_AI
         else -> HistoryRecordingDecision.RECORDING
     }
 }

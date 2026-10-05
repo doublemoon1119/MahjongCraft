@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.HandReadinessSnaps
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomSnapshot
 import com.doublemoon1119.mahjongcraft.logic.table.TableStateSnapshot
+import kotlin.uuid.Uuid
 
 /**
  * 一位觀察者目前應該看到的權威狀態內容。
@@ -25,10 +26,12 @@ sealed interface ObserverSnapshot {
      * @property game 依觀看政策裁切過的對局快照。
      * @property roundPreparation 只向本人公開的開局準備內容；沒有進行中的準備步驟時為 `null`。
      * @property handReadinessAnalysis 只向該局參與者本人公開的目前手牌分析；沒有聽牌或規則不支援時為 `null`。
+     * @property aiPlayerIds 由 AI 操控的玩家；對所有觀察者相同。
      */
     data class OfGame(
         val game: TableStateSnapshot,
         val roundPreparation: RoundPreparationSnapshot?,
         val handReadinessAnalysis: HandReadinessSnapshot? = null,
+        val aiPlayerIds: Set<Uuid> = emptySet(),
     ) : ObserverSnapshot
 }

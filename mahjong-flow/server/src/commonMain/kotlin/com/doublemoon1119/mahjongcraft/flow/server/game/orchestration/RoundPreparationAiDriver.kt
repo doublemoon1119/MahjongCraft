@@ -35,14 +35,14 @@ class RoundPreparationAiDriver(
         val resolver = resolverRegistry.find(module.id) ?: return null
         val pendingIds = preparation.participantPlayerIds - preparation.completedPlayerIds
         val player = game.tableState.players.firstOrNull { player ->
-            player.id in pendingIds && (player.isAi || player.id in game.forcedAutoPlayPlayerIds)
+            player.id in pendingIds && (game.isAi(player.id) || player.id in game.forcedAutoPlayPlayerIds)
         } ?: return null
         val input = preparation.inputSpecsByPlayerId.getValue(player.id)
         val fallback = resolver.fallbackSubmission(game.tableState, preparation, player.id, module)
-        val submission = if (player.isAi) {
+        val submission = if (game.isAi(player.id)) {
             runCatching {
                 withTimeoutOrNull(AI_DECISION_TIMEOUT_MILLIS) {
-                    aiStrategyRegistry.resolve(player.aiStrategyKey).decideRoundPreparation(
+                    aiStrategyRegistry.resolve(game.aiPlayerStrategyKeys[player.id]).decideRoundPreparation(
                         RoundPreparationAiContext(
                             snapshot = visibilityPolicy.snapshotFor(game, player.id),
                             selfId = player.id,

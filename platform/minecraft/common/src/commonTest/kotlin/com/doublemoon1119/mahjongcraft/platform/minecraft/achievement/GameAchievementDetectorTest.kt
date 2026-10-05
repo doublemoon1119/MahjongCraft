@@ -125,9 +125,9 @@ class GameAchievementDetectorTest {
     @Test
     fun `ai players get no achievements`() {
         val players = listOf(Wind.EAST, Wind.SOUTH, Wind.WEST, Wind.NORTH).map { wind ->
-            FakeMahjongPlayerFactory.create(initialSeat = wind, aiStrategyKey = if (wind == Wind.EAST) "mahjongcraft:beginner" else null)
+            FakeMahjongPlayerFactory.create(initialSeat = wind)
         }
-        val game = gameOf(players)
+        val game = gameOf(players).copy(aiPlayerStrategyKeys = mapOf(players.first().id to "mahjongcraft:beginner"))
         val (aiWinner) = players
 
         val result = detector().detect(facts(game, HistoryFact.WinSettled(BuiltInRoundOutcomeIds.TSUMO, listOf(winDetails(aiWinner.id)))))

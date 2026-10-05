@@ -90,6 +90,8 @@ class RespondToDiscardUseCase(
      * @return 回應結果，成功時為 [Unit]，失敗時為 [GameError]。
      */
     suspend operator fun invoke(gameId: Uuid, playerId: Uuid, action: GameAction): Outcome<Unit, GameError> {
+        // AI 名單整場對局不變，先取出供結算呈現使用。
+        val aiPlayerIds = gameRepository.getGame(gameId)?.aiPlayerIds.orEmpty()
         val outcome = gameRepository.update(
             gameId = gameId,
             history = { before, after, result ->
@@ -192,6 +194,7 @@ class RespondToDiscardUseCase(
                                 previousState = checkNotNull(result.previousTableState),
                                 currentState = result.tableState,
                                 module = module,
+                                aiPlayerIds = aiPlayerIds,
                                 outcomeId = BuiltInRoundOutcomeIds.RON,
                                 isTsumo = false,
                                 winningTileId = result.ronWinningTileId,

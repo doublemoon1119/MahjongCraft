@@ -44,7 +44,7 @@ class RiichiFuritenDebugGameScenariosTest {
 
         assertEquals(context.invokingPlayerId, state.currentPlayer.id, scenario.id)
         assertTrue(state.currentPlayer.hand.lastDrawn != null, "${scenario.id} should start after the invoking player drew")
-        val strategyKeys = state.players.filterNot { it.id == context.invokingPlayerId }.map { it.aiStrategyKey }
+        val strategyKeys = state.players.filterNot { it.id == context.invokingPlayerId }.map { result.game.aiPlayerStrategyKeys[it.id] }
         assertTrue(
             strategyKeys.all { it == DebugScriptedAiStrategy.TSUMOGIRI_KEY || it == DebugScriptedAiStrategy.KAN_FIRST_KEY },
             "${scenario.id} should hand every opponent to a scripted AI",
@@ -115,10 +115,11 @@ class RiichiFuritenDebugGameScenariosTest {
     /** 立直中放過搶槓：下家摸到一萬可以加槓，呼叫者可以搶槓。 */
     @Test
     fun `declined chankan scenario lets the downstream player add a kan the invoker can rob`() {
-        val state = build("riichi_furiten_declined_chankan").game.tableState
+        val game = build("riichi_furiten_declined_chankan").game
+        val state = game.tableState
 
         assertTrue((state.seat(0).playerRuleState as RiichiPlayerState).isRiichi)
-        assertEquals(DebugScriptedAiStrategy.KAN_FIRST_KEY, state.seat(1).aiStrategyKey)
+        assertEquals(DebugScriptedAiStrategy.KAN_FIRST_KEY, game.aiPlayerStrategyKeys[state.seat(1).id])
         assertTrue(state.ownTurnKans(offset = 1).any { it.type == GameAction.KanType.ADDED_KAN })
         assertTrue(state.canRobKan(offset = 0, type = GameAction.KanType.ADDED_KAN))
     }

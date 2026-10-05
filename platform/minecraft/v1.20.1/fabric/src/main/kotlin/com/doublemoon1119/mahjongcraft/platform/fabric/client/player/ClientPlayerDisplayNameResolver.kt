@@ -23,8 +23,7 @@ class ClientPlayerDisplayNameResolver(
      */
     fun resolve(tableId: Uuid?, playerId: String, isAiHint: Boolean? = null): String {
         val id = runCatching { Uuid.parse(playerId) }.getOrNull() ?: return unknownName()
-        val snapshotPlayer = tableId?.let(stateStore::gameSnapshot)?.players?.firstOrNull { it.id == id }
-        val isAi = isAiHint ?: snapshotPlayer?.isAi == true
+        val isAi = isAiHint ?: (tableId != null && id in stateStore.gameAiPlayerIds(tableId))
         if (isAi) return aiPlayerDisplayName(id, orderedAiPlayerIds(tableId))
         return profiles.knownProfile(id)?.name?.takeIf(String::isNotBlank) ?: unknownName()
     }
@@ -38,6 +37,7 @@ class ClientPlayerDisplayNameResolver(
             .mapNotNull { runCatching { Uuid.parse(it) }.getOrNull() }
         if (lobbyIds.isNotEmpty()) return lobbyIds
         stateStore.roomSnapshot(tableId)?.aiPlayerIds?.takeIf { it.isNotEmpty() }?.let { return it }
-        return stateStore.gameSnapshot(tableId)?.players.orEmpty().filter { it.isAi }.map { it.id }
+        val aiPlayerIds = stateStore.gameAiPlayerIds(tableId)
+        return stateStore.gameSnapshot(tableId)?.players.orEmpty().map { it.id }.filter { it in aiPlayerIds }
     }
 }

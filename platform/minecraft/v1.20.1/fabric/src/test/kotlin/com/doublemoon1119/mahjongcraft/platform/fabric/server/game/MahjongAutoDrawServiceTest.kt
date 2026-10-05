@@ -236,9 +236,11 @@ class MahjongAutoDrawServiceTest {
             id = gameId,
             playerIds = playerIds,
             module = module,
-            aiPlayerStrategyKeys = if (dealerIsAi) playerIds.associateWith { RandomAiStrategy.KEY } else emptyMap(),
         )
         gameRepo.setTableState(result.tableState)
+        if (dealerIsAi) {
+            gameRepo.updateGame(gameId) { game -> game!!.copy(aiPlayerStrategyKeys = playerIds.associateWith { RandomAiStrategy.KEY }) to Unit }
+        }
         return gameId
     }
 
@@ -364,7 +366,6 @@ class MahjongAutoDrawServiceTest {
             id = gameId,
             playerIds = playerIds,
             module = module,
-            aiPlayerStrategyKeys = aiStrategyKeys,
         )
         val remainingReservedIds = initializationResult.tableState.reservedWallTiles.mapTo(mutableSetOf()) { it.id }
         val emptyWallState = initializationResult.tableState.copy(
@@ -375,7 +376,7 @@ class MahjongAutoDrawServiceTest {
         // GameInitializer 依座位風重排玩家順序，setTableState 預設把 hostId 定成第一位玩家的 id，
         // 不保證真的是 hostId 這位玩家——比照 StartGameUseCase 實際上是明確從 Room.hostId 帶入，
         // 這裡也要明確蓋回去才是在測「hostId 有沒有被正確保留」，不是在測隨機湊巧對上。
-        fixtures.gameRepo.updateGame(gameId) { game -> game!!.copy(hostId = hostId) to Unit }
+        fixtures.gameRepo.updateGame(gameId) { game -> game!!.copy(hostId = hostId, aiPlayerStrategyKeys = aiStrategyKeys) to Unit }
 
         fixtures.coordinator.driveAutomatedPlayers(gameId)
 

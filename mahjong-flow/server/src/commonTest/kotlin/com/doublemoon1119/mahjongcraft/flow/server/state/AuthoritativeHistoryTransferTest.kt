@@ -38,12 +38,12 @@ class AuthoritativeHistoryTransferTest {
         val store = AuthoritativeStateStore(historyRecordingEnabled = true)
         val game = game()
         assertTrue(store.beginHistoryTransfer(game))
-        val batch = events(game, 1, HistoryFact.MatchStarted(game.tableState, game.flowConfig))
+        val batch = events(game, 1, HistoryFact.MatchStarted(game.tableState, game.flowConfig, game.aiPlayerStrategyKeys))
 
         assertEquals(HistoryTransferResult.ACCEPTED, store.appendHistoryTransfer(game.matchId, batch))
         assertEquals(HistoryTransferResult.ACCEPTED, store.appendHistoryTransfer(game.matchId, batch))
         assertFailsWith<IllegalArgumentException> {
-            store.appendHistoryTransfer(game.matchId, events(game, 1, HistoryFact.MatchStarted(game.tableState, game.flowConfig), occurredAt = 2L))
+            store.appendHistoryTransfer(game.matchId, events(game, 1, HistoryFact.MatchStarted(game.tableState, game.flowConfig, game.aiPlayerStrategyKeys), occurredAt = 2L))
         }
         assertEquals(listOf(batch.single()), store.snapshot().historyRecordingState.pendingEvents)
     }
@@ -55,7 +55,7 @@ class AuthoritativeHistoryTransferTest {
         val game = game()
         val other = game()
         assertTrue(store.beginHistoryTransfer(game))
-        val opening = events(game, 1, HistoryFact.MatchStarted(game.tableState, game.flowConfig))
+        val opening = events(game, 1, HistoryFact.MatchStarted(game.tableState, game.flowConfig, game.aiPlayerStrategyKeys))
         assertEquals(HistoryTransferResult.ACCEPTED, store.appendHistoryTransfer(game.matchId, opening))
 
         assertFailsWith<IllegalArgumentException> {
@@ -73,7 +73,7 @@ class AuthoritativeHistoryTransferTest {
         val store = AuthoritativeStateStore(historyRecordingEnabled = true, maxPendingHistoryEvents = 2)
         val game = game()
         assertTrue(store.beginHistoryTransfer(game))
-        val opening = events(game, 1, HistoryFact.MatchStarted(game.tableState, game.flowConfig))
+        val opening = events(game, 1, HistoryFact.MatchStarted(game.tableState, game.flowConfig, game.aiPlayerStrategyKeys))
         assertEquals(HistoryTransferResult.ACCEPTED, store.appendHistoryTransfer(game.matchId, opening))
         val before = store.snapshot().historyRecordingState
 
@@ -89,13 +89,13 @@ class AuthoritativeHistoryTransferTest {
         val configGame = game()
         assertTrue(configStopped.beginHistoryTransfer(configGame))
         configStopped.applyHistoryRecordingPolicy(HistoryRecordingPolicy(enabled = false))
-        assertEquals(HistoryTransferResult.STOPPED, configStopped.appendHistoryTransfer(configGame.matchId, events(configGame, 1, HistoryFact.MatchStarted(configGame.tableState, configGame.flowConfig))))
+        assertEquals(HistoryTransferResult.STOPPED, configStopped.appendHistoryTransfer(configGame.matchId, events(configGame, 1, HistoryFact.MatchStarted(configGame.tableState, configGame.flowConfig, configGame.aiPlayerStrategyKeys))))
 
         val storageStopped = AuthoritativeStateStore(historyRecordingEnabled = true)
         val storageGame = game()
         assertTrue(storageStopped.beginHistoryTransfer(storageGame))
         storageStopped.applyHistoryStorageAvailability(false)
-        assertEquals(HistoryTransferResult.STOPPED, storageStopped.appendHistoryTransfer(storageGame.matchId, events(storageGame, 1, HistoryFact.MatchStarted(storageGame.tableState, storageGame.flowConfig))))
+        assertEquals(HistoryTransferResult.STOPPED, storageStopped.appendHistoryTransfer(storageGame.matchId, events(storageGame, 1, HistoryFact.MatchStarted(storageGame.tableState, storageGame.flowConfig, storageGame.aiPlayerStrategyKeys))))
         assertEquals(HistoryRecordingDecision.STOPPED_STORAGE_UNAVAILABLE, storageStopped.snapshot().historyRecordingState.decisionsByMatchId[storageGame.matchId])
     }
 
@@ -109,7 +109,7 @@ class AuthoritativeHistoryTransferTest {
 
         assertFailsWith<IllegalArgumentException> { store.finishHistoryTransfer(game.matchId, terminal) }
         val completeBatch = listOf(
-            event(game, 1, HistoryFact.MatchStarted(game.tableState, game.flowConfig)),
+            event(game, 1, HistoryFact.MatchStarted(game.tableState, game.flowConfig, game.aiPlayerStrategyKeys)),
             event(game, 2, HistoryFact.MatchCompleted("test:completed", emptyMap())),
             event(game, 3, HistoryFact.ReturnedToRoom),
         )

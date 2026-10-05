@@ -51,7 +51,7 @@ class HistoryStorageQueryServiceTest {
             sequence = 1L,
             occurredAtEpochMillis = 100L,
             actorPlayerId = null,
-            fact = HistoryFact.MatchStarted(activeGame.tableState, activeGame.flowConfig),
+            fact = HistoryFact.MatchStarted(activeGame.tableState, activeGame.flowConfig, activeGame.aiPlayerStrategyKeys),
         )
         val store = AuthoritativeStateStore()
         store.load(

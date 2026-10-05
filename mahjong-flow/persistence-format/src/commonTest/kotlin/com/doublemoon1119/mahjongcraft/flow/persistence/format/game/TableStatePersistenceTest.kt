@@ -223,7 +223,6 @@ class TableStatePersistenceTest {
             discardPile = RiichiDiscardPile(),
             playerRuleState = RiichiPlayerState(),
             score = 26_000,
-            aiStrategyKey = "random",
         )
         return TableState(
             id = Uuid.random(),

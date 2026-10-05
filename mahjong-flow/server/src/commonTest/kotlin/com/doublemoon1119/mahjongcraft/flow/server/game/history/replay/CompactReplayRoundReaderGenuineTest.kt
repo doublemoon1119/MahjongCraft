@@ -340,7 +340,7 @@ class CompactReplayRoundReaderGenuineTest {
         val settled = changed.copy(players = changed.players.map { player -> player.copy(score = player.score + if (player.initialSeatIndex == 0) 250 else -250) })
         val matchId = Uuid.random()
         val events = listOf(
-            event(matchId, table.id, 1, 0L, HistoryFact.MatchStarted(table, GameFlowConfig())),
+            event(matchId, table.id, 1, 0L, HistoryFact.MatchStarted(table, GameFlowConfig(), emptyMap())),
             event(matchId, table.id, 2, 125L, HistoryFact.TableChanged(HistoryTableResult.Checkpoint("test:checkpoint", changed))),
             event(matchId, table.id, 3, 250L, HistoryFact.RoundCompleted(RoundCompletionSummary("test:round_completed", RoundCompletionClassification.EXHAUSTIVE_DRAW, emptySet(), transitionDirective = RoundTransitionDirective.ADVANCE_DEALER, settledScoresByPlayerId = settled.players.associate { it.id to it.score }))),
             event(matchId, table.id, 4, 250L, HistoryFact.MatchCompleted("test:completed", settled.players.associate { it.id to it.score })).copy(transactionFirstSequence = 3),
@@ -390,7 +390,7 @@ class CompactReplayRoundReaderGenuineTest {
             nextPlayerId = settled.currentPlayer.id,
         )
         val events = buildList {
-            add(event(matchId, table.id, 1, 0L, HistoryFact.MatchStarted(table, GameFlowConfig())))
+            add(event(matchId, table.id, 1, 0L, HistoryFact.MatchStarted(table, GameFlowConfig(), emptyMap())))
             add(event(matchId, table.id, 2, 100L, HistoryFact.ActionAccepted(GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.Normal), actionResult)))
             add(event(matchId, table.id, 3, 100L, HistoryFact.TableChanged(HistoryTableResult.Checkpoint("test:exhaustive_draw_settled", settled))).copy(transactionFirstSequence = 2))
             if (intermediate != null) {
@@ -443,7 +443,7 @@ class CompactReplayRoundReaderGenuineTest {
         )
         val matchId = Uuid.random()
         val events = listOf(
-            event(matchId, table.id, 1, 0L, HistoryFact.MatchStarted(table, GameFlowConfig())),
+            event(matchId, table.id, 1, 0L, HistoryFact.MatchStarted(table, GameFlowConfig(), emptyMap())),
             event(matchId, table.id, 2, 100L, HistoryFact.TableChanged(HistoryTableResult.Checkpoint("test:riichi", beforeWin))),
             event(matchId, table.id, 3, 200L, HistoryFact.TableChanged(HistoryTableResult.Checkpoint("test:win", changed))),
             event(

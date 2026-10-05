@@ -195,11 +195,11 @@ class GameDecisionAuthorityResolverTest {
         val aiPlayer = FakeMahjongPlayerFactory.create(
             id = playerId,
             hand = Hand(lastDrawn = IdentifiedTile(Uuid.random(), Tile.Honor.East)),
-            aiStrategyKey = "example-strategy",
         )
         val game = Game(
             tableState = FakeTableStateFactory.create(players = listOf(aiPlayer)),
             flowConfig = GameFlowConfig(),
+            aiPlayerStrategyKeys = mapOf(playerId to "example-strategy"),
         )
 
         assertEquals(emptyMap(), resolver.resolve(game))
@@ -213,7 +213,7 @@ class GameDecisionAuthorityResolverTest {
         val game = Game(
             tableState = FakeTableStateFactory.create(
                 players = listOf(
-                    FakeMahjongPlayerFactory.create(id = aiId, aiStrategyKey = "example-strategy"),
+                    FakeMahjongPlayerFactory.create(id = aiId),
                     FakeMahjongPlayerFactory.create(id = humanId),
                 ),
                 pendingReaction = PendingReaction(
@@ -224,6 +224,7 @@ class GameDecisionAuthorityResolverTest {
                 ),
             ),
             flowConfig = GameFlowConfig(),
+            aiPlayerStrategyKeys = mapOf(aiId to "example-strategy"),
         )
 
         assertEquals(

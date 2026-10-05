@@ -27,17 +27,14 @@ class TestPlayerDeltaTest {
         val before = player().copy(
             hand = Hand(lastDrawn = drawn),
             playerRuleState = RiichiPlayerState(riichiTile = drawn),
-            aiStrategyKey = "test-ai",
         )
         val after = before.copy(
             hand = Hand(),
             playerRuleState = null,
-            aiStrategyKey = null,
         )
         val delta = requireNotNull(TestPlayerDelta.between(before, after))
         assertNull(delta.lastDrawn?.value)
         assertNull(delta.ruleState?.value)
-        assertNull(delta.aiStrategyKey?.value)
         assertEquals(after, delta.applyTo(before))
     }
 

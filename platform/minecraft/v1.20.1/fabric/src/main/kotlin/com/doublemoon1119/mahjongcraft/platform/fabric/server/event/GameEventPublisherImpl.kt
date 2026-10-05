@@ -44,7 +44,9 @@ class GameEventPublisherImpl(
     override suspend fun publish(gameId: Uuid, targetPlayerId: Uuid, actorId: Uuid, action: GameAction) {
         val player = serverHolder.findPlayer(targetPlayerId) ?: return
         val snapshot = gameSnapshotRepository.getSnapshot(gameId, targetPlayerId) ?: return
-        val endedGame = if (action is GameAction.MatchEnded) authoritativeStateStore.getGame(gameId) else null
+        val game = authoritativeStateStore.getGame(gameId)
+        val endedGame = game?.takeIf { action is GameAction.MatchEnded }
+        val aiPlayerIds = game?.aiPlayerIds.orEmpty()
         endedGame?.let { game ->
             val decision = authoritativeStateStore.snapshot().historyRecordingState.decisionsByMatchId[game.matchId]
             historyWriter.rememberEndedMatch(game.matchId, snapshot.players.mapTo(mutableSetOf()) { it.id }, decision)
@@ -54,9 +56,10 @@ class GameEventPublisherImpl(
             actorId = actorId.toString(),
             action = action.toDto(networkRegistries),
             snapshot = snapshot.toDto(networkRegistries),
+            aiPlayerIds = aiPlayerIds.map(Uuid::toString),
             historyMatchId = endedGame?.matchId?.toString(),
         )
-        playerIdentities.send(targetPlayerId, snapshot.players.filterNot { it.isAi }.map { it.id })
+        playerIdentities.send(targetPlayerId, snapshot.players.map { it.id }.filterNot { it in aiPlayerIds })
         MahjongChannels.gameUpdate.sendTo(player, json, payload)
     }
 

@@ -89,7 +89,8 @@ class RoomMemberPresentationTest {
     @Test
     fun `keeps seat order and scores in the fallback roster`() {
         val entries = roomMemberEntriesFrom(
-            listOf(snapshot(Wind.EAST, score = 30000), snapshot(Wind.SOUTH, score = 20000)),
+            players = listOf(snapshot(Wind.EAST, score = 30000), snapshot(Wind.SOUTH, score = 20000)),
+            aiPlayerIds = emptySet(),
             resolveHumanName = { "Player" },
         )
 
@@ -101,7 +102,7 @@ class RoomMemberPresentationTest {
     /** 真人玩家的名稱交由呼叫端解析，解析不到時保留 null。 */
     @Test
     fun `leaves an unresolved human name null`() {
-        val entries = roomMemberEntriesFrom(listOf(snapshot(Wind.EAST)), resolveHumanName = { null })
+        val entries = roomMemberEntriesFrom(listOf(snapshot(Wind.EAST)), aiPlayerIds = emptySet(), resolveHumanName = { null })
 
         assertNull(entries.single().playerName)
     }
@@ -109,8 +110,10 @@ class RoomMemberPresentationTest {
     /** AI 玩家不經過真人名稱解析，並取得依序產生的顯示名稱。 */
     @Test
     fun `names ai players without the human resolver`() {
+        val players = listOf(snapshot(Wind.EAST), snapshot(Wind.SOUTH))
         val entries = roomMemberEntriesFrom(
-            listOf(snapshot(Wind.EAST, isAi = true), snapshot(Wind.SOUTH, isAi = true)),
+            players = players,
+            aiPlayerIds = players.map { it.id }.toSet(),
             resolveHumanName = { error("AI players must not use the human name resolver") },
         )
 
@@ -121,7 +124,7 @@ class RoomMemberPresentationTest {
     /** 降級清單不含規則公開指示器。 */
     @Test
     fun `carries no indicators in the fallback roster`() {
-        val entries = roomMemberEntriesFrom(listOf(snapshot(Wind.EAST)), resolveHumanName = { "Player" })
+        val entries = roomMemberEntriesFrom(listOf(snapshot(Wind.EAST)), aiPlayerIds = emptySet(), resolveHumanName = { "Player" })
 
         assertEquals(emptyList(), entries.single().indicators)
     }
@@ -142,10 +145,9 @@ class RoomMemberPresentationTest {
     )
 
     /** 建立測試用的玩家快照。 */
-    private fun snapshot(seatWind: Wind, score: Int = 25000, isAi: Boolean = false) = FakeMahjongPlayerFactory.create(
-        initialSeat = seatWind,
-        aiStrategyKey = if (isAi) "mahjongcraft:random" else null,
-    ).copy(score = score).toSnapshot(isVisible = true, revealsClosedKanTiles = false)
+    private fun snapshot(seatWind: Wind, score: Int = 25000) = FakeMahjongPlayerFactory.create(initialSeat = seatWind)
+        .copy(score = score)
+        .toSnapshot(isVisible = true, revealsClosedKanTiles = false)
 
     private companion object {
         /** 測試用的玩家 ID。 */

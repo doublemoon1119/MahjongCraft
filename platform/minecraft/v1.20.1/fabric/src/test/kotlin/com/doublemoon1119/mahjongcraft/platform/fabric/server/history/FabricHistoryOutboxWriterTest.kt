@@ -414,7 +414,7 @@ class FabricHistoryOutboxWriterTest {
     private suspend fun startMatch(store: AuthoritativeStateStore): Game {
         val table = FakeTableStateFactory.create()
         GameRepositoryImpl(store).updateGame(table.id, history = { _, _, _ ->
-            listOf(HistoryEventDraft(null, HistoryFact.MatchStarted(table, GameFlowConfig())))
+            listOf(HistoryEventDraft(null, HistoryFact.MatchStarted(table, GameFlowConfig(), emptyMap())))
         }) { Game(table, GameFlowConfig()) to Unit }
         return checkNotNull(store.getGame(table.id))
     }

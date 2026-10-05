@@ -35,6 +35,12 @@ class FakeGameRepository : GameRepository {
     override suspend fun setTableState(state: TableState) {
         games[state.id] = games[state.id]?.copy(tableState = state) ?: Game(state, GameFlowConfig())
     }
+
+    /** 寫入 [state] 並指定由 AI 操控的玩家，供需要 AI 座位的測試使用。 */
+    suspend fun setTableState(state: TableState, aiPlayerStrategyKeys: Map<Uuid, String>) {
+        setTableState(state)
+        games[state.id] = games.getValue(state.id).copy(aiPlayerStrategyKeys = aiPlayerStrategyKeys)
+    }
     override suspend fun removeTableState(gameId: Uuid) {
         games.remove(gameId)
     }

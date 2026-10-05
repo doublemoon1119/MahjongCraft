@@ -122,9 +122,8 @@ internal class MatchSimulator(
             id = gameId,
             playerIds = playerIds,
             module = runtime.moduleRegistry.getModule(config),
-            aiPlayerStrategyKeys = strategyKeysByPlayer,
         ).tableState
-        runtime.gameRepository.setTableState(initial)
+        runtime.gameRepository.setTableState(initial, strategyKeysByPlayer)
 
         val problem = drive(runtime, gameId, recorder)
         val recordedRounds = runtime.gameRepository.rounds(gameId)
@@ -135,7 +134,7 @@ internal class MatchSimulator(
                 round = failingRound,
                 cause = cause,
                 trace = recorder.recent,
-                reproducedOnReplay = failingRound?.let { replayFails(it.start) },
+                reproducedOnReplay = failingRound?.let { replayFails(it.start, strategyKeysByPlayer) },
             )
         }
         val finalState = recordedRounds.last().final
@@ -149,11 +148,11 @@ internal class MatchSimulator(
         )
     }
 
-    /** 從 [start] 重新推進一次，回傳是否再次發生問題。 */
-    private suspend fun replayFails(start: TableState): Boolean {
+    /** 從 [start] 以 [aiPlayerStrategyKeys] 重新推進一次，回傳是否再次發生問題。 */
+    private suspend fun replayFails(start: TableState, aiPlayerStrategyKeys: Map<Uuid, String>): Boolean {
         val recorder = DecisionRecorder()
         val runtime = runtime(recorder)
-        runtime.gameRepository.setTableState(start)
+        runtime.gameRepository.setTableState(start, aiPlayerStrategyKeys)
         return drive(runtime, start.id, recorder) != null
     }
 

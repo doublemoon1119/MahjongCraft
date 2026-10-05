@@ -14,12 +14,13 @@ import kotlin.uuid.Uuid
 class ExhaustiveDrawSettlementPresentationService(
     @Provided private val presentationPublisher: GamePresentationPublisher,
 ) {
-    /** 建立並發布一次統一流局結算呈現。 */
+    /** 建立並發布一次統一流局結算呈現；[aiPlayerIds] 為由 AI 操控的玩家。 */
     fun publish(
         gameId: Uuid,
         previousState: TableState,
         currentState: TableState,
         module: MahjongRuleModule<*>,
+        aiPlayerIds: Set<Uuid>,
         reason: ExhaustiveDrawReason,
         tenpaiPlayerIds: Set<Uuid>?,
         revealedHands: List<RevealedHandSettlement>,
@@ -30,6 +31,7 @@ class ExhaustiveDrawSettlementPresentationService(
                 previousState = previousState,
                 currentState = currentState,
                 module = module,
+                aiPlayerIds = aiPlayerIds,
                 reason = reason,
                 tenpaiPlayerIds = tenpaiPlayerIds,
                 revealedHands = revealedHands,

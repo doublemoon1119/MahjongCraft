@@ -213,17 +213,14 @@ class AuthoritativeStateRecoveryIntegrationTest {
     fun `ai turn restores through NBT and resolves next action`() = runTest {
         val runtime = RuntimeFixture()
         val playerIds = List(4) { Uuid.random() }
-        val state = runtime.createGame(
-            playerIds = playerIds,
-            aiPlayerStrategyKeys = playerIds.associateWith { RandomAiStrategy.KEY },
-        )
-        runtime.restore(runtime.snapshotWith(state))
+        val state = runtime.createGame(playerIds = playerIds)
+        runtime.restore(runtime.snapshotWith(state, aiPlayerStrategyKeys = playerIds.associateWith { RandomAiStrategy.KEY }))
 
         val action = runtime.aiTurnDriver.resolveNextAction(state.id)
 
         assertEquals(state.currentPlayer.id to GameCommand.Draw, action)
         assertNull(runtime.memberships.getVenueId(state.currentPlayer.id))
-        assertEquals(RandomAiStrategy.KEY, runtime.gameRepository.getTableState(state.id)?.currentPlayer?.aiStrategyKey)
+        assertEquals(RandomAiStrategy.KEY, runtime.gameRepository.getGame(state.id)?.aiPlayerStrategyKeys?.get(state.currentPlayer.id))
     }
 
     /**
@@ -463,24 +460,24 @@ class AuthoritativeStateRecoveryIntegrationTest {
         /** 建立使用正式日麻 module 初始化的牌局。 */
         fun createGame(
             playerIds: List<Uuid> = List(4) { Uuid.random() },
-            aiPlayerStrategyKeys: Map<Uuid, String> = emptyMap(),
         ): TableState = GameInitializer.initialize(
             id = Uuid.random(),
             playerIds = playerIds,
             module = moduleRegistry.getModule(RiichiRuleConfig()),
-            aiPlayerStrategyKeys = aiPlayerStrategyKeys,
         ).tableState
 
-        /** 將單一 [state] 包裝成權威 snapshot，可選帶上進行中的開局準備步驟。 */
+        /** 將單一 [state] 包裝成權威 snapshot，可選帶上進行中的開局準備步驟與由 AI 操控的玩家。 */
         fun snapshotWith(
             state: TableState,
             pendingRoundPreparation: PendingRoundPreparation? = null,
+            aiPlayerStrategyKeys: Map<Uuid, String> = emptyMap(),
         ): AuthoritativeStateSnapshot = AuthoritativeStateSnapshot(
             games = mapOf(
                 state.id to Game(
                     tableState = state,
                     flowConfig = GameFlowConfig(),
                     pendingRoundPreparation = pendingRoundPreparation,
+                    aiPlayerStrategyKeys = aiPlayerStrategyKeys,
                 ),
             ),
         )

@@ -214,6 +214,41 @@ class AuthoritativeStatePersistenceDtoTest {
         assertEquals(setOf(playerId), restored.forcedAutoPlayPlayerIds)
     }
 
+    /** 驗證 AI 操控的玩家與其策略 key 會隨權威遊戲保存及恢復。 */
+    @Test
+    fun `ai player strategy keys round-trip`() {
+        val tableState = createGame()
+        val playerId = tableState.players.single().id
+        val game = Game(
+            tableState = tableState,
+            flowConfig = GameFlowConfig(),
+            aiPlayerStrategyKeys = mapOf(playerId to "example:strategy"),
+        )
+        val state = createAuthoritativeStatePersistenceDto(
+            rooms = emptyList(),
+            games = listOf(game),
+            ruleConfigRegistry = ruleConfigRegistry,
+            discardPileRegistry = discardPileRegistry,
+            playerRuleStateRegistry = playerRuleStateRegistry,
+            dynamicRuleStateRegistry = dynamicRuleStateRegistry,
+            exhaustiveDrawReasonRegistry = exhaustiveDrawReasonRegistry,
+            extensionGameActionRegistry = extensionGameActionRegistry,
+            json = json,
+        )
+
+        val restored = state.toGames(
+            ruleConfigRegistry,
+            discardPileRegistry,
+            playerRuleStateRegistry,
+            dynamicRuleStateRegistry,
+            exhaustiveDrawReasonRegistry,
+            extensionGameActionRegistry,
+            json,
+        ).getValue(game.id)
+
+        assertEquals(mapOf(playerId to "example:strategy"), restored.aiPlayerStrategyKeys)
+    }
+
     /** 驗證本局自動操作控制會隨權威遊戲保存及恢復。 */
     @Test
     fun `round automatic controls round-trip`() {
@@ -339,6 +374,20 @@ class AuthoritativeStatePersistenceDtoTest {
         val gameId = state.games.keys.single()
         val invalidRuntimeState = state.gameRuntimeStates.getValue(gameId).copy(
             forcedAutoPlayPlayerIds = setOf(Uuid.random().toString()),
+        )
+
+        assertFailsWith<IllegalArgumentException> {
+            state.copy(gameRuntimeStates = mapOf(gameId to invalidRuntimeState))
+        }
+    }
+
+    /** 驗證 AI 策略索引不得包含遊戲以外的玩家。 */
+    @Test
+    fun `unknown ai player is rejected`() {
+        val state = createState(emptyList(), listOf(createGame()))
+        val gameId = state.games.keys.single()
+        val invalidRuntimeState = state.gameRuntimeStates.getValue(gameId).copy(
+            aiPlayerStrategyKeys = mapOf(Uuid.random().toString() to "example:strategy"),
         )
 
         assertFailsWith<IllegalArgumentException> {

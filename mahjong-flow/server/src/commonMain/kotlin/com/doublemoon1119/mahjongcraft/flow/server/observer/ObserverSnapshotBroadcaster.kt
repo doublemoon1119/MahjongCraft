@@ -99,6 +99,7 @@ class ObserverSnapshotBroadcaster(
                 game = visibilityPolicy.snapshotFor(game, observerId),
                 roundPreparation = visibilityPolicy.roundPreparationSnapshotFor(game, observerId),
                 handReadinessAnalysis = handReadinessVisibilityPolicy.snapshotFor(game, observerId),
+                aiPlayerIds = game.aiPlayerIds,
             )
         }
         val room = state.rooms[id] ?: return null

@@ -26,13 +26,15 @@ private data class ClientTableState(
     val tableOccupancy: TableOccupancyPayloadDto? = null,
     val roomSnapshot: RoomSnapshot? = null,
     val gameSnapshot: TableStateSnapshot? = null,
+    val gameAiPlayerIds: Set<Uuid> = emptySet(),
     val roundPreparationSnapshot: RoundPreparationSnapshot? = null,
     val handReadinessAnalysis: HandReadinessAnalysisDto? = null,
     val managedTileSnapshotsByTileId: Map<Uuid, IdentifiedTileSnapshot> = emptyMap(),
 ) {
-    /** 更新 [gameSnapshot] 時一併重建 [managedTileSnapshotsByTileId]，兩者不會不同步。 */
-    fun withGameSnapshot(snapshot: TableStateSnapshot?): ClientTableState = copy(
+    /** 更新 [gameSnapshot] 時一併更新 [gameAiPlayerIds] 並重建 [managedTileSnapshotsByTileId]，三者不會不同步。 */
+    fun withGameSnapshot(snapshot: TableStateSnapshot?, aiPlayerIds: Set<Uuid> = emptySet()): ClientTableState = copy(
         gameSnapshot = snapshot,
+        gameAiPlayerIds = if (snapshot == null) emptySet() else aiPlayerIds,
         handReadinessAnalysis = if (snapshot == null) null else handReadinessAnalysis,
         managedTileSnapshotsByTileId = buildManagedTileIndex(snapshot),
     )
@@ -81,6 +83,9 @@ class ClientMahjongStateStore(
     fun roomSnapshot(tableId: Uuid): RoomSnapshot? = tables[tableId]?.roomSnapshot
 
     fun gameSnapshot(tableId: Uuid): TableStateSnapshot? = tables[tableId]?.gameSnapshot
+
+    /** 取得指定桌子目前對局中由 AI 操控的玩家；沒有對局快照時為空集合。 */
+    fun gameAiPlayerIds(tableId: Uuid): Set<Uuid> = tables[tableId]?.gameAiPlayerIds.orEmpty()
 
     fun roundPreparationSnapshot(tableId: Uuid): RoundPreparationSnapshot? = tables[tableId]?.roundPreparationSnapshot
 
@@ -137,7 +142,10 @@ class ClientMahjongStateStore(
         val tableId = Uuid.parse(payload.gameId)
         updateTable(tableId) { current ->
             val waitingConfig = current.roomSnapshot?.gameConfig?.toDto(networkRegistries)
-            current.withGameSnapshot(payload.snapshot.toDomain(networkRegistries)).copy(
+            current.withGameSnapshot(
+                payload.snapshot.toDomain(networkRegistries),
+                payload.aiPlayerIds.mapTo(mutableSetOf(), Uuid::parse),
+            ).copy(
                 tableOccupancy = current.tableOccupancy?.copy(
                     occupancy = TableOccupancyDto.GAME,
                     playingGameConfig = current.tableOccupancy.playingGameConfig ?: waitingConfig,
@@ -177,17 +185,18 @@ class ClientMahjongStateStore(
         }
     }
 
-    /** 保存沒有伴隨遊戲動作的主動同步快照。 */
+    /** 保存沒有伴隨遊戲動作的主動同步快照；[aiPlayerIds] 為該對局由 AI 操控的玩家。 */
     fun applyGameSnapshot(
         gameId: Uuid,
         snapshot: TableStateSnapshot,
+        aiPlayerIds: Set<Uuid>,
         roundPreparation: RoundPreparationSnapshot? = null,
         handReadinessAnalysis: HandReadinessAnalysisDto? = null,
     ) {
         require(snapshot.id == gameId) { "Game snapshot ID does not match its payload ID." }
         updateTable(gameId) { current ->
             val waitingConfig = current.roomSnapshot?.gameConfig?.toDto(networkRegistries)
-            current.withGameSnapshot(snapshot).copy(
+            current.withGameSnapshot(snapshot, aiPlayerIds).copy(
                 tableOccupancy = current.tableOccupancy?.copy(
                     occupancy = TableOccupancyDto.GAME,
                     playingGameConfig = current.tableOccupancy.playingGameConfig ?: waitingConfig,

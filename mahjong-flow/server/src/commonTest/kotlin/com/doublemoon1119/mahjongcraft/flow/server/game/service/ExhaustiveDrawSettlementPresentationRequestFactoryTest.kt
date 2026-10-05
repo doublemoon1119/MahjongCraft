@@ -34,6 +34,7 @@ class ExhaustiveDrawSettlementPresentationRequestFactoryTest {
             previousState = state,
             currentState = state,
             module = module,
+            aiPlayerIds = emptySet(),
             reason = RiichiExhaustiveDrawReason.Normal,
             tenpaiPlayerIds = setOf(tenpaiPlayer.id),
             revealedHands = listOf(RevealedHandSettlement(tenpaiPlayer.id, setOf(Tile.Numeric(Tile.Suit.Character, 1)))),
@@ -45,6 +46,24 @@ class ExhaustiveDrawSettlementPresentationRequestFactoryTest {
         assertEquals(emptyList(), request.players[1].revealedHandTileIds)
     }
 
+    /** 排名只把傳入的 AI 玩家標成 AI。 */
+    @Test
+    fun `ranking marks only the given players as ai`() {
+        val state = tableState(4)
+        val aiPlayer = state.players[1]
+        val request = ExhaustiveDrawSettlementPresentationRequestFactory.create(
+            previousState = state,
+            currentState = state,
+            module = module,
+            aiPlayerIds = setOf(aiPlayer.id),
+            reason = RiichiExhaustiveDrawReason.Normal,
+            tenpaiPlayerIds = emptySet(),
+            revealedHands = emptyList(),
+        )
+
+        assertEquals(listOf(aiPlayer.id), request.players.filter { it.ranking.isAi }.map { it.ranking.playerId })
+    }
+
     /** 九種九牌只公開宣告者，其餘玩家必須蓋牌。 */
     @Test
     fun `abortive proof reveals declarer and conceals other hands`() {
@@ -54,6 +73,7 @@ class ExhaustiveDrawSettlementPresentationRequestFactoryTest {
             previousState = state,
             currentState = state,
             module = module,
+            aiPlayerIds = emptySet(),
             reason = RiichiExhaustiveDrawReason.KyuushuKyuuhai,
             tenpaiPlayerIds = null,
             revealedHands = listOf(RevealedHandSettlement(declarer.id, emptySet())),
@@ -74,6 +94,7 @@ class ExhaustiveDrawSettlementPresentationRequestFactoryTest {
                 previousState = state,
                 currentState = state,
                 module = module,
+                aiPlayerIds = emptySet(),
                 reason = RiichiExhaustiveDrawReason.SuufonRenda,
                 tenpaiPlayerIds = null,
                 revealedHands = emptyList(),
@@ -110,6 +131,7 @@ class ExhaustiveDrawSettlementPresentationRequestFactoryTest {
             previousState = state,
             currentState = state,
             module = module,
+            aiPlayerIds = emptySet(),
             reason = RiichiExhaustiveDrawReason.SuufonRenda,
             tenpaiPlayerIds = null,
             revealedHands = emptyList(),
@@ -143,6 +165,7 @@ class ExhaustiveDrawSettlementPresentationRequestFactoryTest {
             previousState = state,
             currentState = state,
             module = module,
+            aiPlayerIds = emptySet(),
             reason = RiichiExhaustiveDrawReason.Normal,
             tenpaiPlayerIds = emptySet(),
             revealedHands = emptyList(),
@@ -168,6 +191,7 @@ class ExhaustiveDrawSettlementPresentationRequestFactoryTest {
             previousState = base,
             currentState = state,
             module = module,
+            aiPlayerIds = emptySet(),
             reason = RiichiExhaustiveDrawReason.Normal,
             tenpaiPlayerIds = setOf(base.players.first().id),
             revealedHands = emptyList(),

@@ -123,7 +123,7 @@ class CompactReplayCompletionTest {
 
     /** 建立 MatchCompleted、同交易桌況結果及下一交易 ReturnedToRoom 的合法事件。 */
     private fun validEvents(): List<HistoryOutboxEvent> = listOf(
-        HistoryOutboxEvent(matchId, table.id, 1, 1, 1, 100, null, HistoryFact.MatchStarted(table, GameFlowConfig())),
+        HistoryOutboxEvent(matchId, table.id, 1, 1, 1, 100, null, HistoryFact.MatchStarted(table, GameFlowConfig(), emptyMap())),
         completion(sequence = 2, transactionFirstSequence = 2, occurredAtEpochMillis = 200),
         HistoryOutboxEvent(
             matchId,

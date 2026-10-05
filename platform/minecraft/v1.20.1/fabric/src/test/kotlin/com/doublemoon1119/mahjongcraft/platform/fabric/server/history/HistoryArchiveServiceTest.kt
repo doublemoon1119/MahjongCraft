@@ -65,7 +65,7 @@ class HistoryArchiveServiceTest {
                 transactionFirstSequence = 1,
                 occurredAtEpochMillis = 100,
                 actorPlayerId = null,
-                fact = HistoryFact.MatchStarted(table, GameFlowConfig()),
+                fact = HistoryFact.MatchStarted(table, GameFlowConfig(), emptyMap()),
             ),
             HistoryOutboxEvent(
                 matchId = matchId,
@@ -161,7 +161,7 @@ class HistoryArchiveServiceTest {
         )
         val table = FakeTableStateFactory.create(id = tableId, players = players, config = RiichiRuleConfig())
         val events = listOf(
-            HistoryOutboxEvent(matchId, tableId, 1, 1, occurredAtEpochMillis = 100, actorPlayerId = null, fact = HistoryFact.MatchStarted(table, GameFlowConfig())),
+            HistoryOutboxEvent(matchId, tableId, 1, 1, occurredAtEpochMillis = 100, actorPlayerId = null, fact = HistoryFact.MatchStarted(table, GameFlowConfig(), emptyMap())),
             HistoryOutboxEvent(matchId, tableId, 1, 2, occurredAtEpochMillis = 200, actorPlayerId = null, fact = HistoryFact.MatchCompleted("test:complete", emptyMap())),
             HistoryOutboxEvent(matchId, tableId, 1, 3, occurredAtEpochMillis = 300, actorPlayerId = null, fact = HistoryFact.ReturnedToRoom),
         )
@@ -227,7 +227,7 @@ class HistoryArchiveServiceTest {
             sequence = 1,
             occurredAtEpochMillis = 100,
             actorPlayerId = null,
-            fact = HistoryFact.MatchStarted(table, GameFlowConfig()),
+            fact = HistoryFact.MatchStarted(table, GameFlowConfig(), emptyMap()),
         )
         val game = Game(table, GameFlowConfig(), matchId = matchId)
         val store = AuthoritativeStateStore(historyRecordingEnabled = true)

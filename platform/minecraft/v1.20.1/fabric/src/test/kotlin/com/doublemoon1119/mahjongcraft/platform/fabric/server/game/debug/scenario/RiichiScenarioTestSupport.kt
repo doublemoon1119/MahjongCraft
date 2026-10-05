@@ -38,13 +38,13 @@ internal fun createRiichiScenarioContext(
         id = Uuid.random(),
         playerIds = playerIds,
         module = RiichiRuleModule("mahjongcraft:riichi", config),
-        aiPlayerStrategyKeys = playerIds.drop(1).take(aiOpponentCount).associateWith { "random" },
     )
     val game = Game(
         tableState = initialized.tableState,
         flowConfig = GameFlowConfig(),
         hostId = playerIds.first(),
         roomPlayerIds = playerIds,
+        aiPlayerStrategyKeys = playerIds.drop(1).take(aiOpponentCount).associateWith { "random" },
     )
     return DebugGameScenarioContext(game, playerIds.first())
 }

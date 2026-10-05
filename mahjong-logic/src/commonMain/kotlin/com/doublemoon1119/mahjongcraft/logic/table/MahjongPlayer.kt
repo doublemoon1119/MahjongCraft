@@ -20,11 +20,6 @@ import kotlin.uuid.Uuid
  * @property playerRuleState 用於儲存規則特有的玩家狀態（如立直、振聽等）。
  * 具體類型由各規則決定，例如日麻的 `RiichiPlayerState`。
  * @property score 玩家目前的總分（持點）。其初始值通常由 [TableState] 根據規則配置進行初始化。
- * @property aiStrategyKey 若該玩家由電腦（AI）操控，這裡存放其 AI 策略的登記 key（例如
- * `"random"`）；人類玩家維持 null。由 [GameInitializer.initialize]
- * 依開局時的 AI 玩家名單標記，此後隨玩家實例透過既有的 `.copy()` 機制自然延續。實際
- * 策略的解析（key → `MahjongAiStrategy` 實例）不在這一層，見 `:mahjong-ai` 的
- * `MahjongAiStrategyRegistry`。
  * @property seatWind 玩家本局由規則指派的自風／門風；不得用來反推莊家。
  * @property passedTilesInRound 玩家上次取牌（摸牌或鳴牌）後，交給玩家、但玩家沒有榮和的牌：他家每一張沒有被
  *                              榮和的捨牌，以及玩家有資格搶槓卻放過的槓牌。規則以此判斷下次取牌前的限制（例如
@@ -38,7 +33,6 @@ data class MahjongPlayer(
     val discardPile: DiscardPile<*>,
     val playerRuleState: PlayerRuleState? = null,
     override val score: Int = 0,
-    val aiStrategyKey: String? = null,
     override val seatWind: Wind,
     val passedTilesInRound: Set<Tile> = emptySet(),
     val actionHistory: List<GameAction> = emptyList(),
@@ -46,9 +40,6 @@ data class MahjongPlayer(
     init {
         require(initialSeatIndex >= 0) { "initialSeatIndex must not be negative" }
     }
-
-    /** 是否由 AI 操控——[aiStrategyKey] 非 null 即代表是 AI，不需要另外存一個 Boolean。 */
-    val isAi: Boolean get() = aiStrategyKey != null
 
     /**
      * 是否剛吃／碰成立，尚未捨牌。

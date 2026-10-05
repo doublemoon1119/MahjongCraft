@@ -573,9 +573,9 @@ class FabricGamePresentationPublisher(
             roundInfoPresenter.present(presentation)
             val game = gameRepository.getGame(gameId) ?: return@launchOpeningStage
             val module = moduleRegistry.getModule(game.tableState.config)
-            val orderedAiPlayerIds = game.roomPlayerIds.filter { id -> game.tableState.players.any { it.id == id && it.isAi } }
-            val playerInfo = MahjongPlayerInfoPresentationFactory.create(game.tableState, module) { player ->
-                if (player.isAi) aiPlayerDisplayName(player.id, orderedAiPlayerIds) else playerIdentities.resolveKnownName(player.id)
+            val orderedAiPlayerIds = game.roomPlayerIds.filter(game::isAi)
+            val playerInfo = MahjongPlayerInfoPresentationFactory.create(game.tableState, module, game.aiPlayerIds) { player ->
+                if (game.isAi(player.id)) aiPlayerDisplayName(player.id, orderedAiPlayerIds) else playerIdentities.resolveKnownName(player.id)
             }
             playerInfoPresenter.present(playerInfo, resolved.location, resolved.facing)
         }

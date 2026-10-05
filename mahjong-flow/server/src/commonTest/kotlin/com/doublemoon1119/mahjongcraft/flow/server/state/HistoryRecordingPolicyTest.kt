@@ -18,6 +18,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
 
 /** 驗證歷史記錄資格在權威狀態交易、載入與政策變更下的固定性。 */
 class HistoryRecordingPolicyTest {
@@ -47,11 +48,12 @@ class HistoryRecordingPolicyTest {
         val table = FakeTableStateFactory.create(
             players = listOf(
                 FakeMahjongPlayerFactory.create(),
-                FakeMahjongPlayerFactory.create(initialSeatIndex = 1, aiStrategyKey = "test:ai"),
+                FakeMahjongPlayerFactory.create(initialSeatIndex = 1),
             ),
         )
-        repository.updateGame(table.id, history = { _, _, _ -> listOf(matchStarted(table)) }) {
-            Game(table, GameFlowConfig()) to Unit
+        val aiPlayerStrategyKeys = mapOf(table.players[1].id to "test:ai")
+        repository.updateGame(table.id, history = { _, _, _ -> listOf(matchStarted(table, aiPlayerStrategyKeys)) }) {
+            Game(table, GameFlowConfig(), aiPlayerStrategyKeys = aiPlayerStrategyKeys) to Unit
         }
 
         val recording = store.snapshot().historyRecordingState
@@ -98,11 +100,12 @@ class HistoryRecordingPolicyTest {
         val table = FakeTableStateFactory.create(
             players = listOf(
                 FakeMahjongPlayerFactory.create(),
-                FakeMahjongPlayerFactory.create(initialSeatIndex = 1, aiStrategyKey = "test:ai"),
+                FakeMahjongPlayerFactory.create(initialSeatIndex = 1),
             ),
         )
-        repository.updateGame(table.id, history = { _, _, _ -> listOf(matchStarted(table)) }) {
-            Game(table, GameFlowConfig()) to Unit
+        val aiPlayerStrategyKeys = mapOf(table.players[1].id to "test:ai")
+        repository.updateGame(table.id, history = { _, _, _ -> listOf(matchStarted(table, aiPlayerStrategyKeys)) }) {
+            Game(table, GameFlowConfig(), aiPlayerStrategyKeys = aiPlayerStrategyKeys) to Unit
         }
         val game = checkNotNull(store.getGame(table.id))
 
@@ -123,13 +126,9 @@ class HistoryRecordingPolicyTest {
         }
         val firstGame = checkNotNull(store.getGame(table.id))
         repository.updateGame(table.id) { null to Unit }
-        val aiTable = table.copy(
-            players = table.players.mapIndexed { index, player ->
-                if (index == 1) player.copy(aiStrategyKey = "test:ai") else player
-            },
-        )
-        repository.updateGame(table.id, history = { _, _, _ -> listOf(matchStarted(aiTable)) }) {
-            Game(aiTable, GameFlowConfig()) to Unit
+        val aiPlayerStrategyKeys = mapOf(table.players[1].id to "test:ai")
+        repository.updateGame(table.id, history = { _, _, _ -> listOf(matchStarted(table, aiPlayerStrategyKeys)) }) {
+            Game(table, GameFlowConfig(), aiPlayerStrategyKeys = aiPlayerStrategyKeys) to Unit
         }
 
         val recording = store.snapshot().historyRecordingState
@@ -289,10 +288,11 @@ class HistoryRecordingPolicyTest {
      * 建立代表對局開局的歷史草稿。
      *
      * @param table 成功開局的桌況。
+     * @param aiPlayerStrategyKeys 開局時由 AI 操控的玩家。
      * @return 未指派序號的開局事實。
      */
-    private fun matchStarted(table: TableState): HistoryEventDraft = HistoryEventDraft(
+    private fun matchStarted(table: TableState, aiPlayerStrategyKeys: Map<Uuid, String> = emptyMap()): HistoryEventDraft = HistoryEventDraft(
         actorPlayerId = null,
-        fact = HistoryFact.MatchStarted(table, GameFlowConfig()),
+        fact = HistoryFact.MatchStarted(table, GameFlowConfig(), aiPlayerStrategyKeys),
     )
 }

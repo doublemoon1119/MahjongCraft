@@ -66,7 +66,6 @@ class MahjongPlayerPersistenceTest {
                 paoLiability = PaoLiability(PaoYaku.Daisangen, RelativeDirection.Left),
             ),
             score = 31_200,
-            aiStrategyKey = "random",
             seatWind = Wind.SOUTH,
             passedTilesInRound = setOf(Tile.Honor.White, Tile.Numeric(Tile.Suit.Dot, 5)),
             actionHistory = listOf(
@@ -134,7 +133,6 @@ class MahjongPlayerPersistenceTest {
         assertEquals(expected.initialSeatIndex, actual.initialSeatIndex)
         assertEquals(expected.hand, actual.hand)
         assertEquals(expected.score, actual.score)
-        assertEquals(expected.aiStrategyKey, actual.aiStrategyKey)
         assertEquals(expected.seatWind, actual.seatWind)
         assertEquals(expected.passedTilesInRound, actual.passedTilesInRound)
         assertEquals(expected.actionHistory, actual.actionHistory)

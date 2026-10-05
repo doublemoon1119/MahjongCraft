@@ -26,11 +26,12 @@ data class MahjongPlayerInfoPresentation(
     val players: List<MahjongPlayerInfoEntry>,
 )
 
-/** 集中建立玩家公開快照，避免 use case 或 loader adapter 各自挑選規則資料。 */
+/** 集中建立玩家公開快照，避免 use case 或 loader adapter 各自挑選規則資料；[aiPlayerIds] 為由 AI 操控的玩家。 */
 object MahjongPlayerInfoPresentationFactory {
     fun create(
         tableState: TableState,
         module: MahjongRuleModule<*>,
+        aiPlayerIds: Set<Uuid>,
         resolvePlayerName: (MahjongPlayer) -> String?,
     ): MahjongPlayerInfoPresentation = MahjongPlayerInfoPresentation(
         tableId = tableState.id,
@@ -39,7 +40,7 @@ object MahjongPlayerInfoPresentationFactory {
             MahjongPlayerInfoEntry(
                 playerId = player.id,
                 playerName = resolvePlayerName(player),
-                isAi = player.isAi,
+                isAi = player.id in aiPlayerIds,
                 seatIndex = seatIndex,
                 seatWind = player.seatWind,
                 score = player.score,

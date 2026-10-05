@@ -411,7 +411,7 @@ class AuthoritativeStateStoreTest {
                 result = Unit,
                 historyDraftsByVenueId = mapOf(
                     secondGame.id to listOf(
-                        HistoryEventDraft(null, HistoryFact.MatchStarted(secondGame.tableState, secondGame.flowConfig)),
+                        HistoryEventDraft(null, HistoryFact.MatchStarted(secondGame.tableState, secondGame.flowConfig, secondGame.aiPlayerStrategyKeys)),
                         HistoryEventDraft(null, HistoryFact.ReturnedToRoom),
                     ),
                 ),

@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableChan
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableResult
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinDetails
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinningHand
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailEntry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailField
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailValue
@@ -17,7 +18,10 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuant
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.buildBuiltInPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardPile
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
@@ -77,6 +81,42 @@ class HistoryRecordingPersistenceDtoTest {
         val encoded = Json.encodeToString(HistoryRecordingPersistenceDto.serializer(), dto)
 
         assertTrue(!encoded.contains("resultingState"))
+        assertEquals(state, mapper.decode(Json.decodeFromString(HistoryRecordingPersistenceDto.serializer(), encoded)))
+    }
+
+    /** 開局事實攜帶的 AI 策略 key 在 JSON 與 DTO 往返後保持不變。 */
+    @Test
+    fun `match started ai strategy keys round trip`() {
+        val player = MahjongPlayer(Uuid.random(), 0, discardPile = TaiwanDiscardPile(), seatWind = Wind.EAST)
+        val tableState = TableState(
+            id = Uuid.random(),
+            players = listOf(player),
+            config = TaiwanRuleConfig(),
+            tileWall = TileWall(emptyList()),
+            dealerPlayerId = player.id,
+        )
+        val matchId = Uuid.random()
+        val state = HistoryRecordingState(
+            nextSequenceByMatchId = mapOf(matchId to 2L),
+            pendingEvents = listOf(
+                HistoryOutboxEvent(
+                    matchId = matchId,
+                    venueId = tableState.id,
+                    roundNumber = 1,
+                    sequence = 1L,
+                    occurredAtEpochMillis = 1L,
+                    actorPlayerId = null,
+                    fact = HistoryFact.MatchStarted(
+                        tableState = tableState,
+                        flowConfig = GameFlowConfig(),
+                        aiPlayerStrategyKeys = mapOf(player.id to "example:strategy"),
+                    ),
+                ),
+            ),
+        )
+        val mapper = HistoryRecordingPersistenceMapper(buildBuiltInPersistenceRegistries())
+        val encoded = Json.encodeToString(HistoryRecordingPersistenceDto.serializer(), mapper.encode(state))
+
         assertEquals(state, mapper.decode(Json.decodeFromString(HistoryRecordingPersistenceDto.serializer(), encoded)))
     }
 

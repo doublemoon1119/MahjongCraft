@@ -15,7 +15,6 @@ import kotlin.uuid.Uuid
  * @property discardPile 牌河實體，始終對所有玩家可見
  * @property playerRuleState 規則特定的玩家狀態（如立直、振聽等）
  * @property score 當前分數
- * @property isAi 該玩家是否由電腦（AI）操控，始終對所有玩家可見
  */
 data class MahjongPlayerSnapshot(
     val id: Uuid,
@@ -25,7 +24,6 @@ data class MahjongPlayerSnapshot(
     val discardPile: DiscardPile<*>,
     val playerRuleState: PlayerRuleState?,
     override val score: Int,
-    val isAi: Boolean,
 ) : RankablePlayer
 
 /**
@@ -44,5 +42,4 @@ fun MahjongPlayer.toSnapshot(isVisible: Boolean, revealsClosedKanTiles: Boolean)
     discardPile = this.discardPile,
     playerRuleState = this.playerRuleState,
     score = this.score,
-    isAi = this.isAi,
 )

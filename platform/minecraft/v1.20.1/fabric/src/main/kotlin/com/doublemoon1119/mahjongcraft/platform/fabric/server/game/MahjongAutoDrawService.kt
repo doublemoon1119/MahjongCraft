@@ -47,7 +47,7 @@ class MahjongAutoDrawService(
         if (state.pendingReaction != null || state.pendingKanReaction != null) return
 
         val current = state.currentPlayer
-        if (current.isAi || current.id in game.forcedAutoPlayPlayerIds) return
+        if (game.isAi(current.id) || current.id in game.forcedAutoPlayPlayerIds) return
 
         if (current.hand.lastDrawn == null && !current.justClaimedMeld) {
             gameFlowCoordinator(gameId, current.id, GameCommand.Draw)

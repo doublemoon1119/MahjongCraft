@@ -117,12 +117,14 @@ sealed interface HistoryFactPersistenceDto {
      *
      * @property state 對局開始時的桌況。
      * @property flowConfig 對局使用的流程設定。
+     * @property aiPlayerStrategyKeys 以玩家 UUID 字串索引的 AI 策略 key；真人玩家不列入。
      */
     @Serializable
     @SerialName(HistoryFactTypeKeys.MATCH_STARTED)
     data class MatchStarted(
         val state: TableStatePersistenceDto,
         val flowConfig: GameFlowConfigPersistenceDto,
+        val aiPlayerStrategyKeys: Map<String, String>,
     ) : HistoryFactPersistenceDto
 
     /** 新局開始時的完整桌況。
@@ -512,7 +514,11 @@ class HistoryRecordingPersistenceMapper(
 
     /** 將 domain 歷史事實轉成帶明確種類的持久化 DTO。 */
     private fun encodeFact(fact: HistoryFact): HistoryFactPersistenceDto = when (fact) {
-        is HistoryFact.MatchStarted -> HistoryFactPersistenceDto.MatchStarted(encodeTable(fact.tableState), fact.flowConfig.toPersistenceDto())
+        is HistoryFact.MatchStarted -> HistoryFactPersistenceDto.MatchStarted(
+            encodeTable(fact.tableState),
+            fact.flowConfig.toPersistenceDto(),
+            fact.aiPlayerStrategyKeys.mapKeys { (playerId, _) -> playerId.toString() },
+        )
         is HistoryFact.RoundStarted -> HistoryFactPersistenceDto.RoundStarted(encodeTable(fact.tableState))
         is HistoryFact.RoundPreparationStarted -> HistoryFactPersistenceDto.RoundPreparationStarted(fact.stepId, fact.stepIndex)
         is HistoryFact.RoundPreparationSubmitted -> HistoryFactPersistenceDto.RoundPreparationSubmitted(
@@ -562,7 +568,11 @@ class HistoryRecordingPersistenceMapper(
 
     /** 將持久化歷史事實還原成 domain 事實。 */
     private fun decodeFact(dto: HistoryFactPersistenceDto): HistoryFact = when (dto) {
-        is HistoryFactPersistenceDto.MatchStarted -> HistoryFact.MatchStarted(decodeTable(dto.state), dto.flowConfig.toDomain())
+        is HistoryFactPersistenceDto.MatchStarted -> HistoryFact.MatchStarted(
+            decodeTable(dto.state),
+            dto.flowConfig.toDomain(),
+            dto.aiPlayerStrategyKeys.mapKeys { (playerId, _) -> Uuid.parse(playerId) },
+        )
         is HistoryFactPersistenceDto.RoundStarted -> HistoryFact.RoundStarted(decodeTable(dto.state))
         is HistoryFactPersistenceDto.RoundPreparationStarted -> HistoryFact.RoundPreparationStarted(dto.stepId, dto.stepIndex)
         is HistoryFactPersistenceDto.RoundPreparationSubmitted -> HistoryFact.RoundPreparationSubmitted(

@@ -36,6 +36,8 @@ import kotlin.uuid.Uuid
  *   （見 `ReturnToRoomUseCase`）時能還原同一位房主，預設值取第一位玩家僅供未指定房主的測試情境使用；
  *   `tableState` 沒有任何玩家時（同樣僅見於測試情境）退回隨機值，不受下方驗證約束。
  * @property roomPlayerIds 開局前房間成員的固定顯示順序；牌桌座位洗牌不得覆寫此順序。
+ * @property aiPlayerStrategyKeys 由 AI 操控的玩家 Uuid 對應到其 AI 策略 key；開局時取自房間，對局結束轉回房間時還原。
+ *   不在其中的玩家由真人操控。
  * @property interruptedBaseMillisByPlayerId 因 server session 結束或 blocking presentation 而暫停的那一次
  *   決策，其尚未使用的基本思考時間毫秒數，以玩家 Uuid 索引。`PlayerDecisionTimer.startedAtMillis` 屬於
  *   runtime 單調時間、不得持久化，因此只寫回剩餘量；沒有這筆資料的玩家下一次取得決策權時重新取得
@@ -57,6 +59,7 @@ data class Game(
     val pendingRoundPreparation: PendingRoundPreparation? = null,
     val hostId: Uuid = tableState.players.firstOrNull()?.id ?: Uuid.random(),
     val roomPlayerIds: List<Uuid> = tableState.players.map { it.id },
+    val aiPlayerStrategyKeys: Map<Uuid, String> = emptyMap(),
     val interruptedBaseMillisByPlayerId: Map<Uuid, Long> = emptyMap(),
     val matchId: Uuid = Uuid.random(),
 ) {
@@ -85,6 +88,12 @@ data class Game(
         require(roomPlayerIds.size == playerIds.size && roomPlayerIds.toSet() == playerIds) {
             "Room player order must contain every game player exactly once"
         }
+        require(aiPlayerStrategyKeys.keys.all { it in playerIds }) {
+            "AI players must belong to the game"
+        }
+        require(aiPlayerStrategyKeys.values.all(String::isNotBlank)) {
+            "AI strategy keys must not be blank"
+        }
         require(roundCompletion?.settledScoresByPlayerId?.keys?.let { it == playerIds } != false) {
             "Round completion scores must contain exactly the game players"
         }
@@ -98,4 +107,15 @@ data class Game(
 
     /** 與場地及 [TableState] 共用的穩定識別碼。 */
     val id: Uuid get() = tableState.id
+
+    /** 由 AI 操控的玩家。 */
+    val aiPlayerIds: Set<Uuid> get() = aiPlayerStrategyKeys.keys
+
+    /**
+     * [playerId] 是否由 AI 操控。
+     *
+     * @param playerId 欲查詢的玩家。
+     * @return 由 AI 操控時為 。
+     */
+    fun isAi(playerId: Uuid): Boolean = playerId in aiPlayerStrategyKeys
 }

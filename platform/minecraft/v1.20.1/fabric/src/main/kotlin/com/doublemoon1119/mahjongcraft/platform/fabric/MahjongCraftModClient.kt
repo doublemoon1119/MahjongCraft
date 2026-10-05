@@ -178,6 +178,7 @@ class MahjongCraftModClient : ClientModInitializer {
                 action = action,
                 previousSnapshot = previousSnapshot,
                 newSnapshot = newSnapshot,
+                aiPlayerIds = stateStore.gameAiPlayerIds(gameId),
                 module = module,
                 actionVocabularyRegistry = actionVocabulary,
                 displayNameRegistry = tileDisplayNames,
@@ -188,6 +189,7 @@ class MahjongCraftModClient : ClientModInitializer {
             ) ?: buildMatchResultChatMessage(
                 action = action,
                 newSnapshot = newSnapshot,
+                aiPlayerIds = stateStore.gameAiPlayerIds(gameId),
                 module = module,
                 playerDisplayName = { id, isAi -> playerNames.resolve(gameId, id.toString(), isAi) },
                 historyCommand = if (action is GameAction.MatchEnded) historyChatEntries.createCommand(payload.historyMatchId) else null,
@@ -231,10 +233,11 @@ class MahjongCraftModClient : ClientModInitializer {
         }
         MahjongChannels.gameSnapshot.registerClientReceiver(json) { payload ->
             stateStore.applyGameSnapshot(
-                Uuid.parse(payload.gameId),
-                payload.snapshot.toDomain(networkRegistries),
-                payload.roundPreparation?.toDomain(),
-                payload.handReadinessAnalysis,
+                gameId = Uuid.parse(payload.gameId),
+                snapshot = payload.snapshot.toDomain(networkRegistries),
+                aiPlayerIds = payload.aiPlayerIds.mapTo(mutableSetOf(), Uuid::parse),
+                roundPreparation = payload.roundPreparation?.toDomain(),
+                handReadinessAnalysis = payload.handReadinessAnalysis,
             )
         }
         MahjongChannels.automaticControlSnapshot.registerClientReceiver(json) { snapshot ->

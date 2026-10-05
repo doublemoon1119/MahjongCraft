@@ -218,4 +218,22 @@ class ObserverSnapshotBroadcasterTest {
         val snapshot = assertIs<ObserverSnapshot.OfGame>(sender.sent.single().third)
         assertTrue(snapshot.game.players.all { player -> player.hand.standingTiles.all { it.tile == null } })
     }
+
+    /** 對局快照附帶由 AI 操控的玩家。 */
+    @Test
+    fun `a game snapshot carries the ai players`() = runTest {
+        val store = AuthoritativeStateStore()
+        val audience = MutableAudienceSource()
+        val sender = RecordingSender()
+        val broadcaster = broadcaster(store, audience, sender)
+        val game = game()
+        val aiId = game.tableState.players.last().id
+        store.setGame(game.copy(aiPlayerStrategyKeys = mapOf(aiId to "random")))
+        audience.observers = mapOf(id to setOf(observerId))
+
+        broadcaster.broadcast()
+
+        val snapshot = assertIs<ObserverSnapshot.OfGame>(sender.sent.single().third)
+        assertEquals(setOf(aiId), snapshot.aiPlayerIds)
+    }
 }

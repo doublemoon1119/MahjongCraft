@@ -55,13 +55,14 @@ class FabricObserverSnapshotSender(
             }
 
             is ObserverSnapshot.OfGame -> {
-                playerIdentities.send(observerId, snapshot.game.players.filterNot { it.isAi }.map { it.id })
+                playerIdentities.send(observerId, snapshot.game.players.map { it.id }.filterNot { it in snapshot.aiPlayerIds })
                 MahjongChannels.gameSnapshot.sendTo(
                     player,
                     json,
                     GameSnapshotSyncPayloadDto(
                         gameId = id.toString(),
                         snapshot = snapshot.game.toDto(networkRegistries),
+                        aiPlayerIds = snapshot.aiPlayerIds.map { it.toString() },
                         roundPreparation = snapshot.roundPreparation?.toDto(),
                         handReadinessAnalysis = snapshot.handReadinessAnalysis?.let { readiness ->
                             analysisDtoMapper.toDto(readiness.ruleModuleId, readiness.analysis)

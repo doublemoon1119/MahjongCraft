@@ -185,7 +185,7 @@ internal class HistoryArchiveService(
             }
         }
         val players = opening.tableState.players.sortedBy { it.initialSeatIndex }.map {
-            HistoryParticipantRecord(it.initialSeatIndex, it.id.toString(), it.aiStrategyKey)
+            HistoryParticipantRecord(it.initialSeatIndex, it.id.toString(), opening.aiPlayerStrategyKeys[it.id])
         }
         val projectedResults = HistoryResultProjector.project(events, moduleRegistry).associateBy { it.playerId.toString() }
         val participantResults = players.map { participant ->

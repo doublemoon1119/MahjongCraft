@@ -108,6 +108,19 @@ class StartGameUseCaseTest {
         assertEquals(game.tableState.players.associate { it.id to 37_000L }, game.remainingReserveMillisByPlayerId)
     }
 
+    /** 驗證開局時房間登記的 AI 玩家與策略會帶進 Game。 */
+    @Test
+    fun `test start game carries room ai strategy keys into the game`() = runTest {
+        val fixtures = Fixtures()
+        val aiId = guestIds.last()
+        fixtures.roomRepo.setRoom(readyRoom().copy(aiPlayerStrategyKeys = mapOf(aiId to "random")))
+
+        assertTrue(fixtures.useCase(roomId, hostId) is Outcome.Success)
+
+        val game = assertNotNull(fixtures.gameRepo.getGame(roomId))
+        assertEquals(mapOf(aiId to "random"), game.aiPlayerStrategyKeys)
+    }
+
     /**
      * 驗證開局後每位玩家皆收到一份對局快照，且快照內容對應正確的對局 id。
      */

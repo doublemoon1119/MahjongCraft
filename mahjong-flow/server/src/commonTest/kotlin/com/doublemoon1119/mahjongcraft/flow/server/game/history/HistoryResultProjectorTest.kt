@@ -59,7 +59,7 @@ class HistoryResultProjectorTest {
         val matchId = Uuid.random()
         val result = HistoryResultProjector.project(
             listOf(
-                event(matchId, 1, HistoryFact.MatchStarted(first, GameFlowConfig())),
+                event(matchId, 1, HistoryFact.MatchStarted(first, GameFlowConfig(), emptyMap())),
                 event(matchId, 2, HistoryFact.RoundStarted(second)),
                 event(matchId, 3, HistoryFact.MatchCompleted("test:completed", second.players.associate { it.id to it.score })),
             ),
@@ -98,7 +98,7 @@ class HistoryResultProjectorTest {
     private fun events(table: TableState, scores: Map<Uuid, Int>): List<HistoryOutboxEvent> {
         val matchId = Uuid.random()
         return listOf(
-            event(matchId, 1, HistoryFact.MatchStarted(table, GameFlowConfig())),
+            event(matchId, 1, HistoryFact.MatchStarted(table, GameFlowConfig(), emptyMap())),
             event(matchId, 2, HistoryFact.MatchCompleted("test:completed", scores)),
         )
     }

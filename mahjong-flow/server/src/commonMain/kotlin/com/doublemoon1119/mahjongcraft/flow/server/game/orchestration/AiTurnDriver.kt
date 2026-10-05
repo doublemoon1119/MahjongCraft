@@ -24,8 +24,8 @@ import kotlin.uuid.Uuid
  *
  * @property gameRepository 權威對局數據倉庫。
  * @property getLegalActionsUseCase 查詢玩家目前合法動作清單的用例，直接重用，不重新實作規則判斷。
- * @property aiStrategyRegistry AI 策略登記中心，依每位 AI 玩家自己的 `aiStrategyKey` 解析出實際
- *           要問的策略——每局、每個 AI 玩家可以各自使用不同策略，不是全伺服器共用一個。
+ * @property aiStrategyRegistry AI 策略登記中心，依 [Game.aiPlayerStrategyKeys] 中每位 AI 玩家的策略識別碼
+ *           解析出實際要問的策略——每局、每個 AI 玩家可以各自使用不同策略，不是全伺服器共用一個。
  * @property visibilityPolicy 依 AI 玩家視角建立決策用快照的觀看政策。
  * @property moduleRegistry 規則模組註冊中心，用於提供規則特有但規則中立的決策限制。
  * @property actionContextResolver 玩家目前操作情境的權威解析器。
@@ -56,7 +56,7 @@ class AiTurnDriver(
         val state = game.tableState
 
         val context = actionContextResolver.resolve(state).values.firstOrNull { context ->
-            state.players.first { it.id == context.playerId }.isAi
+            game.isAi(context.playerId)
         }
         if (context != null) {
             val phase = when (context) {
@@ -68,7 +68,7 @@ class AiTurnDriver(
         }
 
         val current = state.currentPlayer
-        if (current.isAi &&
+        if (game.isAi(current.id) &&
             current.hand.lastDrawn == null &&
             !current.justClaimedMeld &&
             state.pendingKanReaction == null &&
@@ -81,7 +81,7 @@ class AiTurnDriver(
     }
 
     /**
-     * 依 [aiId] 自己的 `aiStrategyKey` 從 [aiStrategyRegistry] 解析出策略，組出 [AiDecisionContext]
+     * 依 [aiId] 在 [Game.aiPlayerStrategyKeys] 的策略 key 從 [aiStrategyRegistry] 解析出策略，組出 [AiDecisionContext]
      * 並問它該怎麼行動。
      */
     private suspend fun decideGameCommand(
@@ -94,7 +94,7 @@ class AiTurnDriver(
         val legalActionsResult = getLegalActionsUseCase(gameId, aiId)
         val legalActions = (legalActionsResult as? Outcome.Success)?.value ?: emptyList()
         val player = state.players.first { it.id == aiId }
-        val strategyKey = player.aiStrategyKey
+        val strategyKey = game.aiPlayerStrategyKeys[aiId]
         val context = AiDecisionContext(
             snapshot = visibilityPolicy.snapshotFor(game, aiId),
             selfId = aiId,

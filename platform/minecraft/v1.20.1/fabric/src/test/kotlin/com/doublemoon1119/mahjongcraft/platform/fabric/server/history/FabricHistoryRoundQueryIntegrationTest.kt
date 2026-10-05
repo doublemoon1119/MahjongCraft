@@ -43,7 +43,7 @@ class FabricHistoryRoundQueryIntegrationTest {
         val table = FakeTableStateFactory.create(players = List(2) { FakeMahjongPlayerFactory.create(discardPile = RiichiDiscardPile()) }, config = RiichiRuleConfig())
         val matchId = Uuid.random()
         val events = listOf(
-            HistoryOutboxEvent(matchId, table.id, 1, 1L, 1L, 1L, null, HistoryFact.MatchStarted(table, GameFlowConfig())),
+            HistoryOutboxEvent(matchId, table.id, 1, 1L, 1L, 1L, null, HistoryFact.MatchStarted(table, GameFlowConfig(), emptyMap())),
             HistoryOutboxEvent(matchId, table.id, 1, 2L, 2L, 2L, null, HistoryFact.MatchCompleted("test:completed", table.players.associate { it.id to it.score })),
         )
         val payload = CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries).toString()

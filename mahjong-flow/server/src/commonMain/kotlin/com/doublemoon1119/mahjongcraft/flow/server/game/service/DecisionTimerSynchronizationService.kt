@@ -44,7 +44,7 @@ class DecisionTimerSynchronizationService(
      */
     suspend fun synchronize(gameId: Uuid, statuses: Map<Uuid, ActivePlayerDecisionStatus>) = mutex.withLock {
         val game = gameRepository.getGame(gameId)
-        val humanPlayerIds = game?.tableState?.players.orEmpty().filterNot { it.isAi }.mapTo(mutableSetOf()) { it.id }
+        val humanPlayerIds = game?.tableState?.players.orEmpty().filterNot { game?.isAi(it.id) == true }.mapTo(mutableSetOf()) { it.id }
         val activeHumanStatuses = statuses.filterKeys { it in humanPlayerIds }
         val previousPlayerIds = synchronizedPlayerIdsByGame[gameId].orEmpty()
 

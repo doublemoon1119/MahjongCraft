@@ -31,9 +31,6 @@ object GameInitializer {
      * @param id 對局的唯一識別碼。
      * @param playerIds 參與對局的玩家 Uuid 列表（尚未分配座位，內部會隨機排序）。
      * @param module 該對局採用的規則模組，提供牌山工廠、牌河實作與規則配置。
-     * @param aiPlayerStrategyKeys 由 AI 操控的玩家 Uuid 對應到其 AI 策略 key 的映射（key 集合須為
-     * [playerIds] 的子集），寫入對應 [MahjongPlayer] 後隨實例透過既有的 `.copy()` 機制自然延續，
-     * 不需要另外維護。
      * @return 已完成洗牌、（若規則支援）擲骰開門、發牌、分數初始化的新結果，含權威 [TableState] 與
      * 只有平台呈現層需要的一次性擲骰／牌牆結構資料。
      * @throws IllegalArgumentException 當玩家人數不在該規則允許的範圍內時拋出。
@@ -42,7 +39,6 @@ object GameInitializer {
         id: Uuid,
         playerIds: List<Uuid>,
         module: MahjongRuleModule<*>,
-        aiPlayerStrategyKeys: Map<Uuid, String> = emptyMap(),
     ): GameInitializationResult {
         require(playerIds.size in module.config.minPlayers..module.config.maxPlayers) {
             "Player count ${playerIds.size} out of range for this rule config " +
@@ -65,7 +61,6 @@ object GameInitializer {
                 hand = Hand(tiles = hands[index]),
                 discardPile = module.createDiscardPile(),
                 playerRuleState = module.createInitialPlayerRuleState(),
-                aiStrategyKey = aiPlayerStrategyKeys[playerId],
             )
         }
 

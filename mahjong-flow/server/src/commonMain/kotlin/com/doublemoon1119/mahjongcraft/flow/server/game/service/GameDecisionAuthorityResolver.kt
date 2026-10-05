@@ -34,7 +34,7 @@ class GameDecisionAuthorityResolver(
     fun resolve(game: Game): Map<Uuid, PlayerDecisionPhase> {
         if (game.isMatchOver || game.pendingTransition != null) return emptyMap()
         val state = game.tableState
-        val humanPlayerIds = state.players.filterNot { it.isAi }.mapTo(mutableSetOf()) { it.id }
+        val humanPlayerIds = state.players.filterNot { game.isAi(it.id) }.mapTo(mutableSetOf()) { it.id }
         game.pendingRoundPreparation?.let { preparation ->
             return preparation.participantPlayerIds
                 .filter { it in humanPlayerIds }

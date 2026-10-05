@@ -42,13 +42,11 @@ class RiichiSimulationAssertionsTest {
             FakeMahjongPlayerFactory.create(
                 initialSeat = Wind.EAST,
                 id = eastId,
-                aiStrategyKey = RON_STRATEGY_KEY,
                 discardPile = FakeDiscardPile().discardTile(discardedTile),
             ).copy(score = INITIAL_SCORE),
             FakeMahjongPlayerFactory.create(
                 initialSeat = Wind.SOUTH,
                 id = southId,
-                aiStrategyKey = RON_STRATEGY_KEY,
                 hand = Hand(daisangenTiles().map(FakeIdentifiedTileFactory::create)),
                 discardPile = FakeDiscardPile().discardTile(
                     FakeIdentifiedTileFactory.create(Tile.Honor.South),
@@ -57,12 +55,10 @@ class RiichiSimulationAssertionsTest {
             FakeMahjongPlayerFactory.create(
                 initialSeat = Wind.WEST,
                 id = westId,
-                aiStrategyKey = RON_STRATEGY_KEY,
             ).copy(score = INITIAL_SCORE),
             FakeMahjongPlayerFactory.create(
                 initialSeat = Wind.NORTH,
                 id = northId,
-                aiStrategyKey = RON_STRATEGY_KEY,
             ).copy(score = INITIAL_SCORE),
         )
         runtime.gameRepository.setTableState(
@@ -74,6 +70,7 @@ class RiichiSimulationAssertionsTest {
                 currentPlayerIndex = 0,
                 pendingReaction = PendingReaction(eastId, discardedTile.id, setOf(southId)),
             ),
+            players.associate { it.id to RON_STRATEGY_KEY },
         )
 
         runtime.coordinator.driveAutomatedPlayers(gameId)

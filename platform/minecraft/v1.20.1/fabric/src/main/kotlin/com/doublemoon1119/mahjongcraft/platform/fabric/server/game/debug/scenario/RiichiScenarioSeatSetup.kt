@@ -80,7 +80,7 @@ internal class SeatSetupScenario(
         require(tableState.config is RiichiRuleConfig) { "Riichi debug scenarios require a Riichi game" }
         val invokingPlayerIndex = tableState.players.indexOfFirst { it.id == context.invokingPlayerId }
         require(invokingPlayerIndex >= 0) { "Invoking player does not belong to the game" }
-        require(tableState.players.filterIndexed { index, _ -> index != invokingPlayerIndex }.all { it.isAi }) {
+        require(tableState.players.filterIndexed { index, _ -> index != invokingPlayerIndex }.all { currentGame.isAi(it.id) }) {
             "Seat setup debug scenarios require the other three players to be AI"
         }
 
@@ -126,11 +126,15 @@ internal class SeatSetupScenario(
                 discardPile = seat.discardPile(),
                 playerRuleState = RiichiPlayerState(riichiTile = seat.riichiTile),
                 score = config.scoreConfig.initialScore - if (seat.riichiTile != null) RIICHI_STICK_SCORE else 0,
-                aiStrategyKey = if (seatOffset == 0) oldPlayer.aiStrategyKey else seatSpecs[seatOffset].strategyKey,
                 actionHistory = seat.actionHistory(),
                 seatWind = Wind.entries[seatOffset],
             )
         }
+        val aiPlayerStrategyKeys = tableState.players.mapIndexedNotNull { index, player ->
+            val seatOffset = (index - invokingPlayerIndex + PLAYER_COUNT) % PLAYER_COUNT
+            val strategyKey = if (seatOffset == 0) currentGame.aiPlayerStrategyKeys[player.id] else seatSpecs[seatOffset].strategyKey
+            strategyKey?.let { player.id to it }
+        }.toMap()
         val state = TableState(
             id = currentGame.id,
             players = players,
@@ -151,6 +155,7 @@ internal class SeatSetupScenario(
                 matchId = currentGame.matchId,
                 hostId = currentGame.hostId,
                 roomPlayerIds = currentGame.roomPlayerIds,
+                aiPlayerStrategyKeys = aiPlayerStrategyKeys,
             ),
             wallStructure = structure,
             wallLayout = initialPhysicalLayout,

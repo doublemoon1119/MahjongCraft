@@ -61,19 +61,20 @@ internal class RoomMemberPresentation(private val indicatorTextResolver: PublicP
 /**
  * Player Info entity 尚未同步時，由遊戲快照組出可顯示的玩家清單。
  *
- * AI 以登記順序產生顯示名稱，真人交由 [resolveHumanName] 解析；解析不到時保留 `null`，由呈現層決定
+ * [aiPlayerIds] 中的 AI 以登記順序產生顯示名稱，真人交由 [resolveHumanName] 解析；解析不到時保留 `null`，由呈現層決定
  * 顯示什麼。這份降級資料不含規則公開 indicator。
  */
 internal fun roomMemberEntriesFrom(
     players: List<MahjongPlayerSnapshot>,
+    aiPlayerIds: Set<Uuid>,
     resolveHumanName: (Uuid) -> String?,
 ): List<MahjongPlayerInfoEntry> {
-    val orderedAiPlayerIds = players.filter { it.isAi }.map { it.id }
+    val orderedAiPlayerIds = players.filter { it.id in aiPlayerIds }.map { it.id }
     return players.mapIndexed { index, player ->
         MahjongPlayerInfoEntry(
             playerId = player.id,
-            playerName = if (player.isAi) aiPlayerDisplayName(player.id, orderedAiPlayerIds) else resolveHumanName(player.id),
-            isAi = player.isAi,
+            playerName = if (player.id in aiPlayerIds) aiPlayerDisplayName(player.id, orderedAiPlayerIds) else resolveHumanName(player.id),
+            isAi = player.id in aiPlayerIds,
             seatIndex = index,
             seatWind = player.seatWind,
             score = player.score,

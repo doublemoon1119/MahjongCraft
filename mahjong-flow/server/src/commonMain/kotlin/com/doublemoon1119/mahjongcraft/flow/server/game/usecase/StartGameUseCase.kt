@@ -66,7 +66,6 @@ class StartGameUseCase(
                         id = roomId,
                         playerIds = room.playerIds,
                         module = module,
-                        aiPlayerStrategyKeys = room.aiPlayerStrategyKeys,
                     )
                     val dealtState = initializationResult.tableState
                     // 發牌順序（哪張牌在哪一批發出），只提供給呈現使用，不是實際寫回權威狀態
@@ -96,6 +95,7 @@ class StartGameUseCase(
                                     matchId = Uuid.random(),
                                     hostId = room.hostId,
                                     roomPlayerIds = room.playerIds,
+                                    aiPlayerStrategyKeys = room.aiPlayerStrategyKeys,
                                 )
                                 ),
                         ),
@@ -104,7 +104,7 @@ class StartGameUseCase(
                             roomId to listOf(
                                 HistoryEventDraft(
                                     actorPlayerId = null,
-                                    fact = HistoryFact.MatchStarted(organizedState, room.gameConfig.flowConfig),
+                                    fact = HistoryFact.MatchStarted(organizedState, room.gameConfig.flowConfig, room.aiPlayerStrategyKeys),
                                 ),
                             ),
                         ),

@@ -47,6 +47,7 @@ fun buildRoundResultChatMessage(
     action: GameAction,
     previousSnapshot: TableStateSnapshot?,
     newSnapshot: TableStateSnapshot,
+    aiPlayerIds: Set<Uuid>,
     module: MahjongRuleModule<*>,
     actionVocabularyRegistry: GameActionVocabularyRegistry,
     displayNameRegistry: TileDisplayNameRegistry,
@@ -77,7 +78,7 @@ fun buildRoundResultChatMessage(
     val previousRankById = previousSnapshot.players.sortedWith(rankBy).withIndex().associate { (index, p) -> p.id to index + 1 }
     val previousScoreById = previousSnapshot.players.associate { it.id to it.score }
     val newRanked = newSnapshot.players.sortedWith(rankBy)
-    val orderedAiPlayerIds = newSnapshot.players.filter { it.isAi }.map { it.id }
+    val orderedAiPlayerIds = newSnapshot.players.filter { it.id in aiPlayerIds }.map { it.id }
 
     newRanked.forEachIndexed { index, player ->
         val newRank = index + 1
@@ -87,8 +88,8 @@ fun buildRoundResultChatMessage(
         details.append(
             Text.translatable(
                 MinecraftMessageKeys.ROUND_RESULT_PLAYER_LINE,
-                playerDisplayName?.invoke(player.id, player.isAi)
-                    ?: resolvePlayerDisplayName(player.id, player.isAi, orderedAiPlayerIds),
+                playerDisplayName?.invoke(player.id, player.id in aiPlayerIds)
+                    ?: resolvePlayerDisplayName(player.id, player.id in aiPlayerIds, orderedAiPlayerIds),
                 previousRank.toString(),
                 newRank.toString(),
                 rankChangeSymbol(previousRank, newRank),
@@ -116,6 +117,7 @@ private fun rankChangeSymbol(previousRank: Int, newRank: Int): String = when {
  *
  * @param action 欲呈現的對局事件。
  * @param newSnapshot 結束對局的可見桌況。
+ * @param aiPlayerIds 由 AI 操控的玩家。
  * @param module 提供權威排名排序的規則模組。
  * @param playerDisplayName 選用的玩家名稱解析。
  * @param historyCommand 選用的本地歷史畫面開啟命令，不以保存完成為前提。
@@ -124,6 +126,7 @@ private fun rankChangeSymbol(previousRank: Int, newRank: Int): String = when {
 fun buildMatchResultChatMessage(
     action: GameAction,
     newSnapshot: TableStateSnapshot,
+    aiPlayerIds: Set<Uuid>,
     module: MahjongRuleModule<*>,
     historyCommand: String? = null,
     playerDisplayName: ((Uuid, Boolean) -> String)? = null,
@@ -131,7 +134,7 @@ fun buildMatchResultChatMessage(
     if (action !is GameAction.MatchEnded) return null
 
     val details = Text.empty()
-    appendRankingLines(details, newSnapshot.players.sortedWith(module.compareForMatchRanking()), playerDisplayName)
+    appendRankingLines(details, newSnapshot.players.sortedWith(module.compareForMatchRanking()), aiPlayerIds, playerDisplayName)
     if (historyCommand != null) details.append(Text.literal("\n").append(Text.translatable(HISTORY_OPEN_HINT_KEY).formatted(Formatting.AQUA)))
     return buildMatchResultChatText(details, historyCommand?.let { ClickEvent(ClickEvent.Action.RUN_COMMAND, it) })
 }
@@ -143,17 +146,18 @@ private const val HISTORY_OPEN_HINT_KEY = MinecraftHistoryScreenKeys.OPEN_HINT
 private fun appendRankingLines(
     message: MutableText,
     rankedPlayers: List<MahjongPlayerSnapshot>,
+    aiPlayerIds: Set<Uuid>,
     playerDisplayName: ((Uuid, Boolean) -> String)?,
 ) {
-    val orderedAiPlayerIds = rankedPlayers.filter { it.isAi }.sortedBy { it.initialSeatIndex }.map { it.id }
+    val orderedAiPlayerIds = rankedPlayers.filter { it.id in aiPlayerIds }.sortedBy { it.initialSeatIndex }.map { it.id }
     rankedPlayers.forEachIndexed { index, player ->
         if (index > 0) message.append(Text.literal("\n"))
         message.append(
             Text.translatable(
                 MinecraftMessageKeys.RANKING_LINE,
                 (index + 1).toString(),
-                playerDisplayName?.invoke(player.id, player.isAi)
-                    ?: resolvePlayerDisplayName(player.id, player.isAi, orderedAiPlayerIds),
+                playerDisplayName?.invoke(player.id, player.id in aiPlayerIds)
+                    ?: resolvePlayerDisplayName(player.id, player.id in aiPlayerIds, orderedAiPlayerIds),
                 player.score.toString(),
             ),
         )

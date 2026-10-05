@@ -19,7 +19,7 @@ internal suspend fun AuthoritativeStateStore.openGame(tableState: TableState): G
             state = state.copy(games = state.games + (game.id to game)),
             result = Unit,
             historyDraftsByVenueId = mapOf(
-                game.id to listOf(HistoryEventDraft(null, HistoryFact.MatchStarted(tableState, game.flowConfig))),
+                game.id to listOf(HistoryEventDraft(null, HistoryFact.MatchStarted(tableState, game.flowConfig, emptyMap()))),
             ),
         )
     }

@@ -170,7 +170,7 @@ class MahjongTableRoomService(
                         tableId = tableId,
                         occupancy = TableOccupancyDto.GAME,
                         playingPlayerIds = game.players.map { it.id.toString() },
-                        playingAiPlayerIds = game.players.filter { it.isAi }.map { it.id.toString() },
+                        playingAiPlayerIds = game.players.filter { runtimeGame.isAi(it.id) }.map { it.id.toString() },
                         playingGameConfig = GameConfig(game.config, runtimeGame.flowConfig).toDto(networkRegistries),
                     ),
                 )

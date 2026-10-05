@@ -143,8 +143,11 @@ object CompactReplayCodec {
                         if (ruleConfig == null) {
                             ruleConfig = stateJson[ReplaySourceKeys.CONFIG]
                             flowConfig = (encoded[ReplaySourceKeys.FACT] as JsonObject)[ReplaySourceKeys.FLOW_CONFIG]
+                            val aiStrategyKeys = checkNotNull((fact as? HistoryFact.MatchStarted)?.aiPlayerStrategyKeys) {
+                                "Replay must open with match start"
+                            }
                             players += openingState.players.sortedBy { it.initialSeatIndex }.map { player ->
-                                JsonObject(mapOf(ReplaySourceKeys.ID to JsonPrimitive(player.id.toString()), ReplayFormatKeys.PLAYER_AI to (player.aiStrategyKey?.let(::JsonPrimitive) ?: JsonNull)))
+                                JsonObject(mapOf(ReplaySourceKeys.ID to JsonPrimitive(player.id.toString()), ReplayFormatKeys.PLAYER_AI to (aiStrategyKeys[player.id]?.let(::JsonPrimitive) ?: JsonNull)))
                             }
                         }
                         val openingIndex = createRoundIndex(openingState, json, typeDictionary)

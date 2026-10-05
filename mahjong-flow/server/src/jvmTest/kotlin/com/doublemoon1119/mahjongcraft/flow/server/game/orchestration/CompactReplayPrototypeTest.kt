@@ -352,11 +352,12 @@ class CompactReplayPrototypeTest {
                             val openingState = factJson.getValue("state") as JsonObject
                             ruleConfig = openingState.getValue("config")
                             flowConfig = (factJson["flowConfig"] ?: error("Match lacks flow configuration"))
+                            val aiStrategyKeys = (fact as HistoryFact.MatchStarted).aiPlayerStrategyKeys
                             players += state.players.sortedBy { it.initialSeatIndex }.map { player ->
                                 JsonObject(
                                     mapOf(
                                         "id" to JsonPrimitive(player.id.toString()),
-                                        "ai" to (player.aiStrategyKey?.let(::JsonPrimitive) ?: JsonNull),
+                                        "ai" to (aiStrategyKeys[player.id]?.let(::JsonPrimitive) ?: JsonNull),
                                     ),
                                 )
                             }
@@ -575,7 +576,7 @@ class CompactReplayPrototypeTest {
         gameplay["players"] = JsonArray(
             (encoded.getValue("players") as JsonArray).map { playerElement ->
                 val player = playerElement as JsonObject
-                JsonObject(player.filterKeys { it !in setOf("id", "aiStrategyKey", "actionHistory") })
+                JsonObject(player.filterKeys { it !in setOf("id", "actionHistory") })
             },
         )
         return translate(JsonObject(gameplay), index)

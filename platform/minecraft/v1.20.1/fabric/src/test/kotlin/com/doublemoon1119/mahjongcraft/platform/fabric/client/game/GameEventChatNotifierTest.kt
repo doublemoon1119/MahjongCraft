@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
+import com.doublemoon1119.mahjongcraft.logic.table.TableStateSnapshot
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistryImpl
@@ -48,6 +49,7 @@ class GameEventChatNotifierTest {
             action = GameAction.Discard(Uuid.random()),
             previousSnapshot = previous,
             newSnapshot = current,
+            aiPlayerIds = current.allPlayerIds(),
             module = module,
             actionVocabularyRegistry = actionVocabularyRegistry,
             displayNameRegistry = displayNameRegistry,
@@ -68,6 +70,7 @@ class GameEventChatNotifierTest {
             action = GameAction.Tsumo,
             previousSnapshot = null,
             newSnapshot = current,
+            aiPlayerIds = current.allPlayerIds(),
             module = module,
             actionVocabularyRegistry = actionVocabularyRegistry,
             displayNameRegistry = displayNameRegistry,
@@ -102,6 +105,7 @@ class GameEventChatNotifierTest {
             action = GameAction.Tsumo,
             previousSnapshot = previous,
             newSnapshot = current,
+            aiPlayerIds = current.allPlayerIds(),
             module = module,
             actionVocabularyRegistry = actionVocabularyRegistry,
             displayNameRegistry = displayNameRegistry,
@@ -141,13 +145,13 @@ class GameEventChatNotifierTest {
         // initialSeat 是西、seatWind 是東，東家的 initialSeat 是東、seatWind 是南——如果
         // 用錯欄位（誤用 initialSeat），排序會反過來，藉此確認回合排名真的是比 seatWind。
         val players = listOf(
-            FakeMahjongPlayerFactory.create(id = eastId, initialSeat = Wind.EAST, aiStrategyKey = "fake")
+            FakeMahjongPlayerFactory.create(id = eastId, initialSeat = Wind.EAST)
                 .copy(score = 25000, seatWind = Wind.SOUTH),
-            FakeMahjongPlayerFactory.create(id = southId, initialSeat = Wind.WEST, aiStrategyKey = "fake")
+            FakeMahjongPlayerFactory.create(id = southId, initialSeat = Wind.WEST)
                 .copy(score = 25000, seatWind = Wind.EAST),
-            FakeMahjongPlayerFactory.create(id = westId, initialSeat = Wind.SOUTH, aiStrategyKey = "fake")
+            FakeMahjongPlayerFactory.create(id = westId, initialSeat = Wind.SOUTH)
                 .copy(score = 30000, seatWind = Wind.WEST),
-            FakeMahjongPlayerFactory.create(id = northId, initialSeat = Wind.NORTH, aiStrategyKey = "fake")
+            FakeMahjongPlayerFactory.create(id = northId, initialSeat = Wind.NORTH)
                 .copy(score = 20000, seatWind = Wind.NORTH),
         )
         val previous = FakeTableStateFactory.create(players = players).toSnapshot(visibleHandPlayerIds = emptySet())
@@ -157,6 +161,7 @@ class GameEventChatNotifierTest {
             action = GameAction.Tsumo,
             previousSnapshot = previous,
             newSnapshot = current,
+            aiPlayerIds = current.allPlayerIds(),
             module = module,
             actionVocabularyRegistry = actionVocabularyRegistry,
             displayNameRegistry = displayNameRegistry,
@@ -187,15 +192,16 @@ class GameEventChatNotifierTest {
     fun `returns null for match result when the action is not match ended`() {
         val snapshot = fakeSnapshot(scores = listOf(25000, 25000))
 
-        assertNull(buildMatchResultChatMessage(GameAction.Tsumo, snapshot, module))
+        assertNull(buildMatchResultChatMessage(GameAction.Tsumo, snapshot, snapshot.allPlayerIds(), module))
     }
 
     /** 保存尚未完成時也一次建立提示與可點擊入口，不修改原始排行。 */
     @Test
     fun `test match result contains a stable history click and hint immediately`() {
         val command = "/mahjongcraft_client history chat_entry local-token"
+        val snapshot = fakeSnapshot(listOf(30000, 20000))
         val message = requireNotNull(
-            buildMatchResultChatMessage(GameAction.MatchEnded, fakeSnapshot(listOf(30000, 20000)), module, historyCommand = command),
+            buildMatchResultChatMessage(GameAction.MatchEnded, snapshot, snapshot.allPlayerIds(), module, historyCommand = command),
         )
         val label = message.siblings.last()
         assertEquals(command, label.style.clickEvent?.value)
@@ -225,19 +231,20 @@ class GameEventChatNotifierTest {
         // 同時刻意把兩人的本局風位反過來，確認終局同分判準不受 seatWind 影響。
         val snapshot = FakeTableStateFactory.create(
             players = listOf(
-                FakeMahjongPlayerFactory.create(id = eastId, initialSeat = Wind.EAST, aiStrategyKey = "fake").copy(score = 30000),
-                FakeMahjongPlayerFactory.create(id = southId, initialSeat = Wind.SOUTH, aiStrategyKey = "fake")
+                FakeMahjongPlayerFactory.create(id = eastId, initialSeat = Wind.EAST).copy(score = 30000),
+                FakeMahjongPlayerFactory.create(id = southId, initialSeat = Wind.SOUTH)
                     .copy(score = 25000, seatWind = Wind.NORTH),
-                FakeMahjongPlayerFactory.create(id = northId, initialSeat = Wind.NORTH, aiStrategyKey = "fake")
+                FakeMahjongPlayerFactory.create(id = northId, initialSeat = Wind.NORTH)
                     .copy(score = 25000, seatWind = Wind.SOUTH),
-                FakeMahjongPlayerFactory.create(id = westId, initialSeat = Wind.WEST, aiStrategyKey = "fake").copy(score = 20000),
+                FakeMahjongPlayerFactory.create(id = westId, initialSeat = Wind.WEST).copy(score = 20000),
             ),
         ).toSnapshot(visibleHandPlayerIds = emptySet())
 
         val message = buildMatchResultChatMessage(
-            GameAction.MatchEnded,
-            snapshot,
-            module,
+            action = GameAction.MatchEnded,
+            newSnapshot = snapshot,
+            aiPlayerIds = snapshot.allPlayerIds(),
+            module = module,
         ) { id, _ -> id.toString().take(4) }
 
         assertEquals(false, message?.hoverDetails()?.string?.startsWith("\n"))
@@ -254,13 +261,15 @@ class GameEventChatNotifierTest {
         )
     }
 
-    /** AI 玩家（`aiStrategyKey` 非 null）避免觸發需要真正 client 執行環境的名稱解析分支。 */
+    /** 測試把所有玩家都當成 AI，避免觸發需要真正 client 執行環境的名稱解析分支。 */
+    private fun TableStateSnapshot.allPlayerIds(): Set<Uuid> = players.map { it.id }.toSet()
+
     private fun fakeSnapshot(
         scores: List<Int>,
         ids: List<Uuid> = scores.map { Uuid.random() },
     ) = FakeTableStateFactory.create(
         players = ids.zip(scores).map { (id, score) ->
-            FakeMahjongPlayerFactory.create(id = id, aiStrategyKey = "fake").copy(score = score)
+            FakeMahjongPlayerFactory.create(id = id).copy(score = score)
         },
     ).toSnapshot(visibleHandPlayerIds = emptySet())
 }

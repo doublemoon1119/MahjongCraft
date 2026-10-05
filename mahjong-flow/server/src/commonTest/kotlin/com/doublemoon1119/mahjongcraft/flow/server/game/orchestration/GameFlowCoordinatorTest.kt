@@ -323,7 +323,6 @@ class GameFlowCoordinatorTest {
         )
         val ai = FakeMahjongPlayerFactory.create(
             initialSeat = Wind.SOUTH,
-            aiStrategyKey = RandomAiStrategy.KEY,
             playerRuleState = RiichiPlayerState(),
         )
         val table = FakeTableStateFactory.create(
@@ -333,7 +332,14 @@ class GameFlowCoordinatorTest {
             tileWall = TileWall(List(20) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 9)) }),
             currentPlayerIndex = 0,
         )
-        fixtures.gameRepo.setGame(Game(table, GameFlowConfig(), forcedAutoPlayPlayerIds = setOf(forcedPlayerId)))
+        fixtures.gameRepo.setGame(
+            Game(
+                tableState = table,
+                flowConfig = GameFlowConfig(),
+                forcedAutoPlayPlayerIds = setOf(forcedPlayerId),
+                aiPlayerStrategyKeys = mapOf(ai.id to RandomAiStrategy.KEY),
+            ),
+        )
 
         assertTrue(fixtures.coordinator.advanceAutomatedPlayerStep(gameId))
 
@@ -1229,7 +1235,6 @@ class GameFlowCoordinatorTest {
             id = aiId,
             initialSeat = Wind.SOUTH,
             hand = Hand(tiles = aiHandTiles),
-            aiStrategyKey = RandomAiStrategy.KEY,
             playerRuleState = RiichiPlayerState(),
         )
         val drawnTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5))
@@ -1240,7 +1245,7 @@ class GameFlowCoordinatorTest {
             tileWall = TileWall(listOf(drawnTile)),
             currentPlayerIndex = 0,
         )
-        fixtures.gameRepo.setTableState(table)
+        fixtures.gameRepo.setTableState(table, mapOf(aiId to RandomAiStrategy.KEY))
 
         val result = fixtures.coordinator(gameId, humanId, GameCommand.Discard(discardedTile.id))
 
@@ -1269,7 +1274,6 @@ class GameFlowCoordinatorTest {
             id = aiId,
             initialSeat = Wind.SOUTH,
             hand = Hand(tiles = listOf(southTile1, southTile2) + filler),
-            aiStrategyKey = RandomAiStrategy.KEY,
             playerRuleState = RiichiPlayerState(),
         )
         // 若 AI 選擇過牌（而非碰），輪到的下一位就是它自己、需要先摸牌——牌山至少要有 1 張牌，
@@ -1282,7 +1286,7 @@ class GameFlowCoordinatorTest {
             tileWall = TileWall(listOf(nextDrawTile)),
             currentPlayerIndex = 0,
         )
-        fixtures.gameRepo.setTableState(table)
+        fixtures.gameRepo.setTableState(table, mapOf(aiId to RandomAiStrategy.KEY))
 
         val result = fixtures.coordinator(gameId, humanId, GameCommand.Discard(southTile.id))
 
@@ -1304,7 +1308,6 @@ class GameFlowCoordinatorTest {
         val ai = FakeMahjongPlayerFactory.create(
             id = aiId,
             initialSeat = Wind.EAST,
-            aiStrategyKey = RandomAiStrategy.KEY,
             playerRuleState = RiichiPlayerState(),
         )
         val other = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH)
@@ -1318,7 +1321,7 @@ class GameFlowCoordinatorTest {
             currentPlayerIndex = 0,
             roundNumber = 1,
         )
-        fixtures.gameRepo.setTableState(table)
+        fixtures.gameRepo.setTableState(table, mapOf(aiId to RandomAiStrategy.KEY))
 
         fixtures.coordinator.driveAutomatedPlayers(gameId)
 
@@ -1343,7 +1346,6 @@ class GameFlowCoordinatorTest {
         val ai = FakeMahjongPlayerFactory.create(
             id = aiId,
             initialSeat = Wind.EAST,
-            aiStrategyKey = RandomAiStrategy.KEY,
             playerRuleState = RiichiPlayerState(),
         )
         val other = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH, playerRuleState = RiichiPlayerState())
@@ -1355,7 +1357,7 @@ class GameFlowCoordinatorTest {
             currentPlayerIndex = 0,
             roundNumber = 1,
         )
-        fixtures.gameRepo.setTableState(table)
+        fixtures.gameRepo.setTableState(table, mapOf(aiId to RandomAiStrategy.KEY))
 
         // 第一次呼叫：觸發 WallExhausted → 流局結算 → isMatchOver 成立。
         fixtures.coordinator.driveAutomatedPlayers(gameId)

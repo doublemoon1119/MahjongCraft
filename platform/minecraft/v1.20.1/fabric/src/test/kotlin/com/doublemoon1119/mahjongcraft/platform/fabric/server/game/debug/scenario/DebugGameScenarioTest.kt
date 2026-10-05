@@ -399,13 +399,13 @@ class DebugGameScenarioTest {
             id = Uuid.random(),
             playerIds = playerIds,
             module = module,
-            aiPlayerStrategyKeys = playerIds.drop(1).associateWith { "random" },
         )
         val game = Game(
             tableState = initialized.tableState,
             flowConfig = GameFlowConfig(),
             hostId = playerIds.first(),
             roomPlayerIds = playerIds,
+            aiPlayerStrategyKeys = playerIds.drop(1).associateWith { "random" },
         )
         val moduleRegistry = MahjongModuleRegistryImpl().apply {
             registerBuiltInRuleModules()

@@ -109,4 +109,48 @@ class GameTest {
             )
         }
     }
+
+    /** AI 操控資訊由 Game 保存，只有登記的玩家會被視為 AI。 */
+    @Test
+    fun `game reports only registered players as ai`() {
+        val humanId = Uuid.random()
+        val aiId = Uuid.random()
+        val game = Game(
+            tableState = FakeTableStateFactory.create(
+                players = listOf(FakeMahjongPlayerFactory.create(id = humanId), FakeMahjongPlayerFactory.create(id = aiId)),
+            ),
+            flowConfig = GameFlowConfig(),
+            aiPlayerStrategyKeys = mapOf(aiId to "example:strategy"),
+        )
+
+        assertEquals(setOf(aiId), game.aiPlayerIds)
+        assertTrue(game.isAi(aiId))
+        assertTrue(!game.isAi(humanId))
+    }
+
+    /** AI 策略 key 不得索引遊戲以外的玩家。 */
+    @Test
+    fun `game rejects ai strategy keys for unknown players`() {
+        assertFailsWith<IllegalArgumentException> {
+            Game(
+                tableState = FakeTableStateFactory.create(),
+                flowConfig = GameFlowConfig(),
+                aiPlayerStrategyKeys = mapOf(Uuid.random() to "example:strategy"),
+            )
+        }
+    }
+
+    /** AI 策略 key 不得為空白。 */
+    @Test
+    fun `game rejects blank ai strategy keys`() {
+        val playerId = Uuid.random()
+
+        assertFailsWith<IllegalArgumentException> {
+            Game(
+                tableState = FakeTableStateFactory.create(players = listOf(FakeMahjongPlayerFactory.create(id = playerId))),
+                flowConfig = GameFlowConfig(),
+                aiPlayerStrategyKeys = mapOf(playerId to " "),
+            )
+        }
+    }
 }

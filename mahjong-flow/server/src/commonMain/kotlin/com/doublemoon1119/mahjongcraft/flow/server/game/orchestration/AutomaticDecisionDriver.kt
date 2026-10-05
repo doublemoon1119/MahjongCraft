@@ -22,8 +22,7 @@ class AutomaticDecisionDriver(
         val state = game.tableState
         val contexts = actionContextResolver.resolve(state)
         for ((playerId, context) in contexts) {
-            val player = state.players.first { it.id == playerId }
-            if (player.isAi || playerId in game.forcedAutoPlayPlayerIds) continue
+            if (game.isAi(playerId) || playerId in game.forcedAutoPlayPlayerIds) continue
             if (game.enabledAutomaticControlIdsByPlayerId[playerId].isNullOrEmpty()) continue
             val immediate = evaluator.evaluate(game, playerId)?.immediateAction ?: continue
             val command = requireNotNull(

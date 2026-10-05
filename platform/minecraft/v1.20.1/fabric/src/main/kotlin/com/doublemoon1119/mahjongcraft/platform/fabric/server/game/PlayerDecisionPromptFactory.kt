@@ -53,7 +53,7 @@ class PlayerDecisionPromptFactory(
             emptyList()
         }
         val trigger = state.triggerContext(playerId)
-        val orderedAiPlayerIds = game.roomPlayerIds.filter { id -> state.players.any { it.id == id && it.isAi } }
+        val orderedAiPlayerIds = game.roomPlayerIds.filter(game::isAi)
         return PlayerDecisionPromptDto(
             ruleModuleId = resolvedCandidates.ruleModuleId,
             decisionKey = buildDecisionKey(
@@ -106,8 +106,7 @@ class PlayerDecisionPromptFactory(
             },
             triggerPlayerId = trigger?.playerId?.toString(),
             triggerPlayerName = trigger?.playerId?.let { sourceId ->
-                val sourcePlayer = state.players.firstOrNull { it.id == sourceId }
-                if (sourcePlayer?.isAi == true) aiPlayerDisplayName(sourceId, orderedAiPlayerIds) else null
+                if (game.isAi(sourceId)) aiPlayerDisplayName(sourceId, orderedAiPlayerIds) else null
             },
             triggerPlayerRelation = trigger?.relation,
             triggerActionId = trigger?.actionId,

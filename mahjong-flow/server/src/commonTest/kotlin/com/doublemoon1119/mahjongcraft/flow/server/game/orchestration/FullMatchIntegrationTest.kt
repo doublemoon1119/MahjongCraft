@@ -48,9 +48,8 @@ class FullMatchIntegrationTest {
             id = gameId,
             playerIds = playerIds,
             module = module,
-            aiPlayerStrategyKeys = playerIds.associateWith { FakeAiStrategy.KEY },
         ).tableState
-        runtime.gameRepository.setTableState(initialState)
+        runtime.gameRepository.setTableState(initialState, playerIds.associateWith { FakeAiStrategy.KEY })
 
         runtime.coordinator.driveAutomatedPlayers(gameId)
         val finalState = runtime.gameRepository.getTableState(gameId)

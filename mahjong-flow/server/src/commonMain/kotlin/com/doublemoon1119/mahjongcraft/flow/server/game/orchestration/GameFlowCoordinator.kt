@@ -331,10 +331,11 @@ class GameFlowCoordinator(
                     presentationPublisher.publishWinSettlement(
                         gameId,
                         WinSettlementPresentationRequestFactory.createSpecialOutcome(
-                            previousState,
-                            resolved,
-                            moduleRegistry.getModule(previousState.config),
-                            winSettlementDetailResolverRegistry,
+                            previousState = previousState,
+                            outcome = resolved,
+                            module = moduleRegistry.getModule(previousState.config),
+                            aiPlayerIds = gameRepository.getGame(gameId)?.aiPlayerIds.orEmpty(),
+                            detailResolverRegistry = winSettlementDetailResolverRegistry,
                         ),
                     )
                 }
@@ -347,13 +348,14 @@ class GameFlowCoordinator(
                 val settlement = module.declareExhaustiveDraw(previousState)
                 if (currentState != null && settlement != null) {
                     exhaustiveDrawSettlementPresentationService.publish(
-                        gameId,
-                        previousState,
-                        currentState,
-                        module,
-                        settlement.reason,
-                        settlement.tenpaiPlayerIds.takeIf { settlement.stickPotCollectorPlayerIds.isEmpty() },
-                        settlement.revealedHands,
+                        gameId = gameId,
+                        previousState = previousState,
+                        currentState = currentState,
+                        module = module,
+                        aiPlayerIds = gameRepository.getGame(gameId)?.aiPlayerIds.orEmpty(),
+                        reason = settlement.reason,
+                        tenpaiPlayerIds = settlement.tenpaiPlayerIds.takeIf { settlement.stickPotCollectorPlayerIds.isEmpty() },
+                        revealedHands = settlement.revealedHands,
                     )
                 }
                 chainAdvanceRound(gameId)
@@ -401,6 +403,7 @@ class GameFlowCoordinator(
             previousState = previousState,
             currentState = currentState,
             module = module,
+            aiPlayerIds = gameRepository.getGame(gameId)?.aiPlayerIds.orEmpty(),
             reason = reason,
             tenpaiPlayerIds = null,
             revealedHands = module.resolveAbortiveDrawRevealedHands(currentState, declarerId, reason),

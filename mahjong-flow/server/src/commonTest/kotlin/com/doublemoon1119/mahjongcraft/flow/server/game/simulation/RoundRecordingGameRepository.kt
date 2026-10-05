@@ -53,6 +53,12 @@ internal class RoundRecordingGameRepository(
         observe(state.id)
     }
 
+    /** 寫入 [state] 並指定由 AI 操控的玩家。 */
+    suspend fun setTableState(state: TableState, aiPlayerStrategyKeys: Map<Uuid, String>) {
+        delegate.setTableState(state, aiPlayerStrategyKeys)
+        observe(state.id)
+    }
+
     override suspend fun <T> updateGame(
         gameId: Uuid,
         history: (Game?, Game?, T) -> List<HistoryEventDraft>,

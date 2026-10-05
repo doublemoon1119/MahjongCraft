@@ -226,6 +226,7 @@ class AdvanceRoundUseCase(
             val lastDealerId = newState.dealerPlayerId
             eventPublisher.publishToAllObservers(gameId, newState.players.map { it.id }, lastDealerId, GameAction.MatchEnded)
             val presentationModule = moduleRegistry.getModule(newState.config)
+            val aiPlayerIds = gameRepository.getGame(gameId)?.aiPlayerIds.orEmpty()
             val finalRankById = newState.players.sortedWith(presentationModule.compareForMatchRanking())
                 .mapIndexed { index, player -> player.id to index + 1 }
                 .toMap()
@@ -237,7 +238,7 @@ class AdvanceRoundUseCase(
                         MatchSettlementPlayerPresentation(
                             playerId = player.id,
                             seatIndex = seatIndex,
-                            isAi = player.isAi,
+                            isAi = player.id in aiPlayerIds,
                             initialSeatIndex = player.initialSeatIndex,
                             finalScore = player.score,
                             finalRank = finalRankById.getValue(player.id),

@@ -16,8 +16,13 @@ sealed interface HistoryFact {
      *
      * @property tableState 開局時含完整牌牆與座位的伺服器桌況。
      * @property flowConfig 此場對局採用的流程設定。
+     * @property aiPlayerStrategyKeys 開局時由 AI 操控的玩家 Uuid 對應到其 AI 策略 key，見 `Game.aiPlayerStrategyKeys`。
      */
-    data class MatchStarted(val tableState: TableState, val flowConfig: GameFlowConfig) : HistoryFact
+    data class MatchStarted(
+        val tableState: TableState,
+        val flowConfig: GameFlowConfig,
+        val aiPlayerStrategyKeys: Map<Uuid, String>,
+    ) : HistoryFact
 
     /**
      * 保存換局後的新牌牆及起始桌況。
