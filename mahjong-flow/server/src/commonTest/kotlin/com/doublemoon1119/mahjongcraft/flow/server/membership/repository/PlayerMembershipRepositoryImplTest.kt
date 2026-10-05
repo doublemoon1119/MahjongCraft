@@ -11,35 +11,35 @@ import kotlin.uuid.Uuid
 
 /** [PlayerMembershipRepositoryImpl] 唯一歸屬與並發行為測試。 */
 class PlayerMembershipRepositoryImplTest {
-    /** 同一玩家同時競爭多張桌子時只能成功占用其中一張。 */
+    /** 同一玩家同時競爭多個場地時只能成功占用其中一個。 */
     @Test
     fun `test concurrent claims keep exactly one table membership`() = runTest {
         val repository = PlayerMembershipRepositoryImpl()
         val playerId = Uuid.random()
-        val tableIds = List(20) { Uuid.random() }
+        val venueIds = List(20) { Uuid.random() }
 
-        val results = tableIds.map { tableId -> async { tableId to repository.claim(playerId, tableId) } }.awaitAll()
-        val claimedTableId = results.single { it.second }.first
+        val results = venueIds.map { venueId -> async { venueId to repository.claim(playerId, venueId) } }.awaitAll()
+        val claimedVenueId = results.single { it.second }.first
 
-        assertEquals(claimedTableId, repository.getTableId(playerId))
+        assertEquals(claimedVenueId, repository.getVenueId(playerId))
     }
 
-    /** 舊桌子的延遲 release 不得清除玩家後來建立的新歸屬。 */
+    /** 舊場地的延遲 release 不得清除玩家後來建立的新歸屬。 */
     @Test
     fun `test release only removes the matching table membership`() = runTest {
         val repository = PlayerMembershipRepositoryImpl()
         val playerId = Uuid.random()
-        val oldTableId = Uuid.random()
-        val newTableId = Uuid.random()
+        val oldVenueId = Uuid.random()
+        val newVenueId = Uuid.random()
 
-        assertTrue(repository.claim(playerId, oldTableId))
-        repository.release(playerId, oldTableId)
-        assertTrue(repository.claim(playerId, newTableId))
-        repository.release(playerId, oldTableId)
+        assertTrue(repository.claim(playerId, oldVenueId))
+        repository.release(playerId, oldVenueId)
+        assertTrue(repository.claim(playerId, newVenueId))
+        repository.release(playerId, oldVenueId)
 
-        assertEquals(newTableId, repository.getTableId(playerId))
+        assertEquals(newVenueId, repository.getVenueId(playerId))
         repository.clearAll()
-        assertNull(repository.getTableId(playerId))
+        assertNull(repository.getVenueId(playerId))
     }
 
     /** 完整替換歸屬時應移除舊 session 的索引並載入新索引。 */
@@ -48,12 +48,12 @@ class PlayerMembershipRepositoryImplTest {
         val repository = PlayerMembershipRepositoryImpl()
         val oldPlayerId = Uuid.random()
         val newPlayerId = Uuid.random()
-        val newTableId = Uuid.random()
+        val newVenueId = Uuid.random()
         repository.claim(oldPlayerId, Uuid.random())
 
-        repository.replaceAll(mapOf(newPlayerId to newTableId))
+        repository.replaceAll(mapOf(newPlayerId to newVenueId))
 
-        assertNull(repository.getTableId(oldPlayerId))
-        assertEquals(newTableId, repository.getTableId(newPlayerId))
+        assertNull(repository.getVenueId(oldPlayerId))
+        assertEquals(newVenueId, repository.getVenueId(newPlayerId))
     }
 }

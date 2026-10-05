@@ -127,7 +127,7 @@ class FabricAchievementServiceTest {
     )
 
     private fun facts(fact: HistoryFact) = CommittedGameFacts(
-        tableId = game.id,
+        venueId = game.id,
         previousGame = game,
         game = game,
         facts = listOf(HistoryEventDraft(null, fact)),

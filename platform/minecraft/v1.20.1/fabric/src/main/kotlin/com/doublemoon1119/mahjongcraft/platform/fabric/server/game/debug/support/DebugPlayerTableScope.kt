@@ -48,7 +48,7 @@ class DebugPlayerTableScope(
     fun runOnMain(source: ServerCommandSource, action: (tableId: Uuid) -> String): Int {
         val player = requirePlayer(source) ?: return COMMAND_FAILURE
         scope.launch {
-            val tableId = membershipRepository.getTableId(player.uuid.toKotlinUuid())
+            val tableId = membershipRepository.getVenueId(player.uuid.toKotlinUuid())
             tableId?.let { excludeCurrentMatch(it) }
             withContext(dispatchers.main) {
                 if (tableId == null) {
@@ -69,7 +69,7 @@ class DebugPlayerTableScope(
         val player = requirePlayer(source) ?: return COMMAND_FAILURE
         scope.launch {
             val playerId = player.uuid.toKotlinUuid()
-            val tableId = membershipRepository.getTableId(playerId)
+            val tableId = membershipRepository.getVenueId(playerId)
             val message = tableId?.let { id ->
                 excludeCurrentMatch(id)
                 val result = action(id, playerId)

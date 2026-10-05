@@ -63,13 +63,13 @@ data class HistoryRecordingPersistenceDto(
 /**
  * 未完成歷史轉移的持久化 metadata。
  *
- * @property tableId 來源牌桌 UUID 字串。
+ * @property venueId 來源場地 UUID 字串。
  * @property lastAcceptedBatch 最近確認的完整交易批次。
  * @property matchCompleted 是否已有整場完成事實。
  */
 @Serializable
 data class HistoryRecordingTransferPersistenceDto(
-    val tableId: String,
+    val venueId: String,
     val lastAcceptedBatch: List<HistoryOutboxEventPersistenceDto>,
     val matchCompleted: Boolean,
 )
@@ -78,19 +78,19 @@ data class HistoryRecordingTransferPersistenceDto(
  *
  * @property endedAtEpochMillis 場次結束的 UTC 毫秒時間戳。
  * @property completed 場次是否正常完成整場對局。
- * @property tableId 原牌桌 UUID 字串。
+ * @property venueId 原場地 UUID 字串。
  */
 @Serializable
 data class HistoryRecordingTerminalPersistenceDto(
     val endedAtEpochMillis: Long,
     val completed: Boolean,
-    val tableId: String,
+    val venueId: String,
 )
 
 /** 一筆已指派穩定鍵、可重試寫入的歷史事件。
  *
  * @property matchId 事件所屬對局的 UUID 字串。
- * @property tableId 事件所屬牌桌的 UUID 字串。
+ * @property venueId 事件所屬場地的 UUID 字串。
  * @property roundNumber 事件發生時所在的局數。
  * @property sequence 在同一對局內單調遞增的事件序號。
  * @property occurredAtEpochMillis 事件發生時間的 Unix epoch 毫秒值。
@@ -101,7 +101,7 @@ data class HistoryRecordingTerminalPersistenceDto(
 @Serializable
 data class HistoryOutboxEventPersistenceDto(
     val matchId: String,
-    val tableId: String,
+    val venueId: String,
     val roundNumber: Int,
     val sequence: Long,
     val occurredAtEpochMillis: Long,
@@ -448,11 +448,11 @@ class HistoryRecordingPersistenceMapper(
                 HistoryRecordingTerminalPersistenceDto(
                     terminal.endedAtEpochMillis,
                     terminal.completed,
-                    terminal.tableId.toString(),
+                    terminal.venueId.toString(),
                 )
             },
             transfersByMatchId = state.transfersByMatchId.mapKeys { it.key.toString() }.mapValues { (_, transfer) ->
-                HistoryRecordingTransferPersistenceDto(transfer.tableId.toString(), transfer.lastAcceptedBatch.map(::encodeEvent), transfer.matchCompleted)
+                HistoryRecordingTransferPersistenceDto(transfer.venueId.toString(), transfer.lastAcceptedBatch.map(::encodeEvent), transfer.matchCompleted)
             },
         )
     }
@@ -477,11 +477,11 @@ class HistoryRecordingPersistenceMapper(
                 HistoryRecordingTerminal(
                     terminal.endedAtEpochMillis,
                     terminal.completed,
-                    Uuid.parse(terminal.tableId),
+                    Uuid.parse(terminal.venueId),
                 )
             },
             transfersByMatchId = dto.transfersByMatchId.mapKeys { Uuid.parse(it.key) }.mapValues { (_, transfer) ->
-                HistoryRecordingTransfer(Uuid.parse(transfer.tableId), transfer.lastAcceptedBatch.map(::decodeEvent), transfer.matchCompleted)
+                HistoryRecordingTransfer(Uuid.parse(transfer.venueId), transfer.lastAcceptedBatch.map(::decodeEvent), transfer.matchCompleted)
             },
         )
     }
@@ -489,7 +489,7 @@ class HistoryRecordingPersistenceMapper(
     /** 將單筆 domain 事件轉成持久化 DTO。 */
     private fun encodeEvent(event: HistoryOutboxEvent) = HistoryOutboxEventPersistenceDto(
         matchId = event.matchId.toString(),
-        tableId = event.tableId.toString(),
+        venueId = event.venueId.toString(),
         roundNumber = event.roundNumber,
         sequence = event.sequence,
         transactionFirstSequence = event.transactionFirstSequence,
@@ -501,7 +501,7 @@ class HistoryRecordingPersistenceMapper(
     /** 將單筆持久化事件還原成 domain 事件。 */
     private fun decodeEvent(dto: HistoryOutboxEventPersistenceDto) = HistoryOutboxEvent(
         matchId = Uuid.parse(dto.matchId),
-        tableId = Uuid.parse(dto.tableId),
+        venueId = Uuid.parse(dto.venueId),
         roundNumber = dto.roundNumber,
         sequence = dto.sequence,
         transactionFirstSequence = dto.transactionFirstSequence,

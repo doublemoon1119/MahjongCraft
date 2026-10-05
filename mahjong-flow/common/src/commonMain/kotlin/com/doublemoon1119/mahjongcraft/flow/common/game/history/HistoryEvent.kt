@@ -196,8 +196,8 @@ data class HistoryEventDraft(
 /**
  * 保存於權威 outbox、供後續 writer 依場次與序號組成的穩定鍵重試的事件。
  *
- * @property matchId 此次開局的獨立場次 UUID，同桌重開時不同。
- * @property tableId 牌桌 UUID，同桌重開時保持不變。
+ * @property matchId 此次開局的獨立場次 UUID，同一場地重開時不同。
+ * @property venueId 場地 UUID，同一場地重開時保持不變。
  * @property roundNumber 此場次內的局數。
  * @property sequence 此場次內單調遞增的事件序號，從 1 開始。
  * @property transactionFirstSequence 同一權威交易內第一筆事件的序號。
@@ -207,7 +207,7 @@ data class HistoryEventDraft(
  */
 data class HistoryOutboxEvent(
     val matchId: Uuid,
-    val tableId: Uuid,
+    val venueId: Uuid,
     val roundNumber: Int,
     val sequence: Long,
     val transactionFirstSequence: Long = sequence,

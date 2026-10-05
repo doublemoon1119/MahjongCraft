@@ -119,7 +119,7 @@ class LeaveRoomUseCaseTest {
         assertEquals(RoomError.RoomNotFound(roomId), result.error)
     }
 
-    /** 玩家成功離開後應釋放麻將桌歸屬。 */
+    /** 玩家成功離開後應釋放場地歸屬。 */
     @Test
     fun `test leaving room releases player membership`() = runTest {
         val roomRepo = FakeRoomRepository()
@@ -137,6 +137,6 @@ class LeaveRoomUseCaseTest {
         val result = useCase(roomId, guestId)
 
         assertTrue(result is Outcome.Success)
-        assertNull(memberships.getTableId(guestId))
+        assertNull(memberships.getVenueId(guestId))
     }
 }

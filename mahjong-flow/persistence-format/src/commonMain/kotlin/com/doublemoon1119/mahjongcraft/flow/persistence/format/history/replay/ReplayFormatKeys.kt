@@ -26,8 +26,8 @@ internal object ReplayFormatKeys {
     /** 對局識別碼。 */
     const val MATCH = "match"
 
-    /** 牌桌識別碼。 */
-    const val TABLE = "table"
+    /** 場地識別碼。 */
+    const val VENUE = "venue"
 
     /** 對局玩家清單。 */
     const val PLAYERS = "players"

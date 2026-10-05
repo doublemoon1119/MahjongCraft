@@ -202,7 +202,7 @@ object CompactReplayCodec {
             round.transactions += JsonObject(parts)
         }
         val header = linkedMapOf<String, JsonElement>(
-            ReplayFormatKeys.MATCH to JsonPrimitive(first.matchId.toString()), ReplayFormatKeys.TABLE to JsonPrimitive(first.tableId.toString()),
+            ReplayFormatKeys.MATCH to JsonPrimitive(first.matchId.toString()), ReplayFormatKeys.VENUE to JsonPrimitive(first.venueId.toString()),
             ReplayFormatKeys.PLAYERS to JsonArray(players), ReplayFormatKeys.RULE to checkNotNull(ruleConfig), ReplayFormatKeys.FLOW to checkNotNull(flowConfig),
             ReplayFormatKeys.TYPES to JsonArray(typeDictionary.values.toList()), ReplayFormatKeys.TIME to JsonPrimitive(first.occurredAtEpochMillis),
             ReplayFormatKeys.PATCH_PATHS to JsonArray(patchPaths.keys.map(::JsonArray)), ReplayFormatKeys.FACT_TYPES to JsonArray(factTypes.keys.map(::JsonPrimitive)),
@@ -351,8 +351,8 @@ object CompactReplayCodec {
         require(events.zipWithNext().all { (before, after) -> before.sequence + 1L == after.sequence }) {
             "Replay event sequence is not contiguous"
         }
-        require(events.all { it.matchId == events.first().matchId && it.tableId == events.first().tableId }) {
-            "Replay events must belong to one match and table"
+        require(events.all { it.matchId == events.first().matchId && it.venueId == events.first().venueId }) {
+            "Replay events must belong to one match and venue"
         }
         var transactionStart = 0L
         var transactionTime = Long.MIN_VALUE

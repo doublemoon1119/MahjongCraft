@@ -53,7 +53,7 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
     /** 依對局 Uuid 紀錄最後一次收到的牌牆結構隨附桌況資料。 */
     private val wallStructureContexts = mutableMapOf<Uuid, WallStructureContext>()
 
-    /** 依對局 Uuid 紀錄收到桌上物件更新通知的次數。 */
+    /** 依對局 Uuid 紀錄收到規則狀態更新通知的次數。 */
     private val ruleStateUpdateCounts = mutableMapOf<Uuid, Int>()
 
     /** 依對局 Uuid 紀錄最後一次收到的局況更新快照。 */
@@ -218,7 +218,7 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
     /** 取得指定對局最後一次收到的牌牆結構隨附桌況資料；若無紀錄則回傳 null。 */
     fun getPublishedWallStructureContext(gameId: Uuid): WallStructureContext? = wallStructureContexts[gameId]
 
-    /** 取得指定對局收到桌上物件更新通知的次數；沒有收到過則為 0。 */
+    /** 取得指定對局收到規則狀態更新通知的次數；沒有收到過則為 0。 */
     fun getRuleStateUpdateCount(gameId: Uuid): Int = ruleStateUpdateCounts[gameId] ?: 0
 
     /** 取得指定對局最後一次收到的局況更新快照；若無紀錄則回傳 null。 */

@@ -101,9 +101,9 @@ class AuthoritativeStateRecoveryIntegrationTest {
         )(room.id, joiningPlayerId)
 
         assertIs<Outcome.Success<Unit>>(result)
-        assertEquals(room.id, runtime.memberships.getTableId(hostId))
-        assertEquals(room.id, runtime.memberships.getTableId(existingPlayerId))
-        assertEquals(room.id, runtime.memberships.getTableId(joiningPlayerId))
+        assertEquals(room.id, runtime.memberships.getVenueId(hostId))
+        assertEquals(room.id, runtime.memberships.getVenueId(existingPlayerId))
+        assertEquals(room.id, runtime.memberships.getVenueId(joiningPlayerId))
         assertEquals(room.playerIds + joiningPlayerId, runtime.roomRepository.getRoom(room.id)?.playerIds)
     }
 
@@ -222,7 +222,7 @@ class AuthoritativeStateRecoveryIntegrationTest {
         val action = runtime.aiTurnDriver.resolveNextAction(state.id)
 
         assertEquals(state.currentPlayer.id to GameCommand.Draw, action)
-        assertNull(runtime.memberships.getTableId(state.currentPlayer.id))
+        assertNull(runtime.memberships.getVenueId(state.currentPlayer.id))
         assertEquals(RandomAiStrategy.KEY, runtime.gameRepository.getTableState(state.id)?.currentPlayer?.aiStrategyKey)
     }
 

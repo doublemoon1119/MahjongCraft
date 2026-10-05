@@ -53,7 +53,7 @@ data class HistoryRecordingState(
         val appended = acceptedDrafts.mapIndexed { index, draft ->
             HistoryOutboxEvent(
                 matchId = game.matchId,
-                tableId = game.id,
+                venueId = game.id,
                 roundNumber = game.tableState.roundNumber,
                 sequence = nextSequence + index,
                 transactionFirstSequence = nextSequence,

@@ -264,7 +264,7 @@ class FabricDebugDecisionCommand(
         }
         scope.launch {
             val playerId = player.uuid.toKotlinUuid()
-            val tableId = membershipRepository.getTableId(playerId)
+            val tableId = membershipRepository.getVenueId(playerId)
             val pending = tableId?.let { gameRepository.getGame(it)?.pendingRoundPreparation }
             val input = pending?.inputSpecsByPlayerId?.get(playerId)
             if (input != null && playerId !in pending.submissionsByPlayerId) {

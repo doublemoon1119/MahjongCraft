@@ -57,7 +57,7 @@ class GameRepositoryImpl(
         AuthoritativeStateUpdate(
             state.copy(games = games),
             result,
-            historyDraftsByTableId = if (drafts.isEmpty()) emptyMap() else mapOf(gameId to drafts),
+            historyDraftsByVenueId = if (drafts.isEmpty()) emptyMap() else mapOf(gameId to drafts),
             historyRecordingFailures = if (recording.isFailure) setOf(gameId) else emptySet(),
         )
     }

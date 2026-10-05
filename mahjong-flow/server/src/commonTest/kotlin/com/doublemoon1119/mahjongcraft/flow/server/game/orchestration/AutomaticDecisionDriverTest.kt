@@ -234,7 +234,7 @@ class AutomaticDecisionDriverTest {
         Tile.Numeric(Tile.Suit.Bamboo, 3),
     ).map(FakeIdentifiedTileFactory::create)
 
-    /** 以這一桌的權威狀態與啟用控制建立 driver。 */
+    /** 以這場對局的權威狀態與啟用控制建立 driver。 */
     private suspend fun createDriver(
         state: TableState,
         enabledControlIds: Map<Uuid, Set<String>>,

@@ -100,7 +100,7 @@ class StartGameUseCase(
                                 ),
                         ),
                         result = Outcome.Success(StartGameOutcome(organizedResult, dealOrderHandTileIdsBySeatIndex)),
-                        historyDraftsByTableId = mapOf(
+                        historyDraftsByVenueId = mapOf(
                             roomId to listOf(
                                 HistoryEventDraft(
                                     actorPlayerId = null,
@@ -125,7 +125,7 @@ class StartGameUseCase(
 
         // 3. 廣播「對局已開始」事件
         val seatedPlayerIds = tableState.players.map { it.id }
-        eventPublisher.publishToTable(roomId, seatedPlayerIds, operatorId, GameAction.GameStarted)
+        eventPublisher.publishToAllObservers(roomId, seatedPlayerIds, operatorId, GameAction.GameStarted)
 
         // 4. 觸發平台呈現層：規則不支援開門流程時皆為 null，直接跳過。牌牆先建、骰子後擲——真實麻將
         // 是先砌好牌牆才擲骰決定開門位置，呈現層依賴這個固定呼叫順序（先牌牆、後擲骰），這裡不能對調。
@@ -148,9 +148,9 @@ class StartGameUseCase(
             presentationPublisher.publishDiceRoll(roomId, diceRoll, dealerSeatIndex, tableState.roundNumber, tableState.comboCount)
             // 廣播擲骰點數本身；跟第 3 步的 GameStarted 是兩則獨立事件，讓客戶端不用從 GameStarted
             // 的快照反推點數（快照本來就不帶開門用的擲骰資料）。
-            eventPublisher.publishToTable(roomId, seatedPlayerIds, operatorId, GameAction.DiceRolled(diceRoll))
+            eventPublisher.publishToAllObservers(roomId, seatedPlayerIds, operatorId, GameAction.DiceRolled(diceRoll))
         }
-        // 桌上由規則擺放的物件跟牌牆同時更新，緊接在 publishWallStructure 之後呼叫；開局時也要呼叫，
+        // 規則狀態的呈現跟牌牆同時更新，緊接在 publishWallStructure 之後呼叫；開局時也要呼叫，
         // 確保上一場殘留的物件被清乾淨。
         presentationPublisher.publishRuleStateUpdated(roomId)
         presentationPublisher.publishRoundInfoUpdated(roomId, tableState)

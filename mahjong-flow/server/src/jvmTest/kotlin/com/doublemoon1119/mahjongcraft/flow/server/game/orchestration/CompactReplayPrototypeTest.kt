@@ -338,7 +338,7 @@ class CompactReplayPrototypeTest {
                 assertEquals(expectedSequence++, event.sequence, "Event gap must be explicit, not silently collapsed")
                 reconstructedEvents++
                 assertEquals(first.matchId, event.matchId)
-                assertEquals(first.tableId, event.tableId)
+                assertEquals(first.venueId, event.venueId)
                 val fact = event.fact
                 val factJson = encodedEvent.getValue("fact") as JsonObject
                 when (fact) {
@@ -432,7 +432,7 @@ class CompactReplayPrototypeTest {
         }
         val headerFields = mutableMapOf<String, JsonElement>(
             "match" to JsonPrimitive(first.matchId.toString()),
-            "table" to JsonPrimitive(first.tableId.toString()),
+            "venue" to JsonPrimitive(first.venueId.toString()),
             "players" to JsonArray(players),
             "rule" to checkNotNull(ruleConfig),
             "flow" to checkNotNull(flowConfig),

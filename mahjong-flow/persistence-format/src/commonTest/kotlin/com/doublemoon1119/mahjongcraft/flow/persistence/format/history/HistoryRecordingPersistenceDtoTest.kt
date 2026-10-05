@@ -38,7 +38,7 @@ class HistoryRecordingPersistenceDtoTest {
         assertEquals(state, mapper.decode(mapper.encode(state)))
     }
 
-    /** 終局 metadata 的牌桌 UUID 無法解析時必須拒絕資料。 */
+    /** 終局 metadata 的場地 UUID 無法解析時必須拒絕資料。 */
     @Test
     fun `malformed terminal table ID fails decoding`() {
         val dto = HistoryRecordingPersistenceDto(
@@ -63,7 +63,7 @@ class HistoryRecordingPersistenceDtoTest {
             pendingEvents = listOf(
                 HistoryOutboxEvent(
                     matchId = matchId,
-                    tableId = Uuid.random(),
+                    venueId = Uuid.random(),
                     roundNumber = 1,
                     sequence = 1L,
                     occurredAtEpochMillis = 1L,
@@ -91,13 +91,13 @@ class HistoryRecordingPersistenceDtoTest {
     @Test
     fun `history recording state round trips through mapper`() {
         val matchId = Uuid.random()
-        val tableId = Uuid.random()
+        val venueId = Uuid.random()
         val state = HistoryRecordingState(
             nextSequenceByMatchId = mapOf(matchId to 4L),
             pendingEvents = listOf(
                 HistoryOutboxEvent(
                     matchId = matchId,
-                    tableId = tableId,
+                    venueId = venueId,
                     roundNumber = 1,
                     sequence = 3L,
                     occurredAtEpochMillis = 123L,
@@ -141,13 +141,13 @@ class HistoryRecordingPersistenceDtoTest {
     @Test
     fun `undecodable history event leaves a checkpoint gap`() {
         val matchId = Uuid.random()
-        val tableId = Uuid.random()
+        val venueId = Uuid.random()
         val dto = HistoryRecordingPersistenceDto(
             nextSequenceByMatchId = mapOf(matchId.toString() to 3L),
             pendingEvents = listOf(
                 HistoryOutboxEventPersistenceDto(
                     matchId.toString(),
-                    tableId.toString(),
+                    venueId.toString(),
                     1,
                     1L,
                     123L,
@@ -156,7 +156,7 @@ class HistoryRecordingPersistenceDtoTest {
                 ),
                 HistoryOutboxEventPersistenceDto(
                     matchId.toString(),
-                    tableId.toString(),
+                    venueId.toString(),
                     1,
                     2L,
                     124L,

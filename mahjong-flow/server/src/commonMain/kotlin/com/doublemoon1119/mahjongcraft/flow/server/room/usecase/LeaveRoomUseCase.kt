@@ -18,7 +18,7 @@ import kotlin.uuid.Uuid
  * 負責處理玩家主動退出或斷線時的房間狀態更新。若房主離開，則執行房間解散邏輯。
  *
  * @property roomRepository 權威房間數據倉庫。
- * @property membershipRepository 玩家唯一麻將桌歸屬倉庫。
+ * @property membershipRepository 玩家唯一場地歸屬倉庫。
  * @property snapshotRepository 房間快照數據倉庫。
  * @property eventPublisher 房間通知服務。
  */

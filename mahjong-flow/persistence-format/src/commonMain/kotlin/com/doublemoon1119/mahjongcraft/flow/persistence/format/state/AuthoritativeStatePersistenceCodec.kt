@@ -13,8 +13,8 @@ import kotlin.uuid.Uuid
 /**
  * 解碼並驗證後的伺服器權威狀態。
  *
- * @property rooms 以桌子 UUID 索引的等待階段狀態。
- * @property games 以桌子 UUID 索引的進行中狀態。
+ * @property rooms 以場地 UUID 索引的等待階段狀態。
+ * @property games 以場地 UUID 索引的進行中狀態。
  * @property historyRecordingState 待寫歷史與重試 checkpoint。
  */
 data class DecodedAuthoritativeState(

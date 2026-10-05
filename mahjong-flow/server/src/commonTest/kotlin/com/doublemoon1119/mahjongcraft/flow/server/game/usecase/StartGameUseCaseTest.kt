@@ -173,7 +173,7 @@ class StartGameUseCaseTest {
         assertTrue(wallContext.isNewOpening)
     }
 
-    /** 驗證開局時通知平台更新一次桌上由規則擺放的物件。 */
+    /** 驗證開局時通知平台一次規則狀態更新。 */
     @Test
     fun `test start game publishes table props update once`() = runTest {
         val fixtures = Fixtures()

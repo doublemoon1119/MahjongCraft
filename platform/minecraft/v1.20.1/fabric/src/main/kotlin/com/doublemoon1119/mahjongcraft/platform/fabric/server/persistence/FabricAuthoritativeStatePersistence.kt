@@ -36,7 +36,7 @@ class FabricAuthoritativeStatePersistence(
                 logger.warn(
                     "Skipped restoring membership for player {} because saved state references multiple tables: {}",
                     conflict.playerId,
-                    conflict.tableIds,
+                    conflict.venueIds,
                 )
             }
             store.setDirtyListener(state::update)

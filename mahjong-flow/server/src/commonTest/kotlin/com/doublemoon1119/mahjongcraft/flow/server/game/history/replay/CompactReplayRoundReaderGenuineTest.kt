@@ -102,7 +102,7 @@ class CompactReplayRoundReaderGenuineTest {
         val fixture = fixture()
         val events = assertIs<ReplayReadResult.Success<HistoryRoundEvents>>(reader().readEvents(fixture.document, fixture.matchId, 1, 0, 20)).value
         assertEquals(fixture.matchId, events.identity.matchId)
-        assertEquals(fixture.table.id, events.identity.tableId)
+        assertEquals(fixture.table.id, events.identity.venueId)
         val seats = fixture.table.players.sortedBy { it.initialSeatIndex }
         assertEquals(seats.map { it.id }, events.identity.players.map { it.playerId })
         assertEquals(seats.map { it.initialSeatIndex }, events.identity.players.map { it.initialSeatIndex })
@@ -485,13 +485,13 @@ class CompactReplayRoundReaderGenuineTest {
 
     /** 建立正式編碼器需要的有序歷史事件。
      * @param matchId 對局識別碼。
-     * @param tableId 牌桌識別碼。
+     * @param venueId 場地識別碼。
      * @param sequence 事件與交易序號。
      * @param time 保存時間。
      * @param fact 語意事實。
      * @return 同局有序事件。
      */
-    private fun event(matchId: Uuid, tableId: Uuid, sequence: Long, time: Long, fact: HistoryFact) = HistoryOutboxEvent(matchId, tableId, 1, sequence, sequence, time, null, fact)
+    private fun event(matchId: Uuid, venueId: Uuid, sequence: Long, time: Long, fact: HistoryFact) = HistoryOutboxEvent(matchId, venueId, 1, sequence, sequence, time, null, fact)
 
     /** 在正式文件中故意破壞初始投影，保留其他字典與交易資料。
      * @param document 正式文件。

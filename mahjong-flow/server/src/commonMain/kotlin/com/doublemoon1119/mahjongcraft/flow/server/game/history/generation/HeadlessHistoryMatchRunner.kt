@@ -55,7 +55,7 @@ data class HeadlessHistoryRunLimits(
  * @property snapshot 來源已提交的權威快照。
  * @property game 目前來源對局；返回房間後為 null。
  * @property matchId 整場識別碼。
- * @property tableId 隔離牌桌識別碼。
+ * @property venueId 隔離場地識別碼。
  * @property terminal 僅在返回房間且所有事件已確認後為 true。
  * @property events 本批完整權威交易；終點批次為空。
  */
@@ -63,7 +63,7 @@ data class HeadlessHistoryProgress(
     val snapshot: AuthoritativeStateSnapshot,
     val game: Game?,
     val matchId: Uuid,
-    val tableId: Uuid,
+    val venueId: Uuid,
     val terminal: Boolean,
     val events: List<HistoryOutboxEvent>,
 )
@@ -76,8 +76,8 @@ interface HeadlessHistoryMatchRuntime {
     /** 隔離的權威來源儲存。 */
     val store: AuthoritativeStateStore
 
-    /** 來源牌桌識別碼。 */
-    val tableId: Uuid
+    /** 來源場地識別碼。 */
+    val venueId: Uuid
 
     /**
      * 取得初始化時固定的整場識別碼。
@@ -133,7 +133,7 @@ class HeadlessHistoryMatchRunner(
                     check(batch.size <= limits.maxTransferBatchSize) { "A history transaction exceeds the transfer batch limit" }
                     check(batch.first().sequence == firstTransaction) { "History source transaction is incomplete" }
                     withTimeout(limits.transferWaitTimeout) {
-                        emit(HeadlessHistoryProgress(snapshot, runtime.currentGame(), matchId, runtime.tableId, false, batch))
+                        emit(HeadlessHistoryProgress(snapshot, runtime.currentGame(), matchId, runtime.venueId, false, batch))
                     }
                     val remaining = runtime.store.snapshot().historyRecordingState.pendingEvents
                     val ids = batch.mapTo(mutableSetOf()) { it.matchId to it.sequence }
@@ -145,7 +145,7 @@ class HeadlessHistoryMatchRunner(
                 if (runtime.currentGame() == null) {
                     check(recording.terminalByMatchId[matchId]?.completed == true) { "History source has no completed terminal evidence" }
                     withTimeout(limits.transferWaitTimeout) {
-                        emit(HeadlessHistoryProgress(snapshot, null, matchId, runtime.tableId, true, emptyList()))
+                        emit(HeadlessHistoryProgress(snapshot, null, matchId, runtime.venueId, true, emptyList()))
                     }
                     break
                 }

@@ -111,7 +111,7 @@ class HistoryRecordingPolicyTest {
         assertEquals(HistoryRecordingDecision.RECORDING, store.snapshot().historyRecordingState.decisionsByMatchId[game.matchId])
     }
 
-    /** 同一牌桌承載新的 match ID 時，新的對局重新依政策判定。 */
+    /** 同一場地承載新的 match ID 時，新的對局重新依政策判定。 */
     @Test
     fun `new match on the same table is evaluated again`() = runTest {
         val store = AuthoritativeStateStore(historyRecordingEnabled = true)
@@ -247,7 +247,7 @@ class HistoryRecordingPolicyTest {
             AuthoritativeStateUpdate(
                 snapshot.copy(games = emptyMap()),
                 Unit,
-                historyDraftsByTableId = mapOf(game.id to listOf(HistoryEventDraft(null, HistoryFact.ReturnedToRoom))),
+                historyDraftsByVenueId = mapOf(game.id to listOf(HistoryEventDraft(null, HistoryFact.ReturnedToRoom))),
             )
         }
 

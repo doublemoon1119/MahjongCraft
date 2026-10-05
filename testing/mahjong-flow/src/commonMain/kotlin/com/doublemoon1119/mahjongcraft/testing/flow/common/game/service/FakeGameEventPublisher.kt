@@ -23,7 +23,7 @@ class FakeGameEventPublisher : GameEventPublisher {
     }
 
     /** 測試替身沒有旁觀者名單，單純逐一轉呼叫 [publish]，行為等同呼叫端自己迴圈呼叫 [seatedPlayerIds]。 */
-    override suspend fun publishToTable(gameId: Uuid, seatedPlayerIds: Collection<Uuid>, actorId: Uuid, action: GameAction) {
+    override suspend fun publishToAllObservers(gameId: Uuid, seatedPlayerIds: Collection<Uuid>, actorId: Uuid, action: GameAction) {
         seatedPlayerIds.forEach { targetPlayerId -> publish(gameId, targetPlayerId, actorId, action) }
     }
 

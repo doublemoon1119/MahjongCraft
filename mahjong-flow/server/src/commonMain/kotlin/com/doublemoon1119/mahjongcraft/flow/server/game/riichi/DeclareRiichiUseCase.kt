@@ -219,10 +219,10 @@ class DeclareRiichiUseCase(
 
         // 3. 通知在場玩家與旁觀者：先廣播立直宣告，再廣播這張牌的捨牌事件，流局有觸發時接著廣播流局事件
         val seatedPlayerIds = newState.players.map { it.id }
-        eventPublisher.publishToTable(gameId, seatedPlayerIds, playerId, RIICHI_GAME_ACTION)
-        eventPublisher.publishToTable(gameId, seatedPlayerIds, playerId, GameAction.Discard(tileId))
+        eventPublisher.publishToAllObservers(gameId, seatedPlayerIds, playerId, RIICHI_GAME_ACTION)
+        eventPublisher.publishToAllObservers(gameId, seatedPlayerIds, playerId, GameAction.Discard(tileId))
         result.abortiveDrawReason?.let { reason ->
-            eventPublisher.publishToTable(gameId, seatedPlayerIds, playerId, GameAction.ExhaustiveDraw(reason))
+            eventPublisher.publishToAllObservers(gameId, seatedPlayerIds, playerId, GameAction.ExhaustiveDraw(reason))
         }
 
         // 4. 觸發平台呈現層：重新排列立牌列、並把立直宣告牌移到牌河（橫放標記）——立直宣告本質上也是
@@ -248,7 +248,7 @@ class DeclareRiichiUseCase(
         // 5. 宣告成立後立直棒要出現在桌上，通知平台依目前桌況更新桌上物件。
         presentationPublisher.publishRuleStateUpdated(gameId)
 
-        // 6. 通知平台呈現層更新桌面局況顯示——立直宣告當下供託支數馬上 +1，若不在這裡也更新一次，
+        // 6. 通知平台呈現層更新局況資訊——立直宣告當下供託支數馬上 +1，若不在這裡也更新一次，
         // 顯示要等到下一次摸牌才會跟著變，體驗不一致。
         presentationPublisher.publishRoundInfoUpdated(gameId, newState)
         presentationPublisher.publishGameActionDeclared(gameId, playerId, RIICHI_GAME_ACTION)

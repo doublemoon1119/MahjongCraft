@@ -106,7 +106,7 @@ class HistoryResultProjectorTest {
     /** 建立測試用歷史事件。 */
     private fun event(matchId: Uuid, sequence: Long, fact: HistoryFact): HistoryOutboxEvent = HistoryOutboxEvent(
         matchId = matchId,
-        tableId = Uuid.random(),
+        venueId = Uuid.random(),
         roundNumber = 1,
         sequence = sequence,
         occurredAtEpochMillis = sequence,

@@ -33,7 +33,7 @@ class DebugPlayerTableScopeTest {
             AuthoritativeStateUpdate(
                 state = state.copy(games = state.games + (game.id to game)),
                 result = Unit,
-                historyDraftsByTableId = mapOf(
+                historyDraftsByVenueId = mapOf(
                     game.id to listOf(HistoryEventDraft(null, HistoryFact.MatchStarted(tableState, game.flowConfig))),
                 ),
             )

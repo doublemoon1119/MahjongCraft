@@ -44,7 +44,7 @@ class WinRoundContinuationTest {
         assertFailsWith<IllegalArgumentException> { directive.applyTo(state) }
     }
 
-    /** `newlyFinishedPlayerIds` 內含不屬於本桌的玩家應拋出例外。 */
+    /** `newlyFinishedPlayerIds` 內含不屬於這場對局的玩家應拋出例外。 */
     @Test
     fun `applyTo rejects a player not on the table`() {
         val state = FakeTableStateFactory.create(players = fourPlayers, currentPlayerIndex = 0)
@@ -87,7 +87,7 @@ class WinRoundContinuationTest {
         assertFailsWith<IllegalArgumentException> { directive.applyTo(state) }
     }
 
-    /** `nextPlayerId` 若不屬於本桌應拋出例外。 */
+    /** `nextPlayerId` 若不屬於這場對局應拋出例外。 */
     @Test
     fun `applyTo rejects a nextPlayerId not on the table`() {
         val state = FakeTableStateFactory.create(players = fourPlayers, currentPlayerIndex = 0)

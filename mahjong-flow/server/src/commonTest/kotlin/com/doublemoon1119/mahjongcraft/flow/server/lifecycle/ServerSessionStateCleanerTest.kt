@@ -85,7 +85,7 @@ class ServerSessionStateCleanerTest {
         assertNull(gameSnapshots.getSnapshot(game.id, observerId))
         assertTrue(roomSnapshots.getAllObservers(room.id).isEmpty())
         assertTrue(gameSnapshots.getAllObservers(game.id).isEmpty())
-        assertNull(memberships.getTableId(observerId))
+        assertNull(memberships.getVenueId(observerId))
         assertFalse(store.isDirty())
     }
 }

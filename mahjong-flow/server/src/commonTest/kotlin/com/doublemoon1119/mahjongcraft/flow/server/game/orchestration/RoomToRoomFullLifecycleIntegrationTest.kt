@@ -289,13 +289,13 @@ class RoomToRoomFullLifecycleIntegrationTest {
 
         // 打完整場東風戰（4 局，含可能的連莊）——房主是真人身分（不是 AI），driveAutomatedPlayers
         // 不會替他行動，這裡用 playFullMatch 額外替房主套用跟 AI 完全相同的固定決策邏輯，交錯呼叫
-        // driveAutomatedPlayers（推進 3 個 AI）與房主自己的回合，直到整場對局結束、桌子真的退回房間。
+        // driveAutomatedPlayers（推進 3 個 AI）與房主自己的回合，直到整場對局結束、場地真的退回房間。
         fixtures.playFullMatch(gameId, hostId)
         recordMatch?.invoke(fixtures.store.snapshot().historyRecordingState.pendingEvents.filter { it.matchId == firstMatchId })
 
         assertNull(fixtures.store.getGame(gameId), "Game record must be removed once the match ends.")
         val roomAfterMatch = fixtures.store.getRoom(roomId)
-        assertNotNull(roomAfterMatch, "Table must become a Room again once the match ends.")
+        assertNotNull(roomAfterMatch, "The venue must hold a Room again once the match ends.")
         assertEquals(hostId, roomAfterMatch.hostId, "Original host must be preserved across the round trip.")
         assertEquals(setOf(hostId) + aiIds, roomAfterMatch.playerIds.toSet(), "All 4 original players must still be seated in the room.")
         assertEquals(aiIds, roomAfterMatch.readyPlayerIds.toSet(), "AI players must stay ready; only the human host isn't auto-readied.")
@@ -303,7 +303,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
 
         // 重新開第二場對局，驗證真的能再打一次，不是卡在某個殘留狀態
         val secondStartResult = fixtures.startGameUseCase(roomId, hostId)
-        assertTrue(secondStartResult is Outcome.Success, "Starting a second game at the same table should succeed: $secondStartResult")
+        assertTrue(secondStartResult is Outcome.Success, "Starting a second game at the same venue should succeed: $secondStartResult")
         val secondGameId = secondStartResult.value
         assertEquals(roomId, secondGameId)
 
@@ -317,12 +317,12 @@ class RoomToRoomFullLifecycleIntegrationTest {
         recordMatch?.invoke(fixtures.store.snapshot().historyRecordingState.pendingEvents.filter { it.matchId == secondMatchId })
 
         assertNull(fixtures.store.getGame(secondGameId), "Second match's game record must also be removed once it ends.")
-        assertNotNull(fixtures.store.getRoom(roomId), "Table must become a Room again after the second match too.")
+        assertNotNull(fixtures.store.getRoom(roomId), "The venue must hold a Room again after the second match too.")
     }
 
     /**
      * 交錯呼叫 [GameFlowCoordinator.driveAutomatedPlayers]（推進所有 AI 玩家）與 [driveHostTurn]
-     * （替真人房主套用跟 AI 完全相同的固定決策邏輯），直到整場對局結束、桌子從 Game 轉回 Room 為止。
+     * （替真人房主套用跟 AI 完全相同的固定決策邏輯），直到整場對局結束、場地從 Game 轉回 Room 為止。
      *
      * 房主在 [Fixtures] 這一層是真正的真人身分（不是透過 `AddAiPlayerUseCase` 加入的 AI），
      * `driveAutomatedPlayers` 不會替他行動——這正是端對端測試「真的有一個人類玩家」這件事，不能

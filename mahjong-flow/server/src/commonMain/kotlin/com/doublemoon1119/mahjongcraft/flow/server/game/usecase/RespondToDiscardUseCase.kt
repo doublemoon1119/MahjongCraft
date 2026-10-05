@@ -225,9 +225,9 @@ class RespondToDiscardUseCase(
         snapshotSynchronizer.syncAll(gameId)
 
         val seatedPlayerIds = newState.players.map { it.id }
-        eventPublisher.publishToTable(gameId, seatedPlayerIds, playerId, action)
+        eventPublisher.publishToAllObservers(gameId, seatedPlayerIds, playerId, action)
         result.abortiveDrawReason?.let { reason ->
-            eventPublisher.publishToTable(
+            eventPublisher.publishToAllObservers(
                 gameId,
                 seatedPlayerIds,
                 requireNotNull(result.abortiveDrawActorId),
@@ -235,7 +235,7 @@ class RespondToDiscardUseCase(
             )
         }
         if (result.supplementalDrawHappened) {
-            eventPublisher.publishToTable(gameId, seatedPlayerIds, playerId, GameAction.Draw)
+            eventPublisher.publishToAllObservers(gameId, seatedPlayerIds, playerId, GameAction.Draw)
             val module = moduleRegistry.getModule(newState.config)
             presentationPublisher.publishRoundInfoUpdated(gameId, newState)
         }

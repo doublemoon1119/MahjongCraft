@@ -67,14 +67,14 @@ class AuthoritativeStatePersistenceDtoTest {
         assertEquals(games.map(TableState::id).toSet(), restored.toGames().keys)
     }
 
-    /** 驗證 Room 轉成 Game 後，相同桌子 ID 只存在於 Game 集合。 */
+    /** 驗證 Room 轉成 Game 後，相同場地 ID 只存在於 Game 集合。 */
     @Test
     fun `room to game transition leaves only game state`() {
-        val tableId = Uuid.random()
-        val state = createState(emptyList(), listOf(createGame(tableId)))
+        val venueId = Uuid.random()
+        val state = createState(emptyList(), listOf(createGame(venueId)))
 
         assertTrue(state.rooms.isEmpty())
-        assertEquals(setOf(tableId.toString()), state.games.keys)
+        assertEquals(setOf(venueId.toString()), state.games.keys)
     }
 
     /** 驗證輸入集合中的重複 Room ID 不會被 map 轉換靜默覆蓋。 */
@@ -124,18 +124,18 @@ class AuthoritativeStatePersistenceDtoTest {
         }
     }
 
-    /** 驗證相同桌子 ID 不可同時存在於 Room 與 Game。 */
+    /** 驗證相同場地 ID 不可同時存在於 Room 與 Game。 */
     @Test
-    fun `same table ID cannot be both room and game`() {
-        val tableId = Uuid.random()
-        val roomDto = createState(listOf(createRoom(tableId)), emptyList()).rooms.getValue(tableId.toString())
-        val gameState = createState(emptyList(), listOf(createGame(tableId)))
-        val gameDto = gameState.games.getValue(tableId.toString())
+    fun `same venue ID cannot be both room and game`() {
+        val venueId = Uuid.random()
+        val roomDto = createState(listOf(createRoom(venueId)), emptyList()).rooms.getValue(venueId.toString())
+        val gameState = createState(emptyList(), listOf(createGame(venueId)))
+        val gameDto = gameState.games.getValue(venueId.toString())
 
         assertFailsWith<IllegalArgumentException> {
             AuthoritativeStatePersistenceDto(
-                rooms = mapOf(tableId.toString() to roomDto),
-                games = mapOf(tableId.toString() to gameDto),
+                rooms = mapOf(venueId.toString() to roomDto),
+                games = mapOf(venueId.toString() to gameDto),
                 gameFlowConfigs = gameState.gameFlowConfigs,
                 gameRuntimeStates = gameState.gameRuntimeStates,
             )

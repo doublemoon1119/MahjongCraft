@@ -33,13 +33,13 @@ class AuthoritativeHistoryRetentionTest {
         )
         store.update { state -> AuthoritativeStateUpdate(state.copy(games = emptyMap()), Unit) }
         val terminal = store.snapshot().historyRecordingState.terminalByMatchId[game.matchId]
-        assertEquals(table.id, terminal?.tableId)
+        assertEquals(table.id, terminal?.venueId)
         val loaded = AuthoritativeStateStore()
         loaded.load(AuthoritativeStateSnapshot())
         assertTrue(loaded.snapshot().historyRecordingState.terminalByMatchId.isEmpty())
     }
 
-    /** 確認同桌替換場次時，舊場次終點仍被保存。 */
+    /** 確認同一場地替換場次時，舊場次終點仍被保存。 */
     @Test
     fun `same table match replacement records old terminal`() = runTest {
         val table = FakeTableStateFactory.create()
@@ -53,7 +53,7 @@ class AuthoritativeHistoryRetentionTest {
             ),
         )
         store.update { state -> AuthoritativeStateUpdate(state.copy(games = mapOf(table.id to newGame)), Unit) }
-        assertEquals(table.id, store.snapshot().historyRecordingState.terminalByMatchId[oldGame.matchId]?.tableId)
+        assertEquals(table.id, store.snapshot().historyRecordingState.terminalByMatchId[oldGame.matchId]?.venueId)
     }
 
     /** 確認活動中的 tombstone 證明保留對局與待寫事件，只停止後續追加。 */
@@ -191,7 +191,7 @@ class AuthoritativeHistoryRetentionTest {
             AuthoritativeStateUpdate(
                 state.copy(games = state.games + (game.id to changed)),
                 Unit,
-                historyDraftsByTableId = mapOf(game.id to listOf(HistoryEventDraft(null, HistoryFact.ReturnedToRoom))),
+                historyDraftsByVenueId = mapOf(game.id to listOf(HistoryEventDraft(null, HistoryFact.ReturnedToRoom))),
             )
         }
         store.applyHistoryStorageAvailability(true)
@@ -200,7 +200,7 @@ class AuthoritativeHistoryRetentionTest {
             AuthoritativeStateUpdate(
                 state.copy(games = state.games + (game.id to changed.copy(automaticControlRevision = 1L))),
                 Unit,
-                historyDraftsByTableId = mapOf(game.id to listOf(HistoryEventDraft(null, HistoryFact.ReturnedToRoom))),
+                historyDraftsByVenueId = mapOf(game.id to listOf(HistoryEventDraft(null, HistoryFact.ReturnedToRoom))),
             )
         }
         val after = store.snapshot().historyRecordingState

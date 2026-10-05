@@ -61,7 +61,7 @@ internal suspend fun <T> readAuthorizedHistoryRound(
             val actual = identity(result.value)
             val players = actual.players.map { Triple(it.initialSeatIndex, it.playerId.toString(), it.aiStrategyKey) }
             val expected = metadata.participants.map { Triple(it.seatIndex, it.playerId, it.aiStrategyId) }
-            if (actual.matchId != matchId || actual.tableId.toString() != metadata.tableId || players != expected) {
+            if (actual.matchId != matchId || actual.venueId.toString() != metadata.tableId || players != expected) {
                 historyRoundFailure(HistoryQueryErrorCode.NOT_AVAILABLE)
             } else {
                 HistoryQueryResult.Success(result.value)

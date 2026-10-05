@@ -10,29 +10,29 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 sealed interface RoomActionDto {
-    val tableId: String
+    val venueId: String
 
-    @Serializable data class Create(override val tableId: String) : RoomActionDto
+    @Serializable data class Create(override val venueId: String) : RoomActionDto
 
-    @Serializable data class Join(override val tableId: String) : RoomActionDto
+    @Serializable data class Join(override val venueId: String) : RoomActionDto
 
-    @Serializable data class ToggleReady(override val tableId: String) : RoomActionDto
+    @Serializable data class ToggleReady(override val venueId: String) : RoomActionDto
 
-    @Serializable data class Start(override val tableId: String) : RoomActionDto
+    @Serializable data class Start(override val venueId: String) : RoomActionDto
 
-    @Serializable data class Leave(override val tableId: String) : RoomActionDto
+    @Serializable data class Leave(override val venueId: String) : RoomActionDto
 
-    @Serializable data class Disband(override val tableId: String) : RoomActionDto
+    @Serializable data class Disband(override val venueId: String) : RoomActionDto
 
-    @Serializable data class AddAi(override val tableId: String, val strategyKey: String? = null) : RoomActionDto
+    @Serializable data class AddAi(override val venueId: String, val strategyKey: String? = null) : RoomActionDto
 
     @Serializable data class ChangeAiStrategy(
-        override val tableId: String,
+        override val venueId: String,
         val targetPlayerId: String,
         val strategyKey: String,
     ) : RoomActionDto
 
-    @Serializable data class Kick(override val tableId: String, val targetPlayerId: String) : RoomActionDto
+    @Serializable data class Kick(override val venueId: String, val targetPlayerId: String) : RoomActionDto
 
-    @Serializable data class UpdateConfig(override val tableId: String, val config: GameConfigDto) : RoomActionDto
+    @Serializable data class UpdateConfig(override val venueId: String, val config: GameConfigDto) : RoomActionDto
 }

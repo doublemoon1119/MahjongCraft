@@ -17,7 +17,7 @@ import kotlin.uuid.Uuid
 /**
  * [TableState] 的完整權威 persistence DTO。
  *
- * @property id Game 與實體麻將桌共用的穩定 UUID。
+ * @property id Game 與場地共用的穩定 UUID。
  * @property players 所有玩家的完整權威狀態。
  * @property config 完整且帶穩定 type key 的規則配置。
  * @property tileWall 依原始順序保存的完整牌山。

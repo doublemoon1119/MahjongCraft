@@ -135,7 +135,7 @@ class DeclareAbortiveDrawUseCase(
         snapshotSynchronizer.syncAll(gameId)
 
         // 3. 廣播流局事件；跟 DeclareTsumoUseCase/DeclareRiichiUseCase 一樣，actor 是宣告的玩家本人
-        eventPublisher.publishToTable(gameId, newState.players.map { it.id }, playerId, GameAction.ExhaustiveDraw(result.reason))
+        eventPublisher.publishToAllObservers(gameId, newState.players.map { it.id }, playerId, GameAction.ExhaustiveDraw(result.reason))
 
         return Outcome.Success(Unit)
     }

@@ -48,7 +48,7 @@ class OrphanedTableCleanupServiceTest {
 
         assertEquals(OrphanedTableCleanupResult.REMOVED_ROOM, result)
         assertNull(fixture.roomRepository.getRoom(fixture.tableId))
-        assertNull(fixture.memberships.getTableId(playerId))
+        assertNull(fixture.memberships.getVenueId(playerId))
         assertNull(fixture.roomSnapshots.getSnapshot(fixture.tableId, playerId))
         assertNull(fixture.roomSnapshots.getSnapshot(fixture.tableId, observerId))
         assertNull(fixture.locations.get(fixture.tableId))
@@ -68,7 +68,7 @@ class OrphanedTableCleanupServiceTest {
 
         assertEquals(OrphanedTableCleanupResult.RETAINED, result)
         assertNotNull(fixture.gameRepository.getTableState(fixture.tableId))
-        assertEquals(fixture.tableId, fixture.memberships.getTableId(player.id))
+        assertEquals(fixture.tableId, fixture.memberships.getVenueId(player.id))
         assertNotNull(fixture.gameSnapshots.getSnapshot(fixture.tableId, player.id))
         assertNotNull(fixture.locations.get(fixture.tableId))
     }

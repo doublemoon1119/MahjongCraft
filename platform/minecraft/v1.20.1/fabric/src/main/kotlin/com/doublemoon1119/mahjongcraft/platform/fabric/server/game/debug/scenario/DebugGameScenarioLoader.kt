@@ -65,7 +65,7 @@ class DebugGameScenarioLoader(
     ): DebugGameScenarioLoadResult {
         if (!minecraftEnvironment.isDevelopment) return DebugGameScenarioLoadResult.Rejected("Not a development environment")
         val scenario = registry.get(scenarioId) ?: return DebugGameScenarioLoadResult.Rejected("Unknown scenario: $scenarioId")
-        val tableId = membershipRepository.getTableId(playerId)
+        val tableId = membershipRepository.getVenueId(playerId)
             ?: return DebugGameScenarioLoadResult.Rejected("Player is not in a Mahjong game")
         if (busyTracker.isBusy(tableId)) return DebugGameScenarioLoadResult.Rejected("Table presentation is still busy")
 

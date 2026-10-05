@@ -18,7 +18,7 @@ import kotlin.uuid.Uuid
  * `onStartedTrackingBy`／`onStoppedTrackingBy`），伺服器就會呼叫這裡的 [onStartedObserving]。
  *
  * 這裡只負責把他登記為這場對局的觀察者（寫入 [GameSnapshotRepository]），讓
- * [GameEventPublisher.publishToTable] 之後的每則對局事件也送給他——那裡才是決定「這則通知要送給
+ * [GameEventPublisher.publishToAllObservers] 之後的每則對局事件也送給他——那裡才是決定「這則通知要送給
  * 哪些人」的地方，會把已登記的觀察者一併納入。畫面資料本身由觀察者推送負責，不在這裡送出。
  *
  * 在場玩家（座位上的四人）完全不受這裡影響——他們的快照走既有的右鍵互動桌子流程，這裡看到在場

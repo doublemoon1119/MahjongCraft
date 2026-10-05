@@ -81,7 +81,7 @@ class GameActionCandidateResolver(
 
     /** 以同一次 Flow 查詢解析特殊動作候選與一般捨牌分析。 */
     suspend fun resolveActionCandidates(playerId: Uuid): ResolvedGameActionCandidates? {
-        val gameId = membershipRepository.getTableId(playerId) ?: return null
+        val gameId = membershipRepository.getVenueId(playerId) ?: return null
         return resolveActionCandidates(gameId, playerId)
     }
 
@@ -132,7 +132,7 @@ class GameActionCandidateResolver(
 
     /** 以玩家目前的房間歸屬解析目標桌況；不在任何桌子或桌況不是對局時回傳 null。 */
     private suspend fun resolveTableState(playerId: Uuid): TableState? {
-        val gameId = membershipRepository.getTableId(playerId) ?: return null
+        val gameId = membershipRepository.getVenueId(playerId) ?: return null
         return gameRepository.getTableState(gameId)
     }
 }

@@ -74,7 +74,7 @@ class HistoryQueryDtosTest {
             state = HistoryRoundStateDto(
                 identity = HistoryReplayIdentityDto(
                     matchId = Uuid.random().toString(),
-                    tableId = Uuid.random().toString(),
+                    venueId = Uuid.random().toString(),
                     players = listOf(HistoryReplayPlayerIdentityDto(0, Uuid.random().toString(), null)),
                 ),
                 roundNumber = 1,

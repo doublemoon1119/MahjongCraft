@@ -15,7 +15,7 @@ import kotlin.uuid.Uuid
 /**
  * 等待階段 [Room] 的完整權威 persistence DTO。
  *
- * @property id Room 與實體麻將桌共用的穩定 UUID。
+ * @property id Room 與場地共用的穩定 UUID。
  * @property hostId 房主玩家 UUID。
  * @property config 完整且帶穩定 type key 的規則配置。
  * @property flowConfig 不影響麻將規則的流程與觀看設定。

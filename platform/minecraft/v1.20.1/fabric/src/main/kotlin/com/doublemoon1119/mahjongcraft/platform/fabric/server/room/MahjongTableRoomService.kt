@@ -89,7 +89,7 @@ class MahjongTableRoomService(
 ) {
     /** 將 RoomScreen 的強型別操作路由到既有權威 use case；封包中的玩家身分一律忽略。 */
     fun handleRoomAction(player: ServerPlayerEntity, action: RoomActionDto) {
-        val tableId = runCatching { Uuid.parse(action.tableId) }.getOrNull() ?: return
+        val tableId = runCatching { Uuid.parse(action.venueId) }.getOrNull() ?: return
         when (action) {
             is RoomActionDto.Create -> createFromScreen(tableId, player)
             is RoomActionDto.Join -> joinFromScreen(tableId, player)
@@ -117,7 +117,7 @@ class MahjongTableRoomService(
     private fun withMatchingMembership(player: ServerPlayerEntity, tableId: Uuid, action: (ServerPlayerEntity) -> Unit) {
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
-            if (membershipRepository.getTableId(playerId) == tableId) {
+            if (membershipRepository.getVenueId(playerId) == tableId) {
                 action(player)
             } else {
                 feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.PlayerNotInGame)
@@ -249,7 +249,7 @@ class MahjongTableRoomService(
     private fun leaveFromScreen(tableId: Uuid, player: ServerPlayerEntity) {
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
-            if (membershipRepository.getTableId(playerId) != tableId) {
+            if (membershipRepository.getVenueId(playerId) != tableId) {
                 feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.PlayerNotInGame)
                 return@launch
             }
@@ -346,7 +346,7 @@ class MahjongTableRoomService(
         val tableId = table.tableId
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
-            if (membershipRepository.getTableId(playerId) != tableId) {
+            if (membershipRepository.getVenueId(playerId) != tableId) {
                 feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.PlayerNotInGame)
                 return@launch
             }
@@ -388,7 +388,7 @@ class MahjongTableRoomService(
     fun ready(player: ServerPlayerEntity) {
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
-            val tableId = membershipRepository.getTableId(playerId)
+            val tableId = membershipRepository.getVenueId(playerId)
             if (tableId == null) {
                 feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.PlayerNotInGame)
                 return@launch
@@ -425,7 +425,7 @@ class MahjongTableRoomService(
     fun start(player: ServerPlayerEntity) {
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
-            val tableId = membershipRepository.getTableId(playerId)
+            val tableId = membershipRepository.getVenueId(playerId)
             if (tableId == null) {
                 feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.PlayerNotInGame)
                 return@launch
@@ -480,7 +480,7 @@ class MahjongTableRoomService(
     fun addAi(player: ServerPlayerEntity, strategyKey: String?) {
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
-            val tableId = membershipRepository.getTableId(playerId)
+            val tableId = membershipRepository.getVenueId(playerId)
             if (tableId == null) {
                 feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.PlayerNotInGame)
                 return@launch
@@ -502,7 +502,7 @@ class MahjongTableRoomService(
     fun kick(player: ServerPlayerEntity, targetPlayerId: Uuid) {
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
-            val tableId = membershipRepository.getTableId(playerId)
+            val tableId = membershipRepository.getVenueId(playerId)
             if (tableId == null) {
                 feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.PlayerNotInGame)
                 return@launch
@@ -540,7 +540,7 @@ class MahjongTableRoomService(
     fun changeAiStrategy(player: ServerPlayerEntity, targetAiId: Uuid, strategyKey: String) {
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
-            val tableId = membershipRepository.getTableId(playerId)
+            val tableId = membershipRepository.getVenueId(playerId)
             if (tableId == null) {
                 feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.PlayerNotInGame)
                 return@launch
@@ -570,7 +570,7 @@ class MahjongTableRoomService(
     fun showConfig(player: ServerPlayerEntity) {
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
-            val tableId = membershipRepository.getTableId(playerId)
+            val tableId = membershipRepository.getVenueId(playerId)
             val room = tableId?.let { roomRepository.getRoom(it) }
             if (room == null) {
                 feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.PlayerNotInAnyGame)
@@ -587,7 +587,7 @@ class MahjongTableRoomService(
     fun updateConfig(player: ServerPlayerEntity, newConfig: GameConfig) {
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
-            val tableId = membershipRepository.getTableId(playerId)
+            val tableId = membershipRepository.getVenueId(playerId)
             if (tableId == null) {
                 feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.PlayerNotInGame)
                 return@launch

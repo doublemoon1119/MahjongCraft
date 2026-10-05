@@ -20,7 +20,7 @@ import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
 
 /**
- * 對局結束後把桌子從 Game 轉回 Room 的實例化用例。
+ * 對局結束後把場地從 Game 轉回 Room 的實例化用例。
  *
  * 是 [StartGameUseCase] 的反向操作：在 [AuthoritativeStateStore] 的單次交易內把識別碼從 Game 移回
  * Room，讓玩家能重新使用房間階段的操作（加入／準備／開新局／離開）。呼叫前必須確認[Game.isMatchOver] 已成立——
@@ -76,7 +76,7 @@ class ReturnToRoomUseCase(
                             rooms = state.rooms + (gameId to newRoom),
                         ),
                         result = Outcome.Success(newRoom),
-                        historyDraftsByTableId = mapOf(
+                        historyDraftsByVenueId = mapOf(
                             gameId to listOf(HistoryEventDraft(null, HistoryFact.ReturnedToRoom)),
                         ),
                     )

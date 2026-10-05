@@ -70,7 +70,7 @@ fun HistoryRoundEvents.toDto(): HistoryRoundEventsDto = HistoryRoundEventsDto(
  */
 private fun HistoryReplayIdentity.toDto(): HistoryReplayIdentityDto = HistoryReplayIdentityDto(
     matchId = matchId.toString(),
-    tableId = tableId.toString(),
+    venueId = venueId.toString(),
     players = players.map { HistoryReplayPlayerIdentityDto(it.initialSeatIndex, it.playerId.toString(), it.aiStrategyKey) },
 )
 

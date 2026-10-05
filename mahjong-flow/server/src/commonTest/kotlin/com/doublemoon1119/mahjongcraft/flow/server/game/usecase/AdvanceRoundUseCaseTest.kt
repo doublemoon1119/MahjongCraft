@@ -469,7 +469,7 @@ class AdvanceRoundUseCaseTest {
 
     /**
      * 驗證開新的一局後，所有觀察者的快照皆同步更新、所有玩家皆收到 [GameAction.RoundStarted] 事件通知，
-     * 且平台收到一次桌上物件更新通知。
+     * 且平台收到一次規則狀態更新通知。
      */
     @Test
     fun `test advance round syncs snapshot and notifies all players`() = runTest {

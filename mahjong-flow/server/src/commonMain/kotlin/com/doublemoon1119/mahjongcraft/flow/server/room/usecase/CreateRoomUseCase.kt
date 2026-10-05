@@ -21,7 +21,7 @@ import kotlin.uuid.Uuid
  * 負責處理玩家發起的開房請求，初始化房間狀態並同步至相關觀察者。
  *
  * @property authoritativeStateStore Room 與 Game 共用的權威狀態儲存。
- * @property membershipRepository 玩家唯一麻將桌歸屬倉庫。
+ * @property membershipRepository 玩家唯一場地歸屬倉庫。
  * @property snapshotRepository 房間快照數據倉庫。
  * @property eventPublisher 房間通知服務。
  */
@@ -47,13 +47,13 @@ class CreateRoomUseCase(
         gameConfig: GameConfig,
         hostAiStrategyKey: String? = null,
     ): Outcome<Room, RoomError> {
-        val existingTableId = membershipRepository.getTableId(hostId)
-        if (existingTableId != null && existingTableId != roomId) {
-            return Outcome.Error(RoomError.PlayerAlreadyInAnotherGame(hostId, existingTableId))
+        val existingVenueId = membershipRepository.getVenueId(hostId)
+        if (existingVenueId != null && existingVenueId != roomId) {
+            return Outcome.Error(RoomError.PlayerAlreadyInAnotherGame(hostId, existingVenueId))
         }
         if (!membershipRepository.claim(hostId, roomId)) {
-            val occupiedTableId = checkNotNull(membershipRepository.getTableId(hostId))
-            return Outcome.Error(RoomError.PlayerAlreadyInAnotherGame(hostId, occupiedTableId))
+            val occupiedVenueId = checkNotNull(membershipRepository.getVenueId(hostId))
+            return Outcome.Error(RoomError.PlayerAlreadyInAnotherGame(hostId, occupiedVenueId))
         }
 
         // 1. 在同一筆 store 交易中檢查 Room／Game 並建立 Room，避免巢狀 repository 鎖與競態條件。
@@ -81,7 +81,7 @@ class CreateRoomUseCase(
             }
         }
 
-        if (outcome is Outcome.Error && existingTableId == null) {
+        if (outcome is Outcome.Error && existingVenueId == null) {
             membershipRepository.release(hostId, roomId)
         }
 

@@ -637,7 +637,7 @@ class FabricHistoryOutboxWriter(
         retentionCoordinator.withPolicy {
             val transfers = store.snapshot().historyRecordingState.transfersByMatchId
             transfers.forEach { (id, transfer) ->
-                store.finishHistoryTransfer(id, HistoryRecordingTerminal(Clock.System.now().toEpochMilliseconds(), false, transfer.tableId))
+                store.finishHistoryTransfer(id, HistoryRecordingTerminal(Clock.System.now().toEpochMilliseconds(), false, transfer.venueId))
             }
         }
         cachedStorageSnapshot = null
@@ -786,7 +786,7 @@ class FabricHistoryOutboxWriter(
         retentionCoordinator.withPolicy {
             val transfers = store.snapshot().historyRecordingState.transfersByMatchId
             transfers.forEach { (id, transfer) ->
-                store.finishHistoryTransfer(id, HistoryRecordingTerminal(Clock.System.now().toEpochMilliseconds(), false, transfer.tableId))
+                store.finishHistoryTransfer(id, HistoryRecordingTerminal(Clock.System.now().toEpochMilliseconds(), false, transfer.venueId))
             }
         }
         cachedStorageSnapshot = null
@@ -913,7 +913,7 @@ class FabricHistoryOutboxWriter(
         val recording = store.snapshot().historyRecordingState
         activeDatabase.recordTerminals(
             recording.terminalByMatchId.map { (id, terminal) ->
-                HistoryTerminalRecord(id.toString(), terminal.tableId.toString(), terminal.endedAtEpochMillis, terminal.completed)
+                HistoryTerminalRecord(id.toString(), terminal.venueId.toString(), terminal.endedAtEpochMillis, terminal.completed)
             },
         )
         val stopped = recording.decisionsByMatchId.filterValues {

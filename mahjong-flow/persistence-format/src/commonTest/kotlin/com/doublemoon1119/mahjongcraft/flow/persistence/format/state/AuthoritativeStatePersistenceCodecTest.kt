@@ -40,7 +40,7 @@ class AuthoritativeStatePersistenceCodecTest {
             pendingEvents = listOf(
                 HistoryOutboxEvent(
                     matchId = matchId,
-                    tableId = Uuid.random(),
+                    venueId = Uuid.random(),
                     roundNumber = 1,
                     sequence = 3L,
                     occurredAtEpochMillis = 123L,
@@ -110,13 +110,13 @@ class AuthoritativeStatePersistenceCodecTest {
     /** 驗證 Room → Game 後的 payload 只包含同 ID Game。 */
     @Test
     fun `room to game transition encodes only game state`() {
-        val tableId = Uuid.random()
-        val game = Game(createGame(tableId), GameFlowConfig())
+        val venueId = Uuid.random()
+        val game = Game(createGame(venueId), GameFlowConfig())
 
         val decoded = codec.decode(codec.encode(emptyList(), listOf(game)))
 
         assertTrue(decoded.rooms.isEmpty())
-        assertEquals(mapOf(tableId to game), decoded.games)
+        assertEquals(mapOf(venueId to game), decoded.games)
     }
 
     /** 驗證損壞 JSON 由 codec 在進入 adapter 狀態載入前拒絕。 */

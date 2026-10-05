@@ -215,7 +215,7 @@ class DeclareTsumoUseCase(
         snapshotSynchronizer.syncAll(gameId)
 
         // 3. 通知在場玩家與旁觀者：廣播自摸事件
-        eventPublisher.publishToTable(gameId, newState.players.map { it.id }, playerId, GameAction.Tsumo)
+        eventPublisher.publishToAllObservers(gameId, newState.players.map { it.id }, playerId, GameAction.Tsumo)
         if (result.newlyRevealedTileIds.isNotEmpty()) {
             presentationPublisher.publishWallTilesRevealed(gameId, result.newlyRevealedTileIds)
         }

@@ -5,30 +5,30 @@ import kotlinx.coroutines.sync.withLock
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
-/** 以互斥鎖保護玩家唯一桌子歸屬的記憶體實作。 */
+/** 以互斥鎖保護玩家唯一場地歸屬的記憶體實作。 */
 @Single(binds = [PlayerMembershipRepository::class])
 class PlayerMembershipRepositoryImpl : PlayerMembershipRepository {
-    private val tableIdsByPlayerId = mutableMapOf<Uuid, Uuid>()
+    private val venueIdsByPlayerId = mutableMapOf<Uuid, Uuid>()
     private val mutex = Mutex()
 
-    override suspend fun claim(playerId: Uuid, tableId: Uuid): Boolean = mutex.withLock {
-        val existingTableId = tableIdsByPlayerId[playerId]
-        if (existingTableId != null && existingTableId != tableId) return@withLock false
-        tableIdsByPlayerId[playerId] = tableId
+    override suspend fun claim(playerId: Uuid, venueId: Uuid): Boolean = mutex.withLock {
+        val existingVenueId = venueIdsByPlayerId[playerId]
+        if (existingVenueId != null && existingVenueId != venueId) return@withLock false
+        venueIdsByPlayerId[playerId] = venueId
         true
     }
 
-    override suspend fun getTableId(playerId: Uuid): Uuid? = mutex.withLock { tableIdsByPlayerId[playerId] }
+    override suspend fun getVenueId(playerId: Uuid): Uuid? = mutex.withLock { venueIdsByPlayerId[playerId] }
 
-    override suspend fun release(playerId: Uuid, tableId: Uuid) = mutex.withLock {
-        if (tableIdsByPlayerId[playerId] == tableId) tableIdsByPlayerId.remove(playerId)
+    override suspend fun release(playerId: Uuid, venueId: Uuid) = mutex.withLock {
+        if (venueIdsByPlayerId[playerId] == venueId) venueIdsByPlayerId.remove(playerId)
         Unit
     }
 
-    override suspend fun replaceAll(tableIdsByPlayerId: Map<Uuid, Uuid>) = mutex.withLock {
-        this.tableIdsByPlayerId.clear()
-        this.tableIdsByPlayerId.putAll(tableIdsByPlayerId)
+    override suspend fun replaceAll(venueIdsByPlayerId: Map<Uuid, Uuid>) = mutex.withLock {
+        this.venueIdsByPlayerId.clear()
+        this.venueIdsByPlayerId.putAll(venueIdsByPlayerId)
     }
 
-    override suspend fun clearAll() = mutex.withLock { tableIdsByPlayerId.clear() }
+    override suspend fun clearAll() = mutex.withLock { venueIdsByPlayerId.clear() }
 }

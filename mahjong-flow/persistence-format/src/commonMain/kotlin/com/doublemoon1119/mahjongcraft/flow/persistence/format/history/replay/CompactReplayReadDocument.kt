@@ -55,7 +55,7 @@ internal data class CompactReplayReadDocument(
             require(root.keys == setOf(ReplayFormatKeys.VERSION, ReplayFormatKeys.HEADER, ReplayFormatKeys.ROUNDS)) { "Replay content contains unexpected fields" }
             checkVersion(dictionary.expand(root.getValue(ReplayFormatKeys.VERSION)))
             val header = dictionary.expand(root.getValue(ReplayFormatKeys.HEADER)) as? JsonObject ?: error("Replay header must be an object")
-            require(header.keys == setOf(ReplayFormatKeys.MATCH, ReplayFormatKeys.TABLE, ReplayFormatKeys.PLAYERS, ReplayFormatKeys.RULE, ReplayFormatKeys.FLOW, ReplayFormatKeys.TIME, ReplayFormatKeys.TYPES, ReplayFormatKeys.FACT_TYPES, ReplayFormatKeys.ACTION_TYPES, ReplayFormatKeys.PATCH_PATHS)) { "Replay header contains missing or unexpected fields" }
+            require(header.keys == setOf(ReplayFormatKeys.MATCH, ReplayFormatKeys.VENUE, ReplayFormatKeys.PLAYERS, ReplayFormatKeys.RULE, ReplayFormatKeys.FLOW, ReplayFormatKeys.TIME, ReplayFormatKeys.TYPES, ReplayFormatKeys.FACT_TYPES, ReplayFormatKeys.ACTION_TYPES, ReplayFormatKeys.PATCH_PATHS)) { "Replay header contains missing or unexpected fields" }
             val match = Uuid.parse(string(header.getValue(ReplayFormatKeys.MATCH)))
             require(match == expectedMatchId) { "Replay match ID does not match the request" }
             val playersJson = header.getValue(ReplayFormatKeys.PLAYERS) as? JsonArray ?: error("Replay players must be an array")
@@ -69,7 +69,7 @@ internal data class CompactReplayReadDocument(
                 HistoryReplayPlayerIdentity(index, Uuid.parse(string(player.getValue(ReplaySourceKeys.ID))), ai)
             }
             require(players.map { it.playerId }.distinct().size == players.size) { "Replay contains duplicate players" }
-            val identity = HistoryReplayIdentity(match, Uuid.parse(string(header.getValue(ReplayFormatKeys.TABLE))), players.toList())
+            val identity = HistoryReplayIdentity(match, Uuid.parse(string(header.getValue(ReplayFormatKeys.VENUE))), players.toList())
             val typesJson = header.getValue(ReplayFormatKeys.TYPES) as? JsonArray ?: error("Replay tile dictionary must be an array")
             if (typesJson.size > budget.limits.maxTiles) throw ReplayReadException(ReplayReadError.LIMIT_EXCEEDED)
             val types = typesJson.map {

@@ -28,7 +28,7 @@ class AuthoritativeHistoryTransferTest {
 
         val state = store.snapshot()
         assertTrue(state.games.isEmpty())
-        assertEquals(game.id, state.historyRecordingState.transfersByMatchId.getValue(game.matchId).tableId)
+        assertEquals(game.id, state.historyRecordingState.transfersByMatchId.getValue(game.matchId).venueId)
         assertEquals(HistoryRecordingDecision.RECORDING, state.historyRecordingState.decisionsByMatchId[game.matchId])
     }
 
@@ -48,7 +48,7 @@ class AuthoritativeHistoryTransferTest {
         assertEquals(listOf(batch.single()), store.snapshot().historyRecordingState.pendingEvents)
     }
 
-    /** 非連續序號、錯誤來源場次及跨牌桌事件不得進入轉移。 */
+    /** 非連續序號、錯誤來源場次及跨場地事件不得進入轉移。 */
     @Test
     fun `history transfer rejects jumps and cross identity events`() = runTest {
         val store = AuthoritativeStateStore(historyRecordingEnabled = true)
@@ -99,7 +99,7 @@ class AuthoritativeHistoryTransferTest {
         assertEquals(HistoryRecordingDecision.STOPPED_STORAGE_UNAVAILABLE, storageStopped.snapshot().historyRecordingState.decisionsByMatchId[storageGame.matchId])
     }
 
-    /** 完成轉移必須先接收整場完成與返回牌桌事實。 */
+    /** 完成轉移必須先接收整場完成與返回房間事實。 */
     @Test
     fun `history transfer completion requires match completed and returned`() = runTest {
         val store = AuthoritativeStateStore(historyRecordingEnabled = true)
@@ -136,7 +136,7 @@ class AuthoritativeHistoryTransferTest {
         assertTrue(state.transfersByMatchId.isEmpty())
         assertEquals(HistoryRecordingDecision.STOPPED_TRANSFER_INTERRUPTED, state.decisionsByMatchId[game.matchId])
         assertFalse(state.terminalByMatchId.getValue(game.matchId).completed)
-        assertEquals(game.id, state.terminalByMatchId.getValue(game.matchId).tableId)
+        assertEquals(game.id, state.terminalByMatchId.getValue(game.matchId).venueId)
         assertTrue(restored.isDirty(), "Recovered interruption evidence must be saved.")
     }
 

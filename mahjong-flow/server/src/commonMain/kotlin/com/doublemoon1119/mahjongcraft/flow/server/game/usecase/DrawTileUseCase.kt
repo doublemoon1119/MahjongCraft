@@ -103,7 +103,7 @@ class DrawTileUseCase(
         snapshotSynchronizer.syncAll(gameId)
 
         // 3. 通知在場玩家與旁觀者
-        eventPublisher.publishToTable(gameId, newState.players.map { it.id }, playerId, GameAction.Draw)
+        eventPublisher.publishToAllObservers(gameId, newState.players.map { it.id }, playerId, GameAction.Draw)
 
         // 4. 觸發平台呈現層：把摸到的牌從牌牆移到摸牌位（副露/積棒不受摸牌影響，仍要一併帶上讓手牌
         // 讓開偏移量算得準）；這是真正的摸牌，isNewlyDrawn 傳 true，見
@@ -119,7 +119,7 @@ class DrawTileUseCase(
             drawnPlayer.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles, module.tileOrder) },
             isNewlyDrawn = true,
         )
-        // 牌山剩餘張數每次摸牌都會變，桌面局況顯示要跟著更新——這份呈現是「找到既有的就地更新」
+        // 牌山剩餘張數每次摸牌都會變，局況資訊要跟著更新——這份呈現是「找到既有的就地更新」
         // 模式，沒帶上完整內容就會把之前顯示的內容覆蓋回空清單。
         presentationPublisher.publishRoundInfoUpdated(gameId, newState)
 

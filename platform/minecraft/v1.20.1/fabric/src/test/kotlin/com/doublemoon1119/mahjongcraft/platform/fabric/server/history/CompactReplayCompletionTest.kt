@@ -157,7 +157,7 @@ class CompactReplayCompletionTest {
      */
     private fun completion(sequence: Long, transactionFirstSequence: Long, occurredAtEpochMillis: Long): HistoryOutboxEvent = HistoryOutboxEvent(
         matchId = matchId,
-        tableId = table.id,
+        venueId = table.id,
         roundNumber = 1,
         sequence = sequence,
         transactionFirstSequence = transactionFirstSequence,

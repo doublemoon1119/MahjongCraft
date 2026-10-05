@@ -49,7 +49,7 @@ class FabricHistoryOutboxWriterTest {
                     pendingEvents = listOf(pending),
                     nextSequenceByMatchId = mapOf(pending.matchId to 3L),
                     firstMissingSequenceByMatchId = mapOf(pending.matchId to 2L),
-                    terminalByMatchId = mapOf(pending.matchId to HistoryRecordingTerminal(100L, false, pending.tableId)),
+                    terminalByMatchId = mapOf(pending.matchId to HistoryRecordingTerminal(100L, false, pending.venueId)),
                 ),
             ),
         )
@@ -82,7 +82,7 @@ class FabricHistoryOutboxWriterTest {
         store.load(AuthoritativeStateSnapshot(historyRecordingState = HistoryRecordingState(pendingEvents = listOf(pending))))
         val path = createTempDirectory("history-tombstone-restart-").resolve("history.sqlite")
         val database = SqliteHistoryDatabase.open(path)
-        database.recordTerminals(listOf(HistoryTerminalRecord(pending.matchId.toString(), pending.tableId.toString(), 100L, false)))
+        database.recordTerminals(listOf(HistoryTerminalRecord(pending.matchId.toString(), pending.venueId.toString(), 100L, false)))
         database.pruneMatches(mapOf(pending.matchId.toString() to "EXPIRED"), 101L)
         val writer = writer(store)
         try {
@@ -99,7 +99,7 @@ class FabricHistoryOutboxWriterTest {
     @Test
     fun `tombstoned active outbox remains protected and stops appending`() = runBlocking {
         val game = Game(FakeTableStateFactory.create(), GameFlowConfig())
-        val pending = event().copy(matchId = game.matchId, tableId = game.id)
+        val pending = event().copy(matchId = game.matchId, venueId = game.id)
         val store = AuthoritativeStateStore()
         store.load(
             AuthoritativeStateSnapshot(
@@ -445,7 +445,7 @@ class FabricHistoryOutboxWriterTest {
     /** 不依賴桌況快照的最小可序列化事件。 */
     private fun event(): HistoryOutboxEvent = HistoryOutboxEvent(
         matchId = Uuid.random(),
-        tableId = Uuid.random(),
+        venueId = Uuid.random(),
         roundNumber = 1,
         sequence = 1L,
         occurredAtEpochMillis = 100L,

@@ -100,7 +100,7 @@ class PlayerConnectionLifecycleService(
      * 只寫入快照倉庫，讓重連後的事件仍帶得出正確內容；把資料送到客戶端是觀察者推送的職責。
      */
     private suspend fun resyncSnapshot(playerId: Uuid) {
-        val tableId = membershipRepository.getTableId(playerId)
+        val tableId = membershipRepository.getVenueId(playerId)
         if (tableId == null) {
             logger.debug("Skipped reconnect snapshot resync for player {} because no membership exists", playerId)
             return
@@ -155,7 +155,7 @@ class PlayerConnectionLifecycleService(
 
     /** 僅讓仍處於等待室的玩家離開；進行中的對局一律保留座位。 */
     private suspend fun leaveWaitingRoom(playerId: Uuid) {
-        val tableId = membershipRepository.getTableId(playerId)
+        val tableId = membershipRepository.getVenueId(playerId)
         if (tableId == null) {
             logger.debug("Skipped disconnected-player leave for player {} because no membership exists", playerId)
             return

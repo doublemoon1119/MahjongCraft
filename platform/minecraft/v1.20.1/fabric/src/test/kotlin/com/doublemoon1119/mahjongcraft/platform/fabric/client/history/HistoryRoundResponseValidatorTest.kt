@@ -354,7 +354,7 @@ class HistoryRoundResponseValidatorTest {
     @Test
     fun `test malformed identity uuid is rejected`() {
         val request = HistoryRoundStateRequestDto("request", TEST_MATCH_ID, roundNumber = 1)
-        val response = HistoryRoundStateResponseDto("request", TEST_MATCH_ID, 1, HistoryRoundPositionDto.Initial, state = state().copy(identity = identity().copy(tableId = "table")))
+        val response = HistoryRoundStateResponseDto("request", TEST_MATCH_ID, 1, HistoryRoundPositionDto.Initial, state = state().copy(identity = identity().copy(venueId = "table")))
 
         assertEquals(HistoryRoundValidationError.CONTEXT_MISMATCH, assertIs<HistoryRoundValidationResult.Invalid>(HistoryRoundResponseValidator.validateState(request, response)).reason)
     }

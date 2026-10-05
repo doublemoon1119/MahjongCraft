@@ -40,7 +40,7 @@ import kotlin.uuid.Uuid
  * 終局時，本用例把事實與完整 reason ID 寫回 [Game]，
  * 並同步最終桌況快照、廣播 [GameAction.MatchEnded]（帶著最終分數的快照，供呼叫端／客戶端組出排名
  * 呈現）——但不會開新的一局；`TableState` 除了「桌上未被收下的供託歸給最終第一名」這個結算之外
- * 維持呼叫前的樣子不變（見 `MahjongRuleModule.collectStickPot` 的呼叫）。房間清理（把桌子從 Game
+ * 維持呼叫前的樣子不變（見 `MahjongRuleModule.collectStickPot` 的呼叫）。房間清理（把場地從 Game
  * 轉回 Room）留給呼叫端接著呼叫 `ReturnToRoomUseCase`，不在這裡處理。務必記下 `isMatchOver` 這個事實：
  * `AiTurnDriver`／`ForcedAutoPlayDriver` 都靠它提前跳過已結束的對局，否則牌山已空的桌況會被反覆
  * 嘗試摸牌、反覆觸發流局結算。
@@ -224,7 +224,7 @@ class AdvanceRoundUseCase(
             // 但不做開下一局才需要的 RoundStarted 廣播或擲骰／牌牆呈現。
             snapshotSynchronizer.syncAll(gameId)
             val lastDealerId = newState.dealerPlayerId
-            eventPublisher.publishToTable(gameId, newState.players.map { it.id }, lastDealerId, GameAction.MatchEnded)
+            eventPublisher.publishToAllObservers(gameId, newState.players.map { it.id }, lastDealerId, GameAction.MatchEnded)
             val presentationModule = moduleRegistry.getModule(newState.config)
             val finalRankById = newState.players.sortedWith(presentationModule.compareForMatchRanking())
                 .mapIndexed { index, player -> player.id to index + 1 }
@@ -255,7 +255,7 @@ class AdvanceRoundUseCase(
         //    填入新莊家的 Uuid
         val newDealerId = newState.dealerPlayerId
         val seatedPlayerIds = newState.players.map { it.id }
-        eventPublisher.publishToTable(gameId, seatedPlayerIds, newDealerId, GameAction.RoundStarted)
+        eventPublisher.publishToAllObservers(gameId, seatedPlayerIds, newDealerId, GameAction.RoundStarted)
 
         // 4. 觸發平台呈現層：規則不支援開門流程時皆為 null，直接跳過。牌牆先建、骰子後擲，理由同
         // StartGameUseCase，這裡不能對調呼叫順序。
@@ -283,9 +283,9 @@ class AdvanceRoundUseCase(
                 newState.comboCount,
             )
             // 廣播擲骰點數本身；跟第 3 步的 RoundStarted 是兩則獨立事件，理由同 StartGameUseCase。
-            eventPublisher.publishToTable(gameId, seatedPlayerIds, newDealerId, GameAction.DiceRolled(diceRoll))
+            eventPublisher.publishToAllObservers(gameId, seatedPlayerIds, newDealerId, GameAction.DiceRolled(diceRoll))
         }
-        // 桌上由規則擺放的物件跟牌牆同時更新，緊接在 publishWallStructure 之後呼叫。
+        // 規則狀態的呈現跟牌牆同時更新，緊接在 publishWallStructure 之後呼叫。
         presentationPublisher.publishRuleStateUpdated(gameId)
         val module = moduleRegistry.getModule(newState.config)
         presentationPublisher.publishRoundInfoUpdated(gameId, newState)

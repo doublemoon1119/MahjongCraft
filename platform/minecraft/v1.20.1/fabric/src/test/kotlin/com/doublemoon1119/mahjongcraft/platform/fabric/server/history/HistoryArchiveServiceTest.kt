@@ -59,7 +59,7 @@ class HistoryArchiveServiceTest {
         val events = listOf(
             HistoryOutboxEvent(
                 matchId = matchId,
-                tableId = tableId,
+                venueId = tableId,
                 roundNumber = 1,
                 sequence = 1,
                 transactionFirstSequence = 1,
@@ -69,7 +69,7 @@ class HistoryArchiveServiceTest {
             ),
             HistoryOutboxEvent(
                 matchId = matchId,
-                tableId = tableId,
+                venueId = tableId,
                 roundNumber = 1,
                 sequence = 2,
                 transactionFirstSequence = 2,
@@ -79,7 +79,7 @@ class HistoryArchiveServiceTest {
             ),
             HistoryOutboxEvent(
                 matchId = matchId,
-                tableId = tableId,
+                venueId = tableId,
                 roundNumber = 1,
                 sequence = 3,
                 transactionFirstSequence = 3,
@@ -89,7 +89,7 @@ class HistoryArchiveServiceTest {
             ),
             HistoryOutboxEvent(
                 matchId = matchId,
-                tableId = tableId,
+                venueId = tableId,
                 roundNumber = 1,
                 sequence = 4,
                 transactionFirstSequence = 4,
@@ -99,7 +99,7 @@ class HistoryArchiveServiceTest {
             ),
             HistoryOutboxEvent(
                 matchId = matchId,
-                tableId = tableId,
+                venueId = tableId,
                 roundNumber = 1,
                 sequence = 5,
                 transactionFirstSequence = 5,
@@ -267,7 +267,7 @@ class HistoryArchiveServiceTest {
             AuthoritativeStateUpdate(
                 state.copy(games = emptyMap()),
                 Unit,
-                historyDraftsByTableId = mapOf(
+                historyDraftsByVenueId = mapOf(
                     table.id to listOf(
                         HistoryEventDraft(
                             null,

@@ -217,7 +217,7 @@ internal object HistoryRoundResponseValidator {
      */
     private fun validIdentity(identity: HistoryReplayIdentityDto, expectedMatchId: String): Boolean = identity.matchId == expectedMatchId &&
         canonicalUuid(identity.matchId) &&
-        canonicalUuid(identity.tableId) &&
+        canonicalUuid(identity.venueId) &&
         identity.players.all { player ->
             val playerId = player.playerId
             playerId == null || canonicalUuid(playerId)

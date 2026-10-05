@@ -369,7 +369,7 @@ class HistoryRoundQueryReaderTest {
         /** 取得讀模型公開身分。 */
         fun identity() = HistoryReplayIdentity(
             matchId = matchId,
-            tableId = tableId,
+            venueId = tableId,
             players = listOf(HistoryReplayPlayerIdentity(0, playerId, null)),
         )
     }

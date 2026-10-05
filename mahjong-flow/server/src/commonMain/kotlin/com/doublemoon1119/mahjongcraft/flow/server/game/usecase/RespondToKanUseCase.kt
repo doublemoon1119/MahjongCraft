@@ -279,9 +279,9 @@ class RespondToKanUseCase(
         snapshotSynchronizer.syncAll(gameId)
 
         val seatedPlayerIds = newState.players.map { it.id }
-        eventPublisher.publishToTable(gameId, seatedPlayerIds, playerId, action)
+        eventPublisher.publishToAllObservers(gameId, seatedPlayerIds, playerId, action)
         if (result.drawHappened) {
-            eventPublisher.publishToTable(gameId, seatedPlayerIds, playerId, GameAction.Draw)
+            eventPublisher.publishToAllObservers(gameId, seatedPlayerIds, playerId, GameAction.Draw)
             val module = moduleRegistry.getModule(newState.config)
             presentationPublisher.publishRoundInfoUpdated(gameId, newState)
         }

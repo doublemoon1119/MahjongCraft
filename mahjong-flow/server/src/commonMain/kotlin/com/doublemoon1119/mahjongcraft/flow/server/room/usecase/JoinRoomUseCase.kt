@@ -18,7 +18,7 @@ import kotlin.uuid.Uuid
  * 負責處理玩家請求進入特定房間的邏輯，包含房間狀態檢查、人數限制驗證以及全體成員的狀態同步。
  *
  * @property roomRepository 權威房間數據倉庫。
- * @property membershipRepository 玩家唯一麻將桌歸屬倉庫。
+ * @property membershipRepository 玩家唯一場地歸屬倉庫。
  * @property snapshotRepository 房間快照數據倉庫。
  * @property eventPublisher 房間通知服務。
  */
@@ -40,13 +40,13 @@ class JoinRoomUseCase(
         roomId: Uuid,
         playerId: Uuid,
     ): Outcome<Unit, RoomError> {
-        val existingTableId = membershipRepository.getTableId(playerId)
-        if (existingTableId != null && existingTableId != roomId) {
-            return Outcome.Error(RoomError.PlayerAlreadyInAnotherGame(playerId, existingTableId))
+        val existingVenueId = membershipRepository.getVenueId(playerId)
+        if (existingVenueId != null && existingVenueId != roomId) {
+            return Outcome.Error(RoomError.PlayerAlreadyInAnotherGame(playerId, existingVenueId))
         }
         if (!membershipRepository.claim(playerId, roomId)) {
-            val occupiedTableId = checkNotNull(membershipRepository.getTableId(playerId))
-            return Outcome.Error(RoomError.PlayerAlreadyInAnotherGame(playerId, occupiedTableId))
+            val occupiedVenueId = checkNotNull(membershipRepository.getVenueId(playerId))
+            return Outcome.Error(RoomError.PlayerAlreadyInAnotherGame(playerId, occupiedVenueId))
         }
 
         // 1. 以原子方式讀取房間、驗證業務規則並寫回，避免並發加入請求互相覆蓋
@@ -62,7 +62,7 @@ class JoinRoomUseCase(
             }
         }
 
-        if (outcome is Outcome.Error && existingTableId == null) {
+        if (outcome is Outcome.Error && existingVenueId == null) {
             membershipRepository.release(playerId, roomId)
         }
 

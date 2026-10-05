@@ -174,7 +174,7 @@ class GameAchievementDetectorTest {
     private fun gameOf(players: List<MahjongPlayer>): Game = Game(FakeTableStateFactory.create(players = players, config = RiichiRuleConfig()), GameFlowConfig())
 
     private fun facts(game: Game, fact: HistoryFact) = CommittedGameFacts(
-        tableId = game.id,
+        venueId = game.id,
         previousGame = game,
         game = game,
         facts = listOf(HistoryEventDraft(null, fact)),

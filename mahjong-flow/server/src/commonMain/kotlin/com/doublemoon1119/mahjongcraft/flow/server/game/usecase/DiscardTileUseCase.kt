@@ -212,9 +212,9 @@ class DiscardTileUseCase(
 
         // 3. 通知在場玩家與旁觀者；流局有觸發時，先廣播捨牌事件、再接著廣播流局事件
         val seatedPlayerIds = newState.players.map { it.id }
-        eventPublisher.publishToTable(gameId, seatedPlayerIds, playerId, GameAction.Discard(tileId))
+        eventPublisher.publishToAllObservers(gameId, seatedPlayerIds, playerId, GameAction.Discard(tileId))
         result.resolution.abortiveDrawReason?.let { reason ->
-            eventPublisher.publishToTable(gameId, seatedPlayerIds, playerId, GameAction.ExhaustiveDraw(reason))
+            eventPublisher.publishToAllObservers(gameId, seatedPlayerIds, playerId, GameAction.ExhaustiveDraw(reason))
         }
 
         // 4. 觸發平台呈現層：重新排列立牌列（涵蓋摸切、或打手牌併入摸到的牌兩種情況；副露本身雖然

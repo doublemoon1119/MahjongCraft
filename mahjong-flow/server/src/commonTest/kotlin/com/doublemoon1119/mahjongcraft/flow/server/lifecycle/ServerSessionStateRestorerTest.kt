@@ -94,9 +94,9 @@ class ServerSessionStateRestorerTest {
 
         restorer.restore(state)
 
-        assertEquals(room.id, memberships.getTableId(roomPlayerId))
-        assertEquals(game.id, memberships.getTableId(gamePlayerId))
-        assertEquals(game.id, memberships.getTableId(otherGamePlayerId))
+        assertEquals(room.id, memberships.getVenueId(roomPlayerId))
+        assertEquals(game.id, memberships.getVenueId(gamePlayerId))
+        assertEquals(game.id, memberships.getVenueId(otherGamePlayerId))
         assertNotNull(roomSnapshots.getSnapshot(room.id, roomPlayerId))
         val gamePlayerSnapshot = assertNotNull(gameSnapshots.getSnapshot(game.id, gamePlayerId))
         assertNotNull(gamePlayerSnapshot.players.single { it.id == gamePlayerId }.hand.standingTiles.single().tile)
@@ -136,8 +136,8 @@ class ServerSessionStateRestorerTest {
             ),
         )
         val playerId = Uuid.random()
-        val existingTableId = Uuid.random()
-        memberships.claim(playerId, existingTableId)
+        val existingVenueId = Uuid.random()
+        memberships.claim(playerId, existingVenueId)
         val firstRoom = Room(Uuid.random(), playerId, GameConfig(FakeMahjongRuleConfig()), listOf(playerId))
         val secondRoom = Room(Uuid.random(), playerId, GameConfig(FakeMahjongRuleConfig()), listOf(playerId))
 
@@ -152,7 +152,7 @@ class ServerSessionStateRestorerTest {
             listOf(PlayerMembershipConflict(playerId, setOf(firstRoom.id, secondRoom.id))),
             result.membershipConflicts,
         )
-        assertNull(memberships.getTableId(playerId))
+        assertNull(memberships.getVenueId(playerId))
         assertNotNull(roomSnapshots.getSnapshot(firstRoom.id, playerId))
         assertNotNull(roomSnapshots.getSnapshot(secondRoom.id, playerId))
     }

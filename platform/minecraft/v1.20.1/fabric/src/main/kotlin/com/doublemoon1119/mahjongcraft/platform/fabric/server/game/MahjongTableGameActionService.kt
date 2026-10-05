@@ -349,7 +349,7 @@ class MahjongTableGameActionService(
 
     /** 以玩家目前的房間歸屬解析目標對局；不在任何桌子或桌況不是對局時發布 [MinecraftPlayerFeedback.PlayerNotInGame] 並回傳 null。 */
     private suspend fun resolveGameId(playerId: Uuid): Uuid? {
-        val tableId = membershipRepository.getTableId(playerId)
+        val tableId = membershipRepository.getVenueId(playerId)
         if (tableId == null || gameRepository.getTableState(tableId) == null) {
             feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.PlayerNotInGame)
             return null

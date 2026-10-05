@@ -45,12 +45,12 @@ sealed interface RoomError : ApplicationError {
     data class PlayerAlreadyInRoom(val playerId: Uuid, val roomId: Uuid) : RoomError
 
     /**
-     * 玩家已參與另一張麻將桌的遊戲，無法同時加入目前房間。
+     * 玩家已參與另一個場地的房間或對局，無法同時加入目前房間。
      *
      * @param playerId 玩家 Uuid。
-     * @param tableId 玩家目前占用的麻將桌 Uuid。
+     * @param venueId 玩家目前占用的場地 Uuid。
      */
-    data class PlayerAlreadyInAnotherGame(val playerId: Uuid, val tableId: Uuid) : RoomError
+    data class PlayerAlreadyInAnotherGame(val playerId: Uuid, val venueId: Uuid) : RoomError
 
     /**
      * 房間人數已滿，無法再加入新成員。

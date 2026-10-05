@@ -79,7 +79,7 @@ data class AuthoritativeStatePersistenceDto(
             )
         }
         require(rooms.keys.intersect(games.keys).isEmpty()) {
-            "The same table ID must not exist as both a room and a game"
+            "The same venue ID must not exist as both a room and a game"
         }
     }
 }

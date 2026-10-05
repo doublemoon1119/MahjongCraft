@@ -198,9 +198,9 @@ internal class HistoryArchiveService(
         }
         return HistoryArchiveRecord(
             matchId = start.matchId.toString(),
-            tableId = start.tableId.toString(),
+            tableId = start.venueId.toString(),
             ruleId = moduleRegistry.getModule(opening.tableState.config).id,
-            dimensionId = locations.get(start.tableId)?.location?.dimensionId,
+            dimensionId = locations.get(start.venueId)?.location?.dimensionId,
             startedAtEpochMillis = start.occurredAtEpochMillis,
             endedAtEpochMillis = completion.occurredAtEpochMillis,
             participants = players,

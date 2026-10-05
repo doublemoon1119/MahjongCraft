@@ -46,7 +46,7 @@ class HistoryStorageQueryServiceTest {
 
         val outboxEvent = HistoryOutboxEvent(
             matchId = activeMatchId,
-            tableId = activeGame.id,
+            venueId = activeGame.id,
             roundNumber = activeGame.tableState.roundNumber,
             sequence = 1L,
             occurredAtEpochMillis = 100L,

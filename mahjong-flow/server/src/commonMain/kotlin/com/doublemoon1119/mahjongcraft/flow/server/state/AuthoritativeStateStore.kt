@@ -30,8 +30,8 @@ import kotlin.uuid.Uuid
 /**
  * 伺服器目前持有的完整 Room 與 Game 狀態快照。
  *
- * @property rooms 以桌子 UUID 索引的等待階段狀態。
- * @property games 以桌子 UUID 索引的進行中狀態。
+ * @property rooms 以場地 UUID 索引的等待階段狀態。
+ * @property games 以場地 UUID 索引的進行中狀態。
  * @property historyRecordingState 與 Game 生命週期分離的待寫歷史事件。
  */
 data class AuthoritativeStateSnapshot(
@@ -43,7 +43,7 @@ data class AuthoritativeStateSnapshot(
         require(rooms.all { (id, room) -> id == room.id }) { "Room index must match its state ID" }
         require(games.all { (id, game) -> id == game.id }) { "Game index must match its state ID" }
         require(rooms.keys.intersect(games.keys).isEmpty()) {
-            "The same table ID must not exist as both a room and a game"
+            "The same venue ID must not exist as both a room and a game"
         }
     }
 }
@@ -53,14 +53,14 @@ data class AuthoritativeStateSnapshot(
  *
  * @property state 交易完成後的完整狀態。
  * @property result 回傳給呼叫端的結果。
- * @property historyDraftsByTableId 與本次狀態變更一起提交的權威事實；提交後一律經 [AuthoritativeStateStore.committedFacts]
+ * @property historyDraftsByVenueId 與本次狀態變更一起提交的權威事實；提交後一律經 [AuthoritativeStateStore.committedFacts]
  *   送出，是否寫入歷史由記錄政策決定。
- * @property historyRecordingFailures 歷史事件記錄失敗的桌子 ID；提交狀態時為對應場次記錄序號缺口。
+ * @property historyRecordingFailures 歷史事件記錄失敗的場地 ID；提交狀態時為對應場次記錄序號缺口。
  */
 data class AuthoritativeStateUpdate<T>(
     val state: AuthoritativeStateSnapshot,
     val result: T,
-    val historyDraftsByTableId: Map<Uuid, List<HistoryEventDraft>> = emptyMap(),
+    val historyDraftsByVenueId: Map<Uuid, List<HistoryEventDraft>> = emptyMap(),
     val historyRecordingFailures: Set<Uuid> = emptySet(),
 )
 
@@ -111,7 +111,7 @@ class AuthoritativeStateStore(
     private val mutableCommittedFacts = MutableSharedFlow<CommittedGameFacts>(extraBufferCapacity = Int.MAX_VALUE)
 
     /**
-     * 每次交易提交後，依桌子送出本次的已提交事實。
+     * 每次交易提交後，依場地送出本次的已提交事實。
      *
      * 與歷史記錄政策及儲存端可用性無關；被拒絕或失敗的交易不會送出。只送給送出當下已訂閱的收集者。
      */
@@ -338,7 +338,7 @@ class AuthoritativeStateStore(
         var recording = state.historyRecordingState
         recording.transfersByMatchId.forEach { (id, transfer) ->
             recording = stopTransfer(recording, id, HistoryRecordingDecision.STOPPED_TRANSFER_INTERRUPTED).copy(
-                terminalByMatchId = recording.terminalByMatchId + (id to HistoryRecordingTerminal(historyClock.now().toEpochMilliseconds(), false, transfer.tableId)),
+                terminalByMatchId = recording.terminalByMatchId + (id to HistoryRecordingTerminal(historyClock.now().toEpochMilliseconds(), false, transfer.venueId)),
             )
         }
         currentState = state.copy(historyRecordingState = recording.copy(transfersByMatchId = emptyMap()))
@@ -353,11 +353,11 @@ class AuthoritativeStateStore(
      */
     suspend fun beginHistoryTransfer(game: Game): Boolean = mutex.withLock {
         val recording = currentState.historyRecordingState
-        require(game.id !in currentState.games && game.id !in currentState.rooms) { "History transfer table conflicts with a live table" }
+        require(game.id !in currentState.games && game.id !in currentState.rooms) { "History transfer venue conflicts with a live venue" }
         require(game.matchId !in recording.nextSequenceByMatchId && game.matchId !in recording.decisionsByMatchId && game.matchId !in recording.transfersByMatchId) {
             "History transfer match already exists"
         }
-        require(recording.transfersByMatchId.values.none { it.tableId == game.id }) { "History transfer table already exists" }
+        require(recording.transfersByMatchId.values.none { it.venueId == game.id }) { "History transfer venue already exists" }
         if (!isHistoryStorageAvailable || recordingPolicy.decide(game) != HistoryRecordingDecision.RECORDING) return@withLock false
         commit(
             currentState.copy(
@@ -382,7 +382,7 @@ class AuthoritativeStateStore(
         require(events.isNotEmpty() && events.size <= MAX_TRANSFER_BATCH) { "History transfer batch size must be between 1 and 64" }
         val recording = currentState.historyRecordingState
         val transfer = recording.transfersByMatchId[matchId] ?: error("History transfer is not active")
-        require(events.all { it.matchId == matchId && it.tableId == transfer.tableId }) { "History transfer event identity does not match" }
+        require(events.all { it.matchId == matchId && it.venueId == transfer.venueId }) { "History transfer event identity does not match" }
         if (recording.decisionsByMatchId[matchId] != HistoryRecordingDecision.RECORDING || !recordingPolicy.enabled || !isHistoryStorageAvailable) {
             return@withLock HistoryTransferResult.STOPPED
         }
@@ -430,7 +430,7 @@ class AuthoritativeStateStore(
     suspend fun finishHistoryTransfer(matchId: Uuid, terminal: HistoryRecordingTerminal) = mutex.withLock {
         val recording = currentState.historyRecordingState
         val transfer = recording.transfersByMatchId[matchId] ?: return@withLock
-        require(terminal.tableId == transfer.tableId) { "History transfer terminal table does not match" }
+        require(terminal.venueId == transfer.venueId) { "History transfer terminal venue does not match" }
         val completed = terminal.completed && recording.decisionsByMatchId[matchId] == HistoryRecordingDecision.RECORDING
         require(!completed || (transfer.matchCompleted && transfer.lastAcceptedBatch.lastOrNull()?.fact is HistoryFact.ReturnedToRoom)) {
             "History transfer cannot finish without complete match evidence"
@@ -482,7 +482,7 @@ class AuthoritativeStateStore(
         var recording = restoreDecisions(update.state)
         update.state.games.values.forEach { game ->
             if (currentState.games[game.id]?.matchId != game.matchId) {
-                val hasOpening = update.historyDraftsByTableId[game.id].orEmpty().any { it.fact is HistoryFact.MatchStarted }
+                val hasOpening = update.historyDraftsByVenueId[game.id].orEmpty().any { it.fact is HistoryFact.MatchStarted }
                 val decision = if (hasOpening) recordingPolicy.decide(game) else HistoryRecordingDecision.EXCLUDED_NO_OPENING
                 recording = recording.copy(decisionsByMatchId = recording.decisionsByMatchId + (game.matchId to decision))
             }
@@ -518,9 +518,9 @@ class AuthoritativeStateStore(
                     }
                 }
             }
-            val withDrafts = update.historyDraftsByTableId.entries.fold(recording) { recording, entry ->
+            val withDrafts = update.historyDraftsByVenueId.entries.fold(recording) { recording, entry ->
                 val game = update.state.games[entry.key] ?: currentState.games[entry.key]
-                    ?: error("History event references unknown table ${entry.key}")
+                    ?: error("History event references unknown venue ${entry.key}")
                 val completedReturn = game.isMatchOver && entry.value.all { it.fact is HistoryFact.ReturnedToRoom }
                 if (!isHistoryStorageAvailable || (!recordingPolicy.enabled && !completedReturn) || recording.decisionsByMatchId[game.matchId] != HistoryRecordingDecision.RECORDING) return@fold recording
                 val before = currentState.games[entry.key]?.tableState
@@ -541,8 +541,8 @@ class AuthoritativeStateStore(
                 runCatching { recording.append(game, entry.value + listOfNotNull(resultDraft), timestamp, maxPendingHistoryEvents) }
                     .getOrElse { recording.recordMissing(game) }
             }
-            val recordingState = update.historyRecordingFailures.fold(withDrafts) { recording, tableId ->
-                val game = update.state.games[tableId] ?: currentState.games[tableId]
+            val recordingState = update.historyRecordingFailures.fold(withDrafts) { recording, venueId ->
+                val game = update.state.games[venueId] ?: currentState.games[venueId]
                 if (game == null || (!recordingPolicy.enabled && !game.isMatchOver) || recording.decisionsByMatchId[game.matchId] != HistoryRecordingDecision.RECORDING) recording else recording.recordMissing(game)
             }
             val active = update.state.games.values.mapTo(mutableSetOf()) { it.matchId } + recordingState.transfersByMatchId.keys
@@ -564,11 +564,11 @@ class AuthoritativeStateStore(
         }
         val previousGames = currentState.games
         commit(nextState)
-        update.historyDraftsByTableId.forEach { (tableId, drafts) ->
-            val previousGame = previousGames[tableId]
-            val game = nextState.games[tableId]
+        update.historyDraftsByVenueId.forEach { (venueId, drafts) ->
+            val previousGame = previousGames[venueId]
+            val game = nextState.games[venueId]
             if (drafts.isNotEmpty() && (previousGame != null || game != null)) {
-                mutableCommittedFacts.tryEmit(CommittedGameFacts(tableId, previousGame, game, drafts))
+                mutableCommittedFacts.tryEmit(CommittedGameFacts(venueId, previousGame, game, drafts))
             }
         }
         update.result

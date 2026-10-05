@@ -12,7 +12,7 @@ import kotlinx.serialization.Serializable
  * `GameEventPublisherImpl` 的說明），合併送出讓客戶端收到的 `(action, snapshot)` 永遠是自洽的一對，
  * 不需要處理兩個獨立封包分別到達的順序/遺漏問題。
  *
- * @property gameId 對局所屬牌桌的 UUID 字串。
+ * @property gameId 對局所在場地的 UUID 字串。
  * @property actorId 本次動作執行者的 UUID 字串。
  * @property action 已完成的權威動作。
  * @property snapshot 動作完成後對收件玩家可見的桌況快照。

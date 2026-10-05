@@ -178,7 +178,7 @@ class DeclareRiichiUseCaseTest {
 
     /**
      * 驗證捨牌後所有觀察者的快照皆同步更新、所有玩家皆先收到 Riichi 再收到 Discard 事件通知，且平台收到
-     * 一次桌上物件更新通知。
+     * 一次規則狀態更新通知。
      */
     @Test
     fun `test declare riichi syncs snapshot and notifies riichi then discard`() = runTest {

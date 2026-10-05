@@ -13,14 +13,14 @@ import kotlin.uuid.Uuid
 
 /** 驗證隔離歷史轉移 metadata 可完整持久化並還原。 */
 class HistoryRecordingTransferPersistenceTest {
-    /** 轉移牌桌、最近完整批次與完成旗標經 DTO 及 JSON 往返後保持一致。 */
+    /** 轉移場地、最近完整批次與完成旗標經 DTO 及 JSON 往返後保持一致。 */
     @Test
     fun `history transfer metadata round trips through mapper and JSON`() {
         val matchId = Uuid.random()
-        val tableId = Uuid.random()
+        val venueId = Uuid.random()
         val event = HistoryOutboxEvent(
             matchId = matchId,
-            tableId = tableId,
+            venueId = venueId,
             roundNumber = 1,
             sequence = 1L,
             occurredAtEpochMillis = 123L,
@@ -31,7 +31,7 @@ class HistoryRecordingTransferPersistenceTest {
             nextSequenceByMatchId = mapOf(matchId to 2L),
             transfersByMatchId = mapOf(
                 matchId to HistoryRecordingTransfer(
-                    tableId = tableId,
+                    venueId = venueId,
                     lastAcceptedBatch = listOf(event),
                     matchCompleted = true,
                 ),

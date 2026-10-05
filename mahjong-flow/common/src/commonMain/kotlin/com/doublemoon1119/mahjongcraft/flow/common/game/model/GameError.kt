@@ -62,7 +62,7 @@ sealed interface GameError : ApplicationError {
     data class WallExhausted(val gameId: Uuid) : GameError
 
     /**
-     * 對局尚未結束，不能把桌子從 Game 轉回 Room。
+     * 對局尚未結束，不能把場地從 Game 轉回 Room。
      *
      * @param gameId 對局 Uuid。
      */

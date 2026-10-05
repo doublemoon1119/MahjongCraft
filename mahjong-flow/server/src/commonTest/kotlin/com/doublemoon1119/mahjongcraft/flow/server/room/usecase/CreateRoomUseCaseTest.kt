@@ -137,14 +137,14 @@ class CreateRoomUseCaseTest {
         assertEquals(null, roomRepo.getRoom(roomId), "No room should be created when a game is already in progress.")
     }
 
-    /** 玩家已占用其他麻將桌時不得建立第二個房間。 */
+    /** 玩家已占用其他場地時不得建立第二個房間。 */
     @Test
     fun `test create room fails when host belongs to another table`() = runTest {
         val store = AuthoritativeStateStore()
         val roomRepo = RoomRepositoryImpl(store)
         val memberships = PlayerMembershipRepositoryImpl()
-        val otherTableId = Uuid.random()
-        memberships.claim(hostId, otherTableId)
+        val otherVenueId = Uuid.random()
+        memberships.claim(hostId, otherVenueId)
         val useCase = CreateRoomUseCase(
             store,
             memberships,
@@ -154,8 +154,8 @@ class CreateRoomUseCaseTest {
 
         val result = useCase(roomId, hostId, GameConfig(config))
 
-        assertEquals(Outcome.Error(RoomError.PlayerAlreadyInAnotherGame(hostId, otherTableId)), result)
+        assertEquals(Outcome.Error(RoomError.PlayerAlreadyInAnotherGame(hostId, otherVenueId)), result)
         assertEquals(null, roomRepo.getRoom(roomId))
-        assertEquals(otherTableId, memberships.getTableId(hostId))
+        assertEquals(otherVenueId, memberships.getVenueId(hostId))
     }
 }

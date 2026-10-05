@@ -526,14 +526,14 @@ class GameFlowCoordinatorTest {
         val newState = fixtures.gameRepo.getTableState(gameId)!!
         assertTrue(newState.players.first { it.id == winnerId }.actionHistory.isEmpty(), "A fresh hand's actionHistory should be empty.")
         assertEquals(1, newState.comboCount, "The winner is the dealer, so the dealer should repeat.")
-        // 胡牌演出由 use case 交給 handoff、再由 coordinator 在取得 EndRound 後立即發布到整桌共用
+        // 胡牌演出由 use case 交給 handoff、再由 coordinator 在取得 EndRound 後立即發布到所有玩家共用
         // 時間軸——這是既有規則一直以來的可觀察行為，只是呼叫點從 use case 內部移到了這裡。
         val celebrations = fixtures.presentationPublisher.getPublishedWinCelebrations(gameId)
         assertEquals(1, celebrations.size)
         assertEquals(winningTile.id, celebrations.single().winningTileId)
         assertTrue(celebrations.single().isTsumo)
         val published = fixtures.presentationPublisher.getPublishedWinPresentations(gameId).single()
-        assertTrue(!published.roundContinues, "The round ended, so the whole presentation owns the table.")
+        assertTrue(!published.roundContinues, "The round ended, so the whole presentation blocks every player.")
         assertEquals(
             listOf(listOf(WinPresentationSegment.CELEBRATION, WinPresentationSegment.SETTLEMENT)),
             fixtures.presentationPublisher.getWinPresentationSegmentOrder(gameId),
@@ -569,7 +569,7 @@ class GameFlowCoordinatorTest {
         assertEquals(setOf(winnerId), newState.finishedPlayerIds)
         assertEquals(1, newState.currentPlayerIndex, "Turn should be handed to nextPlayerId from the directive.")
 
-        // FULL 模式：演出照樣發布，但改走中途胡牌專用時間軸——它不列入整桌忙碌判定，因此其他仍在
+        // FULL 模式：演出照樣發布，但改走中途胡牌專用時間軸——它不列入阻擋所有玩家的忙碌判定，因此其他仍在
         // 本局中的玩家可以繼續摸打，只有換局要等它播完。
         val published = fixtures.presentationPublisher.getPublishedWinPresentations(gameId).single()
         assertTrue(published.roundContinues, "A continuing win must tell the platform the round goes on.")

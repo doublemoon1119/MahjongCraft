@@ -28,7 +28,7 @@ interface GameEventPublisher {
     suspend fun publish(gameId: Uuid, targetPlayerId: Uuid, actorId: Uuid, action: GameAction)
 
     /**
-     * 廣播一則對局內事件給整桌——在場玩家＋所有目前已登記的旁觀者（例如透過旁觀機制取得過快照的
+     * 廣播一則對局內事件給這場對局的所有觀察者——在場玩家＋所有目前已登記的旁觀者（例如透過旁觀機制取得過快照的
      * 非在場玩家）。呼叫端只需要提供在場玩家清單；旁觀者名單完全由實作內部決定，呼叫端不需要知道
      * 旁觀機制存不存在——這樣以後任何用例只要改用這個方法，就不會漏掉旁觀者，不需要每個用例各自
      * 記得去查一次旁觀者名單。
@@ -38,5 +38,5 @@ interface GameEventPublisher {
      * @param actorId 執行該動作的玩家 Uuid，語意同 [publish]。
      * @param action 發生的動作內容。
      */
-    suspend fun publishToTable(gameId: Uuid, seatedPlayerIds: Collection<Uuid>, actorId: Uuid, action: GameAction)
+    suspend fun publishToAllObservers(gameId: Uuid, seatedPlayerIds: Collection<Uuid>, actorId: Uuid, action: GameAction)
 }

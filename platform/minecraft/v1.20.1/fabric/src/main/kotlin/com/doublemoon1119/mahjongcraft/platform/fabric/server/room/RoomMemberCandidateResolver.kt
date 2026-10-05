@@ -43,7 +43,7 @@ class RoomMemberCandidateResolver(
 ) {
     /** 列出 [playerId] 目前所在房間內，除房主外的所有候選成員。 */
     suspend fun listCandidates(playerId: Uuid): List<RoomMemberCandidate> {
-        val tableId = membershipRepository.getTableId(playerId) ?: return emptyList()
+        val tableId = membershipRepository.getVenueId(playerId) ?: return emptyList()
         val room = roomRepository.getRoom(tableId) ?: return emptyList()
 
         var aiSequence = 0

@@ -30,7 +30,7 @@ class HeadlessFlowHistoryRuntimeTest {
         var terminal = false
         runtimeFlow(runtime) { terminal = it }
         assertTrue(terminal)
-        val room = runtime.store.snapshot().rooms.getValue(runtime.tableId)
+        val room = runtime.store.snapshot().rooms.getValue(runtime.venueId)
         assertTrue(room.canStart, "The returned AI room must remain ready to start another match.")
         assertEquals(4, room.aiPlayerIds.size)
         assertTrue(room.hostId !in room.readyPlayerIds, "The host must remain outside the readiness collection.")

@@ -111,13 +111,13 @@ class FabricDebugProgressionCommandTest {
 
     /** 指令樹建構不解析任何玩家入座狀態。 */
     private object UnusedMembershipRepository : PlayerMembershipRepository {
-        override suspend fun claim(playerId: Uuid, tableId: Uuid): Boolean = error("Unexpected membership lookup")
+        override suspend fun claim(playerId: Uuid, venueId: Uuid): Boolean = error("Unexpected membership lookup")
 
-        override suspend fun getTableId(playerId: Uuid): Uuid? = error("Unexpected membership lookup")
+        override suspend fun getVenueId(playerId: Uuid): Uuid? = error("Unexpected membership lookup")
 
-        override suspend fun release(playerId: Uuid, tableId: Uuid) = error("Unexpected membership lookup")
+        override suspend fun release(playerId: Uuid, venueId: Uuid) = error("Unexpected membership lookup")
 
-        override suspend fun replaceAll(tableIdsByPlayerId: Map<Uuid, Uuid>) = error("Unexpected membership lookup")
+        override suspend fun replaceAll(venueIdsByPlayerId: Map<Uuid, Uuid>) = error("Unexpected membership lookup")
 
         override suspend fun clearAll() = error("Unexpected membership lookup")
     }

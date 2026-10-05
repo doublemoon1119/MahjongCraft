@@ -253,7 +253,7 @@ class HistoryGenerationController(
                 val runtime = activeRuntime
                 if (runtime != null) {
                     withTimeoutOrNull(WRITER_TIMEOUT) {
-                        writer.abortGeneration(runtime.matchId(), HistoryRecordingTerminal(Clock.System.now().toEpochMilliseconds(), false, runtime.tableId), session)
+                        writer.abortGeneration(runtime.matchId(), HistoryRecordingTerminal(Clock.System.now().toEpochMilliseconds(), false, runtime.venueId), session)
                     }
                 }
                 state.update {

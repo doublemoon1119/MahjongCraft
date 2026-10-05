@@ -71,7 +71,7 @@ class FabricAchievementService(
     internal fun handle(facts: CommittedGameFacts) {
         if (facts.matchId in excludedMatchIds) return
         val batches = runCatching { detector.detect(facts) }.getOrElse { cause ->
-            logger.warn("Achievement detection failed for match {} at table {}", facts.matchId, facts.tableId, cause)
+            logger.warn("Achievement detection failed for match {} at table {}", facts.matchId, facts.venueId, cause)
             return
         }
         batches.forEach { achievements ->

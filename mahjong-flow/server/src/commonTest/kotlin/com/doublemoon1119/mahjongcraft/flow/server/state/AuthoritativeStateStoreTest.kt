@@ -39,8 +39,8 @@ class AuthoritativeStateStoreTest {
     fun `history acknowledgement preserves later events and gaps`() = runTest {
         val store = AuthoritativeStateStore()
         val matchId = Uuid.random()
-        val tableId = Uuid.random()
-        val first = HistoryOutboxEvent(matchId, tableId, 1, 1, 1, 100L, null, HistoryFact.ReturnedToRoom)
+        val venueId = Uuid.random()
+        val first = HistoryOutboxEvent(matchId, venueId, 1, 1, 1, 100L, null, HistoryFact.ReturnedToRoom)
         val second = first.copy(sequence = 2)
         store.load(
             AuthoritativeStateSnapshot(
@@ -85,7 +85,7 @@ class AuthoritativeStateStoreTest {
             AuthoritativeStateUpdate(
                 state = state.copy(games = state.games + (game.id to game.copy(tableState = after))),
                 result = Unit,
-                historyDraftsByTableId = mapOf(
+                historyDraftsByVenueId = mapOf(
                     game.id to listOf(
                         HistoryEventDraft(null, HistoryFact.ReturnedToRoom),
                         HistoryEventDraft(null, HistoryFact.ReturnedToRoom),
@@ -239,9 +239,9 @@ class AuthoritativeStateStoreTest {
         assertEquals(1, notifications)
     }
 
-    /** 驗證相同桌子 ID 不可透過不同 repository 同時保存為 Room 與 Game。 */
+    /** 驗證相同場地 ID 不可透過不同 repository 同時保存為 Room 與 Game。 */
     @Test
-    fun `same table ID cannot be stored as room and game`() = runTest {
+    fun `same venue ID cannot be stored as room and game`() = runTest {
         val store = AuthoritativeStateStore()
         val room = createRoom()
         RoomRepositoryImpl(store).setRoom(room)
@@ -284,7 +284,7 @@ class AuthoritativeStateStoreTest {
             AuthoritativeStateUpdate(
                 state = state.copy(games = state.games + (game.id to nextGame)),
                 result = Unit,
-                historyDraftsByTableId = mapOf(
+                historyDraftsByVenueId = mapOf(
                     game.id to listOf(HistoryEventDraft(null, HistoryFact.ReturnedToRoom)),
                 ),
             )
@@ -321,7 +321,7 @@ class AuthoritativeStateStoreTest {
                         ),
                 ),
                 result = Unit,
-                historyDraftsByTableId = mapOf(
+                historyDraftsByVenueId = mapOf(
                     game.id to listOf(HistoryEventDraft(null, HistoryFact.ReturnedToRoom)),
                 ),
             )
@@ -352,7 +352,7 @@ class AuthoritativeStateStoreTest {
                         ),
                 ),
                 result = Unit,
-                historyDraftsByTableId = mapOf(game.id to drafts),
+                historyDraftsByVenueId = mapOf(game.id to drafts),
             )
         }
 
@@ -385,7 +385,7 @@ class AuthoritativeStateStoreTest {
         assertEquals(3L, snapshot.historyRecordingState.nextSequenceByMatchId.getValue(game.matchId))
     }
 
-    /** 同桌重開須用新的場次身分；同筆交易內的事件依提交順序取得序號。 */
+    /** 同一場地重開須用新的場次身分；同筆交易內的事件依提交順序取得序號。 */
     @Test
     fun `history sequences are scoped to match rather than table`() = runTest {
         val store = AuthoritativeStateStore(historyRecordingEnabled = true)
@@ -396,7 +396,7 @@ class AuthoritativeStateStoreTest {
             AuthoritativeStateUpdate(
                 state = state.copy(games = state.games + (firstGame.id to firstGame.copy(isMatchOver = true))),
                 result = Unit,
-                historyDraftsByTableId = mapOf(
+                historyDraftsByVenueId = mapOf(
                     firstGame.id to listOf(
                         HistoryEventDraft(null, HistoryFact.ReturnedToRoom),
                         HistoryEventDraft(null, HistoryFact.ReturnedToRoom),
@@ -409,7 +409,7 @@ class AuthoritativeStateStoreTest {
             AuthoritativeStateUpdate(
                 state = state.copy(games = state.games + (secondGame.id to secondGame)),
                 result = Unit,
-                historyDraftsByTableId = mapOf(
+                historyDraftsByVenueId = mapOf(
                     secondGame.id to listOf(
                         HistoryEventDraft(null, HistoryFact.MatchStarted(secondGame.tableState, secondGame.flowConfig)),
                         HistoryEventDraft(null, HistoryFact.ReturnedToRoom),
@@ -421,7 +421,7 @@ class AuthoritativeStateStoreTest {
         val events = store.snapshot().historyRecordingState.pendingEvents
         assertEquals(listOf(1L, 2L, 3L), events.filter { it.matchId == firstGame.matchId }.map { it.sequence })
         assertEquals(listOf(1L, 2L), events.filter { it.matchId == secondGame.matchId }.map { it.sequence })
-        assertEquals(setOf(tableState.id), events.map { it.tableId }.toSet())
+        assertEquals(setOf(tableState.id), events.map { it.venueId }.toSet())
     }
 
     /** 倉庫拒絕或無變更的交易不得產生歷史事件。 */
@@ -459,7 +459,7 @@ class AuthoritativeStateStoreTest {
         runCurrent()
 
         val facts = received.single()
-        assertEquals(before.id, facts.tableId)
+        assertEquals(before.id, facts.venueId)
         assertEquals(before, facts.previousGame)
         assertEquals(store.getGame(before.id), facts.game)
         assertEquals(listOf(HistoryFact.ReturnedToRoom), facts.facts.map { it.fact })
@@ -517,7 +517,7 @@ class AuthoritativeStateStoreTest {
             AuthoritativeStateUpdate(
                 state = state.copy(games = state.games + (replaced.id to replaced)),
                 result = Unit,
-                historyDraftsByTableId = mapOf(replaced.id to listOf(HistoryEventDraft(null, HistoryFact.ReturnedToRoom))),
+                historyDraftsByVenueId = mapOf(replaced.id to listOf(HistoryEventDraft(null, HistoryFact.ReturnedToRoom))),
             )
         }
 
@@ -551,7 +551,7 @@ class AuthoritativeStateStoreTest {
             AuthoritativeStateUpdate(
                 state = state.copy(games = state.games + (game.id to game.copy(automaticControlRevision = 1L))),
                 result = Unit,
-                historyDraftsByTableId = mapOf(game.id to listOf(HistoryEventDraft(null, HistoryFact.ReturnedToRoom))),
+                historyDraftsByVenueId = mapOf(game.id to listOf(HistoryEventDraft(null, HistoryFact.ReturnedToRoom))),
             )
         }
 

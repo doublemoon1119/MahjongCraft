@@ -66,7 +66,7 @@ import kotlin.uuid.Uuid
  * @property resolveWinRoundContinuationUseCase 胡牌即時結算完成後，判定本局後續是否結束的用例；
  *   見 [ResolveWinRoundContinuationUseCase] KDoc。
  * @property advanceRoundUseCase 連莊/過莊/開下一局用例。
- * @property returnToRoomUseCase 對局結束後把桌子轉回房間用例；[advanceRoundUseCase] 判定對局結束時
+ * @property returnToRoomUseCase 對局結束後把場地轉回房間用例；[advanceRoundUseCase] 判定對局結束時
  *   會先持久化 [PendingGameTransition.ReturnToRoom]，再於同一次待完成流程收斂中呼叫此用例。
  * @property aiTurnDriver 找出下一個該行動的 AI 玩家與其命令。
  * @property forcedAutoPlayDriver 找出下一個必須由伺服器固定操作的真人玩家與命令。

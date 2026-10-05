@@ -87,7 +87,7 @@ import kotlin.uuid.Uuid
  *
  * @property scenario 生成情境。
  * @property store 隔離權威狀態儲存。
- * @property tableId 牌桌識別碼。
+ * @property venueId 場地識別碼。
  * @property gameRepository 隔離對局 repository。
  * @property coordinator 真實流程 coordinator。
  * @property gameId 目前對局識別碼。
@@ -96,7 +96,7 @@ import kotlin.uuid.Uuid
 class HeadlessFlowHistoryRuntime private constructor(
     override val scenario: HeadlessHistoryScenario,
     override val store: AuthoritativeStateStore,
-    override val tableId: Uuid,
+    override val venueId: Uuid,
     private val gameRepository: GameRepositoryImpl,
     private val coordinator: GameFlowCoordinator,
     private val gameId: Uuid,
@@ -212,16 +212,16 @@ class HeadlessFlowHistoryRuntime private constructor(
                 presentationBusyGate = busy,
             )
             val start = StartGameUseCase(store, moduleRegistry, synchronizer, handSort, gameEvents, presentation)
-            val tableId = Uuid.random()
+            val venueId = Uuid.random()
             val host = Uuid.random()
             val config = GameConfig(ruleConfig = RiichiRuleConfig(gameLength = scenario.gameLength))
-            check(create(tableId, host, config, hostAiStrategyKey = BuiltInAiStrategyKeys.BEGINNER) is Outcome.Success)
-            repeat(3) { check(addAi(tableId, host, BuiltInAiStrategyKeys.BEGINNER) is Outcome.Success) }
-            val started = start(tableId, host)
+            check(create(venueId, host, config, hostAiStrategyKey = BuiltInAiStrategyKeys.BEGINNER) is Outcome.Success)
+            repeat(3) { check(addAi(venueId, host, BuiltInAiStrategyKeys.BEGINNER) is Outcome.Success) }
+            val started = start(venueId, host)
             check(started is Outcome.Success) { "Headless history runtime failed to start game: $started" }
             val id = started.value
             val game = checkNotNull(store.getGame(id))
-            return HeadlessFlowHistoryRuntime(scenario, store, tableId, gameRepository, coordinator, id, game.matchId)
+            return HeadlessFlowHistoryRuntime(scenario, store, venueId, gameRepository, coordinator, id, game.matchId)
         }
     }
 }
@@ -300,8 +300,8 @@ private class NoOpGameEvents : GameEventPublisher {
     /** 丟棄單一玩家事件。 */
     override suspend fun publish(gameId: Uuid, targetPlayerId: Uuid, actorId: Uuid, action: GameAction) = Unit
 
-    /** 丟棄整桌事件。 */
-    override suspend fun publishToTable(gameId: Uuid, seatedPlayerIds: Collection<Uuid>, actorId: Uuid, action: GameAction) = Unit
+    /** 丟棄廣播給所有觀察者的事件。 */
+    override suspend fun publishToAllObservers(gameId: Uuid, seatedPlayerIds: Collection<Uuid>, actorId: Uuid, action: GameAction) = Unit
 }
 
 /** 完成呈現握手但不產生平台副作用的無頭 adapter。 */

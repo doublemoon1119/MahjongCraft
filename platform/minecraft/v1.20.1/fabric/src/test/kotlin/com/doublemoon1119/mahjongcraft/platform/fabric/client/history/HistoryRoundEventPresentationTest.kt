@@ -311,7 +311,7 @@ class HistoryRoundEventPresentationTest {
     ): HistoryRoundEventsDto = HistoryRoundEventsDto(
         identity = HistoryReplayIdentityDto(
             matchId = "match",
-            tableId = "table",
+            venueId = "table",
             players = listOf(HistoryReplayPlayerIdentityDto(0, null, null)),
         ),
         roundNumber = 1,

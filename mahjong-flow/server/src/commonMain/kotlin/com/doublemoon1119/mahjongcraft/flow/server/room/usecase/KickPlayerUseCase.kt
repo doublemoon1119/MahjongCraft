@@ -18,7 +18,7 @@ import kotlin.uuid.Uuid
  * 驗證房主權限後移除目標玩家，並明確標記移除原因為被剔除。
  *
  * @property roomRepository 權威房間數據倉庫。
- * @property membershipRepository 玩家唯一麻將桌歸屬倉庫。
+ * @property membershipRepository 玩家唯一場地歸屬倉庫。
  * @property snapshotRepository 房間快照數據倉庫。
  * @property eventPublisher 房間通知服務。
  */

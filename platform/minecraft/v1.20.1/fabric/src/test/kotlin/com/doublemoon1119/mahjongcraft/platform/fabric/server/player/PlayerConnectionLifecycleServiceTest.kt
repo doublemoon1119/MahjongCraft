@@ -52,7 +52,7 @@ class PlayerConnectionLifecycleServiceTest {
         advanceUntilIdle()
 
         assertNotNull(fixture.roomRepository.getRoom(fixture.tableId))
-        assertEquals(fixture.tableId, fixture.memberships.getTableId(fixture.playerId))
+        assertEquals(fixture.tableId, fixture.memberships.getVenueId(fixture.playerId))
     }
 
     /** `LEAVE_IMMEDIATELY` 應在玩家斷線後立即呼叫等待室離開流程。 */
@@ -63,7 +63,7 @@ class PlayerConnectionLifecycleServiceTest {
         fixture.service.onDisconnected(fixture.playerId)
         advanceUntilIdle()
 
-        assertNull(fixture.memberships.getTableId(fixture.playerId))
+        assertNull(fixture.memberships.getVenueId(fixture.playerId))
         assertNull(fixture.roomRepository.getRoom(fixture.tableId)?.playerIds?.find { it == fixture.playerId })
     }
 
@@ -76,11 +76,11 @@ class PlayerConnectionLifecycleServiceTest {
         runCurrent()
         advanceTimeBy(4_999.milliseconds)
         runCurrent()
-        assertEquals(fixture.tableId, fixture.memberships.getTableId(fixture.playerId))
+        assertEquals(fixture.tableId, fixture.memberships.getVenueId(fixture.playerId))
 
         advanceTimeBy(1.milliseconds)
         runCurrent()
-        assertNull(fixture.memberships.getTableId(fixture.playerId))
+        assertNull(fixture.memberships.getVenueId(fixture.playerId))
     }
 
     /** 玩家在寬限時間內重連時應取消逾時離開。 */
@@ -94,7 +94,7 @@ class PlayerConnectionLifecycleServiceTest {
         fixture.service.onConnected(fixture.playerId)
         advanceUntilIdle()
 
-        assertEquals(fixture.tableId, fixture.memberships.getTableId(fixture.playerId))
+        assertEquals(fixture.tableId, fixture.memberships.getVenueId(fixture.playerId))
         assertNotNull(fixture.roomRepository.getRoom(fixture.tableId))
     }
 
@@ -145,7 +145,7 @@ class PlayerConnectionLifecycleServiceTest {
         fixture.service.onDisconnected(fixture.playerId)
         advanceUntilIdle()
 
-        assertEquals(fixture.tableId, fixture.memberships.getTableId(fixture.playerId))
+        assertEquals(fixture.tableId, fixture.memberships.getVenueId(fixture.playerId))
     }
 
     /** 沒有 membership 的玩家斷線時不得改動任何房間。 */
@@ -171,7 +171,7 @@ class PlayerConnectionLifecycleServiceTest {
         fixture.service.onDisconnected(fixture.playerId)
         advanceUntilIdle()
 
-        assertNull(fixture.memberships.getTableId(fixture.playerId))
+        assertNull(fixture.memberships.getVenueId(fixture.playerId))
     }
 
     /** 已排程工作應保留斷線當下的 timeout，不受後續設定替換影響。 */
@@ -190,7 +190,7 @@ class PlayerConnectionLifecycleServiceTest {
         advanceTimeBy(5.seconds)
         runCurrent()
 
-        assertNull(fixture.memberships.getTableId(fixture.playerId))
+        assertNull(fixture.memberships.getVenueId(fixture.playerId))
     }
 
     /** 建立使用目前測試 scheduler 的斷線政策測試資料。 */

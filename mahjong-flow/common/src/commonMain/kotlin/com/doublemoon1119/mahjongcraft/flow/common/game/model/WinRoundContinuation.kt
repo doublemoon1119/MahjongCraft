@@ -82,7 +82,7 @@ sealed interface WinRoundDirective {
     /**
      * 將 [newlyFinishedPlayerIds] 標記為本局已完成，回合交給 [nextPlayerId] 繼續，本局不結束。
      *
-     * @property newlyFinishedPlayerIds 這次新標記為已完成的玩家；必須屬於本桌且尚未列在
+     * @property newlyFinishedPlayerIds 這次新標記為已完成的玩家；必須屬於這場對局且尚未列在
      * [TableState.finishedPlayerIds]，見 [applyTo]。
      * @property nextPlayerId 套用後應輪到的玩家；必須仍是 active（不在套用後的 finished 集合內）。
      * @property settlementDetail 這次胡牌結算要提供的資訊範圍。
@@ -97,9 +97,9 @@ sealed interface WinRoundDirective {
 /**
  * 驗證並將 [WinRoundDirective.ContinueRound] 套用到 [state]，回傳套用後的新 [TableState]。
  *
- * @throws IllegalArgumentException [newlyFinishedPlayerIds] 內含不屬於本桌、或已經是 finished 的玩家；
+ * @throws IllegalArgumentException [newlyFinishedPlayerIds] 內含不屬於這場對局、或已經是 finished 的玩家；
  * 或套用後將導致所有玩家皆 finished（resolver 遇到這種終止條件應改回傳 [WinRoundDirective.EndRound]）；
- * 或 [nextPlayerId] 不屬於本桌、或套用後仍是 finished。
+ * 或 [nextPlayerId] 不屬於這場對局、或套用後仍是 finished。
  */
 fun WinRoundDirective.ContinueRound.applyTo(state: TableState): TableState {
     val playerIds = state.players.mapTo(mutableSetOf()) { it.id }
