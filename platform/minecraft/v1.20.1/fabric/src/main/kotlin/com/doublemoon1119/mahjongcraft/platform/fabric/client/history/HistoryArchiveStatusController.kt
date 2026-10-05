@@ -56,9 +56,9 @@ internal class HistoryArchiveStatusController(
     /** Screen 可觀察的目前保存狀態。 */
     val view: StateFlow<HistoryArchiveStatusView> = mutableView.asStateFlow()
 
-    /** 開始監看指定場次；重複指定相同場次不重置現有狀態。 */
+    /** 開始監看指定場次；重複指定相同場次時，進行中的監看與已取得的最終結果都維持不變。 */
     fun watch(matchId: String?) {
-        if (matchId == target && monitor?.isActive == true) {
+        if (matchId == target && (monitor?.isActive == true || mutableView.value is HistoryArchiveStatusView.Resolved)) {
             paused = false
             return
         }

@@ -77,6 +77,25 @@ class HistoryArchiveStatusControllerTest {
         assertEquals(2, transport.requests.size)
     }
 
+    /** 摘要返回列表後再次監看同一場時，沿用已取得的最終結果，不回到儲存中也不重新查詢。 */
+    @Test
+    fun `watching a resolved match again keeps its final status`() = runTest {
+        val transport = FakeStatusTransport(listOf(HistoryArchiveStatusDto.SAVED))
+        val controller = HistoryArchiveStatusController(transport, backgroundScope, pollInterval = 10.milliseconds, now = { testScheduler.currentTime.milliseconds })
+        controller.watch("match")
+        advanceTimeBy(10)
+        runCurrent()
+        assertEquals(HistoryArchiveStatusView.Resolved(HistoryArchiveStatusDto.SAVED), controller.view.value)
+
+        controller.pause()
+        controller.watch("match")
+
+        assertEquals(HistoryArchiveStatusView.Resolved(HistoryArchiveStatusDto.SAVED), controller.view.value)
+        advanceTimeBy(100)
+        runCurrent()
+        assertEquals(1, transport.requests.size)
+    }
+
     /** 沒有回覆時會在單次 timeout 後進入失敗狀態並取消 request。 */
     @Test
     fun `missing response times out and cancels request`() = runTest {
