@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.BUILT_IN_MATCH_SETTLEMENT_TEMPLATE_KEY
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.MatchSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MatchSettlementPlayerSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MatchSettlementPresentationEntity
@@ -21,7 +20,7 @@ class FabricMatchSettlementPresentationScheduler(
     private val overlays: PersistentTableOverlayCoordinator,
     private val spawnGateway: FabricEntitySpawnGateway,
 ) {
-    private val warnedUnknownTemplateKeys = mutableSetOf<String>()
+    private val warnedRuleModuleIds = mutableSetOf<String>()
 
     /** 成功生成時回傳固定結束時間；失敗則不隱藏 round info。 */
     fun schedule(
@@ -32,11 +31,11 @@ class FabricMatchSettlementPresentationScheduler(
         earliestStartGameTime: Long,
         request: MatchSettlementPresentationRequest,
     ): Long? {
-        val template = templateRegistry.find(request.templateKey) ?: run {
-            if (warnedUnknownTemplateKeys.add(request.templateKey)) {
-                logger.warn("Unknown match settlement template: {}", request.templateKey)
+        val template = templateRegistry.findForRule(request.ruleModuleId) ?: run {
+            if (warnedRuleModuleIds.add(request.ruleModuleId)) {
+                logger.warn("No match settlement template for rule module: {}", request.ruleModuleId)
             }
-            templateRegistry.find(BUILT_IN_MATCH_SETTLEMENT_TEMPLATE_KEY) ?: return null
+            return null
         }
         val startGameTime = maxOf(world.time, earliestStartGameTime)
         val snapshots = request.players.map { player ->

@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFactTypeKeys
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementTranslationKeys
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayFactDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayIdentityDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayPlayerIdentityDto
@@ -9,13 +9,17 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayTra
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundOutcomeDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinDetailFieldDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinDetailQuantityDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinDetailValueDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinnerDetailsDto
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiYakuTranslationKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementTextKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.registerBuiltInWinSettlementTemplates
 import net.minecraft.text.TranslatableTextContent
 import kotlin.test.Test
@@ -32,8 +36,8 @@ class HistoryWinDetailPresentationTest {
         val presenter = presenter()
         val dora = presenter.detailLabel("mahjongcraft:riichi", "mahjongcraft:riichi_dora", templates)
         val ura = presenter.detailLabel("mahjongcraft:riichi", "mahjongcraft:riichi_ura_dora", templates)
-        assertEquals(WinSettlementTranslationKeys.DORA_INDICATOR, (dora?.content as? TranslatableTextContent)?.key)
-        assertEquals(WinSettlementTranslationKeys.URA_DORA_INDICATOR, (ura?.content as? TranslatableTextContent)?.key)
+        assertEquals(WinSettlementTextKeys.DORA_INDICATOR, (dora?.content as? TranslatableTextContent)?.key)
+        assertEquals(WinSettlementTextKeys.URA_DORA_INDICATOR, (ura?.content as? TranslatableTextContent)?.key)
         assertNull(presenter.detailLabel("custom:rule", "mahjongcraft:riichi_dora", templates))
         assertNull(presenter.detailLabel("mahjongcraft:riichi", "custom:field", templates))
         assertNull(presenter.detailLabel(null, "mahjongcraft:riichi_dora", templates))
@@ -55,8 +59,8 @@ class HistoryWinDetailPresentationTest {
     /** 多家和牌保留各自詳情，不依座位排列將役種交給另一位玩家。 */
     @Test
     fun `multiple winners keep their own details and transaction deltas`() {
-        val first = HistoryWinDetailFieldDto("custom:points", HistoryWinDetailValueDto.Text("custom.score.points", listOf("3")))
-        val second = HistoryWinDetailFieldDto("custom:patterns", HistoryWinDetailValueDto.Entries(listOf(HistoryWinDetailValueDto.Entries.EntryDto("custom.pattern"))))
+        val first = HistoryWinDetailFieldDto("custom:points", HistoryWinDetailValueDto.Quantities(listOf(HistoryWinDetailQuantityDto("custom:point", 3))))
+        val second = HistoryWinDetailFieldDto("custom:patterns", HistoryWinDetailValueDto.Entries(listOf(HistoryWinDetailValueDto.Entries.EntryDto("custom:pattern"))))
         val outcome = HistoryRoundOutcomeDto(
             "mahjongcraft:ron",
             listOf(1, 2),
@@ -65,7 +69,7 @@ class HistoryWinDetailPresentationTest {
             listOf(0),
             null,
             scoreChangesBySeat = mapOf(0 to -5000, 1 to 3000, 2 to 2000),
-            winnerDetails = listOf(HistoryWinnerDetailsDto(2, "custom:rule", listOf(second)), HistoryWinnerDetailsDto(1, "custom:rule", listOf(first))),
+            winnerDetails = listOf(HistoryWinnerDetailsDto(2, listOf(second)), HistoryWinnerDetailsDto(1, listOf(first))),
         )
         val result = present(outcome)
         assertEquals(listOf(-5000, 3000, 2000), result.rows.map { it.scoreChange })
@@ -82,23 +86,38 @@ class HistoryWinDetailPresentationTest {
         assertTrue(result.rows.all { it.detailFields.isEmpty() })
     }
 
-    /** 翻譯單位由規則傳入，不將第三方條目套用日麻翻數。 */
+    /** 日麻詳情依登記的格式化器轉成既有翻譯鍵與參數。 */
     @Test
-    fun `detail entries preserve rule supplied units and arguments`() {
-        val value = HistoryWinDetailValueDto.Entries(
+    fun `riichi detail values use the registered formatters`() {
+        val templates = WinSettlementPresentationTemplateRegistryImpl().apply { registerBuiltInWinSettlementTemplates() }
+        val yaku = HistoryWinDetailValueDto.Entries(
             listOf(
-                HistoryWinDetailValueDto.Entries.EntryDto("custom.pattern", trailingTranslationKey = "custom.points", trailingTranslationArgument = "7"),
-                HistoryWinDetailValueDto.Entries.EntryDto("custom.other", trailingText = "3 stars"),
+                HistoryWinDetailValueDto.Entries.EntryDto(RiichiWinSettlementIds.yaku(YakuType.Riichi), HistoryWinDetailQuantityDto(RiichiWinSettlementIds.HAN, 1)),
+                HistoryWinDetailValueDto.Entries.EntryDto(RiichiWinSettlementIds.yaku(YakuType.Daisangen), HistoryWinDetailQuantityDto(RiichiWinSettlementIds.YAKUMAN, 2)),
             ),
         )
-        val rows = presenter().detailText(value)
-        assertEquals("custom.pattern", (rows[0].content as TranslatableTextContent).key)
-        val trailing = rows[0].siblings.last().content as TranslatableTextContent
-        assertEquals("custom.points", trailing.key)
-        assertEquals(listOf("7"), trailing.args.toList())
-        assertTrue(rows[1].string.endsWith("3 stars"))
-        val summary = presenter().detailText(HistoryWinDetailValueDto.Text("custom.summary", listOf("7", "bonus"))).single()
-        assertEquals(listOf("7", "bonus"), (summary.content as TranslatableTextContent).args.toList())
+        val rows = presenter().detailText(RiichiWinSettlementIds.YAKU_FIELD, yaku, templates)
+        assertEquals(RiichiYakuTranslationKeys.keyFor(YakuType.Riichi), (rows[0].content as TranslatableTextContent).key)
+        val han = rows[0].siblings.last().content as TranslatableTextContent
+        assertEquals(WinSettlementTextKeys.HAN, han.key)
+        assertEquals(listOf("1"), han.args.toList())
+        assertEquals(RiichiYakuTranslationKeys.keyFor(YakuType.Daisangen), (rows[1].content as TranslatableTextContent).key)
+        assertEquals("mahjongcraft.game.score.yakuman_2x", (rows[1].siblings.last().content as TranslatableTextContent).key)
+
+        val hanFu = HistoryWinDetailValueDto.Quantities(listOf(HistoryWinDetailQuantityDto(RiichiWinSettlementIds.HAN, 3), HistoryWinDetailQuantityDto(RiichiWinSettlementIds.FU, 30)))
+        val summary = presenter().detailText(RiichiWinSettlementIds.HAN_FU_FIELD, hanFu, templates).single().content as TranslatableTextContent
+        assertEquals(WinSettlementTextKeys.HAN_FU, summary.key)
+        assertEquals(listOf("3", "30"), summary.args.toList())
+    }
+
+    /** 沒有登記格式化器的第三方欄位以 ID 與原始數值顯示，不套用日麻翻數。 */
+    @Test
+    fun `unregistered detail values show identifiers and raw amounts`() {
+        val templates = WinSettlementPresentationTemplateRegistryImpl().apply { registerBuiltInWinSettlementTemplates() }
+        val value = HistoryWinDetailValueDto.Entries(listOf(HistoryWinDetailValueDto.Entries.EntryDto("custom:pattern", HistoryWinDetailQuantityDto("custom:point", 7))))
+        val row = presenter().detailText("custom:patterns", value, templates).single()
+        assertEquals("custom:pattern", (row.content as TranslatableTextContent).key)
+        assertTrue(row.string.endsWith("7 custom:point"))
     }
 
     /** 建立不包含規則專用邏輯的測試呈現來源。

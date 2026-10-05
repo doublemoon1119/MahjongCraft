@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.service
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ResolvedRoundOutcome
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundOutcomePresentationClassification
-import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiWinSettlementDetailResolver
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.registerRiichiWinSettlementDetailResolver
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Meld
@@ -158,8 +158,8 @@ class WinSettlementPresentationRequestFactoryTest {
 
         val request = WinSettlementPresentationRequestFactory.createSpecialOutcome(state, outcome, module, registry)
 
-        assertEquals(RiichiWinSettlementDetailResolver.TEMPLATE_KEY, request.templateKey)
-        assertEquals(RiichiWinSettlementDetailResolver.YAKU_FIELD, request.winners.single().detailFields.single().id)
+        assertEquals(module.id, request.ruleModuleId)
+        assertEquals(RiichiWinSettlementIds.YAKU_FIELD, request.winners.single().detailFields.single().id)
     }
 
     /** 贏家結算給出的付款原因會帶進 request，沒有原因的玩家不出現。 */

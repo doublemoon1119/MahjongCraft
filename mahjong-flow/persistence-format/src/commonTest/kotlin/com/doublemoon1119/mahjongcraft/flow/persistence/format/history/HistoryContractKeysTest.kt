@@ -51,21 +51,21 @@ class HistoryContractKeysTest {
     /** 和牌明細值種類識別碼必須保持既有文字值。 */
     @Test
     fun `detail value type keys preserve serialized contract`() {
-        assertEquals("text", HistoryDetailValueTypeKeys.TEXT)
+        assertEquals("quantities", HistoryDetailValueTypeKeys.QUANTITIES)
         assertEquals("tiles", HistoryDetailValueTypeKeys.TILES)
         assertEquals("entries", HistoryDetailValueTypeKeys.ENTRIES)
 
         assertEquals(
-            listOf("text", "tiles", "entries"),
+            listOf("quantities", "tiles", "entries"),
             listOf(
-                HistoryWinDetailValuePersistenceDto.Text.serializer(),
+                HistoryWinDetailValuePersistenceDto.Quantities.serializer(),
                 HistoryWinDetailValuePersistenceDto.Tiles.serializer(),
                 HistoryWinDetailValuePersistenceDto.Entries.serializer(),
             ).map { it.descriptor.serialName },
         )
 
-        val value = HistoryWinDetailValuePersistenceDto.Text("test.key")
+        val value = HistoryWinDetailValuePersistenceDto.Quantities(listOf(HistoryWinDetailQuantityPersistenceDto("test:unit", 1)))
         val encoded = Json.encodeToString(HistoryWinDetailValuePersistenceDto.serializer(), value)
-        assertEquals("text", Json.parseToJsonElement(encoded).jsonObject.getValue("type").jsonPrimitive.content)
+        assertEquals("quantities", Json.parseToJsonElement(encoded).jsonObject.getValue("type").jsonPrimitive.content)
     }
 }

@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.settlement
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.BUILT_IN_MATCH_SETTLEMENT_TEMPLATE_KEY
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -18,6 +17,20 @@ class MatchSettlementPresentationTemplateRegistryTest {
 
         assertEquals(MatchSettlementRevealOrder.LAST_TO_FIRST, template.revealOrder)
         assertEquals(100, template.readingTicks)
+    }
+
+    /** 規則綁定的模板優先，沒有綁定或綁定的模板不存在時使用內建模板。 */
+    @Test
+    fun `templates are selected by rule module with built in fallback`() {
+        val registry = MatchSettlementPresentationTemplateRegistryImpl()
+        registry.registerBuiltInMatchSettlementTemplate()
+        registry.register(MatchSettlementPresentationTemplate("example:custom", "example.title"))
+        registry.bindRuleTemplate("example:rule", "example:custom")
+        registry.bindRuleTemplate("example:missing_template_rule", "example:missing")
+
+        assertEquals("example:custom", registry.findForRule("example:rule")?.key)
+        assertEquals(BUILT_IN_MATCH_SETTLEMENT_TEMPLATE_KEY, registry.findForRule("example:missing_template_rule")?.key)
+        assertEquals(BUILT_IN_MATCH_SETTLEMENT_TEMPLATE_KEY, registry.findForRule("example:unbound")?.key)
     }
 
     /** registry 凍結後不得再接受第三方模板。 */

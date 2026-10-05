@@ -138,7 +138,7 @@ class HistoryRoundStatePresentationTest {
      * @param hand 已保存的和牌手牌描述；null 表示缺少描述。
      * @return 贏家詳情 DTO。
      */
-    private fun winner(seat: Int, hand: HistoryReplayWinningHandDto?) = HistoryWinnerDetailsDto(seat, "test:template", emptyList(), hand)
+    private fun winner(seat: Int, hand: HistoryReplayWinningHandDto?) = HistoryWinnerDetailsDto(seat, emptyList(), hand)
 
     /** 建立玩家桌況。
      * @param seat 玩家座位索引。

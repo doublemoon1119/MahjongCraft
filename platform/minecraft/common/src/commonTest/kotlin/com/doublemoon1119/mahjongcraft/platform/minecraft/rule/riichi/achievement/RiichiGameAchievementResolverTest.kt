@@ -10,8 +10,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailField
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailValue
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementTranslationKeys
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.WinSettlementYakuTranslationKeys
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
@@ -24,7 +24,6 @@ import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementDetector
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistryImpl
-import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -147,7 +146,7 @@ class RiichiGameAchievementResolverTest {
             HistoryFact.RuleEffectResolved(
                 reasonId = BuiltInRoundOutcomeIds.NAGASHI_MANGAN,
                 roundCompletion = null,
-                winDetails = listOf(HistoryWinDetails(achiever.id, "mahjongcraft:riichi", emptyList())),
+                winDetails = listOf(HistoryWinDetails(achiever.id, emptyList())),
             ),
         )
 
@@ -245,23 +244,27 @@ class RiichiGameAchievementResolverTest {
 
     private fun win(winnerId: Uuid, fields: List<WinSettlementDetailField>) = HistoryFact.WinSettled(
         outcomeId = BuiltInRoundOutcomeIds.TSUMO,
-        winDetails = listOf(HistoryWinDetails(winnerId, "mahjongcraft:riichi", fields)),
+        winDetails = listOf(HistoryWinDetails(winnerId, fields)),
     )
 
     private fun nonYakumanFields(han: Int, vararg yaku: YakuType) = listOf(
         yakuField(yaku.toList()),
-        WinSettlementDetailField(field("riichi_han_fu"), WinSettlementDetailValue.Text(WinSettlementTranslationKeys.HAN_FU, listOf(han.toString(), "30"))),
+        WinSettlementDetailField(
+            RiichiWinSettlementIds.HAN_FU_FIELD,
+            WinSettlementDetailValue.Quantities(listOf(WinSettlementQuantity(RiichiWinSettlementIds.HAN, han), WinSettlementQuantity(RiichiWinSettlementIds.FU, 30))),
+        ),
     )
 
     private fun yakumanFields(vararg yaku: YakuType) = listOf(
         yakuField(yaku.toList()),
-        WinSettlementDetailField(field("riichi_yakuman_total"), WinSettlementDetailValue.Text("mahjongcraft.game.score.yakuman_1x")),
+        WinSettlementDetailField(
+            RiichiWinSettlementIds.YAKUMAN_TOTAL_FIELD,
+            WinSettlementDetailValue.Quantities(listOf(WinSettlementQuantity(RiichiWinSettlementIds.YAKUMAN, 1))),
+        ),
     )
 
     private fun yakuField(yaku: List<YakuType>) = WinSettlementDetailField(
-        field("riichi_yaku"),
-        WinSettlementDetailValue.Entries(yaku.map { WinSettlementDetailValue.Entries.Entry(WinSettlementYakuTranslationKeys.keyFor(it)) }),
+        RiichiWinSettlementIds.YAKU_FIELD,
+        WinSettlementDetailValue.Entries(yaku.map { RiichiWinSettlementIds.yakuEntry(it, 1) }),
     )
-
-    private fun field(path: String) = "${MinecraftModMetadata.MOD_ID}:$path"
 }

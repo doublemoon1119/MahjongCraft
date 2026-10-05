@@ -276,10 +276,10 @@ internal class HistoryRoundEventsScreen(
                             row.detailFields.forEach detailField@{ field ->
                                 val tileValue = field.value as? HistoryWinDetailValueDto.Tiles
                                 if (tileValue != null && tileValue.tiles.isEmpty()) return@detailField
-                                eventPresenter.detailLabel(row.templateKey, field.id, settlementTemplates)?.let {
+                                eventPresenter.detailLabel(ruleId, field.id, settlementTemplates)?.let {
                                     addText(it, MUTED_COLOR, 46, identifiers = listOf(field.id))
                                 }
-                                eventPresenter.detailText(field.value).forEach { addText(it, TEXT_COLOR, 46, identifiers = listOf(field.id)) }
+                                eventPresenter.detailText(field.id, field.value, settlementTemplates).forEach { addText(it, TEXT_COLOR, 46, identifiers = listOf(field.id)) }
                                 (field.value as? HistoryWinDetailValueDto.Tiles)?.tiles?.mapNotNull(events.tileCatalog::getOrNull)
                                     ?.takeIf { it.isNotEmpty() }?.chunked(((layout.contentWidth - 54) / TILE_STEP).coerceAtLeast(1))?.forEach { rows += Row.Tiles(it, 46) }
                             }

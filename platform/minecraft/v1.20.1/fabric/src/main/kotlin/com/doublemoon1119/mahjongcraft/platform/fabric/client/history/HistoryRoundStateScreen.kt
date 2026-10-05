@@ -311,8 +311,8 @@ internal class HistoryRoundStateScreen(
             winner.detailFields.forEach detailField@{ field ->
                 val value = field.value
                 if (value is HistoryWinDetailValueDto.Tiles && value.tiles.isEmpty()) return@detailField
-                events.detailLabel(winner.templateKey, field.id, session.settlementTemplates)?.let { line(it, MUTED_COLOR) }
-                events.detailText(value).forEach { line(it) }
+                events.detailLabel(session.controller.state.value.summary?.detail?.summary?.ruleId, field.id, session.settlementTemplates)?.let { line(it, MUTED_COLOR) }
+                events.detailText(field.id, value, session.settlementTemplates).forEach { line(it) }
                 if (value is HistoryWinDetailValueDto.Tiles) group(HistoryTileGroupLayoutCalculator.hand(value.tiles, maxWidth = maxWidth))
             }
             add(Row.Space(12))

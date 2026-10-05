@@ -1,10 +1,14 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.settlement
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class WinSettlementPresentationTemplateRegistryTest {
@@ -149,6 +153,32 @@ class WinSettlementPresentationTemplateRegistryTest {
         assertFailsWith<IllegalArgumentException> {
             PresentationSoundCue("missing_namespace", PresentationTimelineAnchor.PANEL_START)
         }
+    }
+
+    /** 日麻規則使用日麻模板，沒有綁定的規則使用通用模板。 */
+    @Test
+    fun `templates are selected by rule module`() {
+        val registry = WinSettlementPresentationTemplateRegistryImpl()
+        registry.registerBuiltInWinSettlementTemplates()
+
+        assertEquals(BuiltInWinSettlementTemplateKeys.RIICHI, registry.findTemplateForRule(BuiltInRuleModuleIds.RIICHI)?.key)
+        assertEquals(BuiltInWinSettlementTemplateKeys.GENERIC, registry.findTemplateForRule("custom:rule")?.key)
+    }
+
+    /** 日麻詳情欄位登記了格式化器；同一欄位不得重複登記。 */
+    @Test
+    fun `riichi detail formatters are registered once per field`() {
+        val registry = WinSettlementPresentationTemplateRegistryImpl()
+        registry.registerBuiltInWinSettlementTemplates()
+
+        listOf(RiichiWinSettlementIds.YAKU_FIELD, RiichiWinSettlementIds.HAN_FU_FIELD, RiichiWinSettlementIds.YAKUMAN_TOTAL_FIELD).forEach { id ->
+            assertNotNull(registry.findDetailTextFormatter(id))
+        }
+        assertNull(registry.findDetailTextFormatter(RiichiWinSettlementIds.DORA_FIELD))
+        assertFailsWith<IllegalArgumentException> {
+            registry.registerDetailTextFormatter(RiichiWinSettlementIds.YAKU_FIELD, FallbackWinSettlementDetailTextFormatter)
+        }
+        assertFailsWith<IllegalArgumentException> { registry.bindRuleTemplate(BuiltInRuleModuleIds.RIICHI, "example:other") }
     }
 
     @Test

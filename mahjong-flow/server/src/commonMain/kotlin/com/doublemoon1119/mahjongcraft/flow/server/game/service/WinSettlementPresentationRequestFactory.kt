@@ -14,7 +14,7 @@ import kotlin.uuid.Uuid
 
 /** 建立胡牌詳情與共用分數排行的權威快照。 */
 object WinSettlementPresentationRequestFactory {
-    /** 建立不偽造翻符或胡牌張的 win-equivalent 特殊 outcome request；規則專屬樣板與欄位交由 [detailResolverRegistry] 解析。 */
+    /** 建立不偽造翻符或胡牌張的 win-equivalent 特殊 outcome request；規則專屬欄位交由 [detailResolverRegistry] 解析。 */
     fun createSpecialOutcome(
         previousState: TableState,
         outcome: ResolvedRoundOutcome,
@@ -24,10 +24,10 @@ object WinSettlementPresentationRequestFactory {
         val currentState = outcome.settledTableState
         val previousRanks = roundRanksByPlayer(previousState, module)
         val currentRanks = roundRanksByPlayer(currentState, module)
-        val resolvedDetails = detailResolverRegistry.resolveSpecialOutcome(module.id, currentState, outcome)
+        val detailFields = detailResolverRegistry.resolveSpecialOutcome(module.id, currentState, outcome)
         return WinSettlementPresentationRequest(
             outcomeId = outcome.id,
-            templateKey = resolvedDetails.templateKey,
+            ruleModuleId = module.id,
             isTsumo = outcome.responsiblePlayerIds.isEmpty(),
             winners = outcome.beneficiaryPlayerIds.map { winnerId ->
                 val player = currentState.players.first { it.id == winnerId }
@@ -39,7 +39,7 @@ object WinSettlementPresentationRequestFactory {
                     standingTileIds = sortedStandingTileIds(player.hand, module),
                     melds = player.hand.melds.map { it.toPresentation(currentState.config.revealsClosedKanTiles, module.tileOrder) },
                     winningTileId = null,
-                    detailFields = resolvedDetails.fields,
+                    detailFields = detailFields,
                 )
             },
             ranking = ScoreRankingPresentation(
@@ -59,7 +59,7 @@ object WinSettlementPresentationRequestFactory {
         )
     }
 
-    /** 建立一般自摸／榮和 request；規則專屬欄位在此轉成穩定、可序列化的 detail values。 */
+    /** 建立一般自摸／榮和 request；規則專屬欄位交由 [detailResolverRegistry] 解析。 */
     fun create(
         previousState: TableState,
         currentState: TableState,
@@ -73,13 +73,12 @@ object WinSettlementPresentationRequestFactory {
     ): WinSettlementPresentationRequest {
         val previousRanks = roundRanksByPlayer(previousState, module)
         val currentRanks = roundRanksByPlayer(currentState, module)
-        val resolvedDetails = resolutions.mapValues { (_, resolution) ->
+        val detailFields = resolutions.mapValues { (_, resolution) ->
             detailResolverRegistry.resolve(module.id, currentState, resolution.handValueResult)
         }
         return WinSettlementPresentationRequest(
             outcomeId = outcomeId,
-            templateKey = resolvedDetails.values.map(WinSettlementResolvedDetails::templateKey).distinct().singleOrNull()
-                ?: GENERIC_TEMPLATE_KEY,
+            ruleModuleId = module.id,
             isTsumo = isTsumo,
             winners = resolutions.map { (winnerId, resolution) ->
                 val player = currentState.players.first { it.id == winnerId }
@@ -91,7 +90,7 @@ object WinSettlementPresentationRequestFactory {
                     standingTileIds = sortedStandingTileIds(player.hand, module).filterNot { it == winningTileId },
                     melds = player.hand.melds.map { it.toPresentation(currentState.config.revealsClosedKanTiles, module.tileOrder) },
                     winningTileId = winningTileId,
-                    detailFields = resolvedDetails.getValue(winnerId).fields,
+                    detailFields = detailFields.getValue(winnerId),
                 )
             },
             ranking = ScoreRankingPresentation(
@@ -147,6 +146,4 @@ object WinSettlementPresentationRequestFactory {
         }
         return reasons
     }
-
-    const val GENERIC_TEMPLATE_KEY = "mahjongcraft:generic"
 }

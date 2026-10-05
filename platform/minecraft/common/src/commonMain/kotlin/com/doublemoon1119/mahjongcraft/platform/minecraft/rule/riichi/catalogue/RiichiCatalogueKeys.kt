@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.catalogue
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.WinSettlementYakuTranslationKeys
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiYakuTranslationKeys
 
 /**
  * 日麻目錄的固定分類，排列順序與列表呈現一致。
@@ -285,7 +285,7 @@ internal enum class RiichiCatalogueSpecial(
     val id: String get() = MahjongCraftMetadata.id("catalogue/riichi/$slug")
 
     /** 特殊說明名稱翻譯鍵；流局滿貫沿用既有結算名稱。 */
-    val nameKey: String get() = if (this == NAGASHI_MANGAN) WinSettlementYakuTranslationKeys.NAGASHI_MANGAN else RiichiCatalogueKeys.PREFIX + "name.$slug"
+    val nameKey: String get() = if (this == NAGASHI_MANGAN) RiichiYakuTranslationKeys.NAGASHI_MANGAN else RiichiCatalogueKeys.PREFIX + "name.$slug"
 
     /** 特殊說明完整敘述翻譯鍵。 */
     val descriptionKey: String get() = RiichiCatalogueKeys.PREFIX + "entry.$slug.description"

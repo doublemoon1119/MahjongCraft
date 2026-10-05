@@ -277,7 +277,12 @@ class WinSettlementPresentationEntity(
         private const val DETAIL_SOUND_ID = "minecraft:entity.experience_orb.pickup"
         private const val RANKING_SETTLED_SOUND_ID = "minecraft:entity.player.levelup"
         const val DETAIL_ENTRIES = "E"
-        const val ENTRY_VALUE_COUNT = 4
+
+        /** 每個條目在快照中的欄位數：名稱、右側文字、右側 key、右側參數、是否強調。 */
+        const val ENTRY_VALUE_COUNT = 5
+
+        /** 條目強調欄位為真時的值。 */
+        const val ENTRY_HIGHLIGHTED = "1"
         private const val F = '\u001f'
         private const val R = '\u001e'
         private const val L = '\u001d'

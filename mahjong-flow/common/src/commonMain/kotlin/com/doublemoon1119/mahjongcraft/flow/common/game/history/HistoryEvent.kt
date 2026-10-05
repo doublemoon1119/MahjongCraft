@@ -147,16 +147,14 @@ sealed interface HistoryFact {
 }
 
 /**
- * 已解析的胡牌公開詳情快照；只保存呈現所需的規則中立欄位，不保存規則領域物件。
+ * 已解析的胡牌公開詳情快照；只保存規則中立的語意欄位，不保存規則領域物件。
  *
  * @property playerId 胡牌玩家 UUID。
- * @property templateKey 對應規則呈現模板的穩定識別碼。
  * @property detailFields 已解析的翻符、役種或其他規則擴充欄位。
  * @property hand 結算時的立牌順序及和牌張；未記錄時為 null。
  */
 data class HistoryWinDetails(
     val playerId: Uuid,
-    val templateKey: String,
     val detailFields: List<WinSettlementDetailField>,
     val hand: HistoryWinningHand? = null,
 ) {

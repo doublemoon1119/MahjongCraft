@@ -38,12 +38,21 @@ sealed interface PresentationValue {
 
     /** 可逐項揭曉的文字條目。 */
     data class EntryListValue(val entries: List<Entry>) : PresentationValue {
-        /** 單一條目的本地化名稱與右側值。 */
+        /**
+         * 單一條目的本地化名稱與右側值。
+         *
+         * @property translationKey 條目名稱的 translation key。
+         * @property trailingText 右側的純文字值；與 [trailingTranslationKey] 不得同時提供。
+         * @property trailingTranslationKey 右側值的 translation key。
+         * @property trailingTranslationArgument [trailingTranslationKey] 的單一參數。
+         * @property highlighted 是否以強調樣式顯示，例如日麻的役滿條目。
+         */
         data class Entry(
             val translationKey: String,
             val trailingText: String = "",
             val trailingTranslationKey: String? = null,
             val trailingTranslationArgument: String? = null,
+            val highlighted: Boolean = false,
         )
     }
 }

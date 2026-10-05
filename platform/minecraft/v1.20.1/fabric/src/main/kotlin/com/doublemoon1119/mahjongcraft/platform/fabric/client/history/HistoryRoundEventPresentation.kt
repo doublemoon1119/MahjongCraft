@@ -3,10 +3,13 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFactTypeKeys
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryActionTypeKeys
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailEntry
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayFactDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundOutcomeDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinDetailFieldDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinDetailQuantityDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinDetailValueDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
@@ -18,6 +21,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHisto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationFieldId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.detailTextFormatter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
@@ -220,30 +224,40 @@ internal class HistoryRoundEventPresenter(
     }
 
     /**
-     * 將規則提供的文字詳情轉為保留其翻譯參數及單位的文字列。
-     * @param value 保存且已驗證的文字或條目資料；牌面詳情由牌面 renderer 處理。
-     * @return 依保存順序排列的文字列，不自行加入特定規則的計分單位。
+     * 將規則提供的詳情語意值轉為文字列；顯示文字由該欄位登記的格式化器決定。
+     * @param fieldId 已驗證的明細欄位識別碼。
+     * @param value 保存且已驗證的數值或條目資料；牌面詳情由牌面 renderer 處理。
+     * @param templates 正式結算模板註冊表。
+     * @return 依保存順序排列的文字列。
      */
-    fun detailText(value: HistoryWinDetailValueDto): List<Text> = when (value) {
-        is HistoryWinDetailValueDto.Text -> listOf(Text.translatable(value.translationKey, *value.arguments.toTypedArray()))
-        is HistoryWinDetailValueDto.Entries -> value.entries.map { entry ->
-            val text = Text.translatable(entry.translationKey)
-            val trailing = entry.trailingTranslationKey?.let { key ->
-                entry.trailingTranslationArgument?.let { Text.translatable(key, it) } ?: Text.translatable(key)
-            } ?: entry.trailingText.takeIf(String::isNotBlank)?.let(Text::literal)
-            trailing?.let { text.append(" • ").append(it.copy().formatted(Formatting.GRAY)) } ?: text
+    fun detailText(fieldId: String, value: HistoryWinDetailValueDto, templates: WinSettlementPresentationTemplateRegistry): List<Text> {
+        val formatter = templates.detailTextFormatter(fieldId)
+        return when (value) {
+            is HistoryWinDetailValueDto.Quantities -> formatter.quantities(value.quantities.map { it.toQuantity() }).let { text ->
+                listOf(Text.translatable(text.translationKey, *text.arguments.toTypedArray()))
+            }
+            is HistoryWinDetailValueDto.Entries -> formatter.entries(value.entries.map { WinSettlementDetailEntry(it.id, it.quantity?.toQuantity()) }).entries.map { entry ->
+                val text = Text.translatable(entry.translationKey)
+                val trailing = entry.trailingTranslationKey?.let { key ->
+                    entry.trailingTranslationArgument?.let { Text.translatable(key, it) } ?: Text.translatable(key)
+                } ?: entry.trailingText.takeIf(String::isNotBlank)?.let(Text::literal)
+                trailing?.let { text.append(" • ").append(it.copy().formatted(Formatting.GRAY)) } ?: text
+            }
+            is HistoryWinDetailValueDto.Tiles -> emptyList()
         }
-        is HistoryWinDetailValueDto.Tiles -> emptyList()
     }
 
-    /** 依已註冊模板取得欄位標題，不推測未知規則的欄位語意。
-     * @param templateKey 該贏家保存的結算模板識別碼。
+    /** 依對局規則使用的模板取得欄位標題，不推測未知規則的欄位語意。
+     * @param ruleId 對局規則模組 ID；未知時為 null。
      * @param fieldId 已驗證的明細欄位識別碼。
      * @param templates 正式結算模板註冊表。
      * @return 本地化標題；沒有對應模板或標題時為 null。
      */
-    fun detailLabel(templateKey: String?, fieldId: String, templates: WinSettlementPresentationTemplateRegistry): Text? = templateKey
-        ?.let(templates::findTemplate)?.detailFieldLabelKeys?.get(PresentationFieldId(fieldId))?.let(Text::translatable)
+    fun detailLabel(ruleId: String?, fieldId: String, templates: WinSettlementPresentationTemplateRegistry): Text? = ruleId
+        ?.let(templates::findTemplateForRule)?.detailFieldLabelKeys?.get(PresentationFieldId(fieldId))?.let(Text::translatable)
+
+    /** 將網路 DTO 的有單位數值還原為語意值。 */
+    private fun HistoryWinDetailQuantityDto.toQuantity(): WinSettlementQuantity = WinSettlementQuantity(unitId, amount)
 
     /** 將動作 ID 解析成規則化顯示文字；未知 ID 使用通用玩家用語。
      * @param ruleId 對局規則模組 ID。
@@ -376,7 +390,6 @@ internal data class HistoryOutcomePresentation(
  * @property score 結算後的絕對分數；沒有保存該玩家分數時為 null。
  * @property scoreChange 該筆交易的權威分數差；缺少可信的前後資料時為 null。
  * @property detailFields 該玩家已保存的和牌明細；缺少時為空，不重新計分。
- * @property templateKey 該玩家保存的結算模板識別碼，用於解析欄位標題。
  * @property beneficiary 是否屬於結算受益玩家。
  * @property responsible 是否屬於結算責任玩家。
  */
@@ -387,7 +400,6 @@ internal data class HistoryOutcomeRowPresentation(
     val responsible: Boolean,
     val scoreChange: Int? = null,
     val detailFields: List<HistoryWinDetailFieldDto> = emptyList(),
-    val templateKey: String? = null,
 )
 
 /** 將結算 DTO 轉成保留結算存在性的呈現資料。
@@ -408,7 +420,6 @@ private fun HistoryRoundOutcomeDto.toPresentation(identitySeats: List<Int>, reas
             seat in responsibleSeats,
             scoreChangesBySeat[seat],
             winnerDetails.firstOrNull { it.seatIndex == seat }?.detailFields.orEmpty(),
-            winnerDetails.firstOrNull { it.seatIndex == seat }?.templateKey,
         )
     },
     hasEarlierWinSettlement = hasEarlierWinSettlement,

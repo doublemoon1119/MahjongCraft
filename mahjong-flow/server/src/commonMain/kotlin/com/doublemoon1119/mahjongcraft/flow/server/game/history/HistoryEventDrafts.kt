@@ -6,7 +6,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinDetails
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinningHand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementPresentationRequest
-import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWallRevealable
@@ -47,22 +46,15 @@ fun acceptedActionHistoryDraft(
     )
 }
 
-/** 將已建立的胡牌呈現 request 轉成歷史詳情並套用規則提供的欄位轉換。
+/** 將已建立的胡牌 request 轉成歷史詳情。
  *
- * @param request 已建立的胡牌呈現 request。
- * @param ruleModuleId 規則模組識別碼。
- * @param resolverRegistry 胡牌詳情解析器 registry。
+ * @param request 已建立的胡牌 request。
  * @return 可保存的規則中立胡牌詳情。
  */
-fun winSettlementHistoryDetails(
-    request: WinSettlementPresentationRequest,
-    ruleModuleId: String,
-    resolverRegistry: WinSettlementDetailResolverRegistry,
-): List<HistoryWinDetails> = request.winners.map { winner ->
+fun winSettlementHistoryDetails(request: WinSettlementPresentationRequest): List<HistoryWinDetails> = request.winners.map { winner ->
     HistoryWinDetails(
         playerId = winner.playerId,
-        templateKey = request.templateKey,
-        detailFields = resolverRegistry.historyFields(ruleModuleId, winner.detailFields),
+        detailFields = winner.detailFields,
         hand = HistoryWinningHand(winner.standingTileIds, winner.winningTileId),
     )
 }

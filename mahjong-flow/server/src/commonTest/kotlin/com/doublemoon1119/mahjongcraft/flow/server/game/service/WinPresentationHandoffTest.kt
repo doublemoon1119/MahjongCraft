@@ -89,7 +89,7 @@ class WinPresentationHandoffTest {
             ),
             settlement = WinSettlementPresentationRequest(
                 outcomeId = "mahjongcraft:tsumo",
-                templateKey = "mahjongcraft:riichi",
+                ruleModuleId = "mahjongcraft:riichi",
                 isTsumo = true,
                 winners = listOf(
                     WinSettlementWinnerPresentation(

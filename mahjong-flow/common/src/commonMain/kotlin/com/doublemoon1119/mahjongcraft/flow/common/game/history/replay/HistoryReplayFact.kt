@@ -1,33 +1,21 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.history.replay
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailEntry
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 
-/** 歷史胡牌詳情值。 */
+/** 歷史胡牌詳情值；與對局中的胡牌詳情相同，只保存規則算出的語意資料。 */
 sealed interface HistoryWinDetailValue {
-    /** 可翻譯的文字值。
-     * @property translationKey 翻譯鍵。
-     * @property arguments 翻譯參數。
+    /** 有單位的數值。
+     * @property quantities 依規則順序排列的數值。
      */
-    data class Text(val translationKey: String, val arguments: List<String> = emptyList()) : HistoryWinDetailValue
+    data class Quantities(val quantities: List<WinSettlementQuantity>) : HistoryWinDetailValue
 
-    /** 可翻譯的條目集合。
+    /** 依規則順序排列的條目。
      * @property entries 條目列表。
      */
-    data class Entries(val entries: List<Entry>) : HistoryWinDetailValue {
-        /** 單一可翻譯條目。
-         * @property translationKey 條目翻譯鍵。
-         * @property trailingText 條目尾端純文字。
-         * @property trailingTranslationKey 條目尾端翻譯鍵。
-         * @property trailingTranslationArgument 條目尾端翻譯參數。
-         */
-        data class Entry(
-            val translationKey: String,
-            val trailingText: String = "",
-            val trailingTranslationKey: String? = null,
-            val trailingTranslationArgument: String? = null,
-        )
-    }
+    data class Entries(val entries: List<WinSettlementDetailEntry>) : HistoryWinDetailValue
 
     /** 局內牌參照集合。
      * @property tiles 局內牌參照列表。
@@ -43,13 +31,11 @@ data class HistoryWinDetailField(val id: String, val value: HistoryWinDetailValu
 
 /** 歷史單一贏家詳情。
  * @property seatIndex 贏家座位。
- * @property templateKey 規則專屬詳情模板識別碼。
  * @property detailFields 規則專屬詳情欄位。
  * @property hand 保存結算順序的立牌與和牌張；未記錄時為 null。
  */
 data class HistoryWinnerDetails(
     val seatIndex: Int,
-    val templateKey: String,
     val detailFields: List<HistoryWinDetailField>,
     val hand: HistoryReplayWinningHand? = null,
 )

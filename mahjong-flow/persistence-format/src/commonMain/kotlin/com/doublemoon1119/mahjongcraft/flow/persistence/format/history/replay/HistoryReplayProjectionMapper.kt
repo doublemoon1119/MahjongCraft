@@ -17,6 +17,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryTi
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryWinDetailField
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryWinDetailValue
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryWinnerDetails
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailEntry
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.MatchRoundPositionPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.MeldTypePersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.RelativeDirectionPersistenceDto
@@ -228,7 +230,6 @@ internal class HistoryReplayProjectionMapper(private val registry: HistoryReplay
             val item = obj(raw)
             HistoryWinnerDetails(
                 seatIndex = context.seat(integer(item.getValue(ReplaySourceKeys.PLAYER_ID))),
-                templateKey = string(item.getValue(ReplaySourceKeys.TEMPLATE_KEY)),
                 detailFields = array(item.getValue(ReplaySourceKeys.DETAIL_FIELDS)).map { fieldValue ->
                     val field = obj(fieldValue)
                     HistoryWinDetailField(
@@ -270,19 +271,17 @@ internal class HistoryReplayProjectionMapper(private val registry: HistoryReplay
      * 將持久化和牌值轉成不含 UUID 的歷史明細值。
      * @param value 已保存的明細值。
      * @param context 座位與牌參照驗證上下文。
-     * @return 文字、牌參照或有序條目。
+     * @return 有單位數值、牌參照或有序條目。
      */
     private fun detailValue(value: JsonObject, context: HistoryReplayProjectionContext): HistoryWinDetailValue = when (string(value.getValue(ReplaySourceKeys.TYPE))) {
-        HistoryDetailValueTypeKeys.TEXT -> HistoryWinDetailValue.Text(string(value.getValue(ReplaySourceKeys.TRANSLATION_KEY)), value[ReplaySourceKeys.ARGUMENTS]?.let(::strings) ?: emptyList())
+        HistoryDetailValueTypeKeys.QUANTITIES -> HistoryWinDetailValue.Quantities(array(value.getValue(ReplaySourceKeys.QUANTITIES)).map { quantity(obj(it)) })
         HistoryDetailValueTypeKeys.TILES -> HistoryWinDetailValue.Tiles(refs(value.getValue(ReplaySourceKeys.TILE_IDS), context))
         HistoryDetailValueTypeKeys.ENTRIES -> HistoryWinDetailValue.Entries(
             array(value.getValue(ReplaySourceKeys.ENTRIES)).map { raw ->
                 val entry = obj(raw)
-                HistoryWinDetailValue.Entries.Entry(
-                    translationKey = string(entry.getValue(ReplaySourceKeys.TRANSLATION_KEY)),
-                    trailingText = entry[ReplaySourceKeys.TRAILING_TEXT]?.let(::string) ?: "",
-                    trailingTranslationKey = entry[ReplaySourceKeys.TRAILING_TRANSLATION_KEY]?.takeUnless { it == JsonNull }?.let(::string),
-                    trailingTranslationArgument = entry[ReplaySourceKeys.TRAILING_TRANSLATION_ARGUMENT]?.takeUnless { it == JsonNull }?.let(::string),
+                WinSettlementDetailEntry(
+                    id = string(entry.getValue(ReplaySourceKeys.ID)),
+                    quantity = entry[ReplaySourceKeys.QUANTITY]?.takeUnless { it == JsonNull }?.let { quantity(obj(it)) },
                 )
             },
         )
@@ -290,11 +289,14 @@ internal class HistoryReplayProjectionMapper(private val registry: HistoryReplay
     }
 
     /**
-     * 讀取字串陣列。
-     * @param value 待驗證的 JSON 陣列。
-     * @return 保留原順序的字串。
+     * 讀取有單位數值。
+     * @param value 已保存的有單位數值。
+     * @return 單位與數值。
      */
-    private fun strings(value: JsonElement): List<String> = array(value).map(::string)
+    private fun quantity(value: JsonObject): WinSettlementQuantity = WinSettlementQuantity(
+        unitId = string(value.getValue(ReplaySourceKeys.UNIT_ID)),
+        amount = integer(value.getValue(ReplaySourceKeys.AMOUNT)),
+    )
 
     /**
      * 將索引字串鍵分數表轉為座位分數。

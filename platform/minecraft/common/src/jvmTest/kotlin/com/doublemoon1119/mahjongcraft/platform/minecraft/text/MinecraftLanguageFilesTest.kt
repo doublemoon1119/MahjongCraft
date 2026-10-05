@@ -1,7 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.text
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementTranslationKeys
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.WinSettlementYakuTranslationKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.registerBuiltInAutomaticControlDisplays
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
@@ -13,6 +11,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresent
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.MinecraftRoomScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.registerBuiltInGameConfigPresentations
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiYakuTranslationKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementTextKeys
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -77,7 +77,7 @@ class MinecraftLanguageFilesTest {
             val settlementKeys = loadTranslations(locale).keys.filterTo(mutableSetOf()) { it.startsWith(settlementPrefix) }
 
             assertEquals(
-                WinSettlementTranslationKeys.ALL,
+                WinSettlementTextKeys.ALL,
                 settlementKeys,
                 "$locale settlement keys do not match the production settlement schema",
             )
@@ -105,7 +105,7 @@ class MinecraftLanguageFilesTest {
             val yakuKeys = loadTranslations(locale).keys.filterTo(mutableSetOf()) { it.startsWith(yakuPrefix) }
 
             assertEquals(
-                WinSettlementYakuTranslationKeys.ALL,
+                RiichiYakuTranslationKeys.ALL,
                 yakuKeys,
                 "$locale yaku keys do not match the production yaku schema",
             )

@@ -13,8 +13,10 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinningHa
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryDetailValueTypeKeys
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinSettlementMode
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailEntry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailField
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailValue
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.config.GameFlowConfigPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.config.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.config.toPersistenceDto
@@ -280,14 +282,12 @@ sealed interface HistoryFactPersistenceDto {
 /** 胡牌詳情的持久化表示。
  *
  * @property playerId 胡牌玩家 UUID 字串。
- * @property templateKey 規則呈現模板識別碼。
  * @property detailFields 胡牌詳情欄位。
  * @property hand 結算時的立牌順序與和牌張；未記錄時為 null。
  */
 @Serializable
 data class HistoryWinDetailsPersistenceDto(
     val playerId: String,
-    val templateKey: String,
     val detailFields: List<HistoryWinDetailFieldPersistenceDto>,
     @EncodeDefault(EncodeDefault.Mode.NEVER)
     val hand: HistoryWinningHandPersistenceDto? = null,
@@ -318,17 +318,14 @@ data class HistoryWinDetailFieldPersistenceDto(
 /** 胡牌詳情值的明確持久化種類。 */
 @Serializable
 sealed interface HistoryWinDetailValuePersistenceDto {
-    /** 翻譯鍵與其字串參數。
+    /** 有單位的數值。
      *
-     * @property translationKey 翻譯鍵。
-     * @property arguments 翻譯參數。
+     * @property quantities 依規則順序排列的數值。
      */
     @Serializable
-    @SerialName(HistoryDetailValueTypeKeys.TEXT)
-    data class Text(
-        val translationKey: String,
-        @EncodeDefault(EncodeDefault.Mode.NEVER)
-        val arguments: List<String> = emptyList(),
+    @SerialName(HistoryDetailValueTypeKeys.QUANTITIES)
+    data class Quantities(
+        val quantities: List<HistoryWinDetailQuantityPersistenceDto>,
     ) : HistoryWinDetailValuePersistenceDto
 
     /** 局內牌 UUID 清單。
@@ -352,23 +349,28 @@ sealed interface HistoryWinDetailValuePersistenceDto {
     ) : HistoryWinDetailValuePersistenceDto {
         /** 單一詳情條目。
          *
-         * @property translationKey 條目翻譯鍵。
-         * @property trailingText 條目尾端純文字。
-         * @property trailingTranslationKey 條目尾端翻譯鍵。
-         * @property trailingTranslationArgument 條目尾端翻譯參數。
+         * @property id 規則定義的條目 ID。
+         * @property quantity 條目附帶的數值；沒有數值時為 null。
          */
         @Serializable
         data class Entry(
-            val translationKey: String,
+            val id: String,
             @EncodeDefault(EncodeDefault.Mode.NEVER)
-            val trailingText: String = "",
-            @EncodeDefault(EncodeDefault.Mode.NEVER)
-            val trailingTranslationKey: String? = null,
-            @EncodeDefault(EncodeDefault.Mode.NEVER)
-            val trailingTranslationArgument: String? = null,
+            val quantity: HistoryWinDetailQuantityPersistenceDto? = null,
         )
     }
 }
+
+/** 有單位數值的持久化表示。
+ *
+ * @property unitId 規則定義的單位 ID。
+ * @property amount 數值。
+ */
+@Serializable
+data class HistoryWinDetailQuantityPersistenceDto(
+    val unitId: String,
+    val amount: Int,
+)
 
 /** 胡牌後續決策的明確持久化表示。 */
 @Serializable
@@ -636,7 +638,6 @@ class HistoryRecordingPersistenceMapper(
  */
 private fun HistoryWinDetails.toPersistenceDto() = HistoryWinDetailsPersistenceDto(
     playerId = playerId.toString(),
-    templateKey = templateKey,
     detailFields = detailFields.map { field ->
         HistoryWinDetailFieldPersistenceDto(field.id, field.value.toPersistenceDto())
     },
@@ -648,7 +649,6 @@ private fun HistoryWinDetails.toPersistenceDto() = HistoryWinDetailsPersistenceD
  */
 private fun HistoryWinDetailsPersistenceDto.toDomain() = HistoryWinDetails(
     playerId = Uuid.parse(playerId),
-    templateKey = templateKey,
     detailFields = detailFields.map { field ->
         WinSettlementDetailField(field.id, field.value.toDomain())
     },
@@ -656,40 +656,32 @@ private fun HistoryWinDetailsPersistenceDto.toDomain() = HistoryWinDetails(
 )
 
 /** 將規則中立明細值映射為明確保存種類。
- * @return 文字、牌 UUID 或條目 DTO。
+ * @return 數值、牌 UUID 或條目 DTO。
  */
 private fun WinSettlementDetailValue.toPersistenceDto(): HistoryWinDetailValuePersistenceDto = when (this) {
-    is WinSettlementDetailValue.Text -> HistoryWinDetailValuePersistenceDto.Text(translationKey, arguments)
+    is WinSettlementDetailValue.Quantities -> HistoryWinDetailValuePersistenceDto.Quantities(quantities.map { it.toPersistenceDto() })
     is WinSettlementDetailValue.Tiles -> HistoryWinDetailValuePersistenceDto.Tiles(tileIds.map(Uuid::toString))
     is WinSettlementDetailValue.Entries -> HistoryWinDetailValuePersistenceDto.Entries(
-        entries.map { entry ->
-            HistoryWinDetailValuePersistenceDto.Entries.Entry(
-                entry.translationKey,
-                entry.trailingText,
-                entry.trailingTranslationKey,
-                entry.trailingTranslationArgument,
-            )
-        },
+        entries.map { entry -> HistoryWinDetailValuePersistenceDto.Entries.Entry(entry.id, entry.quantity?.toPersistenceDto()) },
     )
 }
 
 /** 將保存的明細值還原，不執行規則計算。
- * @return 原有順序與翻譯參數的明細值。
+ * @return 原有順序的明細值。
  */
 private fun HistoryWinDetailValuePersistenceDto.toDomain(): WinSettlementDetailValue = when (this) {
-    is HistoryWinDetailValuePersistenceDto.Text -> WinSettlementDetailValue.Text(translationKey, arguments)
+    is HistoryWinDetailValuePersistenceDto.Quantities -> WinSettlementDetailValue.Quantities(quantities.map { it.toDomain() })
     is HistoryWinDetailValuePersistenceDto.Tiles -> WinSettlementDetailValue.Tiles(tileIds.map(Uuid::parse))
     is HistoryWinDetailValuePersistenceDto.Entries -> WinSettlementDetailValue.Entries(
-        entries.map { entry ->
-            WinSettlementDetailValue.Entries.Entry(
-                entry.translationKey,
-                entry.trailingText,
-                entry.trailingTranslationKey,
-                entry.trailingTranslationArgument,
-            )
-        },
+        entries.map { entry -> WinSettlementDetailEntry(entry.id, entry.quantity?.toDomain()) },
     )
 }
+
+/** 將有單位數值映射為保存格式。 */
+private fun WinSettlementQuantity.toPersistenceDto() = HistoryWinDetailQuantityPersistenceDto(unitId, amount)
+
+/** 將保存的有單位數值還原。 */
+private fun HistoryWinDetailQuantityPersistenceDto.toDomain() = WinSettlementQuantity(unitId, amount)
 
 /** 將胡牌後續決策轉成持久化 DTO。 */
 private fun WinRoundDirective.toPersistenceDto(): WinRoundDirectivePersistenceDto = when (this) {

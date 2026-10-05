@@ -16,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRo
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryWinDetailField
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryWinDetailValue
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryWinnerDetails
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDto
 import kotlinx.serialization.json.Json
@@ -116,7 +117,6 @@ private fun HistoryRoundOutcome.toDto(): HistoryRoundOutcomeDto = HistoryRoundOu
  */
 private fun HistoryWinnerDetails.toDto(): HistoryWinnerDetailsDto = HistoryWinnerDetailsDto(
     seatIndex = seatIndex,
-    templateKey = templateKey,
     detailFields = detailFields.map { it.toDto() },
     hand = hand?.toDto(),
 )
@@ -136,14 +136,15 @@ private fun HistoryWinDetailField.toDto(): HistoryWinDetailFieldDto = HistoryWin
  * @return 可公開傳輸的詳情值。
  */
 private fun HistoryWinDetailValue.toDto(): HistoryWinDetailValueDto = when (this) {
-    is HistoryWinDetailValue.Text -> HistoryWinDetailValueDto.Text(translationKey, arguments)
+    is HistoryWinDetailValue.Quantities -> HistoryWinDetailValueDto.Quantities(quantities.map { it.toDto() })
     is HistoryWinDetailValue.Entries -> HistoryWinDetailValueDto.Entries(
-        entries.map {
-            HistoryWinDetailValueDto.Entries.EntryDto(it.translationKey, it.trailingText, it.trailingTranslationKey, it.trailingTranslationArgument)
-        },
+        entries.map { HistoryWinDetailValueDto.Entries.EntryDto(it.id, it.quantity?.toDto()) },
     )
     is HistoryWinDetailValue.Tiles -> HistoryWinDetailValueDto.Tiles(tiles.map { it.tileIndex })
 }
+
+/** 將有單位數值映射為網路 DTO。 */
+private fun WinSettlementQuantity.toDto(): HistoryWinDetailQuantityDto = HistoryWinDetailQuantityDto(unitId, amount)
 
 /** 將 Flow 單局桌況映射為網路 DTO。
  * @return 可公開傳輸的桌況 DTO。

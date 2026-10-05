@@ -12,9 +12,12 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementSound
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementWinnerSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.PersistentTableOverlayCoordinator
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.BuiltInWinSettlementTemplateKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationTimelineAnchor
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationValue
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementRevealSequence
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.detailTextFormatter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPlacement
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.math.BlockPos
@@ -60,20 +63,16 @@ class FabricWinSettlementPresentationScheduler(
                 },
                 winningTileAssetKey = winner.winningTileId?.let(tileAssetsById::get).orEmpty(),
                 details = winner.detailFields.map { field ->
+                    val formatter = templateRegistry.detailTextFormatter(field.id)
                     when (val value = field.value) {
-                        is WinSettlementDetailValue.Text -> WinSettlementDetailSnapshot(field.id, WinSettlementPresentationEntity.DETAIL_TEXT, listOf(value.translationKey) + value.arguments)
+                        is WinSettlementDetailValue.Quantities -> formatter.quantities(value.quantities).let { text ->
+                            WinSettlementDetailSnapshot(field.id, WinSettlementPresentationEntity.DETAIL_TEXT, listOf(text.translationKey) + text.arguments)
+                        }
                         is WinSettlementDetailValue.Tiles -> WinSettlementDetailSnapshot(field.id, WinSettlementPresentationEntity.DETAIL_TILES, value.tileIds.mapNotNull(tileAssetsById::get))
                         is WinSettlementDetailValue.Entries -> WinSettlementDetailSnapshot(
                             field.id,
                             WinSettlementPresentationEntity.DETAIL_ENTRIES,
-                            value.entries.flatMap {
-                                listOf(
-                                    it.translationKey,
-                                    it.trailingText,
-                                    it.trailingTranslationKey.orEmpty(),
-                                    it.trailingTranslationArgument.orEmpty(),
-                                )
-                            },
+                            formatter.entries(value.entries).entries.flatMap(::entrySnapshotValues),
                         )
                     }
                 },
@@ -91,7 +90,8 @@ class FabricWinSettlementPresentationScheduler(
                 paymentReasonId = request.paymentReasonIdsByPlayerId[it.playerId],
             )
         }
-        val template = templateRegistry.findTemplate(request.templateKey)
+        val template = templateRegistry.findTemplateForRule(request.ruleModuleId)
+        val templateKey = template?.key ?: BuiltInWinSettlementTemplateKeys.GENERIC
         val reveal = template?.reveal ?: WinSettlementRevealSequence()
         val scoreRevealDelayTicks = WinSettlementPresentationEntity.scoreRevealDelayTicks(template?.root)
         val timing = WinSettlementRevealTimingSnapshot(
@@ -102,7 +102,7 @@ class FabricWinSettlementPresentationScheduler(
         )
         val soundCues = buildSoundCues(winners, reveal, timing, scoreRevealDelayTicks)
         val stage = WinSettlementPresentationEntity(world = world).apply {
-            configure(tableId, start, request.outcomeId, request.templateKey, request.isTsumo, winners, rankings, timing, soundCues)
+            configure(tableId, start, request.outcomeId, templateKey, request.isTsumo, winners, rankings, timing, soundCues)
             refreshPositionAndAngles(placement.x, placement.y + STAGE_HEIGHT_OFFSET, placement.z, placement.yaw, 0f)
         }
         if (!spawnGateway.spawn(world, stage, "win-settlement", tableId)) return null
@@ -168,3 +168,12 @@ class FabricWinSettlementPresentationScheduler(
         const val BRIEF_PRESENTATION_HANDOFF_GRACE_TICKS = 5L
     }
 }
+
+/** 把一個顯示條目攤平成快照欄位，順序與數量見 [WinSettlementPresentationEntity.ENTRY_VALUE_COUNT]。 */
+private fun entrySnapshotValues(entry: PresentationValue.EntryListValue.Entry): List<String> = listOf(
+    entry.translationKey,
+    entry.trailingText,
+    entry.trailingTranslationKey.orEmpty(),
+    entry.trailingTranslationArgument.orEmpty(),
+    if (entry.highlighted) WinSettlementPresentationEntity.ENTRY_HIGHLIGHTED else "",
+)

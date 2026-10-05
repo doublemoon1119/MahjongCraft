@@ -180,7 +180,7 @@ class GameAchievementDetectorTest {
         facts = listOf(HistoryEventDraft(null, fact)),
     )
 
-    private fun winDetails(playerId: Uuid) = HistoryWinDetails(playerId = playerId, templateKey = "mahjongcraft:generic", detailFields = emptyList())
+    private fun winDetails(playerId: Uuid) = HistoryWinDetails(playerId = playerId, detailFields = emptyList())
 
     private fun roundSummary(game: Game, classification: RoundCompletionClassification) = RoundCompletionSummary(
         outcomeId = "mahjongcraft:test_draw",

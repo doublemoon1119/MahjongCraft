@@ -1,9 +1,12 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.settlement
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.BUILT_IN_MATCH_SETTLEMENT_TEMPLATE_KEY
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
+import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftResourceIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
+
+/** 內建通用終局結算模板 key；規則沒有綁定模板時使用。 */
+const val BUILT_IN_MATCH_SETTLEMENT_TEMPLATE_KEY: String = "${MinecraftModMetadata.MOD_ID}:generic_match_settlement"
 
 /** 終局名次的宣告式揭曉方向。 */
 enum class MatchSettlementRevealOrder {
@@ -61,8 +64,24 @@ interface MatchSettlementPresentationTemplateRegistry {
     /** 登記一個完整模板；重複 key 視為錯誤。 */
     fun register(template: MatchSettlementPresentationTemplate)
 
+    /**
+     * 指定規則模組使用的模板。
+     *
+     * @param ruleModuleId 規則模組 ID。
+     * @param templateKey 已登記或之後會登記的模板 key。
+     */
+    fun bindRuleTemplate(ruleModuleId: String, templateKey: String)
+
     /** 查詢指定 key 的模板。 */
     fun find(key: String): MatchSettlementPresentationTemplate?
+
+    /**
+     * 取得規則模組使用的模板；沒有綁定或綁定的模板不存在時使用 [BUILT_IN_MATCH_SETTLEMENT_TEMPLATE_KEY]。
+     *
+     * @param ruleModuleId 規則模組 ID。
+     * @return 模板；連內建模板都不存在時為 null。
+     */
+    fun findForRule(ruleModuleId: String): MatchSettlementPresentationTemplate?
 
     /** 凍結 registry，之後不可再登記。 */
     fun freeze()
@@ -71,8 +90,9 @@ interface MatchSettlementPresentationTemplateRegistry {
 /** [MatchSettlementPresentationTemplateRegistry] 的記憶體實作。 */
 class MatchSettlementPresentationTemplateRegistryImpl : MatchSettlementPresentationTemplateRegistry {
     private val templates = linkedMapOf<String, MatchSettlementPresentationTemplate>()
+    private val ruleTemplateKeys = linkedMapOf<String, String>()
 
-    override val registrationKeys: Set<String> get() = templates.keys.toSet()
+    override val registrationKeys: Set<String> get() = templates.keys + ruleTemplateKeys.keys.map { "rule:$it" }
     private var frozen = false
 
     override fun register(template: MatchSettlementPresentationTemplate) {
@@ -80,7 +100,17 @@ class MatchSettlementPresentationTemplateRegistryImpl : MatchSettlementPresentat
         require(templates.putIfAbsent(template.key, template) == null) { "Duplicate match settlement template: ${template.key}" }
     }
 
+    override fun bindRuleTemplate(ruleModuleId: String, templateKey: String) {
+        check(!frozen) { "Match settlement template registry is frozen" }
+        NamespacedId.requireValid(ruleModuleId) { "Rule module ID must be namespaced: $ruleModuleId" }
+        NamespacedId.requireValid(templateKey) { "Match settlement template key must be namespaced: $templateKey" }
+        require(ruleTemplateKeys.putIfAbsent(ruleModuleId, templateKey) == null) { "Duplicate match settlement rule template: $ruleModuleId" }
+    }
+
     override fun find(key: String): MatchSettlementPresentationTemplate? = templates[key]
+
+    override fun findForRule(ruleModuleId: String): MatchSettlementPresentationTemplate? = ruleTemplateKeys[ruleModuleId]?.let(templates::get)
+        ?: templates[BUILT_IN_MATCH_SETTLEMENT_TEMPLATE_KEY]
 
     override fun freeze() {
         frozen = true

@@ -1,8 +1,22 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.settlement
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementTranslationKeys
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.registerRiichiWinSettlementDetailTexts
+
+/** 內建胡牌結算模板的 key。 */
+object BuiltInWinSettlementTemplateKeys {
+    /** 規則中立的通用模板；規則沒有綁定模板時使用。 */
+    const val GENERIC: String = "${MinecraftModMetadata.MOD_ID}:generic"
+
+    /** 流局滿貫模板。 */
+    const val NAGASHI_MANGAN: String = "${MinecraftModMetadata.MOD_ID}:nagashi_mangan"
+
+    /** 內建日麻模板。 */
+    const val RIICHI: String = "${MinecraftModMetadata.MOD_ID}:riichi"
+}
 
 /** 規則中立的內建胡牌結算欄位。 */
 object BuiltInWinSettlementFieldIds {
@@ -33,7 +47,7 @@ fun WinSettlementPresentationTemplateRegistry.registerBuiltInWinSettlementTempla
     val background = PresentationContainerStyle(backgroundArgb = 0xCC101722.toInt(), padding = 8f)
     registerTemplate(
         WinSettlementPresentationTemplate(
-            key = "${MinecraftModMetadata.MOD_ID}:generic",
+            key = BuiltInWinSettlementTemplateKeys.GENERIC,
             root = PresentationLayout.Column(
                 children = listOf(
                     PresentationLayout.Text(BuiltInWinSettlementFieldIds.OUTCOME_TITLE),
@@ -56,12 +70,12 @@ fun WinSettlementPresentationTemplateRegistry.registerBuiltInWinSettlementTempla
     )
     registerTemplate(
         WinSettlementPresentationTemplate(
-            key = "${MinecraftModMetadata.MOD_ID}:nagashi_mangan",
+            key = BuiltInWinSettlementTemplateKeys.NAGASHI_MANGAN,
             root = PresentationLayout.Column(
                 children = listOf(
                     PresentationLayout.Text(BuiltInWinSettlementFieldIds.OUTCOME_TITLE),
                     PresentationLayout.Text(BuiltInWinSettlementFieldIds.WINNER_SUMMARY),
-                    PresentationLayout.RepeatEntries(PresentationFieldId("${MinecraftModMetadata.MOD_ID}:riichi_yaku")),
+                    PresentationLayout.RepeatEntries(PresentationFieldId(RiichiWinSettlementIds.YAKU_FIELD)),
                     PresentationLayout.Text(BuiltInWinSettlementFieldIds.TOTAL_SCORE),
                 ),
                 spacing = 6f,
@@ -78,9 +92,9 @@ fun WinSettlementPresentationTemplateRegistry.registerBuiltInWinSettlementTempla
     registerFieldProvider(BuiltInWinSettlementFieldIds.OUTCOME_TITLE) { snapshot ->
         PresentationValue.TextValue(
             when {
-                snapshot.outcomeId == BuiltInRoundOutcomeIds.NAGASHI_MANGAN -> WinSettlementTranslationKeys.NAGASHI_MANGAN
-                snapshot.isTsumo -> WinSettlementTranslationKeys.TSUMO
-                else -> WinSettlementTranslationKeys.RON
+                snapshot.outcomeId == BuiltInRoundOutcomeIds.NAGASHI_MANGAN -> WinSettlementTextKeys.NAGASHI_MANGAN
+                snapshot.isTsumo -> WinSettlementTextKeys.TSUMO
+                else -> WinSettlementTextKeys.RON
             },
         )
     }
@@ -89,7 +103,7 @@ fun WinSettlementPresentationTemplateRegistry.registerBuiltInWinSettlementTempla
             PresentationValue.TextValue("%s", listOf(snapshot.winnerDisplayName))
         } else {
             PresentationValue.TextValue(
-                WinSettlementTranslationKeys.RON_RELATIONSHIP,
+                WinSettlementTextKeys.RON_RELATIONSHIP,
                 listOf(snapshot.winnerDisplayName, snapshot.responsiblePlayerDisplayName.orEmpty()),
             )
         }
@@ -107,38 +121,38 @@ fun WinSettlementPresentationTemplateRegistry.registerBuiltInWinSettlementTempla
         }
     }
     registerFieldProvider(BuiltInWinSettlementFieldIds.RELATION_ARROW) { snapshot ->
-        snapshot.responsiblePlayerId?.let { PresentationValue.TextValue(WinSettlementTranslationKeys.RELATIONSHIP_ARROW) }
+        snapshot.responsiblePlayerId?.let { PresentationValue.TextValue(WinSettlementTextKeys.RELATIONSHIP_ARROW) }
     }
     registerFieldProvider(BuiltInWinSettlementFieldIds.DORA_LABEL) {
-        PresentationValue.TextValue(WinSettlementTranslationKeys.DORA)
+        PresentationValue.TextValue(WinSettlementTextKeys.DORA)
     }
     registerFieldProvider(BuiltInWinSettlementFieldIds.URA_DORA_LABEL) {
-        PresentationValue.TextValue(WinSettlementTranslationKeys.URA_DORA)
+        PresentationValue.TextValue(WinSettlementTextKeys.URA_DORA)
     }
     registerFieldProvider(BuiltInWinSettlementFieldIds.PAYMENT_SUMMARY) { null }
     registerFieldProvider(BuiltInWinSettlementFieldIds.WINNING_TILE) { snapshot ->
         snapshot.winningTileAssetKey?.let(PresentationValue::TileValue)
     }
     registerFieldProvider(BuiltInWinSettlementFieldIds.TOTAL_SCORE) { snapshot ->
-        PresentationValue.TextValue(WinSettlementTranslationKeys.TOTAL_SCORE, listOf(snapshot.totalScore.toString()))
+        PresentationValue.TextValue(WinSettlementTextKeys.TOTAL_SCORE, listOf(snapshot.totalScore.toString()))
     }
     registerBuiltInRiichiWinSettlementTemplate()
 }
 
 /** Bundled 日麻以通用文字／牌面原語組成的完整模板。 */
 private fun WinSettlementPresentationTemplateRegistry.registerBuiltInRiichiWinSettlementTemplate() {
-    val yaku = PresentationFieldId("${MinecraftModMetadata.MOD_ID}:riichi_yaku")
-    val hanFu = PresentationFieldId("${MinecraftModMetadata.MOD_ID}:riichi_han_fu")
-    val yakumanTotal = PresentationFieldId("${MinecraftModMetadata.MOD_ID}:riichi_yakuman_total")
-    val dora = PresentationFieldId("${MinecraftModMetadata.MOD_ID}:riichi_dora")
-    val uraDora = PresentationFieldId("${MinecraftModMetadata.MOD_ID}:riichi_ura_dora")
+    val yaku = PresentationFieldId(RiichiWinSettlementIds.YAKU_FIELD)
+    val hanFu = PresentationFieldId(RiichiWinSettlementIds.HAN_FU_FIELD)
+    val yakumanTotal = PresentationFieldId(RiichiWinSettlementIds.YAKUMAN_TOTAL_FIELD)
+    val dora = PresentationFieldId(RiichiWinSettlementIds.DORA_FIELD)
+    val uraDora = PresentationFieldId(RiichiWinSettlementIds.URA_DORA_FIELD)
     val panel = PresentationContainerStyle(
         backgroundArgb = 0xC7000000.toInt(),
         padding = 0f,
     )
     registerTemplate(
         WinSettlementPresentationTemplate(
-            key = "${MinecraftModMetadata.MOD_ID}:riichi",
+            key = BuiltInWinSettlementTemplateKeys.RIICHI,
             root = PresentationLayout.Box(
                 width = 320f,
                 height = 156f,
@@ -198,11 +212,13 @@ private fun WinSettlementPresentationTemplateRegistry.registerBuiltInRiichiWinSe
                 ),
             ),
             detailFieldLabelKeys = mapOf(
-                dora to WinSettlementTranslationKeys.DORA_INDICATOR,
-                uraDora to WinSettlementTranslationKeys.URA_DORA_INDICATOR,
+                dora to WinSettlementTextKeys.DORA_INDICATOR,
+                uraDora to WinSettlementTextKeys.URA_DORA_INDICATOR,
             ),
         ),
     )
+    bindRuleTemplate(BuiltInRuleModuleIds.RIICHI, BuiltInWinSettlementTemplateKeys.RIICHI)
+    registerRiichiWinSettlementDetailTexts()
     listOf(yaku, hanFu, yakumanTotal).forEach { id ->
         registerFieldProvider(id) { snapshot -> snapshot.extensionField(id) }
     }

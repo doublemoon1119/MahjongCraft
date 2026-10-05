@@ -268,9 +268,9 @@ class FabricGamePresentationPublisher(
 
     override fun publishMatchSettlement(gameId: Uuid, request: MatchSettlementPresentationRequest) {
         logger.debug(
-            "Match settlement gameId={} template={} players={}",
+            "Match settlement gameId={} rule={} players={}",
             gameId,
-            request.templateKey,
+            request.ruleModuleId,
             request.players.map { player ->
                 mapOf(
                     "playerId" to player.playerId,

@@ -3,7 +3,6 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.text
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ActionTimeControl
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementTranslationKeys
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigManager
@@ -13,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.text.buildRoundResultChat
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.configShowMessage
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.serverConfigEntries
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftConfigCommandKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementTextKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
@@ -102,13 +102,13 @@ class FabricDebugTextCommand(
     /** `hovered_text win_settlement`：以正式 round-result builder 預覽胡牌結算摘要。 */
     private fun previewWinSettlementHoveredText(source: ServerCommandSource): Int {
         val details = Text.empty()
-            .append(Text.translatable(WinSettlementTranslationKeys.RON_SUMMARY, "Player", "AI 1"))
+            .append(Text.translatable(WinSettlementTextKeys.RON_SUMMARY, "Player", "AI 1"))
             .append(Text.literal("\n"))
-            .append(Text.translatable(WinSettlementTranslationKeys.HAN_FU, "3", "30"))
+            .append(Text.translatable(WinSettlementTextKeys.HAN_FU, "3", "30"))
             .append(Text.literal("\n"))
-            .append(Text.translatable(WinSettlementTranslationKeys.TOTAL_SCORE, "7700"))
+            .append(Text.translatable(WinSettlementTextKeys.TOTAL_SCORE, "7700"))
         source.sendFeedback(
-            { buildRoundResultChatText(Text.translatable(WinSettlementTranslationKeys.RON), details) },
+            { buildRoundResultChatText(Text.translatable(WinSettlementTextKeys.RON), details) },
             false,
         )
         return COMMAND_SUCCESS

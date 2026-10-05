@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.catalogue
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.WinSettlementYakuTranslationKeys
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
@@ -10,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogu
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueEntry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiYakuTranslationKeys
 
 /** 日麻說明目錄來源，只組成說明與範例，不執行和牌或計分判定。 */
 class RiichiCatalogueProvider : RuleCatalogueProvider {
@@ -33,7 +33,7 @@ class RiichiCatalogueProvider : RuleCatalogueProvider {
                 RuleCatalogueEntry(
                     id = definition.id,
                     categoryId = definition.category.id,
-                    nameTranslationKey = if (definition.type == YakuType.Dragon) RiichiCatalogueKeys.DRAGON_NAME else WinSettlementYakuTranslationKeys.keyFor(definition.type),
+                    nameTranslationKey = if (definition.type == YakuType.Dragon) RiichiCatalogueKeys.DRAGON_NAME else RiichiYakuTranslationKeys.keyFor(definition.type),
                     descriptionTranslationKey = definition.descriptionKey,
                     labelTranslationKeys = buildList {
                         add(definition.valueKey)

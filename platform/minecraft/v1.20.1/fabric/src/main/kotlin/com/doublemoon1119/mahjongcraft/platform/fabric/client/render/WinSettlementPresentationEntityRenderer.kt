@@ -3,7 +3,6 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingAnimation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPlayer
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPresentation
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementTranslationKeys
 import com.doublemoon1119.mahjongcraft.logic.module.PublicPlayerIndicator
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerDisplayNameResolver
@@ -11,7 +10,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementDetai
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementRankingSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementWinnerSnapshot
-import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.BuiltInWinSettlementTemplateKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExtensionPresentationField
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationAlignment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationAnimationEffect
@@ -30,6 +29,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.Presentatio
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationValue
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationFieldSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementTextKeys
 import net.minecraft.client.font.TextRenderer
 import net.minecraft.client.render.LightmapTextureManager
 import net.minecraft.client.render.VertexConsumerProvider
@@ -107,7 +107,7 @@ class WinSettlementPresentationEntityRenderer(
         val alpha = WorldPanelRenderer.phaseAlpha(local, 0.0, 12.0, duration - 12.0, duration)
         if (alpha <= MIN_VISIBLE_ALPHA) return
         val template = templateRegistry.findTemplate(entity.templateKey)
-            ?: templateRegistry.findTemplate("${MinecraftModMetadata.MOD_ID}:generic")
+            ?: templateRegistry.findTemplate(BuiltInWinSettlementTemplateKeys.GENERIC)
         if (template != null) {
             renderDeclarativeTemplate(entity, winner, template.root, local, alpha, matrices, consumers)
         }
@@ -147,6 +147,7 @@ class WinSettlementPresentationEntityRenderer(
                                 trailingText = it[1],
                                 trailingTranslationKey = it[2].ifBlank { null },
                                 trailingTranslationArgument = it[3].ifBlank { null },
+                                highlighted = it[4] == WinSettlementPresentationEntity.ENTRY_HIGHLIGHTED,
                             )
                         },
                 )
@@ -257,7 +258,7 @@ class WinSettlementPresentationEntityRenderer(
                 val reveal = ((local - snapshot.initialFadeTicks - index * snapshot.entryStaggerTicks) / 6.0).coerceIn(0.0, 1.0).toFloat()
                 if (reveal <= MIN_VISIBLE_ALPHA) return@forEachIndexed
                 val entryScale = 0.85f
-                val emphasisScale = if (entry.trailingTranslationKey == null) 1f else lerp(1.08f, 1f, reveal)
+                val emphasisScale = if (entry.highlighted) lerp(1.08f, 1f, reveal) else 1f
                 val count = (layoutSolver.resolve(layout, snapshot) as? PresentationValue.EntryListValue)?.entries?.size ?: 0
                 val columns = ((count + layout.entriesPerColumn - 1) / layout.entriesPerColumn).coerceAtLeast(1)
                 val columnWidth = layout.width / columns
@@ -270,14 +271,14 @@ class WinSettlementPresentationEntityRenderer(
                 val titleY = rowY + crossAxisOffset(layout.rowHeight, textRenderer.fontHeight * titleScale, layout.verticalAlignment)
                 val trailing = entry.trailingTranslationKey?.let { key ->
                     entry.trailingTranslationArgument?.let { Text.translatable(key, it) } ?: Text.translatable(key)
-                } ?: entry.trailingText.takeIf(String::isNotBlank)?.let { Text.translatable(WinSettlementTranslationKeys.HAN, it) }
+                } ?: entry.trailingText.takeIf(String::isNotBlank)?.let(Text::literal)
                 val trailingY = rowY + crossAxisOffset(layout.rowHeight, textRenderer.fontHeight * entryScale, layout.verticalAlignment)
                 matrices.push()
                 matrices.translate(rowX, rowY + layout.rowHeight / 2f, 0f)
                 matrices.scale(emphasisScale, emphasisScale, 1f)
                 matrices.translate(-rowX, -(rowY + layout.rowHeight / 2f), 0f)
-                draw(title, rowX, titleY, Align.LEFT, color(if (entry.trailingTranslationKey == null) 0xFFFFFF else 0xFFD45A, alpha * reveal), titleScale, matrices, consumers)
-                if (trailing != null) draw(trailing, x + (column + 1) * columnWidth - 5f, trailingY, Align.RIGHT, color(if (entry.trailingTranslationKey == null) 0xFFE08A else 0xFF8C42, alpha * reveal), entryScale, matrices, consumers)
+                draw(title, rowX, titleY, Align.LEFT, color(if (entry.highlighted) 0xFFD45A else 0xFFFFFF, alpha * reveal), titleScale, matrices, consumers)
+                if (trailing != null) draw(trailing, x + (column + 1) * columnWidth - 5f, trailingY, Align.RIGHT, color(if (entry.highlighted) 0xFF8C42 else 0xFFE08A, alpha * reveal), entryScale, matrices, consumers)
                 matrices.pop()
             }
             is PresentationLayout.Row -> {
@@ -487,7 +488,7 @@ class WinSettlementPresentationEntityRenderer(
         val paymentReasonLeftX = layout.find(SettlementRankingColumnId.PAYMENT_REASON)?.left
         val panelBottom = -20f + entity.rankings.size * 16f + 8f
         renderPanel(layout.panelHalfWidth, -55f, panelBottom, alpha, matrices, consumers)
-        draw(Text.translatable(WinSettlementTranslationKeys.SCORE_RANKING), 0f, -42f, Align.CENTER, color(0xFFD45A, alpha), 1.25f, matrices, consumers)
+        draw(Text.translatable(WinSettlementTextKeys.SCORE_RANKING), 0f, -42f, Align.CENTER, color(0xFFD45A, alpha), 1.25f, matrices, consumers)
         val progress = ((local - 35.0) / 48.0).coerceIn(0.0, 1.0)
         val presentation = ScoreRankingPresentation(entity.rankings.map { it.toRankingPlayer() })
         val rows = ScoreRankingAnimation.rows(presentation, progress)

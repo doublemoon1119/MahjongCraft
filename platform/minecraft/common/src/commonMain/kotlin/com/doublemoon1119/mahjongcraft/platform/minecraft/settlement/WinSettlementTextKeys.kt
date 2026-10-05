@@ -1,11 +1,11 @@
-package com.doublemoon1119.mahjongcraft.flow.common.game.model
+package com.doublemoon1119.mahjongcraft.platform.minecraft.settlement
 
-import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 
-/** 內建胡牌結算呈現協定使用的 translation key 單一來源。 */
-object WinSettlementTranslationKeys {
+/** 內建胡牌結算面板與通知使用的 translation key 單一來源。 */
+object WinSettlementTextKeys {
     /** 所有 MahjongCraft 胡牌結算 translation key 的共用前綴。 */
-    private const val PREFIX = MahjongCraftMetadata.PROJECT_ID + ".settlement."
+    private const val PREFIX = MinecraftModMetadata.MOD_ID + ".settlement."
 
     const val DORA = PREFIX + "dora"
     const val DORA_INDICATOR = PREFIX + "dora_indicator"

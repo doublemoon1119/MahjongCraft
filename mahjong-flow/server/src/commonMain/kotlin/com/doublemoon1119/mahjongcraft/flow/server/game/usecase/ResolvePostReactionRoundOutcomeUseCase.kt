@@ -48,7 +48,7 @@ class ResolvePostReactionRoundOutcomeUseCase(
                     emptyList()
                 } else {
                     val module = moduleRegistry.getModule(next.tableState.config)
-                    val resolvedDetails = if (resolved.presentationClassification == RoundOutcomePresentationClassification.WIN_EQUIVALENT) {
+                    val detailFields = if (resolved.presentationClassification == RoundOutcomePresentationClassification.WIN_EQUIVALENT) {
                         winSettlementDetailResolverRegistry.resolveSpecialOutcome(module.id, next.tableState, resolved)
                     } else {
                         null
@@ -59,14 +59,8 @@ class ResolvePostReactionRoundOutcomeUseCase(
                             fact = HistoryFact.RuleEffectResolved(
                                 reasonId = resolved.id,
                                 roundCompletion = next.roundCompletion,
-                                winDetails = resolvedDetails?.let { details ->
-                                    resolved.beneficiaryPlayerIds.map { playerId ->
-                                        HistoryWinDetails(
-                                            playerId,
-                                            details.templateKey,
-                                            winSettlementDetailResolverRegistry.historyFields(module.id, details.fields),
-                                        )
-                                    }
+                                winDetails = detailFields?.let { fields ->
+                                    resolved.beneficiaryPlayerIds.map { playerId -> HistoryWinDetails(playerId, fields) }
                                 }.orEmpty(),
                             ),
                         ),

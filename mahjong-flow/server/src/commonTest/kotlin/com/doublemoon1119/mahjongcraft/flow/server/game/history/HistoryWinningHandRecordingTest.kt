@@ -5,7 +5,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPlayer
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementWinnerPresentation
-import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -25,8 +24,6 @@ class HistoryWinningHandRecordingTest {
                 outcomeId = "mahjongcraft:tsumo",
                 winners = listOf(winnerPresentation(winner, 0, standing, winning)),
             ),
-            "mahjongcraft:test",
-            WinSettlementDetailResolverRegistry(),
         )
 
         assertEquals(HistoryWinningHand(standing, winning), details.single().hand)
@@ -49,8 +46,6 @@ class HistoryWinningHandRecordingTest {
                     winnerPresentation(second, 1, secondStanding, winning),
                 ),
             ),
-            "mahjongcraft:test",
-            WinSettlementDetailResolverRegistry(),
         )
 
         assertEquals(firstStanding, details[0].hand?.standingTileIds)
@@ -70,8 +65,6 @@ class HistoryWinningHandRecordingTest {
                 outcomeId = "mahjongcraft:special",
                 winners = listOf(winnerPresentation(winner, 0, standing, null)),
             ),
-            "mahjongcraft:test",
-            WinSettlementDetailResolverRegistry(),
         )
 
         assertEquals(standing, details.single().hand?.standingTileIds)
@@ -92,7 +85,7 @@ class HistoryWinningHandRecordingTest {
         }
         return WinSettlementPresentationRequest(
             outcomeId = outcomeId,
-            templateKey = "mahjongcraft:test",
+            ruleModuleId = "mahjongcraft:test",
             isTsumo = outcomeId.endsWith("tsumo"),
             winners = winners,
             ranking = ScoreRankingPresentation(rankingPlayers),

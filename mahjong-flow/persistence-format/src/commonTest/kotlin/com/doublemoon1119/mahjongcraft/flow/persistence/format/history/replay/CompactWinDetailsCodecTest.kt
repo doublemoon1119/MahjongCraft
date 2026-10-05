@@ -14,7 +14,7 @@ class CompactWinDetailsCodecTest {
     /** 測試用 JSON 解析器。 */
     private val json = Json
 
-    /** 文字、牌參照與條目明細應保留多位贏家及所有尾綴形式。 */
+    /** 數值、牌參照與條目明細應保留多位贏家、有無數值的條目與空明細。 */
     @Test
     fun `all detail variants round trip for multiple winners`() {
         val details = json.parseToJsonElement(
@@ -22,20 +22,17 @@ class CompactWinDetailsCodecTest {
             [
               {
                 "playerId": 0,
-                "templateKey": "test:template",
                 "detailFields": [
-                  {"id": "test:text", "value": {"type": "text", "translationKey": "test:label", "arguments": ["a", "b"]}},
+                  {"id": "test:quantities", "value": {"type": "quantities", "quantities": [{"unitId": "test:han", "amount": 3}, {"unitId": "test:fu", "amount": 30}]}},
                   {"id": "test:tiles", "value": {"type": "tiles", "tileIds": [1, 2]}},
                   {"id": "test:entries", "value": {"type": "entries", "entries": [
-                    {"translationKey": "test:raw", "trailingText": "", "trailingTranslationKey": null, "trailingTranslationArgument": null},
-                    {"translationKey": "test:text_suffix", "trailingText": " points", "trailingTranslationKey": null, "trailingTranslationArgument": null},
-                    {"translationKey": "test:translated_suffix", "trailingText": "", "trailingTranslationKey": "test:suffix", "trailingTranslationArgument": "7"}
+                    {"id": "test:plain"},
+                    {"id": "test:counted", "quantity": {"unitId": "test:han", "amount": 2}}
                   ]}}
                 ]
               },
               {
                 "playerId": 1,
-                "templateKey": "test:other_template",
                 "detailFields": []
               }
             ]
@@ -45,16 +42,13 @@ class CompactWinDetailsCodecTest {
         assertEquals(details, CompactWinDetailsCodec.decode(CompactWinDetailsCodec.encode(details)))
     }
 
-    /** 空白參數與尾綴欄位應使用固定預設值往返。 */
+    /** 空條目清單應原樣往返。 */
     @Test
-    fun `empty defaults round trip`() {
+    fun `empty entries round trip`() {
         val details = json.parseToJsonElement(
             """
-            [{"playerId":0,"templateKey":"test:template","detailFields":[
-              {"id":"test:text","value":{"type":"text","translationKey":"test:label","arguments":[]}},
-              {"id":"test:entries","value":{"type":"entries","entries":[
-                {"translationKey":"test:entry","trailingText":"","trailingTranslationKey":null,"trailingTranslationArgument":null}
-              ]}}
+            [{"playerId":0,"detailFields":[
+              {"id":"test:entries","value":{"type":"entries","entries":[]}}
             ]}]
             """.trimIndent(),
         )
@@ -67,9 +61,9 @@ class CompactWinDetailsCodecTest {
     fun `winning hand descriptor round trips`() {
         val details = json.parseToJsonElement(
             """
-            [{"playerId":0,"templateKey":"test:template","detailFields":[],
+            [{"playerId":0,"detailFields":[],
               "hand":{"standingTileIds":[2,1],"winningTileId":3}},
-             {"playerId":1,"templateKey":"test:template","detailFields":[],
+             {"playerId":1,"detailFields":[],
               "hand":{"standingTileIds":[4],"winningTileId":null}}]
             """.trimIndent(),
         )
@@ -79,21 +73,27 @@ class CompactWinDetailsCodecTest {
     /** 固定代碼或欄位長度錯誤時應拒絕精簡資料。 */
     @Test
     fun `corrupt codes and lengths are rejected`() {
-        val corruptCode = JsonArray(listOf(JsonPrimitive(99), JsonPrimitive(2), JsonArray(emptyList())))
+        val corruptCode = JsonArray(listOf(JsonPrimitive(99), JsonArray(emptyList())))
         assertFailsWith<IllegalArgumentException> {
-            CompactWinDetailsCodec.decode(JsonArray(listOf(JsonArray(listOf(JsonPrimitive(0), JsonPrimitive("test:template"), JsonArray(listOf(JsonArray(listOf(JsonPrimitive("test:field"), corruptCode)))))))))
+            CompactWinDetailsCodec.decode(JsonArray(listOf(JsonArray(listOf(JsonPrimitive(0), JsonArray(listOf(JsonArray(listOf(JsonPrimitive("test:field"), corruptCode)))))))))
         }
 
-        val wrongWinnerLength = JsonArray(listOf(JsonArray(listOf(JsonPrimitive(0), JsonPrimitive("test:template")))))
+        val wrongWinnerLength = JsonArray(listOf(JsonArray(listOf(JsonPrimitive(0)))))
         assertFailsWith<IllegalArgumentException> { CompactWinDetailsCodec.decode(wrongWinnerLength) }
 
-        val wrongFieldLength = JsonArray(listOf(JsonArray(listOf(JsonPrimitive(0), JsonPrimitive("test:template"), JsonArray(listOf(JsonArray(listOf(JsonPrimitive("test:field")))))))))
+        val wrongFieldLength = JsonArray(listOf(JsonArray(listOf(JsonPrimitive(0), JsonArray(listOf(JsonArray(listOf(JsonPrimitive("test:field")))))))))
         assertFailsWith<IllegalArgumentException> { CompactWinDetailsCodec.decode(wrongFieldLength) }
 
-        val duplicateStanding = JsonArray(listOf(JsonArray(listOf(JsonPrimitive(0), JsonPrimitive("test:template"), JsonArray(emptyList()), JsonArray(listOf(JsonArray(listOf(JsonPrimitive(1), JsonPrimitive(1))), JsonNull))))))
+        val wrongQuantityLength = json.parseToJsonElement("""[[0,[["test:field",[0,[["test:han"]]]]]]]""")
+        assertFailsWith<IllegalArgumentException> { CompactWinDetailsCodec.decode(wrongQuantityLength) }
+
+        val wrongEntryLength = json.parseToJsonElement("""[[0,[["test:field",[2,[["test:entry","test:han"]]]]]]]""")
+        assertFailsWith<IllegalArgumentException> { CompactWinDetailsCodec.decode(wrongEntryLength) }
+
+        val duplicateStanding = JsonArray(listOf(JsonArray(listOf(JsonPrimitive(0), JsonArray(emptyList()), JsonArray(listOf(JsonArray(listOf(JsonPrimitive(1), JsonPrimitive(1))), JsonNull))))))
         assertFailsWith<IllegalArgumentException> { CompactWinDetailsCodec.decode(duplicateStanding) }
 
-        val winningInStanding = JsonArray(listOf(JsonArray(listOf(JsonPrimitive(0), JsonPrimitive("test:template"), JsonArray(emptyList()), JsonArray(listOf(JsonArray(listOf(JsonPrimitive(1))), JsonPrimitive(1)))))))
+        val winningInStanding = JsonArray(listOf(JsonArray(listOf(JsonPrimitive(0), JsonArray(emptyList()), JsonArray(listOf(JsonArray(listOf(JsonPrimitive(1))), JsonPrimitive(1)))))))
         assertFailsWith<IllegalArgumentException> { CompactWinDetailsCodec.decode(winningInStanding) }
     }
 
@@ -102,7 +102,7 @@ class CompactWinDetailsCodecTest {
     fun `third party fact win details remain untouched`() {
         val fact = json.parseToJsonElement(
             """
-            {"type":"custom:fact","winDetails":[{"playerId":0,"templateKey":"test:template","detailFields":[]}]}
+            {"type":"custom:fact","winDetails":[{"playerId":0,"detailFields":[]}]}
             """.trimIndent(),
         ) as JsonObject
         val factTypes = linkedMapOf<String, Int>()

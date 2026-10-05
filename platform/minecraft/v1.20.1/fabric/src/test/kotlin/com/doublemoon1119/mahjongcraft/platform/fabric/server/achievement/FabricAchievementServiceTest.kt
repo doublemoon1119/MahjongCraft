@@ -80,7 +80,7 @@ class FabricAchievementServiceTest {
         val gateway = RecordingGateway(failingPlayerId = winner.id)
 
         service(gateway).handle(
-            facts(HistoryFact.WinSettled(BuiltInRoundOutcomeIds.RON, listOf(HistoryWinDetails(winner.id, "mahjongcraft:generic", emptyList())), listOf(dealer.id))),
+            facts(HistoryFact.WinSettled(BuiltInRoundOutcomeIds.RON, listOf(HistoryWinDetails(winner.id, emptyList())), listOf(dealer.id))),
         )
 
         assertEquals(listOf(dealer.id), gateway.granted.map { it.playerId })
@@ -123,7 +123,7 @@ class FabricAchievementServiceTest {
     }
 
     private fun tsumo(winnerId: Uuid) = facts(
-        HistoryFact.WinSettled(BuiltInRoundOutcomeIds.TSUMO, listOf(HistoryWinDetails(winnerId, "mahjongcraft:generic", emptyList()))),
+        HistoryFact.WinSettled(BuiltInRoundOutcomeIds.TSUMO, listOf(HistoryWinDetails(winnerId, emptyList()))),
     )
 
     private fun facts(fact: HistoryFact) = CommittedGameFacts(

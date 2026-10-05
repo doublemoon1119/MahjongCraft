@@ -271,7 +271,7 @@ internal object HistoryRoundResponseValidator {
         tileCatalogSize: Int,
         declaredTileCount: Int?,
     ): Boolean {
-        if (!namespaced(winner.templateKey) || winner.detailFields.map { it.id }.distinct().size != winner.detailFields.size) return false
+        if (winner.detailFields.map { it.id }.distinct().size != winner.detailFields.size) return false
         winner.hand?.let { hand ->
             val refs = hand.standingTiles + listOfNotNull(hand.winningTile)
             if (!validTileIndexes(tileCatalogSize, refs) ||
@@ -282,31 +282,21 @@ internal object HistoryRoundResponseValidator {
                 return false
             }
         }
-        var textBytes = winner.templateKey.toByteArray(Charsets.UTF_8).size.toLong()
+        var textBytes = 0L
         for (field in winner.detailFields) {
             if (!namespaced(field.id)) return false
             textBytes += field.id.toByteArray(Charsets.UTF_8).size
             when (val value = field.value) {
-                is HistoryWinDetailValueDto.Text -> {
-                    textBytes += value.translationKey.toByteArray(Charsets.UTF_8).size
-                    textBytes += value.arguments.sumOf { it.toByteArray(Charsets.UTF_8).size.toLong() }
-                    if (value.translationKey.isBlank()) return false
+                is HistoryWinDetailValueDto.Quantities -> {
+                    if (value.quantities.isEmpty() || value.quantities.any { !namespaced(it.unitId) }) return false
+                    textBytes += value.quantities.sumOf { it.unitId.toByteArray(Charsets.UTF_8).size.toLong() + Int.SIZE_BYTES }
                 }
                 is HistoryWinDetailValueDto.Entries -> {
                     for (entry in value.entries) {
-                        if (entry.translationKey.isBlank() ||
-                            entry.trailingText.isNotEmpty() &&
-                            entry.trailingTranslationKey != null ||
-                            entry.trailingTranslationArgument != null &&
-                            entry.trailingTranslationKey == null ||
-                            entry.trailingTranslationKey?.isBlank() == true
-                        ) {
-                            return false
-                        }
-                        textBytes += entry.translationKey.toByteArray(Charsets.UTF_8).size
-                        textBytes += entry.trailingText.toByteArray(Charsets.UTF_8).size
-                        textBytes += entry.trailingTranslationKey?.toByteArray(Charsets.UTF_8)?.size ?: 0
-                        textBytes += entry.trailingTranslationArgument?.toByteArray(Charsets.UTF_8)?.size ?: 0
+                        val quantity = entry.quantity
+                        if (!namespaced(entry.id) || quantity != null && !namespaced(quantity.unitId)) return false
+                        textBytes += entry.id.toByteArray(Charsets.UTF_8).size
+                        textBytes += quantity?.let { it.unitId.toByteArray(Charsets.UTF_8).size + Int.SIZE_BYTES } ?: 0
                     }
                 }
                 is HistoryWinDetailValueDto.Tiles -> {

@@ -109,7 +109,6 @@ class HistoryWinningHandProjectionTest {
     private fun winner(seat: Int, standing: List<Int>?, winning: Int?): JsonObject = JsonObject(
         buildMap {
             put(ReplaySourceKeys.PLAYER_ID, JsonPrimitive(seat))
-            put(ReplaySourceKeys.TEMPLATE_KEY, JsonPrimitive("test:template"))
             put(ReplaySourceKeys.DETAIL_FIELDS, JsonArray(emptyList()))
             if (standing != null) {
                 put(

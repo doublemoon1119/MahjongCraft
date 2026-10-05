@@ -83,6 +83,6 @@ interface MahjongExtension {
     /** 登記胡牌即時結算完成後、判斷本局是否結束的 resolver。 */
     fun registerWinRoundContinuationResolvers(registry: WinRoundContinuationResolverRegistry) = Unit
 
-    /** 登記規則專屬胡牌詳情欄位與其宣告式模板鍵。 */
+    /** 登記規則專屬胡牌詳情欄位的解析器；欄位只含語意資料，顯示方式由平台決定。 */
     fun registerWinSettlementDetailResolvers(registry: WinSettlementDetailResolverRegistry) = Unit
 }

@@ -121,11 +121,7 @@ class RespondToDiscardUseCase(
                                         actorPlayerId = resolution.ronDiscarderId,
                                         fact = HistoryFact.WinSettled(
                                             outcomeId = settlement.outcomeId,
-                                            winDetails = winSettlementHistoryDetails(
-                                                settlement,
-                                                checkNotNull(resolution.ruleModuleId),
-                                                winSettlementDetailResolverRegistry,
-                                            ),
+                                            winDetails = winSettlementHistoryDetails(settlement),
                                             responsiblePlayerIds = listOfNotNull(resolution.ronDiscarderId),
                                         ),
                                     ),

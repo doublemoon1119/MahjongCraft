@@ -305,29 +305,23 @@ internal object ReplaySourceKeys {
     /** 胡牌明細封套。 */
     const val WIN_DETAILS = "winDetails"
 
-    /** 明細模板識別碼。 */
-    const val TEMPLATE_KEY = "templateKey"
+    /** 明細有單位數值清單。 */
+    const val QUANTITIES = "quantities"
 
-    /** 明細翻譯鍵。 */
-    const val TRANSLATION_KEY = "translationKey"
+    /** 條目附帶的有單位數值。 */
+    const val QUANTITY = "quantity"
 
-    /** 明細翻譯參數。 */
-    const val ARGUMENTS = "arguments"
+    /** 有單位數值的單位 ID。 */
+    const val UNIT_ID = "unitId"
+
+    /** 有單位數值的數值。 */
+    const val AMOUNT = "amount"
 
     /** 明細牌參照陣列。 */
     const val TILE_IDS = "tileIds"
 
     /** 明細條目清單。 */
     const val ENTRIES = "entries"
-
-    /** 條目尾端文字。 */
-    const val TRAILING_TEXT = "trailingText"
-
-    /** 條目尾端翻譯鍵。 */
-    const val TRAILING_TRANSLATION_KEY = "trailingTranslationKey"
-
-    /** 條目尾端翻譯參數。 */
-    const val TRAILING_TRANSLATION_ARGUMENT = "trailingTranslationArgument"
 
     /** 動作中的擴充動作資料。 */
     const val EXTENSION = "extension"

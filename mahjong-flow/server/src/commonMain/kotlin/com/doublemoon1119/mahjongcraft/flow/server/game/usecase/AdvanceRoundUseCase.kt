@@ -233,6 +233,7 @@ class AdvanceRoundUseCase(
             presentationPublisher.publishMatchSettlement(
                 gameId,
                 MatchSettlementPresentationRequest(
+                    ruleModuleId = presentationModule.id,
                     players = newState.players.mapIndexed { seatIndex, player ->
                         MatchSettlementPlayerPresentation(
                             playerId = player.id,

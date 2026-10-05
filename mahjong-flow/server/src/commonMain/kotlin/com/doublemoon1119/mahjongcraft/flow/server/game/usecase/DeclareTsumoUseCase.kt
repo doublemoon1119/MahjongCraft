@@ -90,11 +90,7 @@ class DeclareTsumoUseCase(
                             actorPlayerId = playerId,
                             fact = HistoryFact.WinSettled(
                                 outcomeId = BuiltInRoundOutcomeIds.TSUMO,
-                                winDetails = winSettlementHistoryDetails(
-                                    settled.settlement,
-                                    settled.ruleModuleId,
-                                    winSettlementDetailResolverRegistry,
-                                ),
+                                winDetails = winSettlementHistoryDetails(settled.settlement),
                             ),
                         ),
                     )

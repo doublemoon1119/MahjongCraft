@@ -5,8 +5,10 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEve
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableResult
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinDetails
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinningHand
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailEntry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailField
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailValue
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.CompactReplayCodec
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.buildBuiltInPersistenceRegistries
@@ -81,7 +83,6 @@ class HistoryWinDetailsCapacityTest {
                     val winningTileId = player.hand.lastDrawn?.id
                     HistoryWinDetails(
                         playerId = playerId,
-                        templateKey = "capacity:rule",
                         detailFields = fields(entryCount),
                         hand = HistoryWinningHand(
                             standingTileIds = player.hand.standingTiles.map { it.id }.filter { it != winningTileId },
@@ -116,7 +117,7 @@ class HistoryWinDetailsCapacityTest {
     }
 
     /**
-     * 建立規則中立的固定文字負載，涵蓋多條目與翻譯參數。
+     * 建立規則中立的固定負載，涵蓋多條目與有單位數值。
      * @param entryCount 明細條目數。
      * @return 每位贏家的代表性詳情欄位。
      */
@@ -125,15 +126,14 @@ class HistoryWinDetailsCapacityTest {
             "capacity:patterns",
             WinSettlementDetailValue.Entries(
                 (1..entryCount).map { index ->
-                    WinSettlementDetailValue.Entries.Entry(
-                        "capacity.pattern.$index",
-                        trailingTranslationKey = "capacity.unit",
-                        trailingTranslationArgument = index.toString(),
-                    )
+                    WinSettlementDetailEntry("capacity:pattern/$index", WinSettlementQuantity("capacity:unit", index))
                 },
             ),
         ),
-        WinSettlementDetailField("capacity:summary", WinSettlementDetailValue.Text("capacity.summary", listOf("12", "40"))),
+        WinSettlementDetailField(
+            "capacity:summary",
+            WinSettlementDetailValue.Quantities(listOf(WinSettlementQuantity("capacity:han", 12), WinSettlementQuantity("capacity:fu", 40))),
+        ),
     )
 
     /**

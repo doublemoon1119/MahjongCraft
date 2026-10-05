@@ -1,12 +1,13 @@
-package com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi
+package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
-import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 
 /** 內建日麻役種顯示名稱的 translation key 單一來源。 */
-object WinSettlementYakuTranslationKeys {
+object RiichiYakuTranslationKeys {
     /** 所有 MahjongCraft 役種 translation key 的共用前綴。 */
-    private const val PREFIX = MahjongCraftMetadata.PROJECT_ID + ".game.yaku."
+    private const val PREFIX = MinecraftModMetadata.MOD_ID + ".game.yaku."
 
     /** 每個內建役種對應的 key 尾段。 */
     private val SUFFIXES: Map<YakuType, String> = mapOf(
@@ -61,8 +62,19 @@ object WinSettlementYakuTranslationKeys {
     /** 取得指定役種的完整 translation key。 */
     fun keyFor(type: YakuType): String = PREFIX + SUFFIXES.getValue(type)
 
-    /** 流局滿貫結算面板役種條目使用的 key；流局滿貫不經過一般役種偵測流程，不屬於 [YakuType]。 */
+    /** 流局滿貫的役種名稱 key；流局滿貫不經過一般役種偵測流程，不屬於 [YakuType]。 */
     const val NAGASHI_MANGAN = PREFIX + "nagashi_mangan"
+
+    /**
+     * 取得胡牌詳情役種條目的名稱 key。
+     *
+     * @param entryId [RiichiWinSettlementIds] 定義的役種或流局滿貫條目 ID。
+     * @return 名稱 key；不是日麻役種條目時為 null。
+     */
+    fun keyForEntry(entryId: String): String? = when (entryId) {
+        RiichiWinSettlementIds.NAGASHI_MANGAN -> NAGASHI_MANGAN
+        else -> RiichiWinSettlementIds.yakuType(entryId)?.let(::keyFor)
+    }
 
     /** 平台語系資源必須提供的全部役種 translation key。 */
     val ALL: Set<String> = YakuType.entries.mapTo(mutableSetOf(), ::keyFor) + NAGASHI_MANGAN

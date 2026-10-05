@@ -363,7 +363,15 @@ class PresentationLayoutSolverTest {
 
         override fun registerFieldProvider(fieldId: PresentationFieldId, provider: WinSettlementPresentationFieldProvider) = error("Unexpected registration")
 
+        override fun bindRuleTemplate(ruleModuleId: String, templateKey: String) = error("Unexpected registration")
+
+        override fun registerDetailTextFormatter(fieldId: String, formatter: WinSettlementDetailTextFormatter) = error("Unexpected registration")
+
         override fun findTemplate(key: String): WinSettlementPresentationTemplate? = null
+
+        override fun findTemplateForRule(ruleModuleId: String): WinSettlementPresentationTemplate? = null
+
+        override fun findDetailTextFormatter(fieldId: String): WinSettlementDetailTextFormatter? = null
 
         override fun findFieldProvider(fieldId: PresentationFieldId): WinSettlementPresentationFieldProvider? = when (fieldId) {
             TEXT_FIELD -> WinSettlementPresentationFieldProvider { PresentationValue.TextValue("mahjongcraft.test") }

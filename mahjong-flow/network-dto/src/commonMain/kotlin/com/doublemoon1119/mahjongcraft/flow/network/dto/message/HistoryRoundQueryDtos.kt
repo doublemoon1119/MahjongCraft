@@ -272,14 +272,12 @@ data class HistoryRoundOutcomeDto(
 
 /** 歷史贏家詳情 DTO。
  * @property seatIndex 贏家座位。
- * @property templateKey 規則專屬詳情模板識別碼。
  * @property detailFields 規則專屬詳情欄位。
  * @property hand 保存結算順序的立牌與獨立和牌張；未記錄時為 null。
  */
 @Serializable
 data class HistoryWinnerDetailsDto(
     val seatIndex: Int,
-    val templateKey: String,
     val detailFields: List<HistoryWinDetailFieldDto>,
     val hand: HistoryReplayWinningHandDto? = null,
 )
@@ -301,35 +299,30 @@ data class HistoryReplayWinningHandDto(
 @Serializable
 data class HistoryWinDetailFieldDto(val id: String, val value: HistoryWinDetailValueDto)
 
-/** 歷史胡牌詳情值 DTO。 */
+/** 歷史胡牌詳情值 DTO；只傳輸規則算出的語意資料，顯示文字由接收端依 ID 決定。 */
 @Serializable
 sealed interface HistoryWinDetailValueDto {
-    /** 可翻譯的文字值。
-     * @property translationKey 翻譯鍵。
-     * @property arguments 翻譯參數。
+    /** 有單位的數值。
+     * @property quantities 依規則順序排列的數值。
      */
     @Serializable
-    @SerialName(HistoryDetailValueTypeKeys.TEXT)
-    data class Text(val translationKey: String, val arguments: List<String> = emptyList()) : HistoryWinDetailValueDto
+    @SerialName(HistoryDetailValueTypeKeys.QUANTITIES)
+    data class Quantities(val quantities: List<HistoryWinDetailQuantityDto>) : HistoryWinDetailValueDto
 
-    /** 可翻譯的條目集合。
+    /** 依規則順序排列的條目。
      * @property entries 條目列表。
      */
     @Serializable
     @SerialName(HistoryDetailValueTypeKeys.ENTRIES)
     data class Entries(val entries: List<EntryDto>) : HistoryWinDetailValueDto {
         /** 單一條目。
-         * @property translationKey 條目翻譯鍵。
-         * @property trailingText 尾端純文字。
-         * @property trailingTranslationKey 尾端翻譯鍵。
-         * @property trailingTranslationArgument 尾端翻譯參數。
+         * @property id 規則定義的條目 ID。
+         * @property quantity 條目附帶的數值；沒有數值時為 null。
          */
         @Serializable
         data class EntryDto(
-            val translationKey: String,
-            val trailingText: String = "",
-            val trailingTranslationKey: String? = null,
-            val trailingTranslationArgument: String? = null,
+            val id: String,
+            val quantity: HistoryWinDetailQuantityDto? = null,
         )
     }
 
@@ -340,6 +333,13 @@ sealed interface HistoryWinDetailValueDto {
     @SerialName(HistoryDetailValueTypeKeys.TILES)
     data class Tiles(val tiles: List<Int>) : HistoryWinDetailValueDto
 }
+
+/** 歷史胡牌詳情的有單位數值 DTO。
+ * @property unitId 規則定義的單位 ID。
+ * @property amount 數值。
+ */
+@Serializable
+data class HistoryWinDetailQuantityDto(val unitId: String, val amount: Int)
 
 /** Replay 桌況 DTO。
  * @property identity 對局與玩家識別資料。

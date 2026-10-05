@@ -10,8 +10,10 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableChan
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableResult
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinDetails
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinningHand
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailEntry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailField
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailValue
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.buildBuiltInPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardPile
@@ -179,12 +181,19 @@ class HistoryRecordingPersistenceDtoTest {
         val standing = listOf(Uuid.random(), Uuid.random())
         val details = HistoryWinDetails(
             winner,
-            "mahjongcraft:riichi",
             listOf(
-                WinSettlementDetailField("mahjongcraft:text", WinSettlementDetailValue.Text("mahjongcraft.han", listOf("3"))),
+                WinSettlementDetailField(
+                    "mahjongcraft:quantities",
+                    WinSettlementDetailValue.Quantities(listOf(WinSettlementQuantity("mahjongcraft:han", 3), WinSettlementQuantity("mahjongcraft:fu", 30))),
+                ),
                 WinSettlementDetailField(
                     "mahjongcraft:entries",
-                    WinSettlementDetailValue.Entries(listOf(WinSettlementDetailValue.Entries.Entry("mahjongcraft.yaku", trailingText = "1"))),
+                    WinSettlementDetailValue.Entries(
+                        listOf(
+                            WinSettlementDetailEntry("mahjongcraft:yaku/test", WinSettlementQuantity("mahjongcraft:han", 1)),
+                            WinSettlementDetailEntry("mahjongcraft:yaku/plain"),
+                        ),
+                    ),
                 ),
                 WinSettlementDetailField("mahjongcraft:tiles", WinSettlementDetailValue.Tiles(listOf(tile))),
             ),

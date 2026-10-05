@@ -12,8 +12,10 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRo
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundState
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryWinDetailValue
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailEntry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailField
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailValue
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.CompactReplayCodec
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.CompactReplayDictionary
@@ -431,9 +433,11 @@ class CompactReplayRoundReaderGenuineTest {
         val continued = changed.copy(players = changed.players.map { player -> if (player.initialSeatIndex == winner.initialSeatIndex) player.copy(score = 23000) else player })
         val details = HistoryWinDetails(
             winner.id,
-            "mahjongcraft:riichi",
             listOf(
-                WinSettlementDetailField("mahjongcraft:yaku", WinSettlementDetailValue.Text("mahjongcraft.yaku.test")),
+                WinSettlementDetailField(
+                    "mahjongcraft:yaku",
+                    WinSettlementDetailValue.Entries(listOf(WinSettlementDetailEntry("mahjongcraft:yaku/test", WinSettlementQuantity("mahjongcraft:han", 1)))),
+                ),
                 WinSettlementDetailField("mahjongcraft:dora", WinSettlementDetailValue.Tiles(listOf(table.tileWall.getAllTiles().first().id))),
             ),
         )

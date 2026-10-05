@@ -20,6 +20,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStat
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinDetailFieldDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinDetailQuantityDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinDetailValueDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinnerDetailsDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.MeldTypeDto
@@ -142,11 +143,11 @@ class HistoryRoundResponseValidatorTest {
         assertEquals(HistoryRoundValidationError.CONTENT_MISMATCH, assertIs<HistoryRoundValidationResult.Invalid>(result).reason)
     }
 
-    /** 贏家詳情只能屬於唯一受益座位，欄位與模板必須使用 namespaced ID。 */
+    /** 贏家詳情只能屬於唯一受益座位，欄位必須使用 namespaced ID。 */
     @Test
     fun `test winner details require valid beneficiary and identifiers`() {
         val request = HistoryRoundEventsRequestDto("request", TEST_MATCH_ID, roundNumber = 1)
-        val details = listOf(HistoryWinnerDetailsDto(0, "test:template", listOf(HistoryWinDetailFieldDto("invalid", HistoryWinDetailValueDto.Text("test:label")))))
+        val details = listOf(HistoryWinnerDetailsDto(0, listOf(HistoryWinDetailFieldDto("invalid", HistoryWinDetailValueDto.Quantities(listOf(HistoryWinDetailQuantityDto("test:unit", 1)))))))
         val outcome = HistoryRoundOutcomeDto("test:win", listOf(0), mapOf(0 to 25000), "WIN", emptyList(), null, winnerDetails = details)
         val base = events()
         val invalid = base.copy(transactions = listOf(base.transactions.single().copy(facts = listOf(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.ROUND_COMPLETED, outcome)))))
@@ -155,11 +156,31 @@ class HistoryRoundResponseValidatorTest {
         assertEquals(HistoryRoundValidationError.CONTENT_MISMATCH, assertIs<HistoryRoundValidationResult.Invalid>(result).reason)
     }
 
+    /** 條目、單位 ID 必須是 namespaced ID，數值欄位不得為空。 */
+    @Test
+    fun `test winner detail entries and units require namespaced identifiers`() {
+        val request = HistoryRoundEventsRequestDto("request", TEST_MATCH_ID, roundNumber = 1)
+        listOf(
+            HistoryWinDetailValueDto.Entries(listOf(HistoryWinDetailValueDto.Entries.EntryDto("invalid"))),
+            HistoryWinDetailValueDto.Entries(listOf(HistoryWinDetailValueDto.Entries.EntryDto("test:entry", HistoryWinDetailQuantityDto("invalid", 1)))),
+            HistoryWinDetailValueDto.Quantities(listOf(HistoryWinDetailQuantityDto("invalid", 1))),
+            HistoryWinDetailValueDto.Quantities(emptyList()),
+        ).forEach { value ->
+            val details = listOf(HistoryWinnerDetailsDto(0, listOf(HistoryWinDetailFieldDto("test:field", value))))
+            val outcome = HistoryRoundOutcomeDto("test:win", listOf(0), mapOf(0 to 25000), "WIN", emptyList(), null, winnerDetails = details)
+            val base = events()
+            val invalid = base.copy(transactions = listOf(base.transactions.single().copy(facts = listOf(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.ROUND_COMPLETED, outcome)))))
+
+            val result = HistoryRoundResponseValidator.validateEvents(request, HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, invalid))
+            assertEquals(HistoryRoundValidationError.CONTENT_MISMATCH, assertIs<HistoryRoundValidationResult.Invalid>(result).reason)
+        }
+    }
+
     /** 和牌詳情中的牌參照不得超出交易當下已宣告牌數量。 */
     @Test
     fun `test winner detail tiles respect declared tile count`() {
         val request = HistoryRoundEventsRequestDto("request", TEST_MATCH_ID, roundNumber = 1)
-        val details = listOf(HistoryWinnerDetailsDto(0, "test:template", listOf(HistoryWinDetailFieldDto("test:tiles", HistoryWinDetailValueDto.Tiles(listOf(1))))))
+        val details = listOf(HistoryWinnerDetailsDto(0, listOf(HistoryWinDetailFieldDto("test:tiles", HistoryWinDetailValueDto.Tiles(listOf(1))))))
         val outcome = HistoryRoundOutcomeDto("test:win", listOf(0), mapOf(0 to 25000), "WIN", emptyList(), null, winnerDetails = details)
         val base = events().copy(tileCatalog = listOf(TileDto.Numeric(SuitDto.CHARACTER, 1), TileDto.Numeric(SuitDto.CHARACTER, 2)))
         val invalid = base.copy(transactions = listOf(base.transactions.single().copy(facts = listOf(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.ROUND_COMPLETED, outcome)))))
@@ -181,26 +202,25 @@ class HistoryRoundResponseValidatorTest {
         val details = listOf(
             HistoryWinnerDetailsDto(
                 0,
-                "test:template",
                 listOf(
                     HistoryWinDetailFieldDto(
                         "test:entries",
                         HistoryWinDetailValueDto.Entries(
                             listOf(
-                                HistoryWinDetailValueDto.Entries.EntryDto(
-                                    "test:pattern",
-                                    trailingTranslationKey = "test:points",
-                                    trailingTranslationArgument = "3",
-                                ),
+                                HistoryWinDetailValueDto.Entries.EntryDto("test:pattern", HistoryWinDetailQuantityDto("test:points", 3)),
+                                HistoryWinDetailValueDto.Entries.EntryDto("test:plain"),
                             ),
                         ),
+                    ),
+                    HistoryWinDetailFieldDto(
+                        "test:quantities",
+                        HistoryWinDetailValueDto.Quantities(listOf(HistoryWinDetailQuantityDto("test:han", 3), HistoryWinDetailQuantityDto("test:fu", 30))),
                     ),
                     HistoryWinDetailFieldDto("test:tiles", HistoryWinDetailValueDto.Tiles(listOf(1))),
                 ),
             ),
             HistoryWinnerDetailsDto(
                 1,
-                "test:template",
                 listOf(HistoryWinDetailFieldDto("test:tiles", HistoryWinDetailValueDto.Tiles(listOf(0)))),
             ),
         )
@@ -223,7 +243,6 @@ class HistoryRoundResponseValidatorTest {
         val details = listOf(
             HistoryWinnerDetailsDto(
                 0,
-                "test:template",
                 emptyList(),
                 HistoryReplayWinningHandDto(standingTiles = listOf(1), winningTile = 0),
             ),
@@ -253,7 +272,6 @@ class HistoryRoundResponseValidatorTest {
         val details = listOf(
             HistoryWinnerDetailsDto(
                 0,
-                "test:template",
                 emptyList(),
                 HistoryReplayWinningHandDto(standingTiles = listOf(0, 0), winningTile = 0),
             ),
@@ -279,8 +297,8 @@ class HistoryRoundResponseValidatorTest {
         )
         val sharedWinningTile = 1
         val details = listOf(
-            HistoryWinnerDetailsDto(0, "test:template", emptyList(), HistoryReplayWinningHandDto(listOf(0), sharedWinningTile)),
-            HistoryWinnerDetailsDto(1, "test:template", emptyList(), HistoryReplayWinningHandDto(listOf(0), sharedWinningTile)),
+            HistoryWinnerDetailsDto(0, emptyList(), HistoryReplayWinningHandDto(listOf(0), sharedWinningTile)),
+            HistoryWinnerDetailsDto(1, emptyList(), HistoryReplayWinningHandDto(listOf(0), sharedWinningTile)),
         )
         val outcome = HistoryRoundOutcomeDto("test:win", listOf(0, 1), mapOf(0 to 25000, 1 to 25000), "WIN", emptyList(), null, winnerDetails = details)
         val base = events().copy(
@@ -305,7 +323,7 @@ class HistoryRoundResponseValidatorTest {
             "WIN",
             emptyList(),
             null,
-            winnerDetails = listOf(HistoryWinnerDetailsDto(0, "test:template", emptyList())),
+            winnerDetails = listOf(HistoryWinnerDetailsDto(0, emptyList())),
         )
         val base = events().copy(transactions = listOf(events().transactions.single().copy(facts = listOf(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.ROUND_COMPLETED, outcome)))))
 
@@ -362,7 +380,7 @@ class HistoryRoundResponseValidatorTest {
             "WIN",
             emptyList(),
             null,
-            winnerDetails = listOf(HistoryWinnerDetailsDto(0, "test:template", emptyList(), HistoryReplayWinningHandDto(listOf(1), null))),
+            winnerDetails = listOf(HistoryWinnerDetailsDto(0, emptyList(), HistoryReplayWinningHandDto(listOf(1), null))),
         )
         val response = HistoryRoundStateResponseDto("request", TEST_MATCH_ID, 1, HistoryRoundPositionDto.Initial, state = state().copy(outcome = outcome))
 
@@ -383,7 +401,7 @@ class HistoryRoundResponseValidatorTest {
             "WIN",
             emptyList(),
             null,
-            winnerDetails = listOf(HistoryWinnerDetailsDto(0, "test:template", emptyList(), HistoryReplayWinningHandDto(listOf(0), 0))),
+            winnerDetails = listOf(HistoryWinnerDetailsDto(0, emptyList(), HistoryReplayWinningHandDto(listOf(0), 0))),
         )
         val response = HistoryRoundStateResponseDto("request", TEST_MATCH_ID, 1, HistoryRoundPositionDto.Initial, state = state().copy(outcome = outcome))
 

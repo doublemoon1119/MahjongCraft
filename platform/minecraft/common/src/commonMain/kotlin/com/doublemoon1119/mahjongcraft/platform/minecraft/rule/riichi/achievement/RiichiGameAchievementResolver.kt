@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinDetails
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailValue
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.WinSettlementYakuTranslationKeys
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
@@ -15,31 +15,18 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import kotlin.uuid.Uuid
 
 /**
  * 內建日麻的專屬成果判定。
  *
- * 役種與番數讀取日麻胡牌詳情欄位；立直與一發另外參考和牌前的玩家狀態，讓役滿和牌也能判定。
+ * 役種與番數讀取日麻胡牌詳情欄位（[RiichiWinSettlementIds]）；立直與一發另外參考和牌前的玩家狀態，讓役滿和牌也能判定。
  */
 object RiichiGameAchievementResolver : GameAchievementResolver {
     override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI
 
-    /** 日麻胡牌詳情的役種欄位。 */
-    private val YAKU_FIELD = "${MinecraftModMetadata.MOD_ID}:riichi_yaku"
-
-    /** 日麻胡牌詳情的翻符欄位；只在非役滿和牌出現，第一個參數是總番數。 */
-    private val HAN_FU_FIELD = "${MinecraftModMetadata.MOD_ID}:riichi_han_fu"
-
-    /** 日麻胡牌詳情的役滿倍數欄位；只在自然役滿和牌出現。 */
-    private val YAKUMAN_TOTAL_FIELD = "${MinecraftModMetadata.MOD_ID}:riichi_yakuman_total"
-
     /** 累計役滿所需的最低總番數。 */
     private const val COUNTED_YAKUMAN_HAN = 13
-
-    /** 役種顯示鍵對回役種。 */
-    private val yakuByKey: Map<String, YakuType> = YakuType.entries.associateBy(WinSettlementYakuTranslationKeys::keyFor)
 
     override fun resolve(facts: CommittedGameFacts): Map<Uuid, Set<String>> {
         val before = (facts.previousGame ?: checkNotNull(facts.game)).tableState
@@ -71,7 +58,7 @@ object RiichiGameAchievementResolver : GameAchievementResolver {
     /** 一位贏家這次和牌的日麻成果。 */
     private fun winAchievements(details: HistoryWinDetails, winnerBefore: MahjongPlayer?): List<String> = buildList {
         val yaku = details.yakuTypes()
-        val isNaturalYakuman = details.detailFields.any { it.id == YAKUMAN_TOTAL_FIELD }
+        val isNaturalYakuman = details.detailFields.any { it.id == RiichiWinSettlementIds.YAKUMAN_TOTAL_FIELD }
         val riichiState = winnerBefore?.playerRuleState as? RiichiPlayerState
         val isRiichi = YakuType.Riichi in yaku || YakuType.DoubleRiichi in yaku || riichiState?.isRiichi == true
         if (isRiichi) add(RiichiAchievementIds.RIICHI_WIN)
@@ -106,14 +93,14 @@ object RiichiGameAchievementResolver : GameAchievementResolver {
 
     /** 詳情中的役種；無法辨識的條目略過。 */
     private fun HistoryWinDetails.yakuTypes(): List<YakuType> = detailFields
-        .filter { it.id == YAKU_FIELD }
+        .filter { it.id == RiichiWinSettlementIds.YAKU_FIELD }
         .flatMap { field -> (field.value as? WinSettlementDetailValue.Entries)?.entries.orEmpty() }
-        .mapNotNull { entry -> yakuByKey[entry.translationKey] }
+        .mapNotNull { entry -> RiichiWinSettlementIds.yakuType(entry.id) }
 
     /** 非役滿和牌的總番數；沒有翻符欄位時為 null。 */
     private fun HistoryWinDetails.totalHan(): Int? = detailFields
-        .firstOrNull { it.id == HAN_FU_FIELD }
-        ?.let { field -> (field.value as? WinSettlementDetailValue.Text)?.arguments?.firstOrNull()?.toIntOrNull() }
+        .firstOrNull { it.id == RiichiWinSettlementIds.HAN_FU_FIELD }
+        ?.let { field -> (field.value as? WinSettlementDetailValue.Quantities)?.quantities?.firstOrNull { it.unitId == RiichiWinSettlementIds.HAN }?.amount }
 }
 
 /** 登記內建日麻的專屬成果判定。 */

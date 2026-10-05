@@ -10,17 +10,20 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.MatchSettlementPla
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.MatchSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPlayer
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPresentation
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailEntry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailField
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailValue
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementPresentationRequest
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementTranslationKeys
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementWinnerPresentation
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
-import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiWinSettlementDetailResolver
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInPaymentReasonIds
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
@@ -594,6 +597,7 @@ class FabricDebugPresentationCommand(
         val scores = listOf(120_000, 45_000, 25_000, -12_000).take(playerCount)
         val playerIds = List(playerCount) { index -> if (index == 0) player.uuid.toKotlinUuid() else Uuid.random() }
         val request = MatchSettlementPresentationRequest(
+            ruleModuleId = BuiltInRuleModuleIds.RIICHI,
             players = List(playerCount) { seatIndex ->
                 MatchSettlementPlayerPresentation(
                     playerId = playerIds[seatIndex],
@@ -640,24 +644,24 @@ class FabricDebugPresentationCommand(
             val dealsIn = preview == WinSettlementPreview.RON || yakuman
             val regularYakuEntries = if (preview == WinSettlementPreview.RON && winnerIndex == 0) {
                 listOf(
-                    WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.reach", "1"),
-                    WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.ippatsu", "1"),
-                    WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.tsumo", "1"),
-                    WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.pinfu", "1"),
-                    WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.tanyao", "1"),
-                    WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.ipeiko", "1"),
-                    WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.sanshokudohjun", "2"),
-                    WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.ikkitsukan", "2"),
-                    WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.chanta", "2"),
-                    WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.toitoiho", "2"),
-                    WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.honitsu", "3"),
-                    WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.chinitsu", "6"),
+                    YakuType.Riichi to 1,
+                    YakuType.Ippatsu to 1,
+                    YakuType.Menzentsumo to 1,
+                    YakuType.Pinfu to 1,
+                    YakuType.Tanyao to 1,
+                    YakuType.Iipeikou to 1,
+                    YakuType.SanshokuDoujun to 2,
+                    YakuType.Ittuitsu to 2,
+                    YakuType.Honchan to 2,
+                    YakuType.Toitoi to 2,
+                    YakuType.Honitsu to 3,
+                    YakuType.Chinitsu to 6,
                 )
             } else {
                 listOf(
-                    WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.reach", "1"),
-                    WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.ippatsu", "1"),
-                    WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.pinfu", "1"),
+                    YakuType.Riichi to 1,
+                    YakuType.Ippatsu to 1,
+                    YakuType.Pinfu to 1,
                 )
             }
             WinSettlementWinnerPresentation(
@@ -680,35 +684,44 @@ class FabricDebugPresentationCommand(
                 detailFields = buildList {
                     add(
                         WinSettlementDetailField(
-                            "mahjongcraft:riichi_yaku",
+                            RiichiWinSettlementIds.YAKU_FIELD,
                             WinSettlementDetailValue.Entries(
                                 if (yakuman) {
                                     listOf(
-                                        WinSettlementDetailValue.Entries.Entry(
-                                            translationKey = "mahjongcraft.game.yaku.kokushimuso_jusanmenmachi",
-                                            trailingTranslationKey = "mahjongcraft.game.score.yakuman_2x",
-                                        ),
-                                        WinSettlementDetailValue.Entries.Entry(
-                                            translationKey = "mahjongcraft.game.yaku.daisangen",
-                                            trailingTranslationKey = "mahjongcraft.game.score.yakuman_1x",
-                                        ),
+                                        RiichiWinSettlementIds.yakumanEntry(YakuType.KokushiMusou13, 2),
+                                        RiichiWinSettlementIds.yakumanEntry(YakuType.Daisangen, 1),
                                     )
                                 } else if (preview != WinSettlementPreview.NAGASHI) {
-                                    regularYakuEntries
+                                    regularYakuEntries.map { (type, han) -> RiichiWinSettlementIds.yakuEntry(type, han) }
                                 } else {
-                                    listOf(WinSettlementDetailValue.Entries.Entry("mahjongcraft.game.yaku.nagashi_mangan"))
+                                    listOf(WinSettlementDetailEntry(RiichiWinSettlementIds.NAGASHI_MANGAN))
                                 },
                             ),
                         ),
                     )
                     if (!yakuman && preview != WinSettlementPreview.NAGASHI) {
-                        val totalHan = regularYakuEntries.sumOf { it.trailingText.toIntOrNull() ?: 0 }
-                        add(WinSettlementDetailField("mahjongcraft:riichi_han_fu", WinSettlementDetailValue.Text(WinSettlementTranslationKeys.HAN_FU, listOf(totalHan.toString(), "30"))))
+                        val totalHan = regularYakuEntries.sumOf { (_, han) -> han }
+                        add(
+                            WinSettlementDetailField(
+                                RiichiWinSettlementIds.HAN_FU_FIELD,
+                                WinSettlementDetailValue.Quantities(
+                                    listOf(
+                                        WinSettlementQuantity(RiichiWinSettlementIds.HAN, totalHan),
+                                        WinSettlementQuantity(RiichiWinSettlementIds.FU, PREVIEW_FU),
+                                    ),
+                                ),
+                            ),
+                        )
                     } else if (yakuman) {
-                        add(WinSettlementDetailField("mahjongcraft:riichi_yakuman_total", WinSettlementDetailValue.Text("mahjongcraft.game.score.yakuman_3x")))
+                        add(
+                            WinSettlementDetailField(
+                                RiichiWinSettlementIds.YAKUMAN_TOTAL_FIELD,
+                                WinSettlementDetailValue.Quantities(listOf(WinSettlementQuantity(RiichiWinSettlementIds.YAKUMAN, PREVIEW_YAKUMAN_MULTIPLIER))),
+                            ),
+                        )
                     }
-                    add(WinSettlementDetailField("mahjongcraft:riichi_dora", WinSettlementDetailValue.Tiles(handIds.take(2))))
-                    add(WinSettlementDetailField("mahjongcraft:riichi_ura_dora", WinSettlementDetailValue.Tiles(handIds.drop(2).take(1))))
+                    add(WinSettlementDetailField(RiichiWinSettlementIds.DORA_FIELD, WinSettlementDetailValue.Tiles(handIds.take(2))))
+                    add(WinSettlementDetailField(RiichiWinSettlementIds.URA_DORA_FIELD, WinSettlementDetailValue.Tiles(handIds.drop(2).take(1))))
                 },
             )
         }
@@ -731,11 +744,8 @@ class FabricDebugPresentationCommand(
             } else {
                 BuiltInRoundOutcomeIds.RON
             },
-            // preview 目前只示範 riichi 規則的兩種一般胡牌，以及其特有的流局滿貫（riichi 自訂的「胡牌等效」特殊結果）。
-            // 這些結果一律對應 RiichiWinSettlementDetailResolver.TEMPLATE_KEY；
-            // WinSettlementPresentationRequestFactory.GENERIC_TEMPLATE_KEY 是給未登記 resolver 的規則模組
-            // （例如第三方擴充）使用的後備值，此指令目前沒有對應的 preview 變體可以示範。
-            templateKey = RiichiWinSettlementDetailResolver.TEMPLATE_KEY,
+            // preview 只示範日麻的兩種一般胡牌與流局滿貫，平台依規則選用日麻模板。
+            ruleModuleId = BuiltInRuleModuleIds.RIICHI,
             isTsumo = preview == WinSettlementPreview.TSUMO,
             winners = winners,
             ranking = ranking,
@@ -896,6 +906,12 @@ class FabricDebugPresentationCommand(
 
         /** 一般流局 literal。 */
         const val NORMAL_ARGUMENT: String = "normal"
+
+        /** 一般和牌預覽顯示的符數。 */
+        const val PREVIEW_FU: Int = 30
+
+        /** 役滿預覽顯示的役滿合計倍數。 */
+        const val PREVIEW_YAKUMAN_MULTIPLIER: Int = 3
 
         /** 副露布局預覽 literal。 */
         const val MELDS_ARGUMENT: String = "melds"
