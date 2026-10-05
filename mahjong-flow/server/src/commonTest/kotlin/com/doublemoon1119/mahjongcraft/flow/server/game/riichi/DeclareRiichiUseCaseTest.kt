@@ -150,6 +150,34 @@ class DeclareRiichiUseCaseTest {
         assertEquals(GameAction.Discard(drawnTile.id), updatedPlayer.actionHistory.last())
     }
 
+    /** 驗證宣告立直不會影響其他玩家仍有的一發資格。 */
+    @Test
+    fun `test declare riichi keeps another player's ippatsu`() = runTest {
+        val fixtures = Fixtures()
+        val alreadyDiscardedPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.West))
+        val currentPlayer = createRiichiPlayer(discardPile = alreadyDiscardedPile)
+        val otherPlayer = FakeMahjongPlayerFactory.create(
+            id = otherPlayerId,
+            initialSeat = Wind.SOUTH,
+            discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.East)),
+            playerRuleState = RiichiPlayerState(riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.South), isIppatsu = true),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer, otherPlayer),
+            config = RiichiRuleConfig(),
+            dynamicRuleState = RiichiDynamicState(),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, drawnTile.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val otherState = fixtures.gameRepo.getTableState(gameId)!!.players.first { it.id == otherPlayerId }.playerRuleState
+        assertTrue((otherState as RiichiPlayerState).isIppatsu, "Another player's riichi must not end this player's ippatsu window.")
+    }
+
     /**
      * 驗證在場上尚無任何鳴牌、且自己是第一次打牌時宣告立直，會被判定為雙立直。
      */

@@ -166,9 +166,16 @@ class RiichiRuleModule(
     override fun createInitialPlayerRuleState(): RiichiPlayerState = RiichiPlayerState()
 
     /**
-     * 若玩家已立直且仍在一發窗口內，摸牌代表這個窗口已經結束（本巡未能胡牌），故清除一發資格。
+     * 日本麻將沒有摸牌後需要變更的規則特有狀態；立直後的下一次摸牌仍在一發期限內，可以自摸一發。
+     *
+     * @return 固定回傳 [player] 本身。
      */
-    override fun onPlayerDrew(player: MahjongPlayer): MahjongPlayer {
+    override fun onPlayerDrew(player: MahjongPlayer): MahjongPlayer = player
+
+    /**
+     * 若玩家已立直且仍有一發資格，這次捨牌代表一發的期限已經結束（立直後一巡內未能胡牌），故清除一發資格。
+     */
+    override fun onPlayerDiscarded(player: MahjongPlayer): MahjongPlayer {
         val riichiState = player.playerRuleState as? RiichiPlayerState ?: return player
         if (!riichiState.isIppatsu) return player
         return player.copy(playerRuleState = riichiState.copy(isIppatsu = false))

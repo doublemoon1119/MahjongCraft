@@ -490,6 +490,8 @@ class DebugGameScenarioTest {
             "mahjongcraft:riichi_furiten_discarded_wait",
             "mahjongcraft:riichi_furiten_head_bump_chankan",
             "mahjongcraft:riichi_furiten_unoffered_wait",
+            "mahjongcraft:riichi_ippatsu_ron",
+            "mahjongcraft:riichi_ippatsu_tsumo",
             "mahjongcraft:riichi_wall_opening",
         )
     }

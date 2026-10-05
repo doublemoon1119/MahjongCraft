@@ -131,6 +131,16 @@ class TaiwanRuleModuleTest {
     }
 
     /**
+     * 驗證台灣麻將目前沒有捨牌後需要清除的規則特有狀態，直接回傳玩家本身。
+     */
+    @Test
+    fun `test onPlayerDiscarded returns player as-is`() {
+        val player = FakeMahjongPlayerFactory.create()
+
+        assertSame(player, module.onPlayerDiscarded(player))
+    }
+
+    /**
      * 驗證台灣麻將目前沒有鳴牌後需要清除的規則特有狀態，直接回傳玩家列表本身。
      */
     @Test

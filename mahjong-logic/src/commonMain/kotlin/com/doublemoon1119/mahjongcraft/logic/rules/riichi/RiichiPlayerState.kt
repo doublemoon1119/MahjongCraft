@@ -14,7 +14,8 @@ import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
  *
  * @property riichiTile 玩家立直時打出的牌，若未立直則為 null。
  * @property doubleRiichiTile 玩家雙立直時打出的牌，若未雙立直則為 null。
- * @property isIppatsu 玩家立直時為 true，摸下一張牌之後或者期間有其他人鳴牌就會設為 false
+ * @property isIppatsu 是否仍有一發資格。立直宣告時設為 true；立直者打出下一張牌，或期間任何人鳴牌（含立直者
+ * 自己暗槓）時設為 false。立直後的下一次摸牌仍在期限內，其他玩家立直也不影響。
  * @property paoLiability 本局是否已成立包牌責任（[PaoDetector] 判定後寫入），若無則為 null。
  * 一旦成立即持續有效直到本局結束，胡牌結算時供 [RiichiHandValueContextCalculator] 讀取。
  * @property isPermanentlyFuriten 立直後是否已經放棄過一次和牌機會（他家打出和牌張時放過、或自己摸到

@@ -53,7 +53,7 @@ object RiichiDebugGameScenarios {
         RiichiBeforePaoPonScenario,
         RiichiBeforeSuuchaRiichiScenario,
         RiichiWallOpeningScenario,
-    ) + RiichiFuritenDebugGameScenarios.all + RiichiAutomaticControlDebugGameScenarios.all
+    ) + RiichiFuritenDebugGameScenarios.all + RiichiIppatsuDebugGameScenarios.all + RiichiAutomaticControlDebugGameScenarios.all
 }
 
 /**

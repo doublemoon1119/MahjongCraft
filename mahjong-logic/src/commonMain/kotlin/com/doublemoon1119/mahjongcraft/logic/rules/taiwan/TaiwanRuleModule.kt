@@ -107,6 +107,13 @@ class TaiwanRuleModule(
     override fun onPlayerDrew(player: MahjongPlayer): MahjongPlayer = player
 
     /**
+     * 台灣麻將目前沒有捨牌後需要清除的規則特有狀態。
+     *
+     * @return 固定回傳 [player] 本身。
+     */
+    override fun onPlayerDiscarded(player: MahjongPlayer): MahjongPlayer = player
+
+    /**
      * 台灣麻將目前沒有鳴牌後需要清除的規則特有狀態。
      *
      * @return 固定回傳 [players] 本身。

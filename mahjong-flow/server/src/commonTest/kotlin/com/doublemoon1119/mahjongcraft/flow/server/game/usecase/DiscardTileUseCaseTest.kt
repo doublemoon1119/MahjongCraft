@@ -271,6 +271,43 @@ class DiscardTileUseCaseTest {
     }
 
     /**
+     * 驗證立直者打出立直後的下一張牌時，自己的一發資格結束；其他玩家的一發資格不受這次捨牌影響。
+     */
+    @Test
+    fun `test discard tile ends the discarding riichi player's ippatsu only`() = runTest {
+        val fixtures = Fixtures()
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(tiles = listOf(handTile), lastDrawn = drawnTile),
+            playerRuleState = RiichiPlayerState(riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.East), isIppatsu = true),
+        )
+        val otherPlayer = FakeMahjongPlayerFactory.create(
+            id = otherPlayerId,
+            initialSeat = Wind.SOUTH,
+            playerRuleState = RiichiPlayerState(riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.South), isIppatsu = true),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer, otherPlayer),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, drawnTile.id)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val players = fixtures.gameRepo.getTableState(gameId)!!.players
+        val currentState = players.first { it.id == currentPlayerId }.playerRuleState as RiichiPlayerState
+        val otherState = players.first { it.id == otherPlayerId }.playerRuleState as RiichiPlayerState
+        assertFalse(currentState.isIppatsu, "Discarding the next tile after riichi ends the ippatsu window.")
+        assertTrue(currentState.isRiichi, "Riichi itself should remain in effect.")
+        assertTrue(otherState.isIppatsu, "Another player's discard must not end this player's ippatsu window.")
+    }
+
+    /**
      * 驗證立直中的玩家摸切棄胡（摸到的牌原本可以自摸，卻選擇打出）時，本局起永久振聽——見
      * [MahjongRuleModule.onPlayerDeclinedWin] KDoc。手牌結構是門前清自摸 1 番的單騎聽牌（聽西風），
      * 摸到第二張西風時打出（而不是宣告自摸）即視為見逃す。

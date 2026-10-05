@@ -36,7 +36,8 @@ import kotlin.uuid.Uuid
  * 用例共用，交給 [DiscardReactionResolver] 處理，詳見其 KDoc。
  *
  * 規則可透過 [MahjongRuleModule.forcedDiscardTileId] 限定這次只能打出的牌；玩家摸牌後原本可以自摸卻選擇
- * 捨牌時，一律呼叫 [MahjongRuleModule.onPlayerDeclinedWin]，由規則決定是否產生後果。
+ * 捨牌時，一律呼叫 [MahjongRuleModule.onPlayerDeclinedWin]，由規則決定是否產生後果。捨牌套用後再呼叫
+ * [MahjongRuleModule.onPlayerDiscarded]，讓規則更新捨牌造成的規則狀態。
  *
  * 除了一炮多響判定為流局之外，這張捨牌若沒有任何人可以吃/碰/槓/榮和，還會額外透過
  * [postActionExhaustiveDrawResolverRegistry] 檢查是否構成主動觸發的途中流局（例如日麻的四風連打）。
@@ -134,12 +135,14 @@ class DiscardTileUseCase(
                             state.currentPlayer
                         }
 
-                        val updatedPlayer = playerAfterDeclineCheck
-                            .copy(
-                                hand = organizedHand,
-                                discardPile = playerAfterDeclineCheck.discardPile.discardTile(discardedTile),
-                            )
-                            .recordAction(GameAction.Discard(tileId))
+                        val updatedPlayer = module.onPlayerDiscarded(
+                            playerAfterDeclineCheck
+                                .copy(
+                                    hand = organizedHand,
+                                    discardPile = playerAfterDeclineCheck.discardPile.discardTile(discardedTile),
+                                )
+                                .recordAction(GameAction.Discard(tileId)),
+                        )
                         val updatedPlayers = state.players.map { if (it.id == playerId) updatedPlayer else it }
                         val stateAfterDiscard = state.copy(players = updatedPlayers)
 

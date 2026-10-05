@@ -243,15 +243,27 @@ class RiichiRuleModuleTest {
     }
 
     /**
-     * 驗證玩家已立直且仍在一發窗口內時，摸牌會清除一發資格。
+     * 驗證立直後的下一次摸牌仍在一發期限內，摸牌不會清除一發資格。
      */
     @Test
-    fun `test onPlayerDrew clears ippatsu when in ippatsu window`() {
+    fun `test onPlayerDrew keeps ippatsu so the next draw can still win with ippatsu`() {
         val player = FakeMahjongPlayerFactory.create(
             playerRuleState = RiichiPlayerState(riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.East), isIppatsu = true),
         )
 
-        val result = module.onPlayerDrew(player)
+        assertSame(player, module.onPlayerDrew(player))
+    }
+
+    /**
+     * 驗證玩家已立直且仍有一發資格時，打出下一張牌會清除一發資格。
+     */
+    @Test
+    fun `test onPlayerDiscarded clears ippatsu when the player still has it`() {
+        val player = FakeMahjongPlayerFactory.create(
+            playerRuleState = RiichiPlayerState(riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.East), isIppatsu = true),
+        )
+
+        val result = module.onPlayerDiscarded(player)
 
         val riichiState = result.playerRuleState as RiichiPlayerState
         assertFalse(riichiState.isIppatsu)
@@ -259,15 +271,13 @@ class RiichiRuleModuleTest {
     }
 
     /**
-     * 驗證玩家不在一發窗口內（未立直或一發已失效）時，摸牌不應變動玩家實例。
+     * 驗證玩家沒有一發資格（未立直或一發已失效）時，捨牌不應變動玩家實例。
      */
     @Test
-    fun `test onPlayerDrew is a no-op when not in ippatsu window`() {
+    fun `test onPlayerDiscarded is a no-op without ippatsu`() {
         val player = FakeMahjongPlayerFactory.create(playerRuleState = RiichiPlayerState())
 
-        val result = module.onPlayerDrew(player)
-
-        assertSame(player, result)
+        assertSame(player, module.onPlayerDiscarded(player))
     }
 
     /**

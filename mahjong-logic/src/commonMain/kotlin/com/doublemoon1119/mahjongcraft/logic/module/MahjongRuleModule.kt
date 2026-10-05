@@ -240,15 +240,26 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     fun createInitialPlayerRuleState(): PlayerRuleState?
 
     /**
-     * 因應「玩家摸牌」事件，套用規則特有的狀態清除。
+     * 因應「玩家摸牌」事件，套用規則特有的狀態變化。
      *
-     * 例如日麻：摸牌代表一發窗口已經結束（本巡未能胡牌），需清除玩家的一發資格。
      * 沒有對應狀態需求的規則應直接回傳 [player] 本身，不做任何事。
      *
      * @param player 剛完成摸牌的玩家（已套用摸牌本身造成的變化）。
-     * @return 套用規則特有狀態清除後的新玩家實例。
+     * @return 套用規則特有狀態變化後的新玩家實例。
      */
     fun onPlayerDrew(player: MahjongPlayer): MahjongPlayer
+
+    /**
+     * 因應「玩家一般捨牌」事件，套用規則特有的狀態變化。
+     *
+     * 只在一般捨牌時呼叫；宣告動作附帶打出的牌（例如日麻的立直宣告牌）由該宣告自行處理，不會呼叫。
+     * 例如日麻：立直者宣告後再打出下一張牌，代表一發的期限已經結束，需清除玩家的一發資格。
+     * 沒有對應狀態需求的規則應直接回傳 [player] 本身，不做任何事。
+     *
+     * @param player 剛完成捨牌的玩家（已套用捨牌本身造成的變化）。
+     * @return 套用規則特有狀態變化後的新玩家實例。
+     */
+    fun onPlayerDiscarded(player: MahjongPlayer): MahjongPlayer
 
     /**
      * 因應「有玩家完成一次鳴牌（吃/碰/槓）」事件，套用規則特有的狀態清除。

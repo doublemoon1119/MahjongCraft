@@ -90,11 +90,10 @@ class DrawTileUseCaseTest {
     }
 
     /**
-     * 驗證已立直且仍在一發窗口內的玩家摸牌後，一發資格會被清除
-     * （代表這個窗口已經結束，本巡未能胡牌）。
+     * 驗證已立直且仍有一發資格的玩家摸牌後，一發資格仍然保留，摸到和牌張時可以自摸一發。
      */
     @Test
-    fun `test draw tile clears ippatsu for a riichi player`() = runTest {
+    fun `test draw tile keeps ippatsu for a riichi player`() = runTest {
         val fixtures = Fixtures()
         val currentPlayer = FakeMahjongPlayerFactory.create(
             id = currentPlayerId,
@@ -118,7 +117,7 @@ class DrawTileUseCaseTest {
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val updatedPlayer = fixtures.gameRepo.getTableState(gameId)!!.players.first { it.id == currentPlayerId }
         val riichiState = updatedPlayer.playerRuleState as RiichiPlayerState
-        assertEquals(false, riichiState.isIppatsu, "Drawing again should end the ippatsu window.")
+        assertEquals(true, riichiState.isIppatsu, "The first draw after riichi is still within the ippatsu window.")
         assertTrue(riichiState.isRiichi, "Riichi itself should remain in effect.")
     }
 
