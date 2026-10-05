@@ -13,7 +13,7 @@
 
 ## Boundaries
 
-This module does not depend on Minecraft, networking, persistence storage, UI, application orchestration, or AI policy. Platform and application concerns consume its domain types instead.
+This module does not depend on Minecraft, networking, persistence storage, UI, application orchestration, or AI policy. Platform and application concerns consume its domain types instead. Seat control, such as whether a human or an AI strategy plays a seat, belongs to the application layer rather than the player model.
 
 ## Dependencies
 

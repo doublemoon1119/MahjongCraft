@@ -7,7 +7,9 @@
 ## Responsibilities
 
 - Model games, rooms, timers, decisions, round preparation, and pending transitions.
+- Track per-game seat control, including AI-controlled seats and forced automatic play.
 - Define event, snapshot, synchronization, and presentation request contracts.
+- Define history facts and observer snapshots shared by recording, replay, and spectating.
 - Provide dependency-injection modules for shared services.
 
 ## Boundaries

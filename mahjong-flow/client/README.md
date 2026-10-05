@@ -6,7 +6,7 @@
 
 ## Responsibilities
 
-- Track decision-timer state and other client-visible game data.
+- Track decision-timer state derived from authoritative timer updates.
 - Provide client-oriented services through shared flow contracts and dependency injection.
 
 ## Boundaries
@@ -19,4 +19,4 @@ It depends on [mahjong-logic](../../mahjong-logic/README.md), [mahjong-flow-comm
 
 ## Testing
 
-Tests cover client state-store behavior and timing updates. Shared fixtures are provided by the testing modules.
+Tests cover the decision-timer state store and its timing updates. Shared fixtures are provided by the testing modules.

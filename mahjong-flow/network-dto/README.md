@@ -6,7 +6,7 @@
 
 ## Responsibilities
 
-- Encode transport-safe messages and payloads.
+- Encode transport-safe messages and payloads, including game and room snapshot synchronization, history queries, and replays.
 - Map controlled domain and application values to DTOs and back.
 - Support registered polymorphic extension payloads.
 

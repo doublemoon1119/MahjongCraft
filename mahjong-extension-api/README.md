@@ -16,7 +16,7 @@ The API does not grant arbitrary renderer callbacks or direct mutation of author
 
 ## Dependencies
 
-This facade exposes APIs from [mahjong-logic](../mahjong-logic/README.md), [mahjong-ai](../mahjong-ai/README.md), and the common, server, network DTO, and persistence DTO parts of [mahjong-flow](../mahjong-flow/README.md).
+This facade exposes APIs from [mahjong-logic](../mahjong-logic/README.md), [mahjong-ai](../mahjong-ai/README.md), and the common, server, network DTO, and persistence format parts of [mahjong-flow](../mahjong-flow/README.md).
 
 ## Testing
 

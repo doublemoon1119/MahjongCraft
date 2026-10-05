@@ -7,6 +7,7 @@
 ## Responsibilities
 
 - Encode games, rooms, tables, reactions, and extension state for storage.
+- Encode pending history events and compact replays.
 - Restore domain and flow models through explicit codecs.
 - Apply registered persistence migrations.
 
