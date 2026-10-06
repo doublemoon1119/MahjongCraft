@@ -8,6 +8,11 @@ import com.doublemoon1119.mahjongcraft.ai.registerBuiltInAiStrategies
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTransferResult
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryListRequest
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryAccess
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryResult
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryScope
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundPosition
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.buildBuiltInPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessFlowHistoryRuntime
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessHistoryMatchRunner
@@ -32,6 +37,7 @@ import java.sql.DriverManager
 import kotlin.io.path.createTempDirectory
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.minutes
@@ -69,8 +75,38 @@ class HistoryGenerationIntegrationTest {
             assertTrue(matchId !in database.readGaps(), "The completed match must not have a sequence gap.")
             assertTrue(liveStore.snapshot().games.isEmpty(), "History generation must not add a live game.")
             assertTrue(liveStore.snapshot().rooms.isEmpty(), "History generation must not add a live room.")
+            assertEveryArchivedRoundReadable(writer, database, session, runtime.matchId())
         } finally {
             writer.detach()
+        }
+    }
+
+    /**
+     * 確認封存局列表中的每一局都能經由正式查詢路徑讀出事件與開局牌面。
+     *
+     * @param writer 已附加資料庫的正式 writer。
+     * @param database writer 所附加的 SQLite 資料庫。
+     * @param session writer session 識別碼。
+     * @param matchId 已封存的對局。
+     */
+    private suspend fun assertEveryArchivedRoundReadable(
+        writer: FabricHistoryOutboxWriter,
+        database: SqliteHistoryDatabase,
+        session: Uuid,
+        matchId: Uuid,
+    ) {
+        val access = HistoryQueryAccess(Uuid.random(), isAdministrator = true)
+        val entry = checkNotNull(
+            database.readHistoryQueryPage(
+                HistoryListRequest(scope = HistoryQueryScope.ALL, pageSize = 1).toSqliteQuery(access, emptySet()).copy(matchId = matchId.toString()),
+            ).entries.singleOrNull(),
+        )
+        assertTrue(entry.rounds.size > 1, "The generated match should archive more than one round.")
+        entry.rounds.forEach { round ->
+            val events = writer.queryRoundEvents(access, matchId, HistoryQueryScope.ALL, round.roundNumber, 0, 1, session)
+            val state = writer.queryRoundState(access, matchId, HistoryQueryScope.ALL, round.roundNumber, HistoryRoundPosition.Initial, session)
+            assertIs<HistoryQueryResult.Success<*>>(assertIs<HistoryManagementResult.Success<*>>(events).value, "Round ${round.roundNumber} events must be readable.")
+            assertIs<HistoryQueryResult.Success<*>>(assertIs<HistoryManagementResult.Success<*>>(state).value, "Round ${round.roundNumber} state must be readable.")
         }
     }
 

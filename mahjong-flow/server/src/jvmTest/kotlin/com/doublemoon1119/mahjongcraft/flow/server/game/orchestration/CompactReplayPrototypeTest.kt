@@ -322,11 +322,27 @@ class CompactReplayPrototypeTest {
         val patchPaths = linkedMapOf<List<JsonElement>, Int>()
         val factTypes = linkedMapOf<String, Int>()
         val actionTypes = linkedMapOf<String, Int>()
+        fun encodeFacts(facts: List<JsonElement>, index: RoundIndex): JsonElement {
+            val encodedFacts = facts.map { fact ->
+                val translated = translate(fact, index) as JsonObject
+                if (flatPatches) {
+                    CompactFactCodec.encode(translated, factTypes, actionTypes).also { encodedFact ->
+                        assertEquals(
+                            translated,
+                            CompactFactCodec.decode(encodedFact, factTypes.keys.toList(), actionTypes.keys.toList()),
+                        )
+                    }
+                } else {
+                    translated
+                }
+            }
+            return if (flatPatches && encodedFacts.size == 1) encodedFacts.single() else JsonArray(encodedFacts)
+        }
         for (transaction in pairs.groupBy { it.first.transactionFirstSequence }.values) {
             assertEquals(expectedSequence, transaction.first().first.transactionFirstSequence)
             val time = transaction.first().first.occurredAtEpochMillis
             assertTrue(transaction.all { it.first.occurredAtEpochMillis == time })
-            val parts = linkedMapOf<String, JsonElement>()
+            var parts = linkedMapOf<String, JsonElement>()
             val timeDelta = time - previousTransactionTime
             if (timeDelta != 0L) parts["dt"] = JsonPrimitive(timeDelta)
             previousTransactionTime = time
@@ -344,6 +360,13 @@ class CompactReplayPrototypeTest {
                 when (fact) {
                     is HistoryFact.MatchStarted, is HistoryFact.RoundStarted -> {
                         check(!openedRound && !tableChanged)
+                        if (facts.isNotEmpty()) {
+                            parts["e"] = encodeFacts(facts, checkNotNull(roundIndex))
+                            rounds.last().transactions += JsonObject(parts)
+                            rounds.last().expected += rounds.last().replayed
+                            parts = linkedMapOf()
+                            facts.clear()
+                        }
                         val state = when (fact) {
                             is HistoryFact.MatchStarted -> fact.tableState
                             is HistoryFact.RoundStarted -> fact.tableState
@@ -367,7 +390,7 @@ class CompactReplayPrototypeTest {
                         current = state
                         roundIndex = createRoundIndex(state, typeDictionary)
                         val projection = project(state, checkNotNull(roundIndex))
-                        rounds += MutableRound(state.roundNumber, checkNotNull(roundIndex).tileTypes.toList(), projection)
+                        rounds += MutableRound(rounds.size + 1, checkNotNull(roundIndex).tileTypes.toList(), projection)
                         parts["h"] = JsonPrimitive(true)
                         openedRound = true
                     }
@@ -388,20 +411,7 @@ class CompactReplayPrototypeTest {
             val declarations = declareNewTiles(checkNotNull(current), checkNotNull(roundIndex), typeDictionary)
             if (declarations.isNotEmpty()) parts["new"] = JsonArray(declarations.map(::JsonPrimitive))
             if (facts.isNotEmpty()) {
-                val encodedFacts = facts.map { fact ->
-                    val translated = translate(fact, checkNotNull(roundIndex)) as JsonObject
-                    if (flatPatches) {
-                        CompactFactCodec.encode(translated, factTypes, actionTypes).also { encodedFact ->
-                            assertEquals(
-                                translated,
-                                CompactFactCodec.decode(encodedFact, factTypes.keys.toList(), actionTypes.keys.toList()),
-                            )
-                        }
-                    } else {
-                        translated
-                    }
-                }
-                parts["e"] = if (flatPatches && encodedFacts.size == 1) encodedFacts.single() else JsonArray(encodedFacts)
+                parts["e"] = encodeFacts(facts, checkNotNull(roundIndex))
             }
             if (tableChanged) {
                 val index = checkNotNull(roundIndex)

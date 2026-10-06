@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundEvents
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundPosition
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundState
@@ -41,8 +42,9 @@ class CompactReplayRoundReaderCapacityTest {
                 parseBoundedReplayJson(document.toString(), ReplayJsonParseLimits(maximumUtf8Bytes = 8 * 1024 * 1024)),
             ).value
             val full = CompactReplayCodec.decodeCompact(document)
-            val numbers = fixture.events.map { it.roundNumber }.distinct()
-            assertEquals(full.size, numbers.size)
+            val openings = fixture.events.count { it.fact is HistoryFact.MatchStarted || it.fact is HistoryFact.RoundStarted }
+            assertEquals(openings, full.size)
+            val numbers = full.indices.map { it + 1 }
             for (roundIndex in listOf(0, full.lastIndex).distinct()) {
                 val last = full[roundIndex].lastIndex
                 val result = assertIs<ReplayReadResult.Success<HistoryRoundState>>(reader.readState(parsed, fixture.events.first().matchId, numbers[roundIndex], HistoryRoundPosition.AfterTransaction(last)))

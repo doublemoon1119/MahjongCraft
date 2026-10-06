@@ -122,7 +122,7 @@ object CompactReplayCodec {
         for (indices in transactions) {
             val txEvents = indices.map { events[it] }
             val txJson = indices.map { serialized[it] }
-            val parts = linkedMapOf<String, JsonElement>()
+            var parts = linkedMapOf<String, JsonElement>()
             val time = txEvents.first().occurredAtEpochMillis
             if (time != previousTime) parts[ReplayFormatKeys.TIME_DELTA] = JsonPrimitive(time - previousTime)
             previousTime = time
@@ -133,6 +133,13 @@ object CompactReplayCodec {
                 when (val fact = event.fact) {
                     is HistoryFact.MatchStarted, is HistoryFact.RoundStarted -> {
                         check(!openedRound && !tableChanged) { "A transaction cannot open multiple rounds" }
+                        // 同一筆權威交易中先於開局的事實（例如上一局結束）屬於上一局，作為上一局的最後一筆交易保存。
+                        if (facts.isNotEmpty()) {
+                            putFacts(parts, facts, checkNotNull(roundIndex) { "Replay event precedes a round opening" }, factTypes, actionTypes)
+                            rounds.last().transactions += JsonObject(parts)
+                            parts = linkedMapOf()
+                            facts.clear()
+                        }
                         current = when (fact) {
                             is HistoryFact.MatchStarted -> fact.tableState
                             is HistoryFact.RoundStarted -> fact.tableState
@@ -152,7 +159,7 @@ object CompactReplayCodec {
                         }
                         val openingIndex = createRoundIndex(openingState, json, typeDictionary)
                         roundIndex = openingIndex
-                        rounds += MutableRound(openingState.roundNumber, openingIndex.tileTypes.toList(), project(openingState, openingIndex, registries, json), mutableListOf())
+                        rounds += MutableRound(rounds.size + 1, openingIndex.tileTypes.toList(), project(openingState, openingIndex, registries, json), mutableListOf())
                         parts[ReplayFormatKeys.ROUND_OPENING] = JsonPrimitive(true)
                         openedRound = true
                     }
@@ -181,16 +188,7 @@ object CompactReplayCodec {
             val state = checkNotNull(current) { "Replay transaction has no table state" }
             val declarations = declareNewTiles(state, index, json, typeDictionary)
             if (declarations.isNotEmpty()) parts[ReplayFormatKeys.NEW_TILES] = JsonArray(declarations.map(::JsonPrimitive))
-            if (facts.isNotEmpty()) {
-                val compactFacts = facts.map { (fact, _) -> translateFact(fact, index) }
-                parts[ReplayFormatKeys.FACTS] = if (compactFacts.size == 1) CompactFactCodec.encode(compactFacts.single(), factTypes, actionTypes) else JsonArray(compactFacts.map { CompactFactCodec.encode(it, factTypes, actionTypes) })
-                val actors = facts.map { (_, actorId) ->
-                    actorId?.let { JsonPrimitive(index.playerIds[it] ?: error("Replay actor is not a match player: $it")) } ?: JsonNull
-                }
-                if (actors.any { it != JsonNull }) {
-                    parts[ReplayFormatKeys.ACTORS] = if (actors.distinct().size == 1) actors.first() else JsonArray(actors)
-                }
-            }
+            if (facts.isNotEmpty()) putFacts(parts, facts, index, factTypes, actionTypes)
             val round = rounds.last()
             if (tableChanged) {
                 val after = project(state, index, registries, json)
@@ -468,6 +466,32 @@ object CompactReplayCodec {
     private fun translateFact(fact: JsonObject, index: RoundIndex): JsonObject = translate(fact, index) as JsonObject
 
     /**
+     * 將一筆交易的語意事實與行為者寫入 [parts]。
+     *
+     * @param parts 正在建立的交易欄位。
+     * @param facts 依序排列的事實與行為者玩家 ID。
+     * @param index 事實所屬局的牌與玩家索引。
+     * @param factTypes 事實種類字典。
+     * @param actionTypes 動作種類字典。
+     */
+    private fun putFacts(
+        parts: MutableMap<String, JsonElement>,
+        facts: List<Pair<JsonObject, String?>>,
+        index: RoundIndex,
+        factTypes: MutableMap<String, Int>,
+        actionTypes: MutableMap<String, Int>,
+    ) {
+        val compactFacts = facts.map { (fact, _) -> translateFact(fact, index) }
+        parts[ReplayFormatKeys.FACTS] = if (compactFacts.size == 1) CompactFactCodec.encode(compactFacts.single(), factTypes, actionTypes) else JsonArray(compactFacts.map { CompactFactCodec.encode(it, factTypes, actionTypes) })
+        val actors = facts.map { (_, actorId) ->
+            actorId?.let { JsonPrimitive(index.playerIds[it] ?: error("Replay actor is not a match player: $it")) } ?: JsonNull
+        }
+        if (actors.any { it != JsonNull }) {
+            parts[ReplayFormatKeys.ACTORS] = if (actors.distinct().size == 1) actors.first() else JsonArray(actors)
+        }
+    }
+
+    /**
      * 遞迴翻譯牌、玩家及牌種參照。
      *
      * @param element 待轉換的 JSON 節點。
@@ -538,7 +562,7 @@ object CompactReplayCodec {
     /**
      * 編碼期間累積的單局內容與交易。
      *
-     * @property number 局數。
+     * @property number 這一局在整場對局中的順序號，從 1 開始；連莊或續局也會遞增，與封存時的局列表一致。賽程局位保存在開局投影中。
      * @property tileTypes 開局時依局內牌索引排列的牌種代碼。
      * @property initial 開局時可查閱的遊戲內容投影。
      * @property transactions 已編碼的有序交易。

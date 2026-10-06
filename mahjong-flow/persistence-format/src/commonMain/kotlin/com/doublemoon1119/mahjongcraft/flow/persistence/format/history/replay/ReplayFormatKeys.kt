@@ -50,7 +50,7 @@ internal object ReplayFormatKeys {
     /** 局內交易資料。 */
     const val TRANSACTIONS = "transactions"
 
-    /** 局序號。 */
+    /** 這一局在整場對局中的順序號，從 1 開始。 */
     const val ROUND_NUMBER = "n"
 
     /** 交易相對時間。 */

@@ -45,7 +45,7 @@ internal class HistoryReplayProjectionMapper(private val registry: HistoryReplay
      * 映射選取位置的唯一桌況。
      * @param projection 已還原桌況。
      * @param identity header 玩家身分。
-     * @param roundNumber 保存局序號。
+     * @param roundNumber 這一局在整場對局中的順序號；連莊時與 [HistoryRoundState.roundPosition] 的賽程局數不同。
      * @param position 選取位置。
      * @param tileCatalog 已宣告的局內實體牌。
      * @param budget 走訪預算。
@@ -62,7 +62,7 @@ internal class HistoryReplayProjectionMapper(private val registry: HistoryReplay
         val current = integer(root.getValue(ReplaySourceKeys.CURRENT_PLAYER_INDEX))
         val roundPosition = Json.decodeFromJsonElement(MatchRoundPositionPersistenceDto.serializer(), root.getValue(ReplaySourceKeys.ROUND_POSITION)).toDomain()
         val wind = Wind.valueOf(string(root.getValue(ReplaySourceKeys.PREVALENT_WIND)))
-        require(roundPosition.prevalentWind == wind && roundPosition.roundNumber == roundNumber) { "Replay round position is inconsistent" }
+        require(roundPosition.prevalentWind == wind) { "Replay round position is inconsistent" }
         val wall = refs(obj(root.getValue(ReplaySourceKeys.TILE_WALL)).getValue(ReplaySourceKeys.WALL_TILES), context)
         val reserved = refs(root.getValue(ReplaySourceKeys.INITIAL_DEAD_WALL), context)
         val held = wall + reserved + players.flatMap { player ->

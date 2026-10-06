@@ -7,7 +7,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.Wind
 
 /** 歷史局桌況。
  * @property identity 對局識別資料。
- * @property roundNumber 局數。
+ * @property roundNumber 這一局在整場對局中的順序號，從 1 開始；連莊或續局也會遞增。
  * @property position 局內位置。
  * @property tileCatalog 牌種目錄。
  * @property players 玩家桌況。
@@ -16,7 +16,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.Wind
  * @property currentPlayerSeat 行動玩家座位。
  * @property dealerSeat 莊家座位。
  * @property prevalentWind 場風。
- * @property roundPosition 保存的局位。
+ * @property roundPosition 保存的賽程局位；連莊時不變。
  * @property comboCount 連莊次數。
  * @property finishedPlayerSeats 已完成玩家座位。
  * @property dynamicRuleState 規則公開資訊。

@@ -31,10 +31,12 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.table.MatchRoundPosition
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -329,6 +331,58 @@ class CompactReplayRoundReaderGenuineTest {
         assertTrue(page.transactions.isEmpty())
         assertEquals(null, page.nextTransactionIndex)
         assertEquals(fixture.changed.tileWall.remainingCount + 1, page.tileCatalog.tiles.size)
+    }
+
+    /**
+     * 連莊時賽程局位不變，Replay 仍以順序號區分每一局，逐局都能讀取並對應到正確的開局內容。
+     *
+     * 局結束與下一局開局在同一筆權威交易中；局結束資訊留在結束的那一局，不出現在下一局的開局交易。
+     */
+    @Test
+    fun `reader selects each round by order when the dealer repeats`() = runTest {
+        val base = FakeTableStateFactory.create(
+            players = listOf(FakeMahjongPlayerFactory.create(discardPile = RiichiDiscardPile()), FakeMahjongPlayerFactory.create(discardPile = RiichiDiscardPile())),
+            config = RiichiRuleConfig(),
+        )
+        val first = base.reversedScores(25_000)
+        val repeated = first.reversedScores(26_000)
+        val next = repeated.copy(roundNumber = 2, roundPosition = MatchRoundPosition(sequenceIndex = 1, prevalentWind = Wind.EAST, localRoundNumber = 2)).reversedScores(27_000)
+        assertEquals(first.roundNumber, repeated.roundNumber)
+        val matchId = Uuid.random()
+        fun completion(settled: TableState) = RoundCompletionSummary(
+            "test:round_completed",
+            RoundCompletionClassification.EXHAUSTIVE_DRAW,
+            emptySet(),
+            transitionDirective = RoundTransitionDirective.REPEAT_DEALER,
+            settledScoresByPlayerId = settled.players.associate { it.id to it.score },
+        )
+        val events = listOf(
+            event(matchId, first.id, 1, 0L, HistoryFact.MatchStarted(first, GameFlowConfig(), emptyMap())),
+            event(matchId, first.id, 2, 100L, HistoryFact.RoundCompleted(completion(repeated))),
+            event(matchId, first.id, 3, 100L, HistoryFact.RoundStarted(repeated)).copy(transactionFirstSequence = 2),
+            event(matchId, first.id, 4, 300L, HistoryFact.RoundCompleted(completion(next))),
+            event(matchId, first.id, 5, 300L, HistoryFact.RoundStarted(next)).copy(transactionFirstSequence = 4),
+            event(matchId, first.id, 6, 500L, HistoryFact.MatchCompleted("test:completed", next.players.associate { it.id to it.score })),
+        )
+        val registries = buildBuiltInPersistenceRegistries()
+        val document = CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries)
+
+        listOf(25_000, 26_000, 27_000).forEachIndexed { index, score ->
+            val roundNumber = index + 1
+            val state = assertIs<ReplayReadResult.Success<HistoryRoundState>>(
+                reader().readState(document, matchId, roundNumber, HistoryRoundPosition.Initial),
+            ).value
+            assertEquals(roundNumber, state.roundNumber)
+            assertEquals(listOf(score, score), state.players.map { it.score })
+        }
+        assertEquals(ReplayReadError.SELECTION_NOT_FOUND, assertIs<ReplayReadResult.Failure>(reader().readEvents(document, matchId, 4, 0, 1)).error)
+        listOf(1, 2).forEach { roundNumber ->
+            val transactions = assertIs<ReplayReadResult.Success<HistoryRoundEvents>>(reader().readEvents(document, matchId, roundNumber, 0, 20)).value.transactions
+            assertTrue(transactions.first().facts.none { it is HistoryReplayFact.Completion }, "Round $roundNumber opening must not carry a completion")
+            assertTrue(transactions.last().facts.any { it is HistoryReplayFact.Completion }, "Round $roundNumber must end with its own completion")
+        }
+        val lastRound = assertIs<ReplayReadResult.Success<HistoryRoundEvents>>(reader().readEvents(document, matchId, 3, 0, 20)).value.transactions
+        assertTrue(lastRound.first().facts.none { it is HistoryReplayFact.Completion }, "The final round opening must not carry the previous completion")
     }
 
     /** 建立由正式 [CompactReplayCodec] 產生的重播文件。 */

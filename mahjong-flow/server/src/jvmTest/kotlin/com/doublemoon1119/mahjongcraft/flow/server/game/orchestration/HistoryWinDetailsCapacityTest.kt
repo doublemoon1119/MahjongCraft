@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuant
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.CompactReplayCodec
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.buildBuiltInPersistenceRegistries
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import java.io.ByteArrayOutputStream
 import java.util.logging.Logger
 import java.util.zip.GZIPOutputStream
@@ -63,7 +64,7 @@ class HistoryWinDetailsCapacityTest {
         var tableState = events.asSequence().map { it.fact }.filterIsInstance<HistoryFact.MatchStarted>().firstOrNull()?.tableState
         return events.groupBy { it.transactionFirstSequence }.values.flatMap { transaction ->
             val first = sequence
-            val transactionState = transaction.fold(tableState) { state, event ->
+            val advance = { state: TableState?, event: HistoryOutboxEvent ->
                 when (val fact = event.fact) {
                     is HistoryFact.RoundStarted -> fact.tableState
                     is HistoryFact.TableChanged -> when (val result = fact.result) {
@@ -73,13 +74,15 @@ class HistoryWinDetailsCapacityTest {
                     else -> state
                 }
             }
-            tableState = transactionState
+            // 和牌明細屬於結束的那一局；同一筆交易若接著開下一局，手牌取自開局前的桌況。
+            val settlementState = transaction.takeWhile { it.fact !is HistoryFact.RoundStarted }.fold(tableState, advance)
+            tableState = transaction.fold(tableState, advance)
             val summary = transaction.mapNotNull { (it.fact as? HistoryFact.RoundCompleted)?.summary }.firstOrNull()
             val winners = if (summary != null && settlements < maxSettlements) {
                 settlements++
                 val winnerIds = summary.beneficiaryPlayerIds.toList().ifEmpty { listOf(summary.settledScoresByPlayerId.keys.first()) }
                 winnerIds.mapNotNull { playerId ->
-                    val player = transactionState?.players?.firstOrNull { it.id == playerId } ?: return@mapNotNull null
+                    val player = settlementState?.players?.firstOrNull { it.id == playerId } ?: return@mapNotNull null
                     val winningTileId = player.hand.lastDrawn?.id
                     HistoryWinDetails(
                         playerId = playerId,
