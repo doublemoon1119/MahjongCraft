@@ -38,6 +38,9 @@ object MinecraftClientConfigScreenKeys {
     /** 開啟對局歷史的快捷鍵。 */
     const val OPEN_HISTORY_KEY: String = "key.mahjongcraft.open_history"
 
+    /** 開啟規則一覽的快捷鍵。 */
+    const val OPEN_RULE_CATALOGUE_KEY: String = "key.mahjongcraft.open_rule_catalogue"
+
     /** 自動整理手牌欄位。 */
     const val AUTO_SORT_HAND: String = "mahjongcraft.client_config.auto_sort_hand"
 

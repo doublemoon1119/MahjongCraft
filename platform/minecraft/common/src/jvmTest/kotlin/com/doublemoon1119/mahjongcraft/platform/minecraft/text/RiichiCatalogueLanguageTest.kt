@@ -22,7 +22,10 @@ class RiichiCatalogueLanguageTest {
                 catalogue.entries.forEach { entry ->
                     add(entry.nameTranslationKey)
                     add(entry.descriptionTranslationKey)
-                    addAll(entry.labelTranslationKeys)
+                    entry.labels.forEach { label ->
+                        add(label.nameTranslationKey)
+                        label.descriptionTranslationKey?.let(::add)
+                    }
                     entry.unavailableReasonTranslationKey?.let(::add)
                     entry.examples.forEach { it.descriptionTranslationKey?.let(::add) }
                 }

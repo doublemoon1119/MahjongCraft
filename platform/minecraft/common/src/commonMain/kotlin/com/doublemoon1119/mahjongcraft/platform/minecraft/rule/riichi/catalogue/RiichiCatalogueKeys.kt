@@ -88,6 +88,15 @@ internal object RiichiCatalogueKeys {
     /** mangan 呈現標籤。 */
     const val MANGAN: String = PREFIX + "label.mangan"
 
+    /** 「不算役」標籤的說明。 */
+    const val BONUS_ONLY_DESCRIPTION: String = PREFIX + "label.bonus_only.description"
+
+    /** 「門清限定」標籤的說明。 */
+    const val CLOSED_ONLY_DESCRIPTION: String = PREFIX + "label.closed_only.description"
+
+    /** 副露翻數標籤共用的說明。 */
+    const val OPEN_HAN_DESCRIPTION: String = PREFIX + "label.open_han.description"
+
     /** 三元牌役牌的總稱，不以紅中名稱代替。 */
     const val DRAGON_NAME: String = PREFIX + "name.dragon"
 

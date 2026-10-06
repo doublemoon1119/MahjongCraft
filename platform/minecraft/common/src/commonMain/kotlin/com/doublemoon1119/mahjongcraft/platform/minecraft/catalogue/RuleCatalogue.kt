@@ -43,7 +43,7 @@ data class RuleCatalogueCategory(
  * @property categoryId 所屬分類識別碼。
  * @property nameTranslationKey 名稱翻譯鍵。
  * @property descriptionTranslationKey 完整說明翻譯鍵。
- * @property labelTranslationKeys 價值、限制或情境標籤的翻譯鍵。
+ * @property labels 價值、限制或情境標籤。
  * @property unavailableReasonTranslationKey 依設定不適用時的原因；null 表示適用。
  * @property examples 可選的完整手牌或局部示意，不要求存在牌面資產。
  */
@@ -52,7 +52,7 @@ data class RuleCatalogueEntry(
     val categoryId: String,
     val nameTranslationKey: String,
     val descriptionTranslationKey: String,
-    val labelTranslationKeys: List<String> = emptyList(),
+    val labels: List<RuleCatalogueLabel> = emptyList(),
     val unavailableReasonTranslationKey: String? = null,
     val examples: List<RuleCatalogueExample> = emptyList(),
 ) {
@@ -60,8 +60,23 @@ data class RuleCatalogueEntry(
         NamespacedId.requireValid(id) { "Invalid catalogue entry ID: $id" }
         NamespacedId.requireValid(categoryId) { "Invalid catalogue entry category ID: $categoryId" }
         require(nameTranslationKey.isNotBlank() && descriptionTranslationKey.isNotBlank()) { "Catalogue entry keys must not be blank" }
-        require(labelTranslationKeys.all { it.isNotBlank() }) { "Catalogue label keys must not be blank" }
         require(unavailableReasonTranslationKey == null || unavailableReasonTranslationKey.isNotBlank()) { "Catalogue unavailable reason must not be blank" }
+    }
+}
+
+/**
+ * 條目的價值、限制或情境標籤，例如日麻的「門清限定」。
+ *
+ * @property nameTranslationKey 標籤文字的翻譯鍵。
+ * @property descriptionTranslationKey 解釋標籤意思的翻譯鍵；標籤本身已足夠清楚時為 null。
+ */
+data class RuleCatalogueLabel(
+    val nameTranslationKey: String,
+    val descriptionTranslationKey: String? = null,
+) {
+    init {
+        require(nameTranslationKey.isNotBlank()) { "Catalogue label key must not be blank" }
+        require(descriptionTranslationKey == null || descriptionTranslationKey.isNotBlank()) { "Catalogue label description must not be blank" }
     }
 }
 

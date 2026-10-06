@@ -185,7 +185,7 @@ class RuleCatalogueBrowserTest {
         val state = browser.snapshot(::translate)
         val first = state.entries.first()
         val labelled = state.entries.first { it.id == "example:second" }
-        assertEquals(listOf("example:points"), labelled.labelTranslationKeys)
+        assertEquals(listOf(RuleCatalogueLabel("example:points")), labelled.labels)
         assertEquals(Tile.Extension(TileTypeId("example", "custom_tile")), first.examples.single().groups.single().tiles.single())
         assertEquals("example:text", state.entries.last().id)
         assertTrue(state.entries.last().examples.isEmpty())
@@ -475,7 +475,7 @@ private fun sampleCatalogue(): RuleCatalogue = RuleCatalogue(
             categoryId = CATEGORY_B,
             nameTranslationKey = "example:second.name",
             descriptionTranslationKey = "example:second.description",
-            labelTranslationKeys = listOf("example:points"),
+            labels = listOf(RuleCatalogueLabel("example:points")),
         ),
         RuleCatalogueEntry("example:text", CATEGORY_B, "example:text.name", "example:text.description"),
     ),

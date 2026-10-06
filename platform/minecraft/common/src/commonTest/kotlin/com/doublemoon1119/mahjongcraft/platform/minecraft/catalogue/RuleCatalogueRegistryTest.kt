@@ -21,7 +21,7 @@ class RuleCatalogueRegistryTest {
         registry.register(TestProvider())
         val result = assertIs<RuleCatalogueResolution.Available>(registry.resolve(RULE_ID))
         assertTrue(result.usesDefaultConfig)
-        assertEquals(listOf("example:points"), result.catalogue.entries.first().labelTranslationKeys)
+        assertEquals(listOf(RuleCatalogueLabel("example:points")), result.catalogue.entries.first().labels)
         assertEquals(Tile.Extension(TileTypeId("example", "dragon")), result.catalogue.entries.first().examples.single().groups.single().tiles.single())
         assertTrue(result.catalogue.entries.last().examples.isEmpty())
     }
@@ -107,7 +107,7 @@ private fun sampleCatalogue(): RuleCatalogue = RuleCatalogue(
             categoryId = "example:category",
             nameTranslationKey = "example.dragon",
             descriptionTranslationKey = "example.dragon.description",
-            labelTranslationKeys = listOf("example:points"),
+            labels = listOf(RuleCatalogueLabel("example:points")),
             examples = listOf(
                 RuleCatalogueExample(
                     completeHand = false,

@@ -171,6 +171,6 @@ class RuleCatalogueBrowser(
  * @param translate 當前語言解析器，缺少翻譯時回傳 null 或空白。
  * @return 條目 ID 及名稱、敘述、標籤的可搜尋文字。
  */
-private fun searchableTexts(entry: RuleCatalogueEntry, translate: (String) -> String?): List<String> = listOf(entry.id) + (listOf(entry.nameTranslationKey, entry.descriptionTranslationKey) + entry.labelTranslationKeys).map { key ->
+private fun searchableTexts(entry: RuleCatalogueEntry, translate: (String) -> String?): List<String> = listOf(entry.id) + (listOf(entry.nameTranslationKey, entry.descriptionTranslationKey) + entry.labels.map { it.nameTranslationKey }).map { key ->
     translate(key)?.takeIf(String::isNotBlank) ?: key
 }

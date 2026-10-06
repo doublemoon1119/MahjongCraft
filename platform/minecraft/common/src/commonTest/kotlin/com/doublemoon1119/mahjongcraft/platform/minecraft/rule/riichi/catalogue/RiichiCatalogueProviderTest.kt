@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueExample
+import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueLabel
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueResolution
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueTileGroup
@@ -45,6 +46,23 @@ class RiichiCatalogueProviderTest {
         assertTrue(catalogue.entries.all { it.descriptionTranslationKey.isNotBlank() })
     }
 
+    /** 不算役、門清限定與副露翻數標籤附有說明，其他價值標籤沒有。 */
+    @Test
+    fun `labels that need explanation carry descriptions`() {
+        val catalogue = checkNotNull(RiichiCatalogueProvider().catalogue(RiichiRuleConfig(allowOpenTanyao = false)))
+        val labels = catalogue.entries.flatMap { it.labels }.distinct()
+        val expected = mapOf(
+            RiichiCatalogueKeys.BONUS_ONLY to RiichiCatalogueKeys.BONUS_ONLY_DESCRIPTION,
+            RiichiCatalogueKeys.CLOSED_ONLY to RiichiCatalogueKeys.CLOSED_ONLY_DESCRIPTION,
+            RiichiCatalogueKeys.OPEN_HAN_1 to RiichiCatalogueKeys.OPEN_HAN_DESCRIPTION,
+            RiichiCatalogueKeys.OPEN_HAN_2 to RiichiCatalogueKeys.OPEN_HAN_DESCRIPTION,
+            RiichiCatalogueKeys.OPEN_HAN_5 to RiichiCatalogueKeys.OPEN_HAN_DESCRIPTION,
+        )
+
+        labels.forEach { label -> assertEquals(expected[label.nameTranslationKey], label.descriptionTranslationKey, label.nameTranslationKey) }
+        assertEquals(expected.keys, labels.map { it.nameTranslationKey }.filter { it in expected }.toSet())
+    }
+
     /** 配置只調整正確的條件；古役保留欄位不能產生不存在的役。 */
     @Test
     fun `configuration changes labels without changing catalogue identities`() {
@@ -55,7 +73,8 @@ class RiichiCatalogueProviderTest {
         assertEquals(default.categories, restricted.categories)
         assertEquals(default.entries.map { it.id }, restricted.entries.map { it.id })
         val tanyao = restricted.entries.single { it.id == RiichiCatalogueYaku.Tanyao.id }
-        assertTrue(RiichiCatalogueKeys.CLOSED_ONLY in tanyao.labelTranslationKeys)
+        assertTrue(RuleCatalogueLabel(RiichiCatalogueKeys.CLOSED_ONLY, RiichiCatalogueKeys.CLOSED_ONLY_DESCRIPTION) in tanyao.labels)
+        assertTrue(default.entries.single { it.id == RiichiCatalogueYaku.Tanyao.id }.labels.none { it.nameTranslationKey == RiichiCatalogueKeys.CLOSED_ONLY })
         assertNull(tanyao.unavailableReasonTranslationKey)
         assertEquals(RiichiCatalogueKeys.RED_DORA_UNAVAILABLE, restricted.entries.single { it.id == RiichiCatalogueYaku.AkaDora.id }.unavailableReasonTranslationKey)
         assertNull(default.entries.single { it.id == RiichiCatalogueYaku.AkaDora.id }.unavailableReasonTranslationKey)

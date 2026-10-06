@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogue
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueCategory
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueEntry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueLabel
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiYakuTranslationKeys
 
@@ -34,11 +35,11 @@ class RiichiCatalogueProvider : RuleCatalogueProvider {
                     categoryId = definition.category.id,
                     nameTranslationKey = if (definition.type == YakuType.Dragon) RiichiCatalogueKeys.DRAGON_NAME else RiichiYakuTranslationKeys.keyFor(definition.type),
                     descriptionTranslationKey = definition.descriptionKey,
-                    labelTranslationKeys = buildList {
+                    labels = buildList {
                         add(definition.valueKey)
                         definition.conditionKey?.let(::add)
                         if (definition.type == YakuType.Tanyao && !config.allowOpenTanyao) add(RiichiCatalogueKeys.CLOSED_ONLY)
-                    },
+                    }.map(::riichiCatalogueLabel),
                     unavailableReasonTranslationKey = RiichiCatalogueKeys.RED_DORA_UNAVAILABLE.takeIf { definition.type == YakuType.AkaDora && config.redDoraCount == 0 },
                     examples = riichiCatalogueExamples(definition.type),
                 )
@@ -55,6 +56,22 @@ private fun riichiCatalogueSpecialEntries(): List<RuleCatalogueEntry> = RiichiCa
         categoryId = if (isMangan) RiichiCatalogueCategory.MANGAN.id else RiichiCatalogueCategory.ABORTIVE_DRAW.id,
         nameTranslationKey = definition.nameKey,
         descriptionTranslationKey = definition.descriptionKey,
-        labelTranslationKeys = if (isMangan) listOf(RiichiCatalogueKeys.MANGAN) else emptyList(),
+        labels = if (isMangan) listOf(riichiCatalogueLabel(RiichiCatalogueKeys.MANGAN)) else emptyList(),
     )
 }
+
+/**
+ * 建立日麻標籤，需要解釋的標籤附上說明。
+ *
+ * @param key 標籤翻譯鍵。
+ * @return 目錄標籤。
+ */
+private fun riichiCatalogueLabel(key: String): RuleCatalogueLabel = RuleCatalogueLabel(
+    nameTranslationKey = key,
+    descriptionTranslationKey = when (key) {
+        RiichiCatalogueKeys.BONUS_ONLY -> RiichiCatalogueKeys.BONUS_ONLY_DESCRIPTION
+        RiichiCatalogueKeys.CLOSED_ONLY -> RiichiCatalogueKeys.CLOSED_ONLY_DESCRIPTION
+        RiichiCatalogueKeys.OPEN_HAN_1, RiichiCatalogueKeys.OPEN_HAN_2, RiichiCatalogueKeys.OPEN_HAN_5 -> RiichiCatalogueKeys.OPEN_HAN_DESCRIPTION
+        else -> null
+    },
+)

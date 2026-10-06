@@ -11,6 +11,8 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAutoSortHandPreferenceService
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAutomaticControlUpdateCoordinator
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.FabricAutomaticControlCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue.FabricRuleCatalogueScreenCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue.RuleCatalogueScreenController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.FabricClientConfigCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigScreenController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
@@ -112,6 +114,8 @@ class MahjongCraftModClient : ClientModInitializer {
         koin.get<FabricClientConfigCommand>().register()
         koin.get<HistoryScreenController>().register()
         koin.get<FabricHistoryScreenCommand>().register()
+        koin.get<RuleCatalogueScreenController>().register()
+        koin.get<FabricRuleCatalogueScreenCommand>().register()
         val decisionHudController = koin.get<PlayerDecisionHudController>()
         decisionHudController.registerEvents()
         koin.get<MatchingTileHighlightController>().register()

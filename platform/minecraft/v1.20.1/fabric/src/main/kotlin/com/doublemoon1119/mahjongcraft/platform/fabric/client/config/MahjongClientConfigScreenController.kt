@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.config
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.AutomaticControlDisplayResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAutoSortHandPreferenceService
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAutomaticControlUpdateCoordinator
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue.RuleCatalogueScreenController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.history.HistoryScreenController
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -22,6 +23,7 @@ import org.lwjgl.glfw.GLFW
  * @property displayResolver 自動操作顯示解析器。
  * @property preferenceService 手牌偏好保存服務。
  * @property historyScreenController 對局歷史畫面控制器。
+ * @property ruleCatalogueScreenController 規則一覽畫面控制器。
  */
 @Single
 class MahjongClientConfigScreenController(
@@ -30,12 +32,16 @@ class MahjongClientConfigScreenController(
     private val displayResolver: AutomaticControlDisplayResolver,
     private val preferenceService: ClientAutoSortHandPreferenceService,
     private val historyScreenController: HistoryScreenController,
+    private val ruleCatalogueScreenController: RuleCatalogueScreenController,
 ) {
     /** 預設以分號開啟 Client Config Screen 的按鍵綁定。 */
     private lateinit var openKeyBinding: KeyBinding
 
     /** 開啟對局歷史的快捷鍵。 */
     private lateinit var historyKeyBinding: KeyBinding
+
+    /** 開啟規則一覽的快捷鍵，預設不綁定。 */
+    private lateinit var ruleCatalogueKeyBinding: KeyBinding
 
     /** 是否已完成事件註冊。 */
     private var registered = false
@@ -60,6 +66,14 @@ class MahjongClientConfigScreenController(
                 MinecraftClientConfigScreenKeys.KEY_CATEGORY,
             ),
         )
+        ruleCatalogueKeyBinding = KeyBindingHelper.registerKeyBinding(
+            KeyBinding(
+                MinecraftClientConfigScreenKeys.OPEN_RULE_CATALOGUE_KEY,
+                InputUtil.Type.KEYSYM,
+                InputUtil.UNKNOWN_KEY.code,
+                MinecraftClientConfigScreenKeys.KEY_CATEGORY,
+            ),
+        )
         ClientTickEvents.END_CLIENT_TICK.register(::tick)
     }
 
@@ -79,6 +93,11 @@ class MahjongClientConfigScreenController(
         while (historyKeyBinding.wasPressed()) {
             if (client.currentScreen == null) {
                 historyScreenController.openFromCommand()
+            }
+        }
+        while (ruleCatalogueKeyBinding.wasPressed()) {
+            if (client.currentScreen == null) {
+                ruleCatalogueScreenController.openGeneral()
             }
         }
     }
