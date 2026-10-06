@@ -220,6 +220,8 @@ class MahjongTileFaceRenderer(
             LightmapTextureManager.MAX_LIGHT_COORDINATE,
         )
         context.matrices.pop()
+        // 與原版繪製文字相同，立即送出暫存的文字，讓標籤套用目前的裁切範圍與繪製順序。
+        context.draw()
     }
 
     /** 使用原版字型描邊管線繪製牌面輔助標籤。 */
