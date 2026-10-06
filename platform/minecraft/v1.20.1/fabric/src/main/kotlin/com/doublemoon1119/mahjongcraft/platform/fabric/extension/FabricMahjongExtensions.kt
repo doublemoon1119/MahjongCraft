@@ -10,12 +10,9 @@ import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationSource
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtensionRegistrar
 import com.doublemoon1119.mahjongcraft.extension.mergeRegistrationSources
-import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decision.DebugRoundPreparationResolver
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.DebugMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationState
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.registerDebugWinRoundContinuationResolvers
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario.registerDebugScriptedAiStrategies
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BundledMinecraftMahjongExtensions
@@ -89,23 +86,14 @@ object FabricMahjongExtensions {
             extensionActionRegistry = coreRegistries.gameActionAiRegistry,
             opponentModelRegistry = coreRegistries.opponentModelRegistry,
         )
-        // 開發環境限定：讓「胡牌後本局繼續」這條路徑在還沒有任何規則支援它時就能進遊戲驗證，
-        // 比照 FabricDebugCommand 的 gating——正式產物裡根本沒註冊過。預設 inert。
-        if (minecraftEnvironment.isDevelopment) {
-            listOf(BuiltInRuleModuleIds.RIICHI, BuiltInRuleModuleIds.TAIWAN).forEach { ruleModuleId ->
-                if (coreRegistries.roundPreparationResolverRegistry.find(ruleModuleId) == null) {
-                    coreRegistries.roundPreparationResolverRegistry.register(DebugRoundPreparationResolver(ruleModuleId))
-                }
-            }
-            coreRegistries.winRoundContinuationResolverRegistry.registerDebugWinRoundContinuationResolvers(
-                state = debugWinRoundContinuationState,
-            )
-            // debug 情境的對手使用腳本 AI
-            coreRegistries.aiStrategyRegistry.registerDebugScriptedAiStrategies()
+        // 開發環境限定的 debug 整合排在內建規則之後、第三方之前；正式產物不登記。
+        val debugExtensions = if (minecraftEnvironment.isDevelopment) {
+            listOf(DebugMahjongExtension(winRoundContinuationState = debugWinRoundContinuationState))
+        } else {
+            emptyList()
         }
-
         val coreSources = MahjongExtensionRegistrar.registerAndFreeze(
-            extensions = BundledMahjongExtensions.all + extensions,
+            extensions = BundledMahjongExtensions.all + debugExtensions + extensions,
             registries = coreRegistries,
         )
 

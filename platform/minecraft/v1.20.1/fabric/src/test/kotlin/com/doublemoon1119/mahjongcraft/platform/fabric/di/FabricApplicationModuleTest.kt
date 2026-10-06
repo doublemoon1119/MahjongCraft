@@ -148,12 +148,12 @@ class FabricApplicationModuleTest {
         }
     }
 
-    /** 開發環境在凍結前另外登記 debug 情境使用的腳本 AI。 */
+    /** 開發環境在凍結前以獨立的 debug 來源登記 debug 情境使用的腳本 AI。 */
     @Test
     fun `development environment registers scripted debug ai strategies before freezing`() {
         val koin = startKoin<MahjongCraftServerApp>().koin
 
-        FabricMahjongExtensions.initialize(
+        val result = FabricMahjongExtensions.initialize(
             coreRegistries = koin.get<CoreExtensionRegistries>(),
             presentationRegistries = koin.get<MinecraftPresentationRegistries>(),
             tablePropKindRegistry = koin.get<FabricTablePropKindRegistry>(),
@@ -164,6 +164,9 @@ class FabricApplicationModuleTest {
         )
 
         assertTrue(DebugScriptedAiStrategy.TSUMOGIRI_KEY in koin.get<MahjongAiStrategyRegistry>().getAllStrategyKeys())
+        val debugSource = result.sources.single { it.extensionId == "mahjongcraft:debug" }
+        assertTrue(debugSource.categories.any { it.id == "mahjongcraft:ai_strategy" && DebugScriptedAiStrategy.TSUMOGIRI_KEY in it.registrationIds })
+        assertTrue(result.sources.first().categories.none { category -> DebugScriptedAiStrategy.TSUMOGIRI_KEY in category.registrationIds })
     }
 
     @Test
