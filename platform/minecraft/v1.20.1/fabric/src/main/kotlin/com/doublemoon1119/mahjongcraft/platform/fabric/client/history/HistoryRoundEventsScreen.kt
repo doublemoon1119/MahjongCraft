@@ -67,7 +67,7 @@ internal class HistoryRoundEventsScreen(
     private var initialButton: ButtonWidget? = null
 
     /** 完整手牌與狀態頁共用的牌組繪製。 */
-    private val tileGroups = HistoryTileGroupRenderer(tileFaceRenderer, tileAssetRegistry)
+    private val tileGroups = HistoryTileGroupRenderer(tileFaceRenderer, tileAssetRegistry, session.discardMarkers)
 
     /** 建立固定控制項並恢復此局位置。 */
     override fun init() {

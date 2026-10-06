@@ -15,6 +15,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatu
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtensionRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftPresentationRegistries
+import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistry
@@ -31,6 +33,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveD
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplateRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcomeDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcomeDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
@@ -69,6 +73,8 @@ class MinecraftCommonModule {
         roomMemberAppearanceSourceRegistry: RoomMemberAppearanceSourceRegistry,
         @Provided ruleModuleDisplayNameRegistry: RuleModuleDisplayNameRegistry,
         exhaustiveDrawReasonDisplayNameRegistry: ExhaustiveDrawReasonDisplayNameRegistry,
+        roundOutcomeDisplayNameRegistry: RoundOutcomeDisplayNameRegistry,
+        historyDiscardMarkerDisplayRegistry: HistoryDiscardMarkerDisplayRegistry,
         matchSettlementTemplateRegistry: MatchSettlementPresentationTemplateRegistry,
         winSettlementTemplateRegistry: WinSettlementPresentationTemplateRegistry,
         winCelebrationShowcaseRegistry: WinCelebrationShowcaseRegistry,
@@ -92,6 +98,8 @@ class MinecraftCommonModule {
         decisionStatusDisplayNameRegistry = decisionStatusDisplayNameRegistry,
         gameActionSoundPresentationRegistry = gameActionSoundPresentationRegistry,
         exhaustiveDrawReasonDisplayNameRegistry = exhaustiveDrawReasonDisplayNameRegistry,
+        roundOutcomeDisplayNameRegistry = roundOutcomeDisplayNameRegistry,
+        historyDiscardMarkerDisplayRegistry = historyDiscardMarkerDisplayRegistry,
         roundPreparationDisplayNameRegistry = roundPreparationDisplayNameRegistry,
         roundInfoLineDisplayRegistry = roundInfoLineDisplayRegistry,
         tablePropDescriberRegistry = tablePropDescriberRegistry,
@@ -157,6 +165,14 @@ class MinecraftCommonModule {
     /** 建立供內建與第三方 extension 登記的流局原因名稱 registry。 */
     @Single
     fun provideExhaustiveDrawReasonDisplayNameRegistry(): ExhaustiveDrawReasonDisplayNameRegistry = ExhaustiveDrawReasonDisplayNameRegistryImpl()
+
+    /** 建立供內建與第三方 extension 登記的規則特殊本局結果名稱 registry。 */
+    @Single
+    fun provideRoundOutcomeDisplayNameRegistry(): RoundOutcomeDisplayNameRegistry = RoundOutcomeDisplayNameRegistryImpl()
+
+    /** 建立供內建與第三方 extension 登記的歷史牌河公開標記呈現 registry。 */
+    @Single
+    fun provideHistoryDiscardMarkerDisplayRegistry(): HistoryDiscardMarkerDisplayRegistry = HistoryDiscardMarkerDisplayRegistryImpl()
 
     /** 建立供內建與第三方 extension 登記的動作顯示名稱 registry。 */
     @Single

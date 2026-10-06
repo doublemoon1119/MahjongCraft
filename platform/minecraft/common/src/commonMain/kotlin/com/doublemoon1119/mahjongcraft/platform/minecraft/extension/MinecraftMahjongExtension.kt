@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNa
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistry
@@ -14,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppeara
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplateRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcomeDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentationRegistry
@@ -103,6 +105,12 @@ interface MinecraftMahjongExtension {
 
     /** 登記第三方流局原因在 Minecraft 中使用的本地化顯示名稱。 */
     fun registerExhaustiveDrawReasonDisplayNames(registry: ExhaustiveDrawReasonDisplayNameRegistry) = Unit
+
+    /** 登記規則特殊本局結果（例如日麻的流局滿貫）在歷史畫面的名稱。 */
+    fun registerRoundOutcomeDisplayNames(registry: RoundOutcomeDisplayNameRegistry) = Unit
+
+    /** 登記規則在歷史牌河上的公開標記如何呈現，例如日麻立直宣告的牌要橫擺。 */
+    fun registerHistoryDiscardMarkerDisplays(registry: HistoryDiscardMarkerDisplayRegistry) = Unit
 
     /** 登記第三方開局準備 step／option 的本地化顯示名稱。 */
     fun registerRoundPreparationDisplayNames(registry: RoundPreparationDisplayNameRegistry) = Unit

@@ -1,12 +1,11 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiHistoryDiscardMarkerIds
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDomain
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileFaceRenderer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionTileOrientationDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
-import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
 import net.minecraft.client.gui.DrawContext
@@ -17,10 +16,12 @@ import net.minecraft.util.Formatting
  * 歷史各頁共用牌面繪製，保持方向、材質與標籤一致。
  * @property faces 共用牌面 renderer。
  * @property assets 牌種素材註冊表。
+ * @property markerDisplays 牌河公開標記的提示文字來源。
  */
 internal class HistoryTileGroupRenderer(
     private val faces: MahjongTileFaceRenderer,
     private val assets: MinecraftTileAssetRegistry,
+    private val markerDisplays: HistoryDiscardMarkerDisplayRegistry,
 ) {
     /**
      * 繪製已測量群組並取得指向牌張的索引提示。
@@ -65,11 +66,7 @@ internal class HistoryTileGroupRenderer(
                     add(Text.translatable(MinecraftHistoryScreenKeys.STATE_TILE_INDEX, placement.tile).formatted(Formatting.GRAY))
                     if (placement.tile in taken) add(Text.translatable(MinecraftHistoryScreenKeys.STATE_TAKEN)) else add(Text.literal(asset))
                     markers[placement.tile].orEmpty().sorted().forEach { marker ->
-                        val label = if (marker == RiichiHistoryDiscardMarkerIds.RIICHI_DECLARED) {
-                            Text.translatable(MinecraftMessageKeys.PLAYER_INDICATOR_RIICHI)
-                        } else {
-                            Text.literal(marker)
-                        }
+                        val label = markerDisplays.find(marker)?.let { Text.translatable(it.labelTranslationKey) } ?: Text.literal(marker)
                         add(label.formatted(Formatting.GRAY))
                     }
                 }

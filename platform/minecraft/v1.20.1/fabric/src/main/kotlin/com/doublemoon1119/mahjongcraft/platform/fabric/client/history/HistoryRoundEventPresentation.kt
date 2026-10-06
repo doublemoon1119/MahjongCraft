@@ -5,7 +5,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryAc
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailEntry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayFactDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundOutcomeDto
@@ -13,7 +12,6 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinDetail
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinDetailQuantityDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinDetailValueDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.table.BuiltInMatchEndReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
@@ -21,9 +19,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.action.MinecraftKanAct
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationFieldId
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcomeDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.detailTextFormatter
-import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds as MinecraftBuiltInGameActionIds
@@ -33,11 +31,13 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActi
  * 這個 presenter 只負責把安全 DTO 映射成文字、玩家座位與牌面參照；不重新判定規則，也不改變事件順序。
  *
  * @property actionVocabulary 動作 ID 的規則專屬顯示名稱來源。
- * @property exhaustiveDrawReasons 流局原因 ID 的顯示名稱來源。
+ * @property exhaustiveDrawReasons 流局原因 ID 的顯示名稱與玩家結算身分用語來源。
+ * @property roundOutcomes 規則特殊本局結果的顯示名稱來源。
  */
 internal class HistoryRoundEventPresenter(
     private val actionVocabulary: GameActionVocabularyRegistry,
     private val exhaustiveDrawReasons: ExhaustiveDrawReasonDisplayNameRegistry,
+    private val roundOutcomes: RoundOutcomeDisplayNameRegistry,
 ) {
     /**
      * 將單局事件轉換為保留原始順序的呈現模型。
@@ -199,18 +199,23 @@ internal class HistoryRoundEventPresenter(
     ).styled { it.withColor(scoreChangeColor(change)) }
 
     /**
-     * 解析已保存的玩家結算身分；一般日麻流局沿用流局面板的聽牌與未聽牌用語。
+     * 解析已保存的玩家結算身分；流局原因有登記結算身分用語時（例如日麻一般荒牌流局的聽牌與未聽）使用該用語，
+     * 否則得分的玩家顯示通用的「受益」。
      * @param outcome 本次結算呈現資料。
      * @param row 玩家結算列。
      * @return 可翻譯的身分文字；沒有身分時為 null。
      */
-    fun settlementStatusText(outcome: HistoryOutcomePresentation, row: HistoryOutcomeRowPresentation): Text? = when {
-        outcome.classification == RoundCompletionClassification.EXHAUSTIVE_DRAW.name &&
-            outcome.reasonId == RiichiExhaustiveDrawReason.Normal.id -> Text.translatable(
-            if (row.beneficiary) MinecraftMessageKeys.EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_TENPAI else MinecraftMessageKeys.EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_NOTEN,
-        ).styled { it.withColor(0xFFE08A) }
-        row.beneficiary -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_BENEFICIARY)
-        else -> null
+    fun settlementStatusText(outcome: HistoryOutcomePresentation, row: HistoryOutcomeRowPresentation): Text? {
+        val labels = outcome.reasonId
+            .takeIf { outcome.classification == RoundCompletionClassification.EXHAUSTIVE_DRAW.name }
+            ?.let(exhaustiveDrawReasons::findSettlementStatusLabels)
+        return when {
+            labels != null -> Text.translatable(
+                if (row.beneficiary) labels.beneficiaryTranslationKey else labels.othersTranslationKey,
+            ).styled { it.withColor(0xFFE08A) }
+            row.beneficiary -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_BENEFICIARY)
+            else -> null
+        }
     }
 
     /**
@@ -290,13 +295,12 @@ internal class HistoryRoundEventPresenter(
     private fun outcomeText(reasonId: String, ruleId: String?): Text = when (reasonId) {
         BuiltInRoundOutcomeIds.TSUMO -> Text.translatable(actionVocabulary.find(ruleId, MinecraftBuiltInGameActionIds.TSUMO)?.labelKey ?: MinecraftHistoryScreenKeys.ROUND_OUTCOME_TSUMO)
         BuiltInRoundOutcomeIds.RON -> Text.translatable(actionVocabulary.find(ruleId, MinecraftBuiltInGameActionIds.RON)?.labelKey ?: MinecraftHistoryScreenKeys.ROUND_OUTCOME_RON)
-        RiichiRoundOutcomeIds.NAGASHI_MANGAN -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_NAGASHI_MANGAN)
         BuiltInMatchEndReasonIds.SCHEDULE_COMPLETED -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_SCHEDULE_COMPLETED)
         BuiltInMatchEndReasonIds.TARGET_SCORE_REACHED -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_TARGET_SCORE_REACHED)
         BuiltInMatchEndReasonIds.EXTRA_ROUND_LIMIT_REACHED -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_EXTRA_ROUND_LIMIT_REACHED)
         BuiltInMatchEndReasonIds.DEALER_TOP_FINISH -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_DEALER_TOP_FINISH)
         BuiltInMatchEndReasonIds.PLAYER_BUSTED -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_PLAYER_BUSTED)
-        else -> Text.translatable(exhaustiveDrawReasons.find(reasonId) ?: MinecraftHistoryScreenKeys.ROUND_OUTCOME_OTHER)
+        else -> Text.translatable(roundOutcomes.find(reasonId) ?: exhaustiveDrawReasons.find(reasonId) ?: MinecraftHistoryScreenKeys.ROUND_OUTCOME_OTHER)
     }
 
     /** 依 DTO 的索引取得牌種；驗證外的索引不會讓呈現流程崩潰。

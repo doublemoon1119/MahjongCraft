@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNa
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistryImpl
@@ -14,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppeara
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplateRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcomeDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentationRegistryImpl
@@ -42,6 +44,8 @@ class MinecraftPresentationRegistriesTest {
             decisionStatusDisplayNameRegistry = DecisionStatusDisplayNameRegistryImpl(),
             gameActionSoundPresentationRegistry = GameActionSoundPresentationRegistryImpl(),
             exhaustiveDrawReasonDisplayNameRegistry = ExhaustiveDrawReasonDisplayNameRegistryImpl(),
+            roundOutcomeDisplayNameRegistry = RoundOutcomeDisplayNameRegistryImpl(),
+            historyDiscardMarkerDisplayRegistry = HistoryDiscardMarkerDisplayRegistryImpl(),
             roundPreparationDisplayNameRegistry = RoundPreparationDisplayNameRegistryImpl(),
             roundInfoLineDisplayRegistry = RoundInfoLineDisplayRegistryImpl(),
             tablePropDescriberRegistry = TablePropDescriberRegistryImpl(),

@@ -12,9 +12,11 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.concurrency.ClientThreadCoroutineDispatcher
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileFaceRenderer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcomeDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import kotlinx.coroutines.CoroutineScope
@@ -36,7 +38,9 @@ import kotlin.time.TimeSource
  * @property networkRegistries 解碼歷史規則設定所需的正式網路註冊表。
  * @property moduleRegistry 提供已保存規則設定的牌面顯示順序。
  * @property actionVocabulary 歷史動作的規則專屬名稱來源。
- * @property exhaustiveDrawReasons 流局原因名稱來源。
+ * @property exhaustiveDrawReasons 流局原因名稱與玩家結算身分用語來源。
+ * @property roundOutcomes 規則特殊本局結果名稱來源。
+ * @property discardMarkers 牌河公開標記的呈現方式來源。
  * @property settlementTemplates 結算明細欄位的規則專屬標題來源。
  * @property tileFaces 共用 GUI 牌面 renderer。
  * @property tileAssets 牌種與 Minecraft 素材的映射來源。
@@ -55,6 +59,8 @@ internal class HistoryBrowseSession(
     private val moduleRegistry: MahjongModuleRegistry,
     val actionVocabulary: GameActionVocabularyRegistry,
     val exhaustiveDrawReasons: ExhaustiveDrawReasonDisplayNameRegistry,
+    val roundOutcomes: RoundOutcomeDisplayNameRegistry,
+    val discardMarkers: HistoryDiscardMarkerDisplayRegistry,
     val settlementTemplates: WinSettlementPresentationTemplateRegistry,
     val tileFaces: MahjongTileFaceRenderer,
     val tileAssets: MinecraftTileAssetRegistry,
@@ -232,7 +238,7 @@ internal class HistoryBrowseSession(
      */
     fun openRound(roundNumber: Int): Boolean {
         if (closed || !controller.showRound(roundNumber)) return false
-        navigate(HistoryRoundEventsScreen(this, tileFaces, tileAssets, HistoryRoundEventPresenter(actionVocabulary, exhaustiveDrawReasons), settlementTemplates))
+        navigate(HistoryRoundEventsScreen(this, tileFaces, tileAssets, HistoryRoundEventPresenter(actionVocabulary, exhaustiveDrawReasons, roundOutcomes), settlementTemplates))
         return true
     }
 
@@ -251,7 +257,7 @@ internal class HistoryBrowseSession(
      */
     fun backToRound(): Boolean {
         if (closed || !controller.backToRound()) return false
-        navigate(HistoryRoundEventsScreen(this, tileFaces, tileAssets, HistoryRoundEventPresenter(actionVocabulary, exhaustiveDrawReasons), settlementTemplates))
+        navigate(HistoryRoundEventsScreen(this, tileFaces, tileAssets, HistoryRoundEventPresenter(actionVocabulary, exhaustiveDrawReasons, roundOutcomes), settlementTemplates))
         return true
     }
 

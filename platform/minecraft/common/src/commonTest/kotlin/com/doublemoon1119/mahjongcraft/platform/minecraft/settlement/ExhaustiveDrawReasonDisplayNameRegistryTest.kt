@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageK
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /** 驗證流局原因顯示名稱 registry 的完整 ID 與凍結契約。 */
@@ -38,5 +39,17 @@ class ExhaustiveDrawReasonDisplayNameRegistryTest {
         assertFailsWith<IllegalStateException> {
             registry.register("example:another_reason", "example.another_reason")
         }
+    }
+
+    /** 流局原因可另外登記玩家結算身分用語；未登記時查無結果，重複登記會失敗。 */
+    @Test
+    fun `settlement status labels are registered per reason`() {
+        val labels = ExhaustiveDrawSettlementStatusLabels(beneficiaryTranslationKey = "test.tenpai", othersTranslationKey = "test.noten")
+        val registry = ExhaustiveDrawReasonDisplayNameRegistryImpl().apply { registerSettlementStatusLabels("example:draw", labels) }
+
+        assertEquals(labels, registry.findSettlementStatusLabels("example:draw"))
+        assertNull(registry.findSettlementStatusLabels("example:other"))
+        assertEquals(setOf("example:draw"), registry.registrationKeys)
+        assertFailsWith<IllegalArgumentException> { registry.registerSettlementStatusLabels("example:draw", labels) }
     }
 }

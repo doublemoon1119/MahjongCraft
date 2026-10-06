@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiHistoryDiscardMarkerIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
@@ -17,6 +18,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocab
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtension
+import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplay
+import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistry
@@ -25,7 +29,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.achievement.RiichiGameAchievementResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.catalogue.RiichiCatalogueProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawSettlementStatusLabels
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationValue
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcomeDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementTextKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
@@ -51,7 +57,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.blackTextOnRedTil
  * 日麻的 Minecraft 呈現整合，與平台無關的日麻 extension 使用同一個 extension ID；日麻在 Minecraft 端的所有登記都寫在這裡。
  *
  * 包含赤五的貼圖、名稱、表情與標籤、規則名稱與設定畫面、規則說明、成就、役滿演出、流局原因名稱、
- * 胡牌結算版面、動作用語、決策狀態、音效、資訊列、桌面物件說明與立直標示。
+ * 胡牌結算版面、動作用語、決策狀態、音效、資訊列、桌面物件說明、立直標示，以及歷史畫面的流局滿貫名稱與立直宣告牌。
  */
 object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
     override val id: String = MahjongCraftMetadata.id("riichi")
@@ -104,6 +110,25 @@ object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
         registry.register(RiichiExhaustiveDrawReason.SuukanNagare.id, MinecraftMessageKeys.GAME_ACTION_SUUKAN_NAGARE)
         registry.register(RiichiExhaustiveDrawReason.SuuchaRiichi.id, MinecraftMessageKeys.GAME_ACTION_SUUCHA_RIICHI)
         registry.register(RiichiExhaustiveDrawReason.SanchaHou.id, MinecraftMessageKeys.GAME_ACTION_SANCHA_HOU)
+        registry.registerSettlementStatusLabels(
+            RiichiExhaustiveDrawReason.Normal.id,
+            ExhaustiveDrawSettlementStatusLabels(
+                beneficiaryTranslationKey = MinecraftMessageKeys.EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_TENPAI,
+                othersTranslationKey = MinecraftMessageKeys.EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_NOTEN,
+            ),
+        )
+    }
+
+    override fun registerRoundOutcomeDisplayNames(registry: RoundOutcomeDisplayNameRegistry) {
+        registry.register(RiichiRoundOutcomeIds.NAGASHI_MANGAN, MinecraftHistoryScreenKeys.ROUND_OUTCOME_NAGASHI_MANGAN)
+    }
+
+    /** 立直宣告的牌在歷史牌河上橫擺，提示顯示「立直」。 */
+    override fun registerHistoryDiscardMarkerDisplays(registry: HistoryDiscardMarkerDisplayRegistry) {
+        registry.register(
+            RiichiHistoryDiscardMarkerIds.RIICHI_DECLARED,
+            HistoryDiscardMarkerDisplay(labelTranslationKey = MinecraftMessageKeys.PLAYER_INDICATOR_RIICHI, sideways = true),
+        )
     }
 
     /** 日麻完整模板綁定日麻規則；標題與胡牌者摘要涵蓋流局滿貫，役種、翻符與役滿倍數直接顯示規則提供的內容，寶牌與裏寶牌指示牌固定顯示五個位置。 */

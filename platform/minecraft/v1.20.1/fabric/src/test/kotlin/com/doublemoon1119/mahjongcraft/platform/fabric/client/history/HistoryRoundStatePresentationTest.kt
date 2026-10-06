@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiHistoryDiscardMarkerIds
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayDiscardDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayIdentityDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayMeldDto
@@ -18,6 +17,8 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.model.WindDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.MatchRoundPhaseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.MatchRoundPositionDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionTileOrientationDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplay
+import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayRegistryImpl
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -116,17 +117,20 @@ class HistoryRoundStatePresentationTest {
         assertTrue(combined.placements[1].y > combined.placements[0].y)
     }
 
-    /** 牌河保留立直標記的橫置牌與已被取走的原槽位，未知標記不造成橫置。 */
+    /** 牌河保留登記為橫擺的標記與已被取走的原槽位，未登記的標記不造成橫置。 */
     @Test
-    fun `discards preserve riichi tilt taken slot and ignore unknown markers`() {
+    fun `discards tilt registered sideways markers keep taken slots and ignore unknown markers`() {
         val player = player().copy(
             discards = listOf(
                 HistoryReplayDiscardDto(0, true, emptySet()),
-                HistoryReplayDiscardDto(1, false, setOf(RiichiHistoryDiscardMarkerIds.RIICHI_DECLARED)),
+                HistoryReplayDiscardDto(1, false, setOf("example:declared")),
                 HistoryReplayDiscardDto(2, false, setOf("custom:marker")),
             ),
         )
-        val layout = HistoryRoundStatePresenter.discards(player, 200f)
+        val markers = HistoryDiscardMarkerDisplayRegistryImpl().apply {
+            register("example:declared", HistoryDiscardMarkerDisplay(labelTranslationKey = "test.declared", sideways = true))
+        }
+        val layout = HistoryRoundStatePresenter.discards(player, 200f, markers)
 
         assertEquals(listOf(0, 1, 2), layout.placements.map { it.tile })
         assertEquals(DecisionTileOrientationDto.UPRIGHT, layout.placements[0].orientation)

@@ -19,6 +19,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocab
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.MinecraftKanActionTokenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawSettlementStatusLabels
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcomeDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
@@ -152,7 +154,7 @@ class HistoryRoundEventPresentationTest {
         val vocabulary = GameActionVocabularyRegistryImpl().apply {
             aliases.values.forEach { actionId -> registerDefault(actionId, GameActionVocabulary("test.$actionId")) }
         }
-        val presenter = HistoryRoundEventPresenter(vocabulary, ExhaustiveDrawReasonDisplayNameRegistryImpl())
+        val presenter = HistoryRoundEventPresenter(vocabulary, ExhaustiveDrawReasonDisplayNameRegistryImpl(), RoundOutcomeDisplayNameRegistryImpl())
 
         aliases.forEach { (alias, actionId) ->
             listOf(alias, actionId).forEach { actionType ->
@@ -257,7 +259,7 @@ class HistoryRoundEventPresentationTest {
         val vocabulary = GameActionVocabularyRegistryImpl().apply {
             registerDefault("custom:spell", GameActionVocabulary("test.spell"))
         }
-        val presenter = HistoryRoundEventPresenter(vocabulary, ExhaustiveDrawReasonDisplayNameRegistryImpl())
+        val presenter = HistoryRoundEventPresenter(vocabulary, ExhaustiveDrawReasonDisplayNameRegistryImpl(), RoundOutcomeDisplayNameRegistryImpl())
         val fact = presenter.present(
             events(HistoryReplayFactDto.KnownAction("action", 0, HistoryActionTypeKeys.EXTENSION, emptyList(), emptyList(), "custom:spell")),
             "custom:rule",
@@ -272,11 +274,34 @@ class HistoryRoundEventPresentationTest {
         val vocabulary = GameActionVocabularyRegistryImpl().apply {
             registerDefault(BuiltInGameActionIds.DISCARD, GameActionVocabulary("test.discard"))
         }
-        val reasons = ExhaustiveDrawReasonDisplayNameRegistryImpl()
-        return HistoryRoundEventPresenter(vocabulary, reasons)
+        val reasons = ExhaustiveDrawReasonDisplayNameRegistryImpl().apply {
+            register("example:registered_draw", "test.registered_draw")
+            registerSettlementStatusLabels(
+                RiichiExhaustiveDrawReason.Normal.id,
+                ExhaustiveDrawSettlementStatusLabels(
+                    beneficiaryTranslationKey = MinecraftMessageKeys.EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_TENPAI,
+                    othersTranslationKey = MinecraftMessageKeys.EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_NOTEN,
+                ),
+            )
+        }
+        val outcomes = RoundOutcomeDisplayNameRegistryImpl().apply { register("example:special", "test.special") }
+        return HistoryRoundEventPresenter(vocabulary, reasons, outcomes)
     }
 
-    /** 一般流局使用聽牌與未聽牌身分；擴充結算保留原有受益身分而不假設規則。 */
+    /** 本局結果名稱依序查詢規則登記的特殊結果、流局原因，都沒有登記時使用通用的「其他」。 */
+    @Test
+    fun `outcome names come from registered outcomes then exhaustive draw reasons`() {
+        val names = listOf("example:special", "example:registered_draw", "example:unknown").map { reasonId ->
+            val outcome = HistoryRoundOutcomeDto(reasonId, listOf(1), emptyMap(), null, emptyList(), null)
+            val fact = presenter().present(events(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.ROUND_COMPLETED, outcome)), null)
+                .transactions.single().facts.single()
+            checkNotNull(fact.outcome).reasonText.string
+        }
+
+        assertEquals(listOf("test.special", "test.registered_draw", MinecraftHistoryScreenKeys.ROUND_OUTCOME_OTHER), names)
+    }
+
+    /** 登記了結算身分用語的流局原因使用該用語；沒有登記的原因只顯示得分者的通用「受益」。 */
     @Test
     fun `normal draw status matches settlement panel without changing extension labels`() {
         val presenter = presenter()

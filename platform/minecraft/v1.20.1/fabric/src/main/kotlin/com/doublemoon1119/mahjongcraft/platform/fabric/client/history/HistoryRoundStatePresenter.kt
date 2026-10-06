@@ -1,9 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiHistoryDiscardMarkerIds
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayPlayerStateDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinnerDetailsDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayRegistry
 
 /** 將已驗證歷史桌況轉為共用牌組幾何，不重排或重新判定規則。 */
 internal object HistoryRoundStatePresenter {
@@ -35,15 +35,23 @@ internal object HistoryRoundStatePresenter {
     fun hand(player: HistoryReplayPlayerStateDto, maxWidth: Float): HistoryTileGroupLayout = HistoryTileGroupLayoutCalculator.hand(player.handTiles, player.lastDrawn, maxWidth)
 
     /**
-     * 保留牌河槽位，依保存的立直宣告標記橫置牌張。
+     * 保留牌河槽位；帶有登記為橫擺的公開標記的牌橫置。
      * @param player 已驗證的玩家桌況。
      * @param maxWidth 可用寬度。
+     * @param markerDisplays 牌河公開標記的呈現方式。
      * @return 包含已被取走槽位的牌河幾何。
      */
-    fun discards(player: HistoryReplayPlayerStateDto, maxWidth: Float): HistoryTileGroupLayout = HistoryTileGroupLayoutCalculator.hand(
+    fun discards(
+        player: HistoryReplayPlayerStateDto,
+        maxWidth: Float,
+        markerDisplays: HistoryDiscardMarkerDisplayRegistry,
+    ): HistoryTileGroupLayout = HistoryTileGroupLayoutCalculator.hand(
         player.discards.map { it.tile },
         maxWidth = maxWidth,
-        sidewaysTiles = player.discards.filter { RiichiHistoryDiscardMarkerIds.RIICHI_DECLARED in it.markers }.map { it.tile }.toSet(),
+        sidewaysTiles = player.discards
+            .filter { discard -> discard.markers.any { markerDisplays.find(it)?.sideways == true } }
+            .map { it.tile }
+            .toSet(),
     )
 
     /**

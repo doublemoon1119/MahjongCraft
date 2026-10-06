@@ -20,6 +20,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BundledMinec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiYakuTranslationKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcomeDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementTextKeys
 import net.minecraft.text.TranslatableTextContent
@@ -133,7 +134,7 @@ class HistoryWinDetailPresentationTest {
     /** 建立不包含規則專用邏輯的測試呈現來源。
      * @return 空動作與流局名稱 registry 的 presenter。
      */
-    private fun presenter(): HistoryRoundEventPresenter = HistoryRoundEventPresenter(GameActionVocabularyRegistryImpl(), ExhaustiveDrawReasonDisplayNameRegistryImpl())
+    private fun presenter(): HistoryRoundEventPresenter = HistoryRoundEventPresenter(GameActionVocabularyRegistryImpl(), ExhaustiveDrawReasonDisplayNameRegistryImpl(), RoundOutcomeDisplayNameRegistryImpl())
 
     /** 建立單次和牌結算的事件呈現資料。
      * @param outcome 已保存的安全結算資料。

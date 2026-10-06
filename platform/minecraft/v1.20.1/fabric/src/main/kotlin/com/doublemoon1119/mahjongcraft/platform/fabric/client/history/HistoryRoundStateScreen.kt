@@ -46,10 +46,10 @@ internal class HistoryRoundStateScreen(
     private lateinit var retryButton: ButtonWidget
 
     /** 共用牌面 renderer。 */
-    private val groups = HistoryTileGroupRenderer(session.tileFaces, session.tileAssets)
+    private val groups = HistoryTileGroupRenderer(session.tileFaces, session.tileAssets, session.discardMarkers)
 
     /** 共用規則欄位標題與文字呈現。 */
-    private val events = HistoryRoundEventPresenter(session.actionVocabulary, session.exhaustiveDrawReasons)
+    private val events = HistoryRoundEventPresenter(session.actionVocabulary, session.exhaustiveDrawReasons, session.roundOutcomes)
 
     /** 建立固定控制項，恢復同一狀態的捲動位置。 */
     override fun init() {
@@ -413,7 +413,7 @@ internal class HistoryRoundStateScreen(
             MUTED_COLOR,
             fullText = Text.translatable(MinecraftHistoryScreenKeys.STATE_DISCARDS_COUNT_TOOLTIP, player.discards.size),
         )
-        val river = HistoryRoundStatePresenter.discards(player, maxWidth)
+        val river = HistoryRoundStatePresenter.discards(player, maxWidth, session.discardMarkers)
         if (river.placements.isEmpty()) group(river) else add(Row.Group(river, taken = player.discards.filter { it.isTaken }.map { it.tile }.toSet(), markers = player.discards.associate { it.tile to it.markers }))
         return@buildList
     }

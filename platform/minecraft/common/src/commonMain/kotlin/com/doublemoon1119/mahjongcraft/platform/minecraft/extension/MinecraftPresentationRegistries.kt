@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNa
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistry
@@ -14,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppeara
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplateRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcomeDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentationRegistry
@@ -39,6 +41,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
  * @property automaticControlDisplayRegistry 自動操作顯示資料 registry。
  * @property gameActionSoundPresentationRegistry 遊戲動作音效呈現 registry。
  * @property exhaustiveDrawReasonDisplayNameRegistry 流局原因顯示名稱 registry。
+ * @property roundOutcomeDisplayNameRegistry 規則特殊本局結果顯示名稱 registry。
+ * @property historyDiscardMarkerDisplayRegistry 歷史牌河公開標記呈現 registry。
  * @property roundPreparationDisplayNameRegistry 開局準備顯示名稱 registry。
  * @property roundInfoLineDisplayRegistry 局況資訊行顯示 registry。
  * @property tablePropDescriberRegistry 規則桌面物件描述 registry。
@@ -66,6 +70,8 @@ class MinecraftPresentationRegistries(
     val decisionStatusDisplayNameRegistry: DecisionStatusDisplayNameRegistry,
     val gameActionSoundPresentationRegistry: GameActionSoundPresentationRegistry,
     val exhaustiveDrawReasonDisplayNameRegistry: ExhaustiveDrawReasonDisplayNameRegistry,
+    val roundOutcomeDisplayNameRegistry: RoundOutcomeDisplayNameRegistry,
+    val historyDiscardMarkerDisplayRegistry: HistoryDiscardMarkerDisplayRegistry,
     val roundPreparationDisplayNameRegistry: RoundPreparationDisplayNameRegistry,
     val roundInfoLineDisplayRegistry: RoundInfoLineDisplayRegistry,
     val tablePropDescriberRegistry: TablePropDescriberRegistry,
@@ -96,6 +102,8 @@ class MinecraftPresentationRegistries(
             snapshotCategory("mahjongcraft:decision_status_display_name", "Decision Status Display Name", decisionStatusDisplayNameRegistry.registrationKeys),
             snapshotCategory("mahjongcraft:game_action_sound", "Game Action Sound", gameActionSoundPresentationRegistry.registrationKeys),
             snapshotCategory("mahjongcraft:exhaustive_draw_reason_display_name", "Exhaustive Draw Reason Display Name", exhaustiveDrawReasonDisplayNameRegistry.registrationKeys),
+            snapshotCategory("mahjongcraft:round_outcome_display_name", "Round Outcome Display Name", roundOutcomeDisplayNameRegistry.registrationKeys),
+            snapshotCategory("mahjongcraft:history_discard_marker_display", "History Discard Marker Display", historyDiscardMarkerDisplayRegistry.registrationKeys),
             snapshotCategory("mahjongcraft:round_preparation_display_name", "Round Preparation Display Name", roundPreparationDisplayNameRegistry.registrationKeys),
             snapshotCategory("mahjongcraft:round_info_line_display", "Round Info Line Display", roundInfoLineDisplayRegistry.registrationKeys),
             snapshotCategory("mahjongcraft:table_prop_describer", "Table Prop Describer", tablePropDescriberRegistry.registrationKeys),
@@ -124,6 +132,8 @@ class MinecraftPresentationRegistries(
         decisionStatusDisplayNameRegistry.freeze()
         gameActionSoundPresentationRegistry.freeze()
         exhaustiveDrawReasonDisplayNameRegistry.freeze()
+        roundOutcomeDisplayNameRegistry.freeze()
+        historyDiscardMarkerDisplayRegistry.freeze()
         roundPreparationDisplayNameRegistry.freeze()
         roundInfoLineDisplayRegistry.freeze()
         tablePropDescriberRegistry.freeze()
