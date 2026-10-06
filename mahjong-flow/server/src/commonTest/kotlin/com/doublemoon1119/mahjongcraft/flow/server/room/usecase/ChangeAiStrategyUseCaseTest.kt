@@ -38,13 +38,13 @@ class ChangeAiStrategyUseCaseTest {
             gameConfig = GameConfig(config),
             playerIds = listOf(hostId, aiId),
             readyPlayerIds = listOf(aiId),
-            aiPlayerStrategyKeys = mapOf(aiId to "random"),
+            aiPlayerStrategyKeys = mapOf(aiId to "mahjongcraft:random"),
         )
         roomRepo.setRoom(room)
 
         val result = useCase(roomId, hostId, aiId, "mymod:hard")
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
-        assertEquals("random", result.value, "Should return the strategy key that was in effect before the change.")
+        assertEquals("mahjongcraft:random", result.value, "Should return the strategy key that was in effect before the change.")
 
         val updatedRoom = roomRepo.getRoom(roomId)
         assertNotNull(updatedRoom)
@@ -59,7 +59,7 @@ class ChangeAiStrategyUseCaseTest {
         val roomRepo = FakeRoomRepository()
         val useCase = ChangeAiStrategyUseCase(roomRepo)
 
-        val result = useCase(roomId, hostId, Uuid.random(), "random")
+        val result = useCase(roomId, hostId, Uuid.random(), "mahjongcraft:random")
         assertTrue(result is Outcome.Error)
         assertEquals(RoomError.RoomNotFound(roomId), result.error)
     }
@@ -79,7 +79,7 @@ class ChangeAiStrategyUseCaseTest {
             hostId = hostId,
             gameConfig = GameConfig(config),
             playerIds = listOf(hostId, guestId, aiId),
-            aiPlayerStrategyKeys = mapOf(aiId to "random"),
+            aiPlayerStrategyKeys = mapOf(aiId to "mahjongcraft:random"),
         )
         roomRepo.setRoom(room)
 

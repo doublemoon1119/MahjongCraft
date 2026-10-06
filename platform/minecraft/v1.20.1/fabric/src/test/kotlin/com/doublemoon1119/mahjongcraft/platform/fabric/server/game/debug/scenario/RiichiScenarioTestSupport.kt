@@ -44,7 +44,7 @@ internal fun createRiichiScenarioContext(
         flowConfig = GameFlowConfig(),
         hostId = playerIds.first(),
         roomPlayerIds = playerIds,
-        aiPlayerStrategyKeys = playerIds.drop(1).take(aiOpponentCount).associateWith { "random" },
+        aiPlayerStrategyKeys = playerIds.drop(1).take(aiOpponentCount).associateWith { "mahjongcraft:random" },
     )
     return DebugGameScenarioContext(game, playerIds.first())
 }

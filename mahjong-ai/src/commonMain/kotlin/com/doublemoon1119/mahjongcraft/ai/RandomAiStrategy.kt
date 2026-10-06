@@ -16,7 +16,7 @@ class RandomAiStrategy(
 ) : MahjongAiStrategy {
     companion object {
         /** 這個策略在 [MahjongAiStrategyRegistry] 裡登記的 key。 */
-        const val KEY = "random"
+        const val KEY = "mahjongcraft:random"
     }
 
     override suspend fun decideGameCommand(context: AiDecisionContext): GameCommand = when (context.phase) {

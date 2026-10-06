@@ -46,7 +46,7 @@ class ObserverSnapshotBroadcasterTest {
     private val hostId = Uuid.random()
     private val observerId = Uuid.random()
 
-    private fun room(aiStrategyKey: String = "random", aiId: Uuid = Uuid.random()) = Room(
+    private fun room(aiStrategyKey: String = "mahjongcraft:random", aiId: Uuid = Uuid.random()) = Room(
         id = id,
         hostId = hostId,
         gameConfig = GameConfig(RiichiRuleConfig()),
@@ -142,7 +142,7 @@ class ObserverSnapshotBroadcasterTest {
         val sender = RecordingSender()
         val broadcaster = broadcaster(store, audience, sender)
         val aiId = Uuid.random()
-        store.setRoom(room(aiStrategyKey = "random", aiId = aiId))
+        store.setRoom(room(aiStrategyKey = "mahjongcraft:random", aiId = aiId))
         audience.observers = mapOf(id to setOf(hostId, observerId))
         broadcaster.broadcast()
         sender.sent.clear()
@@ -228,7 +228,7 @@ class ObserverSnapshotBroadcasterTest {
         val broadcaster = broadcaster(store, audience, sender)
         val game = game()
         val aiId = game.tableState.players.last().id
-        store.setGame(game.copy(aiPlayerStrategyKeys = mapOf(aiId to "random")))
+        store.setGame(game.copy(aiPlayerStrategyKeys = mapOf(aiId to "mahjongcraft:random")))
         audience.observers = mapOf(id to setOf(observerId))
 
         broadcaster.broadcast()

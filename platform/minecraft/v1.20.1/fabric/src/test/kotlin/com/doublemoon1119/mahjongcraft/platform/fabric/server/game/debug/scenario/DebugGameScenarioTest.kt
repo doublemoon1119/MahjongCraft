@@ -405,7 +405,7 @@ class DebugGameScenarioTest {
             flowConfig = GameFlowConfig(),
             hostId = playerIds.first(),
             roomPlayerIds = playerIds,
-            aiPlayerStrategyKeys = playerIds.drop(1).associateWith { "random" },
+            aiPlayerStrategyKeys = playerIds.drop(1).associateWith { "mahjongcraft:random" },
         )
         val moduleRegistry = MahjongModuleRegistryImpl().apply {
             registerBuiltInRuleModules()

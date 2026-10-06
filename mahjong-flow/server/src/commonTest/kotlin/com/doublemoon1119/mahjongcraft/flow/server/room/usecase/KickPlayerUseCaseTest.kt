@@ -83,7 +83,7 @@ class KickPlayerUseCaseTest {
             gameConfig = GameConfig(config),
             playerIds = listOf(hostId, aiId),
             readyPlayerIds = listOf(aiId),
-            aiPlayerStrategyKeys = mapOf(aiId to "random"),
+            aiPlayerStrategyKeys = mapOf(aiId to "mahjongcraft:random"),
         )
         roomRepo.setRoom(room)
 

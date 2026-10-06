@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.ai.expectation.InformationLevel
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 
-/** `:mahjong-ai` 內建期望值策略的登記 key；[RandomAiStrategy.KEY] 維持原本的 key 以相容既有存檔。 */
+/** `:mahjong-ai` 內建期望值策略的登記 key；隨機出牌策略的 key 為 [RandomAiStrategy.KEY]。 */
 object BuiltInAiStrategyKeys {
     /** 初級：只看自己的手牌與向聽。 */
     const val BEGINNER: String = "mahjongcraft:beginner"

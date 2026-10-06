@@ -113,12 +113,12 @@ class StartGameUseCaseTest {
     fun `test start game carries room ai strategy keys into the game`() = runTest {
         val fixtures = Fixtures()
         val aiId = guestIds.last()
-        fixtures.roomRepo.setRoom(readyRoom().copy(aiPlayerStrategyKeys = mapOf(aiId to "random")))
+        fixtures.roomRepo.setRoom(readyRoom().copy(aiPlayerStrategyKeys = mapOf(aiId to "mahjongcraft:random")))
 
         assertTrue(fixtures.useCase(roomId, hostId) is Outcome.Success)
 
         val game = assertNotNull(fixtures.gameRepo.getGame(roomId))
-        assertEquals(mapOf(aiId to "random"), game.aiPlayerStrategyKeys)
+        assertEquals(mapOf(aiId to "mahjongcraft:random"), game.aiPlayerStrategyKeys)
     }
 
     /**

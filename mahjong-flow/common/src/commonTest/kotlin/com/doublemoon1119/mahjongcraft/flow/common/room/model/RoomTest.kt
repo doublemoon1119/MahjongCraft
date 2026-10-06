@@ -156,7 +156,7 @@ class RoomTest {
             id = Uuid.random(),
             hostId = Uuid.random(),
             gameConfig = GameConfig(FakeMahjongRuleConfig()),
-            aiPlayerStrategyKeys = mapOf(aiId to "random"),
+            aiPlayerStrategyKeys = mapOf(aiId to "mahjongcraft:random"),
         )
 
         assertTrue(room.isAi(aiId), "isAi should return true for ID in aiPlayerIds.")
@@ -174,7 +174,7 @@ class RoomTest {
             hostId = hostId,
             gameConfig = GameConfig(FakeMahjongRuleConfig()),
             playerIds = listOf(hostId, humanId, aiId),
-            aiPlayerStrategyKeys = mapOf(aiId to "random"),
+            aiPlayerStrategyKeys = mapOf(aiId to "mahjongcraft:random"),
         )
 
         val humanPlayers = room.humanPlayerIds

@@ -106,7 +106,7 @@ class RoomPersistenceDtoTest {
             gameConfig = GameConfig(config),
             playerIds = listOf(hostId, humanId, aiId),
             readyPlayerIds = listOf(humanId, aiId),
-            aiPlayerStrategyKeys = mapOf(aiId to "random"),
+            aiPlayerStrategyKeys = mapOf(aiId to "mahjongcraft:random"),
         )
     }
 }
