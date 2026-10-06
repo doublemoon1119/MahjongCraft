@@ -51,7 +51,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiSuufonRenda
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiSuukanNagareResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiWinSettlementDetailResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
-import com.doublemoon1119.mahjongcraft.logic.base.BuiltInGameActionIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
@@ -208,11 +207,12 @@ object BundledRiichiExtension : MahjongExtension {
 
     override fun registerPersistenceDtos(registries: PersistenceRegistries) {
         registries.ruleConfigs.register(
-            typeKey = "builtin:riichi_rule_config",
+            typeKey = "mahjongcraft:riichi/rule_config",
             domainClass = RiichiRuleConfig::class,
             serializer = RiichiRuleConfigPersistenceDto.serializer(),
             toDto = RiichiRuleConfig::toPersistenceDto,
             toDomain = RiichiRuleConfigPersistenceDto::toDomain,
+            compactInReplay = true,
         )
         registries.discardPiles.register(
             typeKey = BuiltInDiscardPilePersistenceKeys.RIICHI,
@@ -220,16 +220,18 @@ object BundledRiichiExtension : MahjongExtension {
             serializer = RiichiDiscardPilePersistenceDto.serializer(),
             toDto = RiichiDiscardPile::toPersistenceDto,
             toDomain = RiichiDiscardPilePersistenceDto::toDomain,
+            compactInReplay = true,
         )
         registries.playerRuleStates.register(
-            typeKey = "builtin:riichi_player_state",
+            typeKey = "mahjongcraft:riichi/player_state",
             domainClass = RiichiPlayerState::class,
             serializer = RiichiPlayerStatePersistenceDto.serializer(),
             toDto = RiichiPlayerState::toPersistenceDto,
             toDomain = RiichiPlayerStatePersistenceDto::toDomain,
+            compactInReplay = true,
         )
         registries.dynamicRuleStates.register(
-            typeKey = "builtin:riichi_dynamic_state",
+            typeKey = "mahjongcraft:riichi/dynamic_state",
             domainClass = RiichiDynamicState::class,
             serializer = RiichiDynamicStatePersistenceDto.serializer(),
             toDto = {
@@ -248,51 +250,52 @@ object BundledRiichiExtension : MahjongExtension {
                     it.pendingKanDoraReveals.map(RiichiPendingKanDoraRevealPersistenceDto::toDomain),
                 )
             },
+            compactInReplay = true,
         )
         registries.exhaustiveDrawReasons.register(
-            typeKey = "riichi.exhaustive_draw.normal",
+            typeKey = RiichiExhaustiveDrawReason.Normal.id,
             domainClass = RiichiExhaustiveDrawReason.Normal::class,
             serializer = RiichiExhaustiveDrawReasonPersistenceDto.serializer(),
             toDto = { RiichiExhaustiveDrawReasonPersistenceDto(RiichiExhaustiveDrawReasonPersistenceValue.NORMAL) },
             toDomain = { RiichiExhaustiveDrawReason.Normal },
         )
         registries.exhaustiveDrawReasons.register(
-            typeKey = "riichi.exhaustive_draw.kyuushu_kyuuhai",
+            typeKey = RiichiExhaustiveDrawReason.KyuushuKyuuhai.id,
             domainClass = RiichiExhaustiveDrawReason.KyuushuKyuuhai::class,
             serializer = RiichiExhaustiveDrawReasonPersistenceDto.serializer(),
             toDto = { RiichiExhaustiveDrawReasonPersistenceDto(RiichiExhaustiveDrawReasonPersistenceValue.KYUUSHU_KYUUHAI) },
             toDomain = { RiichiExhaustiveDrawReason.KyuushuKyuuhai },
         )
         registries.exhaustiveDrawReasons.register(
-            typeKey = "riichi.exhaustive_draw.suufon_renda",
+            typeKey = RiichiExhaustiveDrawReason.SuufonRenda.id,
             domainClass = RiichiExhaustiveDrawReason.SuufonRenda::class,
             serializer = RiichiExhaustiveDrawReasonPersistenceDto.serializer(),
             toDto = { RiichiExhaustiveDrawReasonPersistenceDto(RiichiExhaustiveDrawReasonPersistenceValue.SUUFON_RENDA) },
             toDomain = { RiichiExhaustiveDrawReason.SuufonRenda },
         )
         registries.exhaustiveDrawReasons.register(
-            typeKey = "riichi.exhaustive_draw.suukan_nagare",
+            typeKey = RiichiExhaustiveDrawReason.SuukanNagare.id,
             domainClass = RiichiExhaustiveDrawReason.SuukanNagare::class,
             serializer = RiichiExhaustiveDrawReasonPersistenceDto.serializer(),
             toDto = { RiichiExhaustiveDrawReasonPersistenceDto(RiichiExhaustiveDrawReasonPersistenceValue.SUUKAN_NAGARE) },
             toDomain = { RiichiExhaustiveDrawReason.SuukanNagare },
         )
         registries.exhaustiveDrawReasons.register(
-            typeKey = "riichi.exhaustive_draw.suucha_riichi",
+            typeKey = RiichiExhaustiveDrawReason.SuuchaRiichi.id,
             domainClass = RiichiExhaustiveDrawReason.SuuchaRiichi::class,
             serializer = RiichiExhaustiveDrawReasonPersistenceDto.serializer(),
             toDto = { RiichiExhaustiveDrawReasonPersistenceDto(RiichiExhaustiveDrawReasonPersistenceValue.SUUCHA_RIICHI) },
             toDomain = { RiichiExhaustiveDrawReason.SuuchaRiichi },
         )
         registries.exhaustiveDrawReasons.register(
-            typeKey = "riichi.exhaustive_draw.sancha_hou",
+            typeKey = RiichiExhaustiveDrawReason.SanchaHou.id,
             domainClass = RiichiExhaustiveDrawReason.SanchaHou::class,
             serializer = RiichiExhaustiveDrawReasonPersistenceDto.serializer(),
             toDto = { RiichiExhaustiveDrawReasonPersistenceDto(RiichiExhaustiveDrawReasonPersistenceValue.SANCHA_HOU) },
             toDomain = { RiichiExhaustiveDrawReason.SanchaHou },
         )
         registries.extensionGameActions.register(
-            typeKey = BuiltInGameActionIds.RIICHI,
+            typeKey = RiichiGameAction.Riichi.id,
             domainClass = RiichiGameAction.Riichi::class,
             serializer = RiichiGameActionPersistenceDto.serializer(),
             toDto = { RiichiGameActionPersistenceDto },

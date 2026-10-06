@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionActionDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionActionTileSelectionDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
@@ -56,7 +57,7 @@ class DecisionEntryTest {
             actions = listOf(
                 PlayerDecisionActionDto(
                     token = "token-riichi",
-                    actionId = "mahjongcraft:riichi",
+                    actionId = RiichiGameAction.Riichi.id,
                     tileSelection = PlayerDecisionActionTileSelectionDto(listOf("tile-a"), minCount = 1, maxCount = 1),
                 ),
             ),

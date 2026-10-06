@@ -1,13 +1,15 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.settlement
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiWinSettlementTemplates
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 /** 驗證逐條揭示之後的時間完全由版面決定，且內建模板與改寫前的節奏相同。 */
 class WinSettlementRevealTimelineTest {
     private val summaryId = PresentationFieldId("mahjongcraft:test_summary")
-    private val hanFuId = PresentationFieldId("mahjongcraft:riichi_han_fu")
-    private val yakumanTotalId = PresentationFieldId("mahjongcraft:riichi_yakuman_total")
+    private val hanFuId = PresentationFieldId(RiichiWinSettlementIds.HAN_FU_FIELD)
+    private val yakumanTotalId = PresentationFieldId(RiichiWinSettlementIds.YAKUMAN_TOTAL_FIELD)
 
     private fun animated(
         child: PresentationLayout,
@@ -90,21 +92,19 @@ class WinSettlementRevealTimelineTest {
      */
     @Test
     fun `the riichi template keeps its existing rhythm`() {
-        val layout = builtInLayout("mahjongcraft:riichi")
+        val layout = builtInLayout(RiichiWinSettlementTemplates.RIICHI_KEY)
 
         assertEquals(8, WinSettlementRevealTimeline.scoreRevealDelayTicks(layout))
         assertEquals(listOf(0), WinSettlementRevealTimeline.lineRevealDelaysTicks(layout, setOf(hanFuId)))
         assertEquals(listOf(0), WinSettlementRevealTimeline.lineRevealDelaysTicks(layout, setOf(yakumanTotalId)))
     }
 
-    /** 其餘內建模板沒有排在逐條揭示之後的內容，節奏與原本相同。 */
+    /** 通用模板沒有排在逐條揭示之後的內容，節奏與原本相同。 */
     @Test
-    fun `the other built-in templates add no time`() {
-        listOf("mahjongcraft:generic", "mahjongcraft:nagashi_mangan").forEach { key ->
-            val layout = builtInLayout(key)
+    fun `the generic template adds no time`() {
+        val layout = builtInLayout(BuiltInWinSettlementTemplateKeys.GENERIC)
 
-            assertEquals(0, WinSettlementRevealTimeline.scoreRevealDelayTicks(layout), key)
-            assertEquals(emptyList(), WinSettlementRevealTimeline.lineRevealDelaysTicks(layout, emptySet()), key)
-        }
+        assertEquals(0, WinSettlementRevealTimeline.scoreRevealDelayTicks(layout))
+        assertEquals(emptyList(), WinSettlementRevealTimeline.lineRevealDelaysTicks(layout, emptySet()))
     }
 }

@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryAc
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailEntry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayFactDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundOutcomeDto
@@ -289,7 +290,7 @@ internal class HistoryRoundEventPresenter(
     private fun outcomeText(reasonId: String, ruleId: String?): Text = when (reasonId) {
         BuiltInRoundOutcomeIds.TSUMO -> Text.translatable(actionVocabulary.find(ruleId, MinecraftBuiltInGameActionIds.TSUMO)?.labelKey ?: MinecraftHistoryScreenKeys.ROUND_OUTCOME_TSUMO)
         BuiltInRoundOutcomeIds.RON -> Text.translatable(actionVocabulary.find(ruleId, MinecraftBuiltInGameActionIds.RON)?.labelKey ?: MinecraftHistoryScreenKeys.ROUND_OUTCOME_RON)
-        BuiltInRoundOutcomeIds.NAGASHI_MANGAN -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_NAGASHI_MANGAN)
+        RiichiRoundOutcomeIds.NAGASHI_MANGAN -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_NAGASHI_MANGAN)
         BuiltInMatchEndReasonIds.SCHEDULE_COMPLETED -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_SCHEDULE_COMPLETED)
         BuiltInMatchEndReasonIds.TARGET_SCORE_REACHED -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_TARGET_SCORE_REACHED)
         BuiltInMatchEndReasonIds.EXTRA_ROUND_LIMIT_REACHED -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_EXTRA_ROUND_LIMIT_REACHED)

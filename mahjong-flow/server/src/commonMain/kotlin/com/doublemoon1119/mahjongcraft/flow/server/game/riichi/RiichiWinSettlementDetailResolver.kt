@@ -1,11 +1,11 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.riichi
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ResolvedRoundOutcome
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailEntry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailField
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailValue
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolver
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueResult
@@ -19,7 +19,7 @@ object RiichiWinSettlementDetailResolver : WinSettlementDetailResolver {
     override fun resolve(state: TableState, handValue: HandValueResult): List<WinSettlementDetailField> = riichiDetails(state, handValue)
 
     override fun resolveSpecialOutcome(state: TableState, outcome: ResolvedRoundOutcome): List<WinSettlementDetailField>? {
-        if (outcome.id != BuiltInRoundOutcomeIds.NAGASHI_MANGAN) return null
+        if (outcome.id != RiichiRoundOutcomeIds.NAGASHI_MANGAN) return null
         return listOf(
             WinSettlementDetailField(
                 RiichiWinSettlementIds.YAKU_FIELD,

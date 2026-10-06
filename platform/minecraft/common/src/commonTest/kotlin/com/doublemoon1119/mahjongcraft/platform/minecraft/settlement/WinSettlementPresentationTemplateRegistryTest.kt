@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.settlement
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiWinSettlementTemplates
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -36,7 +37,7 @@ class WinSettlementPresentationTemplateRegistryTest {
     fun `built in riichi template uses the same public animation and identity primitives`() {
         val registry = WinSettlementPresentationTemplateRegistryImpl()
         registry.registerBundledWinSettlementTemplates()
-        val rendered = registry.findTemplate("mahjongcraft:riichi").toString()
+        val rendered = registry.findTemplate(RiichiWinSettlementTemplates.RIICHI_KEY).toString()
 
         assertTrue(rendered.contains("Animated"))
         assertTrue(rendered.contains("PlayerIdentity"))
@@ -49,7 +50,7 @@ class WinSettlementPresentationTemplateRegistryTest {
     fun `riichi indicator providers fill unrevealed slots with tile backs`() {
         val registry = WinSettlementPresentationTemplateRegistryImpl()
         registry.registerBundledWinSettlementTemplates()
-        val doraId = PresentationFieldId("mahjongcraft:riichi_dora")
+        val doraId = PresentationFieldId(RiichiWinSettlementIds.DORA_FIELD)
         val snapshot = WinSettlementPresentationFieldSnapshot(
             outcomeId = "mahjongcraft:ron",
             isTsumo = false,
@@ -77,15 +78,15 @@ class WinSettlementPresentationTemplateRegistryTest {
     fun `built in riichi template exposes localized indicator labels`() {
         val registry = WinSettlementPresentationTemplateRegistryImpl()
         registry.registerBundledWinSettlementTemplates()
-        val template = registry.findTemplate("mahjongcraft:riichi") ?: error("Missing built-in riichi template")
+        val template = registry.findTemplate(RiichiWinSettlementTemplates.RIICHI_KEY) ?: error("Missing built-in riichi template")
 
         assertEquals(
             "mahjongcraft.settlement.dora_indicator",
-            template.detailFieldLabelKeys[PresentationFieldId("mahjongcraft:riichi_dora")],
+            template.detailFieldLabelKeys[PresentationFieldId(RiichiWinSettlementIds.DORA_FIELD)],
         )
         assertEquals(
             "mahjongcraft.settlement.ura_dora_indicator",
-            template.detailFieldLabelKeys[PresentationFieldId("mahjongcraft:riichi_ura_dora")],
+            template.detailFieldLabelKeys[PresentationFieldId(RiichiWinSettlementIds.URA_DORA_FIELD)],
         )
     }
 
@@ -161,7 +162,7 @@ class WinSettlementPresentationTemplateRegistryTest {
         val registry = WinSettlementPresentationTemplateRegistryImpl()
         registry.registerBundledWinSettlementTemplates()
 
-        assertEquals(BuiltInWinSettlementTemplateKeys.RIICHI, registry.findTemplateForRule(BuiltInRuleModuleIds.RIICHI)?.key)
+        assertEquals(RiichiWinSettlementTemplates.RIICHI_KEY, registry.findTemplateForRule(BuiltInRuleModuleIds.RIICHI)?.key)
         assertEquals(BuiltInWinSettlementTemplateKeys.GENERIC, registry.findTemplateForRule("custom:rule")?.key)
     }
 

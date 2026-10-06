@@ -1,12 +1,12 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.riichi
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ResolvedRoundOutcome
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundOutcomePresentationClassification
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailEntry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailField
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailValue
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPointResult
@@ -132,7 +132,7 @@ class RiichiWinSettlementDetailResolverTest {
         val winner = FakeMahjongPlayerFactory.create()
         val state = FakeTableStateFactory.create(players = listOf(winner), config = config)
         val outcome = ResolvedRoundOutcome(
-            id = BuiltInRoundOutcomeIds.NAGASHI_MANGAN,
+            id = RiichiRoundOutcomeIds.NAGASHI_MANGAN,
             settledTableState = state,
             beneficiaryPlayerIds = setOf(winner.id),
             scoreDeltas = mapOf(winner.id to 0),

@@ -20,7 +20,7 @@ sealed class RiichiExhaustiveDrawReason : ExhaustiveDrawReason {
      * 牌山摸盡且無勝負。
      */
     data object Normal : RiichiExhaustiveDrawReason() {
-        override val id: String = MahjongCraftMetadata.id("normal")
+        override val id: String = MahjongCraftMetadata.id("riichi/exhaustive_draw/normal")
     }
 
     /**
@@ -28,7 +28,7 @@ sealed class RiichiExhaustiveDrawReason : ExhaustiveDrawReason {
      * 玩家在第一巡摸牌後，手牌中擁有 9 種（含）以上不同的「么九牌」（1、9 數牌與字牌）
      */
     data object KyuushuKyuuhai : RiichiExhaustiveDrawReason() {
-        override val id: String = MahjongCraftMetadata.id("kyuushu_kyuuhai")
+        override val id: String = MahjongCraftMetadata.id("riichi/exhaustive_draw/kyuushu_kyuuhai")
 
         /** 預覽手牌中觸發九種九牌資格的全部么九牌。 */
         override fun previewTiles(hand: Hand): List<Tile> = hand.tiles.map { it.tile }.filter { it.isTerminal || it.isHonor }
@@ -39,7 +39,7 @@ sealed class RiichiExhaustiveDrawReason : ExhaustiveDrawReason {
      * 在第一巡中，四名玩家連續打出同一種風牌（東、南、西、北）
      */
     data object SuufonRenda : RiichiExhaustiveDrawReason() {
-        override val id: String = MahjongCraftMetadata.id("suufon_renda")
+        override val id: String = MahjongCraftMetadata.id("riichi/exhaustive_draw/suufon_renda")
     }
 
     /**
@@ -49,7 +49,7 @@ sealed class RiichiExhaustiveDrawReason : ExhaustiveDrawReason {
      * 例外情況：如果 4 個槓子都由同一個人達成，則不流局（因為該玩家可能正在做「四槓子」役滿）。
      */
     data object SuukanNagare : RiichiExhaustiveDrawReason() {
-        override val id: String = MahjongCraftMetadata.id("suukan_nagare")
+        override val id: String = MahjongCraftMetadata.id("riichi/exhaustive_draw/suukan_nagare")
     }
 
     /**
@@ -57,7 +57,7 @@ sealed class RiichiExhaustiveDrawReason : ExhaustiveDrawReason {
      * 四位玩家全部宣告立直。
      */
     data object SuuchaRiichi : RiichiExhaustiveDrawReason() {
-        override val id: String = MahjongCraftMetadata.id("suucha_riichi")
+        override val id: String = MahjongCraftMetadata.id("riichi/exhaustive_draw/suucha_riichi")
     }
 
     /**
@@ -72,6 +72,6 @@ sealed class RiichiExhaustiveDrawReason : ExhaustiveDrawReason {
      * 不結算點數）與三響完全相同，同樣沿用同一個原因值。
      */
     data object SanchaHou : RiichiExhaustiveDrawReason() {
-        override val id: String = MahjongCraftMetadata.id("sancha_hou")
+        override val id: String = MahjongCraftMetadata.id("riichi/exhaustive_draw/sancha_hou")
     }
 }

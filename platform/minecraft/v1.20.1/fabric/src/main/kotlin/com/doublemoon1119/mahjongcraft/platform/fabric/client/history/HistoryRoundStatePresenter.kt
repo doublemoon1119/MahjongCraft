@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.BuiltInHistoryDiscardMarkerIds
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiHistoryDiscardMarkerIds
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayPlayerStateDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinnerDetailsDto
@@ -43,7 +43,7 @@ internal object HistoryRoundStatePresenter {
     fun discards(player: HistoryReplayPlayerStateDto, maxWidth: Float): HistoryTileGroupLayout = HistoryTileGroupLayoutCalculator.hand(
         player.discards.map { it.tile },
         maxWidth = maxWidth,
-        sidewaysTiles = player.discards.filter { BuiltInHistoryDiscardMarkerIds.RIICHI_DECLARED in it.markers }.map { it.tile }.toSet(),
+        sidewaysTiles = player.discards.filter { RiichiHistoryDiscardMarkerIds.RIICHI_DECLARED in it.markers }.map { it.tile }.toSet(),
     )
 
     /**

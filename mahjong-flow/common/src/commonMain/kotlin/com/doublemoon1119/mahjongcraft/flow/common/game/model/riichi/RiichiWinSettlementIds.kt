@@ -13,19 +13,19 @@ import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
  */
 object RiichiWinSettlementIds {
     /** 役種條目欄位；值為 [WinSettlementDetailValue.Entries]。 */
-    val YAKU_FIELD: String = MahjongCraftMetadata.id("riichi_yaku")
+    val YAKU_FIELD: String = MahjongCraftMetadata.id("riichi/yaku_list")
 
     /** 一般和牌的翻符欄位；值為 [WinSettlementDetailValue.Quantities]，依序為翻與符，沒有權威符數時只有翻。 */
-    val HAN_FU_FIELD: String = MahjongCraftMetadata.id("riichi_han_fu")
+    val HAN_FU_FIELD: String = MahjongCraftMetadata.id("riichi/han_fu")
 
     /** 自然役滿的合計倍數欄位；值為 [WinSettlementDetailValue.Quantities]，只有役滿倍數。 */
-    val YAKUMAN_TOTAL_FIELD: String = MahjongCraftMetadata.id("riichi_yakuman_total")
+    val YAKUMAN_TOTAL_FIELD: String = MahjongCraftMetadata.id("riichi/yakuman_total")
 
     /** 寶牌指示牌欄位；值為 [WinSettlementDetailValue.Tiles]。 */
-    val DORA_FIELD: String = MahjongCraftMetadata.id("riichi_dora")
+    val DORA_FIELD: String = MahjongCraftMetadata.id("riichi/dora_indicators")
 
     /** 裏寶牌指示牌欄位；只在立直和牌出現，值為 [WinSettlementDetailValue.Tiles]。 */
-    val URA_DORA_FIELD: String = MahjongCraftMetadata.id("riichi_ura_dora")
+    val URA_DORA_FIELD: String = MahjongCraftMetadata.id("riichi/ura_dora_indicators")
 
     /** 翻數單位。 */
     val HAN: String = MahjongCraftMetadata.id("riichi/han")

@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.riichi
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ResolvedRoundOutcome
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundOutcomePresentationClassification
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolver
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
@@ -13,7 +13,7 @@ import kotlin.uuid.Uuid
 
 /** 將日麻流局滿貫判定轉為 Flow 的 win-equivalent round outcome。 */
 class RiichiNagashiManganOutcomeResolver : PostReactionRoundOutcomeResolver {
-    override val id: String = BuiltInRoundOutcomeIds.NAGASHI_MANGAN
+    override val id: String = RiichiRoundOutcomeIds.NAGASHI_MANGAN
     override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI
     override val priority: Int = 100
 

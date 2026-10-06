@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailField
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailValue
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
@@ -145,7 +146,7 @@ class RiichiGameAchievementResolverTest {
         val result = resolve(
             game,
             HistoryFact.RuleEffectResolved(
-                reasonId = BuiltInRoundOutcomeIds.NAGASHI_MANGAN,
+                reasonId = RiichiRoundOutcomeIds.NAGASHI_MANGAN,
                 roundCompletion = null,
                 winDetails = listOf(HistoryWinDetails(achiever.id, emptyList())),
             ),

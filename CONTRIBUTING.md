@@ -43,6 +43,13 @@
 - Declare it as an instance member by default. Put it in the companion object only when the class creates many
   instances (for example, one entity per tile) or when functions in the companion object also log.
 
+### Registration ID Conventions
+
+- **Format**: Every registration ID, including persistence type keys, uses the `namespace:path` format defined by `NamespacedId`: lowercase letters, digits, `_`, `-` and `.`, plus `/` in the path. Do not use prefixes such as `builtin:`, dot-separated keys, or IDs without a namespace.
+- **Rule-specific IDs**: Place them under the rule's path, for example `mahjongcraft:riichi/declare_riichi`. Add a category level when a rule registers a family of IDs, for example `mahjongcraft:riichi/yaku/pinfu`.
+- **Rule-neutral IDs**: Place them directly under the namespace, for example `mahjongcraft:pao`. Rule-neutral objects must not hold rule-specific IDs.
+- **Third-party extensions**: Use their own namespace instead of `mahjongcraft`.
+
 ## Before Committing
 
 - Run `./gradlew build` — it compiles, tests, and lints (ktlint, `intellij_idea` code style per
@@ -210,6 +217,7 @@ Platform adaptation and presentation layer.
   - May depend on immutable domain models, value objects, rule-neutral interfaces, and built-in identifiers from `:mahjong-logic` when adapting them for rendering, persistence, networking, or platform presentation.
   - May register platform presentation adapters for built-in rules, such as tile assets, translated names, sounds, and room configuration editors.
   - Must not perform authoritative rule decisions or mutate authoritative game state outside `:mahjong-flow` use cases and coordinators.
+  - Must accept every valid `NamespacedId` wherever players enter or select an ID, such as commands or text input, quoting or escaping it when the platform's input syntax requires.
 
 ## Dependency Rules
 

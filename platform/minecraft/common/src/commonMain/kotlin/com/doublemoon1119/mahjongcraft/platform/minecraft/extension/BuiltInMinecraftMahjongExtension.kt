@@ -2,7 +2,6 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.extension
 
 import com.doublemoon1119.mahjongcraft.ai.BuiltInAiStrategyKeys
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInAutomaticControlIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInPaymentReasonIds
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
@@ -179,16 +178,10 @@ object BuiltInMinecraftMahjongExtension : MinecraftMahjongExtension {
             PresentationValue.TileGroupsValue(snapshot.tileAssetGroups)
         }
         registry.registerFieldProvider(BuiltInWinSettlementFieldIds.OUTCOME_TITLE) { snapshot ->
-            PresentationValue.TextValue(
-                when {
-                    snapshot.outcomeId == BuiltInRoundOutcomeIds.NAGASHI_MANGAN -> WinSettlementTextKeys.NAGASHI_MANGAN
-                    snapshot.isTsumo -> WinSettlementTextKeys.TSUMO
-                    else -> WinSettlementTextKeys.RON
-                },
-            )
+            PresentationValue.TextValue(if (snapshot.isTsumo) WinSettlementTextKeys.TSUMO else WinSettlementTextKeys.RON)
         }
         registry.registerFieldProvider(BuiltInWinSettlementFieldIds.WINNER_SUMMARY) { snapshot ->
-            if (snapshot.isTsumo || snapshot.outcomeId == BuiltInRoundOutcomeIds.NAGASHI_MANGAN) {
+            if (snapshot.isTsumo) {
                 PresentationValue.TextValue("%s", listOf(snapshot.winnerDisplayName))
             } else {
                 PresentationValue.TextValue(

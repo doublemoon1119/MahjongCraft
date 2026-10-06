@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DiscardReadinessAnalysisDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HandReadinessAnalysisDto
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionActionDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionActionTileSelectionDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
@@ -21,7 +22,7 @@ class DecisionHudDiscardAnalysisScopeTest {
             actions = listOf(
                 PlayerDecisionActionDto(
                     token = "riichi",
-                    actionId = "mahjongcraft:riichi",
+                    actionId = RiichiGameAction.Riichi.id,
                     tileSelection = PlayerDecisionActionTileSelectionDto(
                         eligibleTileIds = listOf("tile"),
                         minCount = 1,

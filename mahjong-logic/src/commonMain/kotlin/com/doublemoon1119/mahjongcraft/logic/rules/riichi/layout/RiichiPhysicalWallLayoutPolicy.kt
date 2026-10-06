@@ -231,11 +231,11 @@ object RiichiPhysicalWallLayoutPolicy : PhysicalWallLayoutPolicy {
     private val RESERVED_WALL_GAP_OFFSET = TileWallPlacementOffset(alongWallStacks = RESERVED_WALL_GAP_STACKS)
 
     /** 初始牌牆缺少日麻嶺上牌結構時的拒絕原因。 */
-    const val INVALID_STATE_REASON_ID: String = "mahjongcraft:invalid_riichi_physical_wall_state"
+    const val INVALID_STATE_REASON_ID: String = "mahjongcraft:riichi/invalid_physical_wall_state"
 
     /** 開門面沒有足夠連續且無占用的保留牌軌道時的拒絕原因。 */
-    const val NO_COLLISION_FREE_TRACK_REASON_ID: String = "mahjongcraft:no_collision_free_reserved_wall_track"
+    const val NO_COLLISION_FREE_TRACK_REASON_ID: String = "mahjongcraft:riichi/no_collision_free_reserved_wall_track"
 
     /** 槓前後牌牆或補牌次數不符合日麻 transition 契約時的拒絕原因。 */
-    const val INVALID_TRANSITION_REASON_ID: String = "mahjongcraft:invalid_riichi_physical_wall_transition"
+    const val INVALID_TRANSITION_REASON_ID: String = "mahjongcraft:riichi/invalid_physical_wall_transition"
 }

@@ -38,13 +38,13 @@ class HistoryWinDetailPresentationTest {
             BundledMinecraftMahjongExtensions.all.forEach { it.registerWinSettlementPresentationTemplates(this) }
         }
         val presenter = presenter()
-        val dora = presenter.detailLabel("mahjongcraft:riichi", "mahjongcraft:riichi_dora", templates)
-        val ura = presenter.detailLabel("mahjongcraft:riichi", "mahjongcraft:riichi_ura_dora", templates)
+        val dora = presenter.detailLabel("mahjongcraft:riichi", RiichiWinSettlementIds.DORA_FIELD, templates)
+        val ura = presenter.detailLabel("mahjongcraft:riichi", RiichiWinSettlementIds.URA_DORA_FIELD, templates)
         assertEquals(WinSettlementTextKeys.DORA_INDICATOR, (dora?.content as? TranslatableTextContent)?.key)
         assertEquals(WinSettlementTextKeys.URA_DORA_INDICATOR, (ura?.content as? TranslatableTextContent)?.key)
-        assertNull(presenter.detailLabel("custom:rule", "mahjongcraft:riichi_dora", templates))
+        assertNull(presenter.detailLabel("custom:rule", RiichiWinSettlementIds.DORA_FIELD, templates))
         assertNull(presenter.detailLabel("mahjongcraft:riichi", "custom:field", templates))
-        assertNull(presenter.detailLabel(null, "mahjongcraft:riichi_dora", templates))
+        assertNull(presenter.detailLabel(null, RiichiWinSettlementIds.DORA_FIELD, templates))
     }
 
     /** 分差保留正負號、零變化及柔和色彩，負數最小值不溢位。 */

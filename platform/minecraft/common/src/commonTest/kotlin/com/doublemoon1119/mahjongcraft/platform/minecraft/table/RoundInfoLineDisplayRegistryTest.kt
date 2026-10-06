@@ -23,7 +23,7 @@ class RoundInfoLineDisplayRegistryTest {
             register("example:custom", RoundInfoLineDisplay("example.message.custom"))
         }
 
-        val title = registry.find("riichiTitle")
+        val title = registry.find("mahjongcraft:riichi/round_title")
         assertEquals(true, title != null)
         assertEquals("example.message.custom", registry.find("example:custom")?.translationKey)
         assertNull(registry.find("example:unknown"))
@@ -44,15 +44,15 @@ class RoundInfoLineDisplayRegistryTest {
         assertEquals(
             listOf(
                 RoundInfoLine(
-                    "riichiTitle",
+                    "mahjongcraft:riichi/round_title",
                     listOf(
                         RoundInfoArgument.WindValue(Wind.SOUTH),
                         RoundInfoArgument.Number(state.localRoundNumber),
                         RoundInfoArgument.Number(1),
                     ),
                 ),
-                RoundInfoLine("riichiStickPot", listOf(RoundInfoArgument.Number(2))),
-                RoundInfoLine("riichiWallRemaining", listOf(RoundInfoArgument.Number(50))),
+                RoundInfoLine("mahjongcraft:riichi/stick_pot", listOf(RoundInfoArgument.Number(2))),
+                RoundInfoLine("mahjongcraft:riichi/wall_remaining", listOf(RoundInfoArgument.Number(50))),
             ),
             registry.buildLines(BuiltInRuleModuleIds.RIICHI, state),
         )

@@ -43,8 +43,8 @@ object RiichiSupplementalDrawPolicy : SupplementalDrawPolicy {
     const val MAX_SUPPLEMENTAL_DRAWS = 4
 
     /** 本局補牌次數超過規則上限的原因 ID。 */
-    const val LIMIT_REACHED_REASON_ID = "mahjongcraft:supplemental_draw_limit_reached"
+    const val LIMIT_REACHED_REASON_ID = "mahjongcraft:riichi/supplemental_draw_limit_reached"
 
     /** 桌況缺少日麻動態狀態的原因 ID。 */
-    const val INVALID_STATE_REASON_ID = "mahjongcraft:invalid_riichi_dynamic_state"
+    const val INVALID_STATE_REASON_ID = "mahjongcraft:riichi/invalid_dynamic_state"
 }

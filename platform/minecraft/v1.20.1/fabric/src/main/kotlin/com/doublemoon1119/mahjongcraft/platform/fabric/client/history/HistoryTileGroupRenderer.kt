@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.BuiltInHistoryDiscardMarkerIds
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiHistoryDiscardMarkerIds
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDomain
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileFaceRenderer
@@ -65,7 +65,7 @@ internal class HistoryTileGroupRenderer(
                     add(Text.translatable(MinecraftHistoryScreenKeys.STATE_TILE_INDEX, placement.tile).formatted(Formatting.GRAY))
                     if (placement.tile in taken) add(Text.translatable(MinecraftHistoryScreenKeys.STATE_TAKEN)) else add(Text.literal(asset))
                     markers[placement.tile].orEmpty().sorted().forEach { marker ->
-                        val label = if (marker == BuiltInHistoryDiscardMarkerIds.RIICHI_DECLARED) {
+                        val label = if (marker == RiichiHistoryDiscardMarkerIds.RIICHI_DECLARED) {
                             Text.translatable(MinecraftMessageKeys.PLAYER_INDICATOR_RIICHI)
                         } else {
                             Text.literal(marker)

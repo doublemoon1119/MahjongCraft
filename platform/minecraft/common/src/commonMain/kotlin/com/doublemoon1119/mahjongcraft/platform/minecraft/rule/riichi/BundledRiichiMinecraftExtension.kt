@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardReadinessAnalyzer
@@ -23,9 +24,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresent
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.achievement.RiichiGameAchievementResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.catalogue.RiichiCatalogueProvider
-import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.BuiltInWinSettlementTemplateKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationValue
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementTextKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.BuiltInGameActionSoundIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.BuiltInGameActionVoiceSoundIds
@@ -104,11 +106,29 @@ object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
         registry.register(RiichiExhaustiveDrawReason.SanchaHou.id, MinecraftMessageKeys.GAME_ACTION_SANCHA_HOU)
     }
 
-    /** 日麻完整模板綁定日麻規則；役種、翻符與役滿倍數直接顯示規則提供的內容，寶牌與裏寶牌指示牌固定顯示五個位置。 */
+    /** 日麻完整模板綁定日麻規則；標題與胡牌者摘要涵蓋流局滿貫，役種、翻符與役滿倍數直接顯示規則提供的內容，寶牌與裏寶牌指示牌固定顯示五個位置。 */
     override fun registerWinSettlementPresentationTemplates(registry: WinSettlementPresentationTemplateRegistry) {
-        registry.registerTemplate(RiichiWinSettlementTemplates.NAGASHI_MANGAN)
         registry.registerTemplate(RiichiWinSettlementTemplates.RIICHI)
-        registry.bindRuleTemplate(BuiltInRuleModuleIds.RIICHI, BuiltInWinSettlementTemplateKeys.RIICHI)
+        registry.bindRuleTemplate(BuiltInRuleModuleIds.RIICHI, RiichiWinSettlementTemplates.RIICHI_KEY)
+        registry.registerFieldProvider(RiichiWinSettlementTemplates.OUTCOME_TITLE) { snapshot ->
+            PresentationValue.TextValue(
+                when {
+                    snapshot.outcomeId == RiichiRoundOutcomeIds.NAGASHI_MANGAN -> WinSettlementTextKeys.NAGASHI_MANGAN
+                    snapshot.isTsumo -> WinSettlementTextKeys.TSUMO
+                    else -> WinSettlementTextKeys.RON
+                },
+            )
+        }
+        registry.registerFieldProvider(RiichiWinSettlementTemplates.WINNER_SUMMARY) { snapshot ->
+            if (snapshot.isTsumo || snapshot.outcomeId == RiichiRoundOutcomeIds.NAGASHI_MANGAN) {
+                PresentationValue.TextValue("%s", listOf(snapshot.winnerDisplayName))
+            } else {
+                PresentationValue.TextValue(
+                    WinSettlementTextKeys.RON_RELATIONSHIP,
+                    listOf(snapshot.winnerDisplayName, snapshot.responsiblePlayerDisplayName.orEmpty()),
+                )
+            }
+        }
         registry.registerDetailTextFormatter(RiichiWinSettlementIds.YAKU_FIELD, RiichiWinSettlementDetailTexts.yaku)
         registry.registerDetailTextFormatter(RiichiWinSettlementIds.HAN_FU_FIELD, RiichiWinSettlementDetailTexts.hanFu)
         registry.registerDetailTextFormatter(RiichiWinSettlementIds.YAKUMAN_TOTAL_FIELD, RiichiWinSettlementDetailTexts.yakumanTotal)
@@ -208,13 +228,13 @@ private fun buildRiichiRoundInfoLines(tableState: TableState): List<RoundInfoLin
 }
 
 /** 場風、局數與本場數組成的標題行 key。 */
-private const val RIICHI_TITLE_KEY: String = "riichiTitle"
+private const val RIICHI_TITLE_KEY: String = "mahjongcraft:riichi/round_title"
 
 /** 活牌區剩餘張數行的 key。 */
-private const val RIICHI_WALL_REMAINING_KEY: String = "riichiWallRemaining"
+private const val RIICHI_WALL_REMAINING_KEY: String = "mahjongcraft:riichi/wall_remaining"
 
 /** 累積供託立直棒數量行的 key。 */
-private const val RIICHI_STICK_POT_KEY: String = "riichiStickPot"
+private const val RIICHI_STICK_POT_KEY: String = "mahjongcraft:riichi/stick_pot"
 
 /** 日麻捨牌分析狀態使用的 translation key 前綴。 */
 private const val RIICHI_HUD_PREFIX: String = MinecraftModMetadata.MOD_ID + ".hud."

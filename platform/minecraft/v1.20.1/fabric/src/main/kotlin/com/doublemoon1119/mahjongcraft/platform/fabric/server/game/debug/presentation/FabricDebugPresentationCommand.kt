@@ -16,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetai
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementWinnerPresentation
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
@@ -741,7 +742,7 @@ class FabricDebugPresentationCommand(
         )
         val request = WinSettlementPresentationRequest(
             outcomeId = if (preview == WinSettlementPreview.NAGASHI) {
-                BuiltInRoundOutcomeIds.NAGASHI_MANGAN
+                RiichiRoundOutcomeIds.NAGASHI_MANGAN
             } else if (preview == WinSettlementPreview.TSUMO) {
                 BuiltInRoundOutcomeIds.TSUMO
             } else {

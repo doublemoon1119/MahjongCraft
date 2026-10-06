@@ -106,8 +106,8 @@ object RiichiWallRevealPolicy : WallRevealPolicy {
     }
 
     /** 無法解析日麻動態狀態的原因 ID。 */
-    const val INVALID_STATE_REASON_ID = "mahjongcraft:invalid_wall_reveal_state"
+    const val INVALID_STATE_REASON_ID = "mahjongcraft:riichi/invalid_wall_reveal_state"
 
     /** 節點缺少必要來源動作或玩家的原因 ID。 */
-    const val INVALID_ACTION_REASON_ID = "mahjongcraft:invalid_wall_reveal_action"
+    const val INVALID_ACTION_REASON_ID = "mahjongcraft:riichi/invalid_wall_reveal_action"
 }

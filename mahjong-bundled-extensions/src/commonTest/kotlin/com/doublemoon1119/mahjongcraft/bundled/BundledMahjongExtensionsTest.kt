@@ -65,10 +65,10 @@ class BundledMahjongExtensionsTest {
             "mahjongcraft:win_settlement_detail_resolver",
             "mahjongcraft:win_celebration_cue_resolver",
         ).forEach { categoryId -> assertTrue(riichi.ids(categoryId).isNotEmpty(), "Riichi should register $categoryId") }
-        assertTrue(riichi.ids("mahjongcraft:persistence_dto").any { "riichi_player_state" in it })
+        assertTrue(riichi.ids("mahjongcraft:persistence_dto").any { "riichi/player_state" in it })
         assertTrue(taiwan.ids("mahjongcraft:persistence_dto").all { "taiwan" in it })
         assertTrue(taiwan.ids("mahjongcraft:network_dto").all { "taiwan" in it })
-        assertEquals(listOf("builtin:taiwan_discard_pile"), taiwan.ids("mahjongcraft:history_replay_discard"))
+        assertEquals(listOf("mahjongcraft:taiwan/discard_pile"), taiwan.ids("mahjongcraft:history_replay_discard"))
     }
 
     /** 指定類別中這個來源登記的 ID；沒有登記時為空清單。 */

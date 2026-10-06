@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionActionDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionActionTileSelectionDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
@@ -327,7 +328,7 @@ class DecisionTileSelectionStateTest {
         actions = listOf(
             PlayerDecisionActionDto(
                 token = ACTION_TOKEN,
-                actionId = "mahjongcraft:riichi",
+                actionId = RiichiGameAction.Riichi.id,
                 tileSelection = PlayerDecisionActionTileSelectionDto(
                     eligibleTileIds = listOf(TILE_A, TILE_B, TILE_C),
                     minCount = minCount,

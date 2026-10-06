@@ -157,7 +157,7 @@ object CompactReplayCodec {
                                 JsonObject(mapOf(ReplaySourceKeys.ID to JsonPrimitive(player.id.toString()), ReplayFormatKeys.PLAYER_AI to (aiStrategyKeys[player.id]?.let(::JsonPrimitive) ?: JsonNull)))
                             }
                         }
-                        val openingIndex = createRoundIndex(openingState, json, typeDictionary)
+                        val openingIndex = createRoundIndex(openingState, json, typeDictionary, registries.replayCompactTypeKeys)
                         roundIndex = openingIndex
                         rounds += MutableRound(rounds.size + 1, openingIndex.tileTypes.toList(), project(openingState, openingIndex, registries, json), mutableListOf())
                         parts[ReplayFormatKeys.ROUND_OPENING] = JsonPrimitive(true)
@@ -393,15 +393,28 @@ object CompactReplayCodec {
      * @param state 開局時的權威桌況。
      * @param json 牌種 DTO 的 JSON 編碼設定。
      * @param types 跨局牌種內容到字典值的可變對照。
+     * @param compactPayloadTypeKeys 登記為可壓縮的資料 type key。
      * @return 本局牌與玩家的索引。
      */
-    private fun createRoundIndex(state: TableState, json: Json, types: MutableMap<String, JsonElement>): RoundIndex {
+    private fun createRoundIndex(
+        state: TableState,
+        json: Json,
+        types: MutableMap<String, JsonElement>,
+        compactPayloadTypeKeys: Set<String>,
+    ): RoundIndex {
         val tiles = state.tileWall.getAllTiles() + state.reservedWallTiles + state.players.flatMap { it.hand.allTiles + it.discardPile.entries.map { entry -> entry.tile } }
         val tileIds = tiles.map { it.id.toString() }
         require(tileIds.size == tileIds.distinct().size) { "Replay opening contains duplicate tile identifiers" }
         val encoded = tiles.associate { it.id.toString() to json.encodeToJsonElement(it.tile.toPersistenceDto()) }
         val codes = tiles.map { tile -> types.getOrPut(encoded.getValue(tile.id.toString()).toString()) { encoded.getValue(tile.id.toString()) }.let { types.keys.indexOf(encoded.getValue(tile.id.toString()).toString()) } }
-        return RoundIndex(tileIds.withIndex().associateTo(linkedMapOf()) { it.value to it.index }, codes.toMutableList(), encoded.toMutableMap(), state.players.associate { it.id.toString() to it.initialSeatIndex }, types)
+        return RoundIndex(
+            tileIds = tileIds.withIndex().associateTo(linkedMapOf()) { it.value to it.index },
+            tileTypes = codes.toMutableList(),
+            encodedTiles = encoded.toMutableMap(),
+            playerIds = state.players.associate { it.id.toString() to it.initialSeatIndex },
+            typeDictionary = types,
+            compactPayloadTypeKeys = compactPayloadTypeKeys,
+        )
     }
 
     /**
@@ -510,7 +523,7 @@ object CompactReplayCodec {
                 JsonObject(
                     element.map { (key, value) ->
                         val typeKey = (element[ReplaySourceKeys.TYPE_KEY] as? JsonPrimitive)?.content
-                        val opaque = key == ReplayFormatKeys.PAYLOAD && typeKey != null && !typeKey.startsWith(ReplaySourceKeys.BUILTIN_TYPE_PREFIX)
+                        val opaque = key == ReplayFormatKeys.PAYLOAD && typeKey != null && typeKey !in index.compactPayloadTypeKeys
                         (if (opaque) key else translateKey(key, index)) to (if (opaque) value else translate(value, index))
                     }.toMap(),
                 )
@@ -550,6 +563,7 @@ object CompactReplayCodec {
      * @property encodedTiles 實體牌 UUID 對應的牌種資料，用於驗證牌種不變。
      * @property playerIds 玩家 UUID 到初始座位索引的對照。
      * @property typeDictionary 跨局共用的牌種資料字典。
+     * @property compactPayloadTypeKeys 登記為可壓縮的資料 type key；其他帶 type key 的資料保留原始內容。
      */
     private data class RoundIndex(
         val tileIds: MutableMap<String, Int>,
@@ -557,6 +571,7 @@ object CompactReplayCodec {
         val encodedTiles: MutableMap<String, JsonElement>,
         val playerIds: Map<String, Int>,
         val typeDictionary: MutableMap<String, JsonElement>,
+        val compactPayloadTypeKeys: Set<String>,
     )
 
     /**

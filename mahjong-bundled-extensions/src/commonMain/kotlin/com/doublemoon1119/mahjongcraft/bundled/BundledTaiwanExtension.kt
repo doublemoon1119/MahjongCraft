@@ -101,11 +101,12 @@ object BundledTaiwanExtension : MahjongExtension {
 
     override fun registerPersistenceDtos(registries: PersistenceRegistries) {
         registries.ruleConfigs.register(
-            typeKey = "builtin:taiwan_rule_config",
+            typeKey = "mahjongcraft:taiwan/rule_config",
             domainClass = TaiwanRuleConfig::class,
             serializer = TaiwanRuleConfigPersistenceDto.serializer(),
             toDto = TaiwanRuleConfig::toPersistenceDto,
             toDomain = TaiwanRuleConfigPersistenceDto::toDomain,
+            compactInReplay = true,
         )
         registries.discardPiles.register(
             typeKey = BuiltInDiscardPilePersistenceKeys.TAIWAN,
@@ -113,6 +114,7 @@ object BundledTaiwanExtension : MahjongExtension {
             serializer = TaiwanDiscardPilePersistenceDto.serializer(),
             toDto = TaiwanDiscardPile::toPersistenceDto,
             toDomain = TaiwanDiscardPilePersistenceDto::toDomain,
+            compactInReplay = true,
         )
     }
 

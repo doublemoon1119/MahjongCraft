@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WIN_AVAILABLE_ID
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileAvailabilityDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardReadinessAnalyzer
 import net.minecraft.text.TranslatableTextContent
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -50,7 +51,7 @@ class DiscardAnalysisPresentationTest {
         val content = discardAnalysisContent(
             texts,
             BuiltInRuleModuleIds.RIICHI,
-            analysisOf(waiting("a", 4), statusIndicatorId = "mahjongcraft:discard_furiten"),
+            analysisOf(waiting("a", 4), statusIndicatorId = RiichiDiscardReadinessAnalyzer.StatusIds.DISCARD_FURITEN),
         )
 
         assertEquals(
@@ -65,7 +66,7 @@ class DiscardAnalysisPresentationTest {
         val content = discardAnalysisContent(
             texts,
             BuiltInRuleModuleIds.RIICHI,
-            analysisOf(waiting("a", 4, "mahjongcraft:win_no_yaku"), waiting("b", 2, "mahjongcraft:win_no_yaku")),
+            analysisOf(waiting("a", 4, RiichiDiscardReadinessAnalyzer.StatusIds.WIN_NO_YAKU), waiting("b", 2, RiichiDiscardReadinessAnalyzer.StatusIds.WIN_NO_YAKU)),
         )
 
         assertEquals(
@@ -91,7 +92,7 @@ class DiscardAnalysisPresentationTest {
         val content = discardAnalysisContent(
             texts,
             BuiltInRuleModuleIds.RIICHI,
-            analysisOf(waiting("a", 4, "mahjongcraft:win_tsumo_only"), waiting("b", 2, WIN_AVAILABLE_ID)),
+            analysisOf(waiting("a", 4, RiichiDiscardReadinessAnalyzer.StatusIds.WIN_TSUMO_ONLY), waiting("b", 2, WIN_AVAILABLE_ID)),
         )
 
         assertTrue(content.hasAvailabilityRow)
@@ -109,7 +110,7 @@ class DiscardAnalysisPresentationTest {
         val content = discardAnalysisContent(
             texts,
             BuiltInRuleModuleIds.RIICHI,
-            analysisOf(waiting("a", 4, "mahjongcraft:win_no_yaku"), statusIndicatorId = "mahjongcraft:temporary_furiten"),
+            analysisOf(waiting("a", 4, RiichiDiscardReadinessAnalyzer.StatusIds.WIN_NO_YAKU), statusIndicatorId = RiichiDiscardReadinessAnalyzer.StatusIds.TEMPORARY_FURITEN),
         )
 
         assertEquals(

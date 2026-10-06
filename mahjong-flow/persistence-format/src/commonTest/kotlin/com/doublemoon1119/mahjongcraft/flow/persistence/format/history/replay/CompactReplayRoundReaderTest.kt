@@ -261,7 +261,7 @@ class CompactReplayRoundReaderTest {
                         put(
                             ReplaySourceKeys.DISCARD_PILE,
                             buildJsonObject {
-                                put(ReplaySourceKeys.TYPE_KEY, "builtin:riichi_discard_pile")
+                                put(ReplaySourceKeys.TYPE_KEY, "mahjongcraft:riichi/discard_pile")
                                 put(ReplayFormatKeys.PAYLOAD, buildJsonObject { put(ReplaySourceKeys.ENTRIES, JsonArray(emptyList())) })
                             },
                         )

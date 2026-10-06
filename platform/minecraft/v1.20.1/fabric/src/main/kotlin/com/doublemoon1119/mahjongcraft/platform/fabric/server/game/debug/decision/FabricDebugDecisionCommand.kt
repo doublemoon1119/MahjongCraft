@@ -18,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSync
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardReadinessAnalyzer
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
@@ -398,8 +399,8 @@ class FabricDebugDecisionCommand(
                 claimedTileIndex = claimedIndex,
             )
             fun riichiAction() = PlayerDecisionActionDto(
-                token = "mahjongcraft:riichi",
-                actionId = "mahjongcraft:riichi",
+                token = RiichiGameAction.Riichi.id,
+                actionId = RiichiGameAction.Riichi.id,
                 previewTileAssetKeys = listOf("m1", "m4", "m7", "p2", "p5", "p8", "s3", "s6", "s9"),
                 tileSelection = PlayerDecisionActionTileSelectionDto(
                     eligibleTileIds = List(9) { Uuid.random().toString() },
@@ -457,9 +458,9 @@ class FabricDebugDecisionCommand(
                 listOf(2, 5, 8).map { TileDto.Numeric(SuitDto.CHARACTER, it) }
             }
             val availability = when (this) {
-                DISCARD_NO_YAKU, DISCARD_FURITEN_UNAVAILABLE -> "mahjongcraft:win_no_yaku"
-                DISCARD_BELOW_MINIMUM -> "mahjongcraft:win_below_minimum"
-                DISCARD_TSUMO_ONLY -> "mahjongcraft:win_tsumo_only"
+                DISCARD_NO_YAKU, DISCARD_FURITEN_UNAVAILABLE -> RiichiDiscardReadinessAnalyzer.StatusIds.WIN_NO_YAKU
+                DISCARD_BELOW_MINIMUM -> RiichiDiscardReadinessAnalyzer.StatusIds.WIN_BELOW_MINIMUM
+                DISCARD_TSUMO_ONLY -> RiichiDiscardReadinessAnalyzer.StatusIds.WIN_TSUMO_ONLY
                 else -> WIN_AVAILABLE_ID
             }
             return DiscardReadinessAnalysisDto(
@@ -487,9 +488,9 @@ class FabricDebugDecisionCommand(
             /** [DISCARD_MIXED_AVAILABILITY] 逐張輪流展示的和牌可用性命名字串。 */
             val MIXED_AVAILABILITY_CYCLE = listOf(
                 WIN_AVAILABLE_ID,
-                "mahjongcraft:win_tsumo_only",
-                "mahjongcraft:win_no_yaku",
-                "mahjongcraft:win_below_minimum",
+                RiichiDiscardReadinessAnalyzer.StatusIds.WIN_TSUMO_ONLY,
+                RiichiDiscardReadinessAnalyzer.StatusIds.WIN_NO_YAKU,
+                RiichiDiscardReadinessAnalyzer.StatusIds.WIN_BELOW_MINIMUM,
             )
         }
     }

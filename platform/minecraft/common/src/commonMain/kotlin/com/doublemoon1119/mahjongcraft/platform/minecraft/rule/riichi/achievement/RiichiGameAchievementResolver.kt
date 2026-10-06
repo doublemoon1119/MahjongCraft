@@ -3,8 +3,8 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.achieveme
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.CommittedGameFacts
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinDetails
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailValue
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
@@ -38,7 +38,7 @@ object RiichiGameAchievementResolver : GameAchievementResolver {
                 is HistoryFact.WinSettled -> fact.winDetails.forEach { details ->
                     add(details.playerId, winAchievements(details, before.players.firstOrNull { it.id == details.playerId }))
                 }
-                is HistoryFact.RuleEffectResolved -> if (fact.reasonId == BuiltInRoundOutcomeIds.NAGASHI_MANGAN) {
+                is HistoryFact.RuleEffectResolved -> if (fact.reasonId == RiichiRoundOutcomeIds.NAGASHI_MANGAN) {
                     val achieverIds = fact.winDetails.map { it.playerId }.ifEmpty { fact.roundCompletion?.beneficiaryPlayerIds.orEmpty().toList() }
                     achieverIds.forEach { add(it, listOf(RiichiAchievementIds.NAGASHI_MANGAN)) }
                 }

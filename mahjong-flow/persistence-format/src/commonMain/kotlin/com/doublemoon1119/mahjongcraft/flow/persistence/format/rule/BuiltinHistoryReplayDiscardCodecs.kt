@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.rule
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.BuiltInHistoryDiscardMarkerIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayDiscard
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiHistoryDiscardMarkerIds
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.HistoryReplayProjectionCodec
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.HistoryReplayProjectionContext
 import kotlinx.serialization.json.JsonElement
@@ -33,7 +33,7 @@ object BuiltinHistoryReplayDiscardCodecs {
             context.charge()
             val taken = objectValue["isTaken"]?.jsonPrimitive?.takeUnless { it.isString }?.booleanOrNull ?: error("Discard entry lacks taken flag")
             val declared = if (riichi) objectValue["isRiichi"]?.jsonPrimitive?.takeUnless { it.isString }?.booleanOrNull ?: error("Discard entry lacks declaration flag") else false
-            HistoryReplayDiscard(context.tile(tile), taken, if (declared) setOf(BuiltInHistoryDiscardMarkerIds.RIICHI_DECLARED) else emptySet())
+            HistoryReplayDiscard(context.tile(tile), taken, if (declared) setOf(RiichiHistoryDiscardMarkerIds.RIICHI_DECLARED) else emptySet())
         }
     }
 }

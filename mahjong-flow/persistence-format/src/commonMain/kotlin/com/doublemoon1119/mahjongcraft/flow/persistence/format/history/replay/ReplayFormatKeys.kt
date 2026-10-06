@@ -325,7 +325,4 @@ internal object ReplaySourceKeys {
 
     /** 動作中的擴充動作資料。 */
     const val EXTENSION = "extension"
-
-    /** 內建規則資料的類型前綴。 */
-    const val BUILTIN_TYPE_PREFIX = "builtin:"
 }

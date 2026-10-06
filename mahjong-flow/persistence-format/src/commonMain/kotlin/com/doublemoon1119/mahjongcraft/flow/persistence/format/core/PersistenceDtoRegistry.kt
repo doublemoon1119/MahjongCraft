@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.core
 
+import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -34,13 +35,26 @@ class PersistenceDtoRegistry<Domain : Any> {
     /** 目前已登記 persistence mapper 的穩定 type key 快照。 */
     val registrationKeys: Set<String> get() = byTypeKey.keys.toSet()
 
+    /** 登記時宣告可在精簡牌譜中壓縮的 type key。 */
+    private val compactTypeKeys = mutableSetOf<String>()
+
+    /** 登記時宣告可在精簡牌譜中壓縮的 type key 快照，見 [register] 的 `compactInReplay`。 */
+    val replayCompactTypeKeys: Set<String> get() = compactTypeKeys.toSet()
+
     /** 是否已禁止後續註冊。 */
     private var frozen = false
 
     /**
      * 註冊一組具體領域型別與 persistence DTO 的雙向轉換。
      *
-     * @throws IllegalArgumentException 若 [typeKey] 為空白，或領域類別／type key 已被註冊。
+     * @param typeKey 穩定的 namespaced type key。
+     * @param domainClass 具體領域類別。
+     * @param serializer persistence DTO 的序列化器。
+     * @param toDto 領域物件轉成 persistence DTO。
+     * @param toDomain persistence DTO 還原成領域物件。
+     * @param compactInReplay 為 `true` 時，精簡牌譜會把這份資料內的牌與玩家 UUID 換成局內索引，並壓縮其中的欄位名稱；
+     * 只有資料內的 UUID 都是本局的牌或玩家、且讀取牌譜時能處理局內索引的格式才可設為 `true`。預設保留原始內容。
+     * @throws IllegalArgumentException 若 [typeKey] 不是 namespaced ID，或領域類別／type key 已被註冊。
      */
     fun <D : Domain, T : Any> register(
         typeKey: String,
@@ -48,15 +62,17 @@ class PersistenceDtoRegistry<Domain : Any> {
         serializer: KSerializer<T>,
         toDto: (D) -> T,
         toDomain: (T) -> D,
+        compactInReplay: Boolean = false,
     ) {
         check(!frozen) { "Persistence DTO registry is frozen" }
-        require(typeKey.isNotBlank()) { "Persistence type key must not be blank" }
+        NamespacedId.requireValid(typeKey) { "Persistence type key must be a namespaced ID: $typeKey" }
         require(domainClass !in byDomainClass) { "Persistence DTO already registered for $domainClass" }
         require(typeKey !in byTypeKey) { "Persistence type key already registered: $typeKey" }
 
         val entry = Entry(serializer, toDto, toDomain)
         byDomainClass[domainClass] = typeKey to entry
         byTypeKey[typeKey] = entry
+        if (compactInReplay) compactTypeKeys += typeKey
     }
 
     /** 凍結註冊表；凍結後不得新增 persistence mapper。 */

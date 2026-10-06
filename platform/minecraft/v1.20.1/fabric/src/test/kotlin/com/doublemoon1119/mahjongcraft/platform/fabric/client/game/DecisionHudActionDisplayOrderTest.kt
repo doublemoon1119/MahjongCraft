@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds
 import kotlin.test.Test
@@ -59,7 +60,7 @@ class DecisionHudActionDisplayOrderTest {
             "expected riichi to be registered",
         )
         val kyuushuKyuuhai = assertNotNull(
-            texts.actionOrder(BuiltInRuleModuleIds.RIICHI, "mahjongcraft:kyuushu_kyuuhai"),
+            texts.actionOrder(BuiltInRuleModuleIds.RIICHI, RiichiExhaustiveDrawReason.KyuushuKyuuhai.id),
             "expected kyuushu kyuuhai to be registered",
         )
 

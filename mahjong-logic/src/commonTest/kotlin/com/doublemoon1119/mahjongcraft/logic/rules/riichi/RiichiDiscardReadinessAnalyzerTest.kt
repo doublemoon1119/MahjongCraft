@@ -229,7 +229,7 @@ class RiichiDiscardReadinessAnalyzerTest {
 
         val analysis = analyzer.analyze(tableState, player).single()
 
-        assertEquals("mahjongcraft:discard_furiten", analysis.statusIndicatorId)
+        assertEquals(RiichiDiscardReadinessAnalyzer.StatusIds.DISCARD_FURITEN, analysis.statusIndicatorId)
     }
 
     /**
@@ -244,7 +244,7 @@ class RiichiDiscardReadinessAnalyzerTest {
 
         val analysis = analyzer.analyze(tableState, player).single()
 
-        assertEquals("mahjongcraft:temporary_furiten", analysis.statusIndicatorId)
+        assertEquals(RiichiDiscardReadinessAnalyzer.StatusIds.TEMPORARY_FURITEN, analysis.statusIndicatorId)
     }
 
     /**
@@ -261,7 +261,7 @@ class RiichiDiscardReadinessAnalyzerTest {
 
         val analysis = analyzer.analyze(tableState, player).single()
 
-        assertEquals("mahjongcraft:permanent_furiten", analysis.statusIndicatorId)
+        assertEquals(RiichiDiscardReadinessAnalyzer.StatusIds.PERMANENT_FURITEN, analysis.statusIndicatorId)
     }
 
     /**
@@ -341,7 +341,7 @@ class RiichiDiscardReadinessAnalyzerTest {
         val projected = analyzer.analyzeForAction(tableState, player, RIICHI_GAME_ACTION)
             .single { it.discardTileId == floatingTileId }
 
-        assertEquals("mahjongcraft:win_tsumo_only", ordinary.waitingTiles.single().winAvailability)
+        assertEquals(RiichiDiscardReadinessAnalyzer.StatusIds.WIN_TSUMO_ONLY, ordinary.waitingTiles.single().winAvailability)
         assertEquals("mahjongcraft:win_available", projected.waitingTiles.single().winAvailability)
     }
 

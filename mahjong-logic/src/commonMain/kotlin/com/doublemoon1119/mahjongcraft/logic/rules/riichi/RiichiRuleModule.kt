@@ -600,6 +600,6 @@ class RiichiRuleModule(
 
     companion object {
         /** 玩家已公開宣告立直的 indicator ID。 */
-        const val RIICHI_INDICATOR_ID = "mahjongcraft:riichi"
+        const val RIICHI_INDICATOR_ID = "mahjongcraft:riichi/riichi_indicator"
     }
 }

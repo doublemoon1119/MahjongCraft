@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiHistoryDiscardMarkerIds
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayDiscardDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayIdentityDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayMeldDto
@@ -121,7 +122,7 @@ class HistoryRoundStatePresentationTest {
         val player = player().copy(
             discards = listOf(
                 HistoryReplayDiscardDto(0, true, emptySet()),
-                HistoryReplayDiscardDto(1, false, setOf("mahjongcraft:riichi_declared")),
+                HistoryReplayDiscardDto(1, false, setOf(RiichiHistoryDiscardMarkerIds.RIICHI_DECLARED)),
                 HistoryReplayDiscardDto(2, false, setOf("custom:marker")),
             ),
         )

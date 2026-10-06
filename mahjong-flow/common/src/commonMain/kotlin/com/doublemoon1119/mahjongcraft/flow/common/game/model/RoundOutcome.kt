@@ -6,16 +6,13 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 import kotlin.uuid.Uuid
 
-/** MahjongCraft 內建特殊 round outcome 的完整識別碼。 */
+/** 規則中立的 round outcome 完整識別碼。 */
 object BuiltInRoundOutcomeIds {
     /** 一般自摸。 */
     val TSUMO: String = MahjongCraftMetadata.id("tsumo")
 
     /** 一般榮和（含搶槓）。 */
     val RON: String = MahjongCraftMetadata.id("ron")
-
-    /** 日麻流局滿貫。 */
-    val NAGASHI_MANGAN: String = MahjongCraftMetadata.id("nagashi_mangan")
 }
 
 /** 第三方 outcome 可攜帶、並由 extension DTO registry 負責序列化的強型別詳細資料。 */

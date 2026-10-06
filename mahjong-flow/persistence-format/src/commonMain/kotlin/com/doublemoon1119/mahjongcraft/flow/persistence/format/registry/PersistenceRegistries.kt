@@ -16,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
  * @property playerRuleStates 玩家規則狀態 registry。
  * @property dynamicRuleStates 動態牌桌狀態 registry。
  * @property exhaustiveDrawReasons 流局原因 registry。
+ * @property extensionGameActions 擴充動作 registry。
  */
 data class PersistenceRegistries(
     val ruleConfigs: PersistenceDtoRegistry<MahjongRuleConfig>,
@@ -25,6 +26,11 @@ data class PersistenceRegistries(
     val exhaustiveDrawReasons: PersistenceDtoRegistry<ExhaustiveDrawReason>,
     val extensionGameActions: PersistenceDtoRegistry<ExtensionGameAction>,
 ) {
+    /** 所有 registry 中登記為可在精簡牌譜中壓縮的 type key。 */
+    val replayCompactTypeKeys: Set<String>
+        get() = ruleConfigs.replayCompactTypeKeys + discardPiles.replayCompactTypeKeys + playerRuleStates.replayCompactTypeKeys +
+            dynamicRuleStates.replayCompactTypeKeys + exhaustiveDrawReasons.replayCompactTypeKeys + extensionGameActions.replayCompactTypeKeys
+
     /** 凍結所有 registry；凍結後不得新增 persistence mapper。 */
     fun freeze() {
         ruleConfigs.freeze()

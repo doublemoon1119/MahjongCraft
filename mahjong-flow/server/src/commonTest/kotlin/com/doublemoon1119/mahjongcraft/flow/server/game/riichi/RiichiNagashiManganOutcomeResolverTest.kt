@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.riichi
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundOutcomePresentationClassification
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
@@ -39,7 +39,7 @@ class RiichiNagashiManganOutcomeResolverTest {
 
         val outcome = RiichiNagashiManganOutcomeResolver().resolve(table, module)!!
 
-        assertEquals(BuiltInRoundOutcomeIds.NAGASHI_MANGAN, outcome.id)
+        assertEquals(RiichiRoundOutcomeIds.NAGASHI_MANGAN, outcome.id)
         assertEquals(RoundOutcomePresentationClassification.WIN_EQUIVALENT, outcome.presentationClassification)
         assertEquals(RoundTransitionDirective.REPEAT_DEALER, outcome.transitionDirective)
         assertEquals(setOf(dealer.id), outcome.stickPotCollectorPlayerIds)

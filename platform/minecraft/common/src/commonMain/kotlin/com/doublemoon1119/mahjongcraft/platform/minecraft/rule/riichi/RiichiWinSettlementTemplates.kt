@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
+import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.BuiltInWinSettlementFieldIds
-import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.BuiltInWinSettlementTemplateKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.BuiltInWinSettlementTileAssets
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationAlignment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationAnimationEffect
@@ -18,8 +18,17 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettleme
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplate
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementTextKeys
 
-/** 日麻的胡牌結算版面：日麻完整模板、流局滿貫模板，以及日麻專屬欄位。 */
+/** 日麻的胡牌結算版面：日麻完整模板與日麻專屬欄位；流局滿貫也使用完整模板。 */
 internal object RiichiWinSettlementTemplates {
+    /** 日麻完整模板的 key。 */
+    val RIICHI_KEY: String = MahjongCraftMetadata.id("riichi/win_settlement")
+
+    /** 結算標題欄位：自摸、榮和或流局滿貫。 */
+    val OUTCOME_TITLE: PresentationFieldId = PresentationFieldId(MahjongCraftMetadata.id("riichi/outcome_title"))
+
+    /** 胡牌者摘要欄位：自摸與流局滿貫只列胡牌者，榮和另列放銃者。 */
+    val WINNER_SUMMARY: PresentationFieldId = PresentationFieldId(MahjongCraftMetadata.id("riichi/winner_summary"))
+
     /** 役種列表欄位。 */
     val YAKU: PresentationFieldId = PresentationFieldId(RiichiWinSettlementIds.YAKU_FIELD)
 
@@ -41,38 +50,21 @@ internal object RiichiWinSettlementTemplates {
     /** 固定顯示五個位置的指示牌欄位。 */
     val INDICATOR_FIELDS: List<PresentationFieldId> = listOf(DORA, URA_DORA)
 
-    private val BACKGROUND = PresentationContainerStyle(backgroundArgb = 0xCC101722.toInt(), padding = 8f)
-
     private val PANEL = PresentationContainerStyle(
         backgroundArgb = 0xC7000000.toInt(),
         padding = 0f,
     )
 
-    /** 流局滿貫模板。 */
-    val NAGASHI_MANGAN: WinSettlementPresentationTemplate = WinSettlementPresentationTemplate(
-        key = BuiltInWinSettlementTemplateKeys.NAGASHI_MANGAN,
-        root = PresentationLayout.Column(
-            children = listOf(
-                PresentationLayout.Text(BuiltInWinSettlementFieldIds.OUTCOME_TITLE),
-                PresentationLayout.Text(BuiltInWinSettlementFieldIds.WINNER_SUMMARY),
-                PresentationLayout.RepeatEntries(YAKU),
-                PresentationLayout.Text(BuiltInWinSettlementFieldIds.TOTAL_SCORE),
-            ),
-            spacing = 6f,
-            style = BACKGROUND,
-        ),
-    )
-
     /** 日麻完整模板。 */
     val RIICHI: WinSettlementPresentationTemplate = WinSettlementPresentationTemplate(
-        key = BuiltInWinSettlementTemplateKeys.RIICHI,
+        key = RIICHI_KEY,
         root = PresentationLayout.Box(
             width = 320f,
             height = 156f,
             style = PANEL,
             children = listOf(
                 positioned(
-                    PresentationLayout.Text(BuiltInWinSettlementFieldIds.OUTCOME_TITLE, scale = 1.35f, argb = 0xFFFFD45A.toInt()),
+                    PresentationLayout.Text(OUTCOME_TITLE, scale = 1.35f, argb = 0xFFFFD45A.toInt()),
                     160f,
                     11f,
                 ),

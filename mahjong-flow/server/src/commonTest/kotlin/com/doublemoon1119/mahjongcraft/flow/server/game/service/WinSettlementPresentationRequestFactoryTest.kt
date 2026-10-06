@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.bundled.BundledRiichiExtension
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ResolvedRoundOutcome
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundOutcomePresentationClassification
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Meld
@@ -149,7 +150,7 @@ class WinSettlementPresentationRequestFactoryTest {
             config = config,
         )
         val outcome = ResolvedRoundOutcome(
-            id = BuiltInRoundOutcomeIds.NAGASHI_MANGAN,
+            id = RiichiRoundOutcomeIds.NAGASHI_MANGAN,
             settledTableState = state,
             beneficiaryPlayerIds = setOf(winner.id),
             scoreDeltas = state.players.associate { it.id to 0 },
