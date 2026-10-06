@@ -8,9 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetai
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolver
-import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueResult
-import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
@@ -73,9 +71,4 @@ object RiichiWinSettlementDetailResolver : WinSettlementDetailResolver {
             WinSettlementQuantity(RiichiWinSettlementIds.FU, totalFu).takeIf { totalFu > 0 },
         ),
     )
-}
-
-/** 登記 bundled 日麻的胡牌詳情解析器。 */
-fun WinSettlementDetailResolverRegistry.registerRiichiWinSettlementDetailResolver() {
-    register(BuiltInRuleModuleIds.RIICHI, RiichiWinSettlementDetailResolver)
 }

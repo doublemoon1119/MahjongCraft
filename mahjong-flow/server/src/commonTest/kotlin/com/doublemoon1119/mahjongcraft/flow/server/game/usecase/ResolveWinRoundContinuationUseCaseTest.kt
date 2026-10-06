@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
-import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinSettlementDetail
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundContinuationContext
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
@@ -18,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
@@ -32,7 +32,7 @@ import kotlin.uuid.Uuid
 class ResolveWinRoundContinuationUseCaseTest {
     private val gameId = Uuid.random()
     private val gameRepo = FakeGameRepository()
-    private val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
+    private val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
     private val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, FakeGameSnapshotRepository(), GameVisibilityPolicyImpl())
     private val ruleModuleId = moduleRegistry.getModule(RiichiRuleConfig()).id
 

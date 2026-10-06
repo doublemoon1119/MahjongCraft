@@ -6,7 +6,6 @@ import com.doublemoon1119.mahjongcraft.ai.expectation.ReadingDepth
 import com.doublemoon1119.mahjongcraft.ai.expectation.ThreatEstimate
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.PositionRules
 import com.doublemoon1119.mahjongcraft.logic.module.PositionView
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
@@ -209,9 +208,4 @@ class RiichiOpponentModel(
                 Tile.Honor.Red,
             )
     }
-}
-
-/** 登記內建日麻的對手模型。 */
-fun OpponentModelRegistry.registerRiichiOpponentModel() {
-    register(BuiltInRuleModuleIds.RIICHI) { module, depth -> RiichiOpponentModel(rules = module.createPositionRules(), readingDepth = depth) }
 }

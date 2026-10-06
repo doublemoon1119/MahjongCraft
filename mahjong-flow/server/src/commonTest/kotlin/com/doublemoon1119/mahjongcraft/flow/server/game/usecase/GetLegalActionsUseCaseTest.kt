@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
-import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
@@ -18,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.PendingKanReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
@@ -40,7 +40,7 @@ class GetLegalActionsUseCaseTest {
 
     private class Fixtures {
         val gameRepo = FakeGameRepository()
-        val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
+        val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
         val useCase = GetLegalActionsUseCase(gameRepo, moduleRegistry, PlayerActionContextResolver())
     }
 

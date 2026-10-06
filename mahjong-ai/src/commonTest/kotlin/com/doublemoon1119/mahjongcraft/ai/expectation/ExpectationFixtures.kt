@@ -3,9 +3,7 @@ package com.doublemoon1119.mahjongcraft.ai.expectation
 import com.doublemoon1119.mahjongcraft.ai.AiDecisionContext
 import com.doublemoon1119.mahjongcraft.ai.AiDecisionPhase
 import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
-import com.doublemoon1119.mahjongcraft.ai.riichi.registerRiichiGameActionHandler
-import com.doublemoon1119.mahjongcraft.ai.riichi.registerRiichiOpponentModel
-import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
+import com.doublemoon1119.mahjongcraft.bundled.BundledRiichiExtension
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Meld
@@ -22,6 +20,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -33,19 +32,19 @@ internal object ExpectationFixtures {
 
     /** 登記內建規則的模組 registry。 */
     val moduleRegistry: MahjongModuleRegistryImpl = MahjongModuleRegistryImpl().apply {
-        registerBuiltInRuleModules()
+        registerBundledRuleModules()
         freeze()
     }
 
     /** 登記日麻立直 handler 的擴充動作 registry。 */
     val extensionRegistry: ExtensionGameActionAiRegistry = ExtensionGameActionAiRegistry(moduleRegistry).apply {
-        registerRiichiGameActionHandler()
+        BundledRiichiExtension.registerGameActionAiHandlers(this)
         freeze()
     }
 
     /** 登記日麻對手模型的 registry。 */
     val opponentModelRegistry: OpponentModelRegistry = OpponentModelRegistry().apply {
-        registerRiichiOpponentModel()
+        BundledRiichiExtension.registerOpponentModels(this)
         freeze()
     }
 

@@ -3,8 +3,8 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryOutboxEventPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.buildBuiltInPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import java.io.ByteArrayInputStream
@@ -63,7 +63,7 @@ internal object ReplayCapacityFixtures {
             ListSerializer(HistoryOutboxEventPersistenceDto.serializer()),
             jsonText,
         )
-        val mapper = HistoryRecordingPersistenceMapper(buildBuiltInPersistenceRegistries())
+        val mapper = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries())
         return Fixture(gameLength, persistenceEvents.map(mapper::decodePendingEvent))
     }
 }

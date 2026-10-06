@@ -1,6 +1,4 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.game
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.buildExhaustiveDrawReasonPersistenceRegistry
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.buildExtensionGameActionPersistenceRegistry
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
@@ -9,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawRe
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.PendingKanReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
@@ -21,10 +20,10 @@ class PendingReactionPersistenceTest {
     private val json = Json
 
     /** 內建流局原因的 persistence registry。 */
-    private val exhaustiveDrawReasonRegistry = buildExhaustiveDrawReasonPersistenceRegistry()
+    private val exhaustiveDrawReasonRegistry = bundledPersistenceRegistries().exhaustiveDrawReasons
 
     /** 內建擴充動作的 persistence registry。 */
-    private val extensionGameActionRegistry = buildExtensionGameActionPersistenceRegistry()
+    private val extensionGameActionRegistry = bundledPersistenceRegistries().extensionGameActions
 
     /** 驗證所有 [GameAction] 變體都能完整還原。 */
     @Test

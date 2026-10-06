@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryTi
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledHistoryReplayProjections
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
@@ -30,7 +31,7 @@ class CompactReplayRoundReaderTest {
     /** 讀取摸牌後的投影時，最後摸入牌與立牌分開保留。 */
     @Test
     fun `state mapping preserves separately stored last drawn tile`() {
-        val mapper = HistoryReplayProjectionMapper(HistoryReplayProjectionRegistry().also(::registerBuiltInHistoryReplayProjections))
+        val mapper = HistoryReplayProjectionMapper(HistoryReplayProjectionRegistry().apply { registerBundledHistoryReplayProjections() })
         val state = mapper.mapState(
             projection = playerProjection(standingTiles = listOf(0), lastDrawn = 1, wallTiles = listOf(2)),
             identity = identity(),
@@ -47,7 +48,7 @@ class CompactReplayRoundReaderTest {
     /** 不允許最後摸入牌同時出現在立牌中，避免同一實體牌被重複持有。 */
     @Test
     fun `state mapping rejects last drawn tile duplicated in standing hand`() {
-        val mapper = HistoryReplayProjectionMapper(HistoryReplayProjectionRegistry().also(::registerBuiltInHistoryReplayProjections))
+        val mapper = HistoryReplayProjectionMapper(HistoryReplayProjectionRegistry().apply { registerBundledHistoryReplayProjections() })
 
         assertFailsWith<IllegalArgumentException> {
             mapper.mapState(
@@ -64,7 +65,7 @@ class CompactReplayRoundReaderTest {
     /** 不允許最後摸入牌同時出現在活牌牆，避免牌張從牌牆與手牌重複持有。 */
     @Test
     fun `state mapping rejects last drawn tile duplicated in wall`() {
-        val mapper = HistoryReplayProjectionMapper(HistoryReplayProjectionRegistry().also(::registerBuiltInHistoryReplayProjections))
+        val mapper = HistoryReplayProjectionMapper(HistoryReplayProjectionRegistry().apply { registerBundledHistoryReplayProjections() })
 
         assertFailsWith<IllegalArgumentException> {
             mapper.mapState(
@@ -81,7 +82,7 @@ class CompactReplayRoundReaderTest {
     /** 讀取摸牌後再捨牌的相鄰桌況，確認摸入牌可併入立牌並從獨立欄位移除。 */
     @Test
     fun `state mapping follows draw and discard transition`() {
-        val mapper = HistoryReplayProjectionMapper(HistoryReplayProjectionRegistry().also(::registerBuiltInHistoryReplayProjections))
+        val mapper = HistoryReplayProjectionMapper(HistoryReplayProjectionRegistry().apply { registerBundledHistoryReplayProjections() })
         val identity = identity()
         val catalog = HistoryRoundTileCatalog(listOf(Tile.Honor.East, Tile.Honor.South, Tile.Honor.West))
         val budget = ReplayReadBudget(ReplayReadLimits()) {}
@@ -111,7 +112,7 @@ class CompactReplayRoundReaderTest {
     /** 替換摸牌使用同一個獨立摸入欄位，不會把牌張誤判為立牌的一部分。 */
     @Test
     fun `state mapping preserves replacement draw separately`() {
-        val mapper = HistoryReplayProjectionMapper(HistoryReplayProjectionRegistry().also(::registerBuiltInHistoryReplayProjections))
+        val mapper = HistoryReplayProjectionMapper(HistoryReplayProjectionRegistry().apply { registerBundledHistoryReplayProjections() })
         val state = mapper.mapState(
             playerProjection(standingTiles = listOf(0, 1), lastDrawn = 2, wallTiles = emptyList()),
             identity(),
@@ -128,7 +129,7 @@ class CompactReplayRoundReaderTest {
     /** 不允許最後摸入牌同時出現在保留牌區，避免牌張跨區重複持有。 */
     @Test
     fun `state mapping rejects last drawn tile duplicated in reserved wall`() {
-        val mapper = HistoryReplayProjectionMapper(HistoryReplayProjectionRegistry().also(::registerBuiltInHistoryReplayProjections))
+        val mapper = HistoryReplayProjectionMapper(HistoryReplayProjectionRegistry().apply { registerBundledHistoryReplayProjections() })
 
         assertFailsWith<IllegalArgumentException> {
             mapper.mapState(

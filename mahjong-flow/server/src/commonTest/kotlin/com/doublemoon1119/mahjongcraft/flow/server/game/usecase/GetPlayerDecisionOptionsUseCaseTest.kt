@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
-import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
@@ -22,6 +21,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
@@ -44,7 +44,7 @@ class GetPlayerDecisionOptionsUseCaseTest {
         val gameRepository = FakeGameRepository()
 
         /** 已註冊內建規則的 module registry。 */
-        val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
+        val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
 
         /** 待測的完整決策查詢 use case。 */
         val useCase = GetPlayerDecisionOptionsUseCase(

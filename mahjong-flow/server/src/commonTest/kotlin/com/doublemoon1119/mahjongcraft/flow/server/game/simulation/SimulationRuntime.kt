@@ -3,10 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.simulation
 import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
-import com.doublemoon1119.mahjongcraft.ai.riichi.registerRiichiGameActionHandler
-import com.doublemoon1119.mahjongcraft.ai.riichi.registerRiichiOpponentModel
-import com.doublemoon1119.mahjongcraft.flow.common.di.createBuiltInWinCelebrationCueResolverRegistry
-import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
+import com.doublemoon1119.mahjongcraft.bundled.BundledRiichiExtension
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiTurnDriver
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandContext
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutor
@@ -18,10 +15,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostAction
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
-import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.registerRiichiGameCommandHandler
-import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.registerRiichiNagashiManganOutcomeResolver
-import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.registerRiichiPostActionExhaustiveDrawResolvers
-import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.registerRiichiWinSettlementDetailResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.ExhaustiveDrawSettlementPresentationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAuthorityResolver
@@ -48,6 +41,8 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ReturnToRoomUseC
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.time.MonotonicClockImpl
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledWinCelebrationCueResolverRegistry
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeDecisionTimerUpdatePublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
@@ -70,35 +65,35 @@ import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoom
  */
 internal class SimulationRuntime(defaultStrategyKey: String) {
     /** 登記內建規則的模組 registry。 */
-    val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
+    val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
 
     /** 記錄每一局開局與最終桌況的對局倉庫。 */
     val gameRepository = RoundRecordingGameRepository()
 
     /** 登記日麻立直 handler 的擴充動作 AI registry。 */
-    val extensionActionRegistry = ExtensionGameActionAiRegistry(moduleRegistry).apply { registerRiichiGameActionHandler() }
+    val extensionActionRegistry = ExtensionGameActionAiRegistry(moduleRegistry).apply { BundledRiichiExtension.registerGameActionAiHandlers(this) }
 
     /** 登記日麻對手模型的 registry。 */
-    val opponentModelRegistry = OpponentModelRegistry().apply { registerRiichiOpponentModel() }
+    val opponentModelRegistry = OpponentModelRegistry().apply { BundledRiichiExtension.registerOpponentModels(this) }
 
     /** 由呼叫端登記策略的 AI 策略 registry。 */
     val aiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = defaultStrategyKey)
 
     /** 捨牌後的途中流局判定。 */
     private val postActionExhaustiveDrawResolverRegistry = PostActionExhaustiveDrawResolverRegistry().apply {
-        registerRiichiPostActionExhaustiveDrawResolvers()
+        BundledRiichiExtension.registerPostActionExhaustiveDrawResolvers(this)
         freeze()
     }
 
     /** 胡牌詳情。 */
     private val winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry().apply {
-        registerRiichiWinSettlementDetailResolver()
+        BundledRiichiExtension.registerWinSettlementDetailResolvers(this)
         freeze()
     }
 
     /** 最終捨牌後的特殊結果，例如流局滿貫。 */
     private val postReactionRoundOutcomeResolverRegistry = PostReactionRoundOutcomeResolverRegistry().apply {
-        registerRiichiNagashiManganOutcomeResolver()
+        BundledRiichiExtension.registerPostReactionRoundOutcomeResolvers(this)
         freeze()
     }
 
@@ -123,7 +118,7 @@ internal class SimulationRuntime(defaultStrategyKey: String) {
     /** 以這個 runtime 的流程服務執行日麻立直命令。 */
     private val extensionCommandExecutor = ExtensionGameCommandExecutor(
         registry = ExtensionGameCommandExecutorRegistry().apply {
-            registerRiichiGameCommandHandler()
+            BundledRiichiExtension.registerGameCommandHandlers(this)
             freeze()
         },
         context = ExtensionGameCommandContext(
@@ -156,7 +151,7 @@ internal class SimulationRuntime(defaultStrategyKey: String) {
             eventPublisher,
             presentationPublisher,
             winPresentationHandoff,
-            winCelebrationCueResolverRegistry = createBuiltInWinCelebrationCueResolverRegistry(),
+            winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
             winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
         ),
         declareKanUseCase = DeclareKanUseCase(gameRepository, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher),
@@ -168,7 +163,7 @@ internal class SimulationRuntime(defaultStrategyKey: String) {
             eventPublisher,
             presentationPublisher,
             winPresentationHandoff,
-            winCelebrationCueResolverRegistry = createBuiltInWinCelebrationCueResolverRegistry(),
+            winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
             winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
             postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
         ),
@@ -179,7 +174,7 @@ internal class SimulationRuntime(defaultStrategyKey: String) {
             eventPublisher,
             presentationPublisher,
             winPresentationHandoff,
-            winCelebrationCueResolverRegistry = createBuiltInWinCelebrationCueResolverRegistry(),
+            winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
             winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
         ),
         declareAbortiveDrawUseCase = DeclareAbortiveDrawUseCase(gameRepository, moduleRegistry, snapshotSynchronizer, eventPublisher),

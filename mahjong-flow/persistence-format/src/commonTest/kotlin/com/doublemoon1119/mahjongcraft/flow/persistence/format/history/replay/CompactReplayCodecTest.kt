@@ -6,8 +6,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.SpectatingPolicy
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.config.GameFlowConfigPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.config.toPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.TypedPersistenceDto
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.buildBuiltInPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -59,7 +59,7 @@ class CompactReplayCodecTest {
     /** 規則設定解碼只展開 header，不需要解碼任何局內交易。 */
     @Test
     fun `rule settings decode uses header only`() {
-        val registries = buildBuiltInPersistenceRegistries()
+        val registries = bundledPersistenceRegistries()
         val matchId = Uuid.random()
         val document = settingsDocument(matchId, registries.ruleConfigs.encode(RiichiRuleConfig()))
 
@@ -72,7 +72,7 @@ class CompactReplayCodecTest {
     /** 開局的非預設規則與流程設定均從 header 還原，不使用目前設定。 */
     @Test
     fun `rule settings decode preserves nondefault rule and flow configuration`() {
-        val registries = buildBuiltInPersistenceRegistries()
+        val registries = bundledPersistenceRegistries()
         val matchId = Uuid.random()
         val rule = RiichiRuleConfig(redDoraCount = 0, allowOpenTanyao = false, useLocalYaku = true, minimumWinConstraint = 2)
         val flow = GameFlowConfig(timeControl = ActionTimeControl.from(17, 41), preparationBaseSeconds = 43, spectatingPolicy = SpectatingPolicy.DISABLED)
@@ -85,7 +85,7 @@ class CompactReplayCodecTest {
     /** 未知規則 codec 不得以目前伺服器設定猜測替代。 */
     @Test
     fun `rule settings decode rejects unknown codec`() {
-        val registries = buildBuiltInPersistenceRegistries()
+        val registries = bundledPersistenceRegistries()
         val matchId = Uuid.random()
         val document = settingsDocument(
             matchId,
@@ -103,7 +103,7 @@ class CompactReplayCodecTest {
     /** 要求的對局 ID 與 Replay header 不一致時必須拒絕。 */
     @Test
     fun `rule settings decode rejects mismatched match`() {
-        val registries = buildBuiltInPersistenceRegistries()
+        val registries = bundledPersistenceRegistries()
         val document = settingsDocument(Uuid.random(), registries.ruleConfigs.encode(RiichiRuleConfig()))
 
         assertFailsWith<IllegalArgumentException> {
@@ -114,7 +114,7 @@ class CompactReplayCodecTest {
     /** 開局規則設定缺少必要 header 時必須拒絕文件。 */
     @Test
     fun `rule settings decode rejects missing configuration header`() {
-        val registries = buildBuiltInPersistenceRegistries()
+        val registries = bundledPersistenceRegistries()
         val matchId = Uuid.random()
         val document = settingsDocument(
             matchId,
@@ -130,7 +130,7 @@ class CompactReplayCodecTest {
     /** 缺少流程設定不得悄悄改用預設流程設定。 */
     @Test
     fun `rule settings decode rejects missing flow configuration`() {
-        val registries = buildBuiltInPersistenceRegistries()
+        val registries = bundledPersistenceRegistries()
         val matchId = Uuid.random()
         val document = settingsDocument(matchId, registries.ruleConfigs.encode(RiichiRuleConfig()), includeFlow = false)
         assertFailsWith<IllegalStateException> {
@@ -141,7 +141,7 @@ class CompactReplayCodecTest {
     /** 開局設定內容版本不受支援時必須拒絕文件。 */
     @Test
     fun `rule settings decode rejects unknown content version`() {
-        val registries = buildBuiltInPersistenceRegistries()
+        val registries = bundledPersistenceRegistries()
         val matchId = Uuid.random()
         val document = settingsDocument(
             matchId,

@@ -10,9 +10,9 @@ import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decision.DebugRoundPreparationResolver
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationState
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.registerDebugWinRoundContinuationResolvers
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario.registerDebugScriptedAiStrategies
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario.DebugScriptedAiStrategy
 
 /**
  * 只在開發環境登記的 debug 整合，讓 debug 指令與情境需要的流程能在遊戲內驗證。
@@ -34,7 +34,8 @@ internal class DebugMahjongExtension(
     override fun registerPersistenceDtos(registries: PersistenceRegistries) = Unit
 
     override fun registerAiStrategies(registry: MahjongAiStrategyRegistry) {
-        registry.registerDebugScriptedAiStrategies()
+        registry.register(DebugScriptedAiStrategy.TSUMOGIRI_KEY) { DebugScriptedAiStrategy(declaresKanFirst = false) }
+        registry.register(DebugScriptedAiStrategy.KAN_FIRST_KEY) { DebugScriptedAiStrategy(declaresKanFirst = true) }
     }
 
     override fun registerRoundPreparationResolvers(registry: RoundPreparationResolverRegistry) {
@@ -44,6 +45,8 @@ internal class DebugMahjongExtension(
     }
 
     override fun registerWinRoundContinuationResolvers(registry: WinRoundContinuationResolverRegistry) {
-        registry.registerDebugWinRoundContinuationResolvers(state = winRoundContinuationState)
+        listOf(BuiltInRuleModuleIds.RIICHI, BuiltInRuleModuleIds.TAIWAN).forEach { ruleModuleId ->
+            registry.register(DebugWinRoundContinuationResolver(ruleModuleId = ruleModuleId, state = winRoundContinuationState))
+        }
     }
 }

@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario
 
-import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
@@ -15,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import kotlin.uuid.Uuid
 
 /**
@@ -24,7 +24,7 @@ import kotlin.uuid.Uuid
  * [LegalActionValidator]，桌況本身維持情境載入後的樣子。
  */
 internal val scenarioModuleRegistry: MahjongModuleRegistry = MahjongModuleRegistryImpl().apply {
-    registerBuiltInRuleModules()
+    registerBundledRuleModules()
     freeze()
 }
 

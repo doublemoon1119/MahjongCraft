@@ -1,8 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.rule
 
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceDtoRegistry
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
-import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPendingKanDoraReveal
 import kotlinx.serialization.Serializable
@@ -38,45 +36,15 @@ enum class RiichiPendingKanTypePersistenceDto {
     ADDED_KAN,
 }
 
-/** 登記日麻的動態牌桌狀態 persistence mapper。 */
-fun PersistenceDtoRegistry<DynamicRuleState>.registerRiichiDynamicStatePersistenceDto() {
-    register(
-        typeKey = "builtin:riichi_dynamic_state",
-        domainClass = RiichiDynamicState::class,
-        serializer = RiichiDynamicStatePersistenceDto.serializer(),
-        toDto = {
-            RiichiDynamicStatePersistenceDto(
-                it.riichiStickCount,
-                it.completedSupplementalDrawCount,
-                it.revealedKanDoraCount,
-                it.pendingKanDoraReveals.map(RiichiPendingKanDoraReveal::toPersistenceDto),
-            )
-        },
-        toDomain = {
-            RiichiDynamicState(
-                it.riichiStickCount,
-                it.completedSupplementalDrawCount,
-                it.revealedKanDoraCount,
-                it.pendingKanDoraReveals.map(RiichiPendingKanDoraRevealPersistenceDto::toDomain),
-            )
-        },
-    )
-}
-
-/** 建立已註冊內建日麻動態牌桌狀態的 persistence registry。 */
-fun buildDynamicRuleStatePersistenceRegistry(): PersistenceDtoRegistry<DynamicRuleState> = PersistenceDtoRegistry<DynamicRuleState>().apply {
-    registerRiichiDynamicStatePersistenceDto()
-}
-
 /** 將等待公開項目轉為 persistence DTO。 */
-private fun RiichiPendingKanDoraReveal.toPersistenceDto(): RiichiPendingKanDoraRevealPersistenceDto = RiichiPendingKanDoraRevealPersistenceDto(
+fun RiichiPendingKanDoraReveal.toPersistenceDto(): RiichiPendingKanDoraRevealPersistenceDto = RiichiPendingKanDoraRevealPersistenceDto(
     actorPlayerId.toString(),
     sourceKanType.toPersistenceDto(),
     supplementalDrawNumber,
 )
 
 /** 將等待公開 persistence DTO 還原為 domain model。 */
-private fun RiichiPendingKanDoraRevealPersistenceDto.toDomain(): RiichiPendingKanDoraReveal = RiichiPendingKanDoraReveal(
+fun RiichiPendingKanDoraRevealPersistenceDto.toDomain(): RiichiPendingKanDoraReveal = RiichiPendingKanDoraReveal(
     Uuid.parse(actorPlayerId),
     sourceKanType.toDomain(),
     supplementalDrawNumber,

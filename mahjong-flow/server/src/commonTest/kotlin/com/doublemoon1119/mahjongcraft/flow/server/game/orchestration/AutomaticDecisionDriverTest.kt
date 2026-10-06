@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 
-import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
@@ -18,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
@@ -50,7 +50,7 @@ class AutomaticDecisionDriverTest {
     @Test
     fun `test decline calls maps automatic pass through reaction context`() = runTest {
         val repository = FakeGameRepository()
-        val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
+        val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
         val contextResolver = PlayerActionContextResolver()
         val evaluator = AutomaticDecisionEvaluator(moduleRegistry, contextResolver)
         val driver = AutomaticDecisionDriver(
@@ -240,7 +240,7 @@ class AutomaticDecisionDriverTest {
         enabledControlIds: Map<Uuid, Set<String>>,
     ): AutomaticDecisionDriver {
         val repository = FakeGameRepository()
-        val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
+        val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
         val contextResolver = PlayerActionContextResolver()
         repository.setGame(
             Game(

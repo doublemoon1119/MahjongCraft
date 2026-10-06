@@ -4,10 +4,7 @@ import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
-import com.doublemoon1119.mahjongcraft.ai.registerBuiltInAiStrategies
-import com.doublemoon1119.mahjongcraft.ai.riichi.registerRiichiOpponentModel
-import com.doublemoon1119.mahjongcraft.flow.common.di.createBuiltInWinCelebrationCueResolverRegistry
-import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
+import com.doublemoon1119.mahjongcraft.bundled.BundledRiichiExtension
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinSettlementDetail
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
@@ -23,9 +20,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.time.MonotonicClock
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
-import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.registerRiichiGameCommandHandler
-import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.registerRiichiPostActionExhaustiveDrawResolvers
-import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.registerRiichiWinSettlementDetailResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.ExhaustiveDrawSettlementPresentationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAuthorityResolver
@@ -73,6 +67,9 @@ import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledWinCelebrationCueResolverRegistry
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBuiltInAiStrategies
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeDecisionTimerUpdatePublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
@@ -109,16 +106,16 @@ class GameFlowCoordinatorTest {
         winRoundContinuationResolverRegistry: WinRoundContinuationResolverRegistry = WinRoundContinuationResolverRegistry().apply { freeze() },
     ) {
         val gameRepo = FakeGameRepository()
-        val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
+        val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
         val snapshotRepo = FakeGameSnapshotRepository()
         val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl())
         val handSortPreferenceStore = HandSortPreferenceStore()
         val postActionExhaustiveDrawResolverRegistry = PostActionExhaustiveDrawResolverRegistry().apply {
-            registerRiichiPostActionExhaustiveDrawResolvers()
+            BundledRiichiExtension.registerPostActionExhaustiveDrawResolvers(this)
             freeze()
         }
         val winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry().apply {
-            registerRiichiWinSettlementDetailResolver()
+            BundledRiichiExtension.registerWinSettlementDetailResolvers(this)
             freeze()
         }
         val eventPublisher = FakeGameEventPublisher()
@@ -127,7 +124,7 @@ class GameFlowCoordinatorTest {
         val presentationBusyGate = FakeGamePresentationBusyGate()
         val extensionCommandExecutor = ExtensionGameCommandExecutor(
             registry = ExtensionGameCommandExecutorRegistry().apply {
-                registerRiichiGameCommandHandler()
+                BundledRiichiExtension.registerGameCommandHandlers(this)
                 freeze()
             },
             context = ExtensionGameCommandContext(
@@ -158,7 +155,7 @@ class GameFlowCoordinatorTest {
                 eventPublisher,
                 presentationPublisher,
                 winPresentationHandoff,
-                winCelebrationCueResolverRegistry = createBuiltInWinCelebrationCueResolverRegistry(),
+                winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
             ),
             declareKanUseCase = DeclareKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher),
@@ -170,7 +167,7 @@ class GameFlowCoordinatorTest {
                 eventPublisher,
                 presentationPublisher,
                 winPresentationHandoff,
-                winCelebrationCueResolverRegistry = createBuiltInWinCelebrationCueResolverRegistry(),
+                winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
                 postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
             ),
@@ -181,7 +178,7 @@ class GameFlowCoordinatorTest {
                 eventPublisher,
                 presentationPublisher,
                 winPresentationHandoff,
-                winCelebrationCueResolverRegistry = createBuiltInWinCelebrationCueResolverRegistry(),
+                winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
             ),
             declareAbortiveDrawUseCase = DeclareAbortiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
@@ -189,7 +186,7 @@ class GameFlowCoordinatorTest {
         )
         val getLegalActionsUseCase = GetLegalActionsUseCase(gameRepo, moduleRegistry)
         val aiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = RandomAiStrategy.KEY).apply {
-            registerBuiltInAiStrategies(moduleRegistry, ExtensionGameActionAiRegistry(moduleRegistry), OpponentModelRegistry().apply { registerRiichiOpponentModel() })
+            registerBuiltInAiStrategies(moduleRegistry, ExtensionGameActionAiRegistry(moduleRegistry), OpponentModelRegistry().apply { BundledRiichiExtension.registerOpponentModels(this) })
         }
         val aiTurnDriver = AiTurnDriver(gameRepo, getLegalActionsUseCase, aiStrategyRegistry, GameVisibilityPolicyImpl(), moduleRegistry)
         val clock = MutableMonotonicClock()
@@ -745,7 +742,7 @@ class GameFlowCoordinatorTest {
         settlementDetail: ContinuingWinSettlementDetail,
         handTiles: List<Tile> = daisangenTiles,
     ): Fixtures {
-        val ruleModuleId = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }.getModule(RiichiRuleConfig()).id
+        val ruleModuleId = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }.getModule(RiichiRuleConfig()).id
         val continuationRegistry = WinRoundContinuationResolverRegistry().apply {
             register(
                 object : WinRoundContinuationResolver {

@@ -30,11 +30,11 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySortField
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.WindDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.registerBuiltInRuleConfigDtos
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.MatchRoundPhaseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.MatchRoundPositionDto
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledNetworkDtos
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -770,7 +770,7 @@ class HistoryBrowseControllerTest {
      * @return 可用於驗證規則設定快取的 DTO。
      */
     private fun ruleSettingsConfig(): GameConfigDto = GameConfig(RiichiRuleConfig()).toDto(
-        DefaultNetworkDtoRegistries().apply { registerBuiltInRuleConfigDtos() },
+        DefaultNetworkDtoRegistries().apply { registerBundledNetworkDtos() },
     )
 
     /** 以 MutableStateFlow 模擬 client 歷史查詢傳輸。

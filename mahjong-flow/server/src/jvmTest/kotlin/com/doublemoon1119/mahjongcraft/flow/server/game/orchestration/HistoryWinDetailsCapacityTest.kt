@@ -11,8 +11,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetai
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.CompactReplayCodec
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.buildBuiltInPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
 import java.io.ByteArrayOutputStream
 import java.util.logging.Logger
 import java.util.zip.GZIPOutputStream
@@ -28,7 +28,7 @@ class HistoryWinDetailsCapacityTest {
     /** 固定樣本加入兩次含三個條目與計分摘要的代表性結算後仍符合既有門檻。 */
     @Test
     fun `representative winner details remain within fixed replay capacity limits`() {
-        val registries = buildBuiltInPersistenceRegistries()
+        val registries = bundledPersistenceRegistries()
         val mapper = HistoryRecordingPersistenceMapper(registries)
         for ((index, fixture) in ReplayCapacityFixtures.all.withIndex()) {
             val expanded = withDetails(fixture.events)

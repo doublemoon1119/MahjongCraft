@@ -11,8 +11,8 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.Hi
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayJsonParseLimits
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayReadResult
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.parseBoundedReplayJson
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.registerBuiltInHistoryReplayProjections
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.buildBuiltInPersistenceRegistries
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledHistoryReplayProjections
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.int
@@ -30,9 +30,9 @@ class CompactReplayRoundReaderCapacityTest {
     /** 每場首局及末局只重建選取局，且與完整解碼器的保存分數一致。 */
     @Test
     fun `fixed full matches fit the bounded round read budget`() = runTest {
-        val registries = buildBuiltInPersistenceRegistries()
+        val registries = bundledPersistenceRegistries()
         val projections = HistoryReplayProjectionRegistry().apply {
-            registerBuiltInHistoryReplayProjections(this)
+            this.registerBundledHistoryReplayProjections()
             freeze()
         }
         val reader = CompactReplayRoundReader(projections)

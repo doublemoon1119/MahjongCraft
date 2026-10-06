@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.ai.expectation
 
 import com.doublemoon1119.mahjongcraft.ai.riichi.RiichiOpponentModel
-import com.doublemoon1119.mahjongcraft.ai.riichi.registerRiichiOpponentModel
+import com.doublemoon1119.mahjongcraft.bundled.BundledRiichiExtension
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
@@ -20,7 +20,7 @@ class OpponentModelRegistryTest {
     /** 登記過的規則使用自己的對手模型，其他規則使用 [NeutralOpponentModel]。 */
     @Test
     fun `registered rules get their own model and others get the neutral one`() {
-        val registry = OpponentModelRegistry().apply { registerRiichiOpponentModel() }
+        val registry = OpponentModelRegistry().apply { BundledRiichiExtension.registerOpponentModels(this) }
 
         assertIs<RiichiOpponentModel>(registry.create(riichi, ReadingDepth.BASIC))
         assertIs<NeutralOpponentModel>(registry.create(taiwan, ReadingDepth.BASIC))
@@ -30,7 +30,7 @@ class OpponentModelRegistryTest {
     /** 建立的模型使用決策者的讀牌深度，登記與未登記的規則皆然。 */
     @Test
     fun `created models read at the requested depth`() {
-        val registry = OpponentModelRegistry().apply { registerRiichiOpponentModel() }
+        val registry = OpponentModelRegistry().apply { BundledRiichiExtension.registerOpponentModels(this) }
 
         ReadingDepth.entries.forEach { depth ->
             assertEquals(depth, registry.create(riichi, depth).readingDepth)
@@ -41,7 +41,7 @@ class OpponentModelRegistryTest {
     /** 基本深度直接使用規則自己的模型；進階深度一律在外面套用共用讀牌，登記與未登記的規則皆然。 */
     @Test
     fun `advanced depth layers the shared reading on every model`() {
-        val registry = OpponentModelRegistry().apply { registerRiichiOpponentModel() }
+        val registry = OpponentModelRegistry().apply { BundledRiichiExtension.registerOpponentModels(this) }
 
         assertIs<RiichiOpponentModel>(registry.create(riichi, ReadingDepth.BASIC))
         assertIs<ReadingOpponentModel>(registry.create(riichi, ReadingDepth.ADVANCED))
@@ -52,9 +52,9 @@ class OpponentModelRegistryTest {
     /** 同一個規則不能登記兩次。 */
     @Test
     fun `a rule cannot be registered twice`() {
-        val registry = OpponentModelRegistry().apply { registerRiichiOpponentModel() }
+        val registry = OpponentModelRegistry().apply { BundledRiichiExtension.registerOpponentModels(this) }
 
-        assertFailsWith<IllegalArgumentException> { registry.registerRiichiOpponentModel() }
+        assertFailsWith<IllegalArgumentException> { BundledRiichiExtension.registerOpponentModels(registry) }
     }
 
     /** 凍結後不能再登記。 */

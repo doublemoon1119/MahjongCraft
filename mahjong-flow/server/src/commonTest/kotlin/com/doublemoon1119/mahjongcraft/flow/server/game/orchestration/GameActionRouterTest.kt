@@ -1,16 +1,12 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 
-import com.doublemoon1119.mahjongcraft.flow.common.di.createBuiltInWinCelebrationCueResolverRegistry
-import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
+import com.doublemoon1119.mahjongcraft.bundled.BundledRiichiExtension
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiGameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
-import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.registerRiichiGameCommandHandler
-import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.registerRiichiPostActionExhaustiveDrawResolvers
-import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.registerRiichiWinSettlementDetailResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
@@ -40,6 +36,8 @@ import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledWinCelebrationCueResolverRegistry
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
@@ -67,16 +65,16 @@ class GameActionRouterTest {
 
     private class Fixtures {
         val gameRepo = FakeGameRepository()
-        val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
+        val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
         val snapshotRepo = FakeGameSnapshotRepository()
         val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl())
         val handSortPreferenceStore = HandSortPreferenceStore()
         val postActionExhaustiveDrawResolverRegistry = PostActionExhaustiveDrawResolverRegistry().apply {
-            registerRiichiPostActionExhaustiveDrawResolvers()
+            BundledRiichiExtension.registerPostActionExhaustiveDrawResolvers(this)
             freeze()
         }
         val winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry().apply {
-            registerRiichiWinSettlementDetailResolver()
+            BundledRiichiExtension.registerWinSettlementDetailResolvers(this)
             freeze()
         }
         val eventPublisher = FakeGameEventPublisher()
@@ -84,7 +82,7 @@ class GameActionRouterTest {
         val winPresentationHandoff = WinPresentationHandoff()
         val extensionCommandExecutor = ExtensionGameCommandExecutor(
             registry = ExtensionGameCommandExecutorRegistry().apply {
-                registerRiichiGameCommandHandler()
+                BundledRiichiExtension.registerGameCommandHandlers(this)
                 freeze()
             },
             context = ExtensionGameCommandContext(
@@ -115,7 +113,7 @@ class GameActionRouterTest {
                 eventPublisher,
                 presentationPublisher,
                 winPresentationHandoff,
-                winCelebrationCueResolverRegistry = createBuiltInWinCelebrationCueResolverRegistry(),
+                winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
             ),
             declareKanUseCase = DeclareKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher),
@@ -127,7 +125,7 @@ class GameActionRouterTest {
                 eventPublisher,
                 presentationPublisher,
                 winPresentationHandoff,
-                winCelebrationCueResolverRegistry = createBuiltInWinCelebrationCueResolverRegistry(),
+                winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
                 postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
             ),
@@ -138,7 +136,7 @@ class GameActionRouterTest {
                 eventPublisher,
                 presentationPublisher,
                 winPresentationHandoff,
-                winCelebrationCueResolverRegistry = createBuiltInWinCelebrationCueResolverRegistry(),
+                winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
             ),
             declareAbortiveDrawUseCase = DeclareAbortiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),

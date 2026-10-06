@@ -1,11 +1,11 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.policy
 
-import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -17,7 +17,7 @@ import kotlin.uuid.Uuid
 
 class HandReadinessVisibilityPolicyTest {
     private val policy = HandReadinessVisibilityPolicy(
-        MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() },
+        MahjongModuleRegistryImpl().apply { registerBundledRuleModules() },
     )
 
     @Test

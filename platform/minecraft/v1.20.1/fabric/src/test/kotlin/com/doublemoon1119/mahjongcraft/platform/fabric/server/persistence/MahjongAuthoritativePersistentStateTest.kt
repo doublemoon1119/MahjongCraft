@@ -5,11 +5,11 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceDtoRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceEnvelopeDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.migration.UnsupportedPersistenceSchemaVersionException
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.buildBuiltInPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.state.AuthoritativeStatePersistenceCodec
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import net.minecraft.nbt.NbtCompound
@@ -27,7 +27,7 @@ import kotlin.uuid.Uuid
 /** 驗證 Minecraft NBT adapter 以位元組陣列保存 codec JSON，並維持每個世界各自的 snapshot。 */
 class MahjongAuthoritativePersistentStateTest {
     /** 使用所有內建 mapper 的待測 codec。 */
-    private val codec = AuthoritativeStatePersistenceCodec(buildBuiltInPersistenceRegistries())
+    private val codec = AuthoritativeStatePersistenceCodec(bundledPersistenceRegistries())
 
     /** 驗證沒有既有 NBT payload 時建立空且乾淨的狀態。 */
     @Test
@@ -126,7 +126,7 @@ class MahjongAuthoritativePersistentStateTest {
     fun `missing persistence mapper fails through NBT adapter`() {
         val room = createRoom()
         val encoded = codec.encode(listOf(room), emptyList())
-        val registriesWithoutRules = buildBuiltInPersistenceRegistries().copy(
+        val registriesWithoutRules = bundledPersistenceRegistries().copy(
             ruleConfigs = PersistenceDtoRegistry<MahjongRuleConfig>(),
         )
         val codecWithoutRules = AuthoritativeStatePersistenceCodec(registriesWithoutRules)

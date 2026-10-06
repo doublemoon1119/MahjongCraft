@@ -5,18 +5,21 @@ package com.doublemoon1119.mahjongcraft.extension
  */
 object MahjongExtensionRegistrar {
     /**
-     * 依 [extensions] 順序登記，全部成功後凍結 registry。
+     * 先登記 [builtIn]，再依 [extensions] 順序登記，全部成功後凍結 registry。
      *
-     * 呼叫前已存在的登記視為內建登記；之後每個 extension 新增的登記歸在該 extension 名下。
+     * 呼叫前已存在的登記與 [builtIn] 的登記視為內建登記；之後每個 extension 新增的登記歸在該 extension 名下。
      *
+     * @param builtIn 不屬於任何規則的內建整合；沒有時為 null。
      * @return 依來源分組的所有登記：內建登記在前，接著依 [extensions] 順序排列每個 extension。
      * @throws MahjongExtensionRegistrationException 若任一 extension 註冊失敗。
      */
     fun registerAndFreeze(
         extensions: Iterable<MahjongExtension>,
         registries: CoreExtensionRegistries,
+        builtIn: MahjongExtension? = null,
     ): List<ExtensionRegistrationSource> {
         val registeredExtensionIds = mutableSetOf<String>()
+        builtIn?.let { register(it, registries, registeredExtensionIds) }
         var snapshot = registries.registrationSnapshot()
         val sources = mutableListOf(ExtensionRegistrationSource(extensionId = null, categories = snapshot.toCategories()))
         extensions.forEach { extension ->

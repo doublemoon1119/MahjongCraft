@@ -24,8 +24,6 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.Hi
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayReadError
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayReadLimits
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayReadResult
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.registerBuiltInHistoryReplayProjections
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.buildBuiltInPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
@@ -37,6 +35,8 @@ import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledHistoryReplayProjections
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -93,7 +93,7 @@ class CompactReplayRoundReaderGenuineTest {
      */
     private fun reader(limits: ReplayReadLimits = ReplayReadLimits()): CompactReplayRoundReader {
         val registry = HistoryReplayProjectionRegistry()
-        registerBuiltInHistoryReplayProjections(registry)
+        registry.registerBundledHistoryReplayProjections()
         registry.freeze()
         return CompactReplayRoundReader(registry, limits)
     }
@@ -364,7 +364,7 @@ class CompactReplayRoundReaderGenuineTest {
             event(matchId, first.id, 5, 300L, HistoryFact.RoundStarted(next)).copy(transactionFirstSequence = 4),
             event(matchId, first.id, 6, 500L, HistoryFact.MatchCompleted("test:completed", next.players.associate { it.id to it.score })),
         )
-        val registries = buildBuiltInPersistenceRegistries()
+        val registries = bundledPersistenceRegistries()
         val document = CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries)
 
         listOf(25_000, 26_000, 27_000).forEachIndexed { index, score ->
@@ -400,7 +400,7 @@ class CompactReplayRoundReaderGenuineTest {
             event(matchId, table.id, 4, 250L, HistoryFact.MatchCompleted("test:completed", settled.players.associate { it.id to it.score })).copy(transactionFirstSequence = 3),
             event(matchId, table.id, 5, 250L, HistoryFact.TableChanged(HistoryTableResult.Checkpoint("test:settled", settled))).copy(transactionFirstSequence = 3),
         )
-        val registries = buildBuiltInPersistenceRegistries()
+        val registries = bundledPersistenceRegistries()
         return Fixture(CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries), matchId, table, changed, settled)
     }
 
@@ -469,7 +469,7 @@ class CompactReplayRoundReaderGenuineTest {
             )
             add(event(matchId, table.id, if (intermediate == null) 5 else 6, 300L, HistoryFact.MatchCompleted("test:completed", settledScores)))
         }
-        val registries = buildBuiltInPersistenceRegistries()
+        val registries = bundledPersistenceRegistries()
         return Fixture(CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries), matchId, table, settled, settled)
     }
 
@@ -527,7 +527,7 @@ class CompactReplayRoundReaderGenuineTest {
             event(matchId, table.id, 6, 400L, HistoryFact.RoundCompleted(RoundCompletionSummary("test:win", RoundCompletionClassification.WIN, setOf(winner.id), transitionDirective = RoundTransitionDirective.ADVANCE_DEALER, settledScoresByPlayerId = continued.players.associate { it.id to it.score }))),
             event(matchId, table.id, 7, 400L, HistoryFact.MatchCompleted("test:completed", continued.players.associate { it.id to it.score })).copy(transactionFirstSequence = 6),
         )
-        val registries = buildBuiltInPersistenceRegistries()
+        val registries = bundledPersistenceRegistries()
         return Fixture(CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries), matchId, table, changed, continued)
     }
 

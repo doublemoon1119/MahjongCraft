@@ -2,7 +2,6 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.riichi
 
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.CompletedGameActionContext
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolver
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
@@ -64,11 +63,4 @@ class RiichiSuukanNagareResolver : PostActionExhaustiveDrawResolver {
         }
         return riichiModule.resolveSuukanNagare(context.tableState)
     }
-}
-
-/** 登記 bundled 日麻的主動觸發途中流局 resolver（四風連打／四家立直／四槓散了）。 */
-fun PostActionExhaustiveDrawResolverRegistry.registerRiichiPostActionExhaustiveDrawResolvers() {
-    register(RiichiSuufonRendaResolver())
-    register(RiichiSuuchaRiichiResolver())
-    register(RiichiSuukanNagareResolver())
 }

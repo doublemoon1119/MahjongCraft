@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.achievement
 
-import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.CommittedGameFacts
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
@@ -17,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.BuiltInAch
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.PlayerAchievements
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.concurrency.TestCoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.testing.flow.common.concurrency.createTestAppCoroutineScope
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
@@ -116,7 +116,7 @@ class FabricAchievementServiceTest {
             scope = createTestAppCoroutineScope(dispatchers),
             dispatchers = dispatchers,
             store = AuthoritativeStateStore(),
-            moduleRegistry = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() },
+            moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() },
             resolverRegistry = registry,
             gateway = gateway,
         )

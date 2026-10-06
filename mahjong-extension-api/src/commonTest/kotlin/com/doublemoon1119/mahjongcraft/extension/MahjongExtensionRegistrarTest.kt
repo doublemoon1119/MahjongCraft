@@ -22,7 +22,6 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.PlayerRuleStateDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.ScoreConfigDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.HistoryReplayProjectionRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.buildBuiltInPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
@@ -48,6 +47,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeDefinition
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistryImpl
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -61,7 +61,7 @@ class MahjongExtensionRegistrarTest {
     fun `extension registers all integrations before registries freeze`() {
         val moduleRegistry = MahjongModuleRegistryImpl()
         val networkRegistries = TestNetworkDtoRegistries()
-        val persistenceRegistries = buildBuiltInPersistenceRegistries()
+        val persistenceRegistries = bundledPersistenceRegistries()
         val tileTypeRegistry = TileTypeRegistryImpl()
         val aiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = RandomAiStrategy.KEY)
         val opponentModelRegistry = OpponentModelRegistry()
@@ -209,7 +209,7 @@ private fun testCoreRegistries(
     moduleRegistry: MahjongModuleRegistry = MahjongModuleRegistryImpl(),
     tileTypeRegistry: TileTypeRegistry = TileTypeRegistryImpl(),
     networkRegistries: NetworkDtoRegistries = TestNetworkDtoRegistries(),
-    persistenceRegistries: PersistenceRegistries = buildBuiltInPersistenceRegistries(),
+    persistenceRegistries: PersistenceRegistries = bundledPersistenceRegistries(),
     historyReplayProjectionRegistry: HistoryReplayProjectionRegistry = HistoryReplayProjectionRegistry(),
     aiStrategyRegistry: MahjongAiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = RandomAiStrategy.KEY),
     opponentModelRegistry: OpponentModelRegistry = OpponentModelRegistry(),

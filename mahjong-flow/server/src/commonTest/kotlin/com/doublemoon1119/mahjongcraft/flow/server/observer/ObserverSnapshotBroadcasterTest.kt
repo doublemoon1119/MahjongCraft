@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.flow.server.observer
 
-import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.observer.model.ObserverSnapshot
@@ -14,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdat
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.test.runTest
@@ -92,7 +92,7 @@ class ObserverSnapshotBroadcasterTest {
         store = store,
         visibilityPolicy = GameVisibilityPolicyImpl(),
         handReadinessVisibilityPolicy = HandReadinessVisibilityPolicy(
-            MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() },
+            MahjongModuleRegistryImpl().apply { registerBundledRuleModules() },
         ),
         audienceSource = audience,
         sender = sender,

@@ -4,7 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingState
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingTransfer
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.buildBuiltInPersistenceRegistries
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -37,7 +37,7 @@ class HistoryRecordingTransferPersistenceTest {
                 ),
             ),
         )
-        val mapper = HistoryRecordingPersistenceMapper(buildBuiltInPersistenceRegistries())
+        val mapper = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries())
 
         val dto = mapper.encode(state)
         val encoded = Json.encodeToString(HistoryRecordingPersistenceDto.serializer(), dto)

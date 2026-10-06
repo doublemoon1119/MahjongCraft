@@ -1,10 +1,10 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.service
 
+import com.doublemoon1119.mahjongcraft.bundled.BundledRiichiExtension
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ResolvedRoundOutcome
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundOutcomePresentationClassification
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
-import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.registerRiichiWinSettlementDetailResolver
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
@@ -142,7 +142,7 @@ class WinSettlementPresentationRequestFactoryTest {
      */
     @Test
     fun `dispatches nagashi mangan special outcome through the registry`() {
-        val registry = WinSettlementDetailResolverRegistry().apply { registerRiichiWinSettlementDetailResolver() }
+        val registry = WinSettlementDetailResolverRegistry().apply { BundledRiichiExtension.registerWinSettlementDetailResolvers(this) }
         val winner = FakeMahjongPlayerFactory.create()
         val state = FakeTableStateFactory.create(
             players = listOf(winner) + List(3) { FakeMahjongPlayerFactory.create() },

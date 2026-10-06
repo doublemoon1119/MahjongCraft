@@ -4,7 +4,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.TypedPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.room.RoomPersistenceDto
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.buildRuleConfigPersistenceRegistry
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
 import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
@@ -14,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiScoreConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanGameLength
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanScoreConfig
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
@@ -58,7 +58,7 @@ class RoomPersistenceDtoTest {
     /** 驗證第三方規則能以穩定 type key 註冊並完成 Room round-trip。 */
     @Test
     fun `third-party rule config can register without changing persistence module`() {
-        val registry = buildRuleConfigPersistenceRegistry().apply {
+        val registry = bundledPersistenceRegistries().ruleConfigs.apply {
             register(
                 typeKey = "example:custom_rule_config",
                 domainClass = ThirdPartyRuleConfig::class,
@@ -77,7 +77,7 @@ class RoomPersistenceDtoTest {
     /** 驗證未知第三方 type key 不會被默默忽略或還原成錯誤規則。 */
     @Test
     fun `unknown rule config type key is rejected`() {
-        val registry = buildRuleConfigPersistenceRegistry()
+        val registry = bundledPersistenceRegistries().ruleConfigs
         val dto = createRoom(RiichiRuleConfig()).toPersistenceDto(registry).copy(
             config = TypedPersistenceDto("missing:rule", buildJsonObject { }),
         )
@@ -87,7 +87,7 @@ class RoomPersistenceDtoTest {
 
     /** 針對指定規則配置執行 Room encoded round-trip 並比對完整領域狀態。 */
     private fun assertRoomRoundTrip(config: MahjongRuleConfig) {
-        val registry = buildRuleConfigPersistenceRegistry()
+        val registry = bundledPersistenceRegistries().ruleConfigs
         val room = createRoom(config)
         val encoded = json.encodeToString(RoomPersistenceDto.serializer(), room.toPersistenceDto(registry, json))
         val restored = json.decodeFromString(RoomPersistenceDto.serializer(), encoded).toDomain(registry, json)

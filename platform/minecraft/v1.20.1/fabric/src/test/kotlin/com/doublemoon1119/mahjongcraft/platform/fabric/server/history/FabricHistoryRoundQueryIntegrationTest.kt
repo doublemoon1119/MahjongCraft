@@ -12,7 +12,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRo
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.CompactReplayCodec
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.buildBuiltInPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
@@ -21,6 +20,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftHistor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.CoroutineDispatcher
@@ -39,7 +39,7 @@ class FabricHistoryRoundQueryIntegrationTest {
     /** 真實 compact Replay 能查閱事件與初始桌況，detach 後舊 session 不再讀取。 */
     @Test
     fun `formal writer reads encoded rounds and rejects detached session`(): Unit = runBlocking {
-        val registries = buildBuiltInPersistenceRegistries()
+        val registries = bundledPersistenceRegistries()
         val table = FakeTableStateFactory.create(players = List(2) { FakeMahjongPlayerFactory.create(discardPile = RiichiDiscardPile()) }, config = RiichiRuleConfig())
         val matchId = Uuid.random()
         val events = listOf(

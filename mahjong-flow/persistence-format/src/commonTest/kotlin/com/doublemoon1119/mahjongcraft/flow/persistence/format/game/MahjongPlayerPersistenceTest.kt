@@ -1,8 +1,4 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.game
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.buildDiscardPilePersistenceRegistry
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.buildExhaustiveDrawReasonPersistenceRegistry
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.buildExtensionGameActionPersistenceRegistry
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.buildPlayerRuleStatePersistenceRegistry
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
@@ -21,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -34,16 +31,16 @@ class MahjongPlayerPersistenceTest {
     private val json = Json
 
     /** 內建牌河的 persistence registry。 */
-    private val discardPileRegistry = buildDiscardPilePersistenceRegistry()
+    private val discardPileRegistry = bundledPersistenceRegistries().discardPiles
 
     /** 內建玩家規則狀態的 persistence registry。 */
-    private val playerRuleStateRegistry = buildPlayerRuleStatePersistenceRegistry()
+    private val playerRuleStateRegistry = bundledPersistenceRegistries().playerRuleStates
 
     /** 內建流局原因的 persistence registry。 */
-    private val exhaustiveDrawReasonRegistry = buildExhaustiveDrawReasonPersistenceRegistry()
+    private val exhaustiveDrawReasonRegistry = bundledPersistenceRegistries().exhaustiveDrawReasons
 
     /** 內建擴充動作的 persistence registry。 */
-    private val extensionGameActionRegistry = buildExtensionGameActionPersistenceRegistry()
+    private val extensionGameActionRegistry = bundledPersistenceRegistries().extensionGameActions
 
     /** 驗證日麻玩家的隱藏狀態、牌河與動作歷史皆能完整還原。 */
     @Test

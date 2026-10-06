@@ -1,16 +1,16 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.history
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
-import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.buildBuiltInPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftHistoryConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
@@ -108,10 +108,10 @@ class HistoryGenerationRetentionStressTest {
             maxMatches = maxMatches ?: MinecraftHistoryConfig.DEFAULT_MAX_MATCHES,
             maxDiskMiB = maxDiskMiB ?: MinecraftHistoryConfig.DEFAULT_MAX_DISK_MIB,
         )
-        val modules = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
+        val modules = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
         return FabricHistoryOutboxWriter(
             store = store,
-            registries = buildBuiltInPersistenceRegistries(),
+            registries = bundledPersistenceRegistries(),
             replayProjectionRegistry = buildTestHistoryReplayProjectionRegistry(),
             json = Json,
             dispatchers = TestDispatchers,

@@ -45,9 +45,3 @@ class DebugScriptedAiStrategy(private val declaresKanFirst: Boolean) : MahjongAi
         val KAN_FIRST_KEY: String = MahjongCraftMetadata.id("debug_kan_first")
     }
 }
-
-/** 登記開發環境限定的腳本 AI；正式環境不呼叫。 */
-fun MahjongAiStrategyRegistry.registerDebugScriptedAiStrategies() {
-    register(DebugScriptedAiStrategy.TSUMOGIRI_KEY) { DebugScriptedAiStrategy(declaresKanFirst = false) }
-    register(DebugScriptedAiStrategy.KAN_FIRST_KEY) { DebugScriptedAiStrategy(declaresKanFirst = true) }
-}

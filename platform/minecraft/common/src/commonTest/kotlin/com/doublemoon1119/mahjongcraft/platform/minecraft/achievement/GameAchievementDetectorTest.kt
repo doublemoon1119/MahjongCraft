@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.achievement
 
-import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.CommittedGameFacts
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
@@ -16,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
@@ -25,7 +25,7 @@ import kotlin.uuid.Uuid
 
 /** 驗證 [GameAchievementDetector] 從已提交事實判定的通用成果與規則專屬成果分派。 */
 class GameAchievementDetectorTest {
-    private val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
+    private val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
 
     /** 自摸的贏家取得胡牌與自摸。 */
     @Test

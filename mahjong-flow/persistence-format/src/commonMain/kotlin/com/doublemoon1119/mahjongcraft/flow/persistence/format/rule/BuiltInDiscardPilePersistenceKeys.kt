@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.rule
 
 /** 內建牌河保存格式的註冊識別碼。 */
-internal object BuiltInDiscardPilePersistenceKeys {
+object BuiltInDiscardPilePersistenceKeys {
     /** 日麻牌河的註冊識別碼。 */
     const val RIICHI: String = "builtin:riichi_discard_pile"
 

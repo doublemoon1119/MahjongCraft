@@ -15,7 +15,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetai
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailField
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailValue
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.buildBuiltInPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
@@ -23,6 +22,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -38,7 +38,7 @@ class HistoryRecordingPersistenceDtoTest {
         val matchId = Uuid.random()
         val terminal = HistoryRecordingTerminal(42L, true, Uuid.random())
         val state = HistoryRecordingState(terminalByMatchId = mapOf(matchId to terminal))
-        val mapper = HistoryRecordingPersistenceMapper(buildBuiltInPersistenceRegistries())
+        val mapper = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries())
         assertEquals(state, mapper.decode(mapper.encode(state)))
     }
 
@@ -50,7 +50,7 @@ class HistoryRecordingPersistenceDtoTest {
                 Uuid.random().toString() to HistoryRecordingTerminalPersistenceDto(1L, false, "not-a-uuid"),
             ),
         )
-        val mapper = HistoryRecordingPersistenceMapper(buildBuiltInPersistenceRegistries())
+        val mapper = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries())
         assertFailsWith<IllegalArgumentException> { mapper.decode(dto) }
     }
 
@@ -76,7 +76,7 @@ class HistoryRecordingPersistenceDtoTest {
                 ),
             ),
         )
-        val mapper = HistoryRecordingPersistenceMapper(buildBuiltInPersistenceRegistries())
+        val mapper = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries())
         val dto = mapper.encode(state)
         val encoded = Json.encodeToString(HistoryRecordingPersistenceDto.serializer(), dto)
 
@@ -114,7 +114,7 @@ class HistoryRecordingPersistenceDtoTest {
                 ),
             ),
         )
-        val mapper = HistoryRecordingPersistenceMapper(buildBuiltInPersistenceRegistries())
+        val mapper = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries())
         val encoded = Json.encodeToString(HistoryRecordingPersistenceDto.serializer(), mapper.encode(state))
 
         assertEquals(state, mapper.decode(Json.decodeFromString(HistoryRecordingPersistenceDto.serializer(), encoded)))
@@ -147,7 +147,7 @@ class HistoryRecordingPersistenceDtoTest {
             ),
             firstMissingSequenceByMatchId = mapOf(matchId to 2L),
         )
-        val mapper = HistoryRecordingPersistenceMapper(buildBuiltInPersistenceRegistries())
+        val mapper = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries())
 
         assertEquals(state, mapper.decode(mapper.encode(state)))
     }
@@ -159,7 +159,7 @@ class HistoryRecordingPersistenceDtoTest {
             Uuid.random() to decision
         }
         val state = HistoryRecordingState(decisionsByMatchId = decisionsByMatchId)
-        val mapper = HistoryRecordingPersistenceMapper(buildBuiltInPersistenceRegistries())
+        val mapper = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries())
 
         assertEquals(state, mapper.decode(mapper.encode(state)))
     }
@@ -173,7 +173,7 @@ class HistoryRecordingPersistenceDtoTest {
         )
 
         assertFailsWith<IllegalArgumentException> {
-            HistoryRecordingPersistenceMapper(buildBuiltInPersistenceRegistries()).decode(dto)
+            HistoryRecordingPersistenceMapper(bundledPersistenceRegistries()).decode(dto)
         }
     }
 
@@ -206,7 +206,7 @@ class HistoryRecordingPersistenceDtoTest {
             ),
         )
 
-        val decoded = HistoryRecordingPersistenceMapper(buildBuiltInPersistenceRegistries()).decode(dto)
+        val decoded = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries()).decode(dto)
 
         assertEquals(listOf(2L), decoded.pendingEvents.map { it.sequence })
         assertEquals(1L, decoded.firstMissingSequenceByMatchId.getValue(matchId))
@@ -252,7 +252,7 @@ class HistoryRecordingPersistenceDtoTest {
                 ),
             ),
         )
-        val mapper = HistoryRecordingPersistenceMapper(buildBuiltInPersistenceRegistries())
+        val mapper = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries())
         assertEquals(state, mapper.decode(mapper.encode(state)))
     }
 }

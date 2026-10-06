@@ -12,10 +12,10 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistorySor
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryErrorCodeDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.registerBuiltInRuleConfigDtos
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.buildMahjongDtoSerializersModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledNetworkDtos
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -29,7 +29,7 @@ class HistoryQueryResponseBudgetTest {
     /** 規則設定回應通過正式 registry，大小超限時移除整份設定而不截斷欄位。 */
     @Test
     fun `rule settings budget keeps complete config or returns safe error`() {
-        val registries = DefaultNetworkDtoRegistries().apply { registerBuiltInRuleConfigDtos() }
+        val registries = DefaultNetworkDtoRegistries().apply { registerBundledNetworkDtos() }
         val json = Json { serializersModule = buildMahjongDtoSerializersModule(registries) }
         val config = GameConfig(RiichiRuleConfig())
         val response = boundedHistoryRuleSettings("rules", HistoryRuleSettings(config), registries, json)

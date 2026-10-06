@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario
 
-import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
@@ -21,6 +20,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTran
 import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionDecision
 import com.doublemoon1119.mahjongcraft.logic.table.layout.resolveTransitionValidated
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -408,7 +408,7 @@ class DebugGameScenarioTest {
             aiPlayerStrategyKeys = playerIds.drop(1).associateWith { "mahjongcraft:random" },
         )
         val moduleRegistry = MahjongModuleRegistryImpl().apply {
-            registerBuiltInRuleModules()
+            registerBundledRuleModules()
             freeze()
         }
         val context = DebugGameScenarioContext(game, playerIds.first())

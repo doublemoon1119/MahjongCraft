@@ -175,10 +175,10 @@ Public extension registration layer.
 
 Rule extensions that ship with MahjongCraft.
 
-- **Purpose**: Registers each rule bundled with MahjongCraft (for example, Riichi) through the same `MahjongExtension` callbacks that third-party extensions use. Bundled extensions are always enabled.
+- **Purpose**: Registers each rule bundled with MahjongCraft (for example, Riichi) through the same `MahjongExtension` callbacks that third-party extensions use, and registers rule-neutral built-ins through `BuiltInMahjongExtension`. Bundled extensions are always enabled.
 - **Package**: `com.doublemoon1119.mahjongcraft.bundled.*`
 - **Dependencies**: Only `:mahjong-extension-api`.
-- **Boundary**: Contains no platform code. Platform presentation for these rules is registered by the platform's own extension surface under the same extension IDs. Rule-neutral built-ins stay outside these extensions.
+- **Boundary**: Contains no platform code. Every registration of a bundled rule lives in that rule's extension; other modules only provide the things being registered. Platform presentation for these rules is registered by the platform's own extension surface under the same extension IDs.
 
 ### `:testing`
 

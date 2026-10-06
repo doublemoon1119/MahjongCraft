@@ -5,18 +5,13 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceEnvelopeDto
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.buildDiscardPilePersistenceRegistry
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.buildDynamicRuleStatePersistenceRegistry
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.buildExhaustiveDrawReasonPersistenceRegistry
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.buildExtensionGameActionPersistenceRegistry
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.buildPlayerRuleStatePersistenceRegistry
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.buildRuleConfigPersistenceRegistry
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -30,22 +25,22 @@ class AuthoritativeStatePersistenceDtoTest {
     private val json = Json
 
     /** 內建規則配置的 persistence registry。 */
-    private val ruleConfigRegistry = buildRuleConfigPersistenceRegistry()
+    private val ruleConfigRegistry = bundledPersistenceRegistries().ruleConfigs
 
     /** 內建牌河的 persistence registry。 */
-    private val discardPileRegistry = buildDiscardPilePersistenceRegistry()
+    private val discardPileRegistry = bundledPersistenceRegistries().discardPiles
 
     /** 內建玩家規則狀態的 persistence registry。 */
-    private val playerRuleStateRegistry = buildPlayerRuleStatePersistenceRegistry()
+    private val playerRuleStateRegistry = bundledPersistenceRegistries().playerRuleStates
 
     /** 內建動態牌桌狀態的 persistence registry。 */
-    private val dynamicRuleStateRegistry = buildDynamicRuleStatePersistenceRegistry()
+    private val dynamicRuleStateRegistry = bundledPersistenceRegistries().dynamicRuleStates
 
     /** 內建流局原因的 persistence registry。 */
-    private val exhaustiveDrawReasonRegistry = buildExhaustiveDrawReasonPersistenceRegistry()
+    private val exhaustiveDrawReasonRegistry = bundledPersistenceRegistries().exhaustiveDrawReasons
 
     /** 內建擴充動作的 persistence registry。 */
-    private val extensionGameActionRegistry = buildExtensionGameActionPersistenceRegistry()
+    private val extensionGameActionRegistry = bundledPersistenceRegistries().extensionGameActions
 
     /** 驗證多個 Room 與 Game 能在同一 envelope 中完整編解碼。 */
     @Test

@@ -1,15 +1,10 @@
 package com.doublemoon1119.mahjongcraft.ai
 
-import com.doublemoon1119.mahjongcraft.ai.expectation.ExpectedValueAiStrategy
-import com.doublemoon1119.mahjongcraft.ai.expectation.InformationLevel
-import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
-import kotlin.test.assertIs
 import kotlin.test.assertSame
-import kotlin.test.assertTrue
 
 /**
  * [MahjongAiStrategyRegistryImpl] 的單元測試類別。
@@ -93,25 +88,5 @@ class MahjongAiStrategyRegistryImplTest {
 
         assertFailsWith<IllegalStateException> { registry.register("late") { strategy } }
         assertSame(strategy, registry.resolve("default"))
-    }
-
-    /**
-     * 驗證 [registerBuiltInAiStrategies] 依初級、中級、高級、隨機出牌的順序註冊，且各自解析成對應的資訊等級。
-     */
-    @Test
-    fun `test registerBuiltInAiStrategies registers the three expected value levels then random`() {
-        val registry = MahjongAiStrategyRegistryImpl(defaultKey = BuiltInAiStrategyKeys.BEGINNER).apply {
-            registerBuiltInAiStrategies(MahjongModuleRegistryImpl(), extensionActionRegistry, OpponentModelRegistry())
-        }
-
-        assertEquals(
-            listOf(BuiltInAiStrategyKeys.BEGINNER, BuiltInAiStrategyKeys.INTERMEDIATE, BuiltInAiStrategyKeys.ADVANCED, RandomAiStrategy.KEY),
-            registry.getAllStrategyKeys().toList(),
-        )
-        assertTrue(registry.resolve(RandomAiStrategy.KEY) is RandomAiStrategy)
-        assertEquals(InformationLevel.BEGINNER, assertIs<ExpectedValueAiStrategy>(registry.resolve(BuiltInAiStrategyKeys.BEGINNER)).level)
-        assertEquals(InformationLevel.INTERMEDIATE, assertIs<ExpectedValueAiStrategy>(registry.resolve(BuiltInAiStrategyKeys.INTERMEDIATE)).level)
-        assertEquals(InformationLevel.ADVANCED, assertIs<ExpectedValueAiStrategy>(registry.resolve(BuiltInAiStrategyKeys.ADVANCED)).level)
-        assertEquals(InformationLevel.BEGINNER, assertIs<ExpectedValueAiStrategy>(registry.resolve("unknown")).level)
     }
 }

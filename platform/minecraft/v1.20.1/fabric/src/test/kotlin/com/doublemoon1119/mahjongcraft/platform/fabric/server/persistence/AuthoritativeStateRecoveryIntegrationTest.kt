@@ -4,10 +4,7 @@ import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
-import com.doublemoon1119.mahjongcraft.ai.registerBuiltInAiStrategies
-import com.doublemoon1119.mahjongcraft.ai.riichi.registerRiichiOpponentModel
-import com.doublemoon1119.mahjongcraft.flow.common.di.createBuiltInWinCelebrationCueResolverRegistry
-import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
+import com.doublemoon1119.mahjongcraft.bundled.BundledRiichiExtension
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
@@ -20,13 +17,11 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.repository.GameSnapshotR
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepositoryImpl
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.buildBuiltInPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.state.AuthoritativeStatePersistenceCodec
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiTurnDriver
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
-import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.registerRiichiWinSettlementDetailResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAuthorityResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAvailabilityService
@@ -61,6 +56,10 @@ import com.doublemoon1119.mahjongcraft.logic.table.PendingKanReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWallRevealable
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledWinCelebrationCueResolverRegistry
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBuiltInAiStrategies
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeDecisionTimerUpdatePublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationBusyGate
@@ -379,10 +378,10 @@ class AuthoritativeStateRecoveryIntegrationTest {
     /** 建立跨 persistence 與 server session 邊界的全新 runtime。 */
     private class RuntimeFixture {
         /** 內建 persistence codec。 */
-        private val codec = AuthoritativeStatePersistenceCodec(buildBuiltInPersistenceRegistries())
+        private val codec = AuthoritativeStatePersistenceCodec(bundledPersistenceRegistries())
 
         /** 日麻規則 registry。 */
-        private val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
+        private val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
 
         /** 全新 server session 的權威 store。 */
         private val store = AuthoritativeStateStore()
@@ -442,7 +441,7 @@ class AuthoritativeStateRecoveryIntegrationTest {
             gameRepository,
             GetLegalActionsUseCase(gameRepository, moduleRegistry),
             MahjongAiStrategyRegistryImpl(RandomAiStrategy.KEY).apply {
-                registerBuiltInAiStrategies(moduleRegistry, ExtensionGameActionAiRegistry(moduleRegistry), OpponentModelRegistry().apply { registerRiichiOpponentModel() })
+                registerBuiltInAiStrategies(moduleRegistry, ExtensionGameActionAiRegistry(moduleRegistry), OpponentModelRegistry().apply { BundledRiichiExtension.registerOpponentModels(this) })
             },
             GameVisibilityPolicyImpl(),
             moduleRegistry,
@@ -500,9 +499,9 @@ class AuthoritativeStateRecoveryIntegrationTest {
             FakeGameEventPublisher(),
             FakeGamePresentationPublisher(),
             WinPresentationHandoff(),
-            winCelebrationCueResolverRegistry = createBuiltInWinCelebrationCueResolverRegistry(),
+            winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
             winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry().apply {
-                registerRiichiWinSettlementDetailResolver()
+                BundledRiichiExtension.registerWinSettlementDetailResolvers(this)
                 freeze()
             },
             postActionExhaustiveDrawResolverRegistry = PostActionExhaustiveDrawResolverRegistry().apply { freeze() },
@@ -516,9 +515,9 @@ class AuthoritativeStateRecoveryIntegrationTest {
             FakeGameEventPublisher(),
             FakeGamePresentationPublisher(),
             WinPresentationHandoff(),
-            winCelebrationCueResolverRegistry = createBuiltInWinCelebrationCueResolverRegistry(),
+            winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
             winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry().apply {
-                registerRiichiWinSettlementDetailResolver()
+                BundledRiichiExtension.registerWinSettlementDetailResolvers(this)
                 freeze()
             },
         )(gameId, playerId, GameAction.Pass)

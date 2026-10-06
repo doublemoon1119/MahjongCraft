@@ -1,12 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.history.generation
 
-import com.doublemoon1119.mahjongcraft.ai.BuiltInAiStrategyKeys
-import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
-import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
-import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
-import com.doublemoon1119.mahjongcraft.ai.registerBuiltInAiStrategies
-import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
-import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledHeadlessHistoryRegistries
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.TimeoutCancellationException
@@ -26,7 +20,7 @@ class HeadlessFlowHistoryRuntimeTest {
     /** 驗證東風戰可由四個真實 AI 自動完成。 */
     @Test
     fun `east match completes through cold history flow`() = runTest {
-        val runtime = HeadlessFlowHistoryRuntime.create(HeadlessHistoryScenario.RIICHI_EAST, strategies())
+        val runtime = HeadlessFlowHistoryRuntime.create(HeadlessHistoryScenario.RIICHI_EAST, bundledHeadlessHistoryRegistries())
         var terminal = false
         runtimeFlow(runtime) { terminal = it }
         assertTrue(terminal)
@@ -39,7 +33,7 @@ class HeadlessFlowHistoryRuntimeTest {
     /** 驗證半莊戰可由四個真實 AI 自動完成。 */
     @Test
     fun `hanchan match completes through cold history flow`() = runTest {
-        val runtime = HeadlessFlowHistoryRuntime.create(HeadlessHistoryScenario.RIICHI_HANCHAN, strategies())
+        val runtime = HeadlessFlowHistoryRuntime.create(HeadlessHistoryScenario.RIICHI_HANCHAN, bundledHeadlessHistoryRegistries())
         var terminal = false
         runtimeFlow(runtime) { terminal = it }
         assertTrue(terminal)
@@ -48,7 +42,7 @@ class HeadlessFlowHistoryRuntimeTest {
     /** 驗證未確認整批事件時，流程不會推進下一個權威步驟。 */
     @Test
     fun `cold flow requires complete batch acknowledgement`() = runTest {
-        val runtime = HeadlessFlowHistoryRuntime.create(HeadlessHistoryScenario.RIICHI_EAST, strategies())
+        val runtime = HeadlessFlowHistoryRuntime.create(HeadlessHistoryScenario.RIICHI_EAST, bundledHeadlessHistoryRegistries())
         val pendingBefore = runtime.store.snapshot().historyRecordingState.pendingEvents.size
         var failed = false
         var message = ""
@@ -66,7 +60,7 @@ class HeadlessFlowHistoryRuntimeTest {
     /** 驗證 collector 尚未完成確認時，流程會停在同一批事件而不推進權威步驟。 */
     @Test
     fun `cold flow waits for collector before advancing`() = runTest {
-        val runtime = HeadlessFlowHistoryRuntime.create(HeadlessHistoryScenario.RIICHI_EAST, strategies())
+        val runtime = HeadlessFlowHistoryRuntime.create(HeadlessHistoryScenario.RIICHI_EAST, bundledHeadlessHistoryRegistries())
         val entered = CompletableDeferred<Unit>()
         val release = CompletableDeferred<Unit>()
         val before = runtime.store.snapshot().historyRecordingState.pendingEvents.size
@@ -87,7 +81,7 @@ class HeadlessFlowHistoryRuntimeTest {
     /** 驗證步數上限在初始交易確認後仍會阻止無界推進。 */
     @Test
     fun `runner enforces maximum steps`() = runTest {
-        val runtime = HeadlessFlowHistoryRuntime.create(HeadlessHistoryScenario.RIICHI_EAST, strategies())
+        val runtime = HeadlessFlowHistoryRuntime.create(HeadlessHistoryScenario.RIICHI_EAST, bundledHeadlessHistoryRegistries())
         var failed = false
         try {
             HeadlessHistoryMatchRunner(runtime, HeadlessHistoryRunLimits(maxSteps = 1)).events().collect { progress ->
@@ -102,7 +96,7 @@ class HeadlessFlowHistoryRuntimeTest {
     /** 驗證收集端超過保存等待期限時，來源批次仍然保留。 */
     @Test
     fun `runner times out a stalled collector without dropping events`() = runTest {
-        val runtime = HeadlessFlowHistoryRuntime.create(HeadlessHistoryScenario.RIICHI_EAST, strategies())
+        val runtime = HeadlessFlowHistoryRuntime.create(HeadlessHistoryScenario.RIICHI_EAST, bundledHeadlessHistoryRegistries())
         val before = runtime.store.snapshot().historyRecordingState.pendingEvents.size
         var timedOut = false
         try {
@@ -119,7 +113,7 @@ class HeadlessFlowHistoryRuntimeTest {
     /** 驗證收集取消不會確認或刪除尚未完成的來源批次。 */
     @Test
     fun `runner cancellation retains pending events`() = runTest {
-        val runtime = HeadlessFlowHistoryRuntime.create(HeadlessHistoryScenario.RIICHI_EAST, strategies())
+        val runtime = HeadlessFlowHistoryRuntime.create(HeadlessHistoryScenario.RIICHI_EAST, bundledHeadlessHistoryRegistries())
         val before = runtime.store.snapshot().historyRecordingState.pendingEvents.size
         val entered = CompletableDeferred<Unit>()
         val job = launch {
@@ -146,15 +140,5 @@ class HeadlessFlowHistoryRuntimeTest {
             runtime.store.acknowledgeHistoryEvents(ids)
             if (progress.terminal && progress.events.isEmpty()) terminal(true)
         }
-    }
-
-    /**
-     * 建立內建策略 registry。
-     *
-     * @return 含內建策略的 registry。
-     */
-    private fun strategies() = MahjongAiStrategyRegistryImpl(BuiltInAiStrategyKeys.BEGINNER).apply {
-        val modules = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
-        registerBuiltInAiStrategies(modules, ExtensionGameActionAiRegistry(modules), OpponentModelRegistry())
     }
 }

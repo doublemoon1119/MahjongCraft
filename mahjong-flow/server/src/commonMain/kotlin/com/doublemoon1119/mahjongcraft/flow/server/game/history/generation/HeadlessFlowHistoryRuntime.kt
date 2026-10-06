@@ -1,9 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.history.generation
 
 import com.doublemoon1119.mahjongcraft.ai.BuiltInAiStrategyKeys
-import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
-import com.doublemoon1119.mahjongcraft.flow.common.di.createBuiltInWinCelebrationCueResolverRegistry
-import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
@@ -26,18 +23,11 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomEventPublish
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiTurnDriver
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandContext
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutor
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ForcedAutoPlayDriver
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameActionRouter
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
-import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.registerRiichiGameCommandHandler
-import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.registerRiichiPostActionExhaustiveDrawResolvers
-import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.registerRiichiWinSettlementDetailResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.ExhaustiveDrawSettlementPresentationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAuthorityResolver
@@ -47,7 +37,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSync
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerDecisionTimerFactory
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
-import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAbortiveDrawUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
@@ -70,7 +59,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.time.MonotonicClockImpl
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
-import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TableStateSnapshot
@@ -83,8 +71,8 @@ import kotlin.uuid.Uuid
 /**
  * 不依賴平台或測試 fixture 的單場真實 Flow 執行環境。
  *
- * 只建立內建規則所需的 registry，用來以真實流程驗證歷史記錄與封存管線。擴充規則不在支援範圍內：擴充登記的命令
- * handler（`ExtensionGameCommandHandler`）綁定正式的權威狀態，無法在這個隔離環境中使用。
+ * 用來以真實流程驗證歷史記錄與封存管線。規則整合一律取自執行環境已完成登記的 [HeadlessHistoryRegistries]，
+ * 與正式對局使用同一套登記；權威狀態、快照與事件則全部隔離，不影響正式玩家。
  *
  * @property scenario 生成情境。
  * @property store 隔離權威狀態儲存。
@@ -130,12 +118,12 @@ class HeadlessFlowHistoryRuntime private constructor(
          * 建立一場使用真實 AI 策略的無頭對局。
          *
          * @param scenario 對局場長情境。
-         * @param aiStrategyRegistry 已完成註冊的 AI 策略 registry。
+         * @param registries 執行環境已完成登記的規則整合。
          * @return 已開局且可逐步推進的隔離 runtime。
          */
         suspend fun create(
             scenario: HeadlessHistoryScenario,
-            aiStrategyRegistry: MahjongAiStrategyRegistry,
+            registries: HeadlessHistoryRegistries,
         ): HeadlessFlowHistoryRuntime {
             val store = AuthoritativeStateStore(historyRecordingEnabled = true)
             val gameRepository = GameRepositoryImpl(store)
@@ -147,26 +135,17 @@ class HeadlessFlowHistoryRuntime private constructor(
             val gameEvents = NoOpGameEvents()
             val presentation = NoOpPresentation()
             val busy = NoOpBusyGate()
-            val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
+            val moduleRegistry = registries.moduleRegistry
             val synchronizer = GameSnapshotSynchronizer(gameRepository, gameSnapshots, GameVisibilityPolicyImpl())
             val handSort = HandSortPreferenceStore()
             val create = CreateRoomUseCase(store, membership, rooms, roomEvents)
             val addAi = AddAiPlayerUseCase(roomRepository, rooms, roomEvents)
-            val createCue = createBuiltInWinCelebrationCueResolverRegistry()
+            val createCue = registries.winCelebrationCueResolverRegistry
             val winHandoff = WinPresentationHandoff()
-            val postAction = PostActionExhaustiveDrawResolverRegistry().apply {
-                registerRiichiPostActionExhaustiveDrawResolvers()
-                freeze()
-            }
-            val winDetails = WinSettlementDetailResolverRegistry().apply {
-                registerRiichiWinSettlementDetailResolver()
-                freeze()
-            }
+            val postAction = registries.postActionExhaustiveDrawResolverRegistry
+            val winDetails = registries.winSettlementDetailResolverRegistry
             val commands = ExtensionGameCommandExecutor(
-                registry = ExtensionGameCommandExecutorRegistry().apply {
-                    registerRiichiGameCommandHandler()
-                    freeze()
-                },
+                registry = registries.gameCommandRegistry,
                 context = ExtensionGameCommandContext(
                     gameRepository = gameRepository,
                     moduleRegistry = moduleRegistry,
@@ -188,7 +167,7 @@ class HeadlessFlowHistoryRuntime private constructor(
                 commands,
             )
             val getLegal = GetLegalActionsUseCase(gameRepository, moduleRegistry)
-            val ai = AiTurnDriver(gameRepository, getLegal, aiStrategyRegistry, GameVisibilityPolicyImpl(), moduleRegistry)
+            val ai = AiTurnDriver(gameRepository, getLegal, registries.aiStrategyRegistry, GameVisibilityPolicyImpl(), moduleRegistry)
             val clock = MonotonicClockImpl()
             val timers = GameDecisionTimerManager(gameRepository, GameDecisionAuthorityResolver(), PlayerDecisionTimerFactory(clock), clock)
             val timerSync = DecisionTimerSynchronizationService(timers, gameRepository, NoOpTimerUpdates())
@@ -201,14 +180,14 @@ class HeadlessFlowHistoryRuntime private constructor(
                 resolvePostReactionRoundOutcomeUseCase = ResolvePostReactionRoundOutcomeUseCase(
                     gameRepository,
                     moduleRegistry,
-                    PostReactionRoundOutcomeResolverRegistry().apply { freeze() },
+                    registries.postReactionRoundOutcomeResolverRegistry,
                     synchronizer,
                     winDetails,
                 ),
                 resolveWinRoundContinuationUseCase = ResolveWinRoundContinuationUseCase(
                     gameRepository,
                     moduleRegistry,
-                    WinRoundContinuationResolverRegistry().apply { freeze() },
+                    registries.winRoundContinuationResolverRegistry,
                     synchronizer,
                 ),
                 advanceRoundUseCase = AdvanceRoundUseCase(gameRepository, moduleRegistry, synchronizer, handSort, gameEvents, presentation),

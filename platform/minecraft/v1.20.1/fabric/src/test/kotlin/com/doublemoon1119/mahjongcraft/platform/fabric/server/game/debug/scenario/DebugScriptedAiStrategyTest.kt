@@ -8,6 +8,8 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.DebugMahjongExtension
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationState
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -75,7 +77,7 @@ class DebugScriptedAiStrategyTest {
     @Test
     fun `registration exposes both scripted strategies`() {
         val registry = MahjongAiStrategyRegistryImpl(defaultKey = DebugScriptedAiStrategy.TSUMOGIRI_KEY)
-        registry.registerDebugScriptedAiStrategies()
+        DebugMahjongExtension(winRoundContinuationState = DebugWinRoundContinuationState()).registerAiStrategies(registry)
 
         assertEquals(
             setOf(DebugScriptedAiStrategy.TSUMOGIRI_KEY, DebugScriptedAiStrategy.KAN_FIRST_KEY),

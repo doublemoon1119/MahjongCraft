@@ -1,13 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.registry
 
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceDtoRegistry
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.registerRiichiDiscardPilePersistenceDto
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.registerRiichiDynamicStatePersistenceDto
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.registerRiichiExhaustiveDrawReasonPersistenceDtos
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.registerRiichiPlayerStatePersistenceDto
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.registerRiichiRuleConfigPersistenceDto
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.registerTaiwanDiscardPilePersistenceDto
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.registerTaiwanRuleConfigPersistenceDto
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
@@ -52,24 +45,3 @@ fun emptyPersistenceRegistries(): PersistenceRegistries = PersistenceRegistries(
     exhaustiveDrawReasons = PersistenceDtoRegistry(),
     extensionGameActions = PersistenceDtoRegistry(),
 )
-
-/** 登記日麻規則配置、牌河、玩家與動態狀態及流局原因的 persistence mapper。 */
-fun PersistenceRegistries.registerRiichiPersistenceDtos() {
-    ruleConfigs.registerRiichiRuleConfigPersistenceDto()
-    discardPiles.registerRiichiDiscardPilePersistenceDto()
-    playerRuleStates.registerRiichiPlayerStatePersistenceDto()
-    dynamicRuleStates.registerRiichiDynamicStatePersistenceDto()
-    exhaustiveDrawReasons.registerRiichiExhaustiveDrawReasonPersistenceDtos()
-}
-
-/** 登記台麻規則配置與牌河的 persistence mapper。 */
-fun PersistenceRegistries.registerTaiwanPersistenceDtos() {
-    ruleConfigs.registerTaiwanRuleConfigPersistenceDto()
-    discardPiles.registerTaiwanDiscardPilePersistenceDto()
-}
-
-/** 建立已登記內建日麻與台麻 mapper 的 persistence registries，供不經 extension 登記的組裝處使用。 */
-fun buildBuiltInPersistenceRegistries(): PersistenceRegistries = emptyPersistenceRegistries().apply {
-    registerRiichiPersistenceDtos()
-    registerTaiwanPersistenceDtos()
-}

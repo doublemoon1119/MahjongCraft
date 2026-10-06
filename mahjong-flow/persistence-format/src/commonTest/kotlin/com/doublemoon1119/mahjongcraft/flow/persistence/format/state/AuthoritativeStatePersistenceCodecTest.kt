@@ -12,7 +12,6 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceD
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceEnvelopeDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.migration.InvalidPersistenceSchemaVersionException
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.migration.UnsupportedPersistenceSchemaVersionException
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.buildBuiltInPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
@@ -20,6 +19,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -73,7 +73,7 @@ class AuthoritativeStatePersistenceCodecTest {
     private val json = Json
 
     /** 使用所有內建 mapper 的待測 codec。 */
-    private val codec = AuthoritativeStatePersistenceCodec(buildBuiltInPersistenceRegistries(), json = json)
+    private val codec = AuthoritativeStatePersistenceCodec(bundledPersistenceRegistries(), json = json)
 
     /** 驗證空狀態能以版本化 envelope 完整 round-trip。 */
     @Test
@@ -154,7 +154,7 @@ class AuthoritativeStatePersistenceCodecTest {
     /** 驗證缺少規則 mapper 時不會產生無法恢復的存檔。 */
     @Test
     fun `unregistered persistence type is rejected`() {
-        val registries = buildBuiltInPersistenceRegistries().copy(
+        val registries = bundledPersistenceRegistries().copy(
             ruleConfigs = PersistenceDtoRegistry<MahjongRuleConfig>(),
         )
         val codecWithoutRules = AuthoritativeStatePersistenceCodec(registries)

@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.extension
 
-import com.doublemoon1119.mahjongcraft.ai.registerBuiltInAiStrategies
+import com.doublemoon1119.mahjongcraft.bundled.BuiltInMahjongExtension
 import com.doublemoon1119.mahjongcraft.bundled.BundledMahjongExtensions
 import com.doublemoon1119.mahjongcraft.extension.CoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationCategory
@@ -28,7 +28,7 @@ const val MAHJONG_EXTENSION_ENTRYPOINT: String = "${MinecraftModMetadata.MOD_ID}
 /**
  * 發現並註冊 Fabric 環境中的第三方 [MahjongExtension]。
  *
- * 規則中立的內建項目（例如內建 AI 策略）先完成註冊；接著 [BundledMahjongExtensions] 與第三方 extension 依序經由同一組回呼登記，
+ * 規則中立的 [BuiltInMahjongExtension] 先完成登記；接著 [BundledMahjongExtensions] 與第三方 extension 依序經由同一組回呼登記，
  * 取得 runtime 實際使用的同一批 registry；全部成功後由 [MahjongExtensionRegistrar] 凍結 registry。
  * 啟動 log 依來源列出所有啟用的登記：INFO 只列每個來源的筆數，DEBUG 另外列出完整內容。
  */
@@ -81,11 +81,6 @@ object FabricMahjongExtensions {
         minecraftEnvironment: MinecraftEnvironment = NonDevelopmentEnvironment,
         extensions: Iterable<MahjongExtension>,
     ): FabricExtensionRegistrationResult {
-        coreRegistries.aiStrategyRegistry.registerBuiltInAiStrategies(
-            moduleRegistry = coreRegistries.moduleRegistry,
-            extensionActionRegistry = coreRegistries.gameActionAiRegistry,
-            opponentModelRegistry = coreRegistries.opponentModelRegistry,
-        )
         // 開發環境限定的 debug 整合排在內建規則之後、第三方之前；正式產物不登記。
         val debugExtensions = if (minecraftEnvironment.isDevelopment) {
             listOf(DebugMahjongExtension(winRoundContinuationState = debugWinRoundContinuationState))
@@ -95,6 +90,11 @@ object FabricMahjongExtensions {
         val coreSources = MahjongExtensionRegistrar.registerAndFreeze(
             extensions = BundledMahjongExtensions.all + debugExtensions + extensions,
             registries = coreRegistries,
+            builtIn = BuiltInMahjongExtension(
+                moduleRegistry = coreRegistries.moduleRegistry,
+                extensionActionRegistry = coreRegistries.gameActionAiRegistry,
+                opponentModelRegistry = coreRegistries.opponentModelRegistry,
+            ),
         )
 
         // 同一個第三方類別可同時實作 MahjongExtension 與 MinecraftMahjongExtension，

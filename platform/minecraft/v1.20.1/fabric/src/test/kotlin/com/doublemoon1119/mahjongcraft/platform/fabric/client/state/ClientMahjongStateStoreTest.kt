@@ -8,8 +8,6 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HandReadinessAna
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdateEventDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdatePayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.LeaveReasonDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.registerBuiltInRuleConfigDtos
-import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.registerRiichiGameActionDtos
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDto
@@ -20,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.TableOccupancyDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.TableOccupancyPayloadDto
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledNetworkDtos
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
@@ -35,8 +34,7 @@ import kotlin.uuid.Uuid
 class ClientMahjongStateStoreTest {
 
     private val registries: NetworkDtoRegistries = DefaultNetworkDtoRegistries().apply {
-        registerBuiltInRuleConfigDtos()
-        registerRiichiGameActionDtos()
+        registerBundledNetworkDtos()
     }
 
     @Test

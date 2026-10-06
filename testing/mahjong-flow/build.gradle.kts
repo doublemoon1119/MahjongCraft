@@ -13,6 +13,7 @@ kotlin {
             implementation(libs.kotlinx.coroutines.test)
             implementation(project(":mahjong-logic"))
             implementation(project(":mahjong-flow:mahjong-flow-common"))
+            api(project(":mahjong-bundled-extensions"))
         }
     }
 }

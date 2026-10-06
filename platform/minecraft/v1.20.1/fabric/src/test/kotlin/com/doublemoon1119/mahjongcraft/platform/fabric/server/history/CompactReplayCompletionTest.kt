@@ -6,11 +6,11 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableResu
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.CompactReplayCodec
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.buildBuiltInPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.serialization.json.Json
@@ -25,7 +25,7 @@ class CompactReplayCompletionTest {
     /** 從正式終局 Replay 的字典 header 還原原始開局設定。 */
     @Test
     fun `completed replay exposes original rule settings without replaying transactions`() {
-        val registries = buildBuiltInPersistenceRegistries()
+        val registries = bundledPersistenceRegistries()
         val document = CompactReplayCodec.encodeCompact(validEvents(), HistoryRecordingPersistenceMapper(registries, Json), registries, Json)
         val settings = CompactReplayCodec.decodeRuleSettings(document, registries, matchId)
         assertEquals(table.config, settings.ruleConfig)
@@ -106,7 +106,7 @@ class CompactReplayCompletionTest {
      * @param events 欲驗證並編碼的完整對局事件。
      */
     private fun encode(events: List<HistoryOutboxEvent>) {
-        val registries = buildBuiltInPersistenceRegistries()
+        val registries = bundledPersistenceRegistries()
         val mapper = HistoryRecordingPersistenceMapper(registries, Json)
         CompactReplayCodec.encodeCompact(events, mapper, registries, Json)
     }

@@ -30,8 +30,6 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.model.SuitDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.registerBuiltInRuleConfigDtos
-import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.registerRiichiGameActionDtos
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.MahjongRuleConfigDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
@@ -74,6 +72,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledNetworkDtos
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.serialization.Serializable
@@ -99,8 +98,7 @@ class DtoRoundTripTest {
     @BeforeTest
     fun setUp() {
         registries = DefaultNetworkDtoRegistries().apply {
-            registerBuiltInRuleConfigDtos()
-            registerRiichiGameActionDtos()
+            registerBundledNetworkDtos()
         }
         json = Json { serializersModule = buildMahjongDtoSerializersModule(registries) }
     }
@@ -111,8 +109,7 @@ class DtoRoundTripTest {
         val earlyJson = Json {
             serializersModule = buildMahjongDtoSerializersModule(lateRegistries)
         }
-        lateRegistries.registerBuiltInRuleConfigDtos()
-        lateRegistries.registerRiichiGameActionDtos()
+        lateRegistries.registerBundledNetworkDtos()
         lateRegistries.freeze()
 
         val config = GameConfig(RiichiRuleConfig())

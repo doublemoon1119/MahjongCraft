@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation
 
-import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinSettlementDetail
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundContinuationContext
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
@@ -8,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.applyTo
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
@@ -22,7 +22,7 @@ import kotlin.uuid.Uuid
  * 進遊戲驗證中途胡牌時看到的是工具本身的 bug 而不是被測機制的 bug，因此照樣覆蓋。
  */
 class DebugWinRoundContinuationResolverTest {
-    private val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
+    private val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
     private val ruleModule = moduleRegistry.getModule(RiichiRuleConfig())
     private val state = DebugWinRoundContinuationState()
     private val resolver = DebugWinRoundContinuationResolver(ruleModuleId = ruleModule.id, state = state)

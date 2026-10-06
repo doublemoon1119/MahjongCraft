@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.ai
 
-import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
@@ -8,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
@@ -17,7 +17,7 @@ import kotlin.uuid.Uuid
 
 /** 驗證擴充動作 AI handler 收到的規則模組與這一局的設定一致。 */
 class ExtensionGameActionAiRegistryTest {
-    private val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
+    private val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
 
     /** handler 收到的規則模組依決策情境的對局設定解析，不同規則的對局各自拿到自己的模組。 */
     @Test

@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.ai.expectation
 
-import com.doublemoon1119.mahjongcraft.ai.riichi.registerRiichiOpponentModel
+import com.doublemoon1119.mahjongcraft.bundled.BundledRiichiExtension
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
@@ -30,7 +30,7 @@ import kotlin.test.assertTrue
 /** 驗證進階深度時套在規則模型外面的共用讀牌。 */
 class ReadingOpponentModelTest {
     private val riichi = RiichiRuleModule(BuiltInRuleModuleIds.RIICHI, RiichiRuleConfig())
-    private val registry = OpponentModelRegistry().apply { registerRiichiOpponentModel() }
+    private val registry = OpponentModelRegistry().apply { BundledRiichiExtension.registerOpponentModels(this) }
     private val advanced = registry.create(riichi, ReadingDepth.ADVANCED)
     private val basic = registry.create(riichi, ReadingDepth.BASIC)
 

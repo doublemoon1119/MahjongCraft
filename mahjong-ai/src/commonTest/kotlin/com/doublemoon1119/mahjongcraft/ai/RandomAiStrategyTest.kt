@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.ai
 
-import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExtensionGameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
@@ -12,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -249,7 +249,7 @@ class RandomAiStrategyTest {
     /** 驗證策略會使用明確注入的 registry 將第三方動作轉成命令。 */
     @Test
     fun `test own turn uses explicitly injected extension action handler`() = runTest {
-        val registry = ExtensionGameActionAiRegistry(MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }).apply {
+        val registry = ExtensionGameActionAiRegistry(MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }).apply {
             register(TestExtensionAction::class) { _, _, _ -> listOf(ExtensionCommandCandidate(GameCommand.Extension(TestExtensionCommand))) }
             freeze()
         }

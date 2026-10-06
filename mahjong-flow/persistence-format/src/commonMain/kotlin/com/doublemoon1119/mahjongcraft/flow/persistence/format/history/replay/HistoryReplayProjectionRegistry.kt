@@ -4,8 +4,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRe
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayRuleInformation
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryTileReference
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.BuiltInDiscardPilePersistenceKeys
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.BuiltinHistoryReplayDiscardCodecs
 import kotlinx.serialization.json.JsonElement
 
 /** 歷史公開資料的窄責任解碼器。
@@ -161,22 +159,4 @@ class HistoryReplayProjectionRegistry {
         require(typeKey !in target) { "Duplicate history replay projection type key: $typeKey" }
         target[typeKey] = codec
     }
-}
-
-/** 明確加入內建規則轉換器，不自動凍結或建立隱性 fallback。
- * @param registry 呼叫端提供的可註冊分類。
- */
-fun registerBuiltInHistoryReplayProjections(registry: HistoryReplayProjectionRegistry) {
-    registry.registerRiichiHistoryReplayProjections()
-    registry.registerTaiwanHistoryReplayProjections()
-}
-
-/** 登記日麻牌河的歷史投影轉換器。 */
-fun HistoryReplayProjectionRegistry.registerRiichiHistoryReplayProjections() {
-    registerDiscard(BuiltInDiscardPilePersistenceKeys.RIICHI, BuiltinHistoryReplayDiscardCodecs.riichi)
-}
-
-/** 登記台麻牌河的歷史投影轉換器。 */
-fun HistoryReplayProjectionRegistry.registerTaiwanHistoryReplayProjections() {
-    registerDiscard(BuiltInDiscardPilePersistenceKeys.TAIWAN, BuiltinHistoryReplayDiscardCodecs.taiwan)
 }

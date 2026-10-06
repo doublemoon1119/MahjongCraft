@@ -5,12 +5,11 @@ import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.ai.expectation.NeutralOpponentModel
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
-import com.doublemoon1119.mahjongcraft.ai.riichi.registerRiichiOpponentModel
+import com.doublemoon1119.mahjongcraft.bundled.BundledRiichiExtension
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistryImpl
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.HistoryReplayProjectionRegistry
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.buildBuiltInPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
@@ -21,6 +20,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDet
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistryImpl
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -55,7 +55,7 @@ class CoreExtensionRegistriesTest {
     fun `registration snapshot tracks opponent models`() {
         val registries = registries()
         val before = registries.registrationSnapshot()
-        registries.opponentModelRegistry.registerRiichiOpponentModel()
+        BundledRiichiExtension.registerOpponentModels(registries.opponentModelRegistry)
 
         assertEquals(
             listOf(ExtensionRegistrationCategory("mahjongcraft:opponent_model", "Opponent Model", listOf(BuiltInRuleModuleIds.RIICHI))),
@@ -102,7 +102,7 @@ class CoreExtensionRegistriesTest {
         moduleRegistry = MahjongModuleRegistryImpl(),
         tileTypeRegistry = TileTypeRegistryImpl(),
         networkRegistries = DefaultNetworkDtoRegistries(),
-        persistenceRegistries = buildBuiltInPersistenceRegistries(),
+        persistenceRegistries = bundledPersistenceRegistries(),
         historyReplayProjectionRegistry = HistoryReplayProjectionRegistry(),
         winCelebrationCueResolverRegistry = WinCelebrationCueResolverRegistryImpl(),
         gameActionAiRegistry = ExtensionGameActionAiRegistry(MahjongModuleRegistryImpl()),

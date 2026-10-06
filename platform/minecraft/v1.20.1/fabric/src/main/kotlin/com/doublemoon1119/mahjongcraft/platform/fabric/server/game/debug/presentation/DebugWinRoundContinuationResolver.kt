@@ -5,7 +5,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundContinuati
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
-import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
@@ -135,14 +134,5 @@ class DebugWinRoundContinuationResolver(
             .map { offset -> players[(referenceIndex + offset) % players.size] }
             .firstOrNull { it.id !in finishedAfter }
             ?.id
-    }
-}
-
-/** 登記開發用的中途胡牌 resolver，內建的每個規則模組各一個實例。 */
-fun WinRoundContinuationResolverRegistry.registerDebugWinRoundContinuationResolvers(
-    state: DebugWinRoundContinuationState,
-) {
-    listOf(BuiltInRuleModuleIds.RIICHI, BuiltInRuleModuleIds.TAIWAN).forEach { ruleModuleId ->
-        register(DebugWinRoundContinuationResolver(ruleModuleId = ruleModuleId, state = state))
     }
 }

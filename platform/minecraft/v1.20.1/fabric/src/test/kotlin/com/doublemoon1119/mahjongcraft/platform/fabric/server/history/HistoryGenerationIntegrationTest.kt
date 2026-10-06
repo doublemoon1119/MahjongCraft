@@ -1,19 +1,12 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.history
 
-import com.doublemoon1119.mahjongcraft.ai.BuiltInAiStrategyKeys
-import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
-import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
-import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
-import com.doublemoon1119.mahjongcraft.ai.registerBuiltInAiStrategies
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
-import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTransferResult
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryListRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryAccess
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryResult
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryScope
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundPosition
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.buildBuiltInPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessFlowHistoryRuntime
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessHistoryMatchRunner
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessHistoryProgress
@@ -26,6 +19,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftHistor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledHeadlessHistoryRegistries
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
@@ -312,13 +308,7 @@ class HistoryGenerationIntegrationTest {
     }
 
     /** 建立包含正式 Flow 與內建 AI 策略的隔離四 AI 對局。 */
-    private suspend fun runtime(): HeadlessFlowHistoryRuntime {
-        val modules = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
-        val strategies = MahjongAiStrategyRegistryImpl(BuiltInAiStrategyKeys.BEGINNER).apply {
-            registerBuiltInAiStrategies(modules, ExtensionGameActionAiRegistry(modules), OpponentModelRegistry())
-        }
-        return HeadlessFlowHistoryRuntime.create(HeadlessHistoryScenario.RIICHI_EAST, strategies)
-    }
+    private suspend fun runtime(): HeadlessFlowHistoryRuntime = HeadlessFlowHistoryRuntime.create(HeadlessHistoryScenario.RIICHI_EAST, bundledHeadlessHistoryRegistries())
 
     /**
      * 建立使用正式 persistence registry 與 SQLite writer 的測試實例。
@@ -332,11 +322,11 @@ class HistoryGenerationIntegrationTest {
         historyConfig: MinecraftHistoryConfig = MinecraftHistoryConfig(includeAiMatches = true),
     ): FabricHistoryOutboxWriter = FabricHistoryOutboxWriter(
         store = store,
-        registries = buildBuiltInPersistenceRegistries(),
+        registries = bundledPersistenceRegistries(),
         replayProjectionRegistry = buildTestHistoryReplayProjectionRegistry(),
         json = Json,
         dispatchers = TestDispatchers,
-        moduleRegistry = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() },
+        moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() },
         locations = TableLocationRegistry(),
         configState = MinecraftServerConfigState(MinecraftServerConfig(history = historyConfig)),
         retentionCoordinator = HistoryRetentionCoordinator(),

@@ -2,7 +2,6 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.histor
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.buildBuiltInPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryOutboxWriter
@@ -10,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryRet
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.buildTestHistoryReplayProjectionRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
 import com.mojang.brigadier.tree.CommandNode
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -29,7 +29,7 @@ class FabricDebugHistoryCommandTest {
         val store = AuthoritativeStateStore()
         val writer = FabricHistoryOutboxWriter(
             store = store,
-            registries = buildBuiltInPersistenceRegistries(),
+            registries = bundledPersistenceRegistries(),
             replayProjectionRegistry = buildTestHistoryReplayProjectionRegistry(),
             json = Json,
             dispatchers = TestDispatchers,

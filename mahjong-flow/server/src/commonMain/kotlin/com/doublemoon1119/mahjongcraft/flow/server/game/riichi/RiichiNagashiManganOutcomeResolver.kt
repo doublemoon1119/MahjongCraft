@@ -4,7 +4,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcom
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ResolvedRoundOutcome
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundOutcomePresentationClassification
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolver
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
@@ -68,9 +67,4 @@ class RiichiNagashiManganOutcomeResolver : PostReactionRoundOutcomeResolver {
         val dealerId = tableState.dealerPlayerId
         return tableState.nearestPlayerInTurnOrder(dealerId, achieverIds)
     }
-}
-
-/** 登記 bundled 日麻的流局滿貫 outcome resolver。 */
-fun PostReactionRoundOutcomeResolverRegistry.registerRiichiNagashiManganOutcomeResolver() {
-    register(RiichiNagashiManganOutcomeResolver())
 }

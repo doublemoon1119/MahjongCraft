@@ -8,8 +8,8 @@ import kotlin.reflect.KClass
 /**
  * 領域層開放介面（例如 [MahjongRuleConfig]）與其對應
  * DTO 之間的通用註冊表，比照 [MahjongModuleRegistryImpl] 的既有精神：建構時是空
- * 的對照表，日麻/台麻透過 `registerBuiltInRuleConfigDtos()` 呼叫 [register] 註冊進來，第三方規則
- * 模組要支援序列化的話走同一套流程，這個類別本身不知道、也不在乎誰註冊了什麼。
+ * 的對照表，各規則（例如日麻）在自己的 extension 呼叫 [register] 註冊進來，第三方規則模組要支援
+ * 序列化的話走同一套流程，這個類別本身不知道、也不在乎誰註冊了什麼。
  *
  * 領域層的這幾組型別本來就刻意設計成開放介面（讓第三方能註冊自己的規則），DTO 層如果寫死成
  * `sealed interface` 會讓第三方規則完全無法被序列化，因此這裡改用執行期註冊表 +

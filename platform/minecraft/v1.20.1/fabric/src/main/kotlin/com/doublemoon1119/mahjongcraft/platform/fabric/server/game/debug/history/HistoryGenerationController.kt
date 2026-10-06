@@ -6,12 +6,20 @@ import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatch
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingDecision
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingTerminal
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTransferResult
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessFlowHistoryRuntime
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessHistoryMatchRunner
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessHistoryMatchRuntime
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessHistoryProgress
+import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessHistoryRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessHistoryScenario
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryOutboxWriter
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryGenerationReceipt
@@ -54,19 +62,46 @@ fun interface HistoryGenerationRuntimeFactory {
 }
 
 /**
- * 使用已初始化的 AI 登記表建立隔離生成環境。
- * @property aiStrategies 正式擴充初始化完成後的策略登記表。
+ * 使用 extension 初始化完成後的 registry 建立隔離生成環境，讓生成的對局與正式對局使用同一套規則登記。
+ *
+ * @property moduleRegistry 規則模組。
+ * @property aiStrategies AI 策略。
+ * @property winCelebrationCueResolvers 胡牌演出提示。
+ * @property postActionExhaustiveDrawResolvers 動作後的途中流局判定。
+ * @property postReactionRoundOutcomeResolvers 回應結束後的本局結果判定。
+ * @property winRoundContinuationResolvers 胡牌後本局是否繼續。
+ * @property winSettlementDetailResolvers 胡牌詳情。
+ * @property gameCommands 擴充命令 handler。
  */
 @Single
 class FabricHistoryGenerationRuntimeFactory(
+    @Provided private val moduleRegistry: MahjongModuleRegistry,
     @Provided private val aiStrategies: MahjongAiStrategyRegistry,
+    @Provided private val winCelebrationCueResolvers: WinCelebrationCueResolverRegistry,
+    @Provided private val postActionExhaustiveDrawResolvers: PostActionExhaustiveDrawResolverRegistry,
+    @Provided private val postReactionRoundOutcomeResolvers: PostReactionRoundOutcomeResolverRegistry,
+    @Provided private val winRoundContinuationResolvers: WinRoundContinuationResolverRegistry,
+    @Provided private val winSettlementDetailResolvers: WinSettlementDetailResolverRegistry,
+    @Provided private val gameCommands: ExtensionGameCommandExecutorRegistry,
 ) : HistoryGenerationRuntimeFactory {
     /**
      * 建立四個真 AI 座位的完整對局。
      * @param scenario 場長情境。
      * @return 不產生世界實體的隔離環境。
      */
-    override suspend fun create(scenario: HeadlessHistoryScenario): HeadlessHistoryMatchRuntime = HeadlessFlowHistoryRuntime.create(scenario, aiStrategies)
+    override suspend fun create(scenario: HeadlessHistoryScenario): HeadlessHistoryMatchRuntime = HeadlessFlowHistoryRuntime.create(
+        scenario = scenario,
+        registries = HeadlessHistoryRegistries(
+            moduleRegistry = moduleRegistry,
+            aiStrategyRegistry = aiStrategies,
+            winCelebrationCueResolverRegistry = winCelebrationCueResolvers,
+            postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolvers,
+            postReactionRoundOutcomeResolverRegistry = postReactionRoundOutcomeResolvers,
+            winRoundContinuationResolverRegistry = winRoundContinuationResolvers,
+            winSettlementDetailResolverRegistry = winSettlementDetailResolvers,
+            gameCommandRegistry = gameCommands,
+        ),
+    )
 }
 
 /** 開始生成的安全結果，不含 SQL 或原始例外。 */

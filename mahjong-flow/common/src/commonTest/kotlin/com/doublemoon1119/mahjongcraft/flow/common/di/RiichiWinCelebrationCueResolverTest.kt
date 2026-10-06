@@ -4,13 +4,14 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPointResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledWinCelebrationCueResolverRegistry
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /** 內建日麻胡牌展示理由的輸出規則測試。 */
-class BuiltInWinCelebrationCuesTest {
-    private val registry = createBuiltInWinCelebrationCueResolverRegistry()
+class RiichiWinCelebrationCueResolverTest {
+    private val registry = bundledWinCelebrationCueResolverRegistry()
 
     /** 自然役滿會解析成對應的展示理由。 */
     @Test

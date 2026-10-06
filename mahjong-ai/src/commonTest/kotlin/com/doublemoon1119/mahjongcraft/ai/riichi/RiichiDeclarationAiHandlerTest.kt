@@ -23,7 +23,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 /** 驗證日麻立直 handler 產生的候選。 */
-class RiichiGameActionAiRegistrationTest {
+class RiichiDeclarationAiHandlerTest {
     /** 二三四萬、四五六筒、七八九筒、二三四條、五條，摸到北：打北、打二條或打五條都聽牌。 */
     @Test
     fun `every discard that keeps tenpai becomes a riichi candidate including the drawn tile`() {

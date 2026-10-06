@@ -1,14 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.history
 
-import com.doublemoon1119.mahjongcraft.ai.BuiltInAiStrategyKeys
-import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
-import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
-import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
-import com.doublemoon1119.mahjongcraft.ai.registerBuiltInAiStrategies
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
-import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.buildBuiltInPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessFlowHistoryRuntime
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
@@ -19,6 +12,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftHistor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledHeadlessHistoryRegistries
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -83,11 +79,7 @@ class HistoryGenerationControllerTest {
                 creations++
                 entered.complete(Unit)
                 release.await()
-                val modules = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
-                val strategies = MahjongAiStrategyRegistryImpl(BuiltInAiStrategyKeys.BEGINNER).apply {
-                    registerBuiltInAiStrategies(modules, ExtensionGameActionAiRegistry(modules), OpponentModelRegistry())
-                }
-                HeadlessFlowHistoryRuntime.create(scenario, strategies)
+                HeadlessFlowHistoryRuntime.create(scenario, bundledHeadlessHistoryRegistries())
             },
             store = store,
             configState = config,
@@ -127,11 +119,11 @@ class HistoryGenerationControllerTest {
         configState: MinecraftServerConfigState,
     ): FabricHistoryOutboxWriter = FabricHistoryOutboxWriter(
         store = store,
-        registries = buildBuiltInPersistenceRegistries(),
+        registries = bundledPersistenceRegistries(),
         replayProjectionRegistry = buildTestHistoryReplayProjectionRegistry(),
         json = Json,
         dispatchers = TestDispatchers,
-        moduleRegistry = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() },
+        moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() },
         locations = TableLocationRegistry(),
         configState = configState,
         retentionCoordinator = HistoryRetentionCoordinator(),

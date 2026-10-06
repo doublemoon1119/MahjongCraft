@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.rule
 
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceDtoRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.IdentifiedTilePersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.RelativeDirectionPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toDomain
@@ -9,7 +8,6 @@ import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoLiability
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoYaku
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
-import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
 import kotlinx.serialization.Serializable
 
 /** [PaoYaku] 的 persistence DTO。 */
@@ -32,24 +30,8 @@ data class RiichiPlayerStatePersistenceDto(
     val paoLiability: PaoLiabilityPersistenceDto?,
 )
 
-/** 登記日麻的玩家規則狀態 persistence mapper。 */
-fun PersistenceDtoRegistry<PlayerRuleState>.registerRiichiPlayerStatePersistenceDto() {
-    register(
-        typeKey = "builtin:riichi_player_state",
-        domainClass = RiichiPlayerState::class,
-        serializer = RiichiPlayerStatePersistenceDto.serializer(),
-        toDto = RiichiPlayerState::toPersistenceDto,
-        toDomain = RiichiPlayerStatePersistenceDto::toDomain,
-    )
-}
-
-/** 建立已註冊內建日麻玩家規則狀態的 persistence registry。 */
-fun buildPlayerRuleStatePersistenceRegistry(): PersistenceDtoRegistry<PlayerRuleState> = PersistenceDtoRegistry<PlayerRuleState>().apply {
-    registerRiichiPlayerStatePersistenceDto()
-}
-
 /** 將 [RiichiPlayerState] 轉換成 persistence DTO。 */
-private fun RiichiPlayerState.toPersistenceDto(): RiichiPlayerStatePersistenceDto = RiichiPlayerStatePersistenceDto(
+fun RiichiPlayerState.toPersistenceDto(): RiichiPlayerStatePersistenceDto = RiichiPlayerStatePersistenceDto(
     riichiTile = riichiTile?.toPersistenceDto(),
     doubleRiichiTile = doubleRiichiTile?.toPersistenceDto(),
     isIppatsu = isIppatsu,
@@ -57,7 +39,7 @@ private fun RiichiPlayerState.toPersistenceDto(): RiichiPlayerStatePersistenceDt
 )
 
 /** 將日麻玩家規則狀態 persistence DTO 還原成 [RiichiPlayerState]。 */
-private fun RiichiPlayerStatePersistenceDto.toDomain(): RiichiPlayerState = RiichiPlayerState(
+fun RiichiPlayerStatePersistenceDto.toDomain(): RiichiPlayerState = RiichiPlayerState(
     riichiTile = riichiTile?.toDomain(),
     doubleRiichiTile = doubleRiichiTile?.toDomain(),
     isIppatsu = isIppatsu,
