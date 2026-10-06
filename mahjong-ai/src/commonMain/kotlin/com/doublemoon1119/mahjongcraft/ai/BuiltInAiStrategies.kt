@@ -18,7 +18,7 @@ object BuiltInAiStrategyKeys {
 }
 
 /**
- * 依初級、中級、高級、隨機出牌的順序註冊 `:mahjong-ai` 內建支援的策略；列出策略的畫面依此順序呈現。註冊方式與
+ * 依初級、中級、高級、隨機出牌的順序註冊 `:mahjong-ai` 內建支援的策略；列出策略時依此順序呈現。註冊方式與
  * 第三方策略相同，皆透過 [MahjongAiStrategyRegistry.register]，不具特權。
  *
  * @param moduleRegistry 期望值策略依對局設定取得規則模組。

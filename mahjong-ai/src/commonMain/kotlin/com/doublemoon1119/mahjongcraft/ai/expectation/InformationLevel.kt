@@ -19,7 +19,7 @@ enum class DefenseScope {
  *
  * @property countsVisibleTiles 未見牌是否扣除場上所有可見牌；為 `false` 時只扣除自己的手牌。
  * @property winValueDetail 和牌打點看得多仔細，介於 0 到 1：1 使用規則算出的點數，0 所有和牌都以目前手牌的基準打點計算，
- *   中間值依比例混合兩者，例如 0.5 時立直多出的打點只算一半。
+ *   中間值依比例混合兩者，例如 0.5 時宣告（例如日麻的立直）多出的打點只算一半。
  * @property defenseScope 放銃損失列入計算的對手範圍。
  * @property considersFutureRisk 是否計入繼續進攻時後續捨牌的放銃風險。
  * @property considersPlacement 是否在接近終局時把點數得失換算為名次得失。
@@ -52,7 +52,8 @@ data class InformationLevel(
         /**
          * 中級：數場上的牌、對高威脅的對手防守，打點只粗略區分。
          *
-         * 打點只計入規則點數與基準打點差距的三成，因此偏好快速和牌，只有打點明顯較高或沒有役時才立直。
+         * 打點只計入規則點數與基準打點差距的三成，因此偏好快速和牌；只有宣告後打點明顯較高，或不宣告就不能和牌時，
+         * 才會宣告（例如日麻的立直）。
          */
         val INTERMEDIATE: InformationLevel = InformationLevel(
             countsVisibleTiles = true,

@@ -7,8 +7,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 /**
  * AI 玩家的決策策略：給定目前的情境，決定要執行哪個操作。
  *
- * 只負責「決定要做什麼」，不負責「怎麼把決定套用到桌況」——那是呼叫端（伺服器端的協調邏輯）的事，
- * 這裡完全不依賴 `:mahjong-flow-server` 的 use case 層。
+ * 只負責「決定要做什麼」，不負責「怎麼把決定套用到桌況」——那是呼叫端的事，這裡不依賴任何套用決定的流程。
  *
  * [decideGameCommand] 回傳 [GameCommand] 而非 [GameAction]：兩者形狀不是一對一
  * （例如某些擴充動作還需要由規則提供的 AI mapper 補齊命令參數；捨牌本身也不在

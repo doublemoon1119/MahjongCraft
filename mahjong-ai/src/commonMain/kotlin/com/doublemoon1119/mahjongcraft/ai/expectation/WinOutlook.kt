@@ -92,7 +92,7 @@ internal data class TenpaiProfile(
 }
 
 /**
- * 聽牌時的一種打法，例如默聽或宣告某個動作。
+ * 聽牌時的一種打法，例如不宣告，或宣告某個動作。
  *
  * @property profile 採用這種打法時的和牌率與點數。
  * @property cost 採用這種打法時立即付出的點數。

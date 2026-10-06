@@ -5,10 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import kotlin.random.Random
 
 /**
- * [MahjongAiStrategy] 的 Dummy 實作：純粹隨機選擇，不評估手牌好壞、不追求胡牌效率。
- *
- * 用途是讓 AI 玩家能先動起來、把整條「AI 該不該行動、行動結果怎麼套用」的流程跑通，之後再用真正
- * 會評估局面的策略取代或並存（[MahjongAiStrategy] 介面本身已經支援多個實作）。
+ * 純粹隨機選擇的 [MahjongAiStrategy]：不評估手牌好壞、不追求胡牌效率。
  *
  * @property random 用於所有隨機選擇的亂數來源，測試時可注入固定種子的實例讓行為可預期。
  * @property extensionActionRegistry 將規則 extension 動作轉成可執行命令的註冊表。
