@@ -40,6 +40,9 @@ internal class HistoryRuleSettingsScreen(
     /** 上一次成功解析的呈現資料。 */
     private var resolved: ResolvedGameConfigPresentation? = null
 
+    /** 返回按鈕；只有它顯示時置中。 */
+    private var backButton: ButtonWidget? = null
+
     /** 失敗時可重新查詢的固定底列按鈕。 */
     private var retryButton: ButtonWidget? = null
 
@@ -48,14 +51,22 @@ internal class HistoryRuleSettingsScreen(
         layout = HistorySummaryLayout.measure(width, height)
         dragging = false
         clearChildren()
-        val buttonWidth = ((width - 28) / 2).coerceAtLeast(1)
-        val buttonLeft = ((width - buttonWidth * 2 - 4) / 2).coerceAtLeast(8)
-        addDrawableChild(
-            ButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.BACK)) { session.backToSummary() }
-                .dimensions(buttonLeft, layout.footerTop, buttonWidth, 20).build(),
-        )
+        val (backBounds, retryBounds) = layout.footerButtons(width, retryVisible = true)
+        backButton = ButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.BACK)) { session.backToSummary() }
+            .dimensions(backBounds.x, backBounds.y, backBounds.width, backBounds.height).build().also(::addDrawableChild)
         retryButton = ButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.RETRY)) { session.controller.retry() }
-            .dimensions(buttonLeft + buttonWidth + 4, layout.footerTop, buttonWidth, 20).build().also(::addDrawableChild)
+            .dimensions(checkNotNull(retryBounds).x, retryBounds.y, retryBounds.width, retryBounds.height).build().also(::addDrawableChild)
+    }
+
+    /**
+     * 依重試按鈕是否顯示調整底部按鈕位置：只有返回按鈕時置中，兩顆時並排置中。
+     *
+     * @param retryVisible 是否顯示重試按鈕。
+     */
+    private fun placeFooter(retryVisible: Boolean) {
+        val (back, retry) = layout.footerButtons(width, retryVisible)
+        backButton?.x = back.x
+        retry?.let { retryButton?.x = it.x }
     }
 
     /** 歷史畫面不暫停整合伺服器。 */
@@ -145,7 +156,9 @@ internal class HistoryRuleSettingsScreen(
         context.drawCenteredTextWithShadow(textRenderer, title, width / 2, 2, 0xffffff)
         val status = session.controller.state.value.ruleSettings?.status ?: HistoryBrowseStatus.Loading
         retryButton?.active = session.controller.canRetry()
-        retryButton?.visible = status is HistoryBrowseStatus.Failed
+        val retryVisible = status is HistoryBrowseStatus.Failed
+        retryButton?.visible = retryVisible
+        placeFooter(retryVisible)
         retryButton?.tooltip = if (session.controller.isRefreshCoolingDown()) Tooltip.of(Text.translatable(MinecraftHistoryScreenKeys.QUERY_COOLDOWN_TOOLTIP)) else null
         scroll = layout.clampScroll(scroll, contentHeight())
         context.enableScissor(8, layout.contentTop, width - 8, layout.contentBottom)

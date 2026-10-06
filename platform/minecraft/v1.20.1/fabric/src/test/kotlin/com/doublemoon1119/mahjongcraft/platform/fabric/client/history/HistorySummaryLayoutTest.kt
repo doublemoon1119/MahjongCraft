@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
+import kotlin.math.abs
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -68,5 +69,24 @@ class HistorySummaryLayoutTest {
         assertEquals(0.0, layout.clampScroll(-1.0, 100))
         assertEquals(0.0, layout.clampScroll(1000.0, 10))
         assertTrue(layout.scrollbar(1000, 100.0).thumbHeight <= layout.viewportHeight)
+    }
+
+    /** 只有返回按鈕時置中；顯示重試時兩顆按鈕並排置中、返回在左，且都在畫面內。 */
+    @Test
+    fun `footer centers the back button alone and pairs it with retry`() {
+        listOf(320, 427, 961).forEach { width ->
+            val layout = HistorySummaryLayout.measure(width, 240)
+            val (alone, none) = layout.footerButtons(width, retryVisible = false)
+            val (back, retry) = layout.footerButtons(width, retryVisible = true)
+
+            assertEquals(null, none)
+            assertTrue(abs(alone.x - (width - alone.x - alone.width)) <= 1, "back button must be centered")
+            val pairRight = checkNotNull(retry).x + retry.width
+            assertTrue(abs(back.x - (width - pairRight)) <= 1, "pair must be centered")
+            assertEquals(back.x + back.width + 4, retry.x)
+            assertTrue(back.x >= 0 && pairRight <= width)
+            assertEquals(layout.footerTop, alone.y)
+            assertEquals(layout.footerTop, retry.y)
+        }
     }
 }
