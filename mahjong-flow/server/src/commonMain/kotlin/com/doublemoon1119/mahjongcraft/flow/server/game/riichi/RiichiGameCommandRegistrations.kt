@@ -9,18 +9,26 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionG
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
 import kotlin.uuid.Uuid
 
-/** 登記內建日麻立直命令的 handler。 */
-fun ExtensionGameCommandExecutorRegistry.registerRiichiGameCommandHandler(declareRiichiUseCase: DeclareRiichiUseCase) {
-    register(
-        RiichiGameCommand::class,
+/** 登記內建日麻立直命令的 handler；每個執行環境以自己的流程服務建立 [DeclareRiichiUseCase]。 */
+fun ExtensionGameCommandExecutorRegistry.registerRiichiGameCommandHandler() {
+    register(RiichiGameCommand::class) { context ->
+        val declareRiichiUseCase = DeclareRiichiUseCase(
+            gameRepository = context.gameRepository,
+            moduleRegistry = context.moduleRegistry,
+            snapshotSynchronizer = context.snapshotSynchronizer,
+            handSortPreferenceStore = context.handSortPreferenceStore,
+            postActionExhaustiveDrawResolverRegistry = context.postActionExhaustiveDrawResolverRegistry,
+            eventPublisher = context.eventPublisher,
+            presentationPublisher = context.presentationPublisher,
+        )
         object : ExtensionGameCommandHandler<RiichiGameCommand> {
             override suspend fun execute(
                 gameId: Uuid,
                 playerId: Uuid,
                 command: RiichiGameCommand,
             ): Outcome<Unit, GameError> = declareRiichiUseCase(gameId, playerId, command.tileId)
-        },
-    )
+        }
+    }
 }
 
 /** 登記內建日麻立直動作的命令 factory。 */

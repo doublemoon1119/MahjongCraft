@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReacti
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import org.koin.core.annotation.ComponentScan
 import org.koin.core.annotation.Module
 import org.koin.core.annotation.Single
@@ -39,9 +40,9 @@ class FlowServerModule {
     @Single
     fun extensionGameCommandExecutorRegistry(): ExtensionGameCommandExecutorRegistry = ExtensionGameCommandExecutorRegistry()
 
-    /** 建立已包含內建規則、並開放 extension 啟動期登記的 AI action registry。 */
+    /** 建立開放 extension 啟動期登記的 AI action registry。 */
     @Single
-    fun extensionGameActionAiRegistry(): ExtensionGameActionAiRegistry = ExtensionGameActionAiRegistry()
+    fun extensionGameActionAiRegistry(moduleRegistry: MahjongModuleRegistry): ExtensionGameActionAiRegistry = ExtensionGameActionAiRegistry(moduleRegistry)
 
     /** 建立供規則 extension 登記最終捨牌後特殊結果的 registry。 */
     @Single

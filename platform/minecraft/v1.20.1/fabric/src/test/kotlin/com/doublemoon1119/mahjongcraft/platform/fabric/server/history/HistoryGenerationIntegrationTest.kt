@@ -279,7 +279,7 @@ class HistoryGenerationIntegrationTest {
     private suspend fun runtime(): HeadlessFlowHistoryRuntime {
         val modules = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
         val strategies = MahjongAiStrategyRegistryImpl(BuiltInAiStrategyKeys.BEGINNER).apply {
-            registerBuiltInAiStrategies(modules, ExtensionGameActionAiRegistry(), OpponentModelRegistry())
+            registerBuiltInAiStrategies(modules, ExtensionGameActionAiRegistry(modules), OpponentModelRegistry())
         }
         return HeadlessFlowHistoryRuntime.create(HeadlessHistoryScenario.RIICHI_EAST, strategies)
     }

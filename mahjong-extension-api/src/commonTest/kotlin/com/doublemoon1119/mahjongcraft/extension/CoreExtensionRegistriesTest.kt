@@ -105,7 +105,7 @@ class CoreExtensionRegistriesTest {
         persistenceRegistries = buildBuiltInPersistenceRegistries(),
         historyReplayProjectionRegistry = HistoryReplayProjectionRegistry(),
         winCelebrationCueResolverRegistry = WinCelebrationCueResolverRegistryImpl(),
-        gameActionAiRegistry = ExtensionGameActionAiRegistry(),
+        gameActionAiRegistry = ExtensionGameActionAiRegistry(MahjongModuleRegistryImpl()),
         aiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = RandomAiStrategy.KEY),
         opponentModelRegistry = OpponentModelRegistry(),
         gameActionCommandFactoryRegistry = ExtensionGameActionCommandFactoryRegistry(),

@@ -5,7 +5,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.network.dto.command.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
-import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.DeclareRiichiUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.HandSortPreferenceUpdateMode
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.SetHandSortPreferenceUseCase
@@ -86,7 +85,6 @@ class MahjongCraftMod : ModInitializer {
             coreRegistries = koin.get<CoreExtensionRegistries>(),
             presentationRegistries = koin.get<MinecraftPresentationRegistries>(),
             tablePropKindRegistry = koin.get<FabricTablePropKindRegistry>(),
-            declareRiichiUseCase = koin.get<DeclareRiichiUseCase>(),
             debugWinRoundContinuationState = koin.get<DebugWinRoundContinuationState>(),
             minecraftEnvironment = koin.get<MinecraftEnvironment>(),
         )

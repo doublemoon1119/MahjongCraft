@@ -22,7 +22,6 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.state.Authoritati
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
-import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.DeclareRiichiUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetPlayerDecisionOptionsUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateCleaner
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateRestorer
@@ -135,7 +134,6 @@ class FabricApplicationModuleTest {
             coreRegistries = koin.get<CoreExtensionRegistries>(),
             presentationRegistries = koin.get<MinecraftPresentationRegistries>(),
             tablePropKindRegistry = koin.get<FabricTablePropKindRegistry>(),
-            declareRiichiUseCase = koin.get<DeclareRiichiUseCase>(),
             extensions = listOf(extension),
         )
 
@@ -159,7 +157,6 @@ class FabricApplicationModuleTest {
             coreRegistries = koin.get<CoreExtensionRegistries>(),
             presentationRegistries = koin.get<MinecraftPresentationRegistries>(),
             tablePropKindRegistry = koin.get<FabricTablePropKindRegistry>(),
-            declareRiichiUseCase = koin.get<DeclareRiichiUseCase>(),
             minecraftEnvironment = object : MinecraftEnvironment {
                 override val isDevelopment: Boolean = true
             },
@@ -203,7 +200,6 @@ class FabricApplicationModuleTest {
             coreRegistries = coreRegistries,
             presentationRegistries = presentationRegistries,
             tablePropKindRegistry = koin.get<FabricTablePropKindRegistry>(),
-            declareRiichiUseCase = koin.get<DeclareRiichiUseCase>(),
             extensions = emptyList(),
         )
 

@@ -13,7 +13,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInTileTypes
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInWinCelebrationCueResolvers
 import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.registerBuiltInRuleConfigDtos
-import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.DeclareRiichiUseCase
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decision.DebugRoundPreparationResolver
@@ -47,7 +46,6 @@ object FabricMahjongExtensions {
         coreRegistries: CoreExtensionRegistries,
         presentationRegistries: MinecraftPresentationRegistries,
         tablePropKindRegistry: FabricTablePropKindRegistry,
-        declareRiichiUseCase: DeclareRiichiUseCase,
         debugWinRoundContinuationState: DebugWinRoundContinuationState,
         minecraftEnvironment: MinecraftEnvironment,
     ) {
@@ -58,7 +56,6 @@ object FabricMahjongExtensions {
                 coreRegistries = coreRegistries,
                 presentationRegistries = presentationRegistries,
                 tablePropKindRegistry = tablePropKindRegistry,
-                declareRiichiUseCase = declareRiichiUseCase,
                 debugWinRoundContinuationState = debugWinRoundContinuationState,
                 minecraftEnvironment = minecraftEnvironment,
                 extensions = extensions,
@@ -83,7 +80,6 @@ object FabricMahjongExtensions {
         coreRegistries: CoreExtensionRegistries,
         presentationRegistries: MinecraftPresentationRegistries,
         tablePropKindRegistry: FabricTablePropKindRegistry,
-        declareRiichiUseCase: DeclareRiichiUseCase,
         debugWinRoundContinuationState: DebugWinRoundContinuationState = DebugWinRoundContinuationState(),
         // 預設不註冊開發用的中途胡牌 resolver：這個多載的其他測試呼叫端只關心依賴圖，正式呼叫端
         // （MahjongCraftMod）會傳入真正的 MinecraftEnvironment。
@@ -115,12 +111,7 @@ object FabricMahjongExtensions {
         }
 
         val coreSources = MahjongExtensionRegistrar.registerAndFreeze(
-            extensions = listOf(
-                BundledRiichiExtension(
-                    moduleRegistry = coreRegistries.moduleRegistry,
-                    declareRiichiUseCase = declareRiichiUseCase,
-                ),
-            ) + extensions,
+            extensions = listOf(BundledRiichiExtension) + extensions,
             registries = coreRegistries,
         )
 

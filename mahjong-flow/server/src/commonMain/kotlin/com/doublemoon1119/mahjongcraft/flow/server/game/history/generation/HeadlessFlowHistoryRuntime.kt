@@ -24,6 +24,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiTurnDriver
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandContext
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutor
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ForcedAutoPlayDriver
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameActionRouter
@@ -33,7 +35,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReacti
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
-import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.DeclareRiichiUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.registerRiichiGameCommandHandler
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.registerRiichiPostActionExhaustiveDrawResolvers
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.registerRiichiWinSettlementDetailResolver
@@ -161,11 +162,21 @@ class HeadlessFlowHistoryRuntime private constructor(
                 registerRiichiWinSettlementDetailResolver()
                 freeze()
             }
-            val declareRiichi = DeclareRiichiUseCase(gameRepository, moduleRegistry, synchronizer, handSort, postAction, gameEvents, presentation)
-            val commands = ExtensionGameCommandExecutorRegistry().apply {
-                registerRiichiGameCommandHandler(declareRiichi)
-                freeze()
-            }
+            val commands = ExtensionGameCommandExecutor(
+                registry = ExtensionGameCommandExecutorRegistry().apply {
+                    registerRiichiGameCommandHandler()
+                    freeze()
+                },
+                context = ExtensionGameCommandContext(
+                    gameRepository = gameRepository,
+                    moduleRegistry = moduleRegistry,
+                    snapshotSynchronizer = synchronizer,
+                    handSortPreferenceStore = handSort,
+                    postActionExhaustiveDrawResolverRegistry = postAction,
+                    eventPublisher = gameEvents,
+                    presentationPublisher = presentation,
+                ),
+            )
             val router = GameActionRouter(
                 DrawTileUseCase(gameRepository, moduleRegistry, synchronizer, gameEvents, presentation),
                 DiscardTileUseCase(gameRepository, moduleRegistry, synchronizer, handSort, postAction, gameEvents, presentation),

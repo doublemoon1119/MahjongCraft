@@ -32,7 +32,7 @@ import kotlin.uuid.Uuid
  * @property respondToDiscardUseCase 回應捨牌反應視窗用例。
  * @property respondToKanUseCase 回應搶槓反應視窗用例。
  * @property declareAbortiveDrawUseCase 通用途中流局宣告用例。
- * @property extensionCommandRegistry 規則擴充命令 handler registry。
+ * @property extensionCommandExecutor 規則擴充命令的執行者。
  */
 @Factory
 class GameActionRouter(
@@ -43,7 +43,7 @@ class GameActionRouter(
     private val respondToDiscardUseCase: RespondToDiscardUseCase,
     private val respondToKanUseCase: RespondToKanUseCase,
     private val declareAbortiveDrawUseCase: DeclareAbortiveDrawUseCase,
-    private val extensionCommandRegistry: ExtensionGameCommandExecutorRegistry,
+    private val extensionCommandExecutor: ExtensionGameCommandExecutor,
     private val submitRoundPreparationUseCase: SubmitRoundPreparationUseCase? = null,
 ) {
     /**
@@ -61,7 +61,7 @@ class GameActionRouter(
     ): Outcome<Unit, GameError> = when (command) {
         is GameCommand.SubmitRoundPreparation -> submitRoundPreparationUseCase?.invoke(gameId, playerId, command.submission)
             ?: Outcome.Error(GameError.RoundPreparationUnavailable(gameId, playerId))
-        is GameCommand.Extension -> extensionCommandRegistry.execute(gameId, playerId, command.value)
+        is GameCommand.Extension -> extensionCommandExecutor.execute(gameId, playerId, command.value)
         GameCommand.Draw -> drawTileUseCase(gameId, playerId)
         is GameCommand.Discard -> discardTileUseCase(gameId, playerId, command.tileId)
         GameCommand.Tsumo -> declareTsumoUseCase(gameId, playerId)

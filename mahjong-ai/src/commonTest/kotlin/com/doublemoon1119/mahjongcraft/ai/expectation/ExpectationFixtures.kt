@@ -38,8 +38,8 @@ internal object ExpectationFixtures {
     }
 
     /** 登記日麻立直 handler 的擴充動作 registry。 */
-    val extensionRegistry: ExtensionGameActionAiRegistry = ExtensionGameActionAiRegistry().apply {
-        registerRiichiGameActionHandler(moduleRegistry)
+    val extensionRegistry: ExtensionGameActionAiRegistry = ExtensionGameActionAiRegistry(moduleRegistry).apply {
+        registerRiichiGameActionHandler()
         freeze()
     }
 

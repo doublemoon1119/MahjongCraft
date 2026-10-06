@@ -155,6 +155,6 @@ class HeadlessFlowHistoryRuntimeTest {
      */
     private fun strategies() = MahjongAiStrategyRegistryImpl(BuiltInAiStrategyKeys.BEGINNER).apply {
         val modules = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
-        registerBuiltInAiStrategies(modules, ExtensionGameActionAiRegistry(), OpponentModelRegistry())
+        registerBuiltInAiStrategies(modules, ExtensionGameActionAiRegistry(modules), OpponentModelRegistry())
     }
 }

@@ -13,7 +13,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
-import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.DeclareRiichiUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.registerRiichiGameCommandHandler
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.registerRiichiPostActionExhaustiveDrawResolvers
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.registerRiichiWinSettlementDetailResolver
@@ -114,18 +113,21 @@ class RoomToRoomFullLifecycleIntegrationTest {
             registerRiichiWinSettlementDetailResolver()
             freeze()
         }
-        val declareRiichiUseCase = DeclareRiichiUseCase(
-            gameRepo,
-            moduleRegistry,
-            snapshotSynchronizer,
-            handSortPreferenceStore,
-            postActionExhaustiveDrawResolverRegistry,
-            gameEventPublisher,
-            presentationPublisher,
+        val extensionCommandExecutor = ExtensionGameCommandExecutor(
+            registry = ExtensionGameCommandExecutorRegistry().apply {
+                registerRiichiGameCommandHandler()
+                freeze()
+            },
+            context = ExtensionGameCommandContext(
+                gameRepository = gameRepo,
+                moduleRegistry = moduleRegistry,
+                snapshotSynchronizer = snapshotSynchronizer,
+                handSortPreferenceStore = handSortPreferenceStore,
+                postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
+                eventPublisher = gameEventPublisher,
+                presentationPublisher = presentationPublisher,
+            ),
         )
-        val extensionCommandRegistry = ExtensionGameCommandExecutorRegistry().apply {
-            registerRiichiGameCommandHandler(declareRiichiUseCase)
-        }
 
         val router = GameActionRouter(
             drawTileUseCase = DrawTileUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher, presentationPublisher),
@@ -172,7 +174,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
             ),
             declareAbortiveDrawUseCase = DeclareAbortiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, gameEventPublisher),
-            extensionCommandRegistry = extensionCommandRegistry,
+            extensionCommandExecutor = extensionCommandExecutor,
         )
         val getLegalActionsUseCase = GetLegalActionsUseCase(gameRepo, moduleRegistry)
         val aiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = FakeAiStrategy.KEY).apply {

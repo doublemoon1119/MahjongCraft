@@ -3,6 +3,8 @@ package com.doublemoon1119.mahjongcraft.ai
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import kotlin.reflect.KClass
 import kotlin.uuid.Uuid
 
@@ -24,12 +26,20 @@ data class ExtensionCommandCandidate(
 
 /** 將一種擴充動作轉換成 AI 可執行命令的策略。 */
 fun interface ExtensionGameActionAiHandler<A : ExtensionGameAction> {
-    /** 依目前情境建立所有可安全執行的命令候選。 */
-    fun createCandidates(action: A, context: AiDecisionContext): List<ExtensionCommandCandidate>
+    /** 依目前情境與這一局的 [module] 建立所有可安全執行的命令候選。 */
+    fun createCandidates(
+        action: A,
+        context: AiDecisionContext,
+        module: MahjongRuleModule<*>,
+    ): List<ExtensionCommandCandidate>
 }
 
-/** 管理擴充動作型別與 AI handler 的可凍結註冊表。 */
-class ExtensionGameActionAiRegistry {
+/**
+ * 管理擴充動作型別與 AI handler 的可凍結註冊表。
+ *
+ * @property moduleRegistry 依決策情境的對局設定取得交給 handler 的規則模組。
+ */
+class ExtensionGameActionAiRegistry(private val moduleRegistry: MahjongModuleRegistry) {
     /** 未擦除型別前的單一 handler 包裝。 */
     private class Entry<A : ExtensionGameAction>(val handler: ExtensionGameActionAiHandler<A>)
 
@@ -64,6 +74,6 @@ class ExtensionGameActionAiRegistry {
     @Suppress("UNCHECKED_CAST")
     fun createCandidates(action: ExtensionGameAction, context: AiDecisionContext): List<ExtensionCommandCandidate> {
         val entry = entries[action::class] as? Entry<ExtensionGameAction> ?: return emptyList()
-        return entry.handler.createCandidates(action, context)
+        return entry.handler.createCandidates(action, context, moduleRegistry.getModule(context.snapshot.config))
     }
 }

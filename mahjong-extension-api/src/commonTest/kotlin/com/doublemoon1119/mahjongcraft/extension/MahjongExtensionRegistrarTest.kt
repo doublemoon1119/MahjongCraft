@@ -106,7 +106,7 @@ class MahjongExtensionRegistrarTest {
             tileTypeRegistry.register(TileTypeDefinition(TileTypeId.parse("example:late")))
         }
         assertFailsWith<IllegalStateException> {
-            aiStrategyRegistry.register("example:late") { RandomAiStrategy(ExtensionGameActionAiRegistry()) }
+            aiStrategyRegistry.register("example:late") { RandomAiStrategy(ExtensionGameActionAiRegistry(MahjongModuleRegistryImpl())) }
         }
         assertEquals(setOf(RecordingExtension.RULE_MODULE_ID), opponentModelRegistry.registrationKeys)
         assertFailsWith<IllegalStateException> {
@@ -220,7 +220,7 @@ private fun testCoreRegistries(
     persistenceRegistries = persistenceRegistries,
     historyReplayProjectionRegistry = historyReplayProjectionRegistry,
     winCelebrationCueResolverRegistry = WinCelebrationCueResolverRegistryImpl(),
-    gameActionAiRegistry = ExtensionGameActionAiRegistry(),
+    gameActionAiRegistry = ExtensionGameActionAiRegistry(MahjongModuleRegistryImpl()),
     aiStrategyRegistry = aiStrategyRegistry,
     opponentModelRegistry = opponentModelRegistry,
     gameActionCommandFactoryRegistry = ExtensionGameActionCommandFactoryRegistry(),
@@ -263,7 +263,7 @@ private class RecordingExtension(
 
     override fun registerAiStrategies(registry: MahjongAiStrategyRegistry) {
         calls += "strategy"
-        registry.register(STRATEGY_KEY) { RandomAiStrategy(ExtensionGameActionAiRegistry()) }
+        registry.register(STRATEGY_KEY) { RandomAiStrategy(ExtensionGameActionAiRegistry(MahjongModuleRegistryImpl())) }
     }
 
     override fun registerOpponentModels(registry: OpponentModelRegistry) {
@@ -299,7 +299,7 @@ private class StrategyExtension(override val id: String) : MahjongExtension {
     override fun registerPersistenceDtos(registries: PersistenceRegistries) = Unit
 
     override fun registerAiStrategies(registry: MahjongAiStrategyRegistry) {
-        registry.register(STRATEGY_KEY) { RandomAiStrategy(ExtensionGameActionAiRegistry()) }
+        registry.register(STRATEGY_KEY) { RandomAiStrategy(ExtensionGameActionAiRegistry(MahjongModuleRegistryImpl())) }
     }
 
     /** 兩個測試 extension 共用的常數。 */

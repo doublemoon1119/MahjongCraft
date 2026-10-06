@@ -8,6 +8,8 @@ import com.doublemoon1119.mahjongcraft.ai.riichi.registerRiichiOpponentModel
 import com.doublemoon1119.mahjongcraft.flow.common.di.createBuiltInWinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiTurnDriver
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandContext
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutor
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ForcedAutoPlayDriver
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameActionRouter
@@ -16,7 +18,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostAction
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
-import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.DeclareRiichiUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.registerRiichiGameCommandHandler
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.registerRiichiNagashiManganOutcomeResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.registerRiichiPostActionExhaustiveDrawResolvers
@@ -75,7 +76,7 @@ internal class SimulationRuntime(defaultStrategyKey: String) {
     val gameRepository = RoundRecordingGameRepository()
 
     /** 登記日麻立直 handler 的擴充動作 AI registry。 */
-    val extensionActionRegistry = ExtensionGameActionAiRegistry().apply { registerRiichiGameActionHandler(moduleRegistry) }
+    val extensionActionRegistry = ExtensionGameActionAiRegistry(moduleRegistry).apply { registerRiichiGameActionHandler() }
 
     /** 登記日麻對手模型的 registry。 */
     val opponentModelRegistry = OpponentModelRegistry().apply { registerRiichiOpponentModel() }
@@ -119,20 +120,22 @@ internal class SimulationRuntime(defaultStrategyKey: String) {
     /** 永遠閒置的呈現閘門。 */
     private val presentationBusyGate = FakeGamePresentationBusyGate()
 
-    /** 登記日麻立直命令的擴充命令 registry。 */
-    private val extensionCommandRegistry = ExtensionGameCommandExecutorRegistry().apply {
-        registerRiichiGameCommandHandler(
-            DeclareRiichiUseCase(
-                gameRepository,
-                moduleRegistry,
-                snapshotSynchronizer,
-                handSortPreferenceStore,
-                postActionExhaustiveDrawResolverRegistry,
-                eventPublisher,
-                presentationPublisher,
-            ),
-        )
-    }
+    /** 以這個 runtime 的流程服務執行日麻立直命令。 */
+    private val extensionCommandExecutor = ExtensionGameCommandExecutor(
+        registry = ExtensionGameCommandExecutorRegistry().apply {
+            registerRiichiGameCommandHandler()
+            freeze()
+        },
+        context = ExtensionGameCommandContext(
+            gameRepository = gameRepository,
+            moduleRegistry = moduleRegistry,
+            snapshotSynchronizer = snapshotSynchronizer,
+            handSortPreferenceStore = handSortPreferenceStore,
+            postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
+            eventPublisher = eventPublisher,
+            presentationPublisher = presentationPublisher,
+        ),
+    )
 
     /** 把命令分派給各 use case。 */
     private val router = GameActionRouter(
@@ -180,7 +183,7 @@ internal class SimulationRuntime(defaultStrategyKey: String) {
             winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
         ),
         declareAbortiveDrawUseCase = DeclareAbortiveDrawUseCase(gameRepository, moduleRegistry, snapshotSynchronizer, eventPublisher),
-        extensionCommandRegistry = extensionCommandRegistry,
+        extensionCommandExecutor = extensionCommandExecutor,
     )
 
     /** 決策計時使用的時鐘。 */

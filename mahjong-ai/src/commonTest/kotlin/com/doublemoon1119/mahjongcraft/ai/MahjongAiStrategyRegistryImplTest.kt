@@ -16,7 +16,7 @@ import kotlin.test.assertTrue
  */
 class MahjongAiStrategyRegistryImplTest {
     /** 不登記額外動作的明確測試 registry。 */
-    private val extensionActionRegistry = ExtensionGameActionAiRegistry()
+    private val extensionActionRegistry = ExtensionGameActionAiRegistry(MahjongModuleRegistryImpl())
 
     /**
      * 驗證 [MahjongAiStrategyRegistryImpl.register] 後，[MahjongAiStrategyRegistryImpl.resolve]

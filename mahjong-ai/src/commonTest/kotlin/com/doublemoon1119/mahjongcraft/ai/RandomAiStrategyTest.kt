@@ -1,13 +1,16 @@
 package com.doublemoon1119.mahjongcraft.ai
 
+import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExtensionGameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
@@ -36,7 +39,7 @@ class RandomAiStrategyTest {
     private data object TestExtensionCommand : ExtensionGameCommand
 
     /** 不登記額外動作的明確測試 registry。 */
-    private val extensionActionRegistry = ExtensionGameActionAiRegistry()
+    private val extensionActionRegistry = ExtensionGameActionAiRegistry(MahjongModuleRegistryImpl())
 
     private val selfId = Uuid.random()
 
@@ -246,15 +249,18 @@ class RandomAiStrategyTest {
     /** 驗證策略會使用明確注入的 registry 將第三方動作轉成命令。 */
     @Test
     fun `test own turn uses explicitly injected extension action handler`() = runTest {
-        val registry = ExtensionGameActionAiRegistry().apply {
-            register(TestExtensionAction::class) { _, _ -> listOf(ExtensionCommandCandidate(GameCommand.Extension(TestExtensionCommand))) }
+        val registry = ExtensionGameActionAiRegistry(MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }).apply {
+            register(TestExtensionAction::class) { _, _, _ -> listOf(ExtensionCommandCandidate(GameCommand.Extension(TestExtensionCommand))) }
             freeze()
         }
         val strategy = RandomAiStrategy(registry, Random(42))
         val hand = Hand(tiles = listOf(FakeIdentifiedTileFactory.create(Tile.Honor.East)))
         val results = List(200) {
             strategy.decideGameCommand(
-                contextWithHand(hand, AiDecisionPhase.OwnTurn, listOf(GameAction.Extension(TestExtensionAction))),
+                contextWithHand(hand, AiDecisionPhase.OwnTurn, listOf(GameAction.Extension(TestExtensionAction))).let { context ->
+                    // 擴充動作 handler 會依對局設定取得規則模組，這裡改用已登記的日麻設定。
+                    context.copy(snapshot = context.snapshot.copy(config = RiichiRuleConfig()))
+                },
             )
         }
 

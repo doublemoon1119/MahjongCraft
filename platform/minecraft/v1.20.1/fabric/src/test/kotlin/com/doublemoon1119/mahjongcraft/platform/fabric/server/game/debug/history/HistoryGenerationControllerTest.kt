@@ -85,7 +85,7 @@ class HistoryGenerationControllerTest {
                 release.await()
                 val modules = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
                 val strategies = MahjongAiStrategyRegistryImpl(BuiltInAiStrategyKeys.BEGINNER).apply {
-                    registerBuiltInAiStrategies(modules, ExtensionGameActionAiRegistry(), OpponentModelRegistry())
+                    registerBuiltInAiStrategies(modules, ExtensionGameActionAiRegistry(modules), OpponentModelRegistry())
                 }
                 HeadlessFlowHistoryRuntime.create(scenario, strategies)
             },

@@ -8,7 +8,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiGameC
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
-import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.DeclareRiichiUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.registerRiichiGameCommandHandler
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.registerRiichiPostActionExhaustiveDrawResolvers
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.registerRiichiWinSettlementDetailResolver
@@ -83,18 +82,21 @@ class GameActionRouterTest {
         val eventPublisher = FakeGameEventPublisher()
         val presentationPublisher = FakeGamePresentationPublisher()
         val winPresentationHandoff = WinPresentationHandoff()
-        val declareRiichiUseCase = DeclareRiichiUseCase(
-            gameRepo,
-            moduleRegistry,
-            snapshotSynchronizer,
-            handSortPreferenceStore,
-            postActionExhaustiveDrawResolverRegistry,
-            eventPublisher,
-            presentationPublisher,
+        val extensionCommandExecutor = ExtensionGameCommandExecutor(
+            registry = ExtensionGameCommandExecutorRegistry().apply {
+                registerRiichiGameCommandHandler()
+                freeze()
+            },
+            context = ExtensionGameCommandContext(
+                gameRepository = gameRepo,
+                moduleRegistry = moduleRegistry,
+                snapshotSynchronizer = snapshotSynchronizer,
+                handSortPreferenceStore = handSortPreferenceStore,
+                postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
+                eventPublisher = eventPublisher,
+                presentationPublisher = presentationPublisher,
+            ),
         )
-        val extensionCommandRegistry = ExtensionGameCommandExecutorRegistry().apply {
-            registerRiichiGameCommandHandler(declareRiichiUseCase)
-        }
         val router = GameActionRouter(
             drawTileUseCase = DrawTileUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher),
             discardTileUseCase = DiscardTileUseCase(
@@ -140,7 +142,7 @@ class GameActionRouterTest {
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
             ),
             declareAbortiveDrawUseCase = DeclareAbortiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
-            extensionCommandRegistry = extensionCommandRegistry,
+            extensionCommandExecutor = extensionCommandExecutor,
         )
     }
 
