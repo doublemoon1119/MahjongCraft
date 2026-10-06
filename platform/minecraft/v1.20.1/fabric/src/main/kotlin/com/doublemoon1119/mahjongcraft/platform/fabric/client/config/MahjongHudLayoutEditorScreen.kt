@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.config
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.AutomaticControlStatusHudText
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.automaticControlStatusHudLayout
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.CycleButtonInput
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsFooterLayout
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.UnsavedChangesConfirmationScreen
@@ -154,7 +155,7 @@ class MahjongHudLayoutEditorScreen(
             Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_SELECTOR_HUD, Text.translatable(model.selectedElement.translationKey)),
         ) {
             val entries = HudElement.entries
-            model = model.selectElement(entries[(entries.indexOf(model.selectedElement) + 1) % entries.size])
+            model = model.selectElement(CycleButtonInput.next(options = entries, current = model.selectedElement))
             clearAndInit()
         }.dimensions(0, 0, width, MahjongHudToolbarLayout.BUTTON_HEIGHT).build()
         toolbarTooltips[button] = selectionTooltip(HudElement.entries.map { Text.translatable(it.translationKey) to (it == model.selectedElement) })
@@ -167,7 +168,7 @@ class MahjongHudLayoutEditorScreen(
             Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_SELECTOR_SCENARIO, Text.translatable(model.scenario.translationKey)),
         ) {
             val entries = HudPreviewScenario.entries
-            model = model.selectScenario(entries[(entries.indexOf(model.scenario) + 1) % entries.size])
+            model = model.selectScenario(CycleButtonInput.next(options = entries, current = model.scenario))
             clearAndInit()
         }.dimensions(0, 0, MahjongHudToolbarLayout.SELECTOR_WIDTH, MahjongHudToolbarLayout.BUTTON_HEIGHT).build()
         toolbarTooltips[button] = selectionTooltip(HudPreviewScenario.entries.map { Text.translatable(it.translationKey) to (it == model.scenario) })
@@ -180,7 +181,7 @@ class MahjongHudLayoutEditorScreen(
             Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_SELECTOR_VISIBILITY, Text.translatable(model.otherHudVisibility.translationKey)),
         ) {
             val entries = HudPreviewVisibility.entries
-            model = model.selectVisibility(entries[(entries.indexOf(model.otherHudVisibility) + 1) % entries.size])
+            model = model.selectVisibility(CycleButtonInput.next(options = entries, current = model.otherHudVisibility))
             clearAndInit()
         }.dimensions(0, 0, width, MahjongHudToolbarLayout.BUTTON_HEIGHT).build()
         toolbarTooltips[button] = selectionTooltip(HudPreviewVisibility.entries.map { Text.translatable(it.translationKey) to (it == model.otherHudVisibility) })
@@ -193,15 +194,18 @@ class MahjongHudLayoutEditorScreen(
         updateControlVisibility()
     }.dimensions(0, 0, width, MahjongHudToolbarLayout.BUTTON_HEIGHT).build()
 
-    /** 建立「目前值＋可用選項」清單 tooltip（每行一個元素），補足循環切換按鈕無法一次看到所有選項的缺點。 */
-    private fun selectionTooltip(options: List<Pair<Text, Boolean>>): List<Text> = buildList {
-        val current = options.first { it.second }.first
-        add(Text.translatable(MinecraftClientConfigScreenKeys.CURRENT_VALUE, current).formatted(Formatting.GREEN))
-        add(Text.translatable(MinecraftClientConfigScreenKeys.AVAILABLE_OPTIONS).formatted(Formatting.GOLD))
-        options.forEach { (label, selected) ->
-            add(Text.literal("• ").append(label.copy().formatted(if (selected) Formatting.GREEN else Formatting.WHITE)))
-        }
-    }
+    /** 建立「目前值＋可用選項」清單 tooltip（每行一個元素），補足循環切換按鈕無法一次看到所有選項的缺點；選項至少三個時附上點擊操作說明。 */
+    private fun selectionTooltip(options: List<Pair<Text, Boolean>>): List<Text> = CycleButtonInput.withHintLines(
+        lines = buildList {
+            val current = options.first { it.second }.first
+            add(Text.translatable(MinecraftClientConfigScreenKeys.CURRENT_VALUE, current).formatted(Formatting.GREEN))
+            add(Text.translatable(MinecraftClientConfigScreenKeys.AVAILABLE_OPTIONS).formatted(Formatting.GOLD))
+            options.forEach { (label, selected) ->
+                add(Text.literal("• ").append(label.copy().formatted(if (selected) Formatting.GREEN else Formatting.WHITE)))
+            }
+        },
+        optionCount = options.size,
+    )
 
     /** 第二行內容總寬度，供水平捲動幾何使用。 */
     private fun secondaryRowContentWidth(): Int = secondaryRowEntries.lastOrNull()?.let { (button, contentX) -> contentX + button.width } ?: 0

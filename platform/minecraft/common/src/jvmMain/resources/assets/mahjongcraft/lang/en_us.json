@@ -232,6 +232,8 @@
   "mahjongcraft.game.yaku.tsuiso": "All Honors",
   "mahjongcraft.game.yaku.tsumo": "Fully Concealed Hand",
   "mahjongcraft.game.yaku.uradora": "Ura Dora",
+  "mahjongcraft.gui.cycle_button.click_next": "Click: next option",
+  "mahjongcraft.gui.cycle_button.shift_click_previous": "Shift+click: previous option",
   "mahjongcraft.history.command.active_matches": "Active matches",
   "mahjongcraft.history.command.additional_candidates": "Possible capacity candidates",
   "mahjongcraft.history.command.additional_logical_bytes": "Possible candidate data",

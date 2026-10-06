@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryMatchSumm
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryScopeDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySortDirectionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySortFieldDto
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.CycleButtonInput
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.DrawContext
@@ -255,7 +256,7 @@ internal class HistoryListScreen(
         if (!session.controller.canRefresh()) return
         val query = session.controller.state.value.query
         val fields = availableSortFields()
-        val next = fields[(fields.indexOf(query.sortField) + 1) % fields.size]
+        val next = CycleButtonInput.next(options = fields, current = query.sortField)
         session.controller.updateQuery(query.copy(sortField = next).normalized())
     }
 
@@ -294,7 +295,7 @@ internal class HistoryListScreen(
         sortButton?.message = sortText()
         directionButton?.message = directionText()
         scopeButton?.tooltip = Tooltip.of(scopeTooltip())
-        sortButton?.tooltip = Tooltip.of(sortTooltip())
+        sortButton?.tooltip = Tooltip.of(CycleButtonInput.withHint(tooltip = sortTooltip(), optionCount = availableSortFields().size, active = sortButton?.active == true))
         directionButton?.tooltip = Tooltip.of(directionTooltip())
         refreshButton?.tooltip = Tooltip.of(
             Text.translatable(

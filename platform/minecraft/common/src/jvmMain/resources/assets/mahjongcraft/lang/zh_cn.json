@@ -232,6 +232,8 @@
   "mahjongcraft.game.yaku.tsuiso": "字一色",
   "mahjongcraft.game.yaku.tsumo": "门前清自摸",
   "mahjongcraft.game.yaku.uradora": "里宝牌",
+  "mahjongcraft.gui.cycle_button.click_next": "点击：选择下一项",
+  "mahjongcraft.gui.cycle_button.shift_click_previous": "Shift＋点击：选择上一项",
   "mahjongcraft.history.command.active_matches": "正在进行的场次",
   "mahjongcraft.history.command.additional_candidates": "可能追加的容量候选",
   "mahjongcraft.history.command.additional_logical_bytes": "可能候选数据量",

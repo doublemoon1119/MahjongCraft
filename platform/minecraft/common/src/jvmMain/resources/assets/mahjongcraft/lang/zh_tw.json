@@ -232,6 +232,8 @@
   "mahjongcraft.game.yaku.tsuiso": "字一色",
   "mahjongcraft.game.yaku.tsumo": "門前清自摸",
   "mahjongcraft.game.yaku.uradora": "裏寶牌",
+  "mahjongcraft.gui.cycle_button.click_next": "點擊：選擇下一項",
+  "mahjongcraft.gui.cycle_button.shift_click_previous": "Shift＋點擊：選擇上一項",
   "mahjongcraft.history.command.active_matches": "進行中場次",
   "mahjongcraft.history.command.additional_candidates": "可能追加的容量候選",
   "mahjongcraft.history.command.additional_logical_bytes": "可能候選資料量",

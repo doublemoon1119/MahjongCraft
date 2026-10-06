@@ -232,6 +232,8 @@
   "mahjongcraft.game.yaku.tsuiso": "字一色",
   "mahjongcraft.game.yaku.tsumo": "門前清自摸和",
   "mahjongcraft.game.yaku.uradora": "裏ドラ",
+  "mahjongcraft.gui.cycle_button.click_next": "クリック：次の項目",
+  "mahjongcraft.gui.cycle_button.shift_click_previous": "Shift＋クリック：前の項目",
   "mahjongcraft.history.command.active_matches": "進行中の対局",
   "mahjongcraft.history.command.additional_candidates": "容量による追加候補",
   "mahjongcraft.history.command.additional_logical_bytes": "追加候補データ量",

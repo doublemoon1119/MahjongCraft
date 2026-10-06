@@ -188,6 +188,7 @@ class MinecraftLanguageFilesTest {
         MinecraftClientConfigScreenKeys::class,
         MinecraftConfigCommandKeys::class,
         MinecraftHistoryScreenKeys::class,
+        MinecraftCycleButtonKeys::class,
     )
 
     /**

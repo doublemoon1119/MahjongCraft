@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.CycleButtonInput
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileFaceRenderer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.MinecraftRuleCatalogueScreenKeys
@@ -93,15 +94,19 @@ internal class RuleCatalogueScreen(
             MinecraftRuleCatalogueScreenKeys.GENERAL_NOTE.takeIf { state.configSource == RuleCatalogueConfigSource.GENERAL },
         )
         button(label = presenter.format(MinecraftRuleCatalogueScreenKeys.RULE_BUTTON, name), bounds = layout.rule) {
-            val next = options[(options.indexOf(selected) + 1) % options.size]
+            val next = options[CycleButtonInput.nextIndex(currentIndex = options.indexOf(selected), size = options.size, step = CycleButtonInput.step())]
             changed(browser.selectRule(next.ruleModuleId))
         }.apply {
             active = options.size > 1
             tooltip = Tooltip.of(
-                optionTooltip(
-                    descriptionKeys = description,
-                    current = name,
-                    options = options.map { it.displayName },
+                CycleButtonInput.withHint(
+                    tooltip = optionTooltip(
+                        descriptionKeys = description,
+                        current = name,
+                        options = options.map { it.displayName },
+                    ),
+                    optionCount = options.size,
+                    active = active,
                 ),
             )
         }
@@ -114,14 +119,18 @@ internal class RuleCatalogueScreen(
         val current = options.firstOrNull { it.first == state.categoryId } ?: options.first()
         val name = presenter.text(current.second)
         button(label = presenter.format(MinecraftRuleCatalogueScreenKeys.CATEGORY_BUTTON, name), bounds = layout.category) {
-            changed(browser.selectCategory(options[(options.indexOf(current) + 1) % options.size].first))
+            changed(browser.selectCategory(CycleButtonInput.next(options = options, current = current).first))
         }.apply {
             active = categories.isNotEmpty()
             tooltip = Tooltip.of(
-                optionTooltip(
-                    descriptionKeys = listOf(MinecraftRuleCatalogueScreenKeys.CATEGORY_TOOLTIP),
-                    current = name,
-                    options = options.map { presenter.text(it.second) },
+                CycleButtonInput.withHint(
+                    tooltip = optionTooltip(
+                        descriptionKeys = listOf(MinecraftRuleCatalogueScreenKeys.CATEGORY_TOOLTIP),
+                        current = name,
+                        options = options.map { presenter.text(it.second) },
+                    ),
+                    optionCount = options.size,
+                    active = active,
                 ),
             )
         }

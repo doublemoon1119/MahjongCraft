@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryIntegrity
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryOutcomeFilterDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryFiltersDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryScopeDto
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.CycleButtonInput
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.screen.Screen
@@ -353,16 +354,13 @@ internal class HistoryFilterScreen(
     private fun aiLabel(value: HistoryAiFilterDto?): Text = value?.let { Text.translatable("${MinecraftHistoryScreenKeys.FILTER_AI}.${it.name.lowercase()}") }
         ?: Text.translatable(MinecraftHistoryScreenKeys.FILTER_ANY)
 
-    /** 取得循環選項中的下一個值。
+    /** 取得循環選項中的下一個值；「不限」排在第一項，按住 Shift 時往回選。
      *
-     * @param value 目前選值。
-     * @param values 可循環的值清單。
-     * @return 下一個值；到達清單末端時為 null。
+     * @param value 目前選值；null 表示不限。
+     * @param values 不含「不限」的可循環值清單。
+     * @return 下一個值；null 表示不限。
      */
-    private fun <T> next(value: T?, values: List<T>): T? {
-        val index = value?.let(values::indexOf) ?: -1
-        return if (index + 1 >= values.size) null else values[index + 1]
-    }
+    private fun <T> next(value: T?, values: List<T>): T? = CycleButtonInput.next(options = listOf<T?>(null) + values, current = value)
 
     /** 取得指定欄位目前保留的原始文字。
      *
@@ -470,9 +468,9 @@ internal class HistoryFilterScreen(
         outcomeButton?.message = outcomeLabel(session.filterDraft.input.outcome)
         integrityButton?.message = integrityLabel(session.filterDraft.input.integrity)
         aiButton?.message = aiLabel(session.filterDraft.input.ai)
-        outcomeButton?.tooltip = Tooltip.of(optionTooltip(Text.translatable(MinecraftHistoryScreenKeys.FILTER_OUTCOME), outcomeLabel(session.filterDraft.input.outcome), listOf(Text.translatable(MinecraftHistoryScreenKeys.FILTER_ANY)) + HistoryOutcomeFilterDto.entries.map(::outcomeLabel)))
-        integrityButton?.tooltip = Tooltip.of(optionTooltip(Text.translatable(MinecraftHistoryScreenKeys.FILTER_INTEGRITY), integrityLabel(session.filterDraft.input.integrity), listOf(Text.translatable(MinecraftHistoryScreenKeys.FILTER_ANY)) + HistoryIntegrityFilterDto.entries.map(::integrityLabel)))
-        aiButton?.tooltip = Tooltip.of(optionTooltip(Text.translatable(MinecraftHistoryScreenKeys.FILTER_AI), aiLabel(session.filterDraft.input.ai), listOf(Text.translatable(MinecraftHistoryScreenKeys.FILTER_ANY)) + HistoryAiFilterDto.entries.map(::aiLabel)))
+        outcomeButton?.tooltip = Tooltip.of(CycleButtonInput.withHint(tooltip = optionTooltip(Text.translatable(MinecraftHistoryScreenKeys.FILTER_OUTCOME), outcomeLabel(session.filterDraft.input.outcome), listOf(Text.translatable(MinecraftHistoryScreenKeys.FILTER_ANY)) + HistoryOutcomeFilterDto.entries.map(::outcomeLabel)), optionCount = HistoryOutcomeFilterDto.entries.size + 1))
+        integrityButton?.tooltip = Tooltip.of(CycleButtonInput.withHint(tooltip = optionTooltip(Text.translatable(MinecraftHistoryScreenKeys.FILTER_INTEGRITY), integrityLabel(session.filterDraft.input.integrity), listOf(Text.translatable(MinecraftHistoryScreenKeys.FILTER_ANY)) + HistoryIntegrityFilterDto.entries.map(::integrityLabel)), optionCount = HistoryIntegrityFilterDto.entries.size + 1))
+        aiButton?.tooltip = Tooltip.of(CycleButtonInput.withHint(tooltip = optionTooltip(Text.translatable(MinecraftHistoryScreenKeys.FILTER_AI), aiLabel(session.filterDraft.input.ai), listOf(Text.translatable(MinecraftHistoryScreenKeys.FILTER_ANY)) + HistoryAiFilterDto.entries.map(::aiLabel)), optionCount = HistoryAiFilterDto.entries.size + 1))
         ruleButton?.tooltip = Tooltip.of(ruleTooltip())
         ruleButton?.message = ruleDisplayLabel()
         if (layout.scrollableHeight > 0) {

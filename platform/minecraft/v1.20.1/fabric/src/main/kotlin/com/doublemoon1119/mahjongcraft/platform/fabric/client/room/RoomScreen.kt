@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigScreen
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongHudLayoutEditorScreen
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.CycleButtonInput
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollState
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsFooterLayout
@@ -185,12 +186,18 @@ class RoomScreen(
                     RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftRoomScreenKeys.AI_STRATEGY, aiStrategyText(current))) {
                         val keys = aiStrategies.getAllStrategyKeys().toList()
                         if (keys.isNotEmpty()) {
-                            val next = keys[(keys.indexOf(current).coerceAtLeast(0) + 1) % keys.size]
+                            val next = keys[CycleButtonInput.nextIndex(currentIndex = keys.indexOf(current), size = keys.size, step = CycleButtonInput.step())]
                             send(RoomActionDto.ChangeAiStrategy(tableIdText, targetId.toString(), next))
                         }
                     }.dimensions(cardX + 8, cardY + AI_STRATEGY_BUTTON_OFFSET_Y, grid.cardWidth - 20, 18).build().also {
-                        it.tooltip = Tooltip.of(aiStrategyTooltip(current))
                         it.active = room.isHost
+                        it.tooltip = Tooltip.of(
+                            CycleButtonInput.withHint(
+                                tooltip = aiStrategyTooltip(current),
+                                optionCount = aiStrategies.getAllStrategyKeys().size,
+                                active = it.active,
+                            ),
+                        )
                     },
                 )
             }
@@ -315,9 +322,13 @@ class RoomScreen(
                 val (left, controlWidth) = if (compact) compactControlBounds() else (width - 212) to 184
                 addDrawableChild(
                     RestartableMarqueeButtonWidget.builder(optionText(option)) {
-                        val index = editor.optionIds.indexOf(option).coerceAtLeast(0)
-                        updateDraft(field, GameConfigPresentationValue.ChoiceValue(editor.optionIds[(index + 1) % editor.optionIds.size]))
-                    }.dimensions(left, controlY, controlWidth, 20).build().withFieldTooltip(field, config, editable),
+                        val index = CycleButtonInput.nextIndex(
+                            currentIndex = editor.optionIds.indexOf(option),
+                            size = editor.optionIds.size,
+                            step = CycleButtonInput.step(),
+                        )
+                        updateDraft(field, GameConfigPresentationValue.ChoiceValue(editor.optionIds[index]))
+                    }.dimensions(left, controlY, controlWidth, 20).build().withFieldTooltip(field, config, editable, editor.optionIds.size),
                 )
             }
             is GameConfigEditorSpec.IntegerInput -> {
@@ -393,9 +404,14 @@ class RoomScreen(
 
     private data class IntegerControlBounds(val minusX: Int, val textX: Int, val textWidth: Int, val plusX: Int)
 
-    private fun ButtonWidget.withFieldTooltip(field: GameConfigFieldDefinition, config: GameConfig, active: Boolean): ButtonWidget = apply {
+    private fun ButtonWidget.withFieldTooltip(
+        field: GameConfigFieldDefinition,
+        config: GameConfig,
+        active: Boolean,
+        optionCount: Int = 0,
+    ): ButtonWidget = apply {
         this.active = active
-        tooltip = Tooltip.of(fieldTooltip(field, config))
+        tooltip = Tooltip.of(CycleButtonInput.withHint(tooltip = fieldTooltip(field, config), optionCount = optionCount, active = active))
     }
 
     private fun updateDraft(field: GameConfigFieldDefinition, value: GameConfigPresentationValue) {
@@ -426,7 +442,7 @@ class RoomScreen(
             RestartableMarqueeButtonWidget.builder(currentName) {
                 val selectable = candidates.filter { configPresentations.find(it)?.selectable == true }
                 if (selectable.isEmpty()) return@builder
-                val nextId = selectable[(selectable.indexOf(moduleId).coerceAtLeast(0) + 1) % selectable.size]
+                val nextId = selectable[CycleButtonInput.nextIndex(currentIndex = selectable.indexOf(moduleId), size = selectable.size, step = CycleButtonInput.step())]
                 val next = configPresentations.find(nextId) ?: return@builder
                 draft.resetTo(config.copy(ruleConfig = next.defaultRuleConfig()))
                 selectedCategoryId = null
@@ -435,17 +451,21 @@ class RoomScreen(
             }.dimensions(x, 54, buttonWidth, 20).build().also { button ->
                 button.active = canEdit && candidates.count { configPresentations.find(it)?.selectable == true } > 1
                 button.tooltip = Tooltip.of(
-                    Text.empty()
-                        .append(Text.translatable(MinecraftRoomScreenKeys.CURRENT_VALUE, currentName).formatted(Formatting.GREEN))
-                        .append("\n")
-                        .append(Text.translatable(MinecraftRoomScreenKeys.AVAILABLE_OPTIONS).formatted(Formatting.GOLD))
-                        .also { tooltip ->
-                            candidates.forEach { candidateId ->
-                                val candidate = configPresentations.find(candidateId) ?: return@forEach
-                                tooltip.append("\n• ").append(ruleName(candidateId).copy().formatted(if (candidate.selectable) Formatting.WHITE else Formatting.RED))
-                                candidate.unavailableReasonTranslationKey?.let { tooltip.append(" — ").append(Text.translatable(it).formatted(Formatting.RED)) }
-                            }
-                        },
+                    CycleButtonInput.withHint(
+                        tooltip = Text.empty()
+                            .append(Text.translatable(MinecraftRoomScreenKeys.CURRENT_VALUE, currentName).formatted(Formatting.GREEN))
+                            .append("\n")
+                            .append(Text.translatable(MinecraftRoomScreenKeys.AVAILABLE_OPTIONS).formatted(Formatting.GOLD))
+                            .also { tooltip ->
+                                candidates.forEach { candidateId ->
+                                    val candidate = configPresentations.find(candidateId) ?: return@forEach
+                                    tooltip.append("\n• ").append(ruleName(candidateId).copy().formatted(if (candidate.selectable) Formatting.WHITE else Formatting.RED))
+                                    candidate.unavailableReasonTranslationKey?.let { tooltip.append(" — ").append(Text.translatable(it).formatted(Formatting.RED)) }
+                                }
+                            },
+                        optionCount = candidates.count { configPresentations.find(it)?.selectable == true },
+                        active = button.active,
+                    ),
                 )
             },
         )
