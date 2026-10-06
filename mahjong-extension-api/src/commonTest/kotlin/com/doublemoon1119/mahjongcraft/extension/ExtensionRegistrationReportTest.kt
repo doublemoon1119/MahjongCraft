@@ -2,66 +2,79 @@ package com.doublemoon1119.mahjongcraft.extension
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
-import kotlin.test.assertTrue
+import kotlin.test.assertFailsWith
 
-/** 驗證第三方 extension 註冊報告的統計與穩定文字格式。 */
+/** 驗證依來源分組的登記報告、合併與穩定文字格式。 */
 class ExtensionRegistrationReportTest {
-    /** 沒有 extension 時只輸出單行零項摘要。 */
+    /** 摘要每個來源只列筆數，內建來源顯示為 built-in。 */
     @Test
-    fun formatEmptyReport() {
-        val report = ExtensionRegistrationReport(emptyList(), emptyList())
-
-        assertEquals("Loaded 0 third-party extensions.", ExtensionRegistrationReportFormatter.format(report))
-        assertEquals(0, report.registrationCount)
-        assertEquals(0, report.categoryCount)
+    fun formatSummary() {
+        assertEquals(
+            """
+            Enabled 4 registration(s) from 3 source(s):
+            ├── built-in (2)
+            ├── ext_a (2)
+            └── ext_b (0)
+            """.trimIndent(),
+            ExtensionRegistrationReportFormatter.formatSummary(sampleReport()),
+        )
     }
 
-    /** 有註冊內容時依輸入分類順序輸出正確樹枝與統計。 */
+    /** 詳細格式在每個來源底下列出所有類別與 ID。 */
     @Test
-    fun formatPopulatedReport() {
-        val report = ExtensionRegistrationReport(
-            extensionIds = listOf("ext_a", "ext_b"),
-            categories = listOf(
-                category("tile_asset", "Tile Asset", "asset_a"),
-                category("rule_name", "Rule Module Display Name", "rule_a"),
+    fun formatDetails() {
+        assertEquals(
+            """
+            Enabled 4 registration(s) from 3 source(s):
+            ├── built-in (2)
+            │   └── Tile Asset (2): [asset_a, asset_b]
+            ├── ext_a (2)
+            │   ├── Tile Asset (1): [asset_c]
+            │   └── Rule Module Display Name (1): [rule_a]
+            └── ext_b (0)
+            """.trimIndent(),
+            ExtensionRegistrationReportFormatter.formatDetails(sampleReport()),
+        )
+    }
+
+    /** 合併時同一來源只出現一次，類別依結果順序串接，來源依第一次出現的順序排列。 */
+    @Test
+    fun mergeKeepsFirstSeenSourceOrder() {
+        val merged = mergeRegistrationSources(
+            listOf(ExtensionRegistrationSource(null, listOf(category("tile", "Tile", "built_in"))), ExtensionRegistrationSource("ext_a", emptyList())),
+            listOf(
+                ExtensionRegistrationSource(null, listOf(category("sound", "Sound", "built_in_sound"))),
+                ExtensionRegistrationSource("ext_a", listOf(category("sound", "Sound", "custom_sound"))),
+                ExtensionRegistrationSource("ext_b", emptyList()),
             ),
         )
 
         assertEquals(
-            """
-            Loaded 4 third-party registration(s) across 3 categories from 2 extension(s):
-            ├── Mahjong Extension (2): [ext_a, ext_b]
-            ├── Tile Asset (1): [asset_a]
-            └── Rule Module Display Name (1): [rule_a]
-            """.trimIndent(),
-            ExtensionRegistrationReportFormatter.format(report),
+            listOf(
+                ExtensionRegistrationSource(null, listOf(category("tile", "Tile", "built_in"), category("sound", "Sound", "built_in_sound"))),
+                ExtensionRegistrationSource("ext_a", listOf(category("sound", "Sound", "custom_sound"))),
+                ExtensionRegistrationSource("ext_b", emptyList()),
+            ),
+            merged,
         )
     }
 
-    /** INFO 超過每類上限時標示省略數量，完整格式仍保留全部 ID。 */
+    /** 同一來源不能在報告中出現兩次。 */
     @Test
-    fun truncateLongCategoryOnlyInBoundedFormat() {
-        val ids = (1..11).map { index -> "asset_${index.toString().padStart(2, '0')}" }
-        val report = ExtensionRegistrationReport(
-            extensionIds = listOf("ext_assets"),
-            categories = listOf(ExtensionRegistrationCategory("tile_asset", "Tile Asset", ids)),
-        )
-
-        val bounded = ExtensionRegistrationReportFormatter.format(report)
-        val complete = ExtensionRegistrationReportFormatter.format(report, Int.MAX_VALUE)
-
-        assertTrue(report.isTruncatedAt(8))
-        assertTrue(bounded.contains("asset_08, … (+3 more)]"))
-        assertFalse(bounded.contains("asset_09"))
-        assertTrue(complete.contains("asset_11"))
+    fun rejectDuplicateSources() {
+        assertFailsWith<IllegalArgumentException> {
+            ExtensionRegistrationReport(listOf(ExtensionRegistrationSource("ext_a", emptyList()), ExtensionRegistrationSource("ext_a", emptyList())))
+        }
     }
 
-    /** 快照差集只回傳 callback 新增的 key，不包含 built-in key。 */
+    /** 快照列出所有非空類別，差集只回傳之後新增的 key。 */
     @Test
-    fun snapshotReportsOnlyAdditions() {
+    fun snapshotListsCategoriesAndAdditions() {
         val baseline = ExtensionRegistrationSnapshot(
-            listOf(ExtensionRegistrationSnapshotCategory("tile", "Tile", setOf("built_in"))),
+            listOf(
+                ExtensionRegistrationSnapshotCategory("tile", "Tile", setOf("built_in")),
+                ExtensionRegistrationSnapshotCategory("sound", "Sound", emptySet()),
+            ),
         )
         val current = ExtensionRegistrationSnapshot(
             listOf(
@@ -70,6 +83,7 @@ class ExtensionRegistrationReportTest {
             ),
         )
 
+        assertEquals(listOf(category("tile", "Tile", "built_in")), baseline.toCategories())
         assertEquals(
             listOf(
                 category("tile", "Tile", "third_party"),
@@ -78,6 +92,18 @@ class ExtensionRegistrationReportTest {
             baseline.additionsSince(current),
         )
     }
+
+    /** 內建來源與兩個 extension 的測試報告。 */
+    private fun sampleReport(): ExtensionRegistrationReport = ExtensionRegistrationReport(
+        listOf(
+            ExtensionRegistrationSource(null, listOf(category("tile_asset", "Tile Asset", "asset_a", "asset_b"))),
+            ExtensionRegistrationSource(
+                "ext_a",
+                listOf(category("tile_asset", "Tile Asset", "asset_c"), category("rule_name", "Rule Module Display Name", "rule_a")),
+            ),
+            ExtensionRegistrationSource("ext_b", emptyList()),
+        ),
+    )
 
     /** 建立測試使用的排序後註冊分類。 */
     private fun category(

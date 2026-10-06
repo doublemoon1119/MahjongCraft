@@ -142,7 +142,9 @@ class FabricApplicationModuleTest {
         assertTrue("example:custom_strategy" in strategyRegistry.getAllStrategyKeys())
         assertIs<RandomAiStrategy>(strategyRegistry.resolve("example:custom_strategy"))
         assertEquals("example.ai.custom_strategy", displayNames.find("example:custom_strategy"))
-        assertTrue(result.categories.any { it.id == "mahjongcraft:ai_strategy" && "example:custom_strategy" in it.registrationIds })
+        val extensionSource = result.sources.single { it.extensionId == "example:ai_strategy" }
+        assertTrue(extensionSource.categories.any { it.id == "mahjongcraft:ai_strategy" && "example:custom_strategy" in it.registrationIds })
+        assertTrue(extensionSource.categories.any { it.id == "mahjongcraft:ai_strategy_display_name" && "example:custom_strategy" in it.registrationIds })
         assertFailsWith<IllegalStateException> {
             strategyRegistry.register("example:late") { RandomAiStrategy(koin.get<ExtensionGameActionAiRegistry>()) }
         }
@@ -235,7 +237,11 @@ class FabricApplicationModuleTest {
         assertTrue(tileLabelRegistry.isFrozen)
         assertTrue(gameActionAiRegistry.isRegistered(RiichiGameAction.Riichi::class))
         assertEquals(setOf(BuiltInRuleModuleIds.RIICHI), opponentModelRegistry.registrationKeys)
-        assertTrue(result.categories.all { it.registrationIds.isEmpty() }, "Built-in registrations must not be reported as third-party")
+        assertEquals(listOf(null, "mahjongcraft:riichi"), result.sources.map { it.extensionId })
+        assertTrue(result.sources[0].categories.any { it.id == "mahjongcraft:rule_module" && BuiltInRuleModuleIds.RIICHI in it.registrationIds })
+        assertTrue(result.sources[0].categories.any { it.id == "mahjongcraft:tile_asset" })
+        assertTrue(result.sources[0].categories.any { it.id == "mahjongcraft:table_prop_kind" })
+        assertTrue(result.sources[1].categories.any { it.id == "mahjongcraft:opponent_model" && BuiltInRuleModuleIds.RIICHI in it.registrationIds })
         assertEquals(
             listOf(BuiltInAiStrategyKeys.BEGINNER, BuiltInAiStrategyKeys.INTERMEDIATE, BuiltInAiStrategyKeys.ADVANCED, RandomAiStrategy.KEY),
             aiStrategyRegistry.getAllStrategyKeys().toList(),

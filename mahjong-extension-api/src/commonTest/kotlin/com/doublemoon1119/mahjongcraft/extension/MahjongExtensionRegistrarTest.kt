@@ -54,7 +54,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
-/** 驗證第三方 extension 的統一註冊順序、錯誤診斷與 registry freeze。 */
+/** 驗證 extension 的統一註冊順序、依來源分組的登記結果、錯誤診斷與 registry freeze。 */
 class MahjongExtensionRegistrarTest {
     /** 驗證三個註冊階段都會執行，完成後禁止新增規則模組。 */
     @Test
@@ -68,7 +68,7 @@ class MahjongExtensionRegistrarTest {
         val calls = mutableListOf<String>()
         val extension = RecordingExtension(calls)
 
-        val categories = MahjongExtensionRegistrar.registerAndFreeze(
+        val sources = MahjongExtensionRegistrar.registerAndFreeze(
             extensions = listOf(extension),
             registries = testCoreRegistries(
                 moduleRegistry = moduleRegistry,
@@ -89,7 +89,7 @@ class MahjongExtensionRegistrarTest {
                 "mahjongcraft:opponent_model",
                 "mahjongcraft:history_replay_action",
             ),
-            categories.mapTo(mutableSetOf(), ExtensionRegistrationCategory::id),
+            sources.single { it.extensionId == extension.id }.categories.mapTo(mutableSetOf(), ExtensionRegistrationCategory::id),
         )
         assertTrue(moduleRegistry.getModule(RiichiRuleConfig()) is RiichiRuleModule)
         assertIs<RandomAiStrategy>(aiStrategyRegistry.resolve(RecordingExtension.STRATEGY_KEY))
@@ -114,41 +114,36 @@ class MahjongExtensionRegistrarTest {
         }
     }
 
-    /** 內建 extension 走同一組回呼並先於第三方登記，但它的登記不列入回傳的第三方登記結果。 */
+    /** 呼叫前已存在的登記歸為內建來源，每個 extension 只列出自己新增的登記；沒有登記任何項目的 extension 仍會列出。 */
     @Test
-    fun `built in extensions register first and stay out of third party registrations`() {
-        val calls = mutableListOf<String>()
-        val opponentModelRegistry = OpponentModelRegistry()
-        val builtIn = RecordingExtension(calls)
-
-        val categories = MahjongExtensionRegistrar.registerAndFreeze(
-            extensions = listOf(StrategyExtension("example:third_party")),
-            registries = testCoreRegistries(opponentModelRegistry = opponentModelRegistry),
-            builtInExtensions = listOf(builtIn),
-        )
-
-        assertEquals(listOf("rule", "tile", "network", "persistence", "replay", "strategy", "opponent"), calls)
-        assertEquals(setOf(RecordingExtension.RULE_MODULE_ID), opponentModelRegistry.registrationKeys)
-        assertEquals(
-            listOf(ExtensionRegistrationCategory("mahjongcraft:ai_strategy", "AI Strategy", listOf(StrategyExtension.STRATEGY_KEY))),
-            categories,
-        )
-    }
-
-    /** 第三方 extension 不能沿用內建 extension 的 ID。 */
-    @Test
-    fun `third party extension cannot reuse a built in extension id`() {
-        val builtIn = RecordingExtension(mutableListOf())
-
-        val error = assertFailsWith<MahjongExtensionRegistrationException> {
-            MahjongExtensionRegistrar.registerAndFreeze(
-                extensions = listOf(StrategyExtension(builtIn.id)),
-                registries = testCoreRegistries(),
-                builtInExtensions = listOf(builtIn),
-            )
+    fun `registrations are grouped by the source that registered them`() {
+        val opponentModelRegistry = OpponentModelRegistry().apply {
+            register("example:built_in_rule") { _, depth -> NeutralOpponentModel(depth) }
         }
 
-        assertTrue(error.cause?.message.orEmpty().contains("Duplicate"))
+        val sources = MahjongExtensionRegistrar.registerAndFreeze(
+            extensions = listOf(
+                RecordingExtension(mutableListOf()),
+                StrategyExtension("example:strategy_only"),
+                EmptyExtension("example:empty"),
+            ),
+            registries = testCoreRegistries(opponentModelRegistry = opponentModelRegistry),
+        )
+
+        assertEquals(listOf(null, "example:recording", "example:strategy_only", "example:empty"), sources.map { it.extensionId })
+        assertEquals(
+            listOf("example:built_in_rule"),
+            sources[0].categories.single { it.id == "mahjongcraft:opponent_model" }.registrationIds,
+        )
+        assertEquals(
+            listOf(RecordingExtension.RULE_MODULE_ID),
+            sources[1].categories.single { it.id == "mahjongcraft:opponent_model" }.registrationIds,
+        )
+        assertEquals(
+            listOf(ExtensionRegistrationCategory("mahjongcraft:ai_strategy", "AI Strategy", listOf(StrategyExtension.STRATEGY_KEY))),
+            sources[2].categories,
+        )
+        assertEquals(emptyList(), sources[3].categories)
     }
 
     /** 驗證註冊失敗時的例外會指出第三方 extension ID。 */
@@ -284,6 +279,15 @@ private class RecordingExtension(
         /** 此 extension 登記的測試策略 key。 */
         const val STRATEGY_KEY: String = "example:recorded_strategy"
     }
+}
+
+/** 不登記任何項目的 extension 測試替身。 */
+private class EmptyExtension(override val id: String) : MahjongExtension {
+    override fun registerRuleModules(registry: MahjongModuleRegistry) = Unit
+
+    override fun registerNetworkDtos(registries: NetworkDtoRegistries) = Unit
+
+    override fun registerPersistenceDtos(registries: PersistenceRegistries) = Unit
 }
 
 /** 僅登記 AI 策略的第三方 extension 測試替身。 */

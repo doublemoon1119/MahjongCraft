@@ -35,17 +35,20 @@ class FabricTablePropKindRegistrationTest {
         override fun registerTablePropKinds(registry: FabricTablePropKindRegistry) = kinds.forEach(registry::register)
     }
 
-    /** 內建點棒種類先登記，第三方種類接在後面，完成後凍結；回傳值只列第三方種類。 */
+    /** 內建點棒種類先登記，第三方種類接在後面，完成後凍結；回傳值依來源分組。 */
     @Test
     fun `built-in kind registers first and third-party kinds follow before freeze`() {
         val registry = FabricTablePropKindRegistryImpl()
         val custom = FakeKind("example:marker")
 
-        val thirdPartyIds = registry.registerAndFreeze(listOf(KindExtension("example", listOf(custom))))
+        val sources = registry.registerAndFreeze(listOf(KindExtension("example", listOf(custom))))
 
         assertEquals(listOf(BuiltInTablePropKinds.SCORING_STICK, "example:marker"), registry.kinds.map { it.id })
         assertSame(ScoringStickTablePropKind, registry.find(BuiltInTablePropKinds.SCORING_STICK))
-        assertEquals(listOf("example:marker"), thirdPartyIds)
+        assertEquals(
+            listOf(null to listOf(BuiltInTablePropKinds.SCORING_STICK), "example" to listOf("example:marker")),
+            sources.map { source -> source.extensionId to source.categories.flatMap { it.registrationIds } },
+        )
         assertTrue(registry.isFrozen)
         assertFailsWith<IllegalStateException> { registry.register(FakeKind("example:late")) }
     }

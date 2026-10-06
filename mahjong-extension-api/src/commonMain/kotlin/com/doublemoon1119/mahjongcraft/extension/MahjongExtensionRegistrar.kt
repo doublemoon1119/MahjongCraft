@@ -1,31 +1,33 @@
 package com.doublemoon1119.mahjongcraft.extension
 
 /**
- * 將平台發現的第三方 extension 登記至 runtime 實際使用的 registry，完成後凍結所有 registry。
+ * 將 extension 登記至 runtime 實際使用的 registry，完成後凍結所有 registry。
  */
 object MahjongExtensionRegistrar {
     /**
-     * 先依序登記 [builtInExtensions]，再依 [extensions] 順序登記第三方 extension，全部成功後凍結 registry。
+     * 依 [extensions] 順序登記，全部成功後凍結 registry。
      *
-     * [builtInExtensions] 是隨 MahjongCraft 一起發布的 extension，與第三方走同一組回呼，但它們的登記不列入回傳的
-     * 第三方登記結果。兩者共用 extension ID 的唯一性檢查。
+     * 呼叫前已存在的登記視為內建登記；之後每個 extension 新增的登記歸在該 extension 名下。
      *
-     * @return 第三方 extension 新增的登記類別。
+     * @return 依來源分組的所有登記：內建登記在前，接著依 [extensions] 順序排列每個 extension。
      * @throws MahjongExtensionRegistrationException 若任一 extension 註冊失敗。
      */
     fun registerAndFreeze(
         extensions: Iterable<MahjongExtension>,
         registries: CoreExtensionRegistries,
-        builtInExtensions: Iterable<MahjongExtension> = emptyList(),
-    ): List<ExtensionRegistrationCategory> {
+    ): List<ExtensionRegistrationSource> {
         val registeredExtensionIds = mutableSetOf<String>()
-        builtInExtensions.forEach { extension -> register(extension, registries, registeredExtensionIds) }
-        val baseline = registries.registrationSnapshot()
-        extensions.forEach { extension -> register(extension, registries, registeredExtensionIds) }
+        var snapshot = registries.registrationSnapshot()
+        val sources = mutableListOf(ExtensionRegistrationSource(extensionId = null, categories = snapshot.toCategories()))
+        extensions.forEach { extension ->
+            register(extension, registries, registeredExtensionIds)
+            val after = registries.registrationSnapshot()
+            sources += ExtensionRegistrationSource(extensionId = extension.id, categories = snapshot.additionsSince(after))
+            snapshot = after
+        }
 
-        val registrations = baseline.additionsSince(registries.registrationSnapshot())
         registries.freezeAll()
-        return registrations
+        return sources
     }
 
     /** 檢查 [extension] 的 ID 尚未使用後，依固定順序呼叫它的所有登記回呼。 */

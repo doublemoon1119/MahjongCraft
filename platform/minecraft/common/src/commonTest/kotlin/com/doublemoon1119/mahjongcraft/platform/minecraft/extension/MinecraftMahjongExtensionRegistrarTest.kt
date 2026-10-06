@@ -245,7 +245,7 @@ class MinecraftMahjongExtensionRegistrarTest {
         val tileLabelRegistry = TileLabelRegistryImpl()
         val ruleCatalogueRegistry = RuleCatalogueRegistryImpl()
 
-        registerAndFreeze(
+        val result = registerAndFreeze(
             extensions = emptyList(),
             tileAssetRegistry = tileAssetRegistry,
             aiStrategyDisplayNameRegistry = aiStrategyDisplayNameRegistry,
@@ -285,6 +285,11 @@ class MinecraftMahjongExtensionRegistrarTest {
         assertNull(tileLabelRegistry.find("example_unregistered"))
         assertTrue(ruleCatalogueRegistry.isFrozen)
         assertEquals(setOf(BuiltInRuleModuleIds.RIICHI), ruleCatalogueRegistry.registrationKeys)
+        assertEquals(listOf(null), result.sources.map { it.extensionId })
+        assertEquals(
+            setOf(BuiltInRuleModuleIds.RIICHI),
+            result.sources.single().categories.single { it.id == "mahjongcraft:rule_catalogue" }.registrationKeys,
+        )
     }
 
     /** 驗證註冊失敗時的例外會指出第三方 extension ID。 */
@@ -370,7 +375,9 @@ class MinecraftMahjongExtensionRegistrarTest {
     }
 }
 
-/** 取得測試指定診斷分類的 registration key。 */
-private fun MinecraftMahjongExtensionRegistrationResult.registrationKeys(categoryId: String): Set<String> = categories
-    .single { it.id == categoryId }
-    .registrationKeys
+/** 取得 extension（不含內建映射）在指定診斷分類登記的 key。 */
+private fun MinecraftMahjongExtensionRegistrationResult.registrationKeys(categoryId: String): Set<String> = sources
+    .filter { it.extensionId != null }
+    .flatMap { it.categories }
+    .filter { it.id == categoryId }
+    .flatMapTo(mutableSetOf()) { it.registrationKeys }

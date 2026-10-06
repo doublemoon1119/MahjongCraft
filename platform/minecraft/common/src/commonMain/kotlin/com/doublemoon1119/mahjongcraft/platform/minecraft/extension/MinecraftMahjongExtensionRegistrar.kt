@@ -43,9 +43,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.registerBuiltInTi
  */
 object MinecraftMahjongExtensionRegistrar {
     /**
-     * 先註冊內建映射，再依 [extensions] 順序登記第三方映射，全部成功後凍結所有 registry。
+     * 先註冊內建映射，再依 [extensions] 順序登記各 extension 的映射，全部成功後凍結所有 registry。
      *
-     * @return 依 [extensions] 順序登記的第三方映射，不含內建映射，供呼叫端記錄診斷資訊。
+     * @return 依來源分組的所有映射：內建映射在前，接著依 [extensions] 順序排列每個 extension，供呼叫端記錄診斷資訊。
      * @throws MinecraftMahjongExtensionRegistrationException 若任一 extension 註冊失敗。
      */
     fun registerAndFreeze(
@@ -81,7 +81,8 @@ object MinecraftMahjongExtensionRegistrar {
         registries.tablePropDescriberRegistry.registerBuiltInRiichiTableProps()
         registries.ruleCatalogueRegistry.registerBuiltInRuleCatalogues()
         registries.gameAchievementResolverRegistry.registerBuiltInRiichiAchievements()
-        val baseline = registries.registrationSnapshot()
+        var snapshot = registries.registrationSnapshot()
+        val sources = mutableListOf(MinecraftPresentationRegistrationSource(extensionId = null, categories = snapshot.categories.nonEmpty()))
 
         val registeredExtensionIds = mutableSetOf<String>()
         extensions.forEach { extension ->
@@ -118,24 +119,46 @@ object MinecraftMahjongExtensionRegistrar {
             } catch (cause: Exception) {
                 throw MinecraftMahjongExtensionRegistrationException(extension.id, cause)
             }
+            val after = registries.registrationSnapshot()
+            sources += MinecraftPresentationRegistrationSource(
+                extensionId = extension.id,
+                categories = snapshot.additionsSince(after).nonEmpty(),
+            )
+            snapshot = after
         }
 
         registries.freezeAll()
-        return MinecraftMahjongExtensionRegistrationResult(
-            categories = baseline.additionsSince(registries.registrationSnapshot()),
-        )
+        return MinecraftMahjongExtensionRegistrationResult(sources = sources)
     }
+
+    /** 只保留有登記項目的類別。 */
+    private fun List<MinecraftPresentationRegistrationSnapshotCategory>.nonEmpty() = filter { it.registrationKeys.isNotEmpty() }
 
     /** 包牌付款原因的文字顏色；與分數增減的紅綠色區隔。 */
     private const val PAO_PAYMENT_REASON_COLOR: Int = 0xFFB05C
 }
 
-/** [MinecraftMahjongExtensionRegistrar.registerAndFreeze] 登記的第三方呈現分類。 */
+/**
+ * [MinecraftMahjongExtensionRegistrar.registerAndFreeze] 依來源分組的登記結果。
+ *
+ * @property sources 內建映射在前，接著依登記順序排列每個 extension。
+ */
 data class MinecraftMahjongExtensionRegistrationResult(
+    val sources: List<MinecraftPresentationRegistrationSource>,
+)
+
+/**
+ * 一個來源登記的 Minecraft 呈現映射。
+ *
+ * @property extensionId 登記這些映射的 extension ID；為 null 時代表內建映射。
+ * @property categories 這個來源登記的非空類別。
+ */
+data class MinecraftPresentationRegistrationSource(
+    val extensionId: String?,
     val categories: List<MinecraftPresentationRegistrationSnapshotCategory>,
 )
 
-/** 表示指定第三方 Minecraft extension 無法完成 registry 註冊。 */
+/** 表示指定 Minecraft extension 無法完成 registry 註冊。 */
 class MinecraftMahjongExtensionRegistrationException(
     extensionId: String,
     cause: Throwable,
