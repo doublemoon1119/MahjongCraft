@@ -7,6 +7,7 @@ logic-version = "0.4.0-SNAPSHOT"
 flow-version = "0.4.0-SNAPSHOT"
 ai-version = "0.4.0-SNAPSHOT"
 extension-api-version = "0.4.0-SNAPSHOT"
+bundled-extensions-version = "0.4.0-SNAPSHOT"
 
 # MahjongCraft core JVM policy
 # toolchain 是執行編譯器與測試的 JDK；release 是產出 bytecode 的最低 Java 版本。

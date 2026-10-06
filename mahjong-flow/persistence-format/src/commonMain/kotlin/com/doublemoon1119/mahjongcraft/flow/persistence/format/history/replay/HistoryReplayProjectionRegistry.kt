@@ -167,6 +167,16 @@ class HistoryReplayProjectionRegistry {
  * @param registry 呼叫端提供的可註冊分類。
  */
 fun registerBuiltInHistoryReplayProjections(registry: HistoryReplayProjectionRegistry) {
-    registry.registerDiscard(BuiltInDiscardPilePersistenceKeys.RIICHI, BuiltinHistoryReplayDiscardCodecs.riichi)
-    registry.registerDiscard(BuiltInDiscardPilePersistenceKeys.TAIWAN, BuiltinHistoryReplayDiscardCodecs.taiwan)
+    registry.registerRiichiHistoryReplayProjections()
+    registry.registerTaiwanHistoryReplayProjections()
+}
+
+/** 登記日麻牌河的歷史投影轉換器。 */
+fun HistoryReplayProjectionRegistry.registerRiichiHistoryReplayProjections() {
+    registerDiscard(BuiltInDiscardPilePersistenceKeys.RIICHI, BuiltinHistoryReplayDiscardCodecs.riichi)
+}
+
+/** 登記台麻牌河的歷史投影轉換器。 */
+fun HistoryReplayProjectionRegistry.registerTaiwanHistoryReplayProjections() {
+    registerDiscard(BuiltInDiscardPilePersistenceKeys.TAIWAN, BuiltinHistoryReplayDiscardCodecs.taiwan)
 }

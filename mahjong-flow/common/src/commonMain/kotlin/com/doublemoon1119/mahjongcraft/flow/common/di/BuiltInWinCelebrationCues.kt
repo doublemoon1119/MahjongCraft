@@ -13,6 +13,11 @@ val RIICHI_RULE_MODULE_ID: String = BuiltInRuleModuleIds.RIICHI
 
 /** 註冊內建規則的胡牌展示提示解析器。 */
 fun WinCelebrationCueResolverRegistry.registerBuiltInWinCelebrationCueResolvers() {
+    registerRiichiWinCelebrationCueResolver()
+}
+
+/** 註冊日麻的胡牌展示提示解析器。 */
+fun WinCelebrationCueResolverRegistry.registerRiichiWinCelebrationCueResolver() {
     register(RIICHI_RULE_MODULE_ID, RiichiWinCelebrationCueResolver)
 }
 

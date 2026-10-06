@@ -55,6 +55,7 @@ project(":mahjong-flow:network-dto").name = "mahjong-flow-network-dto"
 include(":mahjong-flow:persistence-format")
 project(":mahjong-flow:persistence-format").name = "mahjong-flow-persistence-format"
 include(":mahjong-extension-api")
+include(":mahjong-bundled-extensions")
 include(":mahjong-flow:server")
 project(":mahjong-flow:server").name = "mahjong-flow-server"
 include(":mahjong-flow:client")

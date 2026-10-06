@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.extension
 
 import com.doublemoon1119.mahjongcraft.ai.registerBuiltInAiStrategies
+import com.doublemoon1119.mahjongcraft.bundled.BundledMahjongExtensions
 import com.doublemoon1119.mahjongcraft.extension.CoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationCategory
 import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationReport
@@ -9,10 +10,6 @@ import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationSource
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtensionRegistrar
 import com.doublemoon1119.mahjongcraft.extension.mergeRegistrationSources
-import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
-import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInTileTypes
-import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInWinCelebrationCueResolvers
-import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.registerBuiltInRuleConfigDtos
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decision.DebugRoundPreparationResolver
@@ -33,7 +30,7 @@ const val MAHJONG_EXTENSION_ENTRYPOINT: String = "${MinecraftModMetadata.MOD_ID}
 /**
  * 發現並註冊 Fabric 環境中的第三方 [MahjongExtension]。
  *
- * 內建規則與 DTO 會先完成註冊；接著 [BundledRiichiExtension] 與第三方 extension 依序經由同一組回呼登記，
+ * 規則中立的內建項目（例如內建 AI 策略）先完成註冊；接著 [BundledMahjongExtensions] 與第三方 extension 依序經由同一組回呼登記，
  * 取得 runtime 實際使用的同一批 registry；全部成功後由 [MahjongExtensionRegistrar] 凍結 registry。
  * 啟動 log 依來源列出所有啟用的登記：INFO 只列每個來源的筆數，DEBUG 另外列出完整內容。
  */
@@ -86,10 +83,6 @@ object FabricMahjongExtensions {
         minecraftEnvironment: MinecraftEnvironment = NonDevelopmentEnvironment,
         extensions: Iterable<MahjongExtension>,
     ): FabricExtensionRegistrationResult {
-        coreRegistries.moduleRegistry.registerBuiltInRuleModules()
-        coreRegistries.tileTypeRegistry.registerBuiltInTileTypes()
-        coreRegistries.networkRegistries.registerBuiltInRuleConfigDtos()
-        coreRegistries.winCelebrationCueResolverRegistry.registerBuiltInWinCelebrationCueResolvers()
         coreRegistries.aiStrategyRegistry.registerBuiltInAiStrategies(
             moduleRegistry = coreRegistries.moduleRegistry,
             extensionActionRegistry = coreRegistries.gameActionAiRegistry,
@@ -111,7 +104,7 @@ object FabricMahjongExtensions {
         }
 
         val coreSources = MahjongExtensionRegistrar.registerAndFreeze(
-            extensions = listOf(BundledRiichiExtension) + extensions,
+            extensions = BundledMahjongExtensions.all + extensions,
             registries = coreRegistries,
         )
 

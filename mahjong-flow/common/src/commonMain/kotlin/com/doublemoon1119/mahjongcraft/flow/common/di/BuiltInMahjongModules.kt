@@ -15,6 +15,16 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleModule
  * 不具特權；第三方規則可在各自的組裝處另行呼叫 `registry.register(...)`。
  */
 fun MahjongModuleRegistry.registerBuiltInRuleModules() {
+    registerRiichiRuleModule()
+    registerTaiwanRuleModule()
+}
+
+/** 註冊日麻規則模組。 */
+fun MahjongModuleRegistry.registerRiichiRuleModule() {
     register(RiichiRuleConfig::class, BuiltInRuleModuleIds.RIICHI) { config, id -> RiichiRuleModule(id, config) }
+}
+
+/** 註冊台麻規則模組。 */
+fun MahjongModuleRegistry.registerTaiwanRuleModule() {
     register(TaiwanRuleConfig::class, BuiltInRuleModuleIds.TAIWAN) { config, id -> TaiwanRuleModule(id, config) }
 }

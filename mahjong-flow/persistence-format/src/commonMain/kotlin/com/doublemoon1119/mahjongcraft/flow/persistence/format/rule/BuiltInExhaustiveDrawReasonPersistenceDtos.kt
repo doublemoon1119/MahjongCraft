@@ -23,6 +23,11 @@ enum class RiichiExhaustiveDrawReasonPersistenceValue {
 
 /** 建立含內建規則流局原因的 persistence registry。 */
 fun buildExhaustiveDrawReasonPersistenceRegistry(): PersistenceDtoRegistry<ExhaustiveDrawReason> = PersistenceDtoRegistry<ExhaustiveDrawReason>().apply {
+    registerRiichiExhaustiveDrawReasonPersistenceDtos()
+}
+
+/** 登記日麻流局原因的 persistence mapper。 */
+fun PersistenceDtoRegistry<ExhaustiveDrawReason>.registerRiichiExhaustiveDrawReasonPersistenceDtos() {
     registerRiichiReason(
         typeKey = "riichi.exhaustive_draw.normal",
         domainClass = RiichiExhaustiveDrawReason.Normal::class,

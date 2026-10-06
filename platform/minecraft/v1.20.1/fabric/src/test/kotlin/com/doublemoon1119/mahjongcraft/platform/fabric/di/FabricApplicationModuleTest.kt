@@ -233,11 +233,13 @@ class FabricApplicationModuleTest {
         assertTrue(tileLabelRegistry.isFrozen)
         assertTrue(gameActionAiRegistry.isRegistered(RiichiGameAction.Riichi::class))
         assertEquals(setOf(BuiltInRuleModuleIds.RIICHI), opponentModelRegistry.registrationKeys)
-        assertEquals(listOf(null, "mahjongcraft:riichi"), result.sources.map { it.extensionId })
-        assertTrue(result.sources[0].categories.any { it.id == "mahjongcraft:rule_module" && BuiltInRuleModuleIds.RIICHI in it.registrationIds })
-        assertTrue(result.sources[0].categories.any { it.id == "mahjongcraft:tile_asset" })
+        assertEquals(listOf(null, "mahjongcraft:riichi", "mahjongcraft:taiwan"), result.sources.map { it.extensionId })
+        assertTrue(result.sources[0].categories.none { it.id == "mahjongcraft:rule_module" }, "Rule modules must come from their bundled extensions")
+        assertTrue(result.sources[0].categories.any { it.id == "mahjongcraft:ai_strategy" })
         assertTrue(result.sources[0].categories.any { it.id == "mahjongcraft:table_prop_kind" })
+        assertTrue(result.sources[1].categories.any { it.id == "mahjongcraft:rule_module" && BuiltInRuleModuleIds.RIICHI in it.registrationIds })
         assertTrue(result.sources[1].categories.any { it.id == "mahjongcraft:opponent_model" && BuiltInRuleModuleIds.RIICHI in it.registrationIds })
+        assertTrue(result.sources[2].categories.any { it.id == "mahjongcraft:rule_module" && BuiltInRuleModuleIds.TAIWAN in it.registrationIds })
         assertEquals(
             listOf(BuiltInAiStrategyKeys.BEGINNER, BuiltInAiStrategyKeys.INTERMEDIATE, BuiltInAiStrategyKeys.ADVANCED, RandomAiStrategy.KEY),
             aiStrategyRegistry.getAllStrategyKeys().toList(),

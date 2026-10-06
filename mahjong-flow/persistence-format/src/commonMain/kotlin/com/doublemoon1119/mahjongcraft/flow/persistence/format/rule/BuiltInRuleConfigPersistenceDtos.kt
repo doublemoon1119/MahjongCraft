@@ -89,24 +89,33 @@ data class TaiwanRuleConfigPersistenceDto(
     val multiRonPolicy: MultiRonPolicyPersistenceDto,
 )
 
+/** 登記日麻的規則配置 persistence mapper。 */
+fun PersistenceDtoRegistry<MahjongRuleConfig>.registerRiichiRuleConfigPersistenceDto() {
+    register(
+        typeKey = "builtin:riichi_rule_config",
+        domainClass = RiichiRuleConfig::class,
+        serializer = RiichiRuleConfigPersistenceDto.serializer(),
+        toDto = RiichiRuleConfig::toPersistenceDto,
+        toDomain = RiichiRuleConfigPersistenceDto::toDomain,
+    )
+}
+
+/** 登記台麻的規則配置 persistence mapper。 */
+fun PersistenceDtoRegistry<MahjongRuleConfig>.registerTaiwanRuleConfigPersistenceDto() {
+    register(
+        typeKey = "builtin:taiwan_rule_config",
+        domainClass = TaiwanRuleConfig::class,
+        serializer = TaiwanRuleConfigPersistenceDto.serializer(),
+        toDto = TaiwanRuleConfig::toPersistenceDto,
+        toDomain = TaiwanRuleConfigPersistenceDto::toDomain,
+    )
+}
+
 /** 建立已註冊內建日麻與台麻規則配置的 persistence registry。 */
-fun buildRuleConfigPersistenceRegistry(): PersistenceDtoRegistry<MahjongRuleConfig> = PersistenceDtoRegistry<MahjongRuleConfig>()
-    .apply {
-        register(
-            typeKey = "builtin:riichi_rule_config",
-            domainClass = RiichiRuleConfig::class,
-            serializer = RiichiRuleConfigPersistenceDto.serializer(),
-            toDto = RiichiRuleConfig::toPersistenceDto,
-            toDomain = RiichiRuleConfigPersistenceDto::toDomain,
-        )
-        register(
-            typeKey = "builtin:taiwan_rule_config",
-            domainClass = TaiwanRuleConfig::class,
-            serializer = TaiwanRuleConfigPersistenceDto.serializer(),
-            toDto = TaiwanRuleConfig::toPersistenceDto,
-            toDomain = TaiwanRuleConfigPersistenceDto::toDomain,
-        )
-    }
+fun buildRuleConfigPersistenceRegistry(): PersistenceDtoRegistry<MahjongRuleConfig> = PersistenceDtoRegistry<MahjongRuleConfig>().apply {
+    registerRiichiRuleConfigPersistenceDto()
+    registerTaiwanRuleConfigPersistenceDto()
+}
 
 /** 將日麻規則配置轉換成 persistence DTO。 */
 private fun RiichiRuleConfig.toPersistenceDto(): RiichiRuleConfigPersistenceDto = RiichiRuleConfigPersistenceDto(

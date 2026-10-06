@@ -171,6 +171,15 @@ Public extension registration layer.
 - **Dependencies**: Provides a facade over selected APIs from `:mahjong-logic`, `:mahjong-ai`, and the Flow common, server, network DTO, and persistence format modules.
 - **Boundary**: Registration does not grant direct access to authoritative mutation or platform render callbacks. Platform-specific extension surfaces belong to their platform module.
 
+### `:mahjong-bundled-extensions`
+
+Rule extensions that ship with MahjongCraft.
+
+- **Purpose**: Registers each rule bundled with MahjongCraft (for example, Riichi) through the same `MahjongExtension` callbacks that third-party extensions use. Bundled extensions are always enabled.
+- **Package**: `com.doublemoon1119.mahjongcraft.bundled.*`
+- **Dependencies**: Only `:mahjong-extension-api`.
+- **Boundary**: Contains no platform code. Platform presentation for these rules is registered by the platform's own extension surface under the same extension IDs. Rule-neutral built-ins stay outside these extensions.
+
 ### `:testing`
 
 Shared test utility module.
@@ -210,6 +219,7 @@ All modules must strictly follow the rules below to form a one-way dependency ch
 - **Supporting modules**:
   - `:mahjong-ai` depends on logic and Flow common contracts; Flow server and platform composition may use its strategies.
   - `:mahjong-extension-api` intentionally exposes selected logic, AI, and Flow registration contracts as a typed public facade.
+  - `:mahjong-bundled-extensions` depends only on `:mahjong-extension-api`; platform composition registers its extensions ahead of third-party ones.
   - Flow network DTO and persistence format modules depend inward on logic and Flow common, and are used only at their explicit serialization boundaries.
   - `:testing:*` modules are test-only fixture providers and may only appear in test source-set dependencies.
 - **No reverse dependencies**: `:mahjong-logic` must not depend on any outer layer. `:mahjong-flow` must not depend on `platform`.

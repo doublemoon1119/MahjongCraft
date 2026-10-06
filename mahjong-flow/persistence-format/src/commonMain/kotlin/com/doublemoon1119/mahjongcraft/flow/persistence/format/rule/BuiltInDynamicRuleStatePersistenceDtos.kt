@@ -38,31 +38,35 @@ enum class RiichiPendingKanTypePersistenceDto {
     ADDED_KAN,
 }
 
+/** 登記日麻的動態牌桌狀態 persistence mapper。 */
+fun PersistenceDtoRegistry<DynamicRuleState>.registerRiichiDynamicStatePersistenceDto() {
+    register(
+        typeKey = "builtin:riichi_dynamic_state",
+        domainClass = RiichiDynamicState::class,
+        serializer = RiichiDynamicStatePersistenceDto.serializer(),
+        toDto = {
+            RiichiDynamicStatePersistenceDto(
+                it.riichiStickCount,
+                it.completedSupplementalDrawCount,
+                it.revealedKanDoraCount,
+                it.pendingKanDoraReveals.map(RiichiPendingKanDoraReveal::toPersistenceDto),
+            )
+        },
+        toDomain = {
+            RiichiDynamicState(
+                it.riichiStickCount,
+                it.completedSupplementalDrawCount,
+                it.revealedKanDoraCount,
+                it.pendingKanDoraReveals.map(RiichiPendingKanDoraRevealPersistenceDto::toDomain),
+            )
+        },
+    )
+}
+
 /** 建立已註冊內建日麻動態牌桌狀態的 persistence registry。 */
-fun buildDynamicRuleStatePersistenceRegistry(): PersistenceDtoRegistry<DynamicRuleState> = PersistenceDtoRegistry<DynamicRuleState>()
-    .apply {
-        register(
-            typeKey = "builtin:riichi_dynamic_state",
-            domainClass = RiichiDynamicState::class,
-            serializer = RiichiDynamicStatePersistenceDto.serializer(),
-            toDto = {
-                RiichiDynamicStatePersistenceDto(
-                    it.riichiStickCount,
-                    it.completedSupplementalDrawCount,
-                    it.revealedKanDoraCount,
-                    it.pendingKanDoraReveals.map(RiichiPendingKanDoraReveal::toPersistenceDto),
-                )
-            },
-            toDomain = {
-                RiichiDynamicState(
-                    it.riichiStickCount,
-                    it.completedSupplementalDrawCount,
-                    it.revealedKanDoraCount,
-                    it.pendingKanDoraReveals.map(RiichiPendingKanDoraRevealPersistenceDto::toDomain),
-                )
-            },
-        )
-    }
+fun buildDynamicRuleStatePersistenceRegistry(): PersistenceDtoRegistry<DynamicRuleState> = PersistenceDtoRegistry<DynamicRuleState>().apply {
+    registerRiichiDynamicStatePersistenceDto()
+}
 
 /** 將等待公開項目轉為 persistence DTO。 */
 private fun RiichiPendingKanDoraReveal.toPersistenceDto(): RiichiPendingKanDoraRevealPersistenceDto = RiichiPendingKanDoraRevealPersistenceDto(

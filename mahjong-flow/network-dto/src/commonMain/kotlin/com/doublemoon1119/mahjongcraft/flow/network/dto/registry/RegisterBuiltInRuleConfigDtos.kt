@@ -41,7 +41,8 @@ import kotlin.uuid.Uuid
  * 序列化，可在各自的組裝處另行呼叫對應 registry 的 `register(...)`。
  */
 fun NetworkDtoRegistries.registerBuiltInRuleConfigDtos() {
-    registerBuiltInRuleDtos()
+    registerRiichiRuleDtos()
+    registerTaiwanRuleDtos()
 }
 
 /** 登記內建立直 extension action 與 command 的網路 DTO。 */
@@ -62,8 +63,8 @@ fun NetworkDtoRegistries.registerRiichiGameActionDtos() {
     )
 }
 
-/** 登記內建日麻與台麻規則狀態的網路 DTO。 */
-private fun NetworkDtoRegistries.registerBuiltInRuleDtos() {
+/** 登記日麻規則狀態的網路 DTO。 */
+fun NetworkDtoRegistries.registerRiichiRuleDtos() {
     this.ruleConfig.register(
         RiichiRuleConfig::class,
         RiichiRuleConfigDto::class,
@@ -71,14 +72,6 @@ private fun NetworkDtoRegistries.registerBuiltInRuleDtos() {
         { it.toRiichiDto(this) },
         { it.toDomain(this) },
     )
-    this.ruleConfig.register(
-        TaiwanRuleConfig::class,
-        TaiwanRuleConfigDto::class,
-        TaiwanRuleConfigDto.serializer(),
-        { it.toTaiwanDto(this) },
-        { it.toDomain(this) },
-    )
-
     this.scoreConfig.register(
         RiichiScoreConfig::class,
         RiichiScoreConfigDto::class,
@@ -86,14 +79,6 @@ private fun NetworkDtoRegistries.registerBuiltInRuleDtos() {
         RiichiScoreConfig::toRiichiDto,
         RiichiScoreConfigDto::toDomain,
     )
-    this.scoreConfig.register(
-        TaiwanScoreConfig::class,
-        TaiwanScoreConfigDto::class,
-        TaiwanScoreConfigDto.serializer(),
-        TaiwanScoreConfig::toTaiwanDto,
-        TaiwanScoreConfigDto::toDomain,
-    )
-
     this.gameLength.register(
         RiichiGameLength.OneGame::class,
         RiichiGameLengthDto.OneGame::class,
@@ -115,35 +100,6 @@ private fun NetworkDtoRegistries.registerBuiltInRuleDtos() {
         { RiichiGameLengthDto.TwoWinds },
         { RiichiGameLength.TwoWinds },
     )
-    this.gameLength.register(
-        TaiwanGameLength.OneGame::class,
-        TaiwanGameLengthDto.OneGame::class,
-        TaiwanGameLengthDto.OneGame.serializer(),
-        { TaiwanGameLengthDto.OneGame },
-        { TaiwanGameLength.OneGame },
-    )
-    this.gameLength.register(
-        TaiwanGameLength.East::class,
-        TaiwanGameLengthDto.East::class,
-        TaiwanGameLengthDto.East.serializer(),
-        { TaiwanGameLengthDto.East },
-        { TaiwanGameLength.East },
-    )
-    this.gameLength.register(
-        TaiwanGameLength.TwoWinds::class,
-        TaiwanGameLengthDto.TwoWinds::class,
-        TaiwanGameLengthDto.TwoWinds.serializer(),
-        { TaiwanGameLengthDto.TwoWinds },
-        { TaiwanGameLength.TwoWinds },
-    )
-    this.gameLength.register(
-        TaiwanGameLength.FourWinds::class,
-        TaiwanGameLengthDto.FourWinds::class,
-        TaiwanGameLengthDto.FourWinds.serializer(),
-        { TaiwanGameLengthDto.FourWinds },
-        { TaiwanGameLength.FourWinds },
-    )
-
     this.dynamicRuleState.register(
         RiichiDynamicState::class,
         RiichiDynamicStateDto::class,
@@ -151,7 +107,6 @@ private fun NetworkDtoRegistries.registerBuiltInRuleDtos() {
         RiichiDynamicState::toRiichiDto,
         RiichiDynamicStateDto::toDomain,
     )
-
     this.playerRuleState.register(
         RiichiPlayerState::class,
         RiichiPlayerStateDto::class,
@@ -159,7 +114,6 @@ private fun NetworkDtoRegistries.registerBuiltInRuleDtos() {
         RiichiPlayerState::toRiichiDto,
         RiichiPlayerStateDto::toDomain,
     )
-
     this.discardPile.register(
         RiichiDiscardPile::class,
         RiichiDiscardPileDto::class,
@@ -167,14 +121,6 @@ private fun NetworkDtoRegistries.registerBuiltInRuleDtos() {
         RiichiDiscardPile::toRiichiDto,
         RiichiDiscardPileDto::toDomain,
     )
-    this.discardPile.register(
-        TaiwanDiscardPile::class,
-        TaiwanDiscardPileDto::class,
-        TaiwanDiscardPileDto.serializer(),
-        TaiwanDiscardPile::toTaiwanDto,
-        TaiwanDiscardPileDto::toDomain,
-    )
-
     this.exhaustiveDrawReason.register(
         RiichiExhaustiveDrawReason.Normal::class,
         RiichiExhaustiveDrawReasonDto.Normal::class,
@@ -216,5 +162,58 @@ private fun NetworkDtoRegistries.registerBuiltInRuleDtos() {
         RiichiExhaustiveDrawReasonDto.SanchaHou.serializer(),
         { RiichiExhaustiveDrawReasonDto.SanchaHou },
         { RiichiExhaustiveDrawReason.SanchaHou },
+    )
+}
+
+/** 登記台麻規則狀態的網路 DTO。 */
+fun NetworkDtoRegistries.registerTaiwanRuleDtos() {
+    this.ruleConfig.register(
+        TaiwanRuleConfig::class,
+        TaiwanRuleConfigDto::class,
+        TaiwanRuleConfigDto.serializer(),
+        { it.toTaiwanDto(this) },
+        { it.toDomain(this) },
+    )
+    this.scoreConfig.register(
+        TaiwanScoreConfig::class,
+        TaiwanScoreConfigDto::class,
+        TaiwanScoreConfigDto.serializer(),
+        TaiwanScoreConfig::toTaiwanDto,
+        TaiwanScoreConfigDto::toDomain,
+    )
+    this.gameLength.register(
+        TaiwanGameLength.OneGame::class,
+        TaiwanGameLengthDto.OneGame::class,
+        TaiwanGameLengthDto.OneGame.serializer(),
+        { TaiwanGameLengthDto.OneGame },
+        { TaiwanGameLength.OneGame },
+    )
+    this.gameLength.register(
+        TaiwanGameLength.East::class,
+        TaiwanGameLengthDto.East::class,
+        TaiwanGameLengthDto.East.serializer(),
+        { TaiwanGameLengthDto.East },
+        { TaiwanGameLength.East },
+    )
+    this.gameLength.register(
+        TaiwanGameLength.TwoWinds::class,
+        TaiwanGameLengthDto.TwoWinds::class,
+        TaiwanGameLengthDto.TwoWinds.serializer(),
+        { TaiwanGameLengthDto.TwoWinds },
+        { TaiwanGameLength.TwoWinds },
+    )
+    this.gameLength.register(
+        TaiwanGameLength.FourWinds::class,
+        TaiwanGameLengthDto.FourWinds::class,
+        TaiwanGameLengthDto.FourWinds.serializer(),
+        { TaiwanGameLengthDto.FourWinds },
+        { TaiwanGameLength.FourWinds },
+    )
+    this.discardPile.register(
+        TaiwanDiscardPile::class,
+        TaiwanDiscardPileDto::class,
+        TaiwanDiscardPileDto.serializer(),
+        TaiwanDiscardPile::toTaiwanDto,
+        TaiwanDiscardPileDto::toDomain,
     )
 }

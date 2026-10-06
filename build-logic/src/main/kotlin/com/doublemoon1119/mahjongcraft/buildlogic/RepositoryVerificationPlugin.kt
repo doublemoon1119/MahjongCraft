@@ -108,12 +108,14 @@ abstract class VerifyProjectVersionPolicyTask : DefaultTask() {
         val flowVersion = versions.findVersion("flow-version").get().requiredVersion
         val aiVersion = versions.findVersion("ai-version").get().requiredVersion
         val extensionApiVersion = versions.findVersion("extension-api-version").get().requiredVersion
+        val bundledExtensionsVersion = versions.findVersion("bundled-extensions-version").get().requiredVersion
         val violations = project.rootProject.allprojects.mapNotNull { candidate ->
             val expected = when {
                 candidate.path == ":" -> "0.0.0-dev"
                 candidate.path == ":mahjong-logic" -> logicVersion
                 candidate.path == ":mahjong-ai" -> aiVersion
                 candidate.path == ":mahjong-extension-api" -> extensionApiVersion
+                candidate.path == ":mahjong-bundled-extensions" -> bundledExtensionsVersion
                 candidate.path == ":mahjong-flow" || candidate.path.startsWith(":mahjong-flow:") -> flowVersion
                 candidate.path == ":testing" || candidate.path.startsWith(":testing:") -> "0.0.0-dev"
                 candidate.projectDir.toPath().startsWith(project.rootDir.resolve("platform/minecraft").toPath()) -> minecraftVersion
