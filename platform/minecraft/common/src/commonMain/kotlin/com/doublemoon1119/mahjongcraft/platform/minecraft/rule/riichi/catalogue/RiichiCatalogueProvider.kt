@@ -48,8 +48,13 @@ class RiichiCatalogueProvider : RuleCatalogueProvider {
     }
 }
 
-/** 登記內建日麻目錄；應在第三方註冊增量基準建立前呼叫。 */
+/** 登記所有內建規則的目錄。 */
 fun RuleCatalogueRegistry.registerBuiltInRuleCatalogues() {
+    registerRiichiRuleCatalogue()
+}
+
+/** 登記日麻目錄。 */
+fun RuleCatalogueRegistry.registerRiichiRuleCatalogue() {
     register(RiichiCatalogueProvider())
 }
 

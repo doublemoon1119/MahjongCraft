@@ -10,9 +10,19 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
  * 特權。
  */
 fun MinecraftTileAssetRegistry.registerBuiltInTileAssets() {
+    registerRiichiTileAssets()
+    registerTaiwanTileAssets()
+}
+
+/** 註冊日麻赤五的 asset key。 */
+fun MinecraftTileAssetRegistry.registerRiichiTileAssets() {
     register(RiichiTileTypes.RED_FIVE_CHARACTER, "m5_red")
     register(RiichiTileTypes.RED_FIVE_DOT, "p5_red")
     register(RiichiTileTypes.RED_FIVE_BAMBOO, "s5_red")
+}
+
+/** 註冊台麻花牌的 asset key。 */
+fun MinecraftTileAssetRegistry.registerTaiwanTileAssets() {
     register(TaiwanTileTypes.SPRING, "flower_spring")
     register(TaiwanTileTypes.SUMMER, "flower_summer")
     register(TaiwanTileTypes.AUTUMN, "flower_autumn")

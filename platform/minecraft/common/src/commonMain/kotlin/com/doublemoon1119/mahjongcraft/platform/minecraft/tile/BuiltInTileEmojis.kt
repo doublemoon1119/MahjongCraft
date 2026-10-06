@@ -9,6 +9,13 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
  * 內建映射與第三方映射共用 [TileEmojiRegistry.register]，不具有覆寫或繞過重複 key 驗證的特權。
  */
 fun TileEmojiRegistry.registerBuiltInTileEmojis() {
+    registerStandardTileEmojis()
+    registerRiichiTileEmojis()
+    registerTaiwanTileEmojis()
+}
+
+/** 註冊 34 種基本牌與未知牌的字元；不屬於任何規則。 */
+fun TileEmojiRegistry.registerStandardTileEmojis() {
     register("east", "🀀")
     register("south", "🀁")
     register("west", "🀂")
@@ -43,6 +50,18 @@ fun TileEmojiRegistry.registerBuiltInTileEmojis() {
     register("p7", "🀟")
     register("p8", "🀠")
     register("p9", "🀡")
+    register(UNKNOWN_TILE_ASSET_KEY, "🀯")
+}
+
+/** 註冊日麻赤五的字元。 */
+fun TileEmojiRegistry.registerRiichiTileEmojis() {
+    register("m5_red", "🀬")
+    register("s5_red", "🀭")
+    register("p5_red", "🀮")
+}
+
+/** 註冊台麻花牌的字元。 */
+fun TileEmojiRegistry.registerTaiwanTileEmojis() {
     register("flower_plum", "🀣")
     register("flower_orchid", "🀤")
     register("flower_bamboo", "🀥")
@@ -51,8 +70,4 @@ fun TileEmojiRegistry.registerBuiltInTileEmojis() {
     register("flower_summer", "🀨")
     register("flower_autumn", "🀩")
     register("flower_winter", "🀪")
-    register("m5_red", "🀬")
-    register("s5_red", "🀭")
-    register("p5_red", "🀮")
-    register(UNKNOWN_TILE_ASSET_KEY, "🀯")
 }

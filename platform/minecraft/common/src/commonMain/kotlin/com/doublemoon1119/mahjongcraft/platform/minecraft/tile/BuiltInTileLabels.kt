@@ -27,6 +27,13 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
  * `forced = false`。
  */
 fun TileLabelRegistry.registerBuiltInTileLabels() {
+    registerStandardTileLabels()
+    registerRiichiTileLabels()
+    registerTaiwanTileLabels()
+}
+
+/** 註冊 34 種基本牌的標籤；不屬於任何規則。 */
+fun TileLabelRegistry.registerStandardTileLabels() {
     // 萬子
     register("m1", redText("1"))
     register("m2", redText("2"))
@@ -37,7 +44,6 @@ fun TileLabelRegistry.registerBuiltInTileLabels() {
     register("m7", redText("7"))
     register("m8", redText("8"))
     register("m9", redText("9"))
-    register("m5_red", blackTextOnRedTile("5"))
 
     // 條子
     register("s1", redText("1"))
@@ -49,7 +55,6 @@ fun TileLabelRegistry.registerBuiltInTileLabels() {
     register("s7", redText("7"))
     register("s8", redText("8"))
     register("s9", redText("9"))
-    register("s5_red", blackTextOnRedTile("5"))
 
     // 餅子
     register("p1", redText("1"))
@@ -61,7 +66,6 @@ fun TileLabelRegistry.registerBuiltInTileLabels() {
     register("p7", redText("7"))
     register("p8", redText("8"))
     register("p9", redText("9"))
-    register("p5_red", blackTextOnRedTile("5"))
 
     // 風牌
     register("east", redText("E"))
@@ -73,7 +77,17 @@ fun TileLabelRegistry.registerBuiltInTileLabels() {
     register("red_dragon", blackTextOnRedTile("R"))
     register("green_dragon", redText("G"))
     register("white_dragon", redText("Wh"))
+}
 
+/** 註冊日麻赤五的標籤。 */
+fun TileLabelRegistry.registerRiichiTileLabels() {
+    register("m5_red", blackTextOnRedTile("5"))
+    register("s5_red", blackTextOnRedTile("5"))
+    register("p5_red", blackTextOnRedTile("5"))
+}
+
+/** 註冊台麻花牌的標籤。 */
+fun TileLabelRegistry.registerTaiwanTileLabels() {
     // 四季花牌：右上紅色中文字、左上黑色數字，依春夏秋冬排序
     register("flower_spring", seasonalFlower(chinese = "春", order = "1"))
     register("flower_summer", seasonalFlower(chinese = "夏", order = "2"))

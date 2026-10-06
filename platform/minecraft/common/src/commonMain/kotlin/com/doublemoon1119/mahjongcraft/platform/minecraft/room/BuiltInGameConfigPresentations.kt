@@ -13,7 +13,17 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 
 /** 登記 Minecraft 內建日麻與唯讀台麻設定 schema。 */
 fun GameConfigPresentationRegistry.registerBuiltInGameConfigPresentations() {
+    registerRiichiGameConfigPresentation()
+    registerTaiwanGameConfigPresentation()
+}
+
+/** 登記日麻設定 schema。 */
+fun GameConfigPresentationRegistry.registerRiichiGameConfigPresentation() {
     register(riichiPresentation())
+}
+
+/** 登記唯讀台麻設定 schema。 */
+fun GameConfigPresentationRegistry.registerTaiwanGameConfigPresentation() {
     register(taiwanPresentation())
 }
 

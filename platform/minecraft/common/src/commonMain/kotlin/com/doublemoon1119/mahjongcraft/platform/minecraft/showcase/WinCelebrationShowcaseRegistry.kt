@@ -68,8 +68,13 @@ class WinCelebrationShowcaseRegistryImpl : WinCelebrationShowcaseRegistry {
     override fun find(cueKey: String): WinCelebrationShowcaseDefinition? = definitions[cueKey]
 }
 
-/** 註冊所有內建日麻役滿展示定義；標題 key 與貼圖都放在日麻專屬的命名下。 */
+/** 註冊所有內建規則的胡牌展示定義。 */
 fun WinCelebrationShowcaseRegistry.registerBuiltInWinCelebrationShowcases() {
+    registerRiichiWinCelebrationShowcases()
+}
+
+/** 註冊所有日麻役滿展示定義；標題 key 與貼圖都放在日麻專屬的命名下。 */
+fun WinCelebrationShowcaseRegistry.registerRiichiWinCelebrationShowcases() {
     BUILT_IN_CUES.forEachIndexed { index, cue ->
         register(
             WinCelebrationShowcaseDefinition(

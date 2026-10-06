@@ -42,8 +42,14 @@ object BuiltInWinSettlementTileAssets {
     const val TILE_BACK = "back"
 }
 
-/** 內建通用 fallback 模板；不包含寶牌、翻數、符數等規則專屬概念。 */
+/** 註冊通用模板與所有內建規則的模板。 */
 fun WinSettlementPresentationTemplateRegistry.registerBuiltInWinSettlementTemplates() {
+    registerGenericWinSettlementTemplates()
+    registerRiichiWinSettlementTemplates()
+}
+
+/** 內建通用 fallback 模板與共用欄位；不包含寶牌、翻數、符數等規則專屬概念。 */
+fun WinSettlementPresentationTemplateRegistry.registerGenericWinSettlementTemplates() {
     val background = PresentationContainerStyle(backgroundArgb = 0xCC101722.toInt(), padding = 8f)
     registerTemplate(
         WinSettlementPresentationTemplate(
@@ -64,21 +70,6 @@ fun WinSettlementPresentationTemplateRegistry.registerBuiltInWinSettlementTempla
                     PresentationLayout.Text(BuiltInWinSettlementFieldIds.TOTAL_SCORE),
                 ),
                 spacing = 4f,
-                style = background,
-            ),
-        ),
-    )
-    registerTemplate(
-        WinSettlementPresentationTemplate(
-            key = BuiltInWinSettlementTemplateKeys.NAGASHI_MANGAN,
-            root = PresentationLayout.Column(
-                children = listOf(
-                    PresentationLayout.Text(BuiltInWinSettlementFieldIds.OUTCOME_TITLE),
-                    PresentationLayout.Text(BuiltInWinSettlementFieldIds.WINNER_SUMMARY),
-                    PresentationLayout.RepeatEntries(PresentationFieldId(RiichiWinSettlementIds.YAKU_FIELD)),
-                    PresentationLayout.Text(BuiltInWinSettlementFieldIds.TOTAL_SCORE),
-                ),
-                spacing = 6f,
                 style = background,
             ),
         ),
@@ -136,11 +127,27 @@ fun WinSettlementPresentationTemplateRegistry.registerBuiltInWinSettlementTempla
     registerFieldProvider(BuiltInWinSettlementFieldIds.TOTAL_SCORE) { snapshot ->
         PresentationValue.TextValue(WinSettlementTextKeys.TOTAL_SCORE, listOf(snapshot.totalScore.toString()))
     }
-    registerBuiltInRiichiWinSettlementTemplate()
 }
 
-/** Bundled 日麻以通用文字／牌面原語組成的完整模板。 */
-private fun WinSettlementPresentationTemplateRegistry.registerBuiltInRiichiWinSettlementTemplate() {
+/** 日麻以通用文字／牌面原語組成的完整模板、流局滿貫模板，以及日麻專屬欄位。 */
+fun WinSettlementPresentationTemplateRegistry.registerRiichiWinSettlementTemplates() {
+    val background = PresentationContainerStyle(backgroundArgb = 0xCC101722.toInt(), padding = 8f)
+    registerTemplate(
+        WinSettlementPresentationTemplate(
+            key = BuiltInWinSettlementTemplateKeys.NAGASHI_MANGAN,
+            root = PresentationLayout.Column(
+                children = listOf(
+                    PresentationLayout.Text(BuiltInWinSettlementFieldIds.OUTCOME_TITLE),
+                    PresentationLayout.Text(BuiltInWinSettlementFieldIds.WINNER_SUMMARY),
+                    PresentationLayout.RepeatEntries(PresentationFieldId(RiichiWinSettlementIds.YAKU_FIELD)),
+                    PresentationLayout.Text(BuiltInWinSettlementFieldIds.TOTAL_SCORE),
+                ),
+                spacing = 6f,
+                style = background,
+            ),
+        ),
+    )
+
     val yaku = PresentationFieldId(RiichiWinSettlementIds.YAKU_FIELD)
     val hanFu = PresentationFieldId(RiichiWinSettlementIds.HAN_FU_FIELD)
     val yakumanTotal = PresentationFieldId(RiichiWinSettlementIds.YAKUMAN_TOTAL_FIELD)

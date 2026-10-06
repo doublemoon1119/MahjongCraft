@@ -18,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.present
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario.registerDebugScriptedAiStrategies
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BundledMinecraftMahjongExtensions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtensionRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftPresentationRegistries
@@ -111,7 +112,7 @@ object FabricMahjongExtensions {
         // 同一個第三方類別可同時實作 MahjongExtension 與 MinecraftMahjongExtension，
         // 不需要在 fabric.mod.json 額外宣告第二個 entrypoint。
         val minecraftResult = MinecraftMahjongExtensionRegistrar.registerAndFreeze(
-            extensions = extensions.filterIsInstance<MinecraftMahjongExtension>(),
+            extensions = BundledMinecraftMahjongExtensions.all + extensions.filterIsInstance<MinecraftMahjongExtension>(),
             registries = presentationRegistries,
         )
         val minecraftSources = minecraftResult.sources.map { source ->

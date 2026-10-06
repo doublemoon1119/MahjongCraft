@@ -161,7 +161,7 @@ class MinecraftMahjongExtensionRegistrarTest {
         }
 
         val result = registerAndFreeze(
-            extensions = listOf(extension),
+            extensions = BundledMinecraftMahjongExtensions.all + extension,
             tileAssetRegistry = tileAssetRegistry,
             aiStrategyDisplayNameRegistry = aiStrategyDisplayNameRegistry,
             tileDisplayNameRegistry = tileDisplayNameRegistry,
@@ -234,9 +234,9 @@ class MinecraftMahjongExtensionRegistrarTest {
         assertEquals(setOf("example:my_rule"), result.registrationKeys("mahjongcraft:rule_catalogue"))
     }
 
-    /** 驗證未實作 [MinecraftMahjongExtension] 的清單一樣能完成內建映射與凍結。 */
+    /** 只帶內建規則 extension 時，日麻與台麻的映射都完成登記並凍結。 */
     @Test
-    fun `no third-party extensions still registers built-ins and freezes`() {
+    fun `bundled extensions register built-in rule presentations and freeze`() {
         val tileAssetRegistry = MinecraftTileAssetRegistryImpl()
         val aiStrategyDisplayNameRegistry = AiStrategyDisplayNameRegistryImpl()
         val tileDisplayNameRegistry = TileDisplayNameRegistryImpl()
@@ -246,7 +246,7 @@ class MinecraftMahjongExtensionRegistrarTest {
         val ruleCatalogueRegistry = RuleCatalogueRegistryImpl()
 
         val result = registerAndFreeze(
-            extensions = emptyList(),
+            extensions = BundledMinecraftMahjongExtensions.all,
             tileAssetRegistry = tileAssetRegistry,
             aiStrategyDisplayNameRegistry = aiStrategyDisplayNameRegistry,
             tileDisplayNameRegistry = tileDisplayNameRegistry,
@@ -285,11 +285,40 @@ class MinecraftMahjongExtensionRegistrarTest {
         assertNull(tileLabelRegistry.find("example_unregistered"))
         assertTrue(ruleCatalogueRegistry.isFrozen)
         assertEquals(setOf(BuiltInRuleModuleIds.RIICHI), ruleCatalogueRegistry.registrationKeys)
-        assertEquals(listOf(null), result.sources.map { it.extensionId })
+        assertEquals(listOf(null, BundledRiichiMinecraftExtension.id, BundledTaiwanMinecraftExtension.id), result.sources.map { it.extensionId })
         assertEquals(
             setOf(BuiltInRuleModuleIds.RIICHI),
-            result.sources.single().categories.single { it.id == "mahjongcraft:rule_catalogue" }.registrationKeys,
+            result.sources[1].categories.single { it.id == "mahjongcraft:rule_catalogue" }.registrationKeys,
         )
+    }
+
+    /** 不帶任何 extension 時只登記規則中立的映射，日麻與台麻的映射都不存在。 */
+    @Test
+    fun `registrar alone registers only rule-neutral mappings`() {
+        val tileAssetRegistry = MinecraftTileAssetRegistryImpl()
+        val aiStrategyDisplayNameRegistry = AiStrategyDisplayNameRegistryImpl()
+        val ruleModuleDisplayNameRegistry = RuleModuleDisplayNameRegistryImpl()
+        val tileEmojiRegistry = TileEmojiRegistryImpl()
+        val tileLabelRegistry = TileLabelRegistryImpl()
+
+        val result = registerAndFreeze(
+            extensions = emptyList(),
+            tileAssetRegistry = tileAssetRegistry,
+            aiStrategyDisplayNameRegistry = aiStrategyDisplayNameRegistry,
+            tileDisplayNameRegistry = TileDisplayNameRegistryImpl(),
+            ruleModuleDisplayNameRegistry = ruleModuleDisplayNameRegistry,
+            tileEmojiRegistry = tileEmojiRegistry,
+            tileLabelRegistry = tileLabelRegistry,
+        )
+
+        assertEquals(listOf(null), result.sources.map { it.extensionId })
+        assertEquals(MinecraftMessageKeys.AI_STRATEGY_BEGINNER, aiStrategyDisplayNameRegistry.find(BuiltInAiStrategyKeys.BEGINNER))
+        assertTrue(tileEmojiRegistry.find("m1") != null)
+        assertTrue(tileLabelRegistry.find("east") != null)
+        assertNull(tileEmojiRegistry.find("m5_red"))
+        assertNull(tileLabelRegistry.find("flower_spring"))
+        assertNull(tileAssetRegistry.find(RiichiTileTypes.RED_FIVE_CHARACTER))
+        assertNull(ruleModuleDisplayNameRegistry.find(BuiltInRuleModuleIds.RIICHI))
     }
 
     /** 驗證註冊失敗時的例外會指出第三方 extension ID。 */
@@ -375,9 +404,9 @@ class MinecraftMahjongExtensionRegistrarTest {
     }
 }
 
-/** 取得 extension（不含內建映射）在指定診斷分類登記的 key。 */
+/** 取得第三方 extension（不含內建映射與內建規則 extension）在指定診斷分類登記的 key。 */
 private fun MinecraftMahjongExtensionRegistrationResult.registrationKeys(categoryId: String): Set<String> = sources
-    .filter { it.extensionId != null }
+    .filter { source -> source.extensionId != null && BundledMinecraftMahjongExtensions.all.none { it.id == source.extensionId } }
     .flatMap { it.categories }
     .filter { it.id == categoryId }
     .flatMapTo(mutableSetOf()) { it.registrationKeys }
