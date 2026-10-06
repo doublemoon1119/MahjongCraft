@@ -117,15 +117,15 @@ internal data class HistorySummaryLayout(
     fun maximumScroll(contentHeight: Int): Int = (contentHeight - viewportHeight).coerceAtLeast(0)
 
     /**
-     * 底部按鈕位置：只有返回按鈕時置中；需要顯示重試按鈕時兩顆並排置中，返回在左。
+     * 底部按鈕位置：只有返回按鈕時置中；需要顯示第二顆按鈕（例如重試或規則一覽）時兩顆並排置中，返回在左。
      *
      * @param width 畫面寬度。
-     * @param retryVisible 是否顯示重試按鈕。
-     * @return 返回按鈕與重試按鈕的界線；不顯示重試時第二項為 null。
+     * @param secondVisible 是否顯示第二顆按鈕。
+     * @return 返回按鈕與第二顆按鈕的界線；不顯示第二顆時第二項為 null。
      */
-    fun footerButtons(width: Int, retryVisible: Boolean): Pair<HistoryScreenLayout.Bounds, HistoryScreenLayout.Bounds?> {
+    fun footerButtons(width: Int, secondVisible: Boolean): Pair<HistoryScreenLayout.Bounds, HistoryScreenLayout.Bounds?> {
         val buttonWidth = ((width - FOOTER_MARGIN * 2 - FOOTER_GAP) / 2).coerceAtLeast(1)
-        if (!retryVisible) return HistoryScreenLayout.Bounds((width - buttonWidth) / 2, footerTop, buttonWidth, FOOTER_BUTTON_HEIGHT) to null
+        if (!secondVisible) return HistoryScreenLayout.Bounds((width - buttonWidth) / 2, footerTop, buttonWidth, FOOTER_BUTTON_HEIGHT) to null
         val left = ((width - buttonWidth * 2 - FOOTER_GAP) / 2).coerceAtLeast(FOOTER_MARGIN)
         return HistoryScreenLayout.Bounds(left, footerTop, buttonWidth, FOOTER_BUTTON_HEIGHT) to
             HistoryScreenLayout.Bounds(left + buttonWidth + FOOTER_GAP, footerTop, buttonWidth, FOOTER_BUTTON_HEIGHT)

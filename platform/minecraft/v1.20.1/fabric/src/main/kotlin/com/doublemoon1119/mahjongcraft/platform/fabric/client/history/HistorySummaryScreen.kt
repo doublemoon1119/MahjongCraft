@@ -50,7 +50,7 @@ internal class HistorySummaryScreen(
         scroll = session.controller.state.value.summary?.scrollOffset ?: 0.0
         dragging = false
         clearChildren()
-        val (backBounds, retryBounds) = layout.footerButtons(width, retryVisible = true)
+        val (backBounds, retryBounds) = layout.footerButtons(width, secondVisible = true)
         backButton = ButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.BACK)) { session.backToList() }
             .dimensions(backBounds.x, backBounds.y, backBounds.width, backBounds.height).build().also(::addDrawableChild)
         retryButton = ButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.RETRY)) { if (session.controller.canRetry()) session.controller.retry() }
@@ -63,7 +63,7 @@ internal class HistorySummaryScreen(
      * @param retryVisible 是否顯示重試按鈕。
      */
     private fun placeFooter(retryVisible: Boolean) {
-        val (back, retry) = layout.footerButtons(width, retryVisible)
+        val (back, retry) = layout.footerButtons(width, secondVisible = retryVisible)
         backButton?.x = back.x
         retry?.let { retryButton?.x = it.x }
     }

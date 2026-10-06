@@ -9,9 +9,11 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStat
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue.RuleCatalogueScreenController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.concurrency.ClientThreadCoroutineDispatcher
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileFaceRenderer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueBrowseContext
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
@@ -44,6 +46,7 @@ import kotlin.time.TimeSource
  * @property settlementTemplates 結算明細欄位的規則專屬標題來源。
  * @property tileFaces 共用 GUI 牌面 renderer。
  * @property tileAssets 牌種與 Minecraft 素材的映射來源。
+ * @property ruleCatalogue 從規則設定頁開啟規則一覽。
  * @param dispatcher 客戶端主執行緒排程。
  * @property parent 關閉後返回的原畫面，指令入口為 null。
  * @param initialMatchId 聊天入口指定的對局；null 表示一般列表。
@@ -64,6 +67,7 @@ internal class HistoryBrowseSession(
     val settlementTemplates: WinSettlementPresentationTemplateRegistry,
     val tileFaces: MahjongTileFaceRenderer,
     val tileAssets: MinecraftTileAssetRegistry,
+    private val ruleCatalogue: RuleCatalogueScreenController,
     dispatcher: ClientThreadCoroutineDispatcher,
     private val parent: Screen?,
     initialMatchId: String?,
@@ -259,6 +263,35 @@ internal class HistoryBrowseSession(
         if (closed || !controller.backToRound()) return false
         navigate(HistoryRoundEventsScreen(this, tileFaces, tileAssets, HistoryRoundEventPresenter(actionVocabulary, exhaustiveDrawReasons, roundOutcomes), settlementTemplates))
         return true
+    }
+
+    /** 瀏覽是否仍在進行；結束後不再接受導航。 */
+    val isOpen: Boolean get() = !closed
+
+    /**
+     * 從規則設定頁開啟規則一覽；切換期間不結束瀏覽，規則一覽成為此瀏覽目前的畫面。
+     *
+     * @param settings 目前顯示的規則設定頁。
+     * @param context 規則與歷史對局設定。
+     * @return 是否已開啟。
+     */
+    fun openRuleCatalogue(settings: Screen, context: RuleCatalogueBrowseContext): Boolean {
+        if (closed || screen !== settings) return false
+        navigate(ruleCatalogue.createScreen(context = context, exit = HistoryRuleCatalogueExit(session = this, settings = settings)))
+        return true
+    }
+
+    /**
+     * 從規則一覽返回原規則設定頁，保留其捲動位置；瀏覽已結束時關回遊戲。
+     *
+     * @param settings 開啟規則一覽的規則設定頁。
+     */
+    fun backFromRuleCatalogue(settings: Screen) {
+        if (closed) {
+            MinecraftClient.getInstance().setScreen(null)
+            return
+        }
+        navigate(settings)
     }
 
     /** 從歷史子頁返回摘要，保留摘要查詢與捲動位置。

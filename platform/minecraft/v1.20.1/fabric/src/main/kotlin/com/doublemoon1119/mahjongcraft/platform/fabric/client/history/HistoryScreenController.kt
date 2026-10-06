@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue.RuleCatalogueScreenController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.concurrency.ClientThreadCoroutineDispatcher
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileFaceRenderer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
@@ -35,6 +36,7 @@ import kotlin.uuid.Uuid
  * @property settlementTemplates 結算明細欄位的規則專屬標題來源。
  * @property tileFaces 共用 GUI 牌面 renderer。
  * @property tileAssets 牌種與 Minecraft 素材的映射來源。
+ * @property ruleCatalogue 從規則設定頁開啟規則一覽。
  * @property archiveStatus 保存狀態查詢。
  * @property dispatcher 客戶端主執行緒排程。
  */
@@ -53,6 +55,7 @@ class HistoryScreenController internal constructor(
     @Provided private val settlementTemplates: WinSettlementPresentationTemplateRegistry,
     private val tileFaces: MahjongTileFaceRenderer,
     @Provided private val tileAssets: MinecraftTileAssetRegistry,
+    private val ruleCatalogue: RuleCatalogueScreenController,
     private val archiveStatus: HistoryArchiveStatusTransport,
     private val dispatcher: ClientThreadCoroutineDispatcher,
 ) {
@@ -129,6 +132,7 @@ class HistoryScreenController internal constructor(
             settlementTemplates,
             tileFaces,
             tileAssets,
+            ruleCatalogue,
             dispatcher,
             request.parent,
             request.matchId,

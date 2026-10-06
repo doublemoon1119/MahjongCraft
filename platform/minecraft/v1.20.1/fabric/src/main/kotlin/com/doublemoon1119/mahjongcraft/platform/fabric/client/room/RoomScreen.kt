@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomActionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue.RuleCatalogueScreenController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigScreen
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongHudLayoutEditorScreen
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.CycleButtonInput
@@ -72,6 +73,7 @@ class RoomScreen(
     private val json: Json,
     private val networkRegistries: NetworkDtoRegistries,
     private val profileResolver: ClientPlayerProfileResolver,
+    private val ruleCatalogue: RuleCatalogueScreenController,
     openSettings: Boolean = false,
 ) : Screen(Text.translatable(MinecraftRoomScreenKeys.TITLE)) {
     private val logger = mahjongCraftLogger(RoomScreen::class)
@@ -433,11 +435,40 @@ class RoomScreen(
         refreshDraftButtons()
     }
 
-    /** 以單一切換按鈕顯示規則，並在 tooltip 條列所有已登記規則；窄視窗時改為佔滿內容寬度的單行。 */
+    /**
+     * 開啟規則一覽的「?」按鈕，位於規則切換鈕右側；依點擊當下設定頁顯示的規則與設定開啟，含尚未套用的修改。
+     *
+     * @param x 按鈕左界。
+     */
+    private fun addRuleCatalogueButton(x: Int) {
+        addDrawableChild(
+            ButtonWidget.builder(Text.literal(RULE_CATALOGUE_BUTTON_LABEL)) {
+                val authoritative = currentConfig() ?: return@builder
+                val displayed = draft.config ?: authoritative
+                val context = roomRuleCatalogueContext(
+                    ruleModuleId = configResolver.resolve(displayed).ruleModuleId,
+                    displayed = displayed,
+                    authoritative = authoritative,
+                )
+                client?.setScreen(ruleCatalogue.createScreen(context = context, exit = RoomRuleCatalogueExit(this)))
+            }.dimensions(x, RULE_SELECTOR_Y, RULE_CATALOGUE_BUTTON_SIZE, RULE_CATALOGUE_BUTTON_SIZE).build().also {
+                it.tooltip = Tooltip.of(
+                    Text.empty()
+                        .append(Text.translatable(MinecraftRoomScreenKeys.RULE_CATALOGUE_BUTTON).formatted(Formatting.GOLD))
+                        .append("\n")
+                        .append(Text.translatable(MinecraftRoomScreenKeys.RULE_CATALOGUE_BUTTON_DESCRIPTION).formatted(Formatting.GRAY)),
+                )
+            },
+        )
+    }
+
+    /** 以切換按鈕顯示規則，並在 tooltip 條列所有已登記規則；右側保留規則一覽按鈕，窄視窗時兩者合計佔滿內容寬度。 */
     private fun addRuleSelector(config: GameConfig, moduleId: String, canEdit: Boolean, compact: Boolean) {
         val candidates = configPresentations.ruleModuleIds.sorted()
         val currentName = ruleName(moduleId)
-        val (x, buttonWidth) = if (compact) COMPACT_CONTENT_MARGIN to (width - COMPACT_CONTENT_MARGIN * 2) else 18 to 112
+        val (x, rowWidth) = if (compact) COMPACT_CONTENT_MARGIN to (width - COMPACT_CONTENT_MARGIN * 2) else 18 to 112
+        val buttonWidth = rowWidth - RULE_CATALOGUE_BUTTON_SIZE - RULE_CATALOGUE_BUTTON_GAP
+        addRuleCatalogueButton(x = x + buttonWidth + RULE_CATALOGUE_BUTTON_GAP)
         addDrawableChild(
             RestartableMarqueeButtonWidget.builder(currentName) {
                 val selectable = candidates.filter { configPresentations.find(it)?.selectable == true }
@@ -448,7 +479,7 @@ class RoomScreen(
                 selectedCategoryId = null
                 fieldScroll.reset()
                 rebuild()
-            }.dimensions(x, 54, buttonWidth, 20).build().also { button ->
+            }.dimensions(x, RULE_SELECTOR_Y, buttonWidth, 20).build().also { button ->
                 button.active = canEdit && candidates.count { configPresentations.find(it)?.selectable == true } > 1
                 button.tooltip = Tooltip.of(
                     CycleButtonInput.withHint(
@@ -768,7 +799,7 @@ class RoomScreen(
      * 桌子可能在畫面開著時被其他玩家破壞，因此距離之外還要確認方塊實體仍然存在；距離條件已經保證所在
      * 區塊是載入的，查不到方塊實體就代表桌子真的沒了。payload 沒有帶座標時無從判斷，一律視為仍可使用。
      */
-    private fun isTableStillAvailable(): Boolean {
+    internal fun isTableStillAvailable(): Boolean {
         val table = stateStore.tableOccupancy(tableId) ?: return false
         val x = table.tableX ?: return true
         val y = table.tableY ?: return true
@@ -1243,6 +1274,18 @@ class RoomScreen(
         const val SETTINGS_FIELD_LABEL_GAP = 8
         const val VANILLA_VISIBLE_TEXT_HEIGHT = 8
         const val COMPACT_CONTENT_MARGIN = 18
+
+        /** 規則切換鈕與規則一覽按鈕的上界。 */
+        const val RULE_SELECTOR_Y = 54
+
+        /** 規則一覽按鈕的邊長。 */
+        const val RULE_CATALOGUE_BUTTON_SIZE = 20
+
+        /** 規則切換鈕與規則一覽按鈕之間的距離。 */
+        const val RULE_CATALOGUE_BUTTON_GAP = 4
+
+        /** 規則一覽按鈕上的文字。 */
+        const val RULE_CATALOGUE_BUTTON_LABEL = "?"
         const val COMPACT_INTEGER_BUTTON_WIDTH = 24
         const val COMPACT_INTEGER_BUTTON_GAP = 4
 

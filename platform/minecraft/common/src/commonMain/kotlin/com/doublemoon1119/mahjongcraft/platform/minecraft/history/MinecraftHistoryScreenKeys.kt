@@ -209,6 +209,12 @@ object MinecraftHistoryScreenKeys {
     /** 規則設定標題。 */
     const val RULE_SETTINGS_TITLE = "mahjongcraft.history_screen.rule_settings.title"
 
+    /** 規則設定頁開啟規則一覽的按鈕。 */
+    const val RULE_CATALOGUE = "mahjongcraft.history_screen.rule_settings.rule_catalogue"
+
+    /** 規則設定頁開啟規則一覽按鈕的提示。 */
+    const val RULE_CATALOGUE_TOOLTIP = "mahjongcraft.history_screen.rule_settings.rule_catalogue_tooltip"
+
     /** 規則設定入口提示。 */
     const val RULE_SETTINGS_OPEN_HINT = "mahjongcraft.history_screen.rule_settings.open_hint"
 

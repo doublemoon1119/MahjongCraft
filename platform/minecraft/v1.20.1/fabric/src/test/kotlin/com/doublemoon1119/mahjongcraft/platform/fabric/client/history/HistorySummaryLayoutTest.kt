@@ -76,8 +76,8 @@ class HistorySummaryLayoutTest {
     fun `footer centers the back button alone and pairs it with retry`() {
         listOf(320, 427, 961).forEach { width ->
             val layout = HistorySummaryLayout.measure(width, 240)
-            val (alone, none) = layout.footerButtons(width, retryVisible = false)
-            val (back, retry) = layout.footerButtons(width, retryVisible = true)
+            val (alone, none) = layout.footerButtons(width, secondVisible = false)
+            val (back, retry) = layout.footerButtons(width, secondVisible = true)
 
             assertEquals(null, none)
             assertTrue(abs(alone.x - (width - alone.x - alone.width)) <= 1, "back button must be centered")

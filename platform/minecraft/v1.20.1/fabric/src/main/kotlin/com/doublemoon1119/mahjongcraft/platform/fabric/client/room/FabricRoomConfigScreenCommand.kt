@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.room
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.CLIENT_COMMAND_ROOT
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue.RuleCatalogueScreenController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.FabricClientConfigCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerProfileResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.PlayerPortraitRenderer
@@ -59,6 +60,7 @@ class FabricRoomConfigScreenCommand(
     @Provided private val json: Json,
     @Provided private val networkRegistries: NetworkDtoRegistries,
     private val profileResolver: ClientPlayerProfileResolver,
+    private val ruleCatalogue: RuleCatalogueScreenController,
 ) {
     private var pendingOpen = false
 
@@ -109,6 +111,7 @@ class FabricRoomConfigScreenCommand(
                 json = json,
                 networkRegistries = networkRegistries,
                 profileResolver = profileResolver,
+                ruleCatalogue = ruleCatalogue,
                 openSettings = true,
             ),
         )

@@ -5,6 +5,12 @@ object MinecraftRoomScreenKeys {
     const val TITLE = "mahjongcraft.room.screen.title"
     const val PAGE_ROOM = "mahjongcraft.room.screen.page.room"
     const val PAGE_SETTINGS = "mahjongcraft.room.screen.page.settings"
+
+    /** 開啟規則一覽按鈕的提示標題。 */
+    const val RULE_CATALOGUE_BUTTON = "mahjongcraft.room.screen.rule_catalogue"
+
+    /** 開啟規則一覽按鈕的提示說明。 */
+    const val RULE_CATALOGUE_BUTTON_DESCRIPTION = "mahjongcraft.room.screen.rule_catalogue.description"
     const val EMPTY = "mahjongcraft.room.screen.empty"
     const val PLAYING = "mahjongcraft.room.screen.playing"
     const val CREATE = "mahjongcraft.room.screen.create"

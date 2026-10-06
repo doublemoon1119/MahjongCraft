@@ -51,6 +51,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.WinCelebrat
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.WinSettlementPresentationEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.FabricRoomConfigScreenCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.RoomScreen
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.isShowingRoom
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricHandSortCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricTileLabelCommand
@@ -114,7 +115,7 @@ class MahjongCraftModClient : ClientModInitializer {
         koin.get<FabricClientConfigCommand>().register()
         koin.get<HistoryScreenController>().register()
         koin.get<FabricHistoryScreenCommand>().register()
-        koin.get<RuleCatalogueScreenController>().register()
+        val ruleCatalogueController = koin.get<RuleCatalogueScreenController>().also { it.register() }
         koin.get<FabricRuleCatalogueScreenCommand>().register()
         val decisionHudController = koin.get<PlayerDecisionHudController>()
         decisionHudController.registerEvents()
@@ -211,7 +212,7 @@ class MahjongCraftModClient : ClientModInitializer {
         MahjongChannels.tableOccupancy.registerClientReceiver(json) { payload ->
             stateStore.apply(payload)
             val client = MinecraftClient.getInstance()
-            if (client.currentScreen !is RoomScreen) {
+            if (!isShowingRoom(client.currentScreen)) {
                 client.setScreen(
                     RoomScreen(
                         stateStore = stateStore,
@@ -227,6 +228,7 @@ class MahjongCraftModClient : ClientModInitializer {
                         json = json,
                         networkRegistries = networkRegistries,
                         profileResolver = profileResolver,
+                        ruleCatalogue = ruleCatalogueController,
                     ),
                 )
             }

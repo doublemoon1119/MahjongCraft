@@ -24,15 +24,18 @@ import net.minecraft.util.Language
  * @property presenter 條目 card 的文字與牌例測量。
  * @property tileFaces 牌面繪製。
  * @property openingContext 開啟時的設定來源。
- * @property parent 關閉後返回的畫面；沒有時關閉回到遊戲。
+ * @property exit 關閉後回到哪裡，以及開啟它的畫面是否仍然有效。
  */
 internal class RuleCatalogueScreen(
     private val browser: RuleCatalogueBrowser,
     private val presenter: RuleCataloguePresenter,
     private val tileFaces: MahjongTileFaceRenderer,
     private val openingContext: RuleCatalogueBrowseContext,
-    private val parent: Screen?,
+    private val exit: RuleCatalogueExit,
 ) : Screen(Text.translatable(MinecraftRuleCatalogueScreenKeys.TITLE)) {
+    /** 返回時回到的畫面；直接關回遊戲時為 null。 */
+    internal val returnScreen: Screen? get() = exit.returnScreen
+
     /** 目前的瀏覽快照。 */
     private var state: RuleCatalogueBrowseState = browser.snapshot(presenter::translation)
 
@@ -77,7 +80,7 @@ internal class RuleCatalogueScreen(
         addSearchControls()
         layout.sourceToggle?.let(::addSourceToggle)
         button(
-            label = presenter.text(if (parent == null) MinecraftRuleCatalogueScreenKeys.CLOSE else MinecraftRuleCatalogueScreenKeys.BACK),
+            label = presenter.text(if (exit.returnScreen == null) MinecraftRuleCatalogueScreenKeys.CLOSE else MinecraftRuleCatalogueScreenKeys.BACK),
             bounds = layout.close,
         ) { close() }
         remeasureContent()
@@ -398,9 +401,22 @@ internal class RuleCatalogueScreen(
         return super.mouseReleased(mouseX, mouseY, button)
     }
 
-    /** 返回開啟前的畫面；沒有時回到遊戲。 */
+    /** 依開啟來源返回原畫面或回到遊戲。 */
     override fun close() {
-        client?.setScreen(parent)
+        client?.let(exit::back)
+    }
+
+    /** 開啟規則一覽的來源失效時直接關回遊戲。 */
+    override fun tick() {
+        super.tick()
+        val client = client ?: return
+        if (!exit.isValid(client)) client.setScreen(null)
+    }
+
+    /** 通知開啟來源規則一覽已被移除。 */
+    override fun removed() {
+        exit.removed(this)
+        super.removed()
     }
 
     /** 規則一覽不暫停單人遊戲。 */

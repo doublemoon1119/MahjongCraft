@@ -14,7 +14,7 @@ import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single
 
 /**
- * 在下一個客戶端 tick 開啟規則一覽，避免指令執行後關閉聊天畫面時蓋掉新畫面。
+ * 開啟規則一覽：一般說明延後到下一個客戶端 tick 開啟，避免指令執行後關閉聊天畫面時蓋掉新畫面；房間與歷史畫面立即切換。
  * @property catalogueRegistry 規則目錄來源。
  * @property ruleNames 規則名稱來源。
  * @property moduleRegistry 已知規則模組。
@@ -42,24 +42,43 @@ class RuleCatalogueScreenController internal constructor(
         ClientTickEvents.END_CLIENT_TICK.register(::tick)
     }
 
-    /** 開啟一般說明的規則一覽，供指令與快捷鍵使用。 */
-    fun openGeneral() = open()
-
-    /**
-     * 要求下一個 tick 開啟規則一覽。
-     *
-     * @param context 開啟時使用的唯讀規則脈絡。
-     * @param parent 關閉後返回的畫面；沒有返回目標時為 null。
-     */
-    fun open(context: RuleCatalogueBrowseContext = RuleCatalogueBrowseContext(), parent: Screen? = null) {
+    /** 在下一個 client tick 開啟一般說明的規則一覽，供指令與快捷鍵使用。 */
+    fun openGeneral() {
         val client = MinecraftClient.getInstance()
         val connection = client.networkHandler ?: return
         val world = client.world ?: return
-        pending = OpenRequest(connection, world, parent, context)
+        pending = OpenRequest(connection, world)
     }
 
     /**
-     * 在下一個 client tick 驗證連線、世界與返回畫面仍然有效後建立畫面。
+     * 建立規則一覽畫面，供房間或歷史畫面立即切換。
+     *
+     * @param context 開啟時的規則與設定來源。
+     * @param exit 關閉後回到哪裡，以及開啟來源是否仍然有效。
+     * @return 規則一覽畫面。
+     */
+    internal fun createScreen(context: RuleCatalogueBrowseContext, exit: RuleCatalogueExit): Screen {
+        val client = MinecraftClient.getInstance()
+        return RuleCatalogueScreen(
+            browser = RuleCatalogueBrowser(
+                catalogues = catalogueRegistry,
+                ruleNames = ruleNames,
+                knownRuleIds = moduleRegistry.getAllModuleIds(),
+                context = context,
+            ),
+            presenter = RuleCataloguePresenter(
+                translate = ::currentLanguageTranslation,
+                metrics = TextRendererCatalogueMetrics(client.textRenderer),
+                tileArt = ResourceCatalogueTileArt(assets = tileAssets, resources = client.resourceManager),
+            ),
+            tileFaces = tileFaces,
+            openingContext = context,
+            exit = exit,
+        )
+    }
+
+    /**
+     * 在下一個 client tick 確認連線與世界仍然相同後開啟一般說明。
      *
      * @param client 當前 Minecraft client。
      */
@@ -67,48 +86,25 @@ class RuleCatalogueScreenController internal constructor(
         val request = pending ?: return
         pending = null
         if (!request.isValid(client)) return
-        val browser = RuleCatalogueBrowser(
-            catalogues = catalogueRegistry,
-            ruleNames = ruleNames,
-            knownRuleIds = moduleRegistry.getAllModuleIds(),
-            context = request.context,
-        )
-        val presenter = RuleCataloguePresenter(
-            translate = ::currentLanguageTranslation,
-            metrics = TextRendererCatalogueMetrics(client.textRenderer),
-            tileArt = ResourceCatalogueTileArt(assets = tileAssets, resources = client.resourceManager),
-        )
-        client.setScreen(
-            RuleCatalogueScreen(
-                browser = browser,
-                presenter = presenter,
-                tileFaces = tileFaces,
-                openingContext = request.context,
-                parent = request.parent,
-            ),
-        )
+        client.setScreen(createScreen(context = RuleCatalogueBrowseContext(), exit = CloseRuleCatalogueToGame))
     }
 }
 
 /**
- * 延後開啟規則一覽的連線與世界身分快照。
+ * 延後開啟一般說明時的連線與世界快照。
+ *
  * @property connection 要求時的連線。
  * @property world 要求時的世界。
- * @property parent 返回目標。
- * @property context 目錄的設定脈絡。
  */
 private data class OpenRequest(
     val connection: Any,
     val world: Any,
-    val parent: Screen?,
-    val context: RuleCatalogueBrowseContext,
 ) {
     /**
-     * 驗證開啟要求仍屬於目前連線、世界及返回畫面。
+     * 確認要求仍屬於目前的連線與世界。
+     *
      * @param client 當前客戶端。
      * @return 是否可安全開啟。
      */
-    fun isValid(client: MinecraftClient): Boolean = client.networkHandler === connection &&
-        client.world === world &&
-        (parent == null || client.currentScreen === parent)
+    fun isValid(client: MinecraftClient): Boolean = client.networkHandler === connection && client.world === world
 }

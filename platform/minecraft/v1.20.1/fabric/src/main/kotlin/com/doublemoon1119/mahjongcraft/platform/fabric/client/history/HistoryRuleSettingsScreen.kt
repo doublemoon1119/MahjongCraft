@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.GameConfigDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDomain
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.gameConfigPresentationText
+import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueBrowseContext
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigEditorSpec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.MinecraftRoomScreenKeys
@@ -46,27 +47,67 @@ internal class HistoryRuleSettingsScreen(
     /** 失敗時可重新查詢的固定底列按鈕。 */
     private var retryButton: ButtonWidget? = null
 
+    /** 設定載入後開啟規則一覽的固定底列按鈕，與重試按鈕共用位置。 */
+    private var catalogueButton: ButtonWidget? = null
+
+    /** 上一次建立規則一覽脈絡時的開局設定與摘要規則，避免每個 render tick 重新解碼。 */
+    private var catalogueContextKey: Pair<GameConfigDto?, String?>? = null
+
+    /** 依保存設定建立的規則一覽脈絡；沒有可用規則時為 null。 */
+    private var catalogueContext: RuleCatalogueBrowseContext? = null
+
     /** 初始化固定 footer。 */
     override fun init() {
         layout = HistorySummaryLayout.measure(width, height)
         dragging = false
         clearChildren()
-        val (backBounds, retryBounds) = layout.footerButtons(width, retryVisible = true)
+        val (backBounds, retryBounds) = layout.footerButtons(width, secondVisible = true)
         backButton = ButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.BACK)) { session.backToSummary() }
             .dimensions(backBounds.x, backBounds.y, backBounds.width, backBounds.height).build().also(::addDrawableChild)
+        val second = checkNotNull(retryBounds)
         retryButton = ButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.RETRY)) { session.controller.retry() }
-            .dimensions(checkNotNull(retryBounds).x, retryBounds.y, retryBounds.width, retryBounds.height).build().also(::addDrawableChild)
+            .dimensions(second.x, second.y, second.width, second.height).build().also(::addDrawableChild)
+        catalogueButton = ButtonWidget.builder(Text.translatable(MinecraftHistoryScreenKeys.RULE_CATALOGUE)) {
+            catalogueContext?.let { session.openRuleCatalogue(settings = this, context = it) }
+        }.dimensions(second.x, second.y, second.width, second.height).build().also {
+            it.tooltip = Tooltip.of(Text.translatable(MinecraftHistoryScreenKeys.RULE_CATALOGUE_TOOLTIP).formatted(Formatting.GRAY))
+            addDrawableChild(it)
+        }
     }
 
     /**
-     * 依重試按鈕是否顯示調整底部按鈕位置：只有返回按鈕時置中，兩顆時並排置中。
+     * 依第二顆按鈕是否顯示調整底部按鈕位置：只有返回按鈕時置中，兩顆時並排置中。
      *
-     * @param retryVisible 是否顯示重試按鈕。
+     * @param secondVisible 是否顯示重試或規則一覽按鈕。
      */
-    private fun placeFooter(retryVisible: Boolean) {
-        val (back, retry) = layout.footerButtons(width, retryVisible)
+    private fun placeFooter(secondVisible: Boolean) {
+        val (back, second) = layout.footerButtons(width, secondVisible = secondVisible)
         backButton?.x = back.x
-        retry?.let { retryButton?.x = it.x }
+        second?.let {
+            retryButton?.x = it.x
+            catalogueButton?.x = it.x
+        }
+    }
+
+    /**
+     * 依保存的開局設定建立規則一覽脈絡並快取；設定解不出時改用摘要記錄的規則。
+     *
+     * @param configDto 歷史伺服器回傳的開局設定，尚未取得時為 null。
+     * @return 規則一覽脈絡；沒有可用規則時為 null。
+     */
+    private fun ruleCatalogueContext(configDto: GameConfigDto?): RuleCatalogueBrowseContext? {
+        val summaryRuleModuleId = session.controller.state.value.summary?.detail?.summary?.ruleId
+        val key = configDto to summaryRuleModuleId
+        if (key != catalogueContextKey) {
+            catalogueContextKey = key
+            val config = configDto?.let { runCatching { it.toDomain(session.networkRegistries) }.getOrNull() }
+            catalogueContext = historyRuleCatalogueContext(
+                decodedRuleModuleId = config?.let { runCatching { session.configResolver.resolve(it).ruleModuleId }.getOrNull() },
+                decodedRuleConfig = config?.ruleConfig,
+                summaryRuleModuleId = summaryRuleModuleId,
+            )
+        }
+        return catalogueContext
     }
 
     /** 歷史畫面不暫停整合伺服器。 */
@@ -157,8 +198,10 @@ internal class HistoryRuleSettingsScreen(
         val status = session.controller.state.value.ruleSettings?.status ?: HistoryBrowseStatus.Loading
         retryButton?.active = session.controller.canRetry()
         val retryVisible = status is HistoryBrowseStatus.Failed
+        val catalogueVisible = status == HistoryBrowseStatus.Ready && ruleCatalogueContext(session.controller.state.value.ruleSettings?.config) != null
         retryButton?.visible = retryVisible
-        placeFooter(retryVisible)
+        catalogueButton?.visible = catalogueVisible
+        placeFooter(secondVisible = retryVisible || catalogueVisible)
         retryButton?.tooltip = if (session.controller.isRefreshCoolingDown()) Tooltip.of(Text.translatable(MinecraftHistoryScreenKeys.QUERY_COOLDOWN_TOOLTIP)) else null
         scroll = layout.clampScroll(scroll, contentHeight())
         context.enableScissor(8, layout.contentTop, width - 8, layout.contentBottom)
