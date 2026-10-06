@@ -18,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -33,6 +34,7 @@ import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
 /** 驗證 Room 與 Game 共用狀態儲存的交易與 dirty tracking。 */
+@OptIn(ExperimentalCoroutinesApi::class)
 class AuthoritativeStateStoreTest {
     /** 確認舊快照只移除已提交的鍵，不會刪掉其後新增事件或清除缺口。 */
     @Test

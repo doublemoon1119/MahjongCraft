@@ -87,6 +87,10 @@
   assuming the repository defaults fit every environment.
 - Parallel project execution is enabled by default. Memory-constrained environments can pass
   `--no-parallel` and lower `org.gradle.workers.max` in their Gradle user properties.
+- The configuration cache is enabled by default. Custom tasks must not read `Task.project` while
+  executing; pass the data they need as task properties at configuration time. A new platform target
+  must build and run its `run` tasks with the configuration cache, or document why its builds pass
+  `--no-configuration-cache`.
 - The built-in `core` target loads only logic, flow, AI, extension API, and testing modules. Formal
   platform targets are declared in `gradle/platform-targets.toml`; directory presence alone does not
   make a platform releasable.
