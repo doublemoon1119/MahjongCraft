@@ -197,7 +197,7 @@ class FabricApplicationModuleTest {
         assertFalse(gameActionAiRegistry.isRegistered(RiichiGameAction.Riichi::class))
         assertFalse(gameActionCommandFactoryRegistry.isRegistered(RiichiGameAction.Riichi::class))
         assertFalse(gameCommandRegistry.isRegistered(RiichiGameCommand::class))
-        FabricMahjongExtensions.initialize(
+        val result = FabricMahjongExtensions.initialize(
             coreRegistries = coreRegistries,
             presentationRegistries = presentationRegistries,
             tablePropKindRegistry = koin.get<FabricTablePropKindRegistry>(),
@@ -234,6 +234,8 @@ class FabricApplicationModuleTest {
         assertTrue(tileEmojiRegistry.isFrozen)
         assertTrue(tileLabelRegistry.isFrozen)
         assertTrue(gameActionAiRegistry.isRegistered(RiichiGameAction.Riichi::class))
+        assertEquals(setOf(BuiltInRuleModuleIds.RIICHI), opponentModelRegistry.registrationKeys)
+        assertTrue(result.categories.all { it.registrationIds.isEmpty() }, "Built-in registrations must not be reported as third-party")
         assertEquals(
             listOf(BuiltInAiStrategyKeys.BEGINNER, BuiltInAiStrategyKeys.INTERMEDIATE, BuiltInAiStrategyKeys.ADVANCED, RandomAiStrategy.KEY),
             aiStrategyRegistry.getAllStrategyKeys().toList(),

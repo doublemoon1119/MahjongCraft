@@ -7,7 +7,7 @@
 ## Responsibilities
 
 - Expose extension bootstrap and registrar contracts.
-- Connect rule modules, actions, commands, DTO codecs, AI strategies, and server handlers through controlled registries.
+- Connect rule modules, actions, commands, DTO codecs, AI strategies, AI opponent models, and server handlers through controlled registries.
 - Preserve typed boundaries between extension data and authoritative game state.
 
 ## Boundaries

@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.extension
 
 import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
+import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.HistoryReplayProjectionRegistry
@@ -23,7 +24,7 @@ import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
  * 此契約只涵蓋與遊戲平台無關的整合，例如：
  * - 規則配置與計算：[registerRuleModules]。
  * - 自訂牌種：[registerTileTypes]。
- * - AI 策略：[registerAiStrategies]。
+ * - AI 策略與對手模型：[registerAiStrategies]、[registerOpponentModels]。
  * - 網路與存檔資料轉換：[registerNetworkDtos]、[registerPersistenceDtos]。
  *
  * 平台專屬整合（如 Minecraft 的貼圖 asset key、顯示名稱與演出效果）由該平台的 extension 介面負責。
@@ -64,6 +65,9 @@ interface MahjongExtension {
 
     /** 登記平台無關的 AI 策略；策略顯示名稱由各平台的呈現 extension 另行登記。 */
     fun registerAiStrategies(registry: MahjongAiStrategyRegistry) = Unit
+
+    /** 登記規則專屬的 AI 對手模型；沒有登記的規則，AI 改用規則中立的對手模型估計對手。 */
+    fun registerOpponentModels(registry: OpponentModelRegistry) = Unit
 
     /** 登記需要額外選牌的規則擴充動作如何建立伺服器命令。 */
     fun registerGameActionCommandFactories(registry: ExtensionGameActionCommandFactoryRegistry) = Unit

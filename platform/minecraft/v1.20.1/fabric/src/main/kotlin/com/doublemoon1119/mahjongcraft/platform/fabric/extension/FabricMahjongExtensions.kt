@@ -1,8 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.extension
 
 import com.doublemoon1119.mahjongcraft.ai.registerBuiltInAiStrategies
-import com.doublemoon1119.mahjongcraft.ai.riichi.registerRiichiGameActionHandler
-import com.doublemoon1119.mahjongcraft.ai.riichi.registerRiichiOpponentModel
 import com.doublemoon1119.mahjongcraft.extension.CoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationCategory
 import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationReport
@@ -13,14 +11,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInRuleModules
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInTileTypes
 import com.doublemoon1119.mahjongcraft.flow.common.di.registerBuiltInWinCelebrationCueResolvers
 import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.registerBuiltInRuleConfigDtos
-import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.registerRiichiGameActionDtos
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.registerRiichiGameActionPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.DeclareRiichiUseCase
-import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.registerRiichiGameActionCommandFactory
-import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.registerRiichiGameCommandHandler
-import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.registerRiichiNagashiManganOutcomeResolver
-import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.registerRiichiPostActionExhaustiveDrawResolvers
-import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.registerRiichiWinSettlementDetailResolver
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decision.DebugRoundPreparationResolver
@@ -41,8 +32,8 @@ const val MAHJONG_EXTENSION_ENTRYPOINT: String = "${MinecraftModMetadata.MOD_ID}
 /**
  * 發現並註冊 Fabric 環境中的第三方 [MahjongExtension]。
  *
- * 內建規則與 DTO 會先完成註冊，第三方 extension 隨後取得 runtime 實際使用的同一批 registry；
- * 全部成功後由 [MahjongExtensionRegistrar] 凍結 registry。
+ * 內建規則與 DTO 會先完成註冊；接著 [BundledRiichiExtension] 以與第三方相同的回呼登記日麻整合，
+ * 第三方 extension 隨後取得 runtime 實際使用的同一批 registry；全部成功後由 [MahjongExtensionRegistrar] 凍結 registry。
  */
 object FabricMahjongExtensions {
     /** Fabric extension discovery 與註冊結果使用的 logger。 */
@@ -108,7 +99,6 @@ object FabricMahjongExtensions {
             extensionActionRegistry = coreRegistries.gameActionAiRegistry,
             opponentModelRegistry = coreRegistries.opponentModelRegistry,
         )
-        registerBundledRiichiExtension(coreRegistries = coreRegistries, declareRiichiUseCase = declareRiichiUseCase)
         // 開發環境限定：讓「胡牌後本局繼續」這條路徑在還沒有任何規則支援它時就能進遊戲驗證，
         // 比照 FabricDebugCommand 的 gating——正式產物裡根本沒註冊過。預設 inert。
         if (minecraftEnvironment.isDevelopment) {
@@ -127,6 +117,12 @@ object FabricMahjongExtensions {
         val coreCategories = MahjongExtensionRegistrar.registerAndFreeze(
             extensions = extensions,
             registries = coreRegistries,
+            builtInExtensions = listOf(
+                BundledRiichiExtension(
+                    moduleRegistry = coreRegistries.moduleRegistry,
+                    declareRiichiUseCase = declareRiichiUseCase,
+                ),
+            ),
         )
 
         // 同一個第三方類別可同時實作 MahjongExtension 與 MinecraftMahjongExtension，
@@ -150,19 +146,6 @@ object FabricMahjongExtensions {
     /** [initialize] 預設使用的環境查詢：一律回報非開發環境，見該參數上方註解。 */
     private object NonDevelopmentEnvironment : MinecraftEnvironment {
         override val isDevelopment: Boolean = false
-    }
-
-    /** 將日麻限定的 action／command 整合集中安裝為 bundled Riichi extension。 */
-    private fun registerBundledRiichiExtension(coreRegistries: CoreExtensionRegistries, declareRiichiUseCase: DeclareRiichiUseCase) {
-        coreRegistries.networkRegistries.registerRiichiGameActionDtos()
-        coreRegistries.persistenceRegistries.extensionGameActions.registerRiichiGameActionPersistenceDto()
-        coreRegistries.gameActionAiRegistry.registerRiichiGameActionHandler(coreRegistries.moduleRegistry)
-        coreRegistries.opponentModelRegistry.registerRiichiOpponentModel()
-        coreRegistries.gameActionCommandFactoryRegistry.registerRiichiGameActionCommandFactory()
-        coreRegistries.gameCommandRegistry.registerRiichiGameCommandHandler(declareRiichiUseCase)
-        coreRegistries.postReactionRoundOutcomeResolverRegistry.registerRiichiNagashiManganOutcomeResolver()
-        coreRegistries.postActionExhaustiveDrawResolverRegistry.registerRiichiPostActionExhaustiveDrawResolvers()
-        coreRegistries.winSettlementDetailResolverRegistry.registerRiichiWinSettlementDetailResolver()
     }
 }
 

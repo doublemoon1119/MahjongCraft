@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
+import com.doublemoon1119.mahjongcraft.ai.expectation.NeutralOpponentModel
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExtensionGameCommand
@@ -63,6 +64,7 @@ class MahjongExtensionRegistrarTest {
         val persistenceRegistries = buildBuiltInPersistenceRegistries()
         val tileTypeRegistry = TileTypeRegistryImpl()
         val aiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = RandomAiStrategy.KEY)
+        val opponentModelRegistry = OpponentModelRegistry()
         val calls = mutableListOf<String>()
         val extension = RecordingExtension(calls)
 
@@ -74,15 +76,17 @@ class MahjongExtensionRegistrarTest {
                 networkRegistries = networkRegistries,
                 persistenceRegistries = persistenceRegistries,
                 aiStrategyRegistry = aiStrategyRegistry,
+                opponentModelRegistry = opponentModelRegistry,
             ),
         )
 
-        assertEquals(listOf("rule", "tile", "network", "persistence", "replay", "strategy"), calls)
+        assertEquals(listOf("rule", "tile", "network", "persistence", "replay", "strategy", "opponent"), calls)
         assertEquals(
             setOf(
                 "mahjongcraft:rule_module",
                 "mahjongcraft:tile_type",
                 "mahjongcraft:ai_strategy",
+                "mahjongcraft:opponent_model",
                 "mahjongcraft:history_replay_action",
             ),
             categories.mapTo(mutableSetOf(), ExtensionRegistrationCategory::id),
@@ -104,6 +108,47 @@ class MahjongExtensionRegistrarTest {
         assertFailsWith<IllegalStateException> {
             aiStrategyRegistry.register("example:late") { RandomAiStrategy(ExtensionGameActionAiRegistry()) }
         }
+        assertEquals(setOf(RecordingExtension.RULE_MODULE_ID), opponentModelRegistry.registrationKeys)
+        assertFailsWith<IllegalStateException> {
+            opponentModelRegistry.register("example:late") { _, depth -> NeutralOpponentModel(depth) }
+        }
+    }
+
+    /** 內建 extension 走同一組回呼並先於第三方登記，但它的登記不列入回傳的第三方登記結果。 */
+    @Test
+    fun `built in extensions register first and stay out of third party registrations`() {
+        val calls = mutableListOf<String>()
+        val opponentModelRegistry = OpponentModelRegistry()
+        val builtIn = RecordingExtension(calls)
+
+        val categories = MahjongExtensionRegistrar.registerAndFreeze(
+            extensions = listOf(StrategyExtension("example:third_party")),
+            registries = testCoreRegistries(opponentModelRegistry = opponentModelRegistry),
+            builtInExtensions = listOf(builtIn),
+        )
+
+        assertEquals(listOf("rule", "tile", "network", "persistence", "replay", "strategy", "opponent"), calls)
+        assertEquals(setOf(RecordingExtension.RULE_MODULE_ID), opponentModelRegistry.registrationKeys)
+        assertEquals(
+            listOf(ExtensionRegistrationCategory("mahjongcraft:ai_strategy", "AI Strategy", listOf(StrategyExtension.STRATEGY_KEY))),
+            categories,
+        )
+    }
+
+    /** 第三方 extension 不能沿用內建 extension 的 ID。 */
+    @Test
+    fun `third party extension cannot reuse a built in extension id`() {
+        val builtIn = RecordingExtension(mutableListOf())
+
+        val error = assertFailsWith<MahjongExtensionRegistrationException> {
+            MahjongExtensionRegistrar.registerAndFreeze(
+                extensions = listOf(StrategyExtension(builtIn.id)),
+                registries = testCoreRegistries(),
+                builtInExtensions = listOf(builtIn),
+            )
+        }
+
+        assertTrue(error.cause?.message.orEmpty().contains("Duplicate"))
     }
 
     /** 驗證註冊失敗時的例外會指出第三方 extension ID。 */
@@ -172,6 +217,7 @@ private fun testCoreRegistries(
     persistenceRegistries: PersistenceRegistries = buildBuiltInPersistenceRegistries(),
     historyReplayProjectionRegistry: HistoryReplayProjectionRegistry = HistoryReplayProjectionRegistry(),
     aiStrategyRegistry: MahjongAiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = RandomAiStrategy.KEY),
+    opponentModelRegistry: OpponentModelRegistry = OpponentModelRegistry(),
 ): CoreExtensionRegistries = CoreExtensionRegistries(
     moduleRegistry = moduleRegistry,
     tileTypeRegistry = tileTypeRegistry,
@@ -181,7 +227,7 @@ private fun testCoreRegistries(
     winCelebrationCueResolverRegistry = WinCelebrationCueResolverRegistryImpl(),
     gameActionAiRegistry = ExtensionGameActionAiRegistry(),
     aiStrategyRegistry = aiStrategyRegistry,
-    opponentModelRegistry = OpponentModelRegistry(),
+    opponentModelRegistry = opponentModelRegistry,
     gameActionCommandFactoryRegistry = ExtensionGameActionCommandFactoryRegistry(),
     gameCommandRegistry = ExtensionGameCommandExecutorRegistry(),
     postReactionRoundOutcomeResolverRegistry = PostReactionRoundOutcomeResolverRegistry(),
@@ -199,7 +245,7 @@ private class RecordingExtension(
 
     override fun registerRuleModules(registry: MahjongModuleRegistry) {
         calls += "rule"
-        registry.register(RiichiRuleConfig::class, "example:riichi") { config, id -> RiichiRuleModule(id, config) }
+        registry.register(RiichiRuleConfig::class, RULE_MODULE_ID) { config, id -> RiichiRuleModule(id, config) }
     }
 
     override fun registerTileTypes(registry: TileTypeRegistry) {
@@ -225,8 +271,16 @@ private class RecordingExtension(
         registry.register(STRATEGY_KEY) { RandomAiStrategy(ExtensionGameActionAiRegistry()) }
     }
 
+    override fun registerOpponentModels(registry: OpponentModelRegistry) {
+        calls += "opponent"
+        registry.register(RULE_MODULE_ID) { _, depth -> NeutralOpponentModel(depth) }
+    }
+
     /** 此測試 extension 的常數。 */
     companion object {
+        /** 此 extension 登記的測試規則模組 ID。 */
+        const val RULE_MODULE_ID: String = "example:riichi"
+
         /** 此 extension 登記的測試策略 key。 */
         const val STRATEGY_KEY: String = "example:recorded_strategy"
     }
