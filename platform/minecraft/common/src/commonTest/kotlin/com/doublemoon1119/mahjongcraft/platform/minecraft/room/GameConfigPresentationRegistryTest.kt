@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.room
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.SpectatingPolicy
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BundledMinecraftMahjongExtensions
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -14,7 +15,7 @@ class GameConfigPresentationRegistryTest {
     fun `built-in schemas expose editable Riichi and unavailable Taiwan rules`() {
         val registry = GameConfigPresentationRegistryImpl()
 
-        registry.registerBuiltInGameConfigPresentations()
+        BundledMinecraftMahjongExtensions.all.forEach { it.registerGameConfigPresentations(registry) }
 
         val riichi = assertNotNull(registry.find("mahjongcraft:riichi"))
         val taiwan = assertNotNull(registry.find("mahjongcraft:taiwan"))

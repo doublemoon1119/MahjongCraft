@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BundledMinecraftMahjongExtensions
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -7,14 +8,14 @@ import kotlin.test.assertEquals
 class MahjongTileItemDataTest {
     /** 測試用的內建牌面 registry。 */
     private val registry: MinecraftTileAssetRegistry = MinecraftTileAssetRegistryImpl().apply {
-        registerBuiltInTileAssets()
+        BundledMinecraftMahjongExtensions.all.forEach { it.registerTileAssets(this) }
         freeze()
     }
 
     /** 缺失牌面使用配方預設牌，錯誤名稱使用未知牌面。 */
     @Test
     fun `missing and invalid item tile keys use distinct fallbacks`() {
-        assertEquals(ALL_TILE_ASSET_KEYS.first(), MahjongTileItemData.read(null, registry))
+        assertEquals(STANDARD_TILE_ASSET_KEYS.first(), MahjongTileItemData.read(null, registry))
         assertEquals(UNKNOWN_TILE_ASSET_KEY, MahjongTileItemData.read("invalid", registry))
     }
 

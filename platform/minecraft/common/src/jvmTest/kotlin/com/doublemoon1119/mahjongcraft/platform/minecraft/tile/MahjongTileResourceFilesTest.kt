@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BundledMinecraftMahjongExtensions
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -14,6 +15,12 @@ import kotlin.test.assertNotNull
 
 /** 驗證麻將牌 item predicate、子模型與貼圖資源完整對齊 asset key schema。 */
 class MahjongTileResourceFilesTest {
+    /** 模組自帶資源的所有牌面：基本牌、內建 extension 登記的擴充牌種與 unknown。 */
+    private val assetKeys: List<String> = MinecraftTileAssetRegistryImpl().apply {
+        BundledMinecraftMahjongExtensions.all.forEach { it.registerTileAssets(this) }
+        freeze()
+    }.allTileAssetKeys()
+
     /** Vanilla 1.20.1 提供的全部染料 item ID。 */
     private val vanillaDyeIds = setOf(
         "minecraft:white_dye",
@@ -49,7 +56,7 @@ class MahjongTileResourceFilesTest {
     /** 驗證每個 asset key 都具有可載入的子模型及 PNG 貼圖。 */
     @Test
     fun `every tile asset key has a model and texture resource`() {
-        ALL_TILE_ASSET_KEYS.forEach { assetKey ->
+        assetKeys.forEach { assetKey ->
             assertNotNull(
                 javaClass.getResource("/assets/mahjongcraft/models/item/mahjong_tile/mahjong_tile_$assetKey.json"),
                 "Missing item model for tile asset key: $assetKey",
@@ -64,7 +71,7 @@ class MahjongTileResourceFilesTest {
     /** 驗證牌面及共用牌體貼圖維持模型 UV 所依賴的像素尺寸。 */
     @Test
     fun `tile textures retain dimensions required by the base model`() {
-        ALL_TILE_ASSET_KEYS.forEach { assetKey ->
+        assetKeys.forEach { assetKey ->
             val path = "/assets/mahjongcraft/textures/item/mahjong_tile/mahjong_tile_$assetKey.png"
             val image = checkNotNull(javaClass.getResourceAsStream(path)) {
                 "Texture resource not found: $path"

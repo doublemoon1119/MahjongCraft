@@ -38,6 +38,3 @@ object ScoringStickTablePropKind : FabricTablePropKind {
         (entity as? MahjongScoringStickEntity)?.enqueueDropAnimation()
     }
 }
-
-/** 登記內建的點棒種類。 */
-fun FabricTablePropKindRegistry.registerBuiltInTablePropKinds() = register(ScoringStickTablePropKind)

@@ -83,8 +83,3 @@ class DecisionStatusDisplayNameRegistryImpl : DecisionStatusDisplayNameRegistry 
 
 /** 捨牌分析狀態顯示名稱的 translation key 前綴。 */
 internal const val HUD_STATUS_PREFIX: String = MinecraftModMetadata.MOD_ID + ".hud."
-
-/** 登記中立預設：和牌資格沒有特殊限制。 */
-fun DecisionStatusDisplayNameRegistry.registerBuiltInDecisionStatusDisplayNames() {
-    registerDefault(BuiltInDecisionStatusIds.WIN_AVAILABLE, HUD_STATUS_PREFIX + "win_availability.available")
-}

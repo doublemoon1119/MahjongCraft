@@ -2,10 +2,10 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.suppor
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.ALL_TILE_ASSET_KEYS
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPlacement
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.allTileAssetKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.normalizedTileAssetKey
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
@@ -53,18 +53,21 @@ class DebugTilePreviewSupport(private val tileAssetRegistry: MinecraftTileAssetR
                 .executes { ctx -> onExecute(ctx.source, StringArgumentType.getString(ctx, TILE_ARGUMENT)) },
         )
 
-    /** 補全 `tile` 引數：內建 asset key（排除佔位用的 [UNKNOWN_TILE_ASSET_KEY]）與已註冊的第三方 asset key。 */
+    /** 預覽用的所有牌面，依 [allTileAssetKeys] 的順序，排除佔位用的 [UNKNOWN_TILE_ASSET_KEY]。 */
+    val previewAssetKeys: List<String> get() = tileAssetRegistry.allTileAssetKeys().filterNot { it == UNKNOWN_TILE_ASSET_KEY }
+
+    /** 補全 `tile` 引數：所有牌面的 asset key，排除佔位用的 [UNKNOWN_TILE_ASSET_KEY]。 */
     fun suggestTileAssetKeys(
         @Suppress("UNUSED_PARAMETER") context: CommandContext<ServerCommandSource>,
         builder: SuggestionsBuilder,
     ): CompletableFuture<Suggestions> {
-        buildTileAssetKeySuggestions(builder.remaining, tileAssetRegistry.registeredAssetKeys).forEach(builder::suggest)
+        buildTileAssetKeySuggestions(builder.remaining, previewAssetKeys).forEach(builder::suggest)
         return builder.buildFuture()
     }
 
-    /** 省略 `tile` 引數時隨機抽一個內建牌面（排除佔位用的 `unknown`），否則正規化呼叫者輸入的字串。 */
+    /** 省略 `tile` 引數時隨機抽一個牌面（排除佔位用的 `unknown`），否則正規化呼叫者輸入的字串。 */
     fun resolveAssetKey(tileArg: String?): String = tileArg?.normalizedTileAssetKey(tileAssetRegistry)
-        ?: ALL_TILE_ASSET_KEYS.dropLast(1).random()
+        ?: previewAssetKeys.random()
 
     /** 生成一張自由放置（不掛任何桌子/對局）的臨時牌 entity，理由見類別 KDoc 的牌面說明。 */
     fun spawnFreeTile(
@@ -89,14 +92,8 @@ class DebugTilePreviewSupport(private val tileAssetRegistry: MinecraftTileAssetR
     }
 }
 
-/**
- * 依目前輸入內容建立 `tile` 引數的補全候選；內建 asset key 依既有順序優先，其後接已註冊的第三方
- * asset key，佔位用的 [UNKNOWN_TILE_ASSET_KEY] 一律排除。
- */
+/** 依目前輸入內容，從 [assetKeys] 依原順序挑出 `tile` 引數的補全候選。 */
 internal fun buildTileAssetKeySuggestions(
     remaining: String,
-    registeredAssetKeys: Collection<String>,
-): List<String> = (ALL_TILE_ASSET_KEYS.asSequence().filterNot { it == UNKNOWN_TILE_ASSET_KEY } + registeredAssetKeys)
-    .distinct()
-    .filter { it.startsWith(remaining, ignoreCase = true) }
-    .toList()
+    assetKeys: List<String>,
+): List<String> = assetKeys.filter { it.startsWith(remaining, ignoreCase = true) }

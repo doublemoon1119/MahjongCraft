@@ -1,9 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.showcase
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInWinCelebrationCueIds
-import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
-import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftShowcaseKeys
-
 /** 宣告式胡牌展示定義註冊中心；展示理由選不出已登記的定義時，該位贏家不播放展示。 */
 interface WinCelebrationShowcaseRegistry {
     /** 目前已登記 cue key 的快照。 */
@@ -67,42 +63,3 @@ class WinCelebrationShowcaseRegistryImpl : WinCelebrationShowcaseRegistry {
 
     override fun find(cueKey: String): WinCelebrationShowcaseDefinition? = definitions[cueKey]
 }
-
-/** 註冊所有內建規則的胡牌展示定義。 */
-fun WinCelebrationShowcaseRegistry.registerBuiltInWinCelebrationShowcases() {
-    registerRiichiWinCelebrationShowcases()
-}
-
-/** 註冊所有日麻役滿展示定義；標題 key 與貼圖都放在日麻專屬的命名下。 */
-fun WinCelebrationShowcaseRegistry.registerRiichiWinCelebrationShowcases() {
-    BUILT_IN_CUES.forEachIndexed { index, cue ->
-        register(
-            WinCelebrationShowcaseDefinition(
-                cueKey = BuiltInWinCelebrationCueIds.riichiYakuman(cue),
-                titleTranslationKey = MinecraftShowcaseKeys.riichiYakuman(cue),
-                titleImageResourceId = "${MinecraftModMetadata.MOD_ID}:textures/showcase/riichi/$cue.png",
-                palette = ShowcasePalette(primary = 0xFFFFD45A.toInt(), secondary = 0xFFC32128.toInt(), accent = 0xFFFFFFFF.toInt()),
-                priority = BUILT_IN_CUES.size - index,
-            ),
-        )
-    }
-}
-
-/** 內建日麻役滿 cue 的役種名稱，依挑選優先序由高到低排列。 */
-private val BUILT_IN_CUES = listOf(
-    "kokushi_musou_13",
-    "churen_poto_9",
-    "suuankou_tanki",
-    "daisuushii",
-    "kokushi_musou",
-    "churen_poto",
-    "tsuuiisou",
-    "ryuuuiisou",
-    "suuankou",
-    "sukantsu",
-    "shousuushi",
-    "daisangen",
-    "chinroutou",
-    "tenhou",
-    "chiihou",
-)

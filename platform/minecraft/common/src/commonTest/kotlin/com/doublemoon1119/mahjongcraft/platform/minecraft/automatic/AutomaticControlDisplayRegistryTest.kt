@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.automatic
 
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInAutomaticControlIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BuiltInMinecraftMahjongExtension
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -14,7 +15,7 @@ class AutomaticControlDisplayRegistryTest {
     @Test
     fun `built-in automatic controls have stable displays`() {
         val registry = AutomaticControlDisplayRegistryImpl().apply {
-            registerBuiltInAutomaticControlDisplays()
+            BuiltInMinecraftMahjongExtension.registerAutomaticControlDisplays(this)
             freeze()
         }
 

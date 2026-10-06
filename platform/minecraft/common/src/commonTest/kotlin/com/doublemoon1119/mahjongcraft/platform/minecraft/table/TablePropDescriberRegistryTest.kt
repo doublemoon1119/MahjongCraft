@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.table
 
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.BundledRiichiMinecraftExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiTableProps
-import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.registerBuiltInRiichiTableProps
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -16,7 +16,7 @@ class TablePropDescriberRegistryTest {
     fun `built-in and third-party describers resolve by rule module id`() {
         val custom = TablePropDescriber { emptyList() }
         val registry = TablePropDescriberRegistryImpl().apply {
-            registerBuiltInRiichiTableProps()
+            BundledRiichiMinecraftExtension.registerTablePropDescribers(this)
             register("example:custom", custom)
         }
 
@@ -39,7 +39,7 @@ class TablePropDescriberRegistryTest {
     /** 驗證同一個規則模組重複登記會被拒絕，避免第三方無意間覆蓋內建描述。 */
     @Test
     fun `duplicate rule module registration is rejected`() {
-        val registry = TablePropDescriberRegistryImpl().apply { registerBuiltInRiichiTableProps() }
+        val registry = TablePropDescriberRegistryImpl().apply { BundledRiichiMinecraftExtension.registerTablePropDescribers(this) }
 
         assertFailsWith<IllegalArgumentException> {
             registry.register(BuiltInRuleModuleIds.RIICHI, TablePropDescriber { emptyList() })

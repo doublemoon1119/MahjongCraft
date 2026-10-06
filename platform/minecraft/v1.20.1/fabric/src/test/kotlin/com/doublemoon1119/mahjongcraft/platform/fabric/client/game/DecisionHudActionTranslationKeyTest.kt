@@ -6,13 +6,11 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardReadiness
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistryImpl
-import com.doublemoon1119.mahjongcraft.platform.minecraft.action.registerBuiltInGameActionVocabulary
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.vocabularyActionId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.BuiltInDecisionStatusIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistryImpl
-import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.registerBuiltInDecisionStatusDisplayNames
-import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.registerRiichiDecisionStatusDisplayNames
-import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.registerRiichiGameActionVocabulary
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BuiltInMinecraftMahjongExtension
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.BundledRiichiMinecraftExtension
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlin.test.Test
@@ -30,13 +28,13 @@ class DecisionHudActionTranslationKeyTest {
     private val locales = listOf("en_us", "ja_jp", "zh_cn", "zh_tw")
 
     private val vocabulary = GameActionVocabularyRegistryImpl().apply {
-        registerBuiltInGameActionVocabulary()
-        registerRiichiGameActionVocabulary()
+        BuiltInMinecraftMahjongExtension.registerGameActionVocabulary(this)
+        BundledRiichiMinecraftExtension.registerGameActionVocabulary(this)
     }
 
     private val statusDisplayNames = DecisionStatusDisplayNameRegistryImpl().apply {
-        registerBuiltInDecisionStatusDisplayNames()
-        registerRiichiDecisionStatusDisplayNames()
+        BuiltInMinecraftMahjongExtension.registerDecisionStatusDisplayNames(this)
+        BundledRiichiMinecraftExtension.registerDecisionStatusDisplayNames(this)
     }
 
     /** 每一個內建與日麻動作的短名稱、訊息文字都必須在所有語系檔中有對應翻譯。 */

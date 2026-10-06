@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
-import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.registerBuiltInRiichiRoundInfoLineDisplays
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.BundledRiichiMinecraftExtension
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
@@ -19,7 +19,7 @@ class RoundInfoLineDisplayRegistryTest {
     @Test
     fun `built-in and third-party keys resolve registered displays`() {
         val registry = RoundInfoLineDisplayRegistryImpl().apply {
-            registerBuiltInRiichiRoundInfoLineDisplays()
+            BundledRiichiMinecraftExtension.registerRoundInfoPresentations(this)
             register("example:custom", RoundInfoLineDisplay("example.message.custom"))
         }
 
@@ -39,7 +39,7 @@ class RoundInfoLineDisplayRegistryTest {
             comboCount = 1,
             dynamicRuleState = RiichiDynamicState(riichiStickCount = 2),
         )
-        val registry = RoundInfoLineDisplayRegistryImpl().apply { registerBuiltInRiichiRoundInfoLineDisplays() }
+        val registry = RoundInfoLineDisplayRegistryImpl().apply { BundledRiichiMinecraftExtension.registerRoundInfoPresentations(this) }
 
         assertEquals(
             listOf(

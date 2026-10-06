@@ -8,16 +8,13 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawRe
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabulary
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistryImpl
-import com.doublemoon1119.mahjongcraft.platform.minecraft.action.registerBuiltInGameActionVocabulary
-import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.registerBuiltInRiichiReasons
-import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.registerRiichiGameActionVocabulary
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BuiltInMinecraftMahjongExtension
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BundledMinecraftMahjongExtensions
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.BundledRiichiMinecraftExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistryImpl
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.registerBuiltInTileAssets
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.registerBuiltInTileDisplayNames
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.registerBuiltInTileEmojis
 import net.minecraft.text.LiteralTextContent
 import net.minecraft.text.Text
 import net.minecraft.text.TranslatableTextContent
@@ -28,15 +25,18 @@ import kotlin.uuid.Uuid
 /** [GameAction.toDisplayText] 的單元測試類別；純函式，不需要 [net.minecraft.server.network.ServerPlayerEntity]。 */
 class GameActionDisplayTextTest {
 
-    private val displayNameRegistry = TileDisplayNameRegistryImpl().apply { registerBuiltInTileDisplayNames() }
+    private val displayNameRegistry = TileDisplayNameRegistryImpl().apply { BundledMinecraftMahjongExtensions.all.forEach { it.registerTileDisplayNames(this) } }
     private val ruleModuleId = BuiltInRuleModuleIds.RIICHI
     private val actionVocabulary = GameActionVocabularyRegistryImpl().apply {
-        registerBuiltInGameActionVocabulary()
-        registerRiichiGameActionVocabulary()
+        BuiltInMinecraftMahjongExtension.registerGameActionVocabulary(this)
+        BundledRiichiMinecraftExtension.registerGameActionVocabulary(this)
     }
-    private val exhaustiveDrawReasonDisplayNameRegistry = ExhaustiveDrawReasonDisplayNameRegistryImpl().apply { registerBuiltInRiichiReasons() }
-    private val assetRegistry = MinecraftTileAssetRegistryImpl().apply { registerBuiltInTileAssets() }
-    private val emojiRegistry = TileEmojiRegistryImpl().apply { registerBuiltInTileEmojis() }
+    private val exhaustiveDrawReasonDisplayNameRegistry = ExhaustiveDrawReasonDisplayNameRegistryImpl().apply { BundledRiichiMinecraftExtension.registerExhaustiveDrawReasonDisplayNames(this) }
+    private val assetRegistry = MinecraftTileAssetRegistryImpl().apply { BundledMinecraftMahjongExtensions.all.forEach { it.registerTileAssets(this) } }
+    private val emojiRegistry = TileEmojiRegistryImpl().apply {
+        BuiltInMinecraftMahjongExtension.registerTileEmojis(this)
+        BundledMinecraftMahjongExtensions.all.forEach { it.registerTileEmojis(this) }
+    }
     private val fiveDot = Tile.Numeric(Tile.Suit.Dot, 5)
 
     /** 驗證帶牌面的動作（例如打出）組出「動作 + 牌面」文字，牌面本身也正確解析（含 emoji 前綴）。 */

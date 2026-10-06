@@ -3,7 +3,6 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.action
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftResourceIds
-import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 
 /** 所有規則共用的核心動作識別碼，與規則擴充動作使用同一套命名空間慣例。 */
 object BuiltInGameActionIds {
@@ -151,48 +150,4 @@ fun GameAction.vocabularyActionId(): String = when (this) {
 }
 
 /** HUD 操作卡短名稱的 translation key 前綴。 */
-private const val HUD_ACTION_PREFIX: String = MinecraftModMetadata.MOD_ID + ".hud.action."
-
-/**
- * 登記核心動作的中立預設用語與操作卡順序。
- *
- * 預設沿用目前的用語；說法不同的規則登記同一個動作 ID 即可覆寫，不需要改動呈現程式。
- */
-fun GameActionVocabularyRegistry.registerBuiltInGameActionVocabulary() {
-    registerDefault(
-        BuiltInGameActionIds.CHI,
-        GameActionVocabulary(HUD_ACTION_PREFIX + "chi", MinecraftMessageKeys.GAME_ACTION_CHI, order = 0),
-    )
-    registerDefault(
-        BuiltInGameActionIds.PON,
-        GameActionVocabulary(HUD_ACTION_PREFIX + "pon", MinecraftMessageKeys.GAME_ACTION_PON, order = 1),
-    )
-    registerDefault(
-        BuiltInGameActionIds.KAN_OPEN,
-        GameActionVocabulary(HUD_ACTION_PREFIX + MinecraftKanActionTokenKeys.OPEN, MinecraftMessageKeys.GAME_ACTION_KAN_OPEN, order = 2),
-    )
-    registerDefault(
-        BuiltInGameActionIds.KAN_CLOSED,
-        GameActionVocabulary(HUD_ACTION_PREFIX + MinecraftKanActionTokenKeys.CLOSED, MinecraftMessageKeys.GAME_ACTION_KAN_CLOSED, order = 2),
-    )
-    registerDefault(
-        BuiltInGameActionIds.KAN_ADDED,
-        GameActionVocabulary(HUD_ACTION_PREFIX + MinecraftKanActionTokenKeys.ADDED, MinecraftMessageKeys.GAME_ACTION_KAN_ADDED, order = 2),
-    )
-    registerDefault(
-        BuiltInGameActionIds.RON,
-        GameActionVocabulary(HUD_ACTION_PREFIX + "ron", MinecraftMessageKeys.GAME_ACTION_RON, order = 3),
-    )
-    registerDefault(
-        BuiltInGameActionIds.TSUMO,
-        GameActionVocabulary(HUD_ACTION_PREFIX + "tsumo", MinecraftMessageKeys.GAME_ACTION_TSUMO, order = 4),
-    )
-    registerDefault(
-        BuiltInGameActionIds.PASS,
-        GameActionVocabulary(HUD_ACTION_PREFIX + "pass", MinecraftMessageKeys.GAME_ACTION_PASS),
-    )
-    registerDefault(
-        BuiltInGameActionIds.DISCARD,
-        GameActionVocabulary(HUD_ACTION_PREFIX + "discard", MinecraftMessageKeys.GAME_ACTION_DISCARD),
-    )
-}
+internal const val HUD_ACTION_PREFIX: String = MinecraftModMetadata.MOD_ID + ".hud.action."

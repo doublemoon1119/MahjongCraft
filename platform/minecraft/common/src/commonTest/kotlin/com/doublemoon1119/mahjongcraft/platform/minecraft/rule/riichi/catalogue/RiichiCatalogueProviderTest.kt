@@ -15,10 +15,11 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogu
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueResolution
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueTileGroup
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueTileGroupRole
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.ALL_TILE_ASSET_KEYS
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BundledMinecraftMahjongExtensions
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.BundledRiichiMinecraftExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.registerBuiltInTileAssets
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.allTileAssetKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
@@ -65,7 +66,7 @@ class RiichiCatalogueProviderTest {
     @Test
     fun `built in registration resolves only riichi and remains frozen`() {
         val registry = RuleCatalogueRegistryImpl()
-        registry.registerBuiltInRuleCatalogues()
+        BundledRiichiMinecraftExtension.registerRuleCatalogues(registry)
         registry.freeze()
         assertTrue(assertIs<RuleCatalogueResolution.Available>(registry.resolve(BuiltInRuleModuleIds.RIICHI)).usesDefaultConfig)
         assertEquals(RuleCatalogueResolution.MissingProvider, registry.resolve(BuiltInRuleModuleIds.TAIWAN))
@@ -76,11 +77,14 @@ class RiichiCatalogueProviderTest {
     /** 內建範例沿用可解析的現有素材，不製造普通牌種 ID。 */
     @Test
     fun `every example tile resolves a built in asset`() {
-        val registry = MinecraftTileAssetRegistryImpl().apply { registerBuiltInTileAssets() }
+        val registry = MinecraftTileAssetRegistryImpl().apply {
+            BundledMinecraftMahjongExtensions.all.forEach { it.registerTileAssets(this) }
+            freeze()
+        }
         val catalogue = checkNotNull(RiichiCatalogueProvider().catalogue(RiichiRuleConfig()))
         catalogue.entries.flatMap { it.examples }.flatMap { it.groups }.flatMap { it.tiles }.forEach { tile ->
             val key = tile.toAssetKey(registry)
-            assertTrue(key in ALL_TILE_ASSET_KEYS && key != UNKNOWN_TILE_ASSET_KEY, "Example tile must resolve a known asset: $tile")
+            assertTrue(key in registry.allTileAssetKeys() && key != UNKNOWN_TILE_ASSET_KEY, "Example tile must resolve a known asset: $tile")
         }
     }
 

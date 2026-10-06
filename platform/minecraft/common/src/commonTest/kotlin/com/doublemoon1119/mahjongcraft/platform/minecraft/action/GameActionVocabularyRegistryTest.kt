@@ -2,7 +2,8 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.action
 
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
-import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.registerRiichiGameActionVocabulary
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BuiltInMinecraftMahjongExtension
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.BundledRiichiMinecraftExtension
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -14,7 +15,7 @@ class GameActionVocabularyRegistryTest {
     /** 沒有登記自己用語的規則，取得中立預設。 */
     @Test
     fun `a rule without its own wording falls back to the default`() {
-        val registry = GameActionVocabularyRegistryImpl().apply { registerBuiltInGameActionVocabulary() }
+        val registry = GameActionVocabularyRegistryImpl().apply { BuiltInMinecraftMahjongExtension.registerGameActionVocabulary(this) }
 
         val chi = registry.find(BuiltInRuleModuleIds.TAIWAN, BuiltInGameActionIds.CHI)
 
@@ -27,7 +28,7 @@ class GameActionVocabularyRegistryTest {
     @Test
     fun `a rule overrides the default wording of the same action`() {
         val registry = GameActionVocabularyRegistryImpl().apply {
-            registerBuiltInGameActionVocabulary()
+            BuiltInMinecraftMahjongExtension.registerGameActionVocabulary(this)
             register(BuiltInRuleModuleIds.TAIWAN, BuiltInGameActionIds.RON, GameActionVocabulary("example.hud.win", order = 9))
         }
 
@@ -42,8 +43,8 @@ class GameActionVocabularyRegistryTest {
     @Test
     fun `riichi registers its own actions after the built-in ones`() {
         val registry = GameActionVocabularyRegistryImpl().apply {
-            registerBuiltInGameActionVocabulary()
-            registerRiichiGameActionVocabulary()
+            BuiltInMinecraftMahjongExtension.registerGameActionVocabulary(this)
+            BundledRiichiMinecraftExtension.registerGameActionVocabulary(this)
         }
 
         val riichi = registry.find(BuiltInRuleModuleIds.RIICHI, RiichiGameAction.Riichi.id)
@@ -59,7 +60,7 @@ class GameActionVocabularyRegistryTest {
     /** 同一個中立預設或同一個規則的同一個動作重複登記會被拒絕。 */
     @Test
     fun `duplicate registration is rejected`() {
-        val registry = GameActionVocabularyRegistryImpl().apply { registerBuiltInGameActionVocabulary() }
+        val registry = GameActionVocabularyRegistryImpl().apply { BuiltInMinecraftMahjongExtension.registerGameActionVocabulary(this) }
 
         assertFailsWith<IllegalArgumentException> {
             registry.registerDefault(BuiltInGameActionIds.CHI, GameActionVocabulary("example.hud.chi"))

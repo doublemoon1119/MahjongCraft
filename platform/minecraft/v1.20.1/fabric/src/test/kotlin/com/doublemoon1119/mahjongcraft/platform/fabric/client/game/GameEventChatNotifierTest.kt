@@ -7,7 +7,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableStateSnapshot
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistryImpl
-import com.doublemoon1119.mahjongcraft.platform.minecraft.action.registerBuiltInGameActionVocabulary
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BuiltInMinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistryImpl
@@ -30,7 +30,7 @@ import kotlin.uuid.Uuid
 class GameEventChatNotifierTest {
 
     private val displayNameRegistry = TileDisplayNameRegistryImpl()
-    private val actionVocabularyRegistry = GameActionVocabularyRegistryImpl().apply { registerBuiltInGameActionVocabulary() }
+    private val actionVocabularyRegistry = GameActionVocabularyRegistryImpl().apply { BuiltInMinecraftMahjongExtension.registerGameActionVocabulary(this) }
     private val tileAssetRegistry = MinecraftTileAssetRegistryImpl()
     private val tileEmojiRegistry = TileEmojiRegistryImpl()
     private val exhaustiveDrawReasonDisplayNameRegistry = ExhaustiveDrawReasonDisplayNameRegistryImpl()

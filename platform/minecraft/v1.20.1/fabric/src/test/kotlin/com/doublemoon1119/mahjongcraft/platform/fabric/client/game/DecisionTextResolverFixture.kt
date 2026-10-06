@@ -1,13 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistryImpl
-import com.doublemoon1119.mahjongcraft.platform.minecraft.action.registerBuiltInGameActionVocabulary
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistryImpl
-import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.registerBuiltInDecisionStatusDisplayNames
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BuiltInMinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistryImpl
-import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.registerBuiltInRiichiReasons
-import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.registerRiichiDecisionStatusDisplayNames
-import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.registerRiichiGameActionVocabulary
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.BundledRiichiMinecraftExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistryImpl
 
 /**
@@ -19,14 +16,14 @@ internal fun testDecisionTextResolver(
     preparationOptions: Map<String, String> = emptyMap(),
 ): DecisionTextResolver = DecisionTextResolver(
     actionVocabulary = GameActionVocabularyRegistryImpl().apply {
-        registerBuiltInGameActionVocabulary()
-        registerRiichiGameActionVocabulary()
+        BuiltInMinecraftMahjongExtension.registerGameActionVocabulary(this)
+        BundledRiichiMinecraftExtension.registerGameActionVocabulary(this)
     },
     decisionStatusDisplayNames = DecisionStatusDisplayNameRegistryImpl().apply {
-        registerBuiltInDecisionStatusDisplayNames()
-        registerRiichiDecisionStatusDisplayNames()
+        BuiltInMinecraftMahjongExtension.registerDecisionStatusDisplayNames(this)
+        BundledRiichiMinecraftExtension.registerDecisionStatusDisplayNames(this)
     },
-    exhaustiveDrawReasonDisplayNames = ExhaustiveDrawReasonDisplayNameRegistryImpl().apply { registerBuiltInRiichiReasons() },
+    exhaustiveDrawReasonDisplayNames = ExhaustiveDrawReasonDisplayNameRegistryImpl().apply { BundledRiichiMinecraftExtension.registerExhaustiveDrawReasonDisplayNames(this) },
     roundPreparationDisplayNames = RoundPreparationDisplayNameRegistryImpl().apply {
         preparationOptions.forEach { (id, translationKey) -> register(id, translationKey) }
     },

@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlSnapshotDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.BuiltInMinecraftAutomaticControlIds
-import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.registerBuiltInAutomaticControlDisplays
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BuiltInMinecraftMahjongExtension
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -12,7 +12,7 @@ import kotlin.test.assertTrue
 class AutomaticControlStatusHudModelTest {
     private val displays = AutomaticControlDisplayResolver(
         AutomaticControlDisplayRegistryImpl().apply {
-            registerBuiltInAutomaticControlDisplays()
+            BuiltInMinecraftMahjongExtension.registerAutomaticControlDisplays(this)
             freeze()
         },
     )

@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.showcase
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.BundledRiichiMinecraftExtension
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -11,7 +12,7 @@ class WinCelebrationShowcaseRegistryTest {
     /** 內建 definition 使用八秒正式展示。 */
     @Test
     fun registersBuiltInsWithEightSecondShowcase() {
-        val registry = WinCelebrationShowcaseRegistryImpl().apply { registerBuiltInWinCelebrationShowcases() }
+        val registry = WinCelebrationShowcaseRegistryImpl().apply { BundledRiichiMinecraftExtension.registerWinCelebrationShowcases(this) }
 
         assertEquals(160, assertNotNull(registry.find("mahjongcraft:riichi/yakuman/kokushi_musou")).showcaseDurationTicks)
     }
@@ -20,7 +21,7 @@ class WinCelebrationShowcaseRegistryTest {
     @Test
     fun exposesRegisteredCueKeySnapshot() {
         val registry = WinCelebrationShowcaseRegistryImpl().apply {
-            registerBuiltInWinCelebrationShowcases()
+            BundledRiichiMinecraftExtension.registerWinCelebrationShowcases(this)
             register(definition())
         }
         val snapshot = registry.cueKeys
@@ -49,7 +50,7 @@ class WinCelebrationShowcaseRegistryTest {
     /** 多個展示理由時挑優先序最高的已登記定義；內建順序與役滿倍數一致。 */
     @Test
     fun selectsHighestPriorityRegisteredDefinition() {
-        val registry = WinCelebrationShowcaseRegistryImpl().apply { registerBuiltInWinCelebrationShowcases() }
+        val registry = WinCelebrationShowcaseRegistryImpl().apply { BundledRiichiMinecraftExtension.registerWinCelebrationShowcases(this) }
 
         assertEquals(
             "mahjongcraft:riichi/yakuman/daisuushii",
@@ -66,7 +67,7 @@ class WinCelebrationShowcaseRegistryTest {
     /** 內建日麻展示的 ID、標題 key 與貼圖都放在日麻專屬的命名下。 */
     @Test
     fun scopesBuiltInsToRiichi() {
-        val registry = WinCelebrationShowcaseRegistryImpl().apply { registerBuiltInWinCelebrationShowcases() }
+        val registry = WinCelebrationShowcaseRegistryImpl().apply { BundledRiichiMinecraftExtension.registerWinCelebrationShowcases(this) }
         val definition = assertNotNull(registry.find("mahjongcraft:riichi/yakuman/daisuushii"))
 
         assertEquals("mahjongcraft.showcase.riichi.daisuushii", definition.titleTranslationKey)
@@ -77,7 +78,7 @@ class WinCelebrationShowcaseRegistryTest {
     /** 沒有指定時，展示會讓仍在本局中的玩家等它播完；內建展示全部維持等待。 */
     @Test
     fun pausesContinuingRoundByDefault() {
-        val registry = WinCelebrationShowcaseRegistryImpl().apply { registerBuiltInWinCelebrationShowcases() }
+        val registry = WinCelebrationShowcaseRegistryImpl().apply { BundledRiichiMinecraftExtension.registerWinCelebrationShowcases(this) }
 
         assertEquals(true, definition().pausesContinuingRound)
         assertEquals(true, registry.pausesContinuingRound(listOf(listOf("mahjongcraft:riichi/yakuman/daisangen"))))
@@ -99,7 +100,7 @@ class WinCelebrationShowcaseRegistryTest {
     /** 展示理由選不出已登記的定義時不播放展示，也不暫停。 */
     @Test
     fun doesNotPauseContinuingRoundForUnregisteredCues() {
-        val registry = WinCelebrationShowcaseRegistryImpl().apply { registerBuiltInWinCelebrationShowcases() }
+        val registry = WinCelebrationShowcaseRegistryImpl().apply { BundledRiichiMinecraftExtension.registerWinCelebrationShowcases(this) }
 
         assertEquals(false, registry.pausesContinuingRound(listOf(listOf("unknown:cue"))))
     }

@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.sound
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
-import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.registerBuiltInRiichiActionSounds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.BundledRiichiMinecraftExtension
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -16,7 +16,7 @@ class GameActionSoundPresentationRegistryTest {
     @Test
     fun `built-in riichi actions resolve their voice sounds`() {
         val registry = GameActionSoundPresentationRegistryImpl().apply {
-            registerBuiltInRiichiActionSounds()
+            BundledRiichiMinecraftExtension.registerGameActionSounds(this)
             freeze()
         }
 

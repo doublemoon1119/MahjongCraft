@@ -15,12 +15,13 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinnerDet
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BuiltInMinecraftMahjongExtension
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BundledMinecraftMahjongExtensions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiYakuTranslationKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementTextKeys
-import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.registerBuiltInWinSettlementTemplates
 import net.minecraft.text.TranslatableTextContent
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -32,7 +33,10 @@ class HistoryWinDetailPresentationTest {
     /** 指示牌欄位標題來自正式規則模板，未知欄位或模板不冒用內建名稱。 */
     @Test
     fun `indicator labels come from registered settlement templates`() {
-        val templates = WinSettlementPresentationTemplateRegistryImpl().apply { registerBuiltInWinSettlementTemplates() }
+        val templates = WinSettlementPresentationTemplateRegistryImpl().apply {
+            BuiltInMinecraftMahjongExtension.registerWinSettlementPresentationTemplates(this)
+            BundledMinecraftMahjongExtensions.all.forEach { it.registerWinSettlementPresentationTemplates(this) }
+        }
         val presenter = presenter()
         val dora = presenter.detailLabel("mahjongcraft:riichi", "mahjongcraft:riichi_dora", templates)
         val ura = presenter.detailLabel("mahjongcraft:riichi", "mahjongcraft:riichi_ura_dora", templates)
@@ -89,7 +93,10 @@ class HistoryWinDetailPresentationTest {
     /** 日麻詳情依登記的格式化器轉成既有翻譯鍵與參數。 */
     @Test
     fun `riichi detail values use the registered formatters`() {
-        val templates = WinSettlementPresentationTemplateRegistryImpl().apply { registerBuiltInWinSettlementTemplates() }
+        val templates = WinSettlementPresentationTemplateRegistryImpl().apply {
+            BuiltInMinecraftMahjongExtension.registerWinSettlementPresentationTemplates(this)
+            BundledMinecraftMahjongExtensions.all.forEach { it.registerWinSettlementPresentationTemplates(this) }
+        }
         val yaku = HistoryWinDetailValueDto.Entries(
             listOf(
                 HistoryWinDetailValueDto.Entries.EntryDto(RiichiWinSettlementIds.yaku(YakuType.Riichi), HistoryWinDetailQuantityDto(RiichiWinSettlementIds.HAN, 1)),
@@ -113,7 +120,10 @@ class HistoryWinDetailPresentationTest {
     /** 沒有登記格式化器的第三方欄位以 ID 與原始數值顯示，不套用日麻翻數。 */
     @Test
     fun `unregistered detail values show identifiers and raw amounts`() {
-        val templates = WinSettlementPresentationTemplateRegistryImpl().apply { registerBuiltInWinSettlementTemplates() }
+        val templates = WinSettlementPresentationTemplateRegistryImpl().apply {
+            BuiltInMinecraftMahjongExtension.registerWinSettlementPresentationTemplates(this)
+            BundledMinecraftMahjongExtensions.all.forEach { it.registerWinSettlementPresentationTemplates(this) }
+        }
         val value = HistoryWinDetailValueDto.Entries(listOf(HistoryWinDetailValueDto.Entries.EntryDto("custom:pattern", HistoryWinDetailQuantityDto("custom:point", 7))))
         val row = presenter().detailText("custom:patterns", value, templates).single()
         assertEquals("custom:pattern", (row.content as TranslatableTextContent).key)

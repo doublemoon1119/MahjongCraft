@@ -2,9 +2,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.extension
 
 import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationCategory
 import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationSource
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKind
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistry
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.registerBuiltInTablePropKinds
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.ScoringStickTablePropKind
 
 /**
  * 第三方 mod 登記 Fabric 1.20.1 專屬整合的契約，例如需要自己的 entity 才能呈現的規則桌面物件種類。
@@ -34,13 +33,13 @@ class FabricMahjongExtensionRegistrationException(
 internal const val TABLE_PROP_KIND_CATEGORY_ID: String = "mahjongcraft:table_prop_kind"
 
 /**
- * 先登記內建 [FabricTablePropKind]，再依 [extensions] 順序登記各 extension 的種類，全部成功後凍結。
+ * 先登記內建的點棒種類 [ScoringStickTablePropKind]，再依 [extensions] 順序登記各 extension 的種類，全部成功後凍結。
  *
  * @return 依來源分組的所有種類：內建種類在前，接著依 [extensions] 順序排列每個 extension。
  * @throws FabricMahjongExtensionRegistrationException 若任一 extension 登記失敗。
  */
 internal fun FabricTablePropKindRegistry.registerAndFreeze(extensions: Iterable<FabricMahjongExtension>): List<ExtensionRegistrationSource> {
-    registerBuiltInTablePropKinds()
+    register(ScoringStickTablePropKind)
     var knownIds = kinds.map { it.id }.toSet()
     val sources = mutableListOf(tablePropKindSource(extensionId = null, kindIds = knownIds))
     val registeredExtensionIds = mutableSetOf<String>()

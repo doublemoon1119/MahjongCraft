@@ -1,8 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
-import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 
 /**
  * 未知/佔位牌（正面朝下、無法辨識）在 Minecraft 資源裡使用的素材識別字串。
@@ -39,55 +37,44 @@ private val Tile.Suit.assetPrefix: Char
     }
 
 /**
- * 只完成內建映射並已凍結的 registry，只供 [ALL_TILE_ASSET_KEYS] 建立固定清單使用。
+ * 34 種基本牌的素材識別字串，依萬子、餅子、條子的 1～9 與東南西北、中發白排列；不屬於任何規則。
  */
-private val builtInTileAssetRegistry: MinecraftTileAssetRegistry = MinecraftTileAssetRegistryImpl().apply {
-    registerBuiltInTileAssets()
-    freeze()
-}
-
-/**
- * 目前內建牌種使用的全部素材識別字串，順序固定。各 loader adapter 依此清單得知哪些 asset key
- * 一定有對應材質與模型，作為循環換牌、NBT 正規化與內建模型註冊的依據；第三方註冊的 asset key
- * 不在此清單內。
- *
- * 包含日麻牌、台灣花牌與結尾的 [UNKNOWN_TILE_ASSET_KEY] 佔位牌。
- */
-val ALL_TILE_ASSET_KEYS: List<String> = buildList {
+val STANDARD_TILE_ASSET_KEYS: List<String> = buildList {
     for (suit in Tile.Suit.entries) {
-        for (value in 1..9) {
-            add(Tile.Numeric(suit, value).toAssetKey(builtInTileAssetRegistry))
-            if (value == 5) add(RiichiTileTypes.redFive(suit).toAssetKey(builtInTileAssetRegistry))
-        }
+        for (value in 1..9) add("${suit.assetPrefix}$value")
     }
-    add(Tile.Honor.East.toAssetKey(builtInTileAssetRegistry))
-    add(Tile.Honor.South.toAssetKey(builtInTileAssetRegistry))
-    add(Tile.Honor.West.toAssetKey(builtInTileAssetRegistry))
-    add(Tile.Honor.North.toAssetKey(builtInTileAssetRegistry))
-    add(Tile.Honor.Red.toAssetKey(builtInTileAssetRegistry))
-    add(Tile.Honor.Green.toAssetKey(builtInTileAssetRegistry))
-    add(Tile.Honor.White.toAssetKey(builtInTileAssetRegistry))
-    TaiwanTileTypes.createAll().forEach { add(it.toAssetKey(builtInTileAssetRegistry)) }
-    add(UNKNOWN_TILE_ASSET_KEY)
+    addAll(listOf("east", "south", "west", "north", "red_dragon", "green_dragon", "white_dragon"))
 }
 
 /**
- * 將外部讀取的素材 key 正規化；內建 key（[ALL_TILE_ASSET_KEYS]）或 [registry] 已註冊的第三方 key
- * 保持不變，其餘一律回退至 [UNKNOWN_TILE_ASSET_KEY]。
+ * 所有應有對應材質與模型的素材識別字串，順序固定：[STANDARD_TILE_ASSET_KEYS]、這個 registry 依登記順序的
+ * 擴充牌種，最後是 [UNKNOWN_TILE_ASSET_KEY] 佔位牌。各 loader adapter 依此清單註冊模型、建立渲染用物品，
+ * 並作為循環換牌的順序；登記擴充牌種的 extension 須提供對應的材質與模型。
  *
- * [ALL_TILE_ASSET_KEYS] 只收錄內建牌種，不能單獨拿來驗證合法性，否則已註冊的第三方 asset key
- * 會被這裡誤判成非法值、正規化成 unknown。
+ * @throws IllegalStateException registry 尚未凍結時拋出；擴充牌種要等所有 extension 登記完成才確定。
+ */
+fun MinecraftTileAssetRegistry.allTileAssetKeys(): List<String> {
+    check(isFrozen) { "Tile asset keys are only complete after the tile asset registry is frozen" }
+    return STANDARD_TILE_ASSET_KEYS + registeredAssetKeys + UNKNOWN_TILE_ASSET_KEY
+}
+
+/**
+ * 將外部讀取的素材 key 正規化；基本牌 key（[STANDARD_TILE_ASSET_KEYS]）或 [registry] 已註冊的擴充牌種 key
+ * 保持不變，其餘一律回退至 [UNKNOWN_TILE_ASSET_KEY]。
  */
 fun String?.normalizedTileAssetKey(registry: MinecraftTileAssetRegistry): String = this
-    ?.takeIf { it in ALL_TILE_ASSET_KEYS || registry.isRegisteredAssetKey(it) }
+    ?.takeIf { it in STANDARD_TILE_ASSET_KEYS || registry.isRegisteredAssetKey(it) }
     ?: UNKNOWN_TILE_ASSET_KEY
 
 /**
- * 取得循環順序中的下一個素材 key。
+ * 取得 [MinecraftTileAssetRegistry.allTileAssetKeys] 循環順序中的下一個素材 key。
  *
  * 無效或缺失值視為尚未選擇牌面，因此回到第一張 `m1`，而不是從 `unknown` 繼續循環。
+ *
+ * @param registry 已凍結的 asset key registry。
  */
-fun String?.nextTileAssetKey(): String {
-    val currentIndex = this?.let(ALL_TILE_ASSET_KEYS::indexOf) ?: -1
-    return ALL_TILE_ASSET_KEYS[(currentIndex + 1) % ALL_TILE_ASSET_KEYS.size]
+fun String?.nextTileAssetKey(registry: MinecraftTileAssetRegistry): String {
+    val keys = registry.allTileAssetKeys()
+    val currentIndex = this?.let(keys::indexOf) ?: -1
+    return keys[(currentIndex + 1) % keys.size]
 }

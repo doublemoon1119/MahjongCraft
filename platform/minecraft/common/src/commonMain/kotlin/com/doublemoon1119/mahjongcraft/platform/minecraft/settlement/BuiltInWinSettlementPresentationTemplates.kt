@@ -1,10 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.settlement
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
-import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
-import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.registerRiichiWinSettlementDetailTexts
 
 /** 內建胡牌結算模板的 key。 */
 object BuiltInWinSettlementTemplateKeys {
@@ -42,262 +38,30 @@ object BuiltInWinSettlementTileAssets {
     const val TILE_BACK = "back"
 }
 
-/** 註冊通用模板與所有內建規則的模板。 */
-fun WinSettlementPresentationTemplateRegistry.registerBuiltInWinSettlementTemplates() {
-    registerGenericWinSettlementTemplates()
-    registerRiichiWinSettlementTemplates()
+/** 規則中立的內建胡牌結算模板。 */
+object BuiltInWinSettlementTemplates {
+    private val BACKGROUND = PresentationContainerStyle(backgroundArgb = 0xCC101722.toInt(), padding = 8f)
+
+    /** 通用 fallback 模板；不包含寶牌、翻數、符數等規則專屬概念。 */
+    val GENERIC: WinSettlementPresentationTemplate = WinSettlementPresentationTemplate(
+        key = BuiltInWinSettlementTemplateKeys.GENERIC,
+        root = PresentationLayout.Column(
+            children = listOf(
+                PresentationLayout.Text(BuiltInWinSettlementFieldIds.OUTCOME_TITLE),
+                PresentationLayout.Text(BuiltInWinSettlementFieldIds.WINNER_SUMMARY),
+                PresentationLayout.Row(
+                    children = listOf(
+                        PresentationLayout.TileList(BuiltInWinSettlementFieldIds.COMPLETE_HAND),
+                        PresentationLayout.Spacer(width = 5f),
+                        PresentationLayout.Tile(BuiltInWinSettlementFieldIds.WINNING_TILE),
+                    ),
+                    spacing = 2f,
+                ),
+                PresentationLayout.Text(BuiltInWinSettlementFieldIds.PAYMENT_SUMMARY),
+                PresentationLayout.Text(BuiltInWinSettlementFieldIds.TOTAL_SCORE),
+            ),
+            spacing = 4f,
+            style = BACKGROUND,
+        ),
+    )
 }
-
-/** 內建通用 fallback 模板與共用欄位；不包含寶牌、翻數、符數等規則專屬概念。 */
-fun WinSettlementPresentationTemplateRegistry.registerGenericWinSettlementTemplates() {
-    val background = PresentationContainerStyle(backgroundArgb = 0xCC101722.toInt(), padding = 8f)
-    registerTemplate(
-        WinSettlementPresentationTemplate(
-            key = BuiltInWinSettlementTemplateKeys.GENERIC,
-            root = PresentationLayout.Column(
-                children = listOf(
-                    PresentationLayout.Text(BuiltInWinSettlementFieldIds.OUTCOME_TITLE),
-                    PresentationLayout.Text(BuiltInWinSettlementFieldIds.WINNER_SUMMARY),
-                    PresentationLayout.Row(
-                        children = listOf(
-                            PresentationLayout.TileList(BuiltInWinSettlementFieldIds.COMPLETE_HAND),
-                            PresentationLayout.Spacer(width = 5f),
-                            PresentationLayout.Tile(BuiltInWinSettlementFieldIds.WINNING_TILE),
-                        ),
-                        spacing = 2f,
-                    ),
-                    PresentationLayout.Text(BuiltInWinSettlementFieldIds.PAYMENT_SUMMARY),
-                    PresentationLayout.Text(BuiltInWinSettlementFieldIds.TOTAL_SCORE),
-                ),
-                spacing = 4f,
-                style = background,
-            ),
-        ),
-    )
-    registerFieldProvider(BuiltInWinSettlementFieldIds.COMPLETE_HAND) { snapshot ->
-        PresentationValue.TileListValue(snapshot.tileAssetKeys)
-    }
-    registerFieldProvider(BuiltInWinSettlementFieldIds.COMPLETE_HAND_GROUPS) { snapshot ->
-        PresentationValue.TileGroupsValue(snapshot.tileAssetGroups)
-    }
-    registerFieldProvider(BuiltInWinSettlementFieldIds.OUTCOME_TITLE) { snapshot ->
-        PresentationValue.TextValue(
-            when {
-                snapshot.outcomeId == BuiltInRoundOutcomeIds.NAGASHI_MANGAN -> WinSettlementTextKeys.NAGASHI_MANGAN
-                snapshot.isTsumo -> WinSettlementTextKeys.TSUMO
-                else -> WinSettlementTextKeys.RON
-            },
-        )
-    }
-    registerFieldProvider(BuiltInWinSettlementFieldIds.WINNER_SUMMARY) { snapshot ->
-        if (snapshot.isTsumo || snapshot.outcomeId == BuiltInRoundOutcomeIds.NAGASHI_MANGAN) {
-            PresentationValue.TextValue("%s", listOf(snapshot.winnerDisplayName))
-        } else {
-            PresentationValue.TextValue(
-                WinSettlementTextKeys.RON_RELATIONSHIP,
-                listOf(snapshot.winnerDisplayName, snapshot.responsiblePlayerDisplayName.orEmpty()),
-            )
-        }
-    }
-    registerFieldProvider(BuiltInWinSettlementFieldIds.WINNER_IDENTITY) { snapshot ->
-        PresentationValue.PlayerIdentityValue(snapshot.winnerId, snapshot.winnerDisplayName, snapshot.winnerIsAi)
-    }
-    registerFieldProvider(BuiltInWinSettlementFieldIds.RESPONSIBLE_PLAYER_IDENTITY) { snapshot ->
-        snapshot.responsiblePlayerId?.let { id ->
-            PresentationValue.PlayerIdentityValue(
-                id,
-                snapshot.responsiblePlayerDisplayName.orEmpty(),
-                snapshot.responsiblePlayerIsAi == true,
-            )
-        }
-    }
-    registerFieldProvider(BuiltInWinSettlementFieldIds.RELATION_ARROW) { snapshot ->
-        snapshot.responsiblePlayerId?.let { PresentationValue.TextValue(WinSettlementTextKeys.RELATIONSHIP_ARROW) }
-    }
-    registerFieldProvider(BuiltInWinSettlementFieldIds.DORA_LABEL) {
-        PresentationValue.TextValue(WinSettlementTextKeys.DORA)
-    }
-    registerFieldProvider(BuiltInWinSettlementFieldIds.URA_DORA_LABEL) {
-        PresentationValue.TextValue(WinSettlementTextKeys.URA_DORA)
-    }
-    registerFieldProvider(BuiltInWinSettlementFieldIds.PAYMENT_SUMMARY) { null }
-    registerFieldProvider(BuiltInWinSettlementFieldIds.WINNING_TILE) { snapshot ->
-        snapshot.winningTileAssetKey?.let(PresentationValue::TileValue)
-    }
-    registerFieldProvider(BuiltInWinSettlementFieldIds.TOTAL_SCORE) { snapshot ->
-        PresentationValue.TextValue(WinSettlementTextKeys.TOTAL_SCORE, listOf(snapshot.totalScore.toString()))
-    }
-}
-
-/** 日麻以通用文字／牌面原語組成的完整模板、流局滿貫模板，以及日麻專屬欄位。 */
-fun WinSettlementPresentationTemplateRegistry.registerRiichiWinSettlementTemplates() {
-    val background = PresentationContainerStyle(backgroundArgb = 0xCC101722.toInt(), padding = 8f)
-    registerTemplate(
-        WinSettlementPresentationTemplate(
-            key = BuiltInWinSettlementTemplateKeys.NAGASHI_MANGAN,
-            root = PresentationLayout.Column(
-                children = listOf(
-                    PresentationLayout.Text(BuiltInWinSettlementFieldIds.OUTCOME_TITLE),
-                    PresentationLayout.Text(BuiltInWinSettlementFieldIds.WINNER_SUMMARY),
-                    PresentationLayout.RepeatEntries(PresentationFieldId(RiichiWinSettlementIds.YAKU_FIELD)),
-                    PresentationLayout.Text(BuiltInWinSettlementFieldIds.TOTAL_SCORE),
-                ),
-                spacing = 6f,
-                style = background,
-            ),
-        ),
-    )
-
-    val yaku = PresentationFieldId(RiichiWinSettlementIds.YAKU_FIELD)
-    val hanFu = PresentationFieldId(RiichiWinSettlementIds.HAN_FU_FIELD)
-    val yakumanTotal = PresentationFieldId(RiichiWinSettlementIds.YAKUMAN_TOTAL_FIELD)
-    val dora = PresentationFieldId(RiichiWinSettlementIds.DORA_FIELD)
-    val uraDora = PresentationFieldId(RiichiWinSettlementIds.URA_DORA_FIELD)
-    val panel = PresentationContainerStyle(
-        backgroundArgb = 0xC7000000.toInt(),
-        padding = 0f,
-    )
-    registerTemplate(
-        WinSettlementPresentationTemplate(
-            key = BuiltInWinSettlementTemplateKeys.RIICHI,
-            root = PresentationLayout.Box(
-                width = 320f,
-                height = 156f,
-                style = panel,
-                children = listOf(
-                    positioned(
-                        PresentationLayout.Text(BuiltInWinSettlementFieldIds.OUTCOME_TITLE, scale = 1.35f, argb = 0xFFFFD45A.toInt()),
-                        160f,
-                        11f,
-                    ),
-                    positioned(playerRelationship(), 160f, 29f),
-                    PresentationLayout.Positioned(
-                        PresentationLayout.Row(
-                            listOf(
-                                PresentationLayout.TileGroups(BuiltInWinSettlementFieldIds.COMPLETE_HAND_GROUPS),
-                                PresentationLayout.Spacer(width = 5f),
-                                PresentationLayout.Tile(BuiltInWinSettlementFieldIds.WINNING_TILE),
-                            ),
-                            spacing = 0.6f,
-                            arrangement = PresentationArrangement.CENTER,
-                        ),
-                        x = 160f,
-                        y = 51f,
-                        horizontalAnchor = PresentationAlignment.CENTER,
-                        verticalAnchor = PresentationAlignment.CENTER,
-                    ),
-                    positioned(doraIndicators(dora, uraDora), 160f, 70.5f),
-                    PresentationLayout.Positioned(
-                        PresentationLayout.RepeatEntries(yaku, entriesPerColumn = 4, width = 232f),
-                        160f,
-                        95f,
-                        horizontalAnchor = PresentationAlignment.CENTER,
-                    ),
-                    PresentationLayout.Positioned(
-                        PresentationLayout.Row(
-                            listOf(
-                                postEntrySummary(hanFu, 0xFFE5E5E5.toInt()),
-                                postEntrySummary(yakumanTotal, 0xFFFFC247.toInt()),
-                            ),
-                        ),
-                        44f,
-                        141f,
-                    ),
-                    PresentationLayout.Positioned(
-                        PresentationLayout.Animated(
-                            PresentationLayout.Text(BuiltInWinSettlementFieldIds.TOTAL_SCORE, argb = 0xFFFFD45A.toInt()),
-                            // 翻符／役滿那一行錨在逐條揭示之後，佔一條役種的間隔（8 tick）；分數接在它後面出現。
-                            PresentationTimeline(PresentationTimelineAnchor.AFTER_ENTRIES, offsetTicks = 8, durationTicks = 18),
-                            listOf(PresentationAnimationEffect.Fade(), scoreRevealScale()),
-                            transformOriginX = PresentationAlignment.END,
-                            transformOriginY = PresentationAlignment.START,
-                        ),
-                        276f,
-                        141f,
-                        horizontalAnchor = PresentationAlignment.END,
-                    ),
-                ),
-            ),
-            detailFieldLabelKeys = mapOf(
-                dora to WinSettlementTextKeys.DORA_INDICATOR,
-                uraDora to WinSettlementTextKeys.URA_DORA_INDICATOR,
-            ),
-        ),
-    )
-    bindRuleTemplate(BuiltInRuleModuleIds.RIICHI, BuiltInWinSettlementTemplateKeys.RIICHI)
-    registerRiichiWinSettlementDetailTexts()
-    listOf(yaku, hanFu, yakumanTotal).forEach { id ->
-        registerFieldProvider(id) { snapshot -> snapshot.extensionField(id) }
-    }
-    listOf(dora, uraDora).forEach { id ->
-        registerFieldProvider(id) { snapshot ->
-            val revealed = (snapshot.extensionField(id) as? PresentationValue.TileListValue)?.assetKeys.orEmpty()
-            PresentationValue.TileListValue(
-                revealed.take(INDICATOR_SLOT_COUNT) +
-                    List((INDICATOR_SLOT_COUNT - revealed.size).coerceAtLeast(0)) {
-                        BuiltInWinSettlementTileAssets.TILE_BACK
-                    },
-            )
-        }
-    }
-}
-
-private fun postEntrySummary(fieldId: PresentationFieldId, argb: Int): PresentationLayout = PresentationLayout.IfPresent(
-    fieldId,
-    PresentationLayout.Animated(
-        PresentationLayout.Text(fieldId, argb = argb),
-        PresentationTimeline(PresentationTimelineAnchor.AFTER_ENTRIES, durationTicks = 6),
-        listOf(PresentationAnimationEffect.Fade()),
-    ),
-)
-
-private fun playerRelationship(): PresentationLayout = PresentationLayout.Row(
-    children = listOf(
-        PresentationLayout.PlayerIdentity(BuiltInWinSettlementFieldIds.WINNER_IDENTITY),
-        PresentationLayout.IfPresent(
-            BuiltInWinSettlementFieldIds.RESPONSIBLE_PLAYER_IDENTITY,
-            PresentationLayout.Row(
-                listOf(
-                    PresentationLayout.Text(BuiltInWinSettlementFieldIds.RELATION_ARROW, argb = 0xFFE5C16A.toInt()),
-                    PresentationLayout.PlayerIdentity(BuiltInWinSettlementFieldIds.RESPONSIBLE_PLAYER_IDENTITY),
-                ),
-                spacing = 5f,
-            ),
-        ),
-    ),
-    spacing = 5f,
-    arrangement = PresentationArrangement.CENTER,
-    fillMaxWidth = true,
-)
-
-private fun doraIndicators(dora: PresentationFieldId, uraDora: PresentationFieldId): PresentationLayout = PresentationLayout.Row(
-    children = listOf(
-        PresentationLayout.Weighted(indicator(BuiltInWinSettlementFieldIds.DORA_LABEL, dora)),
-        PresentationLayout.Weighted(indicator(BuiltInWinSettlementFieldIds.URA_DORA_LABEL, uraDora)),
-    ),
-    arrangement = PresentationArrangement.SPACE_EVENLY,
-    fillMaxWidth = true,
-)
-
-private fun indicator(label: PresentationFieldId, tiles: PresentationFieldId): PresentationLayout = PresentationLayout.Row(
-    children = listOf(
-        PresentationLayout.Text(label, scale = 0.82f, argb = 0xFFE5C16A.toInt()),
-        PresentationLayout.TileList(tiles, tileWidth = 8f, tileHeight = 11f, spacing = 2f),
-    ),
-    spacing = 4f,
-    arrangement = PresentationArrangement.CENTER,
-    fillMaxWidth = true,
-)
-
-private fun positioned(child: PresentationLayout, x: Float, y: Float): PresentationLayout.Positioned = PresentationLayout.Positioned(
-    child = child,
-    x = x,
-    y = y,
-    horizontalAnchor = PresentationAlignment.CENTER,
-)
-
-private fun scoreRevealScale() = PresentationAnimationEffect.ScaleKeyframes(
-    listOf(ScaleKeyframe(0f, 1.35f), ScaleKeyframe(1f, 1f)),
-)
-
-private const val INDICATOR_SLOT_COUNT = 5

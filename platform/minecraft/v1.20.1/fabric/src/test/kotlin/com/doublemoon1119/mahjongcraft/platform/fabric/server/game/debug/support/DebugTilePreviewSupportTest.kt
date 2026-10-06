@@ -1,34 +1,36 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support
 
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.ALL_TILE_ASSET_KEYS
+import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BundledMinecraftMahjongExtensions
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.allTileAssetKeys
 import kotlin.test.Test
-import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import kotlin.test.assertTrue
 
 /** 驗證 `tile` 引數的補全候選來源與過濾規則。 */
 class DebugTilePreviewSupportTest {
-    /** 沒有輸入前綴時列出全部內建牌面，但排除佔位用的 unknown。 */
+    /** 預覽牌面依完整清單的順序列出所有牌面，包含第三方登記的牌種，但排除佔位用的 unknown。 */
     @Test
-    fun `lists built-in asset keys without the placeholder`() {
-        val suggestions = buildTileAssetKeySuggestions(remaining = "", registeredAssetKeys = emptySet())
+    fun `preview asset keys list every tile except the placeholder`() {
+        val registry = MinecraftTileAssetRegistryImpl().apply {
+            BundledMinecraftMahjongExtensions.all.forEach { it.registerTileAssets(this) }
+            register(TileTypeId.parse("example:cat"), "example_cat")
+            freeze()
+        }
 
-        assertEquals(ALL_TILE_ASSET_KEYS.filterNot { it == UNKNOWN_TILE_ASSET_KEY }, suggestions)
-        assertFalse(UNKNOWN_TILE_ASSET_KEY in suggestions)
+        val previewKeys = DebugTilePreviewSupport(registry).previewAssetKeys
+
+        assertEquals(registry.allTileAssetKeys().filterNot { it == UNKNOWN_TILE_ASSET_KEY }, previewKeys)
+        assertEquals("example_cat", previewKeys.last())
+        assertFalse(UNKNOWN_TILE_ASSET_KEY in previewKeys)
     }
 
-    /** 第三方註冊的 asset key 接在內建牌面之後。 */
+    /** 沒有輸入前綴時依原順序列出全部候選。 */
     @Test
-    fun `appends registered third-party asset keys`() {
-        val suggestions = buildTileAssetKeySuggestions(
-            remaining = "",
-            registeredAssetKeys = setOf("example_cat"),
-        )
-
-        assertEquals("example_cat", suggestions.last())
-        assertContains(suggestions, "example_cat")
+    fun `lists every candidate in order without a prefix`() {
+        assertEquals(listOf("m1", "example_cat"), buildTileAssetKeySuggestions(remaining = "", assetKeys = listOf("m1", "example_cat")))
     }
 
     /** 已輸入的前綴只保留相符候選，且大小寫不敏感。 */
@@ -36,23 +38,9 @@ class DebugTilePreviewSupportTest {
     fun `filters candidates by the typed prefix ignoring case`() {
         val suggestions = buildTileAssetKeySuggestions(
             remaining = "EX",
-            registeredAssetKeys = setOf("example_cat", "other_key"),
+            assetKeys = listOf("example_cat", "other_key"),
         )
 
         assertEquals(listOf("example_cat"), suggestions)
-    }
-
-    /** 內建牌面與第三方註冊撞名時只留一份。 */
-    @Test
-    fun `keeps a single candidate for duplicated asset keys`() {
-        val builtIn = ALL_TILE_ASSET_KEYS.first { it != UNKNOWN_TILE_ASSET_KEY }
-
-        val suggestions = buildTileAssetKeySuggestions(
-            remaining = builtIn,
-            registeredAssetKeys = setOf(builtIn),
-        )
-
-        assertEquals(1, suggestions.count { it == builtIn })
-        assertTrue(suggestions.isNotEmpty())
     }
 }

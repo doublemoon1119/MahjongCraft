@@ -24,6 +24,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementDetector
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.BundledRiichiMinecraftExtension
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -190,7 +191,7 @@ class RiichiGameAchievementResolverTest {
     @Test
     fun `non-riichi games produce no riichi achievements`() {
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBuiltInRuleModules() }
-        val registry = GameAchievementResolverRegistryImpl().apply { registerBuiltInRiichiAchievements() }
+        val registry = GameAchievementResolverRegistryImpl().apply { BundledRiichiMinecraftExtension.registerGameAchievementResolvers(this) }
         val game = gameOf(TaiwanRuleConfig())
         val winner = game.tableState.players.first()
 

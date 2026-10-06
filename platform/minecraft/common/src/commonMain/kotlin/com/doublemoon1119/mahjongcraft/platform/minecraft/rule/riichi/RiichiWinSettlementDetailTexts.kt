@@ -7,7 +7,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModM
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.FallbackWinSettlementDetailTextFormatter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationValue
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementDetailTextFormatter
-import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementTextKeys
 
 /** 內建日麻胡牌詳情的顯示文字。 */
@@ -89,11 +88,4 @@ internal object RiichiWinSettlementDetailTexts {
 
         override fun entries(entries: List<WinSettlementDetailEntry>): PresentationValue.EntryListValue = FallbackWinSettlementDetailTextFormatter.entries(entries)
     }
-}
-
-/** 登記內建日麻胡牌詳情欄位的顯示文字。 */
-internal fun WinSettlementPresentationTemplateRegistry.registerRiichiWinSettlementDetailTexts() {
-    registerDetailTextFormatter(RiichiWinSettlementIds.YAKU_FIELD, RiichiWinSettlementDetailTexts.yaku)
-    registerDetailTextFormatter(RiichiWinSettlementIds.HAN_FU_FIELD, RiichiWinSettlementDetailTexts.hanFu)
-    registerDetailTextFormatter(RiichiWinSettlementIds.YAKUMAN_TOTAL_FIELD, RiichiWinSettlementDetailTexts.yakumanTotal)
 }

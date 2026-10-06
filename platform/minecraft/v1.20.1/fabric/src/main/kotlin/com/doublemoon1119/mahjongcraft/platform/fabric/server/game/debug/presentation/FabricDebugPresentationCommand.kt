@@ -43,9 +43,9 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.TileAnimationSteps
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.ALL_TILE_ASSET_KEYS
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongMeldTileGroup
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.STANDARD_TILE_ASSET_KEYS
 import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
@@ -107,6 +107,9 @@ class FabricDebugPresentationCommand(
     private val layoutFactory: DebugVirtualTableLayoutFactory,
     private val entityLifecycle: DebugPreviewEntityLifecycle,
 ) {
+    /** 預覽排列牌面時輪流使用的牌面，見 [DebugTilePreviewSupport.previewAssetKeys]。 */
+    private val previewAssets: List<String> get() = tilePreviewSupport.previewAssetKeys
+
     /** 建立 `win <tsumo|ron> [tile]`：完整重播胡牌慶祝演出。 */
     fun buildWinCommand(): LiteralArgumentBuilder<ServerCommandSource> = literal(WIN_SUBCOMMAND)
         .then(tilePreviewSupport.withOptionalTileArgument(literal(TSUMO_ARGUMENT)) { source, tileArg -> previewWin(source, isTsumo = true, tileArg) })
@@ -408,13 +411,13 @@ class FabricDebugPresentationCommand(
         val tableId = Uuid.random()
         val wingTiles = cues.mapIndexed { seat, cue ->
             val tiles = List(DebugPreviewDefaults.RULE_CONFIG.initialHandSize) { index ->
-                val asset = ALL_TILE_ASSET_KEYS.dropLast(1)[(index + seat * 5) % (ALL_TILE_ASSET_KEYS.size - 1)]
+                val asset = previewAssets[(index + seat * 5) % previewAssets.size]
                 val tile = tilePreviewSupport.spawnFreeTile(world, layout.handPlacement(seat, DebugPreviewDefaults.RULE_CONFIG.initialHandSize, index), MahjongTilePose.STANDING, asset)
                 tile to asset
             }
             Triple(seat, cue, tiles)
         }
-        val winningAsset = ALL_TILE_ASSET_KEYS.first()
+        val winningAsset = STANDARD_TILE_ASSET_KEYS.first()
         val winningPlacement = if (isTsumo) layout.drawnTilePlacement(DebugPreviewDefaults.RULE_CONFIG.initialHandSize) else layout.discardPlacement(0)
         val winningTile = tilePreviewSupport.spawnFreeTile(world, winningPlacement, MahjongTilePose.FACE_UP, winningAsset)
         showcaseScheduler.schedule(
@@ -486,7 +489,7 @@ class FabricDebugPresentationCommand(
                     player.serverWorld,
                     layout.handPlacement(handSize = DebugPreviewDefaults.RULE_CONFIG.initialHandSize, tileIndex = tileIndex),
                     MahjongTilePose.FACE_UP,
-                    ALL_TILE_ASSET_KEYS[(meldIndex * DebugPreviewDefaults.MELD_TILE_COUNT + tileIndex) % (ALL_TILE_ASSET_KEYS.size - 1)],
+                    previewAssets[(meldIndex * DebugPreviewDefaults.MELD_TILE_COUNT + tileIndex) % previewAssets.size],
                 )
             }
         }
@@ -522,7 +525,7 @@ class FabricDebugPresentationCommand(
                 KYUUSHU_PREVIEW_ASSETS
             } else {
                 List(handSize) { index ->
-                    ALL_TILE_ASSET_KEYS[(seat * 7 + index) % (ALL_TILE_ASSET_KEYS.size - 1)]
+                    previewAssets[(seat * 7 + index) % previewAssets.size]
                 }
             }
             assets.mapIndexed { index, asset ->
@@ -634,7 +637,7 @@ class FabricDebugPresentationCommand(
         val tileAssetsById = mutableMapOf<Uuid, String>()
         val winners = List(winnerCount) { winnerIndex ->
             val handIds = List(DebugPreviewDefaults.RULE_CONFIG.initialHandSize - 7) { tileIndex ->
-                Uuid.random().also { tileAssetsById[it] = ALL_TILE_ASSET_KEYS[(winnerIndex * 7 + tileIndex) % (ALL_TILE_ASSET_KEYS.size - 1)] }
+                Uuid.random().also { tileAssetsById[it] = previewAssets[(winnerIndex * 7 + tileIndex) % previewAssets.size] }
             }
             val ponIds = List(3) { Uuid.random().also { id -> tileAssetsById[id] = "s3" } }
             val kanIds = List(4) { Uuid.random().also { id -> tileAssetsById[id] = "p8" } }

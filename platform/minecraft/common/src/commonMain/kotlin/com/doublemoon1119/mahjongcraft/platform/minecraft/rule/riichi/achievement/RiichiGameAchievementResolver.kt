@@ -14,7 +14,6 @@ import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolver
-import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistry
 import kotlin.uuid.Uuid
 
 /**
@@ -101,9 +100,4 @@ object RiichiGameAchievementResolver : GameAchievementResolver {
     private fun HistoryWinDetails.totalHan(): Int? = detailFields
         .firstOrNull { it.id == RiichiWinSettlementIds.HAN_FU_FIELD }
         ?.let { field -> (field.value as? WinSettlementDetailValue.Quantities)?.quantities?.firstOrNull { it.unitId == RiichiWinSettlementIds.HAN }?.amount }
-}
-
-/** 登記內建日麻的專屬成果判定。 */
-fun GameAchievementResolverRegistry.registerBuiltInRiichiAchievements() {
-    register(RiichiGameAchievementResolver)
 }

@@ -3,7 +3,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.item
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModSounds
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.ALL_TILE_ASSET_KEYS
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.allTileAssetKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.nextTileAssetKey
 import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.item.Item
@@ -14,10 +15,11 @@ import net.minecraft.util.ActionResult
 import net.minecraft.util.Hand
 import net.minecraft.util.TypedActionResult
 import net.minecraft.world.World
+import org.koin.core.context.GlobalContext
 
 /**
  * 麻將牌 item：單一 item 類型代表所有牌面，實際牌面由 NBT 的 [NBT_KEY_TILE] 字串決定
- * （對應 [ALL_TILE_ASSET_KEYS]）。
+ * （對應 [allTileAssetKeys]）。
  *
  * 非蹲下右鍵循環切換牌面；蹲下對方塊右鍵則放置保留目前牌面的 [MahjongTileEntity]。
  */
@@ -67,7 +69,7 @@ class MahjongTileItem(settings: Settings) : Item(settings) {
 
         /** 將 item 循環至下一個牌面；無自訂資料的配方產物以目前顯示的 `m1` 為起點。 */
         fun advanceTileAssetKey(stack: ItemStack) {
-            writeTileAssetKey(stack, readTileAssetKey(stack).nextTileAssetKey())
+            writeTileAssetKey(stack, readTileAssetKey(stack).nextTileAssetKey(GlobalContext.get().get<MinecraftTileAssetRegistry>()))
         }
     }
 }

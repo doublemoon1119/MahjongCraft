@@ -2,10 +2,12 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.model
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileItemRenderer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.ALL_TILE_ASSET_KEYS
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.allTileAssetKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tileModelAssetPath
 import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin
 import net.minecraft.util.Identifier
+import org.koin.core.context.GlobalContext
 
 /**
  * 讓麻將牌內建子模型不再只透過 `mahjong_tile.json` 的 predicate override 才會被載入烘焙。
@@ -18,7 +20,7 @@ import net.minecraft.util.Identifier
 object MahjongTileModelLoadingPlugin : ModelLoadingPlugin {
     override fun onInitializeModelLoader(pluginContext: ModelLoadingPlugin.Context) {
         pluginContext.addModels(
-            ALL_TILE_ASSET_KEYS.map { assetKey ->
+            GlobalContext.get().get<MinecraftTileAssetRegistry>().allTileAssetKeys().map { assetKey ->
                 Identifier(MinecraftModMetadata.MOD_ID, tileModelAssetPath(assetKey))
             },
         )

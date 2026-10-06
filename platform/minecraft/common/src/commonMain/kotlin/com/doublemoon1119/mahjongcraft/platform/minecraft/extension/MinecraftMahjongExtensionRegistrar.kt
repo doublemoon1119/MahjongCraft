@@ -1,22 +1,11 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.extension
 
-import com.doublemoon1119.mahjongcraft.logic.module.BuiltInPaymentReasonIds
-import com.doublemoon1119.mahjongcraft.platform.minecraft.action.registerBuiltInGameActionVocabulary
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.registerBuiltInAiStrategyDisplayNames
-import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.registerBuiltInAutomaticControlDisplays
-import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.registerBuiltInDecisionStatusDisplayNames
-import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.registerBuiltInMatchSettlementTemplate
-import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.registerGenericWinSettlementTemplates
-import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.registerStandardTileEmojis
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.registerStandardTileLabels
 
 /**
  * 將平台發現的第三方 [MinecraftMahjongExtension] 登記至 runtime 實際使用的
@@ -29,7 +18,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.registerStandardT
  */
 object MinecraftMahjongExtensionRegistrar {
     /**
-     * 先註冊規則中立的內建映射，再依 [extensions] 順序登記各 extension 的映射，全部成功後凍結所有 registry。
+     * 先登記 [BuiltInMinecraftMahjongExtension] 的規則中立映射，再依 [extensions] 順序登記各 extension 的映射，全部成功後凍結所有 registry。
      *
      * 內建規則的映射由 [BundledMinecraftMahjongExtensions] 提供，呼叫端應把它們排在第三方 extension 之前。
      *
@@ -40,22 +29,11 @@ object MinecraftMahjongExtensionRegistrar {
         extensions: Iterable<MinecraftMahjongExtension>,
         registries: MinecraftPresentationRegistries,
     ): MinecraftMahjongExtensionRegistrationResult {
-        registries.aiStrategyDisplayNameRegistry.registerBuiltInAiStrategyDisplayNames()
-        registries.automaticControlDisplayRegistry.registerBuiltInAutomaticControlDisplays()
-        registries.tileEmojiRegistry.registerStandardTileEmojis()
-        registries.tileLabelRegistry.registerStandardTileLabels()
-        registries.winSettlementTemplateRegistry.registerGenericWinSettlementTemplates()
-        registries.matchSettlementTemplateRegistry.registerBuiltInMatchSettlementTemplate()
-        registries.publicPlayerIndicatorDisplayRegistry.register(
-            BuiltInPaymentReasonIds.PAO,
-            PublicPlayerIndicatorDisplay(MinecraftMessageKeys.PLAYER_INDICATOR_PAO, colorRgb = PAO_PAYMENT_REASON_COLOR),
-        )
-        registries.gameActionVocabularyRegistry.registerBuiltInGameActionVocabulary()
-        registries.decisionStatusDisplayNameRegistry.registerBuiltInDecisionStatusDisplayNames()
+        registerCallbacks(BuiltInMinecraftMahjongExtension, registries)
         var snapshot = registries.registrationSnapshot()
         val sources = mutableListOf(MinecraftPresentationRegistrationSource(extensionId = null, categories = snapshot.categories.nonEmpty()))
 
-        val registeredExtensionIds = mutableSetOf<String>()
+        val registeredExtensionIds = mutableSetOf(BuiltInMinecraftMahjongExtension.id)
         extensions.forEach { extension ->
             if (!registeredExtensionIds.add(extension.id)) {
                 throw MinecraftMahjongExtensionRegistrationException(
@@ -63,33 +41,7 @@ object MinecraftMahjongExtensionRegistrar {
                     IllegalArgumentException("Duplicate Minecraft Mahjong extension id: ${extension.id}"),
                 )
             }
-            try {
-                extension.registerTileAssets(registries.tileAssetRegistry)
-                extension.registerAiStrategyDisplayNames(registries.aiStrategyDisplayNameRegistry)
-                extension.registerAutomaticControlDisplays(registries.automaticControlDisplayRegistry)
-                extension.registerTileDisplayNames(registries.tileDisplayNameRegistry)
-                extension.registerRuleModuleDisplayNames(registries.ruleModuleDisplayNameRegistry)
-                extension.registerTileEmojis(registries.tileEmojiRegistry)
-                extension.registerTileLabels(registries.tileLabelRegistry)
-                extension.registerRuleCatalogues(registries.ruleCatalogueRegistry)
-                extension.registerGameAchievementResolvers(registries.gameAchievementResolverRegistry)
-                extension.registerWinCelebrationShowcases(registries.winCelebrationShowcaseRegistry)
-                extension.registerGameActionVocabulary(registries.gameActionVocabularyRegistry)
-                extension.registerDecisionStatusDisplayNames(registries.decisionStatusDisplayNameRegistry)
-                extension.registerGameActionSounds(registries.gameActionSoundPresentationRegistry)
-                extension.registerExhaustiveDrawReasonDisplayNames(registries.exhaustiveDrawReasonDisplayNameRegistry)
-                extension.registerRoundPreparationDisplayNames(registries.roundPreparationDisplayNameRegistry)
-                extension.registerWinSettlementPresentationTemplates(registries.winSettlementTemplateRegistry)
-                extension.registerMatchSettlementPresentationTemplates(registries.matchSettlementTemplateRegistry)
-                extension.registerPlayerPortraitSources(registries.playerPortraitSourceRegistry)
-                extension.registerPublicPlayerIndicatorDisplays(registries.publicPlayerIndicatorDisplayRegistry)
-                extension.registerGameConfigPresentations(registries.gameConfigPresentationRegistry)
-                extension.registerRoomMemberAppearanceSources(registries.roomMemberAppearanceSourceRegistry)
-                extension.registerRoundInfoPresentations(registries.roundInfoLineDisplayRegistry)
-                extension.registerTablePropDescribers(registries.tablePropDescriberRegistry)
-            } catch (cause: Exception) {
-                throw MinecraftMahjongExtensionRegistrationException(extension.id, cause)
-            }
+            registerCallbacks(extension, registries)
             val after = registries.registrationSnapshot()
             sources += MinecraftPresentationRegistrationSource(
                 extensionId = extension.id,
@@ -102,11 +54,42 @@ object MinecraftMahjongExtensionRegistrar {
         return MinecraftMahjongExtensionRegistrationResult(sources = sources)
     }
 
+    /** 依固定順序呼叫 [extension] 的所有登記回呼；任一回呼失敗時包裝成 [MinecraftMahjongExtensionRegistrationException]。 */
+    private fun registerCallbacks(
+        extension: MinecraftMahjongExtension,
+        registries: MinecraftPresentationRegistries,
+    ) {
+        try {
+            extension.registerTileAssets(registries.tileAssetRegistry)
+            extension.registerAiStrategyDisplayNames(registries.aiStrategyDisplayNameRegistry)
+            extension.registerAutomaticControlDisplays(registries.automaticControlDisplayRegistry)
+            extension.registerTileDisplayNames(registries.tileDisplayNameRegistry)
+            extension.registerRuleModuleDisplayNames(registries.ruleModuleDisplayNameRegistry)
+            extension.registerTileEmojis(registries.tileEmojiRegistry)
+            extension.registerTileLabels(registries.tileLabelRegistry)
+            extension.registerRuleCatalogues(registries.ruleCatalogueRegistry)
+            extension.registerGameAchievementResolvers(registries.gameAchievementResolverRegistry)
+            extension.registerWinCelebrationShowcases(registries.winCelebrationShowcaseRegistry)
+            extension.registerGameActionVocabulary(registries.gameActionVocabularyRegistry)
+            extension.registerDecisionStatusDisplayNames(registries.decisionStatusDisplayNameRegistry)
+            extension.registerGameActionSounds(registries.gameActionSoundPresentationRegistry)
+            extension.registerExhaustiveDrawReasonDisplayNames(registries.exhaustiveDrawReasonDisplayNameRegistry)
+            extension.registerRoundPreparationDisplayNames(registries.roundPreparationDisplayNameRegistry)
+            extension.registerWinSettlementPresentationTemplates(registries.winSettlementTemplateRegistry)
+            extension.registerMatchSettlementPresentationTemplates(registries.matchSettlementTemplateRegistry)
+            extension.registerPlayerPortraitSources(registries.playerPortraitSourceRegistry)
+            extension.registerPublicPlayerIndicatorDisplays(registries.publicPlayerIndicatorDisplayRegistry)
+            extension.registerGameConfigPresentations(registries.gameConfigPresentationRegistry)
+            extension.registerRoomMemberAppearanceSources(registries.roomMemberAppearanceSourceRegistry)
+            extension.registerRoundInfoPresentations(registries.roundInfoLineDisplayRegistry)
+            extension.registerTablePropDescribers(registries.tablePropDescriberRegistry)
+        } catch (cause: Exception) {
+            throw MinecraftMahjongExtensionRegistrationException(extension.id, cause)
+        }
+    }
+
     /** 只保留有登記項目的類別。 */
     private fun List<MinecraftPresentationRegistrationSnapshotCategory>.nonEmpty() = filter { it.registrationKeys.isNotEmpty() }
-
-    /** 包牌付款原因的文字顏色；與分數增減的紅綠色區隔。 */
-    private const val PAO_PAYMENT_REASON_COLOR: Int = 0xFFB05C
 }
 
 /**

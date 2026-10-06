@@ -1,13 +1,11 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi
 
-import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickDimensions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.BuiltInTablePropKinds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropDescriber
-import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropDescriberRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPlacement
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableSeatAnchor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableSeatOffset
@@ -99,9 +97,4 @@ object RiichiTableProps : TablePropDescriber {
             yawOffset = MahjongTileTableLayout.SIDEWAYS_YAW_OFFSET,
         )
     }
-}
-
-/** 登記內建日麻的桌面物件描述。 */
-fun TablePropDescriberRegistry.registerBuiltInRiichiTableProps() {
-    register(BuiltInRuleModuleIds.RIICHI, RiichiTableProps)
 }

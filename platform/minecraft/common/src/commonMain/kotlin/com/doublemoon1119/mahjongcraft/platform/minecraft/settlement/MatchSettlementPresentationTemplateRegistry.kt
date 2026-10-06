@@ -3,7 +3,6 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.settlement
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftResourceIds
-import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 
 /** 內建通用終局結算模板 key；規則沒有綁定模板時使用。 */
 const val BUILT_IN_MATCH_SETTLEMENT_TEMPLATE_KEY: String = "${MinecraftModMetadata.MOD_ID}:generic_match_settlement"
@@ -115,14 +114,4 @@ class MatchSettlementPresentationTemplateRegistryImpl : MatchSettlementPresentat
     override fun freeze() {
         frozen = true
     }
-}
-
-/** 登記 MahjongCraft 的通用終局模板。 */
-fun MatchSettlementPresentationTemplateRegistry.registerBuiltInMatchSettlementTemplate() {
-    register(
-        MatchSettlementPresentationTemplate(
-            key = BUILT_IN_MATCH_SETTLEMENT_TEMPLATE_KEY,
-            titleTranslationKey = MinecraftMessageKeys.MATCH_SETTLEMENT_TITLE,
-        ),
-    )
 }

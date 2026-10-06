@@ -21,7 +21,7 @@ class WinSettlementRevealTimelineTest {
     )
 
     private fun builtInLayout(key: String): PresentationLayout {
-        val registry = WinSettlementPresentationTemplateRegistryImpl().apply { registerBuiltInWinSettlementTemplates() }
+        val registry = WinSettlementPresentationTemplateRegistryImpl().apply { registerBundledWinSettlementTemplates() }
         return requireNotNull(registry.findTemplate(key)).root
     }
 

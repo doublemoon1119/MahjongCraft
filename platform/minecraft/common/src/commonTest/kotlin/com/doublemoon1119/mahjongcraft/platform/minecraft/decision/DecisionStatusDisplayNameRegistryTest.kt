@@ -2,7 +2,8 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.decision
 
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardReadinessAnalyzer
-import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.registerRiichiDecisionStatusDisplayNames
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BuiltInMinecraftMahjongExtension
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.BundledRiichiMinecraftExtension
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -11,8 +12,8 @@ import kotlin.test.assertNull
 /** 驗證捨牌分析狀態名稱的登記與「規則優先、退回中立預設」的查詢順序。 */
 class DecisionStatusDisplayNameRegistryTest {
     private fun registry() = DecisionStatusDisplayNameRegistryImpl().apply {
-        registerBuiltInDecisionStatusDisplayNames()
-        registerRiichiDecisionStatusDisplayNames()
+        BuiltInMinecraftMahjongExtension.registerDecisionStatusDisplayNames(this)
+        BundledRiichiMinecraftExtension.registerDecisionStatusDisplayNames(this)
     }
 
     /** 日麻的振聽與和牌資格由日麻自己登記，別的規則查不到。 */

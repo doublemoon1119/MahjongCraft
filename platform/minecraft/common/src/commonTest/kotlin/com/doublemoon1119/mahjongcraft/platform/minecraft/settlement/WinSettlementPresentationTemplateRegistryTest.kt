@@ -25,7 +25,7 @@ class WinSettlementPresentationTemplateRegistryTest {
     @Test
     fun `built in generic template stays rule neutral`() {
         val registry = WinSettlementPresentationTemplateRegistryImpl()
-        registry.registerBuiltInWinSettlementTemplates()
+        registry.registerBundledWinSettlementTemplates()
         val rendered = registry.findTemplate("mahjongcraft:generic").toString()
         assertFalse(rendered.contains(":dora", ignoreCase = true))
         assertFalse(rendered.contains(":han", ignoreCase = true))
@@ -35,7 +35,7 @@ class WinSettlementPresentationTemplateRegistryTest {
     @Test
     fun `built in riichi template uses the same public animation and identity primitives`() {
         val registry = WinSettlementPresentationTemplateRegistryImpl()
-        registry.registerBuiltInWinSettlementTemplates()
+        registry.registerBundledWinSettlementTemplates()
         val rendered = registry.findTemplate("mahjongcraft:riichi").toString()
 
         assertTrue(rendered.contains("Animated"))
@@ -48,7 +48,7 @@ class WinSettlementPresentationTemplateRegistryTest {
     @Test
     fun `riichi indicator providers fill unrevealed slots with tile backs`() {
         val registry = WinSettlementPresentationTemplateRegistryImpl()
-        registry.registerBuiltInWinSettlementTemplates()
+        registry.registerBundledWinSettlementTemplates()
         val doraId = PresentationFieldId("mahjongcraft:riichi_dora")
         val snapshot = WinSettlementPresentationFieldSnapshot(
             outcomeId = "mahjongcraft:ron",
@@ -76,7 +76,7 @@ class WinSettlementPresentationTemplateRegistryTest {
     @Test
     fun `built in riichi template exposes localized indicator labels`() {
         val registry = WinSettlementPresentationTemplateRegistryImpl()
-        registry.registerBuiltInWinSettlementTemplates()
+        registry.registerBundledWinSettlementTemplates()
         val template = registry.findTemplate("mahjongcraft:riichi") ?: error("Missing built-in riichi template")
 
         assertEquals(
@@ -159,7 +159,7 @@ class WinSettlementPresentationTemplateRegistryTest {
     @Test
     fun `templates are selected by rule module`() {
         val registry = WinSettlementPresentationTemplateRegistryImpl()
-        registry.registerBuiltInWinSettlementTemplates()
+        registry.registerBundledWinSettlementTemplates()
 
         assertEquals(BuiltInWinSettlementTemplateKeys.RIICHI, registry.findTemplateForRule(BuiltInRuleModuleIds.RIICHI)?.key)
         assertEquals(BuiltInWinSettlementTemplateKeys.GENERIC, registry.findTemplateForRule("custom:rule")?.key)
@@ -169,7 +169,7 @@ class WinSettlementPresentationTemplateRegistryTest {
     @Test
     fun `riichi detail formatters are registered once per field`() {
         val registry = WinSettlementPresentationTemplateRegistryImpl()
-        registry.registerBuiltInWinSettlementTemplates()
+        registry.registerBundledWinSettlementTemplates()
 
         listOf(RiichiWinSettlementIds.YAKU_FIELD, RiichiWinSettlementIds.HAN_FU_FIELD, RiichiWinSettlementIds.YAKUMAN_TOTAL_FIELD).forEach { id ->
             assertNotNull(registry.findDetailTextFormatter(id))
@@ -184,7 +184,7 @@ class WinSettlementPresentationTemplateRegistryTest {
     @Test
     fun `frozen registry rejects later registration`() {
         val registry = WinSettlementPresentationTemplateRegistryImpl()
-        registry.registerBuiltInWinSettlementTemplates()
+        registry.registerBundledWinSettlementTemplates()
         registry.freeze()
         assertFailsWith<IllegalStateException> {
             registry.registerTemplate(

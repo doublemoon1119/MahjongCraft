@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.settlement
 
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
-import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.registerBuiltInRiichiReasons
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.BundledRiichiMinecraftExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -14,7 +14,7 @@ class ExhaustiveDrawReasonDisplayNameRegistryTest {
     fun `registers every built-in riichi reason with a stable translation key`() {
         val registry = ExhaustiveDrawReasonDisplayNameRegistryImpl()
 
-        registry.registerBuiltInRiichiReasons()
+        BundledRiichiMinecraftExtension.registerExhaustiveDrawReasonDisplayNames(registry)
 
         assertEquals(MinecraftMessageKeys.EXHAUSTIVE_DRAW_REASON_NORMAL, registry.find(RiichiExhaustiveDrawReason.Normal.id))
         assertEquals(MinecraftMessageKeys.GAME_ACTION_KYUUSHU_KYUUHAI, registry.find(RiichiExhaustiveDrawReason.KyuushuKyuuhai.id))

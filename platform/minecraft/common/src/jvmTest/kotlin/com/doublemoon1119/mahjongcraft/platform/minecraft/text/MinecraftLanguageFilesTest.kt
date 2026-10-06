@@ -1,16 +1,16 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.text
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistryImpl
-import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.registerBuiltInAutomaticControlDisplays
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftConfigCommandKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BuiltInMinecraftMahjongExtension
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BundledMinecraftMahjongExtensions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigEditorSpec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.MinecraftRoomScreenKeys
-import com.doublemoon1119.mahjongcraft.platform.minecraft.room.registerBuiltInGameConfigPresentations
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiYakuTranslationKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementTextKeys
 import kotlinx.serialization.json.Json
@@ -166,7 +166,7 @@ class MinecraftLanguageFilesTest {
     @Test
     fun `all built-in automatic control displays have translations in every language`() {
         val registry = AutomaticControlDisplayRegistryImpl().apply {
-            registerBuiltInAutomaticControlDisplays()
+            BuiltInMinecraftMahjongExtension.registerAutomaticControlDisplays(this)
             freeze()
         }
         val keys = registry.registrationKeys.flatMapTo(mutableSetOf()) { controlId ->
@@ -206,7 +206,7 @@ class MinecraftLanguageFilesTest {
     /** 收集內建設定 schema 的分類、欄位、說明、單位與單選選項翻譯鍵。 */
     private fun builtInGameConfigTranslationKeys(): Set<String> {
         val registry = GameConfigPresentationRegistryImpl().apply {
-            registerBuiltInGameConfigPresentations()
+            BundledMinecraftMahjongExtensions.all.forEach { it.registerGameConfigPresentations(this) }
             freeze()
         }
 

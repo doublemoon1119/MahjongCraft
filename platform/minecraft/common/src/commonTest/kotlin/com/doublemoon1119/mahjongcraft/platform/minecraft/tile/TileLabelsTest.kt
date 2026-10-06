@@ -1,12 +1,17 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BuiltInMinecraftMahjongExtension
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BundledMinecraftMahjongExtensions
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 /** 驗證內建牌面角落標籤的顏色與文字規則（赤牌／花牌的固定配色規則）。 */
-class BuiltInTileLabelsTest {
-    private val registry = TileLabelRegistryImpl().apply { registerBuiltInTileLabels() }
+class TileLabelsTest {
+    private val registry = TileLabelRegistryImpl().apply {
+        BuiltInMinecraftMahjongExtension.registerTileLabels(this)
+        BundledMinecraftMahjongExtensions.all.forEach { it.registerTileLabels(this) }
+    }
 
     /** 一般數牌只有右上角紅色數字，左上角不顯示。 */
     @Test

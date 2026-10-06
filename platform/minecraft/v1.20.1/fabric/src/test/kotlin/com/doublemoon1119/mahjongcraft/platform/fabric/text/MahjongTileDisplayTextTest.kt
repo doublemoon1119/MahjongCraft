@@ -3,12 +3,11 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.text
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BuiltInMinecraftMahjongExtension
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BundledMinecraftMahjongExtensions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistryImpl
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.registerBuiltInTileAssets
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.registerBuiltInTileDisplayNames
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.registerBuiltInTileEmojis
 import net.minecraft.text.LiteralTextContent
 import net.minecraft.text.TranslatableTextContent
 import kotlin.test.Test
@@ -18,9 +17,12 @@ import kotlin.test.assertTrue
 /** [Tile.toDisplayText] 的單元測試類別；純函式，不需要 [net.minecraft.server.network.ServerPlayerEntity]。 */
 class MahjongTileDisplayTextTest {
 
-    private val displayNameRegistry = TileDisplayNameRegistryImpl().apply { registerBuiltInTileDisplayNames() }
-    private val assetRegistry = MinecraftTileAssetRegistryImpl().apply { registerBuiltInTileAssets() }
-    private val emojiRegistry = TileEmojiRegistryImpl().apply { registerBuiltInTileEmojis() }
+    private val displayNameRegistry = TileDisplayNameRegistryImpl().apply { BundledMinecraftMahjongExtensions.all.forEach { it.registerTileDisplayNames(this) } }
+    private val assetRegistry = MinecraftTileAssetRegistryImpl().apply { BundledMinecraftMahjongExtensions.all.forEach { it.registerTileAssets(this) } }
+    private val emojiRegistry = TileEmojiRegistryImpl().apply {
+        BuiltInMinecraftMahjongExtension.registerTileEmojis(this)
+        BundledMinecraftMahjongExtensions.all.forEach { it.registerTileEmojis(this) }
+    }
 
     /** 驗證數牌顯示成「牌面 emoji + 數值/花色」翻譯文字，帶正確的翻譯 key 與 emoji 前綴。 */
     @Test
@@ -64,7 +66,7 @@ class MahjongTileDisplayTextTest {
     fun `tile with unmapped asset key has no emoji prefix`() {
         val typeId = TileTypeId.parse("example:custom")
         val registryWithCustomAsset = MinecraftTileAssetRegistryImpl().apply {
-            registerBuiltInTileAssets()
+            BundledMinecraftMahjongExtensions.all.forEach { it.registerTileAssets(this) }
             register(typeId, "custom_third_party_key")
         }
 

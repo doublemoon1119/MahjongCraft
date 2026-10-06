@@ -391,7 +391,7 @@ class MahjongTileEntity(
         if (player.isSneaking) {
             tilePose = tilePose.next()
         } else {
-            tileAssetKey = tileAssetKey.nextTileAssetKey()
+            tileAssetKey = tileAssetKey.nextTileAssetKey(GlobalContext.get().get<MinecraftTileAssetRegistry>())
         }
         return ActionResult.CONSUME
     }

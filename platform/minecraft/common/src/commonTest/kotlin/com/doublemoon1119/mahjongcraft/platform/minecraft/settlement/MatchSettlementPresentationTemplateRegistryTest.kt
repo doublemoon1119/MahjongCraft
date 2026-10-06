@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.settlement
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BuiltInMinecraftMahjongExtension
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -11,7 +12,7 @@ class MatchSettlementPresentationTemplateRegistryTest {
     @Test
     fun `built in template reveals last place first and reads for five seconds`() {
         val registry = MatchSettlementPresentationTemplateRegistryImpl()
-        registry.registerBuiltInMatchSettlementTemplate()
+        BuiltInMinecraftMahjongExtension.registerMatchSettlementPresentationTemplates(registry)
 
         val template = assertNotNull(registry.find(BUILT_IN_MATCH_SETTLEMENT_TEMPLATE_KEY))
 
@@ -23,7 +24,7 @@ class MatchSettlementPresentationTemplateRegistryTest {
     @Test
     fun `templates are selected by rule module with built in fallback`() {
         val registry = MatchSettlementPresentationTemplateRegistryImpl()
-        registry.registerBuiltInMatchSettlementTemplate()
+        BuiltInMinecraftMahjongExtension.registerMatchSettlementPresentationTemplates(registry)
         registry.register(MatchSettlementPresentationTemplate("example:custom", "example.title"))
         registry.bindRuleTemplate("example:rule", "example:custom")
         registry.bindRuleTemplate("example:missing_template_rule", "example:missing")
@@ -37,7 +38,7 @@ class MatchSettlementPresentationTemplateRegistryTest {
     @Test
     fun `frozen registry rejects later templates`() {
         val registry = MatchSettlementPresentationTemplateRegistryImpl()
-        registry.registerBuiltInMatchSettlementTemplate()
+        BuiltInMinecraftMahjongExtension.registerMatchSettlementPresentationTemplates(registry)
         registry.freeze()
 
         assertFailsWith<IllegalStateException> {

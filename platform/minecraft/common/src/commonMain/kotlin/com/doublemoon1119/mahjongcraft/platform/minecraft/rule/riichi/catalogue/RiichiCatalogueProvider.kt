@@ -8,7 +8,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogu
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueCategory
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueEntry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueProvider
-import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.RiichiYakuTranslationKeys
 
 /** 日麻說明目錄來源，只組成說明與範例，不執行和牌或計分判定。 */
@@ -46,16 +45,6 @@ class RiichiCatalogueProvider : RuleCatalogueProvider {
             } + riichiCatalogueSpecialEntries(),
         )
     }
-}
-
-/** 登記所有內建規則的目錄。 */
-fun RuleCatalogueRegistry.registerBuiltInRuleCatalogues() {
-    registerRiichiRuleCatalogue()
-}
-
-/** 登記日麻目錄。 */
-fun RuleCatalogueRegistry.registerRiichiRuleCatalogue() {
-    register(RiichiCatalogueProvider())
 }
 
 /** 建立不經一般手牌役種判定的特殊結算與途中流局說明。 */
