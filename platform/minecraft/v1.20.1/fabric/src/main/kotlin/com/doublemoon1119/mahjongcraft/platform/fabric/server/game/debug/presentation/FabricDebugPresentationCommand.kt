@@ -121,9 +121,24 @@ class FabricDebugPresentationCommand(
     /** 建立 `showcase`：單家、多家、指定 cue、單一 phase 與含副露的鞘翅煙火預覽。 */
     fun buildShowcaseCommand(): LiteralArgumentBuilder<ServerCommandSource> = literal(SHOWCASE_SUBCOMMAND)
         .then(
-            withOptionalCueArgument(literal(MELDS_ARGUMENT), allowMultiple = false) { source, cue ->
-                previewMeldShowcase(source, cue ?: MELD_SHOWCASE_CUE)
-            },
+            literal(MELDS_ARGUMENT)
+                .executes { context -> previewMeldShowcase(context.source, listOf(MELD_SHOWCASE_CUE)) }
+                .then(
+                    argument(WINNER_COUNT_ARGUMENT, IntegerArgumentType.integer(1, 3))
+                        .executes { context ->
+                            val count = IntegerArgumentType.getInteger(context, WINNER_COUNT_ARGUMENT)
+                            previewMeldShowcase(context.source, List(count) { MELD_SHOWCASE_CUE })
+                        }
+                        .then(
+                            argument(CUE_ARGUMENT, StringArgumentType.greedyString())
+                                .suggests(::suggestShowcaseCueList)
+                                .executes { context ->
+                                    val count = IntegerArgumentType.getInteger(context, WINNER_COUNT_ARGUMENT)
+                                    val supplied = StringArgumentType.getString(context, CUE_ARGUMENT).split(",").filter(String::isNotBlank)
+                                    previewMeldShowcase(context.source, expandShowcaseCues(supplied, count, MELD_SHOWCASE_CUE))
+                                },
+                        ),
+                ),
         )
         .then(
             withOptionalCueArgument(literal(TSUMO_ARGUMENT), allowMultiple = false) { source, cue ->
@@ -451,46 +466,55 @@ class FabricDebugPresentationCommand(
     }
 
     /**
-     * `showcase melds [cue]`：自摸單騎和牌，副露依序為吃（上家）、加槓（對家）與暗槓。
+     * `showcase melds [winner_count] [cues]`：每位贏家都是單騎和牌，副露依序為吃（上家）、加槓（對家）、暗槓與大明槓（下家）。
      *
-     * 驗證副露起飛：橫置的鳴取牌與加槓疊上的牌在站起來時轉正，暗槓兩端露出牌背，編隊中各組之間留空隙。
+     * 一位贏家時為自摸，多位時為同一張捨牌的多家榮和。驗證副露起飛：橫置的鳴取牌與加槓疊上的牌在站起來時轉正，
+     * 暗槓兩端露出牌背，編隊中各組之間留空隙，以及接近最多張數時多翼並排的寬度。
      */
-    private fun previewMeldShowcase(source: ServerCommandSource, cue: String): Int {
-        if (showcaseRegistry.find(cue) == null) return COMMAND_FAILURE
+    private fun previewMeldShowcase(source: ServerCommandSource, cues: List<String>): Int {
+        if (cues.any { showcaseRegistry.find(it) == null }) return COMMAND_FAILURE
         val player = source.player ?: return COMMAND_FAILURE
         val world = player.serverWorld
         val layout = layoutFactory.create(player.blockPos.x, player.blockPos.y, player.blockPos.z, player.horizontalFacing.toMahjongTableFacing())
-        val seat = DebugVirtualTableLayout.DEBUG_SEAT_INDEX
-        val assets = mutableMapOf<Uuid, String>()
-        fun ids(vararg tileAssets: String): List<Uuid> = tileAssets.map { asset -> Uuid.random().also { assets[it] = asset } }
-        val standing = ids("m2", "m3", "m4", "north")
-        val chi = ids("s1", "s2", "s3")
-        val pon = ids("p5", "p5", "p5")
-        val addedKan = pon + ids("p5")
-        val closedKan = ids("east", "east", "east", "east")
-        val melds = listOf(
-            MahjongMeldTileGroup(MeldType.CHI, chi, chi.first(), RelativeDirection.Left, allTilesFaceDown = false),
-            MahjongMeldTileGroup(MeldType.ADDED_KAN, addedKan, pon.first(), RelativeDirection.Across, allTilesFaceDown = false),
-            MahjongMeldTileGroup(MeldType.CLOSED_KAN, closedKan, null, RelativeDirection.Self, allTilesFaceDown = false),
-        )
-        val closedKanFaceDown = winningHandFaceDownIndices(MeldType.CLOSED_KAN, closedKan.size).map(closedKan::get).toSet()
-        val placements = layout.meldPlacements(melds) + standing.mapIndexed { index, id -> id to layout.handPlacement(standing.size, index) }
-        val spawned = placements.mapValues { (id, placement) ->
-            val pose = when {
-                id in standing -> MahjongTilePose.STANDING
-                id in closedKanFaceDown -> MahjongTilePose.FACE_DOWN
-                else -> MahjongTilePose.FACE_UP
+        val isTsumo = cues.size == 1
+        val standingAssets = listOf(MELD_SHOWCASE_WAIT_ASSET)
+        val spawned = mutableListOf<MahjongTileEntity>()
+        val wings = cues.mapIndexed { seat, cue ->
+            val assets = mutableMapOf<Uuid, String>()
+            fun ids(vararg tileAssets: String): List<Uuid> = tileAssets.map { asset -> Uuid.random().also { assets[it] = asset } }
+            val standing = ids(*standingAssets.toTypedArray())
+            val chi = ids("s1", "s2", "s3")
+            val pon = ids("p5", "p5", "p5")
+            val addedKan = pon + ids("p5")
+            val closedKan = ids("east", "east", "east", "east")
+            val openKan = ids("m9", "m9", "m9", "m9")
+            val melds = listOf(
+                MahjongMeldTileGroup(MeldType.CHI, chi, chi.first(), RelativeDirection.Left, allTilesFaceDown = false),
+                MahjongMeldTileGroup(MeldType.ADDED_KAN, addedKan, pon.first(), RelativeDirection.Across, allTilesFaceDown = false),
+                MahjongMeldTileGroup(MeldType.CLOSED_KAN, closedKan, null, RelativeDirection.Self, allTilesFaceDown = false),
+                MahjongMeldTileGroup(MeldType.OPEN_KAN, openKan, openKan.first(), RelativeDirection.Right, allTilesFaceDown = false),
+            )
+            val closedKanFaceDown = winningHandFaceDownIndices(MeldType.CLOSED_KAN, closedKan.size).map(closedKan::get).toSet()
+            val placements = layout.meldPlacements(melds, seat) +
+                standing.mapIndexed { index, id -> id to layout.handPlacement(seat, standing.size, index) }
+            val entityIds = placements.mapValues { (id, placement) ->
+                val pose = when {
+                    id in standing -> MahjongTilePose.STANDING
+                    id in closedKanFaceDown -> MahjongTilePose.FACE_DOWN
+                    else -> MahjongTilePose.FACE_UP
+                }
+                tilePreviewSupport.spawnFreeTile(world, placement, pose, assets.getValue(id)).also(spawned::add).uuid.toKotlinUuid()
             }
-            tilePreviewSupport.spawnFreeTile(world, placement, pose, assets.getValue(id))
+            FabricWinCelebrationShowcaseScheduler.Wing(
+                seatIndex = seat,
+                cueIds = listOf(cue),
+                cards = showcaseWingCards(standingTileIds = standing, melds = melds, assetKeyOf = assets::get)
+                    .map { it.copy(tileId = entityIds.getValue(it.tileId)) },
+                standYaw = MahjongTileTableLayout.seatYaw(layout.tableFacing, seat),
+            )
         }
-        val winningAsset = "north"
-        val winningTile = tilePreviewSupport.spawnFreeTile(world, layout.drawnTilePlacement(standing.size), MahjongTilePose.FACE_UP, winningAsset)
-        val entityIds = spawned.mapValues { (_, tile) -> tile.uuid.toKotlinUuid() }
-        val cards = showcaseWingCards(
-            standingTileIds = standing,
-            melds = melds,
-            assetKeyOf = assets::get,
-        ).map { it.copy(tileId = entityIds.getValue(it.tileId)) }
+        val winningPlacement = if (isTsumo) layout.drawnTilePlacement(standingAssets.size) else layout.discardPlacement(0)
+        val winningTile = tilePreviewSupport.spawnFreeTile(world, winningPlacement, MahjongTilePose.FACE_UP, MELD_SHOWCASE_WAIT_ASSET)
         showcaseScheduler.schedule(
             world = world,
             tableId = Uuid.random(),
@@ -498,18 +522,11 @@ class FabricDebugPresentationCommand(
             stagePlacement = layout.showcaseStagePlacement(),
             startGameTime = world.time,
             winningTileId = winningTile.uuid.toKotlinUuid(),
-            winningTileAssetKey = winningAsset,
-            wings = listOf(
-                FabricWinCelebrationShowcaseScheduler.Wing(
-                    seatIndex = seat,
-                    cueIds = listOf(cue),
-                    cards = cards,
-                    standYaw = MahjongTileTableLayout.seatYaw(layout.tableFacing, seat),
-                ),
-            ),
+            winningTileAssetKey = MELD_SHOWCASE_WAIT_ASSET,
+            wings = wings,
         ) ?: return COMMAND_FAILURE
         // Stage 已同步保存所有牌面與起始位置；debug 臨時牌不必繼續 tick 到演出結束。
-        (spawned.values + winningTile).forEach(Entity::discard)
+        (spawned + winningTile).forEach(Entity::discard)
         return COMMAND_SUCCESS
     }
 
@@ -961,6 +978,9 @@ class FabricDebugPresentationCommand(
 
         /** `showcase melds` 省略 cue 時使用的演出。 */
         val MELD_SHOWCASE_CUE: String = BuiltInWinCelebrationCueIds.riichiYakuman("sukantsu")
+
+        /** `showcase melds` 的單騎待牌，也是和牌張。 */
+        const val MELD_SHOWCASE_WAIT_ASSET: String = "north"
 
         /** 自摸 literal。 */
         const val TSUMO_ARGUMENT: String = "tsumo"

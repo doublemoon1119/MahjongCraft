@@ -93,6 +93,21 @@ class DebugVirtualTableLayoutFactoryTest {
         assertNotEquals(claimed.z, added.z)
     }
 
+    /** 多組副露的格位依指定座位轉向，與該座位的正面朝向一致。 */
+    @Test
+    fun `places melds for the requested seat`() {
+        val layout = factory.create(0, 64, 0, MahjongTableFacing.NORTH)
+        val tileIds = List(3) { Uuid.random() }
+        val chi = MahjongMeldTileGroup(MeldType.CHI, tileIds, null, RelativeDirection.Self, allTilesFaceDown = false)
+
+        val nearSeat = layout.meldPlacements(listOf(chi))
+        val otherSeat = layout.meldPlacements(listOf(chi), seatIndex = 2)
+
+        assertEquals(nearSeat, layout.meldPlacements(listOf(chi), seatIndex = DebugVirtualTableLayout.DEBUG_SEAT_INDEX))
+        assertNotEquals(nearSeat, otherSeat)
+        otherSeat.values.forEach { assertEquals(MahjongTileTableLayout.seatYaw(MahjongTableFacing.NORTH, 2), it.yaw) }
+    }
+
     /** 手牌格位沿牌列前進，相鄰格位不會重疊。 */
     @Test
     fun `spaces adjacent hand tiles apart`() {

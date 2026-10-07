@@ -151,11 +151,17 @@ data class DebugVirtualTableLayout(
     )
 
     /**
-     * 依正式副露游標規則取得多組副露中每張牌的格位。
+     * 依正式副露游標規則取得指定座位多組副露中每張牌的格位。
      *
      * 加槓的最後一張是補上的牌，疊在橫置鳴取牌靠桌子中心的一側，不佔用排列方向的格位。
+     *
+     * @param melds 依鳴牌順序的副露。
+     * @param seatIndex 副露所屬的座位。
      */
-    fun meldPlacements(melds: List<MahjongMeldTileGroup>): Map<Uuid, MahjongTileWallPlacement> {
+    fun meldPlacements(
+        melds: List<MahjongMeldTileGroup>,
+        seatIndex: Int = DEBUG_SEAT_INDEX,
+    ): Map<Uuid, MahjongTileWallPlacement> {
         val placements = mutableMapOf<Uuid, MahjongTileWallPlacement>()
         var cursorAlong = 0.0
         melds.forEachIndexed { meldIndex, meld ->
@@ -181,7 +187,7 @@ data class DebugVirtualTableLayout(
                     controllerY = controllerY,
                     controllerZ = controllerZ,
                     tableFacing = tableFacing,
-                    seatIndex = DEBUG_SEAT_INDEX,
+                    seatIndex = seatIndex,
                     alongOffsetFromCorner = cursorAlong,
                     isSidewaysTile = isSideways,
                 )
@@ -193,7 +199,7 @@ data class DebugVirtualTableLayout(
                     controllerY = controllerY,
                     controllerZ = controllerZ,
                     tableFacing = tableFacing,
-                    seatIndex = DEBUG_SEAT_INDEX,
+                    seatIndex = seatIndex,
                     alongOffsetFromCorner = sidewaysAlongOffset,
                     isSidewaysTile = true,
                     depthOffsetFromEdge = MahjongTileTableLayout.ADDED_KAN_DEPTH_OFFSET,
