@@ -18,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSync
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardReadinessAnalyzer
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
@@ -345,8 +346,8 @@ class FabricDebugDecisionCommand(
         "Round preparation preview cancelled"
     }
 
-    /** `/debug decision_hud` 的固定、可補全測試情境。 */
-    private enum class DecisionHudPreview(
+    /** `/debug decision_hud` 的固定、可補全測試情境；動作 ID 與正式對局送出的相同。 */
+    internal enum class DecisionHudPreview(
         val commandName: String,
         val phase: PlayerDecisionPhaseDto = PlayerDecisionPhaseDto.OWN_TURN,
         val isDiscardAnalysis: Boolean = false,
@@ -418,9 +419,10 @@ class FabricDebugDecisionCommand(
                 TSUMO -> listOf(action("tsumo", listOf("red_dragon")))
                 RIICHI -> listOf(riichiAction())
                 KYUUSHU -> listOf(
-                    action(
-                        "kyuushu_kyuuhai",
-                        listOf("m1", "m9", "p1", "p9", "s1", "s9", "east", "south", "west", "north", "white_dragon", "green_dragon"),
+                    PlayerDecisionActionDto(
+                        token = "$commandName:kyuushu_kyuuhai",
+                        actionId = RiichiExhaustiveDrawReason.KyuushuKyuuhai.id,
+                        previewTileAssetKeys = listOf("m1", "m9", "p1", "p9", "s1", "s9", "east", "south", "west", "north", "white_dragon", "green_dragon"),
                     ),
                 )
                 MIXED -> listOf(
