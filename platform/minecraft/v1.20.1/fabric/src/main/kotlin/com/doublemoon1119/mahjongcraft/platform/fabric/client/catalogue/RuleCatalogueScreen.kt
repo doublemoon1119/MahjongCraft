@@ -65,8 +65,13 @@ internal class RuleCatalogueScreen(
     /** 清除搜尋按鈕。 */
     private lateinit var clear: ButtonWidget
 
-    /** 依目前尺寸與語言建立控制項並重新測量內容；保留規則、分類、搜尋與捲動位置。 */
+    /**
+     * 依目前尺寸、語言與資源建立控制項並重新測量內容；保留規則、分類、搜尋與捲動位置。
+     *
+     * 資源重新載入後畫面會重新初始化，因此在這裡丟棄牌面圖案的快取，補上或移除的貼圖立即反映。
+     */
     override fun init() {
+        presenter.clearResourceCaches()
         language = Language.getInstance()
         state = browser.snapshot(presenter::translation)
         layout = RuleCatalogueScreenLayout.measure(

@@ -29,7 +29,7 @@ internal class TextRendererCatalogueMetrics(private val font: TextRenderer) : Ru
 }
 
 /**
- * 從已載入的資源包找出範例牌面圖案；同一牌種只查一次。
+ * 從已載入的資源包找出範例牌面圖案；同一牌種在 [clearCache] 之前只查一次。
  *
  * @property assets 牌種與素材鍵的對應。
  * @property resources 目前的資源管理器。
@@ -51,6 +51,8 @@ internal class ResourceCatalogueTileArt(
             CatalogueTileArt(assetKey = assetKey)
         }
     }
+
+    override fun clearCache() = resolved.clear()
 }
 
 /**

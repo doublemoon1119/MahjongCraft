@@ -57,6 +57,9 @@ internal fun interface RuleCatalogueTileArt {
      * @return 繪製用素材鍵與缺圖提示。
      */
     fun resolve(tile: Tile): CatalogueTileArt
+
+    /** 丟棄已解析的結果，下次 [resolve] 重新查詢；沒有快取的來源不需要處理。 */
+    fun clearCache() = Unit
 }
 
 /**
@@ -126,6 +129,9 @@ internal class RuleCataloguePresenter(
      * @return 當前語言的文字，或 null。
      */
     fun translation(key: String): String? = translate(key)?.takeIf(String::isNotBlank)
+
+    /** 丟棄牌面圖案的快取；資源重新載入後的畫面重新初始化時呼叫。 */
+    fun clearResourceCaches() = tileArt.clearCache()
 
     /**
      * 取得可顯示的文字，缺少翻譯時顯示翻譯鍵。
