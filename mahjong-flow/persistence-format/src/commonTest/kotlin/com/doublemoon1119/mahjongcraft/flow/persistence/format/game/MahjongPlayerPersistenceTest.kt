@@ -61,6 +61,7 @@ class MahjongPlayerPersistenceTest {
                 riichiTile = riichiTile,
                 isIppatsu = true,
                 paoLiability = PaoLiability(PaoYaku.Daisangen, RelativeDirection.Left),
+                isPermanentlyFuriten = true,
             ),
             score = 31_200,
             seatWind = Wind.SOUTH,
