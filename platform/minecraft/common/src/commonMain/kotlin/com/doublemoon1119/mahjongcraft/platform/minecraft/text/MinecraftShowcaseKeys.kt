@@ -14,6 +14,12 @@ object MinecraftShowcaseKeys {
     const val CHINROUTOU = RIICHI_PREFIX + "chinroutou"
     const val CHUREN_POTO = RIICHI_PREFIX + "churen_poto"
     const val CHUREN_POTO_9 = RIICHI_PREFIX + "churen_poto_9"
+    const val DAICHIKURIN = RIICHI_PREFIX + "daichikurin"
+    const val DAICHISEI = RIICHI_PREFIX + "daichisei"
+    const val DAISHARIN = RIICHI_PREFIX + "daisharin"
+    const val DAISUURIN = RIICHI_PREFIX + "daisuurin"
+    const val ISHINO_UE_SANNEN = RIICHI_PREFIX + "ishino_ue_sannen"
+    const val RENHOU = RIICHI_PREFIX + "renhou"
     const val DAISANGEN = RIICHI_PREFIX + "daisangen"
     const val DAISUUSHII = RIICHI_PREFIX + "daisuushii"
     const val KOKUSHI_MUSOU = RIICHI_PREFIX + "kokushi_musou"
@@ -50,5 +56,11 @@ object MinecraftShowcaseKeys {
         SUUANKOU_TANKI,
         TENHOU,
         TSUUIISOU,
+        DAICHIKURIN,
+        DAICHISEI,
+        DAISHARIN,
+        DAISUURIN,
+        ISHINO_UE_SANNEN,
+        RENHOU,
     )
 }

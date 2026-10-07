@@ -65,11 +65,11 @@ object RiichiGameAchievementResolver : GameAchievementResolver {
             add(RiichiAchievementIds.IPPATSU)
         }
         if (isNaturalYakuman) {
-            val yakuman = yaku.filter { it in RiichiAchievementIds.yakumanTypes || it in RiichiAchievementIds.doubleYakumanTypes }
+            val yakuman = details.yakumanMultipliers()
             if (yakuman.isNotEmpty()) add(RiichiAchievementIds.YAKUMAN)
-            yakuman.mapNotNullTo(this, RiichiAchievementIds::yakuman)
-            if (yakuman.any { it in RiichiAchievementIds.doubleYakumanTypes }) add(RiichiAchievementIds.DOUBLE_YAKUMAN)
-            if (yakuman.distinct().size >= 2) add(RiichiAchievementIds.MULTIPLE_YAKUMAN)
+            yakuman.keys.mapNotNullTo(this, RiichiAchievementIds::yakuman)
+            if (yakuman.values.any { it >= 2 }) add(RiichiAchievementIds.DOUBLE_YAKUMAN)
+            if (yakuman.size >= 2) add(RiichiAchievementIds.MULTIPLE_YAKUMAN)
         } else {
             val han = details.totalHan() ?: return@buildList
             when {
@@ -95,6 +95,18 @@ object RiichiGameAchievementResolver : GameAchievementResolver {
         .filter { it.id == RiichiWinSettlementIds.YAKU_FIELD }
         .flatMap { field -> (field.value as? WinSettlementDetailValue.Entries)?.entries.orEmpty() }
         .mapNotNull { entry -> RiichiWinSettlementIds.yakuType(entry.id) }
+
+    /**
+     * 詳情中的役滿役種與倍數，古役役滿也包含在內；沒有個別進度的役種只計入役滿、雙倍役滿與複合役滿進度。
+     *
+     * @return 役滿役種對應的役滿倍數；無法辨識的條目略過。
+     */
+    private fun HistoryWinDetails.yakumanMultipliers(): Map<YakuType, Int> = detailFields
+        .filter { it.id == RiichiWinSettlementIds.YAKU_FIELD }
+        .flatMap { field -> (field.value as? WinSettlementDetailValue.Entries)?.entries.orEmpty() }
+        .filter { it.quantity?.unitId == RiichiWinSettlementIds.YAKUMAN }
+        .mapNotNull { entry -> RiichiWinSettlementIds.yakuType(entry.id)?.let { it to checkNotNull(entry.quantity).amount } }
+        .toMap()
 
     /** 非役滿和牌的總番數；沒有翻符欄位時為 null。 */
     private fun HistoryWinDetails.totalHan(): Int? = detailFields

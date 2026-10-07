@@ -137,6 +137,24 @@ class RiichiGameAchievementResolverTest {
         )
     }
 
+    /** 古役役滿沒有個別進度，但計入役滿、雙倍役滿與複合役滿進度。 */
+    @Test
+    fun `local yakuman count toward the general yakuman achievements`() {
+        val game = riichiGame()
+        val winner = game.tableState.players.first()
+
+        val single = resolve(game, win(winner.id, yakumanFields(YakuType.Renhou)))
+        val double = resolve(game, win(winner.id, yakumanFields(YakuType.Daichisei)))
+        val combined = resolve(game, win(winner.id, yakumanFields(YakuType.Renhou, YakuType.Daisangen)))
+
+        assertEquals(setOf(RiichiAchievementIds.YAKUMAN), single.getValue(winner.id))
+        assertEquals(setOf(RiichiAchievementIds.YAKUMAN, RiichiAchievementIds.DOUBLE_YAKUMAN), double.getValue(winner.id))
+        assertEquals(
+            setOf(RiichiAchievementIds.YAKUMAN, RiichiAchievementIds.yakuman(YakuType.Daisangen), RiichiAchievementIds.MULTIPLE_YAKUMAN),
+            combined.getValue(winner.id),
+        )
+    }
+
     /** 流局滿貫的成立者取得流局滿貫。 */
     @Test
     fun `nagashi mangan achievers get the nagashi mangan achievement`() {
@@ -258,7 +276,10 @@ class RiichiGameAchievementResolverTest {
     )
 
     private fun yakumanFields(vararg yaku: YakuType) = listOf(
-        yakuField(yaku.toList()),
+        WinSettlementDetailField(
+            RiichiWinSettlementIds.YAKU_FIELD,
+            WinSettlementDetailValue.Entries(yaku.map { RiichiWinSettlementIds.yakumanEntry(it, if (it in doubleYakuman) 2 else 1) }),
+        ),
         WinSettlementDetailField(
             RiichiWinSettlementIds.YAKUMAN_TOTAL_FIELD,
             WinSettlementDetailValue.Quantities(listOf(WinSettlementQuantity(RiichiWinSettlementIds.YAKUMAN, 1))),
@@ -269,4 +290,7 @@ class RiichiGameAchievementResolverTest {
         RiichiWinSettlementIds.YAKU_FIELD,
         WinSettlementDetailValue.Entries(yaku.map { RiichiWinSettlementIds.yakuEntry(it, 1) }),
     )
+
+    /** 測試用的雙倍役滿役種。 */
+    private val doubleYakuman = setOf(YakuType.KokushiMusou13, YakuType.ChurenPoto9, YakuType.SuuankouTanki, YakuType.Daisuushii, YakuType.Daichisei)
 }

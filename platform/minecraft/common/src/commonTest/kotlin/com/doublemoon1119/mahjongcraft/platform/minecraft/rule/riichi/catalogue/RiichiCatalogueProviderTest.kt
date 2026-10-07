@@ -43,10 +43,12 @@ class RiichiCatalogueProviderTest {
         assertEquals(3, catalogue.entries.count { it.categoryId == RiichiCatalogueCategory.BONUS.id })
         assertEquals(4, catalogue.entries.count { it.categoryId == RiichiCatalogueCategory.ABORTIVE_DRAW.id })
         assertEquals(1, catalogue.entries.count { it.categoryId == RiichiCatalogueCategory.MANGAN.id })
+        assertEquals(2, catalogue.entries.count { it.categoryId == RiichiCatalogueCategory.HAN_5.id })
+        catalogue.categories.forEach { category -> assertTrue(catalogue.entries.any { it.categoryId == category.id }, category.id) }
         assertTrue(catalogue.entries.all { it.descriptionTranslationKey.isNotBlank() })
     }
 
-    /** 不算役、門清限定與副露翻數標籤附有說明，其他價值標籤沒有。 */
+    /** 不算役、門清限定、古役與副露翻數標籤附有說明，其他價值標籤沒有。 */
     @Test
     fun `labels that need explanation carry descriptions`() {
         val catalogue = checkNotNull(RiichiCatalogueProvider().catalogue(RiichiRuleConfig(allowOpenTanyao = false)))
@@ -54,6 +56,7 @@ class RiichiCatalogueProviderTest {
         val expected = mapOf(
             RiichiCatalogueKeys.BONUS_ONLY to RiichiCatalogueKeys.BONUS_ONLY_DESCRIPTION,
             RiichiCatalogueKeys.CLOSED_ONLY to RiichiCatalogueKeys.CLOSED_ONLY_DESCRIPTION,
+            RiichiCatalogueKeys.LOCAL_YAKU to RiichiCatalogueKeys.LOCAL_YAKU_DESCRIPTION,
             RiichiCatalogueKeys.OPEN_HAN_1 to RiichiCatalogueKeys.OPEN_HAN_DESCRIPTION,
             RiichiCatalogueKeys.OPEN_HAN_2 to RiichiCatalogueKeys.OPEN_HAN_DESCRIPTION,
             RiichiCatalogueKeys.OPEN_HAN_5 to RiichiCatalogueKeys.OPEN_HAN_DESCRIPTION,
@@ -63,7 +66,7 @@ class RiichiCatalogueProviderTest {
         assertEquals(expected.keys, labels.map { it.nameTranslationKey }.filter { it in expected }.toSet())
     }
 
-    /** 配置只調整正確的條件；古役保留欄位不能產生不存在的役。 */
+    /** 配置只調整正確的條件，不改變分類與條目。 */
     @Test
     fun `configuration changes labels without changing catalogue identities`() {
         val provider = RiichiCatalogueProvider()
@@ -79,6 +82,21 @@ class RiichiCatalogueProviderTest {
         assertEquals(RiichiCatalogueKeys.RED_DORA_UNAVAILABLE, restricted.entries.single { it.id == RiichiCatalogueYaku.AkaDora.id }.unavailableReasonTranslationKey)
         assertNull(default.entries.single { it.id == RiichiCatalogueYaku.AkaDora.id }.unavailableReasonTranslationKey)
         assertEquals(RiichiCatalogueKeys.DRAGON_NAME, default.entries.single { it.id == RiichiCatalogueYaku.Dragon.id }.nameTranslationKey)
+    }
+
+    /** 古役條目都帶古役標籤；未啟用古役時標示未啟用，啟用後不再標示，一般役種不受影響。 */
+    @Test
+    fun `local yaku entries show whether local yaku are enabled`() {
+        val provider = RiichiCatalogueProvider()
+        val localIds = RiichiCatalogueYaku.entries.filter { it.type.isLocal }.map { it.id }.toSet()
+        val disabled = checkNotNull(provider.catalogue(RiichiRuleConfig()))
+        val enabled = checkNotNull(provider.catalogue(RiichiRuleConfig(useLocalYaku = true)))
+
+        assertTrue(disabled.entries.filter { it.id in localIds }.all { it.unavailableReasonTranslationKey == RiichiCatalogueKeys.LOCAL_YAKU_UNAVAILABLE })
+        assertTrue(enabled.entries.filter { it.id in localIds }.all { it.unavailableReasonTranslationKey == null })
+        assertTrue(disabled.entries.filterNot { it.id in localIds }.none { it.unavailableReasonTranslationKey == RiichiCatalogueKeys.LOCAL_YAKU_UNAVAILABLE })
+        assertTrue(enabled.entries.filter { it.id in localIds }.all { entry -> entry.labels.any { it.nameTranslationKey == RiichiCatalogueKeys.LOCAL_YAKU } })
+        assertTrue(enabled.entries.filterNot { it.id in localIds }.none { entry -> entry.labels.any { it.nameTranslationKey == RiichiCatalogueKeys.LOCAL_YAKU } })
     }
 
     /** 一般說明仍標記為預設配置，台麻不冒用日麻目錄。 */
@@ -152,25 +170,36 @@ private fun evaluateExample(type: YakuType, example: RuleCatalogueExample) = run
         },
         roundWind = if (type == YakuType.RoundWind) Wind.WEST else Wind.EAST,
         isRiichi = type in riichiTypes,
-        isDoubleRiichi = type == YakuType.DoubleRiichi,
+        isDoubleRiichi = type == YakuType.DoubleRiichi || type == YakuType.IshinoUeSannen,
         isIppatsu = type == YakuType.Ippatsu,
-        isLastDraw = type == YakuType.Haitei,
-        isLastDiscard = type == YakuType.Houtei,
+        isLastDraw = type == YakuType.Haitei || type == YakuType.IipinMoyue || type == YakuType.IshinoUeSannen,
+        isLastDiscard = type == YakuType.Houtei || type == YakuType.ChuupinRaoyui,
         isRobbingKan = type == YakuType.Chankan,
         isRinshanKaihou = type == YakuType.RinshanKaihou,
-        isFirstTurn = type == YakuType.Tenhou || type == YakuType.Chiihou,
+        isFirstTurn = type == YakuType.Tenhou || type == YakuType.Chiihou || type == YakuType.Renhou,
+        isRiichiDeclarationDiscard = type == YakuType.TsubameGaeshi,
+        isDiscardAfterKan = type == YakuType.Kanburi,
     )
-    RiichiHandValueCalculator().calculate(context)
+    RiichiHandValueCalculator(useLocalYaku = type.isLocal).calculate(context)
 }
 
 /** 範例中需轉成副露的牌組角色。 */
 private val meldRoles = setOf(RuleCatalogueTileGroupRole.OPEN_MELD, RuleCatalogueTileGroupRole.OPEN_KAN, RuleCatalogueTileGroupRole.CLOSED_KAN)
 
 /** 使用自摸情境驗證的役種。 */
-private val tsumoTypes = setOf(YakuType.Menzentsumo, YakuType.RinshanKaihou, YakuType.Haitei, YakuType.Tenhou, YakuType.Chiihou, YakuType.Suuankou)
+private val tsumoTypes = setOf(
+    YakuType.Menzentsumo,
+    YakuType.RinshanKaihou,
+    YakuType.Haitei,
+    YakuType.Tenhou,
+    YakuType.Chiihou,
+    YakuType.Suuankou,
+    YakuType.IipinMoyue,
+    YakuType.IshinoUeSannen,
+)
 
 /** 使用已立直情境驗證的役種。 */
-private val riichiTypes = setOf(YakuType.Riichi, YakuType.DoubleRiichi, YakuType.Ippatsu)
+private val riichiTypes = setOf(YakuType.Riichi, YakuType.DoubleRiichi, YakuType.Ippatsu, YakuType.IshinoUeSannen)
 
 /**
  * 將已明確標記的範例副露轉成測試模型。

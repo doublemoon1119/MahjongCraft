@@ -87,6 +87,20 @@ object RiichiWinSettlementIds {
         YakuType.ChurenPoto9 to yakuId("junsei_churen_poto"),
         YakuType.SuuankouTanki to yakuId("suuankou_tanki"),
         YakuType.Daisuushii to yakuId("daisuushii"),
+        YakuType.TsubameGaeshi to yakuId("tsubame_gaeshi"),
+        YakuType.Kanburi to yakuId("kanburi"),
+        YakuType.ShiiaruRaotai to yakuId("shiiaru_raotai"),
+        YakuType.UumenChii to yakuId("uumen_chii"),
+        YakuType.Sanrenkou to yakuId("sanrenkou"),
+        YakuType.IsshokuSanjun to yakuId("isshoku_sanjun"),
+        YakuType.IipinMoyue to yakuId("iipin_moyue"),
+        YakuType.ChuupinRaoyui to yakuId("chuupin_raoyui"),
+        YakuType.Renhou to yakuId("renhou"),
+        YakuType.Daisharin to yakuId("daisharin"),
+        YakuType.Daichikurin to yakuId("daichikurin"),
+        YakuType.Daisuurin to yakuId("daisuurin"),
+        YakuType.IshinoUeSannen to yakuId("ishi_no_ue_ni_mo_sannen"),
+        YakuType.Daichisei to yakuId("daichisei"),
     )
 
     /** 由條目 ID 對回役種。 */

@@ -39,8 +39,13 @@ class RiichiCatalogueProvider : RuleCatalogueProvider {
                         add(definition.valueKey)
                         definition.conditionKey?.let(::add)
                         if (definition.type == YakuType.Tanyao && !config.allowOpenTanyao) add(RiichiCatalogueKeys.CLOSED_ONLY)
+                        if (definition.type.isLocal) add(RiichiCatalogueKeys.LOCAL_YAKU)
                     }.map(::riichiCatalogueLabel),
-                    unavailableReasonTranslationKey = RiichiCatalogueKeys.RED_DORA_UNAVAILABLE.takeIf { definition.type == YakuType.AkaDora && config.redDoraCount == 0 },
+                    unavailableReasonTranslationKey = when {
+                        definition.type.isLocal && !config.useLocalYaku -> RiichiCatalogueKeys.LOCAL_YAKU_UNAVAILABLE
+                        definition.type == YakuType.AkaDora && config.redDoraCount == 0 -> RiichiCatalogueKeys.RED_DORA_UNAVAILABLE
+                        else -> null
+                    },
                     examples = riichiCatalogueExamples(definition.type),
                 )
             } + riichiCatalogueSpecialEntries(),
@@ -71,6 +76,7 @@ private fun riichiCatalogueLabel(key: String): RuleCatalogueLabel = RuleCatalogu
     descriptionTranslationKey = when (key) {
         RiichiCatalogueKeys.BONUS_ONLY -> RiichiCatalogueKeys.BONUS_ONLY_DESCRIPTION
         RiichiCatalogueKeys.CLOSED_ONLY -> RiichiCatalogueKeys.CLOSED_ONLY_DESCRIPTION
+        RiichiCatalogueKeys.LOCAL_YAKU -> RiichiCatalogueKeys.LOCAL_YAKU_DESCRIPTION
         RiichiCatalogueKeys.OPEN_HAN_1, RiichiCatalogueKeys.OPEN_HAN_2, RiichiCatalogueKeys.OPEN_HAN_5 -> RiichiCatalogueKeys.OPEN_HAN_DESCRIPTION
         else -> null
     },

@@ -64,7 +64,7 @@ interface RuleCatalogueRegistry {
      *
      * @param ruleModuleId 所選規則模組 ID。
      * @param config 實際配置；null 明確表示使用一般說明的預設配置。
-     * @return 可用目錄或明確的缺失原因。
+     * @return 可用目錄或明確的缺失原因；一般說明沒有實際設定可對照，條目不帶不適用原因。
      */
     fun resolve(ruleModuleId: String, config: MahjongRuleConfig? = null): RuleCatalogueResolution
 
@@ -92,11 +92,16 @@ class RuleCatalogueRegistryImpl : RuleCatalogueRegistry {
         providers[provider.ruleModuleId] = provider
     }
 
-    /** 只向指定規則來源解析，保留實際配置與一般說明的區別。 */
+    /** 只向指定規則來源解析，保留實際配置與一般說明的區別；一般說明清除條目的不適用原因。 */
     override fun resolve(ruleModuleId: String, config: MahjongRuleConfig?): RuleCatalogueResolution {
         val provider = providers[ruleModuleId] ?: return RuleCatalogueResolution.MissingProvider
-        val catalogue = provider.catalogue(config ?: provider.defaultRuleConfig()) ?: return RuleCatalogueResolution.UnsupportedConfig
-        return RuleCatalogueResolution.Available(catalogue, usesDefaultConfig = config == null)
+        if (config != null) {
+            val catalogue = provider.catalogue(config) ?: return RuleCatalogueResolution.UnsupportedConfig
+            return RuleCatalogueResolution.Available(catalogue, usesDefaultConfig = false)
+        }
+        val catalogue = provider.catalogue(provider.defaultRuleConfig()) ?: return RuleCatalogueResolution.UnsupportedConfig
+        val general = catalogue.copy(entries = catalogue.entries.map { it.copy(unavailableReasonTranslationKey = null) })
+        return RuleCatalogueResolution.Available(general, usesDefaultConfig = true)
     }
 
     /** 結束註冊階段。 */

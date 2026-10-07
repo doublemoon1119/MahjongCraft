@@ -37,6 +37,19 @@ class RuleCatalogueRegistryTest {
         assertFalse(result.usesDefaultConfig)
     }
 
+    /** 不適用原因只在有實際設定時保留；一般說明沒有實際設定可對照，不帶原因。 */
+    @Test
+    fun `unavailable reasons appear only with an actual config`() {
+        val registry = RuleCatalogueRegistryImpl()
+        registry.register(TestProvider())
+
+        val general = assertIs<RuleCatalogueResolution.Available>(registry.resolve(RULE_ID))
+        val actual = assertIs<RuleCatalogueResolution.Available>(registry.resolve(RULE_ID, TaiwanRuleConfig()))
+
+        assertTrue(general.catalogue.entries.all { it.unavailableReasonTranslationKey == null })
+        assertEquals("example.text.unavailable", actual.catalogue.entries.last().unavailableReasonTranslationKey)
+    }
+
     /** 重複登記拒絕且不覆蓋原來源，凍結後仍可讀取。 */
     @Test
     fun `duplicate registration and mutation after freeze are rejected`() {
@@ -115,6 +128,12 @@ private fun sampleCatalogue(): RuleCatalogue = RuleCatalogue(
                 ),
             ),
         ),
-        RuleCatalogueEntry("example:text", "example:category", "example.text", "example.text.description"),
+        RuleCatalogueEntry(
+            id = "example:text",
+            categoryId = "example:category",
+            nameTranslationKey = "example.text",
+            descriptionTranslationKey = "example.text.description",
+            unavailableReasonTranslationKey = "example.text.unavailable",
+        ),
     ),
 )

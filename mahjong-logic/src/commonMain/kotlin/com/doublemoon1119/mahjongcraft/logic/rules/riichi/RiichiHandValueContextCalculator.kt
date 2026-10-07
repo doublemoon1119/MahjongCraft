@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
  * - 寶牌指示牌與裏寶牌指示牌
  * - 海底撈月、河底撈魚判定
  * - 嶺上花判定
+ * - 榮和的牌是否為立直宣言牌、是否為槓後捨牌（古役燕返、槓振）
  *
  * @param config 日本麻將規則配置。
  */
@@ -39,6 +40,7 @@ class RiichiHandValueContextCalculator(
         val isMenzen = hand.exposedMelds.isEmpty() || hand.exposedMelds.all { it.type == MeldType.CLOSED_KAN }
         val riichiState = player.playerRuleState as? RiichiPlayerState
         val actionHistory = player.actionHistory
+        val discarder = if (isTsumo || isRobbingKan) null else discarderOf(tableState = tableState, winner = player, incomingTile = incomingTile)
 
         // 計算海底撈月或河底撈魚
         var isLastDraw = false
@@ -101,7 +103,48 @@ class RiichiHandValueContextCalculator(
             isFirstTurn = tableState.players.all { it.hand.exposedMelds.isEmpty() } &&
                 tableState.players.all { it.discardPile.entries.size <= 1 } &&
                 player.discardPile.entries.isEmpty(),
+            isRiichiDeclarationDiscard = discarder?.let { isRiichiDeclarationDiscard(it, incomingTile) } == true,
+            isDiscardAfterKan = discarder?.let(::isDiscardAfterKan) == true,
             paoLiability = riichiState?.paoLiability,
         )
+    }
+
+    /**
+     * 找出打出榮和牌的玩家；自摸與搶槓沒有放銃的捨牌。
+     *
+     * @param tableState 目前桌況。
+     * @param winner 和牌玩家。
+     * @param incomingTile 榮和的牌。
+     * @return 最後一個動作是打出這張牌的其他玩家；找不到時為 null。
+     */
+    private fun discarderOf(
+        tableState: TableState,
+        winner: MahjongPlayer,
+        incomingTile: IdentifiedTile,
+    ): MahjongPlayer? = tableState.players.firstOrNull { other ->
+        other.id != winner.id && (other.actionHistory.lastOrNull() as? GameAction.Discard)?.tileId == incomingTile.id
+    }
+
+    /**
+     * 放銃的牌是否為放銃者的立直宣言牌。
+     *
+     * @param discarder 放銃者。
+     * @param incomingTile 榮和的牌。
+     * @return 放銃者最後一張捨牌就是這張牌，且標記為立直宣言牌時為 true。
+     */
+    private fun isRiichiDeclarationDiscard(discarder: MahjongPlayer, incomingTile: IdentifiedTile): Boolean {
+        val last = discarder.discardPile.entries.lastOrNull() as? RiichiDiscardEntry ?: return false
+        return last.isRiichi && last.tile.id == incomingTile.id
+    }
+
+    /**
+     * 放銃者是否在槓牌並補牌後打出這張牌；同一回合連續槓牌也算。
+     *
+     * @param discarder 放銃者。
+     * @return 打出這張牌之前的動作依序為槓牌、補牌時為 true；中間的規則專屬宣告（例如立直）不影響判定。
+     */
+    private fun isDiscardAfterKan(discarder: MahjongPlayer): Boolean {
+        val beforeDiscard = discarder.actionHistory.dropLast(1).dropLastWhile { it is GameAction.Extension }
+        return beforeDiscard.size >= 2 && beforeDiscard.last() is GameAction.Draw && beforeDiscard[beforeDiscard.size - 2] is GameAction.Kan
     }
 }

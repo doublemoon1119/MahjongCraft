@@ -57,6 +57,20 @@ object RiichiYakuTranslationKeys {
         YakuType.ChurenPoto9 to "junsei_churenpohto",
         YakuType.SuuankouTanki to "suanko_tanki",
         YakuType.Daisuushii to "daisushi",
+        YakuType.TsubameGaeshi to "tsubame_gaeshi",
+        YakuType.Kanburi to "kanburi",
+        YakuType.ShiiaruRaotai to "shiiaru_raotai",
+        YakuType.UumenChii to "uumen_chii",
+        YakuType.Sanrenkou to "sanrenkou",
+        YakuType.IsshokuSanjun to "isshoku_sanjun",
+        YakuType.IipinMoyue to "iipin_moyue",
+        YakuType.ChuupinRaoyui to "chuupin_raoyui",
+        YakuType.Renhou to "renhou",
+        YakuType.Daisharin to "daisharin",
+        YakuType.Daichikurin to "daichikurin",
+        YakuType.Daisuurin to "daisuurin",
+        YakuType.IshinoUeSannen to "ishi_no_ue_ni_mo_sannen",
+        YakuType.Daichisei to "daichisei",
     )
 
     /** 取得指定役種的完整 translation key。 */

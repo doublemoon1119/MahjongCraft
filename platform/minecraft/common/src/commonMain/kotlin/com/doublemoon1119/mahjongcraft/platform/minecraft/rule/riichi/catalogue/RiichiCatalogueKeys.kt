@@ -21,6 +21,9 @@ internal enum class RiichiCatalogueCategory(
     /** han_3 說明分類。 */
     HAN_3("han_3"),
 
+    /** han_5 說明分類。 */
+    HAN_5("han_5"),
+
     /** han_6 說明分類。 */
     HAN_6("han_6"),
 
@@ -61,6 +64,9 @@ internal object RiichiCatalogueKeys {
     /** han_3 呈現標籤。 */
     const val HAN_3: String = PREFIX + "label.han_3"
 
+    /** han_5 呈現標籤。 */
+    const val HAN_5: String = PREFIX + "label.han_5"
+
     /** han_6 呈現標籤。 */
     const val HAN_6: String = PREFIX + "label.han_6"
 
@@ -88,11 +94,17 @@ internal object RiichiCatalogueKeys {
     /** mangan 呈現標籤。 */
     const val MANGAN: String = PREFIX + "label.mangan"
 
+    /** 古役呈現標籤。 */
+    const val LOCAL_YAKU: String = PREFIX + "label.local_yaku"
+
     /** 「不算役」標籤的說明。 */
     const val BONUS_ONLY_DESCRIPTION: String = PREFIX + "label.bonus_only.description"
 
     /** 「門清限定」標籤的說明。 */
     const val CLOSED_ONLY_DESCRIPTION: String = PREFIX + "label.closed_only.description"
+
+    /** 「古役」標籤的說明。 */
+    const val LOCAL_YAKU_DESCRIPTION: String = PREFIX + "label.local_yaku.description"
 
     /** 副露翻數標籤共用的說明。 */
     const val OPEN_HAN_DESCRIPTION: String = PREFIX + "label.open_han.description"
@@ -102,6 +114,9 @@ internal object RiichiCatalogueKeys {
 
     /** 本配置沒有赤寶牌的提示。 */
     const val RED_DORA_UNAVAILABLE: String = PREFIX + "unavailable.red_dora"
+
+    /** 本配置沒有啟用古役的提示。 */
+    const val LOCAL_YAKU_UNAVAILABLE: String = PREFIX + "unavailable.local_yaku"
 }
 
 /**
@@ -257,6 +272,48 @@ internal enum class RiichiCatalogueYaku(
 
     /** Daisuushii 的說明對照。 */
     Daisuushii(YakuType.Daisuushii, "daisushi", RiichiCatalogueCategory.DOUBLE_YAKUMAN, RiichiCatalogueKeys.DOUBLE_YAKUMAN),
+
+    /** 古役燕返的說明對照。 */
+    TsubameGaeshi(YakuType.TsubameGaeshi, "tsubame_gaeshi", RiichiCatalogueCategory.HAN_1, RiichiCatalogueKeys.HAN_1),
+
+    /** 古役槓振的說明對照。 */
+    Kanburi(YakuType.Kanburi, "kanburi", RiichiCatalogueCategory.HAN_1, RiichiCatalogueKeys.HAN_1),
+
+    /** 古役十二落抬的說明對照。 */
+    ShiiaruRaotai(YakuType.ShiiaruRaotai, "shiiaru_raotai", RiichiCatalogueCategory.HAN_1, RiichiCatalogueKeys.HAN_1),
+
+    /** 古役五門齊的說明對照。 */
+    UumenChii(YakuType.UumenChii, "uumen_chii", RiichiCatalogueCategory.HAN_2, RiichiCatalogueKeys.HAN_2),
+
+    /** 古役三連刻的說明對照。 */
+    Sanrenkou(YakuType.Sanrenkou, "sanrenkou", RiichiCatalogueCategory.HAN_2, RiichiCatalogueKeys.HAN_2),
+
+    /** 古役一色三同順的說明對照。 */
+    IsshokuSanjun(YakuType.IsshokuSanjun, "isshoku_sanjun", RiichiCatalogueCategory.HAN_3, RiichiCatalogueKeys.HAN_3, RiichiCatalogueKeys.OPEN_HAN_2),
+
+    /** 古役一筒摸月的說明對照。 */
+    IipinMoyue(YakuType.IipinMoyue, "iipin_moyue", RiichiCatalogueCategory.HAN_5, RiichiCatalogueKeys.HAN_5),
+
+    /** 古役九筒撈魚的說明對照。 */
+    ChuupinRaoyui(YakuType.ChuupinRaoyui, "chuupin_raoyui", RiichiCatalogueCategory.HAN_5, RiichiCatalogueKeys.HAN_5),
+
+    /** 古役人和的說明對照。 */
+    Renhou(YakuType.Renhou, "renhou", RiichiCatalogueCategory.YAKUMAN, RiichiCatalogueKeys.YAKUMAN, RiichiCatalogueKeys.CLOSED_ONLY),
+
+    /** 古役大車輪的說明對照。 */
+    Daisharin(YakuType.Daisharin, "daisharin", RiichiCatalogueCategory.YAKUMAN, RiichiCatalogueKeys.YAKUMAN, RiichiCatalogueKeys.CLOSED_ONLY),
+
+    /** 古役大竹林的說明對照。 */
+    Daichikurin(YakuType.Daichikurin, "daichikurin", RiichiCatalogueCategory.YAKUMAN, RiichiCatalogueKeys.YAKUMAN, RiichiCatalogueKeys.CLOSED_ONLY),
+
+    /** 古役大數鄰的說明對照。 */
+    Daisuurin(YakuType.Daisuurin, "daisuurin", RiichiCatalogueCategory.YAKUMAN, RiichiCatalogueKeys.YAKUMAN, RiichiCatalogueKeys.CLOSED_ONLY),
+
+    /** 古役石上三年的說明對照。 */
+    IshinoUeSannen(YakuType.IshinoUeSannen, "ishi_no_ue_ni_mo_sannen", RiichiCatalogueCategory.YAKUMAN, RiichiCatalogueKeys.YAKUMAN, RiichiCatalogueKeys.CLOSED_ONLY),
+
+    /** 古役大七星的說明對照。 */
+    Daichisei(YakuType.Daichisei, "daichisei", RiichiCatalogueCategory.DOUBLE_YAKUMAN, RiichiCatalogueKeys.DOUBLE_YAKUMAN, RiichiCatalogueKeys.CLOSED_ONLY),
     ;
 
     /** namespaced 役種說明識別碼。 */

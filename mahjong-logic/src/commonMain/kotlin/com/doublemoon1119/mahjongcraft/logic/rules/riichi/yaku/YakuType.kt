@@ -6,8 +6,12 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueCalcula
  * 日本麻將役種識別列舉。
  *
  * 包含所有可計算番數的役種，由 [RiichiHandValueCalculator] 進行檢測與計算。
+ *
+ * @property isLocal 是否為古役；只有規則設定啟用古役時才會成立。
  */
-enum class YakuType {
+enum class YakuType(
+    val isLocal: Boolean = false,
+) {
     // ===== 寶牌 =====
     /** 寶牌 (Dora) */
     Dora,
@@ -151,4 +155,47 @@ enum class YakuType {
 
     /** 大四喜 (Daisuushii) - 雙倍役滿 */
     Daisuushii,
+
+    // ===== 古役 =====
+    /** 燕返 (Tsubame Gaeshi) - 1 翻：以其他玩家的立直宣言牌榮和。 */
+    TsubameGaeshi(isLocal = true),
+
+    /** 槓振 (Kanburi) - 1 翻：以其他玩家槓後打出的牌榮和。 */
+    Kanburi(isLocal = true),
+
+    /** 十二落抬 (Shiiaru Raotai) - 1 翻：四組面子全部副露後單騎和牌。 */
+    ShiiaruRaotai(isLocal = true),
+
+    /** 五門齊 (Uumen Chii) - 2 翻：同時含萬、筒、索、風牌與三元牌。 */
+    UumenChii(isLocal = true),
+
+    /** 三連刻 (Sanrenkou) - 2 翻：同花色數字連續的三組刻子。 */
+    Sanrenkou(isLocal = true),
+
+    /** 一色三同順 (Isshoku Sanjun) - 2 翻（副露）/ 3 翻（門前清）：同花色同數字的三組順子。 */
+    IsshokuSanjun(isLocal = true),
+
+    /** 一筒摸月 (Iipin Moyue) - 5 翻：海底自摸一筒。 */
+    IipinMoyue(isLocal = true),
+
+    /** 九筒撈魚 (Chuupin Raoyui) - 5 翻：河底榮和九筒。 */
+    ChuupinRaoyui(isLocal = true),
+
+    /** 人和 (Renhou) - 役滿：非莊家在自己第一次摸牌前榮和。 */
+    Renhou(isLocal = true),
+
+    /** 大車輪 (Daisharin) - 役滿：筒子 2～8 各兩張。 */
+    Daisharin(isLocal = true),
+
+    /** 大竹林 (Daichikurin) - 役滿：索子 2～8 各兩張。 */
+    Daichikurin(isLocal = true),
+
+    /** 大數鄰 (Daisuurin) - 役滿：萬子 2～8 各兩張。 */
+    Daisuurin(isLocal = true),
+
+    /** 石上三年 (Ishi no Ue ni mo Sannen) - 役滿：雙立直後以海底自摸或河底榮和。 */
+    IshinoUeSannen(isLocal = true),
+
+    /** 大七星 (Daichisei) - 雙倍役滿：七種字牌各一對的七對子。 */
+    Daichisei(isLocal = true),
 }

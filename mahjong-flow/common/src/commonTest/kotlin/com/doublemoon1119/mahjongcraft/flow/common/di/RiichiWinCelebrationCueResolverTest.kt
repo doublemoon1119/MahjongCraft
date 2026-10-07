@@ -49,6 +49,28 @@ class RiichiWinCelebrationCueResolverTest {
         )
     }
 
+    /** 古役役滿和一般役滿一樣列出展示理由。 */
+    @Test
+    fun listsLocalYakuman() {
+        val result = resultOf(YakuResult.yakuman(YakuType.Renhou), YakuResult.doubleYakuman(YakuType.Daichisei), YakuResult.yakuman(YakuType.IshinoUeSannen))
+
+        assertEquals(
+            listOf("mahjongcraft:riichi/yakuman/daichisei", "mahjongcraft:riichi/yakuman/renhou", "mahjongcraft:riichi/yakuman/ishino_ue_sannen"),
+            registry.resolve(RIICHI_RULE_MODULE_ID, result),
+        )
+    }
+
+    /** 役種名稱中的數字前面也加底線。 */
+    @Test
+    fun separatesDigitsInYakuNames() {
+        val result = resultOf(YakuResult.doubleYakuman(YakuType.KokushiMusou13), YakuResult.doubleYakuman(YakuType.ChurenPoto9))
+
+        assertEquals(
+            listOf("mahjongcraft:riichi/yakuman/kokushi_musou_13", "mahjongcraft:riichi/yakuman/churen_poto_9"),
+            registry.resolve(RIICHI_RULE_MODULE_ID, result),
+        )
+    }
+
     /** 沒有登記解析器的規則沒有展示理由。 */
     @Test
     fun unregisteredRuleHasNoCues() {

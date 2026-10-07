@@ -27,7 +27,9 @@ import com.doublemoon1119.mahjongcraft.logic.table.Wind
  * @property isLastDiscard 是否為河底撈魚。
  * @property isRobbingKan 是否為搶槓。
  * @property isRinshanKaihou 是否為嶺上花。
- * @property isFirstTurn 是否為第一巡。用於天和、地和的判定。
+ * @property isFirstTurn 是否為第一巡。用於天和、地和與古役人和的判定。
+ * @property isRiichiDeclarationDiscard 榮和的牌是否為放銃者的立直宣言牌；用於古役燕返。
+ * @property isDiscardAfterKan 榮和的牌是否為放銃者槓牌並補牌後打出的牌；用於古役槓振。
  * @property paoLiability 本局是否已成立包牌責任（大三元／大四喜），若無則為 null。
  */
 data class RiichiHandValueContext(
@@ -49,5 +51,7 @@ data class RiichiHandValueContext(
     val isRobbingKan: Boolean = false,
     val isRinshanKaihou: Boolean = false,
     val isFirstTurn: Boolean = false,
+    val isRiichiDeclarationDiscard: Boolean = false,
+    val isDiscardAfterKan: Boolean = false,
     val paoLiability: PaoLiability? = null,
 ) : HandValueContext

@@ -19,5 +19,8 @@ object RiichiWinCelebrationCueResolver : WinCelebrationCueResolver {
             .map { BuiltInWinCelebrationCueIds.riichiYakuman(it.yaku.name.toSnakeCase()) }
     }
 
-    private fun String.toSnakeCase(): String = replace(Regex("([a-z0-9])([A-Z])"), "$1_$2").lowercase()
+    /** 役種名稱轉成展示 cue 路徑；數字前也加底線，例如 `KokushiMusou13` 轉成 `kokushi_musou_13`。 */
+    private fun String.toSnakeCase(): String = replace(Regex("([a-z0-9])([A-Z])"), "$1_$2")
+        .replace(Regex("([a-z])([0-9])"), "$1_$2")
+        .lowercase()
 }

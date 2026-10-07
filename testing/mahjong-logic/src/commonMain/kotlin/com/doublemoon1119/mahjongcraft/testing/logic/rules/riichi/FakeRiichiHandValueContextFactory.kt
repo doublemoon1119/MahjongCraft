@@ -34,6 +34,8 @@ object FakeRiichiHandValueContextFactory {
      * @param isRobbingKan 是否為槍槓，預設為 false。
      * @param isRinshanKaihou 是否為嶺上開花，預設為 false。
      * @param isFirstTurn 是否為第一巡（用於判斷地和等），預設為 false。
+     * @param isRiichiDeclarationDiscard 榮和的牌是否為放銃者的立直宣言牌，預設為 false。
+     * @param isDiscardAfterKan 榮和的牌是否為放銃者槓後打出的牌，預設為 false。
      * @param paoLiability 是否已成立包牌責任，預設為 null。
      */
     fun create(
@@ -55,6 +57,8 @@ object FakeRiichiHandValueContextFactory {
         isRobbingKan: Boolean = false,
         isRinshanKaihou: Boolean = false,
         isFirstTurn: Boolean = false,
+        isRiichiDeclarationDiscard: Boolean = false,
+        isDiscardAfterKan: Boolean = false,
         paoLiability: PaoLiability? = null,
     ): RiichiHandValueContext = RiichiHandValueContext(
         hand = hand,
@@ -75,6 +79,8 @@ object FakeRiichiHandValueContextFactory {
         isRobbingKan = isRobbingKan,
         isRinshanKaihou = isRinshanKaihou,
         isFirstTurn = isFirstTurn,
+        isRiichiDeclarationDiscard = isRiichiDeclarationDiscard,
+        isDiscardAfterKan = isDiscardAfterKan,
         paoLiability = paoLiability,
     )
 }

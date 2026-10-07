@@ -13,6 +13,12 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.dora.calculateAka
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.dora.calculateDora
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.dora.calculateUraDora
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.honor.calculateHonorYaku
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.local.calculateDaichisei
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.local.calculateIsshokuSanjun
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.local.calculateSanrenkou
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.local.calculateShiiaruRaotai
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.local.calculateUumenChii
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.local.calculateWheelYakuman
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.standard.calculateChiitoitsu
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.standard.calculateChinitsu
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.standard.calculateHonchan
@@ -45,10 +51,8 @@ import kotlin.math.abs
  *
  * 負責計算手牌的全部番數，使用 [RiichiHandValueContext] 提供計算所需的上下文資訊。
  *
- * @property useLocalYaku 是否啟用古役（Local Yaku）。TODO: 回頭實作古役邏輯。
+ * @property useLocalYaku 是否啟用古役（Local Yaku）；關閉時只計算一般役種。
  */
-// 古役尚未實作，useLocalYaku 先保留在建構子上維持 RiichiRuleModule 的注入形狀，實作後才會有使用點。
-@Suppress("UnusedPrivateProperty")
 class RiichiHandValueCalculator(
     private val useLocalYaku: Boolean = false,
 ) : HandValueCalculator<RiichiHandValueContext, RiichiHandValueResult> {
@@ -176,6 +180,9 @@ class RiichiHandValueCalculator(
             // 計算特殊役
             calculateSpecialYaku(context, yakuResults)
 
+            // 計算古役
+            if (useLocalYaku) calculateLocalYaku(context, handStructure, yakuResults)
+
             // 計算總番數
             val totalHan = HanCalculator.calculateTotalHan(yakuResults)
 
@@ -278,11 +285,19 @@ class RiichiHandValueCalculator(
             isMenzen = context.isMenzen,
         )
 
-        // 處理七對子與一杯口、兩杯口的衝突
-        // 兩杯口 (3 han) > 七對子 (2 han) > 一杯口 (1 han)
+        // 古役一色三同順包含一杯口，成立時取代一杯口；與兩杯口同時成立時保留兩杯口
+        val isshokuSanjun = if (useLocalYaku) {
+            calculateIsshokuSanjun(handStructure = handStructure, isMenzen = context.isMenzen)
+        } else {
+            null
+        }
+
+        // 處理七對子與一杯口、兩杯口、一色三同順的衝突
+        // 兩杯口 (3 han) > 七對子 (2 han) > 一色三同順 > 一杯口 (1 han)
         when {
             ryanpeikou != null -> standardResults.add(ryanpeikou)
             chiitoitsu != null -> standardResults.add(chiitoitsu)
+            isshokuSanjun != null -> standardResults.add(isshokuSanjun)
             iipeikou != null -> standardResults.add(iipeikou)
         }
 
@@ -410,6 +425,70 @@ class RiichiHandValueCalculator(
     }
 
     /**
+     * 計算非役滿的古役。一筒摸月、九筒撈魚分別取代海底摸月、河底撈魚。
+     */
+    private fun calculateLocalYaku(
+        context: RiichiHandValueContext,
+        handStructure: HandStructure,
+        results: MutableList<YakuResult>,
+    ) {
+        val winningTile = context.winningTile.riichiCanonical
+
+        // 燕返：以其他玩家的立直宣言牌榮和
+        if (!context.isTsumo && context.isRiichiDeclarationDiscard) {
+            results.add(YakuResult.han(YakuType.TsubameGaeshi, 1))
+        }
+
+        // 槓振：以其他玩家槓後打出的牌榮和
+        if (!context.isTsumo && context.isDiscardAfterKan) {
+            results.add(YakuResult.han(YakuType.Kanburi, 1))
+        }
+
+        calculateShiiaruRaotai(hand = context.hand)?.let { results.add(it) }
+        calculateUumenChii(hand = context.hand, winningTile = context.winningTile)?.let { results.add(it) }
+        calculateSanrenkou(handStructure = handStructure)?.let { results.add(it) }
+
+        // 一筒摸月：海底自摸一筒，取代海底摸月
+        if (context.isLastDraw && context.isTsumo && winningTile == IIPIN) {
+            results.removeAll { it.yaku == YakuType.Haitei }
+            results.add(YakuResult.han(YakuType.IipinMoyue, LAST_TILE_PIN_HAN))
+        }
+
+        // 九筒撈魚：河底榮和九筒，取代河底撈魚
+        if (context.isLastDiscard && !context.isTsumo && winningTile == CHUUPIN) {
+            results.removeAll { it.yaku == YakuType.Houtei }
+            results.add(YakuResult.han(YakuType.ChuupinRaoyui, LAST_TILE_PIN_HAN))
+        }
+    }
+
+    /**
+     * 計算役滿古役。大七星取代字一色。
+     */
+    private fun calculateLocalYakuman(
+        context: RiichiHandValueContext,
+        handStructure: HandStructure,
+        results: MutableList<YakuResult>,
+    ) {
+        calculateWheelYakuman(hand = context.hand, winningTile = context.winningTile, isMenzen = context.isMenzen)?.let { results.add(it) }
+
+        calculateDaichisei(handStructure = handStructure)?.let {
+            results.removeAll { result -> result.yaku == YakuType.Tsuuiisou }
+            results.add(it)
+        }
+
+        // 人和：非莊家在自己第一次摸牌前、無人鳴牌中斷時榮和
+        if (!context.isTsumo && !context.isDealer && context.isFirstTurn && !context.isRobbingKan) {
+            results.add(YakuResult.yakuman(YakuType.Renhou))
+        }
+
+        // 石上三年：雙立直，並以海底自摸或河底榮和和牌
+        val isLastTileWin = (context.isLastDraw && context.isTsumo) || (context.isLastDiscard && !context.isTsumo)
+        if (context.isDoubleRiichi && isLastTileWin) {
+            results.add(YakuResult.yakuman(YakuType.IshinoUeSannen))
+        }
+    }
+
+    /**
      * 計算役滿。
      *
      * 可能會含有小三元 (非役滿)
@@ -476,7 +555,7 @@ class RiichiHandValueCalculator(
         // 計算天和與地和
         if (context.isFirstTurn && context.isTsumo) {
             // 天和：親（莊家）在第一巡自摸
-            if (context.seatWind == context.roundWind) {
+            if (context.isDealer) {
                 results.add(YakuResult.yakuman(YakuType.Tenhou))
             }
             // 地和：子在第一巡自摸
@@ -484,5 +563,19 @@ class RiichiHandValueCalculator(
                 results.add(YakuResult.yakuman(YakuType.Chiihou))
             }
         }
+
+        if (useLocalYaku) calculateLocalYakuman(context, handStructure, results)
+    }
+
+    /** 古役判定使用的牌與翻數。 */
+    private companion object {
+        /** 一筒摸月的和牌張。 */
+        val IIPIN: Tile = Tile.Numeric(Tile.Suit.Dot, 1)
+
+        /** 九筒撈魚的和牌張。 */
+        val CHUUPIN: Tile = Tile.Numeric(Tile.Suit.Dot, 9)
+
+        /** 一筒摸月、九筒撈魚的翻數。 */
+        const val LAST_TILE_PIN_HAN = 5
     }
 }

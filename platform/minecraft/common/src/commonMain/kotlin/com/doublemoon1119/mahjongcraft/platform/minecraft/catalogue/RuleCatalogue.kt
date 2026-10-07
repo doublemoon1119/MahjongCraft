@@ -44,7 +44,7 @@ data class RuleCatalogueCategory(
  * @property nameTranslationKey 名稱翻譯鍵。
  * @property descriptionTranslationKey 完整說明翻譯鍵。
  * @property labels 價值、限制或情境標籤。
- * @property unavailableReasonTranslationKey 依設定不適用時的原因；null 表示適用。
+ * @property unavailableReasonTranslationKey 依實際設定不適用時的原因；null 表示適用，或是沒有實際設定的一般說明。
  * @property examples 可選的完整手牌或局部示意，不要求存在牌面資產。
  */
 data class RuleCatalogueEntry(

@@ -45,6 +45,9 @@ internal class RoundRecordingGameRepository(
     /** 每場對局依序記錄的局。 */
     private val roundsByGame = mutableMapOf<Uuid, MutableList<Pair<RoundKey, RecordedRound>>>()
 
+    /** 目前為止寫入的歷史事件草稿，依寫入順序排列。 */
+    val historyDrafts: List<HistoryEventDraft> get() = delegate.historyDrafts
+
     /** [gameId] 目前為止記錄的所有局，依開局順序排列。 */
     fun rounds(gameId: Uuid): List<RecordedRound> = roundsByGame[gameId].orEmpty().map { it.second }
 

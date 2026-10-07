@@ -53,6 +53,24 @@ internal object RiichiCatalogueExampleKeys {
 
     /** 牌面加碼示意。 */
     const val BONUS: String = PREFIX + "bonus"
+
+    /** 以其他玩家的立直宣言牌榮和。 */
+    const val TSUBAME_GAESHI: String = PREFIX + "tsubame_gaeshi"
+
+    /** 以其他玩家槓後打出的牌榮和。 */
+    const val KANBURI: String = PREFIX + "kanburi"
+
+    /** 海底自摸一筒。 */
+    const val IIPIN_MOYUE: String = PREFIX + "iipin_moyue"
+
+    /** 河底榮和九筒。 */
+    const val CHUUPIN_RAOYUI: String = PREFIX + "chuupin_raoyui"
+
+    /** 非莊家在自己第一次摸牌前榮和。 */
+    const val RENHOU: String = PREFIX + "renhou"
+
+    /** 雙立直後以海底自摸或河底榮和。 */
+    const val ISHI_NO_UE_NI_MO_SANNEN: String = PREFIX + "ishi_no_ue_ni_mo_sannen"
 }
 
 /**
@@ -153,6 +171,49 @@ internal fun riichiCatalogueExamples(type: YakuType): List<RuleCatalogueExample>
     YakuType.ChurenPoto9 -> listOf(full(m1, m1, m1, m2, m3, m4, m5, m6, m7, m8, m9, m9, m9, winning = m5))
     YakuType.SuuankouTanki -> listOf(full(m1, m1, m1, p2, p2, p2, p5, p5, p5, s7, s7, s7, north, winning = north))
     YakuType.Daisuushii -> listOf(full(east, east, east, south, south, south, west, west, west, north, north, north, p1, winning = p1))
+    YakuType.TsubameGaeshi -> listOf(full(m1, m2, m3, p4, p5, p6, s7, s8, s9, s2, s2, m7, m8, winning = m9, description = RiichiCatalogueExampleKeys.TSUBAME_GAESHI))
+    YakuType.Kanburi -> listOf(full(m2, m3, m4, p2, p3, p4, s3, s4, s5, east, east, p7, p8, winning = p6, description = RiichiCatalogueExampleKeys.KANBURI))
+    YakuType.ShiiaruRaotai -> listOf(
+        groupedFull(
+            group(RuleCatalogueTileGroupRole.OPEN_MELD, m1, m2, m3),
+            group(RuleCatalogueTileGroupRole.OPEN_MELD, p5, p5, p5),
+            group(RuleCatalogueTileGroupRole.OPEN_MELD, s7, s8, s9),
+            group(RuleCatalogueTileGroupRole.OPEN_MELD, east, east, east),
+            group(RuleCatalogueTileGroupRole.HAND, white),
+            winning = white,
+        ),
+    )
+    YakuType.UumenChii -> listOf(full(m1, m2, m3, p4, p5, p6, s7, s8, s9, east, east, east, white, winning = white))
+    YakuType.Sanrenkou -> listOf(
+        groupedFull(
+            group(RuleCatalogueTileGroupRole.OPEN_MELD, m3, m3, m3),
+            group(RuleCatalogueTileGroupRole.OPEN_MELD, m4, m4, m4),
+            group(RuleCatalogueTileGroupRole.HAND, m5, m5, m5),
+            group(RuleCatalogueTileGroupRole.HAND, p2, p3),
+            group(RuleCatalogueTileGroupRole.HAND, s9, s9),
+            winning = p4,
+        ),
+    )
+    YakuType.IsshokuSanjun -> listOf(
+        groupedFull(
+            group(RuleCatalogueTileGroupRole.OPEN_MELD, m1, m2, m3),
+            group(RuleCatalogueTileGroupRole.HAND, m1, m2, m3),
+            group(RuleCatalogueTileGroupRole.HAND, m1, m2, m3),
+            group(RuleCatalogueTileGroupRole.HAND, p5, p6, p7),
+            group(RuleCatalogueTileGroupRole.HAND, s9),
+            winning = s9,
+        ),
+    )
+    YakuType.IipinMoyue -> listOf(full(m2, m3, m4, s5, s6, s7, s2, s3, s4, east, east, p2, p3, winning = p1, description = RiichiCatalogueExampleKeys.IIPIN_MOYUE))
+    YakuType.ChuupinRaoyui -> listOf(full(m2, m3, m4, s5, s6, s7, s2, s3, s4, east, east, p7, p8, winning = p9, description = RiichiCatalogueExampleKeys.CHUUPIN_RAOYUI))
+    YakuType.Renhou -> listOf(full(m1, m2, m3, p4, p5, p6, s7, s8, s9, north, north, m4, m5, winning = m6, description = RiichiCatalogueExampleKeys.RENHOU))
+    YakuType.Daisharin -> listOf(full(p2, p2, p3, p3, p4, p4, p5, p5, p6, p6, p7, p7, p8, winning = p8))
+    YakuType.Daichikurin -> listOf(full(s2, s2, s3, s3, s4, s4, s5, s5, s6, s6, s7, s7, s8, winning = s8))
+    YakuType.Daisuurin -> listOf(full(m2, m2, m3, m3, m4, m4, m5, m5, m6, m6, m7, m7, m8, winning = m8))
+    YakuType.IshinoUeSannen -> listOf(
+        full(m1, m2, m3, p4, p5, p6, s7, s8, s9, west, west, m7, m8, winning = m9, description = RiichiCatalogueExampleKeys.ISHI_NO_UE_NI_MO_SANNEN),
+    )
+    YakuType.Daichisei -> listOf(full(east, east, south, south, west, west, north, north, white, white, green, green, red, winning = red))
 }
 
 /**

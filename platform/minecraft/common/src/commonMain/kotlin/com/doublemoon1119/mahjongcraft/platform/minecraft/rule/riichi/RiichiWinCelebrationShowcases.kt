@@ -34,4 +34,10 @@ private val YAKUMAN_CUES = listOf(
     "chinroutou",
     "tenhou",
     "chiihou",
+    "daichisei",
+    "renhou",
+    "daisharin",
+    "daichikurin",
+    "daisuurin",
+    "ishino_ue_sannen",
 )

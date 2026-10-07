@@ -163,4 +163,39 @@ class TenhouChiihouTest : RiichiHandValueCalculatorTestBase() {
             "Should not contain Chiihou for Ron, got: ${result.yakuResults.map { it.yaku }}",
         )
     }
+
+    /** 南場的莊家自風是東、場風是南，第一巡自摸仍是天和而不是地和；同場風的非莊家是地和。 */
+    @Test
+    fun `dealer is decided by the dealer flag rather than matching winds`() {
+        val hand = FakeHandFactory.create(createBasicHand())
+        val winningTile = Tile.Numeric(Tile.Suit.Character, 1)
+
+        val dealer = calculator.calculate(
+            FakeRiichiHandValueContextFactory.create(
+                hand = hand,
+                winningTile = winningTile,
+                isTsumo = true,
+                roundWind = Wind.SOUTH,
+                seatWind = Wind.EAST,
+                isDealer = true,
+                isFirstTurn = true,
+            ),
+        )
+        val nonDealer = calculator.calculate(
+            FakeRiichiHandValueContextFactory.create(
+                hand = hand,
+                winningTile = winningTile,
+                isTsumo = true,
+                roundWind = Wind.SOUTH,
+                seatWind = Wind.SOUTH,
+                isDealer = false,
+                isFirstTurn = true,
+            ),
+        )
+
+        assertTrue(dealer.yakuResults.any { it.yaku == YakuType.Tenhou }, "${dealer.yakuResults}")
+        assertFalse(dealer.yakuResults.any { it.yaku == YakuType.Chiihou })
+        assertTrue(nonDealer.yakuResults.any { it.yaku == YakuType.Chiihou }, "${nonDealer.yakuResults}")
+        assertFalse(nonDealer.yakuResults.any { it.yaku == YakuType.Tenhou })
+    }
 }

@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
@@ -663,6 +664,61 @@ class RiichiHandValueContextCalculatorTest {
         )
 
         assertTrue(context.isRinshanKaihou)
+    }
+
+    /** 以放銃者標記為立直宣言牌的捨牌榮和時，上下文標記為立直宣言牌；其他捨牌、自摸與搶槓都不標記。 */
+    @Test
+    fun `ron on a riichi declaration discard is marked`() {
+        val calculator = createCalculator()
+        val winner = createPlayer(FakeHandFactory.create(listOf(Tile.Numeric(Tile.Suit.Character, 1))))
+        val declared = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
+        val discarder = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.SOUTH,
+            discardPile = RiichiDiscardPile().discard(RiichiDiscardEntry(declared, isRiichi = true)),
+            playerRuleState = RiichiPlayerState(),
+        ).recordAction(RIICHI_GAME_ACTION).recordAction(GameAction.Discard(declared.id))
+        val tableState = FakeTableStateFactory.create(players = listOf(winner, discarder), tileWall = TileWall(List(20) { FakeIdentifiedTileFactory.create(Tile.Honor.Red) }), config = RiichiRuleConfig())
+
+        fun context(isTsumo: Boolean = false, isRobbingKan: Boolean = false, tile: IdentifiedTile = declared) = calculator.calculate(
+            RiichiHandValueContextCalculator.Input(tableState = tableState, player = winner, incomingTile = tile, isTsumo = isTsumo, isRobbingKan = isRobbingKan),
+        )
+
+        assertTrue(context().isRiichiDeclarationDiscard)
+        assertFalse(context().isDiscardAfterKan)
+        assertFalse(context(isTsumo = true).isRiichiDeclarationDiscard)
+        assertFalse(context(isRobbingKan = true).isRiichiDeclarationDiscard)
+        assertFalse(context(tile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))).isRiichiDeclarationDiscard)
+    }
+
+    /** 放銃者槓牌並補牌後打出的牌被榮和時標記為槓後捨牌；一般摸牌後的捨牌不標記。 */
+    @Test
+    fun `ron on the discard after a kan is marked`() {
+        val calculator = createCalculator()
+        val winner = createPlayer(FakeHandFactory.create(listOf(Tile.Numeric(Tile.Suit.Character, 1))))
+        val discard = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
+        val kan = GameAction.Kan(type = GameAction.KanType.CLOSED_KAN, tileId = discard.id, withTiles = emptyList())
+
+        fun discarder(vararg history: GameAction): MahjongPlayer = history.fold(
+            FakeMahjongPlayerFactory.create(
+                initialSeat = Wind.SOUTH,
+                discardPile = RiichiDiscardPile().discardTile(discard),
+                playerRuleState = RiichiPlayerState(),
+            ),
+        ) { player, action -> player.recordAction(action) }
+
+        fun context(discarder: MahjongPlayer) = calculator.calculate(
+            RiichiHandValueContextCalculator.Input(
+                tableState = FakeTableStateFactory.create(players = listOf(winner, discarder), tileWall = TileWall(List(20) { FakeIdentifiedTileFactory.create(Tile.Honor.Red) }), config = RiichiRuleConfig()),
+                player = winner,
+                incomingTile = discard,
+                isTsumo = false,
+            ),
+        )
+
+        assertTrue(context(discarder(kan, GameAction.Draw, GameAction.Discard(discard.id))).isDiscardAfterKan)
+        assertTrue(context(discarder(kan, GameAction.Draw, RIICHI_GAME_ACTION, GameAction.Discard(discard.id))).isDiscardAfterKan)
+        assertFalse(context(discarder(kan, GameAction.Draw, GameAction.Discard(discard.id), GameAction.Draw, GameAction.Discard(discard.id))).isDiscardAfterKan)
+        assertFalse(context(discarder(GameAction.Draw, GameAction.Discard(discard.id))).isDiscardAfterKan)
     }
 
     /**
