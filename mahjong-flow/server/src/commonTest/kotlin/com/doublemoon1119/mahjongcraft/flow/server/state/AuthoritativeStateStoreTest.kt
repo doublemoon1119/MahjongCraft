@@ -19,9 +19,6 @@ import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfi
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -452,7 +449,7 @@ class AuthoritativeStateStoreTest {
         repository.setTableState(tableState)
         val before = store.getGame(tableState.id)!!
         val received = mutableListOf<CommittedGameFacts>()
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { store.committedFacts.toList(received) }
+        store.setCommittedFactsListener(received::add)
 
         repository.updateGame(
             gameId = before.id,
@@ -476,7 +473,7 @@ class AuthoritativeStateStoreTest {
         val tableState = FakeTableStateFactory.create()
         repository.setTableState(tableState)
         val received = mutableListOf<CommittedGameFacts>()
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { store.committedFacts.toList(received) }
+        store.setCommittedFactsListener(received::add)
 
         assertFailsWith<IllegalStateException> {
             repository.updateGame(
@@ -497,7 +494,7 @@ class AuthoritativeStateStoreTest {
         val tableState = FakeTableStateFactory.create()
         repository.setTableState(tableState)
         val received = mutableListOf<CommittedGameFacts>()
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { store.committedFacts.toList(received) }
+        store.setCommittedFactsListener(received::add)
 
         repository.updateGame(
             gameId = tableState.id,
@@ -506,6 +503,45 @@ class AuthoritativeStateStoreTest {
         runCurrent()
 
         assertTrue(received.isEmpty())
+    }
+
+    /** 每筆提交的交易依提交順序通知一次。 */
+    @Test
+    fun `committed facts reach the listener in commit order`() = runTest {
+        val store = AuthoritativeStateStore()
+        val repository = GameRepositoryImpl(store)
+        val tableState = FakeTableStateFactory.create()
+        repository.setTableState(tableState)
+        val received = mutableListOf<CommittedGameFacts>()
+        store.setCommittedFactsListener(received::add)
+
+        listOf(1, 2, 3).forEach { round ->
+            repository.updateGame(
+                gameId = tableState.id,
+                history = { _, _, _ -> listOf(HistoryEventDraft(null, HistoryFact.ReturnedToRoom)) },
+            ) { current ->
+                current!!.copy(tableState = current.tableState.copy(players = current.tableState.players.map { it.copy(score = round) })) to Unit
+            }
+        }
+
+        assertEquals(listOf(1, 2, 3), received.map { it.game!!.tableState.players.first().score })
+    }
+
+    /** 接收者丟出例外時，交易照常提交。 */
+    @Test
+    fun `a failing listener does not undo the transaction`() = runTest {
+        val store = AuthoritativeStateStore()
+        val repository = GameRepositoryImpl(store)
+        val tableState = FakeTableStateFactory.create()
+        repository.setTableState(tableState)
+        store.setCommittedFactsListener { error("listener failed") }
+
+        repository.updateGame(
+            gameId = tableState.id,
+            history = { _, _, _ -> listOf(HistoryEventDraft(null, HistoryFact.ReturnedToRoom)) },
+        ) { current -> current!!.copy(isMatchOver = true) to Unit }
+
+        assertTrue(store.getGame(tableState.id)!!.isMatchOver)
     }
 
     /** 對局中途出現、沒有開局事實的新場次不從中途建立歷史。 */

@@ -16,10 +16,11 @@ import kotlin.uuid.Uuid
 /**
  * server session 期間把已提交的對局事實轉成原版統計與進度。
  *
- * 訂閱在 [CoroutineDispatchers.main]（伺服器 tick 佇列）上執行，原版統計與進度只能在該執行緒操作。
- * 單筆事實判定或授予失敗時只記錄警告，不影響後續事實；成果發生時不在線的玩家不補發。
+ * 交易提交時在提交的執行緒上立即判定成果，不保留對局狀態；判定出成果時才把授予排到 [CoroutineDispatchers.main]
+ * （伺服器 tick 佇列），原版統計與進度只能在該執行緒操作。單筆事實判定或授予失敗時只記錄警告，不影響後續事實；
+ * 成果發生時不在線的玩家不補發。
  *
- * @property scope 執行訂閱的協程 scope；隨 server session 結束取消。
+ * @property scope 執行授予的協程 scope；隨 server session 結束取消。
  * @property dispatchers 取得伺服器主執行緒 dispatcher。
  * @property store 送出已提交事實的權威狀態。
  * @property gateway 把成果交給原版統計與進度系統。
@@ -41,15 +42,14 @@ class FabricAchievementService(
     /** 使用過 debug 指令、不再產生成果的場次。 */
     private val excludedMatchIds: MutableSet<Uuid> = ConcurrentHashMap.newKeySet()
 
-    /** 開始訂閱已提交事實；協程隨 server session 的作用域一起結束。 */
+    /** 開始接收已提交事實。 */
     fun startSession() {
-        scope.launch(dispatchers.main) {
-            store.committedFacts.collect(::handle)
-        }
+        store.setCommittedFactsListener(::handle)
     }
 
-    /** 清除排除的場次，讓下一個 session 從頭開始。 */
+    /** 停止接收已提交事實並清除排除的場次，讓下一個 session 從頭開始。 */
     fun stopSession() {
+        store.setCommittedFactsListener {}
         excludedMatchIds.clear()
     }
 
@@ -63,7 +63,7 @@ class FabricAchievementService(
     }
 
     /**
-     * 判定並授予一筆已提交事實的成果。
+     * 判定一筆已提交事實的成果，有成果時排到伺服器主執行緒授予；排除的場次不判定。
      *
      * @param facts 本次交易對單一桌子提交的事實。
      */
@@ -73,9 +73,12 @@ class FabricAchievementService(
             logger.warn("Achievement detection failed for match {} at table {}", facts.matchId, facts.venueId, cause)
             return
         }
-        batches.forEach { achievements ->
-            runCatching { gateway.grant(achievements) }.onFailure { cause ->
-                logger.warn("Granting achievements {} to player {} failed", achievements.achievementIds, achievements.playerId, cause)
+        if (batches.isEmpty()) return
+        scope.launch(dispatchers.main) {
+            batches.forEach { achievements ->
+                runCatching { gateway.grant(achievements) }.onFailure { cause ->
+                    logger.warn("Granting achievements {} to player {} failed", achievements.achievementIds, achievements.playerId, cause)
+                }
             }
         }
     }

@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinDetail
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
@@ -21,6 +22,7 @@ import com.doublemoon1119.mahjongcraft.testing.flow.common.concurrency.TestCorou
 import com.doublemoon1119.mahjongcraft.testing.flow.common.concurrency.createTestAppCoroutineScope
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -86,6 +88,42 @@ class FabricAchievementServiceTest {
         assertEquals(listOf(dealer.id), gateway.granted.map { it.playerId })
     }
 
+    /** 開始 session 後，交易提交即判定並授予成果；結束 session 後不再接收。 */
+    @Test
+    fun `committed transactions are handled during the session only`() = runTest {
+        val gateway = RecordingGateway()
+        val store = AuthoritativeStateStore()
+        val service = service(gateway, store = store)
+        val repository = GameRepositoryImpl(store)
+        repository.setTableState(game.tableState)
+
+        service.startSession()
+        settleTsumo(repository)
+        service.stopSession()
+        settleTsumo(repository)
+
+        assertEquals(1, gateway.granted.size)
+    }
+
+    /** 排除的場次在判定前就略過，不呼叫任何判定。 */
+    @Test
+    fun `excluded matches are not detected`() {
+        var resolverCalls = 0
+        val registry = GameAchievementResolverRegistryImpl().apply {
+            register(object : GameAchievementResolver {
+                override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI
+
+                override fun resolve(facts: CommittedGameFacts): Map<Uuid, Set<String>> = emptyMap<Uuid, Set<String>>().also { resolverCalls++ }
+            })
+        }
+        val service = service(RecordingGateway(), registry)
+        service.excludeMatch(game.matchId)
+
+        service.handle(tsumo(winner.id))
+
+        assertEquals(0, resolverCalls)
+    }
+
     /** 判定失敗的事實不授予成果，之後的事實照常處理。 */
     @Test
     fun `a failed detection does not stop later facts`() {
@@ -107,15 +145,25 @@ class FabricAchievementServiceTest {
         assertEquals(1, gateway.granted.size)
     }
 
+    private suspend fun settleTsumo(repository: GameRepositoryImpl) {
+        repository.updateGame(
+            gameId = game.id,
+            history = { _, _, _ -> listOf(HistoryEventDraft(null, tsumo(winner.id).facts.single().fact)) },
+        ) { current ->
+            current!!.copy(tableState = current.tableState.copy(players = current.tableState.players.map { it.copy(score = it.score + 1) })) to Unit
+        }
+    }
+
     private fun service(
         gateway: AchievementGrantGateway,
         registry: GameAchievementResolverRegistryImpl = GameAchievementResolverRegistryImpl(),
+        store: AuthoritativeStateStore = AuthoritativeStateStore(),
     ): FabricAchievementService {
         val dispatchers = TestCoroutineDispatchers()
         return FabricAchievementService(
             scope = createTestAppCoroutineScope(dispatchers),
             dispatchers = dispatchers,
-            store = AuthoritativeStateStore(),
+            store = store,
             moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() },
             resolverRegistry = registry,
             gateway = gateway,

@@ -15,11 +15,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableResu
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTransferResult
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -53,8 +50,8 @@ data class AuthoritativeStateSnapshot(
  *
  * @property state 交易完成後的完整狀態。
  * @property result 回傳給呼叫端的結果。
- * @property historyDraftsByVenueId 與本次狀態變更一起提交的權威事實；提交後一律經 [AuthoritativeStateStore.committedFacts]
- *   送出，是否寫入歷史由記錄政策決定。
+ * @property historyDraftsByVenueId 與本次狀態變更一起提交的權威事實；提交後一律交給
+ *   [AuthoritativeStateStore.setCommittedFactsListener] 登記的接收者，是否寫入歷史由記錄政策決定。
  * @property historyRecordingFailures 歷史事件記錄失敗的場地 ID；提交狀態時為對應場次記錄序號缺口。
  */
 data class AuthoritativeStateUpdate<T>(
@@ -107,15 +104,8 @@ class AuthoritativeStateStore(
      */
     val state: StateFlow<AuthoritativeStateSnapshot> = mutableState.asStateFlow()
 
-    /** 已提交事實的送出管道；緩衝不設上限，訂閱者處理較慢時不會遺失事實，也不會阻塞交易。 */
-    private val mutableCommittedFacts = MutableSharedFlow<CommittedGameFacts>(extraBufferCapacity = Int.MAX_VALUE)
-
-    /**
-     * 每次交易提交後，依場地送出本次的已提交事實。
-     *
-     * 與歷史記錄政策及儲存端可用性無關；被拒絕或失敗的交易不會送出。只送給送出當下已訂閱的收集者。
-     */
-    val committedFacts: SharedFlow<CommittedGameFacts> = mutableCommittedFacts.asSharedFlow()
+    /** 已提交事實的接收者；見 [setCommittedFactsListener]。 */
+    @Volatile private var committedFactsListener: (CommittedGameFacts) -> Unit = {}
 
     /** 目前狀態的內部存取捷徑。 */
     private var currentState: AuthoritativeStateSnapshot
@@ -152,6 +142,19 @@ class AuthoritativeStateStore(
      */
     suspend fun setDirtyListener(listener: (AuthoritativeStateSnapshot) -> Unit) = mutex.withLock {
         dirtyListener = listener
+    }
+
+    /**
+     * 登記已提交事實的接收者，取代先前登記的接收者。
+     *
+     * 每次交易提交後，依場地在 store mutex 內同步呼叫一次，順序與提交順序相同；呼叫發生在提交交易的執行緒上。
+     * 與歷史記錄政策及儲存端可用性無關；被拒絕、失敗或沒有改變對局的交易不會呼叫。接收者不得阻塞或再次呼叫
+     * store；接收者丟出的例外會被忽略，交易照常成立。store 不保留任何尚未處理的事實。
+     *
+     * @param listener 接收者；傳入不做事的接收者即可停止接收。
+     */
+    fun setCommittedFactsListener(listener: (CommittedGameFacts) -> Unit) {
+        committedFactsListener = listener
     }
 
     /**
@@ -568,7 +571,8 @@ class AuthoritativeStateStore(
             val previousGame = previousGames[venueId]
             val game = nextState.games[venueId]
             if (drafts.isNotEmpty() && (previousGame != null || game != null)) {
-                mutableCommittedFacts.tryEmit(CommittedGameFacts(venueId, previousGame, game, drafts))
+                val facts = CommittedGameFacts(venueId, previousGame, game, drafts)
+                runCatching { committedFactsListener(facts) }
             }
         }
         update.result
