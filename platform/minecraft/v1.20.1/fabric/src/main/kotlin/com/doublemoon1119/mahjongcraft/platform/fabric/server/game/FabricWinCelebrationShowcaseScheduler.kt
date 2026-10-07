@@ -12,7 +12,9 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntit
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.PersistentTableOverlayCoordinator
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongMeldTileGroup
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPlacement
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.winningHandFaceDownIndices
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.math.BlockPos
 import org.koin.core.annotation.Single
@@ -35,9 +37,30 @@ class FabricWinCelebrationShowcaseScheduler(
      *
      * @property seatIndex 贏家座位。
      * @property cueIds 規則給的展示理由；由 [WinCelebrationShowcaseRegistry.select] 挑出要播放的定義。
-     * @property tileIdsAndAssets 展示用的牌與牌面素材。
+     * @property cards 展示用的牌，依編隊順序排列：手牌在前，之後依序為各組副露；不含和牌張。
+     * @property standYaw 起飛前站起來後的朝向，即贏家座位的正面朝向。
      */
-    data class Wing(val seatIndex: Int, val cueIds: List<String>, val tileIdsAndAssets: List<Pair<Uuid, String>>)
+    data class Wing(
+        val seatIndex: Int,
+        val cueIds: List<String>,
+        val cards: List<Card>,
+        val standYaw: Float,
+    )
+
+    /**
+     * 翼中的一張牌。
+     *
+     * @property tileId 桌上的真實牌。
+     * @property assetKey 牌面素材。
+     * @property group 所屬的組：`0` 為手牌，之後依序為各組副露。
+     * @property faceDown 是否露出牌背，例如暗槓兩端。
+     */
+    data class Card(
+        val tileId: Uuid,
+        val assetKey: String,
+        val group: Int = 0,
+        val faceDown: Boolean = false,
+    )
 
     /**
      * [cueIds] 是否選得出已登記的展示定義；選不出時這位贏家不播放展示，並對同一組理由記錄一次警告。
@@ -95,16 +118,19 @@ class FabricWinCelebrationShowcaseScheduler(
             ShowcaseWingSnapshot(
                 seatIndex = wing.seatIndex,
                 cueKey = definitions[wingIndex].cueKey,
-                cards = wing.tileIdsAndAssets.mapIndexedNotNull { order, (tileId, asset) ->
-                    val tile = world.getEntity(tileId.toJavaUuid()) as? MahjongTileEntity ?: return@mapIndexedNotNull null
+                cards = wing.cards.mapIndexedNotNull { order, card ->
+                    val tile = world.getEntity(card.tileId.toJavaUuid()) as? MahjongTileEntity ?: return@mapIndexedNotNull null
                     ShowcaseCardSnapshot(
                         wingIndex = wingIndex,
                         order = order,
-                        assetKey = asset,
+                        assetKey = card.assetKey,
                         startOffsetX = tile.x - stagePlacement.x,
                         startOffsetY = tile.y - stagePlacement.y,
                         startOffsetZ = tile.z - stagePlacement.z,
                         startYaw = tile.yaw,
+                        group = card.group,
+                        standYaw = wing.standYaw,
+                        faceDown = card.faceDown,
                     )
                 },
             )
@@ -120,7 +146,7 @@ class FabricWinCelebrationShowcaseScheduler(
         }
         if (!spawnGateway.spawn(world, stage, "win-celebration-showcase", tableId)) return null
 
-        wings.flatMap { it.tileIdsAndAssets }.map { it.first }.plus(winningTileId).distinct().forEach { tileId ->
+        wings.flatMap { it.cards }.map { it.tileId }.plus(winningTileId).distinct().forEach { tileId ->
             (world.getEntity(tileId.toJavaUuid()) as? MahjongTileEntity)?.enqueueAll(
                 listOf(AnimationStep.WaitUntil(startGameTime), AnimationStep.SetInvisible(true)),
             )
@@ -128,4 +154,34 @@ class FabricWinCelebrationShowcaseScheduler(
         overlays.hideUntil(world, tableId, controllerPos, endGameTime)
         return endGameTime
     }
+}
+
+/**
+ * 依結算面板的手牌排法排出一翼的牌：手牌在前，之後依鳴牌順序接上各組副露，暗槓兩端露出牌背。
+ *
+ * @param standingTileIds 已排好序的手牌，不含和牌張。
+ * @param melds 依鳴牌順序的副露，每組的牌已依面板順序排列。
+ * @param assetKeyOf 取得牌面素材；取不到的牌不列入。
+ * @return 依編隊順序排列的牌。
+ */
+internal fun showcaseWingCards(
+    standingTileIds: List<Uuid>,
+    melds: List<MahjongMeldTileGroup>,
+    assetKeyOf: (Uuid) -> String?,
+): List<FabricWinCelebrationShowcaseScheduler.Card> {
+    val hand = standingTileIds.mapNotNull { id -> assetKeyOf(id)?.let { FabricWinCelebrationShowcaseScheduler.Card(tileId = id, assetKey = it) } }
+    val meldCards = melds.flatMapIndexed { meldIndex, meld ->
+        val faceDown = winningHandFaceDownIndices(meld.type, meld.tileIds.size)
+        meld.tileIds.mapIndexedNotNull { index, id ->
+            assetKeyOf(id)?.let { asset ->
+                FabricWinCelebrationShowcaseScheduler.Card(
+                    tileId = id,
+                    assetKey = asset,
+                    group = meldIndex + 1,
+                    faceDown = index in faceDown,
+                )
+            }
+        }
+    }
+    return hand + meldCards
 }

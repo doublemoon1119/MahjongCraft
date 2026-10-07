@@ -26,6 +26,7 @@ sealed interface ShowcaseCardSlot {
  * @property winningTileGap 和牌張與手牌之間的間隙。
  * @property minimumWingWidth 一翼的最小寬度，讓役名標題放得下。
  * @property wingGap 相鄰兩翼之間的間隙。
+ * @property groupGap 同一翼中相鄰兩組（手牌與各組副露）之間額外的間隙。
  */
 data class ShowcaseFormationMetrics(
     val cardSpacing: Double,
@@ -34,6 +35,7 @@ data class ShowcaseFormationMetrics(
     val winningTileGap: Double,
     val minimumWingWidth: Double,
     val wingGap: Double,
+    val groupGap: Double = 0.0,
 )
 
 /**
@@ -57,25 +59,32 @@ data class ShowcaseHorizontalBounds(
  * - 兩翼：兩翼左右分開，和牌張在正中央的間隙中。
  * - 三翼：和牌張在中央那一翼手牌的 x 較小一側。
  *
- * 承載和牌張的那一翼會把和牌張算進自身寬度，因此相鄰翼不會與和牌張重疊。沒有卡片的翼仍保留一張卡片的
- * 寬度。只處理數字，不碰 entity 或繪製。
+ * 同一翼中卡片依組別分段，組與組之間多留 [ShowcaseFormationMetrics.groupGap]。承載和牌張的那一翼會把和牌張
+ * 算進自身寬度，因此相鄰翼不會與和牌張重疊。沒有卡片的翼仍保留一張卡片的寬度。只處理數字，不碰 entity 或繪製。
  *
  * @param wingCardOrders 各翼卡片的 [ShowcaseCardSlot.Hand.order]，外層順序即翼的索引。
  * @param includesWinningTile 歸位順序是否包含和牌張；和牌張的位置 [winningTileX] 不受影響。
  * @param metrics 尺寸參數。
+ * @param wingCardGroups 與 [wingCardOrders] 一一對應的組別；組別依 order 遞增且不遞減，省略時全部同一組。
  */
 class ShowcaseFormationLayout(
     private val wingCardOrders: List<List<Int>>,
     includesWinningTile: Boolean,
     private val metrics: ShowcaseFormationMetrics,
+    wingCardGroups: List<List<Int>> = wingCardOrders.map { orders -> orders.map { 0 } },
 ) {
+    /** 各翼中 order 對應的組別。 */
+    private val groupByOrder: List<Map<Int, Int>> = wingCardOrders.mapIndexed { wingIndex, orders ->
+        orders.zip(wingCardGroups.getOrElse(wingIndex) { emptyList() }).toMap()
+    }
+
     /** 各翼中心的 x。 */
     val wingCenters: List<Double> = computeWingCenters()
 
     /** 和牌張的 x。 */
     val winningTileX: Double = when (wingCardOrders.size) {
-        1 -> wingCenters[0] + winningTileRelativeX(cardCount(0))
-        3 -> wingCenters[1] + winningTileRelativeX(cardCount(1))
+        1 -> wingCenters[0] + winningTileRelativeX(0)
+        3 -> wingCenters[1] + winningTileRelativeX(1)
         else -> 0.0
     }
 
@@ -93,18 +102,16 @@ class ShowcaseFormationLayout(
 
     /** 牌位在編隊中的 x。 */
     fun targetX(slot: ShowcaseCardSlot): Double = when (slot) {
-        is ShowcaseCardSlot.Hand ->
-            wingCenters[slot.wingIndex] + ((wingCardOrders[slot.wingIndex].size - 1) / 2.0 - slot.order) * metrics.cardSpacing
+        is ShowcaseCardSlot.Hand -> wingCenters[slot.wingIndex] + centerSpan(slot.wingIndex) / 2.0 - offsetInWing(slot.wingIndex, slot.order)
         ShowcaseCardSlot.WinningTile -> winningTileX
     }
 
     /** 指定翼相對於自身中心的水平範圍，含它承載的和牌張。 */
     fun wingBounds(wingIndex: Int): ShowcaseHorizontalBounds {
-        val cardCount = cardCount(wingIndex)
-        val handSpan = (cardCount - 1) * metrics.cardSpacing + metrics.cardWidth
+        val handSpan = centerSpan(wingIndex) + metrics.cardWidth
         val halfWidth = maxOf(handSpan, metrics.minimumWingWidth) / 2.0
         val minX = if (hostsWinningTile(wingIndex)) {
-            minOf(-halfWidth, winningTileRelativeX(cardCount) - metrics.winningTileWidth / 2.0)
+            minOf(-halfWidth, winningTileRelativeX(wingIndex) - metrics.winningTileWidth / 2.0)
         } else {
             -halfWidth
         }
@@ -130,12 +137,24 @@ class ShowcaseFormationLayout(
     }
 
     /** 和牌張相對於承載翼中心的 x：緊鄰 x 最小的卡片，中間隔 [ShowcaseFormationMetrics.winningTileGap]。 */
-    private fun winningTileRelativeX(handCardCount: Int): Double = -(handCardCount - 1) / 2.0 * metrics.cardSpacing -
+    private fun winningTileRelativeX(wingIndex: Int): Double = -centerSpan(wingIndex) / 2.0 -
         metrics.cardWidth / 2.0 - metrics.winningTileGap - metrics.winningTileWidth / 2.0
+
+    /** 卡片沿排列方向的位移：order 乘上卡片間距，再加上前面各組的組間空隙。 */
+    private fun offsetInWing(wingIndex: Int, order: Int): Double = order * metrics.cardSpacing + ((groupByOrder[wingIndex][order] ?: 0) - firstGroup(wingIndex)) * metrics.groupGap
+
+    /** 一翼第一張到最後一張卡片中心的距離；沒有卡片的翼為 0。 */
+    private fun centerSpan(wingIndex: Int): Double {
+        val orders = wingCardOrders[wingIndex]
+        if (orders.isEmpty()) return 0.0
+        val groups = groupByOrder[wingIndex].values
+        val groupSpan = (groups.maxOrNull() ?: 0) - (groups.minOrNull() ?: 0)
+        return (orders.size - 1) * metrics.cardSpacing + groupSpan * metrics.groupGap
+    }
+
+    /** 一翼中最小的組別。 */
+    private fun firstGroup(wingIndex: Int): Int = groupByOrder[wingIndex].values.minOrNull() ?: 0
 
     /** 一翼是否承載和牌張；只由翼數決定。 */
     private fun hostsWinningTile(wingIndex: Int): Boolean = (wingCardOrders.size == 1 && wingIndex == 0) || (wingCardOrders.size == 3 && wingIndex == 1)
-
-    /** 排版用的卡片數；沒有卡片的翼以一張計算。 */
-    private fun cardCount(wingIndex: Int): Int = wingCardOrders[wingIndex].size.coerceAtLeast(1)
 }

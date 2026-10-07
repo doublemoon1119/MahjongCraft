@@ -12,7 +12,13 @@ import net.minecraft.registry.Registries
 import net.minecraft.world.World
 import kotlin.uuid.Uuid
 
-/** 單張 showcase 視覺牌的同步快照。 */
+/**
+ * 單張 showcase 視覺牌的同步快照。
+ *
+ * @property group 牌所屬的組：`0` 為手牌，之後依序為各組副露；編隊時組與組之間留空隙。
+ * @property standYaw 起飛前站起來後的朝向；橫放的鳴牌在站起來時轉到這個朝向。
+ * @property faceDown 是否一路露出牌背，例如暗槓兩端。
+ */
 data class ShowcaseCardSnapshot(
     val wingIndex: Int,
     val order: Int,
@@ -21,6 +27,9 @@ data class ShowcaseCardSnapshot(
     val startOffsetY: Double,
     val startOffsetZ: Double,
     val startYaw: Float,
+    val group: Int = 0,
+    val standYaw: Float = startYaw,
+    val faceDown: Boolean = false,
 )
 
 /** 共享權威胡牌張的牌面與起飛前世界相對位置快照。 */
@@ -261,7 +270,17 @@ class WinCelebrationShowcaseEntity(
                 wing.seatIndex.toString(),
                 wing.cueKey,
                 wing.cards.joinToString("\u001d") {
-                    listOf(it.order, it.assetKey, it.startOffsetX, it.startOffsetY, it.startOffsetZ, it.startYaw).joinToString("\u001c")
+                    listOf(
+                        it.order,
+                        it.assetKey,
+                        it.startOffsetX,
+                        it.startOffsetY,
+                        it.startOffsetZ,
+                        it.startYaw,
+                        it.group,
+                        it.standYaw,
+                        it.faceDown,
+                    ).joinToString("\u001c")
                 },
             ).joinToString("\u001f")
         }
@@ -274,8 +293,9 @@ class WinCelebrationShowcaseEntity(
                 val seat = parts.getOrNull(0)?.toIntOrNull() ?: return@mapIndexedNotNull null
                 val cue = parts.getOrNull(1).orEmpty()
                 val cards = parts.getOrNull(2).orEmpty().takeIf(String::isNotBlank)?.split("\u001d")?.mapNotNull { card ->
-                    val cardParts = card.split("\u001c", limit = 6)
+                    val cardParts = card.split("\u001c", limit = 9)
                     val order = cardParts.getOrNull(0)?.toIntOrNull() ?: return@mapNotNull null
+                    val startYaw = cardParts.getOrNull(5)?.toFloatOrNull() ?: 0.0f
                     ShowcaseCardSnapshot(
                         wingIndex = wingIndex,
                         order = order,
@@ -283,7 +303,10 @@ class WinCelebrationShowcaseEntity(
                         startOffsetX = cardParts.getOrNull(2)?.toDoubleOrNull() ?: 0.0,
                         startOffsetY = cardParts.getOrNull(3)?.toDoubleOrNull() ?: 0.0,
                         startOffsetZ = cardParts.getOrNull(4)?.toDoubleOrNull() ?: 0.0,
-                        startYaw = cardParts.getOrNull(5)?.toFloatOrNull() ?: 0.0f,
+                        startYaw = startYaw,
+                        group = cardParts.getOrNull(6)?.toIntOrNull() ?: 0,
+                        standYaw = cardParts.getOrNull(7)?.toFloatOrNull() ?: startYaw,
+                        faceDown = cardParts.getOrNull(8)?.toBooleanStrictOrNull() ?: false,
                     )
                 }.orEmpty()
                 ShowcaseWingSnapshot(seat, cue, cards)

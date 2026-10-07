@@ -329,7 +329,7 @@ class FabricApplicationModuleTest {
         )
         val presentationCommand = koin.get<FabricDebugPresentationCommand>()
         assertEquals(
-            setOf("tsumo", "ron", "multi_ron", "phase"),
+            setOf("melds", "tsumo", "ron", "multi_ron", "phase"),
             presentationCommand.buildShowcaseCommand().build().children.map { it.name }.toSet(),
         )
         assertEquals(

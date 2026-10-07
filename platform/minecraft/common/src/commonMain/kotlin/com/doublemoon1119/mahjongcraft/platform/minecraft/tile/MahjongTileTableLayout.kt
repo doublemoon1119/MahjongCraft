@@ -747,6 +747,14 @@ object MahjongTileTableLayout {
         MahjongTableFacing.WEST -> TileTableVector(vector.z, vector.y, -vector.x)
     }
 
+    /**
+     * 座位正面朝向：該座位的手牌與直立副露牌使用的 yaw。
+     *
+     * @param tableFacing 桌子朝向。
+     * @param seatIndex 座位 index。
+     */
+    fun seatYaw(tableFacing: MahjongTableFacing, seatIndex: Int): Float = (yawForSide(seatIndexToTableSide(seatIndex)) + yawForFacing(tableFacing)).mod(FULL_YAW_DEGREES)
+
     /** 局部側面對應的基準 yaw，旋轉方向與 [rotateForSide] 的向量旋轉一致。 */
     private fun yawForSide(side: MahjongTableSide): Float = when (side) {
         MahjongTableSide.SOUTH -> 0.0f

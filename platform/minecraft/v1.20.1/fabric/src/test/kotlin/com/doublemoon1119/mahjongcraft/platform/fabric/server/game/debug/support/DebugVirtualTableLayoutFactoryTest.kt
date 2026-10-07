@@ -1,12 +1,15 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support
 
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
+import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugVirtualTableLayoutFactory.Companion.VIRTUAL_CONTROLLER_FORWARD_BLOCKS
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongMeldTileGroup
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
+import kotlin.uuid.Uuid
 
 /** 驗證 debug 虛擬桌的 controller 推算與座位 0 預設格位。 */
 class DebugVirtualTableLayoutFactoryTest {
@@ -68,6 +71,26 @@ class DebugVirtualTableLayoutFactoryTest {
         assertEquals(claimed.yaw, added.yaw, "the added tile keeps the claimed tile's sideways yaw")
         assertEquals(claimed.x, added.x, TOLERANCE, "the added tile stays aligned along the meld row")
         assertNotEquals(claimed.z, added.z, "the added tile sits deeper than the claimed tile")
+    }
+
+    /** 多組副露中的加槓：前三張照碰排，補上的第四張疊在橫置鳴取牌靠桌子中心的一側。 */
+    @Test
+    fun `places the added kan tile within a list of melds`() {
+        val layout = factory.create(0, 64, 0, MahjongTableFacing.NORTH)
+        val ponIds = List(3) { Uuid.random() }
+        val addedId = Uuid.random()
+        val pon = MahjongMeldTileGroup(MeldType.PON, ponIds, ponIds.first(), RelativeDirection.Across, allTilesFaceDown = false)
+        val addedKan = pon.copy(type = MeldType.ADDED_KAN, tileIds = ponIds + addedId)
+
+        val ponPlacements = layout.meldPlacements(listOf(pon))
+        val addedKanPlacements = layout.meldPlacements(listOf(addedKan))
+
+        assertEquals(ponPlacements, addedKanPlacements - addedId)
+        val claimed = ponPlacements.getValue(ponIds.first())
+        val added = addedKanPlacements.getValue(addedId)
+        assertEquals(claimed.yaw, added.yaw)
+        assertEquals(claimed.x, added.x, TOLERANCE)
+        assertNotEquals(claimed.z, added.z)
     }
 
     /** 手牌格位沿牌列前進，相鄰格位不會重疊。 */

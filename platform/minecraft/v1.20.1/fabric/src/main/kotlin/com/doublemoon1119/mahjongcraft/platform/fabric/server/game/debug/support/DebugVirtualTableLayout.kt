@@ -150,24 +150,32 @@ data class DebugVirtualTableLayout(
         val sidewaysAlongOffset: Double,
     )
 
-    /** 依正式副露游標規則取得多組副露中每張牌的格位。 */
+    /**
+     * 依正式副露游標規則取得多組副露中每張牌的格位。
+     *
+     * 加槓的最後一張是補上的牌，疊在橫置鳴取牌靠桌子中心的一側，不佔用排列方向的格位。
+     */
     fun meldPlacements(melds: List<MahjongMeldTileGroup>): Map<Uuid, MahjongTileWallPlacement> {
         val placements = mutableMapOf<Uuid, MahjongTileWallPlacement>()
         var cursorAlong = 0.0
         melds.forEachIndexed { meldIndex, meld ->
             if (meldIndex > 0) cursorAlong += MahjongTileTableLayout.MELD_GROUP_GAP
+            val isAddedKan = meld.type == MeldType.ADDED_KAN
+            val baseTileIds = if (isAddedKan) meld.tileIds.dropLast(1) else meld.tileIds
             val sidewaysSlot = meld.calledTileId?.let {
-                MahjongTileTableLayout.sidewaysSlotIndex(meld.sourceDirection, meld.tileIds.size)
+                MahjongTileTableLayout.sidewaysSlotIndex(meld.sourceDirection, baseTileIds.size)
             }
-            val remainingTileIds = ArrayDeque(meld.tileIds.filterNot { it == meld.calledTileId })
-            val tileAtSlot = meld.tileIds.indices.map { slot ->
+            val remainingTileIds = ArrayDeque(baseTileIds.filterNot { it == meld.calledTileId })
+            val tileAtSlot = baseTileIds.indices.map { slot ->
                 if (slot == sidewaysSlot) meld.calledTileId!! else remainingTileIds.removeFirst()
             }
+            var sidewaysAlongOffset = 0.0
             for (slot in tileAtSlot.indices.reversed()) {
                 val isSideways = slot == sidewaysSlot
                 val halfWidth =
                     if (isSideways) MahjongTileDimensions.TILE_HEIGHT / 2.0 else MahjongTileDimensions.TILE_WIDTH / 2.0
                 cursorAlong += halfWidth
+                if (isSideways) sidewaysAlongOffset = cursorAlong
                 placements[tileAtSlot[slot]] = MahjongTileTableLayout.meldPlacement(
                     controllerX = controllerX,
                     controllerY = controllerY,
@@ -178,6 +186,18 @@ data class DebugVirtualTableLayout(
                     isSidewaysTile = isSideways,
                 )
                 cursorAlong += halfWidth + MahjongTileDimensions.TILE_SMALL_PADDING
+            }
+            if (isAddedKan) {
+                placements[meld.tileIds.last()] = MahjongTileTableLayout.meldPlacement(
+                    controllerX = controllerX,
+                    controllerY = controllerY,
+                    controllerZ = controllerZ,
+                    tableFacing = tableFacing,
+                    seatIndex = DEBUG_SEAT_INDEX,
+                    alongOffsetFromCorner = sidewaysAlongOffset,
+                    isSidewaysTile = true,
+                    depthOffsetFromEdge = MahjongTileTableLayout.ADDED_KAN_DEPTH_OFFSET,
+                )
             }
         }
         return placements

@@ -143,6 +143,23 @@ class ShowcaseFormationLayoutTest {
     }
 
     /** 以測試用尺寸建立含和牌張的編隊。 */
+    /** 手牌與各組副露之間多留組間空隙；和牌張仍緊鄰最後一張，整個編隊（含和牌張）左右對稱。 */
+    @Test
+    fun `leaves a gap between card groups`() {
+        val layout = ShowcaseFormationLayout(
+            wingCardOrders = listOf(listOf(0, 1, 2, 3, 4)),
+            includesWinningTile = true,
+            metrics = METRICS.copy(groupGap = 0.5),
+            wingCardGroups = listOf(listOf(0, 0, 1, 1, 2)),
+        )
+        val xs = (0..4).map { layout.targetX(Hand(0, it)) }
+
+        assertEquals(listOf(1.0, 1.5, 1.0, 1.5), xs.zipWithNext { a, b -> a - b })
+        assertEquals(xs.last() - 1.5, layout.targetX(WinningTile))
+        val bounds = layout.wingBounds(0)
+        assertEquals(-(layout.wingCenters[0] + bounds.minX), layout.wingCenters[0] + bounds.maxX, 1e-9)
+    }
+
     private fun layout(vararg wings: List<Int>) = ShowcaseFormationLayout(
         wingCardOrders = wings.toList(),
         includesWinningTile = true,

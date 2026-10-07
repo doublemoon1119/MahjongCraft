@@ -671,6 +671,19 @@ class MahjongTileTableLayoutTest {
         return overlapX > ABSOLUTE_TOLERANCE && overlapZ > ABSOLUTE_TOLERANCE
     }
 
+    /** 座位正面朝向與該座位手牌、直立副露牌的 yaw 相同。 */
+    @Test
+    fun `seat yaw matches hand and upright meld tiles`() {
+        MahjongTableFacing.entries.forEach { facing ->
+            (0..3).forEach { seat ->
+                val hand = MahjongTileTableLayout.handPlacement(0, 64, 0, facing, seat, handSize = 13, tileIndex = 0)
+                val meld = MahjongTileTableLayout.meldPlacement(0, 64, 0, facing, seat, alongOffsetFromCorner = 0.1, isSidewaysTile = false)
+                assertEquals(hand.yaw, MahjongTileTableLayout.seatYaw(facing, seat), "$facing seat $seat")
+                assertEquals(meld.yaw, MahjongTileTableLayout.seatYaw(facing, seat), "$facing seat $seat")
+            }
+        }
+    }
+
     /** 固定 controller 中心、每面墩數與浮點容許誤差。 */
     private companion object {
         const val STACKS_PER_SIDE: Int = 17

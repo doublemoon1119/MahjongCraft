@@ -89,6 +89,7 @@ class WinCelebrationShowcaseEntityRenderer(
             wingCardOrders = entity.wings.map { wing -> wing.cards.map { it.order } },
             includesWinningTile = entity.winningTileSnapshot != null,
             metrics = FORMATION_METRICS,
+            wingCardGroups = entity.wings.map { wing -> wing.cards.map { it.group } },
         )
         val cardLayouts = buildCardLayouts(formation)
         renderTntCinematic(entity, formation, elapsed, billboardRotation, matrices, vertexConsumers, light)
@@ -416,15 +417,15 @@ class WinCelebrationShowcaseEntityRenderer(
             elapsed < STAND_START_TICK -> faceUpRotation(card.startYaw)
             elapsed < STAND_END_TICK -> {
                 val progress = smoothStep((elapsed - STAND_START_TICK) / (STAND_END_TICK - STAND_START_TICK)).toFloat()
-                faceUpRotation(card.startYaw).slerp(standingRotation(card.startYaw), progress)
+                faceUpRotation(card.startYaw).slerp(standingRotation(card.standYaw), progress)
             }
-            elapsed < FLIGHT_START_TICK -> standingRotation(card.startYaw)
+            elapsed < FLIGHT_START_TICK -> standingRotation(card.standYaw)
             else -> {
                 val flightElapsed = elapsed.coerceIn(FLIGHT_START_TICK, FLIGHT_END_TICK - 0.01)
                 val pose = flightPose(entity, card, wingIndex, startX, startY, startZ, localTargetX, returnStart, flightElapsed, billboardRotation, winningTile)
                 val pathRotation = flightRotation(pose.velocity)
                 val turnProgress = smoothStep(((elapsed - DEPARTURE_TURN_START_TICK) / DEPARTURE_TURN_DURATION_TICKS).coerceIn(0.0, 1.0))
-                standingRotation(card.startYaw).slerp(
+                standingRotation(card.standYaw).slerp(
                     pathRotation,
                     turnProgress.toFloat(),
                 )
@@ -458,8 +459,16 @@ class WinCelebrationShowcaseEntityRenderer(
             matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees((sin(phase) * SHAKE_PITCH_DEGREES * envelope).toFloat()))
             matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees((sin(phase * SHAKE_SECONDARY_FREQUENCY_RATIO + PI / 3.0) * SHAKE_SECONDARY_TILT_DEGREES * envelope).toFloat()))
         }
-        itemRenderer.renderItem(tileStack(card.assetKey), ModelTransformationMode.HEAD, light, OverlayTexture.DEFAULT_UV, matrices, vertexConsumers, entity.world, card.order)
-        tileFaceRenderer.renderModelLabels(card.assetKey, matrices, vertexConsumers, light)
+        if (card.faceDown) {
+            // 繞牌自身的縱軸翻面：平躺時牌背朝上，站起來後牌背朝向觀眾。
+            matrices.push()
+            matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180.0f))
+            itemRenderer.renderItem(tileStack(card.assetKey), ModelTransformationMode.HEAD, light, OverlayTexture.DEFAULT_UV, matrices, vertexConsumers, entity.world, card.order)
+            matrices.pop()
+        } else {
+            itemRenderer.renderItem(tileStack(card.assetKey), ModelTransformationMode.HEAD, light, OverlayTexture.DEFAULT_UV, matrices, vertexConsumers, entity.world, card.order)
+            tileFaceRenderer.renderModelLabels(card.assetKey, matrices, vertexConsumers, light)
+        }
         if (elapsed in ELYTRA_APPEAR_TICK..<ELYTRA_FADE_END_TICK) {
             renderElytra(elapsed, matrices, vertexConsumers, light)
         }
@@ -629,7 +638,7 @@ class WinCelebrationShowcaseEntityRenderer(
         val seedB = seededUnit(entity.animationSeed, wingIndex * 263 + card.order * 89)
         val start = Vector3f(startX.toFloat(), (startY + LIFT_HEIGHT).toFloat(), startZ.toFloat())
         val orbit = orbitPosition(entity, wingIndex, card.order, elapsed, billboardRotation, winningTile)
-        val departure = initialDepartureDirection(startX, startZ, card.startYaw)
+        val departure = initialDepartureDirection(startX, startZ, card.standYaw)
         if (elapsed < BOOST_END_TICK) {
             val progress = ((elapsed - FLIGHT_START_TICK) / (BOOST_END_TICK - FLIGHT_START_TICK)).coerceIn(0.0, 1.0)
             val fastStart = progress * (2.0 - BOOST_DECELERATION * progress) / (2.0 - BOOST_DECELERATION)
@@ -1159,6 +1168,9 @@ class WinCelebrationShowcaseEntityRenderer(
         const val BILLBOARD_TRANSITION_START = 0.72
         const val ORBIT_SPEED = 0.065
         const val DISPLAY_CARD_SPACING = 0.19
+
+        /** 手牌與各組副露之間額外空隙相對於卡片寬度的比例。 */
+        const val CARD_GROUP_GAP_RATIO = 0.35
         const val DISPLAY_CARD_SCALE = 1.5
         const val WINNING_TILE_SCALE = DISPLAY_CARD_SCALE
         const val WINNING_TILE_GAP = 0.13
@@ -1197,6 +1209,7 @@ class WinCelebrationShowcaseEntityRenderer(
             winningTileGap = WINNING_TILE_GAP,
             minimumWingWidth = TITLE_IMAGE_SCALE * TITLE_QUAD_WIDTH,
             wingGap = MULTI_WINNER_GROUP_GAP,
+            groupGap = DISPLAY_CARD_RENDER_WIDTH * CARD_GROUP_GAP_RATIO,
         )
         const val WINNING_RIPPLE_BOTTOM_GAP = 0.008
         const val TRAIL_SEGMENTS = 7

@@ -36,6 +36,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCele
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinSettlementPresentationScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationState
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinShowcaseOverride
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.showcaseWingCards
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.ServerPlayerIdentityStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.PersistentTableOverlayCoordinator
@@ -958,8 +959,8 @@ class FabricGamePresentationPublisher(
      *
      * @property endGameTime 整段慶祝演出的結束時間。
      * @property showcaseEndGameTime 役滿 showcase 的結束時間；沒播 showcase 時為 null。
-     * @property showcaseHiddenTileIds 實際交接給 showcase 舞台、因而被設成隱形的真實牌——收尾時要恢復
-     * 可見的就是**這一組**，不能拿手牌全集去猜（副露從頭到尾沒有被 showcase 碰過）。沒播 showcase
+     * @property showcaseHiddenTileIds 實際交接給 showcase 舞台、因而被設成隱形的真實牌（手牌、副露與和牌張）——
+     * 收尾時要恢復可見的就是**這一組**，不能拿手牌全集去猜（沒有展示的贏家不會被碰過）。沒播 showcase
      * 時為空集合。
      */
     private data class CelebrationSegment(
@@ -1014,7 +1015,7 @@ class FabricGamePresentationPublisher(
             result.handLaydownEndGameTime?.let { endTime ->
                 handLaydownEndGameTime = maxOf(handLaydownEndGameTime ?: endTime, endTime)
             }
-            requestedWinner.seatIndex to organizedHand.tiles
+            requestedWinner.seatIndex to (organizedHand.tiles to melds)
         }
         if (handLaydownEndGameTime != null) {
             val effectStartGameTime = checkNotNull(handLaydownEndGameTime) + MahjongTileTableLayout.WIN_PRE_EFFECT_DELAY_TICKS
@@ -1027,19 +1028,23 @@ class FabricGamePresentationPublisher(
                 endGameTime = effectEndGameTime,
             )
             val eligibleWings = request.winners.filter { showcaseScheduler.hasShowcase(it.cueIds) }.map { requestedWinner ->
+                val (standingTiles, melds) = organizedBySeat.getValue(requestedWinner.seatIndex)
                 FabricWinCelebrationShowcaseScheduler.Wing(
                     seatIndex = requestedWinner.seatIndex,
                     cueIds = requestedWinner.cueIds,
-                    tileIdsAndAssets = organizedBySeat.getValue(requestedWinner.seatIndex)
-                        .filterNot { it.id == request.winningTileId }
-                        .map { it.id to it.tile.toAssetKey(tileAssetRegistry) },
+                    cards = showcaseWingCards(
+                        standingTileIds = standingTiles.map { it.id }.filterNot { it == request.winningTileId },
+                        melds = melds,
+                        assetKeyOf = { id -> state.findTile(id)?.tile?.toAssetKey(tileAssetRegistry) },
+                    ),
+                    standYaw = MahjongTileTableLayout.seatYaw(resolved.facing, requestedWinner.seatIndex),
                 )
             }
             val winningTile = state.findTile(request.winningTileId)
             // showcase 會把這些真實牌設成隱形交接給舞台代理（見 FabricWinCelebrationShowcaseScheduler），
             // 收尾時要恢復可見的就是這一組。
             val showcaseHiddenTileIds = if (eligibleWings.isNotEmpty() && winningTile != null) {
-                eligibleWings.flatMapTo(mutableSetOf()) { wing -> wing.tileIdsAndAssets.map { it.first } } +
+                eligibleWings.flatMapTo(mutableSetOf()) { wing -> wing.cards.map { it.tileId } } +
                     request.winningTileId
             } else {
                 emptySet()
