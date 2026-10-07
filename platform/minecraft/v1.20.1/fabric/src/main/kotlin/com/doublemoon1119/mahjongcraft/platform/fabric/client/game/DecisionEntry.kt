@@ -30,12 +30,14 @@ internal sealed interface DecisionEntryIntent {
  * @property previewTileAssetKeys 卡片內要顯示的預覽牌面。
  * @property claimedTileIndex [previewTileAssetKeys] 中要額外標記的牌索引；沒有要標記時為 `null`。
  * @property intent 點擊後要執行的事。
+ * @property description 滑鼠移到卡片上時顯示的說明；沒有說明時為 `null`。
  */
 internal data class DecisionEntry(
     val label: Text,
     val previewTileAssetKeys: List<String>,
     val claimedTileIndex: Int?,
     val intent: DecisionEntryIntent,
+    val description: Text? = null,
 ) {
     /** 這張卡片影響版面的特徵。 */
     fun layoutCard(): DecisionCard = DecisionCard(previewTileAssetKeys.size, claimedTileIndex != null)
@@ -64,6 +66,7 @@ internal fun decisionEntriesFrom(texts: DecisionTextResolver, prompt: PlayerDeci
                     } else {
                         DecisionEntryIntent.SubmitAction(action.token)
                     },
+                    description = texts.actionDescription(prompt.ruleModuleId, action.actionId),
                 ),
             )
         }

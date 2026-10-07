@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionActionDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RoundPreparationPromptDto
+import net.minecraft.text.Text
 import net.minecraft.text.TranslatableTextContent
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -70,6 +71,33 @@ class CompactDecisionHudTest {
         )
 
         assertEquals(DecisionTileSelectionState.Progress(1, 2..3), assertIs<CompactDecisionHudContent.TileSelection>(content).progress)
+    }
+
+    /** 選牌提示帶著所屬動作的說明。 */
+    @Test
+    fun `carries the description of the selected action`() {
+        val description = Text.literal("description")
+        val content = compactDecisionHudContent(
+            prompt = interactivePrompt(),
+            dismissedDecisionKey = null,
+            isPhysicalSelectionActive = true,
+            tileSelectionProgress = DecisionTileSelectionState.Progress(0, 1..1),
+            tileSelectionDescription = description,
+        )
+
+        assertEquals(description, assertIs<CompactDecisionHudContent.TileSelection>(content).description)
+    }
+
+    /** 說明行插在標題與細節文字之間，群組隨行數長高，倒數仍貼齊下緣。 */
+    @Test
+    fun `makes room for description lines between the title and the detail`() {
+        val plain = layout(expanded = true)
+        val described = CompactDecisionHudLayout(854, 480, 0.5, 0.5, expanded = true, descriptionLineCount = 2)
+
+        assertEquals(plain.groupHeight + 2 * CompactDecisionHudLayout.TEXT_LINE_HEIGHT, described.groupHeight)
+        assertEquals(described.groupTop + CompactDecisionHudLayout.TEXT_LINE_HEIGHT, described.descriptionLineTop(0))
+        assertEquals(described.descriptionLineTop(1) + CompactDecisionHudLayout.TEXT_LINE_HEIGHT, described.detailTextTop)
+        assertEquals(described.groupTop + described.groupHeight, described.timerTop + CompactDecisionHudLayout.TIMER_HEIGHT)
     }
 
     /** 只有倒數時群組維持倒數本身的高度。 */

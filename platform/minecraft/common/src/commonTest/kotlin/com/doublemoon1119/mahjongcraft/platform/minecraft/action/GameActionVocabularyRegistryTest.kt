@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.action
 
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BuiltInMinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.BundledRiichiMinecraftExtension
@@ -22,6 +23,28 @@ class GameActionVocabularyRegistryTest {
         assertEquals("mahjongcraft.hud.action.chi", chi?.labelKey)
         assertEquals("mahjongcraft.message.game_action_chi", chi?.messageKey)
         assertEquals(0, chi?.order)
+    }
+
+    /** 日麻的立直與九種九牌附有說明，基本動作沒有。 */
+    @Test
+    fun `special riichi decisions carry a description`() {
+        val registry = GameActionVocabularyRegistryImpl().apply {
+            BuiltInMinecraftMahjongExtension.registerGameActionVocabulary(this)
+            BundledRiichiMinecraftExtension.registerGameActionVocabulary(this)
+        }
+
+        assertEquals("mahjongcraft.hud.action.riichi.description", registry.find(BuiltInRuleModuleIds.RIICHI, RiichiGameAction.Riichi.id)?.descriptionKey)
+        assertEquals(
+            "mahjongcraft.hud.action.kyuushu_kyuuhai.description",
+            registry.find(BuiltInRuleModuleIds.RIICHI, RiichiExhaustiveDrawReason.KyuushuKyuuhai.id)?.descriptionKey,
+        )
+        assertNull(registry.find(BuiltInRuleModuleIds.RIICHI, BuiltInGameActionIds.CHI)?.descriptionKey)
+    }
+
+    /** 說明 key 不能是空字串。 */
+    @Test
+    fun `rejects a blank description key`() {
+        assertFailsWith<IllegalArgumentException> { GameActionVocabulary("example.hud.action", descriptionKey = " ") }
     }
 
     /** 規則登記同一個動作時，覆寫中立預設，其他規則不受影響。 */

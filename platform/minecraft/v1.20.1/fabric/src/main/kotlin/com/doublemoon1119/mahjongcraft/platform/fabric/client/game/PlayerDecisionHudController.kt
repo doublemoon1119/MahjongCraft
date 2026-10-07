@@ -193,6 +193,13 @@ class PlayerDecisionHudController(
     /** 目前選牌是否落在合法範圍內、右鍵確認面板會不會真的送出；沒有進行中的選牌時回傳 `null`。 */
     fun currentTileSelectionConfirmable(): Boolean? = currentTileSelectionProgress()?.let { it.selectedCount in it.validRange }
 
+    /** 進行中動作選牌所屬動作的說明；沒有進行中的動作選牌或該動作沒有說明時回傳 `null`。 */
+    private fun activeActionDescription(prompt: PlayerDecisionPromptDto): Text? {
+        val token = tileSelection.activeActionToken ?: return null
+        val action = prompt.actions.firstOrNull { it.token == token } ?: return null
+        return decisionTexts.actionDescription(prompt.ruleModuleId, action.actionId)
+    }
+
     /** 目前進行中選牌情境的進度；沒有進行中的選牌時回傳 `null`。 */
     private fun currentTileSelectionProgress(): DecisionTileSelectionState.Progress? {
         val prompt = promptStore.prompt ?: return null
@@ -344,24 +351,36 @@ class PlayerDecisionHudController(
             dismissedDecisionKey = dismissedDecisionKey,
             isPhysicalSelectionActive = prompt != null && isPhysicalSelectionActive(prompt),
             tileSelectionProgress = currentTileSelectionProgress(),
+            tileSelectionDescription = prompt?.let(::activeActionDescription),
         )
         val hudLayout = configStore.current.hudLayout
+        val renderer = MinecraftClient.getInstance().textRenderer
+        val groupWidth = CompactDecisionHudLayout.GROUP_WIDTH.coerceAtMost(context.scaledWindowWidth)
+        val descriptionLines = (content as? CompactDecisionHudContent.TileSelection)?.description
+            ?.let { renderer.wrapLines(it, groupWidth) }
+            .orEmpty()
         val layout = CompactDecisionHudLayout(
             screenWidth = context.scaledWindowWidth,
             screenHeight = context.scaledWindowHeight,
             ratioX = hudLayout.compactPromptX,
             ratioY = hudLayout.compactPromptY,
             expanded = content != CompactDecisionHudContent.TimerOnly,
+            descriptionLineCount = descriptionLines.size,
         )
         renderTimerOverlay(context, layout.timerTop, layout.centerX)
         when (content) {
             CompactDecisionHudContent.TimerOnly -> Unit
-            is CompactDecisionHudContent.TileSelection -> renderCompactLines(
-                context,
-                layout,
-                Text.translatable("mahjongcraft.hud.tile_selection_in_progress"),
-                tileSelectionDetailText(content.progress),
-            )
+            is CompactDecisionHudContent.TileSelection -> {
+                renderCompactLines(
+                    context,
+                    layout,
+                    Text.translatable("mahjongcraft.hud.tile_selection_in_progress"),
+                    tileSelectionDetailText(content.progress),
+                )
+                descriptionLines.forEachIndexed { index, line ->
+                    context.drawCenteredTextWithShadow(renderer, line, layout.centerX, layout.descriptionLineTop(index), COMPACT_HUD_DETAIL_COLOR)
+                }
+            }
             CompactDecisionHudContent.ReopenReminder -> renderCompactLines(
                 context,
                 layout,

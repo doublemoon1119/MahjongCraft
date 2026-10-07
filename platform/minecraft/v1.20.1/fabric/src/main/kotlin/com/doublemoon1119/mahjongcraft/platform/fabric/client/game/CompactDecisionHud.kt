@@ -13,8 +13,15 @@ internal sealed interface CompactDecisionHudContent {
     /** 只有倒數。 */
     data object TimerOnly : CompactDecisionHudContent
 
-    /** 進行中多選選牌的進度提示。 */
-    data class TileSelection(val progress: DecisionTileSelectionState.Progress) : CompactDecisionHudContent
+    /**
+     * 進行中選牌的進度提示。
+     *
+     * @property description 選牌所屬動作的說明；開局準備或沒有說明的動作為 `null`。
+     */
+    data class TileSelection(
+        val progress: DecisionTileSelectionState.Progress,
+        val description: Text? = null,
+    ) : CompactDecisionHudContent
 
     /** 操作介面已被 Esc 收起、可以重新開啟的提醒。 */
     data object ReopenReminder : CompactDecisionHudContent
@@ -32,8 +39,9 @@ internal fun compactDecisionHudContent(
     dismissedDecisionKey: String?,
     isPhysicalSelectionActive: Boolean,
     tileSelectionProgress: DecisionTileSelectionState.Progress?,
+    tileSelectionDescription: Text? = null,
 ): CompactDecisionHudContent = when {
-    tileSelectionProgress != null -> CompactDecisionHudContent.TileSelection(tileSelectionProgress)
+    tileSelectionProgress != null -> CompactDecisionHudContent.TileSelection(tileSelectionProgress, tileSelectionDescription)
     prompt != null &&
         dismissedDecisionKey == prompt.decisionKey &&
         prompt.isInteractive &&
@@ -61,13 +69,15 @@ internal fun tileSelectionDetailText(progress: DecisionTileSelectionState.Progre
 /**
  * 精簡 HUD 的版位。
  *
- * 倒數固定貼齊群組下緣，提示文字往上長；群組整體的位置由玩家在 HUD 編輯器調整的比例決定。
+ * 倒數固定貼齊群組下緣，提示文字往上長：標題在最上方，接著是說明，最後是細節文字。群組整體的位置由玩家在
+ * HUD 編輯器調整的比例決定。
  *
  * @property screenWidth 目前 GUI scaled 畫面寬度。
  * @property screenHeight 目前 GUI scaled 畫面高度。
  * @property ratioX 玩家設定的水平位置比例。
  * @property ratioY 玩家設定的垂直位置比例。
  * @property expanded 是否要為倒數上方的提示文字保留空間。
+ * @property descriptionLineCount 標題與細節文字之間的說明行數；只在 [expanded] 時保留空間。
  */
 internal data class CompactDecisionHudLayout(
     val screenWidth: Int,
@@ -75,6 +85,7 @@ internal data class CompactDecisionHudLayout(
     val ratioX: Double,
     val ratioY: Double,
     val expanded: Boolean,
+    val descriptionLineCount: Int = 0,
 ) {
     /** 群組寬度；畫面比固定寬度還窄時讓給畫面。 */
     val groupWidth: Int
@@ -82,7 +93,7 @@ internal data class CompactDecisionHudLayout(
 
     /** 群組高度。 */
     val groupHeight: Int
-        get() = if (expanded) EXPANDED_HEIGHT else TIMER_HEIGHT
+        get() = if (expanded) EXPANDED_HEIGHT + descriptionLineCount * TEXT_LINE_HEIGHT else TIMER_HEIGHT
 
     /** 群組左界。 */
     val groupLeft: Int
@@ -100,9 +111,12 @@ internal data class CompactDecisionHudLayout(
     val timerTop: Int
         get() = groupTop + groupHeight - TIMER_HEIGHT
 
-    /** 第二行提示文字的上緣。 */
+    /** 第 [index] 行說明的上緣，緊接在標題下方。 */
+    fun descriptionLineTop(index: Int): Int = groupTop + TEXT_LINE_HEIGHT * (1 + index)
+
+    /** 細節文字的上緣，在所有說明行之後。 */
     val detailTextTop: Int
-        get() = groupTop + TEXT_LINE_HEIGHT
+        get() = groupTop + TEXT_LINE_HEIGHT * (1 + descriptionLineCount)
 
     internal companion object {
         const val GROUP_WIDTH = 220

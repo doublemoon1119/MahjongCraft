@@ -37,7 +37,7 @@ class DecisionHudActionTranslationKeyTest {
         BundledRiichiMinecraftExtension.registerDecisionStatusDisplayNames(this)
     }
 
-    /** 每一個內建與日麻動作的短名稱、訊息文字都必須在所有語系檔中有對應翻譯。 */
+    /** 每一個內建與日麻動作的短名稱、訊息文字與說明都必須在所有語系檔中有對應翻譯。 */
     @Test
     fun `every registered action resolves translated labels in every language`() {
         val translationsByLocale = locales.associateWith(::loadTranslations)
@@ -45,7 +45,7 @@ class DecisionHudActionTranslationKeyTest {
         builtInActions().forEach { action ->
             val actionId = action.vocabularyActionId()
             val entry = assertNotNull(vocabulary.find(BuiltInRuleModuleIds.RIICHI, actionId), "no vocabulary registered for $action")
-            listOf(entry.labelKey, entry.messageKey).forEach { key ->
+            listOfNotNull(entry.labelKey, entry.messageKey, entry.descriptionKey).forEach { key ->
                 translationsByLocale.forEach { (locale, translations) ->
                     assertTrue(key in translations, "$locale is missing $key for $action (actionId=$actionId)")
                 }

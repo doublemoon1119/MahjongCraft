@@ -205,12 +205,20 @@ object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
         registry.register(
             BuiltInRuleModuleIds.RIICHI,
             RiichiGameAction.Riichi.id,
-            GameActionVocabulary(MinecraftMessageKeys.GAME_ACTION_RIICHI, order = RIICHI_ACTION_ORDER),
+            GameActionVocabulary(
+                labelKey = MinecraftMessageKeys.GAME_ACTION_RIICHI,
+                order = RIICHI_ACTION_ORDER,
+                descriptionKey = HUD_ACTION_RIICHI_DESCRIPTION,
+            ),
         )
         registry.register(
             BuiltInRuleModuleIds.RIICHI,
             RiichiExhaustiveDrawReason.KyuushuKyuuhai.id,
-            GameActionVocabulary(MinecraftMessageKeys.GAME_ACTION_KYUUSHU_KYUUHAI, order = KYUUSHU_KYUUHAI_ACTION_ORDER),
+            GameActionVocabulary(
+                labelKey = MinecraftMessageKeys.GAME_ACTION_KYUUSHU_KYUUHAI,
+                order = KYUUSHU_KYUUHAI_ACTION_ORDER,
+                descriptionKey = HUD_ACTION_KYUUSHU_KYUUHAI_DESCRIPTION,
+            ),
         )
     }
 
@@ -266,6 +274,12 @@ private const val RIICHI_HUD_PREFIX: String = MinecraftModMetadata.MOD_ID + ".hu
 
 /** 捨牌振聽。 */
 private const val HUD_FURITEN_DISCARD: String = RIICHI_HUD_PREFIX + "furiten.discard"
+
+/** 立直操作卡的說明。 */
+private const val HUD_ACTION_RIICHI_DESCRIPTION: String = RIICHI_HUD_PREFIX + "action.riichi.description"
+
+/** 九種九牌操作卡的說明。 */
+private const val HUD_ACTION_KYUUSHU_KYUUHAI_DESCRIPTION: String = RIICHI_HUD_PREFIX + "action.kyuushu_kyuuhai.description"
 
 /** 同巡振聽。 */
 private const val HUD_FURITEN_TEMPORARY: String = RIICHI_HUD_PREFIX + "furiten.temporary"

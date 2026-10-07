@@ -36,6 +36,11 @@ class DecisionTextResolver(
         return translationKey?.let(Text::translatable) ?: Text.literal(actionId)
     }
 
+    /** 動作的說明，顯示在操作卡的提示框與選牌提示；規則沒有提供說明時為 null。 */
+    fun actionDescription(ruleModuleId: String?, actionId: String): Text? = actionVocabulary.find(ruleModuleId, actionId)
+        ?.descriptionKey
+        ?.let(Text::translatable)
+
     /** 動作在操作卡中的順序；未登記時為 null，代表排在所有已登記的動作之後。 */
     fun actionOrder(ruleModuleId: String?, actionId: String): Int? = actionVocabulary.find(ruleModuleId, actionId)?.order
 

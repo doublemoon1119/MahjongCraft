@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisio
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSelectionKindDto
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.screen.Screen
+import net.minecraft.client.gui.tooltip.Tooltip
 import net.minecraft.client.gui.widget.ButtonWidget
 import net.minecraft.text.Text
 
@@ -65,6 +66,7 @@ internal class PlayerDecisionScreen(
             val bounds = layout.cardButtonBounds(placements[index])
             ButtonWidget.builder(entry.label) { onEntryClicked(entry) }
                 .dimensions(bounds.x, bounds.y, bounds.width, bounds.height)
+                .tooltip(entry.description?.let(Tooltip::of))
                 .build()
         }
         skipButton = if (prompt.preparation == null) {

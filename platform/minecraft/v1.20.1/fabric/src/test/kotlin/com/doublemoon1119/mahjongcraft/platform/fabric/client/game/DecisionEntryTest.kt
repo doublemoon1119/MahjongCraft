@@ -67,6 +67,24 @@ class DecisionEntryTest {
         assertEquals("token-riichi", intent.action.token)
     }
 
+    /** 規則有提供說明的動作卡帶著說明，基本動作沒有。 */
+    @Test
+    fun `carries the rule description of an action`() {
+        val prompt = PlayerDecisionPromptDto(
+            decisionKey = DECISION_KEY,
+            ruleModuleId = BuiltInRuleModuleIds.RIICHI,
+            actions = listOf(
+                PlayerDecisionActionDto(token = "token-chi", actionId = "mahjongcraft:chi"),
+                PlayerDecisionActionDto(token = "token-riichi", actionId = RiichiGameAction.Riichi.id),
+            ),
+        )
+
+        val (chi, riichi) = decisionEntriesFrom(texts, prompt)
+
+        assertNull(chi.description)
+        assertEquals("mahjongcraft.hud.action.riichi.description", (riichi.description?.content as? TranslatableTextContent)?.key)
+    }
+
     /** 動作卡沿用該候選的預覽牌與鳴牌指標索引。 */
     @Test
     fun `carries the preview tiles and the claimed index of its action`() {

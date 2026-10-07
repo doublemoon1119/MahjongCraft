@@ -45,15 +45,19 @@ object BuiltInGameActionIds {
  * @property labelKey 操作卡與標題用的短名稱 translation key，不帶參數。
  * @property messageKey 聊天訊息用的 translation key，可帶牌面參數；預設沿用 [labelKey]。
  * @property order 操作卡由左至右的順序；`null` 代表排在所有已登記的動作之後，並維持原始相對順序。
+ * @property descriptionKey 說明這個動作做什麼的 translation key，顯示在操作卡的提示框與選牌提示；`null` 代表不需要說明，
+ * 例如吃、碰等基本動作。
  */
 data class GameActionVocabulary(
     val labelKey: String,
     val messageKey: String = labelKey,
     val order: Int? = null,
+    val descriptionKey: String? = null,
 ) {
     init {
         require(labelKey.isNotBlank()) { "Game action label key must not be blank" }
         require(messageKey.isNotBlank()) { "Game action message key must not be blank" }
+        require(descriptionKey == null || descriptionKey.isNotBlank()) { "Game action description key must not be blank" }
     }
 }
 
