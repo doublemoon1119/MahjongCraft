@@ -2,7 +2,6 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailValue
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementPresentationRequest
-import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementDetailSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementMeldSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementPresentationEntity
@@ -19,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettleme
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementRevealSequence
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.detailTextFormatter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPlacement
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.winningHandFaceDownIndices
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.math.BlockPos
 import org.koin.core.annotation.Single
@@ -54,12 +54,7 @@ class FabricWinSettlementPresentationScheduler(
                 handAssetKeys = winner.standingTileIds.mapNotNull(tileAssetsById::get),
                 melds = winner.melds.map { meld ->
                     val assets = meld.tileIds.mapNotNull(tileAssetsById::get)
-                    val concealed = when {
-                        meld.type != MeldType.CLOSED_KAN -> emptySet()
-                        meld.allTilesFaceDown -> assets.indices.toSet()
-                        else -> setOf(0, assets.lastIndex)
-                    }
-                    WinSettlementMeldSnapshot(assets, concealed)
+                    WinSettlementMeldSnapshot(assets, winningHandFaceDownIndices(meld.type, assets.size))
                 },
                 winningTileAssetKey = winner.winningTileId?.let(tileAssetsById::get).orEmpty(),
                 details = winner.detailFields.map { field ->
