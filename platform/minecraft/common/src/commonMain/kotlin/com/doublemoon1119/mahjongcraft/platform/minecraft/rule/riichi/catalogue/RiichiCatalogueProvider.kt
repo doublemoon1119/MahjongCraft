@@ -47,6 +47,7 @@ class RiichiCatalogueProvider : RuleCatalogueProvider {
                         else -> null
                     },
                     examples = riichiCatalogueExamples(definition.type),
+                    additionalCategoryIds = if (definition.type.isLocal) listOf(RiichiCatalogueCategory.LOCAL.id) else emptyList(),
                 )
             } + riichiCatalogueSpecialEntries(),
         )

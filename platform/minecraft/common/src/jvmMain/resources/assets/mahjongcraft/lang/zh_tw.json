@@ -832,6 +832,7 @@
   "mahjongcraft.rule_catalogue.riichi.category.han_3": "三翻",
   "mahjongcraft.rule_catalogue.riichi.category.han_5": "五翻",
   "mahjongcraft.rule_catalogue.riichi.category.han_6": "六翻",
+  "mahjongcraft.rule_catalogue.riichi.category.local": "古役",
   "mahjongcraft.rule_catalogue.riichi.category.mangan": "流局滿貫",
   "mahjongcraft.rule_catalogue.riichi.category.yakuman": "役滿",
   "mahjongcraft.rule_catalogue.riichi.entry.bakaze.description": "包含場風牌的刻子或槓子。",

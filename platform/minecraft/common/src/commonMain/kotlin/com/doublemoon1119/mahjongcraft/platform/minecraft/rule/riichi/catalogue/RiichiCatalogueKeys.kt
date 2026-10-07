@@ -33,6 +33,9 @@ internal enum class RiichiCatalogueCategory(
     /** double_yakuman 說明分類。 */
     DOUBLE_YAKUMAN("double_yakuman"),
 
+    /** 古役說明分類；古役條目同時列在對應翻數的分類。 */
+    LOCAL("local"),
+
     /** bonus 說明分類。 */
     BONUS("bonus"),
 

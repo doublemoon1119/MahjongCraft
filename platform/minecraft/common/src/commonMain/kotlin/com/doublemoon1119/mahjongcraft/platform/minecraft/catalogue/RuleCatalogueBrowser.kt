@@ -124,7 +124,7 @@ class RuleCatalogueBrowser(
         val catalogue = (resolution as? RuleCatalogueResolution.Available)?.catalogue
         val query = searchText.trim()
         val entries = catalogue?.entries.orEmpty().filter { entry ->
-            (selectedCategoryId == null || entry.categoryId == selectedCategoryId) &&
+            (selectedCategoryId == null || selectedCategoryId in entry.categoryIds) &&
                 (query.isEmpty() || searchableTexts(entry, translate).any { it.contains(query, ignoreCase = true) })
         }
         val status = when {

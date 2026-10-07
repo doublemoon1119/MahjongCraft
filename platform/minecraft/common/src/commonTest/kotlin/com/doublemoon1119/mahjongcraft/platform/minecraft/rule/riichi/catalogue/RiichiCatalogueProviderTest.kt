@@ -44,7 +44,7 @@ class RiichiCatalogueProviderTest {
         assertEquals(4, catalogue.entries.count { it.categoryId == RiichiCatalogueCategory.ABORTIVE_DRAW.id })
         assertEquals(1, catalogue.entries.count { it.categoryId == RiichiCatalogueCategory.MANGAN.id })
         assertEquals(2, catalogue.entries.count { it.categoryId == RiichiCatalogueCategory.HAN_5.id })
-        catalogue.categories.forEach { category -> assertTrue(catalogue.entries.any { it.categoryId == category.id }, category.id) }
+        catalogue.categories.forEach { category -> assertTrue(catalogue.entries.any { category.id in it.categoryIds }, category.id) }
         assertTrue(catalogue.entries.all { it.descriptionTranslationKey.isNotBlank() })
     }
 
@@ -84,7 +84,7 @@ class RiichiCatalogueProviderTest {
         assertEquals(RiichiCatalogueKeys.DRAGON_NAME, default.entries.single { it.id == RiichiCatalogueYaku.Dragon.id }.nameTranslationKey)
     }
 
-    /** 古役條目都帶古役標籤；未啟用古役時標示未啟用，啟用後不再標示，一般役種不受影響。 */
+    /** 古役條目都帶古役標籤並列在古役分類；未啟用古役時標示未啟用，啟用後不再標示，一般役種不受影響。 */
     @Test
     fun `local yaku entries show whether local yaku are enabled`() {
         val provider = RiichiCatalogueProvider()
@@ -97,6 +97,8 @@ class RiichiCatalogueProviderTest {
         assertTrue(disabled.entries.filterNot { it.id in localIds }.none { it.unavailableReasonTranslationKey == RiichiCatalogueKeys.LOCAL_YAKU_UNAVAILABLE })
         assertTrue(enabled.entries.filter { it.id in localIds }.all { entry -> entry.labels.any { it.nameTranslationKey == RiichiCatalogueKeys.LOCAL_YAKU } })
         assertTrue(enabled.entries.filterNot { it.id in localIds }.none { entry -> entry.labels.any { it.nameTranslationKey == RiichiCatalogueKeys.LOCAL_YAKU } })
+        assertEquals(localIds, enabled.entries.filter { RiichiCatalogueCategory.LOCAL.id in it.categoryIds }.map { it.id }.toSet())
+        assertTrue(enabled.entries.filter { it.id in localIds }.none { it.categoryId == RiichiCatalogueCategory.LOCAL.id })
     }
 
     /** 一般說明仍標記為預設配置，台麻不冒用日麻目錄。 */

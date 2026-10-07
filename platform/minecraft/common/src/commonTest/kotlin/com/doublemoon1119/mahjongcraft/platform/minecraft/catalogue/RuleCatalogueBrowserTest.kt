@@ -178,6 +178,23 @@ class RuleCatalogueBrowserTest {
         assertEquals("entry", state.searchText)
     }
 
+    /** 條目也會列在額外分類中；全部分類與搜尋時每個條目只出現一次。 */
+    @Test
+    fun `entries also appear in their additional categories without duplicates`() {
+        val catalogue = sampleCatalogue().let { base ->
+            base.copy(entries = base.entries.map { if (it.id == "example:first") it.copy(additionalCategoryIds = listOf(CATEGORY_B)) else it })
+        }
+        val browser = RuleCatalogueBrowser(registry(RecordingProvider(PROVIDER_A, TaiwanRuleConfig()) { catalogue }), names(), listOf(PROVIDER_A))
+
+        assertTrue(browser.selectCategory(CATEGORY_B))
+        assertEquals(listOf("example:first", "example:second", "example:text"), browser.snapshot(::translate).entries.map { it.id })
+        assertTrue(browser.selectCategory("example:category_a"))
+        assertEquals(listOf("example:first"), browser.snapshot(::translate).entries.map { it.id })
+        assertTrue(browser.selectCategory(null))
+        browser.setSearch("entry")
+        assertEquals(listOf("example:first", "example:second", "example:text"), browser.snapshot(::translate).entries.map { it.id })
+    }
+
     /** 第三方自訂價值單位、文字條目與擴充牌種維持原資料，不被瀏覽器改寫。 */
     @Test
     fun `third party units text entries and extension tiles remain unchanged`() {

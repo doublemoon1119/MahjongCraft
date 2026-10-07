@@ -72,7 +72,7 @@ class RuleCatalogueRegistryTest {
         assertEquals(setOf(RULE_ID), registry.registrationKeys)
     }
 
-    /** ID 與關聯驗證不容許錯誤目錄流入呈現。 */
+    /** ID 與關聯驗證（含額外分類）不容許錯誤目錄流入呈現。 */
     @Test
     fun `invalid identifiers duplicate entries and unknown categories are rejected`() {
         assertFailsWith<IllegalArgumentException> { RuleCatalogueCategory("invalid", "category") }
@@ -81,6 +81,10 @@ class RuleCatalogueRegistryTest {
         assertFailsWith<IllegalArgumentException> { catalogue.copy(entries = catalogue.entries + catalogue.entries) }
         assertFailsWith<IllegalArgumentException> { catalogue.copy(categories = emptyList()) }
         assertFailsWith<IllegalArgumentException> { catalogue.entries.first().copy(nameTranslationKey = "") }
+        val entry = catalogue.entries.first()
+        assertFailsWith<IllegalArgumentException> { entry.copy(additionalCategoryIds = listOf("invalid")) }
+        assertFailsWith<IllegalArgumentException> { entry.copy(additionalCategoryIds = listOf(entry.categoryId)) }
+        assertFailsWith<IllegalArgumentException> { catalogue.copy(entries = listOf(entry.copy(additionalCategoryIds = listOf("example:unknown")))) }
     }
 
     /** 和牌張與局部示意的語意不依牌組位置猜測。 */
