@@ -210,11 +210,6 @@ internal class SqliteHistoryDatabase private constructor(
         ) { "History event identity conflicts with existing content" }
     }
 
-    /** 按權威序號讀取指定場次的原始暫存事件。
-     *
-     * @param matchId 對局穩定識別碼。
-     * @return 依事件序號排序的暫存事件。
-     */
     /**
      * 每場待寫事件的序號彙總；只讀主鍵，不讀取 payload。
      *
@@ -286,6 +281,11 @@ internal class SqliteHistoryDatabase private constructor(
         HistoryTerminalTable.select(HistoryTerminalTable.matchId).mapTo(mutableSetOf()) { it[HistoryTerminalTable.matchId] }
     }
 
+    /** 按權威序號讀取指定場次的原始暫存事件。
+     *
+     * @param matchId 對局穩定識別碼。
+     * @return 依事件序號排序的暫存事件。
+     */
     fun readPending(matchId: String): List<PendingHistoryRecord> = transaction(database) {
         HistoryPendingEventTable.selectAll().where { HistoryPendingEventTable.matchId eq matchId }
             .orderBy(HistoryPendingEventTable.sequence)

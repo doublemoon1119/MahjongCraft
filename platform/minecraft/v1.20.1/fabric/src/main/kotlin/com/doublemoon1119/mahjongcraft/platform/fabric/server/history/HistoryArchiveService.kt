@@ -72,8 +72,8 @@ internal class HistoryArchiveService(
      * 對帳權威待寫佇列與 SQLite 的待寫事件，保留可證實的最早缺口；不從最高序號推導中間一定連續。
      *
      * 每次都完整判定四件事：payload 能否解碼、序號缺口、資料庫序號超過權威存檔的孤兒事件，以及待寫佇列與資料庫重疊的
-     * 序號內容是否衝突。資料庫已有終局紀錄、且權威狀態已不再記錄其序號的場次是已結束的場次，不判為孤兒；權威狀態仍記錄
-     * 序號時，即使資料庫有終局紀錄，序號超過權威存檔仍判為孤兒（存檔回溯）。序號與重疊判定只讀主鍵或重疊的那幾筆；payload 解碼則略過本次連線已驗證過、從 1 起連續的事件。
+     * 序號內容是否衝突。資料庫的序號達到權威存檔的下一個序號就是孤兒（存檔回溯），不論待寫佇列是否還有事件；資料庫已有
+     * 終局紀錄、且權威狀態已不再記錄其序號的場次是已結束的場次，不判為孤兒，權威狀態仍記錄序號時則照樣判定。序號與重疊判定只讀主鍵或重疊的那幾筆；payload 解碼則略過本次連線已驗證過、從 1 起連續的事件。
      *
      * @param database 目前連線的資料庫。
      * @param recording 權威狀態中的歷史記錄狀態。
@@ -105,7 +105,7 @@ internal class HistoryArchiveService(
             }
             val nextSequence = nextSequences[matchId] ?: 1L
             val forgottenAfterEnding = matchId !in nextSequences && matchId in ended
-            if (summary != null && summary.last >= nextSequence && staged.isEmpty() && !forgottenAfterEnding) {
+            if (summary != null && summary.last >= nextSequence && !forgottenAfterEnding) {
                 lastArchiveError = "History database contains events beyond the authoritative save"
                 orphans += matchId
                 if (matchId !in warnedOrphanMatchIds) {

@@ -461,6 +461,37 @@ class HistoryArchiveServiceTest {
         assertEquals(ORPHAN_ERROR, fixture.service.lastArchiveError)
     }
 
+    /** 待寫佇列還有與資料庫相同的事件時，資料庫序號超過權威存檔仍判為存檔回溯。 */
+    @Test
+    fun `a rolled back save is an orphan while events are still pending`() {
+        val fixture = ArchiveFixture("mahjongcraft-history-rollback-pending-")
+        val events = fixture.matchEvents()
+        fixture.database.appendPendingBatch(events.map(fixture::record))
+
+        fixture.service.reconcile(
+            fixture.database,
+            HistoryRecordingState(pendingEvents = listOf(events[1]), nextSequenceByMatchId = mapOf(fixture.matchId to 3L)),
+        )
+
+        assertEquals(ORPHAN_ERROR, fixture.service.lastArchiveError)
+        assertTrue(fixture.service.blockedMatchIds.isEmpty(), "Identical pending content is not a conflict.")
+    }
+
+    /** 當掉前已寫進資料庫、尚未確認的事件留在待寫佇列時，序號都小於權威存檔的下一個序號，不是孤兒。 */
+    @Test
+    fun `written but unacknowledged events are not orphans`() {
+        val fixture = ArchiveFixture("mahjongcraft-history-unacknowledged-")
+        val events = fixture.matchEvents()
+        fixture.database.appendPendingBatch(events.take(3).map(fixture::record))
+
+        fixture.service.reconcile(
+            fixture.database,
+            HistoryRecordingState(pendingEvents = events.drop(1), nextSequenceByMatchId = mapOf(fixture.matchId to events.size + 1L)),
+        )
+
+        assertEquals(null, fixture.service.lastArchiveError)
+    }
+
     /**
      * 一場可封存對局的資料庫與對帳服務。
      *
