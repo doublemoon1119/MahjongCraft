@@ -462,7 +462,7 @@ class RoomScreen(
         )
     }
 
-    /** 以切換按鈕顯示規則，並在 tooltip 條列所有已登記規則；右側保留規則一覽按鈕，窄視窗時兩者合計佔滿內容寬度。 */
+    /** 以切換按鈕顯示規則，tooltip 見 [roomRuleSelectorTooltip]；右側保留規則一覽按鈕，窄視窗時兩者合計佔滿內容寬度。 */
     private fun addRuleSelector(config: GameConfig, moduleId: String, canEdit: Boolean, compact: Boolean) {
         val candidates = configPresentations.ruleModuleIds.sorted()
         val currentName = ruleName(moduleId)
@@ -483,17 +483,11 @@ class RoomScreen(
                 button.active = canEdit && candidates.count { configPresentations.find(it)?.selectable == true } > 1
                 button.tooltip = Tooltip.of(
                     CycleButtonInput.withHint(
-                        tooltip = Text.empty()
-                            .append(Text.translatable(MinecraftRoomScreenKeys.CURRENT_VALUE, currentName).formatted(Formatting.GREEN))
-                            .append("\n")
-                            .append(Text.translatable(MinecraftRoomScreenKeys.AVAILABLE_OPTIONS).formatted(Formatting.GOLD))
-                            .also { tooltip ->
-                                candidates.forEach { candidateId ->
-                                    val candidate = configPresentations.find(candidateId) ?: return@forEach
-                                    tooltip.append("\n• ").append(ruleName(candidateId).copy().formatted(if (candidate.selectable) Formatting.WHITE else Formatting.RED))
-                                    candidate.unavailableReasonTranslationKey?.let { tooltip.append(" — ").append(Text.translatable(it).formatted(Formatting.RED)) }
-                                }
-                            },
+                        tooltip = roomRuleSelectorTooltip(
+                            currentModuleId = moduleId,
+                            candidates = candidates.mapNotNull(configPresentations::find),
+                            ruleName = ::ruleName,
+                        ),
                         optionCount = candidates.count { configPresentations.find(it)?.selectable == true },
                         active = button.active,
                     ),
