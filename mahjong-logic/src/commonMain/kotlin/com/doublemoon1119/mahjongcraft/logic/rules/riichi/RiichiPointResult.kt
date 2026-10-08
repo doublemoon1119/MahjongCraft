@@ -74,3 +74,18 @@ sealed interface RiichiPointResult {
         override val total: Int get() = paymentEach * 2 + (remainder?.total ?: 0)
     }
 }
+
+/**
+ * 在 [playerCount] 人對局中贏家實際收到的點數；自摸時每位其他玩家照 [RiichiPointResult] 的金額各付一份，
+ * 人數少於四人時缺少的那一份不支付（自摸損）。四人對局等同 [RiichiPointResult.total]。
+ *
+ * @param playerCount 對局人數。
+ * @return 贏家實際收到的點數。
+ */
+fun RiichiPointResult.totalFor(playerCount: Int): Int = when (this) {
+    is RiichiPointResult.Ron -> total
+    is RiichiPointResult.DealerTsumo -> paymentPerNonDealer * (playerCount - 1)
+    is RiichiPointResult.NonDealerTsumo -> dealerPayment + otherNonDealerPayment * (playerCount - 2)
+    is RiichiPointResult.PaoTsumo -> paoPayment + (remainder?.totalFor(playerCount) ?: 0)
+    is RiichiPointResult.PaoRon -> paymentEach * 2 + (remainder?.totalFor(playerCount) ?: 0)
+}

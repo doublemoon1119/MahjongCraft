@@ -22,6 +22,9 @@ enum class YakuType(
     /** 赤寶牌 (Aka Dora) */
     AkaDora,
 
+    /** 拔北寶牌 (Nuki Dora)：三人麻將中每張拔出的北算一張寶牌。 */
+    NukiDora,
+
     // ===== 一般役 (1-6 翻) =====
     /** 斷么九 (Tanyao) - 1 翻 */
     Tanyao,

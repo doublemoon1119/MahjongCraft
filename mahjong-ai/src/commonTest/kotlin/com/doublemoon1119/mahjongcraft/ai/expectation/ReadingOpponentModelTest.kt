@@ -73,7 +73,7 @@ class ReadingOpponentModelTest {
             discardPile = (1..6).fold(FakeDiscardPile()) { pile, value -> pile.discardTile(FakeIdentifiedTileFactory.create(m(value))) },
         )
         val view = PositionView(
-            snapshot = FakeTableStateFactory.create(players = listOf(active, self)).toSnapshot(visibleHandPlayerIds = setOf(self.id)),
+            snapshot = FakeTableStateFactory.create(players = listOf(active, self)).toSnapshot(visibleHandPlayerIds = setOf(self.id), setAsideTiles = { emptyList() }),
             evaluatorId = self.id,
         )
         val range = OpponentModelRegistry.NEUTRAL_READING_FACTOR_RANGE
@@ -116,7 +116,7 @@ class ReadingOpponentModelTest {
 
     private fun riichiView(players: List<MahjongPlayer>, self: MahjongPlayer): PositionView = PositionView(
         snapshot = FakeTableStateFactory.create(players = players, config = RiichiRuleConfig(), dynamicRuleState = RiichiDynamicState())
-            .toSnapshot(visibleHandPlayerIds = setOf(self.id)),
+            .toSnapshot(visibleHandPlayerIds = setOf(self.id), setAsideTiles = { emptyList() }),
         evaluatorId = self.id,
     )
 

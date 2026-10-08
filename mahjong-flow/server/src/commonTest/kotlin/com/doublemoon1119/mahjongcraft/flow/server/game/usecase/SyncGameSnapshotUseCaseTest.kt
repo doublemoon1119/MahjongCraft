@@ -8,8 +8,10 @@ import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -36,7 +38,7 @@ class SyncGameSnapshotUseCaseTest {
         val gameRepo = FakeGameRepository()
         val snapshotRepo = FakeGameSnapshotRepository()
         val useCase = SyncGameSnapshotUseCase(
-            GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl()),
+            GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(MahjongModuleRegistryImpl().apply { registerBundledRuleModules() })),
         )
 
         val player = FakeMahjongPlayerFactory.create(id = playerId, initialSeat = Wind.EAST)
@@ -60,7 +62,7 @@ class SyncGameSnapshotUseCaseTest {
         val gameRepo = FakeGameRepository()
         val snapshotRepo = FakeGameSnapshotRepository()
         val useCase = SyncGameSnapshotUseCase(
-            GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl()),
+            GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(MahjongModuleRegistryImpl().apply { registerBundledRuleModules() })),
         )
 
         val result = useCase(gameId, playerId)
@@ -75,10 +77,10 @@ class SyncGameSnapshotUseCaseTest {
         val gameRepo = FakeGameRepository()
         val snapshotRepo = FakeGameSnapshotRepository()
         val useCase = SyncGameSnapshotUseCase(
-            GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl()),
+            GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(MahjongModuleRegistryImpl().apply { registerBundledRuleModules() })),
         )
         val player = FakeMahjongPlayerFactory.create(id = playerId, initialSeat = Wind.EAST)
-        val table = FakeTableStateFactory.create(id = gameId, players = listOf(player))
+        val table = FakeTableStateFactory.create(id = gameId, players = listOf(player), config = RiichiRuleConfig())
         val observerId = Uuid.random()
         gameRepo.setGame(
             Game(

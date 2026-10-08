@@ -18,6 +18,9 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnaps
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.time.MonotonicClockImpl
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeDecisionTimerUpdatePublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationBusyGate
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
@@ -52,7 +55,7 @@ class ServerSessionStateRestorerTest {
             roomSnapshots,
             gameSnapshots,
             memberships,
-            GameVisibilityPolicyImpl(),
+            GameVisibilityPolicyImpl(MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }),
             decisionTimerManager,
             GameDecisionAvailabilityService(
                 FakeGamePresentationBusyGate(),
@@ -84,6 +87,7 @@ class ServerSessionStateRestorerTest {
                     },
                 )
             },
+            config = RiichiRuleConfig(),
         )
 
         val state = AuthoritativeStateSnapshot(
@@ -123,7 +127,7 @@ class ServerSessionStateRestorerTest {
             roomSnapshots,
             gameSnapshots,
             memberships,
-            GameVisibilityPolicyImpl(),
+            GameVisibilityPolicyImpl(MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }),
             decisionTimerManager,
             GameDecisionAvailabilityService(
                 FakeGamePresentationBusyGate(),

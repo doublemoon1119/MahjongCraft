@@ -3,19 +3,25 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlin.uuid.Uuid
 
-/** 榮和時每一本場的點數。 */
-const val RIICHI_COMBO_BONUS_RON_POINTS: Int = 300
-
-/** 自摸時每一本場由其他每位玩家各付的點數。 */
+/** 自摸時每一本場由其他每位玩家各付的點數；榮和時放銃者一人付「這個點數 × 其他玩家人數」。 */
 const val RIICHI_COMBO_BONUS_TSUMO_POINTS_PER_PAYER: Int = 100
+
+/**
+ * 榮和時每一本場的點數：[RIICHI_COMBO_BONUS_TSUMO_POINTS_PER_PAYER] × 規則人數中的其他玩家數（四人 300、三人 200）。
+ *
+ * @param playerCount 規則的對局人數。
+ */
+internal fun riichiComboBonusRonPoints(playerCount: Int): Int = RIICHI_COMBO_BONUS_TSUMO_POINTS_PER_PAYER * (playerCount - 1)
 
 /**
  * 日麻本場的付款分攤。
  *
- * - 一般榮和：放銃者支付 本場數 × [RIICHI_COMBO_BONUS_RON_POINTS]。
+ * 每本場總額見 [riichiComboBonusRonPoints]。
+ *
+ * - 一般榮和：放銃者支付 本場數 × 每本場總額。
  * - 一般自摸（含流局滿貫）：其他仍在局中的每位玩家各付 本場數 × [RIICHI_COMBO_BONUS_TSUMO_POINTS_PER_PAYER]。
- * - 包牌自摸，或包牌責任者本人放銃：責任者一人支付 本場數 × [RIICHI_COMBO_BONUS_RON_POINTS]。
- * - 第三方放銃給被包者：放銃者與責任者各付 本場數 × [RIICHI_COMBO_BONUS_RON_POINTS] 的一半。
+ * - 包牌自摸，或包牌責任者本人放銃：責任者一人支付 本場數 × 每本場總額。
+ * - 第三方放銃給被包者：放銃者與責任者各付 本場數 × 每本場總額的一半。
  *
  * @param tableState 目前的桌況（尚未套用本次胡牌結算）。
  * @param winnerId 收取本場的贏家 Uuid。
@@ -31,7 +37,7 @@ internal fun riichiComboBonusPayments(
 ): Map<Uuid, Int> {
     val comboCount = tableState.comboCount
     if (comboCount <= 0) return emptyMap()
-    val fullBonus = comboCount * RIICHI_COMBO_BONUS_RON_POINTS
+    val fullBonus = comboCount * riichiComboBonusRonPoints(tableState.config.maxPlayers)
     return when {
         paoPlayerId != null && (discarderId == null || discarderId == paoPlayerId) -> mapOf(paoPlayerId to fullBonus)
         paoPlayerId != null && discarderId != null -> mapOf(discarderId to fullBonus / 2, paoPlayerId to fullBonus / 2)

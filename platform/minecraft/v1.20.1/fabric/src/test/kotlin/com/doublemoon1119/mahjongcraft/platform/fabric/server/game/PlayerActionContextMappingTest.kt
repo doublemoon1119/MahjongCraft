@@ -29,7 +29,7 @@ class PlayerActionContextMappingTest {
             playerId,
             PendingRobbingReaction(
                 declarerId = Uuid.random(),
-                kanAction = GameAction.Kan(GameAction.KanType.ADDED_KAN, tile.id, emptyList()),
+                declaredAction = GameAction.Kan(GameAction.KanType.ADDED_KAN, tile.id, emptyList()),
                 robbedTile = tile,
                 eligiblePlayerIds = setOf(playerId),
             ),

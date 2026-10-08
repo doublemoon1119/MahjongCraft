@@ -66,7 +66,7 @@ class RobbingEligibilityTest {
         return RobbingEligibility.ronEligiblePlayerIds(
             tableState = table,
             declarerId = declarerId,
-            kanAction = kanAction,
+            declaredAction = kanAction,
             robbedTile = declaredWhite,
             module = module,
         )

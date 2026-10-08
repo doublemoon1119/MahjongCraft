@@ -11,22 +11,23 @@ import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 
-/** 四人日麻的固定賽程、南入／西入、驟死、和了止め與擊飛 policy。 */
+/** 日麻（四人或三人）的固定賽程、南入／西入、驟死、和了止め與擊飛 policy；每圈局數等於玩家人數。 */
 class RiichiMatchProgressionPolicy(
-    private val config: RiichiRuleConfig,
+    private val config: RiichiFamilyRuleConfig,
 ) : MatchProgressionPolicy {
     override fun decide(context: MatchProgressionContext): MatchProgressionDecision {
         val state = context.tableState
-        require(state.playerCount in MIN_SUPPORTED_PLAYER_COUNT..RIICHI_PLAYER_COUNT) {
+        require(state.playerCount in MIN_SUPPORTED_PLAYER_COUNT..MAX_SUPPORTED_PLAYER_COUNT) {
             "Built-in riichi match progression requires two to four players"
         }
+        val roundsPerWind = state.playerCount
 
         val bustThreshold = config.scoreConfig.bustThreshold
         if (bustThreshold != null && state.players.any { it.score < bustThreshold }) {
             return MatchProgressionDecision.EndMatch(BuiltInMatchEndReasonIds.PLAYER_BUSTED)
         }
 
-        val schedule = scheduleFor(config.gameLength)
+        val schedule = scheduleFor(config.gameLength, roundsPerWind)
         val current = state.roundPosition
         require(current.sequenceIndex in 0..schedule.extraLastIndex) { "Round position is outside the riichi schedule: $current" }
 
@@ -44,11 +45,11 @@ class RiichiMatchProgressionPolicy(
             if (current.sequenceIndex >= schedule.extraLastIndex) {
                 return MatchProgressionDecision.EndMatch(BuiltInMatchEndReasonIds.EXTRA_ROUND_LIMIT_REACHED)
             }
-            return continueByDirective(current, directive, schedule.regularLastIndex, continuesCombo)
+            return continueByDirective(current, directive, schedule.regularLastIndex, roundsPerWind, continuesCombo)
         }
 
         if (current.sequenceIndex < schedule.regularLastIndex) {
-            return continueByDirective(current, directive, schedule.regularLastIndex, continuesCombo)
+            return continueByDirective(current, directive, schedule.regularLastIndex, roundsPerWind, continuesCombo)
         }
 
         require(current.sequenceIndex == schedule.regularLastIndex) { "Regular riichi round exceeded its schedule: $current" }
@@ -71,7 +72,7 @@ class RiichiMatchProgressionPolicy(
         if (targetReached) return MatchProgressionDecision.EndMatch(BuiltInMatchEndReasonIds.TARGET_SCORE_REACHED)
         return MatchProgressionDecision.ContinueMatch(
             MatchRoundTransition.AdvanceTo(
-                nextPosition = position(schedule.regularLastIndex + 1, schedule.regularLastIndex),
+                nextPosition = position(schedule.regularLastIndex + 1, schedule.regularLastIndex, roundsPerWind),
                 continuesCombo = continuesCombo,
             ),
         )
@@ -82,12 +83,13 @@ class RiichiMatchProgressionPolicy(
         current: MatchRoundPosition,
         directive: RoundTransitionDirective,
         regularLastIndex: Int,
+        roundsPerWind: Int,
         continuesCombo: Boolean,
     ): MatchProgressionDecision = when (directive) {
         RoundTransitionDirective.REPEAT_DEALER -> MatchProgressionDecision.ContinueMatch(MatchRoundTransition.RepeatCurrentRound)
         RoundTransitionDirective.ADVANCE_DEALER -> MatchProgressionDecision.ContinueMatch(
             MatchRoundTransition.AdvanceTo(
-                nextPosition = position(current.sequenceIndex + 1, regularLastIndex),
+                nextPosition = position(current.sequenceIndex + 1, regularLastIndex, roundsPerWind),
                 continuesCombo = continuesCombo,
             ),
         )
@@ -104,32 +106,36 @@ class RiichiMatchProgressionPolicy(
         -> false
     }
 
-    /** 由明確四人日麻 sequence index 建立局位。 */
-    private fun position(sequenceIndex: Int, regularLastIndex: Int): MatchRoundPosition {
+    /** 由 sequence index 建立局位；每圈 [roundsPerWind] 局。 */
+    private fun position(
+        sequenceIndex: Int,
+        regularLastIndex: Int,
+        roundsPerWind: Int,
+    ): MatchRoundPosition {
         val winds = listOf(Wind.EAST, Wind.SOUTH, Wind.WEST)
         return MatchRoundPosition(
             sequenceIndex = sequenceIndex,
-            prevalentWind = winds[sequenceIndex / RIICHI_PLAYER_COUNT],
-            localRoundNumber = sequenceIndex % RIICHI_PLAYER_COUNT + 1,
+            prevalentWind = winds[sequenceIndex / roundsPerWind],
+            localRoundNumber = sequenceIndex % roundsPerWind + 1,
             phase = if (sequenceIndex > regularLastIndex) MatchRoundPhase.EXTRA else MatchRoundPhase.REGULAR,
         )
     }
 
-    /** 依對局長度取得原定最後局與延長最後局。 */
-    private fun scheduleFor(gameLength: RiichiGameLength): Schedule = when (gameLength) {
+    /** 依對局長度與每圈局數取得原定最後局與延長最後局；延長最多再打一圈。 */
+    private fun scheduleFor(gameLength: RiichiGameLength, roundsPerWind: Int): Schedule = when (gameLength) {
         RiichiGameLength.OneGame -> Schedule(regularLastIndex = 0, extraLastIndex = 0)
-        RiichiGameLength.East -> Schedule(regularLastIndex = 3, extraLastIndex = 7)
-        RiichiGameLength.TwoWinds -> Schedule(regularLastIndex = 7, extraLastIndex = 11)
+        RiichiGameLength.East -> Schedule(regularLastIndex = roundsPerWind - 1, extraLastIndex = roundsPerWind * 2 - 1)
+        RiichiGameLength.TwoWinds -> Schedule(regularLastIndex = roundsPerWind * 2 - 1, extraLastIndex = roundsPerWind * 3 - 1)
     }
 
     /** 日麻賽程的原定與延長局位上限。 */
     private data class Schedule(val regularLastIndex: Int, val extraLastIndex: Int)
 
     private companion object {
-        /** 測試與未來規則擴充共用模型所允許的最少玩家數；正式內建日麻仍限制四人。 */
+        /** 允許的最少玩家數。 */
         const val MIN_SUPPORTED_PLAYER_COUNT: Int = 2
 
-        /** 目前內建日麻固定玩家數。 */
-        const val RIICHI_PLAYER_COUNT: Int = 4
+        /** 允許的最多玩家數。 */
+        const val MAX_SUPPORTED_PLAYER_COUNT: Int = 4
     }
 }

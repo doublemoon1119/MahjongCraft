@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot
 
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.IdentifiedTileDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.WindDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDto
@@ -20,6 +21,7 @@ data class MahjongPlayerSnapshotDto(
     val seatWind: WindDto,
     val hand: HandSnapshotDto,
     val discardPile: DiscardPileDto,
+    val setAsideTiles: List<IdentifiedTileDto>,
     val playerRuleState: PlayerRuleStateDto?,
     val score: Int,
 )
@@ -30,6 +32,7 @@ fun MahjongPlayerSnapshot.toDto(registries: NetworkDtoRegistries): MahjongPlayer
     seatWind = seatWind.toDto(),
     hand = hand.toDto(),
     discardPile = discardPile.toDto(registries),
+    setAsideTiles = setAsideTiles.map { it.toDto() },
     playerRuleState = playerRuleState?.toDto(registries),
     score = score,
 )
@@ -40,6 +43,7 @@ fun MahjongPlayerSnapshotDto.toDomain(registries: NetworkDtoRegistries): Mahjong
     seatWind = seatWind.toDomain(),
     hand = hand.toDomain(),
     discardPile = discardPile.toDomain(registries),
+    setAsideTiles = setAsideTiles.map { it.toDomain() },
     playerRuleState = playerRuleState?.toDomain(registries),
     score = score,
 )

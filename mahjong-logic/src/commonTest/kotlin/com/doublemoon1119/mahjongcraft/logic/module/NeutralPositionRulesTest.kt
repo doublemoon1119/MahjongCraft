@@ -29,7 +29,7 @@ class NeutralPositionRulesTest {
         discardPile = FakeDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.Red)),
     )
     private val view = PositionView(
-        snapshot = FakeTableStateFactory.create(players = listOf(opponent, self)).toSnapshot(visibleHandPlayerIds = setOf(self.id)),
+        snapshot = FakeTableStateFactory.create(players = listOf(opponent, self)).toSnapshot(visibleHandPlayerIds = setOf(self.id), setAsideTiles = { emptyList() }),
         evaluatorId = self.id,
     )
 

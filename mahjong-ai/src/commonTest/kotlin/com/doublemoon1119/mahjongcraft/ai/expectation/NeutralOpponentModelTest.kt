@@ -37,7 +37,7 @@ class NeutralOpponentModelTest {
     )
     private val model = NeutralOpponentModel(ReadingDepth.BASIC)
     private val view = PositionView(
-        snapshot = FakeTableStateFactory.create(players = listOf(quiet, self, active)).toSnapshot(visibleHandPlayerIds = setOf(self.id)),
+        snapshot = FakeTableStateFactory.create(players = listOf(quiet, self, active)).toSnapshot(visibleHandPlayerIds = setOf(self.id), setAsideTiles = { emptyList() }),
         evaluatorId = self.id,
     )
 

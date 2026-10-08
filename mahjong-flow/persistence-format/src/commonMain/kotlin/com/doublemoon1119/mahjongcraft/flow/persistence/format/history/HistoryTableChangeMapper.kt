@@ -98,6 +98,7 @@ internal class HistoryTableChangeMapper(
             )
         },
         finishedPlayerIds = change.finishedPlayerIds?.map(Uuid::toString)?.toSet(),
+        revealedHandTileIds = change.revealedHandTileIds?.map(Uuid::toString)?.toSet(),
     )
 
     /** 將局部 DTO 還原成可套用於前一桌況的差異。 */
@@ -142,5 +143,6 @@ internal class HistoryTableChangeMapper(
             )
         },
         finishedPlayerIds = dto.finishedPlayerIds?.map(Uuid::parse)?.toSet(),
+        revealedHandTileIds = dto.revealedHandTileIds?.map(Uuid::parse)?.toSet(),
     )
 }

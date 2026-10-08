@@ -96,7 +96,7 @@ internal class PlayerDecisionScreen(
         }
     }
 
-    /** 他家捨牌與搶槓視窗的跳過提交正式 Pass，自己回合的跳過改為進入普通實體出牌模式。 */
+    /** 他家捨牌與搶和視窗的跳過提交正式 Pass，自己回合的跳過改為進入普通實體出牌模式。 */
     private fun onSkipClicked() {
         val pass = prompt.actions.firstOrNull { it.actionId == PASS_ACTION_ID }
         if (isReaction && pass != null) {

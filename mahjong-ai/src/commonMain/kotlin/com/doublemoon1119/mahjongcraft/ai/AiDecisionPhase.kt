@@ -16,6 +16,6 @@ sealed interface AiDecisionPhase {
     /** 有資格回應他家的捨牌（吃/碰/明槓/榮和/過），且尚未回應。 */
     data object RespondingToDiscard : AiDecisionPhase
 
-    /** 有資格回應他家的暗槓/加槓宣告（搶槓榮和/過），且尚未回應。 */
+    /** 有資格回應他家的暗槓、加槓或移出手牌動作（搶和/過），且尚未回應。 */
     data object RespondingToRobbing : AiDecisionPhase
 }

@@ -58,7 +58,7 @@ class GameDecisionAuthorityResolverTest {
                 players = listOf(FakeMahjongPlayerFactory.create(id = playerId)),
                 pendingRobbingReaction = PendingRobbingReaction(
                     declarerId = Uuid.random(),
-                    kanAction = GameAction.Kan(
+                    declaredAction = GameAction.Kan(
                         type = GameAction.KanType.ADDED_KAN,
                         tileId = robbedTile.id,
                         withTiles = emptyList(),

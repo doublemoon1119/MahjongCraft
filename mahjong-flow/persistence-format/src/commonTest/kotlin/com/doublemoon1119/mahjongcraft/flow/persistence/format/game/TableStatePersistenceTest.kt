@@ -110,7 +110,7 @@ class TableStatePersistenceTest {
             state.copy(
                 pendingRobbingReaction = PendingRobbingReaction(
                     declarerId = declarerId,
-                    kanAction = kanAction,
+                    declaredAction = kanAction,
                     robbedTile = robbedTile,
                     eligiblePlayerIds = setOf(responderId),
                     responses = mapOf(responderId to GameAction.Pass),
@@ -142,6 +142,15 @@ class TableStatePersistenceTest {
         val humanId = state.players.first().id
 
         assertEncodedRoundTrip(state.copy(finishedPlayerIds = setOf(humanId)))
+    }
+
+    /** 本局已公開、仍在手牌中的牌在存檔往返後保留。 */
+    @Test
+    fun `revealed hand tiles round-trip in complete game state`() {
+        val state = createTableState()
+        val handTileId = state.players.first().hand.standingTiles.first().id
+
+        assertEncodedRoundTrip(state.copy(revealedHandTileIds = setOf(handTileId)))
     }
 
     /** 存檔裡的 `finishedPlayerIds` 含不在座玩家時，還原成領域型別的當下就該被不變式擋下。 */

@@ -117,6 +117,7 @@ class DrawTileUseCase(
             drawnPlayer.hand.tiles.map { it.id },
             drawnPlayer.hand.lastDrawn?.id,
             drawnPlayer.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles, module.tileOrder) },
+            setAsideTileIds = module.setAsideTiles(drawnPlayer).map { it.id },
             isNewlyDrawn = true,
         )
         // 牌山剩餘張數每次摸牌都會變，局況資訊要跟著更新——這份呈現是「找到既有的就地更新」

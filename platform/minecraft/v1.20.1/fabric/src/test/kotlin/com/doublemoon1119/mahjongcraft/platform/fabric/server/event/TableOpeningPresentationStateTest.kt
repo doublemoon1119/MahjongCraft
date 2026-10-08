@@ -28,7 +28,7 @@ class TableOpeningPresentationStateTest {
     /** 牌牆發布後兩個讀取端都取得本局的值。 */
     @Test
     fun `publishes the drop ticks and the stack count of this round`() {
-        state.beginWall(TABLE, wallDropTicks = 40, stacksPerSide = 17)
+        state.beginWall(TABLE, wallDropTicks = 40, stacksPerSide = 17, sideCount = 4)
 
         assertEquals(40, state.wallDropTicks(TABLE))
         assertEquals(17, state.wallStacksPerSide(TABLE))
@@ -37,7 +37,7 @@ class TableOpeningPresentationStateTest {
     /** 兩個讀取端各自安全讀取，不會互相消費。 */
     @Test
     fun `keeps the values readable more than once`() {
-        state.beginWall(TABLE, wallDropTicks = 40, stacksPerSide = 17)
+        state.beginWall(TABLE, wallDropTicks = 40, stacksPerSide = 17, sideCount = 4)
 
         repeat(3) { assertEquals(40, state.wallDropTicks(TABLE)) }
         repeat(3) { assertEquals(17, state.wallStacksPerSide(TABLE)) }
@@ -46,9 +46,9 @@ class TableOpeningPresentationStateTest {
     /** 下一局的牌牆覆寫上一局的值。 */
     @Test
     fun `overwrites the values of the previous round`() {
-        state.beginWall(TABLE, wallDropTicks = 40, stacksPerSide = 17)
+        state.beginWall(TABLE, wallDropTicks = 40, stacksPerSide = 17, sideCount = 4)
 
-        state.beginWall(TABLE, wallDropTicks = 24, stacksPerSide = 9)
+        state.beginWall(TABLE, wallDropTicks = 24, stacksPerSide = 9, sideCount = 4)
 
         assertEquals(24, state.wallDropTicks(TABLE))
         assertEquals(9, state.wallStacksPerSide(TABLE))
@@ -57,8 +57,8 @@ class TableOpeningPresentationStateTest {
     /** 每張桌子各自保存，互不影響。 */
     @Test
     fun `keeps the tables apart`() {
-        state.beginWall(TABLE, wallDropTicks = 40, stacksPerSide = 17)
-        state.beginWall(OTHER_TABLE, wallDropTicks = 24, stacksPerSide = 9)
+        state.beginWall(TABLE, wallDropTicks = 40, stacksPerSide = 17, sideCount = 4)
+        state.beginWall(OTHER_TABLE, wallDropTicks = 24, stacksPerSide = 9, sideCount = 4)
 
         assertEquals(40, state.wallDropTicks(TABLE))
         assertEquals(24, state.wallDropTicks(OTHER_TABLE))
@@ -67,7 +67,7 @@ class TableOpeningPresentationStateTest {
     /** 沒有排定開門時發牌不會取到任何開門資料。 */
     @Test
     fun `consumes no opening while none is armed`() {
-        state.beginWall(TABLE, wallDropTicks = 40, stacksPerSide = 17)
+        state.beginWall(TABLE, wallDropTicks = 40, stacksPerSide = 17, sideCount = 4)
 
         assertNull(state.consumeOpening(TABLE))
     }
@@ -104,7 +104,7 @@ class TableOpeningPresentationStateTest {
     fun `drops an unplayed opening when the next round starts`() {
         state.armOpening(TABLE, openingPresentation())
 
-        state.beginWall(TABLE, wallDropTicks = 24, stacksPerSide = 9)
+        state.beginWall(TABLE, wallDropTicks = 24, stacksPerSide = 9, sideCount = 4)
 
         assertNull(state.consumeOpening(TABLE))
     }
@@ -112,7 +112,7 @@ class TableOpeningPresentationStateTest {
     /** 開局失敗後整張桌子回到初始狀態。 */
     @Test
     fun `resets the table after a failed opening`() {
-        state.beginWall(TABLE, wallDropTicks = 40, stacksPerSide = 17)
+        state.beginWall(TABLE, wallDropTicks = 40, stacksPerSide = 17, sideCount = 4)
         state.armOpening(TABLE, openingPresentation())
 
         state.clear(TABLE)
@@ -125,8 +125,8 @@ class TableOpeningPresentationStateTest {
     /** 清除一張桌子不影響其他桌。 */
     @Test
     fun `clears only the given table`() {
-        state.beginWall(TABLE, wallDropTicks = 40, stacksPerSide = 17)
-        state.beginWall(OTHER_TABLE, wallDropTicks = 24, stacksPerSide = 9)
+        state.beginWall(TABLE, wallDropTicks = 40, stacksPerSide = 17, sideCount = 4)
+        state.beginWall(OTHER_TABLE, wallDropTicks = 24, stacksPerSide = 9, sideCount = 4)
 
         state.clear(TABLE)
 

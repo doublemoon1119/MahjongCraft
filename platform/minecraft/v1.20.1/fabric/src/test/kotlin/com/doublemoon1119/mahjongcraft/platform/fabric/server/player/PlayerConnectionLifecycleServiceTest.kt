@@ -11,12 +11,15 @@ import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepositor
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.LeaveRoomUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.SyncRoomSnapshotUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.AutomaticControlSnapshotSender
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.DisconnectedPlayerPolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.concurrency.TestCoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.testing.flow.common.concurrency.createTestAppCoroutineScope
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
@@ -121,7 +124,7 @@ class PlayerConnectionLifecycleServiceTest {
         val fixture = createFixture(DisconnectedPlayerPolicy.KEEP_SEAT)
         fixture.roomRepository.removeRoom(fixture.tableId)
         fixture.gameRepository.setTableState(
-            FakeTableStateFactory.create(id = fixture.tableId, players = fixture.players),
+            FakeTableStateFactory.create(id = fixture.tableId, players = fixture.players, config = RiichiRuleConfig()),
         )
         assertNull(fixture.gameSnapshotRepository.getSnapshot(fixture.tableId, fixture.playerId))
 
@@ -140,7 +143,7 @@ class PlayerConnectionLifecycleServiceTest {
     fun `test active game always keeps disconnected player membership`() = runTest {
         val fixture = createFixture(DisconnectedPlayerPolicy.LEAVE_IMMEDIATELY)
         fixture.roomRepository.removeRoom(fixture.tableId)
-        fixture.gameRepository.setTableState(FakeTableStateFactory.create(id = fixture.tableId))
+        fixture.gameRepository.setTableState(FakeTableStateFactory.create(id = fixture.tableId, config = RiichiRuleConfig()))
 
         fixture.service.onDisconnected(fixture.playerId)
         advanceUntilIdle()
@@ -243,7 +246,7 @@ class PlayerConnectionLifecycleServiceTest {
             gameRepository,
             leaveRoom,
             SyncRoomSnapshotUseCase(roomRepository, roomSnapshotRepository),
-            SyncGameSnapshotUseCase(GameSnapshotSynchronizer(gameRepository, gameSnapshotRepository, GameVisibilityPolicyImpl())),
+            SyncGameSnapshotUseCase(GameSnapshotSynchronizer(gameRepository, gameSnapshotRepository, GameVisibilityPolicyImpl(MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }))),
             automaticControlSnapshots,
             ServerPlayerIdentityStore(FabricServerHolder()),
         )

@@ -54,7 +54,7 @@ class DeclareKanUseCaseTest {
         val gameRepo = FakeGameRepository()
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
         val snapshotRepo = FakeGameSnapshotRepository()
-        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl())
+        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(moduleRegistry))
         val eventPublisher = FakeGameEventPublisher()
         val presentationPublisher = FakeGamePresentationPublisher()
         val useCase = DeclareKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher)
@@ -116,6 +116,10 @@ class DeclareKanUseCaseTest {
             rinshanTile.id,
             fixtures.presentationPublisher.getPublishedPlayerTiles(gameId)?.drawnTileId,
             "The rinshan tile should be presented as a drawn tile (moved to the draw slot), same as a normal draw.",
+        )
+        assertTrue(
+            fixtures.presentationPublisher.getPublishedPlayerTiles(gameId)?.isNewlyDrawn == true,
+            "The rinshan draw should be presented with the same draw motion as a normal draw.",
         )
         val publishedTransitions = fixtures.presentationPublisher.getPublishedWallLayoutTransitions(gameId)
         assertEquals(1, publishedTransitions.size)
@@ -487,8 +491,8 @@ class DeclareKanUseCaseTest {
             dynamicRuleState = RiichiDynamicState(),
         )
         fixtures.gameRepo.setTableState(table)
-        fixtures.snapshotRepo.setSnapshot(playerId, table.toSnapshot(setOf(playerId)))
-        fixtures.snapshotRepo.setSnapshot(otherId, table.toSnapshot(setOf(otherId)))
+        fixtures.snapshotRepo.setSnapshot(playerId, table.toSnapshot(setOf(playerId), setAsideTiles = { emptyList() }))
+        fixtures.snapshotRepo.setSnapshot(otherId, table.toSnapshot(setOf(otherId), setAsideTiles = { emptyList() }))
 
         fixtures.useCase(gameId, playerId, GameAction.KanType.CLOSED_KAN, east4.id)
 
@@ -504,7 +508,7 @@ class DeclareKanUseCaseTest {
     /**
      * 驗證加槓時若有其他玩家可以搶槓：開啟 `pendingRobbingReaction` 反應視窗，副露**未**套用（宣告者手牌
      * 維持原樣、`lastDrawn` 不變）、牌山**未**縮減、只廣播 `Kan`（不廣播 `Draw`，因為嶺上摸牌
-     * 尚未真正發生）。
+     * 尚未真正發生）；畫面先呈現加槓完成的樣子，加上去的那張移入副露、尚未補牌。
      */
     @Test
     fun `test declare added kan opens chankan window when another player can rob it`() = runTest {
@@ -552,7 +556,7 @@ class DeclareKanUseCaseTest {
         val pending = newState.pendingRobbingReaction
         assertNotNull(pending, "A chankan reaction window should have opened.")
         assertEquals(playerId, pending.declarerId)
-        assertEquals(GameAction.Kan(GameAction.KanType.ADDED_KAN, white4.id, emptyList()), pending.kanAction)
+        assertEquals(GameAction.Kan(GameAction.KanType.ADDED_KAN, white4.id, emptyList()), pending.declaredAction)
         assertEquals(white4, pending.robbedTile)
         assertEquals(setOf(robberId), pending.eligiblePlayerIds)
 
@@ -560,6 +564,7 @@ class DeclareKanUseCaseTest {
         assertEquals(MeldType.PON, unchangedDeclarer.hand.melds.single().type, "The meld must not be upgraded to ADDED_KAN yet.")
         assertEquals(white4, unchangedDeclarer.hand.lastDrawn, "The declarer's hand should be untouched while the window is open.")
         assertEquals(2, newState.tileWall.remainingCount, "The dead wall should not be drawn from yet.")
+        assertEquals(setOf(white4.id), newState.revealedHandTileIds, "The added tile is public while others decide.")
 
         val expectedKan = GameAction.Kan(GameAction.KanType.ADDED_KAN, white4.id, emptyList())
         assertEquals(
@@ -567,6 +572,11 @@ class DeclareKanUseCaseTest {
             fixtures.eventPublisher.getNotifiedActions(gameId, robberId, playerId),
             "Only the Kan declaration should be broadcast; Draw hasn't happened yet.",
         )
+        val presented = assertNotNull(fixtures.presentationPublisher.getPublishedPlayerTiles(gameId))
+        assertEquals(MeldType.ADDED_KAN, presented.melds.single().type)
+        assertEquals(setOf(white4.id), presented.newlyClaimedMeldTileIds)
+        assertNull(presented.drawnTileId)
+        assertTrue(presented.standingTileIds.isEmpty())
     }
 
     /**
@@ -782,7 +792,7 @@ class DeclareKanUseCaseTest {
         val declarer = FakeMahjongPlayerFactory.create(id = playerId, initialSeat = Wind.EAST, hand = Hand(lastDrawn = lastDrawn))
         val existingPending = PendingRobbingReaction(
             declarerId = playerId,
-            kanAction = GameAction.Kan(GameAction.KanType.ADDED_KAN, Uuid.random(), emptyList()),
+            declaredAction = GameAction.Kan(GameAction.KanType.ADDED_KAN, Uuid.random(), emptyList()),
             robbedTile = FakeIdentifiedTileFactory.create(Tile.Honor.White),
             eligiblePlayerIds = setOf(Uuid.random()),
         )

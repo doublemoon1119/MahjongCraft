@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi.layout
 
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PULL_NORTH_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiSupplementalDrawPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.layout.InitialPhysicalWallLayoutContext
 import com.doublemoon1119.mahjongcraft.logic.table.layout.InitialPhysicalWallLayoutDecision
 import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutPolicy
@@ -20,12 +20,29 @@ import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import kotlin.math.ceil
 import kotlin.uuid.Uuid
 
-/** 日本麻將的獨立王牌區、特殊嶺上牌位置與槓後補位布局。 */
-object RiichiPhysicalWallLayoutPolicy : PhysicalWallLayoutPolicy {
+/**
+ * 日本麻將（四人或三人）的獨立王牌區、特殊嶺上牌位置與補牌後的補位布局。
+ *
+ * 王牌最前面的 [rinshanTileCount] 張是嶺上牌，其後是寶牌與裏寶牌指示牌；嶺上牌張數同時是一局最多的補牌次數
+ * （四人 4 次槓；三人槓與拔北合計 8 次）。每次補牌都把活牌尾端補進王牌末端，補進來的牌依序排在開門面軌道的
+ * 指示牌之後。
+ *
+ * @property rinshanTileCount 規則設定的嶺上牌張數，必須是不小於 2 的偶數。
+ */
+class RiichiPhysicalWallLayoutPolicy(
+    private val rinshanTileCount: Int,
+) : PhysicalWallLayoutPolicy {
+    init {
+        require(rinshanTileCount >= MIN_RINSHAN_TILE_COUNT && rinshanTileCount % 2 == 0) {
+            "Riichi rinshan tile count must be an even number of at least $MIN_RINSHAN_TILE_COUNT, got $rinshanTileCount"
+        }
+    }
+
     /** 建立帶王牌分界，並將第一張嶺上牌預先放到缺口外側下層的開局布局。 */
     override fun createInitialLayout(context: InitialPhysicalWallLayoutContext): InitialPhysicalWallLayoutDecision {
         val wallLayout = context.wallLayout
-        if (wallLayout.reservedWallTiles.size != RESERVED_TILE_COUNT) {
+        val reservedTileCount = wallLayout.reservedWallTiles.size
+        if (reservedTileCount <= rinshanTileCount || reservedTileCount % 2 != 0) {
             return InitialPhysicalWallLayoutDecision.Rejected(INVALID_STATE_REASON_ID)
         }
         val reservedIds = wallLayout.reservedWallTiles.mapTo(mutableSetOf()) { it.id }
@@ -39,9 +56,9 @@ object RiichiPhysicalWallLayoutPolicy : PhysicalWallLayoutPolicy {
         val track = SingleSideReservedWallTrackPlanner.plan(
             opening = context.wallOpening,
             stacksPerSide = stacksPerSide,
-            stackCount = RESERVED_TRACK_STACK_COUNT,
+            stackCount = initialReservedStackCount(reservedTileCount) + rinshanTileCount / 2,
             occupiedPositions = occupiedPositions,
-            initialVacantStackCount = INITIAL_RESERVED_STACK_COUNT,
+            initialVacantStackCount = initialReservedStackCount(reservedTileCount),
             extraStacksAfterHead = RESERVED_WALL_GAP_CLEARANCE_STACKS,
         ) ?: return InitialPhysicalWallLayoutDecision.Rejected(NO_COLLISION_FREE_TRACK_REASON_ID)
         val reservedPlacements = createReservedPlacements(wallLayout, track)
@@ -51,7 +68,7 @@ object RiichiPhysicalWallLayoutPolicy : PhysicalWallLayoutPolicy {
         return InitialPhysicalWallLayoutDecision.Completed(TileWallPhysicalLayout(placements))
     }
 
-    /** 將 14 張日麻王牌依「嶺 1、嶺 2、其餘完整牌墩」投影到開門面的連續軌道。 */
+    /** 將日麻王牌依「嶺 1、嶺 2、其餘完整牌墩」投影到開門面的連續軌道。 */
     private fun createReservedPlacements(
         wallLayout: TileWallLayoutResult,
         track: SingleSideReservedWallTrack,
@@ -67,18 +84,16 @@ object RiichiPhysicalWallLayoutPolicy : PhysicalWallLayoutPolicy {
     }
 
     /**
-     * 依補牌完成次數重排活牌末端：奇數次先形成半墩，偶數次再把剩餘牌疊回完整一墩。
+     * 依補牌完成次數（槓與拔北合計）重排活牌末端：奇數次先形成半墩，偶數次再把剩餘牌疊回完整一墩。
      */
     override fun resolveTransition(context: PhysicalWallLayoutTransitionContext): PhysicalWallLayoutTransitionDecision {
-        if (context.action !is GameAction.Kan) return unchangedOrRemoveDepartedTiles(context)
+        if (context.action !is GameAction.Kan && context.action != PULL_NORTH_GAME_ACTION) return unchangedOrRemoveDepartedTiles(context)
         val beforeState = context.tableStateBeforeAction.dynamicRuleState as? RiichiDynamicState
             ?: return PhysicalWallLayoutTransitionDecision.Rejected(INVALID_STATE_REASON_ID)
         val afterState = context.tableStateAfterAction.dynamicRuleState as? RiichiDynamicState
             ?: return PhysicalWallLayoutTransitionDecision.Rejected(INVALID_STATE_REASON_ID)
-        val drawNumber = afterState.completedSupplementalDrawCount
-        if (drawNumber != beforeState.completedSupplementalDrawCount + 1 ||
-            drawNumber !in 1..RiichiSupplementalDrawPolicy.MAX_SUPPLEMENTAL_DRAWS
-        ) {
+        val drawNumber = afterState.totalSupplementalDrawCount
+        if (drawNumber != beforeState.totalSupplementalDrawCount + 1 || drawNumber !in 1..rinshanTileCount) {
             return PhysicalWallLayoutTransitionDecision.Rejected(INVALID_TRANSITION_REASON_ID)
         }
 
@@ -170,7 +185,7 @@ object RiichiPhysicalWallLayoutPolicy : PhysicalWallLayoutPolicy {
             else -> drawNumber / 2 + 1
         }
         val trackHeadStack = nextReservedPlacement.position.stack + nextReservedTrackIndex
-        val trackIndex = FIRST_REPLENISHMENT_TRACK_INDEX + (drawNumber - 1) / 2
+        val trackIndex = initialReservedStackCount(context.tableStateBeforeAction.config.deadTileCount) + (drawNumber - 1) / 2
         val stack = trackHeadStack - trackIndex
         if (stack < 0) return null
         return TileWallPlacement(
@@ -179,7 +194,7 @@ object RiichiPhysicalWallLayoutPolicy : PhysicalWallLayoutPolicy {
         )
     }
 
-    /** 非槓動作只移除已離開牌牆的牌，不建立補位移動階段。 */
+    /** 不需要補牌的動作只移除已離開牌牆的牌，不建立補位移動階段。 */
     private fun unchangedOrRemoveDepartedTiles(
         context: PhysicalWallLayoutTransitionContext,
     ): PhysicalWallLayoutTransitionDecision {
@@ -203,39 +218,42 @@ object RiichiPhysicalWallLayoutPolicy : PhysicalWallLayoutPolicy {
         return counts.distinct().singleOrNull()
     }
 
-    /** 日本麻將固定王牌張數。 */
-    private const val RESERVED_TILE_COUNT = 14
-
-    /** 初始 14 張王牌的八格布局，加上兩墩供四次槓補入牌使用。 */
-    private const val RESERVED_TRACK_STACK_COUNT = 10
-
-    /** 開局時實際由十四張王牌使用的軌道墩數；其後兩墩仍屬活牌，待槓後才補入。 */
-    private const val INITIAL_RESERVED_STACK_COUNT = 8
-
-    /** 第一次補入牌位於軌道的第八格，之後每兩次補牌向尾端推進一墩。 */
-    private const val FIRST_REPLENISHMENT_TRACK_INDEX = 8
+    /** 本局已完成的補牌次數（槓與拔北合計）。 */
+    private val RiichiDynamicState.totalSupplementalDrawCount: Int
+        get() = completedSupplementalDrawCount + completedNorthDrawCount
 
     /**
-     * 王牌區整體朝開門空位平移的墩數。
-     *
-     * 牌張寬度為一墩，所以這個位移同時決定分界寬度：平移一墩半時，活牌末端與王牌區尾端之間留下一墩半
-     * 的空間，槓後補入的那張牌（寬一墩）填進去之後仍剩半墩，不會壓到同一墩下降的活牌。偶數次槓把整墩
-     * 用完、活牌整排後退一墩後，分界回到一墩半。
+     * 開局時王牌使用的軌道墩數：嶺 1、嶺 2 各佔一格，其餘牌兩張一墩。其後的墩仍屬活牌，補牌後才補入，
+     * 每兩次補牌使用一墩。
      */
-    private const val RESERVED_WALL_GAP_STACKS = 1.5
+    private fun initialReservedStackCount(reservedTileCount: Int): Int = reservedTileCount / 2 + 1
 
-    /** 平移後王牌區頭端會越過軌道頭端，向上取整即為頭端必須額外淨空的墩數。 */
-    private val RESERVED_WALL_GAP_CLEARANCE_STACKS = ceil(RESERVED_WALL_GAP_STACKS).toInt()
+    companion object {
+        /** 王牌最少需要的嶺上牌張數（嶺 1 與嶺 2 各自獨立擺放）。 */
+        private const val MIN_RINSHAN_TILE_COUNT = 2
 
-    /** 將集中後的保留牌整體朝開門空位平移，形成清楚且足以容納槓後補入牌的分界。 */
-    private val RESERVED_WALL_GAP_OFFSET = TileWallPlacementOffset(alongWallStacks = RESERVED_WALL_GAP_STACKS)
+        /**
+         * 王牌區整體朝開門空位平移的墩數。
+         *
+         * 牌張寬度為一墩，所以這個位移同時決定分界寬度：平移一墩半時，活牌末端與王牌區尾端之間留下一墩半
+         * 的空間，槓後補入的那張牌（寬一墩）填進去之後仍剩半墩，不會壓到同一墩下降的活牌。偶數次槓把整墩
+         * 用完、活牌整排後退一墩後，分界回到一墩半。
+         */
+        private const val RESERVED_WALL_GAP_STACKS = 1.5
 
-    /** 初始牌牆缺少日麻嶺上牌結構時的拒絕原因。 */
-    const val INVALID_STATE_REASON_ID: String = "mahjongcraft:riichi/invalid_physical_wall_state"
+        /** 平移後王牌區頭端會越過軌道頭端，向上取整即為頭端必須額外淨空的墩數。 */
+        private val RESERVED_WALL_GAP_CLEARANCE_STACKS = ceil(RESERVED_WALL_GAP_STACKS).toInt()
 
-    /** 開門面沒有足夠連續且無占用的保留牌軌道時的拒絕原因。 */
-    const val NO_COLLISION_FREE_TRACK_REASON_ID: String = "mahjongcraft:riichi/no_collision_free_reserved_wall_track"
+        /** 將集中後的保留牌整體朝開門空位平移，形成清楚且足以容納槓後補入牌的分界。 */
+        private val RESERVED_WALL_GAP_OFFSET = TileWallPlacementOffset(alongWallStacks = RESERVED_WALL_GAP_STACKS)
 
-    /** 槓前後牌牆或補牌次數不符合日麻 transition 契約時的拒絕原因。 */
-    const val INVALID_TRANSITION_REASON_ID: String = "mahjongcraft:riichi/invalid_physical_wall_transition"
+        /** 初始牌牆缺少日麻嶺上牌結構時的拒絕原因。 */
+        const val INVALID_STATE_REASON_ID: String = "mahjongcraft:riichi/invalid_physical_wall_state"
+
+        /** 開門面沒有足夠連續且無占用的保留牌軌道時的拒絕原因。 */
+        const val NO_COLLISION_FREE_TRACK_REASON_ID: String = "mahjongcraft:riichi/no_collision_free_reserved_wall_track"
+
+        /** 槓前後牌牆或補牌次數不符合日麻 transition 契約時的拒絕原因。 */
+        const val INVALID_TRANSITION_REASON_ID: String = "mahjongcraft:riichi/invalid_physical_wall_transition"
+    }
 }

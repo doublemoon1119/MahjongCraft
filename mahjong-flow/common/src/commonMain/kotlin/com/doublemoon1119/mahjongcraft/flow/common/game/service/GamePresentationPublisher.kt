@@ -199,10 +199,14 @@ interface GamePresentationPublisher {
      * @param drawnTileId 這位玩家目前摸到、尚未併入立牌或打出的那張牌 Uuid（`Hand.lastDrawn`）；
      * `null` 代表目前沒有摸牌位。
      * @param melds 這位玩家目前所有副露，依宣告順序排列。
-     * @param isNewlyDrawn [drawnTileId] 是否為這次剛摸到的牌：只有真正的摸牌（`DrawTileUseCase`）傳 `true`，平台可據此
+     * @param setAsideTileIds 這位玩家移出手牌、公開擺在桌上的牌 Uuid（見 `MahjongRuleModule.setAsideTiles`），依移出
+     * 順序排列；沒有時為空清單。
+     * @param isNewlyDrawn [drawnTileId] 是否為這次剛從牌牆摸到的牌：一般摸牌與槓、移出手牌後的補牌都傳 `true`，平台可據此
      * 呈現摸牌的過程；其餘呼叫即使摸牌位仍有牌也維持 `false`。
      * @param newlyClaimedMeldTileIds 這次新成立副露、從原本位置移入副露的牌 Uuid：吃／碰／明槓／暗槓為整組，加槓只有
      * 新加入的那一張。空集合（預設值）代表沒有。
+     * @param newlySetAsideTileIds 這次剛移出手牌、公開擺到桌上的牌 Uuid（見 `MahjongRuleModule.setAsideTiles`），例如
+     * 三人日麻拔出的北。空集合（預設值）代表沒有。
      */
     fun publishPlayerTilesUpdated(
         gameId: Uuid,
@@ -210,8 +214,10 @@ interface GamePresentationPublisher {
         standingTileIds: List<Uuid>,
         drawnTileId: Uuid?,
         melds: List<MeldPresentation>,
+        setAsideTileIds: List<Uuid>,
         isNewlyDrawn: Boolean = false,
         newlyClaimedMeldTileIds: Set<Uuid> = emptySet(),
+        newlySetAsideTileIds: Set<Uuid> = emptySet(),
     )
 
     /**

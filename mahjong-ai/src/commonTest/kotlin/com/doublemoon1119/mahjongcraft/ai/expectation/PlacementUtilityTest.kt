@@ -60,7 +60,7 @@ class PlacementUtilityTest {
             roundNumber = sequenceIndex + 1,
             roundPosition = MatchRoundPosition(sequenceIndex, Wind.EAST, sequenceIndex + 1),
         )
-        .toSnapshot(setOf(selfId))
+        .toSnapshot(setOf(selfId), setAsideTiles = { emptyList() })
 
     /** 測試常數。 */
     private companion object {

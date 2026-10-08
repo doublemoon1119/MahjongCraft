@@ -120,6 +120,9 @@ internal object RiichiCatalogueKeys {
 
     /** 本配置沒有啟用古役的提示。 */
     const val LOCAL_YAKU_UNAVAILABLE: String = PREFIX + "unavailable.local_yaku"
+
+    /** 三人日麻的牌組沒有二～八萬，役種無法成立的提示。 */
+    const val THREE_PLAYER_TILES_UNAVAILABLE: String = PREFIX + "unavailable.three_player_tiles"
 }
 
 /**
@@ -146,6 +149,9 @@ internal enum class RiichiCatalogueYaku(
 
     /** AkaDora 的說明對照。 */
     AkaDora(YakuType.AkaDora, "red_five", RiichiCatalogueCategory.BONUS, RiichiCatalogueKeys.BONUS_ONLY),
+
+    /** 三人日麻拔北寶牌的說明對照。 */
+    NukiDora(YakuType.NukiDora, "nuki_dora", RiichiCatalogueCategory.BONUS, RiichiCatalogueKeys.BONUS_ONLY),
 
     /** Tanyao 的說明對照。 */
     Tanyao(YakuType.Tanyao, "tanyao", RiichiCatalogueCategory.HAN_1, RiichiCatalogueKeys.HAN_1),

@@ -33,7 +33,7 @@ import kotlin.uuid.Uuid
  * @property shantenCalculator 判斷手牌是否構成和牌型與聽哪些牌。
  */
 class RiichiPositionRules(
-    private val config: RiichiRuleConfig,
+    private val config: RiichiFamilyRuleConfig,
     private val handValueCalculator: RiichiHandValueCalculator,
     private val shantenCalculator: RiichiShantenCalculator,
 ) : PositionRules {
@@ -70,7 +70,7 @@ class RiichiPositionRules(
         if (!result.qualifyingHan().satisfies(config.minimumWinConstraint)) return WinValue.NotWinnable
 
         val sticks = riichiStickCount(view) + if (declaresRiichi) 1 else 0
-        return WinValue.Points(result.totalPoint + sticks * RIICHI_STICK_POINTS + comboBonus(view, isTsumo))
+        return WinValue.Points(result.pointResult.totalFor(view.snapshot.players.size) + sticks * RIICHI_STICK_POINTS + comboBonus(view, isTsumo))
     }
 
     override fun declarationEffect(view: PositionView, action: GameAction.Extension): DeclarationEffect = if (action.value == RiichiGameAction.Riichi) {
@@ -113,7 +113,7 @@ class RiichiPositionRules(
     }
 
     override fun bonusTileCount(view: PositionView, tile: Tile): Int {
-        val doraTiles = visibleDoraIndicators(view).map { getNextDora(it) }
+        val doraTiles = visibleDoraIndicators(view).map { getNextDora(it, config.usesThreePlayerTiles) }
         return doraTiles.count { it == tile.riichiCanonical } + if (RiichiTileInterpretationPolicy.isRedDora(tile)) 1 else 0
     }
 
@@ -123,7 +123,7 @@ class RiichiPositionRules(
         return if (isTsumo) {
             comboCount * RIICHI_COMBO_BONUS_TSUMO_POINTS_PER_PAYER * (view.snapshot.players.size - 1)
         } else {
-            comboCount * RIICHI_COMBO_BONUS_RON_POINTS
+            comboCount * riichiComboBonusRonPoints(config.maxPlayers)
         }
     }
 

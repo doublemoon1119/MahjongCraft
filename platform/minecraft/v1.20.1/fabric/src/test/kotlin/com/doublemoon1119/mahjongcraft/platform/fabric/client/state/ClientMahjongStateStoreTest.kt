@@ -12,6 +12,9 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRe
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDto
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
@@ -48,7 +51,7 @@ class ClientMahjongStateStoreTest {
 
         val playerB = FakeMahjongPlayerFactory.create(discardPile = RiichiDiscardPile())
         val snapshotB = FakeTableStateFactory.create(id = tableBId, players = listOf(playerB), config = RiichiRuleConfig())
-            .toSnapshot(visibleHandPlayerIds = emptySet())
+            .toSnapshot(visibleHandPlayerIds = emptySet(), setAsideTiles = { emptyList() })
         val gameUpdateB = GameUpdatePayloadDto(
             gameId = tableBId.toString(),
             actorId = playerB.id.toString(),
@@ -71,7 +74,7 @@ class ClientMahjongStateStoreTest {
         val human = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST, discardPile = RiichiDiscardPile())
         val ai = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH, discardPile = RiichiDiscardPile())
         val snapshot = FakeTableStateFactory.create(id = tableId, players = listOf(human, ai), config = RiichiRuleConfig())
-            .toSnapshot(visibleHandPlayerIds = emptySet())
+            .toSnapshot(visibleHandPlayerIds = emptySet(), setAsideTiles = { emptyList() })
 
         store.apply(
             GameUpdatePayloadDto(
@@ -113,7 +116,7 @@ class ClientMahjongStateStoreTest {
         store.applyGameSnapshot(
             gameId = spectatedTableId,
             snapshot = FakeTableStateFactory.create(id = spectatedTableId, players = listOf(otherPlayer), config = RiichiRuleConfig())
-                .toSnapshot(visibleHandPlayerIds = emptySet()),
+                .toSnapshot(visibleHandPlayerIds = emptySet(), setAsideTiles = { emptyList() }),
             aiPlayerIds = emptySet(),
         )
 
@@ -162,7 +165,7 @@ class ClientMahjongStateStoreTest {
         val tableId = Uuid.random()
         val player = FakeMahjongPlayerFactory.create(discardPile = RiichiDiscardPile())
         val snapshot = FakeTableStateFactory.create(id = tableId, players = listOf(player), config = RiichiRuleConfig())
-            .toSnapshot(visibleHandPlayerIds = setOf(player.id))
+            .toSnapshot(visibleHandPlayerIds = setOf(player.id), setAsideTiles = { emptyList() })
         val analysis = HandReadinessAnalysisDto("mahjongcraft:riichi", emptyList())
         store.applyGameSnapshot(tableId, snapshot, aiPlayerIds = emptySet(), handReadinessAnalysis = analysis)
 
@@ -179,5 +182,37 @@ class ClientMahjongStateStoreTest {
         )
 
         assertNull(store.handReadinessAnalysis(tableId))
+    }
+
+    /** 移出手牌、公開擺在桌上的牌也查得到牌面，不會畫成未知牌。 */
+    @Test
+    fun `managed tile index resolves set aside tiles`() {
+        val store = ClientMahjongStateStore(registries)
+        val tableId = Uuid.random()
+        val north = IdentifiedTile(Uuid.random(), Tile.Honor.North)
+        val player = FakeMahjongPlayerFactory.create(discardPile = RiichiDiscardPile())
+        val snapshot = FakeTableStateFactory.create(id = tableId, players = listOf(player), config = RiichiRuleConfig())
+            .toSnapshot(visibleHandPlayerIds = emptySet(), setAsideTiles = { listOf(north) })
+
+        store.applyGameSnapshot(tableId, snapshot, aiPlayerIds = emptySet(), handReadinessAnalysis = null)
+
+        assertEquals(Tile.Honor.North, store.findManagedTileSnapshot(tableId, north.id)?.tile)
+    }
+
+    /** 已公開但仍在手牌中的牌對其他觀察者是隱藏的手牌，查表時以公開牌面為準。 */
+    @Test
+    fun `managed tile index reveals revealed hand tiles`() {
+        val store = ClientMahjongStateStore(registries)
+        val tableId = Uuid.random()
+        val north = IdentifiedTile(Uuid.random(), Tile.Honor.North)
+        val puller = FakeMahjongPlayerFactory.create(hand = Hand(lastDrawn = north), discardPile = RiichiDiscardPile())
+        val observer = FakeMahjongPlayerFactory.create(discardPile = RiichiDiscardPile())
+        val snapshot = FakeTableStateFactory.create(id = tableId, players = listOf(puller, observer), config = RiichiRuleConfig())
+            .copy(revealedHandTileIds = setOf(north.id))
+            .toSnapshot(visibleHandPlayerIds = setOf(observer.id), setAsideTiles = { emptyList() })
+
+        store.applyGameSnapshot(tableId, snapshot, aiPlayerIds = emptySet(), handReadinessAnalysis = null)
+
+        assertEquals(Tile.Honor.North, store.findManagedTileSnapshot(tableId, north.id)?.tile)
     }
 }

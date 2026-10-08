@@ -216,7 +216,8 @@ class DtoRoundTripTest {
                 ),
             ),
         )
-        val snapshot = tableState.toSnapshot(setOf(riichiPlayer.id))
+        val setAsideTile = IdentifiedTile(Uuid.random(), Tile.Honor.North)
+        val snapshot = tableState.toSnapshot(setOf(riichiPlayer.id), setAsideTiles = { listOf(setAsideTile) })
         val snapshotDto = snapshot.toDto(registries)
 
         val encoded = json.encodeToString(TableStateSnapshotDto.serializer(), snapshotDto)
@@ -226,6 +227,7 @@ class DtoRoundTripTest {
         assertEquals(snapshotDto, decodedDto)
         assertEquals(snapshot.dynamicRuleState, decodedDto.toDomain(registries).dynamicRuleState)
         assertEquals(snapshot.physicalWallLayout, decodedDto.toDomain(registries).physicalWallLayout)
+        assertEquals(listOf(setAsideTile), decodedDto.toDomain(registries).players.single().setAsideTiles)
     }
 
     @Test
@@ -240,7 +242,7 @@ class DtoRoundTripTest {
             players = listOf(taiwanPlayer),
             config = TaiwanRuleConfig(),
         )
-        val snapshot = tableState.toSnapshot(setOf(taiwanPlayer.id))
+        val snapshot = tableState.toSnapshot(setOf(taiwanPlayer.id), setAsideTiles = { emptyList() })
         val snapshotDto = snapshot.toDto(registries)
 
         val encoded = json.encodeToString(TableStateSnapshotDto.serializer(), snapshotDto)
@@ -295,7 +297,7 @@ class DtoRoundTripTest {
     fun `test GameUpdatePayload and RoomUpdatePayload round-trip`() {
         val player = FakeMahjongPlayerFactory.create(discardPile = RiichiDiscardPile())
         val snapshot = FakeTableStateFactory.create(players = listOf(player), config = RiichiRuleConfig())
-            .toSnapshot(setOf(player.id))
+            .toSnapshot(setOf(player.id), setAsideTiles = { emptyList() })
         val gamePayload = GameUpdatePayloadDto(
             gameId = Uuid.random().toString(),
             actorId = player.id.toString(),
@@ -331,7 +333,7 @@ class DtoRoundTripTest {
     fun `test explicit room and game snapshot sync payloads round-trip`() {
         val player = FakeMahjongPlayerFactory.create(discardPile = RiichiDiscardPile())
         val gameSnapshot = FakeTableStateFactory.create(players = listOf(player), config = RiichiRuleConfig())
-            .toSnapshot(setOf(player.id))
+            .toSnapshot(setOf(player.id), setAsideTiles = { emptyList() })
         val gamePayload = GameSnapshotSyncPayloadDto(
             gameId = gameSnapshot.id.toString(),
             snapshot = gameSnapshot.toDto(registries),

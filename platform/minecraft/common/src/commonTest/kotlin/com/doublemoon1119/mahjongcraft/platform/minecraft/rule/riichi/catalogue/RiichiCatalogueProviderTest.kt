@@ -6,6 +6,8 @@ import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueCalculator
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
@@ -38,7 +40,9 @@ class RiichiCatalogueProviderTest {
     fun `catalogue covers every built in yaku and separate special categories`() {
         assertEquals(YakuType.entries.toSet(), RiichiCatalogueYaku.entries.map { it.type }.toSet())
         val catalogue = checkNotNull(RiichiCatalogueProvider().catalogue(RiichiRuleConfig()))
-        assertEquals(YakuType.entries.size + RiichiCatalogueSpecial.entries.size, catalogue.entries.size)
+        // 四人日麻不列拔北寶牌。
+        assertEquals(YakuType.entries.size - 1 + RiichiCatalogueSpecial.entries.size, catalogue.entries.size)
+        assertTrue(catalogue.entries.none { it.id == RiichiCatalogueYaku.NukiDora.id })
         assertEquals(catalogue.entries.size, catalogue.entries.map { it.id }.distinct().size)
         assertEquals(3, catalogue.entries.count { it.categoryId == RiichiCatalogueCategory.BONUS.id })
         assertEquals(4, catalogue.entries.count { it.categoryId == RiichiCatalogueCategory.ABORTIVE_DRAW.id })
@@ -46,6 +50,32 @@ class RiichiCatalogueProviderTest {
         assertEquals(2, catalogue.entries.count { it.categoryId == RiichiCatalogueCategory.HAN_5.id })
         catalogue.categories.forEach { category -> assertTrue(catalogue.entries.any { category.id in it.categoryIds }, category.id) }
         assertTrue(catalogue.entries.all { it.descriptionTranslationKey.isNotBlank() })
+    }
+
+    /** 三人日麻目錄多列拔北寶牌、省略四風連打與四家立直，並標出需要二～八萬的役種無法成立。 */
+    @Test
+    fun `three player catalogue lists nuki dora and omits four player abortive draws`() {
+        val provider = RiichiCatalogueProvider(
+            ruleModuleId = BuiltInRuleModuleIds.RIICHI_THREE_PLAYER,
+            configClass = ThreePlayerRiichiRuleConfig::class,
+            defaultConfig = ::ThreePlayerRiichiRuleConfig,
+        )
+        assertNull(provider.catalogue(RiichiRuleConfig()))
+        assertNull(RiichiCatalogueProvider().catalogue(ThreePlayerRiichiRuleConfig()))
+        val catalogue = checkNotNull(provider.catalogue(provider.defaultRuleConfig()))
+
+        assertEquals(4, catalogue.entries.count { it.categoryId == RiichiCatalogueCategory.BONUS.id })
+        assertTrue(catalogue.entries.any { it.id == RiichiCatalogueYaku.NukiDora.id })
+        assertEquals(
+            listOf(RiichiCatalogueSpecial.SUUKAIKAN.id, RiichiCatalogueSpecial.KYUUSHU_KYUUHAI.id),
+            catalogue.entries.filter { it.categoryId == RiichiCatalogueCategory.ABORTIVE_DRAW.id }.map { it.id },
+        )
+        listOf(RiichiCatalogueYaku.SanshokuDoujun, RiichiCatalogueYaku.Daisuurin).forEach { definition ->
+            assertEquals(
+                RiichiCatalogueKeys.THREE_PLAYER_TILES_UNAVAILABLE,
+                catalogue.entries.single { it.id == definition.id }.unavailableReasonTranslationKey,
+            )
+        }
     }
 
     /** 不算役、門清限定、古役與副露翻數標籤附有說明，其他價值標籤沒有。 */
@@ -127,16 +157,45 @@ class RiichiCatalogueProviderTest {
         }
     }
 
-    /** 完整範例在明確情境下必須成立目標役，不以其他役或役滿冒充成功。 */
+    /** 完整範例在明確情境下必須成立目標役，不以其他役或役滿冒充成功；四人與三人日麻的範例都要成立。 */
     @Test
     fun `every complete example produces its target yaku`() {
-        RiichiCatalogueYaku.entries.forEach { definition ->
-            val examples = riichiCatalogueExamples(definition.type)
-            assertTrue(examples.isNotEmpty(), "Missing example for ${definition.type}")
-            if (definition.category != RiichiCatalogueCategory.BONUS) assertTrue(examples.all { it.completeHand }, "Yaku example must be a complete hand: ${definition.type}")
-            examples.filter { it.completeHand }.forEach { example ->
-                val result = evaluateExample(definition.type, example)
-                assertTrue(result.yakuResults.any { it.yaku == definition.type }, "${definition.type} example produced ${result.yakuResults}")
+        listOf(false, true).forEach { usesThreePlayerTiles ->
+            RiichiCatalogueYaku.entries.forEach { definition ->
+                val examples = riichiCatalogueExamples(definition.type, usesThreePlayerTiles)
+                assertTrue(examples.isNotEmpty(), "Missing example for ${definition.type}")
+                if (definition.category != RiichiCatalogueCategory.BONUS) assertTrue(examples.all { it.completeHand }, "Yaku example must be a complete hand: ${definition.type}")
+                examples.filter { it.completeHand }.forEach { example ->
+                    val result = evaluateExample(definition.type, example)
+                    assertTrue(result.yakuResults.any { it.yaku == definition.type }, "${definition.type} example produced ${result.yakuResults}")
+                }
+            }
+        }
+    }
+
+    /** 三人日麻能成立的役種，範例只用三人牌組裡有的牌，也不用吃。 */
+    @Test
+    fun `three player examples only use three player tiles and no chi`() {
+        val provider = RiichiCatalogueProvider(
+            ruleModuleId = BuiltInRuleModuleIds.RIICHI_THREE_PLAYER,
+            configClass = ThreePlayerRiichiRuleConfig::class,
+            defaultConfig = ::ThreePlayerRiichiRuleConfig,
+        )
+        val config = ThreePlayerRiichiRuleConfig()
+        val wallTiles = ThreePlayerRiichiRuleModule(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, config)
+            .createWallFactory()
+            .create()
+            .getAllTiles()
+            .mapTo(mutableSetOf()) { it.tile }
+        val catalogue = checkNotNull(provider.catalogue(config))
+
+        catalogue.entries.filter { it.unavailableReasonTranslationKey == null }.forEach { entry ->
+            entry.examples.flatMap { it.groups }.forEach { group ->
+                assertTrue(group.tiles.all { it in wallTiles }, "${entry.id} example uses a tile missing from three player mahjong: ${group.tiles}")
+                assertTrue(
+                    group.role != RuleCatalogueTileGroupRole.OPEN_MELD || group.tiles.distinct().size == 1,
+                    "${entry.id} example calls chi, which three player mahjong does not allow",
+                )
             }
         }
     }

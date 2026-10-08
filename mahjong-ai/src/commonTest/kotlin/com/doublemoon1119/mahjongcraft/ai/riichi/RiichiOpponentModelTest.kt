@@ -193,7 +193,7 @@ class RiichiOpponentModelTest {
         dynamicRuleState = RiichiDynamicState(),
     )
 
-    private fun view(table: TableState, player: MahjongPlayer): PositionView = PositionView(snapshot = table.toSnapshot(visibleHandPlayerIds = setOf(player.id)), evaluatorId = player.id)
+    private fun view(table: TableState, player: MahjongPlayer): PositionView = PositionView(snapshot = table.toSnapshot(visibleHandPlayerIds = setOf(player.id), setAsideTiles = { emptyList() }), evaluatorId = player.id)
 
     private fun character(value: Int): Tile = Tile.Numeric(Tile.Suit.Character, value)
 

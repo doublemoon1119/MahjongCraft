@@ -21,18 +21,27 @@ internal class TableOpeningPresentationState {
     /** 每張桌子最近一次牌牆結構換算出的單面墩數。 */
     private val wallStacksPerSideByTable = ConcurrentHashMap<Uuid, Int>()
 
+    /** 每張桌子最近一次牌牆結構的面數。 */
+    private val wallSideCountByTable = ConcurrentHashMap<Uuid, Int>()
+
     /** 等待初次發牌與四家翻牌完成後才可排入 entity 佇列的本局開門資料。 */
     private val pendingWallOpeningByTable = ConcurrentHashMap<Uuid, MahjongTileWallPresentation>()
 
     /**
-     * 開始新一局的牌牆：記錄本局的動畫時長與墩數，並丟棄上一局尚未播出的開門資料。
+     * 開始新一局的牌牆：記錄本局的動畫時長、墩數與面數，並丟棄上一局尚未播出的開門資料。
      *
      * 每局都會重新呼叫，覆寫上一局的舊值；後續讀取端因此不需要協調誰先讀、誰負責清除。
      */
-    fun beginWall(gameId: Uuid, wallDropTicks: Int, stacksPerSide: Int) {
+    fun beginWall(
+        gameId: Uuid,
+        wallDropTicks: Int,
+        stacksPerSide: Int,
+        sideCount: Int,
+    ) {
         pendingWallOpeningByTable.remove(gameId)
         wallDropTicksByTable[gameId] = wallDropTicks
         wallStacksPerSideByTable[gameId] = stacksPerSide
+        wallSideCountByTable[gameId] = sideCount
     }
 
     /** 牌牆已成功生成且本局要播開門：保留開門資料，等發牌與四家翻牌完成後才排入。 */
@@ -58,10 +67,14 @@ internal class TableOpeningPresentationState {
     /** 本局牌牆的單面墩數；沒有紀錄時為 `null`，呼叫端應放棄需要它的呈現。 */
     fun wallStacksPerSide(gameId: Uuid): Int? = wallStacksPerSideByTable[gameId]
 
+    /** 本局牌牆的面數；沒有紀錄時為 `null`，呼叫端應放棄需要它的呈現。 */
+    fun wallSideCount(gameId: Uuid): Int? = wallSideCountByTable[gameId]
+
     /** 丟棄這張桌子全部的開局暫存資料。 */
     fun clear(gameId: Uuid) {
         pendingWallOpeningByTable.remove(gameId)
         wallDropTicksByTable.remove(gameId)
         wallStacksPerSideByTable.remove(gameId)
+        wallSideCountByTable.remove(gameId)
     }
 }

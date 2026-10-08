@@ -19,17 +19,21 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
  * @param hand 玩家手牌（包含立牌與副露）。
  * @param winningTile 胡牌張（計入寶牌計算）。
  * @param doraIndicators 寶牌指示牌列表。
+ * @param setAsideTiles 不在手牌中但仍計入寶牌的牌，例如三人麻將拔出的北。
+ * @param usesThreePlayerTiles 是否使用沒有二～八萬的三人麻將牌組。
  * @return 寶牌番數結果。
  */
 fun calculateDora(
     hand: Hand,
     winningTile: Tile,
     doraIndicators: List<Tile>,
+    setAsideTiles: List<Tile> = emptyList(),
+    usesThreePlayerTiles: Boolean = false,
 ): YakuResult {
-    val allTiles = hand.allTiles.map { it.tile } + winningTile
+    val allTiles = hand.allTiles.map { it.tile } + winningTile + setAsideTiles
 
     val doraCount = doraIndicators.sumOf { indicator ->
-        val doraTile = getNextDora(indicator)
+        val doraTile = getNextDora(indicator, usesThreePlayerTiles)
         allTiles.count { it.riichiCanonical == doraTile }
     }
 
@@ -39,10 +43,16 @@ fun calculateDora(
 /**
  * 取得寶牌指示牌的下一張牌作為寶牌。
  *
+ * 三人麻將的牌組沒有二～八萬，因此一萬與九萬互為指示牌。
+ *
  * @param indicator 寶牌指示牌。
+ * @param usesThreePlayerTiles 是否使用沒有二～八萬的三人麻將牌組。
  * @return 對應的寶牌。
  */
-internal fun getNextDora(indicator: Tile): Tile = when (val canonicalIndicator = indicator.riichiCanonical) {
+internal fun getNextDora(indicator: Tile, usesThreePlayerTiles: Boolean = false): Tile = when (val canonicalIndicator = indicator.riichiCanonical) {
+    // 三人麻將的萬子只有一萬與九萬
+    is Tile.Numeric if usesThreePlayerTiles && canonicalIndicator.suit == Tile.Suit.Character ->
+        Tile.Numeric(Tile.Suit.Character, if (canonicalIndicator.value == 1) 9 else 1)
     // 數牌：循環 1-9
     is Tile.Numeric -> {
         val nextValue = if (canonicalIndicator.value == 9) 1 else canonicalIndicator.value + 1

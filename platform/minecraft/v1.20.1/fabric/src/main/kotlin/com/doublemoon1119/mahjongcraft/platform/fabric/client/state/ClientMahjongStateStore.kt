@@ -41,9 +41,9 @@ private data class ClientTableState(
 
     private companion object {
         /**
-         * 匯總牌牆、所有玩家手牌、副露與牌河的牌張快照，建立單一索引。牌河永遠對所有玩家可見
-         * （`MahjongPlayerSnapshot.discardPile` 的 KDoc 本來就這樣寫），因此固定以 `isVisible = true`
-         * 轉換——`discardPile` 型別是跟 `MahjongPlayer` 共用的 domain `DiscardPile<*>`，不像手牌／牌牆
+         * 匯總牌牆、所有玩家手牌、副露、牌河、移出手牌與手牌中已公開的牌張快照，建立單一索引。牌河與移出手牌的牌永遠對
+         * 所有玩家可見（`MahjongPlayerSnapshot.discardPile`／`setAsideTiles` 的 KDoc），因此固定以
+         * `isVisible = true` 轉換——兩者都是 domain 型別，不像手牌／牌牆
          * 已經是依觀察者可見範圍轉換過的 snapshot 型別，需要在這裡自行呼叫 `toSnapshot`。副露
          * （`hand.melds`）本身就恆為完整可見（見 `HandSnapshot.melds` KDoc），直接取用即可，不需要另外
          * 轉換可見性。
@@ -60,7 +60,12 @@ private data class ClientTableState(
             val discardTiles = snapshot.players.flatMap { player ->
                 player.discardPile.entries.map { entry -> entry.tile.toSnapshot(isVisible = true) }
             }
-            return (wallTiles + handTiles + meldTiles + discardTiles).associateBy { it.id }
+            val setAsideTiles = snapshot.players.flatMap { player ->
+                player.setAsideTiles.map { tile -> tile.toSnapshot(isVisible = true) }
+            }
+            // 已公開但仍在手牌中的牌（等待搶和的宣告牌、被搶和胡走的牌）對其他觀察者是隱藏的手牌；排在最後覆蓋成公開牌面。
+            val revealedHandTiles = snapshot.revealedHandTiles.map { tile -> tile.toSnapshot(isVisible = true) }
+            return (wallTiles + handTiles + meldTiles + discardTiles + setAsideTiles + revealedHandTiles).associateBy { it.id }
         }
     }
 }

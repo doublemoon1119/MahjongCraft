@@ -15,7 +15,7 @@ enum class PlayerDecisionPhaseDto {
     /** 玩家正在回應其他玩家的捨牌。 */
     DISCARD_REACTION,
 
-    /** 玩家正在回應搶槓視窗。 */
+    /** 玩家正在回應搶和視窗。 */
     ROBBING_REACTION,
 }
 

@@ -91,7 +91,11 @@ class FabricMahjongPlayerAreaPresenter(
             return tile
         }
 
-        val reservedCornerWidth = MahjongTileTableLayout.cornerAreaWidth(presentation.cornerWidth, presentation.melds)
+        val reservedCornerWidth = MahjongTileTableLayout.cornerAreaWidth(
+            cornerPropWidth = presentation.cornerWidth,
+            melds = presentation.melds,
+            setAsideTileCount = presentation.setAsideTileIds.size,
+        )
         val cornerYieldShift = MahjongTileTableLayout.handCornerYieldShift(
             presentation.standingTileIds.size,
             reservedCornerWidth,
@@ -132,7 +136,13 @@ class FabricMahjongPlayerAreaPresenter(
                     // 起飛前維持牌現在的既有姿態（牌牆生成以來一直是 MahjongTilePose.FACE_DOWN，還沒被
                     // 動過），不要在這裡先改成 STANDING——姿態要等 TileAnimationSteps.scheduleDrawnTile 隱形傳送
                     // 那一刻才切換，見該方法 KDoc。
-                    TileAnimationSteps.scheduleDrawnTile(tile, placement)
+                    // 同一次呈現有牌移入副露或擺到桌上時（槓、移出手牌後的補牌），等那些牌落地後才摸牌。
+                    val claimsTiles = presentation.animatedMeldClaimTileIds.isNotEmpty() || presentation.animatedSetAsideTileIds.isNotEmpty()
+                    TileAnimationSteps.scheduleDrawnTile(
+                        tile = tile,
+                        finalPlacement = placement,
+                        startDelayTicks = if (claimsTiles) MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS.toLong() else 0L,
+                    )
                 } else {
                     tile.tilePose = MahjongTilePose.STANDING
                     tile.teleportExistingManagedTile(placement)
@@ -161,7 +171,7 @@ class FabricMahjongPlayerAreaPresenter(
                 depthOffsetFromEdge = depthOffsetFromEdge,
             )
             tile.assignToTable(presentation.tableId)
-            if (tileId in presentation.animatedMeldClaimTileIds) {
+            if (tileId in presentation.animatedMeldClaimTileIds || tileId in presentation.animatedSetAsideTileIds) {
                 TileAnimationSteps.scheduleMeldClaim(
                     tile,
                     placement,
@@ -229,6 +239,28 @@ class FabricMahjongPlayerAreaPresenter(
                     landingTime + TileAnimationSteps.ACTION_POPUP_DURATION_TICKS,
                 )
             }
+        }
+
+        if (presentation.setAsideTileIds.isNotEmpty() && presentation.melds.isNotEmpty()) {
+            cursorAlong += MahjongTileTableLayout.MELD_GROUP_GAP
+        }
+        var setAsidePopupAnchor: MahjongTileEntity? = null
+        presentation.setAsideTileIds.forEach { tileId ->
+            cursorAlong += MahjongTileDimensions.TILE_WIDTH / 2.0
+            val tile = placeMeldTile(tileId, cursorAlong, isSidewaysTile = false)
+            if (tileId in presentation.animatedSetAsideTileIds && setAsidePopupAnchor == null) setAsidePopupAnchor = tile
+            cursorAlong += MahjongTileDimensions.TILE_WIDTH / 2.0 + MahjongTileDimensions.TILE_SMALL_PADDING
+        }
+        // 剛移出手牌的牌落地後比照副露顯示牌面提示，提示只列這次移出的牌。
+        setAsidePopupAnchor?.let { anchor ->
+            val landingTime = world.time + MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS
+            anchor.showMeldActionPopup(
+                presentation.setAsideTileIds
+                    .filter { it in presentation.animatedSetAsideTileIds }
+                    .map { tileId -> MeldActionPopupTile(tileId = tileId, claimed = false) },
+                landingTime,
+                landingTime + TileAnimationSteps.ACTION_POPUP_DURATION_TICKS,
+            )
         }
 
         table.markDirty()

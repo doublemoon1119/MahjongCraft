@@ -4,21 +4,21 @@ import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 
 /**
- * 四人麻將共用的四面牌牆排列邏輯。
+ * 內建規則共用的環狀牌牆排列邏輯：牌牆由莊家面起逆時針排成數面，每面墩數相同。
  *
- * 供內建規則（目前為日本麻將與台灣麻將）的 [TileWallLayout] 實作重用同一段墩位運算，各規則只需
- * 提供自己的每面墩數與王牌墩數；不屬於 [TileWallLayout] 本身的公開契約，因為並非所有規則都必然採用
- * 四面牌牆的形狀。
+ * 供內建規則（日本麻將四人與三人、台灣麻將）的 [TileWallLayout] 實作重用同一段墩位運算，各規則只需
+ * 提供自己的面數、每面墩數與王牌墩數；不屬於 [TileWallLayout] 本身的公開契約，因為並非所有規則都必然採用
+ * 這種牌牆形狀。[TileWallPosition.side] 是從莊家面起逆時針數的牌牆面序號。
  */
-internal object FourSidedWallLayoutSupport {
-    /** 四人麻將固定的牌牆面數。 */
-    const val SIDE_COUNT = 4
+internal object WallRingLayoutSupport {
+    /** 四人麻將的牌牆面數。 */
+    const val FOUR_SIDE_COUNT = 4
 
     /** 每墩的層數。 */
     private const val LAYERS_PER_STACK = 2
 
     /**
-     * 依 [stacksPerSide] 與 [deadWallStacks] 排列四面牌牆。
+     * 依 [sideCount]、[stacksPerSide] 與 [deadWallStacks] 排列牌牆。
      *
      * 王牌從開門缺口本身開始，往右（全域墩序號遞減，跨面時繞到前一面的最右墩）連續數
      * [deadWallStacks] 墩；活牌緊接在王牌另一端之後，往左（全域墩序號遞增）連續繞完剩餘墩數，
@@ -33,14 +33,15 @@ internal object FourSidedWallLayoutSupport {
         opening: WallOpening,
         stacksPerSide: Int,
         deadWallStacks: Int,
+        sideCount: Int = FOUR_SIDE_COUNT,
     ): TileWallLayoutResult {
-        val totalStacks = SIDE_COUNT * stacksPerSide
+        val totalStacks = sideCount * stacksPerSide
         val totalTiles = totalStacks * LAYERS_PER_STACK
         require(shuffledTiles.size == totalTiles) {
             "Wall layout requires exactly $totalTiles tiles for $stacksPerSide stacks per side, got ${shuffledTiles.size}"
         }
-        require(opening.wallSideOffsetFromDealer < SIDE_COUNT) {
-            "Wall side offset ${opening.wallSideOffsetFromDealer} exceeds side count $SIDE_COUNT"
+        require(opening.wallSideOffsetFromDealer < sideCount) {
+            "Wall side offset ${opening.wallSideOffsetFromDealer} exceeds side count $sideCount"
         }
         require(opening.stacksFromRight <= stacksPerSide) {
             "Stacks from right ${opening.stacksFromRight} exceeds stacks per side $stacksPerSide"

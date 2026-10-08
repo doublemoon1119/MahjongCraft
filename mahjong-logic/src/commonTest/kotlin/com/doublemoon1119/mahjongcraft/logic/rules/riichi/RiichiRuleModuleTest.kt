@@ -81,7 +81,7 @@ class RiichiRuleModuleTest {
     /** 驗證規則模組提供日麻獨立王牌區與槓後補位 policy。 */
     @Test
     fun `test create physical wall layout policy returns riichi implementation`() {
-        assertSame(RiichiPhysicalWallLayoutPolicy, module.createPhysicalWallLayoutPolicy())
+        assertIs<RiichiPhysicalWallLayoutPolicy>(module.createPhysicalWallLayoutPolicy())
     }
 
     /** 驗證規則模組提供日麻赤五的牌面解讀 policy。 */

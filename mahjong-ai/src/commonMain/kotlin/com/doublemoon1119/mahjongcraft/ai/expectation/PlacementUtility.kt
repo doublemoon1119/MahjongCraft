@@ -78,7 +78,7 @@ internal class PlacementUtility private constructor(
         ): PlacementUtility {
             val position = snapshot.roundPosition
             val nearEnd = position.phase == MatchRoundPhase.EXTRA ||
-                position.sequenceIndex >= snapshot.config.gameLength.totalRounds - 1
+                position.sequenceIndex >= snapshot.config.scheduledRoundCount - 1
             val players = snapshot.players.map {
                 RankedSeat(score = it.score, seatWind = it.seatWind, initialSeatIndex = it.initialSeatIndex)
             }

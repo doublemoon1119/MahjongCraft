@@ -17,13 +17,13 @@ import com.doublemoon1119.mahjongcraft.logic.table.layout.resolveTransitionValid
 import kotlin.uuid.Uuid
 
 /**
- * 原子套用暗槓／加槓與規則提供的後續補牌結果。
+ * 原子套用自己回合宣告的暗槓／加槓（或規則提供的移出手牌動作）與規則提供的後續補牌結果。
  *
  * 本物件只負責通用手牌變化、結果驗證及 action history；補牌來源、上限、牌牆變化與新增公開牌完全由
  * [MahjongRuleModule.createSupplementalDrawPolicy] 決定。
  */
 internal object SelfDeclarationApplier {
-    /** 槓牌與補牌的套用結果。 */
+    /** 自己回合宣告的動作與補牌的套用結果。 */
     sealed interface Result {
         /**
          * 完整動作已成功套用。
@@ -64,7 +64,47 @@ internal object SelfDeclarationApplier {
         kanAction: GameAction.Kan,
         incomingTile: IdentifiedTile,
         module: MahjongRuleModule<*>,
-    ): Result {
+    ): Result = applySupplementalDraw(
+        originalState = state,
+        candidateState = kanCandidateState(state, declarerId, kanAction, incomingTile, module),
+        actorPlayerId = declarerId,
+        action = kanAction,
+        module = module,
+    )
+
+    /**
+     * 只把宣告的槓或移出手牌的動作套用到宣告者手上、尚未補牌的候選桌況。
+     *
+     * 搶和反應視窗開啟時，平台依此先呈現宣告完成的樣子，其他玩家在動畫播完後才決定要不要搶；權威桌況要等
+     * 反應結束才套用，不使用這份結果。
+     *
+     * @param state 尚未套用本次動作的權威桌況。
+     * @param declarerId 宣告動作的玩家 ID。
+     * @param action 本次暗槓、加槓或移出手牌的擴充動作。
+     * @param incomingTile 觸發本次動作的牌張。
+     * @param module 對局採用的規則模組。
+     * @return 候選桌況；不是這三種動作或規則拒絕時為 null。
+     */
+    fun declaredState(
+        state: TableState,
+        declarerId: Uuid,
+        action: GameAction,
+        incomingTile: IdentifiedTile,
+        module: MahjongRuleModule<*>,
+    ): TableState? = when (action) {
+        is GameAction.Kan -> kanCandidateState(state, declarerId, action, incomingTile, module)
+        is GameAction.Extension -> module.applyTileSetAsideAction(state, declarerId, action)
+        else -> null
+    }
+
+    /** 套用暗槓或加槓的副露與宣告紀錄，尚未補牌。 */
+    private fun kanCandidateState(
+        state: TableState,
+        declarerId: Uuid,
+        kanAction: GameAction.Kan,
+        incomingTile: IdentifiedTile,
+        module: MahjongRuleModule<*>,
+    ): TableState {
         val declarer = state.players.first { it.id == declarerId }
         val handAfterMeld = when (kanAction.type) {
             GameAction.KanType.CLOSED_KAN -> {
@@ -94,12 +134,30 @@ internal object SelfDeclarationApplier {
         val playersAfterMeld = state.players.map { player ->
             if (player.id == declarerId) declarerAfterMeld else player
         }
-        val candidateState = state.copy(players = module.onMeldClaimed(playersAfterMeld))
-        return applySupplementalDraw(state, candidateState, declarerId, kanAction, module)
+        return state.copy(players = module.onMeldClaimed(playersAfterMeld))
     }
 
     /**
-     * 驗證並套用規則補牌結果；明槓與暗槓／加槓共用此入口。
+     * 套用移出手牌的擴充動作（見 [MahjongRuleModule.applyTileSetAsideAction]），並將候選桌況交給規則補牌 policy。
+     *
+     * @param state 尚未套用本次動作的權威桌況。
+     * @param declarerId 宣告動作的玩家 ID。
+     * @param action 本次移出手牌的擴充動作。
+     * @param module 對局採用的規則模組。
+     */
+    fun applyTileSetAside(
+        state: TableState,
+        declarerId: Uuid,
+        action: GameAction.Extension,
+        module: MahjongRuleModule<*>,
+    ): Result {
+        val candidateState = module.applyTileSetAsideAction(state, declarerId, action)
+            ?: return Result.Rejected(SupplementalDrawReasonIds.INVALID_RESULT)
+        return applySupplementalDraw(state, candidateState, declarerId, action, module)
+    }
+
+    /**
+     * 驗證並套用規則補牌結果；明槓、暗槓／加槓與移出手牌的動作共用此入口。
      *
      * @param originalState 動作套用前的權威桌況。
      * @param candidateState 已套用副露、尚未補牌的候選桌況。

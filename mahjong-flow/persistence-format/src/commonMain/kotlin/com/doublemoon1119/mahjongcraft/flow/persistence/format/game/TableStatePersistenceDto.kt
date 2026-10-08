@@ -29,12 +29,13 @@ import kotlin.uuid.Uuid
  * @property currentPlayerIndex 目前行動玩家的索引。
  * @property dynamicRuleState 規則專屬牌桌狀態；沒有狀態時為 null。
  * @property pendingReaction 尚未完成的捨牌反應視窗。
- * @property pendingRobbingReaction 尚未完成的搶槓反應視窗。
+ * @property pendingRobbingReaction 尚未完成的搶和反應視窗（暗槓、加槓或移出手牌的動作）。
  * @property wallOpening 本局權威擲骰決定的牌牆開門位置；規則尚未支援開門流程時為 null。
  * @property initialDeadWall 目前規則保留牌；舊欄位名稱為既有存檔格式相容性而保留，不代表內容固定，
  * 也不表示 platform 必須將它呈現為日麻式獨立王牌區。
  * @property finishedPlayerIds 本局已完成、不再參與後續回合的玩家 Uuid 集合；預設空集合為最常見的狀態，編碼時省略。
  * @property physicalWallLayout 目前仍在牌牆中的牌張實體位置；不支援實體布局的規則為 null。
+ * @property revealedHandTileIds 本局已公開、可能仍在手牌中的牌 UUID 字串集合。
  */
 @Serializable
 data class TableStatePersistenceDto(
@@ -55,6 +56,7 @@ data class TableStatePersistenceDto(
     val initialDeadWall: List<IdentifiedTilePersistenceDto>,
     val finishedPlayerIds: Set<String> = emptySet(),
     val physicalWallLayout: TileWallPhysicalLayoutPersistenceDto? = null,
+    val revealedHandTileIds: Set<String>,
 )
 
 /** 將 [TableState] 轉換成完整權威 persistence DTO。 */
@@ -92,6 +94,7 @@ fun TableState.toPersistenceDto(
     initialDeadWall = reservedWallTiles.map { it.toPersistenceDto() },
     finishedPlayerIds = finishedPlayerIds.map(Uuid::toString).toSet(),
     physicalWallLayout = physicalWallLayout?.toPersistenceDto(),
+    revealedHandTileIds = revealedHandTileIds.map(Uuid::toString).toSet(),
 )
 
 /** 將 [TableStatePersistenceDto] 驗證並還原成完整權威 [TableState]。 */
@@ -129,4 +132,5 @@ fun TableStatePersistenceDto.toDomain(
     initialDeadWall = initialDeadWall.map { it.toDomain() },
     finishedPlayerIds = finishedPlayerIds.map(Uuid::parse).toSet(),
     physicalWallLayout = physicalWallLayout?.toDomain(),
+    revealedHandTileIds = revealedHandTileIds.map(Uuid::parse).toSet(),
 )

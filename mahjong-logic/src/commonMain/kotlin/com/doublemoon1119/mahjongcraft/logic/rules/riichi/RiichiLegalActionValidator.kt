@@ -27,11 +27,15 @@ import kotlin.math.abs
  * @property shantenCalculator 向聽數計算器，用於判斷聽牌與胡牌。
  * @property handValueCalculator 手牌役種計算機，用於檢查最低番數限制。
  * @property contextCalculator 手牌役種上下文計算機，用於計算寶牌、海底撈月等資訊。
+ * @property allowsChi 是否可以吃；三人麻將不能吃。
+ * @property allowsPullNorth 是否可以拔北；只有三人麻將可以。
  */
 class RiichiLegalActionValidator(
     private val shantenCalculator: RiichiShantenCalculator,
     private val handValueCalculator: RiichiHandValueCalculator,
     private val contextCalculator: RiichiHandValueContextCalculator,
+    private val allowsChi: Boolean = true,
+    private val allowsPullNorth: Boolean = false,
 ) : LegalActionValidator {
 
     /**
@@ -189,7 +193,18 @@ class RiichiLegalActionValidator(
                 }
             }
 
-            // 4. 檢查是否可以宣告和局 (九種九牌)
+            // 4. 檢查是否可以拔北（三人麻將）：摸牌後才可以拔，碰之後的那次打牌前沒有摸牌，因此不能拔；
+            // 立直後手牌固定，只能拔剛摸到的北。拔北的補牌同樣會把活牌尾端補進王牌，因此牌山剩餘張數限制與槓相同。
+            if (allowsPullNorth && wallAllowsKan && canPullAnotherNorth(tableState)) {
+                val canPull = if (isRiichi) {
+                    incomingBaseTile == Tile.Honor.North
+                } else {
+                    (player.hand.standingTiles + incomingTile).any { it.tile.riichiCanonical == Tile.Honor.North }
+                }
+                if (canPull) legalActions.add(PULL_NORTH_GAME_ACTION)
+            }
+
+            // 5. 檢查是否可以宣告和局 (九種九牌)
             if (tableState.isFirstGoAround(player)) {
                 val isKyuushuKyuuhai = (player.hand.standingTiles + incomingTile)
                     .filter { it.tile.isTerminal || it.tile.isHonor } // 過濾么九牌
@@ -263,7 +278,7 @@ class RiichiLegalActionValidator(
             // 立直後不能吃、河底牌不能吃
             // 吃不受赤五外觀影響，必須使用日麻標準牌判斷數值與花色
             val incomingNumeric = incomingBaseTile as? Tile.Numeric
-            if (sourceDirection == RelativeDirection.Left && incomingNumeric != null && !isRiichi && wallHasMoreTiles) {
+            if (allowsChi && sourceDirection == RelativeDirection.Left && incomingNumeric != null && !isRiichi && wallHasMoreTiles) {
                 val iTile = incomingNumeric
                 val handTiles = player.hand.standingTiles
 
@@ -318,6 +333,12 @@ class RiichiLegalActionValidator(
         }
 
         return legalActions
+    }
+
+    /** 本局拔北補牌是否還沒用完；四張北全部拔出後就不能再拔。 */
+    private fun canPullAnotherNorth(tableState: TableState): Boolean {
+        val dynamicState = tableState.dynamicRuleState as? RiichiDynamicState ?: return false
+        return dynamicState.completedNorthDrawCount < RiichiSupplementalDrawPolicy.MAX_SUPPLEMENTAL_DRAWS
     }
 
     /**

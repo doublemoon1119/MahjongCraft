@@ -36,7 +36,7 @@ sealed interface GameCommand {
     /** 回應捨牌反應窗口的命令。 */
     data class RespondToDiscard(val action: GameAction) : GameCommand
 
-    /** 回應槓牌反應窗口的規則中立命令。 */
+    /** 回應搶和反應視窗的規則中立命令。 */
     data class RespondToRobbing(val action: GameAction) : GameCommand
 
     /** 以具體原因宣告途中流局的命令。 */

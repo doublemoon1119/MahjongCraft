@@ -61,6 +61,7 @@ class HistoryRecordingPersistenceDtoTest {
         val matchId = Uuid.random()
         val change = HistoryTableChange(
             changedPlayers = listOf(HistoryPlayerChange(player.copy(score = 100), 0, listOf(GameAction.Draw))),
+            revealedHandTileIds = setOf(Uuid.random()),
         )
         val state = HistoryRecordingState(
             nextSequenceByMatchId = mapOf(matchId to 2L),

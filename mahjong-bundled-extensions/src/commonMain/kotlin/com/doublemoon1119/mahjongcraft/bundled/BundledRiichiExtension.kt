@@ -4,10 +4,12 @@ import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.ai.riichi.RiichiDeclarationAiHandler
 import com.doublemoon1119.mahjongcraft.ai.riichi.RiichiOpponentModel
+import com.doublemoon1119.mahjongcraft.ai.riichi.RiichiPullNorthAiHandler
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
 import com.doublemoon1119.mahjongcraft.flow.common.di.RiichiWinCelebrationCueResolver
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiGameCommand
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiPullNorthCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
@@ -18,10 +20,14 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiGameAc
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiGameCommandDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiGameLengthDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiPlayerStateDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiPullNorthActionDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiPullNorthCommandDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiRuleConfigDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiScoreConfigDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.ThreePlayerRiichiRuleConfigDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.toRiichiDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.toThreePlayerRiichiDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toPersistenceDto
@@ -29,6 +35,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.Hi
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.BuiltInDiscardPilePersistenceKeys
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.BuiltinHistoryReplayDiscardCodecs
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.BuiltinHistoryReplaySetAsideTileCodecs
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.RiichiDiscardPilePersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.RiichiDynamicStatePersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.RiichiExhaustiveDrawReasonPersistenceDto
@@ -36,7 +43,9 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.RiichiExhaus
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.RiichiGameActionPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.RiichiPendingKanDoraRevealPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.RiichiPlayerStatePersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.RiichiPullNorthActionPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.RiichiRuleConfigPersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.ThreePlayerRiichiRuleConfigPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.toPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
@@ -51,8 +60,10 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiSuufonRenda
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiSuukanNagareResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiWinSettlementDetailResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareTileSetAsideUseCase
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PULL_NORTH_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
@@ -63,6 +74,8 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiScoreConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeDefinition
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
@@ -70,7 +83,7 @@ import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 import kotlin.uuid.Uuid
 
 /**
- * 隨 MahjongCraft 發布的日麻 extension；日麻在平台無關層的所有登記都寫在這裡，透過與第三方相同的 [MahjongExtension] 回呼登記。
+ * 隨 MahjongCraft 發布的日麻 extension（四人與三人）；日麻在平台無關層的所有登記都寫在這裡，透過與第三方相同的 [MahjongExtension] 回呼登記。
  *
  * 包含規則模組、赤五牌種、規則設定與規則狀態的網路及存檔格式、牌譜牌河格式、立直等擴充動作的格式、
  * AI 與命令處理、對手模型、途中流局與流局滿貫判定、胡牌詳情，以及役滿演出提示。
@@ -80,6 +93,9 @@ object BundledRiichiExtension : MahjongExtension {
 
     override fun registerRuleModules(registry: MahjongModuleRegistry) {
         registry.register(RiichiRuleConfig::class, BuiltInRuleModuleIds.RIICHI) { config, id -> RiichiRuleModule(id, config) }
+        registry.register(ThreePlayerRiichiRuleConfig::class, BuiltInRuleModuleIds.RIICHI_THREE_PLAYER) { config, id ->
+            ThreePlayerRiichiRuleModule(id, config)
+        }
     }
 
     override fun registerTileTypes(registry: TileTypeRegistry) {
@@ -88,6 +104,7 @@ object BundledRiichiExtension : MahjongExtension {
 
     override fun registerWinCelebrationCueResolvers(registry: WinCelebrationCueResolverRegistry) {
         registry.register(BuiltInRuleModuleIds.RIICHI, RiichiWinCelebrationCueResolver)
+        registry.register(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, RiichiWinCelebrationCueResolver)
     }
 
     override fun registerNetworkDtos(registries: NetworkDtoRegistries) {
@@ -96,6 +113,13 @@ object BundledRiichiExtension : MahjongExtension {
             RiichiRuleConfigDto::class,
             RiichiRuleConfigDto.serializer(),
             { it.toRiichiDto(registries) },
+            { it.toDomain(registries) },
+        )
+        registries.ruleConfig.register(
+            ThreePlayerRiichiRuleConfig::class,
+            ThreePlayerRiichiRuleConfigDto::class,
+            ThreePlayerRiichiRuleConfigDto.serializer(),
+            { it.toThreePlayerRiichiDto(registries) },
             { it.toDomain(registries) },
         )
         registries.scoreConfig.register(
@@ -196,12 +220,26 @@ object BundledRiichiExtension : MahjongExtension {
             { RiichiGameActionDto },
             { RiichiGameAction.Riichi },
         )
+        registries.extensionGameAction.register(
+            RiichiGameAction.PullNorth::class,
+            RiichiPullNorthActionDto::class,
+            RiichiPullNorthActionDto.serializer(),
+            { RiichiPullNorthActionDto },
+            { RiichiGameAction.PullNorth },
+        )
         registries.extensionGameCommand.register(
             RiichiGameCommand::class,
             RiichiGameCommandDto::class,
             RiichiGameCommandDto.serializer(),
             { RiichiGameCommandDto(it.tileId.toString()) },
             { RiichiGameCommand(Uuid.parse(it.tileId)) },
+        )
+        registries.extensionGameCommand.register(
+            RiichiPullNorthCommand::class,
+            RiichiPullNorthCommandDto::class,
+            RiichiPullNorthCommandDto.serializer(),
+            { RiichiPullNorthCommandDto },
+            { RiichiPullNorthCommand },
         )
     }
 
@@ -214,6 +252,14 @@ object BundledRiichiExtension : MahjongExtension {
             toDomain = RiichiRuleConfigPersistenceDto::toDomain,
             compactInReplay = true,
         )
+        registries.ruleConfigs.register(
+            typeKey = "mahjongcraft:riichi_three_player/rule_config",
+            domainClass = ThreePlayerRiichiRuleConfig::class,
+            serializer = ThreePlayerRiichiRuleConfigPersistenceDto.serializer(),
+            toDto = ThreePlayerRiichiRuleConfig::toPersistenceDto,
+            toDomain = ThreePlayerRiichiRuleConfigPersistenceDto::toDomain,
+            compactInReplay = true,
+        )
         registries.discardPiles.register(
             typeKey = BuiltInDiscardPilePersistenceKeys.RIICHI,
             domainClass = RiichiDiscardPile::class,
@@ -223,7 +269,7 @@ object BundledRiichiExtension : MahjongExtension {
             compactInReplay = true,
         )
         registries.playerRuleStates.register(
-            typeKey = "mahjongcraft:riichi/player_state",
+            typeKey = RIICHI_PLAYER_STATE_TYPE_KEY,
             domainClass = RiichiPlayerState::class,
             serializer = RiichiPlayerStatePersistenceDto.serializer(),
             toDto = RiichiPlayerState::toPersistenceDto,
@@ -240,6 +286,7 @@ object BundledRiichiExtension : MahjongExtension {
                     it.completedSupplementalDrawCount,
                     it.revealedKanDoraCount,
                     it.pendingKanDoraReveals.map(RiichiPendingKanDoraReveal::toPersistenceDto),
+                    it.completedNorthDrawCount,
                 )
             },
             toDomain = {
@@ -248,6 +295,7 @@ object BundledRiichiExtension : MahjongExtension {
                     it.completedSupplementalDrawCount,
                     it.revealedKanDoraCount,
                     it.pendingKanDoraReveals.map(RiichiPendingKanDoraRevealPersistenceDto::toDomain),
+                    it.completedNorthDrawCount,
                 )
             },
             compactInReplay = true,
@@ -301,27 +349,40 @@ object BundledRiichiExtension : MahjongExtension {
             toDto = { RiichiGameActionPersistenceDto },
             toDomain = { RiichiGameAction.Riichi },
         )
+        registries.extensionGameActions.register(
+            typeKey = RiichiGameAction.PullNorth.id,
+            domainClass = RiichiGameAction.PullNorth::class,
+            serializer = RiichiPullNorthActionPersistenceDto.serializer(),
+            toDto = { RiichiPullNorthActionPersistenceDto },
+            toDomain = { RiichiGameAction.PullNorth },
+        )
     }
 
     override fun registerHistoryReplayProjections(registry: HistoryReplayProjectionRegistry) {
         registry.registerDiscard(BuiltInDiscardPilePersistenceKeys.RIICHI, BuiltinHistoryReplayDiscardCodecs.riichi)
+        registry.registerSetAsideTiles(RIICHI_PLAYER_STATE_TYPE_KEY, BuiltinHistoryReplaySetAsideTileCodecs.riichi)
     }
 
     override fun registerGameActionAiHandlers(registry: ExtensionGameActionAiRegistry) {
         registry.register(RiichiGameAction.Riichi::class, RiichiDeclarationAiHandler)
+        registry.register(RiichiGameAction.PullNorth::class, RiichiPullNorthAiHandler)
     }
 
     override fun registerOpponentModels(registry: OpponentModelRegistry) {
         registry.register(BuiltInRuleModuleIds.RIICHI) { module, depth -> RiichiOpponentModel(rules = module.createPositionRules(), readingDepth = depth) }
+        registry.register(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER) { module, depth ->
+            RiichiOpponentModel(rules = module.createPositionRules(), readingDepth = depth)
+        }
     }
 
     override fun registerGameActionCommandFactories(registry: ExtensionGameActionCommandFactoryRegistry) {
         registry.register(RiichiGameAction.Riichi::class) { _, selectedTileIds ->
             selectedTileIds.singleOrNull()?.let(::RiichiGameCommand)
         }
+        registry.register(RiichiGameAction.PullNorth::class) { _, _ -> RiichiPullNorthCommand }
     }
 
-    /** 每個執行環境以自己的流程服務建立 [DeclareRiichiUseCase]。 */
+    /** 每個執行環境以自己的流程服務建立 [DeclareRiichiUseCase] 與拔北用的 [DeclareTileSetAsideUseCase]。 */
     override fun registerGameCommandHandlers(registry: ExtensionGameCommandExecutorRegistry) {
         registry.register(RiichiGameCommand::class) { context ->
             val declareRiichiUseCase = DeclareRiichiUseCase(
@@ -341,20 +402,42 @@ object BundledRiichiExtension : MahjongExtension {
                 ): Outcome<Unit, GameError> = declareRiichiUseCase(gameId, playerId, command.tileId)
             }
         }
+        registry.register(RiichiPullNorthCommand::class) { context ->
+            val declareTileSetAsideUseCase = DeclareTileSetAsideUseCase(
+                gameRepository = context.gameRepository,
+                moduleRegistry = context.moduleRegistry,
+                snapshotSynchronizer = context.snapshotSynchronizer,
+                eventPublisher = context.eventPublisher,
+                presentationPublisher = context.presentationPublisher,
+            )
+            object : ExtensionGameCommandHandler<RiichiPullNorthCommand> {
+                override suspend fun execute(
+                    gameId: Uuid,
+                    playerId: Uuid,
+                    command: RiichiPullNorthCommand,
+                ): Outcome<Unit, GameError> = declareTileSetAsideUseCase(gameId, playerId, PULL_NORTH_GAME_ACTION)
+            }
+        }
     }
 
     override fun registerPostReactionRoundOutcomeResolvers(registry: PostReactionRoundOutcomeResolverRegistry) {
         registry.register(RiichiNagashiManganOutcomeResolver())
+        registry.register(RiichiNagashiManganOutcomeResolver(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER))
     }
 
-    /** 主動觸發的途中流局：四風連打、四家立直、四槓散了。 */
+    /** 主動觸發的途中流局：四風連打、四家立直、四槓散了；三人日麻只有四槓散了。 */
     override fun registerPostActionExhaustiveDrawResolvers(registry: PostActionExhaustiveDrawResolverRegistry) {
         registry.register(RiichiSuufonRendaResolver())
         registry.register(RiichiSuuchaRiichiResolver())
         registry.register(RiichiSuukanNagareResolver())
+        registry.register(RiichiSuukanNagareResolver(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER))
     }
 
     override fun registerWinSettlementDetailResolvers(registry: WinSettlementDetailResolverRegistry) {
         registry.register(BuiltInRuleModuleIds.RIICHI, RiichiWinSettlementDetailResolver)
+        registry.register(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, RiichiWinSettlementDetailResolver)
     }
 }
+
+/** 日麻玩家規則狀態的存檔種類 key。 */
+private const val RIICHI_PLAYER_STATE_TYPE_KEY: String = "mahjongcraft:riichi/player_state"

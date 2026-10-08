@@ -12,7 +12,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.seatIndexToTableS
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableSeatAnchor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableSeatOffset
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout.advance
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout.localDiscardVector
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout.localHandVector
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout.localWallVector
@@ -43,17 +42,16 @@ data class MahjongTileWallPlacement(
  * 把 [TileWallPosition] 這種與 Minecraft 座標無關的抽象牌牆結構位置，轉換成真實世界座標。
  *
  * 兩段式旋轉合成與 [MahjongDiceTableLayout] 完全同一套慣例：先算出「以局部南側為基準」的向量，再依序旋轉到目標側面、旋轉到桌子世界朝向。
- * [TileWallPosition.side] 以莊家自身面為 0、依這裡的 `SIDE_ORDER`（南→西→北→東，逆時針）遞增，只需要
- * 把 [seatIndexToTableSide] 算出的莊家局部側面當成起點，依 [TileWallPosition.side] 再用同一個
- * `SIDE_ORDER` 旋轉相應步數，就能得到這張牌實際所在的局部側面——`SIDE_ORDER` 只是牌牆環狀結構自己的
- * 固定組裝順序，起點在哪裡（[seatIndexToTableSide] 挑哪個方向對應座位 0）不影響這個環本身密不密合，
- * 兩者刻意各自獨立，見 [seatIndexToTableSide] KDoc 的完整說明。
+ * [TileWallPosition.side] 以莊家自身面為 0，第 `side` 面是莊家往前數 `side` 個座位（座位 `莊家 - side`）面前的
+ * 牌牆，局部側面直接用 [seatIndexToTableSide] 換算；四面牌牆時依序為南→西→北→東（逆時針）的固定環，三面牌牆
+ * （三人對局）時空座位那一側沒有牌牆。牌牆面數與玩家人數相同，由呼叫端從牌牆結構取得（見 [wallSideCount]）。
  */
 object MahjongTileTableLayout {
     /**
      * 依 controller 座標、桌子世界朝向、莊家座位與牌牆總墩數，算出單一 [TileWallPosition] 的世界座標。
      *
      * @param stacksPerSide 這副牌牆每面的總墩數（例如四人日麻固定 17），用來將牌墩對稱置中於側面。
+     * @param sideCount 這副牌牆的面數，與玩家人數相同。
      * [TileWallPlacement.offset] 使用牌張尺寸正規化的三軸位移；沿牌牆的小數位移會在相鄰兩個基本墩位
      * 間內插，跨過牆角時也沿環狀拓樸連續推進。這裡只投影最終端點，動畫行進路徑由呈現層另行處理。
      */
@@ -64,11 +62,13 @@ object MahjongTileTableLayout {
         tableFacing: MahjongTableFacing,
         dealerSeatIndex: Int,
         stacksPerSide: Int,
+        sideCount: Int = STANDARD_WALL_SIDE_COUNT,
         placement: TileWallPlacement,
     ): MahjongTileWallPlacement {
         require(stacksPerSide > 0) { "Stacks per side must be positive" }
+        require(sideCount in 1..STANDARD_WALL_SIDE_COUNT) { "Wall side count $sideCount out of range" }
         val position = placement.position
-        require(position.side in 0 until SIDE_ORDER.size) { "Side ${position.side} out of range" }
+        require(position.side in 0 until sideCount) { "Side ${position.side} out of range" }
         require(position.stack in 0 until stacksPerSide) {
             "Stack ${position.stack} out of range for $stacksPerSide stacks per side"
         }
@@ -85,6 +85,7 @@ object MahjongTileTableLayout {
             tableFacing,
             dealerSeatIndex,
             stacksPerSide,
+            sideCount,
             lowerCoordinate,
             position.layer,
         )
@@ -95,6 +96,7 @@ object MahjongTileTableLayout {
             tableFacing,
             dealerSeatIndex,
             stacksPerSide,
+            sideCount,
             lowerCoordinate + 1,
             position.layer,
         )
@@ -126,6 +128,7 @@ object MahjongTileTableLayout {
         tableFacing: MahjongTableFacing,
         dealerSeatIndex: Int,
         stacksPerSide: Int,
+        sideCount: Int = STANDARD_WALL_SIDE_COUNT,
         position: TileWallPosition,
     ): MahjongTileWallPlacement = wallPlacement(
         controllerX = controllerX,
@@ -134,10 +137,14 @@ object MahjongTileTableLayout {
         tableFacing = tableFacing,
         dealerSeatIndex = dealerSeatIndex,
         stacksPerSide = stacksPerSide,
+        sideCount = sideCount,
         placement = TileWallPlacement(position),
     )
 
-    /** 將環狀牌牆上的整數墩位投影為基本世界座標，超出單面範圍時會繞四面循環。 */
+    /** 牌牆結構涵蓋的面數（最大面 index 加一）；沒有任何格位時為 0。 */
+    fun wallSideCount(positions: Collection<TileWallPosition>): Int = positions.maxOfOrNull { it.side + 1 } ?: 0
+
+    /** 將環狀牌牆上的整數墩位投影為基本世界座標，超出單面範圍時會繞 [sideCount] 面循環。 */
     private fun baseWallPlacement(
         controllerX: Int,
         controllerY: Int,
@@ -145,13 +152,14 @@ object MahjongTileTableLayout {
         tableFacing: MahjongTableFacing,
         dealerSeatIndex: Int,
         stacksPerSide: Int,
+        sideCount: Int,
         circularStack: Int,
         layer: Int,
     ): MahjongTileWallPlacement {
-        val normalized = circularStack.mod(stacksPerSide * SIDE_ORDER.size)
+        val normalized = circularStack.mod(stacksPerSide * sideCount)
         val side = normalized / stacksPerSide
         val stack = normalized % stacksPerSide
-        val physicalSide = advance(seatIndexToTableSide(dealerSeatIndex), side)
+        val physicalSide = seatIndexToTableSide((dealerSeatIndex - side).mod(sideCount))
         val local = localWallVector(stacksPerSide, stack, layer)
         val worldOffset = rotateForFacing(rotateForSide(local, physicalSide), tableFacing)
         return MahjongTileWallPlacement(
@@ -214,8 +222,9 @@ object MahjongTileTableLayout {
      * 倍數更好預期調整後的視覺效果）。
      *
      * `stack = 0` 在該面玩家自己右手邊（`alongSide` 較大）、`stack` 遞增往左手邊移動，真實麻將
-     * 「牌山數墩：從該牌山最右端往左邊數」就是這個方向。這裡的方向跟 [seatIndexToTableSide]／
-     * `SIDE_ORDER` 是耦合校準出來的一組關係，不要單獨改——理由與踩過的坑見 [seatIndexToTableSide] KDoc。
+     * 「牌山數墩：從該牌山最右端往左邊數」就是這個方向。這裡的方向跟 [seatIndexToTableSide] 與牌牆面對應座位的
+     * 方式（第 `side` 面在座位 `莊家 - side` 面前）是耦合校準出來的一組關係，不要單獨改——理由與踩過的坑見
+     * [seatIndexToTableSide] KDoc。
      */
     private fun localWallVector(stacksPerSide: Int, stack: Int, layer: Int): TileTableVector {
         val stackStep = MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING
@@ -575,10 +584,30 @@ object MahjongTileTableLayout {
     fun meldStartOffset(cornerPropWidth: Double): Double = if (cornerPropWidth > 0.0) cornerPropWidth + MELD_GROUP_GAP else 0.0
 
     /**
-     * 角落區沿排列方向總共佔用的寬度，供手牌讓開（[handCornerYieldShift]）與結算舞台避開：沒有副露時只有角落物件
-     * 本身；有副露時為 [meldStartOffset] 加上 [meldAreaWidth]。
+     * 角落區沿排列方向總共佔用的寬度，供手牌讓開（[handCornerYieldShift]）與結算舞台避開：沒有副露與移出的牌時只有
+     * 角落物件本身；否則為 [meldStartOffset] 加上 [meldAreaWidth] 與 [setAsideAreaWidth]。
+     *
+     * @param setAsideTileCount 接在副露之後、移出手牌的牌張數（例如三人日麻拔出的北）。
      */
-    fun cornerAreaWidth(cornerPropWidth: Double, melds: List<MahjongMeldTileGroup>): Double = if (melds.isEmpty()) cornerPropWidth else meldStartOffset(cornerPropWidth) + meldAreaWidth(melds)
+    fun cornerAreaWidth(
+        cornerPropWidth: Double,
+        melds: List<MahjongMeldTileGroup>,
+        setAsideTileCount: Int = 0,
+    ): Double = if (melds.isEmpty() && setAsideTileCount == 0) {
+        cornerPropWidth
+    } else {
+        meldStartOffset(cornerPropWidth) + meldAreaWidth(melds) + setAsideAreaWidth(setAsideTileCount, hasMelds = melds.isNotEmpty())
+    }
+
+    /**
+     * 移出手牌的牌沿排列方向佔用的寬度：一排直立正面朝上的牌，接在最後一組副露之後並隔一個 [MELD_GROUP_GAP]；
+     * 沒有副露時從副露起點開始。每張牌的寬度與縫隙跟副露同一套算法。
+     */
+    fun setAsideAreaWidth(tileCount: Int, hasMelds: Boolean): Double {
+        if (tileCount <= 0) return 0.0
+        val groupGap = if (hasMelds) MELD_GROUP_GAP else 0.0
+        return groupGap + tileCount * (MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING)
+    }
 
     /**
      * 手牌整列（含摸牌位）需要往玩家自己方向（局部 X 軸負向）平移多少距離，才不會跟角落區
@@ -727,9 +756,6 @@ object MahjongTileTableLayout {
      * 右鍵——兩邊共用同一個公式，確保拼湊面板的實際位置跟渲染端判斷可點擊範圍時用的位置永遠一致。
      */
     fun tileSelectionConfirmSegmentAlongOffset(segmentIndex: Int): Double = (segmentIndex - (TILE_SELECTION_CONFIRM_SEGMENT_COUNT - 1) / 2.0) * TILE_SELECTION_CONFIRM_SEGMENT_SPACING
-
-    /** 依南→西→北→東的固定順序（跟 [seatIndexToTableSide] 同一套方向），把 [side] 往同方向推進 [steps] 步。 */
-    private fun advance(side: MahjongTableSide, steps: Int): MahjongTableSide = SIDE_ORDER[(SIDE_ORDER.indexOf(side) + steps).mod(SIDE_ORDER.size)]
 
     /** 將局部南側基準旋轉至指定側面。 */
     private fun rotateForSide(vector: TileTableVector, side: MahjongTableSide): TileTableVector = when (side) {
@@ -1054,7 +1080,6 @@ object MahjongTileTableLayout {
      */
     internal const val HAND_CORNER_GAP: Double = MahjongTileDimensions.TILE_WIDTH * 0.2
 
-    /** 南→西→北→東的固定順序，跟 [seatIndexToTableSide] 與 `TileWallPosition.side` 同一套慣例。 */
-    private val SIDE_ORDER =
-        listOf(MahjongTableSide.SOUTH, MahjongTableSide.WEST, MahjongTableSide.NORTH, MahjongTableSide.EAST)
+    /** 四人對局的牌牆面數，也是桌子的側面數。 */
+    const val STANDARD_WALL_SIDE_COUNT: Int = 4
 }

@@ -5,17 +5,43 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.SpectatingPolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.SpectatorHandVisibility
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
 /** [GameVisibilityPolicyImpl] 的觀看權限與手牌可見範圍測試。 */
 class GameVisibilityPolicyTest {
+    private val policy = GameVisibilityPolicyImpl(MahjongModuleRegistryImpl().apply { registerBundledRuleModules() })
+
+    /** 快照帶出每位玩家移出手牌、公開擺在桌上的牌，任何觀察者都看得到。 */
+    @Test
+    fun `snapshot carries tiles every player set aside`() {
+        val north = FakeIdentifiedTileFactory.create(Tile.Honor.North)
+        val puller = FakeMahjongPlayerFactory.create(playerRuleState = RiichiPlayerState(nukiDoraTiles = listOf(north)))
+        val others = List(2) { FakeMahjongPlayerFactory.create(playerRuleState = RiichiPlayerState()) }
+        val game = Game(
+            tableState = FakeTableStateFactory.create(players = listOf(puller) + others, config = ThreePlayerRiichiRuleConfig()),
+            flowConfig = GameFlowConfig(),
+        )
+
+        val snapshot = policy.snapshotFor(game, others.first().id)
+
+        assertEquals(listOf(north), snapshot.players.single { it.id == puller.id }.setAsideTiles)
+        assertTrue(snapshot.players.filter { it.id != puller.id }.all { it.setAsideTiles.isEmpty() })
+    }
+
     /** 參與玩家只能看見自己的手牌，不受旁觀者設定影響。 */
     @Test
     fun `player sees only own hand`() {
@@ -23,7 +49,7 @@ class GameVisibilityPolicyTest {
         val otherPlayerId = Uuid.random()
         val game = createGame(playerId, otherPlayerId)
 
-        val snapshot = GameVisibilityPolicyImpl().snapshotFor(game, playerId)
+        val snapshot = policy.snapshotFor(game, playerId)
 
         assertNotNull(snapshot.players.single { it.id == playerId }.hand.standingTiles.single().tile)
         assertNull(snapshot.players.single { it.id == otherPlayerId }.hand.standingTiles.single().tile)
@@ -37,7 +63,7 @@ class GameVisibilityPolicyTest {
 
         assertEquals(
             playerIds.toSet(),
-            GameVisibilityPolicyImpl().snapshotFor(game, Uuid.random()).players
+            policy.snapshotFor(game, Uuid.random()).players
                 .filter { it.hand.standingTiles.single().tile != null }
                 .mapTo(mutableSetOf()) { it.id },
         )
@@ -53,7 +79,7 @@ class GameVisibilityPolicyTest {
 
         assertEquals(
             emptyList(),
-            GameVisibilityPolicyImpl().snapshotFor(game, Uuid.random()).players
+            policy.snapshotFor(game, Uuid.random()).players
                 .filter { it.hand.standingTiles.single().tile != null },
         )
     }
@@ -68,7 +94,7 @@ class GameVisibilityPolicyTest {
 
         assertEquals(
             emptyList(),
-            GameVisibilityPolicyImpl().snapshotFor(game, Uuid.random()).players
+            policy.snapshotFor(game, Uuid.random()).players
                 .filter { it.hand.standingTiles.single().tile != null },
         )
     }
@@ -85,6 +111,7 @@ class GameVisibilityPolicyTest {
                     hand = FakeHandFactory.create(listOf(Tile.Honor.East)),
                 )
             },
+            config = RiichiRuleConfig(),
         ),
         flowConfig = flowConfig,
     )

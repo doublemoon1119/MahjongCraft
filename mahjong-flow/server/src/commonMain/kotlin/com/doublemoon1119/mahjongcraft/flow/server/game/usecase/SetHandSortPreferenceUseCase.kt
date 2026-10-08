@@ -73,6 +73,7 @@ class SetHandSortPreferenceUseCase(
             player.hand.tiles.map { it.id },
             player.hand.lastDrawn?.id,
             player.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles, module.tileOrder) },
+            setAsideTileIds = module.setAsideTiles(player).map { it.id },
         )
     }
 }

@@ -23,7 +23,7 @@ class TablePropDescriberRegistryTest {
         assertSame(RiichiTableProps, registry.find(BuiltInRuleModuleIds.RIICHI))
         assertSame(custom, registry.find("example:custom"))
         assertNull(registry.find(BuiltInRuleModuleIds.TAIWAN))
-        assertEquals(setOf(BuiltInRuleModuleIds.RIICHI, "example:custom"), registry.registrationKeys)
+        assertEquals(setOf(BuiltInRuleModuleIds.RIICHI, BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, "example:custom"), registry.registrationKeys)
     }
 
     /** 驗證 registry 凍結後禁止延遲登記。 */

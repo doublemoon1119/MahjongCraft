@@ -6,9 +6,12 @@ import com.doublemoon1119.mahjongcraft.ai.BuiltInAiStrategyKeys
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategy
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiPullNorthCommand
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PULL_NORTH_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -41,6 +44,31 @@ class MatchSimulationSmokeTest {
         result.rounds.forEach { seats ->
             assertEquals(seats.any { it.wonByRon }, seats.any { it.dealtIn }, "ron and deal-in must match: $seats")
             assertTrue(seats.none { it.wonByRon && !it.won }, "a ron must be a win: $seats")
+        }
+    }
+
+    /**
+     * 三個內建策略以三人日麻打完一場東風戰：沒有不合法命令、點數守恆、正常結束，名次為一到三位；
+     * 有機會拔北時，期望值策略會拔北。
+     */
+    @Test
+    fun `built-in strategies play a full three-player east match`() = runTest(timeout = SMOKE_TIMEOUT) {
+        val lineup = listOf(BuiltInAiStrategyKeys.BEGINNER, BuiltInAiStrategyKeys.ADVANCED, RandomAiStrategy.KEY)
+
+        val config = ThreePlayerRiichiRuleConfig(gameLength = RiichiGameLength.East)
+        val recorder = DecisionRecorder(traceLimit = Int.MAX_VALUE)
+        val result = MatchSimulator(config).play(lineup, recorder)
+        val diagnostic = "rounds played: ${result.rounds.size}; end reason: ${result.matchEndReasonId}; final scores: ${result.finalScoresByPlayer}"
+
+        assertNull(result.failure, result.failure?.describe())
+        assertLegalRiichiMatchCompletion(config, result.rounds.size, result.matchEndReasonId, result.finalScoresByPlayer)
+        val pullNorthChances = recorder.recent.filter { PULL_NORTH_GAME_ACTION in it.legalActions && it.strategyKey != RandomAiStrategy.KEY }
+        if (pullNorthChances.isNotEmpty()) {
+            assertTrue(pullNorthChances.any { it.command == GameCommand.Extension(RiichiPullNorthCommand) }, "Expectation strategies never pulled north")
+        }
+        assertEquals(setOf(1, 2, 3), result.placementsByPlayer.values.toSet(), diagnostic)
+        result.rounds.forEach { seats ->
+            assertEquals(seats.any { it.wonByRon }, seats.any { it.dealtIn }, "ron and deal-in must match: $seats")
         }
     }
 

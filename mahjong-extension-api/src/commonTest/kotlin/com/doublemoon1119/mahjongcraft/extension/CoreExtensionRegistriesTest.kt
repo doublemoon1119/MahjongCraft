@@ -58,7 +58,13 @@ class CoreExtensionRegistriesTest {
         BundledRiichiExtension.registerOpponentModels(registries.opponentModelRegistry)
 
         assertEquals(
-            listOf(ExtensionRegistrationCategory("mahjongcraft:opponent_model", "Opponent Model", listOf(BuiltInRuleModuleIds.RIICHI))),
+            listOf(
+                ExtensionRegistrationCategory(
+                    id = "mahjongcraft:opponent_model",
+                    displayName = "Opponent Model",
+                    registrationIds = listOf(BuiltInRuleModuleIds.RIICHI, BuiltInRuleModuleIds.RIICHI_THREE_PLAYER),
+                ),
+            ),
             before.additionsSince(registries.registrationSnapshot()),
         )
     }

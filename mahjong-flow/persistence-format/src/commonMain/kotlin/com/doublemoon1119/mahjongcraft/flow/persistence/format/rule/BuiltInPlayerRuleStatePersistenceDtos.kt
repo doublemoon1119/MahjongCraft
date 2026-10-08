@@ -24,7 +24,7 @@ data class PaoLiabilityPersistenceDto(
 /**
  * [RiichiPlayerState] 的完整 persistence DTO。
  *
- * 預設值是最常見的狀態（沒有永久振聽）；編碼時省略等於預設值的欄位，讓每個存檔點都帶有玩家狀態的
+ * 預設值是最常見的狀態（沒有永久振聽、沒有拔北）；編碼時省略等於預設值的欄位，讓每個存檔點都帶有玩家狀態的
  * 精簡牌譜不必重複寫出這些值。
  */
 @Serializable
@@ -34,6 +34,7 @@ data class RiichiPlayerStatePersistenceDto(
     val isIppatsu: Boolean,
     val paoLiability: PaoLiabilityPersistenceDto?,
     val isPermanentlyFuriten: Boolean = false,
+    val nukiDoraTiles: List<IdentifiedTilePersistenceDto> = emptyList(),
 )
 
 /** 將 [RiichiPlayerState] 轉換成 persistence DTO。 */
@@ -43,6 +44,7 @@ fun RiichiPlayerState.toPersistenceDto(): RiichiPlayerStatePersistenceDto = Riic
     isIppatsu = isIppatsu,
     paoLiability = paoLiability?.toPersistenceDto(),
     isPermanentlyFuriten = isPermanentlyFuriten,
+    nukiDoraTiles = nukiDoraTiles.map { it.toPersistenceDto() },
 )
 
 /** 將日麻玩家規則狀態 persistence DTO 還原成 [RiichiPlayerState]。 */
@@ -52,6 +54,7 @@ fun RiichiPlayerStatePersistenceDto.toDomain(): RiichiPlayerState = RiichiPlayer
     isIppatsu = isIppatsu,
     paoLiability = paoLiability?.toDomain(),
     isPermanentlyFuriten = isPermanentlyFuriten,
+    nukiDoraTiles = nukiDoraTiles.map { it.toDomain() },
 )
 
 /** 將 [PaoLiability] 轉換成 persistence DTO。 */

@@ -135,6 +135,7 @@ internal object HistoryRoundResponseValidator {
                 !validTileIndexes(state.tileCatalog.size, player.handTiles) ||
                 player.lastDrawn?.let { !validTileIndex(state.tileCatalog.size, it) } == true ||
                 !validTileIndexes(state.tileCatalog.size, player.discards.map { it.tile }) ||
+                !validTileIndexes(state.tileCatalog.size, player.setAsideTiles) ||
                 player.melds.any {
                     !validTileIndexes(state.tileCatalog.size, it.tiles) ||
                         !validTileIndexOrNull(state.tileCatalog.size, it.sourceTile) ||

@@ -17,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.BuiltInMatchEndReasonIds
@@ -206,6 +207,20 @@ class RiichiGameAchievementResolverTest {
         assertEquals(setOf(RiichiAchievementIds.MATCH_COMPLETED, RiichiAchievementIds.BUSTED), result.getValue(busted.id))
     }
 
+    /** 三人日麻對局與四人日麻共用同一批日麻成果。 */
+    @Test
+    fun `three player riichi games credit the same riichi achievements`() {
+        val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
+        val registry = GameAchievementResolverRegistryImpl().apply { BundledRiichiMinecraftExtension.registerGameAchievementResolvers(this) }
+        val game = gameOf(ThreePlayerRiichiRuleConfig())
+        val winner = game.tableState.players.first()
+
+        val result = GameAchievementDetector(moduleRegistry, registry)
+            .detect(facts(game, win(winner.id, nonYakumanFields(han = 2, YakuType.Riichi))))
+
+        assertTrue(result.single { it.playerId == winner.id }.achievementIds.contains(RiichiAchievementIds.RIICHI_WIN))
+    }
+
     /** 非日麻對局不會交給日麻判定。 */
     @Test
     fun `non-riichi games produce no riichi achievements`() {
@@ -220,7 +235,7 @@ class RiichiGameAchievementResolverTest {
         assertTrue(result.flatMap { it.achievementIds }.none { it.startsWith("mahjongcraft:riichi/") })
     }
 
-    private fun resolve(game: Game, fact: HistoryFact): Map<Uuid, Set<String>> = RiichiGameAchievementResolver.resolve(facts(game, fact))
+    private fun resolve(game: Game, fact: HistoryFact): Map<Uuid, Set<String>> = RiichiGameAchievementResolver().resolve(facts(game, fact))
 
     private fun riichiGame(
         firstPlayerRuleState: RiichiPlayerState? = null,

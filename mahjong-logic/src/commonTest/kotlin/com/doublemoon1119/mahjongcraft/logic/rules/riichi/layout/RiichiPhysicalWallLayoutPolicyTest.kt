@@ -88,7 +88,7 @@ class RiichiPhysicalWallLayoutPolicyTest {
                     dynamicRuleState = supplemental.dynamicRuleState,
                 )
                 val transition = assertIs<PhysicalWallLayoutTransitionDecision.Completed>(
-                    RiichiPhysicalWallLayoutPolicy.resolveTransitionValidated(
+                    RiichiPhysicalWallLayoutPolicy(rinshanTileCount = 4).resolveTransitionValidated(
                         PhysicalWallLayoutTransitionContext(
                             tableStateBeforeAction = tableState,
                             tableStateAfterAction = updatedState,
@@ -135,7 +135,7 @@ class RiichiPhysicalWallLayoutPolicyTest {
         val initialLayout = initialPhysicalLayout(wallLayout, WallOpening(0, 1))
 
         val transition = assertIs<PhysicalWallLayoutTransitionDecision.Completed>(
-            RiichiPhysicalWallLayoutPolicy.resolveTransitionValidated(
+            RiichiPhysicalWallLayoutPolicy(rinshanTileCount = 4).resolveTransitionValidated(
                 PhysicalWallLayoutTransitionContext(
                     initialState,
                     updatedState,
@@ -245,7 +245,7 @@ class RiichiPhysicalWallLayoutPolicyTest {
                 dynamicRuleState = supplemental.dynamicRuleState,
             )
             val transition = assertIs<PhysicalWallLayoutTransitionDecision.Completed>(
-                RiichiPhysicalWallLayoutPolicy.resolveTransitionValidated(
+                RiichiPhysicalWallLayoutPolicy(rinshanTileCount = 4).resolveTransitionValidated(
                     PhysicalWallLayoutTransitionContext(
                         tableStateBeforeAction = tableState,
                         tableStateAfterAction = updatedState,
@@ -314,7 +314,7 @@ class RiichiPhysicalWallLayoutPolicyTest {
         wallLayout: TileWallLayoutResult,
         opening: WallOpening,
     ): TileWallPhysicalLayout = assertIs<InitialPhysicalWallLayoutDecision.Completed>(
-        RiichiPhysicalWallLayoutPolicy.createInitialLayoutValidated(
+        RiichiPhysicalWallLayoutPolicy(rinshanTileCount = 4).createInitialLayoutValidated(
             InitialPhysicalWallLayoutContext(
                 wallLayout,
                 opening,

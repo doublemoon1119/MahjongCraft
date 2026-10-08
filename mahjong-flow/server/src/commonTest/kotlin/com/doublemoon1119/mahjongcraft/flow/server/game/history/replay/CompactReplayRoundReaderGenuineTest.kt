@@ -25,9 +25,11 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.Re
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayReadLimits
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayReadResult
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.MatchRoundPosition
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
@@ -85,6 +87,60 @@ class CompactReplayRoundReaderGenuineTest {
         assertEquals(ReplayReadError.INVALID_DOCUMENT, assertIs<ReplayReadResult.Failure>(reader().readEvents(changed(1, mapOf("a" to JsonArray(listOf(JsonPrimitive(0))))), fixture.matchId, 1, 1, 1)).error)
         assertEquals(ReplayReadError.INVALID_DOCUMENT, assertIs<ReplayReadResult.Failure>(reader().readEvents(changed(1, mapOf("a" to JsonPrimitive(999))), fixture.matchId, 1, 1, 1)).error)
         assertEquals(ReplayReadError.INVALID_DOCUMENT, assertIs<ReplayReadResult.Failure>(reader().readEvents(changed(1, mapOf("dt" to JsonPrimitive(Long.MAX_VALUE))), fixture.matchId, 1, 0, 20)).error)
+    }
+
+    /** 驗證玩家規則狀態中拔出的北，經正式編碼後投影為該玩家移出手牌的牌。 */
+    @Test
+    fun `reader projects pulled norths as set aside tiles`() = runTest {
+        val north = FakeIdentifiedTileFactory.create(Tile.Honor.North)
+        val kept = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
+        val base = FakeTableStateFactory.create(
+            players = listOf(
+                FakeMahjongPlayerFactory.create(
+                    hand = Hand(tiles = listOf(kept, north)),
+                    discardPile = RiichiDiscardPile(),
+                    playerRuleState = RiichiPlayerState(),
+                ),
+                FakeMahjongPlayerFactory.create(discardPile = RiichiDiscardPile(), playerRuleState = RiichiPlayerState()),
+            ),
+            config = RiichiRuleConfig(),
+        )
+        val pulled = base.copy(
+            players = base.players.mapIndexed { index, player ->
+                if (index == 0) player.copy(hand = player.hand.copy(tiles = listOf(kept)), playerRuleState = RiichiPlayerState(nukiDoraTiles = listOf(north))) else player
+            },
+        )
+        val matchId = Uuid.random()
+        val events = listOf(
+            event(matchId, base.id, 1, 0L, HistoryFact.MatchStarted(base, GameFlowConfig(), emptyMap())),
+            event(matchId, base.id, 2, 50L, HistoryFact.TableChanged(HistoryTableResult.Checkpoint("test:pull_north", pulled))),
+            event(
+                matchId,
+                base.id,
+                3,
+                100L,
+                HistoryFact.RoundCompleted(
+                    RoundCompletionSummary(
+                        "test:round_completed",
+                        RoundCompletionClassification.EXHAUSTIVE_DRAW,
+                        emptySet(),
+                        transitionDirective = RoundTransitionDirective.ADVANCE_DEALER,
+                        settledScoresByPlayerId = pulled.players.associate { it.id to it.score },
+                    ),
+                ),
+            ),
+            event(matchId, base.id, 4, 100L, HistoryFact.MatchCompleted("test:completed", pulled.players.associate { it.id to it.score })).copy(transactionFirstSequence = 3),
+        )
+        val registries = bundledPersistenceRegistries()
+        val document = CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries)
+
+        val initial = assertIs<ReplayReadResult.Success<HistoryRoundState>>(reader().readState(document, matchId, 1, HistoryRoundPosition.Initial)).value
+        val after = assertIs<ReplayReadResult.Success<HistoryRoundState>>(reader().readState(document, matchId, 1, HistoryRoundPosition.AfterTransaction(1))).value
+
+        assertTrue(initial.players.all { it.setAsideTiles.isEmpty() })
+        val puller = after.players.single { it.initialSeatIndex == 0 }
+        assertEquals(listOf<Tile>(Tile.Honor.North), puller.setAsideTiles.map { after.tileCatalog.tiles[it.tileIndex] })
+        assertEquals(listOf<Tile>(Tile.Numeric(Tile.Suit.Dot, 1)), puller.handTiles.map { after.tileCatalog.tiles[it.tileIndex] })
     }
 
     /** 建立內建投影已註冊並凍結的讀取器。

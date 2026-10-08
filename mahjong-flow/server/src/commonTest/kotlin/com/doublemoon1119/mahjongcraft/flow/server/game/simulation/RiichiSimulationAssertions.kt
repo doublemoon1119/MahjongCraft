@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.simulation
 
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiFamilyRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.BuiltInMatchEndReasonIds
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -13,7 +13,7 @@ import kotlin.uuid.Uuid
  * @param finalScoresByPlayer 最後一次權威結算的玩家分數。
  */
 internal fun assertLegalRiichiMatchCompletion(
-    config: RiichiRuleConfig,
+    config: RiichiFamilyRuleConfig,
     roundCount: Int,
     matchEndReasonId: String?,
     finalScoresByPlayer: Map<Uuid, Int>,
@@ -30,7 +30,7 @@ internal fun assertLegalRiichiMatchCompletion(
         BuiltInMatchEndReasonIds.TARGET_SCORE_REACHED,
         BuiltInMatchEndReasonIds.EXTRA_ROUND_LIMIT_REACHED,
         BuiltInMatchEndReasonIds.DEALER_TOP_FINISH,
-        -> assertTrue(roundCount >= config.gameLength.totalRounds, "Schedule ending before the minimum rounds; $diagnostic")
+        -> assertTrue(roundCount >= config.scheduledRoundCount, "Schedule ending before the minimum rounds; $diagnostic")
         else -> throw AssertionError("Missing or unexpected match end reason; $diagnostic")
     }
 }

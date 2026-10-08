@@ -1,7 +1,9 @@
 package com.doublemoon1119.mahjongcraft.logic.table
 
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import kotlin.uuid.Uuid
 
@@ -22,6 +24,8 @@ import kotlin.uuid.Uuid
  * @property finishedPlayerIds 本局已完成、不再參與後續回合的玩家 Uuid 集合，供呈現層顯示牌面與
  * 觀戰狀態使用。
  * @property physicalWallLayout 目前仍在牌牆中的牌張實體位置；規則不支援時為 null。
+ * @property revealedHandTiles 仍在某位玩家手牌中、但已經公開的牌（見 [TableState.revealedHandTileIds]），對所有玩家
+ * 可見；沒有時為空清單。
  */
 data class TableStateSnapshot(
     val id: Uuid,
@@ -37,15 +41,21 @@ data class TableStateSnapshot(
     val dynamicRuleState: DynamicRuleState?,
     val finishedPlayerIds: Set<Uuid>,
     val physicalWallLayout: TileWallPhysicalLayout?,
+    val revealedHandTiles: List<IdentifiedTile>,
 )
 
 /**
  * 產生一個相對於指定觀察者可見範圍的 [TableState] 不可變快照。
  *
  * @param visibleHandPlayerIds 可以顯示完整手牌的玩家識別碼集合。
+ * @param setAsideTiles 取得每位玩家移出手牌、公開擺在桌上的牌，通常是這一局規則模組的
+ *   [MahjongRuleModule.setAsideTiles]。
  * @return 依據明確可見範圍產生的桌局快照。
  */
-fun TableState.toSnapshot(visibleHandPlayerIds: Set<Uuid>): TableStateSnapshot {
+fun TableState.toSnapshot(
+    visibleHandPlayerIds: Set<Uuid>,
+    setAsideTiles: (MahjongPlayer) -> List<IdentifiedTile>,
+): TableStateSnapshot {
     // 若規則實作 TileWallRevealable，則計算牌山中應公開可見的牌張 Uuid
     val visibleTileIds = (dynamicRuleState as? TileWallRevealable)
         ?.getVisibleTileIds(this)
@@ -54,7 +64,11 @@ fun TableState.toSnapshot(visibleHandPlayerIds: Set<Uuid>): TableStateSnapshot {
     return TableStateSnapshot(
         id = this.id,
         players = this.players.map {
-            it.toSnapshot(isVisible = it.id in visibleHandPlayerIds, revealsClosedKanTiles = config.revealsClosedKanTiles)
+            it.toSnapshot(
+                isVisible = it.id in visibleHandPlayerIds,
+                revealsClosedKanTiles = config.revealsClosedKanTiles,
+                setAsideTiles = setAsideTiles(it),
+            )
         },
         config = this.config,
         tileWall = this.tileWall.toSnapshot(visibleTileIds = visibleTileIds, reservedWallTiles = this.reservedWallTiles),
@@ -67,5 +81,11 @@ fun TableState.toSnapshot(visibleHandPlayerIds: Set<Uuid>): TableStateSnapshot {
         dynamicRuleState = this.dynamicRuleState,
         finishedPlayerIds = this.finishedPlayerIds,
         physicalWallLayout = this.physicalWallLayout,
+        revealedHandTiles = revealedHandTiles(),
     )
+}
+
+/** 仍在手牌中、且列在 [TableState.revealedHandTileIds] 的牌。 */
+private fun TableState.revealedHandTiles(): List<IdentifiedTile> = players.flatMap { player ->
+    player.hand.standingTiles.filter { it.id in revealedHandTileIds }
 }

@@ -32,20 +32,22 @@ import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
 
 /**
- * 回應搶槓反應視窗（榮和/過）的實例化用例。
+ * 回應搶和反應視窗（榮和/過）的實例化用例。
  *
- * 名詞對照：**宣告者**（`pending.declarerId`）是剛剛宣告暗槓/加槓的那個人；**搶槓者**是這裡呼叫
- * [GameAction.Ron] 的其他玩家。搶槓的本質是「用宣告者這張要拿去槓的牌榮和」，所以搶槓成功時，
- * 宣告者的身分變成榮和結算裡的放銃者，不是槓的宣告者——這跟一般槓牌完全是兩回事。
+ * 搶和視窗由 [DeclareKanUseCase]（暗槓／加槓）或 [DeclareTileSetAsideUseCase]（移出手牌的擴充動作，例如三人日麻的拔北）
+ * 開啟，存在 `TableState.pendingRobbingReaction`。
  *
- * 對應 [DeclareKanUseCase] 開啟的 `TableState.pendingRobbingReaction`：每位有資格搶槓的玩家各自呼叫一次
- * 本用例記錄自己的回應，等全部人都回應完才結算，結算只有兩種結果：
- * - **有人搶槓成功**：這次暗槓/加槓視為沒發生，改用 [RonSettlementResolver] 結算榮和。
- * - **全員放過**：槓真的成立，這時才呼叫 [SelfDeclarationApplier] 補做原本暫緩的副露套用，並讓
- *   宣告者摸嶺上牌——只有這個分支會摸牌，搶槓成功那個分支不會。
+ * 名詞對照：**宣告者**（`pending.declarerId`）是剛剛宣告動作的那個人；**搶和者**是這裡呼叫
+ * [GameAction.Ron] 的其他玩家。搶和的本質是「用宣告者這張要拿去槓或移出的牌榮和」，所以搶和成功時，
+ * 宣告者的身分變成榮和結算裡的放銃者。
+ *
+ * 每位有資格搶和的玩家各自呼叫一次本用例記錄自己的回應，等全部人都回應完才結算，結算只有兩種結果：
+ * - **有人搶和成功**：這次宣告的動作視為沒發生，改用 [RonSettlementResolver] 結算榮和；只有搶加槓計搶槓。
+ * - **全員放過**：動作真的成立，這時才呼叫 [SelfDeclarationApplier] 補做原本暫緩的套用，並讓
+ *   宣告者摸嶺上牌——只有這個分支會摸牌，搶和成功那個分支不會。
  *
  * 只信任 [GameAction.Ron]/[GameAction.Pass]：`LegalActionValidator.getLegalActions` 的「反應」
- * 分支不分辨 `sourceAction` 是捨牌還是槓牌，會一併算出吃/碰/明槓資格，但搶槓情境下這些都不合法
+ * 分支不分辨 `sourceAction` 是不是捨牌，會一併算出吃/碰/明槓資格，但搶和情境下這些都不合法
  * （這張牌不是捨牌）——回應驗證時額外過濾，只接受 `Ron`/`Pass`。
  *
  * @property gameRepository 權威對局數據倉庫。
@@ -69,7 +71,7 @@ class RespondToRobbingUseCase(
     private val winSettlementDetailResolverRegistry: WinSettlementDetailResolverRegistry,
 ) {
     /**
-     * 執行搶槓反應回應邏輯。
+     * 執行搶和反應回應邏輯。
      *
      * @param gameId 對局 Uuid。
      * @param playerId 發起回應的玩家 Uuid。
@@ -100,7 +102,7 @@ class RespondToRobbingUseCase(
                                     actorPlayerId = resolvedActor,
                                     fact = HistoryFact.ReactionResolved(
                                         resolvedAction = if (resolution.drawHappened) {
-                                            before.pendingRobbingReaction?.kanAction
+                                            before.pendingRobbingReaction?.declaredAction
                                         } else {
                                             resolution.ronWinningTileId?.let(GameAction::Ron)
                                         },
@@ -146,7 +148,7 @@ class RespondToRobbingUseCase(
                     val legalActions = module.createLegalActionValidator().getLegalActions(
                         tableState = state,
                         player = responder,
-                        sourceAction = pending.kanAction,
+                        sourceAction = pending.declaredAction,
                         sourceDirection = state.relativeDirectionOf(playerId, pending.declarerId),
                         incomingTile = pending.robbedTile,
                     ).filter { it is GameAction.Ron || it == GameAction.Pass }
@@ -177,7 +179,7 @@ class RespondToRobbingUseCase(
                             winningTile = pending.robbedTile,
                             module = module,
                             winnerIds = ronWinnerIds,
-                            isRobbingKan = pending.kanAction.type == GameAction.KanType.ADDED_KAN,
+                            isRobbingKan = (pending.declaredAction as? GameAction.Kan)?.type == GameAction.KanType.ADDED_KAN,
                         )
                         val settledState = resolved?.tableState?.copy(pendingRobbingReaction = null)
                             ?: state.copy(pendingRobbingReaction = newPending)
@@ -234,7 +236,7 @@ class RespondToRobbingUseCase(
                         val passedPlayerIds = newPending.responses.keys + RobbingEligibility.ronEligiblePlayerIds(
                             tableState = state,
                             declarerId = pending.declarerId,
-                            kanAction = pending.kanAction,
+                            declaredAction = pending.declaredAction,
                             robbedTile = pending.robbedTile,
                             module = module,
                         )
@@ -244,13 +246,22 @@ class RespondToRobbingUseCase(
                             playerIds = passedPlayerIds,
                             module = module,
                         )
-                        val applied = SelfDeclarationApplier.apply(
-                            stateAfterPasses,
-                            pending.declarerId,
-                            pending.kanAction,
-                            pending.robbedTile,
-                            module,
-                        )
+                        val applied = when (val declaredAction = pending.declaredAction) {
+                            is GameAction.Kan -> SelfDeclarationApplier.apply(
+                                stateAfterPasses,
+                                pending.declarerId,
+                                declaredAction,
+                                pending.robbedTile,
+                                module,
+                            )
+                            is GameAction.Extension -> SelfDeclarationApplier.applyTileSetAside(
+                                state = stateAfterPasses,
+                                declarerId = pending.declarerId,
+                                action = declaredAction,
+                                module = module,
+                            )
+                            else -> SelfDeclarationApplier.Result.Rejected(SupplementalDrawReasonIds.INVALID_RESULT)
+                        }
                         if (applied is SelfDeclarationApplier.Result.Rejected) {
                             val error = if (applied.reasonId == SupplementalDrawReasonIds.WALL_EXHAUSTED) {
                                 GameError.WallExhausted(gameId)
@@ -266,6 +277,7 @@ class RespondToRobbingUseCase(
                                 newState,
                                 drawHappened = applied.drawnTiles.isNotEmpty(),
                                 declarerId = pending.declarerId,
+                                ruleStateChanged = pending.declaredAction is GameAction.Extension,
                                 wallRevealBatches = applied.wallRevealBatches,
                                 physicalWallTransitionPhases = applied.physicalWallTransitionPhases,
                             ),
@@ -302,7 +314,10 @@ class RespondToRobbingUseCase(
                 declarer.hand.tiles.map { it.id },
                 declarer.hand.lastDrawn?.id,
                 declarer.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles, module.tileOrder) },
+                setAsideTileIds = module.setAsideTiles(declarer).map { it.id },
+                isNewlyDrawn = result.drawHappened,
             )
+            if (result.ruleStateChanged) presentationPublisher.publishRuleStateUpdated(gameId)
         }
 
         // 正常成立的槓依規則 checkpoint 發布新公開的牌；搶槓胡牌取消等待時不會產生批次。
@@ -351,13 +366,14 @@ class RespondToRobbingUseCase(
      * `update` 區塊內部用的中繼結果。[drawHappened] 為 true 代表「全員放過、槓真的成立」，這時才有
      * 嶺上摸牌，需要廣播 [GameAction.Draw]；[declarerId]（槓的宣告者）也只在這種情況才有值。[ronWinnerIds]／
      * [ronWinningTileId] 只在搶槓成功時非空，供呼叫端逐一觸發胡牌慶祝演出——跟 [declarerId] 是互斥的
-     * 兩個視窗，同一次結算只會有其中一種非空。
+     * 兩個視窗，同一次結算只會有其中一種非空。[ruleStateChanged] 代表成立的是移出手牌的擴充動作，規則狀態（例如移出的牌）已改變。
      * @property settlement 同一搶槓榮和交易建立的胡牌呈現詳情。
      */
     private data class RobbingResult(
         val tableState: TableState,
         val drawHappened: Boolean,
         val declarerId: Uuid? = null,
+        val ruleStateChanged: Boolean = false,
         val ronWinnerIds: Set<Uuid> = emptySet(),
         val ronWinningTileId: Uuid? = null,
         val ronResolutions: Map<Uuid, WinResolutionResult> = emptyMap(),

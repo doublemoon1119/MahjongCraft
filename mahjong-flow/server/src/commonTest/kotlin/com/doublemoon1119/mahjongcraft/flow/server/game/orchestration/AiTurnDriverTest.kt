@@ -66,7 +66,7 @@ class AiTurnDriverTest {
             gameRepo,
             GetLegalActionsUseCase(gameRepo, moduleRegistry, actionContextResolver),
             strategyRegistry,
-            GameVisibilityPolicyImpl(),
+            GameVisibilityPolicyImpl(moduleRegistry),
             moduleRegistry,
             actionContextResolver,
         )

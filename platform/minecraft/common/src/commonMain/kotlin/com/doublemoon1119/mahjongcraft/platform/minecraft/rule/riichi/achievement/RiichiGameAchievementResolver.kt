@@ -20,12 +20,13 @@ import kotlin.uuid.Uuid
  * 內建日麻的專屬成果判定。
  *
  * 役種與番數讀取日麻胡牌詳情欄位（[RiichiWinSettlementIds]）；立直與一發另外參考和牌前的玩家狀態，讓役滿和牌也能判定。
+ * 四人與三人日麻共用同一批成果。
+ *
+ * @property ruleModuleId 套用的日麻系列規則模組。
  */
-object RiichiGameAchievementResolver : GameAchievementResolver {
-    override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI
-
-    /** 累計役滿所需的最低總番數。 */
-    private const val COUNTED_YAKUMAN_HAN = 13
+class RiichiGameAchievementResolver(
+    override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI,
+) : GameAchievementResolver {
 
     override fun resolve(facts: CommittedGameFacts): Map<Uuid, Set<String>> {
         val before = (facts.previousGame ?: checkNotNull(facts.game)).tableState
@@ -112,4 +113,9 @@ object RiichiGameAchievementResolver : GameAchievementResolver {
     private fun HistoryWinDetails.totalHan(): Int? = detailFields
         .firstOrNull { it.id == RiichiWinSettlementIds.HAN_FU_FIELD }
         ?.let { field -> (field.value as? WinSettlementDetailValue.Quantities)?.quantities?.firstOrNull { it.unitId == RiichiWinSettlementIds.HAN }?.amount }
+
+    private companion object {
+        /** 累計役滿所需的最低總番數。 */
+        const val COUNTED_YAKUMAN_HAN = 13
+    }
 }

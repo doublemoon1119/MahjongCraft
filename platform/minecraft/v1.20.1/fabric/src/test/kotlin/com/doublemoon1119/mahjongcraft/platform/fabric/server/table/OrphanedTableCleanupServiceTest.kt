@@ -62,7 +62,7 @@ class OrphanedTableCleanupServiceTest {
         val game = FakeTableStateFactory.create(id = fixture.tableId, players = listOf(player))
         fixture.gameRepository.setTableState(game)
         fixture.memberships.claim(player.id, fixture.tableId)
-        fixture.gameSnapshots.setSnapshot(player.id, game.toSnapshot(setOf(player.id)))
+        fixture.gameSnapshots.setSnapshot(player.id, game.toSnapshot(setOf(player.id), setAsideTiles = { emptyList() }))
 
         val result = fixture.service.cleanupMissing(fixture.tableId, fixture.entryRevision)
 

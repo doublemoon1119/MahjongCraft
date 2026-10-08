@@ -231,6 +231,7 @@ class DiscardTileUseCase(
             discarder.hand.tiles.map { it.id },
             null,
             discarder.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles, module.tileOrder) },
+            setAsideTileIds = module.setAsideTiles(discarder).map { it.id },
         )
         presentationPublisher.publishDiscardPileUpdated(
             gameId,

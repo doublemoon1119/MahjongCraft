@@ -3,9 +3,9 @@ package com.doublemoon1119.mahjongcraft.logic.rules.taiwan.layout
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.opening.TaiwanWallOpeningPolicy
-import com.doublemoon1119.mahjongcraft.logic.table.layout.FourSidedWallLayoutSupport
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallLayout
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallLayoutResult
+import com.doublemoon1119.mahjongcraft.logic.table.layout.WallRingLayoutSupport
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 
 /**
@@ -13,7 +13,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
  *
  * 四面牌牆，不含花牌時每面 17 墩（136 張），含花牌時每面 18 墩（144 張）；每面墩數依實際輸入的
  * 牌組張數換算，不假設固定值。王牌墩數依 [TaiwanRuleConfig.deadTileCount] 換算（預設 16 張＝8
- * 墩），與 [FourSidedWallLayoutSupport] 共用的排列邏輯保持單一事實來源。
+ * 墩），與 [WallRingLayoutSupport] 共用的排列邏輯保持單一事實來源。
  *
  * 王牌相對開門缺口的方向與張數，來源：
  * [華人麻將競技聯盟賽事規則](https://cml88.com/%E8%B3%BD%E4%BA%8B%E8%A6%8F%E5%89%87/)（「尾牌留
@@ -27,9 +27,9 @@ class TaiwanWallLayout(private val config: TaiwanRuleConfig) : TileWallLayout {
             "Taiwan wall layout requires $TILE_COUNT_WITHOUT_FLOWERS or $TILE_COUNT_WITH_FLOWERS tiles, " +
                 "got ${shuffledTiles.size}"
         }
-        val stacksPerSide = shuffledTiles.size / TILES_PER_STACK / FourSidedWallLayoutSupport.SIDE_COUNT
+        val stacksPerSide = shuffledTiles.size / TILES_PER_STACK / WallRingLayoutSupport.FOUR_SIDE_COUNT
 
-        return FourSidedWallLayoutSupport.resolve(
+        return WallRingLayoutSupport.resolve(
             shuffledTiles = shuffledTiles,
             opening = opening,
             stacksPerSide = stacksPerSide,

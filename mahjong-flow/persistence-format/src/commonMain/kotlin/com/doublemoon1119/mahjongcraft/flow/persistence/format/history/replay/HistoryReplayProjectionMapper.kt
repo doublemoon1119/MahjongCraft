@@ -153,7 +153,21 @@ internal class HistoryReplayProjectionMapper(private val registry: HistoryReplay
             integer(value.getValue(ReplaySourceKeys.SCORE)),
             Wind.valueOf(string(value.getValue(ReplaySourceKeys.SEAT_WIND))),
             optionalRule(value[ReplaySourceKeys.PLAYER_RULE_STATE], context),
+            setAsideTiles(value[ReplaySourceKeys.PLAYER_RULE_STATE], context),
         )
+    }
+
+    /**
+     * 經註冊 codec 從玩家規則狀態取出移出手牌的牌；沒有規則狀態或未註冊時為空清單。
+     * @param value 可為 null 的 typed envelope。
+     * @param context 解碼預算與索引。
+     * @return 依移出順序排列的牌參照。
+     */
+    private fun setAsideTiles(value: JsonElement?, context: HistoryReplayProjectionContext): List<HistoryTileReference> {
+        if (value == null || value == JsonNull) return emptyList()
+        val typed = obj(value)
+        val type = string(typed.getValue(ReplaySourceKeys.TYPE_KEY))
+        return registry.decodeSetAsideTiles(type, typed.getValue(ReplayFormatKeys.PAYLOAD), context).orEmpty()
     }
 
     /**

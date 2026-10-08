@@ -22,7 +22,7 @@ data class PendingReactionPersistenceDto(
 @Serializable
 data class PendingRobbingReactionPersistenceDto(
     val declarerId: String,
-    val kanAction: GameActionPersistenceDto.Kan,
+    val declaredAction: GameActionPersistenceDto,
     val robbedTile: IdentifiedTilePersistenceDto,
     val eligiblePlayerIds: Set<String>,
     val responses: Map<String, GameActionPersistenceDto>,
@@ -63,7 +63,7 @@ fun PendingRobbingReaction.toPersistenceDto(
     json: Json = Json,
 ): PendingRobbingReactionPersistenceDto = PendingRobbingReactionPersistenceDto(
     declarerId = declarerId.toString(),
-    kanAction = kanAction.toPersistenceDto(),
+    declaredAction = declaredAction.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json),
     robbedTile = robbedTile.toPersistenceDto(),
     eligiblePlayerIds = eligiblePlayerIds.map(Uuid::toString).toSet(),
     responses = responses.mapKeys { it.key.toString() }.mapValues {
@@ -78,7 +78,7 @@ fun PendingRobbingReactionPersistenceDto.toDomain(
     json: Json = Json,
 ): PendingRobbingReaction = PendingRobbingReaction(
     declarerId = Uuid.parse(declarerId),
-    kanAction = kanAction.toDomain(),
+    declaredAction = declaredAction.toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json),
     robbedTile = robbedTile.toDomain(),
     eligiblePlayerIds = eligiblePlayerIds.map(Uuid::parse).toSet(),
     responses = responses.mapKeys { Uuid.parse(it.key) }.mapValues {

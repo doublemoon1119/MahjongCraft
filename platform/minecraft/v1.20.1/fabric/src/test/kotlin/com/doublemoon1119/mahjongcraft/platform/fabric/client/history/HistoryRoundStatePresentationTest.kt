@@ -157,7 +157,7 @@ class HistoryRoundStatePresentationTest {
         handTiles: List<Int> = emptyList(),
         lastDrawn: Int? = null,
         melds: List<HistoryReplayMeldDto> = emptyList(),
-    ) = HistoryReplayPlayerStateDto(seat, handTiles, melds, lastDrawn, emptyList(), 25000, WindDto.EAST, null)
+    ) = HistoryReplayPlayerStateDto(seat, handTiles, melds, lastDrawn, emptyList(), 25000, WindDto.EAST, null, emptyList())
 
     /** 建立包含指定玩家的歷史桌況。
      * @param players 玩家桌況列表。

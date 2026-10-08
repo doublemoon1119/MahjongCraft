@@ -139,10 +139,21 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
         standingTileIds: List<Uuid>,
         drawnTileId: Uuid?,
         melds: List<MeldPresentation>,
+        setAsideTileIds: List<Uuid>,
         isNewlyDrawn: Boolean,
         newlyClaimedMeldTileIds: Set<Uuid>,
+        newlySetAsideTileIds: Set<Uuid>,
     ) {
-        playerTiles[gameId] = PlayerTilesContext(seatIndex, standingTileIds, drawnTileId, melds, isNewlyDrawn, newlyClaimedMeldTileIds)
+        playerTiles[gameId] = PlayerTilesContext(
+            seatIndex = seatIndex,
+            standingTileIds = standingTileIds,
+            drawnTileId = drawnTileId,
+            melds = melds,
+            setAsideTileIds = setAsideTileIds,
+            isNewlyDrawn = isNewlyDrawn,
+            newlyClaimedMeldTileIds = newlyClaimedMeldTileIds,
+            newlySetAsideTileIds = newlySetAsideTileIds,
+        )
     }
 
     override fun publishInitialDeal(
@@ -286,8 +297,10 @@ data class PlayerTilesContext(
     val standingTileIds: List<Uuid>,
     val drawnTileId: Uuid?,
     val melds: List<MeldPresentation>,
+    val setAsideTileIds: List<Uuid>,
     val isNewlyDrawn: Boolean,
     val newlyClaimedMeldTileIds: Set<Uuid>,
+    val newlySetAsideTileIds: Set<Uuid>,
 )
 
 /** [FakeGamePresentationPublisher] 紀錄的 [GamePresentationPublisher.publishInitialDeal] 資料。 */

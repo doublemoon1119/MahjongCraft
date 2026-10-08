@@ -16,6 +16,6 @@ enum class PlayerDecisionPhase {
     /** 玩家正在回應其他玩家的捨牌。 */
     DISCARD_REACTION,
 
-    /** 玩家正在回應暗槓或加槓的搶槓視窗。 */
+    /** 玩家正在回應暗槓、加槓或移出手牌動作的搶和視窗。 */
     ROBBING_REACTION,
 }

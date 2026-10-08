@@ -2,7 +2,9 @@ package com.doublemoon1119.mahjongcraft.logic.table
 
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.HandSnapshot
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.toSnapshot
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import kotlin.uuid.Uuid
 
 /**
@@ -13,6 +15,8 @@ import kotlin.uuid.Uuid
  * @property seatWind 本局由規則指派的自風／門風。
  * @property hand 手牌快照，其可見性由建立快照時傳入的 [isVisible] 參數決定
  * @property discardPile 牌河實體，始終對所有玩家可見
+ * @property setAsideTiles 移出手牌、公開擺在桌上的牌（見 [MahjongRuleModule.setAsideTiles]），依移出順序排列，
+ *   始終對所有玩家可見；沒有時為空清單
  * @property playerRuleState 規則特定的玩家狀態（如立直、振聽等）
  * @property score 當前分數
  */
@@ -22,6 +26,7 @@ data class MahjongPlayerSnapshot(
     override val seatWind: Wind,
     val hand: HandSnapshot,
     val discardPile: DiscardPile<*>,
+    val setAsideTiles: List<IdentifiedTile>,
     val playerRuleState: PlayerRuleState?,
     override val score: Int,
 ) : RankablePlayer
@@ -32,14 +37,20 @@ data class MahjongPlayerSnapshot(
  * @param isVisible 控制手牌是否可見。當值為 `false` 時，手牌中的牌張資訊將被隱藏，僅保留識別碼
  * @param revealsClosedKanTiles 該規則是否公開暗槓身份，轉交給 [Hand.toSnapshot] 決定副露中暗槓的
  *   可見性
+ * @param setAsideTiles 這位玩家移出手牌、公開擺在桌上的牌
  * @return 依據 [isVisible] 決定手牌可見性的玩家快照
  */
-fun MahjongPlayer.toSnapshot(isVisible: Boolean, revealsClosedKanTiles: Boolean): MahjongPlayerSnapshot = MahjongPlayerSnapshot(
+fun MahjongPlayer.toSnapshot(
+    isVisible: Boolean,
+    revealsClosedKanTiles: Boolean,
+    setAsideTiles: List<IdentifiedTile>,
+): MahjongPlayerSnapshot = MahjongPlayerSnapshot(
     id = this.id,
     initialSeatIndex = this.initialSeatIndex,
     seatWind = this.seatWind,
     hand = this.hand.toSnapshot(isVisible, revealsClosedKanTiles),
     discardPile = this.discardPile,
+    setAsideTiles = setAsideTiles,
     playerRuleState = this.playerRuleState,
     score = this.score,
 )

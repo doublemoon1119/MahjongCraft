@@ -187,7 +187,7 @@ class AuthoritativeStateRecoveryIntegrationTest {
             },
             pendingRobbingReaction = PendingRobbingReaction(
                 declarerId = declarer.id,
-                kanAction = GameAction.Kan(
+                declaredAction = GameAction.Kan(
                     type = GameAction.KanType.ADDED_KAN,
                     tileId = robbedTile.id,
                     withTiles = List(3) { Uuid.random() },
@@ -405,7 +405,7 @@ class AuthoritativeStateRecoveryIntegrationTest {
         private val snapshotSynchronizer = GameSnapshotSynchronizer(
             gameRepository,
             gameSnapshots,
-            GameVisibilityPolicyImpl(),
+            GameVisibilityPolicyImpl(moduleRegistry),
         )
 
         /** 恢復後的 timer manager。 */
@@ -423,7 +423,7 @@ class AuthoritativeStateRecoveryIntegrationTest {
             roomSnapshots,
             gameSnapshots,
             memberships,
-            GameVisibilityPolicyImpl(),
+            GameVisibilityPolicyImpl(moduleRegistry),
             timerManager,
             GameDecisionAvailabilityService(
                 FakeGamePresentationBusyGate(),
@@ -443,7 +443,7 @@ class AuthoritativeStateRecoveryIntegrationTest {
             MahjongAiStrategyRegistryImpl(RandomAiStrategy.KEY).apply {
                 registerBuiltInAiStrategies(moduleRegistry, ExtensionGameActionAiRegistry(moduleRegistry), OpponentModelRegistry().apply { BundledRiichiExtension.registerOpponentModels(this) })
             },
-            GameVisibilityPolicyImpl(),
+            GameVisibilityPolicyImpl(moduleRegistry),
             moduleRegistry,
         )
 

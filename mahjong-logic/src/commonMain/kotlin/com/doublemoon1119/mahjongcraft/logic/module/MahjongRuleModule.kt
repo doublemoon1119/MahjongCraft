@@ -20,6 +20,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.FixedLengthMatchProgressionPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
+import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayerSnapshot
 import com.doublemoon1119.mahjongcraft.logic.table.MatchProgressionPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.NoOpWallRevealPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
@@ -84,7 +85,7 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      *
      * 未覆寫的規則沿用 [MahjongRuleConfig.gameLength] 的固定局數，不啟用延長賽。
      */
-    fun createMatchProgressionPolicy(): MatchProgressionPolicy = FixedLengthMatchProgressionPolicy(config.gameLength.totalRounds)
+    fun createMatchProgressionPolicy(): MatchProgressionPolicy = FixedLengthMatchProgressionPolicy(config.scheduledRoundCount)
 
     /**
      * 建立適用於該規則的牌山生成工廠。
@@ -492,4 +493,39 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * @return 套用規則特有狀態變化後的新玩家實例。
      */
     fun onPlayerDeclinedWin(player: MahjongPlayer): MahjongPlayer = player
+
+    /**
+     * 玩家宣告 [action] 時會移出手牌的那張牌；[action] 不是本規則會移出手牌的動作、或玩家手中沒有對應的牌時回傳 null。
+     *
+     * 移出手牌的動作是玩家在自己回合宣告、把手中一張牌放到手牌以外的區域，之後由
+     * [createSupplementalDrawPolicy] 決定是否補牌的擴充動作，例如三人日麻的拔北。宣告後、套用前，
+     * 呼叫端可依 [createLegalActionValidator] 開放其他玩家以這張牌搶和。
+     *
+     * @param player 宣告動作的玩家。
+     * @param action 宣告的擴充動作。
+     */
+    fun tileSetAsideBy(player: MahjongPlayer, action: GameAction.Extension): IdentifiedTile? = null
+
+    /**
+     * 套用移出手牌的動作（見 [tileSetAsideBy]）：把那張牌移出 [actorPlayerId] 的手牌、記錄動作，並套用規則狀態變化。
+     * 不含補牌；補牌由呼叫端交給 [createSupplementalDrawPolicy]。
+     *
+     * @param tableState 尚未套用這次動作的權威桌況。
+     * @param actorPlayerId 宣告動作的玩家。
+     * @param action 宣告的擴充動作。
+     * @return 套用後的桌況；本規則不支援這個動作時回傳 null。
+     */
+    fun applyTileSetAsideAction(
+        tableState: TableState,
+        actorPlayerId: Uuid,
+        action: GameAction.Extension,
+    ): TableState? = null
+
+    /**
+     * [player] 本局已經移出手牌、公開擺在桌上的牌（見 [applyTileSetAsideAction]），依移出順序排列；沒有時為空清單。
+     * 這些牌對所有玩家公開，牌局快照依此帶出（見 [MahjongPlayerSnapshot.setAsideTiles]）。
+     *
+     * @param player 要查詢的玩家。
+     */
+    fun setAsideTiles(player: MahjongPlayer): List<IdentifiedTile> = emptyList()
 }

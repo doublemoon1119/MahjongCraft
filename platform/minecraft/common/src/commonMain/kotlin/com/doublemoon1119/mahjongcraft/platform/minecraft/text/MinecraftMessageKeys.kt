@@ -213,6 +213,9 @@ object MinecraftMessageKeys {
     /** 日本麻將規則模組顯示名稱，供 `RuleModuleDisplayNameRegistry` 內建登記使用。 */
     const val RULE_MODULE_RIICHI = PREFIX + "rule_module_riichi"
 
+    /** 三人日本麻將規則模組顯示名稱，供 `RuleModuleDisplayNameRegistry` 內建登記使用。 */
+    const val RULE_MODULE_RIICHI_THREE_PLAYER = PREFIX + "rule_module_riichi_three_player"
+
     /** 台灣麻將規則模組顯示名稱，供 `RuleModuleDisplayNameRegistry` 內建登記使用。 */
     const val RULE_MODULE_TAIWAN = PREFIX + "rule_module_taiwan"
 
@@ -250,6 +253,9 @@ object MinecraftMessageKeys {
 
     /** 九種九牌，不帶參數。 */
     const val GAME_ACTION_KYUUSHU_KYUUHAI = PREFIX + "game_action_kyuushu_kyuuhai"
+
+    /** 拔北，不帶參數。 */
+    const val GAME_ACTION_PULL_NORTH = PREFIX + "game_action_pull_north"
 
     /** 其他規則專屬流局原因的通用 fallback 顯示文字，不帶參數。 */
     const val GAME_ACTION_EXHAUSTIVE_DRAW = PREFIX + "game_action_exhaustive_draw"
@@ -512,6 +518,7 @@ object MinecraftMessageKeys {
         TILE_RED_FIVE_DOT,
         TILE_RED_FIVE_BAMBOO,
         RULE_MODULE_RIICHI,
+        RULE_MODULE_RIICHI_THREE_PLAYER,
         RULE_MODULE_TAIWAN,
         GAME_ACTION_DISCARD,
         GAME_ACTION_RIICHI,
@@ -524,6 +531,7 @@ object MinecraftMessageKeys {
         GAME_ACTION_RON,
         GAME_ACTION_PASS,
         GAME_ACTION_KYUUSHU_KYUUHAI,
+        GAME_ACTION_PULL_NORTH,
         GAME_ACTION_EXHAUSTIVE_DRAW,
         EXHAUSTIVE_DRAW_REASON_NORMAL,
         ROUND_RESULT_DETAILS_LABEL,

@@ -48,10 +48,12 @@ class PostActionExhaustiveDrawResolverRegistry {
     /** 目前已登記 resolver ID 的快照。 */
     val registrationKeys: Set<String> get() = resolvers.mapTo(mutableSetOf()) { it.id }
 
-    /** 登記 resolver；ID 不得重複。 */
+    /** 登記 resolver；同一規則模組內 ID 不得重複，同一個 ID 可由不同規則模組各自登記。 */
     fun register(resolver: PostActionExhaustiveDrawResolver) {
         check(!frozen) { "Post-action exhaustive draw resolver registry is frozen" }
-        require(resolvers.none { it.id == resolver.id }) { "Post-action exhaustive draw resolver already registered: ${resolver.id}" }
+        require(resolvers.none { it.id == resolver.id && it.ruleModuleId == resolver.ruleModuleId }) {
+            "Post-action exhaustive draw resolver already registered: ${resolver.ruleModuleId}/${resolver.id}"
+        }
         resolvers += resolver
     }
 

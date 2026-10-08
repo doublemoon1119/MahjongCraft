@@ -58,6 +58,17 @@ internal sealed interface DecisionCandidate {
         val tileIds: List<Uuid>,
         override val command: GameCommand,
     ) : DecisionCandidate
+
+    /**
+     * 自己回合把一張牌移出手牌，之後補一張牌。
+     *
+     * @property tileId 移出手牌的牌。
+     * @property command 選中時送出的命令。
+     */
+    data class SetAside(
+        val tileId: Uuid,
+        override val command: GameCommand,
+    ) : DecisionCandidate
 }
 
 /**

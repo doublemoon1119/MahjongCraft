@@ -31,7 +31,7 @@ class MahjongPlayerSnapshotTest {
             ),
         )
 
-        val snapshot = player.toSnapshot(isVisible = true, revealsClosedKanTiles = true)
+        val snapshot = player.toSnapshot(isVisible = true, revealsClosedKanTiles = true, setAsideTiles = emptyList())
 
         assertEquals(player.id, snapshot.id)
         assertEquals(Wind.EAST.ordinal, snapshot.initialSeatIndex)
@@ -54,7 +54,7 @@ class MahjongPlayerSnapshotTest {
             ),
         )
 
-        val snapshot = player.toSnapshot(isVisible = false, revealsClosedKanTiles = true)
+        val snapshot = player.toSnapshot(isVisible = false, revealsClosedKanTiles = true, setAsideTiles = emptyList())
 
         assertEquals(player.id, snapshot.id)
         assertEquals(Wind.SOUTH.ordinal, snapshot.initialSeatIndex)
@@ -78,7 +78,7 @@ class MahjongPlayerSnapshotTest {
             discardPile = discardPile,
         ).copy(score = 25000)
 
-        val snapshot = player.toSnapshot(isVisible = true, revealsClosedKanTiles = true)
+        val snapshot = player.toSnapshot(isVisible = true, revealsClosedKanTiles = true, setAsideTiles = emptyList())
 
         assertEquals(id, snapshot.id)
         assertEquals(Wind.WEST.ordinal, snapshot.initialSeatIndex)

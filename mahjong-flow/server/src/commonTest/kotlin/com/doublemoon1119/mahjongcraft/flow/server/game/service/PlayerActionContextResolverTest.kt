@@ -33,7 +33,7 @@ class PlayerActionContextResolverTest {
             ),
             pendingRobbingReaction = PendingRobbingReaction(
                 declarerId = Uuid.random(),
-                kanAction = GameAction.Kan(GameAction.KanType.ADDED_KAN, robbedTile.id, emptyList()),
+                declaredAction = GameAction.Kan(GameAction.KanType.ADDED_KAN, robbedTile.id, emptyList()),
                 robbedTile = robbedTile,
                 eligiblePlayerIds = setOf(playerId),
             ),

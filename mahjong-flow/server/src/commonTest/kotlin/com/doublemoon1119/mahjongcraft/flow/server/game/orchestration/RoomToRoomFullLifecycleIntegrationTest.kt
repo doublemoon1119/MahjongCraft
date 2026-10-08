@@ -89,7 +89,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
         val winPresentationHandoff = WinPresentationHandoff()
         val presentationBusyGate = FakeGamePresentationBusyGate()
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
-        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, gameSnapshotRepo, GameVisibilityPolicyImpl())
+        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, gameSnapshotRepo, GameVisibilityPolicyImpl(moduleRegistry))
         val handSortPreferenceStore = HandSortPreferenceStore()
 
         val createRoomUseCase = CreateRoomUseCase(store, membershipRepo, roomSnapshotRepo, roomEventPublisher)
@@ -178,7 +178,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
         val aiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = FakeAiStrategy.KEY).apply {
             register(FakeAiStrategy.KEY) { FakeAiStrategy() }
         }
-        val aiTurnDriver = AiTurnDriver(gameRepo, getLegalActionsUseCase, aiStrategyRegistry, GameVisibilityPolicyImpl(), moduleRegistry)
+        val aiTurnDriver = AiTurnDriver(gameRepo, getLegalActionsUseCase, aiStrategyRegistry, GameVisibilityPolicyImpl(moduleRegistry), moduleRegistry)
         val clock = MonotonicClockImpl()
         val decisionTimerManager = GameDecisionTimerManager(
             gameRepository = gameRepo,
@@ -353,7 +353,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
     private suspend fun Fixtures.driveHostTurn(gameId: Uuid, hostId: Uuid, strategy: MahjongAiStrategy): Boolean {
         val game = gameRepo.getGame(gameId) ?: return false
         val state = game.tableState
-        val visibilityPolicy = GameVisibilityPolicyImpl()
+        val visibilityPolicy = GameVisibilityPolicyImpl(moduleRegistry)
 
         val pendingRobbingReaction = state.pendingRobbingReaction
         if (pendingRobbingReaction != null && hostId in pendingRobbingReaction.eligiblePlayerIds && hostId !in pendingRobbingReaction.responses) {

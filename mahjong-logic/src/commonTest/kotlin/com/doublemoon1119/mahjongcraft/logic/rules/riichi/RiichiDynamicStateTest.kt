@@ -211,7 +211,7 @@ class RiichiDynamicStateTest {
         val table = createTableStateWithWall(deadWallTiles, listOf(observer))
             .copy(dynamicRuleState = RiichiDynamicState())
 
-        val snapshot = table.toSnapshot(setOf(observerId))
+        val snapshot = table.toSnapshot(setOf(observerId), setAsideTiles = { emptyList() })
 
         // 計算應有多少張牌可見（無槓 = 1 張寶牌指示器）
         val visibleCount = snapshot.tileWall.tiles.count { it.tile != null }

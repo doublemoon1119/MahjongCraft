@@ -410,7 +410,7 @@ class FabricGamePresentationPublisher(
             .maxOfOrNull { position -> position.stack + 1 } ?: 0
         val wallDropTicks = MahjongTileTableLayout.wallDropAnimationTicks(stacksPerSide)
         val openingOperation = if (isNewOpening) openingOperations.begin(gameId) else null
-        openingState.beginWall(gameId, wallDropTicks, stacksPerSide)
+        openingState.beginWall(gameId, wallDropTicks, stacksPerSide, MahjongTileTableLayout.wallSideCount(assemblyStructure.values))
         launchOpeningStage(gameId, "wall-structure", openingOperation, pendingOperation = "publishWallStructure") {
             val resolved = resolveTableContext(gameId, "publishWallStructure") ?: return@launchOpeningStage
 
@@ -443,7 +443,8 @@ class FabricGamePresentationPublisher(
         if (phases.isEmpty()) return
         publish(gameId, "publishWallLayoutTransition", blocksTable = true) { resolved, state, startAt ->
             val stacksPerSide = openingState.wallStacksPerSide(gameId)
-            if (stacksPerSide == null) {
+            val sideCount = openingState.wallSideCount(gameId)
+            if (stacksPerSide == null || sideCount == null) {
                 logger.warn("publishWallLayoutTransition gameId={} skipped: wall stack count is unavailable", gameId)
                 return@publish null
             }
@@ -454,6 +455,7 @@ class FabricGamePresentationPublisher(
                     tableFacing = resolved.facing,
                     dealerSeatIndex = state.dealerIndex,
                     stacksPerSide = stacksPerSide,
+                    sideCount = sideCount,
                     phases = phases,
                     startGameTime = startAt,
                 ),
@@ -594,14 +596,26 @@ class FabricGamePresentationPublisher(
         standingTileIds: List<Uuid>,
         drawnTileId: Uuid?,
         melds: List<MeldPresentation>,
+        setAsideTileIds: List<Uuid>,
         isNewlyDrawn: Boolean,
         newlyClaimedMeldTileIds: Set<Uuid>,
+        newlySetAsideTileIds: Set<Uuid>,
     ) {
         if (serverHolder.current() == null) {
             logger.warn("publishPlayerTilesUpdated gameId={} skipped: no active server", gameId)
             return
         }
-        presentPlayerArea(gameId, seatIndex, standingTileIds, drawnTileId, melds, isNewlyDrawn, newlyClaimedMeldTileIds)
+        presentPlayerArea(
+            gameId = gameId,
+            seatIndex = seatIndex,
+            standingTileIds = standingTileIds,
+            drawnTileId = drawnTileId,
+            melds = melds,
+            setAsideTileIds = setAsideTileIds,
+            isNewlyDrawn = isNewlyDrawn,
+            newlyClaimedMeldTileIds = newlyClaimedMeldTileIds,
+            newlySetAsideTileIds = newlySetAsideTileIds,
+        )
     }
 
     /**
@@ -690,13 +704,15 @@ class FabricGamePresentationPublisher(
         standingTileIds: List<Uuid>,
         drawnTileId: Uuid?,
         melds: List<MeldPresentation>,
+        setAsideTileIds: List<Uuid>,
         isNewlyDrawn: Boolean,
         newlyClaimedMeldTileIds: Set<Uuid>,
+        newlySetAsideTileIds: Set<Uuid>,
     ) {
         launchPendingPresentation(gameId, "publishPlayerTilesUpdated") {
             val resolved = resolveTableContext(gameId, "publishPlayerTilesUpdated") ?: return@launchPendingPresentation
-            val cornerWidthsBySeat = tableCornerWidths.find(gameId) ?: cornerWidthsBySeat(gameId, gameRepository.getTableState(gameId))
-
+            val tableState = gameRepository.getTableState(gameId)
+            val cornerWidthsBySeat = tableCornerWidths.find(gameId) ?: cornerWidthsBySeat(gameId, tableState)
             val presentation = MahjongPlayerAreaPresentation(
                 tableId = gameId,
                 tableLocation = resolved.location,
@@ -710,6 +726,8 @@ class FabricGamePresentationPublisher(
                 cornerWidth = cornerWidthsBySeat[seatIndex] ?: 0.0,
                 animateDrawnTile = isNewlyDrawn,
                 animatedMeldClaimTileIds = newlyClaimedMeldTileIds,
+                setAsideTileIds = setAsideTileIds,
+                animatedSetAsideTileIds = newlySetAsideTileIds,
             )
             playerAreaPresenter.present(presentation)
         }

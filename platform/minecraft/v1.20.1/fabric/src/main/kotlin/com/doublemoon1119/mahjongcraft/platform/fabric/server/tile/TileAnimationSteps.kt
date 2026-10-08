@@ -121,18 +121,25 @@ internal object TileAnimationSteps {
      * 摸牌動畫：跟開局發牌動畫共用同一套「起飛→隱形傳送→落下」節奏（手法同 [scheduleDealBatch]），
      * 完整順序是：面朝下起飛→隱形→傳送到摸牌位→（同一瞬間）姿態換成面向玩家→解除隱形→落下。翻面不是
      * 落地後另外播放的旋轉動畫，而是在隱形傳送那一刻直接切換姿態——因為切換當下牌本身是隱形的，玩家
-     * 看不到姿態瞬間跳變。只有這一張牌，不需要像開局發牌那樣排定跨座位／跨批次的延遲，起飛立刻開始。
+     * 看不到姿態瞬間跳變。只有這一張牌，不需要像開局發牌那樣排定跨座位／跨批次的延遲；[startDelayTicks] 為 0 時起飛立刻
+     * 開始，槓或移出手牌後的補牌則等宣告的牌落地後才起飛。
      */
-    fun scheduleDrawnTile(tile: MahjongTileEntity, finalPlacement: MahjongTileWallPlacement) {
+    fun scheduleDrawnTile(
+        tile: MahjongTileEntity,
+        finalPlacement: MahjongTileWallPlacement,
+        startDelayTicks: Long = 0L,
+    ) {
         val wallX = tile.x
         val wallY = tile.y
         val wallZ = tile.z
         val wallYaw = tile.yaw
         val peakY = wallY + MahjongTileTableLayout.DRAW_LIFT_HEIGHT
-        val snapGapEndGameTime = tile.world.time + MahjongTileTableLayout.DRAW_LIFT_DURATION_TICKS +
+        val liftStartGameTime = tile.world.time + startDelayTicks
+        val snapGapEndGameTime = liftStartGameTime + MahjongTileTableLayout.DRAW_LIFT_DURATION_TICKS +
             MahjongTileTableLayout.DRAW_SNAP_GAP_TICKS
         tile.enqueueAll(
-            listOf(
+            listOfNotNull(
+                AnimationStep.WaitUntil(liftStartGameTime).takeIf { startDelayTicks > 0L },
                 AnimationStep.Teleport(wallX, peakY, wallZ, wallYaw),
                 AnimationStep.PlayMotion(
                     durationTicks = MahjongTileTableLayout.DRAW_LIFT_DURATION_TICKS,

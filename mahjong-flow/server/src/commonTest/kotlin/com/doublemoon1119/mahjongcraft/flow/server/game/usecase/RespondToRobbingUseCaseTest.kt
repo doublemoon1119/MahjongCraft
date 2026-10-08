@@ -58,7 +58,7 @@ class RespondToRobbingUseCaseTest {
         val gameRepo = FakeGameRepository()
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
         val snapshotRepo = FakeGameSnapshotRepository()
-        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl())
+        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(moduleRegistry))
         val eventPublisher = FakeGameEventPublisher()
         val presentationPublisher = FakeGamePresentationPublisher()
         val winPresentationHandoff = WinPresentationHandoff()
@@ -180,7 +180,7 @@ class RespondToRobbingUseCaseTest {
     /**
      * 驗證全員放過時：原本被 `DeclareKanUseCase` 暫緩的副露套用與嶺上摸牌會在這裡補做——副露升級為
      * ADDED_KAN、`lastDrawn` 為補摸的嶺上牌、`actionHistory` 依序記錄 `Kan` → `Draw`、反應視窗清除、
-     * 依序廣播 `Pass` → `Draw`。
+     * 依序廣播 `Pass` → `Draw`；加上去的那張已在宣告時擺好，畫面只呈現補牌。
      */
     @Test
     fun `test all pass resumes the kan declaration`() = runTest {
@@ -214,6 +214,8 @@ class RespondToRobbingUseCaseTest {
             fixtures.presentationPublisher.getPublishedPlayerTiles(gameId)?.drawnTileId,
             "The rinshan tile drawn once the kan actually goes through should be presented as a drawn tile.",
         )
+        assertTrue(fixtures.presentationPublisher.getPublishedPlayerTiles(gameId)?.newlyClaimedMeldTileIds.orEmpty().isEmpty())
+        assertTrue(fixtures.presentationPublisher.getPublishedPlayerTiles(gameId)?.isNewlyDrawn == true)
         assertTrue(
             fixtures.presentationPublisher.getPublishedWinCelebrations(gameId).isEmpty(),
             "A completed kan (not robbed) should never trigger a win celebration.",

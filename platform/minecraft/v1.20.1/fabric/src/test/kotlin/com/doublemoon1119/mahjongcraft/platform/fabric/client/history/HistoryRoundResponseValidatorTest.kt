@@ -341,6 +341,17 @@ class HistoryRoundResponseValidatorTest {
         assertIs<HistoryRoundValidationResult.Success<*>>(HistoryRoundResponseValidator.validateState(request, response))
     }
 
+    /** 玩家移出手牌的牌索引超出目錄時拒絕。 */
+    @Test
+    fun `test invalid set aside tile index is rejected`() {
+        val request = HistoryRoundStateRequestDto("request", TEST_MATCH_ID, roundNumber = 1)
+        val base = state()
+        val invalid = base.copy(players = base.players.mapIndexed { index, player -> if (index == 0) player.copy(setAsideTiles = listOf(base.tileCatalog.size)) else player })
+        val response = HistoryRoundStateResponseDto("request", TEST_MATCH_ID, 1, HistoryRoundPositionDto.Initial, state = invalid)
+
+        assertEquals(HistoryRoundValidationError.TILE_INDEX_INVALID, assertIs<HistoryRoundValidationResult.Invalid>(HistoryRoundResponseValidator.validateState(request, response)).reason)
+    }
+
     /** 桌況回覆中的牌索引超出目錄時拒絕。 */
     @Test
     fun `test invalid state tile index is rejected`() {
@@ -433,6 +444,7 @@ class HistoryRoundResponseValidatorTest {
             25000,
             WindDto.EAST,
             null,
+            emptyList(),
         )
         val response = HistoryRoundStateResponseDto(
             "request",
@@ -505,7 +517,7 @@ class HistoryRoundResponseValidatorTest {
         roundNumber = 1,
         position = HistoryRoundPositionDto.Initial,
         tileCatalog = listOf(TileDto.Numeric(SuitDto.CHARACTER, 1)),
-        players = listOf(HistoryReplayPlayerStateDto(0, emptyList(), emptyList(), null, emptyList(), 25000, WindDto.EAST, null)),
+        players = listOf(HistoryReplayPlayerStateDto(0, emptyList(), emptyList(), null, emptyList(), 25000, WindDto.EAST, null, emptyList())),
         wallTiles = listOf(tileIndex),
         reservedTiles = emptyList(),
         currentPlayerSeat = 0,
@@ -658,7 +670,7 @@ class HistoryRoundCacheTest {
         roundNumber = 1,
         position = HistoryRoundPositionDto.Initial,
         tileCatalog = listOf(TileDto.Numeric(SuitDto.CHARACTER, 1)),
-        players = listOf(HistoryReplayPlayerStateDto(0, emptyList(), emptyList(), null, emptyList(), 25000, WindDto.EAST, null)),
+        players = listOf(HistoryReplayPlayerStateDto(0, emptyList(), emptyList(), null, emptyList(), 25000, WindDto.EAST, null, emptyList())),
         wallTiles = emptyList(),
         reservedTiles = emptyList(),
         currentPlayerSeat = 0,

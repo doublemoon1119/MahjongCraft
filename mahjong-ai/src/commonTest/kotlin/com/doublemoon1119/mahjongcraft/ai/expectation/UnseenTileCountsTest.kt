@@ -23,7 +23,7 @@ class UnseenTileCountsTest {
     /** 只扣除自己的手牌時，對手牌河中的牌仍算未見；剛摸到的牌只算一次。 */
     @Test
     fun `without counting visible tiles only the own hand is deducted`() {
-        val counts = UnseenTileCounts.from(table.toSnapshot(setOf(self.id)), self.id, module, countsVisibleTiles = false)
+        val counts = UnseenTileCounts.from(table.toSnapshot(setOf(self.id), setAsideTiles = { emptyList() }), self.id, module, countsVisibleTiles = false)
 
         assertEquals(1, counts[m(5)])
         assertEquals(4, counts[Tile.Honor.North])
@@ -33,7 +33,7 @@ class UnseenTileCountsTest {
     /** 扣除所有可見牌時，對手牌河中的牌也一併扣除；看到的普通五萬多於牌山中的張數時，改從赤五萬扣除。 */
     @Test
     fun `counting visible tiles also deducts discards`() {
-        val counts = UnseenTileCounts.from(table.toSnapshot(setOf(self.id)), self.id, module, countsVisibleTiles = true)
+        val counts = UnseenTileCounts.from(table.toSnapshot(setOf(self.id), setAsideTiles = { emptyList() }), self.id, module, countsVisibleTiles = true)
 
         assertEquals(0, counts[m(5)])
         assertEquals(3, counts[Tile.Honor.North])
@@ -43,7 +43,7 @@ class UnseenTileCountsTest {
     @Test
     fun `a red five is counted as a five`() {
         val withRed = player(Wind.SOUTH, hand = hand(listOf(RiichiTileTypes.redFive(Tile.Suit.Dot), p(5))))
-        val counts = UnseenTileCounts.from(table(listOf(opponent, withRed)).toSnapshot(setOf(withRed.id)), withRed.id, module, countsVisibleTiles = false)
+        val counts = UnseenTileCounts.from(table(listOf(opponent, withRed)).toSnapshot(setOf(withRed.id), setAsideTiles = { emptyList() }), withRed.id, module, countsVisibleTiles = false)
 
         assertEquals(2, counts[p(5)])
         assertEquals(34, counts.kinds.size)
@@ -53,7 +53,7 @@ class UnseenTileCountsTest {
     @Test
     fun `red and plain fives are tracked separately`() {
         val withPlain = player(Wind.SOUTH, hand = hand(listOf(p(5))))
-        val counts = UnseenTileCounts.from(table(listOf(opponent, withPlain)).toSnapshot(setOf(withPlain.id)), withPlain.id, module, countsVisibleTiles = false)
+        val counts = UnseenTileCounts.from(table(listOf(opponent, withPlain)).toSnapshot(setOf(withPlain.id), setAsideTiles = { emptyList() }), withPlain.id, module, countsVisibleTiles = false)
 
         assertEquals(setOf(p(5) to 2, RED_FIVE_DOT to 1), counts.faces(p(5)).toSet())
         assertEquals(listOf(Tile.Honor.North to 4), counts.faces(Tile.Honor.North))
@@ -63,7 +63,7 @@ class UnseenTileCountsTest {
     @Test
     fun `drawing a red five removes only the red copy`() {
         val withPlain = player(Wind.SOUTH, hand = hand(listOf(p(5))))
-        val counts = UnseenTileCounts.from(table(listOf(opponent, withPlain)).toSnapshot(setOf(withPlain.id)), withPlain.id, module, countsVisibleTiles = false)
+        val counts = UnseenTileCounts.from(table(listOf(opponent, withPlain)).toSnapshot(setOf(withPlain.id), setAsideTiles = { emptyList() }), withPlain.id, module, countsVisibleTiles = false)
             .without(RED_FIVE_DOT)
 
         assertEquals(listOf(p(5) to 2), counts.faces(p(5)))
@@ -73,7 +73,7 @@ class UnseenTileCountsTest {
     /** 假設摸進一張後，該種牌的未見張數減一。 */
     @Test
     fun `drawing a kind removes one unseen copy`() {
-        val counts = UnseenTileCounts.from(table.toSnapshot(setOf(self.id)), self.id, module, countsVisibleTiles = false)
+        val counts = UnseenTileCounts.from(table.toSnapshot(setOf(self.id), setAsideTiles = { emptyList() }), self.id, module, countsVisibleTiles = false)
 
         assertEquals(3, counts.without(Tile.Honor.North)[Tile.Honor.North])
         assertEquals(counts.total - 1, counts.without(Tile.Honor.North).total)

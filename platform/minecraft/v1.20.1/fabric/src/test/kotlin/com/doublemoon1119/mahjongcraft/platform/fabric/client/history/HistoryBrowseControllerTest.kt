@@ -933,7 +933,7 @@ class HistoryBrowseControllerTest {
                 roundNumber = 1,
                 position = HistoryRoundPositionDto.Initial,
                 tileCatalog = emptyList(),
-                players = listOf(HistoryReplayPlayerStateDto(0, emptyList(), emptyList(), null, emptyList(), 0, WindDto.EAST, null)),
+                players = listOf(HistoryReplayPlayerStateDto(0, emptyList(), emptyList(), null, emptyList(), 0, WindDto.EAST, null, emptyList())),
                 wallTiles = emptyList(),
                 reservedTiles = emptyList(),
                 currentPlayerSeat = 0,

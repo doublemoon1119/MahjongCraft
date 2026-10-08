@@ -16,10 +16,10 @@ sealed interface PlayerActionContext {
     val phase: PlayerDecisionPhase
 
     /**
-     * 玩家正在回應暗槓或加槓的搶槓視窗。
+     * 玩家正在回應暗槓、加槓或移出手牌動作的搶和視窗。
      *
      * @property playerId 取得搶槓回應權的玩家 Uuid。
-     * @property pending 目前的搶槓反應視窗。
+     * @property pending 目前的搶和反應視窗。
      */
     data class RobbingReaction(
         override val playerId: Uuid,
@@ -57,7 +57,7 @@ sealed interface PlayerActionContext {
 @Single
 class PlayerActionContextResolver {
     /**
-     * 解析目前取得操作權的所有玩家，優先順序為搶槓反應、捨牌反應、自己回合。
+     * 解析目前取得操作權的所有玩家，優先順序為搶和反應、捨牌反應、自己回合。
      *
      * 此解析只描述桌況事實，不過濾 AI、強制自動操作玩家，也不處理局前準備或對局生命週期。
      */

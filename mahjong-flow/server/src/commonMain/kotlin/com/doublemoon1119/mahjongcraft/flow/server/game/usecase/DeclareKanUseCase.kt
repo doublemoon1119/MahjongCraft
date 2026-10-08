@@ -157,7 +157,7 @@ class DeclareKanUseCase(
                     val ronEligiblePlayerIds = RobbingEligibility.ronEligiblePlayerIds(
                         tableState = state,
                         declarerId = playerId,
-                        kanAction = kanAction,
+                        declaredAction = kanAction,
                         robbedTile = declaredTile,
                         module = module,
                     )
@@ -212,8 +212,16 @@ class DeclareKanUseCase(
                                 declaredTile,
                                 ronWinningPlayerIds,
                             ),
+                            revealedHandTileIds = state.revealedHandTileIds + kanAction.withTiles + kanAction.tileId,
                         )
-                        return@update newState to Outcome.Success(KanResult(newState, kanAction, drawHappened = false))
+                        return@update newState to Outcome.Success(
+                            KanResult(
+                                tableState = newState,
+                                kanAction = kanAction,
+                                drawHappened = false,
+                                declaredState = SelfDeclarationApplier.declaredState(state, playerId, kanAction, declaredTile, module),
+                            ),
+                        )
                     }
 
                     val applied = SelfDeclarationApplier.apply(state, playerId, kanAction, declaredTile, module)
@@ -259,6 +267,23 @@ class DeclareKanUseCase(
             eventPublisher.publishToAllObservers(gameId, seatedPlayerIds, playerId, GameAction.ExhaustiveDraw(reason))
         }
 
+        // 開啟搶和反應視窗時，先呈現槓完成的樣子（牌移入副露、尚未補牌），其他玩家等動畫播完才決定要不要搶；
+        // 權威桌況要等反應結束才套用，全員放過後只會再呈現補牌。
+        result.declaredState?.let { declared ->
+            val declarerSeatIndex = declared.players.indexOfFirst { it.id == playerId }
+            val declarer = declared.players[declarerSeatIndex]
+            val module = moduleRegistry.getModule(declared.config)
+            presentationPublisher.publishPlayerTilesUpdated(
+                gameId = gameId,
+                seatIndex = declarerSeatIndex,
+                standingTileIds = declarer.hand.tiles.map { it.id },
+                drawnTileId = declarer.hand.lastDrawn?.id,
+                melds = declarer.hand.melds.map { it.toPresentation(declared.config.revealsClosedKanTiles, module.tileOrder) },
+                setAsideTileIds = module.setAsideTiles(declarer).map { it.id },
+                newlyClaimedMeldTileIds = result.kanAction.newlyClaimedMeldTileIds(),
+            )
+        }
+
         // 副露成立時（無人搶槓、也未判定為途中流局），重新呈現宣告者的整份手牌/摸牌位/副露——把補到
         // 的嶺上牌移到摸牌位，跟一般摸牌同一套呈現慣例（見 DrawTileUseCase），先前遺漏這一步會讓
         // 補到的嶺上牌在玩家端看起來像是憑空消失，只看到副露成立、看不到補牌動作。
@@ -273,17 +298,15 @@ class DeclareKanUseCase(
             // 加槓是把新牌插進一組既有副露（Hand.upgradeToAddedKan 原地修改，不是加到尾端），只有新
             // 插入的那一張是新移入的，既有三張碰的牌本來就在副露裡——見
             // GamePresentationPublisher.publishPlayerTilesUpdated 的 newlyClaimedMeldTileIds KDoc。
-            val claimedTileIds = when (result.kanAction.type) {
-                GameAction.KanType.CLOSED_KAN -> (result.kanAction.withTiles + result.kanAction.tileId).toSet()
-                GameAction.KanType.ADDED_KAN -> setOf(result.kanAction.tileId)
-                GameAction.KanType.OPEN_KAN -> error("Unreachable: OPEN_KAN never reaches DeclareKanUseCase")
-            }
+            val claimedTileIds = result.kanAction.newlyClaimedMeldTileIds()
             presentationPublisher.publishPlayerTilesUpdated(
                 gameId,
                 declarerSeatIndex,
                 declarer.hand.tiles.map { it.id },
                 declarer.hand.lastDrawn?.id,
                 declarer.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles, module.tileOrder) },
+                setAsideTileIds = module.setAsideTiles(declarer).map { it.id },
+                isNewlyDrawn = true,
                 newlyClaimedMeldTileIds = claimedTileIds,
             )
             // 依規則 checkpoint 順序發布這次新公開的牌牆資訊（例如日麻暗槓後立即翻槓寶牌）。
@@ -301,14 +324,21 @@ class DeclareKanUseCase(
      * [tableState] 一起帶出 `gameRepository.update` 的作用域，供廣播事件時使用。[drawHappened] 為
      * false 代表這次宣告開啟了搶槓反應視窗、或搶槓多響判定為流局，副露與嶺上摸牌皆尚未套用，不應
      * 廣播 [GameAction.Draw]。[abortiveDrawReason] 非 null 代表搶槓多響依規則設定判定為流局，這次
-     * 加槓視為未成立。
+     * 加槓視為未成立。[declaredState] 只在開啟搶槓反應視窗時有值，是槓已移入副露、尚未補牌的候選桌況，供呈現使用。
      */
     private data class KanResult(
         val tableState: TableState,
         val kanAction: GameAction.Kan,
         val drawHappened: Boolean,
         val abortiveDrawReason: ExhaustiveDrawReason? = null,
+        val declaredState: TableState? = null,
         val wallRevealBatches: List<Set<Uuid>> = emptyList(),
         val physicalWallTransitionPhases: List<PhysicalWallLayoutTransitionPhase> = emptyList(),
     )
+}
+
+/** 這次槓成立後新移入副露的牌：暗槓與明槓為整組，加槓只有新加入的那一張。 */
+internal fun GameAction.Kan.newlyClaimedMeldTileIds(): Set<Uuid> = when (type) {
+    GameAction.KanType.ADDED_KAN -> setOf(tileId)
+    GameAction.KanType.CLOSED_KAN, GameAction.KanType.OPEN_KAN -> (withTiles + tileId).toSet()
 }

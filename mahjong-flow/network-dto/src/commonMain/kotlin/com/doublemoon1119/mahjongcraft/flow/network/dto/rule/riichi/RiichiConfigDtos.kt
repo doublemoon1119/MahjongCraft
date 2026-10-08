@@ -25,6 +25,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPendingKanDoraRe
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiScoreConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
 import kotlinx.serialization.Serializable
 import kotlin.uuid.Uuid
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDomain as toRuleDomain
@@ -65,6 +66,48 @@ fun RiichiRuleConfig.toRiichiDto(registries: NetworkDtoRegistries): RiichiRuleCo
 )
 
 fun RiichiRuleConfigDto.toDomain(registries: NetworkDtoRegistries): RiichiRuleConfig = RiichiRuleConfig(
+    redDoraCount = redDoraCount,
+    allowOpenTanyao = allowOpenTanyao,
+    useLocalYaku = useLocalYaku,
+    minimumWinConstraint = minimumWinConstraint,
+    scoreConfig = scoreConfig.toDomain(),
+    gameLength = gameLength.toRuleDomain(registries) as RiichiGameLength,
+    multiRonPolicy = multiRonPolicy.toRuleDomain(),
+)
+
+/** [ThreePlayerRiichiRuleConfig] 的完整網路 DTO；人數、王牌張數等由規則固定的欄位只作為顯示用途傳送。 */
+@Serializable
+data class ThreePlayerRiichiRuleConfigDto(
+    val initialHandSize: Int,
+    val deadTileCount: Int,
+    val scoreConfig: RiichiScoreConfigDto,
+    val gameLength: GameLengthDto,
+    val minimumWinConstraint: Int,
+    val minPlayers: Int,
+    val maxPlayers: Int,
+    val multiRonPolicy: MultiRonPolicyDto,
+    val redDoraCount: Int,
+    val allowOpenTanyao: Boolean,
+    val useLocalYaku: Boolean,
+    val revealsClosedKanTiles: Boolean,
+) : MahjongRuleConfigDto
+
+fun ThreePlayerRiichiRuleConfig.toThreePlayerRiichiDto(registries: NetworkDtoRegistries): ThreePlayerRiichiRuleConfigDto = ThreePlayerRiichiRuleConfigDto(
+    initialHandSize = initialHandSize,
+    deadTileCount = deadTileCount,
+    scoreConfig = scoreConfig.toRiichiDto(),
+    gameLength = gameLength.toRuleDto(registries),
+    minimumWinConstraint = minimumWinConstraint,
+    minPlayers = minPlayers,
+    maxPlayers = maxPlayers,
+    multiRonPolicy = multiRonPolicy.toRuleDto(),
+    redDoraCount = redDoraCount,
+    allowOpenTanyao = allowOpenTanyao,
+    useLocalYaku = useLocalYaku,
+    revealsClosedKanTiles = revealsClosedKanTiles,
+)
+
+fun ThreePlayerRiichiRuleConfigDto.toDomain(registries: NetworkDtoRegistries): ThreePlayerRiichiRuleConfig = ThreePlayerRiichiRuleConfig(
     redDoraCount = redDoraCount,
     allowOpenTanyao = allowOpenTanyao,
     useLocalYaku = useLocalYaku,
@@ -120,6 +163,7 @@ data class RiichiDynamicStateDto(
     val completedSupplementalDrawCount: Int,
     val revealedKanDoraCount: Int = completedSupplementalDrawCount,
     val pendingKanDoraReveals: List<RiichiPendingKanDoraRevealDto> = emptyList(),
+    val completedNorthDrawCount: Int,
 ) : DynamicRuleStateDto
 
 /** 尚未正式公開的日麻槓寶牌網路 DTO。 */
@@ -154,6 +198,7 @@ fun RiichiDynamicState.toRiichiDto(): RiichiDynamicStateDto = RiichiDynamicState
             it.supplementalDrawNumber,
         )
     },
+    completedNorthDrawCount,
 )
 
 fun RiichiDynamicStateDto.toDomain(): RiichiDynamicState = RiichiDynamicState(
@@ -167,6 +212,7 @@ fun RiichiDynamicStateDto.toDomain(): RiichiDynamicState = RiichiDynamicState(
             it.supplementalDrawNumber,
         )
     },
+    completedNorthDrawCount,
 )
 
 /** 將來源槓牌種類轉為等待公開項目的網路 DTO。 */
@@ -216,6 +262,7 @@ data class RiichiPlayerStateDto(
     val doubleRiichiTile: IdentifiedTileDto?,
     val isIppatsu: Boolean,
     val paoLiability: PaoLiabilityDto?,
+    val nukiDoraTiles: List<IdentifiedTileDto>,
 ) : PlayerRuleStateDto
 
 fun RiichiPlayerState.toRiichiDto(): RiichiPlayerStateDto = RiichiPlayerStateDto(
@@ -223,6 +270,7 @@ fun RiichiPlayerState.toRiichiDto(): RiichiPlayerStateDto = RiichiPlayerStateDto
     doubleRiichiTile = doubleRiichiTile?.toDto(),
     isIppatsu = isIppatsu,
     paoLiability = paoLiability?.toDto(),
+    nukiDoraTiles = nukiDoraTiles.map { it.toDto() },
 )
 
 fun RiichiPlayerStateDto.toDomain(): RiichiPlayerState = RiichiPlayerState(
@@ -230,6 +278,7 @@ fun RiichiPlayerStateDto.toDomain(): RiichiPlayerState = RiichiPlayerState(
     doubleRiichiTile = doubleRiichiTile?.toDomain(),
     isIppatsu = isIppatsu,
     paoLiability = paoLiability?.toDomain(),
+    nukiDoraTiles = nukiDoraTiles.map { it.toDomain() },
 )
 
 // ── DiscardPileDto ─────────────────────────────────────────────────────────

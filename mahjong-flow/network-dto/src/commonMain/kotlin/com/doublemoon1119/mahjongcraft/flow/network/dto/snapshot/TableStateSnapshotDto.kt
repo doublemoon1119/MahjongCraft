@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot
 
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.IdentifiedTileDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.WindDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDto
@@ -28,6 +29,7 @@ data class TableStateSnapshotDto(
     val dynamicRuleState: DynamicRuleStateDto?,
     val finishedPlayerIds: Set<String>,
     val physicalWallLayout: TileWallPhysicalLayoutDto? = null,
+    val revealedHandTiles: List<IdentifiedTileDto>,
 )
 
 /** 將 observer-specific 桌況快照轉成網路 DTO。 */
@@ -45,6 +47,7 @@ fun TableStateSnapshot.toDto(registries: NetworkDtoRegistries): TableStateSnapsh
     dynamicRuleState = dynamicRuleState?.toDto(registries),
     finishedPlayerIds = finishedPlayerIds.map(Uuid::toString).toSet(),
     physicalWallLayout = physicalWallLayout?.toDto(),
+    revealedHandTiles = revealedHandTiles.map { it.toDto() },
 )
 
 /** 將網路 DTO 還原成 observer-specific 桌況快照。 */
@@ -62,4 +65,5 @@ fun TableStateSnapshotDto.toDomain(registries: NetworkDtoRegistries): TableState
     dynamicRuleState = dynamicRuleState?.toDomain(registries),
     finishedPlayerIds = finishedPlayerIds.map(Uuid::parse).toSet(),
     physicalWallLayout = physicalWallLayout?.toDomain(),
+    revealedHandTiles = revealedHandTiles.map { it.toDomain() },
 )

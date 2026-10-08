@@ -181,6 +181,7 @@ private fun HistoryReplayPlayerState.toDto(): HistoryReplayPlayerStateDto = Hist
     score = score,
     seatWind = seatWind.toDto(),
     playerRuleState = playerRuleState?.toDto(),
+    setAsideTiles = setAsideTiles.map { it.tileIndex },
 )
 
 /** 將 Replay 副露映射為網路 DTO。

@@ -98,7 +98,7 @@ internal class SimulationRuntime(defaultStrategyKey: String) {
     }
 
     /** 快照同步；快照只寫入測試替身。 */
-    private val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepository, FakeGameSnapshotRepository(), GameVisibilityPolicyImpl())
+    private val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepository, FakeGameSnapshotRepository(), GameVisibilityPolicyImpl(moduleRegistry))
 
     /** 手牌排序偏好。 */
     private val handSortPreferenceStore = HandSortPreferenceStore()
@@ -230,7 +230,7 @@ internal class SimulationRuntime(defaultStrategyKey: String) {
             gameRepository,
             GetLegalActionsUseCase(gameRepository, moduleRegistry),
             aiStrategyRegistry,
-            GameVisibilityPolicyImpl(),
+            GameVisibilityPolicyImpl(moduleRegistry),
             moduleRegistry,
         ),
         forcedAutoPlayDriver = ForcedAutoPlayDriver(gameRepository),

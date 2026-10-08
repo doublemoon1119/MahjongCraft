@@ -24,7 +24,7 @@ class OpponentModelRegistryTest {
 
         assertIs<RiichiOpponentModel>(registry.create(riichi, ReadingDepth.BASIC))
         assertIs<NeutralOpponentModel>(registry.create(taiwan, ReadingDepth.BASIC))
-        assertEquals(setOf(BuiltInRuleModuleIds.RIICHI), registry.registrationKeys)
+        assertEquals(setOf(BuiltInRuleModuleIds.RIICHI, BuiltInRuleModuleIds.RIICHI_THREE_PLAYER), registry.registrationKeys)
     }
 
     /** 建立的模型使用決策者的讀牌深度，登記與未登記的規則皆然。 */

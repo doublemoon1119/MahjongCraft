@@ -284,6 +284,9 @@ object MinecraftHistoryScreenKeys {
     /** 副露區標籤。 */
     const val STATE_MELDS = "mahjongcraft.history_screen.state.melds"
 
+    /** 移出手牌、公開擺在桌上的牌（例如三人日麻拔出的北）區標籤。 */
+    const val STATE_SET_ASIDE = "mahjongcraft.history_screen.state.set_aside"
+
     /** 牌河區標籤。 */
     const val STATE_DISCARDS = "mahjongcraft.history_screen.state.discards"
 

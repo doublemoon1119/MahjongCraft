@@ -42,7 +42,7 @@ class AiTurnDriver(
     /**
      * 找出目前桌況下下一個該行動的 AI 玩家與其命令；若沒有任何 AI 需要行動則回傳 null。
      *
-     * 判斷順序（搶槓反應 → 捨牌反應 → 自己回合）由 [PlayerActionContextResolver] 統一解析。摸牌
+     * 判斷順序（搶和反應 → 捨牌反應 → 自己回合）由 [PlayerActionContextResolver] 統一解析。摸牌
      * （[GameCommand.Draw]）不經過策略——這不是一個需要「策略」的決定，是每位玩家（人類/AI）
      * 回合開始時都必須做的機械動作，直接回傳固定命令。
      *

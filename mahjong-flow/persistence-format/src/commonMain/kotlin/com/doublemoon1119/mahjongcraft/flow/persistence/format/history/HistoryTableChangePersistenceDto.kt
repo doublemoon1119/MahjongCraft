@@ -49,10 +49,11 @@ data class HistoryWallLayoutChangePersistenceDto(
  * @property currentPlayerIndex 新的行動玩家索引；未改變時為 null。
  * @property dynamicRuleState 規則動態狀態的新值；外層 null 代表未改變。
  * @property pendingReaction 捨牌反應視窗的新值；外層 null 代表未改變。
- * @property pendingRobbingReaction 搶槓反應視窗的新值；外層 null 代表未改變。
+ * @property pendingRobbingReaction 搶和反應視窗的新值；外層 null 代表未改變。
  * @property reservedWallTiles 規則保留牌的新順序；未改變時為 null。
  * @property physicalWallLayout 實體牌牆格位的局部變化；未改變時為 null。
  * @property finishedPlayerIds 本局已完成玩家的 UUID 字串集合；未改變時為 null。
+ * @property revealedHandTileIds 本局已公開手牌的 UUID 字串集合；未改變時為 null。
  */
 @Serializable
 data class HistoryTableChangePersistenceDto(
@@ -65,6 +66,7 @@ data class HistoryTableChangePersistenceDto(
     val reservedWallTiles: List<IdentifiedTilePersistenceDto>? = null,
     val physicalWallLayout: HistoryWallLayoutChangePersistenceDto? = null,
     val finishedPlayerIds: Set<String>? = null,
+    val revealedHandTileIds: Set<String>? = null,
 )
 
 /** 玩家狀態與動作紀錄的局部變化。

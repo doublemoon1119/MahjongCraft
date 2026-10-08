@@ -74,7 +74,7 @@ class ServerSessionStateCleanerTest {
             ),
         )
         roomSnapshots.setSnapshot(observerId, room.toSnapshot(observerId))
-        gameSnapshots.setSnapshot(observerId, game.toSnapshot(setOf(observerId)))
+        gameSnapshots.setSnapshot(observerId, game.toSnapshot(setOf(observerId), setAsideTiles = { emptyList() }))
         memberships.claim(observerId, room.id)
 
         cleaner.clear()

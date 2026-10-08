@@ -22,6 +22,13 @@ interface MahjongRuleConfig {
     val gameLength: GameLength
 
     /**
+     * 依 [gameLength] 原定要打的局數，不含延長局。
+     *
+     * 預設為 [GameLength.totalRounds]；每圈局數隨人數改變的規則（例如三人日麻每圈三局）應覆寫成實際局數。
+     */
+    val scheduledRoundCount: Int get() = gameLength.totalRounds
+
+    /**
      * 最小胡牌番數或台數限制（翻縛）。
      * 日本麻將通常為 1，台灣麻將通常為 0。
      */

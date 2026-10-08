@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.WallRevealContext
 import com.doublemoon1119.mahjongcraft.logic.table.WallRevealDecision
 import com.doublemoon1119.mahjongcraft.logic.table.WallRevealPolicy
 
-/** 日本麻將槓寶牌立即公開、延後公開與取消的純邏輯 policy。 */
+/** 日本麻將槓寶牌立即公開、延後公開與取消的純邏輯 policy；三人日麻拔北後的補牌不會公開槓寶牌。 */
 object RiichiWallRevealPolicy : WallRevealPolicy {
     /** 根據規則中立流程節點更新日麻槓寶牌公開狀態。 */
     override fun resolve(context: WallRevealContext): WallRevealDecision {
@@ -27,11 +27,12 @@ object RiichiWallRevealPolicy : WallRevealPolicy {
         }
     }
 
-    /** 依來源動作決定新指示牌立即公開或加入等待佇列。 */
+    /** 依來源動作決定新指示牌立即公開或加入等待佇列；拔北的補牌不公開新指示牌。 */
     private fun afterSupplementalDraw(
         context: WallRevealContext,
         state: RiichiDynamicState,
     ): WallRevealDecision {
+        if (context.sourceAction == PULL_NORTH_GAME_ACTION) return WallRevealDecision.NoChange
         val action = context.sourceAction as? GameAction.Kan
             ?: return WallRevealDecision.Rejected(INVALID_ACTION_REASON_ID)
         val actorPlayerId = context.actorPlayerId

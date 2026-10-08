@@ -94,10 +94,11 @@ data class HistoryPlayerChange(
  * @property currentPlayerIndex 新的行動玩家索引；未改變時為 null。
  * @property dynamicRuleState 規則動態狀態的新值；外層 null 代表未改變。
  * @property pendingReaction 捨牌反應視窗的新值；外層 null 代表未改變。
- * @property pendingRobbingReaction 搶槓反應視窗的新值；外層 null 代表未改變。
+ * @property pendingRobbingReaction 搶和反應視窗的新值；外層 null 代表未改變。
  * @property reservedWallTiles 規則保留牌的新順序；未改變時為 null。
  * @property physicalWallLayout 實體牌牆位置的局部變化；未改變時為 null。
  * @property finishedPlayerIds 本局已完成玩家的新集合；未改變時為 null。
+ * @property revealedHandTileIds 本局已公開手牌的新集合；未改變時為 null。
  */
 data class HistoryTableChange(
     val changedPlayers: List<HistoryPlayerChange> = emptyList(),
@@ -109,6 +110,7 @@ data class HistoryTableChange(
     val reservedWallTiles: List<IdentifiedTile>? = null,
     val physicalWallLayout: HistoryWallLayoutChange? = null,
     val finishedPlayerIds: Set<Uuid>? = null,
+    val revealedHandTileIds: Set<Uuid>? = null,
 ) {
     /** 將差異套用到前一個完整桌況。 */
     fun applyTo(before: TableState): TableState {
@@ -127,6 +129,7 @@ data class HistoryTableChange(
             physicalWallLayout = physicalWallLayout?.applyTo(checkNotNull(before.physicalWallLayout))
                 ?: before.physicalWallLayout,
             finishedPlayerIds = finishedPlayerIds ?: before.finishedPlayerIds,
+            revealedHandTileIds = revealedHandTileIds ?: before.revealedHandTileIds,
         )
     }
 
@@ -179,6 +182,7 @@ data class HistoryTableChange(
                     null
                 },
                 finishedPlayerIds = after.finishedPlayerIds.takeIf { it != before.finishedPlayerIds },
+                revealedHandTileIds = after.revealedHandTileIds.takeIf { it != before.revealedHandTileIds },
             )
             return result.takeIf { runCatching { it.applyTo(before) == after }.getOrDefault(false) }
         }

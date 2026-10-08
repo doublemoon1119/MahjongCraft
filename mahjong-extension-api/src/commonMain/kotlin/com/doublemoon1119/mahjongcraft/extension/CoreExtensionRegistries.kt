@@ -90,6 +90,11 @@ class CoreExtensionRegistries(
                 historyReplayProjectionRegistry.registrationKeys.optionalRule,
             ),
             snapshotCategory(
+                "mahjongcraft:history_replay_set_aside_tiles",
+                "History Replay Set-Aside Tiles",
+                historyReplayProjectionRegistry.registrationKeys.setAsideTiles,
+            ),
+            snapshotCategory(
                 "mahjongcraft:win_celebration_cue_resolver",
                 "Win Celebration Cue Resolver",
                 winCelebrationCueResolverRegistry.registrationKeys,

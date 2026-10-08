@@ -22,9 +22,12 @@ data class MahjongTileWallProjectionContext(
     val dealerSeatIndex: Int,
     /** 牌牆每面的墩數。 */
     val stacksPerSide: Int,
+    /** 牌牆的面數，與玩家人數相同。 */
+    val sideCount: Int,
 ) {
     init {
         require(stacksPerSide > 0) { "Stacks per side must be positive" }
+        require(sideCount > 0) { "Wall side count must be positive" }
     }
 
     /** 將 [placement] 投影成此桌的世界座標與朝向。 */
@@ -35,6 +38,7 @@ data class MahjongTileWallProjectionContext(
         tableFacing = tableFacing,
         dealerSeatIndex = dealerSeatIndex,
         stacksPerSide = stacksPerSide,
+        sideCount = sideCount,
         placement = placement,
     )
 }
@@ -110,7 +114,7 @@ object TileWallMotionPathPlanner {
         }
 
         val startCoordinate = circularCoordinate(start, context.stacksPerSide)
-        val endCoordinate = unwrapNear(startCoordinate, circularCoordinate(end, context.stacksPerSide), context.stacksPerSide)
+        val endCoordinate = unwrapNear(startCoordinate, circularCoordinate(end, context.stacksPerSide), context.stacksPerSide * context.sideCount)
         val traversedCornerCells = traversedCornerCells(startCoordinate, endCoordinate, context.stacksPerSide)
         if (traversedCornerCells.isEmpty()) {
             return TileWallMotionPathDecision.Completed(listOf(segment(startWorld, endWorld)))
@@ -187,9 +191,9 @@ object TileWallMotionPathPlanner {
     private fun circularCoordinate(placement: TileWallPlacement, stacksPerSide: Int): Double = placement.position.side *
         stacksPerSide + placement.position.stack + placement.offset.alongWallStacks
 
-    /** 將 [coordinate] 展開到最接近 [reference] 的同一圈表示。 */
-    private fun unwrapNear(reference: Double, coordinate: Double, stacksPerSide: Int): Double {
-        val circumference = stacksPerSide * SIDE_COUNT.toDouble()
+    /** 將 [coordinate] 展開到最接近 [reference] 的同一圈表示；[stackCount] 是整圈牌牆的墩數。 */
+    private fun unwrapNear(reference: Double, coordinate: Double, stackCount: Int): Double {
+        val circumference = stackCount.toDouble()
         var result = coordinate
         while (result - reference > circumference / 2.0) result -= circumference
         while (result - reference < -circumference / 2.0) result += circumference
@@ -220,9 +224,6 @@ object TileWallMotionPathPlanner {
         second.x - first.x,
         second.z - first.z,
     )
-
-    /** 牌牆固定由四個面組成。 */
-    private const val SIDE_COUNT = 4
 
     /** 控制方塊中心的座標偏移。 */
     private const val BLOCK_CENTER = 0.5

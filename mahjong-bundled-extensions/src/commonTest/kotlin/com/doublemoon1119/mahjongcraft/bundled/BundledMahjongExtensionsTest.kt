@@ -22,6 +22,8 @@ import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleModule
@@ -43,11 +45,12 @@ class BundledMahjongExtensionsTest {
 
         assertEquals(listOf(null, BundledRiichiExtension.id, BundledTaiwanExtension.id), sources.map { it.extensionId })
         assertTrue(sources.first().categories.isEmpty(), "Empty registries must not carry any built-in rule")
-        assertEquals(listOf(BuiltInRuleModuleIds.RIICHI), sources[1].ids("mahjongcraft:rule_module"))
+        assertEquals(listOf(BuiltInRuleModuleIds.RIICHI, BuiltInRuleModuleIds.RIICHI_THREE_PLAYER), sources[1].ids("mahjongcraft:rule_module"))
         assertEquals(listOf(BuiltInRuleModuleIds.TAIWAN), sources[2].ids("mahjongcraft:rule_module"))
         assertEquals(RiichiTileTypes.ALL.map { it.toString() }.sorted(), sources[1].ids("mahjongcraft:tile_type"))
         assertEquals(TaiwanTileTypes.ALL.map { it.toString() }.sorted(), sources[2].ids("mahjongcraft:tile_type"))
         assertIs<RiichiRuleModule>(registries.moduleRegistry.getModule(RiichiRuleConfig()))
+        assertIs<ThreePlayerRiichiRuleModule>(registries.moduleRegistry.getModule(ThreePlayerRiichiRuleConfig()))
         assertIs<TaiwanRuleModule>(registries.moduleRegistry.getModule(TaiwanRuleConfig()))
     }
 

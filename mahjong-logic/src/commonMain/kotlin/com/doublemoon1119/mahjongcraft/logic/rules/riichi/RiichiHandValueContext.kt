@@ -31,6 +31,8 @@ import com.doublemoon1119.mahjongcraft.logic.table.Wind
  * @property isRiichiDeclarationDiscard 榮和的牌是否為放銃者的立直宣言牌；用於古役燕返。
  * @property isDiscardAfterKan 榮和的牌是否為放銃者槓牌並補牌後打出的牌；用於古役槓振。
  * @property paoLiability 本局是否已成立包牌責任（大三元／大四喜），若無則為 null。
+ * @property nukiDoraTiles 三人麻將中和牌者拔出的北；每張算一張拔北寶牌，也計入寶牌與裏寶牌。
+ * @property usesThreePlayerTiles 是否使用沒有二～八萬的三人麻將牌組；決定一萬與九萬的寶牌指示。
  */
 data class RiichiHandValueContext(
     override val hand: Hand,
@@ -54,4 +56,6 @@ data class RiichiHandValueContext(
     val isRiichiDeclarationDiscard: Boolean = false,
     val isDiscardAfterKan: Boolean = false,
     val paoLiability: PaoLiability? = null,
+    val nukiDoraTiles: List<Tile> = emptyList(),
+    val usesThreePlayerTiles: Boolean = false,
 ) : HandValueContext

@@ -123,7 +123,7 @@ class TileWallTransitionMotionPlannerTest {
 
     /** 測試共用常數。 */
     private companion object {
-        val CONTEXT = MahjongTileWallProjectionContext(0, 64, 0, MahjongTableFacing.NORTH, 0, 17)
+        val CONTEXT = MahjongTileWallProjectionContext(0, 64, 0, MahjongTableFacing.NORTH, 0, 17, 4)
         const val TOLERANCE = 1e-9
     }
 }

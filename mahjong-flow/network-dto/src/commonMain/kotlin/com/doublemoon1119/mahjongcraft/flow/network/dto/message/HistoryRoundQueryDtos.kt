@@ -357,7 +357,7 @@ data class HistoryWinDetailQuantityDto(val unitId: String, val amount: Int)
  * @property finishedPlayerSeats 已完成玩家座位。
  * @property dynamicRuleState 規則公開資訊。
  * @property hasPendingReaction 是否有待處理反應。
- * @property hasPendingRobbingReaction 是否有待處理槓牌反應。
+ * @property hasPendingRobbingReaction 是否有待處理搶和反應。
  * @property outcome 結算結果。
  */
 @Serializable
@@ -390,6 +390,7 @@ data class HistoryRoundStateDto(
  * @property score 分數。
  * @property seatWind 座風。
  * @property playerRuleState 規則公開資訊。
+ * @property setAsideTiles 移出手牌、公開擺在桌上的牌索引（例如三人日麻拔出的北），依移出順序排列。
  */
 @Serializable
 data class HistoryReplayPlayerStateDto(
@@ -401,6 +402,7 @@ data class HistoryReplayPlayerStateDto(
     val score: Int,
     val seatWind: WindDto,
     val playerRuleState: HistoryReplayRuleInformationDto?,
+    val setAsideTiles: List<Int>,
 )
 
 /** Replay 副露 DTO。

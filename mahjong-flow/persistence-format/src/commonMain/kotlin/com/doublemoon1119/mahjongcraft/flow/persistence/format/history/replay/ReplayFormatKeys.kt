@@ -209,7 +209,7 @@ internal object ReplaySourceKeys {
     /** 目前等待中的一般反應。 */
     const val PENDING_REACTION = "pendingReaction"
 
-    /** 目前等待中的槓牌反應。 */
+    /** 目前等待中的搶和反應（暗槓、加槓或移出手牌的動作）。 */
     const val PENDING_ROBBING_REACTION = "pendingRobbingReaction"
 
     /** 動作使用的牌。 */

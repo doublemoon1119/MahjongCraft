@@ -145,6 +145,8 @@ class RiichiHandValueCalculator(
                 hand = context.hand,
                 winningTile = context.winningTile,
                 doraIndicators = context.doraIndicators,
+                setAsideTiles = context.nukiDoraTiles,
+                usesThreePlayerTiles = context.usesThreePlayerTiles,
             )
             if (doraResult.han > 0) {
                 yakuResults.add(doraResult)
@@ -156,6 +158,8 @@ class RiichiHandValueCalculator(
                     hand = context.hand,
                     winningTile = context.winningTile,
                     uraDoraIndicators = context.uraDoraIndicators,
+                    setAsideTiles = context.nukiDoraTiles,
+                    usesThreePlayerTiles = context.usesThreePlayerTiles,
                 )
                 if (uraDoraResult.han > 0) {
                     yakuResults.add(uraDoraResult)
@@ -169,6 +173,11 @@ class RiichiHandValueCalculator(
             )
             if (akaDoraResult.han > 0) {
                 yakuResults.add(akaDoraResult)
+            }
+
+            // 計算拔北寶牌
+            if (context.nukiDoraTiles.isNotEmpty()) {
+                yakuResults.add(YakuResult.han(YakuType.NukiDora, context.nukiDoraTiles.size))
             }
 
             // 計算一般役

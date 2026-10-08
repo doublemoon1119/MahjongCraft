@@ -62,6 +62,7 @@ class ObserverSnapshotBroadcasterTest {
                 FakeMahjongPlayerFactory.create(seatWind = Wind.EAST, id = hostId),
                 FakeMahjongPlayerFactory.create(seatWind = Wind.SOUTH),
             ),
+            config = RiichiRuleConfig(),
         ),
         flowConfig = GameConfig(RiichiRuleConfig()).flowConfig,
         hostId = hostId,
@@ -90,7 +91,7 @@ class ObserverSnapshotBroadcasterTest {
         sender: RecordingSender,
     ) = ObserverSnapshotBroadcaster(
         store = store,
-        visibilityPolicy = GameVisibilityPolicyImpl(),
+        visibilityPolicy = GameVisibilityPolicyImpl(MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }),
         handReadinessVisibilityPolicy = HandReadinessVisibilityPolicy(
             MahjongModuleRegistryImpl().apply { registerBundledRuleModules() },
         ),

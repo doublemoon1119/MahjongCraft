@@ -290,10 +290,10 @@ class MinecraftMahjongExtensionRegistrarTest {
         assertNull(tileLabelRegistry.find("unknown"))
         assertNull(tileLabelRegistry.find("example_unregistered"))
         assertTrue(ruleCatalogueRegistry.isFrozen)
-        assertEquals(setOf(BuiltInRuleModuleIds.RIICHI), ruleCatalogueRegistry.registrationKeys)
+        assertEquals(setOf(BuiltInRuleModuleIds.RIICHI, BuiltInRuleModuleIds.RIICHI_THREE_PLAYER), ruleCatalogueRegistry.registrationKeys)
         assertEquals(listOf(null, BundledRiichiMinecraftExtension.id, BundledTaiwanMinecraftExtension.id), result.sources.map { it.extensionId })
         assertEquals(
-            setOf(BuiltInRuleModuleIds.RIICHI),
+            setOf(BuiltInRuleModuleIds.RIICHI, BuiltInRuleModuleIds.RIICHI_THREE_PLAYER),
             result.sources[1].categories.single { it.id == "mahjongcraft:rule_catalogue" }.registrationKeys,
         )
     }

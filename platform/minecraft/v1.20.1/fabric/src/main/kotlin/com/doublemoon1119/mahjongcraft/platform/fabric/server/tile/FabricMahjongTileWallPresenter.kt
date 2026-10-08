@@ -82,6 +82,7 @@ class FabricMahjongTileWallPresenter(
         val stacksPerSide = presentation.assemblyStructure.values
             .filter { position -> position.side == 0 }
             .maxOfOrNull { position -> position.stack + 1 } ?: 0
+        val sideCount = MahjongTileTableLayout.wallSideCount(presentation.assemblyStructure.values)
         val oldTiles = findManagedTiles(world, presentation.tableId, controllerPos)
         val restoresFinalStateImmediately = !presentation.animateOpening
         require(presentation.assemblyStructure.keys == presentation.finalLayout.placements.keys) {
@@ -96,6 +97,7 @@ class FabricMahjongTileWallPresenter(
                 tableFacing = presentation.tableFacing,
                 dealerSeatIndex = presentation.dealerSeatIndex,
                 stacksPerSide = stacksPerSide,
+                sideCount = sideCount,
                 placement = if (restoresFinalStateImmediately) finalPlacement else TileWallPlacement(assemblyPosition),
             )
             assemblyPosition to MahjongTileEntity(world = world).apply {
@@ -167,6 +169,7 @@ class FabricMahjongTileWallPresenter(
                 tableFacing = request.tableFacing,
                 dealerSeatIndex = request.dealerSeatIndex,
                 stacksPerSide = request.projectionContext(controllerPos).stacksPerSide,
+                sideCount = request.projectionContext(controllerPos).sideCount,
                 placement = placement,
             )
             val steps = stepsByTile.getOrPut(tileId) { mutableListOf() }
@@ -266,6 +269,7 @@ class FabricMahjongTileWallPresenter(
         stacksPerSide = assemblyStructure.values
             .filter { position -> position.side == 0 }
             .maxOf { position -> position.stack + 1 },
+        sideCount = MahjongTileTableLayout.wallSideCount(assemblyStructure.values),
     )
 
     /** 建立此 transition 請求使用的抽象 placement 世界投影資料。 */
@@ -278,6 +282,7 @@ class FabricMahjongTileWallPresenter(
         tableFacing = tableFacing,
         dealerSeatIndex = dealerSeatIndex,
         stacksPerSide = stacksPerSide,
+        sideCount = sideCount,
     )
 
     /** 建立一墩牌牆落桌時的小音量聲音 step；同墩只由上層牌播放一次。 */

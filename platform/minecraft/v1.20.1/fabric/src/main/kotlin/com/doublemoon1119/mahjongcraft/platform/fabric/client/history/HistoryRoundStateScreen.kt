@@ -408,6 +408,10 @@ internal class HistoryRoundStateScreen(
             line(Text.translatable(MinecraftHistoryScreenKeys.STATE_MELDS), MUTED_COLOR)
             group(HistoryRoundStatePresenter.combine(player.melds.map { HistoryTileGroupLayoutCalculator.meld(it, maxWidth) }, maxWidth))
         }
+        if (player.setAsideTiles.isNotEmpty()) {
+            line(Text.translatable(MinecraftHistoryScreenKeys.STATE_SET_ASIDE), MUTED_COLOR)
+            group(HistoryTileGroupLayoutCalculator.hand(player.setAsideTiles, maxWidth = maxWidth))
+        }
         line(
             Text.translatable(MinecraftHistoryScreenKeys.STATE_DISCARDS_COUNT, player.discards.size),
             MUTED_COLOR,

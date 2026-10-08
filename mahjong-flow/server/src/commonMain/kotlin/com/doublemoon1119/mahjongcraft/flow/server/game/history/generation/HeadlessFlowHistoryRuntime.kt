@@ -136,7 +136,7 @@ class HeadlessFlowHistoryRuntime private constructor(
             val presentation = NoOpPresentation()
             val busy = NoOpBusyGate()
             val moduleRegistry = registries.moduleRegistry
-            val synchronizer = GameSnapshotSynchronizer(gameRepository, gameSnapshots, GameVisibilityPolicyImpl())
+            val synchronizer = GameSnapshotSynchronizer(gameRepository, gameSnapshots, GameVisibilityPolicyImpl(moduleRegistry))
             val handSort = HandSortPreferenceStore()
             val create = CreateRoomUseCase(store, membership, rooms, roomEvents)
             val addAi = AddAiPlayerUseCase(roomRepository, rooms, roomEvents)
@@ -167,7 +167,7 @@ class HeadlessFlowHistoryRuntime private constructor(
                 commands,
             )
             val getLegal = GetLegalActionsUseCase(gameRepository, moduleRegistry)
-            val ai = AiTurnDriver(gameRepository, getLegal, registries.aiStrategyRegistry, GameVisibilityPolicyImpl(), moduleRegistry)
+            val ai = AiTurnDriver(gameRepository, getLegal, registries.aiStrategyRegistry, GameVisibilityPolicyImpl(moduleRegistry), moduleRegistry)
             val clock = MonotonicClockImpl()
             val timers = GameDecisionTimerManager(gameRepository, GameDecisionAuthorityResolver(), PlayerDecisionTimerFactory(clock), clock)
             val timerSync = DecisionTimerSynchronizationService(timers, gameRepository, NoOpTimerUpdates())
@@ -321,7 +321,7 @@ private class NoOpPresentation : GamePresentationPublisher {
     override fun publishRoundInfoUpdated(gameId: Uuid, tableState: TableState) = Unit
 
     /** 丟棄玩家區域通知。 */
-    override fun publishPlayerTilesUpdated(gameId: Uuid, seatIndex: Int, standingTileIds: List<Uuid>, drawnTileId: Uuid?, melds: List<MeldPresentation>, isNewlyDrawn: Boolean, newlyClaimedMeldTileIds: Set<Uuid>) = Unit
+    override fun publishPlayerTilesUpdated(gameId: Uuid, seatIndex: Int, standingTileIds: List<Uuid>, drawnTileId: Uuid?, melds: List<MeldPresentation>, setAsideTileIds: List<Uuid>, isNewlyDrawn: Boolean, newlyClaimedMeldTileIds: Set<Uuid>, newlySetAsideTileIds: Set<Uuid>) = Unit
 
     /** 丟棄初始發牌通知。 */
     override fun publishInitialDeal(gameId: Uuid, handTileIdsBySeatIndex: Map<Int, List<Uuid>>, postFlipHandTileIdsBySeatIndex: Map<Int, List<Uuid>>, dealerSeatIndex: Int, dealBatchSizes: List<Int>, diceCount: Int) = Unit

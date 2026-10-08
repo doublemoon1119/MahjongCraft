@@ -108,7 +108,7 @@ internal object ExpectationFixtures {
         phase: AiDecisionPhase = AiDecisionPhase.OwnTurn,
         legalActions: List<GameAction> = emptyList(),
     ): AiDecisionContext = AiDecisionContext(
-        snapshot = table.toSnapshot(visibleHandPlayerIds = setOf(self.id)),
+        snapshot = table.toSnapshot(visibleHandPlayerIds = setOf(self.id), setAsideTiles = { emptyList() }),
         selfId = self.id,
         phase = phase,
         legalActions = legalActions,

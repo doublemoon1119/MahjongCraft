@@ -31,7 +31,7 @@ internal fun RiichiHandValueResult.qualifyingHan(): RiichiQualifyingHan {
     }
     return RiichiQualifyingHan(
         value = yakuResults
-            .filterNot { it.yaku == YakuType.Dora || it.yaku == YakuType.UraDora || it.yaku == YakuType.AkaDora }
+            .filterNot { it.yaku == YakuType.Dora || it.yaku == YakuType.UraDora || it.yaku == YakuType.AkaDora || it.yaku == YakuType.NukiDora }
             .sumOf { it.han },
     )
 }

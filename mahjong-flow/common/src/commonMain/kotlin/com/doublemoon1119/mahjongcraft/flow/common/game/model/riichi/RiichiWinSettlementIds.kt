@@ -44,6 +44,7 @@ object RiichiWinSettlementIds {
         YakuType.Dora to yakuId("dora"),
         YakuType.UraDora to yakuId("ura_dora"),
         YakuType.AkaDora to yakuId("aka_dora"),
+        YakuType.NukiDora to yakuId("nuki_dora"),
         YakuType.Tanyao to yakuId("tanyao"),
         YakuType.Pinfu to yakuId("pinfu"),
         YakuType.Iipeikou to yakuId("iipeikou"),

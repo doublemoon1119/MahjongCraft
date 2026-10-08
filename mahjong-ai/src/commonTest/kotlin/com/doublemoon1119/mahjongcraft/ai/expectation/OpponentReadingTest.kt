@@ -199,7 +199,7 @@ class OpponentReadingTest {
     fun `rules without bonus tiles never raise danger`() {
         val self = FakeMahjongPlayerFactory.create(Wind.SOUTH)
         val view = PositionView(
-            snapshot = FakeTableStateFactory.create(players = listOf(self)).toSnapshot(visibleHandPlayerIds = setOf(self.id)),
+            snapshot = FakeTableStateFactory.create(players = listOf(self)).toSnapshot(visibleHandPlayerIds = setOf(self.id), setAsideTiles = { emptyList() }),
             evaluatorId = self.id,
         )
 
@@ -215,7 +215,7 @@ class OpponentReadingTest {
         )
         val self = FakeMahjongPlayerFactory.create(Wind.SOUTH)
         val view = PositionView(
-            snapshot = FakeTableStateFactory.create(players = listOf(opponent, self)).toSnapshot(visibleHandPlayerIds = setOf(self.id)),
+            snapshot = FakeTableStateFactory.create(players = listOf(opponent, self)).toSnapshot(visibleHandPlayerIds = setOf(self.id), setAsideTiles = { emptyList() }),
             evaluatorId = self.id,
         )
 
@@ -249,7 +249,7 @@ class OpponentReadingTest {
             players = players + self,
             config = RiichiRuleConfig(),
             dynamicRuleState = RiichiDynamicState(),
-        ).toSnapshot(visibleHandPlayerIds = setOf(self.id))
+        ).toSnapshot(visibleHandPlayerIds = setOf(self.id), setAsideTiles = { emptyList() })
         val withIndicators = if (doraIndicators.isEmpty()) {
             snapshot
         } else {
@@ -262,7 +262,7 @@ class OpponentReadingTest {
     private fun snapshotOf(player: MahjongPlayer): MahjongPlayerSnapshot {
         val self = FakeMahjongPlayerFactory.create(Wind.SOUTH)
         return FakeTableStateFactory.create(players = listOf(player, self))
-            .toSnapshot(visibleHandPlayerIds = setOf(self.id))
+            .toSnapshot(visibleHandPlayerIds = setOf(self.id), setAsideTiles = { emptyList() })
             .players
             .first { it.id == player.id }
     }

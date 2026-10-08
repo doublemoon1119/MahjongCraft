@@ -53,7 +53,7 @@ class ExtensionGameActionAiRegistryTest {
         val selfId = Uuid.random()
         val table = FakeTableStateFactory.create(players = listOf(FakeMahjongPlayerFactory.create(id = selfId)), config = config)
         return AiDecisionContext(
-            snapshot = table.toSnapshot(setOf(selfId)),
+            snapshot = table.toSnapshot(setOf(selfId), setAsideTiles = { emptyList() }),
             selfId = selfId,
             phase = AiDecisionPhase.OwnTurn,
             legalActions = emptyList(),

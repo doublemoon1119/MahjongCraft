@@ -154,8 +154,8 @@ class GameEventChatNotifierTest {
             FakeMahjongPlayerFactory.create(id = northId, initialSeat = Wind.NORTH)
                 .copy(score = 20000, seatWind = Wind.NORTH),
         )
-        val previous = FakeTableStateFactory.create(players = players).toSnapshot(visibleHandPlayerIds = emptySet())
-        val current = FakeTableStateFactory.create(players = players.map { it.copy(score = it.score + 1) }).toSnapshot(visibleHandPlayerIds = emptySet())
+        val previous = FakeTableStateFactory.create(players = players).toSnapshot(visibleHandPlayerIds = emptySet(), setAsideTiles = { emptyList() })
+        val current = FakeTableStateFactory.create(players = players.map { it.copy(score = it.score + 1) }).toSnapshot(visibleHandPlayerIds = emptySet(), setAsideTiles = { emptyList() })
 
         val message = buildRoundResultChatMessage(
             action = GameAction.Tsumo,
@@ -238,7 +238,7 @@ class GameEventChatNotifierTest {
                     .copy(score = 25000, seatWind = Wind.SOUTH),
                 FakeMahjongPlayerFactory.create(id = westId, initialSeat = Wind.WEST).copy(score = 20000),
             ),
-        ).toSnapshot(visibleHandPlayerIds = emptySet())
+        ).toSnapshot(visibleHandPlayerIds = emptySet(), setAsideTiles = { emptyList() })
 
         val message = buildMatchResultChatMessage(
             action = GameAction.MatchEnded,
@@ -271,5 +271,5 @@ class GameEventChatNotifierTest {
         players = ids.zip(scores).map { (id, score) ->
             FakeMahjongPlayerFactory.create(id = id).copy(score = score)
         },
-    ).toSnapshot(visibleHandPlayerIds = emptySet())
+    ).toSnapshot(visibleHandPlayerIds = emptySet(), setAsideTiles = { emptyList() })
 }

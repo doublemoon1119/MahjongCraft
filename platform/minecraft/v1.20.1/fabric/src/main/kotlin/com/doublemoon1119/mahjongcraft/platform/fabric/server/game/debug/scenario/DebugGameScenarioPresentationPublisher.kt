@@ -78,6 +78,7 @@ class DebugGameScenarioPresentationPublisher(
                 standingTileIds = player.hand.tiles.map { tile -> tile.id },
                 drawnTileId = player.hand.lastDrawn?.id,
                 melds = player.hand.melds.map { meld -> meld.toPresentation(state.config.revealsClosedKanTiles, module.tileOrder) },
+                setAsideTileIds = module.setAsideTiles(player).map { tile -> tile.id },
             )
             publisher.publishDiscardPileUpdated(
                 gameId = game.id,

@@ -30,7 +30,7 @@ import kotlin.uuid.Uuid
  * @property declareTsumoUseCase 自摸宣告用例。
  * @property declareKanUseCase 暗槓/加槓宣告用例。
  * @property respondToDiscardUseCase 回應捨牌反應視窗用例。
- * @property respondToRobbingUseCase 回應搶槓反應視窗用例。
+ * @property respondToRobbingUseCase 回應搶和反應視窗用例。
  * @property declareAbortiveDrawUseCase 通用途中流局宣告用例。
  * @property extensionCommandExecutor 規則擴充命令的執行者。
  */

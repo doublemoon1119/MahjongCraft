@@ -333,7 +333,7 @@ class RiichiPositionRulesTest {
         player: MahjongPlayer,
         doraIndicators: List<Tile> = emptyList(),
     ): PositionView {
-        val snapshot = table.toSnapshot(visibleHandPlayerIds = setOf(player.id))
+        val snapshot = table.toSnapshot(visibleHandPlayerIds = setOf(player.id), setAsideTiles = { emptyList() })
         val withIndicators = if (doraIndicators.isEmpty()) {
             snapshot
         } else {

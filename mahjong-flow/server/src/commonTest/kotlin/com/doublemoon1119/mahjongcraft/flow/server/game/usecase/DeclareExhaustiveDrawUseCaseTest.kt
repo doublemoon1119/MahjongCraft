@@ -42,7 +42,7 @@ class DeclareExhaustiveDrawUseCaseTest {
         val gameRepo = FakeGameRepository()
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
         val snapshotRepo = FakeGameSnapshotRepository()
-        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl())
+        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(moduleRegistry))
         val eventPublisher = FakeGameEventPublisher()
         val useCase = DeclareExhaustiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher)
     }
@@ -223,8 +223,8 @@ class DeclareExhaustiveDrawUseCaseTest {
         val south = FakeMahjongPlayerFactory.create(id = southId, initialSeat = Wind.SOUTH, hand = notTenpaiHand())
         val table = FakeTableStateFactory.create(id = gameId, players = listOf(dealer, south), config = RiichiRuleConfig())
         fixtures.gameRepo.setTableState(table)
-        fixtures.snapshotRepo.setSnapshot(dealer.id, table.toSnapshot(setOf(dealer.id)))
-        fixtures.snapshotRepo.setSnapshot(southId, table.toSnapshot(setOf(southId)))
+        fixtures.snapshotRepo.setSnapshot(dealer.id, table.toSnapshot(setOf(dealer.id), setAsideTiles = { emptyList() }))
+        fixtures.snapshotRepo.setSnapshot(southId, table.toSnapshot(setOf(southId), setAsideTiles = { emptyList() }))
 
         fixtures.useCase(gameId)
 

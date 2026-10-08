@@ -45,7 +45,7 @@ class TableStateSnapshotTest {
             players = listOf(observer, other),
         )
 
-        val snapshot = table.toSnapshot(setOf(observerId))
+        val snapshot = table.toSnapshot(setOf(observerId), setAsideTiles = { emptyList() })
 
         val observerSnapshot = snapshot.players.find { it.id == observerId }!!
         val otherSnapshot = snapshot.players.find { it.id == otherId }!!
@@ -69,7 +69,7 @@ class TableStateSnapshotTest {
             currentPlayerIndex = 0,
         )
 
-        val snapshot = table.toSnapshot(setOf(player.id))
+        val snapshot = table.toSnapshot(setOf(player.id), setAsideTiles = { emptyList() })
 
         assertEquals(Wind.SOUTH, snapshot.prevalentWind)
         assertEquals(3, snapshot.roundNumber)
@@ -93,7 +93,7 @@ class TableStateSnapshotTest {
             config = config,
         )
 
-        val snapshot = table.toSnapshot(setOf(player.id))
+        val snapshot = table.toSnapshot(setOf(player.id), setAsideTiles = { emptyList() })
 
         assertEquals(config, snapshot.config)
         assertEquals(16, snapshot.config.initialHandSize)
@@ -111,7 +111,7 @@ class TableStateSnapshotTest {
             dynamicRuleState = null,
         )
 
-        val snapshot = table.toSnapshot(setOf(player.id))
+        val snapshot = table.toSnapshot(setOf(player.id), setAsideTiles = { emptyList() })
 
         assertNull(snapshot.dynamicRuleState)
     }
@@ -128,7 +128,7 @@ class TableStateSnapshotTest {
             dynamicRuleState = dynamicState,
         )
 
-        val snapshot = table.toSnapshot(setOf(player.id))
+        val snapshot = table.toSnapshot(setOf(player.id), setAsideTiles = { emptyList() })
 
         assertEquals(dynamicState, snapshot.dynamicRuleState)
     }
@@ -145,7 +145,7 @@ class TableStateSnapshotTest {
             players = listOf(player),
         )
 
-        val snapshot = table.toSnapshot(setOf(player.id))
+        val snapshot = table.toSnapshot(setOf(player.id), setAsideTiles = { emptyList() })
 
         assertEquals(tableId, snapshot.id)
     }
@@ -163,8 +163,34 @@ class TableStateSnapshotTest {
             finishedPlayerIds = setOf(finishedPlayer.id),
         )
 
-        val snapshot = table.toSnapshot(setOf(finishedPlayer.id, activePlayer.id))
+        val snapshot = table.toSnapshot(setOf(finishedPlayer.id, activePlayer.id), setAsideTiles = { emptyList() })
 
         assertEquals(setOf(finishedPlayer.id), snapshot.finishedPlayerIds)
+    }
+
+    /** 已公開的牌只要還在手牌中，其他觀察者也看得到；已經離開手牌的不列入，其他手牌照舊隱藏。 */
+    @Test
+    fun `revealed hand tiles lists revealed tiles still held in hands`() {
+        val revealed = FakeIdentifiedTileFactory.create(Tile.Honor.North)
+        val hidden = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
+        val alreadyPlaced = Uuid.random()
+        val declarer = FakeMahjongPlayerFactory.create(hand = Hand(tiles = listOf(hidden), lastDrawn = revealed))
+        val observer = FakeMahjongPlayerFactory.create()
+        val table = FakeTableStateFactory.create(players = listOf(declarer, observer))
+            .copy(revealedHandTileIds = setOf(revealed.id, alreadyPlaced))
+
+        val snapshot = table.toSnapshot(setOf(observer.id), setAsideTiles = { emptyList() })
+
+        assertEquals(listOf(revealed), snapshot.revealedHandTiles)
+        assertNull(snapshot.players.first { it.id == declarer.id }.hand.standingTiles.first { it.id == hidden.id }.tile)
+    }
+
+    /** 沒有公開的手牌時不列出任何牌。 */
+    @Test
+    fun `no revealed hand tiles lists nothing`() {
+        val snapshot = FakeTableStateFactory.create(players = listOf(FakeMahjongPlayerFactory.create()))
+            .toSnapshot(emptySet(), setAsideTiles = { emptyList() })
+
+        assertEquals(emptyList(), snapshot.revealedHandTiles)
     }
 }

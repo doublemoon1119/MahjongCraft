@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiScoreConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanGameLength
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanScoreConfig
@@ -46,6 +47,21 @@ enum class RiichiGameLengthPersistenceDto {
 /** [RiichiRuleConfig] 的完整 persistence DTO。 */
 @Serializable
 data class RiichiRuleConfigPersistenceDto(
+    val redDoraCount: Int,
+    val allowOpenTanyao: Boolean,
+    val useLocalYaku: Boolean,
+    val minimumWinConstraint: Int,
+    val initialScore: Int,
+    val bustThreshold: Int?,
+    val minPointsToWin: Int,
+    val notenPenaltyUnit: Int,
+    val gameLength: RiichiGameLengthPersistenceDto,
+    val multiRonPolicy: MultiRonPolicyPersistenceDto,
+)
+
+/** [ThreePlayerRiichiRuleConfig] 的完整 persistence DTO。 */
+@Serializable
+data class ThreePlayerRiichiRuleConfigPersistenceDto(
     val redDoraCount: Int,
     val allowOpenTanyao: Boolean,
     val useLocalYaku: Boolean,
@@ -103,6 +119,31 @@ fun RiichiRuleConfig.toPersistenceDto(): RiichiRuleConfigPersistenceDto = Riichi
 
 /** 將日麻規則 persistence DTO 還原成領域配置。 */
 fun RiichiRuleConfigPersistenceDto.toDomain(): RiichiRuleConfig = RiichiRuleConfig(
+    redDoraCount = redDoraCount,
+    allowOpenTanyao = allowOpenTanyao,
+    useLocalYaku = useLocalYaku,
+    minimumWinConstraint = minimumWinConstraint,
+    scoreConfig = RiichiScoreConfig(initialScore, bustThreshold, minPointsToWin, notenPenaltyUnit),
+    gameLength = gameLength.toDomain(),
+    multiRonPolicy = multiRonPolicy.toDomain(),
+)
+
+/** 將三人日麻規則配置轉換成 persistence DTO。 */
+fun ThreePlayerRiichiRuleConfig.toPersistenceDto(): ThreePlayerRiichiRuleConfigPersistenceDto = ThreePlayerRiichiRuleConfigPersistenceDto(
+    redDoraCount = redDoraCount,
+    allowOpenTanyao = allowOpenTanyao,
+    useLocalYaku = useLocalYaku,
+    minimumWinConstraint = minimumWinConstraint,
+    initialScore = scoreConfig.initialScore,
+    bustThreshold = scoreConfig.bustThreshold,
+    minPointsToWin = scoreConfig.minPointsToWin,
+    notenPenaltyUnit = scoreConfig.notenPenaltyUnit,
+    gameLength = gameLength.toPersistenceDto(),
+    multiRonPolicy = multiRonPolicy.toPersistenceDto(),
+)
+
+/** 將三人日麻規則 persistence DTO 還原成領域配置。 */
+fun ThreePlayerRiichiRuleConfigPersistenceDto.toDomain(): ThreePlayerRiichiRuleConfig = ThreePlayerRiichiRuleConfig(
     redDoraCount = redDoraCount,
     allowOpenTanyao = allowOpenTanyao,
     useLocalYaku = useLocalYaku,

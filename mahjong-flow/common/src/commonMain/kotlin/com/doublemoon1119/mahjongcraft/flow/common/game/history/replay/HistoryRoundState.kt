@@ -21,7 +21,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.Wind
  * @property finishedPlayerSeats 已完成玩家座位。
  * @property dynamicRuleState 規則公開資訊。
  * @property hasPendingReaction 是否仍有待處理的捨牌反應，不包含可執行命令。
- * @property hasPendingRobbingReaction 是否仍有待處理的槓牌反應，不包含可執行命令。
+ * @property hasPendingRobbingReaction 是否仍有待處理的搶和反應，不包含可執行命令。
  * @property outcome 結算結果。
  */
 data class HistoryRoundState(
@@ -53,6 +53,7 @@ data class HistoryRoundState(
  * @property score 分數。
  * @property seatWind 保存的座風。
  * @property playerRuleState 規則公開資訊。
+ * @property setAsideTiles 移出手牌、公開擺在桌上的牌（例如三人日麻拔出的北），依移出順序排列；沒有時為空清單。
  */
 data class HistoryReplayPlayerState(
     val initialSeatIndex: Int,
@@ -63,6 +64,7 @@ data class HistoryReplayPlayerState(
     val score: Int,
     val seatWind: Wind,
     val playerRuleState: HistoryReplayRuleInformation?,
+    val setAsideTiles: List<HistoryTileReference>,
 )
 
 /** 歷史副露。

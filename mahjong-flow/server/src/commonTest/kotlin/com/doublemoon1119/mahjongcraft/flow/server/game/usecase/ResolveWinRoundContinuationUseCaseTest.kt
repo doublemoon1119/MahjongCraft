@@ -33,7 +33,7 @@ class ResolveWinRoundContinuationUseCaseTest {
     private val gameId = Uuid.random()
     private val gameRepo = FakeGameRepository()
     private val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
-    private val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, FakeGameSnapshotRepository(), GameVisibilityPolicyImpl())
+    private val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, FakeGameSnapshotRepository(), GameVisibilityPolicyImpl(moduleRegistry))
     private val ruleModuleId = moduleRegistry.getModule(RiichiRuleConfig()).id
 
     /** 未替該規則模組登記任何 resolver 時，回傳 EndRound 且完全不修改已結算的桌況。 */

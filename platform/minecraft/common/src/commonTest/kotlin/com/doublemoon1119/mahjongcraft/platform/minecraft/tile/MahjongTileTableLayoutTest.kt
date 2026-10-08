@@ -56,6 +56,68 @@ class MahjongTileTableLayoutTest {
         }
     }
 
+    /**
+     * 三面牌牆（三人對局）的第 `side` 面擺在座位 `莊家 - side` 面前，跟四面牌牆中同一個座位面前的那一面位置相同；
+     * 空座位那一側沒有牌牆。
+     */
+    @Test
+    fun `three sided wall sits in front of the three seated players`() {
+        (0 until THREE_PLAYER_SIDE_COUNT).forEach { dealer ->
+            (0 until THREE_PLAYER_SIDE_COUNT).forEach { side ->
+                val seat = (dealer - side).mod(THREE_PLAYER_SIDE_COUNT)
+                val fourSidedSide = (dealer - seat).mod(SIDE_COUNT)
+                val position = TileWallPosition(side = side, stack = 3, layer = 0)
+                val threeSided = wallPlacement(
+                    dealerSeatIndex = dealer,
+                    position = position,
+                    stacksPerSide = THREE_PLAYER_STACKS_PER_SIDE,
+                    sideCount = THREE_PLAYER_SIDE_COUNT,
+                )
+                val fourSided = wallPlacement(
+                    dealerSeatIndex = dealer,
+                    position = position.copy(side = fourSidedSide),
+                    stacksPerSide = THREE_PLAYER_STACKS_PER_SIDE,
+                )
+                assertEquals(fourSided, threeSided, "dealer=$dealer side=$side")
+            }
+        }
+    }
+
+    /** 三面牌牆每面 18 墩時，任兩張牌的 footprint 都不重疊。 */
+    @Test
+    fun `three sided wall tiles do not overlap`() {
+        val footprints = (0 until THREE_PLAYER_SIDE_COUNT).flatMap { side ->
+            (0 until THREE_PLAYER_STACKS_PER_SIDE).map { stack ->
+                wallPlacement(
+                    position = TileWallPosition(side = side, stack = stack, layer = 0),
+                    stacksPerSide = THREE_PLAYER_STACKS_PER_SIDE,
+                    sideCount = THREE_PLAYER_SIDE_COUNT,
+                ).toFootprint()
+            }
+        }
+
+        for (i in footprints.indices) {
+            for (j in i + 1 until footprints.size) {
+                assertFalse(footprints[i].overlaps(footprints[j]), "Tile footprints $i and $j overlap")
+            }
+        }
+    }
+
+    /** 移出手牌的牌接在副露之後，寬度與副露同一套算法；有副露時多隔一個組間縫隙。 */
+    @Test
+    fun `set aside tiles extend the corner area`() {
+        val tileStep = MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING
+        val meld = MahjongMeldTileGroup(MeldType.PON, List(3) { Uuid.random() }, null, RelativeDirection.Self, false)
+
+        assertEquals(2 * tileStep, MahjongTileTableLayout.cornerAreaWidth(0.0, emptyList(), setAsideTileCount = 2), ABSOLUTE_TOLERANCE)
+        assertEquals(
+            MahjongTileTableLayout.cornerAreaWidth(0.0, listOf(meld)) + MahjongTileTableLayout.MELD_GROUP_GAP + tileStep,
+            MahjongTileTableLayout.cornerAreaWidth(0.0, listOf(meld), setAsideTileCount = 1),
+            ABSOLUTE_TOLERANCE,
+        )
+        assertEquals(0.3, MahjongTileTableLayout.cornerAreaWidth(0.3, emptyList(), setAsideTileCount = 0), ABSOLUTE_TOLERANCE)
+    }
+
     /** 上層應比下層高出一個牌深，水平位置不變。 */
     @Test
     fun `upper layer sits one tile depth above lower layer`() {
@@ -573,13 +635,16 @@ class MahjongTileTableLayoutTest {
         dealerSeatIndex: Int = 0,
         position: TileWallPosition = TileWallPosition(side = 0, stack = 0, layer = 0),
         placement: TileWallPlacement = TileWallPlacement(position),
+        stacksPerSide: Int = STACKS_PER_SIDE,
+        sideCount: Int = SIDE_COUNT,
     ): MahjongTileWallPlacement = MahjongTileTableLayout.wallPlacement(
         controllerX = 10,
         controllerY = 64,
         controllerZ = -4,
         tableFacing = tableFacing,
         dealerSeatIndex = dealerSeatIndex,
-        stacksPerSide = STACKS_PER_SIDE,
+        stacksPerSide = stacksPerSide,
+        sideCount = sideCount,
         placement = placement,
     )
 
@@ -688,6 +753,8 @@ class MahjongTileTableLayoutTest {
     private companion object {
         const val STACKS_PER_SIDE: Int = 17
         const val SIDE_COUNT: Int = 4
+        const val THREE_PLAYER_SIDE_COUNT: Int = 3
+        const val THREE_PLAYER_STACKS_PER_SIDE: Int = 18
         const val HAND_SIZE: Int = 13
         const val CONTROLLER_CENTER_X: Double = 10.5
         const val CONTROLLER_CENTER_Z: Double = -3.5

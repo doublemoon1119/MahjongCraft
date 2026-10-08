@@ -9,13 +9,10 @@ import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInAutomaticControlIds
-import com.doublemoon1119.mahjongcraft.logic.module.BuiltInPaymentReasonIds
 import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResult
-import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.PublicPlayerIndicator
 import com.doublemoon1119.mahjongcraft.logic.module.RevealedHandSettlement
 import com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult
-import com.doublemoon1119.mahjongcraft.logic.module.WinSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.layout.RiichiPhysicalWallLayoutPolicy
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.layout.RiichiWallLayout
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.opening.RiichiWallOpeningPolicy
@@ -29,8 +26,6 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.WallRevealPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutPolicy
 import com.doublemoon1119.mahjongcraft.logic.tile.TileInterpretationPolicy
-import com.doublemoon1119.mahjongcraft.logic.util.isHonor
-import com.doublemoon1119.mahjongcraft.logic.util.isTerminal
 import com.doublemoon1119.mahjongcraft.logic.util.isWind
 import kotlin.uuid.Uuid
 
@@ -42,7 +37,7 @@ import kotlin.uuid.Uuid
 class RiichiRuleModule(
     override val id: String,
     override val config: RiichiRuleConfig,
-) : MahjongRuleModule<RiichiRuleConfig> {
+) : RiichiFamilyRuleModule<RiichiRuleConfig> {
     /** 四人日本麻將支援的本局自動操作控制。 */
     override fun getSupportedAutomaticControlIds(): Set<String> = setOf(
         BuiltInAutomaticControlIds.AUTO_WIN,
@@ -76,7 +71,7 @@ class RiichiRuleModule(
     override fun createWallLayout(): RiichiWallLayout = RiichiWallLayout(config)
 
     /** 建立日本麻將獨立王牌區與槓後補位所使用的抽象實體布局 policy。 */
-    override fun createPhysicalWallLayoutPolicy(): PhysicalWallLayoutPolicy = RiichiPhysicalWallLayoutPolicy
+    override fun createPhysicalWallLayoutPolicy(): PhysicalWallLayoutPolicy = RiichiPhysicalWallLayoutPolicy(rinshanTileCount = config.rinshanTileCount)
 
     /** 建立將日麻赤五解讀為普通五的牌面 policy。 */
     override fun createTileInterpretationPolicy(): TileInterpretationPolicy = RiichiTileInterpretationPolicy
@@ -233,42 +228,7 @@ class RiichiRuleModule(
             ),
         )
         val result = createHandValueCalculator().calculate(context)
-
-        var paymentReasons: Map<Uuid, String> = emptyMap()
-        val payments: Map<Uuid, Int> = when (val pointResult = result.pointResult) {
-            is RiichiPointResult.DealerTsumo ->
-                tableState.players
-                    .filter { it.id != player.id }
-                    .associate { it.id to pointResult.paymentPerNonDealer }
-
-            is RiichiPointResult.NonDealerTsumo -> {
-                val dealerId = tableState.dealerPlayerId
-                tableState.players
-                    .filter { it.id != player.id }
-                    .associate { it.id to if (it.id == dealerId) pointResult.dealerPayment else pointResult.otherNonDealerPayment }
-            }
-
-            is RiichiPointResult.PaoTsumo -> {
-                // 理論上不會發生：RiichiHandValueCalculator 只在 paoLiability 非 null 時才會回傳 PaoTsumo。
-                val paoLiability = result.paoLiability ?: return null
-                val paoPlayerId = tableState.riichiPaoPlayerId(player.id, paoLiability)
-                paymentReasons = mapOf(paoPlayerId to BuiltInPaymentReasonIds.PAO)
-                mergeTsumoRemainder(tableState, player.id, mapOf(paoPlayerId to pointResult.paoPayment), pointResult.remainder)
-            }
-
-            // Ron / PaoRon 理論上不會出現在 isTsumo = true 的計算結果中。若真的發生，視為此規則
-            // 無法對這次自摸完成結算，回傳 null 讓呼叫端以 IllegalAction 處理，而非產生錯誤的結算。
-            is RiichiPointResult.Ron, is RiichiPointResult.PaoRon -> return null
-        }
-
-        return WinResolutionResult(
-            settlement = WinSettlementResult(
-                totalGained = result.totalPoint,
-                paymentsByPlayerId = payments,
-                paymentReasonIdsByPlayerId = paymentReasons,
-            ),
-            handValueResult = result,
-        )
+        return riichiTsumoResolution(tableState, player.id, result, isTsumoLoss = false)
     }
 
     /**
@@ -297,81 +257,7 @@ class RiichiRuleModule(
             ),
         )
         val result = createHandValueCalculator().calculate(context)
-
-        var paymentReasons: Map<Uuid, String> = emptyMap()
-        val payments: Map<Uuid, Int> = when (val pointResult = result.pointResult) {
-            is RiichiPointResult.Ron -> mapOf(discarderId to pointResult.total)
-
-            is RiichiPointResult.PaoRon -> {
-                // 理論上不會發生：RiichiHandValueCalculator 只在 paoLiability 非 null 時才會回傳 PaoRon。
-                val paoLiability = result.paoLiability ?: return null
-                val paoPlayerId = tableState.riichiPaoPlayerId(player.id, paoLiability)
-                // 包牌責任者剛好就是放銃者本人時，兩份「一半」其實是同一個人要付，直接歸戶成一筆
-                // 全額，避免兩筆同 key 的付款在合併時互相覆蓋掉一半金額。
-                paymentReasons = mapOf(paoPlayerId to BuiltInPaymentReasonIds.PAO)
-                val paoPayments = if (paoPlayerId == discarderId) {
-                    mapOf(discarderId to pointResult.paymentEach * 2)
-                } else {
-                    mapOf(discarderId to pointResult.paymentEach, paoPlayerId to pointResult.paymentEach)
-                }
-                mergeRonRemainder(discarderId, paoPayments, pointResult.remainder)
-            }
-
-            // DealerTsumo/NonDealerTsumo/PaoTsumo 理論上不會出現在 isTsumo = false 的計算結果中。
-            // 若真的發生，視為此規則無法對這次榮和完成結算，回傳 null 讓呼叫端以 IllegalAction 處理，
-            // 而非產生錯誤的結算。
-            is RiichiPointResult.DealerTsumo, is RiichiPointResult.NonDealerTsumo, is RiichiPointResult.PaoTsumo -> return null
-        }
-
-        return WinResolutionResult(
-            settlement = WinSettlementResult(
-                totalGained = result.totalPoint,
-                paymentsByPlayerId = payments,
-                paymentReasonIdsByPlayerId = paymentReasons,
-            ),
-            handValueResult = result,
-        )
-    }
-
-    /**
-     * 把包牌疊加役滿時的 [remainder]（正常自摸結算部分）疊加進 [basePayments]（包牌部分的付款），
-     * 同一位玩家同時是兩種付款人時金額相加，不互相覆蓋。[remainder] 為 null（沒有疊加役滿）時原樣
-     * 回傳 [basePayments]。
-     */
-    private fun mergeTsumoRemainder(
-        tableState: TableState,
-        winnerId: Uuid,
-        basePayments: Map<Uuid, Int>,
-        remainder: RiichiPointResult?,
-    ): Map<Uuid, Int> {
-        val remainderPayments: Map<Uuid, Int> = when (remainder) {
-            null -> return basePayments
-            is RiichiPointResult.DealerTsumo ->
-                tableState.players.filter { it.id != winnerId }.associate { it.id to remainder.paymentPerNonDealer }
-            is RiichiPointResult.NonDealerTsumo -> {
-                val dealerId = tableState.dealerPlayerId
-                tableState.players.filter { it.id != winnerId }
-                    .associate { it.id to if (it.id == dealerId) remainder.dealerPayment else remainder.otherNonDealerPayment }
-            }
-            // buildPaoPointResult 的 remainder 在自摸情境下一律經由 buildPointResult(isTsumo = true)
-            // 產生，只會是 DealerTsumo/NonDealerTsumo，僅作防呆。
-            is RiichiPointResult.Ron, is RiichiPointResult.PaoTsumo, is RiichiPointResult.PaoRon -> return basePayments
-        }
-        return (basePayments.keys + remainderPayments.keys).associateWith { id ->
-            (basePayments[id] ?: 0) + (remainderPayments[id] ?: 0)
-        }
-    }
-
-    /**
-     * 把包牌疊加役滿時的 [remainder]（正常榮和結算部分，恆由 [discarderId] 全額支付）疊加進
-     * [basePayments]（包牌部分的付款），同一位玩家同時是兩種付款人時金額相加，不互相覆蓋。
-     * [remainder] 為 null（沒有疊加役滿）時原樣回傳 [basePayments]。
-     */
-    private fun mergeRonRemainder(discarderId: Uuid, basePayments: Map<Uuid, Int>, remainder: RiichiPointResult?): Map<Uuid, Int> {
-        // buildPaoPointResult 的 remainder 在榮和情境下一律經由 buildPointResult(isTsumo = false)
-        // 產生，只會是 Ron，僅作防呆。
-        val remainderAmount = (remainder as? RiichiPointResult.Ron)?.total ?: return basePayments
-        return basePayments + (discarderId to (basePayments[discarderId] ?: 0) + remainderAmount)
+        return riichiRonResolution(tableState, player.id, discarderId, result)
     }
 
     /**
@@ -406,28 +292,13 @@ class RiichiRuleModule(
     /**
      * 計算一般流局（牌山摸盡）的點數結算：聽牌判定（[ShantenResult] 非 [ShantenResult.NotTenpai]
      * 皆視為聽牌，`Complete` 理論上不會在流局判定時出現，僅作寬鬆處理），並依
-     * [buildNotenPenaltyDeltas] 計算不聽罰符。流局滿貫已由 [resolveNagashiMangan] 在普通流局之前判定。
+     * [riichiExhaustiveDrawSettlement] 計算不聽罰符。流局滿貫已由 [resolveNagashiMangan] 在普通流局之前判定。
      *
      * 只計入 [TableState.activePlayers]：本局已經胡牌退場的玩家（見 [TableState.finishedPlayerIds]）
      * 手牌早已收起、也不再摸打，既不該被判聽牌／不聽，也不該收付不聽罰符。沒有玩家中途退場時，
      * [TableState.activePlayers] 就是全體玩家。
      */
-    override fun declareExhaustiveDraw(tableState: TableState): ExhaustiveDrawSettlementResult {
-        val shantenCalculator = createShantenCalculator()
-        val shantenByPlayer = tableState.activePlayers.associateWith { shantenCalculator.calculate(it.hand) }
-        val tenpaiIds = shantenByPlayer.filterValues { it !is ShantenResult.NotTenpai }.keys.map { it.id }.toSet()
-
-        return ExhaustiveDrawSettlementResult(
-            reason = RiichiExhaustiveDrawReason.Normal,
-            tenpaiPlayerIds = tenpaiIds,
-            revealedHands = shantenByPlayer.mapNotNull { (player, result) ->
-                val waits = (result as? ShantenResult.Tenpai)?.winningTiles ?: return@mapNotNull null
-                RevealedHandSettlement(player.id, waits.toSet())
-            },
-            stickPotCollectorPlayerIds = emptySet(),
-            scoreDeltas = buildNotenPenaltyDeltas(tableState, tenpaiIds),
-        )
-    }
+    override fun declareExhaustiveDraw(tableState: TableState): ExhaustiveDrawSettlementResult = riichiExhaustiveDrawSettlement(tableState, createShantenCalculator(), config.scoreConfig.notenPenaltyUnit)
 
     /**
      * 判定流局滿貫並計算自摸滿貫式收支；沒有任何人成立時回傳 `null`。
@@ -437,89 +308,14 @@ class RiichiRuleModule(
      * 只計入 [TableState.activePlayers]：本局已胡牌退場的玩家不再參與流局計算，其牌河也不該成立
      * 流局滿貫。
      */
-    fun resolveNagashiMangan(tableState: TableState): NagashiManganResolution? {
-        val achieverIds = tableState.activePlayers
-            .filter { player ->
-                player.discardPile.entries.isNotEmpty() &&
-                    player.discardPile.entries.all { entry ->
-                        !entry.isTaken && (entry.tile.tile.isTerminal || entry.tile.tile.isHonor)
-                    }
-            }
-            .mapTo(linkedSetOf()) { it.id }
-        if (achieverIds.isEmpty()) return null
-        return NagashiManganResolution(achieverIds, buildNagashiManganDeltas(tableState, achieverIds))
-    }
+    override fun resolveNagashiMangan(tableState: TableState): NagashiManganResolution? = riichiNagashiMangan(tableState)
 
     /** 九種九牌需要公開宣告者手牌作為成立證明，其餘途中流局不公開手牌。 */
     override fun resolveAbortiveDrawRevealedHands(
         tableState: TableState,
         declarerId: Uuid?,
         reason: ExhaustiveDrawReason,
-    ): List<RevealedHandSettlement> {
-        if (reason != RiichiExhaustiveDrawReason.KyuushuKyuuhai || declarerId == null) return emptyList()
-        if (tableState.players.none { it.id == declarerId }) return emptyList()
-        return listOf(RevealedHandSettlement(declarerId, emptySet()))
-    }
-
-    /**
-     * 流局滿貫視為自摸滿貫，重用既有的 [PointCalculator.calculateNonYakumanPoint]（`han = 5`
-     * 固定走滿貫的 `basicPoint = 2000` 分支，`fu` 不影響結果），依莊/閒身分換算成付款 map；
-     * 多位成立者時（罕見邊界情況）比照多家和的既有作法，把各自的付款加總到同一份 `scoreDeltas`
-     * （同一位玩家可能同時是多位成立者的付款對象）。
-     *
-     * 付款者只取 [TableState.activePlayers]：本局已胡牌退場的玩家不再參與流局計算。莊家身分仍由座風
-     * 判定（座位不會因退場而消失），只是莊家若已退場就不在付款者之列。回傳的 map 仍涵蓋全部玩家，
-     * 退場者的差額為 0。
-     */
-    private fun buildNagashiManganDeltas(tableState: TableState, nagashiManganIds: Set<Uuid>): Map<Uuid, Int> {
-        val deltas = tableState.players.associate { it.id to 0 }.toMutableMap()
-        nagashiManganIds.forEach { achieverId ->
-            val achiever = tableState.players.first { it.id == achieverId }
-            val isDealer = tableState.isDealer(achiever.id)
-            val pointResult = PointCalculator.calculateNonYakumanPoint(han = 5, fu = 0, isDealer = isDealer, isTsumo = true)
-            val payments: Map<Uuid, Int> = when (pointResult) {
-                is RiichiPointResult.DealerTsumo ->
-                    tableState.activePlayers
-                        .filter { it.id != achieverId }
-                        .associate { it.id to pointResult.paymentPerNonDealer }
-
-                is RiichiPointResult.NonDealerTsumo -> {
-                    val dealerId = tableState.dealerPlayerId
-                    tableState.activePlayers
-                        .filter { it.id != achieverId }
-                        .associate { it.id to if (it.id == dealerId) pointResult.dealerPayment else pointResult.otherNonDealerPayment }
-                }
-
-                // calculateNonYakumanPoint(isTsumo = true) 理論上只會回傳上述兩種結果，僅作防呆。
-                is RiichiPointResult.Ron, is RiichiPointResult.PaoTsumo, is RiichiPointResult.PaoRon -> emptyMap()
-            }
-
-            deltas[achieverId] = (deltas[achieverId] ?: 0) + payments.values.sum()
-            payments.forEach { (payerId, amount) -> deltas[payerId] = (deltas[payerId] ?: 0) - amount }
-        }
-        return deltas
-    }
-
-    /**
-     * 不聽罰符：總額為「[RiichiScoreConfig.notenPenaltyUnit] * (對局人數 - 1)」（四人對局標準值
-     * 3000），由聽牌者均分收取、不聽者均分支付（皆為淨額，不需要逐筆算聽牌者與不聽者之間的
-     * 個別配對金額）。無人聽牌、全員聽牌、或（理論上不會發生的）無人不聽時，回傳空 map
-     * （沒有任何點數交換）。
-     *
-     * 本局已胡牌退場的玩家完全不參與：既不列入聽牌／不聽，總額也改以**仍在局中的人數**計算。
-     * 沒有玩家中途退場時，仍在局中的人數就是對局人數。
-     */
-    private fun buildNotenPenaltyDeltas(tableState: TableState, tenpaiIds: Set<Uuid>): Map<Uuid, Int> {
-        val activeCount = tableState.activePlayers.size
-        val notenIds = tableState.activePlayers.map { it.id }.toSet() - tenpaiIds
-        if (tenpaiIds.isEmpty() || notenIds.isEmpty()) return emptyMap()
-
-        val total = config.scoreConfig.notenPenaltyUnit * (activeCount - 1)
-        val gainPerTenpai = total / tenpaiIds.size
-        val lossPerNoten = total / notenIds.size
-
-        return tenpaiIds.associateWith { gainPerTenpai } + notenIds.associateWith { -lossPerNoten }
-    }
+    ): List<RevealedHandSettlement> = riichiAbortiveDrawRevealedHands(tableState, declarerId, reason)
 
     /**
      * 多家和判定為流局時，日本麻將對應的具體流局原因固定為三家和了。
@@ -556,18 +352,7 @@ class RiichiRuleModule(
      * 達到 4 個（含）以上時，若其中有一位玩家的槓子數就等於全場總數，代表全部槓子都是他一人
      * 達成（該玩家可能正在做四槓子役滿），此時不成立。
      */
-    fun resolveSuukanNagare(tableState: TableState): ExhaustiveDrawReason? {
-        val kanCountsByPlayer = tableState.players.map { player ->
-            player.hand.exposedMelds.count {
-                it.type == MeldType.OPEN_KAN || it.type == MeldType.ADDED_KAN || it.type == MeldType.CLOSED_KAN
-            }
-        }
-        val totalKans = kanCountsByPlayer.sum()
-        if (totalKans < 4) return null
-
-        val isSinglePlayerAllKans = kanCountsByPlayer.any { it == totalKans }
-        return if (isSinglePlayerAllKans) null else RiichiExhaustiveDrawReason.SuukanNagare
-    }
+    override fun resolveSuukanNagare(tableState: TableState): ExhaustiveDrawReason? = riichiSuukanNagare(tableState)
 
     /**
      * 日本麻將的加值牌是寶牌：赤寶牌（[RiichiTileInterpretationPolicy.isRedDora]，跟指示牌

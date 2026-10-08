@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
-import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
 import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.config.validate
@@ -8,7 +7,7 @@ import com.doublemoon1119.mahjongcraft.logic.config.validate
 /**
  * 日本麻將（Riichi Mahjong）特有的規則配置介面。
  *
- * 繼承自 [MahjongRuleConfig] 並增加與日麻計分和道具相關的參數。
+ * 實作 [RiichiFamilyRuleConfig]，並固定四人對局的牌組與人數。
  *
  * 本模組未直接對應到欄位的規則判定（例如包牌等結算規則），
  * 以 [M League 公式競技規則](https://m-league.jp/about/) 為準。
@@ -28,9 +27,9 @@ import com.doublemoon1119.mahjongcraft.logic.config.validate
  * @property revealsClosedKanTiles 暗槓身份是否公開，恆為 true。
  */
 data class RiichiRuleConfig(
-    val redDoraCount: Int = 3,
-    val allowOpenTanyao: Boolean = true,
-    val useLocalYaku: Boolean = false,
+    override val redDoraCount: Int = 3,
+    override val allowOpenTanyao: Boolean = true,
+    override val useLocalYaku: Boolean = false,
     override val minimumWinConstraint: Int = 1,
     override val scoreConfig: RiichiScoreConfig = RiichiScoreConfig(),
     override val gameLength: RiichiGameLength = RiichiGameLength.OneGame,
@@ -38,12 +37,14 @@ data class RiichiRuleConfig(
         doubleRonResolution = RonResolution.ALL_WINNERS,
         tripleRonResolution = RonResolution.ALL_WINNERS,
     ),
-) : MahjongRuleConfig {
+) : RiichiFamilyRuleConfig {
     override val initialHandSize: Int = 13
     override val deadTileCount: Int = 14
     override val minPlayers: Int = 4
     override val maxPlayers: Int = 4
     override val revealsClosedKanTiles: Boolean = true
+    override val usesThreePlayerTiles: Boolean = false
+    override val rinshanTileCount: Int = 4
 
     init {
         validate()

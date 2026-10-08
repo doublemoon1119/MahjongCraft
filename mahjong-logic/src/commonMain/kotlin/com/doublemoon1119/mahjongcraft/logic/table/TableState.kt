@@ -27,7 +27,7 @@ import kotlin.uuid.Uuid
  * @property currentPlayerIndex 目前輪到執行動作的玩家索引。
  * @property dynamicRuleState 規則特有的動態狀態實體（如日麻的立直棒、供託）。
  * @property pendingReaction 目前尚待其他玩家回應（吃/碰/槓/過）的捨牌反應視窗，若無則為 null。
- * @property pendingRobbingReaction 目前尚待其他玩家回應（搶槓/過）的暗槓/加槓反應視窗，若無則為 null。
+ * @property pendingRobbingReaction 目前尚待其他玩家回應（搶和/過）的暗槓/加槓或移出手牌動作反應視窗，若無則為 null。
  * @property wallOpening 本局權威擲骰決定的牌牆開門位置；規則尚未支援開門流程時為 null。
  * @property initialDeadWall 目前權威規則保留牌。舊名稱為既有建構與 mapping 相容性而保留；通用程式
  * 應改讀 [reservedWallTiles]，不得由此名稱推定其他規則必須形成日麻式獨立王牌區。
@@ -36,6 +36,8 @@ import kotlin.uuid.Uuid
  * 「胡牌後本局可能不結束」的擴充（如持續胡牌局）；核心規則預設不會寫入這個集合，因此對現有
  * 規則永遠是空集合、行為不變。座位、分數、快照仍保留這些玩家；見 [isPlayerActive]、[activePlayers]、
  * [nextActivePlayerAfter]。
+ * @property revealedHandTileIds 本局已經公開、但可能仍留在手牌中的牌：宣告暗槓、加槓或移出手牌的動作而開啟搶和反應
+ * 視窗時，宣告擺出的牌就此公開；被搶和時宣告不成立，這些牌留在宣告者手上但仍是公開的。每局重新開始時為空集合。
  */
 data class TableState(
     val id: Uuid,
@@ -59,6 +61,7 @@ data class TableState(
     val initialDeadWall: List<IdentifiedTile> = emptyList(),
     val physicalWallLayout: TileWallPhysicalLayout? = null,
     val finishedPlayerIds: Set<Uuid> = emptySet(),
+    val revealedHandTileIds: Set<Uuid> = emptySet(),
 ) {
     /**
      * 目前不由一般 [tileWall] 摸牌流程取得、改由規則解讀用途與順序的保留牌。

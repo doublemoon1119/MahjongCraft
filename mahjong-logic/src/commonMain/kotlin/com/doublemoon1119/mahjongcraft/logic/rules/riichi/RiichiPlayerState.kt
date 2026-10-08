@@ -23,6 +23,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
  * 清空而恢復，這位玩家之後整局都不能榮和，只能自摸。由
  * [MahjongRuleModule.onPlayerDeclinedWin] 設定為 `true`，本局結束由
  * [RiichiRuleModule.createInitialPlayerRuleState] 自然重置。
+ * @property nukiDoraTiles 三人麻將中本局拔出的北，依拔出順序排列；不是捨牌，不構成振聽。
  */
 data class RiichiPlayerState(
     val riichiTile: IdentifiedTile? = null,
@@ -30,6 +31,7 @@ data class RiichiPlayerState(
     val isIppatsu: Boolean = false,
     val paoLiability: PaoLiability? = null,
     val isPermanentlyFuriten: Boolean = false,
+    val nukiDoraTiles: List<IdentifiedTile> = emptyList(),
 ) : PlayerRuleState {
 
     /**

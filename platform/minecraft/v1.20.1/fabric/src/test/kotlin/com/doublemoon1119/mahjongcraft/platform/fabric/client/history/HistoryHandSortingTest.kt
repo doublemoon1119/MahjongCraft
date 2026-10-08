@@ -86,6 +86,7 @@ class HistoryHandSortingTest {
         score = 25000,
         seatWind = WindDto.EAST,
         playerRuleState = null,
+        setAsideTiles = emptyList(),
     )
 
     /**

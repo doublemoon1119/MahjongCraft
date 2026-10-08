@@ -17,11 +17,13 @@ import kotlin.uuid.Uuid
  * @property command 可直接送出的命令。
  * @property discardTileId 命令執行時會打出的牌；不打牌的命令為 null。
  * @property declaration 命令宣告的擴充動作；不宣告任何動作時為 null。
+ * @property setAsideTileId 命令執行時會移出手牌、之後補一張牌的那張牌（例如三人日麻的拔北）；沒有時為 null。
  */
 data class ExtensionCommandCandidate(
     val command: GameCommand,
     val discardTileId: Uuid? = null,
     val declaration: GameAction.Extension? = null,
+    val setAsideTileId: Uuid? = null,
 )
 
 /** 將一種擴充動作轉換成 AI 可執行命令的策略。 */

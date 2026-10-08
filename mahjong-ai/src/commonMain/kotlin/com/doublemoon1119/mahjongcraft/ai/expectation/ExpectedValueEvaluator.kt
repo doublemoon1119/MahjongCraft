@@ -175,6 +175,7 @@ internal class ExpectedValueEvaluator(
         is DecisionCandidate.Discard -> evaluateDiscard(candidate)
         is DecisionCandidate.Claim -> evaluateClaim(candidate)
         is DecisionCandidate.SelfKan -> selfKanHand(candidate)?.let { evaluateWaitingHand(candidate, it) }
+        is DecisionCandidate.SetAside -> evaluateSetAside(candidate)
     }
 
     /** 以實際手牌計算打點的評估中，依和牌機率加權的平均每次和牌點數；沒有這類評估時為 null。 */
@@ -195,10 +196,16 @@ internal class ExpectedValueEvaluator(
         )
     }
 
-    /** 自己回合：能自摸就自摸，否則比較捨牌、附帶宣告的捨牌與槓。 */
+    /**
+     * 自己回合：能自摸就自摸，否則比較捨牌、附帶宣告的捨牌、槓與移出手牌的動作。
+     *
+     * 移出手牌的動作排在最前面：期望值與打出其他牌相同時優先移出，因為之後還會補一張牌。
+     */
     private fun decideOwnTurn(extensionRegistry: ExtensionGameActionAiRegistry): GameCommand {
         if (GameAction.Tsumo in context.legalActions) return GameCommand.Tsumo
-        val best = choose(discardCandidates() + declarationCandidates(extensionRegistry) + selfKanCandidates())
+        val best = choose(
+            setAsideCandidates(extensionRegistry) + discardCandidates() + declarationCandidates(extensionRegistry) + selfKanCandidates(),
+        )
         val abortiveDraw = context.legalActions.filterIsInstance<GameAction.ExhaustiveDraw>().firstOrNull()
         if (abortiveDraw != null && best.winProbability < parameters.abortiveDrawWinProbability) {
             return GameCommand.DeclareExhaustiveDraw(abortiveDraw.reason)
@@ -239,6 +246,12 @@ internal class ExpectedValueEvaluator(
             val tile = ownHand.tiles.firstOrNull { it.id == tileId } ?: return@mapNotNull null
             DecisionCandidate.Discard(tile = tile, declaration = candidate.declaration, command = candidate.command)
         }
+
+    /** 規則擴充動作中說明了會移出手牌哪張牌的候選。 */
+    private fun setAsideCandidates(extensionRegistry: ExtensionGameActionAiRegistry): List<DecisionCandidate> = context.legalActions
+        .filterIsInstance<GameAction.Extension>()
+        .flatMap { extensionRegistry.createCandidates(it.value, context) }
+        .mapNotNull { candidate -> candidate.setAsideTileId?.let { DecisionCandidate.SetAside(it, candidate.command) } }
 
     /** 自己回合的暗槓與加槓。 */
     private fun selfKanCandidates(): List<DecisionCandidate> = context.legalActions
@@ -288,6 +301,22 @@ internal class ExpectedValueEvaluator(
             assessment = assessor.assess(rest, hypotheticalView(rest, discarded = candidate.tile), declarations),
             locksHand = effect.locksHand,
             fixedLoss = risk.immediateLoss(assessor.canonical(candidate.tile.tile)) + effect.cost,
+        )
+    }
+
+    /**
+     * 把一張牌移出手牌後的評估：手牌變化與打出那張牌相同，但移出的牌不會被他家榮和（有人能搶和時，規則另外開放
+     * 反應，這裡不估計），因此沒有立即的放銃損失。
+     */
+    private fun evaluateSetAside(candidate: DecisionCandidate.SetAside): Evaluation? {
+        val tile = ownHand.tiles.firstOrNull { it.id == candidate.tileId } ?: return null
+        val rest = ownHand.copy(tiles = ownHand.tiles.filterNot { it.id == tile.id })
+        return Evaluation(
+            candidate = candidate,
+            hand = rest,
+            assessment = assessor.assess(rest, hypotheticalView(rest, discarded = null), declarations = emptySet()),
+            locksHand = false,
+            fixedLoss = 0.0,
         )
     }
 

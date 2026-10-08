@@ -14,6 +14,7 @@ object RiichiYakuTranslationKeys {
         YakuType.Dora to "dora",
         YakuType.UraDora to "uradora",
         YakuType.AkaDora to "red_five",
+        YakuType.NukiDora to "nuki_dora",
         YakuType.Tanyao to "tanyao",
         YakuType.Pinfu to "pinfu",
         YakuType.Iipeikou to "ipeiko",

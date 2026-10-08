@@ -474,7 +474,7 @@ class HistoryBrowseRoundControllerTest {
         roundNumber = roundNumber,
         position = position,
         tileCatalog = emptyList(),
-        players = listOf(HistoryReplayPlayerStateDto(0, emptyList(), emptyList(), null, emptyList(), 25000, WindDto.EAST, null)),
+        players = listOf(HistoryReplayPlayerStateDto(0, emptyList(), emptyList(), null, emptyList(), 25000, WindDto.EAST, null, emptyList())),
         wallTiles = emptyList(),
         reservedTiles = emptyList(),
         currentPlayerSeat = 0,

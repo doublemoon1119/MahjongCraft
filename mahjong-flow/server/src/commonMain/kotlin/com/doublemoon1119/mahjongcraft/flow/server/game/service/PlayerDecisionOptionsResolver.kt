@@ -77,7 +77,7 @@ internal object PlayerDecisionOptionsResolver {
             validator.getLegalActions(
                 tableState = state,
                 player = player,
-                sourceAction = context.pending.kanAction,
+                sourceAction = context.pending.declaredAction,
                 sourceDirection = state.relativeDirectionOf(player.id, context.pending.declarerId),
                 incomingTile = context.pending.robbedTile,
             ).filter { it is GameAction.Ron || it == GameAction.Pass }

@@ -6,19 +6,24 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiRound
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolver
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiFamilyRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlin.uuid.Uuid
 
-/** 將日麻流局滿貫判定轉為 Flow 的 win-equivalent round outcome。 */
-class RiichiNagashiManganOutcomeResolver : PostReactionRoundOutcomeResolver {
+/**
+ * 將日麻流局滿貫判定轉為 Flow 的 win-equivalent round outcome。
+ *
+ * @property ruleModuleId 套用的日麻系列規則模組（四人或三人）。
+ */
+class RiichiNagashiManganOutcomeResolver(
+    override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI,
+) : PostReactionRoundOutcomeResolver {
     override val id: String = RiichiRoundOutcomeIds.NAGASHI_MANGAN
-    override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI
     override val priority: Int = 100
 
     override fun resolve(tableState: TableState, ruleModule: MahjongRuleModule<*>): ResolvedRoundOutcome? {
-        val riichiModule = ruleModule as? RiichiRuleModule ?: return null
+        val riichiModule = ruleModule as? RiichiFamilyRuleModule<*> ?: return null
         val resolution = riichiModule.resolveNagashiMangan(tableState) ?: return null
         val stickPot = riichiModule.collectStickPot(tableState)
         val collectorId = chooseStickPotCollector(tableState, resolution.achieverPlayerIds)

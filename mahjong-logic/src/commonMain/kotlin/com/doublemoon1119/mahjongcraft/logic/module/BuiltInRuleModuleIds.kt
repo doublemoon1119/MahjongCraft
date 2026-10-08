@@ -7,6 +7,9 @@ object BuiltInRuleModuleIds {
     /** 日本麻將規則模組。 */
     val RIICHI: String = MahjongCraftMetadata.id("riichi")
 
+    /** 三人日本麻將規則模組。 */
+    val RIICHI_THREE_PLAYER: String = MahjongCraftMetadata.id("riichi_three_player")
+
     /** 台灣麻將規則模組。 */
     val TAIWAN: String = MahjongCraftMetadata.id("taiwan")
 }

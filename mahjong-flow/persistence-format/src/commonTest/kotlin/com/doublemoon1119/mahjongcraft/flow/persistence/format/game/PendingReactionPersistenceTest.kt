@@ -95,7 +95,7 @@ class PendingReactionPersistenceTest {
         )
         val reaction = PendingRobbingReaction(
             declarerId = declarerId,
-            kanAction = kanAction,
+            declaredAction = kanAction,
             robbedTile = robbedTile,
             eligiblePlayerIds = setOf(responderA, responderB),
             responses = mapOf(responderA to GameAction.Pass),

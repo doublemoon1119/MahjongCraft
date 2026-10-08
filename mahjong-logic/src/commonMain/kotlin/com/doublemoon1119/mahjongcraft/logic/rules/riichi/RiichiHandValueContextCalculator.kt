@@ -17,10 +17,10 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
  * - 嶺上花判定
  * - 榮和的牌是否為立直宣言牌、是否為槓後捨牌（古役燕返、槓振）
  *
- * @param config 日本麻將規則配置。
+ * @param config 日本麻將（四人或三人）規則配置。
  */
 class RiichiHandValueContextCalculator(
-    private val config: RiichiRuleConfig,
+    private val config: RiichiFamilyRuleConfig,
 ) : HandValueContextCalculator<RiichiHandValueContext, RiichiHandValueContextCalculator.Input> {
 
     /**
@@ -93,19 +93,22 @@ class RiichiHandValueContextCalculator(
                 // 嶺上花需要「槓牌 → 摸牌 → 自摸」的動作序列
                 // 依循 M League 公式競技規則（見 RiichiRuleConfig 的規則基準），
                 // 大明槓後槓上開花不採用包牌，直接視為一般自摸胡牌。
+                // 三人麻將拔北後的補牌同樣是嶺上牌。
                 val lastTwoActions = actionHistory.takeLast(2)
                 val firstAction = lastTwoActions.first()
                 val secondAction = lastTwoActions.last()
-                firstAction is GameAction.Kan && secondAction is GameAction.Draw && isTsumo
+                (firstAction is GameAction.Kan || firstAction == PULL_NORTH_GAME_ACTION) && secondAction is GameAction.Draw && isTsumo
             } else {
                 false
             },
-            isFirstTurn = tableState.players.all { it.hand.exposedMelds.isEmpty() } &&
+            isFirstTurn = tableState.players.all { it.hand.exposedMelds.isEmpty() && !it.hasPulledNorth() } &&
                 tableState.players.all { it.discardPile.entries.size <= 1 } &&
                 player.discardPile.entries.isEmpty(),
             isRiichiDeclarationDiscard = discarder?.let { isRiichiDeclarationDiscard(it, incomingTile) } == true,
             isDiscardAfterKan = discarder?.let(::isDiscardAfterKan) == true,
             paoLiability = riichiState?.paoLiability,
+            nukiDoraTiles = riichiState?.nukiDoraTiles.orEmpty().map { it.tile },
+            usesThreePlayerTiles = config.usesThreePlayerTiles,
         )
     }
 
