@@ -97,6 +97,105 @@ class RiichiMatchProgressionPolicyTest {
         )
     }
 
+    /** 延長局包含莊家的雙響，只有子家達返點並居首時，莊家連莊優先。 */
+    @Test
+    fun `extra round double ron with the dealer repeats when only a non-dealer reaches the target`() {
+        val context = context(
+            RiichiGameLength.East,
+            6,
+            Wind.SOUTH,
+            MatchRoundPhase.EXTRA,
+            listOf(24_000, 26_000, 32_000, 18_000),
+            directive = RoundTransitionDirective.REPEAT_DEALER,
+            dealerIndex = 1,
+            beneficiaryIndices = listOf(1, 2),
+        )
+
+        assertEquals(
+            MatchProgressionDecision.ContinueMatch(MatchRoundTransition.RepeatCurrentRound),
+            policy(context).decide(context),
+        )
+    }
+
+    /** 延長局荒牌流局莊家聽牌連莊時，子家靠不聽罰符達返點也不終局。 */
+    @Test
+    fun `extra round dealer tenpai repeats when a non-dealer reaches the target through noten payments`() {
+        val context = context(
+            RiichiGameLength.East,
+            6,
+            Wind.SOUTH,
+            MatchRoundPhase.EXTRA,
+            listOf(23_500, 26_500, 30_500, 19_500),
+            directive = RoundTransitionDirective.REPEAT_DEALER,
+            dealerIndex = 1,
+            classification = RoundCompletionClassification.EXHAUSTIVE_DRAW,
+            beneficiaryIndices = listOf(1, 2),
+        )
+
+        assertEquals(
+            MatchProgressionDecision.ContinueMatch(MatchRoundTransition.RepeatCurrentRound),
+            policy(context).decide(context),
+        )
+    }
+
+    /** 延長最後局莊家連莊且未居首時重打同一局，不以延長局數用完終局。 */
+    @Test
+    fun `extra last round repeats while the dealer keeps the seat`() {
+        val context = context(
+            RiichiGameLength.East,
+            8,
+            Wind.SOUTH,
+            MatchRoundPhase.EXTRA,
+            listOf(29_000, 25_000, 24_000, 22_000),
+            directive = RoundTransitionDirective.REPEAT_DEALER,
+            dealerIndex = 3,
+        )
+
+        assertEquals(
+            MatchProgressionDecision.ContinueMatch(MatchRoundTransition.RepeatCurrentRound),
+            policy(context).decide(context),
+        )
+    }
+
+    /** 延長局莊家本人連莊並以達返點居首時，套用和了止め終局。 */
+    @Test
+    fun `extra round dealer top finish ends the match`() {
+        val context = context(
+            RiichiGameLength.East,
+            6,
+            Wind.SOUTH,
+            MatchRoundPhase.EXTRA,
+            listOf(22_000, 31_000, 27_000, 20_000),
+            directive = RoundTransitionDirective.REPEAT_DEALER,
+            dealerIndex = 1,
+        )
+
+        assertEquals(
+            MatchProgressionDecision.EndMatch(BuiltInMatchEndReasonIds.DEALER_TOP_FINISH),
+            policy(context).decide(context),
+        )
+    }
+
+    /** 原定最後局包含莊家的雙響，只有子家達返點並居首時，莊家連莊優先。 */
+    @Test
+    fun `final regular round double ron with the dealer repeats when only a non-dealer reaches the target`() {
+        val context = context(
+            RiichiGameLength.East,
+            4,
+            Wind.EAST,
+            MatchRoundPhase.REGULAR,
+            listOf(31_000, 24_000, 20_000, 25_000),
+            directive = RoundTransitionDirective.REPEAT_DEALER,
+            dealerIndex = 3,
+            beneficiaryIndices = listOf(3, 0),
+        )
+
+        assertEquals(
+            MatchProgressionDecision.ContinueMatch(MatchRoundTransition.RepeatCurrentRound),
+            policy(context).decide(context),
+        )
+    }
+
     /** 原定最後局的途中流局即使連莊，也不得誤套用和了止め。 */
     @Test
     fun `abortive draw does not trigger dealer top finish`() {
@@ -223,6 +322,7 @@ class RiichiMatchProgressionPolicyTest {
         dealerIndex: Int = 0,
         rankedIndices: List<Int> = scores.indices.sortedWith(compareByDescending<Int> { scores[it] }.thenBy { it }),
         classification: RoundCompletionClassification = RoundCompletionClassification.WIN,
+        beneficiaryIndices: List<Int> = if (directive == RoundTransitionDirective.REPEAT_DEALER) listOf(dealerIndex) else emptyList(),
     ): MatchProgressionContext {
         val players = scores.mapIndexed { index, score ->
             FakeMahjongPlayerFactory.create(initialSeat = Wind.entries[index]).copy(score = score)
@@ -237,7 +337,7 @@ class RiichiMatchProgressionPolicyTest {
         val state = baseState.copy(
             roundPosition = MatchRoundPosition(roundNumber - 1, prevalentWind, (roundNumber - 1) % 4 + 1, phase),
         )
-        return progressionContext(state, directive, rankedIndices, classification)
+        return progressionContext(state, directive, rankedIndices, classification, beneficiaryIndices)
     }
 
     /** 由桌況建立最小完整的本局摘要與權威排名。 */
@@ -246,16 +346,13 @@ class RiichiMatchProgressionPolicyTest {
         directive: RoundTransitionDirective,
         rankedIndices: List<Int>,
         classification: RoundCompletionClassification,
+        beneficiaryIndices: List<Int>,
     ): MatchProgressionContext = MatchProgressionContext(
         tableState = state,
         completion = RoundCompletionSummary(
             outcomeId = "test:round_completed",
             classification = classification,
-            beneficiaryPlayerIds = if (directive == RoundTransitionDirective.REPEAT_DEALER) {
-                setOf(state.dealerPlayerId)
-            } else {
-                emptySet()
-            },
+            beneficiaryPlayerIds = beneficiaryIndices.mapTo(mutableSetOf()) { state.players[it].id },
             transitionDirective = directive,
             settledScoresByPlayerId = state.players.associate { it.id to it.score },
         ),

@@ -11,7 +11,12 @@ import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 
-/** 日麻（四人或三人）的固定賽程、南入／西入、驟死、和了止め與擊飛 policy；每圈局數等於玩家人數。 */
+/**
+ * 日麻（四人或三人）的固定賽程、南入／西入、驟死、和了止め與擊飛 policy；每圈局數等於玩家人數。
+ *
+ * 原定最後局與延長局一律莊家連莊優先：莊家連莊時，即使其他玩家（例如包含莊家的雙響中的子家）已達返點也繼續連莊，
+ * 只有莊家本人和牌或聽牌、居首且達返點才終局；莊家沒有連莊時，有人達返點即終局，延長局打完最後一局也終局。
+ */
 class RiichiMatchProgressionPolicy(
     private val config: RiichiFamilyRuleConfig,
 ) : MatchProgressionPolicy {
@@ -40,19 +45,11 @@ class RiichiMatchProgressionPolicy(
         val directive = context.completion.transitionDirective
         val continuesCombo = context.completion.classification.continuesCombo()
 
-        if (current.phase == MatchRoundPhase.EXTRA) {
-            if (targetReached) return MatchProgressionDecision.EndMatch(BuiltInMatchEndReasonIds.TARGET_SCORE_REACHED)
-            if (current.sequenceIndex >= schedule.extraLastIndex) {
-                return MatchProgressionDecision.EndMatch(BuiltInMatchEndReasonIds.EXTRA_ROUND_LIMIT_REACHED)
-            }
+        if (current.phase == MatchRoundPhase.REGULAR && current.sequenceIndex < schedule.regularLastIndex) {
             return continueByDirective(current, directive, schedule.regularLastIndex, roundsPerWind, continuesCombo)
         }
 
-        if (current.sequenceIndex < schedule.regularLastIndex) {
-            return continueByDirective(current, directive, schedule.regularLastIndex, roundsPerWind, continuesCombo)
-        }
-
-        require(current.sequenceIndex == schedule.regularLastIndex) { "Regular riichi round exceeded its schedule: $current" }
+        // 原定最後局與延長局使用同一套判斷：莊家連莊優先，只有莊家本人以和牌或聽牌連莊、居首且達返點時才終局。
         if (directive == RoundTransitionDirective.REPEAT_DEALER) {
             val dealerQualifiedForTopFinish = when (context.completion.classification) {
                 RoundCompletionClassification.WIN,
@@ -70,9 +67,12 @@ class RiichiMatchProgressionPolicy(
             }
         }
         if (targetReached) return MatchProgressionDecision.EndMatch(BuiltInMatchEndReasonIds.TARGET_SCORE_REACHED)
+        if (current.sequenceIndex >= schedule.extraLastIndex) {
+            return MatchProgressionDecision.EndMatch(BuiltInMatchEndReasonIds.EXTRA_ROUND_LIMIT_REACHED)
+        }
         return MatchProgressionDecision.ContinueMatch(
             MatchRoundTransition.AdvanceTo(
-                nextPosition = position(schedule.regularLastIndex + 1, schedule.regularLastIndex, roundsPerWind),
+                nextPosition = position(current.sequenceIndex + 1, schedule.regularLastIndex, roundsPerWind),
                 continuesCombo = continuesCombo,
             ),
         )
