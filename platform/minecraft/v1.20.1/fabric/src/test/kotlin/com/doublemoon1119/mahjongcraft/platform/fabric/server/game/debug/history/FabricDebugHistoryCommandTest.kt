@@ -20,6 +20,7 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.time.Duration
 
 /** 驗證歷史 debug 指令樹的 literal、引數限制與查詢子指令。 */
 class FabricDebugHistoryCommandTest {
@@ -70,7 +71,7 @@ class FabricDebugHistoryCommandTest {
         override fun cancel() {
             coroutineContext[Job]?.cancel()
         }
-        override suspend fun shutdown(timeoutMillis: Long) {
+        override suspend fun shutdown(timeout: Duration) {
             coroutineContext[Job]?.cancel()
         }
     }

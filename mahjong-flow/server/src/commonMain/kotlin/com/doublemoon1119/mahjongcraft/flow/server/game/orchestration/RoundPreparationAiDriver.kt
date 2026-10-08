@@ -9,6 +9,8 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositor
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import kotlinx.coroutines.withTimeoutOrNull
 import org.koin.core.annotation.Factory
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
 /** 需要由伺服器代為完成的一次開局準備提交。 */
@@ -41,7 +43,7 @@ class RoundPreparationAiDriver(
         val fallback = resolver.fallbackSubmission(game.tableState, preparation, player.id, module)
         val submission = if (game.isAi(player.id)) {
             runCatching {
-                withTimeoutOrNull(AI_DECISION_TIMEOUT_MILLIS) {
+                withTimeoutOrNull(AI_DECISION_TIMEOUT) {
                     aiStrategyRegistry.resolve(game.aiPlayerStrategyKeys[player.id]).decideRoundPreparation(
                         RoundPreparationAiContext(
                             snapshot = visibilityPolicy.snapshotFor(game, player.id),
@@ -67,6 +69,6 @@ class RoundPreparationAiDriver(
 
     private companion object {
         /** Preparation AI 單次決策的硬上限；逾時後改用 resolver 的 deterministic fallback。 */
-        const val AI_DECISION_TIMEOUT_MILLIS: Long = 5_000L
+        val AI_DECISION_TIMEOUT: Duration = 5.seconds
     }
 }

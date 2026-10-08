@@ -13,7 +13,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.withTimeoutOrNull
 import org.koin.core.annotation.Single
 import kotlin.coroutines.CoroutineContext
-import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration
 
 /** 可隨 integrated/dedicated server session 重新建立工作的 Fabric 應用協程作用域。 */
 @Single(binds = [AppCoroutineScope::class])
@@ -54,10 +54,10 @@ class FabricAppCoroutineScope(
      * [CompletableJob]，不在 [Job] 本身），從 [CoroutineContext] 用 `[Job]` 拿回來的靜態型別只有
      * [Job]，所以這裡轉型還原——執行期一定成立，拿不到才代表 context 本身有問題，直接放棄。
      */
-    override suspend fun shutdown(timeoutMillis: Long) {
+    override suspend fun shutdown(timeout: Duration) {
         val job = sessionContext[Job] as? CompletableJob ?: return
         job.complete()
-        withTimeoutOrNull(timeoutMillis.milliseconds) { job.join() }
+        withTimeoutOrNull(timeout) { job.join() }
         job.cancel()
     }
 

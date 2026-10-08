@@ -13,6 +13,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import org.koin.core.annotation.Single
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
 /** 載入 development-only 權威情境時可能回傳的結果。 */
@@ -99,16 +102,16 @@ class DebugGameScenarioLoader(
 
     /** 等待上一輪 presentation 解除 busy；逾時時保留明確的壓力測試失敗。 */
     private suspend fun awaitPresentationAvailable(tableId: Uuid) {
-        withTimeout(PRESENTATION_TIMEOUT_MILLIS) {
-            while (busyTracker.isBusy(tableId)) delay(PRESENTATION_POLL_MILLIS)
+        withTimeout(PRESENTATION_TIMEOUT) {
+            while (busyTracker.isBusy(tableId)) delay(PRESENTATION_POLL_INTERVAL)
         }
     }
 
     private companion object {
         /** 每輪等待桌面呈現完成的上限。 */
-        const val PRESENTATION_TIMEOUT_MILLIS: Long = 30_000L
+        val PRESENTATION_TIMEOUT: Duration = 30.seconds
 
         /** Busy 狀態的輪詢間隔。 */
-        const val PRESENTATION_POLL_MILLIS: Long = 50L
+        val PRESENTATION_POLL_INTERVAL: Duration = 50.milliseconds
     }
 }

@@ -28,6 +28,7 @@ import kotlin.io.path.createTempDirectory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 
@@ -140,7 +141,7 @@ class HistoryGenerationControllerTest {
         }
 
         /** 在測試中立即結束作用域。 */
-        override suspend fun shutdown(timeoutMillis: Long) {
+        override suspend fun shutdown(timeout: Duration) {
             coroutineContext[Job]?.cancel()
         }
     }

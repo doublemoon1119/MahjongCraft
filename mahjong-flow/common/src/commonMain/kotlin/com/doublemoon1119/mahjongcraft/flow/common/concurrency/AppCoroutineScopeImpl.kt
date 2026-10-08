@@ -7,7 +7,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
-import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration
 
 /**
  * [AppCoroutineScope] 的具體實作。
@@ -43,9 +43,9 @@ class AppCoroutineScopeImpl(
         coroutineContext.cancel()
     }
 
-    override suspend fun shutdown(timeoutMillis: Long) {
+    override suspend fun shutdown(timeout: Duration) {
         job.complete()
-        withTimeoutOrNull(timeoutMillis.milliseconds) { job.join() }
+        withTimeoutOrNull(timeout) { job.join() }
         job.cancel()
     }
 }

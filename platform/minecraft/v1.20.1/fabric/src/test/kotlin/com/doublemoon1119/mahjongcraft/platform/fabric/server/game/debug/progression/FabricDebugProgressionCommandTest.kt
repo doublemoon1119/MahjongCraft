@@ -22,6 +22,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.time.Duration
 import kotlin.uuid.Uuid
 
 /** 驗證終局推進預覽子指令樹的情境 literal 結構。 */
@@ -133,6 +134,6 @@ class FabricDebugProgressionCommandTest {
 
         override fun cancel() = error("Unexpected scope cancellation")
 
-        override suspend fun shutdown(timeoutMillis: Long) = error("Unexpected scope shutdown")
+        override suspend fun shutdown(timeout: Duration) = error("Unexpected scope shutdown")
     }
 }
