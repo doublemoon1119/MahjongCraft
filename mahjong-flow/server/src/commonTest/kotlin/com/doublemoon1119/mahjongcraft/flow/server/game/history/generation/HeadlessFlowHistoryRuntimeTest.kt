@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.history.generation
 
+import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledHeadlessHistoryRegistries
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -11,7 +12,10 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 /** 驗證無頭真實 runtime 的完整場長流程與歷史背壓契約。 */
@@ -49,6 +53,30 @@ class HeadlessFlowHistoryRuntimeTest {
             assertTrue(terminal, "$scenario must reach its terminal event")
             assertEquals(3, runtime.store.snapshot().rooms.getValue(runtime.venueId).aiPlayerIds.size)
         }
+    }
+
+    /** 驗證計時器量到 AI 決策、快照同步與歷史記錄，歸零後重新累計。 */
+    @Test
+    fun `step timer measures each stage`() = runTest {
+        val timer = HeadlessStepTimer()
+        val store = AuthoritativeStateStore(historyRecordingEnabled = true, historyRecordingObserver = timer)
+        val runtime = HeadlessFlowHistoryRuntime.create(HeadlessHistoryScenario.RIICHI_EAST, bundledHeadlessHistoryRegistries(), store, timer)
+        assertTrue(timer.historyEvents > 0, "Opening the match must record history events.")
+
+        timer.reset()
+        assertEquals(Duration.ZERO, timer.aiDecision + timer.snapshotSync + timer.historyRecording)
+        assertEquals(0, timer.historyEvents)
+        repeat(STEPS_TO_MEASURE) { runtime.step() }
+
+        assertTrue(timer.aiDecision > Duration.ZERO, "AI turns must be timed.")
+        assertTrue(timer.snapshotSync > Duration.ZERO, "Snapshot synchronization must be timed.")
+        assertTrue(timer.historyRecording > Duration.ZERO, "History recording must be timed.")
+        assertTrue(timer.historyEvents > 0)
+        assertNotNull(timer.slowestAiDecision, "The slowest AI decision must be kept for diagnosis.")
+        assertNull(timer.ongoingAiDecision, "No AI decision may stay in progress after a step.")
+
+        timer.reset()
+        assertNull(timer.slowestAiDecision)
     }
 
     /** 驗證未確認整批事件時，流程不會推進下一個權威步驟。 */
@@ -152,5 +180,10 @@ class HeadlessFlowHistoryRuntimeTest {
             runtime.store.acknowledgeHistoryEvents(ids)
             if (progress.terminal && progress.events.isEmpty()) terminal(true)
         }
+    }
+
+    private companion object {
+        /** 計時測試推進的步數；足以涵蓋多次 AI 出牌，又不會塞滿待寫佇列。 */
+        const val STEPS_TO_MEASURE = 40
     }
 }

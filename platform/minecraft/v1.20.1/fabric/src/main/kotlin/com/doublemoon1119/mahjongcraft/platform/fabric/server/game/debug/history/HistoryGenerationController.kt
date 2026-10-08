@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.Headl
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessHistoryProgress
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessHistoryRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessHistoryScenario
+import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessStepTimer
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
@@ -85,22 +86,44 @@ class FabricHistoryGenerationRuntimeFactory(
     @Provided private val gameCommands: ExtensionGameCommandExecutorRegistry,
 ) : HistoryGenerationRuntimeFactory {
     /**
-     * 建立四個真 AI 座位的完整對局。
-     * @param scenario 場長情境。
+     * 建立全部座位都是真 AI 的完整對局。
+     * @param scenario 規則與場長情境。
      * @return 不產生世界實體的隔離環境。
      */
     override suspend fun create(scenario: HeadlessHistoryScenario): HeadlessHistoryMatchRuntime = HeadlessFlowHistoryRuntime.create(
         scenario = scenario,
-        registries = HeadlessHistoryRegistries(
-            moduleRegistry = moduleRegistry,
-            aiStrategyRegistry = aiStrategies,
-            winCelebrationCueResolverRegistry = winCelebrationCueResolvers,
-            postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolvers,
-            postReactionRoundOutcomeResolverRegistry = postReactionRoundOutcomeResolvers,
-            winRoundContinuationResolverRegistry = winRoundContinuationResolvers,
-            winSettlementDetailResolverRegistry = winSettlementDetailResolvers,
-            gameCommandRegistry = gameCommands,
-        ),
+        registries = registries(),
+    )
+
+    /**
+     * 在 [store] 中建立全部座位都是真 AI 的完整對局；多場共用同一個權威來源，如同正式伺服器上同時進行的多桌。
+     *
+     * @param scenario 規則與場長情境。
+     * @param store 承載對局的共用權威來源。
+     * @param stepTimer 累計 AI 決策與快照同步耗時的計時器。
+     * @return 不產生世界實體的對局環境。
+     */
+    suspend fun createIn(
+        scenario: HeadlessHistoryScenario,
+        store: AuthoritativeStateStore,
+        stepTimer: HeadlessStepTimer,
+    ): HeadlessHistoryMatchRuntime = HeadlessFlowHistoryRuntime.create(
+        scenario = scenario,
+        registries = registries(),
+        store = store,
+        stepTimer = stepTimer,
+    )
+
+    /** 正式對局使用的規則整合。 */
+    private fun registries() = HeadlessHistoryRegistries(
+        moduleRegistry = moduleRegistry,
+        aiStrategyRegistry = aiStrategies,
+        winCelebrationCueResolverRegistry = winCelebrationCueResolvers,
+        postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolvers,
+        postReactionRoundOutcomeResolverRegistry = postReactionRoundOutcomeResolvers,
+        winRoundContinuationResolverRegistry = winRoundContinuationResolvers,
+        winSettlementDetailResolverRegistry = winSettlementDetailResolvers,
+        gameCommandRegistry = gameCommands,
     )
 }
 

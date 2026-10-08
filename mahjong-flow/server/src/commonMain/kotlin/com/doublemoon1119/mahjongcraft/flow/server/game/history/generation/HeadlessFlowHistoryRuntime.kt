@@ -116,15 +116,18 @@ class HeadlessFlowHistoryRuntime private constructor(
         /**
          * 建立一場使用真實 AI 策略的無頭對局。
          *
-         * @param scenario 對局場長情境。
+         * @param scenario 對局規則與場長情境。
          * @param registries 執行環境已完成登記的規則整合。
-         * @return 已開局且可逐步推進的隔離 runtime。
+         * @param store 承載這場對局的權威來源；多場對局可共用同一個來源，如同正式伺服器上同時進行的多桌。
+         * @param stepTimer 累計 AI 決策與快照同步耗時的計時器；null 時不量測。歷史記錄耗時由 [store] 自己的觀察者量測。
+         * @return 已開局且可逐步推進的 runtime。
          */
         suspend fun create(
             scenario: HeadlessHistoryScenario,
             registries: HeadlessHistoryRegistries,
+            store: AuthoritativeStateStore = AuthoritativeStateStore(historyRecordingEnabled = true),
+            stepTimer: HeadlessStepTimer? = null,
         ): HeadlessFlowHistoryRuntime {
-            val store = AuthoritativeStateStore(historyRecordingEnabled = true)
             val gameRepository = GameRepositoryImpl(store)
             val roomRepository = RoomRepositoryImpl(store)
             val membership = PlayerMembershipRepositoryImpl()
@@ -135,7 +138,16 @@ class HeadlessFlowHistoryRuntime private constructor(
             val presentation = NoOpPresentation()
             val busy = NoOpBusyGate()
             val moduleRegistry = registries.moduleRegistry
-            val synchronizer = GameSnapshotSynchronizer(gameRepository, gameSnapshots, GameVisibilityPolicyImpl(moduleRegistry))
+            val snapshotPolicy = GameVisibilityPolicyImpl(moduleRegistry).let { policy ->
+                if (stepTimer == null) policy else TimedVisibilityPolicy(policy, stepTimer::addSnapshotSync)
+            }
+            val aiPolicy = GameVisibilityPolicyImpl(moduleRegistry).let { policy ->
+                if (stepTimer == null) policy else TimedVisibilityPolicy(policy, stepTimer::addAiDecision)
+            }
+            val aiStrategies = registries.aiStrategyRegistry.let { strategies ->
+                if (stepTimer == null) strategies else TimedAiStrategyRegistry(strategies, stepTimer)
+            }
+            val synchronizer = GameSnapshotSynchronizer(gameRepository, gameSnapshots, snapshotPolicy)
             val handSort = HandSortPreferenceStore()
             val create = CreateRoomUseCase(store, membership, rooms, roomEvents)
             val addAi = AddAiPlayerUseCase(roomRepository, rooms, roomEvents)
@@ -166,7 +178,7 @@ class HeadlessFlowHistoryRuntime private constructor(
                 commands,
             )
             val getLegal = GetLegalActionsUseCase(gameRepository, moduleRegistry)
-            val ai = AiTurnDriver(gameRepository, getLegal, registries.aiStrategyRegistry, GameVisibilityPolicyImpl(moduleRegistry), moduleRegistry)
+            val ai = AiTurnDriver(gameRepository, getLegal, aiStrategies, aiPolicy, moduleRegistry)
             val clock = MonotonicClockImpl()
             val timers = GameDecisionTimerManager(gameRepository, GameDecisionAuthorityResolver(), PlayerDecisionTimerFactory(clock), clock)
             val timerSync = DecisionTimerSynchronizationService(timers, gameRepository, NoOpTimerUpdates())

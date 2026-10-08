@@ -102,6 +102,7 @@ sealed interface HistoryRetryResult {
  * @property configState 目前有效的不可變設定，供 session 初始化使用。
  * @property retentionCoordinator 將清理與有效政策更新排序的協調邊界。
  * @property replayProjectionRegistry 已完成註冊與凍結的歷史讀取轉換表。
+ * @property observer 接收背景工作各環節耗時與寫入事件數；null 時不量測。
  */
 @Single
 class FabricHistoryOutboxWriter(
@@ -114,6 +115,7 @@ class FabricHistoryOutboxWriter(
     @Provided private val configState: MinecraftServerConfigState,
     private val retentionCoordinator: HistoryRetentionCoordinator,
     @Provided private val replayProjectionRegistry: HistoryReplayProjectionRegistry,
+    private val observer: HistoryWriterObserver? = null,
 ) {
     /** 記錄歷史寫入與對帳錯誤的 logger。 */
     private val logger = mahjongCraftLogger(FabricHistoryOutboxWriter::class)
@@ -731,32 +733,36 @@ class FabricHistoryOutboxWriter(
             while (true) {
                 try {
                     val wrote = retentionCoordinator.withPolicy { policy ->
-                        val pressure = opened.measureDiskUsage().totalBytes > policy.maxDiskBytes
+                        val pressure = measured(HistoryWriterStage.DISK_USAGE) { opened.measureDiskUsage() }.totalBytes > policy.maxDiskBytes
                         if (lastPolicy != policy || maintenanceMark.elapsedNow() >= MAINTENANCE_INTERVAL || (pressure && store.isHistoryStorageAvailable)) {
-                            synchronizeRecordingDecisions(opened)
-                            val snapshot = store.snapshot()
-                            knownGaps = archiveService.reconcile(opened, snapshot.historyRecordingState)
-                            archiveService.archiveReady(opened, snapshot)
-                            maintain(opened, policy)
+                            measured(HistoryWriterStage.MAINTENANCE) {
+                                synchronizeRecordingDecisions(opened)
+                                val snapshot = store.snapshot()
+                                knownGaps = archiveService.reconcile(opened, snapshot.historyRecordingState)
+                                archiveService.archiveReady(opened, snapshot)
+                                maintain(opened, policy)
+                            }
                             lastPolicy = policy
                             maintenanceMark = TimeSource.Monotonic.markNow()
                         }
                         if (attemptedStoragePolicy != policy || storageRefreshMark.elapsedNow() >= STORAGE_REFRESH_INTERVAL) {
-                            refreshStorageSafely(opened, policy)
+                            measured(HistoryWriterStage.STORAGE_STATS) { refreshStorageSafely(opened, policy) }
                         }
                         if (!store.isHistoryStorageAvailable) return@withPolicy false
                         val wrote = flushOneBatch(opened)
                         if (wrote) {
                             val snapshot = store.snapshot()
                             if (snapshot.historyRecordingState.pendingEvents.isEmpty()) {
-                                knownGaps = archiveService.reconcile(opened, snapshot.historyRecordingState)
-                                if (archiveService.archiveReady(opened, snapshot) > 0) maintain(opened, policy)
+                                measured(HistoryWriterStage.ARCHIVE) {
+                                    knownGaps = archiveService.reconcile(opened, snapshot.historyRecordingState)
+                                    if (archiveService.archiveReady(opened, snapshot) > 0) maintain(opened, policy)
+                                }
                             }
                         }
                         wrote
                     }
                     retryDelay = INITIAL_RETRY_DELAY
-                    if (!wrote) delay(IDLE_POLL_INTERVAL)
+                    if (!wrote) delay(HISTORY_WRITER_IDLE_POLL_INTERVAL)
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (error: Exception) {
@@ -912,26 +918,24 @@ class FabricHistoryOutboxWriter(
      * @return 是否成功提交至少一筆事件。
      */
     private suspend fun flushOneBatch(activeDatabase: SqliteHistoryDatabase): Boolean {
-        synchronizeRecordingDecisions(activeDatabase)
-        val pruned = activeDatabase.readTombstones()
+        measured(HistoryWriterStage.DECISION_SYNC) { synchronizeRecordingDecisions(activeDatabase) }
+        val pruned = measured(HistoryWriterStage.TOMBSTONES) { activeDatabase.readTombstones() }
         val batch = store.snapshot().historyRecordingState.pendingEvents
             .filterNot { it.matchId.toString() in archiveService.blockedMatchIds || it.matchId.toString() in pruned }
-            .take(BATCH_SIZE)
+            .take(HISTORY_WRITE_BATCH_SIZE)
         if (batch.isEmpty()) return false
-        val records = batch.map { event ->
-            val dto = mapper.encodePendingEvent(event)
-            PendingHistoryRecord(
-                matchId = dto.matchId,
-                sequence = dto.sequence,
-                roundNumber = dto.roundNumber,
-                occurredAtEpochMillis = dto.occurredAtEpochMillis,
-                payloadVersion = PAYLOAD_VERSION,
-                payload = json.encodeToString(HistoryOutboxEventPersistenceDto.serializer(), dto),
-            )
-        }
-        activeDatabase.appendPendingBatch(records)
+        val records = measured(HistoryWriterStage.ENCODE) { batch.map { event -> mapper.encodePendingRecord(event, json) } }
+        measured(HistoryWriterStage.BATCH_WRITE) { activeDatabase.appendPendingBatch(records) }
         store.acknowledgeHistoryEvents(batch.map { it.matchId to it.sequence }.toSet())
+        observer?.onEventsWritten(batch.size)
         return true
+    }
+
+    /** 執行 [block]，並在有 [observer] 時回報 [stage] 的耗時。 */
+    private inline fun <T> measured(stage: HistoryWriterStage, block: () -> T): T {
+        val currentObserver = observer ?: return block()
+        val mark = TimeSource.Monotonic.markNow()
+        return block().also { currentObserver.onStage(stage, mark.elapsedNow()) }
     }
 
     /**
@@ -999,15 +1003,6 @@ class FabricHistoryOutboxWriter(
             "history recording is paused and active matches are marked incomplete; " +
                 "already pending events stay in the world save until the database opens again"
 
-        /** 每次提交的最大待寫事件數量。 */
-        const val BATCH_SIZE = 64
-
-        /** 待寫事件 payload 的持久化版本。 */
-        const val PAYLOAD_VERSION = 1
-
-        /** 背景 worker 閒置時的輪詢間隔。 */
-        val IDLE_POLL_INTERVAL = 250.milliseconds
-
         /** 背景 worker 初次重試等待時間。 */
         val INITIAL_RETRY_DELAY = 1.seconds
 
@@ -1034,4 +1029,32 @@ class FabricHistoryOutboxWriter(
  * @property report 失敗前可證實的部分清理結果。
  * @param cause 原始內部例外，僅供 server log。
  */
+/** 每次提交的最大待寫事件數量。 */
+internal const val HISTORY_WRITE_BATCH_SIZE = 64
+
+/** 背景寫入閒置時的輪詢間隔。 */
+internal val HISTORY_WRITER_IDLE_POLL_INTERVAL = 250.milliseconds
+
+/** 待寫事件 payload 的持久化版本。 */
+private const val PENDING_PAYLOAD_VERSION = 1
+
+/**
+ * 把一筆待寫事件編碼成寫進資料庫的紀錄。
+ *
+ * @param event 權威待寫佇列中的事件。
+ * @param json 事件 payload 的序列化設定。
+ * @return 帶有持久化 payload 的紀錄。
+ */
+internal fun HistoryRecordingPersistenceMapper.encodePendingRecord(event: HistoryOutboxEvent, json: Json): PendingHistoryRecord {
+    val dto = encodePendingEvent(event)
+    return PendingHistoryRecord(
+        matchId = dto.matchId,
+        sequence = dto.sequence,
+        roundNumber = dto.roundNumber,
+        occurredAtEpochMillis = dto.occurredAtEpochMillis,
+        payloadVersion = PENDING_PAYLOAD_VERSION,
+        payload = json.encodeToString(HistoryOutboxEventPersistenceDto.serializer(), dto),
+    )
+}
+
 private class HistoryManagementFailure(val report: HistoryCleanupReport, cause: Exception) : Exception("History cleanup did not finish", cause)

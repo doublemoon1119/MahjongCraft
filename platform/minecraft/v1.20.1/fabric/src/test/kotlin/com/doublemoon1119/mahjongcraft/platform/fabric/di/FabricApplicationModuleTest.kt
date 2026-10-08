@@ -298,7 +298,7 @@ class FabricApplicationModuleTest {
             setOf(
                 "scenario",
                 "history",
-                "history",
+                "stress",
                 "win",
                 "showcase",
                 "dice",

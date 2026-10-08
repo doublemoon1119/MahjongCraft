@@ -7,6 +7,8 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.present
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.progression.FabricDebugProgressionCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.progression.FabricDebugRoundCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario.FabricDebugScenarioCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.stress.FabricDebugStressCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.stress.StressTestController
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPreviewEntityLifecycle
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.text.FabricDebugTextCommand
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
@@ -49,6 +51,8 @@ import org.koin.core.annotation.Single
  * @property progressionCommand 建立終局推進預覽子指令樹。
  * @property roundCommand 建立換局推進子指令樹。
  * @property historyCommand 建立隔離歷史生成子指令樹。
+ * @property stressCommand 建立壓力測試子指令樹。
+ * @property stressController 壓力測試的 tick 推進與伺服器關閉時的清理。
  * @property entityLifecycle 保管並驅動臨時 entity 的到期清除。
  */
 @Single
@@ -62,12 +66,15 @@ class FabricDebugCommand(
     private val progressionCommand: FabricDebugProgressionCommand,
     private val roundCommand: FabricDebugRoundCommand,
     private val historyCommand: FabricDebugHistoryCommand,
+    private val stressCommand: FabricDebugStressCommand,
+    private val stressController: StressTestController,
     private val entityLifecycle: DebugPreviewEntityLifecycle,
 ) {
     /** 註冊整組 debug 指令樹；只有開發環境才真的呼叫 `dispatcher.register`，見類別 KDoc。 */
     fun register() {
         if (!minecraftEnvironment.isDevelopment) return
         entityLifecycle.registerTicking()
+        stressController.registerTicking()
         CommandRegistrationCallback.EVENT.register { dispatcher, _, _ ->
             dispatcher.register(build())
         }
@@ -95,7 +102,8 @@ class FabricDebugCommand(
             .then(presentationCommand.buildWinShowcaseOverrideCommand())
             .then(decisionCommand.buildPreparationCommand())
             .then(roundCommand.buildRoundCommand())
-            .then(historyCommand.build()),
+            .then(historyCommand.build())
+            .then(stressCommand.build()),
     )
 
     private companion object {

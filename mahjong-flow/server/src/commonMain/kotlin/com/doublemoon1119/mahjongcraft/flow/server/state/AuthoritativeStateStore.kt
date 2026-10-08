@@ -22,6 +22,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.koin.core.annotation.Single
 import kotlin.time.Clock
+import kotlin.time.TimeSource
 import kotlin.uuid.Uuid
 
 /**
@@ -70,12 +71,14 @@ data class AuthoritativeStateUpdate<T>(
  * @param historyRecordingEnabled 建立時的新場記錄預設；正式政策由伺服器組合入口套用，與儲存連線無關。
  * @property historyClock 產生歷史事件 UTC 時間戳的時鐘；事件順序仍由序號決定。
  * @property maxPendingHistoryEvents 待寫佇列的容量上限；超出時只保留序號缺口，不阻塞對局。
+ * @property historyRecordingObserver 接收每次交易記錄歷史事件的耗時與事件數；null 時不量測。
  */
 @Single
 class AuthoritativeStateStore(
     historyRecordingEnabled: Boolean = false,
     private val historyClock: Clock = Clock.System,
-    private val maxPendingHistoryEvents: Int = 256,
+    val maxPendingHistoryEvents: Int = 256,
+    private val historyRecordingObserver: HistoryRecordingObserver? = null,
 ) {
     init {
         require(maxPendingHistoryEvents >= 0) { "Pending history capacity must not be negative" }
@@ -521,6 +524,7 @@ class AuthoritativeStateStore(
                     }
                 }
             }
+            val recordingMark = historyRecordingObserver?.let { TimeSource.Monotonic.markNow() }
             val withDrafts = update.historyDraftsByVenueId.entries.fold(recording) { recording, entry ->
                 val game = update.state.games[entry.key] ?: currentState.games[entry.key]
                     ?: error("History event references unknown venue ${entry.key}")
@@ -543,6 +547,10 @@ class AuthoritativeStateStore(
                 }
                 runCatching { recording.append(game, entry.value + listOfNotNull(resultDraft), timestamp, maxPendingHistoryEvents) }
                     .getOrElse { recording.recordMissing(game) }
+            }
+            if (recordingMark != null && update.historyDraftsByVenueId.isNotEmpty()) {
+                val appended = (withDrafts.pendingEvents.size - recording.pendingEvents.size).coerceAtLeast(0)
+                historyRecordingObserver.onHistoryRecorded(recordingMark.elapsedNow(), appended)
             }
             val recordingState = update.historyRecordingFailures.fold(withDrafts) { recording, venueId ->
                 val game = update.state.games[venueId] ?: currentState.games[venueId]
