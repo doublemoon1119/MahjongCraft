@@ -7,10 +7,14 @@ import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionValidator
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
@@ -32,12 +36,32 @@ internal val scenarioModuleRegistry: MahjongModuleRegistry = MahjongModuleRegist
 internal fun createRiichiScenarioContext(
     aiOpponentCount: Int = 3,
     config: RiichiRuleConfig = RiichiRuleConfig(),
+): DebugGameScenarioContext = createScenarioContext(
+    module = RiichiRuleModule(BuiltInRuleModuleIds.RIICHI, config),
+    playerCount = 4,
+    aiOpponentCount = aiOpponentCount,
+)
+
+/** 建立呼叫者以外兩位都是 AI 的正式三人日麻對局。 */
+internal fun createThreePlayerRiichiScenarioContext(
+    config: ThreePlayerRiichiRuleConfig = ThreePlayerRiichiRuleConfig(),
+): DebugGameScenarioContext = createScenarioContext(
+    module = ThreePlayerRiichiRuleModule(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, config),
+    playerCount = 3,
+    aiOpponentCount = 2,
+)
+
+/** 以 [module] 正式開局，第一位玩家是呼叫者，接著 [aiOpponentCount] 位是 AI。 */
+private fun createScenarioContext(
+    module: MahjongRuleModule<*>,
+    playerCount: Int,
+    aiOpponentCount: Int,
 ): DebugGameScenarioContext {
-    val playerIds = List(4) { Uuid.random() }
+    val playerIds = List(playerCount) { Uuid.random() }
     val initialized = GameInitializer.initialize(
         id = Uuid.random(),
         playerIds = playerIds,
-        module = RiichiRuleModule("mahjongcraft:riichi", config),
+        module = module,
     )
     val game = Game(
         tableState = initialized.tableState,

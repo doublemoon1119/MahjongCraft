@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenar
 
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import org.koin.core.annotation.Single
 
@@ -34,7 +35,8 @@ class DebugGameScenarioValidator(
             }
         }
 
-        val allTiles = candidate.tableState.allTiles()
+        val module = moduleRegistry.getModule(candidate.tableState.config)
+        val allTiles = candidate.tableState.allTiles(module)
         require(allTiles.map { it.id }.distinct().size == allTiles.size) { "Debug scenario contains duplicate tile UUIDs" }
         require(result.wallStructure.keys == allTiles.mapTo(mutableSetOf()) { it.id }) {
             "Debug scenario wall structure must contain every tile UUID exactly once"
@@ -49,7 +51,6 @@ class DebugGameScenarioValidator(
             validateInitialRoundPresentation(candidate.tableState, presentation)
         }
 
-        val module = moduleRegistry.getModule(candidate.tableState.config)
         val expectedCounts = module.createWallFactory().create().getAllTiles().groupingBy { it.tile }.eachCount()
         val actualCounts = allTiles.groupingBy { it.tile }.eachCount()
         require(actualCounts == expectedCounts) { "Debug scenario tile multiset does not match its rule config" }
@@ -65,19 +66,20 @@ class DebugGameScenarioValidator(
             }
         }
         candidate.tableState.pendingRobbingReaction?.let { pending ->
-            require(pending.declarerId in playerIds) { "Pending kan reaction references an unknown player" }
+            require(pending.declarerId in playerIds) { "Pending robbing reaction references an unknown player" }
             require((pending.eligiblePlayerIds + pending.responses.keys).all { it in playerIds }) {
-                "Pending kan reaction references an unknown player"
+                "Pending robbing reaction references an unknown player"
             }
             require(pending.robbedTile.id in allTiles.mapTo(mutableSetOf()) { it.id }) {
-                "Pending kan reaction references an unknown tile"
+                "Pending robbing reaction references an unknown tile"
             }
         }
     }
 
-    /** 收集權威桌況目前持有的全部實體牌。 */
-    private fun TableState.allTiles(): List<IdentifiedTile> = players.flatMap { it.hand.allTiles + it.discardPile.entries.map { entry -> entry.tile } } +
-        tileWall.getAllTiles() + reservedWallTiles
+    /** 收集權威桌況目前持有的全部實體牌，包含依 [module] 規則移出手牌的牌。 */
+    private fun TableState.allTiles(module: MahjongRuleModule<*>): List<IdentifiedTile> = players.flatMap { player ->
+        player.hand.allTiles + player.discardPile.entries.map { entry -> entry.tile } + module.setAsideTiles(player)
+    } + tileWall.getAllTiles() + reservedWallTiles
 
     /** 驗證完整開局呈現的發牌前後資料與同一份權威手牌完全一致。 */
     private fun validateInitialRoundPresentation(

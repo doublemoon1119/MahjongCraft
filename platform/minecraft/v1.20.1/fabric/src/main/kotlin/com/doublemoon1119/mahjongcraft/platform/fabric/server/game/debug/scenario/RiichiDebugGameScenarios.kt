@@ -8,15 +8,19 @@ import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
 import com.doublemoon1119.mahjongcraft.logic.config.dealBatchSizes
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardEntry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiFamilyRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.MatchRoundPosition
@@ -36,7 +40,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.layout.resolveTransitionValid
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 import kotlin.uuid.Uuid
 
-/** 供實體牌牆演進驗收使用的首批四人日麻權威情境。 */
+/** 內建的日麻權威情境；除了開局與三人日麻情境以外都只適用四人日麻。 */
 object RiichiDebugGameScenarios {
     /** 所有內建日麻 debug 情境。 */
     val all: List<DebugGameScenario> = listOf(
@@ -53,7 +57,10 @@ object RiichiDebugGameScenarios {
         RiichiBeforePaoPonScenario,
         RiichiBeforeSuuchaRiichiScenario,
         RiichiWallOpeningScenario,
-    ) + RiichiFuritenDebugGameScenarios.all + RiichiIppatsuDebugGameScenarios.all + RiichiAutomaticControlDebugGameScenarios.all
+    ) + RiichiFuritenDebugGameScenarios.all +
+        RiichiIppatsuDebugGameScenarios.all +
+        RiichiAutomaticControlDebugGameScenarios.all +
+        ThreePlayerRiichiDebugGameScenarios.all
 }
 
 /**
@@ -290,15 +297,13 @@ private object RiichiBeforePaoPonScenario : DebugGameScenario {
     }
 }
 
-/** 使用正式初始化流程建立完整日麻開局呈現情境。 */
+/** 使用正式初始化流程建立完整日麻開局呈現情境；四人與三人日麻都適用。 */
 private object RiichiWallOpeningScenario : DebugGameScenario {
     override val id: String = "mahjongcraft:riichi_wall_opening"
 
     override fun build(context: DebugGameScenarioContext): DebugGameScenarioResult {
         val currentGame = context.currentGame
-        val config = currentGame.tableState.config as? RiichiRuleConfig
-            ?: error("Riichi debug scenarios require a Riichi game")
-        val module = RiichiRuleModule(BuiltInRuleModuleIds.RIICHI, config)
+        val module = riichiFamilyScenarioModule(currentGame)
         val playerIds = currentGame.tableState.players.map { player -> player.id }
         val initialization = GameInitializer.initialize(
             id = currentGame.id,
@@ -628,6 +633,26 @@ private class RiichiBeforeMinkanScenario(
  */
 internal fun scenarioConfig(currentGame: Game): RiichiRuleConfig = currentGame.tableState.config as RiichiRuleConfig
 
+/**
+ * 依目前這一桌的日麻設定建立情境使用的規則模組，四人與三人日麻都適用。
+ *
+ * 設定整份沿用，理由同 [scenarioConfig]；[multiRonPolicy] 不為 null 時只覆寫一炮多響設定。
+ */
+internal fun riichiFamilyScenarioModule(
+    currentGame: Game,
+    multiRonPolicy: MultiRonPolicy? = null,
+): RiichiFamilyRuleModule<*> = when (val config = currentGame.tableState.config) {
+    is RiichiRuleConfig -> RiichiRuleModule(
+        id = BuiltInRuleModuleIds.RIICHI,
+        config = multiRonPolicy?.let { config.copy(multiRonPolicy = it) } ?: config,
+    )
+    is ThreePlayerRiichiRuleConfig -> ThreePlayerRiichiRuleModule(
+        id = BuiltInRuleModuleIds.RIICHI_THREE_PLAYER,
+        config = multiRonPolicy?.let { config.copy(multiRonPolicy = it) } ?: config,
+    )
+    else -> error("Riichi debug scenarios require a Riichi game")
+}
+
 /** 從牌庫依指定牌種順序各取出一張具有唯一 UUID 的實體牌。 */
 internal fun takeTiles(
     tiles: MutableList<IdentifiedTile>,
@@ -675,6 +700,9 @@ internal fun Tile.stableSortKey(): String = when (this) {
 
 /** 四人日麻固定玩家數。 */
 internal const val PLAYER_COUNT: Int = 4
+
+/** 三人日麻固定玩家數。 */
+internal const val THREE_PLAYER_COUNT: Int = 3
 
 /** 未副露時的立牌張數。 */
 internal const val INITIAL_HAND_SIZE: Int = 13

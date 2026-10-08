@@ -9,14 +9,11 @@ import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
-import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardEntry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.MatchRoundPosition
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
@@ -48,20 +45,23 @@ internal data class SeatSpec(
 )
 
 /**
- * 依座位設定與活牌最前端順序建立的日麻情境。
+ * 依座位設定與活牌最前端順序建立的日麻情境，四人與三人日麻都適用。
  *
- * 呼叫者為莊家，座位順序為呼叫者 → 下家 → 對家 → 上家，情境從呼叫者剛摸牌、準備捨牌開始。其他三家必須是 AI，
- * 載入後改用 [DebugScriptedAiStrategy]，依 [liveWallFront] 排定的順序摸牌並立即打出，因此接下來每一張摸牌與
- * 捨牌都是固定的。
+ * 呼叫者為莊家，座位順序為呼叫者 → 下家 → 對家 → 上家（三人日麻沒有對家），情境從呼叫者剛摸牌、準備捨牌開始。
+ * 其他家必須是 AI，載入後改用 [DebugScriptedAiStrategy]，依 [liveWallFront] 排定的順序摸牌並立即打出，因此接下來
+ * 每一張摸牌與捨牌都是固定的。
  *
  * @property id 完整的 namespaced 情境 ID。
  * @property invoker 呼叫者的座位設定。
  * @property downstream 下家的座位設定。
- * @property across 對家的座位設定。
+ * @property across 對家的座位設定；三人日麻沒有對家，必須維持預設值。
  * @property upstream 上家的座位設定。
  * @property liveWallFront 活牌最前端的排定牌種順序，決定載入後每一次摸牌。
- * @property waitingTiles 驗收用的和牌張；這些牌種不會被放進王牌區，避免成為寶牌指示牌或嶺上牌。
+ * @property waitingTiles 驗收用的和牌張；除了 [deadWallFront] 指定的牌以外，這些牌種不會被放進王牌區，避免成為
+ *   寶牌指示牌或嶺上牌。
  * @property multiRonPolicy 不為 null 時覆寫這一桌的一炮多響設定，其餘設定一律沿用。
+ * @property deadWallFront 王牌最前端的排定牌種順序，也就是之後槓或拔北時依序補到的牌；其餘王牌照常補齊。
+ * @property playerCount 情境適用的人數；只能在這個人數的桌子載入。
  */
 internal class SeatSetupScenario(
     override val id: String,
@@ -72,31 +72,39 @@ internal class SeatSetupScenario(
     private val liveWallFront: List<Tile>,
     private val waitingTiles: Set<Tile>,
     private val multiRonPolicy: MultiRonPolicy? = null,
+    private val deadWallFront: List<Tile> = emptyList(),
+    private val playerCount: Int = PLAYER_COUNT,
 ) : DebugGameScenario {
     override fun build(context: DebugGameScenarioContext): DebugGameScenarioResult {
         val currentGame = context.currentGame
         val tableState = currentGame.tableState
-        require(tableState.players.size == PLAYER_COUNT) { "Riichi debug scenarios require four players" }
-        require(tableState.config is RiichiRuleConfig) { "Riichi debug scenarios require a Riichi game" }
+        require(tableState.players.size == playerCount) { "This debug scenario requires $playerCount players" }
+        val seatSpecs = when (playerCount) {
+            PLAYER_COUNT -> listOf(invoker, downstream, across, upstream)
+            THREE_PLAYER_COUNT -> {
+                require(across == SeatSpec()) { "Three-player debug scenarios have no across seat" }
+                listOf(invoker, downstream, upstream)
+            }
+            else -> error("Seat setup debug scenarios do not support $playerCount players")
+        }
         val invokingPlayerIndex = tableState.players.indexOfFirst { it.id == context.invokingPlayerId }
         require(invokingPlayerIndex >= 0) { "Invoking player does not belong to the game" }
         require(tableState.players.filterIndexed { index, _ -> index != invokingPlayerIndex }.all { currentGame.isAi(it.id) }) {
-            "Seat setup debug scenarios require the other three players to be AI"
+            "Seat setup debug scenarios require the other players to be AI"
         }
 
-        val config = scenarioConfig(currentGame).let { current ->
-            multiRonPolicy?.let { current.copy(multiRonPolicy = it) } ?: current
-        }
-        val module = RiichiRuleModule(BuiltInRuleModuleIds.RIICHI, config)
+        val module = riichiFamilyScenarioModule(currentGame, multiRonPolicy)
+        val config = module.config
         val opening = DEFAULT_WALL_OPENING
         val inventory = module.createWallFactory().create().getAllTiles().sortedBy { it.tile.stableSortKey() }
         val availableTiles = inventory.toMutableList()
 
-        val seatSpecs = listOf(invoker, downstream, across, upstream)
         val explicitSeats = seatSpecs.map { spec -> spec.takeExplicitTiles(availableTiles) }
         val wallFront = takeTiles(availableTiles, liveWallFront)
+        val reservedFront = takeTiles(availableTiles, deadWallFront)
         val seats = seatSpecs.zip(explicitSeats) { spec, explicit -> explicit.withFillers(spec, availableTiles) }
-        val initialReservedTiles = takeAvoiding(availableTiles, config.deadTileCount, waitingTiles)
+        val initialReservedTiles = reservedFront +
+            takeAvoiding(availableTiles, config.deadTileCount - reservedFront.size, waitingTiles)
         val liveTiles = wallFront + availableTiles
         val consumedTiles = seats.flatMap { it.allTiles }
         val initialLiveTiles = consumedTiles + liveTiles
@@ -117,7 +125,7 @@ internal class SeatSetupScenario(
         )
 
         val players = tableState.players.mapIndexed { index, oldPlayer ->
-            val seatOffset = (index - invokingPlayerIndex + PLAYER_COUNT) % PLAYER_COUNT
+            val seatOffset = (index - invokingPlayerIndex + playerCount) % playerCount
             val seat = seats[seatOffset]
             MahjongPlayer(
                 id = oldPlayer.id,
@@ -131,7 +139,7 @@ internal class SeatSetupScenario(
             )
         }
         val aiPlayerStrategyKeys = tableState.players.mapIndexedNotNull { index, player ->
-            val seatOffset = (index - invokingPlayerIndex + PLAYER_COUNT) % PLAYER_COUNT
+            val seatOffset = (index - invokingPlayerIndex + playerCount) % playerCount
             val strategyKey = if (seatOffset == 0) currentGame.aiPlayerStrategyKeys[player.id] else seatSpecs[seatOffset].strategyKey
             strategyKey?.let { player.id to it }
         }.toMap()

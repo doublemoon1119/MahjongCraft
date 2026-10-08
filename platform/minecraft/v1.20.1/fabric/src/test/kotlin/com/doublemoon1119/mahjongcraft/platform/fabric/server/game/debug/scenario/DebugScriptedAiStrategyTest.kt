@@ -4,9 +4,11 @@ import com.doublemoon1119.mahjongcraft.ai.AiDecisionContext
 import com.doublemoon1119.mahjongcraft.ai.AiDecisionPhase
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiPullNorthCommand
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PULL_NORTH_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.DebugMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationState
@@ -62,6 +64,26 @@ class DebugScriptedAiStrategyTest {
         )
     }
 
+    /** 能拔北時先拔北，即使同時可以槓。 */
+    @Test
+    fun `pull north first strategy pulls an available north`() = runTest {
+        val strategy = DebugScriptedAiStrategy(declaresKanFirst = true, pullsNorthFirst = true)
+        val kan = GameAction.Kan(GameAction.KanType.CLOSED_KAN, drawnTile.id, emptyList())
+
+        assertEquals(
+            GameCommand.Extension(RiichiPullNorthCommand),
+            strategy.decideGameCommand(context(AiDecisionPhase.OwnTurn, listOf(kan, PULL_NORTH_GAME_ACTION))),
+        )
+    }
+
+    /** 不能拔北時照常摸切。 */
+    @Test
+    fun `pull north first strategy discards when no north can be pulled`() = runTest {
+        val strategy = DebugScriptedAiStrategy(declaresKanFirst = false, pullsNorthFirst = true)
+
+        assertEquals(GameCommand.Discard(drawnTile.id), strategy.decideGameCommand(context(AiDecisionPhase.OwnTurn, emptyList())))
+    }
+
     /** 沒有摸牌時打出第一張立牌。 */
     @Test
     fun `discards the first standing tile without a drawn tile`() = runTest {
@@ -73,17 +95,22 @@ class DebugScriptedAiStrategyTest {
         )
     }
 
-    /** 兩個腳本 AI 皆可由 registry 解析。 */
+    /** 所有腳本 AI 皆可由 registry 解析。 */
     @Test
-    fun `registration exposes both scripted strategies`() {
+    fun `registration exposes every scripted strategy`() {
         val registry = MahjongAiStrategyRegistryImpl(defaultKey = DebugScriptedAiStrategy.TSUMOGIRI_KEY)
         DebugMahjongExtension(winRoundContinuationState = DebugWinRoundContinuationState()).registerAiStrategies(registry)
 
         assertEquals(
-            setOf(DebugScriptedAiStrategy.TSUMOGIRI_KEY, DebugScriptedAiStrategy.KAN_FIRST_KEY),
+            setOf(
+                DebugScriptedAiStrategy.TSUMOGIRI_KEY,
+                DebugScriptedAiStrategy.KAN_FIRST_KEY,
+                DebugScriptedAiStrategy.PULL_NORTH_FIRST_KEY,
+            ),
             registry.getAllStrategyKeys(),
         )
         assertIs<DebugScriptedAiStrategy>(registry.resolve(DebugScriptedAiStrategy.KAN_FIRST_KEY))
+        assertIs<DebugScriptedAiStrategy>(registry.resolve(DebugScriptedAiStrategy.PULL_NORTH_FIRST_KEY))
     }
 
     private fun context(

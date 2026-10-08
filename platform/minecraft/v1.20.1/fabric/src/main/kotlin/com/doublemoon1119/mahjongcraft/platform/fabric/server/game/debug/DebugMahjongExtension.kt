@@ -36,17 +36,29 @@ internal class DebugMahjongExtension(
     override fun registerAiStrategies(registry: MahjongAiStrategyRegistry) {
         registry.register(DebugScriptedAiStrategy.TSUMOGIRI_KEY) { DebugScriptedAiStrategy(declaresKanFirst = false) }
         registry.register(DebugScriptedAiStrategy.KAN_FIRST_KEY) { DebugScriptedAiStrategy(declaresKanFirst = true) }
+        registry.register(DebugScriptedAiStrategy.PULL_NORTH_FIRST_KEY) {
+            DebugScriptedAiStrategy(declaresKanFirst = false, pullsNorthFirst = true)
+        }
     }
 
     override fun registerRoundPreparationResolvers(registry: RoundPreparationResolverRegistry) {
-        listOf(BuiltInRuleModuleIds.RIICHI, BuiltInRuleModuleIds.TAIWAN).forEach { ruleModuleId ->
+        DEBUG_RULE_MODULE_IDS.forEach { ruleModuleId ->
             if (registry.find(ruleModuleId) == null) registry.register(DebugRoundPreparationResolver(ruleModuleId))
         }
     }
 
     override fun registerWinRoundContinuationResolvers(registry: WinRoundContinuationResolverRegistry) {
-        listOf(BuiltInRuleModuleIds.RIICHI, BuiltInRuleModuleIds.TAIWAN).forEach { ruleModuleId ->
+        DEBUG_RULE_MODULE_IDS.forEach { ruleModuleId ->
             registry.register(DebugWinRoundContinuationResolver(ruleModuleId = ruleModuleId, state = winRoundContinuationState))
         }
+    }
+
+    private companion object {
+        /** 補上 debug 開局準備與胡牌後本局繼續流程的內建規則模組。 */
+        val DEBUG_RULE_MODULE_IDS: List<String> = listOf(
+            BuiltInRuleModuleIds.RIICHI,
+            BuiltInRuleModuleIds.RIICHI_THREE_PLAYER,
+            BuiltInRuleModuleIds.TAIWAN,
+        )
     }
 }

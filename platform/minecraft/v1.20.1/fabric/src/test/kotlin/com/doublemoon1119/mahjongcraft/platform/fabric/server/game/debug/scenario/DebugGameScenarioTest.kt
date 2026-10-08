@@ -48,15 +48,14 @@ class DebugGameScenarioTest {
     /** 只有開門情境應攜帶完整初局呈現，其餘可操作牌局維持靜態同步。 */
     @Test
     fun `test only wall opening scenario provides initial round presentation`() {
-        val fixture = createFixture()
         val registry = DebugGameScenarioRegistry()
 
-        val opening = registry.get("mahjongcraft:riichi_wall_opening")!!.build(fixture.context)
+        val opening = registry.get("mahjongcraft:riichi_wall_opening")!!.build(createFixture().context)
         assertIs<DebugGameScenarioPresentation.InitialRound>(opening.presentation)
         EXPECTED_IDS.filterNot { it == "mahjongcraft:riichi_wall_opening" }.forEach { id ->
             assertEquals(
                 DebugGameScenarioPresentation.StaticWall,
-                registry.get(id)!!.build(fixture.context).presentation,
+                registry.get(id)!!.build(contextFor(id)).presentation,
                 id,
             )
         }
@@ -65,11 +64,11 @@ class DebugGameScenarioTest {
     /** 所有內建情境都應沿用目前場次，讓場次層級的進度排除與歷史停止作用在同一場。 */
     @Test
     fun `test built in scenarios preserve the current match id`() {
-        val fixture = createFixture()
         val registry = DebugGameScenarioRegistry()
 
         EXPECTED_IDS.forEach { id ->
-            assertEquals(fixture.context.currentGame.matchId, registry.get(id)!!.build(fixture.context).game.matchId, id)
+            val context = contextFor(id)
+            assertEquals(context.currentGame.matchId, registry.get(id)!!.build(context).game.matchId, id)
         }
     }
 
@@ -415,6 +414,13 @@ class DebugGameScenarioTest {
         return Fixture(context, moduleRegistry, DebugGameScenarioValidator(moduleRegistry))
     }
 
+    /** 依情境適用的人數建立四人或三人日麻的情境輸入。 */
+    private fun contextFor(id: String): DebugGameScenarioContext = if (id in THREE_PLAYER_IDS) {
+        createThreePlayerRiichiScenarioContext()
+    } else {
+        createFixture().context
+    }
+
     /** 收集結果內所有權威牌 UUID。 */
     private fun allTileIds(result: DebugGameScenarioResult): Set<Uuid> = result.game.tableState.let { state ->
         (
@@ -492,7 +498,14 @@ class DebugGameScenarioTest {
             "mahjongcraft:riichi_furiten_unoffered_wait",
             "mahjongcraft:riichi_ippatsu_ron",
             "mahjongcraft:riichi_ippatsu_tsumo",
+            "mahjongcraft:riichi_three_player_kan_and_pull_north",
+            "mahjongcraft:riichi_three_player_pull_north",
+            "mahjongcraft:riichi_three_player_pull_north_in_riichi",
+            "mahjongcraft:riichi_three_player_rob_north",
             "mahjongcraft:riichi_wall_opening",
         )
+
+        /** 只能在三人日麻的桌子載入的情境。 */
+        val THREE_PLAYER_IDS: Set<String> = ThreePlayerRiichiDebugGameScenarios.all.mapTo(mutableSetOf()) { it.id }
     }
 }
