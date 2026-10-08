@@ -44,7 +44,7 @@ class FabricDebugStressCommand(
         .then(
             literal(FIXED_SUBCOMMAND).then(
                 scenarioArgument().then(
-                    withOptionalSettings(argument(TABLES_ARGUMENT, IntegerArgumentType.integer(1))) { context ->
+                    withOptionalSettings(argument(TABLES_ARGUMENT, IntegerArgumentType.integer(1, STRESS_MAX_TABLES))) { context ->
                         StressTestMode.Fixed(IntegerArgumentType.getInteger(context, TABLES_ARGUMENT))
                     },
                 ),

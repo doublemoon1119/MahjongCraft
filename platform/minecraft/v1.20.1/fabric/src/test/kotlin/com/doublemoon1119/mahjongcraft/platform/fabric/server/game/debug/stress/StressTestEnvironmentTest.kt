@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.stress
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessFlowHistoryRuntime
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessHistoryScenario
+import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryWriterStage
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.SqliteHistoryDatabase
@@ -93,6 +94,40 @@ class StressTestEnvironmentTest {
         }
     }
 
+    /** 打完的桌移除後只剩下待處理的歷史；返回的房間不會留在共用權威來源。 */
+    @Test
+    fun `discarding a finished table removes its room`() = runBlocking {
+        val environment = assertNotNull(factory().openAt(databasePath(), StressHistoryMode.OFF))
+        try {
+            val runtime = playMatches(environment, count = 1).single()
+            assertTrue(runtime.venueId in environment.store.snapshot().rooms, "A finished table returns to its room.")
+
+            discardStressTable(runtime)
+
+            val state = environment.store.snapshot()
+            assertTrue(state.rooms.isEmpty() && state.games.isEmpty())
+        } finally {
+            environment.closeAndDelete()
+        }
+    }
+
+    /** 卡住而移除的桌：對局與房間都移除，已記錄的歷史仍留在待寫佇列，並記為未完成的場次。 */
+    @Test
+    fun `discarding a running table keeps its pending history`() = runBlocking {
+        val store = AuthoritativeStateStore(historyRecordingEnabled = true)
+        val runtime = HeadlessFlowHistoryRuntime.create(HeadlessHistoryScenario.RIICHI_EAST, bundledHeadlessHistoryRegistries(), store)
+        repeat(RUNNING_STEPS) { runtime.step() }
+        val matchId = runtime.matchId()
+        val pending = store.snapshot().historyRecordingState.pendingEvents.count { it.matchId == matchId }
+
+        discardStressTable(runtime)
+
+        val state = store.snapshot()
+        assertTrue(state.rooms.isEmpty() && state.games.isEmpty())
+        assertEquals(pending, state.historyRecordingState.pendingEvents.count { it.matchId == matchId })
+        assertEquals(false, state.historyRecordingState.terminalByMatchId[matchId]?.completed)
+    }
+
     /** 在 [environment] 中同時打完 [count] 場三人對局；待寫事件太多時等待背景工作追上，模擬伺服器 tick 之間的時間。 */
     private suspend fun playMatches(environment: StressTestEnvironment, count: Int) = withTimeout(2.minutes) {
         val runtimes = List(count) {
@@ -133,5 +168,8 @@ class StressTestEnvironmentTest {
     private companion object {
         /** 待寫事件超過這個數量時等待背景工作追上。 */
         const val BACKLOG_PAUSE = 64
+
+        /** 移除進行中桌子前推進的步數。 */
+        const val RUNNING_STEPS = 10
     }
 }

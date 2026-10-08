@@ -144,12 +144,13 @@ enum class StressTestClearResult {
 /**
  * 以伺服器 tick 驅動的壓力測試。
  *
- * 所有測試對局共用 [StressTestEnvironment] 的權威來源，並在伺服器主執行緒上依 [StressTestPace] 逐 tick 推進，
- * 與正式對局由 tick 巡查推進的方式相同，因此每 tick 耗時直接反映 AI 與流程的負擔；歷史依 [StressHistoryMode]
- * 經由同一個權威來源的待寫佇列交給背景工作處理。
+ * 所有測試對局共用 [StressTestEnvironment] 的權威來源，並在伺服器主執行緒上依 [StressTestPace] 逐 tick 推進。每桌都對齊在
+ * 同一個推進週期上（見 [alignedStepTick]），與正式對局由 tick 巡查在同一個 tick 推進所有對局的方式相同，因此每 tick 耗時直接
+ * 反映 AI 與流程的負擔；歷史依 [StressHistoryMode] 經由同一個權威來源的待寫佇列交給背景工作處理。新桌每個 tick 最多建立
+ * [STRESS_TABLES_CREATED_PER_TICK] 桌，打完或卡住的桌會從權威來源移除。
  *
- * 開始後先暖機 [STRESS_WARMUP_TICKS] 個 tick：期間維持初始桌數、不列入統計，也不以每 tick 耗時判斷落後或卡頓；之後每 tick
- * 檢查 [StressSafetyValve]，伺服器落後或歷史出問題就停止並保留報告，持續卡頓則記下當時的桌數後繼續。不記錄歷史時不檢查
+ * 開始後先暖機 [STRESS_WARMUP_TICKS] 個 tick：期間維持初始桌數、不列入統計與卡頓判斷。每 tick 都檢查 [StressSafetyValve]，
+ * 包括暖機期間：伺服器落後或歷史出問題就停止並保留報告，持續卡頓則在暖機後記下當時的桌數後繼續。不記錄歷史時不檢查
  * 歷史相關的門檻。執行期間每秒在存檔資料夾的時間序列 CSV 追加一列。
  *
  * 單步耗時超過 [SLOW_STEP_LOG_THRESHOLD] 時，在 log 記下該步最久的 AI 決策情境；另有背景工作每秒檢查進行中的 AI 決策，
@@ -441,9 +442,10 @@ class StressTestController(
             tickSteps = 0
             tickEvents = 0
             val timer = environment.stepTimer
-            while (tables.size < targetTables()) {
+            repeat(minOf(targetTables() - tables.size, STRESS_TABLES_CREATED_PER_TICK)) {
                 timer.reset()
-                tables += StressTable(runtimes.createIn(scenario, environment.store, timer), nextStepTick = elapsedTicks)
+                val runtime = runtimes.createIn(scenario, environment.store, timer)
+                tables += StressTable(runtime, nextStepTick = alignedStepTick(elapsedTicks, pace.stepIntervalTicks))
                 tickEvents += timer.historyEvents
             }
             val iterator = tables.iterator()
@@ -460,12 +462,14 @@ class StressTestController(
                 if (table.runtime.currentGame() == null) {
                     completedMatches++
                     iterator.remove()
+                    discardStressTable(table.runtime)
                 } else if (progressed) {
                     table.stalledSteps = 0
                 } else if (++table.stalledSteps >= MAX_STALLED_STEPS) {
                     failedMatches++
                     logger.warn("Stress test match made no progress for {} steps; dropping it", MAX_STALLED_STEPS)
                     iterator.remove()
+                    discardStressTable(table.runtime)
                 }
             }
             val recording = environment.store.snapshot().historyRecordingState
@@ -545,7 +549,7 @@ class StressTestController(
                 pendingPeak = maxOf(pendingPeak, pendingEvents)
             }
             if (lastRowMark.elapsedNow() >= TIME_SERIES_INTERVAL) writeTimeSeriesRow()
-            val tickStop = if (measuring) valve.recordTick(msptMillis) else null
+            val tickStop = valve.recordTick(msptMillis, countStutter = measuring)
             if (measuring && stutterTables == null && valve.stuttering) stutterTables = tables.size
             return tickStop ?: if (environment.historyMode == StressHistoryMode.OFF) {
                 null
@@ -587,10 +591,10 @@ class StressTestController(
             }
         }
 
-        /** 目前應同時進行的桌數；爬坡在暖機結束後才開始加桌。 */
+        /** 目前應同時進行的桌數；爬坡在暖機結束後才開始加桌，最多 [STRESS_MAX_TABLES] 桌。 */
         private fun targetTables(): Int = when (mode) {
             is StressTestMode.Fixed -> mode.tables
-            is StressTestMode.Ramp -> mode.plan.tablesAt(elapsedTicks - STRESS_WARMUP_TICKS)
+            is StressTestMode.Ramp -> mode.plan.tablesAt(elapsedTicks - STRESS_WARMUP_TICKS).coerceAtMost(STRESS_MAX_TABLES)
         }
 
         /** 目前的數據。 */
@@ -637,7 +641,8 @@ class StressTestController(
                 sustainedTables = (mode as? StressTestMode.Ramp)
                     ?.takeIf { stopReason in VALVE_STOP_REASONS }
                     ?.plan
-                    ?.sustainedTablesAt(elapsedTicks - STRESS_WARMUP_TICKS),
+                    ?.sustainedTablesAt(elapsedTicks - STRESS_WARMUP_TICKS)
+                    ?.coerceAtMost(STRESS_MAX_TABLES),
             )
         }
 

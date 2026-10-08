@@ -4,8 +4,10 @@ import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatch
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.HistoryReplayProjectionRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
+import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessHistoryMatchRuntime
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessStepTimer
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
+import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdate
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryDatabasePath
@@ -63,6 +65,19 @@ class StressTestEnvironment internal constructor(
 
     /** 停止背景工作；有資料庫時一併刪除資料庫及其附屬檔案。 */
     suspend fun closeAndDelete() = sink.close()
+}
+
+/**
+ * 把一桌從共用權威來源移除：打完後留下的房間，或卡住而未結束的對局連同房間一併移除，讓持續補桌時狀態不會累積。
+ *
+ * 已加入待寫佇列的歷史仍留給背景工作處理；未結束的對局依一般流程記為未完成的場次。
+ *
+ * @param runtime 要移除的桌。
+ */
+internal suspend fun discardStressTable(runtime: HeadlessHistoryMatchRuntime) {
+    runtime.store.update { state ->
+        AuthoritativeStateUpdate(state.copy(rooms = state.rooms - runtime.venueId, games = state.games - runtime.venueId), Unit)
+    }
 }
 
 /** 處理壓力測試待寫佇列的背景工作。 */

@@ -23,11 +23,11 @@ sealed interface StressTestMode {
     /**
      * 固定維持 [tables] 桌同時進行。
      *
-     * @property tables 同時進行的桌數。
+     * @property tables 同時進行的桌數，介於 1 與 [STRESS_MAX_TABLES] 之間。
      */
     data class Fixed(val tables: Int) : StressTestMode {
         init {
-            require(tables > 0) { "Stress test table count must be positive" }
+            require(tables in 1..STRESS_MAX_TABLES) { "Stress test table count must be between 1 and $STRESS_MAX_TABLES" }
         }
     }
 
@@ -100,6 +100,8 @@ data class StressRampPlan(
  * @property windowTicks 判斷落後與卡頓所看的最近 tick 數。
  * @property stutterTicks 最近 [windowTicks] 個 tick 中至少有這麼多次卡頓，才判定為持續卡頓；偶發的單次尖峰不算。
  * @property fallingBehindAverageMillis 最近 [windowTicks] 個 tick 的平均耗時超過這個毫秒數，就表示伺服器跟不上每秒 20 tick。
+ * @property maxLagMillis 最近 [windowTicks] 個 tick 累計超出 [fallingBehindAverageMillis] 的毫秒數上限；嚴重過載時不必等
+ *   視窗填滿就停止，搶在 Minecraft 的 watchdog 因伺服器落後太多而強制關閉之前。
  * @property backlogRatio 歷史待寫佇列積壓佔容量的比例上限。
  */
 data class StressSafetyThresholds(
@@ -107,6 +109,7 @@ data class StressSafetyThresholds(
     val windowTicks: Int = 200,
     val stutterTicks: Int = 5,
     val fallingBehindAverageMillis: Double = 50.0,
+    val maxLagMillis: Double = 10_000.0,
     val backlogRatio: Double = 0.8,
 ) {
     init {
@@ -114,6 +117,7 @@ data class StressSafetyThresholds(
         require(windowTicks > 0) { "Tick window must be positive" }
         require(stutterTicks in 1..windowTicks) { "Stutter tick count must be within the tick window" }
         require(fallingBehindAverageMillis > 0) { "Falling-behind average must be positive" }
+        require(maxLagMillis > 0) { "Maximum lag must be positive" }
         require(backlogRatio in 0.0..1.0) { "Backlog ratio must be between 0 and 1" }
     }
 }
@@ -121,15 +125,18 @@ data class StressSafetyThresholds(
 /**
  * 判斷壓力測試是否該停止，並偵測持續卡頓。
  *
- * 最近 [StressSafetyThresholds.windowTicks] 個 tick 的平均耗時超過門檻時停止：此時伺服器已跟不上每秒 20 tick。
- * 持續卡頓只回報狀態、不停止，讓同一次測試同時量到「開始卡頓」與「撐不住」兩個桌數。歷史遺失、寫入失敗與積壓
- * 超過比例則立即停止，讓測試在真的遺失歷史之前停下。
+ * 伺服器跟不上每秒 20 tick 時停止：最近 [StressSafetyThresholds.windowTicks] 個 tick 的平均耗時超過門檻，或這段期間
+ * 累計落後超過 [StressSafetyThresholds.maxLagMillis]。持續卡頓只回報狀態、不停止，讓同一次測試同時量到「開始卡頓」與
+ * 「撐不住」兩個桌數。歷史遺失、寫入失敗與積壓超過比例則立即停止，讓測試在真的遺失歷史之前停下。
  *
  * @property thresholds 停止門檻。
  */
 class StressSafetyValve(private val thresholds: StressSafetyThresholds) {
     /** 最近的每 tick 耗時。 */
     private val window = ArrayDeque<Double>(thresholds.windowTicks)
+
+    /** [window] 中每個 tick 是否算作卡頓。 */
+    private val stutterFlags = ArrayDeque<Boolean>(thresholds.windowTicks)
 
     /** [window] 中耗時的總和。 */
     private var windowTotalMillis = 0.0
@@ -140,18 +147,25 @@ class StressSafetyValve(private val thresholds: StressSafetyThresholds) {
     /** 最近一段時間是否持續卡頓。 */
     val stuttering: Boolean get() = stutters >= thresholds.stutterTicks
 
-    /** 記錄一個 tick 的耗時；最近一段時間的平均超過門檻時回傳停止原因。 */
-    fun recordTick(msptMillis: Double): StressStopReason? {
+    /**
+     * 記錄一個 tick 的耗時；伺服器跟不上每秒 20 tick 時回傳停止原因。
+     *
+     * @param msptMillis 這個 tick 的耗時毫秒數。
+     * @param countStutter 這個 tick 是否列入卡頓判斷；暖機期間不列入，但仍會判斷是否落後。
+     */
+    fun recordTick(msptMillis: Double, countStutter: Boolean): StressStopReason? {
+        val stutter = countStutter && msptMillis > thresholds.stutterLimitMillis
         window.addLast(msptMillis)
+        stutterFlags.addLast(stutter)
         windowTotalMillis += msptMillis
-        if (msptMillis > thresholds.stutterLimitMillis) stutters++
+        if (stutter) stutters++
         if (window.size > thresholds.windowTicks) {
-            val removed = window.removeFirst()
-            windowTotalMillis -= removed
-            if (removed > thresholds.stutterLimitMillis) stutters--
+            windowTotalMillis -= window.removeFirst()
+            if (stutterFlags.removeFirst()) stutters--
         }
+        val lagMillis = windowTotalMillis - window.size * thresholds.fallingBehindAverageMillis
         val full = window.size == thresholds.windowTicks
-        return if (full && windowTotalMillis / window.size > thresholds.fallingBehindAverageMillis) StressStopReason.FALLING_BEHIND else null
+        return if ((full && lagMillis > 0) || lagMillis > thresholds.maxLagMillis) StressStopReason.FALLING_BEHIND else null
     }
 
     /**
@@ -290,8 +304,23 @@ class TimingAccumulator {
     }
 }
 
-/** 暖機時間：開始後這段期間 JIT 編譯尚未穩定，不列入統計，也不以每 tick 耗時判斷落後或卡頓；爬坡在暖機結束後才開始加桌。 */
+/** 暖機時間：開始後這段期間 JIT 編譯尚未穩定，不列入統計與卡頓判斷，但仍會因伺服器落後而停止；爬坡在暖機結束後才開始加桌。 */
 const val STRESS_WARMUP_TICKS: Long = 1_200
+
+/** 同時進行桌數的上限；固定桌數的指令引數與爬坡的目標桌數都不會超過。 */
+const val STRESS_MAX_TABLES: Int = 1_000
+
+/** 每個 tick 最多新建的桌數；需要大量建桌時分散到連續幾個 tick，避免安全閥介入前單一 tick 就卡住。 */
+const val STRESS_TABLES_CREATED_PER_TICK: Int = 4
+
+/**
+ * 從 [tick] 起第一個推進週期的 tick：每桌都對齊在 [intervalTicks] 的倍數上推進，與正式伺服器每個週期在同一個 tick
+ * 推進所有對局相同，不因建桌時間不同而錯開。
+ *
+ * @param tick 最早可以推進的 tick。
+ * @param intervalTicks 推進週期的 tick 數。
+ */
+internal fun alignedStepTick(tick: Long, intervalTicks: Int): Long = (tick + intervalTicks - 1) / intervalTicks * intervalTicks
 
 /** 統計「每 tick 耗時超過門檻」比例的門檻毫秒數。 */
 val STRESS_SLOW_TICK_THRESHOLDS_MILLIS: List<Int> = listOf(50, 100, 250)

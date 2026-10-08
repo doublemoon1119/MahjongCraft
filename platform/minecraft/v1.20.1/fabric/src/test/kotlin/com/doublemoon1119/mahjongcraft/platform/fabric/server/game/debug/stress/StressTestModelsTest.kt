@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.stress
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -34,11 +35,31 @@ class StressTestModelsTest {
     fun `falling behind is judged by the recent average`() {
         val valve = StressSafetyValve(StressSafetyThresholds(windowTicks = 4, stutterTicks = 1, fallingBehindAverageMillis = 50.0))
 
-        assertNull(valve.recordTick(300.0), "A window that is not yet full must not stop the test.")
-        assertNull(valve.recordTick(1.0))
-        assertNull(valve.recordTick(1.0))
-        assertEquals(StressStopReason.FALLING_BEHIND, valve.recordTick(1.0))
-        assertNull(valve.recordTick(1.0), "The heavy tick has left the window.")
+        assertNull(valve.recordTick(300.0, countStutter = true), "A window that is not yet full must not stop the test.")
+        assertNull(valve.recordTick(1.0, countStutter = true))
+        assertNull(valve.recordTick(1.0, countStutter = true))
+        assertEquals(StressStopReason.FALLING_BEHIND, valve.recordTick(1.0, countStutter = true))
+        assertNull(valve.recordTick(1.0, countStutter = true), "The heavy tick has left the window.")
+    }
+
+    /** 嚴重過載時不等視窗填滿：累計落後超過上限就停止，搶在 watchdog 強制關閉伺服器之前。 */
+    @Test
+    fun `severe lag stops before the window fills`() {
+        val valve = StressSafetyValve(StressSafetyThresholds(windowTicks = 200, fallingBehindAverageMillis = 50.0, maxLagMillis = 1_000.0))
+
+        assertNull(valve.recordTick(550.0, countStutter = false))
+        assertEquals(StressStopReason.FALLING_BEHIND, valve.recordTick(560.0, countStutter = false), "1010 ms of lag exceeds the 1000 ms cap.")
+    }
+
+    /** 暖機期間的 tick 不列入卡頓判斷，但仍計入是否落後。 */
+    @Test
+    fun `warm-up ticks do not count as stutter`() {
+        val valve = StressSafetyValve(StressSafetyThresholds(stutterLimitMillis = 100.0, windowTicks = 4, stutterTicks = 1))
+
+        valve.recordTick(150.0, countStutter = false)
+        assertFalse(valve.stuttering)
+        valve.recordTick(150.0, countStutter = true)
+        assertTrue(valve.stuttering)
     }
 
     /** 最近一段時間內卡頓次數達門檻才算持續卡頓；偶發的單次尖峰不算，舊的卡頓離開視窗後解除。 */
@@ -46,13 +67,13 @@ class StressTestModelsTest {
     fun `stutter needs repeated spikes within the window`() {
         val valve = StressSafetyValve(StressSafetyThresholds(stutterLimitMillis = 100.0, windowTicks = 4, stutterTicks = 2))
 
-        valve.recordTick(150.0)
+        valve.recordTick(150.0, countStutter = true)
         assertFalse(valve.stuttering)
-        valve.recordTick(10.0)
-        valve.recordTick(150.0)
+        valve.recordTick(10.0, countStutter = true)
+        valve.recordTick(150.0, countStutter = true)
         assertTrue(valve.stuttering)
-        valve.recordTick(10.0)
-        valve.recordTick(10.0)
+        valve.recordTick(10.0, countStutter = true)
+        valve.recordTick(10.0, countStutter = true)
         assertFalse(valve.stuttering)
     }
 
@@ -72,6 +93,23 @@ class StressTestModelsTest {
 
         assertEquals(StressStopReason.HISTORY_LOST, valve.checkHistory(pendingEvents = 256, capacity = 256, lostSegments = 1, writerFailed = true))
         assertEquals(StressStopReason.HISTORY_WRITER_FAILED, valve.checkHistory(pendingEvents = 256, capacity = 256, lostSegments = 0, writerFailed = true))
+    }
+
+    /** 每桌推進都對齊在週期的倍數上；每 tick 推進時任何 tick 都可以。 */
+    @Test
+    fun `steps align to the pace interval`() {
+        assertEquals(20, alignedStepTick(1, 20))
+        assertEquals(20, alignedStepTick(20, 20))
+        assertEquals(40, alignedStepTick(21, 20))
+        assertEquals(5, alignedStepTick(5, 1))
+    }
+
+    /** 固定桌數必須介於 1 與上限之間。 */
+    @Test
+    fun `fixed table count is bounded`() {
+        assertEquals(STRESS_MAX_TABLES, StressTestMode.Fixed(STRESS_MAX_TABLES).tables)
+        assertFailsWith<IllegalArgumentException> { StressTestMode.Fixed(0) }
+        assertFailsWith<IllegalArgumentException> { StressTestMode.Fixed(STRESS_MAX_TABLES + 1) }
     }
 
     /** 滾動統計只保留最近的數值，並以最接近的排名計算百分位數。 */
