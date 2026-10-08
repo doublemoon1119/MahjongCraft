@@ -290,7 +290,7 @@ class RoomScreen(
             val done = RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftRoomScreenKeys.DONE)) {
                 finishSettings()
             }.dimensions(footer.doneX, height - 30, footer.actionWidth, 20).build().also {
-                it.active = draft.canDone()
+                it.active = draft.canDone(roomPlayerCount())
             }
             doneButton = done
             addDrawableChild(done)
@@ -584,7 +584,7 @@ class RoomScreen(
         }
 
     private fun applyDraft() {
-        if (!draft.canDone()) return
+        if (!draft.canDone(roomPlayerCount())) return
         val table = stateStore.tableOccupancy(tableId) ?: return
         val config = draft.config ?: return
         MahjongChannels.roomAction.sendToServer(json, RoomActionDto.UpdateConfig(table.tableId, config.toDto(networkRegistries)))
@@ -618,18 +618,34 @@ class RoomScreen(
             configResolver.resolve(config).definition?.let { GameConfig(it.defaultRuleConfig()) }
         },
     ) {
-        applyButton?.active = draft.canApply(authoritative)
+        val roomPlayerCount = roomPlayerCount()
+        applyButton?.active = draft.canApply(authoritative, roomPlayerCount)
         undoButton?.active = draft.canUndo(authoritative)
         resetButton?.active = draft.canReset(defaults)
-        doneButton?.active = draft.canDone()
+        doneButton?.active = draft.canDone(roomPlayerCount)
         val changes = if (current != null && authoritative != null && current != authoritative && !draft.isStale) {
             Tooltip.of(gameConfigDifferenceText(configResolver, ruleNames, authoritative, current))
         } else {
             null
         }
-        applyButton?.tooltip = changes
+        val playerLimit = current?.takeIf { draft.exceedsPlayerLimit(roomPlayerCount) }?.let { config ->
+            Tooltip.of(playerLimitExceededText(config, roomPlayerCount).copy().formatted(Formatting.RED))
+        }
+        applyButton?.tooltip = playerLimit ?: changes
+        doneButton?.tooltip = playerLimit
         undoButton?.tooltip = changes ?: Tooltip.of(undoTooltip())
     }
+
+    /** 房間目前人數（含 AI）；房間資料尚未同步時為 0。 */
+    private fun roomPlayerCount(): Int = stateStore.roomSnapshot(tableId)?.playerIds?.size ?: 0
+
+    /** 說明房間人數超過 [config] 規則人數上限、因此無法套用。 */
+    private fun playerLimitExceededText(config: GameConfig, roomPlayerCount: Int): Text = Text.translatable(
+        MinecraftRoomScreenKeys.PLAYER_LIMIT_EXCEEDED,
+        roomPlayerCount,
+        ruleName(configResolver.resolve(config).ruleModuleId),
+        config.ruleConfig.maxPlayers,
+    )
 
     private fun undoTooltip(): Text = Text.empty()
         .append(Text.translatable(MinecraftRoomScreenKeys.UNDO).formatted(Formatting.GOLD))
@@ -1077,6 +1093,7 @@ class RoomScreen(
             !definition.selectable -> Text.translatable(definition.unavailableReasonTranslationKey!!) to 0xFF7777
             draft.isStale -> Text.translatable(MinecraftRoomScreenKeys.DRAFT_STALE) to 0xFF5555
             draft.hasInvalidFields -> Text.translatable(MinecraftRoomScreenKeys.VALIDATION_FAILED) to 0xFF5555
+            draft.exceedsPlayerLimit(roomPlayerCount()) -> playerLimitExceededText(config, roomPlayerCount()) to 0xFF5555
             else -> null
         }
         status?.let { (message, color) ->
@@ -1232,7 +1249,7 @@ class RoomScreen(
      * 目前是否有尚未套用、且可以直接套用的設定草稿；草稿因外部變更失效或驗證失敗時視為沒有，交由
      * 既有 Undo 流程處理，不提供「套用並返回」選項。
      */
-    private fun hasUnsavedSettingsDraft(): Boolean = draft.canDone() && draft.hasUnsavedChanges(currentConfig())
+    private fun hasUnsavedSettingsDraft(): Boolean = draft.canDone(roomPlayerCount()) && draft.hasUnsavedChanges(currentConfig())
 
     /** 關閉整個 RoomScreen，不套用設定頁的階層式 Esc 行為。 */
     private fun closeEntireScreen() {

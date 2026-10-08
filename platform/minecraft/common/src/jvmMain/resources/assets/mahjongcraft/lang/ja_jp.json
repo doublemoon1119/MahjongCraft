@@ -808,6 +808,7 @@
   "mahjongcraft.room.screen.offline_player": "オフラインプレイヤー",
   "mahjongcraft.room.screen.page.room": "ゲーム",
   "mahjongcraft.room.screen.page.settings": "設定",
+  "mahjongcraft.room.screen.player_limit_exceeded": "ルームには現在 %s 人います。%sは最大 %s 人です。先に多い分のプレイヤーに退出してもらうか、AI を削除してください。",
   "mahjongcraft.room.screen.playing": "対局中（読み取り専用）",
   "mahjongcraft.room.screen.read_only": "読み取り専用",
   "mahjongcraft.room.screen.ready": "準備",

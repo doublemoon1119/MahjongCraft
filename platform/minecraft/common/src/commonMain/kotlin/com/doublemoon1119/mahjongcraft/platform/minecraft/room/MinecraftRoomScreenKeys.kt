@@ -37,6 +37,7 @@ object MinecraftRoomScreenKeys {
     const val UNAVAILABLE = "mahjongcraft.room.screen.unavailable"
     const val DRAFT_STALE = "mahjongcraft.room.screen.draft_stale"
     const val VALIDATION_FAILED = "mahjongcraft.room.screen.validation_failed"
+    const val PLAYER_LIMIT_EXCEEDED = "mahjongcraft.room.screen.player_limit_exceeded"
     const val RESET_DEFAULTS_BUTTON = "mahjongcraft.room.screen.reset_defaults"
     const val UNDO_DISCARD = "mahjongcraft.room.screen.tooltip.undo_discard"
     const val UNDO_RESTORE = "mahjongcraft.room.screen.tooltip.undo_restore"

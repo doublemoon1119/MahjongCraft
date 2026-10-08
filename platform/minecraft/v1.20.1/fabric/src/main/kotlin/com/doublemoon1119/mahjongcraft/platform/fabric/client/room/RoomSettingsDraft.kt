@@ -48,8 +48,14 @@ internal class RoomSettingsDraft {
         return draft != null && authoritative != null && draft != authoritative
     }
 
-    /** 是否可以送出草稿。 */
-    fun canApply(authoritative: GameConfig?): Boolean = hasUnsavedChanges(authoritative) && !isStale && !hasInvalidFields
+    /**
+     * 草稿規則的人數上限是否少於房間目前的 [roomPlayerCount] 人（含 AI）；此時伺服器會拒絕套用。
+     * 人數不足不算：之後還能補人，開始對局時另有檢查。
+     */
+    fun exceedsPlayerLimit(roomPlayerCount: Int): Boolean = config?.let { roomPlayerCount > it.ruleConfig.maxPlayers } == true
+
+    /** 是否可以送出草稿；房間目前有 [roomPlayerCount] 人（含 AI）。 */
+    fun canApply(authoritative: GameConfig?, roomPlayerCount: Int): Boolean = hasUnsavedChanges(authoritative) && !isStale && !hasInvalidFields && !exceedsPlayerLimit(roomPlayerCount)
 
     /** 是否可以放棄草稿還原成權威設定。 */
     fun canUndo(authoritative: GameConfig?): Boolean = hasUnsavedChanges(authoritative) || isStale || hasInvalidFields
@@ -60,8 +66,8 @@ internal class RoomSettingsDraft {
         return draft != null && defaults != null && draft != defaults
     }
 
-    /** 是否可以結束設定。 */
-    fun canDone(): Boolean = !isStale && !hasInvalidFields
+    /** 是否可以結束設定；房間目前有 [roomPlayerCount] 人（含 AI）。 */
+    fun canDone(roomPlayerCount: Int): Boolean = !isStale && !hasInvalidFields && !exceedsPlayerLimit(roomPlayerCount)
 
     /** 進入設定頁時建立草稿；已有草稿時不覆蓋編輯中的內容。 */
     fun beginIfAbsent(authoritative: GameConfig) {

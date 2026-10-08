@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.SpectatingPolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.SpectatorHandVisibility
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigEditorSpec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigFieldDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationValue
@@ -24,9 +25,38 @@ class RoomSettingsDraftTest {
         draft.beginIfAbsent(AUTHORITATIVE)
 
         assertFalse(draft.hasUnsavedChanges(AUTHORITATIVE))
-        assertFalse(draft.canApply(AUTHORITATIVE))
+        assertFalse(draft.canApply(AUTHORITATIVE, FULL_ROOM))
         assertFalse(draft.canUndo(AUTHORITATIVE))
-        assertTrue(draft.canDone())
+        assertTrue(draft.canDone(FULL_ROOM))
+    }
+
+    /** 草稿換成人數上限較少的規則、房間人數超過上限時，Apply 與 Done 停用；人數沒有超過時照常可用。 */
+    @Test
+    fun `blocks apply and done while the room has more players than the drafted rule allows`() {
+        val draft = RoomSettingsDraft()
+        draft.beginIfAbsent(AUTHORITATIVE)
+
+        draft.resetTo(THREE_PLAYER)
+
+        assertTrue(draft.exceedsPlayerLimit(FULL_ROOM))
+        assertFalse(draft.canApply(AUTHORITATIVE, FULL_ROOM))
+        assertFalse(draft.canDone(FULL_ROOM))
+        assertTrue(draft.canUndo(AUTHORITATIVE))
+        assertFalse(draft.exceedsPlayerLimit(THREE_PLAYER_ROOM))
+        assertTrue(draft.canApply(AUTHORITATIVE, THREE_PLAYER_ROOM))
+        assertTrue(draft.canDone(THREE_PLAYER_ROOM))
+    }
+
+    /** 房間人數少於規則的人數下限時照常可以套用，之後還能補人。 */
+    @Test
+    fun `allows apply while the room still has fewer players than the rule needs`() {
+        val draft = RoomSettingsDraft()
+        draft.beginIfAbsent(AUTHORITATIVE)
+
+        draft.resetTo(THREE_PLAYER)
+
+        assertFalse(draft.exceedsPlayerLimit(SINGLE_PLAYER_ROOM))
+        assertTrue(draft.canApply(AUTHORITATIVE, SINGLE_PLAYER_ROOM))
     }
 
     /** 已有草稿時再次進入設定頁不覆蓋編輯中的內容。 */
@@ -48,11 +78,11 @@ class RoomSettingsDraftTest {
         draft.beginIfAbsent(AUTHORITATIVE)
 
         draft.updateField(preparationSecondsField(), GameConfigPresentationValue.IntegerValue(45))
-        assertTrue(draft.canApply(AUTHORITATIVE))
+        assertTrue(draft.canApply(AUTHORITATIVE, FULL_ROOM))
         assertTrue(draft.canUndo(AUTHORITATIVE))
 
         draft.updateField(preparationSecondsField(), GameConfigPresentationValue.IntegerValue(30))
-        assertFalse(draft.canApply(AUTHORITATIVE))
+        assertFalse(draft.canApply(AUTHORITATIVE, FULL_ROOM))
         assertFalse(draft.canUndo(AUTHORITATIVE))
     }
 
@@ -67,8 +97,8 @@ class RoomSettingsDraftTest {
         assertTrue(draft.isFieldInvalid(REJECTING_FIELD_ID))
         assertTrue(draft.hasInvalidFields)
         assertEquals(AUTHORITATIVE, draft.config)
-        assertFalse(draft.canApply(AUTHORITATIVE))
-        assertFalse(draft.canDone())
+        assertFalse(draft.canApply(AUTHORITATIVE, FULL_ROOM))
+        assertFalse(draft.canDone(FULL_ROOM))
         assertTrue(draft.canUndo(AUTHORITATIVE), "Expected undo to stay available while a field is invalid.")
     }
 
@@ -85,7 +115,7 @@ class RoomSettingsDraftTest {
 
         assertFalse(draft.isFieldInvalid(field.id))
         assertFalse(draft.hasInvalidFields)
-        assertTrue(draft.canDone())
+        assertTrue(draft.canDone(FULL_ROOM))
     }
 
     /** 編輯另一個欄位不會清除既有欄位的無效標記。 */
@@ -99,7 +129,7 @@ class RoomSettingsDraftTest {
 
         assertTrue(draft.isFieldInvalid(REJECTING_FIELD_ID))
         assertTrue(draft.hasInvalidFields)
-        assertFalse(draft.canDone(), "Expected done to be blocked while a field is invalid.")
+        assertFalse(draft.canDone(FULL_ROOM), "Expected done to be blocked while a field is invalid.")
         assertEquals(45, draft.config?.flowConfig?.preparationBaseSeconds, "Expected an edit to a valid field to still reach the draft.")
     }
 
@@ -114,7 +144,7 @@ class RoomSettingsDraftTest {
         assertFalse(draft.markNumericInput(field, editor, "999"))
         assertTrue(draft.isFieldInvalid(field.id))
         assertEquals(AUTHORITATIVE, draft.config)
-        assertFalse(draft.canDone())
+        assertFalse(draft.canDone(FULL_ROOM))
     }
 
     /** 第一段通過後第二段才套用 updater。 */
@@ -130,7 +160,7 @@ class RoomSettingsDraftTest {
 
         assertFalse(draft.isFieldInvalid(field.id))
         assertEquals(45, draft.config?.flowConfig?.preparationBaseSeconds)
-        assertTrue(draft.canApply(AUTHORITATIVE))
+        assertTrue(draft.canApply(AUTHORITATIVE, FULL_ROOM))
     }
 
     /** 可為空的整數欄位接受空字串。 */
@@ -243,8 +273,8 @@ class RoomSettingsDraftTest {
         draft.onAuthoritativeChanged(withPreparationSeconds(20))
         val authoritative = withPreparationSeconds(20)
 
-        assertFalse(draft.canApply(authoritative))
-        assertFalse(draft.canDone())
+        assertFalse(draft.canApply(authoritative, FULL_ROOM))
+        assertFalse(draft.canDone(FULL_ROOM))
         assertTrue(draft.canUndo(authoritative))
     }
 
@@ -294,6 +324,18 @@ class RoomSettingsDraftTest {
     private companion object {
         /** 測試用的權威設定。 */
         val AUTHORITATIVE = GameConfig(RiichiRuleConfig(), GameFlowConfig())
+
+        /** 三人日麻的設定。 */
+        val THREE_PLAYER = GameConfig(ThreePlayerRiichiRuleConfig(), GameFlowConfig())
+
+        /** 四人坐滿的房間人數。 */
+        const val FULL_ROOM = 4
+
+        /** 三人坐滿的房間人數。 */
+        const val THREE_PLAYER_ROOM = 3
+
+        /** 只有房主一人的房間人數。 */
+        const val SINGLE_PLAYER_ROOM = 1
 
         /** 一定會被 updater 拒絕的欄位 ID。 */
         const val REJECTING_FIELD_ID = "mahjongcraft:rejecting"

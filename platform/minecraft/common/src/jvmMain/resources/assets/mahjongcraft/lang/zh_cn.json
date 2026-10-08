@@ -808,6 +808,7 @@
   "mahjongcraft.room.screen.offline_player": "离线玩家",
   "mahjongcraft.room.screen.page.room": "游戏",
   "mahjongcraft.room.screen.page.settings": "设置",
+  "mahjongcraft.room.screen.player_limit_exceeded": "房间目前有 %s 人，%s最多 %s 人。请先让多出的玩家离开或移除 AI。",
   "mahjongcraft.room.screen.playing": "对局进行中（只读）",
   "mahjongcraft.room.screen.read_only": "只读",
   "mahjongcraft.room.screen.ready": "准备",

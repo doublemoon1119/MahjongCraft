@@ -808,6 +808,7 @@
   "mahjongcraft.room.screen.offline_player": "Offline Player",
   "mahjongcraft.room.screen.page.room": "Game",
   "mahjongcraft.room.screen.page.settings": "Settings",
+  "mahjongcraft.room.screen.player_limit_exceeded": "The room has %s players, but %s allows at most %s. Have extra players leave or remove AI first.",
   "mahjongcraft.room.screen.playing": "Match in progress — read only",
   "mahjongcraft.room.screen.read_only": "Read Only",
   "mahjongcraft.room.screen.ready": "Ready",
