@@ -39,6 +39,18 @@ class HeadlessFlowHistoryRuntimeTest {
         assertTrue(terminal)
     }
 
+    /** 驗證三人東風戰與三人半莊戰可由三個真實 AI 自動完成。 */
+    @Test
+    fun `three player matches complete through cold history flow`() = runTest {
+        listOf(HeadlessHistoryScenario.THREE_PLAYER_RIICHI_EAST, HeadlessHistoryScenario.THREE_PLAYER_RIICHI_HANCHAN).forEach { scenario ->
+            val runtime = HeadlessFlowHistoryRuntime.create(scenario, bundledHeadlessHistoryRegistries())
+            var terminal = false
+            runtimeFlow(runtime) { terminal = it }
+            assertTrue(terminal, "$scenario must reach its terminal event")
+            assertEquals(3, runtime.store.snapshot().rooms.getValue(runtime.venueId).aiPlayerIds.size)
+        }
+    }
+
     /** 驗證未確認整批事件時，流程不會推進下一個權威步驟。 */
     @Test
     fun `cold flow requires complete batch acknowledgement`() = runTest {

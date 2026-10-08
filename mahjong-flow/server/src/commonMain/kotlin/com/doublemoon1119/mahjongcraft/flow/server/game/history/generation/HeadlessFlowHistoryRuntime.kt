@@ -59,7 +59,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.time.MonotonicClockImpl
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TableStateSnapshot
 import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionPhase
@@ -112,7 +111,7 @@ class HeadlessFlowHistoryRuntime private constructor(
      */
     override suspend fun currentGame(): Game? = gameRepository.getGame(gameId)
 
-    /** 建立隔離且完整的四 AI 對局執行環境。 */
+    /** 建立隔離且完整的全 AI 對局執行環境。 */
     companion object {
         /**
          * 建立一場使用真實 AI 策略的無頭對局。
@@ -204,9 +203,9 @@ class HeadlessFlowHistoryRuntime private constructor(
             val start = StartGameUseCase(store, moduleRegistry, synchronizer, handSort, gameEvents, presentation)
             val venueId = Uuid.random()
             val host = Uuid.random()
-            val config = GameConfig(ruleConfig = RiichiRuleConfig(gameLength = scenario.gameLength))
+            val config = GameConfig(ruleConfig = scenario.ruleConfig)
             check(create(venueId, host, config, hostAiStrategyKey = BuiltInAiStrategyKeys.BEGINNER) is Outcome.Success)
-            repeat(3) { check(addAi(venueId, host, BuiltInAiStrategyKeys.BEGINNER) is Outcome.Success) }
+            repeat(scenario.ruleConfig.maxPlayers - 1) { check(addAi(venueId, host, BuiltInAiStrategyKeys.BEGINNER) is Outcome.Success) }
             val started = start(venueId, host)
             check(started is Outcome.Success) { "Headless history runtime failed to start game: $started" }
             val id = started.value

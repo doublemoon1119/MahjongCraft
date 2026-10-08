@@ -108,7 +108,7 @@ class FabricDebugHistoryCommand(
         return SUCCESS
     }
 
-    /** 提供東風與半莊情境的 tab 補全。
+    /** 提供所有情境的 tab 補全。
      * @param context Brigadier 指令內容。
      * @param builder 補全結果建構器。
      * @return 非同步補全結果。
