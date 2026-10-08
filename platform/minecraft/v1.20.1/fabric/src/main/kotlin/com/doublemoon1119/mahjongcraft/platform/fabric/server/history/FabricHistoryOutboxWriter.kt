@@ -130,7 +130,7 @@ class FabricHistoryOutboxWriter(
     /** 共用唯讀 preview 與清理政策的 I/O 維護服務。 */
     private val retentionService = HistoryRetentionService(store)
 
-    /** 清理後磁碟用量是否在上限內；只在暫停或恢復記錄時記錄 log。 */
+    /** 清理後磁碟用量是否在上限內；每個存檔 session 只在暫停或恢復記錄時記錄 log。 */
     private val diskLimitTracker = HistoryDiskLimitTracker()
 
     /** 與啟動 log 及管理指令共用的統計組合邊界。 */
@@ -844,9 +844,10 @@ class FabricHistoryOutboxWriter(
         synchronizedStops = activeDatabase.readRecordingStops()
     }
 
-    /** 清理後歷史記錄因磁碟用量上限而暫停或恢復時各記錄一次。 */
+    /** 清理後歷史記錄因磁碟用量上限而暫停或恢復時，在目前存檔 session 內各記錄一次。 */
     private fun logDiskLimitTransition(result: HistoryCleanupResult, policy: HistoryRetentionPolicy) {
-        when (diskLimitTracker.update(result.storageAvailable)) {
+        val session = currentSessionId ?: return
+        when (diskLimitTracker.update(session, result.storageAvailable)) {
             HistoryDiskLimitTransition.PAUSED -> logger.warn(
                 "History recording paused: disk usage {} bytes exceeds the limit of {} bytes after cleanup; active matches are marked incomplete",
                 result.diskAfter.totalBytes,

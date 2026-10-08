@@ -108,6 +108,26 @@ class ClientAutoSortHandPreferenceServiceTest {
         assertEquals(revision, store.revision)
     }
 
+    /** 連續同步失敗只記錄一次警告；重新連線後 RESTORE 成功，下一次失敗會再記錄，重試標記則保留。 */
+    @Test
+    fun `sync failure warning resets after a successful restore`() = withService(sendFailure = IllegalStateException("offline")) { service, sender, store ->
+        assertIs<MahjongClientConfigUpdateResult.Success>(store.load())
+
+        service.set(false)
+        assertTrue(service.syncFailureReported)
+        service.set(false)
+        assertTrue(service.syncFailureReported)
+
+        sender.failure = null
+        service.restoreToServer()
+        assertFalse(service.syncFailureReported)
+        assertTrue(service.hasPendingSync, "A restore does not replace the pending user change.")
+
+        sender.failure = IllegalStateException("offline again")
+        service.set(false)
+        assertTrue(service.syncFailureReported, "The first failure on the new connection must be reported again.")
+    }
+
     /** 建立隔離設定檔與記錄型 sender，並在測試後移除暫存目錄。 */
     private fun withService(
         sendFailure: RuntimeException? = null,

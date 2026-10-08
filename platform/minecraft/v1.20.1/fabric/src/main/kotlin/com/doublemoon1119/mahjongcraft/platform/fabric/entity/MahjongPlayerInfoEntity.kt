@@ -38,7 +38,7 @@ class MahjongPlayerInfoEntity(
                 JSON.decodeFromString<List<PlayerEntryDto>>(raw)
             } catch (error: Exception) {
                 if (unreadablePlayers.shouldReport(raw)) {
-                    LOGGER.warn("Player info entity {} has unreadable player data ({}); showing no players", uuid, error::class.simpleName)
+                    logger.warn("Player info entity {} has unreadable player data ({}); showing no players", uuid, error::class.simpleName)
                 }
                 return emptyList()
             }
@@ -157,7 +157,7 @@ class MahjongPlayerInfoEntity(
         private const val NBT_CONTROLLER_Z = "ControllerZ"
         private const val NBT_HIDDEN_UNTIL = "HiddenUntilGameTime"
         private val JSON = Json
-        private val LOGGER = mahjongCraftLogger(MahjongPlayerInfoEntity::class)
+        private val logger = mahjongCraftLogger(MahjongPlayerInfoEntity::class)
         private val PLAYERS: TrackedData<String> = DataTracker.registerData(MahjongPlayerInfoEntity::class.java, TrackedDataHandlerRegistry.STRING)
         private val DEALER_PLAYER_ID: TrackedData<String> = DataTracker.registerData(MahjongPlayerInfoEntity::class.java, TrackedDataHandlerRegistry.STRING)
         private val TABLE_FACING: TrackedData<String> = DataTracker.registerData(MahjongPlayerInfoEntity::class.java, TrackedDataHandlerRegistry.STRING)

@@ -115,13 +115,25 @@ class ClientAutoSortHandPreferenceService(
     /** 記錄偏好同步送不出去的 logger。 */
     private val logger = mahjongCraftLogger(ClientAutoSortHandPreferenceService::class)
 
+    /**
+     * 目前這一連串 USER_CHANGE 失敗是否已記錄過警告；任何一次偏好成功送出（含 RESTORE）後重設。
+     *
+     * 與 [syncRetryPending] 分開：重試標記會跨連線保留，警告則在偏好成功送達後的下一次失敗重新記錄。
+     */
+    internal var syncFailureReported = false
+        private set
+
     /** 只在封包送出後清除重試標記；連續失敗只在第一次記錄警告。 */
     private fun sendUserChange(enabled: Boolean): ClientAutoSortHandPreferenceUpdateResult = try {
         sender.sendUserChange(enabled)
         syncRetryPending = false
+        syncFailureReported = false
         ClientAutoSortHandPreferenceUpdateResult.Updated(enabled)
     } catch (exception: RuntimeException) {
-        if (!syncRetryPending) logger.warn("Auto sort hand preference change could not be sent: enabled={}", enabled, exception)
+        if (!syncFailureReported) {
+            logger.warn("Auto sort hand preference change could not be sent: enabled={}", enabled, exception)
+            syncFailureReported = true
+        }
         syncRetryPending = true
         ClientAutoSortHandPreferenceUpdateResult.SyncFailed(enabled, exception)
     }
@@ -131,6 +143,7 @@ class ClientAutoSortHandPreferenceService(
         val enabled = current()
         try {
             sender.sendRestore(enabled)
+            syncFailureReported = false
         } catch (exception: RuntimeException) {
             logger.warn("Auto sort hand preference restore could not be sent: enabled={}", enabled, exception)
         }
