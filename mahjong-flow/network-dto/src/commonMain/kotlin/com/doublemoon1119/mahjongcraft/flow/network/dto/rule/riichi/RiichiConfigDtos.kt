@@ -161,8 +161,8 @@ sealed interface RiichiGameLengthDto : GameLengthDto {
 data class RiichiDynamicStateDto(
     val riichiStickCount: Int,
     val completedSupplementalDrawCount: Int,
-    val revealedKanDoraCount: Int = completedSupplementalDrawCount,
-    val pendingKanDoraReveals: List<RiichiPendingKanDoraRevealDto> = emptyList(),
+    val revealedKanDoraCount: Int,
+    val pendingKanDoraReveals: List<RiichiPendingKanDoraRevealDto>,
     val completedNorthDrawCount: Int,
 ) : DynamicRuleStateDto
 

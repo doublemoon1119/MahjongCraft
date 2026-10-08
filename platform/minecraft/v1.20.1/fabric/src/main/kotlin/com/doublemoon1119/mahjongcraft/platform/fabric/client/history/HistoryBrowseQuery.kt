@@ -17,7 +17,7 @@ internal data class HistoryBrowseQuery(
     val scope: HistoryQueryScopeDto = HistoryQueryScopeDto.OWN,
     val sortField: HistorySortFieldDto = HistorySortFieldDto.ENDED_AT,
     val sortDirection: HistorySortDirectionDto = HistorySortDirectionDto.DESC,
-    val filters: HistoryQueryFiltersDto = HistoryQueryFiltersDto(),
+    val filters: HistoryQueryFiltersDto = HistoryQueryFiltersDto.NONE,
 ) {
     /** 將目前條件調整為指定資料範圍可用的形式。
      *

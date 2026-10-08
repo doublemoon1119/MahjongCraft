@@ -64,7 +64,7 @@ internal class HistoryReplayProjectionMapper(private val registry: HistoryReplay
         val wind = Wind.valueOf(string(root.getValue(ReplaySourceKeys.PREVALENT_WIND)))
         require(roundPosition.prevalentWind == wind) { "Replay round position is inconsistent" }
         val wall = refs(obj(root.getValue(ReplaySourceKeys.TILE_WALL)).getValue(ReplaySourceKeys.WALL_TILES), context)
-        val reserved = refs(root.getValue(ReplaySourceKeys.INITIAL_DEAD_WALL), context)
+        val reserved = refs(root.getValue(ReplaySourceKeys.RESERVED_WALL_TILES), context)
         val held = wall + reserved + players.flatMap { player ->
             player.handTiles + listOfNotNull(player.lastDrawn) + player.melds.flatMap { it.tiles } + player.discards.filterNot { it.isTaken }.map { it.tile }
         }

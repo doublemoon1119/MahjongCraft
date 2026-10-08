@@ -127,7 +127,7 @@ class TableStatePersistenceTest {
         assertEncodedRoundTrip(
             state.copy(
                 wallOpening = WallOpening(wallSideOffsetFromDealer = 2, stacksFromRight = 7),
-                initialDeadWall = listOf(identified(Tile.Honor.White), identified(Tile.Honor.Green)),
+                reservedWallTiles = listOf(identified(Tile.Honor.White), identified(Tile.Honor.Green)),
             ),
         )
     }

@@ -437,9 +437,12 @@ class HistoryBrowseRoundControllerTest {
         endedAtEpochMillis = 2,
         outcome = HistoryOutcomeFilterDto.COMPLETED,
         integrity = HistoryIntegrityFilterDto.COMPLETE,
-        participants = listOf(HistoryParticipantSummaryDto(0, PLAYER_ID)),
+        participants = listOf(HistoryParticipantSummaryDto(0, PLAYER_ID, aiStrategyId = null)),
         roundCount = 2,
         resultsAvailable = true,
+        integrityDiagnostic = null,
+        durationMillis = null,
+        results = emptyList(),
     )
 
     /** 建立包含兩局索引的摘要內容。
@@ -562,14 +565,14 @@ class HistoryBrowseRoundControllerTest {
          * @param entries 列表摘要。
          */
         fun respondList(entries: List<HistoryMatchSummaryDto>) {
-            mutableState.value = ClientHistoryQueryState.ListResult(HistoryListResponseDto("list-1", entries))
+            mutableState.value = ClientHistoryQueryState.ListResult(HistoryListResponseDto("list-1", entries, nextCursor = null, errorCode = null, allowAll = false))
         }
 
         /** 發出摘要成功回應。
          * @param detail 摘要內容。
          */
         fun respondSummary(detail: HistoryMatchDetailDto) {
-            mutableState.value = ClientHistoryQueryState.SummaryResult(HistorySummaryResponseDto("summary-2", detail))
+            mutableState.value = ClientHistoryQueryState.SummaryResult(HistorySummaryResponseDto("summary-2", detail, errorCode = null))
         }
 
         /** 發出事件頁成功回應。
@@ -588,7 +591,7 @@ class HistoryBrowseRoundControllerTest {
         ) {
             val indexes = transactionIndexes ?: if (next == null) listOf(start) else (start until next).toList()
             mutableState.value = ClientHistoryQueryState.RoundEventsResult(
-                HistoryRoundEventsResponseDto(requestId, MATCH_ID, roundNumber, start, events(roundNumber, indexes, next)),
+                HistoryRoundEventsResponseDto(requestId, MATCH_ID, roundNumber, start, events(roundNumber, indexes, next), errorCode = null),
             )
         }
 
@@ -599,7 +602,7 @@ class HistoryBrowseRoundControllerTest {
         fun respondEventsError(errorCode: HistoryQueryErrorCodeDto, requestId: String = roundEventsRequests.last().requestId) {
             val request = roundEventsRequests.last { it.requestId == requestId }
             mutableState.value = ClientHistoryQueryState.RoundEventsResult(
-                HistoryRoundEventsResponseDto(requestId, request.matchId, request.roundNumber, request.startTransactionIndex, errorCode = errorCode),
+                HistoryRoundEventsResponseDto(requestId, request.matchId, request.roundNumber, request.startTransactionIndex, errorCode = errorCode, events = null),
             )
         }
 
@@ -610,7 +613,7 @@ class HistoryBrowseRoundControllerTest {
          */
         fun respondState(roundNumber: Int, position: HistoryRoundPositionDto, requestId: String = roundStateRequests.last().requestId) {
             mutableState.value = ClientHistoryQueryState.RoundStateResult(
-                HistoryRoundStateResponseDto(requestId, MATCH_ID, roundNumber, position, state(roundNumber, position)),
+                HistoryRoundStateResponseDto(requestId, MATCH_ID, roundNumber, position, state(roundNumber, position), errorCode = null),
             )
         }
     }

@@ -83,7 +83,7 @@ class DeclareKanUseCaseTest {
             id = gameId,
             players = listOf(declarer),
             config = RiichiRuleConfig(),
-            initialDeadWall = completeDeadWall(rinshanTile),
+            reservedWallTiles = completeDeadWall(rinshanTile),
             currentPlayerIndex = 0,
             dynamicRuleState = RiichiDynamicState(),
         ).withFirstKanPhysicalWallLayout()
@@ -105,7 +105,7 @@ class DeclareKanUseCaseTest {
             "Kan must be recorded before Draw for rinshan kaihou detection to work.",
         )
         assertEquals(table.tileWall.remainingCount - 1, newState.tileWall.remainingCount)
-        assertEquals(table.tileWall.getAllTiles().last(), newState.initialDeadWall.last())
+        assertEquals(table.tileWall.getAllTiles().last(), newState.reservedWallTiles.last())
         assertEquals(1, (newState.dynamicRuleState as RiichiDynamicState).completedSupplementalDrawCount)
         assertEquals(
             newState,
@@ -149,7 +149,7 @@ class DeclareKanUseCaseTest {
             id = gameId,
             players = listOf(declarer),
             config = RiichiRuleConfig(),
-            initialDeadWall = deadWall,
+            reservedWallTiles = deadWall,
             currentPlayerIndex = 0,
             dynamicRuleState = RiichiDynamicState(),
         )
@@ -197,7 +197,7 @@ class DeclareKanUseCaseTest {
             id = gameId,
             players = listOf(declarer),
             config = RiichiRuleConfig(),
-            initialDeadWall = deadWall,
+            reservedWallTiles = deadWall,
             currentPlayerIndex = 0,
             dynamicRuleState = RiichiDynamicState(completedSupplementalDrawCount = 1),
         )
@@ -237,7 +237,7 @@ class DeclareKanUseCaseTest {
             id = gameId,
             players = listOf(declarer),
             config = RiichiRuleConfig(),
-            initialDeadWall = completeDeadWall(rinshanTile),
+            reservedWallTiles = completeDeadWall(rinshanTile),
             currentPlayerIndex = 0,
             dynamicRuleState = RiichiDynamicState(),
         )
@@ -317,7 +317,7 @@ class DeclareKanUseCaseTest {
             id = gameId,
             players = listOf(declarer),
             config = RiichiRuleConfig(),
-            initialDeadWall = completeDeadWall(rinshanTile),
+            reservedWallTiles = completeDeadWall(rinshanTile),
             currentPlayerIndex = 0,
             dynamicRuleState = RiichiDynamicState(),
         )
@@ -373,7 +373,7 @@ class DeclareKanUseCaseTest {
             players = listOf(declarer),
             config = RiichiRuleConfig(),
             // tileWall 刻意不是空的——那是「河底/海底不可鳴牌」的判定條件，跟這裡要測的「嶺上牌保留區
-            // （initialDeadWall，預設空清單）摸盡」是兩回事，tileWall 空的話這次暗槓在走到補摸嶺上牌
+            // （reservedWallTiles，預設空清單）摸盡」是兩回事，tileWall 空的話這次暗槓在走到補摸嶺上牌
             // 之前就會先被 RiichiLegalActionValidator 擋下，這個測試就測不到真正想驗證的情境。
             currentPlayerIndex = 0,
             dynamicRuleState = RiichiDynamicState(),
@@ -388,7 +388,7 @@ class DeclareKanUseCaseTest {
         val unchangedPlayer = unchangedState.players.first { it.id == playerId }
         assertTrue(unchangedPlayer.hand.melds.isEmpty(), "The meld should not be applied when the replacement draw fails.")
         assertEquals(east4, unchangedPlayer.hand.lastDrawn, "The player's hand should remain exactly as it was before the declaration.")
-        assertEquals(0, unchangedState.initialDeadWall.size, "The rinshan reserve (initialDeadWall) is what's actually exhausted here.")
+        assertEquals(0, unchangedState.reservedWallTiles.size, "The rinshan reserve (reservedWallTiles) is what's actually exhausted here.")
         assertTrue(fixtures.presentationPublisher.getPublishedWallLayoutTransitions(gameId).isEmpty())
         assertNull(fixtures.presentationPublisher.getPublishedRoundInfo(gameId))
     }
@@ -486,7 +486,7 @@ class DeclareKanUseCaseTest {
             id = gameId,
             players = listOf(declarer, other),
             config = RiichiRuleConfig(),
-            initialDeadWall = completeDeadWall(rinshanTile),
+            reservedWallTiles = completeDeadWall(rinshanTile),
             currentPlayerIndex = 0,
             dynamicRuleState = RiichiDynamicState(),
         )
@@ -603,7 +603,7 @@ class DeclareKanUseCaseTest {
             id = gameId,
             players = listOf(declarer, finishedRobber),
             config = RiichiRuleConfig(),
-            initialDeadWall = completeDeadWall(rinshanTile),
+            reservedWallTiles = completeDeadWall(rinshanTile),
             currentPlayerIndex = 0,
             finishedPlayerIds = setOf(finishedRobberId),
             dynamicRuleState = RiichiDynamicState(),

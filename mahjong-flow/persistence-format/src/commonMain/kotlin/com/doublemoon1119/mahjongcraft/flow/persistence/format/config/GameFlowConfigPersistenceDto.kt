@@ -10,12 +10,12 @@ import kotlinx.serialization.Serializable
 /** [GameFlowConfig] 的完整 persistence DTO。 */
 @Serializable
 data class GameFlowConfigPersistenceDto(
-    val baseSeconds: Int = ActionTimeControl.Normal.baseSeconds,
-    val reserveSeconds: Int = ActionTimeControl.Normal.reserveSeconds,
-    val preparationBaseSeconds: Int = GameFlowConfig().preparationBaseSeconds,
-    val decisionTimeoutPolicy: DecisionTimeoutPolicy = DecisionTimeoutPolicy.FORCED_AUTO_PLAY,
-    val spectatingPolicy: SpectatingPolicy = SpectatingPolicy.ENABLED,
-    val spectatorHandVisibility: SpectatorHandVisibility = SpectatorHandVisibility.REVEALED,
+    val baseSeconds: Int,
+    val reserveSeconds: Int,
+    val preparationBaseSeconds: Int,
+    val decisionTimeoutPolicy: DecisionTimeoutPolicy,
+    val spectatingPolicy: SpectatingPolicy,
+    val spectatorHandVisibility: SpectatorHandVisibility,
 )
 
 /** 將 [GameFlowConfig] 轉換成 persistence DTO。 */

@@ -6,19 +6,14 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPendingKanDoraRe
 import kotlinx.serialization.Serializable
 import kotlin.uuid.Uuid
 
-/**
- * [RiichiDynamicState] 的完整 persistence DTO。
- *
- * 預設值是最常見的狀態（槓寶牌已全部公開、沒有等待公開的槓寶牌、沒有拔北補牌）；編碼時省略等於預設值的欄位，
- * 讓精簡牌譜不必重複寫出這些值。
- */
+/** [RiichiDynamicState] 的完整 persistence DTO。 */
 @Serializable
 data class RiichiDynamicStatePersistenceDto(
     val riichiStickCount: Int,
     val completedSupplementalDrawCount: Int,
-    val revealedKanDoraCount: Int = completedSupplementalDrawCount,
-    val pendingKanDoraReveals: List<RiichiPendingKanDoraRevealPersistenceDto> = emptyList(),
-    val completedNorthDrawCount: Int = 0,
+    val revealedKanDoraCount: Int,
+    val pendingKanDoraReveals: List<RiichiPendingKanDoraRevealPersistenceDto>,
+    val completedNorthDrawCount: Int,
 )
 
 /** 尚未正式公開的日麻槓寶牌 persistence DTO。 */

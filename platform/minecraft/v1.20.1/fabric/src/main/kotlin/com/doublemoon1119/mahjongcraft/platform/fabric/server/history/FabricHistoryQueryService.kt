@@ -129,10 +129,10 @@ class FabricHistoryQueryService(
     private fun receiveRoundEvents(server: MinecraftServer, player: ServerPlayerEntity, request: HistoryRoundEventsRequestDto) {
         receiveRoundQuery(
             server, player, request.requestId, request.matchId, request.scope.toDomain(),
-            failure = { HistoryRoundEventsResponseDto(request.requestId, request.matchId, request.roundNumber, request.startTransactionIndex, errorCode = it) },
+            failure = { HistoryRoundEventsResponseDto(request.requestId, request.matchId, request.roundNumber, request.startTransactionIndex, errorCode = it, events = null) },
             query = { access, repository ->
                 when (val result = GetHistoryRoundEventsUseCase(repository, ::policy)(access, request.toDomain())) {
-                    is HistoryQueryResult.Failure -> HistoryRoundEventsResponseDto(request.requestId, request.matchId, request.roundNumber, request.startTransactionIndex, errorCode = result.error.code.toDto())
+                    is HistoryQueryResult.Failure -> HistoryRoundEventsResponseDto(request.requestId, request.matchId, request.roundNumber, request.startTransactionIndex, errorCode = result.error.code.toDto(), events = null)
                     is HistoryQueryResult.Success -> boundedHistoryRoundEvents(request, result.value, json)
                 }
             },
@@ -151,10 +151,10 @@ class FabricHistoryQueryService(
     private fun receiveRoundState(server: MinecraftServer, player: ServerPlayerEntity, request: HistoryRoundStateRequestDto) {
         receiveRoundQuery(
             server, player, request.requestId, request.matchId, request.scope.toDomain(),
-            failure = { HistoryRoundStateResponseDto(request.requestId, request.matchId, request.roundNumber, request.position, errorCode = it) },
+            failure = { HistoryRoundStateResponseDto(request.requestId, request.matchId, request.roundNumber, request.position, errorCode = it, state = null) },
             query = { access, repository ->
                 when (val result = GetHistoryRoundStateUseCase(repository, ::policy)(access, request.toDomain())) {
-                    is HistoryQueryResult.Failure -> HistoryRoundStateResponseDto(request.requestId, request.matchId, request.roundNumber, request.position, errorCode = result.error.code.toDto())
+                    is HistoryQueryResult.Failure -> HistoryRoundStateResponseDto(request.requestId, request.matchId, request.roundNumber, request.position, errorCode = result.error.code.toDto(), state = null)
                     is HistoryQueryResult.Success -> boundedHistoryRoundState(request, result.value, json)
                 }
             },
@@ -273,7 +273,7 @@ class FabricHistoryQueryService(
                     try {
                         val matchId = Uuid.parse(request.matchId)
                         when (val result = writer.archiveStatus(access, matchId, sessionId)) {
-                            is HistoryManagementResult.Success -> HistoryArchiveStatusResponseDto(request.requestId, result.value)
+                            is HistoryManagementResult.Success -> HistoryArchiveStatusResponseDto(request.requestId, result.value, errorCode = null)
                             is HistoryManagementResult.Busy -> HistoryArchiveStatusResponseDto(request.requestId, HistoryArchiveStatusDto.MISSING, HistoryQueryErrorCodeDto.BUSY)
                             is HistoryManagementResult.Disconnected,
                             is HistoryManagementResult.SessionChanged,
@@ -288,7 +288,7 @@ class FabricHistoryQueryService(
                     if (!sameConnection(server, player, sessionId)) return@withContext
                     val currentPolicy = policy()
                     if (!currentPolicy.queryEnabled) {
-                        response = HistoryArchiveStatusResponseDto(request.requestId, HistoryArchiveStatusDto.DISABLED)
+                        response = HistoryArchiveStatusResponseDto(request.requestId, HistoryArchiveStatusDto.DISABLED, errorCode = null)
                     } else if (access.isAdministrator &&
                         (!player.queryAccess().isAdministrator || initialPolicy.allowAdministratorQuery && !currentPolicy.allowAdministratorQuery)
                     ) {
@@ -332,7 +332,7 @@ class FabricHistoryQueryService(
         val accepted = admission.acquire(access.principalId)
         if (accepted !is HistoryQueryAdmission.Admission.Accepted) {
             if (admission.shouldSendRejection(access.principalId)) {
-                MahjongChannels.historyListResponse.sendTo(player, json, HistoryListResponseDto(request.requestId, emptyList(), errorCode = accepted.errorCode(), allowAll = canQueryAll(access, policy())))
+                MahjongChannels.historyListResponse.sendTo(player, json, HistoryListResponseDto(request.requestId, emptyList(), nextCursor = null, errorCode = accepted.errorCode(), allowAll = canQueryAll(access, policy())))
             }
             return
         }
@@ -344,19 +344,19 @@ class FabricHistoryQueryService(
                         val domain = request.toDomain { it?.decodeHistoryCursor(json) }
                         val repository = FabricHistoryQueryRepository(writer, sessionId, identityStore)
                         when (val result = ListHistoryUseCase(repository, ::policy)(access, domain)) {
-                            is HistoryQueryResult.Failure -> HistoryListResponseDto(request.requestId, emptyList(), errorCode = result.error.code.toDto())
+                            is HistoryQueryResult.Failure -> HistoryListResponseDto(request.requestId, emptyList(), nextCursor = null, errorCode = result.error.code.toDto(), allowAll = false)
                             is HistoryQueryResult.Success -> boundedHistoryPage(request.requestId, result.value, domain, access.principalId, json, { it.encode(json) })
                         }
                     } catch (_: IllegalArgumentException) {
-                        HistoryListResponseDto(request.requestId, emptyList(), errorCode = HistoryQueryErrorCodeDto.INVALID_REQUEST)
+                        HistoryListResponseDto(request.requestId, emptyList(), nextCursor = null, errorCode = HistoryQueryErrorCodeDto.INVALID_REQUEST, allowAll = false)
                     }
-                } ?: HistoryListResponseDto(request.requestId, emptyList(), errorCode = HistoryQueryErrorCodeDto.TIMEOUT)
+                } ?: HistoryListResponseDto(request.requestId, emptyList(), nextCursor = null, errorCode = HistoryQueryErrorCodeDto.TIMEOUT, allowAll = false)
                 withContext(dispatchers.main) {
                     if (!sameConnection(server, player, sessionId)) return@withContext
                     val invalid = replyError(player.queryAccess(), policy(), request.scope.toDomain())
-                    if (invalid != null) response = HistoryListResponseDto(request.requestId, emptyList(), errorCode = invalid)
+                    if (invalid != null) response = HistoryListResponseDto(request.requestId, emptyList(), nextCursor = null, errorCode = invalid, allowAll = false)
                     val active = activeMatches()
-                    if (response.entries.any { it.matchId in active }) response = HistoryListResponseDto(request.requestId, emptyList(), errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE)
+                    if (response.entries.any { it.matchId in active }) response = HistoryListResponseDto(request.requestId, emptyList(), nextCursor = null, errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE, allowAll = false)
                     response = response.copy(allowAll = canQueryAll(player.queryAccess(), policy()))
                     sendIdentities(player, response.entries.flatMap { entry -> entry.participants.filter { it.aiStrategyId == null }.map { it.playerId } })
                     MahjongChannels.historyListResponse.sendTo(player, json, response)
@@ -366,7 +366,7 @@ class FabricHistoryQueryService(
             } catch (error: Exception) {
                 logger.error("History list query failed", error)
                 withContext(dispatchers.main) {
-                    if (sameConnection(server, player, sessionId)) MahjongChannels.historyListResponse.sendTo(player, json, HistoryListResponseDto(request.requestId, emptyList(), errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE, allowAll = canQueryAll(player.queryAccess(), policy())))
+                    if (sameConnection(server, player, sessionId)) MahjongChannels.historyListResponse.sendTo(player, json, HistoryListResponseDto(request.requestId, emptyList(), nextCursor = null, errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE, allowAll = canQueryAll(player.queryAccess(), policy())))
                 }
             } finally {
                 admission.release(access.principalId, accepted.token)
@@ -391,7 +391,7 @@ class FabricHistoryQueryService(
         val accepted = admission.acquire(access.principalId)
         if (accepted !is HistoryQueryAdmission.Admission.Accepted) {
             if (admission.shouldSendRejection(access.principalId)) {
-                MahjongChannels.historySummaryResponse.sendTo(player, json, HistorySummaryResponseDto(request.requestId, errorCode = accepted.errorCode()))
+                MahjongChannels.historySummaryResponse.sendTo(player, json, HistorySummaryResponseDto(request.requestId, errorCode = accepted.errorCode(), detail = null))
             }
             return
         }
@@ -402,21 +402,21 @@ class FabricHistoryQueryService(
                         val domain = HistorySummaryRequest(Uuid.parse(request.matchId), request.scope.toDomain())
                         val repository = FabricHistoryQueryRepository(writer, sessionId, identityStore)
                         when (val result = GetHistorySummaryUseCase(repository, ::policy)(access, domain)) {
-                            is HistoryQueryResult.Failure -> HistorySummaryResponseDto(request.requestId, errorCode = result.error.code.toDto())
-                            is HistoryQueryResult.Success -> HistorySummaryResponseDto(request.requestId, result.value.toDto())
+                            is HistoryQueryResult.Failure -> HistorySummaryResponseDto(request.requestId, errorCode = result.error.code.toDto(), detail = null)
+                            is HistoryQueryResult.Success -> HistorySummaryResponseDto(request.requestId, result.value.toDto(), errorCode = null)
                         }
                     } catch (_: IllegalArgumentException) {
-                        HistorySummaryResponseDto(request.requestId, errorCode = HistoryQueryErrorCodeDto.INVALID_REQUEST)
+                        HistorySummaryResponseDto(request.requestId, errorCode = HistoryQueryErrorCodeDto.INVALID_REQUEST, detail = null)
                     }
-                } ?: HistorySummaryResponseDto(request.requestId, errorCode = HistoryQueryErrorCodeDto.TIMEOUT)
+                } ?: HistorySummaryResponseDto(request.requestId, errorCode = HistoryQueryErrorCodeDto.TIMEOUT, detail = null)
                 if (json.encodeToString(HistorySummaryResponseDto.serializer(), response).toByteArray(Charsets.UTF_8).size > HistoryQueryLimits.RESPONSE_BYTES) {
-                    response = HistorySummaryResponseDto(request.requestId, errorCode = HistoryQueryErrorCodeDto.CONTENT_TOO_LARGE)
+                    response = HistorySummaryResponseDto(request.requestId, errorCode = HistoryQueryErrorCodeDto.CONTENT_TOO_LARGE, detail = null)
                 }
                 withContext(dispatchers.main) {
                     if (!sameConnection(server, player, sessionId)) return@withContext
                     val invalid = replyError(player.queryAccess(), policy(), request.scope.toDomain())
-                    if (invalid != null) response = HistorySummaryResponseDto(request.requestId, errorCode = invalid)
-                    if (response.detail?.summary?.matchId in activeMatches()) response = HistorySummaryResponseDto(request.requestId, errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE)
+                    if (invalid != null) response = HistorySummaryResponseDto(request.requestId, errorCode = invalid, detail = null)
+                    if (response.detail?.summary?.matchId in activeMatches()) response = HistorySummaryResponseDto(request.requestId, errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE, detail = null)
                     response.detail?.let { detail ->
                         sendIdentities(player, detail.summary.participants.filter { it.aiStrategyId == null }.map { it.playerId })
                     }
@@ -427,7 +427,7 @@ class FabricHistoryQueryService(
             } catch (error: Exception) {
                 logger.error("History summary query failed", error)
                 withContext(dispatchers.main) {
-                    if (sameConnection(server, player, sessionId)) MahjongChannels.historySummaryResponse.sendTo(player, json, HistorySummaryResponseDto(request.requestId, errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE))
+                    if (sameConnection(server, player, sessionId)) MahjongChannels.historySummaryResponse.sendTo(player, json, HistorySummaryResponseDto(request.requestId, errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE, detail = null))
                 }
             } finally {
                 admission.release(access.principalId, accepted.token)
@@ -455,7 +455,7 @@ class FabricHistoryQueryService(
                 MahjongChannels.historyRuleSettingsResponse.sendTo(
                     player,
                     json,
-                    HistoryRuleSettingsResponseDto(request.requestId, errorCode = accepted.errorCode()),
+                    HistoryRuleSettingsResponseDto(request.requestId, errorCode = accepted.errorCode(), config = null),
                 )
             }
             return
@@ -467,22 +467,23 @@ class FabricHistoryQueryService(
                         val domain = request.toDomain()
                         val repository = FabricHistoryQueryRepository(writer, sessionId, identityStore)
                         when (val result = GetHistoryRuleSettingsUseCase(repository, ::policy)(access, domain)) {
-                            is HistoryQueryResult.Failure -> HistoryRuleSettingsResponseDto(request.requestId, errorCode = result.error.code.toDto())
+                            is HistoryQueryResult.Failure -> HistoryRuleSettingsResponseDto(request.requestId, errorCode = result.error.code.toDto(), config = null)
                             is HistoryQueryResult.Success -> boundedHistoryRuleSettings(request.requestId, result.value, networkRegistries, json)
                         }
                     } catch (_: IllegalArgumentException) {
-                        HistoryRuleSettingsResponseDto(request.requestId, errorCode = HistoryQueryErrorCodeDto.INVALID_REQUEST)
+                        HistoryRuleSettingsResponseDto(request.requestId, errorCode = HistoryQueryErrorCodeDto.INVALID_REQUEST, config = null)
                     }
-                } ?: HistoryRuleSettingsResponseDto(request.requestId, errorCode = HistoryQueryErrorCodeDto.TIMEOUT)
+                } ?: HistoryRuleSettingsResponseDto(request.requestId, errorCode = HistoryQueryErrorCodeDto.TIMEOUT, config = null)
                 withContext(dispatchers.main) {
                     if (!sameConnection(server, player, sessionId)) return@withContext
                     val invalid = replyError(player.queryAccess(), policy(), request.scope.toDomain())
-                    if (invalid != null) response = HistoryRuleSettingsResponseDto(request.requestId, errorCode = invalid)
+                    if (invalid != null) response = HistoryRuleSettingsResponseDto(request.requestId, errorCode = invalid, config = null)
                     val requestedMatchId = runCatching { Uuid.parse(request.matchId).toString() }.getOrNull()
                     if (requestedMatchId != null && requestedMatchId in activeMatches()) {
                         response = HistoryRuleSettingsResponseDto(
                             request.requestId,
                             errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE,
+                            config = null,
                         )
                     }
                     MahjongChannels.historyRuleSettingsResponse.sendTo(player, json, response)
@@ -496,7 +497,7 @@ class FabricHistoryQueryService(
                         MahjongChannels.historyRuleSettingsResponse.sendTo(
                             player,
                             json,
-                            HistoryRuleSettingsResponseDto(request.requestId, errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE),
+                            HistoryRuleSettingsResponseDto(request.requestId, errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE, config = null),
                         )
                     }
                 }

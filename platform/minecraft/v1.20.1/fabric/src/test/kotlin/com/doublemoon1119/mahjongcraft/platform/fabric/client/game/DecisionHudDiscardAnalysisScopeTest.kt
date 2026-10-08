@@ -29,9 +29,19 @@ class DecisionHudDiscardAnalysisScopeTest {
                         maxCount = 1,
                         discardAnalyses = listOf(riichi),
                     ),
+                    referenceTileAssetKey = null,
+                    previewTileAssetKeys = emptyList(),
+                    claimedTileIndex = null,
                 ),
             ),
             discardAnalyses = listOf(ordinary),
+            ruleModuleId = null,
+            triggerTileAssetKey = null,
+            triggerPlayerId = null,
+            triggerPlayerName = null,
+            triggerPlayerRelation = null,
+            triggerActionId = null,
+            preparation = null,
         )
 
         assertEquals(listOf(riichi), prompt.discardAnalysesForAction("riichi"))
@@ -52,10 +62,21 @@ class DecisionHudDiscardAnalysisScopeTest {
                         eligibleTileIds = listOf("tile"),
                         minCount = 1,
                         maxCount = 1,
+                        discardAnalyses = emptyList(),
                     ),
+                    referenceTileAssetKey = null,
+                    previewTileAssetKeys = emptyList(),
+                    claimedTileIndex = null,
                 ),
             ),
             discardAnalyses = listOf(ordinary),
+            ruleModuleId = null,
+            triggerTileAssetKey = null,
+            triggerPlayerId = null,
+            triggerPlayerName = null,
+            triggerPlayerRelation = null,
+            triggerActionId = null,
+            preparation = null,
         )
 
         assertEquals(listOf(ordinary), prompt.discardAnalysesForAction("action"))
@@ -65,11 +86,18 @@ class DecisionHudDiscardAnalysisScopeTest {
     @Test
     fun `pointing at a legal discard prefers its projected analysis`() {
         val projected = analysis("tile")
-        val current = HandReadinessAnalysisDto("mahjongcraft:riichi", emptyList())
+        val current = HandReadinessAnalysisDto("mahjongcraft:riichi", emptyList(), statusIndicatorId = null)
         val prompt = PlayerDecisionPromptDto(
             decisionKey = "decision",
             ruleModuleId = "mahjongcraft:riichi",
             discardAnalyses = listOf(projected),
+            actions = emptyList(),
+            triggerTileAssetKey = null,
+            triggerPlayerId = null,
+            triggerPlayerName = null,
+            triggerPlayerRelation = null,
+            triggerActionId = null,
+            preparation = null,
         )
 
         val selected = assertIs<HandAnalysisSelection.AfterDiscard>(
@@ -81,7 +109,7 @@ class DecisionHudDiscardAnalysisScopeTest {
 
     @Test
     fun `current hand analysis is used without a legal pointed discard`() {
-        val current = HandReadinessAnalysisDto("mahjongcraft:riichi", emptyList())
+        val current = HandReadinessAnalysisDto("mahjongcraft:riichi", emptyList(), statusIndicatorId = null)
 
         val selected = assertIs<HandAnalysisSelection.Current>(
             selectHandAnalysis(null, null, null, current),
@@ -94,5 +122,6 @@ class DecisionHudDiscardAnalysisScopeTest {
     private fun analysis(id: String) = DiscardReadinessAnalysisDto(
         discardTileId = id,
         waitingTiles = emptyList(),
+        statusIndicatorId = null,
     )
 }

@@ -180,7 +180,7 @@ class HistoryRoundEventPresentationTest {
     fun `match completion localizes built in end reasons`() {
         val reasons = mapOf(BuiltInMatchEndReasonIds.SCHEDULE_COMPLETED to MinecraftHistoryScreenKeys.ROUND_OUTCOME_SCHEDULE_COMPLETED, BuiltInMatchEndReasonIds.TARGET_SCORE_REACHED to MinecraftHistoryScreenKeys.ROUND_OUTCOME_TARGET_SCORE_REACHED, BuiltInMatchEndReasonIds.EXTRA_ROUND_LIMIT_REACHED to MinecraftHistoryScreenKeys.ROUND_OUTCOME_EXTRA_ROUND_LIMIT_REACHED, BuiltInMatchEndReasonIds.DEALER_TOP_FINISH to MinecraftHistoryScreenKeys.ROUND_OUTCOME_DEALER_TOP_FINISH, BuiltInMatchEndReasonIds.PLAYER_BUSTED to MinecraftHistoryScreenKeys.ROUND_OUTCOME_PLAYER_BUSTED)
         reasons.forEach { (reason, key) ->
-            val outcome = HistoryRoundOutcomeDto(reason, emptyList(), emptyMap(), null, emptyList(), null)
+            val outcome = HistoryRoundOutcomeDto(reason, emptyList(), emptyMap(), null, emptyList(), null, scoreChangesBySeat = emptyMap(), winnerDetails = emptyList(), hasEarlierWinSettlement = false)
             val fact = presenter().present(events(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.MATCH_COMPLETED, outcome)), null).transactions.single().facts.single()
             assertEquals(MinecraftHistoryScreenKeys.ROUND_MATCH_COMPLETION, (fact.text.content as TranslatableTextContent).key)
             assertEquals(key, checkNotNull(fact.outcome).reasonText.string)
@@ -228,6 +228,9 @@ class HistoryRoundEventPresentationTest {
             classification = "WIN",
             responsibleSeats = listOf(0),
             transitionDirective = null,
+            scoreChangesBySeat = emptyMap(),
+            winnerDetails = emptyList(),
+            hasEarlierWinSettlement = false,
         )
         val fact = presenter().present(
             events(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.ROUND_COMPLETED, outcome)),
@@ -244,7 +247,7 @@ class HistoryRoundEventPresentationTest {
     /** 結算存在但缺少分數時，仍保留玩家角色且不把未知分數補為零。 */
     @Test
     fun `missing outcome scores remain unknown`() {
-        val outcome = HistoryRoundOutcomeDto("custom:draw", listOf(1), emptyMap(), null, emptyList(), null)
+        val outcome = HistoryRoundOutcomeDto("custom:draw", listOf(1), emptyMap(), null, emptyList(), null, scoreChangesBySeat = emptyMap(), winnerDetails = emptyList(), hasEarlierWinSettlement = false)
         val fact = presenter().present(events(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.ROUND_COMPLETED, outcome)), null)
             .transactions.single().facts.single()
         val rows = checkNotNull(fact.outcome).rows
@@ -292,7 +295,7 @@ class HistoryRoundEventPresentationTest {
     @Test
     fun `outcome names come from registered outcomes then exhaustive draw reasons`() {
         val names = listOf("example:special", "example:registered_draw", "example:unknown").map { reasonId ->
-            val outcome = HistoryRoundOutcomeDto(reasonId, listOf(1), emptyMap(), null, emptyList(), null)
+            val outcome = HistoryRoundOutcomeDto(reasonId, listOf(1), emptyMap(), null, emptyList(), null, scoreChangesBySeat = emptyMap(), winnerDetails = emptyList(), hasEarlierWinSettlement = false)
             val fact = presenter().present(events(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.ROUND_COMPLETED, outcome)), null)
                 .transactions.single().facts.single()
             checkNotNull(fact.outcome).reasonText.string

@@ -139,7 +139,7 @@ class MahjongPlayerInfoEntity(
         private const val NBT_CONTROLLER_Y = "ControllerY"
         private const val NBT_CONTROLLER_Z = "ControllerZ"
         private const val NBT_HIDDEN_UNTIL = "HiddenUntilGameTime"
-        private val JSON = Json { ignoreUnknownKeys = true }
+        private val JSON = Json
         private val PLAYERS: TrackedData<String> = DataTracker.registerData(MahjongPlayerInfoEntity::class.java, TrackedDataHandlerRegistry.STRING)
         private val DEALER_PLAYER_ID: TrackedData<String> = DataTracker.registerData(MahjongPlayerInfoEntity::class.java, TrackedDataHandlerRegistry.STRING)
         private val TABLE_FACING: TrackedData<String> = DataTracker.registerData(MahjongPlayerInfoEntity::class.java, TrackedDataHandlerRegistry.STRING)
@@ -190,19 +190,19 @@ internal data class PlayerEntryDto(
 }
 
 @Serializable
-internal data class IndicatorDto(val id: String, val kind: String, val value: String = "") {
+internal data class IndicatorDto(val id: String, val kind: String, val value: String?) {
     fun toDomain() = PublicPlayerIndicator(
         id,
         when (kind) {
-            "count" -> PublicPlayerIndicatorValue.Count(value.toInt())
-            "option" -> PublicPlayerIndicatorValue.Option(value)
+            "count" -> PublicPlayerIndicatorValue.Count(checkNotNull(value).toInt())
+            "option" -> PublicPlayerIndicatorValue.Option(checkNotNull(value))
             else -> PublicPlayerIndicatorValue.Marker
         },
     )
 
     companion object {
         fun fromDomain(indicator: PublicPlayerIndicator): IndicatorDto = when (val indicatorValue = indicator.indicatorValue) {
-            PublicPlayerIndicatorValue.Marker -> IndicatorDto(indicator.id, "marker")
+            PublicPlayerIndicatorValue.Marker -> IndicatorDto(indicator.id, "marker", null)
             is PublicPlayerIndicatorValue.Count -> IndicatorDto(indicator.id, "count", indicatorValue.value.toString())
             is PublicPlayerIndicatorValue.Option -> IndicatorDto(indicator.id, "option", indicatorValue.optionId)
         }

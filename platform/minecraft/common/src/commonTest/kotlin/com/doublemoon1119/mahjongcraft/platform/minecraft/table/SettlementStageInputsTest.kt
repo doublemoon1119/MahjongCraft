@@ -177,7 +177,7 @@ class SettlementStageInputsTest {
             players = listOf(dealer, opponent),
             dealerPlayerId = dealer.id,
             tileWall = TileWall(wallTiles),
-            initialDeadWall = deadWallTiles,
+            reservedWallTiles = deadWallTiles,
         )
     }
 

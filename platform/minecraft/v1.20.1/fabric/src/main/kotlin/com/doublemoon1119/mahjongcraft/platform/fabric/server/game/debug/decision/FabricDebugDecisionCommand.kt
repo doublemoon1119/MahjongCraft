@@ -398,6 +398,8 @@ class FabricDebugDecisionCommand(
                 actionId = "mahjongcraft:$id",
                 previewTileAssetKeys = tiles,
                 claimedTileIndex = claimedIndex,
+                referenceTileAssetKey = null,
+                tileSelection = null,
             )
             fun riichiAction() = PlayerDecisionActionDto(
                 token = RiichiGameAction.Riichi.id,
@@ -407,7 +409,10 @@ class FabricDebugDecisionCommand(
                     eligibleTileIds = List(9) { Uuid.random().toString() },
                     minCount = 1,
                     maxCount = 1,
+                    discardAnalyses = emptyList(),
                 ),
+                referenceTileAssetKey = null,
+                claimedTileIndex = null,
             )
             // 只有吃會標出鳴來的那張牌（三張牌花色/數值不同才有辨識意義）；碰／槓牌面彼此完全相同，不標記。
             return when (this) {
@@ -423,6 +428,9 @@ class FabricDebugDecisionCommand(
                         token = "$commandName:kyuushu_kyuuhai",
                         actionId = RiichiExhaustiveDrawReason.KyuushuKyuuhai.id,
                         previewTileAssetKeys = listOf("m1", "m9", "p1", "p9", "s1", "s9", "east", "south", "west", "north", "white_dragon", "green_dragon"),
+                        referenceTileAssetKey = null,
+                        claimedTileIndex = null,
+                        tileSelection = null,
                     ),
                 )
                 MIXED -> listOf(

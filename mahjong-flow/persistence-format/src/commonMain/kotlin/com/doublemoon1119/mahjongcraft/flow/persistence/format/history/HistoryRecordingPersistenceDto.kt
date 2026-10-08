@@ -28,7 +28,6 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
-import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -36,7 +35,7 @@ import kotlin.uuid.Uuid
 
 /** 權威歷史待寫事件的持久化快照；此格式與 SQLite schema 分開演進。
  *
- * @property formatVersion 此快照格式的版本號。
+ * @property formatVersion 此快照格式的版本號，目前只接受 [FORMAT_VERSION]。
  * @property nextSequenceByMatchId 各對局下一個可分配的事件序號，鍵為對局 UUID 字串。
  * @property pendingEvents 尚未交給歷史儲存端的事件；各場次的事件依序號排序。
  * @property firstMissingSequenceByMatchId 各對局第一個無法完整還原的事件序號，鍵為對局 UUID 字串。
@@ -46,17 +45,32 @@ import kotlin.uuid.Uuid
  */
 @Serializable
 data class HistoryRecordingPersistenceDto(
-    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
-    val formatVersion: Int = 1,
-    val nextSequenceByMatchId: Map<String, Long> = emptyMap(),
-    val pendingEvents: List<HistoryOutboxEventPersistenceDto> = emptyList(),
-    val firstMissingSequenceByMatchId: Map<String, Long> = emptyMap(),
-    val decisionsByMatchId: Map<String, String> = emptyMap(),
-    val terminalByMatchId: Map<String, HistoryRecordingTerminalPersistenceDto> = emptyMap(),
-    val transfersByMatchId: Map<String, HistoryRecordingTransferPersistenceDto> = emptyMap(),
+    val formatVersion: Int,
+    val nextSequenceByMatchId: Map<String, Long>,
+    val pendingEvents: List<HistoryOutboxEventPersistenceDto>,
+    val firstMissingSequenceByMatchId: Map<String, Long>,
+    val decisionsByMatchId: Map<String, String>,
+    val terminalByMatchId: Map<String, HistoryRecordingTerminalPersistenceDto>,
+    val transfersByMatchId: Map<String, HistoryRecordingTransferPersistenceDto>,
 ) {
     init {
-        require(formatVersion == 1) { "Unsupported history outbox format $formatVersion" }
+        require(formatVersion == FORMAT_VERSION) { "Unsupported history outbox format $formatVersion" }
+    }
+
+    companion object {
+        /** 目前的待寫事件快照格式版本。 */
+        const val FORMAT_VERSION: Int = 1
+
+        /** 沒有任何待寫事件、決策與轉移的空快照。 */
+        val EMPTY: HistoryRecordingPersistenceDto = HistoryRecordingPersistenceDto(
+            formatVersion = FORMAT_VERSION,
+            nextSequenceByMatchId = emptyMap(),
+            pendingEvents = emptyList(),
+            firstMissingSequenceByMatchId = emptyMap(),
+            decisionsByMatchId = emptyMap(),
+            terminalByMatchId = emptyMap(),
+            transfersByMatchId = emptyMap(),
+        )
     }
 }
 
@@ -107,7 +121,7 @@ data class HistoryOutboxEventPersistenceDto(
     val occurredAtEpochMillis: Long,
     val actorPlayerId: String?,
     val fact: HistoryFactPersistenceDto,
-    val transactionFirstSequence: Long = sequence,
+    val transactionFirstSequence: Long,
 )
 
 /** 帶明確序列化種類的歷史事實 DTO。 */
@@ -224,8 +238,7 @@ sealed interface HistoryFactPersistenceDto {
     data class WinSettled(
         val outcomeId: String,
         val winDetails: List<HistoryWinDetailsPersistenceDto>,
-        @EncodeDefault(EncodeDefault.Mode.NEVER)
-        val responsiblePlayerIds: List<String> = emptyList(),
+        val responsiblePlayerIds: List<String>,
     ) : HistoryFactPersistenceDto
 
     /** 整場對局結束時的原因與最終分數。
@@ -254,15 +267,14 @@ sealed interface HistoryFactPersistenceDto {
      *
      * @property reasonId 規則效果的識別碼。
      * @property roundCompletion 規則效果同時完成本局時的結算摘要；否則為 null。
-     * @property winDetails 規則效果產生的胡牌公開詳情；沒有時為空清單，編碼時省略。
+     * @property winDetails 規則效果產生的胡牌公開詳情；沒有時為空清單。
      */
     @Serializable
     @SerialName(HistoryFactTypeKeys.RULE_EFFECT_RESOLVED)
     data class RuleEffectResolved(
         val reasonId: String,
         val roundCompletion: RoundCompletionSummaryPersistenceDto?,
-        @EncodeDefault(EncodeDefault.Mode.NEVER)
-        val winDetails: List<HistoryWinDetailsPersistenceDto> = emptyList(),
+        val winDetails: List<HistoryWinDetailsPersistenceDto>,
     ) : HistoryFactPersistenceDto
 
     /** 同一權威交易內所有語意事實之後唯一的桌況結果。
@@ -291,8 +303,7 @@ sealed interface HistoryFactPersistenceDto {
 data class HistoryWinDetailsPersistenceDto(
     val playerId: String,
     val detailFields: List<HistoryWinDetailFieldPersistenceDto>,
-    @EncodeDefault(EncodeDefault.Mode.NEVER)
-    val hand: HistoryWinningHandPersistenceDto? = null,
+    val hand: HistoryWinningHandPersistenceDto?,
 )
 
 /** 胡牌手牌的持久化表示。
@@ -303,7 +314,7 @@ data class HistoryWinDetailsPersistenceDto(
 @Serializable
 data class HistoryWinningHandPersistenceDto(
     val standingTileIds: List<String>,
-    val winningTileId: String? = null,
+    val winningTileId: String?,
 )
 
 /** 單一胡牌詳情欄位的持久化表示。
@@ -357,8 +368,7 @@ sealed interface HistoryWinDetailValuePersistenceDto {
         @Serializable
         data class Entry(
             val id: String,
-            @EncodeDefault(EncodeDefault.Mode.NEVER)
-            val quantity: HistoryWinDetailQuantityPersistenceDto? = null,
+            val quantity: HistoryWinDetailQuantityPersistenceDto?,
         )
     }
 }
@@ -442,6 +452,7 @@ class HistoryRecordingPersistenceMapper(
             }
         }
         return HistoryRecordingPersistenceDto(
+            formatVersion = HistoryRecordingPersistenceDto.FORMAT_VERSION,
             nextSequenceByMatchId = state.nextSequenceByMatchId.mapKeys { it.key.toString() },
             pendingEvents = encoded,
             firstMissingSequenceByMatchId = missing.mapKeys { it.key.toString() },

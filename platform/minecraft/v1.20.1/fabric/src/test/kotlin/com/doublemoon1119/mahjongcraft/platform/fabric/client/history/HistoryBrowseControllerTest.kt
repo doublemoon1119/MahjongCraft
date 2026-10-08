@@ -233,7 +233,7 @@ class HistoryBrowseControllerTest {
         assertTrue(controller.backToList())
         assertFalse(controller.refresh())
         runCurrent()
-        transport.emit(ClientHistoryQueryState.SummaryResult(HistorySummaryResponseDto(summaryRequest, detail("match"))))
+        transport.emit(ClientHistoryQueryState.SummaryResult(HistorySummaryResponseDto(summaryRequest, detail("match"), errorCode = null)))
         runCurrent()
         assertEquals(1, transport.listRequests.size)
         assertFalse(controller.refresh())
@@ -723,7 +723,7 @@ class HistoryBrowseControllerTest {
         runCurrent()
         assertTrue(controller.state.value.closed)
         assertEquals(HistoryBrowseFailure.DISCONNECTED, assertIs<HistoryBrowseStatus.Failed>(controller.state.value.list.status).reason)
-        transport.emit(ClientHistoryQueryState.ListResult(HistoryListResponseDto(requestId, listOf(summary("late")))))
+        transport.emit(ClientHistoryQueryState.ListResult(HistoryListResponseDto(requestId, listOf(summary("late")), nextCursor = null, errorCode = null, allowAll = false)))
         runCurrent()
         assertTrue(controller.state.value.list.entries.isEmpty())
     }
@@ -737,7 +737,7 @@ class HistoryBrowseControllerTest {
         runCurrent()
         val requestId = transport.listRequests.single().requestId
         controller.close()
-        transport.emit(ClientHistoryQueryState.ListResult(HistoryListResponseDto(requestId, listOf(summary("late")))))
+        transport.emit(ClientHistoryQueryState.ListResult(HistoryListResponseDto(requestId, listOf(summary("late")), nextCursor = null, errorCode = null, allowAll = false)))
         runCurrent()
         assertTrue(controller.state.value.closed)
         assertTrue(controller.state.value.list.entries.isEmpty())
@@ -761,6 +761,9 @@ class HistoryBrowseControllerTest {
         participants = emptyList<HistoryParticipantSummaryDto>(),
         roundCount = 0,
         resultsAvailable = false,
+        integrityDiagnostic = null,
+        durationMillis = null,
+        results = emptyList(),
     )
 
     /** 建立指定對局的摘要回覆內容。 */
@@ -894,7 +897,7 @@ class HistoryBrowseControllerTest {
          * @param requestId 回應所配對的要求識別碼。
          */
         fun respondSummary(detail: HistoryMatchDetailDto?, requestId: String = summaryRequests.last().requestId) {
-            mutableState.value = ClientHistoryQueryState.SummaryResult(HistorySummaryResponseDto(requestId, detail))
+            mutableState.value = ClientHistoryQueryState.SummaryResult(HistorySummaryResponseDto(requestId, detail, errorCode = null))
         }
 
         /** 回覆最小有效事件頁。
@@ -914,6 +917,7 @@ class HistoryBrowseControllerTest {
                     1,
                     0,
                     HistoryRoundEventsDto(identity, 1, emptyList(), null, emptyList()),
+                    errorCode = null,
                 ),
             )
         }
@@ -948,7 +952,7 @@ class HistoryBrowseControllerTest {
                 outcome = null,
             )
             mutableState.value = ClientHistoryQueryState.RoundStateResult(
-                HistoryRoundStateResponseDto(requestId, matchId, 1, HistoryRoundPositionDto.Initial, state),
+                HistoryRoundStateResponseDto(requestId, matchId, 1, HistoryRoundPositionDto.Initial, state, errorCode = null),
             )
         }
 
@@ -957,7 +961,7 @@ class HistoryBrowseControllerTest {
          * @param requestId 回應所配對的要求識別碼。
          */
         fun respondRuleSettings(config: GameConfigDto? = null, requestId: String = ruleSettingsRequests.last().requestId) {
-            mutableState.value = ClientHistoryQueryState.RuleSettingsResult(HistoryRuleSettingsResponseDto(requestId, config))
+            mutableState.value = ClientHistoryQueryState.RuleSettingsResult(HistoryRuleSettingsResponseDto(requestId, config, errorCode = null))
         }
     }
 }

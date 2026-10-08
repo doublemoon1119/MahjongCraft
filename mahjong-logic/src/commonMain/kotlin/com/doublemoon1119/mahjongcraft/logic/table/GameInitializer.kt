@@ -73,7 +73,7 @@ object GameInitializer {
             roundPosition = module.createMatchProgressionPolicy().initialPosition(players.size),
             dynamicRuleState = module.createInitialDynamicState(),
             wallOpening = openedWall.wallOpening,
-            initialDeadWall = openedWall.reservedWallTiles,
+            reservedWallTiles = openedWall.reservedWallTiles,
             physicalWallLayout = physicalLayouts?.current,
         ).init()
 
@@ -150,7 +150,7 @@ object GameInitializer {
             currentPlayerIndex = dealerIndex,
             dynamicRuleState = module.createNextRoundDynamicState(previousDynamicRuleState),
             wallOpening = openedWall.wallOpening,
-            initialDeadWall = openedWall.reservedWallTiles,
+            reservedWallTiles = openedWall.reservedWallTiles,
             physicalWallLayout = physicalLayouts?.current,
         )
 

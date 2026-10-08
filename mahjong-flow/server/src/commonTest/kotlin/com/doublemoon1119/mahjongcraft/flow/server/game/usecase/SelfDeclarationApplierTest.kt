@@ -27,7 +27,7 @@ class SelfDeclarationApplierTest {
         val reservedTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val state = FakeTableStateFactory.create(
             tileWall = TileWall(listOf(drawnTile, remainingTile)),
-            initialDeadWall = listOf(reservedTile),
+            reservedWallTiles = listOf(reservedTile),
         )
         val decision = SupplementalDrawDecision.Completed(
             drawnTiles = listOf(drawnTile),
@@ -60,7 +60,7 @@ class SelfDeclarationApplierTest {
         val reservedTile = FakeIdentifiedTileFactory.create(Tile.Honor.Green)
         val state = FakeTableStateFactory.create(
             tileWall = TileWall(listOf(liveTile)),
-            initialDeadWall = listOf(reservedTile),
+            reservedWallTiles = listOf(reservedTile),
         )
         val invalidDecision = SupplementalDrawDecision.Completed(
             drawnTiles = listOf(reservedTile),
@@ -94,7 +94,7 @@ class SelfDeclarationApplierTest {
         val beforeState = FakeTableStateFactory.create(
             config = RiichiRuleConfig(),
             tileWall = TileWall(listOf(loweredTile, replenishment)),
-            initialDeadWall = reservedTiles,
+            reservedWallTiles = reservedTiles,
             dynamicRuleState = RiichiDynamicState(),
         ).withFirstKanPhysicalWallLayout()
         val decision = SupplementalDrawDecision.Completed(

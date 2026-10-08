@@ -107,7 +107,7 @@ class ThreePlayerRiichiRuleModuleTest {
 
         assertEquals(94, result.drawOrder.size)
         assertEquals(55, result.drawOrder.size - 3 * config.initialHandSize)
-        assertEquals(14, result.initialDeadWall.size)
+        assertEquals(14, result.reservedWallTiles.size)
         assertEquals(tiles.map { it.id }.toSet(), result.structure.keys)
         result.structure.values.forEach { position ->
             assertTrue(position.side in 0..2, "Unexpected side: ${position.side}")
@@ -253,7 +253,7 @@ class ThreePlayerRiichiRuleModuleTest {
         val state = FakeTableStateFactory.create(
             config = config,
             tileWall = TileWall(liveWall),
-            initialDeadWall = deadWall,
+            reservedWallTiles = deadWall,
             dynamicRuleState = RiichiDynamicState(completedSupplementalDrawCount = 2),
         )
 
@@ -281,7 +281,7 @@ class ThreePlayerRiichiRuleModuleTest {
         var state = FakeTableStateFactory.create(
             config = config,
             tileWall = TileWall(liveWall),
-            initialDeadWall = deadWall,
+            reservedWallTiles = deadWall,
             dynamicRuleState = RiichiDynamicState(),
         )
         val drawn = mutableListOf<IdentifiedTile>()
@@ -294,7 +294,7 @@ class ThreePlayerRiichiRuleModuleTest {
             drawn += result.drawnTiles
             state = state.copy(
                 tileWall = result.tileWall,
-                initialDeadWall = result.reservedWallTiles,
+                reservedWallTiles = result.reservedWallTiles,
                 dynamicRuleState = result.dynamicRuleState,
             )
         }
@@ -317,7 +317,7 @@ class ThreePlayerRiichiRuleModuleTest {
         var state = FakeTableStateFactory.create(
             config = config,
             tileWall = TileWall(liveWall),
-            initialDeadWall = rinshan + indicatorStacks,
+            reservedWallTiles = rinshan + indicatorStacks,
             dynamicRuleState = RiichiDynamicState(),
         )
         repeat(4) {
@@ -327,7 +327,7 @@ class ThreePlayerRiichiRuleModuleTest {
             )
             state = state.copy(
                 tileWall = result.tileWall,
-                initialDeadWall = result.reservedWallTiles,
+                reservedWallTiles = result.reservedWallTiles,
                 dynamicRuleState = result.dynamicRuleState,
             )
         }
@@ -399,7 +399,7 @@ class ThreePlayerRiichiRuleModuleTest {
         val table = threePlayerTable(
             players = listOf(FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST), winner, other(Wind.WEST)),
             dynamicRuleState = RiichiDynamicState(completedNorthDrawCount = 2),
-            initialDeadWall = deadWall,
+            reservedWallTiles = deadWall,
         )
 
         val result = assertNotNull(module.declareTsumo(table, winner))
@@ -539,13 +539,13 @@ class ThreePlayerRiichiRuleModuleTest {
     private fun threePlayerTable(
         players: List<MahjongPlayer>,
         dynamicRuleState: RiichiDynamicState = RiichiDynamicState(),
-        initialDeadWall: List<IdentifiedTile> = emptyList(),
+        reservedWallTiles: List<IdentifiedTile> = emptyList(),
         comboCount: Int = 0,
     ): TableState = FakeTableStateFactory.create(
         players = players,
         config = config,
         dynamicRuleState = dynamicRuleState,
-        initialDeadWall = initialDeadWall,
+        reservedWallTiles = reservedWallTiles,
         comboCount = comboCount,
     )
 

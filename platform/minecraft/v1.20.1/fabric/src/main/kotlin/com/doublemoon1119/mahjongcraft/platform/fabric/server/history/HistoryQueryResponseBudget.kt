@@ -41,9 +41,9 @@ internal fun boundedHistoryPage(
     while (true) {
         val entries = page.entries.take(count)
         val cursor = if (count < page.entries.size) entries.lastOrNull()?.cursorAfter(request, principalId) else page.nextCursor
-        val response = HistoryListResponseDto(requestId, entries.map { it.toDto() }, cursor?.let(encodeCursor))
+        val response = HistoryListResponseDto(requestId, entries.map { it.toDto() }, cursor?.let(encodeCursor), errorCode = null, allowAll = false)
         if (json.encodeToString(HistoryListResponseDto.serializer(), response).toByteArray(Charsets.UTF_8).size <= limit) return response
-        if (count <= 1) return HistoryListResponseDto(requestId, emptyList(), errorCode = HistoryQueryErrorCodeDto.CONTENT_TOO_LARGE)
+        if (count <= 1) return HistoryListResponseDto(requestId, emptyList(), nextCursor = null, errorCode = HistoryQueryErrorCodeDto.CONTENT_TOO_LARGE, allowAll = false)
         count--
     }
 }
@@ -66,16 +66,16 @@ internal fun boundedHistoryRuleSettings(
     limit: Int = HistoryQueryLimits.RESPONSE_BYTES,
 ): HistoryRuleSettingsResponseDto {
     val response = try {
-        HistoryRuleSettingsResponseDto(requestId, config = settings.toDto(registries))
+        HistoryRuleSettingsResponseDto(requestId, config = settings.toDto(registries), errorCode = null)
     } catch (_: IllegalArgumentException) {
-        return HistoryRuleSettingsResponseDto(requestId, errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE)
+        return HistoryRuleSettingsResponseDto(requestId, errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE, config = null)
     } catch (_: IllegalStateException) {
-        return HistoryRuleSettingsResponseDto(requestId, errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE)
+        return HistoryRuleSettingsResponseDto(requestId, errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE, config = null)
     }
     return if (json.encodeToString(HistoryRuleSettingsResponseDto.serializer(), response).toByteArray(Charsets.UTF_8).size <= limit) {
         response
     } else {
-        HistoryRuleSettingsResponseDto(requestId, errorCode = HistoryQueryErrorCodeDto.CONTENT_TOO_LARGE)
+        HistoryRuleSettingsResponseDto(requestId, errorCode = HistoryQueryErrorCodeDto.CONTENT_TOO_LARGE, config = null)
     }
 }
 

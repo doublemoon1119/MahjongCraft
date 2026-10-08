@@ -17,7 +17,7 @@ data class RoomSnapshotDto(
     val playerIds: List<String>,
     val readyPlayerIds: List<String>,
     val aiPlayerIds: List<String>,
-    val aiPlayerStrategyKeys: Map<String, String> = emptyMap(),
+    val aiPlayerStrategyKeys: Map<String, String>,
     val canStart: Boolean,
     val isHost: Boolean,
     val isInRoom: Boolean,

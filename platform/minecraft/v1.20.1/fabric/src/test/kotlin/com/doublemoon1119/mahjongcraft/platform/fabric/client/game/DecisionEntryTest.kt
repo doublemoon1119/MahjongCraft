@@ -58,9 +58,20 @@ class DecisionEntryTest {
                 PlayerDecisionActionDto(
                     token = "token-riichi",
                     actionId = RiichiGameAction.Riichi.id,
-                    tileSelection = PlayerDecisionActionTileSelectionDto(listOf("tile-a"), minCount = 1, maxCount = 1),
+                    tileSelection = PlayerDecisionActionTileSelectionDto(listOf("tile-a"), minCount = 1, maxCount = 1, discardAnalyses = emptyList()),
+                    referenceTileAssetKey = null,
+                    previewTileAssetKeys = emptyList(),
+                    claimedTileIndex = null,
                 ),
             ),
+            ruleModuleId = null,
+            triggerTileAssetKey = null,
+            triggerPlayerId = null,
+            triggerPlayerName = null,
+            triggerPlayerRelation = null,
+            triggerActionId = null,
+            preparation = null,
+            discardAnalyses = emptyList(),
         )
 
         val intent = assertIs<DecisionEntryIntent.BeginActionTileSelection>(decisionEntriesFrom(texts, prompt).single().intent)
@@ -74,9 +85,16 @@ class DecisionEntryTest {
             decisionKey = DECISION_KEY,
             ruleModuleId = BuiltInRuleModuleIds.RIICHI,
             actions = listOf(
-                PlayerDecisionActionDto(token = "token-chi", actionId = "mahjongcraft:chi"),
-                PlayerDecisionActionDto(token = "token-riichi", actionId = RiichiGameAction.Riichi.id),
+                PlayerDecisionActionDto(token = "token-chi", actionId = "mahjongcraft:chi", referenceTileAssetKey = null, previewTileAssetKeys = emptyList(), claimedTileIndex = null, tileSelection = null),
+                PlayerDecisionActionDto(token = "token-riichi", actionId = RiichiGameAction.Riichi.id, referenceTileAssetKey = null, previewTileAssetKeys = emptyList(), claimedTileIndex = null, tileSelection = null),
             ),
+            triggerTileAssetKey = null,
+            triggerPlayerId = null,
+            triggerPlayerName = null,
+            triggerPlayerRelation = null,
+            triggerActionId = null,
+            preparation = null,
+            discardAnalyses = emptyList(),
         )
 
         val (chi, riichi) = decisionEntriesFrom(texts, prompt)
@@ -96,8 +114,18 @@ class DecisionEntryTest {
                     actionId = "mahjongcraft:chi",
                     previewTileAssetKeys = listOf("a", "b", "c"),
                     claimedTileIndex = 1,
+                    referenceTileAssetKey = null,
+                    tileSelection = null,
                 ),
             ),
+            ruleModuleId = null,
+            triggerTileAssetKey = null,
+            triggerPlayerId = null,
+            triggerPlayerName = null,
+            triggerPlayerRelation = null,
+            triggerActionId = null,
+            preparation = null,
+            discardAnalyses = emptyList(),
         )
 
         val entry = decisionEntriesFrom(texts, prompt).single()
@@ -172,7 +200,7 @@ class DecisionEntryTest {
     /** 沒有動作也沒有開局準備時沒有任何卡片。 */
     @Test
     fun `builds no card for an empty prompt`() {
-        assertEquals(emptyList(), decisionEntriesFrom(texts, PlayerDecisionPromptDto(decisionKey = DECISION_KEY)))
+        assertEquals(emptyList(), decisionEntriesFrom(texts, PlayerDecisionPromptDto(decisionKey = DECISION_KEY, ruleModuleId = null, actions = emptyList(), triggerTileAssetKey = null, triggerPlayerId = null, triggerPlayerName = null, triggerPlayerRelation = null, triggerActionId = null, preparation = null, discardAnalyses = emptyList())))
     }
 
     /** 未知的動作 ID 排在內建動作之後並維持原始相對順序。 */
@@ -193,7 +221,14 @@ class DecisionEntryTest {
     private fun promptOf(vararg actionIds: String) = PlayerDecisionPromptDto(
         decisionKey = DECISION_KEY,
         ruleModuleId = BuiltInRuleModuleIds.RIICHI,
-        actions = actionIds.map { PlayerDecisionActionDto(token = "token-$it", actionId = it) },
+        actions = actionIds.map { PlayerDecisionActionDto(token = "token-$it", actionId = it, referenceTileAssetKey = null, previewTileAssetKeys = emptyList(), claimedTileIndex = null, tileSelection = null) },
+        triggerTileAssetKey = null,
+        triggerPlayerId = null,
+        triggerPlayerName = null,
+        triggerPlayerRelation = null,
+        triggerActionId = null,
+        preparation = null,
+        discardAnalyses = emptyList(),
     )
 
     /** 建立只含開局準備的 prompt。 */
@@ -201,6 +236,13 @@ class DecisionEntryTest {
         decisionKey = DECISION_KEY,
         ruleModuleId = BuiltInRuleModuleIds.RIICHI,
         preparation = preparation,
+        actions = emptyList(),
+        triggerTileAssetKey = null,
+        triggerPlayerId = null,
+        triggerPlayerName = null,
+        triggerPlayerRelation = null,
+        triggerActionId = null,
+        discardAnalyses = emptyList(),
     )
 
     private companion object {

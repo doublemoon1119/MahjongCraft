@@ -28,7 +28,7 @@ data class TableStateSnapshotDto(
     val currentPlayerIndex: Int,
     val dynamicRuleState: DynamicRuleStateDto?,
     val finishedPlayerIds: Set<String>,
-    val physicalWallLayout: TileWallPhysicalLayoutDto? = null,
+    val physicalWallLayout: TileWallPhysicalLayoutDto?,
     val revealedHandTiles: List<IdentifiedTileDto>,
 )
 

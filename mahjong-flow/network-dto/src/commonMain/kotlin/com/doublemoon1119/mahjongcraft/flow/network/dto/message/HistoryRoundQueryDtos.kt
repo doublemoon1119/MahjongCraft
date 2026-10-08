@@ -22,10 +22,10 @@ import kotlinx.serialization.Serializable
 data class HistoryRoundEventsRequestDto(
     val requestId: String,
     val matchId: String,
-    val scope: HistoryQueryScopeDto = HistoryQueryScopeDto.OWN,
+    val scope: HistoryQueryScopeDto,
     val roundNumber: Int,
-    val startTransactionIndex: Int = 0,
-    val limit: Int = 20,
+    val startTransactionIndex: Int,
+    val limit: Int,
 )
 
 /** 單局桌況的 C2S 請求。
@@ -39,9 +39,9 @@ data class HistoryRoundEventsRequestDto(
 data class HistoryRoundStateRequestDto(
     val requestId: String,
     val matchId: String,
-    val scope: HistoryQueryScopeDto = HistoryQueryScopeDto.OWN,
+    val scope: HistoryQueryScopeDto,
     val roundNumber: Int,
-    val position: HistoryRoundPositionDto = HistoryRoundPositionDto.Initial,
+    val position: HistoryRoundPositionDto,
 )
 
 /** 網路傳輸的局內位置。 */
@@ -74,8 +74,8 @@ data class HistoryRoundEventsResponseDto(
     val matchId: String,
     val roundNumber: Int,
     val startTransactionIndex: Int,
-    val events: HistoryRoundEventsDto? = null,
-    val errorCode: HistoryQueryErrorCodeDto? = null,
+    val events: HistoryRoundEventsDto?,
+    val errorCode: HistoryQueryErrorCodeDto?,
 )
 
 /** 單局桌況的 S2C 回覆。
@@ -92,8 +92,8 @@ data class HistoryRoundStateResponseDto(
     val matchId: String,
     val roundNumber: Int,
     val position: HistoryRoundPositionDto,
-    val state: HistoryRoundStateDto? = null,
-    val errorCode: HistoryQueryErrorCodeDto? = null,
+    val state: HistoryRoundStateDto?,
+    val errorCode: HistoryQueryErrorCodeDto?,
 )
 
 /** 單局事件資料 DTO。
@@ -265,9 +265,9 @@ data class HistoryRoundOutcomeDto(
     val classification: String?,
     val responsibleSeats: List<Int>,
     val transitionDirective: String?,
-    val scoreChangesBySeat: Map<Int, Int> = emptyMap(),
-    val winnerDetails: List<HistoryWinnerDetailsDto> = emptyList(),
-    val hasEarlierWinSettlement: Boolean = false,
+    val scoreChangesBySeat: Map<Int, Int>,
+    val winnerDetails: List<HistoryWinnerDetailsDto>,
+    val hasEarlierWinSettlement: Boolean,
 )
 
 /** 歷史贏家詳情 DTO。
@@ -279,7 +279,7 @@ data class HistoryRoundOutcomeDto(
 data class HistoryWinnerDetailsDto(
     val seatIndex: Int,
     val detailFields: List<HistoryWinDetailFieldDto>,
-    val hand: HistoryReplayWinningHandDto? = null,
+    val hand: HistoryReplayWinningHandDto?,
 )
 
 /** 歷史胡牌手牌 DTO。
@@ -289,7 +289,7 @@ data class HistoryWinnerDetailsDto(
 @Serializable
 data class HistoryReplayWinningHandDto(
     val standingTiles: List<Int>,
-    val winningTile: Int? = null,
+    val winningTile: Int?,
 )
 
 /** 歷史胡牌詳情欄位 DTO。
@@ -322,7 +322,7 @@ sealed interface HistoryWinDetailValueDto {
         @Serializable
         data class EntryDto(
             val id: String,
-            val quantity: HistoryWinDetailQuantityDto? = null,
+            val quantity: HistoryWinDetailQuantityDto?,
         )
     }
 
@@ -443,8 +443,8 @@ data class HistoryReplayRuleInformationDto(val typeKey: String, val summary: Str
 @Serializable
 data class HistorySummaryResponseDto(
     val requestId: String,
-    val detail: HistoryMatchDetailDto? = null,
-    val errorCode: HistoryQueryErrorCodeDto? = null,
+    val detail: HistoryMatchDetailDto?,
+    val errorCode: HistoryQueryErrorCodeDto?,
 )
 
 /** 單場歷史規則設定查詢的 S2C 回覆。
@@ -456,6 +456,6 @@ data class HistorySummaryResponseDto(
 @Serializable
 data class HistoryRuleSettingsResponseDto(
     val requestId: String,
-    val config: GameConfigDto? = null,
-    val errorCode: HistoryQueryErrorCodeDto? = null,
+    val config: GameConfigDto?,
+    val errorCode: HistoryQueryErrorCodeDto?,
 )

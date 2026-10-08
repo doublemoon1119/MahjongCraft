@@ -1016,7 +1016,7 @@ internal class HistoryBrowseController(
              * @param requestId 傳輸配對鍵。
              * @return 事件頁要求。
              */
-            fun request(requestId: String = ""): HistoryRoundEventsRequestDto = HistoryRoundEventsRequestDto(requestId, matchId, query.scope, roundNumber, starts.last())
+            fun request(requestId: String = ""): HistoryRoundEventsRequestDto = HistoryRoundEventsRequestDto(requestId, matchId, query.scope, roundNumber, starts.last(), limit = 20)
         }
 
         /** 單局完整牌面查詢。

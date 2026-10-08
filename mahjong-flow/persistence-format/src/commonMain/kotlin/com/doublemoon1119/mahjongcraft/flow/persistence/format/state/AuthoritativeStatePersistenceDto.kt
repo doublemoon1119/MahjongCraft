@@ -54,7 +54,7 @@ data class AuthoritativeStatePersistenceDto(
     val games: Map<String, TableStatePersistenceDto>,
     val gameFlowConfigs: Map<String, GameFlowConfigPersistenceDto>,
     val gameRuntimeStates: Map<String, GameRuntimeStatePersistenceDto>,
-    val historyRecordingState: HistoryRecordingPersistenceDto = HistoryRecordingPersistenceDto(),
+    val historyRecordingState: HistoryRecordingPersistenceDto,
 ) {
     init {
         require(rooms.all { (id, room) -> id == room.id }) { "Room persistence index must match its DTO ID" }

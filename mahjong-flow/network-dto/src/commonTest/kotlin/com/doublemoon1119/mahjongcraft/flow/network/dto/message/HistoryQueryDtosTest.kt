@@ -41,7 +41,7 @@ class HistoryQueryDtosTest {
             HistoryRoundPositionDto.AfterTransaction(7),
         )
         positions.forEach { position ->
-            val expected = HistoryRoundStateRequestDto("round-state", matchId, roundNumber = 2, position = position)
+            val expected = HistoryRoundStateRequestDto("round-state", matchId, roundNumber = 2, position = position, scope = HistoryQueryScopeDto.OWN)
             val encoded = expected.encode(Json)
             assertEquals(expected, Json.decodeFromString(HistoryRoundStateRequestDto.serializer(), encoded))
             assertEquals(expected, encoded.decodeHistoryRoundStateRequest(Json))
@@ -94,6 +94,7 @@ class HistoryQueryDtosTest {
                 hasPendingRobbingReaction = false,
                 outcome = null,
             ),
+            errorCode = null,
         )
         val encoded = Json.encodeToString(HistoryRoundStateResponseDto.serializer(), expected)
         assertEquals(expected, Json.decodeFromString(HistoryRoundStateResponseDto.serializer(), encoded))
@@ -114,7 +115,7 @@ class HistoryQueryDtosTest {
             scope = HistoryQueryScopeDto.ALL,
             sortField = HistorySortFieldDto.OWN_SCORE,
             sortDirection = HistorySortDirectionDto.ASC,
-            filters = HistoryQueryFiltersDto(
+            filters = HistoryQueryFiltersDto.NONE.copy(
                 ruleId = "mahjongcraft:riichi",
                 outcome = HistoryOutcomeFilterDto.COMPLETED,
                 integrity = HistoryIntegrityFilterDto.COMPLETE,
@@ -147,11 +148,17 @@ class HistoryQueryDtosTest {
                     endedAtEpochMillis = 2L,
                     outcome = HistoryOutcomeFilterDto.COMPLETED,
                     integrity = HistoryIntegrityFilterDto.COMPLETE,
-                    participants = listOf(HistoryParticipantSummaryDto(0, "player-1")),
+                    participants = listOf(HistoryParticipantSummaryDto(0, "player-1", aiStrategyId = null)),
                     roundCount = 8,
                     resultsAvailable = true,
+                    integrityDiagnostic = null,
+                    durationMillis = null,
+                    results = emptyList(),
                 ),
             ),
+            nextCursor = null,
+            errorCode = null,
+            allowAll = false,
         )
 
         val encoded = Json.encodeToString(HistoryListResponseDto.serializer(), response)
@@ -194,7 +201,7 @@ class HistoryQueryDtosTest {
     /** 不合法對局 UUID 不得由規則設定查詢 mapping 靜默接受。 */
     @Test
     fun `history rule settings request rejects malformed match id`() {
-        val request = HistoryRuleSettingsRequestDto("request-rules", "not-a-uuid")
+        val request = HistoryRuleSettingsRequestDto("request-rules", "not-a-uuid", scope = HistoryQueryScopeDto.OWN)
         assertFailsWith<IllegalArgumentException> { request.toDomain() }
     }
 
@@ -204,6 +211,7 @@ class HistoryQueryDtosTest {
         val expected = HistoryRuleSettingsResponseDto(
             requestId = "request-rules",
             errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE,
+            config = null,
         )
         val encoded = expected.encode(Json)
 

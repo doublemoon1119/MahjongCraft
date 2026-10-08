@@ -49,6 +49,12 @@ class HistoryRecordingPersistenceDtoTest {
             terminalByMatchId = mapOf(
                 Uuid.random().toString() to HistoryRecordingTerminalPersistenceDto(1L, false, "not-a-uuid"),
             ),
+            nextSequenceByMatchId = emptyMap(),
+            pendingEvents = emptyList(),
+            firstMissingSequenceByMatchId = emptyMap(),
+            decisionsByMatchId = emptyMap(),
+            transfersByMatchId = emptyMap(),
+            formatVersion = HistoryRecordingPersistenceDto.FORMAT_VERSION,
         )
         val mapper = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries())
         assertFailsWith<IllegalArgumentException> { mapper.decode(dto) }
@@ -124,7 +130,7 @@ class HistoryRecordingPersistenceDtoTest {
     /** 即使版本為預設值，也必須明確輸出歷史格式版本。 */
     @Test
     fun `history format version is always serialized`() {
-        val encoded = Json.encodeToString(HistoryRecordingPersistenceDto.serializer(), HistoryRecordingPersistenceDto())
+        val encoded = Json.encodeToString(HistoryRecordingPersistenceDto.serializer(), HistoryRecordingPersistenceDto(nextSequenceByMatchId = emptyMap(), pendingEvents = emptyList(), firstMissingSequenceByMatchId = emptyMap(), decisionsByMatchId = emptyMap(), terminalByMatchId = emptyMap(), transfersByMatchId = emptyMap(), formatVersion = HistoryRecordingPersistenceDto.FORMAT_VERSION))
         assertTrue(encoded.contains("\"formatVersion\":1"))
     }
 
@@ -171,6 +177,12 @@ class HistoryRecordingPersistenceDtoTest {
         val matchId = Uuid.random()
         val dto = HistoryRecordingPersistenceDto(
             decisionsByMatchId = mapOf(matchId.toString() to "UNKNOWN_DECISION"),
+            nextSequenceByMatchId = emptyMap(),
+            pendingEvents = emptyList(),
+            firstMissingSequenceByMatchId = emptyMap(),
+            terminalByMatchId = emptyMap(),
+            transfersByMatchId = emptyMap(),
+            formatVersion = HistoryRecordingPersistenceDto.FORMAT_VERSION,
         )
 
         assertFailsWith<IllegalArgumentException> {
@@ -194,6 +206,7 @@ class HistoryRecordingPersistenceDtoTest {
                     123L,
                     null,
                     HistoryFactPersistenceDto.MatchCompleted("test", mapOf("invalid-player-id" to 1)),
+                    1L,
                 ),
                 HistoryOutboxEventPersistenceDto(
                     matchId.toString(),
@@ -203,8 +216,14 @@ class HistoryRecordingPersistenceDtoTest {
                     124L,
                     null,
                     HistoryFactPersistenceDto.ReturnedToRoom,
+                    2L,
                 ),
             ),
+            firstMissingSequenceByMatchId = emptyMap(),
+            decisionsByMatchId = emptyMap(),
+            terminalByMatchId = emptyMap(),
+            transfersByMatchId = emptyMap(),
+            formatVersion = HistoryRecordingPersistenceDto.FORMAT_VERSION,
         )
 
         val decoded = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries()).decode(dto)

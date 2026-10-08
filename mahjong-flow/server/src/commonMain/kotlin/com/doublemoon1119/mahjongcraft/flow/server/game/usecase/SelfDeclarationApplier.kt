@@ -263,7 +263,7 @@ internal object SelfDeclarationApplier {
         val stateWithoutResolvedPhysicalLayout = candidateState.copy(
             players = updatedPlayers,
             tileWall = decision.tileWall,
-            initialDeadWall = decision.reservedWallTiles,
+            reservedWallTiles = decision.reservedWallTiles,
             dynamicRuleState = decision.dynamicRuleState,
             physicalWallLayout = null,
         )

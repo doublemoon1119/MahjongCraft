@@ -469,7 +469,7 @@ class RespondToDiscardUseCaseTest {
             id = gameId,
             players = listOf(discarder, responder),
             config = RiichiRuleConfig(),
-            initialDeadWall = completeRiichiReservedWall(rinshanTile),
+            reservedWallTiles = completeRiichiReservedWall(rinshanTile),
             currentPlayerIndex = 0,
             pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
             dynamicRuleState = RiichiDynamicState(),
@@ -484,7 +484,7 @@ class RespondToDiscardUseCaseTest {
         assertNull(newState.pendingReaction)
         assertEquals(1, newState.currentPlayerIndex, "Turn should move to the player who claimed the meld.")
         assertEquals(table.tileWall.remainingCount - 1, newState.tileWall.remainingCount)
-        assertEquals(table.tileWall.getAllTiles().last(), newState.initialDeadWall.last())
+        assertEquals(table.tileWall.getAllTiles().last(), newState.reservedWallTiles.last())
         assertEquals(1, (newState.dynamicRuleState as RiichiDynamicState).completedSupplementalDrawCount)
         assertEquals(
             newState,
@@ -543,7 +543,7 @@ class RespondToDiscardUseCaseTest {
             id = gameId,
             players = listOf(discarder, responder),
             config = RiichiRuleConfig(),
-            initialDeadWall = listOf(rinshanTile),
+            reservedWallTiles = listOf(rinshanTile),
             currentPlayerIndex = 0,
             pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
             dynamicRuleState = RiichiDynamicState(),
@@ -584,7 +584,7 @@ class RespondToDiscardUseCaseTest {
             players = listOf(discarder, responder),
             config = RiichiRuleConfig(),
             // tileWall 刻意不是空的——那是「河底不可明槓」的判定條件，跟這裡要測的「嶺上牌保留區
-            // （initialDeadWall，預設空清單）摸盡」是兩回事，tileWall 空的話這次明槓在走到補摸嶺上牌
+            // （reservedWallTiles，預設空清單）摸盡」是兩回事，tileWall 空的話這次明槓在走到補摸嶺上牌
             // 之前就會先被 RiichiLegalActionValidator 擋下，這個測試就測不到真正想驗證的情境。
             currentPlayerIndex = 0,
             pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
@@ -601,7 +601,7 @@ class RespondToDiscardUseCaseTest {
         val winner = newState.players.first { it.id == responderId }
         assertTrue(winner.hand.melds.isEmpty(), "The meld must not be applied when its supplemental draw fails.")
         assertTrue(newState.players.first { it.id == discarderId }.discardPile.entries.last().isTaken.not())
-        assertEquals(0, newState.initialDeadWall.size, "The rinshan reserve (initialDeadWall) is what's actually exhausted here.")
+        assertEquals(0, newState.reservedWallTiles.size, "The rinshan reserve (reservedWallTiles) is what's actually exhausted here.")
         assertTrue(fixtures.eventPublisher.getNotifiedActions(gameId, responderId, responderId).isEmpty())
         assertTrue(fixtures.presentationPublisher.getPublishedWallLayoutTransitions(gameId).isEmpty())
         assertNull(fixtures.presentationPublisher.getPublishedRoundInfo(gameId))

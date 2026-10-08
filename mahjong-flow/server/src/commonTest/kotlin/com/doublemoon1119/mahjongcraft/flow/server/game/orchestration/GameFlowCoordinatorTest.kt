@@ -1030,7 +1030,7 @@ class GameFlowCoordinatorTest {
         assertEquals(ponAction, newState.players.first { it.id == respondentId }.actionHistory.last())
     }
 
-    private fun chankanTable(declarerId: Uuid, robberId: Uuid, initialDeadWall: List<IdentifiedTile>, robberHand: Hand): TableState {
+    private fun chankanTable(declarerId: Uuid, robberId: Uuid, reservedWallTiles: List<IdentifiedTile>, robberHand: Hand): TableState {
         val whiteTile1 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val whiteTile2 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val whiteTile3 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
@@ -1048,7 +1048,7 @@ class GameFlowCoordinatorTest {
             id = gameId,
             players = listOf(declarer, robber),
             config = RiichiRuleConfig(gameLength = RiichiGameLength.East),
-            initialDeadWall = initialDeadWall,
+            reservedWallTiles = reservedWallTiles,
             currentPlayerIndex = 0,
             pendingRobbingReaction = PendingRobbingReaction(declarerId, kanAction, robbedWhiteTile, setOf(robberId)),
             dynamicRuleState = RiichiDynamicState(),
@@ -1146,7 +1146,7 @@ class GameFlowCoordinatorTest {
             id = gameId,
             players = listOf(player),
             config = RiichiRuleConfig(gameLength = RiichiGameLength.East),
-            initialDeadWall = listOf(rinshanTile) +
+            reservedWallTiles = listOf(rinshanTile) +
                 List(13) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 1)) },
             currentPlayerIndex = 0,
             dynamicRuleState = RiichiDynamicState(),

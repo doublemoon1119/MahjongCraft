@@ -153,7 +153,7 @@ internal class SeatSetupScenario(
             currentPlayerIndex = invokingPlayerIndex,
             dynamicRuleState = RiichiDynamicState(riichiStickCount = seats.count { it.riichiTile != null }),
             wallOpening = opening,
-            initialDeadWall = initialReservedTiles,
+            reservedWallTiles = initialReservedTiles,
             physicalWallLayout = physicalLayout,
         )
         return DebugGameScenarioResult(

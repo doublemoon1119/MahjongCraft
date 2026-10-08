@@ -24,5 +24,5 @@ data class GameUpdatePayloadDto(
     val action: GameActionDto,
     val snapshot: TableStateSnapshotDto,
     val aiPlayerIds: List<String>,
-    val historyMatchId: String? = null,
+    val historyMatchId: String?,
 )

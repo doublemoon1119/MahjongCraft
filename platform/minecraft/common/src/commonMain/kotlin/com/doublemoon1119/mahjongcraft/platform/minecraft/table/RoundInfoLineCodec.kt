@@ -8,7 +8,7 @@ import kotlinx.serialization.json.Json
 
 /** Encodes typed round information for entity tracking and NBT persistence. */
 object RoundInfoLineCodec {
-    private val json = Json { ignoreUnknownKeys = true }
+    private val json = Json
 
     fun encode(lines: List<RoundInfoLine>): String = json.encodeToString(lines.map(EncodedLine::fromDomain))
 
@@ -20,7 +20,7 @@ object RoundInfoLineCodec {
 @Serializable
 private data class EncodedLine(
     val key: String,
-    val args: List<EncodedArgument> = emptyList(),
+    val args: List<EncodedArgument>,
 ) {
     fun toDomain(): RoundInfoLine? = runCatching {
         RoundInfoLine(key, args.map { it.toDomain() ?: return null })

@@ -31,9 +31,9 @@ import kotlin.uuid.Uuid
  * @property pendingReaction 尚未完成的捨牌反應視窗。
  * @property pendingRobbingReaction 尚未完成的搶和反應視窗（暗槓、加槓或移出手牌的動作）。
  * @property wallOpening 本局權威擲骰決定的牌牆開門位置；規則尚未支援開門流程時為 null。
- * @property initialDeadWall 目前規則保留牌；舊欄位名稱為既有存檔格式相容性而保留，不代表內容固定，
+ * @property reservedWallTiles 目前規則保留牌；舊欄位名稱為既有存檔格式相容性而保留，不代表內容固定，
  * 也不表示 platform 必須將它呈現為日麻式獨立王牌區。
- * @property finishedPlayerIds 本局已完成、不再參與後續回合的玩家 Uuid 集合；預設空集合為最常見的狀態，編碼時省略。
+ * @property finishedPlayerIds 本局已完成、不再參與後續回合的玩家 Uuid 集合。
  * @property physicalWallLayout 目前仍在牌牆中的牌張實體位置；不支援實體布局的規則為 null。
  * @property revealedHandTileIds 本局已公開、可能仍在手牌中的牌 UUID 字串集合。
  */
@@ -53,9 +53,9 @@ data class TableStatePersistenceDto(
     val pendingReaction: PendingReactionPersistenceDto?,
     val pendingRobbingReaction: PendingRobbingReactionPersistenceDto?,
     val wallOpening: WallOpeningPersistenceDto?,
-    val initialDeadWall: List<IdentifiedTilePersistenceDto>,
-    val finishedPlayerIds: Set<String> = emptySet(),
-    val physicalWallLayout: TileWallPhysicalLayoutPersistenceDto? = null,
+    val reservedWallTiles: List<IdentifiedTilePersistenceDto>,
+    val finishedPlayerIds: Set<String>,
+    val physicalWallLayout: TileWallPhysicalLayoutPersistenceDto?,
     val revealedHandTileIds: Set<String>,
 )
 
@@ -91,7 +91,7 @@ fun TableState.toPersistenceDto(
     pendingReaction = pendingReaction?.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json),
     pendingRobbingReaction = pendingRobbingReaction?.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json),
     wallOpening = wallOpening?.toPersistenceDto(),
-    initialDeadWall = reservedWallTiles.map { it.toPersistenceDto() },
+    reservedWallTiles = reservedWallTiles.map { it.toPersistenceDto() },
     finishedPlayerIds = finishedPlayerIds.map(Uuid::toString).toSet(),
     physicalWallLayout = physicalWallLayout?.toPersistenceDto(),
     revealedHandTileIds = revealedHandTileIds.map(Uuid::toString).toSet(),
@@ -129,7 +129,7 @@ fun TableStatePersistenceDto.toDomain(
     pendingReaction = pendingReaction?.toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json),
     pendingRobbingReaction = pendingRobbingReaction?.toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json),
     wallOpening = wallOpening?.toDomain(),
-    initialDeadWall = initialDeadWall.map { it.toDomain() },
+    reservedWallTiles = reservedWallTiles.map { it.toDomain() },
     finishedPlayerIds = finishedPlayerIds.map(Uuid::parse).toSet(),
     physicalWallLayout = physicalWallLayout?.toDomain(),
     revealedHandTileIds = revealedHandTileIds.map(Uuid::parse).toSet(),

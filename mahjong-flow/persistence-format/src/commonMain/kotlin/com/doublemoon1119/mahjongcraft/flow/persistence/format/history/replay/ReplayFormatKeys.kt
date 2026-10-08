@@ -195,7 +195,7 @@ internal object ReplaySourceKeys {
     const val WALL_TILES = "tiles"
 
     /** 開局保留牌區。 */
-    const val INITIAL_DEAD_WALL = "initialDeadWall"
+    const val RESERVED_WALL_TILES = "reservedWallTiles"
 
     /** 本場數。 */
     const val COMBO_COUNT = "comboCount"

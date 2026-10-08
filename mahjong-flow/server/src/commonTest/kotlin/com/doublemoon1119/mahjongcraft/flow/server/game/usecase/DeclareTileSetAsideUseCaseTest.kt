@@ -215,7 +215,7 @@ class DeclareTileSetAsideUseCaseTest {
         id = gameId,
         players = listOf(puller, waiter, bystander(Uuid.random(), Wind.WEST)),
         config = ThreePlayerRiichiRuleConfig(),
-        initialDeadWall = listOf(rinshan) + List(13) { tile(Tile.Honor.White) },
+        reservedWallTiles = listOf(rinshan) + List(13) { tile(Tile.Honor.White) },
         currentPlayerIndex = 0,
         dynamicRuleState = RiichiDynamicState(),
     )

@@ -1289,7 +1289,7 @@ class DiscardTileUseCaseTest {
             config = RiichiRuleConfig(),
             tileWall = TileWall(emptyList()),
             currentPlayerIndex = 0,
-            initialDeadWall = deadWall,
+            reservedWallTiles = deadWall,
             dynamicRuleState = RiichiDynamicState(
                 completedSupplementalDrawCount = 1,
                 revealedKanDoraCount = 0,

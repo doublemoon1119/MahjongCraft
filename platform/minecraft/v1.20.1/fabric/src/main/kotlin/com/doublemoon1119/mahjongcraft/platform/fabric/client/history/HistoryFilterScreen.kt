@@ -252,7 +252,7 @@ internal class HistoryFilterScreen(
         session.filterDraft.errors = emptyMap()
         fields.values.forEach { it.text = "" }
         val current = session.controller.state.value.query
-        session.controller.updateQuery(current.copy(filters = HistoryQueryFiltersDto()))
+        session.controller.updateQuery(current.copy(filters = HistoryQueryFiltersDto.NONE))
     }
 
     /** 循環改變結果篩選。 */

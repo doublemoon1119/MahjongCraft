@@ -41,6 +41,9 @@ class PlayerDecisionSubmissionDtoTest {
             gameId = "game",
             decisionKey = "decision",
             kind = PlayerDecisionSelectionKindDto.BEGIN_TILE_SELECTION,
+            token = null,
+            tileIds = emptyList(),
+            submissionId = "",
         )
 
         val encoded = Json.encodeToString(PlayerDecisionSelectionDto.serializer(), expected)

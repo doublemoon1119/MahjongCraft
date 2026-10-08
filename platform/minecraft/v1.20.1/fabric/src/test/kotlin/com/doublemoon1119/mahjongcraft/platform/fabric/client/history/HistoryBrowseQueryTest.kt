@@ -22,7 +22,7 @@ class HistoryBrowseQueryTest {
             scope = HistoryQueryScopeDto.ALL,
             sortField = HistorySortFieldDto.OWN_SCORE,
             sortDirection = HistorySortDirectionDto.ASC,
-            filters = HistoryQueryFiltersDto(ownRankMin = 2, ownRankMax = 4, ruleId = "mahjongcraft:riichi"),
+            filters = HistoryQueryFiltersDto.NONE.copy(ownRankMin = 2, ownRankMax = 4, ruleId = "mahjongcraft:riichi"),
         )
 
         assertEquals(
@@ -30,7 +30,7 @@ class HistoryBrowseQueryTest {
                 scope = HistoryQueryScopeDto.ALL,
                 sortField = HistorySortFieldDto.ENDED_AT,
                 sortDirection = HistorySortDirectionDto.ASC,
-                filters = HistoryQueryFiltersDto(ruleId = "mahjongcraft:riichi"),
+                filters = HistoryQueryFiltersDto.NONE.copy(ruleId = "mahjongcraft:riichi"),
             ),
             query.normalized(),
         )
@@ -42,7 +42,7 @@ class HistoryBrowseQueryTest {
         val query = HistoryBrowseQuery(
             scope = HistoryQueryScopeDto.OWN,
             sortField = HistorySortFieldDto.DURATION,
-            filters = HistoryQueryFiltersDto(outcome = HistoryOutcomeFilterDto.COMPLETED),
+            filters = HistoryQueryFiltersDto.NONE.copy(outcome = HistoryOutcomeFilterDto.COMPLETED),
         )
 
         val request = query.toRequest("next")

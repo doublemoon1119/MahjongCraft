@@ -31,6 +31,7 @@ class DecisionTimerUpdatePayloadDtoTest {
                                 referenceTileAssetKey = "m3",
                                 previewTileAssetKeys = listOf("m1", "m2", "m3"),
                                 claimedTileIndex = 2,
+                                tileSelection = null,
                             ),
                             PlayerDecisionActionDto(
                                 token = "riichi",
@@ -50,9 +51,12 @@ class DecisionTimerUpdatePayloadDtoTest {
                                                     "mahjongcraft:win_available",
                                                 ),
                                             ),
+                                            statusIndicatorId = null,
                                         ),
                                     ),
                                 ),
+                                referenceTileAssetKey = null,
+                                claimedTileIndex = null,
                             ),
                         ),
                         triggerTileAssetKey = "m3",
@@ -73,6 +77,8 @@ class DecisionTimerUpdatePayloadDtoTest {
                                 statusIndicatorId = "mahjongcraft:discard_furiten",
                             ),
                         ),
+                        ruleModuleId = null,
+                        preparation = null,
                     ),
                 ),
             ),
@@ -85,7 +91,7 @@ class DecisionTimerUpdatePayloadDtoTest {
         }
     }
 
-    /** 驗證封包的欄位名稱與列舉值維持既有格式。 */
+    /** 驗證封包寫出每個欄位，且欄位名稱與列舉值固定。 */
     @Test
     fun `test payload keeps its wire field names`() {
         val payload = DecisionTimerUpdatePayloadDto(
@@ -96,15 +102,26 @@ class DecisionTimerUpdatePayloadDtoTest {
                 2_000L,
                 PlayerDecisionPromptDto(
                     decisionKey = "key",
-                    actions = listOf(PlayerDecisionActionDto(token = "pass", actionId = "mahjongcraft:pass")),
+                    actions = listOf(PlayerDecisionActionDto(token = "pass", actionId = "mahjongcraft:pass", referenceTileAssetKey = null, previewTileAssetKeys = emptyList(), claimedTileIndex = null, tileSelection = null)),
                     triggerPlayerRelation = DecisionPlayerRelationDto.ACROSS,
+                    ruleModuleId = null,
+                    triggerTileAssetKey = null,
+                    triggerPlayerId = null,
+                    triggerPlayerName = null,
+                    triggerActionId = null,
+                    preparation = null,
+                    discardAnalyses = emptyList(),
                 ),
             ),
         )
 
         assertEquals(
             """{"gameId":"game","status":{"phase":"OWN_TURN","baseRemainingMillis":1000,"reserveRemainingMillis":2000,""" +
-                """"prompt":{"decisionKey":"key","actions":[{"token":"pass","actionId":"mahjongcraft:pass"}],"triggerPlayerRelation":"ACROSS"}}}""",
+                """"prompt":{"decisionKey":"key","ruleModuleId":null,""" +
+                """"actions":[{"token":"pass","actionId":"mahjongcraft:pass","referenceTileAssetKey":null,"previewTileAssetKeys":[],""" +
+                """"claimedTileIndex":null,"tileSelection":null}],""" +
+                """"triggerTileAssetKey":null,"triggerPlayerId":null,"triggerPlayerName":null,"triggerPlayerRelation":"ACROSS",""" +
+                """"triggerActionId":null,"preparation":null,"discardAnalyses":[]}}}""",
             Json.encodeToString(DecisionTimerUpdatePayloadDto.serializer(), payload),
         )
     }

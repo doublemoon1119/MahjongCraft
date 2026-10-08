@@ -177,7 +177,7 @@ class HistoryArchiveStatusControllerTest {
          * @param status 欲回覆的保存狀態。
          */
         fun respond(status: HistoryArchiveStatusDto) {
-            mutableState.value = ClientHistoryArchiveStatusState.Result(HistoryArchiveStatusResponseDto(requests.last().requestId, status))
+            mutableState.value = ClientHistoryArchiveStatusState.Result(HistoryArchiveStatusResponseDto(requests.last().requestId, status, errorCode = null))
         }
 
         override fun query(matchId: String): String {

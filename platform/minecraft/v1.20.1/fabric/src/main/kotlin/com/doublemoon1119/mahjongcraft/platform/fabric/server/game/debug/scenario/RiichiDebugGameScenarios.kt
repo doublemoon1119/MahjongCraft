@@ -159,7 +159,7 @@ private object RiichiBeforeSuuchaRiichiScenario : DebugGameScenario {
             currentPlayerIndex = invokingPlayerIndex,
             dynamicRuleState = RiichiDynamicState(riichiStickCount = PLAYER_COUNT - 1),
             wallOpening = opening,
-            initialDeadWall = initialReservedTiles,
+            reservedWallTiles = initialReservedTiles,
             physicalWallLayout = physicalLayout,
         )
         return DebugGameScenarioResult(
@@ -279,7 +279,7 @@ private object RiichiBeforePaoPonScenario : DebugGameScenario {
                 eligiblePlayerIds = setOf(context.invokingPlayerId),
             ),
             wallOpening = opening,
-            initialDeadWall = initialReservedTiles,
+            reservedWallTiles = initialReservedTiles,
             physicalWallLayout = physicalLayout,
         )
         return DebugGameScenarioResult(
@@ -445,7 +445,7 @@ private class RiichiBeforeAnkanScenario(
             currentPlayerIndex = dealerIndex,
             dynamicRuleState = RiichiDynamicState(completedSupplementalDrawCount = completedKanCount),
             wallOpening = opening,
-            initialDeadWall = reservedTiles,
+            reservedWallTiles = reservedTiles,
         )
         val currentPhysicalLayout = resolveCurrentPhysicalLayout(
             module,
@@ -482,13 +482,13 @@ private class RiichiBeforeAnkanScenario(
         wallStages.zipWithNext().forEachIndexed { index, (beforeStage, afterStage) ->
             val beforeState = stateTemplate.copy(
                 tileWall = TileWall(beforeStage.liveTiles),
-                initialDeadWall = beforeStage.reservedTiles,
+                reservedWallTiles = beforeStage.reservedTiles,
                 dynamicRuleState = RiichiDynamicState(completedSupplementalDrawCount = index),
                 physicalWallLayout = currentLayout,
             )
             val afterState = stateTemplate.copy(
                 tileWall = TileWall(afterStage.liveTiles),
-                initialDeadWall = afterStage.reservedTiles,
+                reservedWallTiles = afterStage.reservedTiles,
                 dynamicRuleState = RiichiDynamicState(completedSupplementalDrawCount = index + 1),
             )
             val markerTile = beforeStage.reservedTiles.first()

@@ -31,7 +31,7 @@ class RiichiSupplementalDrawPolicyTest {
         val state = FakeTableStateFactory.create(
             config = RiichiRuleConfig(),
             tileWall = TileWall(liveWall),
-            initialDeadWall = deadWall,
+            reservedWallTiles = deadWall,
             dynamicRuleState = RiichiDynamicState(),
         )
 
@@ -60,7 +60,7 @@ class RiichiSupplementalDrawPolicyTest {
         var state = FakeTableStateFactory.create(
             config = RiichiRuleConfig(),
             tileWall = TileWall(liveWall),
-            initialDeadWall = deadWall,
+            reservedWallTiles = deadWall,
             dynamicRuleState = RiichiDynamicState(),
         )
         val drawnTiles = mutableListOf<IdentifiedTile>()
@@ -72,7 +72,7 @@ class RiichiSupplementalDrawPolicyTest {
             drawnTiles += result.drawnTiles.single()
             state = state.copy(
                 tileWall = result.tileWall,
-                initialDeadWall = result.reservedWallTiles,
+                reservedWallTiles = result.reservedWallTiles,
                 dynamicRuleState = result.dynamicRuleState,
             )
         }
@@ -90,7 +90,7 @@ class RiichiSupplementalDrawPolicyTest {
         val state = FakeTableStateFactory.create(
             config = RiichiRuleConfig(),
             tileWall = TileWall(listOf(liveTile)),
-            initialDeadWall = deadWall.drop(3) + List(3) {
+            reservedWallTiles = deadWall.drop(3) + List(3) {
                 FakeIdentifiedTileFactory.create(Tile.Honor.Red)
             },
             dynamicRuleState = RiichiDynamicState(completedSupplementalDrawCount = 3),
@@ -116,7 +116,7 @@ class RiichiSupplementalDrawPolicyTest {
         val state = FakeTableStateFactory.create(
             config = RiichiRuleConfig(),
             tileWall = TileWall(),
-            initialDeadWall = deadWall,
+            reservedWallTiles = deadWall,
             dynamicRuleState = RiichiDynamicState(),
         )
 

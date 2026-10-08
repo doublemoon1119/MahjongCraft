@@ -41,14 +41,14 @@ class CompactDecisionHudTest {
     fun `shows no reminder for a prompt with nothing to choose`() {
         assertEquals(
             CompactDecisionHudContent.TimerOnly,
-            content(prompt = PlayerDecisionPromptDto(decisionKey = DECISION_KEY), dismissedDecisionKey = DECISION_KEY),
+            content(prompt = PlayerDecisionPromptDto(decisionKey = DECISION_KEY, ruleModuleId = null, actions = emptyList(), triggerTileAssetKey = null, triggerPlayerId = null, triggerPlayerName = null, triggerPlayerRelation = null, triggerActionId = null, preparation = null, discardAnalyses = emptyList()), dismissedDecisionKey = DECISION_KEY),
         )
     }
 
     /** 只有開局準備的 prompt 仍算需要玩家選擇。 */
     @Test
     fun `treats a preparation only prompt as interactive`() {
-        val prompt = PlayerDecisionPromptDto(decisionKey = DECISION_KEY, preparation = RoundPreparationPromptDto.Confirmation)
+        val prompt = PlayerDecisionPromptDto(decisionKey = DECISION_KEY, preparation = RoundPreparationPromptDto.Confirmation, ruleModuleId = null, actions = emptyList(), triggerTileAssetKey = null, triggerPlayerId = null, triggerPlayerName = null, triggerPlayerRelation = null, triggerActionId = null, discardAnalyses = emptyList())
 
         assertTrue(prompt.isInteractive)
     }
@@ -191,7 +191,15 @@ class CompactDecisionHudTest {
     /** 建立含一個動作候選的 prompt。 */
     private fun interactivePrompt() = PlayerDecisionPromptDto(
         decisionKey = DECISION_KEY,
-        actions = listOf(PlayerDecisionActionDto(token = "token-1", actionId = "mahjongcraft:ron")),
+        actions = listOf(PlayerDecisionActionDto(token = "token-1", actionId = "mahjongcraft:ron", referenceTileAssetKey = null, previewTileAssetKeys = emptyList(), claimedTileIndex = null, tileSelection = null)),
+        ruleModuleId = null,
+        triggerTileAssetKey = null,
+        triggerPlayerId = null,
+        triggerPlayerName = null,
+        triggerPlayerRelation = null,
+        triggerActionId = null,
+        preparation = null,
+        discardAnalyses = emptyList(),
     )
 
     /** 建立測試用的版位。 */

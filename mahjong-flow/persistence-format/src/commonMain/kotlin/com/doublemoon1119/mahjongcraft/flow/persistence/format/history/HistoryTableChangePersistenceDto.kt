@@ -57,16 +57,16 @@ data class HistoryWallLayoutChangePersistenceDto(
  */
 @Serializable
 data class HistoryTableChangePersistenceDto(
-    val changedPlayers: List<HistoryPlayerChangePersistenceDto> = emptyList(),
-    val wall: HistoryWallChangePersistenceDto? = null,
-    val currentPlayerIndex: Int? = null,
-    val dynamicRuleState: HistoryChangedValuePersistenceDto<TypedPersistenceDto?>? = null,
-    val pendingReaction: HistoryChangedValuePersistenceDto<PendingReactionPersistenceDto?>? = null,
-    val pendingRobbingReaction: HistoryChangedValuePersistenceDto<PendingRobbingReactionPersistenceDto?>? = null,
-    val reservedWallTiles: List<IdentifiedTilePersistenceDto>? = null,
-    val physicalWallLayout: HistoryWallLayoutChangePersistenceDto? = null,
-    val finishedPlayerIds: Set<String>? = null,
-    val revealedHandTileIds: Set<String>? = null,
+    val changedPlayers: List<HistoryPlayerChangePersistenceDto>,
+    val wall: HistoryWallChangePersistenceDto?,
+    val currentPlayerIndex: Int?,
+    val dynamicRuleState: HistoryChangedValuePersistenceDto<TypedPersistenceDto?>?,
+    val pendingReaction: HistoryChangedValuePersistenceDto<PendingReactionPersistenceDto?>?,
+    val pendingRobbingReaction: HistoryChangedValuePersistenceDto<PendingRobbingReactionPersistenceDto?>?,
+    val reservedWallTiles: List<IdentifiedTilePersistenceDto>?,
+    val physicalWallLayout: HistoryWallLayoutChangePersistenceDto?,
+    val finishedPlayerIds: Set<String>?,
+    val revealedHandTileIds: Set<String>?,
 )
 
 /** 玩家狀態與動作紀錄的局部變化。

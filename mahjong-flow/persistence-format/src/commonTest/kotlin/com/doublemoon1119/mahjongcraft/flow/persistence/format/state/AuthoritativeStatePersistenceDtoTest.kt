@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceEnvelopeDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceDto
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
@@ -99,6 +100,7 @@ class AuthoritativeStatePersistenceDtoTest {
                 games = emptyMap(),
                 gameFlowConfigs = emptyMap(),
                 gameRuntimeStates = emptyMap(),
+                historyRecordingState = HistoryRecordingPersistenceDto.EMPTY,
             )
         }
     }
@@ -115,6 +117,7 @@ class AuthoritativeStatePersistenceDtoTest {
                 games = mapOf(Uuid.random().toString() to gameDto),
                 gameFlowConfigs = state.gameFlowConfigs,
                 gameRuntimeStates = state.gameRuntimeStates,
+                historyRecordingState = HistoryRecordingPersistenceDto.EMPTY,
             )
         }
     }
@@ -133,6 +136,7 @@ class AuthoritativeStatePersistenceDtoTest {
                 games = mapOf(venueId.toString() to gameDto),
                 gameFlowConfigs = gameState.gameFlowConfigs,
                 gameRuntimeStates = gameState.gameRuntimeStates,
+                historyRecordingState = HistoryRecordingPersistenceDto.EMPTY,
             )
         }
     }

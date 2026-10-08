@@ -285,7 +285,7 @@ class DebugGameScenarioTest {
             val currentLayout = assertNotNull(state.physicalWallLayout)
             val afterState = state.copy(
                 tileWall = decision.tileWall,
-                initialDeadWall = decision.reservedWallTiles,
+                reservedWallTiles = decision.reservedWallTiles,
                 dynamicRuleState = decision.dynamicRuleState,
                 physicalWallLayout = null,
             )

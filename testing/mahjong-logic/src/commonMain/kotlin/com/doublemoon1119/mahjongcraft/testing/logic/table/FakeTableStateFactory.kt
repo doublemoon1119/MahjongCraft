@@ -46,7 +46,7 @@ object FakeTableStateFactory {
         dynamicRuleState: DynamicRuleState? = null,
         pendingReaction: PendingReaction? = null,
         pendingRobbingReaction: PendingRobbingReaction? = null,
-        initialDeadWall: List<IdentifiedTile> = emptyList(),
+        reservedWallTiles: List<IdentifiedTile> = emptyList(),
         physicalWallLayout: TileWallPhysicalLayout? = null,
         finishedPlayerIds: Set<Uuid> = emptySet(),
     ): TableState {
@@ -70,7 +70,7 @@ object FakeTableStateFactory {
             dynamicRuleState = dynamicRuleState,
             pendingReaction = pendingReaction,
             pendingRobbingReaction = pendingRobbingReaction,
-            initialDeadWall = initialDeadWall,
+            reservedWallTiles = reservedWallTiles,
             physicalWallLayout = physicalWallLayout,
             finishedPlayerIds = finishedPlayerIds,
         )

@@ -69,7 +69,7 @@ class WallRevealDecisionApplierTest {
             FakeTableStateFactory.create(
                 players = listOf(player),
                 config = RiichiRuleConfig(),
-                initialDeadWall = List(14) {
+                reservedWallTiles = List(14) {
                     FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 3))
                 },
                 dynamicRuleState = dynamicState,

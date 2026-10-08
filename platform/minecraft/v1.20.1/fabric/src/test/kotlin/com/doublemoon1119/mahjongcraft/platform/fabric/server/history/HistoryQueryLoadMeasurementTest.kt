@@ -258,7 +258,7 @@ class HistoryQueryLoadMeasurementTest {
             if (page != null) {
                 Json.encodeToString(
                     HistoryListResponseDto.serializer(),
-                    HistoryListResponseDto(requestId = "load-request", entries = page.entries.map { it.toResponseDto() }),
+                    HistoryListResponseDto(requestId = "load-request", entries = page.entries.map { it.toResponseDto() }, nextCursor = null, errorCode = null, allowAll = false),
                 )
                 samples.completed++
                 samples.recordQuery(elapsedMillis(timer), collect)
@@ -279,7 +279,7 @@ class HistoryQueryLoadMeasurementTest {
     private fun encodeErrorResponse(errorCode: HistoryQueryErrorCodeDto) {
         Json.encodeToString(
             HistoryListResponseDto.serializer(),
-            HistoryListResponseDto(requestId = "load-request", entries = emptyList(), errorCode = errorCode),
+            HistoryListResponseDto(requestId = "load-request", entries = emptyList(), errorCode = errorCode, nextCursor = null, allowAll = false),
         )
     }
 
@@ -299,6 +299,7 @@ class HistoryQueryLoadMeasurementTest {
         roundCount = rounds.size.takeIf { state == HistoryStoredMatchState.COMPLETED },
         resultsAvailable = state == HistoryStoredMatchState.COMPLETED,
         results = participants.map { HistoryResultSummaryDto(it.playerId, it.finalScore, it.finalRank) },
+        integrityDiagnostic = null,
     )
 
     /** 將資料庫終局狀態轉為網路列舉。

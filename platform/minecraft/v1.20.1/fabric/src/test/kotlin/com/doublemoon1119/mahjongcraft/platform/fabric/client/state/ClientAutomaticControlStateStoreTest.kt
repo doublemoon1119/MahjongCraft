@@ -64,6 +64,7 @@ class ClientAutomaticControlStateStoreTest {
             requestId = pending.requestId,
             gameId = Uuid.random().toString(),
             result = AutomaticControlUpdateResultKindDto.UNAVAILABLE,
+            snapshot = null,
         )
 
         assertFalse(store.applyResult(otherGameResult))

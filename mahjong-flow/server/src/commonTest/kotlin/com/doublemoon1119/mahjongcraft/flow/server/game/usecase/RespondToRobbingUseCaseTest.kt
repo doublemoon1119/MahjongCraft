@@ -103,7 +103,7 @@ class RespondToRobbingUseCaseTest {
     )
 
     private fun setUpTable(
-        initialDeadWall: List<IdentifiedTile> = completeRiichiReservedWall(rinshanTile),
+        reservedWallTiles: List<IdentifiedTile> = completeRiichiReservedWall(rinshanTile),
         robberRuleState: RiichiPlayerState = RiichiPlayerState(),
     ): TableState {
         val declarer = FakeMahjongPlayerFactory.create(
@@ -121,7 +121,7 @@ class RespondToRobbingUseCaseTest {
             id = gameId,
             players = listOf(declarer, robber),
             config = RiichiRuleConfig(),
-            initialDeadWall = initialDeadWall,
+            reservedWallTiles = reservedWallTiles,
             currentPlayerIndex = 0,
             dynamicRuleState = RiichiDynamicState(),
             pendingRobbingReaction = PendingRobbingReaction(declarerId, kanAction, robbedWhiteTile, setOf(robberId)),
@@ -238,7 +238,7 @@ class RespondToRobbingUseCaseTest {
     @Test
     fun `test all pass fails with wall exhausted and applies nothing`() = runTest {
         val fixtures = Fixtures()
-        fixtures.gameRepo.setTableState(setUpTable(initialDeadWall = emptyList()))
+        fixtures.gameRepo.setTableState(setUpTable(reservedWallTiles = emptyList()))
 
         val result = fixtures.useCase(gameId, robberId, GameAction.Pass)
 

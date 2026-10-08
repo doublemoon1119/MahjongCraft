@@ -308,7 +308,7 @@ class GameActionRouterTest {
         )
     }
 
-    private fun chankanTable(declarerId: Uuid, robberId: Uuid, initialDeadWall: List<IdentifiedTile>): TableState {
+    private fun chankanTable(declarerId: Uuid, robberId: Uuid, reservedWallTiles: List<IdentifiedTile>): TableState {
         val whiteTile1 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val whiteTile2 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val whiteTile3 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
@@ -334,7 +334,7 @@ class GameActionRouterTest {
             id = gameId,
             players = listOf(declarer, robber),
             config = RiichiRuleConfig(),
-            initialDeadWall = initialDeadWall,
+            reservedWallTiles = reservedWallTiles,
             currentPlayerIndex = 0,
             dynamicRuleState = RiichiDynamicState(),
             pendingRobbingReaction = PendingRobbingReaction(declarerId, kanAction, robbedWhiteTile, setOf(robberId)),

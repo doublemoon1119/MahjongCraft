@@ -46,7 +46,7 @@ class ClientMahjongStateStoreTest {
         val tableAId = Uuid.random()
         val tableBId = Uuid.random()
 
-        val occupancyA = TableOccupancyPayloadDto(tableId = tableAId.toString(), occupancy = TableOccupancyDto.ROOM)
+        val occupancyA = TableOccupancyPayloadDto(tableId = tableAId.toString(), occupancy = TableOccupancyDto.ROOM, roomSnapshot = null, playingPlayerIds = emptyList(), playingAiPlayerIds = emptyList(), playingGameConfig = null, dimensionId = null, tableX = null, tableY = null, tableZ = null)
         store.apply(occupancyA)
 
         val playerB = FakeMahjongPlayerFactory.create(discardPile = RiichiDiscardPile())
@@ -58,6 +58,7 @@ class ClientMahjongStateStoreTest {
             action = GameAction.Draw.toDto(registries),
             snapshot = snapshotB.toDto(registries),
             aiPlayerIds = emptyList(),
+            historyMatchId = null,
         )
         store.apply(gameUpdateB)
 
@@ -83,6 +84,7 @@ class ClientMahjongStateStoreTest {
                 action = GameAction.Draw.toDto(registries),
                 snapshot = snapshot.toDto(registries),
                 aiPlayerIds = listOf(ai.id.toString()),
+                historyMatchId = null,
             ),
         )
         assertEquals(setOf(ai.id), store.gameAiPlayerIds(tableId))
@@ -144,7 +146,7 @@ class ClientMahjongStateStoreTest {
             isHost = false,
             isInRoom = true,
         )
-        store.apply(TableOccupancyPayloadDto(tableId.toString(), TableOccupancyDto.ROOM, snapshot.toDto(registries)))
+        store.apply(TableOccupancyPayloadDto(tableId.toString(), TableOccupancyDto.ROOM, snapshot.toDto(registries), playingPlayerIds = emptyList(), playingAiPlayerIds = emptyList(), playingGameConfig = null, dimensionId = null, tableX = null, tableY = null, tableZ = null))
         store.applyRoomSnapshot(tableId, snapshot)
 
         store.apply(
@@ -166,7 +168,7 @@ class ClientMahjongStateStoreTest {
         val player = FakeMahjongPlayerFactory.create(discardPile = RiichiDiscardPile())
         val snapshot = FakeTableStateFactory.create(id = tableId, players = listOf(player), config = RiichiRuleConfig())
             .toSnapshot(visibleHandPlayerIds = setOf(player.id), setAsideTiles = { emptyList() })
-        val analysis = HandReadinessAnalysisDto("mahjongcraft:riichi", emptyList())
+        val analysis = HandReadinessAnalysisDto("mahjongcraft:riichi", emptyList(), statusIndicatorId = null)
         store.applyGameSnapshot(tableId, snapshot, aiPlayerIds = emptySet(), handReadinessAnalysis = analysis)
 
         assertEquals(analysis, store.handReadinessAnalysis(tableId))
@@ -178,6 +180,7 @@ class ClientMahjongStateStoreTest {
                 action = GameAction.Draw.toDto(registries),
                 snapshot = snapshot.toDto(registries),
                 aiPlayerIds = emptyList(),
+                historyMatchId = null,
             ),
         )
 

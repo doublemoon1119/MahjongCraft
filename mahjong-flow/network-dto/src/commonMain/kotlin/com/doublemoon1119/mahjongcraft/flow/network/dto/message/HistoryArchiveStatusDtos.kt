@@ -56,5 +56,5 @@ data class HistoryArchiveStatusRequestDto(
 data class HistoryArchiveStatusResponseDto(
     val requestId: String,
     val status: HistoryArchiveStatusDto,
-    val errorCode: HistoryQueryErrorCodeDto? = null,
+    val errorCode: HistoryQueryErrorCodeDto?,
 )

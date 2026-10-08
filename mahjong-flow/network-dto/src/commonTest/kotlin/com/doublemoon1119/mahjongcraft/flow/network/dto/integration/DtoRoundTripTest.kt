@@ -20,6 +20,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSetti
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomSnapshotSyncPayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdateEventDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdatePayloadDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WIN_AVAILABLE_ID
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileAvailabilityDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.decodeHistoryRuleSettingsResponse
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.encode
@@ -124,6 +125,7 @@ class DtoRoundTripTest {
         val response = HistoryRuleSettingsResponseDto(
             requestId = "history-rules",
             config = HistoryRuleSettings(config).toDto(registries),
+            errorCode = null,
         )
 
         val encoded = response.encode(json)
@@ -344,10 +346,12 @@ class DtoRoundTripTest {
                     WaitingTileAvailabilityDto(
                         tile = TileDto.Numeric(SuitDto.CHARACTER, 1),
                         remainingCount = 2,
+                        winAvailability = WIN_AVAILABLE_ID,
                     ),
                 ),
                 statusIndicatorId = "mahjongcraft:riichi/discard_furiten",
             ),
+            roundPreparation = null,
         )
         val encodedGame = json.encodeToString(GameSnapshotSyncPayloadDto.serializer(), gamePayload)
         assertEquals(gamePayload, json.decodeFromString(GameSnapshotSyncPayloadDto.serializer(), encodedGame))

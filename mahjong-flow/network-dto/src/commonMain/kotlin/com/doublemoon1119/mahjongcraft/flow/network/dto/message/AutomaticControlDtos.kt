@@ -67,7 +67,7 @@ data class AutomaticControlUpdateResultDto(
     val requestId: String,
     val gameId: String,
     val result: AutomaticControlUpdateResultKindDto,
-    val snapshot: AutomaticControlSnapshotDto? = null,
+    val snapshot: AutomaticControlSnapshotDto?,
 )
 
 /** 將個人權威狀態轉換成網路快照。 */

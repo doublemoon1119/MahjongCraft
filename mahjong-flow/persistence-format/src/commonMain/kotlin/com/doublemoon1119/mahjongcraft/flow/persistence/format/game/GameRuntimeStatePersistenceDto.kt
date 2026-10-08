@@ -25,19 +25,19 @@ import kotlin.uuid.Uuid
 @Serializable
 data class GameRuntimeStatePersistenceDto(
     val remainingReserveMillisByPlayerId: Map<String, Long>,
-    val forcedAutoPlayPlayerIds: Set<String> = emptySet(),
-    val enabledAutomaticControlIdsByPlayerId: Map<String, Set<String>> = emptyMap(),
-    val automaticControlRevision: Long = 0L,
-    val isMatchOver: Boolean = false,
-    val pendingTransition: PendingGameTransitionPersistenceDto? = null,
-    val roundCompletion: RoundCompletionSummaryPersistenceDto? = null,
-    val matchEndReasonId: String? = null,
-    val pendingRoundPreparation: PendingRoundPreparationPersistenceDto? = null,
+    val forcedAutoPlayPlayerIds: Set<String>,
+    val enabledAutomaticControlIdsByPlayerId: Map<String, Set<String>>,
+    val automaticControlRevision: Long,
+    val isMatchOver: Boolean,
+    val pendingTransition: PendingGameTransitionPersistenceDto?,
+    val roundCompletion: RoundCompletionSummaryPersistenceDto?,
+    val matchEndReasonId: String?,
+    val pendingRoundPreparation: PendingRoundPreparationPersistenceDto?,
     val hostId: String,
     val roomPlayerIds: List<String>,
-    val interruptedBaseMillisByPlayerId: Map<String, Long> = emptyMap(),
+    val interruptedBaseMillisByPlayerId: Map<String, Long>,
     val matchId: String,
-    val aiPlayerStrategyKeys: Map<String, String> = emptyMap(),
+    val aiPlayerStrategyKeys: Map<String, String>,
 )
 
 /** 將 [Game] 的 runtime 狀態轉換成 persistence DTO。 */

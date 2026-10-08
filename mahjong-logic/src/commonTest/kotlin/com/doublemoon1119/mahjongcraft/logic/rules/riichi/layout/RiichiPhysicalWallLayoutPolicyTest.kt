@@ -66,7 +66,7 @@ class RiichiPhysicalWallLayoutPolicyTest {
             var tableState = FakeTableStateFactory.create(
                 config = RiichiRuleConfig(),
                 tileWall = TileWall(wallLayout.drawOrder),
-                initialDeadWall = wallLayout.reservedWallTiles,
+                reservedWallTiles = wallLayout.reservedWallTiles,
                 dynamicRuleState = RiichiDynamicState(),
             )
             var physicalLayout = initialPhysicalLayout(wallLayout, opening)
@@ -84,7 +84,7 @@ class RiichiPhysicalWallLayoutPolicyTest {
                 replenishmentIds += replenishmentId
                 val updatedState = tableState.copy(
                     tileWall = supplemental.tileWall,
-                    initialDeadWall = supplemental.reservedWallTiles,
+                    reservedWallTiles = supplemental.reservedWallTiles,
                     dynamicRuleState = supplemental.dynamicRuleState,
                 )
                 val transition = assertIs<PhysicalWallLayoutTransitionDecision.Completed>(
@@ -127,7 +127,7 @@ class RiichiPhysicalWallLayoutPolicyTest {
         val initialState = FakeTableStateFactory.create(
             config = RiichiRuleConfig(),
             tileWall = TileWall(wallLayout.drawOrder),
-            initialDeadWall = wallLayout.reservedWallTiles,
+            reservedWallTiles = wallLayout.reservedWallTiles,
             dynamicRuleState = RiichiDynamicState(),
         )
         val draw = initialState.tileWall.draw()
@@ -221,7 +221,7 @@ class RiichiPhysicalWallLayoutPolicyTest {
         var tableState = FakeTableStateFactory.create(
             config = RiichiRuleConfig(),
             tileWall = TileWall(wallLayout.drawOrder),
-            initialDeadWall = wallLayout.reservedWallTiles,
+            reservedWallTiles = wallLayout.reservedWallTiles,
             dynamicRuleState = RiichiDynamicState(),
         )
         var layout = initialPhysicalLayout(wallLayout, opening)
@@ -241,7 +241,7 @@ class RiichiPhysicalWallLayoutPolicyTest {
             )
             val updatedState = tableState.copy(
                 tileWall = supplemental.tileWall,
-                initialDeadWall = supplemental.reservedWallTiles,
+                reservedWallTiles = supplemental.reservedWallTiles,
                 dynamicRuleState = supplemental.dynamicRuleState,
             )
             val transition = assertIs<PhysicalWallLayoutTransitionDecision.Completed>(

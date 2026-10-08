@@ -38,6 +38,7 @@ internal fun boundedHistoryRoundEvents(
             request.roundNumber,
             request.startTransactionIndex,
             events = mapped.copy(transactions = transactions, nextTransactionIndex = next, tileCatalog = catalog),
+            errorCode = null,
         )
         if (json.encodeToString(HistoryRoundEventsResponseDto.serializer(), response).encodeToByteArray().size <= maximumBytes) return response
         if (count <= 1) {
@@ -47,6 +48,7 @@ internal fun boundedHistoryRoundEvents(
                 request.roundNumber,
                 request.startTransactionIndex,
                 errorCode = HistoryQueryErrorCodeDto.CONTENT_TOO_LARGE,
+                events = null,
             )
         }
         count--
@@ -67,10 +69,10 @@ internal fun boundedHistoryRoundState(
     json: Json,
     maximumBytes: Int = HistoryQueryLimits.RESPONSE_BYTES,
 ): HistoryRoundStateResponseDto {
-    val response = HistoryRoundStateResponseDto(request.requestId, request.matchId, request.roundNumber, request.position, state = state.toDto())
+    val response = HistoryRoundStateResponseDto(request.requestId, request.matchId, request.roundNumber, request.position, state = state.toDto(), errorCode = null)
     return if (json.encodeToString(HistoryRoundStateResponseDto.serializer(), response).encodeToByteArray().size <= maximumBytes) {
         response
     } else {
-        HistoryRoundStateResponseDto(request.requestId, request.matchId, request.roundNumber, request.position, errorCode = HistoryQueryErrorCodeDto.CONTENT_TOO_LARGE)
+        HistoryRoundStateResponseDto(request.requestId, request.matchId, request.roundNumber, request.position, errorCode = HistoryQueryErrorCodeDto.CONTENT_TOO_LARGE, state = null)
     }
 }

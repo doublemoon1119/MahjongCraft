@@ -16,10 +16,10 @@ import kotlinx.serialization.Serializable
 data class PlayerDecisionActionDto(
     val token: String,
     val actionId: String,
-    val referenceTileAssetKey: String? = null,
-    val previewTileAssetKeys: List<String> = emptyList(),
-    val claimedTileIndex: Int? = null,
-    val tileSelection: PlayerDecisionActionTileSelectionDto? = null,
+    val referenceTileAssetKey: String?,
+    val previewTileAssetKeys: List<String>,
+    val claimedTileIndex: Int?,
+    val tileSelection: PlayerDecisionActionTileSelectionDto?,
 )
 
 /**
@@ -32,7 +32,7 @@ data class PlayerDecisionActionTileSelectionDto(
     val eligibleTileIds: List<String>,
     val minCount: Int,
     val maxCount: Int,
-    val discardAnalyses: List<DiscardReadinessAnalysisDto> = emptyList(),
+    val discardAnalyses: List<DiscardReadinessAnalysisDto>,
 )
 
 /**
@@ -70,7 +70,7 @@ sealed interface RoundPreparationPromptDto {
     data class TileSelection(
         val eligibleTileIds: List<String>,
         /** 與 [eligibleTileIds] 相同順序、只公開給本人的牌面資產。 */
-        val eligibleTileAssetKeys: List<String> = emptyList(),
+        val eligibleTileAssetKeys: List<String>,
         val minCount: Int,
         val maxCount: Int,
     ) : RoundPreparationPromptDto
@@ -86,15 +86,15 @@ sealed interface RoundPreparationPromptDto {
 @Serializable
 data class PlayerDecisionPromptDto(
     val decisionKey: String,
-    val ruleModuleId: String? = null,
-    val actions: List<PlayerDecisionActionDto> = emptyList(),
-    val triggerTileAssetKey: String? = null,
-    val triggerPlayerId: String? = null,
-    val triggerPlayerName: String? = null,
-    val triggerPlayerRelation: DecisionPlayerRelationDto? = null,
-    val triggerActionId: String? = null,
-    val preparation: RoundPreparationPromptDto? = null,
-    val discardAnalyses: List<DiscardReadinessAnalysisDto> = emptyList(),
+    val ruleModuleId: String?,
+    val actions: List<PlayerDecisionActionDto>,
+    val triggerTileAssetKey: String?,
+    val triggerPlayerId: String?,
+    val triggerPlayerName: String?,
+    val triggerPlayerRelation: DecisionPlayerRelationDto?,
+    val triggerActionId: String?,
+    val preparation: RoundPreparationPromptDto?,
+    val discardAnalyses: List<DiscardReadinessAnalysisDto>,
 )
 
 /** 客戶端提交 prompt 選擇時使用的受控操作種類。 */
@@ -120,9 +120,9 @@ data class PlayerDecisionSelectionDto(
     val gameId: String,
     val decisionKey: String,
     val kind: PlayerDecisionSelectionKindDto,
-    val token: String? = null,
-    val tileIds: List<String> = emptyList(),
-    val submissionId: String = "",
+    val token: String?,
+    val tileIds: List<String>,
+    val submissionId: String,
 )
 
 /** 最終決策提交的伺服器權威處理結果。 */

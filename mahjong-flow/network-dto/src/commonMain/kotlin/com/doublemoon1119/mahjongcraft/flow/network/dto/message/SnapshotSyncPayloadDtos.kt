@@ -37,7 +37,7 @@ data class GameSnapshotSyncPayloadDto(
     /** 由 AI 操控的玩家 UUID 字串；對所有觀察者相同。 */
     val aiPlayerIds: List<String>,
     /** 指定 observer 可見的開局準備狀態。 */
-    val roundPreparation: RoundPreparationSnapshotDto? = null,
+    val roundPreparation: RoundPreparationSnapshotDto?,
     /** 只向參與者本人公開的目前手牌分析；未聽牌或規則不支援時為 `null`。 */
-    val handReadinessAnalysis: HandReadinessAnalysisDto? = null,
+    val handReadinessAnalysis: HandReadinessAnalysisDto?,
 )

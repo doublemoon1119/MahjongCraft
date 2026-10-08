@@ -137,7 +137,23 @@ enum class HistoryQueryErrorCodeDto {
  * @property playerName 參與者名稱的大小寫不敏感部分比對文字。
  * @property matchId 指定對局 UUID 文字；留空表示不限制對局。
  */
-data class HistoryQueryFiltersDto(val ruleId: String? = null, val outcome: HistoryOutcomeFilterDto? = null, val integrity: HistoryIntegrityFilterDto? = null, val ai: HistoryAiFilterDto? = null, val endedAtFromEpochMillis: Long? = null, val endedAtBeforeEpochMillis: Long? = null, val ownRankMin: Int? = null, val ownRankMax: Int? = null, val playerName: String? = null, val matchId: String? = null)
+data class HistoryQueryFiltersDto(val ruleId: String?, val outcome: HistoryOutcomeFilterDto?, val integrity: HistoryIntegrityFilterDto?, val ai: HistoryAiFilterDto?, val endedAtFromEpochMillis: Long?, val endedAtBeforeEpochMillis: Long?, val ownRankMin: Int?, val ownRankMax: Int?, val playerName: String?, val matchId: String?) {
+    companion object {
+        /** 不套用任何篩選條件。 */
+        val NONE: HistoryQueryFiltersDto = HistoryQueryFiltersDto(
+            ruleId = null,
+            outcome = null,
+            integrity = null,
+            ai = null,
+            endedAtFromEpochMillis = null,
+            endedAtBeforeEpochMillis = null,
+            ownRankMin = null,
+            ownRankMax = null,
+            playerName = null,
+            matchId = null,
+        )
+    }
+}
 
 /** 可驗證的歷史 keyset cursor 傳輸內容。
  *
@@ -173,12 +189,12 @@ data class HistoryQueryCursorDto(
 @Serializable
 data class HistoryListRequestDto(
     val requestId: String,
-    val scope: HistoryQueryScopeDto = HistoryQueryScopeDto.OWN,
-    val sortField: HistorySortFieldDto = HistorySortFieldDto.ENDED_AT,
-    val sortDirection: HistorySortDirectionDto = HistorySortDirectionDto.DESC,
-    val filters: HistoryQueryFiltersDto = HistoryQueryFiltersDto(),
-    val pageSize: Int = 20,
-    val cursor: String? = null,
+    val scope: HistoryQueryScopeDto,
+    val sortField: HistorySortFieldDto,
+    val sortDirection: HistorySortDirectionDto,
+    val filters: HistoryQueryFiltersDto,
+    val pageSize: Int,
+    val cursor: String?,
 )
 
 /** 歷史清單中可安全公開的參與者資訊。
@@ -191,7 +207,7 @@ data class HistoryListRequestDto(
 data class HistoryParticipantSummaryDto(
     val seatIndex: Int,
     val playerId: String,
-    val aiStrategyId: String? = null,
+    val aiStrategyId: String?,
 )
 
 /** 歷史清單中的單筆對局摘要。
@@ -217,12 +233,12 @@ data class HistoryMatchSummaryDto(
     val endedAtEpochMillis: Long?,
     val outcome: HistoryOutcomeFilterDto?,
     val integrity: HistoryIntegrityFilterDto,
-    val integrityDiagnostic: String? = null,
-    val durationMillis: Long? = null,
+    val integrityDiagnostic: String?,
+    val durationMillis: Long?,
     val participants: List<HistoryParticipantSummaryDto>,
     val roundCount: Int?,
     val resultsAvailable: Boolean,
-    val results: List<HistoryResultSummaryDto> = emptyList(),
+    val results: List<HistoryResultSummaryDto>,
 )
 
 /** 歷史對局中可公開的玩家終局結果。
@@ -274,9 +290,9 @@ data class HistoryMatchDetailDto(
 data class HistoryListResponseDto(
     val requestId: String,
     val entries: List<HistoryMatchSummaryDto>,
-    val nextCursor: String? = null,
-    val errorCode: HistoryQueryErrorCodeDto? = null,
-    val allowAll: Boolean = false,
+    val nextCursor: String?,
+    val errorCode: HistoryQueryErrorCodeDto?,
+    val allowAll: Boolean,
 )
 
 /** 單場歷史摘要查詢的 C2S 請求。
@@ -289,7 +305,7 @@ data class HistoryListResponseDto(
 data class HistorySummaryRequestDto(
     val requestId: String,
     val matchId: String,
-    val scope: HistoryQueryScopeDto = HistoryQueryScopeDto.OWN,
+    val scope: HistoryQueryScopeDto,
 )
 
 /** 單場歷史規則設定查詢的 C2S 請求。
@@ -302,5 +318,5 @@ data class HistorySummaryRequestDto(
 data class HistoryRuleSettingsRequestDto(
     val requestId: String,
     val matchId: String,
-    val scope: HistoryQueryScopeDto = HistoryQueryScopeDto.OWN,
+    val scope: HistoryQueryScopeDto,
 )

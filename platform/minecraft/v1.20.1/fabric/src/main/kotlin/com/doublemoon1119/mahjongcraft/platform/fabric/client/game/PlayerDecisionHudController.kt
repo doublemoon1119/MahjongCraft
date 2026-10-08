@@ -237,7 +237,7 @@ class PlayerDecisionHudController(
         val gameId = timerStore.state?.gameId ?: return
         MahjongChannels.decisionSelection.sendToServer(
             json,
-            PlayerDecisionSelectionDto(gameId.toString(), prompt.decisionKey, kind, token, tileIds),
+            PlayerDecisionSelectionDto(gameId.toString(), prompt.decisionKey, kind, token, tileIds, submissionId = ""),
         )
     }
 

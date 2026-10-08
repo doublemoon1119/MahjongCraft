@@ -27,7 +27,7 @@ class PhysicalWallLayoutPolicyTest {
         )
         val result = TileWallLayoutResult(
             drawOrder = listOf(topTile, bottomTile),
-            initialDeadWall = emptyList(),
+            reservedWallTiles = emptyList(),
             structure = structure,
         )
 

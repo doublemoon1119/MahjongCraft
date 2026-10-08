@@ -72,9 +72,9 @@ class ReplayReadBudgetTest {
         assertEquals(1, diagnostics.transactionsRebuilt)
     }
 
-    /** 有界套用沿用原有數字字串路徑，且不改變完整 decoder 的結果。 */
+    /** 有界套用與完整 decoder 使用同一套路徑規則（陣列索引以數字字串表示），結果相同。 */
     @Test
-    fun `bounded patch shares legacy numeric string path grammar`() {
+    fun `bounded patch shares the numeric string path grammar`() {
         val before = json.parseToJsonElement("{\"players\":[{\"score\":1}]}")
         val path = listOf(JsonPrimitive("players"), JsonPrimitive("0"), JsonPrimitive("score"))
         val operations = JsonArray(listOf(JsonArray(listOf(JsonPrimitive(0), JsonPrimitive(0), JsonPrimitive(20)))))

@@ -10,8 +10,8 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class HandSnapshotDto(
     val standingTiles: List<IdentifiedTileSnapshotDto>,
-    val lastDrawn: IdentifiedTileSnapshotDto? = null,
-    val melds: List<MeldSnapshotDto> = emptyList(),
+    val lastDrawn: IdentifiedTileSnapshotDto?,
+    val melds: List<MeldSnapshotDto>,
 )
 
 fun HandSnapshot.toDto(): HandSnapshotDto = HandSnapshotDto(

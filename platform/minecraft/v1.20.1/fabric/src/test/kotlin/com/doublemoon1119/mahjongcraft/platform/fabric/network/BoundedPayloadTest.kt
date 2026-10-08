@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.network
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlUpdateRequestDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryScopeDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundPositionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateRequestDto
@@ -19,12 +20,12 @@ class BoundedPayloadTest {
      */
     @Test
     fun `round replay requests share the bounded packet decoder`() {
-        val events = HistoryRoundEventsRequestDto("events", Uuid.random().toString(), roundNumber = 1)
+        val events = HistoryRoundEventsRequestDto("events", Uuid.random().toString(), roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
         val eventPayload = Json.encodeToString(HistoryRoundEventsRequestDto.serializer(), events)
         assertEquals(events, decodeBoundedPayload(bufferFor(eventPayload), Json, HistoryRoundEventsRequestDto.serializer(), HistoryQueryLimits.REQUEST_BYTES))
         val trailing = bufferFor(eventPayload).also { it.writeByte(1) }
         assertNull(decodeBoundedPayload(trailing, Json, HistoryRoundEventsRequestDto.serializer(), HistoryQueryLimits.REQUEST_BYTES))
-        val state = HistoryRoundStateRequestDto("state", events.matchId, roundNumber = 1, position = HistoryRoundPositionDto.AfterTransaction(4))
+        val state = HistoryRoundStateRequestDto("state", events.matchId, roundNumber = 1, position = HistoryRoundPositionDto.AfterTransaction(4), scope = HistoryQueryScopeDto.OWN)
         val statePayload = Json.encodeToString(HistoryRoundStateRequestDto.serializer(), state)
         assertEquals(state, decodeBoundedPayload(bufferFor(statePayload), Json, HistoryRoundStateRequestDto.serializer(), HistoryQueryLimits.REQUEST_BYTES))
         val oversized = Json.encodeToString(HistoryRoundEventsRequestDto.serializer(), events.copy(requestId = "界".repeat(2000)))

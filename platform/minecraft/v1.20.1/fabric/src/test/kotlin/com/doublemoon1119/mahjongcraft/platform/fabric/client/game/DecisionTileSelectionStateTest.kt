@@ -44,7 +44,7 @@ class DecisionTileSelectionStateTest {
     /** 不需要選牌的動作不請求確認面板。 */
     @Test
     fun `requests no confirm panel for an action without a tile selection`() {
-        assertNull(state.beginAction(PlayerDecisionActionDto(ACTION_TOKEN, "mahjongcraft:pon")))
+        assertNull(state.beginAction(PlayerDecisionActionDto(ACTION_TOKEN, "mahjongcraft:pon", referenceTileAssetKey = null, previewTileAssetKeys = emptyList(), claimedTileIndex = null, tileSelection = null)))
     }
 
     /** 沒有進入任何選牌情境時，右鍵手牌不被消化。 */
@@ -319,7 +319,16 @@ class DecisionTileSelectionStateTest {
             eligibleTileIds = listOf(TILE_A, TILE_B, TILE_C),
             minCount = minCount,
             maxCount = maxCount,
+            eligibleTileAssetKeys = emptyList(),
         ),
+        ruleModuleId = null,
+        actions = emptyList(),
+        triggerTileAssetKey = null,
+        triggerPlayerId = null,
+        triggerPlayerName = null,
+        triggerPlayerRelation = null,
+        triggerActionId = null,
+        discardAnalyses = emptyList(),
     )
 
     /** 建立帶選牌需求的動作 prompt。 */
@@ -333,9 +342,21 @@ class DecisionTileSelectionStateTest {
                     eligibleTileIds = listOf(TILE_A, TILE_B, TILE_C),
                     minCount = minCount,
                     maxCount = maxCount,
+                    discardAnalyses = emptyList(),
                 ),
+                referenceTileAssetKey = null,
+                previewTileAssetKeys = emptyList(),
+                claimedTileIndex = null,
             ),
         ),
+        ruleModuleId = null,
+        triggerTileAssetKey = null,
+        triggerPlayerId = null,
+        triggerPlayerName = null,
+        triggerPlayerRelation = null,
+        triggerActionId = null,
+        preparation = null,
+        discardAnalyses = emptyList(),
     )
 
     private companion object {

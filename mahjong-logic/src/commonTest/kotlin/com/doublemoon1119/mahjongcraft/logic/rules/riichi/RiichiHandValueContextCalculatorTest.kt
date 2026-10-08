@@ -265,7 +265,7 @@ class RiichiHandValueContextCalculatorTest {
             tileWall = tileWall,
             config = RiichiRuleConfig(),
             dynamicRuleState = RiichiDynamicState(),
-            initialDeadWall = wanPaiTiles,
+            reservedWallTiles = wanPaiTiles,
         )
 
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
@@ -330,7 +330,7 @@ class RiichiHandValueContextCalculatorTest {
             tileWall = tileWall,
             config = RiichiRuleConfig(),
             dynamicRuleState = RiichiDynamicState(completedSupplementalDrawCount = 1),
-            initialDeadWall = afterSupplementalDraws(wanPaiTiles, 1),
+            reservedWallTiles = afterSupplementalDraws(wanPaiTiles, 1),
         )
 
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 1))
@@ -416,7 +416,7 @@ class RiichiHandValueContextCalculatorTest {
             tileWall = tileWall,
             config = RiichiRuleConfig(),
             dynamicRuleState = RiichiDynamicState(completedSupplementalDrawCount = 4),
-            initialDeadWall = afterSupplementalDraws(wanPaiTiles, 4),
+            reservedWallTiles = afterSupplementalDraws(wanPaiTiles, 4),
         )
 
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5))
@@ -469,7 +469,7 @@ class RiichiHandValueContextCalculatorTest {
             tileWall = tileWall,
             config = RiichiRuleConfig(),
             dynamicRuleState = RiichiDynamicState(),
-            initialDeadWall = wanPaiTiles,
+            reservedWallTiles = wanPaiTiles,
         )
 
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
@@ -525,7 +525,7 @@ class RiichiHandValueContextCalculatorTest {
             tileWall = tileWall,
             config = RiichiRuleConfig(),
             dynamicRuleState = RiichiDynamicState(),
-            initialDeadWall = wanPaiTiles,
+            reservedWallTiles = wanPaiTiles,
         )
 
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
@@ -758,7 +758,7 @@ class RiichiHandValueContextCalculatorTest {
         val player = createPlayer(hand)
 
         /**
-         * 王牌配置，依 [TableState.initialDeadWall] 的索引順序（0~13）直接排列，每個位置都用不同牌面
+         * 王牌配置，依 [TableState.reservedWallTiles] 的索引順序（0~13）直接排列，每個位置都用不同牌面
          * 以便驗證索引對應是否正確。
          *
          * ## 各位置在不同槓數下的 dora / uraDora
@@ -797,7 +797,7 @@ class RiichiHandValueContextCalculatorTest {
             tileWall = TileWall(wanPaiTiles),
             config = RiichiRuleConfig(),
             dynamicRuleState = RiichiDynamicState(),
-            initialDeadWall = wanPaiTiles,
+            reservedWallTiles = wanPaiTiles,
         )
 
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
@@ -825,7 +825,7 @@ class RiichiHandValueContextCalculatorTest {
             tileWall = TileWall(wanPaiTiles),
             config = RiichiRuleConfig(),
             dynamicRuleState = RiichiDynamicState(completedSupplementalDrawCount = 1),
-            initialDeadWall = afterSupplementalDraws(wanPaiTiles, 1),
+            reservedWallTiles = afterSupplementalDraws(wanPaiTiles, 1),
         )
         val context1Kan = calculator.calculate(
             RiichiHandValueContextCalculator.Input(
@@ -850,7 +850,7 @@ class RiichiHandValueContextCalculatorTest {
             tileWall = TileWall(wanPaiTiles),
             config = RiichiRuleConfig(),
             dynamicRuleState = RiichiDynamicState(completedSupplementalDrawCount = 2),
-            initialDeadWall = afterSupplementalDraws(wanPaiTiles, 2),
+            reservedWallTiles = afterSupplementalDraws(wanPaiTiles, 2),
         )
         val context2Kan = calculator.calculate(
             RiichiHandValueContextCalculator.Input(
@@ -876,7 +876,7 @@ class RiichiHandValueContextCalculatorTest {
             tileWall = TileWall(wanPaiTiles),
             config = RiichiRuleConfig(),
             dynamicRuleState = RiichiDynamicState(completedSupplementalDrawCount = 3),
-            initialDeadWall = afterSupplementalDraws(wanPaiTiles, 3),
+            reservedWallTiles = afterSupplementalDraws(wanPaiTiles, 3),
         )
         val context3Kan = calculator.calculate(
             RiichiHandValueContextCalculator.Input(
@@ -903,7 +903,7 @@ class RiichiHandValueContextCalculatorTest {
             tileWall = TileWall(wanPaiTiles),
             config = RiichiRuleConfig(),
             dynamicRuleState = RiichiDynamicState(completedSupplementalDrawCount = 4),
-            initialDeadWall = afterSupplementalDraws(wanPaiTiles, 4),
+            reservedWallTiles = afterSupplementalDraws(wanPaiTiles, 4),
         )
         val context4Kan = calculator.calculate(
             RiichiHandValueContextCalculator.Input(

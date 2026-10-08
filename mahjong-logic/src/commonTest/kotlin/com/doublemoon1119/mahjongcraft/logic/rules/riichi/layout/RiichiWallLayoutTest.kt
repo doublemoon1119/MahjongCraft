@@ -29,9 +29,9 @@ class RiichiWallLayoutTest {
         val result = layout.resolve(tiles, WallOpening(wallSideOffsetFromDealer = 3, stacksFromRight = 8))
 
         assertEquals(122, result.drawOrder.size)
-        assertEquals(14, result.initialDeadWall.size)
-        assertEquals(tiles.map { it.id }.toSet(), (result.drawOrder + result.initialDeadWall).map { it.id }.toSet())
-        assertEquals(136, (result.drawOrder + result.initialDeadWall).map { it.id }.toSet().size)
+        assertEquals(14, result.reservedWallTiles.size)
+        assertEquals(tiles.map { it.id }.toSet(), (result.drawOrder + result.reservedWallTiles).map { it.id }.toSet())
+        assertEquals(136, (result.drawOrder + result.reservedWallTiles).map { it.id }.toSet().size)
     }
 
     /** 驗證 structure 涵蓋全部 136 張牌，且面／墩／層座標範圍合法、彼此不重複。 */
@@ -57,7 +57,7 @@ class RiichiWallLayoutTest {
         val opening = WallOpening(wallSideOffsetFromDealer = 1, stacksFromRight = 5)
         val result = layout.resolve(tiles, opening)
 
-        val deadWallPositions = result.initialDeadWall.map { result.structure.getValue(it.id) }.toSet()
+        val deadWallPositions = result.reservedWallTiles.map { result.structure.getValue(it.id) }.toSet()
         val liveWallPositions = result.drawOrder.map { result.structure.getValue(it.id) }.toSet()
 
         // 開門缺口右側緊鄰的墩：面 1，從右數第 5 墩（一基底），零基底墩序號 = 5 - 1 = 4。

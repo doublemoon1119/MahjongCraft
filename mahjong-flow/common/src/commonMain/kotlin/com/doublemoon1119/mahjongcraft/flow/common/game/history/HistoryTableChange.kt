@@ -125,7 +125,7 @@ data class HistoryTableChange(
             dynamicRuleState = if (dynamicRuleState != null) dynamicRuleState.value else before.dynamicRuleState,
             pendingReaction = if (pendingReaction != null) pendingReaction.value else before.pendingReaction,
             pendingRobbingReaction = if (pendingRobbingReaction != null) pendingRobbingReaction.value else before.pendingRobbingReaction,
-            initialDeadWall = reservedWallTiles ?: before.reservedWallTiles,
+            reservedWallTiles = reservedWallTiles ?: before.reservedWallTiles,
             physicalWallLayout = physicalWallLayout?.applyTo(checkNotNull(before.physicalWallLayout))
                 ?: before.physicalWallLayout,
             finishedPlayerIds = finishedPlayerIds ?: before.finishedPlayerIds,

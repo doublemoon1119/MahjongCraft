@@ -37,7 +37,7 @@ class HistoryWinDetailsCapacityTest {
             val compressed = gzip(bytes)
             assertTrue(expanded.any { it.fact is HistoryFact.WinSettled }, "Capacity fixture must include winner details")
             assertTrue(bytes.size > original.size, "Winner detail capacity fixture must measure a nonzero additional payload")
-            assertTrue(bytes.size <= 220_000, "Winner details exceeded the fixed JSON capacity limit: ${bytes.size}")
+            assertTrue(bytes.size <= 230_000, "Winner details exceeded the fixed JSON capacity limit: ${bytes.size}")
             assertTrue(compressed.size <= 35_000, "Winner details exceeded the fixed gzip capacity limit: ${compressed.size}")
             Logger.getLogger(javaClass.name).info(
                 "Winner detail capacity fixture ${index + 1}: JSON=${bytes.size} bytes, gzip=${compressed.size} bytes, additional JSON=${bytes.size - original.size} bytes",

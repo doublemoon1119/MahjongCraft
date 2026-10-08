@@ -43,7 +43,7 @@ class ThreePlayerRiichiPhysicalWallLayoutTest {
             var tableState = FakeTableStateFactory.create(
                 config = config,
                 tileWall = TileWall(wallLayout.drawOrder),
-                initialDeadWall = wallLayout.reservedWallTiles,
+                reservedWallTiles = wallLayout.reservedWallTiles,
                 dynamicRuleState = RiichiDynamicState(),
             )
             var layout = assertIs<InitialPhysicalWallLayoutDecision.Completed>(
@@ -67,7 +67,7 @@ class ThreePlayerRiichiPhysicalWallLayoutTest {
                 )
                 val updatedState = tableState.copy(
                     tileWall = supplemental.tileWall,
-                    initialDeadWall = supplemental.reservedWallTiles,
+                    reservedWallTiles = supplemental.reservedWallTiles,
                     dynamicRuleState = supplemental.dynamicRuleState,
                 )
                 layout = assertIs<PhysicalWallLayoutTransitionDecision.Completed>(

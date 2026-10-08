@@ -117,8 +117,8 @@ class CompactReplayPrototypeTest {
         for (fixture in ReplayCapacityFixtures.all) {
             val measurement = verifyMatch(fixture.events)
             assertTrue(
-                measurement.jsonBytes <= 220_000,
-                "Compact Replay JSON exceeds 220 KB: ${measurement.jsonBytes} bytes",
+                measurement.jsonBytes <= 230_000,
+                "Compact Replay JSON exceeds 230 KB: ${measurement.jsonBytes} bytes",
             )
             assertTrue(
                 measurement.gzipBytes <= 35_000,

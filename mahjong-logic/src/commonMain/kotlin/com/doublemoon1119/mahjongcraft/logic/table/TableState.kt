@@ -29,8 +29,8 @@ import kotlin.uuid.Uuid
  * @property pendingReaction 目前尚待其他玩家回應（吃/碰/槓/過）的捨牌反應視窗，若無則為 null。
  * @property pendingRobbingReaction 目前尚待其他玩家回應（搶和/過）的暗槓/加槓或移出手牌動作反應視窗，若無則為 null。
  * @property wallOpening 本局權威擲骰決定的牌牆開門位置；規則尚未支援開門流程時為 null。
- * @property initialDeadWall 目前權威規則保留牌。舊名稱為既有建構與 mapping 相容性而保留；通用程式
- * 應改讀 [reservedWallTiles]，不得由此名稱推定其他規則必須形成日麻式獨立王牌區。
+ * @property reservedWallTiles 目前不由一般 [tileWall] 摸牌流程取得、改由規則解讀用途與順序的保留牌。日麻將它
+ * 解讀為王牌；其他規則可以維持連續牌牆、採用不同補牌語意或完全不使用保留牌。
  * @property physicalWallLayout 目前仍位於活牌區與規則保留區的權威抽象實體位置；不支援實體布局的規則為 null。
  * @property finishedPlayerIds 本局已完成、不再參與後續回合的玩家 Uuid 集合。供第三方規則實作
  * 「胡牌後本局可能不結束」的擴充（如持續胡牌局）；核心規則預設不會寫入這個集合，因此對現有
@@ -58,18 +58,11 @@ data class TableState(
     val pendingReaction: PendingReaction? = null,
     val pendingRobbingReaction: PendingRobbingReaction? = null,
     val wallOpening: WallOpening? = null,
-    val initialDeadWall: List<IdentifiedTile> = emptyList(),
+    val reservedWallTiles: List<IdentifiedTile> = emptyList(),
     val physicalWallLayout: TileWallPhysicalLayout? = null,
     val finishedPlayerIds: Set<Uuid> = emptySet(),
     val revealedHandTileIds: Set<Uuid> = emptySet(),
 ) {
-    /**
-     * 目前不由一般 [tileWall] 摸牌流程取得、改由規則解讀用途與順序的保留牌。
-     *
-     * 日麻會將它解讀為王牌；其他規則可以維持連續牌牆、採用不同補牌語意或完全不使用保留牌。
-     */
-    val reservedWallTiles: List<IdentifiedTile> get() = initialDeadWall
-
     init {
         require(players.map { it.id }.distinct().size == players.size) { "Table players must have unique IDs" }
         require(players.any { it.id == dealerPlayerId }) { "dealerPlayerId must belong to this table" }

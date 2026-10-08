@@ -21,20 +21,15 @@ data class PaoLiabilityPersistenceDto(
     val direction: RelativeDirectionPersistenceDto,
 )
 
-/**
- * [RiichiPlayerState] 的完整 persistence DTO。
- *
- * 預設值是最常見的狀態（沒有永久振聽、沒有拔北）；編碼時省略等於預設值的欄位，讓每個存檔點都帶有玩家狀態的
- * 精簡牌譜不必重複寫出這些值。
- */
+/** [RiichiPlayerState] 的完整 persistence DTO。 */
 @Serializable
 data class RiichiPlayerStatePersistenceDto(
     val riichiTile: IdentifiedTilePersistenceDto?,
     val doubleRiichiTile: IdentifiedTilePersistenceDto?,
     val isIppatsu: Boolean,
     val paoLiability: PaoLiabilityPersistenceDto?,
-    val isPermanentlyFuriten: Boolean = false,
-    val nukiDoraTiles: List<IdentifiedTilePersistenceDto> = emptyList(),
+    val isPermanentlyFuriten: Boolean,
+    val nukiDoraTiles: List<IdentifiedTilePersistenceDto>,
 )
 
 /** 將 [RiichiPlayerState] 轉換成 persistence DTO。 */

@@ -71,7 +71,7 @@ class RiichiLocalYakuFlowTest {
             id = gameId,
             players = listOf(discarder, winner()),
             config = RiichiRuleConfig(useLocalYaku = useLocalYaku),
-            initialDeadWall = completeRiichiReservedWall(tile(s(2))),
+            reservedWallTiles = completeRiichiReservedWall(tile(s(2))),
             currentPlayerIndex = 0,
             dynamicRuleState = RiichiDynamicState(),
         ).withFirstKanPhysicalWallLayout()

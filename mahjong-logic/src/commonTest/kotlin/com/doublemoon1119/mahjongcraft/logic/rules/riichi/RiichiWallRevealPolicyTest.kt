@@ -156,7 +156,7 @@ class RiichiWallRevealPolicyTest {
     @Test
     fun `test missing indicator tile is rejected atomically`() {
         val fixture = fixture(GameAction.KanType.CLOSED_KAN)
-        val incompleteState = fixture.state.copy(initialDeadWall = fixture.state.reservedWallTiles.take(5))
+        val incompleteState = fixture.state.copy(reservedWallTiles = fixture.state.reservedWallTiles.take(5))
 
         assertEquals(
             WallRevealDecision.Rejected(RiichiWallRevealPolicy.INVALID_STATE_REASON_ID),
@@ -183,7 +183,7 @@ class RiichiWallRevealPolicyTest {
         )
         val state = FakeTableStateFactory.create(
             config = RiichiRuleConfig(),
-            initialDeadWall = originalDeadWall.drop(1) + replacement,
+            reservedWallTiles = originalDeadWall.drop(1) + replacement,
             dynamicRuleState = dynamicState,
         )
         val actorId = state.currentPlayer.id
