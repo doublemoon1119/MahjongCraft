@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingDecision
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingState
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingTerminal
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryOutboxEventPersistenceDto
@@ -129,7 +130,7 @@ class HistoryArchiveServiceTest {
             },
         )
 
-        assertEquals(1, service.archiveReady(database, AuthoritativeStateSnapshot()))
+        assertEquals(1, service.archiveReady(database, AuthoritativeStateSnapshot(), scanAllPending = true))
         DriverManager.getConnection("jdbc:sqlite:${path.toAbsolutePath()}").use { connection ->
             connection.prepareStatement("SELECT round_number FROM history_round WHERE match_id = ? ORDER BY round_number").use { statement ->
                 statement.setString(1, matchId.toString())
@@ -186,7 +187,7 @@ class HistoryArchiveServiceTest {
             },
         )
 
-        assertEquals(0, service.archiveReady(database, AuthoritativeStateSnapshot()))
+        assertEquals(0, service.archiveReady(database, AuthoritativeStateSnapshot(), scanAllPending = true))
         assertEquals(2, database.readPending(matchId.toString()).size)
         val returned = events.last()
         database.appendPending(
@@ -200,9 +201,9 @@ class HistoryArchiveServiceTest {
             ),
         )
         val active = Game(tableState = table, flowConfig = GameFlowConfig(), matchId = matchId)
-        assertEquals(0, service.archiveReady(database, AuthoritativeStateSnapshot(games = mapOf(tableId to active))))
+        assertEquals(0, service.archiveReady(database, AuthoritativeStateSnapshot(games = mapOf(tableId to active)), scanAllPending = true))
         assertEquals(3, database.readPending(matchId.toString()).size)
-        assertEquals(1, service.archiveReady(database, AuthoritativeStateSnapshot()))
+        assertEquals(1, service.archiveReady(database, AuthoritativeStateSnapshot(), scanAllPending = true))
         val reopened = SqliteHistoryDatabase.open(path)
         assertEquals(emptyList(), reopened.readPending(matchId.toString()))
         assertTrue(matchId.toString() in reopened.readReplayIds())
@@ -304,7 +305,7 @@ class HistoryArchiveServiceTest {
             },
         )
 
-        assertEquals(1, service.archiveReady(database, AuthoritativeStateSnapshot()))
+        assertEquals(1, service.archiveReady(database, AuthoritativeStateSnapshot(), scanAllPending = true))
         assertEquals(emptyList(), database.readPending(matchId.toString()))
         assertTrue(matchId.toString() in database.readReplayIds())
         DriverManager.getConnection("jdbc:sqlite:${path.toAbsolutePath()}").use { connection ->
@@ -342,5 +343,161 @@ class HistoryArchiveServiceTest {
         val comparison = compareStagedHistoryEvent("payload") { throw failure }
 
         assertSame(failure, assertIs<StagedHistoryEventComparison.EncodingFailed>(comparison).error)
+    }
+
+    /** 彙總值相同的兩種序號，推出不同的最早缺口；彙總證明連續時只檢查尾端。 */
+    @Test
+    fun `earliest gap follows the actual sequences`() {
+        val summary = PendingSequenceSummary(count = 4, first = 1, last = 7)
+
+        assertEquals(3L, firstMissingSequence(summary, listOf(1L, 2L, 4L, 7L), emptyList(), nextSequence = 8))
+        assertEquals(2L, firstMissingSequence(summary, listOf(1L, 3L, 4L, 7L), emptyList(), nextSequence = 8))
+        val contiguous = PendingSequenceSummary(count = 3, first = 1, last = 3)
+        assertEquals(null, firstMissingSequence(contiguous, null, listOf(4L, 5L), nextSequence = 6))
+        assertEquals(4L, firstMissingSequence(contiguous, null, listOf(5L), nextSequence = 6))
+        assertEquals(4L, firstMissingSequence(contiguous, null, emptyList(), nextSequence = 5), "The authoritative save already assigned sequence 4.")
+    }
+
+    /** 待寫事件剛好補足資料庫的缺口時不算缺口。 */
+    @Test
+    fun `staged events can fill a database gap`() {
+        val summary = PendingSequenceSummary(count = 3, first = 1, last = 4)
+
+        assertEquals(null, firstMissingSequence(summary, listOf(1L, 2L, 4L), listOf(3L), nextSequence = 5))
+    }
+
+    /** 同一次連線中已驗證的事件不再解碼；重新開啟資料庫後完整解碼，因此之後才損壞的內容在下一次連線被發現。 */
+    @Test
+    fun `validated events are decoded again only on a new connection`() {
+        val fixture = ArchiveFixture("mahjongcraft-history-incremental-")
+        val events = fixture.matchEvents()
+        fixture.database.appendPendingBatch(events.map(fixture::record))
+        val recording = HistoryRecordingState(nextSequenceByMatchId = mapOf(fixture.matchId to events.size + 1L))
+
+        fixture.service.reconcile(fixture.database, recording)
+        assertTrue(fixture.service.blockedMatchIds.isEmpty())
+        fixture.corruptPayload(sequence = 2)
+
+        fixture.service.reconcile(fixture.database, recording)
+        assertTrue(fixture.service.blockedMatchIds.isEmpty(), "Already validated events are not decoded again in the same connection.")
+
+        fixture.service.beginConnection()
+        fixture.service.reconcile(fixture.database, recording)
+        assertEquals(setOf(fixture.matchId.toString()), fixture.service.blockedMatchIds)
+    }
+
+    /** 待寫佇列與資料庫重疊的序號內容不同時，即使該場已驗證過仍判定衝突並禁止寫入。 */
+    @Test
+    fun `overlapping staged events are still compared`() {
+        val fixture = ArchiveFixture("mahjongcraft-history-overlap-")
+        val events = fixture.matchEvents()
+        fixture.database.appendPendingBatch(events.map(fixture::record))
+        val recorded = HistoryRecordingState(nextSequenceByMatchId = mapOf(fixture.matchId to events.size + 1L))
+        fixture.service.reconcile(fixture.database, recorded)
+
+        val conflicting = events.last().copy(occurredAtEpochMillis = 999)
+        fixture.service.reconcile(fixture.database, recorded.copy(pendingEvents = listOf(conflicting)))
+
+        assertEquals(setOf(fixture.matchId.toString()), fixture.service.blockedMatchIds)
+    }
+
+    /** 連線期間只封存已有終局紀錄的場次；開啟資料庫時的完整掃描則找出所有可封存的場次。 */
+    @Test
+    fun `incremental archiving reads only ended matches`() {
+        val fixture = ArchiveFixture("mahjongcraft-history-ended-")
+        val events = fixture.matchEvents()
+        fixture.database.appendPendingBatch(events.map(fixture::record))
+
+        assertEquals(0, fixture.service.archiveReady(fixture.database, AuthoritativeStateSnapshot(), scanAllPending = false))
+        val ended = AuthoritativeStateSnapshot(
+            historyRecordingState = HistoryRecordingState(
+                terminalByMatchId = mapOf(fixture.matchId to HistoryRecordingTerminal(endedAtEpochMillis = 600, completed = true, venueId = fixture.tableId)),
+            ),
+        )
+        assertEquals(1, fixture.service.archiveReady(fixture.database, ended, scanAllPending = false))
+    }
+
+    /** 開啟資料庫時的完整掃描不需要終局紀錄。 */
+    @Test
+    fun `a full scan archives without a terminal record`() {
+        val fixture = ArchiveFixture("mahjongcraft-history-full-scan-")
+        fixture.database.appendPendingBatch(fixture.matchEvents().map(fixture::record))
+
+        assertEquals(1, fixture.service.archiveReady(fixture.database, AuthoritativeStateSnapshot(), scanAllPending = true))
+    }
+
+    /**
+     * 一場可封存對局的資料庫與對帳服務。
+     *
+     * @param prefix 暫存資料夾名稱前綴。
+     */
+    private class ArchiveFixture(prefix: String) {
+        val tableId: Uuid = Uuid.random()
+        val matchId: Uuid = Uuid.random()
+        val path = createTempDirectory(prefix).resolve("history.sqlite")
+        val database: SqliteHistoryDatabase = SqliteHistoryDatabase.open(path)
+        private val registries = bundledPersistenceRegistries()
+        private val mapper = HistoryRecordingPersistenceMapper(registries, Json)
+        val service = HistoryArchiveService(
+            mapper,
+            registries,
+            MahjongModuleRegistryImpl().apply { registerBundledRuleModules() },
+            TableLocationRegistry(),
+            Json,
+        )
+
+        /** 開局、一局、終局與返回房間的完整事件。 */
+        fun matchEvents(): List<HistoryOutboxEvent> {
+            val table = FakeTableStateFactory.create(
+                id = tableId,
+                players = listOf(
+                    FakeMahjongPlayerFactory.create(Wind.EAST, discardPile = RiichiDiscardPile()),
+                    FakeMahjongPlayerFactory.create(Wind.SOUTH, discardPile = RiichiDiscardPile()),
+                    FakeMahjongPlayerFactory.create(Wind.WEST, discardPile = RiichiDiscardPile()),
+                    FakeMahjongPlayerFactory.create(Wind.NORTH, discardPile = RiichiDiscardPile()),
+                ),
+                config = RiichiRuleConfig(),
+                roundNumber = 1,
+            )
+            val facts = listOf(
+                HistoryFact.MatchStarted(table, GameFlowConfig(), emptyMap()),
+                HistoryFact.RoundStarted(table),
+                HistoryFact.MatchCompleted("test:complete", emptyMap()),
+                HistoryFact.ReturnedToRoom,
+            )
+            return facts.mapIndexed { index, fact ->
+                HistoryOutboxEvent(
+                    matchId = matchId,
+                    venueId = tableId,
+                    roundNumber = 1,
+                    sequence = index + 1L,
+                    transactionFirstSequence = index + 1L,
+                    occurredAtEpochMillis = (index + 1L) * 100,
+                    actorPlayerId = null,
+                    fact = fact,
+                )
+            }
+        }
+
+        /** 寫進資料庫的待寫事件紀錄。 */
+        fun record(event: HistoryOutboxEvent): PendingHistoryRecord = PendingHistoryRecord(
+            event.matchId.toString(),
+            event.sequence,
+            event.roundNumber,
+            event.occurredAtEpochMillis,
+            1,
+            Json.encodeToString(HistoryOutboxEventPersistenceDto.serializer(), mapper.encodePendingEvent(event)),
+        )
+
+        /** 直接在資料庫中把一筆事件的內容改成無法解碼的值。 */
+        fun corruptPayload(sequence: Long) {
+            DriverManager.getConnection("jdbc:sqlite:${path.toAbsolutePath()}").use { connection ->
+                connection.prepareStatement("UPDATE history_pending_event SET payload = '{}' WHERE match_id = ? AND sequence = ?").use { statement ->
+                    statement.setString(1, matchId.toString())
+                    statement.setLong(2, sequence)
+                    check(statement.executeUpdate() == 1) { "The event to corrupt does not exist" }
+                }
+            }
+        }
     }
 }

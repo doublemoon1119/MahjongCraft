@@ -253,7 +253,7 @@ class FabricHistoryOutboxWriter(
     internal suspend fun finishGeneration(matchId: Uuid, terminal: HistoryRecordingTerminal, sessionId: Uuid): HistoryManagementResult<HistoryGenerationReceipt> = manage(sessionId) { activeDatabase, policy ->
         store.finishHistoryTransfer(matchId, terminal)
         synchronizeRecordingDecisions(activeDatabase)
-        archiveService.archiveReady(activeDatabase, store.snapshot())
+        archiveService.archiveReady(activeDatabase, store.snapshot(), scanAllPending = false)
         synchronizeRecordingDecisions(activeDatabase)
         val archived = activeDatabase.readGenerationReceipt(setOf(matchId.toString()))
         maintain(activeDatabase, policy)
@@ -702,12 +702,13 @@ class FabricHistoryOutboxWriter(
         try {
             withContext(dispatchers.io) {
                 retentionCoordinator.withPolicy { policy ->
+                    archiveService.beginConnection()
                     synchronizedStops = opened.readRecordingStops()
                     synchronizeRecordingDecisions(opened)
                     val snapshot = store.snapshot()
                     archiveService.reconcile(opened, snapshot.historyRecordingState).also {
                         knownGaps = it
-                        archiveService.archiveReady(opened, snapshot)
+                        archiveService.archiveReady(opened, snapshot, scanAllPending = true)
                     }
                     maintain(opened, policy)
                     refreshStorageSafely(opened, policy)
@@ -739,7 +740,7 @@ class FabricHistoryOutboxWriter(
                                 synchronizeRecordingDecisions(opened)
                                 val snapshot = store.snapshot()
                                 knownGaps = archiveService.reconcile(opened, snapshot.historyRecordingState)
-                                archiveService.archiveReady(opened, snapshot)
+                                archiveService.archiveReady(opened, snapshot, scanAllPending = false)
                                 maintain(opened, policy)
                             }
                             lastPolicy = policy
@@ -755,7 +756,7 @@ class FabricHistoryOutboxWriter(
                             if (snapshot.historyRecordingState.pendingEvents.isEmpty()) {
                                 measured(HistoryWriterStage.ARCHIVE) {
                                     knownGaps = archiveService.reconcile(opened, snapshot.historyRecordingState)
-                                    if (archiveService.archiveReady(opened, snapshot) > 0) maintain(opened, policy)
+                                    if (archiveService.archiveReady(opened, snapshot, scanAllPending = false) > 0) maintain(opened, policy)
                                 }
                             }
                         }

@@ -4,11 +4,17 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryPruningCo
 import org.jetbrains.exposed.v1.core.ColumnType
 import org.jetbrains.exposed.v1.core.IntegerColumnType
 import org.jetbrains.exposed.v1.core.LongColumnType
+import org.jetbrains.exposed.v1.core.ResultRow
 import org.jetbrains.exposed.v1.core.SortOrder
 import org.jetbrains.exposed.v1.core.VarCharColumnType
 import org.jetbrains.exposed.v1.core.and
+import org.jetbrains.exposed.v1.core.count
 import org.jetbrains.exposed.v1.core.eq
+import org.jetbrains.exposed.v1.core.greater
+import org.jetbrains.exposed.v1.core.inList
 import org.jetbrains.exposed.v1.core.isNotNull
+import org.jetbrains.exposed.v1.core.max
+import org.jetbrains.exposed.v1.core.min
 import org.jetbrains.exposed.v1.core.statements.StatementType
 import org.jetbrains.exposed.v1.jdbc.Database
 import org.jetbrains.exposed.v1.jdbc.SchemaUtils
@@ -45,6 +51,18 @@ internal data class PendingHistoryRecord(
     val payloadVersion: Int,
     val payload: String,
 )
+
+/**
+ * 一場待寫事件的序號彙總，不包含 payload。
+ *
+ * @property count 事件數。
+ * @property first 最小序號。
+ * @property last 最大序號。
+ */
+internal data class PendingSequenceSummary(val count: Long, val first: Long, val last: Long) {
+    /** 序號是否正好是從 1 起連續的 1..[last]。 */
+    val contiguousFromStart: Boolean get() = first == 1L && count == last
+}
 
 /**
  * 封存時由完整權威事件建立、與 Replay 一起提交的對局摘要。
@@ -197,35 +215,88 @@ internal class SqliteHistoryDatabase private constructor(
      * @param matchId 對局穩定識別碼。
      * @return 依事件序號排序的暫存事件。
      */
+    /**
+     * 每場待寫事件的序號彙總；只讀主鍵，不讀取 payload。
+     *
+     * @return 以場次 ID 索引的彙總。
+     */
+    fun readPendingSequenceSummaries(): Map<String, PendingSequenceSummary> = transaction(database) {
+        val count = HistoryPendingEventTable.sequence.count()
+        val first = HistoryPendingEventTable.sequence.min()
+        val last = HistoryPendingEventTable.sequence.max()
+        HistoryPendingEventTable.select(HistoryPendingEventTable.matchId, count, first, last)
+            .groupBy(HistoryPendingEventTable.matchId)
+            .associate { row ->
+                row[HistoryPendingEventTable.matchId] to PendingSequenceSummary(
+                    count = row[count],
+                    first = checkNotNull(row[first]) { "Pending history group has no first sequence" },
+                    last = checkNotNull(row[last]) { "Pending history group has no last sequence" },
+                )
+            }
+    }
+
+    /**
+     * 一場待寫事件的序號，依序排列；只讀主鍵，不讀取 payload。
+     *
+     * @param matchId 場次 ID。
+     * @return 由小到大的序號。
+     */
+    fun readPendingSequences(matchId: String): List<Long> = transaction(database) {
+        HistoryPendingEventTable.select(HistoryPendingEventTable.sequence)
+            .where { HistoryPendingEventTable.matchId eq matchId }
+            .orderBy(HistoryPendingEventTable.sequence)
+            .map { it[HistoryPendingEventTable.sequence] }
+    }
+
+    /**
+     * 一場序號大於 [afterSequence] 的待寫事件，依序排列。
+     *
+     * @param matchId 場次 ID。
+     * @param afterSequence 只讀取大於這個序號的事件。
+     * @return 由小到大的事件。
+     */
+    fun readPendingAfter(matchId: String, afterSequence: Long): List<PendingHistoryRecord> = transaction(database) {
+        HistoryPendingEventTable.selectAll()
+            .where { (HistoryPendingEventTable.matchId eq matchId) and (HistoryPendingEventTable.sequence greater afterSequence) }
+            .orderBy(HistoryPendingEventTable.sequence)
+            .map { it.toPendingRecord() }
+    }
+
+    /**
+     * 一場指定序號的待寫事件，依序排列；資料庫沒有的序號不出現在結果中。
+     *
+     * @param matchId 場次 ID。
+     * @param sequences 要讀取的序號。
+     * @return 由小到大的事件。
+     */
+    fun readPendingAt(matchId: String, sequences: Collection<Long>): List<PendingHistoryRecord> = transaction(database) {
+        if (sequences.isEmpty()) return@transaction emptyList()
+        HistoryPendingEventTable.selectAll()
+            .where { (HistoryPendingEventTable.matchId eq matchId) and (HistoryPendingEventTable.sequence inList sequences) }
+            .orderBy(HistoryPendingEventTable.sequence)
+            .map { it.toPendingRecord() }
+    }
+
+    /**
+     * 已記錄終局時間的場次 ID，不讀取其他欄位。
+     *
+     * @return 場次 ID。
+     */
+    fun readTerminalIds(): Set<String> = transaction(database) {
+        HistoryTerminalTable.select(HistoryTerminalTable.matchId).mapTo(mutableSetOf()) { it[HistoryTerminalTable.matchId] }
+    }
+
     fun readPending(matchId: String): List<PendingHistoryRecord> = transaction(database) {
         HistoryPendingEventTable.selectAll().where { HistoryPendingEventTable.matchId eq matchId }
             .orderBy(HistoryPendingEventTable.sequence)
-            .map { row ->
-                PendingHistoryRecord(
-                    matchId = row[HistoryPendingEventTable.matchId],
-                    sequence = row[HistoryPendingEventTable.sequence],
-                    roundNumber = row[HistoryPendingEventTable.roundNumber],
-                    occurredAtEpochMillis = row[HistoryPendingEventTable.occurredAtEpochMillis],
-                    payloadVersion = row[HistoryPendingEventTable.payloadVersion],
-                    payload = row[HistoryPendingEventTable.payload],
-                )
-            }
+            .map { it.toPendingRecord() }
     }
 
     /** 讀取所有未封存事件，供啟動時與權威 outbox 對帳。 */
     fun readAllPending(): List<PendingHistoryRecord> = transaction(database) {
         HistoryPendingEventTable.selectAll()
             .orderBy(HistoryPendingEventTable.matchId to SortOrder.ASC, HistoryPendingEventTable.sequence to SortOrder.ASC)
-            .map { row ->
-                PendingHistoryRecord(
-                    row[HistoryPendingEventTable.matchId],
-                    row[HistoryPendingEventTable.sequence],
-                    row[HistoryPendingEventTable.roundNumber],
-                    row[HistoryPendingEventTable.occurredAtEpochMillis],
-                    row[HistoryPendingEventTable.payloadVersion],
-                    row[HistoryPendingEventTable.payload],
-                )
-            }
+            .map { it.toPendingRecord() }
     }
 
     /** 讀取已確認缺口，不以無內容事件填補。 */
@@ -1129,3 +1200,13 @@ internal class SqliteHistoryDatabase private constructor(
         }
     }
 }
+
+/** 把待寫事件資料列轉成 [PendingHistoryRecord]。 */
+private fun ResultRow.toPendingRecord(): PendingHistoryRecord = PendingHistoryRecord(
+    matchId = this[HistoryPendingEventTable.matchId],
+    sequence = this[HistoryPendingEventTable.sequence],
+    roundNumber = this[HistoryPendingEventTable.roundNumber],
+    occurredAtEpochMillis = this[HistoryPendingEventTable.occurredAtEpochMillis],
+    payloadVersion = this[HistoryPendingEventTable.payloadVersion],
+    payload = this[HistoryPendingEventTable.payload],
+)
