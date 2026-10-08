@@ -310,14 +310,5 @@ const val STRESS_MAX_TABLES: Int = 1_000
 /** 每個 tick 最多新建的桌數；需要大量建桌時分散到連續幾個 tick，避免安全閥介入前單一 tick 就卡住。 */
 const val STRESS_TABLES_CREATED_PER_TICK: Int = 4
 
-/**
- * 從 [tick] 起第一個推進週期的 tick：每桌都對齊在 [intervalTicks] 的倍數上推進，與正式伺服器每個週期在同一個 tick
- * 推進所有對局相同，不因建桌時間不同而錯開。
- *
- * @param tick 最早可以推進的 tick。
- * @param intervalTicks 推進週期的 tick 數。
- */
-internal fun alignedStepTick(tick: Long, intervalTicks: Int): Long = (tick + intervalTicks - 1) / intervalTicks * intervalTicks
-
 /** 統計「每 tick 耗時超過門檻」比例的門檻毫秒數。 */
 val STRESS_SLOW_TICK_THRESHOLDS_MILLIS: List<Int> = listOf(50, 100, 250)

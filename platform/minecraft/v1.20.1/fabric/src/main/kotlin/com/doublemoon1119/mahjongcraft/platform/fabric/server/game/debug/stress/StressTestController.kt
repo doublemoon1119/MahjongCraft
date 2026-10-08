@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.Headl
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessStepTimer
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.OngoingAiDecision
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.GameAdvanceRotation
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.history.FabricHistoryGenerationRuntimeFactory
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryDatabasePath
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryWriterStage
@@ -147,9 +148,9 @@ enum class StressTestClearResult {
 /**
  * 以伺服器 tick 驅動的壓力測試。
  *
- * 所有測試對局共用 [StressTestEnvironment] 的權威來源，並在伺服器主執行緒上依 [StressTestPace] 逐 tick 推進。每桌都對齊在
- * 同一個推進週期上（見 [alignedStepTick]），與正式對局由 tick 巡查在同一個 tick 推進所有對局的方式相同，因此每 tick 耗時直接
- * 反映 AI 與流程的負擔；歷史依 [StressHistoryMode] 經由同一個權威來源的待寫佇列交給背景工作處理。新桌每個 tick 最多建立
+ * 所有測試對局共用 [StressTestEnvironment] 的權威來源，並在伺服器主執行緒上依 [StressTestPace] 逐 tick 推進。每桌推進的 tick
+ * 由與正式排程相同的 [GameAdvanceRotation] 決定（位置分配、待推進標記與每 tick 推進上限），因此每 tick 耗時直接反映正式環境中
+ * AI 與流程的負擔；歷史依 [StressHistoryMode] 經由同一個權威來源的待寫佇列交給背景工作處理。新桌每個 tick 最多建立
  * [STRESS_TABLES_CREATED_PER_TICK] 桌，打完或卡住的桌會從權威來源移除。
  *
  * 開始後先依 [StressRunOptions.warmupSeconds] 暖機：期間維持初始桌數、不列入統計與卡頓判斷。每 tick 都檢查 [StressSafetyValve]，
@@ -282,6 +283,7 @@ class StressTestController(
     /** tick 結束時推進到期的對局，並以本 tick 的耗時檢查安全閥。 */
     private fun onTickEnd(server: MinecraftServer) {
         val current = run ?: return
+        current.onServerTick()
         if (processing) return
         processing = true
         scope.launch(dispatchers.main) {
@@ -345,11 +347,14 @@ class StressTestController(
         val starterId: Uuid?,
         private var timeSeries: StressTimeSeriesFile?,
     ) {
-        /** 同時進行中的桌。 */
-        private val tables = mutableListOf<StressTable>()
+        /** 同時進行中的桌，以場地識別碼索引。 */
+        private val tables = LinkedHashMap<Uuid, StressTable>()
 
         /** 每桌推進節奏。 */
         private val pace = options.pace
+
+        /** 各桌推進的 tick 位置與待推進標記；與正式排程使用相同的政策。 */
+        private val rotation = GameAdvanceRotation(pace.stepIntervalTicks)
 
         /** 安全閥門檻。 */
         private val thresholds = options.thresholds()
@@ -447,7 +452,10 @@ class StressTestController(
         /** 是否已結束暖機。 */
         private val measuring: Boolean get() = measureStart != null
 
-        /** 補足目標桌數，推進到期的桌，並更新歷史狀態。 */
+        /** 伺服器前進一個 tick：把輪到的桌標為待推進；上一個 tick 的工作仍在等待時也要標記。 */
+        fun onServerTick() = rotation.advanceTick()
+
+        /** 補足目標桌數，推進輪到的桌，並更新歷史狀態。 */
         suspend fun advance() {
             elapsedTicks++
             if (elapsedTicks == warmupTicks + 1) beginMeasuring()
@@ -457,31 +465,29 @@ class StressTestController(
             repeat(minOf(targetTables() - tables.size, STRESS_TABLES_CREATED_PER_TICK)) {
                 timer.reset()
                 val runtime = runtimes.createIn(scenario, environment.store, timer)
-                tables += StressTable(runtime, nextStepTick = alignedStepTick(elapsedTicks, pace.stepIntervalTicks))
+                tables[runtime.venueId] = StressTable(runtime)
                 tickEvents += timer.historyEvents
             }
-            val iterator = tables.iterator()
-            while (iterator.hasNext()) {
-                val table = iterator.next()
-                if (table.nextStepTick > elapsedTicks) continue
+            rotation.syncGames(tables.keys)
+            rotation.takeDue().forEach { venueId ->
+                val table = tables[venueId] ?: return@forEach
                 timer.reset()
                 val stepStart = TimeSource.Monotonic.markNow()
                 val progressed = table.runtime.step()
                 val stepTime = stepStart.elapsedNow()
                 recordStep(stepTime, timer)
                 if (stepTime >= SLOW_STEP_LOG_THRESHOLD) logSlowStep(stepTime, timer)
-                table.nextStepTick = elapsedTicks + pace.stepIntervalTicks
                 if (table.runtime.currentGame() == null) {
                     completedMatches++
-                    iterator.remove()
-                    discardStressTables(environment.store, listOf(table.runtime.venueId))
+                    tables.remove(venueId)
+                    discardStressTables(environment.store, listOf(venueId))
                 } else if (progressed) {
                     table.stalledSteps = 0
                 } else if (++table.stalledSteps >= MAX_STALLED_STEPS) {
                     failedMatches++
                     logger.warn("Stress test match made no progress for {} steps; dropping it", MAX_STALLED_STEPS)
-                    iterator.remove()
-                    discardStressTables(environment.store, listOf(table.runtime.venueId))
+                    tables.remove(venueId)
+                    discardStressTables(environment.store, listOf(venueId))
                 }
             }
             val recording = environment.store.snapshot().historyRecordingState
@@ -492,7 +498,7 @@ class StressTestController(
 
         /** 把剩下的桌從權威來源移除；未結束的對局記為未完成，待寫歷史仍交給背景工作處理。 */
         suspend fun discardRemainingTables() {
-            discardStressTables(environment.store, tables.map { it.runtime.venueId })
+            discardStressTables(environment.store, tables.keys.toList())
             tables.clear()
         }
 
@@ -732,12 +738,8 @@ class StressTestController(
      * 一桌測試對局。
      *
      * @property runtime 對局環境。
-     * @property nextStepTick 下一次推進的 tick。
      */
-    private class StressTable(
-        val runtime: HeadlessHistoryMatchRuntime,
-        var nextStepTick: Long,
-    ) {
+    private class StressTable(val runtime: HeadlessHistoryMatchRuntime) {
         /** 連續沒有進展的步數。 */
         var stalledSteps = 0
     }

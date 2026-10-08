@@ -95,15 +95,6 @@ class StressTestModelsTest {
         assertEquals(StressStopReason.HISTORY_WRITER_FAILED, valve.checkHistory(pendingEvents = 256, capacity = 256, lostSegments = 0, writerFailed = true))
     }
 
-    /** 每桌推進都對齊在週期的倍數上；每 tick 推進時任何 tick 都可以。 */
-    @Test
-    fun `steps align to the pace interval`() {
-        assertEquals(20, alignedStepTick(1, 20))
-        assertEquals(20, alignedStepTick(20, 20))
-        assertEquals(40, alignedStepTick(21, 20))
-        assertEquals(5, alignedStepTick(5, 1))
-    }
-
     /** 固定桌數必須介於 1 與上限之間。 */
     @Test
     fun `fixed table count is bounded`() {
