@@ -1,14 +1,22 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailability
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
+import com.doublemoon1119.mahjongcraft.logic.table.visibleTiles
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
@@ -70,7 +78,7 @@ class RiichiDiscardReadinessAnalyzerTest {
         val player = FakeMahjongPlayerFactory.create(hand = hand)
         val tableState = FakeTableStateFactory.create(players = listOf(player), config = RiichiRuleConfig())
 
-        val analyses = analyzer.analyze(tableState, player)
+        val analyses = analyzer.analyze(tableState, player, visibleTiles = visibleTo(tableState, player))
 
         val floatingTileId = hand.standingTiles.first { it.tile == floatingTile }.id
         assertEquals(listOf(floatingTileId), analyses.map { it.discardTileId })
@@ -86,7 +94,7 @@ class RiichiDiscardReadinessAnalyzerTest {
         val tableState = FakeTableStateFactory.create(players = listOf(player), config = RiichiRuleConfig())
 
         val floatingTileId = hand.standingTiles.single { it.tile == floatingTile }.id
-        val analysis = analyzer.analyze(tableState, player).single { it.discardTileId == floatingTileId }
+        val analysis = analyzer.analyze(tableState, player, visibleTiles = visibleTo(tableState, player)).single { it.discardTileId == floatingTileId }
 
         val threeSouWait = analysis.waitingTiles.single { it.tile == threeSou }
         // 手牌與他家都沒有額外的 3s，牌山最多還剩全部 4 張。
@@ -106,7 +114,7 @@ class RiichiDiscardReadinessAnalyzerTest {
         )
         val tableState = FakeTableStateFactory.create(players = listOf(player, otherPlayer), config = RiichiRuleConfig())
 
-        val analysis = analyzer.analyze(tableState, player).single()
+        val analysis = analyzer.analyze(tableState, player, visibleTiles = visibleTo(tableState, player)).single()
 
         val threeSouWait = analysis.waitingTiles.single { it.tile == threeSou }
         assertEquals(3, threeSouWait.remainingCount)
@@ -139,7 +147,7 @@ class RiichiDiscardReadinessAnalyzerTest {
             config = RiichiRuleConfig(),
         )
 
-        val analysis = analyzer.analyze(tableState, player).single()
+        val analysis = analyzer.analyze(tableState, player, visibleTiles = visibleTo(tableState, player)).single()
 
         assertEquals(1, analysis.waitingTiles.single { it.tile == threeSou }.remainingCount)
     }
@@ -153,7 +161,7 @@ class RiichiDiscardReadinessAnalyzerTest {
         val player = FakeMahjongPlayerFactory.create(hand = hand)
         val tableState = FakeTableStateFactory.create(players = listOf(player), config = RiichiRuleConfig())
 
-        val analysis = analyzer.analyze(tableState, player).single { it.discardTileId == hand.lastDrawn?.id }
+        val analysis = analyzer.analyze(tableState, player, visibleTiles = visibleTo(tableState, player)).single { it.discardTileId == hand.lastDrawn?.id }
 
         assertEquals(3, analysis.waitingTiles.single { it.tile == threeSou }.remainingCount)
     }
@@ -174,7 +182,7 @@ class RiichiDiscardReadinessAnalyzerTest {
             config = RiichiRuleConfig(),
         )
 
-        val analysis = analyzer.analyze(tableState, player).single()
+        val analysis = analyzer.analyze(tableState, player, visibleTiles = visibleTo(tableState, player)).single()
 
         assertEquals(4, analysis.waitingTiles.single { it.tile == threeSou }.remainingCount)
     }
@@ -210,7 +218,7 @@ class RiichiDiscardReadinessAnalyzerTest {
         val tableState = FakeTableStateFactory.create(players = listOf(player, otherPlayer), config = RiichiRuleConfig())
 
         val floatingTileId = hand.standingTiles.single { it.tile == floatingTile }.id
-        val analysis = analyzer.analyze(tableState, player).single { it.discardTileId == floatingTileId }
+        val analysis = analyzer.analyze(tableState, player, visibleTiles = visibleTo(tableState, player)).single { it.discardTileId == floatingTileId }
 
         assertEquals(3, analysis.waitingTiles.single { it.tile == fiveDot }.remainingCount)
     }
@@ -227,7 +235,7 @@ class RiichiDiscardReadinessAnalyzerTest {
         )
         val tableState = FakeTableStateFactory.create(players = listOf(player), config = RiichiRuleConfig())
 
-        val analysis = analyzer.analyze(tableState, player).single()
+        val analysis = analyzer.analyze(tableState, player, visibleTiles = visibleTo(tableState, player)).single()
 
         assertEquals(RiichiDiscardReadinessAnalyzer.StatusIds.DISCARD_FURITEN, analysis.statusIndicatorId)
     }
@@ -242,7 +250,7 @@ class RiichiDiscardReadinessAnalyzerTest {
             .copy(passedTilesInRound = setOf(sixSou))
         val tableState = FakeTableStateFactory.create(players = listOf(player), config = RiichiRuleConfig())
 
-        val analysis = analyzer.analyze(tableState, player).single()
+        val analysis = analyzer.analyze(tableState, player, visibleTiles = visibleTo(tableState, player)).single()
 
         assertEquals(RiichiDiscardReadinessAnalyzer.StatusIds.TEMPORARY_FURITEN, analysis.statusIndicatorId)
     }
@@ -259,7 +267,7 @@ class RiichiDiscardReadinessAnalyzerTest {
         )
         val tableState = FakeTableStateFactory.create(players = listOf(player), config = RiichiRuleConfig())
 
-        val analysis = analyzer.analyze(tableState, player).single()
+        val analysis = analyzer.analyze(tableState, player, visibleTiles = visibleTo(tableState, player)).single()
 
         assertEquals(RiichiDiscardReadinessAnalyzer.StatusIds.PERMANENT_FURITEN, analysis.statusIndicatorId)
     }
@@ -274,7 +282,7 @@ class RiichiDiscardReadinessAnalyzerTest {
         val player = FakeMahjongPlayerFactory.create(hand = hand)
         val tableState = FakeTableStateFactory.create(players = listOf(player), config = RiichiRuleConfig())
 
-        val analysis = analyzer.analyze(tableState, player).single()
+        val analysis = analyzer.analyze(tableState, player, visibleTiles = visibleTo(tableState, player)).single()
 
         assertTrue(analysis.waitingTiles.any { it.tile == threeSou })
         assertTrue(analysis.waitingTiles.any { it.tile == sixSou })
@@ -290,7 +298,7 @@ class RiichiDiscardReadinessAnalyzerTest {
         val player = FakeMahjongPlayerFactory.create(hand = hand)
         val tableState = FakeTableStateFactory.create(players = listOf(player), config = RiichiRuleConfig())
 
-        val analysis = analyzer.analyze(tableState, player).single()
+        val analysis = analyzer.analyze(tableState, player, visibleTiles = visibleTo(tableState, player)).single()
 
         assertTrue(analysis.waitingTiles.isNotEmpty())
         analysis.waitingTiles.forEach { assertTrue(it.winAvailability.startsWith("mahjongcraft:win_")) }
@@ -337,8 +345,8 @@ class RiichiDiscardReadinessAnalyzerTest {
         )
         val floatingTileId = hand.standingTiles.single { it.tile == Tile.Honor.East }.id
 
-        val ordinary = analyzer.analyze(tableState, player).single { it.discardTileId == floatingTileId }
-        val projected = analyzer.analyzeForAction(tableState, player, RIICHI_GAME_ACTION)
+        val ordinary = analyzer.analyze(tableState, player, visibleTiles = visibleTo(tableState, player)).single { it.discardTileId == floatingTileId }
+        val projected = analyzer.analyzeForAction(tableState, player, RIICHI_GAME_ACTION, visibleTiles = visibleTo(tableState, player))
             .single { it.discardTileId == floatingTileId }
 
         assertEquals(RiichiDiscardReadinessAnalyzer.StatusIds.WIN_TSUMO_ONLY, ordinary.waitingTiles.single().winAvailability)
@@ -351,7 +359,7 @@ class RiichiDiscardReadinessAnalyzerTest {
         val player = FakeMahjongPlayerFactory.create(hand = hand)
         val tableState = FakeTableStateFactory.create(players = listOf(player), config = RiichiRuleConfig())
 
-        val analysis = assertNotNull(analyzer.analyzeCurrentHand(tableState, player))
+        val analysis = assertNotNull(analyzer.analyzeCurrentHand(tableState, player, visibleTiles = visibleTo(tableState, player)))
 
         assertEquals(setOf<Tile>(threeSou, sixSou), analysis.waitingTiles.mapTo(linkedSetOf()) { it.tile })
         assertNull(analysis.statusIndicatorId)
@@ -363,7 +371,7 @@ class RiichiDiscardReadinessAnalyzerTest {
         val player = FakeMahjongPlayerFactory.create(hand = hand)
         val tableState = FakeTableStateFactory.create(players = listOf(player), config = RiichiRuleConfig())
 
-        assertNull(analyzer.analyzeCurrentHand(tableState, player))
+        assertNull(analyzer.analyzeCurrentHand(tableState, player, visibleTiles = visibleTo(tableState, player)))
     }
 
     /**
@@ -420,7 +428,7 @@ class RiichiDiscardReadinessAnalyzerTest {
                 config = RiichiRuleConfig(),
             )
 
-            val analysis = assertNotNull(analyzer.analyzeCurrentHand(tableState, player))
+            val analysis = assertNotNull(analyzer.analyzeCurrentHand(tableState, player, visibleTiles = visibleTo(tableState, player)))
 
             assertEquals(
                 listOf(Tile.Numeric(Tile.Suit.Dot, 5)),
@@ -447,7 +455,7 @@ class RiichiDiscardReadinessAnalyzerTest {
                 config = RiichiRuleConfig(),
             )
 
-            val analysis = assertNotNull(analyzer.analyzeCurrentHand(tableState, player))
+            val analysis = assertNotNull(analyzer.analyzeCurrentHand(tableState, player, visibleTiles = visibleTo(tableState, player)))
 
             assertEquals(
                 RiichiDiscardReadinessAnalyzer.StatusIds.WIN_AVAILABLE,
@@ -474,7 +482,7 @@ class RiichiDiscardReadinessAnalyzerTest {
             )
             val eastId = player.hand.standingTiles.single { it.tile == Tile.Honor.East }.id
 
-            val analysis = analyzer.analyze(tableState, player).single { it.discardTileId == eastId }
+            val analysis = analyzer.analyze(tableState, player, visibleTiles = visibleTo(tableState, player)).single { it.discardTileId == eastId }
 
             assertEquals(
                 RiichiDiscardReadinessAnalyzer.StatusIds.WIN_NO_YAKU,
@@ -501,7 +509,7 @@ class RiichiDiscardReadinessAnalyzerTest {
             )
             val eastId = player.hand.standingTiles.single { it.tile == Tile.Honor.East }.id
 
-            val analysis = analyzer.analyze(tableState, player).single { it.discardTileId == eastId }
+            val analysis = analyzer.analyze(tableState, player, visibleTiles = visibleTo(tableState, player)).single { it.discardTileId == eastId }
 
             assertEquals(
                 RiichiDiscardReadinessAnalyzer.StatusIds.WIN_AVAILABLE,
@@ -509,4 +517,47 @@ class RiichiDiscardReadinessAnalyzerTest {
             )
         }
     }
+
+    /** 三人麻將單吊北時，其他兩家拔出的三張北都從剩餘張數扣除。 */
+    @Test
+    fun `remaining count excludes north tiles pulled by every player`() {
+        val module = ThreePlayerRiichiRuleModule(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, ThreePlayerRiichiRuleConfig())
+        val waitingHand = listOf(1, 2, 3, 4, 5, 6, 7, 8, 9).map { Tile.Numeric(Tile.Suit.Dot, it) } +
+            listOf(1, 2, 3).map { Tile.Numeric(Tile.Suit.Bamboo, it) } +
+            Tile.Honor.North
+        val player = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST, hand = FakeHandFactory.create(waitingHand))
+        val pulledNorths = List(3) { FakeIdentifiedTileFactory.create(Tile.Honor.North) }
+        val southPlayer = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.SOUTH,
+            playerRuleState = RiichiPlayerState(nukiDoraTiles = pulledNorths.take(2)),
+        )
+        val westPlayer = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.WEST,
+            playerRuleState = RiichiPlayerState(nukiDoraTiles = pulledNorths.drop(2)),
+        )
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player, southPlayer, westPlayer),
+            config = ThreePlayerRiichiRuleConfig(),
+            dynamicRuleState = RiichiDynamicState(),
+        )
+        val analyzer = assertNotNull(module.createDiscardReadinessAnalyzer())
+
+        val analysis = assertNotNull(
+            analyzer.analyzeCurrentHand(
+                tableState = tableState,
+                player = player,
+                visibleTiles = visibleTo(tableState = tableState, player = player, setAsideTiles = module::setAsideTiles),
+            ),
+        )
+
+        assertEquals(Tile.Honor.North, analysis.waitingTiles.single().tile)
+        assertEquals(0, analysis.waitingTiles.single().remainingCount)
+    }
+
+    /** 以 [player] 本人的桌況快照列出看得到的牌。 */
+    private fun visibleTo(
+        tableState: TableState,
+        player: MahjongPlayer,
+        setAsideTiles: (MahjongPlayer) -> List<IdentifiedTile> = { emptyList() },
+    ): List<IdentifiedTile> = tableState.toSnapshot(visibleHandPlayerIds = setOf(player.id), setAsideTiles = setAsideTiles).visibleTiles()
 }

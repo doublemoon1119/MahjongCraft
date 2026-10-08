@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.AutomaticDecisionEvaluator
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerActionContextResolver
@@ -49,7 +50,7 @@ class GetPlayerDecisionOptionsUseCaseTest {
         /** 待測的完整決策查詢 use case。 */
         val useCase = GetPlayerDecisionOptionsUseCase(
             gameRepository,
-            AutomaticDecisionEvaluator(moduleRegistry, PlayerActionContextResolver()),
+            AutomaticDecisionEvaluator(moduleRegistry, GameVisibilityPolicyImpl(moduleRegistry), PlayerActionContextResolver()),
         )
     }
 

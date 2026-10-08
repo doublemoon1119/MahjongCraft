@@ -92,9 +92,9 @@ class ObserverSnapshotBroadcasterTest {
     ) = ObserverSnapshotBroadcaster(
         store = store,
         visibilityPolicy = GameVisibilityPolicyImpl(MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }),
-        handReadinessVisibilityPolicy = HandReadinessVisibilityPolicy(
-            MahjongModuleRegistryImpl().apply { registerBundledRuleModules() },
-        ),
+        handReadinessVisibilityPolicy = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }.let { registry ->
+            HandReadinessVisibilityPolicy(moduleRegistry = registry, visibilityPolicy = GameVisibilityPolicyImpl(registry))
+        },
         audienceSource = audience,
         sender = sender,
     )

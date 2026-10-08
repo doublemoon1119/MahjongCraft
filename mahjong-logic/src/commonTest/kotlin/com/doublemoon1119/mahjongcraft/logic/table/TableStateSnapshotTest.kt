@@ -1,10 +1,14 @@
 package com.doublemoon1119.mahjongcraft.logic.table
 
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.Meld
+import com.doublemoon1119.mahjongcraft.logic.base.MeldType
+import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
@@ -192,5 +196,79 @@ class TableStateSnapshotTest {
             .toSnapshot(emptySet(), setAsideTiles = { emptyList() })
 
         assertEquals(emptyList(), snapshot.revealedHandTiles)
+    }
+
+    /**
+     * 看得到的牌包含自己的手牌、他家副露、牌河中未被鳴走的牌、移出手牌的牌、牌山已公開的牌與已公開的手牌；
+     * 他家立牌與牌山中未公開的牌不列入，被鳴走的捨牌只隨副露計一次。
+     */
+    @Test
+    fun `visible tiles collect every public source once`() {
+        val ownTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
+        val ownDrawn = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 2))
+        val hiddenTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 3))
+        val revealedTile = FakeIdentifiedTileFactory.create(Tile.Honor.North)
+        val claimedTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val meldTiles = listOf(claimedTile) + List(2) { FakeIdentifiedTileFactory.create(Tile.Honor.White) }
+        val riverTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val setAsideTile = FakeIdentifiedTileFactory.create(Tile.Honor.North)
+        val revealedWallTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val hiddenWallTile = FakeIdentifiedTileFactory.create(Tile.Honor.Green)
+        val observer = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.EAST,
+            hand = Hand(tiles = listOf(ownTile), lastDrawn = ownDrawn),
+            discardPile = FakeDiscardPile().discardTile(riverTile).discardTile(claimedTile).takeLast(),
+        )
+        val other = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.SOUTH,
+            hand = Hand(
+                tiles = listOf(hiddenTile, revealedTile),
+                melds = listOf(
+                    Meld(
+                        type = MeldType.PON,
+                        tiles = meldTiles,
+                        sourceTile = claimedTile,
+                        sourceDirection = RelativeDirection.Right,
+                    ),
+                ),
+            ),
+        )
+        val revealing = object : DynamicRuleState, TileWallRevealable {
+            override fun getVisibleTileIds(state: TableState) = setOf(revealedWallTile.id)
+        }
+        val table = FakeTableStateFactory.create(
+            players = listOf(observer, other),
+            tileWall = TileWall(listOf(revealedWallTile, hiddenWallTile)),
+            dynamicRuleState = revealing,
+        ).copy(revealedHandTileIds = setOf(revealedTile.id))
+
+        val snapshot = table.toSnapshot(setOf(observer.id)) { player -> if (player.id == other.id) listOf(setAsideTile) else emptyList() }
+
+        assertEquals(
+            (listOf(ownTile, ownDrawn, riverTile, setAsideTile, revealedWallTile, revealedTile) + meldTiles).map { it.id }.toSet(),
+            snapshot.visibleTiles().map { it.id }.toSet(),
+        )
+        assertEquals(snapshot.visibleTiles().size, snapshot.visibleTiles().map { it.id }.distinct().size)
+    }
+
+    /** 玩家手上的牌包含看得到的立牌、剛摸到的牌、副露與移出手牌的牌；看不到牌面的他家立牌不列入。 */
+    @Test
+    fun `held tiles include melds and set aside tiles but not hidden standing tiles`() {
+        val standing = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
+        val meldTiles = List(3) { FakeIdentifiedTileFactory.create(Tile.Honor.White) }
+        val setAsideTile = FakeIdentifiedTileFactory.create(Tile.Honor.North)
+        val player = FakeMahjongPlayerFactory.create(
+            hand = Hand(
+                tiles = listOf(standing),
+                melds = listOf(Meld(type = MeldType.PON, tiles = meldTiles, sourceTile = meldTiles.first(), sourceDirection = RelativeDirection.Left)),
+            ),
+        )
+        val table = FakeTableStateFactory.create(players = listOf(player, FakeMahjongPlayerFactory.create(Wind.SOUTH)))
+
+        val ownView = table.toSnapshot(setOf(player.id)) { listOf(setAsideTile) }.players.first { it.id == player.id }
+        val otherView = table.toSnapshot(emptySet()) { listOf(setAsideTile) }.players.first { it.id == player.id }
+
+        assertEquals((listOf(standing, setAsideTile) + meldTiles).map { it.id }.toSet(), ownView.heldTiles().map { it.id }.toSet())
+        assertEquals((listOf(setAsideTile) + meldTiles).map { it.id }.toSet(), otherView.heldTiles().map { it.id }.toSet())
     }
 }

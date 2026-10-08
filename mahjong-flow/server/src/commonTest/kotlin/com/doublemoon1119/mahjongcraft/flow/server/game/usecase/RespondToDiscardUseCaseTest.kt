@@ -33,6 +33,8 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
+import com.doublemoon1119.mahjongcraft.logic.table.visibleTiles
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledWinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
@@ -1721,7 +1723,8 @@ class RespondToDiscardUseCaseTest {
         val newState = fixtures.gameRepo.getTableState(gameId)!!
         val claimer = newState.players.first { it.id == responderId }
         val analyzer = assertNotNull(fixtures.moduleRegistry.getModule(newState.config).createDiscardReadinessAnalyzer())
-        val analysis = analyzer.analyze(newState, claimer).single { it.discardTileId == nineCharacter.id }
+        val visibleTiles = newState.toSnapshot(setOf(claimer.id)) { emptyList() }.visibleTiles()
+        val analysis = analyzer.analyze(tableState = newState, player = claimer, visibleTiles = visibleTiles).single { it.discardTileId == nineCharacter.id }
         assertEquals(listOf(Tile.Honor.North), analysis.waitingTiles.map { it.tile })
         assertNull(analysis.statusIndicatorId, "Passes before the claim should not show as temporary furiten after it.")
     }

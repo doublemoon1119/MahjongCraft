@@ -7,9 +7,16 @@ import com.doublemoon1119.mahjongcraft.ai.expectation.ExpectationFixtures.p
 import com.doublemoon1119.mahjongcraft.ai.expectation.ExpectationFixtures.player
 import com.doublemoon1119.mahjongcraft.ai.expectation.ExpectationFixtures.table
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -77,6 +84,28 @@ class UnseenTileCountsTest {
 
         assertEquals(3, counts.without(Tile.Honor.North)[Tile.Honor.North])
         assertEquals(counts.total - 1, counts.without(Tile.Honor.North).total)
+    }
+
+    /** 自己拔出的北一律扣除；扣除所有可見牌時，他家拔出的北也一併扣除。 */
+    @Test
+    fun `pulled north tiles are deducted`() {
+        val threePlayerModule = ThreePlayerRiichiRuleModule(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, ThreePlayerRiichiRuleConfig())
+        val puller = player(Wind.EAST, hand = hand(listOf(p(1))))
+            .copy(playerRuleState = RiichiPlayerState(nukiDoraTiles = listOf(FakeIdentifiedTileFactory.create(Tile.Honor.North))))
+        val otherPuller = player(Wind.SOUTH)
+            .copy(playerRuleState = RiichiPlayerState(nukiDoraTiles = List(2) { FakeIdentifiedTileFactory.create(Tile.Honor.North) }))
+        val threePlayerTable = FakeTableStateFactory.create(
+            players = listOf(puller, otherPuller, player(Wind.WEST)),
+            config = ThreePlayerRiichiRuleConfig(),
+            dynamicRuleState = RiichiDynamicState(),
+        )
+        val snapshot = threePlayerTable.toSnapshot(setOf(puller.id), setAsideTiles = threePlayerModule::setAsideTiles)
+
+        val ownOnly = UnseenTileCounts.from(snapshot, puller.id, threePlayerModule, countsVisibleTiles = false)
+        val allVisible = UnseenTileCounts.from(snapshot, puller.id, threePlayerModule, countsVisibleTiles = true)
+
+        assertEquals(3, ownOnly[Tile.Honor.North])
+        assertEquals(1, allVisible[Tile.Honor.North])
     }
 
     private companion object {

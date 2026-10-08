@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.service
 import com.doublemoon1119.mahjongcraft.flow.server.game.model.PlayerDecisionActionOption
 import com.doublemoon1119.mahjongcraft.flow.server.game.model.PlayerDecisionOptions
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionValidator
@@ -33,12 +34,14 @@ internal object PlayerDecisionOptionsResolver {
      *
      * @param state 目前權威桌況。
      * @param player 欲查詢的玩家。
+     * @param visibleTiles 這位玩家看得到牌面的每一張實體牌，供捨牌分析扣除剩餘張數。
      * @param moduleRegistry 麻將規則模組註冊中心。
      * @param actionContextResolver 玩家操作情境解析器。
      */
     fun resolve(
         state: TableState,
         player: MahjongPlayer,
+        visibleTiles: List<IdentifiedTile>,
         moduleRegistry: MahjongModuleRegistry,
         actionContextResolver: PlayerActionContextResolver,
     ): PlayerDecisionOptions {
@@ -51,7 +54,7 @@ internal object PlayerDecisionOptionsResolver {
         val actionOptions = actions.map { action ->
             val requirement = validator.tileSelectionRequirement(state, player, action)
             val analyses = if (ownTurn && requirement != null) {
-                analyzer?.analyzeForAction(state, player, action)
+                analyzer?.analyzeForAction(tableState = state, player = player, action = action, visibleTiles = visibleTiles)
                     ?.filter { it.discardTileId in requirement.eligibleTileIds }
                     .orEmpty()
             } else {
@@ -61,7 +64,7 @@ internal object PlayerDecisionOptionsResolver {
         }
         return PlayerDecisionOptions(
             actions = actionOptions,
-            discardAnalyses = if (ownTurn) analyzer?.analyze(state, player).orEmpty() else emptyList(),
+            discardAnalyses = if (ownTurn) analyzer?.analyze(tableState = state, player = player, visibleTiles = visibleTiles).orEmpty() else emptyList(),
             referenceTile = referenceTile(state, player, context),
         )
     }

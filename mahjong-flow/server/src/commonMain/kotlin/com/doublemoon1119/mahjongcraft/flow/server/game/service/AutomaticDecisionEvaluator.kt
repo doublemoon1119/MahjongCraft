@@ -3,17 +3,26 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.service
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.server.game.model.PlayerDecisionActionOption
 import com.doublemoon1119.mahjongcraft.flow.server.game.model.PlayerDecisionOptions
+import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicy
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.AutomaticControlAction
 import com.doublemoon1119.mahjongcraft.logic.module.AutomaticControlContext
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.table.visibleTiles
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
-/** 套用規則模組的自動操作政策，解析決策選項與可立即執行的動作。 */
+/**
+ * 套用規則模組的自動操作政策，解析決策選項與可立即執行的動作。
+ *
+ * @property moduleRegistry 取得這一局規則模組。
+ * @property visibilityPolicy 產生玩家本人的桌況快照，捨牌分析的剩餘張數只扣除其中看得到的牌。
+ * @property actionContextResolver 判斷玩家目前的操作情境。
+ */
 @Single
 class AutomaticDecisionEvaluator(
     private val moduleRegistry: MahjongModuleRegistry,
+    private val visibilityPolicy: GameVisibilityPolicy,
     private val actionContextResolver: PlayerActionContextResolver = PlayerActionContextResolver(),
 ) {
     /** 針對指定玩家解析目前決策；沒有操作權時仍回傳空選項，不自行推測動作。 */
@@ -21,7 +30,13 @@ class AutomaticDecisionEvaluator(
         val state = game.tableState
         val player = state.players.firstOrNull { it.id == playerId } ?: return null
         val module = moduleRegistry.getModule(state.config)
-        val options = PlayerDecisionOptionsResolver.resolve(state, player, moduleRegistry, actionContextResolver)
+        val options = PlayerDecisionOptionsResolver.resolve(
+            state = state,
+            player = player,
+            visibleTiles = visibilityPolicy.snapshotFor(game, playerId).visibleTiles(),
+            moduleRegistry = moduleRegistry,
+            actionContextResolver = actionContextResolver,
+        )
         val supportedIds = module.getSupportedAutomaticControlIds()
         val enabledIds = game.enabledAutomaticControlIdsByPlayerId[playerId].orEmpty().intersect(supportedIds)
         val legalActions = options.actions.map(PlayerDecisionActionOption::action)

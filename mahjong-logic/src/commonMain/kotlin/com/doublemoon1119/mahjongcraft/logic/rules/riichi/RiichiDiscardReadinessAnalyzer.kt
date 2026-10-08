@@ -15,7 +15,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlin.uuid.Uuid
 
 /**
- * 日本麻將的手牌分析器：分析目前手牌或逐張立牌假想捨牌，且只以自身與公開資訊估算等待牌餘量。
+ * 日本麻將的手牌分析器：分析目前手牌或逐張立牌假想捨牌，且只以呼叫端傳入的可見牌估算等待牌餘量。
  *
  * @property shantenCalculator 向聽數計算器，用於判斷假想捨牌後是否聽牌。
  * @property legalActionValidator 合法動作判定器，用於分析各等待牌的和牌資格。
@@ -24,28 +24,42 @@ class RiichiDiscardReadinessAnalyzer(
     private val shantenCalculator: RiichiShantenCalculator,
     private val legalActionValidator: RiichiLegalActionValidator,
 ) : DiscardReadinessAnalyzer {
-    override fun analyzeCurrentHand(tableState: TableState, player: MahjongPlayer): HandReadinessAnalysis? {
+    override fun analyzeCurrentHand(
+        tableState: TableState,
+        player: MahjongPlayer,
+        visibleTiles: List<IdentifiedTile>,
+    ): HandReadinessAnalysis? {
         if (player.hand.standingTiles.size % COMPLETE_GROUP_SIZE != 1) return null
         val tenpai = shantenCalculator.calculate(Hand(player.hand.standingTiles, player.hand.melds)) as? ShantenResult.Tenpai
             ?: return null
         val waits = tenpai.winningTiles.map(Tile::riichiCanonical).distinct()
         if (waits.isEmpty()) return null
         return HandReadinessAnalysis(
-            waitingTiles = waitingTileAvailability(tableState, player, player, waits),
+            waitingTiles = waitingTileAvailability(
+                tableState = tableState,
+                visibleTiles = visibleTiles,
+                winPlayer = player,
+                waits = waits,
+            ),
             statusIndicatorId = readinessStatus(player, waits),
         )
     }
 
-    override fun analyze(tableState: TableState, player: MahjongPlayer): List<DiscardReadinessAnalysis> = analyzeWithProjection(tableState, player) { _, hypotheticalPlayer -> hypotheticalPlayer }
+    override fun analyze(
+        tableState: TableState,
+        player: MahjongPlayer,
+        visibleTiles: List<IdentifiedTile>,
+    ): List<DiscardReadinessAnalysis> = analyzeWithProjection(tableState, player, visibleTiles) { _, hypotheticalPlayer -> hypotheticalPlayer }
 
     /** 立直選牌期間以正式宣告邏輯投影每張候選，其他動作維持一般分析。 */
     override fun analyzeForAction(
         tableState: TableState,
         player: MahjongPlayer,
         action: GameAction,
+        visibleTiles: List<IdentifiedTile>,
     ): List<DiscardReadinessAnalysis> {
-        if (action != RIICHI_GAME_ACTION) return analyze(tableState, player)
-        return analyzeWithProjection(tableState, player) { discardResult, _ ->
+        if (action != RIICHI_GAME_ACTION) return analyze(tableState = tableState, player = player, visibleTiles = visibleTiles)
+        return analyzeWithProjection(tableState, player, visibleTiles) { discardResult, _ ->
             applyRiichiDeclaration(tableState, player, discardResult)?.player
         }
     }
@@ -54,6 +68,7 @@ class RiichiDiscardReadinessAnalyzer(
     private fun analyzeWithProjection(
         tableState: TableState,
         player: MahjongPlayer,
+        visibleTiles: List<IdentifiedTile>,
         projectPlayer: (Hand.DiscardResult, MahjongPlayer) -> MahjongPlayer?,
     ): List<DiscardReadinessAnalysis> {
         val riichiState = player.playerRuleState as? RiichiPlayerState
@@ -72,34 +87,31 @@ class RiichiDiscardReadinessAnalyzer(
             }
             DiscardReadinessAnalysis(
                 discardTileId = discard.id,
-                waitingTiles = waitingTileAvailability(tableState, player, projectedPlayer, waits),
+                waitingTiles = waitingTileAvailability(
+                    tableState = tableState,
+                    visibleTiles = visibleTiles,
+                    winPlayer = projectedPlayer,
+                    waits = waits,
+                ),
                 statusIndicatorId = status,
             )
         }
     }
 
-    /** 只使用本人手牌與桌面公開資訊估算每張等待牌的剩餘數量及和牌資格。 */
+    /** 以 [visibleTiles] 估算每張等待牌的剩餘數量，並判定 [winPlayer] 的和牌資格。 */
     private fun waitingTileAvailability(
         tableState: TableState,
-        visiblePlayer: MahjongPlayer,
+        visibleTiles: List<IdentifiedTile>,
         winPlayer: MahjongPlayer,
         waits: List<Tile>,
     ): List<WaitingTileAvailability> {
-        val visibleTiles = buildList {
-            addAll(visiblePlayer.hand.standingTiles)
-            tableState.players.forEach { tablePlayer ->
-                addAll(tablePlayer.discardPile.entries.filterNot { it.isTaken }.map { it.tile })
-                addAll(tablePlayer.hand.exposedMelds.flatMap { meld -> meld.tiles })
-            }
-            (tableState.dynamicRuleState as? RiichiDynamicState)?.getDoraIndicators(tableState)?.first?.let(::addAll)
-            // 同一實體牌可能同時出現在不同可見來源；依 UUID 去重並非用來處理 UUID 碰撞。
-        }.distinctBy { it.id }
+        val visibleCounts = visibleTiles.distinctBy { it.id }
             .groupingBy { it.tile.riichiCanonical }
             .eachCount()
         return waits.map { tile ->
             WaitingTileAvailability(
                 tile = tile,
-                remainingCount = (COPIES_PER_TILE - (visibleTiles[tile] ?: 0)).coerceAtLeast(0),
+                remainingCount = (COPIES_PER_TILE - (visibleCounts[tile] ?: 0)).coerceAtLeast(0),
                 winAvailability = legalActionValidator.analyzeWinAvailability(
                     tableState,
                     winPlayer,

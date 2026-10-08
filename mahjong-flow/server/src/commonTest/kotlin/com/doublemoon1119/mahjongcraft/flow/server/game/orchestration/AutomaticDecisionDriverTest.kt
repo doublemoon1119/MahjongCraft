@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.AutomaticDecisionEvaluator
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerActionContextResolver
@@ -52,7 +53,7 @@ class AutomaticDecisionDriverTest {
         val repository = FakeGameRepository()
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
         val contextResolver = PlayerActionContextResolver()
-        val evaluator = AutomaticDecisionEvaluator(moduleRegistry, contextResolver)
+        val evaluator = AutomaticDecisionEvaluator(moduleRegistry, GameVisibilityPolicyImpl(moduleRegistry), contextResolver)
         val driver = AutomaticDecisionDriver(
             repository,
             evaluator,
@@ -251,7 +252,7 @@ class AutomaticDecisionDriverTest {
         )
         return AutomaticDecisionDriver(
             repository,
-            AutomaticDecisionEvaluator(moduleRegistry, contextResolver),
+            AutomaticDecisionEvaluator(moduleRegistry, GameVisibilityPolicyImpl(moduleRegistry), contextResolver),
             GameActionCommandMapper(ExtensionGameActionCommandFactoryRegistry()),
             contextResolver,
         )

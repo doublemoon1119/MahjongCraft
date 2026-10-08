@@ -2,7 +2,10 @@ package com.doublemoon1119.mahjongcraft.ai.expectation
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayerSnapshot
 import com.doublemoon1119.mahjongcraft.logic.table.TableStateSnapshot
+import com.doublemoon1119.mahjongcraft.logic.table.heldTiles
+import com.doublemoon1119.mahjongcraft.logic.table.visibleTiles
 import kotlin.uuid.Uuid
 
 /**
@@ -44,8 +47,9 @@ internal class UnseenTileCounts private constructor(
         /**
          * 由 [selfId] 的視角計算未見張數。
          *
-         * 自己的手牌與副露一律扣除；[countsVisibleTiles] 為 `true` 時再扣除所有牌河中未被鳴走的牌、他家公開的副露與
-         * 牌山中已公開的牌。看到的牌面不在規則的牌山組成中時，改從它的正規化牌面扣除。
+         * [countsVisibleTiles] 為 `true` 時扣除快照中看得到的每一張牌（見 [TableStateSnapshot.visibleTiles]）；為 `false`
+         * 時只扣除自己手上的牌（見 [MahjongPlayerSnapshot.heldTiles]）。看到的牌面不在規則的牌山組成中時，改從它的
+         * 正規化牌面扣除。
          */
         fun from(
             snapshot: TableStateSnapshot,
@@ -55,20 +59,10 @@ internal class UnseenTileCounts private constructor(
         ): UnseenTileCounts {
             val interpretation = module.createTileInterpretationPolicy()
             val composition = module.createWallFactory().create().getAllTiles().groupingBy { it.tile }.eachCount()
-            val self = snapshot.players.first { it.id == selfId }
-            val seen = buildList {
-                addAll(self.hand.standingTiles.distinctBy { it.id }.mapNotNull { it.tile })
-                self.hand.melds.forEach { meld -> addAll(meld.tiles.mapNotNull { it.tile }) }
-                if (countsVisibleTiles) {
-                    snapshot.players.forEach { player ->
-                        player.discardPile.entries.filterNot { it.isTaken }.forEach { add(it.tile.tile) }
-                        if (player.id != selfId) {
-                            player.hand.melds.forEach { meld -> addAll(meld.tiles.mapNotNull { it.tile }) }
-                        }
-                    }
-                    addAll(snapshot.tileWall.tiles.mapNotNull { it.tile })
-                }
-            }.groupingBy { face -> if (face in composition) face else interpretation.canonicalize(face) }.eachCount()
+            val seenTiles = if (countsVisibleTiles) snapshot.visibleTiles() else snapshot.players.first { it.id == selfId }.heldTiles()
+            val seen = seenTiles.map { it.tile }
+                .groupingBy { face -> if (face in composition) face else interpretation.canonicalize(face) }
+                .eachCount()
 
             val facesByKind = composition.keys.groupBy { interpretation.canonicalize(it) }
             return UnseenTileCounts(
