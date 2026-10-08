@@ -4,7 +4,6 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryAiFilterD
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryIntegrityFilterDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryOutcomeFilterDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryFiltersDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryScopeDto
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.CycleButtonInput
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import net.minecraft.client.gui.DrawContext
@@ -56,7 +55,7 @@ internal class HistoryFilterScreen(
     override fun init() {
         seedFromQueryIfNeeded()
         fields.clear()
-        val all = session.controller.state.value.query.scope == HistoryQueryScopeDto.ALL
+        val all = session.controller.state.value.query.scope.coversAllMatches
         val fieldsToShow = listOf(
             HistoryBrowseFilterField.PLAYER_NAME,
             HistoryBrowseFilterField.MATCH_ID,
@@ -160,7 +159,7 @@ internal class HistoryFilterScreen(
      *
      * @return 文字欄位數量。
      */
-    private fun visibleFieldCount(): Int = if (session.controller.state.value.query.scope == HistoryQueryScopeDto.ALL) 4 else 6
+    private fun visibleFieldCount(): Int = if (session.controller.state.value.query.scope.coversAllMatches) 4 else 6
 
     /** 取得包含規則及選項列的內容列數。
      *
@@ -430,7 +429,7 @@ internal class HistoryFilterScreen(
             HistoryBrowseFilterField.MIN_RANK to MinecraftHistoryScreenKeys.FILTER_MIN_RANK,
             HistoryBrowseFilterField.MAX_RANK to MinecraftHistoryScreenKeys.FILTER_MAX_RANK,
         ).filterNot {
-            session.controller.state.value.query.scope == HistoryQueryScopeDto.ALL &&
+            session.controller.state.value.query.scope.coversAllMatches &&
                 (it.first == HistoryBrowseFilterField.MIN_RANK || it.first == HistoryBrowseFilterField.MAX_RANK)
         }
         if (layout.isVisible(0, contentScroll)) drawLabel(context, MinecraftHistoryScreenKeys.FILTER_RULE, rowTop(0), 0xffffff)

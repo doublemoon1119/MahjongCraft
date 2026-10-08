@@ -115,6 +115,29 @@ class HistoryBrowseControllerTest {
         assertEquals(false, controller.state.value.allowAll)
     }
 
+    /** 壓力測試範圍由權威回覆開啟；壓力測試資料庫刪除後切回自己的紀錄。 */
+    @Test
+    fun `test stress test scope falls back to own once the server withdraws it`() = runTest {
+        val transport = FakeHistoryQueryTransport()
+        val controller = controller(transport)
+        controller.open()
+        runCurrent()
+        transport.respondList(allowAll = true, allowStressTest = true)
+        runCurrent()
+        assertTrue(controller.state.value.allowStressTest)
+        controller.updateQuery(HistoryBrowseQuery(scope = HistoryQueryScopeDto.STRESS_TEST))
+        advanceTimeBy(300)
+        runCurrent()
+        assertEquals(HistoryQueryScopeDto.STRESS_TEST, transport.listRequests.last().scope)
+        transport.respondList(errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE, allowAll = true, allowStressTest = false)
+        runCurrent()
+        advanceTimeBy(300)
+        runCurrent()
+        assertEquals(HistoryQueryScopeDto.OWN, controller.state.value.query.scope)
+        assertEquals(HistoryQueryScopeDto.OWN, transport.listRequests.last().scope)
+        assertEquals(false, controller.state.value.allowStressTest)
+    }
+
     /** 首次開啟會送出第一頁並提交成功清單。 */
     @Test
     fun `test initial open queries first page`() = runTest {
@@ -723,7 +746,7 @@ class HistoryBrowseControllerTest {
         runCurrent()
         assertTrue(controller.state.value.closed)
         assertEquals(HistoryBrowseFailure.DISCONNECTED, assertIs<HistoryBrowseStatus.Failed>(controller.state.value.list.status).reason)
-        transport.emit(ClientHistoryQueryState.ListResult(HistoryListResponseDto(requestId, listOf(summary("late")), nextCursor = null, errorCode = null, allowAll = false)))
+        transport.emit(ClientHistoryQueryState.ListResult(HistoryListResponseDto(requestId, listOf(summary("late")), nextCursor = null, errorCode = null, allowAll = false, allowStressTest = false)))
         runCurrent()
         assertTrue(controller.state.value.list.entries.isEmpty())
     }
@@ -737,7 +760,7 @@ class HistoryBrowseControllerTest {
         runCurrent()
         val requestId = transport.listRequests.single().requestId
         controller.close()
-        transport.emit(ClientHistoryQueryState.ListResult(HistoryListResponseDto(requestId, listOf(summary("late")), nextCursor = null, errorCode = null, allowAll = false)))
+        transport.emit(ClientHistoryQueryState.ListResult(HistoryListResponseDto(requestId, listOf(summary("late")), nextCursor = null, errorCode = null, allowAll = false, allowStressTest = false)))
         runCurrent()
         assertTrue(controller.state.value.closed)
         assertTrue(controller.state.value.list.entries.isEmpty())
@@ -887,8 +910,9 @@ class HistoryBrowseControllerTest {
             nextCursor: String? = null,
             errorCode: HistoryQueryErrorCodeDto? = null,
             allowAll: Boolean = false,
+            allowStressTest: Boolean = false,
         ) {
-            mutableState.value = ClientHistoryQueryState.ListResult(HistoryListResponseDto(requestId, entries, nextCursor, errorCode, allowAll))
+            mutableState.value = ClientHistoryQueryState.ListResult(HistoryListResponseDto(requestId, entries, nextCursor, errorCode, allowAll, allowStressTest))
         }
 
         /** 發出摘要回應。

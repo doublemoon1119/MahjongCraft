@@ -159,6 +159,7 @@ class HistoryQueryDtosTest {
             nextCursor = null,
             errorCode = null,
             allowAll = false,
+            allowStressTest = false,
         )
 
         val encoded = Json.encodeToString(HistoryListResponseDto.serializer(), response)

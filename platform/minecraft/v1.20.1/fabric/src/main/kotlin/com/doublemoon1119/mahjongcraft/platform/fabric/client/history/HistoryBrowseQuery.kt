@@ -24,7 +24,7 @@ internal data class HistoryBrowseQuery(
      * @return 清除不適用名次條件並修正排序欄位後的查詢條件。
      */
     fun normalized(): HistoryBrowseQuery {
-        if (scope != HistoryQueryScopeDto.ALL) return this
+        if (!scope.coversAllMatches) return this
         val normalizedSortField = when (sortField) {
             HistorySortFieldDto.OWN_RANK, HistorySortFieldDto.OWN_SCORE -> HistorySortFieldDto.ENDED_AT
             else -> sortField
@@ -50,3 +50,7 @@ internal data class HistoryBrowseQuery(
         cursor = cursor,
     )
 }
+
+/** 是否查詢不限玩家本人的全部對局；全部對局與壓力測試資料都沒有個人名次與個人分數。 */
+internal val HistoryQueryScopeDto.coversAllMatches: Boolean
+    get() = this != HistoryQueryScopeDto.OWN

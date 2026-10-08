@@ -33,7 +33,7 @@ class ClientHistoryQueryCoordinatorTest {
 
         assertEquals(requestId, sender.listRequest?.requestId)
         assertIs<ClientHistoryQueryState.Loading>(coordinator.state.value)
-        coordinator.applyList(HistoryListResponseDto(requestId, emptyList(), nextCursor = null, errorCode = null, allowAll = false))
+        coordinator.applyList(HistoryListResponseDto(requestId, emptyList(), nextCursor = null, errorCode = null, allowAll = false, allowStressTest = false))
         assertIs<ClientHistoryQueryState.ListResult>(coordinator.state.value)
     }
 
@@ -72,7 +72,7 @@ class ClientHistoryQueryCoordinatorTest {
 
         coordinator.applySummary(HistorySummaryResponseDto(requestId, detail = null, errorCode = null))
         assertIs<ClientHistoryQueryState.Loading>(coordinator.state.value)
-        coordinator.applyList(HistoryListResponseDto(requestId, emptyList(), nextCursor = null, errorCode = null, allowAll = false))
+        coordinator.applyList(HistoryListResponseDto(requestId, emptyList(), nextCursor = null, errorCode = null, allowAll = false, allowStressTest = false))
         assertIs<ClientHistoryQueryState.ListResult>(coordinator.state.value)
     }
 
@@ -134,7 +134,7 @@ class ClientHistoryQueryCoordinatorTest {
 
         assertEquals(previousRevision + 1, coordinator.sessionRevision.value)
         assertEquals(ClientHistoryQueryState.Idle, coordinator.state.value)
-        coordinator.applyList(HistoryListResponseDto(requestId, emptyList(), nextCursor = null, errorCode = null, allowAll = false))
+        coordinator.applyList(HistoryListResponseDto(requestId, emptyList(), nextCursor = null, errorCode = null, allowAll = false, allowStressTest = false))
         assertEquals(ClientHistoryQueryState.Idle, coordinator.state.value)
     }
 

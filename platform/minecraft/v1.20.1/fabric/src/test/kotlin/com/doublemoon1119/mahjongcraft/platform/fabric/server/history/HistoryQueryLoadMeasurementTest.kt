@@ -258,7 +258,7 @@ class HistoryQueryLoadMeasurementTest {
             if (page != null) {
                 Json.encodeToString(
                     HistoryListResponseDto.serializer(),
-                    HistoryListResponseDto(requestId = "load-request", entries = page.entries.map { it.toResponseDto() }, nextCursor = null, errorCode = null, allowAll = false),
+                    HistoryListResponseDto(requestId = "load-request", entries = page.entries.map { it.toResponseDto() }, nextCursor = null, errorCode = null, allowAll = false, allowStressTest = false),
                 )
                 samples.completed++
                 samples.recordQuery(elapsedMillis(timer), collect)
@@ -279,7 +279,7 @@ class HistoryQueryLoadMeasurementTest {
     private fun encodeErrorResponse(errorCode: HistoryQueryErrorCodeDto) {
         Json.encodeToString(
             HistoryListResponseDto.serializer(),
-            HistoryListResponseDto(requestId = "load-request", entries = emptyList(), errorCode = errorCode, nextCursor = null, allowAll = false),
+            HistoryListResponseDto(requestId = "load-request", entries = emptyList(), errorCode = errorCode, nextCursor = null, allowAll = false, allowStressTest = false),
         )
     }
 

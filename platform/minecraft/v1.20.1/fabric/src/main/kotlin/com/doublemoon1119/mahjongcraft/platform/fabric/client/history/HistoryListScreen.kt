@@ -202,10 +202,15 @@ internal class HistoryListScreen(
     private fun scopeTooltip(): Text = optionTooltip(Text.translatable(MinecraftHistoryScreenKeys.SCOPE_TITLE), scopeText(), availableScopes().map { Text.translatable("${MinecraftHistoryScreenKeys.SCOPE_PREFIX}${it.name.lowercase()}") })
 
     /** 只提供最近權威回應允許的查詢範圍。 */
-    private fun availableScopes(): List<HistoryQueryScopeDto> = if (session.controller.state.value.allowAll) HistoryQueryScopeDto.entries else listOf(HistoryQueryScopeDto.OWN)
+    private fun availableScopes(): List<HistoryQueryScopeDto> = buildList {
+        val state = session.controller.state.value
+        add(HistoryQueryScopeDto.OWN)
+        if (state.allowAll) add(HistoryQueryScopeDto.ALL)
+        if (state.allowStressTest) add(HistoryQueryScopeDto.STRESS_TEST)
+    }
 
-    /** 全部紀錄沒有個人名次或個人分數排序。 */
-    private fun availableSortFields(): List<HistorySortFieldDto> = if (session.controller.state.value.query.scope == HistoryQueryScopeDto.ALL) listOf(HistorySortFieldDto.ENDED_AT, HistorySortFieldDto.DURATION) else HistorySortFieldDto.entries
+    /** 全部紀錄與壓力測試資料沒有個人名次或個人分數排序。 */
+    private fun availableSortFields(): List<HistorySortFieldDto> = if (session.controller.state.value.query.scope.coversAllMatches) listOf(HistorySortFieldDto.ENDED_AT, HistorySortFieldDto.DURATION) else HistorySortFieldDto.entries
 
     /** 建立排序欄位按鈕的選項 tooltip。 */
     private fun sortTooltip(): Text = optionTooltip(Text.translatable(MinecraftHistoryScreenKeys.SORT_TITLE), sortText(), availableSortFields().map { Text.translatable("${MinecraftHistoryScreenKeys.SORT_PREFIX}${it.name.lowercase()}") })
@@ -241,12 +246,12 @@ internal class HistoryListScreen(
         }
     }
 
-    /** 在自己的紀錄與管理員用途的全部紀錄間切換。 */
+    /** 依序在自己的紀錄、管理員用途的全部紀錄與開發環境的壓力測試資料間切換。 */
     private fun cycleScope() {
         if (!session.controller.canRefresh()) return
         if (availableScopes().size < 2) return
         val query = session.controller.state.value.query
-        val scope = if (query.scope == HistoryQueryScopeDto.OWN) HistoryQueryScopeDto.ALL else HistoryQueryScopeDto.OWN
+        val scope = CycleButtonInput.next(options = availableScopes(), current = query.scope)
         session.filterDraft.setScope(scope)
         session.controller.updateQuery(query.copy(scope = scope).normalized())
     }

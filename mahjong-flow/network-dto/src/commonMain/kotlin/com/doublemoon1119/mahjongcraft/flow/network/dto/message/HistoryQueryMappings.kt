@@ -25,12 +25,14 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistrie
 import kotlinx.serialization.json.Json
 import kotlin.uuid.Uuid
 
-/** 將網路查詢範圍映射為 Flow 查詢範圍。
+/** 將網路查詢範圍映射為 Flow 查詢範圍；壓力測試範圍在權限與查詢語意上等同全部對局，資料來源由平台另外選擇。
  * @return 對應的 Flow 查詢範圍。
  */
 fun HistoryQueryScopeDto.toDomain(): HistoryQueryScope = when (this) {
     HistoryQueryScopeDto.OWN -> HistoryQueryScope.OWN
-    HistoryQueryScopeDto.ALL -> HistoryQueryScope.ALL
+    HistoryQueryScopeDto.ALL,
+    HistoryQueryScopeDto.STRESS_TEST,
+    -> HistoryQueryScope.ALL
 }
 
 /** 將網路排序欄位映射為 Flow 排序欄位。

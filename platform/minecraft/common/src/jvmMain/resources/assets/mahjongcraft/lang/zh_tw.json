@@ -543,6 +543,7 @@
   "mahjongcraft.history_screen.scope": "範圍",
   "mahjongcraft.history_screen.scope.all": "所有對局",
   "mahjongcraft.history_screen.scope.own": "我的對局",
+  "mahjongcraft.history_screen.scope.stress_test": "壓力測試",
   "mahjongcraft.history_screen.sort": "排序",
   "mahjongcraft.history_screen.sort.duration": "時長",
   "mahjongcraft.history_screen.sort.ended_at": "結束時間",

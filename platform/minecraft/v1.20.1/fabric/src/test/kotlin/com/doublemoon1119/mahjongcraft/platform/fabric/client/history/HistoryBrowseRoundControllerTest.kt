@@ -565,7 +565,7 @@ class HistoryBrowseRoundControllerTest {
          * @param entries 列表摘要。
          */
         fun respondList(entries: List<HistoryMatchSummaryDto>) {
-            mutableState.value = ClientHistoryQueryState.ListResult(HistoryListResponseDto("list-1", entries, nextCursor = null, errorCode = null, allowAll = false))
+            mutableState.value = ClientHistoryQueryState.ListResult(HistoryListResponseDto("list-1", entries, nextCursor = null, errorCode = null, allowAll = false, allowStressTest = false))
         }
 
         /** 發出摘要成功回應。

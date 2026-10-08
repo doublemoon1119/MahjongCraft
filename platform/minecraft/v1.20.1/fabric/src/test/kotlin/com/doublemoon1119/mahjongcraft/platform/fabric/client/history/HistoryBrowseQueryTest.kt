@@ -15,25 +15,28 @@ import kotlin.test.assertIs
 
 /** 驗證歷史瀏覽查詢的正規化、轉換及表單篩選解析。 */
 class HistoryBrowseQueryTest {
-    /** 全部對局查詢會清除玩家名次條件並回復結束時間排序。 */
+    /** 全部對局與壓力測試資料的查詢都會清除玩家名次條件並回復結束時間排序。 */
     @Test
-    fun `test all scope normalizes own filters and sorting`() {
-        val query = HistoryBrowseQuery(
-            scope = HistoryQueryScopeDto.ALL,
-            sortField = HistorySortFieldDto.OWN_SCORE,
-            sortDirection = HistorySortDirectionDto.ASC,
-            filters = HistoryQueryFiltersDto.NONE.copy(ownRankMin = 2, ownRankMax = 4, ruleId = "mahjongcraft:riichi"),
-        )
-
-        assertEquals(
-            HistoryBrowseQuery(
-                scope = HistoryQueryScopeDto.ALL,
-                sortField = HistorySortFieldDto.ENDED_AT,
+    fun `test all match scopes normalize own filters and sorting`() {
+        listOf(HistoryQueryScopeDto.ALL, HistoryQueryScopeDto.STRESS_TEST).forEach { scope ->
+            val query = HistoryBrowseQuery(
+                scope = scope,
+                sortField = HistorySortFieldDto.OWN_SCORE,
                 sortDirection = HistorySortDirectionDto.ASC,
-                filters = HistoryQueryFiltersDto.NONE.copy(ruleId = "mahjongcraft:riichi"),
-            ),
-            query.normalized(),
-        )
+                filters = HistoryQueryFiltersDto.NONE.copy(ownRankMin = 2, ownRankMax = 4, ruleId = "mahjongcraft:riichi"),
+            )
+
+            assertEquals(
+                HistoryBrowseQuery(
+                    scope = scope,
+                    sortField = HistorySortFieldDto.ENDED_AT,
+                    sortDirection = HistorySortDirectionDto.ASC,
+                    filters = HistoryQueryFiltersDto.NONE.copy(ruleId = "mahjongcraft:riichi"),
+                ),
+                query.normalized(),
+                "$scope",
+            )
+        }
     }
 
     /** 查詢轉換會保留條件、游標與固定頁大小。 */
@@ -151,17 +154,19 @@ class HistoryBrowseQueryTest {
         assertEquals(HistoryBrowseFilterError.REVERSED_RANGE, invalid.errors[HistoryBrowseFilterField.MAX_RANK])
     }
 
-    /** 全部對局範圍會忽略名次文字，不因其無效而拒絕其他篩選。 */
+    /** 全部對局與壓力測試資料範圍會忽略名次文字，不因其無效而拒絕其他篩選。 */
     @Test
-    fun `test all scope ignores rank fields`() {
-        val result = HistoryBrowseFilterValidation.parse(
-            HistoryBrowseFilterInput(ownRankMin = "not-a-rank", ownRankMax = "0"),
-            ZoneId.of("UTC"),
-            HistoryQueryScopeDto.ALL,
-        )
-        val valid = assertIs<HistoryBrowseFilterResult.Valid>(result)
-        assertEquals(null, valid.filters.ownRankMin)
-        assertEquals(null, valid.filters.ownRankMax)
+    fun `test all match scopes ignore rank fields`() {
+        listOf(HistoryQueryScopeDto.ALL, HistoryQueryScopeDto.STRESS_TEST).forEach { scope ->
+            val result = HistoryBrowseFilterValidation.parse(
+                HistoryBrowseFilterInput(ownRankMin = "not-a-rank", ownRankMax = "0"),
+                ZoneId.of("UTC"),
+                scope,
+            )
+            val valid = assertIs<HistoryBrowseFilterResult.Valid>(result)
+            assertEquals(null, valid.filters.ownRankMin)
+            assertEquals(null, valid.filters.ownRankMax)
+        }
     }
 
     /** Match ID 必須是完整 UUID。 */

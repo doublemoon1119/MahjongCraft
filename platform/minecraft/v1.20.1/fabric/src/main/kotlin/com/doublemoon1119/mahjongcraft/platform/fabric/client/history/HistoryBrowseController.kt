@@ -723,8 +723,13 @@ internal class HistoryBrowseController(
      * @param intent 此次分頁目標。
      */
     private fun acceptList(response: HistoryListResponseDto, intent: Intent.ListQuery) {
-        mutableState.value = state.value.copy(allowAll = response.allowAll)
-        if (!response.allowAll && state.value.query.scope == HistoryQueryScopeDto.ALL) {
+        mutableState.value = state.value.copy(allowAll = response.allowAll, allowStressTest = response.allowStressTest)
+        val scopeAllowed = when (state.value.query.scope) {
+            HistoryQueryScopeDto.OWN -> true
+            HistoryQueryScopeDto.ALL -> response.allowAll
+            HistoryQueryScopeDto.STRESS_TEST -> response.allowStressTest
+        }
+        if (!scopeAllowed) {
             updateQuery(state.value.query.copy(scope = HistoryQueryScopeDto.OWN))
             return
         }

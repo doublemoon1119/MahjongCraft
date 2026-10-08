@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryArchiveSt
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryErrorCodeDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryScopeDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateRequestDto
@@ -38,6 +39,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.PlayerIdentitySender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.ServerPlayerIdentityStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
+import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryQuerySettingsPayload
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -67,6 +69,8 @@ import kotlin.uuid.toKotlinUuid
  * @property networkRegistries 將已保存的規則設定映射為網路 DTO 的正式註冊表。
  * @property identityStore 伺服器已知的玩家名稱索引。
  * @property playerIdentities 向已授權玩家同步參與者名稱及外觀身分。
+ * @property stressTestHistory 壓力測試範圍讀取的壓力測試資料庫。
+ * @property minecraftEnvironment 只在開發環境開放壓力測試範圍。
  */
 @Single
 class FabricHistoryQueryService(
@@ -79,6 +83,8 @@ class FabricHistoryQueryService(
     @Provided private val networkRegistries: NetworkDtoRegistries,
     private val playerIdentities: PlayerIdentitySender,
     private val identityStore: ServerPlayerIdentityStore,
+    private val stressTestHistory: StressTestHistorySource,
+    private val minecraftEnvironment: MinecraftEnvironment,
 ) {
     /** 不向玩家傳送原始查詢例外的診斷 logger。 */
     private val logger = mahjongCraftLogger(FabricHistoryQueryService::class)
@@ -128,7 +134,7 @@ class FabricHistoryQueryService(
      */
     private fun receiveRoundEvents(server: MinecraftServer, player: ServerPlayerEntity, request: HistoryRoundEventsRequestDto) {
         receiveRoundQuery(
-            server, player, request.requestId, request.matchId, request.scope.toDomain(),
+            server, player, request.requestId, request.matchId, request.scope,
             failure = { HistoryRoundEventsResponseDto(request.requestId, request.matchId, request.roundNumber, request.startTransactionIndex, errorCode = it, events = null) },
             query = { access, repository ->
                 when (val result = GetHistoryRoundEventsUseCase(repository, ::policy)(access, request.toDomain())) {
@@ -150,7 +156,7 @@ class FabricHistoryQueryService(
      */
     private fun receiveRoundState(server: MinecraftServer, player: ServerPlayerEntity, request: HistoryRoundStateRequestDto) {
         receiveRoundQuery(
-            server, player, request.requestId, request.matchId, request.scope.toDomain(),
+            server, player, request.requestId, request.matchId, request.scope,
             failure = { HistoryRoundStateResponseDto(request.requestId, request.matchId, request.roundNumber, request.position, errorCode = it, state = null) },
             query = { access, repository ->
                 when (val result = GetHistoryRoundStateUseCase(repository, ::policy)(access, request.toDomain())) {
@@ -171,7 +177,7 @@ class FabricHistoryQueryService(
      * @param player 原連線玩家。
      * @param requestId 原要求配對鍵。
      * @param matchId 原要求對局識別碼。
-     * @param queryScope 原要求範圍。
+     * @param wireScope 原要求範圍，決定讀取的資料來源。
      * @param failure 不含內容的錯誤回覆建構器。
      * @param query 有界且已授權的背景查詢。
      * @param hasContent 判斷是否需再次確認公開性。
@@ -183,7 +189,7 @@ class FabricHistoryQueryService(
         player: ServerPlayerEntity,
         requestId: String,
         matchId: String,
-        queryScope: HistoryQueryScope,
+        wireScope: HistoryQueryScopeDto,
         failure: (HistoryQueryErrorCodeDto) -> R,
         query: suspend (HistoryQueryAccess, FabricHistoryQueryRepository) -> R,
         hasContent: (R) -> Boolean,
@@ -191,8 +197,10 @@ class FabricHistoryQueryService(
         send: (R) -> Unit,
     ) {
         if (!validRequestId(requestId)) return
+        val queryScope = wireScope.toDomain()
+        val source = sourceFor(wireScope) ?: return send(failure(HistoryQueryErrorCodeDto.NOT_AVAILABLE))
         val access = player.queryAccess()
-        val sessionId = writer.currentSessionId
+        val sessionId = source.writer.currentSessionId
         val accepted = admission.acquire(access.principalId)
         if (accepted !is HistoryQueryAdmission.Admission.Accepted) {
             if (admission.shouldSendRejection(access.principalId)) send(failure(accepted.errorCode()))
@@ -203,9 +211,9 @@ class FabricHistoryQueryService(
                 var response = withTimeoutOrNull(HistoryQueryLimits.timeout) {
                     try {
                         val id = Uuid.parse(matchId)
-                        var result = query(access, FabricHistoryQueryRepository(writer, sessionId, identityStore))
+                        var result = query(access, FabricHistoryQueryRepository(source.writer, sessionId, identityStore))
                         if (hasContent(result)) {
-                            val confirmed = writer.confirmRoundPublication(access, id, queryScope, sessionId)
+                            val confirmed = source.writer.confirmRoundPublication(access, id, queryScope, sessionId)
                             val invalid = when (confirmed) {
                                 is HistoryManagementResult.Success -> (confirmed.value as? HistoryQueryResult.Failure)?.error?.code?.toDto()
                                 is HistoryManagementResult.Busy -> HistoryQueryErrorCodeDto.BUSY
@@ -220,11 +228,11 @@ class FabricHistoryQueryService(
                     }
                 } ?: failure(HistoryQueryErrorCodeDto.TIMEOUT)
                 withContext(dispatchers.main) {
-                    if (!sameConnection(server, player, sessionId)) return@withContext
+                    if (!sameConnection(server, player, source, sessionId)) return@withContext
                     val invalid = replyError(player.queryAccess(), policy(), queryScope)
                     if (invalid != null) response = failure(invalid)
                     val canonicalMatchId = runCatching { Uuid.parse(matchId).toString() }.getOrNull()
-                    if (canonicalMatchId in activeMatches()) response = failure(HistoryQueryErrorCodeDto.NOT_AVAILABLE)
+                    if (canonicalMatchId in activeMatches(source)) response = failure(HistoryQueryErrorCodeDto.NOT_AVAILABLE)
                     sendIdentities(player, participants(response))
                     send(response)
                 }
@@ -233,7 +241,7 @@ class FabricHistoryQueryService(
             } catch (error: Exception) {
                 logger.error("History round query failed", error)
                 withContext(dispatchers.main) {
-                    if (sameConnection(server, player, sessionId)) send(failure(HistoryQueryErrorCodeDto.NOT_AVAILABLE))
+                    if (sameConnection(server, player, source, sessionId)) send(failure(HistoryQueryErrorCodeDto.NOT_AVAILABLE))
                 }
             } finally {
                 admission.release(access.principalId, accepted.token)
@@ -285,7 +293,7 @@ class FabricHistoryQueryService(
                     }
                 } ?: HistoryArchiveStatusResponseDto(request.requestId, HistoryArchiveStatusDto.MISSING, HistoryQueryErrorCodeDto.TIMEOUT)
                 withContext(dispatchers.main) {
-                    if (!sameConnection(server, player, sessionId)) return@withContext
+                    if (!sameConnection(server, player, formalSource(), sessionId)) return@withContext
                     val currentPolicy = policy()
                     if (!currentPolicy.queryEnabled) {
                         response = HistoryArchiveStatusResponseDto(request.requestId, HistoryArchiveStatusDto.DISABLED, errorCode = null)
@@ -301,7 +309,7 @@ class FabricHistoryQueryService(
             } catch (error: Exception) {
                 logger.error("History archive status query failed", error)
                 withContext(dispatchers.main) {
-                    if (sameConnection(server, player, sessionId)) {
+                    if (sameConnection(server, player, formalSource(), sessionId)) {
                         MahjongChannels.historyArchiveStatusResponse.sendTo(
                             player,
                             json,
@@ -328,11 +336,34 @@ class FabricHistoryQueryService(
     private fun receiveList(server: MinecraftServer, player: ServerPlayerEntity, request: HistoryListRequestDto) {
         if (!validRequestId(request.requestId)) return
         val access = player.queryAccess()
-        val sessionId = writer.currentSessionId
+        val source = sourceFor(request.scope) ?: return MahjongChannels.historyListResponse.sendTo(
+            player,
+            json,
+            HistoryListResponseDto(
+                request.requestId,
+                emptyList(),
+                nextCursor = null,
+                errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE,
+                allowAll = canQueryAll(access, policy()),
+                allowStressTest = canQueryStressTest(access, policy()),
+            ),
+        )
+        val sessionId = source.writer.currentSessionId
         val accepted = admission.acquire(access.principalId)
         if (accepted !is HistoryQueryAdmission.Admission.Accepted) {
             if (admission.shouldSendRejection(access.principalId)) {
-                MahjongChannels.historyListResponse.sendTo(player, json, HistoryListResponseDto(request.requestId, emptyList(), nextCursor = null, errorCode = accepted.errorCode(), allowAll = canQueryAll(access, policy())))
+                MahjongChannels.historyListResponse.sendTo(
+                    player,
+                    json,
+                    HistoryListResponseDto(
+                        request.requestId,
+                        emptyList(),
+                        nextCursor = null,
+                        errorCode = accepted.errorCode(),
+                        allowAll = canQueryAll(access, policy()),
+                        allowStressTest = canQueryStressTest(access, policy()),
+                    ),
+                )
             }
             return
         }
@@ -342,22 +373,25 @@ class FabricHistoryQueryService(
                     try {
                         require((request.cursor?.length ?: 0) <= HistoryQueryLimits.CURSOR_LENGTH) { "History cursor exceeds its length limit" }
                         val domain = request.toDomain { it?.decodeHistoryCursor(json) }
-                        val repository = FabricHistoryQueryRepository(writer, sessionId, identityStore)
+                        val repository = FabricHistoryQueryRepository(source.writer, sessionId, identityStore)
                         when (val result = ListHistoryUseCase(repository, ::policy)(access, domain)) {
-                            is HistoryQueryResult.Failure -> HistoryListResponseDto(request.requestId, emptyList(), nextCursor = null, errorCode = result.error.code.toDto(), allowAll = false)
+                            is HistoryQueryResult.Failure -> HistoryListResponseDto(request.requestId, emptyList(), nextCursor = null, errorCode = result.error.code.toDto(), allowAll = false, allowStressTest = false)
                             is HistoryQueryResult.Success -> boundedHistoryPage(request.requestId, result.value, domain, access.principalId, json, { it.encode(json) })
                         }
                     } catch (_: IllegalArgumentException) {
-                        HistoryListResponseDto(request.requestId, emptyList(), nextCursor = null, errorCode = HistoryQueryErrorCodeDto.INVALID_REQUEST, allowAll = false)
+                        HistoryListResponseDto(request.requestId, emptyList(), nextCursor = null, errorCode = HistoryQueryErrorCodeDto.INVALID_REQUEST, allowAll = false, allowStressTest = false)
                     }
-                } ?: HistoryListResponseDto(request.requestId, emptyList(), nextCursor = null, errorCode = HistoryQueryErrorCodeDto.TIMEOUT, allowAll = false)
+                } ?: HistoryListResponseDto(request.requestId, emptyList(), nextCursor = null, errorCode = HistoryQueryErrorCodeDto.TIMEOUT, allowAll = false, allowStressTest = false)
                 withContext(dispatchers.main) {
-                    if (!sameConnection(server, player, sessionId)) return@withContext
+                    if (!sameConnection(server, player, source, sessionId)) return@withContext
                     val invalid = replyError(player.queryAccess(), policy(), request.scope.toDomain())
-                    if (invalid != null) response = HistoryListResponseDto(request.requestId, emptyList(), nextCursor = null, errorCode = invalid, allowAll = false)
-                    val active = activeMatches()
-                    if (response.entries.any { it.matchId in active }) response = HistoryListResponseDto(request.requestId, emptyList(), nextCursor = null, errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE, allowAll = false)
-                    response = response.copy(allowAll = canQueryAll(player.queryAccess(), policy()))
+                    if (invalid != null) response = HistoryListResponseDto(request.requestId, emptyList(), nextCursor = null, errorCode = invalid, allowAll = false, allowStressTest = false)
+                    val active = activeMatches(source)
+                    if (response.entries.any { it.matchId in active }) response = HistoryListResponseDto(request.requestId, emptyList(), nextCursor = null, errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE, allowAll = false, allowStressTest = false)
+                    response = response.copy(
+                        allowAll = canQueryAll(player.queryAccess(), policy()),
+                        allowStressTest = canQueryStressTest(player.queryAccess(), policy()),
+                    )
                     sendIdentities(player, response.entries.flatMap { entry -> entry.participants.filter { it.aiStrategyId == null }.map { it.playerId } })
                     MahjongChannels.historyListResponse.sendTo(player, json, response)
                 }
@@ -366,7 +400,20 @@ class FabricHistoryQueryService(
             } catch (error: Exception) {
                 logger.error("History list query failed", error)
                 withContext(dispatchers.main) {
-                    if (sameConnection(server, player, sessionId)) MahjongChannels.historyListResponse.sendTo(player, json, HistoryListResponseDto(request.requestId, emptyList(), nextCursor = null, errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE, allowAll = canQueryAll(player.queryAccess(), policy())))
+                    if (sameConnection(server, player, source, sessionId)) {
+                        MahjongChannels.historyListResponse.sendTo(
+                            player,
+                            json,
+                            HistoryListResponseDto(
+                                request.requestId,
+                                emptyList(),
+                                nextCursor = null,
+                                errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE,
+                                allowAll = canQueryAll(player.queryAccess(), policy()),
+                                allowStressTest = canQueryStressTest(player.queryAccess(), policy()),
+                            ),
+                        )
+                    }
                 }
             } finally {
                 admission.release(access.principalId, accepted.token)
@@ -387,7 +434,12 @@ class FabricHistoryQueryService(
     private fun receiveSummary(server: MinecraftServer, player: ServerPlayerEntity, request: HistorySummaryRequestDto) {
         if (!validRequestId(request.requestId)) return
         val access = player.queryAccess()
-        val sessionId = writer.currentSessionId
+        val source = sourceFor(request.scope) ?: return MahjongChannels.historySummaryResponse.sendTo(
+            player,
+            json,
+            HistorySummaryResponseDto(request.requestId, errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE, detail = null),
+        )
+        val sessionId = source.writer.currentSessionId
         val accepted = admission.acquire(access.principalId)
         if (accepted !is HistoryQueryAdmission.Admission.Accepted) {
             if (admission.shouldSendRejection(access.principalId)) {
@@ -400,7 +452,7 @@ class FabricHistoryQueryService(
                 var response = withTimeoutOrNull(HistoryQueryLimits.timeout) {
                     try {
                         val domain = HistorySummaryRequest(Uuid.parse(request.matchId), request.scope.toDomain())
-                        val repository = FabricHistoryQueryRepository(writer, sessionId, identityStore)
+                        val repository = FabricHistoryQueryRepository(source.writer, sessionId, identityStore)
                         when (val result = GetHistorySummaryUseCase(repository, ::policy)(access, domain)) {
                             is HistoryQueryResult.Failure -> HistorySummaryResponseDto(request.requestId, errorCode = result.error.code.toDto(), detail = null)
                             is HistoryQueryResult.Success -> HistorySummaryResponseDto(request.requestId, result.value.toDto(), errorCode = null)
@@ -413,10 +465,10 @@ class FabricHistoryQueryService(
                     response = HistorySummaryResponseDto(request.requestId, errorCode = HistoryQueryErrorCodeDto.CONTENT_TOO_LARGE, detail = null)
                 }
                 withContext(dispatchers.main) {
-                    if (!sameConnection(server, player, sessionId)) return@withContext
+                    if (!sameConnection(server, player, source, sessionId)) return@withContext
                     val invalid = replyError(player.queryAccess(), policy(), request.scope.toDomain())
                     if (invalid != null) response = HistorySummaryResponseDto(request.requestId, errorCode = invalid, detail = null)
-                    if (response.detail?.summary?.matchId in activeMatches()) response = HistorySummaryResponseDto(request.requestId, errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE, detail = null)
+                    if (response.detail?.summary?.matchId in activeMatches(source)) response = HistorySummaryResponseDto(request.requestId, errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE, detail = null)
                     response.detail?.let { detail ->
                         sendIdentities(player, detail.summary.participants.filter { it.aiStrategyId == null }.map { it.playerId })
                     }
@@ -427,7 +479,7 @@ class FabricHistoryQueryService(
             } catch (error: Exception) {
                 logger.error("History summary query failed", error)
                 withContext(dispatchers.main) {
-                    if (sameConnection(server, player, sessionId)) MahjongChannels.historySummaryResponse.sendTo(player, json, HistorySummaryResponseDto(request.requestId, errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE, detail = null))
+                    if (sameConnection(server, player, source, sessionId)) MahjongChannels.historySummaryResponse.sendTo(player, json, HistorySummaryResponseDto(request.requestId, errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE, detail = null))
                 }
             } finally {
                 admission.release(access.principalId, accepted.token)
@@ -448,7 +500,12 @@ class FabricHistoryQueryService(
     private fun receiveRuleSettings(server: MinecraftServer, player: ServerPlayerEntity, request: HistoryRuleSettingsRequestDto) {
         if (!validRequestId(request.requestId)) return
         val access = player.queryAccess()
-        val sessionId = writer.currentSessionId
+        val source = sourceFor(request.scope) ?: return MahjongChannels.historyRuleSettingsResponse.sendTo(
+            player,
+            json,
+            HistoryRuleSettingsResponseDto(request.requestId, errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE, config = null),
+        )
+        val sessionId = source.writer.currentSessionId
         val accepted = admission.acquire(access.principalId)
         if (accepted !is HistoryQueryAdmission.Admission.Accepted) {
             if (admission.shouldSendRejection(access.principalId)) {
@@ -465,7 +522,7 @@ class FabricHistoryQueryService(
                 var response = withTimeoutOrNull(HistoryQueryLimits.timeout) {
                     try {
                         val domain = request.toDomain()
-                        val repository = FabricHistoryQueryRepository(writer, sessionId, identityStore)
+                        val repository = FabricHistoryQueryRepository(source.writer, sessionId, identityStore)
                         when (val result = GetHistoryRuleSettingsUseCase(repository, ::policy)(access, domain)) {
                             is HistoryQueryResult.Failure -> HistoryRuleSettingsResponseDto(request.requestId, errorCode = result.error.code.toDto(), config = null)
                             is HistoryQueryResult.Success -> boundedHistoryRuleSettings(request.requestId, result.value, networkRegistries, json)
@@ -475,11 +532,11 @@ class FabricHistoryQueryService(
                     }
                 } ?: HistoryRuleSettingsResponseDto(request.requestId, errorCode = HistoryQueryErrorCodeDto.TIMEOUT, config = null)
                 withContext(dispatchers.main) {
-                    if (!sameConnection(server, player, sessionId)) return@withContext
+                    if (!sameConnection(server, player, source, sessionId)) return@withContext
                     val invalid = replyError(player.queryAccess(), policy(), request.scope.toDomain())
                     if (invalid != null) response = HistoryRuleSettingsResponseDto(request.requestId, errorCode = invalid, config = null)
                     val requestedMatchId = runCatching { Uuid.parse(request.matchId).toString() }.getOrNull()
-                    if (requestedMatchId != null && requestedMatchId in activeMatches()) {
+                    if (requestedMatchId != null && requestedMatchId in activeMatches(source)) {
                         response = HistoryRuleSettingsResponseDto(
                             request.requestId,
                             errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE,
@@ -493,7 +550,7 @@ class FabricHistoryQueryService(
             } catch (error: Exception) {
                 logger.error("History rule settings query failed", error)
                 withContext(dispatchers.main) {
-                    if (sameConnection(server, player, sessionId)) {
+                    if (sameConnection(server, player, source, sessionId)) {
                         MahjongChannels.historyRuleSettingsResponse.sendTo(
                             player,
                             json,
@@ -517,23 +574,48 @@ class FabricHistoryQueryService(
     private fun policy(): HistoryQueryPolicy = configState.current.history.let { HistoryQueryPolicy(it.queryEnabled, it.allowAdminQuery) }
 
     /**
-     * 確認回覆仍屬於原玩家連線與世界。
+     * 依查詢範圍選擇資料來源；壓力測試範圍只在開發環境且壓力測試資料庫存在時可用。
+     *
+     * @param scope 原要求範圍。
+     * @return 資料來源；壓力測試資料庫不可用時為 null。
+     */
+    private fun sourceFor(scope: HistoryQueryScopeDto): HistoryDataSource? = selectHistoryDataSource(
+        scope = scope,
+        formal = formalSource(),
+        stressTest = stressTestHistory.current,
+        isDevelopment = minecraftEnvironment.isDevelopment,
+    )
+
+    /** 正式歷史的資料來源。 */
+    private fun formalSource(): HistoryDataSource = HistoryDataSource(writer, store)
+
+    /** 判斷目前連線是否可使用壓力測試範圍：與全部對局相同的權限，且開發環境中存在壓力測試資料庫。 */
+    private fun canQueryStressTest(access: HistoryQueryAccess, policy: HistoryQueryPolicy): Boolean = canQueryStressTest(
+        canQueryAll = canQueryAll(access, policy),
+        isDevelopment = minecraftEnvironment.isDevelopment,
+        stressTestAvailable = stressTestHistory.current != null,
+    )
+
+    /**
+     * 確認回覆仍屬於原玩家連線與資料來源的 session。
      *
      * @param server 原伺服器。
      * @param player 原連線玩家實例。
-     * @param sessionId 原世界 session。
+     * @param source 原要求讀取的資料來源。
+     * @param sessionId 原資料來源 session。
      * @return 仍可安全回覆原要求。
      */
-    private fun sameConnection(server: MinecraftServer, player: ServerPlayerEntity, sessionId: Uuid?): Boolean = server.playerManager.getPlayer(player.uuid) === player &&
-        (writer.isCurrentSession(sessionId) || sessionId == null && writer.currentSessionId == null)
+    private fun sameConnection(server: MinecraftServer, player: ServerPlayerEntity, source: HistoryDataSource, sessionId: Uuid?): Boolean = server.playerManager.getPlayer(player.uuid) === player &&
+        (source.writer.isCurrentSession(sessionId) || sessionId == null && source.writer.currentSessionId == null)
 
     /**
-     * 在回覆前取得仍可接續的場次。
+     * 在回覆前取得資料來源中仍可接續的場次。
      *
+     * @param source 原要求讀取的資料來源。
      * @return 必須排除的對局 ID。
      */
-    private suspend fun activeMatches(): Set<String> {
-        val snapshot = store.snapshot()
+    private suspend fun activeMatches(source: HistoryDataSource): Set<String> {
+        val snapshot = source.store.snapshot()
         return snapshot.games.values.mapTo(mutableSetOf()) { it.matchId.toString() } +
             snapshot.historyRecordingState.transfersByMatchId.keys.map { it.toString() }
     }

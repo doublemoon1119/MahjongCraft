@@ -132,9 +132,9 @@ internal object HistoryBrowseFilterValidation {
             errors[HistoryBrowseFilterField.FROM_DATE] = HistoryBrowseFilterError.REVERSED_RANGE
             errors[HistoryBrowseFilterField.THROUGH_DATE] = HistoryBrowseFilterError.REVERSED_RANGE
         }
-        val minimum = if (scope == HistoryQueryScopeDto.ALL) null else parseRank(input.ownRankMin, errors, HistoryBrowseFilterField.MIN_RANK)
-        val maximum = if (scope == HistoryQueryScopeDto.ALL) null else parseRank(input.ownRankMax, errors, HistoryBrowseFilterField.MAX_RANK)
-        if (scope != HistoryQueryScopeDto.ALL && minimum != null && maximum != null && minimum > maximum) {
+        val minimum = if (scope.coversAllMatches) null else parseRank(input.ownRankMin, errors, HistoryBrowseFilterField.MIN_RANK)
+        val maximum = if (scope.coversAllMatches) null else parseRank(input.ownRankMax, errors, HistoryBrowseFilterField.MAX_RANK)
+        if (!scope.coversAllMatches && minimum != null && maximum != null && minimum > maximum) {
             errors[HistoryBrowseFilterField.MIN_RANK] = HistoryBrowseFilterError.REVERSED_RANGE
             errors[HistoryBrowseFilterField.MAX_RANK] = HistoryBrowseFilterError.REVERSED_RANGE
         }

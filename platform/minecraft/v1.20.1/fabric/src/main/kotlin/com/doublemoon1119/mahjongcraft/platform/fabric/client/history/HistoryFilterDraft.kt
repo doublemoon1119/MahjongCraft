@@ -12,7 +12,7 @@ internal class HistoryFilterDraft {
 
     /** 將目前範圍套用到草稿，並保留所有原始文字。 */
     fun setScope(scope: HistoryQueryScopeDto) {
-        if (scope == HistoryQueryScopeDto.ALL) {
+        if (scope.coversAllMatches) {
             input = input.copy(ownRankMin = "", ownRankMax = "")
             errors = errors - HistoryBrowseFilterField.MIN_RANK - HistoryBrowseFilterField.MAX_RANK
         }

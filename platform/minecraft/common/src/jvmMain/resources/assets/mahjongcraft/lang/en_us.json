@@ -543,6 +543,7 @@
   "mahjongcraft.history_screen.scope": "Scope",
   "mahjongcraft.history_screen.scope.all": "All matches",
   "mahjongcraft.history_screen.scope.own": "My matches",
+  "mahjongcraft.history_screen.scope.stress_test": "Stress test",
   "mahjongcraft.history_screen.sort": "Sort",
   "mahjongcraft.history_screen.sort.duration": "Duration",
   "mahjongcraft.history_screen.sort.ended_at": "End time",

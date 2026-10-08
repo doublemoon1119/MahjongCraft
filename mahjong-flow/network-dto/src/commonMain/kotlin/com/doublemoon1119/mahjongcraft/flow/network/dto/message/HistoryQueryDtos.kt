@@ -13,6 +13,10 @@ enum class HistoryQueryScopeDto {
     /** 查詢伺服器允許公開的全部對局。 */
     @SerialName("all")
     ALL,
+
+    /** 查詢開發環境壓力測試資料庫中的全部對局；權限與查詢語意等同 [ALL]，只是讀取的資料來源不同。 */
+    @SerialName("stress_test")
+    STRESS_TEST,
 }
 
 /** 歷史清單的排序欄位。 */
@@ -285,6 +289,7 @@ data class HistoryMatchDetailDto(
  * @property nextCursor 下一頁 keyset cursor；null 表示沒有下一頁。
  * @property errorCode 安全的查詢錯誤代碼。
  * @property allowAll 是否允許查詢全部已保存歷史。
+ * @property allowStressTest 是否允許查詢壓力測試資料（[HistoryQueryScopeDto.STRESS_TEST]）。
  */
 @Serializable
 data class HistoryListResponseDto(
@@ -293,6 +298,7 @@ data class HistoryListResponseDto(
     val nextCursor: String?,
     val errorCode: HistoryQueryErrorCodeDto?,
     val allowAll: Boolean,
+    val allowStressTest: Boolean,
 )
 
 /** 單場歷史摘要查詢的 C2S 請求。
