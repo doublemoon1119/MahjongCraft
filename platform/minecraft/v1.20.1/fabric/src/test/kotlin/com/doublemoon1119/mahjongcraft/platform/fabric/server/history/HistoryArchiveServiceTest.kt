@@ -426,6 +426,41 @@ class HistoryArchiveServiceTest {
         assertEquals(1, fixture.service.archiveReady(fixture.database, AuthoritativeStateSnapshot(), scanAllPending = true))
     }
 
+    /** 資料庫已有終局紀錄、權威狀態已不再記錄序號的場次是已結束的場次，保留的事件不判為超出權威存檔。 */
+    @Test
+    fun `ended matches forgotten by the authoritative state are not orphans`() {
+        val fixture = ArchiveFixture("mahjongcraft-history-ended-orphan-")
+        fixture.database.appendPendingBatch(fixture.matchEvents().take(2).map(fixture::record))
+        fixture.database.recordTerminals(listOf(HistoryTerminalRecord(fixture.matchId.toString(), fixture.tableId.toString(), 300, completed = false)))
+
+        fixture.service.reconcile(fixture.database, HistoryRecordingState())
+
+        assertEquals(null, fixture.service.lastArchiveError)
+    }
+
+    /** 權威狀態沒有紀錄、資料庫也沒有終局紀錄時，資料庫的事件超出權威存檔。 */
+    @Test
+    fun `events of an unknown match without an ending are orphans`() {
+        val fixture = ArchiveFixture("mahjongcraft-history-unknown-orphan-")
+        fixture.database.appendPendingBatch(fixture.matchEvents().take(2).map(fixture::record))
+
+        fixture.service.reconcile(fixture.database, HistoryRecordingState())
+
+        assertEquals(ORPHAN_ERROR, fixture.service.lastArchiveError)
+    }
+
+    /** 權威狀態仍記錄序號且比資料庫小時（存檔回溯），即使資料庫有終局紀錄仍判為超出權威存檔。 */
+    @Test
+    fun `a rolled back save is an orphan even when the match ended later`() {
+        val fixture = ArchiveFixture("mahjongcraft-history-rollback-orphan-")
+        fixture.database.appendPendingBatch(fixture.matchEvents().map(fixture::record))
+        fixture.database.recordTerminals(listOf(HistoryTerminalRecord(fixture.matchId.toString(), fixture.tableId.toString(), 600, completed = true)))
+
+        fixture.service.reconcile(fixture.database, HistoryRecordingState(nextSequenceByMatchId = mapOf(fixture.matchId to 3L)))
+
+        assertEquals(ORPHAN_ERROR, fixture.service.lastArchiveError)
+    }
+
     /**
      * 一場可封存對局的資料庫與對帳服務。
      *
@@ -499,5 +534,10 @@ class HistoryArchiveServiceTest {
                 }
             }
         }
+    }
+
+    private companion object {
+        /** 資料庫事件超出權威存檔時的對帳錯誤摘要。 */
+        const val ORPHAN_ERROR = "History database contains events beyond the authoritative save"
     }
 }
