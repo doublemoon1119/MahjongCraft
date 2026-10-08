@@ -27,11 +27,12 @@ internal data class DecisionCard(
 /**
  * 操作介面的版面幾何。
  *
- * 卡片排成固定單列並在寬度不足時水平捲動；面板、觸發牌、倒數三者構成一個整體群組，群組的垂直位置由玩家
- * 在 HUD 編輯器調整的比例決定。
+ * 卡片排成固定單列並在寬度不足時水平捲動；面板與觸發牌構成一個整體群組，群組的垂直位置由玩家在 HUD 編輯器
+ * 調整的比例決定。倒數畫在面板標題列左側、與標題文字同一列（見 [headerTextTop]），與右側的跳過按鈕相對；卡片說明固定在面板外緣、對齊被指著的卡片，
+ * 不覆蓋任何卡片。
  *
- * 這個類別不依賴 `Screen` 或 `DrawContext`：畫面尺寸、玩家設定的位置比例，以及兩處需要實際量測的文字寬度
- * （面板標題與觸發文字換行結果）全部由呼叫端傳入。捲動量是每幀變動的輸入，因此由需要它的方法接收，不進
+ * 這個類別不依賴 `Screen` 或 `DrawContext`：畫面尺寸、玩家設定的位置比例，以及需要實際量測的文字寬度
+ * （面板標題、觸發文字換行結果與倒數）全部由呼叫端傳入。捲動量是每幀變動的輸入，因此由需要它的方法接收，不進
  * 建構子。
  *
  * @property screenWidth 目前 GUI scaled 畫面寬度。
@@ -42,6 +43,7 @@ internal data class DecisionCard(
  * @property triggerTextWidth 觸發文字最寬一行的像素寬度；沒有觸發文字時為 0。
  * @property hasTriggerTile 是否有觸發牌需要在主面板上方保留空間。
  * @property panelRatioY 玩家設定的操作群組垂直位置比例。
+ * @property timerWidth 標題列左側為倒數保留的寬度；呼叫端傳入本次決策出現過的最大倒數寬度，讓面板不隨秒數縮放。
  */
 internal data class DecisionCardLayout(
     val screenWidth: Int,
@@ -52,6 +54,7 @@ internal data class DecisionCardLayout(
     val triggerTextWidth: Int,
     val hasTriggerTile: Boolean,
     val panelRatioY: Double,
+    val timerWidth: Int,
 ) {
     /** 單一卡片的寬度；預覽牌不多時維持緊湊，牌多時優先橫向擴張到畫面允許的上限。 */
     fun cardWidth(card: DecisionCard): Int {
@@ -105,9 +108,13 @@ internal data class DecisionCardLayout(
     val panelWidth: Int
         get() {
             val cardsWidth = contentWidth + PANEL_PADDING * 2
-            val headerWidth = headerTextWidth + HEADER_SIDE_WIDTH * 2 + PANEL_PADDING * 2
+            val headerWidth = headerTextWidth + headerSideWidth * 2 + PANEL_PADDING * 2
             return maxOf(cardsWidth, headerWidth).coerceAtMost((screenWidth - SCREEN_MARGIN * 2).coerceAtLeast(1))
         }
+
+    /** 標題列兩側各自保留的寬度，左側放倒數、右側放跳過按鈕；標題置中於兩者之間。 */
+    val headerSideWidth: Int
+        get() = maxOf(HEADER_SIDE_WIDTH, timerWidth)
 
     /** 面板左界。 */
     val panelLeft: Int
@@ -125,9 +132,9 @@ internal data class DecisionCardLayout(
     val triggerAreaHeight: Int
         get() = if (hasTriggerTile) TRIGGER_PADDING * 2 + triggerTextHeight + PREVIEW_TILE_HEIGHT + PANEL_GAP else 0
 
-    /** 面板、觸發牌與倒數形成的完整群組高度。 */
+    /** 面板與觸發牌形成的完整群組高度。 */
     val groupHeight: Int
-        get() = triggerAreaHeight + panelHeight + TIMER_PANEL_GAP + TIMER_HEIGHT
+        get() = triggerAreaHeight + panelHeight
 
     /** 完整群組的上界。 */
     val groupTop: Int
@@ -168,9 +175,9 @@ internal data class DecisionCardLayout(
     val scrollbarTop: Int
         get() = cardBottom + SCROLLBAR_GAP
 
-    /** 倒數的上界。 */
-    val timerTop: Int
-        get() = panelBottom + TIMER_PANEL_GAP
+    /** 倒數的左界，位於標題列左側。 */
+    val timerLeft: Int
+        get() = panelLeft + PANEL_PADDING
 
     /** 跳過按鈕的版位。 */
     val skipButtonBounds: DecisionBounds
@@ -234,6 +241,23 @@ internal data class DecisionCardLayout(
     /** 依滾輪量計算新的捲動量。 */
     fun scrollFromWheel(currentScroll: Double, amount: Double): Double = scroll.scrollFromWheel(currentScroll, amount, SCROLL_STEP)
 
+    /**
+     * 卡片說明 tooltip 內容區的左上角，[width]、[height] 為內容區尺寸（不含 tooltip 外框）。
+     *
+     * 水平對齊 [card] 的中心，垂直放在面板上緣外側；上方放不下時改放面板下緣外側。兩個方向都會限制在畫面內，
+     * 因此說明不會覆蓋卡片列。
+     */
+    fun descriptionTooltipPosition(card: DecisionBounds, width: Int, height: Int): DecisionBounds {
+        val above = panelTop - TOOLTIP_GAP - TOOLTIP_FRAME - height
+        val y = if (above - TOOLTIP_FRAME >= 0) above else panelBottom + TOOLTIP_GAP + TOOLTIP_FRAME
+        return DecisionBounds(
+            x = (card.x + card.width / 2 - width / 2).coerceIn(TOOLTIP_FRAME, (screenWidth - TOOLTIP_FRAME - width).coerceAtLeast(TOOLTIP_FRAME)),
+            y = y.coerceIn(TOOLTIP_FRAME, (screenHeight - TOOLTIP_FRAME - height).coerceAtLeast(TOOLTIP_FRAME)),
+            width = width,
+            height = height,
+        )
+    }
+
     /** 觸發牌面板的版位；高度只由觸發文字行數決定。 */
     val triggerPanelBounds: DecisionBounds
         get() {
@@ -281,11 +305,18 @@ internal data class DecisionCardLayout(
         const val PANEL_GAP = 5
         const val SCREEN_MARGIN = 8
         const val TEXT_LINE_HEIGHT = 10
-        const val TIMER_PANEL_GAP = 5
-        const val TIMER_HEIGHT = 14
         const val SCROLLBAR_GAP = 4
         const val SCROLLBAR_HEIGHT = 4
         const val MIN_SCROLLBAR_THUMB_WIDTH = 18
+
+        /** 卡片說明換行前的最大寬度。 */
+        const val TOOLTIP_MAX_WIDTH = 200
+
+        /** 原版 tooltip 外框超出內容區的距離。 */
+        const val TOOLTIP_FRAME = 4
+
+        /** 卡片說明 tooltip 外框與面板之間的間距。 */
+        const val TOOLTIP_GAP = 2
 
         /** 滾輪一格捲動的距離。 */
         const val SCROLL_STEP = 48.0

@@ -7,9 +7,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisio
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSelectionKindDto
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.screen.Screen
-import net.minecraft.client.gui.tooltip.Tooltip
+import net.minecraft.client.gui.tooltip.TooltipPositioner
 import net.minecraft.client.gui.widget.ButtonWidget
 import net.minecraft.text.Text
+import org.joml.Vector2i
 
 /**
  * 透明且不暫停遊戲的權威操作選擇介面。
@@ -44,6 +45,9 @@ internal class PlayerDecisionScreen(
     /** 是否正在拖曳 scrollbar thumb。 */
     private var draggingScrollbar = false
 
+    /** 本次決策出現過的最大倒數寬度；只增不減，讓標題列與面板寬度不隨秒數位數變化。 */
+    private var reservedTimerWidth = 0
+
     /** 開始拖曳時的游標與捲動位置。 */
     private var scrollbarDragStartX = 0.0
     private var scrollbarDragStartScroll = 0.0
@@ -54,6 +58,7 @@ internal class PlayerDecisionScreen(
     /** 建立固定單列、可水平捲動的半透明選項卡。 */
     override fun init() {
         visibleEntries = decisionEntriesFrom(controller.decisionTexts, prompt)
+        reservedTimerWidth = maxOf(reservedTimerWidth, controller.timerOverlayWidth(HEADER_TIMER_SCALE) ?: 0)
         val layout = layout()
         horizontalScroll = if (horizontalScrollInitialized) {
             horizontalScroll.coerceIn(0.0, layout.maximumScroll)
@@ -66,7 +71,6 @@ internal class PlayerDecisionScreen(
             val bounds = layout.cardButtonBounds(placements[index])
             ButtonWidget.builder(entry.label) { onEntryClicked(entry) }
                 .dimensions(bounds.x, bounds.y, bounds.width, bounds.height)
-                .tooltip(entry.description?.let(Tooltip::of))
                 .build()
         }
         skipButton = if (prompt.preparation == null) {
@@ -183,6 +187,7 @@ internal class PlayerDecisionScreen(
 
     /** 繪製觸發牌、完整副露預覽與半透明深色選項面板。 */
     override fun render(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
+        reservedTimerWidth = maxOf(reservedTimerWidth, controller.timerOverlayWidth(HEADER_TIMER_SCALE) ?: 0)
         val layout = layout()
         context.fill(layout.panelLeft, layout.panelTop, layout.panelRight, layout.panelBottom, PANEL_BACKGROUND)
         context.drawCenteredTextWithShadow(
@@ -203,7 +208,37 @@ internal class PlayerDecisionScreen(
         context.disableScissor()
         skipButton?.render(context, mouseX, mouseY, delta)
         if (layout.hasOverflow) renderScrollbar(context, layout)
-        controller.renderTimerOverlay(context, layout.timerTop)
+        controller.timerOverlayWidth(HEADER_TIMER_SCALE)?.let { timerWidth ->
+            controller.renderTimerOverlay(
+                context = context,
+                y = layout.headerTextTop(textRenderer.fontHeight),
+                centerX = layout.timerLeft + timerWidth / 2,
+                scale = HEADER_TIMER_SCALE,
+            )
+        }
+        renderDescriptionTooltip(context, layout, placements, mouseX, mouseY)
+    }
+
+    /** 游標停在有說明的卡片上時，在面板外緣對齊該卡片顯示說明，不覆蓋卡片列。 */
+    private fun renderDescriptionTooltip(
+        context: DrawContext,
+        layout: DecisionCardLayout,
+        placements: List<DecisionBounds>,
+        mouseX: Int,
+        mouseY: Int,
+    ) {
+        if (mouseX !in layout.viewportLeft until layout.viewportRight) return
+        val index = placements.indexOfFirst { placement ->
+            mouseX in placement.x until placement.x + placement.width && mouseY in placement.y until placement.y + placement.height
+        }
+        if (index < 0) return
+        val description = visibleEntries[index].description ?: return
+        val card = placements[index]
+        val positioner = TooltipPositioner { _, _, _, _, width, height ->
+            val position = layout.descriptionTooltipPosition(card, width, height)
+            Vector2i(position.x, position.y)
+        }
+        context.drawTooltip(textRenderer, textRenderer.wrapLines(description, DecisionCardLayout.TOOLTIP_MAX_WIDTH), positioner, mouseX, mouseY)
     }
 
     /** 繪製單一卡片的背景、預覽牌與鳴牌指標。 */
@@ -278,6 +313,7 @@ internal class PlayerDecisionScreen(
             triggerTextWidth = lines.maxOfOrNull(textRenderer::getWidth) ?: 0,
             hasTriggerTile = !prompt.triggerTileAssetKey.isNullOrEmpty(),
             panelRatioY = controller.hudLayout().decisionPanelY,
+            timerWidth = reservedTimerWidth,
         )
     }
 
@@ -323,6 +359,8 @@ internal class PlayerDecisionScreen(
     }
 
     private companion object {
+        /** 標題列內的倒數與標題同尺寸，並與標題文字上緣對齊。 */
+        const val HEADER_TIMER_SCALE = 1f
         const val PANEL_BACKGROUND = 0xCC101820.toInt()
         const val HEADER_TEXT_COLOR = 0xFFD54F
         const val CARD_BACKGROUND = 0xCC2A3844.toInt()

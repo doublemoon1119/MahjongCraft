@@ -186,7 +186,15 @@ class DecisionCardLayoutTest {
         val layout = layout(cardCount = 3, hasTriggerTile = true, triggerLineCount = 2, triggerTextWidth = 80, panelRatioY = 1.0)
 
         assertTrue(layout.groupTop >= 0)
-        assertTrue(layout.timerTop + DecisionCardLayout.TIMER_HEIGHT <= layout.screenHeight)
+        assertEquals(layout.screenHeight, layout.panelBottom)
+    }
+
+    /** 群組只包含觸發區與主面板；倒數畫在標題列內，不另外佔用高度。 */
+    @Test
+    fun `sizes the group from the trigger area and the panel only`() {
+        val layout = layout(cardCount = 2, hasTriggerTile = true, triggerLineCount = 1, triggerTextWidth = 80)
+
+        assertEquals(layout.triggerAreaHeight + layout.panelHeight, layout.groupHeight)
     }
 
     /** 位置比例 0 讓群組貼齊畫面上緣。 */
@@ -345,12 +353,63 @@ class DecisionCardLayoutTest {
         assertEquals(layout.panelTop + DecisionCardLayout.PANEL_PADDING, skip.y)
     }
 
-    /** 倒數接在面板下方。 */
+    /** 倒數貼齊面板標題列左側。 */
     @Test
-    fun `puts the timer below the panel`() {
+    fun `puts the timer at the left of the header`() {
         val layout = layout(cardCount = 2, previewTileCount = 0)
 
-        assertEquals(layout.panelBottom + DecisionCardLayout.TIMER_PANEL_GAP, layout.timerTop)
+        assertEquals(layout.panelLeft + DecisionCardLayout.PANEL_PADDING, layout.timerLeft)
+    }
+
+    /** 倒數比預設側邊寬度更寬時，標題列兩側一起加寬，面板跟著容納。 */
+    @Test
+    fun `widens both header sides to fit a wide timer`() {
+        val narrow = layout(cardCount = 1, previewTileCount = 0, headerTextWidth = 200)
+        val wide = layout(cardCount = 1, previewTileCount = 0, headerTextWidth = 200, timerWidth = DecisionCardLayout.HEADER_SIDE_WIDTH + 20)
+
+        assertEquals(DecisionCardLayout.HEADER_SIDE_WIDTH, narrow.headerSideWidth)
+        assertEquals(DecisionCardLayout.HEADER_SIDE_WIDTH + 20, wide.headerSideWidth)
+        assertEquals(narrow.panelWidth + 40, wide.panelWidth)
+    }
+
+    /** 卡片說明放在面板上緣外側，水平對齊卡片中心。 */
+    @Test
+    fun `places the description above the panel aligned to the card`() {
+        val layout = layout(cardCount = 3, previewTileCount = 0, panelRatioY = 1.0)
+        val card = layout.cardPlacements(scroll = 0.0)[1]
+
+        val position = layout.descriptionTooltipPosition(card, width = 120, height = 20)
+
+        assertEquals(card.x + card.width / 2 - 60, position.x)
+        assertEquals(
+            layout.panelTop - DecisionCardLayout.TOOLTIP_GAP - DecisionCardLayout.TOOLTIP_FRAME - 20,
+            position.y,
+        )
+    }
+
+    /** 面板上方放不下說明時，改放在面板下緣外側。 */
+    @Test
+    fun `places the description below the panel when the space above is too small`() {
+        val layout = layout(cardCount = 3, previewTileCount = 0, panelRatioY = 0.0)
+        val card = layout.cardPlacements(scroll = 0.0).first()
+
+        val position = layout.descriptionTooltipPosition(card, width = 120, height = 20)
+
+        assertEquals(layout.panelBottom + DecisionCardLayout.TOOLTIP_GAP + DecisionCardLayout.TOOLTIP_FRAME, position.y)
+    }
+
+    /** 靠近畫面邊緣的卡片，說明往內收，外框不超出畫面。 */
+    @Test
+    fun `keeps the description inside the screen horizontally`() {
+        val layout = layout(cardCount = 12, previewTileCount = 0, screenWidth = 400, panelRatioY = 1.0)
+        val first = layout.cardPlacements(scroll = 0.0).first()
+        val last = layout.cardPlacements(scroll = layout.maximumScroll).last()
+
+        assertEquals(DecisionCardLayout.TOOLTIP_FRAME, layout.descriptionTooltipPosition(first, width = 200, height = 20).x)
+        assertEquals(
+            400 - DecisionCardLayout.TOOLTIP_FRAME - 200,
+            layout.descriptionTooltipPosition(last.copy(x = 390), width = 200, height = 20).x,
+        )
     }
 
     /** 觸發文字的換行寬度至少為 1，即使畫面極窄。 */
@@ -370,6 +429,7 @@ class DecisionCardLayoutTest {
         triggerTextWidth: Int = 0,
         hasTriggerTile: Boolean = false,
         panelRatioY: Double = 0.5,
+        timerWidth: Int = 0,
     ) = DecisionCardLayout(
         screenWidth = screenWidth,
         screenHeight = screenHeight,
@@ -379,5 +439,6 @@ class DecisionCardLayoutTest {
         triggerTextWidth = triggerTextWidth,
         hasTriggerTile = hasTriggerTile,
         panelRatioY = panelRatioY,
+        timerWidth = timerWidth,
     )
 }

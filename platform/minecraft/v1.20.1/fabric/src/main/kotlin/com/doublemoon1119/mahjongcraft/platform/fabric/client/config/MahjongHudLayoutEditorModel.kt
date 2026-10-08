@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.config
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.DecisionCard
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.DecisionCardLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
 import kotlin.math.abs
 import kotlin.math.roundToInt
@@ -56,35 +58,54 @@ internal enum class HudPreviewVisibility(val translationKey: String) {
 /**
  * 操作面板可切換的代表性動態尺寸情境。
  *
+ * 預覽尺寸由實際操作面板的版面（[DecisionCardLayout]）依代表性卡片計算，因此編輯器中的位置與遊戲中面板的位置一致。
+ * 每個情境都有一行觸發文字與觸發牌。
+ *
  * @property translationKey 情境名稱翻譯鍵。
- * @property width 預覽寬度。
- * @property height 預覽高度。
+ * @property cards 情境中由左至右的代表性卡片。
  */
 internal enum class HudPreviewScenario(
     val translationKey: String,
-    val width: Int,
-    val height: Int,
+    val cards: List<DecisionCard>,
 ) {
-    /** 一般鳴牌。 */
+    /** 一般鳴牌：碰與兩種吃，每張卡片三張預覽牌並標示鳴到的牌。 */
     CALL(
         translationKey = MinecraftClientConfigScreenKeys.HUD_LAYOUT_SCENARIO_CALL,
-        width = 300,
-        height = 104,
+        cards = List(3) { DecisionCard(previewTileCount = 3, hasClaimedTileMarker = true) },
     ),
 
-    /** 立直宣告。 */
+    /** 立直宣告：立直、暗槓與自摸。 */
     RIICHI(
         translationKey = MinecraftClientConfigScreenKeys.HUD_LAYOUT_SCENARIO_RIICHI,
-        width = 380,
-        height = 112,
+        cards = listOf(
+            DecisionCard(previewTileCount = 0, hasClaimedTileMarker = false),
+            DecisionCard(previewTileCount = 4, hasClaimedTileMarker = false),
+            DecisionCard(previewTileCount = 0, hasClaimedTileMarker = false),
+        ),
     ),
 
-    /** 九種九牌等長牌列操作。 */
+    /** 九種九牌等長牌列操作：一張列出九張么九牌的卡片與立直。 */
     ABORTIVE_DRAW(
         translationKey = MinecraftClientConfigScreenKeys.HUD_LAYOUT_SCENARIO_ABORTIVE_DRAW,
-        width = 440,
-        height = 124,
+        cards = listOf(
+            DecisionCard(previewTileCount = 9, hasClaimedTileMarker = false),
+            DecisionCard(previewTileCount = 0, hasClaimedTileMarker = false),
+        ),
     ),
+    ;
+
+    /** 這個情境在 [screenWidth] × [screenHeight] 畫面上的操作面板版面；不含標題文字寬度與倒數寬度。 */
+    fun layout(screenWidth: Int, screenHeight: Int): DecisionCardLayout = DecisionCardLayout(
+        screenWidth = screenWidth,
+        screenHeight = screenHeight,
+        cards = cards,
+        headerTextWidth = 0,
+        triggerLineCount = 1,
+        triggerTextWidth = 0,
+        hasTriggerTile = true,
+        panelRatioY = 0.0,
+        timerWidth = 0,
+    )
 }
 
 /**
@@ -147,7 +168,7 @@ internal data class MahjongHudLayoutEditorModel(
         screenHeight: Int,
     ): MahjongHudPreviewSize {
         val (preferredWidth, preferredHeight) = when (element) {
-            HudElement.DECISION -> scenario.width to scenario.height
+            HudElement.DECISION -> scenario.layout(screenWidth, screenHeight).let { it.panelWidth to it.groupHeight }
             HudElement.COMPACT -> COMPACT_PREVIEW_WIDTH to COMPACT_PREVIEW_HEIGHT
             HudElement.ANALYSIS -> ANALYSIS_PREVIEW_WIDTH to ANALYSIS_PREVIEW_HEIGHT
             HudElement.AUTOMATIC_CONTROL -> {

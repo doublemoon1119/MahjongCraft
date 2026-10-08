@@ -218,8 +218,9 @@ class MahjongHudLayoutEditorModelTest {
     /** 換成更大的預覽情境後，原本合法的位置仍必須被重新限制在畫面內。 */
     @Test
     fun `switching to a larger scenario re-clamps the panel inside the screen`() {
-        val narrowScreenWidth = HudPreviewScenario.CALL.width + 40
-        val narrowScreenHeight = HudPreviewScenario.CALL.height + 40
+        val callLayout = HudPreviewScenario.CALL.layout(SCREEN_WIDTH, SCREEN_HEIGHT)
+        val narrowScreenWidth = callLayout.panelWidth + 40
+        val narrowScreenHeight = callLayout.groupHeight + 40
         val atBottom = model()
             .beginDrag(
                 element = HudElement.DECISION,
@@ -246,6 +247,22 @@ class MahjongHudLayoutEditorModelTest {
             assertTrue(bounds.top >= 0, "$scenario top ${bounds.top} escaped the screen")
             assertTrue(bounds.right <= narrowScreenWidth, "$scenario right ${bounds.right} escaped the screen")
             assertTrue(bounds.bottom <= narrowScreenHeight, "$scenario bottom ${bounds.bottom} escaped the screen")
+        }
+    }
+
+    /** 操作面板的預覽框與實際操作面板在同一畫面上的寬度與群組高度一致。 */
+    @Test
+    fun `decision preview matches the real panel size`() {
+        HudPreviewScenario.entries.forEach { scenario ->
+            val size = model().selectScenario(scenario).previewSize(
+                element = HudElement.DECISION,
+                screenWidth = SCREEN_WIDTH,
+                screenHeight = SCREEN_HEIGHT,
+            )
+            val layout = scenario.layout(SCREEN_WIDTH, SCREEN_HEIGHT)
+
+            assertEquals(layout.panelWidth, size.width, "$scenario width")
+            assertEquals(layout.groupHeight, size.height, "$scenario height")
         }
     }
 

@@ -400,29 +400,50 @@ class PlayerDecisionHudController(
     /** 玩家已明確進入實體牌選擇階段時，不再顯示「重新開啟操作介面」提醒。 */
     private fun isPhysicalSelectionActive(prompt: PlayerDecisionPromptDto): Boolean = tileSelection.isPhysicalSelectionActive(prompt.decisionKey, promptStore.isTileSelectionActive())
 
-    /** 在一般 HUD 或操作畫面的最上層繪製同一份權威倒數，避免被 Screen 背景遮住。 */
-    fun renderTimerOverlay(context: DrawContext, y: Int, centerX: Int = context.scaledWindowWidth / 2) {
-        val reading = timerDisplay.reading() ?: return
-        renderDecisionTimer(
-            context,
-            ceil(reading.baseRemainingMillis / 1_000.0).toInt(),
-            ceil(reading.reserveRemainingMillis / 1_000.0).toInt(),
-            y,
-            centerX,
-        )
+    /**
+     * 在一般 HUD 或操作畫面的最上層繪製同一份權威倒數，避免被 Screen 背景遮住。
+     *
+     * @param scale 文字縮放；單獨顯示的精簡倒數放大以便辨識，操作面板標題列內與標題同尺寸。
+     */
+    fun renderTimerOverlay(
+        context: DrawContext,
+        y: Int,
+        centerX: Int = context.scaledWindowWidth / 2,
+        scale: Float = TIMER_SCALE,
+    ) {
+        val parts = currentTimerParts() ?: return
+        val renderer = MinecraftClient.getInstance().textRenderer
+        val width = parts.sumOf { renderer.getWidth(it.first) }
+        context.matrices.push()
+        context.matrices.scale(scale, scale, 1f)
+        var x = centerX / scale - width / 2f
+        parts.forEach { (text, color) ->
+            context.drawTextWithShadow(renderer, text, x.toInt(), (y / scale).toInt(), color)
+            x += renderer.getWidth(text)
+        }
+        context.matrices.pop()
     }
 
-    /** 將基本時間、加號與較低對比的保留時間分段放大並靠右下排列。 */
-    private fun renderDecisionTimer(
-        context: DrawContext,
-        baseSeconds: Int,
-        reserveSeconds: Int,
-        y: Int,
-        centerX: Int,
-    ) {
+    /** 目前倒數以 [scale] 縮放後的畫面寬度；沒有有效計時時為 null。 */
+    fun timerOverlayWidth(scale: Float = TIMER_SCALE): Int? {
+        val parts = currentTimerParts() ?: return null
         val renderer = MinecraftClient.getInstance().textRenderer
+        return ceil(parts.sumOf { renderer.getWidth(it.first) } * scale).toInt()
+    }
+
+    /** 目前倒數的文字片段與顏色；沒有有效計時或兩段時間都已用完時為 null。 */
+    private fun currentTimerParts(): List<Pair<String, Int>>? {
+        val reading = timerDisplay.reading() ?: return null
+        return decisionTimerParts(
+            baseSeconds = ceil(reading.baseRemainingMillis / 1_000.0).toInt(),
+            reserveSeconds = ceil(reading.reserveRemainingMillis / 1_000.0).toInt(),
+        ).ifEmpty { null }
+    }
+
+    /** 基本時間、加號與較低對比的保留時間；保留時間開始消耗後依剩餘秒數轉為橘色與紅色。 */
+    private fun decisionTimerParts(baseSeconds: Int, reserveSeconds: Int): List<Pair<String, Int>> {
         val consumingReserve = baseSeconds <= 0 && reserveSeconds > 0
-        val parts = buildList {
+        return buildList {
             if (baseSeconds > 0) add(baseSeconds.toString() to 0xFFD54F)
             if (baseSeconds > 0 && reserveSeconds > 0) add(" + " to 0x888888)
             if (reserveSeconds > 0) {
@@ -434,16 +455,6 @@ class PlayerDecisionHudController(
                 add(reserveSeconds.toString() to reserveColor)
             }
         }
-        if (parts.isEmpty()) return
-        val width = parts.sumOf { renderer.getWidth(it.first) }
-        context.matrices.push()
-        context.matrices.scale(TIMER_SCALE, TIMER_SCALE, 1f)
-        var x = centerX / TIMER_SCALE - width / 2f
-        parts.forEach { (text, color) ->
-            context.drawTextWithShadow(renderer, text, x.toInt(), (y / TIMER_SCALE).toInt(), color)
-            x += renderer.getWidth(text)
-        }
-        context.matrices.pop()
     }
 
     /**
