@@ -14,8 +14,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-/** [KanDeclarationApplier] 對規則補牌結果的通用邊界測試。 */
-class KanDeclarationApplierTest {
+/** [SelfDeclarationApplier] 對規則補牌結果的通用邊界測試。 */
+class SelfDeclarationApplierTest {
     /** 測試補牌套用流程使用的內建日麻規則模組。 */
     private val module = RiichiRuleModule("mahjongcraft:riichi", RiichiRuleConfig())
 
@@ -36,8 +36,8 @@ class KanDeclarationApplierTest {
             dynamicRuleState = state.dynamicRuleState,
         )
 
-        val result = assertIs<KanDeclarationApplier.Result.Applied>(
-            KanDeclarationApplier.applyCompletedDecision(
+        val result = assertIs<SelfDeclarationApplier.Result.Applied>(
+            SelfDeclarationApplier.applyCompletedDecision(
                 state,
                 state,
                 state.currentPlayer.id,
@@ -69,8 +69,8 @@ class KanDeclarationApplierTest {
             dynamicRuleState = state.dynamicRuleState,
         )
 
-        val result = assertIs<KanDeclarationApplier.Result.Rejected>(
-            KanDeclarationApplier.applyCompletedDecision(
+        val result = assertIs<SelfDeclarationApplier.Result.Rejected>(
+            SelfDeclarationApplier.applyCompletedDecision(
                 state,
                 state,
                 state.currentPlayer.id,
@@ -105,8 +105,8 @@ class KanDeclarationApplierTest {
         )
         val action = GameAction.Kan(GameAction.KanType.CLOSED_KAN, reservedTiles.first().id, emptyList())
 
-        val result = assertIs<KanDeclarationApplier.Result.Applied>(
-            KanDeclarationApplier.applyCompletedDecision(
+        val result = assertIs<SelfDeclarationApplier.Result.Applied>(
+            SelfDeclarationApplier.applyCompletedDecision(
                 beforeState,
                 beforeState,
                 beforeState.currentPlayer.id,

@@ -17,7 +17,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareTsumoUseC
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DiscardTileUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DrawTileUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToDiscardUseCase
-import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToKanUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToRobbingUseCase
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
@@ -31,8 +31,8 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
-import com.doublemoon1119.mahjongcraft.logic.table.PendingKanReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
+import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
@@ -129,7 +129,7 @@ class GameActionRouterTest {
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
                 postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
             ),
-            respondToKanUseCase = RespondToKanUseCase(
+            respondToRobbingUseCase = RespondToRobbingUseCase(
                 gameRepo,
                 moduleRegistry,
                 snapshotSynchronizer,
@@ -337,13 +337,13 @@ class GameActionRouterTest {
             initialDeadWall = initialDeadWall,
             currentPlayerIndex = 0,
             dynamicRuleState = RiichiDynamicState(),
-            pendingKanReaction = PendingKanReaction(declarerId, kanAction, robbedWhiteTile, setOf(robberId)),
+            pendingRobbingReaction = PendingRobbingReaction(declarerId, kanAction, robbedWhiteTile, setOf(robberId)),
         )
     }
 
     /**
      * 驗證 [GameCommand.RespondToDiscard] 路由到 [RespondToDiscardUseCase]：對只開了
-     * `pendingReaction`（未開 `pendingKanReaction`）的桌況送出，應成功結算（全員過牌 → 反應視窗清除）。
+     * `pendingReaction`（未開 `pendingRobbingReaction`）的桌況送出，應成功結算（全員過牌 → 反應視窗清除）。
      */
     @Test
     fun `test respond to discard command routes to RespondToDiscardUseCase and succeeds`() = runTest {
@@ -359,8 +359,8 @@ class GameActionRouterTest {
     }
 
     /**
-     * 驗證 [GameCommand.RespondToKan] 不會被誤路由到 [RespondToDiscardUseCase]：對只開了
-     * `pendingReaction` 的桌況送出 [GameCommand.RespondToKan]，因為 `pendingKanReaction == null`
+     * 驗證 [GameCommand.RespondToRobbing] 不會被誤路由到 [RespondToDiscardUseCase]：對只開了
+     * `pendingReaction` 的桌況送出 [GameCommand.RespondToRobbing]，因為 `pendingRobbingReaction == null`
      * 應失敗。
      */
     @Test
@@ -370,33 +370,33 @@ class GameActionRouterTest {
         val respondentId = Uuid.random()
         fixtures.gameRepo.setTableState(discardReactionTable(discarderId, respondentId))
 
-        val result = fixtures.router(gameId, respondentId, GameCommand.RespondToKan(GameAction.Pass))
+        val result = fixtures.router(gameId, respondentId, GameCommand.RespondToRobbing(GameAction.Pass))
 
         assertTrue(result is Outcome.Error)
         assertEquals(GameError.IllegalAction(respondentId, gameId, GameAction.Pass), result.error)
     }
 
     /**
-     * 驗證 [GameCommand.RespondToKan] 路由到 [RespondToKanUseCase]：對只開了
-     * `pendingKanReaction` 的桌況送出，應成功結算（全員過牌 → 補做套用副露與嶺上摸牌）。
+     * 驗證 [GameCommand.RespondToRobbing] 路由到 [RespondToRobbingUseCase]：對只開了
+     * `pendingRobbingReaction` 的桌況送出，應成功結算（全員過牌 → 補做套用副露與嶺上摸牌）。
      */
     @Test
-    fun `test respond to chankan command routes to RespondToKanUseCase and succeeds`() = runTest {
+    fun `test respond to chankan command routes to RespondToRobbingUseCase and succeeds`() = runTest {
         val fixtures = Fixtures()
         val declarerId = Uuid.random()
         val robberId = Uuid.random()
         val rinshanTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
         fixtures.gameRepo.setTableState(chankanTable(declarerId, robberId, listOf(rinshanTile)))
 
-        val result = fixtures.router(gameId, robberId, GameCommand.RespondToKan(GameAction.Pass))
+        val result = fixtures.router(gameId, robberId, GameCommand.RespondToRobbing(GameAction.Pass))
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
-        assertNull(fixtures.gameRepo.getTableState(gameId)!!.pendingKanReaction)
+        assertNull(fixtures.gameRepo.getTableState(gameId)!!.pendingRobbingReaction)
     }
 
     /**
-     * 驗證 [GameCommand.RespondToDiscard] 不會被誤路由到 [RespondToKanUseCase]：對只開了
-     * `pendingKanReaction` 的桌況送出 [GameCommand.RespondToDiscard]，因為 `pendingReaction == null`
+     * 驗證 [GameCommand.RespondToDiscard] 不會被誤路由到 [RespondToRobbingUseCase]：對只開了
+     * `pendingRobbingReaction` 的桌況送出 [GameCommand.RespondToDiscard]，因為 `pendingReaction == null`
      * 應失敗。
      */
     @Test

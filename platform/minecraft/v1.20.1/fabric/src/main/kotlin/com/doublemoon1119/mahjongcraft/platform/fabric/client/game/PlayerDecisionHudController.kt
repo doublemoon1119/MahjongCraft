@@ -560,4 +560,4 @@ internal fun PlayerDecisionPromptDto.discardAnalysesForAction(actionToken: Strin
 
 /** 只有他家捨牌與搶槓視窗的跳過會提交正式 Pass。 */
 private val PlayerDecisionPhase.isReaction: Boolean
-    get() = this == PlayerDecisionPhase.DISCARD_REACTION || this == PlayerDecisionPhase.KAN_REACTION
+    get() = this == PlayerDecisionPhase.DISCARD_REACTION || this == PlayerDecisionPhase.ROBBING_REACTION

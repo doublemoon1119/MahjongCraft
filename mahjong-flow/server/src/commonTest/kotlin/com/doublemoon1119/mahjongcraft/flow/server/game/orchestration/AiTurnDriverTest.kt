@@ -15,8 +15,8 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
-import com.doublemoon1119.mahjongcraft.logic.table.PendingKanReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
+import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
@@ -76,11 +76,11 @@ class AiTurnDriverTest {
 
     /**
      * 驗證搶槓反應視窗裡有資格且尚未回應的 AI 時，回傳該 AI 與策略決定的
-     * [GameCommand.RespondToKan]，且傳給策略的情境為 [AiDecisionPhase.RespondingToKan]。
+     * [GameCommand.RespondToRobbing]，且傳給策略的情境為 [AiDecisionPhase.RespondingToRobbing]。
      */
     @Test
     fun `test pending chankan with eligible ai returns respond to chankan`() = runTest {
-        val fixtures = Fixtures(strategyCommand = GameCommand.RespondToKan(GameAction.Pass))
+        val fixtures = Fixtures(strategyCommand = GameCommand.RespondToRobbing(GameAction.Pass))
         val declarerId = Uuid.random()
         val aiId = Uuid.random()
         val robbedTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
@@ -101,14 +101,14 @@ class AiTurnDriverTest {
             players = listOf(declarer, ai),
             config = RiichiRuleConfig(),
             currentPlayerIndex = 0,
-            pendingKanReaction = PendingKanReaction(declarerId, kanAction, robbedTile, setOf(aiId)),
+            pendingRobbingReaction = PendingRobbingReaction(declarerId, kanAction, robbedTile, setOf(aiId)),
         )
         fixtures.gameRepo.setTableState(table, mapOf(aiId to strategyKey))
 
         val result = fixtures.driver.resolveNextAction(gameId)
 
-        assertEquals(aiId to GameCommand.RespondToKan(GameAction.Pass), result)
-        assertEquals(AiDecisionPhase.RespondingToKan, fixtures.strategy.lastContext?.phase)
+        assertEquals(aiId to GameCommand.RespondToRobbing(GameAction.Pass), result)
+        assertEquals(AiDecisionPhase.RespondingToRobbing, fixtures.strategy.lastContext?.phase)
         assertEquals(aiId, fixtures.strategy.lastContext?.selfId)
         val snapshot = assertNotNull(fixtures.strategy.lastContext?.snapshot)
         assertNotNull(snapshot.players.single { it.id == aiId }.hand.standingTiles.single().tile)
@@ -132,7 +132,7 @@ class AiTurnDriverTest {
             players = listOf(declarer, human),
             config = RiichiRuleConfig(),
             currentPlayerIndex = 0,
-            pendingKanReaction = PendingKanReaction(declarerId, kanAction, robbedTile, setOf(humanId)),
+            pendingRobbingReaction = PendingRobbingReaction(declarerId, kanAction, robbedTile, setOf(humanId)),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -159,7 +159,7 @@ class AiTurnDriverTest {
             players = listOf(declarer, ai),
             config = RiichiRuleConfig(),
             currentPlayerIndex = 0,
-            pendingKanReaction = PendingKanReaction(
+            pendingRobbingReaction = PendingRobbingReaction(
                 declarerId,
                 kanAction,
                 robbedTile,

@@ -64,7 +64,7 @@ class PlayerDecisionPromptFactory(
                 when (phase) {
                     PlayerDecisionPhase.OWN_TURN -> player.hand.lastDrawn?.id ?: player.actionHistory.lastOrNull()?.hashCode()
                     PlayerDecisionPhase.DISCARD_REACTION -> state.pendingReaction?.tileId
-                    PlayerDecisionPhase.KAN_REACTION -> state.pendingKanReaction?.robbedTile?.id
+                    PlayerDecisionPhase.ROBBING_REACTION -> state.pendingRobbingReaction?.robbedTile?.id
                     PlayerDecisionPhase.ROUND_PREPARATION -> game.pendingRoundPreparation?.stepIndex
                 },
             ),
@@ -180,7 +180,7 @@ private data class ActionTilePreview(
  * 發生，視為沒有觸發者。
  */
 private fun TableState.triggerContext(playerId: Uuid): TriggerContext? {
-    val sourceId = pendingReaction?.discarderId ?: pendingKanReaction?.declarerId ?: return null
+    val sourceId = pendingReaction?.discarderId ?: pendingRobbingReaction?.declarerId ?: return null
     val relation = when (relativeDirectionOf(playerId, sourceId)) {
         RelativeDirection.Left -> DecisionPlayerRelationDto.LEFT
         RelativeDirection.Across -> DecisionPlayerRelationDto.ACROSS
@@ -190,7 +190,7 @@ private fun TableState.triggerContext(playerId: Uuid): TriggerContext? {
     return TriggerContext(
         playerId = sourceId,
         relation = relation,
-        actionId = pendingKanReaction?.kanAction?.vocabularyActionId() ?: BuiltInGameActionIds.DISCARD,
+        actionId = pendingRobbingReaction?.kanAction?.vocabularyActionId() ?: BuiltInGameActionIds.DISCARD,
     )
 }
 

@@ -21,7 +21,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.Wind
  * @property finishedPlayerSeats 已完成玩家座位。
  * @property dynamicRuleState 規則公開資訊。
  * @property hasPendingReaction 是否仍有待處理的捨牌反應，不包含可執行命令。
- * @property hasPendingKanReaction 是否仍有待處理的槓牌反應，不包含可執行命令。
+ * @property hasPendingRobbingReaction 是否仍有待處理的槓牌反應，不包含可執行命令。
  * @property outcome 結算結果。
  */
 data class HistoryRoundState(
@@ -40,7 +40,7 @@ data class HistoryRoundState(
     val finishedPlayerSeats: Set<Int>,
     val dynamicRuleState: HistoryReplayRuleInformation?,
     val hasPendingReaction: Boolean,
-    val hasPendingKanReaction: Boolean,
+    val hasPendingRobbingReaction: Boolean,
     val outcome: HistoryRoundOutcome?,
 )
 

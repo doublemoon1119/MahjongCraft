@@ -73,7 +73,7 @@ internal object PlayerDecisionOptionsResolver {
         validator: LegalActionValidator,
         context: PlayerActionContext?,
     ): List<GameAction> = when (context) {
-        is PlayerActionContext.KanReaction ->
+        is PlayerActionContext.RobbingReaction ->
             validator.getLegalActions(
                 tableState = state,
                 player = player,
@@ -114,7 +114,7 @@ internal object PlayerDecisionOptionsResolver {
         player: MahjongPlayer,
         context: PlayerActionContext?,
     ): Tile? = when (context) {
-        is PlayerActionContext.KanReaction -> context.pending.robbedTile.tile
+        is PlayerActionContext.RobbingReaction -> context.pending.robbedTile.tile
         is PlayerActionContext.DiscardReaction ->
             state.players
                 .first { it.id == context.pending.discarderId }

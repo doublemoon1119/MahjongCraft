@@ -20,7 +20,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawRe
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
-import com.doublemoon1119.mahjongcraft.logic.table.PendingKanReaction
+import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
@@ -502,7 +502,7 @@ class DeclareKanUseCaseTest {
     }
 
     /**
-     * 驗證加槓時若有其他玩家可以搶槓：開啟 `pendingKanReaction` 反應視窗，副露**未**套用（宣告者手牌
+     * 驗證加槓時若有其他玩家可以搶槓：開啟 `pendingRobbingReaction` 反應視窗，副露**未**套用（宣告者手牌
      * 維持原樣、`lastDrawn` 不變）、牌山**未**縮減、只廣播 `Kan`（不廣播 `Draw`，因為嶺上摸牌
      * 尚未真正發生）。
      */
@@ -549,7 +549,7 @@ class DeclareKanUseCaseTest {
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!
-        val pending = newState.pendingKanReaction
+        val pending = newState.pendingRobbingReaction
         assertNotNull(pending, "A chankan reaction window should have opened.")
         assertEquals(playerId, pending.declarerId)
         assertEquals(GameAction.Kan(GameAction.KanType.ADDED_KAN, white4.id, emptyList()), pending.kanAction)
@@ -604,7 +604,7 @@ class DeclareKanUseCaseTest {
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!
-        assertNull(newState.pendingKanReaction, "The finished player's chankan eligibility must not open a reaction window.")
+        assertNull(newState.pendingRobbingReaction, "The finished player's chankan eligibility must not open a reaction window.")
     }
 
     /**
@@ -661,7 +661,7 @@ class DeclareKanUseCaseTest {
         val result = fixtures.useCase(gameId, playerId, GameAction.KanType.ADDED_KAN, white4.id)
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
-        val pending = fixtures.gameRepo.getTableState(gameId)!!.pendingKanReaction
+        val pending = fixtures.gameRepo.getTableState(gameId)!!.pendingRobbingReaction
         assertNotNull(pending)
         assertEquals(setOf(robber1Id, robber2Id), pending.eligiblePlayerIds)
     }
@@ -704,7 +704,7 @@ class DeclareKanUseCaseTest {
         val result = fixtures.useCase(gameId, playerId, GameAction.KanType.ADDED_KAN, white4.id)
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
-        val pending = fixtures.gameRepo.getTableState(gameId)!!.pendingKanReaction
+        val pending = fixtures.gameRepo.getTableState(gameId)!!.pendingRobbingReaction
         assertNotNull(pending)
         assertEquals(setOf(robber1Id), pending.eligiblePlayerIds, "Only the nearest robber should remain eligible.")
     }
@@ -750,7 +750,7 @@ class DeclareKanUseCaseTest {
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!
-        assertEquals(null, newState.pendingKanReaction, "The multi-ron abortive draw should resolve immediately, not open a window.")
+        assertEquals(null, newState.pendingRobbingReaction, "The multi-ron abortive draw should resolve immediately, not open a window.")
         assertEquals(2, newState.tileWall.remainingCount, "No rinshan tile should be drawn; the kan is voided.")
 
         val unchangedDeclarer = newState.players.first { it.id == playerId }
@@ -780,14 +780,14 @@ class DeclareKanUseCaseTest {
         val fixtures = Fixtures()
         val lastDrawn = FakeIdentifiedTileFactory.create(Tile.Honor.East)
         val declarer = FakeMahjongPlayerFactory.create(id = playerId, initialSeat = Wind.EAST, hand = Hand(lastDrawn = lastDrawn))
-        val existingPending = PendingKanReaction(
+        val existingPending = PendingRobbingReaction(
             declarerId = playerId,
             kanAction = GameAction.Kan(GameAction.KanType.ADDED_KAN, Uuid.random(), emptyList()),
             robbedTile = FakeIdentifiedTileFactory.create(Tile.Honor.White),
             eligiblePlayerIds = setOf(Uuid.random()),
         )
         val table = FakeTableStateFactory.create(id = gameId, players = listOf(declarer), config = RiichiRuleConfig(), currentPlayerIndex = 0)
-            .copy(pendingKanReaction = existingPending)
+            .copy(pendingRobbingReaction = existingPending)
         fixtures.gameRepo.setTableState(table)
 
         val result = fixtures.useCase(gameId, playerId, GameAction.KanType.CLOSED_KAN, lastDrawn.id)

@@ -60,7 +60,7 @@ class AiTurnDriver(
         }
         if (context != null) {
             val phase = when (context) {
-                is PlayerActionContext.KanReaction -> AiDecisionPhase.RespondingToKan
+                is PlayerActionContext.RobbingReaction -> AiDecisionPhase.RespondingToRobbing
                 is PlayerActionContext.DiscardReaction -> AiDecisionPhase.RespondingToDiscard
                 is PlayerActionContext.OwnTurn -> AiDecisionPhase.OwnTurn
             }
@@ -71,7 +71,7 @@ class AiTurnDriver(
         if (game.isAi(current.id) &&
             current.hand.lastDrawn == null &&
             !current.justClaimedMeld &&
-            state.pendingKanReaction == null &&
+            state.pendingRobbingReaction == null &&
             state.pendingReaction == null
         ) {
             return current.id to GameCommand.Draw

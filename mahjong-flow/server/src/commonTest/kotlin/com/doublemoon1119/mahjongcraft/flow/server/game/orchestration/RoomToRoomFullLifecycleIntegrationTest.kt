@@ -33,7 +33,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetLegalActionsU
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ResolvePostReactionRoundOutcomeUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ResolveWinRoundContinuationUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToDiscardUseCase
-import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToKanUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToRobbingUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ReturnToRoomUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.StartGameUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepositoryImpl
@@ -161,7 +161,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
                 postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
             ),
-            respondToKanUseCase = RespondToKanUseCase(
+            respondToRobbingUseCase = RespondToRobbingUseCase(
                 gameRepo,
                 moduleRegistry,
                 snapshotSynchronizer,
@@ -355,9 +355,9 @@ class RoomToRoomFullLifecycleIntegrationTest {
         val state = game.tableState
         val visibilityPolicy = GameVisibilityPolicyImpl()
 
-        val pendingKanReaction = state.pendingKanReaction
-        if (pendingKanReaction != null && hostId in pendingKanReaction.eligiblePlayerIds && hostId !in pendingKanReaction.responses) {
-            val command = decideFor(gameId, game, hostId, AiDecisionPhase.RespondingToKan, strategy, visibilityPolicy)
+        val pendingRobbingReaction = state.pendingRobbingReaction
+        if (pendingRobbingReaction != null && hostId in pendingRobbingReaction.eligiblePlayerIds && hostId !in pendingRobbingReaction.responses) {
+            val command = decideFor(gameId, game, hostId, AiDecisionPhase.RespondingToRobbing, strategy, visibilityPolicy)
             coordinator(gameId, hostId, command)
             return true
         }
@@ -369,7 +369,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
             return true
         }
 
-        if (pendingKanReaction == null && pendingReaction == null && state.currentPlayer.id == hostId) {
+        if (pendingRobbingReaction == null && pendingReaction == null && state.currentPlayer.id == hostId) {
             val current = state.currentPlayer
             val command = if (current.hand.lastDrawn == null && !current.justClaimedMeld) {
                 GameCommand.Draw
@@ -422,8 +422,8 @@ class RoomToRoomFullLifecycleIntegrationTest {
             AiDecisionPhase.RespondingToDiscard ->
                 GameCommand.RespondToDiscard(context.legalActions.firstOrNull { it is GameAction.Ron } ?: GameAction.Pass)
 
-            AiDecisionPhase.RespondingToKan ->
-                GameCommand.RespondToKan(context.legalActions.firstOrNull { it is GameAction.Ron } ?: GameAction.Pass)
+            AiDecisionPhase.RespondingToRobbing ->
+                GameCommand.RespondToRobbing(context.legalActions.firstOrNull { it is GameAction.Ron } ?: GameAction.Pass)
 
             AiDecisionPhase.OwnTurn -> {
                 if (context.legalActions.contains(GameAction.Tsumo)) {

@@ -357,7 +357,7 @@ data class HistoryWinDetailQuantityDto(val unitId: String, val amount: Int)
  * @property finishedPlayerSeats 已完成玩家座位。
  * @property dynamicRuleState 規則公開資訊。
  * @property hasPendingReaction 是否有待處理反應。
- * @property hasPendingKanReaction 是否有待處理槓牌反應。
+ * @property hasPendingRobbingReaction 是否有待處理槓牌反應。
  * @property outcome 結算結果。
  */
 @Serializable
@@ -377,7 +377,7 @@ data class HistoryRoundStateDto(
     val finishedPlayerSeats: Set<Int>,
     val dynamicRuleState: HistoryReplayRuleInformationDto?,
     val hasPendingReaction: Boolean,
-    val hasPendingKanReaction: Boolean,
+    val hasPendingRobbingReaction: Boolean,
     val outcome: HistoryRoundOutcomeDto?,
 )
 

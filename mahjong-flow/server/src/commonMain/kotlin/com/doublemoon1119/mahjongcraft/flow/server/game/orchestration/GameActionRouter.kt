@@ -9,7 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareTsumoUseC
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DiscardTileUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DrawTileUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToDiscardUseCase
-import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToKanUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToRobbingUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.SubmitRoundPreparationUseCase
 import org.koin.core.annotation.Factory
 import kotlin.uuid.Uuid
@@ -30,7 +30,7 @@ import kotlin.uuid.Uuid
  * @property declareTsumoUseCase 自摸宣告用例。
  * @property declareKanUseCase 暗槓/加槓宣告用例。
  * @property respondToDiscardUseCase 回應捨牌反應視窗用例。
- * @property respondToKanUseCase 回應搶槓反應視窗用例。
+ * @property respondToRobbingUseCase 回應搶槓反應視窗用例。
  * @property declareAbortiveDrawUseCase 通用途中流局宣告用例。
  * @property extensionCommandExecutor 規則擴充命令的執行者。
  */
@@ -41,7 +41,7 @@ class GameActionRouter(
     private val declareTsumoUseCase: DeclareTsumoUseCase,
     private val declareKanUseCase: DeclareKanUseCase,
     private val respondToDiscardUseCase: RespondToDiscardUseCase,
-    private val respondToKanUseCase: RespondToKanUseCase,
+    private val respondToRobbingUseCase: RespondToRobbingUseCase,
     private val declareAbortiveDrawUseCase: DeclareAbortiveDrawUseCase,
     private val extensionCommandExecutor: ExtensionGameCommandExecutor,
     private val submitRoundPreparationUseCase: SubmitRoundPreparationUseCase? = null,
@@ -67,7 +67,7 @@ class GameActionRouter(
         GameCommand.Tsumo -> declareTsumoUseCase(gameId, playerId)
         is GameCommand.Kan -> declareKanUseCase(gameId, playerId, command.type, command.tileId)
         is GameCommand.RespondToDiscard -> respondToDiscardUseCase(gameId, playerId, command.action)
-        is GameCommand.RespondToKan -> respondToKanUseCase(gameId, playerId, command.action)
+        is GameCommand.RespondToRobbing -> respondToRobbingUseCase(gameId, playerId, command.action)
         is GameCommand.DeclareExhaustiveDraw ->
             declareAbortiveDrawUseCase(gameId, playerId, command.reason)
     }

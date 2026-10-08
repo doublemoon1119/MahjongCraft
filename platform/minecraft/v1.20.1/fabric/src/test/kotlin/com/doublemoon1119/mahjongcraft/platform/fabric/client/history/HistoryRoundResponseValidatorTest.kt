@@ -516,7 +516,7 @@ class HistoryRoundResponseValidatorTest {
         finishedPlayerSeats = emptySet(),
         dynamicRuleState = null,
         hasPendingReaction = false,
-        hasPendingKanReaction = false,
+        hasPendingRobbingReaction = false,
         outcome = null,
     )
 
@@ -669,7 +669,7 @@ class HistoryRoundCacheTest {
         finishedPlayerSeats = emptySet(),
         dynamicRuleState = null,
         hasPendingReaction = false,
-        hasPendingKanReaction = false,
+        hasPendingRobbingReaction = false,
         outcome = null,
     )
 }

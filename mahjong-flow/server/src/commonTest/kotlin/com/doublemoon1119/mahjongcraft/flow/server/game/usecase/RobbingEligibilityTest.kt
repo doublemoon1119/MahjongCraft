@@ -16,7 +16,7 @@ import kotlin.test.assertEquals
 import kotlin.uuid.Uuid
 
 /** 驗證搶槓資格只包含規則允許榮和這張槓牌的玩家。 */
-class ChankanEligibilityTest {
+class RobbingEligibilityTest {
     private val declarerId = Uuid.random()
     private val kokushiPlayerId = Uuid.random()
     private val singleWaitPlayerId = Uuid.random()
@@ -63,7 +63,7 @@ class ChankanEligibilityTest {
             config = RiichiRuleConfig(),
             currentPlayerIndex = 0,
         )
-        return ChankanEligibility.ronEligiblePlayerIds(
+        return RobbingEligibility.ronEligiblePlayerIds(
             tableState = table,
             declarerId = declarerId,
             kanAction = kanAction,

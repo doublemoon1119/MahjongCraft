@@ -7,8 +7,8 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerActionCont
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.table.PendingKanReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
+import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.GameTurnStatus
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -25,9 +25,9 @@ class PlayerActionContextMappingTest {
     fun `test reaction contexts wrap action in matching command`() {
         val playerId = Uuid.random()
         val tile = IdentifiedTile(Uuid.random(), Tile.Honor.White)
-        val kanContext = PlayerActionContext.KanReaction(
+        val kanContext = PlayerActionContext.RobbingReaction(
             playerId,
-            PendingKanReaction(
+            PendingRobbingReaction(
                 declarerId = Uuid.random(),
                 kanAction = GameAction.Kan(GameAction.KanType.ADDED_KAN, tile.id, emptyList()),
                 robbedTile = tile,
@@ -39,7 +39,7 @@ class PlayerActionContextMappingTest {
             PendingReaction(Uuid.random(), tile.id, setOf(playerId)),
         )
 
-        assertEquals(GameCommand.RespondToKan(GameAction.Pass), commandMapper.toCommand(kanContext, GameAction.Pass))
+        assertEquals(GameCommand.RespondToRobbing(GameAction.Pass), commandMapper.toCommand(kanContext, GameAction.Pass))
         assertEquals(
             GameCommand.RespondToDiscard(GameAction.Pass),
             commandMapper.toCommand(discardContext, GameAction.Pass),
@@ -60,9 +60,9 @@ class PlayerActionContextMappingTest {
     fun `test contexts map to turn status`() {
         val playerId = Uuid.random()
         val tile = IdentifiedTile(Uuid.random(), Tile.Honor.White)
-        val kanContext = PlayerActionContext.KanReaction(
+        val kanContext = PlayerActionContext.RobbingReaction(
             playerId,
-            PendingKanReaction(
+            PendingRobbingReaction(
                 Uuid.random(),
                 GameAction.Kan(GameAction.KanType.ADDED_KAN, tile.id, emptyList()),
                 tile,

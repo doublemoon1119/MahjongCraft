@@ -36,8 +36,8 @@ class DebugScriptedAiStrategyTest {
             strategy.decideGameCommand(context(AiDecisionPhase.RespondingToDiscard, listOf(ron, GameAction.Pass))),
         )
         assertEquals(
-            GameCommand.RespondToKan(GameAction.Pass),
-            strategy.decideGameCommand(context(AiDecisionPhase.RespondingToKan, listOf(ron, GameAction.Pass))),
+            GameCommand.RespondToRobbing(GameAction.Pass),
+            strategy.decideGameCommand(context(AiDecisionPhase.RespondingToRobbing, listOf(ron, GameAction.Pass))),
         )
     }
 

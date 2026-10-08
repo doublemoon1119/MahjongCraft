@@ -73,7 +73,7 @@ internal class HistoryReplayProjectionMapper(private val registry: HistoryReplay
             identity, roundNumber, position, tileCatalog, players, wall, reserved,
             players.getOrNull(current)?.initialSeatIndex ?: invalid(), dealer, wind, roundPosition,
             integer(root.getValue(ReplaySourceKeys.COMBO_COUNT)), root[ReplaySourceKeys.FINISHED_PLAYER_IDS]?.let { array(it).map { value -> context.seat(integer(value)) }.toSet() } ?: emptySet(),
-            optionalRule(root[ReplaySourceKeys.DYNAMIC_RULE_STATE], context), root.getValue(ReplaySourceKeys.PENDING_REACTION) != JsonNull, root.getValue(ReplaySourceKeys.PENDING_KAN_REACTION) != JsonNull, null,
+            optionalRule(root[ReplaySourceKeys.DYNAMIC_RULE_STATE], context), root.getValue(ReplaySourceKeys.PENDING_REACTION) != JsonNull, root.getValue(ReplaySourceKeys.PENDING_ROBBING_REACTION) != JsonNull, null,
         )
     }
 

@@ -165,7 +165,7 @@ fun HistoryRoundState.toDto(): HistoryRoundStateDto = HistoryRoundStateDto(
     finishedPlayerSeats = finishedPlayerSeats,
     dynamicRuleState = dynamicRuleState?.toDto(),
     hasPendingReaction = hasPendingReaction,
-    hasPendingKanReaction = hasPendingKanReaction,
+    hasPendingRobbingReaction = hasPendingRobbingReaction,
     outcome = outcome?.toDto(),
 )
 

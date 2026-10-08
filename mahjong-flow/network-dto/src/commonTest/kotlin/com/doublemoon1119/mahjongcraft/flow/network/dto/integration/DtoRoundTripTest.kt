@@ -143,7 +143,7 @@ class DtoRoundTripTest {
             GameCommand.Tsumo,
             GameCommand.Kan(GameAction.KanType.CLOSED_KAN, tileId),
             GameCommand.RespondToDiscard(GameAction.Ron(tileId)),
-            GameCommand.RespondToKan(GameAction.Pass),
+            GameCommand.RespondToRobbing(GameAction.Pass),
             GameCommand.DeclareExhaustiveDraw(RiichiExhaustiveDrawReason.KyuushuKyuuhai),
         )
 

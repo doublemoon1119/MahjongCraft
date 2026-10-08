@@ -522,7 +522,7 @@ class RespondToDiscardUseCase(
         if (reactionReveal.rejectionReasonId != null) return reactionReveal
 
         return when (
-            val applied = KanDeclarationApplier.applySupplementalDraw(
+            val applied = SelfDeclarationApplier.applySupplementalDraw(
                 originalState.copy(dynamicRuleState = reactionReveal.tableState.dynamicRuleState),
                 reactionReveal.tableState,
                 winnerId,
@@ -530,12 +530,12 @@ class RespondToDiscardUseCase(
                 module,
             )
         ) {
-            is KanDeclarationApplier.Result.Rejected -> RespondResult(
+            is SelfDeclarationApplier.Result.Rejected -> RespondResult(
                 tableState = state,
                 rejectionReasonId = applied.reasonId,
             )
 
-            is KanDeclarationApplier.Result.Applied -> RespondResult(
+            is SelfDeclarationApplier.Result.Applied -> RespondResult(
                 tableState = applied.tableState,
                 supplementalDrawHappened = applied.drawnTiles.isNotEmpty(),
                 discarderId = pendingReaction.discarderId,

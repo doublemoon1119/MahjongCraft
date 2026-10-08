@@ -290,6 +290,6 @@ class CompactReplayRoundReaderTest {
         put(ReplaySourceKeys.FINISHED_PLAYER_IDS, JsonArray(emptyList()))
         put("dynamicRuleState", JsonNull)
         put(ReplaySourceKeys.PENDING_REACTION, JsonNull)
-        put(ReplaySourceKeys.PENDING_KAN_REACTION, JsonNull)
+        put(ReplaySourceKeys.PENDING_ROBBING_REACTION, JsonNull)
     }
 }

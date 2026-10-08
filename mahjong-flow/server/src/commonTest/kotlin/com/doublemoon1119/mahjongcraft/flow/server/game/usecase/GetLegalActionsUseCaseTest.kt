@@ -14,8 +14,8 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
-import com.doublemoon1119.mahjongcraft.logic.table.PendingKanReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
+import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
@@ -165,7 +165,7 @@ class GetLegalActionsUseCaseTest {
             players = listOf(declarer, robber),
             config = RiichiRuleConfig(),
             currentPlayerIndex = 0,
-            pendingKanReaction = PendingKanReaction(declarerId, kanAction, robbedWhiteTile, setOf(robberId)),
+            pendingRobbingReaction = PendingRobbingReaction(declarerId, kanAction, robbedWhiteTile, setOf(robberId)),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -195,7 +195,7 @@ class GetLegalActionsUseCaseTest {
             players = listOf(declarer, robber),
             config = RiichiRuleConfig(),
             currentPlayerIndex = 0,
-            pendingKanReaction = PendingKanReaction(
+            pendingRobbingReaction = PendingRobbingReaction(
                 declarerId,
                 kanAction,
                 robbedWhiteTile,

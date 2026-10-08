@@ -6,8 +6,8 @@ import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiLegalActionValidator
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
-import com.doublemoon1119.mahjongcraft.logic.table.PendingKanReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
+import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
@@ -45,7 +45,7 @@ object FakeTableStateFactory {
         currentPlayerIndex: Int = 0,
         dynamicRuleState: DynamicRuleState? = null,
         pendingReaction: PendingReaction? = null,
-        pendingKanReaction: PendingKanReaction? = null,
+        pendingRobbingReaction: PendingRobbingReaction? = null,
         initialDeadWall: List<IdentifiedTile> = emptyList(),
         physicalWallLayout: TileWallPhysicalLayout? = null,
         finishedPlayerIds: Set<Uuid> = emptySet(),
@@ -69,7 +69,7 @@ object FakeTableStateFactory {
             currentPlayerIndex = currentPlayerIndex,
             dynamicRuleState = dynamicRuleState,
             pendingReaction = pendingReaction,
-            pendingKanReaction = pendingKanReaction,
+            pendingRobbingReaction = pendingRobbingReaction,
             initialDeadWall = initialDeadWall,
             physicalWallLayout = physicalWallLayout,
             finishedPlayerIds = finishedPlayerIds,

@@ -3,8 +3,8 @@ package com.doublemoon1119.mahjongcraft.flow.persistence.format.game
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceDtoRegistry
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
-import com.doublemoon1119.mahjongcraft.logic.table.PendingKanReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
+import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlin.uuid.Uuid
@@ -18,9 +18,9 @@ data class PendingReactionPersistenceDto(
     val responses: Map<String, GameActionPersistenceDto>,
 )
 
-/** [PendingKanReaction] 的完整 persistence DTO。 */
+/** [PendingRobbingReaction] 的完整 persistence DTO。 */
 @Serializable
-data class PendingKanReactionPersistenceDto(
+data class PendingRobbingReactionPersistenceDto(
     val declarerId: String,
     val kanAction: GameActionPersistenceDto.Kan,
     val robbedTile: IdentifiedTilePersistenceDto,
@@ -56,12 +56,12 @@ fun PendingReactionPersistenceDto.toDomain(
     },
 )
 
-/** 將 [PendingKanReaction] 轉換成 persistence DTO。 */
-fun PendingKanReaction.toPersistenceDto(
+/** 將 [PendingRobbingReaction] 轉換成 persistence DTO。 */
+fun PendingRobbingReaction.toPersistenceDto(
     exhaustiveDrawReasonRegistry: PersistenceDtoRegistry<ExhaustiveDrawReason>,
     extensionGameActionRegistry: PersistenceDtoRegistry<ExtensionGameAction>,
     json: Json = Json,
-): PendingKanReactionPersistenceDto = PendingKanReactionPersistenceDto(
+): PendingRobbingReactionPersistenceDto = PendingRobbingReactionPersistenceDto(
     declarerId = declarerId.toString(),
     kanAction = kanAction.toPersistenceDto(),
     robbedTile = robbedTile.toPersistenceDto(),
@@ -71,12 +71,12 @@ fun PendingKanReaction.toPersistenceDto(
     },
 )
 
-/** 將 [PendingKanReactionPersistenceDto] 還原成 [PendingKanReaction]。 */
-fun PendingKanReactionPersistenceDto.toDomain(
+/** 將 [PendingRobbingReactionPersistenceDto] 還原成 [PendingRobbingReaction]。 */
+fun PendingRobbingReactionPersistenceDto.toDomain(
     exhaustiveDrawReasonRegistry: PersistenceDtoRegistry<ExhaustiveDrawReason>,
     extensionGameActionRegistry: PersistenceDtoRegistry<ExtensionGameAction>,
     json: Json = Json,
-): PendingKanReaction = PendingKanReaction(
+): PendingRobbingReaction = PendingRobbingReaction(
     declarerId = Uuid.parse(declarerId),
     kanAction = kanAction.toDomain(),
     robbedTile = robbedTile.toDomain(),

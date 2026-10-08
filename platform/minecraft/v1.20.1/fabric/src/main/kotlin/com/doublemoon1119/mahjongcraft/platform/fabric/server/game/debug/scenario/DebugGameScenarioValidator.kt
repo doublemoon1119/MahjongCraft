@@ -26,7 +26,7 @@ class DebugGameScenarioValidator(
                 candidate.tableState.pendingReaction?.let { pending ->
                     context.invokingPlayerId in pending.eligiblePlayerIds && context.invokingPlayerId !in pending.responses
                 } == true ||
-                candidate.tableState.pendingKanReaction?.let { pending ->
+                candidate.tableState.pendingRobbingReaction?.let { pending ->
                     context.invokingPlayerId in pending.eligiblePlayerIds && context.invokingPlayerId !in pending.responses
                 } == true
             require(invokingPlayerHasAuthority) {
@@ -64,7 +64,7 @@ class DebugGameScenarioValidator(
                 "Pending discard reaction references an unknown tile"
             }
         }
-        candidate.tableState.pendingKanReaction?.let { pending ->
+        candidate.tableState.pendingRobbingReaction?.let { pending ->
             require(pending.declarerId in playerIds) { "Pending kan reaction references an unknown player" }
             require((pending.eligiblePlayerIds + pending.responses.keys).all { it in playerIds }) {
                 "Pending kan reaction references an unknown player"

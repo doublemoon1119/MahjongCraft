@@ -35,7 +35,7 @@ sealed interface GameCommandDto {
 
     @Serializable data class RespondToDiscard(val action: GameActionDto) : GameCommandDto
 
-    @Serializable data class RespondToKan(val action: GameActionDto) : GameCommandDto
+    @Serializable data class RespondToRobbing(val action: GameActionDto) : GameCommandDto
 
     @Serializable data class DeclareExhaustiveDraw(val reason: ExhaustiveDrawReasonDto) : GameCommandDto
 }
@@ -48,7 +48,7 @@ fun GameCommand.toDto(registries: NetworkDtoRegistries): GameCommandDto = when (
     GameCommand.Tsumo -> GameCommandDto.Tsumo
     is GameCommand.Kan -> GameCommandDto.Kan(type.toDto(), tileId.toString())
     is GameCommand.RespondToDiscard -> GameCommandDto.RespondToDiscard(action.toDto(registries))
-    is GameCommand.RespondToKan -> GameCommandDto.RespondToKan(action.toDto(registries))
+    is GameCommand.RespondToRobbing -> GameCommandDto.RespondToRobbing(action.toDto(registries))
     is GameCommand.DeclareExhaustiveDraw -> GameCommandDto.DeclareExhaustiveDraw(reason.toDto(registries))
 }
 
@@ -60,6 +60,6 @@ fun GameCommandDto.toDomain(registries: NetworkDtoRegistries): GameCommand = whe
     GameCommandDto.Tsumo -> GameCommand.Tsumo
     is GameCommandDto.Kan -> GameCommand.Kan(kanType.toDomain(), Uuid.parse(tileId))
     is GameCommandDto.RespondToDiscard -> GameCommand.RespondToDiscard(action.toDomain(registries))
-    is GameCommandDto.RespondToKan -> GameCommand.RespondToKan(action.toDomain(registries))
+    is GameCommandDto.RespondToRobbing -> GameCommand.RespondToRobbing(action.toDomain(registries))
     is GameCommandDto.DeclareExhaustiveDraw -> GameCommand.DeclareExhaustiveDraw(reason.toDomain(registries))
 }

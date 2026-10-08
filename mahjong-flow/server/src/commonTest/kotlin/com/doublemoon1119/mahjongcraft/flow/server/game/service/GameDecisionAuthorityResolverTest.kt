@@ -12,8 +12,8 @@ import com.doublemoon1119.mahjongcraft.logic.module.BuiltInAutomaticControlIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
-import com.doublemoon1119.mahjongcraft.logic.table.PendingKanReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
+import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
@@ -56,7 +56,7 @@ class GameDecisionAuthorityResolverTest {
         val game = Game(
             tableState = FakeTableStateFactory.create(
                 players = listOf(FakeMahjongPlayerFactory.create(id = playerId)),
-                pendingKanReaction = PendingKanReaction(
+                pendingRobbingReaction = PendingRobbingReaction(
                     declarerId = Uuid.random(),
                     kanAction = GameAction.Kan(
                         type = GameAction.KanType.ADDED_KAN,
@@ -71,7 +71,7 @@ class GameDecisionAuthorityResolverTest {
         )
 
         assertEquals(
-            mapOf(playerId to PlayerDecisionPhase.KAN_REACTION),
+            mapOf(playerId to PlayerDecisionPhase.ROBBING_REACTION),
             resolver.resolve(game),
         )
     }

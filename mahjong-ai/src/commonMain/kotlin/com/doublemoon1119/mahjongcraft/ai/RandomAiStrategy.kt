@@ -22,8 +22,8 @@ class RandomAiStrategy(
     override suspend fun decideGameCommand(context: AiDecisionContext): GameCommand = when (context.phase) {
         AiDecisionPhase.RespondingToDiscard ->
             GameCommand.RespondToDiscard(context.legalActions.randomOrNull(random) ?: GameAction.Pass)
-        AiDecisionPhase.RespondingToKan ->
-            GameCommand.RespondToKan(context.legalActions.randomOrNull(random) ?: GameAction.Pass)
+        AiDecisionPhase.RespondingToRobbing ->
+            GameCommand.RespondToRobbing(context.legalActions.randomOrNull(random) ?: GameAction.Pass)
         AiDecisionPhase.OwnTurn -> decideOwnTurn(context)
     }
 

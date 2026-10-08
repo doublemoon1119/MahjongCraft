@@ -16,7 +16,7 @@ enum class PlayerDecisionPhaseDto {
     DISCARD_REACTION,
 
     /** 玩家正在回應搶槓視窗。 */
-    KAN_REACTION,
+    ROBBING_REACTION,
 }
 
 /** 將流程決策階段轉成網路 DTO。 */
@@ -24,7 +24,7 @@ fun PlayerDecisionPhase.toDto(): PlayerDecisionPhaseDto = when (this) {
     PlayerDecisionPhase.ROUND_PREPARATION -> PlayerDecisionPhaseDto.ROUND_PREPARATION
     PlayerDecisionPhase.OWN_TURN -> PlayerDecisionPhaseDto.OWN_TURN
     PlayerDecisionPhase.DISCARD_REACTION -> PlayerDecisionPhaseDto.DISCARD_REACTION
-    PlayerDecisionPhase.KAN_REACTION -> PlayerDecisionPhaseDto.KAN_REACTION
+    PlayerDecisionPhase.ROBBING_REACTION -> PlayerDecisionPhaseDto.ROBBING_REACTION
 }
 
 /** 將網路決策階段還原成 flow common 型別。 */
@@ -32,7 +32,7 @@ fun PlayerDecisionPhaseDto.toDomain(): PlayerDecisionPhase = when (this) {
     PlayerDecisionPhaseDto.ROUND_PREPARATION -> PlayerDecisionPhase.ROUND_PREPARATION
     PlayerDecisionPhaseDto.OWN_TURN -> PlayerDecisionPhase.OWN_TURN
     PlayerDecisionPhaseDto.DISCARD_REACTION -> PlayerDecisionPhase.DISCARD_REACTION
-    PlayerDecisionPhaseDto.KAN_REACTION -> PlayerDecisionPhase.KAN_REACTION
+    PlayerDecisionPhaseDto.ROBBING_REACTION -> PlayerDecisionPhase.ROBBING_REACTION
 }
 
 /**

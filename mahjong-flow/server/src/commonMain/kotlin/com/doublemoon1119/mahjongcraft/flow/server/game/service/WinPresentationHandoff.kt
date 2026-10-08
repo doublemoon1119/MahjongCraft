@@ -10,7 +10,7 @@ import kotlin.uuid.Uuid
  * `GameFlowCoordinator` 的暫存交接點，每個場地最多一筆。
  *
  * 為什麼需要這個東西：胡牌 use case（`DeclareTsumoUseCase`／`RespondToDiscardUseCase`／
- * `RespondToKanUseCase`）擁有建構 [SettledWinPresentation] 所需的全部素材（算役結果、規則模組、
+ * `RespondToRobbingUseCase`）擁有建構 [SettledWinPresentation] 所需的全部素材（算役結果、規則模組、
  * 各種 resolver registry），但它執行的當下還不知道本局會不會就此結束——那要等
  * `ResolveWinRoundContinuationUseCase` 詢問過規則模組才有答案，而那發生在 use case 回傳之後。
  * 讓 use case 直接回傳這份內容給呼叫端則不可行：`GameActionRouter` 對所有指令（含第三方擴充指令）

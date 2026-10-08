@@ -48,7 +48,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetLegalActionsU
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ResolvePostReactionRoundOutcomeUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ResolveWinRoundContinuationUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToDiscardUseCase
-import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToKanUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToRobbingUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ReturnToRoomUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.StartGameUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepositoryImpl
@@ -162,7 +162,7 @@ class HeadlessFlowHistoryRuntime private constructor(
                 DeclareTsumoUseCase(gameRepository, moduleRegistry, synchronizer, gameEvents, presentation, winHandoff, createCue, winDetails),
                 DeclareKanUseCase(gameRepository, moduleRegistry, synchronizer, gameEvents, presentation),
                 RespondToDiscardUseCase(gameRepository, moduleRegistry, synchronizer, handSort, gameEvents, presentation, winHandoff, createCue, winDetails, postAction),
-                RespondToKanUseCase(gameRepository, moduleRegistry, synchronizer, gameEvents, presentation, winHandoff, createCue, winDetails),
+                RespondToRobbingUseCase(gameRepository, moduleRegistry, synchronizer, gameEvents, presentation, winHandoff, createCue, winDetails),
                 DeclareAbortiveDrawUseCase(gameRepository, moduleRegistry, synchronizer, gameEvents),
                 commands,
             )

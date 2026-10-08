@@ -12,8 +12,8 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
-import com.doublemoon1119.mahjongcraft.logic.table.PendingKanReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
+import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
@@ -108,7 +108,7 @@ class TableStatePersistenceTest {
 
         assertEncodedRoundTrip(
             state.copy(
-                pendingKanReaction = PendingKanReaction(
+                pendingRobbingReaction = PendingRobbingReaction(
                     declarerId = declarerId,
                     kanAction = kanAction,
                     robbedTile = robbedTile,
@@ -215,7 +215,7 @@ class TableStatePersistenceTest {
         assertEquals(expectedDto, restored.toPersistenceDto())
         assertEquals(state.tileWall.getAllTiles(), restored.tileWall.getAllTiles())
         assertEquals(state.pendingReaction, restored.pendingReaction)
-        assertEquals(state.pendingKanReaction, restored.pendingKanReaction)
+        assertEquals(state.pendingRobbingReaction, restored.pendingRobbingReaction)
     }
 
     /** 使用所有內建 registry 將 [TableState] 轉換成 persistence DTO。 */

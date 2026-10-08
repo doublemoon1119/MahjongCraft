@@ -174,9 +174,9 @@ class ExpectedValueAiStrategyTest {
                 ),
             )
             assertEquals(
-                GameCommand.RespondToKan(ron),
+                GameCommand.RespondToRobbing(ron),
                 strategy(level).decideGameCommand(
-                    context(table, self, phase = AiDecisionPhase.RespondingToKan, legalActions = listOf(GameAction.Pass, ron)),
+                    context(table, self, phase = AiDecisionPhase.RespondingToRobbing, legalActions = listOf(GameAction.Pass, ron)),
                 ),
             )
         }

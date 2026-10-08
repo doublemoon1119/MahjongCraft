@@ -91,7 +91,7 @@ class HistoryQueryDtosTest {
                 finishedPlayerSeats = emptySet(),
                 dynamicRuleState = null,
                 hasPendingReaction = false,
-                hasPendingKanReaction = false,
+                hasPendingRobbingReaction = false,
                 outcome = null,
             ),
         )

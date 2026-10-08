@@ -90,18 +90,18 @@ class RandomAiStrategyTest {
     }
 
     /**
-     * 驗證回應搶槓反應視窗時，回傳的 [GameCommand.RespondToKan] 攜帶的動作確實來自
+     * 驗證回應搶槓反應視窗時，回傳的 [GameCommand.RespondToRobbing] 攜帶的動作確實來自
      * [AiDecisionContext.legalActions]。
      */
     @Test
     fun `test responding to chankan picks one of the legal actions`() = runTest {
         val strategy = RandomAiStrategy(extensionActionRegistry, Random(1))
         val ronAction = GameAction.Ron(Uuid.random())
-        val context = contextWithHand(Hand(), AiDecisionPhase.RespondingToKan, listOf(ronAction, GameAction.Pass))
+        val context = contextWithHand(Hand(), AiDecisionPhase.RespondingToRobbing, listOf(ronAction, GameAction.Pass))
 
         val result = strategy.decideGameCommand(context)
 
-        assertTrue(result is GameCommand.RespondToKan)
+        assertTrue(result is GameCommand.RespondToRobbing)
         assertTrue(result.action == ronAction || result.action == GameAction.Pass)
     }
 
@@ -111,11 +111,11 @@ class RandomAiStrategyTest {
     @Test
     fun `test responding to chankan defaults to pass when legal actions is empty`() = runTest {
         val strategy = RandomAiStrategy(extensionActionRegistry, Random(1))
-        val context = contextWithHand(Hand(), AiDecisionPhase.RespondingToKan, emptyList())
+        val context = contextWithHand(Hand(), AiDecisionPhase.RespondingToRobbing, emptyList())
 
         val result = strategy.decideGameCommand(context)
 
-        assertEquals(GameCommand.RespondToKan(GameAction.Pass), result)
+        assertEquals(GameCommand.RespondToRobbing(GameAction.Pass), result)
     }
 
     /**

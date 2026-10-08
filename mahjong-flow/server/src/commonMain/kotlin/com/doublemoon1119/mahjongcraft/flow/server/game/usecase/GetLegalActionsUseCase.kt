@@ -21,7 +21,7 @@ import kotlin.uuid.Uuid
  * 呼叫端只給 [gameId]/[playerId]，這裡會依 [TableState]
  * 現況自動判斷屬於以下哪一種情境，並組出正確的 `sourceAction`/`sourceDirection`/`incomingTile` 參數：
  *
- * 1. 有資格搶槓、且尚未回應（`pendingKanReaction` 非 null）：比照 [RespondToKanUseCase] 的既有慣例，
+ * 1. 有資格搶槓、且尚未回應（`pendingRobbingReaction` 非 null）：比照 [RespondToRobbingUseCase] 的既有慣例，
  *    過濾只留 [GameAction.Ron]/[GameAction.Pass]（`getLegalActions` 的「反應」分支不分辨
  *    `sourceAction` 種類，會一併算出吃/碰/明槓資格，這裡都不合法）。
  * 2. 有資格回應捨牌、且尚未回應（`pendingReaction` 非 null）：不過濾，Chi/Pon/Kan/Ron/Pass 皆可能合法。

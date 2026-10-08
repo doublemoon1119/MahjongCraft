@@ -5,8 +5,8 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
-import com.doublemoon1119.mahjongcraft.logic.table.PendingKanReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
+import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
@@ -93,7 +93,7 @@ class PendingReactionPersistenceTest {
             tileId = robbedTile.id,
             withTiles = List(3) { Uuid.random() },
         )
-        val reaction = PendingKanReaction(
+        val reaction = PendingRobbingReaction(
             declarerId = declarerId,
             kanAction = kanAction,
             robbedTile = robbedTile,
@@ -102,10 +102,10 @@ class PendingReactionPersistenceTest {
         )
 
         val encoded = json.encodeToString(
-            PendingKanReactionPersistenceDto.serializer(),
+            PendingRobbingReactionPersistenceDto.serializer(),
             reaction.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json),
         )
-        val restored = json.decodeFromString(PendingKanReactionPersistenceDto.serializer(), encoded)
+        val restored = json.decodeFromString(PendingRobbingReactionPersistenceDto.serializer(), encoded)
             .toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json)
 
         assertEquals(reaction, restored)

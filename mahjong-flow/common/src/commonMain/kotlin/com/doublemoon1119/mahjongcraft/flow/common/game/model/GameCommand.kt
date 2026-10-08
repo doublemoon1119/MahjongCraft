@@ -37,7 +37,7 @@ sealed interface GameCommand {
     data class RespondToDiscard(val action: GameAction) : GameCommand
 
     /** 回應槓牌反應窗口的規則中立命令。 */
-    data class RespondToKan(val action: GameAction) : GameCommand
+    data class RespondToRobbing(val action: GameAction) : GameCommand
 
     /** 以具體原因宣告途中流局的命令。 */
     data class DeclareExhaustiveDraw(val reason: ExhaustiveDrawReason) : GameCommand

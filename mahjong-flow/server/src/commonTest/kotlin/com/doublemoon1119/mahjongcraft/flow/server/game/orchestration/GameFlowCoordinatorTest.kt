@@ -41,7 +41,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetLegalActionsU
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ResolvePostReactionRoundOutcomeUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ResolveWinRoundContinuationUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToDiscardUseCase
-import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToKanUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToRobbingUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ReturnToRoomUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
@@ -59,8 +59,8 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
-import com.doublemoon1119.mahjongcraft.logic.table.PendingKanReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
+import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
@@ -171,7 +171,7 @@ class GameFlowCoordinatorTest {
                 winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
                 postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
             ),
-            respondToKanUseCase = RespondToKanUseCase(
+            respondToRobbingUseCase = RespondToRobbingUseCase(
                 gameRepo,
                 moduleRegistry,
                 snapshotSynchronizer,
@@ -1050,13 +1050,13 @@ class GameFlowCoordinatorTest {
             config = RiichiRuleConfig(gameLength = RiichiGameLength.East),
             initialDeadWall = initialDeadWall,
             currentPlayerIndex = 0,
-            pendingKanReaction = PendingKanReaction(declarerId, kanAction, robbedWhiteTile, setOf(robberId)),
+            pendingRobbingReaction = PendingRobbingReaction(declarerId, kanAction, robbedWhiteTile, setOf(robberId)),
             dynamicRuleState = RiichiDynamicState(),
         )
     }
 
     /**
-     * 驗證 [RespondToKanUseCase] 解析為榮和時，`AdvanceRoundUseCase` 會被銜接。
+     * 驗證 [RespondToRobbingUseCase] 解析為榮和時，`AdvanceRoundUseCase` 會被銜接。
      */
     @Test
     fun `test respond to chankan resolving as ron chains advance round`() = runTest {
@@ -1065,9 +1065,9 @@ class GameFlowCoordinatorTest {
         val robberId = Uuid.random()
         val table = chankanTable(declarerId, robberId, emptyList(), ronReadyHand())
         fixtures.gameRepo.setTableState(table)
-        val robbedTileId = table.pendingKanReaction!!.robbedTile.id
+        val robbedTileId = table.pendingRobbingReaction!!.robbedTile.id
 
-        val result = fixtures.coordinator(gameId, robberId, GameCommand.RespondToKan(GameAction.Ron(robbedTileId)))
+        val result = fixtures.coordinator(gameId, robberId, GameCommand.RespondToRobbing(GameAction.Ron(robbedTileId)))
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!
@@ -1075,7 +1075,7 @@ class GameFlowCoordinatorTest {
     }
 
     /**
-     * 驗證 [RespondToKanUseCase] 全員放過、補做套用副露（未結束本局）時，`AdvanceRoundUseCase`
+     * 驗證 [RespondToRobbingUseCase] 全員放過、補做套用副露（未結束本局）時，`AdvanceRoundUseCase`
      * 不會被誤觸發。
      */
     @Test
@@ -1087,7 +1087,7 @@ class GameFlowCoordinatorTest {
         val table = chankanTable(declarerId, robberId, listOf(rinshanTile), ronReadyHand())
         fixtures.gameRepo.setTableState(table)
 
-        val result = fixtures.coordinator(gameId, robberId, GameCommand.RespondToKan(GameAction.Pass))
+        val result = fixtures.coordinator(gameId, robberId, GameCommand.RespondToRobbing(GameAction.Pass))
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!

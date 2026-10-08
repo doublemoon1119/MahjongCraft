@@ -19,7 +19,7 @@ import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 class DebugScriptedAiStrategy(private val declaresKanFirst: Boolean) : MahjongAiStrategy {
     override suspend fun decideGameCommand(context: AiDecisionContext): GameCommand = when (context.phase) {
         AiDecisionPhase.RespondingToDiscard -> GameCommand.RespondToDiscard(GameAction.Pass)
-        AiDecisionPhase.RespondingToKan -> GameCommand.RespondToKan(GameAction.Pass)
+        AiDecisionPhase.RespondingToRobbing -> GameCommand.RespondToRobbing(GameAction.Pass)
         AiDecisionPhase.OwnTurn -> decideOwnTurn(context)
     }
 

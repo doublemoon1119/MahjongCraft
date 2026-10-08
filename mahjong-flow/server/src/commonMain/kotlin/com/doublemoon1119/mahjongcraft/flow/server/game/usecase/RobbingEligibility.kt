@@ -7,7 +7,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlin.uuid.Uuid
 
 /** 判斷哪些玩家依規則可以搶一次暗槓或加槓。 */
-internal object ChankanEligibility {
+internal object RobbingEligibility {
     /**
      * 回傳可以榮和 [robbedTile] 的玩家，尚未套用一炮多響設定。
      *

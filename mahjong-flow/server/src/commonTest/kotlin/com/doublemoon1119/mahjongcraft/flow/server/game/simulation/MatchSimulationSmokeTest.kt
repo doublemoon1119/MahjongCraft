@@ -65,7 +65,7 @@ class MatchSimulationSmokeTest {
         override suspend fun decideGameCommand(context: AiDecisionContext): GameCommand = when (context.phase) {
             AiDecisionPhase.OwnTurn -> GameCommand.Discard(Uuid.random())
             AiDecisionPhase.RespondingToDiscard -> GameCommand.RespondToDiscard(GameAction.Pass)
-            AiDecisionPhase.RespondingToKan -> GameCommand.RespondToKan(GameAction.Pass)
+            AiDecisionPhase.RespondingToRobbing -> GameCommand.RespondToRobbing(GameAction.Pass)
         }
     }
 

@@ -197,7 +197,7 @@ class RiichiSimulationAssertionsTest {
             AiDecisionPhase.RespondingToDiscard -> GameCommand.RespondToDiscard(
                 context.legalActions.filterIsInstance<GameAction.Ron>().single(),
             )
-            AiDecisionPhase.RespondingToKan -> GameCommand.RespondToKan(GameAction.Pass)
+            AiDecisionPhase.RespondingToRobbing -> GameCommand.RespondToRobbing(GameAction.Pass)
             AiDecisionPhase.OwnTurn -> error("The fixed ron scenario should end before an own turn")
         }
     }

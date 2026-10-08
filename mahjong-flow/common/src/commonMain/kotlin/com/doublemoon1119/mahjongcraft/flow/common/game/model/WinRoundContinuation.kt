@@ -17,7 +17,7 @@ import kotlin.uuid.Uuid
  * 只需要看結算後的桌況即可，不需要重新理解規則特有的算役細節。
  *
  * @property previousTableState 這次胡牌指令送出前的桌況（尚未套用本次結算），用於還原放銃者／搶槓
- * 宣告者身分（此時 `pendingReaction`／`pendingKanReaction` 仍未清除）。
+ * 宣告者身分（此時 `pendingReaction`／`pendingRobbingReaction` 仍未清除）。
  * @property settledTableState 本次結算完成後的權威桌況：分數與贏家的 `actionHistory` 皆已是最終值，
  * 但 `finishedPlayerIds`／`currentPlayerIndex` 仍是結算前的值，尚未套用 resolver 這次的決策。
  * @property winnerPlayerIds 這次一起成立的所有贏家 Uuid。
@@ -48,7 +48,7 @@ enum class ContinuingWinSettlementDetail {
 /**
  * 一次胡牌剛結算完成、但還沒決定該立即呈現或延後呈現的完整呈現內容。
  *
- * 由 `DeclareTsumoUseCase`／`RespondToDiscardUseCase`／`RespondToKanUseCase` 建構後交給
+ * 由 `DeclareTsumoUseCase`／`RespondToDiscardUseCase`／`RespondToRobbingUseCase` 建構後交給
  * `WinPresentationHandoff` 暫存（而不是直接發布），再由 `ResolveWinRoundContinuationUseCase` 依本次
  * 的 [WinRoundDirective] 取走。
  *

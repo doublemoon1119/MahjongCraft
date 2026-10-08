@@ -44,7 +44,7 @@ class MahjongAutoDrawService(
         val game = gameRepository.getGame(gameId) ?: return
         if (game.isMatchOver) return
         val state = game.tableState
-        if (state.pendingReaction != null || state.pendingKanReaction != null) return
+        if (state.pendingReaction != null || state.pendingRobbingReaction != null) return
 
         val current = state.currentPlayer
         if (game.isAi(current.id) || current.id in game.forcedAutoPlayPlayerIds) return

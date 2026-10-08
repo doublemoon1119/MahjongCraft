@@ -143,9 +143,9 @@ internal class InstrumentedAiStrategy(
             else -> "expected RespondToDiscard"
         }
 
-        AiDecisionPhase.RespondingToKan -> when (command) {
-            is GameCommand.RespondToKan -> responseReason(context, command.action)
-            else -> "expected RespondToKan"
+        AiDecisionPhase.RespondingToRobbing -> when (command) {
+            is GameCommand.RespondToRobbing -> responseReason(context, command.action)
+            else -> "expected RespondToRobbing"
         }
 
         AiDecisionPhase.OwnTurn -> checkOwnTurn(context, command)

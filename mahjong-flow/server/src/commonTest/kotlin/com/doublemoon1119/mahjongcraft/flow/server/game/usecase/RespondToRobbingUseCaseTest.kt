@@ -20,7 +20,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
-import com.doublemoon1119.mahjongcraft.logic.table.PendingKanReaction
+import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
@@ -42,13 +42,13 @@ import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
 /**
- * [RespondToKanUseCase] 的單元測試類別。
+ * [RespondToRobbingUseCase] 的單元測試類別。
  *
  * 驗證搶槓反應視窗的回應：只信任 Ron/Pass（過濾掉 getLegalActions 誤算出的吃/碰/明槓資格）、
  * 搶槓成功時透過 [RonSettlementResolver] 結算（暗槓/加槓宣告視為未成立，副露不套用）、全員放過時
- * 透過 [KanDeclarationApplier] 補做原本被暫緩的套用，以及各種驗證失敗案例。
+ * 透過 [SelfDeclarationApplier] 補做原本被暫緩的套用，以及各種驗證失敗案例。
  */
-class RespondToKanUseCaseTest {
+class RespondToRobbingUseCaseTest {
 
     private val gameId = Uuid.random()
     private val declarerId = Uuid.random()
@@ -66,7 +66,7 @@ class RespondToKanUseCaseTest {
             BundledRiichiExtension.registerWinSettlementDetailResolvers(this)
             freeze()
         }
-        val useCase = RespondToKanUseCase(
+        val useCase = RespondToRobbingUseCase(
             gameRepo,
             moduleRegistry,
             snapshotSynchronizer,
@@ -124,7 +124,7 @@ class RespondToKanUseCaseTest {
             initialDeadWall = initialDeadWall,
             currentPlayerIndex = 0,
             dynamicRuleState = RiichiDynamicState(),
-            pendingKanReaction = PendingKanReaction(declarerId, kanAction, robbedWhiteTile, setOf(robberId)),
+            pendingRobbingReaction = PendingRobbingReaction(declarerId, kanAction, robbedWhiteTile, setOf(robberId)),
         ).withFirstKanPhysicalWallLayout()
     }
 
@@ -141,7 +141,7 @@ class RespondToKanUseCaseTest {
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!
-        assertNull(newState.pendingKanReaction)
+        assertNull(newState.pendingRobbingReaction)
 
         val winner = newState.players.first { it.id == robberId }
         assertTrue(winner.score > 0, "Winner should have gained points.")
@@ -191,7 +191,7 @@ class RespondToKanUseCaseTest {
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!
-        assertNull(newState.pendingKanReaction)
+        assertNull(newState.pendingRobbingReaction)
 
         val declarer = newState.players.first { it.id == declarerId }
         val meld = declarer.hand.melds.single()
@@ -299,7 +299,7 @@ class RespondToKanUseCaseTest {
     @Test
     fun `test respond fails when there is no pending chankan`() = runTest {
         val fixtures = Fixtures()
-        val table = setUpTable().copy(pendingKanReaction = null)
+        val table = setUpTable().copy(pendingRobbingReaction = null)
         fixtures.gameRepo.setTableState(table)
 
         val result = fixtures.useCase(gameId, robberId, GameAction.Pass)
@@ -344,7 +344,7 @@ class RespondToKanUseCaseTest {
             config = RiichiRuleConfig(),
             tileWall = TileWall(listOf(rinshanTile)),
             currentPlayerIndex = 0,
-            pendingKanReaction = PendingKanReaction(
+            pendingRobbingReaction = PendingRobbingReaction(
                 declarerId,
                 kanAction,
                 robbedWhiteTile,

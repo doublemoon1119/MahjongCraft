@@ -944,7 +944,7 @@ class HistoryBrowseControllerTest {
                 finishedPlayerSeats = emptySet(),
                 dynamicRuleState = null,
                 hasPendingReaction = false,
-                hasPendingKanReaction = false,
+                hasPendingRobbingReaction = false,
                 outcome = null,
             )
             mutableState.value = ClientHistoryQueryState.RoundStateResult(

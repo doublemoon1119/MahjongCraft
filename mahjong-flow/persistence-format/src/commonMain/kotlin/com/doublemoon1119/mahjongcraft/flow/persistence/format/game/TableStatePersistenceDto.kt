@@ -29,7 +29,7 @@ import kotlin.uuid.Uuid
  * @property currentPlayerIndex 目前行動玩家的索引。
  * @property dynamicRuleState 規則專屬牌桌狀態；沒有狀態時為 null。
  * @property pendingReaction 尚未完成的捨牌反應視窗。
- * @property pendingKanReaction 尚未完成的搶槓反應視窗。
+ * @property pendingRobbingReaction 尚未完成的搶槓反應視窗。
  * @property wallOpening 本局權威擲骰決定的牌牆開門位置；規則尚未支援開門流程時為 null。
  * @property initialDeadWall 目前規則保留牌；舊欄位名稱為既有存檔格式相容性而保留，不代表內容固定，
  * 也不表示 platform 必須將它呈現為日麻式獨立王牌區。
@@ -50,7 +50,7 @@ data class TableStatePersistenceDto(
     val currentPlayerIndex: Int,
     val dynamicRuleState: TypedPersistenceDto?,
     val pendingReaction: PendingReactionPersistenceDto?,
-    val pendingKanReaction: PendingKanReactionPersistenceDto?,
+    val pendingRobbingReaction: PendingRobbingReactionPersistenceDto?,
     val wallOpening: WallOpeningPersistenceDto?,
     val initialDeadWall: List<IdentifiedTilePersistenceDto>,
     val finishedPlayerIds: Set<String> = emptySet(),
@@ -87,7 +87,7 @@ fun TableState.toPersistenceDto(
     currentPlayerIndex = currentPlayerIndex,
     dynamicRuleState = dynamicRuleState?.let { dynamicRuleStateRegistry.encode(it, json) },
     pendingReaction = pendingReaction?.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json),
-    pendingKanReaction = pendingKanReaction?.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json),
+    pendingRobbingReaction = pendingRobbingReaction?.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json),
     wallOpening = wallOpening?.toPersistenceDto(),
     initialDeadWall = reservedWallTiles.map { it.toPersistenceDto() },
     finishedPlayerIds = finishedPlayerIds.map(Uuid::toString).toSet(),
@@ -124,7 +124,7 @@ fun TableStatePersistenceDto.toDomain(
     currentPlayerIndex = currentPlayerIndex,
     dynamicRuleState = dynamicRuleState?.let { dynamicRuleStateRegistry.decode(it, json) },
     pendingReaction = pendingReaction?.toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json),
-    pendingKanReaction = pendingKanReaction?.toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json),
+    pendingRobbingReaction = pendingRobbingReaction?.toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json),
     wallOpening = wallOpening?.toDomain(),
     initialDeadWall = initialDeadWall.map { it.toDomain() },
     finishedPlayerIds = finishedPlayerIds.map(Uuid::parse).toSet(),

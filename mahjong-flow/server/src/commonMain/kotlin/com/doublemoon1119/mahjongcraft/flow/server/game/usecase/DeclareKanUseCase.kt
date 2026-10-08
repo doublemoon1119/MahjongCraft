@@ -17,7 +17,7 @@ import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
-import com.doublemoon1119.mahjongcraft.logic.table.PendingKanReaction
+import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionPhase
@@ -32,8 +32,8 @@ import kotlin.uuid.Uuid
  * （含立直後暗槓「不能改變聽牌」的限制），理由與 [DeclareRiichiUseCase]、
  * [DeclareAbortiveDrawUseCase] 相同。合法性確認後，先檢查有沒有其他玩家可以搶槓
  * （是否允許搶槓以及哪些和牌形能搶，完全由規則模組的合法動作判定器決定）：
- * 有人可以搶時開一次反應視窗（[TableState.pendingKanReaction]，副露暫緩套用，交給
- * [RespondToKanUseCase] 解析）；沒人可以搶時直接套用（[KanDeclarationApplier]）。多位玩家同時
+ * 有人可以搶時開一次反應視窗（[TableState.pendingRobbingReaction]，副露暫緩套用，交給
+ * [RespondToRobbingUseCase] 解析）；沒人可以搶時直接套用（[SelfDeclarationApplier]）。多位玩家同時
  * 可搶時（罕見），依 [MahjongRuleConfig.multiRonPolicy] 決定實際開放
  * 給誰，與一般捨牌榮和共用同一套判定（見 [DiscardReactionResolver]）；判定為途中流局時，這次
  * 加槓視為未成立，不開反應視窗、不套用副露。
@@ -118,7 +118,7 @@ class DeclareKanUseCase(
                 state.currentPlayer.id != playerId ->
                     state to Outcome.Error(GameError.NotPlayersTurn(playerId, gameId))
 
-                state.pendingKanReaction != null ->
+                state.pendingRobbingReaction != null ->
                     state to Outcome.Error(
                         GameError.IllegalAction(playerId, gameId, GameAction.Kan(kanType, tileId, emptyList())),
                     )
@@ -154,7 +154,7 @@ class DeclareKanUseCase(
                             GameError.IllegalAction(playerId, gameId, GameAction.Kan(kanType, tileId, emptyList())),
                         )
 
-                    val ronEligiblePlayerIds = ChankanEligibility.ronEligiblePlayerIds(
+                    val ronEligiblePlayerIds = RobbingEligibility.ronEligiblePlayerIds(
                         tableState = state,
                         declarerId = playerId,
                         kanAction = kanAction,
@@ -188,8 +188,8 @@ class DeclareKanUseCase(
                     }
 
                     if (abortiveDrawReason != null) {
-                        // 多響流局：這次加槓視為未成立（比照 RespondToKanUseCase 既有的「搶槓
-                        // 成功時，暗槓/加槓視為未成立」原則），不套用 KanDeclarationApplier、不補
+                        // 多響流局：這次加槓視為未成立（比照 RespondToRobbingUseCase 既有的「搶槓
+                        // 成功時，暗槓/加槓視為未成立」原則），不套用 SelfDeclarationApplier、不補
                         // 嶺上牌，直接記錄流局。
                         val newState = state.copy(
                             players = state.players.map { it.recordAction(GameAction.ExhaustiveDraw(abortiveDrawReason)) },
@@ -206,7 +206,7 @@ class DeclareKanUseCase(
 
                     if (ronWinningPlayerIds.isNotEmpty()) {
                         val newState = state.copy(
-                            pendingKanReaction = PendingKanReaction(
+                            pendingRobbingReaction = PendingRobbingReaction(
                                 playerId,
                                 kanAction,
                                 declaredTile,
@@ -216,8 +216,8 @@ class DeclareKanUseCase(
                         return@update newState to Outcome.Success(KanResult(newState, kanAction, drawHappened = false))
                     }
 
-                    val applied = KanDeclarationApplier.apply(state, playerId, kanAction, declaredTile, module)
-                    if (applied is KanDeclarationApplier.Result.Rejected) {
+                    val applied = SelfDeclarationApplier.apply(state, playerId, kanAction, declaredTile, module)
+                    if (applied is SelfDeclarationApplier.Result.Rejected) {
                         val error = if (applied.reasonId == SupplementalDrawReasonIds.WALL_EXHAUSTED) {
                             GameError.WallExhausted(gameId)
                         } else {
@@ -225,7 +225,7 @@ class DeclareKanUseCase(
                         }
                         return@update state to Outcome.Error(error)
                     }
-                    applied as KanDeclarationApplier.Result.Applied
+                    applied as SelfDeclarationApplier.Result.Applied
                     applied.tableState to Outcome.Success(
                         KanResult(
                             applied.tableState,

@@ -84,7 +84,7 @@ class ResolveWinRoundContinuationUseCase(
             when (directive) {
                 WinRoundDirective.EndRound -> {
                     val responsiblePlayerId = previousTableState.pendingReaction?.discarderId
-                        ?: previousTableState.pendingKanReaction?.declarerId
+                        ?: previousTableState.pendingRobbingReaction?.declarerId
                     val dealerDirective = if (settledTableState.dealerPlayerId in winnerPlayerIds) {
                         RoundTransitionDirective.REPEAT_DEALER
                     } else {
@@ -121,7 +121,7 @@ class ResolveWinRoundContinuationUseCase(
 
     /**
      * 從結算前後的桌況重建 [WinRoundContinuationContext]——放銃者／搶槓宣告者身分要從
-     * [previousTableState] 尚未清除的 `pendingReaction`／`pendingKanReaction` 還原（自摸時兩者皆為
+     * [previousTableState] 尚未清除的 `pendingReaction`／`pendingRobbingReaction` 還原（自摸時兩者皆為
      * null）；胡牌張則優先取任一贏家剛記錄的 [GameAction.Ron.tileId]，自摸時改用贏家的 `lastDrawn`
      * （[DeclareTsumoUseCase] 不會清除它）。
      */
@@ -138,7 +138,7 @@ class ResolveWinRoundContinuationUseCase(
             previousTableState = previousTableState,
             settledTableState = settledTableState,
             winnerPlayerIds = winnerPlayerIds,
-            ronDiscarderId = previousTableState.pendingReaction?.discarderId ?: previousTableState.pendingKanReaction?.declarerId,
+            ronDiscarderId = previousTableState.pendingReaction?.discarderId ?: previousTableState.pendingRobbingReaction?.declarerId,
             winningTileId = winningTileId,
         )
     }

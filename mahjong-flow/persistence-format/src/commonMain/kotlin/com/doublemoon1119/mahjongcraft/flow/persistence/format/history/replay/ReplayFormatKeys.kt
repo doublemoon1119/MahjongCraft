@@ -210,7 +210,7 @@ internal object ReplaySourceKeys {
     const val PENDING_REACTION = "pendingReaction"
 
     /** 目前等待中的槓牌反應。 */
-    const val PENDING_KAN_REACTION = "pendingKanReaction"
+    const val PENDING_ROBBING_REACTION = "pendingRobbingReaction"
 
     /** 動作使用的牌。 */
     const val TILE_ID = "tileId"

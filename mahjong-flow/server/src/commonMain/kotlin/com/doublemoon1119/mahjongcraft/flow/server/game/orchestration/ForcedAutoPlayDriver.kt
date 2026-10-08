@@ -30,9 +30,9 @@ class ForcedAutoPlayDriver(
         val state = game.tableState
         val forcedPlayerIds = game.forcedAutoPlayPlayerIds
 
-        state.pendingKanReaction?.let { pending ->
+        state.pendingRobbingReaction?.let { pending ->
             pending.eligiblePlayerIds.firstOrNull { it in forcedPlayerIds && it !in pending.responses }?.let { playerId ->
-                return playerId to GameCommand.RespondToKan(GameAction.Pass)
+                return playerId to GameCommand.RespondToRobbing(GameAction.Pass)
             }
         }
         state.pendingReaction?.let { pending ->
@@ -40,7 +40,7 @@ class ForcedAutoPlayDriver(
                 return playerId to GameCommand.RespondToDiscard(GameAction.Pass)
             }
         }
-        if (state.pendingKanReaction != null || state.pendingReaction != null) return null
+        if (state.pendingRobbingReaction != null || state.pendingReaction != null) return null
 
         val currentPlayer = state.currentPlayer.takeIf { it.id in forcedPlayerIds } ?: return null
         if (currentPlayer.hand.lastDrawn == null && !currentPlayer.justClaimedMeld) {

@@ -87,8 +87,8 @@ class FullMatchIntegrationTest {
                         ?: GameAction.Pass,
                 )
 
-            AiDecisionPhase.RespondingToKan ->
-                GameCommand.RespondToKan(
+            AiDecisionPhase.RespondingToRobbing ->
+                GameCommand.RespondToRobbing(
                     context.legalActions.firstOrNull { it is GameAction.Ron }
                         ?: GameAction.Pass,
                 )

@@ -281,7 +281,7 @@ interface GamePresentationPublisher {
      * 通知平台這次胡牌成立的贏家，平台據此呈現胡牌演出。
      *
      * 呼叫時機：贏家結算完成、既有事件廣播之後——自摸（`DeclareTsumoUseCase`）緊接在廣播 [GameAction.Tsumo] 之後；
-     * 榮和／搶槓（`RespondToDiscardUseCase`／`RespondToKanUseCase`）在既有事件廣播之後，一次包含這次所有贏家。
+     * 榮和／搶槓（`RespondToDiscardUseCase`／`RespondToRobbingUseCase`）在既有事件廣播之後，一次包含這次所有贏家。
      *
      * 不攜帶贏家手牌的完整內容，手牌如何排列由平台依規則模組的牌序決定。
      *

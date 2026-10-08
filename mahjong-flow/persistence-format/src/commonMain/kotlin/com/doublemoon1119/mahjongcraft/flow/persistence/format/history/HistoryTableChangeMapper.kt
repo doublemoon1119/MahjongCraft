@@ -85,7 +85,7 @@ internal class HistoryTableChangeMapper(
                 changeValue.value?.toPersistenceDto(registries.exhaustiveDrawReasons, registries.extensionGameActions, json),
             )
         },
-        pendingKanReaction = change.pendingKanReaction?.let { changeValue ->
+        pendingRobbingReaction = change.pendingRobbingReaction?.let { changeValue ->
             HistoryChangedValuePersistenceDto(
                 changeValue.value?.toPersistenceDto(registries.exhaustiveDrawReasons, registries.extensionGameActions, json),
             )
@@ -127,7 +127,7 @@ internal class HistoryTableChangeMapper(
                 changeValue.value?.toDomain(registries.exhaustiveDrawReasons, registries.extensionGameActions, json),
             )
         },
-        pendingKanReaction = dto.pendingKanReaction?.let { changeValue ->
+        pendingRobbingReaction = dto.pendingRobbingReaction?.let { changeValue ->
             HistoryChangedValue(
                 changeValue.value?.toDomain(registries.exhaustiveDrawReasons, registries.extensionGameActions, json),
             )

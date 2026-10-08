@@ -183,7 +183,7 @@ class HistoryRoundStatePresentationTest {
         finishedPlayerSeats = emptySet(),
         dynamicRuleState = null,
         hasPendingReaction = false,
-        hasPendingKanReaction = false,
+        hasPendingRobbingReaction = false,
         outcome = null,
     )
 }

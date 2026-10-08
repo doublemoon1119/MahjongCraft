@@ -4,8 +4,8 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
-import com.doublemoon1119.mahjongcraft.logic.table.PendingKanReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
+import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
@@ -94,7 +94,7 @@ data class HistoryPlayerChange(
  * @property currentPlayerIndex 新的行動玩家索引；未改變時為 null。
  * @property dynamicRuleState 規則動態狀態的新值；外層 null 代表未改變。
  * @property pendingReaction 捨牌反應視窗的新值；外層 null 代表未改變。
- * @property pendingKanReaction 搶槓反應視窗的新值；外層 null 代表未改變。
+ * @property pendingRobbingReaction 搶槓反應視窗的新值；外層 null 代表未改變。
  * @property reservedWallTiles 規則保留牌的新順序；未改變時為 null。
  * @property physicalWallLayout 實體牌牆位置的局部變化；未改變時為 null。
  * @property finishedPlayerIds 本局已完成玩家的新集合；未改變時為 null。
@@ -105,7 +105,7 @@ data class HistoryTableChange(
     val currentPlayerIndex: Int? = null,
     val dynamicRuleState: HistoryChangedValue<DynamicRuleState?>? = null,
     val pendingReaction: HistoryChangedValue<PendingReaction?>? = null,
-    val pendingKanReaction: HistoryChangedValue<PendingKanReaction?>? = null,
+    val pendingRobbingReaction: HistoryChangedValue<PendingRobbingReaction?>? = null,
     val reservedWallTiles: List<IdentifiedTile>? = null,
     val physicalWallLayout: HistoryWallLayoutChange? = null,
     val finishedPlayerIds: Set<Uuid>? = null,
@@ -122,7 +122,7 @@ data class HistoryTableChange(
             currentPlayerIndex = currentPlayerIndex ?: before.currentPlayerIndex,
             dynamicRuleState = if (dynamicRuleState != null) dynamicRuleState.value else before.dynamicRuleState,
             pendingReaction = if (pendingReaction != null) pendingReaction.value else before.pendingReaction,
-            pendingKanReaction = if (pendingKanReaction != null) pendingKanReaction.value else before.pendingKanReaction,
+            pendingRobbingReaction = if (pendingRobbingReaction != null) pendingRobbingReaction.value else before.pendingRobbingReaction,
             initialDeadWall = reservedWallTiles ?: before.reservedWallTiles,
             physicalWallLayout = physicalWallLayout?.applyTo(checkNotNull(before.physicalWallLayout))
                 ?: before.physicalWallLayout,
@@ -168,7 +168,7 @@ data class HistoryTableChange(
                 currentPlayerIndex = after.currentPlayerIndex.takeIf { it != before.currentPlayerIndex },
                 dynamicRuleState = if (after.dynamicRuleState != before.dynamicRuleState) HistoryChangedValue(after.dynamicRuleState) else null,
                 pendingReaction = if (after.pendingReaction != before.pendingReaction) HistoryChangedValue(after.pendingReaction) else null,
-                pendingKanReaction = if (after.pendingKanReaction != before.pendingKanReaction) HistoryChangedValue(after.pendingKanReaction) else null,
+                pendingRobbingReaction = if (after.pendingRobbingReaction != before.pendingRobbingReaction) HistoryChangedValue(after.pendingRobbingReaction) else null,
                 reservedWallTiles = after.reservedWallTiles.takeIf { it != before.reservedWallTiles },
                 physicalWallLayout = if (newPlacements != oldPlacements) {
                     HistoryWallLayoutChange(

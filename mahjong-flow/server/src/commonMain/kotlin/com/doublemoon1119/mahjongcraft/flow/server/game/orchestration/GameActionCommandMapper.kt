@@ -26,7 +26,7 @@ class GameActionCommandMapper(
             return null
         }
         return when (context) {
-            is PlayerActionContext.KanReaction -> GameCommand.RespondToKan(action)
+            is PlayerActionContext.RobbingReaction -> GameCommand.RespondToRobbing(action)
             is PlayerActionContext.DiscardReaction -> GameCommand.RespondToDiscard(action)
             is PlayerActionContext.OwnTurn -> action.toOwnTurnCommand()
         }

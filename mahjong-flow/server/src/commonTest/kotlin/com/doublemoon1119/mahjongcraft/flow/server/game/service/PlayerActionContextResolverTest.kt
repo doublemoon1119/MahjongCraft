@@ -4,8 +4,8 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.table.PendingKanReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
+import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
@@ -31,7 +31,7 @@ class PlayerActionContextResolverTest {
                     hand = Hand(lastDrawn = IdentifiedTile(Uuid.random(), Tile.Honor.East)),
                 ),
             ),
-            pendingKanReaction = PendingKanReaction(
+            pendingRobbingReaction = PendingRobbingReaction(
                 declarerId = Uuid.random(),
                 kanAction = GameAction.Kan(GameAction.KanType.ADDED_KAN, robbedTile.id, emptyList()),
                 robbedTile = robbedTile,
@@ -40,7 +40,7 @@ class PlayerActionContextResolverTest {
             pendingReaction = PendingReaction(Uuid.random(), Uuid.random(), setOf(playerId)),
         )
 
-        assertIs<PlayerActionContext.KanReaction>(resolver.resolveFor(state, playerId))
+        assertIs<PlayerActionContext.RobbingReaction>(resolver.resolveFor(state, playerId))
     }
 
     /** 驗證反應情境只包含尚未回應的合資格玩家。 */

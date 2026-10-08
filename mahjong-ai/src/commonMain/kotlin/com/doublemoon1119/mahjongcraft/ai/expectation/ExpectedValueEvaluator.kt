@@ -128,7 +128,7 @@ internal class ExpectedValueEvaluator(
     fun decide(extensionRegistry: ExtensionGameActionAiRegistry): GameCommand = when (context.phase) {
         AiDecisionPhase.OwnTurn -> decideOwnTurn(extensionRegistry)
         AiDecisionPhase.RespondingToDiscard -> decideDiscardResponse()
-        AiDecisionPhase.RespondingToKan -> GameCommand.RespondToKan(
+        AiDecisionPhase.RespondingToRobbing -> GameCommand.RespondToRobbing(
             context.legalActions.firstOrNull { it is GameAction.Ron } ?: GameAction.Pass,
         )
     }

@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.service
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
-import com.doublemoon1119.mahjongcraft.logic.table.PendingKanReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
+import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
@@ -21,11 +21,11 @@ sealed interface PlayerActionContext {
      * @property playerId 取得搶槓回應權的玩家 Uuid。
      * @property pending 目前的搶槓反應視窗。
      */
-    data class KanReaction(
+    data class RobbingReaction(
         override val playerId: Uuid,
-        val pending: PendingKanReaction,
+        val pending: PendingRobbingReaction,
     ) : PlayerActionContext {
-        override val phase: PlayerDecisionPhase = PlayerDecisionPhase.KAN_REACTION
+        override val phase: PlayerDecisionPhase = PlayerDecisionPhase.ROBBING_REACTION
     }
 
     /**
@@ -62,10 +62,10 @@ class PlayerActionContextResolver {
      * 此解析只描述桌況事實，不過濾 AI、強制自動操作玩家，也不處理局前準備或對局生命週期。
      */
     fun resolve(state: TableState): Map<Uuid, PlayerActionContext> {
-        state.pendingKanReaction?.let { pending ->
+        state.pendingRobbingReaction?.let { pending ->
             return pending.eligiblePlayerIds
                 .filterNot { it in pending.responses }
-                .associateWith { PlayerActionContext.KanReaction(it, pending) }
+                .associateWith { PlayerActionContext.RobbingReaction(it, pending) }
         }
         state.pendingReaction?.let { pending ->
             return pending.eligiblePlayerIds

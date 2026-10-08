@@ -22,7 +22,7 @@ import kotlin.uuid.Uuid
  * 本物件只負責通用手牌變化、結果驗證及 action history；補牌來源、上限、牌牆變化與新增公開牌完全由
  * [MahjongRuleModule.createSupplementalDrawPolicy] 決定。
  */
-internal object KanDeclarationApplier {
+internal object SelfDeclarationApplier {
     /** 槓牌與補牌的套用結果。 */
     sealed interface Result {
         /**

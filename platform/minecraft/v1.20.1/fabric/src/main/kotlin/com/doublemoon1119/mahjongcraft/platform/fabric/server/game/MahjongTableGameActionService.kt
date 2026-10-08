@@ -359,7 +359,7 @@ class MahjongTableGameActionService(
 
 /** 對應到手牌查詢顯示使用的粗粒度回合狀態。 */
 internal fun PlayerActionContext?.toTurnStatus(): GameTurnStatus = when (this) {
-    is PlayerActionContext.KanReaction, is PlayerActionContext.DiscardReaction -> GameTurnStatus.AWAITING_RESPONSE
+    is PlayerActionContext.RobbingReaction, is PlayerActionContext.DiscardReaction -> GameTurnStatus.AWAITING_RESPONSE
     is PlayerActionContext.OwnTurn -> GameTurnStatus.OWN_TURN
     null -> GameTurnStatus.WAITING
 }

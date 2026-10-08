@@ -38,10 +38,10 @@ import kotlin.uuid.Uuid
  * [GameAction.Ron] 的其他玩家。搶槓的本質是「用宣告者這張要拿去槓的牌榮和」，所以搶槓成功時，
  * 宣告者的身分變成榮和結算裡的放銃者，不是槓的宣告者——這跟一般槓牌完全是兩回事。
  *
- * 對應 [DeclareKanUseCase] 開啟的 `TableState.pendingKanReaction`：每位有資格搶槓的玩家各自呼叫一次
+ * 對應 [DeclareKanUseCase] 開啟的 `TableState.pendingRobbingReaction`：每位有資格搶槓的玩家各自呼叫一次
  * 本用例記錄自己的回應，等全部人都回應完才結算，結算只有兩種結果：
  * - **有人搶槓成功**：這次暗槓/加槓視為沒發生，改用 [RonSettlementResolver] 結算榮和。
- * - **全員放過**：槓真的成立，這時才呼叫 [KanDeclarationApplier] 補做原本暫緩的副露套用，並讓
+ * - **全員放過**：槓真的成立，這時才呼叫 [SelfDeclarationApplier] 補做原本暫緩的副露套用，並讓
  *   宣告者摸嶺上牌——只有這個分支會摸牌，搶槓成功那個分支不會。
  *
  * 只信任 [GameAction.Ron]/[GameAction.Pass]：`LegalActionValidator.getLegalActions` 的「反應」
@@ -58,7 +58,7 @@ import kotlin.uuid.Uuid
  * @property winSettlementDetailResolverRegistry 胡牌詳情解析器 registry。
  */
 @Factory
-class RespondToKanUseCase(
+class RespondToRobbingUseCase(
     private val gameRepository: GameRepository,
     private val moduleRegistry: MahjongModuleRegistry,
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
@@ -91,7 +91,7 @@ class RespondToKanUseCase(
                             after = after,
                             affectedTileIds = action.affectedTileIds(),
                         ),
-                    ) + if (before.pendingKanReaction != null && after.pendingKanReaction == null) {
+                    ) + if (before.pendingRobbingReaction != null && after.pendingRobbingReaction == null) {
                         val resolution = result.value
                         val resolvedActor = resolution.declarerId ?: resolution.ronWinnerIds.singleOrNull()
                         buildList {
@@ -100,7 +100,7 @@ class RespondToKanUseCase(
                                     actorPlayerId = resolvedActor,
                                     fact = HistoryFact.ReactionResolved(
                                         resolvedAction = if (resolution.drawHappened) {
-                                            before.pendingKanReaction?.kanAction
+                                            before.pendingRobbingReaction?.kanAction
                                         } else {
                                             resolution.ronWinningTileId?.let(GameAction::Ron)
                                         },
@@ -129,7 +129,7 @@ class RespondToKanUseCase(
                 }
             },
         ) { state ->
-            val pending = state?.pendingKanReaction
+            val pending = state?.pendingRobbingReaction
             when {
                 state == null -> state to Outcome.Error(GameError.GameNotFound(gameId))
                 state.players.none { it.id == playerId } ->
@@ -163,8 +163,8 @@ class RespondToKanUseCase(
                     }
                     val newPending = pending.copy(responses = pending.responses + (playerId to action))
                     if (!newPending.isComplete) {
-                        val newState = stateAfterResponse.copy(pendingKanReaction = newPending)
-                        return@update newState to Outcome.Success(ChankanResult(newState, drawHappened = false))
+                        val newState = stateAfterResponse.copy(pendingRobbingReaction = newPending)
+                        return@update newState to Outcome.Success(RobbingResult(newState, drawHappened = false))
                     }
 
                     val ronWinnerIds = newPending.responses.filterValues { it is GameAction.Ron }.keys
@@ -179,8 +179,8 @@ class RespondToKanUseCase(
                             winnerIds = ronWinnerIds,
                             isRobbingKan = pending.kanAction.type == GameAction.KanType.ADDED_KAN,
                         )
-                        val settledState = resolved?.tableState?.copy(pendingKanReaction = null)
-                            ?: state.copy(pendingKanReaction = newPending)
+                        val settledState = resolved?.tableState?.copy(pendingRobbingReaction = null)
+                            ?: state.copy(pendingRobbingReaction = newPending)
                         val revealResult = if (resolved != null) {
                             WallRevealDecisionApplier.apply(
                                 tableState = settledState,
@@ -215,7 +215,7 @@ class RespondToKanUseCase(
                             null
                         }
                         newState to Outcome.Success(
-                            ChankanResult(
+                            RobbingResult(
                                 tableState = newState,
                                 drawHappened = false,
                                 ronWinnerIds = if (resolved != null) ronWinnerIds else emptySet(),
@@ -231,7 +231,7 @@ class RespondToKanUseCase(
                     } else {
                         // 全員放過：可以搶槓卻沒有榮和的玩家（含一炮多響設定下沒被詢問的玩家）記入被搶的牌，
                         // 槓真的成立，補做副露套用，並讓宣告者摸嶺上牌。
-                        val passedPlayerIds = newPending.responses.keys + ChankanEligibility.ronEligiblePlayerIds(
+                        val passedPlayerIds = newPending.responses.keys + RobbingEligibility.ronEligiblePlayerIds(
                             tableState = state,
                             declarerId = pending.declarerId,
                             kanAction = pending.kanAction,
@@ -244,14 +244,14 @@ class RespondToKanUseCase(
                             playerIds = passedPlayerIds,
                             module = module,
                         )
-                        val applied = KanDeclarationApplier.apply(
+                        val applied = SelfDeclarationApplier.apply(
                             stateAfterPasses,
                             pending.declarerId,
                             pending.kanAction,
                             pending.robbedTile,
                             module,
                         )
-                        if (applied is KanDeclarationApplier.Result.Rejected) {
+                        if (applied is SelfDeclarationApplier.Result.Rejected) {
                             val error = if (applied.reasonId == SupplementalDrawReasonIds.WALL_EXHAUSTED) {
                                 GameError.WallExhausted(gameId)
                             } else {
@@ -259,10 +259,10 @@ class RespondToKanUseCase(
                             }
                             return@update state to Outcome.Error(error)
                         }
-                        applied as KanDeclarationApplier.Result.Applied
-                        val newState = applied.tableState.copy(pendingKanReaction = null)
+                        applied as SelfDeclarationApplier.Result.Applied
+                        val newState = applied.tableState.copy(pendingRobbingReaction = null)
                         newState to Outcome.Success(
-                            ChankanResult(
+                            RobbingResult(
                                 newState,
                                 drawHappened = applied.drawnTiles.isNotEmpty(),
                                 declarerId = pending.declarerId,
@@ -289,7 +289,7 @@ class RespondToKanUseCase(
             presentationPublisher.publishRoundInfoUpdated(gameId, newState)
         }
 
-        // declarerId 只在「全員放過、槓真的成立」時才有值（見上面 KanDeclarationApplier 那個分支）；
+        // declarerId 只在「全員放過、槓真的成立」時才有值（見上面 SelfDeclarationApplier 那個分支）；
         // 這裡重新呈現宣告者的手牌/摸牌位/副露，把摸到的嶺上牌移到摸牌位（跟一般摸牌同一套呈現方式，
         // 見 DrawTileUseCase）。搶槓成功那個分支不會走到這裡。
         result.declarerId?.let { declarerId ->
@@ -354,7 +354,7 @@ class RespondToKanUseCase(
      * 兩個視窗，同一次結算只會有其中一種非空。
      * @property settlement 同一搶槓榮和交易建立的胡牌呈現詳情。
      */
-    private data class ChankanResult(
+    private data class RobbingResult(
         val tableState: TableState,
         val drawHappened: Boolean,
         val declarerId: Uuid? = null,
