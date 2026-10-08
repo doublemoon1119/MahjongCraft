@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongAnimationSo
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongVisualEffectKeys
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationEffectEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
@@ -32,11 +33,14 @@ import kotlin.uuid.toJavaUuid
  */
 @Single
 class FabricWinCelebrationEffectScheduler(private val spawnGateway: FabricEntitySpawnGateway) {
+    /** 記錄胡牌張 entity 找不到而略過效果的 logger。 */
+    private val logger = mahjongCraftLogger(FabricWinCelebrationEffectScheduler::class)
+
     /** 依 [Task.targetTileId] 索引的待開始／進行中任務。 */
     private val tasksByTargetTileId = ConcurrentHashMap<Uuid, Task>()
 
     /**
-     * 排定新的效果 entity；相同胡牌張的既有任務尚未到期時直接忽略。
+     * 排定新的效果 entity；相同胡牌張的既有任務尚未到期時直接忽略，胡牌張 entity 找不到時記錄警告並略過。
      *
      * @param onComplete 任務到期時額外呼叫一次的程序內收尾動作；debug 指令用來移除臨時牌。
      */
@@ -49,7 +53,11 @@ class FabricWinCelebrationEffectScheduler(private val spawnGateway: FabricEntity
         onComplete: (() -> Unit)? = null,
     ) {
         require(endGameTime > startGameTime) { "Win celebration effect end time must be after start time" }
-        val tile = world.getEntity(targetTileId.toJavaUuid()) as? MahjongTileEntity ?: return
+        val tile = world.getEntity(targetTileId.toJavaUuid()) as? MahjongTileEntity
+        if (tile == null) {
+            logger.warn("Win celebration effect skipped on table {}: winning tile entity {} is missing", tableId, targetTileId)
+            return
+        }
         val effect = WinCelebrationEffectEntity(world = world).apply {
             configure(
                 tableId = tableId,

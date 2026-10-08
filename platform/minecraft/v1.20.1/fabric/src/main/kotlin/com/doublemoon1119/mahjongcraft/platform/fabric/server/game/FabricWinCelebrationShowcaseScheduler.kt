@@ -88,7 +88,8 @@ class FabricWinCelebrationShowcaseScheduler(
     /**
      * 生成共享舞台；成功時隱藏局況顯示到舞台結束，並讓真實牌在 stage 起點交接為隱形。
      *
-     * [wings] 只能包含 [hasShowcase] 為 `true` 的贏家。
+     * [wings] 只能包含 [hasShowcase] 為 `true` 的贏家。找不到和牌張、或有贏家一張牌都找不到時不播放；
+     * 有牌找不到時記錄一筆警告，列出各座位缺少的牌。
      */
     fun schedule(
         world: ServerWorld,
@@ -106,7 +107,11 @@ class FabricWinCelebrationShowcaseScheduler(
         }
         val showcaseDurationTicks = definitions.maxOf { it.showcaseDurationTicks }
         val endGameTime = startGameTime + WinCelebrationShowcaseEntity.totalDurationTicks(showcaseDurationTicks)
-        val winningTile = world.getEntity(winningTileId.toJavaUuid()) as? MahjongTileEntity ?: return null
+        val winningTile = world.getEntity(winningTileId.toJavaUuid()) as? MahjongTileEntity
+        if (winningTile == null) {
+            logger.warn("Win celebration showcase cancelled on table {}: winning tile entity {} is missing", tableId, winningTileId)
+            return null
+        }
         val winningTileSnapshot = ShowcaseWinningTileSnapshot(
             assetKey = winningTileAssetKey,
             startOffsetX = winningTile.x - stagePlacement.x,
@@ -114,12 +119,17 @@ class FabricWinCelebrationShowcaseScheduler(
             startOffsetZ = winningTile.z - stagePlacement.z,
             startYaw = winningTile.yaw,
         )
+        val missingBySeat = mutableMapOf<Int, MutableList<Uuid>>()
         val snapshots = wings.mapIndexed { wingIndex, wing ->
             ShowcaseWingSnapshot(
                 seatIndex = wing.seatIndex,
                 cueKey = definitions[wingIndex].cueKey,
                 cards = wing.cards.mapIndexedNotNull { order, card ->
-                    val tile = world.getEntity(card.tileId.toJavaUuid()) as? MahjongTileEntity ?: return@mapIndexedNotNull null
+                    val tile = world.getEntity(card.tileId.toJavaUuid()) as? MahjongTileEntity
+                    if (tile == null) {
+                        missingBySeat.getOrPut(wing.seatIndex, ::mutableListOf) += card.tileId
+                        return@mapIndexedNotNull null
+                    }
                     ShowcaseCardSnapshot(
                         wingIndex = wingIndex,
                         order = order,
@@ -135,7 +145,15 @@ class FabricWinCelebrationShowcaseScheduler(
                 },
             )
         }
-        if (snapshots.any { it.cards.isEmpty() }) return null
+        val cancelled = snapshots.any { it.cards.isEmpty() }
+        missingPresentationTilesText(missingBySeat)?.let { missing ->
+            if (cancelled) {
+                logger.warn("Win celebration showcase cancelled on table {}: a winner has no tile entities left ({})", tableId, missing)
+            } else {
+                logger.warn("Win celebration showcase on table {} skips tiles whose entities are missing ({})", tableId, missing)
+            }
+        }
+        if (cancelled) return null
         val extraSounds = definitions
             .flatMap { it.extraSounds }
             .distinct()

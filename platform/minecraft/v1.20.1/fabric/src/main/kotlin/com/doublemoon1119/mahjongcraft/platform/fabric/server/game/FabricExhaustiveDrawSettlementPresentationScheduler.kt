@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSett
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ExhaustiveDrawSettlementPlayerSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ExhaustiveDrawSettlementPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.PersistentTableOverlayCoordinator
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.TileAnimationSteps
@@ -23,7 +24,10 @@ class FabricExhaustiveDrawSettlementPresentationScheduler(
     private val overlays: PersistentTableOverlayCoordinator,
     private val spawnGateway: FabricEntitySpawnGateway,
 ) {
-    /** 成功生成時回傳固定結束時間；失敗則不隱藏 round info。 */
+    /** 記錄手牌 entity 找不到的 logger。 */
+    private val logger = mahjongCraftLogger(FabricExhaustiveDrawSettlementPresentationScheduler::class)
+
+    /** 成功生成時回傳固定結束時間；失敗則不隱藏 round info。手牌 entity 找不到的牌不播放動畫，並記錄一筆警告列出各座位缺少的牌。 */
     fun schedule(
         world: ServerWorld,
         tableId: Uuid,
@@ -64,6 +68,7 @@ class FabricExhaustiveDrawSettlementPresentationScheduler(
         }
         if (!spawnGateway.spawn(world, stage, "exhaustive-draw-settlement", tableId)) return null
         val endGameTime = startGameTime + ExhaustiveDrawSettlementPresentationEntity.durationTicks(playerSnapshots)
+        val missingBySeat = mutableMapOf<Int, MutableList<Uuid>>()
         request.players.forEach { player ->
             val handTileIds = player.handTileIds.distinct()
             val cornerYieldShift = MahjongTileTableLayout.handCornerYieldShift(
@@ -71,7 +76,11 @@ class FabricExhaustiveDrawSettlementPresentationScheduler(
                 reservedCornerWidth = reservedCornerWidthsBySeat[player.ranking.seatIndex] ?: 0.0,
             )
             handTileIds.forEachIndexed { orderIndex, tileId ->
-                val tile = world.getEntity(tileId.toJavaUuid()) as? MahjongTileEntity ?: return@forEachIndexed
+                val tile = world.getEntity(tileId.toJavaUuid()) as? MahjongTileEntity
+                if (tile == null) {
+                    missingBySeat.getOrPut(player.ranking.seatIndex, ::mutableListOf) += tileId
+                    return@forEachIndexed
+                }
                 val sortedPlacement = MahjongTileTableLayout.handPlacement(
                     controllerX = controllerPos.x,
                     controllerY = controllerPos.y,
@@ -106,6 +115,9 @@ class FabricExhaustiveDrawSettlementPresentationScheduler(
                     }
                 }
             }
+        }
+        missingPresentationTilesText(missingBySeat)?.let { missing ->
+            logger.warn("Exhaustive draw settlement on table {} skips hand tiles whose entities are missing ({})", tableId, missing)
         }
         overlays.hideUntilRemoved(world, tableId, controllerPos)
         return endGameTime
