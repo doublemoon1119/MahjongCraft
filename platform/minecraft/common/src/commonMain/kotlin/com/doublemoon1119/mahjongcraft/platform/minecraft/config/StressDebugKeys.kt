@@ -23,6 +23,18 @@ object StressDebugKeys {
     /** 歷史處理方式不存在。 */
     const val INVALID_HISTORY_MODE: String = PREFIX + "invalid_history_mode"
 
+    /** 不認得的選項，參數為寫錯的名稱與可用的選項。 */
+    const val UNKNOWN_OPTION: String = PREFIX + "unknown_option"
+
+    /** 選項缺少值，參數為選項名稱。 */
+    const val MISSING_OPTION_VALUE: String = PREFIX + "missing_option_value"
+
+    /** 選項重複，參數為選項名稱。 */
+    const val DUPLICATE_OPTION: String = PREFIX + "duplicate_option"
+
+    /** 數值選項超出範圍，參數為選項名稱、最小值與最大值。 */
+    const val INVALID_OPTION_NUMBER: String = PREFIX + "invalid_option_number"
+
     /** 壓力測試資料庫無法開啟。 */
     const val STORAGE_UNAVAILABLE: String = PREFIX + "storage_unavailable"
 
@@ -94,6 +106,9 @@ object StressDebugKeys {
 
     /** 暖機已結束，參數為排除的秒數。 */
     const val WARMUP_DONE: String = PREFIX + "report.warmup.done"
+
+    /** 這次測試沒有暖機。 */
+    const val WARMUP_NONE: String = PREFIX + "report.warmup.none"
 
     /** 每 tick 耗時欄位。 */
     const val TICK: String = PREFIX + "report.tick"

@@ -35,7 +35,7 @@ import kotlin.uuid.toJavaUuid
 /**
  * 壓力測試一次執行的結果與目前數據。
  *
- * 除了場數與即時狀態，所有統計都只涵蓋暖機結束之後（見 [STRESS_WARMUP_TICKS]）。
+ * 除了場數與即時狀態，所有統計都只涵蓋暖機結束之後（見 [StressRunOptions.warmupSeconds]）。
  *
  * @property scenarioId 對局情境識別碼。
  * @property mode 桌數安排。
@@ -46,6 +46,7 @@ import kotlin.uuid.toJavaUuid
  * @property completedMatches 開始以來已打完的場數。
  * @property failedMatches 開始以來卡住而中止的場數。
  * @property elapsedTicks 開始以來已經過的伺服器 tick 數。
+ * @property warmupTicks 暖機的 tick 數；0 表示不暖機。
  * @property warmupRemainingTicks 暖機剩餘的 tick 數；暖機已結束時為 0。
  * @property measuredSeconds 暖機結束後經過的實際秒數。
  * @property tickAverageMillis 最近一段時間每 tick 耗時的平均毫秒數。
@@ -85,6 +86,7 @@ data class StressTestReport(
     val completedMatches: Int,
     val failedMatches: Int,
     val elapsedTicks: Long,
+    val warmupTicks: Long,
     val warmupRemainingTicks: Long,
     val measuredSeconds: Double,
     val tickAverageMillis: Double,
@@ -150,7 +152,7 @@ enum class StressTestClearResult {
  * 反映 AI 與流程的負擔；歷史依 [StressHistoryMode] 經由同一個權威來源的待寫佇列交給背景工作處理。新桌每個 tick 最多建立
  * [STRESS_TABLES_CREATED_PER_TICK] 桌，打完或卡住的桌會從權威來源移除。
  *
- * 開始後先暖機 [STRESS_WARMUP_TICKS] 個 tick：期間維持初始桌數、不列入統計與卡頓判斷。每 tick 都檢查 [StressSafetyValve]，
+ * 開始後先依 [StressRunOptions.warmupSeconds] 暖機：期間維持初始桌數、不列入統計與卡頓判斷。每 tick 都檢查 [StressSafetyValve]，
  * 包括暖機期間：伺服器落後或歷史出問題就停止並保留報告，持續卡頓則在暖機後記下當時的桌數後繼續。不記錄歷史時不檢查
  * 歷史相關的門檻。執行期間每秒在存檔資料夾的時間序列 CSV 追加一列。
  *
@@ -215,35 +217,30 @@ class StressTestController(
      * @param server 執行中的伺服器。
      * @param scenarioId 對局情境識別碼。
      * @param mode 桌數安排。
-     * @param pace 每桌推進節奏。
-     * @param historyMode 歷史處理方式。
-     * @param thresholds 安全閥門檻。
+     * @param options 節奏、歷史處理方式、卡頓門檻與暖機秒數。
      * @param starterId 下指令的玩家；停止時收到報告。null 表示由主控台執行。
      */
     suspend fun start(
         server: MinecraftServer,
         scenarioId: String,
         mode: StressTestMode,
-        pace: StressTestPace,
-        historyMode: StressHistoryMode,
-        thresholds: StressSafetyThresholds,
+        options: StressRunOptions,
         starterId: Uuid?,
     ): StressTestStartResult {
         if (run != null) return StressTestStartResult.Busy
         val scenario = HeadlessHistoryScenario.entries.firstOrNull { it.identifier == scenarioId } ?: return StressTestStartResult.InvalidScenario
         environment?.closeAndDelete()
         environment = null
-        val opened = environments.open(server, historyMode) ?: return StressTestStartResult.StorageUnavailable
+        val opened = environments.open(server, options.historyMode) ?: return StressTestStartResult.StorageUnavailable
         environment = opened
         lastReport = null
-        val timeSeries = openTimeSeries(server, scenario, pace, historyMode)
-        run = StressRun(scenario, mode, pace, thresholds, opened, starterId, timeSeries).also { it.startDecisionWatch() }
+        val timeSeries = openTimeSeries(server, scenario, options.pace, options.historyMode)
+        run = StressRun(scenario, mode, options, opened, starterId, timeSeries).also { it.startDecisionWatch() }
         logger.info(
-            "Stress test started: scenario={}, mode={}, pace={}, historyMode={}, timeSeries={}",
+            "Stress test started: scenario={}, mode={}, options={}, timeSeries={}",
             scenario.identifier,
             mode,
-            pace,
-            historyMode,
+            options,
             timeSeries?.path,
         )
         return StressTestStartResult.Started
@@ -335,8 +332,7 @@ class StressTestController(
      *
      * @property scenario 對局情境。
      * @property mode 桌數安排。
-     * @property pace 每桌推進節奏。
-     * @property thresholds 安全閥門檻。
+     * @property options 節奏、歷史處理方式、卡頓門檻與暖機秒數。
      * @property environment 共用的權威來源、計時器與歷史背景工作。
      * @property starterId 下指令的玩家。
      * @property timeSeries 每秒時間序列 CSV；無法建立或寫入失敗後為 null。
@@ -344,14 +340,22 @@ class StressTestController(
     private inner class StressRun(
         val scenario: HeadlessHistoryScenario,
         val mode: StressTestMode,
-        val pace: StressTestPace,
-        val thresholds: StressSafetyThresholds,
+        val options: StressRunOptions,
         val environment: StressTestEnvironment,
         val starterId: Uuid?,
         private var timeSeries: StressTimeSeriesFile?,
     ) {
         /** 同時進行中的桌。 */
         private val tables = mutableListOf<StressTable>()
+
+        /** 每桌推進節奏。 */
+        private val pace = options.pace
+
+        /** 安全閥門檻。 */
+        private val thresholds = options.thresholds()
+
+        /** 暖機的 tick 數。 */
+        private val warmupTicks = options.warmupTicks
 
         /** 開始的時刻。 */
         private val startMark = TimeSource.Monotonic.markNow()
@@ -446,7 +450,7 @@ class StressTestController(
         /** 補足目標桌數，推進到期的桌，並更新歷史狀態。 */
         suspend fun advance() {
             elapsedTicks++
-            if (elapsedTicks == STRESS_WARMUP_TICKS + 1) beginMeasuring()
+            if (elapsedTicks == warmupTicks + 1) beginMeasuring()
             tickSteps = 0
             tickEvents = 0
             val timer = environment.stepTimer
@@ -608,7 +612,7 @@ class StressTestController(
         /** 目前應同時進行的桌數；爬坡在暖機結束後才開始加桌，最多 [STRESS_MAX_TABLES] 桌。 */
         private fun targetTables(): Int = when (mode) {
             is StressTestMode.Fixed -> mode.tables
-            is StressTestMode.Ramp -> mode.plan.tablesAt(elapsedTicks - STRESS_WARMUP_TICKS).coerceAtMost(STRESS_MAX_TABLES)
+            is StressTestMode.Ramp -> mode.plan.tablesAt(elapsedTicks - warmupTicks).coerceAtMost(STRESS_MAX_TABLES)
         }
 
         /** 目前的數據。 */
@@ -625,7 +629,8 @@ class StressTestController(
                 completedMatches = completedMatches,
                 failedMatches = failedMatches,
                 elapsedTicks = elapsedTicks,
-                warmupRemainingTicks = (STRESS_WARMUP_TICKS - elapsedTicks).coerceAtLeast(0),
+                warmupTicks = warmupTicks,
+                warmupRemainingTicks = (warmupTicks - elapsedTicks).coerceAtLeast(0),
                 measuredSeconds = measureStart?.elapsedNow()?.toDouble(DurationUnit.SECONDS) ?: 0.0,
                 tickAverageMillis = tickSamples.average(),
                 tickP95Millis = tickSamples.percentile(P95),
@@ -655,7 +660,7 @@ class StressTestController(
                 sustainedTables = (mode as? StressTestMode.Ramp)
                     ?.takeIf { stopReason in VALVE_STOP_REASONS }
                     ?.plan
-                    ?.sustainedTablesAt(elapsedTicks - STRESS_WARMUP_TICKS)
+                    ?.sustainedTablesAt(elapsedTicks - warmupTicks)
                     ?.coerceAtMost(STRESS_MAX_TABLES),
             )
         }

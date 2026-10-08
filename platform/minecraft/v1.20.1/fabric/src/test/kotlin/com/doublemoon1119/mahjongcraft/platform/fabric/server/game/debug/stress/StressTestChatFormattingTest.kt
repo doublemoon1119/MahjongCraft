@@ -18,7 +18,7 @@ class StressTestChatFormattingTest {
     @Test
     fun `log line lists every report field`() {
         assertEquals(
-            "reason=HISTORY_BACKLOG, scenario=mahjongcraft:riichi_east, mode=ramp, pace=fast, historyMode=encode, elapsedSeconds=120, " +
+            "reason=HISTORY_BACKLOG, scenario=mahjongcraft:riichi_east, mode=ramp, pace=fast, historyMode=encode, warmupSeconds=60, elapsedSeconds=120, " +
                 "measuredSeconds=60.0, tables=8, completed=8, stalled=0, tickMs(avg/p95/max)=56.2/117.2/181.0, " +
                 "slowTicks(>50ms/>100ms/>250ms)=25.0%/5.0%/0.0%, stutter(limitMs/tables)=100.0/24, stepMs(avg/p95/max)=7.2/29.3/127.1, " +
                 "stepStageMs(avg/max)=ai_decision:4.0/90.0,rules_and_state:2.0/20.0,snapshot_sync:1.0/10.0,history_recording:0.5/7.0, " +
@@ -78,6 +78,7 @@ class StressTestChatFormattingTest {
         completedMatches = 8,
         failedMatches = 0,
         elapsedTicks = 2_400,
+        warmupTicks = 1_200,
         warmupRemainingTicks = 0,
         measuredSeconds = 60.0,
         tickAverageMillis = 56.156,

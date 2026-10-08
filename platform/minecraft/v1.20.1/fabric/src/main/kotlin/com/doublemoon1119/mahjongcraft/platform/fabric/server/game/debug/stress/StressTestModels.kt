@@ -304,9 +304,6 @@ class TimingAccumulator {
     }
 }
 
-/** 暖機時間：開始後這段期間 JIT 編譯尚未穩定，不列入統計與卡頓判斷，但仍會因伺服器落後而停止；爬坡在暖機結束後才開始加桌。 */
-const val STRESS_WARMUP_TICKS: Long = 1_200
-
 /** 同時進行桌數的上限；固定桌數的指令引數與爬坡的目標桌數都不會超過。 */
 const val STRESS_MAX_TABLES: Int = 1_000
 

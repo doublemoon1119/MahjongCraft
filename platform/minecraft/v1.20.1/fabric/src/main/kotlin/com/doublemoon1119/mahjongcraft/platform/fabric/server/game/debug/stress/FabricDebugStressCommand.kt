@@ -22,9 +22,10 @@ import kotlin.uuid.toKotlinUuid
 /**
  * 建立 `/mahjongcraft debug stress` 的壓力測試指令：固定桌數、爬坡、狀態、停止與刪除資料庫。
  *
- * 開始測試的格式為 `/mahjongcraft debug stress fixed <情境> <桌數> [realtime|fast] [write|encode|off] [max_mspt]` 與
- * `/mahjongcraft debug stress ramp <情境> [realtime|fast] [write|encode|off] [max_mspt]`；省略時為真實節奏、寫入資料庫。
- * `max_mspt` 是判定卡頓的單一 tick 耗時毫秒數，預設 100；卡頓只記錄開始時的桌數，不會停止測試。
+ * 開始測試的格式為 `/mahjongcraft debug stress fixed <情境> <桌數>` 與 `/mahjongcraft debug stress ramp <情境>`，後面可接選用的具名選項。
+ * 選項以「名稱 值」成對出現，順序不限、只寫需要的（見 [StressOption]），例如 `fixed mahjongcraft:riichi_east 40 history off warmup 30`：
+ * `pace realtime|fast`、`history write|encode|off`、`max_mspt <毫秒>`（判定卡頓的單一 tick 耗時，卡頓只記錄開始時的桌數，不會停止測試）、
+ * `warmup <秒>`（0 表示不暖機）。沒有寫的選項使用 [StressRunOptions.DEFAULT]。
  *
  * 量測伺服器能承受的桌數時應使用專用伺服器：單人世界的內建伺服器與客戶端共用同一個程序與 CPU，客戶端的繪製與
  * 記憶體回收會拉高並擾動每 tick 耗時，打開遊戲選單時內建伺服器暫停也會中斷量測。在內建伺服器上開始時會提醒數據僅供參考。
@@ -44,13 +45,13 @@ class FabricDebugStressCommand(
         .then(
             literal(FIXED_SUBCOMMAND).then(
                 scenarioArgument().then(
-                    withOptionalSettings(argument(TABLES_ARGUMENT, IntegerArgumentType.integer(1, STRESS_MAX_TABLES))) { context ->
+                    withOptions(argument(TABLES_ARGUMENT, IntegerArgumentType.integer(1, STRESS_MAX_TABLES))) { context ->
                         StressTestMode.Fixed(IntegerArgumentType.getInteger(context, TABLES_ARGUMENT))
                     },
                 ),
             ),
         )
-        .then(literal(RAMP_SUBCOMMAND).then(withOptionalSettings(scenarioArgument()) { StressTestMode.Ramp(StressRampPlan()) }))
+        .then(literal(RAMP_SUBCOMMAND).then(withOptions(scenarioArgument()) { StressTestMode.Ramp(StressRampPlan()) }))
         .then(literal(STATUS_SUBCOMMAND).executes(::status))
         .then(literal(STOP_SUBCOMMAND).executes(::stop))
         .then(literal(CLEAR_SUBCOMMAND).executes(::clear))
@@ -60,62 +61,41 @@ class FabricDebugStressCommand(
         .suggests { _, builder -> CommandSource.suggestMatching(HeadlessHistoryScenario.entries.map { it.identifier }, builder) }
 
     /**
-     * 讓 [node] 本身可以執行，並依序接上選用的節奏、歷史處理方式與每 tick 耗時上限引數。
+     * 讓 [node] 本身可以執行，並接上選用的具名選項文字。
      *
      * @param mode 由指令內容取得桌數安排。
      */
-    private fun <T : ArgumentBuilder<ServerCommandSource, T>> withOptionalSettings(
+    private fun <T : ArgumentBuilder<ServerCommandSource, T>> withOptions(
         node: T,
         mode: (CommandContext<ServerCommandSource>) -> StressTestMode,
     ): T = node
-        .executes { start(it, mode(it), StressTestPace.REALTIME, StressHistoryMode.WRITE, StressSafetyThresholds()) }
+        .executes { start(it, mode(it), optionsText = "") }
         .then(
-            argument(PACE_ARGUMENT, StringArgumentType.word())
-                .suggests { _, builder -> CommandSource.suggestMatching(StressTestPace.entries.map { it.commandName }, builder) }
-                .executes { start(it, mode(it), pace(it) ?: return@executes FAILURE, StressHistoryMode.WRITE, StressSafetyThresholds()) }
-                .then(
-                    argument(HISTORY_MODE_ARGUMENT, StringArgumentType.word())
-                        .suggests { _, builder -> CommandSource.suggestMatching(StressHistoryMode.entries.map { it.commandName }, builder) }
-                        .executes {
-                            start(it, mode(it), pace(it) ?: return@executes FAILURE, historyMode(it) ?: return@executes FAILURE, StressSafetyThresholds())
-                        }
-                        .then(
-                            argument(MAX_MSPT_ARGUMENT, IntegerArgumentType.integer(1)).executes {
-                                val thresholds = StressSafetyThresholds(stutterLimitMillis = IntegerArgumentType.getInteger(it, MAX_MSPT_ARGUMENT).toDouble())
-                                start(it, mode(it), pace(it) ?: return@executes FAILURE, historyMode(it) ?: return@executes FAILURE, thresholds)
-                            },
-                        ),
-                ),
+            argument(OPTIONS_ARGUMENT, StringArgumentType.greedyString())
+                .suggests { _, builder ->
+                    val (offset, candidates) = stressOptionSuggestions(builder.remaining)
+                    CommandSource.suggestMatching(candidates, builder.createOffset(builder.start + offset))
+                }
+                .executes { start(it, mode(it), StringArgumentType.getString(it, OPTIONS_ARGUMENT)) },
         )
 
-    /** 讀取節奏引數；名稱不存在時回覆錯誤並回傳 null。 */
-    private fun pace(context: CommandContext<ServerCommandSource>): StressTestPace? {
-        val name = StringArgumentType.getString(context, PACE_ARGUMENT)
-        return StressTestPace.entries.firstOrNull { it.commandName == name }.also { pace ->
-            if (pace == null) context.source.sendError(stressTestMessage(StressDebugKeys.INVALID_PACE, Formatting.RED))
-        }
-    }
-
-    /** 讀取歷史處理方式引數；名稱不存在時回覆錯誤並回傳 null。 */
-    private fun historyMode(context: CommandContext<ServerCommandSource>): StressHistoryMode? {
-        val name = StringArgumentType.getString(context, HISTORY_MODE_ARGUMENT)
-        return StressHistoryMode.entries.firstOrNull { it.commandName == name }.also { historyMode ->
-            if (historyMode == null) context.source.sendError(stressTestMessage(StressDebugKeys.INVALID_HISTORY_MODE, Formatting.RED))
-        }
-    }
-
-    /** 開始壓力測試並回覆結果。 */
+    /** 解析選項並開始壓力測試，回覆結果；選項有誤時回覆錯誤且不開始。 */
     private fun start(
         context: CommandContext<ServerCommandSource>,
         mode: StressTestMode,
-        pace: StressTestPace,
-        historyMode: StressHistoryMode,
-        thresholds: StressSafetyThresholds,
+        optionsText: String,
     ): Int {
         val source = context.source
+        val options = when (val parsed = parseStressRunOptions(optionsText)) {
+            is StressOptionsParseResult.Parsed -> parsed.options
+            is StressOptionsParseResult.Invalid -> {
+                source.sendError(stressOptionErrorMessage(parsed.error))
+                return FAILURE
+            }
+        }
         val scenarioId = IdentifierArgumentType.getIdentifier(context, SCENARIO_ARGUMENT).toString()
         scope.launch(dispatchers.main) {
-            val result = controller.start(source.server, scenarioId, mode, pace, historyMode, thresholds, source.player?.uuid?.toKotlinUuid())
+            val result = controller.start(source.server, scenarioId, mode, options, source.player?.uuid?.toKotlinUuid())
             when (result) {
                 StressTestStartResult.Started -> {
                     source.sendFeedback({ stressTestMessage(StressDebugKeys.STARTED, Formatting.GREEN) }, false)
@@ -175,9 +155,7 @@ class FabricDebugStressCommand(
         const val CLEAR_SUBCOMMAND = "clear"
         const val SCENARIO_ARGUMENT = "scenario"
         const val TABLES_ARGUMENT = "tables"
-        const val PACE_ARGUMENT = "pace"
-        const val HISTORY_MODE_ARGUMENT = "history"
-        const val MAX_MSPT_ARGUMENT = "max_mspt"
+        const val OPTIONS_ARGUMENT = "options"
         const val SUCCESS = 1
         const val FAILURE = 0
     }

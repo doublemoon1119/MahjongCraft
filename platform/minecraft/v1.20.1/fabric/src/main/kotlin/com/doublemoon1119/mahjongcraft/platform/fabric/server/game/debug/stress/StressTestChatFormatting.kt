@@ -71,6 +71,7 @@ internal fun stressTestReportLogLine(report: StressTestReport): String = with(re
         )
         append(", pace=").append(pace.commandName)
         append(", historyMode=").append(historyMode.commandName)
+        append(", warmupSeconds=").append(warmupTicks / TICKS_PER_SECOND)
         append(", elapsedSeconds=").append(elapsedTicks / TICKS_PER_SECOND)
         append(", measuredSeconds=").append(formatMillis(measuredSeconds))
         append(", tables=").append(tables)
@@ -158,11 +159,41 @@ private fun stutterEntry(report: StressTestReport): MutableText = Text.literal("
     )
 
 /** 暖機狀態的顯示文字。 */
-private fun warmupText(report: StressTestReport): Text = if (report.warmupRemainingTicks > 0) {
-    Text.translatableWithFallback(StressDebugKeys.WARMUP_RUNNING, "In progress, %s s left", (report.warmupRemainingTicks + TICKS_PER_SECOND - 1) / TICKS_PER_SECOND)
-} else {
-    Text.translatableWithFallback(StressDebugKeys.WARMUP_DONE, "Done, the first %s s are excluded", STRESS_WARMUP_TICKS / TICKS_PER_SECOND)
+private fun warmupText(report: StressTestReport): Text = when {
+    report.warmupTicks == 0L -> stressText(StressDebugKeys.WARMUP_NONE)
+    report.warmupRemainingTicks > 0 -> Text.translatableWithFallback(
+        StressDebugKeys.WARMUP_RUNNING,
+        "In progress, %s s left",
+        (report.warmupRemainingTicks + TICKS_PER_SECOND - 1) / TICKS_PER_SECOND,
+    )
+    else -> Text.translatableWithFallback(StressDebugKeys.WARMUP_DONE, "Done, the first %s s are excluded", report.warmupTicks / TICKS_PER_SECOND)
 }
+
+/** 選項解析錯誤的回覆。 */
+internal fun stressOptionErrorMessage(error: StressOptionError): MutableText = prefixedConfigMessage(
+    when (error) {
+        is StressOptionError.UnknownOption -> Text.translatableWithFallback(
+            StressDebugKeys.UNKNOWN_OPTION,
+            "Unknown stress test option: %s; use %s",
+            error.token,
+            StressOption.entries.joinToString(", ") { it.commandName },
+        )
+        is StressOptionError.MissingValue -> Text.translatableWithFallback(StressDebugKeys.MISSING_OPTION_VALUE, "Stress test option %s needs a value", error.option.commandName)
+        is StressOptionError.DuplicateOption -> Text.translatableWithFallback(StressDebugKeys.DUPLICATE_OPTION, "Stress test option %s is given more than once", error.option.commandName)
+        is StressOptionError.InvalidValue -> when (error.option) {
+            StressOption.PACE -> stressText(StressDebugKeys.INVALID_PACE)
+            StressOption.HISTORY -> stressText(StressDebugKeys.INVALID_HISTORY_MODE)
+            StressOption.MAX_MSPT, StressOption.WARMUP -> Text.translatableWithFallback(
+                StressDebugKeys.INVALID_OPTION_NUMBER,
+                "Stress test option %s must be a whole number from %s to %s",
+                error.option.commandName,
+                requireNotNull(error.option.range).first,
+                requireNotNull(error.option.range).last,
+            )
+        }
+    },
+    Formatting.RED,
+)
 
 /** 推進節奏的翻譯鍵。 */
 private fun paceKey(pace: StressTestPace): String = when (pace) {
@@ -252,6 +283,7 @@ private val STRESS_FALLBACKS: Map<String, String> = mapOf(
     StressDebugKeys.FAILED to "Stalled matches",
     StressDebugKeys.ELAPSED to "Elapsed",
     StressDebugKeys.WARMUP to "Warm-up",
+    StressDebugKeys.WARMUP_NONE to "None",
     StressDebugKeys.TICK to "Tick time (avg / p95 / max)",
     StressDebugKeys.SLOW_TICKS to "Ticks over 50 / 100 / 250 ms",
     StressDebugKeys.STEP to "Step time (avg / p95 / max)",
