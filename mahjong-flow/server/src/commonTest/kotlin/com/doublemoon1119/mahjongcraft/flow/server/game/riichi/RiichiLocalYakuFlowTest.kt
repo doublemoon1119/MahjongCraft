@@ -46,7 +46,7 @@ class RiichiLocalYakuFlowTest {
         val disabled = ronOnDiscardAfterKan(useLocalYaku = false)
 
         assertTrue(YakuType.Kanburi in enabled, "Settled yaku: $enabled")
-        assertTrue(YakuType.Dragon in enabled && YakuType.Dragon in disabled)
+        assertTrue(YakuType.GreenDragon in enabled && YakuType.GreenDragon in disabled)
         assertTrue(disabled.none { it.isLocal }, "Settled yaku: $disabled")
     }
 
@@ -57,7 +57,7 @@ class RiichiLocalYakuFlowTest {
         val disabled = ronOnRiichiDeclaration(useLocalYaku = false)
 
         assertTrue(YakuType.TsubameGaeshi in enabled, "Settled yaku: $enabled")
-        assertTrue(YakuType.Dragon in enabled && YakuType.Dragon in disabled)
+        assertTrue(YakuType.GreenDragon in enabled && YakuType.GreenDragon in disabled)
         assertTrue(disabled.none { it.isLocal }, "Settled yaku: $disabled")
     }
 

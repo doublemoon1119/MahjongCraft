@@ -128,11 +128,12 @@ internal object RiichiCatalogueKeys {
 /**
  * 內建役種與目錄的顯式對照；翻譯尾段亦作為穩定條目尾段。
  *
- * @property type 對應的現行役種。
+ * @property type 條目的代表役種，決定名稱、標籤、無法成立的原因與範例。
  * @property slug 固定條目與翻譯尾段。
  * @property category 所屬說明分類。
  * @property valueKey 門清價值或加算標籤。
  * @property conditionKey 副露價值或門清限制標籤；null 表示沒有額外標籤。
+ * @property coveredTypes 條目說明的全部役種；規則相同的多個役種（例如白、發、中三種役牌）合併成一個條目。
  */
 internal enum class RiichiCatalogueYaku(
     val type: YakuType,
@@ -140,6 +141,7 @@ internal enum class RiichiCatalogueYaku(
     val category: RiichiCatalogueCategory,
     val valueKey: String,
     val conditionKey: String? = null,
+    val coveredTypes: Set<YakuType> = setOf(type),
 ) {
     /** Dora 的說明對照。 */
     Dora(YakuType.Dora, "dora", RiichiCatalogueCategory.BONUS, RiichiCatalogueKeys.BONUS_ONLY),
@@ -234,8 +236,14 @@ internal enum class RiichiCatalogueYaku(
     /** SeatWind 的說明對照。 */
     SeatWind(YakuType.SeatWind, "jikaze", RiichiCatalogueCategory.HAN_1, RiichiCatalogueKeys.HAN_1),
 
-    /** Dragon 的說明對照。 */
-    Dragon(YakuType.Dragon, "chun", RiichiCatalogueCategory.HAN_1, RiichiCatalogueKeys.HAN_1),
+    /** 白、發、中三種役牌合併的說明對照，以中為範例。 */
+    Dragon(
+        type = YakuType.RedDragon,
+        slug = "dragon",
+        category = RiichiCatalogueCategory.HAN_1,
+        valueKey = RiichiCatalogueKeys.HAN_1,
+        coveredTypes = setOf(YakuType.WhiteDragon, YakuType.GreenDragon, YakuType.RedDragon),
+    ),
 
     /** KokushiMusou 的說明對照。 */
     KokushiMusou(YakuType.KokushiMusou, "kokushimuso", RiichiCatalogueCategory.YAKUMAN, RiichiCatalogueKeys.YAKUMAN, RiichiCatalogueKeys.CLOSED_ONLY),

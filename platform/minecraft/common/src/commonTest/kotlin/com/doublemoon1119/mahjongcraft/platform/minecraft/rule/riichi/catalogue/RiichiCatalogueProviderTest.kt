@@ -38,10 +38,11 @@ class RiichiCatalogueProviderTest {
     /** 內建役種與特殊說明不缺漏，也不把流局條件混成一般役。 */
     @Test
     fun `catalogue covers every built in yaku and separate special categories`() {
-        assertEquals(YakuType.entries.toSet(), RiichiCatalogueYaku.entries.map { it.type }.toSet())
+        assertEquals(YakuType.entries.toSet(), RiichiCatalogueYaku.entries.flatMap { it.coveredTypes }.toSet())
+        assertEquals(YakuType.entries.size, RiichiCatalogueYaku.entries.sumOf { it.coveredTypes.size }, "Each yaku belongs to exactly one entry")
         val catalogue = checkNotNull(RiichiCatalogueProvider().catalogue(RiichiRuleConfig()))
         // 四人日麻不列拔北寶牌。
-        assertEquals(YakuType.entries.size - 1 + RiichiCatalogueSpecial.entries.size, catalogue.entries.size)
+        assertEquals(RiichiCatalogueYaku.entries.size - 1 + RiichiCatalogueSpecial.entries.size, catalogue.entries.size)
         assertTrue(catalogue.entries.none { it.id == RiichiCatalogueYaku.NukiDora.id })
         assertEquals(catalogue.entries.size, catalogue.entries.map { it.id }.distinct().size)
         assertEquals(3, catalogue.entries.count { it.categoryId == RiichiCatalogueCategory.BONUS.id })

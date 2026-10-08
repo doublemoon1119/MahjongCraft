@@ -109,8 +109,14 @@ enum class YakuType(
     /** 自風 (Tonmyakze) - 1 翻 */
     SeatWind,
 
-    /** 役牌 (Yakuhai) - 1 翻 */
-    Dragon,
+    /** 役牌：白 (Haku) - 1 翻 */
+    WhiteDragon,
+
+    /** 役牌：發 (Hatsu) - 1 翻 */
+    GreenDragon,
+
+    /** 役牌：中 (Chun) - 1 翻 */
+    RedDragon,
 
     // ===== 役滿 =====
     /** 國士無雙 (Kokushi Musou) - 役滿 */

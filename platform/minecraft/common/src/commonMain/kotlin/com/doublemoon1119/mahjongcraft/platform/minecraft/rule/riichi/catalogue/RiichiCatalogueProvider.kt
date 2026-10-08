@@ -47,7 +47,7 @@ class RiichiCatalogueProvider(
                     RuleCatalogueEntry(
                         id = definition.id,
                         categoryId = definition.category.id,
-                        nameTranslationKey = if (definition.type == YakuType.Dragon) RiichiCatalogueKeys.DRAGON_NAME else RiichiYakuTranslationKeys.keyFor(definition.type),
+                        nameTranslationKey = if (definition == RiichiCatalogueYaku.Dragon) RiichiCatalogueKeys.DRAGON_NAME else RiichiYakuTranslationKeys.keyFor(definition.type),
                         descriptionTranslationKey = definition.descriptionKey,
                         labels = buildList {
                             add(definition.valueKey)

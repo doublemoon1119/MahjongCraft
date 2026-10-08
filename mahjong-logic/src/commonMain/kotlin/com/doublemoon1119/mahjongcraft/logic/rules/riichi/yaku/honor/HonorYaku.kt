@@ -12,7 +12,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.Wind
  * 包含以下役種：
  * - 場風 (Bakaze/RoundWind)：手牌中有與圈風相同的風牌刻子/槓
  * - 自風 (Tonmyakze/SeatWind)：手牌中有與自風相同的風牌刻子/槓
- * - 役牌 (Yakuhai/Dragon)：手牌中有三元牌（中、發、白）的刻子/槓
+ * - 役牌 (Yakuhai)：手牌中有三元牌（白、發、中）的刻子/槓，每種三元牌各自是一個役種
  *
  * @param handTiles 手牌中的牌（不含副露、不含和牌張，不含赤寶牌標記）。
  * @param winningTile 和牌張；靠它補成的刻子同樣成立字牌役，因此必須一併統計。
@@ -66,10 +66,14 @@ fun calculateHonorYaku(
     }
 
     // 檢測役牌（三元牌）
-    val dragonTiles = setOf(Tile.Honor.Red, Tile.Honor.Green, Tile.Honor.White)
-    for (dragon in dragonTiles) {
+    val dragonYaku = listOf(
+        Tile.Honor.White to YakuType.WhiteDragon,
+        Tile.Honor.Green to YakuType.GreenDragon,
+        Tile.Honor.Red to YakuType.RedDragon,
+    )
+    for ((dragon, yaku) in dragonYaku) {
         if ((honorCounts[dragon] ?: 0) >= 3) {
-            results.add(YakuResult.han(YakuType.Dragon, 1))
+            results.add(YakuResult.han(yaku, 1))
         }
     }
 

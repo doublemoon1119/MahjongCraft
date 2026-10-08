@@ -99,9 +99,9 @@ class HonorYakuTest : RiichiHandValueCalculatorTestBase() {
     }
 
     /**
-     * 測試役牌 - 中。
+     * 測試役牌 - 中與發。
      *
-     * 手牌有中發刻子，應獲得 2 翻（役牌 x2）。
+     * 手牌有中發刻子，中與發各自成立對應的役牌，合計 2 翻。
      */
     @Test
     fun `test dragon yakuhai`() {
@@ -133,9 +133,42 @@ class HonorYakuTest : RiichiHandValueCalculatorTestBase() {
         )
         val result = calculator.calculate(context)
 
-        val dragonResults = result.yakuResults.filter { it.yaku == YakuType.Dragon }
-        assertEquals(2, dragonResults.size, "Should have 2 Dragon yaku")
-        assertEquals(2, dragonResults.sumOf { it.han }, "Dragon should be 2 han total")
+        val dragonResults = result.yakuResults.filter { it.yaku in DRAGON_YAKU }
+        assertEquals(setOf(YakuType.RedDragon, YakuType.GreenDragon), dragonResults.map { it.yaku }.toSet())
+        assertEquals(2, dragonResults.sumOf { it.han }, "Dragon yakuhai should be 2 han total")
+    }
+
+    /** 白的刻子只成立白的役牌，不會記成其他三元牌。 */
+    @Test
+    fun `test white dragon triplet scores the white dragon yakuhai`() {
+        val hand = FakeHandFactory.create(
+            listOf(
+                Tile.Honor.White,
+                Tile.Honor.White,
+                Tile.Honor.White,
+                Tile.Numeric(Tile.Suit.Character, 2),
+                Tile.Numeric(Tile.Suit.Character, 3),
+                Tile.Numeric(Tile.Suit.Character, 4),
+                Tile.Numeric(Tile.Suit.Dot, 2),
+                Tile.Numeric(Tile.Suit.Dot, 3),
+                Tile.Numeric(Tile.Suit.Dot, 4),
+                Tile.Numeric(Tile.Suit.Bamboo, 6),
+                Tile.Numeric(Tile.Suit.Bamboo, 7),
+                Tile.Numeric(Tile.Suit.Bamboo, 8),
+                Tile.Numeric(Tile.Suit.Dot, 5),
+            ),
+        )
+        val context = FakeRiichiHandValueContextFactory.create(
+            hand = hand,
+            winningTile = Tile.Numeric(Tile.Suit.Dot, 5),
+            isTsumo = true,
+            roundWind = Wind.EAST,
+            seatWind = Wind.SOUTH,
+        )
+
+        val result = calculator.calculate(context)
+
+        assertEquals(listOf(YakuType.WhiteDragon), result.yakuResults.filter { it.yaku in DRAGON_YAKU }.map { it.yaku })
     }
 
     /**
@@ -236,7 +269,7 @@ class HonorYakuTest : RiichiHandValueCalculatorTestBase() {
 
         val result = calculator.calculate(context)
 
-        assertEquals(1, result.yakuResults.filter { it.yaku == YakuType.Dragon }.sumOf { it.han })
+        assertEquals(1, result.yakuResults.filter { it.yaku == YakuType.RedDragon }.sumOf { it.han })
     }
 
     /** 自摸補成三元牌刻子時同樣成立，與榮和走同一條統計路徑。 */
@@ -252,7 +285,7 @@ class HonorYakuTest : RiichiHandValueCalculatorTestBase() {
 
         val result = calculator.calculate(context)
 
-        assertEquals(1, result.yakuResults.filter { it.yaku == YakuType.Dragon }.sumOf { it.han })
+        assertEquals(1, result.yakuResults.filter { it.yaku == YakuType.RedDragon }.sumOf { it.han })
     }
 
     /** 自風也適用：手上兩張南、第三張由和牌張補齊。 */
@@ -300,7 +333,7 @@ class HonorYakuTest : RiichiHandValueCalculatorTestBase() {
 
         val result = calculator.calculate(context)
 
-        assertNull(result.yakuResults.find { it.yaku == YakuType.Dragon })
+        assertNull(result.yakuResults.find { it.yaku == YakuType.RedDragon })
     }
 
     /** 四五六筒、七八九筒、二三四條、中中、二二條：雙碰聽中與二條。 */
@@ -323,5 +356,10 @@ class HonorYakuTest : RiichiHandValueCalculatorTestBase() {
     /** 以 [wind] 取代三元牌的同型雙碰手牌。 */
     private fun shanponOnWind(wind: Tile.Honor): List<Tile> = shanponOnRedDragon().map { tile ->
         if (tile == Tile.Honor.Red) wind else tile
+    }
+
+    private companion object {
+        /** 三種三元牌的役牌。 */
+        val DRAGON_YAKU: Set<YakuType> = setOf(YakuType.WhiteDragon, YakuType.GreenDragon, YakuType.RedDragon)
     }
 }
