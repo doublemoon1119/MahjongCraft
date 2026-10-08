@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.player
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.mojang.authlib.GameProfile
 import com.mojang.authlib.minecraft.MinecraftProfileTexture
 import net.minecraft.client.MinecraftClient
@@ -20,6 +21,9 @@ import kotlin.uuid.toJavaUuid
  */
 @Single
 class ClientPlayerProfileResolver {
+    /** 記錄皮膚載入失敗與逾時的 logger。 */
+    private val logger = mahjongCraftLogger(ClientPlayerProfileResolver::class)
+
     /** 用來丟棄舊伺服器 session 的非同步回呼。 */
     @Volatile
     private var sessionGeneration: Long = 0
@@ -136,6 +140,7 @@ class ClientPlayerProfileResolver {
             expired.forEach { expiredId ->
                 skinRequests.remove(expiredId)
                 rememberSkinFailure(expiredId)
+                logger.debug("Skin request for player {} timed out; using the default appearance", expiredId)
             }
             val startedAt = skinRequests[playerId]
             if (playerId in skinFailures) return
@@ -143,6 +148,7 @@ class ClientPlayerProfileResolver {
                 if (startedAt.elapsedNow() >= SKIN_REQUEST_TIMEOUT) {
                     skinRequests.remove(playerId)
                     rememberSkinFailure(playerId)
+                    logger.debug("Skin request for player {} timed out; using the default appearance", playerId)
                 }
                 return
             }
@@ -168,9 +174,10 @@ class ClientPlayerProfileResolver {
                 },
                 true,
             )
-        }.onFailure {
+        }.onFailure { error ->
             synchronized(skinRequests) { skinRequests.remove(playerId) }
             rememberSkinFailure(playerId)
+            logger.debug("Skin request for player {} failed; using the default appearance", playerId, error)
         }
     }
 
