@@ -4,7 +4,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatch
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.HistoryReplayProjectionRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
-import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessHistoryMatchRuntime
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessStepTimer
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdate
@@ -38,6 +37,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.TimeSource
+import kotlin.uuid.Uuid
 
 /**
  * 壓力測試專用的資料環境：所有測試對局共用的權威來源、分項計時器，以及依 [StressHistoryMode] 處理歷史的背景工作。
@@ -68,15 +68,18 @@ class StressTestEnvironment internal constructor(
 }
 
 /**
- * 把一桌從共用權威來源移除：打完後留下的房間，或卡住而未結束的對局連同房間一併移除，讓持續補桌時狀態不會累積。
+ * 以同一筆交易把多桌從共用權威來源移除：打完後留下的房間，或尚未結束的對局連同房間一併移除，讓持續補桌或停止測試後
+ * 狀態不會殘留。
  *
  * 已加入待寫佇列的歷史仍留給背景工作處理；未結束的對局依一般流程記為未完成的場次。
  *
- * @param runtime 要移除的桌。
+ * @param store 這些桌所在的共用權威來源。
+ * @param venueIds 要移除的桌的場地識別碼。
  */
-internal suspend fun discardStressTable(runtime: HeadlessHistoryMatchRuntime) {
-    runtime.store.update { state ->
-        AuthoritativeStateUpdate(state.copy(rooms = state.rooms - runtime.venueId, games = state.games - runtime.venueId), Unit)
+internal suspend fun discardStressTables(store: AuthoritativeStateStore, venueIds: Collection<Uuid>) {
+    if (venueIds.isEmpty()) return
+    store.update { state ->
+        AuthoritativeStateUpdate(state.copy(rooms = state.rooms - venueIds.toSet(), games = state.games - venueIds.toSet()), Unit)
     }
 }
 

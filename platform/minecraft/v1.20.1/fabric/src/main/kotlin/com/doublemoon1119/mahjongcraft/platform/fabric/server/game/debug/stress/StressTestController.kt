@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.history
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryDatabasePath
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryWriterStage
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.StressTestHistorySource
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -300,13 +301,20 @@ class StressTestController(
         }
     }
 
-    /** 停止執行中的測試並保留報告；沒有寫進資料庫的環境一併關閉。沒有執行中的測試時回傳 null。 */
+    /** 停止執行中的測試並保留報告：剩下的桌從權威來源移除，沒有寫進資料庫的環境一併關閉。沒有執行中的測試時回傳 null。 */
     private suspend fun stopRun(reason: StressStopReason): StressTestReport? {
         val current = run ?: return null
         run = null
         val report = current.report(running = false, stopReason = reason)
         current.closeTimeSeries()
         current.stopDecisionWatch()
+        try {
+            current.discardRemainingTables()
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Exception) {
+            logger.error("Stress test tables could not be removed after the run stopped", error)
+        }
         if (current.environment.historySource == null) {
             current.environment.closeAndDelete()
             if (environment === current.environment) environment = null
@@ -462,20 +470,26 @@ class StressTestController(
                 if (table.runtime.currentGame() == null) {
                     completedMatches++
                     iterator.remove()
-                    discardStressTable(table.runtime)
+                    discardStressTables(environment.store, listOf(table.runtime.venueId))
                 } else if (progressed) {
                     table.stalledSteps = 0
                 } else if (++table.stalledSteps >= MAX_STALLED_STEPS) {
                     failedMatches++
                     logger.warn("Stress test match made no progress for {} steps; dropping it", MAX_STALLED_STEPS)
                     iterator.remove()
-                    discardStressTable(table.runtime)
+                    discardStressTables(environment.store, listOf(table.runtime.venueId))
                 }
             }
             val recording = environment.store.snapshot().historyRecordingState
             pendingEvents = recording.pendingEvents.size
             lostSegments = recording.firstMissingSequenceByMatchId.size
             if (elapsedTicks % WRITER_CHECK_INTERVAL_TICKS == 0L) writerFailed = environment.historyFailed()
+        }
+
+        /** 把剩下的桌從權威來源移除；未結束的對局記為未完成，待寫歷史仍交給背景工作處理。 */
+        suspend fun discardRemainingTables() {
+            discardStressTables(environment.store, tables.map { it.runtime.venueId })
+            tables.clear()
         }
 
         /** 暖機結束：記下基準值並清除暖機期間的背景工作統計。 */

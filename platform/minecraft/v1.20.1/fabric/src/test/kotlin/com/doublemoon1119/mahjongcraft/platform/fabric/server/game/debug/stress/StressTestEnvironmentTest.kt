@@ -102,7 +102,7 @@ class StressTestEnvironmentTest {
             val runtime = playMatches(environment, count = 1).single()
             assertTrue(runtime.venueId in environment.store.snapshot().rooms, "A finished table returns to its room.")
 
-            discardStressTable(runtime)
+            discardStressTables(environment.store, listOf(runtime.venueId))
 
             val state = environment.store.snapshot()
             assertTrue(state.rooms.isEmpty() && state.games.isEmpty())
@@ -120,12 +120,26 @@ class StressTestEnvironmentTest {
         val matchId = runtime.matchId()
         val pending = store.snapshot().historyRecordingState.pendingEvents.count { it.matchId == matchId }
 
-        discardStressTable(runtime)
+        discardStressTables(store, listOf(runtime.venueId))
 
         val state = store.snapshot()
         assertTrue(state.rooms.isEmpty() && state.games.isEmpty())
         assertEquals(pending, state.historyRecordingState.pendingEvents.count { it.matchId == matchId })
         assertEquals(false, state.historyRecordingState.terminalByMatchId[matchId]?.completed)
+    }
+
+    /** 停止測試時剩下的多桌以同一筆交易全部移除，各自記為未完成的場次。 */
+    @Test
+    fun `discarding several running tables ends every match`() = runBlocking {
+        val store = AuthoritativeStateStore(historyRecordingEnabled = true)
+        val runtimes = List(2) { HeadlessFlowHistoryRuntime.create(HeadlessHistoryScenario.RIICHI_EAST, bundledHeadlessHistoryRegistries(), store) }
+        runtimes.forEach { runtime -> repeat(RUNNING_STEPS) { runtime.step() } }
+
+        discardStressTables(store, runtimes.map { it.venueId })
+
+        val state = store.snapshot()
+        assertTrue(state.rooms.isEmpty() && state.games.isEmpty())
+        runtimes.forEach { runtime -> assertEquals(false, state.historyRecordingState.terminalByMatchId[runtime.matchId()]?.completed) }
     }
 
     /** 在 [environment] 中同時打完 [count] 場三人對局；待寫事件太多時等待背景工作追上，模擬伺服器 tick 之間的時間。 */
