@@ -130,6 +130,9 @@ class FabricHistoryOutboxWriter(
     /** 共用唯讀 preview 與清理政策的 I/O 維護服務。 */
     private val retentionService = HistoryRetentionService(store)
 
+    /** 清理後磁碟用量是否在上限內；只在暫停或恢復記錄時記錄 log。 */
+    private val diskLimitTracker = HistoryDiskLimitTracker()
+
     /** 與啟動 log 及管理指令共用的統計組合邊界。 */
     private val storageQueryService = HistoryStorageQueryService(store)
 
@@ -319,6 +322,7 @@ class FabricHistoryOutboxWriter(
         try {
             before = activeDatabase.measureDiskUsage()
             val result = retentionService.run(activeDatabase, policy) { committed = Math.addExact(committed, it.toLong()) }
+            logDiskLimitTransition(result, policy)
             knownGaps = activeDatabase.readGaps()
             synchronizedStops = activeDatabase.readRecordingStops()
             refreshStorageSafely(activeDatabase, policy)
@@ -812,14 +816,14 @@ class FabricHistoryOutboxWriter(
     }
 
     /**
-     * 套用清理政策後重新讀取診斷，避免已刪除場次仍留在狀態統計中。
+     * 套用清理政策後重新讀取診斷，避免已刪除場次仍留在狀態統計中。實際刪除對局時記錄場數與前後用量。
      *
      * @param activeDatabase 同一 session 的資料庫。
      * @param policy 協調邊界固定的有效政策。
      */
     private suspend fun maintain(activeDatabase: SqliteHistoryDatabase, policy: HistoryRetentionPolicy) {
         attemptedStoragePolicy = null
-        try {
+        val result = try {
             retentionService.run(activeDatabase, policy)
         } catch (cancelled: CancellationException) {
             throw cancelled
@@ -827,8 +831,34 @@ class FabricHistoryOutboxWriter(
             store.applyHistoryStorageAvailability(false)
             throw error
         }
+        if (result.removedMatches > 0) {
+            logger.info(
+                "Automatic history cleanup removed {} match(es); diskBeforeBytes={}, diskAfterBytes={}",
+                result.removedMatches,
+                result.diskBefore.totalBytes,
+                result.diskAfter.totalBytes,
+            )
+        }
+        logDiskLimitTransition(result, policy)
         knownGaps = activeDatabase.readGaps()
         synchronizedStops = activeDatabase.readRecordingStops()
+    }
+
+    /** 清理後歷史記錄因磁碟用量上限而暫停或恢復時各記錄一次。 */
+    private fun logDiskLimitTransition(result: HistoryCleanupResult, policy: HistoryRetentionPolicy) {
+        when (diskLimitTracker.update(result.storageAvailable)) {
+            HistoryDiskLimitTransition.PAUSED -> logger.warn(
+                "History recording paused: disk usage {} bytes exceeds the limit of {} bytes after cleanup; active matches are marked incomplete",
+                result.diskAfter.totalBytes,
+                policy.maxDiskBytes,
+            )
+            HistoryDiskLimitTransition.RESUMED -> logger.info(
+                "History recording resumed: disk usage {} bytes is within the limit of {} bytes",
+                result.diskAfter.totalBytes,
+                policy.maxDiskBytes,
+            )
+            null -> Unit
+        }
     }
 
     /**

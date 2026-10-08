@@ -44,11 +44,15 @@ internal class HistoryArchiveService(
         private set
     private var warnedOrphanMatchIds: Set<String> = emptySet()
 
+    /** 上一次對帳已記錄過的待寫事件問題（場次與序號）；問題持續存在時不重複記錄。 */
+    private var reportedEventProblems: Set<Pair<String, Long>> = emptySet()
+
     /** 在開始另一個存檔 session 前清除錯誤與逐場對帳快取，不修改資料庫。 */
     fun resetSession() {
         lastArchiveError = null
         blockedMatchIds = emptySet()
         warnedOrphanMatchIds = emptySet()
+        reportedEventProblems = emptySet()
     }
 
     /** 保留可證實的最早缺口；不從最高序號推斷中間一定連續。 */
@@ -64,6 +68,7 @@ internal class HistoryArchiveService(
             .toMutableMap()
         val blocked = mutableSetOf<String>()
         val orphans = mutableSetOf<String>()
+        val eventProblems = mutableSetOf<Pair<String, Long>>()
         candidates.filterNot { it in archived }.forEach { matchId ->
             val persisted = existing[matchId].orEmpty()
             val staged = outbox[matchId].orEmpty()
@@ -95,20 +100,41 @@ internal class HistoryArchiveService(
             val bySequence = persisted.associateBy(PendingHistoryRecord::sequence)
             staged.forEach { event ->
                 val onDisk = bySequence[event.sequence] ?: return@forEach
-                val encoded = runCatching {
+                val comparison = compareStagedHistoryEvent(onDisk.payload) {
                     json.encodeToString(HistoryOutboxEventPersistenceDto.serializer(), mapper.encodePendingEvent(event))
-                }.getOrNull()
-                if (onDisk.payload != encoded) {
-                    gaps[matchId] = minOf(gaps[matchId] ?: event.sequence, event.sequence)
-                    blocked += matchId
-                    lastArchiveError = "History event identity conflicts with SQLite content"
-                    logger.error("History event identity conflicts with SQLite content for match {} at sequence {}", matchId, event.sequence)
+                }
+                if (comparison == StagedHistoryEventComparison.Matches) return@forEach
+                gaps[matchId] = minOf(gaps[matchId] ?: event.sequence, event.sequence)
+                blocked += matchId
+                val problem = matchId to event.sequence
+                eventProblems += problem
+                val firstReport = problem !in reportedEventProblems
+                when (comparison) {
+                    is StagedHistoryEventComparison.EncodingFailed -> {
+                        lastArchiveError = "History event could not be encoded for comparison with SQLite content"
+                        if (firstReport) {
+                            logger.error(
+                                "History event could not be encoded for comparison with SQLite content for match {} at sequence {}",
+                                matchId,
+                                event.sequence,
+                                comparison.error,
+                            )
+                        }
+                    }
+                    StagedHistoryEventComparison.Conflicts -> {
+                        lastArchiveError = "History event identity conflicts with SQLite content"
+                        if (firstReport) {
+                            logger.error("History event identity conflicts with SQLite content for match {} at sequence {}", matchId, event.sequence)
+                        }
+                    }
+                    StagedHistoryEventComparison.Matches -> Unit
                 }
             }
         }
         database.recordGaps(gaps)
         blockedMatchIds = blocked
         warnedOrphanMatchIds = orphans
+        reportedEventProblems = eventProblems
         return database.readGaps()
     }
 
@@ -209,4 +235,36 @@ internal class HistoryArchiveService(
             participantResults = participantResults,
         )
     }
+}
+
+/** 待寫佇列中的事件與資料庫中同一序號內容的比對結果。 */
+internal sealed interface StagedHistoryEventComparison {
+    /** 內容相同。 */
+    data object Matches : StagedHistoryEventComparison
+
+    /** 內容不同。 */
+    data object Conflicts : StagedHistoryEventComparison
+
+    /**
+     * 待寫事件無法編碼，無法比對。
+     *
+     * @property error 編碼時的例外。
+     */
+    data class EncodingFailed(val error: Exception) : StagedHistoryEventComparison
+}
+
+/**
+ * 把待寫事件編碼後與資料庫中的內容比對；編碼失敗與內容不同分開回報。
+ *
+ * @param persistedPayload 資料庫中同一序號的內容。
+ * @param encode 編碼待寫事件。
+ * @return 比對結果。
+ */
+internal fun compareStagedHistoryEvent(persistedPayload: String, encode: () -> String): StagedHistoryEventComparison {
+    val encoded = try {
+        encode()
+    } catch (error: Exception) {
+        return StagedHistoryEventComparison.EncodingFailed(error)
+    }
+    return if (encoded == persistedPayload) StagedHistoryEventComparison.Matches else StagedHistoryEventComparison.Conflicts
 }

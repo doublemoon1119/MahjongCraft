@@ -35,6 +35,8 @@ import java.sql.DriverManager
 import kotlin.io.path.createTempDirectory
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
@@ -323,5 +325,22 @@ class HistoryArchiveServiceTest {
                 }
             }
         }
+    }
+
+    /** 編碼與資料庫內容相同時視為一致，不同時視為衝突。 */
+    @Test
+    fun `staged event comparison separates matches from conflicts`() {
+        assertEquals(StagedHistoryEventComparison.Matches, compareStagedHistoryEvent("payload") { "payload" })
+        assertEquals(StagedHistoryEventComparison.Conflicts, compareStagedHistoryEvent("payload") { "other" })
+    }
+
+    /** 編碼拋出例外時回報編碼失敗並保留原始例外，不當成內容衝突。 */
+    @Test
+    fun `staged event comparison keeps the encoding failure`() {
+        val failure = IllegalStateException("unregistered extension")
+
+        val comparison = compareStagedHistoryEvent("payload") { throw failure }
+
+        assertSame(failure, assertIs<StagedHistoryEventComparison.EncodingFailed>(comparison).error)
     }
 }
