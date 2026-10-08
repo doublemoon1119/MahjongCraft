@@ -1,9 +1,13 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.config
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BuiltInMinecraftMahjongExtension
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.BundledRiichiMinecraftExtension
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -182,26 +186,53 @@ class MahjongHudLayoutEditorModelTest {
         assertEquals(MahjongHudLayoutEditorModel.AUTOMATIC_CONTROL_PREVIEW_HEIGHT, size.height)
     }
 
-    /** 收到實際量測結果後，預覽框改用量到的尺寸，位置也跟著重新計算。 */
+    /** 收到實際量測結果後，每種 HUD 的預覽框都改用量到的尺寸，位置也跟著重新計算。 */
     @Test
-    fun `automatic control status follows the reported measurement`() {
+    fun `every element follows the reported measurement`() {
         val measured = MahjongHudPreviewSize(width = 168, height = 58)
-        val model = model().withAutomaticControlSize(measured)
+        HudElement.entries.forEach { element ->
+            val bounds = model().withMeasuredSize(element, measured).bounds(
+                element = element,
+                screenWidth = SCREEN_WIDTH,
+                screenHeight = SCREEN_HEIGHT,
+            )
 
-        val bounds = model.bounds(
-            element = HudElement.AUTOMATIC_CONTROL,
-            screenWidth = SCREEN_WIDTH,
-            screenHeight = SCREEN_HEIGHT,
-        )
+            assertEquals(measured.width, bounds.width, "$element width")
+            assertEquals(measured.height, bounds.height, "$element height")
+        }
+    }
 
-        assertEquals(measured.width, bounds.width)
-        assertEquals(measured.height, bounds.height)
+    /** 每個預覽情境的動作卡都對得上情境規則已登記的動作用語，預覽卡片因此有正式的標籤。 */
+    @Test
+    fun `every preview scenario action is registered for its rule`() {
+        val vocabulary = GameActionVocabularyRegistryImpl().apply {
+            BuiltInMinecraftMahjongExtension.registerGameActionVocabulary(this)
+            BundledRiichiMinecraftExtension.registerGameActionVocabulary(this)
+        }
+
+        HudPreviewScenario.entries.forEach { scenario ->
+            scenario.prompt.actions.forEach { action ->
+                assertNotNull(vocabulary.find(scenario.prompt.ruleModuleId, action.actionId), "$scenario uses an unregistered action ${action.actionId}")
+            }
+        }
+    }
+
+    /** 切換操作面板情境後，舊情境量到的操作面板尺寸失效，其他 HUD 的量測保留。 */
+    @Test
+    fun `switching the scenario drops only the decision measurement`() {
+        val measured = MahjongHudPreviewSize(width = 168, height = 58)
+        val model = model()
+            .withMeasuredSize(HudElement.DECISION, measured)
+            .withMeasuredSize(HudElement.COMPACT, measured)
+            .selectScenario(HudPreviewScenario.RIICHI)
+
+        assertEquals(mapOf(HudElement.COMPACT to measured), model.measuredSizes)
     }
 
     /** 量到的尺寸超過畫面時仍被限制在畫面內。 */
     @Test
     fun `an oversized measurement is clamped to the screen`() {
-        val model = model().withAutomaticControlSize(MahjongHudPreviewSize(width = 10_000, height = 10_000))
+        val model = model().withMeasuredSize(HudElement.AUTOMATIC_CONTROL, MahjongHudPreviewSize(width = 10_000, height = 10_000))
 
         val bounds = model.bounds(
             element = HudElement.AUTOMATIC_CONTROL,

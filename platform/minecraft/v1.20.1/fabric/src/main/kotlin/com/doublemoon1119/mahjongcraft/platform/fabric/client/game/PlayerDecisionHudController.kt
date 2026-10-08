@@ -344,7 +344,8 @@ class PlayerDecisionHudController(
     private fun renderCompactDecisionHud(context: DrawContext) {
         val client = MinecraftClient.getInstance()
         if (!configStore.current.presentationVisibility.compactPromptEnabled) return
-        if (client.options.hudHidden || timerDisplay.reading() == null) return
+        if (client.options.hudHidden) return
+        val timerParts = currentTimerParts() ?: return
         val prompt = promptStore.prompt
         val content = compactDecisionHudContent(
             prompt = prompt,
@@ -354,20 +355,33 @@ class PlayerDecisionHudController(
             tileSelectionDescription = prompt?.let(::activeActionDescription),
         )
         val hudLayout = configStore.current.hudLayout
-        val renderer = MinecraftClient.getInstance().textRenderer
-        val groupWidth = CompactDecisionHudLayout.GROUP_WIDTH.coerceAtMost(context.scaledWindowWidth)
-        val descriptionLines = (content as? CompactDecisionHudContent.TileSelection)?.description
-            ?.let { renderer.wrapLines(it, groupWidth) }
-            .orEmpty()
-        val layout = CompactDecisionHudLayout(
-            screenWidth = context.scaledWindowWidth,
-            screenHeight = context.scaledWindowHeight,
+        renderCompactHud(
+            context = context,
+            content = content,
+            timerParts = timerParts,
             ratioX = hudLayout.compactPromptX,
             ratioY = hudLayout.compactPromptY,
-            expanded = content != CompactDecisionHudContent.TimerOnly,
-            descriptionLineCount = descriptionLines.size,
         )
-        renderTimerOverlay(context, layout.timerTop, layout.centerX)
+    }
+
+    /** 依 [content] 與 [timerParts] 在 [ratioX]、[ratioY] 的位置畫出精簡 HUD；HUD 位置編輯器的預覽也使用這裡。 */
+    internal fun renderCompactHud(
+        context: DrawContext,
+        content: CompactDecisionHudContent,
+        timerParts: List<DecisionTimerPart>,
+        ratioX: Double,
+        ratioY: Double,
+    ) {
+        val renderer = MinecraftClient.getInstance().textRenderer
+        val descriptionLines = compactDescriptionLines(content, context.scaledWindowWidth)
+        val layout = compactHudLayout(
+            screenWidth = context.scaledWindowWidth,
+            screenHeight = context.scaledWindowHeight,
+            content = content,
+            ratioX = ratioX,
+            ratioY = ratioY,
+        )
+        context.drawDecisionTimer(renderer, timerParts, layout.timerTop, layout.centerX, TIMER_SCALE)
         when (content) {
             CompactDecisionHudContent.TimerOnly -> Unit
             is CompactDecisionHudContent.TileSelection -> {
@@ -389,6 +403,27 @@ class PlayerDecisionHudController(
             )
         }
     }
+
+    /** [content] 在指定畫面上的精簡 HUD 版位；說明行數依實際換行結果計算。 */
+    internal fun compactHudLayout(
+        screenWidth: Int,
+        screenHeight: Int,
+        content: CompactDecisionHudContent,
+        ratioX: Double,
+        ratioY: Double,
+    ): CompactDecisionHudLayout = CompactDecisionHudLayout(
+        screenWidth = screenWidth,
+        screenHeight = screenHeight,
+        ratioX = ratioX,
+        ratioY = ratioY,
+        expanded = content != CompactDecisionHudContent.TimerOnly,
+        descriptionLineCount = compactDescriptionLines(content, screenWidth).size,
+    )
+
+    /** 選牌進度提示的動作說明依精簡 HUD 寬度換行後的每一行；其他內容沒有說明。 */
+    private fun compactDescriptionLines(content: CompactDecisionHudContent, screenWidth: Int) = (content as? CompactDecisionHudContent.TileSelection)?.description
+        ?.let { MinecraftClient.getInstance().textRenderer.wrapLines(it, CompactDecisionHudLayout.GROUP_WIDTH.coerceAtMost(screenWidth)) }
+        .orEmpty()
 
     /** 繪製精簡 HUD 倒數上方的兩行提示。 */
     private fun renderCompactLines(context: DrawContext, layout: CompactDecisionHudLayout, title: Text, detail: Text) {
@@ -412,57 +447,24 @@ class PlayerDecisionHudController(
         scale: Float = TIMER_SCALE,
     ) {
         val parts = currentTimerParts() ?: return
-        val renderer = MinecraftClient.getInstance().textRenderer
-        val width = parts.sumOf { renderer.getWidth(it.first) }
-        context.matrices.push()
-        context.matrices.scale(scale, scale, 1f)
-        var x = centerX / scale - width / 2f
-        parts.forEach { (text, color) ->
-            context.drawTextWithShadow(renderer, text, x.toInt(), (y / scale).toInt(), color)
-            x += renderer.getWidth(text)
-        }
-        context.matrices.pop()
+        context.drawDecisionTimer(MinecraftClient.getInstance().textRenderer, parts, y, centerX, scale)
     }
 
     /** 目前倒數以 [scale] 縮放後的畫面寬度；沒有有效計時時為 null。 */
-    fun timerOverlayWidth(scale: Float = TIMER_SCALE): Int? {
-        val parts = currentTimerParts() ?: return null
-        val renderer = MinecraftClient.getInstance().textRenderer
-        return ceil(parts.sumOf { renderer.getWidth(it.first) } * scale).toInt()
+    fun timerOverlayWidth(scale: Float = TIMER_SCALE): Int? = currentTimerParts()?.let { parts ->
+        decisionTimerWidth(MinecraftClient.getInstance().textRenderer, parts, scale)
     }
 
-    /** 目前倒數的文字片段與顏色；沒有有效計時或兩段時間都已用完時為 null。 */
-    private fun currentTimerParts(): List<Pair<String, Int>>? {
+    /** 目前倒數的文字片段；沒有有效計時時為 null，兩段時間都已用完時為空清單。 */
+    private fun currentTimerParts(): List<DecisionTimerPart>? {
         val reading = timerDisplay.reading() ?: return null
         return decisionTimerParts(
             baseSeconds = ceil(reading.baseRemainingMillis / 1_000.0).toInt(),
             reserveSeconds = ceil(reading.reserveRemainingMillis / 1_000.0).toInt(),
-        ).ifEmpty { null }
+        )
     }
 
-    /** 基本時間、加號與較低對比的保留時間；保留時間開始消耗後依剩餘秒數轉為橘色與紅色。 */
-    private fun decisionTimerParts(baseSeconds: Int, reserveSeconds: Int): List<Pair<String, Int>> {
-        val consumingReserve = baseSeconds <= 0 && reserveSeconds > 0
-        return buildList {
-            if (baseSeconds > 0) add(baseSeconds.toString() to 0xFFD54F)
-            if (baseSeconds > 0 && reserveSeconds > 0) add(" + " to 0x888888)
-            if (reserveSeconds > 0) {
-                val reserveColor = when {
-                    !consumingReserve -> 0xB0B0B0
-                    reserveSeconds <= 5 -> 0xE05252
-                    else -> 0xE69A45
-                }
-                add(reserveSeconds.toString() to reserveColor)
-            }
-        }
-    }
-
-    /**
-     * 優先依準星指向的手牌 UUID 顯示捨牌後預測，沒有合法候選時顯示目前手牌的權威分析。
-     *
-     * 欄寬與狀態列寬度都依實際文字寬度動態計算：前者避免不同語系下的剩餘張數與和牌資格文字互相碰撞，
-     * 後者讓較長的狀態列不會超出面板背景，兩者都在這裡量測後交給 [DiscardAnalysisLayout]。
-     */
+    /** 優先依準星指向的手牌 UUID 顯示捨牌後預測，沒有合法候選時顯示目前手牌的權威分析。 */
     private fun renderHandAnalysis(context: DrawContext, prompt: PlayerDecisionPromptDto?, hit: HitResult?) {
         if (!configStore.current.presentationVisibility.discardAnalysisEnabled) return
         val pointedTile = (hit as? EntityHitResult)?.entity as? MahjongTileEntity
@@ -481,10 +483,25 @@ class PlayerDecisionHudController(
             is HandAnalysisSelection.Current -> handAnalysisContent(decisionTexts, selection.analysis)
         }
         if (content.cells.isEmpty()) return
+        renderAnalysisPanel(context, content, configStore.current.hudLayout.discardAnalysisY)
+    }
+
+    /**
+     * [content] 在指定畫面上的手牌分析面板版位。
+     *
+     * 欄寬與狀態列寬度都依實際文字寬度動態計算：前者避免不同語系下的剩餘張數與和牌資格文字互相碰撞，
+     * 後者讓較長的狀態列不會超出面板背景。
+     */
+    internal fun analysisLayout(
+        screenWidth: Int,
+        screenHeight: Int,
+        content: DiscardAnalysisContent,
+        ratioY: Double,
+    ): DiscardAnalysisLayout {
         val renderer = MinecraftClient.getInstance().textRenderer
-        val layout = DiscardAnalysisLayout(
-            screenWidth = context.scaledWindowWidth,
-            screenHeight = context.scaledWindowHeight,
+        return DiscardAnalysisLayout(
+            screenWidth = screenWidth,
+            screenHeight = screenHeight,
             cellCount = content.cells.size,
             statusLineCount = content.statusTexts.size,
             widestCellContentWidth = content.cells.maxOfOrNull { cell ->
@@ -496,8 +513,14 @@ class PlayerDecisionHudController(
             } ?: DiscardAnalysisLayout.TILE_WIDTH,
             widestStatusTextWidth = content.statusTexts.maxOfOrNull(renderer::getWidth) ?: 0,
             hasAvailabilityRow = content.hasAvailabilityRow,
-            ratioY = configStore.current.hudLayout.discardAnalysisY,
+            ratioY = ratioY,
         )
+    }
+
+    /** 在 [ratioY] 的位置畫出 [content] 的手牌分析面板；HUD 位置編輯器的預覽也使用這裡。 */
+    internal fun renderAnalysisPanel(context: DrawContext, content: DiscardAnalysisContent, ratioY: Double) {
+        val renderer = MinecraftClient.getInstance().textRenderer
+        val layout = analysisLayout(context.scaledWindowWidth, context.scaledWindowHeight, content, ratioY)
         context.fill(
             layout.panelLeft,
             layout.panelTop,

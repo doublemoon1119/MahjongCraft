@@ -24,6 +24,7 @@ import org.lwjgl.glfw.GLFW
  * @property preferenceService 手牌偏好保存服務。
  * @property historyScreenController 對局歷史畫面控制器。
  * @property ruleCatalogueScreenController 規則一覽畫面控制器。
+ * @property hudPreviewRenderer HUD 位置編輯器的真實 HUD 預覽繪製。
  */
 @Single
 class MahjongClientConfigScreenController(
@@ -33,6 +34,7 @@ class MahjongClientConfigScreenController(
     private val preferenceService: ClientAutoSortHandPreferenceService,
     private val historyScreenController: HistoryScreenController,
     private val ruleCatalogueScreenController: RuleCatalogueScreenController,
+    private val hudPreviewRenderer: MahjongHudPreviewRenderer,
 ) {
     /** 預設以分號開啟 Client Config Screen 的按鍵綁定。 */
     private lateinit var openKeyBinding: KeyBinding
@@ -111,6 +113,7 @@ class MahjongClientConfigScreenController(
                 automaticCoordinator,
                 displayResolver,
                 preferenceService,
+                hudPreviewRenderer,
             ),
         )
     }

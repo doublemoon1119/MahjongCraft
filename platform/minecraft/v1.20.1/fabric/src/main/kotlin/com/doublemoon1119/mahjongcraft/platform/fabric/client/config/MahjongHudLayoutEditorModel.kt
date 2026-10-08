@@ -1,8 +1,15 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.config
 
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.DecisionCard
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.DecisionCardLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionPlayerRelationDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionActionDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -56,49 +63,75 @@ internal enum class HudPreviewVisibility(val translationKey: String) {
 }
 
 /**
- * 操作面板可切換的代表性動態尺寸情境。
+ * 操作面板可切換的代表性預覽情境。
  *
- * 預覽尺寸由實際操作面板的版面（[DecisionCardLayout]）依代表性卡片計算，因此編輯器中的位置與遊戲中面板的位置一致。
- * 每個情境都有一行觸發文字與觸發牌。
+ * 每個情境是一份與正式對局相同格式的範例決策提示；編輯器以它畫出真實的操作面板，預覽尺寸也由實際操作面板的版面
+ * （[DecisionCardLayout]）計算，因此編輯器中的位置與遊戲中面板的位置一致。
  *
  * @property translationKey 情境名稱翻譯鍵。
- * @property cards 情境中由左至右的代表性卡片。
+ * @property prompt 情境的範例決策提示。
  */
 internal enum class HudPreviewScenario(
     val translationKey: String,
-    val cards: List<DecisionCard>,
+    val prompt: PlayerDecisionPromptDto,
 ) {
-    /** 一般鳴牌：碰與兩種吃，每張卡片三張預覽牌並標示鳴到的牌。 */
+    /** 一般鳴牌：上家打出五條，可以碰或兩種吃。 */
     CALL(
         translationKey = MinecraftClientConfigScreenKeys.HUD_LAYOUT_SCENARIO_CALL,
-        cards = List(3) { DecisionCard(previewTileCount = 3, hasClaimedTileMarker = true) },
-    ),
-
-    /** 立直宣告：立直、暗槓與自摸。 */
-    RIICHI(
-        translationKey = MinecraftClientConfigScreenKeys.HUD_LAYOUT_SCENARIO_RIICHI,
-        cards = listOf(
-            DecisionCard(previewTileCount = 0, hasClaimedTileMarker = false),
-            DecisionCard(previewTileCount = 4, hasClaimedTileMarker = false),
-            DecisionCard(previewTileCount = 0, hasClaimedTileMarker = false),
+        prompt = previewPrompt(
+            triggerTileAssetKey = "s5",
+            fromLeftPlayer = true,
+            actions = listOf(
+                previewAction(BuiltInGameActionIds.PON, listOf("s5", "s5", "s5")),
+                previewAction(BuiltInGameActionIds.CHI, listOf("s4", "s5", "s6"), claimedTileIndex = 1),
+                previewAction(BuiltInGameActionIds.CHI, listOf("s3", "s4", "s5"), claimedTileIndex = 2),
+                previewAction(BuiltInGameActionIds.PASS, emptyList()),
+            ),
         ),
     ),
 
-    /** 九種九牌等長牌列操作：一張列出九張么九牌的卡片與立直。 */
+    /** 立直宣告：自己摸到一萬，可以立直、暗槓或自摸。 */
+    RIICHI(
+        translationKey = MinecraftClientConfigScreenKeys.HUD_LAYOUT_SCENARIO_RIICHI,
+        prompt = previewPrompt(
+            triggerTileAssetKey = "m1",
+            fromLeftPlayer = false,
+            actions = listOf(
+                previewAction(RiichiGameAction.Riichi.id, RIICHI_PREVIEW_TILES),
+                previewAction(BuiltInGameActionIds.KAN_CLOSED, listOf("m9", "m9", "m9", "m9")),
+                previewAction(BuiltInGameActionIds.TSUMO, listOf("m1")),
+            ),
+        ),
+    ),
+
+    /** 九種九牌等長牌列操作：自己摸到東，可以宣告九種九牌或立直。 */
     ABORTIVE_DRAW(
         translationKey = MinecraftClientConfigScreenKeys.HUD_LAYOUT_SCENARIO_ABORTIVE_DRAW,
-        cards = listOf(
-            DecisionCard(previewTileCount = 9, hasClaimedTileMarker = false),
-            DecisionCard(previewTileCount = 0, hasClaimedTileMarker = false),
+        prompt = previewPrompt(
+            triggerTileAssetKey = "east",
+            fromLeftPlayer = false,
+            actions = listOf(
+                previewAction(
+                    RiichiExhaustiveDrawReason.KyuushuKyuuhai.id,
+                    listOf("m1", "m9", "p1", "p9", "s1", "s9", "east", "south", "west", "north", "white_dragon", "green_dragon"),
+                ),
+                previewAction(RiichiGameAction.Riichi.id, RIICHI_PREVIEW_TILES),
+            ),
         ),
     ),
     ;
 
-    /** 這個情境在 [screenWidth] × [screenHeight] 畫面上的操作面板版面；不含標題文字寬度與倒數寬度。 */
+    /**
+     * 這個情境在 [screenWidth] × [screenHeight] 畫面上的操作面板版面；不含標題文字寬度與倒數寬度。
+     *
+     * 編輯器量測到實際文字後的尺寸優先，這裡只在尚未量測時提供預覽尺寸。
+     */
     fun layout(screenWidth: Int, screenHeight: Int): DecisionCardLayout = DecisionCardLayout(
         screenWidth = screenWidth,
         screenHeight = screenHeight,
-        cards = cards,
+        cards = prompt.actions
+            .filterNot { it.actionId == BuiltInGameActionIds.PASS }
+            .map { DecisionCard(previewTileCount = it.previewTileAssetKeys.size, hasClaimedTileMarker = it.claimedTileIndex != null) },
         headerTextWidth = 0,
         triggerLineCount = 1,
         triggerTextWidth = 0,
@@ -107,6 +140,45 @@ internal enum class HudPreviewScenario(
         timerWidth = 0,
     )
 }
+
+/** 立直卡片的範例預覽牌：可以打出宣告立直的牌。 */
+private val RIICHI_PREVIEW_TILES: List<String> = listOf("m1", "m4", "m7", "p2", "p5", "p8", "s3", "s6", "s9")
+
+/** 預覽情境的範例決策提示；來自上家捨牌時附上來源玩家，否則是自己摸到 [triggerTileAssetKey]。 */
+private fun previewPrompt(
+    triggerTileAssetKey: String,
+    fromLeftPlayer: Boolean,
+    actions: List<PlayerDecisionActionDto>,
+): PlayerDecisionPromptDto = PlayerDecisionPromptDto(
+    decisionKey = "hud_layout_preview",
+    ruleModuleId = BuiltInRuleModuleIds.RIICHI,
+    actions = actions,
+    triggerTileAssetKey = triggerTileAssetKey,
+    triggerPlayerId = if (fromLeftPlayer) PREVIEW_TRIGGER_PLAYER_ID else null,
+    triggerPlayerName = if (fromLeftPlayer) PREVIEW_TRIGGER_PLAYER_NAME else null,
+    triggerPlayerRelation = if (fromLeftPlayer) DecisionPlayerRelationDto.LEFT else null,
+    triggerActionId = if (fromLeftPlayer) BuiltInGameActionIds.DISCARD else null,
+    preparation = null,
+    discardAnalyses = emptyList(),
+)
+
+/** 預覽情境的一張動作卡。 */
+private fun previewAction(
+    actionId: String,
+    previewTileAssetKeys: List<String>,
+    claimedTileIndex: Int? = null,
+): PlayerDecisionActionDto = PlayerDecisionActionDto(
+    token = actionId,
+    actionId = actionId,
+    referenceTileAssetKey = null,
+    previewTileAssetKeys = previewTileAssetKeys,
+    claimedTileIndex = claimedTileIndex,
+    tileSelection = null,
+)
+
+/** 鳴牌情境中打出觸發牌的範例玩家。 */
+private const val PREVIEW_TRIGGER_PLAYER_ID: String = "00000000-0000-0000-0000-000000000000"
+private const val PREVIEW_TRIGGER_PLAYER_NAME: String = "Alex"
 
 /**
  * HUD 預覽框在目前畫面尺寸下的實際像素尺寸。
@@ -130,8 +202,8 @@ internal data class MahjongHudPreviewSize(
  * @property selectedElement 目前取得完整預覽與拖曳焦點的 HUD。
  * @property scenario 操作面板目前使用的尺寸預覽情境。
  * @property otherHudVisibility 所有未選取 HUD 共用的預覽方式。
- * @property automaticControlSize 自動操作狀態面板在目前畫面上量到的實際尺寸；量測需要文字寬高，
- * 由編輯器畫面在每次重建版面時寫入，尚未量測時退回保守的內建預設值。
+ * @property measuredSizes 各 HUD 以範例內容在目前畫面上量到的實際尺寸；量測需要文字寬高，由編輯器畫面在每次
+ * 繪製時寫入，尚未量測的 HUD 退回內建預設尺寸。
  * @property controlsManuallyHidden 玩家是否手動隱藏所有編輯器控制項。
  * @property dragging 目前被拖曳的 HUD 區塊；`null` 代表沒有拖曳進行中。
  * @property dragOffsetX 拖曳起點相對 HUD 左上角的 X。
@@ -143,7 +215,7 @@ internal data class MahjongHudLayoutEditorModel(
     val selectedElement: HudElement = HudElement.DECISION,
     val scenario: HudPreviewScenario = HudPreviewScenario.CALL,
     val otherHudVisibility: HudPreviewVisibility = HudPreviewVisibility.HIDDEN,
-    val automaticControlSize: MahjongHudPreviewSize? = null,
+    val measuredSizes: Map<HudElement, MahjongHudPreviewSize> = emptyMap(),
     val controlsManuallyHidden: Boolean = false,
     val dragging: HudElement? = null,
     val dragOffsetX: Double = 0.0,
@@ -167,15 +239,11 @@ internal data class MahjongHudLayoutEditorModel(
         screenWidth: Int,
         screenHeight: Int,
     ): MahjongHudPreviewSize {
-        val (preferredWidth, preferredHeight) = when (element) {
+        val (preferredWidth, preferredHeight) = measuredSizes[element]?.let { it.width to it.height } ?: when (element) {
             HudElement.DECISION -> scenario.layout(screenWidth, screenHeight).let { it.panelWidth to it.groupHeight }
             HudElement.COMPACT -> COMPACT_PREVIEW_WIDTH to COMPACT_PREVIEW_HEIGHT
             HudElement.ANALYSIS -> ANALYSIS_PREVIEW_WIDTH to ANALYSIS_PREVIEW_HEIGHT
-            HudElement.AUTOMATIC_CONTROL -> {
-                val measured = automaticControlSize
-                    ?: MahjongHudPreviewSize(AUTOMATIC_CONTROL_PREVIEW_WIDTH, AUTOMATIC_CONTROL_PREVIEW_HEIGHT)
-                measured.width to measured.height
-            }
+            HudElement.AUTOMATIC_CONTROL -> AUTOMATIC_CONTROL_PREVIEW_WIDTH to AUTOMATIC_CONTROL_PREVIEW_HEIGHT
         }
         return MahjongHudPreviewSize(
             width = minOf(preferredWidth, screenWidth - PREVIEW_SCREEN_MARGIN).coerceAtLeast(1),
@@ -319,11 +387,14 @@ internal data class MahjongHudLayoutEditorModel(
     /** 選取要編輯的 HUD 區塊。 */
     fun selectElement(element: HudElement): MahjongHudLayoutEditorModel = copy(selectedElement = element)
 
-    /** 切換操作面板的尺寸預覽情境。 */
-    fun selectScenario(scenario: HudPreviewScenario): MahjongHudLayoutEditorModel = copy(scenario = scenario)
+    /** 切換操作面板的預覽情境；舊情境量到的操作面板尺寸隨之失效，等待重新量測。 */
+    fun selectScenario(scenario: HudPreviewScenario): MahjongHudLayoutEditorModel = copy(
+        scenario = scenario,
+        measuredSizes = measuredSizes - HudElement.DECISION,
+    )
 
-    /** 記錄自動操作狀態面板量到的實際尺寸，讓預覽框與實際 HUD 一樣大。 */
-    fun withAutomaticControlSize(size: MahjongHudPreviewSize): MahjongHudLayoutEditorModel = copy(automaticControlSize = size)
+    /** 記錄 [element] 以範例內容量到的實際尺寸，讓預覽框與實際 HUD 一樣大。 */
+    fun withMeasuredSize(element: HudElement, size: MahjongHudPreviewSize): MahjongHudLayoutEditorModel = copy(measuredSizes = measuredSizes + (element to size))
 
     /** 切換未選取 HUD 的預覽方式。 */
     fun selectVisibility(visibility: HudPreviewVisibility): MahjongHudLayoutEditorModel = copy(otherHudVisibility = visibility)

@@ -30,6 +30,7 @@ import net.minecraft.util.Formatting
  * @property automaticCoordinator 本局自動操作更新協調器。
  * @property displayResolver 自動操作顯示解析器。
  * @property preferenceService 手牌偏好保存服務。
+ * @property hudPreviewRenderer HUD 位置編輯器的真實 HUD 預覽繪製。
  */
 class MahjongClientConfigScreen(
     private val parent: Screen?,
@@ -37,6 +38,7 @@ class MahjongClientConfigScreen(
     private val automaticCoordinator: ClientAutomaticControlUpdateCoordinator,
     private val displayResolver: AutomaticControlDisplayResolver,
     private val preferenceService: ClientAutoSortHandPreferenceService,
+    private val hudPreviewRenderer: MahjongHudPreviewRenderer,
 ) : Screen(Text.translatable(MinecraftClientConfigScreenKeys.TITLE)) {
     /** 伺服器權威狀態之外的畫面專用本局草稿。 */
     private val automaticDraft = ClientAutomaticControlDraftSession(automaticCoordinator.snapshot())
@@ -530,6 +532,7 @@ class MahjongClientConfigScreen(
                             parent = this,
                             initialLayout = currentDraft().hudLayout,
                             automaticControlLabels = automaticControlPreviewLabels(),
+                            previewRenderer = hudPreviewRenderer,
                         ),
                     )
                 },

@@ -1,7 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.config
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.AutomaticControlStatusHudText
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.automaticControlStatusHudLayout
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.CycleButtonInput
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.SettingsFooterLayout
@@ -22,14 +20,17 @@ import kotlin.math.roundToInt
  * [MahjongHudLayoutEditorModel]，第二行二級選項的水平捲動幾何計算委派給 [MahjongHudToolbarLayout]，
  * 兩者都不依賴 Minecraft 型別，因此可以直接以 JVM 測試驗證。
  *
+ * 選取中的 HUD 以真實內容的半透明預覽畫在草稿位置（見 [MahjongHudPreviewRenderer]），並在外框旁標示名稱與位置。
+ *
  * @property parent 開啟這個編輯器的設定畫面，套用草稿與返回都交由它處理。
- * @property automaticControlLabels 自動操作狀態面板要呈現的項目名稱，由父畫面決定內容；編輯器只用它量測
- * 預覽框大小，使預覽與實際面板同寬同高。
+ * @property automaticControlLabels 自動操作狀態面板要呈現的項目名稱，由父畫面決定內容。
+ * @property previewRenderer 以範例內容畫出真實 HUD 並量測其尺寸。
  */
 class MahjongHudLayoutEditorScreen(
     private val parent: MahjongClientConfigScreen,
     initialLayout: MahjongHudLayoutConfig,
     private val automaticControlLabels: List<Text>,
+    private val previewRenderer: MahjongHudPreviewRenderer,
 ) : Screen(Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_TITLE)) {
     /** 編輯器的全部可測試狀態；拖曳、選取、草稿與控制項顯示都由它決定。 */
     private var model = MahjongHudLayoutEditorModel(baseline = initialLayout)
@@ -256,7 +257,7 @@ class MahjongHudLayoutEditorScreen(
 
     /** 繪製背景、參考線與全部可拖曳的 HUD 預覽。 */
     override fun render(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
-        measureAutomaticControlPreview()
+        measurePreviews()
         context.fill(0, 0, width, height, SCREEN_OVERLAY_COLOR)
         context.fill(width / 2, 24, width / 2 + 1, height - 34, GUIDE_COLOR)
         context.fill(0, height / 2, width, height / 2 + 1, GUIDE_COLOR)
@@ -298,9 +299,8 @@ class MahjongHudLayoutEditorScreen(
     }
 
     /**
-     * 預覽框太窄而讓內容被截斷時，補一個完整內容的 tooltip。
+     * 外框預覽太窄而讓名稱被截斷時，補一個完整名稱與位置的 tooltip；選取中的元素已在外框旁標示完整內容，不另外顯示。
      *
-     * 位置百分比只畫在選取中的元素上，因此只有選取中的元素會把它納入截斷判斷；外框模式只看名稱。
      * 只在沒有拖曳、且游標不在任何工具列按鈕上時顯示，避免與按鈕本身的 tooltip 疊在一起。
      */
     private fun renderTrimmedPreviewTooltip(context: DrawContext, mouseX: Int, mouseY: Int) {
@@ -312,12 +312,10 @@ class MahjongHudLayoutEditorScreen(
             screenWidth = width,
             screenHeight = height,
         ) ?: return
+        if (element == model.selectedElement) return
         val name = Text.translatable(element.translationKey)
         val position = positionText(element)
-        val maxWidth = previewTextWidth(bounds(element))
-        val trimmed = textRenderer.getWidth(name) > maxWidth ||
-            (element == model.selectedElement && textRenderer.getWidth(position) > maxWidth)
-        if (!trimmed) return
+        if (textRenderer.getWidth(name) <= previewTextWidth(bounds(element))) return
         context.drawTooltip(textRenderer, listOf(name, Text.literal(position)), mouseX, mouseY)
     }
 
@@ -510,23 +508,18 @@ class MahjongHudLayoutEditorScreen(
             ?.let { (_, tooltip) -> context.drawTooltip(textRenderer, tooltip, mouseX, mouseY) }
     }
 
-    /**
-     * 以正式 HUD 的同一份排列計算量測自動操作狀態面板，讓預覽框反映實際的換欄與縮放結果；
-     * 沒有任何項目可量測時沿用模型的內建預設尺寸。
-     */
-    private fun measureAutomaticControlPreview() {
-        if (automaticControlLabels.isEmpty()) return
-        val layout = automaticControlStatusHudLayout(
-            rowWidths = AutomaticControlStatusHudText.rowWidths(textRenderer, automaticControlLabels),
-            textHeight = AutomaticControlStatusHudText.textHeight(textRenderer),
-            screenWidth = width,
-            screenHeight = height,
-            ratioX = model.draft.automaticControlStatusX,
-            ratioY = model.draft.automaticControlStatusY,
-            summaryWidth = { AutomaticControlStatusHudText.summaryWidth(textRenderer, it) },
-        ) ?: return
-        val size = MahjongHudPreviewSize(width = layout.bounds.width, height = layout.bounds.height)
-        if (model.automaticControlSize != size) model = model.withAutomaticControlSize(size)
+    /** 以範例內容量測每個 HUD 的實際尺寸，讓預覽框與實際 HUD 同寬同高；無法量測的 HUD 沿用模型的內建預設尺寸。 */
+    private fun measurePreviews() {
+        HudElement.entries.forEach { element ->
+            val size = previewRenderer.size(
+                element = element,
+                scenario = model.scenario,
+                automaticControlLabels = automaticControlLabels,
+                screenWidth = width,
+                screenHeight = height,
+            ) ?: return@forEach
+            if (model.measuredSizes[element] != size) model = model.withMeasuredSize(element, size)
+        }
     }
 
     /** 預覽框內可用於文字的寬度，左右各留一點內距。 */
@@ -569,23 +562,33 @@ class MahjongHudLayoutEditorScreen(
         mouseY: Int,
     ) {
         val hovered = bounds.contains(mouseX.toDouble(), mouseY.toDouble())
-        val background = if (hovered) PREVIEW_HOVER_COLOR else PREVIEW_COLOR
-        val maxWidth = previewTextWidth(bounds)
-        context.fill(bounds.left, bounds.top, bounds.right, bounds.bottom, background)
-        context.drawBorder(bounds.left, bounds.top, bounds.width, bounds.height, SELECTED_BORDER_COLOR)
-        context.drawCenteredTextWithShadow(
-            textRenderer,
-            trimToPreview(Text.translatable(element.translationKey), maxWidth),
-            bounds.left + bounds.width / 2,
-            bounds.top + 7,
-            if (hovered) TITLE_COLOR else 0xFFFFFF,
+        previewRenderer.render(
+            context = context,
+            element = element,
+            scenario = model.scenario,
+            layout = model.draft,
+            automaticControlLabels = automaticControlLabels,
+            opacity = if (hovered || model.dragging == element) PREVIEW_HOVER_OPACITY else PREVIEW_OPACITY,
         )
+        context.drawBorder(bounds.left, bounds.top, bounds.width, bounds.height, SELECTED_BORDER_COLOR)
+        renderPreviewLabel(context, element, bounds, hovered)
+    }
+
+    /** 在預覽外框上方標示名稱與位置；上方空間不足時改標在外框下方。 */
+    private fun renderPreviewLabel(context: DrawContext, element: HudElement, bounds: MahjongHudBounds, hovered: Boolean) {
+        val label = Text.translatable(element.translationKey).append("  ").append(positionText(element))
+        val labelWidth = (textRenderer.getWidth(label) + PREVIEW_LABEL_PADDING * 2).coerceAtMost(width)
+        val labelHeight = textRenderer.fontHeight + PREVIEW_LABEL_PADDING * 2
+        val left = (bounds.left + bounds.width / 2 - labelWidth / 2).coerceIn(0, (width - labelWidth).coerceAtLeast(0))
+        val above = bounds.top - PREVIEW_LABEL_GAP - labelHeight
+        val top = (if (above >= 0) above else bounds.bottom + PREVIEW_LABEL_GAP).coerceIn(0, (height - labelHeight).coerceAtLeast(0))
+        context.fill(left, top, left + labelWidth, top + labelHeight, PREVIEW_LABEL_BACKGROUND)
         context.drawCenteredTextWithShadow(
             textRenderer,
-            trimToPreview(Text.literal(positionText(element)), maxWidth),
-            bounds.left + bounds.width / 2,
-            bounds.top + 22,
-            0xB0B0B0,
+            label,
+            left + labelWidth / 2,
+            top + PREVIEW_LABEL_PADDING,
+            if (hovered) TITLE_COLOR else 0xFFFFFF,
         )
     }
 
@@ -611,11 +614,20 @@ class MahjongHudLayoutEditorScreen(
         /** 全畫面半透明遮罩。 */
         const val SCREEN_OVERLAY_COLOR = 0x88000000.toInt()
 
-        /** HUD 預覽背景。 */
-        const val PREVIEW_COLOR = 0xCC101820.toInt()
+        /** 選取中 HUD 的真實內容預覽不透明度。 */
+        const val PREVIEW_OPACITY = 0.6f
 
-        /** HUD 預覽 hover 背景。 */
-        const val PREVIEW_HOVER_COLOR = 0xDD36566B.toInt()
+        /** 游標停在預覽上或正在拖曳時的不透明度。 */
+        const val PREVIEW_HOVER_OPACITY = 0.85f
+
+        /** 預覽標籤背景。 */
+        const val PREVIEW_LABEL_BACKGROUND = 0xCC101820.toInt()
+
+        /** 預覽標籤文字與背景邊緣的內距。 */
+        const val PREVIEW_LABEL_PADDING = 2
+
+        /** 預覽標籤與外框之間的間距。 */
+        const val PREVIEW_LABEL_GAP = 2
 
         /** 僅外框預覽仍保留的極淡背景。 */
         const val OUTLINE_BACKGROUND_COLOR = 0x30202B35

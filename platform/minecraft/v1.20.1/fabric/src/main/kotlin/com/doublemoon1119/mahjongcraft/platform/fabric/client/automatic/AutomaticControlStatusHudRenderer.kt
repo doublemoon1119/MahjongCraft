@@ -35,16 +35,26 @@ class AutomaticControlStatusHudRenderer(
             displays = displays,
         )
         if (rows.isEmpty()) return
+        val hudLayout = configStore.current.hudLayout
+        renderRows(context, rows, hudLayout.automaticControlStatusX, hudLayout.automaticControlStatusY)
+    }
 
-        val renderer = client.textRenderer
+    /** 在 [ratioX]、[ratioY] 的位置畫出 [rows]；HUD 位置編輯器的預覽也使用這裡。 */
+    internal fun renderRows(
+        context: DrawContext,
+        rows: List<AutomaticControlStatusRow>,
+        ratioX: Double,
+        ratioY: Double,
+    ) {
+        val renderer = MinecraftClient.getInstance().textRenderer
         val dotWidth = AutomaticControlStatusHudText.dotWidth(renderer)
         val layout = automaticControlStatusHudLayout(
             rowWidths = AutomaticControlStatusHudText.rowWidths(renderer, rows.map { it.label }),
             textHeight = AutomaticControlStatusHudText.textHeight(renderer),
             screenWidth = context.scaledWindowWidth,
             screenHeight = context.scaledWindowHeight,
-            ratioX = configStore.current.hudLayout.automaticControlStatusX,
-            ratioY = configStore.current.hudLayout.automaticControlStatusY,
+            ratioX = ratioX,
+            ratioY = ratioY,
             summaryWidth = { AutomaticControlStatusHudText.summaryWidth(renderer, it) },
         ) ?: return
 

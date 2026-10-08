@@ -1,8 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ClaimedTileMarker
-import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds
-import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionPlayerRelationDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSelectionKindDto
 import net.minecraft.client.gui.DrawContext
@@ -15,8 +12,8 @@ import org.joml.Vector2i
 /**
  * 透明且不暫停遊戲的權威操作選擇介面。
  *
- * 版面幾何全部由 [DecisionCardLayout] 計算，卡片清單由 [decisionEntriesFrom] 組出；本類別只負責建立
- * widget、分派滑鼠輸入、把結果畫到 [DrawContext]，並把點擊意圖接回 [PlayerDecisionHudController]。
+ * 內容由 [decisionPanelContent] 組出、版面幾何由 [DecisionCardLayout] 計算、面板由 [drawDecisionPanel] 畫出；
+ * 本類別只負責建立 widget、分派滑鼠輸入、畫出按鈕、倒數與卡片說明，並把點擊意圖接回 [PlayerDecisionHudController]。
  */
 internal class PlayerDecisionScreen(
     private val prompt: PlayerDecisionPromptDto,
@@ -57,7 +54,7 @@ internal class PlayerDecisionScreen(
 
     /** 建立固定單列、可水平捲動的半透明選項卡。 */
     override fun init() {
-        visibleEntries = decisionEntriesFrom(controller.decisionTexts, prompt)
+        visibleEntries = panelContent().entries
         reservedTimerWidth = maxOf(reservedTimerWidth, controller.timerOverlayWidth(HEADER_TIMER_SCALE) ?: 0)
         val layout = layout()
         horizontalScroll = if (horizontalScrollInitialized) {
@@ -185,29 +182,26 @@ internal class PlayerDecisionScreen(
         return false
     }
 
-    /** 繪製觸發牌、完整副露預覽與半透明深色選項面板。 */
+    /** 繪製操作面板、按鈕、倒數與卡片說明。 */
     override fun render(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
         reservedTimerWidth = maxOf(reservedTimerWidth, controller.timerOverlayWidth(HEADER_TIMER_SCALE) ?: 0)
-        val layout = layout()
-        context.fill(layout.panelLeft, layout.panelTop, layout.panelRight, layout.panelBottom, PANEL_BACKGROUND)
-        context.drawCenteredTextWithShadow(
-            textRenderer,
-            title,
-            width / 2,
-            layout.headerTextTop(textRenderer.fontHeight),
-            HEADER_TEXT_COLOR,
-        )
-        renderTriggerPanel(context, layout)
+        val content = panelContent()
+        val layout = layout(content)
         val placements = layout.cardPlacements(horizontalScroll)
         updateCardButtonPositions(layout, placements)
-        context.enableScissor(layout.viewportLeft, layout.cardTop, layout.viewportRight, layout.cardBottom)
-        visibleEntries.forEachIndexed { index, entry ->
-            renderCard(context, layout, entry, placements[index], mouseX, mouseY)
+        context.drawDecisionPanel(
+            renderer = textRenderer,
+            layout = layout,
+            content = content,
+            placements = placements,
+            scroll = horizontalScroll,
+            mouseX = mouseX,
+            mouseY = mouseY,
+            drawTile = { assetKey, x, y -> drawTile(context, assetKey, x, y) },
+        ) {
+            cardButtons.forEach { it.render(context, mouseX, mouseY, delta) }
         }
-        cardButtons.forEach { it.render(context, mouseX, mouseY, delta) }
-        context.disableScissor()
         skipButton?.render(context, mouseX, mouseY, delta)
-        if (layout.hasOverflow) renderScrollbar(context, layout)
         controller.timerOverlayWidth(HEADER_TIMER_SCALE)?.let { timerWidth ->
             controller.renderTimerOverlay(
                 context = context,
@@ -241,81 +235,24 @@ internal class PlayerDecisionScreen(
         context.drawTooltip(textRenderer, textRenderer.wrapLines(description, DecisionCardLayout.TOOLTIP_MAX_WIDTH), positioner, mouseX, mouseY)
     }
 
-    /** 繪製單一卡片的背景、預覽牌與鳴牌指標。 */
-    private fun renderCard(
-        context: DrawContext,
-        layout: DecisionCardLayout,
-        entry: DecisionEntry,
-        placement: DecisionBounds,
-        mouseX: Int,
-        mouseY: Int,
-    ) {
-        val hovered = mouseX in placement.x until placement.x + placement.width &&
-            mouseY in placement.y until placement.y + placement.height
-        context.fill(
-            placement.x,
-            placement.y,
-            placement.x + placement.width,
-            placement.y + placement.height,
-            if (hovered) CARD_HOVER_BACKGROUND else CARD_BACKGROUND,
-        )
-        val tiles = entry.previewTileAssetKeys
-        layout.previewTilePlacements(placement, tiles.size).forEachIndexed { index, tile ->
-            drawTile(context, tiles[index], tile.x, tile.y)
-            if (index == entry.claimedTileIndex) {
-                drawClaimedTileMarker(context, tile.x + tile.width / 2, layout.claimedTileMarkerTop(tile))
-            }
-        }
-    }
-
-    /** 完整顯示來源玩家、相對位置與動作；寬度不足時換行，不截斷資訊。 */
-    private fun renderTriggerPanel(context: DrawContext, layout: DecisionCardLayout) {
-        val assetKey = prompt.triggerTileAssetKey ?: return
-        val panel = layout.triggerPanelBounds
-        context.fill(panel.x, panel.y, panel.x + panel.width, panel.y + panel.height, PANEL_BACKGROUND)
-        triggerTextLines().forEachIndexed { index, line ->
-            context.drawCenteredTextWithShadow(textRenderer, line, width / 2, layout.triggerTextLineTop(index), 0xFFFFFF)
-        }
-        val tile = layout.triggerTileBounds
-        drawTile(context, assetKey, tile.x, tile.y)
-    }
-
-    /** 使用共用玩家名稱來源與完整本地化句型；自己摸牌沒有來源玩家時使用專用句型。 */
-    private fun triggerText(): Text? {
-        val playerId = prompt.triggerPlayerId
-            ?: return if (prompt.triggerTileAssetKey != null) Text.translatable("mahjongcraft.hud.trigger.self_draw") else null
-        val playerName = prompt.triggerPlayerName
-            ?: controller.resolveTriggerPlayerName(playerId)
-        val relationKey = when (prompt.triggerPlayerRelation) {
-            DecisionPlayerRelationDto.LEFT -> "mahjongcraft.hud.relation.left"
-            DecisionPlayerRelationDto.ACROSS -> "mahjongcraft.hud.relation.across"
-            DecisionPlayerRelationDto.RIGHT -> "mahjongcraft.hud.relation.right"
-            null -> return null
-        }
-        val action = controller.decisionTexts.actionLabel(prompt.ruleModuleId, prompt.triggerActionId ?: BuiltInGameActionIds.DISCARD)
-        return Text.translatable("mahjongcraft.hud.trigger", playerName, Text.translatable(relationKey), action)
-    }
-
-    /** 觸發文字依畫面寬度換行後的每一行。 */
-    private fun triggerTextLines() = triggerText()
-        ?.let { textRenderer.wrapLines(it, DecisionCardLayout.triggerTextMaximumWidth(width)) }
-        .orEmpty()
+    /** 目前畫面寬度下的面板內容；觸發文字依畫面寬度換行。 */
+    private fun panelContent(): DecisionPanelContent = decisionPanelContent(
+        prompt = prompt,
+        texts = controller.decisionTexts,
+        resolvePlayerName = controller::resolveTriggerPlayerName,
+        renderer = textRenderer,
+        screenWidth = width,
+    )
 
     /** 目前畫面尺寸、玩家設定與實際文字量測結果下的版面幾何。 */
-    private fun layout(): DecisionCardLayout {
-        val lines = triggerTextLines()
-        return DecisionCardLayout(
-            screenWidth = width,
-            screenHeight = height,
-            cards = visibleEntries.map(DecisionEntry::layoutCard),
-            headerTextWidth = textRenderer.getWidth(title),
-            triggerLineCount = lines.size,
-            triggerTextWidth = lines.maxOfOrNull(textRenderer::getWidth) ?: 0,
-            hasTriggerTile = !prompt.triggerTileAssetKey.isNullOrEmpty(),
-            panelRatioY = controller.hudLayout().decisionPanelY,
-            timerWidth = reservedTimerWidth,
-        )
-    }
+    private fun layout(content: DecisionPanelContent = panelContent()): DecisionCardLayout = decisionPanelLayout(
+        content = content,
+        renderer = textRenderer,
+        screenWidth = width,
+        screenHeight = height,
+        panelRatioY = controller.hudLayout().decisionPanelY,
+        timerWidth = reservedTimerWidth,
+    )
 
     /** 使用完整牌面 UV 等比例縮放預覽牌；卡片預覽一律直立，不套用鳴牌後最終桌面朝向。 */
     private fun drawTile(context: DrawContext, assetKey: String, x: Int, y: Int) {
@@ -329,17 +266,6 @@ internal class PlayerDecisionScreen(
         )
     }
 
-    /**
-     * 在 [centerX], [top] 位置畫一個寬扁的倒三角形指標，逐列縮減寬度來模擬三角形，
-     * 不依賴字型字符，形狀比例可完全自訂。
-     */
-    private fun drawClaimedTileMarker(context: DrawContext, centerX: Int, top: Int) {
-        ClaimedTileMarker.ROW_WIDTHS.forEachIndexed { row, width ->
-            val left = centerX - width / 2
-            context.fill(left, top + row, left + width, top + row + 1, ClaimedTileMarker.COLOR)
-        }
-    }
-
     /** 每幀同步因拖曳／滾輪移動後的原版按鈕座標。 */
     private fun updateCardButtonPositions(layout: DecisionCardLayout, placements: List<DecisionBounds>) {
         cardButtons.forEachIndexed { index, button ->
@@ -347,25 +273,5 @@ internal class PlayerDecisionScreen(
             button.x = bounds.x
             button.y = bounds.y
         }
-    }
-
-    /** 滿寬 track 與依可見比例縮放的 thumb。 */
-    private fun renderScrollbar(context: DrawContext, layout: DecisionCardLayout) {
-        val top = layout.scrollbarTop
-        val bottom = top + DecisionCardLayout.SCROLLBAR_HEIGHT
-        context.fill(layout.viewportLeft, top, layout.viewportRight, bottom, SCROLLBAR_TRACK_COLOR)
-        val thumb = layout.scrollbarThumb(horizontalScroll)
-        context.fill(thumb.left, top, thumb.right, bottom, SCROLLBAR_THUMB_COLOR)
-    }
-
-    private companion object {
-        /** 標題列內的倒數與標題同尺寸，並與標題文字上緣對齊。 */
-        const val HEADER_TIMER_SCALE = 1f
-        const val PANEL_BACKGROUND = 0xCC101820.toInt()
-        const val HEADER_TEXT_COLOR = 0xFFD54F
-        const val CARD_BACKGROUND = 0xCC2A3844.toInt()
-        const val CARD_HOVER_BACKGROUND = 0xDD3A4B59.toInt()
-        const val SCROLLBAR_TRACK_COLOR = 0xFF26333D.toInt()
-        const val SCROLLBAR_THUMB_COLOR = 0xFF8796A3.toInt()
     }
 }
