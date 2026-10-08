@@ -353,6 +353,8 @@ class FabricDebugDecisionCommand(
         val isDiscardAnalysis: Boolean = false,
         /** 自己回合摸牌的觸發牌 asset key；只有真的代表「摸到這張牌」的情境才給值，例如 [TIMER] 不給。 */
         val selfDrawTileAssetKey: String? = null,
+        /** 預覽使用的規則；動作用語與振聽用語依此查詢，例如拔北只登記在三人日麻。 */
+        val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI,
     ) {
         TIMER("timer"),
         CHI("chi", PlayerDecisionPhaseDto.DISCARD_REACTION),
@@ -363,6 +365,7 @@ class FabricDebugDecisionCommand(
         RIICHI("riichi", selfDrawTileAssetKey = "m1"),
         ANKAN("ankan", selfDrawTileAssetKey = "m9"),
         KYUUSHU("kyuushu", selfDrawTileAssetKey = "east"),
+        PULL_NORTH("pull_north", selfDrawTileAssetKey = "north", ruleModuleId = BuiltInRuleModuleIds.RIICHI_THREE_PLAYER),
         MIXED("mixed", PlayerDecisionPhaseDto.DISCARD_REACTION),
         DISCARD_ANALYSIS("discard_analysis", isDiscardAnalysis = true),
         DISCARD_FURITEN("discard_furiten", isDiscardAnalysis = true),
@@ -380,8 +383,7 @@ class FabricDebugDecisionCommand(
 
         fun prompt(decisionKey: String, analysisTileId: String?): PlayerDecisionPromptDto = PlayerDecisionPromptDto(
             decisionKey = decisionKey,
-            // 預覽情境使用日麻的動作與振聽用語。
-            ruleModuleId = BuiltInRuleModuleIds.RIICHI,
+            ruleModuleId = ruleModuleId,
             actions = actions(),
             triggerTileAssetKey = if (phase == PlayerDecisionPhaseDto.DISCARD_REACTION) "s5" else selfDrawTileAssetKey,
             triggerPlayerId = if (phase == PlayerDecisionPhaseDto.DISCARD_REACTION) Uuid.random().toString() else null,
@@ -428,6 +430,16 @@ class FabricDebugDecisionCommand(
                         token = "$commandName:kyuushu_kyuuhai",
                         actionId = RiichiExhaustiveDrawReason.KyuushuKyuuhai.id,
                         previewTileAssetKeys = listOf("m1", "m9", "p1", "p9", "s1", "s9", "east", "south", "west", "north", "white_dragon", "green_dragon"),
+                        referenceTileAssetKey = null,
+                        claimedTileIndex = null,
+                        tileSelection = null,
+                    ),
+                )
+                PULL_NORTH -> listOf(
+                    PlayerDecisionActionDto(
+                        token = "$commandName:pull_north",
+                        actionId = RiichiGameAction.PullNorth.id,
+                        previewTileAssetKeys = listOf("north"),
                         referenceTileAssetKey = null,
                         claimedTileIndex = null,
                         tileSelection = null,
