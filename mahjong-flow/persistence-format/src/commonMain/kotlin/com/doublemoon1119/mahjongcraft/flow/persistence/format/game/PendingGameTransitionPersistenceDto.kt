@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
  * [PendingGameTransition] 的持久化表示。
  *
  * 領域層保留 sealed interface 作為可擴充的強型別流程；DTO 目前只保存分支類型，
- * 未來某個分支需要參數時可新增具有預設值的 payload 欄位，維持舊存檔相容。
+ * 未來某個分支需要參數時再新增 payload 欄位。
  */
 @Serializable
 data class PendingGameTransitionPersistenceDto(

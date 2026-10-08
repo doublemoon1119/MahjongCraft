@@ -16,14 +16,6 @@ class WinSettlementRankingCodecTest {
         assertEquals(rankings, WinSettlementRankingCodec.decode(WinSettlementRankingCodec.encode(rankings)))
     }
 
-    /** 沒有付款原因欄位的舊格式仍可讀回，付款原因為 null。 */
-    @Test
-    fun `reads the legacy format without a payment reason`() {
-        val legacy = listOf("a", "1", "1", "25000", "33000", "2", "1").joinToString(WinSettlementRankingCodec.FIELD_SEPARATOR.toString())
-
-        assertEquals(listOf(snapshot(playerId = "a", paymentReasonId = null)), WinSettlementRankingCodec.decode(legacy))
-    }
-
     /** 欄位數不符或數字格式錯誤的列直接略過，其餘列照常讀回。 */
     @Test
     fun `skips malformed rows`() {

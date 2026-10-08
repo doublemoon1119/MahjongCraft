@@ -62,16 +62,19 @@ class MahjongTableLocationsPersistentState private constructor(
          * 設定處理。因此無法解讀的資料一律略過並記錄，不讓世界載入失敗——擋下整個世界的代價遠高於
          * 暫時少幾筆索引。
          *
-         * 沒有版本欄位的存檔視為加入版本欄位之前的格式，依相同欄位讀取；版本比程式新時整份略過，
-         * 因為無法確定既有欄位的語意是否仍然相同。
+         * 版本欄位缺少、型別不符或不是目前版本時整份略過，因為無法確定欄位的語意是否相同。
          */
         fun fromNbt(nbt: NbtCompound): MahjongTableLocationsPersistentState {
             if (nbt.contains(NBT_KEY_VERSION) && !nbt.contains(NBT_KEY_VERSION, NbtElement.INT_TYPE.toInt())) {
                 logger.error("Ignoring Mahjong table location index with an invalid format version type")
                 return create()
             }
-            val version = if (nbt.contains(NBT_KEY_VERSION)) nbt.getInt(NBT_KEY_VERSION) else LEGACY_VERSION
-            if (version !in LEGACY_VERSION..CURRENT_VERSION) {
+            if (!nbt.contains(NBT_KEY_VERSION)) {
+                logger.error("Ignoring Mahjong table location index without a format version")
+                return create()
+            }
+            val version = nbt.getInt(NBT_KEY_VERSION)
+            if (version != CURRENT_VERSION) {
                 logger.error(
                     "Ignoring Mahjong table location index with unsupported format version {} (supported: {})",
                     version,
@@ -121,9 +124,6 @@ class MahjongTableLocationsPersistentState private constructor(
 
         /** 這個索引目前的格式版本。 */
         const val CURRENT_VERSION: Int = 1
-
-        /** 尚未加入版本欄位的存檔採用的版本。 */
-        private const val LEGACY_VERSION: Int = 0
 
         /** 格式版本欄位名稱。 */
         const val NBT_KEY_VERSION: String = "Version"

@@ -32,10 +32,14 @@ class MahjongTableLocationsPersistentStateTest {
         assertEquals(setOf(first, second), restored.entries.toSet())
     }
 
-    /** 缺少位置 list 的舊存檔應視為空索引。 */
+    /** 有版本欄位但沒有任何桌子位置時視為空索引。 */
     @Test
     fun `test missing entries load empty state`() {
-        assertEquals(emptyList(), MahjongTableLocationsPersistentState.fromNbt(NbtCompound()).entries)
+        val nbt = NbtCompound().apply {
+            putInt(MahjongTableLocationsPersistentState.NBT_KEY_VERSION, MahjongTableLocationsPersistentState.CURRENT_VERSION)
+        }
+
+        assertEquals(emptyList(), MahjongTableLocationsPersistentState.fromNbt(nbt).entries)
     }
 
     /** 寫入時附上目前格式版本。 */
@@ -49,15 +53,15 @@ class MahjongTableLocationsPersistentStateTest {
         )
     }
 
-    /** 尚未加入版本欄位的存檔仍依相同欄位讀出位置。 */
+    /** 沒有版本欄位的資料無法確定格式，整份略過。 */
     @Test
-    fun `test entries without a version field still load`() {
+    fun `test entries without a version field load an empty index`() {
         val entry = TableLocationEntry(Uuid.random(), TableLocation("minecraft:overworld", 1, 2, 3), 5)
         val state = MahjongTableLocationsPersistentState.create()
         state.update(mapOf(entry.tableId to entry))
         val nbt = state.writeNbt(NbtCompound()).apply { remove(MahjongTableLocationsPersistentState.NBT_KEY_VERSION) }
 
-        assertEquals(listOf(entry), MahjongTableLocationsPersistentState.fromNbt(nbt).entries)
+        assertEquals(emptyList(), MahjongTableLocationsPersistentState.fromNbt(nbt).entries)
     }
 
     /** 無法解讀的單筆資料只略過該筆，其餘位置保留。 */
@@ -124,7 +128,7 @@ class MahjongTableLocationsPersistentStateTest {
         TableLocationRegistry().load(restored)
     }
 
-    /** 錯誤型別的版本欄位不能被當成舊版而誤讀。 */
+    /** 錯誤型別的版本欄位不能被誤讀成任何版本。 */
     @Test
     fun `test invalid version type loads an empty index`() {
         val entry = TableLocationEntry(Uuid.random(), TableLocation("minecraft:overworld", 4, 5, 6), 2)

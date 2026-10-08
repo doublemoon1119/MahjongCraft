@@ -12,7 +12,7 @@ import net.minecraft.nbt.NbtCompound
  * 測試基礎建設，因此讀寫規則本身抽出來才能被直接覆蓋（見 `NonBlockingPresentationLeaseCodecTest`）。
  */
 internal object NonBlockingPresentationLeaseCodec {
-    /** NBT key；沒有這個欄位的舊存檔讀回 [NO_LEASE]。 */
+    /** NBT key。 */
     const val NBT_KEY: String = "NonBlockingPresentationUntilGameTime"
 
     /** 沒有豁免時的欄位值。 */

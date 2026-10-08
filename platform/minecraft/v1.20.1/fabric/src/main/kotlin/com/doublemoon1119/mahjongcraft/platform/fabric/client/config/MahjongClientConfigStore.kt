@@ -118,8 +118,7 @@ class MahjongClientConfigStore() {
         var temporaryPath: Path? = null
         return try {
             createDefaultFileIfMissing()
-            val original = Files.readString(path, StandardCharsets.UTF_8)
-            val updated = ensureControlledSections(original)
+            val updated = Files.readString(path, StandardCharsets.UTF_8)
                 .let { updateBoolean(it, TILE_LABELS_ENABLED_KEY, TILE_LABELS_ENABLED_LINE, config.tileLabelsEnabled) }
                 .let { updateBoolean(it, AUTO_SORT_HAND_ENABLED_KEY, AUTO_SORT_HAND_ENABLED_LINE, config.autoSortHandEnabled) }
                 .let { updateDouble(it, DECISION_PANEL_Y_KEY, DECISION_PANEL_Y_LINE, config.hudLayout.decisionPanelY) }
@@ -180,59 +179,6 @@ class MahjongClientConfigStore() {
     private fun updateDouble(content: String, key: String, lineRegex: Regex, number: Double): String {
         check(lineRegex.containsMatchIn(content)) { "Missing controlled client config field '$key'" }
         return lineRegex.replace(content) { match -> match.groupValues[1] + number + match.groupValues[2] }
-    }
-
-    /**
-     * 舊版 client config 沒有受控 section 時附加預設欄位；完整的舊版 section 只補入本次新增欄位，
-     * 並保留既有文件內容與註解。若 section 只有部分欄位，則拒絕猜測人工修改內容。
-     */
-    private fun ensureControlledSections(content: String): String {
-        val fieldCount = HUD_LAYOUT_LINES.count { it.containsMatchIn(content) }
-        check(fieldCount == 0 || fieldCount == LEGACY_HUD_LAYOUT_FIELD_COUNT || fieldCount == HUD_LAYOUT_LINES.size) {
-            "Incomplete controlled client config section '$HUD_LAYOUT_SECTION'"
-        }
-        val withHud = when (fieldCount) {
-            0 -> content.trimEnd() + "\n\n" + DEFAULT_HUD_LAYOUT_SECTION + "\n"
-            LEGACY_HUD_LAYOUT_FIELD_COUNT -> appendFieldsToSection(
-                content,
-                HUD_LAYOUT_SECTION,
-                listOf(
-                    "$AUTOMATIC_CONTROL_STATUS_X_KEY = 0.03",
-                    "$AUTOMATIC_CONTROL_STATUS_Y_KEY = 0.22",
-                ),
-            )
-            else -> content
-        }
-        val visibilityCount = VISIBILITY_FIELDS.count { it.line.containsMatchIn(withHud) }
-        check(visibilityCount == 0 || visibilityCount == LEGACY_VISIBILITY_FIELD_COUNT || visibilityCount == VISIBILITY_FIELDS.size) {
-            "Incomplete controlled client config section '$VISIBILITY_SECTION'"
-        }
-        return when (visibilityCount) {
-            0 -> withHud.trimEnd() + "\n\n" + DEFAULT_VISIBILITY_SECTION + "\n"
-            LEGACY_VISIBILITY_FIELD_COUNT -> appendFieldsToSection(
-                withHud,
-                VISIBILITY_SECTION,
-                listOf("$AUTOMATIC_CONTROL_STATUS_ENABLED_KEY = true"),
-            )
-            else -> withHud
-        }
-    }
-
-    /** 在既有完整舊 section 尾端補入新增欄位，避免重建或改寫使用者的 TOML 排版。 */
-    private fun appendFieldsToSection(content: String, section: String, fields: List<String>): String {
-        val sectionMatch = Regex("(?m)^\\[$section]\\s*${'$'}\\r?\\n?").find(content)
-            ?: error("Missing controlled client config section '$section'")
-        val nextSection = Regex("(?m)^\\[[^\\r\\n]+]\\s*$").find(content, sectionMatch.range.last + 1)
-        val insertionIndex = nextSection?.range?.first ?: content.length
-        val before = content.substring(0, insertionIndex)
-        val after = content.substring(insertionIndex)
-        return buildString {
-            append(before)
-            if (before.isNotEmpty() && before.last() != '\n') append('\n')
-            append(fields.joinToString("\n"))
-            append('\n')
-            append(after)
-        }
     }
 
     /** 在設定檔缺少時原樣複製打包的帶註解 template。 */
@@ -300,12 +246,6 @@ class MahjongClientConfigStore() {
         /** 自動操作狀態 HUD 垂直比例的 TOML 欄位鍵。 */
         const val AUTOMATIC_CONTROL_STATUS_Y_KEY: String = "automatic-control-status-y"
 
-        /** HUD layout TOML section 名稱。 */
-        const val HUD_LAYOUT_SECTION: String = "hud-layout"
-
-        /** 舊版 HUD section 的完整欄位數量。 */
-        const val LEGACY_HUD_LAYOUT_FIELD_COUNT: Int = 4
-
         /** 比對操作面板垂直比例欄位。 */
         val DECISION_PANEL_Y_LINE = doubleLine(DECISION_PANEL_Y_KEY)
 
@@ -323,35 +263,6 @@ class MahjongClientConfigStore() {
 
         /** 比對自動操作狀態 HUD 垂直欄位。 */
         val AUTOMATIC_CONTROL_STATUS_Y_LINE = doubleLine(AUTOMATIC_CONTROL_STATUS_Y_KEY)
-
-        /** 所有受控 HUD 欄位比對式。 */
-        val HUD_LAYOUT_LINES: List<Regex> = listOf(
-            DECISION_PANEL_Y_LINE,
-            COMPACT_PROMPT_X_LINE,
-            COMPACT_PROMPT_Y_LINE,
-            DISCARD_ANALYSIS_Y_LINE,
-            AUTOMATIC_CONTROL_STATUS_X_LINE,
-            AUTOMATIC_CONTROL_STATUS_Y_LINE,
-        )
-
-        /** 舊設定保存時附加的預設 HUD section。 */
-        val DEFAULT_HUD_LAYOUT_SECTION: String = """
-            # HUD positions are ratios inside the area where the complete HUD can fit on screen.
-            # 0.0 means the left/top edge and 1.0 means the right/bottom edge.
-            [$HUD_LAYOUT_SECTION]
-            $DECISION_PANEL_Y_KEY = 0.88
-            $COMPACT_PROMPT_X_KEY = 0.95
-            $COMPACT_PROMPT_Y_KEY = 0.78
-            $DISCARD_ANALYSIS_Y_KEY = 0.8
-            $AUTOMATIC_CONTROL_STATUS_X_KEY = 0.03
-            $AUTOMATIC_CONTROL_STATUS_Y_KEY = 0.22
-        """.trimIndent()
-
-        /** 可選呈現開關的 TOML section 名稱。 */
-        const val VISIBILITY_SECTION: String = "presentation-visibility"
-
-        /** 舊版呈現開關 section 的完整欄位數量。 */
-        const val LEGACY_VISIBILITY_FIELD_COUNT: Int = 12
 
         /** 一個可選呈現欄位的保存描述。 */
         private data class VisibilityField(
@@ -382,13 +293,6 @@ class MahjongClientConfigStore() {
                 MahjongPresentationVisibilityConfig::automaticControlStatusEnabled,
             ),
         )
-
-        /** 舊設定保存時附加的預設呈現開關 section。 */
-        private val DEFAULT_VISIBILITY_SECTION: String = buildString {
-            appendLine("# Optional HUD panels and world-space information.")
-            appendLine("[$VISIBILITY_SECTION]")
-            VISIBILITY_FIELDS.forEach { appendLine("${it.key} = true") }
-        }.trimEnd()
 
         /** 建立一個 Boolean 呈現欄位描述。 */
         private fun visibilityField(

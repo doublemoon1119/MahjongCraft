@@ -71,7 +71,7 @@ class WinCelebrationShowcaseEntity(
     /** 共享胡牌張牌面 asset key。 */
     val winningTileAssetKey: String get() = dataTracker[WINNING_TILE_ASSET_KEY]
 
-    /** 胡牌張完整起飛所需快照；舊存檔沒有資料時為 null。 */
+    /** 胡牌張完整起飛所需快照；尚未寫入資料時為 null。 */
     val winningTileSnapshot: ShowcaseWinningTileSnapshot?
         get() = decodeWinningTile(dataTracker[WINNING_TILE_SNAPSHOT])
 

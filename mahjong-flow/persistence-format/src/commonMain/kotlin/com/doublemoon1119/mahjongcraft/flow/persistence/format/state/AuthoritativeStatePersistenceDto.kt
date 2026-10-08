@@ -180,11 +180,11 @@ fun AuthoritativeStatePersistenceDto.toGames(
         roundCompletion = runtimeState.roundCompletion?.toDomain(),
         matchEndReasonId = runtimeState.matchEndReasonId,
         pendingRoundPreparation = runtimeState.pendingRoundPreparation?.toDomain(),
-        hostId = runtimeState.hostId?.let { Uuid.parse(it) } ?: tableState.players.first().id,
-        roomPlayerIds = runtimeState.roomPlayerIds?.map(Uuid::parse) ?: tableState.players.map { it.id },
+        hostId = Uuid.parse(runtimeState.hostId),
+        roomPlayerIds = runtimeState.roomPlayerIds.map(Uuid::parse),
         aiPlayerStrategyKeys = runtimeState.toAiPlayerStrategyKeys(),
         interruptedBaseMillisByPlayerId = runtimeState.toInterruptedBaseMillisByPlayerId(),
-        matchId = runtimeState.matchId?.let(Uuid::parse) ?: id,
+        matchId = Uuid.parse(runtimeState.matchId),
     )
 }
 

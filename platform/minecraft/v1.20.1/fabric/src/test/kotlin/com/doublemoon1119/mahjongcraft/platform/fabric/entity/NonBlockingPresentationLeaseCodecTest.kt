@@ -39,16 +39,4 @@ class NonBlockingPresentationLeaseCodecTest {
         )
         assertTrue(TablePresentationBusyPolicy.tileBlocksTableBusy(true, restored, 1_234L))
     }
-
-    /** 沒寫過這個欄位的存檔讀回「沒有豁免」，因此那些牌的動畫照常讓整桌忙碌。 */
-    @Test
-    fun `a save file without the lease reads back as no exemption`() {
-        val legacy = NbtCompound()
-
-        assertEquals(NonBlockingPresentationLeaseCodec.NO_LEASE, NonBlockingPresentationLeaseCodec.read(legacy))
-        assertTrue(
-            TablePresentationBusyPolicy.tileBlocksTableBusy(true, NonBlockingPresentationLeaseCodec.read(legacy), 0L),
-            "Tiles from an older save must keep their original blocking behaviour.",
-        )
-    }
 }

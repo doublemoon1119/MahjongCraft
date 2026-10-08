@@ -33,9 +33,8 @@ import kotlin.uuid.Uuid
  * @property wallOpening 本局權威擲骰決定的牌牆開門位置；規則尚未支援開門流程時為 null。
  * @property initialDeadWall 目前規則保留牌；舊欄位名稱為既有存檔格式相容性而保留，不代表內容固定，
  * 也不表示 platform 必須將它呈現為日麻式獨立王牌區。
- * @property finishedPlayerIds 本局已完成、不再參與後續回合的玩家 Uuid 集合；舊存檔缺少此欄位時
- * 預設空集合。
- * @property physicalWallLayout 目前仍在牌牆中的牌張實體位置；舊存檔或不支援的規則為 null。
+ * @property finishedPlayerIds 本局已完成、不再參與後續回合的玩家 Uuid 集合；預設空集合為最常見的狀態，編碼時省略。
+ * @property physicalWallLayout 目前仍在牌牆中的牌張實體位置；不支援實體布局的規則為 null。
  */
 @Serializable
 data class TableStatePersistenceDto(

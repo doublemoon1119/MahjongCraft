@@ -95,7 +95,7 @@ class FabricHistoryOutboxWriterTest {
         }
     }
 
-    /** 舊存檔中的可接續場次即使有 tombstone 也保留 Game 與原有待寫事件。 */
+    /** 從存檔還原的可接續場次即使有 tombstone 也保留 Game 與原有待寫事件。 */
     @Test
     fun `tombstoned active outbox remains protected and stops appending`() = runBlocking {
         val game = Game(FakeTableStateFactory.create(), GameFlowConfig())
@@ -381,7 +381,7 @@ class FabricHistoryOutboxWriterTest {
     }
 
     /**
-     * 建立缺少結果相關表的歷史資料庫，模擬較舊格式建立的資料庫。
+     * 建立缺少結果相關表的歷史資料庫，模擬損壞或不完整的資料庫。
      *
      * @return 無法通過結構驗證的資料庫檔案位置。
      */

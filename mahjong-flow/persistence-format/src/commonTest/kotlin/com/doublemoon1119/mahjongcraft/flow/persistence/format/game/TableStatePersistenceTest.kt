@@ -1,5 +1,4 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.game
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.RiichiDynamicStatePersistenceDto
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
@@ -26,8 +25,6 @@ import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.jsonObject
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -145,43 +142,6 @@ class TableStatePersistenceTest {
         val humanId = state.players.first().id
 
         assertEncodedRoundTrip(state.copy(finishedPlayerIds = setOf(humanId)))
-    }
-
-    /** 驗證舊存檔缺少 `finishedPlayerIds` 欄位時，解碼後預設為空集合。 */
-    @Test
-    fun `decoding a persistence dto without finishedPlayerIds defaults to empty set`() {
-        val state = createTableState()
-        val json = this.json.encodeToJsonElement(TableStatePersistenceDto.serializer(), state.toPersistenceDto())
-        val withoutFinishedPlayerIds = JsonObject(json.jsonObject.filterKeys { it != "finishedPlayerIds" })
-
-        val decoded = this.json.decodeFromJsonElement(TableStatePersistenceDto.serializer(), withoutFinishedPlayerIds)
-
-        assertEquals(emptySet(), decoded.finishedPlayerIds)
-    }
-
-    /** 驗證舊存檔缺少實體牌牆布局時，不猜測規則位置並維持 null。 */
-    @Test
-    fun `decoding a persistence dto without physicalWallLayout defaults to null`() {
-        val state = createTableState()
-        val element = json.encodeToJsonElement(TableStatePersistenceDto.serializer(), state.toPersistenceDto())
-        val legacyElement = JsonObject(element.jsonObject.filterKeys { it != "physicalWallLayout" })
-
-        val decoded = json.decodeFromJsonElement(TableStatePersistenceDto.serializer(), legacyElement)
-
-        assertEquals(null, decoded.physicalWallLayout)
-        assertEquals(null, decoded.toDomain().physicalWallLayout)
-    }
-
-    /** 驗證舊存檔缺少公開進度與等待項目時，沿用原本的立即公開語意。 */
-    @Test
-    fun `decoding legacy riichi dynamic state defaults reveal progress to completed draws`() {
-        val decoded = json.decodeFromString(
-            RiichiDynamicStatePersistenceDto.serializer(),
-            """{"riichiStickCount":2,"completedSupplementalDrawCount":3}""",
-        )
-
-        assertEquals(3, decoded.revealedKanDoraCount)
-        assertEquals(emptyList(), decoded.pendingKanDoraReveals)
     }
 
     /** 存檔裡的 `finishedPlayerIds` 含不在座玩家時，還原成領域型別的當下就該被不變式擋下。 */

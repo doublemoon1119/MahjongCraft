@@ -34,7 +34,6 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRe
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.MahjongRuleConfigDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.buildMahjongDtoSerializersModule
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiDynamicStateDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDto
@@ -227,19 +226,6 @@ class DtoRoundTripTest {
         assertEquals(snapshotDto, decodedDto)
         assertEquals(snapshot.dynamicRuleState, decodedDto.toDomain(registries).dynamicRuleState)
         assertEquals(snapshot.physicalWallLayout, decodedDto.toDomain(registries).physicalWallLayout)
-    }
-
-    /** 驗證舊版網路資料缺少公開進度與等待項目時，沿用原本的立即公開語意。 */
-    @Test
-    fun `test legacy riichi dynamic state defaults reveal progress to completed draws`() {
-        val decoded = json.decodeFromString(
-            RiichiDynamicStateDto.serializer(),
-            """{"riichiStickCount":2,"completedSupplementalDrawCount":3}""",
-        )
-
-        assertEquals(3, decoded.revealedKanDoraCount)
-        assertEquals(emptyList(), decoded.pendingKanDoraReveals)
-        assertEquals(RiichiDynamicState(2, 3, 3), decoded.toDomain())
     }
 
     @Test

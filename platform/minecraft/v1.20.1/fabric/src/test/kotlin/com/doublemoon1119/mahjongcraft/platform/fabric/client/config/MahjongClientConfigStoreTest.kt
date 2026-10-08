@@ -106,65 +106,6 @@ class MahjongClientConfigStoreTest {
         assertEquals(1L, store.revision)
     }
 
-    /** 舊版設定缺少整個 HUD section 時，首次保存應保留舊內容並附加預設結構。 */
-    @Test
-    fun `save upgrades a legacy config without hud layout fields`() = withTemporaryConfig { store, path ->
-        assertIs<MahjongClientConfigUpdateResult.Success>(store.load())
-        val legacy = Files.readString(path).substringBefore("\n# HUD positions") + "\n# Legacy note\n"
-        Files.writeString(path, legacy)
-        assertIs<MahjongClientConfigUpdateResult.Success>(store.load())
-
-        val requested = store.current.copy(tileLabelsEnabled = true)
-        assertIs<MahjongClientConfigUpdateResult.Success>(store.save(requested))
-
-        val updated = Files.readString(path)
-        assertTrue(updated.contains("# Legacy note"))
-        assertTrue(updated.contains("[hud-layout]"))
-        assertEquals(requested, store.current)
-    }
-
-    /** 完整舊版 section 應只補入新增欄位，並保留原有註解與欄位內容。 */
-    @Test
-    fun `save upgrades complete legacy sections idempotently`() = withTemporaryConfig { store, path ->
-        assertIs<MahjongClientConfigUpdateResult.Success>(store.load())
-        val current = Files.readString(path)
-        val legacy = current
-            .lineSequence()
-            .filterNot { it.contains("automatic-control-status-enabled") }
-            .filterNot { it.contains("automatic-control-status-x") || it.contains("automatic-control-status-y") }
-            .joinToString("\n")
-            .replace("[presentation-visibility]", "# Legacy visibility note\n[presentation-visibility]")
-        Files.writeString(path, legacy)
-
-        assertIs<MahjongClientConfigUpdateResult.Success>(store.load())
-        assertIs<MahjongClientConfigUpdateResult.Success>(store.save(store.current))
-        val updated = Files.readString(path)
-        assertTrue(updated.contains("# Legacy visibility note"))
-        assertEquals(1, Regex("automatic-control-status-x\\s*=").findAll(updated).count())
-        assertEquals(1, Regex("automatic-control-status-y\\s*=").findAll(updated).count())
-        assertEquals(1, Regex("automatic-control-status-enabled\\s*=").findAll(updated).count())
-
-        val afterFirstSave = updated
-        assertIs<MahjongClientConfigUpdateResult.Success>(store.save(store.current))
-        assertEquals(afterFirstSave, Files.readString(path))
-    }
-
-    /** 新版受控 section 只缺一個欄位時，應拒絕猜測而不改寫檔案。 */
-    @Test
-    fun `save rejects partial additions to controlled sections`() = withTemporaryConfig { store, path ->
-        assertIs<MahjongClientConfigUpdateResult.Success>(store.load())
-        val partial = Files.readString(path).lineSequence()
-            .filterNot { it.trimStart().startsWith("automatic-control-status-x") }
-            .joinToString("\n")
-        Files.writeString(path, partial)
-
-        val result = assertIs<MahjongClientConfigUpdateResult.Failure>(store.save(store.current))
-
-        assertTrue(result.message.contains("hud-layout"))
-        assertEquals(partial, Files.readString(path))
-        assertEquals(1L, store.revision)
-    }
-
     /** 建立隔離設定路徑並於測試結束後清理。 */
     private fun withTemporaryConfig(block: (MahjongClientConfigStore, Path) -> Unit) {
         val directory = Files.createTempDirectory("mahjongcraft-client-config-")

@@ -254,7 +254,7 @@ sealed interface HistoryFactPersistenceDto {
      *
      * @property reasonId 規則效果的識別碼。
      * @property roundCompletion 規則效果同時完成本局時的結算摘要；否則為 null。
-     * @property winDetails 規則效果產生的胡牌公開詳情；舊資料缺少時為空清單。
+     * @property winDetails 規則效果產生的胡牌公開詳情；沒有時為空清單，編碼時省略。
      */
     @Serializable
     @SerialName(HistoryFactTypeKeys.RULE_EFFECT_RESOLVED)
