@@ -11,6 +11,7 @@ import net.minecraft.network.PacketByteBuf
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.util.Identifier
+import java.util.concurrent.atomic.AtomicBoolean
 
 /** JSON 字串走 [net.minecraft.network.PacketByteBuf] 內建的 varint 長度前綴字串編碼，上限字元數。 */
 private const val MAX_PAYLOAD_LENGTH = 1 shl 20
@@ -50,6 +51,12 @@ class S2CChannel<T>(id: String, private val serializer: KSerializer<T>, private 
     /** Fabric 網路使用的頻道識別碼。 */
     val channelId: Identifier = Identifier(MinecraftModMetadata.MOD_ID, id)
 
+    /** 記錄丟棄過大回應的 logger。 */
+    private val logger = mahjongCraftLogger(S2CChannel::class)
+
+    /** 這個頻道是否已以警告記錄過丟棄過大的回應；之後改用 debug，避免洗版。 */
+    private val oversizedWarned = AtomicBoolean(false)
+
     /**
      * 編碼並傳送一份符合頻道限制的回應。
      *
@@ -73,12 +80,30 @@ class S2CChannel<T>(id: String, private val serializer: KSerializer<T>, private 
      */
     fun registerClientReceiver(json: Json, handler: (T) -> Unit) {
         ClientPlayNetworking.registerGlobalReceiver(channelId) { client, connection, buf, _ ->
-            if (maxPayloadBytes != null && buf.readableBytes() > maxPayloadBytes + MAX_STRING_PREFIX_BYTES) return@registerGlobalReceiver
+            if (maxPayloadBytes != null && buf.readableBytes() > maxPayloadBytes + MAX_STRING_PREFIX_BYTES) {
+                reportOversized(buf.readableBytes(), maxPayloadBytes)
+                return@registerGlobalReceiver
+            }
             val raw = buf.readString(MAX_PAYLOAD_LENGTH)
-            if (maxPayloadBytes != null && raw.toByteArray(Charsets.UTF_8).size > maxPayloadBytes) return@registerGlobalReceiver
+            if (maxPayloadBytes != null) {
+                val rawBytes = raw.toByteArray(Charsets.UTF_8).size
+                if (rawBytes > maxPayloadBytes) {
+                    reportOversized(rawBytes, maxPayloadBytes)
+                    return@registerGlobalReceiver
+                }
+            }
             client.execute {
                 if (client.networkHandler === connection) handler(json.decodeFromString(serializer, raw))
             }
+        }
+    }
+
+    /** 丟棄過大的回應；每個頻道第一次以警告記錄，之後改用 debug。 */
+    private fun reportOversized(bytes: Int, limit: Int) {
+        if (oversizedWarned.compareAndSet(false, true)) {
+            logger.warn("Dropped an oversized message on {}: {} bytes exceeds the limit of {} bytes; later drops on this channel are logged at debug level", channelId, bytes, limit)
+        } else {
+            logger.debug("Dropped an oversized message on {}: {} bytes exceeds the limit of {} bytes", channelId, bytes, limit)
         }
     }
 }

@@ -4,6 +4,8 @@ import com.doublemoon1119.mahjongcraft.logic.module.PublicPlayerIndicator
 import com.doublemoon1119.mahjongcraft.logic.module.PublicPlayerIndicatorValue
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.DistinctFailureGate
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
@@ -25,9 +27,24 @@ class MahjongPlayerInfoEntity(
     type: EntityType<out MahjongPlayerInfoEntity> = ModEntities.mahjongPlayerInfo,
     world: World,
 ) : AnimatedMahjongEntity<Nothing>(type, world) {
+    /** 同一份解不出來的玩家資料只記錄一次警告。 */
+    private val unreadablePlayers = DistinctFailureGate<String>()
+
+    /** 同步的玩家快照；資料解不出來時視為沒有玩家，並對同一份資料記錄一次警告（不含資料內容）。 */
     var players: List<MahjongPlayerInfoEntry>
-        get() = runCatching { JSON.decodeFromString<List<PlayerEntryDto>>(dataTracker[PLAYERS]) }
-            .getOrDefault(emptyList()).mapNotNull(PlayerEntryDto::toDomain)
+        get() {
+            val raw = dataTracker[PLAYERS]
+            val entries = try {
+                JSON.decodeFromString<List<PlayerEntryDto>>(raw)
+            } catch (error: Exception) {
+                if (unreadablePlayers.shouldReport(raw)) {
+                    LOGGER.warn("Player info entity {} has unreadable player data ({}); showing no players", uuid, error::class.simpleName)
+                }
+                return emptyList()
+            }
+            unreadablePlayers.clear()
+            return entries.mapNotNull(PlayerEntryDto::toDomain)
+        }
         set(value) = dataTracker.set(PLAYERS, JSON.encodeToString(value.map(PlayerEntryDto::fromDomain)))
 
     var dealerPlayerId: Uuid?
@@ -140,6 +157,7 @@ class MahjongPlayerInfoEntity(
         private const val NBT_CONTROLLER_Z = "ControllerZ"
         private const val NBT_HIDDEN_UNTIL = "HiddenUntilGameTime"
         private val JSON = Json
+        private val LOGGER = mahjongCraftLogger(MahjongPlayerInfoEntity::class)
         private val PLAYERS: TrackedData<String> = DataTracker.registerData(MahjongPlayerInfoEntity::class.java, TrackedDataHandlerRegistry.STRING)
         private val DEALER_PLAYER_ID: TrackedData<String> = DataTracker.registerData(MahjongPlayerInfoEntity::class.java, TrackedDataHandlerRegistry.STRING)
         private val TABLE_FACING: TrackedData<String> = DataTracker.registerData(MahjongPlayerInfoEntity::class.java, TrackedDataHandlerRegistry.STRING)

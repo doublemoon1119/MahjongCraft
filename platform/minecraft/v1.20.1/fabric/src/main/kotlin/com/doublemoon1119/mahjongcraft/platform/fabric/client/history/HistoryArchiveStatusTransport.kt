@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryArchiveStatusDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryArchiveStatusRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryArchiveStatusResponseDto
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -73,6 +74,9 @@ internal class ClientHistoryArchiveStatusCoordinator(
     private val sender: HistoryArchiveStatusSender,
     settings: ClientHistoryQuerySettings,
 ) : HistoryArchiveStatusTransport {
+    /** 記錄查詢送不出去的 logger。 */
+    private val logger = mahjongCraftLogger(ClientHistoryArchiveStatusCoordinator::class)
+
     /** 只保留目前連線有效的要求配對。 */
     private val correlation = HistoryArchiveStatusCorrelation()
 
@@ -103,7 +107,8 @@ internal class ClientHistoryArchiveStatusCoordinator(
         mutableState.value = ClientHistoryArchiveStatusState.Loading(requestId, matchId)
         try {
             sender.send(request)
-        } catch (_: RuntimeException) {
+        } catch (exception: RuntimeException) {
+            logger.warn("History archive status query could not be sent: requestId={}, matchId={}", requestId, matchId, exception)
             correlation.cancel(requestId)
             mutableState.value = ClientHistoryArchiveStatusState.SendFailed(requestId, matchId)
         }

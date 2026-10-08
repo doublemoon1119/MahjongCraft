@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControl
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlUpdateRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlUpdateResultDto
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientAutomaticControlStateStore
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
@@ -54,6 +55,9 @@ class ClientAutomaticControlUpdateCoordinator(
     private val stateStore: ClientAutomaticControlStateStore,
     private val requestSender: ClientAutomaticControlRequestSender,
 ) {
+    /** 記錄要求送不出去的 logger。 */
+    private val logger = mahjongCraftLogger(ClientAutomaticControlUpdateCoordinator::class)
+
     private var completionSequence = 0L
     private val completions = linkedMapOf<String, ClientAutomaticControlCompletion>()
 
@@ -84,6 +88,13 @@ class ClientAutomaticControlUpdateCoordinator(
             requestSender.send(request)
         } catch (exception: RuntimeException) {
             check(stateStore.discardPendingRequest(request.requestId)) { "Failed request was no longer pending" }
+            logger.warn(
+                "Automatic control update could not be sent: requestId={}, gameId={}, expectedRevision={}",
+                request.requestId,
+                request.gameId,
+                request.expectedRevision,
+                exception,
+            )
             return ClientAutomaticControlSubmitResult.SendFailed(exception)
         }
         return ClientAutomaticControlSubmitResult.Submitted(request)

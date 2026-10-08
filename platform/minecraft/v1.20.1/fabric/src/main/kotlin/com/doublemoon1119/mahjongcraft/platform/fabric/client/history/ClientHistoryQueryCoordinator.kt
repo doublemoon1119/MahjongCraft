@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSetti
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSettingsResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryResponseDto
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -77,6 +78,9 @@ class ClientHistoryQueryCoordinator(
     private val sender: HistoryQuerySender,
     private val settings: ClientHistoryQuerySettings,
 ) : HistoryQueryTransport {
+    /** 記錄查詢送不出去的 logger。 */
+    private val logger = mahjongCraftLogger(ClientHistoryQueryCoordinator::class)
+
     /** 只接受目前連線最新要求的回應。 */
     private val correlation = HistoryQueryCorrelation()
 
@@ -256,7 +260,8 @@ class ClientHistoryQueryCoordinator(
         mutableState.value = ClientHistoryQueryState.Loading(requestId)
         try {
             send()
-        } catch (_: RuntimeException) {
+        } catch (exception: RuntimeException) {
+            logger.warn("History query could not be sent: requestId={}, kind={}", requestId, kind, exception)
             correlation.cancel(requestId)
             pendingRoundEvents = null
             pendingRoundState = null

@@ -96,6 +96,18 @@ class ClientAutoSortHandPreferenceServiceTest {
         assertEquals(revision, store.revision)
     }
 
+    /** 加入世界時恢復偏好送不出去不會中斷加入流程，本機設定維持不變。 */
+    @Test
+    fun `restore failure does not throw`() = withService(sendFailure = IllegalStateException("offline")) { service, sender, store ->
+        assertIs<MahjongClientConfigUpdateResult.Success>(store.load())
+        val revision = store.revision
+
+        service.restoreToServer()
+
+        assertTrue(sender.restores.isEmpty())
+        assertEquals(revision, store.revision)
+    }
+
     /** 建立隔離設定檔與記錄型 sender，並在測試後移除暫存目錄。 */
     private fun withService(
         sendFailure: RuntimeException? = null,
@@ -132,8 +144,9 @@ class ClientAutoSortHandPreferenceServiceTest {
             userChanges += enabled
         }
 
-        /** 記錄 RESTORE。 */
+        /** 記錄 RESTORE，或拋出指定錯誤。 */
         override fun sendRestore(enabled: Boolean) {
+            failure?.let { throw it }
             restores += enabled
         }
     }

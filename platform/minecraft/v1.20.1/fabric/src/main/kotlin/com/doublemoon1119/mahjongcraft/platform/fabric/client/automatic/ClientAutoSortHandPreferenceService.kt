@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigState
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigUpdateResult
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import kotlinx.serialization.json.Json
 import org.koin.core.annotation.Single
@@ -111,18 +112,27 @@ class ClientAutoSortHandPreferenceService(
 
     private var syncRetryPending = false
 
-    /** 只在封包送出後清除重試標記。 */
+    /** 記錄偏好同步送不出去的 logger。 */
+    private val logger = mahjongCraftLogger(ClientAutoSortHandPreferenceService::class)
+
+    /** 只在封包送出後清除重試標記；連續失敗只在第一次記錄警告。 */
     private fun sendUserChange(enabled: Boolean): ClientAutoSortHandPreferenceUpdateResult = try {
         sender.sendUserChange(enabled)
         syncRetryPending = false
         ClientAutoSortHandPreferenceUpdateResult.Updated(enabled)
     } catch (exception: RuntimeException) {
+        if (!syncRetryPending) logger.warn("Auto sort hand preference change could not be sent: enabled={}", enabled, exception)
         syncRetryPending = true
         ClientAutoSortHandPreferenceUpdateResult.SyncFailed(enabled, exception)
     }
 
-    /** 將本機已保存值以 RESTORE 語意同步至剛加入的伺服器。 */
+    /** 將本機已保存值以 RESTORE 語意同步至剛加入的伺服器；送不出去時記錄警告，伺服器維持預設偏好。 */
     fun restoreToServer() {
-        sender.sendRestore(current())
+        val enabled = current()
+        try {
+            sender.sendRestore(enabled)
+        } catch (exception: RuntimeException) {
+            logger.warn("Auto sort hand preference restore could not be sent: enabled={}", enabled, exception)
+        }
     }
 }
