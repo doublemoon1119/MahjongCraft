@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.ai.expectation
 
+import com.doublemoon1119.mahjongcraft.ai.AiDecisionContext
 import com.doublemoon1119.mahjongcraft.ai.AiDecisionPhase
 import com.doublemoon1119.mahjongcraft.ai.expectation.ExpectationFixtures.context
 import com.doublemoon1119.mahjongcraft.ai.expectation.ExpectationFixtures.hand
@@ -13,12 +14,18 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiGameCommand
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -207,6 +214,44 @@ class ExpectedValueAiStrategyTest {
             assertTrue(riichiScore.expectedValue > damaScore.expectedValue, "$level riichi $riichiScore dama $damaScore")
             assertTrue(riichiScore.winProbability > damaScore.winProbability)
         }
+    }
+
+    /**
+     * 三人麻將聽牌時摸到北：拔北與打出北之後的手牌相同，但拔北後多一張拔北寶牌，和牌價值較高；不計防守時兩者沒有其他差別，
+     * 因此拔北的期望值較高。
+     */
+    @Test
+    fun `pulling a north values the extra pulled north dora`() {
+        val module = ThreePlayerRiichiRuleModule(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, ThreePlayerRiichiRuleConfig())
+        val self = player(
+            Wind.SOUTH,
+            hand = hand(
+                List(3) { m(9) } + listOf(p(4), p(5), p(6), p(7), p(8), p(9), Tile.Honor.Red, Tile.Honor.Red, Tile.Honor.Red, s(2)),
+                drawn = Tile.Honor.North,
+            ),
+        )
+        val table = FakeTableStateFactory.create(
+            players = listOf(player(Wind.EAST), self, player(Wind.WEST)),
+            config = ThreePlayerRiichiRuleConfig(),
+            dynamicRuleState = RiichiDynamicState(),
+        )
+        val context = AiDecisionContext(
+            snapshot = table.toSnapshot(visibleHandPlayerIds = setOf(self.id), setAsideTiles = module::setAsideTiles),
+            selfId = self.id,
+            phase = AiDecisionPhase.OwnTurn,
+            legalActions = emptyList(),
+            forcedDiscardTileId = null,
+        )
+        val north = checkNotNull(self.hand.lastDrawn)
+        val discard = DecisionCandidate.Discard(tile = north, declaration = null, command = GameCommand.Discard(north.id))
+        val pull = DecisionCandidate.SetAside(tileId = north.id, command = GameCommand.Discard(north.id))
+        val level = InformationLevel.ADVANCED.copy(defenseScope = DefenseScope.NONE)
+        val opponentModel = ExpectationFixtures.opponentModelRegistry.create(module, level.readingDepth)
+
+        val (discardScore, pullScore) = ExpectedValueEvaluator(level, ExpectationParameters.DEFAULT, module, opponentModel, context)
+            .scoreAll(listOf(discard, pull))
+
+        assertTrue(pullScore.expectedValue > discardScore.expectedValue, "pull $pullScore discard $discardScore")
     }
 
     /**

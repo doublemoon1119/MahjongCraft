@@ -37,6 +37,8 @@ object FakeRiichiHandValueContextFactory {
      * @param isRiichiDeclarationDiscard 榮和的牌是否為放銃者的立直宣言牌，預設為 false。
      * @param isDiscardAfterKan 榮和的牌是否為放銃者槓後打出的牌，預設為 false。
      * @param paoLiability 是否已成立包牌責任，預設為 null。
+     * @param nukiDoraTiles 和牌者拔出的北，預設為空。
+     * @param usesThreePlayerTiles 是否使用三人麻將牌組，預設為 false。
      */
     fun create(
         hand: Hand,
@@ -60,6 +62,8 @@ object FakeRiichiHandValueContextFactory {
         isRiichiDeclarationDiscard: Boolean = false,
         isDiscardAfterKan: Boolean = false,
         paoLiability: PaoLiability? = null,
+        nukiDoraTiles: List<Tile> = emptyList(),
+        usesThreePlayerTiles: Boolean = false,
     ): RiichiHandValueContext = RiichiHandValueContext(
         hand = hand,
         winningTile = winningTile,
@@ -82,5 +86,7 @@ object FakeRiichiHandValueContextFactory {
         isRiichiDeclarationDiscard = isRiichiDeclarationDiscard,
         isDiscardAfterKan = isDiscardAfterKan,
         paoLiability = paoLiability,
+        nukiDoraTiles = nukiDoraTiles,
+        usesThreePlayerTiles = usesThreePlayerTiles,
     )
 }

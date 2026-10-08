@@ -13,6 +13,8 @@ import com.doublemoon1119.mahjongcraft.logic.module.DeclarationEffect
 import com.doublemoon1119.mahjongcraft.logic.module.PositionView
 import com.doublemoon1119.mahjongcraft.logic.module.RonExclusions
 import com.doublemoon1119.mahjongcraft.logic.module.WinValue
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
@@ -33,6 +35,8 @@ import kotlin.uuid.Uuid
 class RiichiPositionRulesTest {
     private val module = RiichiRuleModule(BuiltInRuleModuleIds.RIICHI, RiichiRuleConfig())
     private val rules = module.createPositionRules()
+    private val threePlayerModule = ThreePlayerRiichiRuleModule(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, ThreePlayerRiichiRuleConfig())
+    private val threePlayerRules = threePlayerModule.createPositionRules()
 
     /** 和牌價值等於正式榮和結算的點數，加上場上可收下的立直棒與本場。 */
     @Test
@@ -264,6 +268,58 @@ class RiichiPositionRulesTest {
         assertEquals(0, rules.bonusTileCount(view, dot(5)))
     }
 
+    /** 三人麻將拔出的北計入和牌價值，且與正式榮和結算一致。 */
+    @Test
+    fun `three player win value counts pulled norths like the formal settlement`() {
+        val pulled = seat(Wind.SOUTH, hand = threePlayerYakuhaiTanki(), discards = listOf(Tile.Honor.West))
+            .copy(playerRuleState = RiichiPlayerState(nukiDoraTiles = listOf(FakeIdentifiedTileFactory.create(Tile.Honor.North))))
+        val notPulled = pulled.copy(playerRuleState = RiichiPlayerState())
+        val discarder = seat(Wind.EAST)
+
+        val pulledTable = threePlayerTable(listOf(discarder, pulled, seat(Wind.WEST)))
+        val resolution = threePlayerModule.declareRon(pulledTable, pulled, FakeIdentifiedTileFactory.create(TWO_BAMBOO), discarderId = discarder.id)
+        val pulledValue = threePlayerRules.winValue(threePlayerView(pulledTable, pulled), pulled.hand, TWO_BAMBOO, isTsumo = false)
+        val notPulledTable = threePlayerTable(listOf(discarder, notPulled, seat(Wind.WEST)))
+        val notPulledValue = threePlayerRules.winValue(threePlayerView(notPulledTable, notPulled), notPulled.hand, TWO_BAMBOO, isTsumo = false)
+
+        assertEquals(WinValue.Points(resolution!!.totalGained), pulledValue)
+        assertTrue(assertIs<WinValue.Points>(pulledValue).points > assertIs<WinValue.Points>(notPulledValue).points)
+    }
+
+    /** 三人麻將沒有二～八萬，一萬指示牌指向九萬，手上的三張九萬都算寶牌。 */
+    @Test
+    fun `three player one character indicator makes nine character dora`() {
+        val winner = seat(Wind.SOUTH, hand = threePlayerYakuhaiTanki(), discards = listOf(Tile.Honor.West))
+        val table = threePlayerTable(listOf(seat(Wind.EAST), winner, seat(Wind.WEST)))
+
+        val withNineDora = threePlayerRules.winValue(threePlayerView(table, winner, listOf(character(1))), winner.hand, TWO_BAMBOO, isTsumo = false)
+        val withoutDora = threePlayerRules.winValue(threePlayerView(table, winner, listOf(Tile.Honor.East)), winner.hand, TWO_BAMBOO, isTsumo = false)
+
+        assertEquals(1, threePlayerRules.bonusTileCount(threePlayerView(table, winner, listOf(character(1))), character(9)))
+        assertTrue(assertIs<WinValue.Points>(withNineDora).points > assertIs<WinValue.Points>(withoutDora).points)
+    }
+
+    /** 假想拔北後，北從手牌移到拔出的北，和牌價值多一張拔北寶牌；原本的視角不受影響。 */
+    @Test
+    fun `setting a north aside adds it to the pulled norths`() {
+        val north = FakeIdentifiedTileFactory.create(Tile.Honor.North)
+        val tanki = threePlayerYakuhaiTanki()
+        val holder = seat(Wind.SOUTH, hand = tanki.copy(lastDrawn = north), discards = listOf(Tile.Honor.West))
+        val table = threePlayerTable(listOf(seat(Wind.EAST), holder, seat(Wind.WEST)))
+        val view = threePlayerView(table, holder)
+
+        val projected = threePlayerRules.afterTileSetAside(view, north.id)
+
+        assertEquals(listOf(north), projected.evaluator.setAsideTiles)
+        assertEquals(listOf(north), assertIs<RiichiPlayerState>(projected.evaluator.playerRuleState).nukiDoraTiles)
+        assertTrue(projected.evaluator.hand.standingTiles.none { it.id == north.id })
+        assertNull(projected.evaluator.hand.lastDrawn)
+        assertEquals(emptyList(), view.evaluator.setAsideTiles)
+        val before = assertIs<WinValue.Points>(threePlayerRules.winValue(view, tanki, TWO_BAMBOO, isTsumo = false)).points
+        val after = assertIs<WinValue.Points>(threePlayerRules.winValue(projected, tanki, TWO_BAMBOO, isTsumo = false)).points
+        assertTrue(after > before)
+    }
+
     /** 測試用、不屬於日麻的擴充動作。 */
     private object OtherAction : ExtensionGameAction {
         override val id: String = "example:other"
@@ -292,6 +348,34 @@ class RiichiPositionRulesTest {
             discardPile = pile,
             playerRuleState = RiichiPlayerState(riichiTile = riichiTile),
         )
+    }
+
+    /** 九九九萬、四五六筒、七八九筒、中中中、二條：單騎聽二條，中提供役牌役，只用三人麻將也有的牌。 */
+    private fun threePlayerYakuhaiTanki(): Hand = handOf(
+        List(3) { character(9) } + listOf(dot(4), dot(5), dot(6), dot(7), dot(8), dot(9)) +
+            List(3) { Tile.Honor.Red } + TWO_BAMBOO,
+    )
+
+    private fun threePlayerTable(players: List<MahjongPlayer>): TableState = FakeTableStateFactory.create(
+        players = players,
+        dealerPlayerId = players.first().id,
+        config = ThreePlayerRiichiRuleConfig(),
+        dynamicRuleState = RiichiDynamicState(),
+    )
+
+    /** 以 [player] 為觀察者的三人麻將視角；[doraIndicators] 不為空時，牌山只包含這些公開的寶牌指示牌。 */
+    private fun threePlayerView(
+        table: TableState,
+        player: MahjongPlayer,
+        doraIndicators: List<Tile> = emptyList(),
+    ): PositionView {
+        val snapshot = table.toSnapshot(visibleHandPlayerIds = setOf(player.id), setAsideTiles = threePlayerModule::setAsideTiles)
+        val withIndicators = if (doraIndicators.isEmpty()) {
+            snapshot
+        } else {
+            snapshot.copy(tileWall = TileWallSnapshot(doraIndicators.map { IdentifiedTileSnapshot(id = Uuid.random(), tile = it) }))
+        }
+        return PositionView(snapshot = withIndicators, evaluatorId = player.id)
     }
 
     private fun handOf(tiles: List<Tile>, melds: List<Meld> = emptyList()): Hand = Hand(tiles = tiles.map(FakeIdentifiedTileFactory::create), melds = melds)

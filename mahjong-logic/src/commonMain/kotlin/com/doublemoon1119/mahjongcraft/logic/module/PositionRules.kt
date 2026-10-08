@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.logic.module
 
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayerSnapshot
 import com.doublemoon1119.mahjongcraft.logic.table.TableStateSnapshot
@@ -25,6 +26,32 @@ data class PositionView(
 
     /** 取得桌上指定玩家；不存在時拋出例外。 */
     fun player(playerId: Uuid): MahjongPlayerSnapshot = snapshot.players.first { it.id == playerId }
+
+    /** 評估者換成 [evaluator] 之後的視角。 */
+    fun withEvaluator(evaluator: MahjongPlayerSnapshot): PositionView {
+        require(evaluator.id == evaluatorId) { "Replacement must be the evaluator" }
+        return copy(snapshot = snapshot.copy(players = snapshot.players.map { if (it.id == evaluatorId) evaluator else it }))
+    }
+
+    /**
+     * 評估者手牌中的 [tileId] 移到評估者移出手牌的牌（[MahjongPlayerSnapshot.setAsideTiles]）末端之後的視角。
+     *
+     * 評估者手牌中沒有這張牌時拋出例外。
+     */
+    fun withTileSetAside(tileId: Uuid): PositionView {
+        val self = evaluator
+        val tile = (self.hand.standingTiles + listOfNotNull(self.hand.lastDrawn)).first { it.id == tileId }
+        val face = requireNotNull(tile.tile) { "The evaluator must see its own tiles" }
+        return withEvaluator(
+            self.copy(
+                hand = self.hand.copy(
+                    standingTiles = self.hand.standingTiles.filterNot { it.id == tileId },
+                    lastDrawn = self.hand.lastDrawn?.takeUnless { it.id == tileId },
+                ),
+                setAsideTiles = self.setAsideTiles + IdentifiedTile(tileId, face),
+            ),
+        )
+    }
 }
 
 /** 一種和牌方式的價值。 */
@@ -134,6 +161,14 @@ interface PositionRules {
      * 對手沒有宣告，或規則沒有這種宣告時為 null；預設為 null。
      */
     fun declarationTile(view: PositionView, opponentId: Uuid): Tile? = null
+
+    /**
+     * 評估者把手牌中的 [tileId] 移出手牌、公開擺在桌上之後的視角，例如日麻的拔北；不包含之後補進的牌。
+     *
+     * 只是假想局面，不改變任何狀態。預設只移動那張牌（見 [PositionView.withTileSetAside]）；玩家狀態另外記錄這些牌的
+     * 規則需覆寫，一併更新玩家狀態。
+     */
+    fun afterTileSetAside(view: PositionView, tileId: Uuid): PositionView = view.withTileSetAside(tileId)
 }
 
 /**

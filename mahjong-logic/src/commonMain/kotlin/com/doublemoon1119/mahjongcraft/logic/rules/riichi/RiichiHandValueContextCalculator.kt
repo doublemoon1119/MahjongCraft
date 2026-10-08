@@ -2,7 +2,6 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
-import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueContextCalculator
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
@@ -37,8 +36,7 @@ class RiichiHandValueContextCalculator(
     override fun calculate(input: Input): RiichiHandValueContext {
         val (tableState, player, incomingTile, isTsumo, isRobbingKan) = input
         val hand = player.hand
-        val isMenzen = hand.exposedMelds.isEmpty() || hand.exposedMelds.all { it.type == MeldType.CLOSED_KAN }
-        val riichiState = player.playerRuleState as? RiichiPlayerState
+        val riichiState = player.playerRuleState as? RiichiPlayerState ?: RiichiPlayerState()
         val actionHistory = player.actionHistory
         val discarder = if (isTsumo || isRobbingKan) null else discarderOf(tableState = tableState, winner = player, incomingTile = incomingTile)
 
@@ -72,20 +70,19 @@ class RiichiHandValueContextCalculator(
             uraDoraIndicators = emptyList()
         }
 
-        return RiichiHandValueContext(
+        return RiichiHandValueContext.forPlayer(
+            config = config,
+            riichiState = riichiState,
             hand = hand,
             winningTile = incomingTile.tile,
             isTsumo = isTsumo,
-            isMenzen = isMenzen,
             roundWind = tableState.prevalentWind,
             seatWind = player.seatWind,
             isDealer = tableState.isDealer(player.id),
-            isRiichi = riichiState?.isRiichi == true,
-            isDoubleRiichi = riichiState?.isDoubleRiichi == true,
-            isIppatsu = riichiState?.isIppatsu == true,
-            allowOpenTanyao = config.allowOpenTanyao,
             doraIndicators = doraIndicators,
-            uraDoraIndicators = if (riichiState?.isRiichi == true) uraDoraIndicators else emptyList(),
+        ).copy(
+            isIppatsu = riichiState.isIppatsu,
+            uraDoraIndicators = if (riichiState.isRiichi) uraDoraIndicators else emptyList(),
             isLastDraw = isLastDraw,
             isLastDiscard = isLastDiscard,
             isRobbingKan = isRobbingKan,
@@ -106,9 +103,6 @@ class RiichiHandValueContextCalculator(
                 player.discardPile.entries.isEmpty(),
             isRiichiDeclarationDiscard = discarder?.let { isRiichiDeclarationDiscard(it, incomingTile) } == true,
             isDiscardAfterKan = discarder?.let(::isDiscardAfterKan) == true,
-            paoLiability = riichiState?.paoLiability,
-            nukiDoraTiles = riichiState?.nukiDoraTiles.orEmpty().map { it.tile },
-            usesThreePlayerTiles = config.usesThreePlayerTiles,
         )
     }
 

@@ -14,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.toSnapshot
 import com.doublemoon1119.mahjongcraft.logic.module.DeclarationEffect
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.module.PositionRules
 import com.doublemoon1119.mahjongcraft.logic.module.PositionView
 import kotlin.math.min
 
@@ -306,15 +307,17 @@ internal class ExpectedValueEvaluator(
 
     /**
      * 把一張牌移出手牌後的評估：手牌變化與打出那張牌相同，但移出的牌不會被他家榮和（有人能搶和時，規則另外開放
-     * 反應，這裡不估計），因此沒有立即的放銃損失。
+     * 反應，這裡不估計），因此沒有立即的放銃損失。和牌價值以規則投影的移出後局面計算（見
+     * [PositionRules.afterTileSetAside]），例如日麻拔北後多一張拔北寶牌。
      */
     private fun evaluateSetAside(candidate: DecisionCandidate.SetAside): Evaluation? {
         val tile = ownHand.tiles.firstOrNull { it.id == candidate.tileId } ?: return null
         val rest = ownHand.copy(tiles = ownHand.tiles.filterNot { it.id == tile.id })
+        val view = HypotheticalView(id = nextViewId++, view = rules.afterTileSetAside(currentView, tile.id))
         return Evaluation(
             candidate = candidate,
             hand = rest,
-            assessment = assessor.assess(rest, hypotheticalView(rest, discarded = null), declarations = emptySet()),
+            assessment = assessor.assess(rest, view, declarations = emptySet()),
             locksHand = false,
             fixedLoss = 0.0,
         )

@@ -27,6 +27,7 @@ import kotlin.uuid.Uuid
  *   也最多讓鳴牌者多打一張，因此其他玩家牌河中位置超過「立直宣告牌的位置加上兩倍全桌鳴牌次數」的牌必定在宣告之後打出。
  * - 寶牌：寶牌指示牌的下一張，加上赤寶牌。
  * - 宣告聽牌時打出的牌：已經立直的對手宣告立直時打出的牌。
+ * - 移出手牌的牌：三人麻將拔出的北，計入評估者的拔北寶牌。
  *
  * @property config 本局日麻規則設定。
  * @property handValueCalculator 役種與點數計算。
@@ -53,19 +54,17 @@ class RiichiPositionRules(
         if (!isTsumo && isFuriten(self, riichiState, hand)) return WinValue.NotWinnable
 
         val result = handValueCalculator.calculate(
-            RiichiHandValueContext(
+            RiichiHandValueContext.forPlayer(
+                config = config,
+                riichiState = riichiState,
                 hand = hand,
                 winningTile = winningTile,
                 isTsumo = isTsumo,
-                isMenzen = hand.melds.all { it.type == MeldType.CLOSED_KAN },
                 roundWind = view.snapshot.prevalentWind,
                 seatWind = self.seatWind,
                 isDealer = view.snapshot.dealerPlayerId == self.id,
-                isRiichi = riichiState.isRiichi || declaresRiichi,
-                isDoubleRiichi = riichiState.isDoubleRiichi,
-                allowOpenTanyao = config.allowOpenTanyao,
                 doraIndicators = visibleDoraIndicators(view),
-            ),
+            ).let { context -> if (declaresRiichi) context.copy(isRiichi = true) else context },
         )
         if (!result.qualifyingHan().satisfies(config.minimumWinConstraint)) return WinValue.NotWinnable
 
@@ -110,6 +109,16 @@ class RiichiPositionRules(
             ?.tile
             ?.tile
             ?.riichiCanonical
+    }
+
+    /** 移出手牌的牌是拔出的北，另外記進評估者的拔北寶牌。 */
+    override fun afterTileSetAside(view: PositionView, tileId: Uuid): PositionView {
+        val moved = view.withTileSetAside(tileId)
+        val self = moved.evaluator
+        val riichiState = self.playerRuleState as? RiichiPlayerState ?: RiichiPlayerState()
+        return moved.withEvaluator(
+            self.copy(playerRuleState = riichiState.copy(nukiDoraTiles = riichiState.nukiDoraTiles + self.setAsideTiles.last())),
+        )
     }
 
     override fun bonusTileCount(view: PositionView, tile: Tile): Int {

@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueContext
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
@@ -8,7 +9,8 @@ import com.doublemoon1119.mahjongcraft.logic.table.Wind
 /**
  * 立直麻將手牌價值計算所需的上下文資訊。
  *
- * 包含手牌資訊、遊戲狀態、環境資訊等，用於各役種的檢測計算。
+ * 包含手牌資訊、遊戲狀態、環境資訊等，用於各役種的檢測計算。正式結算與局面評估都經由 [forPlayer] 建立，
+ * 規則設定與玩家狀態帶入的欄位因此不會因呼叫端而不同。
  *
  * @property hand 玩家手牌（包含立牌與副露）。
  * @property winningTile 胡牌張（放銃或自摸的牌）。
@@ -38,24 +40,72 @@ data class RiichiHandValueContext(
     override val hand: Hand,
     override val winningTile: Tile,
     override val isTsumo: Boolean,
-    override val isMenzen: Boolean = true,
-    override val roundWind: Wind = Wind.EAST,
-    override val seatWind: Wind = Wind.EAST,
+    override val isMenzen: Boolean,
+    override val roundWind: Wind,
+    override val seatWind: Wind,
     val isDealer: Boolean,
-    val isRiichi: Boolean = false,
-    val isDoubleRiichi: Boolean = false,
-    val isIppatsu: Boolean = false,
-    val allowOpenTanyao: Boolean = true,
-    val doraIndicators: List<Tile> = emptyList(),
-    val uraDoraIndicators: List<Tile> = emptyList(),
-    val isLastDraw: Boolean = false,
-    val isLastDiscard: Boolean = false,
-    val isRobbingKan: Boolean = false,
-    val isRinshanKaihou: Boolean = false,
-    val isFirstTurn: Boolean = false,
-    val isRiichiDeclarationDiscard: Boolean = false,
-    val isDiscardAfterKan: Boolean = false,
-    val paoLiability: PaoLiability? = null,
-    val nukiDoraTiles: List<Tile> = emptyList(),
-    val usesThreePlayerTiles: Boolean = false,
-) : HandValueContext
+    val isRiichi: Boolean,
+    val isDoubleRiichi: Boolean,
+    val isIppatsu: Boolean,
+    val allowOpenTanyao: Boolean,
+    val doraIndicators: List<Tile>,
+    val uraDoraIndicators: List<Tile>,
+    val isLastDraw: Boolean,
+    val isLastDiscard: Boolean,
+    val isRobbingKan: Boolean,
+    val isRinshanKaihou: Boolean,
+    val isFirstTurn: Boolean,
+    val isRiichiDeclarationDiscard: Boolean,
+    val isDiscardAfterKan: Boolean,
+    val paoLiability: PaoLiability?,
+    val nukiDoraTiles: List<Tile>,
+    val usesThreePlayerTiles: Boolean,
+) : HandValueContext {
+    /** [RiichiHandValueContext] 的建立方式。 */
+    companion object {
+        /**
+         * 依規則設定 [config] 與和牌者的 [riichiState] 建立手牌價值上下文。
+         *
+         * 規則設定（食斷、三人牌組）與玩家狀態（立直、兩立直、拔出的北、包牌責任）一律在這裡帶入；只有正式結算才知道的
+         * 和牌情境（一發、裏寶牌、海底、河底、搶槓、嶺上、第一巡、燕返、槓振）一律為否或空，由正式結算另外補上。
+         *
+         * @param hand 不含和牌張的手牌；門前清依副露是否全為暗槓判定。
+         * @param doraIndicators 和牌者看得到的寶牌指示牌。
+         */
+        fun forPlayer(
+            config: RiichiFamilyRuleConfig,
+            riichiState: RiichiPlayerState,
+            hand: Hand,
+            winningTile: Tile,
+            isTsumo: Boolean,
+            roundWind: Wind,
+            seatWind: Wind,
+            isDealer: Boolean,
+            doraIndicators: List<Tile>,
+        ): RiichiHandValueContext = RiichiHandValueContext(
+            hand = hand,
+            winningTile = winningTile,
+            isTsumo = isTsumo,
+            isMenzen = hand.melds.all { it.type == MeldType.CLOSED_KAN },
+            roundWind = roundWind,
+            seatWind = seatWind,
+            isDealer = isDealer,
+            isRiichi = riichiState.isRiichi,
+            isDoubleRiichi = riichiState.isDoubleRiichi,
+            isIppatsu = false,
+            allowOpenTanyao = config.allowOpenTanyao,
+            doraIndicators = doraIndicators,
+            uraDoraIndicators = emptyList(),
+            isLastDraw = false,
+            isLastDiscard = false,
+            isRobbingKan = false,
+            isRinshanKaihou = false,
+            isFirstTurn = false,
+            isRiichiDeclarationDiscard = false,
+            isDiscardAfterKan = false,
+            paoLiability = riichiState.paoLiability,
+            nukiDoraTiles = riichiState.nukiDoraTiles.map { it.tile },
+            usesThreePlayerTiles = config.usesThreePlayerTiles,
+        )
+    }
+}
