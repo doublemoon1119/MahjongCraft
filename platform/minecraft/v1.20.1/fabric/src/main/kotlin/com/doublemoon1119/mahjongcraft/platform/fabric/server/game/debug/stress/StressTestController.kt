@@ -6,6 +6,10 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.Headl
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessHistoryScenario
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessStepTimer
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.OngoingAiDecision
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionExecutor
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionObserver
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionOutcome
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionReporter
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.GameAdvanceRotation
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.history.FabricHistoryGenerationRuntimeFactory
@@ -13,7 +17,11 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHist
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryWriterStage
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.StressTestHistorySource
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.Runnable
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -25,6 +33,8 @@ import org.koin.core.annotation.Single
 import java.io.IOException
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import kotlin.coroutines.AbstractCoroutineContextElement
+import kotlin.coroutines.CoroutineContext
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.DurationUnit
@@ -50,22 +60,40 @@ import kotlin.uuid.toJavaUuid
  * @property warmupTicks 暖機的 tick 數；0 表示不暖機。
  * @property warmupRemainingTicks 暖機剩餘的 tick 數；暖機已結束時為 0。
  * @property measuredSeconds 暖機結束後經過的實際秒數。
- * @property tickAverageMillis 最近一段時間每 tick 耗時的平均毫秒數。
- * @property tickP95Millis 最近一段時間每 tick 耗時的第 95 百分位毫秒數。
- * @property tickMaxMillis 最近一段時間每 tick 耗時的最大毫秒數。
- * @property stepAverageMillis 最近一段時間單桌單步耗時的平均毫秒數。
- * @property stepP95Millis 最近一段時間單桌單步耗時的第 95 百分位毫秒數。
- * @property stepMaxMillis 最近一段時間單桌單步耗時的最大毫秒數。
- * @property stepStages 單步各環節的耗時。
+ * @property tickAverageMillis 最近一段時間 tick 本身處理時間的平均毫秒數；只供診斷，不含 tick 之間執行的工作。
+ * @property tickP95Millis 最近一段時間 tick 本身處理時間的第 95 百分位毫秒數。
+ * @property tickMaxMillis 最近一段時間 tick 本身處理時間的最大毫秒數。
+ * @property tickIntervalAverageMillis 最近一段時間實際 tick 間隔（相鄰兩個 tick 開始的時間差）的平均毫秒數。
+ * @property tickIntervalP95Millis 最近一段時間實際 tick 間隔的第 95 百分位毫秒數。
+ * @property tickIntervalMaxMillis 最近一段時間實際 tick 間隔的最大毫秒數。
+ * @property lagMillis 目前相對每 tick 50 ms 節奏的落後毫秒數；見 [StressSafetyValve]。
+ * @property advanceMillisPerSecond 暖機結束後每秒 MahjongCraft 推進（各桌推進協程在主執行緒上實際執行的片段）的平均毫秒數。
+ * @property stepAverageMillis 最近一段時間單桌單步 MahjongCraft 推進耗時的平均毫秒數：這一步在主執行緒上實際執行的片段加總，
+ *   不含等待 AI 結果的時間。
+ * @property stepP95Millis 最近一段時間單桌單步 MahjongCraft 推進耗時的第 95 百分位毫秒數。
+ * @property stepMaxMillis 最近一段時間單桌單步 MahjongCraft 推進耗時的最大毫秒數。
+ * @property stepStages 單步各環節的耗時；見 [StressStepStage]。
+ * @property historyRecording 每 tick 歷史記錄的耗時。
+ * @property aiDecisions 有結果的 AI 決策數。
+ * @property aiTimeouts 等待超過上限而使用固定命令的 AI 決策數。
+ * @property aiPreviousStillRunning 同一局先前逾時的策略呼叫尚未結束，直接使用固定命令的 AI 決策數。
+ * @property aiLatencyAverageMillis 暖機結束後 AI 決策延遲（開始決策到得到結果，含排隊）的平均毫秒數。
+ * @property aiLatencyP95Millis 暖機結束後 AI 決策延遲的第 95 百分位毫秒數。
+ * @property aiLatencyP99Millis 暖機結束後 AI 決策延遲的第 99 百分位毫秒數。
+ * @property aiLatencyMaxMillis 暖機結束後 AI 決策延遲的最大毫秒數。
+ * @property staleDecisions 權威遊戲已改變而沒有套用的 AI 決策數。
+ * @property unfinishedStrategyCalls 目前尚未真正結束的策略工作數。
+ * @property unfinishedStrategyPeak 暖機結束後同時存在、尚未真正結束的策略工作數的最大值，包含 tick 之間短暫出現的工作。
+ * @property strategyCapacity 同時存在、尚未結束的策略工作上限。
  * @property writerStages 歷史背景工作各環節的耗時；只列出有發生的環節。
  * @property eventsProduced 新加入待寫佇列的歷史事件數。
  * @property eventsWritten 背景工作處理完（寫入或編碼後確認移除）的歷史事件數。
- * @property maxStepsInTick 單一 tick 內推進的最多步數。
+ * @property maxStepsInTick 單一 tick 內完成的最多步數。
  * @property maxEventsInTick 單一 tick 內產生的最多歷史事件數。
  * @property measuredTicks 列入統計的 tick 數。
  * @property slowTicks 以 [STRESS_SLOW_TICK_THRESHOLDS_MILLIS] 的每個門檻毫秒數為鍵，耗時超過門檻的 tick 數。
  * @property gc 記憶體回收次數與耗時。
- * @property stutterLimitMillis 單一 tick 耗時超過這個毫秒數就算一次卡頓。
+ * @property stutterLimitMillis 單一 tick 間隔超過這個毫秒數就算一次卡頓。
  * @property stutterTables 第一次判定持續卡頓時的桌數；尚未發生時為 null。
  * @property pendingEvents 目前歷史待寫佇列中的事件數。
  * @property pendingPeak 歷史待寫佇列的最大事件數。
@@ -93,10 +121,27 @@ data class StressTestReport(
     val tickAverageMillis: Double,
     val tickP95Millis: Double,
     val tickMaxMillis: Double,
+    val tickIntervalAverageMillis: Double,
+    val tickIntervalP95Millis: Double,
+    val tickIntervalMaxMillis: Double,
+    val lagMillis: Double,
+    val advanceMillisPerSecond: Double,
     val stepAverageMillis: Double,
     val stepP95Millis: Double,
     val stepMaxMillis: Double,
     val stepStages: Map<StressStepStage, TimingSummary>,
+    val historyRecording: TimingSummary,
+    val aiDecisions: Long,
+    val aiTimeouts: Long,
+    val aiPreviousStillRunning: Long,
+    val aiLatencyAverageMillis: Double,
+    val aiLatencyP95Millis: Double,
+    val aiLatencyP99Millis: Double,
+    val aiLatencyMaxMillis: Double,
+    val staleDecisions: Long,
+    val unfinishedStrategyCalls: Int,
+    val unfinishedStrategyPeak: Int,
+    val strategyCapacity: Int,
     val writerStages: Map<HistoryWriterStage, TimingSummary>,
     val eventsProduced: Long,
     val eventsWritten: Long,
@@ -148,23 +193,25 @@ enum class StressTestClearResult {
 /**
  * 以伺服器 tick 驅動的壓力測試。
  *
- * 所有測試對局共用 [StressTestEnvironment] 的權威來源，並在伺服器主執行緒上依 [StressTestPace] 逐 tick 推進。每桌推進的 tick
- * 由與正式排程相同的 [GameAdvanceRotation] 決定（位置分配、待推進標記與每 tick 推進上限），因此每 tick 耗時直接反映正式環境中
- * AI 與流程的負擔；歷史依 [StressHistoryMode] 經由同一個權威來源的待寫佇列交給背景工作處理。新桌每個 tick 最多建立
+ * 所有測試對局共用 [StressTestEnvironment] 的權威來源，依 [StressTestPace] 逐 tick 推進。每桌推進的 tick 由與正式排程相同的
+ * [GameAdvanceRotation] 決定（位置分配、待推進標記與每 tick 推進上限）；與正式環境相同，每桌在伺服器主執行緒上各自的協程中推進、
+ * 不互相等待，AI 策略在背景執行緒上計算，因此每 tick 耗時直接反映正式環境中主執行緒的負擔。歷史依 [StressHistoryMode] 經由同一個
+ * 權威來源的待寫佇列交給背景工作處理。新桌每個 tick 最多建立
  * [STRESS_TABLES_CREATED_PER_TICK] 桌，打完或卡住的桌會從權威來源移除。
  *
  * 開始後先依 [StressRunOptions.warmupSeconds] 暖機：期間維持初始桌數、不列入統計與卡頓判斷。每 tick 都檢查 [StressSafetyValve]，
  * 包括暖機期間：伺服器落後或歷史出問題就停止並保留報告，持續卡頓則在暖機後記下當時的桌數後繼續。不記錄歷史時不檢查
  * 歷史相關的門檻。執行期間每秒在存檔資料夾的時間序列 CSV 追加一列。
  *
- * 單步耗時超過 [SLOW_STEP_LOG_THRESHOLD] 時，在 log 記下該步最久的 AI 決策情境；另有背景工作每秒檢查進行中的 AI 決策，
- * 超過 [STUCK_DECISION_LOG_THRESHOLD] 仍未結束就先記下情境，即使該 tick 最後讓伺服器被強制關閉也留有線索。
+ * 單步在主執行緒上的耗時超過 [SLOW_STEP_LOG_THRESHOLD] 時，在 log 記下該步最久的 AI 決策情境；另每秒檢查各桌進行中的 AI 決策，
+ * 超過 [STUCK_DECISION_LOG_THRESHOLD] 仍未結束就先記下情境。
  *
  * @property environments 建立壓力測試資料環境。
  * @property runtimes 在共用權威來源中建立全 AI 對局。
  * @property scope 執行 tick 工作的應用作用域。
  * @property dispatchers 切換到伺服器主執行緒。
  * @property historySource 讓對局歷史畫面的壓力測試範圍讀到目前的壓力測試資料庫。
+ * @param aiDecisionReporter 記錄 AI 決策逾時與舊策略呼叫仍未結束的情況。
  */
 @Single
 class StressTestController(
@@ -173,9 +220,23 @@ class StressTestController(
     private val scope: AppCoroutineScope,
     private val dispatchers: CoroutineDispatchers,
     private val historySource: StressTestHistorySource,
+    aiDecisionReporter: AiDecisionReporter,
 ) {
     /** 記錄壓力測試開始、停止與報告的 logger。 */
     private val logger = mahjongCraftLogger(StressTestController::class)
+
+    /** 同時存在、尚未結束的策略工作上限。 */
+    private val strategyCapacity = dispatchers.aiDecisionParallelism * AiDecisionExecutor.CAPACITY_PER_THREAD
+
+    /** 各輪共用的 AI 決策執行器與決策結果的分派；上一輪留下的策略工作仍計入下一輪的名額。 */
+    private val sharedDecisions = StressAiDecisions { observer ->
+        AiDecisionExecutor(
+            dispatcher = dispatchers.aiDecision,
+            capacity = strategyCapacity,
+            reporter = aiDecisionReporter,
+            observer = observer,
+        )
+    }
 
     /**
      * 目前的壓力測試資料環境；尚未開始過、已刪除，或上一輪沒有寫進資料庫時為 null。設定時一併更新對局歷史畫面讀取的
@@ -196,12 +257,23 @@ class StressTestController(
     /** 本 tick 開始的時刻。 */
     private var tickStart = TimeSource.Monotonic.markNow()
 
+    /** 本 tick 與上一個 tick 開始的時間差；伺服器啟動後的第一個 tick 為 null。 */
+    private var tickInterval: Duration? = null
+
     /** 上一個 tick 的壓力測試工作是否仍在執行。 */
     private var processing = false
 
+    /** 是否已經過至少一個 tick 的開始。 */
+    private var started = false
+
     /** 註冊 tick 量測、逐 tick 推進與伺服器關閉時的清理。 */
     fun registerTicking() {
-        ServerTickEvents.START_SERVER_TICK.register { tickStart = TimeSource.Monotonic.markNow() }
+        ServerTickEvents.START_SERVER_TICK.register {
+            val now = TimeSource.Monotonic.markNow()
+            tickInterval = tickStart.elapsedNow().takeIf { started }
+            tickStart = now
+            started = true
+        }
         ServerTickEvents.END_SERVER_TICK.register(::onTickEnd)
         ServerLifecycleEvents.SERVER_STOPPING.register {
             runBlocking {
@@ -289,7 +361,10 @@ class StressTestController(
         scope.launch(dispatchers.main) {
             try {
                 current.advance()
-                val stopReason = current.recordTick(tickStart.elapsedNow().toDouble(DurationUnit.MILLISECONDS))
+                val stopReason = current.recordTick(
+                    msptMillis = tickStart.elapsedNow().toDouble(DurationUnit.MILLISECONDS),
+                    intervalMillis = tickInterval?.toDouble(DurationUnit.MILLISECONDS),
+                )
                 if (stopReason != null) stopRun(stopReason)?.let { report -> notifyStarter(server, current.starterId, report) }
             } catch (error: Exception) {
                 logger.error("Stress test tick failed; stopping the stress test", error)
@@ -332,10 +407,14 @@ class StressTestController(
     /**
      * 一次壓力測試的執行狀態；只在伺服器主執行緒上存取。
      *
+     * 每桌的推進在各自的協程中進行：輪到的桌啟動推進後不等待，上一步還沒結束的桌這一輪略過。AI 策略在
+     * [CoroutineDispatchers.aiDecision] 上由各輪共用的 [AiDecisionExecutor] 呼叫（名額規則與正式環境相同），這一輪的對局在建立時
+     * 登記，決策結果只算進這一輪。
+     *
      * @property scenario 對局情境。
      * @property mode 桌數安排。
      * @property options 節奏、歷史處理方式、卡頓門檻與暖機秒數。
-     * @property environment 共用的權威來源、計時器與歷史背景工作。
+     * @property environment 共用的權威來源、歷史計時器與歷史背景工作。
      * @property starterId 下指令的玩家。
      * @property timeSeries 每秒時間序列 CSV；無法建立或寫入失敗後為 null。
      */
@@ -350,11 +429,31 @@ class StressTestController(
         /** 同時進行中的桌，以場地識別碼索引。 */
         private val tables = LinkedHashMap<Uuid, StressTable>()
 
+        /** 同時進行中的桌，以對局識別碼索引，供 AI 決策的量測對應到桌。 */
+        private val tablesByGameId = HashMap<Uuid, StressTable>()
+
         /** 每桌推進節奏。 */
         private val pace = options.pace
 
         /** 各桌推進的 tick 位置與待推進標記；與正式排程使用相同的政策。 */
         private val rotation = GameAdvanceRotation(pace.stepIntervalTicks)
+
+        /** 各桌推進協程的父工作；停止時一併取消。 */
+        private val stepJob = SupervisorJob(scope.coroutineContext[Job])
+
+        /** 啟動各桌推進協程的作用域；推進協程在主執行緒上執行的每個片段都會計時。 */
+        private val stepScope = CoroutineScope(scope.coroutineContext + stepJob + SegmentTimingDispatcher(dispatchers.main))
+
+        /** 各輪共用的 AI 決策執行器。 */
+        private val decisions = sharedDecisions.executor
+
+        /** 接收這一輪對局的 AI 決策結果；登記與取消登記使用同一個實例。 */
+        private val decisionObserver = AiDecisionObserver(::onDecision)
+
+        init {
+            // 策略工作峰值從這一輪開始重新起算。
+            decisions.takeUnfinishedStrategyPeak()
+        }
 
         /** 安全閥門檻。 */
         private val thresholds = options.thresholds()
@@ -377,6 +476,9 @@ class StressTestController(
         /** 卡住而中止的場數。 */
         private var failedMatches = 0
 
+        /** 某一桌推進時發生的未預期錯誤；下一個 tick 據此停止測試。 */
+        private var stepFailure: Exception? = null
+
         /** 暖機結束的時刻；仍在暖機時為 null。 */
         private var measureStart: TimeMark? = null
 
@@ -395,10 +497,31 @@ class StressTestController(
         /** 單步各環節的耗時。 */
         private val stepStages = StressStepStage.entries.associateWith { TimingAccumulator() }
 
+        /** 每 tick 歷史記錄的耗時。 */
+        private val historyRecording = TimingAccumulator()
+
+        /** 暖機結束後全部 AI 決策的延遲。 */
+        private val aiLatency = MillisHistogram()
+
+        /** 有結果的 AI 決策數。 */
+        private var aiDecisions = 0L
+
+        /** 逾時而使用固定命令的 AI 決策數。 */
+        private var aiTimeouts = 0L
+
+        /** 舊策略呼叫尚未結束而直接使用固定命令的 AI 決策數。 */
+        private var aiPreviousStillRunning = 0L
+
+        /** 過期而沒有套用的 AI 決策數。 */
+        private var staleDecisions = 0L
+
+        /** 尚未結束的策略工作數的最大值。 */
+        private var unfinishedStrategyPeak = 0
+
         /** 新加入待寫佇列的歷史事件數。 */
         private var eventsProduced = 0L
 
-        /** 單一 tick 內推進的最多步數。 */
+        /** 單一 tick 內完成的最多步數。 */
         private var maxStepsInTick = 0
 
         /** 單一 tick 內產生的最多歷史事件數。 */
@@ -410,11 +533,20 @@ class StressTestController(
         /** 各門檻的超時 tick 數，順序與 [STRESS_SLOW_TICK_THRESHOLDS_MILLIS] 相同。 */
         private val slowTicks = LongArray(STRESS_SLOW_TICK_THRESHOLDS_MILLIS.size)
 
-        /** 本 tick 推進的步數。 */
+        /** 本 tick 完成的步數。 */
         private var tickSteps = 0
 
-        /** 本 tick 產生的歷史事件數。 */
-        private var tickEvents = 0
+        /** 本 tick 推進協程在主執行緒上執行的總時間。 */
+        private var tickAdvance = Duration.ZERO
+
+        /** 暖機結束後推進協程在主執行緒上執行的總時間。 */
+        private var advanceTotal = Duration.ZERO
+
+        /** 最近一段時間的實際 tick 間隔。 */
+        private val intervalSamples = RollingSamples(SAMPLE_WINDOW_TICKS)
+
+        /** 上一次的目標桌數；爬坡進入新的階段時據此重設落後量。 */
+        private var lastTargetTables: Int? = null
 
         /** 目前歷史待寫佇列的事件數。 */
         private var pendingEvents = 0
@@ -455,40 +587,31 @@ class StressTestController(
         /** 伺服器前進一個 tick：把輪到的桌標為待推進；上一個 tick 的工作仍在等待時也要標記。 */
         fun onServerTick() = rotation.advanceTick()
 
-        /** 補足目標桌數，推進輪到的桌，並更新歷史狀態。 */
+        /** 補足目標桌數，為輪到的桌啟動推進（不等待），並更新歷史狀態。 */
         suspend fun advance() {
             elapsedTicks++
             if (elapsedTicks == warmupTicks + 1) beginMeasuring()
-            tickSteps = 0
-            tickEvents = 0
-            val timer = environment.stepTimer
-            repeat(minOf(targetTables() - tables.size, STRESS_TABLES_CREATED_PER_TICK)) {
-                timer.reset()
-                val runtime = runtimes.createIn(scenario, environment.store, timer)
-                tables[runtime.venueId] = StressTable(runtime)
-                tickEvents += timer.historyEvents
+            val target = targetTables()
+            if (lastTargetTables != null && target != lastTargetTables) valve.resetLag()
+            lastTargetTables = target
+            repeat(minOf(target - tables.size, STRESS_TABLES_CREATED_PER_TICK)) {
+                val timer = HeadlessStepTimer()
+                val runtime = runtimes.createIn(scenario, environment.store, timer, decisions)
+                val gameId = runtime.currentGame()?.id
+                val table = StressTable(runtime, timer, gameId)
+                tables[runtime.venueId] = table
+                gameId?.let {
+                    tablesByGameId[it] = table
+                    sharedDecisions.register(it, decisionObserver)
+                }
             }
             rotation.syncGames(tables.keys)
             rotation.takeDue().forEach { venueId ->
                 val table = tables[venueId] ?: return@forEach
-                timer.reset()
-                val stepStart = TimeSource.Monotonic.markNow()
-                val progressed = table.runtime.step()
-                val stepTime = stepStart.elapsedNow()
-                recordStep(stepTime, timer)
-                if (stepTime >= SLOW_STEP_LOG_THRESHOLD) logSlowStep(stepTime, timer)
-                if (table.runtime.currentGame() == null) {
-                    completedMatches++
-                    tables.remove(venueId)
-                    discardStressTables(environment.store, listOf(venueId))
-                } else if (progressed) {
-                    table.stalledSteps = 0
-                } else if (++table.stalledSteps >= MAX_STALLED_STEPS) {
-                    failedMatches++
-                    logger.warn("Stress test match made no progress for {} steps; dropping it", MAX_STALLED_STEPS)
-                    tables.remove(venueId)
-                    discardStressTables(environment.store, listOf(venueId))
-                }
+                if (table.stepping) return@forEach
+                table.stepping = true
+                table.stepTime = Duration.ZERO
+                stepScope.launch(StepTiming { duration -> onSegment(table, duration) }) { step(venueId, table) }
             }
             val recording = environment.store.snapshot().historyRecordingState
             pendingEvents = recording.pendingEvents.size
@@ -496,10 +619,86 @@ class StressTestController(
             if (elapsedTicks % WRITER_CHECK_INTERVAL_TICKS == 0L) writerFailed = environment.historyFailed()
         }
 
-        /** 把剩下的桌從權威來源移除；未結束的對局記為未完成，待寫歷史仍交給背景工作處理。 */
+        /** 推進一桌一步；這一步的統計在它最後一個片段結束時記錄。未預期的錯誤留給下一個 tick 停止測試。 */
+        private suspend fun step(venueId: Uuid, table: StressTable) {
+            try {
+                stepOnce(venueId, table)
+                table.finished = true
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                stepFailure = stepFailure ?: error
+            } finally {
+                table.stepping = false
+            }
+        }
+
+        /** 推進一桌一步並記錄；打完或卡住的桌從權威來源移除。 */
+        private suspend fun stepOnce(venueId: Uuid, table: StressTable) {
+            table.timer.reset()
+            val progressed = table.runtime.step()
+            val game = table.runtime.currentGame()
+            when {
+                game == null -> {
+                    completedMatches++
+                    removeTable(venueId, table)
+                }
+                progressed -> table.stalledSteps = 0
+                ++table.stalledSteps >= MAX_STALLED_STEPS -> {
+                    failedMatches++
+                    logger.warn("Stress test match made no progress for {} steps; dropping it", MAX_STALLED_STEPS)
+                    removeTable(venueId, table)
+                }
+            }
+        }
+
+        /**
+         * 推進協程在主執行緒上執行完一個片段：累計到這一步與本 tick；這一步已經結束時記錄它的統計。
+         *
+         * @param table 推進的桌。
+         * @param duration 這個片段的執行時間。
+         */
+        private fun onSegment(table: StressTable, duration: Duration) {
+            table.stepTime += duration
+            tickAdvance += duration
+            if (!table.finished) return
+            table.finished = false
+            val stepTime = table.stepTime
+            recordStep(stepTime, table.timer)
+            if (stepTime >= SLOW_STEP_LOG_THRESHOLD) logSlowStep(stepTime, table.timer)
+        }
+
+        /** 把一桌從進行中的桌與權威來源移除。 */
+        private suspend fun removeTable(venueId: Uuid, table: StressTable) {
+            tables.remove(venueId)
+            table.gameId?.let {
+                tablesByGameId.remove(it)
+                sharedDecisions.unregister(it, decisionObserver)
+            }
+            discardStressTables(environment.store, listOf(venueId))
+        }
+
+        /** 記錄這一輪對局的一次有結果的 AI 決策；在等待決策的推進協程（伺服器主執行緒）上呼叫。 */
+        private fun onDecision(gameId: Uuid, outcome: AiDecisionOutcome, latency: Duration) {
+            tablesByGameId[gameId]?.timer?.addAiWait(latency)
+            bucket.addDecision(latency, outcome)
+            if (!measuring) return
+            aiDecisions++
+            when (outcome) {
+                AiDecisionOutcome.DECIDED -> Unit
+                AiDecisionOutcome.TIMED_OUT -> aiTimeouts++
+                AiDecisionOutcome.PREVIOUS_STILL_RUNNING -> aiPreviousStillRunning++
+            }
+            aiLatency.add(latency.toDouble(DurationUnit.MILLISECONDS))
+        }
+
+        /** 取消所有推進協程並把剩下的桌從權威來源移除；未結束的對局記為未完成，待寫歷史仍交給背景工作處理。 */
         suspend fun discardRemainingTables() {
+            tablesByGameId.keys.forEach { sharedDecisions.unregister(it, decisionObserver) }
+            stepJob.cancel()
             discardStressTables(environment.store, tables.keys.toList())
             tables.clear()
+            tablesByGameId.clear()
         }
 
         /** 暖機結束：記下基準值並清除暖機期間的背景工作統計。 */
@@ -513,27 +712,30 @@ class StressTestController(
         /** 在 log 記下一個過久的步驟與該步最久的 AI 決策情境。 */
         private fun logSlowStep(total: Duration, timer: HeadlessStepTimer) {
             logger.warn(
-                "Stress test step took {} ms (aiDecision={} ms, snapshotSync={} ms, historyRecording={} ms); slowest AI decision: {} ms, {}",
+                "Stress test step took {} ms on the server thread (aiContext={} ms, snapshotSync={} ms, aiWait={} ms, aiDecision={} ms); slowest AI decision: {} ms, {}",
                 total.inWholeMilliseconds,
-                timer.aiDecision.inWholeMilliseconds,
+                timer.aiContext.inWholeMilliseconds,
                 timer.snapshotSync.inWholeMilliseconds,
-                timer.historyRecording.inWholeMilliseconds,
+                timer.aiWait.inWholeMilliseconds,
+                timer.aiDecision.inWholeMilliseconds,
                 timer.slowestAiDecision?.duration?.inWholeMilliseconds,
                 timer.slowestAiDecision?.let { stressAiDecisionLogText(it.context) },
             )
         }
 
-        /** 開始每秒檢查進行中的 AI 決策；同一次決策只記錄一次。 */
+        /** 開始每秒檢查各桌進行中的 AI 決策；同一次決策只記錄一次。 */
         fun startDecisionWatch() {
-            decisionWatch = scope.launch(dispatchers.io) {
-                var reported: OngoingAiDecision? = null
+            decisionWatch = scope.launch(dispatchers.main) {
+                val reported = mutableSetOf<OngoingAiDecision>()
                 while (isActive) {
                     delay(DECISION_WATCH_INTERVAL)
-                    val ongoing = environment.stepTimer.ongoingAiDecision ?: continue
-                    val elapsed = ongoing.startedAt.elapsedNow()
-                    if (ongoing === reported || elapsed < STUCK_DECISION_LOG_THRESHOLD) continue
-                    reported = ongoing
-                    logger.warn("Stress test AI decision still running after {} s: {}", elapsed.inWholeSeconds, stressAiDecisionLogText(ongoing.context))
+                    val ongoing = tables.values.mapNotNullTo(mutableSetOf()) { it.timer.ongoingAiDecision }
+                    reported.retainAll(ongoing)
+                    ongoing.forEach { decision ->
+                        val elapsed = decision.startedAt.elapsedNow()
+                        if (elapsed < STUCK_DECISION_LOG_THRESHOLD || !reported.add(decision)) return@forEach
+                        logger.warn("Stress test AI decision still running after {} s: {}", elapsed.inWholeSeconds, stressAiDecisionLogText(decision.context))
+                    }
                 }
             }
         }
@@ -544,36 +746,57 @@ class StressTestController(
             decisionWatch = null
         }
 
-        /** 記錄一步的總耗時與各環節耗時。 */
+        /** 記錄一步主執行緒上的耗時與各環節耗時。 */
         private fun recordStep(total: Duration, timer: HeadlessStepTimer) {
             val stages = mapOf(
-                StressStepStage.AI_DECISION to timer.aiDecision,
-                StressStepStage.RULES_AND_STATE to (total - timer.aiDecision - timer.snapshotSync - timer.historyRecording).coerceAtLeast(Duration.ZERO),
+                StressStepStage.AI_CONTEXT to timer.aiContext,
+                StressStepStage.RULES_AND_STATE to (total - timer.aiContext - timer.snapshotSync).coerceAtLeast(Duration.ZERO),
                 StressStepStage.SNAPSHOT_SYNC to timer.snapshotSync,
-                StressStepStage.HISTORY_RECORDING to timer.historyRecording,
+                StressStepStage.AI_DECISION to timer.aiDecision,
             )
             tickSteps++
-            tickEvents += timer.historyEvents
-            bucket.addStep(total, stages)
+            bucket.addStep(total, stages, timer.staleDecisions)
             if (!measuring) return
+            staleDecisions += timer.staleDecisions
             stepSamples.add(total.toDouble(DurationUnit.MILLISECONDS))
             stages.forEach { (stage, duration) -> stepStages.getValue(stage).add(duration) }
         }
 
-        /** 記錄本 tick 耗時、寫出到期的時間序列，並回傳安全閥的停止原因。 */
-        fun recordTick(msptMillis: Double): StressStopReason? {
-            bucket.addTick(msptMillis, tickEvents)
+        /**
+         * 記錄本 tick 的處理時間與實際間隔、寫出到期的時間序列，並回傳安全閥的停止原因。
+         *
+         * @param msptMillis tick 本身的處理時間毫秒數。
+         * @param intervalMillis 與上一個 tick 開始的時間差毫秒數；伺服器啟動後的第一個 tick 為 null。
+         */
+        fun recordTick(msptMillis: Double, intervalMillis: Double?): StressStopReason? {
+            stepFailure?.let { error ->
+                logger.error("Stress test table failed; stopping the stress test", error)
+                return StressStopReason.RUN_FAILED
+            }
+            val history = environment.historyTimer
+            val tickEvents = history.historyEvents
+            val tickHistory = history.historyRecording
+            history.reset()
+            val strategyPeak = decisions.takeUnfinishedStrategyPeak()
+            val advance = tickAdvance
+            tickAdvance = Duration.ZERO
+            val tickStop = intervalMillis?.let { valve.recordTick(it, countStutter = measuring) }
+            bucket.addTick(msptMillis, intervalMillis, tickEvents, tickHistory, strategyPeak, advance, valve.lagMillis)
             if (measuring) {
                 tickSamples.add(msptMillis)
+                intervalMillis?.let(intervalSamples::add)
+                advanceTotal += advance
                 measuredTicks++
                 STRESS_SLOW_TICK_THRESHOLDS_MILLIS.forEachIndexed { index, threshold -> if (msptMillis > threshold) slowTicks[index]++ }
                 maxStepsInTick = maxOf(maxStepsInTick, tickSteps)
                 maxEventsInTick = maxOf(maxEventsInTick, tickEvents)
                 eventsProduced += tickEvents
                 pendingPeak = maxOf(pendingPeak, pendingEvents)
+                historyRecording.add(tickHistory)
+                unfinishedStrategyPeak = maxOf(unfinishedStrategyPeak, strategyPeak)
             }
+            tickSteps = 0
             if (lastRowMark.elapsedNow() >= TIME_SERIES_INTERVAL) writeTimeSeriesRow()
-            val tickStop = valve.recordTick(msptMillis, countStutter = measuring)
             if (measuring && stutterTables == null && valve.stuttering) stutterTables = tables.size
             return tickStop ?: if (environment.historyMode == StressHistoryMode.OFF) {
                 null
@@ -641,10 +864,27 @@ class StressTestController(
                 tickAverageMillis = tickSamples.average(),
                 tickP95Millis = tickSamples.percentile(P95),
                 tickMaxMillis = tickSamples.max(),
+                tickIntervalAverageMillis = intervalSamples.average(),
+                tickIntervalP95Millis = intervalSamples.percentile(P95),
+                tickIntervalMaxMillis = intervalSamples.max(),
+                lagMillis = valve.lagMillis,
+                advanceMillisPerSecond = advancePerSecond(),
                 stepAverageMillis = stepSamples.average(),
                 stepP95Millis = stepSamples.percentile(P95),
                 stepMaxMillis = stepSamples.max(),
                 stepStages = stepStages.mapValues { (_, accumulator) -> accumulator.summary() },
+                historyRecording = historyRecording.summary(),
+                aiDecisions = aiDecisions,
+                aiTimeouts = aiTimeouts,
+                aiPreviousStillRunning = aiPreviousStillRunning,
+                aiLatencyAverageMillis = aiLatency.average(),
+                aiLatencyP95Millis = aiLatency.percentile(P95),
+                aiLatencyP99Millis = aiLatency.percentile(P99),
+                aiLatencyMaxMillis = aiLatency.max(),
+                staleDecisions = staleDecisions,
+                unfinishedStrategyCalls = decisions.unfinishedStrategyCalls,
+                unfinishedStrategyPeak = unfinishedStrategyPeak,
+                strategyCapacity = strategyCapacity,
                 writerStages = if (measured) environment.writerTimer.stageSummaries() else emptyMap(),
                 eventsProduced = eventsProduced,
                 eventsWritten = if (measured) environment.writerTimer.eventsWritten() - writtenBaseline else 0,
@@ -671,6 +911,12 @@ class StressTestController(
             )
         }
 
+        /** 暖機結束後每秒推進協程在主執行緒上執行的平均毫秒數。 */
+        private fun advancePerSecond(): Double {
+            val seconds = measureStart?.elapsedNow()?.toDouble(DurationUnit.SECONDS) ?: return 0.0
+            return if (seconds <= 0.0) 0.0 else advanceTotal.toDouble(DurationUnit.MILLISECONDS) / seconds
+        }
+
         /** 一列時間序列期間的彙總。 */
         private inner class TimeSeriesBucket {
             /** tick 數。 */
@@ -682,31 +928,93 @@ class StressTestController(
             /** tick 耗時最大毫秒數。 */
             private var tickMaxMillis = 0.0
 
-            /** 推進的步數。 */
+            /** 有實際間隔的 tick 數。 */
+            private var intervals = 0
+
+            /** 實際 tick 間隔總毫秒數。 */
+            private var intervalTotalMillis = 0.0
+
+            /** 實際 tick 間隔最大毫秒數。 */
+            private var intervalMaxMillis = 0.0
+
+            /** 推進協程在主執行緒上執行的總時間。 */
+            private var advanceTotal = Duration.ZERO
+
+            /** 最後一個 tick 相對目標節奏的落後毫秒數。 */
+            private var lag = 0.0
+
+            /** 完成的步數。 */
             private var steps = 0
 
-            /** 單步總耗時。 */
+            /** 單步主執行緒總耗時。 */
             private var stepTotal = Duration.ZERO
 
             /** 各環節總耗時。 */
             private val stageTotals = StressStepStage.entries.associateWithTo(mutableMapOf()) { Duration.ZERO }
 
+            /** 歷史記錄總耗時。 */
+            private var historyTotal = Duration.ZERO
+
             /** 產生的歷史事件數。 */
             private var eventsProduced = 0
 
+            /** 有結果的 AI 決策數。 */
+            private var decisions = 0
+
+            /** AI 決策延遲總時間。 */
+            private var latencyTotal = Duration.ZERO
+
+            /** AI 決策延遲最大值。 */
+            private var latencyMax = Duration.ZERO
+
+            /** 逾時而使用固定命令的 AI 決策數。 */
+            private var timeouts = 0
+
+            /** 過期而沒有套用的 AI 決策數。 */
+            private var stale = 0
+
+            /** 這段期間同時存在、尚未結束的策略工作數的最大值。 */
+            private var strategyPeak = 0
+
             /** 加入一步。 */
-            fun addStep(total: Duration, stages: Map<StressStepStage, Duration>) {
+            fun addStep(total: Duration, stages: Map<StressStepStage, Duration>, staleDecisions: Int) {
                 steps++
                 stepTotal += total
                 stages.forEach { (stage, duration) -> stageTotals[stage] = stageTotals.getValue(stage) + duration }
+                stale += staleDecisions
+            }
+
+            /** 加入一次有結果的 AI 決策。 */
+            fun addDecision(latency: Duration, outcome: AiDecisionOutcome) {
+                decisions++
+                latencyTotal += latency
+                latencyMax = maxOf(latencyMax, latency)
+                if (outcome == AiDecisionOutcome.TIMED_OUT) timeouts++
             }
 
             /** 加入一個 tick。 */
-            fun addTick(msptMillis: Double, events: Int) {
+            fun addTick(
+                msptMillis: Double,
+                intervalMillis: Double?,
+                events: Int,
+                history: Duration,
+                strategyCallsPeak: Int,
+                advance: Duration,
+                lagMillis: Double,
+            ) {
                 ticks++
                 tickTotalMillis += msptMillis
                 tickMaxMillis = maxOf(tickMaxMillis, msptMillis)
+                intervalMillis?.let { interval ->
+                    intervals++
+                    intervalTotalMillis += interval
+                    intervalMaxMillis = maxOf(intervalMaxMillis, interval)
+                }
+                advanceTotal += advance
+                lag = lagMillis
                 eventsProduced += events
+                historyTotal += history
+                strategyPeak = maxOf(strategyPeak, strategyCallsPeak)
             }
 
             /** 以目前狀態組成一列。 */
@@ -719,9 +1027,20 @@ class StressTestController(
                     ticks = ticks,
                     tickAverageMillis = if (ticks == 0) 0.0 else tickTotalMillis / ticks,
                     tickMaxMillis = tickMaxMillis,
+                    tickIntervalAverageMillis = if (intervals == 0) 0.0 else intervalTotalMillis / intervals,
+                    tickIntervalMaxMillis = intervalMaxMillis,
+                    lagMillis = lag,
+                    advanceMillis = advanceTotal.toDouble(DurationUnit.MILLISECONDS),
                     steps = steps,
                     stepAverageMillis = if (steps == 0) 0.0 else stepTotal.toDouble(DurationUnit.MILLISECONDS) / steps,
                     stageTotalMillis = stageTotals.mapValues { (_, duration) -> duration.toDouble(DurationUnit.MILLISECONDS) },
+                    historyRecordingMillis = historyTotal.toDouble(DurationUnit.MILLISECONDS),
+                    aiDecisions = decisions,
+                    aiLatencyAverageMillis = if (decisions == 0) 0.0 else latencyTotal.toDouble(DurationUnit.MILLISECONDS) / decisions,
+                    aiLatencyMaxMillis = latencyMax.toDouble(DurationUnit.MILLISECONDS),
+                    aiTimeouts = timeouts,
+                    staleDecisions = stale,
+                    strategyCallsPeak = strategyPeak,
                     eventsProduced = eventsProduced,
                     eventsWritten = eventsWritten,
                     pendingEvents = pendingEvents,
@@ -738,10 +1057,25 @@ class StressTestController(
      * 一桌測試對局。
      *
      * @property runtime 對局環境。
+     * @property timer 這一桌的分項計時器。
+     * @property gameId 這一桌的對局；建立時已沒有對局為 null。
      */
-    private class StressTable(val runtime: HeadlessHistoryMatchRuntime) {
+    private class StressTable(
+        val runtime: HeadlessHistoryMatchRuntime,
+        val timer: HeadlessStepTimer,
+        val gameId: Uuid?,
+    ) {
         /** 連續沒有進展的步數。 */
         var stalledSteps = 0
+
+        /** 是否有推進正在進行。 */
+        var stepping = false
+
+        /** 進行中這一步在主執行緒上已執行的時間。 */
+        var stepTime = Duration.ZERO
+
+        /** 進行中這一步是否已結束，等它最後一個片段結束時記錄統計。 */
+        var finished = false
     }
 
     private companion object {
@@ -759,6 +1093,9 @@ class StressTestController(
 
         /** 第 95 百分位。 */
         const val P95 = 0.95
+
+        /** 第 99 百分位。 */
+        const val P99 = 0.99
 
         /** 位元組換算 MiB。 */
         const val BYTES_PER_MIB = 1_048_576L
@@ -785,5 +1122,47 @@ class StressTestController(
             StressStopReason.HISTORY_LOST,
             StressStopReason.HISTORY_WRITER_FAILED,
         )
+    }
+}
+
+/**
+ * 推進協程的計時：協程在主執行緒上執行完一個片段時，以片段的執行時間呼叫 [onSegment]。
+ *
+ * @property onSegment 接收每個片段的執行時間。
+ */
+internal class StepTiming(val onSegment: (Duration) -> Unit) : AbstractCoroutineContextElement(Key) {
+    /** 在協程情境中查詢 [StepTiming] 的 key。 */
+    companion object Key : CoroutineContext.Key<StepTiming>
+}
+
+/**
+ * 計時推進協程每個執行片段的主執行緒調度器：一律經 [delegate] 排程（在主執行緒上時 [delegate] 會立即執行），並量測片段的執行時間交給
+ * 協程情境中的 [StepTiming]，因此等待 AI 結果等掛起期間不計入。另一個協程在片段中同步恢復時，它的時間會同時計入外層片段。
+ *
+ * 沒有實作延遲排程，推進協程中的等待逾時以實際時間計算。
+ *
+ * @property delegate 實際的主執行緒調度器。
+ * @property timeSource 量測片段的時間來源。
+ */
+internal class SegmentTimingDispatcher(
+    private val delegate: CoroutineDispatcher,
+    private val timeSource: TimeSource = TimeSource.Monotonic,
+) : CoroutineDispatcher() {
+    override fun isDispatchNeeded(context: CoroutineContext): Boolean = true
+
+    override fun dispatch(context: CoroutineContext, block: Runnable) {
+        val timing = context[StepTiming]
+        if (timing == null) {
+            delegate.dispatch(context, block)
+            return
+        }
+        delegate.dispatch(context) {
+            val mark = timeSource.markNow()
+            try {
+                block.run()
+            } finally {
+                timing.onSegment(mark.elapsedNow())
+            }
+        }
     }
 }

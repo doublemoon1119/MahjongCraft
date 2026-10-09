@@ -20,17 +20,30 @@ import kotlin.uuid.Uuid
 /**
  * 累計無頭對局推進中各環節的耗時，供壓力測試拆解單步耗時。
  *
- * 量測三個環節：AI 決策（建立 AI 視角快照與策略思考）、快照同步（為每位觀察者裁切可見快照）、歷史記錄（權威交易中
- * 比對桌況並加入待寫佇列）。單步總耗時扣掉這三項，就是規則判斷與狀態提交等其餘流程。
+ * 量測的環節：建立 AI 視角快照（[aiContext]）、策略思考（[aiDecision]，可能在背景執行緒上）、快照同步（為每位觀察者裁切可見快照）、
+ * 歷史記錄（權威交易中比對桌況並加入待寫佇列；作為權威來源的觀察者時才有）。呼叫端另外以 [addAiWait] 記下等待 AI 結果的時間，
+ * 單步總耗時扣掉它就是主執行緒上的耗時。另外計算過期而沒有套用的 AI 決策數（[staleDecisions]）。
  *
  * 另外記下本區間最久的一次 AI 出牌決策，以及正在進行中的 AI 出牌決策，用來找出異常緩慢的決策情境。
  *
- * 呼叫端在每個量測區間開始前 [reset]，結束後讀取各項累計值；同一時間只量測一個區間，只在同一個執行緒上依序使用。
- * 只有 [ongoingAiDecision] 可以從其他執行緒讀取。
+ * 呼叫端在每個量測區間開始前 [reset]，結束後讀取各項累計值；同一時間只量測一個區間，同一個區間內的寫入依序發生（策略思考
+ * 可能在其他執行緒上，但結束後才回到呼叫端）。只有 [ongoingAiDecision] 可以在區間進行中從其他執行緒讀取。
  */
 class HeadlessStepTimer : HistoryRecordingObserver {
-    /** 本區間 AI 決策的累計耗時。 */
+    /** 本區間策略思考的累計耗時。 */
     var aiDecision: Duration = Duration.ZERO
+        private set
+
+    /** 本區間建立 AI 視角快照的累計耗時。 */
+    var aiContext: Duration = Duration.ZERO
+        private set
+
+    /** 本區間等待 AI 決策結果的累計時間，含排隊與回到呼叫端。 */
+    var aiWait: Duration = Duration.ZERO
+        private set
+
+    /** 本區間因權威遊戲已改變而沒有套用的 AI 決策數。 */
+    var staleDecisions: Int = 0
         private set
 
     /** 本區間快照同步的累計耗時。 */
@@ -56,6 +69,9 @@ class HeadlessStepTimer : HistoryRecordingObserver {
     /** 歸零所有累計值，開始新的量測區間。 */
     fun reset() {
         aiDecision = Duration.ZERO
+        aiContext = Duration.ZERO
+        aiWait = Duration.ZERO
+        staleDecisions = 0
         snapshotSync = Duration.ZERO
         historyRecording = Duration.ZERO
         historyEvents = 0
@@ -73,9 +89,28 @@ class HeadlessStepTimer : HistoryRecordingObserver {
         if (duration > (slowestAiDecision?.duration ?: Duration.ZERO)) slowestAiDecision = TimedAiDecision(context, duration)
     }
 
-    /** 累計一次 AI 決策耗時。 */
+    /** 累計一次策略思考耗時。 */
     internal fun addAiDecision(duration: Duration) {
         aiDecision += duration
+    }
+
+    /** 累計一次建立 AI 視角快照的耗時。 */
+    internal fun addAiContext(duration: Duration) {
+        aiContext += duration
+    }
+
+    /**
+     * 累計一次等待 AI 決策結果的時間。
+     *
+     * @param duration 從開始決策到得到結果的時間。
+     */
+    fun addAiWait(duration: Duration) {
+        aiWait += duration
+    }
+
+    /** 記下一次因權威遊戲已改變而沒有套用的 AI 決策。 */
+    internal fun addStaleDecision() {
+        staleDecisions++
     }
 
     /** 累計一次快照同步耗時。 */

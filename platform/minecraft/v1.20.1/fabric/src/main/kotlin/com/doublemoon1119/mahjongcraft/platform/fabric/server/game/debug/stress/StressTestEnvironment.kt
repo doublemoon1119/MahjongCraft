@@ -46,14 +46,14 @@ import kotlin.uuid.Uuid
  *
  * @property store 所有測試對局共用的權威來源。
  * @property historyMode 歷史處理方式。
- * @property stepTimer 累計單步各環節耗時；也是 [store] 的歷史記錄觀察者。
+ * @property historyTimer [store] 的歷史記錄觀察者，累計歷史記錄耗時與新加入待寫佇列的事件數；各桌的其他環節由各桌自己的計時器累計。
  * @property writerTimer 累計歷史背景工作各環節耗時與已處理事件數。
  * @property sink 處理待寫佇列的背景工作。
  */
 class StressTestEnvironment internal constructor(
     val store: AuthoritativeStateStore,
     val historyMode: StressHistoryMode,
-    val stepTimer: HeadlessStepTimer,
+    val historyTimer: HeadlessStepTimer,
     val writerTimer: StressWriterTimer,
     private val sink: StressHistorySink,
 ) {
@@ -167,15 +167,15 @@ class StressTestEnvironmentFactory(
      * @return 環境；資料庫無法開啟時為 null。
      */
     internal suspend fun openAt(path: Path, historyMode: StressHistoryMode): StressTestEnvironment? {
-        val stepTimer = HeadlessStepTimer()
+        val historyTimer = HeadlessStepTimer()
         val writerTimer = StressWriterTimer()
-        val store = AuthoritativeStateStore(historyRecordingEnabled = historyMode != StressHistoryMode.OFF, historyRecordingObserver = stepTimer)
+        val store = AuthoritativeStateStore(historyRecordingEnabled = historyMode != StressHistoryMode.OFF, historyRecordingObserver = historyTimer)
         val sink = when (historyMode) {
             StressHistoryMode.WRITE -> openDatabase(store, writerTimer, path) ?: return null
             StressHistoryMode.ENCODE -> startEncoding(store, writerTimer)
             StressHistoryMode.OFF -> StressHistorySink.Disabled
         }
-        return StressTestEnvironment(store, historyMode, stepTimer, writerTimer, sink)
+        return StressTestEnvironment(store, historyMode, historyTimer, writerTimer, sink)
     }
 
     /** 以正式寫入元件開啟 [path] 的新資料庫；無法開啟時刪除殘檔並回傳 null。 */

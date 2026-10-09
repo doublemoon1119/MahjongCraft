@@ -85,7 +85,7 @@ class StressTestEnvironmentTest {
         val environment = assertNotNull(factory().openAt(databasePath(), StressHistoryMode.OFF))
         try {
             playMatches(environment, count = 1)
-            assertEquals(0, environment.stepTimer.historyEvents)
+            assertEquals(0, environment.historyTimer.historyEvents)
             assertTrue(environment.store.snapshot().historyRecordingState.pendingEvents.isEmpty())
             assertEquals(0, environment.writerTimer.eventsWritten())
             assertNull(environment.historySource)
@@ -149,7 +149,7 @@ class StressTestEnvironmentTest {
                 scenario = HeadlessHistoryScenario.THREE_PLAYER_RIICHI_EAST,
                 registries = bundledHeadlessHistoryRegistries(),
                 store = environment.store,
-                stepTimer = environment.stepTimer,
+                stepTimer = environment.historyTimer,
             )
         }
         while (runtimes.any { it.currentGame() != null }) {

@@ -71,11 +71,22 @@ data class GcTotals(val count: Long, val millis: Long) {
  * @property warmup 是否仍在暖機期間。
  * @property tables 同時進行的桌數。
  * @property ticks 這段期間的 tick 數。
- * @property tickAverageMillis 這段期間每 tick 耗時的平均毫秒數。
- * @property tickMaxMillis 這段期間每 tick 耗時的最大毫秒數。
+ * @property tickAverageMillis 這段期間 tick 本身處理時間的平均毫秒數。
+ * @property tickMaxMillis 這段期間 tick 本身處理時間的最大毫秒數。
+ * @property tickIntervalAverageMillis 這段期間實際 tick 間隔的平均毫秒數。
+ * @property tickIntervalMaxMillis 這段期間實際 tick 間隔的最大毫秒數。
+ * @property lagMillis 這段期間結束時相對每 tick 50 ms 節奏的落後毫秒數。
+ * @property advanceMillis 這段期間 MahjongCraft 推進在主執行緒上執行的總毫秒數。
  * @property steps 這段期間推進的步數。
- * @property stepAverageMillis 這段期間單步耗時的平均毫秒數。
+ * @property stepAverageMillis 這段期間單步 MahjongCraft 推進耗時的平均毫秒數。
  * @property stageTotalMillis 這段期間各環節的總毫秒數。
+ * @property historyRecordingMillis 這段期間歷史記錄的總毫秒數。
+ * @property aiDecisions 這段期間有結果的 AI 決策數。
+ * @property aiLatencyAverageMillis 這段期間 AI 決策延遲的平均毫秒數。
+ * @property aiLatencyMaxMillis 這段期間 AI 決策延遲的最大毫秒數。
+ * @property aiTimeouts 這段期間逾時而使用固定命令的 AI 決策數。
+ * @property staleDecisions 這段期間過期而沒有套用的 AI 決策數。
+ * @property strategyCallsPeak 這段期間同時存在、尚未真正結束的策略工作數的最大值，包含 tick 之間短暫出現的工作。
  * @property eventsProduced 這段期間新加入待寫佇列的歷史事件數。
  * @property eventsWritten 這段期間背景工作處理完的歷史事件數。
  * @property pendingEvents 這段期間結束時待寫佇列的事件數。
@@ -91,9 +102,20 @@ data class StressTimeSeriesRow(
     val ticks: Int,
     val tickAverageMillis: Double,
     val tickMaxMillis: Double,
+    val tickIntervalAverageMillis: Double,
+    val tickIntervalMaxMillis: Double,
+    val lagMillis: Double,
+    val advanceMillis: Double,
     val steps: Int,
     val stepAverageMillis: Double,
     val stageTotalMillis: Map<StressStepStage, Double>,
+    val historyRecordingMillis: Double,
+    val aiDecisions: Int,
+    val aiLatencyAverageMillis: Double,
+    val aiLatencyMaxMillis: Double,
+    val aiTimeouts: Int,
+    val staleDecisions: Int,
+    val strategyCallsPeak: Int,
     val eventsProduced: Int,
     val eventsWritten: Long,
     val pendingEvents: Int,
@@ -152,10 +174,12 @@ class StressTimeSeriesFile private constructor(
     }
 }
 
-/** 時間序列 CSV 的標題列；各環節欄位為這段期間的總毫秒數。 */
+/** 時間序列 CSV 的標題列；各環節與歷史記錄欄位為這段期間的總毫秒數，環節欄位順序與 [StressStepStage] 相同。 */
 internal val STRESS_TIME_SERIES_HEADER: String = listOf(
-    "elapsedSeconds", "warmup", "scenario", "pace", "historyMode", "tables", "ticks", "tickAvgMs", "tickMaxMs", "steps", "stepAvgMs",
-    "aiDecisionMs", "rulesAndStateMs", "snapshotSyncMs", "historyRecordingMs", "eventsProduced", "eventsWritten", "pendingEvents",
+    "elapsedSeconds", "warmup", "scenario", "pace", "historyMode", "tables", "ticks", "tickAvgMs", "tickMaxMs", "tickIntervalAvgMs",
+    "tickIntervalMaxMs", "lagMs", "advanceMs", "steps", "stepAvgMs",
+    "aiContextMs", "rulesAndStateMs", "snapshotSyncMs", "aiDecisionMs", "historyRecordingMs", "aiDecisions", "aiLatencyAvgMs",
+    "aiLatencyMaxMs", "aiTimeouts", "staleDecisions", "strategyCallsPeak", "eventsProduced", "eventsWritten", "pendingEvents",
     "lostSegments", "completedMatches", "usedMemoryMiB", "gcCount", "gcMs",
 ).joinToString(",")
 
@@ -176,9 +200,20 @@ internal fun stressTimeSeriesCsvLine(
         ticks.toString(),
         formatDecimal(tickAverageMillis),
         formatDecimal(tickMaxMillis),
+        formatDecimal(tickIntervalAverageMillis),
+        formatDecimal(tickIntervalMaxMillis),
+        formatDecimal(lagMillis),
+        formatDecimal(advanceMillis),
         steps.toString(),
         formatDecimal(stepAverageMillis),
         *StressStepStage.entries.map { formatDecimal(stageTotalMillis[it] ?: 0.0) }.toTypedArray(),
+        formatDecimal(historyRecordingMillis),
+        aiDecisions.toString(),
+        formatDecimal(aiLatencyAverageMillis),
+        formatDecimal(aiLatencyMaxMillis),
+        aiTimeouts.toString(),
+        staleDecisions.toString(),
+        strategyCallsPeak.toString(),
         eventsProduced.toString(),
         eventsWritten.toString(),
         pendingEvents.toString(),

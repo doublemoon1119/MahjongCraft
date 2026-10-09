@@ -13,6 +13,7 @@ import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
+import kotlin.time.TimeSource
 import kotlin.uuid.Uuid
 
 /** 接收 AI 決策沒有等到策略結果的情況，供平台記錄。 */
@@ -46,6 +47,30 @@ interface AiDecisionReporter {
     }
 }
 
+/** 一次有結果的 AI 決策是怎麼得到結果的。 */
+enum class AiDecisionOutcome {
+    /** 策略在等待上限內給出結果。 */
+    DECIDED,
+
+    /** 等待超過上限，使用固定結果。 */
+    TIMED_OUT,
+
+    /** 這一局先前逾時的策略呼叫尚未結束，直接使用固定結果。 */
+    PREVIOUS_STILL_RUNNING,
+}
+
+/** 接收每次有結果的 AI 決策，供量測使用。 */
+fun interface AiDecisionObserver {
+    /**
+     * 一次決策有了結果。在呼叫端的執行緒上呼叫；這一局已有策略呼叫正在計算而沒有決策時不呼叫。
+     *
+     * @param gameId 對局。
+     * @param outcome 結果是怎麼得到的。
+     * @param latency 從開始決策到得到結果的時間，含等待名額、排隊與回到呼叫端。
+     */
+    fun onDecision(gameId: Uuid, outcome: AiDecisionOutcome, latency: Duration)
+}
+
 /**
  * 在 AI 專用的調度器上呼叫策略，並限制等待時間與同時存在的策略工作。
  *
@@ -65,6 +90,8 @@ interface AiDecisionReporter {
  * @property capacity 同時存在、尚未結束的策略工作上限。
  * @property timeout 等待一次決策結果的上限。
  * @property reporter 接收逾時與舊呼叫仍未結束的情況。
+ * @property observer 接收每次有結果的決策；不需要量測時為 null。
+ * @property timeSource 量測決策延遲的時間來源。
  */
 @OptIn(ExperimentalAtomicApi::class)
 class AiDecisionExecutor(
@@ -72,6 +99,8 @@ class AiDecisionExecutor(
     private val capacity: Int,
     private val timeout: Duration = DEFAULT_TIMEOUT,
     private val reporter: AiDecisionReporter = AiDecisionReporter.NONE,
+    private val observer: AiDecisionObserver? = null,
+    private val timeSource: TimeSource = TimeSource.Monotonic,
 ) {
     init {
         require(capacity > 0) { "AI decision capacity must be positive" }
@@ -83,6 +112,23 @@ class AiDecisionExecutor(
 
     /** 執行策略工作的作用域；不隨任何呼叫端取消，工作失敗也不影響其他工作。 */
     private val workerScope = CoroutineScope(SupervisorJob() + dispatcher)
+
+    /** 尚未真正結束的策略工作數與它自上次讀取峰值以來的最大值；兩者一起以原子操作更新。 */
+    private val strategyCalls = AtomicReference(StrategyCallCounts(unfinished = 0, peak = 0))
+
+    /** 目前尚未真正結束的策略工作數，包含逾時後仍在執行的工作。 */
+    val unfinishedStrategyCalls: Int get() = strategyCalls.load().unfinished
+
+    /**
+     * 回傳自上次呼叫以來（第一次呼叫時為建立以來）同時存在、尚未真正結束的策略工作數的最大值，並在同一個原子操作中把起算點
+     * 重設為目前的數量，兩次呼叫之間開始又結束的工作也會計入。供量測使用。
+     */
+    fun takeUnfinishedStrategyPeak(): Int {
+        while (true) {
+            val current = strategyCalls.load()
+            if (strategyCalls.compareAndSet(current, current.copy(peak = current.unfinished))) return current.peak
+        }
+    }
 
     /** 每局目前的策略呼叫；呼叫結束時由完成回呼移除。 */
     private val calls = AtomicReference<Map<Uuid, StrategyCall>>(emptyMap())
@@ -105,13 +151,14 @@ class AiDecisionExecutor(
         decide: suspend () -> T,
         fallback: () -> T,
     ): T? {
+        val start = timeSource.markNow()
         val call = StrategyCall()
         when (val claim = claim(gameId, call)) {
             Claim.Granted -> Unit
             Claim.Busy -> return null
             is Claim.Abandoned -> {
                 if (claim.firstReport) reporter.onPreviousStillRunning(gameId, playerId, strategyKey)
-                return fallback()
+                return fallback().also { observer?.onDecision(gameId, AiDecisionOutcome.PREVIOUS_STILL_RUNNING, start.elapsedNow()) }
             }
         }
         var started: Deferred<T>? = null
@@ -119,8 +166,10 @@ class AiDecisionExecutor(
             withTimeoutOrNull(timeout) {
                 permits.acquire()
                 // 取得名額到建立工作之間沒有掛起點，名額不會在登記完成回呼前遺失。
+                countStrategyCall(+1)
                 val work = workerScope.async { decide() }
                 work.invokeOnCompletion {
+                    countStrategyCall(-1)
                     permits.release()
                     finish(gameId, call)
                 }
@@ -131,10 +180,10 @@ class AiDecisionExecutor(
             abandon(gameId, call, started)
             throw cancellation
         }
-        if (value != null) return value
+        if (value != null) return value.also { observer?.onDecision(gameId, AiDecisionOutcome.DECIDED, start.elapsedNow()) }
         abandon(gameId, call, started)
         reporter.onTimedOut(gameId, playerId, strategyKey)
-        return fallback()
+        return fallback().also { observer?.onDecision(gameId, AiDecisionOutcome.TIMED_OUT, start.elapsedNow()) }
     }
 
     /** 嘗試讓 [call] 成為 [gameId] 目前的策略呼叫。 */
@@ -160,6 +209,15 @@ class AiDecisionExecutor(
         }
         work.cancel()
         update(gameId, call) { it.copy(abandoned = true) }
+    }
+
+    /** 尚未真正結束的策略工作數增減 [delta]，增加時一併更新峰值。 */
+    private fun countStrategyCall(delta: Int) {
+        while (true) {
+            val current = strategyCalls.load()
+            val unfinished = current.unfinished + delta
+            if (strategyCalls.compareAndSet(current, StrategyCallCounts(unfinished, maxOf(current.peak, unfinished)))) return
+        }
     }
 
     /** 清除 [call] 的記錄；記錄已不是 [call] 時不做事。 */
@@ -190,6 +248,14 @@ class AiDecisionExecutor(
         val reported: Boolean = false,
     )
 
+    /**
+     * 尚未真正結束的策略工作數。
+     *
+     * @property unfinished 目前的數量。
+     * @property peak 自上次讀取峰值以來的最大值。
+     */
+    private data class StrategyCallCounts(val unfinished: Int, val peak: Int)
+
     /** 嘗試成為一局目前策略呼叫的結果。 */
     private sealed interface Claim {
         /** 可以呼叫策略。 */
@@ -210,6 +276,9 @@ class AiDecisionExecutor(
     companion object {
         /** 預設的等待上限。 */
         val DEFAULT_TIMEOUT: Duration = 5.seconds
+
+        /** 每條 AI 執行緒可同時存在的策略工作數；多出的工作在調度器中排隊，讓執行緒保持忙碌。 */
+        const val CAPACITY_PER_THREAD: Int = 2
 
         /**
          * 在呼叫端的執行緒上直接執行策略的執行器：策略沒有掛起時，計算在呼叫內同步完成。供不需要背景計算的執行環境

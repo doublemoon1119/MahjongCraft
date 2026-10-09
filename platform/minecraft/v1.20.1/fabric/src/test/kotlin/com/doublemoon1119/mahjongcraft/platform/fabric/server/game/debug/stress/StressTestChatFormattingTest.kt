@@ -20,9 +20,10 @@ class StressTestChatFormattingTest {
         assertEquals(
             "reason=HISTORY_BACKLOG, scenario=mahjongcraft:riichi_east, mode=ramp, pace=fast, historyMode=encode, warmupSeconds=60, elapsedSeconds=120, " +
                 "measuredSeconds=60.0, tables=8, completed=8, stalled=0, tickMs(avg/p95/max)=56.2/117.2/181.0, " +
-                "slowTicks(>50ms/>100ms/>250ms)=25.0%/5.0%/0.0%, stutter(limitMs/tables)=100.0/24, stepMs(avg/p95/max)=7.2/29.3/127.1, " +
-                "stepStageMs(avg/max)=ai_decision:4.0/90.0,rules_and_state:2.0/20.0,snapshot_sync:1.0/10.0,history_recording:0.5/7.0, " +
-                "peakPerTick(steps/events)=8/30, events(produced/written)=600/540, eventsPerSecond(produced/written)=10.0/9.0, " +
+                "tickIntervalMs(avg/p95/max)=58.0/120.0/190.0, lagMs=1600.0, advanceMsPerSecond=320.5, slowTicks(>50ms/>100ms/>250ms)=25.0%/5.0%/0.0%, stutter(limitMs/tables)=100.0/24, stepMs(avg/p95/max)=7.2/29.3/127.1, " +
+                "stepStageMs(avg/max)=ai_context:0.5/7.0,rules_and_state:2.0/20.0,snapshot_sync:1.0/10.0,ai_decision:4.0/90.0, " +
+                "historyRecordingMsPerTick(avg/max)=0.8/6.0, aiLatencyMs(avg/p95/p99/max)=4.6/12.4/40.1/95.0, aiDecisions(total/timedOut/previousStillRunning)=500/1/2, " +
+                "staleDecisions=3, strategyCalls(now/peak/capacity)=2/14/30, peakPerTick(steps/events)=8/30, events(produced/written)=600/540, eventsPerSecond(produced/written)=10.0/9.0, " +
                 "writerStageMs(avg/max/count)=encode:1.5/4.0/9, pending(now/peak/capacity)=206/206/256, lostSegments=0, writerFailed=false, " +
                 "memoryMiB=1024, gc(count/ms)=12/85, timeSeries=stress-test-20261008-120000-encode.csv, sustainedTables=4",
             stressTestReportLogLine(sampleReport()),
@@ -84,15 +85,32 @@ class StressTestChatFormattingTest {
         tickAverageMillis = 56.156,
         tickP95Millis = 117.154,
         tickMaxMillis = 180.974,
+        tickIntervalAverageMillis = 58.0,
+        tickIntervalP95Millis = 120.0,
+        tickIntervalMaxMillis = 190.0,
+        lagMillis = 1_600.0,
+        advanceMillisPerSecond = 320.5,
         stepAverageMillis = 7.24,
         stepP95Millis = 29.31,
         stepMaxMillis = 127.08,
         stepStages = mapOf(
-            StressStepStage.AI_DECISION to TimingSummary(count = 100, averageMillis = 4.0, maxMillis = 90.0, totalMillis = 400.0),
+            StressStepStage.AI_CONTEXT to TimingSummary(count = 100, averageMillis = 0.5, maxMillis = 7.0, totalMillis = 50.0),
             StressStepStage.RULES_AND_STATE to TimingSummary(count = 100, averageMillis = 2.0, maxMillis = 20.0, totalMillis = 200.0),
             StressStepStage.SNAPSHOT_SYNC to TimingSummary(count = 100, averageMillis = 1.0, maxMillis = 10.0, totalMillis = 100.0),
-            StressStepStage.HISTORY_RECORDING to TimingSummary(count = 100, averageMillis = 0.5, maxMillis = 7.0, totalMillis = 50.0),
+            StressStepStage.AI_DECISION to TimingSummary(count = 100, averageMillis = 4.0, maxMillis = 90.0, totalMillis = 400.0),
         ),
+        historyRecording = TimingSummary(count = 1_200, averageMillis = 0.8, maxMillis = 6.0, totalMillis = 960.0),
+        aiDecisions = 500,
+        aiTimeouts = 1,
+        aiPreviousStillRunning = 2,
+        aiLatencyAverageMillis = 4.62,
+        aiLatencyP95Millis = 12.38,
+        aiLatencyP99Millis = 40.12,
+        aiLatencyMaxMillis = 95.0,
+        staleDecisions = 3,
+        unfinishedStrategyCalls = 2,
+        unfinishedStrategyPeak = 14,
+        strategyCapacity = 30,
         writerStages = mapOf(HistoryWriterStage.ENCODE to TimingSummary(count = 9, averageMillis = 1.5, maxMillis = 4.0, totalMillis = 13.5)),
         eventsProduced = 600,
         eventsWritten = 540,

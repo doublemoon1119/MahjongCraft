@@ -25,6 +25,9 @@ internal fun stressTestReportMessage(report: StressTestReport): MutableText = pr
         .append(entry(StressDebugKeys.ELAPSED, Text.literal(formatSeconds(report.elapsedTicks)), Formatting.GRAY))
         .append(entry(StressDebugKeys.WARMUP, warmupText(report), Formatting.GRAY))
         .append(entry(StressDebugKeys.TICK, Text.literal(formatTriple(report.tickAverageMillis, report.tickP95Millis, report.tickMaxMillis)), Formatting.AQUA))
+        .append(entry(StressDebugKeys.TICK_INTERVAL, Text.literal(formatTriple(report.tickIntervalAverageMillis, report.tickIntervalP95Millis, report.tickIntervalMaxMillis)), Formatting.AQUA))
+        .append(entry(StressDebugKeys.LAG, Text.literal("${formatMillis(report.lagMillis)} ms"), Formatting.AQUA))
+        .append(entry(StressDebugKeys.ADVANCE_PER_SECOND, Text.literal("${formatMillis(report.advanceMillisPerSecond)} ms"), Formatting.AQUA))
         .append(entry(StressDebugKeys.SLOW_TICKS, Text.literal(formatSlowTicks(report)), Formatting.AQUA))
         .append(stutterEntry(report))
         .append(entry(StressDebugKeys.STEP, Text.literal(formatTriple(report.stepAverageMillis, report.stepP95Millis, report.stepMaxMillis)), Formatting.AQUA))
@@ -32,6 +35,23 @@ internal fun stressTestReportMessage(report: StressTestReport): MutableText = pr
     report.stepStages.forEach { (stage, summary) ->
         message.append(subEntry(stressText(StressDebugKeys.STEP_STAGE_PREFIX + stage.name.lowercase(Locale.ROOT)), formatAverageMax(summary)))
     }
+    message.append(entry(StressDebugKeys.HISTORY_RECORDING, Text.literal(formatAverageMax(report.historyRecording)), Formatting.AQUA))
+        .append(entry(StressDebugKeys.AI_LATENCY, Text.literal(formatMillisList(report.aiLatencyAverageMillis, report.aiLatencyP95Millis, report.aiLatencyP99Millis, report.aiLatencyMaxMillis)), Formatting.AQUA))
+        .append(
+            entry(
+                StressDebugKeys.AI_DECISIONS,
+                Text.literal("${report.aiDecisions} / ${report.aiTimeouts} / ${report.aiPreviousStillRunning}"),
+                if (report.aiTimeouts + report.aiPreviousStillRunning > 0) Formatting.RED else Formatting.AQUA,
+            ),
+        )
+        .append(entry(StressDebugKeys.STALE_DECISIONS, Text.literal(report.staleDecisions.toString()), Formatting.AQUA))
+        .append(
+            entry(
+                StressDebugKeys.STRATEGY_CALLS,
+                Text.literal("${report.unfinishedStrategyCalls} / ${report.unfinishedStrategyPeak} / ${report.strategyCapacity}"),
+                Formatting.AQUA,
+            ),
+        )
     message.append(entry(StressDebugKeys.PEAK_PER_TICK, Text.literal("${report.maxStepsInTick} / ${report.maxEventsInTick}"), Formatting.AQUA))
         .append(entry(StressDebugKeys.EVENTS, Text.literal(formatEvents(report)), Formatting.AQUA))
         .append(entry(StressDebugKeys.WRITER_BREAKDOWN, Text.empty(), Formatting.AQUA))
@@ -78,12 +98,21 @@ internal fun stressTestReportLogLine(report: StressTestReport): String = with(re
         append(", completed=").append(completedMatches)
         append(", stalled=").append(failedMatches)
         append(", tickMs(avg/p95/max)=").append(listOf(tickAverageMillis, tickP95Millis, tickMaxMillis).joinToString("/", transform = ::formatMillis))
+        append(", tickIntervalMs(avg/p95/max)=").append(listOf(tickIntervalAverageMillis, tickIntervalP95Millis, tickIntervalMaxMillis).joinToString("/", transform = ::formatMillis))
+        append(", lagMs=").append(formatMillis(lagMillis))
+        append(", advanceMsPerSecond=").append(formatMillis(advanceMillisPerSecond))
         append(", slowTicks(").append(slowTicks.keys.joinToString("/") { ">${it}ms" }).append(")=").append(formatSlowTicks(report).replace(" ", ""))
         append(", stutter(limitMs/tables)=").append(formatMillis(stutterLimitMillis)).append('/').append(stutterTables)
         append(", stepMs(avg/p95/max)=").append(listOf(stepAverageMillis, stepP95Millis, stepMaxMillis).joinToString("/", transform = ::formatMillis))
         append(", stepStageMs(avg/max)=").append(
             stepStages.entries.joinToString(",") { (stage, summary) -> "${stage.name.lowercase(Locale.ROOT)}:${formatMillis(summary.averageMillis)}/${formatMillis(summary.maxMillis)}" },
         )
+        append(", historyRecordingMsPerTick(avg/max)=").append("${formatMillis(historyRecording.averageMillis)}/${formatMillis(historyRecording.maxMillis)}")
+        append(", aiLatencyMs(avg/p95/p99/max)=")
+        append(listOf(aiLatencyAverageMillis, aiLatencyP95Millis, aiLatencyP99Millis, aiLatencyMaxMillis).joinToString("/", transform = ::formatMillis))
+        append(", aiDecisions(total/timedOut/previousStillRunning)=").append("$aiDecisions/$aiTimeouts/$aiPreviousStillRunning")
+        append(", staleDecisions=").append(staleDecisions)
+        append(", strategyCalls(now/peak/capacity)=").append("$unfinishedStrategyCalls/$unfinishedStrategyPeak/$strategyCapacity")
         append(", peakPerTick(steps/events)=").append("$maxStepsInTick/$maxEventsInTick")
         append(", events(produced/written)=").append("$eventsProduced/$eventsWritten")
         append(", eventsPerSecond(produced/written)=").append("${formatMillis(perSecond(eventsProduced, measuredSeconds))}/${formatMillis(perSecond(eventsWritten, measuredSeconds))}")
@@ -151,7 +180,7 @@ private fun modeText(mode: StressTestMode): Text = when (mode) {
 /** 開始持續卡頓時的桌數；欄位名稱帶有卡頓的毫秒門檻。 */
 private fun stutterEntry(report: StressTestReport): MutableText = Text.literal("\n  • ")
     .formatted(Formatting.GRAY)
-    .append(Text.translatableWithFallback(StressDebugKeys.STUTTER, "Tables when stutter began (ticks over %s ms)", formatMillis(report.stutterLimitMillis)).formatted(Formatting.GRAY))
+    .append(Text.translatableWithFallback(StressDebugKeys.STUTTER, STRESS_FALLBACKS.getValue(StressDebugKeys.STUTTER), formatMillis(report.stutterLimitMillis)).formatted(Formatting.GRAY))
     .append(Text.literal(": ").formatted(Formatting.DARK_GRAY))
     .append(
         report.stutterTables?.let { Text.literal(it.toString()).formatted(Formatting.GOLD) }
@@ -224,6 +253,9 @@ private fun stressText(key: String): MutableText = Text.translatableWithFallback
 /** 以平均／第 95 百分位／最大值格式化毫秒數。 */
 private fun formatTriple(average: Double, p95: Double, max: Double): String = "${formatMillis(average)} / ${formatMillis(p95)} / ${formatMillis(max)} ms"
 
+/** 以「／」串接多個毫秒數。 */
+private fun formatMillisList(vararg values: Double): String = values.joinToString(" / ", postfix = " ms", transform = ::formatMillis)
+
 /** 以平均／最大值格式化毫秒數。 */
 private fun formatAverageMax(summary: TimingSummary): String = "${formatMillis(summary.averageMillis)} / ${formatMillis(summary.maxMillis)} ms"
 
@@ -284,15 +316,24 @@ private val STRESS_FALLBACKS: Map<String, String> = mapOf(
     StressDebugKeys.ELAPSED to "Elapsed",
     StressDebugKeys.WARMUP to "Warm-up",
     StressDebugKeys.WARMUP_NONE to "None",
-    StressDebugKeys.TICK to "Tick time (avg / p95 / max)",
+    StressDebugKeys.TICK to "Tick processing time (avg / p95 / max)",
+    StressDebugKeys.TICK_INTERVAL to "Actual tick interval (avg / p95 / max)",
+    StressDebugKeys.LAG to "Lag behind 50 ms per tick",
+    StressDebugKeys.ADVANCE_PER_SECOND to "MahjongCraft advance time per second",
+    StressDebugKeys.STUTTER to "Tables when stutter began (tick intervals over %s ms)",
     StressDebugKeys.SLOW_TICKS to "Ticks over 50 / 100 / 250 ms",
-    StressDebugKeys.STEP to "Step time (avg / p95 / max)",
+    StressDebugKeys.STEP to "MahjongCraft advance time per step (avg / p95 / max)",
     StressDebugKeys.STEP_BREAKDOWN to "Step breakdown (avg / max)",
-    StressDebugKeys.STEP_STAGE_PREFIX + "ai_decision" to "AI decision",
+    StressDebugKeys.STEP_STAGE_PREFIX + "ai_context" to "AI view",
     StressDebugKeys.STEP_STAGE_PREFIX + "rules_and_state" to "Rules and state",
     StressDebugKeys.STEP_STAGE_PREFIX + "snapshot_sync" to "Snapshot sync",
-    StressDebugKeys.STEP_STAGE_PREFIX + "history_recording" to "History recording",
-    StressDebugKeys.PEAK_PER_TICK to "Most in one tick (steps / history events)",
+    StressDebugKeys.STEP_STAGE_PREFIX + "ai_decision" to "AI thinking (background)",
+    StressDebugKeys.HISTORY_RECORDING to "History recording per tick (avg / max)",
+    StressDebugKeys.AI_LATENCY to "AI decision delay incl. queueing (avg / p95 / p99 / max)",
+    StressDebugKeys.AI_DECISIONS to "AI decisions (total / timed out / previous still running)",
+    StressDebugKeys.STALE_DECISIONS to "AI decisions redone after the game changed",
+    StressDebugKeys.STRATEGY_CALLS to "Unfinished strategy calls (now / peak / limit)",
+    StressDebugKeys.PEAK_PER_TICK to "Most in one tick (finished steps / history events)",
     StressDebugKeys.EVENTS to "History events produced / processed (per second)",
     StressDebugKeys.WRITER_BREAKDOWN to "History background work (avg / max × count)",
     StressDebugKeys.WRITER_STAGE_PREFIX + "disk_usage" to "Disk usage check",

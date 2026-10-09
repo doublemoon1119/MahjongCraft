@@ -82,12 +82,12 @@ class FlowServerModule {
 
     /**
      * 建立整個程式共用的 AI 決策執行器：在 [CoroutineDispatchers.aiDecision] 上呼叫策略，同時存在的策略工作上限為 AI 執行緒數的
-     * [AI_DECISION_CAPACITY_PER_THREAD] 倍。
+     * [AiDecisionExecutor.CAPACITY_PER_THREAD] 倍。
      */
     @Single
     fun aiDecisionExecutor(dispatchers: CoroutineDispatchers, @Provided reporter: AiDecisionReporter): AiDecisionExecutor = AiDecisionExecutor(
         dispatcher = dispatchers.aiDecision,
-        capacity = dispatchers.aiDecisionParallelism * AI_DECISION_CAPACITY_PER_THREAD,
+        capacity = dispatchers.aiDecisionParallelism * AiDecisionExecutor.CAPACITY_PER_THREAD,
         reporter = reporter,
     )
 
@@ -100,9 +100,4 @@ class FlowServerModule {
         @Provided followUp: AutomatedAdvanceFollowUp,
         @Provided failureReporter: AutomatedAdvanceFailureReporter,
     ): AutomatedAdvanceManager = AutomatedAdvanceManager.forCoordinator(appScope, dispatchers.main, coordinator, followUp, failureReporter)
-
-    private companion object {
-        /** 每條 AI 執行緒可同時存在的策略工作數；多出的工作在調度器中排隊，讓執行緒保持忙碌。 */
-        const val AI_DECISION_CAPACITY_PER_THREAD = 2
-    }
 }

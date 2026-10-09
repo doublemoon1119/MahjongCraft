@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.stress
 
+import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -30,22 +31,50 @@ class StressTestModelsTest {
         assertEquals(12, plan.sustainedTablesAt(1_900))
     }
 
-    /** 最近一段時間的平均耗時超過門檻才停止；推進集中在少數 tick 時，只看平均而不要求連續變慢。 */
+    /** 間隔在目標節奏上下正常抖動時不會停止，落後量也不會無限累積。 */
     @Test
-    fun `falling behind is judged by the recent average`() {
-        val valve = StressSafetyValve(StressSafetyThresholds(windowTicks = 4, stutterTicks = 1, fallingBehindAverageMillis = 50.0))
+    fun `normal interval jitter does not stop the test`() {
+        val valve = StressSafetyValve(StressSafetyThresholds())
+        val random = Random(SEED)
 
-        assertNull(valve.recordTick(300.0, countStutter = true), "A window that is not yet full must not stop the test.")
-        assertNull(valve.recordTick(1.0, countStutter = true))
-        assertNull(valve.recordTick(1.0, countStutter = true))
-        assertEquals(StressStopReason.FALLING_BEHIND, valve.recordTick(1.0, countStutter = true))
-        assertNull(valve.recordTick(1.0, countStutter = true), "The heavy tick has left the window.")
+        repeat(20_000) {
+            assertNull(valve.recordTick(45.0 + random.nextDouble() * 10.0, countStutter = true))
+        }
     }
 
-    /** 嚴重過載時不等視窗填滿：累計落後超過上限就停止，搶在 watchdog 強制關閉伺服器之前。 */
+    /** 連續兩個不重疊視窗的平均間隔都超過門檻才停止；只有一個視窗變慢不停止。 */
     @Test
-    fun `severe lag stops before the window fills`() {
-        val valve = StressSafetyValve(StressSafetyThresholds(windowTicks = 200, fallingBehindAverageMillis = 50.0, maxLagMillis = 1_000.0))
+    fun `sustained slow windows stop the test`() {
+        val thresholds = StressSafetyThresholds(windowTicks = 4, stutterTicks = 1, fallingBehindAverageMillis = 55.0, maxLagMillis = 1_000_000.0)
+        val valve = StressSafetyValve(thresholds)
+
+        repeat(4) { assertNull(valve.recordTick(60.0, countStutter = true)) }
+        repeat(4) { assertNull(valve.recordTick(50.0, countStutter = true)) }
+        repeat(4) { assertNull(valve.recordTick(60.0, countStutter = true)) }
+        repeat(3) { assertNull(valve.recordTick(60.0, countStutter = true)) }
+        assertEquals(StressStopReason.FALLING_BEHIND, valve.recordTick(60.0, countStutter = true))
+    }
+
+    /** 落後量在伺服器追上時下降，不會降到負值；進入新的爬坡階段時重設。 */
+    @Test
+    fun `lag recovers when the server catches up`() {
+        val valve = StressSafetyValve(StressSafetyThresholds(maxLagMillis = 1_000_000.0))
+
+        repeat(10) { valve.recordTick(150.0, countStutter = false) }
+        assertEquals(1_000.0, valve.lagMillis, 1e-9)
+        repeat(10) { valve.recordTick(10.0, countStutter = false) }
+        assertEquals(600.0, valve.lagMillis, 1e-9)
+        repeat(100) { valve.recordTick(10.0, countStutter = false) }
+        assertEquals(0.0, valve.lagMillis, 1e-9)
+        valve.recordTick(250.0, countStutter = false)
+        valve.resetLag()
+        assertEquals(0.0, valve.lagMillis, 1e-9)
+    }
+
+    /** 落後超過上限時不等視窗判定就緊急停止，搶在 watchdog 強制關閉伺服器之前。 */
+    @Test
+    fun `severe lag stops before the windows are judged`() {
+        val valve = StressSafetyValve(StressSafetyThresholds(windowTicks = 200, maxLagMillis = 1_000.0))
 
         assertNull(valve.recordTick(550.0, countStutter = false))
         assertEquals(StressStopReason.FALLING_BEHIND, valve.recordTick(560.0, countStutter = false), "1010 ms of lag exceeds the 1000 ms cap.")
@@ -62,18 +91,18 @@ class StressTestModelsTest {
         assertTrue(valve.stuttering)
     }
 
-    /** 最近一段時間內卡頓次數達門檻才算持續卡頓；偶發的單次尖峰不算，舊的卡頓離開視窗後解除。 */
+    /** 間隔尖峰在最近一段時間內達門檻次數才算持續卡頓；偶發的單次尖峰不算，舊的卡頓離開視窗後解除。 */
     @Test
-    fun `stutter needs repeated spikes within the window`() {
-        val valve = StressSafetyValve(StressSafetyThresholds(stutterLimitMillis = 100.0, windowTicks = 4, stutterTicks = 2))
+    fun `stutter needs repeated interval spikes within the window`() {
+        val valve = StressSafetyValve(StressSafetyThresholds(stutterLimitMillis = 100.0, windowTicks = 4, stutterTicks = 2, maxLagMillis = 1_000_000.0))
 
         valve.recordTick(150.0, countStutter = true)
         assertFalse(valve.stuttering)
-        valve.recordTick(10.0, countStutter = true)
+        valve.recordTick(50.0, countStutter = true)
         valve.recordTick(150.0, countStutter = true)
         assertTrue(valve.stuttering)
-        valve.recordTick(10.0, countStutter = true)
-        valve.recordTick(10.0, countStutter = true)
+        valve.recordTick(50.0, countStutter = true)
+        valve.recordTick(50.0, countStutter = true)
         assertFalse(valve.stuttering)
     }
 
@@ -124,5 +153,38 @@ class StressTestModelsTest {
         assertEquals(0.0, samples.average())
         assertEquals(0.0, samples.max())
         assertEquals(0.0, samples.percentile(0.95))
+    }
+
+    /** 直方圖統計全部數值，分位數以落點那一格的上緣回報，不超過實際最大值。 */
+    @Test
+    fun `histogram reports percentiles of every value`() {
+        val histogram = MillisHistogram(resolutionMillis = 1.0, limitMillis = 100.0)
+        (1..100).forEach { histogram.add(it - 0.5) }
+
+        assertEquals(100L, histogram.count)
+        assertEquals(50.0, histogram.average(), 1e-9)
+        assertEquals(99.5, histogram.max())
+        assertEquals(95.0, histogram.percentile(0.95))
+        assertEquals(99.0, histogram.percentile(0.99))
+        assertEquals(99.5, histogram.percentile(1.0))
+    }
+
+    /** 超過上限的數值歸入最後一格，分位數落在那裡時回報實際最大值。 */
+    @Test
+    fun `histogram reports the real maximum for values beyond the limit`() {
+        val histogram = MillisHistogram(resolutionMillis = 1.0, limitMillis = 10.0)
+        repeat(98) { histogram.add(2.2) }
+        histogram.add(400.0)
+        histogram.add(7_000.0)
+
+        assertEquals(3.0, histogram.percentile(0.95))
+        assertEquals(400.0 + 7_000.0 + 98 * 2.2, histogram.average() * 100, 1e-6)
+        assertEquals(7_000.0, histogram.percentile(0.99))
+        assertEquals(0.0, MillisHistogram().percentile(0.99))
+    }
+
+    private companion object {
+        /** 隨機間隔的固定種子。 */
+        const val SEED = 20_261_009
     }
 }

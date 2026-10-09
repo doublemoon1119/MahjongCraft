@@ -122,6 +122,15 @@ object StressDebugKeys {
     /** 尚未發生持續卡頓。 */
     const val STUTTER_NONE: String = PREFIX + "report.stutter.none"
 
+    /** 實際 tick 間隔欄位。 */
+    const val TICK_INTERVAL: String = PREFIX + "report.tick_interval"
+
+    /** 相對每 tick 50 ms 節奏的落後量欄位。 */
+    const val LAG: String = PREFIX + "report.lag"
+
+    /** 每秒 MahjongCraft 推進耗時欄位。 */
+    const val ADVANCE_PER_SECOND: String = PREFIX + "report.advance_per_second"
+
     /** 單步耗時欄位。 */
     const val STEP: String = PREFIX + "report.step"
 
@@ -130,6 +139,21 @@ object StressDebugKeys {
 
     /** 單步環節翻譯鍵前綴，後接環節名稱的小寫。 */
     const val STEP_STAGE_PREFIX: String = PREFIX + "report.step_stage."
+
+    /** 每 tick 歷史記錄耗時欄位。 */
+    const val HISTORY_RECORDING: String = PREFIX + "report.history_recording"
+
+    /** AI 決策延遲欄位。 */
+    const val AI_LATENCY: String = PREFIX + "report.ai_latency"
+
+    /** AI 決策數與使用固定命令的次數欄位。 */
+    const val AI_DECISIONS: String = PREFIX + "report.ai_decisions"
+
+    /** 過期而沒有套用的 AI 決策數欄位。 */
+    const val STALE_DECISIONS: String = PREFIX + "report.stale_decisions"
+
+    /** 尚未結束的策略工作數欄位。 */
+    const val STRATEGY_CALLS: String = PREFIX + "report.strategy_calls"
 
     /** 單一 tick 內最多步數與歷史事件數欄位。 */
     const val PEAK_PER_TICK: String = PREFIX + "report.peak_per_tick"

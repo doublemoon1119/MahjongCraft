@@ -91,24 +91,28 @@ data class StressRampPlan(
 }
 
 /**
- * 安全閥的門檻。
+ * 安全閥的門檻；這是壓力測試自己的停止政策。
  *
- * 推進對局集中在少數 tick（正式伺服器也是每 20 tick 一次推進所有對局），因此以最近一段時間的整體表現判斷，
- * 而不是要求連續多個 tick 都很慢。
+ * 所有判斷都看實際 tick 間隔（相鄰兩個 tick 開始的時間差），而不是 tick 本身的處理時間：AI 結果回到伺服器主執行緒後的工作
+ * 在 tick 之間執行，只看 tick 本身會漏掉這些負擔。
  *
- * @property stutterLimitMillis 單一 tick 耗時超過這個毫秒數就算一次卡頓。
- * @property windowTicks 判斷落後與卡頓所看的最近 tick 數。
+ * @property stutterLimitMillis 單一 tick 間隔超過這個毫秒數就算一次卡頓。
+ * @property windowTicks 判斷落後與卡頓所看的 tick 數。
  * @property stutterTicks 最近 [windowTicks] 個 tick 中至少有這麼多次卡頓，才判定為持續卡頓；偶發的單次尖峰不算。
- * @property fallingBehindAverageMillis 最近 [windowTicks] 個 tick 的平均耗時超過這個毫秒數，就表示伺服器跟不上每秒 20 tick。
- * @property maxLagMillis 最近 [windowTicks] 個 tick 累計超出 [fallingBehindAverageMillis] 的毫秒數上限；嚴重過載時不必等
- *   視窗填滿就停止，搶在 Minecraft 的 watchdog 因伺服器落後太多而強制關閉之前。
+ * @property fallingBehindAverageMillis 一個 [windowTicks] 視窗的平均間隔超過這個毫秒數，這個視窗就算跟不上；目標節奏 50 ms
+ *   之上保留正常排程抖動的餘裕。
+ * @property sustainedWindows 連續這麼多個不重疊的視窗都跟不上，才判定伺服器持續跟不上而停止。
+ * @property targetIntervalMillis 目標 tick 間隔。
+ * @property maxLagMillis 相對目標節奏的落後量上限；超過時不等視窗判定就緊急停止，搶在 Minecraft 的 watchdog 強制關閉之前。
  * @property backlogRatio 歷史待寫佇列積壓佔容量的比例上限。
  */
 data class StressSafetyThresholds(
     val stutterLimitMillis: Double = 100.0,
     val windowTicks: Int = 200,
     val stutterTicks: Int = 5,
-    val fallingBehindAverageMillis: Double = 50.0,
+    val fallingBehindAverageMillis: Double = 55.0,
+    val sustainedWindows: Int = 2,
+    val targetIntervalMillis: Double = 50.0,
     val maxLagMillis: Double = 10_000.0,
     val backlogRatio: Double = 0.8,
 ) {
@@ -117,6 +121,8 @@ data class StressSafetyThresholds(
         require(windowTicks > 0) { "Tick window must be positive" }
         require(stutterTicks in 1..windowTicks) { "Stutter tick count must be within the tick window" }
         require(fallingBehindAverageMillis > 0) { "Falling-behind average must be positive" }
+        require(sustainedWindows > 0) { "Sustained window count must be positive" }
+        require(targetIntervalMillis > 0) { "Target interval must be positive" }
         require(maxLagMillis > 0) { "Maximum lag must be positive" }
         require(backlogRatio in 0.0..1.0) { "Backlog ratio must be between 0 and 1" }
     }
@@ -125,47 +131,62 @@ data class StressSafetyThresholds(
 /**
  * 判斷壓力測試是否該停止，並偵測持續卡頓。
  *
- * 伺服器跟不上每秒 20 tick 時停止：最近 [StressSafetyThresholds.windowTicks] 個 tick 的平均耗時超過門檻，或這段期間
- * 累計落後超過 [StressSafetyThresholds.maxLagMillis]。持續卡頓只回報狀態、不停止，讓同一次測試同時量到「開始卡頓」與
- * 「撐不住」兩個桌數。歷史遺失、寫入失敗與積壓超過比例則立即停止，讓測試在真的遺失歷史之前停下。
+ * 以實際 tick 間隔判斷伺服器是否跟不上：連續 [StressSafetyThresholds.sustainedWindows] 個不重疊視窗的平均間隔都超過門檻就停止；
+ * 另外追蹤相對目標節奏的落後量（每個 tick 加上間隔與目標的差，最低為 0），伺服器追上時會下降，超過
+ * [StressSafetyThresholds.maxLagMillis] 就緊急停止。爬坡進入新的階段時以 [resetLag] 重設落後量。持續卡頓（間隔尖峰）只回報
+ * 狀態、不停止，讓同一次測試同時量到「開始卡頓」與「撐不住」兩個桌數。歷史遺失、寫入失敗與積壓超過比例則立即停止，讓測試
+ * 在真的遺失歷史之前停下。
  *
  * @property thresholds 停止門檻。
  */
 class StressSafetyValve(private val thresholds: StressSafetyThresholds) {
-    /** 最近的每 tick 耗時。 */
-    private val window = ArrayDeque<Double>(thresholds.windowTicks)
-
-    /** [window] 中每個 tick 是否算作卡頓。 */
+    /** 最近 [StressSafetyThresholds.windowTicks] 個 tick 是否算作卡頓。 */
     private val stutterFlags = ArrayDeque<Boolean>(thresholds.windowTicks)
 
-    /** [window] 中耗時的總和。 */
+    /** [stutterFlags] 中的卡頓次數。 */
+    private var stutters = 0
+
+    /** 目前視窗已記錄的 tick 數。 */
+    private var windowCount = 0
+
+    /** 目前視窗的間隔總和。 */
     private var windowTotalMillis = 0.0
 
-    /** [window] 中的卡頓次數。 */
-    private var stutters = 0
+    /** 連續跟不上的視窗數。 */
+    private var slowWindows = 0
+
+    /** 相對目標節奏的落後毫秒數。 */
+    var lagMillis: Double = 0.0
+        private set
 
     /** 最近一段時間是否持續卡頓。 */
     val stuttering: Boolean get() = stutters >= thresholds.stutterTicks
 
     /**
-     * 記錄一個 tick 的耗時；伺服器跟不上每秒 20 tick 時回傳停止原因。
+     * 記錄一個 tick 的實際間隔；伺服器持續跟不上或落後太多時回傳停止原因。
      *
-     * @param msptMillis 這個 tick 的耗時毫秒數。
+     * @param intervalMillis 這個 tick 與上一個 tick 開始的時間差毫秒數。
      * @param countStutter 這個 tick 是否列入卡頓判斷；暖機期間不列入，但仍會判斷是否落後。
      */
-    fun recordTick(msptMillis: Double, countStutter: Boolean): StressStopReason? {
-        val stutter = countStutter && msptMillis > thresholds.stutterLimitMillis
-        window.addLast(msptMillis)
+    fun recordTick(intervalMillis: Double, countStutter: Boolean): StressStopReason? {
+        val stutter = countStutter && intervalMillis > thresholds.stutterLimitMillis
         stutterFlags.addLast(stutter)
-        windowTotalMillis += msptMillis
         if (stutter) stutters++
-        if (window.size > thresholds.windowTicks) {
-            windowTotalMillis -= window.removeFirst()
-            if (stutterFlags.removeFirst()) stutters--
+        if (stutterFlags.size > thresholds.windowTicks && stutterFlags.removeFirst()) stutters--
+        lagMillis = (lagMillis + intervalMillis - thresholds.targetIntervalMillis).coerceAtLeast(0.0)
+        windowCount++
+        windowTotalMillis += intervalMillis
+        if (windowCount == thresholds.windowTicks) {
+            slowWindows = if (windowTotalMillis / windowCount > thresholds.fallingBehindAverageMillis) slowWindows + 1 else 0
+            windowCount = 0
+            windowTotalMillis = 0.0
         }
-        val lagMillis = windowTotalMillis - window.size * thresholds.fallingBehindAverageMillis
-        val full = window.size == thresholds.windowTicks
-        return if ((full && lagMillis > 0) || lagMillis > thresholds.maxLagMillis) StressStopReason.FALLING_BEHIND else null
+        return if (slowWindows >= thresholds.sustainedWindows || lagMillis > thresholds.maxLagMillis) StressStopReason.FALLING_BEHIND else null
+    }
+
+    /** 重設相對目標節奏的落後量，例如爬坡進入新的階段時。 */
+    fun resetLag() {
+        lagMillis = 0.0
     }
 
     /**
@@ -223,6 +244,76 @@ class RollingSamples(private val capacity: Int) {
 }
 
 /**
+ * 以固定刻度累計毫秒數的直方圖：記憶體用量固定，可統計長時間量測中全部數值的分位數。
+ *
+ * 分位數以落點那一格的上緣回報（不超過實際最大值），誤差最多 [resolutionMillis]；超過 [limitMillis] 的數值歸入最後一格，
+ * 分位數落在最後一格時回報實際最大值。
+ *
+ * @property resolutionMillis 每格的寬度毫秒數。
+ * @property limitMillis 有獨立刻度的上限毫秒數。
+ */
+class MillisHistogram(
+    private val resolutionMillis: Double = DEFAULT_RESOLUTION_MILLIS,
+    private val limitMillis: Double = DEFAULT_LIMIT_MILLIS,
+) {
+    init {
+        require(resolutionMillis > 0.0) { "Histogram resolution must be positive" }
+        require(limitMillis >= resolutionMillis) { "Histogram limit must be at least one resolution step" }
+    }
+
+    /** 每格的筆數；最後一格收容超過上限的數值。 */
+    private val counts = LongArray(ceil(limitMillis / resolutionMillis).toInt() + 1)
+
+    /** 累計的筆數。 */
+    var count: Long = 0L
+        private set
+
+    /** 累計的總毫秒數。 */
+    private var totalMillis = 0.0
+
+    /** 累計的最大毫秒數。 */
+    private var maxMillis = 0.0
+
+    /** 加入一筆毫秒數；負值視為 0。 */
+    fun add(millis: Double) {
+        val value = millis.coerceAtLeast(0.0)
+        counts[(value / resolutionMillis).toInt().coerceAtMost(counts.lastIndex)]++
+        count++
+        totalMillis += value
+        maxMillis = maxOf(maxMillis, value)
+    }
+
+    /** 平均值；沒有數值時為 0。 */
+    fun average(): Double = if (count == 0L) 0.0 else totalMillis / count
+
+    /** 最大值；沒有數值時為 0。 */
+    fun max(): Double = maxMillis
+
+    /** 第 [fraction] 分位數（例如 0.99），以最接近的排名取值；沒有數值時為 0。 */
+    fun percentile(fraction: Double): Double {
+        require(fraction in 0.0..1.0) { "Percentile fraction must be between 0 and 1" }
+        if (count == 0L) return 0.0
+        val rank = ceil(fraction * count).toLong().coerceIn(1L, count)
+        var seen = 0L
+        for (index in counts.indices) {
+            seen += counts[index]
+            if (seen < rank) continue
+            return if (index == counts.lastIndex) maxMillis else minOf((index + 1) * resolutionMillis, maxMillis)
+        }
+        return maxMillis
+    }
+
+    /** 預設刻度所在的伴生物件。 */
+    private companion object {
+        /** 預設每格寬度毫秒數。 */
+        const val DEFAULT_RESOLUTION_MILLIS = 0.1
+
+        /** 預設有獨立刻度的上限毫秒數。 */
+        const val DEFAULT_LIMIT_MILLIS = 10_000.0
+    }
+}
+
+/**
  * 壓力測試的歷史處理方式，用來分辨瓶頸在記錄、編碼還是資料庫寫入。
  *
  * @property commandName 指令中使用的名稱。
@@ -238,19 +329,24 @@ enum class StressHistoryMode(val commandName: String) {
     OFF("off"),
 }
 
-/** 單步耗時拆解出的環節。 */
+/**
+ * 單步耗時拆解出的環節。
+ *
+ * 前三項在伺服器主執行緒上，加總就是單步耗時（單步從開始到結束的時間扣掉等待 AI 結果的時間）；[AI_DECISION] 在背景執行緒上，
+ * 不計入單步耗時。歷史記錄無法分攤到同時進行的各步，改以每 tick 統計。
+ */
 enum class StressStepStage {
-    /** 建立 AI 視角快照與策略思考。 */
-    AI_DECISION,
+    /** 建立 AI 視角快照。 */
+    AI_CONTEXT,
 
-    /** 規則判斷、狀態提交等其餘流程：單步總耗時扣掉其他三項。 */
+    /** 規則判斷、狀態提交與歷史記錄等其餘主執行緒流程：單步耗時扣掉建立 AI 視角快照與快照同步。 */
     RULES_AND_STATE,
 
     /** 為每位觀察者裁切可見快照。 */
     SNAPSHOT_SYNC,
 
-    /** 權威交易中比對桌況並把事件加入待寫佇列。 */
-    HISTORY_RECORDING,
+    /** 策略在背景執行緒上的思考。 */
+    AI_DECISION,
 }
 
 /**

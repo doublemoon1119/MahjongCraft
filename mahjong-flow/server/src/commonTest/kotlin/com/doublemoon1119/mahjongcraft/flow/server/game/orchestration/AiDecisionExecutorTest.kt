@@ -189,6 +189,93 @@ class AiDecisionExecutorTest {
         assertEquals("decided", fixture.executor.decide(otherGameId, playerId, STRATEGY_KEY, decide = { "decided" }, fallback = { "fallback" }))
     }
 
+    /** 每次有結果的決策都回報結果的來源與延遲；同一局正在計算而略過的請求不回報。尚未結束的策略工作數包含逾時後仍在執行的工作。 */
+    @Test
+    fun `decisions with a result are observed with their latency`() = runTest {
+        val observed = mutableListOf<Pair<AiDecisionOutcome, Long>>()
+        val executor = AiDecisionExecutor(
+            StandardTestDispatcher(testScheduler),
+            capacity = 4,
+            timeout = TIMEOUT,
+            observer = { _, outcome, latency -> observed += outcome to latency.inWholeMilliseconds },
+            timeSource = testScheduler.timeSource,
+        )
+        val gate = CompletableDeferred<Unit>()
+
+        assertEquals("decided", executor.decide(gameId, playerId, STRATEGY_KEY, decide = { "decided" }, fallback = { "fallback" }))
+        executor.decide(gameId, playerId, STRATEGY_KEY, decide = {
+            withContext(NonCancellable) { gate.await() }
+            "late"
+        }, fallback = { "fallback" })
+        assertEquals(1, executor.unfinishedStrategyCalls, "The timed out call is still running")
+        executor.decide(gameId, playerId, STRATEGY_KEY, decide = { "decided" }, fallback = { "fallback" })
+
+        assertEquals(
+            listOf(AiDecisionOutcome.DECIDED to 0L, AiDecisionOutcome.TIMED_OUT to TIMEOUT.inWholeMilliseconds, AiDecisionOutcome.PREVIOUS_STILL_RUNNING to 0L),
+            observed,
+        )
+        gate.complete(Unit)
+        testScheduler.runCurrent()
+        assertEquals(0, executor.unfinishedStrategyCalls)
+    }
+
+    /** 兩次讀取峰值之間開始又全部結束的策略工作仍計入峰值；讀取後從當下的數量重新起算。 */
+    @Test
+    fun `a short burst between two peak reads is counted`() = runTest {
+        val executor = AiDecisionExecutor(StandardTestDispatcher(testScheduler), capacity = 4, timeout = TIMEOUT)
+        val gate = CompletableDeferred<String>()
+        assertEquals(0, executor.takeUnfinishedStrategyPeak())
+
+        val burst = List(3) { async { executor.decide(Uuid.random(), playerId, STRATEGY_KEY, decide = { gate.await() }, fallback = { "fallback" }) } }
+        testScheduler.runCurrent()
+        gate.complete("decided")
+        burst.forEach { assertEquals("decided", it.await()) }
+        testScheduler.runCurrent()
+
+        assertEquals(0, executor.unfinishedStrategyCalls)
+        assertEquals(3, executor.takeUnfinishedStrategyPeak(), "The burst ended before the read but must still be counted")
+        assertEquals(0, executor.takeUnfinishedStrategyPeak())
+    }
+
+    /** 讀取峰值時仍未結束的工作成為下一段的起算點，不會被歸零漏掉。 */
+    @Test
+    fun `the peak restarts from the calls still running`() = runTest {
+        val executor = AiDecisionExecutor(StandardTestDispatcher(testScheduler), capacity = 4, timeout = TIMEOUT)
+        val first = CompletableDeferred<String>()
+        val second = CompletableDeferred<String>()
+        val running = listOf(first, second).map { gate ->
+            async { executor.decide(Uuid.random(), playerId, STRATEGY_KEY, decide = { gate.await() }, fallback = { "fallback" }) }
+        }
+        testScheduler.runCurrent()
+        assertEquals(2, executor.takeUnfinishedStrategyPeak())
+
+        first.complete("decided")
+        running.first().await()
+        testScheduler.runCurrent()
+        assertEquals(1, executor.unfinishedStrategyCalls)
+        assertEquals(2, executor.takeUnfinishedStrategyPeak(), "Both calls were still running when this period began")
+        assertEquals(1, executor.takeUnfinishedStrategyPeak())
+
+        second.complete("decided")
+        running.last().await()
+    }
+
+    /** 同一局正在計算而略過的請求不回報。 */
+    @Test
+    fun `a skipped request is not observed`() = runTest {
+        var observed = 0
+        val executor = AiDecisionExecutor(StandardTestDispatcher(testScheduler), capacity = 4, timeout = TIMEOUT, observer = { _, _, _ -> observed++ })
+        val gate = CompletableDeferred<String>()
+        val first = async { executor.decide(gameId, playerId, STRATEGY_KEY, decide = { gate.await() }, fallback = { "fallback" }) }
+        testScheduler.runCurrent()
+
+        assertNull(executor.decide(gameId, playerId, STRATEGY_KEY, decide = { "second" }, fallback = { "fallback" }))
+        assertEquals(0, observed)
+        gate.complete("first")
+        first.await()
+        assertEquals(1, observed)
+    }
+
     /**
      * 使用虛擬時間的執行器與回報紀錄。
      *

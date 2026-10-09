@@ -29,6 +29,8 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ForcedAuto
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameActionRouter
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
+import com.doublemoon1119.mahjongcraft.flow.server.game.repository.ExpectedGameResult
+import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.ExhaustiveDrawSettlementPresentationService
@@ -126,7 +128,9 @@ class HeadlessFlowHistoryRuntime private constructor(
          * @param scenario 對局規則與場長情境。
          * @param registries 執行環境已完成登記的規則整合。
          * @param store 承載這場對局的權威來源；多場對局可共用同一個來源，如同正式伺服器上同時進行的多桌。
-         * @param stepTimer 累計 AI 決策與快照同步耗時的計時器；null 時不量測。歷史記錄耗時由 [store] 自己的觀察者量測。
+         * @param stepTimer 累計 AI 視角快照、策略思考與快照同步耗時，以及過期 AI 決策數的計時器；null 時不量測。歷史記錄耗時由
+         *   [store] 自己的觀察者量測。
+         * @param decisionExecutor 呼叫 AI 策略的執行器；預設在呼叫端直接執行。
          * @return 已開局且可逐步推進的 runtime。
          */
         suspend fun create(
@@ -134,6 +138,7 @@ class HeadlessFlowHistoryRuntime private constructor(
             registries: HeadlessHistoryRegistries,
             store: AuthoritativeStateStore = AuthoritativeStateStore(historyRecordingEnabled = true),
             stepTimer: HeadlessStepTimer? = null,
+            decisionExecutor: AiDecisionExecutor = AiDecisionExecutor.direct(),
         ): HeadlessFlowHistoryRuntime {
             val gameRepository = GameRepositoryImpl(store)
             val roomRepository = RoomRepositoryImpl(store)
@@ -149,7 +154,7 @@ class HeadlessFlowHistoryRuntime private constructor(
                 if (stepTimer == null) policy else TimedVisibilityPolicy(policy, stepTimer::addSnapshotSync)
             }
             val aiPolicy = GameVisibilityPolicyImpl(moduleRegistry).let { policy ->
-                if (stepTimer == null) policy else TimedVisibilityPolicy(policy, stepTimer::addAiDecision)
+                if (stepTimer == null) policy else TimedVisibilityPolicy(policy, stepTimer::addAiContext)
             }
             val aiStrategies = registries.aiStrategyRegistry.let { strategies ->
                 if (stepTimer == null) strategies else TimedAiStrategyRegistry(strategies, stepTimer)
@@ -185,13 +190,15 @@ class HeadlessFlowHistoryRuntime private constructor(
                 commands,
             )
             val getLegal = GetLegalActionsUseCase(gameRepository, moduleRegistry)
-            val ai = AiTurnDriver(gameRepository, getLegal, aiStrategies, aiPolicy, moduleRegistry, AiDecisionExecutor.direct())
+            val ai = AiTurnDriver(gameRepository, getLegal, aiStrategies, aiPolicy, moduleRegistry, decisionExecutor)
             val clock = MonotonicClockImpl()
             val timers = GameDecisionTimerManager(gameRepository, GameDecisionAuthorityResolver(), PlayerDecisionTimerFactory(clock), clock)
             val timerSync = DecisionTimerSynchronizationService(timers, gameRepository, NoOpTimerUpdates())
+            // 協調者以這個倉庫提交 AI 決策；量測時一併計算過期而沒有套用的決策。
+            val decisionRepository = if (stepTimer == null) gameRepository else StaleCountingGameRepository(gameRepository, stepTimer)
             val coordinator = GameFlowCoordinator(
                 gameActionRouter = router,
-                gameRepository = gameRepository,
+                gameRepository = decisionRepository,
                 moduleRegistry = moduleRegistry,
                 winSettlementDetailResolverRegistry = winDetails,
                 declareExhaustiveDrawUseCase = DeclareExhaustiveDrawUseCase(gameRepository, moduleRegistry, synchronizer, gameEvents),
@@ -377,4 +384,19 @@ private class NoOpBusyGate : GamePresentationBusyGate {
 private class NoOpTimerUpdates : DecisionTimerUpdatePublisher {
     /** 丟棄計時器更新。 */
     override suspend fun publish(targetPlayerId: Uuid, update: DecisionTimerUpdate) = Unit
+}
+
+/**
+ * 計算過期 AI 決策的倉庫：[GameRepository.withExpectedGame] 回報過期時記到 [timer]，其餘直接交給 [delegate]。
+ *
+ * @property delegate 實際的倉庫。
+ * @property timer 接收過期的 AI 決策。
+ */
+private class StaleCountingGameRepository(
+    private val delegate: GameRepository,
+    private val timer: HeadlessStepTimer,
+) : GameRepository by delegate {
+    override suspend fun <T> withExpectedGame(gameId: Uuid, expectedGame: Game, command: suspend () -> T): ExpectedGameResult<T> = delegate.withExpectedGame(gameId, expectedGame, command).also { result ->
+        if (result == ExpectedGameResult.Stale) timer.addStaleDecision()
+    }
 }

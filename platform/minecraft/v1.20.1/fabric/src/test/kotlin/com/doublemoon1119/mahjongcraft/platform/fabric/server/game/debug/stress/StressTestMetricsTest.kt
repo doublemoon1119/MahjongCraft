@@ -73,14 +73,25 @@ class StressTestMetricsTest {
         ticks = 20,
         tickAverageMillis = 31.25,
         tickMaxMillis = 120.0,
+        tickIntervalAverageMillis = 50.5,
+        tickIntervalMaxMillis = 71.0,
+        lagMillis = 30.0,
+        advanceMillis = 40.0,
         steps = 12,
         stepAverageMillis = 2.5,
         stageTotalMillis = mapOf(
-            StressStepStage.AI_DECISION to 18.0,
+            StressStepStage.AI_CONTEXT to 1.5,
             StressStepStage.RULES_AND_STATE to 9.0,
             StressStepStage.SNAPSHOT_SYNC to 2.0,
-            StressStepStage.HISTORY_RECORDING to 1.0,
+            StressStepStage.AI_DECISION to 18.0,
         ),
+        historyRecordingMillis = 1.0,
+        aiDecisions = 9,
+        aiLatencyAverageMillis = 3.25,
+        aiLatencyMaxMillis = 12.0,
+        aiTimeouts = 0,
+        staleDecisions = 1,
+        strategyCallsPeak = 2,
         eventsProduced = 40,
         eventsWritten = 38,
         pendingEvents = 2,
@@ -92,6 +103,6 @@ class StressTestMetricsTest {
 
     private companion object {
         /** [sampleRow] 對應的 CSV 列。 */
-        const val EXPECTED_ROW = "61.50,false,mahjongcraft:riichi_east,realtime,off,12,20,31.25,120.00,12,2.50,18.00,9.00,2.00,1.00,40,38,2,0,3,900,1,7"
+        const val EXPECTED_ROW = "61.50,false,mahjongcraft:riichi_east,realtime,off,12,20,31.25,120.00,50.50,71.00,30.00,40.00,12,2.50,1.50,9.00,2.00,18.00,1.00,9,3.25,12.00,0,1,2,40,38,2,0,3,900,1,7"
     }
 }

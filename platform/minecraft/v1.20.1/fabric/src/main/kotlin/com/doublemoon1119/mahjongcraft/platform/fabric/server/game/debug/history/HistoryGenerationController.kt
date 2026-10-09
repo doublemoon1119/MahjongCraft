@@ -14,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.Headl
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessHistoryRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessHistoryScenario
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessStepTimer
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionExecutor
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
@@ -100,18 +101,21 @@ class FabricHistoryGenerationRuntimeFactory(
      *
      * @param scenario 規則與場長情境。
      * @param store 承載對局的共用權威來源。
-     * @param stepTimer 累計 AI 決策與快照同步耗時的計時器。
+     * @param stepTimer 這一桌的分項計時器。
+     * @param decisionExecutor 呼叫 AI 策略的執行器。
      * @return 不產生世界實體的對局環境。
      */
     suspend fun createIn(
         scenario: HeadlessHistoryScenario,
         store: AuthoritativeStateStore,
         stepTimer: HeadlessStepTimer,
+        decisionExecutor: AiDecisionExecutor,
     ): HeadlessHistoryMatchRuntime = HeadlessFlowHistoryRuntime.create(
         scenario = scenario,
         registries = registries(),
         store = store,
         stepTimer = stepTimer,
+        decisionExecutor = decisionExecutor,
     )
 
     /** 正式對局使用的規則整合。 */
