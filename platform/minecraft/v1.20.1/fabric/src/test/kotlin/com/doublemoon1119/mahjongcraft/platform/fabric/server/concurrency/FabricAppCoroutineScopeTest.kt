@@ -32,5 +32,7 @@ class FabricAppCoroutineScopeTest {
         override val default: CoroutineDispatcher = Dispatchers.Unconfined
         override val io: CoroutineDispatcher = Dispatchers.Unconfined
         override val main: CoroutineDispatcher = Dispatchers.Unconfined
+        override val aiDecision: CoroutineDispatcher = Dispatchers.Unconfined
+        override val aiDecisionParallelism = 1
     }
 }

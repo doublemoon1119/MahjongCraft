@@ -81,5 +81,7 @@ class FabricDebugHistoryCommandTest {
         override val default: CoroutineDispatcher = Dispatchers.Default
         override val io: CoroutineDispatcher = Dispatchers.IO
         override val main: CoroutineDispatcher = Dispatchers.Default
+        override val aiDecision: CoroutineDispatcher = Dispatchers.Default
+        override val aiDecisionParallelism = 1
     }
 }

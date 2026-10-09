@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.bundled.BundledRiichiExtension
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionExecutor
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiTurnDriver
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandContext
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutor
@@ -232,6 +233,7 @@ internal class SimulationRuntime(defaultStrategyKey: String) {
             aiStrategyRegistry,
             GameVisibilityPolicyImpl(moduleRegistry),
             moduleRegistry,
+            AiDecisionExecutor.direct(),
         ),
         forcedAutoPlayDriver = ForcedAutoPlayDriver(gameRepository),
         decisionAvailabilityService = GameDecisionAvailabilityService(

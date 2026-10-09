@@ -178,7 +178,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
         val aiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = FakeAiStrategy.KEY).apply {
             register(FakeAiStrategy.KEY) { FakeAiStrategy() }
         }
-        val aiTurnDriver = AiTurnDriver(gameRepo, getLegalActionsUseCase, aiStrategyRegistry, GameVisibilityPolicyImpl(moduleRegistry), moduleRegistry)
+        val aiTurnDriver = AiTurnDriver(gameRepo, getLegalActionsUseCase, aiStrategyRegistry, GameVisibilityPolicyImpl(moduleRegistry), moduleRegistry, AiDecisionExecutor.direct())
         val clock = MonotonicClockImpl()
         val decisionTimerManager = GameDecisionTimerManager(
             gameRepository = gameRepo,

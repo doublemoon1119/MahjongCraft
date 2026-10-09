@@ -5,7 +5,10 @@ import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
+import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.flow.common.di.FlowCommonModule
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionExecutor
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionReporter
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
@@ -16,6 +19,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDet
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import org.koin.core.annotation.ComponentScan
 import org.koin.core.annotation.Module
+import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single
 
 /**
@@ -70,4 +74,20 @@ class FlowServerModule {
     /** 建立供規則 extension 登記對手模型的 registry；沒有登記的規則使用不具規則知識的對手模型。 */
     @Single
     fun opponentModelRegistry(): OpponentModelRegistry = OpponentModelRegistry()
+
+    /**
+     * 建立整個程式共用的 AI 決策執行器：在 [CoroutineDispatchers.aiDecision] 上呼叫策略，同時存在的策略工作上限為 AI 執行緒數的
+     * [AI_DECISION_CAPACITY_PER_THREAD] 倍。
+     */
+    @Single
+    fun aiDecisionExecutor(dispatchers: CoroutineDispatchers, @Provided reporter: AiDecisionReporter): AiDecisionExecutor = AiDecisionExecutor(
+        dispatcher = dispatchers.aiDecision,
+        capacity = dispatchers.aiDecisionParallelism * AI_DECISION_CAPACITY_PER_THREAD,
+        reporter = reporter,
+    )
+
+    private companion object {
+        /** 每條 AI 執行緒可同時存在的策略工作數；多出的工作在調度器中排隊，讓執行緒保持忙碌。 */
+        const val AI_DECISION_CAPACITY_PER_THREAD = 2
+    }
 }

@@ -20,6 +20,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.model.LeaveReason
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomEventPublisher
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionExecutor
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiTurnDriver
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandContext
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutor
@@ -178,7 +179,7 @@ class HeadlessFlowHistoryRuntime private constructor(
                 commands,
             )
             val getLegal = GetLegalActionsUseCase(gameRepository, moduleRegistry)
-            val ai = AiTurnDriver(gameRepository, getLegal, aiStrategies, aiPolicy, moduleRegistry)
+            val ai = AiTurnDriver(gameRepository, getLegal, aiStrategies, aiPolicy, moduleRegistry, AiDecisionExecutor.direct())
             val clock = MonotonicClockImpl()
             val timers = GameDecisionTimerManager(gameRepository, GameDecisionAuthorityResolver(), PlayerDecisionTimerFactory(clock), clock)
             val timerSync = DecisionTimerSynchronizationService(timers, gameRepository, NoOpTimerUpdates())

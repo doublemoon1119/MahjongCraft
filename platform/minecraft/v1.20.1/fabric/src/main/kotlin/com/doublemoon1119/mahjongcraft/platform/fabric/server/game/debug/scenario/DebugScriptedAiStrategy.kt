@@ -15,7 +15,7 @@ import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
  *
  * 他家捨牌或宣告槓、拔北時一律跳過；自己回合打出剛摸到的牌，沒有摸牌時打出第一張立牌；不和牌、不鳴牌、不立直。
  * [declaresKanFirst] 為 `true` 時，自己回合有可宣告的槓就先宣告；[pullsNorthFirst] 為 `true` 時，三人日麻自己回合
- * 可以拔北就先拔北。
+ * 可以拔北就先拔北。只依決策情境計算，沒有可變狀態。
  *
  * @property declaresKanFirst 自己回合是否優先宣告可用的暗槓或加槓。
  * @property pullsNorthFirst 自己回合是否優先拔北。

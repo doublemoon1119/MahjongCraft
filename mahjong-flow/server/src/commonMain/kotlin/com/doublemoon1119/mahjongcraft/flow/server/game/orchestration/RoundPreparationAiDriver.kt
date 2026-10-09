@@ -8,10 +8,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.accepts
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicy
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
-import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.CancellationException
 import org.koin.core.annotation.Factory
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
 /**
@@ -29,7 +27,19 @@ data class AutomatedRoundPreparation(
     val basis: Game,
 )
 
-/** 解析 AI 與逾時真人的下一次開局準備提交。 */
+/**
+ * 解析 AI 與逾時真人的下一次開局準備提交。
+ *
+ * AI 的提交經 [decisionExecutor] 在 AI 專用的調度器上詢問策略；沒有在等待上限內得到結果、策略丟出例外，或結果不被接受時，
+ * 使用解析器提供的可重現提交。
+ *
+ * @property gameRepository 讀取權威遊戲。
+ * @property moduleRegistry 依對局設定取得規則模組。
+ * @property resolverRegistry 各規則的開局準備解析器。
+ * @property aiStrategyRegistry 依策略 key 取得 AI 策略。
+ * @property visibilityPolicy 建立 AI 視角的快照。
+ * @property decisionExecutor 在 AI 專用的調度器上呼叫策略。
+ */
 @Factory
 class RoundPreparationAiDriver(
     private val gameRepository: GameRepository,
@@ -37,8 +47,9 @@ class RoundPreparationAiDriver(
     private val resolverRegistry: RoundPreparationResolverRegistry,
     private val aiStrategyRegistry: MahjongAiStrategyRegistry,
     private val visibilityPolicy: GameVisibilityPolicy,
+    private val decisionExecutor: AiDecisionExecutor,
 ) {
-    /** 找出下一位需要自動提交的參與者；沒有時回傳 null。 */
+    /** 找出下一位需要自動提交的參與者；沒有時，或這一局已有策略呼叫正在計算時回傳 null。 */
     suspend fun resolveNextAction(gameId: Uuid): AutomatedRoundPreparation? {
         val game = gameRepository.getGame(gameId) ?: return null
         val preparation = game.pendingRoundPreparation ?: return null
@@ -51,18 +62,26 @@ class RoundPreparationAiDriver(
         val input = preparation.inputSpecsByPlayerId.getValue(player.id)
         val fallback = resolver.fallbackSubmission(game.tableState, preparation, player.id, module)
         val submission = if (game.isAi(player.id)) {
-            runCatching {
-                withTimeoutOrNull(AI_DECISION_TIMEOUT) {
-                    aiStrategyRegistry.resolve(game.aiPlayerStrategyKeys[player.id]).decideRoundPreparation(
-                        RoundPreparationAiContext(
-                            snapshot = visibilityPolicy.snapshotFor(game, player.id),
-                            selfId = player.id,
-                            stepId = preparation.stepId,
-                            inputSpec = input,
-                        ),
-                    )
-                } ?: fallback
-            }.getOrElse { fallback }
+            val strategyKey = game.aiPlayerStrategyKeys[player.id]
+            val strategy = aiStrategyRegistry.resolve(strategyKey)
+            val context = RoundPreparationAiContext(
+                snapshot = visibilityPolicy.snapshotFor(game, player.id),
+                selfId = player.id,
+                stepId = preparation.stepId,
+                inputSpec = input,
+            )
+            decisionExecutor.decide(
+                gameId = gameId,
+                playerId = player.id,
+                strategyKey = strategyKey,
+                decide = {
+                    runCatching { strategy.decideRoundPreparation(context) }.getOrElse { error ->
+                        if (error is CancellationException) throw error
+                        fallback
+                    }
+                },
+                fallback = { fallback },
+            ) ?: return null
         } else {
             fallback
         }
@@ -75,10 +94,5 @@ class RoundPreparationAiDriver(
             clearsForcedAutoPlay = player.id in game.forcedAutoPlayPlayerIds,
             basis = game,
         )
-    }
-
-    private companion object {
-        /** Preparation AI 單次決策的硬上限；逾時後改用 resolver 的 deterministic fallback。 */
-        val AI_DECISION_TIMEOUT: Duration = 5.seconds
     }
 }

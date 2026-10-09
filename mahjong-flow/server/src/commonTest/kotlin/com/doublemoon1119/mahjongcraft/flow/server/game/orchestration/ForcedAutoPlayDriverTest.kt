@@ -68,4 +68,36 @@ class ForcedAutoPlayDriverTest {
             ForcedAutoPlayDriver(repository).resolveNextAction(game.id),
         )
     }
+
+    /** 驗證 AI 代打使用的 [fixedAutoPlayCommand] 對每位玩家的結果，與強制自動操作驅動對同一位玩家的命令相同。 */
+    @Test
+    fun `test fixed command matches the forced driver for each player`() = runTest {
+        val reactorId = Uuid.random()
+        val currentId = Uuid.random()
+        val bystanderId = Uuid.random()
+        val lastDrawn = IdentifiedTile(Uuid.random(), Tile.Honor.Red)
+        val players = listOf(
+            FakeMahjongPlayerFactory.create(id = currentId, hand = Hand(lastDrawn = lastDrawn)),
+            FakeMahjongPlayerFactory.create(id = reactorId),
+            FakeMahjongPlayerFactory.create(id = bystanderId),
+        )
+        val ownTurn = FakeTableStateFactory.create(players = players, currentPlayerIndex = 0)
+        val reaction = ownTurn.copy(
+            pendingReaction = PendingReaction(discarderId = currentId, tileId = Uuid.random(), eligiblePlayerIds = setOf(reactorId)),
+        )
+        listOf(ownTurn, reaction).forEach { state ->
+            players.forEach { player ->
+                val repository = FakeGameRepository()
+                val game = Game(tableState = state, flowConfig = GameFlowConfig(), forcedAutoPlayPlayerIds = setOf(player.id))
+                repository.setGame(game)
+
+                val forced = ForcedAutoPlayDriver(repository).resolveNextAction(game.id)
+
+                assertEquals(forced?.second, fixedAutoPlayCommand(state, player.id))
+            }
+        }
+        assertEquals(GameCommand.Discard(lastDrawn.id), fixedAutoPlayCommand(ownTurn, currentId))
+        assertEquals(GameCommand.RespondToDiscard(GameAction.Pass), fixedAutoPlayCommand(reaction, reactorId))
+        assertEquals(null, fixedAutoPlayCommand(reaction, bystanderId))
+    }
 }

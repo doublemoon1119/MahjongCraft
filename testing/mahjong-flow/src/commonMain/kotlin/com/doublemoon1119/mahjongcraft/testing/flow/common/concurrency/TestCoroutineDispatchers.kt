@@ -15,4 +15,6 @@ class TestCoroutineDispatchers(
     override val default: CoroutineDispatcher = UnconfinedTestDispatcher(),
     override val io: CoroutineDispatcher = UnconfinedTestDispatcher(),
     override val main: CoroutineDispatcher = UnconfinedTestDispatcher(),
+    override val aiDecision: CoroutineDispatcher = UnconfinedTestDispatcher(),
+    override val aiDecisionParallelism: Int = 1,
 ) : CoroutineDispatchers

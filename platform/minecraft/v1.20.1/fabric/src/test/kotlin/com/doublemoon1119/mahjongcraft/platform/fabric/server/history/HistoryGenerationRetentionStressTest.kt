@@ -127,5 +127,7 @@ class HistoryGenerationRetentionStressTest {
         override val default = Dispatchers.Default
         override val io = Dispatchers.IO
         override val main = Dispatchers.Default
+        override val aiDecision = Dispatchers.Default
+        override val aiDecisionParallelism = 1
     }
 }

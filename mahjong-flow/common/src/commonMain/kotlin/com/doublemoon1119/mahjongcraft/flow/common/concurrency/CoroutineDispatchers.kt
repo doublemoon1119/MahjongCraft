@@ -26,4 +26,13 @@ interface CoroutineDispatchers {
      * 主執行緒或與平台 UI/主循環相關的協程調度器。
      */
     val main: CoroutineDispatcher
+
+    /**
+     * 計算 AI 決策的調度器。不在 [main] 上，不同對局的 AI 決策可能在這裡同時計算；整個程式共用同一個，同時使用的執行緒
+     * 不超過 [aiDecisionParallelism]。
+     */
+    val aiDecision: CoroutineDispatcher
+
+    /** [aiDecision] 最多同時使用的執行緒數，至少為 1。 */
+    val aiDecisionParallelism: Int
 }

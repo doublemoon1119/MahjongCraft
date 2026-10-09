@@ -175,6 +175,8 @@ class HistoryManagementTest {
             override val default = dispatcher
             override val io = dispatcher
             override val main = dispatcher
+            override val aiDecision = dispatcher
+            override val aiDecisionParallelism = 1
         },
     )
 }

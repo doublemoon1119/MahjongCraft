@@ -23,6 +23,7 @@ import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFact
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -40,7 +41,10 @@ class AiTurnDriverTest {
 
     private val gameId = Uuid.random()
 
-    private class FakeMahjongAiStrategy(private val command: GameCommand = GameCommand.Draw) : MahjongAiStrategy {
+    private class FakeMahjongAiStrategy(
+        private val command: GameCommand = GameCommand.Draw,
+        private val hangs: Boolean = false,
+    ) : MahjongAiStrategy {
         var lastContext: AiDecisionContext? = null
             private set
         var callCount: Int = 0
@@ -49,6 +53,7 @@ class AiTurnDriverTest {
         override suspend fun decideGameCommand(context: AiDecisionContext): GameCommand {
             lastContext = context
             callCount++
+            if (hangs) awaitCancellation()
             return command
         }
     }
@@ -56,10 +61,10 @@ class AiTurnDriverTest {
     /** 每局 AI 玩家測試共用的策略 key，對應到 [Fixtures] 裡註冊的假策略。 */
     private val strategyKey = "fake"
 
-    private class Fixtures(strategyCommand: GameCommand = GameCommand.Draw) {
+    private class Fixtures(strategyCommand: GameCommand = GameCommand.Draw, strategyHangs: Boolean = false) {
         val gameRepo = FakeGameRepository()
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
-        val strategy = FakeMahjongAiStrategy(strategyCommand)
+        val strategy = FakeMahjongAiStrategy(strategyCommand, strategyHangs)
         val strategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = "fake").apply { register("fake") { strategy } }
         val actionContextResolver = PlayerActionContextResolver()
         val driver = AiTurnDriver(
@@ -68,6 +73,7 @@ class AiTurnDriverTest {
             strategyRegistry,
             GameVisibilityPolicyImpl(moduleRegistry),
             moduleRegistry,
+            AiDecisionExecutor.direct(),
             actionContextResolver,
         )
     }
@@ -374,5 +380,23 @@ class AiTurnDriverTest {
 
         assertEquals(fixtures.gameRepo.getGame(gameId), result.basis)
         assertEquals(table.id, fixtures.strategy.lastContext?.snapshot?.id)
+    }
+
+    /**
+     * 驗證策略沒有在等待上限內給出結果時，改用與真人逾時相同的固定命令：自己回合打出剛摸入的牌。
+     */
+    @Test
+    fun `test a strategy past the timeout falls back to the fixed command`() = runTest {
+        val fixtures = Fixtures(strategyHangs = true)
+        val aiId = Uuid.random()
+        val lastDrawn = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val ai = FakeMahjongPlayerFactory.create(id = aiId, initialSeat = Wind.EAST, hand = Hand(lastDrawn = lastDrawn))
+        val table = FakeTableStateFactory.create(id = gameId, players = listOf(ai), config = RiichiRuleConfig(), currentPlayerIndex = 0)
+        fixtures.gameRepo.setTableState(table, mapOf(aiId to strategyKey))
+
+        val result = assertNotNull(fixtures.driver.resolveNextAction(gameId))
+
+        assertEquals(GameCommand.Discard(lastDrawn.id), result.command)
+        assertEquals(AiDecisionExecutor.DEFAULT_TIMEOUT.inWholeMilliseconds, testScheduler.currentTime)
     }
 }

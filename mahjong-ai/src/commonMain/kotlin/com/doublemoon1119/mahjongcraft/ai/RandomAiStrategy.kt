@@ -7,6 +7,8 @@ import kotlin.random.Random
 /**
  * 純粹隨機選擇的 [MahjongAiStrategy]：不評估手牌好壞、不追求胡牌效率。
  *
+ * 除了 [random] 之外沒有可變狀態；預設的 [Random.Default] 可跨執行緒使用，注入其他亂數來源時也必須可跨執行緒使用。
+ *
  * @property random 用於所有隨機選擇的亂數來源，測試時可注入固定種子的實例讓行為可預期。
  * @property extensionActionRegistry 將規則 extension 動作轉成可執行命令的註冊表。
  */

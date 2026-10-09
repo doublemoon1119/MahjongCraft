@@ -113,5 +113,7 @@ class FabricDebugTextCommandTest {
 
         /** 設定發布使用預設調度器。 */
         override val main: CoroutineDispatcher = Dispatchers.Default
+        override val aiDecision: CoroutineDispatcher = Dispatchers.Default
+        override val aiDecisionParallelism = 1
     }
 }

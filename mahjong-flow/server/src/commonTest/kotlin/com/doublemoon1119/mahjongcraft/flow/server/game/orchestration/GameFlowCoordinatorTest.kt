@@ -92,6 +92,7 @@ import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFact
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -214,7 +215,7 @@ class GameFlowCoordinatorTest {
             registerBuiltInAiStrategies(moduleRegistry, ExtensionGameActionAiRegistry(moduleRegistry), OpponentModelRegistry().apply { BundledRiichiExtension.registerOpponentModels(this) })
             extraStrategies.forEach { (key, strategy) -> register(key) { strategy } }
         }
-        val aiTurnDriver = AiTurnDriver(gameRepo, getLegalActionsUseCase, aiStrategyRegistry, GameVisibilityPolicyImpl(moduleRegistry), moduleRegistry)
+        val aiTurnDriver = AiTurnDriver(gameRepo, getLegalActionsUseCase, aiStrategyRegistry, GameVisibilityPolicyImpl(moduleRegistry), moduleRegistry, AiDecisionExecutor.direct())
         val clock = MutableMonotonicClock()
         val decisionTimerManager = GameDecisionTimerManager(
             gameRepository = gameRepo,
@@ -270,7 +271,7 @@ class GameFlowCoordinatorTest {
             winPresentationHandoff = winPresentationHandoff,
             presentationPublisher = presentationPublisher,
             roundPreparationAiDriver = roundPreparationResolvers?.let {
-                RoundPreparationAiDriver(gameRepo, moduleRegistry, it, aiStrategyRegistry, GameVisibilityPolicyImpl(moduleRegistry))
+                RoundPreparationAiDriver(gameRepo, moduleRegistry, it, aiStrategyRegistry, GameVisibilityPolicyImpl(moduleRegistry), AiDecisionExecutor.direct())
             },
         )
     }
@@ -1518,6 +1519,50 @@ class GameFlowCoordinatorTest {
         assertEquals(false, game.isMatchOver)
     }
 
+    /**
+     * 驗證 AI 的開局準備策略沒有在等待上限內給出結果時，改用解析器的可重現提交並完成準備步驟。
+     */
+    @Test
+    fun `test an ai round preparation past the timeout submits the fallback`() = runTest {
+        val resolvers = RoundPreparationResolverRegistry().apply { register(ConfirmationResolver) }
+        val fixtures = Fixtures(extraStrategies = mapOf(HANGING_STRATEGY_KEY to HangingStrategy), roundPreparationResolvers = resolvers)
+        val humanId = Uuid.random()
+        val aiId = Uuid.random()
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(
+                FakeMahjongPlayerFactory.create(id = humanId, initialSeat = Wind.EAST),
+                FakeMahjongPlayerFactory.create(id = aiId, initialSeat = Wind.SOUTH),
+            ),
+            config = RiichiRuleConfig(),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setGame(
+            Game(
+                tableState = table,
+                flowConfig = GameFlowConfig(),
+                aiPlayerStrategyKeys = mapOf(aiId to HANGING_STRATEGY_KEY),
+                pendingRoundPreparation = PendingRoundPreparation(
+                    stepId = "test:confirm",
+                    stepIndex = 0,
+                    inputSpecsByPlayerId = mapOf(aiId to RoundPreparationInputSpec.Confirmation),
+                ),
+            ),
+        )
+
+        fixtures.coordinator.driveAutomatedPlayers(gameId)
+
+        assertNull(fixtures.gameRepo.getGame(gameId)?.pendingRoundPreparation)
+        assertEquals(AiDecisionExecutor.DEFAULT_TIMEOUT.inWholeMilliseconds, testScheduler.currentTime)
+    }
+
+    /** 永遠不會給出結果、只在被取消時結束的 AI 策略。 */
+    private object HangingStrategy : MahjongAiStrategy {
+        override suspend fun decideGameCommand(context: AiDecisionContext): GameCommand = awaitCancellation()
+
+        override suspend fun decideRoundPreparation(context: RoundPreparationAiContext): RoundPreparationSubmission = awaitCancellation()
+    }
+
     /** 每次都回傳同一個命令的 AI 策略。 */
     private class FixedCommandStrategy(private val command: GameCommand) : MahjongAiStrategy {
         /** 被呼叫的次數。 */
@@ -1588,6 +1633,9 @@ class GameFlowCoordinatorTest {
 
         /** [FixedCommandStrategy] 的策略 key。 */
         const val FIXED_STRATEGY_KEY = "test:fixed_command"
+
+        /** [HangingStrategy] 的策略 key。 */
+        const val HANGING_STRATEGY_KEY = "test:hanging"
     }
 }
 

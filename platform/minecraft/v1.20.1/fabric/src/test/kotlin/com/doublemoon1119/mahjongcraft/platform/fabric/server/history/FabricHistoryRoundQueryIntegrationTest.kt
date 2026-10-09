@@ -112,6 +112,8 @@ class FabricHistoryRoundQueryIntegrationTest {
     private object QueryTestDispatchers : CoroutineDispatchers {
         /** 測試不操作平台物件，可直接接續主執行緒作業。 */
         override val main: CoroutineDispatcher = Dispatchers.Unconfined
+        override val aiDecision: CoroutineDispatcher = Dispatchers.Unconfined
+        override val aiDecisionParallelism = 1
 
         /** 使用正式背景 I/O 執行資料庫工作。 */
         override val io: CoroutineDispatcher = Dispatchers.IO

@@ -12,6 +12,8 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
  * 規則事實來自規則模組的向聽計算與規則查詢，對各玩家的估計來自依規則登記的對手模型，策略本身不含任何特定規則的判斷；
  * [level] 決定可使用的資訊，[parameters] 決定估計時使用的數值。同一個局面一定得到同一個決策。
  *
+ * 每次決策建立新的 [ExpectedValueEvaluator]，估計用的快取只活在一次決策內；策略本身沒有可變狀態，可同時替不同對局決策。
+ *
  * @property level 可使用的資訊範圍。
  * @property moduleRegistry 依對局設定取得規則模組。
  * @property extensionActionRegistry 將規則擴充動作轉成命令候選。
