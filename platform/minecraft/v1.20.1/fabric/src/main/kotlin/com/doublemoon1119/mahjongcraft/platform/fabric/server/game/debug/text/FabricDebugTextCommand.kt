@@ -90,8 +90,9 @@ class FabricDebugTextCommand(
         source.sendFeedback(
             {
                 buildRoundResultChatText(
-                    Text.translatable(MinecraftMessageKeys.GAME_ACTION_EXHAUSTIVE_DRAW),
-                    details,
+                    actionText = Text.translatable(MinecraftMessageKeys.GAME_ACTION_EXHAUSTIVE_DRAW),
+                    details = details,
+                    roundContinues = false,
                 )
             },
             false,
@@ -108,7 +109,7 @@ class FabricDebugTextCommand(
             .append(Text.literal("\n"))
             .append(Text.translatable(WinSettlementTextKeys.TOTAL_SCORE, "7700"))
         source.sendFeedback(
-            { buildRoundResultChatText(Text.translatable(WinSettlementTextKeys.RON), details) },
+            { buildRoundResultChatText(Text.translatable(WinSettlementTextKeys.RON), details, roundContinues = false) },
             false,
         )
         return COMMAND_SUCCESS

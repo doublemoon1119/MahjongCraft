@@ -284,6 +284,9 @@ object MinecraftMessageKeys {
      */
     const val ROUND_RESULT_BROADCAST = PREFIX + "round_result_broadcast"
 
+    /** 和牌後本局繼續時的結算廣播標題，帶一個結果顯示文字參數（一個 `%s`）。 */
+    const val CONTINUING_WIN_RESULT_BROADCAST = PREFIX + "continuing_win_result_broadcast"
+
     /**
      * 回合結束廣播內每一位玩家的一行，帶玩家名稱、回合前名次、回合後名次、名次變化符號
      * （`↑`/`↓`/`→`）、回合前分數、回合後分數共六個參數（六個 `%s`）——固定列出所有玩家，不只是
@@ -540,6 +543,7 @@ object MinecraftMessageKeys {
         GAME_ACTION_SUUCHA_RIICHI,
         GAME_ACTION_SANCHA_HOU,
         ROUND_RESULT_BROADCAST,
+        CONTINUING_WIN_RESULT_BROADCAST,
         ROUND_RESULT_PLAYER_LINE,
         EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_TENPAI,
         EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_NOTEN,

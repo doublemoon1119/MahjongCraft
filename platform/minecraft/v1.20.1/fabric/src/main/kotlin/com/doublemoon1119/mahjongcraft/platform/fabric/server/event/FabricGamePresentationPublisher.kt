@@ -37,6 +37,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinSett
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationState
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinShowcaseOverride
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.showcaseWingCards
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.RoundResultSender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.ServerPlayerIdentityStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.PersistentTableOverlayCoordinator
@@ -141,6 +142,7 @@ import kotlin.uuid.toJavaUuid
  * @property tableOverlayCoordinator 桌級持久面板協調器。
  * @property tileAssetRegistry 牌面資產與材質註冊表。
  * @property gameActionSoundPresentationRegistry 動作聲音與宣告語音呈現註冊表。
+ * @property roundResultSender 在和牌或流局結算當下把前後分數與名次送給入座的真人玩家。
  * @property scope 承接世界／方塊狀態查詢需要切回伺服器主執行緒的工作。
  * @property dispatchers 切回伺服器主執行緒用的 dispatcher。
  */
@@ -176,6 +178,7 @@ class FabricGamePresentationPublisher(
     private val tableOverlayCoordinator: PersistentTableOverlayCoordinator,
     private val tileAssetRegistry: MinecraftTileAssetRegistry,
     private val gameActionSoundPresentationRegistry: GameActionSoundPresentationRegistry,
+    private val roundResultSender: RoundResultSender,
     private val scope: AppCoroutineScope,
     private val dispatchers: CoroutineDispatchers,
 ) : GamePresentationPublisher {
@@ -235,6 +238,7 @@ class FabricGamePresentationPublisher(
                 )
             },
         )
+        roundResultSender.sendDraw(gameId, request)
         launchPendingPresentation(gameId, "publishExhaustiveDrawSettlement") {
             val resolved = resolveTableContext(gameId, "publishExhaustiveDrawSettlement") ?: return@launchPendingPresentation
             val tableState = gameRepository.getTableState(gameId)
@@ -820,6 +824,7 @@ class FabricGamePresentationPublisher(
 
     /** 通知平台顯示逐位贏家詳情與共用分數排行。 */
     override fun publishWinSettlement(gameId: Uuid, request: WinSettlementPresentationRequest) {
+        roundResultSender.sendWin(gameId, request, roundContinues = false)
         publish(gameId, "publishWinSettlement", blocksTable = true) { resolved, state, startAt ->
             runSettlement(gameId, resolved, state, request, startAt)?.also { resolved.table.extendPresentationUntil(it) }
         }
@@ -839,6 +844,7 @@ class FabricGamePresentationPublisher(
      * 兩個請求都是 null（`NONE` 模式）也一樣，否則已完成玩家的手牌會一直立在桌上。
      */
     override fun publishWinPresentation(gameId: Uuid, request: WinPresentationRequest) {
+        roundResultSender.sendWin(gameId, request.settlement, request.roundContinues)
         // 開發用的一次性 showcase 覆寫必須在 blocksTable 判定之前套用，之後
         // 整段流程（阻塞判定、兩條時間軸的切分、收尾恢復可見的範圍）才會一致，見
         // DebugWinShowcaseOverride KDoc。正式產物裡這一步永遠是原樣回傳。

@@ -73,6 +73,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppeara
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplateRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcomeDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistry
@@ -148,6 +149,7 @@ class MahjongCraftModClient : ClientModInitializer {
         val moduleRegistry = koin.get<MahjongModuleRegistry>()
         val showcaseRegistry = koin.get<WinCelebrationShowcaseRegistry>()
         val exhaustiveDrawReasonDisplayNames = koin.get<ExhaustiveDrawReasonDisplayNameRegistry>()
+        val roundOutcomeDisplayNames = koin.get<RoundOutcomeDisplayNameRegistry>()
         val roundInfoLineDisplayRegistry = koin.get<RoundInfoLineDisplayRegistry>()
         val winSettlementTemplates = koin.get<WinSettlementPresentationTemplateRegistry>()
         val matchSettlementTemplates = koin.get<MatchSettlementPresentationTemplateRegistry>()
@@ -171,35 +173,31 @@ class MahjongCraftModClient : ClientModInitializer {
         MahjongChannels.roomUpdate.registerClientReceiver(json, stateStore::apply)
         MahjongChannels.gameUpdate.registerClientReceiver(json) { payload ->
             val gameId = Uuid.parse(payload.gameId)
-            val previousSnapshot = stateStore.gameSnapshot(gameId)
             stateStore.apply(payload)
             val action = payload.action.toDomain(networkRegistries)
             val newSnapshot = stateStore.gameSnapshot(gameId) ?: return@registerClientReceiver
-            // 這個封包也會送給旁觀者（供其畫面同步用），回合／對局結算的聊天訊息只該發給實際入座的玩家。
+            // 這個封包也會送給旁觀者（供其畫面同步用），對局結算的聊天訊息只該發給實際入座的玩家。
             val localPlayerId = MinecraftClient.getInstance().player?.uuid?.toKotlinUuid()
             if (newSnapshot.players.none { it.id == localPlayerId }) return@registerClientReceiver
-            val module = moduleRegistry.getModule(newSnapshot.config)
-            val message = buildRoundResultChatMessage(
-                action = action,
-                previousSnapshot = previousSnapshot,
-                newSnapshot = newSnapshot,
-                aiPlayerIds = stateStore.gameAiPlayerIds(gameId),
-                module = module,
-                actionVocabularyRegistry = actionVocabulary,
-                displayNameRegistry = tileDisplayNames,
-                tileAssetRegistry = tileAssetRegistry,
-                tileEmojiRegistry = tileEmojiRegistry,
-                exhaustiveDrawReasonDisplayNameRegistry = exhaustiveDrawReasonDisplayNames,
-                playerDisplayName = { id, isAi -> playerNames.resolve(gameId, id.toString(), isAi) },
-            ) ?: buildMatchResultChatMessage(
+            val message = buildMatchResultChatMessage(
                 action = action,
                 newSnapshot = newSnapshot,
                 aiPlayerIds = stateStore.gameAiPlayerIds(gameId),
-                module = module,
+                module = moduleRegistry.getModule(newSnapshot.config),
                 playerDisplayName = { id, isAi -> playerNames.resolve(gameId, id.toString(), isAi) },
                 historyCommand = if (action is GameAction.MatchEnded) historyChatEntries.createCommand(payload.historyMatchId) else null,
             )
                 ?: return@registerClientReceiver
+            MinecraftClient.getInstance().player?.sendMessage(message)
+        }
+        MahjongChannels.roundResult.registerClientReceiver(json) { payload ->
+            val message = buildRoundResultChatMessage(
+                result = payload,
+                actionVocabularyRegistry = actionVocabulary,
+                roundOutcomeDisplayNameRegistry = roundOutcomeDisplayNames,
+                exhaustiveDrawReasonDisplayNameRegistry = exhaustiveDrawReasonDisplayNames,
+                playerDisplayName = { id, isAi -> playerNames.resolve(Uuid.parse(payload.gameId), id.toString(), isAi) },
+            )
             MinecraftClient.getInstance().player?.sendMessage(message)
         }
         MahjongChannels.roomSnapshot.registerClientReceiver(json) { payload ->

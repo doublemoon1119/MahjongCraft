@@ -1,17 +1,22 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.TableStateSnapshot
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BuiltInMinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistryImpl
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistryImpl
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcomeDisplayNameRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundResultKindDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundResultPayloadDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundResultPlayerDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementTextKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import net.minecraft.text.HoverEvent
@@ -23,166 +28,128 @@ import kotlin.test.assertNull
 import kotlin.uuid.Uuid
 
 /**
- * [buildRoundResultChatMessage]／[buildMatchResultChatMessage] 的單元測試
- * ——只涵蓋不需要真正 Minecraft client 執行環境的分支（AI 玩家、非對應事件、沒有前一份快照可比較）；
+ * [buildRoundResultChatMessage]／[buildMatchResultChatMessage] 的單元測試；只涵蓋不需要真正 Minecraft client 執行環境的分支，
  * 真人玩家名稱解析需要 `MinecraftClient.getInstance()`，留給實機驗證。
  */
 class GameEventChatNotifierTest {
 
-    private val displayNameRegistry = TileDisplayNameRegistryImpl()
     private val actionVocabularyRegistry = GameActionVocabularyRegistryImpl().apply { BuiltInMinecraftMahjongExtension.registerGameActionVocabulary(this) }
-    private val tileAssetRegistry = MinecraftTileAssetRegistryImpl()
-    private val tileEmojiRegistry = TileEmojiRegistryImpl()
+    private val roundOutcomeDisplayNameRegistry = RoundOutcomeDisplayNameRegistryImpl()
     private val exhaustiveDrawReasonDisplayNameRegistry = ExhaustiveDrawReasonDisplayNameRegistryImpl()
 
-    /** 排名邏輯測的是 [MahjongRuleModule] 介面的預設實作，用哪個規則模組不影響結果——這裡沒有
-     *  覆寫 `compareForRoundRanking`／`compareForMatchRanking`，借用即可，跟快照本身用的
-     *  `FakeMahjongRuleConfig` 是不是同一種規則無關。 */
+    /** 對局結束排名使用的規則模組；沒有覆寫排名比較器，預設實作與規則無關。 */
     private val module = RiichiRuleModule(id = "riichi", config = RiichiRuleConfig())
 
+    /** 每位玩家一行，前後分數與名次原樣使用伺服器的值，依結算後名次排列，分數沒變的玩家也列出。 */
     @Test
-    fun `returns null for actions that do not end a round`() {
-        val previous = fakeSnapshot(scores = listOf(25000, 25000))
-        val current = fakeSnapshot(scores = listOf(25000, 25000))
+    fun `round result lists every player with the server's scores and ranks`() {
+        val winner = player(seatIndex = 0, previousScore = 25_000, currentScore = 43_000, previousRank = 1, currentRank = 1)
+        val unchanged = player(seatIndex = 1, previousScore = 25_000, currentScore = 25_000, previousRank = 2, currentRank = 2)
+        val payerA = player(seatIndex = 2, previousScore = 25_000, currentScore = 19_000, previousRank = 3, currentRank = 4)
+        val payerB = player(seatIndex = 3, previousScore = 25_000, currentScore = 19_000, previousRank = 4, currentRank = 3)
 
-        val message = buildRoundResultChatMessage(
-            action = GameAction.Discard(Uuid.random()),
-            previousSnapshot = previous,
-            newSnapshot = current,
-            aiPlayerIds = current.allPlayerIds(),
-            module = module,
-            actionVocabularyRegistry = actionVocabularyRegistry,
-            displayNameRegistry = displayNameRegistry,
-            tileAssetRegistry = tileAssetRegistry,
-            tileEmojiRegistry = tileEmojiRegistry,
-            exhaustiveDrawReasonDisplayNameRegistry = exhaustiveDrawReasonDisplayNameRegistry,
-            playerDisplayName = { id, _ -> id.toString().take(4) },
-        )
+        val message = buildMessage(result(BuiltInRoundOutcomeIds.TSUMO, players = listOf(winner, unchanged, payerA, payerB)))
 
-        assertNull(message)
+        val lines = message.playerLines()
+        assertEquals(listOf(winner, unchanged, payerB, payerA).map { it.playerId.take(4) }, lines.map { it.args[0].toString() })
+        assertEquals(listOf("1", "1", "→", "25000", "43000"), lines[0].args.drop(1).map { it.toString() })
+        assertEquals(listOf("2", "2", "→", "25000", "25000"), lines[1].args.drop(1).map { it.toString() })
+        assertEquals(listOf("4", "3", "↑", "25000", "19000"), lines[2].args.drop(1).map { it.toString() })
+        assertEquals(listOf("3", "4", "↓", "25000", "19000"), lines[3].args.drop(1).map { it.toString() })
     }
 
+    /** 本局結束時以本局結束為標題；和牌後本局繼續時改以和牌為標題。 */
     @Test
-    fun `returns null when there is no previous snapshot to compare against`() {
-        val current = fakeSnapshot(scores = listOf(25000, 25000))
-
-        val message = buildRoundResultChatMessage(
-            action = GameAction.Tsumo,
-            previousSnapshot = null,
-            newSnapshot = current,
-            aiPlayerIds = current.allPlayerIds(),
-            module = module,
-            actionVocabularyRegistry = actionVocabularyRegistry,
-            displayNameRegistry = displayNameRegistry,
-            tileAssetRegistry = tileAssetRegistry,
-            tileEmojiRegistry = tileEmojiRegistry,
-            exhaustiveDrawReasonDisplayNameRegistry = exhaustiveDrawReasonDisplayNameRegistry,
-            playerDisplayName = { id, _ -> id.toString().take(4) },
-        )
-
-        assertNull(message)
-    }
-
-    @Test
-    fun `builds a tsumo message listing every player's rank and score movement, not just the ones whose score changed`() {
-        val dId = Uuid.random()
-        val bId = Uuid.random()
-        val cId = Uuid.random()
-        val aId = Uuid.random()
-        // B 自己的分數完全沒變（25000 → 25000），但 A 從 20000 衝到 26000 把 B 擠出第 2 名、
-        // 掉到第 3 名——這是刻意設計的情境，證明「名次會不會變」不能只看自己的分數變化，B 這種
-        // 玩家過去只看分數差異會被完全忽略，現在一定要出現在結果裡才對。
-        val previous = fakeSnapshot(
-            ids = listOf(dId, bId, cId, aId),
-            scores = listOf(30000, 25000, 25000, 20000),
-        )
-        val current = fakeSnapshot(
-            ids = listOf(dId, bId, cId, aId),
-            scores = listOf(30000, 25000, 25000, 26000),
-        )
-
-        val message = buildRoundResultChatMessage(
-            action = GameAction.Tsumo,
-            previousSnapshot = previous,
-            newSnapshot = current,
-            aiPlayerIds = current.allPlayerIds(),
-            module = module,
-            actionVocabularyRegistry = actionVocabularyRegistry,
-            displayNameRegistry = displayNameRegistry,
-            tileAssetRegistry = tileAssetRegistry,
-            tileEmojiRegistry = tileEmojiRegistry,
-            exhaustiveDrawReasonDisplayNameRegistry = exhaustiveDrawReasonDisplayNameRegistry,
-            playerDisplayName = { id, _ -> id.toString().take(4) },
-        )
-
-        val broadcastContent = message?.content as? TranslatableTextContent
-        kotlin.test.assertEquals("mahjongcraft.message.round_result_broadcast", broadcastContent?.key)
-
-        val playerLinesById = message?.hoverDetails()?.siblings
-            .orEmpty()
-            .mapNotNull { it.content as? TranslatableTextContent }
-            .filter { it.key == "mahjongcraft.message.round_result_player_line" }
-            .associateBy { it.args[0].toString().removePrefix("AI-") }
-        kotlin.test.assertEquals(4, playerLinesById.size, "every player must appear, even ones whose own score never moved")
-
-        val bLine = playerLinesById.getValue(bId.toString().take(4))
-        assertEquals(listOf("2", "3", "↓", "25000", "25000"), bLine.args.drop(1).map { it.toString() }, "B's own score never changed, but A overtaking them should still drop them from rank 2 to rank 3")
-
-        val aLine = playerLinesById.getValue(aId.toString().take(4))
-        assertEquals(listOf("4", "2", "↑", "20000", "26000"), aLine.args.drop(1).map { it.toString() }, "A climbed from last place to 2nd")
-
-        val dLine = playerLinesById.getValue(dId.toString().take(4))
-        assertEquals(listOf("1", "1", "→", "30000", "30000"), dLine.args.drop(1).map { it.toString() }, "D stayed in 1st with no score change")
-    }
-
-    @Test
-    fun `round result ranks players by this hand's seat when scores are tied, not the original seat`() {
-        val eastId = Uuid.random()
-        val southId = Uuid.random()
-        val westId = Uuid.random()
-        val northId = Uuid.random()
-        // 東家跟南家同分；起家（initialSeat）刻意跟這一局的座位（seatWind）反過來排——南家的
-        // initialSeat 是西、seatWind 是東，東家的 initialSeat 是東、seatWind 是南——如果
-        // 用錯欄位（誤用 initialSeat），排序會反過來，藉此確認回合排名真的是比 seatWind。
-        val players = listOf(
-            FakeMahjongPlayerFactory.create(id = eastId, initialSeat = Wind.EAST)
-                .copy(score = 25000, seatWind = Wind.SOUTH),
-            FakeMahjongPlayerFactory.create(id = southId, initialSeat = Wind.WEST)
-                .copy(score = 25000, seatWind = Wind.EAST),
-            FakeMahjongPlayerFactory.create(id = westId, initialSeat = Wind.SOUTH)
-                .copy(score = 30000, seatWind = Wind.WEST),
-            FakeMahjongPlayerFactory.create(id = northId, initialSeat = Wind.NORTH)
-                .copy(score = 20000, seatWind = Wind.NORTH),
-        )
-        val previous = FakeTableStateFactory.create(players = players).toSnapshot(visibleHandPlayerIds = emptySet(), setAsideTiles = { emptyList() })
-        val current = FakeTableStateFactory.create(players = players.map { it.copy(score = it.score + 1) }).toSnapshot(visibleHandPlayerIds = emptySet(), setAsideTiles = { emptyList() })
-
-        val message = buildRoundResultChatMessage(
-            action = GameAction.Tsumo,
-            previousSnapshot = previous,
-            newSnapshot = current,
-            aiPlayerIds = current.allPlayerIds(),
-            module = module,
-            actionVocabularyRegistry = actionVocabularyRegistry,
-            displayNameRegistry = displayNameRegistry,
-            tileAssetRegistry = tileAssetRegistry,
-            tileEmojiRegistry = tileEmojiRegistry,
-            exhaustiveDrawReasonDisplayNameRegistry = exhaustiveDrawReasonDisplayNameRegistry,
-            playerDisplayName = { id, _ -> id.toString().take(4) },
-        )
-
-        val playerLines = message?.hoverDetails()?.siblings
-            .orEmpty()
-            .mapNotNull { it.content as? TranslatableTextContent }
-            .filter { it.key == "mahjongcraft.message.round_result_player_line" }
-        val orderedPlayerIdPrefixes = playerLines.map { it.args[0].toString().removePrefix("AI-") }
-
+    fun `a continuing win is titled as a win instead of a round end`() {
+        assertEquals(MinecraftMessageKeys.ROUND_RESULT_BROADCAST, buildMessage(result(BuiltInRoundOutcomeIds.TSUMO)).titleKey())
         assertEquals(
-            listOf(westId, southId, eastId, northId).map { it.toString().take(4) },
-            orderedPlayerIdPrefixes,
-            "Expected west (highest score), then south before east (tied score, south sits closer to this hand's east), then north.",
+            MinecraftMessageKeys.CONTINUING_WIN_RESULT_BROADCAST,
+            buildMessage(result(BuiltInRoundOutcomeIds.TSUMO, roundContinues = true)).titleKey(),
         )
     }
+
+    /** 自摸使用規則的動作用語，榮和使用結算用語。 */
+    @Test
+    fun `tsumo and ron use the rule's wording`() {
+        val tsumoKey = requireNotNull(actionVocabularyRegistry.find(RULE_MODULE_ID, BuiltInGameActionIds.TSUMO)).messageKey
+
+        assertEquals(tsumoKey, buildMessage(result(BuiltInRoundOutcomeIds.TSUMO)).outcomeKey())
+        assertEquals(WinSettlementTextKeys.RON, buildMessage(result(BuiltInRoundOutcomeIds.RON)).outcomeKey())
+    }
+
+    /** 其他結果依序查特殊結果與流局原因名稱，都沒有登記時流局使用通用流局文字、和牌顯示結果 ID。 */
+    @Test
+    fun `other outcomes use registered names before falling back by kind`() {
+        roundOutcomeDisplayNameRegistry.register(SPECIAL_OUTCOME_ID, "test.special_outcome")
+        exhaustiveDrawReasonDisplayNameRegistry.register(DRAW_REASON_ID, "test.draw_reason")
+
+        assertEquals("test.special_outcome", buildMessage(result(SPECIAL_OUTCOME_ID)).outcomeKey())
+        assertEquals("test.draw_reason", buildMessage(result(DRAW_REASON_ID, kind = RoundResultKindDto.DRAW)).outcomeKey())
+        assertEquals(
+            MinecraftMessageKeys.GAME_ACTION_EXHAUSTIVE_DRAW,
+            buildMessage(result(UNKNOWN_OUTCOME_ID, kind = RoundResultKindDto.DRAW)).outcomeKey(),
+        )
+        assertEquals(UNKNOWN_OUTCOME_ID, buildMessage(result(UNKNOWN_OUTCOME_ID)).outcomeArgument().string)
+    }
+
+    /** 以測試的名稱解析組出結算訊息，名稱為玩家 ID 的前四碼。 */
+    private fun buildMessage(result: RoundResultPayloadDto): Text = buildRoundResultChatMessage(
+        result = result,
+        actionVocabularyRegistry = actionVocabularyRegistry,
+        roundOutcomeDisplayNameRegistry = roundOutcomeDisplayNameRegistry,
+        exhaustiveDrawReasonDisplayNameRegistry = exhaustiveDrawReasonDisplayNameRegistry,
+        playerDisplayName = { id, _ -> id.toString().take(4) },
+    )
+
+    /** 建立一筆結算結果；沒指定玩家時為兩名分數不變的 AI。 */
+    private fun result(
+        outcomeId: String,
+        kind: RoundResultKindDto = RoundResultKindDto.WIN,
+        roundContinues: Boolean = false,
+        players: List<RoundResultPlayerDto> = listOf(
+            player(seatIndex = 0, previousScore = 25_000, currentScore = 25_000, previousRank = 1, currentRank = 1),
+            player(seatIndex = 1, previousScore = 25_000, currentScore = 25_000, previousRank = 2, currentRank = 2),
+        ),
+    ) = RoundResultPayloadDto(
+        gameId = Uuid.random().toString(),
+        ruleModuleId = RULE_MODULE_ID,
+        outcomeId = outcomeId,
+        kind = kind,
+        roundContinues = roundContinues,
+        players = players,
+    )
+
+    /** 建立一名 AI 玩家的結算前後值。 */
+    private fun player(
+        seatIndex: Int,
+        previousScore: Int,
+        currentScore: Int,
+        previousRank: Int,
+        currentRank: Int,
+    ) = RoundResultPlayerDto(
+        playerId = Uuid.random().toString(),
+        seatIndex = seatIndex,
+        isAi = true,
+        previousScore = previousScore,
+        currentScore = currentScore,
+        previousRank = previousRank,
+        currentRank = currentRank,
+    )
+
+    /** 訊息標題的翻譯鍵。 */
+    private fun Text.titleKey(): String? = (content as? TranslatableTextContent)?.key
+
+    /** 標題中結算結果文字的參數。 */
+    private fun Text.outcomeArgument(): Text = (content as TranslatableTextContent).args[0] as Text
+
+    /** 標題中結算結果文字的翻譯鍵。 */
+    private fun Text.outcomeKey(): String? = (outcomeArgument().content as? TranslatableTextContent)?.key
+
+    /** hover 詳情中每位玩家的一行。 */
+    private fun Text.playerLines(): List<TranslatableTextContent> = hoverDetails()?.siblings
+        .orEmpty()
+        .mapNotNull { it.content as? TranslatableTextContent }
+        .filter { it.key == MinecraftMessageKeys.ROUND_RESULT_PLAYER_LINE }
 
     /** 取得簡短 round-result 訊息的 hover 詳情。 */
     private fun Text.hoverDetails(): Text? = style.hoverEvent?.getValue(HoverEvent.Action.SHOW_TEXT)
@@ -272,4 +239,18 @@ class GameEventChatNotifierTest {
             FakeMahjongPlayerFactory.create(id = id).copy(score = score)
         },
     ).toSnapshot(visibleHandPlayerIds = emptySet(), setAsideTiles = { emptyList() })
+
+    private companion object {
+        /** 測試結算使用的規則模組 ID。 */
+        const val RULE_MODULE_ID = "mahjongcraft:riichi"
+
+        /** 測試登記的特殊結果 ID。 */
+        const val SPECIAL_OUTCOME_ID = "test:special_outcome"
+
+        /** 測試登記的流局原因 ID。 */
+        const val DRAW_REASON_ID = "test:draw_reason"
+
+        /** 沒有登記任何名稱的結果 ID。 */
+        const val UNKNOWN_OUTCOME_ID = "test:unknown_outcome"
+    }
 }

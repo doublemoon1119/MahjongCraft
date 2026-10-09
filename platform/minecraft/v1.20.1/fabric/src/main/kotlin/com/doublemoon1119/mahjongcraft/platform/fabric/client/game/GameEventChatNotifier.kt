@@ -1,21 +1,22 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayerSnapshot
 import com.doublemoon1119.mahjongcraft.logic.table.TableStateSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.buildMatchResultChatText
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.buildRoundResultChatText
-import com.doublemoon1119.mahjongcraft.platform.fabric.text.toDisplayText
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.aiPlayerDisplayName
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcomeDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundResultKindDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundResultPayloadDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementTextKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
 import net.minecraft.client.MinecraftClient
 import net.minecraft.text.ClickEvent
 import net.minecraft.text.MutableText
@@ -25,81 +26,75 @@ import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 
 /**
- * 把回合結束事件（自摸／榮和／流局）組成一則聊天訊息，列出每位玩家「回合前 → 回合後」的名次與分數
- * 變化——這是供排行榜動畫使用的完整資料（名次升降方向、分數增減），不只是「有變化的人」。就算某位
- * 玩家自己分數沒變，也可能因為別人分數變了而被擠掉名次，所以固定列出所有玩家，不像分數變化那樣
- * 略過沒變化的人。
+ * 把伺服器送來的結算結果（和牌或流局）組成一則聊天訊息，依結算後名次列出每位玩家結算前後的名次與分數。
  *
- * 這是資料流驗證用的占位呈現：`GameEventPublisher` 廣播給所有玩家的事件本身已經是結構化資料
- * （[action] + 前後 [TableStateSnapshot]），呈現方式完全是外層決定——這裡先借用聊天訊息，之後要換成
- * GUI/HUD（例如你說的名次上下移動動畫）只需要在呼叫端換掉輸出方式，不需要動 `mahjong-flow` 或
- * 伺服端任何一行；[previousSnapshot]／[newSnapshot] 本身就已經是動畫需要的頭尾兩個關鍵影格。
+ * 自己分數沒變的玩家也可能因為別人分數改變而名次升降，因此固定列出所有玩家。前後分數與名次原樣使用 [result] 的值，
+ * 不比對 client 保存的快照。本局在這次和牌後仍繼續時，標題為和牌而不是本局結束。
  *
- * 排名（含同分決勝判準）交給 [module]（[MahjongRuleModule.compareForRoundRanking]），不在這裡寫死
- * ——跟對局結束的最終排名（[buildMatchResultChatMessage]）用的是不同的 hook
- * （[MahjongRuleModule.compareForMatchRanking]），因為這裡談的是這一局的座位，不是整場對局開始時的
- * 座位，兩者的同分決勝依據可能不同。
- *
- * @return 不是回合結束事件（自摸／榮和／流局以外的動作），或沒有前一份快照可供比較（例如玩家剛連線、
- *   還沒收到過任何 `gameUpdate`）時回傳 null，代表呼叫端不需要顯示任何訊息。
+ * @param result 伺服器送來的結算結果。
+ * @param actionVocabularyRegistry 依規則查詢自摸、流局宣告等動作用語。
+ * @param roundOutcomeDisplayNameRegistry 規則特殊結果（例如日麻的流局滿貫）的顯示名稱。
+ * @param exhaustiveDrawReasonDisplayNameRegistry 流局原因的顯示名稱。
+ * @param playerDisplayName 選用的玩家名稱解析。
+ * @return 結算結果的聊天訊息。
  */
 fun buildRoundResultChatMessage(
-    action: GameAction,
-    previousSnapshot: TableStateSnapshot?,
-    newSnapshot: TableStateSnapshot,
-    aiPlayerIds: Set<Uuid>,
-    module: MahjongRuleModule<*>,
+    result: RoundResultPayloadDto,
     actionVocabularyRegistry: GameActionVocabularyRegistry,
-    displayNameRegistry: TileDisplayNameRegistry,
-    tileAssetRegistry: MinecraftTileAssetRegistry,
-    tileEmojiRegistry: TileEmojiRegistry,
+    roundOutcomeDisplayNameRegistry: RoundOutcomeDisplayNameRegistry,
     exhaustiveDrawReasonDisplayNameRegistry: ExhaustiveDrawReasonDisplayNameRegistry,
     playerDisplayName: ((Uuid, Boolean) -> String)? = null,
-): Text? {
-    if (action !is GameAction.Tsumo && action !is GameAction.Ron && action !is GameAction.ExhaustiveDraw) return null
-    if (previousSnapshot == null) return null
-
-    val actionText = if (action is GameAction.Ron) {
-        Text.translatable(WinSettlementTextKeys.RON)
-    } else {
-        action.toDisplayText(
-            referenceTile = null,
-            ruleModuleId = module.id,
-            actionVocabularyRegistry = actionVocabularyRegistry,
-            displayNameRegistry = displayNameRegistry,
-            tileAssetRegistry = tileAssetRegistry,
-            tileEmojiRegistry = tileEmojiRegistry,
-            exhaustiveDrawReasonDisplayNameRegistry = exhaustiveDrawReasonDisplayNameRegistry,
-        )
-    }
+): Text {
+    val orderedAiPlayerIds = result.players.filter { it.isAi }.sortedBy { it.seatIndex }.map { Uuid.parse(it.playerId) }
     val details: MutableText = Text.empty()
-
-    val rankBy = module.compareForRoundRanking()
-    val previousRankById = previousSnapshot.players.sortedWith(rankBy).withIndex().associate { (index, p) -> p.id to index + 1 }
-    val previousScoreById = previousSnapshot.players.associate { it.id to it.score }
-    val newRanked = newSnapshot.players.sortedWith(rankBy)
-    val orderedAiPlayerIds = newSnapshot.players.filter { it.id in aiPlayerIds }.map { it.id }
-
-    newRanked.forEachIndexed { index, player ->
-        val newRank = index + 1
-        val previousRank = previousRankById[player.id] ?: newRank
-        val previousScore = previousScoreById[player.id] ?: player.score
+    result.players.sortedBy { it.currentRank }.forEachIndexed { index, player ->
+        val playerId = Uuid.parse(player.playerId)
         if (index > 0) details.append(Text.literal("\n"))
         details.append(
             Text.translatable(
                 MinecraftMessageKeys.ROUND_RESULT_PLAYER_LINE,
-                playerDisplayName?.invoke(player.id, player.id in aiPlayerIds)
-                    ?: resolvePlayerDisplayName(player.id, player.id in aiPlayerIds, orderedAiPlayerIds),
-                previousRank.toString(),
-                newRank.toString(),
-                rankChangeSymbol(previousRank, newRank),
-                previousScore.toString(),
-                player.score.toString(),
+                playerDisplayName?.invoke(playerId, player.isAi)
+                    ?: resolvePlayerDisplayName(playerId, player.isAi, orderedAiPlayerIds),
+                player.previousRank.toString(),
+                player.currentRank.toString(),
+                rankChangeSymbol(player.previousRank, player.currentRank),
+                player.previousScore.toString(),
+                player.currentScore.toString(),
             ),
         )
     }
+    val outcomeText = roundOutcomeText(
+        result = result,
+        actionVocabularyRegistry = actionVocabularyRegistry,
+        roundOutcomeDisplayNameRegistry = roundOutcomeDisplayNameRegistry,
+        exhaustiveDrawReasonDisplayNameRegistry = exhaustiveDrawReasonDisplayNameRegistry,
+    )
+    return buildRoundResultChatText(outcomeText, details, result.roundContinues)
+}
 
-    return buildRoundResultChatText(actionText, details)
+/**
+ * 結算結果的顯示文字：自摸使用規則的動作用語，榮和使用結算用語；其他結果依序查規則的動作用語（例如九種九牌）、
+ * 特殊結果名稱與流局原因名稱，都沒有登記時流局退回通用流局文字、和牌顯示結果 ID。
+ */
+private fun roundOutcomeText(
+    result: RoundResultPayloadDto,
+    actionVocabularyRegistry: GameActionVocabularyRegistry,
+    roundOutcomeDisplayNameRegistry: RoundOutcomeDisplayNameRegistry,
+    exhaustiveDrawReasonDisplayNameRegistry: ExhaustiveDrawReasonDisplayNameRegistry,
+): Text = when (result.outcomeId) {
+    BuiltInRoundOutcomeIds.TSUMO -> Text.translatable(
+        actionVocabularyRegistry.find(result.ruleModuleId, BuiltInGameActionIds.TSUMO)?.messageKey ?: WinSettlementTextKeys.TSUMO,
+    )
+    BuiltInRoundOutcomeIds.RON -> Text.translatable(WinSettlementTextKeys.RON)
+    else -> (
+        actionVocabularyRegistry.find(result.ruleModuleId, result.outcomeId)?.messageKey
+            ?: roundOutcomeDisplayNameRegistry.find(result.outcomeId)
+            ?: exhaustiveDrawReasonDisplayNameRegistry.find(result.outcomeId)
+        )?.let(Text::translatable)
+        ?: when (result.kind) {
+            RoundResultKindDto.DRAW -> Text.translatable(MinecraftMessageKeys.GAME_ACTION_EXHAUSTIVE_DRAW)
+            RoundResultKindDto.WIN -> Text.literal(result.outcomeId)
+        }
 }
 
 /** `↑`：名次數字變小（進步）；`↓`：名次數字變大（退步）；`→`：名次沒變。 */
@@ -110,8 +105,7 @@ private fun rankChangeSymbol(previousRank: Int, newRank: Int): String = when {
 }
 
 /**
- * 把對局結束事件（[GameAction.MatchEnded]）組成一則列出最終名次的聊天訊息，占位呈現理由同
- * [buildRoundResultChatMessage]。
+ * 把對局結束事件（[GameAction.MatchEnded]）組成一則列出最終名次的聊天訊息。
  *
  * 排名（含同分決勝判準）交給 [module]（[MahjongRuleModule.compareForMatchRanking]），不在這裡寫死。
  *

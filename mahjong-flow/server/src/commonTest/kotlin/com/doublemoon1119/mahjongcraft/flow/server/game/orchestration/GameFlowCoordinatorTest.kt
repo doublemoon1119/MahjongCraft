@@ -967,6 +967,45 @@ class GameFlowCoordinatorTest {
         assertTrue(newState.players.first { it.id == respondentId }.actionHistory.isEmpty())
     }
 
+    /** 一炮多響只交出一次和牌呈現，同時包含兩位贏家，結算排行列出所有玩家並反映兩位贏家的得分。 */
+    @Test
+    fun `test double ron publishes one win presentation with both winners`() = runTest {
+        val fixtures = Fixtures()
+        val discarderId = Uuid.random()
+        val firstWinnerId = Uuid.random()
+        val secondWinnerId = Uuid.random()
+        val discardedTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val discarder = FakeMahjongPlayerFactory.create(
+            id = discarderId,
+            initialSeat = Wind.EAST,
+            discardPile = FakeDiscardPile().discardTile(discardedTile),
+        ).copy(score = 25000)
+        val winners = listOf(firstWinnerId to Wind.SOUTH, secondWinnerId to Wind.WEST).map { (id, seat) ->
+            FakeMahjongPlayerFactory.create(id = id, initialSeat = seat, hand = ronReadyHand(), playerRuleState = RiichiPlayerState()).copy(score = 25000)
+        }
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(discarder) + winners,
+            config = RiichiRuleConfig(gameLength = RiichiGameLength.East),
+            currentPlayerIndex = 0,
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(firstWinnerId, secondWinnerId)),
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        fixtures.coordinator.dispatchThenDrive(gameId, firstWinnerId, GameCommand.RespondToDiscard(GameAction.Ron(discardedTile.id)))
+        assertTrue(fixtures.presentationPublisher.getPublishedWinPresentations(gameId).isEmpty(), "The window waits for the other winner.")
+        val result = fixtures.coordinator.dispatchThenDrive(gameId, secondWinnerId, GameCommand.RespondToDiscard(GameAction.Ron(discardedTile.id)))
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val published = fixtures.presentationPublisher.getPublishedWinPresentations(gameId).single()
+        assertEquals(setOf(firstWinnerId, secondWinnerId), published.winnerPlayerIds.toSet())
+        val ranking = published.settlement.ranking.players.associateBy { it.playerId }
+        assertEquals(setOf(discarderId, firstWinnerId, secondWinnerId), ranking.keys)
+        assertTrue(ranking.getValue(firstWinnerId).currentScore > ranking.getValue(firstWinnerId).previousScore)
+        assertTrue(ranking.getValue(secondWinnerId).currentScore > ranking.getValue(secondWinnerId).previousScore)
+        assertTrue(ranking.getValue(discarderId).currentScore < ranking.getValue(discarderId).previousScore)
+    }
+
     /** 驗證 blocking presentation 期間的真人命令會在進入權威流程前遭拒。 */
     @Test
     fun `test busy presentation rejects player command`() = runTest {

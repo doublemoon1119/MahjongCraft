@@ -28,6 +28,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisio
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryQuerySettingsPayload
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerIdentityPayload
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.TableOccupancyPayloadDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundResultPayloadDto
 import kotlinx.serialization.builtins.nullable
 import kotlinx.serialization.builtins.serializer
 
@@ -105,6 +106,9 @@ object MahjongChannels {
     val decisionTimerUpdate = S2CChannel("decision_timer_update", DecisionTimerUpdatePayloadDto.serializer())
     val decisionSubmissionResult = S2CChannel("decision_submission_result", PlayerDecisionSubmissionResultDto.serializer())
     val gameUpdate = S2CChannel("game_update", GameUpdatePayloadDto.serializer())
+
+    /** 和牌或流局結算的前後分數與名次，只送給入座的真人玩家。 */
+    val roundResult = S2CChannel("round_result", RoundResultPayloadDto.serializer())
 
     val roomUpdate = S2CChannel("room_update", RoomUpdatePayloadDto.serializer())
     val gameSnapshot = S2CChannel("game_snapshot", GameSnapshotSyncPayloadDto.serializer())
