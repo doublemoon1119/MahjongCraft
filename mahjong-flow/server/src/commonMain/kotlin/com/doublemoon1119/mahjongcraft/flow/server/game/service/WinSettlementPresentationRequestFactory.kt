@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPlayer
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementWinnerPresentation
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.roundRanksByPlayer
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule

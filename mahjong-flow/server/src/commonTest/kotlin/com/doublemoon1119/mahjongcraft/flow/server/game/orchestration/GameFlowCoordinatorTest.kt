@@ -8,6 +8,9 @@ import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.ai.RoundPreparationAiContext
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.bundled.BundledRiichiExtension
+import com.doublemoon1119.mahjongcraft.flow.api.event.RoundSettledEvent
+import com.doublemoon1119.mahjongcraft.flow.api.event.RoundSettlementKind
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventProjector
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinSettlementDetail
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExtensionGameCommand
@@ -129,6 +132,13 @@ class GameFlowCoordinatorTest {
         roundPreparationResolvers: RoundPreparationResolverRegistry? = null,
         extraCommandHandlers: (ExtensionGameCommandExecutorRegistry) -> Unit = {},
     ) {
+        /** 由各交易提交的事實產生的事件中，恰好有一次 [kind] 的結算；換局等其他交易不再產生結算。 */
+        fun assertSingleSettlement(kind: RoundSettlementKind) {
+            val projector = GameEventProjector(moduleRegistry)
+            val settlements = gameRepo.committedFacts.flatMap(projector::project).filterIsInstance<RoundSettledEvent>()
+            assertEquals(listOf(kind), settlements.map { it.kind })
+        }
+
         val gameRepo = FakeGameRepository()
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
         val snapshotRepo = FakeGameSnapshotRepository()
@@ -422,6 +432,7 @@ class GameFlowCoordinatorTest {
         val newState = fixtures.gameRepo.getTableState(gameId)!!
         assertTrue(newState.tileWall.remainingCount > 0, "The wall should have been rebuilt for the next hand.")
         assertTrue(newState.players.first { it.id == playerId }.actionHistory.isEmpty(), "A fresh hand's actionHistory should be empty.")
+        fixtures.assertSingleSettlement(RoundSettlementKind.DRAW)
     }
 
     /**
@@ -575,6 +586,7 @@ class GameFlowCoordinatorTest {
             "Celebration must always be ordered before settlement.",
         )
         assertEquals(null, fixtures.winPresentationHandoff.take(gameId, setOf(winnerId)), "The handoff must be consumed.")
+        fixtures.assertSingleSettlement(RoundSettlementKind.WIN)
     }
 
     /**
@@ -859,6 +871,7 @@ class GameFlowCoordinatorTest {
         val newState = fixtures.gameRepo.getTableState(gameId)!!
         assertTrue(newState.players.first { it.id == playerId }.actionHistory.isEmpty())
         assertEquals(1, newState.comboCount, "Kyuushu kyuuhai is an abortive draw; the dealer always repeats.")
+        fixtures.assertSingleSettlement(RoundSettlementKind.DRAW)
     }
 
     // ---- 連莊/過莊：視分支結果的命令 ----
@@ -915,6 +928,7 @@ class GameFlowCoordinatorTest {
         val newState = fixtures.gameRepo.getTableState(gameId)!!
         assertTrue(newState.players.first { it.id == p2Id }.actionHistory.isEmpty())
         assertEquals(1, newState.comboCount, "Suufon renda is an abortive draw; the dealer always repeats.")
+        fixtures.assertSingleSettlement(RoundSettlementKind.DRAW)
     }
 
     private fun discardReactionTable(discarderId: Uuid, respondentId: Uuid, respondentHand: Hand): TableState {
@@ -965,6 +979,7 @@ class GameFlowCoordinatorTest {
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!
         assertTrue(newState.players.first { it.id == respondentId }.actionHistory.isEmpty())
+        fixtures.assertSingleSettlement(RoundSettlementKind.WIN)
     }
 
     /** 一炮多響只交出一次和牌呈現，同時包含兩位贏家，結算排行列出所有玩家並反映兩位贏家的得分。 */
@@ -1004,6 +1019,7 @@ class GameFlowCoordinatorTest {
         assertTrue(ranking.getValue(firstWinnerId).currentScore > ranking.getValue(firstWinnerId).previousScore)
         assertTrue(ranking.getValue(secondWinnerId).currentScore > ranking.getValue(secondWinnerId).previousScore)
         assertTrue(ranking.getValue(discarderId).currentScore < ranking.getValue(discarderId).previousScore)
+        fixtures.assertSingleSettlement(RoundSettlementKind.WIN)
     }
 
     /** 驗證 blocking presentation 期間的真人命令會在進入權威流程前遭拒。 */
@@ -1141,6 +1157,7 @@ class GameFlowCoordinatorTest {
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!
         assertTrue(newState.players.first { it.id == robberId }.actionHistory.isEmpty())
+        fixtures.assertSingleSettlement(RoundSettlementKind.WIN)
     }
 
     /**

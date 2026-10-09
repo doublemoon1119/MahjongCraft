@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.simulation
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.CommittedGameFacts
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
@@ -47,6 +48,9 @@ internal class RoundRecordingGameRepository(
 
     /** 目前為止寫入的歷史事件草稿，依寫入順序排列。 */
     val historyDrafts: List<HistoryEventDraft> get() = delegate.historyDrafts
+
+    /** 目前為止每筆有事實的交易提交的前後對局與事實，依提交順序排列。 */
+    val committedFacts: List<CommittedGameFacts> get() = delegate.committedFacts
 
     /** [gameId] 目前為止記錄的所有局，依開局順序排列。 */
     fun rounds(gameId: Uuid): List<RecordedRound> = roundsByGame[gameId].orEmpty().map { it.second }

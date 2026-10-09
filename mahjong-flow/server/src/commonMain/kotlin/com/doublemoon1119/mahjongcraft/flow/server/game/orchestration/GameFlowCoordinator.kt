@@ -7,6 +7,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransition
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundOutcomePresentationClassification
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.newlyRecordedActionsByPlayerId
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.recordedDrawCompletion
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationBusyGate
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinPresentationRequest
@@ -27,9 +29,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ResolveWinRoundC
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ReturnToRoomUseCase
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
-import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
-import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
-import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlinx.coroutines.sync.Mutex
 import org.koin.core.annotation.Factory
@@ -461,10 +460,7 @@ class GameFlowCoordinator(
      */
     private suspend fun handleHandConclusionIfPresent(gameId: Uuid, playerId: Uuid, previousState: TableState) {
         val currentState = gameRepository.getTableState(gameId) ?: return
-        val newlyRecordedActionsByPlayerId = currentState.players.associate { player ->
-            val previousActionCount = previousState.players.firstOrNull { it.id == player.id }?.actionHistory?.size ?: 0
-            player.id to player.actionHistory.drop(previousActionCount)
-        }
+        val newlyRecordedActionsByPlayerId = newlyRecordedActionsByPlayerId(previousState, currentState)
 
         val hasNewExhaustiveDraw = newlyRecordedActionsByPlayerId.values.any { actions ->
             actions.any { it is GameAction.ExhaustiveDraw }
@@ -522,32 +518,7 @@ class GameFlowCoordinator(
     ) {
         gameRepository.updateGame(gameId) { game ->
             if (game == null || game.roundCompletion != null) return@updateGame game to Unit
-            val affectedPlayerIds = newActionsByPlayerId.filterValues { actions ->
-                actions.any { it is GameAction.ExhaustiveDraw }
-            }.keys
-            val reason = newActionsByPlayerId.values.asSequence()
-                .flatten()
-                .filterIsInstance<GameAction.ExhaustiveDraw>()
-                .first().reason
-            val isAbortive = affectedPlayerIds.size == state.playerCount
-            val directive = if (isAbortive || state.dealerPlayerId in affectedPlayerIds) {
-                RoundTransitionDirective.REPEAT_DEALER
-            } else {
-                RoundTransitionDirective.ADVANCE_DEALER
-            }
-            game.copy(
-                roundCompletion = RoundCompletionSummary(
-                    outcomeId = reason.id,
-                    classification = if (isAbortive) {
-                        RoundCompletionClassification.ABORTIVE_DRAW
-                    } else {
-                        RoundCompletionClassification.EXHAUSTIVE_DRAW
-                    },
-                    beneficiaryPlayerIds = if (isAbortive) emptySet() else affectedPlayerIds,
-                    transitionDirective = directive,
-                    settledScoresByPlayerId = state.players.associate { it.id to it.score },
-                ),
-            ) to Unit
+            game.copy(roundCompletion = recordedDrawCompletion(state, newActionsByPlayerId)) to Unit
         }
     }
 

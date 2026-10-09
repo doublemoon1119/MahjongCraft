@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.repository
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.CommittedGameFacts
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
@@ -21,6 +22,9 @@ class FakeGameRepository : GameRepository {
 
     /** 測試中由交易 callback 產生的歷史草稿。 */
     val historyDrafts: MutableList<HistoryEventDraft> = mutableListOf()
+
+    /** 比照正式 store，每筆有事實的交易提交的前後對局與事實。 */
+    val committedFacts: MutableList<CommittedGameFacts> = mutableListOf()
 
     override suspend fun getGame(gameId: Uuid): Game? = games[gameId]
 
@@ -71,7 +75,9 @@ class FakeGameRepository : GameRepository {
         writeCount++
         val (next, result) = block(previous)
         if (next == null) games.remove(gameId) else games[gameId] = next
-        historyDrafts += history(previous, next, result)
+        val drafts = history(previous, next, result)
+        historyDrafts += drafts
+        if (drafts.isNotEmpty() && (previous != null || next != null)) committedFacts += CommittedGameFacts(gameId, previous, next, drafts)
         return result
     }
 

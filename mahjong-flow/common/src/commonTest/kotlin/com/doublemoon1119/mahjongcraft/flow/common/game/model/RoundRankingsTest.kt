@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.flow.server.game.service
+package com.doublemoon1119.mahjongcraft.flow.common.game.model
 
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
