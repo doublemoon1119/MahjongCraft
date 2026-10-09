@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
+import com.doublemoon1119.mahjongcraft.flow.server.game.repository.runAsSingleWrite
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
@@ -78,6 +79,8 @@ class DeclareAbortiveDrawUseCaseTest {
     /**
      * 驗證成立九種九牌時：全員 `actionHistory` 皆記錄 `ExhaustiveDraw(KyuushuKyuuhai)`、
      * 分數皆不變（途中流局不結算任何點數）。
+     *
+     * 以目前的遊戲為預期遊戲執行，確認命令只寫入這一局一次（AI 命令的條件式提交契約）。
      */
     @Test
     fun `test declare kyuushu kyuuhai records ExhaustiveDraw for all players and does not change scores`() = runTest {
@@ -99,7 +102,7 @@ class DeclareAbortiveDrawUseCaseTest {
         )
         fixtures.gameRepo.setTableState(table)
 
-        val result = fixtures.useCase(gameId, playerId, RiichiExhaustiveDrawReason.KyuushuKyuuhai)
+        val result = fixtures.gameRepo.runAsSingleWrite(gameId) { fixtures.useCase(gameId, playerId, RiichiExhaustiveDrawReason.KyuushuKyuuhai) }
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!

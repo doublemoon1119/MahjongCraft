@@ -11,6 +11,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.server.game.repository.ExpectedGameResult
+import com.doublemoon1119.mahjongcraft.flow.server.game.repository.ExpectedGameWrittenTwiceException
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.ExhaustiveDrawSettlementPresentationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAvailabilityService
@@ -226,16 +228,26 @@ class GameFlowCoordinator(
 
         val preparationAction = roundPreparationAiDriver?.resolveNextAction(gameId)
         if (preparationAction != null) {
-            if (preparationAction.clearsForcedAutoPlay) clearForcedAutoPlay(gameId, preparationAction.playerId)
-            dispatchAndReconcile(gameId, preparationAction.playerId, preparationAction.command)
+            if (preparationAction.clearsForcedAutoPlay) {
+                clearForcedAutoPlay(gameId, preparationAction.playerId)
+                dispatchAndReconcile(gameId, preparationAction.playerId, preparationAction.command)
+            } else {
+                submitAutomatedDecision(gameId, preparationAction.playerId, preparationAction.command, preparationAction.basis)
+            }
             return stepBefore != gameRepository.getGame(gameId)
         }
 
         val forcedAction = forcedAutoPlayDriver.resolveNextAction(gameId)
         val automaticAction = if (forcedAction == null) automaticDecisionDriver?.resolveNextAction(gameId) else null
-        val (playerId, command) = forcedAction ?: automaticAction ?: aiTurnDriver.resolveNextAction(gameId) ?: return false
-        if (forcedAction != null) clearForcedAutoPlay(gameId, playerId)
-        dispatchAndReconcile(gameId, playerId, command)
+        val humanAction = forcedAction ?: automaticAction
+        if (humanAction != null) {
+            val (playerId, command) = humanAction
+            if (forcedAction != null) clearForcedAutoPlay(gameId, playerId)
+            dispatchAndReconcile(gameId, playerId, command)
+        } else {
+            val decision = aiTurnDriver.resolveNextAction(gameId) ?: return false
+            submitAutomatedDecision(gameId, decision.playerId, decision.command, decision.basis)
+        }
         if (presentationBusyGate.isBusy(gameId)) {
             return stepBefore != gameRepository.getGame(gameId)
         }
@@ -280,18 +292,65 @@ class GameFlowCoordinator(
         }
     }
 
+    /** 無條件分派 [command]、做系統銜接，再調整決策計時器（見 [reconcileAfter]）。 */
+    private suspend fun dispatchAndReconcile(
+        gameId: Uuid,
+        playerId: Uuid,
+        command: GameCommand,
+    ): Outcome<Unit, GameError> {
+        val result = dispatchAndChain(gameId, playerId, command) { gameActionRouter(gameId, playerId, command) }
+        return reconcileAfter(gameId, playerId, requireNotNull(result) { "An unconditional dispatch is never stale" })
+    }
+
+    /**
+     * 送出依 [expectedGame] 決定的 AI 命令（遊戲中的決策或開局準備的提交），只在權威遊戲仍是 [expectedGame] 時套用。
+     *
+     * 呈現忙碌時不送出。命令的那一次權威寫入在交易內比對 [expectedGame]（見 [GameRepository.withExpectedGame]）；
+     * 不符時命令完全沒有執行，也不做系統銜接與計時調整，由下一輪推進重新判斷誰該行動。
+     *
+     * @param gameId 對局 Uuid。
+     * @param playerId 行動的 AI 玩家。
+     * @param command AI 決定的命令。
+     * @param expectedGame 決策所依據的權威遊戲。
+     * @return 命令的執行結果；過期或呈現忙碌而沒有送出時為 null。
+     * @throws IllegalStateException 命令對這一局寫入超過一次；第一次寫入可能已經提交，這一次推進就此停止。
+     */
+    private suspend fun submitAutomatedDecision(
+        gameId: Uuid,
+        playerId: Uuid,
+        command: GameCommand,
+        expectedGame: Game,
+    ): Outcome<Unit, GameError>? {
+        if (presentationBusyGate.isBusy(gameId)) return null
+        val result = dispatchAndChain(gameId, playerId, command) {
+            val conditional = try {
+                gameRepository.withExpectedGame(gameId, expectedGame) { gameActionRouter(gameId, playerId, command) }
+            } catch (violation: ExpectedGameWrittenTwiceException) {
+                throw IllegalStateException(
+                    "Automated command $command by player $playerId wrote game $gameId more than once; " +
+                        "the first write may already be committed",
+                    violation,
+                )
+            }
+            when (conditional) {
+                is ExpectedGameResult.Applied -> conditional.value
+                ExpectedGameResult.Stale -> null
+            }
+        } ?: return null
+        return reconcileAfter(gameId, playerId, result)
+    }
+
     /**
      * 分派命令與系統銜接完成後，依最終權威桌況調整決策計時器。
      *
      * 成功命令會將 [playerId] 視為完成一次決策，結算舊 timer；失敗命令只進行狀態校正，不重設該玩家
      * 已存在的基本思考時間。機械摸牌成功前沒有 timer，但完成後仍會透過相同流程建立自己回合的新 timer。
      */
-    private suspend fun dispatchAndReconcile(
+    private suspend fun reconcileAfter(
         gameId: Uuid,
         playerId: Uuid,
-        command: GameCommand,
+        result: Outcome<Unit, GameError>,
     ): Outcome<Unit, GameError> {
-        val result = dispatchAndChain(gameId, playerId, command)
         decisionAvailabilityService.reconcile(
             gameId = gameId,
             completedPlayerId = playerId.takeIf { result is Outcome.Success },
@@ -312,8 +371,16 @@ class GameFlowCoordinator(
     /**
      * 分派 [command] 並自動銜接對應的系統觸發 use case。抽出成獨立方法讓 [driveAutomatedPlayers] 能
      * 直接呼叫——AI 送出的命令也必須經過同一套系統銜接邏輯，不能繞過去。
+     *
+     * @param dispatchCommand 實際分派 [command] 的方式；回傳 null 代表命令因過期而沒有執行，此時不做任何系統銜接。
+     * @return 命令的執行結果；[dispatchCommand] 回傳 null 時為 null。
      */
-    private suspend fun dispatchAndChain(gameId: Uuid, playerId: Uuid, command: GameCommand): Outcome<Unit, GameError> {
+    private suspend fun dispatchAndChain(
+        gameId: Uuid,
+        playerId: Uuid,
+        command: GameCommand,
+        dispatchCommand: suspend () -> Outcome<Unit, GameError>?,
+    ): Outcome<Unit, GameError>? {
         val game = gameRepository.getGame(gameId)
             ?: return Outcome.Error(GameError.GameNotFound(gameId))
         if (game.pendingRoundPreparation != null && command !is GameCommand.SubmitRoundPreparation) {
@@ -321,7 +388,7 @@ class GameFlowCoordinator(
         }
         val previousState = gameRepository.getTableState(gameId)
             ?: return Outcome.Error(GameError.GameNotFound(gameId))
-        val result = gameActionRouter(gameId, playerId, command)
+        val result = dispatchCommand() ?: return null
 
         if (result is Outcome.Error && result.error is GameError.WallExhausted) {
             val specialOutcome = resolvePostReactionRoundOutcomeUseCase(gameId)

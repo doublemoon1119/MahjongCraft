@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
+import com.doublemoon1119.mahjongcraft.flow.server.game.repository.runAsSingleWrite
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
@@ -131,13 +132,15 @@ class RespondToRobbingUseCaseTest {
     /**
      * 驗證搶槓成功：贏家分數增加（含搶槓 1 翻的加成）、`actionHistory` 記錄 `Ron`、反應視窗清除，
      * 且暗槓/加槓宣告視為未成立——宣告者的副露維持原本的 PON、`lastDrawn` 不變、牌山不縮減。
+     *
+     * 以目前的遊戲為預期遊戲執行，確認命令只寫入這一局一次（AI 命令的條件式提交契約）。
      */
     @Test
     fun `test chankan ron settles winner and leaves the kan unapplied`() = runTest {
         val fixtures = Fixtures()
         fixtures.gameRepo.setTableState(setUpTable())
 
-        val result = fixtures.useCase(gameId, robberId, GameAction.Ron(robbedWhiteTile.id))
+        val result = fixtures.gameRepo.runAsSingleWrite(gameId) { fixtures.useCase(gameId, robberId, GameAction.Ron(robbedWhiteTile.id)) }
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!

@@ -1,24 +1,32 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 
+import com.doublemoon1119.mahjongcraft.ai.AiDecisionContext
 import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
+import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategy
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
+import com.doublemoon1119.mahjongcraft.ai.RoundPreparationAiContext
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.bundled.BundledRiichiExtension
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinSettlementDetail
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExtensionGameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransition
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRoundPreparation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationInputSpec
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSubmission
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundContinuationContext
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.time.MonotonicClock
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
+import com.doublemoon1119.mahjongcraft.flow.server.game.repository.ExpectedGameWrittenTwiceException
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.ExhaustiveDrawSettlementPresentationService
@@ -43,6 +51,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ResolveWinRoundC
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToDiscardUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToRobbingUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ReturnToRoomUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.SubmitRoundPreparationUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
@@ -51,6 +60,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
@@ -85,9 +95,11 @@ import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
@@ -102,8 +114,19 @@ class GameFlowCoordinatorTest {
 
     private val gameId = Uuid.random()
 
+    /**
+     * 協調者與它依賴的流程服務。
+     *
+     * @param winRoundContinuationResolverRegistry 胡牌後是否繼續本局的解析器。
+     * @param extraStrategies 另外登記的 AI 策略，以策略 key 索引。
+     * @param roundPreparationResolvers 開局準備的解析器；提供時才接上開局準備的提交與 AI。
+     * @param extraCommandHandlers 另外登記擴充命令 handler 的方式。
+     */
     private class Fixtures(
         winRoundContinuationResolverRegistry: WinRoundContinuationResolverRegistry = WinRoundContinuationResolverRegistry().apply { freeze() },
+        extraStrategies: Map<String, MahjongAiStrategy> = emptyMap(),
+        roundPreparationResolvers: RoundPreparationResolverRegistry? = null,
+        extraCommandHandlers: (ExtensionGameCommandExecutorRegistry) -> Unit = {},
     ) {
         val gameRepo = FakeGameRepository()
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
@@ -125,6 +148,7 @@ class GameFlowCoordinatorTest {
         val extensionCommandExecutor = ExtensionGameCommandExecutor(
             registry = ExtensionGameCommandExecutorRegistry().apply {
                 BundledRiichiExtension.registerGameCommandHandlers(this)
+                extraCommandHandlers(this)
                 freeze()
             },
             context = ExtensionGameCommandContext(
@@ -183,10 +207,12 @@ class GameFlowCoordinatorTest {
             ),
             declareAbortiveDrawUseCase = DeclareAbortiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
             extensionCommandExecutor = extensionCommandExecutor,
+            submitRoundPreparationUseCase = roundPreparationResolvers?.let { SubmitRoundPreparationUseCase(gameRepo, moduleRegistry, it, snapshotSynchronizer) },
         )
         val getLegalActionsUseCase = GetLegalActionsUseCase(gameRepo, moduleRegistry)
         val aiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = RandomAiStrategy.KEY).apply {
             registerBuiltInAiStrategies(moduleRegistry, ExtensionGameActionAiRegistry(moduleRegistry), OpponentModelRegistry().apply { BundledRiichiExtension.registerOpponentModels(this) })
+            extraStrategies.forEach { (key, strategy) -> register(key) { strategy } }
         }
         val aiTurnDriver = AiTurnDriver(gameRepo, getLegalActionsUseCase, aiStrategyRegistry, GameVisibilityPolicyImpl(moduleRegistry), moduleRegistry)
         val clock = MutableMonotonicClock()
@@ -243,6 +269,9 @@ class GameFlowCoordinatorTest {
             exhaustiveDrawSettlementPresentationService = ExhaustiveDrawSettlementPresentationService(presentationPublisher),
             winPresentationHandoff = winPresentationHandoff,
             presentationPublisher = presentationPublisher,
+            roundPreparationAiDriver = roundPreparationResolvers?.let {
+                RoundPreparationAiDriver(gameRepo, moduleRegistry, it, aiStrategyRegistry, GameVisibilityPolicyImpl(moduleRegistry))
+            },
         )
     }
 
@@ -1368,6 +1397,197 @@ class GameFlowCoordinatorTest {
         val scoresAfterMoreCalls = fixtures.gameRepo.getTableState(gameId)!!.players.associate { it.id to it.score }
 
         assertEquals(scoresAfterFirstCall, scoresAfterMoreCalls, "Scores must not change after the match has already ended.")
+    }
+
+    // ---- AI 決策的條件式提交 ----
+
+    /**
+     * 驗證 AI 決策期間權威遊戲被改變時，這次決策完全不套用，下一輪重新判斷並決策後才捨牌。
+     */
+    @Test
+    fun `test an ai decision made on a changed game is discarded and decided again`() = runTest {
+        val strategy = ChangingGameStrategy(changesGameOnFirstCall = true)
+        val fixtures = Fixtures(extraStrategies = mapOf(CHANGING_STRATEGY_KEY to strategy))
+        strategy.gameRepo = fixtures.gameRepo
+        val aiId = Uuid.random()
+        val drawn = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5))
+        val ai = FakeMahjongPlayerFactory.create(
+            id = aiId,
+            initialSeat = Wind.EAST,
+            hand = Hand(lastDrawn = drawn),
+            playerRuleState = RiichiPlayerState(),
+        )
+        val human = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(ai, human),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(listOf(FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)))),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table, mapOf(aiId to CHANGING_STRATEGY_KEY))
+
+        fixtures.coordinator.driveAutomatedPlayers(gameId)
+
+        assertEquals(2, strategy.gameCommandCalls, "The stale decision should be made again on the changed game.")
+        val updatedAi = fixtures.gameRepo.getTableState(gameId)!!.players.first { it.id == aiId }
+        assertEquals(listOf(drawn.id), updatedAi.discardPile.entries.map { it.tile.id }, "Only the second decision should be applied.")
+    }
+
+    /**
+     * 驗證 AI 的開局準備提交期間權威遊戲被改變時，這次提交完全不套用，下一輪重新決定後才完成準備步驟。
+     */
+    @Test
+    fun `test an ai round preparation submission on a changed game is discarded and decided again`() = runTest {
+        val strategy = ChangingGameStrategy(changesGameOnFirstCall = true)
+        val resolvers = RoundPreparationResolverRegistry().apply { register(ConfirmationResolver) }
+        val fixtures = Fixtures(extraStrategies = mapOf(CHANGING_STRATEGY_KEY to strategy), roundPreparationResolvers = resolvers)
+        strategy.gameRepo = fixtures.gameRepo
+        val humanId = Uuid.random()
+        val aiId = Uuid.random()
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(
+                FakeMahjongPlayerFactory.create(id = humanId, initialSeat = Wind.EAST),
+                FakeMahjongPlayerFactory.create(id = aiId, initialSeat = Wind.SOUTH),
+            ),
+            config = RiichiRuleConfig(),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setGame(
+            Game(
+                tableState = table,
+                flowConfig = GameFlowConfig(),
+                aiPlayerStrategyKeys = mapOf(aiId to CHANGING_STRATEGY_KEY),
+                pendingRoundPreparation = PendingRoundPreparation(
+                    stepId = "test:confirm",
+                    stepIndex = 0,
+                    inputSpecsByPlayerId = mapOf(aiId to RoundPreparationInputSpec.Confirmation),
+                ),
+            ),
+        )
+
+        fixtures.coordinator.driveAutomatedPlayers(gameId)
+
+        assertEquals(2, strategy.preparationCalls, "The stale submission should be decided again on the changed game.")
+        assertNull(fixtures.gameRepo.getGame(gameId)?.pendingRoundPreparation)
+    }
+
+    /**
+     * 驗證 AI 送出的擴充命令寫入同一局兩次、即使 handler 攔下例外並回報成功，這次推進仍以錯誤停止：第一次寫入維持
+     * 提交、不重試，也不接著做系統銜接。
+     */
+    @Test
+    fun `test an ai command writing the game twice stops the advance`() = runTest {
+        val strategy = FixedCommandStrategy(GameCommand.Extension(DoubleWriteCommand))
+        val fixtures = Fixtures(
+            extraStrategies = mapOf(FIXED_STRATEGY_KEY to strategy),
+            extraCommandHandlers = { registry ->
+                registry.register(DoubleWriteCommand::class) { context ->
+                    object : ExtensionGameCommandHandler<DoubleWriteCommand> {
+                        override suspend fun execute(gameId: Uuid, playerId: Uuid, command: DoubleWriteCommand): Outcome<Unit, GameError> {
+                            context.gameRepository.updateGame(gameId) { it?.copy(automaticControlRevision = it.automaticControlRevision + 1) to Unit }
+                            runCatching { context.gameRepository.updateGame(gameId) { it?.copy(isMatchOver = true) to Unit } }
+                            return Outcome.Success(Unit)
+                        }
+                    }
+                }
+            },
+        )
+        val aiId = Uuid.random()
+        val ai = FakeMahjongPlayerFactory.create(
+            id = aiId,
+            initialSeat = Wind.EAST,
+            hand = Hand(lastDrawn = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5))),
+            playerRuleState = RiichiPlayerState(),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(ai, FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH)),
+            config = RiichiRuleConfig(),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table, mapOf(aiId to FIXED_STRATEGY_KEY))
+
+        val error = assertFailsWith<IllegalStateException> { fixtures.coordinator.driveAutomatedPlayers(gameId) }
+
+        assertIs<ExpectedGameWrittenTwiceException>(error.cause)
+        assertEquals(1, strategy.calls, "A contract violation must not be decided again.")
+        val game = assertNotNull(fixtures.gameRepo.getGame(gameId))
+        assertEquals(1L, game.automaticControlRevision, "The first write stays committed.")
+        assertEquals(false, game.isMatchOver)
+    }
+
+    /** 每次都回傳同一個命令的 AI 策略。 */
+    private class FixedCommandStrategy(private val command: GameCommand) : MahjongAiStrategy {
+        /** 被呼叫的次數。 */
+        var calls = 0
+            private set
+
+        override suspend fun decideGameCommand(context: AiDecisionContext): GameCommand {
+            calls++
+            return command
+        }
+    }
+
+    /** 對同一局寫入兩次的測試用擴充命令。 */
+    private data object DoubleWriteCommand : ExtensionGameCommand
+
+    /**
+     * 決策時可選擇先改變權威遊戲一次的 AI 策略，用來模擬 AI 思考期間其他入口修改了同一局。
+     *
+     * @property changesGameOnFirstCall 第一次被呼叫時是否改變權威遊戲。
+     */
+    private class ChangingGameStrategy(private val changesGameOnFirstCall: Boolean) : MahjongAiStrategy {
+        /** 決策期間要改變的權威倉庫；建立 [Fixtures] 後設定。 */
+        lateinit var gameRepo: FakeGameRepository
+
+        /** [decideGameCommand] 的呼叫次數。 */
+        var gameCommandCalls = 0
+            private set
+
+        /** [decideRoundPreparation] 的呼叫次數。 */
+        var preparationCalls = 0
+            private set
+
+        override suspend fun decideGameCommand(context: AiDecisionContext): GameCommand {
+            gameCommandCalls++
+            if (gameCommandCalls == 1) changeGame(context.snapshot.id)
+            val tile = context.snapshot.players.first { it.id == context.selfId }.hand.lastDrawn
+            return GameCommand.Discard(checkNotNull(tile).id)
+        }
+
+        override suspend fun decideRoundPreparation(context: RoundPreparationAiContext): RoundPreparationSubmission {
+            preparationCalls++
+            if (preparationCalls == 1) changeGame(context.snapshot.id)
+            return RoundPreparationSubmission.Confirmed
+        }
+
+        private suspend fun changeGame(gameId: Uuid) {
+            if (!changesGameOnFirstCall) return
+            gameRepo.updateGame(gameId) { game -> game?.copy(automaticControlRevision = game.automaticControlRevision + 1) to Unit }
+        }
+    }
+
+    /** 收齊確認後不改桌況、也沒有下一步的開局準備解析器。 */
+    private object ConfirmationResolver : RoundPreparationResolver {
+        override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI
+
+        override fun begin(tableState: TableState, ruleModule: MahjongRuleModule<*>): PendingRoundPreparation? = null
+
+        override fun resolve(
+            tableState: TableState,
+            preparation: PendingRoundPreparation,
+            ruleModule: MahjongRuleModule<*>,
+        ): RoundPreparationResolution = RoundPreparationResolution(tableState, nextStep = null)
+    }
+
+    private companion object {
+        /** [ChangingGameStrategy] 的策略 key。 */
+        const val CHANGING_STRATEGY_KEY = "test:changing_game"
+
+        /** [FixedCommandStrategy] 的策略 key。 */
+        const val FIXED_STRATEGY_KEY = "test:fixed_command"
     }
 }
 

@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
+import com.doublemoon1119.mahjongcraft.flow.server.game.repository.runAsSingleWrite
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToDiscardUseCase
@@ -100,6 +101,8 @@ class DeclareRiichiUseCaseTest {
     /**
      * 驗證聽牌、門前清、點數足夠的玩家，宣告立直（打出剛摸到的牌）後，
      * 手牌、牌河、點數、立直棒、玩家立直狀態、回合推進皆正確更新。
+     *
+     * 以目前的遊戲為預期遊戲執行，確認命令只寫入這一局一次（AI 命令的條件式提交契約）。
      */
     @Test
     fun `test declare riichi with tsumogiri updates all riichi related state`() = runTest {
@@ -118,7 +121,7 @@ class DeclareRiichiUseCaseTest {
         )
         fixtures.gameRepo.setTableState(table)
 
-        val result = fixtures.useCase(gameId, currentPlayerId, drawnTile.id)
+        val result = fixtures.gameRepo.runAsSingleWrite(gameId) { fixtures.useCase(gameId, currentPlayerId, drawnTile.id) }
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
 

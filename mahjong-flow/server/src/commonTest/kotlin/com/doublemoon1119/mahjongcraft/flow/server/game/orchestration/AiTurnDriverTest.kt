@@ -107,7 +107,7 @@ class AiTurnDriverTest {
 
         val result = fixtures.driver.resolveNextAction(gameId)
 
-        assertEquals(aiId to GameCommand.RespondToRobbing(GameAction.Pass), result)
+        assertEquals(aiId to GameCommand.RespondToRobbing(GameAction.Pass), result?.let { it.playerId to it.command })
         assertEquals(AiDecisionPhase.RespondingToRobbing, fixtures.strategy.lastContext?.phase)
         assertEquals(aiId, fixtures.strategy.lastContext?.selfId)
         val snapshot = assertNotNull(fixtures.strategy.lastContext?.snapshot)
@@ -203,7 +203,7 @@ class AiTurnDriverTest {
 
         val result = fixtures.driver.resolveNextAction(gameId)
 
-        assertEquals(aiId to GameCommand.RespondToDiscard(GameAction.Pass), result)
+        assertEquals(aiId to GameCommand.RespondToDiscard(GameAction.Pass), result?.let { it.playerId to it.command })
         assertEquals(AiDecisionPhase.RespondingToDiscard, fixtures.strategy.lastContext?.phase)
     }
 
@@ -252,7 +252,7 @@ class AiTurnDriverTest {
 
         val result = fixtures.driver.resolveNextAction(gameId)
 
-        assertEquals(aiId to GameCommand.Draw, result)
+        assertEquals(aiId to GameCommand.Draw, result?.let { it.playerId to it.command })
         assertEquals(0, fixtures.strategy.callCount, "Drawing is not a strategic decision; the strategy should not be consulted.")
     }
 
@@ -276,7 +276,7 @@ class AiTurnDriverTest {
 
         val result = fixtures.driver.resolveNextAction(gameId)
 
-        assertEquals(aiId to strategyCommand, result)
+        assertEquals(aiId to strategyCommand, result?.let { it.playerId to it.command })
         assertEquals(AiDecisionPhase.OwnTurn, fixtures.strategy.lastContext?.phase)
         assertEquals(aiId, fixtures.strategy.lastContext?.selfId)
         assertNull(fixtures.strategy.lastContext?.forcedDiscardTileId)
@@ -322,7 +322,7 @@ class AiTurnDriverTest {
 
         val result = fixtures.driver.resolveNextAction(gameId)
 
-        assertEquals(aiId to strategyCommand, result)
+        assertEquals(aiId to strategyCommand, result?.let { it.playerId to it.command })
         assertEquals(AiDecisionPhase.OwnTurn, fixtures.strategy.lastContext?.phase)
     }
 
@@ -352,5 +352,27 @@ class AiTurnDriverTest {
         val result = fixtures.driver.resolveNextAction(gameId)
 
         assertNull(result)
+    }
+
+    /**
+     * 驗證決策結果附上建立情境時讀到的遊戲，套用前可據此確認局面沒有改變。
+     */
+    @Test
+    fun `test decision carries the game it was decided on`() = runTest {
+        val strategyCommand = GameCommand.Discard(Uuid.random())
+        val fixtures = Fixtures(strategyCommand = strategyCommand)
+        val aiId = Uuid.random()
+        val ai = FakeMahjongPlayerFactory.create(
+            id = aiId,
+            initialSeat = Wind.EAST,
+            hand = Hand(lastDrawn = FakeIdentifiedTileFactory.create(Tile.Honor.East)),
+        )
+        val table = FakeTableStateFactory.create(id = gameId, players = listOf(ai), config = RiichiRuleConfig(), currentPlayerIndex = 0)
+        fixtures.gameRepo.setTableState(table, mapOf(aiId to strategyKey))
+
+        val result = assertNotNull(fixtures.driver.resolveNextAction(gameId))
+
+        assertEquals(fixtures.gameRepo.getGame(gameId), result.basis)
+        assertEquals(table.id, fixtures.strategy.lastContext?.snapshot?.id)
     }
 }

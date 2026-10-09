@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
+import com.doublemoon1119.mahjongcraft.flow.server.game.repository.runAsSingleWrite
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
@@ -87,6 +88,8 @@ class DiscardTileUseCaseTest {
 
     /**
      * 驗證捨棄剛摸到的牌（摸切）時，正確更新手牌、牌河並推進到下一位玩家。
+     *
+     * 以目前的遊戲為預期遊戲執行，確認命令只寫入這一局一次（AI 命令的條件式提交契約）。
      */
     @Test
     fun `test discard drawn tile advances to next player`() = runTest {
@@ -106,7 +109,7 @@ class DiscardTileUseCaseTest {
         )
         fixtures.gameRepo.setTableState(table)
 
-        val result = fixtures.useCase(gameId, currentPlayerId, drawnTile.id)
+        val result = fixtures.gameRepo.runAsSingleWrite(gameId) { fixtures.useCase(gameId, currentPlayerId, drawnTile.id) }
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
 

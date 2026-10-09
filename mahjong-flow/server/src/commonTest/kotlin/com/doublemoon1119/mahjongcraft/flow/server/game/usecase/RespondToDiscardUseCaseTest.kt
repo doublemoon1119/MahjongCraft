@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostAction
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
+import com.doublemoon1119.mahjongcraft.flow.server.game.repository.runAsSingleWrite
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
@@ -117,6 +118,8 @@ class RespondToDiscardUseCaseTest {
     /**
      * 驗證唯一有資格的玩家選擇過牌時：若原本可以碰，把該牌記入放過清單；且因反應視窗已經齊全（無人動作），
      * 直接推進到下一位玩家並清除反應視窗。
+     *
+     * 以目前的遊戲為預期遊戲執行，確認命令只寫入這一局一次（AI 命令的條件式提交契約）。
      */
     @Test
     fun `test pass on lone pon-eligible player records passed tile and advances turn`() = runTest {
@@ -141,7 +144,7 @@ class RespondToDiscardUseCaseTest {
         )
         fixtures.gameRepo.setTableState(table)
 
-        val result = fixtures.useCase(gameId, responderId, GameAction.Pass)
+        val result = fixtures.gameRepo.runAsSingleWrite(gameId) { fixtures.useCase(gameId, responderId, GameAction.Pass) }
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!

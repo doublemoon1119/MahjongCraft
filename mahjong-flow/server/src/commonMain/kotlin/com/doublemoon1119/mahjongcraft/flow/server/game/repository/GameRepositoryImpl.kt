@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdate
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import kotlinx.coroutines.currentCoroutineContext
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
@@ -25,15 +26,18 @@ class GameRepositoryImpl(
     override suspend fun getTableState(gameId: Uuid): TableState? = store.getGame(gameId)?.tableState
 
     override suspend fun setTableState(state: TableState) = store.update { current ->
+        expectedGameScopeFor(state.id)?.checkBeforeWrite(current.games[state.id])
         val game = current.games[state.id]?.copy(tableState = state) ?: Game(state, GameFlowConfig())
         AuthoritativeStateUpdate(current.copy(games = current.games + (state.id to game)), Unit)
     }
 
     override suspend fun removeTableState(gameId: Uuid) = store.update { state ->
+        expectedGameScopeFor(gameId)?.checkBeforeWrite(state.games[gameId])
         AuthoritativeStateUpdate(state.copy(games = state.games - gameId), Unit)
     }
 
     override suspend fun clearAll() = store.update { state ->
+        currentCoroutineContext()[ExpectedGameScope]?.let { scope -> scope.checkBeforeWrite(state.games[scope.gameId]) }
         AuthoritativeStateUpdate(state.copy(games = emptyMap()), Unit)
     }
 
@@ -43,6 +47,7 @@ class GameRepositoryImpl(
         block: suspend (Game?) -> Pair<Game?, T>,
     ): T = store.update { state ->
         val previous = state.games[gameId]
+        expectedGameScopeFor(gameId)?.checkBeforeWrite(previous)
         val (next, result) = block(previous)
         val games = when {
             next == null -> state.games - gameId
@@ -78,4 +83,6 @@ class GameRepositoryImpl(
         }
         nextGame to result
     }
+
+    override suspend fun <T> withExpectedGame(gameId: Uuid, expectedGame: Game, command: suspend () -> T): ExpectedGameResult<T> = runWithExpectedGame(gameId, expectedGame, command)
 }

@@ -14,7 +14,13 @@ import org.koin.core.annotation.Single
 import kotlin.reflect.KClass
 import kotlin.uuid.Uuid
 
-/** 執行一種規則 extension 命令的 handler。 */
+/**
+ * 執行一種規則 extension 命令的 handler。
+ *
+ * AI 送出的命令只在權威遊戲仍是 AI 決策時的遊戲時才套用（見 [GameRepository.withExpectedGame]），因此 AI 可能送出的命令
+ * 必須遵守：對該局最多做一次權威寫入，且事件、呈現與快照同步等副作用都在這次寫入成功之後才發布。寫入前發現局面已改變時，
+ * 寫入會以例外中止，此時命令不得已經發布任何副作用；同一個命令寫入該局兩次會被視為違反契約並停止這次推進。
+ */
 interface ExtensionGameCommandHandler<C : ExtensionGameCommand> {
     /** 執行指定玩家送出的強型別命令。 */
     suspend fun execute(gameId: Uuid, playerId: Uuid, command: C): Outcome<Unit, GameError>

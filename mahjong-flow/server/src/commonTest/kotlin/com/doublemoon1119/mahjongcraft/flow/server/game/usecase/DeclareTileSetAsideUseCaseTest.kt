@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSe
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
+import com.doublemoon1119.mahjongcraft.flow.server.game.repository.runAsSingleWrite
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
@@ -71,13 +72,17 @@ class DeclareTileSetAsideUseCaseTest {
     private val north = FakeIdentifiedTileFactory.create(Tile.Honor.North)
     private val rinshan = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 9))
 
-    /** 驗證沒有人能榮和時，北移到拔北區、補一張嶺上牌，並依序記錄拔北與摸牌；畫面收到這次拔出的北。 */
+    /**
+     * 驗證沒有人能榮和時，北移到拔北區、補一張嶺上牌，並依序記錄拔北與摸牌；畫面收到這次拔出的北。
+     *
+     * 以目前的遊戲為預期遊戲執行，確認命令只寫入這一局一次（AI 命令的條件式提交契約）。
+     */
     @Test
     fun `pulling north without a robbing chance draws a rinshan tile`() = runTest {
         val fixtures = Fixtures()
         fixtures.gameRepo.setTableState(table(waiter = bystander(waiterId, Wind.SOUTH)))
 
-        val result = fixtures.useCase(gameId, pullerId, PULL_NORTH_GAME_ACTION)
+        val result = fixtures.gameRepo.runAsSingleWrite(gameId) { fixtures.useCase(gameId, pullerId, PULL_NORTH_GAME_ACTION) }
 
         assertIs<Outcome.Success<Unit>>(result)
         val state = assertNotNull(fixtures.gameRepo.getTableState(gameId))

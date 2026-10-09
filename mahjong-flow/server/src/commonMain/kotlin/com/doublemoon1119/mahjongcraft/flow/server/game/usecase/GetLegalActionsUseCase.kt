@@ -54,10 +54,19 @@ class GetLegalActionsUseCase(
     suspend operator fun invoke(gameId: Uuid, playerId: Uuid): Outcome<List<GameAction>, GameError> {
         val state = gameRepository.getTableState(gameId)
             ?: return Outcome.Error(GameError.GameNotFound(gameId))
-        val player = state.players.firstOrNull { it.id == playerId }
-            ?: return Outcome.Error(GameError.PlayerNotInGame(playerId, gameId))
+        return resolve(state, playerId)
+    }
 
-        val actions = PlayerDecisionOptionsResolver.resolveActions(state, player, moduleRegistry, actionContextResolver)
-        return Outcome.Success(actions)
+    /**
+     * 依呼叫端已讀取的 [state] 查詢指定玩家的合法動作，不重新讀取權威狀態；供需要與同一次讀取的其他資料一致的呼叫端使用。
+     *
+     * @param state 呼叫端讀取的桌況。
+     * @param playerId 欲查詢的玩家 Uuid。
+     * @return 合法動作清單，玩家不在桌上時為 [GameError]。
+     */
+    fun resolve(state: TableState, playerId: Uuid): Outcome<List<GameAction>, GameError> {
+        val player = state.players.firstOrNull { it.id == playerId }
+            ?: return Outcome.Error(GameError.PlayerNotInGame(playerId, state.id))
+        return Outcome.Success(PlayerDecisionOptionsResolver.resolveActions(state, player, moduleRegistry, actionContextResolver))
     }
 }

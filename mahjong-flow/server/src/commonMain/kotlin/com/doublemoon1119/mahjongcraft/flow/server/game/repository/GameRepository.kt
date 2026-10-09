@@ -84,4 +84,20 @@ interface GameRepository {
         history: (TableState?, TableState?, T) -> List<HistoryEventDraft> = { _, _, _ -> emptyList() },
         block: suspend (TableState?) -> Pair<TableState?, T>,
     ): T
+
+    /**
+     * 只在 [gameId] 的權威遊戲仍是 [expectedGame] 時讓 [command] 寫入這一局。
+     *
+     * [command] 執行期間對這一局的權威寫入（[updateGame]、[update]、[setTableState]、[removeTableState]、[clearAll]），會在
+     * 同一個交易內、執行修改區塊之前比對目前的遊戲與 [expectedGame]；不符時不寫入，並以例外中止 [command]，結果為
+     * [ExpectedGameResult.Stale]。[command] 對這一局最多寫入一次；第二次寫入丟出 [ExpectedGameWrittenTwiceException]，
+     * 此時第一次寫入可能已經提交。範圍只涵蓋 [command] 本身，不影響其他遊戲的寫入，也不能巢狀使用。
+     *
+     * @param T [command] 的回傳型別。
+     * @param gameId 受條件限制的遊戲。
+     * @param expectedGame 預期的權威遊戲。
+     * @param command 至多寫入這一局一次的命令。
+     * @return [command] 的結果，或過期。
+     */
+    suspend fun <T> withExpectedGame(gameId: Uuid, expectedGame: Game, command: suspend () -> T): ExpectedGameResult<T>
 }

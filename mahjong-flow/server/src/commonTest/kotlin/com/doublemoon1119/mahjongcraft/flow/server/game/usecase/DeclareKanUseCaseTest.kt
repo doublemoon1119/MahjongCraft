@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
+import com.doublemoon1119.mahjongcraft.flow.server.game.repository.runAsSingleWrite
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
@@ -66,6 +67,8 @@ class DeclareKanUseCaseTest {
      * 驗證暗槓成功宣告：手牌 3 張 + 摸到第 4 張同種牌 → 副露正確加入 `exposedMelds`、
      * 手牌對應 4 張牌被移除、`actionHistory` 依序記錄 `Kan` → `Draw`、`lastDrawn` 為補摸的嶺上牌、
      * 牌山正確縮減 1 張。
+     *
+     * 以目前的遊戲為預期遊戲執行，確認命令只寫入這一局一次（AI 命令的條件式提交契約）。
      */
     @Test
     fun `test closed kan success applies meld and draws replacement tile`() = runTest {
@@ -89,7 +92,7 @@ class DeclareKanUseCaseTest {
         ).withFirstKanPhysicalWallLayout()
         fixtures.gameRepo.setTableState(table)
 
-        val result = fixtures.useCase(gameId, playerId, GameAction.KanType.CLOSED_KAN, east4.id)
+        val result = fixtures.gameRepo.runAsSingleWrite(gameId) { fixtures.useCase(gameId, playerId, GameAction.KanType.CLOSED_KAN, east4.id) }
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!

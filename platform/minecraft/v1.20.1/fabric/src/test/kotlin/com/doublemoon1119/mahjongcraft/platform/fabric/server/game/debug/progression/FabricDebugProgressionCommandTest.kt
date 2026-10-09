@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.progre
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
+import com.doublemoon1119.mahjongcraft.flow.server.game.repository.ExpectedGameResult
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
@@ -108,6 +109,12 @@ class FabricDebugProgressionCommandTest {
             history: (TableState?, TableState?, T) -> List<HistoryEventDraft>,
             block: suspend (TableState?) -> Pair<TableState?, T>,
         ): T = error("Unexpected repository access")
+
+        override suspend fun <T> withExpectedGame(
+            gameId: Uuid,
+            expectedGame: Game,
+            command: suspend () -> T,
+        ): ExpectedGameResult<T> = error("Unexpected repository access")
     }
 
     /** 指令樹建構不解析任何玩家入座狀態。 */

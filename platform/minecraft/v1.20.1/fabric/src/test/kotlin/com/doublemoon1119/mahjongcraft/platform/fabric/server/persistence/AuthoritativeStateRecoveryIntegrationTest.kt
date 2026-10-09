@@ -217,7 +217,7 @@ class AuthoritativeStateRecoveryIntegrationTest {
 
         val action = runtime.aiTurnDriver.resolveNextAction(state.id)
 
-        assertEquals(state.currentPlayer.id to GameCommand.Draw, action)
+        assertEquals(state.currentPlayer.id to GameCommand.Draw, action?.let { it.playerId to it.command })
         assertNull(runtime.memberships.getVenueId(state.currentPlayer.id))
         assertEquals(RandomAiStrategy.KEY, runtime.gameRepository.getGame(state.id)?.aiPlayerStrategyKeys?.get(state.currentPlayer.id))
     }
