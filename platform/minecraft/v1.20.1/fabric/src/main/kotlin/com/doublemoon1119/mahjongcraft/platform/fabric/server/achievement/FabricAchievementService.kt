@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.CommittedGameFacts
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
+import com.doublemoon1119.mahjongcraft.flow.server.state.CommittedFactsListener
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementDetector
@@ -39,17 +40,24 @@ class FabricAchievementService(
     /** 通用與規則專屬成果判定。 */
     private val detector = GameAchievementDetector(moduleRegistry, resolverRegistry)
 
+    /** 將已提交事實轉交本服務；釋放通知不需要額外處理。 */
+    private val committedFactsListener = object : CommittedFactsListener {
+        override fun onCommitted(sequence: Long, facts: CommittedGameFacts) = handle(facts)
+
+        override fun onReleased(sequence: Long) = Unit
+    }
+
     /** 使用過 debug 指令、不再產生成果的場次。 */
     private val excludedMatchIds: MutableSet<Uuid> = ConcurrentHashMap.newKeySet()
 
     /** 開始接收已提交事實。 */
     fun startSession() {
-        store.setCommittedFactsListener(::handle)
+        store.setCommittedFactsListener(committedFactsListener)
     }
 
     /** 停止接收已提交事實並清除排除的場次，讓下一個 session 從頭開始。 */
     fun stopSession() {
-        store.setCommittedFactsListener {}
+        store.setCommittedFactsListener(CommittedFactsListener.NONE)
         excludedMatchIds.clear()
     }
 

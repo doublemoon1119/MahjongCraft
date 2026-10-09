@@ -69,7 +69,7 @@ class MatchEventsJavaVisibilityTest {
 
     /** 以 Java 介面的方法反射呼叫，模擬 Java 原始碼的呼叫方式。 */
     private fun javaCall(target: Any, name: String, parameterType: Class<*>? = null, argument: Any? = null): Any? {
-        val owner = if (target is Iterator<*>) java.util.Iterator::class.java else java.util.Collection::class.java
+        val owner = if (target is Iterator<*>) Iterator::class.java else Collection::class.java
         val method = if (parameterType == null) owner.getMethod(name) else owner.getMethod(name, parameterType)
         return try {
             if (parameterType == null) method.invoke(target) else method.invoke(target, argument)

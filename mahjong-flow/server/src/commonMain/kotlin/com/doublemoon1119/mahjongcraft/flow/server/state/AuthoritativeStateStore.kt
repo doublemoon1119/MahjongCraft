@@ -107,8 +107,11 @@ class AuthoritativeStateStore(
      */
     val state: StateFlow<AuthoritativeStateSnapshot> = mutableState.asStateFlow()
 
-    /** 已提交事實的接收者；見 [setCommittedFactsListener]。 */
-    @Volatile private var committedFactsListener: (CommittedGameFacts) -> Unit = {}
+    /** 已提交事實的接收者；同一交易的提交與釋放通知使用同一個接收者快照。 */
+    @Volatile private var committedFactsListener: CommittedFactsListener = CommittedFactsListener.NONE
+
+    /** store 生命週期內下一筆含有效事實交易的通知序號。 */
+    private var nextCommittedFactsSequence: Long = 1L
 
     /** 目前狀態的內部存取捷徑。 */
     private var currentState: AuthoritativeStateSnapshot
@@ -150,13 +153,12 @@ class AuthoritativeStateStore(
     /**
      * 登記已提交事實的接收者，取代先前登記的接收者。
      *
-     * 每次交易提交後，依場地在 store mutex 內同步呼叫一次，順序與提交順序相同；呼叫發生在提交交易的執行緒上。
-     * 與歷史記錄政策及儲存端可用性無關；被拒絕、失敗或沒有改變對局的交易不會呼叫。接收者不得阻塞或再次呼叫
-     * store；接收者丟出的例外會被忽略，交易照常成立。store 不保留任何尚未處理的事實。
+     * 接收者在提交後於鎖內收到事實，解鎖後收到釋放通知；store 只保留最新登記的接收者，不補發先前交易。若交易已經
+     * 捕捉到舊接收者，該交易的 [CommittedFactsListener.onReleased] 仍會交給同一個接收者。
      *
-     * @param listener 接收者；傳入不做事的接收者即可停止接收。
+     * @param listener 接收者；傳入 [CommittedFactsListener.NONE] 即可停止接收。
      */
-    fun setCommittedFactsListener(listener: (CommittedGameFacts) -> Unit) {
+    fun setCommittedFactsListener(listener: CommittedFactsListener) {
         committedFactsListener = listener
     }
 
@@ -474,115 +476,154 @@ class AuthoritativeStateStore(
     }
 
     /**
+     * 已捕捉的提交通知；用來確保提交與釋放通知使用同一 listener。
+     *
+     * @property sequence 這筆權威交易的單調遞增序號。
+     * @property listener 交易提交時捕捉的 listener。
+     * @property factsByVenue 交易中各場地的有效事實，順序與提交輸入一致。
+     */
+    private data class CommittedFactsNotification(
+        val sequence: Long,
+        val listener: CommittedFactsListener,
+        val factsByVenue: List<CommittedGameFacts>,
+    )
+
+    /**
      * 以原子方式讀取並更新完整伺服器權威狀態。
      *
-     * 只有 [AuthoritativeStateUpdate.state] 與目前狀態不同時才會標記 dirty 並通知 listener。
+     * 只有 [AuthoritativeStateUpdate.state] 與目前狀態不同時才會標記 dirty；有有效事實的交易才通知接收者。提交事實的
+     * [CommittedFactsListener.onCommitted] 會在交易鎖內依序呼叫；[CommittedFactsListener.onReleased] 會在
+     * 交易鎖釋放後呼叫。新場次只有在同一交易提交 [HistoryFact.MatchStarted] 時才依記錄政策決定資格；沒有
+     * 開局事實的新場次一律為 [HistoryRecordingDecision.EXCLUDED_NO_OPENING]，不從中途建立歷史。
      *
-     * 新場次只有在同一交易提交 [HistoryFact.MatchStarted] 時才依記錄政策決定資格；沒有開局事實的新場次一律為
-     * [HistoryRecordingDecision.EXCLUDED_NO_OPENING]，不從中途建立歷史。
+     * @param T 交易回傳結果的型別。
+     * @param block 在交易鎖內根據目前狀態產生新狀態、事實與結果。
+     * @return [block] 產生的交易結果。
      */
     suspend fun <T> update(
         block: suspend (AuthoritativeStateSnapshot) -> AuthoritativeStateUpdate<T>,
-    ): T = mutex.withLock {
-        val update = block(currentState)
-        var recording = restoreDecisions(update.state)
-        update.state.games.values.forEach { game ->
-            if (currentState.games[game.id]?.matchId != game.matchId) {
-                val hasOpening = update.historyDraftsByVenueId[game.id].orEmpty().any { it.fact is HistoryFact.MatchStarted }
-                val decision = if (hasOpening) recordingPolicy.decide(game) else HistoryRecordingDecision.EXCLUDED_NO_OPENING
-                recording = recording.copy(decisionsByMatchId = recording.decisionsByMatchId + (game.matchId to decision))
-            }
-        }
-        val nextState = if (update.state != currentState) {
-            val timestamp = historyClock.now().toEpochMilliseconds()
-            val previousHistory = currentState.historyRecordingState
-            val removedOrReplaced = currentState.games.values.filter { old ->
-                val replacement = update.state.games[old.id]
-                replacement == null || replacement.matchId != old.matchId
-            }
-            val terminals = removedOrReplaced.filter { old ->
-                old.matchId in previousHistory.nextSequenceByMatchId ||
-                    old.matchId in previousHistory.pendingEvents.map { it.matchId } ||
-                    old.matchId in previousHistory.firstMissingSequenceByMatchId ||
-                    previousHistory.decisionsByMatchId[old.matchId] == HistoryRecordingDecision.RECORDING ||
-                    previousHistory.decisionsByMatchId[old.matchId] == HistoryRecordingDecision.STOPPED_CONFIG_DISABLED ||
-                    previousHistory.decisionsByMatchId[old.matchId] == HistoryRecordingDecision.STOPPED_STORAGE_UNAVAILABLE ||
-                    previousHistory.decisionsByMatchId[old.matchId] == HistoryRecordingDecision.STOPPED_EXTERNALLY_MODIFIED
-            }.associate { old ->
-                old.matchId to HistoryRecordingTerminal(timestamp, old.isMatchOver, old.id)
-            }
-            recording = recording.copy(terminalByMatchId = recording.terminalByMatchId + terminals)
-            if (!isHistoryStorageAvailable) {
+    ): T {
+        var notification: CommittedFactsNotification? = null
+        return try {
+            mutex.withLock {
+                val update = block(currentState)
+                var recording = restoreDecisions(update.state)
                 update.state.games.values.forEach { game ->
-                    if (currentState.games[game.id] != game &&
-                        recording.decisionsByMatchId[game.matchId] == HistoryRecordingDecision.RECORDING
-                    ) {
-                        recording = recording.recordMissing(game).copy(
-                            decisionsByMatchId = recording.decisionsByMatchId +
-                                (game.matchId to HistoryRecordingDecision.STOPPED_STORAGE_UNAVAILABLE),
-                        )
+                    if (currentState.games[game.id]?.matchId != game.matchId) {
+                        val hasOpening = update.historyDraftsByVenueId[game.id].orEmpty().any { it.fact is HistoryFact.MatchStarted }
+                        val decision = if (hasOpening) recordingPolicy.decide(game) else HistoryRecordingDecision.EXCLUDED_NO_OPENING
+                        recording = recording.copy(decisionsByMatchId = recording.decisionsByMatchId + (game.matchId to decision))
                     }
                 }
-            }
-            val recordingMark = historyRecordingObserver?.let { TimeSource.Monotonic.markNow() }
-            val withDrafts = update.historyDraftsByVenueId.entries.fold(recording) { recording, entry ->
-                val game = update.state.games[entry.key] ?: currentState.games[entry.key]
-                    ?: error("History event references unknown venue ${entry.key}")
-                val completedReturn = game.isMatchOver && entry.value.all { it.fact is HistoryFact.ReturnedToRoom }
-                if (!isHistoryStorageAvailable || (!recordingPolicy.enabled && !completedReturn) || recording.decisionsByMatchId[game.matchId] != HistoryRecordingDecision.RECORDING) return@fold recording
-                val before = currentState.games[entry.key]?.tableState
-                val after = update.state.games[entry.key]?.tableState
-                val hasSnapshot = entry.value.any { it.fact is HistoryFact.MatchStarted || it.fact is HistoryFact.RoundStarted }
-                val resultDraft = if (after != null && before != after && !hasSnapshot) {
-                    val change = if (before == null) null else runCatching { HistoryTableChange.between(before, after) }.getOrNull()
-                    HistoryEventDraft(
-                        actorPlayerId = null,
-                        fact = HistoryFact.TableChanged(
-                            change?.let(HistoryTableResult::Change)
-                                ?: HistoryTableResult.Checkpoint("mahjongcraft:unsupported_structural_change", after),
+                val nextState = if (update.state != currentState) {
+                    val timestamp = historyClock.now().toEpochMilliseconds()
+                    val previousHistory = currentState.historyRecordingState
+                    val removedOrReplaced = currentState.games.values.filter { old ->
+                        val replacement = update.state.games[old.id]
+                        replacement == null || replacement.matchId != old.matchId
+                    }
+                    val terminals = removedOrReplaced.filter { old ->
+                        old.matchId in previousHistory.nextSequenceByMatchId ||
+                            old.matchId in previousHistory.pendingEvents.map { it.matchId } ||
+                            old.matchId in previousHistory.firstMissingSequenceByMatchId ||
+                            previousHistory.decisionsByMatchId[old.matchId] == HistoryRecordingDecision.RECORDING ||
+                            previousHistory.decisionsByMatchId[old.matchId] == HistoryRecordingDecision.STOPPED_CONFIG_DISABLED ||
+                            previousHistory.decisionsByMatchId[old.matchId] == HistoryRecordingDecision.STOPPED_STORAGE_UNAVAILABLE ||
+                            previousHistory.decisionsByMatchId[old.matchId] == HistoryRecordingDecision.STOPPED_EXTERNALLY_MODIFIED
+                    }.associate { old ->
+                        old.matchId to HistoryRecordingTerminal(timestamp, old.isMatchOver, old.id)
+                    }
+                    recording = recording.copy(terminalByMatchId = recording.terminalByMatchId + terminals)
+                    if (!isHistoryStorageAvailable) {
+                        update.state.games.values.forEach { game ->
+                            if (currentState.games[game.id] != game &&
+                                recording.decisionsByMatchId[game.matchId] == HistoryRecordingDecision.RECORDING
+                            ) {
+                                recording = recording.recordMissing(game).copy(
+                                    decisionsByMatchId = recording.decisionsByMatchId +
+                                        (game.matchId to HistoryRecordingDecision.STOPPED_STORAGE_UNAVAILABLE),
+                                )
+                            }
+                        }
+                    }
+                    val recordingMark = historyRecordingObserver?.let { TimeSource.Monotonic.markNow() }
+                    val withDrafts = update.historyDraftsByVenueId.entries.fold(recording) { recording, entry ->
+                        val game = update.state.games[entry.key] ?: currentState.games[entry.key]
+                            ?: error("History event references unknown venue ${entry.key}")
+                        val completedReturn = game.isMatchOver && entry.value.all { it.fact is HistoryFact.ReturnedToRoom }
+                        if (!isHistoryStorageAvailable || (!recordingPolicy.enabled && !completedReturn) || recording.decisionsByMatchId[game.matchId] != HistoryRecordingDecision.RECORDING) return@fold recording
+                        val before = currentState.games[entry.key]?.tableState
+                        val after = update.state.games[entry.key]?.tableState
+                        val hasSnapshot = entry.value.any { it.fact is HistoryFact.MatchStarted || it.fact is HistoryFact.RoundStarted }
+                        val resultDraft = if (after != null && before != after && !hasSnapshot) {
+                            val change = if (before == null) null else runCatching { HistoryTableChange.between(before, after) }.getOrNull()
+                            HistoryEventDraft(
+                                actorPlayerId = null,
+                                fact = HistoryFact.TableChanged(
+                                    change?.let(HistoryTableResult::Change)
+                                        ?: HistoryTableResult.Checkpoint("mahjongcraft:unsupported_structural_change", after),
+                                ),
+                            )
+                        } else {
+                            null
+                        }
+                        runCatching { recording.append(game, entry.value + listOfNotNull(resultDraft), timestamp, maxPendingHistoryEvents) }
+                            .getOrElse { recording.recordMissing(game) }
+                    }
+                    if (recordingMark != null && update.historyDraftsByVenueId.isNotEmpty()) {
+                        val appended = (withDrafts.pendingEvents.size - recording.pendingEvents.size).coerceAtLeast(0)
+                        historyRecordingObserver.onHistoryRecorded(recordingMark.elapsedNow(), appended)
+                    }
+                    val recordingState = update.historyRecordingFailures.fold(withDrafts) { recording, venueId ->
+                        val game = update.state.games[venueId] ?: currentState.games[venueId]
+                        if (game == null || (!recordingPolicy.enabled && !game.isMatchOver) || recording.decisionsByMatchId[game.matchId] != HistoryRecordingDecision.RECORDING) recording else recording.recordMissing(game)
+                    }
+                    val active = update.state.games.values.mapTo(mutableSetOf()) { it.matchId } + recordingState.transfersByMatchId.keys
+                    update.state.copy(
+                        historyRecordingState = recordingState.copy(
+                            decisionsByMatchId = recordingState.decisionsByMatchId.filter { (matchId, decision) ->
+                                matchId in active ||
+                                    decision == HistoryRecordingDecision.RECORDING ||
+                                    decision == HistoryRecordingDecision.STOPPED_CONFIG_DISABLED ||
+                                    decision == HistoryRecordingDecision.STOPPED_STORAGE_UNAVAILABLE ||
+                                    decision == HistoryRecordingDecision.STOPPED_TRANSFER_INTERRUPTED ||
+                                    decision == HistoryRecordingDecision.STOPPED_PRUNED ||
+                                    decision == HistoryRecordingDecision.STOPPED_EXTERNALLY_MODIFIED
+                            },
                         ),
                     )
                 } else {
-                    null
+                    update.state
                 }
-                runCatching { recording.append(game, entry.value + listOfNotNull(resultDraft), timestamp, maxPendingHistoryEvents) }
-                    .getOrElse { recording.recordMissing(game) }
+                val previousGames = currentState.games
+                commit(nextState)
+                val committedFacts = update.historyDraftsByVenueId.mapNotNull { (venueId, drafts) ->
+                    val previousGame = previousGames[venueId]
+                    val game = nextState.games[venueId]
+                    if (drafts.isEmpty() || (previousGame == null && game == null)) {
+                        null
+                    } else {
+                        CommittedGameFacts(venueId, previousGame, game, drafts)
+                    }
+                }
+                if (committedFacts.isNotEmpty()) {
+                    check(nextCommittedFactsSequence < Long.MAX_VALUE) { "Committed facts sequence exhausted" }
+                    val pending = CommittedFactsNotification(
+                        sequence = nextCommittedFactsSequence++,
+                        listener = committedFactsListener,
+                        factsByVenue = committedFacts,
+                    )
+                    notification = pending
+                    committedFacts.forEach { facts ->
+                        runCatching { pending.listener.onCommitted(pending.sequence, facts) }
+                    }
+                }
+                update.result
             }
-            if (recordingMark != null && update.historyDraftsByVenueId.isNotEmpty()) {
-                val appended = (withDrafts.pendingEvents.size - recording.pendingEvents.size).coerceAtLeast(0)
-                historyRecordingObserver.onHistoryRecorded(recordingMark.elapsedNow(), appended)
-            }
-            val recordingState = update.historyRecordingFailures.fold(withDrafts) { recording, venueId ->
-                val game = update.state.games[venueId] ?: currentState.games[venueId]
-                if (game == null || (!recordingPolicy.enabled && !game.isMatchOver) || recording.decisionsByMatchId[game.matchId] != HistoryRecordingDecision.RECORDING) recording else recording.recordMissing(game)
-            }
-            val active = update.state.games.values.mapTo(mutableSetOf()) { it.matchId } + recordingState.transfersByMatchId.keys
-            update.state.copy(
-                historyRecordingState = recordingState.copy(
-                    decisionsByMatchId = recordingState.decisionsByMatchId.filter { (matchId, decision) ->
-                        matchId in active ||
-                            decision == HistoryRecordingDecision.RECORDING ||
-                            decision == HistoryRecordingDecision.STOPPED_CONFIG_DISABLED ||
-                            decision == HistoryRecordingDecision.STOPPED_STORAGE_UNAVAILABLE ||
-                            decision == HistoryRecordingDecision.STOPPED_TRANSFER_INTERRUPTED ||
-                            decision == HistoryRecordingDecision.STOPPED_PRUNED ||
-                            decision == HistoryRecordingDecision.STOPPED_EXTERNALLY_MODIFIED
-                    },
-                ),
-            )
-        } else {
-            update.state
-        }
-        val previousGames = currentState.games
-        commit(nextState)
-        update.historyDraftsByVenueId.forEach { (venueId, drafts) ->
-            val previousGame = previousGames[venueId]
-            val game = nextState.games[venueId]
-            if (drafts.isNotEmpty() && (previousGame != null || game != null)) {
-                val facts = CommittedGameFacts(venueId, previousGame, game, drafts)
-                runCatching { committedFactsListener(facts) }
+        } finally {
+            notification?.let { pending ->
+                runCatching { pending.listener.onReleased(pending.sequence) }
             }
         }
-        update.result
     }
 }

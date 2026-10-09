@@ -449,7 +449,7 @@ class AuthoritativeStateStoreTest {
         repository.setTableState(tableState)
         val before = store.getGame(tableState.id)!!
         val received = mutableListOf<CommittedGameFacts>()
-        store.setCommittedFactsListener(received::add)
+        store.setCommittedFactsListener(recordingListener { _, facts -> received += facts })
 
         repository.updateGame(
             gameId = before.id,
@@ -473,7 +473,7 @@ class AuthoritativeStateStoreTest {
         val tableState = FakeTableStateFactory.create()
         repository.setTableState(tableState)
         val received = mutableListOf<CommittedGameFacts>()
-        store.setCommittedFactsListener(received::add)
+        store.setCommittedFactsListener(recordingListener { _, facts -> received += facts })
 
         assertFailsWith<IllegalStateException> {
             repository.updateGame(
@@ -494,7 +494,7 @@ class AuthoritativeStateStoreTest {
         val tableState = FakeTableStateFactory.create()
         repository.setTableState(tableState)
         val received = mutableListOf<CommittedGameFacts>()
-        store.setCommittedFactsListener(received::add)
+        store.setCommittedFactsListener(recordingListener { _, facts -> received += facts })
 
         repository.updateGame(
             gameId = tableState.id,
@@ -513,7 +513,7 @@ class AuthoritativeStateStoreTest {
         val tableState = FakeTableStateFactory.create()
         repository.setTableState(tableState)
         val received = mutableListOf<CommittedGameFacts>()
-        store.setCommittedFactsListener(received::add)
+        store.setCommittedFactsListener(recordingListener { _, facts -> received += facts })
 
         listOf(1, 2, 3).forEach { round ->
             repository.updateGame(
@@ -527,6 +527,175 @@ class AuthoritativeStateStoreTest {
         assertEquals(listOf(1, 2, 3), received.map { it.game!!.tableState.players.first().score })
     }
 
+    /** 同一交易的不同場地共用一個提交序號。 */
+    @Test
+    fun `multiple venues in one transaction share a sequence`() = runTest {
+        val store = AuthoritativeStateStore()
+        val first = store.openGame(FakeTableStateFactory.create())
+        val second = store.openGame(FakeTableStateFactory.create())
+        val received = mutableListOf<Pair<Long, Uuid>>()
+        store.setCommittedFactsListener(
+            recordingListener { sequence, facts -> received += sequence to facts.venueId },
+        )
+
+        store.update { state ->
+            AuthoritativeStateUpdate(
+                state = state.copy(
+                    games = state.games +
+                        (first.id to first.copy(automaticControlRevision = 1L)) +
+                        (second.id to second.copy(automaticControlRevision = 1L)),
+                ),
+                result = Unit,
+                historyDraftsByVenueId = mapOf(
+                    first.id to listOf(HistoryEventDraft(null, HistoryFact.ReturnedToRoom)),
+                    second.id to listOf(HistoryEventDraft(null, HistoryFact.ReturnedToRoom)),
+                ),
+            )
+        }
+
+        assertEquals(listOf(first.id, second.id), received.map { it.second })
+        assertEquals(1, received.map { it.first }.distinct().size)
+        assertTrue(received.first().first > 0)
+    }
+
+    /** 交付完成通知在交易鎖外執行，通知時可以讀取最新狀態。 */
+    @Test
+    fun `release notification can read committed state`() = runTest {
+        val store = AuthoritativeStateStore()
+        val tableState = FakeTableStateFactory.create()
+        val repository = GameRepositoryImpl(store)
+        repository.setTableState(tableState)
+        var releasedState: AuthoritativeStateSnapshot? = null
+        store.setCommittedFactsListener(
+            object : CommittedFactsListener {
+                override fun onCommitted(sequence: Long, facts: CommittedGameFacts) = Unit
+
+                override fun onReleased(sequence: Long) {
+                    releasedState = store.state.value
+                }
+            },
+        )
+
+        repository.updateGame(
+            gameId = tableState.id,
+            history = { _, _, _ -> listOf(HistoryEventDraft(null, HistoryFact.ReturnedToRoom)) },
+        ) { current -> current!!.copy(isMatchOver = true) to Unit }
+
+        assertTrue(releasedState!!.games.getValue(tableState.id).isMatchOver)
+    }
+
+    /** listener 替換後，既有交易的提交與釋放通知仍交給同一個 listener。 */
+    @Test
+    fun `listener replacement does not split a transaction notification`() = runTest {
+        val store = AuthoritativeStateStore()
+        val tableState = FakeTableStateFactory.create()
+        val repository = GameRepositoryImpl(store)
+        repository.setTableState(tableState)
+        val notifications = mutableListOf<String>()
+        val replacement = object : CommittedFactsListener {
+            override fun onCommitted(sequence: Long, facts: CommittedGameFacts) {
+                notifications += "replacement-committed"
+            }
+
+            override fun onReleased(sequence: Long) {
+                notifications += "replacement-released"
+            }
+        }
+        val original = object : CommittedFactsListener {
+            override fun onCommitted(sequence: Long, facts: CommittedGameFacts) {
+                notifications += "original-committed"
+                store.setCommittedFactsListener(replacement)
+            }
+
+            override fun onReleased(sequence: Long) {
+                notifications += "original-released"
+            }
+        }
+        store.setCommittedFactsListener(original)
+
+        repeat(2) {
+            repository.updateGame(
+                gameId = tableState.id,
+                history = { _, _, _ -> listOf(HistoryEventDraft(null, HistoryFact.ReturnedToRoom)) },
+            ) { current -> current!!.copy(automaticControlRevision = current.automaticControlRevision + 1L) to Unit }
+        }
+
+        assertEquals(
+            listOf("original-committed", "original-released", "replacement-committed", "replacement-released"),
+            notifications,
+        )
+    }
+
+    /** 下一筆交易只能在前一筆提交通知完成後開始。 */
+    @Test
+    fun `committed notifications preserve transaction order`() = runTest {
+        val store = AuthoritativeStateStore()
+        val tableState = FakeTableStateFactory.create()
+        val repository = GameRepositoryImpl(store)
+        repository.setTableState(tableState)
+        val events = mutableListOf<String>()
+        store.setCommittedFactsListener(
+            object : CommittedFactsListener {
+                override fun onCommitted(sequence: Long, facts: CommittedGameFacts) {
+                    events += "committed-$sequence"
+                }
+
+                override fun onReleased(sequence: Long) {
+                    events += "released-$sequence"
+                }
+            },
+        )
+
+        repeat(2) {
+            repository.updateGame(
+                gameId = tableState.id,
+                history = { _, _, _ -> listOf(HistoryEventDraft(null, HistoryFact.ReturnedToRoom)) },
+            ) { current -> current!!.copy(automaticControlRevision = current.automaticControlRevision + 1L) to Unit }
+        }
+
+        assertEquals(listOf("committed-1", "released-1", "committed-2", "released-2"), events)
+    }
+
+    /** 單一場地 listener 失敗時，其他場地與交易釋放通知仍會繼續。 */
+    @Test
+    fun `listener failure is isolated per venue`() = runTest {
+        val store = AuthoritativeStateStore()
+        val first = store.openGame(FakeTableStateFactory.create())
+        val second = store.openGame(FakeTableStateFactory.create())
+        val received = mutableListOf<Uuid>()
+        var released = false
+        store.setCommittedFactsListener(
+            object : CommittedFactsListener {
+                override fun onCommitted(sequence: Long, facts: CommittedGameFacts) {
+                    if (facts.venueId == first.id) error("first venue listener failed")
+                    received += facts.venueId
+                }
+
+                override fun onReleased(sequence: Long) {
+                    released = true
+                }
+            },
+        )
+
+        store.update { state ->
+            AuthoritativeStateUpdate(
+                state = state.copy(
+                    games = state.games +
+                        (first.id to first.copy(automaticControlRevision = 1L)) +
+                        (second.id to second.copy(automaticControlRevision = 1L)),
+                ),
+                result = Unit,
+                historyDraftsByVenueId = mapOf(
+                    first.id to listOf(HistoryEventDraft(null, HistoryFact.ReturnedToRoom)),
+                    second.id to listOf(HistoryEventDraft(null, HistoryFact.ReturnedToRoom)),
+                ),
+            )
+        }
+
+        assertEquals(listOf(second.id), received)
+        assertTrue(released)
+    }
+
     /** 接收者丟出例外時，交易照常提交。 */
     @Test
     fun `a failing listener does not undo the transaction`() = runTest {
@@ -534,7 +703,13 @@ class AuthoritativeStateStoreTest {
         val repository = GameRepositoryImpl(store)
         val tableState = FakeTableStateFactory.create()
         repository.setTableState(tableState)
-        store.setCommittedFactsListener { error("listener failed") }
+        store.setCommittedFactsListener(
+            object : CommittedFactsListener {
+                override fun onCommitted(sequence: Long, facts: CommittedGameFacts) = error("listener failed")
+
+                override fun onReleased(sequence: Long) = Unit
+            },
+        )
 
         repository.updateGame(
             gameId = tableState.id,
@@ -610,6 +785,13 @@ class AuthoritativeStateStoreTest {
         val recording = store.snapshot().historyRecordingState
         assertEquals(HistoryRecordingDecision.EXCLUDED_CONFIG_DISABLED, recording.decisionsByMatchId[game.matchId])
         assertNull(recording.firstMissingSequenceByMatchId[game.matchId])
+    }
+
+    /** 建立只記錄提交事實的 listener。 */
+    private fun recordingListener(onCommitted: (Long, CommittedGameFacts) -> Unit): CommittedFactsListener = object : CommittedFactsListener {
+        override fun onCommitted(sequence: Long, facts: CommittedGameFacts) = onCommitted(sequence, facts)
+
+        override fun onReleased(sequence: Long) = Unit
     }
 
     /** 建立最小等待階段 Room。 */
