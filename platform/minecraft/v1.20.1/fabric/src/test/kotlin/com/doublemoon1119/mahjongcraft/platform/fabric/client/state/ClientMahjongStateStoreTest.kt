@@ -161,8 +161,9 @@ class ClientMahjongStateStoreTest {
         assertEquals(TableOccupancyDto.VACANT, store.tableOccupancy(tableId)?.occupancy)
     }
 
+    /** 手牌分析只隨主動同步快照改變；同步快照先於動作更新抵達時，動作更新不會清掉已是最新的分析。 */
     @Test
-    fun `private hand analysis follows authoritative game snapshots and clears on newer action`() {
+    fun `private hand analysis follows game snapshots and is kept by game updates`() {
         val store = ClientMahjongStateStore(registries)
         val tableId = Uuid.random()
         val player = FakeMahjongPlayerFactory.create(discardPile = RiichiDiscardPile())
@@ -183,6 +184,10 @@ class ClientMahjongStateStoreTest {
                 historyMatchId = null,
             ),
         )
+
+        assertEquals(analysis, store.handReadinessAnalysis(tableId))
+
+        store.applyGameSnapshot(tableId, snapshot, aiPlayerIds = emptySet(), handReadinessAnalysis = null)
 
         assertNull(store.handReadinessAnalysis(tableId))
     }

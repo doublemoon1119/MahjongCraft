@@ -142,7 +142,10 @@ class ClientMahjongStateStore(
         }
     }
 
-    /** 接收帶動作的遊戲更新並保存其最新快照。 */
+    /**
+     * 接收帶動作的遊戲更新並保存其最新快照。手牌分析只隨主動同步快照（[applyGameSnapshot]）更新：兩種封包的抵達順序不固定，
+     * 動作更新不清除也不改變目前的手牌分析。
+     */
     fun apply(payload: GameUpdatePayloadDto) {
         val tableId = Uuid.parse(payload.gameId)
         updateTable(tableId) { current ->
@@ -156,7 +159,6 @@ class ClientMahjongStateStore(
                     playingGameConfig = current.tableOccupancy.playingGameConfig ?: waitingConfig,
                 ),
                 roomSnapshot = null,
-                handReadinessAnalysis = null,
             )
         }
     }
