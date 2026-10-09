@@ -2,10 +2,17 @@ package com.doublemoon1119.mahjongcraft.logic.rules.taiwan
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
+import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenTestFixtures.assertDrawProperties
+import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenTestFixtures.fullWall
+import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenTestFixtures.handOf
+import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenTestFixtures.randomCompleteTiles
+import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenTestFixtures.randomHand
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
+import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 class TaiwanShantenCalculatorTest {
@@ -112,5 +119,34 @@ class TaiwanShantenCalculatorTest {
         val flowerHand = FakeHandFactory.create(TaiwanTileTypes.createAll())
 
         assertEquals(calculator.calculate(emptyHand), calculator.calculate(flowerHand))
+    }
+
+    /** 和牌少一張的手牌（含副露）摸牌時，聽牌列表與摸進後的結果一致，向聽數最多變化 1。 */
+    @Test
+    fun `drawing into a tenpai hand agrees with its waits`() {
+        val random = Random(PROPERTY_SEED)
+        repeat(PROPERTY_HANDS) {
+            val melds = random.nextInt(5)
+            val hand = handOf(randomCompleteTiles(random, groups = 5 - melds).drop(1), melds)
+            assertIs<ShantenResult.Tenpai>(calculator.calculate(hand), "A complete hand missing one tile must be tenpai")
+            assertDrawProperties(calculator, hand, { it }, "tenpai")
+        }
+    }
+
+    /** 隨機抽出的 16 張（有副露時更少）摸牌時，向聽數最多變化 1。 */
+    @Test
+    fun `drawing into a random hand changes shanten by at most one`() {
+        val random = Random(PROPERTY_SEED + 1)
+        val wall = fullWall()
+        repeat(PROPERTY_HANDS) {
+            val melds = random.nextInt(6)
+            val hand = randomHand(random, wall, standing = 16 - 3 * melds, meldCount = melds)
+            assertDrawProperties(calculator, hand, { it }, "random")
+        }
+    }
+
+    private companion object {
+        const val PROPERTY_SEED = 20261012
+        const val PROPERTY_HANDS = 300
     }
 }

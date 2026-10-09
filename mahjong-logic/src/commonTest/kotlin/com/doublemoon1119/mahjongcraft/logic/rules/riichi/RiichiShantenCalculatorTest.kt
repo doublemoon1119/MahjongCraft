@@ -2,9 +2,18 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
+import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenTestFixtures.assertDrawProperties
+import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenTestFixtures.fullWall
+import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenTestFixtures.handOf
+import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenTestFixtures.randomCompleteTiles
+import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenTestFixtures.randomHand
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
+import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 /**
@@ -244,5 +253,34 @@ class RiichiShantenCalculatorTest {
             tenpaiResult.winningTiles.toSet(),
             "Unrelated quadruple tile should not suppress the actual wait",
         )
+    }
+
+    /** 和牌少一張的手牌（含副露）摸牌時，聽牌列表與摸進後的結果一致，向聽數最多變化 1。 */
+    @Test
+    fun `drawing into a tenpai hand agrees with its waits`() {
+        val random = Random(PROPERTY_SEED)
+        repeat(PROPERTY_HANDS) {
+            val melds = random.nextInt(4)
+            val hand = handOf(randomCompleteTiles(random, groups = 4 - melds).drop(1), melds)
+            assertIs<ShantenResult.Tenpai>(calculator.calculate(hand), "A complete hand missing one tile must be tenpai")
+            assertDrawProperties(calculator, hand, { it.riichiCanonical }, "tenpai")
+        }
+    }
+
+    /** 從含赤牌的牌山隨機抽出的 13 張（有副露時更少）摸牌時，向聽數最多變化 1。 */
+    @Test
+    fun `drawing into a random hand changes shanten by at most one`() {
+        val random = Random(PROPERTY_SEED + 1)
+        val wall = fullWall { tile, copy -> if (copy == 0 && tile is Tile.Numeric && tile.value == 5) RiichiTileTypes.redFive(tile.suit) else tile }
+        repeat(PROPERTY_HANDS) {
+            val melds = random.nextInt(5)
+            val hand = randomHand(random, wall, standing = 13 - 3 * melds, meldCount = melds)
+            assertDrawProperties(calculator, hand, { it.riichiCanonical }, "random")
+        }
+    }
+
+    private companion object {
+        const val PROPERTY_SEED = 20261011
+        const val PROPERTY_HANDS = 300
     }
 }

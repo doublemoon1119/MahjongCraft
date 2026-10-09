@@ -4,17 +4,21 @@ import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenCalculator
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
-import com.doublemoon1119.mahjongcraft.logic.judgment.StandardMeldSearch
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import kotlin.math.max
 import kotlin.math.min
 
 /**
- * 台灣麻將規則的向聽數計算器。
+ * 台灣麻將規則的向聽數計算器，對整副牌窮舉面子與搭子的原始實作。
+ *
+ * 凍結的行為回歸基準：對照測試確認 [TaiwanShantenCalculator] 的結果與它相同。它只是回歸基準，不是規則正確性的唯一依據；
+ * 出現差異時保留案例分析，不直接認定哪一邊錯。
+ *
+ * 不為了讓測試通過而修改這份實作。日後刻意改變向聽規則時，記錄預期的差異、調整對照範圍，並以獨立的規則測試驗證新行為。
  *
  * 負責根據台灣麻將的規則（標準型：5面子 + 1雀頭）分析手牌。
  */
-class TaiwanShantenCalculator : ShantenCalculator {
+internal class LegacyTaiwanShantenCalculator : ShantenCalculator {
 
     // 為了方便計算，將所有牌型映射到 0-33 的索引
     // 台麻雖然有花牌，但花牌不參與向聽計算（摸到即補），所以這裡只處理數牌和字牌
@@ -59,7 +63,7 @@ class TaiwanShantenCalculator : ShantenCalculator {
         val exposedMeldsCount = hand.exposedMelds.size
 
         // 計算標準型向聽數 (5面子 + 1雀頭)
-        val minShanten = calculateStandardShanten(StandardMeldSearch(targetMelds = 5), counts, exposedMeldsCount)
+        val minShanten = calculateStandardShanten(counts, exposedMeldsCount)
 
         // 檢查是否已胡牌（向聽數 <= 0 且標準型已完成）
         if (minShanten <= 0 && isStandardCompleteHand(counts, exposedMeldsCount)) {
@@ -164,19 +168,21 @@ class TaiwanShantenCalculator : ShantenCalculator {
      *
      * 公式：10 - (面子*2) - 搭子 - 雀頭
      *
-     * @param search 這次計算使用的面子搜尋。
      * @param counts 立牌的計數陣列。
      * @param initialMelds 已副露的面子數。
      */
-    private fun calculateStandardShanten(search: StandardMeldSearch, counts: IntArray, initialMelds: Int): Int {
+    private fun calculateStandardShanten(counts: IntArray, initialMelds: Int): Int {
         var minShanten = 10 // 台灣麻將的初始最大向聽數
 
         // 情況 A: 有雀頭
         for (i in counts.indices) {
             if (counts[i] >= 2) {
                 counts[i] -= 2
-                // 雀頭已定，面子搜尋的結果未扣雀頭，這裡再減去雀頭的 1
-                val shanten = search.meldShanten(counts, initialMelds)
+                // 雀頭已定 (1組)，目標是湊齊 5 組面子
+                val shanten = calculateMelds(counts, 0, initialMelds, 0)
+                // 標準型公式：10 - (總面子*2) - 搭子 - 雀頭(1)
+                // calculateMelds 回傳的是 10 - (initialMelds + melds_in_standing*2) - tatsus
+                // 所以這裡要減去雀頭的貢獻
                 minShanten = min(minShanten, shanten - 1)
                 counts[i] += 2
             }
@@ -184,9 +190,91 @@ class TaiwanShantenCalculator : ShantenCalculator {
 
         // 情況 B: 無雀頭（或尚未找到雀頭）
         // 雀頭數為 0，目標是凑齊 5 組面子，最後缺的雀頭視為一個搭子缺口
-        val shantenNoPair = search.meldShanten(counts, initialMelds)
+        val shantenNoPair = calculateMelds(counts, 0, initialMelds, 0)
         minShanten = min(minShanten, shantenNoPair)
 
         return minShanten
+    }
+
+    /**
+     * 遞迴計算剩餘牌能組成的最佳面子與搭子組合。
+     *
+     * @param counts 立牌的計數陣列。
+     * @param index 當前處理的牌索引。
+     * @param currentMelds 已副露的面子數 + 立牌中找到的面子數。
+     * @param currentTatsus 立牌中找到的搭子數。
+     * @return 10 - (總面子*2) - 有效搭子數。
+     */
+    private fun calculateMelds(counts: IntArray, index: Int, currentMelds: Int, currentTatsus: Int): Int {
+        // 總目標面子數為 5
+        val targetMelds = 5
+
+        // 剪枝：如果總面子數 + 總搭子數 已經達到或超過目標面子數，可以停止
+        if (currentMelds + currentTatsus >= targetMelds) {
+            return 10 - (currentMelds * 2) - currentTatsus
+        }
+
+        if (index >= 34) {
+            // 遍歷結束
+            // 有效搭子數不能超過 (目標面子數 - 總面子數)
+            val validTatsus = min(currentTatsus, targetMelds - currentMelds)
+            return 10 - (currentMelds * 2) - validTatsus
+        }
+
+        // 如果當前牌數為 0，直接跳下一個
+        if (counts[index] == 0) {
+            return calculateMelds(counts, index + 1, currentMelds, currentTatsus)
+        }
+
+        var bestShanten = 10
+
+        // 1. 嘗試組成刻子 (3張一樣)
+        if (counts[index] >= 3) {
+            counts[index] -= 3
+            bestShanten = min(bestShanten, calculateMelds(counts, index, currentMelds + 1, currentTatsus))
+            counts[index] += 3
+        }
+
+        // 2. 嘗試組成順子 (3張連續，僅限數牌)
+        if (index < 27 && index % 9 < 7 && counts[index + 1] > 0 && counts[index + 2] > 0) {
+            counts[index]--
+            counts[index + 1]--
+            counts[index + 2]--
+            bestShanten = min(bestShanten, calculateMelds(counts, index, currentMelds + 1, currentTatsus))
+            counts[index]++
+            counts[index + 1]++
+            counts[index + 2]++
+        }
+
+        // 3. 嘗試組成搭子 (2張)
+        // 3a. 對子 (2張一樣)
+        if (counts[index] >= 2) {
+            counts[index] -= 2
+            bestShanten = min(bestShanten, calculateMelds(counts, index, currentMelds, currentTatsus + 1))
+            counts[index] += 2
+        }
+
+        // 3b. 兩面或邊張搭子 (2張連續)
+        if (index < 27 && index % 9 < 8 && counts[index + 1] > 0) {
+            counts[index]--
+            counts[index + 1]--
+            bestShanten = min(bestShanten, calculateMelds(counts, index, currentMelds, currentTatsus + 1))
+            counts[index]++
+            counts[index + 1]++
+        }
+
+        // 3c. 嵌張搭子 (間隔1張)
+        if (index < 27 && index % 9 < 7 && counts[index + 2] > 0) {
+            counts[index]--
+            counts[index + 2]--
+            bestShanten = min(bestShanten, calculateMelds(counts, index, currentMelds, currentTatsus + 1))
+            counts[index]++
+            counts[index + 2]++
+        }
+
+        // 4. 跳過這張牌 (視為孤張)，不組成任何面子或搭子
+        bestShanten = min(bestShanten, calculateMelds(counts, index + 1, currentMelds, currentTatsus))
+
+        return bestShanten
     }
 }
