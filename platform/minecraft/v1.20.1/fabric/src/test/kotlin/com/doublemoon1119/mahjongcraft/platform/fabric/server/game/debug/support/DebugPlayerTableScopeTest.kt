@@ -9,11 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositor
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdate
-import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.achievement.AchievementGrantGateway
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.achievement.FabricAchievementService
-import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistryImpl
-import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.PlayerAchievements
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.GameEventExclusions
 import com.doublemoon1119.mahjongcraft.testing.flow.common.concurrency.TestCoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.testing.flow.common.concurrency.createTestAppCoroutineScope
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -38,22 +34,13 @@ class DebugPlayerTableScopeTest {
                 ),
             )
         }
-        val dispatchers = TestCoroutineDispatchers()
-        val scope = createTestAppCoroutineScope(dispatchers)
         val playerTableScope = DebugPlayerTableScope(
             membershipRepository = PlayerMembershipRepositoryImpl(),
             gameRepository = GameRepositoryImpl(store),
-            achievementService = FabricAchievementService(
-                scope = scope,
-                dispatchers = dispatchers,
-                store = store,
-                moduleRegistry = MahjongModuleRegistryImpl(),
-                resolverRegistry = GameAchievementResolverRegistryImpl(),
-                gateway = UnusedGateway,
-            ),
+            exclusions = GameEventExclusions(),
             stateStore = store,
-            scope = scope,
-            dispatchers = dispatchers,
+            scope = createTestAppCoroutineScope(TestCoroutineDispatchers()),
+            dispatchers = TestCoroutineDispatchers(),
         )
 
         playerTableScope.excludeCurrentMatch(game.id)
@@ -62,10 +49,5 @@ class DebugPlayerTableScopeTest {
         assertEquals(HistoryRecordingDecision.STOPPED_EXTERNALLY_MODIFIED, recording.decisionsByMatchId[game.matchId])
         assertEquals(listOf(1L), recording.pendingEvents.map { it.sequence })
         assertEquals(2L, recording.firstMissingSequenceByMatchId[game.matchId])
-    }
-
-    /** 排除場次不授予任何成果。 */
-    private object UnusedGateway : AchievementGrantGateway {
-        override fun grant(achievements: PlayerAchievements): Boolean = error("Unexpected achievement grant")
     }
 }

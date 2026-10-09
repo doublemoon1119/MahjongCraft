@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAvai
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.achievement.FabricAchievementService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.GameEventExclusions
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TablePresentationBusyTracker
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
 import kotlinx.coroutines.delay
@@ -35,7 +35,22 @@ sealed interface DebugGameScenarioLoadResult {
     ) : DebugGameScenarioLoadResult
 }
 
-/** 驗證、原子替換並同步 development-only 權威對局情境；載入情境的場次不再產生進度、統計與歷史紀錄。 */
+/**
+ * 驗證、原子替換並同步 development-only 權威對局情境；載入情境的場次不再產生進度、統計、事件掛勾與歷史紀錄。
+ *
+ * @property minecraftEnvironment 判斷是否允許使用開發情境。
+ * @property registry 查詢可載入的情境。
+ * @property validator 驗證情境產生的權威狀態。
+ * @property membershipRepository 查詢玩家所在的牌桌。
+ * @property gameRepository 原子更新目前對局。
+ * @property busyTracker 查詢牌桌呈現是否仍在執行。
+ * @property presentationSynchronizer 同步情境的桌面呈現。
+ * @property decisionAvailabilityService 更新可操作狀態與計時。
+ * @property snapshotSynchronizer 廣播更新後的對局快照。
+ * @property exclusions 成就與事件掛勾共用的 debug 場次排除名單。
+ * @property stateStore 停止情境場次的歷史記錄。
+ * @property dispatchers 提供平台呈現使用的執行緒。
+ */
 @Single
 class DebugGameScenarioLoader(
     private val minecraftEnvironment: MinecraftEnvironment,
@@ -47,7 +62,7 @@ class DebugGameScenarioLoader(
     private val presentationSynchronizer: DebugGameScenarioPresentationSynchronizer,
     private val decisionAvailabilityService: GameDecisionAvailabilityService,
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
-    private val achievementService: FabricAchievementService,
+    private val exclusions: GameEventExclusions,
     private val stateStore: AuthoritativeStateStore,
     private val dispatchers: CoroutineDispatchers,
 ) {
@@ -77,7 +92,7 @@ class DebugGameScenarioLoader(
                 requireNotNull(currentGame) { "The table does not have a running game" }
                 require(!currentGame.isMatchOver) { "The game has already ended" }
                 require(currentGame.pendingTransition == null) { "The game has a pending transition" }
-                achievementService.excludeMatch(currentGame.matchId)
+                exclusions.exclude(currentGame.matchId)
                 val context = DebugGameScenarioContext(currentGame, playerId)
                 val result = scenario.build(context).continueAutomaticControls(currentGame)
                 validator.validate(context, result)

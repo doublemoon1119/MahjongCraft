@@ -27,12 +27,12 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItemGroups
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModSounds
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.achievement.FabricAchievementService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricAppCoroutineScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigManager
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.historyRecordingPolicy
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.MahjongTileCollisionService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.CommittedFactsDispatcher
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TableOpeningPresentationOperationTracker
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TablePresentationBusyTracker
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.AutomaticControlUpdateService
@@ -126,7 +126,7 @@ class MahjongCraftMod : ModInitializer {
         val openingPresentationOperations = koin.get<TableOpeningPresentationOperationTracker>()
         val presentationBusyTracker = koin.get<TablePresentationBusyTracker>()
         val observerBroadcast = koin.get<FabricObserverSnapshotBroadcastService>()
-        val achievementService = koin.get<FabricAchievementService>()
+        val committedFactsDispatcher = koin.get<CommittedFactsDispatcher>()
         mahjongTileCollisionService.registerEvents()
         observerBroadcast.registerEvents()
         ServerLifecycleEvents.SERVER_STARTED.register { server ->
@@ -141,12 +141,11 @@ class MahjongCraftMod : ModInitializer {
             appScope.startSession()
             koin.get<AutomatedAdvanceManager>().startSession()
             observerBroadcast.startSession()
-            achievementService.startSession()
+            committedFactsDispatcher.startSession(server)
             lobbyInfoLifecycle.startSession()
         }
         ServerLifecycleEvents.SERVER_STOPPING.register {
             tableLocationValidation.stopSession()
-            tableLocationPersistence.detach()
             runBlocking {
                 // 順序很重要：appScope.shutdown() 必須先跑完，才能保證後面的 settleAll／detach／
                 // clear 執行時，不會有任何 Draw／討論結果之類還在等鎖、卡在中途的協程被攔腰砍斷——
@@ -155,7 +154,9 @@ class MahjongCraftMod : ModInitializer {
                 // 最後才解除 persistence dirty listener」。
                 appScope.shutdown()
                 observerBroadcast.stopSession()
-                achievementService.stopSession()
+                committedFactsDispatcher.stopSession()
+                // 等已開始的權威工作結束並停止事件接收後，才清除事件投影使用的位置索引。
+                tableLocationPersistence.detach()
                 lobbyInfoLifecycle.stopSession()
                 presentationBusyTracker.clearAll()
                 openingPresentationOperations.clearAll()

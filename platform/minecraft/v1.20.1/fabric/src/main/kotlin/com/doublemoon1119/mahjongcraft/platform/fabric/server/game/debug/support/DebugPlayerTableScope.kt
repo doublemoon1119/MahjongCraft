@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatch
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.achievement.FabricAchievementService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.GameEventExclusions
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import net.minecraft.server.command.ServerCommandSource
@@ -26,11 +26,11 @@ import kotlin.uuid.toKotlinUuid
  *
  * 兩者都立即回傳 Brigadier 結果碼，實際訊息稍後才非同步送出。
  *
- * 經過這裡的 debug 指令會讓該桌執行前後的場次不再產生進度、統計與歷史紀錄。
+ * 經過這裡的 debug 指令會讓該桌執行前後的場次不再產生進度、統計、事件掛勾與歷史紀錄。
  *
  * @property membershipRepository 查詢玩家目前入座的牌桌。
  * @property gameRepository 取得牌桌目前的場次。
- * @property achievementService 排除使用過 debug 指令的場次。
+ * @property exclusions 排除使用過 debug 指令的場次，不再產生成就與事件掛勾。
  * @property stateStore 停止使用過 debug 指令的場次的歷史紀錄。
  * @property scope 執行查詢與動作的協程 scope。
  * @property dispatchers 取得回到 main thread 送出回饋的 dispatcher。
@@ -39,7 +39,7 @@ import kotlin.uuid.toKotlinUuid
 class DebugPlayerTableScope(
     private val membershipRepository: PlayerMembershipRepository,
     private val gameRepository: GameRepository,
-    private val achievementService: FabricAchievementService,
+    private val exclusions: GameEventExclusions,
     private val stateStore: AuthoritativeStateStore,
     private val scope: AppCoroutineScope,
     private val dispatchers: CoroutineDispatchers,
@@ -87,10 +87,10 @@ class DebugPlayerTableScope(
         return COMMAND_SUCCESS
     }
 
-    /** 讓 [tableId] 目前的場次不再產生進度、統計與歷史紀錄。 */
+    /** 讓 [tableId] 目前的場次不再產生進度、統計、事件掛勾與歷史紀錄。 */
     internal suspend fun excludeCurrentMatch(tableId: Uuid) {
         val game = gameRepository.getGame(tableId) ?: return
-        achievementService.excludeMatch(game.matchId)
+        exclusions.exclude(game.matchId)
         stateStore.stopHistoryRecording(game.matchId)
     }
 

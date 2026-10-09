@@ -7,13 +7,9 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.repository.ExpectedGameR
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
-import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.achievement.AchievementGrantGateway
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.achievement.FabricAchievementService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.GameEventExclusions
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPlayerTableScope
-import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistryImpl
-import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.PlayerAchievements
 import com.doublemoon1119.mahjongcraft.testing.flow.common.concurrency.TestCoroutineDispatchers
 import com.mojang.brigadier.tree.CommandNode
 import net.minecraft.server.command.ServerCommandSource
@@ -33,14 +29,7 @@ class FabricDebugProgressionCommandTest {
         playerTableScope = DebugPlayerTableScope(
             membershipRepository = UnusedMembershipRepository,
             gameRepository = UnusedGameRepository,
-            achievementService = FabricAchievementService(
-                scope = UnusedScope,
-                dispatchers = TestCoroutineDispatchers(),
-                store = AuthoritativeStateStore(),
-                moduleRegistry = MahjongModuleRegistryImpl(),
-                resolverRegistry = GameAchievementResolverRegistryImpl(),
-                gateway = UnusedGateway,
-            ),
+            exclusions = GameEventExclusions(),
             stateStore = AuthoritativeStateStore(),
             scope = UnusedScope,
             dispatchers = TestCoroutineDispatchers(),
@@ -128,11 +117,6 @@ class FabricDebugProgressionCommandTest {
         override suspend fun replaceAll(venueIdsByPlayerId: Map<Uuid, Uuid>) = error("Unexpected membership lookup")
 
         override suspend fun clearAll() = error("Unexpected membership lookup")
-    }
-
-    /** 指令樹建構不授予任何成果。 */
-    private object UnusedGateway : AchievementGrantGateway {
-        override fun grant(achievements: PlayerAchievements): Boolean = error("Unexpected achievement grant")
     }
 
     /** 指令樹建構不啟動任何協程。 */

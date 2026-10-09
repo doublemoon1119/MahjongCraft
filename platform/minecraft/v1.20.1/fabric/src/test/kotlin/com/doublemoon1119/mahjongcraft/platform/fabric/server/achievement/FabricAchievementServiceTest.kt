@@ -7,12 +7,11 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinDetail
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
-import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
-import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.GameEventExclusions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.BuiltInAchievementIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistryImpl
@@ -22,6 +21,9 @@ import com.doublemoon1119.mahjongcraft.testing.flow.common.concurrency.TestCorou
 import com.doublemoon1119.mahjongcraft.testing.flow.common.concurrency.createTestAppCoroutineScope
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -39,6 +41,23 @@ class FabricAchievementServiceTest {
     )
     private val winner = game.tableState.players.first()
 
+    /** 授予排程後來源 session 結束時，不把舊成果授予下一個世界。 */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun `queued grants are rejected after their source session ends`() = runTest {
+        val gateway = RecordingGateway()
+        val dispatchers = TestCoroutineDispatchers(main = StandardTestDispatcher(testScheduler))
+        val service = service(gateway = gateway, dispatchers = dispatchers)
+        var active = true
+
+        service.handle(tsumo(winner.id)) { active }
+        assertTrue(gateway.granted.isEmpty())
+        active = false
+        runCurrent()
+
+        assertTrue(gateway.granted.isEmpty())
+    }
+
     /** 判定出的成果交給 gateway。 */
     @Test
     fun `detected achievements are granted`() {
@@ -54,25 +73,12 @@ class FabricAchievementServiceTest {
     @Test
     fun `excluded matches are not granted`() {
         val gateway = RecordingGateway()
-        val service = service(gateway)
-        service.excludeMatch(game.matchId)
+        val exclusions = GameEventExclusions().also { it.exclude(game.matchId) }
+        val service = service(gateway, exclusions = exclusions)
 
         service.handle(tsumo(winner.id))
 
         assertTrue(gateway.granted.isEmpty())
-    }
-
-    /** 換 session 後排除的場次會清除。 */
-    @Test
-    fun `stopping the session clears excluded matches`() {
-        val gateway = RecordingGateway()
-        val service = service(gateway)
-        service.excludeMatch(game.matchId)
-
-        service.stopSession()
-        service.handle(tsumo(winner.id))
-
-        assertEquals(1, gateway.granted.size)
     }
 
     /** 一位玩家授予失敗時，同一筆事實的其他玩家仍會授予。 */
@@ -88,23 +94,6 @@ class FabricAchievementServiceTest {
         assertEquals(listOf(dealer.id), gateway.granted.map { it.playerId })
     }
 
-    /** 開始 session 後，交易提交即判定並授予成果；結束 session 後不再接收。 */
-    @Test
-    fun `committed transactions are handled during the session only`() = runTest {
-        val gateway = RecordingGateway()
-        val store = AuthoritativeStateStore()
-        val service = service(gateway, store = store)
-        val repository = GameRepositoryImpl(store)
-        repository.setTableState(game.tableState)
-
-        service.startSession()
-        settleTsumo(repository)
-        service.stopSession()
-        settleTsumo(repository)
-
-        assertEquals(1, gateway.granted.size)
-    }
-
     /** 排除的場次在判定前就略過，不呼叫任何判定。 */
     @Test
     fun `excluded matches are not detected`() {
@@ -116,8 +105,8 @@ class FabricAchievementServiceTest {
                 override fun resolve(facts: CommittedGameFacts): Map<Uuid, Set<String>> = emptyMap<Uuid, Set<String>>().also { resolverCalls++ }
             })
         }
-        val service = service(RecordingGateway(), registry)
-        service.excludeMatch(game.matchId)
+        val exclusions = GameEventExclusions().also { it.exclude(game.matchId) }
+        val service = service(RecordingGateway(), registry, exclusions)
 
         service.handle(tsumo(winner.id))
 
@@ -145,30 +134,19 @@ class FabricAchievementServiceTest {
         assertEquals(1, gateway.granted.size)
     }
 
-    private suspend fun settleTsumo(repository: GameRepositoryImpl) {
-        repository.updateGame(
-            gameId = game.id,
-            history = { _, _, _ -> listOf(HistoryEventDraft(null, tsumo(winner.id).facts.single().fact)) },
-        ) { current ->
-            current!!.copy(tableState = current.tableState.copy(players = current.tableState.players.map { it.copy(score = it.score + 1) })) to Unit
-        }
-    }
-
     private fun service(
         gateway: AchievementGrantGateway,
         registry: GameAchievementResolverRegistryImpl = GameAchievementResolverRegistryImpl(),
-        store: AuthoritativeStateStore = AuthoritativeStateStore(),
-    ): FabricAchievementService {
-        val dispatchers = TestCoroutineDispatchers()
-        return FabricAchievementService(
-            scope = createTestAppCoroutineScope(dispatchers),
-            dispatchers = dispatchers,
-            store = store,
-            moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() },
-            resolverRegistry = registry,
-            gateway = gateway,
-        )
-    }
+        exclusions: GameEventExclusions = GameEventExclusions(),
+        dispatchers: TestCoroutineDispatchers = TestCoroutineDispatchers(),
+    ): FabricAchievementService = FabricAchievementService(
+        scope = createTestAppCoroutineScope(dispatchers),
+        dispatchers = dispatchers,
+        moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() },
+        resolverRegistry = registry,
+        gateway = gateway,
+        exclusions = exclusions,
+    )
 
     private fun tsumo(winnerId: Uuid) = facts(
         HistoryFact.WinSettled(BuiltInRoundOutcomeIds.TSUMO, listOf(HistoryWinDetails(winnerId, emptyList()))),
