@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 
-import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -101,26 +100,6 @@ class GameAdvanceRotationTest {
 
         rotation.completeGlobal()
         assertFalse(rotation.globalDue)
-    }
-
-    /** 單局推進失敗時記錄該局，其他對局照常推進。 */
-    @Test
-    fun `one failing game does not stop the others`() = runBlocking {
-        val games = games(3)
-        val advanced = mutableListOf<Uuid>()
-        val failed = mutableListOf<Uuid>()
-
-        advanceEachGame(
-            gameIds = games,
-            advance = { gameId ->
-                check(gameId != games[1]) { "boom" }
-                advanced += gameId
-            },
-            onFailure = { gameId, _ -> failed += gameId },
-        )
-
-        assertEquals(listOf(games[0], games[2]), advanced)
-        assertEquals(listOf(games[1]), failed)
     }
 
     /** 前進一個 tick 並取出這個 tick 要推進的對局。 */

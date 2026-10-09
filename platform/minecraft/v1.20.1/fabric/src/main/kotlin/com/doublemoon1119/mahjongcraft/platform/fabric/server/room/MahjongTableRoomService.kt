@@ -15,7 +15,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomActionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.RoomSnapshotDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDto
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceManager
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.StartGameUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.SyncGameSnapshotUseCase
@@ -33,7 +33,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.UpdateConfigUseC
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.MahjongAutoDrawService
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.TableOccupancyDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.TableOccupancyPayloadDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
@@ -80,8 +79,7 @@ class MahjongTableRoomService(
     private val tableLocationRegistry: TableLocationRegistry,
     private val reachableTableResolver: ReachableMahjongTableResolver,
     private val memberCandidateResolver: RoomMemberCandidateResolver,
-    private val gameFlowCoordinator: GameFlowCoordinator,
-    private val autoDrawService: MahjongAutoDrawService,
+    private val advanceManager: AutomatedAdvanceManager,
     private val serverHolder: FabricServerHolder,
     private val dispatchers: CoroutineDispatchers,
     @Provided private val json: Json,
@@ -418,9 +416,8 @@ class MahjongTableRoomService(
      * 是哪些人——不會只挑呼叫 [start] 的房主自己檢查，否則其他成員仍然可以先在附近按 [ready]、再走遠，
      * 靠房主開局把自己傳送過去。
      *
-     * 開局後第一位玩家的摸牌需要另外補：[GameFlowCoordinator.driveAutomatedPlayers] 只涵蓋第一位是
-     * AI 的情況，[MahjongAutoDrawService.checkAndAutoDraw] 只涵蓋第一位是真人的情況，兩者依
-     * `current.isAi` 互斥，只呼叫其中一個會漏掉另一種開局，因此都要呼叫。
+     * 開局後向 [AutomatedAdvanceManager] 請求推進：推進同時涵蓋第一位是 AI（驅動自動操作）與第一位是真人（推進最後的
+     * 自動摸牌）兩種開局。
      */
     fun start(player: ServerPlayerEntity) {
         val playerId = player.uuid.toKotlinUuid()
@@ -451,8 +448,7 @@ class MahjongTableRoomService(
             when (val result = startGame(tableId, playerId)) {
                 is Outcome.Success -> {
                     val gameId = result.value
-                    gameFlowCoordinator.driveAutomatedPlayers(gameId)
-                    autoDrawService.checkAndAutoDraw(gameId)
+                    advanceManager.request(gameId)
                 }
                 is Outcome.Error -> feedbackPublisher.publish(playerId, MinecraftRoomFeedbackResolver.startError(result.error))
             }

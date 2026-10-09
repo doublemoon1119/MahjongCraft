@@ -5,12 +5,17 @@ import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
+import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.flow.common.di.FlowCommonModule
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionExecutor
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionReporter
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceFailureReporter
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceFollowUp
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceManager
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolverRegistry
@@ -85,6 +90,16 @@ class FlowServerModule {
         capacity = dispatchers.aiDecisionParallelism * AI_DECISION_CAPACITY_PER_THREAD,
         reporter = reporter,
     )
+
+    /** 建立整個程式共用的單局推進管理器：推進協程在目前 server session 的作用域、伺服器主執行緒上執行。 */
+    @Single
+    fun automatedAdvanceManager(
+        appScope: AppCoroutineScope,
+        dispatchers: CoroutineDispatchers,
+        coordinator: GameFlowCoordinator,
+        @Provided followUp: AutomatedAdvanceFollowUp,
+        @Provided failureReporter: AutomatedAdvanceFailureReporter,
+    ): AutomatedAdvanceManager = AutomatedAdvanceManager.forCoordinator(appScope, dispatchers.main, coordinator, followUp, failureReporter)
 
     private companion object {
         /** 每條 AI 執行緒可同時存在的策略工作數；多出的工作在調度器中排隊，讓執行緒保持忙碌。 */

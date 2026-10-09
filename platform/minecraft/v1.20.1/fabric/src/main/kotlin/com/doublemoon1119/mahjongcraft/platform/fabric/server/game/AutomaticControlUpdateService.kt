@@ -5,17 +5,22 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControl
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlUpdateResultDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlUpdateResultKindDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.toDto
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceManager
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.UpdatePlayerAutomaticControlsResult
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.UpdatePlayerAutomaticControlsUseCase
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
-/** 驗證 Fabric 更新請求、套用本人本局自動操作集合，並建立可配對的權威回覆。 */
+/**
+ * 驗證 Fabric 更新請求、套用本人本局自動操作集合，並建立可配對的權威回覆。
+ *
+ * @property updateControls 套用自動操作集合的用例。
+ * @property advanceManager 集合實際改變時請求推進，讓新啟用的自動操作立即生效。
+ */
 @Single
 class AutomaticControlUpdateService(
     private val updateControls: UpdatePlayerAutomaticControlsUseCase,
-    private val gameFlowCoordinator: GameFlowCoordinator,
+    private val advanceManager: AutomatedAdvanceManager,
 ) {
     /** 處理 [request]；[playerId] 必須來自已驗證的網路連線，不能來自 payload。 */
     suspend operator fun invoke(
@@ -31,7 +36,7 @@ class AutomaticControlUpdateService(
             enabledControlIds = request.enabledControlIds,
         )
         if (result is UpdatePlayerAutomaticControlsResult.Accepted && result.changed) {
-            gameFlowCoordinator.driveAutomatedPlayers(gameId)
+            advanceManager.request(gameId)
         }
         return result.toDto(request)
     }

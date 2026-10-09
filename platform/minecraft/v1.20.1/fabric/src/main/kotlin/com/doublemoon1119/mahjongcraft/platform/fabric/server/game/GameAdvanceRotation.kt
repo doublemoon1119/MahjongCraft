@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 
-import kotlinx.coroutines.CancellationException
 import kotlin.uuid.Uuid
 
 /**
@@ -95,28 +94,5 @@ class GameAdvanceRotation(private val cycleTicks: Int) {
     /** 全域處理已完成，下一次在一個週期後到期。 */
     fun completeGlobal() {
         ticksSinceGlobal = 0
-    }
-}
-
-/**
- * 依序推進每局；單局丟出例外時交給 [onFailure]，其他對局照常推進。
- *
- * @param gameIds 要推進的對局。
- * @param advance 推進一局。
- * @param onFailure 接收推進失敗的對局與例外。
- */
-internal suspend fun advanceEachGame(
-    gameIds: List<Uuid>,
-    advance: suspend (Uuid) -> Unit,
-    onFailure: (Uuid, Exception) -> Unit,
-) {
-    gameIds.forEach { gameId ->
-        try {
-            advance(gameId)
-        } catch (cancelled: CancellationException) {
-            throw cancelled
-        } catch (error: Exception) {
-            onFailure(gameId, error)
-        }
     }
 }

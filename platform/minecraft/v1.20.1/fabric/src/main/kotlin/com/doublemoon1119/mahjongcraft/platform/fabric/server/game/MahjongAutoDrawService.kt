@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
+import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TablePresentationBusyTracker
@@ -33,24 +34,25 @@ class MahjongAutoDrawService(
      *
      * 判斷邏輯比照 `AiTurnDriver.resolveNextAction` 對 AI 回合的既有判斷，只是條件反過來套用到真人：
      * 有反應視窗開著、目前玩家是 AI、已經摸過牌、或剛碰/吃成立準備直接捨牌時都不觸發。已進入強制
-     * 自動操作（[Game.forcedAutoPlayPlayerIds]） 的真人玩家也不觸發——這類玩家的摸牌／捨牌改由 `ForcedAutoPlayDriver` 透過
-     * [GameFlowCoordinator.driveAutomatedPlayers] 內部路徑代打，這裡若也嘗試呼叫
-     * [gameFlowCoordinator]，會被其強制自動操作守門檢查擋下，白白多一次必定失敗的呼叫。
+     * 自動操作（[Game.forcedAutoPlayPlayerIds]） 的真人玩家也不觸發——這類玩家的摸牌／捨牌改由 `ForcedAutoPlayDriver` 在
+     * 自動推進中代打，這裡若也嘗試分派，會被其強制自動操作守門檢查擋下，白白多一次必定失敗的呼叫。
+     *
+     * 只分派摸牌、不接著驅動自動連鎖；它在每次自動推進的最後執行，摸牌成功時由推進再跑一輪接續後續流程。
      *
      * @param gameId 欲檢查的對局 Uuid。
+     * @return 是否替真人摸了牌。
      */
-    suspend fun checkAndAutoDraw(gameId: Uuid) {
-        if (busyTracker.isBusy(gameId)) return
-        val game = gameRepository.getGame(gameId) ?: return
-        if (game.isMatchOver) return
+    suspend fun checkAndAutoDraw(gameId: Uuid): Boolean {
+        if (busyTracker.isBusy(gameId)) return false
+        val game = gameRepository.getGame(gameId) ?: return false
+        if (game.isMatchOver) return false
         val state = game.tableState
-        if (state.pendingReaction != null || state.pendingRobbingReaction != null) return
+        if (state.pendingReaction != null || state.pendingRobbingReaction != null) return false
 
         val current = state.currentPlayer
-        if (game.isAi(current.id) || current.id in game.forcedAutoPlayPlayerIds) return
+        if (game.isAi(current.id) || current.id in game.forcedAutoPlayPlayerIds) return false
+        if (current.hand.lastDrawn != null || current.justClaimedMeld) return false
 
-        if (current.hand.lastDrawn == null && !current.justClaimedMeld) {
-            gameFlowCoordinator(gameId, current.id, GameCommand.Draw)
-        }
+        return gameFlowCoordinator.dispatch(gameId, current.id, GameCommand.Draw) is Outcome.Success
     }
 }

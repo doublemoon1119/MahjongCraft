@@ -22,6 +22,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotR
 import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionExecutor
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiTurnDriver
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceManager
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandContext
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutor
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ForcedAutoPlayDriver
@@ -66,6 +67,9 @@ import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTran
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlin.uuid.Uuid
 
 /**
@@ -79,6 +83,7 @@ import kotlin.uuid.Uuid
  * @property venueId 場地識別碼。
  * @property gameRepository 隔離對局 repository。
  * @property coordinator 真實流程 coordinator。
+ * @property advances 這一局的單局推進；[step] 經它執行，這一局已在推進時略過。
  * @property gameId 目前對局識別碼。
  * @property match 場次識別碼。
  */
@@ -88,6 +93,7 @@ class HeadlessFlowHistoryRuntime private constructor(
     override val venueId: Uuid,
     private val gameRepository: GameRepositoryImpl,
     private val coordinator: GameFlowCoordinator,
+    private val advances: AutomatedAdvanceManager,
     private val gameId: Uuid,
     private val match: Uuid,
 ) : HeadlessHistoryMatchRuntime {
@@ -99,11 +105,11 @@ class HeadlessFlowHistoryRuntime private constructor(
     override suspend fun matchId(): Uuid = match
 
     /**
-     * 推進一個自動玩家步驟。
+     * 推進一個自動玩家步驟；這一局已在推進時不推進。
      *
      * @return 是否實際推進權威流程。
      */
-    override suspend fun step(): Boolean = coordinator.advanceAutomatedPlayerStep(gameId)
+    override suspend fun step(): Boolean = advances.runExclusive(gameId) { coordinator.advanceAutomatedPlayerStep(gameId) } ?: false
 
     /**
      * 取得目前對局；返回房間後為 null。
@@ -223,7 +229,14 @@ class HeadlessFlowHistoryRuntime private constructor(
             check(started is Outcome.Success) { "Headless history runtime failed to start game: $started" }
             val id = started.value
             val game = checkNotNull(store.getGame(id))
-            return HeadlessFlowHistoryRuntime(scenario, store, venueId, gameRepository, coordinator, id, game.matchId)
+            // 離線對局只經 step 逐步推進，不使用排程推進，因此作用域不會啟動任何協程。
+            val advances = AutomatedAdvanceManager(
+                scope = CoroutineScope(SupervisorJob()),
+                dispatcher = Dispatchers.Unconfined,
+                advanceOnce = { false },
+                failureReporter = { _, error -> throw error },
+            )
+            return HeadlessFlowHistoryRuntime(scenario, store, venueId, gameRepository, coordinator, advances, id, game.matchId)
         }
     }
 }

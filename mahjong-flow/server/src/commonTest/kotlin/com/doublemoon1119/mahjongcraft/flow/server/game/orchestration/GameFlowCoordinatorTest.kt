@@ -291,7 +291,7 @@ class GameFlowCoordinatorTest {
         )
         fixtures.gameRepo.setGame(game)
 
-        val result = fixtures.coordinator(gameId, playerId, GameCommand.Draw)
+        val result = fixtures.coordinator.dispatchThenDrive(gameId, playerId, GameCommand.Draw)
 
         assertEquals(
             Outcome.Error(GameError.ForcedAutoPlayActive(playerId, gameId)),
@@ -415,7 +415,7 @@ class GameFlowCoordinatorTest {
         )
         fixtures.gameRepo.setTableState(table)
 
-        val result = fixtures.coordinator(gameId, playerId, GameCommand.Draw)
+        val result = fixtures.coordinator.dispatchThenDrive(gameId, playerId, GameCommand.Draw)
 
         assertTrue(result is Outcome.Error)
         assertEquals(GameError.WallExhausted(gameId), result.error)
@@ -442,7 +442,7 @@ class GameFlowCoordinatorTest {
         )
         fixtures.gameRepo.setTableState(table)
 
-        val result = fixtures.coordinator(gameId, playerId, GameCommand.Draw)
+        val result = fixtures.coordinator.dispatchThenDrive(gameId, playerId, GameCommand.Draw)
 
         assertTrue(result is Outcome.Error)
         assertEquals(GameError.WallExhausted(gameId), result.error)
@@ -492,7 +492,7 @@ class GameFlowCoordinatorTest {
         val lastDrawn = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
         fixtures.gameRepo.setTableState(suukanNagareTable(dealerId, otherId, lastDrawn))
 
-        val result = fixtures.coordinator(gameId, dealerId, GameCommand.Discard(lastDrawn.id))
+        val result = fixtures.coordinator.dispatchThenDrive(gameId, dealerId, GameCommand.Discard(lastDrawn.id))
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!
@@ -513,7 +513,7 @@ class GameFlowCoordinatorTest {
         val table = FakeTableStateFactory.create(id = gameId, players = listOf(player), config = RiichiRuleConfig(gameLength = RiichiGameLength.East), currentPlayerIndex = 0)
         fixtures.gameRepo.setTableState(table)
 
-        val result = fixtures.coordinator(gameId, playerId, GameCommand.Discard(lastDrawn.id))
+        val result = fixtures.coordinator.dispatchThenDrive(gameId, playerId, GameCommand.Discard(lastDrawn.id))
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!
@@ -555,7 +555,7 @@ class GameFlowCoordinatorTest {
         val table = FakeTableStateFactory.create(id = gameId, players = listOf(winner, other), config = RiichiRuleConfig(gameLength = RiichiGameLength.East), currentPlayerIndex = 0)
         fixtures.gameRepo.setTableState(table)
 
-        val result = fixtures.coordinator(gameId, winnerId, GameCommand.Tsumo)
+        val result = fixtures.coordinator.dispatchThenDrive(gameId, winnerId, GameCommand.Tsumo)
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!
@@ -747,7 +747,7 @@ class GameFlowCoordinatorTest {
             game.copy(tableState = state.copy(players = updated)) to Unit
         }
 
-        fixtures.coordinator(gameId, secondWinnerId, GameCommand.Tsumo)
+        fixtures.coordinator.dispatchThenDrive(gameId, secondWinnerId, GameCommand.Tsumo)
 
         val published = fixtures.presentationPublisher.getPublishedWinPresentations(gameId)
         assertEquals(2, published.size, "Each continuing win must publish its own presentation, never merged.")
@@ -817,7 +817,7 @@ class GameFlowCoordinatorTest {
         )
         fixtures.gameRepo.setTableState(table)
 
-        val result = fixtures.coordinator(gameId, winnerId, GameCommand.Tsumo)
+        val result = fixtures.coordinator.dispatchThenDrive(gameId, winnerId, GameCommand.Tsumo)
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         return fixtures
     }
@@ -853,7 +853,7 @@ class GameFlowCoordinatorTest {
         )
         fixtures.gameRepo.setTableState(table)
 
-        val result = fixtures.coordinator(gameId, playerId, GameCommand.DeclareExhaustiveDraw(RiichiExhaustiveDrawReason.KyuushuKyuuhai))
+        val result = fixtures.coordinator.dispatchThenDrive(gameId, playerId, GameCommand.DeclareExhaustiveDraw(RiichiExhaustiveDrawReason.KyuushuKyuuhai))
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!
@@ -877,7 +877,7 @@ class GameFlowCoordinatorTest {
         val table = FakeTableStateFactory.create(id = gameId, players = listOf(player, bystander), config = RiichiRuleConfig(gameLength = RiichiGameLength.East), currentPlayerIndex = 0)
         fixtures.gameRepo.setTableState(table)
 
-        val result = fixtures.coordinator(gameId, playerId, GameCommand.Discard(lastDrawn.id))
+        val result = fixtures.coordinator.dispatchThenDrive(gameId, playerId, GameCommand.Discard(lastDrawn.id))
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!
@@ -909,7 +909,7 @@ class GameFlowCoordinatorTest {
         val table = FakeTableStateFactory.create(id = gameId, players = listOf(p1, p2), config = RiichiRuleConfig(gameLength = RiichiGameLength.East), currentPlayerIndex = 1)
         fixtures.gameRepo.setTableState(table)
 
-        val result = fixtures.coordinator(gameId, p2Id, GameCommand.Discard(p2LastDrawn.id))
+        val result = fixtures.coordinator.dispatchThenDrive(gameId, p2Id, GameCommand.Discard(p2LastDrawn.id))
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!
@@ -960,7 +960,7 @@ class GameFlowCoordinatorTest {
         fixtures.gameRepo.setTableState(table)
         val whiteTileId = table.pendingReaction!!.tileId
 
-        val result = fixtures.coordinator(gameId, respondentId, GameCommand.RespondToDiscard(GameAction.Ron(whiteTileId)))
+        val result = fixtures.coordinator.dispatchThenDrive(gameId, respondentId, GameCommand.RespondToDiscard(GameAction.Ron(whiteTileId)))
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!
@@ -978,7 +978,7 @@ class GameFlowCoordinatorTest {
         fixtures.presentationBusyGate.setBusy(gameId, true)
         val whiteTileId = table.pendingReaction!!.tileId
 
-        val result = fixtures.coordinator(gameId, respondentId, GameCommand.RespondToDiscard(GameAction.Ron(whiteTileId)))
+        val result = fixtures.coordinator.dispatchThenDrive(gameId, respondentId, GameCommand.RespondToDiscard(GameAction.Ron(whiteTileId)))
 
         val error = assertIs<Outcome.Error<GameError>>(result).error
         assertEquals(GameError.UnsupportedAction(gameId, respondentId, "mahjongcraft:presentation_busy"), error)
@@ -1052,7 +1052,7 @@ class GameFlowCoordinatorTest {
         val whiteTileId = table.pendingReaction!!.tileId
 
         val ponAction = GameAction.Pon(whiteTileId, listOf(whiteTile1.id, whiteTile2.id))
-        val result = fixtures.coordinator(gameId, respondentId, GameCommand.RespondToDiscard(ponAction))
+        val result = fixtures.coordinator.dispatchThenDrive(gameId, respondentId, GameCommand.RespondToDiscard(ponAction))
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!
@@ -1097,7 +1097,7 @@ class GameFlowCoordinatorTest {
         fixtures.gameRepo.setTableState(table)
         val robbedTileId = table.pendingRobbingReaction!!.robbedTile.id
 
-        val result = fixtures.coordinator(gameId, robberId, GameCommand.RespondToRobbing(GameAction.Ron(robbedTileId)))
+        val result = fixtures.coordinator.dispatchThenDrive(gameId, robberId, GameCommand.RespondToRobbing(GameAction.Ron(robbedTileId)))
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!
@@ -1117,7 +1117,7 @@ class GameFlowCoordinatorTest {
         val table = chankanTable(declarerId, robberId, listOf(rinshanTile), ronReadyHand())
         fixtures.gameRepo.setTableState(table)
 
-        val result = fixtures.coordinator(gameId, robberId, GameCommand.RespondToRobbing(GameAction.Pass))
+        val result = fixtures.coordinator.dispatchThenDrive(gameId, robberId, GameCommand.RespondToRobbing(GameAction.Pass))
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!
@@ -1147,7 +1147,7 @@ class GameFlowCoordinatorTest {
         )
         fixtures.gameRepo.setTableState(table)
 
-        val result = fixtures.coordinator(gameId, playerId, GameCommand.Draw)
+        val result = fixtures.coordinator.dispatchThenDrive(gameId, playerId, GameCommand.Draw)
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!
@@ -1183,7 +1183,7 @@ class GameFlowCoordinatorTest {
         )
         fixtures.gameRepo.setTableState(table)
 
-        val result = fixtures.coordinator(gameId, playerId, GameCommand.Kan(GameAction.KanType.CLOSED_KAN, east4.id))
+        val result = fixtures.coordinator.dispatchThenDrive(gameId, playerId, GameCommand.Kan(GameAction.KanType.CLOSED_KAN, east4.id))
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!
@@ -1206,7 +1206,7 @@ class GameFlowCoordinatorTest {
         val table = FakeTableStateFactory.create(id = gameId, players = listOf(currentPlayer, other), config = RiichiRuleConfig(gameLength = RiichiGameLength.East), currentPlayerIndex = 0)
         fixtures.gameRepo.setTableState(table)
 
-        val result = fixtures.coordinator(gameId, otherPlayerId, GameCommand.Draw)
+        val result = fixtures.coordinator.dispatchThenDrive(gameId, otherPlayerId, GameCommand.Draw)
 
         assertTrue(result is Outcome.Error)
         assertEquals(GameError.NotPlayersTurn(otherPlayerId, gameId), result.error)
@@ -1236,7 +1236,7 @@ class GameFlowCoordinatorTest {
         fixtures.decisionTimerManager.reconcile(gameId)
         fixtures.clock.nowMillis = 2_000L
 
-        val result = fixtures.coordinator(gameId, otherPlayerId, GameCommand.Draw)
+        val result = fixtures.coordinator.dispatchThenDrive(gameId, otherPlayerId, GameCommand.Draw)
 
         assertTrue(result is Outcome.Error)
         assertEquals(
@@ -1248,7 +1248,7 @@ class GameFlowCoordinatorTest {
     // ---- AI 自動出手 ----
 
     /**
-     * 驗證人類捨牌後、輪到的下一位是 AI 且無人可反應時：同一次 `coordinator(...)` 呼叫內，AI
+     * 驗證人類捨牌後、輪到的下一位是 AI 且無人可反應時：同一次 `dispatchThenDrive(...)` 呼叫內，AI
      * 已經自動摸牌並捨牌，回合正確推回人類——不需要呼叫端再送出任何命令。
      */
     @Test
@@ -1276,7 +1276,7 @@ class GameFlowCoordinatorTest {
         )
         fixtures.gameRepo.setTableState(table, mapOf(aiId to RandomAiStrategy.KEY))
 
-        val result = fixtures.coordinator(gameId, humanId, GameCommand.Discard(discardedTile.id))
+        val result = fixtures.coordinator.dispatchThenDrive(gameId, humanId, GameCommand.Discard(discardedTile.id))
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!
@@ -1317,7 +1317,7 @@ class GameFlowCoordinatorTest {
         )
         fixtures.gameRepo.setTableState(table, mapOf(aiId to RandomAiStrategy.KEY))
 
-        val result = fixtures.coordinator(gameId, humanId, GameCommand.Discard(southTile.id))
+        val result = fixtures.coordinator.dispatchThenDrive(gameId, humanId, GameCommand.Discard(southTile.id))
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!

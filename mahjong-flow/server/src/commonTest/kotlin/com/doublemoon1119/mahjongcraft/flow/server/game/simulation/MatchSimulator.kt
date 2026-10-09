@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransition
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.dispatchThenDrive
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_STICK_POINTS
@@ -174,7 +175,7 @@ internal class MatchSimulator(
         }
         if (runtime.gameRepository.getGame(gameId)?.pendingTransition != PendingGameTransition.ReturnToRoom) {
             val rejection = recorder.recent.lastOrNull()?.let { last ->
-                (runtime.coordinator(gameId, last.playerId, last.command) as? Outcome.Error)?.error
+                (runtime.coordinator.dispatchThenDrive(gameId, last.playerId, last.command) as? Outcome.Error)?.error
             }
             return "the match stopped before it ended; last command rejected with: $rejection" to null
         }

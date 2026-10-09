@@ -2,8 +2,11 @@ package com.doublemoon1119.mahjongcraft.platform.fabric
 
 import com.doublemoon1119.mahjongcraft.extension.CoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
+import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.network.dto.command.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceManager
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.HandSortPreferenceUpdateMode
@@ -136,6 +139,7 @@ class MahjongCraftMod : ModInitializer {
             serverHolder.set(server)
             playerIdentityStore.refresh()
             appScope.startSession()
+            koin.get<AutomatedAdvanceManager>().startSession()
             observerBroadcast.startSession()
             achievementService.startSession()
             lobbyInfoLifecycle.startSession()
@@ -236,7 +240,8 @@ class MahjongCraftMod : ModInitializer {
      * 接收端跑在網路執行緒（見 [C2SChannel]），
      * `registerServerReceiver` 已經把 `envelope` 解碼、丟回伺服器執行緒；這裡再用 [AppCoroutineScope]
      * 啟動協程呼叫 [GameFlowCoordinator]（`suspend` 函式），不阻塞伺服器主執行緒。玩家身分一律用
-     * 連線本身的 [ServerPlayerEntity.getUuid]，不信任封包內容宣稱的身分。
+     * 連線本身的 [ServerPlayerEntity.getUuid]，不信任封包內容宣稱的身分。分派後向 [AutomatedAdvanceManager] 請求推進；
+     * 強制自動操作中的玩家送出的命令被拒絕，視為完全沒發生過，不請求推進。
      */
     private fun registerGameCommandReceiver(koin: Koin) {
         val json = koin.get<Json>()
@@ -244,11 +249,15 @@ class MahjongCraftMod : ModInitializer {
         val scope = koin.get<AppCoroutineScope>()
         MahjongChannels.gameCommand.registerServerReceiver(json) { _, player, envelope ->
             scope.launch {
-                koin.get<GameFlowCoordinator>().invoke(
-                    gameId = Uuid.parse(envelope.gameId),
+                val gameId = Uuid.parse(envelope.gameId)
+                val result = koin.get<GameFlowCoordinator>().dispatch(
+                    gameId = gameId,
                     playerId = player.uuid.toKotlinUuid(),
                     command = envelope.command.toDomain(networkRegistries),
                 )
+                if (result !is Outcome.Error || result.error !is GameError.ForcedAutoPlayActive) {
+                    koin.get<AutomatedAdvanceManager>().request(gameId)
+                }
             }
         }
     }

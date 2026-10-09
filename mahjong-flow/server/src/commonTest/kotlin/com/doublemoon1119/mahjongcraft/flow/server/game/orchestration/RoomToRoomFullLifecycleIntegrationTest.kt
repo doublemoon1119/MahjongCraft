@@ -358,14 +358,14 @@ class RoomToRoomFullLifecycleIntegrationTest {
         val pendingRobbingReaction = state.pendingRobbingReaction
         if (pendingRobbingReaction != null && hostId in pendingRobbingReaction.eligiblePlayerIds && hostId !in pendingRobbingReaction.responses) {
             val command = decideFor(gameId, game, hostId, AiDecisionPhase.RespondingToRobbing, strategy, visibilityPolicy)
-            coordinator(gameId, hostId, command)
+            coordinator.dispatchThenDrive(gameId, hostId, command)
             return true
         }
 
         val pendingReaction = state.pendingReaction
         if (pendingReaction != null && hostId in pendingReaction.eligiblePlayerIds && hostId !in pendingReaction.responses) {
             val command = decideFor(gameId, game, hostId, AiDecisionPhase.RespondingToDiscard, strategy, visibilityPolicy)
-            coordinator(gameId, hostId, command)
+            coordinator.dispatchThenDrive(gameId, hostId, command)
             return true
         }
 
@@ -376,7 +376,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
             } else {
                 decideFor(gameId, game, hostId, AiDecisionPhase.OwnTurn, strategy, visibilityPolicy)
             }
-            coordinator(gameId, hostId, command)
+            coordinator.dispatchThenDrive(gameId, hostId, command)
             return true
         }
 

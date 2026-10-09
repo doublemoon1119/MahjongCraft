@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhas
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSubmission
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceManager
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameActionCommandMapper
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
@@ -49,8 +50,7 @@ import kotlin.uuid.toKotlinUuid
  * @property gameRepository 權威對局數據倉庫，用於解析手牌／桌況。
  * @property membershipRepository 玩家目前桌子（房間／對局共用同一個 Uuid）的歸屬查詢。
  * @property gameFlowCoordinator 對局命令的分派與自動銜接入口。
- * @property autoDrawService 命令成功後補做真人玩家的自動摸牌檢查（`driveAutomatedPlayers` 已經包在
- *   [GameFlowCoordinator.invoke] 內部，不需要另外呼叫）。
+ * @property advanceManager 命令分派後請求推進 AI／強制自動操作玩家，推進的最後會補做真人玩家的自動摸牌。
  * @property candidateResolver 查詢目前合法動作清單，供 [showHand] 使用；跟 `action` 指令 Tab 補全共用
  *   同一份查詢，確保手牌畫面顯示的候選跟玩家實際能輸入的候選一致。
  * @property feedbackPublisher 操作結果的一次性回饋。
@@ -67,7 +67,7 @@ class MahjongTableGameActionService(
     private val gameRepository: GameRepository,
     private val membershipRepository: PlayerMembershipRepository,
     private val gameFlowCoordinator: GameFlowCoordinator,
-    private val autoDrawService: MahjongAutoDrawService,
+    private val advanceManager: AutomatedAdvanceManager,
     private val candidateResolver: GameActionCandidateResolver,
     private val feedbackPublisher: MinecraftPlayerFeedbackPublisher,
     private val busyTracker: TablePresentationBusyTracker,
@@ -328,13 +328,11 @@ class MahjongTableGameActionService(
                 is Outcome.Success -> Unit
                 is Outcome.Error -> feedbackPublisher.publish(playerId, MinecraftGameFeedbackResolver.actionError(result.error))
             }
-            // 被拒絕的命令視為完全沒發生過，不驅動自動連鎖——跟 GameFlowCoordinator.invoke() 對
-            // ForcedAutoPlayActive 的既有處理一致。其餘成功／失敗結果都要驅動，即使這位玩家的命令
-            // 失敗，其他 AI／強制自動操作玩家仍然可能有動作要做。
+            // 強制自動操作中的玩家送出的命令被拒絕，視為完全沒發生過，不請求推進。其餘成功／失敗結果都要請求，
+            // 即使這位玩家的命令失敗，其他 AI／強制自動操作玩家仍然可能有動作要做；推進的最後會補做真人自動摸牌。
             if (result !is Outcome.Error || result.error !is GameError.ForcedAutoPlayActive) {
-                gameFlowCoordinator.driveAutomatedPlayers(gameId)
+                advanceManager.request(gameId)
             }
-            if (result is Outcome.Success) autoDrawService.checkAndAutoDraw(gameId)
             return if (result is Outcome.Success) {
                 PlayerDecisionSubmissionResultKindDto.ACCEPTED
             } else {

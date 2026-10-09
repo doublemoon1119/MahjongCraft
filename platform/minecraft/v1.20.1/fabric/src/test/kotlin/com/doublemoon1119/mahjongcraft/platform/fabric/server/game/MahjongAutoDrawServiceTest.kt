@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransit
 import com.doublemoon1119.mahjongcraft.flow.common.time.MonotonicClock
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionExecutor
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiTurnDriver
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceManager
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandContext
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutor
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
@@ -62,6 +63,8 @@ import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGame
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository.FakeRoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomEventPublisher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -222,6 +225,19 @@ class MahjongAutoDrawServiceTest {
             coordinator,
             TablePresentationBusyTracker(FabricServerHolder(), TableLocationRegistry()),
         )
+
+        /**
+         * 以正式的推進流程推進 [gameId] 並在返回前跑完：推進協程在 [scope] 上立即執行，AI 策略在呼叫端直接計算；推進失敗時讓測試失敗。
+         */
+        fun advance(scope: CoroutineScope, gameId: Uuid) {
+            AutomatedAdvanceManager.forCoordinator(
+                scope = scope,
+                dispatcher = Dispatchers.Unconfined,
+                coordinator = coordinator,
+                followUp = autoDrawService::checkAndAutoDraw,
+                failureReporter = { _, error -> throw error },
+            ).request(gameId)
+        }
     }
 
     /** 提供固定時間的假時鐘，避免測試依賴真實系統時間。 */
@@ -263,7 +279,7 @@ class MahjongAutoDrawServiceTest {
         assertNotNull(drawnTile, "Human dealer should have been auto-drawn a tile.")
     }
 
-    /** 驗證目前玩家是 AI 時，`checkAndAutoDraw` 不會介入（交給 `driveAutomatedPlayers` 處理）。 */
+    /** 驗證目前玩家是 AI 時，`checkAndAutoDraw` 不會介入（交給自動推進處理）。 */
     @Test
     fun `test checkAndAutoDraw skips when current player is ai`() = runTest {
         val fixtures = Fixtures()
@@ -293,7 +309,7 @@ class MahjongAutoDrawServiceTest {
 
     /**
      * 驗證目前玩家是已進入強制自動操作的真人時，`checkAndAutoDraw` 不會介入（改由
-     * `ForcedAutoPlayDriver` 透過 `driveAutomatedPlayers` 代打）。
+     * `ForcedAutoPlayDriver` 在自動推進中代打）。
      *
      * 迴歸測試：這個排除條件原本沒有，`checkAndAutoDraw` 會嘗試幫這種玩家摸牌，被
      * [GameFlowCoordinator] 的強制自動操作守門檢查擋下、靜默失敗。
@@ -315,19 +331,18 @@ class MahjongAutoDrawServiceTest {
     }
 
     /**
-     * 迴歸測試：驗證玩家進入強制自動操作後，即使沒有任何逾時事件（沒有計時器可等），單純重複呼叫
-     * [GameFlowCoordinator.driveAutomatedPlayers] 仍然能幫他完成當下卡住的那次捨牌，不會卡住。
+     * 迴歸測試：驗證玩家進入強制自動操作後，即使沒有任何逾時事件（沒有計時器可等），單純請求一次自動推進
+     * 仍然能幫他完成當下卡住的那次捨牌，不會卡住。
      *
-     * 對應 `FabricDecisionTimerScheduler` 現在每個 tick 都巡邏所有進行中對局呼叫
-     * `driveAutomatedPlayers` 的設計——這裡驗證的正是這個心跳背後依賴的核心行為：強制自動操作的
-     * 玩家不需要逾時事件也能被 `driveAutomatedPlayers` 正確推進。
+     * 對應 `FabricDecisionTimerScheduler` 每秒巡邏所有進行中對局並請求推進的設計——這裡驗證的正是這個心跳背後依賴的
+     * 核心行為：強制自動操作的玩家不需要逾時事件也能被自動推進正確代打。
      *
      * 摸牌先透過 [MahjongAutoDrawService] 走一般玩家的機械摸牌路徑，比照真實流程——強制自動操作只會
      * 在玩家已經摸過牌、卡在「該打哪張」這個決策上逾時才成立（見 [GameDecisionAuthorityResolver]，
      * `OWN_TURN` 一定要求 `lastDrawn != null`），不會發生在「連牌都還沒摸」的狀態。
      */
     @Test
-    fun `test driveAutomatedPlayers advances a forced auto play player without any timeout event`() = runTest {
+    fun `test an automated advance serves a forced auto play player without any timeout event`() = runTest {
         val fixtures = Fixtures()
         val gameId = fixtures.createStartedGame()
         val dealerId = fixtures.gameRepo.getTableState(gameId)!!.currentPlayer.id
@@ -336,7 +351,7 @@ class MahjongAutoDrawServiceTest {
             game!!.copy(forcedAutoPlayPlayerIds = setOf(dealerId)) to Unit
         }
 
-        fixtures.coordinator.driveAutomatedPlayers(gameId)
+        fixtures.advance(this, gameId)
 
         val game = fixtures.gameRepo.getGame(gameId)
         assertNotNull(game)
@@ -353,7 +368,7 @@ class MahjongAutoDrawServiceTest {
      *
      * 四位玩家都設成 AI（含房主本人）——這裡只驗證 `Game.hostId` 能不能正確往返、Room 能不能正確
      * 重建，不需要真人玩家；若房主是唯一的真人玩家，`GameInitializer.initialize` 內部洗牌座位是
-     * 隨機的，房主可能剛好被排到莊家（東家）座位，`driveAutomatedPlayers` 不會替真人行動，測試會在
+     * 隨機的，房主可能剛好被排到莊家（東家）座位，自動推進不會替真人行動，測試會在
      * 空牌山的第一次摸牌前卡住、變成間歇性失敗——曾經在這裡踩過一次。
      */
     @Test
@@ -380,7 +395,7 @@ class MahjongAutoDrawServiceTest {
         // 這裡也要明確蓋回去才是在測「hostId 有沒有被正確保留」，不是在測隨機湊巧對上。
         fixtures.gameRepo.updateGame(gameId) { game -> game!!.copy(hostId = hostId, aiPlayerStrategyKeys = aiStrategyKeys) to Unit }
 
-        fixtures.coordinator.driveAutomatedPlayers(gameId)
+        fixtures.advance(this, gameId)
 
         val settledGame = fixtures.store.getGame(gameId)
         assertNotNull(settledGame, "Game must remain available while the match settlement presentation is pending.")

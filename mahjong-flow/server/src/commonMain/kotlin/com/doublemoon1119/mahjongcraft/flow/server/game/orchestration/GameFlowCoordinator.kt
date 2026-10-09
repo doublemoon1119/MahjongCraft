@@ -55,9 +55,10 @@ import kotlin.uuid.Uuid
  * 銜接呼叫皆為 best-effort：若銜接呼叫本身失敗，不會覆蓋原始命令的執行結果——玩家自己那次操作
  * 是否成功，跟後續系統銜接是否成功，是兩件事。
  *
- * 每次 [invoke] 執行完畢，還會額外透過 [aiTurnDriver] 讓所有輪到自己、或有資格回應且尚未回應的
+ * 自動操作由 [driveAutomatedPlayers] 透過 [aiTurnDriver] 等驅動：讓所有輪到自己、或有資格回應且尚未回應的
  * AI 玩家依序自動行動，直到沒有任何 AI 需要行動為止——AI 背後沒有真人會主動送出命令，這一步
- * 讓加入房間的 AI 玩家真的能在牌局裡自動出手。詳見 [driveAutomatedPlayers]。
+ * 讓加入房間的 AI 玩家真的能在牌局裡自動出手。它只供 [AutomatedAdvanceManager] 使用，確保同一局同一時間只有一個推進；
+ * 其他呼叫端分派命令後向管理器請求推進。
  *
  * @property gameActionRouter 玩家發起命令的路由入口。
  * @property gameRepository 權威對局數據倉庫，用於判斷是否需要銜接。
@@ -105,45 +106,12 @@ class GameFlowCoordinator(
     private val pendingTransitionMutex = Mutex()
 
     /**
-     * 分派 [command] 並自動銜接對應的系統觸發 use case，完成後接著驅動所有需要行動的 AI 玩家
-     * （見 [driveAutomatedPlayers]）。
-     *
-     * 大多數呼叫端應該用這個一次到位的入口；已進入強制自動操作的玩家一律拒絕，且完全不觸發自動連鎖
-     * ——被拒絕的手動命令視為完全沒發生過，不應該有任何副作用。只有在呼叫端需要在「這次操作本身的
-     * 結果」與「隨之而來的自動連鎖」之間插入自己的動作時（例如先發布這次操作成功的回饋訊息，再讓
-     * 自動連鎖繼續跑，避免訊息順序看起來顛倒），才需要改拆成 [dispatch] + [driveAutomatedPlayers]
-     * 分開呼叫；這種情況下呼叫端要自行決定拒絕時是否仍要驅動自動連鎖。
-     *
-     * @param gameId 對局 Uuid。
-     * @param playerId 發起操作的玩家 Uuid。
-     * @param command 欲執行的操作。
-     * @return [GameActionRouter] 的執行結果。
-     */
-    suspend operator fun invoke(
-        gameId: Uuid,
-        playerId: Uuid,
-        command: GameCommand,
-    ): Outcome<Unit, GameError> {
-        val game = gameRepository.getGame(gameId)
-            ?: return Outcome.Error(GameError.GameNotFound(gameId))
-        if (!decisionAvailabilityService.reconcile(gameId)) {
-            return Outcome.Error(GameError.UnsupportedAction(gameId, playerId, PRESENTATION_BUSY_REASON_ID))
-        }
-        if (playerId in game.forcedAutoPlayPlayerIds) {
-            return Outcome.Error(GameError.ForcedAutoPlayActive(playerId, gameId))
-        }
-        val result = dispatchAndReconcile(gameId, playerId, command)
-        driveAutomatedPlayers(gameId)
-        return result
-    }
-
-    /**
-     * 分派 [command] 並自動銜接對應的系統觸發 use case，**不會**接著驅動自動連鎖（見 [invoke] 與
-     * [driveAutomatedPlayers]）——只有需要在兩者之間插入自己動作的呼叫端才需要直接呼叫這個方法，
-     * 呼叫完後仍須自行接著呼叫 [driveAutomatedPlayers]，否則 AI／強制自動操作玩家不會被推進。
+     * 分派 [command] 並自動銜接對應的系統觸發 use case，**不會**接著驅動自動連鎖：呼叫端分派後須向
+     * [AutomatedAdvanceManager] 請求推進，AI／強制自動操作玩家才會接著行動。被拒絕的手動命令（例如強制自動操作中的玩家）
+     * 視為完全沒發生過，呼叫端可自行決定是否仍要請求推進。
      *
      * 已進入強制自動操作（[Game.forcedAutoPlayPlayerIds]）
-     * 的玩家一律拒絕——跟 [invoke] 共用同一條守門檢查；[driveAutomatedPlayers] 內部呼叫的是私有的
+     * 的玩家一律拒絕；[driveAutomatedPlayers] 內部呼叫的是私有的
      * `dispatchAndReconcile`，替 AI／強制自動操作玩家送出命令時不會經過這裡、不會撞到這條檢查。
      *
      * @param gameId 對局 Uuid。
@@ -175,8 +143,8 @@ class GameFlowCoordinator(
      * `while (true)`——純粹是防呆：萬一未來出現尚未發現的收斂性 bug，讓這裡真的陷入無限迴圈，
      * `while (true)` 會讓呼叫這個函式的那次心跳永遠卡住、吃滿 CPU 卻不留下任何訊號，而心跳是
      * 依序遍歷所有對局的，一局卡住會連帶讓同一次心跳裡其他對局的自動操作全部停擺。設上限後，
-     * 卡住會直接拋出例外，能被立即看見、定位。可由開局與逾時流程主動呼叫，確保沒有真人送出指令時
-     * 仍能推進自動操作。
+     * 卡住會直接拋出例外，能被立即看見、定位。開局、逾時與每秒巡邏都經 [AutomatedAdvanceManager] 呼叫，確保沒有真人送出
+     * 指令時仍能推進自動操作。
      *
      * 由 [forcedAutoPlayDriver] 解析出的動作在送出前會先把該玩家從[Game.forcedAutoPlayPlayerIds] 移除——
      * 強制自動操作只鎖住逾時當下那一次決策，不是整場對局；提前移除也讓緊接著呼叫的
@@ -192,7 +160,7 @@ class GameFlowCoordinator(
      * @param gameId 欲推進的遊戲。
      * @throws IllegalStateException 跑滿 [MAX_ITERATIONS] 步仍未收斂，代表自動操作鏈路真的卡住了。
      */
-    suspend fun driveAutomatedPlayers(gameId: Uuid) {
+    internal suspend fun driveAutomatedPlayers(gameId: Uuid) {
         repeat(MAX_ITERATIONS) {
             if (!advanceAutomatedPlayerStep(gameId)) return
             // 已排入下一段轉移或呈現忙碌時維持原本的交接節奏，留待後續恢復入口。
@@ -209,13 +177,13 @@ class GameFlowCoordinator(
      *
      * 單步會依序處理待完成流程、回合準備、強制自動操作、真人自動設定與 AI 決策；呈現忙碌、沒有
      * 可執行決策，或命令沒有改變權威 [Game] 時，會立即停止。此方法不會等待下一步，適合由外部
-     * 逐次收集自動操作事件並以背壓控制推進速度。
+     * 逐次收集自動操作事件並以背壓控制推進速度；只經 [AutomatedAdvanceManager.runExclusive] 呼叫。
      *
      * @param gameId 欲推進的遊戲。
      * @return 權威 [Game] 或其待完成流程確實改變時為 `true`；沒有可推進的工作、呈現忙碌或命令
      *   未造成狀態變更時為 `false`。
      */
-    suspend fun advanceAutomatedPlayerStep(gameId: Uuid): Boolean {
+    internal suspend fun advanceAutomatedPlayerStep(gameId: Uuid): Boolean {
         if (!decisionAvailabilityService.reconcile(gameId)) return false
         val stepBefore = gameRepository.getGame(gameId) ?: return false
 

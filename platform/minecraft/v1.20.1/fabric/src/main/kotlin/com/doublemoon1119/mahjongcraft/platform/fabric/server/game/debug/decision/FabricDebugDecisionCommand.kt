@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WIN_AVAILABLE_ID
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileAvailabilityDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.SuitDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceManager
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAvailabilityService
@@ -70,6 +71,7 @@ import kotlin.uuid.toKotlinUuid
  *
  * @property gameRepository 讀寫 preparation 測試情境所需的牌桌狀態。
  * @property gameFlowCoordinator 送出 preparation 的正式指令。
+ * @property advanceManager 送出後請求推進，讓 AI 與逾時代打接著行動。
  * @property decisionAvailabilityService 重新計算 preparation 的決策可用性與計時器。
  * @property snapshotSynchronizer 同步 reconcile 之後的快照。
  * @property membershipRepository 供 tab 補全解析呼叫者目前入座的桌子。
@@ -82,6 +84,7 @@ import kotlin.uuid.toKotlinUuid
 class FabricDebugDecisionCommand(
     private val gameRepository: GameRepository,
     private val gameFlowCoordinator: GameFlowCoordinator,
+    private val advanceManager: AutomatedAdvanceManager,
     private val decisionAvailabilityService: GameDecisionAvailabilityService,
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
     private val membershipRepository: PlayerMembershipRepository,
@@ -319,7 +322,8 @@ class FabricDebugDecisionCommand(
 
     /** 透過正式 coordinator 提交測試 preparation 選擇。 */
     private fun submitPreparation(source: ServerCommandSource, submission: RoundPreparationSubmission): Int = playerTableScope.runSuspending(source) { tableId, playerId ->
-        gameFlowCoordinator(tableId, playerId, GameCommand.SubmitRoundPreparation(submission))
+        gameFlowCoordinator.dispatch(tableId, playerId, GameCommand.SubmitRoundPreparation(submission))
+        advanceManager.request(tableId)
         "Round preparation submission sent"
     }
 
@@ -328,7 +332,7 @@ class FabricDebugDecisionCommand(
         gameRepository.updateGame(tableId) { game ->
             game?.copy(forcedAutoPlayPlayerIds = game.forcedAutoPlayPlayerIds + playerId) to Unit
         }
-        gameFlowCoordinator.driveAutomatedPlayers(tableId)
+        advanceManager.request(tableId)
         "Round preparation timeout fallback requested"
     }
 

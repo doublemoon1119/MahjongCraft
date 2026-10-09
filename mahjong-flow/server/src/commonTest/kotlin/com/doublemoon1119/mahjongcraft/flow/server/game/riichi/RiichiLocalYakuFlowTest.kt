@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetai
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiGameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.dispatchThenDrive
 import com.doublemoon1119.mahjongcraft.flow.server.game.simulation.SimulationRuntime
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.completeRiichiReservedWall
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.withFirstKanPhysicalWallLayout
@@ -109,7 +110,7 @@ class RiichiLocalYakuFlowTest {
         val runtime = SimulationRuntime(defaultStrategyKey = "unused")
         runtime.gameRepository.setTableState(table)
         commands.forEach { (playerId, command) ->
-            val result = runtime.coordinator(gameId, playerId, command)
+            val result = runtime.coordinator.dispatchThenDrive(gameId, playerId, command)
             assertTrue(result is Outcome.Success, "$command failed: $result")
         }
         val settled = runtime.gameRepository.historyDrafts.map { it.fact }.filterIsInstance<HistoryFact.WinSettled>().single()
