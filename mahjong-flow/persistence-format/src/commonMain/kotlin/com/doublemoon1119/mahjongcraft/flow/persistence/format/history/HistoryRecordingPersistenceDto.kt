@@ -253,6 +253,16 @@ sealed interface HistoryFactPersistenceDto {
         val finalScoresByPlayerId: Map<String, Int>,
     ) : HistoryFactPersistenceDto
 
+    /** 對局在正常完成前被移除時的終止原因。
+     *
+     * @property reasonId 呼叫端提供、原樣保存的中止原因識別碼。
+     */
+    @Serializable
+    @SerialName(HistoryFactTypeKeys.MATCH_ABORTED)
+    data class MatchAborted(
+        val reasonId: String,
+    ) : HistoryFactPersistenceDto
+
     /** 胡牌後續流程完成決策後的結果。
      *
      * @property directive 胡牌後決定的本局後續。
@@ -563,6 +573,7 @@ class HistoryRecordingPersistenceMapper(
             fact.reasonId,
             fact.finalScoresByPlayerId.mapKeys { it.key.toString() },
         )
+        is HistoryFact.MatchAborted -> HistoryFactPersistenceDto.MatchAborted(fact.reasonId)
         is HistoryFact.WinContinuationResolved -> HistoryFactPersistenceDto.WinContinuationResolved(
             fact.directive.toPersistenceDto(),
         )
@@ -617,6 +628,7 @@ class HistoryRecordingPersistenceMapper(
             dto.reasonId,
             dto.finalScoresByPlayerId.mapKeys { Uuid.parse(it.key) },
         )
+        is HistoryFactPersistenceDto.MatchAborted -> HistoryFact.MatchAborted(dto.reasonId)
         is HistoryFactPersistenceDto.WinContinuationResolved -> HistoryFact.WinContinuationResolved(
             dto.directive.toDomain(),
         )

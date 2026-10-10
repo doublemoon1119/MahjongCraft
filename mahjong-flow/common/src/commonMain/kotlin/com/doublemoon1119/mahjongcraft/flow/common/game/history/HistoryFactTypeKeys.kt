@@ -35,6 +35,9 @@ object HistoryFactTypeKeys {
     /** 整場對局完成事實的種類識別碼。 */
     const val MATCH_COMPLETED: String = "match_completed"
 
+    /** 整場對局中途終止事實的種類識別碼。 */
+    const val MATCH_ABORTED: String = "match_aborted"
+
     /** 和牌後續流程裁定事實的種類識別碼。 */
     const val WIN_CONTINUATION_RESOLVED: String = "win_continuation_resolved"
 

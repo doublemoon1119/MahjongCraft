@@ -207,6 +207,16 @@ class RiichiGameAchievementResolverTest {
         assertEquals(setOf(RiichiAchievementIds.MATCH_COMPLETED, RiichiAchievementIds.BUSTED), result.getValue(busted.id))
     }
 
+    /** 日麻規則的中途終止不會誤發完成對局或擊飛成果。 */
+    @Test
+    fun `aborted riichi match produces no achievements`() {
+        val game = riichiGame()
+
+        val result = resolve(game, HistoryFact.MatchAborted("mahjongcraft:table_missing"))
+
+        assertTrue(result.isEmpty())
+    }
+
     /** 三人日麻對局與四人日麻共用同一批日麻成果。 */
     @Test
     fun `three player riichi games credit the same riichi achievements`() {

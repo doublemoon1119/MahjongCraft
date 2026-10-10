@@ -43,6 +43,31 @@ import kotlin.uuid.Uuid
 
 /** 驗證完整返回房間後才刪除原始事件並保存可重啟的 Replay。 */
 class HistoryArchiveServiceTest {
+    /** 中途終止事實與終端證據保留為部分紀錄，不封存或刪除待寫事件。 */
+    @Test
+    fun `aborted history remains partial and never archives as a completed replay`() {
+        val fixture = ArchiveFixture("mahjongcraft-history-aborted-")
+        val opening = fixture.matchEvents().take(2)
+        val aborted = opening.last().copy(
+            sequence = 3,
+            transactionFirstSequence = 3,
+            occurredAtEpochMillis = 300,
+            fact = HistoryFact.MatchAborted("test:aborted"),
+        )
+        val records = (opening + aborted).map(fixture::record)
+        fixture.database.appendPendingBatch(records)
+        fixture.database.recordTerminals(
+            listOf(HistoryTerminalRecord(fixture.matchId.toString(), fixture.tableId.toString(), 300, completed = false)),
+        )
+
+        assertEquals(0, fixture.service.archiveReady(fixture.database, AuthoritativeStateSnapshot(), scanAllPending = false))
+        assertEquals(0, fixture.service.archiveReady(fixture.database, AuthoritativeStateSnapshot(), scanAllPending = true))
+        assertEquals(records, fixture.database.readPending(fixture.matchId.toString()))
+        assertEquals(emptySet(), fixture.database.readReplayIds())
+        assertEquals(HistoryStoredMatchState.PARTIAL, fixture.database.readStatistics().matchStates[fixture.matchId.toString()])
+        assertEquals(null, fixture.service.lastArchiveError)
+    }
+
     /** 相同規則局號的重複莊局必須以實際出現順序建立唯一 SQL round 索引。 */
     @Test
     fun `archive assigns distinct round indexes to repeated round numbers`() {

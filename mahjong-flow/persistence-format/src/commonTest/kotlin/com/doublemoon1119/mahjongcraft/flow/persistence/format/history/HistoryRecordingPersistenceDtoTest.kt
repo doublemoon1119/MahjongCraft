@@ -127,6 +127,29 @@ class HistoryRecordingPersistenceDtoTest {
         assertEquals(state, mapper.decode(Json.decodeFromString(HistoryRecordingPersistenceDto.serializer(), encoded)))
     }
 
+    /** 中止事實的原因識別碼在 JSON 與 DTO 往返後保持不變。 */
+    @Test
+    fun `match aborted reason round trips`() {
+        val matchId = Uuid.random()
+        val state = HistoryRecordingState(
+            pendingEvents = listOf(
+                HistoryOutboxEvent(
+                    matchId = matchId,
+                    venueId = Uuid.random(),
+                    roundNumber = 1,
+                    sequence = 1L,
+                    occurredAtEpochMillis = 1L,
+                    actorPlayerId = null,
+                    fact = HistoryFact.MatchAborted("mahjongcraft:table_missing"),
+                ),
+            ),
+        )
+        val mapper = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries())
+        val encoded = Json.encodeToString(HistoryRecordingPersistenceDto.serializer(), mapper.encode(state))
+
+        assertEquals(state, mapper.decode(Json.decodeFromString(HistoryRecordingPersistenceDto.serializer(), encoded)))
+    }
+
     /** 即使版本為預設值，也必須明確輸出歷史格式版本。 */
     @Test
     fun `history format version is always serialized`() {

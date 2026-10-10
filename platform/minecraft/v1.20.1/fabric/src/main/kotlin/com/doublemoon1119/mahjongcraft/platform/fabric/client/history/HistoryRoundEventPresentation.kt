@@ -16,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.BuiltInMatchEndReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.MinecraftKanActionTokenKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.MinecraftMatchAbortReasonIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationFieldId
@@ -104,13 +105,16 @@ internal class HistoryRoundEventPresenter(
             is HistoryReplayFactDto.Completion -> HistoryFactPresentation(
                 text = when (typeKey) {
                     HistoryFactTypeKeys.MATCH_COMPLETED -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_MATCH_COMPLETION, outcome?.let { outcomeText(it.reasonId, ruleId) } ?: Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_OTHER))
+                    HistoryFactTypeKeys.MATCH_ABORTED -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_MATCH_ABORTED, outcome?.let { outcomeText(it.reasonId, ruleId) } ?: Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_OTHER))
                     HistoryFactTypeKeys.WIN_SETTLED -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_WIN_SETTLEMENT, outcome?.let { outcomeText(it.reasonId, ruleId) } ?: Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_OTHER))
                     else -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_COMPLETION, outcome?.let { outcomeText(it.reasonId, ruleId) } ?: Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_OTHER), outcome?.classification?.let(::classificationText) ?: "—")
                 },
                 actorSeat = null,
                 directTiles = emptyList(),
                 revealedTiles = emptyList(),
-                outcome = outcome?.let { it.toPresentation(identitySeats, outcomeText(it.reasonId, ruleId)) },
+                outcome = outcome
+                    ?.takeUnless { typeKey == HistoryFactTypeKeys.MATCH_ABORTED }
+                    ?.let { result -> result.toPresentation(identitySeats, outcomeText(result.reasonId, ruleId)) },
             )
             is HistoryReplayFactDto.RuleEffect -> HistoryFactPresentation(
                 text = Text.translatable(MinecraftHistoryScreenKeys.ROUND_RULE_EFFECT, outcomeText(reasonId, ruleId)),
@@ -300,6 +304,8 @@ internal class HistoryRoundEventPresenter(
         BuiltInMatchEndReasonIds.EXTRA_ROUND_LIMIT_REACHED -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_EXTRA_ROUND_LIMIT_REACHED)
         BuiltInMatchEndReasonIds.DEALER_TOP_FINISH -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_DEALER_TOP_FINISH)
         BuiltInMatchEndReasonIds.PLAYER_BUSTED -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_PLAYER_BUSTED)
+        MinecraftMatchAbortReasonIds.TABLE_MISSING -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_ABORT_REASON_TABLE_MISSING)
+        MinecraftMatchAbortReasonIds.TABLE_BROKEN_BY_PLAYER -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_ABORT_REASON_TABLE_BROKEN_BY_PLAYER)
         else -> Text.translatable(roundOutcomes.find(reasonId) ?: exhaustiveDrawReasons.find(reasonId) ?: MinecraftHistoryScreenKeys.ROUND_OUTCOME_OTHER)
     }
 

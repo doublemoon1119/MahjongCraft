@@ -117,6 +117,13 @@ sealed interface HistoryFact {
     data class MatchCompleted(val reasonId: String, val finalScoresByPlayerId: Map<Uuid, Int>) : HistoryFact
 
     /**
+     * 尚未正常結束的對局被移除時提交的終止事實；不代表完成結算或可封存的完整對局。
+     *
+     * @property reasonId 呼叫端定義的終止原因 ID；流程層僅原樣轉交，不解釋原因內容。
+     */
+    data class MatchAborted(val reasonId: String) : HistoryFact
+
+    /**
      * 胡牌結算後，規則決定本局繼續或結束的權威結果。
      *
      * @property directive 本局後續的規則決策。

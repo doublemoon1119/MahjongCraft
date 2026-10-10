@@ -121,6 +121,16 @@ class GameAchievementDetectorTest {
         assertEquals(listOf(bottom.id), result.filterValues { BuiltInAchievementIds.LAST_PLACE in it }.keys.toList())
     }
 
+    /** 中途終止不視為完成對局，也不產生完成或名次成果。 */
+    @Test
+    fun `aborted match produces no match completion achievements`() {
+        val game = fourPlayerGame()
+
+        val result = detector().detect(facts(game, HistoryFact.MatchAborted("mahjongcraft:table_missing")))
+
+        assertTrue(result.isEmpty())
+    }
+
     /** AI 玩家不產生成果。 */
     @Test
     fun `ai players get no achievements`() {

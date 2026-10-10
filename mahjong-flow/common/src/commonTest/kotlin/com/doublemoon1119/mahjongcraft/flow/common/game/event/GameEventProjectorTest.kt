@@ -171,7 +171,45 @@ class GameEventProjectorTest {
         assertEquals(listOf(30_000, 25_000, 25_000, 20_000), event.standings.map { it.score })
     }
 
-    /** 對局已被移除的交易不產生事件；每個事件各有一個事件 ID。 */
+    /** 中止交易只產生一次終止事件，使用移除前分數、起家同分順位及 AI 身分。 */
+    @Test
+    fun `aborted removal emits only an ended event from the previous game`() {
+        val game = game(scores(25_000, 30_000, 25_000, 20_000), aiPlayerIds = setOf(south))
+            .let { it.copy(tableState = it.tableState.withSeatWinds(Wind.SOUTH, Wind.WEST, Wind.EAST, Wind.NORTH)) }
+        val facts = CommittedGameFacts(
+            venueId = game.id,
+            previousGame = game,
+            game = null,
+            facts = listOf(HistoryEventDraft(null, HistoryFact.MatchAborted(REASON_ID))),
+        )
+
+        val event = assertIs<MatchEndedEvent>(projector.project(facts).single())
+
+        assertEquals(MatchCompletion.ABORTED, event.completion)
+        assertEquals(REASON_ID, event.reasonId)
+        assertEquals(game.matchId, event.matchId)
+        assertEquals(game.id, event.venueId)
+        assertEquals(RULE_MODULE_ID, event.ruleModuleId)
+        assertEquals(listOf(south, east, west, north), event.standings.map { it.playerId })
+        assertEquals(listOf(30_000, 25_000, 25_000, 20_000), event.standings.map { it.score })
+        assertEquals(listOf(1, 2, 3, 4), event.standings.map { it.rank })
+        assertEquals(listOf(true, false, false, false), event.standings.map { it.isAi })
+        assertEquals(1, eventCount)
+    }
+
+    /** 已正常完成的對局不因清理重複通知，未移除的交易亦不能誤發中止。 */
+    @Test
+    fun `completed removal and nonremoval do not emit an abort event`() {
+        val game = game(scores(25_000, 25_000, 25_000, 25_000))
+        val completed = game.copy(isMatchOver = true)
+        val drafts = listOf(HistoryEventDraft(null, HistoryFact.MatchAborted(REASON_ID)))
+
+        assertEquals(emptyList(), projector.project(CommittedGameFacts(game.id, completed, null, drafts)))
+        assertEquals(emptyList(), projector.project(CommittedGameFacts(game.id, game, game, drafts)))
+        assertEquals(0, eventCount)
+    }
+
+    /** 未附中止事實的移除交易不產生事件；每個事件各有一個事件 ID。 */
     @Test
     fun `removed games produce nothing and each event has its own id`() {
         val game = game(scores(25_000, 25_000, 25_000, 25_000))

@@ -166,6 +166,38 @@ class CompactReplayRoundReaderTest {
         assertEquals(completed, assertIs<HistoryReplayFact.RuleEffect>(result[1]).outcome)
     }
 
+    /** 中止事實保留原因，但不偽造完整對局的分數或結算分類。 */
+    @Test
+    fun `aborted match mapping preserves reason without completion details`() {
+        val identity = HistoryReplayIdentity(
+            matchId = Uuid.random(),
+            venueId = Uuid.random(),
+            players = listOf(HistoryReplayPlayerIdentity(0, Uuid.random(), null)),
+        )
+        val mapper = HistoryReplayProjectionMapper(HistoryReplayProjectionRegistry())
+        val fact = JsonObject(
+            mapOf(
+                ReplaySourceKeys.TYPE to JsonPrimitive(HistoryFactTypeKeys.MATCH_ABORTED),
+                ReplaySourceKeys.REASON_ID to JsonPrimitive("test:aborted"),
+            ),
+        )
+
+        val result = mapper.mapFacts(
+            facts = listOf(fact),
+            actorSeats = listOf(null),
+            identity = identity,
+            roundNumber = 1,
+            tileCatalog = HistoryRoundTileCatalog(emptyList()),
+            budget = ReplayReadBudget(ReplayReadLimits()) {},
+        ).single()
+
+        val completion = assertIs<HistoryReplayFact.Completion>(result)
+        assertEquals(HistoryFactTypeKeys.MATCH_ABORTED, completion.typeKey)
+        assertEquals("test:aborted", completion.outcome?.reasonId)
+        assertEquals(emptyMap(), completion.outcome?.scoresBySeat)
+        assertEquals(null, completion.outcome?.classification)
+    }
+
     /** 擴充動作經明確 codec 映射，未註冊時只保留種類，不暴露私有資料。 */
     @Test
     fun `extension action mapping preserves opaque fallback and rejects missing envelope`() {

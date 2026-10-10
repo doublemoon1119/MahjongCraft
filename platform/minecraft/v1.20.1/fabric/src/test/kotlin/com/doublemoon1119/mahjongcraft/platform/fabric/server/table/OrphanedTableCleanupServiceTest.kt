@@ -1,6 +1,11 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.table
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.CommittedGameFacts
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.repository.GameSnapshotRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
@@ -9,7 +14,9 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositor
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
+import com.doublemoon1119.mahjongcraft.flow.server.state.CommittedFactsListener
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.MinecraftMatchAbortReasonIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.OrphanedTablePolicy
@@ -106,12 +113,66 @@ class OrphanedTableCleanupServiceTest {
     fun `test player break overrides orphan retention policy`() = runTest {
         val fixture = Fixture(OrphanedTablePolicy.KEEP_AND_WARN)
         fixture.gameRepository.setTableState(FakeTableStateFactory.create(id = fixture.tableId))
+        fixture.captureCommittedFacts()
 
         val result = fixture.service.cleanupPlayerBroken(fixture.tableId, fixture.entryRevision)
 
         assertEquals(OrphanedTableCleanupResult.REMOVED_GAME, result)
         assertNull(fixture.gameRepository.getTableState(fixture.tableId))
         assertNull(fixture.locations.get(fixture.tableId))
+        assertEquals(
+            listOf(HistoryFact.MatchAborted(MinecraftMatchAbortReasonIds.TABLE_BROKEN_BY_PLAYER)),
+            fixture.committedFacts.single().facts.map { it.fact },
+        )
+    }
+
+    /** 缺失桌子移除未完成對局時，應在同一交易提交一次中途終止事實。 */
+    @Test
+    fun `test missing table emits one aborted fact for unfinished game`() = runTest {
+        val fixture = Fixture(OrphanedTablePolicy.REMOVE_ALL, recordHistory = true)
+        val game = FakeTableStateFactory.create(id = fixture.tableId).let { tableState ->
+            Game(
+                tableState = tableState,
+                flowConfig = GameFlowConfig(),
+            )
+        }
+        fixture.gameRepository.updateGame(
+            gameId = fixture.tableId,
+            history = { _, _, _ ->
+                listOf(HistoryEventDraft(null, HistoryFact.MatchStarted(game.tableState, game.flowConfig, emptyMap())))
+            },
+        ) { game to Unit }
+        fixture.captureCommittedFacts()
+
+        val result = fixture.service.cleanupMissing(fixture.tableId, fixture.entryRevision)
+
+        assertEquals(OrphanedTableCleanupResult.REMOVED_GAME, result)
+        assertEquals(1, fixture.committedFacts.size)
+        assertEquals(
+            HistoryFact.MatchAborted(MinecraftMatchAbortReasonIds.TABLE_MISSING),
+            fixture.committedFacts.single().facts.single().fact,
+        )
+        assertEquals(fixture.tableId, fixture.committedFacts.single().venueId)
+        val recording = fixture.store.snapshot().historyRecordingState
+        assertEquals(
+            listOf(HistoryFact.MatchStarted(game.tableState, game.flowConfig, emptyMap()), HistoryFact.MatchAborted(MinecraftMatchAbortReasonIds.TABLE_MISSING)),
+            recording.pendingEvents.map { it.fact },
+        )
+        assertEquals(false, recording.terminalByMatchId[game.matchId]?.completed)
+    }
+
+    /** 清理已正常結束的對局時，不得重複產生中途終止事實。 */
+    @Test
+    fun `test cleanup of completed game does not emit aborted fact`() = runTest {
+        val fixture = Fixture(OrphanedTablePolicy.REMOVE_ALL)
+        fixture.gameRepository.setTableState(FakeTableStateFactory.create(id = fixture.tableId))
+        fixture.gameRepository.updateGame(fixture.tableId) { game -> checkNotNull(game).copy(isMatchOver = true) to Unit }
+        fixture.captureCommittedFacts()
+
+        val result = fixture.service.cleanupMissing(fixture.tableId, fixture.entryRevision)
+
+        assertEquals(OrphanedTableCleanupResult.REMOVED_GAME, result)
+        assertEquals(emptyList(), fixture.committedFacts)
     }
 
     /** 過期 revision 不得清除已移動桌子的狀態。 */
@@ -144,13 +205,21 @@ class OrphanedTableCleanupServiceTest {
         assertEquals(OrphanedTableCleanupResult.REMOVED_ROOM, result)
     }
 
-    /** 建立單一政策測試所需的共用 repository 與位置。 */
-    private class Fixture(policy: OrphanedTablePolicy) {
+    /**
+     * 建立單一政策測試所需的共用 repository 與位置。
+     *
+     * @param policy 測試使用的缺失桌子清理政策。
+     * @param recordHistory 是否啟用歷史記錄資格以驗證待寫事件與終止狀態。
+     */
+    private class Fixture(
+        policy: OrphanedTablePolicy,
+        recordHistory: Boolean = false,
+    ) {
         /** 測試桌子 UUID。 */
         val tableId: Uuid = Uuid.random()
 
         /** 共用權威狀態。 */
-        val store = AuthoritativeStateStore()
+        val store = AuthoritativeStateStore(historyRecordingEnabled = recordHistory)
 
         /** Room repository。 */
         val roomRepository = RoomRepositoryImpl(store)
@@ -188,5 +257,19 @@ class OrphanedTableCleanupServiceTest {
             locations,
             configState,
         )
+
+        /** 已提交交易的事實通知。 */
+        val committedFacts = mutableListOf<CommittedGameFacts>()
+
+        /** 記錄本測試 fixture 的權威事實通知。 */
+        fun captureCommittedFacts() {
+            store.setCommittedFactsListener(object : CommittedFactsListener {
+                override fun onCommitted(sequence: Long, facts: CommittedGameFacts) {
+                    committedFacts += facts
+                }
+
+                override fun onReleased(sequence: Long) = Unit
+            })
+        }
     }
 }

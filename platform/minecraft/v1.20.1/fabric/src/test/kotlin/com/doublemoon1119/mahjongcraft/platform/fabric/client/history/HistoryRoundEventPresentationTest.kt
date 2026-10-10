@@ -44,6 +44,7 @@ class HistoryRoundEventPresentationTest {
             MinecraftHistoryScreenKeys.ROUND_COMPLETION to 2,
             MinecraftHistoryScreenKeys.ROUND_PREPARATION to 2,
             MinecraftHistoryScreenKeys.ROUND_MATCH_COMPLETION to 1,
+            MinecraftHistoryScreenKeys.ROUND_MATCH_ABORTED to 1,
             MinecraftHistoryScreenKeys.ROUND_WIN_SETTLEMENT to 1,
             MinecraftHistoryScreenKeys.ROUND_UNKNOWN_FACT to 0,
             MinecraftHistoryScreenKeys.ROUND_PREPARATION_NEXT to 0,
@@ -186,6 +187,57 @@ class HistoryRoundEventPresentationTest {
             assertEquals(key, checkNotNull(fact.outcome).reasonText.string)
             assertTrue(reason in fact.identifiers)
         }
+    }
+
+    /** 中途終止顯示已知平台原因，未知原因則回退為通用結算文字。 */
+    @Test
+    fun `match abortion localizes known and unknown reasons`() {
+        val reasons = mapOf(
+            "mahjongcraft:table_missing" to MinecraftHistoryScreenKeys.ROUND_ABORT_REASON_TABLE_MISSING,
+            "mahjongcraft:table_broken_by_player" to MinecraftHistoryScreenKeys.ROUND_ABORT_REASON_TABLE_BROKEN_BY_PLAYER,
+        )
+        reasons.forEach { (reason, key) ->
+            val outcome = HistoryRoundOutcomeDto(
+                reason,
+                emptyList(),
+                emptyMap(),
+                null,
+                emptyList(),
+                null,
+                scoreChangesBySeat = emptyMap(),
+                winnerDetails = emptyList(),
+                hasEarlierWinSettlement = false,
+            )
+            val fact = presenter().present(
+                events(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.MATCH_ABORTED, outcome)),
+                null,
+            ).transactions.single().facts.single()
+            assertEquals(MinecraftHistoryScreenKeys.ROUND_MATCH_ABORTED, (fact.text.content as TranslatableTextContent).key)
+            val reasonText = ((fact.text.content as TranslatableTextContent).args.single() as Text)
+            assertEquals(key, (reasonText.content as TranslatableTextContent).key)
+            assertEquals(null, fact.outcome)
+            assertTrue(reason in fact.identifiers)
+        }
+
+        val unknown = HistoryRoundOutcomeDto(
+            "custom:abort",
+            emptyList(),
+            emptyMap(),
+            null,
+            emptyList(),
+            null,
+            scoreChangesBySeat = emptyMap(),
+            winnerDetails = emptyList(),
+            hasEarlierWinSettlement = false,
+        )
+        val fact = presenter().present(
+            events(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.MATCH_ABORTED, unknown)),
+            null,
+        ).transactions.single().facts.single()
+        val reasonText = ((fact.text.content as TranslatableTextContent).args.single() as Text)
+        assertEquals(MinecraftHistoryScreenKeys.ROUND_OUTCOME_OTHER, (reasonText.content as TranslatableTextContent).key)
+        assertEquals(null, fact.outcome)
+        assertTrue("custom:abort" in fact.identifiers)
     }
 
     /** 開始或提交準備時，沒有下一步 ID 不代表準備已完成。 */

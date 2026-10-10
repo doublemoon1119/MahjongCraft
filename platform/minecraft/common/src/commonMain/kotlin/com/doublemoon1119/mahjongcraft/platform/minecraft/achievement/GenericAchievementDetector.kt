@@ -57,6 +57,7 @@ internal object GenericAchievementDetector {
                         add(ranked.last().id, BuiltInAchievementIds.LAST_PLACE)
                     }
                 }
+                is HistoryFact.MatchAborted -> Unit
                 else -> Unit
             }
         }

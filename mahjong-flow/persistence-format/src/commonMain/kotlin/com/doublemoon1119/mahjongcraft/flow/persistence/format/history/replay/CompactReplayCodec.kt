@@ -346,6 +346,7 @@ object CompactReplayCodec {
      * @param events 同一場對局的完整有序事件。
      */
     private fun validateDomainEvents(events: List<HistoryOutboxEvent>) {
+        require(events.none { it.fact is HistoryFact.MatchAborted }) { "Aborted matches cannot be archived as complete replays" }
         require(events.first().sequence == 1L && events.first().fact is HistoryFact.MatchStarted) {
             "Replay must begin with match start at sequence one"
         }

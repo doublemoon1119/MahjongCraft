@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.bundled.BundledRiichiExtension
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
@@ -642,6 +643,9 @@ class DiscardTileUseCaseTest {
         assertNull(newState.pendingReaction)
         val expectedAction = GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.SanchaHou)
         newState.players.forEach { player -> assertEquals(expectedAction, player.actionHistory.last()) }
+        val recordedDraws = fixtures.gameRepo.committedFacts.flatMap { it.facts }
+            .mapNotNull { (it.fact as? HistoryFact.ActionAccepted)?.action as? GameAction.ExhaustiveDraw }
+        assertEquals(listOf(expectedAction), recordedDraws)
     }
 
     /**

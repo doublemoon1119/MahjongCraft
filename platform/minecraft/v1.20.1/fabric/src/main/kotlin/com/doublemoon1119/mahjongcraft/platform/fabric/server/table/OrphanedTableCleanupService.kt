@@ -1,11 +1,14 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.table
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.repository.GameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdate
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.MinecraftMatchAbortReasonIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.OrphanedTablePolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
@@ -30,7 +33,16 @@ enum class OrphanedTableCleanupResult {
     REMOVED_LOCATION,
 }
 
-/** 依伺服器政策清除缺失桌子的權威狀態、衍生狀態與位置索引。 */
+/**
+ * 依伺服器政策清除缺失桌子的權威狀態、衍生狀態與位置索引。
+ *
+ * @property store Room、Game 與歷史事實的權威交易儲存。
+ * @property memberships 玩家與桌子之間的佔用關係儲存。
+ * @property roomSnapshots 等待中房間的觀察者快照儲存。
+ * @property gameSnapshots 進行中對局的觀察者快照儲存。
+ * @property locations 桌子位置與 revision 的索引。
+ * @property configState 提供目前缺失桌子清理政策的伺服器設定狀態。
+ */
 @Single
 class OrphanedTableCleanupService(
     private val store: AuthoritativeStateStore,
@@ -43,25 +55,45 @@ class OrphanedTableCleanupService(
     /** 用於記錄缺失桌子與實際採取的清理政策。 */
     private val logger = mahjongCraftLogger(OrphanedTableCleanupService::class)
 
-    /** 依目前有效設定的 orphan policy 處理已確認缺失的桌子。 */
+    /** 依目前有效設定的 orphan policy 處理已確認缺失的桌子。
+     *
+     * @param tableId 已確認缺失的桌子 UUID。
+     * @param expectedRevision 呼叫端觀察到的位置索引 revision。
+     * @return 實際採取的清理結果。
+     */
     suspend fun cleanupMissing(tableId: Uuid, expectedRevision: Long): OrphanedTableCleanupResult = cleanup(
-        tableId,
-        expectedRevision,
-        configState.current.orphanedTablePolicy,
+        tableId = tableId,
+        expectedRevision = expectedRevision,
+        policy = configState.current.orphanedTablePolicy,
+        abortReasonId = MinecraftMatchAbortReasonIds.TABLE_MISSING,
     )
 
-    /** 玩家政策已允許破壞時，移除該桌子的任何 Room／Game。 */
+    /** 玩家政策已允許破壞時，移除該桌子的任何 Room／Game。
+     *
+     * @param tableId 玩家破壞的桌子 UUID。
+     * @param expectedRevision 呼叫端觀察到的位置索引 revision。
+     * @return 實際採取的清理結果。
+     */
     suspend fun cleanupPlayerBroken(tableId: Uuid, expectedRevision: Long): OrphanedTableCleanupResult = cleanup(
-        tableId,
-        expectedRevision,
-        OrphanedTablePolicy.REMOVE_ALL,
+        tableId = tableId,
+        expectedRevision = expectedRevision,
+        policy = OrphanedTablePolicy.REMOVE_ALL,
+        abortReasonId = MinecraftMatchAbortReasonIds.TABLE_BROKEN_BY_PLAYER,
     )
 
-    /** 依指定政策原子移除權威狀態，再清除所有衍生資料與位置。 */
+    /** 依指定政策原子移除權威狀態，再清除所有衍生資料與位置。
+     *
+     * @param tableId 要清理的桌子 UUID。
+     * @param expectedRevision 清理請求建立時的位置索引 revision。
+     * @param policy 本次清理採用的 orphan table 政策。
+     * @param abortReasonId 移除未完成對局時寫入的中途終止原因 ID。
+     * @return 實際採取的清理結果。
+     */
     private suspend fun cleanup(
         tableId: Uuid,
         expectedRevision: Long,
         policy: OrphanedTablePolicy,
+        abortReasonId: String,
     ): OrphanedTableCleanupResult {
         val entry = locations.get(tableId)
         if (entry == null || entry.revision != expectedRevision) return OrphanedTableCleanupResult.STALE_REQUEST
@@ -79,10 +111,25 @@ class OrphanedTableCleanupService(
                     state.copy(rooms = state.rooms - tableId),
                     CleanupDecision.removeRoom(room.playerIds.toSet()),
                 )
-                else -> AuthoritativeStateUpdate(
-                    state.copy(games = state.games - tableId),
-                    CleanupDecision.removeGame(checkNotNull(game).tableState.players.map { it.id }.toSet()),
-                )
+                else -> {
+                    val removedGame = checkNotNull(game)
+                    AuthoritativeStateUpdate(
+                        state = state.copy(games = state.games - tableId),
+                        result = CleanupDecision.removeGame(removedGame.tableState.players.map { it.id }.toSet()),
+                        historyDraftsByVenueId = if (removedGame.isMatchOver) {
+                            emptyMap()
+                        } else {
+                            mapOf(
+                                tableId to listOf(
+                                    HistoryEventDraft(
+                                        actorPlayerId = null,
+                                        fact = HistoryFact.MatchAborted(abortReasonId),
+                                    ),
+                                ),
+                            )
+                        },
+                    )
+                }
             }
         }
 
@@ -117,11 +164,13 @@ class OrphanedTableCleanupService(
         return decision.result
     }
 
-    /** 權威狀態交易後需要清除的衍生資料。 */
+    /** 權威狀態交易後需要清除的衍生資料。
+     *
+     * @property result 對外回報的清理結果。
+     * @property playerIds 需要清除 membership 與 observer snapshot 的玩家。
+     */
     private data class CleanupDecision(
-        /** 對外回報的清理結果。 */
         val result: OrphanedTableCleanupResult,
-        /** 需要清除 membership 與 observer snapshot 的玩家。 */
         val playerIds: Set<Uuid>,
     ) {
         /** 建立固定清理決策。 */

@@ -124,6 +124,10 @@ internal class HistoryReplayProjectionMapper(private val registry: HistoryReplay
                     },
                 )
                 HistoryFactTypeKeys.MATCH_COMPLETED -> HistoryReplayFact.Completion(type, HistoryRoundOutcome(string(fact.getValue(ReplaySourceKeys.REASON_ID)), emptyList(), scores(fact.getValue(ReplaySourceKeys.FINAL_SCORES_BY_PLAYER_ID), context)))
+                HistoryFactTypeKeys.MATCH_ABORTED -> HistoryReplayFact.Completion(
+                    type,
+                    HistoryRoundOutcome(string(fact.getValue(ReplaySourceKeys.REASON_ID)), emptyList(), emptyMap()),
+                )
                 else -> registry.decodeFact(type, fact, context) ?: HistoryReplayFact.Opaque(type, actor, direct, revealed)
             }
         }

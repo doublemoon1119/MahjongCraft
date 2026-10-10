@@ -428,6 +428,15 @@ object MinecraftHistoryScreenKeys {
     /** 整場結束格式。 */
     const val ROUND_MATCH_COMPLETION = "mahjongcraft.history_screen.round.match_completion"
 
+    /** 整場中途終止格式。 */
+    const val ROUND_MATCH_ABORTED = "mahjongcraft.history_screen.round.match_aborted"
+
+    /** 桌子消失的中途終止原因。 */
+    const val ROUND_ABORT_REASON_TABLE_MISSING = "mahjongcraft.history_screen.round.abort_reason.table_missing"
+
+    /** 玩家破壞桌子的中途終止原因。 */
+    const val ROUND_ABORT_REASON_TABLE_BROKEN_BY_PLAYER = "mahjongcraft.history_screen.round.abort_reason.table_broken_by_player"
+
     /** 已完成預定賽程。 */
     const val ROUND_OUTCOME_SCHEDULE_COMPLETED = "mahjongcraft.history_screen.round.outcome.schedule_completed"
 

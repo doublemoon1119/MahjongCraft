@@ -20,11 +20,13 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.PlayerAchi
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.GameEventContext
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.MatchEndedListener
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.MatchStartedListener
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.MinecraftMatchAbortReasonIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.RoundSettledListener
 import com.doublemoon1119.mahjongcraft.platform.minecraft.event.GameEventDeliveryReporter
-import com.doublemoon1119.mahjongcraft.platform.minecraft.event.GameEventLocationSource
 import com.doublemoon1119.mahjongcraft.platform.minecraft.event.GameEventScheduler
 import com.doublemoon1119.mahjongcraft.platform.minecraft.event.GameEventSubscriptions
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.concurrency.TestCoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.testing.flow.common.concurrency.createTestAppCoroutineScope
@@ -60,12 +62,15 @@ class CommittedFactsDispatcherTest {
     }
 
     /** 建立獨立訂閱點並驗證完整橋接流程；離開時關閉 session 與背景執行器。 */
-    private fun verifyBridgeSession() {
+    private fun verifyBridgeSession() = runBlocking {
         val store = AuthoritativeStateStore()
         val repository = GameRepositoryImpl(store)
         val scheduler = QueueScheduler()
         val subscriptions = GameEventSubscriptions()
         val activeGame = game()
+        val locations = TableLocationRegistry()
+        val activeLocation = TableLocation("minecraft:overworld", 4, 8, 12)
+        locations.put(activeGame.id, activeLocation)
         val changedGame = activeGame.copy(tableState = activeGame.tableState.copy(currentPlayerIndex = 1))
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
         val exclusions = GameEventExclusions()
@@ -78,7 +83,7 @@ class CommittedFactsDispatcherTest {
             store = store,
             achievementService = achievementService(moduleRegistry, exclusions, gateway),
             moduleRegistry = moduleRegistry,
-            locations = GameEventLocationSource { null },
+            locations = FabricGameEventLocationSource(locations),
             reporter = reporter,
             exclusions = exclusions,
         )
@@ -87,6 +92,7 @@ class CommittedFactsDispatcherTest {
         var observedContext: GameEventContext? = null
         var callbackThread: Thread? = null
         val ownerThread = Thread.currentThread()
+        var lastEndedContext: GameEventContext? = null
         subscriptions.matchStarted.register(
             MatchStartedListener { _, context ->
                 received += "started"
@@ -96,9 +102,27 @@ class CommittedFactsDispatcherTest {
             },
         )
         subscriptions.roundSettled.register(RoundSettledListener { _, _ -> received += "settled" })
-        subscriptions.matchEnded.register(MatchEndedListener { _, _ -> received += "ended" })
+        subscriptions.matchEnded.register(
+            MatchEndedListener { _, context ->
+                received += "ended"
+                lastEndedContext = context
+            },
+        )
         val executor = Executors.newSingleThreadExecutor()
         try {
+            val preSessionGame = game()
+            repository.updateGame(
+                gameId = preSessionGame.id,
+                history = { _, _, _ ->
+                    listOf(HistoryEventDraft(null, HistoryFact.MatchStarted(preSessionGame.tableState, preSessionGame.flowConfig, emptyMap())))
+                },
+            ) { preSessionGame to Unit }
+            repository.updateGame(
+                gameId = preSessionGame.id,
+                history = { _, _, _ ->
+                    listOf(HistoryEventDraft(null, HistoryFact.MatchAborted(MinecraftMatchAbortReasonIds.TABLE_MISSING)))
+                },
+            ) { null to Unit }
             dispatcher.startSession(scheduler = scheduler, serverProvider = serverProvider, subscriptions = subscriptions)
             val oldGame = game()
             submit(executor) {
@@ -161,10 +185,37 @@ class CommittedFactsDispatcherTest {
             assertEquals(changedGame, observedGame)
             assertEquals(ownerThread, callbackThread)
             val capturedContext = assertNotNull(observedContext)
-            assertEquals(3, reporter.missingLocations.size)
+            assertEquals(1, reporter.missingLocations.size)
             assertTrue(gateway.granted.isNotEmpty())
             assertFailsWith<UnsupportedOperationException> { FabricGameEventContexts.server(capturedContext) }
 
+            val abortedGame = changedGame.copy(matchId = Uuid.random())
+            val removalLocationEntry = locations.put(abortedGame.id, activeLocation)
+            repository.updateGame(
+                gameId = abortedGame.id,
+                history = { _, _, _ ->
+                    listOf(
+                        HistoryEventDraft(
+                            null,
+                            HistoryFact.MatchStarted(abortedGame.tableState, abortedGame.flowConfig, emptyMap()),
+                        ),
+                    )
+                },
+            ) { abortedGame to Unit }
+            scheduler.runAll()
+            repository.updateGame(
+                gameId = abortedGame.id,
+                history = { _, _, _ ->
+                    listOf(HistoryEventDraft(null, HistoryFact.MatchAborted(MinecraftMatchAbortReasonIds.TABLE_MISSING)))
+                },
+            ) { null to Unit }
+            locations.remove(abortedGame.id, removalLocationEntry.revision)
+            scheduler.runAll()
+            val endedLocation = assertNotNull(lastEndedContext?.tableLocation)
+            assertEquals(activeLocation.dimensionId, endedLocation.dimensionId)
+            assertEquals(activeLocation.x, endedLocation.x)
+            assertEquals(activeLocation.y, endedLocation.y)
+            assertEquals(activeLocation.z, endedLocation.z)
             val receivedBeforeExclusion = received.toList()
             val grantsBeforeExclusion = gateway.granted.size
             exclusions.exclude(activeGame.matchId)

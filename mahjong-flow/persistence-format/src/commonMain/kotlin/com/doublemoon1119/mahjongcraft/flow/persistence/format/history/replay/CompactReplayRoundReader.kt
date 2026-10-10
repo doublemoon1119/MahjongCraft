@@ -125,10 +125,12 @@ class CompactReplayRoundReader(
             if (exhaustiveDrawAction && cursor.exhaustiveDrawSettlement == null) {
                 cursor.exhaustiveDrawSettlement = ScoreSnapshot(beforeScores, afterScores)
             }
-            facts.mapNotNull {
-                when (it) {
-                    is HistoryReplayFact.Completion -> it.outcome.takeUnless { _ -> it.typeKey == HistoryFactTypeKeys.MATCH_COMPLETED }
-                    is HistoryReplayFact.RuleEffect -> it.outcome
+            facts.mapNotNull { fact ->
+                when (fact) {
+                    is HistoryReplayFact.Completion -> fact.outcome.takeUnless {
+                        fact.typeKey == HistoryFactTypeKeys.MATCH_COMPLETED || fact.typeKey == HistoryFactTypeKeys.MATCH_ABORTED
+                    }
+                    is HistoryReplayFact.RuleEffect -> fact.outcome
                     else -> null
                 }
             }.lastOrNull()?.let { cursor.outcome = it }
@@ -187,7 +189,7 @@ class CompactReplayRoundReader(
         hasPriorWinSettlement: Boolean,
         exhaustiveDrawSettlement: ScoreSnapshot?,
     ): HistoryReplayFact {
-        if (typeKey == HistoryFactTypeKeys.MATCH_COMPLETED) return this
+        if (typeKey == HistoryFactTypeKeys.MATCH_COMPLETED || typeKey == HistoryFactTypeKeys.MATCH_ABORTED) return this
         val outcome = when (this) {
             is HistoryReplayFact.Completion -> outcome
             is HistoryReplayFact.RuleEffect -> outcome

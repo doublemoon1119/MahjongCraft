@@ -1,11 +1,14 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ActionTimeControl
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.SpectatingPolicy
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.config.GameFlowConfigPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.config.toPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.TypedPersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
 import kotlinx.serialization.json.Json
@@ -54,6 +57,30 @@ class CompactReplayCodecTest {
                 JsonObject(mapOf(ReplayFormatKeys.FORMAT_VERSION to JsonPrimitive(1), ReplayFormatKeys.PAYLOAD to JsonArray(emptyList()))),
             )
         }
+    }
+
+    /** 中止的對局不可被編碼為需要完整終局證據的 Replay。 */
+    @Test
+    fun `aborted match is rejected as a complete replay`() {
+        val event = HistoryOutboxEvent(
+            matchId = Uuid.random(),
+            venueId = Uuid.random(),
+            roundNumber = 1,
+            sequence = 1L,
+            occurredAtEpochMillis = 1L,
+            actorPlayerId = null,
+            fact = HistoryFact.MatchAborted("test:aborted"),
+        )
+        val registries = bundledPersistenceRegistries()
+
+        val error = assertFailsWith<IllegalArgumentException> {
+            CompactReplayCodec.encodeCompact(
+                events = listOf(event),
+                mapper = HistoryRecordingPersistenceMapper(registries),
+                registries = registries,
+            )
+        }
+        assertEquals("Aborted matches cannot be archived as complete replays", error.message)
     }
 
     /** 規則設定解碼只展開 header，不需要解碼任何局內交易。 */

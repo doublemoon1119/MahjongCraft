@@ -30,7 +30,7 @@ import kotlin.uuid.Uuid
  *   否則有帶本局結算摘要的 [HistoryFact.RuleEffectResolved] 時為特殊結果；否則這筆交易寫入流局的本局結算摘要、或新增了
  *   流局記錄時為流局。
  *   結算前後的分數取交易前後的對局。換局交易的 [HistoryFact.RoundCompleted] 不產生事件。
- * - 正常打完的對局結束：[HistoryFact.MatchCompleted]，名次依規則的終局排名決定。
+ * - 對局結束：[HistoryFact.MatchCompleted] 或移除交易的 [HistoryFact.MatchAborted]，名次依規則的終局排名決定。
  *
  * @property moduleRegistry 取得對局的規則模組，用來查詢規則 ID 與排名比較器。
  * @property newEventId 產生事件 ID。
@@ -46,7 +46,13 @@ class GameEventProjector(
      * @return 對應的事件；沒有任何事件時為空清單。
      */
     fun project(facts: CommittedGameFacts): List<MatchEvent> {
-        val game = facts.game ?: return emptyList()
+        val game = facts.game ?: run {
+            val previous = facts.previousGame ?: return emptyList()
+            val aborted = facts.facts.mapNotNull { it.fact as? HistoryFact.MatchAborted }.firstOrNull() ?: return emptyList()
+            if (previous.isMatchOver) return emptyList()
+            val module = moduleRegistry.getModule(previous.tableState.config)
+            return listOf(matchEnded(previous, module, aborted.reasonId, MatchCompletion.ABORTED))
+        }
         val module = moduleRegistry.getModule(game.tableState.config)
         var started: MatchStartedEvent? = null
         val wins = mutableListOf<HistoryFact.WinSettled>()
@@ -58,6 +64,7 @@ class GameEventProjector(
                 is HistoryFact.WinSettled -> wins += fact
                 is HistoryFact.RuleEffectResolved -> fact.roundCompletion?.let { specialOutcome = specialOutcome ?: it }
                 is HistoryFact.MatchCompleted -> ended = matchCompleted(game, module, fact.reasonId)
+                is HistoryFact.MatchAborted -> Unit
                 is HistoryFact.RoundStarted,
                 is HistoryFact.RoundPreparationStarted,
                 is HistoryFact.RoundPreparationSubmitted,
@@ -141,12 +148,28 @@ class GameEventProjector(
     }
 
     /** 正常打完的對局結束事件。 */
-    private fun matchCompleted(game: Game, module: MahjongRuleModule<*>, reasonId: String): MatchEndedEvent = MatchEndedEvent.create(
+    private fun matchCompleted(game: Game, module: MahjongRuleModule<*>, reasonId: String): MatchEndedEvent = matchEnded(game, module, reasonId, MatchCompletion.COMPLETED)
+
+    /**
+     * 由指定對局快照建立終局名次，不重新結算分數。
+     *
+     * @param game 終局或移除前的對局快照。
+     * @param module 提供終局排名比較器的規則模組。
+     * @param reasonId 原樣轉交的終局原因 ID。
+     * @param completion 正常完成或中途終止的分類。
+     * @return 依規則排名的對局結束事件。
+     */
+    private fun matchEnded(
+        game: Game,
+        module: MahjongRuleModule<*>,
+        reasonId: String,
+        completion: MatchCompletion,
+    ): MatchEndedEvent = MatchEndedEvent.create(
         eventId = newEventId(),
         matchId = game.matchId,
         venueId = game.id,
         ruleModuleId = module.id,
-        completion = MatchCompletion.COMPLETED,
+        completion = completion,
         reasonId = reasonId,
         standings = game.tableState.players.sortedWith(module.compareForMatchRanking()).mapIndexed { index, player ->
             MatchStanding.create(playerId = player.id, isAi = game.isAi(player.id), score = player.score, rank = index + 1)
