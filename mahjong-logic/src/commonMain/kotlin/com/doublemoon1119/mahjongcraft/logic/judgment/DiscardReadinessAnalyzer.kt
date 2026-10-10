@@ -2,13 +2,11 @@ package com.doublemoon1119.mahjongcraft.logic.judgment
 
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
-import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TableStateSnapshot
 import com.doublemoon1119.mahjongcraft.logic.table.visibleTiles
-import kotlin.uuid.Uuid
 
 /**
  * 分析目前手牌及捨牌後聽牌狀態的介面，供呼叫端取得等待牌、剩餘張數與和牌資格。
@@ -61,30 +59,3 @@ interface DiscardReadinessAnalyzer {
         visibleTiles: List<IdentifiedTile>,
     ): List<DiscardReadinessAnalysis> = analyze(tableState = tableState, player = player, visibleTiles = visibleTiles)
 }
-
-/** 玩家目前手牌的等待牌與整體狀態，不包含任何假想捨牌。 */
-data class HandReadinessAnalysis(
-    val waitingTiles: List<WaitingTileAvailability>,
-    val statusIndicatorId: String?,
-)
-
-/** 假想捨出 [discardTileId] 後的聽牌分析結果。 */
-data class DiscardReadinessAnalysis(
-    val discardTileId: Uuid,
-    val waitingTiles: List<WaitingTileAvailability>,
-    val statusIndicatorId: String?,
-)
-
-/**
- * 一張等待牌的可用性。
- *
- * [winAvailability] 是規則模組自訂的命名字串，比照 [DiscardReadinessAnalysis.statusIndicatorId] 的
- * 慣例：`"mahjongcraft:win_available"` 代表沒有任何和牌資格上的特殊限制，這是所有規則模組共通的中立
- * 預設；有更細分和牌可用性概念的規則模組（例如日麻的自摸限定、無役、未達最低翻符）另外提供各自的
- * 命名字串。
- */
-data class WaitingTileAvailability(
-    val tile: Tile,
-    val remainingCount: Int,
-    val winAvailability: String,
-)

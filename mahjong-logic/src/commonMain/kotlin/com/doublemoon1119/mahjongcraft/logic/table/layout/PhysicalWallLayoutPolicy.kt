@@ -1,9 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.table.layout
 
-import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
-import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 import kotlin.uuid.Uuid
 
 /**
@@ -17,25 +15,6 @@ interface PhysicalWallLayoutPolicy {
 
     /** 根據已完成的遊戲動作與牌牆變化解析新的實體布局。 */
     fun resolveTransition(context: PhysicalWallLayoutTransitionContext): PhysicalWallLayoutTransitionDecision
-}
-
-/**
- * 建立初始實體牌牆布局所需的規則中立資料。
- *
- * @property wallLayout 牌牆開門及分區完成後的權威布局結果。
- * @property wallOpening 規則已決定的開門面與開門位置。
- * @property occupiedTileIds 初次發牌完成後仍留在牌牆或規則保留區的牌張，用於避免最終布局碰撞。
- */
-data class InitialPhysicalWallLayoutContext(
-    val wallLayout: TileWallLayoutResult,
-    val wallOpening: WallOpening,
-    val occupiedTileIds: Set<Uuid>,
-) {
-    init {
-        require(wallLayout.structure.keys.containsAll(occupiedTileIds)) {
-            "Occupied physical wall tiles must belong to the wall structure"
-        }
-    }
 }
 
 /** 建立初始實體牌牆布局的強型別結果。 */
@@ -55,47 +34,6 @@ sealed interface InitialPhysicalWallLayoutDecision {
     data class Rejected(val reasonId: String) : InitialPhysicalWallLayoutDecision {
         init {
             requirePhysicalWallReasonId(reasonId)
-        }
-    }
-}
-
-/**
- * 動作完成後解析實體牌牆演進所需的資料。
- *
- * @property tableStateBeforeAction 動作套用前的權威桌況。
- * @property tableStateAfterAction 動作及其規則牌牆變化套用後的候選桌況。
- * @property currentLayout 動作前的權威實體牌牆布局。
- * @property actorPlayerId 執行動作的玩家 Uuid。
- * @property action 實際完成的遊戲動作。
- */
-data class PhysicalWallLayoutTransitionContext(
-    val tableStateBeforeAction: TableState,
-    val tableStateAfterAction: TableState,
-    val currentLayout: TileWallPhysicalLayout,
-    val actorPlayerId: Uuid,
-    val action: GameAction,
-)
-
-/** 一個實體牌牆 transition 階段中，單張牌的宣告式移動。 */
-data class PhysicalWallTileMove(
-    /** 要移動的既有牌張 Uuid。 */
-    val tileId: Uuid,
-    /** 此階段開始時的權威抽象來源位置。 */
-    val source: TileWallPlacement,
-    /** 此移動完成後的抽象目的位置。 */
-    val destination: TileWallPlacement,
-)
-
-/**
- * 同一段整體動作中的牌張移動集合。
- *
- * 同一階段允許平台為避免實體碰撞而細微錯開個別牌張的起步時間，但不得改變階段順序或最終位置。
- */
-data class PhysicalWallLayoutTransitionPhase(val moves: List<PhysicalWallTileMove>) {
-    init {
-        require(moves.isNotEmpty()) { "Physical wall transition phase must contain at least one move" }
-        require(moves.map { it.tileId }.distinct().size == moves.size) {
-            "Physical wall transition phase must not move the same tile more than once"
         }
     }
 }
@@ -126,12 +64,6 @@ sealed interface PhysicalWallLayoutTransitionDecision {
             requirePhysicalWallReasonId(reasonId)
         }
     }
-}
-
-/** 實體牌牆布局共用的拒絕原因 ID。 */
-object PhysicalWallLayoutReasonIds {
-    /** Policy 結果未通過牌張集合、位置或 transition 引用驗證。 */
-    const val INVALID_RESULT: String = "mahjongcraft:invalid_physical_wall_layout_result"
 }
 
 /**
