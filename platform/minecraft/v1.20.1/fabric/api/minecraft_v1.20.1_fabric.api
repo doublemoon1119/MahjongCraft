@@ -1,0 +1,5 @@
+public final class com/doublemoon1119/mahjongcraft/platform/fabric/api/event/FabricGameEventContexts {
+	public static final field INSTANCE Lcom/doublemoon1119/mahjongcraft/platform/fabric/api/event/FabricGameEventContexts;
+	public static final fun server (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/event/GameEventContext;)Lnet/minecraft/server/MinecraftServer;
+}
+

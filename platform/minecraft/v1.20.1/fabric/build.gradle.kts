@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.fabric.loom)
     alias(libs.plugins.koin.compiler)
+    alias(libs.plugins.mahjongcraft.event.api.abi)
 }
 
 version = libs.versions.minecraft.mod.version.get()

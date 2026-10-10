@@ -78,6 +78,26 @@
 - Fix flagged warnings/violations before committing, unless they are pre-existing and unrelated to
   the current change.
 
+## Event API Compatibility
+
+- The stable event surface is limited to the `api.event` packages in Flow common, Minecraft common, and each
+  loader adapter. Public implementation types outside those packages are not covered by this event API contract.
+- Modules exposing this surface apply `mahjongcraft.event-api-abi`, which uses Kotlin's built-in ABI validation.
+  Reference signatures live in each module's `api/` directory and must be committed. `check` (and therefore
+  `build`) checks them automatically; do not regenerate the references as part of normal builds.
+- Run `./gradlew checkKotlinAbi` with the intended platform target to inspect signature changes. The core target
+  only checks Flow; a Minecraft target also checks its common and loader surfaces. Verify every supported target
+  when changing shared APIs. New loader adapters exposing event APIs must apply the convention and add their own
+  reference signatures. KMP validation follows the module's declared targets; checking JVM does not validate a
+  Native binary, and unsupported-target inference is not a substitute for validation on a suitable host.
+- Only after reviewing a deliberate API change, run `./gradlew updateKotlinAbi` for the intended target, inspect
+  the signature diff, and commit it with the implementation. Updating the reference acknowledges a change; it
+  does not prove compatibility. Preserve existing names, types and listener methods; prefer additive read-only
+  properties, and retain deprecated declarations when removing a released API would break consumers.
+- Signature checks do not guarantee event delivery semantics, constant values, nullability, or generic type
+  contracts erased by the JVM. Keep behavior, visibility and contract tests alongside the ABI baselines. They
+  also do not guarantee compatibility across Minecraft or loader versions whose own APIs differ.
+
 ## Gradle Build Configuration
 
 - The repository tracks `gradle.properties` with conservative daemon defaults suitable for the

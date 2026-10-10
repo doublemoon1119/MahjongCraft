@@ -45,6 +45,10 @@ gradlePlugin {
             id = "mahjongcraft.repository-verification"
             implementationClass = "com.doublemoon1119.mahjongcraft.buildlogic.RepositoryVerificationPlugin"
         }
+        register("eventApiAbi") {
+            id = "mahjongcraft.event-api-abi"
+            implementationClass = "com.doublemoon1119.mahjongcraft.buildlogic.EventApiAbiPlugin"
+        }
     }
 }
 

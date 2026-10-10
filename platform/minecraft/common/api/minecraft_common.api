@@ -1,0 +1,40 @@
+public final class com/doublemoon1119/mahjongcraft/platform/minecraft/api/event/GameEventContext {
+	public final fun getTableLocation ()Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/event/TableLocation;
+}
+
+public final class com/doublemoon1119/mahjongcraft/platform/minecraft/api/event/MahjongCraftEvent {
+	public final fun register (Ljava/lang/Object;)V
+}
+
+public final class com/doublemoon1119/mahjongcraft/platform/minecraft/api/event/MahjongCraftEvents {
+	public static final field INSTANCE Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/event/MahjongCraftEvents;
+	public static final field MATCH_ENDED Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/event/MahjongCraftEvent;
+	public static final field MATCH_STARTED Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/event/MahjongCraftEvent;
+	public static final field ROUND_SETTLED Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/event/MahjongCraftEvent;
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/event/MatchEndedListener {
+	public abstract fun onMatchEnded (Lcom/doublemoon1119/mahjongcraft/flow/api/event/MatchEndedEvent;Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/event/GameEventContext;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/event/MatchStartedListener {
+	public abstract fun onMatchStarted (Lcom/doublemoon1119/mahjongcraft/flow/api/event/MatchStartedEvent;Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/event/GameEventContext;)V
+}
+
+public final class com/doublemoon1119/mahjongcraft/platform/minecraft/api/event/MinecraftMatchAbortReasonIds {
+	public static final field INSTANCE Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/event/MinecraftMatchAbortReasonIds;
+	public static final field TABLE_BROKEN_BY_PLAYER Ljava/lang/String;
+	public static final field TABLE_MISSING Ljava/lang/String;
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/event/RoundSettledListener {
+	public abstract fun onRoundSettled (Lcom/doublemoon1119/mahjongcraft/flow/api/event/RoundSettledEvent;Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/event/GameEventContext;)V
+}
+
+public final class com/doublemoon1119/mahjongcraft/platform/minecraft/api/event/TableLocation {
+	public final fun getDimensionId ()Ljava/lang/String;
+	public final fun getX ()I
+	public final fun getY ()I
+	public final fun getZ ()I
+}
+

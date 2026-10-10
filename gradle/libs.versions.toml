@@ -74,6 +74,7 @@ fabric-language-kotlin = { group = "net.fabricmc", name = "fabric-language-kotli
 # MahjongCraft convention plugins
 # 由 build-logic included build 提供，因此不宣告外部版本。
 mahjongcraft-base = { id = "mahjongcraft.base" }
+mahjongcraft-event-api-abi = { id = "mahjongcraft.event-api-abi" }
 mahjongcraft-kotlin-multiplatform = { id = "mahjongcraft.kotlin-multiplatform" }
 mahjongcraft-minecraft-version-common = { id = "mahjongcraft.minecraft-version-common" }
 mahjongcraft-minecraft-loader = { id = "mahjongcraft.minecraft-loader" }

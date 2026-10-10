@@ -1,0 +1,76 @@
+public final class com/doublemoon1119/mahjongcraft/flow/api/event/MatchCompletion : java/lang/Enum {
+	public static final field ABORTED Lcom/doublemoon1119/mahjongcraft/flow/api/event/MatchCompletion;
+	public static final field COMPLETED Lcom/doublemoon1119/mahjongcraft/flow/api/event/MatchCompletion;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/doublemoon1119/mahjongcraft/flow/api/event/MatchCompletion;
+	public static fun values ()[Lcom/doublemoon1119/mahjongcraft/flow/api/event/MatchCompletion;
+}
+
+public final class com/doublemoon1119/mahjongcraft/flow/api/event/MatchEndedEvent : com/doublemoon1119/mahjongcraft/flow/api/event/MatchEvent {
+	public final fun getCompletion ()Lcom/doublemoon1119/mahjongcraft/flow/api/event/MatchCompletion;
+	public fun getEventId ()Lkotlin/uuid/Uuid;
+	public fun getMatchId ()Lkotlin/uuid/Uuid;
+	public final fun getReasonId ()Ljava/lang/String;
+	public fun getRuleModuleId ()Ljava/lang/String;
+	public final fun getStandings ()Ljava/util/List;
+	public fun getVenueId ()Lkotlin/uuid/Uuid;
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/flow/api/event/MatchEvent {
+	public abstract fun getEventId ()Lkotlin/uuid/Uuid;
+	public abstract fun getMatchId ()Lkotlin/uuid/Uuid;
+	public abstract fun getRuleModuleId ()Ljava/lang/String;
+	public abstract fun getVenueId ()Lkotlin/uuid/Uuid;
+}
+
+public final class com/doublemoon1119/mahjongcraft/flow/api/event/MatchPlayer {
+	public final fun getInitialSeatIndex ()I
+	public final fun getPlayerId ()Lkotlin/uuid/Uuid;
+	public final fun isAi ()Z
+}
+
+public final class com/doublemoon1119/mahjongcraft/flow/api/event/MatchStanding {
+	public final fun getPlayerId ()Lkotlin/uuid/Uuid;
+	public final fun getRank ()I
+	public final fun getScore ()I
+	public final fun isAi ()Z
+}
+
+public final class com/doublemoon1119/mahjongcraft/flow/api/event/MatchStartedEvent : com/doublemoon1119/mahjongcraft/flow/api/event/MatchEvent {
+	public fun getEventId ()Lkotlin/uuid/Uuid;
+	public fun getMatchId ()Lkotlin/uuid/Uuid;
+	public final fun getPlayers ()Ljava/util/List;
+	public fun getRuleModuleId ()Ljava/lang/String;
+	public fun getVenueId ()Lkotlin/uuid/Uuid;
+}
+
+public final class com/doublemoon1119/mahjongcraft/flow/api/event/RoundScoreChange {
+	public final fun getCurrentRank ()I
+	public final fun getCurrentScore ()I
+	public final fun getPlayerId ()Lkotlin/uuid/Uuid;
+	public final fun getPreviousRank ()I
+	public final fun getPreviousScore ()I
+}
+
+public final class com/doublemoon1119/mahjongcraft/flow/api/event/RoundSettledEvent : com/doublemoon1119/mahjongcraft/flow/api/event/MatchEvent {
+	public final fun getBeneficiaryPlayerIds ()Ljava/util/Set;
+	public fun getEventId ()Lkotlin/uuid/Uuid;
+	public final fun getKind ()Lcom/doublemoon1119/mahjongcraft/flow/api/event/RoundSettlementKind;
+	public fun getMatchId ()Lkotlin/uuid/Uuid;
+	public final fun getOutcomeId ()Ljava/lang/String;
+	public final fun getPlayers ()Ljava/util/List;
+	public final fun getResponsiblePlayerIds ()Ljava/util/Set;
+	public final fun getRoundNumber ()I
+	public fun getRuleModuleId ()Ljava/lang/String;
+	public fun getVenueId ()Lkotlin/uuid/Uuid;
+}
+
+public final class com/doublemoon1119/mahjongcraft/flow/api/event/RoundSettlementKind : java/lang/Enum {
+	public static final field DRAW Lcom/doublemoon1119/mahjongcraft/flow/api/event/RoundSettlementKind;
+	public static final field SPECIAL Lcom/doublemoon1119/mahjongcraft/flow/api/event/RoundSettlementKind;
+	public static final field WIN Lcom/doublemoon1119/mahjongcraft/flow/api/event/RoundSettlementKind;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/doublemoon1119/mahjongcraft/flow/api/event/RoundSettlementKind;
+	public static fun values ()[Lcom/doublemoon1119/mahjongcraft/flow/api/event/RoundSettlementKind;
+}
+
