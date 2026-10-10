@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFactTypeK
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableResult
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinDetails
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryActionTypeKeys
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundEvents
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundPosition
@@ -243,6 +244,35 @@ class CompactReplayRoundReaderGenuineTest {
             reader().readEvents(fixture.document, fixture.matchId, 1, 2, 1),
         ).value.transactions.single().facts.filterIsInstance<HistoryReplayFact.Completion>().single()
         assertEquals(mapOf(0 to 0, 1 to 0), completion.outcome?.scoreChangesBySeat)
+    }
+
+    /** 反應後途中流局的正式交易保留單一流局動作、零分差與可重建的局面。 */
+    @Test
+    fun `reader preserves post reaction abortive draw action and zero settlement delta`() = runTest {
+        val fixture = postReactionAbortiveDrawFixture()
+        val events = assertIs<ReplayReadResult.Success<HistoryRoundEvents>>(
+            reader().readEvents(fixture.document, fixture.matchId, 1, 0, 20),
+        ).value
+        val drawActions = events.transactions.flatMap { transaction ->
+            transaction.facts.filterIsInstance<HistoryReplayFact.KnownAction>()
+                .filter { it.actionType == HistoryActionTypeKeys.EXHAUSTIVE_DRAW }
+        }
+        assertEquals(1, drawActions.size)
+
+        val completion = events.transactions.flatMap { it.facts }
+            .filterIsInstance<HistoryReplayFact.Completion>()
+            .single { it.typeKey == HistoryFactTypeKeys.ROUND_COMPLETED }
+        assertEquals(RoundCompletionClassification.ABORTIVE_DRAW, completion.outcome?.classification)
+        assertEquals(
+            fixture.table.players.associate { it.initialSeatIndex to 0 },
+            completion.outcome?.scoreChangesBySeat,
+        )
+
+        val state = assertIs<ReplayReadResult.Success<HistoryRoundState>>(
+            reader().readState(fixture.document, fixture.matchId, 1, HistoryRoundPosition.AfterTransaction(1)),
+        ).value
+        assertEquals(fixture.table.players.associate { it.initialSeatIndex to it.score }, state.players.associate { it.initialSeatIndex to it.score })
+        assertEquals(null, state.outcome)
     }
 
     /** 流局結算後的其他分數變化不會污染先前保存的流局分差。 */
@@ -527,6 +557,59 @@ class CompactReplayRoundReaderGenuineTest {
         }
         val registries = bundledPersistenceRegistries()
         return Fixture(CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries), matchId, table, settled, settled)
+    }
+
+    /** 建立語意上對應反應完成後才成立途中流局的正式 Replay 文件。 */
+    private fun postReactionAbortiveDrawFixture(): Fixture {
+        val table = FakeTableStateFactory.create(
+            players = List(4) { FakeMahjongPlayerFactory.create(discardPile = RiichiDiscardPile()) },
+            currentPlayerIndex = 1,
+            config = RiichiRuleConfig(),
+        ).reversedScores(25_000)
+        val abortiveAction = GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.SuuchaRiichi)
+        val abortiveState = table.copy(players = table.players.map { it.recordAction(abortiveAction) })
+        val matchId = Uuid.random()
+        val scores = abortiveState.players.associate { it.id to it.score }
+        val actionResult = HistoryActionResult(
+            affectedTileIds = emptyList(),
+            newlyRevealedTileIds = emptyList(),
+            remainingWallTileCount = abortiveState.tileWall.remainingCount,
+            reservedWallTileIds = abortiveState.reservedWallTiles.map { it.id },
+            scoresByPlayerId = scores,
+            nextPlayerId = abortiveState.currentPlayer.id,
+        )
+        val events = listOf(
+            event(matchId, table.id, 1, 0L, HistoryFact.MatchStarted(table, GameFlowConfig(), emptyMap())),
+            event(matchId, table.id, 2, 100L, HistoryFact.ActionAccepted(GameAction.Pass, actionResult))
+                .copy(actorPlayerId = table.players[1].id),
+            event(matchId, table.id, 3, 100L, HistoryFact.ReactionResolved(null, null)).copy(transactionFirstSequence = 2),
+            event(matchId, table.id, 4, 100L, HistoryFact.ActionAccepted(abortiveAction, actionResult)).copy(transactionFirstSequence = 2),
+            event(
+                matchId,
+                table.id,
+                5,
+                100L,
+                HistoryFact.TableChanged(HistoryTableResult.Checkpoint("test:post_reaction_abortive_draw", abortiveState)),
+            ).copy(transactionFirstSequence = 2),
+            event(
+                matchId,
+                table.id,
+                6,
+                200L,
+                HistoryFact.RoundCompleted(
+                    RoundCompletionSummary(
+                        RiichiExhaustiveDrawReason.SuuchaRiichi.id,
+                        RoundCompletionClassification.ABORTIVE_DRAW,
+                        emptySet(),
+                        transitionDirective = RoundTransitionDirective.REPEAT_DEALER,
+                        settledScoresByPlayerId = scores,
+                    ),
+                ),
+            ),
+            event(matchId, table.id, 7, 200L, HistoryFact.MatchCompleted("test:completed", scores)).copy(transactionFirstSequence = 6),
+        )
+        val registries = bundledPersistenceRegistries()
+        return Fixture(CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries), matchId, table, abortiveState, abortiveState)
     }
 
     /** 建立包含立直後胡牌、續局分數變化與後續局結算的正式 Replay 文件。

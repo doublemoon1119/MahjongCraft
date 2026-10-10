@@ -117,6 +117,16 @@ class RespondToDiscardUseCase(
                                     ),
                                 ),
                             )
+                            resolution.abortiveDrawReason?.let { reason ->
+                                add(
+                                    acceptedActionHistoryDraft(
+                                        actorPlayerId = resolution.abortiveDrawActorId,
+                                        action = GameAction.ExhaustiveDraw(reason),
+                                        before = before,
+                                        after = after,
+                                    ),
+                                )
+                            }
                             resolution.settlement?.let { settlement ->
                                 add(
                                     HistoryEventDraft(

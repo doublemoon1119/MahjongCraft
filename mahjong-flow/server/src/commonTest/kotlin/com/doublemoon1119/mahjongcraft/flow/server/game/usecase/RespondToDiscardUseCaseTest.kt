@@ -26,6 +26,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoLiability
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoYaku
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
@@ -149,6 +150,10 @@ class RespondToDiscardUseCaseTest {
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!
         assertNull(newState.pendingReaction, "Everyone eligible has responded, so the reaction window should close.")
+        assertTrue(
+            fixtures.gameRepo.historyDrafts.none { (it.fact as? HistoryFact.ActionAccepted)?.action is GameAction.ExhaustiveDraw },
+            "An ordinary pass must not record an exhaustive draw action.",
+        )
         assertEquals(1, newState.currentPlayerIndex, "No one acted, so turn should advance like the normal discard flow.")
         val updatedResponder = newState.players.first { it.id == responderId }
         assertTrue(
@@ -157,7 +162,7 @@ class RespondToDiscardUseCaseTest {
         )
     }
 
-    /** 驗證無人榮和時，捨牌後途中流局優先於已提交的碰牌，且捨牌保持在牌河。 */
+    /** 驗證無人榮和時，途中流局優先於碰牌，保留牌河，並於同一交易記錄唯一流局事實。 */
     @Test
     fun `test post-action abortive draw takes priority over pon after reactions complete`() = runTest {
         val fixtures = Fixtures(alwaysAbortAfterDiscardRegistry())
@@ -196,6 +201,68 @@ class RespondToDiscardUseCaseTest {
         assertFalse(newState.players.first { it.id == discarderId }.discardPile.entries.last().isTaken)
         val expected = GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.SuukanNagare)
         assertTrue(newState.players.all { it.actionHistory.lastOrNull() == expected })
+        val drafts = fixtures.gameRepo.historyDrafts
+        assertEquals(3, drafts.size)
+        assertTrue(drafts[0].fact is HistoryFact.ActionAccepted)
+        assertTrue(drafts[1].fact is HistoryFact.ReactionResolved)
+        val drawDraft = drafts.single { (it.fact as? HistoryFact.ActionAccepted)?.action == expected }
+        assertEquals(discarderId, drawDraft.actorPlayerId)
+        val drawFact = drawDraft.fact as HistoryFact.ActionAccepted
+        assertEquals(newState.players.associate { it.id to it.score }, drawFact.result.scoresByPlayerId)
+        assertTrue(drafts.none { it.fact is HistoryFact.WinSettled })
+        assertTrue(newState.players.all { player -> player.actionHistory.count { it == expected } == 1 })
+    }
+
+    /** 四家立直於最後回應過牌後成立，流局事實只記錄一次並保留原捨牌者。 */
+    @Test
+    fun `four riichi after the final pass records one abortive draw action`() = runTest {
+        val registry = PostActionExhaustiveDrawResolverRegistry().apply {
+            BundledRiichiExtension.registerPostActionExhaustiveDrawResolvers(this)
+            freeze()
+        }
+        val fixtures = Fixtures(registry)
+        val discardedTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val players = listOf(Wind.EAST, Wind.SOUTH, Wind.WEST, Wind.NORTH).mapIndexed { index, wind ->
+            FakeMahjongPlayerFactory.create(
+                id = when (index) {
+                    0 -> discarderId
+                    1 -> responderId
+                    else -> Uuid.random()
+                },
+                initialSeat = wind,
+                discardPile = if (index == 0) FakeDiscardPile().discardTile(discardedTile) else FakeDiscardPile(),
+                hand = if (index == 1) {
+                    Hand(
+                        tiles = (listOf(1, 2, 3, 4).flatMap { value -> List(3) { Tile.Numeric(Tile.Suit.Character, value) } } + Tile.Honor.White)
+                            .map(FakeIdentifiedTileFactory::create),
+                    )
+                } else {
+                    Hand()
+                },
+                playerRuleState = RiichiPlayerState(riichiTile = discardedTile),
+            ).let { player ->
+                if (index == 0) player.copy(actionHistory = listOf(RIICHI_GAME_ACTION, GameAction.Discard(discardedTile.id))) else player
+            }
+        }
+        fixtures.gameRepo.setTableState(
+            FakeTableStateFactory.create(
+                id = gameId,
+                players = players,
+                config = RiichiRuleConfig(),
+                currentPlayerIndex = 0,
+                pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+            ),
+        )
+
+        assertTrue(fixtures.useCase(gameId, responderId, GameAction.Pass) is Outcome.Success)
+
+        val expected = GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.SuuchaRiichi)
+        val draft = fixtures.gameRepo.historyDrafts.single { (it.fact as? HistoryFact.ActionAccepted)?.action == expected }
+        assertEquals(discarderId, draft.actorPlayerId)
+        val state = assertNotNull(fixtures.gameRepo.getTableState(gameId))
+        assertNull(state.pendingReaction)
+        assertTrue(state.players.all { player -> player.actionHistory.count { it == expected } == 1 })
+        assertEquals(players.map { it.score }, state.players.map { it.score })
     }
 
     /**
@@ -837,6 +904,10 @@ class RespondToDiscardUseCaseTest {
         assertTrue(
             newState.players.none { player -> player.actionHistory.any { it is GameAction.ExhaustiveDraw } },
             "A resolved Ron must take priority over the post-action abortive draw resolver.",
+        )
+        assertTrue(
+            fixtures.gameRepo.historyDrafts.none { (it.fact as? HistoryFact.ActionAccepted)?.action is GameAction.ExhaustiveDraw },
+            "A winning reaction must not record an exhaustive draw action.",
         )
 
         assertNull(
