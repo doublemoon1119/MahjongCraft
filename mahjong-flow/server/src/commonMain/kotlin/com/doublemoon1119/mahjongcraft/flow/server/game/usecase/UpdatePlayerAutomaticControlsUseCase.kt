@@ -9,60 +9,6 @@ import com.doublemoon1119.mahjongcraft.logic.module.requireValidAutomaticControl
 import org.koin.core.annotation.Factory
 import kotlin.uuid.Uuid
 
-/** 本局自動操作更新遭拒絕的原因。 */
-enum class AutomaticControlUpdateRejection {
-    /** 連線玩家不是指定對局的成員。 */
-    PLAYER_NOT_IN_GAME,
-
-    /** 提交內容含有不符合 namespaced ID 格式的控制。 */
-    INVALID_CONTROL_ID,
-
-    /** 提交內容含有目前規則未宣告支援的控制。 */
-    UNSUPPORTED_CONTROL_ID,
-}
-
-/** 無法提供或更新本局自動操作狀態的原因。 */
-enum class AutomaticControlUpdateUnavailableReason {
-    /** 指定對局不存在。 */
-    GAME_NOT_FOUND,
-
-    /** 指定對局已經結束。 */
-    MATCH_OVER,
-}
-
-/** 更新玩家本局自動操作集合的權威結果。 */
-sealed interface UpdatePlayerAutomaticControlsResult {
-    /**
-     * 更新已接受。
-     *
-     * @property snapshot 接受後的個人權威快照。
-     * @property changed 本次是否實際改變集合及 revision。
-     */
-    data class Accepted(
-        val snapshot: PlayerAutomaticControlSnapshot,
-        val changed: Boolean,
-    ) : UpdatePlayerAutomaticControlsResult
-
-    /** 提交所依據的 revision 已過期，並回傳目前權威快照。 */
-    data class Stale(val snapshot: PlayerAutomaticControlSnapshot) : UpdatePlayerAutomaticControlsResult
-
-    /**
-     * 提交內容遭拒絕。
-     *
-     * @property reason 拒絕原因。
-     * @property snapshot 驗證身分後可安全回傳的目前權威快照；無法確認成員時為 null。
-     */
-    data class Rejected(
-        val reason: AutomaticControlUpdateRejection,
-        val snapshot: PlayerAutomaticControlSnapshot? = null,
-    ) : UpdatePlayerAutomaticControlsResult
-
-    /** 指定對局目前無法提供本局自動操作狀態。 */
-    data class Unavailable(
-        val reason: AutomaticControlUpdateUnavailableReason,
-    ) : UpdatePlayerAutomaticControlsResult
-}
-
 /**
  * 以 revision 保護的原子操作替換單一玩家在目前這一局啟用的自動操作集合。
  *

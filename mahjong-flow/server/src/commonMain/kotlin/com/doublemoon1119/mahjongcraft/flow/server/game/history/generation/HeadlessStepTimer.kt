@@ -13,7 +13,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.HistoryRecordingObserve
 import com.doublemoon1119.mahjongcraft.logic.table.TableStateSnapshot
 import kotlin.concurrent.Volatile
 import kotlin.time.Duration
-import kotlin.time.TimeMark
 import kotlin.time.TimeSource
 import kotlin.uuid.Uuid
 
@@ -123,22 +122,6 @@ class HeadlessStepTimer : HistoryRecordingObserver {
         historyEvents += appendedEvents
     }
 }
-
-/**
- * 一次已結束的 AI 出牌決策。
- *
- * @property context 決策情境。
- * @property duration 策略思考的耗時。
- */
-data class TimedAiDecision(val context: AiDecisionContext, val duration: Duration)
-
-/**
- * 一次進行中的 AI 出牌決策。
- *
- * @property context 決策情境。
- * @property startedAt 開始的時刻。
- */
-class OngoingAiDecision(val context: AiDecisionContext, val startedAt: TimeMark)
 
 /**
  * 量測每次產生快照耗時的觀看政策。

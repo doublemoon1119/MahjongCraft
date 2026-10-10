@@ -16,61 +16,6 @@ import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeSource
 import kotlin.uuid.Uuid
 
-/** 接收 AI 決策沒有等到策略結果的情況，供平台記錄。 */
-interface AiDecisionReporter {
-    /**
-     * 等待策略的決策超過上限，這次改用固定命令。
-     *
-     * @param gameId 對局。
-     * @param playerId 決策的 AI 玩家。
-     * @param strategyKey 玩家的策略 key；未指定時為 null。
-     */
-    fun onTimedOut(gameId: Uuid, playerId: Uuid, strategyKey: String?)
-
-    /**
-     * 這一局先前逾時的策略呼叫尚未結束，這次直接使用固定命令；同一個未結束的呼叫只回報一次。
-     *
-     * @param gameId 對局。
-     * @param playerId 決策的 AI 玩家。
-     * @param strategyKey 玩家的策略 key；未指定時為 null。
-     */
-    fun onPreviousStillRunning(gameId: Uuid, playerId: Uuid, strategyKey: String?)
-
-    /** [NONE] 所在的伴生物件。 */
-    companion object {
-        /** 不記錄任何情況的接收者。 */
-        val NONE: AiDecisionReporter = object : AiDecisionReporter {
-            override fun onTimedOut(gameId: Uuid, playerId: Uuid, strategyKey: String?) = Unit
-
-            override fun onPreviousStillRunning(gameId: Uuid, playerId: Uuid, strategyKey: String?) = Unit
-        }
-    }
-}
-
-/** 一次有結果的 AI 決策是怎麼得到結果的。 */
-enum class AiDecisionOutcome {
-    /** 策略在等待上限內給出結果。 */
-    DECIDED,
-
-    /** 等待超過上限，使用固定結果。 */
-    TIMED_OUT,
-
-    /** 這一局先前逾時的策略呼叫尚未結束，直接使用固定結果。 */
-    PREVIOUS_STILL_RUNNING,
-}
-
-/** 接收每次有結果的 AI 決策，供量測使用。 */
-fun interface AiDecisionObserver {
-    /**
-     * 一次決策有了結果。在呼叫端的執行緒上呼叫；這一局已有策略呼叫正在計算而沒有決策時不呼叫。
-     *
-     * @param gameId 對局。
-     * @param outcome 結果是怎麼得到的。
-     * @param latency 從開始決策到得到結果的時間，含等待名額、排隊與回到呼叫端。
-     */
-    fun onDecision(gameId: Uuid, outcome: AiDecisionOutcome, latency: Duration)
-}
-
 /**
  * 在 AI 專用的調度器上呼叫策略，並限制等待時間與同時存在的策略工作。
  *

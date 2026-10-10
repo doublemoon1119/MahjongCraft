@@ -16,19 +16,6 @@ import org.koin.core.annotation.Factory
 import kotlin.uuid.Uuid
 
 /**
- * [AiTurnDriver] 決定的一次 AI 操作。
- *
- * @property playerId 行動的 AI 玩家。
- * @property command 要送出的命令。
- * @property basis 決策所依據的權威遊戲；命令只應在權威遊戲仍是這個遊戲時套用。
- */
-data class AiTurnDecision(
-    val playerId: Uuid,
-    val command: GameCommand,
-    val basis: Game,
-)
-
-/**
  * 找出目前桌況下一個該行動的 AI 玩家與其命令，供 [GameFlowCoordinator] 驅動 AI 玩家自動出手。
  *
  * 只負責「找出該問誰、問完後決定的命令是什麼」，不負責把命令套用到桌況——那是呼叫端

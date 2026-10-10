@@ -11,17 +11,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnaps
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
-/** 無法自動恢復的單一玩家跨桌歸屬。 */
-data class PlayerMembershipConflict(
-    val playerId: Uuid,
-    val venueIds: Set<Uuid>,
-)
-
-/** server session 衍生狀態恢復結果。 */
-data class ServerSessionStateRestoreResult(
-    val membershipConflicts: List<PlayerMembershipConflict>,
-)
-
 /** 從已載入的權威狀態重建單次 server session 使用的衍生索引與 observer snapshot。 */
 @Single
 class ServerSessionStateRestorer(

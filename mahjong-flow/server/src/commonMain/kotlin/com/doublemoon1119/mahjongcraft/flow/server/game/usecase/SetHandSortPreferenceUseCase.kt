@@ -9,15 +9,6 @@ import org.koin.core.annotation.Factory
 import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
 
-/** 自動理牌偏好更新的來源意圖，決定是否允許立即整理並重新呈現手牌。 */
-enum class HandSortPreferenceUpdateMode {
-    /** 重新連線時只恢復伺服器端暫存偏好，不重新發布手牌。 */
-    RESTORE,
-
-    /** 玩家主動變更設定，允許在安全情況下立即整理並重新呈現手牌。 */
-    USER_CHANGE,
-}
-
 /**
  * 設定「是否自動整理手牌」偏好（[HandSortPreferenceStore]），並在玩家目前正坐在進行中對局時立即套用
  * 一次整理，讓切換開關這個動作本身就能看到手牌重新排序，不用等到下一次摸牌/打牌才生效。

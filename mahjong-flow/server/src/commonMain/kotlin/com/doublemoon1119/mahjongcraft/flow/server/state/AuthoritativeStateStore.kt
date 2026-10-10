@@ -26,43 +26,6 @@ import kotlin.time.TimeSource
 import kotlin.uuid.Uuid
 
 /**
- * 伺服器目前持有的完整 Room 與 Game 狀態快照。
- *
- * @property rooms 以場地 UUID 索引的等待階段狀態。
- * @property games 以場地 UUID 索引的進行中狀態。
- * @property historyRecordingState 與 Game 生命週期分離的待寫歷史事件。
- */
-data class AuthoritativeStateSnapshot(
-    val rooms: Map<Uuid, Room> = emptyMap(),
-    val games: Map<Uuid, Game> = emptyMap(),
-    val historyRecordingState: HistoryRecordingState = HistoryRecordingState(),
-) {
-    init {
-        require(rooms.all { (id, room) -> id == room.id }) { "Room index must match its state ID" }
-        require(games.all { (id, game) -> id == game.id }) { "Game index must match its state ID" }
-        require(rooms.keys.intersect(games.keys).isEmpty()) {
-            "The same venue ID must not exist as both a room and a game"
-        }
-    }
-}
-
-/**
- * 單次伺服器權威狀態交易的結果。
- *
- * @property state 交易完成後的完整狀態。
- * @property result 回傳給呼叫端的結果。
- * @property historyDraftsByVenueId 與本次狀態變更一起提交的權威事實；提交後一律交給
- *   [AuthoritativeStateStore.setCommittedFactsListener] 登記的接收者，是否寫入歷史由記錄政策決定。
- * @property historyRecordingFailures 歷史事件記錄失敗的場地 ID；提交狀態時為對應場次記錄序號缺口。
- */
-data class AuthoritativeStateUpdate<T>(
-    val state: AuthoritativeStateSnapshot,
-    val result: T,
-    val historyDraftsByVenueId: Map<Uuid, List<HistoryEventDraft>> = emptyMap(),
-    val historyRecordingFailures: Set<Uuid> = emptySet(),
-)
-
-/**
  * 以同一把互斥鎖管理 Room 與 Game 的共用狀態儲存。
  *
  * 所有變更皆透過 [update] 提交，使 Room → Game 等跨集合操作能在單次交易內完成。變更後的狀態同時

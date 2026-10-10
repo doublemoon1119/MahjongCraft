@@ -8,28 +8,6 @@ import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.uuid.Uuid
 
-/** 平台在每次自動推進的最後補做的檢查，例如替真人玩家自動摸牌。 */
-fun interface AutomatedAdvanceFollowUp {
-    /**
-     * 推進 [gameId] 後補做平台的檢查。
-     *
-     * @param gameId 剛推進的遊戲。
-     * @return 是否改變了遊戲；改變時 [AutomatedAdvanceManager] 會再推進一輪。
-     */
-    suspend fun afterAdvance(gameId: Uuid): Boolean
-}
-
-/** 接收自動推進失敗的情況，供平台記錄。 */
-fun interface AutomatedAdvanceFailureReporter {
-    /**
-     * 推進 [gameId] 時發生未預期的錯誤；這次推進已停止，之後的請求照常推進。
-     *
-     * @param gameId 推進失敗的遊戲。
-     * @param error 推進時丟出的錯誤。
-     */
-    fun onAdvanceFailed(gameId: Uuid, error: Exception)
-}
-
 /**
  * 每一局同一時間只有一個自動推進：所有驅動自動操作的入口都向這裡請求，不直接驅動。
  *

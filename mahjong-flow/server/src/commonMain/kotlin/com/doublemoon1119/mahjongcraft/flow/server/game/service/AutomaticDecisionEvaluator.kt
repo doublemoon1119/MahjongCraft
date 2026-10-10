@@ -86,9 +86,3 @@ class AutomaticDecisionEvaluator(
         ) { "Automatic control policy selected tiles that violate the action requirement" }
     }
 }
-
-/** 一次自動操作政策評估後的玩家可見選項與立即動作。 */
-data class EvaluatedPlayerDecision(
-    val options: PlayerDecisionOptions,
-    val immediateAction: AutomaticControlAction?,
-)

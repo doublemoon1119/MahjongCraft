@@ -1,0 +1,34 @@
+package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
+
+import kotlin.uuid.Uuid
+
+/** 接收 AI 決策未能及時取得策略結果的診斷資訊。 */
+interface AiDecisionReporter {
+    /**
+     * 等待策略的決策超過上限，這次改用固定命令。
+     *
+     * @param gameId 對局。
+     * @param playerId 決策的 AI 玩家。
+     * @param strategyKey 玩家的策略 key；未指定時為 null。
+     */
+    fun onTimedOut(gameId: Uuid, playerId: Uuid, strategyKey: String?)
+
+    /**
+     * 這一局先前逾時的策略呼叫尚未結束，這次直接使用固定命令；同一個未結束的呼叫只回報一次。
+     *
+     * @param gameId 對局。
+     * @param playerId 決策的 AI 玩家。
+     * @param strategyKey 玩家的策略 key；未指定時為 null。
+     */
+    fun onPreviousStillRunning(gameId: Uuid, playerId: Uuid, strategyKey: String?)
+
+    /** [NONE] 所在的伴生物件。 */
+    companion object {
+        /** 不記錄任何情況的接收者。 */
+        val NONE: AiDecisionReporter = object : AiDecisionReporter {
+            override fun onTimedOut(gameId: Uuid, playerId: Uuid, strategyKey: String?) = Unit
+
+            override fun onPreviousStillRunning(gameId: Uuid, playerId: Uuid, strategyKey: String?) = Unit
+        }
+    }
+}
