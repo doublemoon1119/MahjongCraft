@@ -39,6 +39,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
  * @property tileLabelRegistry 牌面輔助標籤 registry。
  * @property gameActionVocabularyRegistry 遊戲動作顯示名稱 registry。
  * @property automaticControlDisplayRegistry 自動操作顯示資料 registry。
+ * @property decisionStatusDisplayNameRegistry 決策狀態顯示名稱 registry。
  * @property gameActionSoundPresentationRegistry 遊戲動作音效呈現 registry。
  * @property exhaustiveDrawReasonDisplayNameRegistry 流局原因顯示名稱 registry。
  * @property roundOutcomeDisplayNameRegistry 規則特殊本局結果顯示名稱 registry。
@@ -160,26 +161,3 @@ private fun snapshotCategory(
     displayName,
     registrationKeys.toSet(),
 )
-
-/** 保存所有 Minecraft 呈現 registry 在單一時間點的註冊內容。 */
-data class MinecraftPresentationRegistrationSnapshot(
-    val categories: List<MinecraftPresentationRegistrationSnapshotCategory>,
-) {
-    /** 與 [current] 比較並回傳新增的註冊內容。 */
-    fun additionsSince(current: MinecraftPresentationRegistrationSnapshot): List<MinecraftPresentationRegistrationSnapshotCategory> {
-        val baselineById = categories.associateBy { it.id }
-        return current.categories.map { category ->
-            category.copy(registrationKeys = category.registrationKeys - baselineById[category.id].orEmptyKeys())
-        }
-    }
-}
-
-/** 保存單一 Minecraft 呈現 registry 的名稱與註冊 key。 */
-data class MinecraftPresentationRegistrationSnapshotCategory(
-    val id: String,
-    val displayName: String,
-    val registrationKeys: Set<String>,
-)
-
-/** 取得 nullable 快照分類的註冊 key。 */
-private fun MinecraftPresentationRegistrationSnapshotCategory?.orEmptyKeys(): Set<String> = this?.registrationKeys.orEmpty()

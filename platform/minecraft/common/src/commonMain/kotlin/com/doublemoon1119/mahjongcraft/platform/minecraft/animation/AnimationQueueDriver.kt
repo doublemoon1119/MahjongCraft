@@ -1,23 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.animation
 
 /**
- * 一次 [AnimationQueueDriver.tick] 呼叫的結果：依序套用的瞬間動作（[appliedInstantSteps]，只含
- * [AnimationStep.Teleport]／[AnimationStep.SetInvisible]／[AnimationStep.PlaySound]／[AnimationStep.Custom]，不含
- * [AnimationStep.WaitUntil]——純等待沒有任何可套用的動作），以及套用後的佇列／計時進度快照。
- *
- * [startedPlayMotion] 非 `null` 代表這個 tick 有一段 [AnimationStep.PlayMotion] 剛開始播放，呼叫端
- * 需要據此同步 render 用欄位；[completedPlayMotion] 為 `true` 代表這個 tick 有一段
- * [AnimationStep.PlayMotion] 播完了（`durationTicks` 為 `0` 時同一個 tick 內可能兩者都成立）。
- */
-data class AnimationQueueTickResult<C>(
-    val appliedInstantSteps: List<AnimationStep<C>>,
-    val startedPlayMotion: AnimationStep.PlayMotion?,
-    val completedPlayMotion: Boolean,
-    val remainingQueue: List<AnimationStep<C>>,
-    val activeStepEndGameTime: Long?,
-)
-
-/**
  * 動畫佇列的純邏輯處理核心，不依賴任何 Minecraft API——真正的座標／姿態／render 欄位變更（副作用）
  * 由呼叫端（`AnimatedMahjongEntity`）依 [AnimationQueueTickResult] 執行，這裡只負責「依目前佇列與
  * game time，這個 tick 該往前推進到什麼狀態」這個純粹的判斷，讓佇列的到期／推進邏輯可以脫離

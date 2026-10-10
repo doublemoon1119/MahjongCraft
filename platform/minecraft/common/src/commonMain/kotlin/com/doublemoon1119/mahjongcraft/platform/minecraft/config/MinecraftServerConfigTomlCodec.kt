@@ -7,12 +7,6 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 
-/** Server config TOML 解碼或驗證失敗。 */
-class InvalidMinecraftServerConfigException(
-    message: String,
-    cause: Throwable? = null,
-) : IllegalArgumentException(message, cause)
-
 /** 在不同 Minecraft loader 間共用的嚴格 server config TOML codec。 */
 class MinecraftServerConfigTomlCodec {
     /** 拒絕未知欄位、空值與空文件的 TOML decoder。 */
@@ -154,7 +148,8 @@ private data class MahjongTileTomlDto(
     val physicalCollisionEnabled: Boolean = true,
 )
 
-/** 歷史資料記錄與封存 TOML 欄位。
+/**
+ * 歷史資料記錄與封存 TOML 欄位。
  *
  * @property enabled 是否啟用歷史資料記錄；停用會停止目前記錄，重新啟用只會記錄之後的新牌局。
  * @property includeAiMatches 是否記錄含有任一 AI 座位的牌局。

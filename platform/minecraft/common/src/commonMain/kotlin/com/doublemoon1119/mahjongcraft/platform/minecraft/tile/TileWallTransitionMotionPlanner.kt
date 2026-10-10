@@ -7,52 +7,6 @@ import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import kotlin.uuid.Uuid
 
-/** 單張牌在一個規則 phase 中依序播放的幾何路徑。 */
-data class TileWallPhaseMotion(
-    /** 要移動的既有牌張 Uuid。 */
-    val tileId: Uuid,
-    /** 已按碰撞安全順序排列的路徑段。 */
-    val segments: List<TileWallMotionSegment>,
-) {
-    init {
-        require(segments.isNotEmpty()) { "Wall phase motion must contain at least one segment" }
-    }
-
-    /** 此牌完成本 phase 所需的 ticks。 */
-    val durationTicks: Int = segments.sumOf { it.durationTicks }
-}
-
-/** 一個共用時間邊界內同步開始的牌牆移動階段。 */
-data class TileWallMotionPhasePlan(
-    /** 此階段內各張牌的路徑。 */
-    val motions: List<TileWallPhaseMotion>,
-) {
-    init {
-        require(motions.isNotEmpty()) { "Wall motion phase plan must contain at least one motion" }
-    }
-
-    /** 下一個 phase 最早可開始的相對 ticks。 */
-    val durationTicks: Int = motions.maxOf { it.durationTicks }
-}
-
-/** 完整牌牆 transition 的確定性幾何與 phase barrier 計畫。 */
-data class TileWallTransitionMotionPlan(
-    /** 依權威順序排列的移動階段。 */
-    val phases: List<TileWallMotionPhasePlan>,
-) {
-    /** 全部階段播放完成所需的 ticks。 */
-    val durationTicks: Int = phases.sumOf { it.durationTicks }
-}
-
-/** 牌牆 transition 路徑規劃結果。 */
-sealed interface TileWallTransitionMotionDecision {
-    /** 所有移動均已成功規劃。 */
-    data class Completed(val plan: TileWallTransitionMotionPlan) : TileWallTransitionMotionDecision
-
-    /** 至少一個移動無法轉成安全路徑。 */
-    data class Rejected(val tileId: Uuid, val reason: TileWallMotionPathRejection) : TileWallTransitionMotionDecision
-}
-
 /** 將規則 transition phases 轉成同步且碰撞安全的世界路徑。 */
 object TileWallTransitionMotionPlanner {
     /** 將砌牆格位到規則最終布局建立為單一同步開門 phase。 */

@@ -1,94 +1,11 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
-import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
 import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.hypot
 import kotlin.math.sqrt
-
-/** 將抽象牌牆 placement 投影到特定桌子的必要資料。 */
-data class MahjongTileWallProjectionContext(
-    /** 控制方塊 X 座標。 */
-    val controllerX: Int,
-    /** 控制方塊 Y 座標。 */
-    val controllerY: Int,
-    /** 控制方塊 Z 座標。 */
-    val controllerZ: Int,
-    /** 桌子在世界中的朝向。 */
-    val tableFacing: MahjongTableFacing,
-    /** 本局莊家座位索引。 */
-    val dealerSeatIndex: Int,
-    /** 牌牆每面的墩數。 */
-    val stacksPerSide: Int,
-    /** 牌牆的面數，與玩家人數相同。 */
-    val sideCount: Int,
-) {
-    init {
-        require(stacksPerSide > 0) { "Stacks per side must be positive" }
-        require(sideCount > 0) { "Wall side count must be positive" }
-    }
-
-    /** 將 [placement] 投影成此桌的世界座標與朝向。 */
-    fun project(placement: TileWallPlacement): MahjongTileWallPlacement = MahjongTileTableLayout.wallPlacement(
-        controllerX = controllerX,
-        controllerY = controllerY,
-        controllerZ = controllerZ,
-        tableFacing = tableFacing,
-        dealerSeatIndex = dealerSeatIndex,
-        stacksPerSide = stacksPerSide,
-        sideCount = sideCount,
-        placement = placement,
-    )
-}
-
-/** 一段由絕對起點移至絕對終點的確定性線性運動。 */
-data class TileWallMotionSegment(
-    /** 本段畫面起點。 */
-    val start: MahjongTileWallPlacement,
-    /** 本段真實終點。 */
-    val end: MahjongTileWallPlacement,
-    /** 本段播放時間。 */
-    val durationTicks: Int,
-) {
-    init {
-        require(durationTicks > 0) { "Wall motion segment duration must be positive" }
-    }
-}
-
-/** 牌牆路徑規劃的強型別結果。 */
-sealed interface TileWallMotionPathDecision {
-    /**
-     * 已成功建立路徑。
-     *
-     * @property segments 依播放順序排列的非空路徑段。
-     */
-    data class Completed(val segments: List<TileWallMotionSegment>) : TileWallMotionPathDecision {
-        init {
-            require(segments.isNotEmpty()) { "Completed wall motion path must contain at least one segment" }
-        }
-    }
-
-    /**
-     * 輸入無法用安全的單面或相鄰牆角路徑表達。
-     *
-     * @property reason 可供平台診斷的穩定原因。
-     */
-    data class Rejected(val reason: TileWallMotionPathRejection) : TileWallMotionPathDecision
-}
-
-/** 路徑規劃拒絕原因。 */
-enum class TileWallMotionPathRejection {
-    /** 開門來源與最終布局的牌張集合不一致。 */
-    INCONSISTENT_LAYOUT,
-
-    /** 起訖位置同時改變水平位置與垂直層級，無法判斷動作順序。 */
-    MIXED_HORIZONTAL_AND_VERTICAL,
-
-    /** 起訖位置跨越超過一個相鄰牆角。 */
-    NON_ADJACENT_SIDES,
-}
 
 /**
  * 把兩個規則 placement 之間的移動規劃為不穿越桌面的版本無關路徑。

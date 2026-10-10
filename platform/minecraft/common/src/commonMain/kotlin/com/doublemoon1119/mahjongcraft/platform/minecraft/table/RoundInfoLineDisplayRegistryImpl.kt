@@ -1,0 +1,38 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.table
+
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
+
+/** [RoundInfoLineDisplayRegistry] 的記憶體實作。 */
+class RoundInfoLineDisplayRegistryImpl : RoundInfoLineDisplayRegistry {
+    /** 依局況顯示行 key 索引的翻譯資訊。 */
+    private val displays = mutableMapOf<String, RoundInfoLineDisplay>()
+
+    private val providers = mutableMapOf<String, RoundInfoLineProvider>()
+
+    override val registrationKeys: Set<String> get() = displays.keys + providers.keys
+
+    override var isFrozen: Boolean = false
+        private set
+
+    override fun register(key: String, display: RoundInfoLineDisplay) {
+        check(!isFrozen) { "Round info line display registry is frozen" }
+        require(key.isNotBlank()) { "Round info line key must not be blank" }
+        require(displays.putIfAbsent(key, display) == null) { "Duplicate round info line display: $key" }
+    }
+
+    override fun register(ruleModuleId: String, provider: RoundInfoLineProvider) {
+        check(!isFrozen) { "Round info line display registry is frozen" }
+        require(ruleModuleId.isNotBlank()) { "Round info provider rule module ID must not be blank" }
+        require(providers.putIfAbsent(ruleModuleId, provider) == null) {
+            "Duplicate round info provider: $ruleModuleId"
+        }
+    }
+
+    override fun find(key: String): RoundInfoLineDisplay? = displays[key]
+
+    override fun buildLines(ruleModuleId: String, tableState: TableState): List<RoundInfoLine> = providers[ruleModuleId]?.buildLines(tableState).orEmpty()
+
+    override fun freeze() {
+        isFrozen = true
+    }
+}

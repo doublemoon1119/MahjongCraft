@@ -1,32 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.settlement
 
 /**
- * 版面節點量測出來的尺寸。
- *
- * @property width 寬度。
- * @property height 高度。
- */
-data class PresentationNodeSize(val width: Float, val height: Float) {
-    companion object {
-        /** 不佔空間的尺寸，供解析不到內容的節點使用。 */
-        val ZERO = PresentationNodeSize(0f, 0f)
-    }
-}
-
-/**
- * 版面計算取得文字寬度的邊界。
- *
- * 文字寬度只有實際的字型量測得出來，因此由平台實作；解算本身不認識任何字型或繪製型別。
- */
-interface PresentationTextMeasurer {
-    /** 本地化文字的寬度。 */
-    fun measure(text: PresentationValue.TextValue): Float
-
-    /** 已經是最終字串（例如玩家顯示名稱）的寬度。 */
-    fun measurePlain(text: String): Float
-}
-
-/**
  * 宣告式結算版面的量測與配置。
  *
  * 負責把 [PresentationLayout] 樹換算成尺寸與位置：節點量測、主軸空間分配（含權重）、依 arrangement 決定

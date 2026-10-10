@@ -8,23 +8,13 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeating
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import kotlin.math.atan2
 
-/** 局部水平向量，沿用 [MahjongTableSide]／[MahjongTableFacing] 兩段式旋轉合成。 */
-private data class SeatVector(val x: Double, val z: Double)
-
 /**
- * 麻將桌單一座位的世界座標與朝向。
+ * 局部水平向量，沿用 [MahjongTableSide]／[MahjongTableFacing] 兩段式旋轉合成。
  *
- * @property x 置中後的世界 X 座標。
- * @property y 世界 Y 座標，與 controller 同高。
- * @property z 置中後的世界 Z 座標。
- * @property yaw 面向桌子中心（controller）的水平朝向角度。
+ * @property x 局部 X 座標。
+ * @property z 局部 Z 座標。
  */
-data class MahjongSeatPlacement(
-    val x: Double,
-    val y: Double,
-    val z: Double,
-    val yaw: Float,
-)
+private data class SeatVector(val x: Double, val z: Double)
 
 /**
  * 麻將桌四個固定座位的座標計算。
@@ -44,7 +34,15 @@ data class MahjongSeatPlacement(
  * 兩套系統共用同一個旋轉來源，不會再各自累積出不一致的方位。
  */
 object MahjongSeatingTableLayout {
-    /** 依 controller 世界座標與桌子世界朝向，算出四個座位的座標與面向桌子中心的朝向，依 index 逆時針排列。 */
+    /**
+     * 依 controller 世界座標與桌子世界朝向，算出四個座位的座標與面向桌子中心的朝向，依座位 index 排列。
+     *
+     * @param controllerX controller 的世界 X 座標。
+     * @param controllerY controller 的世界 Y 座標。
+     * @param controllerZ controller 的世界 Z 座標。
+     * @param tableFacing 麻將桌的世界朝向。
+     * @return 依座位 index 排列的座位位置與朝向。
+     */
     fun seatPlacements(
         controllerX: Int,
         controllerY: Int,

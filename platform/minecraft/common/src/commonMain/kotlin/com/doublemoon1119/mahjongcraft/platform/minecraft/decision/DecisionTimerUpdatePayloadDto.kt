@@ -3,22 +3,6 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.decision
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
 import kotlinx.serialization.Serializable
 
-/** 玩家目前取得決策權的網路階段。 */
-@Serializable
-enum class PlayerDecisionPhaseDto {
-    /** 玩家正在進行開局準備。 */
-    ROUND_PREPARATION,
-
-    /** 玩家自己的回合。 */
-    OWN_TURN,
-
-    /** 玩家正在回應其他玩家的捨牌。 */
-    DISCARD_REACTION,
-
-    /** 玩家正在回應搶和視窗。 */
-    ROBBING_REACTION,
-}
-
 /** 將流程決策階段轉成網路 DTO。 */
 fun PlayerDecisionPhase.toDto(): PlayerDecisionPhaseDto = when (this) {
     PlayerDecisionPhase.ROUND_PREPARATION -> PlayerDecisionPhaseDto.ROUND_PREPARATION
@@ -34,21 +18,6 @@ fun PlayerDecisionPhaseDto.toDomain(): PlayerDecisionPhase = when (this) {
     PlayerDecisionPhaseDto.DISCARD_REACTION -> PlayerDecisionPhase.DISCARD_REACTION
     PlayerDecisionPhaseDto.ROBBING_REACTION -> PlayerDecisionPhase.ROBBING_REACTION
 }
-
-/**
- * 一次權威決策計時同步的剩餘時間。
- *
- * @property phase 目前決策階段。
- * @property baseRemainingMillis 尚未使用的基本思考時間。
- * @property reserveRemainingMillis 尚未使用的保留思考時間。
- */
-@Serializable
-data class DecisionTimerStatusDto(
-    val phase: PlayerDecisionPhaseDto,
-    val baseRemainingMillis: Long,
-    val reserveRemainingMillis: Long,
-    val prompt: PlayerDecisionPromptDto?,
-)
 
 /**
  * `mahjongcraft:decision_timer_update` S2C 頻道的權威計時 payload。

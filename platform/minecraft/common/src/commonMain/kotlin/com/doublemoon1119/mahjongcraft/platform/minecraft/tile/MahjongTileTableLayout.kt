@@ -24,21 +24,6 @@ import kotlin.math.sqrt
 private data class TileTableVector(val x: Double, val y: Double, val z: Double)
 
 /**
- * 一張牌牆用牌的版本無關世界呈現位置。
- *
- * @property x 世界 X 座標，牌底面中心。
- * @property y 世界 Y 座標，牌底面中心。
- * @property z 世界 Z 座標，牌底面中心。
- * @property yaw 世界水平朝向角度。
- */
-data class MahjongTileWallPlacement(
-    val x: Double,
-    val y: Double,
-    val z: Double,
-    val yaw: Float,
-)
-
-/**
  * 把 [TileWallPosition] 這種與 Minecraft 座標無關的抽象牌牆結構位置，轉換成真實世界座標。
  *
  * 兩段式旋轉合成與 [MahjongDiceTableLayout] 完全同一套慣例：先算出「以局部南側為基準」的向量，再依序旋轉到目標側面、旋轉到桌子世界朝向。

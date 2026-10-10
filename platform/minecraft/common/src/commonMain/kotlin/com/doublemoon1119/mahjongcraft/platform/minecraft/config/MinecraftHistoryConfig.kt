@@ -4,7 +4,8 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.milliseconds
 
-/** 麻將歷史資料記錄與封存設定。
+/**
+ * 麻將歷史資料記錄與封存設定。
  *
  * @property enabled 是否啟用歷史資料記錄；停用會永久停止目前記錄，重新啟用只會記錄之後的新牌局。
  * @property includeAiMatches 是否記錄含有任一 AI 座位的牌局。

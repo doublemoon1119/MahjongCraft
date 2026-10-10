@@ -4,55 +4,6 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import kotlin.uuid.Uuid
 
-/** 麻將桌 controller 的世界水平朝向；避免共用 layout 依賴特定 Minecraft 版本的 Direction。 */
-enum class MahjongTableFacing {
-    /** 朝向世界北方。 */
-    NORTH,
-
-    /** 朝向世界東方。 */
-    EAST,
-
-    /** 朝向世界南方。 */
-    SOUTH,
-
-    /** 朝向世界西方。 */
-    WEST,
-    ;
-
-    companion object {
-        /** 由穩定名稱解析桌面朝向；未知值使用北方作為安全預設。 */
-        fun fromNameOrDefault(name: String?): MahjongTableFacing = entries.firstOrNull { it.name == name } ?: NORTH
-    }
-}
-
-/** 擲骰者相對麻將桌的局部側面；不受桌子在世界中的朝向影響。 */
-enum class MahjongTableSide {
-    /** 麻將桌局部北側。 */
-    NORTH,
-
-    /** 麻將桌局部東側。 */
-    EAST,
-
-    /** 麻將桌局部南側。 */
-    SOUTH,
-
-    /** 麻將桌局部西側。 */
-    WEST,
-}
-
-/**
- * 正式擲骰時單顆骰子的版本無關呈現位置。
- *
- * @property finalPosition 動畫結束後骰子底部中心的世界座標。
- * @property startOffset 動畫起點相對 [finalPosition] 的向量。
- * @property startDelayTicks 相對同次擲骰開始時間的延遲 tick 數。
- */
-data class MahjongDiceTablePlacement(
-    val finalPosition: DiceAnimationVector,
-    val startOffset: DiceAnimationVector,
-    val startDelayTicks: Int,
-)
-
 /**
  * 把座位 index 換算成桌子局部側面：index 0 固定對應局部南側，之後依序旋轉。任何需要「某位座位玩家的
  * 局部側面」的呈現層計算（骰子投入側、座位站立位置、手牌／摸牌位／牌河座位方向、[MahjongTileTableLayout.wallPlacement] 的

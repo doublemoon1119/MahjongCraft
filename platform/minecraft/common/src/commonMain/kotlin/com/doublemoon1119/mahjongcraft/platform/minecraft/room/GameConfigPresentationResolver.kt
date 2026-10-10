@@ -3,18 +3,17 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.room
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 
-/** 一次解析後供 RoomScreen 與聊天 hover 共用的規則設定呈現。 */
-data class ResolvedGameConfigPresentation(
-    val ruleModuleId: String,
-    val definition: GameConfigPresentationDefinition?,
-    val valuesByFieldId: Map<String, GameConfigPresentationValue>,
-)
-
-/** 集中解析規則 ID、schema 與欄位值，避免 GUI 和聊天各自重建同一套判斷。 */
+/**
+ * 集中解析規則 ID、schema 與欄位值，避免 GUI 和聊天各自重建同一套判斷。
+ *
+ * @property presentations 設定呈現定義 registry。
+ * @property modules 規則模組 registry。
+ */
 class GameConfigPresentationResolver(
     private val presentations: GameConfigPresentationRegistry,
     private val modules: MahjongModuleRegistry,
 ) {
+    /** 解析設定的規則呈現。 */
     fun resolve(config: GameConfig): ResolvedGameConfigPresentation {
         val moduleId = modules.getModule(config.ruleConfig).id
         val definition = presentations.find(moduleId)

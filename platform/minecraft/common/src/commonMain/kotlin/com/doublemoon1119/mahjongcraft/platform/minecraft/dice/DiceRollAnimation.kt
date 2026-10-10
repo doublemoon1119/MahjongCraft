@@ -5,33 +5,23 @@ import kotlin.math.ceil
 import kotlin.math.sin
 
 /**
- * 單顆骰子接觸桌面時需要播放的聲音提示。
+ * 一次骰子翻滾動畫的可調整參數。
  *
- * @property tickOffset 相對骰子動畫開始時間的 server tick。
- * @property volume 此次接觸相對音量。
- * @property pitch 由動畫 seed 確定性產生的輕微音高差異。
+ * @property durationTicks 動畫總長度，以 server ticks 表示。
+ * @property startOffsetX 畫面起點相對最終落點的 X 偏移。
+ * @property startOffsetY 畫面起點相對最終落點的 Y 偏移。
+ * @property startOffsetZ 畫面起點相對最終落點的 Z 偏移。
+ * @property tossHeight 拋物線最高額外高度。
+ * @property firstBounceHeight 第一次落地後的彈跳高度。
+ * @property secondBounceHeight 第二次落地後的彈跳高度。
  */
-data class DiceLandingSoundCue(
-    val tickOffset: Int,
-    val volume: Float,
-    val pitch: Float,
-)
-
-/** 一次骰子翻滾動畫的可調整參數。 */
 data class DiceRollAnimationSpec(
-    /** 動畫總長度，以 server ticks 表示。 */
     val durationTicks: Int = DEFAULT_DURATION_TICKS,
-    /** 畫面起點相對最終落點的 X 偏移。 */
     val startOffsetX: Double = -0.65,
-    /** 畫面起點相對最終落點的 Y 偏移。 */
     val startOffsetY: Double = 0.0,
-    /** 畫面起點相對最終落點的 Z 偏移。 */
     val startOffsetZ: Double = 0.0,
-    /** 拋物線最高額外高度。 */
     val tossHeight: Double = 0.45,
-    /** 第一次落地後的彈跳高度。 */
     val firstBounceHeight: Double = 0.10,
-    /** 第二次落地後的彈跳高度。 */
     val secondBounceHeight: Double = 0.035,
 ) {
     init {
@@ -84,21 +74,12 @@ data class DiceRollAnimationSpec(
     }
 }
 
-/** renderer 在指定時間需要套用的視覺位移與額外旋轉。 */
-data class DiceRollAnimationFrame(
-    /** 相對 entity 最終位置的視覺位移。 */
-    val offset: DiceAnimationVector,
-    /** 在最終點數姿態之前套用的額外旋轉。 */
-    val rotation: DiceAnimationQuaternion,
-    /** 限制在 `0～1` 的動畫進度。 */
-    val progress: Double,
-    /** 動畫是否已完成。 */
-    val completed: Boolean,
-)
-
-/** 由 seed 與 server tick 產生可重建骰子翻滾 frame 的純計算器。 */
+/**
+ * 由 seed 與 server tick 產生可重建骰子翻滾 frame 的純計算器。
+ *
+ * @property spec 此動畫使用的時間與幅度參數。
+ */
 class DiceRollAnimation(
-    /** 此動畫使用的時間與幅度參數。 */
     private val spec: DiceRollAnimationSpec = DiceRollAnimationSpec(),
 ) {
     /** 計算指定經過 ticks 的視覺 frame。 */
@@ -222,7 +203,11 @@ class DiceRollAnimation(
     }
 }
 
-/** 跨 Kotlin target 產生相同序列的 SplitMix64 亂數。 */
+/**
+ * 跨 Kotlin target 產生相同序列的 SplitMix64 亂數。
+ *
+ * @param seed 亂數序列的初始狀態。
+ */
 private class DeterministicDiceRandom(seed: Long) {
     /** 目前內部狀態。 */
     private var state: Long = seed

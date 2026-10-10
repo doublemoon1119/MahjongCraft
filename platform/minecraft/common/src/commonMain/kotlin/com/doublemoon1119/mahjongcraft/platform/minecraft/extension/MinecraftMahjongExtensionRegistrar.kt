@@ -93,29 +93,3 @@ object MinecraftMahjongExtensionRegistrar {
     /** 只保留有登記項目的類別。 */
     private fun List<MinecraftPresentationRegistrationSnapshotCategory>.nonEmpty() = filter { it.registrationKeys.isNotEmpty() }
 }
-
-/**
- * [MinecraftMahjongExtensionRegistrar.registerAndFreeze] 依來源分組的登記結果。
- *
- * @property sources 內建映射在前，接著依登記順序排列每個 extension。
- */
-data class MinecraftMahjongExtensionRegistrationResult(
-    val sources: List<MinecraftPresentationRegistrationSource>,
-)
-
-/**
- * 一個來源登記的 Minecraft 呈現映射。
- *
- * @property extensionId 登記這些映射的 extension ID；為 null 時代表內建映射。
- * @property categories 這個來源登記的非空類別。
- */
-data class MinecraftPresentationRegistrationSource(
-    val extensionId: String?,
-    val categories: List<MinecraftPresentationRegistrationSnapshotCategory>,
-)
-
-/** 表示指定 Minecraft extension 無法完成 registry 註冊。 */
-class MinecraftMahjongExtensionRegistrationException(
-    extensionId: String,
-    cause: Throwable,
-) : IllegalStateException("Failed to register Minecraft Mahjong extension: $extensionId", cause)

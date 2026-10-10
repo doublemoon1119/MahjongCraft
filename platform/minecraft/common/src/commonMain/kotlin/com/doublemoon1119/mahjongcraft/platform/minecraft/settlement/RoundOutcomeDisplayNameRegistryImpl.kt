@@ -1,0 +1,27 @@
+package com.doublemoon1119.mahjongcraft.platform.minecraft.settlement
+
+import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
+
+/** [RoundOutcomeDisplayNameRegistry] 的記憶體實作。 */
+class RoundOutcomeDisplayNameRegistryImpl : RoundOutcomeDisplayNameRegistry {
+    private val translations = mutableMapOf<String, String>()
+    override var isFrozen: Boolean = false
+        private set
+    override val registrationKeys: Set<String> get() = translations.keys.toSet()
+
+    override fun register(
+        outcomeId: String,
+        translationKey: String,
+    ) {
+        check(!isFrozen) { "Round outcome display-name registry is frozen" }
+        NamespacedId.requireValid(outcomeId) { "Round outcome ID must be namespaced: $outcomeId" }
+        require(translationKey.isNotBlank()) { "Translation key must not be blank" }
+        require(translations.putIfAbsent(outcomeId, translationKey) == null) { "Duplicate round outcome display name: $outcomeId" }
+    }
+
+    override fun find(outcomeId: String): String? = translations[outcomeId]
+
+    override fun freeze() {
+        isFrozen = true
+    }
+}

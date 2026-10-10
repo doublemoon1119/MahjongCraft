@@ -22,35 +22,3 @@ data class RoundResultPayloadDto(
     val roundContinues: Boolean,
     val players: List<RoundResultPlayerDto>,
 )
-
-/** 結算的種類。 */
-@Serializable
-enum class RoundResultKindDto {
-    /** 和牌，或規則視同和牌的特殊結果。 */
-    WIN,
-
-    /** 流局，包含途中流局。 */
-    DRAW,
-}
-
-/**
- * 單一玩家結算前後的分數與名次。
- *
- * @property playerId 玩家 UUID 字串。
- * @property seatIndex 固定座位 index。
- * @property isAi 是否由 AI 操控。
- * @property previousScore 結算前總分。
- * @property currentScore 結算後總分。
- * @property previousRank 結算前名次，從 1 開始。
- * @property currentRank 結算後名次，從 1 開始。
- */
-@Serializable
-data class RoundResultPlayerDto(
-    val playerId: String,
-    val seatIndex: Int,
-    val isAi: Boolean,
-    val previousScore: Int,
-    val currentScore: Int,
-    val previousRank: Int,
-    val currentRank: Int,
-)

@@ -1,13 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.decision
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
-import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftResourceIds
-
-/** 所有規則共用的決策狀態識別碼。 */
-object BuiltInDecisionStatusIds {
-    /** 和牌資格沒有任何特殊限制，對應 `DiscardReadinessAnalyzer` 的中立預設。 */
-    const val WIN_AVAILABLE: String = "mahjongcraft:win_available"
-}
 
 /**
  * 管理捨牌分析狀態（例如振聽、和牌資格）顯示名稱的凍結式 registry。
@@ -37,47 +30,6 @@ interface DecisionStatusDisplayNameRegistry {
     companion object {
         /** [registrationKeys] 中代表中立預設的規則位置。 */
         const val DEFAULT_KEY: String = "default"
-    }
-}
-
-/** [DecisionStatusDisplayNameRegistry] 的記憶體實作。 */
-class DecisionStatusDisplayNameRegistryImpl : DecisionStatusDisplayNameRegistry {
-    /** 依狀態 ID 索引的中立預設。 */
-    private val defaults = mutableMapOf<String, String>()
-
-    /** 依規則模組與狀態 ID 索引的規則專屬名稱。 */
-    private val byRuleModule = mutableMapOf<Pair<String, String>, String>()
-
-    override val registrationKeys: Set<String>
-        get() = defaults.keys.mapTo(mutableSetOf()) { statusId -> "${DecisionStatusDisplayNameRegistry.DEFAULT_KEY}/$statusId" } +
-            byRuleModule.keys.map { (ruleModuleId, statusId) -> "$ruleModuleId/$statusId" }
-
-    override var isFrozen: Boolean = false
-        private set
-
-    override fun registerDefault(statusId: String, translationKey: String) {
-        check(!isFrozen) { "Decision status display-name registry is frozen" }
-        MinecraftResourceIds.requireValid(statusId) { "Decision status ID must be namespaced: $statusId" }
-        require(translationKey.isNotBlank()) { "Translation key must not be blank" }
-        require(defaults.putIfAbsent(statusId, translationKey) == null) {
-            "Default decision status display name already registered: $statusId"
-        }
-    }
-
-    override fun register(ruleModuleId: String, statusId: String, translationKey: String) {
-        check(!isFrozen) { "Decision status display-name registry is frozen" }
-        MinecraftResourceIds.requireValid(ruleModuleId) { "Rule module ID must be namespaced: $ruleModuleId" }
-        MinecraftResourceIds.requireValid(statusId) { "Decision status ID must be namespaced: $statusId" }
-        require(translationKey.isNotBlank()) { "Translation key must not be blank" }
-        require(byRuleModule.putIfAbsent(ruleModuleId to statusId, translationKey) == null) {
-            "Decision status display name already registered: $ruleModuleId/$statusId"
-        }
-    }
-
-    override fun find(ruleModuleId: String?, statusId: String): String? = ruleModuleId?.let { byRuleModule[it to statusId] } ?: defaults[statusId]
-
-    override fun freeze() {
-        isFrozen = true
     }
 }
 
