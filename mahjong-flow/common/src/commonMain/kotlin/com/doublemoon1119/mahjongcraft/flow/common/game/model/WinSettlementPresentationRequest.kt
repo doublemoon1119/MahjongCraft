@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.model
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.logic.module.WinSettlementResult
 import kotlin.uuid.Uuid
@@ -33,64 +32,6 @@ sealed interface WinSettlementDetailValue {
      * @property tileIds 依規則順序排列的牌 ID。
      */
     data class Tiles(val tileIds: List<Uuid>) : WinSettlementDetailValue
-}
-
-/**
- * 有單位的數值。
- *
- * @property unitId 規則定義的 namespaced 單位 ID，例如日麻的翻、符或役滿倍數。
- * @property amount 數值。
- */
-data class WinSettlementQuantity(val unitId: String, val amount: Int) {
-    init {
-        NamespacedId.requireValid(unitId) { "Win settlement quantity unit ID must be namespaced: $unitId" }
-    }
-}
-
-/**
- * 胡牌詳情的一個條目。
- *
- * @property id 規則定義的 namespaced 條目 ID，例如日麻的役種。
- * @property quantity 條目附帶的數值；沒有數值的條目為 null。
- */
-data class WinSettlementDetailEntry(val id: String, val quantity: WinSettlementQuantity? = null) {
-    init {
-        NamespacedId.requireValid(id) { "Win settlement detail entry ID must be namespaced: $id" }
-    }
-}
-
-/** 不使用字串 Map 的單一規則擴充欄位。 */
-data class WinSettlementDetailField(val id: String, val value: WinSettlementDetailValue) {
-    init {
-        NamespacedId.requireValid(id) { "Win settlement detail field ID must be namespaced: $id" }
-    }
-}
-
-/**
- * 一位贏家的權威胡牌詳情快照。
- *
- * @property playerId 贏家玩家 ID。
- * @property seatIndex 贏家座位序。
- * @property responsiblePlayerId 放銃／被搶槓玩家；自摸或不歸咎特定玩家的特殊結算（例如流局滿貫）為 `null`。
- * @property totalScore 這位贏家本次胡牌獲得的總點數。
- * @property standingTileIds 立牌 ID，依規則的牌序排列，**不含**副露牌；副露牌另外完整列在 [melds]，兩者不得重複。
- * @property melds 已公開的副露。
- * @property winningTileId 胡牌張；特殊結算（同上）沒有胡牌張時為 `null`。
- * @property detailFields 規則專屬的胡牌詳情（例如日麻的翻符、役種），欄位 id 不得重複。
- */
-data class WinSettlementWinnerPresentation(
-    val playerId: Uuid,
-    val seatIndex: Int,
-    val responsiblePlayerId: Uuid?,
-    val totalScore: Int,
-    val standingTileIds: List<Uuid>,
-    val melds: List<MeldPresentation>,
-    val winningTileId: Uuid?,
-    val detailFields: List<WinSettlementDetailField>,
-) {
-    init {
-        require(detailFields.map(WinSettlementDetailField::id).distinct().size == detailFields.size)
-    }
 }
 
 /**

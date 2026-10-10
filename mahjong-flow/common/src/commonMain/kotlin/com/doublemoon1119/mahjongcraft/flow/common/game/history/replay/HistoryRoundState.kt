@@ -1,11 +1,11 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.history.replay
 
-import com.doublemoon1119.mahjongcraft.logic.base.MeldType
-import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.table.MatchRoundPosition
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 
-/** 歷史局桌況。
+/**
+ * 歷史局桌況。
+ *
  * @property identity 對局識別資料。
  * @property roundNumber 這一局在整場對局中的順序號，從 1 開始；連莊或續局也會遞增。
  * @property position 局內位置。
@@ -42,51 +42,4 @@ data class HistoryRoundState(
     val hasPendingReaction: Boolean,
     val hasPendingRobbingReaction: Boolean,
     val outcome: HistoryRoundOutcome?,
-)
-
-/** 歷史玩家桌況。
- * @property initialSeatIndex 初始座位。
- * @property handTiles 立牌。
- * @property melds 副露。
- * @property lastDrawn 最近摸牌。
- * @property discards 捨牌。
- * @property score 分數。
- * @property seatWind 保存的座風。
- * @property playerRuleState 規則公開資訊。
- * @property setAsideTiles 移出手牌、公開擺在桌上的牌（例如三人日麻拔出的北），依移出順序排列；沒有時為空清單。
- */
-data class HistoryReplayPlayerState(
-    val initialSeatIndex: Int,
-    val handTiles: List<HistoryTileReference>,
-    val melds: List<HistoryReplayMeld>,
-    val lastDrawn: HistoryTileReference?,
-    val discards: List<HistoryReplayDiscard>,
-    val score: Int,
-    val seatWind: Wind,
-    val playerRuleState: HistoryReplayRuleInformation?,
-    val setAsideTiles: List<HistoryTileReference>,
-)
-
-/** 歷史副露。
- * @property type 副露種類。
- * @property tiles 副露牌。
- * @property sourceTile 來源牌。
- * @property sourceDirection 來源方向。
- */
-data class HistoryReplayMeld(
-    val type: MeldType,
-    val tiles: List<HistoryTileReference>,
-    val sourceTile: HistoryTileReference?,
-    val sourceDirection: RelativeDirection?,
-)
-
-/** 歷史捨牌。
- * @property tile 捨出牌。
- * @property isTaken 是否已被副露取走。
- * @property markers 規則提供的 namespaced 捨牌標記。
- */
-data class HistoryReplayDiscard(
-    val tile: HistoryTileReference,
-    val isTaken: Boolean,
-    val markers: Set<String>,
 )

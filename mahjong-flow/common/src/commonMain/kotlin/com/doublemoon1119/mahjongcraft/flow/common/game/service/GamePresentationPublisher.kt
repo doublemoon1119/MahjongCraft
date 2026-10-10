@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.service
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinSettlementDetail
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.MatchSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationRequest
@@ -9,7 +8,6 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
-import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
@@ -18,27 +16,6 @@ import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import kotlin.uuid.Uuid
-
-/**
- * 供 [GamePresentationPublisher.publishPlayerTilesUpdated] 使用的單一副露資料。
- *
- * 只帶擺放副露需要的資訊（種類、牌 ID、鳴取的牌與來源方位），不帶 [Meld] 的牌面；牌面由各玩家的可見性快照決定。
- *
- * @property type 副露種類。
- * @property tileIds 組成這組副露的所有牌 ID，依規則牌序排列；加槓補上的第四張固定排在最後。鳴取的牌由 [calledTileId]
- * 指出，不靠位置辨識。
- * @property calledTileId 鳴取自他家的牌 ID；暗槓沒有鳴牌來源時為 `null`。
- * @property sourceDirection 鳴取來源的相對方位；暗槓沒有鳴牌來源時為 [RelativeDirection.Self]。
- * @property allTilesFaceDown 只在 [type] 為 [MeldType.CLOSED_KAN] 時有意義：規則是否連暗槓的牌都不公開；公開暗槓牌的規則
- * （例如日麻）為 `false`。其餘副露種類固定為 `false`。
- */
-data class MeldPresentation(
-    val type: MeldType,
-    val tileIds: List<Uuid>,
-    val calledTileId: Uuid?,
-    val sourceDirection: RelativeDirection,
-    val allTilesFaceDown: Boolean,
-)
 
 /**
  * 剝除 [Meld] 的牌面，只保留 [MeldPresentation] 需要的資訊。
@@ -308,33 +285,4 @@ interface GamePresentationPublisher {
      * 分別呼叫的那兩個方法保留給不成對的呼叫點（例如流局特殊結果只需要結算）。
      */
     fun publishWinPresentation(gameId: Uuid, request: WinPresentationRequest) = Unit
-}
-
-/**
- * 一次胡牌的完整呈現請求。
- *
- * 「提供哪些內容」與「是否暫停其他玩家」是兩件獨立的事：
- * - 內容：[celebration] 與 [settlement]；中途胡牌時結算的資訊範圍見 [ContinuingWinSettlementDetail]。
- * - 是否暫停：[roundContinues] 為 `false` 時一律暫停；為 `true` 時由平台決定，見下方說明。
- *
- * @property winnerPlayerIds 這次一起成立的所有贏家；[roundContinues] 時平台須依此收尾這些玩家的手牌呈現。
- * @property celebration 胡牌演出請求；一律呈現、不可省略，這是其他玩家得知「這位玩家胡了」的依據。
- * @property settlement 結算請求。
- * @property roundContinues 本局是否在這次胡牌之後仍然繼續（已完成玩家退出、其他人續打）。
- *
- * `false`（本局就此結束）時，整段呈現期間其他玩家都在等待。
- *
- * `true` 時只有平台認為需要所有人觀看的段落才暫停遊戲，例如依展示理由播放、且要求所有人看完的展示；暫停期間停止
- * 玩家輸入、AI、強制自動操作與決策計時器。其餘段落（包括整個結算）不得阻擋仍在本局中的玩家。不論是否暫停，換局都會
- * 等整段呈現結束；整段結束後，平台須把贏家的手牌呈現收尾（見 `GamePresentationBusyGate.isPresentingContinuingWin`）。
- */
-data class WinPresentationRequest(
-    val winnerPlayerIds: Set<Uuid>,
-    val celebration: WinCelebrationRequest,
-    val settlement: WinSettlementPresentationRequest,
-    val roundContinues: Boolean,
-) {
-    init {
-        require(winnerPlayerIds.isNotEmpty()) { "A win presentation must have at least one winner" }
-    }
 }

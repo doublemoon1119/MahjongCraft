@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.history
 
-import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
@@ -8,83 +7,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
-import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
-import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
 import kotlin.uuid.Uuid
-
-/**
- * 外層表示欄位已變更，與沒有變化的 null 外層區別。
- *
- * @property value 欄位的新值；欄位本身可空時，此值也可以為 null。
- */
-data class HistoryChangedValue<T>(
-    val value: T,
-)
-
-/**
- * 活牌牆僅從兩端移除牌張的變化。
- *
- * @property removedFront 從摸牌端移除的張數。
- * @property removedBack 從另一端移除的張數。
- */
-data class HistoryWallChange(
-    val removedFront: Int,
-    val removedBack: Int,
-) {
-    init {
-        require(removedFront >= 0 && removedBack >= 0)
-    }
-
-    /** 從前一個牌牆重建留下的牌序。 */
-    fun applyTo(before: TileWall): TileWall {
-        val tiles = before.getAllTiles()
-        require(removedFront + removedBack <= tiles.size) { "History wall removal exceeds source wall" }
-        return TileWall(tiles.subList(removedFront, tiles.size - removedBack))
-    }
-}
-
-/**
- * 實體牌牆位置的局部變化。
- *
- * @property removedTileIds 離開牌牆的牌 UUID。
- * @property updatedPlacements 位置或方向改變的牌 UUID 與新位置。
- */
-data class HistoryWallLayoutChange(
-    val removedTileIds: Set<Uuid>,
-    val updatedPlacements: Map<Uuid, TileWallPlacement>,
-) {
-    /** 將局部變化套用到前一個布局。 */
-    fun applyTo(before: TileWallPhysicalLayout): TileWallPhysicalLayout = TileWallPhysicalLayout(
-        before.placements.filterKeys { it !in removedTileIds } + updatedPlacements,
-    )
-}
-
-/**
- * 玩家狀態與累積動作紀錄的局部變化。
- *
- * @property playerWithoutHistory 交易後玩家狀態；[MahjongPlayer.actionHistory] 固定為空，避免反覆保存累積紀錄。
- * @property retainedActionCount 從交易前動作紀錄保留的前綴張數；清空紀錄時為零。
- * @property appendedActions 本次交易新追加的動作。
- */
-data class HistoryPlayerChange(
-    val playerWithoutHistory: MahjongPlayer,
-    val retainedActionCount: Int,
-    val appendedActions: List<GameAction>,
-) {
-    init {
-        require(playerWithoutHistory.actionHistory.isEmpty()) { "History player change must not contain cumulative actions" }
-        require(retainedActionCount >= 0) { "Retained history action count must not be negative" }
-    }
-
-    /** 使用前一位玩家的動作紀錄重建交易後玩家狀態。 */
-    fun applyTo(before: MahjongPlayer): MahjongPlayer {
-        require(before.id == playerWithoutHistory.id) { "History player change references another player" }
-        require(retainedActionCount <= before.actionHistory.size) { "History action prefix exceeds source history" }
-        return playerWithoutHistory.copy(
-            actionHistory = before.actionHistory.take(retainedActionCount) + appendedActions,
-        )
-    }
-}
 
 /**
  * 一筆權威交易造成的可重建桌況差異。
@@ -198,29 +121,4 @@ data class HistoryTableChange(
             return HistoryWallChange(first, old.size - first - new.size)
         }
     }
-}
-
-/**
- * 同一權威交易中唯一的桌況結果。
- */
-sealed interface HistoryTableResult {
-    /**
-     * 可根據前一桌況還原的變化。
-     *
-     * @property change 本次交易的桌況差異。
-     */
-    data class Change(
-        val change: HistoryTableChange,
-    ) : HistoryTableResult
-
-    /**
-     * 無法安全表示結構變化時的完整檢查點。
-     *
-     * @property reasonId 選用完整檢查點的穩定原因 ID。
-     * @property tableState 交易提交後的完整桌況。
-     */
-    data class Checkpoint(
-        val reasonId: String,
-        val tableState: TableState,
-    ) : HistoryTableResult
 }

@@ -2,79 +2,39 @@ package com.doublemoon1119.mahjongcraft.flow.common.game.history.replay
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailEntry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
-import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
-import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 
 /** 歷史胡牌詳情值；與對局中的胡牌詳情相同，只保存規則算出的語意資料。 */
 sealed interface HistoryWinDetailValue {
-    /** 有單位的數值。
+    /**
+     * 有單位的數值。
+     *
      * @property quantities 依規則順序排列的數值。
      */
     data class Quantities(val quantities: List<WinSettlementQuantity>) : HistoryWinDetailValue
 
-    /** 依規則順序排列的條目。
+    /**
+     * 依規則順序排列的條目。
+     *
      * @property entries 條目列表。
      */
     data class Entries(val entries: List<WinSettlementDetailEntry>) : HistoryWinDetailValue
 
-    /** 局內牌參照集合。
+    /**
+     * 局內牌參照集合。
+     *
      * @property tiles 局內牌參照列表。
      */
     data class Tiles(val tiles: List<HistoryTileReference>) : HistoryWinDetailValue
 }
-
-/** 歷史胡牌詳情欄位。
- * @property id 規則專屬欄位識別碼。
- * @property value 欄位值。
- */
-data class HistoryWinDetailField(val id: String, val value: HistoryWinDetailValue)
-
-/** 歷史單一贏家詳情。
- * @property seatIndex 贏家座位。
- * @property detailFields 規則專屬詳情欄位。
- * @property hand 保存結算順序的立牌與和牌張；未記錄時為 null。
- */
-data class HistoryWinnerDetails(
-    val seatIndex: Int,
-    val detailFields: List<HistoryWinDetailField>,
-    val hand: HistoryReplayWinningHand? = null,
-)
-
-/** 歷史規則專屬公開資訊。
- * @property typeKey 穩定種類識別碼。
- * @property summary 不含私有命令或原始資料的公開摘要；種類未註冊時為 null，表示資訊不可取得。
- */
-data class HistoryReplayRuleInformation(val typeKey: String, val summary: String?)
-
-/** 歷史局結算結果。
- * @property reasonId 結算原因識別碼。
- * @property beneficiarySeats 保存的受益玩家座位，不假設結果必為和牌。
- * @property scoresBySeat 依座位索引排列的分數。
- * @property scoreChangesBySeat 該次結算相對於交易前的分數變化；讀取器依交易前後分數補上，補上前為空。
- * @property winnerDetails 各贏家保存的規則專屬詳情；沒有胡牌詳情的結算（例如流局）為空。
- * @property hasEarlierWinSettlement 是否已有較早的胡牌結算事實。
- * @property classification 保存的局結算分類；整場完成事實不含此資料。
- * @property responsibleSeats 保存的責任玩家座位；整場完成事實不含此資料。
- * @property transitionDirective 保存的莊家推進決策；整場完成事實不含此資料。
- */
-data class HistoryRoundOutcome(
-    val reasonId: String,
-    val beneficiarySeats: List<Int>,
-    val scoresBySeat: Map<Int, Int>,
-    val classification: RoundCompletionClassification? = null,
-    val responsibleSeats: List<Int> = emptyList(),
-    val transitionDirective: RoundTransitionDirective? = null,
-    val scoreChangesBySeat: Map<Int, Int> = emptyMap(),
-    val winnerDetails: List<HistoryWinnerDetails> = emptyList(),
-    val hasEarlierWinSettlement: Boolean = false,
-)
 
 /** 歷史語意事實。 */
 sealed interface HistoryReplayFact {
     /** 事實種類識別碼。 */
     val typeKey: String
 
-    /** 已接受動作。
+    /**
+     * 已接受動作。
+     *
      * @property typeKey 動作事實種類。
      * @property actorSeat 發起者座位。
      * @property actionType 動作種類。
@@ -91,7 +51,9 @@ sealed interface HistoryReplayFact {
         val extensionTypeId: String?,
     ) : HistoryReplayFact
 
-    /** 反應事實。
+    /**
+     * 反應事實。
+     *
      * @property typeKey 事實種類。
      * @property actionType 動作種類。
      * @property resolvedActorSeat 裁定玩家座位。
@@ -102,7 +64,9 @@ sealed interface HistoryReplayFact {
         val resolvedActorSeat: Int?,
     ) : HistoryReplayFact
 
-    /** 開局準備事實。
+    /**
+     * 開局準備事實。
+     *
      * @property typeKey 事實種類。
      * @property stepId 步驟識別碼。
      * @property stepIndex 步驟索引。
@@ -115,13 +79,17 @@ sealed interface HistoryReplayFact {
         val nextStepId: String?,
     ) : HistoryReplayFact
 
-    /** 完成事實。
+    /**
+     * 完成事實。
+     *
      * @property typeKey 事實種類。
      * @property outcome 局結算結果。
      */
     data class Completion(override val typeKey: String, val outcome: HistoryRoundOutcome?) : HistoryReplayFact
 
-    /** 已完成的規則效果。
+    /**
+     * 已完成的規則效果。
+     *
      * @property typeKey 事實種類。
      * @property reasonId 規則效果識別碼。
      * @property outcome 該效果同時完成本局時保存的結算結果。
@@ -132,7 +100,9 @@ sealed interface HistoryReplayFact {
         val outcome: HistoryRoundOutcome?,
     ) : HistoryReplayFact
 
-    /** 未知擴充事實，只保留識別碼與可驗證的公開參照，不保留私有 payload。
+    /**
+     * 未知擴充事實，只保留識別碼與可驗證的公開參照，不保留私有 payload。
+     *
      * @property typeKey 穩定種類識別碼。
      * @property actorSeat 已知行為者的初始座位。
      * @property directTiles 已知直接涉及的局內牌參照。

@@ -42,6 +42,3 @@ sealed interface GameCommand {
     /** 以具體原因宣告途中流局的命令。 */
     data class DeclareExhaustiveDraw(val reason: ExhaustiveDrawReason) : GameCommand
 }
-
-/** 規則 extension 可提供的強型別遊戲命令。 */
-interface ExtensionGameCommand

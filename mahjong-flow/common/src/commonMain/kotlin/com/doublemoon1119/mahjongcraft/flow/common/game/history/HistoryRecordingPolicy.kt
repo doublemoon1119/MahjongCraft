@@ -24,33 +24,3 @@ data class HistoryRecordingPolicy(
         else -> HistoryRecordingDecision.RECORDING
     }
 }
-
-/** 每場固定的歷史記錄結果，名稱亦為持久化識別值。 */
-enum class HistoryRecordingDecision {
-    /** 允許依權威交易追加事件。 */
-    RECORDING,
-
-    /** 開局時總開關關閉，整場不建立事件。 */
-    EXCLUDED_CONFIG_DISABLED,
-
-    /** 開局包含被政策排除的 AI 座位。 */
-    EXCLUDED_AI,
-
-    /** 已開始的對局沒有可確認的開局記錄，不從中途建立歷史。 */
-    EXCLUDED_NO_OPENING,
-
-    /** 原本正在記錄，因總開關關閉而永久停止該場追加。 */
-    STOPPED_CONFIG_DISABLED,
-
-    /** 歷史儲存端容量不足或不可用，該場次保留缺口並停止追加。 */
-    STOPPED_STORAGE_UNAVAILABLE,
-
-    /** 已由封存清理標記為不可再追加的場次。 */
-    STOPPED_PRUNED,
-
-    /** 隔離歷史來源已中止，保留部分事件而不重啟生成。 */
-    STOPPED_TRANSFER_INTERRUPTED,
-
-    /** 對局被正常流程以外的方式修改（例如開發用指令），之後的事件不再對應正常的對局過程；保留缺口並停止追加。 */
-    STOPPED_EXTERNALLY_MODIFIED,
-}

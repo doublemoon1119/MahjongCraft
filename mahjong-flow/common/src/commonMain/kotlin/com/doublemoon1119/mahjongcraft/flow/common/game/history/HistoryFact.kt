@@ -3,7 +3,6 @@ package com.doublemoon1119.mahjongcraft.flow.common.game.history
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSubmission
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailField
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
@@ -156,80 +155,4 @@ sealed interface HistoryFact {
 
     /** 已結束的 Game 被移出權威狀態並返回 Room。 */
     data object ReturnedToRoom : HistoryFact
-}
-
-/**
- * 已解析的胡牌公開詳情快照；只保存規則中立的語意欄位，不保存規則領域物件。
- *
- * @property playerId 胡牌玩家 UUID。
- * @property detailFields 已解析的翻符、役種或其他規則擴充欄位。
- * @property hand 結算時的立牌順序及和牌張；未記錄時為 null。
- */
-data class HistoryWinDetails(
-    val playerId: Uuid,
-    val detailFields: List<WinSettlementDetailField>,
-    val hand: HistoryWinningHand? = null,
-) {
-    init {
-        require(detailFields.map(WinSettlementDetailField::id).distinct().size == detailFields.size)
-    }
-}
-
-/**
- * 動作提交後的權威結果，不從玩家通知或各人本局 action history 回推。
- *
- * @property affectedTileIds 動作直接涉及的牌 UUID。
- * @property newlyRevealedTileIds 本次交易新增公開的牌 UUID。
- * @property remainingWallTileCount 提交後活牌牆的剩餘張數。
- * @property reservedWallTileIds 提交後保留牌區的牌 UUID，依規則順序排列。
- * @property scoresByPlayerId 提交後各玩家分數。
- * @property nextPlayerId 提交後輪到的玩家 UUID。
- */
-data class HistoryActionResult(
-    val affectedTileIds: List<Uuid>,
-    val newlyRevealedTileIds: List<Uuid>,
-    val remainingWallTileCount: Int,
-    val reservedWallTileIds: List<Uuid>,
-    val scoresByPlayerId: Map<Uuid, Int>,
-    val nextPlayerId: Uuid,
-)
-
-/**
- * 在權威交易內產生、尚未指派序號與時間戳的歷史事件。
- *
- * @property actorPlayerId 發起動作的玩家；系統或規則事件為 null。
- * @property fact 已提交的權威事實。
- */
-data class HistoryEventDraft(
-    val actorPlayerId: Uuid?,
-    val fact: HistoryFact,
-)
-
-/**
- * 保存於權威 outbox、供後續 writer 依場次與序號組成的穩定鍵重試的事件。
- *
- * @property matchId 此次開局的獨立場次 UUID，同一場地重開時不同。
- * @property venueId 場地 UUID，同一場地重開時保持不變。
- * @property roundNumber 此場次內的局數。
- * @property sequence 此場次內單調遞增的事件序號，從 1 開始。
- * @property transactionFirstSequence 同一權威交易內第一筆事件的序號。
- * @property occurredAtEpochMillis 事件提交時的 UTC 毫秒時間戳，不用於排序。
- * @property actorPlayerId 發起動作的玩家；系統或規則事件為 null。
- * @property fact 已提交的權威事實。
- */
-data class HistoryOutboxEvent(
-    val matchId: Uuid,
-    val venueId: Uuid,
-    val roundNumber: Int,
-    val sequence: Long,
-    val transactionFirstSequence: Long = sequence,
-    val occurredAtEpochMillis: Long,
-    val actorPlayerId: Uuid?,
-    val fact: HistoryFact,
-) {
-    init {
-        require(sequence > 0L) { "History sequence must be positive" }
-        require(transactionFirstSequence in 1L..sequence) { "History transaction sequence must not exceed event sequence" }
-        require(roundNumber > 0) { "History round number must be positive" }
-    }
 }

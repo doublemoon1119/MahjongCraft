@@ -3,29 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.common.game.model
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
-import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 import kotlin.uuid.Uuid
-
-/** 規則中立的 round outcome 完整識別碼。 */
-object BuiltInRoundOutcomeIds {
-    /** 一般自摸。 */
-    val TSUMO: String = MahjongCraftMetadata.id("tsumo")
-
-    /** 一般榮和（含搶槓）。 */
-    val RON: String = MahjongCraftMetadata.id("ron")
-}
-
-/** 第三方 outcome 可攜帶、並由 extension DTO registry 負責序列化的強型別詳細資料。 */
-interface ExtensionRoundOutcomeDetail
-
-/** 特殊 round outcome 在後續呈現流程中的規則中立分類。 */
-enum class RoundOutcomePresentationClassification {
-    /** 外觀與胡牌結算等價，但不代表核心需要理解該規則的計分細節。 */
-    WIN_EQUIVALENT,
-
-    /** 外觀與流局結算等價。 */
-    EXHAUSTIVE_DRAW_EQUIVALENT,
-}
 
 /**
  * 規則 resolver 產生的強型別特殊本局結果。
