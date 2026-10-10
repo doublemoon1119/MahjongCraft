@@ -1,0 +1,71 @@
+package com.doublemoon1119.mahjongcraft.flow.persistence.format.rule
+
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.RelativeDirectionPersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toDomain
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toPersistenceDto
+import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoLiability
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoYaku
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
+
+/**
+ * 將 [RiichiPlayerState] 轉換成 persistence DTO。
+ *
+ * @return 轉換後的日麻玩家規則狀態 persistence DTO。
+ */
+fun RiichiPlayerState.toPersistenceDto(): RiichiPlayerStatePersistenceDto = RiichiPlayerStatePersistenceDto(
+    riichiTile = riichiTile?.toPersistenceDto(),
+    doubleRiichiTile = doubleRiichiTile?.toPersistenceDto(),
+    isIppatsu = isIppatsu,
+    paoLiability = paoLiability?.toPersistenceDto(),
+    isPermanentlyFuriten = isPermanentlyFuriten,
+    nukiDoraTiles = nukiDoraTiles.map { it.toPersistenceDto() },
+)
+
+/**
+ * 將日麻玩家規則狀態 persistence DTO 還原成 [RiichiPlayerState]。
+ *
+ * @return 還原後的日麻玩家規則狀態。
+ */
+fun RiichiPlayerStatePersistenceDto.toDomain(): RiichiPlayerState = RiichiPlayerState(
+    riichiTile = riichiTile?.toDomain(),
+    doubleRiichiTile = doubleRiichiTile?.toDomain(),
+    isIppatsu = isIppatsu,
+    paoLiability = paoLiability?.toDomain(),
+    isPermanentlyFuriten = isPermanentlyFuriten,
+    nukiDoraTiles = nukiDoraTiles.map { it.toDomain() },
+)
+
+/** 將 [PaoLiability] 轉換成 persistence DTO。 */
+private fun PaoLiability.toPersistenceDto(): PaoLiabilityPersistenceDto = PaoLiabilityPersistenceDto(
+    yaku = when (yaku) {
+        PaoYaku.Daisangen -> PaoYakuPersistenceDto.DAISANGEN
+        PaoYaku.Daisuushii -> PaoYakuPersistenceDto.DAISUUSHII
+    },
+    direction = direction.toPersistenceDto(),
+)
+
+/** 將包牌責任 persistence DTO 還原成 [PaoLiability]。 */
+private fun PaoLiabilityPersistenceDto.toDomain(): PaoLiability = PaoLiability(
+    yaku = when (yaku) {
+        PaoYakuPersistenceDto.DAISANGEN -> PaoYaku.Daisangen
+        PaoYakuPersistenceDto.DAISUUSHII -> PaoYaku.Daisuushii
+    },
+    direction = direction.toDomain(),
+)
+
+/** 將 [RelativeDirection] 轉換成 persistence DTO。 */
+private fun RelativeDirection.toPersistenceDto(): RelativeDirectionPersistenceDto = when (this) {
+    RelativeDirection.Left -> RelativeDirectionPersistenceDto.LEFT
+    RelativeDirection.Across -> RelativeDirectionPersistenceDto.ACROSS
+    RelativeDirection.Right -> RelativeDirectionPersistenceDto.RIGHT
+    RelativeDirection.Self -> RelativeDirectionPersistenceDto.SELF
+}
+
+/** 將 [RelativeDirectionPersistenceDto] 還原成 [RelativeDirection]。 */
+private fun RelativeDirectionPersistenceDto.toDomain(): RelativeDirection = when (this) {
+    RelativeDirectionPersistenceDto.LEFT -> RelativeDirection.Left
+    RelativeDirectionPersistenceDto.ACROSS -> RelativeDirection.Across
+    RelativeDirectionPersistenceDto.RIGHT -> RelativeDirection.Right
+    RelativeDirectionPersistenceDto.SELF -> RelativeDirection.Self
+}

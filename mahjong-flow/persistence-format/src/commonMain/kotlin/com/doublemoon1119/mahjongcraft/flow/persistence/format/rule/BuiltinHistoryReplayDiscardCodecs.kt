@@ -19,7 +19,9 @@ object BuiltinHistoryReplayDiscardCodecs {
     /** Taiwan 牌河 codec。 */
     val taiwan = HistoryReplayProjectionCodec<List<HistoryReplayDiscard>> { value, context -> decode(value, context, false) }
 
-    /** 轉換內建規則牌河的索引與公開標記，不恢復牌 UUID。
+    /**
+     * 轉換內建規則牌河的索引與公開標記，不恢復牌 UUID。
+     *
      * @param value 內部牌河 payload。
      * @param context 局內索引與預算。
      * @param riichi 是否讀取日麻專屬宣告標記。

@@ -5,7 +5,9 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 
-/** 讀取 Replay 時集中執行資源上限與取消檢查的內部記帳器。
+/**
+ * 讀取 Replay 時集中執行資源上限與取消檢查的內部記帳器。
+ *
  * @property limits 每次獨立讀取的資源上限。
  * @property checkCancellation 檢查執行作業是否已取消；取消例外直接傳播。
  */
@@ -35,7 +37,9 @@ internal class ReplayReadBudget(
         checkCancellation()
     }
 
-    /** 記帳指定數量的工作單位並定期檢查取消狀態。
+    /**
+     * 記帳指定數量的工作單位並定期檢查取消狀態。
+     *
      * @param units 要記帳的工作單位數。
      */
     fun charge(units: Long = 1L) {
@@ -49,7 +53,9 @@ internal class ReplayReadBudget(
         }
     }
 
-    /** 驗證輸入 JSON 的節點與深度限制。
+    /**
+     * 驗證輸入 JSON 的節點與深度限制。
+     *
      * @param element 待檢查的輸入 JSON 樹。
      */
     fun inspectInput(element: JsonElement) {
@@ -74,7 +80,9 @@ internal class ReplayReadBudget(
         }
     }
 
-    /** 驗證投影 JSON 的存活節點與深度；既有字串不重複記為展開配置。
+    /**
+     * 驗證投影 JSON 的存活節點與深度；既有字串不重複記為展開配置。
+     *
      * @param element 待檢查的投影 JSON 樹。
      */
     fun inspectProjection(element: JsonElement) {
@@ -100,7 +108,9 @@ internal class ReplayReadBudget(
         }
     }
 
-    /** 驗證牌索引並記帳一個牌參照。
+    /**
+     * 驗證牌索引並記帳一個牌參照。
+     *
      * @param index 牌種索引。
      * @param catalogSize 牌種目錄大小。
      * @return 原索引。
@@ -111,7 +121,9 @@ internal class ReplayReadBudget(
         return index
     }
 
-    /** 驗證座位索引並記帳一個玩家座位。
+    /**
+     * 驗證座位索引並記帳一個玩家座位。
+     *
      * @param index 座位索引。
      * @param seatCount 座位數。
      * @return 原索引。
@@ -122,7 +134,9 @@ internal class ReplayReadBudget(
         return index
     }
 
-    /** 記帳一個展開字串的 UTF-8 大小。
+    /**
+     * 記帳一個展開字串的 UTF-8 大小。
+     *
      * @param value 待計算大小的字串。
      */
     fun expandedString(value: String) {
@@ -164,7 +178,9 @@ internal class ReplayReadBudget(
         expandedNodes = checkedAdd(expandedNodes, 1L)
     }
 
-    /** 在推入子節點前檢查待處理節點數不會超過輸入上限。
+    /**
+     * 在推入子節點前檢查待處理節點數不會超過輸入上限。
+     *
      * @param stackSize 目前堆疊中的節點數。
      * @param childCount 即將推入的子節點數。
      * @param maximumNodes 此遍歷允許的節點上限。
@@ -174,7 +190,9 @@ internal class ReplayReadBudget(
         if (pending > maximumNodes) throw ReplayReadException(ReplayReadError.LIMIT_EXCEEDED)
     }
 
-    /** 執行不溢位的非負整數加法。
+    /**
+     * 執行不溢位的非負整數加法。
+     *
      * @param left 左運算元。
      * @param right 右運算元。
      * @return 加法結果。
@@ -184,14 +202,18 @@ internal class ReplayReadBudget(
         return left + right
     }
 
-    /** 投影遍歷的一個堆疊框架。
+    /**
+     * 投影遍歷的一個堆疊框架。
+     *
      * @property element 框架對應的 JSON 節點。
      * @property depth 節點在樹中的深度。
      */
     private data class ProjectionFrame(val element: JsonElement, val depth: Int)
 }
 
-/** 讀取格式或限制失敗時使用的內部例外。
+/**
+ * 讀取格式或限制失敗時使用的內部例外。
+ *
  * @property error 有型別的失敗原因。
  */
 internal class ReplayReadException(val error: ReplayReadError) : IllegalArgumentException(error.message)

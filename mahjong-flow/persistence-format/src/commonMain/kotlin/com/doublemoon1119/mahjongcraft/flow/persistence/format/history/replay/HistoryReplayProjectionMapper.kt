@@ -38,11 +38,13 @@ import kotlinx.serialization.json.JsonPrimitive
 
 /**
  * 將已驗證的索引投影轉為歷史讀模型，不還原權威規則命令。
+ *
  * @property registry 規則專屬公開資料的明確解碼器。
  */
 internal class HistoryReplayProjectionMapper(private val registry: HistoryReplayProjectionRegistry) {
     /**
      * 映射選取位置的唯一桌況。
+     *
      * @param projection 已還原桌況。
      * @param identity header 玩家身分。
      * @param roundNumber 這一局在整場對局中的順序號；連莊時與 [HistoryRoundState.roundPosition] 的賽程局數不同。
@@ -79,6 +81,7 @@ internal class HistoryReplayProjectionMapper(private val registry: HistoryReplay
 
     /**
      * 依序映射事實，不公開擴充的私有 payload。
+     *
      * @param facts 解碼後的語意事實。
      * @param actorSeats 與事實一對一的行為者。
      * @param identity 玩家身分。
@@ -135,6 +138,7 @@ internal class HistoryReplayProjectionMapper(private val registry: HistoryReplay
 
     /**
      * 映射具有明確初始座位的玩家。
+     *
      * @param value 玩家投影。
      * @param context 索引驗證上下文。
      * @return 玩家歷史桌況。
@@ -163,6 +167,7 @@ internal class HistoryReplayProjectionMapper(private val registry: HistoryReplay
 
     /**
      * 經註冊 codec 從玩家規則狀態取出移出手牌的牌；沒有規則狀態或未註冊時為空清單。
+     *
      * @param value 可為 null 的 typed envelope。
      * @param context 解碼預算與索引。
      * @return 依移出順序排列的牌參照。
@@ -176,6 +181,7 @@ internal class HistoryReplayProjectionMapper(private val registry: HistoryReplay
 
     /**
      * 保留副露牌順序、來源牌與來源方向。
+     *
      * @param value 副露投影。
      * @param context 索引驗證上下文。
      * @return 型別化副露。
@@ -204,6 +210,7 @@ internal class HistoryReplayProjectionMapper(private val registry: HistoryReplay
 
     /**
      * 只經註冊 codec 公開規則資料，未註冊資料不可取得。
+     *
      * @param value 可為 null 的 typed envelope。
      * @param context 解碼預算與索引。
      * @return 可用公開資料或 null。
@@ -217,6 +224,7 @@ internal class HistoryReplayProjectionMapper(private val registry: HistoryReplay
 
     /**
      * 讀取保存的結算摘要，不重新計分。
+     *
      * @param value 完成摘要。
      * @param context 座位驗證上下文。
      * @param savedWinnerDetails 同一結算已保存的逐位和牌明細；未提供時不補造內容。
@@ -238,6 +246,7 @@ internal class HistoryReplayProjectionMapper(private val registry: HistoryReplay
 
     /**
      * 將保存的和牌欄位轉成局內座位與牌參照；缺少欄位時回傳空清單。
+     *
      * @param value 已保存的逐位明細陣列。
      * @param context 座位與牌參照驗證上下文。
      * @return 保留原順序的和牌明細。
@@ -269,6 +278,7 @@ internal class HistoryReplayProjectionMapper(private val registry: HistoryReplay
 
     /**
      * 將和牌交易事實投影成沒有重複分數表的結算結果。
+     *
      * @param value 已保存的和牌交易事實。
      * @param context 座位與牌參照驗證上下文。
      * @return 分數留待交易投影補齊的和牌結果。
@@ -287,6 +297,7 @@ internal class HistoryReplayProjectionMapper(private val registry: HistoryReplay
 
     /**
      * 將持久化和牌值轉成不含 UUID 的歷史明細值。
+     *
      * @param value 已保存的明細值。
      * @param context 座位與牌參照驗證上下文。
      * @return 有單位數值、牌參照或有序條目。
@@ -308,6 +319,7 @@ internal class HistoryReplayProjectionMapper(private val registry: HistoryReplay
 
     /**
      * 讀取有單位數值。
+     *
      * @param value 已保存的有單位數值。
      * @return 單位與數值。
      */
@@ -318,6 +330,7 @@ internal class HistoryReplayProjectionMapper(private val registry: HistoryReplay
 
     /**
      * 將索引字串鍵分數表轉為座位分數。
+     *
      * @param value 結算分數表。
      * @param context 座位驗證上下文。
      * @return 不含 UUID 猜測的分數表。
@@ -331,32 +344,42 @@ internal class HistoryReplayProjectionMapper(private val registry: HistoryReplay
         return result
     }
 
-    /** 驗證有序牌參照。
+    /**
+     * 驗證有序牌參照。
+     *
      * @param value 索引陣列。
      * @param context 局內牌目錄。
      * @return 原順序牌參照。
      */
     private fun refs(value: JsonElement, context: HistoryReplayProjectionContext): List<HistoryTileReference> = array(value).map { context.tile(integer(it)) }
 
-    /** 讀取嚴格物件。
+    /**
+     * 讀取嚴格物件。
+     *
      * @param value 待驗證值。
      * @return 物件。
      */
     private fun obj(value: JsonElement): JsonObject = value as? JsonObject ?: invalid()
 
-    /** 讀取嚴格陣列。
+    /**
+     * 讀取嚴格陣列。
+     *
      * @param value 待驗證值。
      * @return 陣列。
      */
     private fun array(value: JsonElement): JsonArray = value as? JsonArray ?: invalid()
 
-    /** 讀取嚴格字串。
+    /**
+     * 讀取嚴格字串。
+     *
      * @param value 待驗證值。
      * @return 字串。
      */
     private fun string(value: JsonElement): String = (value as? JsonPrimitive)?.takeIf { it.isString }?.content ?: invalid()
 
-    /** 讀取嚴格整數。
+    /**
+     * 讀取嚴格整數。
+     *
      * @param value 待驗證值。
      * @return 整數。
      */

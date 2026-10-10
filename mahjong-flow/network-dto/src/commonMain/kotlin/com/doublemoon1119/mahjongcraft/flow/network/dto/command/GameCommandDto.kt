@@ -2,16 +2,10 @@ package com.doublemoon1119.mahjongcraft.flow.network.dto.command
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.RoundPreparationSubmissionDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDomain
-import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.ExhaustiveDrawReasonDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.ExtensionGameCommandDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDomain
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDto
 import kotlinx.serialization.Polymorphic
 import kotlinx.serialization.Serializable
-import kotlin.uuid.Uuid
 
 /**
  * [GameCommand] 的網路 DTO。跟 [GameActionDto] 一樣獨立鏡射成一份 DTO，而不是直接讓
@@ -21,45 +15,57 @@ import kotlin.uuid.Uuid
  */
 @Serializable
 sealed interface GameCommandDto {
+    /**
+     * SubmitRoundPreparation 網路 DTO。
+     *
+     * @property submission 玩家提交的開局準備資料。
+     */
     @Serializable data class SubmitRoundPreparation(val submission: RoundPreparationSubmissionDto) : GameCommandDto
 
+    /**
+     * Extension 網路 DTO。
+     *
+     * @property value 擴充值或牌面數值。
+     */
     @Serializable data class Extension(@Polymorphic val value: ExtensionGameCommandDto) : GameCommandDto
 
     @Serializable data object Draw : GameCommandDto
 
+    /**
+     * Discard 網路 DTO。
+     *
+     * @property tileId 牌的識別碼。
+     */
     @Serializable data class Discard(val tileId: String) : GameCommandDto
 
     @Serializable data object Tsumo : GameCommandDto
 
+    /**
+     * Kan 網路 DTO。
+     *
+     * @property kanType 槓牌種類。
+     * @property tileId 牌的識別碼。
+     */
     @Serializable data class Kan(val kanType: KanTypeDto, val tileId: String) : GameCommandDto
 
+    /**
+     * RespondToDiscard 網路 DTO。
+     *
+     * @property action 玩家選擇的遊戲動作。
+     */
     @Serializable data class RespondToDiscard(val action: GameActionDto) : GameCommandDto
 
+    /**
+     * RespondToRobbing 網路 DTO。
+     *
+     * @property action 玩家選擇的遊戲動作。
+     */
     @Serializable data class RespondToRobbing(val action: GameActionDto) : GameCommandDto
 
+    /**
+     * DeclareExhaustiveDraw 網路 DTO。
+     *
+     * @property reason 相關的結果或操作原因。
+     */
     @Serializable data class DeclareExhaustiveDraw(val reason: ExhaustiveDrawReasonDto) : GameCommandDto
-}
-
-fun GameCommand.toDto(registries: NetworkDtoRegistries): GameCommandDto = when (this) {
-    is GameCommand.SubmitRoundPreparation -> GameCommandDto.SubmitRoundPreparation(submission.toDto())
-    is GameCommand.Extension -> GameCommandDto.Extension(value.toDto(registries))
-    GameCommand.Draw -> GameCommandDto.Draw
-    is GameCommand.Discard -> GameCommandDto.Discard(tileId.toString())
-    GameCommand.Tsumo -> GameCommandDto.Tsumo
-    is GameCommand.Kan -> GameCommandDto.Kan(type.toDto(), tileId.toString())
-    is GameCommand.RespondToDiscard -> GameCommandDto.RespondToDiscard(action.toDto(registries))
-    is GameCommand.RespondToRobbing -> GameCommandDto.RespondToRobbing(action.toDto(registries))
-    is GameCommand.DeclareExhaustiveDraw -> GameCommandDto.DeclareExhaustiveDraw(reason.toDto(registries))
-}
-
-fun GameCommandDto.toDomain(registries: NetworkDtoRegistries): GameCommand = when (this) {
-    is GameCommandDto.SubmitRoundPreparation -> GameCommand.SubmitRoundPreparation(submission.toDomain())
-    is GameCommandDto.Extension -> GameCommand.Extension(value.toDomain(registries))
-    GameCommandDto.Draw -> GameCommand.Draw
-    is GameCommandDto.Discard -> GameCommand.Discard(Uuid.parse(tileId))
-    GameCommandDto.Tsumo -> GameCommand.Tsumo
-    is GameCommandDto.Kan -> GameCommand.Kan(kanType.toDomain(), Uuid.parse(tileId))
-    is GameCommandDto.RespondToDiscard -> GameCommand.RespondToDiscard(action.toDomain(registries))
-    is GameCommandDto.RespondToRobbing -> GameCommand.RespondToRobbing(action.toDomain(registries))
-    is GameCommandDto.DeclareExhaustiveDraw -> GameCommand.DeclareExhaustiveDraw(reason.toDomain(registries))
 }

@@ -2,18 +2,23 @@ package com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.IdentifiedTileDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.WindDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDomain
-import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DiscardPileDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.PlayerRuleStateDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDomain
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDto
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayerSnapshot
 import kotlinx.serialization.Serializable
-import kotlin.uuid.Uuid
 
-/** [MahjongPlayerSnapshot] 的網路 DTO。 */
+/**
+ * [MahjongPlayerSnapshot] 的網路 DTO。
+ *
+ * @property id 玩家 UUID 字串。
+ * @property initialSeatIndex 玩家在本局開始時的座位索引。
+ * @property seatWind 玩家目前的座位風。
+ * @property hand 玩家手牌快照。
+ * @property discardPile 玩家牌河。
+ * @property setAsideTiles 玩家保留在手牌外的牌張。
+ * @property playerRuleState 規則專屬玩家狀態；沒有時為 `null`。
+ * @property score 玩家目前分數。
+ */
 @Serializable
 data class MahjongPlayerSnapshotDto(
     val id: String,
@@ -24,26 +29,4 @@ data class MahjongPlayerSnapshotDto(
     val setAsideTiles: List<IdentifiedTileDto>,
     val playerRuleState: PlayerRuleStateDto?,
     val score: Int,
-)
-
-fun MahjongPlayerSnapshot.toDto(registries: NetworkDtoRegistries): MahjongPlayerSnapshotDto = MahjongPlayerSnapshotDto(
-    id = id.toString(),
-    initialSeatIndex = initialSeatIndex,
-    seatWind = seatWind.toDto(),
-    hand = hand.toDto(),
-    discardPile = discardPile.toDto(registries),
-    setAsideTiles = setAsideTiles.map { it.toDto() },
-    playerRuleState = playerRuleState?.toDto(registries),
-    score = score,
-)
-
-fun MahjongPlayerSnapshotDto.toDomain(registries: NetworkDtoRegistries): MahjongPlayerSnapshot = MahjongPlayerSnapshot(
-    id = Uuid.parse(id),
-    initialSeatIndex = initialSeatIndex,
-    seatWind = seatWind.toDomain(),
-    hand = hand.toDomain(),
-    discardPile = discardPile.toDomain(registries),
-    setAsideTiles = setAsideTiles.map { it.toDomain() },
-    playerRuleState = playerRuleState?.toDomain(registries),
-    score = score,
 )

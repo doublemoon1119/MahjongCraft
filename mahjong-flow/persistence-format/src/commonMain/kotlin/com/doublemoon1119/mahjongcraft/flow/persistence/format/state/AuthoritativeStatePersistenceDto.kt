@@ -1,42 +1,13 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.state
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingState
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.config.GameFlowConfigPersistenceDto
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.config.toDomain
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.config.toPersistenceDto
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceDtoRegistry
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceEnvelopeDto
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceSchema
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.GameRuntimeStatePersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.TableStatePersistenceDto
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toAiPlayerStrategyKeys
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toDomain
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toEnabledAutomaticControlIdsByPlayerId
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toForcedAutoPlayPlayerIds
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toInterruptedBaseMillisByPlayerId
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toPersistenceDto
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toRemainingReserveMillisByPlayerId
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toRuntimeStatePersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceDto
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.room.RoomPersistenceDto
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.room.toDomain
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.room.toPersistenceDto
-import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
-import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
-import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
-import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.requireValidAutomaticControlIds
-import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
-import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
-import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonObject
-import kotlin.uuid.Uuid
 
 /**
  * 同批保存所有 [Room] 與 [TableState] 的伺服器權威狀態 DTO。
@@ -46,7 +17,6 @@ import kotlin.uuid.Uuid
  * @property gameFlowConfigs 以 Game UUID 字串索引的流程與觀看設定。
  * @property gameRuntimeStates 以 Game UUID 字串索引的流程 runtime 狀態。
  * @property historyRecordingState 與 Game 移除相互獨立的待寫歷史與 checkpoint。
- * @throws IllegalArgumentException 若索引與 DTO 內部 ID 不一致，或相同 ID 同時存在於 Room 與 Game。
  */
 @Serializable
 data class AuthoritativeStatePersistenceDto(
@@ -78,130 +48,10 @@ data class AuthoritativeStatePersistenceDto(
             require(gameRuntimeStates.getValue(gameId).enabledAutomaticControlIdsByPlayerId.keys.all { it in playerIds }) {
                 "Automatic control players must belong to the game"
             }
-            gameRuntimeStates.getValue(gameId).enabledAutomaticControlIdsByPlayerId.values.forEach(
-                ::requireValidAutomaticControlIds,
-            )
+            gameRuntimeStates.getValue(gameId).enabledAutomaticControlIdsByPlayerId.values.forEach(::requireValidAutomaticControlIds)
         }
         require(rooms.keys.intersect(games.keys).isEmpty()) {
             "The same venue ID must not exist as both a room and a game"
         }
     }
-}
-
-/** 將 Room 與 Game 集合轉換成同批提交的伺服器權威狀態 DTO。 */
-fun createAuthoritativeStatePersistenceDto(
-    rooms: Collection<Room>,
-    games: Collection<Game>,
-    ruleConfigRegistry: PersistenceDtoRegistry<MahjongRuleConfig>,
-    discardPileRegistry: PersistenceDtoRegistry<DiscardPile<*>>,
-    playerRuleStateRegistry: PersistenceDtoRegistry<PlayerRuleState>,
-    dynamicRuleStateRegistry: PersistenceDtoRegistry<DynamicRuleState>,
-    exhaustiveDrawReasonRegistry: PersistenceDtoRegistry<ExhaustiveDrawReason>,
-    extensionGameActionRegistry: PersistenceDtoRegistry<ExtensionGameAction>,
-    json: Json = Json,
-    historyRecordingState: HistoryRecordingState = HistoryRecordingState(),
-): AuthoritativeStatePersistenceDto {
-    require(rooms.map(Room::id).distinct().size == rooms.size) { "Room IDs must be unique" }
-    require(games.map(Game::id).distinct().size == games.size) { "Game IDs must be unique" }
-
-    return AuthoritativeStatePersistenceDto(
-        rooms = rooms.associate { room ->
-            room.id.toString() to room.toPersistenceDto(ruleConfigRegistry, json)
-        },
-        games = games.associate { game ->
-            game.id.toString() to game.tableState.toPersistenceDto(
-                ruleConfigRegistry,
-                discardPileRegistry,
-                playerRuleStateRegistry,
-                dynamicRuleStateRegistry,
-                exhaustiveDrawReasonRegistry,
-                extensionGameActionRegistry,
-                json,
-            )
-        },
-        gameFlowConfigs = games.associate { game -> game.id.toString() to game.flowConfig.toPersistenceDto() },
-        gameRuntimeStates = games.associate { game -> game.id.toString() to game.toRuntimeStatePersistenceDto() },
-        historyRecordingState = HistoryRecordingPersistenceMapper(
-            PersistenceRegistries(
-                ruleConfigRegistry,
-                discardPileRegistry,
-                playerRuleStateRegistry,
-                dynamicRuleStateRegistry,
-                exhaustiveDrawReasonRegistry,
-                extensionGameActionRegistry,
-            ),
-            json,
-        ).encode(historyRecordingState),
-    )
-}
-
-/** 還原與 Game 生命週期分離的待寫歷史。 */
-fun AuthoritativeStatePersistenceDto.toHistoryRecordingState(
-    registries: PersistenceRegistries,
-    json: Json = Json,
-): HistoryRecordingState = HistoryRecordingPersistenceMapper(registries, json).decode(historyRecordingState)
-
-/** 將伺服器權威狀態 DTO 內的所有 Room 還原成以 UUID 索引的領域狀態。 */
-fun AuthoritativeStatePersistenceDto.toRooms(
-    ruleConfigRegistry: PersistenceDtoRegistry<MahjongRuleConfig>,
-    json: Json = Json,
-): Map<Uuid, Room> = rooms.values.associate { room -> Uuid.parse(room.id) to room.toDomain(ruleConfigRegistry, json) }
-
-/** 將伺服器權威狀態 DTO 內的所有 Game 還原成以 UUID 索引的領域狀態。 */
-fun AuthoritativeStatePersistenceDto.toGames(
-    ruleConfigRegistry: PersistenceDtoRegistry<MahjongRuleConfig>,
-    discardPileRegistry: PersistenceDtoRegistry<DiscardPile<*>>,
-    playerRuleStateRegistry: PersistenceDtoRegistry<PlayerRuleState>,
-    dynamicRuleStateRegistry: PersistenceDtoRegistry<DynamicRuleState>,
-    exhaustiveDrawReasonRegistry: PersistenceDtoRegistry<ExhaustiveDrawReason>,
-    extensionGameActionRegistry: PersistenceDtoRegistry<ExtensionGameAction>,
-    json: Json = Json,
-): Map<Uuid, Game> = games.values.associate { game ->
-    val id = Uuid.parse(game.id)
-    val tableState = game.toDomain(
-        ruleConfigRegistry,
-        discardPileRegistry,
-        playerRuleStateRegistry,
-        dynamicRuleStateRegistry,
-        exhaustiveDrawReasonRegistry,
-        extensionGameActionRegistry,
-        json,
-    )
-    val runtimeState = gameRuntimeStates.getValue(id.toString())
-    id to Game(
-        tableState = tableState,
-        flowConfig = gameFlowConfigs.getValue(id.toString()).toDomain(),
-        remainingReserveMillisByPlayerId = runtimeState.toRemainingReserveMillisByPlayerId(),
-        forcedAutoPlayPlayerIds = runtimeState.toForcedAutoPlayPlayerIds(),
-        enabledAutomaticControlIdsByPlayerId = runtimeState.toEnabledAutomaticControlIdsByPlayerId(),
-        automaticControlRevision = runtimeState.automaticControlRevision,
-        isMatchOver = runtimeState.isMatchOver,
-        pendingTransition = runtimeState.pendingTransition?.toDomain(),
-        roundCompletion = runtimeState.roundCompletion?.toDomain(),
-        matchEndReasonId = runtimeState.matchEndReasonId,
-        pendingRoundPreparation = runtimeState.pendingRoundPreparation?.toDomain(),
-        hostId = Uuid.parse(runtimeState.hostId),
-        roomPlayerIds = runtimeState.roomPlayerIds.map(Uuid::parse),
-        aiPlayerStrategyKeys = runtimeState.toAiPlayerStrategyKeys(),
-        interruptedBaseMillisByPlayerId = runtimeState.toInterruptedBaseMillisByPlayerId(),
-        matchId = Uuid.parse(runtimeState.matchId),
-    )
-}
-
-/** 以目前 schema version 將伺服器權威狀態包裝成 [PersistenceEnvelopeDto]。 */
-fun AuthoritativeStatePersistenceDto.toEnvelope(json: Json = Json): PersistenceEnvelopeDto = PersistenceEnvelopeDto(
-    schemaVersion = PersistenceSchema.CURRENT_VERSION,
-    state = json.encodeToJsonElement(AuthoritativeStatePersistenceDto.serializer(), this).jsonObject,
-)
-
-/**
- * 將已完成 migration 的目前 schema envelope 解碼成伺服器權威狀態 DTO。
- *
- * @throws IllegalArgumentException 若 envelope 尚未轉換成目前 schema version。
- */
-fun PersistenceEnvelopeDto.decodeCurrentAuthoritativeState(json: Json = Json): AuthoritativeStatePersistenceDto {
-    require(schemaVersion == PersistenceSchema.CURRENT_VERSION) {
-        "Persistence envelope must use current schema version ${PersistenceSchema.CURRENT_VERSION}"
-    }
-    return json.decodeFromJsonElement(AuthoritativeStatePersistenceDto.serializer(), state)
 }

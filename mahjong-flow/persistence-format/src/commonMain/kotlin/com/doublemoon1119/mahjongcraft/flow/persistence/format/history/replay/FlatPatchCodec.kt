@@ -33,6 +33,7 @@ object FlatPatchCodec {
 
     /**
      * 在歷史查閱的共用工作預算內套用差異，不改變操作格式。
+     *
      * @param before 更新前的投影。
      * @param operations 有序差異操作。
      * @param paths 共用路徑字典。
@@ -43,6 +44,7 @@ object FlatPatchCodec {
 
     /**
      * 共用操作解讀入口；正式完整解碼與局級有界解碼使用同一演算法。
+     *
      * @param before 更新前的投影。
      * @param operations 有序差異操作。
      * @param paths 共用路徑字典。
@@ -62,6 +64,7 @@ object FlatPatchCodec {
 
     /**
      * 在配置更新後容器前計算存活節點變化，避免小型差異持續放大桌況。
+     *
      * @param root 更新前完整投影。
      * @param path 操作路徑。
      * @param operation 精簡操作。
@@ -117,6 +120,7 @@ object FlatPatchCodec {
 
     /**
      * 在有界深度內計算子樹節點，不建立另一份 JSON 投影。
+     *
      * @param value 子樹根節點。
      * @param depth 相對於完整投影的深度。
      * @param budget 走訪預算。

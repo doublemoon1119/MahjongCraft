@@ -2,13 +2,22 @@ package com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot
 
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomSnapshot
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.GameConfigDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDomain
-import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import kotlinx.serialization.Serializable
-import kotlin.uuid.Uuid
 
-/** [RoomSnapshot] 的 observer-specific 網路 DTO。 */
+/**
+ * [RoomSnapshot] 的 observer-specific 網路 DTO。
+ *
+ * @property id 房間 UUID 字串。
+ * @property hostId 房主 UUID 字串。
+ * @property gameConfig 房間使用的遊戲設定。
+ * @property playerIds 房間內玩家 UUID 字串。
+ * @property readyPlayerIds 已準備玩家 UUID 字串。
+ * @property aiPlayerIds 由 AI 操控的玩家 UUID 字串。
+ * @property aiPlayerStrategyKeys 各 AI 玩家使用的策略識別碼。
+ * @property canStart 房間目前是否可開始對局。
+ * @property isHost 目前 observer 是否為房主。
+ * @property isInRoom 目前 observer 是否位於房間中。
+ */
 @Serializable
 data class RoomSnapshotDto(
     val id: String,
@@ -21,30 +30,4 @@ data class RoomSnapshotDto(
     val canStart: Boolean,
     val isHost: Boolean,
     val isInRoom: Boolean,
-)
-
-fun RoomSnapshot.toDto(registries: NetworkDtoRegistries): RoomSnapshotDto = RoomSnapshotDto(
-    id = id.toString(),
-    hostId = hostId.toString(),
-    gameConfig = gameConfig.toDto(registries),
-    playerIds = playerIds.map { it.toString() },
-    readyPlayerIds = readyPlayerIds.map { it.toString() },
-    aiPlayerIds = aiPlayerIds.map { it.toString() },
-    aiPlayerStrategyKeys = aiPlayerStrategyKeys.mapKeys { it.key.toString() },
-    canStart = canStart,
-    isHost = isHost,
-    isInRoom = isInRoom,
-)
-
-fun RoomSnapshotDto.toDomain(registries: NetworkDtoRegistries): RoomSnapshot = RoomSnapshot(
-    id = Uuid.parse(id),
-    hostId = Uuid.parse(hostId),
-    gameConfig = gameConfig.toDomain(registries),
-    playerIds = playerIds.map { Uuid.parse(it) },
-    readyPlayerIds = readyPlayerIds.map { Uuid.parse(it) },
-    aiPlayerIds = aiPlayerIds.map { Uuid.parse(it) },
-    aiPlayerStrategyKeys = aiPlayerStrategyKeys.mapKeys { Uuid.parse(it.key) },
-    canStart = canStart,
-    isHost = isHost,
-    isInRoom = isInRoom,
 )

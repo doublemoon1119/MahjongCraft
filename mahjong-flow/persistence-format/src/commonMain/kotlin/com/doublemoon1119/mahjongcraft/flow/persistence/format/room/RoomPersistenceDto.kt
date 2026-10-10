@@ -1,16 +1,8 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.room
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
-import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.config.GameFlowConfigPersistenceDto
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.config.toDomain
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.config.toPersistenceDto
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceDtoRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.TypedPersistenceDto
-import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
-import kotlin.uuid.Uuid
 
 /**
  * 等待階段 [Room] 的完整權威 persistence DTO。
@@ -32,34 +24,4 @@ data class RoomPersistenceDto(
     val playerIds: List<String>,
     val readyPlayerIds: List<String>,
     val aiPlayerStrategyKeys: Map<String, String>,
-)
-
-/** 將 Room 權威領域狀態轉換成完整 persistence DTO。 */
-fun Room.toPersistenceDto(
-    ruleConfigRegistry: PersistenceDtoRegistry<MahjongRuleConfig>,
-    json: Json = Json,
-): RoomPersistenceDto = RoomPersistenceDto(
-    id = id.toString(),
-    hostId = hostId.toString(),
-    config = ruleConfigRegistry.encode(gameConfig.ruleConfig, json),
-    flowConfig = gameConfig.flowConfig.toPersistenceDto(),
-    playerIds = playerIds.map(Uuid::toString),
-    readyPlayerIds = readyPlayerIds.map(Uuid::toString),
-    aiPlayerStrategyKeys = aiPlayerStrategyKeys.mapKeys { it.key.toString() },
-)
-
-/** 將 Room persistence DTO 驗證並還原成權威領域狀態。 */
-fun RoomPersistenceDto.toDomain(
-    ruleConfigRegistry: PersistenceDtoRegistry<MahjongRuleConfig>,
-    json: Json = Json,
-): Room = Room(
-    id = Uuid.parse(id),
-    hostId = Uuid.parse(hostId),
-    gameConfig = GameConfig(
-        ruleConfig = ruleConfigRegistry.decode(config, json),
-        flowConfig = flowConfig.toDomain(),
-    ),
-    playerIds = playerIds.map(Uuid::parse),
-    readyPlayerIds = readyPlayerIds.map(Uuid::parse),
-    aiPlayerStrategyKeys = aiPlayerStrategyKeys.mapKeys { Uuid.parse(it.key) },
 )

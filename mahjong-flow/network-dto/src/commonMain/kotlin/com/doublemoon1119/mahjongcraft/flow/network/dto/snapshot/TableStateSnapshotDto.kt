@@ -2,18 +2,29 @@ package com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.IdentifiedTileDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.WindDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDomain
-import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DynamicRuleStateDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.MahjongRuleConfigDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDomain
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDto
 import com.doublemoon1119.mahjongcraft.logic.table.TableStateSnapshot
 import kotlinx.serialization.Serializable
-import kotlin.uuid.Uuid
 
-/** [TableStateSnapshot] 的 observer-specific 網路 DTO。 */
+/**
+ * [TableStateSnapshot] 的 observer-specific 網路 DTO。
+ *
+ * @property id 對局 UUID 字串。
+ * @property players 玩家快照。
+ * @property config 本局規則設定。
+ * @property tileWall 牌牆快照。
+ * @property dealerPlayerId 莊家玩家 UUID 字串。
+ * @property prevalentWind 場風。
+ * @property roundNumber 局數索引。
+ * @property roundPosition 場次位置。
+ * @property comboCount 本場數。
+ * @property currentPlayerIndex 目前玩家的座位索引。
+ * @property dynamicRuleState 規則專屬動態狀態；沒有時為 `null`。
+ * @property finishedPlayerIds 已完成本局玩家 UUID 字串。
+ * @property physicalWallLayout 實體牌牆布局；沒有時為 `null`。
+ * @property revealedHandTiles 對 observer 公開的額外手牌牌張。
+ */
 @Serializable
 data class TableStateSnapshotDto(
     val id: String,
@@ -33,37 +44,3 @@ data class TableStateSnapshotDto(
 )
 
 /** 將 observer-specific 桌況快照轉成網路 DTO。 */
-fun TableStateSnapshot.toDto(registries: NetworkDtoRegistries): TableStateSnapshotDto = TableStateSnapshotDto(
-    id = id.toString(),
-    players = players.map { it.toDto(registries) },
-    config = config.toDto(registries),
-    tileWall = tileWall.toDto(),
-    dealerPlayerId = dealerPlayerId.toString(),
-    prevalentWind = prevalentWind.toDto(),
-    roundNumber = roundNumber,
-    roundPosition = roundPosition.toDto(),
-    comboCount = comboCount,
-    currentPlayerIndex = currentPlayerIndex,
-    dynamicRuleState = dynamicRuleState?.toDto(registries),
-    finishedPlayerIds = finishedPlayerIds.map(Uuid::toString).toSet(),
-    physicalWallLayout = physicalWallLayout?.toDto(),
-    revealedHandTiles = revealedHandTiles.map { it.toDto() },
-)
-
-/** 將網路 DTO 還原成 observer-specific 桌況快照。 */
-fun TableStateSnapshotDto.toDomain(registries: NetworkDtoRegistries): TableStateSnapshot = TableStateSnapshot(
-    id = Uuid.parse(id),
-    players = players.map { it.toDomain(registries) },
-    config = config.toDomain(registries),
-    tileWall = tileWall.toDomain(),
-    dealerPlayerId = Uuid.parse(dealerPlayerId),
-    prevalentWind = prevalentWind.toDomain(),
-    roundNumber = roundNumber,
-    roundPosition = roundPosition.toDomain(),
-    comboCount = comboCount,
-    currentPlayerIndex = currentPlayerIndex,
-    dynamicRuleState = dynamicRuleState?.toDomain(registries),
-    finishedPlayerIds = finishedPlayerIds.map(Uuid::parse).toSet(),
-    physicalWallLayout = physicalWallLayout?.toDomain(),
-    revealedHandTiles = revealedHandTiles.map { it.toDomain() },
-)

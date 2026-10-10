@@ -10,7 +10,9 @@ import org.koin.core.annotation.Single
 /** `:mahjong-flow-persistence-format` 擁有的 registry 與 codec Koin 定義。 */
 @Module
 class PersistenceFormatModule {
-    /** 建立空的共用歷史投影 registry；各規則的投影由 extension 登記，完成後由 bootstrap 集中凍結。
+    /**
+     * 建立空的共用歷史投影 registry；各規則的投影由 extension 登記，完成後由 bootstrap 集中凍結。
+     *
      * @return 可供擴充註冊及正式歷史讀取共用的唯一 registry。
      */
     @Single

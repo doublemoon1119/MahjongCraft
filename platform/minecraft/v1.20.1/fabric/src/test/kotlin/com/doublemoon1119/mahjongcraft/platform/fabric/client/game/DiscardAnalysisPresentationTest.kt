@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DiscardReadinessAnalysisDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WIN_AVAILABLE_ID
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileAvailabilityDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileAvailabilityIds
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardReadinessAnalyzer
@@ -92,7 +92,7 @@ class DiscardAnalysisPresentationTest {
         val content = discardAnalysisContent(
             texts,
             BuiltInRuleModuleIds.RIICHI,
-            analysisOf(waiting("a", 4, RiichiDiscardReadinessAnalyzer.StatusIds.WIN_TSUMO_ONLY), waiting("b", 2, WIN_AVAILABLE_ID)),
+            analysisOf(waiting("a", 4, RiichiDiscardReadinessAnalyzer.StatusIds.WIN_TSUMO_ONLY), waiting("b", 2, WaitingTileAvailabilityIds.WIN_AVAILABLE)),
         )
 
         assertTrue(content.hasAvailabilityRow)
@@ -286,7 +286,7 @@ class DiscardAnalysisPresentationTest {
     )
 
     /** 建立測試用的等待牌。 */
-    private fun waiting(label: String, remainingCount: Int, availability: String = WIN_AVAILABLE_ID) = WaitingTileAvailabilityDto(tile(label), remainingCount, availability)
+    private fun waiting(label: String, remainingCount: Int, availability: String = WaitingTileAvailabilityIds.WIN_AVAILABLE) = WaitingTileAvailabilityDto(tile(label), remainingCount, availability)
 
     /** 以標籤區分的測試牌種。 */
     private fun tile(label: String) = TileDto.Extension("test:$label")

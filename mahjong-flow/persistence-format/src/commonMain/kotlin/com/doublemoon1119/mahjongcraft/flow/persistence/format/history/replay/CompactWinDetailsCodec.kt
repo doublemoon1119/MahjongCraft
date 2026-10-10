@@ -11,6 +11,7 @@ import kotlinx.serialization.json.JsonPrimitive
 internal object CompactWinDetailsCodec {
     /**
      * 編碼逐位明細，省略可還原的空白尾端欄位。
+     *
      * @param details 保存 DTO 產生的明細陣列。
      * @return 使用局內玩家／牌參照的精簡明細。
      */
@@ -29,6 +30,7 @@ internal object CompactWinDetailsCodec {
 
     /**
      * 還原明細的明確結構，不重新計分或猜測未知值種類。
+     *
      * @param details 精簡明細陣列。
      * @return 供既有歷史投影 mapper 使用的明細物件。
      */
@@ -48,7 +50,9 @@ internal object CompactWinDetailsCodec {
         )
     }
 
-    /** 將可選的胡牌手牌描述編碼為立牌索引陣列與獨立和牌索引。
+    /**
+     * 將可選的胡牌手牌描述編碼為立牌索引陣列與獨立和牌索引。
+     *
      * @param value 明確保存的手牌描述。
      * @return 精簡立牌參照與和牌參照陣列。
      */
@@ -60,7 +64,9 @@ internal object CompactWinDetailsCodec {
         return JsonArray(listOf(standing, winning))
     }
 
-    /** 解碼並驗證可選的胡牌手牌描述。
+    /**
+     * 解碼並驗證可選的胡牌手牌描述。
+     *
      * @param value 精簡手牌描述。
      * @return 明確的有序立牌與和牌張物件。
      */
@@ -73,7 +79,9 @@ internal object CompactWinDetailsCodec {
         return JsonObject(mapOf(ReplaySourceKeys.WINNING_STANDING_TILES to standing, ReplaySourceKeys.WINNING_TILE to winning))
     }
 
-    /** 驗證牌參照列表不含重複實體。
+    /**
+     * 驗證牌參照列表不含重複實體。
+     *
      * @param value 待驗證參照列表。
      * @param label 英文診斷名稱。
      */
@@ -83,6 +91,7 @@ internal object CompactWinDetailsCodec {
 
     /**
      * 編碼三種明確明細值，種類代碼為固定格式契約而非 enum ordinal。
+     *
      * @param value 保存的明細值。
      * @return 精簡值。
      */
@@ -106,6 +115,7 @@ internal object CompactWinDetailsCodec {
 
     /**
      * 將有單位數值編碼為單位與數值兩個欄位。
+     *
      * @param value 保存的有單位數值。
      * @return 精簡陣列。
      */
@@ -113,6 +123,7 @@ internal object CompactWinDetailsCodec {
 
     /**
      * 還原有單位數值。
+     *
      * @param unitId 單位 ID。
      * @param amount 數值。
      * @return 明確的有單位數值物件。
@@ -121,6 +132,7 @@ internal object CompactWinDetailsCodec {
 
     /**
      * 解碼固定值種類，拒絕錯誤陣列長度與未支援代碼。
+     *
      * @param value 精簡值。
      * @return 明確的明細值物件。
      */
@@ -166,6 +178,7 @@ internal object CompactWinDetailsCodec {
 
     /**
      * 映射陣列並保留原順序。
+     *
      * @param transform 單項結構轉換。
      * @return 轉換後的 JSON 陣列。
      */
@@ -173,6 +186,7 @@ internal object CompactWinDetailsCodec {
 
     /**
      * 驗證明確物件結構。
+     *
      * @param value 待驗證值。
      * @return JSON 物件。
      */
@@ -180,6 +194,7 @@ internal object CompactWinDetailsCodec {
 
     /**
      * 驗證明確陣列結構。
+     *
      * @param value 待驗證值。
      * @return JSON 陣列。
      */

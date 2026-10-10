@@ -44,6 +44,7 @@ object CompactReplayDictionary {
     ) {
         /**
          * 解讀單層物件欄位名稱，保留子節點的字典編碼。
+         *
          * @param value 未展開的物件。
          * @return 已還原欄位名稱的單層唯讀物件。
          */
@@ -62,6 +63,7 @@ object CompactReplayDictionary {
 
         /**
          * 使用既有演算法還原指定子樹。
+         *
          * @param value 欲展開的資料節點。
          * @return 經預算檢查的還原資料。
          */

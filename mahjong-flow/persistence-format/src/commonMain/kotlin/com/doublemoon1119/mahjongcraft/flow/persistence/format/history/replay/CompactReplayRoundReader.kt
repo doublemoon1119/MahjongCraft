@@ -39,6 +39,7 @@ class CompactReplayRoundReader(
 ) {
     /**
      * 讀取指定局的一段交易；僅保留要求的交易，不還原其他局的桌況。
+     *
      * @param document 已解析的 Replay 文件。
      * @param expectedMatchId 欲讀取的對局識別碼。
      * @param roundNumber 保存的局序號。
@@ -86,6 +87,7 @@ class CompactReplayRoundReader(
 
     /**
      * 由本局初始投影重建指定交易後的唯一桌況。
+     *
      * @param document 已解析的 Replay 文件。
      * @param expectedMatchId 欲讀取的對局識別碼。
      * @param roundNumber 保存的局序號。
@@ -138,7 +140,9 @@ class CompactReplayRoundReader(
         mapper.mapState(cursor.projection, source.identity, round.number, position, catalog(cursor, budget), budget).copy(outcome = cursor.outcome)
     }
 
-    /** 在複製局內牌目錄前記帳，不讓交易數繞過集合複製預算。
+    /**
+     * 在複製局內牌目錄前記帳，不讓交易數繞過集合複製預算。
+     *
      * @param cursor 目前局游標。
      * @param budget 本次工作預算。
      * @return 不受後續新牌宣告修改的牌目錄。
@@ -150,6 +154,7 @@ class CompactReplayRoundReader(
 
     /**
      * 建立隔離預算並轉換格式錯誤，保留協程取消語意。
+     *
      * @param T 讀取結果型別。
      * @param operation 本次有界讀取作業。
      * @return 完整成功值或分類錯誤。
@@ -176,7 +181,9 @@ class CompactReplayRoundReader(
         }
     }
 
-    /** 以交易前後的完整投影計算本次結算分數變化。
+    /**
+     * 以交易前後的完整投影計算本次結算分數變化。
+     *
      * @param beforeScores 交易套用前的座位分數。
      * @param afterScores 交易套用後的座位分數。
      * @param hasPriorWinSettlement 是否已有同局胡牌結算事實。
@@ -227,7 +234,9 @@ class CompactReplayRoundReader(
         }
     }
 
-    /** 讀取投影中每個座位的分數，避免為每筆交易複製完整桌況。
+    /**
+     * 讀取投影中每個座位的分數，避免為每筆交易複製完整桌況。
+     *
      * @param projection 已套用至目前交易的投影。
      * @param seatCount 對局玩家數量。
      * @param budget 本次讀取工作預算。
@@ -247,7 +256,9 @@ class CompactReplayRoundReader(
         return scores
     }
 
-    /** 將 JSON 整數讀為分數使用的 Int。
+    /**
+     * 將 JSON 整數讀為分數使用的 Int。
+     *
      * @return 驗證後的整數。
      */
     private fun JsonElement?.asInt(): Int {
@@ -258,6 +269,7 @@ class CompactReplayRoundReader(
 
     /**
      * 尋找唯一局資料。
+     *
      * @param source 已驗證文件。
      * @param number 要求局序號。
      * @return 選取的編碼局資料。
@@ -266,6 +278,7 @@ class CompactReplayRoundReader(
 
     /**
      * 初始化局游標；前面各局只掃描時間差，不重建投影或 patch。
+     *
      * @param source 文件檢視。
      * @param round 目標局。
      * @param budget 工作預算。
@@ -289,6 +302,7 @@ class CompactReplayRoundReader(
 
     /**
      * 套用一筆交易的新牌與差異，沿用完整解碼器的事實演算法。
+     *
      * @param source 文件檢視。
      * @param round 目標局。
      * @param cursor 唯一目前桌況。
@@ -316,6 +330,7 @@ class CompactReplayRoundReader(
 
     /**
      * 追加本交易之前已宣告的牌，不引入未來交易的牌目錄。
+     *
      * @param value 牌種索引陣列。
      * @param source 文件牌種字典。
      * @param tiles 可識別的實體牌目錄。
@@ -329,6 +344,7 @@ class CompactReplayRoundReader(
 
     /**
      * 驗證壓縮行為者欄位與事實數量一致。
+     *
      * @param value 單一座位、逐筆座位或缺省。
      * @param count 事實數量。
      * @param seats 玩家數。
@@ -347,7 +363,9 @@ class CompactReplayRoundReader(
         }
     }
 
-    /** 判斷交易是否接受了會完成流局結算的動作。
+    /**
+     * 判斷交易是否接受了會完成流局結算的動作。
+     *
      * @param fact 已解碼的單一交易事實。
      * @return 若事實是接受流局動作則為 true。
      */
@@ -359,6 +377,7 @@ class CompactReplayRoundReader(
 
     /**
      * 套用可為負值的時間差並拒絕溢位。
+     *
      * @param time 前一筆時間。
      * @param delta 本筆時間差，缺省代表零。
      * @return 更新時間。
@@ -374,6 +393,7 @@ class CompactReplayRoundReader(
 
     /**
      * 單局重建時的唯一可變游標。
+     *
      * @property projection 目前桌況投影。
      * @property tiles 截至目前位置可識別的牌。
      * @property time 全場相對時間累加結果。
@@ -390,7 +410,9 @@ class CompactReplayRoundReader(
         var exhaustiveDrawSettlement: ScoreSnapshot? = null,
     )
 
-    /** 流局結算交易前後的權威分數快照。
+    /**
+     * 流局結算交易前後的權威分數快照。
+     *
      * @property before 流局結算交易套用前的各座位分數。
      * @property after 流局結算交易套用後的各座位分數。
      */
@@ -401,6 +423,7 @@ class CompactReplayRoundReader(
 
     /**
      * 已還原的一筆交易資料。
+     *
      * @property facts 語意事實。
      * @property actors 對應行為者座位。
      * @property opening 開局標記。

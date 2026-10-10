@@ -52,26 +52,3 @@ class PersistenceMigrationRegistry(
         const val FIRST_SCHEMA_VERSION: Int = 1
     }
 }
-
-/** 表示存檔宣告了無效的 schema version。 */
-class InvalidPersistenceSchemaVersionException(
-    version: Int,
-) : IllegalArgumentException(
-    "Persistence schema version must be positive, but was $version",
-)
-
-/** 表示存檔 schema version 比目前程式支援的版本更新。 */
-class UnsupportedPersistenceSchemaVersionException(
-    version: Int,
-    currentVersion: Int,
-) : IllegalStateException(
-    "Persistence schema version $version is newer than supported version $currentVersion",
-)
-
-/** 表示兩個連續 schema version 之間缺少必要的 migration。 */
-class MissingPersistenceMigrationException(
-    sourceVersion: Int,
-    targetVersion: Int,
-) : IllegalStateException(
-    "Missing persistence migration from schema version $sourceVersion to $targetVersion",
-)

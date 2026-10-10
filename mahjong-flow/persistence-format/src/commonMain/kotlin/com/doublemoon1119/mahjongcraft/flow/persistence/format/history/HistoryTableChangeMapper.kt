@@ -24,7 +24,12 @@ internal class HistoryTableChangeMapper(
     private val registries: PersistenceRegistries,
     private val json: Json,
 ) {
-    /** 將規則中立差異或完整檢查點轉為持久化 DTO。 */
+    /**
+     * 將規則中立差異或完整檢查點轉為持久化 DTO。
+     *
+     * @param result 動作套用後的結果。
+     * @return 轉換後的結果。
+     */
     fun encode(result: HistoryTableResult): HistoryTableResultPersistenceDto = when (result) {
         is HistoryTableResult.Change -> HistoryTableResultPersistenceDto.Change(encodeChange(result.change))
         is HistoryTableResult.Checkpoint -> HistoryTableResultPersistenceDto.Checkpoint(
@@ -41,7 +46,12 @@ internal class HistoryTableChangeMapper(
         )
     }
 
-    /** 從持久化 DTO 還原規則中立差異或完整檢查點。 */
+/**
+     * 從持久化 DTO 還原規則中立差異或完整檢查點。
+     *
+     * @param dto 待還原的桌況結果 DTO。
+     * @return 還原的桌況差異或完整檢查點。
+     */
     fun decode(dto: HistoryTableResultPersistenceDto): HistoryTableResult = when (dto) {
         is HistoryTableResultPersistenceDto.Change -> HistoryTableResult.Change(decodeChange(dto.change))
         is HistoryTableResultPersistenceDto.Checkpoint -> HistoryTableResult.Checkpoint(

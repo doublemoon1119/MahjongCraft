@@ -20,8 +20,8 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSetti
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomSnapshotSyncPayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdateEventDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdatePayloadDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WIN_AVAILABLE_ID
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileAvailabilityDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileAvailabilityIds
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.decodeHistoryRuleSettingsResponse
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.encode
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.toDto
@@ -346,7 +346,7 @@ class DtoRoundTripTest {
                     WaitingTileAvailabilityDto(
                         tile = TileDto.Numeric(SuitDto.CHARACTER, 1),
                         remainingCount = 2,
-                        winAvailability = WIN_AVAILABLE_ID,
+                        winAvailability = WaitingTileAvailabilityIds.WIN_AVAILABLE,
                     ),
                 ),
                 statusIndicatorId = "mahjongcraft:riichi/discard_furiten",

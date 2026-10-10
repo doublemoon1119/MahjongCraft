@@ -1,13 +1,20 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.config
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.ActionTimeControl
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.DecisionTimeoutPolicy
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.SpectatingPolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.SpectatorHandVisibility
 import kotlinx.serialization.Serializable
 
-/** [GameFlowConfig] 的完整 persistence DTO。 */
+/**
+ * [GameFlowConfig] 的完整 persistence DTO。
+ *
+ * @property baseSeconds 每個玩家每次行動可用的基礎秒數。
+ * @property reserveSeconds 每個玩家可累積使用的保留秒數。
+ * @property preparationBaseSeconds 開局準備階段可用的基礎秒數。
+ * @property decisionTimeoutPolicy 決策逾時時採用的處理政策。
+ * @property spectatingPolicy 觀戰者的加入與觀看政策。
+ * @property spectatorHandVisibility 觀戰者可見的手牌範圍。
+ */
 @Serializable
 data class GameFlowConfigPersistenceDto(
     val baseSeconds: Int,
@@ -16,23 +23,4 @@ data class GameFlowConfigPersistenceDto(
     val decisionTimeoutPolicy: DecisionTimeoutPolicy,
     val spectatingPolicy: SpectatingPolicy,
     val spectatorHandVisibility: SpectatorHandVisibility,
-)
-
-/** 將 [GameFlowConfig] 轉換成 persistence DTO。 */
-fun GameFlowConfig.toPersistenceDto(): GameFlowConfigPersistenceDto = GameFlowConfigPersistenceDto(
-    baseSeconds = timeControl.baseSeconds,
-    reserveSeconds = timeControl.reserveSeconds,
-    preparationBaseSeconds = preparationBaseSeconds,
-    decisionTimeoutPolicy = decisionTimeoutPolicy,
-    spectatingPolicy = spectatingPolicy,
-    spectatorHandVisibility = spectatorHandVisibility,
-)
-
-/** 將 [GameFlowConfigPersistenceDto] 還原成 [GameFlowConfig]。 */
-fun GameFlowConfigPersistenceDto.toDomain(): GameFlowConfig = GameFlowConfig(
-    timeControl = ActionTimeControl.from(baseSeconds, reserveSeconds),
-    preparationBaseSeconds = preparationBaseSeconds,
-    decisionTimeoutPolicy = decisionTimeoutPolicy,
-    spectatingPolicy = spectatingPolicy,
-    spectatorHandVisibility = spectatorHandVisibility,
 )

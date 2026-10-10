@@ -7,8 +7,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhas
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationInputSpec
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSubmission
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DiscardReadinessAnalysisDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WIN_AVAILABLE_ID
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileAvailabilityDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileAvailabilityIds
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.SuitDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceManager
@@ -487,7 +487,7 @@ class FabricDebugDecisionCommand(
                 DISCARD_NO_YAKU, DISCARD_FURITEN_UNAVAILABLE -> RiichiDiscardReadinessAnalyzer.StatusIds.WIN_NO_YAKU
                 DISCARD_BELOW_MINIMUM -> RiichiDiscardReadinessAnalyzer.StatusIds.WIN_BELOW_MINIMUM
                 DISCARD_TSUMO_ONLY -> RiichiDiscardReadinessAnalyzer.StatusIds.WIN_TSUMO_ONLY
-                else -> WIN_AVAILABLE_ID
+                else -> WaitingTileAvailabilityIds.WIN_AVAILABLE
             }
             return DiscardReadinessAnalysisDto(
                 discardTileId,
@@ -513,7 +513,7 @@ class FabricDebugDecisionCommand(
         private companion object {
             /** [DISCARD_MIXED_AVAILABILITY] 逐張輪流展示的和牌可用性命名字串。 */
             val MIXED_AVAILABILITY_CYCLE = listOf(
-                WIN_AVAILABLE_ID,
+                WaitingTileAvailabilityIds.WIN_AVAILABLE,
                 RiichiDiscardReadinessAnalyzer.StatusIds.WIN_TSUMO_ONLY,
                 RiichiDiscardReadinessAnalyzer.StatusIds.WIN_NO_YAKU,
                 RiichiDiscardReadinessAnalyzer.StatusIds.WIN_BELOW_MINIMUM,

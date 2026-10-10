@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.config
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DiscardReadinessAnalysisDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WIN_AVAILABLE_ID
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileAvailabilityDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileAvailabilityIds
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.SuitDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
@@ -193,7 +193,7 @@ class MahjongHudPreviewRenderer(
                 WaitingTileAvailabilityDto(
                     tile = TileDto.Numeric(SuitDto.CHARACTER, value),
                     remainingCount = 3 - index,
-                    winAvailability = WIN_AVAILABLE_ID,
+                    winAvailability = WaitingTileAvailabilityIds.WIN_AVAILABLE,
                 )
             },
             statusIndicatorId = null,

@@ -8,20 +8,6 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.migration.Persist
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.migration.buildBuiltInPersistenceMigrationRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import kotlinx.serialization.json.Json
-import kotlin.uuid.Uuid
-
-/**
- * 解碼並驗證後的伺服器權威狀態。
- *
- * @property rooms 以場地 UUID 索引的等待階段狀態。
- * @property games 以場地 UUID 索引的進行中狀態。
- * @property historyRecordingState 待寫歷史與重試 checkpoint。
- */
-data class DecodedAuthoritativeState(
-    val rooms: Map<Uuid, Room>,
-    val games: Map<Uuid, Game>,
-    val historyRecordingState: HistoryRecordingState = HistoryRecordingState(),
-)
 
 /**
  * 不依賴任何平台 API、負責權威狀態 JSON、schema migration 與 DTO mapping 的 codec。

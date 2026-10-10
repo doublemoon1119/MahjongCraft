@@ -41,6 +41,7 @@ internal data class CompactReplayReadDocument(
     companion object {
         /**
          * 驗證身份與結構，僅還原 header 與局定位欄位。
+         *
          * @param document 已解析的原始文件。
          * @param expectedMatchId 呼叫端要求的對局。
          * @param budget 工作預算。
@@ -102,6 +103,7 @@ internal data class CompactReplayReadDocument(
 
         /**
          * 驗證唯一字串字典。
+         *
          * @param value 字典陣列。
          * @return 已驗證的字串。
          */
@@ -113,6 +115,7 @@ internal data class CompactReplayReadDocument(
 
         /**
          * 驗證文件版本，不將未知內容當作目前格式。
+         *
          * @param value 版本值。
          */
         private fun checkVersion(value: JsonElement) {
@@ -121,6 +124,7 @@ internal data class CompactReplayReadDocument(
 
         /**
          * 讀取嚴格字串。
+         *
          * @param value 待讀取節點。
          * @return 字串內容。
          */
@@ -128,6 +132,7 @@ internal data class CompactReplayReadDocument(
 
         /**
          * 讀取嚴格整數。
+         *
          * @param value 待讀取節點。
          * @return 整數內容。
          */
@@ -137,6 +142,7 @@ internal data class CompactReplayReadDocument(
 
 /**
  * 尚未還原字典的單局資料。
+ *
  * @property number 保存局序號。
  * @property tileTypes 初始牌種對照的編碼值。
  * @property initial 初始桌況的編碼值。

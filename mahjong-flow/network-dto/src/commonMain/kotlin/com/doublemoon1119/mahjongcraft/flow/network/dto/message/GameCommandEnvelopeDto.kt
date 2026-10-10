@@ -9,6 +9,9 @@ import kotlinx.serialization.Serializable
  * [GameCommandDto] 本身鏡射 [GameCommand]，不帶對局識別碼——伺服器端
  * 的 `GameFlowCoordinator` 需要 gameId 才能找到對應對局，這裡額外包一層帶上，玩家身分則一律用
  * 接收端拿到的連線本身的身分，不透過封包內容宣稱。
+ *
+ * @property gameId 目標對局的 UUID 字串。
+ * @property command 要交由伺服器驗證與執行的遊戲命令。
  */
 @Serializable
 data class GameCommandEnvelopeDto(

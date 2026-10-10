@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay
 
-/** Replay 讀取作業可使用的資源上限。
+/**
+ * Replay 讀取作業可使用的資源上限。
  *
  * @property maxDepth JSON 樹允許的最大深度。
  * @property maxInputNodes 輸入文件允許的最大節點數。

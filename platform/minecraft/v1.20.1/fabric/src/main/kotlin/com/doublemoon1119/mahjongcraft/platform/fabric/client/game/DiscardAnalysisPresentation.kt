@@ -2,8 +2,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DiscardReadinessAnalysisDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HandReadinessAnalysisDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WIN_AVAILABLE_ID
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileAvailabilityDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileAvailabilityIds
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.hudCoordinate
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
@@ -69,7 +69,7 @@ internal fun selectHandAnalysis(
  * 由權威分析組出面板內容。
  *
  * 全部等待牌共用同一種非預設和牌資格時，該資格提升到狀態列只講一次；資格不一致時改為逐格標示，只標非
- * 預設的那幾張。[WIN_AVAILABLE_ID] 代表沒有特殊限制，任何情況都不顯示。
+ * 預設的那幾張。[WaitingTileAvailabilityIds.WIN_AVAILABLE] 代表沒有特殊限制，任何情況都不顯示。
  */
 internal fun discardAnalysisContent(
     texts: DecisionTextResolver,
@@ -97,9 +97,9 @@ private fun readinessAnalysisContent(
     val sharedAvailability = waitingTiles.map { it.winAvailability }
         .distinct()
         .singleOrNull()
-        ?.takeUnless { it == WIN_AVAILABLE_ID }
+        ?.takeUnless { it == WaitingTileAvailabilityIds.WIN_AVAILABLE }
     val hasAvailabilityRow = sharedAvailability == null &&
-        waitingTiles.any { it.winAvailability != WIN_AVAILABLE_ID }
+        waitingTiles.any { it.winAvailability != WaitingTileAvailabilityIds.WIN_AVAILABLE }
     return DiscardAnalysisContent(
         statusTexts = listOfNotNull(
             statusIndicatorId?.let { texts.statusText(ruleModuleId, it) },
@@ -114,7 +114,7 @@ private fun readinessAnalysisContent(
                     1 -> 0xFFD54F
                     else -> 0xFFFFFF
                 },
-                availabilityText = if (hasAvailabilityRow && waiting.winAvailability != WIN_AVAILABLE_ID) {
+                availabilityText = if (hasAvailabilityRow && waiting.winAvailability != WaitingTileAvailabilityIds.WIN_AVAILABLE) {
                     texts.statusText(ruleModuleId, waiting.winAvailability)
                 } else {
                     null

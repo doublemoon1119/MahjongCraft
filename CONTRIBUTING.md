@@ -39,6 +39,11 @@
 - Top-level functions, extensions, properties and constants normally stay in their original file: moving them
   can change the JVM file facade even when their Kotlin package and name stay unchanged. Review Java, reflection
   and generated-code references before any exception.
+- DTO files define their types; place conversion functions in `<PrimaryModel>Mapper.kt`, with both conversion
+  directions and overloads for that model together. A composite model delegates to other mappers instead of
+  collecting their implementations. Keep dedicated private helpers with their owning mapper; do not widen
+  visibility merely to split them. Keep serializer-module construction separate from model conversion.
+  Review and explicitly approve JVM facade changes when reorganizing existing conversion functions.
 - Compare the public declarations before and after each split, including source-set placement. Event API ABI
   checks cover only the event surface, not every public type in the repository. Move existing KDoc with its
   declaration; do not expand a file-organization change into an unrelated documentation rewrite.
