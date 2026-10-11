@@ -16,7 +16,8 @@ import net.minecraft.text.OrderedText
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 
-/** 顯示歷史對局採用的規則設定；所有欄位均為唯讀。
+/**
+ * 顯示歷史對局採用的規則設定；所有欄位均為唯讀。
  *
  * @property session 共用歷史瀏覽 session。
  */
@@ -124,7 +125,8 @@ internal class HistoryRuleSettingsScreen(
         super.removed()
     }
 
-    /** 處理規則設定內容區滾輪。
+    /**
+     * 處理規則設定內容區滾輪。
      *
      * @param mouseX 游標水平座標。
      * @param mouseY 游標垂直座標。
@@ -137,7 +139,8 @@ internal class HistoryRuleSettingsScreen(
         return true
     }
 
-    /** 開始捲軸拖曳。
+    /**
+     * 開始捲軸拖曳。
      *
      * @param mouseX 游標水平座標。
      * @param mouseY 游標垂直座標。
@@ -162,7 +165,8 @@ internal class HistoryRuleSettingsScreen(
         return super.mouseClicked(mouseX, mouseY, button)
     }
 
-    /** 持續處理捲軸拖曳。
+    /**
+     * 持續處理捲軸拖曳。
      *
      * @param mouseX 游標水平座標。
      * @param mouseY 游標垂直座標。
@@ -178,7 +182,8 @@ internal class HistoryRuleSettingsScreen(
         super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)
     }
 
-    /** 結束捲軸拖曳。
+    /**
+     * 結束捲軸拖曳。
      *
      * @param mouseX 游標水平座標。
      * @param mouseY 游標垂直座標。
@@ -217,7 +222,8 @@ internal class HistoryRuleSettingsScreen(
         hoveredTooltip?.let { context.drawTooltip(textRenderer, it, mouseX, mouseY) }
     }
 
-    /** 更新捲軸拖曳位置。
+    /**
+     * 更新捲軸拖曳位置。
      *
      * @param mouseY 游標垂直座標。
      */
@@ -225,7 +231,8 @@ internal class HistoryRuleSettingsScreen(
         scroll = layout.scrollbar(contentHeight(), scroll).scrollIndexFor(mouseY, grabOffset).toDouble()
     }
 
-    /** 解析規則設定並快取結果，避免每個 render tick 重建規則設定。
+    /**
+     * 解析規則設定並快取結果，避免每個 render tick 重建規則設定。
      *
      * @param configDto 歷史伺服器回傳的開局設定，尚未取得時為 null。
      * @return 本地可解析的規則呈現；缺少 codec 或呈現註冊時為 null。
@@ -238,7 +245,8 @@ internal class HistoryRuleSettingsScreen(
         return resolved
     }
 
-    /** 繪製成功解析的規則設定。
+    /**
+     * 繪製成功解析的規則設定。
      *
      * @param context 繪製上下文。
      * @param mouseX 游標水平座標。
@@ -268,7 +276,9 @@ internal class HistoryRuleSettingsScreen(
         val lines = mutableListOf<Line>()
         var y = layout.contentTop + 4
 
-        /** 將一項文字依目前可用寬度換行。
+        /**
+         * 將一項文字依目前可用寬度換行。
+         *
          * @param text 欲顯示的完整文字。
          * @param color 預設文字顏色。
          * @param indent 相對內容左界的縮排。
@@ -310,7 +320,8 @@ internal class HistoryRuleSettingsScreen(
         return lines
     }
 
-    /** 建立欄位說明與可用選項 tooltip。
+    /**
+     * 建立欄位說明與可用選項 tooltip。
      *
      * @param editor 欄位編輯器描述。
      * @param descriptionKey 欄位說明翻譯鍵。
@@ -352,7 +363,9 @@ internal class HistoryRuleSettingsScreen(
      */
     private data class Line(val x: Int, val y: Int, val text: OrderedText, val color: Int, val tooltip: List<Text>?)
 
-    /** 在內容區置中繪製狀態文字。
+    /**
+     * 在內容區置中繪製狀態文字。
+     *
      * @param context 繪製上下文。
      * @param text 狀態文字。
      * @param y 垂直座標。

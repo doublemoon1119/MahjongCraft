@@ -207,7 +207,9 @@ class CompactReplayRoundReaderTest {
         val mapper = HistoryReplayProjectionMapper(registry)
         val action = JsonObject(mapOf(ReplaySourceKeys.TYPE to JsonPrimitive(HistoryActionTypeKeys.EXTENSION), ReplaySourceKeys.VALUE to JsonObject(mapOf(ReplaySourceKeys.TYPE_KEY to JsonPrimitive("test:spell"), ReplayFormatKeys.PAYLOAD to JsonObject(mapOf("private" to JsonPrimitive("secret")))))))
 
-        /** 映射一筆動作事實。
+        /**
+         * 映射一筆動作事實。
+         *
          * @param value 動作 envelope。
          * @return 公開歷史事實。
          */
@@ -254,7 +256,9 @@ class CompactReplayRoundReaderTest {
         assertFailsWith<ReplayReadException> { context.seat(2) }
     }
 
-    /** 建立單玩家歷史身分標頭。
+    /**
+     * 建立單玩家歷史身分標頭。
+     *
      * @return 可供投影測試使用的玩家身分。
      */
     private fun identity(): HistoryReplayIdentity = HistoryReplayIdentity(
@@ -263,7 +267,9 @@ class CompactReplayRoundReaderTest {
         listOf(HistoryReplayPlayerIdentity(0, Uuid.random(), null)),
     )
 
-    /** 建立包含手牌、牌牆與必要局位欄位的桌況投影。
+    /**
+     * 建立包含手牌、牌牆與必要局位欄位的桌況投影。
+     *
      * @param standingTiles 立牌索引。
      * @param lastDrawn 最近摸入牌索引，沒有時為 null。
      * @param wallTiles 活牌牆索引。

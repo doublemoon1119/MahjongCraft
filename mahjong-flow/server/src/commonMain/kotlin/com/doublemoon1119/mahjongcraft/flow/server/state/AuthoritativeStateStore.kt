@@ -150,7 +150,8 @@ class AuthoritativeStateStore(
         commit(currentState.copy(historyRecordingState = recording))
     }
 
-    /** 更新歷史儲存端容量旗標；不可用期間仍保留權威交易，但不建立待寫事件。
+    /**
+     * 更新歷史儲存端容量旗標；不可用期間仍保留權威交易，但不建立待寫事件。
      *
      * @param available 儲存端是否可接受新的歷史事件。
      */
@@ -204,7 +205,8 @@ class AuthoritativeStateStore(
         commit(currentState.copy(historyRecordingState = recording.copy(decisionsByMatchId = recording.decisionsByMatchId - removable)))
     }
 
-    /** 確認已同步的場次 metadata，僅清除沒有對局與待寫事件保護的項目。
+    /**
+     * 確認已同步的場次 metadata，僅清除沒有對局與待寫事件保護的項目。
      *
      * @param matchIds 已由儲存端確認的場次 UUID。
      */

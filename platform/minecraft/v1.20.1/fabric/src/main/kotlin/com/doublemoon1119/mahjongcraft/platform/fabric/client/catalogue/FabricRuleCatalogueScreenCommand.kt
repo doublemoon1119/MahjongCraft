@@ -7,6 +7,7 @@ import org.koin.core.annotation.Single
 
 /**
  * 不需要加入房間的客戶端規則一覽指令。
+ *
  * @property screens 延後開啟畫面的入口。
  */
 @Single

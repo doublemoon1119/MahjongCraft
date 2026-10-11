@@ -51,12 +51,16 @@ class ClientHistoryQuerySettingsTest {
                 override fun sendSummary(request: HistorySummaryRequestDto) = Unit
                 override fun sendRuleSettings(request: HistoryRuleSettingsRequestDto) = Unit
 
-                /** 設定測試不執行實際事件查詢。
+                /**
+                 * 設定測試不執行實際事件查詢。
+                 *
                  * @param request 單局事件要求。
                  */
                 override fun sendRoundEvents(request: HistoryRoundEventsRequestDto) = Unit
 
-                /** 設定測試不執行實際牌面查詢。
+                /**
+                 * 設定測試不執行實際牌面查詢。
+                 *
                  * @param request 單局牌面要求。
                  */
                 override fun sendRoundState(request: HistoryRoundStateRequestDto) = Unit

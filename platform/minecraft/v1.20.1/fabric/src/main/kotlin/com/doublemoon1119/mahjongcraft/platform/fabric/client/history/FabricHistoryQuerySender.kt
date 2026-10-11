@@ -36,21 +36,27 @@ class FabricHistoryQuerySender(
         MahjongChannels.historySummaryRequest.sendToServer(json, request)
     }
 
-    /** 將規則設定要求交給 Fabric 客戶端頻道。
+    /**
+     * 將規則設定要求交給 Fabric 客戶端頻道。
+     *
      * @param request 已具備配對識別碼的規則設定要求。
      */
     override fun sendRuleSettings(request: HistoryRuleSettingsRequestDto) {
         MahjongChannels.historyRuleSettingsRequest.sendToServer(json, request)
     }
 
-    /** 將單局事件頁要求交給 Fabric 客戶端頻道。
+    /**
+     * 將單局事件頁要求交給 Fabric 客戶端頻道。
+     *
      * @param request 已具備配對識別碼的事件頁要求。
      */
     override fun sendRoundEvents(request: HistoryRoundEventsRequestDto) {
         MahjongChannels.historyRoundEventsRequest.sendToServer(json, request)
     }
 
-    /** 將單局桌況要求交給 Fabric 客戶端頻道。
+    /**
+     * 將單局桌況要求交給 Fabric 客戶端頻道。
+     *
      * @param request 已具備配對識別碼的桌況要求。
      */
     override fun sendRoundState(request: HistoryRoundStateRequestDto) {

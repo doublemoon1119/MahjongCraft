@@ -96,7 +96,8 @@ internal class HistoryFilterScreen(
         )
     }
 
-    /** 建立並註冊一個文字輸入欄位。
+    /**
+     * 建立並註冊一個文字輸入欄位。
      *
      * @param field 欄位種類。
      * @param labelKey 欄位提示的翻譯鍵。
@@ -115,7 +116,8 @@ internal class HistoryFilterScreen(
         )
     }
 
-    /** 取得欄位輸入長度上限。
+    /**
+     * 取得欄位輸入長度上限。
      *
      * @return 文字長度上限。
      */
@@ -127,7 +129,8 @@ internal class HistoryFilterScreen(
         HistoryBrowseFilterField.MIN_RANK, HistoryBrowseFilterField.MAX_RANK -> 9
     }
 
-    /** 建立與文字輸入欄位同一排版語言的選項按鈕。
+    /**
+     * 建立與文字輸入欄位同一排版語言的選項按鈕。
      *
      * @param labelKey 按鈕標題翻譯鍵。
      * @param y 按鈕垂直座標。
@@ -137,44 +140,51 @@ internal class HistoryFilterScreen(
     private fun addChoiceButton(labelKey: String, y: Int, action: () -> Unit): ButtonWidget = ButtonWidget.builder(Text.translatable(labelKey)) { action() }
         .dimensions(controlLeft(), y, controlWidth(), layout.rowHeight).build().also(::addDrawableChild)
 
-    /** 取得控制項高度。
+    /**
+     * 取得控制項高度。
      *
      * @return 控制項高度。
      */
     private fun controlHeight(): Int = (layout.rowHeight - TEXT_FIELD_BORDER * 2).coerceAtLeast(1)
 
-    /** 取得右側控制項可用寬度。
+    /**
+     * 取得右側控制項可用寬度。
      *
      * @return 控制項寬度。
      */
     private fun controlWidth(): Int = (width - controlLeft() - 14).coerceAtLeast(1)
 
-    /** 依可用寬度配置標題與控制項分界。
+    /**
+     * 依可用寬度配置標題與控制項分界。
      *
      * @return 控制項左界。
      */
     private fun controlLeft(): Int = (width * 0.4).toInt().coerceIn(70, 160)
 
-    /** 取得目前可見的文字欄位數量。
+    /**
+     * 取得目前可見的文字欄位數量。
      *
      * @return 文字欄位數量。
      */
     private fun visibleFieldCount(): Int = if (session.controller.state.value.query.scope.coversAllMatches) 4 else 6
 
-    /** 取得包含規則及選項列的內容列數。
+    /**
+     * 取得包含規則及選項列的內容列數。
      *
      * @return 內容列數。
      */
     private fun visibleRowCount(): Int = visibleFieldCount() + 4
 
-    /** 取得內容列位置。
+    /**
+     * 取得內容列位置。
      *
      * @param index 從零開始的內容列索引。
      * @return 依目前捲動狀態計算的控制項上界。
      */
     private fun rowTop(index: Int): Int = layout.rowTop(index, contentScroll)
 
-    /** 取得篩選欄位標題翻譯鍵。
+    /**
+     * 取得篩選欄位標題翻譯鍵。
      *
      * @param field 欄位種類。
      * @return 欄位標題翻譯鍵。
@@ -189,7 +199,8 @@ internal class HistoryFilterScreen(
         HistoryBrowseFilterField.RULE -> MinecraftHistoryScreenKeys.FILTER_RULE
     }
 
-    /** 建立文字欄位的用途與格式範例提示。
+    /**
+     * 建立文字欄位的用途與格式範例提示。
      *
      * @param field 欄位種類。
      * @param labelKey 欄位標題翻譯鍵。
@@ -202,7 +213,8 @@ internal class HistoryFilterScreen(
         .append(" ")
         .append(Text.translatable("${MinecraftHistoryScreenKeys.FILTER_INPUT_EXAMPLE_PREFIX}${field.name.lowercase()}").formatted(Formatting.WHITE))
 
-    /** 更新欄位草稿並嘗試套用有效查詢。
+    /**
+     * 更新欄位草稿並嘗試套用有效查詢。
      *
      * @param field 被修改的欄位。
      * @param value 欄位新文字。
@@ -221,7 +233,8 @@ internal class HistoryFilterScreen(
         validateAndApply()
     }
 
-    /** 驗證整份草稿；只有有效結果才送出查詢。
+    /**
+     * 驗證整份草稿；只有有效結果才送出查詢。
      *
      * @return 是否已套用有效查詢。
      */
@@ -272,7 +285,8 @@ internal class HistoryFilterScreen(
         validateAndApply()
     }
 
-    /** 選取已註冊規則，最後一項回到不限。
+    /**
+     * 選取已註冊規則，最後一項回到不限。
      *
      * @param step 選取方向及步數。
      */
@@ -310,7 +324,8 @@ internal class HistoryFilterScreen(
         mouseY >= rowTop(0) + layout.rowHeight + 2 &&
         mouseY < rulePickerBottom()
 
-    /** 建立列出目前值與可選值的 tooltip。
+    /**
+     * 建立列出目前值與可選值的 tooltip。
      *
      * @param title 選項名稱。
      * @param current 目前選值。
@@ -325,7 +340,8 @@ internal class HistoryFilterScreen(
         .append(Text.translatable(MinecraftHistoryScreenKeys.TOOLTIP_OPTIONS).formatted(Formatting.GOLD))
         .also { result -> options.forEach { option -> result.append("\n• ").append(option.copy().formatted(if (option.string == current.string) Formatting.GREEN else Formatting.WHITE)) } }
 
-    /** 建立規則選擇器的 tooltip。
+    /**
+     * 建立規則選擇器的 tooltip。
      *
      * @return 顯示目前規則與可選規則的 tooltip。
      */
@@ -353,7 +369,8 @@ internal class HistoryFilterScreen(
     private fun aiLabel(value: HistoryAiFilterDto?): Text = value?.let { Text.translatable("${MinecraftHistoryScreenKeys.FILTER_AI}.${it.name.lowercase()}") }
         ?: Text.translatable(MinecraftHistoryScreenKeys.FILTER_ANY)
 
-    /** 取得循環選項中的下一個值；「不限」排在第一項，按住 Shift 時往回選。
+    /**
+     * 取得循環選項中的下一個值；「不限」排在第一項，按住 Shift 時往回選。
      *
      * @param value 目前選值；null 表示不限。
      * @param values 不含「不限」的可循環值清單。
@@ -361,7 +378,8 @@ internal class HistoryFilterScreen(
      */
     private fun <T> next(value: T?, values: List<T>): T? = CycleButtonInput.next(options = listOf<T?>(null) + values, current = value)
 
-    /** 取得指定欄位目前保留的原始文字。
+    /**
+     * 取得指定欄位目前保留的原始文字。
      *
      * @param field 欄位種類。
      * @return 欄位文字。
@@ -500,7 +518,8 @@ internal class HistoryFilterScreen(
         context.drawTextWithShadow(textRenderer, Text.literal(value), 8, y + (layout.rowHeight - textRenderer.fontHeight) / 2, color)
     }
 
-    /** 繪製可捲動的規則選項清單。
+    /**
+     * 繪製可捲動的規則選項清單。
      *
      * @param context 畫面繪製上下文。
      * @param mouseX 游標水平座標。

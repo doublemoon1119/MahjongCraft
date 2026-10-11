@@ -36,6 +36,7 @@ class ResolvePostReactionRoundOutcomeUseCase(
 ) {
     /**
      * 原子判定並寫回特殊結果；沒有 resolver 成立時成功回傳 `null`，呼叫端應繼續普通流局。
+     *
      * @param gameId 欲推進的對局識別碼。
      * @return 已套用的特殊結果、無成立結果或對局不存在錯誤。
      */

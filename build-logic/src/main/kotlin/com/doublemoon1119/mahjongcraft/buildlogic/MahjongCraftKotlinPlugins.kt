@@ -61,6 +61,7 @@ private fun Project.configureKtlint() {
  */
 private fun Project.configureDetekt() {
     pluginManager.apply("dev.detekt")
+    dependencies.add("detektPlugins", DETEKT_RULES_COORDINATES)
     extensions.configure<DetektExtension> {
         buildUponDefaultConfig.set(false)
         config.setFrom(rootProject.layout.projectDirectory.file(DETEKT_CONFIG_PATH))
@@ -80,6 +81,10 @@ private fun Project.configureDetekt() {
 
 /** 共用 detekt 設定檔相對於 root project 的路徑。 */
 private const val DETEKT_CONFIG_PATH: String = "config/detekt/detekt.yml"
+
+/** included build 提供的開發工具規則；只加入 detekt 外掛 classpath，不進入正式模組依賴。 */
+private const val DETEKT_RULES_COORDINATES: String =
+    "com.doublemoon1119.mahjongcraft.buildlogic:mahjongcraft-detekt-rules:0.0.0-dev"
 
 /** 彙整帶型別解析 detekt 任務、供手動執行的任務名稱。 */
 private const val DETEKT_ALL_TASK_NAME: String = "detektAll"

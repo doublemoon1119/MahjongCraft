@@ -29,7 +29,9 @@ class HistoryRoundNavigationTest {
         assertNull(HistoryRoundNavigation.nextPosition(state, HistoryRoundPositionDto.AfterTransaction(3), 1))
     }
 
-    /** 建立不含牌引用的導航事件頁。
+    /**
+     * 建立不含牌引用的導航事件頁。
+     *
      * @param indices 已確認的交易索引。
      * @param next 下一頁起點；null 表示終端頁。
      * @return 導航測試使用的唯讀資料。

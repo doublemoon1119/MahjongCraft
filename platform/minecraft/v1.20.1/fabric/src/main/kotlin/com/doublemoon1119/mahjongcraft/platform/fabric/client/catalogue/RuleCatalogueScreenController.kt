@@ -15,6 +15,7 @@ import org.koin.core.annotation.Single
 
 /**
  * 開啟規則一覽：一般說明延後到下一個客戶端 tick 開啟，避免指令執行後關閉聊天畫面時蓋掉新畫面；房間與歷史畫面立即切換。
+ *
  * @property catalogueRegistry 規則目錄來源。
  * @property ruleNames 規則名稱來源。
  * @property moduleRegistry 已知規則模組。

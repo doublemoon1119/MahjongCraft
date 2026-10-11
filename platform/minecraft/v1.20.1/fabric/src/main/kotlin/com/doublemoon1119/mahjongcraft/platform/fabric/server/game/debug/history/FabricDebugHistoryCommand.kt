@@ -24,7 +24,8 @@ import net.minecraft.util.Formatting
 import org.koin.core.annotation.Single
 import java.util.concurrent.CompletableFuture
 
-/** 建立 `/mahjongcraft debug history` 的歷史生成、狀態及取消指令。
+/**
+ * 建立 `/mahjongcraft debug history` 的歷史生成、狀態及取消指令。
  *
  * @property controller 管理單一 session 的生成批次。
  * @property writer 驗證非同步回覆仍屬於原存檔 session。
@@ -51,7 +52,9 @@ class FabricDebugHistoryCommand(
         .then(literal(STATUS_SUBCOMMAND).executes { status(it) })
         .then(literal(CANCEL_SUBCOMMAND).executes { cancel(it) })
 
-    /** 開始一批有界歷史生成工作。
+    /**
+     * 開始一批有界歷史生成工作。
+     *
      * @param context Brigadier 指令內容。
      * @return 指令已接受的結果碼；實際工作於協程中執行。
      */
@@ -81,7 +84,9 @@ class FabricDebugHistoryCommand(
         return SUCCESS
     }
 
-    /** 回報目前批次的完整安全統計。
+    /**
+     * 回報目前批次的完整安全統計。
+     *
      * @param context Brigadier 指令內容。
      * @return 指令結果碼。
      */
@@ -95,7 +100,9 @@ class FabricDebugHistoryCommand(
         return if (progress == null) FAILURE else SUCCESS
     }
 
-    /** 要求目前場次完成後停止批次。
+    /**
+     * 要求目前場次完成後停止批次。
+     *
      * @param context Brigadier 指令內容。
      * @return 指令結果碼。
      */
@@ -108,7 +115,9 @@ class FabricDebugHistoryCommand(
         return SUCCESS
     }
 
-    /** 提供所有情境的 tab 補全。
+    /**
+     * 提供所有情境的 tab 補全。
+     *
      * @param context Brigadier 指令內容。
      * @param builder 補全結果建構器。
      * @return 非同步補全結果。
@@ -116,7 +125,9 @@ class FabricDebugHistoryCommand(
     @Suppress("UNUSED_PARAMETER")
     private fun suggestScenarios(context: CommandContext<ServerCommandSource>, builder: SuggestionsBuilder): CompletableFuture<Suggestions> = CommandSource.suggestMatching(HeadlessHistoryScenario.entries.map { it.identifier }, builder)
 
-    /** 建立帶有固定前綴與英文 fallback 的安全回覆。
+    /**
+     * 建立帶有固定前綴與英文 fallback 的安全回覆。
+     *
      * @param key 翻譯鍵。
      * @param fallback 英文 fallback。
      * @param color 回覆顏色。

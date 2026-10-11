@@ -342,7 +342,8 @@ class CommittedFactsDispatcherTest {
         }
     }
 
-    /** 將 suspend 交易提交到背景執行緒。
+    /**
+     * 將 suspend 交易提交到背景執行緒。
      *
      * @param executor 接收背景工作的執行器。
      * @param block 欲提交的權威交易。

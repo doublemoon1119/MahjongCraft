@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.history
 
-/** 歷史事實在跨層傳遞時使用的穩定種類識別碼。
+/**
+ * 歷史事實在跨層傳遞時使用的穩定種類識別碼。
  *
  * 這些值同時是歷史讀模型與序列化邊界的契約；讀到未登記的種類時一律拒絕解碼。
  */

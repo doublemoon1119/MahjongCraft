@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.model.LeaveReason
 
 /**
  * 將領域資料轉換為網路 DTO。
+ *
  * @return 轉換後的資料。
  */
 fun JoinReason.toDto(): JoinReasonDto = when (this) {
@@ -14,6 +15,7 @@ fun JoinReason.toDto(): JoinReasonDto = when (this) {
 
 /**
  * 將網路 DTO 還原為領域資料。
+ *
  * @return 轉換後的資料。
  */
 fun JoinReasonDto.toDomain(): JoinReason = when (this) {
@@ -24,6 +26,7 @@ fun JoinReasonDto.toDomain(): JoinReason = when (this) {
 
 /**
  * 將領域資料轉換為網路 DTO。
+ *
  * @return 轉換後的資料。
  */
 fun LeaveReason.toDto(): LeaveReasonDto = when (this) {
@@ -34,6 +37,7 @@ fun LeaveReason.toDto(): LeaveReasonDto = when (this) {
 
 /**
  * 將網路 DTO 還原為領域資料。
+ *
  * @return 轉換後的資料。
  */
 fun LeaveReasonDto.toDomain(): LeaveReason = when (this) {

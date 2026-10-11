@@ -16,7 +16,8 @@ import kotlin.uuid.Uuid
 
 /** 驗證有界 JSON payload 的長度、編碼與封包完整性檢查。 */
 class BoundedPayloadTest {
-    /** 單局要求沿用正式 4 KiB buffer 防護，不能夾帶額外封包或超長配對鍵。
+    /**
+     * 單局要求沿用正式 4 KiB buffer 防護，不能夾帶額外封包或超長配對鍵。
      */
     @Test
     fun `round replay requests share the bounded packet decoder`() {

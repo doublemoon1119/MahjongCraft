@@ -74,23 +74,31 @@ class HistoryWinningHandProjectionTest {
         assertNull(completion.outcome?.winnerDetails?.single()?.hand)
     }
 
-    /** 建立包含牌目錄中的局內牌索引。
+    /**
+     * 建立包含牌目錄中的局內牌索引。
+     *
      * @param size 牌目錄大小。
      * @return 供投影上下文使用的牌目錄。
      */
     private fun catalog(size: Int) = HistoryRoundTileCatalog(List(size) { Tile.Numeric(Tile.Suit.Character, (it % 9) + 1) })
 
-    /** 建立受限投影預算。
+    /**
+     * 建立受限投影預算。
+     *
      * @return 可供單筆測試事實使用的讀取預算。
      */
     private fun budget() = ReplayReadBudget(ReplayReadLimits()) {}
 
-    /** 建立投影 mapper。
+    /**
+     * 建立投影 mapper。
+     *
      * @return 未註冊擴充資料的標準 mapper。
      */
     private fun mapper() = HistoryReplayProjectionMapper(HistoryReplayProjectionRegistry())
 
-    /** 建立測試用 canonical 玩家身分。
+    /**
+     * 建立測試用 canonical 玩家身分。
+     *
      * @param count 玩家數量。
      * @return 與事實座位索引相符的對局身分。
      */
@@ -100,7 +108,9 @@ class HistoryWinningHandProjectionTest {
         List(count) { HistoryReplayPlayerIdentity(it, Uuid.random(), null) },
     )
 
-    /** 建立單一贏家明細。
+    /**
+     * 建立單一贏家明細。
+     *
      * @param seat 贏家座位索引。
      * @param standing 有序立牌索引；null 表示不保存牌組描述。
      * @param winning 獨立和牌索引；特殊結算時為 null。

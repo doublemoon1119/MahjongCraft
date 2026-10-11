@@ -14,6 +14,7 @@ object FakeHandFactory {
 
     /**
      * 建立一個測試用的手牌。
+     *
      * @param tiles 手中的立牌列表，自動轉換為 [IdentifiedTile]。
      * @param melds 副露列表，預設為空。
      * @param lastDrawn 最後摸入的牌，預設為空。

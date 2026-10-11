@@ -349,6 +349,7 @@ class RespondToDiscardUseCase(
      * [ronWinnerIds] 只在榮和結算成立時非空（一炮多響可能不只一人），[ronWinningTileId] 是被榮和的那張
      * 捨牌，供呼叫端逐一觸發胡牌慶祝演出；跟 [winnerId]（碰/吃/明槓得標）是互斥的兩個視窗，同一次結算
      * 只會有其中一種非空。
+     *
      * @property settlement 同一榮和交易建立的胡牌呈現詳情。
      */
     private data class RespondResult(

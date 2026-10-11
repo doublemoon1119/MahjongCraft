@@ -74,7 +74,8 @@ internal class HistoryQueryAdmission(
         rejectionResponses.remove(playerId)
     }
 
-    /** 判斷是否可以向玩家傳送一次准入拒絕回覆，避免拒絕封包形成回覆洪水。
+    /**
+     * 判斷是否可以向玩家傳送一次准入拒絕回覆，避免拒絕封包形成回覆洪水。
      *
      * @param playerId 已驗證連線玩家。
      * @return 已超過拒絕回覆間隔時為 true，並保留此次回覆時間。

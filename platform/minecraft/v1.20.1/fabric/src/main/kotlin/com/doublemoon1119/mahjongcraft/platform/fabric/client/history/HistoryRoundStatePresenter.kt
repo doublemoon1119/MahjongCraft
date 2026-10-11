@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscard
 internal object HistoryRoundStatePresenter {
     /**
      * 取得保存當下的完整和牌牌組；立牌已失去對應時不猜測原手牌。
+     *
      * @param state 已驗證的交易後桌況。
      * @param winner 該筆結算的贏家描述。
      * @param maxWidth 可用寬度。
@@ -28,6 +29,7 @@ internal object HistoryRoundStatePresenter {
 
     /**
      * 顯示保存順序的手牌，最近摸牌依實體索引分離且不重複。
+     *
      * @param player 已驗證的玩家桌況。
      * @param maxWidth 可用寬度。
      * @return 手牌幾何。
@@ -36,6 +38,7 @@ internal object HistoryRoundStatePresenter {
 
     /**
      * 保留牌河槽位；帶有登記為橫擺的公開標記的牌橫置。
+     *
      * @param player 已驗證的玩家桌況。
      * @param maxWidth 可用寬度。
      * @param markerDisplays 牌河公開標記的呈現方式。
@@ -56,6 +59,7 @@ internal object HistoryRoundStatePresenter {
 
     /**
      * 組合完整群組，群組間保留間距並在必要時整組換行。
+     *
      * @param groups 依保存順序排列的群組。
      * @param maxWidth 可用寬度。
      * @return 所有群組的完整幾何。

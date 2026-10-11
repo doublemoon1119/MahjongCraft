@@ -11,6 +11,7 @@ interface MahjongModuleRegistry {
 
     /**
      * 註冊一個新的規則模組。
+     *
      * @param configClass 規則配置類別。
      * @param id 規則模組 ID。
      * @param factory 工廠函數。

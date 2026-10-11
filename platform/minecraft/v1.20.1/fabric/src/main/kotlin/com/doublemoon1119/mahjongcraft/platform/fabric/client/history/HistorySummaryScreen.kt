@@ -16,7 +16,8 @@ import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeMark
 import kotlin.time.TimeSource
 
-/** 顯示單場歷史對局的安全摘要與局級索引。
+/**
+ * 顯示單場歷史對局的安全摘要與局級索引。
  *
  * @property session 共用歷史瀏覽 session。
  */
@@ -80,7 +81,8 @@ internal class HistorySummaryScreen(
     /** 摘要與其他歷史畫面一致，不暫停整合伺服器。 */
     override fun shouldPause(): Boolean = false
 
-    /** 處理內容區滾輪。
+    /**
+     * 處理內容區滾輪。
      *
      * @param mouseX 游標水平座標。
      * @param mouseY 游標垂直座標。
@@ -94,7 +96,8 @@ internal class HistorySummaryScreen(
         return true
     }
 
-    /** 開始捲軸拖曳。
+    /**
+     * 開始捲軸拖曳。
      *
      * @param mouseX 游標水平座標。
      * @param mouseY 游標垂直座標。
@@ -131,7 +134,8 @@ internal class HistorySummaryScreen(
         return super.mouseClicked(mouseX, mouseY, button)
     }
 
-    /** 更新拖曳捲動位置。
+    /**
+     * 更新拖曳捲動位置。
      *
      * @param mouseY 游標垂直座標。
      */
@@ -140,7 +144,8 @@ internal class HistorySummaryScreen(
         session.controller.rememberSummaryPosition(scroll)
     }
 
-    /** 持續處理捲軸拖曳。
+    /**
+     * 持續處理捲軸拖曳。
      *
      * @param mouseX 游標水平座標。
      * @param mouseY 游標垂直座標。
@@ -156,7 +161,8 @@ internal class HistorySummaryScreen(
         super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY)
     }
 
-    /** 結束捲軸拖曳。
+    /**
+     * 結束捲軸拖曳。
      *
      * @param mouseX 游標水平座標。
      * @param mouseY 游標垂直座標。

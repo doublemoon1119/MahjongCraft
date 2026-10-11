@@ -35,19 +35,25 @@ interface HistoryQueryTransport {
      */
     fun querySummary(request: HistorySummaryRequestDto): String
 
-    /** 傳送單場歷史規則設定要求。
+    /**
+     * 傳送單場歷史規則設定要求。
+     *
      * @param request 目標對局與查閱範圍。
      * @return 此次要求的配對識別碼。
      */
     fun queryRuleSettings(request: HistoryRuleSettingsRequestDto): String
 
-    /** 傳送單局事件頁要求。
+    /**
+     * 傳送單局事件頁要求。
+     *
      * @param request 目標對局、局序號及事件頁選擇器。
      * @return 此次要求的配對識別碼。
      */
     fun queryRoundEvents(request: HistoryRoundEventsRequestDto): String
 
-    /** 傳送單局桌況要求。
+    /**
+     * 傳送單局桌況要求。
+     *
      * @param request 目標對局、局序號及局內位置。
      * @return 此次要求的配對識別碼。
      */

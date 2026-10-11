@@ -220,7 +220,8 @@ class HistoryRoundQueryReaderTest {
         )
     }
 
-    /** 執行單局讀取測試的共用入口。
+    /**
+     * 執行單局讀取測試的共用入口。
      *
      * @param database 測試用 SQLite 歷史資料庫。
      * @param matchId 欲查詢的對局識別碼。
@@ -260,7 +261,8 @@ class HistoryRoundQueryReaderTest {
     /** 建立新的 SQLite 歷史資料庫。 */
     private fun openDatabase(): SqliteHistoryDatabase = SqliteHistoryDatabase.open(createTempDirectory("mahjongcraft-round-reader-").resolve("history.sqlite"))
 
-    /** 寫入可供查詢的完整對局摘要與 Replay。
+    /**
+     * 寫入可供查詢的完整對局摘要與 Replay。
      *
      * @param path 資料庫檔案位置。
      * @param payload Replay payload。
@@ -283,21 +285,24 @@ class HistoryRoundQueryReaderTest {
         return MatchFixture(matchId, TABLE_ID, PLAYER_ID)
     }
 
-    /** 寫入清理墓碑。
+    /**
+     * 寫入清理墓碑。
      *
      * @param path 資料庫檔案位置。
      * @param matchId 對局識別碼。
      */
     private fun insertTombstone(path: Path, matchId: Uuid) = sql(path, "INSERT INTO history_tombstone(match_id, pruned_at_epoch_millis, reason) VALUES (?, 1, 'test')", matchId)
 
-    /** 寫入事件序號缺口。
+    /**
+     * 寫入事件序號缺口。
      *
      * @param path 資料庫檔案位置。
      * @param matchId 對局識別碼。
      */
     private fun insertGap(path: Path, matchId: Uuid) = sql(path, "INSERT INTO history_gap(match_id, first_missing_sequence) VALUES (?, 2)", matchId)
 
-    /** 建立測試查詢身分。
+    /**
+     * 建立測試查詢身分。
      *
      * @param playerId 玩家識別碼。
      * @param administrator 是否具有管理員權限。
@@ -308,7 +313,8 @@ class HistoryRoundQueryReaderTest {
     /** 建立空的成功 JSON 文件。 */
     private fun successDocument(): ReplayReadResult<JsonObject> = success(JsonObject(emptyMap()))
 
-    /** 建立帶有明確資源統計的成功 Replay 結果。
+    /**
+     * 建立帶有明確資源統計的成功 Replay 結果。
      *
      * @param value Replay 讀取值。
      * @return 成功結果。
@@ -318,7 +324,8 @@ class HistoryRoundQueryReaderTest {
         diagnostics = ReplayReadDiagnostics(0, 0, 0, 0),
     )
 
-    /** 驗證結果為指定錯誤。
+    /**
+     * 驗證結果為指定錯誤。
      *
      * @param result 查詢結果。
      * @param code 預期錯誤碼。
@@ -328,7 +335,8 @@ class HistoryRoundQueryReaderTest {
         assertEquals(code, failure.error.code)
     }
 
-    /** 執行帶參數 SQL。
+    /**
+     * 執行帶參數 SQL。
      *
      * @param path 資料庫檔案位置。
      * @param statement SQL 敘述。
@@ -343,7 +351,8 @@ class HistoryRoundQueryReaderTest {
         }
     }
 
-    /** 測試用封存身分資料。
+    /**
+     * 測試用封存身分資料。
      *
      * @property matchId 對局識別碼。
      * @property tableId 牌桌識別碼。
@@ -355,7 +364,8 @@ class HistoryRoundQueryReaderTest {
         val playerId: Uuid,
     )
 
-    /** 測試用最小 Replay 讀模型。
+    /**
+     * 測試用最小 Replay 讀模型。
      *
      * @property matchId Replay 對局識別碼。
      * @property tableId Replay 牌桌識別碼。

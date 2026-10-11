@@ -110,7 +110,9 @@ class HistoryGenerationControllerTest {
         }
     }
 
-    /** 建立與 production 相同的 writer 依賴邊界。
+    /**
+     * 建立與 production 相同的 writer 依賴邊界。
+     *
      * @param store 受測的權威歷史來源。
      * @param configState writer 使用的有效設定。
      * @return 未附加資料庫的歷史 writer。

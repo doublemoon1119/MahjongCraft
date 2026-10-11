@@ -12,6 +12,7 @@ class GameEventExclusions {
 
     /**
      * 排除指定場次後續的成就與事件。
+     *
      * @param matchId 使用 debug 操作的場次。
      */
     fun exclude(matchId: Uuid) {
@@ -20,6 +21,7 @@ class GameEventExclusions {
 
     /**
      * 查詢場次是否已被排除。
+     *
      * @param matchId 欲查詢的場次。
      * @return 場次已被排除時為 true。
      */

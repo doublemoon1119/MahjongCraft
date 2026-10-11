@@ -45,6 +45,7 @@ internal class FabricHistoryQueryRepository(
 ) : HistoryQueryRepository {
     /**
      * 查閱已公開對局的一頁交易，保留 writer 的生命週期錯誤。
+     *
      * @param access 可信連線身分。
      * @param request 已驗證事件要求。
      * @return 有界交易頁或安全錯誤。
@@ -54,6 +55,7 @@ internal class FabricHistoryQueryRepository(
 
     /**
      * 查閱已公開對局的指定位置，不建立可操作的遊戲狀態。
+     *
      * @param access 可信連線身分。
      * @param request 已驗證狀態要求。
      * @return 完整歷史狀態或安全錯誤。
@@ -242,6 +244,7 @@ private const val MAX_RULE_SETTINGS_REPLAY_BYTES = HISTORY_REPLAY_QUERY_BYTES
 
 /**
  * 展平 writer 管理結果與資料讀取結果，保留兩層安全失敗。
+ *
  * @param T 成功值型別。
  * @return 完整查詢值或安全失敗。
  */

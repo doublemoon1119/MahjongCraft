@@ -272,7 +272,8 @@ class HistoryQueryLoadMeasurementTest {
         }
     }
 
-    /** 將忙碌回覆序列化，計入正式回覆的配置與 CPU 成本。
+    /**
+     * 將忙碌回覆序列化，計入正式回覆的配置與 CPU 成本。
      *
      * @param errorCode 要回覆的穩定錯誤代碼。
      */
@@ -283,7 +284,8 @@ class HistoryQueryLoadMeasurementTest {
         )
     }
 
-    /** 將正式 SQLite 摘要轉成實際歷史清單網路 DTO。
+    /**
+     * 將正式 SQLite 摘要轉成實際歷史清單網路 DTO。
      *
      * @return 包含參與者與終局結果的線路摘要。
      */
@@ -302,7 +304,8 @@ class HistoryQueryLoadMeasurementTest {
         integrityDiagnostic = null,
     )
 
-    /** 將資料庫終局狀態轉為網路列舉。
+    /**
+     * 將資料庫終局狀態轉為網路列舉。
      *
      * @return 對應的線路終局狀態。
      */
@@ -311,7 +314,8 @@ class HistoryQueryLoadMeasurementTest {
         SqliteHistoryMatchOutcome.INTERRUPTED -> HistoryOutcomeFilterDto.INTERRUPTED
     }
 
-    /** 將資料庫完整性狀態轉為網路列舉。
+    /**
+     * 將資料庫完整性狀態轉為網路列舉。
      *
      * @return 對應的線路完整性狀態。
      */
@@ -320,7 +324,8 @@ class HistoryQueryLoadMeasurementTest {
         else -> HistoryIntegrityFilterDto.INCOMPLETE
     }
 
-    /** 建立每位玩家跨負載波次固定不變的 UUID。
+    /**
+     * 建立每位玩家跨負載波次固定不變的 UUID。
      *
      * @param count 固定玩家數量。
      * @return 不重複且跨波次穩定的玩家識別碼。
@@ -374,7 +379,8 @@ class HistoryQueryLoadMeasurementTest {
         /** 已完成待寫事件數量。 */
         var writeCount: Int = 0
 
-        /** 記錄成功查詢延遲。
+        /**
+         * 記錄成功查詢延遲。
          *
          * @param value 本次延遲的毫秒數。
          * @param collect 是否保存延遲樣本。
@@ -383,7 +389,8 @@ class HistoryQueryLoadMeasurementTest {
             if (collect) queryMillis += value
         }
 
-        /** 記錄待寫事件延遲。
+        /**
+         * 記錄待寫事件延遲。
          *
          * @param value 本次延遲的毫秒數。
          * @param collect 是否保存延遲樣本。
@@ -422,7 +429,8 @@ class HistoryQueryLoadMeasurementTest {
             }
         }
 
-        /** 取得處理程序 CPU、heap 與 GC 的量測結果。
+        /**
+         * 取得處理程序 CPU、heap 與 GC 的量測結果。
          *
          * @return 本輪資源統計；不支援的指標為 null。
          */
@@ -436,7 +444,8 @@ class HistoryQueryLoadMeasurementTest {
             return RuntimeTelemetry(processCpuMillis, initialHeapBytes, peakHeapBytes, garbageCollections)
         }
 
-        /** 取得支援時的處理程序 CPU 奈秒數。
+        /**
+         * 取得支援時的處理程序 CPU 奈秒數。
          *
          * @return 處理程序累積 CPU 奈秒數；不支援時為 null。
          */
@@ -444,7 +453,8 @@ class HistoryQueryLoadMeasurementTest {
             ?.processCpuTime
             ?.takeIf { it >= 0 }
 
-        /** 取得支援時的 GC 累積次數。
+        /**
+         * 取得支援時的 GC 累積次數。
          *
          * @return 所有 GC 的累積次數；不支援時為 null。
          */

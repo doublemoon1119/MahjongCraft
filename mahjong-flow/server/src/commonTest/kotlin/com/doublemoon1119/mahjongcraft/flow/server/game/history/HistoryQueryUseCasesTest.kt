@@ -296,7 +296,8 @@ class HistoryQueryUseCasesTest {
         assertEquals(expectedCode, result.error.code)
     }
 
-    /** 記錄用的最小查詢 repository。
+    /**
+     * 記錄用的最小查詢 repository。
      *
      * @property listCalls 清單查詢呼叫次數。
      * @property summaryCalls 摘要查詢呼叫次數。
@@ -312,7 +313,9 @@ class HistoryQueryUseCasesTest {
         var lastRuleSettingsAccess: HistoryQueryAccess? = null
         var lastListAccess: HistoryQueryAccess? = null
 
-        /** 回傳空的成功頁並記錄授權身分。
+        /**
+         * 回傳空的成功頁並記錄授權身分。
+         *
          * @param access 查詢授權身分。
          * @param request 清單查詢要求。
          * @return 空的成功頁。
@@ -326,7 +329,9 @@ class HistoryQueryUseCasesTest {
             return HistoryQueryResult.Success(HistoryListPage(emptyList(), null))
         }
 
-        /** 回傳未找到結果，供授權測試驗證不應觸發此方法。
+        /**
+         * 回傳未找到結果，供授權測試驗證不應觸發此方法。
+         *
          * @param access 查詢授權身分。
          * @param request 摘要查詢要求。
          * @return 測試用查詢失敗。
@@ -341,7 +346,9 @@ class HistoryQueryUseCasesTest {
             )
         }
 
-        /** 回傳成功設定，供授權測試驗證允許的要求會抵達此方法。
+        /**
+         * 回傳成功設定，供授權測試驗證允許的要求會抵達此方法。
+         *
          * @param access 查詢授權身分。
          * @param request 規則設定查詢要求。
          * @return 測試用開局設定。

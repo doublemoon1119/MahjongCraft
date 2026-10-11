@@ -367,6 +367,7 @@ class RespondToRobbingUseCase(
      * 嶺上摸牌，需要廣播 [GameAction.Draw]；[declarerId]（槓的宣告者）也只在這種情況才有值。[ronWinnerIds]／
      * [ronWinningTileId] 只在搶槓成功時非空，供呼叫端逐一觸發胡牌慶祝演出——跟 [declarerId] 是互斥的
      * 兩個視窗，同一次結算只會有其中一種非空。[ruleStateChanged] 代表成立的是移出手牌的擴充動作，規則狀態（例如移出的牌）已改變。
+     *
      * @property settlement 同一搶槓榮和交易建立的胡牌呈現詳情。
      */
     private data class RobbingResult(

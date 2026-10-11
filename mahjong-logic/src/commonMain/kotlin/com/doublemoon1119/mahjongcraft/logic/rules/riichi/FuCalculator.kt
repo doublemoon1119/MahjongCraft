@@ -92,7 +92,7 @@ object FuCalculator {
         return ceilToTen(fu)
     }
 
-    /***
+    /**
      * 是否為門前平和自摸
      */
     private fun isMenzenPinfuTsumo(context: RiichiHandValueContext, structure: HandStructure.Standard): Boolean {
@@ -110,7 +110,7 @@ object FuCalculator {
         return false
     }
 
-    /***
+    /**
      * 是否為副露平和型的榮和
      */
     private fun isFuuroPinfuRon(context: RiichiHandValueContext, structure: HandStructure.Standard): Boolean {

@@ -3,6 +3,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.Wind
 
 /**
  * 將領域資料轉換為網路 DTO。
+ *
  * @return 轉換後的資料。
  */
 fun Wind.toDto(): WindDto = when (this) {
@@ -14,6 +15,7 @@ fun Wind.toDto(): WindDto = when (this) {
 
 /**
  * 將網路 DTO 還原為領域資料。
+ *
  * @return 轉換後的資料。
  */
 fun WindDto.toDomain(): Wind = when (this) {

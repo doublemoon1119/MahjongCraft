@@ -13,6 +13,10 @@ plugins {
 
 rootProject.name = "MahjongCraft"
 
+// 讓 detekt 從本機 build-logic 取得自訂規則，不必到遠端下載。
+// 上方 pluginManagement 裡的宣告只負責提供 Gradle 外掛，因此這裡仍需另外宣告。
+includeBuild("build-logic")
+
 /**
  * 集中化依賴管理與倉庫配置
  */

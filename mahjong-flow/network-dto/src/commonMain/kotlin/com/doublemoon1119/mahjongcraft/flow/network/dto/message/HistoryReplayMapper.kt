@@ -23,6 +23,7 @@ import kotlinx.serialization.json.Json
 
 /**
  * 將單局事件請求 DTO 映射為 Flow 要求。
+ *
  * @return 可交給 Flow use case 驗證的查詢要求。
  */
 fun HistoryRoundEventsRequestDto.toDomain(): HistoryRoundEventsRequest = HistoryRoundEventsRequest(
@@ -35,6 +36,7 @@ fun HistoryRoundEventsRequestDto.toDomain(): HistoryRoundEventsRequest = History
 
 /**
  * 將單局桌況請求 DTO 映射為 Flow 要求。
+ *
  * @return 可交給 Flow use case 驗證的查詢要求。
  */
 fun HistoryRoundStateRequestDto.toDomain(): HistoryRoundStateRequest = HistoryRoundStateRequest(
@@ -66,6 +68,7 @@ fun HistoryRoundPosition.toDto(): HistoryRoundPositionDto = when (this) {
 
 /**
  * 將 Flow 單局事件映射為網路 DTO。
+ *
  * @return 可公開傳輸的事件 DTO。
  */
 fun HistoryRoundEvents.toDto(): HistoryRoundEventsDto = HistoryRoundEventsDto(
@@ -78,6 +81,7 @@ fun HistoryRoundEvents.toDto(): HistoryRoundEventsDto = HistoryRoundEventsDto(
 
 /**
  * 將 Replay 對局識別資料映射為網路 DTO。
+ *
  * @return 不含私有狀態的對局識別 DTO。
  */
 private fun HistoryReplayIdentity.toDto(): HistoryReplayIdentityDto = HistoryReplayIdentityDto(
@@ -88,6 +92,7 @@ private fun HistoryReplayIdentity.toDto(): HistoryReplayIdentityDto = HistoryRep
 
 /**
  * 將 Replay 交易映射為網路 DTO。
+ *
  * @return 可序列化的交易 DTO。
  */
 private fun HistoryReplayTransaction.toDto(): HistoryReplayTransactionDto = HistoryReplayTransactionDto(
@@ -100,6 +105,7 @@ private fun HistoryReplayTransaction.toDto(): HistoryReplayTransactionDto = Hist
 
 /**
  * 將 Replay 語意事實映射為不含原始 payload 的網路 DTO。
+ *
  * @return 可公開傳輸的事實 DTO。
  */
 private fun HistoryReplayFact.toDto(): HistoryReplayFactDto = when (this) {
@@ -113,6 +119,7 @@ private fun HistoryReplayFact.toDto(): HistoryReplayFactDto = when (this) {
 
 /**
  * 將局結算結果映射為網路 DTO。
+ *
  * @return 可公開傳輸的結算 DTO。
  */
 private fun HistoryRoundOutcome.toDto(): HistoryRoundOutcomeDto = HistoryRoundOutcomeDto(
@@ -129,6 +136,7 @@ private fun HistoryRoundOutcome.toDto(): HistoryRoundOutcomeDto = HistoryRoundOu
 
 /**
  * 將歷史贏家詳情映射為網路 DTO。
+ *
  * @return 可公開傳輸的贏家詳情。
  */
 private fun HistoryWinnerDetails.toDto(): HistoryWinnerDetailsDto = HistoryWinnerDetailsDto(
@@ -149,12 +157,14 @@ private fun HistoryReplayWinningHand.toDto(): HistoryReplayWinningHandDto = Hist
 
 /**
  * 將歷史胡牌詳情欄位映射為網路 DTO。
+ *
  * @return 可公開傳輸的詳情欄位。
  */
 private fun HistoryWinDetailField.toDto(): HistoryWinDetailFieldDto = HistoryWinDetailFieldDto(id, value.toDto())
 
 /**
  * 將歷史胡牌詳情值映射為網路 DTO。
+ *
  * @return 可公開傳輸的詳情值。
  */
 private fun HistoryWinDetailValue.toDto(): HistoryWinDetailValueDto = when (this) {
@@ -174,6 +184,7 @@ private fun WinSettlementQuantity.toDto(): HistoryWinDetailQuantityDto = History
 
 /**
  * 將 Flow 單局桌況映射為網路 DTO。
+ *
  * @return 可公開傳輸的桌況 DTO。
  */
 fun HistoryRoundState.toDto(): HistoryRoundStateDto = HistoryRoundStateDto(
@@ -198,6 +209,7 @@ fun HistoryRoundState.toDto(): HistoryRoundStateDto = HistoryRoundStateDto(
 
 /**
  * 將 Replay 玩家桌況映射為網路 DTO。
+ *
  * @return 可公開傳輸的玩家桌況 DTO。
  */
 private fun HistoryReplayPlayerState.toDto(): HistoryReplayPlayerStateDto = HistoryReplayPlayerStateDto(
@@ -214,6 +226,7 @@ private fun HistoryReplayPlayerState.toDto(): HistoryReplayPlayerStateDto = Hist
 
 /**
  * 將 Replay 副露映射為網路 DTO。
+ *
  * @return 可公開傳輸的副露 DTO。
  */
 private fun HistoryReplayMeld.toDto(): HistoryReplayMeldDto = HistoryReplayMeldDto(
@@ -225,12 +238,14 @@ private fun HistoryReplayMeld.toDto(): HistoryReplayMeldDto = HistoryReplayMeldD
 
 /**
  * 將 Replay 規則公開資訊映射為網路 DTO。
+ *
  * @return 可公開傳輸的規則資訊 DTO。
  */
 private fun HistoryReplayRuleInformation.toDto(): HistoryReplayRuleInformationDto = HistoryReplayRuleInformationDto(typeKey, summary)
 
 /**
  * 將事件查詢要求 DTO 編碼成傳輸字串。
+ *
  * @param json 使用的 JSON codec。
  * @return 編碼後的要求字串。
  */
@@ -238,6 +253,7 @@ fun HistoryRoundEventsRequestDto.encode(json: Json): String = json.encodeToStrin
 
 /**
  * 將傳輸字串解碼為單局事件請求 DTO。
+ *
  * @param json 使用的 JSON codec。
  * @return 解碼後的請求 DTO。
  */
@@ -245,6 +261,7 @@ fun String.decodeHistoryRoundEventsRequest(json: Json): HistoryRoundEventsReques
 
 /**
  * 將桌況查詢要求 DTO 編碼成傳輸字串。
+ *
  * @param json 使用的 JSON codec。
  * @return 編碼後的要求字串。
  */
@@ -252,6 +269,7 @@ fun HistoryRoundStateRequestDto.encode(json: Json): String = json.encodeToString
 
 /**
  * 將傳輸字串解碼為單局桌況請求 DTO。
+ *
  * @param json 使用的 JSON codec。
  * @return 解碼後的請求 DTO。
  */

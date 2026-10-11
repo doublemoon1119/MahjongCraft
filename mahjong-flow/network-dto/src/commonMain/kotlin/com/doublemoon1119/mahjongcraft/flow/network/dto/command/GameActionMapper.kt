@@ -8,6 +8,7 @@ import kotlin.uuid.Uuid
 
 /**
  * 將領域資料轉換為網路 DTO。
+ *
  * @param registries 網路 DTO 的動態註冊表集合。
  * @return 轉換後的資料。
  */
@@ -30,6 +31,7 @@ fun GameAction.toDto(registries: NetworkDtoRegistries): GameActionDto = when (th
 
 /**
  * 將網路 DTO 還原為領域資料。
+ *
  * @param registries 網路 DTO 的動態註冊表集合。
  * @return 轉換後的資料。
  */
@@ -52,6 +54,7 @@ fun GameActionDto.toDomain(registries: NetworkDtoRegistries): GameAction = when 
 
 /**
  * 將領域資料轉換為網路 DTO。
+ *
  * @return 轉換後的資料。
  */
 fun GameAction.KanType.toDto(): KanTypeDto = when (this) {
@@ -62,6 +65,7 @@ fun GameAction.KanType.toDto(): KanTypeDto = when (this) {
 
 /**
  * 將網路 DTO 還原為領域資料。
+ *
  * @return 轉換後的資料。
  */
 fun KanTypeDto.toDomain(): GameAction.KanType = when (this) {

@@ -20,7 +20,8 @@ import kotlin.time.Duration
 class FabricAppCoroutineScope(
     private val dispatchers: CoroutineDispatchers,
 ) : AppCoroutineScope {
-    /** 兜底記錄未被個別呼叫端攔截的協程例外；[SupervisorJob] 下每個 child 各自獨立，這裡不會影響
+    /**
+     * 兜底記錄未被個別呼叫端攔截的協程例外；[SupervisorJob] 下每個 child 各自獨立，這裡不會影響
      *  其他任務繼續執行，純粹是最後一道防線的 log。 */
     private val logger = mahjongCraftLogger(FabricAppCoroutineScope::class)
 

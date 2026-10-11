@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 
 /**
  * 將領域資料轉換為網路 DTO。
+ *
  * @return 轉換後的資料。
  */
 fun Tile.toDto(): TileDto = when (this) {
@@ -20,6 +21,7 @@ fun Tile.toDto(): TileDto = when (this) {
 
 /**
  * 將網路 DTO 還原為領域資料。
+ *
  * @return 轉換後的資料。
  */
 fun TileDto.toDomain(): Tile = when (this) {
@@ -36,6 +38,7 @@ fun TileDto.toDomain(): Tile = when (this) {
 
 /**
  * 將領域資料轉換為網路 DTO。
+ *
  * @return 轉換後的資料。
  */
 fun Tile.Suit.toDto(): SuitDto = when (this) {
@@ -46,6 +49,7 @@ fun Tile.Suit.toDto(): SuitDto = when (this) {
 
 /**
  * 將網路 DTO 還原為領域資料。
+ *
  * @return 轉換後的資料。
  */
 fun SuitDto.toDomain(): Tile.Suit = when (this) {

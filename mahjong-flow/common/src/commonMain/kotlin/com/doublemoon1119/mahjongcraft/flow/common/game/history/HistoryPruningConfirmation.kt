@@ -2,7 +2,8 @@ package com.doublemoon1119.mahjongcraft.flow.common.game.history
 
 import kotlin.uuid.Uuid
 
-/** 歷史儲存端已持久化 tombstone 的清理證明。
+/**
+ * 歷史儲存端已持久化 tombstone 的清理證明。
  *
  * @property matchId 已清理的場次 UUID。
  * @property prunedAtEpochMillis tombstone 建立的 UTC 毫秒時間戳。

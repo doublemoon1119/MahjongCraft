@@ -13,6 +13,7 @@ import kotlinx.serialization.json.Json
 
 /**
  * 一次映射後按完整交易縮頁，同步裁切截止位置的牌字典。
+ *
  * @param request 原查詢上下文。
  * @param page 已授權讀取的事件頁。
  * @param json 線路編碼設定。
@@ -57,6 +58,7 @@ internal fun boundedHistoryRoundEvents(
 
 /**
  * 原子傳送完整歷史桌況，不能為符合預算截斷持牌或牌牆。
+ *
  * @param request 原查詢上下文。
  * @param state 已授權的完整狀態。
  * @param json 線路編碼設定。

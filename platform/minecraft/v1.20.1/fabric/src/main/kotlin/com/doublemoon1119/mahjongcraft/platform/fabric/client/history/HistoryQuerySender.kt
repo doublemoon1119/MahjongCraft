@@ -22,17 +22,23 @@ interface HistoryQuerySender {
      */
     fun sendSummary(request: HistorySummaryRequestDto)
 
-    /** 傳送已包含唯一配對識別碼的歷史規則設定要求。
+    /**
+     * 傳送已包含唯一配對識別碼的歷史規則設定要求。
+     *
      * @param request 要傳送的規則設定要求。
      */
     fun sendRuleSettings(request: HistoryRuleSettingsRequestDto)
 
-    /** 傳送單局事件頁要求。
+    /**
+     * 傳送單局事件頁要求。
+     *
      * @param request 已具備配對識別碼的事件頁要求。
      */
     fun sendRoundEvents(request: HistoryRoundEventsRequestDto)
 
-    /** 傳送單局桌況要求。
+    /**
+     * 傳送單局桌況要求。
+     *
      * @param request 已具備配對識別碼的桌況要求。
      */
     fun sendRoundState(request: HistoryRoundStateRequestDto)

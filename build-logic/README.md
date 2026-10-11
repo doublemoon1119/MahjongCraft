@@ -4,6 +4,15 @@
 
 `build-logic` is an included Gradle build containing MahjongCraft convention and platform-target plugins.
 
+The `detekt-rules` subproject provides MahjongCraft's KDoc layout checks. It is loaded only through
+`detektPlugins`, not through a game module's runtime dependencies. Run `./gradlew -p build-logic build`
+to test the rules and convention integration. The project-wide `detektAll` task checks multiline KDoc
+opening lines and spacing before block tags; `build` does not run detekt and the rules do not auto-format.
+
+The rules subproject applies the standard Kotlin JVM plugin already on the build classpath and uses
+the included build's group and version. It does not select a separate JDK or apply the product
+conventions that depend on `detekt-rules` itself.
+
 ## Responsibilities
 
 - Configure shared Kotlin Multiplatform and JVM compilation policies.

@@ -4,7 +4,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecording
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryArchiveStatusDto
 import kotlin.uuid.Uuid
 
-/** 近期已結束場次的最小查詢身分證據，不保存牌局內容。
+/**
+ * 近期已結束場次的最小查詢身分證據，不保存牌局內容。
  *
  * @property participantIds 已結束場次的參與者 UUID。
  * @property decision 已固定的歷史記錄決策；缺少證據時為 null，不猜測排除原因。
@@ -14,7 +15,8 @@ internal data class RecentHistoryMatchEvidence(
     val decision: HistoryRecordingDecision?,
 )
 
-/** SQLite 與權威 outbox 合併後的單場保存證據。
+/**
+ * SQLite 與權威 outbox 合併後的單場保存證據。
  *
  * @property saved 是否已存在完整 Replay。
  * @property pruned 是否已由清理墓碑證明該場被移除。
@@ -30,7 +32,8 @@ internal data class HistoryArchiveStatusEvidence(
     val participantIds: Set<String>,
 )
 
-/** 權威記錄狀態與 SQLite 證據的安全對外判定。
+/**
+ * 權威記錄狀態與 SQLite 證據的安全對外判定。
  *
  * @param decision 權威狀態保存的該場記錄決策；若已被清理則可為 null。
  * @param pendingOutbox 是否仍有權威待寫事件或進行中的轉移。

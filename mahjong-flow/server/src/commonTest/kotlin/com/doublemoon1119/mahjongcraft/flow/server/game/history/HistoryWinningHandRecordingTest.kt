@@ -71,7 +71,9 @@ class HistoryWinningHandRecordingTest {
         assertNull(details.single().hand?.winningTileId)
     }
 
-    /** 由權威贏家呈現資料建立最小結算要求。
+    /**
+     * 由權威贏家呈現資料建立最小結算要求。
+     *
      * @param outcomeId 結算原因識別碼。
      * @param winners 權威贏家呈現資料。
      * @return 可轉換為歷史詳情的結算要求。
@@ -92,7 +94,9 @@ class HistoryWinningHandRecordingTest {
         )
     }
 
-    /** 建立一位含精確排序立牌與獨立和牌參照的贏家。
+    /**
+     * 建立一位含精確排序立牌與獨立和牌參照的贏家。
+     *
      * @param playerId 贏家玩家 UUID。
      * @param seatIndex 贏家座位索引。
      * @param standing 排序後且不含和牌張的立牌 UUID。

@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.MeldSnapshot
 
 /**
  * 將領域資料轉換為網路 DTO。
+ *
  * @return 轉換後的資料。
  */
 fun MeldSnapshot.toDto(): MeldSnapshotDto = MeldSnapshotDto(
@@ -16,6 +17,7 @@ fun MeldSnapshot.toDto(): MeldSnapshotDto = MeldSnapshotDto(
 
 /**
  * 將網路 DTO 還原為領域資料。
+ *
  * @return 轉換後的資料。
  */
 fun MeldSnapshotDto.toDomain(): MeldSnapshot = MeldSnapshot(

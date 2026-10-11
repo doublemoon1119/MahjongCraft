@@ -2,7 +2,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollbarLayout
 
-/** 單局事件畫面的固定標題、事件內容與底列幾何。
+/**
+ * 單局事件畫面的固定標題、事件內容與底列幾何。
  *
  * @property contentTop 捲動內容上界。
  * @property contentBottom 捲動內容下界。
@@ -26,20 +27,26 @@ internal data class HistoryRoundEventsLayout(
     /** 可視內容高度。 */
     val viewportHeight: Int get() = (contentBottom - contentTop).coerceAtLeast(1)
 
-    /** 將捲動位置限制在有效範圍。
+    /**
+     * 將捲動位置限制在有效範圍。
+     *
      * @param offset 欲套用的捲動位置。
      * @param contentHeight 內容總高度。
      * @return 限制後的位置。
      */
     fun clampScroll(offset: Double, contentHeight: Int): Double = offset.coerceIn(0.0, maximumScroll(contentHeight).toDouble())
 
-    /** 計算內容最大捲動位置。
+    /**
+     * 計算內容最大捲動位置。
+     *
      * @param contentHeight 內容總高度。
      * @return 最大捲動位置。
      */
     fun maximumScroll(contentHeight: Int): Int = (contentHeight - viewportHeight).coerceAtLeast(0)
 
-    /** 建立捲軸幾何。
+    /**
+     * 建立捲軸幾何。
+     *
      * @param contentHeight 內容總高度。
      * @param offset 目前捲動位置。
      * @return 捲軸幾何。
@@ -61,7 +68,9 @@ internal data class HistoryRoundEventsLayout(
         (contentBottom - contentTop).coerceAtLeast(0),
     )
 
-    /** 判斷游標是否位於內容區內指定卡片，並排除捲軸與裁切範圍。
+    /**
+     * 判斷游標是否位於內容區內指定卡片，並排除捲軸與裁切範圍。
+     *
      * @param mouseX 游標水平座標。
      * @param mouseY 游標垂直座標。
      * @param top 卡片上界。
@@ -75,14 +84,18 @@ internal data class HistoryRoundEventsLayout(
         mouseY >= top &&
         mouseY < top + height
 
-    /** 計算單列可容納的牌數。
+    /**
+     * 計算單列可容納的牌數。
+     *
      * @param tileWidth 單張牌寬度。
      * @param tileStep 牌面左界之間的距離。
      * @return 每列牌數。
      */
     fun tilesPerRow(tileWidth: Int = DEFAULT_TILE_WIDTH, tileStep: Int = DEFAULT_TILE_STEP): Int = ((contentWidth - TILE_ROW_PADDING - tileWidth).coerceAtLeast(0) / tileStep + 1).coerceAtLeast(1)
 
-    /** 計算牌面需要的列數。
+    /**
+     * 計算牌面需要的列數。
+     *
      * @param count 牌面數量。
      * @param tileWidth 單張牌寬度。
      * @param tileStep 牌面左界之間的距離。
@@ -90,7 +103,9 @@ internal data class HistoryRoundEventsLayout(
      */
     fun tileRowCount(count: Int, tileWidth: Int = DEFAULT_TILE_WIDTH, tileStep: Int = DEFAULT_TILE_STEP): Int = if (count <= 0) 0 else (count + tilesPerRow(tileWidth, tileStep) - 1) / tilesPerRow(tileWidth, tileStep)
 
-    /** 依寬度配置返回、上一頁、頁碼、下一頁四個底列槽位。
+    /**
+     * 依寬度配置返回、上一頁、頁碼、下一頁四個底列槽位。
+     *
      * @param width 畫面寬度。
      * @return 依控制項順序排列的槽位；頁碼保留兩列文字高度。
      */
@@ -111,7 +126,9 @@ internal data class HistoryRoundEventsLayout(
         return List(4) { index -> HistoryScreenLayout.Bounds(left + index * (buttonWidth + gap), footerTop, buttonWidth, if (index == 2) FOOTER_ROW_HEIGHT else 20) }
     }
 
-    /** 保留捲軸滑塊內的抓取位置。
+    /**
+     * 保留捲軸滑塊內的抓取位置。
+     *
      * @param contentHeight 內容總高度。
      * @param offset 目前捲動位置。
      * @param mouseY 游標垂直位置。
@@ -126,7 +143,9 @@ internal data class HistoryRoundEventsLayout(
 
     /** 版面測量與共用尺寸。 */
     companion object {
-        /** 依畫面大小建立幾何，固定底列不與內容重疊。
+        /**
+         * 依畫面大小建立幾何，固定底列不與內容重疊。
+         *
          * @param width 畫面寬度。
          * @param height 畫面高度。
          * @param headerHeight 換行後固定標題區高度。

@@ -8,6 +8,7 @@ import kotlin.uuid.Uuid
 
 /**
  * 從已發布的不可變桌子位置快照提供事件位置。
+ *
  * @property locations 支援背景讀取的記憶體位置索引。
  */
 @Single(binds = [GameEventLocationSource::class])

@@ -138,14 +138,18 @@ class HistoryRoundStatePresentationTest {
         assertEquals(DecisionTileOrientationDto.UPRIGHT, layout.placements[2].orientation)
     }
 
-    /** 建立單一贏家明細。
+    /**
+     * 建立單一贏家明細。
+     *
      * @param seat 贏家座位索引。
      * @param hand 已保存的和牌手牌描述；null 表示缺少描述。
      * @return 贏家詳情 DTO。
      */
     private fun winner(seat: Int, hand: HistoryReplayWinningHandDto?) = HistoryWinnerDetailsDto(seat, emptyList(), hand)
 
-    /** 建立玩家桌況。
+    /**
+     * 建立玩家桌況。
+     *
      * @param seat 玩家座位索引。
      * @param handTiles 保存的立牌索引。
      * @param lastDrawn 最近摸牌索引。
@@ -159,7 +163,9 @@ class HistoryRoundStatePresentationTest {
         melds: List<HistoryReplayMeldDto> = emptyList(),
     ) = HistoryReplayPlayerStateDto(seat, handTiles, melds, lastDrawn, emptyList(), 25000, WindDto.EAST, null, emptyList())
 
-    /** 建立包含指定玩家的歷史桌況。
+    /**
+     * 建立包含指定玩家的歷史桌況。
+     *
      * @param players 玩家桌況列表。
      * @return 歷史桌況 DTO。
      */

@@ -73,13 +73,17 @@ class ClientHistoryChatEntryStoreTest {
         /** 聊天入口不得自行查詢規則設定。 */
         override fun queryRuleSettings(request: HistoryRuleSettingsRequestDto): String = error("Chat entries must not query rule settings directly")
 
-        /** 聊天入口不得自行查詢單局事件。
+        /**
+         * 聊天入口不得自行查詢單局事件。
+         *
          * @param request 單局事件要求。
          * @return 此入口不接受事件要求，固定拋出錯誤。
          */
         override fun queryRoundEvents(request: HistoryRoundEventsRequestDto): String = error("Chat entries must not query round events directly")
 
-        /** 聊天入口不得自行查詢單局桌況。
+        /**
+         * 聊天入口不得自行查詢單局桌況。
+         *
          * @param request 單局牌面要求。
          * @return 此入口不接受牌面要求，固定拋出錯誤。
          */

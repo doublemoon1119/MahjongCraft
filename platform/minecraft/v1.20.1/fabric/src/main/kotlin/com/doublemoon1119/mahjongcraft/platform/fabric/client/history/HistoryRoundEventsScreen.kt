@@ -116,6 +116,7 @@ internal class HistoryRoundEventsScreen(
 
     /**
      * 繪製固定資訊、卡片、捲軸及可見行 tooltip。
+     *
      * @param context 繪製上下文。
      * @param mouseX 游標水平座標。
      * @param mouseY 游標垂直座標。
@@ -166,6 +167,7 @@ internal class HistoryRoundEventsScreen(
 
     /**
      * 依共用查詢狀態停用網路控制項。
+     *
      * @param status 目前事件頁狀態。
      */
     private fun updateButtons(status: HistoryBrowseStatus) {
@@ -190,6 +192,7 @@ internal class HistoryRoundEventsScreen(
 
     /**
      * 測量繪製與高度共用的卡片列。
+     *
      * @param events 成功事件頁。
      * @return 保留交易及事實順序的卡片。
      */
@@ -200,6 +203,7 @@ internal class HistoryRoundEventsScreen(
 
             /**
              * 加入換行文字，頭像僅放於第一列。
+             *
              * @param text 完整文字及 tooltip。
              * @param color 文字色。
              * @param indent 卡片內縮排。
@@ -215,6 +219,7 @@ internal class HistoryRoundEventsScreen(
 
             /**
              * 加入具名牌列，過長時換列而不截斷。
+             *
              * @param tiles 原始順序牌張。
              * @param labelKey 牌列用途 key。
              */
@@ -296,6 +301,7 @@ internal class HistoryRoundEventsScreen(
 
     /**
      * 依 replay 身分對應摘要玩家，不以重排後座位猜頭像。
+     *
      * @param identity 初始玩家身分。
      * @param seat 初始座位。
      * @return UUID 相符玩家；缺少映射時為 null。
@@ -307,6 +313,7 @@ internal class HistoryRoundEventsScreen(
 
     /**
      * 取得名稱或具名座位 fallback。
+     *
      * @param identity 初始玩家身分。
      * @param seat 初始座位。
      * @return 玩家名稱或從 1 開始的座位名稱。
@@ -317,6 +324,7 @@ internal class HistoryRoundEventsScreen(
 
     /**
      * 繪製已測量卡片列。
+     *
      * @param context 繪製上下文。
      * @param cards 卡片。
      * @param mouseX 游標水平座標。
@@ -377,6 +385,7 @@ internal class HistoryRoundEventsScreen(
 
     /**
      * 尚未讀到可用結算的頁尾提示。
+     *
      * @param events 事件頁。
      * @return 本頁沒有結果時的提示；有結果時為 null。
      */
@@ -388,6 +397,7 @@ internal class HistoryRoundEventsScreen(
 
     /**
      * 計算卡片及頁尾提示的完整高度。
+     *
      * @param cards 測量後卡片。
      * @param hint 頁尾提示。
      * @return 不小於可視區的高度。
@@ -414,6 +424,7 @@ internal class HistoryRoundEventsScreen(
 
     /**
      * 顯示已確認頁碼與本頁交易範圍，不猜總數。
+     *
      * @param context 繪製上下文。
      * @param round 已確認局狀態。
      * @param mouseX 游標水平座標。
@@ -442,6 +453,7 @@ internal class HistoryRoundEventsScreen(
 
     /**
      * 繪製與拖曳相同幾何的捲軸。
+     *
      * @param context 繪製上下文。
      * @param contentHeight 本頁高度。
      */
@@ -455,6 +467,7 @@ internal class HistoryRoundEventsScreen(
 
     /**
      * 顯示可換行的狀態提示。
+     *
      * @param context 繪製上下文。
      * @param text 提示。
      * @param y 上界。
@@ -466,6 +479,7 @@ internal class HistoryRoundEventsScreen(
 
     /**
      * 處理滾輪，載入期間保留位置。
+     *
      * @param mouseX 水平座標。
      * @param mouseY 垂直座標。
      * @param amount 滾輪增量。
@@ -482,6 +496,7 @@ internal class HistoryRoundEventsScreen(
 
     /**
      * 開始捲軸拖曳。
+     *
      * @param mouseX 水平座標。
      * @param mouseY 垂直座標。
      * @param button 按鍵。
@@ -517,6 +532,7 @@ internal class HistoryRoundEventsScreen(
 
     /**
      * 更新拖曳位置。
+     *
      * @param mouseY 游標垂直座標。
      */
     private fun updateDrag(mouseY: Double) {
@@ -527,6 +543,7 @@ internal class HistoryRoundEventsScreen(
 
     /**
      * 拖曳時不將輸入送往底層控制項。
+     *
      * @param mouseX 水平座標。
      * @param mouseY 垂直座標。
      * @param button 按鍵。
@@ -543,6 +560,7 @@ internal class HistoryRoundEventsScreen(
 
     /**
      * 結束拖曳。
+     *
      * @param mouseX 水平座標。
      * @param mouseY 垂直座標。
      * @param button 按鍵。
@@ -556,6 +574,7 @@ internal class HistoryRoundEventsScreen(
 
     /**
      * 一張已測量卡片。
+     *
      * @property rows 共用繪製與高度計算的列。
      * @property height 包含內距及卡片間距的高度。
      */
@@ -571,6 +590,7 @@ internal class HistoryRoundEventsScreen(
 
         /**
          * 已換行文字列。
+         *
          * @property text 繪製文字。
          * @property tooltip 完整文字。
          * @property indent 文字縮排。
@@ -592,6 +612,7 @@ internal class HistoryRoundEventsScreen(
 
         /**
          * 已分組的一列牌。
+         *
          * @property tiles 保留順序與重複的牌張。
          * @property indent 相對卡片左側的牌面縮排。
          */
@@ -605,13 +626,16 @@ internal class HistoryRoundEventsScreen(
 
         /**
          * 段落間距。
+         *
          * @property height 間距高度。
          */
         data class Space(
             override val height: Int,
         ) : Row
 
-        /** 完整狀態或和牌手牌的單筆查詢入口。
+        /**
+         * 完整狀態或和牌手牌的單筆查詢入口。
+         *
          * @property index 已確認交易索引。
          * @property inline 是否留在事件頁展開手牌。
          */
@@ -626,7 +650,9 @@ internal class HistoryRoundEventsScreen(
             val indent: Int = if (inline) 46 else 16
         }
 
-        /** 完整和牌手牌群組。
+        /**
+         * 完整和牌手牌群組。
+         *
          * @property layout 共用群組排列。
          * @property catalog 經驗證的同筆牌目錄。
          */

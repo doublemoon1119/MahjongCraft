@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 
 /**
  * 將領域資料轉換為網路 DTO。
+ *
  * @return 轉換後的資料。
  */
 fun RonResolution.toDto(): RonResolutionDto = when (this) {
@@ -14,6 +15,7 @@ fun RonResolution.toDto(): RonResolutionDto = when (this) {
 
 /**
  * 將網路 DTO 還原為領域資料。
+ *
  * @return 轉換後的資料。
  */
 fun RonResolutionDto.toDomain(): RonResolution = when (this) {
@@ -24,6 +26,7 @@ fun RonResolutionDto.toDomain(): RonResolution = when (this) {
 
 /**
  * 將領域資料轉換為網路 DTO。
+ *
  * @return 轉換後的資料。
  */
 fun MultiRonPolicy.toDto(): MultiRonPolicyDto = MultiRonPolicyDto(
@@ -33,6 +36,7 @@ fun MultiRonPolicy.toDto(): MultiRonPolicyDto = MultiRonPolicyDto(
 
 /**
  * 將網路 DTO 還原為領域資料。
+ *
  * @return 轉換後的資料。
  */
 fun MultiRonPolicyDto.toDomain(): MultiRonPolicy = MultiRonPolicy(

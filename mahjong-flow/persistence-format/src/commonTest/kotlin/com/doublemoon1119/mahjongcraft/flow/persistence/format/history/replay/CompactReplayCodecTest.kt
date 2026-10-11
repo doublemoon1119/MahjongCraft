@@ -191,7 +191,9 @@ class CompactReplayCodecTest {
         }
     }
 
-    /** 建立最小 Replay，局內內容刻意不提供可解碼的交易資料。
+    /**
+     * 建立最小 Replay，局內內容刻意不提供可解碼的交易資料。
+     *
      * @param matchId header 對局識別碼。
      * @param rule 規則持久化 DTO。
      * @param contentVersion 內容版本。

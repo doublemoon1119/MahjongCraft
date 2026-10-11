@@ -179,7 +179,9 @@ class ClientHistoryQueryCoordinatorTest {
             ruleSettingsRequest = request
         }
 
-        /** 保存事件要求或模擬傳送失敗。
+        /**
+         * 保存事件要求或模擬傳送失敗。
+         *
          * @param request 單局事件查詢封套。
          */
         override fun sendRoundEvents(request: HistoryRoundEventsRequestDto) {
@@ -187,7 +189,9 @@ class ClientHistoryQueryCoordinatorTest {
             roundEventsRequest = request
         }
 
-        /** 保存牌面要求或模擬傳送失敗。
+        /**
+         * 保存牌面要求或模擬傳送失敗。
+         *
          * @param request 單局牌面查詢封套。
          */
         override fun sendRoundState(request: HistoryRoundStateRequestDto) {

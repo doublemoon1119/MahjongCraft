@@ -68,7 +68,8 @@ class HistoryGenerationRetentionStressTest {
         }
     }
 
-    /** 取得並驗證百場壓力測試資料庫；未提供路徑時略過需要既有資料的測試。
+    /**
+     * 取得並驗證百場壓力測試資料庫；未提供路徑時略過需要既有資料的測試。
      *
      * @return 僅供複製的既有資料庫路徑，或環境變數未設定時的 null。
      */
@@ -76,7 +77,8 @@ class HistoryGenerationRetentionStressTest {
         ?.takeIf { it.isNotBlank() }
         ?.let(Path::of)
 
-    /** 將既有資料庫及 SQLite sidecar 複製到獨立暫存目錄，避免改動來源檔案。
+    /**
+     * 將既有資料庫及 SQLite sidecar 複製到獨立暫存目錄，避免改動來源檔案。
      *
      * @param source 已完成百場資料庫的主檔路徑。
      * @return 複製後獨立資料庫的主檔路徑。
@@ -91,7 +93,8 @@ class HistoryGenerationRetentionStressTest {
         }
     }
 
-    /** 建立使用正式 persistence registry 與 SQLite 邊界的 writer。
+    /**
+     * 建立使用正式 persistence registry 與 SQLite 邊界的 writer。
      *
      * @param store writer 使用的權威待寫狀態。
      * @param maxMatches 覆蓋測試用的場數上限；null 使用預設值。

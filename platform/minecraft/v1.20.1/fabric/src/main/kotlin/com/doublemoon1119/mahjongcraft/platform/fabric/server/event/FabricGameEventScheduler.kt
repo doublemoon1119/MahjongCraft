@@ -6,6 +6,7 @@ import net.minecraft.server.ServerTask
 
 /**
  * 將遊戲事件交付工作排入指定 Fabric server 的主執行緒佇列。
+ *
  * @property server 接收工作且執行交付的伺服器。
  */
 internal class FabricGameEventScheduler(

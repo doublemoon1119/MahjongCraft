@@ -53,6 +53,7 @@ class HistoryWinDetailsCapacityTest {
     /**
      * 為固定樣本的完成交易加入容量用和牌詳情，重新編排序號但保留交易分組。
      * 流局樣本同樣注入負載，確保無和牌樣本不會讓量測漏掉新增資料成本。
+     *
      * @param events 固定樣本原始權威歷史。
      * @param maxSettlements 最多注入的結算數；密集量測可涵蓋每局。
      * @param entryCount 每次注入的明細條目數。
@@ -121,6 +122,7 @@ class HistoryWinDetailsCapacityTest {
 
     /**
      * 建立規則中立的固定負載，涵蓋多條目與有單位數值。
+     *
      * @param entryCount 明細條目數。
      * @return 每位贏家的代表性詳情欄位。
      */
@@ -141,6 +143,7 @@ class HistoryWinDetailsCapacityTest {
 
     /**
      * 量測整份精簡 Replay 壓縮後的實際位元組數。
+     *
      * @param bytes 原始 UTF-8 JSON。
      * @return gzip 內容。
      */

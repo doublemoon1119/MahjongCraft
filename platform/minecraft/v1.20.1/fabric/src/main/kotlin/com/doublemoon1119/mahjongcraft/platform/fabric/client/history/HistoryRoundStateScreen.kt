@@ -16,6 +16,7 @@ import kotlin.math.ceil
 
 /**
  * 顯示初始或交易後的唯讀牌面，以及該筆結算保存的完整和牌手牌。
+ *
  * @property session 共用查詢、導航及呈現來源。
  */
 internal class HistoryRoundStateScreen(
@@ -99,6 +100,7 @@ internal class HistoryRoundStateScreen(
 
     /**
      * 繪製經驗證桌況；載入／錯誤期間不把上一筆資料冒充新位置。
+     *
      * @param context 繪製上下文。
      * @param mouseX 游標水平座標。
      * @param mouseY 游標垂直座標。
@@ -276,13 +278,16 @@ internal class HistoryRoundStateScreen(
 
     /**
      * 建立文字與牌面共同使用的測量列。
+     *
      * @param state 已驗證桌況。
      * @return 依區域順序排列的內容列。
      */
     private fun rows(state: HistoryRoundStateDto): List<Row> = buildList {
         val maxWidth = (layout.contentWidth - 32).coerceAtLeast(1).toFloat()
 
-        /** 加入可換行文字。
+        /**
+         * 加入可換行文字。
+         *
          * @param text 文字。
          * @param color 文字色。
          * @param portrait 可選玩家頭像。
@@ -294,7 +299,9 @@ internal class HistoryRoundStateScreen(
             }
         }
 
-        /** 加入一組已測量牌面。
+        /**
+         * 加入一組已測量牌面。
+         *
          * @param group 牌面幾何。
          * @param hint 可選額外提示。
          */
@@ -333,6 +340,7 @@ internal class HistoryRoundStateScreen(
 
     /**
      * 建立單一玩家卡片，讓頭像、標頭與牌面共用同一背景。
+     *
      * @param state 已驗證桌況。
      * @param player 本卡片對應的玩家。
      * @param maxWidth 卡片內牌組可用寬度。
@@ -341,6 +349,7 @@ internal class HistoryRoundStateScreen(
     private fun buildPlayerRows(state: HistoryRoundStateDto, player: HistoryReplayPlayerStateDto, maxWidth: Float): List<Row> = buildList {
         /**
          * 加入卡片內可換行文字。
+         *
          * @param text 完整文字。
          * @param color 文字色。
          * @param portrait 首列顯示的玩家頭像。
@@ -360,6 +369,7 @@ internal class HistoryRoundStateScreen(
 
         /**
          * 加入卡片內牌組或空區域說明。
+         *
          * @param group 已測量牌組。
          * @param hint 牌組額外提示。
          */
@@ -424,6 +434,7 @@ internal class HistoryRoundStateScreen(
 
     /**
      * 以歷史身分取得玩家摘要。
+     *
      * @param state 歷史桌況。
      * @param seat 初始座位。
      * @return 對應玩家摘要，或 null。
@@ -435,6 +446,7 @@ internal class HistoryRoundStateScreen(
 
     /**
      * 使用共用名稱來源與具名座位 fallback。
+     *
      * @param state 歷史桌況。
      * @param seat 初始座位。
      * @return 玩家名稱。
@@ -451,6 +463,7 @@ internal class HistoryRoundStateScreen(
 
     /**
      * 內容區滾輪輸入，端點限制避免抖動。
+     *
      * @param mouseX 游標水平座標。
      * @param mouseY 游標垂直座標。
      * @param amount 捲動量。
@@ -465,6 +478,7 @@ internal class HistoryRoundStateScreen(
 
     /**
      * 處理捲軸抓取並保留滑塊內偏移。
+     *
      * @param mouseX 水平座標。
      * @param mouseY 垂直座標。
      * @param button 按鍵。
@@ -516,6 +530,7 @@ internal class HistoryRoundStateScreen(
 
     /**
      * 套用捲軸拖曳位置。
+     *
      * @param mouseY 游標垂直座標。
      */
     private fun updateDrag(mouseY: Double) {
@@ -525,6 +540,7 @@ internal class HistoryRoundStateScreen(
 
     /**
      * 拖曳不穿透其他控制項。
+     *
      * @param mouseX 水平座標。
      * @param mouseY 垂直座標。
      * @param button 按鍵。
@@ -541,6 +557,7 @@ internal class HistoryRoundStateScreen(
 
     /**
      * 結束拖曳。
+     *
      * @param mouseX 水平座標。
      * @param mouseY 垂直座標。
      * @param button 按鍵。
@@ -557,7 +574,9 @@ internal class HistoryRoundStateScreen(
         /** 列高。 */
         val height: Int
 
-        /** 文字列。
+        /**
+         * 文字列。
+         *
          * @property text 已換行文字。
          * @property fullText 完整提示。
          * @property color 文字色。
@@ -575,7 +594,9 @@ internal class HistoryRoundStateScreen(
             override val height: Int = LINE_HEIGHT
         }
 
-        /** 牌面列。
+        /**
+         * 牌面列。
+         *
          * @property layout 牌面幾何。
          * @property hint 額外提示。
          * @property taken 已被取走的牌索引，保持空槽。
@@ -591,7 +612,9 @@ internal class HistoryRoundStateScreen(
             override val height: Int = ceil(layout.height).toInt() + 8
         }
 
-        /** 單一玩家的完整牌面卡片。
+        /**
+         * 單一玩家的完整牌面卡片。
+         *
          * @property seat 玩家初始座位，用於個別保存手牌排序狀態。
          * @property rows 玩家標頭、手牌、副露與牌河列。
          * @property height 卡片總高度。
@@ -602,7 +625,9 @@ internal class HistoryRoundStateScreen(
             override val height: Int,
         ) : Row
 
-        /** 可單獨切換一位玩家手牌排序的標題列。
+        /**
+         * 可單獨切換一位玩家手牌排序的標題列。
+         *
          * @property label 顯示中的手牌標題。
          * @property action 顯示目前排列方式的可點擊文字。
          * @property tooltip 點擊後的目標排序模式說明。
@@ -622,7 +647,9 @@ internal class HistoryRoundStateScreen(
             override val height: Int = LINE_HEIGHT
         }
 
-        /** 可展開的活牌與保留牌區塊。
+        /**
+         * 可展開的活牌與保留牌區塊。
+         *
          * @property expanded 是否顯示兩區牌面。
          * @property wallCount 活牌數量。
          * @property reservedCount 保留牌數量。
@@ -640,7 +667,9 @@ internal class HistoryRoundStateScreen(
             override val height: Int = headerHeight + 12 + if (expanded) groups.sumOf { it.height + LINE_HEIGHT } else 0
         }
 
-        /** 段落間距。
+        /**
+         * 段落間距。
+         *
          * @property height 間距高度。
          */
         data class Space(override val height: Int) : Row

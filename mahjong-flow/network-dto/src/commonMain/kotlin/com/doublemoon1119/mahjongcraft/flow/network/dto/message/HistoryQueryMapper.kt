@@ -27,6 +27,7 @@ import kotlin.uuid.Uuid
 
 /**
  * 將網路查詢範圍映射為 Flow 查詢範圍；壓力測試範圍在權限與查詢語意上等同全部對局，資料來源由平台另外選擇。
+ *
  * @return 對應的 Flow 查詢範圍。
  */
 fun HistoryQueryScopeDto.toDomain(): HistoryQueryScope = when (this) {
@@ -38,6 +39,7 @@ fun HistoryQueryScopeDto.toDomain(): HistoryQueryScope = when (this) {
 
 /**
  * 將網路排序欄位映射為 Flow 排序欄位。
+ *
  * @return 對應的 Flow 排序欄位。
  */
 fun HistorySortFieldDto.toDomain(): HistorySortField = when (this) {
@@ -49,6 +51,7 @@ fun HistorySortFieldDto.toDomain(): HistorySortField = when (this) {
 
 /**
  * 將網路排序方向映射為 Flow 排序方向。
+ *
  * @return 對應的 Flow 排序方向。
  */
 fun HistorySortDirectionDto.toDomain(): HistorySortDirection = when (this) {
@@ -58,6 +61,7 @@ fun HistorySortDirectionDto.toDomain(): HistorySortDirection = when (this) {
 
 /**
  * 將網路結果篩選映射為 Flow 結果篩選。
+ *
  * @return 對應的 Flow 結果篩選。
  */
 fun HistoryOutcomeFilterDto.toDomain(): HistoryOutcomeFilter = when (this) {
@@ -67,6 +71,7 @@ fun HistoryOutcomeFilterDto.toDomain(): HistoryOutcomeFilter = when (this) {
 
 /**
  * 將網路完整性篩選映射為 Flow 完整性篩選。
+ *
  * @return 對應的 Flow 完整性篩選。
  */
 fun HistoryIntegrityFilterDto.toDomain(): HistoryIntegrityFilter = when (this) {
@@ -76,6 +81,7 @@ fun HistoryIntegrityFilterDto.toDomain(): HistoryIntegrityFilter = when (this) {
 
 /**
  * 將網路 AI 篩選映射為 Flow AI 篩選。
+ *
  * @return 對應的 Flow AI 篩選。
  */
 fun HistoryAiFilterDto.toDomain(): HistoryAiFilter = when (this) {
@@ -85,6 +91,7 @@ fun HistoryAiFilterDto.toDomain(): HistoryAiFilter = when (this) {
 
 /**
  * 將網路篩選映射為 Flow 篩選；游標由傳輸邊界的 codec 解碼。
+ *
  * @return 對應的 Flow 篩選。
  */
 fun HistoryQueryFiltersDto.toDomain(): HistoryQueryFilters = HistoryQueryFilters(
@@ -101,6 +108,7 @@ fun HistoryQueryFiltersDto.toDomain(): HistoryQueryFilters = HistoryQueryFilters
 
 /**
  * 將網路清單要求映射為 Flow 要求；[decodeCursor] 驗證並解碼不透明游標。
+ *
  * @param decodeCursor 驗證並解碼傳輸 cursor 的函式。
  * @return 可交給 Flow use case 驗證的清單查詢要求。
  */
@@ -115,6 +123,7 @@ fun HistoryListRequestDto.toDomain(decodeCursor: (String?) -> HistoryQueryCursor
 
 /**
  * 將網路規則設定查詢要求映射為 Flow 要求。
+ *
  * @return 可交給規則設定查詢用例的要求。
  */
 fun HistoryRuleSettingsRequestDto.toDomain(): HistoryRuleSettingsRequest = HistoryRuleSettingsRequest(
@@ -124,6 +133,7 @@ fun HistoryRuleSettingsRequestDto.toDomain(): HistoryRuleSettingsRequest = Histo
 
 /**
  * 將規則設定查詢請求 DTO 編碼為傳輸字串。
+ *
  * @param json 使用的 JSON codec。
  * @return 可傳送的 JSON 請求字串。
  */
@@ -131,6 +141,7 @@ fun HistoryRuleSettingsRequestDto.encode(json: Json): String = json.encodeToStri
 
 /**
  * 將傳輸字串解碼為規則設定查詢請求 DTO。
+ *
  * @param json 使用的 JSON codec。
  * @return 解碼後的請求 DTO。
  */
@@ -138,6 +149,7 @@ fun String.decodeHistoryRuleSettingsRequest(json: Json): HistoryRuleSettingsRequ
 
 /**
  * 將網路 cursor 內容映射為 Flow cursor。
+ *
  * @return 驗證後的 Flow cursor。
  */
 fun HistoryQueryCursorDto.toDomain(): HistoryQueryCursor = HistoryQueryCursor(
@@ -151,6 +163,7 @@ fun HistoryQueryCursorDto.toDomain(): HistoryQueryCursor = HistoryQueryCursor(
 
 /**
  * 將 Flow cursor 映射為可序列化的網路 cursor 內容。
+ *
  * @return 可序列化的網路 cursor 內容。
  */
 fun HistoryQueryCursor.toDto(): HistoryQueryCursorDto = HistoryQueryCursorDto(
@@ -192,6 +205,7 @@ fun HistoryQueryCursor.toDto(): HistoryQueryCursorDto = HistoryQueryCursorDto(
 
 /**
  * 將 Flow cursor 以 JSON 編碼為傳輸字串。
+ *
  * @param json 使用的 JSON codec。
  * @return 可放入網路 DTO 的 cursor 字串。
  */
@@ -199,6 +213,7 @@ fun HistoryQueryCursor.encode(json: Json): String = json.encodeToString(HistoryQ
 
 /**
  * 將傳輸字串解碼為 Flow cursor；格式錯誤由呼叫端轉成無效請求。
+ *
  * @param json 使用的 JSON codec。
  * @return 驗證後的 Flow cursor。
  */
@@ -206,6 +221,7 @@ fun String.decodeHistoryCursor(json: Json): HistoryQueryCursor = json.decodeFrom
 
 /**
  * 將 Flow 查詢錯誤映射為不暴露儲存細節的傳輸代碼。
+ *
  * @return 穩定的網路錯誤代碼。
  */
 fun HistoryQueryErrorCode.toDto(): HistoryQueryErrorCodeDto = when (this) {
@@ -222,6 +238,7 @@ fun HistoryQueryErrorCode.toDto(): HistoryQueryErrorCodeDto = when (this) {
 
 /**
  * 將 Flow 參與者摘要映射為網路參與者摘要。
+ *
  * @return 網路參與者摘要。
  */
 fun HistoryParticipantSummary.toDto(): HistoryParticipantSummaryDto = HistoryParticipantSummaryDto(
@@ -232,6 +249,7 @@ fun HistoryParticipantSummary.toDto(): HistoryParticipantSummaryDto = HistoryPar
 
 /**
  * 將 Flow 終局結果映射為網路終局結果。
+ *
  * @return 網路終局結果。
  */
 fun HistoryResultSummary.toDto(): HistoryResultSummaryDto = HistoryResultSummaryDto(
@@ -242,6 +260,7 @@ fun HistoryResultSummary.toDto(): HistoryResultSummaryDto = HistoryResultSummary
 
 /**
  * 將 Flow 對局摘要映射為不含重播內容的網路摘要。
+ *
  * @return 不含重播內容的網路摘要。
  */
 fun HistoryMatchSummary.toDto(): HistoryMatchSummaryDto = HistoryMatchSummaryDto(
@@ -261,6 +280,7 @@ fun HistoryMatchSummary.toDto(): HistoryMatchSummaryDto = HistoryMatchSummaryDto
 
 /**
  * 將 Flow 結果篩選映射為網路結果篩選。
+ *
  * @return 對應的網路結果篩選。
  */
 fun HistoryOutcomeFilter.toDto(): HistoryOutcomeFilterDto = when (this) {
@@ -270,6 +290,7 @@ fun HistoryOutcomeFilter.toDto(): HistoryOutcomeFilterDto = when (this) {
 
 /**
  * 將 Flow 完整性篩選映射為網路完整性篩選。
+ *
  * @return 對應的網路完整性篩選。
  */
 fun HistoryIntegrityFilter.toDto(): HistoryIntegrityFilterDto = when (this) {
@@ -279,6 +300,7 @@ fun HistoryIntegrityFilter.toDto(): HistoryIntegrityFilterDto = when (this) {
 
 /**
  * 將 Flow 局摘要映射為網路局摘要。
+ *
  * @return 網路局摘要。
  */
 fun HistoryRoundSummary.toDto(): HistoryRoundSummaryDto = HistoryRoundSummaryDto(
@@ -289,6 +311,7 @@ fun HistoryRoundSummary.toDto(): HistoryRoundSummaryDto = HistoryRoundSummaryDto
 
 /**
  * 將 Flow 對局明細映射為網路對局明細。
+ *
  * @return 網路對局明細。
  */
 fun HistoryMatchDetail.toDto(): HistoryMatchDetailDto = HistoryMatchDetailDto(
@@ -298,6 +321,7 @@ fun HistoryMatchDetail.toDto(): HistoryMatchDetailDto = HistoryMatchDetailDto(
 
 /**
  * 將 Flow 歷史規則設定映射為網路遊戲設定 DTO。
+ *
  * @param registries 網路規則 DTO registry，用於支援已註冊的第三方規則。
  * @return 可序列化的完整遊戲設定 DTO。
  */
@@ -305,6 +329,7 @@ fun HistoryRuleSettings.toDto(registries: NetworkDtoRegistries): GameConfigDto =
 
 /**
  * 將規則設定查詢回覆 DTO 編碼為傳輸字串。
+ *
  * @param json 使用的 JSON codec。
  * @return 可傳送的 JSON 回覆字串。
  */
@@ -312,6 +337,7 @@ fun HistoryRuleSettingsResponseDto.encode(json: Json): String = json.encodeToStr
 
 /**
  * 將傳輸字串解碼為規則設定查詢回覆 DTO。
+ *
  * @param json 使用的 JSON codec。
  * @return 解碼後的回覆 DTO。
  */
@@ -319,6 +345,7 @@ fun String.decodeHistoryRuleSettingsResponse(json: Json): HistoryRuleSettingsRes
 
 /**
  * 將網路 UUID 字串解析為 Flow UUID，錯誤由呼叫端轉成無效請求。
+ *
  * @return 解析後的 UUID。
  */
 fun String.toHistoryUuid(): Uuid = Uuid.parse(this)

@@ -12,7 +12,8 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import kotlin.uuid.Uuid
 
-/** 歷史瀏覽表單的文字篩選輸入。
+/**
+ * 歷史瀏覽表單的文字篩選輸入。
  *
  * @property ruleId 規則模組的 namespaced ID；空白值表示不限制規則。
  * @property playerName 玩家名稱包含文字；空白值表示不限制玩家名稱。
@@ -83,26 +84,31 @@ internal enum class HistoryBrowseFilterError {
     REVERSED_RANGE,
 }
 
-/** 歷史瀏覽篩選解析結果。
+/**
+ * 歷史瀏覽篩選解析結果。
  */
 internal sealed interface HistoryBrowseFilterResult {
-    /** 通過驗證並可送出的篩選條件。
+    /**
+     * 通過驗證並可送出的篩選條件。
      *
      * @property filters DTO 篩選條件。
      */
     data class Valid(val filters: HistoryQueryFiltersDto) : HistoryBrowseFilterResult
 
-    /** 含有欄位錯誤的篩選條件。
+    /**
+     * 含有欄位錯誤的篩選條件。
      *
      * @property errors 欄位與錯誤的對應表。
      */
     data class Invalid(val errors: Map<HistoryBrowseFilterField, HistoryBrowseFilterError>) : HistoryBrowseFilterResult
 }
 
-/** 驗證並轉換歷史瀏覽篩選表單。
+/**
+ * 驗證並轉換歷史瀏覽篩選表單。
  */
 internal object HistoryBrowseFilterValidation {
-    /** 驗證表單並建立線路 DTO。
+    /**
+     * 驗證表單並建立線路 DTO。
      *
      * @param input 使用者輸入的文字篩選條件。
      * @param zone 日期文字所使用的時區。
@@ -155,7 +161,8 @@ internal object HistoryBrowseFilterValidation {
         )
     }
 
-    /** 解析本地日期並轉換為時區中的 epoch milliseconds。
+    /**
+     * 解析本地日期並轉換為時區中的 epoch milliseconds。
      *
      * @param value 日期文字。
      * @param zone 日期使用的時區。
@@ -186,7 +193,8 @@ internal object HistoryBrowseFilterValidation {
         }
     }
 
-    /** 解析正整數名次。
+    /**
+     * 解析正整數名次。
      *
      * @param value 名次文字。
      * @param errors 驗證錯誤輸出表。

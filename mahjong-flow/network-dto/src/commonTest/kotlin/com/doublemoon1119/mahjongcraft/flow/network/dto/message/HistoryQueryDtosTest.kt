@@ -101,7 +101,9 @@ class HistoryQueryDtosTest {
         assertTrue("custom:flower" in encoded)
     }
 
-    /** 序列化測試使用的事實集合。
+    /**
+     * 序列化測試使用的事實集合。
+     *
      * @property facts 安全歷史事實 DTO。
      */
     @Serializable

@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDto as toRuleDto
 
 /**
  * 執行網路資料轉換。
+ *
  * @param registries 網路 DTO 的動態註冊表集合。
  * @return 轉換後的資料。
  */
@@ -30,6 +31,7 @@ fun TaiwanRuleConfig.toTaiwanDto(registries: NetworkDtoRegistries): TaiwanRuleCo
 
 /**
  * 將網路 DTO 還原為領域資料。
+ *
  * @param registries 網路 DTO 的動態註冊表集合。
  * @return 轉換後的資料。
  */
@@ -43,6 +45,7 @@ fun TaiwanRuleConfigDto.toDomain(registries: NetworkDtoRegistries): TaiwanRuleCo
 
 /**
  * 執行網路資料轉換。
+ *
  * @return 轉換後的資料。
  */
 fun TaiwanScoreConfig.toTaiwanDto(): TaiwanScoreConfigDto = TaiwanScoreConfigDto(
@@ -54,6 +57,7 @@ fun TaiwanScoreConfig.toTaiwanDto(): TaiwanScoreConfigDto = TaiwanScoreConfigDto
 
 /**
  * 將網路 DTO 還原為領域資料。
+ *
  * @return 轉換後的資料。
  */
 fun TaiwanScoreConfigDto.toDomain(): TaiwanScoreConfig = TaiwanScoreConfig(
@@ -65,6 +69,7 @@ fun TaiwanScoreConfigDto.toDomain(): TaiwanScoreConfig = TaiwanScoreConfig(
 
 /**
  * 執行網路資料轉換。
+ *
  * @return 轉換後的資料。
  */
 fun TaiwanDiscardPile.toTaiwanDto(): TaiwanDiscardPileDto = TaiwanDiscardPileDto(
@@ -73,6 +78,7 @@ fun TaiwanDiscardPile.toTaiwanDto(): TaiwanDiscardPileDto = TaiwanDiscardPileDto
 
 /**
  * 將網路 DTO 還原為領域資料。
+ *
  * @return 轉換後的資料。
  */
 fun TaiwanDiscardPileDto.toDomain(): TaiwanDiscardPile = TaiwanDiscardPile(

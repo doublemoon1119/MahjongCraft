@@ -7,6 +7,7 @@ import kotlin.uuid.Uuid
 
 /**
  * 將領域資料轉換為網路 DTO。
+ *
  * @param registries 網路 DTO 的動態註冊表集合。
  * @return 轉換後的資料。
  */
@@ -25,6 +26,7 @@ fun RoomSnapshot.toDto(registries: NetworkDtoRegistries): RoomSnapshotDto = Room
 
 /**
  * 將網路 DTO 還原為領域資料。
+ *
  * @param registries 網路 DTO 的動態註冊表集合。
  * @return 轉換後的資料。
  */

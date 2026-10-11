@@ -14,6 +14,7 @@ import net.minecraft.util.Formatting
 
 /**
  * 歷史各頁共用牌面繪製，保持方向、材質與標籤一致。
+ *
  * @property faces 共用牌面 renderer。
  * @property assets 牌種素材註冊表。
  * @property markerDisplays 牌河公開標記的提示文字來源。
@@ -25,6 +26,7 @@ internal class HistoryTileGroupRenderer(
 ) {
     /**
      * 繪製已測量群組並取得指向牌張的索引提示。
+     *
      * @param context 繪製上下文。
      * @param layout 共用幾何。
      * @param catalog 已驗證牌目錄。

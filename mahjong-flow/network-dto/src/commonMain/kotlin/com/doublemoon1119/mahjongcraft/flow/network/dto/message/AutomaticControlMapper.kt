@@ -4,6 +4,7 @@ import kotlin.uuid.Uuid
 
 /**
  * 將領域資料轉換為網路 DTO。
+ *
  * @return 轉換後的資料。
  */
 fun PlayerAutomaticControlSnapshot.toDto(): AutomaticControlSnapshotDto = AutomaticControlSnapshotDto(

@@ -766,7 +766,8 @@ class HistoryBrowseControllerTest {
         assertTrue(controller.state.value.list.entries.isEmpty())
     }
 
-    /** 以測試作用域建立使用虛擬單調時間的控制器。
+    /**
+     * 以測試作用域建立使用虛擬單調時間的控制器。
      *
      * @param transport 模擬查詢傳輸。
      * @return 綁定目前測試作用域的歷史瀏覽控制器。
@@ -792,14 +793,17 @@ class HistoryBrowseControllerTest {
     /** 建立指定對局的摘要回覆內容。 */
     private fun detail(matchId: String): HistoryMatchDetailDto = HistoryMatchDetailDto(summary(matchId), emptyList())
 
-    /** 建立經正式 registry 編碼的規則設定回覆。
+    /**
+     * 建立經正式 registry 編碼的規則設定回覆。
+     *
      * @return 可用於驗證規則設定快取的 DTO。
      */
     private fun ruleSettingsConfig(): GameConfigDto = GameConfig(RiichiRuleConfig()).toDto(
         DefaultNetworkDtoRegistries().apply { registerBundledNetworkDtos() },
     )
 
-    /** 以 MutableStateFlow 模擬 client 歷史查詢傳輸。
+    /**
+     * 以 MutableStateFlow 模擬 client 歷史查詢傳輸。
      *
      * @property sendFailed 是否讓下一次清單要求產生傳送失敗狀態。
      */
@@ -857,7 +861,9 @@ class HistoryBrowseControllerTest {
         /** 已發出的事件頁要求。 */
         val roundEventsRequests = mutableListOf<HistoryRoundEventsRequestDto>()
 
-        /** 發出事件頁查詢並記錄要求。
+        /**
+         * 發出事件頁查詢並記錄要求。
+         *
          * @param request 單局事件要求。
          * @return 配對識別碼。
          */
@@ -871,7 +877,9 @@ class HistoryBrowseControllerTest {
         /** 已發出的牌面要求。 */
         val roundStateRequests = mutableListOf<HistoryRoundStateRequestDto>()
 
-        /** 發出牌面查詢並記錄要求。
+        /**
+         * 發出牌面查詢並記錄要求。
+         *
          * @param request 單局牌面要求。
          * @return 配對識別碼。
          */
@@ -888,7 +896,8 @@ class HistoryBrowseControllerTest {
             return true
         }
 
-        /** 更新模擬傳輸的可觀察結果。
+        /**
+         * 更新模擬傳輸的可觀察結果。
          *
          * @param result 新的查詢結果。
          */
@@ -896,7 +905,8 @@ class HistoryBrowseControllerTest {
             mutableState.value = result
         }
 
-        /** 發出清單回應。
+        /**
+         * 發出清單回應。
          *
          * @param requestId 回應所配對的要求識別碼。
          * @param entries 回應中的清單摘要。
@@ -915,7 +925,8 @@ class HistoryBrowseControllerTest {
             mutableState.value = ClientHistoryQueryState.ListResult(HistoryListResponseDto(requestId, entries, nextCursor, errorCode, allowAll, allowStressTest))
         }
 
-        /** 發出摘要回應。
+        /**
+         * 發出摘要回應。
          *
          * @param detail 回應中的摘要內容，可為 null。
          * @param requestId 回應所配對的要求識別碼。
@@ -924,7 +935,9 @@ class HistoryBrowseControllerTest {
             mutableState.value = ClientHistoryQueryState.SummaryResult(HistorySummaryResponseDto(requestId, detail, errorCode = null))
         }
 
-        /** 回覆最小有效事件頁。
+        /**
+         * 回覆最小有效事件頁。
+         *
          * @param matchId 對局識別碼。
          * @param requestId 要配對的要求識別碼。
          */
@@ -946,7 +959,9 @@ class HistoryBrowseControllerTest {
             )
         }
 
-        /** 回覆最小有效初始牌面。
+        /**
+         * 回覆最小有效初始牌面。
+         *
          * @param matchId 對局識別碼。
          * @param requestId 要配對的要求識別碼。
          */
@@ -980,7 +995,9 @@ class HistoryBrowseControllerTest {
             )
         }
 
-        /** 發出規則設定回應。
+        /**
+         * 發出規則設定回應。
+         *
          * @param config 回應中的完整遊戲設定，可為 null。
          * @param requestId 回應所配對的要求識別碼。
          */

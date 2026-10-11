@@ -156,7 +156,9 @@ internal class HistoryBrowseController(
         pending == null &&
         !isRefreshCoolingDown()
 
-    /** 判斷目前是否有可重送的最新失敗查詢。
+    /**
+     * 判斷目前是否有可重送的最新失敗查詢。
+     *
      * @return 目前查詢失敗、無其他工作且未進入冷卻期時為 true。
      */
     fun canRetry(): Boolean = available() &&
@@ -269,7 +271,9 @@ internal class HistoryBrowseController(
         return true
     }
 
-    /** 開啟目前摘要對應的歷史規則設定；成功結果會保留於本瀏覽 session。
+    /**
+     * 開啟目前摘要對應的歷史規則設定；成功結果會保留於本瀏覽 session。
+     *
      * @return 是否接受規則設定導航。
      */
     fun showRuleSettings(): Boolean {
@@ -287,7 +291,8 @@ internal class HistoryBrowseController(
         return true
     }
 
-    /** 保留摘要頁的呈現位置，不改變查詢條件或摘要資料。
+    /**
+     * 保留摘要頁的呈現位置，不改變查詢條件或摘要資料。
      *
      * @param scrollOffset 有限且非負的捲動位置。
      * @return 是否接受位置更新。
@@ -305,7 +310,9 @@ internal class HistoryBrowseController(
         return true
     }
 
-    /** 開啟摘要已列出的單局事件，保留各局的分頁與位置。
+    /**
+     * 開啟摘要已列出的單局事件，保留各局的分頁與位置。
+     *
      * @param roundNumber 已公開的局序號。
      * @return 是否接受選局。
      */
@@ -321,7 +328,9 @@ internal class HistoryBrowseController(
         return true
     }
 
-    /** 查詢下一個事件頁，只有成功才提交分頁位置。
+    /**
+     * 查詢下一個事件頁，只有成功才提交分頁位置。
+     *
      * @return 是否存在已確認的下一頁。
      */
     fun nextRoundPage(): Boolean {
@@ -333,7 +342,9 @@ internal class HistoryBrowseController(
         return true
     }
 
-    /** 返回已到達的上一個事件頁。
+    /**
+     * 返回已到達的上一個事件頁。
+     *
      * @return 是否接受上一頁查詢。
      */
     fun previousRoundPage(): Boolean {
@@ -344,7 +355,9 @@ internal class HistoryBrowseController(
         return true
     }
 
-    /** 查閱初始牌面或已確認存在的交易後牌面。
+    /**
+     * 查閱初始牌面或已確認存在的交易後牌面。
+     *
      * @param position 欲查閱的局內位置。
      * @return 是否接受牌面選取。
      */
@@ -358,12 +371,16 @@ internal class HistoryBrowseController(
         return true
     }
 
-    /** 前往已知的下一筆；未讀頁由同一意圖先確認交易再查牌面。
+    /**
+     * 前往已知的下一筆；未讀頁由同一意圖先確認交易再查牌面。
+     *
      * @return 是否接受前進。
      */
     fun nextRoundState(): Boolean = navigateRoundState(1)
 
-    /** 查詢事件明細的完整牌組而不離開事件頁，沿用相同在途限制與快取。
+    /**
+     * 查詢事件明細的完整牌組而不離開事件頁，沿用相同在途限制與快取。
+     *
      * @param transactionIndex 已確認存在的交易索引。
      * @return 是否接受查詢。
      */
@@ -375,12 +392,16 @@ internal class HistoryBrowseController(
         return true
     }
 
-    /** 前往上一筆，第一筆交易之前為初始牌面。
+    /**
+     * 前往上一筆，第一筆交易之前為初始牌面。
+     *
      * @return 是否接受後退。
      */
     fun previousRoundState(): Boolean = navigateRoundState(-1)
 
-    /** 返回目前局的事件列表，保留事件頁與捲動位置。
+    /**
+     * 返回目前局的事件列表，保留事件頁與捲動位置。
+     *
      * @return 是否接受返回。
      */
     fun backToRound(): Boolean {
@@ -392,7 +413,9 @@ internal class HistoryBrowseController(
         return true
     }
 
-    /** 保存目前事件或牌面子頁的捲動位置。
+    /**
+     * 保存目前事件或牌面子頁的捲動位置。
+     *
      * @param scrollOffset 有限且非負的位置。
      * @return 是否接受更新。
      */
@@ -407,7 +430,9 @@ internal class HistoryBrowseController(
         return true
     }
 
-    /** 重新授權查詢目前單局位置，清除該場成功快取。
+    /**
+     * 重新授權查詢目前單局位置，清除該場成功快取。
+     *
      * @return 是否沒有其他查詢或冷卻且已接受重新查詢。
      */
     fun refreshRound(): Boolean {
@@ -419,7 +444,9 @@ internal class HistoryBrowseController(
         return true
     }
 
-    /** 取得仍屬於有效 session 的選局資料。
+    /**
+     * 取得仍屬於有效 session 的選局資料。
+     *
      * @return 選局資料或 null。
      */
     private fun currentRound(): HistoryBrowseRoundState? = if (available()) state.value.selectedRoundNumber?.let(state.value.rounds::get) else null
@@ -432,7 +459,9 @@ internal class HistoryBrowseController(
         sendJob?.cancel()
     }
 
-    /** 以已確認牌面為基準進行相鄰交易導航。
+    /**
+     * 以已確認牌面為基準進行相鄰交易導航。
+     *
      * @param direction 向前為 1，向後為 -1。
      * @return 是否接受導航。
      */
@@ -459,7 +488,9 @@ internal class HistoryBrowseController(
         return true
     }
 
-    /** 排程事件頁或相鄰牌面的交易存在性確認。
+    /**
+     * 排程事件頁或相鄰牌面的交易存在性確認。
+     *
      * @param starts 欲提交的事件頁堆疊。
      * @param afterEvents 確認交易後的牌面需求；不改事件列表位置。
      */
@@ -470,7 +501,9 @@ internal class HistoryBrowseController(
         enqueue(Intent.RoundEvents(generation, matchId, state.value.query, round.roundNumber, starts, afterEvents), Duration.ZERO)
     }
 
-    /** 排程完整牌面，不把舊資料標記為新位置。
+    /**
+     * 排程完整牌面，不把舊資料標記為新位置。
+     *
      * @param position 欲確認的位置。
      */
     private fun requestRoundState(position: HistoryRoundPositionDto) {
@@ -480,7 +513,9 @@ internal class HistoryBrowseController(
         enqueue(Intent.RoundState(generation, matchId, state.value.query, round.roundNumber, position), Duration.ZERO)
     }
 
-    /** 更新指定局的唯讀導航資料。
+    /**
+     * 更新指定局的唯讀導航資料。
+     *
      * @param roundNumber 局序號。
      * @param transform 不變資料轉換。
      */
@@ -488,7 +523,9 @@ internal class HistoryBrowseController(
         mutableState.value = state.value.withRound(roundNumber, transform)
     }
 
-    /** 產生指定局更新後的瀏覽快照。
+    /**
+     * 產生指定局更新後的瀏覽快照。
+     *
      * @param roundNumber 局序號。
      * @param transform 不變資料轉換。
      * @return 更新後快照；不存在的局不建立。
@@ -515,7 +552,9 @@ internal class HistoryBrowseController(
         return true
     }
 
-    /** 返回目前對局摘要，不重新查詢。
+    /**
+     * 返回目前對局摘要，不重新查詢。
+     *
      * @return 是否接受返回。
      */
     fun backToSummary(): Boolean {
@@ -772,7 +811,9 @@ internal class HistoryBrowseController(
         mutableState.value = state.value.copy(summary = HistoryBrowseSummaryState(intent.matchId, detail, HistoryBrowseStatus.Ready))
     }
 
-    /** 接受同場規則設定；缺少設定內容視為無法取得。
+    /**
+     * 接受同場規則設定；缺少設定內容視為無法取得。
+     *
      * @param response 已配對的規則設定回應。
      * @param intent 本次對局規則設定查詢。
      */
@@ -791,7 +832,9 @@ internal class HistoryBrowseController(
         )
     }
 
-    /** 驗證事件頁，僅保存目前世代的成功內容。
+    /**
+     * 驗證事件頁，僅保存目前世代的成功內容。
+     *
      * @param response 已配對的事件頁回覆。
      * @param intent 原始事件頁意圖。
      */
@@ -806,7 +849,9 @@ internal class HistoryBrowseController(
         }
     }
 
-    /** 驗證完整牌面，保留資料自己的確認位置。
+    /**
+     * 驗證完整牌面，保留資料自己的確認位置。
+     *
      * @param response 已配對的牌面回覆。
      * @param intent 原始牌面意圖。
      */
@@ -821,7 +866,9 @@ internal class HistoryBrowseController(
         }
     }
 
-    /** 套用成功事件頁；牌面查找不覆蓋事件列表位置。
+    /**
+     * 套用成功事件頁；牌面查找不覆蓋事件列表位置。
+     *
      * @param events 已驗證的事件頁。
      * @param intent 原始頁面或交易存在性查詢。
      */
@@ -855,7 +902,9 @@ internal class HistoryBrowseController(
         requestRoundState(target)
     }
 
-    /** 套用同局牌面，確認位置與內容同步更新。
+    /**
+     * 套用同局牌面，確認位置與內容同步更新。
+     *
      * @param data 已驗證的完整牌面。
      * @param intent 原始位置查詢。
      */
@@ -871,7 +920,9 @@ internal class HistoryBrowseController(
         }
     }
 
-    /** 使用仍有效的成功快取，不送出請求或消耗新的冷卻。
+    /**
+     * 使用仍有效的成功快取，不送出請求或消耗新的冷卻。
+     *
      * @param intent 欲取得的單局資料。
      * @return 是否已由快取滿足需求。
      */
@@ -887,7 +938,9 @@ internal class HistoryBrowseController(
         else -> false
     }
 
-    /** 取得包含 session 與權限範圍的事件快取鍵。
+    /**
+     * 取得包含 session 與權限範圍的事件快取鍵。
+     *
      * @return 唯一事件頁條件。
      */
     private fun Intent.RoundEvents.cacheKey(): HistoryRoundCacheKey.Events = HistoryRoundCacheKey.Events(
@@ -899,7 +952,9 @@ internal class HistoryBrowseController(
         request().limit,
     )
 
-    /** 取得包含 session 與權限範圍的牌面快取鍵。
+    /**
+     * 取得包含 session 與權限範圍的牌面快取鍵。
+     *
      * @return 唯一局內位置條件。
      */
     private fun Intent.RoundState.cacheKey(): HistoryRoundCacheKey.State = HistoryRoundCacheKey.State(
@@ -994,14 +1049,18 @@ internal class HistoryBrowseController(
          */
         data class Summary(override val generation: Long, val matchId: String, val query: HistoryBrowseQuery) : Intent
 
-        /** 同場規則設定查詢。
+        /**
+         * 同場規則設定查詢。
+         *
          * @property generation 提出意圖時的條件世代。
          * @property matchId 欲查閱的對局。
          * @property query 當時的有效查閱範圍。
          */
         data class RuleSettings(override val generation: Long, val matchId: String, val query: HistoryBrowseQuery) : Intent
 
-        /** 單局事件頁及成功後的可選牌面導航。
+        /**
+         * 單局事件頁及成功後的可選牌面導航。
+         *
          * @property generation 導航世代。
          * @property matchId 對局識別碼。
          * @property query 有效查閱範圍。
@@ -1017,14 +1076,18 @@ internal class HistoryBrowseController(
             val starts: List<Int>,
             val afterEvents: HistoryRoundPositionDto? = null,
         ) : Intent {
-            /** 建立本次查詢封套。
+            /**
+             * 建立本次查詢封套。
+             *
              * @param requestId 傳輸配對鍵。
              * @return 事件頁要求。
              */
             fun request(requestId: String = ""): HistoryRoundEventsRequestDto = HistoryRoundEventsRequestDto(requestId, matchId, query.scope, roundNumber, starts.last(), limit = 20)
         }
 
-        /** 單局完整牌面查詢。
+        /**
+         * 單局完整牌面查詢。
+         *
          * @property generation 導航世代。
          * @property matchId 對局識別碼。
          * @property query 有效查閱範圍。
@@ -1038,7 +1101,9 @@ internal class HistoryBrowseController(
             val roundNumber: Int,
             val position: HistoryRoundPositionDto,
         ) : Intent {
-            /** 建立本次查詢封套。
+            /**
+             * 建立本次查詢封套。
+             *
              * @param requestId 傳輸配對鍵。
              * @return 牌面要求。
              */

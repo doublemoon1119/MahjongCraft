@@ -27,7 +27,8 @@ import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds as MinecraftBuiltInGameActionIds
 
-/** 將已驗證的單局歷史 DTO 轉成畫面可直接使用的事件呈現模型。
+/**
+ * 將已驗證的單局歷史 DTO 轉成畫面可直接使用的事件呈現模型。
  *
  * 這個 presenter 只負責把安全 DTO 映射成文字、玩家座位與牌面參照；不重新判定規則，也不改變事件順序。
  *
@@ -63,7 +64,9 @@ internal class HistoryRoundEventPresenter(
         },
     )
 
-    /** 將單一語意事實映射成呈現模型。
+    /**
+     * 將單一語意事實映射成呈現模型。
+     *
      * @param tileCatalog 目前回覆可解析的牌目錄。
      * @param identitySeats 對局身份中的所有座位索引。
      * @param ruleId 對局規則模組 ID。
@@ -133,7 +136,9 @@ internal class HistoryRoundEventPresenter(
         }
         ).copy(identifiers = identifiers())
 
-    /** 收集僅供 tooltip 查閱的格式識別碼，不放進玩家可見摘要。
+    /**
+     * 收集僅供 tooltip 查閱的格式識別碼，不放進玩家可見摘要。
+     *
      * @return 保留順序且去除重複的識別碼。
      */
     private fun HistoryReplayFactDto.identifiers(): List<String> = (
@@ -147,7 +152,9 @@ internal class HistoryRoundEventPresenter(
         }
         ).distinct()
 
-    /** 內建流程事實的玩家用語；未知擴充只使用通用文字。
+    /**
+     * 內建流程事實的玩家用語；未知擴充只使用通用文字。
+     *
      * @param typeKey 保存的事實種類。
      * @return 不包含格式 ID 的玩家用語。
      */
@@ -161,7 +168,9 @@ internal class HistoryRoundEventPresenter(
         },
     )
 
-    /** 依記錄種類描述準備狀態，不將尚未開始推進的事件誤判為準備完成。
+    /**
+     * 依記錄種類描述準備狀態，不將尚未開始推進的事件誤判為準備完成。
+     *
      * @param typeKey 保存的準備事實種類。
      * @param nextStepId 自動處理後的下一步識別碼；開始／提交事實不以此欄位推斷完成。
      * @return 本地化準備狀態。
@@ -175,7 +184,9 @@ internal class HistoryRoundEventPresenter(
         },
     )
 
-    /** 將保存的結算分類轉成玩家用語，未知分類的原值由事實 tooltip 保留。
+    /**
+     * 將保存的結算分類轉成玩家用語，未知分類的原值由事實 tooltip 保留。
+     *
      * @param classification 保存的分類名稱。
      * @return 本地化分類。
      */
@@ -191,6 +202,7 @@ internal class HistoryRoundEventPresenter(
 
     /**
      * 將單次權威分數差轉成具正負號與柔和配色的文字，不由絕對分數推測差額。
+     *
      * @param change 該次交易前後分數差。
      * @return 可附加於玩家分數列的差額文字。
      */
@@ -205,6 +217,7 @@ internal class HistoryRoundEventPresenter(
     /**
      * 解析已保存的玩家結算身分；流局原因有登記結算身分用語時（例如日麻一般荒牌流局的聽牌與未聽）使用該用語，
      * 否則得分的玩家顯示通用的「受益」。
+     *
      * @param outcome 本次結算呈現資料。
      * @param row 玩家結算列。
      * @return 可翻譯的身分文字；沒有身分時為 null。
@@ -224,6 +237,7 @@ internal class HistoryRoundEventPresenter(
 
     /**
      * 取得分數變化的柔和文字色。
+     *
      * @param change 該次交易前後分數差。
      * @return RGB 配色。
      */
@@ -235,6 +249,7 @@ internal class HistoryRoundEventPresenter(
 
     /**
      * 將規則提供的詳情語意值轉為文字列；顯示文字由該欄位登記的格式化器決定。
+     *
      * @param fieldId 已驗證的明細欄位識別碼。
      * @param value 保存且已驗證的數值或條目資料；牌面詳情由牌面 renderer 處理。
      * @param templates 正式結算模板註冊表。
@@ -257,7 +272,9 @@ internal class HistoryRoundEventPresenter(
         }
     }
 
-    /** 依對局規則使用的模板取得欄位標題，不推測未知規則的欄位語意。
+    /**
+     * 依對局規則使用的模板取得欄位標題，不推測未知規則的欄位語意。
+     *
      * @param ruleId 對局規則模組 ID；未知時為 null。
      * @param fieldId 已驗證的明細欄位識別碼。
      * @param templates 正式結算模板註冊表。
@@ -269,7 +286,9 @@ internal class HistoryRoundEventPresenter(
     /** 將網路 DTO 的有單位數值還原為語意值。 */
     private fun HistoryWinDetailQuantityDto.toQuantity(): WinSettlementQuantity = WinSettlementQuantity(unitId, amount)
 
-    /** 將動作 ID 解析成規則化顯示文字；未知 ID 使用通用玩家用語。
+    /**
+     * 將動作 ID 解析成規則化顯示文字；未知 ID 使用通用玩家用語。
+     *
      * @param ruleId 對局規則模組 ID。
      * @param actionType 保存格式中的動作種類。
      * @param extensionTypeId 擴充動作 ID；一般動作為 null。
@@ -291,7 +310,9 @@ internal class HistoryRoundEventPresenter(
         return Text.translatable(translationKey ?: MinecraftHistoryScreenKeys.ROUND_ACTION_OTHER)
     }
 
-    /** 將結算原因解析成規則提供的文字，未知原因使用通用玩家用語。
+    /**
+     * 將結算原因解析成規則提供的文字，未知原因使用通用玩家用語。
+     *
      * @param reasonId 結算原因 ID。
      * @param ruleId 對局規則模組 ID。
      * @return 結算原因顯示文字。
@@ -309,14 +330,18 @@ internal class HistoryRoundEventPresenter(
         else -> Text.translatable(roundOutcomes.find(reasonId) ?: exhaustiveDrawReasons.find(reasonId) ?: MinecraftHistoryScreenKeys.ROUND_OUTCOME_OTHER)
     }
 
-    /** 依 DTO 的索引取得牌種；驗證外的索引不會讓呈現流程崩潰。
+    /**
+     * 依 DTO 的索引取得牌種；驗證外的索引不會讓呈現流程崩潰。
+     *
      * @param tileCatalog 目前回覆可解析的牌目錄。
      * @param indexes 牌目錄索引，保留原始順序與重複。
      * @return 可解析的牌種清單。
      */
     private fun tiles(tileCatalog: List<TileDto>, indexes: List<Int>): List<TileDto> = indexes.mapNotNull(tileCatalog::getOrNull)
 
-    /** 將保存格式的短動作名稱映射為呈現 registry 使用的穩定內建 ID。
+    /**
+     * 將保存格式的短動作名稱映射為呈現 registry 使用的穩定內建 ID。
+     *
      * @param actionType 保存格式中的動作種類。
      * @param extensionTypeId 擴充動作 ID；一般動作為 null。
      * @return registry 使用的動作 ID。
@@ -336,7 +361,9 @@ internal class HistoryRoundEventPresenter(
     }
 }
 
-/** 單局歷史事件的完整呈現模型。
+/**
+ * 單局歷史事件的完整呈現模型。
+ *
  * @property ruleId 對局摘要中的規則模組 ID。
  * @property roundNumber 局序號。
  * @property transactions 保留交易順序的呈現資料。
@@ -349,7 +376,9 @@ internal data class HistoryRoundPresentation(
     val nextTransactionIndex: Int?,
 )
 
-/** 單一歷史交易的呈現資料。
+/**
+ * 單一歷史交易的呈現資料。
+ *
  * @property index 交易索引。
  * @property occurredAtEpochMillis 發生時間。
  * @property isOpening 是否為開局交易。
@@ -362,7 +391,9 @@ internal data class HistoryTransactionPresentation(
     val facts: List<HistoryFactPresentation>,
 )
 
-/** 單一歷史事實的呈現資料。
+/**
+ * 單一歷史事實的呈現資料。
+ *
  * @property text 事實的本地化玩家用語，不包含未知格式識別碼。
  * @property actorSeat 可取得時的發起玩家座位。
  * @property directTiles 直接涉及的牌種，保留重複項目與原始順序。
@@ -379,7 +410,9 @@ internal data class HistoryFactPresentation(
     val identifiers: List<String> = emptyList(),
 )
 
-/** 單一結算事實的保存結果呈現資料。
+/**
+ * 單一結算事實的保存結果呈現資料。
+ *
  * @property reasonId 原始結算原因 ID。
  * @property reasonText 結算原因顯示文字。
  * @property classification 保存的結算分類；缺少時為 null。
@@ -396,7 +429,9 @@ internal data class HistoryOutcomePresentation(
     val hasEarlierWinSettlement: Boolean = false,
 )
 
-/** 單一玩家的結算呈現資料。
+/**
+ * 單一玩家的結算呈現資料。
+ *
  * @property seatIndex 玩家座位。
  * @property score 結算後的絕對分數；沒有保存該玩家分數時為 null。
  * @property scoreChange 該筆交易的權威分數差；缺少可信的前後資料時為 null。
@@ -413,7 +448,9 @@ internal data class HistoryOutcomeRowPresentation(
     val detailFields: List<HistoryWinDetailFieldDto> = emptyList(),
 )
 
-/** 將結算 DTO 轉成保留結算存在性的呈現資料。
+/**
+ * 將結算 DTO 轉成保留結算存在性的呈現資料。
+ *
  * @param identitySeats 對局身份中的所有座位索引。
  * @param reasonText 已解析的結算原因顯示文字。
  * @return 結算呈現資料。

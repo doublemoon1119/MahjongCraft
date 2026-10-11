@@ -2,7 +2,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollbarLayout
 
-/** 歷史摘要固定標題、捲動內容與底列的版面幾何。
+/**
+ * 歷史摘要固定標題、捲動內容與底列的版面幾何。
  *
  * @property contentTop 捲動內容上界。
  * @property contentBottom 捲動內容下界。
@@ -71,7 +72,8 @@ internal data class HistorySummaryLayout(
         (contentBottom - contentTop).coerceAtLeast(0),
     )
 
-    /** 依內容高度建立像素捲軸。
+    /**
+     * 依內容高度建立像素捲軸。
      *
      * @param contentHeight 捲動內容總高度。
      * @param scrollOffset 目前捲動偏移。
@@ -101,7 +103,8 @@ internal data class HistorySummaryLayout(
         return mouseY - continuousTop
     }
 
-    /** 限制內容捲動偏移。
+    /**
+     * 限制內容捲動偏移。
      *
      * @param offset 欲套用的偏移。
      * @param contentHeight 內容總高度。
@@ -109,7 +112,8 @@ internal data class HistorySummaryLayout(
      */
     fun clampScroll(offset: Double, contentHeight: Int): Double = offset.coerceIn(0.0, maximumScroll(contentHeight).toDouble())
 
-    /** 計算內容可捲動的最大偏移。
+    /**
+     * 計算內容可捲動的最大偏移。
      *
      * @param contentHeight 內容總高度。
      * @return 最大偏移。

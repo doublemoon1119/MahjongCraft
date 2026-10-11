@@ -14,6 +14,7 @@ internal class FabricGameEventDeliveryReporter : GameEventDeliveryReporter {
 
     /**
      * 記錄事件產生時找不到場地位置的情況。
+     *
      * @param matchId 事件所屬場次。
      * @param venueId 缺少位置的場地。
      */
@@ -23,6 +24,7 @@ internal class FabricGameEventDeliveryReporter : GameEventDeliveryReporter {
 
     /**
      * 記錄單一第三方事件監聽者失敗。
+     *
      * @param event 交付中的事件。
      * @param cause 監聽者拋出的例外。
      */
@@ -38,6 +40,7 @@ internal class FabricGameEventDeliveryReporter : GameEventDeliveryReporter {
 
     /**
      * 記錄無法將事件交付工作排入 server 佇列的錯誤。
+     *
      * @param cause 排程器拋出的例外。
      */
     override fun schedulingFailed(cause: Throwable) {

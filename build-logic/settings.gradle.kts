@@ -18,3 +18,6 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "mahjongcraft-build-logic"
+
+include(":detekt-rules")
+project(":detekt-rules").name = "mahjongcraft-detekt-rules"

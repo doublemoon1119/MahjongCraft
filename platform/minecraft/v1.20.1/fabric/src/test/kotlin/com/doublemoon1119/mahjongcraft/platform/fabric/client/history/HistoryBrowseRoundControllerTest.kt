@@ -93,7 +93,9 @@ class HistoryBrowseRoundControllerTest {
         assertEquals(sent, transport.roundEventsRequests.size)
     }
 
-    /** 建立列表、摘要與單局頁面的共同前置狀態。
+    /**
+     * 建立列表、摘要與單局頁面的共同前置狀態。
+     *
      * @param transport 可手動回覆的模擬傳輸。
      * @param roundNumber 本次選取的局序號。
      * @return 使用虛擬時間的瀏覽控制器。
@@ -426,7 +428,9 @@ class HistoryBrowseRoundControllerTest {
         assertFalse(controller.refreshRound())
     }
 
-    /** 建立指定對局的最小列表摘要。
+    /**
+     * 建立指定對局的最小列表摘要。
+     *
      * @param matchId 對局識別碼。
      * @return 可供控制器進入摘要頁的摘要。
      */
@@ -445,7 +449,9 @@ class HistoryBrowseRoundControllerTest {
         results = emptyList(),
     )
 
-    /** 建立包含兩局索引的摘要內容。
+    /**
+     * 建立包含兩局索引的摘要內容。
+     *
      * @return 含局索引的摘要。
      */
     private fun detail() = HistoryMatchDetailDto(
@@ -453,7 +459,9 @@ class HistoryBrowseRoundControllerTest {
         listOf(HistoryRoundSummaryDto(1, 1, 2), HistoryRoundSummaryDto(2, 3, 4)),
     )
 
-    /** 建立最小且可通過回應驗證的事件頁。
+    /**
+     * 建立最小且可通過回應驗證的事件頁。
+     *
      * @param roundNumber 局序號。
      * @param indexes 此頁交易索引。
      * @param next 下一頁起始交易索引。
@@ -467,7 +475,9 @@ class HistoryBrowseRoundControllerTest {
         tileCatalog = emptyList(),
     )
 
-    /** 建立最小且可通過回應驗證的桌況。
+    /**
+     * 建立最小且可通過回應驗證的桌況。
+     *
      * @param roundNumber 局序號。
      * @param position 桌況對應的局內位置。
      * @return 桌況 DTO。
@@ -515,7 +525,9 @@ class HistoryBrowseRoundControllerTest {
         /** 測試用要求序號。 */
         private var nextId = 0
 
-        /** 記錄列表查詢並回報等待狀態。
+        /**
+         * 記錄列表查詢並回報等待狀態。
+         *
          * @param request 列表要求。
          * @return 模擬配對識別碼。
          */
@@ -523,7 +535,9 @@ class HistoryBrowseRoundControllerTest {
             mutableState.value = ClientHistoryQueryState.Loading(it)
         }
 
-        /** 記錄摘要查詢並回報等待狀態。
+        /**
+         * 記錄摘要查詢並回報等待狀態。
+         *
          * @param request 摘要要求。
          * @return 模擬配對識別碼。
          */
@@ -531,13 +545,17 @@ class HistoryBrowseRoundControllerTest {
             mutableState.value = ClientHistoryQueryState.Loading(it)
         }
 
-        /** 記錄規則設定查詢。
+        /**
+         * 記錄規則設定查詢。
+         *
          * @param request 規則設定要求。
          * @return 模擬配對識別碼。
          */
         override fun queryRuleSettings(request: HistoryRuleSettingsRequestDto): String = "rules-${++nextId}"
 
-        /** 記錄事件頁查詢。
+        /**
+         * 記錄事件頁查詢。
+         *
          * @param request 事件頁要求。
          * @return 測試用要求識別碼。
          */
@@ -546,7 +564,9 @@ class HistoryBrowseRoundControllerTest {
             mutableState.value = ClientHistoryQueryState.Loading(it.requestId)
         }.requestId
 
-        /** 記錄桌況查詢。
+        /**
+         * 記錄桌況查詢。
+         *
          * @param request 桌況要求。
          * @return 測試用要求識別碼。
          */
@@ -555,27 +575,35 @@ class HistoryBrowseRoundControllerTest {
             mutableState.value = ClientHistoryQueryState.Loading(it.requestId)
         }.requestId
 
-        /** 模擬取消要求。
+        /**
+         * 模擬取消要求。
+         *
          * @param requestId 要取消的要求識別碼。
          * @return 一律表示已接受取消。
          */
         override fun cancel(requestId: String): Boolean = true
 
-        /** 發出列表成功回應。
+        /**
+         * 發出列表成功回應。
+         *
          * @param entries 列表摘要。
          */
         fun respondList(entries: List<HistoryMatchSummaryDto>) {
             mutableState.value = ClientHistoryQueryState.ListResult(HistoryListResponseDto("list-1", entries, nextCursor = null, errorCode = null, allowAll = false, allowStressTest = false))
         }
 
-        /** 發出摘要成功回應。
+        /**
+         * 發出摘要成功回應。
+         *
          * @param detail 摘要內容。
          */
         fun respondSummary(detail: HistoryMatchDetailDto) {
             mutableState.value = ClientHistoryQueryState.SummaryResult(HistorySummaryResponseDto("summary-2", detail, errorCode = null))
         }
 
-        /** 發出事件頁成功回應。
+        /**
+         * 發出事件頁成功回應。
+         *
          * @param requestId 回應配對識別碼。
          * @param roundNumber 局序號。
          * @param start 事件頁起點。
@@ -595,7 +623,9 @@ class HistoryBrowseRoundControllerTest {
             )
         }
 
-        /** 回覆單局查詢的穩定錯誤。
+        /**
+         * 回覆單局查詢的穩定錯誤。
+         *
          * @param errorCode 伺服器拒絕原因。
          * @param requestId 回覆配對識別碼。
          */
@@ -606,7 +636,9 @@ class HistoryBrowseRoundControllerTest {
             )
         }
 
-        /** 發出桌況成功回應。
+        /**
+         * 發出桌況成功回應。
+         *
          * @param roundNumber 局序號。
          * @param position 回應位置。
          * @param requestId 回應配對識別碼。

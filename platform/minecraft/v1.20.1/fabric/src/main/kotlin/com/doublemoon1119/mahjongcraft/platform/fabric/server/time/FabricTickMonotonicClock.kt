@@ -24,7 +24,8 @@ class FabricTickMonotonicClock : MonotonicClock {
     private val pendingTasks = PriorityQueue<ScheduledTask>(compareBy { it.dueAtTick })
     private val pendingTasksLock = Any()
 
-    /** 註冊 tick 事件；只增不減，跨對局／跨桌共用同一個遞增計數，符合 [MonotonicClock] 只能同一
+    /**
+     * 註冊 tick 事件；只增不減，跨對局／跨桌共用同一個遞增計數，符合 [MonotonicClock] 只能同一
      * session 內比較的約定。每個 tick 順便觸發到期的 [scheduleAfter] 工作。 */
     fun registerEvents() {
         ServerTickEvents.END_SERVER_TICK.register {

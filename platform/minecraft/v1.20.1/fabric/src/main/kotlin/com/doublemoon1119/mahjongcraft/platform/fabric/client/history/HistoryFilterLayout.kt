@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
-/** 歷史篩選頁固定標題／頁尾與可捲動內容區的版面計算。
+/**
+ * 歷史篩選頁固定標題／頁尾與可捲動內容區的版面計算。
  *
  * @property headerBottom 標題區下界。
  * @property footerTop 頁尾按鈕上界。
@@ -19,7 +20,8 @@ internal data class HistoryFilterLayout(
     val rowHeight: Int,
     val scrollableHeight: Int,
 ) {
-    /** 取得內容列的垂直座標。
+    /**
+     * 取得內容列的垂直座標。
      *
      * @param rowIndex 從零開始的列索引。
      * @param scroll 內容區目前的捲動距離。
@@ -27,7 +29,8 @@ internal data class HistoryFilterLayout(
      */
     fun rowTop(rowIndex: Int, scroll: Int): Int = contentTop + rowIndex * rowSpacing - scroll
 
-    /** 判斷完整控制項是否位於內容區內，避免覆蓋標題與頁尾。
+    /**
+     * 判斷完整控制項是否位於內容區內，避免覆蓋標題與頁尾。
      *
      * @param rowIndex 從零開始的列索引。
      * @param scroll 內容區目前的捲動距離。

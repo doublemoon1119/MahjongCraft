@@ -106,6 +106,7 @@ internal fun authorizedHistoryReplay(
 
 /**
  * 將讀取器分類轉為既有查詢錯誤，不洩漏 codec 或文件內容。
+ *
  * @return 安全查詢失敗。
  */
 private fun ReplayReadError.toQueryFailure(): HistoryQueryResult.Failure = historyRoundFailure(
@@ -118,6 +119,7 @@ private fun ReplayReadError.toQueryFailure(): HistoryQueryResult.Failure = histo
 
 /**
  * 建立只含英文內部診斷的錯誤，不回傳 SQL 或原始 payload。
+ *
  * @param code 穩定查詢錯誤碼。
  * @return 安全失敗。
  */

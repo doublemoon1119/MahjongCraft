@@ -58,6 +58,7 @@ class GameEventDelivery(
 
     /**
      * 結束指定 session；較舊 session 的排程工作不會再交付事件。
+     *
      * @param sessionId 欲結束的 session。
      */
     fun stopSession(sessionId: Uuid) {
@@ -66,6 +67,7 @@ class GameEventDelivery(
 
     /**
      * 接收一筆已提交交易，僅投影並加入佇列，不直接呼叫第三方監聽者。
+     *
      * @param sessionId 接收者建立時擷取的 session。
      * @param sequence store 在交易內配置的遞增提交序號。
      * @param facts 同一交易中單一場地的事實。
@@ -97,6 +99,7 @@ class GameEventDelivery(
 
     /**
      * 標示指定交易已釋放權威交易鎖，並安排所有已可交付事件。
+     *
      * @param sessionId 通知所屬 session。
      * @param sequence 已釋放交易鎖的提交序號；亂序通知不會使水位倒退。
      */
@@ -112,6 +115,7 @@ class GameEventDelivery(
 
     /**
      * 判斷事件情境是否仍屬於指定的有效 session。
+     *
      * @param context 第三方收到的情境。
      * @param sessionId 橋接目前持有的 session。
      * @return 情境與目前 session 均相符時為 true。
@@ -120,6 +124,7 @@ class GameEventDelivery(
 
     /**
      * 在提交時擷取位置，不延遲到交付時查詢。
+     *
      * @param event 本次投影事件。
      * @param sessionId 事件所屬 session。
      * @return 保存位置與 session 的唯讀情境。
@@ -140,6 +145,7 @@ class GameEventDelivery(
 
     /**
      * 只有一個交付工作可同時排程或執行。
+     *
      * @param sessionId 欲排程的 session。
      */
     private fun scheduleIfReady(sessionId: Uuid) {
@@ -161,6 +167,7 @@ class GameEventDelivery(
 
     /**
      * 在主執行緒交付目前已解鎖的事件。
+     *
      * @param sessionId 此工作所屬 session。
      */
     private fun deliver(sessionId: Uuid) {
@@ -173,6 +180,7 @@ class GameEventDelivery(
 
     /**
      * 原子移出已解鎖事件，或在沒有可交付事件時解除排程旗標。
+     *
      * @param sessionId 此工作所屬 session。
      * @return 可交付事件；session 失效或沒有可交付事件時為 null。
      */
@@ -195,6 +203,7 @@ class GameEventDelivery(
 
     /**
      * 依事件類型取得訂閱者快照。
+     *
      * @param pending 當次待交付事件。
      */
     private fun deliverOne(pending: PendingEvent) {
@@ -207,6 +216,7 @@ class GameEventDelivery(
 
     /**
      * 逐一隔離監聽者失敗；生命週期切換後不再交付舊事件。
+     *
      * @param L 監聽者型別。
      * @param pending 當次事件。
      * @param listeners 訂閱者快照。
@@ -227,6 +237,7 @@ class GameEventDelivery(
 
     /**
      * 隔離回報器本身的失敗。
+     *
      * @param block 欲執行的回報。
      */
     private inline fun report(block: () -> Unit) {
@@ -235,6 +246,7 @@ class GameEventDelivery(
 
     /**
      * 提交時擷取的單一通知。
+     *
      * @property sequence 來源交易序號。
      * @property event 公開事件。
      * @property context 提交當下的位置與 session。
@@ -247,6 +259,7 @@ class GameEventDelivery(
 
     /**
      * 不可變的 session 交付狀態。
+     *
      * @property sessionId 有效 session；未啟動時為 null。
      * @property releasedSequence 已解鎖的最大序號。
      * @property events 依提交順序排列的待交付事件。
@@ -264,6 +277,7 @@ class GameEventDelivery(
 
     /**
      * 僅更新仍屬於同一 session 的狀態。
+     *
      * @param sessionId 欲更新的 session。
      * @param transform 根據目前快照產生新狀態。
      */

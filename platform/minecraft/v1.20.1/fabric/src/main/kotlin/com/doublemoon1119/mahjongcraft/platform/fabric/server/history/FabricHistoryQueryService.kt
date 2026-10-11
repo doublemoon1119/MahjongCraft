@@ -118,7 +118,8 @@ class FabricHistoryQueryService(
         ServerPlayConnectionEvents.DISCONNECT.register { handler, _ -> admission.remove(handler.player.uuid.toKotlinUuid()) }
     }
 
-    /** 同步目前有效的間隔；不將工作上限或拒絕回覆政策交由客戶端決定。
+    /**
+     * 同步目前有效的間隔；不將工作上限或拒絕回覆政策交由客戶端決定。
      *
      * @param player 已建立連線的玩家。
      */
@@ -128,6 +129,7 @@ class FabricHistoryQueryService(
 
     /**
      * 接收單局事件要求，共用正式查詢准入與回覆驗證。
+     *
      * @param server 目前伺服器。
      * @param player 已驗證連線玩家。
      * @param request 有界事件要求。
@@ -150,6 +152,7 @@ class FabricHistoryQueryService(
 
     /**
      * 接收指定交易後的桌況要求，不建立可操作的遊戲狀態。
+     *
      * @param server 目前伺服器。
      * @param player 已驗證連線玩家。
      * @param request 有界狀態要求。
@@ -172,6 +175,7 @@ class FabricHistoryQueryService(
 
     /**
      * 執行單局查詢的共同生命週期，同一 deadline 內完成讀取、預算與公開確認。
+     *
      * @param R 線路回覆型別。
      * @param server 原伺服器。
      * @param player 原連線玩家。

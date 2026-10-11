@@ -26,7 +26,8 @@ import kotlin.test.assertTrue
 class RiichiWinSettlementDetailResolverTest {
     private val config = RiichiRuleConfig()
 
-    /** 立直及雙立直即使沒有裏寶牌加飜，也保留可用指示牌欄位；未立直及役滿不加入。
+    /**
+     * 立直及雙立直即使沒有裏寶牌加飜，也保留可用指示牌欄位；未立直及役滿不加入。
      */
     @Test
     fun `ura indicators require an applicable winning riichi result`() {

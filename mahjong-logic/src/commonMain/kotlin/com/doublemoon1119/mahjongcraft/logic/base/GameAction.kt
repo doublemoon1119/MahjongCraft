@@ -39,6 +39,7 @@ sealed class GameAction {
      * 本局開門擲骰已完成。
      * 用於對外廣播「這次擲骰的點數是多少」事件，不代表任何玩家的主動操作；規則不支援開門流程時
      * 不會廣播這個事件。
+     *
      * @property dice 本次擲骰的個別點數。
      */
     data class DiceRolled(val dice: DiceRollResult) : GameAction()
@@ -52,6 +53,7 @@ sealed class GameAction {
     /**
      * 捨牌動作。
      * 玩家從手牌中選擇一張牌打出。
+     *
      * @property tileId 欲捨棄牌的唯一識別碼。
      */
     data class Discard(val tileId: Uuid) : GameAction()
@@ -59,6 +61,7 @@ sealed class GameAction {
     /**
      * 吃牌動作。
      * 玩家使用手牌中的兩張牌與他人的捨牌組成順子。
+     *
      * @property tileId 欲吃的他家捨牌的唯一識別碼。
      * @property withTiles 玩家手牌中用於組成順子的兩張牌的唯一識別碼。
      */
@@ -67,6 +70,7 @@ sealed class GameAction {
     /**
      * 碰牌動作。
      * 玩家使用手牌中的兩張牌與他人的捨牌組成刻子。
+     *
      * @property tileId 欲碰的他家捨牌的唯一識別碼。
      * @property withTiles 玩家手牌中用於組成刻子的兩張牌的唯一識別碼。
      */
@@ -75,6 +79,7 @@ sealed class GameAction {
     /**
      * 槓牌動作。
      * 包含明槓、暗槓、加槓。
+     *
      * @property type 槓牌的種類。
      * @property tileId 觸發槓牌的牌的唯一識別碼。
      * @property withTiles 玩家手牌中用於組成槓子的牌的唯一識別碼（不包含觸發牌）。
@@ -84,6 +89,7 @@ sealed class GameAction {
     /**
      * 胡牌動作（榮和）。
      * 玩家胡他人的捨牌。
+     *
      * @property tileId 欲胡的他家捨牌的唯一識別碼。
      */
     data class Ron(val tileId: Uuid) : GameAction()

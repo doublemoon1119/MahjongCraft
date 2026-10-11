@@ -146,7 +146,8 @@ internal class HistoryListScreen(
         return handled || super.mouseReleased(mouseX, mouseY, button)
     }
 
-    /** 依拖曳位置更新列表捲動偏移。
+    /**
+     * 依拖曳位置更新列表捲動偏移。
      *
      * @param mouseY 游標垂直座標。
      */
@@ -183,7 +184,8 @@ internal class HistoryListScreen(
     /** 取得目前排序方向的按鈕文字。 */
     private fun directionText(): Text = Text.translatable("${MinecraftHistoryScreenKeys.DIRECTION_PREFIX}${session.controller.state.value.query.sortDirection.name.lowercase()}")
 
-    /** 建立列出目前值與可選值的 tooltip。
+    /**
+     * 建立列出目前值與可選值的 tooltip。
      *
      * @param title 選項名稱。
      * @param current 目前選值。
@@ -368,7 +370,8 @@ internal class HistoryListScreen(
         hoveredEntry?.let { context.drawTooltip(textRenderer, it, mouseX, mouseY) }
     }
 
-    /** 繪製不依賴固定參與者數量的對局卡片。
+    /**
+     * 繪製不依賴固定參與者數量的對局卡片。
      *
      * @param context 畫面繪製上下文。
      * @param entries 要繪製的對局摘要。
@@ -428,7 +431,8 @@ internal class HistoryListScreen(
         hoveredEntry = hover
     }
 
-    /** 繪製與拖曳共用幾何的捲軸，不受卡片內容裁切影響。
+    /**
+     * 繪製與拖曳共用幾何的捲軸，不受卡片內容裁切影響。
      *
      * @param context 畫面繪製上下文。
      * @param entries 目前顯示的對局摘要。
@@ -441,7 +445,8 @@ internal class HistoryListScreen(
         context.fill(bounds.x, scrollbar.thumbTop, bounds.x + bounds.width, scrollbar.thumbTop + scrollbar.thumbHeight, SCROLLBAR_THUMB_COLOR)
     }
 
-    /** 計算單張對局卡片高度，供繪製與捲軸使用相同幾何資料。
+    /**
+     * 計算單張對局卡片高度，供繪製與捲軸使用相同幾何資料。
      *
      * @param entry 對局摘要。
      * @return 卡片所需的垂直高度。

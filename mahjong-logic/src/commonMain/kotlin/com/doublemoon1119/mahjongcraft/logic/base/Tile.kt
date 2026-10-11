@@ -68,17 +68,20 @@ sealed class Tile {
      * 麻將中的數牌由三種花色組成，每種花色包含從一到九的數字。
      */
     enum class Suit {
-        /** * 萬子 (Character)。
+        /**
+         * * 萬子 (Character)。
          * 日文：萬子 (Manzu)。
          */
         Character,
 
-        /** * 筒子 (Dot)。
+        /**
+         * * 筒子 (Dot)。
          * 日文：筒子 (Pinzu)。
          */
         Dot,
 
-        /** * 條子 (Bamboo)。
+        /**
+         * * 條子 (Bamboo)。
          * 日文：索子 (Sozu)。
          */
         Bamboo,

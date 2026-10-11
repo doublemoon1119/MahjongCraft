@@ -7,7 +7,8 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDomain
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionTileOrientationDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 
-/** 單張歷史牌面在一組牌面中的幾何位置與顯示方向。
+/**
+ * 單張歷史牌面在一組牌面中的幾何位置與顯示方向。
  *
  * @property tile 牌面目錄中的牌索引。
  * @property x 牌面左界的水平位置。
@@ -27,7 +28,8 @@ internal data class HistoryTilePlacement(
     val faceDown: Boolean = false,
 )
 
-/** 一組歷史牌面的完整尺寸與各牌位置。
+/**
+ * 一組歷史牌面的完整尺寸與各牌位置。
  *
  * @property placements 依顯示順序排列的牌面位置。
  * @property width 這組牌面所需的總寬度。
@@ -41,7 +43,8 @@ internal data class HistoryTileGroupLayout(
 
 /** 計算歷史手牌與副露的純幾何配置，不負責載入牌面或繪製。 */
 internal object HistoryTileGroupLayoutCalculator {
-    /** 計算可換行的手牌配置，和牌張與立牌之間保留額外間距。
+    /**
+     * 計算可換行的手牌配置，和牌張與立牌之間保留額外間距。
      *
      * @param tiles 依歷史資料保存順序排列的立牌牌索引。
      * @param winningTile 和牌張牌索引；若沒有則為 null。
@@ -126,7 +129,8 @@ internal object HistoryTileGroupLayoutCalculator {
         )
     }
 
-    /** 計算單一副露配置，保留來源牌的橫置位置與加槓疊牌。
+    /**
+     * 計算單一副露配置，保留來源牌的橫置位置與加槓疊牌。
      *
      * @param meld 歷史資料中的副露。
      * @param maxWidth 單組副露允許的最大寬度；超出時等比例縮小。
@@ -201,7 +205,8 @@ internal object HistoryTileGroupLayoutCalculator {
         )
     }
 
-    /** 將實際來源牌移到規則指定的橫置格位，並維持其餘牌的歷史順序。
+    /**
+     * 將實際來源牌移到規則指定的橫置格位，並維持其餘牌的歷史順序。
      *
      * @param tiles 副露中依歷史資料保存的牌索引。
      * @param sourceTile 實際鳴取來源牌索引；沒有來源牌時為 null。

@@ -46,7 +46,8 @@ fun acceptedActionHistoryDraft(
     )
 }
 
-/** 將已建立的胡牌 request 轉成歷史詳情。
+/**
+ * 將已建立的胡牌 request 轉成歷史詳情。
  *
  * @param request 已建立的胡牌 request。
  * @return 可保存的規則中立胡牌詳情。

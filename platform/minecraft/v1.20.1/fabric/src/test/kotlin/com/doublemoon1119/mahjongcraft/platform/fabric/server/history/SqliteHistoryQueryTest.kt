@@ -428,7 +428,8 @@ class SqliteHistoryQueryTest {
      */
     private fun openDatabase(): SqliteHistoryDatabase = SqliteHistoryDatabase.open(createTempDirectory("mahjongcraft-history-query-").resolve("history.sqlite"))
 
-    /** 寫入摘要列。
+    /**
+     * 寫入摘要列。
      *
      * @param path 資料庫檔案位置。
      * @param id 對局 ID。
@@ -446,7 +447,8 @@ class SqliteHistoryQueryTest {
         ended,
     )
 
-    /** 寫入 Replay 列。
+    /**
+     * 寫入 Replay 列。
      *
      * @param path 資料庫檔案位置。
      * @param id 對局 ID。
@@ -459,7 +461,8 @@ class SqliteHistoryQueryTest {
         payload,
     )
 
-    /** 寫入暫存事件列。
+    /**
+     * 寫入暫存事件列。
      *
      * @param path 資料庫檔案位置。
      * @param id 對局 ID。
@@ -472,7 +475,8 @@ class SqliteHistoryQueryTest {
         payload,
     )
 
-    /** 寫入終局證據列。
+    /**
+     * 寫入終局證據列。
      *
      * @param path 資料庫檔案位置。
      * @param id 對局 ID。
@@ -489,7 +493,8 @@ class SqliteHistoryQueryTest {
         completed,
     )
 
-    /** 寫入缺口證據列。
+    /**
+     * 寫入缺口證據列。
      *
      * @param path 資料庫檔案位置。
      * @param id 對局 ID。
@@ -500,7 +505,8 @@ class SqliteHistoryQueryTest {
         id,
     )
 
-    /** 寫入子表孤兒列。
+    /**
+     * 寫入子表孤兒列。
      *
      * @param path 資料庫檔案位置。
      * @param id 對局 ID。
@@ -523,7 +529,8 @@ class SqliteHistoryQueryTest {
         aiStrategyId,
     )
 
-    /** 寫入記錄停止診斷列，不代表對局已經安全終止。
+    /**
+     * 寫入記錄停止診斷列，不代表對局已經安全終止。
      *
      * @param path 資料庫檔案位置。
      * @param id 對局 ID。
@@ -534,7 +541,8 @@ class SqliteHistoryQueryTest {
         id,
     )
 
-    /** 寫入清理墓碑列。
+    /**
+     * 寫入清理墓碑列。
      *
      * @param path 資料庫檔案位置。
      * @param id 對局 ID。
@@ -545,7 +553,8 @@ class SqliteHistoryQueryTest {
         id,
     )
 
-    /** 刪除指定摘要與 Replay，模擬游標列已被清理。
+    /**
+     * 刪除指定摘要與 Replay，模擬游標列已被清理。
      *
      * @param path 資料庫檔案位置。
      * @param id 對局 ID。
@@ -555,7 +564,8 @@ class SqliteHistoryQueryTest {
         sql(path, "DELETE FROM history_match WHERE match_id = ?", id)
     }
 
-    /** 執行帶參數的測試 SQL。
+    /**
+     * 執行帶參數的測試 SQL。
      *
      * @param path 資料庫檔案位置。
      * @param statement SQL 語句。

@@ -132,12 +132,16 @@ class HistoryWinDetailPresentationTest {
         assertTrue(row.string.endsWith("7 custom:point"))
     }
 
-    /** 建立不包含規則專用邏輯的測試呈現來源。
+    /**
+     * 建立不包含規則專用邏輯的測試呈現來源。
+     *
      * @return 空動作與流局名稱 registry 的 presenter。
      */
     private fun presenter(): HistoryRoundEventPresenter = HistoryRoundEventPresenter(GameActionVocabularyRegistryImpl(), ExhaustiveDrawReasonDisplayNameRegistryImpl(), RoundOutcomeDisplayNameRegistryImpl())
 
-    /** 建立單次和牌結算的事件呈現資料。
+    /**
+     * 建立單次和牌結算的事件呈現資料。
+     *
      * @param outcome 已保存的安全結算資料。
      * @return 依初始座位排列的結算呈現結果。
      */

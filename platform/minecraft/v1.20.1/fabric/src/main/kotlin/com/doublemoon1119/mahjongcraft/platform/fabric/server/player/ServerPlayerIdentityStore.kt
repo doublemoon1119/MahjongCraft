@@ -34,7 +34,8 @@ class ServerPlayerIdentityStore(
      */
     fun nameOf(playerId: Uuid): String? = cachedNames[playerId]
 
-    /** 依最後已知普通名稱尋找玩家 UUID；不向外部服務查詢。
+    /**
+     * 依最後已知普通名稱尋找玩家 UUID；不向外部服務查詢。
      *
      * @param query 名稱片段，使用大小寫不敏感比對。
      * @return 名稱包含 [query] 的玩家 UUID。

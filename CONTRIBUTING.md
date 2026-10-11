@@ -4,6 +4,10 @@
 
 - **Language**: All comments and KDoc must be written in **Traditional Chinese (繁體中文)**.
 - **Style**: Use objective descriptions of functionality. Avoid subjective tone or conversational language.
+- **KDoc layout**: In a multiline KDoc, put `/**` on its own line. Separate the description from the first
+  block tag (such as `@property`, `@param` or `@return`) with a blank comment line. No blank line is required
+  between individual tags, or before tags when there is no description. Single-line KDoc remains allowed.
+  The custom detekt rules enforce this layout through `detektAll`; they do not auto-format comments.
 - **Completeness**: Every Kotlin declaration must have a complete comment or KDoc.
 - **Constructor properties**: Document properties declared in a class's primary constructor with `@property` in the
   class KDoc. Do not place a separate KDoc immediately above each constructor property unless that placement is
@@ -83,7 +87,7 @@
 - If it fails on ktlint violations, run `./gradlew ktlintFormat` to auto-fix them instead of fixing
   them by hand.
 - Run `./gradlew detektAll` before committing. It runs detekt with type resolution, limited to the rules enabled
-  in `config/detekt/detekt.yml` (unnecessary fully qualified names and unused private declarations). `build` does not
+  in `config/detekt/detekt.yml` (KDoc layout, unnecessary fully qualified names and unused private declarations). `build` does not
   run detekt, and detekt does not auto-fix; fix the reported code, or suppress an intentional exception at the
   declaration with `@Suppress("RuleName")` and a comment stating the reason.
 - `./gradlew build` also verifies the Minecraft language files (`platform/minecraft/common/.../lang/`)

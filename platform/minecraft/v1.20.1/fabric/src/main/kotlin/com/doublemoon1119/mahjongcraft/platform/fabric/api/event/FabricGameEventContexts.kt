@@ -28,6 +28,7 @@ object FabricGameEventContexts {
 
     /**
      * 安裝目前 session 的轉換綁定；只由 Fabric session lifecycle 呼叫。
+     *
      * @param serverProvider 取得此 session 所屬的伺服器；不得改為動態查詢另一個 session。
      * @param isValid 驗證情境是否仍屬於有效 session。
      */

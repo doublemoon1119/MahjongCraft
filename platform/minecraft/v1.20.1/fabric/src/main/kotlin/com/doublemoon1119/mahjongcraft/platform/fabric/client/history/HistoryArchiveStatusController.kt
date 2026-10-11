@@ -100,7 +100,8 @@ internal class HistoryArchiveStatusController(
         delay((sentAt + transport.minimumInterval.value - now()).coerceAtLeast(Duration.ZERO))
     }
 
-    /** 輪詢保存狀態直到取得終態或達到次數上限。
+    /**
+     * 輪詢保存狀態直到取得終態或達到次數上限。
      *
      * @param matchId 欲查詢的對局識別碼。
      */
@@ -141,7 +142,8 @@ internal class HistoryArchiveStatusController(
         }
     }
 
-    /** 等待與指定要求完全配對的回覆。
+    /**
+     * 等待與指定要求完全配對的回覆。
      *
      * @param requestId 要求識別碼。
      * @param matchId 對局識別碼，用於避免過期畫面更新狀態。

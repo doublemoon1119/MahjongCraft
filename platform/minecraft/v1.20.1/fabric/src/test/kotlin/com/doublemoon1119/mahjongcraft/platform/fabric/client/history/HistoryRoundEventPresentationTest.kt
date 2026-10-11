@@ -322,7 +322,9 @@ class HistoryRoundEventPresentationTest {
         assertEquals("test.spell", fact.text.string)
     }
 
-    /** 建立測試所需的事件 presenter。
+    /**
+     * 建立測試所需的事件 presenter。
+     *
      * @return 已註冊測試用動作詞彙的 presenter。
      */
     private fun presenter(): HistoryRoundEventPresenter {
@@ -378,7 +380,9 @@ class HistoryRoundEventPresentationTest {
         assertEquals("±0", presenter.scoreChangeText(0).string)
     }
 
-    /** 建立含單一交易的測試事件頁。
+    /**
+     * 建立含單一交易的測試事件頁。
+     *
      * @param fact 單一事實便捷輸入。
      * @param facts 依序保存的事實。
      * @param tileCatalog 事實參照的牌目錄。

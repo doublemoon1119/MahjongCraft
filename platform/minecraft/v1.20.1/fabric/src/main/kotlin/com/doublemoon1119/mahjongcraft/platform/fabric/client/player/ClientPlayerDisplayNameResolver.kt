@@ -7,7 +7,8 @@ import net.minecraft.text.Text
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
-/** 集中解析所有 HUD、提示文字與世界面板使用的真人及 AI 顯示名稱。
+/**
+ * 集中解析所有 HUD、提示文字與世界面板使用的真人及 AI 顯示名稱。
  *
  * @property stateStore 提供房間與對局中的 AI 座位順序。
  * @property profiles 提供線上及已快取的真人 profile。

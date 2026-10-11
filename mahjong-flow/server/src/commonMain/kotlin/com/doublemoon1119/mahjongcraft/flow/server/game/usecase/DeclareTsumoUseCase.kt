@@ -249,7 +249,8 @@ class DeclareTsumoUseCase(
         return Outcome.Success(Unit)
     }
 
-    /** 將原子更新內取得的算役結果帶到呈現發布階段。
+    /**
+     * 將原子更新內取得的算役結果帶到呈現發布階段。
      *
      * @property settlement 同一交易建立的胡牌呈現詳情。
      */

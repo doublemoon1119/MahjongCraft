@@ -134,7 +134,8 @@ internal data class HistoryBrowseSummaryState(
     val scrollOffset: Double = 0.0,
 )
 
-/** 已選對局的開局規則設定載入結果。
+/**
+ * 已選對局的開局規則設定載入結果。
  *
  * @property matchId 正在查閱的對局識別碼。
  * @property config 最近成功取得的完整開局設定。

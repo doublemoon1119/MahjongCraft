@@ -17,6 +17,7 @@ internal class HistoryHandSorting {
 
     /**
      * 取得指定玩家目前是否使用規則排序。
+     *
      * @param matchId 對局識別碼。
      * @param playerId 玩家識別碼。
      * @return 尚未切換時為 true。
@@ -25,6 +26,7 @@ internal class HistoryHandSorting {
 
     /**
      * 切換指定玩家的手牌排序偏好。
+     *
      * @param matchId 對局識別碼。
      * @param playerId 玩家識別碼。
      * @return 切換後是否使用規則排序。
@@ -69,6 +71,7 @@ internal class HistoryHandSorting {
 
     /**
      * 對局與玩家的顯示偏好鍵。
+     *
      * @property matchId 對局識別碼。
      * @property playerId 玩家身分或穩定初始座位鍵。
      */

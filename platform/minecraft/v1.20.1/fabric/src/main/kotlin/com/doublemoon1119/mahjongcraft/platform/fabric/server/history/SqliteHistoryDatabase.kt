@@ -130,7 +130,8 @@ internal sealed interface HistoryReplayPayloadRead {
     /** Replay 超過查詢允許的解析大小。 */
     data object TooLarge : HistoryReplayPayloadRead
 
-    /** 已讀取且尚未解碼的 Replay JSON。
+    /**
+     * 已讀取且尚未解碼的 Replay JSON。
      *
      * @property payload 通過大小限制的 Replay JSON 文字。
      */
@@ -165,13 +166,15 @@ internal class SqliteHistoryDatabase private constructor(
     val path: Path,
     private val database: Database,
 ) {
-    /** 同鍵、同內容重送視為成功；同鍵、不同內容拒絕且不覆寫原事件。
+    /**
+     * 同鍵、同內容重送視為成功；同鍵、不同內容拒絕且不覆寫原事件。
      *
      * @param record 待寫入的歷史事件。
      */
     fun appendPending(record: PendingHistoryRecord) = appendPendingBatch(listOf(record))
 
-    /** 同一批事件在單一 SQLite 交易內提交；任一衝突會使整批回滾。
+    /**
+     * 同一批事件在單一 SQLite 交易內提交；任一衝突會使整批回滾。
      *
      * @param records 待寫入的歷史事件批次。
      */
@@ -281,7 +284,8 @@ internal class SqliteHistoryDatabase private constructor(
         HistoryTerminalTable.select(HistoryTerminalTable.matchId).mapTo(mutableSetOf()) { it[HistoryTerminalTable.matchId] }
     }
 
-    /** 按權威序號讀取指定場次的原始暫存事件。
+    /**
+     * 按權威序號讀取指定場次的原始暫存事件。
      *
      * @param matchId 對局穩定識別碼。
      * @return 依事件序號排序的暫存事件。
@@ -304,7 +308,8 @@ internal class SqliteHistoryDatabase private constructor(
         HistoryGapTable.selectAll().associate { it[HistoryGapTable.matchId] to it[HistoryGapTable.firstMissingSequence] }
     }
 
-    /** 保留每場最早缺口；重複對帳不會將缺口推後。
+    /**
+     * 保留每場最早缺口；重複對帳不會將缺口推後。
      *
      * @param gaps 對局 ID 與最早缺失序號的對照。
      */
@@ -500,7 +505,8 @@ internal class SqliteHistoryDatabase private constructor(
         true
     }
 
-    /** 寫入終局摘要；已清理場次的延遲訊息會被安全忽略。
+    /**
+     * 寫入終局摘要；已清理場次的延遲訊息會被安全忽略。
      *
      * @param terminals 權威狀態移除交易產生的終端摘要。
      */
@@ -531,7 +537,8 @@ internal class SqliteHistoryDatabase private constructor(
         }
     }
 
-    /** 讀取清理墓碑，供啟動時過濾延遲 outbox 訊息。
+    /**
+     * 讀取清理墓碑，供啟動時過濾延遲 outbox 訊息。
      *
      * @return 已清理對局的穩定 ID 集合。
      */
@@ -552,7 +559,8 @@ internal class SqliteHistoryDatabase private constructor(
             .mapTo(mutableSetOf()) { it[HistoryTerminalTable.matchId] }
     }
 
-    /** 以資料表識別欄位讀取保存分類與列數，不載入任何事件或 Replay 內容。
+    /**
+     * 以資料表識別欄位讀取保存分類與列數，不載入任何事件或 Replay 內容。
      *
      * @return 單一交易內取得的資料庫統計。
      */
@@ -596,7 +604,8 @@ internal class SqliteHistoryDatabase private constructor(
         )
     }
 
-    /** 以結束時間與對局 ID 執行有界 keyset 分頁，不載入未回傳的摘要列。
+    /**
+     * 以結束時間與對局 ID 執行有界 keyset 分頁，不載入未回傳的摘要列。
      *
      * @param limit 單頁筆數，會限制在 1 至 100。
      * @param cursor 上一頁最後一列的排序游標。
@@ -916,7 +925,8 @@ internal class SqliteHistoryDatabase private constructor(
             )
         }
 
-    /** 以 SQLite UTF-8 BLOB 長度計算指定對局的邏輯 payload 大小。
+    /**
+     * 以 SQLite UTF-8 BLOB 長度計算指定對局的邏輯 payload 大小。
      *
      * @param matchIds 要計算的對局 ID 集合。
      * @return 指定對局的 Replay 與暫存事件 payload UTF-8 位元組總數。
@@ -925,7 +935,8 @@ internal class SqliteHistoryDatabase private constructor(
         logicalPayloadBytesInTransaction(matchIds)
     }
 
-    /** 讀取可供權威 outbox 對帳的清理確認；墓碑 ID 格式錯誤時拒絕啟動對帳。
+    /**
+     * 讀取可供權威 outbox 對帳的清理確認；墓碑 ID 格式錯誤時拒絕啟動對帳。
      *
      * @return 已提交的清理確認清單。
      */
@@ -941,7 +952,8 @@ internal class SqliteHistoryDatabase private constructor(
         }
     }
 
-    /** 讀取僅有可證實摘要或終端診斷的保留候選。
+    /**
+     * 讀取僅有可證實摘要或終端診斷的保留候選。
      *
      * @return 依終局時間排序的保留候選。
      */
@@ -1021,7 +1033,8 @@ internal class SqliteHistoryDatabase private constructor(
         dimensionId = getString("dimension_id"),
     )
 
-    /** 原子地重新確認可清理條件、刪除場次資料並寫入墓碑。
+    /**
+     * 原子地重新確認可清理條件、刪除場次資料並寫入墓碑。
      *
      * @param reasons 對局 ID 與清理原因名稱的對照。
      * @param prunedAtEpochMillis 清理交易的 UTC 毫秒時間。
@@ -1056,7 +1069,8 @@ internal class SqliteHistoryDatabase private constructor(
         count
     }
 
-    /** 取得主資料庫與 SQLite sidecar 檔案的實際大小。
+    /**
+     * 取得主資料庫與 SQLite sidecar 檔案的實際大小。
      *
      * @return 三個檔案的大小摘要。
      */
@@ -1066,7 +1080,8 @@ internal class SqliteHistoryDatabase private constructor(
         shmBytes = sidecarSize(Path.of("$path-shm")),
     )
 
-    /** 先截斷 WAL，再以有界 incremental vacuum 回收頁面。
+    /**
+     * 先截斷 WAL，再以有界 incremental vacuum 回收頁面。
      *
      * @return 回收是否因資料庫忙碌而延後及是否支援 incremental vacuum。
      */

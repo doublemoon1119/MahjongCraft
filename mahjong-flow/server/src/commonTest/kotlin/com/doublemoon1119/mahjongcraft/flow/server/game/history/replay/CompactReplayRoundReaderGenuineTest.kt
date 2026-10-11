@@ -70,7 +70,9 @@ class CompactReplayRoundReaderGenuineTest {
         val round = rounds.first().jsonObject
         val transactions = round.getValue("transactions").jsonArray
 
-        /** 替換一筆交易欄位，保留正式格式其餘內容。
+        /**
+         * 替換一筆交易欄位，保留正式格式其餘內容。
+         *
          * @param index 交易索引。
          * @param fields 替換欄位。
          * @return 故意變更的文件。
@@ -144,7 +146,9 @@ class CompactReplayRoundReaderGenuineTest {
         assertEquals(listOf<Tile>(Tile.Numeric(Tile.Suit.Dot, 1)), puller.handTiles.map { after.tileCatalog.tiles[it.tileIndex] })
     }
 
-    /** 建立內建投影已註冊並凍結的讀取器。
+    /**
+     * 建立內建投影已註冊並凍結的讀取器。
+     *
      * @param limits 本次使用的資源上限。
      * @return 測試讀取器。
      */
@@ -490,7 +494,9 @@ class CompactReplayRoundReaderGenuineTest {
         return Fixture(CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries), matchId, table, changed, settled)
     }
 
-    /** 建立流局動作與局完成摘要分屬不同交易的正式 Replay 文件。
+    /**
+     * 建立流局動作與局完成摘要分屬不同交易的正式 Replay 文件。
+     *
      * @param scores 流局結算交易寫入的玩家分數，依初始座位排列。
      * @param intermediateScores 流局結算後、局完成前的額外分數；沒有時為 null。
      * @return 正式編碼的流局測試 Replay fixture。
@@ -612,7 +618,9 @@ class CompactReplayRoundReaderGenuineTest {
         return Fixture(CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries), matchId, table, abortiveState, abortiveState)
     }
 
-    /** 建立包含立直後胡牌、續局分數變化與後續局結算的正式 Replay 文件。
+    /**
+     * 建立包含立直後胡牌、續局分數變化與後續局結算的正式 Replay 文件。
+     *
      * @param useWinRuleEffect 是否以 WIN 規則效果取代獨立胡牌結算事實。
      * @param recordWinSettlement 是否記錄實際胡牌交易；關閉時驗證缺少明細的安全處理。
      * @return 正式編碼的測試 Replay fixture。
@@ -670,13 +678,17 @@ class CompactReplayRoundReaderGenuineTest {
         return Fixture(CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries), matchId, table, changed, continued)
     }
 
-    /** 將測試桌況的玩家分數統一設為指定值。
+    /**
+     * 將測試桌況的玩家分數統一設為指定值。
+     *
      * @param score 每位玩家的新分數。
      * @return 分數更新後的桌況。
      */
     private fun TableState.reversedScores(score: Int): TableState = copy(players = players.map { it.copy(score = score) })
 
-    /** 建立正式編碼器需要的有序歷史事件。
+    /**
+     * 建立正式編碼器需要的有序歷史事件。
+     *
      * @param matchId 對局識別碼。
      * @param venueId 場地識別碼。
      * @param sequence 事件與交易序號。
@@ -686,7 +698,9 @@ class CompactReplayRoundReaderGenuineTest {
      */
     private fun event(matchId: Uuid, venueId: Uuid, sequence: Long, time: Long, fact: HistoryFact) = HistoryOutboxEvent(matchId, venueId, 1, sequence, sequence, time, null, fact)
 
-    /** 在正式文件中故意破壞初始投影，保留其他字典與交易資料。
+    /**
+     * 在正式文件中故意破壞初始投影，保留其他字典與交易資料。
+     *
      * @param document 正式文件。
      * @param transform 測試用破壞操作。
      * @return 重新字典化的破損文件。
@@ -699,7 +713,9 @@ class CompactReplayRoundReaderGenuineTest {
         return JsonObject(document + ("payload" to CompactReplayDictionary.encode(JsonObject(content + ("rounds" to JsonArray(rounds))))))
     }
 
-    /** 正式編碼器文件及其預期桌況。
+    /**
+     * 正式編碼器文件及其預期桌況。
+     *
      * @property document 正式編碼文件。
      * @property matchId 對局識別碼。
      * @property table 開局桌況。

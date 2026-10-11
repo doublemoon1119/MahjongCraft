@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.logic.config.ScoreConfig
 
 /**
  * 台灣麻將特有的積分配置實作。
+ *
  * @property baseScore 底分（如：30, 100 等）。
  * @property pointPerTai 台分（每一台對應的分數，如：10, 20 等）。
  * @property initialScore 初始分數，通常台麻在純計點模式下可設為 0。

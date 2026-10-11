@@ -4,7 +4,9 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEven
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundPositionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateDto
 
-/** 單一歷史局的要求與確認位置。
+/**
+ * 單一歷史局的要求與確認位置。
+ *
  * @property roundNumber 局數。
  * @property requestedPosition 最近一次要求的位置。
  * @property confirmedPosition 最近一次成功確認的位置。
@@ -41,6 +43,7 @@ internal data class HistoryBrowseRoundState(
 internal object HistoryRoundNavigation {
     /**
      * 記錄已通過驗證的事件頁與可跨頁游標。
+     *
      * @param current 目前局狀態。
      * @param events 已驗證事件頁。
      * @return 更新事件資料與交易索引的局狀態。
@@ -59,6 +62,7 @@ internal object HistoryRoundNavigation {
 
     /**
      * 依已知交易索引取得相鄰桌況位置。
+     *
      * @param round 目前局狀態。
      * @param position 目前桌況位置。
      * @param direction -1 表示上一筆，1 表示下一筆。

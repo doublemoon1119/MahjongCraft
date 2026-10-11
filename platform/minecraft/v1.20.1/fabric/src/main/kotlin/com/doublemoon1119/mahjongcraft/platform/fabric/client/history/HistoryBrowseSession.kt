@@ -102,6 +102,7 @@ internal class HistoryBrowseSession(
 
     /**
      * 取得單一玩家的排序選擇。
+     *
      * @param state 目前歷史桌況。
      * @param seat 玩家初始座位。
      * @return 是否選擇理牌順序。
@@ -110,6 +111,7 @@ internal class HistoryBrowseSession(
 
     /**
      * 切換單一玩家的手牌顯示，不修改保存資料。
+     *
      * @param state 目前歷史桌況。
      * @param seat 玩家初始座位。
      */
@@ -119,6 +121,7 @@ internal class HistoryBrowseSession(
 
     /**
      * 取得玩家顯示偏好鍵；沒有 UUID 的 AI 使用穩定初始座位。
+     *
      * @param state 同場歷史身分。
      * @param seat 玩家初始座位。
      * @return 玩家 UUID 或不與 UUID 重疊的座位鍵。
@@ -127,6 +130,7 @@ internal class HistoryBrowseSession(
 
     /**
      * 取得立牌顯示順序，摸入牌仍由呼叫端獨立排列。
+     *
      * @param state 目前歷史桌況與牌目錄。
      * @param player 欲排列的玩家。
      * @return 原始或依該場規則排序的牌索引。
@@ -138,6 +142,7 @@ internal class HistoryBrowseSession(
 
     /**
      * 確認同場規則牌序已可使用。
+     *
      * @param state 目前歷史桌況。
      * @return 是否可切換理牌順序。
      */
@@ -145,6 +150,7 @@ internal class HistoryBrowseSession(
 
     /**
      * 快取並解析同場規則牌序，不套用其他對局設定。
+     *
      * @param state 目前歷史桌況。
      * @return 已註冊牌序，或設定缺少／無法解碼時為 null。
      */
@@ -225,7 +231,9 @@ internal class HistoryBrowseSession(
         return true
     }
 
-    /** 開啟目前摘要的規則設定唯讀頁。
+    /**
+     * 開啟目前摘要的規則設定唯讀頁。
+     *
      * @return 是否接受導航並開啟規則設定頁。
      */
     fun openRuleSettings(): Boolean {
@@ -246,7 +254,9 @@ internal class HistoryBrowseSession(
         return true
     }
 
-    /** 開啟已確認交易的完整牌面頁。
+    /**
+     * 開啟已確認交易的完整牌面頁。
+     *
      * @param position 初始狀態或已確認交易的位置。
      * @return 是否接受導航。
      */
@@ -256,7 +266,9 @@ internal class HistoryBrowseSession(
         return true
     }
 
-    /** 返回原單局事件頁，不重送已成功的事件查詢。
+    /**
+     * 返回原單局事件頁，不重送已成功的事件查詢。
+     *
      * @return 是否接受返回。
      */
     fun backToRound(): Boolean {
@@ -294,7 +306,9 @@ internal class HistoryBrowseSession(
         navigate(settings)
     }
 
-    /** 從歷史子頁返回摘要，保留摘要查詢與捲動位置。
+    /**
+     * 從歷史子頁返回摘要，保留摘要查詢與捲動位置。
+     *
      * @return 是否返回原摘要頁。
      */
     fun backToSummary(): Boolean {

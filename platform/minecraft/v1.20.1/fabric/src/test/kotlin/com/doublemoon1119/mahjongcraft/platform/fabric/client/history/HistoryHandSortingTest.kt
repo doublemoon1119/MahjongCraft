@@ -73,6 +73,7 @@ class HistoryHandSortingTest {
 
     /**
      * 建立排序測試使用的玩家資料。
+     *
      * @param handTiles 保存順序的立牌索引。
      * @param lastDrawn 獨立摸入牌索引。
      * @return 無副露與牌河的玩家資料。
@@ -91,6 +92,7 @@ class HistoryHandSortingTest {
 
     /**
      * 建立指定數值的萬子牌面。
+     *
      * @param value 牌面數值。
      * @return 測試牌面。
      */

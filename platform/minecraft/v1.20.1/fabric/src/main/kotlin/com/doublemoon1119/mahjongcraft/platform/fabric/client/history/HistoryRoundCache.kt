@@ -16,7 +16,9 @@ internal sealed interface HistoryRoundCacheKey {
     /** 對局識別碼。 */
     val matchId: String
 
-    /** 事件頁快取鍵。
+    /**
+     * 事件頁快取鍵。
+     *
      * @property sessionRevision 連線／世界工作階段版本。
      * @property matchId 對局識別碼。
      * @property roundNumber 局序號。
@@ -33,7 +35,9 @@ internal sealed interface HistoryRoundCacheKey {
         val limit: Int,
     ) : HistoryRoundCacheKey
 
-    /** 桌況快取鍵。
+    /**
+     * 桌況快取鍵。
+     *
      * @property sessionRevision 連線／世界工作階段版本。
      * @property matchId 對局識別碼。
      * @property roundNumber 局序號。
@@ -87,19 +91,25 @@ internal class HistoryRoundCache(
     /** 目前快取資料的序列化 UTF-8 容量總和。 */
     private var totalBytes = 0L
 
-    /** 取得尚未過期的事件頁。
+    /**
+     * 取得尚未過期的事件頁。
+     *
      * @param key 事件頁快取鍵。
      * @return 成功回覆，或沒有可用項目時為 null。
      */
     fun getEvents(key: HistoryRoundCacheKey.Events): HistoryRoundEventsDto? = get(key) as? HistoryRoundEventsDto
 
-    /** 取得尚未過期的桌況。
+    /**
+     * 取得尚未過期的桌況。
+     *
      * @param key 桌況快取鍵。
      * @return 成功回覆，或沒有可用項目時為 null。
      */
     fun getState(key: HistoryRoundCacheKey.State): HistoryRoundStateDto? = get(key) as? HistoryRoundStateDto
 
-    /** 保存已驗證的事件頁。
+    /**
+     * 保存已驗證的事件頁。
+     *
      * @param key 事件頁快取鍵。
      * @param value 已通過驗證的事件頁。
      * @param utf8Bytes 其序列化 UTF-8 大小估算。
@@ -107,7 +117,9 @@ internal class HistoryRoundCache(
      */
     fun putEvents(key: HistoryRoundCacheKey.Events, value: HistoryRoundEventsDto, utf8Bytes: Int): Boolean = put(key, value, utf8Bytes.toLong(), maxEventEntries)
 
-    /** 保存已驗證的桌況。
+    /**
+     * 保存已驗證的桌況。
+     *
      * @param key 桌況快取鍵。
      * @param value 已通過驗證的桌況。
      * @param utf8Bytes 其序列化 UTF-8 大小估算。
@@ -115,14 +127,18 @@ internal class HistoryRoundCache(
      */
     fun putState(key: HistoryRoundCacheKey.State, value: HistoryRoundStateDto, utf8Bytes: Int): Boolean = put(key, value, utf8Bytes.toLong(), maxStateEntries)
 
-    /** 移除其他工作階段的所有結果。
+    /**
+     * 移除其他工作階段的所有結果。
+     *
      * @param sessionRevision 目前有效的連線／世界工作階段版本。
      */
     fun invalidateOtherSessions(sessionRevision: Long) {
         removeKeys { it.sessionRevision != sessionRevision }
     }
 
-    /** 移除指定對局的所有事件頁與桌況。
+    /**
+     * 移除指定對局的所有事件頁與桌況。
+     *
      * @param matchId 欲移除的對局識別碼。
      */
     fun evictMatch(matchId: String) {
@@ -135,7 +151,9 @@ internal class HistoryRoundCache(
         totalBytes = 0L
     }
 
-    /** 讀取並先清除已過期項目。
+    /**
+     * 讀取並先清除已過期項目。
+     *
      * @param key 查詢上下文鍵。
      * @return 成功回覆，或沒有命中時為 null。
      */
@@ -144,7 +162,9 @@ internal class HistoryRoundCache(
         return entries[key]?.value
     }
 
-    /** 依類別、總容量及 LRU 順序保存一項成功回覆。
+    /**
+     * 依類別、總容量及 LRU 順序保存一項成功回覆。
+     *
      * @param key 查詢上下文鍵。
      * @param value 成功回覆 DTO。
      * @param bytes UTF-8 估算大小。
@@ -175,7 +195,9 @@ internal class HistoryRoundCache(
         removeKeys(expiredKeys::contains)
     }
 
-    /** 依條件移除項目並同步容量計數。
+    /**
+     * 依條件移除項目並同步容量計數。
+     *
      * @param predicate 判斷要移除的鍵。
      */
     private fun removeKeys(predicate: (HistoryRoundCacheKey) -> Boolean) {

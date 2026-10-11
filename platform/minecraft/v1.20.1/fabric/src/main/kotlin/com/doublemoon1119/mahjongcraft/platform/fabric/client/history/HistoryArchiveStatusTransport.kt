@@ -16,20 +16,23 @@ internal sealed interface ClientHistoryArchiveStatusState {
     /** 尚未要求保存狀態。 */
     data object Idle : ClientHistoryArchiveStatusState
 
-    /** 等待單一狀態回覆。
+    /**
+     * 等待單一狀態回覆。
      *
      * @property requestId 此次查詢的配對識別碼。
      * @property matchId 正在查詢的對局識別碼。
      */
     data class Loading(val requestId: String, val matchId: String) : ClientHistoryArchiveStatusState
 
-    /** 已收到與目前要求配對的保存狀態。
+    /**
+     * 已收到與目前要求配對的保存狀態。
      *
      * @property response 伺服器回覆的保存狀態。
      */
     data class Result(val response: HistoryArchiveStatusResponseDto) : ClientHistoryArchiveStatusState
 
-    /** 客戶端無法送出要求。
+    /**
+     * 客戶端無法送出要求。
      *
      * @property requestId 未送出的要求識別碼。
      * @property matchId 無法查詢的對局識別碼。
@@ -48,14 +51,16 @@ internal interface HistoryArchiveStatusTransport {
     /** 目前伺服器公布的最短查詢間隔。 */
     val minimumInterval: StateFlow<Duration>
 
-    /** 傳送指定對局的保存狀態要求。
+    /**
+     * 傳送指定對局的保存狀態要求。
      *
      * @param matchId 對局識別碼。
      * @return 新要求的識別碼。
      */
     fun query(matchId: String): String
 
-    /** 取消指定的狀態要求。
+    /**
+     * 取消指定的狀態要求。
      *
      * @param requestId 要取消的要求識別碼。
      * @return 是否取消了有效要求。
@@ -95,7 +100,8 @@ internal class ClientHistoryArchiveStatusCoordinator(
     /** 保存狀態輪詢與列表共用的伺服器冷卻。 */
     override val minimumInterval: StateFlow<Duration> = settings.minimumInterval
 
-    /** 建立並傳送指定對局的保存狀態要求。
+    /**
+     * 建立並傳送指定對局的保存狀態要求。
      *
      * @param matchId 對局識別碼。
      * @return 新要求的識別碼。
@@ -115,7 +121,8 @@ internal class ClientHistoryArchiveStatusCoordinator(
         return requestId
     }
 
-    /** 套用目前要求的伺服器回覆。
+    /**
+     * 套用目前要求的伺服器回覆。
      *
      * @param response 已解碼的保存狀態回覆。
      */
@@ -123,7 +130,8 @@ internal class ClientHistoryArchiveStatusCoordinator(
         if (correlation.complete(response.requestId)) mutableState.value = ClientHistoryArchiveStatusState.Result(response)
     }
 
-    /** 取消目前仍有效的要求。
+    /**
+     * 取消目前仍有效的要求。
      *
      * @param requestId 要求識別碼。
      * @return 是否確實取消了目前要求。
@@ -147,7 +155,8 @@ internal class HistoryArchiveStatusCorrelation {
     /** 目前有效的要求與對局識別碼配對。 */
     private var active: Pair<String, String>? = null
 
-    /** 記錄新的要求與對局配對。
+    /**
+     * 記錄新的要求與對局配對。
      *
      * @param requestId 要求識別碼。
      * @param matchId 對局識別碼。
@@ -156,7 +165,8 @@ internal class HistoryArchiveStatusCorrelation {
         active = requestId to matchId
     }
 
-    /** 完成指定要求並清除配對。
+    /**
+     * 完成指定要求並清除配對。
      *
      * @param requestId 回覆中的要求識別碼。
      * @return 回覆是否與目前要求配對。
@@ -167,7 +177,8 @@ internal class HistoryArchiveStatusCorrelation {
         return true
     }
 
-    /** 取消指定要求並清除配對。
+    /**
+     * 取消指定要求並清除配對。
      *
      * @param requestId 要求識別碼。
      * @return 要求是否仍是目前有效要求。
@@ -186,7 +197,8 @@ internal class HistoryArchiveStatusCorrelation {
 
 /** 將保存狀態要求交給 Minecraft 平台網路頻道。 */
 internal interface HistoryArchiveStatusSender {
-    /** 傳送已帶有 request ID 的保存狀態 DTO。
+    /**
+     * 傳送已帶有 request ID 的保存狀態 DTO。
      *
      * @param request 具備配對識別碼的狀態要求。
      */
@@ -198,19 +210,22 @@ internal sealed interface HistoryArchiveStatusView {
     /** 尚未指定對局。 */
     data object Idle : HistoryArchiveStatusView
 
-    /** 等待伺服器確認保存狀態。
+    /**
+     * 等待伺服器確認保存狀態。
      *
      * @property matchId 正在等待的對局識別碼。
      */
     data class Pending(val matchId: String) : HistoryArchiveStatusView
 
-    /** 已取得穩定保存狀態。
+    /**
+     * 已取得穩定保存狀態。
      *
      * @property status 伺服器判定的保存狀態。
      */
     data class Resolved(val status: HistoryArchiveStatusDto) : HistoryArchiveStatusView
 
-    /** 客戶端等待或傳輸失敗。
+    /**
+     * 客戶端等待或傳輸失敗。
      *
      * @property matchId 查詢失敗的對局識別碼。
      */

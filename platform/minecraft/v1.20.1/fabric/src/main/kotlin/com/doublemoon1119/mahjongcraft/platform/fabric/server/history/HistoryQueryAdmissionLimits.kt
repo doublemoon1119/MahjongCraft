@@ -4,7 +4,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftHistor
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
-/** 歷史查詢准入目前使用的動態限制快照。
+/**
+ * 歷史查詢准入目前使用的動態限制快照。
  *
  * @property minimumInterval 同一玩家接受兩次查詢之間的最短間隔。
  * @property maximumOutstanding 全伺服器同時執行中的查詢工作上限。

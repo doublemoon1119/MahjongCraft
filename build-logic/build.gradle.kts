@@ -64,4 +64,10 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+    // 取得自訂 detekt 規則的 JAR 打包任務。
+    val detektRulesJar = project(":mahjongcraft-detekt-rules").tasks.named<Jar>("jar")
+    // 先打包規則，再執行需要載入規則的整合測試。
+    dependsOn(detektRulesJar)
+    // 將 JAR 的完整路徑交給測試，讓測試建立的臨時專案能找到規則。
+    systemProperty("mahjongcraft.detektRulesJar", detektRulesJar.flatMap { it.archiveFile }.get().asFile.absolutePath)
 }

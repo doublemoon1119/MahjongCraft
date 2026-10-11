@@ -18,17 +18,23 @@ import kotlin.uuid.Uuid
 
 /** 單局歷史回覆的可接受結果。 */
 internal sealed interface HistoryRoundValidationResult<out T> {
-    /** 回覆通過上下文、索引與牌目錄驗證。
+    /**
+     * 回覆通過上下文、索引與牌目錄驗證。
+     *
      * @property value 通過驗證的回覆內容。
      */
     data class Success<T>(val value: T) : HistoryRoundValidationResult<T>
 
-    /** 伺服器以穩定錯誤碼拒絕要求；這不是格式錯誤。
+    /**
+     * 伺服器以穩定錯誤碼拒絕要求；這不是格式錯誤。
+     *
      * @property code 伺服器提供的穩定錯誤碼。
      */
     data class Error(val code: HistoryQueryErrorCodeDto) : HistoryRoundValidationResult<Nothing>
 
-    /** 回覆格式或內容不符合原要求。
+    /**
+     * 回覆格式或內容不符合原要求。
+     *
      * @property reason 客戶端拒絕回覆的原因。
      */
     data class Invalid(val reason: HistoryRoundValidationError) : HistoryRoundValidationResult<Nothing>
@@ -150,7 +156,9 @@ internal object HistoryRoundResponseValidator {
         return HistoryRoundValidationResult.Success(state)
     }
 
-    /** 驗證事件序列的交易、牌目錄及玩家座位引用。
+    /**
+     * 驗證事件序列的交易、牌目錄及玩家座位引用。
+     *
      * @param events 待驗證的事件頁。
      * @param startIndex 要求的起始交易索引。
      * @param limit 要求的交易數量上限。
@@ -211,7 +219,9 @@ internal object HistoryRoundResponseValidator {
         return null
     }
 
-    /** 驗證對局與玩家的身份識別碼；座位集合另行驗證。
+    /**
+     * 驗證對局與玩家的身份識別碼；座位集合另行驗證。
+     *
      * @param identity 回覆中的 Replay 身份。
      * @param expectedMatchId 要求中的對局識別碼。
      * @return 所有身份識別碼格式正確且對局相符時為 true。
@@ -224,7 +234,9 @@ internal object HistoryRoundResponseValidator {
             playerId == null || canonicalUuid(playerId)
         }
 
-    /** 取得身份中的非負且不重複座位。
+    /**
+     * 取得身份中的非負且不重複座位。
+     *
      * @param identity 回覆中的 Replay 身份。
      * @return 唯一座位集合，或身份沒有有效座位時為 null。
      */
@@ -234,7 +246,9 @@ internal object HistoryRoundResponseValidator {
         return seats.takeIf { it.all { seat -> seat >= 0 } && it.toSet().size == it.size }?.toSet()
     }
 
-    /** 驗證局結算結果的座位引用。
+    /**
+     * 驗證局結算結果的座位引用。
+     *
      * @param outcome 局結算結果。
      * @param seats 有效座位集合。
      * @param tileCatalogSize 回覆牌目錄大小。
@@ -261,7 +275,9 @@ internal object HistoryRoundResponseValidator {
                 outcome.winnerDetails.all { winner -> validWinnerDetails(winner, tileCatalogSize, declaredTileCount) }
             )
 
-    /** 驗證贏家詳情的識別碼、翻譯資料與牌參照均可安全呈現。
+    /**
+     * 驗證贏家詳情的識別碼、翻譯資料與牌參照均可安全呈現。
+     *
      * @param winner 贏家詳情。
      * @param tileCatalogSize 回覆牌目錄大小。
      * @param declaredTileCount 該交易宣告的牌數量；桌況回覆沒有交易限制時為 null。
@@ -314,33 +330,43 @@ internal object HistoryRoundResponseValidator {
         return textBytes <= HistoryQueryLimits.RESPONSE_BYTES
     }
 
-    /** 驗證規則識別碼具有 namespace 與 path 部分。
+    /**
+     * 驗證規則識別碼具有 namespace 與 path 部分。
+     *
      * @param value 待驗證識別碼。
      * @return 識別碼格式有效時為 true。
      */
     private fun namespaced(value: String): Boolean = NamespacedId.isValid(value)
 
-    /** 驗證字串是否為標準 UUID 表示。
+    /**
+     * 驗證字串是否為標準 UUID 表示。
+     *
      * @param value 待驗證字串。
      * @return 可解析且格式與標準字串一致時為 true。
      */
     private fun canonicalUuid(value: String): Boolean = runCatching { Uuid.parse(value).toString() == value.lowercase() }.getOrDefault(false)
 
-    /** 驗證一組牌索引均落在目錄範圍。
+    /**
+     * 驗證一組牌索引均落在目錄範圍。
+     *
      * @param size 牌目錄大小。
      * @param values 待驗證索引。
      * @return 全部有效時為 true。
      */
     private fun validTileIndexes(size: Int, values: List<Int>): Boolean = values.all { validTileIndex(size, it) }
 
-    /** 驗證單一牌索引。
+    /**
+     * 驗證單一牌索引。
+     *
      * @param size 牌目錄大小。
      * @param value 待驗證索引。
      * @return 索引有效時為 true。
      */
     private fun validTileIndex(size: Int, value: Int): Boolean = value in 0 until size
 
-    /** 驗證可為 null 的牌索引。
+    /**
+     * 驗證可為 null 的牌索引。
+     *
      * @param size 牌目錄大小。
      * @param value 待驗證索引。
      * @return null 或有效索引時為 true。

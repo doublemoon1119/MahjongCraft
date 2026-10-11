@@ -5,7 +5,9 @@ sealed interface HistoryRoundPosition {
     /** 開局位置。 */
     data object Initial : HistoryRoundPosition
 
-    /** 已套用指定交易的位置。
+    /**
+     * 已套用指定交易的位置。
+     *
      * @property index 交易索引。
      */
     data class AfterTransaction(val index: Int) : HistoryRoundPosition
