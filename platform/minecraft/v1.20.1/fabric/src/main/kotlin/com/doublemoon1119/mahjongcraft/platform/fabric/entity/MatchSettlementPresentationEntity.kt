@@ -12,17 +12,12 @@ import net.minecraft.nbt.NbtCompound
 import net.minecraft.world.World
 import kotlin.uuid.Uuid
 
-/** 單一玩家在終局排行榜中的可持久化權威快照。 */
-data class MatchSettlementPlayerSnapshot(
-    val playerId: String,
-    val seatIndex: Int,
-    val isAi: Boolean,
-    val initialSeatIndex: Int,
-    val finalScore: Int,
-    val finalRank: Int,
-)
-
-/** 終局排行榜舞台；client 只依絕對時間與權威快照重建揭曉動畫。 */
+/**
+ * 終局排行榜舞台；client 只依絕對時間與權威快照重建揭曉動畫。
+ *
+ * @param type 終局結算實體種類。
+ * @param world 實體所屬世界。
+ */
 class MatchSettlementPresentationEntity(
     type: EntityType<out MatchSettlementPresentationEntity> = ModEntities.matchSettlementPresentation,
     world: World,

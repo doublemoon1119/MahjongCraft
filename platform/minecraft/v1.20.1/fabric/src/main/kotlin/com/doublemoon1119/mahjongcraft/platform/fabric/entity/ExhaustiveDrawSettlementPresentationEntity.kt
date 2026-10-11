@@ -10,24 +10,11 @@ import net.minecraft.nbt.NbtCompound
 import net.minecraft.world.World
 import kotlin.uuid.Uuid
 
-/** 單一玩家在流局結算排行榜中的可持久化關鍵影格。 */
-data class ExhaustiveDrawSettlementPlayerSnapshot(
-    val playerId: String,
-    val seatIndex: Int,
-    val wind: String,
-    val isAi: Boolean,
-    val previousScore: Int,
-    val currentScore: Int,
-    val previousRank: Int,
-    val currentRank: Int,
-    val statusId: String?,
-    val revealedHandTileIds: List<String>,
-    val revealedHandAssetKeys: List<String>,
-    val waitingTileAssetKeys: List<String>,
-)
-
 /**
  * 統一流局結算舞台。Entity 只同步起訖關鍵影格；client 依絕對遊戲時間重建分數與排行動畫。
+ *
+ * @param type 流局結算實體種類。
+ * @param world 實體所屬世界。
  */
 class ExhaustiveDrawSettlementPresentationEntity(
     type: EntityType<out ExhaustiveDrawSettlementPresentationEntity> = ModEntities.exhaustiveDrawSettlementPresentation,

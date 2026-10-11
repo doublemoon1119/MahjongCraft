@@ -15,24 +15,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationReg
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
-/** 缺失麻將桌的清理結果。 */
-enum class OrphanedTableCleanupResult {
-    /** 延遲請求已過期，不變更任何狀態。 */
-    STALE_REQUEST,
-
-    /** 政策要求保留目前 Room／Game 與位置索引。 */
-    RETAINED,
-
-    /** 已移除等待中的 Room 與其衍生狀態。 */
-    REMOVED_ROOM,
-
-    /** 已移除進行中的 Game 與其衍生狀態。 */
-    REMOVED_GAME,
-
-    /** 沒有權威狀態，只移除過期位置索引。 */
-    REMOVED_LOCATION,
-}
-
 /**
  * 依伺服器政策清除缺失桌子的權威狀態、衍生狀態與位置索引。
  *
@@ -55,7 +37,8 @@ class OrphanedTableCleanupService(
     /** 用於記錄缺失桌子與實際採取的清理政策。 */
     private val logger = mahjongCraftLogger(OrphanedTableCleanupService::class)
 
-    /** 依目前有效設定的 orphan policy 處理已確認缺失的桌子。
+    /**
+     * 依目前有效設定的 orphan policy 處理已確認缺失的桌子。
      *
      * @param tableId 已確認缺失的桌子 UUID。
      * @param expectedRevision 呼叫端觀察到的位置索引 revision。
@@ -68,7 +51,8 @@ class OrphanedTableCleanupService(
         abortReasonId = MinecraftMatchAbortReasonIds.TABLE_MISSING,
     )
 
-    /** 玩家政策已允許破壞時，移除該桌子的任何 Room／Game。
+    /**
+     * 玩家政策已允許破壞時，移除該桌子的任何 Room／Game。
      *
      * @param tableId 玩家破壞的桌子 UUID。
      * @param expectedRevision 呼叫端觀察到的位置索引 revision。
@@ -81,7 +65,8 @@ class OrphanedTableCleanupService(
         abortReasonId = MinecraftMatchAbortReasonIds.TABLE_BROKEN_BY_PLAYER,
     )
 
-    /** 依指定政策原子移除權威狀態，再清除所有衍生資料與位置。
+    /**
+     * 依指定政策原子移除權威狀態，再清除所有衍生資料與位置。
      *
      * @param tableId 要清理的桌子 UUID。
      * @param expectedRevision 清理請求建立時的位置索引 revision。
@@ -164,7 +149,8 @@ class OrphanedTableCleanupService(
         return decision.result
     }
 
-    /** 權威狀態交易後需要清除的衍生資料。
+    /**
+     * 權威狀態交易後需要清除的衍生資料。
      *
      * @property result 對外回報的清理結果。
      * @property playerIds 需要清除 membership 與 observer snapshot 的玩家。

@@ -14,6 +14,9 @@ import kotlin.uuid.toJavaUuid
  * 可持久化、可由絕對世界時間任意取樣的純視覺 entity 基底。效果種類、目標 entity、隨機 seed 與時間窗
  * 都同時透過 tracked data 同步給 client、透過 NBT 保存；具體 renderer 只需要依 [effectKey] 與
  * [progress] 選擇視覺公式，不必各自重寫生命週期與重載恢復。
+ *
+ * @param type 特效實體種類。
+ * @param world 實體所屬世界。
  */
 abstract class AnimatedVisualEffectEntity(
     type: EntityType<out AnimatedVisualEffectEntity>,
@@ -188,10 +191,4 @@ abstract class AnimatedVisualEffectEntity(
         private val END_GAME_TIME: TrackedData<Long> =
             DataTracker.registerData(AnimatedVisualEffectEntity::class.java, TrackedDataHandlerRegistry.LONG)
     }
-}
-
-/** 內建視覺效果使用的穩定 key；後續役種動畫可在不新增 Minecraft entity type 的情況下擴充。 */
-object MahjongVisualEffectKeys {
-    /** 一般胡牌的中空金色收束光帶。 */
-    const val WIN_CELEBRATION: String = "win_celebration"
 }

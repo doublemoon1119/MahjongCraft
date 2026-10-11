@@ -1,12 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop
 
-import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftResourceIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPlacement
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropTarget
 import net.minecraft.entity.Entity
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.math.Box
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -37,51 +35,4 @@ interface FabricTablePropKind {
 
     /** entity 成功加入世界後呼叫，例如開始出現動畫。 */
     fun onSpawned(entity: Entity) = Unit
-}
-
-/** 依 [FabricTablePropKind.id] 登記 Fabric 端的規則桌面物件種類。 */
-interface FabricTablePropKindRegistry {
-    /** 目前已登記的種類識別碼快照。 */
-    val registrationKeys: Set<String>
-
-    /** registry 是否已凍結。 */
-    val isFrozen: Boolean
-
-    /** 目前已登記的全部種類，依登記順序排列。 */
-    val kinds: List<FabricTablePropKind>
-
-    /** 登記一個種類。 */
-    fun register(kind: FabricTablePropKind)
-
-    /** 查詢指定種類；未登記時回傳 null。 */
-    fun find(kindId: String): FabricTablePropKind?
-
-    /** 凍結 registry，禁止後續登記。 */
-    fun freeze()
-}
-
-/** [FabricTablePropKindRegistry] 的記憶體實作。 */
-@Single(binds = [FabricTablePropKindRegistry::class])
-class FabricTablePropKindRegistryImpl : FabricTablePropKindRegistry {
-    /** 依識別碼索引、保留登記順序的種類。 */
-    private val kindsById = linkedMapOf<String, FabricTablePropKind>()
-
-    override val registrationKeys: Set<String> get() = kindsById.keys.toSet()
-
-    override var isFrozen: Boolean = false
-        private set
-
-    override val kinds: List<FabricTablePropKind> get() = kindsById.values.toList()
-
-    override fun register(kind: FabricTablePropKind) {
-        check(!isFrozen) { "Table prop kind registry is frozen" }
-        MinecraftResourceIds.requireValid(kind.id) { "Table prop kind must be namespaced: ${kind.id}" }
-        require(kindsById.putIfAbsent(kind.id, kind) == null) { "Duplicate table prop kind: ${kind.id}" }
-    }
-
-    override fun find(kindId: String): FabricTablePropKind? = kindsById[kindId]
-
-    override fun freeze() {
-        isFrozen = true
-    }
 }

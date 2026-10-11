@@ -7,46 +7,11 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetPlayerDecisio
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.judgment.DiscardReadinessAnalysis
-import com.doublemoon1119.mahjongcraft.logic.judgment.TileSelectionRequirement
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.MinecraftKanActionTokenKeys
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
-
-/** `discard` 與動作選牌使用的手牌候選項目。 */
-data class HandTileCandidate(val tileId: Uuid, val token: String, val tile: Tile)
-
-/**
- * `action` 指令的合法動作候選項目。
- *
- * @property action 選中後實際要送出的完整動作。
- * @property token 玩家實際輸入的字面值。
- * @property referenceTile 該動作涉及的牌面；不涉及特定牌面的動作為 null。
- * @property tileSelectionRequirement 動作提交前需要額外選取的手牌契約；不需選牌時為 null。
- * @property discardAnalyses 該動作選牌的捨牌分析；不適用時為空。
- */
-data class GameActionCandidate(
-    val action: GameAction,
-    val token: String,
-    val referenceTile: Tile?,
-    val tileSelectionRequirement: TileSelectionRequirement?,
-    val discardAnalyses: List<DiscardReadinessAnalysis>,
-)
-
-/**
- * 同一次 Flow 查詢建立的特殊動作候選與一般捨牌分析。
- *
- * @property ruleModuleId 這局採用的規則模組 ID，決定動作用語。
- * @property actions Minecraft 指令與 HUD 共用的特殊動作候選。
- * @property discardAnalyses 自己回合的一般捨牌分析；不適用時為空。
- */
-data class ResolvedGameActionCandidates(
-    val ruleModuleId: String,
-    val actions: List<GameActionCandidate>,
-    val discardAnalyses: List<DiscardReadinessAnalysis>,
-)
 
 /**
  * 依玩家目前的桌況列出 `/mahjongcraft game discard|action` 的候選項目。
@@ -57,6 +22,7 @@ data class ResolvedGameActionCandidates(
  * `namespace:path` 字串當 token。
  *
  * @property gameRepository 權威對局數據倉庫。
+ * @property moduleRegistry 解析對局規則模組的登錄表。
  * @property membershipRepository 玩家目前所在桌子（房間／對局共用同一個 Uuid）的歸屬查詢。
  * @property getPlayerDecisionOptions 查詢完整合法動作、選牌需求與捨牌分析的 Flow use case。
  */

@@ -1,27 +1,15 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.history
 
-import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingDecision
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingTerminal
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTransferResult
-import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
-import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessFlowHistoryRuntime
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessHistoryMatchRunner
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessHistoryMatchRuntime
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessHistoryProgress
-import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessHistoryRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessHistoryScenario
-import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessStepTimer
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionExecutor
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
-import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
-import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryOutboxWriter
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryGenerationReceipt
@@ -53,107 +41,9 @@ import kotlin.time.Duration.Companion.seconds
 import kotlin.time.TimeSource
 import kotlin.uuid.Uuid
 
-/** 為生成工作建立一次性的隔離 Flow 環境，不使用正式玩家集合。 */
-fun interface HistoryGenerationRuntimeFactory {
-    /**
-     * 建立採用指定規則與場長的全 AI 對局。
-     * @param scenario 場長情境。
-     * @return 已走正式開局流程的隔離環境。
-     */
-    suspend fun create(scenario: HeadlessHistoryScenario): HeadlessHistoryMatchRuntime
-}
-
-/**
- * 使用 extension 初始化完成後的 registry 建立隔離生成環境，讓生成的對局與正式對局使用同一套規則登記。
- *
- * @property moduleRegistry 規則模組。
- * @property aiStrategies AI 策略。
- * @property winCelebrationCueResolvers 胡牌演出提示。
- * @property postActionExhaustiveDrawResolvers 動作後的途中流局判定。
- * @property postReactionRoundOutcomeResolvers 回應結束後的本局結果判定。
- * @property winRoundContinuationResolvers 胡牌後本局是否繼續。
- * @property winSettlementDetailResolvers 胡牌詳情。
- * @property gameCommands 擴充命令 handler。
- */
-@Single
-class FabricHistoryGenerationRuntimeFactory(
-    @Provided private val moduleRegistry: MahjongModuleRegistry,
-    @Provided private val aiStrategies: MahjongAiStrategyRegistry,
-    @Provided private val winCelebrationCueResolvers: WinCelebrationCueResolverRegistry,
-    @Provided private val postActionExhaustiveDrawResolvers: PostActionExhaustiveDrawResolverRegistry,
-    @Provided private val postReactionRoundOutcomeResolvers: PostReactionRoundOutcomeResolverRegistry,
-    @Provided private val winRoundContinuationResolvers: WinRoundContinuationResolverRegistry,
-    @Provided private val winSettlementDetailResolvers: WinSettlementDetailResolverRegistry,
-    @Provided private val gameCommands: ExtensionGameCommandExecutorRegistry,
-) : HistoryGenerationRuntimeFactory {
-    /**
-     * 建立全部座位都是真 AI 的完整對局。
-     * @param scenario 規則與場長情境。
-     * @return 不產生世界實體的隔離環境。
-     */
-    override suspend fun create(scenario: HeadlessHistoryScenario): HeadlessHistoryMatchRuntime = HeadlessFlowHistoryRuntime.create(
-        scenario = scenario,
-        registries = registries(),
-    )
-
-    /**
-     * 在 [store] 中建立全部座位都是真 AI 的完整對局；多場共用同一個權威來源，如同正式伺服器上同時進行的多桌。
-     *
-     * @param scenario 規則與場長情境。
-     * @param store 承載對局的共用權威來源。
-     * @param stepTimer 這一桌的分項計時器。
-     * @param decisionExecutor 呼叫 AI 策略的執行器。
-     * @return 不產生世界實體的對局環境。
-     */
-    suspend fun createIn(
-        scenario: HeadlessHistoryScenario,
-        store: AuthoritativeStateStore,
-        stepTimer: HeadlessStepTimer,
-        decisionExecutor: AiDecisionExecutor,
-    ): HeadlessHistoryMatchRuntime = HeadlessFlowHistoryRuntime.create(
-        scenario = scenario,
-        registries = registries(),
-        store = store,
-        stepTimer = stepTimer,
-        decisionExecutor = decisionExecutor,
-    )
-
-    /** 正式對局使用的規則整合。 */
-    private fun registries() = HeadlessHistoryRegistries(
-        moduleRegistry = moduleRegistry,
-        aiStrategyRegistry = aiStrategies,
-        winCelebrationCueResolverRegistry = winCelebrationCueResolvers,
-        postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolvers,
-        postReactionRoundOutcomeResolverRegistry = postReactionRoundOutcomeResolvers,
-        winRoundContinuationResolverRegistry = winRoundContinuationResolvers,
-        winSettlementDetailResolverRegistry = winSettlementDetailResolvers,
-        gameCommandRegistry = gameCommands,
-    )
-}
-
-/** 開始生成的安全結果，不含 SQL 或原始例外。 */
-sealed interface HistoryGenerationStartResult {
-    /** 已啟動一批工作。 */
-    data object Started : HistoryGenerationStartResult
-
-    /** 原有批次仍執行中。 */
-    data object Busy : HistoryGenerationStartResult
-
-    /** 不支援指定情境。 */
-    data object InvalidScenario : HistoryGenerationStartResult
-
-    /** 尚未綁定存檔 session。 */
-    data object SessionUnavailable : HistoryGenerationStartResult
-
-    /** 總開關或 AI 篩選拒絕新場。 */
-    data object PolicyRejected : HistoryGenerationStartResult
-
-    /** writer 斷線或容量已停止。 */
-    data object StorageUnavailable : HistoryGenerationStartResult
-}
-
 /**
  * 管理單一存檔的有界歷史生成批次；來源僅在 SQLite 寫入確認後清除事件。
+ *
  * @property writer 唯一正式 outbox writer 與 session 邊界。
  * @property runtimeFactory 隔離 Flow 組裝入口。
  * @property store 正式待寫佇列，僅讀取提交確認與固定記錄決策。
@@ -188,8 +78,9 @@ class HistoryGenerationController(
     /** 進度所屬的固定 session，切換後不對外顯示。 */
     @Volatile private var sessionId: Uuid? = null
 
-    /**
+/**
      * 驗證政策及 session 後啟動一批工作。
+     *
      * @param scenarioId 場長情境 ID。
      * @param count 要求場數，限制為 1 至 100。
      * @param expectedSessionId 要求發出時所屬的存檔 session。
@@ -219,8 +110,9 @@ class HistoryGenerationController(
         HistoryGenerationStartResult.Started
     }
 
-    /**
+/**
      * 要求目前場次完成後停止，不回滾已提交事件。
+     *
      * @return 是否存在目前 session 的執行中批次。
      */
     internal fun cancel(): Boolean {
@@ -230,14 +122,16 @@ class HistoryGenerationController(
         return true
     }
 
-    /**
+/**
      * 讀取目前 session 的最新安全進度。
+     *
      * @return 最新進度，或沒有同 session 批次時的 null。
      */
     internal fun snapshot(): HistoryGenerationProgress? = state.value.takeIf { writer.isCurrentSession(sessionId) }
 
-    /**
+/**
      * 在批次時間限制內逐場計算及封存。
+     *
      * @param scenario 場長情境。
      * @param count 要求場數。
      * @param session 開始時固定的存檔 session。
@@ -334,8 +228,9 @@ class HistoryGenerationController(
         }
     }
 
-    /**
+/**
      * 追加完整批次，等待正式 outbox 的精確 SQLite 確認後才返回。
+     *
      * @param batch 一步產生的完整交易批次。
      * @param session 固定存檔 session。
      */
@@ -359,8 +254,9 @@ class HistoryGenerationController(
         }
     }
 
-    /**
+/**
      * 將權威的固定停止決策轉為批次回報原因。
+     *
      * @param matchId 被停止的生成場次。
      * @return 設定停止或儲存停止分類。
      */
@@ -370,8 +266,9 @@ class HistoryGenerationController(
         HistoryGenerationFailure.STORAGE
     }
 
-    /**
+/**
      * 重試忙碌要求，其他管理失敗明確停止；不自行重新開庫。
+     *
      * @param session 固定存檔 session。
      * @param operation 唯一 writer 的型別化工作。
      * @return 工作成功值。
@@ -391,8 +288,9 @@ class HistoryGenerationController(
         error("History management retry loop exited unexpectedly")
     }
 
-    /**
+/**
      * 合併收據，不因重複查詢重複計算場次或 Replay bytes。
+     *
      * @param receipt SQLite 已提交的封存及清理證據。
      * @param archived 已確認封存的累積集合。
      * @param pruned 已確認清理的累積集合。
@@ -407,24 +305,27 @@ class HistoryGenerationController(
         receipt.pruned.forEach { pruned += Uuid.parse(it) }
     }
 
-    /**
+/**
      * 驗證來源仍屬於開始時的存檔。
+     *
      * @param session 開始時的 session。
      */
     private fun requireSession(session: Uuid) {
         if (!writer.isCurrentSession(session)) throw GenerationStopped(HistoryGenerationFailure.SESSION)
     }
 
-    /**
+/**
      * 保留失敗分類與失敗場數，原始訊息不傳給玩家。
+     *
      * @param failure 安全分類。
      */
     private fun markFailure(failure: HistoryGenerationFailure) {
         state.update { it?.copy(failure = failure, failed = it.failed + 1) }
     }
 
-    /**
+/**
      * 具型別的安全停止，不從例外字串猜測原因。
+     *
      * @property failure 停止分類。
      */
     private class GenerationStopped(val failure: HistoryGenerationFailure) : IllegalStateException("History generation stopped: $failure")

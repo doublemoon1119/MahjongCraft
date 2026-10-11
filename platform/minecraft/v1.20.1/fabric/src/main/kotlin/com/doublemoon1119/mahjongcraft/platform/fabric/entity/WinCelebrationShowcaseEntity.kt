@@ -13,42 +13,10 @@ import net.minecraft.world.World
 import kotlin.uuid.Uuid
 
 /**
- * 單張 showcase 視覺牌的同步快照。
- *
- * @property group 牌所屬的組：`0` 為手牌，之後依序為各組副露；編隊時組與組之間留空隙。
- * @property standYaw 起飛前站起來後的朝向；橫放的鳴牌在站起來時轉到這個朝向。
- * @property faceDown 是否一路露出牌背，例如暗槓兩端。
- */
-data class ShowcaseCardSnapshot(
-    val wingIndex: Int,
-    val order: Int,
-    val assetKey: String,
-    val startOffsetX: Double,
-    val startOffsetY: Double,
-    val startOffsetZ: Double,
-    val startYaw: Float,
-    val group: Int = 0,
-    val standYaw: Float = startYaw,
-    val faceDown: Boolean = false,
-)
-
-/** 共享權威胡牌張的牌面與起飛前世界相對位置快照。 */
-data class ShowcaseWinningTileSnapshot(
-    val assetKey: String,
-    val startOffsetX: Double,
-    val startOffsetY: Double,
-    val startOffsetZ: Double,
-    val startYaw: Float,
-)
-
-/** 單一贏家展示翼的同步資料。 */
-data class ShowcaseWingSnapshot(val seatIndex: Int, val cueKey: String, val cards: List<ShowcaseCardSnapshot>)
-
-/** 可持久化的第三方 showcase 額外音效快照。 */
-data class ShowcaseSoundSnapshot(val soundId: String, val tickOffset: Int, val volume: Float, val pitch: Float)
-
-/**
  * 持久化共享胡牌 showcase 舞台；所有視覺皆由 client 依絕對時間與 [animationSeed] 決定。
+ *
+ * @param type 展示舞台實體種類。
+ * @param world 實體所屬世界。
  */
 class WinCelebrationShowcaseEntity(
     type: EntityType<out WinCelebrationShowcaseEntity> = ModEntities.winCelebrationShowcase,

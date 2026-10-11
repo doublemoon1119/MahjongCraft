@@ -8,47 +8,13 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogge
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
-/** 送出本局自動操作更新時，在 client 端即可判定的結果。 */
-sealed interface ClientAutomaticControlSubmitResult {
-    /** 請求已送出並等待伺服器回覆。 */
-    data class Submitted(
-        /** 已送出的完整請求。 */
-        val request: AutomaticControlUpdateRequestDto,
-    ) : ClientAutomaticControlSubmitResult
-
-    /** 已有另一筆請求等待回覆。 */
-    data object Pending : ClientAutomaticControlSubmitResult
-
-    /** 目前沒有可更新的本局權威快照。 */
-    data object Unavailable : ClientAutomaticControlSubmitResult
-
-    /** 草稿包含目前規則未宣告支援的控制 ID。 */
-    data class Unsupported(
-        /** 不受支援的控制 ID。 */
-        val controlIds: Set<String>,
-    ) : ClientAutomaticControlSubmitResult
-
-    /** 封包未能交給 Fabric networking，pending 狀態已回復。 */
-    data class SendFailed(
-        /** 傳送時發生的錯誤。 */
-        val cause: RuntimeException,
-    ) : ClientAutomaticControlSubmitResult
-}
-
-/** 一筆已配對請求的伺服器完成結果。 */
-data class ClientAutomaticControlCompletion(
-    /** client 端單調遞增的完成序號。 */
-    val sequence: Long,
-    /** 伺服器回傳的權威結果。 */
-    val result: AutomaticControlUpdateResultDto,
-    /** 套用結果後 store 中可用的最新權威快照。 */
-    val authoritativeSnapshot: AutomaticControlSnapshotDto?,
-)
-
 /**
  * 集中管理本局自動操作更新的 request、pending 與 ACK 配對。
  *
  * 這個服務不預測自動操作是否會執行；已確認狀態仍以 [ClientAutomaticControlStateStore] 為唯一來源。
+ *
+ * @property stateStore 本局自動操作權威狀態儲存。
+ * @property requestSender 本局更新請求傳送器。
  */
 @Single
 class ClientAutomaticControlUpdateCoordinator(

@@ -1,59 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
-/** 結算排名列可出現的欄位。 */
-enum class SettlementRankingColumnId {
-    /** 名次，靠右對齊。 */
-    RANK,
-
-    /** 玩家頭像。 */
-    FACE,
-
-    /** 玩家名稱，靠左對齊。 */
-    NAME,
-
-    /** 結算狀態文字，置中對齊。 */
-    STATUS,
-
-    /** 分數，靠右對齊。 */
-    SCORE,
-
-    /** 分數增減，靠右對齊。 */
-    DELTA,
-
-    /** 付款原因文字，靠左對齊。 */
-    PAYMENT_REASON,
-}
-
-/**
- * 排名列中的一欄。
- *
- * @property id 欄位識別。
- * @property width 欄位寬度。
- * @property gapBefore 與前一欄之間的間距；第一欄的值不使用。
- */
-data class SettlementRankingColumn(
-    val id: SettlementRankingColumnId,
-    val width: Float,
-    val gapBefore: Float,
-)
-
-/**
- * 一欄在面板座標中的水平範圍；面板以 x = 0 為中心。
- *
- * @property left 左緣。
- * @property width 寬度。
- */
-data class SettlementRankingColumnSpan(
-    val left: Float,
-    val width: Float,
-) {
-    /** 右緣。 */
-    val right: Float get() = left + width
-
-    /** 水平中心。 */
-    val centerX: Float get() = left + width / 2f
-}
-
 /**
  * 結算排名面板的水平版面：欄位由左至右依序排列，整體以 x = 0 置中。
  *

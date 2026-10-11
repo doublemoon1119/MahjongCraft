@@ -6,14 +6,6 @@ import net.minecraft.text.Text
 import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single
 
-/** Client 可直接呈現的一項自動操作顯示資料。 */
-data class ResolvedAutomaticControlDisplay(
-    val controlId: String,
-    val label: Text,
-    val description: Text?,
-    val displayOrder: Int,
-)
-
 /** 將自動操作 ID 解析為本地化顯示資料，並安全保留未登記的第三方 ID。 */
 @Single
 class AutomaticControlDisplayResolver(

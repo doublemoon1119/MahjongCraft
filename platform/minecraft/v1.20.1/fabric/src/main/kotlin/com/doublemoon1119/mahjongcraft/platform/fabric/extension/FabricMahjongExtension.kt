@@ -23,12 +23,6 @@ interface FabricMahjongExtension {
     fun registerTablePropKinds(registry: FabricTablePropKindRegistry) = Unit
 }
 
-/** 表示指定 Fabric extension 無法完成 registry 註冊。 */
-class FabricMahjongExtensionRegistrationException(
-    extensionId: String,
-    cause: Throwable,
-) : IllegalStateException("Failed to register Fabric Mahjong extension: $extensionId", cause)
-
 /** 啟動報告中規則桌面物件種類的分類識別碼。 */
 internal const val TABLE_PROP_KIND_CATEGORY_ID: String = "mahjongcraft:table_prop_kind"
 

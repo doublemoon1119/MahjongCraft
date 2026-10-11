@@ -2,7 +2,6 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
-import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationFieldId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementRevealTimeline
@@ -14,55 +13,12 @@ import net.minecraft.world.World
 import org.koin.core.context.GlobalContext
 import kotlin.uuid.Uuid
 
-data class WinSettlementDetailSnapshot(val id: String, val type: String, val values: List<String>)
-
-data class WinSettlementMeldSnapshot(
-    val assetKeys: List<String>,
-    val faceDownIndices: Set<Int>,
-)
-
-data class WinSettlementWinnerSnapshot(
-    val playerId: String,
-    val seatIndex: Int,
-    val isAi: Boolean,
-    val responsiblePlayerId: String?,
-    val totalScore: Int,
-    val handAssetKeys: List<String>,
-    val melds: List<WinSettlementMeldSnapshot>,
-    val winningTileAssetKey: String,
-    val details: List<WinSettlementDetailSnapshot>,
-) {
-    /** 這位贏家實際有內容的細項欄位；版面裡「有資料才顯示」的部分以此判斷。 */
-    val presentFieldIds: Set<PresentationFieldId>
-        get() = details.mapNotNullTo(mutableSetOf()) { detail -> runCatching { PresentationFieldId(detail.id) }.getOrNull() }
-}
-
-data class WinSettlementRankingSnapshot(
-    val playerId: String,
-    val seatIndex: Int,
-    val isAi: Boolean,
-    val previousScore: Int,
-    val currentScore: Int,
-    val previousRank: Int,
-    val currentRank: Int,
-    val paymentReasonId: String? = null,
-)
-
-data class WinSettlementRevealTimingSnapshot(
-    val initialFadeTicks: Int,
-    val entryStaggerTicks: Int,
-    val scoreRevealTicks: Int,
-    val readingTicks: Int,
-)
-
-data class WinSettlementSoundCueSnapshot(
-    val eventTick: Long,
-    val soundId: String,
-    val volume: Float,
-    val pitch: Float,
-)
-
-/** 持久化胡牌詳情與最終排行的世界舞台。 */
+/**
+ * 持久化胡牌詳情與最終排行的世界舞台。
+ *
+ * @param type 和牌結算實體種類。
+ * @param world 實體所屬世界。
+ */
 class WinSettlementPresentationEntity(
     type: EntityType<out WinSettlementPresentationEntity> = ModEntities.winSettlementPresentation,
     world: World,

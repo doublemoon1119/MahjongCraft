@@ -1,57 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
-/** showcase 編隊中的一個牌位。 */
-sealed interface ShowcaseCardSlot {
-    /**
-     * 某一翼的手牌卡片。
-     *
-     * @property wingIndex 所屬翼的索引。
-     * @property order 卡片在翼中的順序；0 的 x 最大，依序往 x 較小的一側排。
-     */
-    data class Hand(
-        val wingIndex: Int,
-        val order: Int,
-    ) : ShowcaseCardSlot
-
-    /** 全部翼共用的一張和牌張。 */
-    data object WinningTile : ShowcaseCardSlot
-}
-
-/**
- * showcase 編隊的尺寸參數，單位為方塊。
- *
- * @property cardSpacing 同一翼相鄰卡片的中心距。
- * @property cardWidth 展示卡片的寬度。
- * @property winningTileWidth 和牌張的寬度。
- * @property winningTileGap 和牌張與手牌之間的間隙。
- * @property minimumWingWidth 一翼的最小寬度，讓役名標題放得下。
- * @property wingGap 相鄰兩翼之間的間隙。
- * @property groupGap 同一翼中相鄰兩組（手牌與各組副露）之間額外的間隙。
- */
-data class ShowcaseFormationMetrics(
-    val cardSpacing: Double,
-    val cardWidth: Double,
-    val winningTileWidth: Double,
-    val winningTileGap: Double,
-    val minimumWingWidth: Double,
-    val wingGap: Double,
-    val groupGap: Double = 0.0,
-)
-
-/**
- * 一翼相對於自身中心的水平範圍。
- *
- * @property minX 左緣。
- * @property maxX 右緣。
- */
-data class ShowcaseHorizontalBounds(
-    val minX: Double,
-    val maxX: Double,
-) {
-    /** 寬度。 */
-    val width: Double get() = maxX - minX
-}
-
 /**
  * 役滿 showcase 的最終編隊：各翼並排、整體以 x = 0 置中，和牌張依翼數放在固定位置。
  *
@@ -62,9 +10,9 @@ data class ShowcaseHorizontalBounds(
  * 同一翼中卡片依組別分段，組與組之間多留 [ShowcaseFormationMetrics.groupGap]。承載和牌張的那一翼會把和牌張
  * 算進自身寬度，因此相鄰翼不會與和牌張重疊。沒有卡片的翼仍保留一張卡片的寬度。只處理數字，不碰 entity 或繪製。
  *
- * @param wingCardOrders 各翼卡片的 [ShowcaseCardSlot.Hand.order]，外層順序即翼的索引。
+ * @property wingCardOrders 各翼卡片的 [ShowcaseCardSlot.Hand.order]，外層順序即翼的索引。
  * @param includesWinningTile 歸位順序是否包含和牌張；和牌張的位置 [winningTileX] 不受影響。
- * @param metrics 尺寸參數。
+ * @property metrics 尺寸參數。
  * @param wingCardGroups 與 [wingCardOrders] 一一對應的組別；組別依 order 遞增且不遞減，省略時全部同一組。
  */
 class ShowcaseFormationLayout(

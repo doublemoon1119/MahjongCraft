@@ -2,7 +2,6 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.history
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryScopeDto
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
-import org.koin.core.annotation.Single
 
 /**
  * 歷史查詢讀取的資料來源。
@@ -15,16 +14,10 @@ class HistoryDataSource(
     val store: AuthoritativeStateStore,
 )
 
-/** 開發環境壓力測試資料庫的歷史資料來源；壓力測試建立資料庫時登記，刪除時清除。 */
-@Single
-class StressTestHistorySource {
-    /** 目前的壓力測試資料來源；沒有壓力測試資料庫時為 null。 */
-    @Volatile var current: HistoryDataSource? = null
-}
-
 /**
  * 依查詢範圍選擇資料來源；壓力測試範圍只在開發環境且壓力測試資料庫存在時可用。
  *
+ * @param scope 要查詢的歷史範圍。
  * @param formal 正式歷史的資料來源，供自己的對局與全部對局使用。
  * @param stressTest 壓力測試資料來源；沒有壓力測試資料庫時為 null。
  * @param isDevelopment 是否為開發環境。
@@ -36,10 +29,7 @@ internal fun selectHistoryDataSource(
     stressTest: HistoryDataSource?,
     isDevelopment: Boolean,
 ): HistoryDataSource? = when (scope) {
-    HistoryQueryScopeDto.OWN,
-    HistoryQueryScopeDto.ALL,
-    -> formal
-
+    HistoryQueryScopeDto.OWN, HistoryQueryScopeDto.ALL -> formal
     HistoryQueryScopeDto.STRESS_TEST -> stressTest?.takeIf { isDevelopment }
 }
 
@@ -50,4 +40,8 @@ internal fun selectHistoryDataSource(
  * @param isDevelopment 是否為開發環境。
  * @param stressTestAvailable 是否存在壓力測試資料庫。
  */
-internal fun canQueryStressTest(canQueryAll: Boolean, isDevelopment: Boolean, stressTestAvailable: Boolean): Boolean = canQueryAll && isDevelopment && stressTestAvailable
+internal fun canQueryStressTest(
+    canQueryAll: Boolean,
+    isDevelopment: Boolean,
+    stressTestAvailable: Boolean,
+): Boolean = canQueryAll && isDevelopment && stressTestAvailable

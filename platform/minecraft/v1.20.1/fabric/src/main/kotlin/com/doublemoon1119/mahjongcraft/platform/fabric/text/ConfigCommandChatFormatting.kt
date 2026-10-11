@@ -16,17 +16,6 @@ import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 import kotlin.math.roundToInt
 
-/**
- * 設定指令 hover 使用的一個本地化欄位與格式化值。
- *
- * @property name 欄位名稱。
- * @property displayedValue 欄位目前值。
- */
-data class ConfigPresentationEntry(
-    val name: Text,
-    val displayedValue: Text,
-)
-
 /** 建立統一帶有 mod 名稱前綴的 config 指令回饋。 */
 fun prefixedConfigMessage(message: Text, color: Formatting): MutableText = Text
     .literal("[${MinecraftModMetadata.MOD_NAME}] ")
@@ -59,14 +48,6 @@ fun clientConfigEntries(config: MahjongClientConfigState): List<ConfigPresentati
 
 /** 將 HUD 比例轉換為不受系統語系影響的整數百分比。 */
 private fun Double.asPercent(): Int = (this * 100).roundToInt()
-
-/**
- * 對應 TOML 區塊的設定分類。
- *
- * @property name 分類的本地化名稱。
- * @property entries 此分類的設定名稱與有效值。
- */
-data class ConfigPresentationSection(val name: Text, val entries: List<ConfigPresentationEntry>)
 
 /** 建立 server 設定的平面欄位列表，供共用詳情呈現使用。 */
 fun serverConfigEntries(config: MinecraftServerConfig): List<ConfigPresentationEntry> = serverConfigSections(config).flatMap { it.entries }

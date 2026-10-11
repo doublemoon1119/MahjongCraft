@@ -60,37 +60,6 @@ import kotlin.time.TimeSource
 import kotlin.uuid.Uuid
 
 /**
- * 管理員可見的歷史寫入狀態，不包含資料庫路徑或事件內容。
- *
- * @property databaseConnected 是否已開啟目前世界的資料庫。
- * @property recordingEnabled 有效政策是否允許新對局記錄歷史；不表示每場皆符合資格或資料庫已連線。
- * @property pendingEventCount 權威 outbox 尚待寫入的事件數。
- * @property knownGapCount 已知具有序號缺口的場次數。
- * @property lastError 最近是否發生錯誤；原始文字只供內部診斷，不傳給玩家。
- * @property storagePaused 是否因實際容量不足或量測失敗暫停新增歷史，與有效總開關分離。
- */
-data class HistoryWriterStatus(
-    val databaseConnected: Boolean,
-    val recordingEnabled: Boolean,
-    val pendingEventCount: Int,
-    val knownGapCount: Int,
-    val lastError: String?,
-    val storagePaused: Boolean = false,
-)
-
-/** 正式管理員重試連線的結果，不公開原始例外細節。 */
-sealed interface HistoryRetryResult {
-    /** 已重新連結並開始處理待寫事件。 */
-    data object Reconnected : HistoryRetryResult
-
-    /** 原本已連線，不建立第二個 writer。 */
-    data object AlreadyConnected : HistoryRetryResult
-
-    /** 開啟或驗證失敗，保留原資料。 */
-    data object Failed : HistoryRetryResult
-}
-
-/**
  * 在獨立 I/O 協程中將權威 outbox 送入 SQLite；只在交易成功後確認已寫入的事件。
  *
  * @property store 權威待寫事件與精確確認的來源。
@@ -187,7 +156,8 @@ class FabricHistoryOutboxWriter(
     /** 目前 session 的背景寫入 worker。 */
     private var worker: Job? = null
 
-    /** 開啟目前世界的資料庫；連線狀態不改變資格政策，失敗時待寫事件仍由有界佇列保留。
+    /**
+     * 開啟目前世界的資料庫；連線狀態不改變資格政策，失敗時待寫事件仍由有界佇列保留。
      *
      * @param server 目前執行中的 Minecraft 伺服器。
      */
@@ -442,6 +412,7 @@ class FabricHistoryOutboxWriter(
 
     /**
      * 在唯一 session 與政策 lease 內讀取一頁已授權交易。
+     *
      * @param access 可信連線身分。
      * @param matchId 對局識別碼。
      * @param queryScope 要求範圍。
@@ -470,6 +441,7 @@ class FabricHistoryOutboxWriter(
 
     /**
      * 在唯一 session 與政策 lease 內重建已授權交易位置。
+     *
      * @param access 可信連線身分。
      * @param matchId 對局識別碼。
      * @param queryScope 要求範圍。
@@ -496,6 +468,7 @@ class FabricHistoryOutboxWriter(
 
     /**
      * 在回覆前重新確認場次仍可公開，不再次讀取 Replay。
+     *
      * @param access 目前可信身分。
      * @param matchId 原要求對局。
      * @param queryScope 原要求範圍。
@@ -514,7 +487,9 @@ class FabricHistoryOutboxWriter(
         }
     }
 
-    /** 取得目前有效查詢政策，不沿用要求開始時的設定。
+    /**
+     * 取得目前有效查詢政策，不沿用要求開始時的設定。
+     *
      * @return 記錄政策以外的獨立查詢政策。
      */
     private fun historyQueryPolicy(): HistoryQueryPolicy = configState.current.history.let { HistoryQueryPolicy(it.queryEnabled, it.allowAdminQuery) }
@@ -610,7 +585,8 @@ class FabricHistoryOutboxWriter(
         }
     }
 
-    /** 回報連線與權威待寫狀態；原始錯誤只供內部 log 使用。
+    /**
+     * 回報連線與權威待寫狀態；原始錯誤只供內部 log 使用。
      *
      * @return 不包含路徑與 payload 的安全狀態摘要。
      */
@@ -626,7 +602,8 @@ class FabricHistoryOutboxWriter(
         )
     }
 
-    /** 僅在斷線時重新開啟目前存檔的固定資料庫，不建立第二個 worker。
+    /**
+     * 僅在斷線時重新開啟目前存檔的固定資料庫，不建立第二個 worker。
      *
      * @param server 目前執行中的 Minecraft 伺服器。
      * @param expectedSessionId 指令建立時的 session；等待鎖期間切換存檔時拒絕操作。
@@ -652,7 +629,8 @@ class FabricHistoryOutboxWriter(
         if (open(FabricHistoryDatabasePath.resolve(server))) HistoryRetryResult.Reconnected else HistoryRetryResult.Failed
     }
 
-    /** 路徑版本供無 Minecraft server 的整合測試使用。
+    /**
+     * 路徑版本供無 Minecraft server 的整合測試使用。
      *
      * @param path 歷史資料庫檔案位置。
      */
@@ -682,7 +660,8 @@ class FabricHistoryOutboxWriter(
         open(path)
     }
 
-    /** 開啟、驗證並對帳；失敗時保留原資料與有效記錄政策，並暫停記錄新的歷史事件。
+    /**
+     * 開啟、驗證並對帳；失敗時保留原資料與有效記錄政策，並暫停記錄新的歷史事件。
      *
      * @param path 歷史資料庫檔案位置。
      * @return 是否成功建立背景寫入 session。
@@ -913,7 +892,8 @@ class FabricHistoryOutboxWriter(
         }
     }
 
-    /** 對一份不可變快照提交最多一批，確認時只移除該批的穩定鍵。
+    /**
+     * 對一份不可變快照提交最多一批，確認時只移除該批的穩定鍵。
      *
      * @param activeDatabase 目前 session 的固定資料庫。
      * @return 是否成功提交至少一筆事件。

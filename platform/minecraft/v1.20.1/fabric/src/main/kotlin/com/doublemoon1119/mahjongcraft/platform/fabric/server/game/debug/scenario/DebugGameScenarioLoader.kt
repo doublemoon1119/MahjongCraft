@@ -18,23 +18,6 @@ import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
-/** 載入 development-only 權威情境時可能回傳的結果。 */
-sealed interface DebugGameScenarioLoadResult {
-    /** 情境已成功寫入並完成同步。 */
-    data class Success(
-        /** 已載入的 scenario ID。 */
-        val scenarioId: String,
-        /** 本次完整重建桌面呈現的次數。 */
-        val presentationCount: Int = 1,
-    ) : DebugGameScenarioLoadResult
-
-    /** 情境載入遭拒，並攜帶供 debug 指令顯示的原因。 */
-    data class Rejected(
-        /** 不含玩家資料的拒絕原因。 */
-        val reason: String,
-    ) : DebugGameScenarioLoadResult
-}
-
 /**
  * 驗證、原子替換並同步 development-only 權威對局情境；載入情境的場次不再產生進度、統計、事件掛勾與歷史紀錄。
  *

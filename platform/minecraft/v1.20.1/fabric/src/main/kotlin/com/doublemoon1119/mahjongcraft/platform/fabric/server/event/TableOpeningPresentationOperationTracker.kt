@@ -81,13 +81,3 @@ class TableOpeningPresentationOperationTracker {
         var failedStage: String? = null,
     )
 }
-
-/** 附加開局批次、世代與 stage 的不可恢復 presentation 例外。 */
-class OpeningPresentationOperationException(
-    val ticket: TableOpeningPresentationOperationTracker.Ticket?,
-    val stage: String,
-    cause: Throwable,
-) : RuntimeException(
-    "Opening presentation failed: tableId=${ticket?.tableId}, generation=${ticket?.generation}, stage=$stage",
-    cause,
-)
