@@ -1,13 +1,13 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailabilityIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardReadinessAnalyzer
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.vocabularyActionId
-import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.BuiltInDecisionStatusIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BuiltInMinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.BundledRiichiMinecraftExtension
@@ -58,7 +58,7 @@ class DecisionHudActionTranslationKeyTest {
     fun `every registered decision status resolves a translated name in every language`() {
         val translationsByLocale = locales.associateWith(::loadTranslations)
         val statusIds = listOf(
-            BuiltInDecisionStatusIds.WIN_AVAILABLE,
+            WaitingTileAvailabilityIds.WIN_AVAILABLE,
             RiichiDiscardReadinessAnalyzer.StatusIds.DISCARD_FURITEN,
             RiichiDiscardReadinessAnalyzer.StatusIds.TEMPORARY_FURITEN,
             RiichiDiscardReadinessAnalyzer.StatusIds.PERMANENT_FURITEN,

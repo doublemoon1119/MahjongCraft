@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.network.dto.message
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
+import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailabilityIds
 import kotlinx.serialization.Serializable
 
 /**

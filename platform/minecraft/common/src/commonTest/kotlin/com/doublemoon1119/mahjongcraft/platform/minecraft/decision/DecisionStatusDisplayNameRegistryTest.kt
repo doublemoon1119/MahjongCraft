@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.decision
 
+import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailabilityIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardReadinessAnalyzer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BuiltInMinecraftMahjongExtension
@@ -37,13 +38,13 @@ class DecisionStatusDisplayNameRegistryTest {
     fun `the neutral default applies to every rule until one overrides it`() {
         val registry = registry()
 
-        assertEquals("mahjongcraft.hud.win_availability.available", registry.find(BuiltInRuleModuleIds.RIICHI, BuiltInDecisionStatusIds.WIN_AVAILABLE))
-        assertEquals("mahjongcraft.hud.win_availability.available", registry.find(BuiltInRuleModuleIds.TAIWAN, BuiltInDecisionStatusIds.WIN_AVAILABLE))
+        assertEquals("mahjongcraft.hud.win_availability.available", registry.find(BuiltInRuleModuleIds.RIICHI, WaitingTileAvailabilityIds.WIN_AVAILABLE))
+        assertEquals("mahjongcraft.hud.win_availability.available", registry.find(BuiltInRuleModuleIds.TAIWAN, WaitingTileAvailabilityIds.WIN_AVAILABLE))
 
-        registry.register(BuiltInRuleModuleIds.TAIWAN, BuiltInDecisionStatusIds.WIN_AVAILABLE, "example.hud.can_win")
+        registry.register(BuiltInRuleModuleIds.TAIWAN, WaitingTileAvailabilityIds.WIN_AVAILABLE, "example.hud.can_win")
 
-        assertEquals("example.hud.can_win", registry.find(BuiltInRuleModuleIds.TAIWAN, BuiltInDecisionStatusIds.WIN_AVAILABLE))
-        assertEquals("mahjongcraft.hud.win_availability.available", registry.find(BuiltInRuleModuleIds.RIICHI, BuiltInDecisionStatusIds.WIN_AVAILABLE))
+        assertEquals("example.hud.can_win", registry.find(BuiltInRuleModuleIds.TAIWAN, WaitingTileAvailabilityIds.WIN_AVAILABLE))
+        assertEquals("mahjongcraft.hud.win_availability.available", registry.find(BuiltInRuleModuleIds.RIICHI, WaitingTileAvailabilityIds.WIN_AVAILABLE))
     }
 
     /** 未登記的狀態查不到，由呼叫端顯示原始 ID。 */
@@ -61,7 +62,7 @@ class DecisionStatusDisplayNameRegistryTest {
             registry.register(BuiltInRuleModuleIds.RIICHI, RiichiDiscardReadinessAnalyzer.StatusIds.DISCARD_FURITEN, "example.hud.duplicate")
         }
         assertFailsWith<IllegalArgumentException> {
-            registry.registerDefault(BuiltInDecisionStatusIds.WIN_AVAILABLE, "example.hud.duplicate")
+            registry.registerDefault(WaitingTileAvailabilityIds.WIN_AVAILABLE, "example.hud.duplicate")
         }
 
         registry.freeze()

@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.logic.judgment.DiscardReadinessAnalyzer
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandReadinessAnalysis
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
 import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailability
+import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailabilityIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
@@ -137,7 +138,7 @@ class RiichiDiscardReadinessAnalyzer(
 
     /** 將日麻的和牌可用性判定轉為 [WaitingTileAvailability.winAvailability] 用的命名字串。 */
     private fun RiichiWinAvailability.toStatusId(): String = when (this) {
-        RiichiWinAvailability.AVAILABLE -> StatusIds.WIN_AVAILABLE
+        RiichiWinAvailability.AVAILABLE -> WaitingTileAvailabilityIds.WIN_AVAILABLE
         RiichiWinAvailability.TSUMO_ONLY -> StatusIds.WIN_TSUMO_ONLY
         RiichiWinAvailability.NO_YAKU -> StatusIds.WIN_NO_YAKU
         RiichiWinAvailability.BELOW_MINIMUM -> StatusIds.WIN_BELOW_MINIMUM
@@ -146,7 +147,7 @@ class RiichiDiscardReadinessAnalyzer(
     /**
      * 這個分析器產生的狀態命名字串。
      *
-     * 呈現層依這些 ID 決定顯示什麼文字，因此是公開契約的一部分；[StatusIds.WIN_AVAILABLE] 是所有規則共用的
+     * 呈現層依這些 ID 決定顯示什麼文字，因此是公開契約的一部分；[WaitingTileAvailabilityIds.WIN_AVAILABLE] 是所有規則共用的
      * 中立預設，見 [DiscardReadinessAnalysis.statusIndicatorId] 與 [WaitingTileAvailability.winAvailability]。
      */
     object StatusIds {
@@ -158,9 +159,6 @@ class RiichiDiscardReadinessAnalyzer(
 
         /** 立直後振聽，直到本局結束。 */
         const val PERMANENT_FURITEN = "mahjongcraft:riichi/permanent_furiten"
-
-        /** 和牌資格沒有特殊限制。 */
-        const val WIN_AVAILABLE = "mahjongcraft:win_available"
 
         /** 只能自摸和牌。 */
         const val WIN_TSUMO_ONLY = "mahjongcraft:riichi/win_tsumo_only"

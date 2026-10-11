@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailability
+import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailabilityIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleModule
@@ -458,7 +459,7 @@ class RiichiDiscardReadinessAnalyzerTest {
             val analysis = assertNotNull(analyzer.analyzeCurrentHand(tableState, player, visibleTiles = visibleTo(tableState, player)))
 
             assertEquals(
-                RiichiDiscardReadinessAnalyzer.StatusIds.WIN_AVAILABLE,
+                WaitingTileAvailabilityIds.WIN_AVAILABLE,
                 analysis.waitingTiles.single().winAvailability,
             )
         }
@@ -512,7 +513,7 @@ class RiichiDiscardReadinessAnalyzerTest {
             val analysis = analyzer.analyze(tableState, player, visibleTiles = visibleTo(tableState, player)).single { it.discardTileId == eastId }
 
             assertEquals(
-                RiichiDiscardReadinessAnalyzer.StatusIds.WIN_AVAILABLE,
+                WaitingTileAvailabilityIds.WIN_AVAILABLE,
                 analysis.waitingTiles.single().winAvailability,
             )
         }

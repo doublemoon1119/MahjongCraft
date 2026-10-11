@@ -3,8 +3,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DiscardReadinessAnalysisDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HandReadinessAnalysisDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileAvailabilityDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileAvailabilityIds
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
+import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailabilityIds
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.hudCoordinate
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
 import net.minecraft.text.Text

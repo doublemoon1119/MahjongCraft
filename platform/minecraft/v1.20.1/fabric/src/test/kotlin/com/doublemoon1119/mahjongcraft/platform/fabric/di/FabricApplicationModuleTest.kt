@@ -25,6 +25,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCo
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetPlayerDecisionOptionsUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateCleaner
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateRestorer
+import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailabilityIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardReadinessAnalyzer
@@ -69,7 +70,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNa
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
-import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.BuiltInDecisionStatusIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
@@ -259,7 +259,7 @@ class FabricApplicationModuleTest {
         )
         assertTrue(actionVocabularyRegistry.isFrozen)
         assertTrue(automaticControlDisplayRegistry.isFrozen)
-        assertTrue(decisionStatusDisplayNameRegistry.find(BuiltInRuleModuleIds.RIICHI, BuiltInDecisionStatusIds.WIN_AVAILABLE) != null)
+        assertTrue(decisionStatusDisplayNameRegistry.find(BuiltInRuleModuleIds.RIICHI, WaitingTileAvailabilityIds.WIN_AVAILABLE) != null)
         assertTrue(
             decisionStatusDisplayNameRegistry.find(
                 BuiltInRuleModuleIds.RIICHI,

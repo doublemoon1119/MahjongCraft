@@ -21,7 +21,6 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomSnapshotSync
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdateEventDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdatePayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileAvailabilityDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileAvailabilityIds
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.decodeHistoryRuleSettingsResponse
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.encode
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.toDto
@@ -52,6 +51,7 @@ import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
 import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.config.ScoreConfig
+import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailabilityIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoLiability
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoYaku
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION

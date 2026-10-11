@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.extension
 
 import com.doublemoon1119.mahjongcraft.ai.BuiltInAiStrategyKeys
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
+import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailabilityIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInAutomaticControlIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInPaymentReasonIds
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
@@ -15,7 +16,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticCon
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.BuiltInMinecraftAutomaticControlIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
-import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.BuiltInDecisionStatusIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.HUD_STATUS_PREFIX
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplay
@@ -278,7 +278,7 @@ object BuiltInMinecraftMahjongExtension : MinecraftMahjongExtension {
 
     /** 中立預設：和牌資格沒有特殊限制。 */
     override fun registerDecisionStatusDisplayNames(registry: DecisionStatusDisplayNameRegistry) {
-        registry.registerDefault(BuiltInDecisionStatusIds.WIN_AVAILABLE, HUD_STATUS_PREFIX + "win_availability.available")
+        registry.registerDefault(WaitingTileAvailabilityIds.WIN_AVAILABLE, HUD_STATUS_PREFIX + "win_availability.available")
     }
 }
 

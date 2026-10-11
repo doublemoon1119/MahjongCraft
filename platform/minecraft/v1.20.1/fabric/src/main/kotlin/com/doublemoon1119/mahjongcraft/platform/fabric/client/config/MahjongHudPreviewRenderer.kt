@@ -2,9 +2,9 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.config
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DiscardReadinessAnalysisDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileAvailabilityDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileAvailabilityIds
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.SuitDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
+import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailabilityIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.AutomaticControlStatusHudRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.AutomaticControlStatusHudText

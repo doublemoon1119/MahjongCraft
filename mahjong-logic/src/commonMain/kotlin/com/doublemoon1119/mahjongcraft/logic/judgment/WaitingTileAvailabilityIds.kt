@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.flow.network.dto.message
+package com.doublemoon1119.mahjongcraft.logic.judgment
 
 /** 等待牌和牌資格的規則中立識別碼。 */
 object WaitingTileAvailabilityIds {
