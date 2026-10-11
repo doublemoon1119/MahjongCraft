@@ -123,20 +123,6 @@ abstract class SwitchTargetTask : DefaultTask() {
     }
 }
 
-/** 清除本機 target，讓 Settings 回到 core-only 預設。 */
-abstract class ClearTargetTask : DefaultTask() {
-    /** repository 根目錄。 */
-    @get:Internal
-    abstract val rootDirectory: DirectoryProperty
-
-    /** 移除 local.dev.properties 中的 target property。 */
-    @TaskAction
-    fun clearTarget() {
-        updateLocalProperty(rootDirectory.get().asFile.resolve("local.dev.properties"), null)
-        logger.lifecycle("Development target cleared. Reload the Gradle project to use core-only mode.")
-    }
-}
-
 /** 從 [root] 下的 catalog 載入 target。 */
 private fun loadTargets(root: File): List<PlatformTarget> = PlatformTargetCatalog.load(
     root.resolve("gradle/platform-targets.toml"),

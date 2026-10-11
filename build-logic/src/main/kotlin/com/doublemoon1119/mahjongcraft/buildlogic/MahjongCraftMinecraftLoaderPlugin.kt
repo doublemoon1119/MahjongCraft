@@ -7,15 +7,6 @@ import org.gradle.language.jvm.tasks.ProcessResources
 import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.withType
 
-/** 套用 Minecraft 版本特定 common module 的 target Java 政策。 */
-class MahjongCraftMinecraftVersionCommonPlugin : Plugin<Project> {
-    /** 套用 KMP convention 並覆寫為目前 target 的 Java 設定。 */
-    override fun apply(project: Project) = with(project) {
-        pluginManager.apply("mahjongcraft.kotlin-multiplatform")
-        configureMultiplatformJvm(targetJavaToolchain(), targetJavaRelease(), overrideDefaults = true)
-    }
-}
-
 /** 套用 Minecraft loader module 的 target Java、archive 與 metadata 政策。 */
 class MahjongCraftMinecraftLoaderPlugin : Plugin<Project> {
     /** 套用 JVM convention 並設定 loader-specific build 行為。 */

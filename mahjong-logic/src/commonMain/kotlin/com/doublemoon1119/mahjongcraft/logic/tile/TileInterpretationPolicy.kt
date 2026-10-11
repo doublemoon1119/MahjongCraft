@@ -13,8 +13,3 @@ fun interface TileInterpretationPolicy {
     /** 將 [tile] 轉為目前規則用於一般牌面比較的正規表示。 */
     fun canonicalize(tile: Tile): Tile
 }
-
-/** 不具有規則特有牌面等價關係時使用的原樣解讀 policy。 */
-object IdentityTileInterpretationPolicy : TileInterpretationPolicy {
-    override fun canonicalize(tile: Tile): Tile = tile
-}

@@ -6,48 +6,38 @@ import kotlinx.serialization.Serializable
 import org.gradle.api.GradleException
 import java.io.File
 
-/** 單一正式平台建置目標的通用設定。 */
-data class PlatformTarget(
-    /** 供 CLI、環境變數與 CI 使用的穩定完整 ID。 */
-    val id: String,
-    /** 平台種類；核心載入器不假設任何特定平台。 */
-    val platform: String,
-    /** 編譯此 target 使用的 JDK toolchain。 */
-    val javaToolchain: Int,
-    /** 此 target 產出的最低 JVM bytecode 版本。 */
-    val javaRelease: Int,
-    /** Settings 階段必須載入的模組目錄。 */
-    val modules: List<String>,
-    /** 由各平台自行定義並解讀的額外屬性。 */
-    val attributes: Map<String, String>,
-)
-
-/** KToml 反序列化使用的 catalog 文件。 */
+/**
+ * KToml 反序列化使用的 catalog 文件。
+ *
+ * @property schemaVersion Catalog schema 版本。
+ * @property targets 正式平台 target 清單。
+ */
 @Serializable
 private data class PlatformTargetCatalogDocument(
-    /** Catalog schema 版本。 */
     @SerialName("schema-version")
     val schemaVersion: Int,
-    /** 正式平台 target 清單。 */
     val targets: List<PlatformTargetDefinition> = emptyList(),
 )
 
-/** KToml 反序列化使用的平台中立 target 定義。 */
+/**
+ * KToml 反序列化使用的平台中立 target 定義。
+ *
+ * @property id 穩定完整 ID。
+ * @property platform 平台種類。
+ * @property javaToolchain JDK toolchain。
+ * @property javaRelease JVM bytecode release。
+ * @property modules 應載入的 module paths。
+ * @property attributes 平台自行定義的附加欄位。
+ */
 @Serializable
 private data class PlatformTargetDefinition(
-    /** 穩定完整 ID。 */
     val id: String,
-    /** 平台種類。 */
     val platform: String,
-    /** JDK toolchain。 */
     @SerialName("java-toolchain")
     val javaToolchain: Int,
-    /** JVM bytecode release。 */
     @SerialName("java-release")
     val javaRelease: Int,
-    /** 應載入的 module paths。 */
     val modules: List<String>,
-    /** 平台自行定義的附加欄位。 */
     val attributes: Map<String, String> = emptyMap(),
 )
 
