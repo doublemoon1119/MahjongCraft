@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.HandSortPreferen
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.SetHandSortPreferenceUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateCleaner
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.FabricSeatProviderRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.di.MahjongCraftClientApp
 import com.doublemoon1119.mahjongcraft.platform.fabric.di.MahjongCraftServerApp
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongExtensions
@@ -53,6 +54,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.ServerPlaye
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.FabricMahjongLobbyInfoLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.FabricRoomCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableRoomService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.MahjongStoolSeatProvider
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.MahjongStoolSeatService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLocationValidationService
@@ -90,6 +92,8 @@ class MahjongCraftMod : ModInitializer {
             coreRegistries = koin.get<CoreExtensionRegistries>(),
             presentationRegistries = koin.get<MinecraftPresentationRegistries>(),
             tablePropKindRegistry = koin.get<FabricTablePropKindRegistry>(),
+            seatProviderRegistry = koin.get<FabricSeatProviderRegistry>(),
+            mahjongStoolSeatProvider = koin.get<MahjongStoolSeatProvider>(),
             debugWinRoundContinuationState = koin.get<DebugWinRoundContinuationState>(),
             minecraftEnvironment = koin.get<MinecraftEnvironment>(),
         )

@@ -10,9 +10,12 @@ import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationSource
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtensionRegistrar
 import com.doublemoon1119.mahjongcraft.extension.mergeRegistrationSources
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.FabricSeatProviderRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.DebugMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationState
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatProviderRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.MahjongStoolSeatProvider
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BundledMinecraftMahjongExtensions
@@ -42,6 +45,8 @@ object FabricMahjongExtensions {
      * @param coreRegistries 規則核心 registry 集合。
      * @param presentationRegistries Minecraft 呈現 registry 集合。
      * @param tablePropKindRegistry Fabric 桌面物件種類 registry。
+     * @param seatProviderRegistry Fabric 座位 provider registry。
+     * @param mahjongStoolSeatProvider 內建麻將凳座位 provider。
      * @param debugWinRoundContinuationState 開發用中途胡牌流程狀態。
      * @param minecraftEnvironment 判斷是否載入開發用 extension 的環境資訊。
      */
@@ -49,6 +54,8 @@ object FabricMahjongExtensions {
         coreRegistries: CoreExtensionRegistries,
         presentationRegistries: MinecraftPresentationRegistries,
         tablePropKindRegistry: FabricTablePropKindRegistry,
+        seatProviderRegistry: FabricSeatProviderRegistry,
+        mahjongStoolSeatProvider: MahjongStoolSeatProvider,
         debugWinRoundContinuationState: DebugWinRoundContinuationState,
         minecraftEnvironment: MinecraftEnvironment,
     ) {
@@ -59,6 +66,8 @@ object FabricMahjongExtensions {
                 coreRegistries = coreRegistries,
                 presentationRegistries = presentationRegistries,
                 tablePropKindRegistry = tablePropKindRegistry,
+                seatProviderRegistry = seatProviderRegistry,
+                mahjongStoolSeatProvider = mahjongStoolSeatProvider,
                 debugWinRoundContinuationState = debugWinRoundContinuationState,
                 minecraftEnvironment = minecraftEnvironment,
                 extensions = extensions,
@@ -81,6 +90,8 @@ object FabricMahjongExtensions {
      * @param coreRegistries 規則核心 registry 集合。
      * @param presentationRegistries Minecraft 呈現 registry 集合。
      * @param tablePropKindRegistry Fabric 桌面物件種類 registry。
+     * @param seatProviderRegistry Fabric 座位 provider registry。
+     * @param mahjongStoolSeatProvider 內建麻將凳座位 provider。
      * @param debugWinRoundContinuationState 開發用中途胡牌流程狀態。
      * @param minecraftEnvironment 判斷是否載入開發用 extension 的環境資訊。
      * @param extensions 要額外登記的 extension。
@@ -89,6 +100,8 @@ object FabricMahjongExtensions {
         coreRegistries: CoreExtensionRegistries,
         presentationRegistries: MinecraftPresentationRegistries,
         tablePropKindRegistry: FabricTablePropKindRegistry,
+        seatProviderRegistry: FabricSeatProviderRegistry = FabricSeatProviderRegistryImpl(),
+        mahjongStoolSeatProvider: MahjongStoolSeatProvider? = null,
         debugWinRoundContinuationState: DebugWinRoundContinuationState = DebugWinRoundContinuationState(),
         // 預設不註冊開發用的中途胡牌 resolver：這個多載的其他測試呼叫端只關心依賴圖，正式呼叫端
         // （MahjongCraftMod）會傳入真正的 MinecraftEnvironment。
@@ -128,7 +141,13 @@ object FabricMahjongExtensions {
         val tablePropKindSources = tablePropKindRegistry.registerAndFreeze(
             extensions = extensions.filterIsInstance<FabricMahjongExtension>(),
         )
-        return FabricExtensionRegistrationResult(mergeRegistrationSources(coreSources, minecraftSources, tablePropKindSources))
+        val seatProviderSources = seatProviderRegistry.registerAndFreeze(
+            extensions = extensions.filterIsInstance<FabricMahjongExtension>(),
+            builtInProvider = mahjongStoolSeatProvider,
+        )
+        return FabricExtensionRegistrationResult(
+            mergeRegistrationSources(coreSources, minecraftSources, tablePropKindSources, seatProviderSources),
+        )
     }
 
     /** [initialize] 預設使用的環境查詢：一律回報非開發環境，見該參數上方註解。 */

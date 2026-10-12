@@ -1,40 +1,50 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.seating
 
-import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongStoolBlock
-import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongStoolSeatEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.FabricSeatProviderRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatRequest
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingTableLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.SeatAssignmentCoordinator
+import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.SeatAssignmentResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftSeatingKeys
+import net.minecraft.entity.Entity
 import net.minecraft.registry.RegistryKey
 import net.minecraft.registry.RegistryKeys
-import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.state.property.Properties
+import net.minecraft.text.Text
+import net.minecraft.util.Formatting
 import net.minecraft.util.Identifier
 import net.minecraft.util.math.BlockPos
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
- * 使用 Fabric 1.20.1 玩家傳送實作 [MahjongSeatingPresenter]。
+ * 使用原生座位能力實作 [MahjongSeatingPresenter]。
  *
- * 每位玩家傳送到分配到的座位位置並面向桌子；該位置是麻將凳時接著坐上去。已經坐在分配到的凳子上的玩家不移動。
+ * 優先在固定席位入座；沒有座位時只傳送到通過安全檢查的站立點。
+ * 已入座本人不移動，占用或堵塞時保留原位置。此入口目前只解析在線玩家。
  *
  * @property tableLocationRegistry 查詢桌子目前的位置。
  * @property serverHolder 取得目前伺服器世界與在線玩家。
- * @property seatService 讓玩家坐上麻將凳的服務。
+ * @property seatProviders 已完成註冊的原生座位來源。
  */
 @Single(binds = [MahjongSeatingPresenter::class])
 class FabricMahjongSeatingPresenter(
     private val tableLocationRegistry: TableLocationRegistry,
     private val serverHolder: FabricServerHolder,
-    private val seatService: MahjongStoolSeatService,
+    private val seatProviders: FabricSeatProviderRegistry,
 ) : MahjongSeatingPresenter {
+    /** 提供者違約與執行失敗的診斷。 */
+    private val logger = mahjongCraftLogger(FabricMahjongSeatingPresenter::class)
+
     /**
-     * 將入座名單移至對應座位，並在座位是凳子時安排乘坐。
+     * 依固定席位安排在線玩家入座或安全站立。
      *
      * @param tableId 對局桌子 UUID。
      * @param seatedPlayerIds 依座位順序排列的玩家 UUID。
@@ -42,33 +52,36 @@ class FabricMahjongSeatingPresenter(
     override fun present(tableId: Uuid, seatedPlayerIds: List<Uuid>) {
         val location = tableLocationRegistry.get(tableId)?.location ?: return
         val world = resolveWorld(location) ?: return
+        check(world.server.isOnThread) { "Automatic seating must run on the server thread" }
         val controllerPos = BlockPos(location.x, location.y, location.z)
+        if (!world.chunkManager.isChunkLoaded(controllerPos.x shr 4, controllerPos.z shr 4)) return
         val state = world.getBlockState(controllerPos)
         if (!state.contains(Properties.HORIZONTAL_FACING)) return
         val tableFacing = state.get(Properties.HORIZONTAL_FACING).toMahjongTableFacing()
         val placements = MahjongSeatingTableLayout.seatPlacements(location.x, location.y, location.z, tableFacing)
+        val environment = FabricSeatEnvironment()
+        var currentSeatIndex = -1
+        var currentPlayerId: Uuid? = null
+        val coordinator = SeatAssignmentCoordinator<ServerWorld, Entity, FabricSeatSnapshot>(seatProviders.entries(), environment) { providerId, cause ->
+            logger.warn("Seat provider {} failed for table {}, seat {}, rider {}", providerId, tableId, currentSeatIndex, currentPlayerId, cause)
+        }
 
         seatedPlayerIds.forEachIndexed { index, playerId ->
             val placement = placements.getOrNull(index) ?: return@forEachIndexed
             val player = serverHolder.findPlayer(playerId) ?: return@forEachIndexed
-            val stoolPos = BlockPos.ofFloored(placement.x, placement.y, placement.z)
-            if (isSeatedOn(player, world, stoolPos)) return@forEachIndexed
-            player.teleport(world, placement.x, placement.y, placement.z, placement.yaw, 0.0f)
-            if (world.getBlockState(stoolPos).block is MahjongStoolBlock) seatService.sit(world, stoolPos, player)
+            currentSeatIndex = index
+            currentPlayerId = playerId
+            val request = SeatRequest(tableId, index, location.dimensionId, placement)
+            val result = coordinator.assign(world, player, request)
+            val key = when (result) {
+                SeatAssignmentResult.SEATED, SeatAssignmentResult.STANDING -> null
+                SeatAssignmentResult.OCCUPIED -> MinecraftSeatingKeys.OCCUPIED
+                SeatAssignmentResult.BLOCKED -> MinecraftSeatingKeys.BLOCKED
+                SeatAssignmentResult.RIDING -> MinecraftSeatingKeys.RIDING
+                SeatAssignmentResult.FAILED -> MinecraftSeatingKeys.FAILED
+            }
+            if (key != null) player.sendMessage(Text.translatable(key).formatted(Formatting.YELLOW), false)
         }
-    }
-
-    /**
-     * [player] 是否已經坐在 [world] 中位於 [stoolPos] 的麻將凳上。
-     *
-     * @param player 要檢查的玩家。
-     * @param world 凳子所在世界。
-     * @param stoolPos 凳子方塊座標。
-     * @return 玩家正乘坐該凳子的座位實體時為 true。
-     */
-    private fun isSeatedOn(player: ServerPlayerEntity, world: ServerWorld, stoolPos: BlockPos): Boolean {
-        val seat = player.vehicle as? MahjongStoolSeatEntity ?: return false
-        return seat.world === world && seat.blockPos == stoolPos
     }
 
     /**

@@ -2,8 +2,12 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.extension
 
 import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationCategory
 import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationSource
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.FabricSeatProviderRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.ScoringStickTablePropKind
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatProvider
+import net.minecraft.entity.Entity
+import net.minecraft.server.world.ServerWorld
 
 /**
  * 第三方 mod 登記 Fabric 1.20.1 專屬整合的契約，例如需要自己的 entity 才能呈現的規則桌面物件種類。
@@ -23,10 +27,25 @@ interface FabricMahjongExtension {
      * @param registry Fabric 桌面物件種類 registry。
      */
     fun registerTablePropKinds(registry: FabricTablePropKindRegistry) = Unit
+
+    /**
+     * 登記此 Fabric 版本可解析的座位 provider。
+     *
+     * 預設不登記；只使用內建座位 provider 的 extension 不必實作。
+     *
+     * @param registry Fabric 座位 provider registry。
+     */
+    fun registerSeatProviders(registry: FabricSeatProviderRegistry) = Unit
 }
 
 /** 啟動報告中規則桌面物件種類的分類識別碼。 */
 internal const val TABLE_PROP_KIND_CATEGORY_ID: String = "mahjongcraft:table_prop_kind"
+
+/** 啟動報告中座位 provider 的分類識別碼。 */
+internal const val SEAT_PROVIDER_CATEGORY_ID: String = "mahjongcraft:seat_provider"
+
+/** 內建麻將凳座位 provider 的識別碼。 */
+internal const val MAHJONG_STOOL_SEAT_PROVIDER_ID: String = "mahjongcraft:mahjong_stool"
 
 /**
  * 先登記內建的點棒種類 [ScoringStickTablePropKind]，再依 [extensions] 順序登記各 extension 的種類，全部成功後凍結。
@@ -54,6 +73,60 @@ internal fun FabricTablePropKindRegistry.registerAndFreeze(extensions: Iterable<
         }
         val afterIds = kinds.map { it.id }.toSet()
         sources += tablePropKindSource(extensionId = extension.id, kindIds = afterIds - knownIds)
+        knownIds = afterIds
+    }
+    freeze()
+    return sources
+}
+
+/**
+ * 依 extension 順序登記 Fabric 座位 provider，完成後凍結 registry。
+ *
+ * @param extensions 要按順序登記的 Fabric extensions。
+ * @param builtInProvider 內建麻將凳 provider；測試可省略。
+ * @return 依來源分組的 provider 登記資訊。
+ * @throws FabricMahjongExtensionRegistrationException 若任一 extension 登記失敗。
+ */
+internal fun FabricSeatProviderRegistry.registerAndFreeze(
+    extensions: Iterable<FabricMahjongExtension>,
+    builtInProvider: SeatProvider<ServerWorld, Entity>? = null,
+): List<ExtensionRegistrationSource> {
+    if (builtInProvider != null) {
+        register(MAHJONG_STOOL_SEAT_PROVIDER_ID, builtInProvider)
+    }
+    var knownIds = registrationKeys
+    val sources = mutableListOf(
+        ExtensionRegistrationSource(
+            extensionId = null,
+            categories = listOfNotNull(
+                registrationKeys.takeIf { it.isNotEmpty() }?.let {
+                    ExtensionRegistrationCategory(SEAT_PROVIDER_CATEGORY_ID, "Seat Provider", it.sorted())
+                },
+            ),
+        ),
+    )
+    val registeredExtensionIds = mutableSetOf<String>()
+    extensions.forEach { extension ->
+        if (!registeredExtensionIds.add(extension.id)) {
+            throw FabricMahjongExtensionRegistrationException(
+                extensionId = extension.id,
+                cause = IllegalArgumentException("Duplicate Fabric Mahjong extension id: ${extension.id}"),
+            )
+        }
+        try {
+            extension.registerSeatProviders(this)
+        } catch (cause: Exception) {
+            throw FabricMahjongExtensionRegistrationException(extension.id, cause)
+        }
+        val afterIds = registrationKeys
+        sources += ExtensionRegistrationSource(
+            extensionId = extension.id,
+            categories = listOfNotNull(
+                (afterIds - knownIds).takeIf { it.isNotEmpty() }?.let {
+                    ExtensionRegistrationCategory(SEAT_PROVIDER_CATEGORY_ID, "Seat Provider", it.sorted())
+                },
+            ),
+        )
         knownIds = afterIds
     }
     freeze()
