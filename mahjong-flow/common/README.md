@@ -10,6 +10,9 @@
 - Track per-game seat control, including AI-controlled seats and forced automatic play.
 - Define event, snapshot, synchronization, and presentation request contracts.
 - Define history facts and observer snapshots shared by recording, replay, and spectating.
+- Project committed game facts into read-only match-start, round-settlement,
+  and match-end events; platform adapters own listener registration and
+  delivery.
 - Provide dependency-injection modules for shared services.
 
 ## Boundaries
@@ -22,4 +25,12 @@ It depends on [mahjong-logic](../../mahjong-logic/README.md), coroutines, and Ko
 
 ## Testing
 
-Tests cover shared models, timers, snapshots, ranking calculations, preparation state, and DI registration. Shared fixtures come from [testing-mahjong-flow](../../testing/mahjong-flow/README.md).
+Tests cover shared models, timers, snapshots, ranking calculations, preparation
+state, event projection, and DI registration. Shared fixtures come from
+[testing-mahjong-flow](../../testing/mahjong-flow/README.md).
+
+From the repository root, run
+`./gradlew :mahjong-flow:mahjong-flow-common:check "-PmahjongcraftTarget=core"`.
+Its declared JVM event API signatures are checked as part of `check`; platform
+subscription signatures require the corresponding platform target. See
+[CONTRIBUTING.md](../../CONTRIBUTING.md) for verification policy.
