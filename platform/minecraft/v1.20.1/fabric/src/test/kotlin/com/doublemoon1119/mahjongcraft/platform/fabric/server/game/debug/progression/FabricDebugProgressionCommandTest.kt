@@ -24,6 +24,7 @@ import kotlin.uuid.Uuid
 
 /** 驗證終局推進預覽子指令樹的情境 literal 結構。 */
 class FabricDebugProgressionCommandTest {
+    /** 僅供檢查指令樹結構的終局推進指令。 */
     private val command = FabricDebugProgressionCommand(
         gameRepository = UnusedGameRepository,
         playerTableScope = DebugPlayerTableScope(
@@ -73,7 +74,7 @@ class FabricDebugProgressionCommandTest {
         }
     }
 
-    /** 指令樹建構不觸碰任何倉庫；每次呼叫都回傳獨立的節點實例。 */
+    /** 拒絕所有存取，確保建構指令樹不讀寫遊戲倉庫。 */
     private object UnusedGameRepository : GameRepository {
         override suspend fun getGame(gameId: Uuid): Game? = error("Unexpected repository access")
 

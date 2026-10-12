@@ -75,6 +75,12 @@ fun buildRoundResultChatMessage(
 /**
  * 結算結果的顯示文字：自摸使用規則的動作用語，榮和使用結算用語；其他結果依序查規則的動作用語（例如九種九牌）、
  * 特殊結果名稱與流局原因名稱，都沒有登記時流局退回通用流局文字、和牌顯示結果 ID。
+ *
+ * @param result 欲顯示的權威結算結果。
+ * @param actionVocabularyRegistry 規則專屬動作用語。
+ * @param roundOutcomeDisplayNameRegistry 特殊結算結果的顯示名稱。
+ * @param exhaustiveDrawReasonDisplayNameRegistry 流局原因的顯示名稱。
+ * @return 本地化結果名稱；未知和牌結果使用原始識別碼。
  */
 private fun roundOutcomeText(
     result: RoundResultPayloadDto,
@@ -97,7 +103,13 @@ private fun roundOutcomeText(
         }
 }
 
-/** `↑`：名次數字變小（進步）；`↓`：名次數字變大（退步）；`→`：名次沒變。 */
+/**
+ * 將名次變化轉為方向符號。
+ *
+ * @param previousRank 結算前名次。
+ * @param newRank 結算後名次。
+ * @return 名次數字變小時為 ↑、變大時為 ↓，不變時為 →。
+ */
 private fun rankChangeSymbol(previousRank: Int, newRank: Int): String = when {
     newRank < previousRank -> "↑"
     newRank > previousRank -> "↓"
@@ -136,7 +148,14 @@ fun buildMatchResultChatMessage(
 /** 對局歷史畫面入口說明的翻譯鍵。 */
 private const val HISTORY_OPEN_HINT_KEY = MinecraftHistoryScreenKeys.OPEN_HINT
 
-/** 把 [rankedPlayers]（已排好序）依序編號附加到 [message]，兩種排名訊息共用同一種每行格式。 */
+/**
+ * 將已排序的玩家依序編號並附加至排名訊息。
+ *
+ * @param message 接收排名文字的訊息，會直接更新。
+ * @param rankedPlayers 依最終排名排列的玩家。
+ * @param aiPlayerIds 由 AI 操控的玩家識別碼。
+ * @param playerDisplayName 自訂名稱解析器；未提供時使用玩家清單與 AI 名稱。
+ */
 private fun appendRankingLines(
     message: MutableText,
     rankedPlayers: List<MahjongPlayerSnapshot>,
@@ -160,7 +179,12 @@ private fun appendRankingLines(
 
 /**
  * 真人玩家的麻將 Uuid 就是其 Minecraft 帳號 Uuid（見 `MahjongTableRoomService.join`），可以直接查
- * 玩家清單解析出真實 ID；查不到（不在同一伺服器可見範圍）或是 AI 玩家則退回顯示短 ID 佔位。
+ * 玩家清單解析出帳號名稱；AI 使用座位順序命名，查不到真人名稱時使用短 ID。
+ *
+ * @param id 玩家識別碼。
+ * @param isAi 是否由 AI 操控。
+ * @param orderedAiPlayerIds 依初始座位排列的 AI 玩家識別碼。
+ * @return AI 名稱、玩家清單中的名稱，或識別碼的前八個字元。
  */
 private fun resolvePlayerDisplayName(id: Uuid, isAi: Boolean, orderedAiPlayerIds: List<Uuid>): String {
     if (isAi) return aiPlayerDisplayName(id, orderedAiPlayerIds)

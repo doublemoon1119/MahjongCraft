@@ -8,13 +8,23 @@ interface RoundOutcomeDisplayNameRegistry {
     /** registry 是否已凍結。 */
     val isFrozen: Boolean
 
-    /** 登記結果 ID 的本地化名稱；重複 ID 會失敗。 */
+    /**
+     * 登記結果 ID 的本地化名稱；重複 ID 會失敗。
+     *
+     * @param outcomeId 完整特殊結果 ID。
+     * @param translationKey Minecraft translation key。
+     */
     fun register(
         outcomeId: String,
         translationKey: String,
     )
 
-    /** 查詢本地化名稱；未登記時回傳 null。 */
+    /**
+     * 查詢特殊結果的本地化名稱。
+     *
+     * @param outcomeId 要查詢的完整特殊結果 ID。
+     * @return 已登記的 translation key；未登記時回傳 null。
+     */
     fun find(outcomeId: String): String?
 
     /** 凍結 registry。 */

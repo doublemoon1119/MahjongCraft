@@ -10,9 +10,19 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuant
  * translation key 與參數。
  */
 interface WinSettlementDetailTextFormatter {
-    /** 轉換有單位的數值。 */
+    /**
+     * 轉換有單位的數值。
+     *
+     * @param quantities 欄位包含的數值與單位。
+     * @return 可供面板呈現的文字值。
+     */
     fun quantities(quantities: List<WinSettlementQuantity>): PresentationValue.TextValue
 
-    /** 轉換條目清單。 */
+    /**
+     * 轉換條目清單。
+     *
+     * @param entries 欄位包含的條目。
+     * @return 可供面板呈現的條目清單。
+     */
     fun entries(entries: List<WinSettlementDetailEntry>): PresentationValue.EntryListValue
 }

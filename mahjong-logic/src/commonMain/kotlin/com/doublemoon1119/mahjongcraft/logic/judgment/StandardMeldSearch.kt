@@ -85,12 +85,22 @@ class StandardMeldSearch(private val targetMelds: Int) {
         return min(melds, targetMelds)
     }
 
-    /** 確認 [counts] 是 34 格的計數陣列。 */
+    /**
+     * 確認 [counts] 是 34 格的計數陣列。
+     *
+     * @param counts 待檢查的牌種計數陣列。
+     * @throws IllegalArgumentException 格數不是 34 時拋出。
+     */
     private fun requireTileKinds(counts: IntArray) {
         require(counts.size == TILE_KINDS) { "Tile counts must have $TILE_KINDS entries" }
     }
 
-    /** 一組可達組合中最多的面子數。 */
+    /**
+     * 一組可達組合中最多的面子數。
+     *
+     * @param reachable 以位元集合表示的可達組合。
+     * @return 可達組合中的最大面子數。
+     */
     private fun maxMelds(reachable: Long): Int {
         for (melds in targetMelds downTo 1) {
             if ((reachable and rowMask(melds)) != 0L) return melds
@@ -105,6 +115,7 @@ class StandardMeldSearch(private val targetMelds: Int) {
      * @param start 這組牌的第一格。
      * @param size 這組牌的格數。
      * @param connected 是否為數牌（可組成順子與順子搭子）。
+     * @return 此組牌可達的面子與搭子組合位元集合。
      */
     private fun reachableInGroup(counts: IntArray, start: Int, size: Int, connected: Boolean): Long {
         var key = if (connected) 1L else 0L
@@ -149,7 +160,11 @@ class StandardMeldSearch(private val targetMelds: Int) {
          * 搜尋 [counts] 的 [start] 到 [end]（不含）這組牌可達的組合。
          *
          * @param connected 是否為數牌（可組成順子與順子搭子）。
+         * @param counts 這組牌共用的計數陣列。
+         * @param start 這組牌的起始格。
+         * @param end 這組牌結束位置（不含）。
          * @param states 記憶搜尋狀態的空表；牌少到直接搜尋較快，或某一格超過 4 張時為 null。
+         * @return 此組牌可達的面子與搭子組合。
          */
         fun search(counts: IntArray, start: Int, end: Int, connected: Boolean, states: LongTable?): Long {
             this.counts = counts
@@ -160,7 +175,12 @@ class StandardMeldSearch(private val targetMelds: Int) {
             return reachableFrom(start)
         }
 
-        /** 從 [index] 起（較小的位置已處理完）可達的組合；在同一個位置可以連續取多組牌，或放棄這個位置剩下的牌改看下一個位置。 */
+        /**
+         * 從 [index] 起（較小的位置已處理完）可達的組合；在同一個位置可以連續取多組牌，或放棄這個位置剩下的牌改看下一個位置。
+         *
+         * @param index 開始搜尋的計數格。
+         * @return 從該位置可達的組合位元集合。
+         */
         private fun reachableFrom(index: Int): Long {
             if (index == end) return bit(0, 0)
             if (counts[index] == 0) return reachableFrom(index + 1)
@@ -188,6 +208,8 @@ class StandardMeldSearch(private val targetMelds: Int) {
          *
          * @param offsets 相對於 [index] 要各取走一張的位置。
          * @param meld 這一組是面子（true）還是搭子（false）。
+         * @param index 組合中第一張牌的位置。
+         * @return 扣除該組牌後可達組合，再加入面子或搭子的一組結果。
          */
         private fun withTaken(index: Int, offsets: IntArray, meld: Boolean): Long {
             offsets.forEach { counts[index + it]-- }
@@ -196,7 +218,12 @@ class StandardMeldSearch(private val targetMelds: Int) {
             return if (meld) addMeld(rest) else addPartial(rest)
         }
 
-        /** 位置 [index] 與其後兩格的剩餘張數組成的狀態索引；超出這組牌的格子以 0 計。 */
+        /**
+         * 位置 [index] 與其後兩格的剩餘張數組成的狀態索引；超出這組牌的格子以 0 計。
+         *
+         * @param index 要編碼的計數格。
+         * @return 對應目前三格牌數的狀態索引。
+         */
         private fun stateOf(index: Int): Int {
             val next = if (index + 1 < end) counts[index + 1] else 0
             val afterNext = if (index + 2 < end) counts[index + 2] else 0
@@ -206,6 +233,10 @@ class StandardMeldSearch(private val targetMelds: Int) {
 
     /**
      * 兩組獨立牌的可達組合合併：任取 [first] 的一個組合與 [second] 的一個組合相加，超過上限的仍記在最後一格。
+     *
+     * @param first 第一組牌的可達組合。
+     * @param second 第二組牌的可達組合。
+     * @return 合併後的可達組合。
      */
     private fun combine(first: Long, second: Long): Long {
         var combined = 0L
@@ -221,16 +252,37 @@ class StandardMeldSearch(private val targetMelds: Int) {
         return combined
     }
 
-    /** 每個組合多一組面子；已在最後一格的仍留在最後一格。 */
+    /**
+     * 每個組合多一組面子；已在最後一格的仍留在最後一格。
+     *
+     * @param reachable 原可達組合位元集合。
+     * @return 增加一組面子後的位元集合。
+     */
     private fun addMeld(reachable: Long): Long = ((reachable and lastRow.inv()) shl width) or (reachable and lastRow)
 
-    /** 每個組合多一組搭子；已在最後一格的仍留在最後一格。 */
+    /**
+     * 每個組合多一組搭子；已在最後一格的仍留在最後一格。
+     *
+     * @param reachable 原可達組合位元集合。
+     * @return 增加一組搭子後的位元集合。
+     */
     private fun addPartial(reachable: Long): Long = ((reachable and lastColumn.inv()) shl 1) or (reachable and lastColumn)
 
-    /** （面子數, 搭子數）在位元集合中的位元。 */
+    /**
+     * 取得指定（面子數, 搭子數）在位元集合中的位元。
+     *
+     * @param melds 面子數。
+     * @param partials 搭子數。
+     * @return 代表此數量組合的位元遮罩。
+     */
     private fun bit(melds: Int, partials: Int): Long = 1L shl (melds * width + partials)
 
-    /** 面子數為 [melds] 的所有位元。 */
+    /**
+     * 面子數為 [melds] 的所有位元。
+     *
+     * @param melds 要取得的面子數。
+     * @return 對應該面子數的位元遮罩。
+     */
     private fun rowMask(melds: Int): Long = ((1L shl width) - 1) shl (melds * width)
 
     /**
@@ -293,6 +345,10 @@ class StandardMeldSearch(private val targetMelds: Int) {
          * 在 [keys]／[values] 中寫入一筆，遇到已有其他 key 的格子就往下一格找。
          *
          * @return [key] 原本是否不存在。
+         * @param keys 儲存鍵值的表。
+         * @param values 與鍵值表相同位置對應的資料表。
+         * @param key 欲寫入的鍵。
+         * @param value 欲寫入的值。
          */
         private fun insert(keys: LongArray, values: LongArray, key: Long, value: Long): Boolean {
             var slot = slotOf(key, keys.size)
@@ -305,6 +361,10 @@ class StandardMeldSearch(private val targetMelds: Int) {
 
         /**
          * [key] 在容量為 [capacity]（2 的次方）的表中的起始格：乘上常數打散後取最高的幾個位元。
+         *
+         * @param key 要放置或查詢的非負鍵。
+         * @param capacity 雜湊表容量，必須是 2 的次方。
+         * @return 探查開始的格子索引。
          */
         private fun slotOf(key: Long, capacity: Int): Int {
             val mixed = key * HASH_MULTIPLIER

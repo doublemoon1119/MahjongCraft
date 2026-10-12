@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.game
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import kotlinx.serialization.Serializable
 
 /**

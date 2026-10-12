@@ -8,7 +8,13 @@ import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 import kotlin.math.roundToInt
 
-/** 建立 Client Config Screen 與 HUD editor 共用的本地化差異清單。 */
+/**
+ * 建立 Client Config Screen 與 HUD editor 共用的本地化差異清單。
+ *
+ * @param from 比較前的本機設定。
+ * @param to 比較後的本機設定。
+ * @return 列出設定差異的本地化文字。
+ */
 fun clientConfigDifferenceText(from: MahjongClientConfigState, to: MahjongClientConfigState): Text {
     val result = Text.translatable(MinecraftClientConfigScreenKeys.CONFIG_CHANGES).formatted(Formatting.GOLD)
     if (from.autoSortHandEnabled != to.autoSortHandEnabled) {
@@ -30,7 +36,15 @@ fun clientConfigDifferenceText(from: MahjongClientConfigState, to: MahjongClient
     return result
 }
 
-/** 在既有本機差異後附加本局自動操作草稿差異，供設定畫面所有套用入口共用。 */
+/**
+ * 在既有本機差異後附加本局自動操作草稿差異，供設定畫面所有套用入口共用。
+ *
+ * @param from 比較前的本機設定。
+ * @param to 比較後的本機設定。
+ * @param automaticDraft 目前自動操作草稿與其權威基準。
+ * @param displayResolver 取得控制項本地化名稱的解析器。
+ * @return 同時列出本機設定與本局草稿差異的文字。
+ */
 fun clientConfigDifferenceText(
     from: MahjongClientConfigState,
     to: MahjongClientConfigState,

@@ -48,13 +48,29 @@ fun Meld.toPresentation(revealsClosedKanTiles: Boolean, tileOrder: TileOrder): M
  * 實作必須是 best-effort：沒有平台實作、該對局不支援呈現，或呈現本身失敗時都不得拋例外，呼叫端的權威狀態變更不受影響。
  */
 interface GamePresentationPublisher {
-    /** 權威遊戲動作成立後通知平台；平台可據此呈現該動作，例如播放宣告語音。 */
+    /**
+     * 權威遊戲動作成立後通知平台；平台可據此呈現該動作，例如播放宣告語音。
+     *
+     * @param gameId 對局識別碼。
+     * @param actorId 執行該動作的玩家識別碼。
+     * @param action 已成立的權威遊戲動作。
+     */
     fun publishGameActionDeclared(gameId: Uuid, actorId: Uuid, action: GameAction) = Unit
 
-    /** 通知平台呈現一次流局結算。預設 no-op。 */
+    /**
+     * 通知平台呈現一次流局結算。預設 no-op。
+     *
+     * @param gameId 對局識別碼。
+     * @param request 流局結算呈現資料。
+     */
     fun publishExhaustiveDrawSettlement(gameId: Uuid, request: ExhaustiveDrawSettlementPresentationRequest) = Unit
 
-    /** 通知平台在整場對局結束後呈現最終排行，完成後才可返回房間。 */
+    /**
+     * 通知平台在整場對局結束後呈現最終排行，完成後才可返回房間。
+     *
+     * @param gameId 對局識別碼。
+     * @param request 終局排行呈現資料。
+     */
     fun publishMatchSettlement(gameId: Uuid, request: MatchSettlementPresentationRequest) = Unit
 
     /**
@@ -62,6 +78,9 @@ interface GamePresentationPublisher {
      * 提供確認選擇的操作。只需要選一張時不呼叫。
      *
      * 預設 no-op。
+     *
+     * @param gameId 對局識別碼。
+     * @param playerId 開始選牌的玩家識別碼。
      */
     fun publishTileSelectionStarted(gameId: Uuid, playerId: Uuid) = Unit
 
@@ -69,6 +88,9 @@ interface GamePresentationPublisher {
      * 通知平台 [playerId] 的多張選牌已送出或已失效；沒有進行中的選牌時應為 no-op。
      *
      * 預設 no-op。
+     *
+     * @param gameId 對局識別碼。
+     * @param playerId 已送出或失去選牌狀態的玩家識別碼。
      */
     fun publishTileSelectionEnded(gameId: Uuid, playerId: Uuid) = Unit
 
@@ -273,7 +295,12 @@ interface GamePresentationPublisher {
      */
     fun publishWinCelebration(gameId: Uuid, request: WinCelebrationRequest)
 
-    /** 通知平台在胡牌演出之後呈現各贏家詳情與共用分數排行。 */
+    /**
+     * 通知平台在胡牌演出之後呈現各贏家詳情與共用分數排行。
+     *
+     * @param gameId 對局識別碼。
+     * @param request 胡牌結算呈現資料。
+     */
     fun publishWinSettlement(gameId: Uuid, request: WinSettlementPresentationRequest) = Unit
 
     /**
@@ -283,6 +310,9 @@ interface GamePresentationPublisher {
      * 實作必須保證結算排在胡牌演出結束之後才開始，不得依賴兩次獨立非同步呼叫的先後順序。
      *
      * 分別呼叫的那兩個方法保留給不成對的呼叫點（例如流局特殊結果只需要結算）。
+     *
+     * @param gameId 對局識別碼。
+     * @param request 胡牌演出與結算的完整呈現資料。
      */
     fun publishWinPresentation(gameId: Uuid, request: WinPresentationRequest) = Unit
 }

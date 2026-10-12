@@ -16,7 +16,12 @@ class TaiwanWallLayoutTest {
     /** 使用預設 [TaiwanRuleConfig]（王牌 16 張）的布局實例。 */
     private val layout = TaiwanWallLayout(TaiwanRuleConfig())
 
-    /** 建立指定張數、互不相同（依 [IdentifiedTile.id] 區分）的測試牌，牌面本身無關緊要。 */
+    /**
+     * 建立指定張數、互不相同（依 [IdentifiedTile.id] 區分）的測試牌，牌面本身無關緊要。
+     *
+     * @param count 要建立的牌數。
+     * @return 含有 `count` 張測試牌的清單。
+     */
     private fun buildShuffledTiles(count: Int): List<IdentifiedTile> = List(count) {
         FakeIdentifiedTileFactory.create(Tile.Honor.East)
     }

@@ -8,10 +8,20 @@ interface TablePropDescriberRegistry {
     /** registry 是否已凍結。 */
     val isFrozen: Boolean
 
-    /** 登記一個規則模組的桌面物件描述。 */
+    /**
+     * 登記一個規則模組的桌面物件描述。
+     *
+     * @param ruleModuleId 規則模組識別碼。
+     * @param describer 該規則的完整桌面物件描述器。
+     */
     fun register(ruleModuleId: String, describer: TablePropDescriber)
 
-    /** 查詢指定規則模組的描述；未登記時回傳 null。 */
+    /**
+     * 查詢指定規則模組的描述；未登記時回傳 null。
+     *
+     * @param ruleModuleId 規則模組識別碼。
+     * @return 已登記描述器；未登記時為 `null`。
+     */
     fun find(ruleModuleId: String): TablePropDescriber?
 
     /** 凍結 registry，禁止後續登記。 */

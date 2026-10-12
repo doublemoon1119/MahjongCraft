@@ -222,14 +222,26 @@ class OpponentReadingTest {
         assertEquals(NEAR_OUTSIDE_FACTOR * OFF_SUIT_FACTOR, reading.dangerFactor(view, opponent.id, m(3)), absoluteTolerance = 1e-12)
     }
 
-    /** 東家對手，依序打出 [discards]，並有 [melds] 副露。 */
+    /**
+     * 建立依序打出 [discards] 並有 [melds] 副露的東家對手。
+     *
+     * @param discards 依打出順序排列的牌面。
+     * @param melds 對手的副露，預設為空。
+     * @return 對應公開狀態的玩家。
+     */
     private fun player(discards: List<Tile>, melds: List<Meld> = emptyList()): MahjongPlayer = FakeMahjongPlayerFactory.create(
         initialSeat = Wind.EAST,
         hand = Hand(melds = melds),
         discardPile = discards.fold(FakeDiscardPile()) { pile, tile -> pile.discardTile(FakeIdentifiedTileFactory.create(tile)) },
     )
 
-    /** 東家對手，打出 [discardsBefore] 之後以 [declarationTile] 宣告立直。 */
+    /**
+     * 建立打出 [discardsBefore] 後以 [declarationTile] 宣告立直的東家對手。
+     *
+     * @param discardsBefore 宣告前依序打出的牌面。
+     * @param declarationTile 宣告立直時打出的牌面。
+     * @return 帶有立直狀態與宣告舍牌的玩家。
+     */
     private fun riichiPlayer(discardsBefore: List<Tile>, declarationTile: Tile): MahjongPlayer {
         val riichiTile = FakeIdentifiedTileFactory.create(declarationTile)
         val pile = discardsBefore
@@ -242,7 +254,13 @@ class OpponentReadingTest {
         )
     }
 
-    /** 日麻桌上以南家為觀察者的視角；[doraIndicators] 不為空時，牌山只包含這些公開的寶牌指示牌。 */
+    /**
+     * 建立日麻桌上以南家為觀察者的視角；[doraIndicators] 不為空時，牌山只包含這些公開的寶牌指示牌。
+     *
+     * @param players 觀察者以外的桌上玩家。
+     * @param doraIndicators 公開的寶牌指示牌；預設不替換牌山快照。
+     * @return 以南家為評估者的局面視角。
+     */
     private fun riichiView(players: List<MahjongPlayer>, doraIndicators: List<Tile> = emptyList()): PositionView {
         val self = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH, playerRuleState = RiichiPlayerState())
         val snapshot = FakeTableStateFactory.create(
@@ -258,7 +276,12 @@ class OpponentReadingTest {
         return PositionView(snapshot = withIndicators, evaluatorId = self.id)
     }
 
-    /** 以南家為觀察者時 [player] 的快照。 */
+    /**
+     * 取得以南家為觀察者時 [player] 的快照。
+     *
+     * @param player 要取得快照的玩家。
+     * @return 桌況中該玩家的公開狀態。
+     */
     private fun snapshotOf(player: MahjongPlayer): MahjongPlayerSnapshot {
         val self = FakeMahjongPlayerFactory.create(Wind.SOUTH)
         return FakeTableStateFactory.create(players = listOf(player, self))
@@ -267,21 +290,51 @@ class OpponentReadingTest {
             .first { it.id == player.id }
     }
 
+    /**
+     * 建立由他家提供牌面的碰副露。
+     *
+     * @param tile 碰牌的牌面。
+     * @return 使用三張相同牌面的碰副露。
+     */
     private fun pon(tile: Tile): Meld = Meld(
         type = MeldType.PON,
         tiles = List(3) { FakeIdentifiedTileFactory.create(tile) },
         sourceDirection = RelativeDirection.Across,
     )
 
+    /**
+     * 建立吃牌副露。
+     *
+     * @param tiles 依順序組成順子的三張牌面。
+     * @return 使用輸入牌面的吃副露。
+     */
     private fun chi(vararg tiles: Tile): Meld = Meld(
         type = MeldType.CHI,
         tiles = tiles.map(FakeIdentifiedTileFactory::create),
         sourceDirection = RelativeDirection.Left,
     )
 
+    /**
+     * 建立萬子。
+     *
+     * @param value 牌面數字。
+     * @return 指定數字的萬子。
+     */
     private fun m(value: Int): Tile = Tile.Numeric(Tile.Suit.Character, value)
 
+    /**
+     * 建立筒子。
+     *
+     * @param value 牌面數字。
+     * @return 指定數字的筒子。
+     */
     private fun p(value: Int): Tile = Tile.Numeric(Tile.Suit.Dot, value)
 
+    /**
+     * 建立條子。
+     *
+     * @param value 牌面數字。
+     * @return 指定數字的條子。
+     */
     private fun s(value: Int): Tile = Tile.Numeric(Tile.Suit.Bamboo, value)
 }

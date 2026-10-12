@@ -20,7 +20,10 @@ import kotlin.uuid.Uuid
 
 /** 驗證三人日麻驗收情境的桌況能重現拔北、搶北與連續補牌。 */
 class ThreePlayerRiichiDebugGameScenariosTest {
+    /** 提供三人日麻情境的登錄表。 */
     private val registry = DebugGameScenarioRegistry()
+
+    /** 檢查三人日麻情境結果的驗證器。 */
     private val scenarioValidator = DebugGameScenarioValidator(scenarioModuleRegistry)
 
     /** 所有三人情境在兩種赤寶牌設定下都通過權威驗證；呼叫者是莊家且輪到自己，三家的自風依序是東、南、西。 */
@@ -144,14 +147,26 @@ class ThreePlayerRiichiDebugGameScenariosTest {
         scenarioValidator.validate(context, result.copy(game = result.game.copy(tableState = pulled)))
     }
 
+    /**
+     * 由 registry 建立指定三人日麻情境的桌況。
+     *
+     * @param idPath 情境識別碼中 namespace 後的路徑。
+     * @return 建立後的對局桌況。
+     */
     private fun build(idPath: String): TableState = registry.get("mahjongcraft:$idPath")!!
         .build(createThreePlayerRiichiScenarioContext())
         .game
         .tableState
 
+    /** @return 目前桌況設定對應的規則模組。 */
     private fun TableState.module(): MahjongRuleModule<*> = scenarioModuleRegistry.getModule(config)
 
-    /** 目前玩家拔北，再把 [replacement] 當成補到的牌放進手上；補牌本身由正式流程負責，這裡只模擬結果。 */
+    /**
+     * 目前玩家拔北後，直接設定其補牌以模擬結果；不執行正式補牌流程。
+     *
+     * @param replacement 模擬補到的牌。
+     * @return 更新拔北狀態與目前玩家摸牌位後的桌況。
+     */
     private fun TableState.pullNorthThenDraw(replacement: IdentifiedTile): TableState {
         val pulled = assertNotNull(module().applyTileSetAsideAction(this, currentPlayer.id, PULL_NORTH_GAME_ACTION))
         val player = pulled.currentPlayer
@@ -160,7 +175,13 @@ class ThreePlayerRiichiDebugGameScenariosTest {
         )
     }
 
-    /** [offset] 座位能否搶下家拔出的 [north] 榮和。 */
+    /**
+     * 查詢指定座位能否搶座位偏移 1 的玩家拔出的北榮和。
+     *
+     * @param offset 回應玩家相對於目前玩家的座位偏移。
+     * @param north 被拔出的北牌。
+     * @return 合法反應包含榮和時為 true。
+     */
     private fun TableState.canRobPulledNorth(offset: Int, north: IdentifiedTile): Boolean = scenarioValidator().getLegalActions(
         tableState = this,
         player = waitingSeat(offset),
@@ -169,6 +190,7 @@ class ThreePlayerRiichiDebugGameScenariosTest {
         incomingTile = north,
     ).any { it is GameAction.Ron }
 
+    /** 三人日麻情境共用的規則數值與牌面。 */
     private companion object {
         /** 三人日麻房間設定可選的赤寶牌張數。 */
         val RED_DORA_COUNTS: List<Int> = listOf(0, 2)
@@ -179,9 +201,16 @@ class ThreePlayerRiichiDebugGameScenariosTest {
         /** 三人日麻開局配牌後的活牌張數。 */
         const val LIVE_TILES_AFTER_DEAL: Int = 55
 
+        /** 一筒，暗槓候選牌面。 */
         val ONE_DOT: Tile = Tile.Numeric(Tile.Suit.Dot, 1)
+
+        /** 九筒，暗槓候選牌面。 */
         val NINE_DOT: Tile = Tile.Numeric(Tile.Suit.Dot, 9)
+
+        /** 一索，暗槓候選牌面。 */
         val ONE_BAMBOO: Tile = Tile.Numeric(Tile.Suit.Bamboo, 1)
+
+        /** 四索，拔北補牌後的和牌張。 */
         val FOUR_BAMBOO: Tile = Tile.Numeric(Tile.Suit.Bamboo, 4)
     }
 }

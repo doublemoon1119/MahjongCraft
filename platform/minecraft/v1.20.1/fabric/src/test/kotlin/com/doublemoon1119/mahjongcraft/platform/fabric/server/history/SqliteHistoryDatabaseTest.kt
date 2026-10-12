@@ -240,7 +240,12 @@ class SqliteHistoryDatabaseTest {
         assertEquals(setOf(event.matchId), reopened.readReplayIds())
     }
 
-    /** 最小但具備所有關聯列的封存測資。 */
+    /**
+     * 建立含有最小關聯資料的封存測資。
+     *
+     * @param matchId 封存記錄所屬的對局 ID。
+     * @return 含有一位參與者與一回合的封存記錄。
+     */
     private fun archive(matchId: String): HistoryArchiveRecord = HistoryArchiveRecord(
         matchId = matchId,
         tableId = "00000000-0000-0000-0000-000000000002",
@@ -253,7 +258,13 @@ class SqliteHistoryDatabaseTest {
         replayPayload = "{}",
     )
 
-    /** 建立固定的測試事件。 */
+    /**
+     * 建立固定內容的暫存事件。
+     *
+     * @param sequence 事件序號。
+     * @param payload 事件內容。
+     * @return 對應對局的暫存事件記錄。
+     */
     private fun pending(sequence: Long, payload: String): PendingHistoryRecord = PendingHistoryRecord(
         matchId = "00000000-0000-0000-0000-000000000001",
         sequence = sequence,

@@ -115,7 +115,7 @@ data class Game(
      * [playerId] 是否由 AI 操控。
      *
      * @param playerId 欲查詢的玩家。
-     * @return 由 AI 操控時為 。
+     * @return 此玩家由 AI 操控時為 `true`，否則為 `false`。
      */
     fun isAi(playerId: Uuid): Boolean = playerId in aiPlayerStrategyKeys
 }

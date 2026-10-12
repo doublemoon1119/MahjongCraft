@@ -14,6 +14,7 @@ import kotlin.uuid.Uuid
 
 /** [ClientAutomaticControlDraftSession] 的草稿、stale 與 ACK 狀態測試。 */
 class ClientAutomaticControlDraftSessionTest {
+    /** 未修改的草稿工作階段會跟隨較新的權威快照。 */
     @Test
     fun `clean session follows newer authority snapshot`() {
         val initial = snapshot(revision = 1L, enabled = emptySet())
@@ -28,6 +29,7 @@ class ClientAutomaticControlDraftSessionTest {
         assertFalse(session.state().stale)
     }
 
+    /** 已修改草稿保留本地選擇，外部更新使其標記為過期。 */
     @Test
     fun `dirty session preserves draft and becomes stale on external update`() {
         val initial = snapshot(revision = 1L, enabled = emptySet())
@@ -44,6 +46,7 @@ class ClientAutomaticControlDraftSessionTest {
         assertFalse(session.state().dirty)
     }
 
+    /** 配對的接受結果更新基準快照並保留關閉意圖。 */
     @Test
     fun `matching accepted completion updates baseline and remembers close intent`() {
         val initial = snapshot(revision = 1L, enabled = emptySet())
@@ -63,6 +66,7 @@ class ClientAutomaticControlDraftSessionTest {
         assertFalse(session.state().pending)
     }
 
+    /** 拒絕結果保留草稿且不觸發關閉。 */
     @Test
     fun `rejected completion keeps draft and does not close`() {
         val initial = snapshot(revision = 1L, enabled = emptySet())
@@ -81,6 +85,7 @@ class ClientAutomaticControlDraftSessionTest {
         assertFalse(session.state().pending)
     }
 
+    /** 無關的完成結果不能結束目前 pending 的請求。 */
     @Test
     fun `unrelated completion cannot finish pending request`() {
         val initial = snapshot()
@@ -93,6 +98,7 @@ class ClientAutomaticControlDraftSessionTest {
         assertTrue(session.state().pending)
     }
 
+    /** 對局切換重置生命週期，clear 移除先前狀態。 */
     @Test
     fun `different game replaces lifecycle and clear removes previous state`() {
         val initial = snapshot(revision = 4L, enabled = setOf("test:auto"))
@@ -108,7 +114,14 @@ class ClientAutomaticControlDraftSessionTest {
         assertTrue(session.state().enabledControlIds.isEmpty())
     }
 
-    /** 建立支援單一測試控制的權威快照。 */
+    /**
+     * 建立支援單一測試控制的權威快照。
+     *
+     * @param gameId 快照所屬對局 ID。
+     * @param revision 對局內的快照版本。
+     * @param enabled 已啟用的測試控制項 ID。
+     * @return 支援 `test:auto` 的權威快照。
+     */
     private fun snapshot(
         gameId: String = Uuid.random().toString(),
         revision: Long = 1L,
@@ -120,7 +133,13 @@ class ClientAutomaticControlDraftSessionTest {
         enabledControlIds = enabled,
     )
 
-    /** 依 [snapshot] 建立更新請求。 */
+    /**
+     * 依 [snapshot] 建立更新請求。
+     *
+     * @param snapshot 請求所依據的權威快照。
+     * @param enabled 請求欲啟用的控制項 ID。
+     * @return 使用該快照對局與版本的更新請求。
+     */
     private fun request(snapshot: AutomaticControlSnapshotDto, enabled: Set<String>): AutomaticControlUpdateRequestDto = AutomaticControlUpdateRequestDto(
         requestId = Uuid.random().toString(),
         gameId = snapshot.gameId,
@@ -128,7 +147,14 @@ class ClientAutomaticControlDraftSessionTest {
         enabledControlIds = enabled,
     )
 
-    /** 建立已配對的 client completion。 */
+    /**
+     * 建立與請求配對的客戶端完成事件。
+     *
+     * @param request 被完成的更新請求。
+     * @param kind 伺服器回覆的結果種類。
+     * @param snapshot 結果攜帶的權威快照，若無則為 `null`。
+     * @return 與請求 ID 和對局 ID 配對的完成事件。
+     */
     private fun completion(
         request: AutomaticControlUpdateRequestDto,
         kind: AutomaticControlUpdateResultKindDto,

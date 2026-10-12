@@ -17,7 +17,10 @@ class PlayerPortraitSourceRegistryImpl : PlayerPortraitSourceRegistry {
         val provider: PlayerPortraitSourceProvider,
     )
 
+    /** 以來源識別碼索引的登記項目。 */
     private val entries = mutableMapOf<String, Entry>()
+
+    /** 凍結後固定使用的解析順序。 */
     private var orderedEntries: List<Entry> = emptyList()
 
     override var isFrozen: Boolean = false
@@ -53,6 +56,11 @@ class PlayerPortraitSourceRegistryImpl : PlayerPortraitSourceRegistry {
         isFrozen = true
     }
 
+    /**
+     * 依優先順序由高至低、同分依來源識別碼排序。
+     *
+     * @return 登記項目的解析順序。
+     */
     private fun sortedEntries(): List<Entry> = entries.values.sortedWith(
         compareByDescending<Entry> { it.priority }.thenBy { it.providerId },
     )

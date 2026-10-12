@@ -142,7 +142,13 @@ class StressTestEnvironmentTest {
         runtimes.forEach { runtime -> assertEquals(false, state.historyRecordingState.terminalByMatchId[runtime.matchId()]?.completed) }
     }
 
-    /** 在 [environment] 中同時打完 [count] 場三人對局；待寫事件太多時等待背景工作追上，模擬伺服器 tick 之間的時間。 */
+    /**
+     * 輪流推進多場三人對局至結束，待寫事件過多時暫停以等待背景寫入。
+     *
+     * @param environment 各場共用的測試資料環境。
+     * @param count 要建立並完成的場數。
+     * @return 已完成的各場推進器，保留其場次與場地識別碼供斷言使用。
+     */
     private suspend fun playMatches(environment: StressTestEnvironment, count: Int) = withTimeout(2.minutes) {
         val runtimes = List(count) {
             HeadlessFlowHistoryRuntime.create(
@@ -159,10 +165,10 @@ class StressTestEnvironmentTest {
         runtimes
     }
 
-    /** 新暫存資料夾中的資料庫位置。 */
+    /** @return 新建暫存資料夾中的資料庫路徑；此時尚未建立資料庫檔案。 */
     private fun databasePath(): Path = createTempDirectory("mahjongcraft-stress-test-").resolve("stress-test-history.sqlite")
 
-    /** 以測試用 registry 建立環境工廠。 */
+    /** @return 使用內建規則、測試排程器與獨立位置索引的環境工廠。 */
     private fun factory() = StressTestEnvironmentFactory(
         registries = bundledPersistenceRegistries(),
         json = Json,
@@ -181,6 +187,7 @@ class StressTestEnvironmentTest {
         override val aiDecisionParallelism = 1
     }
 
+    /** 測試推進與待寫佇列的控制數值。 */
     private companion object {
         /** 待寫事件超過這個數量時等待背景工作追上。 */
         const val BACKLOG_PAUSE = 64

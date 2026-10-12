@@ -32,20 +32,43 @@ object ShowcaseTimelineCurves {
     /** 展示中卡片上下晃動的角速度（弧度／tick）。 */
     const val BOB_SPEED: Double = 0.22
 
-    /** 線性內插。 */
+    /**
+     * 線性內插。
+     *
+     * @param start 起點數值。
+     * @param end 終點數值。
+     * @param progress 起訖間進度。
+     * @return 依進度內插的數值。
+     */
     fun lerp(
         start: Double,
         end: Double,
         progress: Double,
     ): Double = start + (end - start) * progress
 
-    /** 兩端斜率為 0 的平滑曲線；輸入應在 0..1。 */
+    /**
+     * 兩端斜率為 0 的平滑曲線；輸入應在 0..1。
+     *
+     * @param value 輸入進度。
+     * @return 平滑後的進度值。
+     */
     fun smoothStep(value: Double): Double = value * value * (3.0 - 2.0 * value)
 
-    /** 起步快、收尾慢的二次曲線；輸入應在 0..1。 */
+    /**
+     * 起步快、收尾慢的二次曲線；輸入應在 0..1。
+     *
+     * @param value 輸入進度。
+     * @return ease-out 後的進度值。
+     */
     fun easeOut(value: Double): Double = 1.0 - (1.0 - value) * (1.0 - value)
 
-    /** 收尾淡出的縮放係數：[fadeStart] 之前為 1，之後在 [WinCelebrationShowcaseEntity.FADE_OUT_TICKS] 內平滑降到 0。 */
+    /**
+     * 收尾淡出的縮放係數：[fadeStart] 之前為 1，之後在 [WinCelebrationShowcaseEntity.FADE_OUT_TICKS] 內平滑降到 0。
+     *
+     * @param elapsed 已經過的 tick。
+     * @param fadeStart 開始淡出的 tick。
+     * @return 介於 0 到 1 的縮放係數。
+     */
     fun fadeScale(
         elapsed: Double,
         fadeStart: Double,
@@ -55,19 +78,35 @@ object ShowcaseTimelineCurves {
         1.0 - smoothStep(((elapsed - fadeStart) / WinCelebrationShowcaseEntity.FADE_OUT_TICKS).coerceIn(0.0, 1.0))
     }
 
-    /** 起飛裝備的可見度：抵達後在 [ELYTRA_FADE_START_TICK]～[EQUIPMENT_FADE_END_TICK] 間平滑降到 0。 */
+    /**
+     * 起飛裝備的可見度：抵達後在 [ELYTRA_FADE_START_TICK]～[EQUIPMENT_FADE_END_TICK] 間平滑降到 0。
+     *
+     * @param elapsed 已經過的 tick。
+     * @return 起飛裝備的可見比例。
+     */
     fun equipmentVisibility(elapsed: Double): Double = when {
         elapsed < ELYTRA_FADE_START_TICK -> 1.0
         elapsed < EQUIPMENT_FADE_END_TICK -> 1.0 - smoothStep((elapsed - ELYTRA_FADE_START_TICK) / (EQUIPMENT_FADE_END_TICK - ELYTRA_FADE_START_TICK))
         else -> 0.0
     }
 
-    /** 起飛裝備由小到大具現的進度：[ELYTRA_APPEAR_TICK]～[ELYTRA_OPEN_TICK] 間由 0 升到 1。 */
+    /**
+     * 起飛裝備由小到大具現的進度：[ELYTRA_APPEAR_TICK]～[ELYTRA_OPEN_TICK] 間由 0 升到 1。
+     *
+     * @param elapsed 已經過的 tick。
+     * @return 介於 0 到 1 的具現進度。
+     */
     fun equipmentAppearance(elapsed: Double): Double = easeOut(
         ((elapsed - ELYTRA_APPEAR_TICK) / (ELYTRA_OPEN_TICK - ELYTRA_APPEAR_TICK)).coerceIn(0.0, 1.0),
     )
 
-    /** 和牌張的垂直晃動；和牌張本體與接觸波紋共用這一個來源。 */
+    /**
+     * 和牌張的垂直晃動；和牌張本體與接觸波紋共用這一個來源。
+     *
+     * @param elapsed 已經過的 tick。
+     * @param fade 晃動振幅使用的淡出比例。
+     * @return 相對展示位置的垂直位移。
+     */
     fun winningTileBobOffset(
         elapsed: Double,
         fade: Double,
@@ -77,6 +116,9 @@ object ShowcaseTimelineCurves {
      * 距離最近一次晃動最低點的 tick 數。
      *
      * 範圍為半個週期的正負值：負值表示正在下降、尚未到達最低點；正值表示已過最低點、正在上升。
+     *
+     * @param elapsed 已經過的 tick。
+     * @return 距離最近最低點的 tick 數。
      */
     fun winningTileTicksFromBottom(elapsed: Double): Double {
         val twoPi = PI * 2.0
@@ -89,6 +131,9 @@ object ShowcaseTimelineCurves {
      * 引信燃燒進度為 [fuse]（0..1）時 TNT 是否閃白。
      *
      * 越接近爆炸，閃爍週期越短、每次亮起的時間占比越高。
+     *
+     * @param fuse 引信燃燒進度，預期介於 0 到 1。
+     * @return 此時間點 TNT 是否應顯示閃白。
      */
     fun tntFlashVisible(fuse: Double): Boolean {
         val cycle = 8.0 - fuse * 6.5

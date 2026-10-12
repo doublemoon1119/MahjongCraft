@@ -19,7 +19,14 @@ import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 import org.koin.core.annotation.Single
 
-/** 註冊限制管理員使用的 server config reload 與 show 指令。 */
+/**
+ * 註冊限制管理員使用的 server config reload 與 show 指令。
+ *
+ * @property configManager 伺服器設定載入與 reload 管理器。
+ * @property mahjongTileCollisionService 將有效碰撞設定套用至麻將牌的服務。
+ * @property scope 執行設定 reload 的應用協程作用域。
+ * @property dispatchers 提供伺服器主執行緒 dispatcher。
+ */
 @Single
 class FabricServerConfigCommand(
     private val configManager: FabricServerConfigManager,
@@ -51,7 +58,12 @@ class FabricServerConfigCommand(
         }
     }
 
-    /** 重新載入設定並向執行者回報結果。 */
+    /**
+     * 重新載入設定並向執行者回報結果。
+     *
+     * @param source 發起 reload 的管理員命令來源。
+     * @return 表示已排程重新載入的成功結果碼，不代表設定已載入成功。
+     */
     private fun reload(source: ServerCommandSource): Int {
         scope.launch {
             val result = configManager.reload()
@@ -96,6 +108,9 @@ class FabricServerConfigCommand(
 
     /**
      * 顯示目前生效的設定，以單則條列訊息提供各 TOML 分類的獨立懸停詳情。
+     *
+     * @param source 發起 show 的管理員命令來源。
+     * @return 訊息送出後的成功結果碼。
      */
     private fun show(source: ServerCommandSource): Int {
         logger.debug(

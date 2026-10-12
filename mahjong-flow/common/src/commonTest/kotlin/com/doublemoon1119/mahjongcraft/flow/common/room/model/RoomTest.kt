@@ -8,8 +8,10 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
+/** 驗證房間容量、開局準備狀態與玩家分類。 */
 class RoomTest {
 
+    /** 玩家人數達到上限時房間已滿。 */
     @Test
     fun `test isFull returns true when players reach max capacity`() {
         val config = FakeMahjongRuleConfig(minPlayers = 2, maxPlayers = 3)
@@ -24,6 +26,7 @@ class RoomTest {
         assertTrue(room.isFull, "Room should be full when player count equals max capacity.")
     }
 
+    /** 玩家人數未達上限時房間尚有空位。 */
     @Test
     fun `test isFull returns false when room has space`() {
         val config = FakeMahjongRuleConfig(minPlayers = 2, maxPlayers = 4)
@@ -38,6 +41,7 @@ class RoomTest {
         assertFalse(room.isFull, "Room should not be full when there is remaining capacity.")
     }
 
+    /** 房間人數足夠且非房主玩家皆已準備時可開局。 */
     @Test
     fun `test canStart returns true when other players are ready and host is not in ready list`() {
         val config = FakeMahjongRuleConfig(minPlayers = 2, maxPlayers = 4)
@@ -59,6 +63,7 @@ class RoomTest {
         assertTrue(room.canStart, "Room should be able to start when all players except the host are ready.")
     }
 
+    /** 玩家人數低於規則下限時人數無效。 */
     @Test
     fun `test isPlayerCountValid returns false when player count is below minimum`() {
         val config = FakeMahjongRuleConfig(minPlayers = 2, maxPlayers = 4)
@@ -74,6 +79,7 @@ class RoomTest {
         assertFalse(room.isPlayerCountValid, "Player count should be invalid when below the configured minimum.")
     }
 
+    /** 玩家人數落在規則允許範圍時人數有效。 */
     @Test
     fun `test isPlayerCountValid returns true when player count is within range`() {
         val config = FakeMahjongRuleConfig(minPlayers = 2, maxPlayers = 4)
@@ -90,6 +96,7 @@ class RoomTest {
         assertTrue(room.isPlayerCountValid, "Player count should be valid when within the configured range.")
     }
 
+    /** 玩家人數低於規則下限時不可開局。 */
     @Test
     fun `test canStart returns false when player count is below minimum`() {
         val config = FakeMahjongRuleConfig(minPlayers = 2, maxPlayers = 4)
@@ -107,6 +114,7 @@ class RoomTest {
         assertFalse(room.canStart, "Room should not start if the number of players is below the minimum required.")
     }
 
+    /** 任一非房主玩家尚未準備時不可開局。 */
     @Test
     fun `test canStart returns false when some non-host players are not ready`() {
         val config = FakeMahjongRuleConfig(minPlayers = 2, maxPlayers = 4)
@@ -128,6 +136,7 @@ class RoomTest {
         assertFalse(room.canStart, "Room should not start if any player (other than host) is not ready.")
     }
 
+    /** 準備清單包含房間外玩家時不可開局。 */
     @Test
     fun `test canStart returns false when ready players contains external player`() {
         val config = FakeMahjongRuleConfig(minPlayers = 2, maxPlayers = 4)
@@ -149,6 +158,7 @@ class RoomTest {
         assertFalse(room.canStart, "Room should not start if ready list contains players not present in the room.")
     }
 
+    /** AI 策略集合中的玩家會被識別為 AI。 */
     @Test
     fun `test isAi returns true for players in ai set`() {
         val aiId = Uuid.random()
@@ -163,6 +173,7 @@ class RoomTest {
         assertFalse(room.isAi(Uuid.random()), "isAi should return false for unknown ID.")
     }
 
+    /** 人類玩家清單會排除 AI 玩家。 */
     @Test
     fun `test humanPlayerIds filters out ai players`() {
         val hostId = Uuid.random()

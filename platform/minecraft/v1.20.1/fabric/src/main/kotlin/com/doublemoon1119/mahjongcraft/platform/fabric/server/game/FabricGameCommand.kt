@@ -96,12 +96,22 @@ class FabricGameCommand(
         }
     }
 
-    /** 顯示執行指令玩家目前的手牌與可執行動作。 */
+    /**
+     * 顯示執行指令玩家目前的手牌與可執行動作。
+     *
+     * @param source 指令呼叫來源。
+     * @return Brigadier 命令結果碼。
+     */
     private fun hand(source: ServerCommandSource): Int = withPlayer(source) { player ->
         gameActionService.showHand(player)
     }
 
-    /** 打出指令帶入的候選手牌。 */
+    /**
+     * 打出指令帶入的候選手牌。
+     *
+     * @param context 含有指令來源與手牌候選 token 的 Brigadier 情境。
+     * @return Brigadier 命令結果碼。
+     */
     private fun discard(context: CommandContext<ServerCommandSource>): Int = withPlayer(context.source) { player ->
         val token = StringArgumentType.getString(context, TILE_ARGUMENT)
         val playerId = player.uuid.toKotlinUuid()
@@ -115,7 +125,13 @@ class FabricGameCommand(
         }
     }
 
-    /** 執行指令帶入的候選動作與額外選牌。 */
+    /**
+     * 執行指令帶入的候選動作與額外選牌。
+     *
+     * @param context 含有指令來源與動作候選 token 的 Brigadier 情境。
+     * @param tileTokens 額外選取的手牌候選 token。
+     * @return Brigadier 命令結果碼。
+     */
     private fun act(context: CommandContext<ServerCommandSource>, tileTokens: List<String>): Int = withPlayer(context.source) { player ->
         val token = StringArgumentType.getString(context, ACTION_ARGUMENT)
         val playerId = player.uuid.toKotlinUuid()
@@ -136,14 +152,26 @@ class FabricGameCommand(
         }
     }
 
-    /** 解析執行指令的玩家，非玩家（例如主控台）執行時直接以指令失敗回應。 */
+    /**
+     * 解析執行指令的玩家，非玩家（例如主控台）執行時直接以指令失敗回應。
+     *
+     * @param source 指令呼叫來源。
+     * @param action 以來源玩家執行的動作。
+     * @return Brigadier 命令結果碼。
+     */
     private fun withPlayer(source: ServerCommandSource, action: (ServerPlayerEntity) -> Unit): Int {
         val player = source.player ?: return COMMAND_FAILURE
         action(player)
         return COMMAND_SUCCESS
     }
 
-    /** 列出執行指令玩家目前手牌，作為 `discard` 的候選建議，tooltip 顯示牌面文字。 */
+    /**
+     * 列出執行指令玩家目前手牌，作為 `discard` 的候選建議，tooltip 顯示牌面文字。
+     *
+     * @param context Brigadier 補全情境。
+     * @param builder 收集候選與 tooltip 並建立建議結果。
+     * @return 非同步建立的候選建議。
+     */
     private fun suggestHandTiles(
         context: CommandContext<ServerCommandSource>,
         builder: SuggestionsBuilder,
@@ -166,7 +194,13 @@ class FabricGameCommand(
         return future
     }
 
-    /** 列出執行指令玩家目前合法的特殊動作，作為 `action` 的候選建議，tooltip 顯示動作文字。 */
+    /**
+     * 列出執行指令玩家目前合法的特殊動作，作為 `action` 的候選建議，tooltip 顯示動作文字。
+     *
+     * @param context Brigadier 補全情境。
+     * @param builder 收集候選與 tooltip 並建立建議結果。
+     * @return 非同步建立的候選建議。
+     */
     private fun suggestActions(
         context: CommandContext<ServerCommandSource>,
         builder: SuggestionsBuilder,
@@ -198,7 +232,13 @@ class FabricGameCommand(
         return future
     }
 
-    /** 列出目前 action 引數指定動作可接受的額外手牌候選。 */
+    /**
+     * 列出目前 action 引數指定動作可接受的額外手牌候選。
+     *
+     * @param context 含有玩家來源及 action token 的 Brigadier 情境。
+     * @param builder 收集目前選牌 token 的候選。
+     * @return 非同步建立的候選建議。
+     */
     private fun suggestActionTiles(
         context: CommandContext<ServerCommandSource>,
         builder: SuggestionsBuilder,
@@ -231,7 +271,11 @@ class FabricGameCommand(
         return future
     }
 
-    /** 將手牌候選加入目前的 Brigadier 建議清單。 */
+    /**
+     * 將手牌候選加入目前的 Brigadier 建議清單。
+     *
+     * @param candidate 要加入建議清單的手牌候選。
+     */
     private fun SuggestionsBuilder.suggestTile(candidate: HandTileCandidate) {
         suggest(
             StringArgumentType.escapeIfRequired(candidate.token),
@@ -239,7 +283,13 @@ class FabricGameCommand(
         )
     }
 
-    /** 將 greedy string 引數拆成不含空白的選牌 token。 */
+    /**
+     * 將 greedy string 引數拆成不含空白的選牌 token。
+     *
+     * @param context 含有 greedy string 值的 Brigadier 情境。
+     * @param argumentName 要讀取的引數名稱。
+     * @return 依輸入順序排列的非空白 token。
+     */
     private fun parseTileTokens(context: CommandContext<ServerCommandSource>, argumentName: String): List<String> = StringArgumentType.getString(context, argumentName).split(Regex("\\s+")).filter(String::isNotBlank)
 
     private companion object {

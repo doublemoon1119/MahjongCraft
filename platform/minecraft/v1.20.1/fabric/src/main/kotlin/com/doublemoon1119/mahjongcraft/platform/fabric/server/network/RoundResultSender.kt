@@ -64,7 +64,15 @@ class RoundResultSender(
         ranking = request.scoreRanking,
     )
 
-    /** 組成結算結果並送給 [ranking] 中的真人玩家；對局已不存在時不送出。 */
+    /**
+     * 組成結算結果並送給 [ranking] 中的真人玩家；對局已不存在時不送出。
+     *
+     * @param gameId 對局 UUID。
+     * @param outcomeId 和牌結果或流局原因 ID。
+     * @param kind 和牌或流局類型。
+     * @param roundContinues 結算後本局是否繼續。
+     * @param ranking 結算前後的分數與名次。
+     */
     private fun send(
         gameId: Uuid,
         outcomeId: String,

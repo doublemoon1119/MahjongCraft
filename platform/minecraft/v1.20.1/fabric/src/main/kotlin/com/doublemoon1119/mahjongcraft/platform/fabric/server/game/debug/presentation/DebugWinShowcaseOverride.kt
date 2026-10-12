@@ -7,40 +7,27 @@ import java.util.concurrent.ConcurrentHashMap
 import kotlin.uuid.Uuid
 
 /**
- * 開發用的一次性役滿 showcase 覆寫：讓**下一次**該桌真實胡牌一定播放指定的 showcase cue。
+ * 在開發環境覆寫某桌下一次和牌的展示提示。
+ * 只修改 [WinCelebrationRequest] 的展示理由，不修改權威役種、翻符或分數；
+ * 展示定義仍可影響演出是否暫停整桌操作。
  *
- * 存在理由：`RiichiWinCelebrationCueResolver` 只有役滿才回傳非 null 的 cue，而 `cue != null` 正是
- * 「這次胡牌會不會有需要觀看的 showcase」的判準。中途胡牌把「顯示什麼」與「是否阻塞全桌」分開建模
- * 之後，最難湊到、也最需要實機驗證的情境就是「役滿 showcase 期間擋住全桌 → showcase 結束後其他仍在
- * 局中的玩家立刻恢復可操作，而結算面板與收尾蓋牌動畫都不再阻塞」。真的湊出一副役滿來驗證這條路徑
- * 並不實際，因此提供這個覆寫。
+ * [arm] 只在開發環境接受設定；[consume] 取走即移除，不再檢查環境。
+ * 必須在判斷演出是否阻塞整桌之前套用 [applyTo]，讓演出與阻塞設定一致。
  *
- * ## 只能動呈現，動不到權威資料
- *
- * 覆寫的對象是 [WinCelebrationRequest]，而這個型別**只**攜帶 `winningTileId`、`isTsumo` 與每位贏家的
- * `seatIndex` 與展示理由 `cueIds`——沒有役種、沒有番數、沒有符數、沒有分數。分數結算走的是完全
- * 獨立的 `WinSettlementPresentationRequest`，權威分數更早就已經由規則模組算完並寫進
- * `TableState`。因此這個覆寫在結構上不可能改到權威役種、番數、分數或結算結果，它能改變的只有
- * 「要不要播 showcase、播哪一段」，以及隨之而來的阻塞判定。
- *
- * ## 一次性
- *
- * [consume] 取走即清除：武裝一次只影響下一次胡牌，不會讓該桌後續每一次胡牌都變成役滿演出。
- *
- * 只在 [MinecraftEnvironment.isDevelopment] 為 `true` 時可武裝；正式產物裡 [arm] 直接拒絕，
- * [consume] 永遠回傳 `null`。
- *
- * @property minecraftEnvironment 查詢目前是否為開發環境。
+ * @property minecraftEnvironment 開發環境判斷來源。
  */
 @Single
 class DebugWinShowcaseOverride(
     private val minecraftEnvironment: MinecraftEnvironment,
 ) {
+    /** 各牌桌尚未消耗的一次性展示理由識別碼。 */
     private val armedCuesByTableId = ConcurrentHashMap<Uuid, String>()
 
     /**
      * 替 [tableId] 武裝一次性覆寫。
      *
+     * @param tableId 要覆寫下一次胡牌演出的牌桌。
+     * @param cueKey 要使用的展示理由識別碼。
      * @return 是否成功武裝；非開發環境一律為 `false`。
      */
     fun arm(tableId: Uuid, cueKey: String): Boolean {
@@ -49,15 +36,28 @@ class DebugWinShowcaseOverride(
         return true
     }
 
-    /** 取走並清除 [tableId] 的武裝；沒有武裝時回傳 `null`。 */
+    /**
+     * 取走並清除牌桌的一次性覆寫。
+     *
+     * @param tableId 牌桌識別碼。
+     * @return 已設定的展示理由識別碼；沒有設定時為 null。
+     */
     fun consume(tableId: Uuid): String? = armedCuesByTableId.remove(tableId)
 
-    /** 清除 [tableId] 的武裝；該桌對局結束或桌子被破壞時呼叫。 */
+    /**
+     * 清除指定牌桌的一次性覆寫。
+     *
+     * @param tableId 對局結束或牌桌被破壞的牌桌識別碼。
+     */
     fun clear(tableId: Uuid) {
         armedCuesByTableId.remove(tableId)
     }
 
-    /** 目前仍有武裝的桌子，供指令回報影響範圍。 */
+    /**
+     * 取得仍有一次性展示覆寫的桌子。
+     *
+     * @return 呼叫當下取得的識別碼集合副本；後續設定變更不會修改此集合。
+     */
     fun armedTableIds(): Set<Uuid> = armedCuesByTableId.keys.toSet()
 
     /**
@@ -65,6 +65,10 @@ class DebugWinShowcaseOverride(
      *
      * 必須在 `blocksTable` 判定**之前**套用，否則 showcase 會播、卻不擋全桌，
      * 剛好把這個覆寫想驗證的那條路徑跳過去。
+     *
+     * @param tableId 演出所屬牌桌。
+     * @param request 原始胡牌演出請求。
+     * @return 消耗覆寫後的請求；沒有覆寫時回傳原請求。
      */
     fun applyTo(tableId: Uuid, request: WinCelebrationRequest): WinCelebrationRequest {
         val cue = consume(tableId) ?: return request

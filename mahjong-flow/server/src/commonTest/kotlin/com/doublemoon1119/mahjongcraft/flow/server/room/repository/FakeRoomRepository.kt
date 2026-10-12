@@ -7,6 +7,7 @@ import kotlin.uuid.Uuid
  * 供測試使用的 [RoomRepository] 簡易實作。
  */
 class FakeRoomRepository : RoomRepository {
+    /** 以房間 ID 索引的測試房間資料。 */
     private val rooms = mutableMapOf<Uuid, Room>()
     override suspend fun getRoom(id: Uuid): Room? = rooms[id]
     override suspend fun setRoom(room: Room) {

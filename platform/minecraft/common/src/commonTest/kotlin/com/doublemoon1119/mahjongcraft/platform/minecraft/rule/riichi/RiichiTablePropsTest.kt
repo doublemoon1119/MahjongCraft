@@ -21,8 +21,17 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-/** 驗證日麻桌上點棒的描述內容，以及換算出的位置與原本的擺法相同。 */
+/** 驗證日麻桌上點棒的描述內容，以及換算出的世界位置與朝向。 */
 class RiichiTablePropsTest {
+    /**
+     * 建立可指定立直、莊家、本場與供託數的四人日麻桌況。
+     *
+     * @param riichiSeatIndices 已立直玩家的座位索引。
+     * @param dealerSeatIndex 莊家座位索引。
+     * @param comboCount 本場數。
+     * @param stickPotCount 尚未收取的立直棒數。
+     * @return 依指定玩家狀態建立的桌況。
+     */
     private fun state(
         riichiSeatIndices: Set<Int> = emptySet(),
         dealerSeatIndex: Int = 0,
@@ -45,6 +54,12 @@ class RiichiTablePropsTest {
         )
     }
 
+    /**
+     * 將桌面物件的座位錨點換算成世界座標。
+     *
+     * @param facing 桌子的世界朝向。
+     * @return 物件的世界座標與朝向。
+     */
     private fun TablePropPlacement.place(facing: MahjongTableFacing): MahjongTileWallPlacement = MahjongTileTableLayout.seatAnchorPlacement(
         controllerX = CONTROLLER_X,
         controllerY = CONTROLLER_Y,
@@ -56,6 +71,13 @@ class RiichiTablePropsTest {
         yawOffset = yawOffset,
     )
 
+    /**
+     * 以測試容差比較兩個世界座標與朝向。
+     *
+     * @param expected 預期位置。
+     * @param actual 實際位置。
+     * @param context 斷言失敗時顯示的情境。
+     */
     private fun assertSamePlacement(expected: MahjongTileWallPlacement, actual: MahjongTileWallPlacement, context: String) {
         assertTrue(abs(expected.x - actual.x) < EPSILON, "$context x: $expected vs $actual")
         assertTrue(abs(expected.y - actual.y) < EPSILON, "$context y: $expected vs $actual")
@@ -118,7 +140,7 @@ class RiichiTablePropsTest {
     /**
      * 立直棒的世界座標與朝向（controller 位於 12, 64, -7；四種桌子朝向、四個座位）。
      *
-     * 期望值取自搬移前的立直棒擺放函式，確保搬移後位置完全不變。
+     * 以固定座標驗證各座位在四種桌子朝向下的擺放位置。
      */
     @Test
     fun `riichi sticks keep their established position`() {
@@ -150,7 +172,7 @@ class RiichiTablePropsTest {
     /**
      * 角落那一疊的世界座標與朝向（controller 位於 12, 64, -7；桌子朝北；莊家座位 1）：一排四根，第五根起往上疊。
      *
-     * 期望值取自搬移前的積棒擺放函式，確保搬移後位置完全不變。
+     * 以固定座標驗證同一排的間距與往上堆疊的高度。
      */
     @Test
     fun `corner sticks keep their established position`() {
@@ -171,9 +193,16 @@ class RiichiTablePropsTest {
     }
 
     private companion object {
+        /** 測試桌面 controller 的 X 座標。 */
         const val CONTROLLER_X = 12
+
+        /** 測試桌面 controller 的 Y 座標。 */
         const val CONTROLLER_Y = 64
+
+        /** 測試桌面 controller 的 Z 座標。 */
         const val CONTROLLER_Z = -7
+
+        /** 世界位置與朝向比較使用的誤差容許值。 */
         const val EPSILON = 1.0e-6
     }
 }

@@ -77,7 +77,7 @@ internal enum class HistoryBrowseFilterError {
     /** 對局識別碼不是 UUID。 */
     INVALID_MATCH_ID,
 
-    /** 玩家名稱超過 Minecraft 名稱長度上限。 */
+    /** 玩家名稱長度超過 16，或包含控制字元。 */
     INVALID_PLAYER_NAME,
 
     /** 下界大於上界。 */

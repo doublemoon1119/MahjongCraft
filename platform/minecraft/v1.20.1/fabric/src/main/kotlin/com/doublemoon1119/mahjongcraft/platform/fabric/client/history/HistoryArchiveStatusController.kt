@@ -20,7 +20,7 @@ import kotlin.time.Duration.Companion.seconds
  * @property transport 保存狀態查詢傳輸。
  * @property scope 此歷史 Screen 的獨立工作作用域。
  * @property pollInterval PENDING 狀態之間的等待時間。
- * @property maxPolls 最多送出的狀態查詢次數。
+ * @property maxPolls 單次監看最多送出的狀態查詢次數；小於 1 時仍查詢一次。
  * @property responseTimeout 單次查詢等待上限。
  * @property now 判斷查詢冷卻的單調時間來源。
  */
@@ -56,7 +56,11 @@ internal class HistoryArchiveStatusController(
     /** Screen 可觀察的目前保存狀態。 */
     val view: StateFlow<HistoryArchiveStatusView> = mutableView.asStateFlow()
 
-    /** 開始監看指定場次；重複指定相同場次時，進行中的監看與已取得的最終結果都維持不變。 */
+    /**
+     * 開始監看指定場次；重複指定相同場次時，進行中的監看與已取得的最終結果都維持不變。
+     *
+     * @param matchId 欲監看的對局識別碼；null 時停止監看並恢復未指定狀態。
+     */
     fun watch(matchId: String?) {
         if (matchId == target && (monitor?.isActive == true || mutableView.value is HistoryArchiveStatusView.Resolved)) {
             paused = false
@@ -82,7 +86,7 @@ internal class HistoryArchiveStatusController(
         mutableView.value = HistoryArchiveStatusView.Idle
     }
 
-    /** 重新開始目前指定對局的保存狀態查詢。 */
+    /** 重試目前對局的失敗查詢；仍在監看或已取得最終結果時不重新查詢。 */
     fun retry() {
         watch(target)
     }

@@ -7,7 +7,7 @@ import kotlin.uuid.Uuid
 /**
  * 規則提供的抽象實體牌牆布局能力。
  *
- * 規則只描述正規化位置與移動階段；平台負責將結果投影成世界座標、規劃碰撞安全路徑及播放動畫。
+ * 規則只描述正規化位置與移動階段；具體座標、碰撞安全路徑及移動方式由使用此結果的外層自行決定。
  */
 interface PhysicalWallLayoutPolicy {
     /** 建立一局牌牆的初始實體布局。 */
@@ -95,7 +95,12 @@ object ContinuousPhysicalWallLayoutPolicy : PhysicalWallLayoutPolicy {
     }
 }
 
-/** 建立並驗證初始實體牌牆布局。 */
+/**
+ * 建立並驗證初始實體牌牆布局。
+ *
+ * @param context 建立布局所需的牌牆、開門與占位牌資料。
+ * @return policy 的原始決策；若完成布局未涵蓋完整初始牌牆，回傳無效結果拒絕決策。
+ */
 fun PhysicalWallLayoutPolicy.createInitialLayoutValidated(
     context: InitialPhysicalWallLayoutContext,
 ): InitialPhysicalWallLayoutDecision {
@@ -108,7 +113,12 @@ fun PhysicalWallLayoutPolicy.createInitialLayoutValidated(
     }
 }
 
-/** 解析並驗證動作完成後的實體牌牆布局演進。 */
+/**
+ * 解析並驗證動作完成後的實體牌牆布局演進。
+ *
+ * @param context 動作前後桌況與目前布局。
+ * @return policy 的決策；若結果未通過成員、位置或移動階段驗證，回傳無效結果拒絕決策。
+ */
 fun PhysicalWallLayoutPolicy.resolveTransitionValidated(
     context: PhysicalWallLayoutTransitionContext,
 ): PhysicalWallLayoutTransitionDecision {
@@ -130,7 +140,13 @@ fun PhysicalWallLayoutPolicy.resolveTransitionValidated(
     }
 }
 
-/** 此完成結果是否完整描述 [expectedTileIds] 的最終位置及所有實際位置變化。 */
+/**
+ * 此完成結果是否完整描述 [expectedTileIds] 的最終位置及所有實際位置變化。
+ *
+ * @param currentLayout 動作前的牌張位置。
+ * @param expectedTileIds 動作後仍應位於牌牆中的牌張 ID。
+ * @return 完成布局及移動階段完全符合成員與位置驗證時為 true。
+ */
 private fun PhysicalWallLayoutTransitionDecision.Completed.isValidFor(
     currentLayout: TileWallPhysicalLayout,
     expectedTileIds: Set<Uuid>,
@@ -158,10 +174,19 @@ private fun PhysicalWallLayoutTransitionDecision.Completed.isValidFor(
     return workingPlacements == layout.placements
 }
 
-/** 目前桌況中仍應具有實體牌牆 placement 的所有牌張 Uuid。 */
+/**
+ * 目前桌況中仍應具有實體牌牆 placement 的所有牌張 Uuid。
+ *
+ * @return 活牌區與規則保留區中的牌張 ID 集合。
+ */
 private fun TableState.physicalWallTileIds(): Set<Uuid> = (tileWall.getAllTiles() + reservedWallTiles).mapTo(mutableSetOf()) { it.id }
 
-/** 驗證實體牌牆拒絕原因使用完整 namespaced ID。 */
+/**
+ * 驗證實體牌牆拒絕原因使用完整 namespaced ID。
+ *
+ * @param reasonId policy 提供的拒絕原因 ID。
+ * @throws IllegalArgumentException 當 ID 不是合法的 namespaced ID 時拋出。
+ */
 private fun requirePhysicalWallReasonId(reasonId: String) {
     NamespacedId.requireValid(reasonId) {
         "Physical wall layout rejection must use a namespaced id: $reasonId"

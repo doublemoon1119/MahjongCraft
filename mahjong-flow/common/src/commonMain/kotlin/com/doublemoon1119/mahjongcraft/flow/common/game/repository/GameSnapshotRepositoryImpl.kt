@@ -7,10 +7,16 @@ import kotlinx.coroutines.sync.withLock
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
+/** 以互斥鎖保護記憶體內桌況與開局準備快照的 repository 實作。 */
 @Single(binds = [GameSnapshotRepository::class])
 class GameSnapshotRepositoryImpl : GameSnapshotRepository {
+    /** 依遊戲及觀看者識別碼保存的桌況快照。 */
     private val snapshots = mutableMapOf<Uuid, MutableMap<Uuid, TableStateSnapshot>>()
+
+    /** 依遊戲及觀看者識別碼保存的開局準備快照。 */
     private val preparationSnapshots = mutableMapOf<Uuid, MutableMap<Uuid, RoundPreparationSnapshot>>()
+
+    /** 保護兩種快照對應表的互斥鎖。 */
     private val mutex = Mutex()
 
     override suspend fun getSnapshot(gameId: Uuid, observerId: Uuid): TableStateSnapshot? = mutex.withLock { snapshots[gameId]?.get(observerId) }

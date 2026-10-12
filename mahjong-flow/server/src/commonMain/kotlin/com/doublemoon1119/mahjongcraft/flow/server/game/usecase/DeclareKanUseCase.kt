@@ -325,6 +325,14 @@ class DeclareKanUseCase(
      * false 代表這次宣告開啟了搶槓反應視窗、或搶槓多響判定為流局，副露與嶺上摸牌皆尚未套用，不應
      * 廣播 [GameAction.Draw]。[abortiveDrawReason] 非 null 代表搶槓多響依規則設定判定為流局，這次
      * 加槓視為未成立。[declaredState] 只在開啟搶槓反應視窗時有值，是槓已移入副露、尚未補牌的候選桌況，供呈現使用。
+     *
+     * @property tableState 此次原子更新後的權威桌況。
+     * @property kanAction 規則判定成立的槓動作。
+     * @property drawHappened 是否已套用補摸。
+     * @property abortiveDrawReason 搶槓多響成立的途中流局原因；未發生時為 null。
+     * @property declaredState 搶槓反應視窗使用的候選桌況；沒有開啟視窗時為 null。
+     * @property wallRevealBatches 補摸過程中依序公開的牌牆牌組。
+     * @property physicalWallTransitionPhases 補摸造成的實體牌牆排列轉換階段。
      */
     private data class KanResult(
         val tableState: TableState,
@@ -337,7 +345,11 @@ class DeclareKanUseCase(
     )
 }
 
-/** 這次槓成立後新移入副露的牌：暗槓與明槓為整組，加槓只有新加入的那一張。 */
+/**
+ * 這次槓成立後新移入副露的牌：暗槓與明槓為整組，加槓只有新加入的那一張。
+ *
+ * @return 此次新移入副露的牌識別碼。
+ */
 internal fun GameAction.Kan.newlyClaimedMeldTileIds(): Set<Uuid> = when (type) {
     GameAction.KanType.ADDED_KAN -> setOf(tileId)
     GameAction.KanType.CLOSED_KAN, GameAction.KanType.OPEN_KAN -> (withTiles + tileId).toSet()

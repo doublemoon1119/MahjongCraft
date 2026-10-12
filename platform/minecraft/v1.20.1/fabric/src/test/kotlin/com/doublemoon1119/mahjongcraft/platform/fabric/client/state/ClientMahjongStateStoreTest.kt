@@ -29,17 +29,15 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.uuid.Uuid
 
-/**
- * [ClientMahjongStateStore] 是依桌子 UUID 索引的，這裡驗證的正是它存在的理由：一張桌子的推播不會
- * 覆蓋或清掉另一張桌子已經存好的資料——這正是被動旁觀（entity tracking 觸發的自動同步）讓一個
- * client 同時收到好幾張不相干桌子推播時，之前會發生的問題。
- */
+/** 驗證客戶端依桌子識別碼隔離快照，並正確更新玩家分析與公開牌面索引。 */
 class ClientMahjongStateStoreTest {
 
+    /** 登記內建規則的網路轉換集合。 */
     private val registries: NetworkDtoRegistries = DefaultNetworkDtoRegistries().apply {
         registerBundledNetworkDtos()
     }
 
+    /** 驗證另一桌的對局更新不會覆蓋已保存的房間狀態。 */
     @Test
     fun `a game update for table B does not touch table A's already-stored lobby state`() {
         val store = ClientMahjongStateStore(registries)
@@ -93,6 +91,7 @@ class ClientMahjongStateStoreTest {
         assertEquals(emptySet(), store.gameAiPlayerIds(tableId))
     }
 
+    /** 驗證座位查詢只回傳玩家參與的桌子，不包含僅收到旁觀快照的桌子。 */
     @Test
     fun `findTableWhereSeated only matches the table the local player is actually a member of`() {
         val store = ClientMahjongStateStore(registries)

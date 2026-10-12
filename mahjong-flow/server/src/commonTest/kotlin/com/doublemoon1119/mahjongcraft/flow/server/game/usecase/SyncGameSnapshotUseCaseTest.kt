@@ -27,7 +27,10 @@ import kotlin.uuid.Uuid
  */
 class SyncGameSnapshotUseCaseTest {
 
+    /** 測試對局的識別碼。 */
     private val gameId = Uuid.random()
+
+    /** 接收快照的玩家識別碼。 */
     private val playerId = Uuid.random()
 
     /**

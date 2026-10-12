@@ -10,6 +10,7 @@ import org.koin.core.annotation.ComponentScan
 import org.koin.core.annotation.Module
 import org.koin.core.annotation.Single
 
+/** 提供共用流程服務與由擴充註冊流程初始化的 registry。 */
 @Module
 @ComponentScan("com.doublemoon1119.mahjongcraft.flow.common")
 class FlowCommonModule {

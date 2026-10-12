@@ -6,7 +6,11 @@ interface RuleCatalogueProvider {
     /** 對應的 namespaced 規則模組識別碼。 */
     val ruleModuleId: String
 
-    /** 建立一般說明使用的預設配置；不表示房間或歷史實際配置。 */
+    /**
+     * 建立一般說明使用的預設配置；不表示房間或歷史實際配置。
+     *
+     * @return 供本來源建立一般說明目錄的規則配置。
+     */
     fun defaultRuleConfig(): MahjongRuleConfig
 
     /**

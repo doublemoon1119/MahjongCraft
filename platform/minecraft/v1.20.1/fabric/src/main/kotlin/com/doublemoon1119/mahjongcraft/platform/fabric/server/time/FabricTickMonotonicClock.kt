@@ -36,7 +36,13 @@ class FabricTickMonotonicClock : MonotonicClock {
 
     override fun nowMillis(): Long = elapsedTicks * MILLIS_PER_TICK
 
-    /** 排定 [block] 在 [delayMillis] 之後（依 tick 無條件進位）於下個到期 tick 執行；回傳可取消的 handle。 */
+    /**
+     * 排定 [block] 在 [delayMillis] 之後（依 tick 無條件進位）於下個到期 tick 執行；回傳可取消的 handle。
+     *
+     * @param delayMillis 延遲毫秒數；換算成 tick 時向上取整。
+     * @param block 到期時於 server tick 回呼的工作。
+     * @return 可移除尚未執行工作的取消 handle。
+     */
     fun scheduleAfter(delayMillis: Long, block: Runnable): DisposableHandle {
         val delayTicks = (delayMillis + MILLIS_PER_TICK - 1) / MILLIS_PER_TICK
         val task = ScheduledTask(elapsedTicks + delayTicks, block)
@@ -55,7 +61,16 @@ class FabricTickMonotonicClock : MonotonicClock {
         dueTasks.forEach { it.block.run() }
     }
 
-    private class ScheduledTask(val dueAtTick: Long, val block: Runnable)
+    /**
+     * 等待到指定 tick 執行的工作。
+     *
+     * @property dueAtTick 工作可執行的絕對 tick，也是佇列排序依據。
+     * @property block 到期時要執行的回呼。
+     */
+    private class ScheduledTask(
+        val dueAtTick: Long,
+        val block: Runnable,
+    )
 
     private companion object {
         /** Minecraft 正常運行時每個 tick 對應的毫秒數（20 TPS）。 */

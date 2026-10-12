@@ -8,13 +8,10 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
- * 驗證「動畫不阻塞全桌」豁免的世界存檔往返走的是**生產程式碼的讀寫**（[NonBlockingPresentationLeaseCodec]，
- * 即 `MahjongTileEntity.readCustomDataFromNbt`／`writeCustomDataToNbt` 實際呼叫的那一份），而不是在測試裡
- * 另外拼一次 key 與型別。
+ * 驗證動畫豁免到期時間經由 [NonBlockingPresentationLeaseCodec] 寫入並讀回後，仍符合忙碌判斷規則。
  *
- * 直接實體化 `MahjongTileEntity` 做完整 entity NBT 往返在本專案不可行——那需要註冊表裡的 `EntityType`
- * 與一個 `World`，而這裡沒有 Minecraft bootstrap 的測試基礎建設。因此讀寫規則抽成 codec：這能擋下 key
- * 拼錯、型別用錯、預設值不對這幾類漏接，但擋不下「entity 忘記呼叫 codec」，那一項仍只能靠 review。
+ * [NonBlockingPresentationLeaseCodec] 是 `MahjongTileEntity.readCustomDataFromNbt` 與
+ * `writeCustomDataToNbt` 共用的讀寫實作。測試直接驗證此 codec，避免複製欄位名稱與型別。
  */
 class NonBlockingPresentationLeaseCodecTest {
     /** 寫進去的到期時間必須原封不動讀回來。 */
@@ -26,7 +23,7 @@ class NonBlockingPresentationLeaseCodecTest {
         assertEquals(1_234L, NonBlockingPresentationLeaseCodec.read(nbt))
     }
 
-    /** 讀回來的值必須真的還能繼續豁免——往返正確但語意接不上就沒有意義。 */
+    /** 讀回的到期時間在到期前仍會讓牌的動畫維持豁免。 */
     @Test
     fun `a lease restored from a save file still exempts the tile`() {
         val nbt = NbtCompound()

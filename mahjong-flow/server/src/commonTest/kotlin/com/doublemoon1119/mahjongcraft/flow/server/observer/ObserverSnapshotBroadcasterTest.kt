@@ -28,6 +28,7 @@ import kotlin.uuid.Uuid
 class ObserverSnapshotBroadcasterTest {
     /** 記錄每次送出的目標與內容。 */
     private class RecordingSender : ObserverSnapshotSender {
+        /** 依送出順序保存的目標 ID、觀察者 ID 與快照。 */
         val sent = mutableListOf<Triple<Uuid, Uuid, ObserverSnapshot?>>()
 
         override suspend fun send(id: Uuid, observerId: Uuid, snapshot: ObserverSnapshot?) {
@@ -37,15 +38,28 @@ class ObserverSnapshotBroadcasterTest {
 
     /** 由測試直接設定的觀察者來源。 */
     private class MutableAudienceSource : ObserverAudienceSource {
+        /** 依場地 ID 保存的觀察者識別碼集合。 */
         var observers: Map<Uuid, Set<Uuid>> = emptyMap()
 
         override suspend fun observersById(): Map<Uuid, Set<Uuid>> = observers
     }
 
+    /** 測試中 Room 與 Game 共用的場地識別碼。 */
     private val id = Uuid.random()
+
+    /** 測試房主及遊戲主持者的玩家識別碼。 */
     private val hostId = Uuid.random()
+
+    /** 不屬於房間成員的測試觀察者識別碼。 */
     private val observerId = Uuid.random()
 
+    /**
+     * 建立包含一名已準備 AI 玩家的測試房間。
+     *
+     * @param aiStrategyKey 測試 AI 使用的策略識別碼。
+     * @param aiId 測試 AI 的玩家識別碼。
+     * @return 包含房主及 AI 玩家的測試房間。
+     */
     private fun room(aiStrategyKey: String = "mahjongcraft:random", aiId: Uuid = Uuid.random()) = Room(
         id = id,
         hostId = hostId,
@@ -55,6 +69,11 @@ class ObserverSnapshotBroadcasterTest {
         aiPlayerStrategyKeys = mapOf(aiId to aiStrategyKey),
     )
 
+    /**
+     * 建立由房主控制、含兩名玩家的測試對局。
+     *
+     * @return 以測試場地 ID 建立、由房主控制的對局。
+     */
     private fun game() = Game(
         tableState = FakeTableStateFactory.create(
             id = id,
@@ -68,6 +87,11 @@ class ObserverSnapshotBroadcasterTest {
         hostId = hostId,
     )
 
+    /**
+     * 在測試 store 中以 Room 取代同 ID 的 Game。
+     *
+     * @param room 要保存的房間；為 null 時移除同 ID 的房間。
+     */
     private suspend fun AuthoritativeStateStore.setRoom(room: Room?) = update { state ->
         AuthoritativeStateUpdate(
             state = state.copy(
@@ -78,6 +102,11 @@ class ObserverSnapshotBroadcasterTest {
         )
     }
 
+    /**
+     * 在測試 store 中以 Game 取代同 ID 的 Room。
+     *
+     * @param game 要保存的對局。
+     */
     private suspend fun AuthoritativeStateStore.setGame(game: Game) = update { state ->
         AuthoritativeStateUpdate(
             state = state.copy(rooms = state.rooms - id, games = state.games + (id to game)),
@@ -85,6 +114,14 @@ class ObserverSnapshotBroadcasterTest {
         )
     }
 
+    /**
+     * 組成觀察者快照廣播器及其測試用 audience、sender。
+     *
+     * @param store 權威狀態來源。
+     * @param audience 可直接設定觀察者清單的來源。
+     * @param sender 記錄送出快照的替身。
+     * @return 使用測試替身的觀察者快照廣播器。
+     */
     private fun broadcaster(
         store: AuthoritativeStateStore,
         audience: MutableAudienceSource,

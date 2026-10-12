@@ -40,11 +40,16 @@ class MahjongClientConfigStore() {
     val path: Path
         get() = pathOverride ?: defaultConfigPath()
 
-    /** 建立使用指定路徑的測試 store，不讀取 Fabric 執行環境。 */
+    /**
+     * 建立使用指定路徑的測試儲存區，不讀取 Fabric 執行環境。
+     *
+     * @param path 測試隔離的設定檔位置。
+     */
     private constructor(path: Path) : this() {
         pathOverride = path
     }
 
+    /** 記錄設定檔保存失敗的診斷來源。 */
     private val logger = mahjongCraftLogger(MahjongClientConfigStore::class)
 
     /** 拒絕未知欄位、空值與空文件的 TOML codec，理由同 server 設定的 `MinecraftServerConfigTomlCodec`。 */
@@ -60,7 +65,7 @@ class MahjongClientConfigStore() {
     /** [path] 不含主機目錄資訊、可供指令輸出的邏輯路徑，理由同 server 設定的 `displayPath`。 */
     val displayPath: String = "<Minecraft instance>/config/${MinecraftModMetadata.MOD_ID}/client.toml"
 
-    /** 目前記憶體內有效的 client 設定；載入失敗或檔案不存在時為程式預設值。 */
+    /** 目前有效設定；首次載入前為預設值，載入或保存失敗時保留前一份有效設定。 */
     var current: MahjongClientConfigState = MahjongClientConfigState()
         private set
 
@@ -72,6 +77,8 @@ class MahjongClientConfigStore() {
      * 從磁碟載入設定；檔案不存在時先原樣複製帶註解的 template，再讀取剛建立的檔案。複製、讀取或解析
      * 失敗時保留（不覆寫）記憶體內目前的有效設定，也不覆寫已存在但格式錯誤的檔案，理由同 server 設定
      * 的 `MinecraftServerConfigManager.load`。
+     *
+     * @return 已套用的有效設定，或保留原設定的失敗結果。
      */
     fun load(): MahjongClientConfigUpdateResult {
         val createdDefaultFile = try {
@@ -101,18 +108,27 @@ class MahjongClientConfigStore() {
     /**
      * 切換牌面角落輔助標籤開關並立即寫回磁碟；只替換檔案裡 `tile-labels-enabled` 那一行的值，其餘
      * 內容（含註解）原樣保留。寫入失敗時磁碟與記憶體內的有效設定都維持原值。
+     *
+     * @param enabled 是否啟用牌面輔助標籤。
+     * @return 設定保存結果。
      */
     fun setTileLabelsEnabled(enabled: Boolean): MahjongClientConfigUpdateResult = save(current.copy(tileLabelsEnabled = enabled))
 
     /**
      * 切換自動整理手牌開關並立即寫回磁碟，手法同 [setTileLabelsEnabled]；呼叫端（`FabricHandSortCommand`）
      * 除了呼叫這個方法，還要另外把偏好同步給伺服器——這裡只負責 client 本機持久化。
+     *
+     * @param enabled 是否啟用自動整理手牌。
+     * @return 本機設定保存結果，不代表偏好已同步至伺服器。
      */
     fun setAutoSortHandEnabled(enabled: Boolean): MahjongClientConfigUpdateResult = save(current.copy(autoSortHandEnabled = enabled))
 
     /**
      * 原子保存完整受控草稿；成功替換磁碟檔案後才更新 runtime 設定與 [revision]。
      * 已知欄位只替換等號右側，因此保留模板註解、空行及欄位順序。
+     *
+     * @param config 要保存的完整設定草稿。
+     * @return 成功套用的設定，或保留原有效設定的失敗結果。
      */
     fun save(config: MahjongClientConfigState): MahjongClientConfigUpdateResult {
         var temporaryPath: Path? = null
@@ -167,7 +183,16 @@ class MahjongClientConfigStore() {
         }
     }
 
-    /** 只替換 [key] 的 Boolean 值；缺少受控欄位時拒絕猜測 TOML section。 */
+    /**
+     * 替換受控 Boolean 欄位，保留行尾空白及註解。
+     *
+     * @param content 原始 TOML 文字。
+     * @param key 診斷訊息使用的欄位鍵。
+     * @param lineRegex 擷取等號前段與行尾內容的比對式。
+     * @param enabled 要寫入的值。
+     * @return 替換後的 TOML 文字。
+     * @throws IllegalStateException 找不到指定欄位時。
+     */
     private fun updateBoolean(content: String, key: String, lineRegex: Regex, enabled: Boolean): String {
         check(lineRegex.containsMatchIn(content)) { "Missing controlled client config field '$key'" }
         return lineRegex.replace(content) { match ->
@@ -175,13 +200,28 @@ class MahjongClientConfigStore() {
         }
     }
 
-    /** 只替換一個受控 Double 欄位，缺少欄位時拒絕猜測 TOML section。 */
+    /**
+     * 替換受控 Double 欄位，保留行尾空白及註解。
+     *
+     * @param content 原始 TOML 文字。
+     * @param key 診斷訊息使用的欄位鍵。
+     * @param lineRegex 擷取等號前段與行尾內容的比對式。
+     * @param number 要寫入的值。
+     * @return 替換後的 TOML 文字。
+     * @throws IllegalStateException 找不到指定欄位時。
+     */
     private fun updateDouble(content: String, key: String, lineRegex: Regex, number: Double): String {
         check(lineRegex.containsMatchIn(content)) { "Missing controlled client config field '$key'" }
         return lineRegex.replace(content) { match -> match.groupValues[1] + number + match.groupValues[2] }
     }
 
-    /** 在設定檔缺少時原樣複製打包的帶註解 template。 */
+    /**
+     * 在設定檔缺少時原樣複製打包的帶註解範本。
+     *
+     * @return 本次建立檔案時為 true；檔案原已存在時為 false。
+     * @throws IllegalStateException 找不到打包的範本資源時。
+     * @throws java.io.IOException 建立目錄或複製檔案失敗時。
+     */
     private fun createDefaultFileIfMissing(): Boolean {
         if (Files.exists(path)) return false
         Files.createDirectories(path.parent)
@@ -198,7 +238,12 @@ class MahjongClientConfigStore() {
             .resolve(MinecraftModMetadata.MOD_ID)
             .resolve("client.toml")
 
-        /** 建立使用指定路徑的測試 store。 */
+        /**
+         * 建立使用指定路徑的測試儲存區，不立即讀寫檔案。
+         *
+         * @param path 測試隔離的設定檔位置。
+         * @return 使用指定位置的新儲存區。
+         */
         fun createForTesting(path: Path): MahjongClientConfigStore = MahjongClientConfigStore(path)
 
         /** 打包於 Minecraft common resources 的帶註解預設 template。 */
@@ -264,13 +309,16 @@ class MahjongClientConfigStore() {
         /** 比對自動操作狀態 HUD 垂直欄位。 */
         val AUTOMATIC_CONTROL_STATUS_Y_LINE = doubleLine(AUTOMATIC_CONTROL_STATUS_Y_KEY)
 
-        /** 一個可選呈現欄位的保存描述。 */
+        /**
+         * 一個可選呈現欄位的保存描述。
+         *
+         * @property key TOML 欄位鍵。
+         * @property line 欄位所在行的比對式。
+         * @property read 從完整呈現設定讀取欄位值的函式。
+         */
         private data class VisibilityField(
-            /** TOML 欄位鍵。 */
             val key: String,
-            /** 欄位所在行的比對式。 */
             val line: Regex,
-            /** 從設定讀取欄位值。 */
             val read: (MahjongPresentationVisibilityConfig) -> Boolean,
         )
 
@@ -294,18 +342,34 @@ class MahjongClientConfigStore() {
             ),
         )
 
-        /** 建立一個 Boolean 呈現欄位描述。 */
+        /**
+         * 建立 Boolean 呈現欄位的保存描述。
+         *
+         * @param key TOML 欄位鍵。
+         * @param read 從完整呈現設定讀取欄位值的函式。
+         * @return 包含欄位比對式及取值函式的描述。
+         */
         private fun visibilityField(
             key: String,
             read: (MahjongPresentationVisibilityConfig) -> Boolean,
         ): VisibilityField = VisibilityField(key, booleanLine(key), read)
 
-        /** 建立保留行尾註解與空白的 Boolean 欄位比對式。 */
+        /**
+         * 建立保留行尾註解與空白的 Boolean 欄位比對式。
+         *
+         * @param key TOML 欄位鍵。
+         * @return 擷取欄位前段與行尾內容的比對式。
+         */
         private fun booleanLine(key: String): Regex = Regex(
             """(?m)^(\s*$key\s*=\s*)\S+(\s*(?:#.*)?)$""",
         )
 
-        /** 建立保留行尾註解與空白的 Double 欄位比對式。 */
+        /**
+         * 建立保留行尾註解與空白的 Double 欄位比對式。
+         *
+         * @param key TOML 欄位鍵。
+         * @return 擷取十進位數值前段與行尾內容的比對式。
+         */
         private fun doubleLine(key: String): Regex = Regex(
             """(?m)^(\s*$key\s*=\s*)[-+]?\d+(?:\.\d+)?(\s*(?:#.*)?)$""",
         )

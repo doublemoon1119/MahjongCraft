@@ -13,7 +13,7 @@ class MahjongScoringStickItemDataTest {
         }
     }
 
-    /** 缺失或無效名稱使用百分棒。 */
+    /** 缺失或無效名稱使用百點棒。 */
     @Test
     fun `missing and invalid denomination names use smallest value`() {
         assertEquals(MahjongScoringStickDenomination.P100, MahjongScoringStickItemData.read(null))

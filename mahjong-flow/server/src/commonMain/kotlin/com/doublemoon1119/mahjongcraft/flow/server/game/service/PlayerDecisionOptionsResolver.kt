@@ -17,6 +17,12 @@ internal object PlayerDecisionOptionsResolver {
      * 只解析合法動作，供不需要選牌與分析資料的既有查詢使用。
      *
      * 此路徑不建立捨牌分析器，避免 AI 的高頻合法動作查詢額外執行完整聽牌分析。
+     *
+     * @param state 目前權威桌況。
+     * @param player 欲查詢的玩家。
+     * @param moduleRegistry 提供本局規則模組的註冊中心。
+     * @param actionContextResolver 解析玩家操作情境的服務。
+     * @return 目前可執行的合法動作。
      */
     fun resolveActions(
         state: TableState,
@@ -37,6 +43,7 @@ internal object PlayerDecisionOptionsResolver {
      * @param visibleTiles 這位玩家看得到牌面的每一張實體牌，供捨牌分析扣除剩餘張數。
      * @param moduleRegistry 麻將規則模組註冊中心。
      * @param actionContextResolver 玩家操作情境解析器。
+     * @return 合法動作、選牌需求與可用的捨牌分析。
      */
     fun resolve(
         state: TableState,
@@ -69,7 +76,15 @@ internal object PlayerDecisionOptionsResolver {
         )
     }
 
-    /** 依已解析的 [context] 執行一次合法動作查詢。 */
+    /**
+     * 依已解析的 [context] 執行一次合法動作查詢。
+     *
+     * @param state 目前權威桌況。
+     * @param player 欲查詢的玩家。
+     * @param validator 本局規則模組提供的合法動作判定器。
+     * @param context 已解析的操作情境；玩家目前沒有操作權時為 null。
+     * @return 目前可執行的合法動作。
+     */
     private fun resolveActions(
         state: TableState,
         player: MahjongPlayer,
@@ -111,7 +126,14 @@ internal object PlayerDecisionOptionsResolver {
         null -> emptyList()
     }
 
-    /** 找出目前決策的觸發牌；沒有特定牌時回傳 null。 */
+    /**
+     * 找出目前決策的觸發牌；沒有特定牌時回傳 null。
+     *
+     * @param state 目前權威桌況。
+     * @param player 欲查詢的玩家。
+     * @param context 已解析的玩家操作情境。
+     * @return 反應牌或摸入牌；沒有特定牌或無操作情境時為 null。
+     */
     private fun referenceTile(
         state: TableState,
         player: MahjongPlayer,

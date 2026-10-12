@@ -15,9 +15,16 @@ import kotlin.uuid.Uuid
 
 /** [WinPresentationHandoff] 的關聯鍵驗證與殘留清理測試。 */
 class WinPresentationHandoffTest {
+    /** 受測的和牌呈現交接暫存。 */
     private val handoff = WinPresentationHandoff()
+
+    /** 暫存內容所屬的對局。 */
     private val gameId = Uuid.random()
+
+    /** 首次和牌使用的贏家識別碼。 */
     private val firstWinnerId = Uuid.random()
+
+    /** 後續和牌使用的不同贏家識別碼。 */
     private val secondWinnerId = Uuid.random()
 
     /** 贏家相符時取回原本暫存的內容。 */
@@ -77,7 +84,12 @@ class WinPresentationHandoffTest {
         assertEquals(staged, handoff.take(gameId, setOf(firstWinnerId)))
     }
 
-    /** 建立最小可用的測試用呈現內容。 */
+    /**
+     * 建立最小可用的測試用呈現內容。
+     *
+     * @param winnerId 贏家識別碼。
+     * @return 只包含指定贏家的測試用結算呈現。
+     */
     private fun presentationFor(winnerId: Uuid): SettledWinPresentation {
         val winningTileId = Uuid.random()
         return SettledWinPresentation(

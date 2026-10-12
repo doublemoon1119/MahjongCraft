@@ -8,7 +8,7 @@ import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.TaskAction
 import java.io.File
 
-/** 阻擋原始碼註解引用不進版控的 `docs/temp` 檔案。 */
+/** 掃描 Kotlin 原始碼全文，阻擋其中引用不進版控的 `docs/temp` 檔案名稱。 */
 abstract class VerifyNoDocsTempReferencesTask : DefaultTask() {
     /** repository 根目錄。 */
     @get:Internal

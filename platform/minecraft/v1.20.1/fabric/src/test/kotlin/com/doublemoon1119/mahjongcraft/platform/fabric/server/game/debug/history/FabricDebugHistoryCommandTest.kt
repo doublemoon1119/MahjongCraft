@@ -67,10 +67,15 @@ class FabricDebugHistoryCommandTest {
 
     /** 測試使用的應用協程作用域。 */
     private class TestAppScope : AppCoroutineScope {
+        /** 測試作用域使用的協程工作與預設 dispatcher。 */
         override val coroutineContext: CoroutineContext = Job() + Dispatchers.Default
+
+        /** 取消測試作用域中的工作。 */
         override fun cancel() {
             coroutineContext[Job]?.cancel()
         }
+
+        /** 測試不等待其他工作，直接取消作用域。 */
         override suspend fun shutdown(timeout: Duration) {
             coroutineContext[Job]?.cancel()
         }
@@ -78,10 +83,19 @@ class FabricDebugHistoryCommandTest {
 
     /** 測試使用的 dispatcher 集合。 */
     private object TestDispatchers : CoroutineDispatchers {
+        /** CPU 工作使用預設 dispatcher。 */
         override val default: CoroutineDispatcher = Dispatchers.Default
+
+        /** 檔案工作使用 I/O dispatcher。 */
         override val io: CoroutineDispatcher = Dispatchers.IO
+
+        /** 主執行緒工作使用預設 dispatcher。 */
         override val main: CoroutineDispatcher = Dispatchers.Default
+
+        /** AI 決策工作使用預設 dispatcher。 */
         override val aiDecision: CoroutineDispatcher = Dispatchers.Default
+
+        /** 測試宣告的 AI 決策平行工作數。 */
         override val aiDecisionParallelism = 1
     }
 }

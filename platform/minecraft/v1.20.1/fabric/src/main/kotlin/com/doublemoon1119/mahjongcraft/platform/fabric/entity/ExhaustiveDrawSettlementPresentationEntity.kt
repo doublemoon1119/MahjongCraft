@@ -46,7 +46,14 @@ class ExhaustiveDrawSettlementPresentationEntity(
         setNoGravity(true)
     }
 
-    /** 生成前設定完整且不可變的舞台資料。 */
+    /**
+     * 生成前設定完整且不可變的舞台資料。
+     *
+     * @param tableId 所屬麻將桌 UUID。
+     * @param startGameTime 舞台開始的絕對遊戲時間。
+     * @param reasonId 流局原因的完整 namespaced ID。
+     * @param players 全部座位的結算關鍵影格。
+     */
     fun configure(
         tableId: Uuid,
         startGameTime: Long,
@@ -64,7 +71,11 @@ class ExhaustiveDrawSettlementPresentationEntity(
         enqueueSettlementSounds(startGameTime)
     }
 
-    /** 取得含 tick delta 的相對演出時間。 */
+    /**
+     * 取得含 tick delta 的相對演出時間。
+     *
+     * @param tickDelta 本 tick 的部分經過時間。
+     */
     fun elapsedTicks(tickDelta: Float): Double = world.time + tickDelta.toDouble() - startGameTime
 
     override fun isCollidable(): Boolean = false
@@ -83,7 +94,11 @@ class ExhaustiveDrawSettlementPresentationEntity(
         if (endGameTime > startGameTime && world.time >= endGameTime) discard()
     }
 
-    /** 依揭示時間一次建立全部可持久化聲音 cue。 */
+    /**
+     * 依揭示時間一次建立全部可持久化聲音 cue。
+     *
+     * @param startGameTime 此舞台的絕對開始時間。
+     */
     private fun enqueueSettlementSounds(startGameTime: Long) {
         val sounds = buildList {
             informationPlayers().indices.forEach { index ->
@@ -122,7 +137,15 @@ class ExhaustiveDrawSettlementPresentationEntity(
         enqueueAll(sounds)
     }
 
-    /** 建立使用結算 presentation 共用寬限的聲音 cue。 */
+    /**
+     * 建立使用結算 presentation 共用寬限的聲音 cue。
+     *
+     * @param gameTime 聲音預定播放的絕對遊戲時間。
+     * @param soundId 聲音事件的完整 ID。
+     * @param volume 聲音音量。
+     * @param pitch 聲音音高。
+     * @return 含播放時間及過期時間的聲音動畫步驟。
+     */
     private fun soundStep(gameTime: Long, soundId: String, volume: Float, pitch: Float): AnimationStep.PlaySound = AnimationStep.PlaySound(
         soundId = soundId,
         volume = volume,
@@ -191,25 +214,43 @@ class ExhaustiveDrawSettlementPresentationEntity(
         private const val RANKING_SETTLED_SOUND_TICK = 170L
         private const val RANKING_ONLY_SETTLED_SOUND_TICK = 110L
 
-        /** 依內容決定是否保留等待牌資訊階段。 */
+        /**
+         * 依是否有公開等待牌決定舞台總長度，據此保留或略過等待牌資訊階段。
+         *
+         * @param players 結算玩家快照。
+         * @return 有等待牌資訊時的雙階段長度，否則為排行榜單階段長度。
+         */
         fun durationTicks(players: List<ExhaustiveDrawSettlementPlayerSnapshot>): Long = if (players.any { it.waitingTileAssetKeys.isNotEmpty() }) {
             DURATION_TICKS
         } else {
             RANKING_ONLY_DURATION_TICKS
         }
 
-        /** 依玩家列 index 計算逐列出現時間，renderer 與 server 音效共用。 */
+        /**
+         * 依玩家列 index 計算逐列出現時間，renderer 與 server 音效共用。
+         *
+         * @param index 玩家列索引；負值按 0 計算。
+         * @param hasInformationPhase 是否先顯示等待牌資訊階段。
+         */
         fun rowRevealTick(index: Int, hasInformationPhase: Boolean): Long = (if (hasInformationPhase) 110L else 50L) +
             index.coerceAtLeast(0) * ROW_REVEAL_INTERVAL_TICKS
 
-        /** 依是否存在等待牌資訊決定排行落定音效時間。 */
+        /**
+         * 依是否存在等待牌資訊決定排行落定音效時間。
+         *
+         * @param hasInformationPhase 是否先顯示等待牌資訊階段。
+         */
         fun rankingSettledSoundTick(hasInformationPhase: Boolean): Long = if (hasInformationPhase) {
             RANKING_SETTLED_SOUND_TICK
         } else {
             RANKING_ONLY_SETTLED_SOUND_TICK
         }
 
-        /** 依公開資訊列 index 計算逐列出現時間。 */
+        /**
+         * 依公開資訊列 index 計算逐列出現時間。
+         *
+         * @param index 公開資訊列索引；負值按 0 計算。
+         */
         fun informationRowRevealTick(index: Int): Long = INFORMATION_ROW_REVEAL_START_TICK +
             index.coerceAtLeast(0) * INFORMATION_ROW_REVEAL_INTERVAL_TICKS
 
@@ -234,6 +275,12 @@ class ExhaustiveDrawSettlementPresentationEntity(
             TrackedDataHandlerRegistry.STRING,
         )
 
+        /**
+         * 將全部玩家關鍵影格編碼為 tracked data 使用的分隔文字。
+         *
+         * @param players 要編碼的結算玩家快照。
+         * @return 可同步並存檔的玩家資料字串。
+         */
         private fun encodePlayers(players: List<ExhaustiveDrawSettlementPlayerSnapshot>): String = players.joinToString(ROW_SEPARATOR.toString()) { player ->
             listOf(
                 player.playerId,
@@ -251,6 +298,12 @@ class ExhaustiveDrawSettlementPresentationEntity(
             ).joinToString(FIELD_SEPARATOR.toString())
         }
 
+        /**
+         * 解碼玩家資料字串，略過欄位數量或必要數值格式不符的列。
+         *
+         * @param encoded tracked data 中保存的玩家資料字串。
+         * @return 可還原的玩家關鍵影格。
+         */
         private fun decodePlayers(encoded: String): List<ExhaustiveDrawSettlementPlayerSnapshot> = encoded
             .split(ROW_SEPARATOR)
             .mapNotNull { row ->

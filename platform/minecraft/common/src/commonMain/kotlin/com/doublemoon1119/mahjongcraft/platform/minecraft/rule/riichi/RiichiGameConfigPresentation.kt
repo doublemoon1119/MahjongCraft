@@ -111,16 +111,20 @@ internal fun riichiGameConfigPresentation(): GameConfigPresentationDefinition = 
     ) + flowFields(),
 )
 
+/** 將 [transform] 套用到日麻規則配置並回傳新的遊戲配置。 */
 private fun GameConfig.withRiichi(transform: RiichiRuleConfig.() -> RiichiRuleConfig): GameConfig = copy(ruleConfig = (ruleConfig as RiichiRuleConfig).transform())
 
+/** 透過 [withRiichi] 更新日麻計分配置。 */
 private fun GameConfig.withRiichiScore(transform: RiichiScoreConfig.() -> RiichiScoreConfig): GameConfig = withRiichi { copy(scoreConfig = scoreConfig.transform()) }
 
+/** 將日麻局長轉成設定欄位使用的選項值。 */
 private fun RiichiGameLength.toOption(): String = when (this) {
     RiichiGameLength.OneGame -> "one_game"
     RiichiGameLength.East -> "east"
     RiichiGameLength.TwoWinds -> "two_winds"
 }
 
+/** 將設定欄位選項轉回日麻局長；不支援的選項視為程式錯誤。 */
 private fun String.toRiichiGameLength(): RiichiGameLength = when (this) {
     "one_game" -> RiichiGameLength.OneGame
     "east" -> RiichiGameLength.East
@@ -128,6 +132,11 @@ private fun String.toRiichiGameLength(): RiichiGameLength = when (this) {
     else -> error("Unknown Riichi game length option: $this")
 }
 
+/** 將多響處理方式轉成設定欄位使用的小寫選項值。 */
 private fun RonResolution.toOption(): String = name.lowercase()
+
+/** 將設定欄位選項轉回多響處理方式。 */
 private fun String.toRonResolution(): RonResolution = RonResolution.valueOf(uppercase())
+
+/** 多響設定欄位接受的選項值。 */
 private fun ronOptions() = listOf("nearest_winner", "all_winners", "abortive_draw")

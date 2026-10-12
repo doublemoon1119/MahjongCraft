@@ -170,7 +170,6 @@ object MinecraftConfigCommandKeys {
     /** 開始執行清理訊息。 */
     const val HISTORY_CLEANUP_STARTED: String = "mahjongcraft.history.command.cleanup_started"
 
-    /** 歷史用量快照的詳細欄位。 */
     /** 已完成場次數量。 */
     const val HISTORY_COMPLETED_MATCHES: String = "mahjongcraft.history.command.completed_matches"
 
@@ -201,7 +200,6 @@ object MinecraftConfigCommandKeys {
     /** 快照是否已過期。 */
     const val HISTORY_STALE: String = "mahjongcraft.history.command.stale"
 
-    /** 清理預覽標題與候選統計欄位。 */
     /** 清理預覽標題。 */
     const val HISTORY_CLEANUP_PREVIEW: String = "mahjongcraft.history.command.cleanup_preview"
 
@@ -235,7 +233,6 @@ object MinecraftConfigCommandKeys {
     /** 無法精確承諾磁碟釋放量的說明。 */
     const val HISTORY_NO_EXACT_DISK_PROMISE: String = "mahjongcraft.history.command.no_exact_disk_promise"
 
-    /** 清理執行報告欄位。 */
     /** 清理是否完成。 */
     const val HISTORY_CLEANUP_COMPLETE: String = "mahjongcraft.history.command.cleanup_complete"
 

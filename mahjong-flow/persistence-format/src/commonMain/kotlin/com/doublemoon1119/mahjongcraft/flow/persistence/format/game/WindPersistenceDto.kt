@@ -5,4 +5,16 @@ import kotlinx.serialization.Serializable
 
 /** [Wind] 的 persistence DTO。 */
 @Serializable
-enum class WindPersistenceDto { EAST, SOUTH, WEST, NORTH }
+enum class WindPersistenceDto {
+    /** 東。 */
+    EAST,
+
+    /** 南。 */
+    SOUTH,
+
+    /** 西。 */
+    WEST,
+
+    /** 北。 */
+    NORTH,
+}

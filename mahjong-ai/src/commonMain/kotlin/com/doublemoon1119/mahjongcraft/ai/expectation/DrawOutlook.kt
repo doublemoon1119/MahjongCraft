@@ -19,7 +19,13 @@ internal data class DrawOutlook(
 ) {
     /** [DrawOutlook] 的建立方式。 */
     companion object {
-        /** 以牌山快照扣除王牌後的張數，平均分給仍在局中的玩家。 */
+        /**
+         * 以牌山快照扣除王牌後的張數，平均分給仍在局中的玩家。
+         *
+         * @param snapshot 用來估算剩餘牌山與仍在局中玩家的桌況快照。
+         * @param parameters 對手捨牌折算率與每輪結束率等估計參數。
+         * @return 本局剩餘摸牌與榮和機會的估計。
+         */
         fun from(snapshot: TableStateSnapshot, parameters: ExpectationParameters): DrawOutlook {
             val activePlayers = (snapshot.players.size - snapshot.finishedPlayerIds.size).coerceAtLeast(1)
             val liveWall = (snapshot.tileWall.tiles.size - snapshot.config.deadTileCount).coerceAtLeast(0)

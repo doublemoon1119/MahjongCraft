@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveD
  * 建立以內建登記為準的文字解析器，供 HUD 測試使用。
  *
  * @param preparationOptions 額外登記的開局準備選項名稱。
+ * @return 以內建詞彙與提供選項建立的文字解析器。
  */
 internal fun testDecisionTextResolver(
     preparationOptions: Map<String, String> = emptyMap(),

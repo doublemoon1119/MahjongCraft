@@ -171,7 +171,7 @@ class AuthoritativeStateStoreTest {
         assertEquals(0, notifications)
     }
 
-    /** 驗證每次實際變更都標記 dirty 並通知平台 listener。 */
+    /** 驗證每次實際變更都標記 dirty 並通知已註冊的 listener。 */
     @Test
     fun `mutations mark dirty and notify listener`() = runTest {
         val store = AuthoritativeStateStore()
@@ -787,14 +787,23 @@ class AuthoritativeStateStoreTest {
         assertNull(recording.firstMissingSequenceByMatchId[game.matchId])
     }
 
-    /** 建立只記錄提交事實的 listener。 */
+    /**
+     * 建立只記錄提交事實、不處理交易釋放的 listener。
+     *
+     * @param onCommitted 接收提交序號與事實的回呼。
+     * @return 將提交通知轉交給指定回呼的 listener。
+     */
     private fun recordingListener(onCommitted: (Long, CommittedGameFacts) -> Unit): CommittedFactsListener = object : CommittedFactsListener {
         override fun onCommitted(sequence: Long, facts: CommittedGameFacts) = onCommitted(sequence, facts)
 
         override fun onReleased(sequence: Long) = Unit
     }
 
-    /** 建立最小等待階段 Room。 */
+    /**
+     * 建立最小等待階段 Room。
+     *
+     * @return 僅包含房主的測試房間。
+     */
     private fun createRoom(): Room {
         val hostId = Uuid.random()
         return Room(

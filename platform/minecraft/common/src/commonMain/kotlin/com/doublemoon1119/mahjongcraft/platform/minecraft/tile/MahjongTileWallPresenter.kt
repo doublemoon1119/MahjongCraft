@@ -11,27 +11,47 @@ import kotlin.uuid.Uuid
  * 比照 [MahjongDiceRollPresenter] 的 best-effort 慣例。
  */
 interface MahjongTileWallPresenter {
-    /** 在指定桌面呈現整副牌牆；[MahjongTileWallPresentation.finalLayout] 為空時等同只清除舊牌。 */
+    /**
+     * 在指定桌面呈現整副牌牆；[MahjongTileWallPresentation.finalLayout] 為空時等同只清除舊牌。
+     *
+     * @param presentation 已由規則決定的牌牆呈現資料。
+     * @return 牌牆呈現結果。
+     */
     fun present(presentation: MahjongTileWallPresentation): MahjongTileWallPresentationResult
 
-    /** 在既有牌牆上排入開門整理及初始公開牌翻面動畫。 */
+    /**
+     * 在既有牌牆上排入開門整理及初始公開牌翻面動畫。
+     *
+     * @param presentation 開門與初始翻面所需的資料。
+     * @return 牌牆呈現結果。
+     */
     fun presentOpening(presentation: MahjongTileWallOpeningPresentation): MahjongTileWallPresentationResult
 
-    /** 將權威 transition 原子排入指定桌子的既有牌牆 entity。 */
+    /**
+     * 將權威 transition 原子排入指定桌子的既有牌牆 entity。
+     *
+     * @param presentation 已由規則解析完成的 transition 資料。
+     * @return transition 呈現結果。
+     */
     fun presentTransition(presentation: MahjongTileWallTransitionPresentation): MahjongTileWallTransitionResult
 
     /**
-     * 把 [revealedTileIds] 對應的既有王牌 entity 姿態改成正面朝上，其餘管理中的王牌不受影響——用於
-     * 牌牆建立之後才追加公開的牌（例如日麻槓牌後翻開新的寶牌指示牌），跟 [present] 開局那次的初始
-     * 公開（[MahjongTileWallPresentation.revealedTileIds]）是兩條獨立的時機，理由見
-     * `GamePresentationPublisher.publishWallTilesRevealed` KDoc。冪等：重複呼叫同一批 id 沒有
-     * 副作用。
+     * 將 [revealedTileIds] 對應的既有王牌 entity 翻至正面，不影響其他管理中的王牌。重複呼叫相同 ID
+     * 不會改變結果。
      *
+     * @param tableId 麻將桌 UUID。
+     * @param tableLocation 麻將桌目前位置。
      * @param revealedTileIds 本次新增公開翻面的牌 Uuid 集合；實作只處理這一批，重複 ID 仍須保持冪等。
      * @return 找不到對應 entity 的張數；比照本介面 best-effort 慣例，找不到的牌會被跳過。
      */
     fun revealDeadWallTiles(tableId: Uuid, tableLocation: TableLocation, revealedTileIds: Set<Uuid>): MahjongTileWallPresentationResult
 
-    /** 清除指定桌子目前的正式牌牆用牌；回傳實際移除數量。 */
+    /**
+     * 清除指定桌子目前的正式牌牆用牌。
+     *
+     * @param tableId 麻將桌 UUID。
+     * @param tableLocation 麻將桌目前位置。
+     * @return 實際移除的 entity 數量。
+     */
     fun clear(tableId: Uuid, tableLocation: TableLocation): Int
 }

@@ -104,7 +104,12 @@ class MahjongPlayerPersistenceTest {
         assertEquals(true, restoredEntry.isTaken)
     }
 
-    /** 將玩家編碼成 JSON 後解碼並還原成 domain。 */
+    /**
+     * 將玩家編碼成 JSON 後解碼並還原成領域模型。
+     *
+     * @param player 要進行存檔往返驗證的玩家狀態。
+     * @return 經 JSON 編解碼還原的玩家狀態。
+     */
     private fun encodedRoundTrip(player: MahjongPlayer): MahjongPlayer {
         val encoded = json.encodeToString(
             MahjongPlayerPersistenceDto.serializer(),
@@ -125,7 +130,12 @@ class MahjongPlayerPersistenceTest {
         )
     }
 
-    /** 比對不依賴牌河具體實作的玩家權威狀態。 */
+    /**
+     * 比對不依賴牌河具體實作的玩家權威狀態。
+     *
+     * @param expected 原始玩家狀態。
+     * @param actual 存檔往返後的玩家狀態。
+     */
     private fun assertPlayerCommonState(expected: MahjongPlayer, actual: MahjongPlayer) {
         assertEquals(expected.id, actual.id)
         assertEquals(expected.initialSeatIndex, actual.initialSeatIndex)
@@ -136,6 +146,11 @@ class MahjongPlayerPersistenceTest {
         assertEquals(expected.actionHistory, actual.actionHistory)
     }
 
-    /** 建立具有隨機穩定識別碼的測試牌。 */
+    /**
+     * 為指定牌種建立具有隨機識別碼的測試牌。
+     *
+     * @param tile 測試牌的牌種。
+     * @return 帶有獨立 UUID 的測試牌。
+     */
     private fun identified(tile: Tile): IdentifiedTile = IdentifiedTile(Uuid.random(), tile)
 }

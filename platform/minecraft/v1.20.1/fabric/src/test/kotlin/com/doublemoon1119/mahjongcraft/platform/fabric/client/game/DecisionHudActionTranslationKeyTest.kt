@@ -27,11 +27,13 @@ class DecisionHudActionTranslationKeyTest {
     /** 支援的 Minecraft 語系代碼。 */
     private val locales = listOf("en_us", "ja_jp", "zh_cn", "zh_tw")
 
+    /** 包含內建與日麻動作詞彙的測試 registry。 */
     private val vocabulary = GameActionVocabularyRegistryImpl().apply {
         BuiltInMinecraftMahjongExtension.registerGameActionVocabulary(this)
         BundledRiichiMinecraftExtension.registerGameActionVocabulary(this)
     }
 
+    /** 包含內建與日麻狀態顯示名稱的測試 registry。 */
     private val statusDisplayNames = DecisionStatusDisplayNameRegistryImpl().apply {
         BuiltInMinecraftMahjongExtension.registerDecisionStatusDisplayNames(this)
         BundledRiichiMinecraftExtension.registerDecisionStatusDisplayNames(this)
@@ -75,7 +77,11 @@ class DecisionHudActionTranslationKeyTest {
         }
     }
 
-    /** 涵蓋玩家在決策介面上會看到的每一種內建動作。 */
+    /**
+     * 列出決策介面可能呈現的內建動作。
+     *
+     * @return 涵蓋核心與日麻動作的測試清單。
+     */
     private fun builtInActions(): List<GameAction> = listOf(
         GameAction.Chi(Uuid.random(), emptyList()),
         GameAction.Pon(Uuid.random(), emptyList()),
@@ -90,7 +96,12 @@ class DecisionHudActionTranslationKeyTest {
         GameAction.ExhaustiveDraw(RiichiExhaustiveDrawReason.KyuushuKyuuhai),
     )
 
-    /** 讀取指定語系檔的全部 translation key。 */
+    /**
+     * 讀取指定語系檔的全部 translation key。
+     *
+     * @param locale 語系代碼。
+     * @return 語系檔中宣告的 translation key 集合。
+     */
     private fun loadTranslations(locale: String): Set<String> {
         val resource = checkNotNull(javaClass.classLoader.getResourceAsStream("assets/mahjongcraft/lang/$locale.json")) {
             "missing language file: $locale"

@@ -49,7 +49,7 @@ internal data class SeatSpec(
  *
  * 呼叫者為莊家，座位順序為呼叫者 → 下家 → 對家 → 上家（三人日麻沒有對家），情境從呼叫者剛摸牌、準備捨牌開始。
  * 其他家必須是 AI，載入後改用 [DebugScriptedAiStrategy]，依 [liveWallFront] 排定的順序摸牌並立即打出，因此接下來
- * 每一張摸牌與捨牌都是固定的。
+ * 腳本會依各座位的策略設定處理反應與自身回合。
  *
  * @property id 完整的 namespaced 情境 ID。
  * @property invoker 呼叫者的座位設定。
@@ -191,24 +191,43 @@ internal data class SeatTiles(
     val allTiles: List<IdentifiedTile>
         get() = standingTiles + melds.flatMap { it.tiles } + listOfNotNull(drawnTile) + discards + listOfNotNull(riichiTile)
 
-    /** 預先捨牌依序放入牌河，立直宣告牌放在最後。 */
+    /**
+     * 預先捨牌依序放入牌河，立直宣告牌放在最後。
+     *
+     * @return 依設定建立的牌河。
+     */
     fun discardPile(): RiichiDiscardPile {
         val pile = discards.fold(RiichiDiscardPile()) { current, tile -> current.discardTile(tile) }
         return riichiTile?.let { pile.discard(RiichiDiscardEntry(it, isRiichi = true)) } ?: pile
     }
 
-    /** 與預先捨牌一致的摸牌、捨牌與立直紀錄。 */
+    /**
+     * 建立與預先捨牌一致的摸牌、捨牌與立直紀錄。
+     *
+     * @return 依設定排列的動作紀錄。
+     */
     fun actionHistory(): List<GameAction> = discards.flatMap { tile -> listOf(GameAction.Draw, GameAction.Discard(tile.id)) } +
         (riichiTile?.let { tile -> listOf(GameAction.Draw, RIICHI_GAME_ACTION, GameAction.Discard(tile.id)) } ?: emptyList())
 
-    /** 以牌種互異的填充牌補齊立牌。 */
+    /**
+     * 以牌種互異的填充牌補齊立牌，並從可用牌中移除填充牌。
+     *
+     * @param spec 用於計算副露已占張數的座位設定。
+     * @param availableTiles 尚未分配的實體牌；選出的填充牌會從此清單移除。
+     * @return 補齊立牌後的座位牌組。
+     */
     fun withFillers(spec: SeatSpec, availableTiles: MutableList<IdentifiedTile>): SeatTiles {
         val fillerCount = INITIAL_HAND_SIZE - spec.ponTiles.size * MELD_TILE_COUNT - standingTiles.size
         return copy(standingTiles = standingTiles + takeDistinctFillers(availableTiles, fillerCount))
     }
 }
 
-/** 取出座位設定指定的牌；填充牌在所有指定牌取出後才補上。 */
+/**
+ * 取出座位設定指定的牌；填充牌在所有指定牌取出後才補上。
+ *
+ * @param availableTiles 尚未分配的實體牌；指定牌會從此清單移除。
+ * @return 尚未補上填充牌的座位牌組。
+ */
 internal fun SeatSpec.takeExplicitTiles(availableTiles: MutableList<IdentifiedTile>): SeatTiles = SeatTiles(
     standingTiles = takeTiles(availableTiles, standingTiles),
     melds = ponTiles.map { tile ->
@@ -223,7 +242,15 @@ internal fun SeatSpec.takeExplicitTiles(availableTiles: MutableList<IdentifiedTi
     riichiTile = riichiTile?.let { tile -> takeTiles(availableTiles, listOf(tile)).single() },
 )
 
-/** 從清單前端取出 [count] 張不屬於 [excludedTiles] 的牌，讓嶺上牌與寶牌不會是驗收用的和牌張。 */
+/**
+ * 依清單順序選取不屬於排除牌種的實體牌，並從原清單移除。
+ *
+ * @param tiles 尚未分配的實體牌；選取成功後會移除所選項目。
+ * @param count 要取出的張數，須為非負值。
+ * @param excludedTiles 不可選取的牌種。
+ * @return 依原清單順序選出的牌。
+ * @throws IllegalArgumentException 張數為負值，或符合條件的牌不足時拋出。
+ */
 internal fun takeAvoiding(
     tiles: MutableList<IdentifiedTile>,
     count: Int,

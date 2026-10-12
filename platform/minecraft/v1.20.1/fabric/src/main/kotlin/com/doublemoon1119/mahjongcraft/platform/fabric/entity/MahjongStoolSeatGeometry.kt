@@ -20,13 +20,28 @@ internal object MahjongStoolSeatGeometry {
      */
     const val SEATED_BOTTOM_HEIGHT: Double = 10.0 / 16.0 * 15.0 / 16.0
 
-    /** 凳面高度為 [seatTopY] 時，座位 entity 的 Y 座標。 */
+    /**
+     * 凳面高度為 [seatTopY] 時，座位 entity 的 Y 座標。
+     *
+     * @param seatTopY 凳面世界座標 Y。
+     * @return 座位 entity 的世界座標 Y。
+     */
     fun seatY(seatTopY: Double): Double = seatTopY - SEAT_SIZE
 
-    /** 座位 entity 位於 [seatY] 時，乘客腳底的 Y 座標。 */
+    /**
+     * 座位 entity 位於 [seatY] 時，乘客腳底的 Y 座標。
+     *
+     * @param seatY 座位 entity 世界座標 Y。
+     * @return 乘客腳底的世界座標 Y。
+     */
     fun passengerFeetY(seatY: Double): Double = seatY + SEAT_SIZE - SEATED_BOTTOM_HEIGHT
 
-    /** 乘客面對 [facing] 時嘗試下座的方向：先往面前，再往右、往左，最後往後。 */
+    /**
+     * 乘客面對 [facing] 時嘗試下座的方向：先往面前，再往右、往左，最後往後。
+     *
+     * @param facing 乘客目前面向。
+     * @return 依面前、右、左、後順序嘗試的方向。
+     */
     fun dismountDirections(facing: Direction): List<Direction> = listOf(
         facing,
         facing.rotateYClockwise(),

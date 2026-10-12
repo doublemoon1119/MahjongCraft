@@ -5,7 +5,11 @@ import net.minecraft.client.render.entity.EntityRenderer
 import net.minecraft.client.render.entity.EntityRendererFactory
 import net.minecraft.util.Identifier
 
-/** 無形聲音時間線的空 renderer。 */
+/**
+ * 無形聲音時間線的空 renderer。
+ *
+ * @param context Minecraft renderer factory 提供的 client context。
+ */
 class MahjongSoundTimelineEntityRenderer(
     context: EntityRendererFactory.Context,
 ) : EntityRenderer<MahjongSoundTimelineEntity>(context) {

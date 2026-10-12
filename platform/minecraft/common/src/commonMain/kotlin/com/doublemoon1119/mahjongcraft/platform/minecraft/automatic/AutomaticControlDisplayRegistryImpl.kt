@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftReso
 
 /** [AutomaticControlDisplayRegistry] 的記憶體實作。 */
 class AutomaticControlDisplayRegistryImpl : AutomaticControlDisplayRegistry {
+    /** 依自動操作識別碼索引的顯示資料。 */
     private val displays = mutableMapOf<String, AutomaticControlDisplay>()
 
     override val registrationKeys: Set<String>

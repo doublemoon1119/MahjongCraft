@@ -16,6 +16,7 @@ import kotlin.uuid.Uuid
 
 /** [GameRepositoryImpl.withExpectedGame] 的條件式寫入。 */
 class GameRepositoryImplExpectedGameTest {
+    /** 使用真實權威儲存區驗證條件式交易的儲存庫。 */
     private val repository = GameRepositoryImpl(AuthoritativeStateStore())
 
     /** 權威遊戲仍是預期的遊戲時，命令的寫入照常提交並回傳命令的結果。 */
@@ -140,6 +141,11 @@ class GameRepositoryImplExpectedGameTest {
         assertNotNull(repository.getGame(game.id))
     }
 
+    /**
+     * 建立並寫入具有獨立識別碼的測試遊戲。
+     *
+     * @return 已寫入儲存庫的遊戲。
+     */
     private suspend fun createGame(): Game {
         val table = FakeTableStateFactory.create(
             id = Uuid.random(),

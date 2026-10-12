@@ -12,13 +12,30 @@ interface GameActionVocabularyRegistry {
     /** registry 是否已凍結。 */
     val isFrozen: Boolean
 
-    /** 登記所有規則共用的中立預設。 */
+    /**
+     * 登記所有規則共用的中立預設。
+     *
+     * @param actionId 動作的穩定 ID。
+     * @param vocabulary 要使用的顯示用語。
+     */
     fun registerDefault(actionId: String, vocabulary: GameActionVocabulary)
 
-    /** 登記指定規則模組專屬的用語，覆寫同一個動作的中立預設。 */
+    /**
+     * 登記指定規則模組專屬的用語，優先於同一動作的中立預設。
+     *
+     * @param ruleModuleId 規則模組 ID。
+     * @param actionId 動作的穩定 ID。
+     * @param vocabulary 要使用的規則專屬顯示用語。
+     */
     fun register(ruleModuleId: String, actionId: String, vocabulary: GameActionVocabulary)
 
-    /** 查詢用語：先查 [ruleModuleId] 的登記，再查中立預設；都沒有時回傳 null。 */
+    /**
+     * 查詢用語：先查 [ruleModuleId] 的登記，再查中立預設；都沒有時回傳 null。
+     *
+     * @param ruleModuleId 規則模組 ID；null 時只查中立預設。
+     * @param actionId 動作的穩定 ID。
+     * @return 找到的規則專屬或中立顯示用語；都未登記時為 null。
+     */
     fun find(ruleModuleId: String?, actionId: String): GameActionVocabulary?
 
     /** 凍結 registry，禁止後續登記。 */

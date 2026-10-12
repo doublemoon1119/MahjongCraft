@@ -9,6 +9,10 @@ import kotlin.uuid.toJavaUuid
  * 這個本地、同步、不用連網的名字快取（伺服器曾經看過這個 UUID 就查得到，offline-mode 假 UUID 也適用，
  * 因為快取存的是伺服器自己記得的對應關係，不是 Mojang 官方資料）。兩者都查不到就回傳 `null`，交由呼叫
  * 端決定要顯示什麼 fallback 文字。
+ *
+ * @param serverHolder 提供目前伺服器與線上玩家查詢。
+ * @param playerId 要解析名稱的玩家 UUID。
+ * @return 線上或 UserCache 中的普通名稱；兩處都沒有時為 null。
  */
 fun resolveKnownPlayerName(serverHolder: FabricServerHolder, playerId: Uuid): String? = serverHolder.findPlayer(playerId)?.gameProfile?.name
     ?: serverHolder.current()?.userCache?.getByUuid(playerId.toJavaUuid())?.orElse(null)?.name

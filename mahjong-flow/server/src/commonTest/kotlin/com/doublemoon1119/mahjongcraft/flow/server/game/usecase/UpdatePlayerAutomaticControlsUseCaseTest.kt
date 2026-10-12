@@ -31,7 +31,14 @@ class UpdatePlayerAutomaticControlsUseCaseTest {
         /** 本次受測 use case。 */
         val useCase = UpdatePlayerAutomaticControlsUseCase(gameRepository, moduleRegistry)
 
-        /** 建立並保存一場四人日麻對局。 */
+        /**
+         * 建立並保存一場四人日麻對局。
+         *
+         * @param automaticControlRevision 對局目前的自動操作 revision。
+         * @param enabledControlIds 測試玩家目前啟用的控制 ID。
+         * @param isMatchOver 對局是否已結束。
+         * @return 建立的對局與測試玩家 ID。
+         */
         suspend fun createGame(
             automaticControlRevision: Long = 0L,
             enabledControlIds: Set<String> = emptySet(),

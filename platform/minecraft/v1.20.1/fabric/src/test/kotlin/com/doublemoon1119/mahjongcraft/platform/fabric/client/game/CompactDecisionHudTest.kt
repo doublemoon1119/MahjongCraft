@@ -180,7 +180,15 @@ class CompactDecisionHudTest {
         assertEquals("mahjongcraft.hud.tile_selection_ready", content.key)
     }
 
-    /** 組出顯示決策。 */
+    /**
+     * 組出顯示決策。
+     *
+     * @param prompt 目前權威決策提示。
+     * @param dismissedDecisionKey 已收起畫面的決策鍵。
+     * @param isPhysicalSelectionActive 是否已有實體牌選取操作。
+     * @param tileSelectionProgress 目前選牌進度。
+     * @return 依 prompt 與本機狀態決定的精簡 HUD 內容。
+     */
     private fun content(
         prompt: PlayerDecisionPromptDto? = interactivePrompt(),
         dismissedDecisionKey: String? = null,
@@ -188,7 +196,11 @@ class CompactDecisionHudTest {
         tileSelectionProgress: DecisionTileSelectionState.Progress? = null,
     ) = compactDecisionHudContent(prompt, dismissedDecisionKey, isPhysicalSelectionActive, tileSelectionProgress)
 
-    /** 建立含一個動作候選的 prompt。 */
+    /**
+     * 建立含一個動作候選的 prompt。
+     *
+     * @return 使用固定決策鍵與榮和候選的測試 prompt。
+     */
     private fun interactivePrompt() = PlayerDecisionPromptDto(
         decisionKey = DECISION_KEY,
         actions = listOf(PlayerDecisionActionDto(token = "token-1", actionId = "mahjongcraft:ron", referenceTileAssetKey = null, previewTileAssetKeys = emptyList(), claimedTileIndex = null, tileSelection = null)),
@@ -202,7 +214,16 @@ class CompactDecisionHudTest {
         discardAnalyses = emptyList(),
     )
 
-    /** 建立測試用的版位。 */
+    /**
+     * 建立測試用的版位。
+     *
+     * @param expanded 是否顯示提示文字。
+     * @param screenWidth 畫面寬度。
+     * @param screenHeight 畫面高度。
+     * @param ratioX 水平位置比例。
+     * @param ratioY 垂直位置比例。
+     * @return 依指定尺寸與位置建立的精簡 HUD 版位。
+     */
     private fun layout(
         expanded: Boolean,
         screenWidth: Int = 854,
@@ -211,7 +232,9 @@ class CompactDecisionHudTest {
         ratioY: Double = 0.5,
     ) = CompactDecisionHudLayout(screenWidth, screenHeight, ratioX, ratioY, expanded)
 
+    /** 測試用識別值。 */
     private companion object {
+        /** 測試用決策鍵。 */
         const val DECISION_KEY = "decision-1"
     }
 }

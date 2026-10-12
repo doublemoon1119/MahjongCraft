@@ -20,8 +20,13 @@ import kotlin.uuid.Uuid
  */
 class SyncRoomSnapshotUseCaseTest {
 
+    /** 測試房間的識別碼。 */
     private val roomId: Uuid = Uuid.random()
+
+    /** 測試房間房主的玩家識別碼。 */
     private val hostId: Uuid = Uuid.random()
+
+    /** 測試房間使用的規則設定。 */
     private val config: MahjongRuleConfig = FakeMahjongRuleConfig()
 
     /**

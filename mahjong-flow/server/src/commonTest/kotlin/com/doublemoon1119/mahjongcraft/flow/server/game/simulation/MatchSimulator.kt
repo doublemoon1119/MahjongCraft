@@ -53,7 +53,11 @@ internal data class SimulationFailure(
     val trace: List<DecisionRecord>,
     val reproducedOnReplay: Boolean?,
 ) {
-    /** 供測試失敗訊息使用的完整描述。 */
+    /**
+     * 供測試失敗訊息使用的完整描述。
+     *
+     * @return 包含原因、例外、局況與近期決策的文字。
+     */
     fun describe(): String = buildString {
         appendLine("Simulation failure: $reason")
         cause?.let { appendLine("Cause: $it") }
@@ -91,8 +95,8 @@ internal data class MatchResult(
 /**
  * 以正式規則與流程讓 AI 打完一整場對局，並檢查：沒有送出不合法命令、流程沒有卡住、點數守恆、對局正常結束。
  *
- * 每一局開局時的權威桌況都會記錄下來；偵測到問題時，從發生問題那一局的開局桌況重新推進一次，確認問題能重現。
- * 內建期望值策略是確定性的，同一個開局桌況一定得到同樣的過程；隨機出牌策略則不保證重現。
+ * 記錄每局開局桌況；偵測到問題時，從選定局的開局桌況重新推進，記錄是否再次出現問題。
+ * 重新推進仍會繼續到後續各局；後續洗牌與隨機策略沒有固定亂數來源，因此不保證完整過程相同。
  * 點數守恆以日麻計算：所有玩家的分數加上場上立直棒的點數，等於開局總分。
  *
  * @property config 對局規則設定。
@@ -113,6 +117,7 @@ internal class MatchSimulator(
      *
      * @param lineup 每位玩家使用的策略 key。
      * @param recorder 累計決策時間與最近決策的紀錄。
+     * @return 對局結果，包含各局摘要、名次或診斷資料。
      */
     suspend fun play(lineup: List<String>, recorder: DecisionRecorder = DecisionRecorder()): MatchResult {
         val runtime = runtime(recorder)
@@ -149,7 +154,13 @@ internal class MatchSimulator(
         )
     }
 
-    /** 從 [start] 以 [aiPlayerStrategyKeys] 重新推進一次，回傳是否再次發生問題。 */
+    /**
+     * 從 [start] 以 [aiPlayerStrategyKeys] 重新推進一次，回傳是否再次發生問題。
+     *
+     * @param start 要重播的開局桌況。
+     * @param aiPlayerStrategyKeys 玩家與策略 key 的對應。
+     * @return 是否再次偵測到問題。
+     */
     private suspend fun replayFails(start: TableState, aiPlayerStrategyKeys: Map<Uuid, String>): Boolean {
         val recorder = DecisionRecorder()
         val runtime = runtime(recorder)
@@ -161,6 +172,11 @@ internal class MatchSimulator(
      * 推進對局直到停止，回傳問題的說明與例外；正常結束時為 null。
      *
      * 流程停在整場結束之前時，把最後一次 AI 決策的命令重新送出一次，附上流程拒絕它的原因。
+     *
+     * @param runtime 此次模擬使用的流程與倉庫。
+     * @param gameId 對局識別碼。
+     * @param recorder 決策紀錄器。
+     * @return 停止原因與例外；對局正常結束且點數守恆時為 null。
      */
     private suspend fun drive(
         runtime: SimulationRuntime,
@@ -182,13 +198,24 @@ internal class MatchSimulator(
         return null
     }
 
-    /** 所有玩家的分數加上場上立直棒的點數是否等於開局總分。 */
+    /**
+     * 所有玩家的分數加上場上立直棒的點數是否等於開局總分。
+     *
+     * @param state 要檢查的桌況。
+     * @return 總分守恆時為 true。
+     */
     private fun isConserved(state: TableState): Boolean {
         val sticks = (state.dynamicRuleState as? RiichiDynamicState)?.riichiStickCount ?: 0
         return state.players.sumOf { it.score } + sticks * RIICHI_STICK_POINTS == state.players.size * config.scoreConfig.initialScore
     }
 
-    /** 一局中每位玩家的分數變化、和牌與放銃，以及局結束時是否有其他玩家已經立直。 */
+    /**
+     * 一局中每位玩家的分數變化、和牌與放銃，以及局結束時是否有其他玩家已經立直。
+     *
+     * @param round 已記錄的一局。
+     * @param strategyKeysByPlayer 玩家與策略 key 的對應。
+     * @return 每位玩家各一筆的局內結果。
+     */
     private fun roundResults(round: RecordedRound, strategyKeysByPlayer: Map<Uuid, String>): List<SeatRoundResult> {
         val final = round.final
         val riichiIds = final.players
@@ -217,13 +244,24 @@ internal class MatchSimulator(
         }
     }
 
-    /** 依規則的整場排名決定名次。 */
+    /**
+     * 依規則的整場排名決定名次。
+     *
+     * @param runtime 此次模擬使用的流程與規則模組。
+     * @param finalState 終局桌況。
+     * @return 玩家識別碼與名次的對應，第一名為 1。
+     */
     private fun placements(runtime: SimulationRuntime, finalState: TableState): Map<Uuid, Int> = finalState.players
         .sortedWith(runtime.moduleRegistry.getModule(config).compareForMatchRanking())
         .mapIndexed { index, player -> player.id to index + 1 }
         .toMap()
 
-    /** 建立一個新的對局環境，AI 策略包裝成記錄決策並檢查合法性的版本。 */
+    /**
+     * 建立一個新的對局環境，AI 策略包裝成記錄決策並檢查合法性的版本。
+     *
+     * @param recorder 決策紀錄器。
+     * @return 註冊好儀器化 AI 策略的新對局環境。
+     */
     private fun runtime(recorder: DecisionRecorder): SimulationRuntime = SimulationRuntime(defaultStrategyKey = BuiltInAiStrategyKeys.BEGINNER).also { runtime ->
         val source = MahjongAiStrategyRegistryImpl(defaultKey = BuiltInAiStrategyKeys.BEGINNER)
         registerStrategies(source, runtime)

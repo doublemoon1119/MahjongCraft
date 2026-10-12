@@ -24,11 +24,25 @@ object FakeTableStateFactory {
     /**
      * 建立一個測試用的 [TableState]。
      *
-     * [tileWall] 預設不是空牌山——一場真實對局開局時牌山本來就有大量剩餘，空牌山只是牌山摸盡這個
-     * 特定情境的測試才需要的邊界值，不該是每個測試都要背的預設狀態（[RiichiLegalActionValidator]
-     * 的河底/海底鳴牌限制、立直摸牌機會限制都依賴 `remainingCount`，空牌山預設會讓幾乎所有跟鳴牌／
-     * 立直相關的既有測試意外被擋下，這是實際遇到的問題）；需要測試牌山摸盡情境的測試應自行覆寫成
+     * [tileWall] 預設包含牌張，避免測試意外觸發依賴牌山剩餘張數的邊界判斷；這也符合
+     * [RiichiLegalActionValidator] 對河底／海底鳴牌與立直摸牌機會的檢查。需要測試牌山摸盡時，請傳入
      * `TileWall(emptyList())`。
+     *
+     * @param id 桌況識別碼，預設隨機產生。
+     * @param players 玩家清單；每位玩家的起家順位會依清單索引正規化，若自風重複則改依索引指定自風。
+     * @param dealerPlayerId 莊家玩家識別碼，預設使用首位玩家的識別碼；清單為空時隨機產生。
+     * @param config 此桌況使用的規則設定。
+     * @param tileWall 牌山，預設包含 70 張測試牌；摸盡情境請明確傳入空牌山。
+     * @param prevalentWind 場風，預設為東風。
+     * @param roundNumber 局數，預設為 1。
+     * @param comboCount 連莊／本場數，預設為 0。
+     * @param currentPlayerIndex 目前行動玩家在清單中的索引，預設為 0。
+     * @param dynamicRuleState 動態規則狀態，預設為 null。
+     * @param pendingReaction 尚待處理的鳴牌反應，預設為 null。
+     * @param pendingRobbingReaction 尚待處理的搶槓反應，預設為 null。
+     * @param reservedWallTiles 從牌山預留的牌，預設為空清單。
+     * @param physicalWallLayout 實體牌牆配置，預設為 null。
+     * @param finishedPlayerIds 已完成本局的玩家識別碼，預設為空集合。
      */
     fun create(
         id: Uuid = Uuid.random(),
@@ -76,6 +90,6 @@ object FakeTableStateFactory {
         )
     }
 
-    /** [tileWall] 預設張數——遠高於一般測試的玩家人數，避免不小心撞到摸牌相關的邊界判斷。 */
+    /** [TileWall] 預設牌張數，供一般測試避免意外觸發牌山摸盡判斷。 */
     private const val DEFAULT_WALL_SIZE = 70
 }

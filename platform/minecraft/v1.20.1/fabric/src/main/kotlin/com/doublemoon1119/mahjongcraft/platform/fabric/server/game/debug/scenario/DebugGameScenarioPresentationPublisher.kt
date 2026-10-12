@@ -9,13 +9,22 @@ import com.doublemoon1119.mahjongcraft.logic.table.TileWallRevealable
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
-/** 將 debug 情境轉交給正式 [GamePresentationPublisher] 的可測試發布器。 */
+/**
+ * 將開發情境轉交給正式 [GamePresentationPublisher] 的發布器。
+ *
+ * @property publisher 發布桌面物件與局況的正式呈現介面。
+ * @property moduleRegistry 查詢牌張排序與移出手牌區等規則能力。
+ */
 @Single
 class DebugGameScenarioPresentationPublisher(
     private val publisher: GamePresentationPublisher,
     private val moduleRegistry: MahjongModuleRegistry,
 ) {
-    /** 依情境指定的呈現方式發布完整桌況。 */
+    /**
+     * 依情境指定的呈現方式發布完整桌況。
+     *
+     * @param result 已通過情境驗證的對局與呈現資料。
+     */
     fun publish(result: DebugGameScenarioResult) {
         val game = result.game
         val state = game.tableState
@@ -56,7 +65,12 @@ class DebugGameScenarioPresentationPublisher(
         }
     }
 
-    /** 直接重建可操作情境的目前牌牆、手牌、副露與牌河。 */
+    /**
+     * 直接重建可操作情境的目前牌牆、手牌、副露與牌河。
+     *
+     * @param result 已驗證的情境資料。
+     * @param revealedTileIds 規則要求公開的牌張識別碼。
+     */
     private fun publishStaticTable(result: DebugGameScenarioResult, revealedTileIds: Set<Uuid>) {
         val game = result.game
         val state = game.tableState
@@ -89,7 +103,11 @@ class DebugGameScenarioPresentationPublisher(
         }
     }
 
-    /** 發布靜態情境與完整開局共用的桌上物件及局況資訊。 */
+    /**
+     * 發布靜態情境與完整開局共用的桌上物件及局況資訊。
+     *
+     * @param result 提供目前權威桌況的情境結果。
+     */
     private fun publishTableInformation(result: DebugGameScenarioResult) {
         val game = result.game
         val state = game.tableState

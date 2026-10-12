@@ -10,7 +10,12 @@ import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 import java.util.Locale
 
-/** 壓力測試的完整報告訊息：執行中顯示目前數據，停止後加上停止原因與爬坡結果。 */
+/**
+ * 壓力測試的完整報告訊息：執行中顯示目前數據，停止後加上停止原因與爬坡結果。
+ *
+ * @param report 要呈現的測試快照。
+ * @return 帶模組前綴與分行欄位的報告文字。
+ */
 internal fun stressTestReportMessage(report: StressTestReport): MutableText = prefixedConfigMessage(
     stressText(if (report.running) StressDebugKeys.TITLE_RUNNING else StressDebugKeys.TITLE_STOPPED),
     if (report.running) Formatting.AQUA else Formatting.YELLOW,
@@ -78,7 +83,12 @@ internal fun stressTestReportMessage(report: StressTestReport): MutableText = pr
     }
 }
 
-/** 報告的所有欄位，以一行英文輸出到 log；主控台開始的測試沒有玩家可收報告，也方便比較不同次的結果。 */
+/**
+ * 報告的所有欄位，以一行英文輸出到 log；主控台開始的測試沒有玩家可收報告，也方便比較不同次的結果。
+ *
+ * @param report 要格式化的測試快照。
+ * @return 供記錄與比較的單行英文摘要。
+ */
 internal fun stressTestReportLogLine(report: StressTestReport): String = with(report) {
     buildString {
         append("reason=").append(stopReason)
@@ -135,6 +145,9 @@ internal fun stressTestReportLogLine(report: StressTestReport): String = with(re
  * 一次 AI 出牌決策的情境，以一行英文輸出到 log，用來重現異常緩慢的決策。
  *
  * 牌以數字加花色表示：m 萬子、p 筒子、s 條子；字牌 1z 至 7z 依序為東、南、西、北、白、發、中；看不到的牌為 ?。
+ *
+ * @param context 策略取得的決策情境，僅輸出其中可見的牌。
+ * @return 回合、座風、手牌、副露與合法動作的單行英文摘要。
  */
 internal fun stressAiDecisionLogText(context: AiDecisionContext): String {
     val snapshot = context.snapshot
@@ -150,7 +163,12 @@ internal fun stressAiDecisionLogText(context: AiDecisionContext): String {
     }
 }
 
-/** 一張牌的簡寫。 */
+/**
+ * 一張牌的簡寫。
+ *
+ * @param tile 牌種；null 表示沒有提供或不可見。
+ * @return 牌種簡寫、擴充牌 ID，或未知牌符號。
+ */
 private fun tileNotation(tile: Tile?): String = when (tile) {
     null -> "?"
     is Tile.Numeric -> "${tile.value}" + when (tile.suit) {
@@ -168,16 +186,32 @@ private fun tileNotation(tile: Tile?): String = when (tile) {
     is Tile.Extension -> "${tile.typeId.namespace}:${tile.typeId.path}"
 }
 
-/** 帶有固定前綴的單行壓力測試回覆。 */
+/**
+ * 帶有固定前綴的單行壓力測試回覆。
+ *
+ * @param key 內容的翻譯鍵。
+ * @param color 內容的文字顏色。
+ * @return 帶模組前綴的回覆文字。
+ */
 internal fun stressTestMessage(key: String, color: Formatting): MutableText = prefixedConfigMessage(stressText(key), color)
 
-/** 桌數安排的顯示文字。 */
+/**
+ * 桌數安排的顯示文字。
+ *
+ * @param mode 固定桌數或爬坡安排。
+ * @return 對應安排的本地化文字。
+ */
 private fun modeText(mode: StressTestMode): Text = when (mode) {
     is StressTestMode.Fixed -> Text.translatableWithFallback(StressDebugKeys.MODE_FIXED, "Fixed %s tables", mode.tables)
     is StressTestMode.Ramp -> stressText(StressDebugKeys.MODE_RAMP)
 }
 
-/** 開始持續卡頓時的桌數；欄位名稱帶有卡頓的毫秒門檻。 */
+/**
+ * 開始持續卡頓時的桌數；欄位名稱帶有卡頓的毫秒門檻。
+ *
+ * @param report 包含卡頓門檻與首次持續卡頓桌數的報告。
+ * @return 包含門檻、桌數或尚未發生提示的欄位。
+ */
 private fun stutterEntry(report: StressTestReport): MutableText = Text.literal("\n  • ")
     .formatted(Formatting.GRAY)
     .append(Text.translatableWithFallback(StressDebugKeys.STUTTER, STRESS_FALLBACKS.getValue(StressDebugKeys.STUTTER), formatMillis(report.stutterLimitMillis)).formatted(Formatting.GRAY))
@@ -187,7 +221,12 @@ private fun stutterEntry(report: StressTestReport): MutableText = Text.literal("
             ?: stressText(StressDebugKeys.STUTTER_NONE).formatted(Formatting.GREEN),
     )
 
-/** 暖機狀態的顯示文字。 */
+/**
+ * 暖機狀態的顯示文字。
+ *
+ * @param report 包含暖機設定與剩餘 tick 數的報告。
+ * @return 未設定、進行中或完成暖機的提示。
+ */
 private fun warmupText(report: StressTestReport): Text = when {
     report.warmupTicks == 0L -> stressText(StressDebugKeys.WARMUP_NONE)
     report.warmupRemainingTicks > 0 -> Text.translatableWithFallback(
@@ -198,7 +237,12 @@ private fun warmupText(report: StressTestReport): Text = when {
     else -> Text.translatableWithFallback(StressDebugKeys.WARMUP_DONE, "Done, the first %s s are excluded", report.warmupTicks / TICKS_PER_SECOND)
 }
 
-/** 選項解析錯誤的回覆。 */
+/**
+ * 選項解析錯誤的回覆。
+ *
+ * @param error 選項解析錯誤。
+ * @return 帶模組前綴的紅色錯誤回覆。
+ */
 internal fun stressOptionErrorMessage(error: StressOptionError): MutableText = prefixedConfigMessage(
     when (error) {
         is StressOptionError.UnknownOption -> Text.translatableWithFallback(
@@ -224,58 +268,129 @@ internal fun stressOptionErrorMessage(error: StressOptionError): MutableText = p
     Formatting.RED,
 )
 
-/** 推進節奏的翻譯鍵。 */
+/**
+ * 推進節奏的翻譯鍵。
+ *
+ * @param pace 測試採用的推進節奏。
+ * @return 對應節奏的翻譯鍵。
+ */
 private fun paceKey(pace: StressTestPace): String = when (pace) {
     StressTestPace.REALTIME -> StressDebugKeys.PACE_REALTIME
     StressTestPace.FAST -> StressDebugKeys.PACE_FAST
 }
 
-/** 歷史背景工作環節的翻譯鍵。 */
+/**
+ * 歷史背景工作環節的翻譯鍵。
+ *
+ * @param stage 要呈現的寫入環節。
+ * @return 對應環節的翻譯鍵。
+ */
 private fun writerStageKey(stage: HistoryWriterStage): String = StressDebugKeys.WRITER_STAGE_PREFIX + stage.name.lowercase(Locale.ROOT)
 
-/** 單一欄位：灰色欄位名稱加上指定顏色的值。 */
+/**
+ * 單一欄位：灰色欄位名稱加上指定顏色的值。
+ *
+ * @param key 欄位名稱的翻譯鍵。
+ * @param value 顯示的值；使用副本，不修改原文字。
+ * @param valueColor 值的文字顏色。
+ * @return 以換行與項目符號開頭的欄位。
+ */
 private fun entry(key: String, value: Text, valueColor: Formatting): MutableText = Text.literal("\n  • ")
     .formatted(Formatting.GRAY)
     .append(stressText(key).formatted(Formatting.GRAY))
     .append(Text.literal(": ").formatted(Formatting.DARK_GRAY))
     .append(value.copy().formatted(valueColor))
 
-/** 縮排在上一個欄位下的子欄位。 */
+/**
+ * 縮排在上一個欄位下的子欄位。
+ *
+ * @param name 子欄位名稱；會直接設定此文字的顏色。
+ * @param value 子欄位值。
+ * @return 以換行與縮排項目符號開頭的子欄位。
+ */
 private fun subEntry(name: MutableText, value: String): MutableText = Text.literal("\n      ◦ ")
     .formatted(Formatting.DARK_GRAY)
     .append(name.formatted(Formatting.GRAY))
     .append(Text.literal(": ").formatted(Formatting.DARK_GRAY))
     .append(Text.literal(value).formatted(Formatting.AQUA))
 
-/** 以 [key] 建立帶英文備援的本地化文字。 */
+/**
+ * 以 [key] 建立帶英文備援的本地化文字。
+ *
+ * @param key 翻譯鍵；沒有英文備援時也作為備援內容。
+ * @return 帶英文或鍵名備援的本地化文字。
+ */
 private fun stressText(key: String): MutableText = Text.translatableWithFallback(key, STRESS_FALLBACKS[key] ?: key)
 
-/** 以平均／第 95 百分位／最大值格式化毫秒數。 */
+/**
+ * 以平均／第 95 百分位／最大值格式化毫秒數。
+ *
+ * @param average 平均毫秒數。
+ * @param p95 第 95 百分位毫秒數。
+ * @param max 最大毫秒數。
+ * @return 各保留一位小數，以斜線分隔並附毫秒單位的文字。
+ */
 private fun formatTriple(average: Double, p95: Double, max: Double): String = "${formatMillis(average)} / ${formatMillis(p95)} / ${formatMillis(max)} ms"
 
-/** 以「／」串接多個毫秒數。 */
+/**
+ * 以「／」串接多個毫秒數。
+ *
+ * @param values 按顯示順序排列的毫秒數。
+ * @return 各保留一位小數，以斜線分隔並附毫秒單位的文字。
+ */
 private fun formatMillisList(vararg values: Double): String = values.joinToString(" / ", postfix = " ms", transform = ::formatMillis)
 
-/** 以平均／最大值格式化毫秒數。 */
+/**
+ * 以平均／最大值格式化毫秒數。
+ *
+ * @param summary 計時摘要。
+ * @return 平均與最大毫秒數，各保留一位小數。
+ */
 private fun formatAverageMax(summary: TimingSummary): String = "${formatMillis(summary.averageMillis)} / ${formatMillis(summary.maxMillis)} ms"
 
-/** 各門檻的超時 tick 比例，例如「1.5% / 0.2% / 0.0%」。 */
+/**
+ * 各門檻的超時 tick 比例，例如「1.5% / 0.2% / 0.0%」。
+ *
+ * @param report 包含各門檻超時次數與已量測 tick 數的報告。
+ * @return 依門檻順序排列的百分比；未量測時比例為零。
+ */
 private fun formatSlowTicks(report: StressTestReport): String = report.slowTicks.values.joinToString(" / ") { count ->
     val ratio = if (report.measuredTicks == 0L) 0.0 else count * PERCENT / report.measuredTicks
     "${formatMillis(ratio)}%"
 }
 
-/** 歷史事件的產生與處理數量及每秒速率。 */
+/**
+ * 歷史事件的產生與處理數量及每秒速率。
+ *
+ * @param report 包含事件數與量測秒數的報告。
+ * @return 產生／處理數量及對應每秒速率的文字。
+ */
 private fun formatEvents(report: StressTestReport): String = "${report.eventsProduced} / ${report.eventsWritten} " +
     "(${formatMillis(perSecond(report.eventsProduced, report.measuredSeconds))} / ${formatMillis(perSecond(report.eventsWritten, report.measuredSeconds))} /s)"
 
-/** 每秒速率；沒有經過時間時為 0。 */
+/**
+ * 每秒速率；沒有經過時間時為 0。
+ *
+ * @param count 累計數量。
+ * @param seconds 經過秒數；非正值時不計算速率。
+ * @return 每秒數量，或時間非正值時的零。
+ */
 private fun perSecond(count: Long, seconds: Double): Double = if (seconds <= 0.0) 0.0 else count / seconds
 
-/** 以一位小數格式化。 */
+/**
+ * 以一位小數格式化。
+ *
+ * @param value 要格式化的數值，不限於毫秒。
+ * @return 使用固定小數點符號、保留一位小數的文字。
+ */
 private fun formatMillis(value: Double): String = String.format(Locale.ROOT, "%.1f", value)
 
-/** 把 tick 數換算成秒數。 */
+/**
+ * 把 tick 數換算成秒數。
+ *
+ * @param ticks 以每秒 20 tick 換算的 tick 數。
+ * @return 整數除法取得的秒數與單位，不代表實際經過時間。
+ */
 private fun formatSeconds(ticks: Long): String = "${ticks / TICKS_PER_SECOND} s"
 
 /** 一秒的伺服器 tick 數。 */

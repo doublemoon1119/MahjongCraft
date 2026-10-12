@@ -41,7 +41,14 @@ internal object FlatPatchCodec {
         update(current, path, operation)
     }
 
-    /** 遞迴展開物件與列表差異，將葉節點轉為可索引操作。 */
+    /**
+     * 遞迴展開物件與列表差異，將葉節點轉為可索引操作。
+     *
+     * @param patch 待攤平的差異節點。
+     * @param path 目前節點在原資料樹中的位置。
+     * @param paths 對應差異路徑及字典索引的可變對照表。
+     * @param output 接收攤平後操作的清單。
+     */
     private fun flatten(
         patch: JsonElement,
         path: List<JsonElement>,
@@ -82,7 +89,14 @@ internal object FlatPatchCodec {
         }
     }
 
-    /** 沿指定路徑更新單一節點；列表操作會驗證原列表長度。 */
+    /**
+     * 沿指定路徑更新單一節點；列表操作會驗證原列表長度。
+     *
+     * @param value 目前尚未更新的 JSON 節點。
+     * @param path 要更新的節點路徑。
+     * @param operation 要套用的單一操作。
+     * @return 套用操作後的 JSON 節點。
+     */
     private fun update(value: JsonElement, path: List<JsonElement>, operation: JsonArray): JsonElement {
         if (path.isEmpty()) {
             return when (operation[1].jsonPrimitive.content.toInt()) {

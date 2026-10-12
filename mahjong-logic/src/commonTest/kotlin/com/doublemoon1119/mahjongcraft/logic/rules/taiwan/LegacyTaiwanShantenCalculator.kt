@@ -85,7 +85,7 @@ internal class LegacyTaiwanShantenCalculator : ShantenCalculator {
      *
      * @param counts 立牌的計數陣列。
      * @param exposedMeldsCount 已副露的面子數。
-     * @return 如果標準型手牌已完成則為 true。
+     * @return 找到雀頭且遞迴搜尋達到所需面子數時為 true；保留凍結實作的判定方式。
      */
     private fun isStandardCompleteHand(counts: IntArray, exposedMeldsCount: Int): Boolean {
         val targetMelds = 5 - exposedMeldsCount
@@ -107,6 +107,12 @@ internal class LegacyTaiwanShantenCalculator : ShantenCalculator {
 
     /**
      * 遞迴計算能夠組成的最多面子數。
+     *
+     * @param counts 各牌索引目前剩餘的張數；遞迴會暫時扣牌並在返回前還原。
+     * @param index 下一個要檢查的牌索引。
+     * @param currentMelds 目前已組成的面子數。
+     * @param targetMelds 此次搜尋要達到的面子數。
+     * @return 最終組成的面子數，最多不超過 `targetMelds`。
      */
     private fun countMeldsRecursive(counts: IntArray, index: Int, currentMelds: Int, targetMelds: Int): Int {
         if (currentMelds >= targetMelds || index >= 34) {
@@ -142,6 +148,10 @@ internal class LegacyTaiwanShantenCalculator : ShantenCalculator {
 
     /**
      * 計算聽牌列表。
+     *
+     * @param counts 立牌中各牌型的張數。
+     * @param exposedMeldsCount 已副露的面子數。
+     * @return 加入一張牌後可完成標準型手牌的牌種，不重複列出。
      */
     private fun calculateWinningTiles(counts: IntArray, exposedMeldsCount: Int): List<Tile> {
         val winningTiles = mutableListOf<Tile>()
@@ -170,6 +180,7 @@ internal class LegacyTaiwanShantenCalculator : ShantenCalculator {
      *
      * @param counts 立牌的計數陣列。
      * @param initialMelds 已副露的面子數。
+     * @return 比較各雀頭候選與無雀頭情況後的最小向聽數。
      */
     private fun calculateStandardShanten(counts: IntArray, initialMelds: Int): Int {
         var minShanten = 10 // 台灣麻將的初始最大向聽數
@@ -181,7 +192,7 @@ internal class LegacyTaiwanShantenCalculator : ShantenCalculator {
                 // 雀頭已定 (1組)，目標是湊齊 5 組面子
                 val shanten = calculateMelds(counts, 0, initialMelds, 0)
                 // 標準型公式：10 - (總面子*2) - 搭子 - 雀頭(1)
-                // calculateMelds 回傳的是 10 - (initialMelds + melds_in_standing*2) - tatsus
+                // calculateMelds 已將副露與立牌中的面子合計，再以每個面子扣除 2。
                 // 所以這裡要減去雀頭的貢獻
                 minShanten = min(minShanten, shanten - 1)
                 counts[i] += 2
@@ -189,7 +200,7 @@ internal class LegacyTaiwanShantenCalculator : ShantenCalculator {
         }
 
         // 情況 B: 無雀頭（或尚未找到雀頭）
-        // 雀頭數為 0，目標是凑齊 5 組面子，最後缺的雀頭視為一個搭子缺口
+        // 不先取出雀頭，直接搜尋其餘面子與搭子。
         val shantenNoPair = calculateMelds(counts, 0, initialMelds, 0)
         minShanten = min(minShanten, shantenNoPair)
 

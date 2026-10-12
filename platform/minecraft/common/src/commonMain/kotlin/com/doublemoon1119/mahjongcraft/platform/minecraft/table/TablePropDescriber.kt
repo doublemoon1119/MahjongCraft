@@ -24,6 +24,7 @@ fun interface TablePropDescriber {
      *
      * @param tableState 目前的權威桌況。
      * @param seatIndex 座位，即 `TableState.players` 的 index。
+     * @return 這種物件佔用的角落寬度；預設為 `0.0`。
      */
     fun cornerWidth(tableState: TableState, seatIndex: Int): Double = 0.0
 }

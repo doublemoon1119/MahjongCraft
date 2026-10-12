@@ -23,5 +23,3 @@ data class RoundPreparationSnapshotDto(
     val ownInputSpec: RoundPreparationInputSpecDto?,
     val ownSubmission: RoundPreparationSubmissionDto?,
 )
-
-/** 將開局準備快照轉為網路資料。 */

@@ -14,6 +14,7 @@ import kotlin.test.assertTrue
 
 /** 設定頁底部與未保存變更確認畫面共用的差異文字。 */
 class MahjongClientConfigDifferenceFormatterTest {
+    /** 呈現可見性變更時列出自動操作狀態 HUD。 */
     @Test
     fun `visibility changes include automatic control status`() {
         val from = MahjongClientConfigState()
@@ -31,6 +32,7 @@ class MahjongClientConfigDifferenceFormatterTest {
         assertTrue(changeNames.any { it.key == "mahjongcraft.client_config.presentation.automatic_control_status" })
     }
 
+    /** HUD 位置異動時顯示自動操作狀態的位置差異。 */
     @Test
     fun `hud layout changes include the automatic control status position`() {
         val from = MahjongClientConfigState()
@@ -51,6 +53,7 @@ class MahjongClientConfigDifferenceFormatterTest {
         assertEquals("mahjongcraft.hud_layout.automatic_control_status", name.key)
     }
 
+    /** 遠端本局草稿差異能顯示已登記名稱與未知 ID 回退名稱。 */
     @Test
     fun `remote-only changes include registered and unknown control names`() {
         val registry = AutomaticControlDisplayRegistryImpl().apply {

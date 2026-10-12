@@ -20,6 +20,9 @@ data class ExtensionRegistrationReport(
  * 依來源合併多份登記結果，例如核心與各平台分別登記的項目。
  *
  * 來源依第一次出現的順序排列；同一來源在多份結果中的類別依結果順序串接。
+ *
+ * @param sourceLists 要合併的來源清單，依傳入順序處理。
+ * @return 每個來源只出現一次的合併結果；來源依首次出現排序，同來源類別依遇見順序串接。
  */
 fun mergeRegistrationSources(vararg sourceLists: List<ExtensionRegistrationSource>): List<ExtensionRegistrationSource> {
     val categoriesBySource = linkedMapOf<String?, MutableList<ExtensionRegistrationCategory>>()

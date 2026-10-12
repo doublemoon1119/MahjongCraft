@@ -57,6 +57,7 @@ internal object SelfDeclarationApplier {
      * @param kanAction 本次暗槓或加槓動作。
      * @param incomingTile 觸發本次槓牌的牌張。
      * @param module 對局採用的規則模組。
+     * @return 已套用的動作與補牌結果，或規則拒絕結果。
      */
     fun apply(
         state: TableState,

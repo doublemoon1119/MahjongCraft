@@ -24,7 +24,10 @@ class ClientAutomaticControlUpdateCoordinator(
     /** 記錄要求送不出去的 logger。 */
     private val logger = mahjongCraftLogger(ClientAutomaticControlUpdateCoordinator::class)
 
+    /** 配對成功的完成事件序號；清除對局狀態時不歸零。 */
     private var completionSequence = 0L
+
+    /** 依完成順序保存、可由請求識別碼取出的有限結果集合。 */
     private val completions = linkedMapOf<String, ClientAutomaticControlCompletion>()
 
     /** 目前已確認的個人權威快照。 */
@@ -37,6 +40,9 @@ class ClientAutomaticControlUpdateCoordinator(
      * 以 [enabledControlIds] 完整替換本人本局控制集合。
      *
      * 只有通過本地快照與支援集合驗證的請求才會被保存為 pending 並送出。
+     *
+     * @param enabledControlIds 本人本局要啟用的完整控制項集合。
+     * @return 請求送出或本機驗證失敗的結果；送出不代表伺服器已接受。
      */
     fun submit(enabledControlIds: Set<String>): ClientAutomaticControlSubmitResult {
         if (stateStore.pendingRequest() != null) return ClientAutomaticControlSubmitResult.Pending
@@ -66,13 +72,21 @@ class ClientAutomaticControlUpdateCoordinator(
         return ClientAutomaticControlSubmitResult.Submitted(request)
     }
 
-    /** 套用 server 發布的個人權威快照。 */
+    /**
+     * 套用伺服器發布的個人權威快照。
+     *
+     * @param snapshot 收到的權威快照。
+     * @return 狀態儲存接受快照時為 true。
+     */
     fun applySnapshot(snapshot: AutomaticControlSnapshotDto): Boolean = stateStore.applySnapshot(snapshot)
 
     /**
      * 配對並套用 server 更新結果。
      *
      * 回傳值表示結果是否屬於目前 pending request；無關或延遲結果不會建立 completion。
+     *
+     * @param result 收到的伺服器更新結果。
+     * @return 結果與待處理請求配對並已保存完成事件時為 true。
      */
     fun applyResult(result: AutomaticControlUpdateResultDto): Boolean {
         if (!stateStore.applyResult(result)) return false
@@ -88,7 +102,12 @@ class ClientAutomaticControlUpdateCoordinator(
         return true
     }
 
-    /** 取出並移除 [requestId] 對應的完成結果；其他提交者不會誤取這筆結果。 */
+    /**
+     * 取出並移除指定請求的完成結果。
+     *
+     * @param requestId 要取出的請求識別碼。
+     * @return 保存的完成結果；尚未完成、已被取出或已超過保留上限時為 null。
+     */
     fun takeCompletion(requestId: String): ClientAutomaticControlCompletion? = completions.remove(requestId)
 
     /** 清除目前對局的權威快照、pending request 與已完成結果。 */

@@ -16,7 +16,7 @@ sealed interface DebugGameScenarioLoadResult {
     /**
      * 情境載入遭拒，並攜帶供 debug 指令顯示的原因。
      *
-     * @property reason 不含玩家資料的拒絕原因。
+     * @property reason 供開發指令顯示的失敗原因，可能來自驗證或呈現例外訊息。
      */
     data class Rejected(
         val reason: String,

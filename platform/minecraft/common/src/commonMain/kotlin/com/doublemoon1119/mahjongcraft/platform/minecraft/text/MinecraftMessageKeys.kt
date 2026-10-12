@@ -104,10 +104,7 @@ object MinecraftMessageKeys {
      */
     const val AI_STRATEGY_CHANGED = PREFIX + "ai_strategy_changed"
 
-    /**
-     * 指定的新策略與目前策略相同，操作本身仍算成功（冪等），只是換一句不會出現「同一個策略 → 同一個
-     * 策略」這種容易讓人誤以為系統異常的呈現方式。依序帶序號、策略顯示名稱兩個參數（各一個 `%s`）。
-     */
+    /** 指定的新策略與目前策略相同，操作仍成功（冪等）；依序帶序號與策略顯示名稱兩個參數（各一個 `%s`）。 */
     const val AI_STRATEGY_UNCHANGED = PREFIX + "ai_strategy_unchanged"
 
     /** 目標玩家不是 AI，無法更換策略。 */
@@ -122,18 +119,10 @@ object MinecraftMessageKeys {
     /** 更換 AI 策略失敗。 */
     const val CHANGE_AI_STRATEGY_FAILED = PREFIX + "change_ai_strategy_failed"
 
-    /**
-     * `kick` 指令 Tab 補全時，AI 候選項目的 tooltip 文字，依序帶序號與策略顯示名稱兩個參數（各一個
-     * `%s`）。與其他 key 不同：其他 key 都是玩家操作「結果」的一次性回饋，這個 key 是指令輸入階段
-     * 候選項目的說明文字。
-     */
+    /** `kick` 指令補全中 AI 候選項目的提示文字，依序帶序號與策略顯示名稱兩個參數（各一個 `%s`）。 */
     const val KICK_CANDIDATE_AI_LABEL = PREFIX + "kick_candidate_ai_label"
 
-    /**
-     * 內建隨機出牌 AI 策略的顯示名稱。刻意不直接叫「隨機」——容易讓人誤以為是「難度隨機」，而非
-     * 「出牌動作隨機」。與 [KICK_CANDIDATE_AI_LABEL] 同樣不是操作結果回饋，是候選項目說明文字用的
-     * 顯示名稱；只涵蓋內建策略，未登記顯示名稱的第三方策略 key 直接顯示原始字串。
-     */
+    /** 內建隨機出牌 AI 策略的顯示名稱；未登記顯示名稱的策略使用其識別字串。 */
     const val AI_STRATEGY_RANDOM = PREFIX + "ai_strategy_random"
 
     /** 內建初級 AI 策略的顯示名稱，用途同 [AI_STRATEGY_RANDOM]。 */
@@ -151,10 +140,7 @@ object MinecraftMessageKeys {
      */
     const val GAME_CONFIG_CHANGED = PREFIX + "game_config_changed"
 
-    /**
-     * 提供的新設定與目前設定相同，操作本身仍算成功（冪等）。帶一個目前設定的可互動文字參數（一個
-     * `%s`），比照 [AI_STRATEGY_UNCHANGED] 不呈現成容易誤解的「同一設定 → 同一設定」。
-     */
+    /** 提供的新設定與目前設定相同，操作仍成功（冪等）；帶一個目前設定的可互動文字參數（`%s`）。 */
     const val GAME_CONFIG_UNCHANGED = PREFIX + "game_config_unchanged"
 
     /** 變更遊戲設定失敗。 */
@@ -278,10 +264,7 @@ object MinecraftMessageKeys {
     /** 三家和了，不帶參數。 */
     const val GAME_ACTION_SANCHA_HOU = PREFIX + "game_action_sancha_hou"
 
-    /**
-     * 回合結束廣播的標題，帶一個動作顯示文字參數（一個 `%s`，見上方 `GAME_ACTION_*`）——目前是
-     * client 端聊天訊息占位呈現，之後若換成 GUI/HUD 只需要換掉呼叫端，這個 key 不受影響。
-     */
+    /** 回合結束廣播標題，帶一個動作顯示文字參數（`%s`，見上方 `GAME_ACTION_*`）。 */
     const val ROUND_RESULT_BROADCAST = PREFIX + "round_result_broadcast"
 
     /** 和牌後本局繼續時的結算廣播標題，帶一個結果顯示文字參數（一個 `%s`）。 */
@@ -319,10 +302,7 @@ object MinecraftMessageKeys {
     /** [GameAction.MatchEnded] 的顯示文字，不帶參數。 */
     const val GAME_ACTION_MATCH_ENDED = PREFIX + "game_action_match_ended"
 
-    /**
-     * 對局結束廣播的標題，不帶參數——目前是 client 端聊天訊息占位呈現，之後若換成 GUI/HUD 只需要
-     * 換掉呼叫端，這個 key 不受影響。
-     */
+    /** 對局結束廣播的標題，不帶參數。 */
     const val MATCH_RESULT_BROADCAST = PREFIX + "match_result_broadcast"
 
     /** 終局結算面板的標題，不帶參數。 */
@@ -341,8 +321,6 @@ object MinecraftMessageKeys {
     const val DICE_ROLL_TOTAL = PREFIX + "dice_roll.total"
 
     // ── 對局階段指令回饋 ──────────────────────────────────────────────────
-
-    /** 已成功執行對局操作，帶一個動作顯示文字參數（一個 `%s`，見上方 `GAME_ACTION_*`）。 */
 
     /** 還沒輪到該玩家的回合。 */
     const val NOT_YOUR_TURN = PREFIX + "not_your_turn"

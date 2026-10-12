@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 
 /** 最後捨牌的所有反應結束後，以純邏輯判定一種特殊 round outcome。 */
 interface PostReactionRoundOutcomeResolver {
-    /** Resolver 的完整 namespaced ID，同時作為穩定排序的最後決勝鍵。 */
+    /** Resolver 的識別碼，依註冊 ID 慣例使用 `namespace:path` 格式；同優先序時作為穩定排序的最後決勝鍵。 */
     val id: String
 
     /** 此 resolver 所屬的規則模組 ID。 */

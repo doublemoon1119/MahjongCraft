@@ -10,9 +10,11 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
  * 以期望值選擇行動的 AI 策略。
  *
  * 規則事實來自規則模組的向聽計算與規則查詢，對各玩家的估計來自依規則登記的對手模型，策略本身不含任何特定規則的判斷；
- * [level] 決定可使用的資訊，[parameters] 決定估計時使用的數值。同一個局面一定得到同一個決策。
+ * [level] 決定可使用的資訊，[parameters] 決定估計時使用的數值。輸入相同且注入的對手模型與擴充動作 handler
+ * 都是確定性的時，同一局面會得到相同決策。
  *
- * 每次決策建立新的 [ExpectedValueEvaluator]，估計用的快取只活在一次決策內；策略本身沒有可變狀態，可同時替不同對局決策。
+ * 每次決策都建立新的 [ExpectedValueEvaluator]，估計用的快取只存在於該次決策，不會在不同呼叫間共用。
+ * 若要並行呼叫同一策略，注入的規則模組登記表、對手模型登記表與模型、擴充動作登記表與 handler 都必須支援並行使用。
  *
  * @property level 可使用的資訊範圍。
  * @property moduleRegistry 依對局設定取得規則模組。

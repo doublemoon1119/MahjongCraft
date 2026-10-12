@@ -126,7 +126,13 @@ class RiichiPositionRules(
         return doraTiles.count { it == tile.riichiCanonical } + if (RiichiTileInterpretationPolicy.isRedDora(tile)) 1 else 0
     }
 
-    /** 評估者以此次和牌收取的本場點數；自摸時其他每位玩家各付一份。 */
+    /**
+     * 計算評估者可收取的本場點數。
+     *
+     * @param view 目前評估局面。
+     * @param isTsumo 是否為自摸；自摸由其他每位玩家各付一份。
+     * @return 本場加算點數。
+     */
     private fun comboBonus(view: PositionView, isTsumo: Boolean): Int {
         val comboCount = view.snapshot.comboCount
         return if (isTsumo) {
@@ -136,7 +142,14 @@ class RiichiPositionRules(
         }
     }
 
-    /** 評估者的牌河或立直後振聽是否讓 [hand] 不能榮和。 */
+    /**
+     * 判定評估者是否因捨牌或永久振聽而無法榮和，不判定同巡振聽。
+     *
+     * @param self 評估者的公開及自身資料。
+     * @param riichiState 評估者的立直規則狀態。
+     * @param hand 尚未加入和牌張的手牌。
+     * @return 永久振聽或等待牌含自己捨牌時為 true。
+     */
     private fun isFuriten(
         self: MahjongPlayerSnapshot,
         riichiState: RiichiPlayerState,
@@ -148,9 +161,19 @@ class RiichiPositionRules(
         return waits.any { it.riichiCanonical in furitenTiles }
     }
 
-    /** 牌山中公開的牌；日麻只公開寶牌指示牌。 */
+    /**
+     * 從快照牌山取得公開的寶牌指示牌。
+     *
+     * @param view 目前評估局面。
+     * @return 保持快照順序的公開牌種。
+     */
     private fun visibleDoraIndicators(view: PositionView): List<Tile> = view.snapshot.tileWall.tiles.mapNotNull { it.tile }
 
-    /** 場上尚未被收下的立直棒數。 */
+    /**
+     * 取得場上尚未被收下的立直棒數。
+     *
+     * @param view 目前評估局面。
+     * @return 立直棒數；缺少立直動態狀態時為零。
+     */
     private fun riichiStickCount(view: PositionView): Int = (view.snapshot.dynamicRuleState as? RiichiDynamicState)?.riichiStickCount ?: 0
 }

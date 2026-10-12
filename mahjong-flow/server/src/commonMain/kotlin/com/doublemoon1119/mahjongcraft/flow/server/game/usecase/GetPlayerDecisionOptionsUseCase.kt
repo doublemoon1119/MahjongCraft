@@ -8,7 +8,12 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.AutomaticDecisio
 import org.koin.core.annotation.Factory
 import kotlin.uuid.Uuid
 
-/** 查詢指定玩家目前完整決策選項的應用層用例。 */
+/**
+ * 查詢指定玩家目前完整決策選項的應用層用例。
+ *
+ * @property gameRepository 權威對局資料倉庫。
+ * @property automaticDecisionEvaluator 評估玩家目前自動決策選項的服務。
+ */
 @Factory
 class GetPlayerDecisionOptionsUseCase(
     private val gameRepository: GameRepository,
@@ -19,6 +24,7 @@ class GetPlayerDecisionOptionsUseCase(
      *
      * @param gameId 對局 Uuid。
      * @param playerId 欲查詢的玩家 Uuid。
+     * @return 該玩家的完整決策選項；找不到對局或玩家時回傳 [GameError]。
      */
     suspend operator fun invoke(gameId: Uuid, playerId: Uuid): Outcome<PlayerDecisionOptions, GameError> {
         val game = gameRepository.getGame(gameId)

@@ -77,8 +77,10 @@ import org.koin.plugin.module.dsl.startKoin
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 
+/** Fabric mod 的初始化入口；組裝 runtime graph、註冊平台內容與伺服器事件。 */
 class MahjongCraftMod : ModInitializer {
 
+    /** Fabric 啟動、伺服器生命週期與命令處理的記錄器。 */
     private val logger = mahjongCraftLogger(MahjongCraftMod::class)
 
     override fun onInitialize() {
@@ -186,7 +188,11 @@ class MahjongCraftMod : ModInitializer {
         logger.info(koin.get<FabricRuntimeMetadata>().initializationMessage())
     }
 
-    /** 將 RoomScreen 的受控操作交給桌級房間服務執行。 */
+    /**
+     * 將 RoomScreen 的受控操作交給桌級房間服務執行。
+     *
+     * @param koin 目前 Fabric runtime 的依賴容器。
+     */
     private fun registerRoomActionReceiver(koin: Koin) {
         val json = koin.get<Json>()
         val service = koin.get<MahjongTableRoomService>()
@@ -195,14 +201,24 @@ class MahjongCraftMod : ModInitializer {
         }
     }
 
-    /** 依目前 Fabric environment 啟動 dedicated-server 或 client/integrated-server graph。 */
+    /**
+     * 依目前 Fabric environment 啟動 dedicated-server 或 client/integrated-server graph。
+     *
+     * @return 對應執行環境的 Koin 依賴容器。
+     */
     private fun startDependencyInjection(): Koin = if (FabricLoader.getInstance().environmentType == EnvType.CLIENT) {
         startKoin<MahjongCraftClientApp>().koin
     } else {
         startKoin<MahjongCraftServerApp>().koin
     }
 
-    /** 載入 server TOML；失敗時 manager 會保留程式預設值並記錄詳細錯誤。 */
+    /**
+     * 載入 server TOML；失敗時 manager 會保留程式預設值並記錄詳細錯誤。
+     *
+     * @param configManager 伺服器設定載入器與持久化管理器。
+     * @param mahjongTileCollisionService 將設定套用至已載入麻將牌的服務。
+     * @param server 目前 Minecraft server。
+     */
     private fun initializeServerConfig(
         configManager: FabricServerConfigManager,
         mahjongTileCollisionService: MahjongTileCollisionService,
@@ -226,7 +242,11 @@ class MahjongCraftMod : ModInitializer {
         }
     }
 
-    /** 將 Fabric 玩家連線事件轉送給可測試的斷線政策執行器。 */
+    /**
+     * 將 Fabric 玩家連線事件轉送給可測試的斷線政策執行器。
+     *
+     * @param koin 目前 Fabric runtime 的依賴容器。
+     */
     private fun registerPlayerConnectionEvents(koin: Koin) {
         val lifecycleService = koin.get<PlayerConnectionLifecycleService>()
         ServerPlayConnectionEvents.JOIN.register { handler, _, _ ->
@@ -243,6 +263,8 @@ class MahjongCraftMod : ModInitializer {
      * 啟動協程呼叫 [GameFlowCoordinator]（`suspend` 函式），不阻塞伺服器主執行緒。玩家身分一律用
      * 連線本身的 [ServerPlayerEntity.getUuid]，不信任封包內容宣稱的身分。分派後向 [AutomatedAdvanceManager] 請求推進；
      * 強制自動操作中的玩家送出的命令被拒絕，視為完全沒發生過，不請求推進。
+     *
+     * @param koin 目前 Fabric runtime 的依賴容器。
      */
     private fun registerGameCommandReceiver(koin: Koin) {
         val json = koin.get<Json>()
@@ -263,7 +285,11 @@ class MahjongCraftMod : ModInitializer {
         }
     }
 
-    /** 接收操作 HUD 的候選選擇，實際合法性仍由伺服器目前 prompt 與正式流程驗證。 */
+    /**
+     * 接收操作 HUD 的候選選擇，實際合法性仍由伺服器目前 prompt 與正式流程驗證。
+     *
+     * @param koin 目前 Fabric runtime 的依賴容器。
+     */
     private fun registerDecisionSelectionReceiver(koin: Koin) {
         val json = koin.get<Json>()
         val service = koin.get<MahjongTableGameActionService>()
@@ -272,7 +298,11 @@ class MahjongCraftMod : ModInitializer {
         }
     }
 
-    /** 接收客戶端加入世界後主動送出的快照補送請求，見 [MahjongChannels.requestSnapshot] KDoc。 */
+    /**
+     * 接收客戶端加入世界後主動送出的快照補送請求，見 [MahjongChannels.requestSnapshot] KDoc。
+     *
+     * @param koin 目前 Fabric runtime 的依賴容器。
+     */
     private fun registerRequestSnapshotReceiver(koin: Koin) {
         val json = koin.get<Json>()
         val lifecycleService = koin.get<PlayerConnectionLifecycleService>()
@@ -281,7 +311,11 @@ class MahjongCraftMod : ModInitializer {
         }
     }
 
-    /** 接收客戶端切換「自動整理手牌」偏好的請求，見 [MahjongChannels.setAutoSortHand] KDoc。 */
+    /**
+     * 接收客戶端切換「自動整理手牌」偏好的請求，見 [MahjongChannels.setAutoSortHand] KDoc。
+     *
+     * @param koin 目前 Fabric runtime 的依賴容器。
+     */
     private fun registerSetAutoSortHandReceiver(koin: Koin) {
         val json = koin.get<Json>()
         val useCase = koin.get<SetHandSortPreferenceUseCase>()
@@ -298,7 +332,11 @@ class MahjongCraftMod : ModInitializer {
         }
     }
 
-    /** 接收本局自動操作集合更新，只使用連線玩家身分並回覆可配對的權威結果。 */
+    /**
+     * 接收本局自動操作集合更新，只使用連線玩家身分並回覆可配對的權威結果。
+     *
+     * @param koin 目前 Fabric runtime 的依賴容器。
+     */
     private fun registerAutomaticControlUpdateReceiver(koin: Koin) {
         val json = koin.get<Json>()
         val service = koin.get<AutomaticControlUpdateService>()

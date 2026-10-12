@@ -101,7 +101,14 @@ class TileWallMotionPathPlannerTest {
         assertEquals(-20.0f, shortestYawDeltaDegrees(10.0f, 350.0f))
     }
 
-    /** 取得指定起訖 placement 的成功路徑。 */
+    /**
+     * 取得指定起訖 placement 的成功路徑。
+     *
+     * @param start 起點 placement。
+     * @param end 終點 placement。
+     * @param facing 桌面朝向；預設朝北。
+     * @return planner 成功產生的路徑。
+     */
     private fun completedPath(
         start: TileWallPlacement,
         end: TileWallPlacement,
@@ -110,10 +117,22 @@ class TileWallMotionPathPlannerTest {
         TileWallMotionPathPlanner.plan(CONTEXT.copy(tableFacing = facing), start, end),
     )
 
-    /** 建立測試用零 offset placement。 */
+    /**
+     * 建立測試用零 offset placement。
+     *
+     * @param side 牌牆側面索引。
+     * @param stack 側面上的墩索引。
+     * @param layer 墩的層索引。
+     * @return 對應的零 offset placement。
+     */
     private fun position(side: Int, stack: Int, layer: Int): TileWallPlacement = TileWallPlacement(TileWallPosition(side, stack, layer))
 
-    /** 計算單一路徑段的三維長度。 */
+    /**
+     * 計算單一路徑段的三維長度。
+     *
+     * @param segment 要計算的路徑段。
+     * @return 起點至終點的三維距離。
+     */
     private fun length(segment: TileWallMotionSegment): Double {
         val dx = segment.end.x - segment.start.x
         val dy = segment.end.y - segment.start.y
@@ -123,7 +142,10 @@ class TileWallMotionPathPlannerTest {
 
     /** 測試共用桌面投影。 */
     private companion object {
+        /** 測試共用的桌面投影情境。 */
         val CONTEXT = MahjongTileWallProjectionContext(0, 64, 0, MahjongTableFacing.NORTH, 0, 17, 4)
+
+        /** 三維長度比較使用的誤差容許值。 */
         const val TOLERANCE = 1e-9
     }
 }

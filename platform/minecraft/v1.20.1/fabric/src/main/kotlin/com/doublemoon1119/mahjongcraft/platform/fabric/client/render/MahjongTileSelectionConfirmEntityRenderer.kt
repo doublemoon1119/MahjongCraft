@@ -49,6 +49,8 @@ import kotlin.uuid.toKotlinUuid
  * 面板真正的中心，而不是這個 instance 自己的世界座標——兩者只有在
  * [MahjongTileTableLayout.TILE_SELECTION_CONFIRM_SEGMENT_COUNT] 是奇數、`isPrimary` 剛好選在正中央
  * 那個 index 時才會重合（偶數段數沒有任何一個 index 剛好落在正中央，這個平移就不是零）。
+ *
+ * @param context Minecraft renderer factory 提供的 client context。
  */
 class MahjongTileSelectionConfirmEntityRenderer(
     context: EntityRendererFactory.Context,
@@ -95,15 +97,35 @@ class MahjongTileSelectionConfirmEntityRenderer(
         matrices.pop()
     }
 
-    /** 本機玩家目前準心是否正對著這組確認面板的任一個 instance（跟 [entity] 同一個 holder／桌）。 */
+    /**
+     * 本機玩家目前準心是否正對著這組確認面板的任一個 instance（與 [entity] 屬於同一 holder／桌）。
+     *
+     * @param entity 要比對持有者與桌子的確認面板。
+     * @return 準心目標屬於相同 holder 與桌子時為 `true`。
+     */
     private fun isHovered(entity: MahjongTileSelectionConfirmEntity): Boolean {
         val target = (MinecraftClient.getInstance().crosshairTarget as? EntityHitResult)?.entity as? MahjongTileSelectionConfirmEntity
         return target != null && target.holderId == entity.holderId && target.managedTableId == entity.managedTableId
     }
 
-    /** [text] 左右加上選取效果標記；見類別 KDoc「量測永遠把標記算進去」的說明。 */
+    /**
+     * 在 [text] 左右加上選取效果標記；版面量測永遠會把標記算進去，見類別 KDoc。
+     *
+     * @param text 要加上標記的文字。
+     * @return 前後含標記的文字。
+     */
     private fun markedLabel(text: Text): Text = Text.literal("$SELECTION_MARK_LEFT ").append(text).append(" $SELECTION_MARK_RIGHT")
 
+    /**
+     * 繪製確認面板的一面背景與置中文字。
+     *
+     * @param label 要顯示的文字。
+     * @param confirmable 選取數量是否符合可送出的條件。
+     * @param widthPx 背景及文字可用寬度。
+     * @param light 世界光照值。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供面板與文字頂點緩衝。
+     */
     private fun renderFace(label: Text, confirmable: Boolean, widthPx: Float, light: Int, matrices: MatrixStack, consumers: VertexConsumerProvider) {
         val textColor = if (confirmable) CONFIRMABLE_TEXT_COLOR else NOT_CONFIRMABLE_TEXT_COLOR
         val height = textRenderer.fontHeight

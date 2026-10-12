@@ -125,6 +125,7 @@ internal class HistoryBrowseSession(
      * @param state 同場歷史身分。
      * @param seat 玩家初始座位。
      * @return 玩家 UUID 或不與 UUID 重疊的座位鍵。
+     * @throws NoSuchElementException 歷史身分中不存在指定初始座位時拋出。
      */
     private fun handPreferencePlayer(state: HistoryRoundStateDto, seat: Int): String = state.identity.players.first { it.initialSeatIndex == seat }.playerId ?: "seat:$seat"
 
@@ -344,7 +345,7 @@ internal class HistoryBrowseSession(
         if (!navigating && removed === screen) dispose()
     }
 
-    /** 原連線失效後隱藏資料，不返回舊世界的設定頁。 */
+    /** 補查牌序所需規則、監看指定對局的封存狀態並在保存後刷新；原連線失效時關閉，不返回舊世界畫面。 */
     fun tick() {
         controller.ensureRoundStateRuleSettings()
         val matchId = requestedMatchId.takeIf { controller.state.value.page == HistoryBrowsePage.LIST }

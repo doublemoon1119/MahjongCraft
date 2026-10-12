@@ -59,6 +59,12 @@ class RoomMemberAppearanceResolverTest {
     fun `attributes a plain failure to the registry`() {
         val resolver = RoomMemberAppearanceResolver(
             object : FakeRegistry() {
+                /**
+                 * 此案例模擬登記表本身失敗。
+                 *
+                 * @param context 成員外觀解析脈絡。
+                 * @return 不會回傳；此案例固定拋出錯誤。
+                 */
                 override fun resolve(context: RoomMemberAppearanceContext): RoomMemberAppearanceSource = error("registry itself failed")
             },
         )
@@ -85,6 +91,12 @@ class RoomMemberAppearanceResolverTest {
         var providerId = "example:first"
         val resolver = RoomMemberAppearanceResolver(
             object : FakeRegistry() {
+                /**
+                 * 依目前測試識別碼模擬 provider 失敗。
+                 *
+                 * @param context 成員外觀解析脈絡。
+                 * @return 不會回傳；此案例固定拋出 provider 例外。
+                 */
                 override fun resolve(context: RoomMemberAppearanceContext): RoomMemberAppearanceSource = throw RoomMemberAppearanceSourceProviderException(providerId, IllegalStateException("boom"))
             },
         )
@@ -113,6 +125,12 @@ class RoomMemberAppearanceResolverTest {
         var actorKey = "example:cat"
         val resolver = RoomMemberAppearanceResolver(
             object : FakeRegistry() {
+                /**
+                 * 回傳測試指定的角色預覽來源。
+                 *
+                 * @param context 成員外觀解析脈絡。
+                 * @return 使用目前測試角色識別碼的預覽來源。
+                 */
                 override fun resolve(context: RoomMemberAppearanceContext): RoomMemberAppearanceSource = RoomMemberAppearanceSource.ActorPreview(actorKey)
             },
         )
@@ -122,31 +140,64 @@ class RoomMemberAppearanceResolverTest {
         assertIs<RoomMemberAppearanceResolver.Warning.MissingActorPreviewFactory>(resolver.resolve(PLAYER_ID, isAi = false).warning)
     }
 
-    /** 建立回傳固定來源的 resolver。 */
+    /**
+     * 建立回傳固定來源的解析器。
+     *
+     * @param source 提供外觀來源的函式。
+     * @return 使用測試登記表的外觀解析器。
+     */
     private fun resolver(source: () -> RoomMemberAppearanceSource) = RoomMemberAppearanceResolver(
         object : FakeRegistry() {
+            /**
+             * 回傳測試指定的外觀來源。
+             *
+             * @param context 成員外觀解析脈絡。
+             * @return 測試指定的外觀來源。
+             */
             override fun resolve(context: RoomMemberAppearanceContext): RoomMemberAppearanceSource = source()
         },
     )
 
-    /** 建立一定會拋出 provider 例外的 resolver。 */
+    /**
+     * 建立一定會拋出 provider 例外的解析器。
+     *
+     * @param providerId 失敗來源識別碼。
+     * @return 解析時會拋出指定來源例外的解析器。
+     */
     private fun failingResolver(providerId: String = "example:provider") = RoomMemberAppearanceResolver(
         object : FakeRegistry() {
+            /**
+             * 以指定 provider 識別碼模擬來源解析失敗。
+             *
+             * @param context 成員外觀解析脈絡。
+             * @return 不會回傳；此替身固定拋出 provider 例外。
+             */
             override fun resolve(context: RoomMemberAppearanceContext): RoomMemberAppearanceSource = throw RoomMemberAppearanceSourceProviderException(providerId, IllegalStateException("boom"))
         },
     )
 
     /** 只有 resolve 會被使用的 registry 測試替身。 */
     private abstract class FakeRegistry : RoomMemberAppearanceSourceRegistry {
+        /** 測試替身不提供任何已登記的來源。 */
         override val registrationKeys: Set<String> get() = emptySet()
 
+        /** 測試替身不支援凍結狀態。 */
         override val isFrozen: Boolean get() = false
 
+        /**
+         * 此測試不應新增外觀來源。
+         *
+         * @param providerId 來源識別碼。
+         * @param priority 來源優先順序。
+         * @param provider 待登記的來源提供者。
+         */
         override fun register(providerId: String, priority: Int, provider: RoomMemberAppearanceSourceProvider) = error("Unexpected registration")
 
+        /** 此測試不應凍結登記表。 */
         override fun freeze() = error("Unexpected freeze")
     }
 
+    /** 測試共用的玩家識別碼。 */
     private companion object {
         /** 測試用的玩家 ID。 */
         val PLAYER_ID: Uuid = Uuid.parse("00000000-0000-0000-0000-000000000001")

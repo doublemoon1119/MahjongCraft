@@ -23,6 +23,7 @@ class GameEventContext private constructor(
          *
          * @param tableLocation 事件產生時的桌子位置；找不到時為 `null`。
          * @param sessionId 產生事件的伺服器 session 識別碼。
+         * @return 保留指定位置與所屬啟動週期的事件情境。
          */
         @JvmSynthetic
         fun create(

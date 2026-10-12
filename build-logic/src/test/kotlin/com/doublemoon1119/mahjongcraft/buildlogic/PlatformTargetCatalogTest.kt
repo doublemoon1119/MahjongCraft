@@ -134,6 +134,13 @@ class PlatformTargetCatalogTest {
         assertEquals("customProperty=kept", localFile.readText().trim())
     }
 
+    /**
+     * 建立 Minecraft 平台 target 的 TOML 片段。
+     *
+     * @param id target ID。
+     * @param module target 載入的 module 路徑。
+     * @return 含預設 Java 與 Minecraft loader attribute 的 target 定義。
+     */
     private fun target(id: String, module: String): String = """
         [[targets]]
         id = "$id"
@@ -147,14 +154,32 @@ class PlatformTargetCatalogTest {
         loader = "fabric"
     """.trimIndent() + "\n"
 
+    /**
+     * 將 target 定義寫入測試 catalog。
+     *
+     * @param root 測試專案根目錄。
+     * @param targets 要寫入的 TOML target 定義。
+     * @return 寫入後的 catalog 檔案。
+     */
     private fun writeCatalog(root: File, targets: String): File = root.resolve("platform-targets.toml").apply {
         writeText("schema-version = 1\n\n$targets")
     }
 
+    /**
+     * 建立 catalog target 引用的測試 module 目錄。
+     *
+     * @param root 測試專案根目錄。
+     * @param path 相對於根目錄的 module 路徑。
+     */
     private fun createModule(root: File, path: String) {
         root.toPath().resolve(path).createDirectories()
     }
 
+    /**
+     * 建立並在測試完成後刪除暫存專案。
+     *
+     * @param block 使用暫存專案根目錄的測試動作。
+     */
     private fun withFixture(block: (File) -> Unit) {
         createTempDirectory("mahjongcraft-target-test").toFile().apply {
             try {

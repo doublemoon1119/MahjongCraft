@@ -41,7 +41,7 @@ interface HistoryQueryRepository {
     ): HistoryQueryResult<HistoryRuleSettings>
 
     /**
-     * 讀取已公開單局的有界事件頁。
+     * 讀取已公開單局的有界事件頁；未覆寫此方法的實作預設回傳 `NOT_AVAILABLE`。
      *
      * @param access 可信任的發起者資訊。
      * @param request 單局事件查詢要求。
@@ -55,7 +55,7 @@ interface HistoryQueryRepository {
     )
 
     /**
-     * 讀取已公開單局指定位置的完整桌況。
+     * 讀取已公開單局指定位置的完整桌況；未覆寫此方法的實作預設回傳 `NOT_AVAILABLE`。
      *
      * @param access 可信任的發起者資訊。
      * @param request 單局桌況查詢要求。

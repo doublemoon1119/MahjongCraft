@@ -74,7 +74,11 @@ class FabricHistoryGenerationRuntimeFactory(
         decisionExecutor = decisionExecutor,
     )
 
-    /** 正式對局使用的規則整合。 */
+    /**
+     * 組合隔離對局所需、與正式環境相同的規則與擴充 registry。
+     *
+     * @return 提供給無世界生成環境的 registry 集合。
+     */
     private fun registries() = HeadlessHistoryRegistries(
         moduleRegistry = moduleRegistry,
         aiStrategyRegistry = aiStrategies,

@@ -165,14 +165,36 @@ class RiichiOpponentModelTest {
         assertEquals(standingDanger, drawnDanger)
     }
 
+    /**
+     * 以指定牌面建立立牌手牌。
+     *
+     * @param tiles 立牌牌面。
+     * @return 以測試識別碼包裝輸入牌面的手牌。
+     */
     private fun handOf(tiles: List<Tile>): Hand = Hand(tiles = tiles.map(FakeIdentifiedTileFactory::create))
 
+    /**
+     * 建立碰副露。
+     *
+     * @param tile 碰牌的牌面。
+     * @return 由三張相同牌面組成的碰副露。
+     */
     private fun pon(tile: Tile): Meld = Meld(
         type = MeldType.PON,
         tiles = List(3) { FakeIdentifiedTileFactory.create(tile) },
         sourceDirection = RelativeDirection.Across,
     )
 
+    /**
+     * 建立指定自風與公開狀態的日麻玩家。
+     *
+     * @param wind 玩家自風與座位。
+     * @param hand 玩家手牌，預設為空。
+     * @param discards 依序打出的牌面，預設為空。
+     * @param melds 額外加入手牌的副露，預設為空。
+     * @param riichi 是否已宣告立直，預設為否。
+     * @return 帶有對應日麻規則狀態的玩家。
+     */
     private fun seat(
         wind: Wind,
         hand: Hand = Hand(),
@@ -186,6 +208,12 @@ class RiichiOpponentModelTest {
         playerRuleState = RiichiPlayerState(riichiTile = if (riichi) FakeIdentifiedTileFactory.create(Tile.Honor.West) else null),
     )
 
+    /**
+     * 以第一位玩家作為莊家建立日麻桌況。
+     *
+     * @param players 依桌況座位順序排列的玩家。
+     * @return 使用日麻規則設定與動態狀態的桌況。
+     */
     private fun table(players: List<MahjongPlayer>): TableState = FakeTableStateFactory.create(
         players = players,
         dealerPlayerId = players.first().id,
@@ -193,13 +221,33 @@ class RiichiOpponentModelTest {
         dynamicRuleState = RiichiDynamicState(),
     )
 
+    /**
+     * 建立以 [player] 為觀察者的局面視角。
+     *
+     * @param table 來源桌況。
+     * @param player 評估者本人。
+     * @return 對應玩家可見資訊的局面視角。
+     */
     private fun view(table: TableState, player: MahjongPlayer): PositionView = PositionView(snapshot = table.toSnapshot(visibleHandPlayerIds = setOf(player.id), setAsideTiles = { emptyList() }), evaluatorId = player.id)
 
+    /**
+     * 建立萬子。
+     *
+     * @param value 牌面數字。
+     * @return 指定數字的萬子。
+     */
     private fun character(value: Int): Tile = Tile.Numeric(Tile.Suit.Character, value)
 
+    /**
+     * 建立筒子。
+     *
+     * @param value 牌面數字。
+     * @return 指定數字的筒子。
+     */
     private fun dot(value: Int): Tile = Tile.Numeric(Tile.Suit.Dot, value)
 
     private companion object {
+        /** 日麻的赤五筒牌面。 */
         val RED_FIVE_DOT: Tile = RiichiTileTypes.redFive(Tile.Suit.Dot)
     }
 }

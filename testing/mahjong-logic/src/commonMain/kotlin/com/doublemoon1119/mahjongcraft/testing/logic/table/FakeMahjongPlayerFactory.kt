@@ -24,7 +24,7 @@ object FakeMahjongPlayerFactory {
      * @param hand 初始手牌，預設建立新的空 [Hand]。
      * @param discardPile 該玩家的牌河實體，預設為 [FakeDiscardPile]。
      * @param playerRuleState 用於儲存規則特有的玩家狀態（如立直、振聽等）。
-     * @return 具備模擬牌河的 [MahjongPlayer] 實體。
+     * @return 使用指定牌河的 [MahjongPlayer] 實體；未指定時使用預設的 [FakeDiscardPile]。
      */
     fun create(
         initialSeat: Wind = Wind.EAST,

@@ -10,7 +10,10 @@ import kotlin.test.assertTrue
 
 /** 驗證自動操作驗收情境的桌況能重現每個控制要觀察的局面。 */
 class RiichiAutomaticControlDebugGameScenariosTest {
+    /** 提供自動操作與槓牌情境的登錄表。 */
     private val registry = DebugGameScenarioRegistry()
+
+    /** 檢查情境結果是否符合對局約束。 */
     private val scenarioValidator = DebugGameScenarioValidator(scenarioModuleRegistry)
 
     /** 四個情境都登記在 registry 中，且在各種赤寶牌張數下都通過權威驗證。 */
@@ -110,18 +113,33 @@ class RiichiAutomaticControlDebugGameScenariosTest {
         assertTrue(actions.any { it is GameAction.Kan && it.type == GameAction.KanType.CLOSED_KAN })
     }
 
+    /**
+     * 由 registry 建立指定自動操作情境。
+     *
+     * @param idPath 情境識別碼中 namespace 後的路徑。
+     * @param context 情境使用的目前對局輸入。
+     * @return 建立後的情境結果。
+     */
     private fun build(
         idPath: String,
         context: DebugGameScenarioContext = createRiichiScenarioContext(),
     ): DebugGameScenarioResult = registry.get("mahjongcraft:$idPath")!!.build(context)
 
+    /** 測試使用的規則選項與牌面。 */
     private companion object {
         /** 房間設定可選的赤寶牌張數。 */
         val RED_DORA_COUNTS: List<Int> = listOf(0, 3, 4)
 
+        /** 一萬，用於檢查捨牌振聽。 */
         val ONE_CHARACTER: Tile = Tile.Numeric(Tile.Suit.Character, 1)
+
+        /** 四萬，情境中的和牌張。 */
         val FOUR_CHARACTER: Tile = Tile.Numeric(Tile.Suit.Character, 4)
+
+        /** 九萬，中途摸切的牌面。 */
         val NINE_CHARACTER: Tile = Tile.Numeric(Tile.Suit.Character, 9)
+
+        /** 九索，普通摸牌與摸切的牌面。 */
         val NINE_BAMBOO: Tile = Tile.Numeric(Tile.Suit.Bamboo, 9)
     }
 }

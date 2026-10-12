@@ -63,26 +63,55 @@ import kotlin.uuid.Uuid
  */
 class RespondToDiscardUseCaseTest {
 
+    /** 受測對局的識別碼。 */
     private val gameId = Uuid.random()
+
+    /** 進行捨牌的玩家識別碼。 */
     private val discarderId = Uuid.random()
+
+    /** 送出反應的玩家識別碼。 */
     private val responderId = Uuid.random()
 
+    /**
+     * 組成受測用例及記錄副作用的記憶體替身。
+     *
+     * @param postActionExhaustiveDrawResolverRegistry 動作後途中流局的解析器註冊中心。
+     */
     private class Fixtures(
         postActionExhaustiveDrawResolverRegistry: PostActionExhaustiveDrawResolverRegistry =
             PostActionExhaustiveDrawResolverRegistry().apply { freeze() },
     ) {
+        /** 保存權威桌況與歷史事實的測試資料倉庫。 */
         val gameRepo = FakeGameRepository()
+
+        /** 已註冊內建規則的模組註冊中心。 */
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
+
+        /** 記錄同步快照的測試倉庫。 */
         val snapshotRepo = FakeGameSnapshotRepository()
+
+        /** 依觀看政策同步對局快照的元件。 */
         val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(moduleRegistry))
+
+        /** 保存手牌排序偏好的元件。 */
         val handSortPreferenceStore = HandSortPreferenceStore()
+
+        /** 記錄流程事件的發布替身。 */
         val eventPublisher = FakeGameEventPublisher()
+
+        /** 記錄呈現要求的發布替身。 */
         val presentationPublisher = FakeGamePresentationPublisher()
+
+        /** 暫存待發布的和牌呈現要求。 */
         val winPresentationHandoff = WinPresentationHandoff()
+
+        /** 和牌明細的解析器註冊中心。 */
         val winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry().apply {
             BundledRiichiExtension.registerWinSettlementDetailResolvers(this)
             freeze()
         }
+
+        /** 受測捨牌反應用例。 */
         val useCase = RespondToDiscardUseCase(
             gameRepo,
             moduleRegistry,
@@ -97,7 +126,11 @@ class RespondToDiscardUseCaseTest {
         )
     }
 
-    /** 建立每次完成捨牌都要求途中流局的測試 registry，用來驗證反應結算優先序。 */
+    /**
+     * 建立每次完成捨牌都要求途中流局的測試登記表。
+     *
+     * @return 已凍結、用於驗證反應結算優先序的判定器登記表。
+     */
     private fun alwaysAbortAfterDiscardRegistry(): PostActionExhaustiveDrawResolverRegistry = PostActionExhaustiveDrawResolverRegistry().apply {
         register(
             object : PostActionExhaustiveDrawResolver {
@@ -266,7 +299,7 @@ class RespondToDiscardUseCaseTest {
     }
 
     /**
-     * 驗證全員過牌、推進回合時會跳過座位表上物理相鄰但已 finished 的玩家，直接輪到下一位
+     * 驗證全員過牌、推進回合時會跳過座位表上相鄰但已結束本局的玩家，直接輪到下一位
      * 仍在本局中的玩家。
      */
     @Test
@@ -349,8 +382,7 @@ class RespondToDiscardUseCaseTest {
     }
 
     /**
-     * 驗證碰牌得標後，即使沒有新增捨牌，也會觸發平台呈現層重新呈現丟牌者的牌河——因為
-     * `takeLast()` 改變了 `isTaken` 狀態，側身標記可能因此位移。
+     * 驗證碰牌後會發布捨牌者牌河的呈現要求；被鳴走的牌不再列入牌河，可能改變側身標記位置。
      */
     @Test
     fun `test pon success publishes discarder's discard pile presentation`() = runTest {
@@ -391,7 +423,7 @@ class RespondToDiscardUseCaseTest {
     }
 
     /**
-     * 驗證碰牌得標後，觸發平台呈現層重新呈現得標玩家的整份副露列表。
+     * 驗證碰牌後會發布得標玩家完整副露列表的呈現要求。
      */
     @Test
     fun `test pon success publishes winner's melds presentation`() = runTest {
@@ -515,9 +547,8 @@ class RespondToDiscardUseCaseTest {
     }
 
     /**
-     * 驗證明槓（大明槓）得標後：正確套用副露、標記捨牌已被鳴走、且立即從死牌區補摸嶺上牌
-     * （取代過去依賴得標玩家事後另外呼叫 `DrawTileUseCase`、從牌山前端摸錯位置的既有缺口）——
-     * `lastDrawn` 為嶺上牌、`actionHistory` 依序記錄 `Kan` → `Draw`、牌山正確縮減 1 張。
+     * 驗證明槓成立後套用副露、標記捨牌已被鳴走，並立即從保留牌區補摸嶺上牌。
+     * `lastDrawn` 為嶺上牌、`actionHistory` 依序記錄 `Kan` → `Draw`，活牌牆縮減一張以補入保留牌區。
      */
     @Test
     fun `test open kan success applies meld and draws replacement tile from dead wall`() = runTest {
@@ -590,8 +621,7 @@ class RespondToDiscardUseCaseTest {
     }
 
     /**
-     * 驗證明槓得標且成功補到嶺上牌時，事件流完整廣播 [GameAction.Kan] 再廣播 [GameAction.Draw]——
-     * 過去只廣播了 Kan，狀態雖然正確同步但事件流不完整。
+     * 驗證明槓成立且成功補到嶺上牌時，依序發布 [GameAction.Kan] 與 [GameAction.Draw]。
      */
     @Test
     fun `test open kan success broadcasts kan then draw event`() = runTest {
@@ -692,7 +722,7 @@ class RespondToDiscardUseCaseTest {
             initialSeat = Wind.EAST,
             discardPile = FakeDiscardPile().discardTile(discardedTile),
         )
-        // 上家：可以吃（4萬、6萬）
+        // 捨牌者的下家：可以吃（4萬、6萬）。
         val chiTile4 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 4))
         val chiTile6 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 6))
         val chiPlayerId = Uuid.random()
@@ -720,7 +750,7 @@ class RespondToDiscardUseCaseTest {
         )
         fixtures.gameRepo.setTableState(table)
 
-        // 上家先回應吃：資格尚未齊全，不應結算
+        // 下家先回應吃：其他有資格者尚未回應，不應結算。
         val firstResult = fixtures.useCase(gameId, chiPlayerId, GameAction.Chi(discardedTile.id, listOf(chiTile4.id, chiTile6.id)))
         assertTrue(firstResult is Outcome.Success, "Expected Success but got $firstResult")
         val stateAfterChiResponse = fixtures.gameRepo.getTableState(gameId)!!
@@ -845,7 +875,9 @@ class RespondToDiscardUseCaseTest {
     }
 
     /**
-     * 手牌：中中、發發發、白白白、123m、55p（大三元役滿，13 張立牌），供榮和結算測試共用。
+     * 建立榮和結算測試共用的大三元聽牌。
+     *
+     * @return 中中、發發發、白白白、一二三萬、五五餅的十三張牌，等待紅中完成大三元。
      */
     private fun daisangenTiles() = listOf(
         Tile.Honor.Red, Tile.Honor.Red,
@@ -942,7 +974,7 @@ class RespondToDiscardUseCaseTest {
             initialSeat = Wind.EAST,
             discardPile = FakeDiscardPile().discardTile(discardedTile),
         )
-        // 上家：可以吃（4萬、6萬）
+        // 捨牌者的下家：可以吃（4萬、6萬）。
         val chiTile4 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 4))
         val chiTile6 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 6))
         val chiPlayerId = Uuid.random()
@@ -1495,8 +1527,7 @@ class RespondToDiscardUseCaseTest {
     }
 
     /**
-     * 驗證振聽時榮和被擋下：玩家先前已經打過（或放過）等待的牌，重新驗證合法動作時 Ron 不會出現，
-     * 直接回傳 [GameError.IllegalAction]（沿用既有的 getLegalActions 重新驗證機制，無需新程式碼）。
+     * 驗證玩家先前打過等待牌而振聽時，重新驗證合法動作會拒絕榮和，回傳 [GameError.IllegalAction]。
      */
     @Test
     fun `test furiten blocks ron via re-validated legal actions`() = runTest {

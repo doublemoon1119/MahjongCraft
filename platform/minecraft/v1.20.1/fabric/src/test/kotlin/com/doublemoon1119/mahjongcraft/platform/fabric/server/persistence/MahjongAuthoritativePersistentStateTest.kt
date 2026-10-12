@@ -137,7 +137,11 @@ class MahjongAuthoritativePersistentStateTest {
         }
     }
 
-    /** 建立測試用等待階段 Room。 */
+    /**
+     * 建立含有隨機房間與房主識別碼的等待階段 Room。
+     *
+     * @return 可供持久化測試使用的 Room。
+     */
     private fun createRoom(): Room {
         val hostId = Uuid.random()
         return Room(

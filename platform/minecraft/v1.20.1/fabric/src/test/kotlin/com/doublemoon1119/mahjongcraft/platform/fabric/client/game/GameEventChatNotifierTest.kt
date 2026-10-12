@@ -33,8 +33,13 @@ import kotlin.uuid.Uuid
  */
 class GameEventChatNotifierTest {
 
+    /** 以內建登記解析動作訊息的測試 registry。 */
     private val actionVocabularyRegistry = GameActionVocabularyRegistryImpl().apply { BuiltInMinecraftMahjongExtension.registerGameActionVocabulary(this) }
+
+    /** 測試結算用的結果名稱 registry。 */
     private val roundOutcomeDisplayNameRegistry = RoundOutcomeDisplayNameRegistryImpl()
+
+    /** 測試流局原因用的顯示名稱 registry。 */
     private val exhaustiveDrawReasonDisplayNameRegistry = ExhaustiveDrawReasonDisplayNameRegistryImpl()
 
     /** 對局結束排名使用的規則模組；沒有覆寫排名比較器，預設實作與規則無關。 */
@@ -92,7 +97,12 @@ class GameEventChatNotifierTest {
         assertEquals(UNKNOWN_OUTCOME_ID, buildMessage(result(UNKNOWN_OUTCOME_ID)).outcomeArgument().string)
     }
 
-    /** 以測試的名稱解析組出結算訊息，名稱為玩家 ID 的前四碼。 */
+    /**
+     * 以測試的名稱解析組出結算訊息，名稱為玩家 ID 的前四碼。
+     *
+     * @param result 結算 payload。
+     * @return 結算聊天訊息。
+     */
     private fun buildMessage(result: RoundResultPayloadDto): Text = buildRoundResultChatMessage(
         result = result,
         actionVocabularyRegistry = actionVocabularyRegistry,
@@ -101,7 +111,15 @@ class GameEventChatNotifierTest {
         playerDisplayName = { id, _ -> id.toString().take(4) },
     )
 
-    /** 建立一筆結算結果；沒指定玩家時為兩名分數不變的 AI。 */
+    /**
+     * 建立一筆結算結果；沒指定玩家時為兩名分數不變的 AI。
+     *
+     * @param outcomeId 結算結果識別碼。
+     * @param kind 結算種類。
+     * @param roundContinues 本局結束後是否繼續下一局。
+     * @param players 結算前後分數與名次資料。
+     * @return 以隨機對局 ID 建立的結果 payload。
+     */
     private fun result(
         outcomeId: String,
         kind: RoundResultKindDto = RoundResultKindDto.WIN,
@@ -119,7 +137,16 @@ class GameEventChatNotifierTest {
         players = players,
     )
 
-    /** 建立一名 AI 玩家的結算前後值。 */
+    /**
+     * 建立一名 AI 玩家的結算前後值。
+     *
+     * @param seatIndex 座位索引。
+     * @param previousScore 結算前分數。
+     * @param currentScore 結算後分數。
+     * @param previousRank 結算前名次。
+     * @param currentRank 結算後名次。
+     * @return 含隨機玩家 ID 的結算資料。
+     */
     private fun player(
         seatIndex: Int,
         previousScore: Int,
@@ -136,25 +163,51 @@ class GameEventChatNotifierTest {
         currentRank = currentRank,
     )
 
-    /** 訊息標題的翻譯鍵。 */
+    /**
+     * 訊息標題的翻譯鍵。
+     *
+     * @receiver 待讀取標題的訊息。
+     * @return 標題的 translation key；非翻譯文字時為 `null`。
+     */
     private fun Text.titleKey(): String? = (content as? TranslatableTextContent)?.key
 
-    /** 標題中結算結果文字的參數。 */
+    /**
+     * 標題中結算結果文字的參數。
+     *
+     * @receiver 結算訊息。
+     * @return 標題第一個參數的文字。
+     */
     private fun Text.outcomeArgument(): Text = (content as TranslatableTextContent).args[0] as Text
 
-    /** 標題中結算結果文字的翻譯鍵。 */
+    /**
+     * 標題中結算結果文字的翻譯鍵。
+     *
+     * @receiver 結算訊息。
+     * @return 結果文字的 translation key；非翻譯文字時為 `null`。
+     */
     private fun Text.outcomeKey(): String? = (outcomeArgument().content as? TranslatableTextContent)?.key
 
-    /** hover 詳情中每位玩家的一行。 */
+    /**
+     * hover 詳情中每位玩家的一行。
+     *
+     * @receiver 結算訊息。
+     * @return hover 詳情內的玩家行。
+     */
     private fun Text.playerLines(): List<TranslatableTextContent> = hoverDetails()?.siblings
         .orEmpty()
         .mapNotNull { it.content as? TranslatableTextContent }
         .filter { it.key == MinecraftMessageKeys.ROUND_RESULT_PLAYER_LINE }
 
-    /** 取得簡短 round-result 訊息的 hover 詳情。 */
+    /**
+     * 取得簡短 round-result 訊息的 hover 詳情。
+     *
+     * @receiver 要搜尋 hover 的文字。
+     * @return 直接或巢狀 hover 的內容；未找到時為 `null`。
+     */
     private fun Text.hoverDetails(): Text? = style.hoverEvent?.getValue(HoverEvent.Action.SHOW_TEXT)
         ?: siblings.firstNotNullOfOrNull { it.hoverDetails() }
 
+    /** 非「對局結束」動作不建立 match-result 訊息。 */
     @Test
     fun `returns null for match result when the action is not match ended`() {
         val snapshot = fakeSnapshot(scores = listOf(25000, 25000))
@@ -162,7 +215,7 @@ class GameEventChatNotifierTest {
         assertNull(buildMatchResultChatMessage(GameAction.Tsumo, snapshot, snapshot.allPlayerIds(), module))
     }
 
-    /** 保存尚未完成時也一次建立提示與可點擊入口，不修改原始排行。 */
+    /** 排名尚未完成時仍立即建立帶提示與歷史入口的訊息，且不修改原始排行。 */
     @Test
     fun `test match result contains a stable history click and hint immediately`() {
         val command = "/mahjongcraft_client history chat_entry local-token"
@@ -188,6 +241,7 @@ class GameEventChatNotifierTest {
         siblings.forEach { yieldAll(it.descendants()) }
     }
 
+    /** 終局同分時依起家座位順位決定名次，不受本局風位調整影響。 */
     @Test
     fun `breaks tied final scores by seat proximity to the original dealer`() {
         val eastId = Uuid.random()
@@ -228,9 +282,21 @@ class GameEventChatNotifierTest {
         )
     }
 
-    /** 測試把所有玩家都當成 AI，避免觸發需要真正 client 執行環境的名稱解析分支。 */
+    /**
+     * 測試把所有玩家都當成 AI，避免觸發需要真正 client 執行環境的名稱解析分支。
+     *
+     * @receiver 對局快照。
+     * @return 快照中的玩家 ID 集合。
+     */
     private fun TableStateSnapshot.allPlayerIds(): Set<Uuid> = players.map { it.id }.toSet()
 
+    /**
+     * 建立指定分數的測試對局快照。
+     *
+     * @param scores 玩家分數，順序對應玩家 ID。
+     * @param ids 玩家 ID；未指定時為每位玩家產生隨機 ID。
+     * @return 隱藏手牌與留置牌皆為空的快照。
+     */
     private fun fakeSnapshot(
         scores: List<Int>,
         ids: List<Uuid> = scores.map { Uuid.random() },
@@ -240,6 +306,7 @@ class GameEventChatNotifierTest {
         },
     ).toSnapshot(visibleHandPlayerIds = emptySet(), setAsideTiles = { emptyList() })
 
+    /** 測試結果識別值。 */
     private companion object {
         /** 測試結算使用的規則模組 ID。 */
         const val RULE_MODULE_ID = "mahjongcraft:riichi"

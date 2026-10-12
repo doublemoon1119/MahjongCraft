@@ -20,9 +20,7 @@ import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
- * [RoomEventPublisher] 的 Fabric 實作，四個方法都收斂到同一個 [send]——組出對應的 [RoomUpdateEventDto]
- * 變體，讀出目標玩家目前的房間快照（呼叫端已經先寫進 [roomSnapshotRepository]），一起包成
- * [RoomUpdatePayloadDto] 送出。目標玩家不在線就直接跳過，理由同 [GameEventPublisherImpl]。
+ * 將房間事件與收件玩家可見的最新快照組成封包；沒有快照或玩家不在線時不送出。
  *
  * @property roomSnapshotRepository 玩家可見的房間快照來源。
  * @property serverHolder 目前伺服器與有效收件玩家。
@@ -54,6 +52,13 @@ class RoomEventPublisherImpl(
         send(roomId, targetPlayerId, RoomUpdateEventDto.ConfigChanged(newConfig.toDto(networkRegistries)))
     }
 
+    /**
+     * 傳送房間事件、目前快照與真人玩家名稱。
+     *
+     * @param roomId 要查詢快照的房間。
+     * @param targetPlayerId 快照的觀察者及封包收件玩家。
+     * @param event 要與快照一起傳送的房間事件。
+     */
     private suspend fun send(roomId: Uuid, targetPlayerId: Uuid, event: RoomUpdateEventDto) {
         val snapshot = roomSnapshotRepository.getSnapshot(roomId, targetPlayerId) ?: return
         val player = serverHolder.findPlayer(targetPlayerId) ?: return

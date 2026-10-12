@@ -23,6 +23,7 @@ class MahjongCraftEvent<L : Any> private constructor() {
      * 註冊監聽者；初始化完成後註冊會被拒絕。
      *
      * @param listener 要依註冊順序接收事件的監聽者。
+     * @throws IllegalStateException 訂閱點已鎖定時拋出。
      */
     fun register(listener: L) {
         requireNotNull(listener) { "Event listener must not be null" }
@@ -43,12 +44,21 @@ class MahjongCraftEvent<L : Any> private constructor() {
         }
     }
 
-    /** 取得依註冊順序排列的監聽者快照。 */
+    /**
+     * 取得依註冊順序排列的監聽者快照。
+     *
+     * @return 不受後續註冊影響且不可修改的監聽者清單。
+     */
     internal fun listenersSnapshot(): List<L> = ListenerSnapshot(state.load().listeners)
 
     /** MahjongCraft 內部建立訂閱點的入口。 */
     internal companion object {
-        /** 建立尚未鎖定的訂閱點；此方法不暴露給 Java 第三方。 */
+        /**
+         * 建立尚未鎖定的訂閱點；此方法不暴露給 Java 第三方。
+         *
+         * @param L 監聽者介面型別。
+         * @return 空白且允許註冊的訂閱點。
+         */
         @JvmSynthetic
         fun <L : Any> create(): MahjongCraftEvent<L> = MahjongCraftEvent()
     }
@@ -56,6 +66,7 @@ class MahjongCraftEvent<L : Any> private constructor() {
     /**
      * 訂閱點的不可變狀態。
      *
+     * @param L 監聽者介面型別。
      * @property listeners 依註冊順序排列的監聽者。
      * @property locked 是否已禁止後續註冊。
      */
@@ -67,6 +78,7 @@ class MahjongCraftEvent<L : Any> private constructor() {
     /**
      * 監聽者的不可修改快照，避免交付端暴露可變的底層清單。
      *
+     * @param L 監聽者介面型別。
      * @param listeners 要複製到快照的監聽者。
      */
     private class ListenerSnapshot<L>(listeners: Collection<L>) : AbstractList<L>() {

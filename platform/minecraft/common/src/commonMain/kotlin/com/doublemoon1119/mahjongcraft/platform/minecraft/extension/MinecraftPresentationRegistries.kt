@@ -90,7 +90,11 @@ class MinecraftPresentationRegistries(
     // 對局成果
     val gameAchievementResolverRegistry: GameAchievementResolverRegistry,
 ) {
-    /** 取得目前所有 Minecraft presentation registry 的不可變診斷快照。 */
+    /**
+     * 取得目前所有 Minecraft presentation registry 的不可變診斷快照。
+     *
+     * @return 各 registry 分類及當前註冊 key 的快照。
+     */
     fun registrationSnapshot(): MinecraftPresentationRegistrationSnapshot = MinecraftPresentationRegistrationSnapshot(
         listOf(
             snapshotCategory("mahjongcraft:tile_asset", "Tile Asset", tileAssetRegistry.registrationKeys),
@@ -151,7 +155,14 @@ class MinecraftPresentationRegistries(
     }
 }
 
-/** 建立單一 Minecraft presentation registry 的診斷快照類別。 */
+/**
+ * 建立單一 Minecraft presentation registry 的診斷快照類別。
+ *
+ * @param id registry 的穩定分類 ID。
+ * @param displayName 診斷畫面使用的分類名稱。
+ * @param registrationKeys registry 目前登記的 key。
+ * @return 保存分類資訊與 key 快照的物件。
+ */
 private fun snapshotCategory(
     id: String,
     displayName: String,

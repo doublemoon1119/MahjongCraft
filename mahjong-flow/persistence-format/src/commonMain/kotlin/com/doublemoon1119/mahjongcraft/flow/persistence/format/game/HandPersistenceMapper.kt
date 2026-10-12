@@ -45,6 +45,8 @@ fun MeldPersistenceDto.toDomain(): Meld = Meld(
     sourceTile = sourceTile?.toDomain(),
     sourceDirection = sourceDirection.toDomain(),
 )
+
+/** 將副露種類轉成存檔 DTO。 */
 private fun MeldType.toPersistenceDto(): MeldTypePersistenceDto = when (this) {
     MeldType.CHI -> MeldTypePersistenceDto.Chi
     MeldType.PON -> MeldTypePersistenceDto.Pon
@@ -53,6 +55,8 @@ private fun MeldType.toPersistenceDto(): MeldTypePersistenceDto = when (this) {
     MeldType.ADDED_KAN -> MeldTypePersistenceDto.AddedKan
     is MeldType.Extension -> MeldTypePersistenceDto.Extension(typeId.toString())
 }
+
+/** 將已保存的副露種類還原成領域值。 */
 private fun MeldTypePersistenceDto.toDomain(): MeldType = when (this) {
     MeldTypePersistenceDto.Chi -> MeldType.CHI
     MeldTypePersistenceDto.Pon -> MeldType.PON
@@ -83,12 +87,16 @@ fun HandPersistenceDto.toDomain(): Hand = Hand(
     melds = melds.map(MeldPersistenceDto::toDomain),
     lastDrawn = lastDrawn?.toDomain(),
 )
+
+/** 將副露來源的相對方向轉成存檔 DTO。 */
 private fun RelativeDirection.toPersistenceDto(): RelativeDirectionPersistenceDto = when (this) {
     RelativeDirection.Left -> RelativeDirectionPersistenceDto.LEFT
     RelativeDirection.Across -> RelativeDirectionPersistenceDto.ACROSS
     RelativeDirection.Right -> RelativeDirectionPersistenceDto.RIGHT
     RelativeDirection.Self -> RelativeDirectionPersistenceDto.SELF
 }
+
+/** 將已保存的相對方向還原成領域值。 */
 private fun RelativeDirectionPersistenceDto.toDomain(): RelativeDirection = when (this) {
     RelativeDirectionPersistenceDto.LEFT -> RelativeDirection.Left
     RelativeDirectionPersistenceDto.ACROSS -> RelativeDirection.Across

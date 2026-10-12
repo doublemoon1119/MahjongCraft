@@ -20,12 +20,5 @@ sealed interface WinRoundDirectivePersistenceDto {
      */
     @Serializable
     @SerialName("continue_round")
-    /**
-     * ContinueRound 的 persistence 資料型別。
-     *
-     * @property newlyFinishedPlayerIds 本次完成流程的玩家 UUID 字串列表。
-     * @property nextPlayerId 下一位玩家的 UUID 字串。
-     * @property settlementDetail 結算明細。
-     */
     data class ContinueRound(val newlyFinishedPlayerIds: Set<String>, val nextPlayerId: String, val settlementDetail: String) : WinRoundDirectivePersistenceDto
 }

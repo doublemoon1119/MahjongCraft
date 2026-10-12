@@ -9,12 +9,23 @@ import net.minecraft.util.math.Box
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
-/** 集中清除指定麻將桌擁有的暫時性舞台與仍在執行的演出工作。 */
+/**
+ * 集中清除指定麻將桌擁有的暫時性舞台與仍在執行的演出工作。
+ *
+ * @property winCelebrationEffectScheduler 取消該桌尚未完成的和牌演出工作。
+ */
 @Single
 class FabricTablePresentationCleaner(
     private val winCelebrationEffectScheduler: FabricWinCelebrationEffectScheduler,
 ) {
-    /** 立即停止指定桌子的所有暫時性呈現，並回傳移除的世界實體數量。 */
+    /**
+     * 立即停止指定桌子的所有暫時性呈現，並回傳移除的世界實體數量。
+     *
+     * @param world 搜尋暫時呈現實體的伺服器世界。
+     * @param tableId 目標桌子 UUID。
+     * @param controllerPos 桌子 controller 方塊位置。
+     * @return 實際移除的 entity 數量。
+     */
     fun clear(world: ServerWorld, tableId: Uuid, controllerPos: BlockPos): Int {
         val presentations = world.getEntitiesByClass(
             Entity::class.java,

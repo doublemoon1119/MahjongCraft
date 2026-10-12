@@ -50,6 +50,11 @@ class ModuleReadmeVerificationTest {
         assertTrue(result.output.contains("loaded/README.md"))
     }
 
+    /**
+     * 建立 README 驗證測試所需的 Gradle 專案與目錄。
+     *
+     * @param root 測試專案根目錄。
+     */
     private fun prepareBuild(root: File) {
         requiredDirectories(root).forEach { it.toPath().createDirectories() }
         root.resolve("gradle/platform-targets.toml").writeText(
@@ -74,6 +79,12 @@ class ModuleReadmeVerificationTest {
         root.resolve("loaded/build.gradle.kts").writeText("")
     }
 
+    /**
+     * 列出 README 驗證要求存在的各類目錄。
+     *
+     * @param root 測試專案根目錄。
+     * @return root、載入模組、catalog 模組與索引目錄。
+     */
     private fun requiredDirectories(root: File): List<File> = listOf(
         root,
         root.resolve("loaded"),
@@ -84,11 +95,22 @@ class ModuleReadmeVerificationTest {
         root.resolve("gradle"),
     )
 
+    /**
+     * 建立執行測試 fixture 的 Gradle runner。
+     *
+     * @param root 測試專案根目錄。
+     * @return 已設定專案目錄與 plugin classpath 的 runner。
+     */
     private fun runner(root: File): GradleRunner = GradleRunner.create()
         .withProjectDir(root)
         .withPluginClasspath()
         .forwardOutput()
 
+    /**
+     * 建立並在測試完成後刪除暫存專案。
+     *
+     * @param block 使用暫存專案根目錄的測試動作。
+     */
     private fun withFixture(block: (File) -> Unit) {
         createTempDirectory("mahjongcraft-readme-test").toFile().apply {
             try {

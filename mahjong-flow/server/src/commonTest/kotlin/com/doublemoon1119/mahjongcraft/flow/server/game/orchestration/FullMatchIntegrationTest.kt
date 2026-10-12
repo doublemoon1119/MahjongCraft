@@ -29,8 +29,8 @@ import kotlin.uuid.Uuid
  * 不會卡住、分數守恆。對局環境使用與 AI 對局模擬共用的 [SimulationRuntime]。
  *
  * 刻意用 [FakeAiStrategy]（見下方）而非 [RandomAiStrategy]：
- * 這個測試關心的是「編排層撐不撐得住」，不是「AI 選得好不好」，用固定策略讓行為可預期、測試結果
- * 穩定重現，不需要處理隨機性帶來的不穩定。
+ * 此測試關心完整對局的流程銜接，而不是策略強弱。固定策略對相同情境給出相同命令，
+ * 但初始化的牌山仍是隨機的，不保證每次對局經過相同路徑。
  */
 class FullMatchIntegrationTest {
     /**
@@ -87,7 +87,9 @@ class FullMatchIntegrationTest {
      * 搶槓路徑已經有各自獨立的單元測試涵蓋）。
      */
     private class FakeAiStrategy : MahjongAiStrategy {
+        /** 測試策略的註冊資訊。 */
         companion object {
+            /** 此固定策略的測試識別碼。 */
             const val KEY = "fake-deterministic"
         }
 

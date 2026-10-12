@@ -85,7 +85,7 @@ class RespondToDiscardUseCase(
      *
      * @param gameId 對局 Uuid。
      * @param playerId 發起回應的玩家 Uuid。
-     * @param action 欲執行的回應動作（[GameAction.Pass]、[GameAction.Chi]、[GameAction.Pon]，
+     * @param action 欲執行的回應動作（[GameAction.Ron]、[GameAction.Pass]、[GameAction.Chi]、[GameAction.Pon]，
      * 或 [GameAction.KanType.OPEN_KAN] 型態的 [GameAction.Kan]）。
      * @return 回應結果，成功時為 [Unit]，失敗時為 [GameError]。
      */
@@ -350,7 +350,23 @@ class RespondToDiscardUseCase(
      * 捨牌，供呼叫端逐一觸發胡牌慶祝演出；跟 [winnerId]（碰/吃/明槓得標）是互斥的兩個視窗，同一次結算
      * 只會有其中一種非空。
      *
+     * @property tableState 本次交易提交的權威桌況。
+     * @property supplementalDrawHappened 明槓成立後是否成功補牌。
+     * @property discarderId 鳴牌成立時原捨牌者的識別碼；其他結果為 null。
+     * @property winnerId 鳴牌成立時取得副露的玩家識別碼；其他結果為 null。
+     * @property resolvedAction 最後成立的非過牌動作；沒有成立的動作時為 null。
+     * @property ronWinnerIds 本次榮和成立的贏家識別碼集合。
+     * @property ronWinningTileId 本次榮和使用的捨牌識別碼。
+     * @property ronResolutions 各榮和贏家的算役結果。
+     * @property ruleModuleId 本次榮和所用規則模組的識別碼。
+     * @property previousTableState 榮和結算前、仍保留反應視窗資訊的桌況。
+     * @property ronDiscarderId 榮和結算中的放銃者識別碼。
      * @property settlement 同一榮和交易建立的胡牌呈現詳情。
+     * @property wallRevealBatches 依 checkpoint 順序新增公開的牌張 ID 批次。
+     * @property physicalWallTransitionPhases 已驗證的實體牌牆移動階段。
+     * @property rejectionReasonId 規則拒絕或結果驗證失敗時的原因 ID。
+     * @property abortiveDrawReason 本次結算觸發的途中流局原因。
+     * @property abortiveDrawActorId 記錄途中流局動作的玩家識別碼。
      */
     private data class RespondResult(
         val tableState: TableState,

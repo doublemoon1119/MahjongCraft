@@ -10,7 +10,11 @@ import net.minecraft.nbt.NbtList
 import net.minecraft.world.PersistentState
 import kotlin.uuid.Uuid
 
-/** 將 Minecraft 麻將桌位置索引保存為獨立 NBT list 的 [PersistentState]。 */
+/**
+ * 將 Minecraft 麻將桌位置索引保存為獨立 NBT list 的 [PersistentState]。
+ *
+ * @param initialEntries 從既有世界存檔還原的位置項目。
+ */
 class MahjongTableLocationsPersistentState private constructor(
     initialEntries: Collection<TableLocationEntry>,
 ) : PersistentState() {
@@ -18,13 +22,22 @@ class MahjongTableLocationsPersistentState private constructor(
     var entries: List<TableLocationEntry> = initialEntries.toList()
         private set
 
-    /** 更新待保存位置並標記此 state 為 dirty。 */
+    /**
+     * 更新待保存位置並標記此 state 為 dirty。
+     *
+     * @param entriesByTableId 以桌子 UUID 為鍵的最新位置索引。
+     */
     fun update(entriesByTableId: Map<Uuid, TableLocationEntry>) {
         entries = entriesByTableId.values.toList()
         markDirty()
     }
 
-    /** 將完整位置索引連同格式版本寫入 Minecraft NBT。 */
+    /**
+     * 將完整位置索引連同格式版本寫入 Minecraft NBT。
+     *
+     * @param nbt Minecraft 提供的 NBT compound。
+     * @return 寫入位置索引後的 NBT compound。
+     */
     override fun writeNbt(nbt: NbtCompound): NbtCompound {
         nbt.putInt(NBT_KEY_VERSION, CURRENT_VERSION)
         val entriesNbt = NbtList()
@@ -63,6 +76,9 @@ class MahjongTableLocationsPersistentState private constructor(
          * 暫時少幾筆索引。
          *
          * 版本欄位缺少、型別不符或不是目前版本時整份略過，因為無法確定欄位的語意是否相同。
+         *
+         * @param nbt Minecraft 讀出的持久化 NBT。
+         * @return 還原完成的位置索引；格式版本無效時為空索引。
          */
         fun fromNbt(nbt: NbtCompound): MahjongTableLocationsPersistentState {
             if (nbt.contains(NBT_KEY_VERSION) && !nbt.contains(NBT_KEY_VERSION, NbtElement.INT_TYPE.toInt())) {

@@ -9,7 +9,16 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnaps
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import org.koin.core.annotation.Single
 
-/** 清除一個 server session 的所有權威狀態與 observer read-side 快照。 */
+/**
+ * 清除一個伺服器工作階段的所有權威狀態與觀察者讀取快照。
+ *
+ * @property authoritativeStateStore 權威狀態儲存。
+ * @property roomSnapshots 房間觀察者快照倉庫。
+ * @property gameSnapshots 對局觀察者快照倉庫。
+ * @property membershipRepository 玩家場地歸屬倉庫。
+ * @property decisionTimerManager 對局決策計時器管理器。
+ * @property decisionTimerSynchronizationService 決策計時器同步服務。
+ */
 @Single
 class ServerSessionStateCleaner(
     private val authoritativeStateStore: AuthoritativeStateStore,

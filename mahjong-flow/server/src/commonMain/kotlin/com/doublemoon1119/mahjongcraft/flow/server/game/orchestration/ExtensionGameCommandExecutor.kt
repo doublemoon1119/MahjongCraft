@@ -22,7 +22,14 @@ class ExtensionGameCommandExecutor(
     /** 依命令具體型別索引、綁定 [context] 的 handler。 */
     private val handlers by lazy { registry.createHandlers(context) }
 
-    /** 執行已註冊命令；未知命令安全回傳不支援。 */
+    /**
+     * 執行已註冊命令；未知命令回傳不支援。
+     *
+     * @param gameId 對局識別碼。
+     * @param playerId 發出命令的玩家識別碼。
+     * @param command 欲執行的擴充命令。
+     * @return handler 的執行結果；命令型別未註冊時為不支援錯誤。
+     */
     @Suppress("UNCHECKED_CAST")
     suspend fun execute(
         gameId: Uuid,

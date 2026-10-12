@@ -307,7 +307,11 @@ class HistoryGenerationIntegrationTest {
         }
     }
 
-    /** 建立包含正式 Flow 與內建 AI 策略的隔離四 AI 對局。 */
+    /**
+     * 建立包含正式 Flow 與內建 AI 策略的隔離四 AI 對局。
+     *
+     * @return 已建立且尚未推進的隔離歷史生成 runtime。
+     */
     private suspend fun runtime(): HeadlessFlowHistoryRuntime = HeadlessFlowHistoryRuntime.create(HeadlessHistoryScenario.RIICHI_EAST, bundledHeadlessHistoryRegistries())
 
     /**

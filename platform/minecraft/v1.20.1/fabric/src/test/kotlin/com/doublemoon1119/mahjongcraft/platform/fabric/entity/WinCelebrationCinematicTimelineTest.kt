@@ -4,8 +4,9 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-/** 驗證 TNT 役滿演出的固定 phase 邊界與牌組 stagger。 */
+/** 驗證 TNT 役滿演出的階段順序與各張牌的錯開回歸時間。 */
 class WinCelebrationCinematicTimelineTest {
+    /** 各階段依序開始，牌組展示固定從第 300 tick 開始。 */
     @Test
     fun `phases remain ordered and showcase starts at tick 300`() {
         val starts = listOf(
@@ -27,6 +28,7 @@ class WinCelebrationCinematicTimelineTest {
         assertEquals(478L, WinCelebrationCinematicTimeline.totalDurationTicks(160))
     }
 
+    /** 各張牌依序回歸，並在標題顯示前完成定位。 */
     @Test
     fun `formation return starts with the blast and settles before title reveal`() {
         val returnTicks = (0 until 43).map { WinCelebrationCinematicTimeline.returnStartTick(it, 43) }

@@ -24,7 +24,15 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
-/** 只從權威桌況建立指定玩家可見的操作 HUD prompt。 */
+/**
+ * 只從權威桌況建立指定玩家可見的操作 HUD prompt。
+ *
+ * @property gameRepository 讀取對局權威狀態。
+ * @property candidateResolver 解析合法動作及手牌候選。
+ * @property moduleRegistry 解析規則模組與牌序。
+ * @property tileAssetRegistry 將牌面轉成素材 key。
+ * @property analysisDtoMapper 將捨牌分析轉成同步 DTO。
+ */
 @Single
 class PlayerDecisionPromptFactory(
     private val gameRepository: GameRepository,
@@ -33,7 +41,14 @@ class PlayerDecisionPromptFactory(
     private val tileAssetRegistry: MinecraftTileAssetRegistry,
     private val analysisDtoMapper: ReadinessAnalysisDtoMapper,
 ) {
-    /** 建立目前決策的私人 prompt；遊戲或玩家已失效時回傳 null。 */
+    /**
+     * 建立目前決策的私人 prompt；遊戲或玩家已失效時回傳 null。
+     *
+     * @param gameId 對局識別碼。
+     * @param playerId prompt 接收玩家識別碼。
+     * @param phase 目前決策階段。
+     * @return 只包含該玩家可見資料的 prompt；狀態已失效時為 null。
+     */
     suspend fun create(gameId: Uuid, playerId: Uuid, phase: PlayerDecisionPhase): PlayerDecisionPromptDto? {
         val game = gameRepository.getGame(gameId) ?: return null
         val state = game.tableState
@@ -124,7 +139,16 @@ class PlayerDecisionPromptFactory(
         )
     }
 
-    /** 組合不依同步時間變化的決策識別碼。 */
+    /**
+     * 組合不依同步時間變化的決策識別碼。
+     *
+     * @param gameId 對局識別碼。
+     * @param playerId prompt 接收玩家識別碼。
+     * @param phase 決策階段。
+     * @param preparation 目前受控的準備輸入 prompt。
+     * @param reference 用來區分目前決策的參考狀態。
+     * @return 由上述狀態組成的穩定識別字串。
+     */
     private fun buildDecisionKey(
         gameId: Uuid,
         playerId: Uuid,
@@ -134,7 +158,12 @@ class PlayerDecisionPromptFactory(
     ): String = listOf(gameId, playerId, phase, reference, preparation?.hashCode()).joinToString(":")
 }
 
-/** 將受控 preparation input 轉成不暴露其他玩家提交的私人 prompt。 */
+/**
+ * 將受控 preparation input 轉成不暴露其他玩家提交的私人 prompt。
+ *
+ * @param resolveAssetKey 以牌張識別碼取得可顯示素材 key 的函式。
+ * @return 對應的私人準備階段 prompt。
+ */
 private fun RoundPreparationInputSpec.toPrompt(resolveAssetKey: (Uuid) -> String?): RoundPreparationPromptDto = when (this) {
     RoundPreparationInputSpec.Confirmation -> RoundPreparationPromptDto.Confirmation
     is RoundPreparationInputSpec.SingleChoice -> RoundPreparationPromptDto.SingleChoice(optionIds)
@@ -157,6 +186,12 @@ private fun RoundPreparationInputSpec.toPrompt(resolveAssetKey: (Uuid) -> String
  * 卡片預覽一律直立顯示，不套用鳴牌後最終桌面朝向——那是給實際擺上桌的牌用的空間慣例，套在決策卡片上
  * 反而讓玩家要多一拍才能解讀。只有吃才會標出 [ActionTilePreview.claimedTileIndex]（三張牌本身花色/
  * 數值不同，框出來才有辨識意義）；碰跟槓的牌彼此看起來完全一樣，框哪一張都沒有實質資訊，不標記。
+ *
+ * @param hand 玩家目前的手牌。
+ * @param reactedTile 正在回應的牌；沒有反應來源時為 null。
+ * @param tileOrder 該規則的牌序。
+ * @param setAsideTile 規則指定要移出手牌的牌；無指定時為 null。
+ * @return 動作完成後的牌面預覽及必要時標示的鳴取牌索引。
  */
 internal fun GameAction.previewTiles(
     hand: Hand,
@@ -187,7 +222,12 @@ private fun TableState.reactedTile(): IdentifiedTile? = pendingRobbingReaction?.
         players.firstNotNullOfOrNull { player -> player.discardPile.entries.firstOrNull { it.tile.id == pending.tileId }?.tile }
     }
 
-/** 操作 HUD 一組牌面，[claimedTileIndex] 只有吃才會給值。 */
+/**
+ * 操作 HUD 一組牌面，[claimedTileIndex] 只有吃才會給值。
+ *
+ * @property tiles 預覽牌面。
+ * @property claimedTileIndex 吃牌時鳴取牌在預覽中的索引；其他動作為 null。
+ */
 internal data class ActionTilePreview(
     val tiles: List<Tile>,
     val claimedTileIndex: Int? = null,
@@ -198,6 +238,9 @@ internal data class ActionTilePreview(
  *
  * 相對位置沿用 [TableState.relativeDirectionOf]；觸發者是自己（[RelativeDirection.Self]）在反應情境不會
  * 發生，視為沒有觸發者。
+ *
+ * @param playerId prompt 接收玩家的識別碼。
+ * @return 反應觸發者及其相對位置；目前沒有他家反應時為 null。
  */
 private fun TableState.triggerContext(playerId: Uuid): TriggerContext? {
     val sourceId = pendingReaction?.discarderId ?: pendingRobbingReaction?.declarerId ?: return null
@@ -214,5 +257,11 @@ private fun TableState.triggerContext(playerId: Uuid): TriggerContext? {
     )
 }
 
-/** 一次他家反應的公開來源資訊。 */
+/**
+ * 一次他家反應的公開來源資訊。
+ *
+ * @property playerId 觸發反應的玩家識別碼。
+ * @property relation 該玩家相對 prompt 接收者的位置。
+ * @property actionId 觸發反應的動作識別碼。
+ */
 private data class TriggerContext(val playerId: Uuid, val relation: DecisionPlayerRelationDto, val actionId: String)

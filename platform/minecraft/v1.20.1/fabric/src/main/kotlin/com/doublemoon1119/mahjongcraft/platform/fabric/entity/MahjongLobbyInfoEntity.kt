@@ -18,28 +18,39 @@ class MahjongLobbyInfoEntity(
     type: EntityType<out MahjongLobbyInfoEntity> = ModEntities.mahjongLobbyInfo,
     world: World,
 ) : AnimatedMahjongEntity<Nothing>(type, world) {
+    /** 等待中遊戲使用的規則模組 ID。 */
     var ruleModuleId: String
         get() = dataTracker[RULE_MODULE_ID]
         set(value) = dataTracker.set(RULE_MODULE_ID, value)
 
+    /** 目前房間內的玩家人數。 */
     var playerCount: Int
         get() = dataTracker[PLAYER_COUNT]
         set(value) = dataTracker.set(PLAYER_COUNT, value)
 
+    /** 規則允許的最大玩家人數。 */
     var maximumPlayerCount: Int
         get() = dataTracker[MAXIMUM_PLAYER_COUNT]
         set(value) = dataTracker.set(MAXIMUM_PLAYER_COUNT, value)
 
+    /** 所屬麻將桌；尚未指派或資料損壞時為 `null`。 */
     var managedTableId: Uuid?
         get() = dataTracker[MANAGED_TABLE_ID].takeIf(String::isNotBlank)?.let { runCatching { Uuid.parse(it) }.getOrNull() }
         private set(value) = dataTracker.set(MANAGED_TABLE_ID, value?.toString().orEmpty())
 
+    /** 所屬桌子的控制方塊位置，用來檢查此等待室提示是否仍有效。 */
     private var controllerPos: BlockPos? = null
 
     init {
         setNoGravity(true)
     }
 
+    /**
+     * 設定所屬桌子與用來檢查桌子是否仍有效的控制方塊位置。
+     *
+     * @param tableId 所屬麻將桌 UUID。
+     * @param controllerPos 該桌控制方塊位置。
+     */
     fun assignToTable(tableId: Uuid, controllerPos: BlockPos) {
         check(!world.isClient) { "Managed lobby info must be assigned by the server" }
         managedTableId = tableId

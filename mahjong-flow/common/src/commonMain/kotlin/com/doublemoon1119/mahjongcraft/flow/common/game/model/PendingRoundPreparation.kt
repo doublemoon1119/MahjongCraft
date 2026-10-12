@@ -3,7 +3,14 @@ package com.doublemoon1119.mahjongcraft.flow.common.game.model
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import kotlin.uuid.Uuid
 
-/** 一個仍在等待玩家或規則完成的開局準備步驟。 */
+/**
+ * 一個仍在等待玩家或規則完成的開局準備步驟。
+ *
+ * @property stepId 此準備步驟的完整 namespaced 識別碼。
+ * @property stepIndex 此步驟在準備流程中的零起算索引。
+ * @property inputSpecsByPlayerId 各參與玩家可提交的輸入規格。
+ * @property submissionsByPlayerId 各玩家已提交且符合輸入規格的內容。
+ */
 data class PendingRoundPreparation(
     val stepId: String,
     val stepIndex: Int,

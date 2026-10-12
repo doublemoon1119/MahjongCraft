@@ -22,7 +22,12 @@ import net.minecraft.util.math.BlockPos
 import net.minecraft.world.World
 import kotlin.uuid.Uuid
 
-/** 一桌一個、同步完整公開玩家快照的純視覺 entity。 */
+/**
+ * 一桌一個、同步完整公開玩家快照的純視覺 entity。
+ *
+ * @param type Minecraft entity 類型。
+ * @param world 實體所屬世界。
+ */
 class MahjongPlayerInfoEntity(
     type: EntityType<out MahjongPlayerInfoEntity> = ModEntities.mahjongPlayerInfo,
     world: World,
@@ -47,31 +52,48 @@ class MahjongPlayerInfoEntity(
         }
         set(value) = dataTracker.set(PLAYERS, JSON.encodeToString(value.map(PlayerEntryDto::fromDomain)))
 
+    /** 莊家玩家 UUID；資料未設定或損壞時為 `null`。 */
     var dealerPlayerId: Uuid?
         get() = dataTracker[DEALER_PLAYER_ID].takeIf(String::isNotBlank)?.let { runCatching { Uuid.parse(it) }.getOrNull() }
         set(value) = dataTracker.set(DEALER_PLAYER_ID, value?.toString().orEmpty())
 
+    /** 觀看此桌時的座位方向；未知值使用北向預設。 */
     var tableFacing: MahjongTableFacing
         get() = MahjongTableFacing.fromNameOrDefault(dataTracker[TABLE_FACING])
         set(value) = dataTracker.set(TABLE_FACING, value.name)
 
+    /** 所屬麻將桌；尚未指派或資料損壞時為 `null`。 */
     var managedTableId: Uuid?
         get() = dataTracker[MANAGED_TABLE_ID].takeIf(String::isNotBlank)?.let { runCatching { Uuid.parse(it) }.getOrNull() }
         private set(value) = dataTracker.set(MANAGED_TABLE_ID, value?.toString().orEmpty())
 
+    /** 所屬桌子的控制方塊位置，用來定期檢查此資訊 entity 是否仍有效。 */
     private var controllerPos: BlockPos? = null
+
+    /** 目前隱藏租約的絕對結束時間；`Long.MIN_VALUE` 表示沒有隱藏租約。 */
     private var hiddenUntilGameTime: Long = Long.MIN_VALUE
 
     init {
         setNoGravity(true)
     }
 
+    /**
+     * 指派所屬桌子與用來檢查桌子是否仍有效的控制方塊位置。
+     *
+     * @param tableId 所屬麻將桌 UUID。
+     * @param controllerPos 該桌控制方塊位置。
+     */
     fun assignToTable(tableId: Uuid, controllerPos: BlockPos) {
         check(!world.isClient) { "Managed player info must be assigned by the server" }
         managedTableId = tableId
         this.controllerPos = controllerPos.toImmutable()
     }
 
+    /**
+     * 將玩家公開資訊隱藏至指定絕對遊戲時間。
+     *
+     * @param gameTime 隱藏租約結束的 server game time；不晚於現有期限時不改變佇列。
+     */
     fun hideUntil(gameTime: Long) {
         check(!world.isClient) { "Player info visibility lease must be changed by the server" }
         if (gameTime <= hiddenUntilGameTime) return
@@ -81,6 +103,7 @@ class MahjongPlayerInfoEntity(
         )
     }
 
+    /** 將玩家公開資訊隱藏至此 entity 被移除。 */
     fun hideUntilRemoved() {
         check(!world.isClient) { "Player info visibility lease must be changed by the server" }
         hiddenUntilGameTime = Long.MAX_VALUE
@@ -165,6 +188,17 @@ class MahjongPlayerInfoEntity(
     }
 }
 
+/**
+ * 供 tracked data 序列化玩家公開快照的內部 DTO。
+ *
+ * @property playerId 玩家 UUID 的文字形式。
+ * @property playerName 玩家顯示名稱；沒有名稱時為 `null`。
+ * @property isAi 玩家是否由 AI 操控。
+ * @property seatIndex 玩家座位索引。
+ * @property seatWind 座位風的名稱。
+ * @property score 玩家目前分數。
+ * @property indicators 玩家公開指示器。
+ */
 @Serializable
 internal data class PlayerEntryDto(
     val playerId: String,
@@ -176,7 +210,9 @@ internal data class PlayerEntryDto(
     val indicators: List<IndicatorDto>,
 ) {
     /**
-     * 將同步快照轉成領域資料；未知座位風位會略過該筆，避免錯誤資料被當成其他風位。
+     * 將此序列化條目還原為領域資料；未知座位風位或 UUID 無效時略過該筆，避免錯誤資料被當成其他玩家。
+     *
+     * @return 有效的玩家公開資料；資料無效時為 `null`。
      */
     fun toDomain(): MahjongPlayerInfoEntry? {
         val wind = Wind.entries.firstOrNull { it.name == seatWind } ?: return null
@@ -195,6 +231,12 @@ internal data class PlayerEntryDto(
     }
 
     companion object {
+        /**
+         * 將領域玩家公開資料轉換為可同步的 DTO。
+         *
+         * @param value 要轉換的玩家公開資料。
+         * @return 可序列化的玩家條目。
+         */
         fun fromDomain(value: MahjongPlayerInfoEntry) = PlayerEntryDto(
             value.playerId.toString(),
             value.playerName,
@@ -207,8 +249,20 @@ internal data class PlayerEntryDto(
     }
 }
 
+/**
+ * 以穩定文字欄位編碼公開玩家指示器。
+ *
+ * @property id 指示器識別碼。
+ * @property kind 指示器種類標記。
+ * @property value 數值或選項內容；marker 類型不帶值。
+ */
 @Serializable
 internal data class IndicatorDto(val id: String, val kind: String, val value: String?) {
+    /**
+     * 還原領域指示器值；未知種類按無值 marker 處理，count／option 缺值則視為格式錯誤。
+     *
+     * @return 還原的公開玩家指示器。
+     */
     fun toDomain() = PublicPlayerIndicator(
         id,
         when (kind) {
@@ -219,6 +273,12 @@ internal data class IndicatorDto(val id: String, val kind: String, val value: St
     )
 
     companion object {
+        /**
+         * 將領域指示器編碼為穩定的種類與值欄位。
+         *
+         * @param indicator 要轉換的公開玩家指示器。
+         * @return 可序列化的指示器 DTO。
+         */
         fun fromDomain(indicator: PublicPlayerIndicator): IndicatorDto = when (val indicatorValue = indicator.indicatorValue) {
             PublicPlayerIndicatorValue.Marker -> IndicatorDto(indicator.id, "marker", null)
             is PublicPlayerIndicatorValue.Count -> IndicatorDto(indicator.id, "count", indicatorValue.value.toString())

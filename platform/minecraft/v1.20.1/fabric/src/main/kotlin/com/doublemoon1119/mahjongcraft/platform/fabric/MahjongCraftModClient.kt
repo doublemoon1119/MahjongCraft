@@ -94,7 +94,9 @@ import org.koin.core.context.GlobalContext
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 
+/** Fabric client 初始化入口；註冊 client-only 命令、網路接收器與 entity renderer。 */
 class MahjongCraftModClient : ClientModInitializer {
+    /** Fabric client 初始化與網路處理的記錄器。 */
     private val logger = mahjongCraftLogger(MahjongCraftModClient::class)
 
     override fun onInitializeClient() {
@@ -334,7 +336,11 @@ class MahjongCraftModClient : ClientModInitializer {
         }
     }
 
-    /** 載入 client TOML；失敗時 store 會保留程式預設值並記錄詳細錯誤，對稱 server 端 `initializeServerConfig`。 */
+    /**
+     * 載入 client TOML；失敗時 store 會保留程式預設值並記錄詳細錯誤，對稱 server 端 `initializeServerConfig`。
+     *
+     * @param configStore client 設定讀取與更新 store。
+     */
     private fun initializeClientConfig(configStore: MahjongClientConfigStore) {
         when (val result = configStore.load()) {
             is MahjongClientConfigUpdateResult.Success -> {

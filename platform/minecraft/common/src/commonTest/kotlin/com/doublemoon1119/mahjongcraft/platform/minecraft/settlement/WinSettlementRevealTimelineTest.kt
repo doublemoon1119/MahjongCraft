@@ -7,10 +7,24 @@ import kotlin.test.assertEquals
 
 /** 驗證逐條揭示之後的時間完全由版面決定，且內建模板與改寫前的節奏相同。 */
 class WinSettlementRevealTimelineTest {
+    /** 測試用的揭示後摘要欄位。 */
     private val summaryId = PresentationFieldId("mahjongcraft:test_summary")
+
+    /** 日麻翻數符數欄位。 */
     private val hanFuId = PresentationFieldId(RiichiWinSettlementIds.HAN_FU_FIELD)
+
+    /** 日麻役滿總數欄位。 */
     private val yakumanTotalId = PresentationFieldId(RiichiWinSettlementIds.YAKUMAN_TOTAL_FIELD)
 
+    /**
+     * 建立帶淡入效果與指定時間軸的動畫節點。
+     *
+     * @param child 動畫內容。
+     * @param anchor 動畫開始時間的錨點。
+     * @param offsetTicks 相對錨點的延遲 tick 數。
+     * @param durationTicks 動畫持續 tick 數。
+     * @return 對應的動畫版面節點。
+     */
     private fun animated(
         child: PresentationLayout,
         anchor: PresentationTimelineAnchor,
@@ -22,6 +36,12 @@ class WinSettlementRevealTimelineTest {
         effects = listOf(PresentationAnimationEffect.Fade()),
     )
 
+    /**
+     * 從內建模板註冊表取得模板根版面。
+     *
+     * @param key 模板識別碼。
+     * @return 該模板的根版面；模板不存在時失敗。
+     */
     private fun builtInLayout(key: String): PresentationLayout {
         val registry = WinSettlementPresentationTemplateRegistryImpl().apply { registerBundledWinSettlementTemplates() }
         return requireNotNull(registry.findTemplate(key)).root

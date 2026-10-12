@@ -4,7 +4,11 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentation
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
-/** [GamePresentationBusyGate] 的 Fabric 實作，直接查詢 [TablePresentationBusyTracker]。 */
+/**
+ * [GamePresentationBusyGate] 的 Fabric 實作，直接查詢 [TablePresentationBusyTracker]。
+ *
+ * @property tracker 查詢牌桌呈現狀態的追蹤器。
+ */
 @Single(binds = [GamePresentationBusyGate::class])
 class FabricGamePresentationBusyGate(private val tracker: TablePresentationBusyTracker) : GamePresentationBusyGate {
     override fun isBusy(gameId: Uuid): Boolean = tracker.isBusy(gameId)

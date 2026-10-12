@@ -16,6 +16,11 @@ object RiichiTileInterpretationPolicy : TileInterpretationPolicy {
         else -> tile
     }
 
-    /** 判斷 [tile] 是否為日麻內建赤五。 */
+    /**
+     * 判斷 [tile] 是否為日麻內建赤五。
+     *
+     * @param tile 要檢查的牌。
+     * @return 若牌是三種內建赤五之一則為 true。
+     */
     fun isRedDora(tile: Tile): Boolean = (tile as? Tile.Extension)?.typeId in RiichiTileTypes.ALL
 }

@@ -143,5 +143,11 @@ object RiichiWinSettlementIds {
      */
     fun yakumanEntry(type: YakuType, multiplier: Int): WinSettlementDetailEntry = WinSettlementDetailEntry(yaku(type), WinSettlementQuantity(YAKUMAN, multiplier))
 
+    /**
+     * 以役種識別片段建立完整的役種條目 ID。
+     *
+     * @param slug 役種的穩定識別片段。
+     * @return 日麻役種條目的完整 namespaced ID。
+     */
     private fun yakuId(slug: String): String = MahjongCraftMetadata.id("riichi/yaku/$slug")
 }

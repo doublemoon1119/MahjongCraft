@@ -9,7 +9,14 @@ import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 
-/** 在聊天欄後方繪製本局已確認的自動操作狀態。 */
+/**
+ * 在一般遊戲或聊天畫面繪製本局已確認的自動操作狀態。
+ *
+ * @property configStore HUD 顯示與位置設定的來源。
+ * @property stateStore 查詢本機玩家目前入座對局的狀態來源。
+ * @property coordinator 已確認自動操作快照的來源。
+ * @property displays 控制項名稱與顯示順序的解析器。
+ */
 @Single
 class AutomaticControlStatusHudRenderer(
     private val configStore: MahjongClientConfigStore,
@@ -17,7 +24,11 @@ class AutomaticControlStatusHudRenderer(
     private val coordinator: ClientAutomaticControlUpdateCoordinator,
     private val displays: AutomaticControlDisplayResolver,
 ) {
-    /** 僅在一般遊戲畫面或聊天畫面呈現，不顯示尚未確認的設定草稿。 */
+    /**
+     * 僅在一般遊戲畫面或聊天畫面呈現，不顯示尚未確認的設定草稿。
+     *
+     * @param context 本次 GUI 繪製環境。
+     */
     fun render(context: DrawContext) {
         val client = MinecraftClient.getInstance()
         if (client.options.hudHidden || !configStore.current.presentationVisibility.automaticControlStatusEnabled) return
@@ -39,7 +50,14 @@ class AutomaticControlStatusHudRenderer(
         renderRows(context, rows, hudLayout.automaticControlStatusX, hudLayout.automaticControlStatusY)
     }
 
-    /** 在 [ratioX]、[ratioY] 的位置畫出 [rows]；HUD 位置編輯器的預覽也使用這裡。 */
+    /**
+     * 在指定比例位置繪製狀態列；HUD 位置編輯器的預覽也使用這裡。
+     *
+     * @param context 本次 GUI 繪製環境。
+     * @param rows 依顯示順序排列的控制項狀態。
+     * @param ratioX 水平位置比例。
+     * @param ratioY 垂直位置比例。
+     */
     internal fun renderRows(
         context: DrawContext,
         rows: List<AutomaticControlStatusRow>,
@@ -94,9 +112,16 @@ class AutomaticControlStatusHudRenderer(
     }
 
     private companion object {
+        /** 面板底色（ARGB）。 */
         val BACKGROUND_COLOR = 0xB0182028.toInt()
+
+        /** 已啟用項目的文字與圓點顏色（ARGB）。 */
         val ENABLED_COLOR = 0xFFA8D8A0.toInt()
+
+        /** 未啟用項目的文字與圓點顏色（ARGB）。 */
         val DISABLED_COLOR = 0xFFB6B6B6.toInt()
+
+        /** 隱藏項目數摘要的顏色（ARGB）。 */
         val SUMMARY_COLOR = 0xFFB6B6B6.toInt()
     }
 }

@@ -4,9 +4,16 @@ import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 
 /** 記憶體 registry 實作。 */
 class WinSettlementPresentationTemplateRegistryImpl : WinSettlementPresentationTemplateRegistry {
+    /** 依完整模板 key 保存的結算模板。 */
     private val templates = linkedMapOf<String, WinSettlementPresentationTemplate>()
+
+    /** 欄位 ID 對應的欄位值 provider。 */
     private val providers = linkedMapOf<PresentationFieldId, WinSettlementPresentationFieldProvider>()
+
+    /** 規則模組 ID 對應的結算模板 key。 */
     private val ruleTemplateKeys = linkedMapOf<String, String>()
+
+    /** 詳情欄位 ID 對應的文字格式器。 */
     private val detailTextFormatters = linkedMapOf<String, WinSettlementDetailTextFormatter>()
     override var isFrozen: Boolean = false
         private set

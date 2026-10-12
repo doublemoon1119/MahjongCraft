@@ -8,7 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinSettl
  * @property settlementDetail 中途胡牌時採用的結算面板模式；`null` 代表功能關閉。
  */
 enum class DebugWinRoundContinuationMode(val settlementDetail: ContinuingWinSettlementDetail?) {
-    /** 關閉：resolver 一律回傳 `null`，胡牌後立即結束本局，與正式行為完全相同。 */
+    /** 關閉開發覆寫，交由正式規則決定和牌後是否結束本局。 */
     OFF(settlementDetail = null),
 
     /** 中途胡牌，胡牌演出照常，接完整結算面板。 */

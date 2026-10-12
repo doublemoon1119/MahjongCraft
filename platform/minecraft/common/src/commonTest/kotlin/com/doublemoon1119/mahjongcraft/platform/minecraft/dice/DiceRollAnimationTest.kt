@@ -149,14 +149,24 @@ class DiceRollAnimationTest {
         }
     }
 
-    /** 比對三維向量各分量。 */
+    /**
+     * 比對三維向量各分量。
+     *
+     * @param expected 預期的向量。
+     * @param actual 實際向量。
+     */
     private fun assertVectorEquals(expected: DiceAnimationVector, actual: DiceAnimationVector) {
         assertEquals(expected.x, actual.x, TOLERANCE)
         assertEquals(expected.y, actual.y, TOLERANCE)
         assertEquals(expected.z, actual.z, TOLERANCE)
     }
 
-    /** 比對 quaternion 各分量。 */
+    /**
+     * 比對 quaternion 各分量。
+     *
+     * @param expected 預期的旋轉。
+     * @param actual 實際旋轉。
+     */
     private fun assertQuaternionEquals(expected: DiceAnimationQuaternion, actual: DiceAnimationQuaternion) {
         assertEquals(expected.x, actual.x, TOLERANCE)
         assertEquals(expected.y, actual.y, TOLERANCE)
@@ -164,11 +174,18 @@ class DiceRollAnimationTest {
         assertEquals(expected.w, actual.w, TOLERANCE)
     }
 
-    /** 計算 quaternion 分量差距，供收斂測試使用。 */
+    /**
+     * 計算 quaternion 分量差距，供收斂測試使用。
+     *
+     * @param first 第一個旋轉。
+     * @param second 第二個旋轉。
+     * @return 對應分量差距的總和。
+     */
     private fun quaternionDistance(first: DiceAnimationQuaternion, second: DiceAnimationQuaternion): Double = abs(
         first.x - second.x,
     ) + abs(first.y - second.y) + abs(first.z - second.z) + abs(first.w - second.w)
 
+    /** 測試共用容差。 */
     private companion object {
         /** 浮點計算允許誤差。 */
         const val TOLERANCE = 1.0e-9

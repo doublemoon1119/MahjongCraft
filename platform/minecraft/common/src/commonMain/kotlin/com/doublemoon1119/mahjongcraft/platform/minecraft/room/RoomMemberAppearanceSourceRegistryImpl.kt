@@ -4,6 +4,13 @@ import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 
 /** [RoomMemberAppearanceSourceRegistry] 的記憶體實作。 */
 class RoomMemberAppearanceSourceRegistryImpl : RoomMemberAppearanceSourceRegistry {
+    /**
+     * provider 的排序資料。
+     *
+     * @property id provider 的穩定識別碼。
+     * @property priority provider 的解析優先順序。
+     * @property provider 執行來源解析的 provider。
+     */
     private data class Entry(val id: String, val priority: Int, val provider: RoomMemberAppearanceSourceProvider)
 
     private val entries = mutableMapOf<String, Entry>()
@@ -39,5 +46,10 @@ class RoomMemberAppearanceSourceRegistryImpl : RoomMemberAppearanceSourceRegistr
         isFrozen = true
     }
 
+    /**
+     * 依優先順序由高至低、同分依 provider ID 排序。
+     *
+     * @return 登記項目的解析順序。
+     */
     private fun sorted(): List<Entry> = entries.values.sortedWith(compareByDescending<Entry> { it.priority }.thenBy { it.id })
 }

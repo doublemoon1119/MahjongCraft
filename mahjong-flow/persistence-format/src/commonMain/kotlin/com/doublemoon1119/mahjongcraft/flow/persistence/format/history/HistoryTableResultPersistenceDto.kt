@@ -14,11 +14,6 @@ sealed interface HistoryTableResultPersistenceDto {
      */
     @Serializable
     @SerialName("change")
-    /**
-     * Change 的 persistence 資料型別。
-     *
-     * @property change 本次交易的結構差異。
-     */
     data class Change(val change: HistoryTableChangePersistenceDto) : HistoryTableResultPersistenceDto
 
     /**
@@ -29,11 +24,5 @@ sealed interface HistoryTableResultPersistenceDto {
      */
     @Serializable
     @SerialName("checkpoint")
-/**
-     * 無法以差異表示桌況時保存的完整檢查點。
-     *
-     * @property reasonId 建立完整檢查點的原因識別碼。
-     * @property state 交易提交後保存的完整狀態。
-     */
     data class Checkpoint(val reasonId: String, val state: TableStatePersistenceDto) : HistoryTableResultPersistenceDto
 }

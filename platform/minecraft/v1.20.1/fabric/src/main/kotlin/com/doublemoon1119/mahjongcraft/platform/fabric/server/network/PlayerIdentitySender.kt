@@ -31,6 +31,7 @@ class PlayerIdentitySender(
      *
      * @param targetId 已驗證的收件玩家。
      * @param playerIds 已授權內容中的真人 UUID，不得傳入全伺服器名單。
+     * @return 此函式完成時，所有可解析名稱均已分批送出；玩家離線時不送出資料。
      */
     suspend fun send(targetId: Uuid, playerIds: Collection<Uuid>) = withContext(dispatchers.main) {
         val player = serverHolder.findPlayer(targetId) ?: return@withContext

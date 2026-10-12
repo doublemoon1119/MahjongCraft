@@ -19,6 +19,7 @@ import kotlin.uuid.Uuid
 /** [AutomatedAdvanceManager] 的單局推進、補跑、失敗與 session 隔離。 */
 @OptIn(ExperimentalCoroutinesApi::class)
 class AutomatedAdvanceManagerTest {
+    /** 受測對局識別碼。 */
     private val gameId = Uuid.random()
 
     /** 請求後立即返回，推進在自己的協程中進行；推進期間視為推進中，結束後釋放。 */
@@ -158,6 +159,13 @@ class AutomatedAdvanceManagerTest {
      *
      * @param test 提供虛擬時間的測試作用域。
      * @param scope 啟動推進協程的作用域。
+     * @property onAdvance 每輪推進執行的測試操作。
+     * @property again 判斷是否立即再推進一輪的測試操作。
+     * @property advances 已開始的推進次數。
+     * @property maxConcurrent 同時執行推進的最大數量。
+     * @property failures 已回報失敗的對局識別碼。
+     * @property running 目前正在執行的推進數。
+     * @property manager 受測推進管理器。
      */
     private class Fixture(test: TestScope, scope: CoroutineScope = test.backgroundScope) {
         var onAdvance: suspend () -> Unit = {}

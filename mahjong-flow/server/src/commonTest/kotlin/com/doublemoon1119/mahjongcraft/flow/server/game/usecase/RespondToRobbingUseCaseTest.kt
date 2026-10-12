@@ -51,22 +51,45 @@ import kotlin.uuid.Uuid
  */
 class RespondToRobbingUseCaseTest {
 
+    /** 受測對局的識別碼。 */
     private val gameId = Uuid.random()
+
+    /** 宣告槓牌的玩家識別碼。 */
     private val declarerId = Uuid.random()
+
+    /** 搶槓反應者的玩家識別碼。 */
     private val robberId = Uuid.random()
 
+    /** 組成受測用例及記錄副作用的記憶體替身。 */
     private class Fixtures {
+        /** 保存權威桌況與歷史事實的測試資料倉庫。 */
         val gameRepo = FakeGameRepository()
+
+        /** 已註冊內建規則的模組註冊中心。 */
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
+
+        /** 記錄同步快照的測試倉庫。 */
         val snapshotRepo = FakeGameSnapshotRepository()
+
+        /** 依觀看政策同步對局快照的元件。 */
         val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(moduleRegistry))
+
+        /** 記錄流程事件的發布替身。 */
         val eventPublisher = FakeGameEventPublisher()
+
+        /** 記錄呈現要求的發布替身。 */
         val presentationPublisher = FakeGamePresentationPublisher()
+
+        /** 暫存待發布的和牌呈現要求。 */
         val winPresentationHandoff = WinPresentationHandoff()
+
+        /** 和牌明細的解析器註冊中心。 */
         val winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry().apply {
             BundledRiichiExtension.registerWinSettlementDetailResolvers(this)
             freeze()
         }
+
+        /** 受測搶槓反應用例。 */
         val useCase = RespondToRobbingUseCase(
             gameRepo,
             moduleRegistry,
@@ -79,13 +102,29 @@ class RespondToRobbingUseCaseTest {
         )
     }
 
+    /** 構成宣告加槓既有碰子的第一張白板。 */
     private val whiteTile1 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+
+    /** 構成宣告加槓既有碰子的第二張白板。 */
     private val whiteTile2 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+
+    /** 構成宣告加槓既有碰子的第三張白板。 */
     private val whiteTile3 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+
+    /** 宣告加槓並供搶槓的白板。 */
     private val robbedWhiteTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+
+    /** 宣告成立後預期摸入的嶺上牌。 */
     private val rinshanTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
+
+    /** 宣告加槓時提交的槓動作。 */
     private val kanAction = GameAction.Kan(GameAction.KanType.ADDED_KAN, robbedWhiteTile.id, emptyList())
 
+    /**
+     * 建立宣告加槓前的既有碰子。
+     *
+     * @return 由三張測試白板組成、來源為上家的碰子。
+     */
     private fun existingPon() = Meld(
         MeldType.PON,
         listOf(whiteTile1, whiteTile2, whiteTile3),
@@ -93,7 +132,11 @@ class RespondToRobbingUseCaseTest {
         sourceDirection = RelativeDirection.Left,
     )
 
-    // 役牌發已成立（1 翻）、單騎聽白（搶槓的那張牌）
+    /**
+     * 建立具有發刻子、三組順子並單騎聽白的搶槓手牌。
+     *
+     * @return 已有役牌、等待被搶白板的十三張手牌。
+     */
     private fun robberHand() = Hand(
         tiles = listOf(
             Tile.Honor.Green, Tile.Honor.Green, Tile.Honor.Green,
@@ -103,6 +146,13 @@ class RespondToRobbingUseCaseTest {
         ).map { FakeIdentifiedTileFactory.create(it) } + FakeIdentifiedTileFactory.create(Tile.Honor.White),
     )
 
+    /**
+     * 建立宣告加槓並等待搶槓回應的桌況。
+     *
+     * @param reservedWallTiles 測試桌況的保留牌；預設包含預期嶺上牌。
+     * @param robberRuleState 搶槓者的日麻規則狀態。
+     * @return 開啟搶槓反應視窗並配置實體牌牆的桌況。
+     */
     private fun setUpTable(
         reservedWallTiles: List<IdentifiedTile> = completeRiichiReservedWall(rinshanTile),
         robberRuleState: RiichiPlayerState = RiichiPlayerState(),
@@ -183,7 +233,7 @@ class RespondToRobbingUseCaseTest {
     /**
      * 驗證全員放過時：原本被 `DeclareKanUseCase` 暫緩的副露套用與嶺上摸牌會在這裡補做——副露升級為
      * ADDED_KAN、`lastDrawn` 為補摸的嶺上牌、`actionHistory` 依序記錄 `Kan` → `Draw`、反應視窗清除、
-     * 依序廣播 `Pass` → `Draw`；加上去的那張已在宣告時擺好，畫面只呈現補牌。
+     * 依序發布 `Pass` → `Draw` 事件；本次呈現要求只標記補摸的牌，不重複標記鳴取牌。
      */
     @Test
     fun `test all pass resumes the kan declaration`() = runTest {

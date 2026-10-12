@@ -13,8 +13,13 @@ import org.koin.core.annotation.Single
  */
 @Single
 class ClientAutomaticControlStateStore {
+    /** 最後接受的權威快照；尚未同步或已清除時為 null。 */
     private var currentSnapshot: AutomaticControlSnapshotDto? = null
+
+    /** 等待伺服器回覆的單一更新請求。 */
     private var currentPendingRequest: AutomaticControlUpdateRequestDto? = null
+
+    /** 本地狀態變更通知序號，清除資料時不歸零。 */
     private var notificationRevision: Long = 0L
 
     /** 目前最後一份被接受的個人權威快照。 */
@@ -26,7 +31,12 @@ class ClientAutomaticControlStateStore {
     /** 目前狀態的本地通知序號；任何可觀察狀態變更都會遞增，清除後不會回退。 */
     fun notificationRevision(): Long = notificationRevision
 
-    /** 尚無等待中請求時保存 [request]；回傳是否成功，避免新請求取代仍待確認的更新。 */
+    /**
+     * 尚無等待中請求時保存新請求，避免取代仍待確認的更新。
+     *
+     * @param request 要等待伺服器確認的請求。
+     * @return 成功保存時為 true；已有等待中請求時為 false。
+     */
     fun trySetPendingRequest(request: AutomaticControlUpdateRequestDto): Boolean {
         if (currentPendingRequest != null) return false
         currentPendingRequest = request
@@ -34,7 +44,12 @@ class ClientAutomaticControlStateStore {
         return true
     }
 
-    /** 送出失敗時移除與 [requestId] 相符的 pending request；其他請求不受影響。 */
+    /**
+     * 送出失敗時移除識別碼相符的等待中請求；其他請求不受影響。
+     *
+     * @param requestId 送出失敗的請求識別碼。
+     * @return 找到並移除相符請求時為 true。
+     */
     fun discardPendingRequest(requestId: String): Boolean {
         if (currentPendingRequest?.requestId != requestId) return false
         currentPendingRequest = null
@@ -47,6 +62,9 @@ class ClientAutomaticControlStateStore {
      *
      * 同一局只接受較新的 revision；不同局代表新的生命週期，可以取代舊局，即使 revision 較小也一樣。
      * 回傳值表示快照是否真的改變了 store。
+     *
+     * @param snapshot 新收到的權威快照。
+     * @return 快照被接受並更新暫存狀態時為 true。
      */
     fun applySnapshot(snapshot: AutomaticControlSnapshotDto): Boolean {
         val previous = currentSnapshot
@@ -60,8 +78,11 @@ class ClientAutomaticControlStateStore {
     }
 
     /**
-     * 套用更新結果。只有結果的 request ID 與目前 pending request 相同時，才會清除 pending。
+     * 套用更新結果。只有結果的請求識別碼與對局識別碼都符合等待中請求時，才會清除該請求。
      * 若結果附帶快照，仍遵守 [applySnapshot] 的對局與 revision 規則。
+     *
+     * @param result 伺服器回覆的更新結果。
+     * @return 結果與等待中請求相符並完成處理時為 true。
      */
     fun applyResult(result: AutomaticControlUpdateResultDto): Boolean {
         val pending = currentPendingRequest

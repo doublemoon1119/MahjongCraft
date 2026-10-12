@@ -28,8 +28,13 @@ import kotlin.uuid.Uuid
 /** [AiDecisionExecutor] 的背景執行、等待上限、名額與同一局的呼叫限制。 */
 @OptIn(ExperimentalCoroutinesApi::class)
 class AiDecisionExecutorTest {
+    /** 第一場受測對局。 */
     private val gameId = Uuid.random()
+
+    /** 驗證跨局名額限制的另一場對局。 */
     private val otherGameId = Uuid.random()
+
+    /** 提交決策的受測玩家。 */
     private val playerId = Uuid.random()
 
     /** 策略在執行器的調度器上計算，結果原樣回傳。 */
@@ -281,19 +286,30 @@ class AiDecisionExecutorTest {
      *
      * @param scope 測試的作用域，提供虛擬時間。
      * @param capacity 名額。
+     * @property reporter 記錄決策逾時與舊工作未結束的回報。
+     * @property executor 使用虛擬時間調度器的受測執行器。
      */
     private class Fixture(scope: TestScope, capacity: Int = 4) {
         val reporter = RecordingReporter()
         val executor = AiDecisionExecutor(StandardTestDispatcher(scope.testScheduler), capacity = capacity, timeout = TIMEOUT, reporter = reporter)
 
-        /** 不理會取消、直到 [gate] 完成才返回的策略。 */
+        /**
+         * 不理會取消、直到閘門開啟才返回的策略。
+         *
+         * @param gate 控制工作何時結束的閘門。
+         * @return 固定的延遲結果。
+         */
         suspend fun uncooperative(gate: CompletableDeferred<Unit>): String = withContext(NonCancellable) {
             gate.await()
             "late"
         }
     }
 
-    /** 依序記錄回報的事件。 */
+    /**
+     * 依序記錄回報的事件。
+     *
+     * @property events 依呼叫順序累積的診斷記錄。
+     */
     private class RecordingReporter : AiDecisionReporter {
         val events = mutableListOf<String>()
 
@@ -310,6 +326,7 @@ class AiDecisionExecutorTest {
      * 記錄排程次數的調度器。
      *
      * @property delegate 實際執行的調度器。
+     * @property dispatches 已接收的排程次數。
      */
     private class RecordingDispatcher(private val delegate: CoroutineDispatcher) : CoroutineDispatcher() {
         var dispatches = 0
@@ -323,6 +340,7 @@ class AiDecisionExecutorTest {
 
     /** 收到的工作先保留，直到 [runAll]；[runEach] 為 true 後收到就立即執行。 */
     private class HeldDispatcher : CoroutineDispatcher() {
+        /** 尚未執行的排程工作。 */
         private val held = ArrayDeque<Runnable>()
 
         /** 是否收到工作就立即執行。 */
@@ -338,8 +356,12 @@ class AiDecisionExecutorTest {
         }
     }
 
+    /** 決策測試共用的策略識別碼與等待上限。 */
     private companion object {
+        /** 回報中使用的測試策略識別碼。 */
         const val STRATEGY_KEY = "test:strategy"
+
+        /** 虛擬時間中的決策等待上限。 */
         val TIMEOUT = 5.seconds
     }
 }

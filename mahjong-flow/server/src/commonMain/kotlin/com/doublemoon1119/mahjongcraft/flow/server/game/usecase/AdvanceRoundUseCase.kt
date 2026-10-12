@@ -323,6 +323,12 @@ class AdvanceRoundUseCase(
      * 對外回傳形狀。[dealOrderHandTileIdsBySeatIndex] 是發牌順序，在
      * [result] 的手牌已經被整理過之後就無法再從它反推出來，理由同 `StartGameUseCase` KDoc；整場對局
      * 已結束（沒有開新的一局）時固定為空 map，不會被用到。
+     *
+     * @property result 對呼叫端回傳的回合推進結果。
+     * @property diceRoll 新局發牌時使用的擲骰結果；沒有開新局時為 null。
+     * @property wallStructure 新局的牌牆位置；沒有開新局時為 null。
+     * @property initialPhysicalWallLayout 新局開始時的實體牌牆排列；沒有開新局時為 null。
+     * @property dealOrderHandTileIdsBySeatIndex 按座位索引的發牌順序牌識別碼；沒有開新局時為空 map。
      */
     private data class AdvanceRoundOutcome(
         val result: AdvanceRoundResult,

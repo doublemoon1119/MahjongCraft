@@ -47,7 +47,12 @@ class KDocTagSpacingRule(
         })
     }
 
-    /** 判斷第一個區塊標籤前是否有獨立的空白註解行。 */
+    /**
+     * 判斷第一個區塊標籤前是否有獨立的空白註解行。
+     *
+     * @param commentText KDoc 的完整文字。
+     * @param tagOffset 第一個區塊標籤相對於 KDoc 起點的字元位置。
+     */
     private fun hasBlankLineBefore(commentText: String, tagOffset: Int): Boolean {
         val prefix = commentText.substring(0, tagOffset.coerceIn(0, commentText.length))
         val lines = prefix.split('\n')

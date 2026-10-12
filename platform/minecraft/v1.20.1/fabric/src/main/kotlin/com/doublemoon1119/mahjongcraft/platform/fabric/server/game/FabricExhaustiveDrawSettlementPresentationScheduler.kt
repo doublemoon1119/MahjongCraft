@@ -18,7 +18,12 @@ import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 
-/** 統一流局結算舞台的生成與 round-info visibility lease 交接。 */
+/**
+ * 統一流局結算舞台的生成與 round-info visibility lease 交接。
+ *
+ * @property overlays 管理桌面 overlay 的暫時隱藏。
+ * @property spawnGateway 生成並追蹤舞台 entity。
+ */
 @Single
 class FabricExhaustiveDrawSettlementPresentationScheduler(
     private val overlays: PersistentTableOverlayCoordinator,
@@ -27,7 +32,20 @@ class FabricExhaustiveDrawSettlementPresentationScheduler(
     /** 記錄手牌 entity 找不到的 logger。 */
     private val logger = mahjongCraftLogger(FabricExhaustiveDrawSettlementPresentationScheduler::class)
 
-    /** 成功生成時回傳固定結束時間；失敗則不隱藏 round info。手牌 entity 找不到的牌不播放動畫，並記錄一筆警告列出各座位缺少的牌。 */
+    /**
+     * 成功生成時回傳固定結束時間；失敗則不隱藏 round info。手牌 entity 找不到的牌不播放動畫，並記錄一筆警告列出各座位缺少的牌。
+     *
+     * @param world 生成舞台與查找牌 entity 的世界。
+     * @param tableId 對局所在牌桌識別碼。
+     * @param controllerPos 牌桌 controller 方塊位置。
+     * @param tableFacing 牌桌朝向。
+     * @param placement 舞台的世界位置與朝向。
+     * @param request 流局結算顯示資料。
+     * @param waitingTileAssetsBySeat 各座位聽牌等待牌的素材 key。
+     * @param revealedTileAssetsById 可公開牌張識別碼到素材 key 的對應。
+     * @param reservedCornerWidthsBySeat 各座位為其他牌面預留的桌角寬度。
+     * @return 舞台固定結束的絕對 game time；未能生成時為 null。
+     */
     fun schedule(
         world: ServerWorld,
         tableId: Uuid,

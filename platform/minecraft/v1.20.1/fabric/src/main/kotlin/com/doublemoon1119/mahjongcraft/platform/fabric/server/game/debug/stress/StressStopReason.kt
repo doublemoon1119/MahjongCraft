@@ -5,10 +5,10 @@ enum class StressStopReason {
     /** 管理員要求停止。 */
     REQUESTED,
 
-    /** 伺服器跟不上每秒 20 tick：最近一段時間的平均每 tick 耗時超過門檻。 */
+    /** 實際 tick 間隔連續超過視窗平均門檻，或相對目標節奏的累計落後量超過上限。 */
     FALLING_BEHIND,
 
-    /** 歷史待寫佇列積壓超過容量比例門檻。 */
+    /** 歷史待寫佇列積壓達到容量比例門檻。 */
     HISTORY_BACKLOG,
 
     /** 歷史出現遺失的序號缺口。 */

@@ -8,7 +8,10 @@ import kotlin.test.assertEquals
 
 /** 驗證跑馬燈的停頓、移動與循環節奏。 */
 class MarqueeTimingTest {
+    /** 測試文字超出可見區的像素數。 */
     private val overflow = 20
+
+    /** 單程移動所需時間。 */
     private val travel = overflow * MILLIS_PER_PIXEL
 
     /** 沒有超出時永遠不移動。 */

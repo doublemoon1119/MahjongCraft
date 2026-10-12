@@ -12,10 +12,13 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 sealed interface GameActionDto {
+    /** 對局已開始。 */
     @Serializable data object GameStarted : GameActionDto
 
+    /** 新的一局已開始。 */
     @Serializable data object RoundStarted : GameActionDto
 
+    /** 對局已結束。 */
     @Serializable data object MatchEnded : GameActionDto
 
     /**
@@ -25,6 +28,7 @@ sealed interface GameActionDto {
      */
     @Serializable data class DiceRolled(val dice: List<Int>) : GameActionDto
 
+    /** 玩家摸牌。 */
     @Serializable data object Draw : GameActionDto
 
     /**
@@ -66,21 +70,23 @@ sealed interface GameActionDto {
      */
     @Serializable data class Ron(val tileId: String) : GameActionDto
 
+    /** 玩家以自摸胡牌。 */
     @Serializable data object Tsumo : GameActionDto
 
     /**
      * Extension 網路 DTO。
      *
-     * @property value 擴充值或牌面數值。
+     * @property value 由 registry 註冊的擴充遊戲動作 DTO。
      */
     @Serializable data class Extension(@Polymorphic val value: ExtensionGameActionDto) : GameActionDto
 
+    /** 玩家放棄本次可選反應。 */
     @Serializable data object Pass : GameActionDto
 
     /**
      * ExhaustiveDraw 網路 DTO。
      *
-     * @property reason 相關的結果或操作原因。
+     * @property reason 本次流局的具體原因，由規則模組提供並透過註冊表轉換。
      */
     @Serializable data class ExhaustiveDraw(val reason: ExhaustiveDrawReasonDto) : GameActionDto
 }

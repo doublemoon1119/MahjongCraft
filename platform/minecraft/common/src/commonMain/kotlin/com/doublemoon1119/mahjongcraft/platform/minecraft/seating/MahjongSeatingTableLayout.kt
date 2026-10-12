@@ -29,9 +29,7 @@ private data class SeatVector(val x: Double, val z: Double)
  *
  * 旋轉合成與 [MahjongTileTableLayout.handPlacement]
  * 完全同一套慣例（同樣以 [seatIndexToTableSide] 把座位 index 換算局部側面，不經過莊家相對旋轉，只套用
- * 桌子世界朝向）——先前這裡漏了套用 [MahjongTableFacing] 這一段，導致桌子朝向不是預設值時，玩家實際
- * 站立的座位跟同一 seatIndex 手牌呈現的位置對不上（曾實際造成手牌出現在對面玩家座位的錯位）；修好後
- * 兩套系統共用同一個旋轉來源，不會再各自累積出不一致的方位。
+ * 桌子世界朝向），確保玩家座位與同一 seatIndex 的手牌位置使用一致的方位。
  */
 object MahjongSeatingTableLayout {
     /**
@@ -65,7 +63,15 @@ object MahjongSeatingTableLayout {
         }
     }
 
-    /** 依 Minecraft yaw 慣例（0 度朝南、逆時針遞增角度朝西）算出從座位面向桌子中心的水平朝向。 */
+    /**
+     * 依 Minecraft yaw 慣例（0 度朝南、逆時針遞增角度朝西）算出從座位面向桌子中心的水平朝向。
+     *
+     * @param seatX 座位世界 X 座標。
+     * @param seatZ 座位世界 Z 座標。
+     * @param centerX 桌子中心世界 X 座標。
+     * @param centerZ 桌子中心世界 Z 座標。
+     * @return 面向桌子中心的 Minecraft yaw 角度。
+     */
     private fun yawTowardCenter(
         seatX: Double,
         seatZ: Double,
@@ -77,7 +83,13 @@ object MahjongSeatingTableLayout {
         return Math.toDegrees(atan2(-dx, dz)).toFloat()
     }
 
-    /** 將局部南側基準旋轉至指定側面，與 [MahjongTileTableLayout] 同一套慣例。 */
+    /**
+     * 將局部南側基準旋轉至指定側面，與 [MahjongTileTableLayout] 同一套慣例。
+     *
+     * @param vector 待旋轉的局部向量。
+     * @param side 目標桌面側邊。
+     * @return 旋轉後的局部向量。
+     */
     private fun rotateForSide(vector: SeatVector, side: MahjongTableSide): SeatVector = when (side) {
         MahjongTableSide.SOUTH -> vector
         MahjongTableSide.WEST -> SeatVector(-vector.z, vector.x)
@@ -85,7 +97,13 @@ object MahjongSeatingTableLayout {
         MahjongTableSide.EAST -> SeatVector(vector.z, -vector.x)
     }
 
-    /** 將朝北擺放桌子的局部向量旋轉至指定世界朝向。 */
+    /**
+     * 將朝北擺放桌子的局部向量旋轉至指定世界朝向。
+     *
+     * @param vector 待旋轉的局部向量。
+     * @param facing 桌子的世界朝向。
+     * @return 旋轉後的世界向量。
+     */
     private fun rotateForFacing(vector: SeatVector, facing: MahjongTableFacing): SeatVector = when (facing) {
         MahjongTableFacing.NORTH -> vector
         MahjongTableFacing.EAST -> SeatVector(-vector.z, vector.x)
@@ -96,7 +114,7 @@ object MahjongSeatingTableLayout {
     /** 讓玩家站在方塊正中央的置中偏移。 */
     private const val BLOCK_CENTER: Double = 0.5
 
-    /** 座位離桌子中心的固定距離（格），沿用先前 `SEAT_OFFSETS` 的既有數值。 */
+    /** 座位離桌子中心的固定距離（格）。 */
     private const val SEAT_DISTANCE: Double = 2.0
 
     /** 座位總數。 */

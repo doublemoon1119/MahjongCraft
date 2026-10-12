@@ -48,10 +48,20 @@ object RiichiAutomaticControlPolicy : AutomaticControlPolicy {
         return AutomaticControlResult(hiddenActions = hiddenCalls)
     }
 
-    /** 判斷動作是否為日麻可自動接受的和牌。 */
+    /**
+     * 判斷動作是否為日麻可自動接受的和牌。
+     *
+     * @param action 待檢查的遊戲動作。
+     * @return 動作為榮和或自摸時為 true。
+     */
     private fun isWinAction(action: GameAction): Boolean = action is GameAction.Ron || action == GameAction.Tsumo
 
-    /** 判斷動作是否屬於「不吃碰槓」會拒絕的公開鳴牌。 */
+    /**
+     * 判斷動作是否屬於「不吃碰槓」會拒絕的公開鳴牌。
+     *
+     * @param action 待檢查的遊戲動作。
+     * @return 動作為吃、碰或明槓時為 true。
+     */
     private fun isDeclinableCall(action: GameAction): Boolean = when (action) {
         is GameAction.Chi, is GameAction.Pon -> true
         is GameAction.Kan -> action.type == GameAction.KanType.OPEN_KAN

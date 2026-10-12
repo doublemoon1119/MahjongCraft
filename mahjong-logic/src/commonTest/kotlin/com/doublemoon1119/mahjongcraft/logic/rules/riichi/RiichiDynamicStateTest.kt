@@ -29,6 +29,10 @@ class RiichiDynamicStateTest {
      *
      * [deadWallTiles] 寫入 [TableState.reservedWallTiles]（[RiichiDynamicState.getDoraIndicators] 真正
      * 讀取的來源），不是 [TableState.tileWall]（那是活牌堆，跟王牌完全無關，見該函式 KDoc）。
+     *
+     * @param deadWallTiles 要放入王牌區的牌。
+     * @param players 桌上的玩家；預設建立東、南兩家。
+     * @return 王牌區與玩家均依參數建立的桌況。
      */
     private fun createTableStateWithWall(
         deadWallTiles: List<IdentifiedTile>,
@@ -48,7 +52,13 @@ class RiichiDynamicStateTest {
         )
     }
 
-    /** 建立已完成指定補牌次數後仍維持十四張的死牌區。 */
+    /**
+     * 建立已完成指定補牌次數後仍維持十四張的死牌區。
+     *
+     * @param originalDeadWall 原始王牌區牌序。
+     * @param completedDrawCount 已完成的補牌次數。
+     * @return 移除前段補牌牌位並以測試牌補足的王牌區。
+     */
     private fun afterSupplementalDraws(
         originalDeadWall: List<IdentifiedTile>,
         completedDrawCount: Int,
@@ -134,6 +144,12 @@ class RiichiDynamicStateTest {
     @Test
     fun `test getDoraIndicators caps at 5 indicators with 4 or more kan`() {
         // 建立四個玩家，每人各有一個槓
+        /**
+         * 建立指定自風、手牌含一組暗槓的測試玩家。
+         *
+         * @param seat 玩家自風。
+         * @return 含一組暗槓的測試玩家。
+         */
         fun createPlayerWithKan(seat: Wind): MahjongPlayer {
             val kanTiles = List(4) { i ->
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, seat.ordinal + 1))

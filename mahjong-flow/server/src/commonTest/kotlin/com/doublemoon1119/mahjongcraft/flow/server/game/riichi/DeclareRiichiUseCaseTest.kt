@@ -50,10 +50,28 @@ import kotlin.uuid.Uuid
  */
 class DeclareRiichiUseCaseTest {
 
+    /** 測試對局識別碼。 */
     private val gameId = Uuid.random()
+
+    /** 宣告立直的玩家識別碼。 */
     private val currentPlayerId = Uuid.random()
+
+    /** 用於反應與通知驗證的另一位玩家識別碼。 */
     private val otherPlayerId = Uuid.random()
 
+    /**
+     * 立直宣告的測試依賴。
+     *
+     * @property gameRepo 保存測試對局及寫入次數的儲存庫。
+     * @property moduleRegistry 提供內建規則的模組登錄表。
+     * @property snapshotRepo 保存觀察者快照的儲存庫。
+     * @property snapshotSynchronizer 更新各觀察者可見快照的服務。
+     * @property handSortPreferenceStore 保存玩家理牌偏好的儲存區。
+     * @property postActionExhaustiveDrawResolverRegistry 判定立直捨牌後途中流局的解析器。
+     * @property eventPublisher 收集遊戲動作通知的測試發佈器。
+     * @property presentationPublisher 收集呈現請求的測試發佈器。
+     * @property useCase 受測的立直宣告用例。
+     */
     private class Fixtures {
         val gameRepo = FakeGameRepository()
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
@@ -77,13 +95,30 @@ class DeclareRiichiUseCaseTest {
         )
     }
 
-    // 111萬 234567899萬（13 張，單騎聽 8 萬）+ 摸到北風
+    /** 十三張萬子立牌，可搭配北風摸牌驗證立直捨牌。 */
     private val manTiles = listOf(1, 1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 9, 9)
         .map { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, it)) }
+
+    /** 預設摸入並用作立直宣告牌的北風。 */
     private val drawnTile = FakeIdentifiedTileFactory.create(Tile.Honor.North)
 
+    /**
+     * 建立預設的十四張手牌。
+     *
+     * @return 包含萬子立牌與北風摸牌的手牌。
+     */
     private fun tenpaiHand(): Hand = Hand(tiles = manTiles, lastDrawn = drawnTile)
 
+    /**
+     * 建立具有指定狀態的東家，供立直合法性驗證使用。
+     *
+     * @param id 玩家識別碼。
+     * @param hand 宣告前的手牌。
+     * @param score 宣告前的分數。
+     * @param playerRuleState 立直、一發等玩家規則狀態。
+     * @param discardPile 宣告前的牌河。
+     * @return 套用指定狀態的玩家。
+     */
     private fun createRiichiPlayer(
         id: Uuid = currentPlayerId,
         hand: Hand = tenpaiHand(),
@@ -209,8 +244,8 @@ class DeclareRiichiUseCaseTest {
     }
 
     /**
-     * 驗證捨牌後所有觀察者的快照皆同步更新、所有玩家皆先收到 Riichi 再收到 Discard 事件通知，且平台收到
-     * 一次規則狀態更新通知。
+     * 驗證捨牌後兩位玩家的快照存在、另一位玩家先收到立直再收到捨牌通知，
+     * 並發出一次規則狀態更新請求。
      */
     @Test
     fun `test declare riichi syncs snapshot and notifies riichi then discard`() = runTest {
@@ -456,8 +491,7 @@ class DeclareRiichiUseCaseTest {
     }
 
     /**
-     * 驗證立直宣告牌打出後，若其他玩家可以碰這張牌，會開啟反應視窗、暫緩推進回合——修正過去
-     * `DeclareRiichiUseCase` 完全沒有開反應視窗的缺口。
+     * 驗證立直宣告牌打出後，若其他玩家可以碰這張牌，會開啟反應視窗並暫緩推進回合。
      */
     @Test
     fun `test declare riichi opens reaction window when someone can pon the declaration tile`() = runTest {

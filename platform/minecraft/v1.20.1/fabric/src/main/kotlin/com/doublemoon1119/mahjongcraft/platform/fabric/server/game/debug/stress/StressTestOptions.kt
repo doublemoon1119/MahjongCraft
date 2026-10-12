@@ -46,7 +46,13 @@ fun stressOptionSuggestions(text: String): Pair<Int, List<String>> {
     return lastStart to candidates
 }
 
-/** 套用一個選項的值；值無效時回傳 null。 */
+/**
+ * 套用一個選項的值；值無效時回傳 null。
+ *
+ * @param option 要更新的選項。
+ * @param value 輸入的選項值。
+ * @return 更新後的設定；值無效時為 null。
+ */
 private fun StressRunOptions.with(option: StressOption, value: String): StressRunOptions? = when (option) {
     StressOption.PACE -> StressTestPace.entries.firstOrNull { it.commandName == value }?.let { copy(pace = it) }
     StressOption.HISTORY -> StressHistoryMode.entries.firstOrNull { it.commandName == value }?.let { copy(historyMode = it) }
@@ -54,7 +60,12 @@ private fun StressRunOptions.with(option: StressOption, value: String): StressRu
     StressOption.WARMUP -> value.toBoundedInt(option)?.let { copy(warmupSeconds = it) }
 }
 
-/** 解析成 [option] 範圍內的整數；不是整數或超出範圍時回傳 null。 */
+/**
+ * 解析成 [option] 範圍內的整數；不是整數或超出範圍時回傳 null。
+ *
+ * @param option 提供合法整數範圍的選項。
+ * @return 範圍內的整數；輸入不是整數或超出範圍時為 null。
+ */
 private fun String.toBoundedInt(option: StressOption): Int? = toIntOrNull()?.takeIf { it in requireNotNull(option.range) }
 
 /** 分隔選項的空白。 */

@@ -4,10 +4,15 @@ import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 
 /** [MatchSettlementPresentationTemplateRegistry] 的記憶體實作。 */
 class MatchSettlementPresentationTemplateRegistryImpl : MatchSettlementPresentationTemplateRegistry {
+    /** 依完整模板 key 保存的模板。 */
     private val templates = linkedMapOf<String, MatchSettlementPresentationTemplate>()
+
+    /** 規則模組 ID 對應的終局模板 key。 */
     private val ruleTemplateKeys = linkedMapOf<String, String>()
 
     override val registrationKeys: Set<String> get() = templates.keys + ruleTemplateKeys.keys.map { "rule:$it" }
+
+    /** registry 是否已停止接受註冊。 */
     private var frozen = false
 
     override fun register(template: MatchSettlementPresentationTemplate) {

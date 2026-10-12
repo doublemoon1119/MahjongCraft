@@ -38,7 +38,13 @@ class MahjongDiceRollPresentationTest {
         assertFailsWith<IllegalArgumentException> { presentation(rollSequence = -1) }
     }
 
-    /** 建立具有固定桌子資料的測試 presentation。 */
+    /**
+     * 建立具有固定桌子資料的測試 presentation。
+     *
+     * @param rollSequence 擲骰序號。
+     * @param dice 權威骰子點數與動畫 seed。
+     * @return 供測試使用的骰子呈現資料。
+     */
     private fun presentation(
         rollSequence: Long = 0,
         dice: List<MahjongDicePresentation> = listOf(
@@ -56,6 +62,7 @@ class MahjongDiceRollPresentationTest {
 
     /** 測試使用的固定桌子 UUID。 */
     private companion object {
+        /** 此測試共用的桌子識別碼。 */
         val TABLE_ID: Uuid = Uuid.parse("00000000-0000-0000-0000-000000000001")
     }
 }

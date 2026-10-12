@@ -14,7 +14,11 @@ import net.minecraft.util.Identifier
 import net.minecraft.util.math.RotationAxis
 import org.joml.Quaternionf
 
-/** 使用單一骰子 item model 呈現指定朝上點數的 client renderer。 */
+/**
+ * 使用單一骰子 item model 呈現指定朝上點數的 client renderer。
+ *
+ * @param context Minecraft entity renderer 共用資源。
+ */
 class MahjongDiceEntityRenderer(
     context: EntityRendererFactory.Context,
 ) : EntityRenderer<MahjongDiceEntity>(context) {

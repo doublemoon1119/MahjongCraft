@@ -58,7 +58,7 @@ class PresentationLayoutSolverTest {
         assertEquals(14f, size.height)
     }
 
-    /** 沒有牌時不留高度，也不算進負的間距。 */
+    /** 空牌列的寬度為零，單張牌不加入牌間距。 */
     @Test
     fun `measures an empty tile sequence as nothing wide`() {
         assertEquals(0f, tileSequenceWidth(count = 0, tileWidth = 10f, gap = 2f))
@@ -338,7 +338,11 @@ class PresentationLayoutSolverTest {
         }
     }
 
-    /** 建立測試用的解算器；文字寬度以固定值回應，與字型無關。 */
+    /**
+     * 建立測試用的解算器；文字寬度以固定值回應，與字型無關。
+     *
+     * @return 使用固定文字尺寸與測試 registry 的解算器。
+     */
     private fun solver() = PresentationLayoutSolver(
         FakeTemplateRegistry,
         object : PresentationTextMeasurer {
@@ -348,7 +352,13 @@ class PresentationLayoutSolverTest {
         },
     )
 
-    /** 建立固定尺寸、不引用欄位的節點。 */
+    /**
+     * 建立固定尺寸、不引用欄位的節點。
+     *
+     * @param width 節點寬度。
+     * @param height 節點高度。
+     * @return 固定尺寸的空白版面節點。
+     */
     private fun spacer(width: Float, height: Float) = PresentationLayout.Spacer(width, height)
 
     /** 只回應測試用欄位的 registry 測試替身。 */
@@ -390,16 +400,31 @@ class PresentationLayoutSolverTest {
     }
 
     private companion object {
+        /** 純文字欄位的測試識別碼。 */
         val TEXT_FIELD = PresentationFieldId("mahjongcraft:text")
+
+        /** 玩家識別欄位的測試識別碼。 */
         val IDENTITY_FIELD = PresentationFieldId("mahjongcraft:identity")
+
+        /** 牌列欄位的測試識別碼。 */
         val TILE_LIST_FIELD = PresentationFieldId("mahjongcraft:tile_list")
+
+        /** 多組牌欄位的測試識別碼。 */
         val TILE_GROUPS_FIELD = PresentationFieldId("mahjongcraft:tile_groups")
+
+        /** 重複條目欄位的測試識別碼。 */
         val ENTRY_FIELD = PresentationFieldId("mahjongcraft:entries")
+
+        /** 未提供值的欄位測試識別碼。 */
         val MISSING_FIELD = PresentationFieldId("mahjongcraft:missing")
 
+        /** 文字欄位測試量測寬度。 */
         const val TEXT_WIDTH = 30f
+
+        /** 玩家名稱測試量測寬度。 */
         const val NAME_WIDTH = 24f
 
+        /** 各測試共用的結算欄位快照。 */
         val SNAPSHOT = WinSettlementPresentationFieldSnapshot(
             outcomeId = "mahjongcraft:test",
             isTsumo = true,

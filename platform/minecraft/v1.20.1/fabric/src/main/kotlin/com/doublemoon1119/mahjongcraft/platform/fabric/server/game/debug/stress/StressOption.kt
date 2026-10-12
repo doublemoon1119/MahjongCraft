@@ -13,7 +13,7 @@ enum class StressOption(val commandName: String, val range: IntRange?) {
     /** 歷史處理方式：`write`、`encode` 或 `off`。 */
     HISTORY("history", null),
 
-    /** 判定卡頓的單一 tick 耗時毫秒數。 */
+    /** 判定卡頓的單一 tick 實際間隔毫秒數；沿用 max_mspt 指令名稱。 */
     MAX_MSPT("max_mspt", 1..10_000),
 
     /** 暖機秒數。 */

@@ -14,7 +14,12 @@ object ThreePlayerRiichiWallOpeningPolicy : WallOpeningPolicy {
     /** 使用兩顆六面骰。 */
     override val diceCount: Int = 2
 
-    /** 依雙骰總點數解析牌牆面與從右側計算的墩數。 */
+    /**
+     * 依雙骰總點數解析牌牆面與從右側計算的墩數。
+     *
+     * @param diceRoll 骰子結果；必須恰有 [diceCount] 顆。
+     * @return 開門所在牌牆面，以及從該面右側計算的墩數。
+     */
     override fun resolve(diceRoll: DiceRollResult): WallOpening {
         require(diceRoll.values.size == diceCount) {
             "Three-player riichi wall opening requires exactly $diceCount dice"

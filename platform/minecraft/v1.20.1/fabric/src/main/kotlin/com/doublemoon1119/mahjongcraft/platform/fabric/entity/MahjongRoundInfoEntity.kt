@@ -30,6 +30,9 @@ import kotlin.uuid.toKotlinUuid
  * 除了顯示局況以外，這個 entity 還被借來當作「有沒有玩家正在看著這張桌」的信號來源：它跟牌牆
  * 同時出現、對局一結束就消失，剛好等於「這張桌子現在有沒有一場對局」，時機完全吻合，所以不需要
  * 另外開一個 entity 專門做這件事。實際做法見 [onStartedTrackingBy]／[onStoppedTrackingBy]。
+ *
+ * @param type Minecraft entity 類型。
+ * @param world 實體所屬世界。
  */
 class MahjongRoundInfoEntity(
     type: EntityType<out MahjongRoundInfoEntity> = ModEntities.mahjongRoundInfo,
@@ -39,6 +42,8 @@ class MahjongRoundInfoEntity(
      * 要顯示的完整內容，依序顯示——`DataTracker` 只能同步基本型別，這裡編碼成 JSON 存進一個
      * `TrackedData<String>`，client 端 renderer 解碼後才依認得的 key 翻譯成文字，見
      * [MahjongRoundInfoEntity] KDoc 同一套分工。
+     *
+     * @property lines 依序顯示的局況行；各行語意由規則模組決定。
      */
     var lines: List<RoundInfoLine>
         get() = RoundInfoLineCodec.decode(dataTracker[LINES])
@@ -110,6 +115,8 @@ class MahjongRoundInfoEntity(
      *
      * 之後這位旁觀者會不會持續收到最新的牌局變化？會——不需要在這裡額外處理，伺服器每次牌局有變化
      * 時，本來就會重新同步「目前所有已經同步過的人」，第一次同步過之後就會自動被納入。
+     *
+     * @param player 開始追蹤此局況顯示的伺服器玩家。
      */
     override fun onStartedTrackingBy(player: ServerPlayerEntity) {
         super.onStartedTrackingBy(player)
@@ -123,6 +130,8 @@ class MahjongRoundInfoEntity(
      *
      * 只處理旁觀者：這裡把他先前收到的那份快照資料清掉，避免伺服器記憶體裡一直留著「已經沒人在看」
      * 的舊資料。在場玩家完全不受影響——他們的快照就算暫時斷線也要保留，才能重新連上時馬上恢復畫面。
+     *
+     * @param player 停止追蹤此局況顯示的伺服器玩家。
      */
     override fun onStoppedTrackingBy(player: ServerPlayerEntity) {
         super.onStoppedTrackingBy(player)
@@ -130,7 +139,11 @@ class MahjongRoundInfoEntity(
         GlobalContext.get().get<SpectatorObservationService>().onStoppedObserving(player.uuid.toKotlinUuid(), tableId)
     }
 
-    /** 將 entity 標記為指定正式牌局桌子管理。 */
+    /**
+     * 將 entity 標記為指定正式牌局桌子管理。
+     *
+     * @param tableId 所屬麻將桌 UUID。
+     */
     fun assignToTable(tableId: Uuid) {
         check(!world.isClient) { "Managed round info display must be assigned by the server" }
         managedTableId = tableId
@@ -138,6 +151,8 @@ class MahjongRoundInfoEntity(
 
     /**
      * 隱形到 [gameTime]；重複呼叫只能延長期限，並以單一可持久化動畫序列取代舊期限。
+     *
+     * @param gameTime 隱形 lease 結束的 server game time。
      */
     fun hideUntil(gameTime: Long) {
         check(!world.isClient) { "Round info visibility lease must be changed by the server" }
@@ -171,16 +186,34 @@ class MahjongRoundInfoEntity(
         setInvisible(false)
     }
 
-    /** 局況顯示沒有專屬瞬間動畫。 */
+    /**
+     * 局況顯示沒有專屬瞬間動畫。
+     *
+     * @param step 不支援的自訂動畫步驟（型別本身為 `Nothing`）。
+     */
     override fun applyCustomStep(step: Nothing) = error("Round info display has no custom animation step")
 
-    /** 局況顯示不支援位移動畫。 */
+    /**
+     * 局況顯示不支援位移動畫。
+     *
+     * @param step 不支援的位移動畫步驟。
+     * @param startGameTime 位移動畫原定的絕對開始時間；此 entity 不接受該步驟。
+     */
     override fun applyPlayMotion(step: AnimationStep.PlayMotion, startGameTime: Long) = error("Round info display does not support motion animation")
 
-    /** 局況顯示沒有可序列化的專屬動畫。 */
+    /**
+     * 局況顯示沒有可序列化的專屬動畫。
+     *
+     * @param step 不支援的自訂動畫步驟（型別本身為 `Nothing`）。
+     * @param nbt 動畫步驟原定寫入的 NBT；此 entity 不接受該步驟。
+     */
     override fun serializeCustomStep(step: Nothing, nbt: NbtCompound) = error("Round info display has no custom animation step")
 
-    /** 局況顯示沒有可還原的專屬動畫。 */
+    /**
+     * 局況顯示沒有可還原的專屬動畫。
+     *
+     * @param nbt 動畫步驟原定讀取的 NBT；此 entity 不接受自訂動畫步驟。
+     */
     override fun deserializeCustomStep(nbt: NbtCompound): Nothing = error("Round info display has no custom animation step")
 
     override fun initDataTracker() {
@@ -188,6 +221,11 @@ class MahjongRoundInfoEntity(
         dataTracker.startTracking(MANAGED_TABLE_ID, "")
     }
 
+    /**
+     * 從 NBT 還原同步內容、桌子識別及隱形 lease。
+     *
+     * @param nbt entity 的持久化資料。
+     */
     override fun readCustomDataFromNbt(nbt: NbtCompound) {
         dataTracker.set(LINES, nbt.getString(NBT_KEY_LINES))
         managedTableId = nbt.getString(NBT_KEY_MANAGED_TABLE_ID)
@@ -197,6 +235,11 @@ class MahjongRoundInfoEntity(
         readAnimationQueueFromNbt(nbt)
     }
 
+    /**
+     * 將同步內容、桌子識別及隱形 lease 寫入 NBT。
+     *
+     * @param nbt 接收 entity 持久化資料的 NBT。
+     */
     override fun writeCustomDataToNbt(nbt: NbtCompound) {
         nbt.putString(NBT_KEY_LINES, dataTracker[LINES])
         managedTableId?.let { tableId -> nbt.putString(NBT_KEY_MANAGED_TABLE_ID, tableId.toString()) }
@@ -211,8 +254,13 @@ class MahjongRoundInfoEntity(
         /** 足以涵蓋目前三行本地化文字面板的垂直 debug／追蹤高度。 */
         const val HEIGHT: Float = 1.5f
 
+        /** 局況顯示行內容的世界存檔 key。 */
         private const val NBT_KEY_LINES = "Lines"
+
+        /** 正式牌局桌子 UUID 的世界存檔 key。 */
         private const val NBT_KEY_MANAGED_TABLE_ID = "ManagedTableId"
+
+        /** 隱形 lease 截止遊戲時間的世界存檔 key。 */
         private const val NBT_KEY_HIDDEN_UNTIL_GAME_TIME = "HiddenUntilGameTime"
 
         /**

@@ -32,6 +32,10 @@ import net.minecraft.util.Identifier
  * 讓每個玩家依自己的語系看到對應翻譯，見該 entity KDoc。實際翻譯資訊透過 [roundInfoLineDisplayRegistry]
  * 查詢，不認得特定規則模組；查不到 key 時安全退回顯示原始 key 字面文字，不會整行消失，比照
  * `GameActionDisplayText.extensionDisplayText()` 對未知規則擴充動作的既有 fallback 慣例。
+ *
+ * @param context Minecraft renderer factory 提供的 client context。
+ * @param configStore 提供局況面板可見性設定。
+ * @param roundInfoLineDisplayRegistry 將同步的 line key 解析為本地化顯示定義。
  */
 class MahjongRoundInfoEntityRenderer(
     context: EntityRendererFactory.Context,
@@ -89,7 +93,12 @@ class MahjongRoundInfoEntityRenderer(
         matrices.pop()
     }
 
-    /** 依 [roundInfoLineDisplayRegistry] 查到的翻譯資訊組出 [line] 對應文字；查不到 key 時退回顯示原始 key。 */
+    /**
+     * 依 [roundInfoLineDisplayRegistry] 查到的翻譯資訊組出 [line] 對應文字；查不到 key 時退回顯示原始 key。
+     *
+     * @param line 同步的規則局況列及其格式化參數。
+     * @return 依本機語系組成的文字，或未知 key 的字面文字。
+     */
     private fun buildLineText(line: RoundInfoLine): Text {
         val display = roundInfoLineDisplayRegistry.find(line.key) ?: return Text.literal(line.key)
         val arguments = line.args.map { argument ->
@@ -101,7 +110,11 @@ class MahjongRoundInfoEntityRenderer(
         return Text.translatable(display.translationKey, *arguments.toTypedArray())
     }
 
-    /** 場風對應的牌面顯示文字 key，跟手牌裡的風牌共用同一組翻譯（同一個詞，不需要另外一套 key）。 */
+    /**
+     * 場風對應的牌面顯示文字 key，跟手牌裡的風牌共用同一組翻譯（同一個詞，不需要另外一套 key）。
+     *
+     * @return 對應風牌的翻譯 key。
+     */
     private fun Wind.toMessageKey(): String = when (this) {
         Wind.EAST -> MinecraftMessageKeys.TILE_HONOR_EAST
         Wind.SOUTH -> MinecraftMessageKeys.TILE_HONOR_SOUTH

@@ -25,9 +25,15 @@ import kotlin.uuid.Uuid
  */
 @Single
 class WinPresentationHandoff {
+    /** 以對局識別碼索引、等待同一派發流程取走的胡牌呈現資料。 */
     private val presentationsByGameId = ConcurrentHashMap<Uuid, SettledWinPresentation>()
 
-    /** 暫存 [gameId] 這次胡牌的呈現內容，覆寫任何尚未被取走的舊值。 */
+    /**
+     * 暫存 [gameId] 這次胡牌的呈現內容，覆寫任何尚未被取走的舊值。
+     *
+     * @param gameId 胡牌發生的對局。
+     * @param presentation 已建構的胡牌呈現資料。
+     */
     fun stage(gameId: Uuid, presentation: SettledWinPresentation) {
         presentationsByGameId[gameId] = presentation
     }
@@ -38,6 +44,8 @@ class WinPresentationHandoff {
      * [expectedWinnerPlayerIds] 作為關聯鍵：暫存內容的贏家集合必須完全相符才會回傳，否則視為
      * 不屬於這次胡牌的殘留資料，一樣清除但回傳 null——避免把上一次胡牌的演出誤播成這一次的。
      *
+     * @param gameId 胡牌發生的對局。
+     * @param expectedWinnerPlayerIds 這次預期的贏家識別碼集合。
      * @return 這次胡牌的呈現內容；沒有暫存內容或贏家不符時為 null。
      */
     fun take(gameId: Uuid, expectedWinnerPlayerIds: Set<Uuid>): SettledWinPresentation? {
@@ -45,7 +53,11 @@ class WinPresentationHandoff {
         return staged.takeIf { it.winnerPlayerIds == expectedWinnerPlayerIds }
     }
 
-    /** 丟棄 [gameId] 任何尚未取走的暫存內容，供收斂流程提前中止時清理。 */
+    /**
+     * 丟棄 [gameId] 任何尚未取走的暫存內容，供收斂流程提前中止時清理。
+     *
+     * @param gameId 欲清除暫存內容的對局。
+     */
     fun discard(gameId: Uuid) {
         presentationsByGameId.remove(gameId)
     }

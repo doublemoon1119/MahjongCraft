@@ -109,16 +109,20 @@ internal fun threePlayerRiichiGameConfigPresentation(): GameConfigPresentationDe
     ) + flowFields(),
 )
 
+/** 將 [transform] 套用到三人日麻規則配置並回傳新的遊戲配置。 */
 private fun GameConfig.withThreePlayerRiichi(transform: ThreePlayerRiichiRuleConfig.() -> ThreePlayerRiichiRuleConfig): GameConfig = copy(ruleConfig = (ruleConfig as ThreePlayerRiichiRuleConfig).transform())
 
+/** 透過 [withThreePlayerRiichi] 更新三人日麻計分配置。 */
 private fun GameConfig.withThreePlayerRiichiScore(transform: RiichiScoreConfig.() -> RiichiScoreConfig): GameConfig = withThreePlayerRiichi { copy(scoreConfig = scoreConfig.transform()) }
 
+/** 將日麻局長轉成設定欄位使用的選項值。 */
 private fun RiichiGameLength.toOption(): String = when (this) {
     RiichiGameLength.OneGame -> "one_game"
     RiichiGameLength.East -> "east"
     RiichiGameLength.TwoWinds -> "two_winds"
 }
 
+/** 將設定欄位選項轉回日麻局長；不支援的選項視為程式錯誤。 */
 private fun String.toRiichiGameLength(): RiichiGameLength = when (this) {
     "one_game" -> RiichiGameLength.OneGame
     "east" -> RiichiGameLength.East

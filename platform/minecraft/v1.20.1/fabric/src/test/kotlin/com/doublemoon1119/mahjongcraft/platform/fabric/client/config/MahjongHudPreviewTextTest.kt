@@ -37,6 +37,7 @@ class MahjongHudPreviewTextTest {
         assertEquals(PREVIEW_ELLIPSIS, trimPreviewText("Auto Controls", widthOf(PREVIEW_ELLIPSIS), widthOf))
     }
 
+    /** 預覽文字的測試常數。 */
     private companion object {
         /** 假量測使用的固定字寬。 */
         const val CHARACTER_WIDTH = 6

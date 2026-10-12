@@ -28,7 +28,14 @@ class OpponentReading(
     private val interpretation: TileInterpretationPolicy,
     private val rules: PositionRules,
 ) {
-    /** 評估者打出 [tile] 時，對 [opponentId] 的危險度相對於平常的倍率；小於 1 表示較安全。 */
+    /**
+     * 評估者打出 [tile] 時，對 [opponentId] 的危險度相對於平常的倍率；小於 1 表示較安全。
+     *
+     * @param view 供規則查詢使用的局面視角。
+     * @param opponentId 正在評估的對手。
+     * @param tile 評估者考慮打出的牌。
+     * @return 綜合各種公開跡象後的危險度倍率。
+     */
     fun dangerFactor(
         view: PositionView,
         opponentId: Uuid,
@@ -42,7 +49,13 @@ class OpponentReading(
             bonusNeighborFactor(view, canonical)
     }
 
-    /** 對手很早打出的數字牌讓 [tile] 變安全的倍率；多張早打的牌取最小倍率，不連乘。 */
+    /**
+     * 對手很早打出的數字牌讓 [tile] 變安全的倍率；多張早打的牌取最小倍率，不連乘。
+     *
+     * @param opponent 對手的公開狀態。
+     * @param tile 要評估的牌面。
+     * @return 早巡舍牌跡象所對應的倍率。
+     */
     internal fun earlyOutsideFactor(opponent: MahjongPlayerSnapshot, tile: Tile): Double {
         if (tile !is Tile.Numeric) return 1.0
         return opponent.discardPile.entries
@@ -53,7 +66,13 @@ class OpponentReading(
             ?: 1.0
     }
 
-    /** 對手只收單一花色時 [tile] 的倍率；看不出來時為 1。 */
+    /**
+     * 對手只收單一花色時 [tile] 的倍率；看不出來時為 1。
+     *
+     * @param opponent 對手的公開狀態。
+     * @param tile 要評估的牌面。
+     * @return 染手跡象所對應的倍率。
+     */
     internal fun flushFactor(opponent: MahjongPlayerSnapshot, tile: Tile): Double {
         val signal = flushSignal(opponent) ?: return 1.0
         return when (tile) {
@@ -63,7 +82,12 @@ class OpponentReading(
         }
     }
 
-    /** 從副露與牌河判斷對手是否只收單一花色；看不出來時為 null。 */
+    /**
+     * 從副露與牌河判斷對手是否只收單一花色；看不出來時為 null。
+     *
+     * @param opponent 對手的公開狀態。
+     * @return 可辨識的染手花色與是否含字牌；無法判斷時為 null。
+     */
     internal fun flushSignal(opponent: MahjongPlayerSnapshot): FlushSignal? {
         val melds = opponent.hand.melds
         if (melds.none { it.type != MeldType.CLOSED_KAN }) return null
@@ -76,7 +100,14 @@ class OpponentReading(
         return FlushSignal(suit = suit, withHonors = meldTiles.any { it is Tile.Honor })
     }
 
-    /** [tile] 在 [opponentId] 宣告聽牌時打出的牌旁邊兩格內時的倍率；不在旁邊或對手沒有宣告時為 1。 */
+    /**
+     * [tile] 在 [opponentId] 宣告聽牌時打出的牌旁邊兩格內時的倍率；不在旁邊或對手沒有宣告時為 1。
+     *
+     * @param view 供規則查詢使用的局面視角。
+     * @param opponentId 正在評估的對手。
+     * @param tile 要評估的牌面。
+     * @return 宣告聽牌舍牌跡象所對應的倍率。
+     */
     internal fun declarationNeighborFactor(
         view: PositionView,
         opponentId: Uuid,
@@ -87,7 +118,13 @@ class OpponentReading(
         return if (abs(tile.value - declared.value) in 1..NEAR_DISTANCE) DECLARATION_NEIGHBOR_FACTOR else 1.0
     }
 
-    /** [tile] 本身或旁邊兩格內的同花色牌會加計打點時的倍率；兩者都符合時取較大的倍率，不連乘。 */
+    /**
+     * [tile] 本身或旁邊兩格內的同花色牌會加計打點時的倍率；兩者都符合時取較大的倍率，不連乘。
+     *
+     * @param view 供規則查詢使用的局面視角。
+     * @param tile 要評估的牌面。
+     * @return 寶牌或其鄰牌跡象所對應的倍率。
+     */
     internal fun bonusNeighborFactor(view: PositionView, tile: Tile): Double {
         if (rules.bonusTileCount(view, tile) > 0) return BONUS_TILE_FACTOR
         if (tile !is Tile.Numeric) return 1.0
@@ -98,7 +135,13 @@ class OpponentReading(
         return if (hasBonusNeighbor) BONUS_NEIGHBOR_FACTOR else 1.0
     }
 
-    /** 牌張 [value] 相對於很早打出的 [early] 的倍率；不在往一或九那一側時為 1。 */
+    /**
+     * 牌張 [value] 相對於很早打出的 [early] 的倍率；不在往一或九那一側時為 1。
+     *
+     * @param early 對手很早打出的數字牌。
+     * @param value 正在評估的同花色牌張數字。
+     * @return 早巡舍牌所對應的倍率。
+     */
     private fun outsideFactor(early: Int, value: Int): Double {
         val isOutside = when {
             value == early -> false

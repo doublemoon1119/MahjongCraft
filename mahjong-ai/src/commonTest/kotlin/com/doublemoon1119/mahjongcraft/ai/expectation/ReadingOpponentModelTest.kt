@@ -94,7 +94,12 @@ class ReadingOpponentModelTest {
         assertEquals(ReadingDepth.ADVANCED, advanced.readingDepth)
     }
 
-    /** 東家對手，打出 [discardsBefore] 之後以西風宣告立直。 */
+    /**
+     * 建立打出 [discardsBefore] 後以西風宣告立直的東家對手。
+     *
+     * @param discardsBefore 宣告前依序打出的牌面。
+     * @return 帶有立直狀態與宣告舍牌的玩家。
+     */
     private fun riichiDeclarer(discardsBefore: List<Tile>): MahjongPlayer {
         val riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.West)
         val pile = discardsBefore
@@ -103,6 +108,14 @@ class ReadingOpponentModelTest {
         return FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST, discardPile = pile, playerRuleState = RiichiPlayerState(riichiTile = riichiTile))
     }
 
+    /**
+     * 建立指定自風、牌河、副露與立直狀態的玩家。
+     *
+     * @param wind 玩家自風與座位。
+     * @param discards 依序打出的牌面，預設為空。
+     * @param melds 玩家副露，預設為空。
+     * @return 使用日麻規則狀態的玩家。
+     */
     private fun riichiSeat(
         wind: Wind,
         discards: List<Tile> = emptyList(),
@@ -114,21 +127,52 @@ class ReadingOpponentModelTest {
         playerRuleState = RiichiPlayerState(),
     )
 
+    /**
+     * 建立以 [self] 為觀察者的日麻局面視角。
+     *
+     * @param players 桌上其他玩家。
+     * @param self 評估者本人。
+     * @return 對應桌況的局面視角。
+     */
     private fun riichiView(players: List<MahjongPlayer>, self: MahjongPlayer): PositionView = PositionView(
         snapshot = FakeTableStateFactory.create(players = players, config = RiichiRuleConfig(), dynamicRuleState = RiichiDynamicState())
             .toSnapshot(visibleHandPlayerIds = setOf(self.id), setAsideTiles = { emptyList() }),
         evaluatorId = self.id,
     )
 
+    /**
+     * 建立碰副露。
+     *
+     * @param tile 碰牌的牌面。
+     * @return 由三張相同牌面組成的碰副露。
+     */
     private fun pon(tile: Tile): Meld = Meld(
         type = MeldType.PON,
         tiles = List(3) { FakeIdentifiedTileFactory.create(tile) },
         sourceDirection = RelativeDirection.Across,
     )
 
+    /**
+     * 建立萬子。
+     *
+     * @param value 牌面數字。
+     * @return 指定數字的萬子。
+     */
     private fun m(value: Int): Tile = Tile.Numeric(Tile.Suit.Character, value)
 
+    /**
+     * 建立筒子。
+     *
+     * @param value 牌面數字。
+     * @return 指定數字的筒子。
+     */
     private fun p(value: Int): Tile = Tile.Numeric(Tile.Suit.Dot, value)
 
+    /**
+     * 建立條子。
+     *
+     * @param value 牌面數字。
+     * @return 指定數字的條子。
+     */
     private fun s(value: Int): Tile = Tile.Numeric(Tile.Suit.Bamboo, value)
 }

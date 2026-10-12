@@ -124,6 +124,11 @@ class ResolveWinRoundContinuationUseCase(
      * [previousTableState] 尚未清除的 `pendingReaction`／`pendingRobbingReaction` 還原（自摸時兩者皆為
      * null）；胡牌張則優先取任一贏家剛記錄的 [GameAction.Ron.tileId]，自摸時改用贏家的 `lastDrawn`
      * （[DeclareTsumoUseCase] 不會清除它）。
+     *
+     * @param previousTableState 胡牌指令送出前的桌況。
+     * @param settledTableState 胡牌結算後的桌況。
+     * @param winnerPlayerIds 本次胡牌的贏家識別碼集合。
+     * @return 提供給後續決策解析器的胡牌情境。
      */
     private fun buildContext(
         previousTableState: TableState,

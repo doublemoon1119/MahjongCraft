@@ -396,7 +396,7 @@ class CompactReplayRoundReader(
      *
      * @property projection 目前桌況投影。
      * @property tiles 截至目前位置可識別的牌。
-     * @property time 全場相對時間累加結果。
+     * @property time 從文件起始時間累加交易時間差後的時間戳。
      * @property outcome 截至目前交易已保存的結算結果。
      * @property hasWinSettlement 是否已遇到較早的胡牌結算交易。
      * @property exhaustiveDrawSettlement 流局動作交易前後的分數快照。

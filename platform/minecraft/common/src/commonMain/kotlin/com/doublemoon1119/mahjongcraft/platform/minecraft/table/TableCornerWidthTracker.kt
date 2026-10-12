@@ -12,15 +12,29 @@ class TableCornerWidthTracker {
     /** 依桌子 UUID 索引的各座位寬度。 */
     private val widthsByTableId = mutableMapOf<Uuid, Map<Int, Double>>()
 
-    /** 記錄指定桌子目前各座位的角落寬度，取代先前的紀錄。 */
+    /**
+     * 記錄指定桌子目前各座位的角落寬度，取代先前的紀錄。
+     *
+     * @param tableId 麻將桌 UUID。
+     * @param widthsBySeat 依固定座位 index 索引的角落寬度。
+     */
     fun record(tableId: Uuid, widthsBySeat: Map<Int, Double>) {
         widthsByTableId[tableId] = widthsBySeat
     }
 
-    /** 查詢指定桌子的紀錄；尚未記錄時回傳 null。 */
+    /**
+     * 查詢指定桌子的紀錄；尚未記錄時回傳 null。
+     *
+     * @param tableId 麻將桌 UUID。
+     * @return 各座位角落寬度；尚未記錄時為 `null`。
+     */
     fun find(tableId: Uuid): Map<Int, Double>? = widthsByTableId[tableId]
 
-    /** 移除指定桌子的紀錄。 */
+    /**
+     * 移除指定桌子的紀錄。
+     *
+     * @param tableId 麻將桌 UUID。
+     */
     fun clear(tableId: Uuid) {
         widthsByTableId.remove(tableId)
     }

@@ -18,7 +18,11 @@ data class TileTypeId(
         require(PATH_PATTERN.matches(path)) { "Invalid tile type path: $path" }
     }
 
-    /** 回傳穩定的 `namespace:path` 表示。 */
+    /**
+     * 回傳穩定的 `namespace:path` 表示。
+     *
+     * @return 此識別碼的字串表示。
+     */
     override fun toString(): String = "$namespace:$path"
 
     /** 建立與解析 [TileTypeId] 的工廠。 */
@@ -32,6 +36,8 @@ data class TileTypeId(
         /**
          * 解析 `namespace:path` 格式的穩定識別字串。
          *
+         * @param value 待解析的完整識別碼。
+         * @return 解析後的牌種識別碼。
          * @throws IllegalArgumentException 當字串缺少 namespace、path 或包含多餘冒號時拋出。
          */
         fun parse(value: String): TileTypeId {

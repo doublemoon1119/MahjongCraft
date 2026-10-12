@@ -20,7 +20,13 @@ class ClientAutomaticControlCommandService(
         addAll(updateCoordinator.snapshot()?.supportedControlIds.orEmpty())
     }
 
-    /** 依 [mode] 更新 [controlId]。 */
+    /**
+     * 依指定模式更新永久偏好或本局控制項。
+     *
+     * @param controlId 要更新的控制項識別碼。
+     * @param mode 明確開關或反轉目前狀態的模式。
+     * @return 本機保存或本局請求送出結果；本局提交仍須等待伺服器確認。
+     */
     fun execute(controlId: String, mode: AutomaticControlCommandMode): ClientAutomaticControlCommandResult {
         if (controlId == BuiltInMinecraftAutomaticControlIds.AUTO_SORT_HAND) {
             return updateAutoSortHand(mode)
@@ -51,7 +57,13 @@ class ClientAutomaticControlCommandService(
         }
     }
 
-    /** 取回 [requestId] 的 ACK，並解析該控制的最終已確認狀態。 */
+    /**
+     * 取出指定請求的回覆，並解析該控制項的已確認狀態。
+     *
+     * @param requestId 要取出的請求識別碼。
+     * @param controlId 要從回覆快照查詢的控制項識別碼。
+     * @return 該請求的完成結果；尚無回覆或已被取出時為 null。
+     */
     fun takeCompletion(requestId: String, controlId: String): ClientAutomaticControlCommandCompletion? {
         val completion = updateCoordinator.takeCompletion(requestId) ?: return null
         return ClientAutomaticControlCommandCompletion(
@@ -60,10 +72,20 @@ class ClientAutomaticControlCommandService(
         )
     }
 
-    /** 目前是否仍等待 [requestId] 的 ACK。 */
+    /**
+     * 檢查是否仍等待指定請求的回覆。
+     *
+     * @param requestId 要查詢的請求識別碼。
+     * @return 目前待處理請求與識別碼相符時為 true。
+     */
     fun isPending(requestId: String): Boolean = updateCoordinator.pendingRequest()?.requestId == requestId
 
-    /** 更新永久自動理牌偏好。 */
+    /**
+     * 更新永久自動理牌偏好，並轉換成指令處理結果。
+     *
+     * @param mode 明確開關或反轉目前偏好的模式。
+     * @return 偏好保存與同步的結果。
+     */
     private fun updateAutoSortHand(mode: AutomaticControlCommandMode): ClientAutomaticControlCommandResult {
         val previousEnabled = autoSortHandPreferenceService.current()
         val enabled = resolveEnabled(previousEnabled, mode)
@@ -84,7 +106,13 @@ class ClientAutomaticControlCommandService(
         }
     }
 
-    /** 依明確模式或反轉模式計算目標狀態。 */
+    /**
+     * 依明確模式或反轉模式計算目標狀態。
+     *
+     * @param current 目前已確認狀態。
+     * @param mode 要套用的開關模式。
+     * @return 要求的新狀態。
+     */
     private fun resolveEnabled(current: Boolean, mode: AutomaticControlCommandMode): Boolean = when (mode) {
         AutomaticControlCommandMode.ON -> true
         AutomaticControlCommandMode.OFF -> false

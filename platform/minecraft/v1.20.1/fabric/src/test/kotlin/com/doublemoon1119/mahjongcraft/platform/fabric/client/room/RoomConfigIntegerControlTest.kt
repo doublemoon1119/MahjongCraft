@@ -169,14 +169,22 @@ class RoomConfigIntegerControlTest {
         assertEquals(4, RoomConfigIntegerControl.increment(current = 4, editor = editor, shiftHeld = false))
     }
 
-    /** 建立不可為 null 的整數欄位規格。 */
+    /**
+     * 建立不可為 null 的整數欄位規格。
+     *
+     * @return 下限 10、上限 310、步長 5 的欄位規格。
+     */
     private fun bounded(): GameConfigEditorSpec.IntegerInput = GameConfigEditorSpec.IntegerInput(
         minimum = 10,
         maximum = 310,
         step = 5,
     )
 
-    /** 建立可為 null 的整數欄位規格。 */
+    /**
+     * 建立可為 null 的整數欄位規格。
+     *
+     * @return 下限 10、上限 310、步長 5 的可空欄位規格。
+     */
     private fun nullable(): GameConfigEditorSpec.IntegerInput = GameConfigEditorSpec.IntegerInput(
         minimum = 10,
         maximum = 310,

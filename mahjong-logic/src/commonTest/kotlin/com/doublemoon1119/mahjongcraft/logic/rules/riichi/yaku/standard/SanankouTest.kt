@@ -290,7 +290,11 @@ class SanankouTest : RiichiHandValueCalculatorTestBase() {
         assertEquals(2, sanankouResult?.han, "Ron on a tanki wait leaves every triplet concealed")
     }
 
-    /** 222p, 333s, 456m, 55s, 77z：聽 5s 與 7z 的雙碰。 */
+    /**
+     * 建立 222p、333s、456m、55s、77z 的雙碰聽牌型。
+     *
+     * @return 聽 5s 與 7z 的測試手牌。
+     */
     private fun createShanponHand() = FakeHandFactory.create(
         listOf(
             Tile.Numeric(Tile.Suit.Dot, 2),

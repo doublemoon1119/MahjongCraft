@@ -10,17 +10,18 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigEditorS
  * 加高、label 與控制項改為上下堆疊。兩種版面的差異全部集中在這裡，呼叫端只讀算好的座標。
  *
  * 純資料，不依賴任何 Minecraft 型別；視窗尺寸、分類數、欄位數與捲動位置都由呼叫端傳入。
+ *
+ * @property windowWidth 目前視窗寬度。
+ * @property windowHeight 目前視窗高度。
+ * @property categoryCount 目前規則模組的設定分類數。
+ * @property fieldCount 目前分類的完整欄位數。
+ * @property scrollIndex 目前第一個可見欄位的索引。
  */
 internal data class RoomSettingsLayout(
-    /** 目前視窗寬度。 */
     val windowWidth: Int,
-    /** 目前視窗高度。 */
     val windowHeight: Int,
-    /** 目前規則模組的設定分類數。 */
     val categoryCount: Int,
-    /** 目前分類的完整欄位數。 */
     val fieldCount: Int,
-    /** 目前第一個可見欄位的 index。 */
     val scrollIndex: Int,
 ) {
     /** 視窗寬度不足以容納側邊欄、label 與控制項並排時改用堆疊版面。 */
@@ -67,10 +68,18 @@ internal data class RoomSettingsLayout(
      *
      * Compact 版面下 label 畫在 [rowTop]，控制項必須讓出 label 的高度才不會疊在一起；非 compact 版面則與
      * label 同高並排。
+     *
+     * @param rowTop 欄位列頂端的 Y 座標。
+     * @return 控制項頂端的 Y 座標。
      */
     fun fieldControlY(rowTop: Int): Int = if (isCompact) rowTop + COMPACT_CONTROL_Y_OFFSET else rowTop
 
-    /** 依 editor 實際控制元件的左界，供計算本地化標籤的可用寬度。 */
+    /**
+     * 依編輯器種類計算控制項左界，供呼叫端計算標籤的可用寬度。
+     *
+     * @param editor 欄位使用的編輯器規格。
+     * @return 控制項左界的 X 座標。
+     */
     fun fieldControlLeft(editor: GameConfigEditorSpec): Int = when (editor) {
         GameConfigEditorSpec.BooleanToggle -> windowWidth - BOOLEAN_CONTROL_LEFT_INSET
         is GameConfigEditorSpec.SingleChoice,
@@ -78,7 +87,13 @@ internal data class RoomSettingsLayout(
         -> windowWidth - WIDE_CONTROL_LEFT_INSET
     }
 
-    /** 游標是否落在設定欄位 scrollbar 的可拖曳範圍內。 */
+    /**
+     * 判斷游標是否落在設定欄位捲軸的命中範圍內；不判斷內容是否需要捲動。
+     *
+     * @param mouseX 游標的水平座標。
+     * @param mouseY 游標的垂直座標。
+     * @return 游標位於命中範圍內時為 true。
+     */
     fun isOverScrollbar(mouseX: Double, mouseY: Double): Boolean = scrollbarColumn.containsHorizontally(mouseX) &&
         mouseY >= fieldsTop &&
         mouseY <= contentBottom

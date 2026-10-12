@@ -13,7 +13,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuResult
  */
 sealed interface RiichiPointResult {
 
-    /** 本次胡牌贏家實際獲得的點數總和。 */
+    /** 按四人付款結構計算的總點數；較少人數的自摸損金額由 [totalFor] 換算。 */
     val total: Int
 
     /**

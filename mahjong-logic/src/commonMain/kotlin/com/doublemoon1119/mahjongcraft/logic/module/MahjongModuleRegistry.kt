@@ -12,9 +12,12 @@ interface MahjongModuleRegistry {
     /**
      * 註冊一個新的規則模組。
      *
+     * @param T 對應的規則配置型別。
      * @param configClass 規則配置類別。
      * @param id 規則模組 ID。
      * @param factory 工廠函數。
+     * @throws IllegalArgumentException 配置類別或模組 ID 已重複註冊時拋出。
+     * @throws IllegalStateException 註冊中心已凍結時拋出。
      */
     fun <T : MahjongRuleConfig> register(
         configClass: KClass<T>,
@@ -27,16 +30,26 @@ interface MahjongModuleRegistry {
 
     /**
      * 根據傳入的配置獲取已綁定該配置的規則模組實例。
+     *
+     * @param T 傳入的規則配置型別。
+     * @param config 要查詢模組的規則配置。
+     * @return 與該配置類別綁定的模組實例。
+     * @throws IllegalStateException 尚未註冊此配置類別的規則模組時拋出。
      */
     fun <T : MahjongRuleConfig> getModule(config: T): MahjongRuleModule<T>
 
     /**
      * 獲取所有已註冊模組的唯一識別碼集合。
+     *
+     * @return 已註冊模組的 ID 集合。
      */
     fun getAllModuleIds(): Set<String>
 
     /**
      * 根據 ID 獲取對應的配置類別。
+     *
+     * @param id 欲查詢的規則模組 ID。
+     * @return 對應的配置類別；ID 尚未註冊時為 null。
      */
     fun getConfigClass(id: String): KClass<out MahjongRuleConfig>?
 }

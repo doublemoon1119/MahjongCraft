@@ -167,13 +167,21 @@ class OrphanedTableCleanupService(
             /** 只移除位置。 */
             fun removeLocation(): CleanupDecision = CleanupDecision(OrphanedTableCleanupResult.REMOVED_LOCATION, emptySet())
 
-            /** 移除 Room 與指定玩家的衍生狀態。 */
+            /**
+             * 移除 Room 與指定玩家的衍生狀態。
+             *
+             * @param playerIds 需清除 membership 與快照的玩家 UUID。
+             */
             fun removeRoom(playerIds: Set<Uuid>): CleanupDecision = CleanupDecision(
                 OrphanedTableCleanupResult.REMOVED_ROOM,
                 playerIds,
             )
 
-            /** 移除 Game 與指定玩家的衍生狀態。 */
+            /**
+             * 移除 Game 與指定玩家的衍生狀態。
+             *
+             * @param playerIds 需清除 membership 與快照的玩家 UUID。
+             */
             fun removeGame(playerIds: Set<Uuid>): CleanupDecision = CleanupDecision(
                 OrphanedTableCleanupResult.REMOVED_GAME,
                 playerIds,

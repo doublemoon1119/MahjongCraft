@@ -5,7 +5,7 @@ import org.gradle.api.Plugin
 import org.gradle.api.initialization.Settings
 import org.gradle.api.plugins.ExtensionAware
 
-/** 在 Settings 階段選擇並載入單一正式平台 target。 */
+/** 在 Settings 階段選擇 core-only 模式或載入單一 catalog 正式平台 target。 */
 class PlatformTargetsSettingsPlugin : Plugin<Settings> {
     /** 解析 target 來源並載入對應平台模組。 */
     override fun apply(settings: Settings) {

@@ -260,6 +260,7 @@ class CommittedFactsDispatcherTest {
      * @param moduleRegistry 測試用規則模組 registry。
      * @param exclusions 與事件分派器共用的排除名單。
      * @param gateway 接收成果授予的測試 gateway。
+     * @return 與事件橋接共用排除名單的成果服務。
      */
     private fun achievementService(
         moduleRegistry: MahjongModuleRegistryImpl,
@@ -277,7 +278,11 @@ class CommittedFactsDispatcherTest {
         )
     }
 
-    /** 建立測試用四人日麻對局。 */
+    /**
+     * 建立測試用四人日麻對局。
+     *
+     * @return 場次識別碼獨立、使用預設立直規則的對局。
+     */
     private fun game(): Game = Game(
         tableState = FakeTableStateFactory.create(
             players = listOf(Wind.EAST, Wind.SOUTH, Wind.WEST, Wind.NORTH).map {
@@ -294,12 +299,23 @@ class CommittedFactsDispatcherTest {
         /** 尚未執行的主執行緒工作。 */
         private val tasks = ConcurrentLinkedQueue<() -> Unit>()
 
+        /**
+         * 將工作加入待執行佇列。
+         *
+         * @param task 待排入主執行緒的工作。
+         */
         override fun enqueue(task: () -> Unit) {
             tasks += task
         }
 
+        /**
+         * 取得尚未執行的工作數量。
+         *
+         * @return 目前佇列長度。
+         */
         fun size(): Int = tasks.size
 
+        /** 依入列順序執行工作，直到佇列為空。 */
         fun runAll() {
             while (true) tasks.poll()?.invoke() ?: return
         }
@@ -316,14 +332,31 @@ class CommittedFactsDispatcherTest {
         /** 排程失敗診斷。 */
         val schedulingFailures = mutableListOf<Throwable>()
 
+        /**
+         * 記錄缺少桌位位置的場次與場地識別碼。
+         *
+         * @param matchId 對局識別碼。
+         * @param venueId 場地識別碼。
+         */
         override fun missingLocation(matchId: Uuid, venueId: Uuid) {
             missingLocations += matchId to venueId
         }
 
+        /**
+         * 記錄監聽者拋出的例外。
+         *
+         * @param event 發生失敗的事件。
+         * @param cause 監聽者拋出的原因。
+         */
         override fun listenerFailed(event: MatchEvent, cause: Throwable) {
             listenerFailures += cause
         }
 
+        /**
+         * 記錄排程工作無法提交時的例外。
+         *
+         * @param cause 排程失敗的原因。
+         */
         override fun schedulingFailed(cause: Throwable) {
             schedulingFailures += cause
         }
@@ -334,6 +367,12 @@ class CommittedFactsDispatcherTest {
         /** 已交付給測試 gateway 的成果批次。 */
         val granted = mutableListOf<PlayerAchievements>()
 
+        /**
+         * 記錄交付的成果並回報成功。
+         *
+         * @param achievements 欲授予玩家的成果集合。
+         * @return 成功接收時回傳 true。
+         */
         override fun grant(
             achievements: PlayerAchievements,
         ): Boolean {

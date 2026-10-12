@@ -17,10 +17,19 @@ import kotlin.uuid.Uuid
 
 /** 驗證搶槓資格只包含規則允許榮和這張槓牌的玩家。 */
 class RobbingEligibilityTest {
+    /** 宣告槓牌的玩家識別碼。 */
     private val declarerId = Uuid.random()
+
+    /** 持有國士無雙聽牌手牌的玩家識別碼。 */
     private val kokushiPlayerId = Uuid.random()
+
+    /** 持有一般單騎聽牌手牌的玩家識別碼。 */
     private val singleWaitPlayerId = Uuid.random()
+
+    /** 已註冊日麻規則的模組，用於計算榮和資格。 */
     private val module = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }.getModule(RiichiRuleConfig())
+
+    /** 此測試宣告為槓牌的白板實體牌。 */
     private val declaredWhite = FakeIdentifiedTileFactory.create(Tile.Honor.White)
 
     /** 暗槓只有國士無雙可以搶；單騎聽同一張牌的一般手牌沒有資格，因此不會被記為放過。 */
@@ -39,6 +48,12 @@ class RobbingEligibilityTest {
         assertEquals(setOf(kokushiPlayerId, singleWaitPlayerId), eligible)
     }
 
+    /**
+     * 以測試玩家與指定槓動作計算符合搶槓條件的玩家。
+     *
+     * @param kanAction 要檢查的暗槓或加槓動作。
+     * @return 可對該槓牌宣告榮和的玩家識別碼。
+     */
     private fun ronEligiblePlayerIds(kanAction: GameAction.Kan): Set<Uuid> {
         val table = FakeTableStateFactory.create(
             players = listOf(

@@ -29,7 +29,13 @@ class WinSettlementRankingCodecTest {
         assertEquals(listOf("a"), WinSettlementRankingCodec.decode(encoded).map { it.playerId })
     }
 
-    /** 建立測試用的排名列。 */
+    /**
+     * 建立測試用的排名列。
+     *
+     * @param playerId 玩家識別碼。
+     * @param paymentReasonId 付款原因識別碼；未指定時不附原因。
+     * @return 使用固定分數與名次的排名列。
+     */
     private fun snapshot(
         playerId: String,
         paymentReasonId: String?,

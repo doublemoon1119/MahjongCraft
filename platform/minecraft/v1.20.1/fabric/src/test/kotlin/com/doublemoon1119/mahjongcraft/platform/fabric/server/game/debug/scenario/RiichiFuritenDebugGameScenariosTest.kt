@@ -16,11 +16,16 @@ import kotlin.test.assertTrue
 
 /** 驗證振聽驗收情境的桌況能重現預定的振聽判定。 */
 class RiichiFuritenDebugGameScenariosTest {
+    /** 提供振聽情境的登錄表。 */
     private val registry = DebugGameScenarioRegistry()
+
+    /** 已凍結的內建規則登錄表，供情境驗證使用。 */
     private val moduleRegistry = MahjongModuleRegistryImpl().apply {
         registerBundledRuleModules()
         freeze()
     }
+
+    /** 檢查情境結果是否符合對局約束。 */
     private val scenarioValidator = DebugGameScenarioValidator(moduleRegistry)
 
     /** 所有振聽情境在各種赤寶牌張數下都通過權威驗證，由呼叫者先捨牌，其他三家改用腳本 AI，王牌區沒有驗收用的和牌張。 */
@@ -33,7 +38,12 @@ class RiichiFuritenDebugGameScenariosTest {
         }
     }
 
-    /** 驗證 [scenario] 在 [context] 下可以載入並依腳本進行。 */
+    /**
+     * 驗證情境可載入，且桌況符合此測試群組共用的可操作前提。
+     *
+     * @param scenario 要檢查的振聽情境。
+     * @param context 情境使用的目前對局輸入。
+     */
     private fun assertScenarioIsPlayable(
         scenario: DebugGameScenario,
         context: DebugGameScenarioContext,
@@ -151,18 +161,33 @@ class RiichiFuritenDebugGameScenariosTest {
         assertTrue(state.canRobKan(offset = 0, type = GameAction.KanType.ADDED_KAN))
     }
 
+    /**
+     * 由 registry 建立指定振聽情境。
+     *
+     * @param idPath 情境識別碼中 namespace 後的路徑。
+     * @param context 情境使用的目前對局輸入。
+     * @return 建立後的情境結果。
+     */
     private fun build(
         idPath: String,
         context: DebugGameScenarioContext = createRiichiScenarioContext(),
     ): DebugGameScenarioResult = registry.get("mahjongcraft:$idPath")!!.build(context)
 
+    /** 振聽情境共用的規則選項與牌面。 */
     private companion object {
         /** 房間設定可選的赤寶牌張數。 */
         val RED_DORA_COUNTS: List<Int> = listOf(0, 3, 4)
 
+        /** 一萬，振聽情境中的等待牌。 */
         val ONE_CHARACTER: Tile = Tile.Numeric(Tile.Suit.Character, 1)
+
+        /** 四萬，振聽情境中的等待牌。 */
         val FOUR_CHARACTER: Tile = Tile.Numeric(Tile.Suit.Character, 4)
+
+        /** 九萬，情境中不觸發鳴牌的摸切牌。 */
         val NINE_CHARACTER: Tile = Tile.Numeric(Tile.Suit.Character, 9)
+
+        /** 九索，情境中不觸發鳴牌的摸切牌。 */
         val NINE_BAMBOO: Tile = Tile.Numeric(Tile.Suit.Bamboo, 9)
     }
 }

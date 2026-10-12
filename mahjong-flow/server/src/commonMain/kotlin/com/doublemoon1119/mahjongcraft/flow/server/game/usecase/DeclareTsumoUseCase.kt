@@ -252,7 +252,11 @@ class DeclareTsumoUseCase(
     /**
      * 將原子更新內取得的算役結果帶到呈現發布階段。
      *
+     * @property tableState 自摸結算後的權威桌況。
+     * @property resolution 自摸宣告產生的完整算役結果。
+     * @property ruleModuleId 執行自摸結算的規則模組識別碼。
      * @property settlement 同一交易建立的胡牌呈現詳情。
+     * @property newlyRevealedTileIds 本次結算新公開的牌張 ID。
      */
     private data class TsumoResult(
         val tableState: TableState,

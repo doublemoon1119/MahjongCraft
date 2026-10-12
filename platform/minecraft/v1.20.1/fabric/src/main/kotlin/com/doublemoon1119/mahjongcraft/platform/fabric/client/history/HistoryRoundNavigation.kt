@@ -67,6 +67,7 @@ internal object HistoryRoundNavigation {
      * @param position 目前桌況位置。
      * @param direction -1 表示上一筆，1 表示下一筆。
      * @return 已知的相鄰位置，或資料不足時為 null。
+     * @throws IllegalArgumentException [direction] 不是 -1 或 1 時拋出。
      */
     fun nextPosition(round: HistoryBrowseRoundState, position: HistoryRoundPositionDto, direction: Int): HistoryRoundPositionDto? {
         require(direction == -1 || direction == 1) { "Direction must be -1 or 1" }

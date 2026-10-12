@@ -7,11 +7,9 @@ import org.koin.core.annotation.Single
 import kotlin.coroutines.CoroutineContext
 
 /**
- * 把協程排程丟回 Minecraft client 執行緒（render/tick thread）——透過 [MinecraftClient.execute] 把工作
- * 丟進 client 自己的任務佇列。不像伺服器端的
- * [ServerThreadCoroutineDispatcher]，
- * client 不會「原地重啟」一個 session，也沒有世界暫停時背景執行緒仍照常計時的問題，所以不需要額外實作
- * [kotlinx.coroutines.Delay]，內建的延遲機制就夠。
+ * 透過 [MinecraftClient.execute] 將協程工作送回客戶端的繪製／tick 執行緒。
+ *
+ * 已在該執行緒時不另行排程；不同於 [ServerThreadCoroutineDispatcher]，此處不實作以伺服器 tick 計時的延遲。
  */
 @Single
 class ClientThreadCoroutineDispatcher : CoroutineDispatcher() {

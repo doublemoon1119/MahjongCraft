@@ -6,12 +6,22 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import org.koin.core.annotation.Single
 
-/** 在寫入 repository 前集中驗證 debug 情境的權威狀態完整性。 */
+/**
+ * 在寫入 repository 前集中驗證開發情境的權威狀態完整性。
+ *
+ * @property moduleRegistry 取得情境規則的牌山組成與移出手牌區能力。
+ */
 @Single
 class DebugGameScenarioValidator(
     private val moduleRegistry: MahjongModuleRegistry,
 ) {
-    /** 驗證候選結果沒有改變遊戲與場次身分、玩家歸屬或牌張守恆。 */
+    /**
+     * 驗證候選結果保留遊戲身分、玩家歸屬、牌張守恆與必要呈現資料。
+     *
+     * @param context 情境建立前的權威對局與發起者。
+     * @param result 要寫入的候選情境。
+     * @throws IllegalArgumentException 候選情境違反任何完整性條件時拋出。
+     */
     fun validate(context: DebugGameScenarioContext, result: DebugGameScenarioResult) {
         val previous = context.currentGame
         val candidate = result.game
@@ -76,12 +86,23 @@ class DebugGameScenarioValidator(
         }
     }
 
-    /** 收集權威桌況目前持有的全部實體牌，包含依 [module] 規則移出手牌的牌。 */
+    /**
+     * 收集權威桌況目前持有的全部實體牌。
+     *
+     * @param module 提供移出手牌區牌張的規則模組。
+     * @return 所有手牌、副露、牌河、移出手牌區、牌山與保留區的牌。
+     */
     private fun TableState.allTiles(module: MahjongRuleModule<*>): List<IdentifiedTile> = players.flatMap { player ->
         player.hand.allTiles + player.discardPile.entries.map { entry -> entry.tile } + module.setAsideTiles(player)
     } + tileWall.getAllTiles() + reservedWallTiles
 
-    /** 驗證完整開局呈現的發牌前後資料與同一份權威手牌完全一致。 */
+    /**
+     * 驗證開局發牌清單涵蓋權威手牌，翻牌後順序與權威手牌完全一致。
+     *
+     * @param state 候選權威桌況。
+     * @param presentation 要驗證的開局呈現資料。
+     * @throws IllegalArgumentException 骰子、座位或手牌內容不符合要求時拋出。
+     */
     private fun validateInitialRoundPresentation(
         state: TableState,
         presentation: DebugGameScenarioPresentation.InitialRound,

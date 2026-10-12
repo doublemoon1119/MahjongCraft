@@ -25,10 +25,11 @@ sealed interface GameCommandDto {
     /**
      * Extension 網路 DTO。
      *
-     * @property value 擴充值或牌面數值。
+     * @property value 由 registry 註冊的擴充遊戲命令 DTO。
      */
     @Serializable data class Extension(@Polymorphic val value: ExtensionGameCommandDto) : GameCommandDto
 
+    /** 要求玩家摸牌。 */
     @Serializable data object Draw : GameCommandDto
 
     /**
@@ -38,6 +39,7 @@ sealed interface GameCommandDto {
      */
     @Serializable data class Discard(val tileId: String) : GameCommandDto
 
+    /** 要求玩家以自摸胡牌。 */
     @Serializable data object Tsumo : GameCommandDto
 
     /**
@@ -65,7 +67,7 @@ sealed interface GameCommandDto {
     /**
      * DeclareExhaustiveDraw 網路 DTO。
      *
-     * @property reason 相關的結果或操作原因。
+     * @property reason 要宣告的流局具體原因，由規則模組提供並透過註冊表轉換。
      */
     @Serializable data class DeclareExhaustiveDraw(val reason: ExhaustiveDrawReasonDto) : GameCommandDto
 }

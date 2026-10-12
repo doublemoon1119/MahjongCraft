@@ -17,6 +17,8 @@ import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
  *
  * 本類別為不可變值物件：[draw] 與 [drawLast] 不會修改原實例，而是透過 [DrawResult] 回傳摸到的牌與
  * 反映變更後狀態的新 [TileWall] 實例。
+ *
+ * @property tiles 依摸牌順序排列、由此牌堆保存的牌張。
  */
 data class TileWall(private val tiles: List<IdentifiedTile> = emptyList()) {
 
@@ -55,6 +57,8 @@ data class TileWall(private val tiles: List<IdentifiedTile> = emptyList()) {
 
     /**
      * 獲取目前牌山的唯讀列表。
+     *
+     * @return 此容器保存的牌張，依摸牌順序排列。
      */
     fun getAllTiles(): List<IdentifiedTile> = tiles
 }

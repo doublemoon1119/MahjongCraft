@@ -16,6 +16,7 @@ class RandomAiStrategy(
     private val extensionActionRegistry: ExtensionGameActionAiRegistry,
     private val random: Random = Random.Default,
 ) : MahjongAiStrategy {
+    /** 隨機策略的登記識別碼。 */
     companion object {
         /** 這個策略在 [MahjongAiStrategyRegistry] 裡登記的 key。 */
         const val KEY = "mahjongcraft:random"
@@ -34,6 +35,9 @@ class RandomAiStrategy(
      * （排除 [GameAction.Pass]；無法由 registry 轉成命令的未知擴充動作也不列入），依機率決定要不要
      * 選一個；沒選、或清單裡沒有這類選項時，預設行為是
      * 捨牌——這是 `LegalActionValidator` 既有慣例裡永遠可用的預設動作。
+     *
+     * @param context 本次決策可見的手牌、合法動作與捨牌限制。
+     * @return 選中的動作命令，或隨機捨牌命令。
      */
     private fun decideOwnTurn(context: AiDecisionContext): GameCommand {
         val actionableOptions = context.legalActions.flatMap { it.toOwnTurnCommands(context) }
@@ -44,7 +48,12 @@ class RandomAiStrategy(
         return actionableOptions.random(random)
     }
 
-    /** 將自己回合的合法動作轉成實際可執行命令。 */
+    /**
+     * 將自己回合的合法動作轉成實際可執行命令。
+     *
+     * @param context 提供擴充動作建立命令時所需的決策資訊。
+     * @return 此動作對應的命令；無法轉換的動作回傳空清單。
+     */
     private fun GameAction.toOwnTurnCommands(context: AiDecisionContext): List<GameCommand> = when (this) {
         GameAction.Tsumo -> listOf(GameCommand.Tsumo)
         is GameAction.Kan -> listOf(GameCommand.Kan(type, tileId))
@@ -54,7 +63,10 @@ class RandomAiStrategy(
     }
 
     /**
-     * 從 [AiDecisionContext.snapshot] 裡這位 AI 自己的手牌（立牌 + 剛摸到的牌）隨機挑一張捨棄。
+     * 優先捨棄規則指定的牌，未指定時從自己的立牌清單隨機挑一張；清單已包含剛摸到的牌。
+     *
+     * @param context 本次決策的手牌快照與指定捨牌限制。
+     * @return 捨棄所選牌張的命令。
      */
     private fun discardRandomTile(context: AiDecisionContext): GameCommand {
         context.forcedDiscardTileId?.let { return GameCommand.Discard(it) }

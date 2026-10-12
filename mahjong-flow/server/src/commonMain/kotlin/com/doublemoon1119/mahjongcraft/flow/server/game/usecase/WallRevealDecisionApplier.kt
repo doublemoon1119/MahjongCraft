@@ -32,7 +32,16 @@ internal object WallRevealDecisionApplier {
         data class Rejected(val reasonId: String) : Result
     }
 
-    /** 呼叫規則 policy 並驗證其動態狀態及新增公開牌集合。 */
+    /**
+     * 呼叫規則 policy 並驗證其動態狀態及新增公開牌集合。
+     *
+     * @param tableState 套用決策前的候選桌況。
+     * @param checkpoint 本次檢查所處的規則 checkpoint。
+     * @param module 對局採用的規則模組。
+     * @param actorPlayerId 觸發 checkpoint 的玩家識別碼，沒有玩家觸發時為 null。
+     * @param sourceAction 觸發 checkpoint 的動作，沒有對應動作時為 null。
+     * @return 套用後的桌況與新公開牌張，或規則拒絕結果。
+     */
     fun apply(
         tableState: TableState,
         checkpoint: WallRevealCheckpoint,
@@ -50,7 +59,13 @@ internal object WallRevealDecisionApplier {
         }
     }
 
-    /** 驗證 policy 宣告的新增集合等於動態狀態實際新增的可見牌集合。 */
+    /**
+     * 驗證 policy 宣告的新增集合等於動態狀態實際新增的可見牌集合。
+     *
+     * @param tableState 套用決策前的候選桌況。
+     * @param decision 規則 policy 回傳的更新決策。
+     * @return 驗證通過後的新桌況，或 Flow 邊界驗證失敗的原因。
+     */
     internal fun applyUpdatedDecision(
         tableState: TableState,
         decision: WallRevealDecision.Updated,

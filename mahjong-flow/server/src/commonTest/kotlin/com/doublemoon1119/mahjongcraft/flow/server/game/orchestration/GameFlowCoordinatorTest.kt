@@ -25,7 +25,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationIn
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSubmission
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundContinuationContext
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
-import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.time.MonotonicClock
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
@@ -110,12 +109,12 @@ import kotlin.uuid.Uuid
 /**
  * [GameFlowCoordinator] 的單元測試類別。
  *
- * 驗證三種自動銜接時機：一般流局（[GameError.WallExhausted]）、四槓散了（攔截
- * [GameCommand.Discard]/[GameCommand.Riichi]）、連莊/過莊（是否結束本局的判斷），
- * 以及不該誤觸發的一般路徑與錯誤原樣傳遞。
+ * 驗證流局與和牌後的流程銜接、繼續本局的和牌呈現要求、自動操作、決策計時與 AI 決策的條件式提交，
+ * 並確認一般操作及錯誤不會誤觸發換局。
  */
 class GameFlowCoordinatorTest {
 
+    /** 各測試使用的對局識別碼。 */
     private val gameId = Uuid.random()
 
     /**
@@ -125,6 +124,25 @@ class GameFlowCoordinatorTest {
      * @param extraStrategies 另外登記的 AI 策略，以策略 key 索引。
      * @param roundPreparationResolvers 開局準備的解析器；提供時才接上開局準備的提交與 AI。
      * @param extraCommandHandlers 另外登記擴充命令 handler 的方式。
+     * @property gameRepo 保存測試對局與已提交事實的資料倉庫。
+     * @property moduleRegistry 內建規則註冊中心。
+     * @property snapshotRepo 記錄同步快照的倉庫。
+     * @property snapshotSynchronizer 依觀看政策同步快照的元件。
+     * @property handSortPreferenceStore 玩家手牌排序偏好的記憶體儲存。
+     * @property postActionExhaustiveDrawResolverRegistry 動作後途中流局解析器註冊中心。
+     * @property winSettlementDetailResolverRegistry 和牌明細解析器註冊中心。
+     * @property eventPublisher 記錄流程事件的發布替身。
+     * @property presentationPublisher 記錄呈現要求的發布替身。
+     * @property winPresentationHandoff 暫存待發布和牌要求的元件。
+     * @property presentationBusyGate 可控制忙碌狀態的呈現替身。
+     * @property extensionCommandExecutor 執行擴充命令的元件。
+     * @property router 將命令分派給正式用例的路由。
+     * @property getLegalActionsUseCase 查詢合法動作的用例。
+     * @property aiStrategyRegistry 內建與測試策略的註冊中心。
+     * @property aiTurnDriver 解析下一個 AI 命令的元件。
+     * @property clock 可手動設定時間的測試時鐘。
+     * @property decisionTimerManager 管理決策剩餘時間的元件。
+     * @property coordinator 受測流程協調器。
      */
     private class Fixtures(
         winRoundContinuationResolverRegistry: WinRoundContinuationResolverRegistry = WinRoundContinuationResolverRegistry().apply { freeze() },
@@ -132,7 +150,11 @@ class GameFlowCoordinatorTest {
         roundPreparationResolvers: RoundPreparationResolverRegistry? = null,
         extraCommandHandlers: (ExtensionGameCommandExecutorRegistry) -> Unit = {},
     ) {
-        /** 由各交易提交的事實產生的事件中，恰好有一次 [kind] 的結算；換局等其他交易不再產生結算。 */
+        /**
+         * 驗證各交易產生的事件中只有一次指定種類的結算。
+         *
+         * @param kind 預期的結算種類。
+         */
         fun assertSingleSettlement(kind: RoundSettlementKind) {
             val projector = GameEventProjector(moduleRegistry)
             val settlements = gameRepo.committedFacts.flatMap(projector::project).filterIsInstance<RoundSettledEvent>()
@@ -462,11 +484,25 @@ class GameFlowCoordinatorTest {
 
     // ---- 四槓散了：捨牌後收斂 ----
 
+    /**
+     * 為每種指定牌建立一組暗槓。
+     *
+     * @param tileValues 各組暗槓的牌種。
+     * @return 與輸入順序相同的暗槓列表。
+     */
     private fun kanMeldsOf(vararg tileValues: Tile): List<Meld> = tileValues.map { tile ->
         val tiles = List(4) { FakeIdentifiedTileFactory.create(tile) }
         Meld(MeldType.CLOSED_KAN, tiles, sourceTile = null, sourceDirection = RelativeDirection.Self)
     }
 
+    /**
+     * 建立兩位玩家各有兩槓、莊家待捨牌的四槓散了情境。
+     *
+     * @param dealerId 莊家識別碼。
+     * @param otherId 另一位持有槓子的玩家。
+     * @param dealerLastDrawn 莊家待捨出的摸牌。
+     * @return 尚未執行最後捨牌的測試桌況。
+     */
     private fun suukanNagareTable(dealerId: Uuid, otherId: Uuid, dealerLastDrawn: IdentifiedTile): TableState {
         val completedKan = GameAction.Kan(
             type = GameAction.KanType.CLOSED_KAN,
@@ -645,13 +681,7 @@ class GameFlowCoordinatorTest {
         )
     }
 
-    /**
-     * 驗證 [ContinuingWinSettlementDetail.SCORE_CHANGES_ONLY]：胡牌演出**完全照常**（理牌、攤牌、降臨特效，役滿時還有
-     * showcase），只有結算面板換成精簡版。
-     *
-     * 這正是這組 enum 的設計重點：胡牌演出是「這個人胡了、退出本局」在世界裡唯一的視覺訊號，其他仍在
-     * 局中的玩家必須看見，任何模式都不可省略；真正依情境調整的只有面板，因為面板是要**讀**的。
-     */
+    /** 驗證只顯示分數變動時，要求仍包含和牌呈現及展示理由，但省略贏家明細。 */
     @Test
     fun `test continuing win in brief mode only shrinks the settlement panel`() = runTest {
         val fixtures = runContinuingWinTsumo(
@@ -685,7 +715,7 @@ class GameFlowCoordinatorTest {
         Tile.Numeric(Tile.Suit.Bamboo, 5),
     )
 
-    /** 驗證**一般**（非役滿）中途胡牌沒有展示理由，平台不需要暫停其他仍在本局中的玩家。 */
+    /** 驗證一般役的中途和牌仍標記本局繼續，且不包含役滿展示理由。 */
     @Test
     fun `test ordinary continuing win does not need to pause the other players`() = runTest {
         val fixtures = runContinuingWinTsumo(
@@ -705,12 +735,7 @@ class GameFlowCoordinatorTest {
         )
     }
 
-    /**
-     * 驗證含役滿的中途胡牌帶著展示理由——平台據此暫停玩家／AI／強制自動操作／決策計時器直到展示播完
-     * （見 [WinPresentationRequest] KDoc）。
-     *
-     * 跟上一個測試的唯一差別就是手牌：大三元是役滿，只有役滿成立時才有展示理由。
-     */
+    /** 驗證大三元中途和牌的呈現要求保留本局繼續標記與對應的役滿展示理由。 */
     @Test
     fun `test continuing win carrying a yakuman publishes its showcase reason`() = runTest {
         val fixtures = runContinuingWinTsumo(
@@ -775,7 +800,12 @@ class GameFlowCoordinatorTest {
     /**
      * 以指定的 [settlementDetail] 跑一次「規則判定本局繼續」的自摸，回傳執行後的 fixtures 供斷言。
      *
-     * 兩種結算面板模式的測試共用同一份桌況與 resolver 設定，差別只在 [settlementDetail]。
+     * @param winnerId 本次自摸玩家。
+     * @param otherId 後續可繼續行動的玩家。
+     * @param winningTile 本次摸入的和牌張。
+     * @param settlementDetail 結算要求保留的明細範圍。
+     * @param handTiles 不含和牌張的立牌牌種。
+     * @return 自摸及續局指令套用後的測試環境。
      */
     private suspend fun runContinuingWinTsumo(
         winnerId: Uuid,
@@ -931,6 +961,14 @@ class GameFlowCoordinatorTest {
         fixtures.assertSingleSettlement(RoundSettlementKind.DRAW)
     }
 
+    /**
+     * 建立他家打出白板的捨牌反應情境。
+     *
+     * @param discarderId 捨牌玩家。
+     * @param respondentId 尚未回應的玩家。
+     * @param respondentHand 回應玩家的手牌。
+     * @return 已開啟捨牌反應視窗的桌況。
+     */
     private fun discardReactionTable(discarderId: Uuid, respondentId: Uuid, respondentHand: Hand): TableState {
         val discardedTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         // score 給一個一般起始分數（而非工廠預設的 0），避免放銃付款後分數跌破 0 誤觸「擊飛」
@@ -1040,10 +1078,7 @@ class GameFlowCoordinatorTest {
         assertEquals(table, fixtures.gameRepo.getTableState(gameId))
     }
 
-    /**
-     * 迴歸測試：模擬 server 在榮和結算與待推進流程已持久化、但呈現尚未結束時重啟；
-     * 新 session 可單純從權威桌況補完推進，且重複恢復不會再推進一次。
-     */
+    /** 驗證已保存榮和結算與待換局狀態時，可補完換局且重複恢復不會再次推進；本測試不執行存檔或重啟。 */
     @Test
     fun `test persisted ron settlement resumes round transition after restart`() = runTest {
         val fixtures = Fixtures()
@@ -1115,6 +1150,15 @@ class GameFlowCoordinatorTest {
         assertEquals(ponAction, newState.players.first { it.id == respondentId }.actionHistory.last())
     }
 
+    /**
+     * 建立白板加槓的搶槓反應情境。
+     *
+     * @param declarerId 宣告加槓的玩家。
+     * @param robberId 尚未回應的玩家。
+     * @param reservedWallTiles 補牌使用的保留牌。
+     * @param robberHand 搶槓玩家的手牌。
+     * @return 已開啟搶槓反應視窗的桌況。
+     */
     private fun chankanTable(declarerId: Uuid, robberId: Uuid, reservedWallTiles: List<IdentifiedTile>, robberHand: Hand): TableState {
         val whiteTile1 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val whiteTile2 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
@@ -1619,7 +1663,11 @@ class GameFlowCoordinatorTest {
         override suspend fun decideRoundPreparation(context: RoundPreparationAiContext): RoundPreparationSubmission = awaitCancellation()
     }
 
-    /** 每次都回傳同一個命令的 AI 策略。 */
+    /**
+     * 每次都回傳同一個命令的 AI 策略。
+     *
+     * @property command 固定回傳的命令。
+     */
     private class FixedCommandStrategy(private val command: GameCommand) : MahjongAiStrategy {
         /** 被呼叫的次數。 */
         var calls = 0
@@ -1664,6 +1712,11 @@ class GameFlowCoordinatorTest {
             return RoundPreparationSubmission.Confirmed
         }
 
+        /**
+         * 依測試設定增加自動操作修訂號，模擬權威遊戲已改變。
+         *
+         * @param gameId 欲改變的對局。
+         */
         private suspend fun changeGame(gameId: Uuid) {
             if (!changesGameOnFirstCall) return
             gameRepo.updateGame(gameId) { game -> game?.copy(automaticControlRevision = game.automaticControlRevision + 1) to Unit }
@@ -1683,6 +1736,7 @@ class GameFlowCoordinatorTest {
         ): RoundPreparationResolution = RoundPreparationResolution(tableState, nextStep = null)
     }
 
+    /** 條件式提交與逾時測試使用的策略識別碼。 */
     private companion object {
         /** [ChangingGameStrategy] 的策略 key。 */
         const val CHANGING_STRATEGY_KEY = "test:changing_game"

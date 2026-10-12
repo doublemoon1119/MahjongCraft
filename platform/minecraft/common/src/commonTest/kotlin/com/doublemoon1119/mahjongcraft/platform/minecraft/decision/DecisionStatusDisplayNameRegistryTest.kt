@@ -12,6 +12,11 @@ import kotlin.test.assertNull
 
 /** 驗證捨牌分析狀態名稱的登記與「規則優先、退回中立預設」的查詢順序。 */
 class DecisionStatusDisplayNameRegistryTest {
+    /**
+     * 建立含通用與日麻內建狀態名稱的已註冊測試 registry。
+     *
+     * @return 含兩組內建登記的狀態名稱 registry。
+     */
     private fun registry() = DecisionStatusDisplayNameRegistryImpl().apply {
         BuiltInMinecraftMahjongExtension.registerDecisionStatusDisplayNames(this)
         BundledRiichiMinecraftExtension.registerDecisionStatusDisplayNames(this)

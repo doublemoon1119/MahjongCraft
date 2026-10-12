@@ -182,6 +182,7 @@ class HeadlessFlowHistoryRuntimeTest {
         }
     }
 
+    /** 計時測試使用的步數上限。 */
     private companion object {
         /** 計時測試推進的步數；足以涵蓋多次 AI 出牌，又不會塞滿待寫佇列。 */
         const val STEPS_TO_MEASURE = 40

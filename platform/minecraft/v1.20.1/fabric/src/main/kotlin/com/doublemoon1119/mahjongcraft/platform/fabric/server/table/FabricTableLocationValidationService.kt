@@ -22,7 +22,18 @@ import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.math.BlockPos
 import org.koin.core.annotation.Single
 
-/** 在 tick 邊界後登記已載入桌子，並定點驗證已載入 chunk 的預期位置。 */
+/**
+ * 在 tick 邊界後登記已載入桌子，並定點驗證已載入 chunk 的預期位置。
+ *
+ * @property locations 桌子位置與 revision 索引。
+ * @property cleanupService 清理經延遲確認仍缺失的桌子。
+ * @property diceRollPresenter 清理骰子呈現。
+ * @property tileWallPresenter 清理牌牆呈現。
+ * @property playerAreaPresenter 清理手牌與副露呈現。
+ * @property tablePropPresenter 清理桌面規則物件。
+ * @property tableCornerWidths 清理桌面角落寬度追蹤。
+ * @property discardPresenter 清理牌河呈現。
+ */
 @Single
 class FabricTableLocationValidationService(
     private val locations: TableLocationRegistry,
@@ -60,7 +71,11 @@ class FabricTableLocationValidationService(
         ServerTickEvents.END_SERVER_TICK.register(::onEndServerTick)
     }
 
-    /** 啟用指定 server session 並保留啟動期間已排入的載入事件。 */
+    /**
+     * 啟用指定 server session 並保留啟動期間已排入的載入事件。
+     *
+     * @param server 要接收延遲位置驗證工作的伺服器 session。
+     */
     fun startSession(server: MinecraftServer) {
         activeServer = server
         validationQueue.startSession(server)
@@ -96,7 +111,11 @@ class FabricTableLocationValidationService(
         readyTableLoads = nextTableLoads.also { nextTableLoads = mutableListOf() }
     }
 
-    /** 在 BlockEntity NBT 完成載入後登記目前 UUID 與位置。 */
+    /**
+     * 在 BlockEntity NBT 完成載入後登記目前 UUID 與位置。
+     *
+     * @param request 已完成載入事件所記錄的世界與位置。
+     */
     private fun processTableLoad(request: PendingTableLoad) {
         if (!isUsable(request.world, request.pos.x shr 4, request.pos.z shr 4)) return
         val table = request.world.getBlockEntity(request.pos) as? MahjongTableBlockEntity ?: return
@@ -113,7 +132,14 @@ class FabricTableLocationValidationService(
         }
     }
 
-    /** 取得指定 chunk 的目前位置索引。 */
+    /**
+     * 取得指定 chunk 的目前位置索引。
+     *
+     * @param world chunk 所在世界。
+     * @param chunkX chunk X 座標。
+     * @param chunkZ chunk Z 座標。
+     * @return 位於該維度與 chunk 的桌子索引項目。
+     */
     private fun entriesForChunk(world: ServerWorld, chunkX: Int, chunkZ: Int): Collection<TableLocationEntry> {
         val key = DimensionChunkKey(world.registryKey.value.toString(), chunkX, chunkZ)
         return locations.getByChunk(key)
@@ -128,6 +154,8 @@ class FabricTableLocationValidationService(
      * （含摸牌位／副露）／規則桌面物件／牌河這幾個 presenter 管理的 entity，再清權威 Room／Game 狀態；先前
      * 這裡漏掉了 presenter 清除，只清權威狀態，會讓已經生成的管理中麻將牌 entity 變成沒有任何權威
      * 資料支撐的孤兒，永遠留在世界存檔裡。
+     *
+     * @param entry 第二次確認後仍缺失的位置索引項目。
      */
     private suspend fun cleanupMissing(entry: TableLocationEntry) {
         logger.debug(
@@ -153,11 +181,24 @@ class FabricTableLocationValidationService(
         cleanupService.cleanupMissing(entry.tableId, entry.revision)
     }
 
-    /** 確認 request 仍屬於目前 session 且 chunk 仍已載入。 */
+    /**
+     * 確認 request 仍屬於目前 session 且 chunk 仍已載入。
+     *
+     * @param world chunk 所在世界。
+     * @param chunkX chunk X 座標。
+     * @param chunkZ chunk Z 座標。
+     * @return 世界仍屬於作用中的伺服器且 chunk 已載入時為 true。
+     */
     private fun isUsable(world: ServerWorld, chunkX: Int, chunkZ: Int): Boolean = world.server === activeServer &&
         world.chunkManager.isChunkLoaded(chunkX, chunkZ)
 
-    /** 定點確認 BlockEntity 類型與 UUID 都符合索引。 */
+    /**
+     * 定點確認 BlockEntity 類型與 UUID 都符合索引。
+     *
+     * @param world 預期桌子所在世界。
+     * @param entry 位置索引中的桌子 UUID 與座標。
+     * @return 指定方塊為完整且 UUID 相符的麻將桌時為 true。
+     */
     private fun matchesExpectedTable(world: ServerWorld, entry: TableLocationEntry): Boolean {
         val location: TableLocation = entry.location
         val table = world.getBlockEntity(BlockPos(location.x, location.y, location.z)) as? MahjongTableBlockEntity
@@ -168,11 +209,14 @@ class FabricTableLocationValidationService(
         return complete
     }
 
-    /** 尚待 BlockEntity NBT 完成載入的位置。 */
+    /**
+     * 尚待 BlockEntity NBT 完成載入的位置。
+     *
+     * @property world BlockEntity 所在世界。
+     * @property pos BlockEntity 所在座標。
+     */
     private data class PendingTableLoad(
-        /** BlockEntity 所在世界。 */
         val world: ServerWorld,
-        /** BlockEntity 所在座標。 */
         val pos: BlockPos,
     )
 }

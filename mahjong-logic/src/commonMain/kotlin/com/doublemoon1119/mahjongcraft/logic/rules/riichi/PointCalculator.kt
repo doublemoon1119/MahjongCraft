@@ -85,6 +85,7 @@ object PointCalculator {
      * @param basicPoint 基本點。
      * @param isDealer 贏家是否為莊家。
      * @param isTsumo 是否為自摸。
+     * @return 依莊家身分與和牌方式計算的付款結果。
      */
     private fun buildPointResult(basicPoint: Int, isDealer: Boolean, isTsumo: Boolean): RiichiPointResult {
         if (!isTsumo) {
@@ -121,6 +122,7 @@ object PointCalculator {
      * @param paoYakuMultiplier 觸發包牌責任的那個役滿本身的倍數（大三元 1、大四喜 2）。
      * @param isDealer 贏家是否為莊家。
      * @param isTsumo 是否為自摸。
+     * @return 包牌付款與可能由其他役滿產生的剩餘付款。
      */
     private fun buildPaoPointResult(
         yakumanMultiplier: Int,

@@ -5,4 +5,13 @@ import kotlinx.serialization.Serializable
 
 /** [GameAction.KanType] 的 persistence DTO。 */
 @Serializable
-enum class KanTypePersistenceDto { OPEN_KAN, CLOSED_KAN, ADDED_KAN }
+enum class KanTypePersistenceDto {
+    /** 明槓。 */
+    OPEN_KAN,
+
+    /** 暗槓。 */
+    CLOSED_KAN,
+
+    /** 加槓。 */
+    ADDED_KAN,
+}

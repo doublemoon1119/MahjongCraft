@@ -7,10 +7,21 @@ import kotlin.test.assertTrue
 
 /** 驗證鳴牌提示的牌組排列：一列等距的直立牌，置中於原點。 */
 class TileGroupPreviewLayoutTest {
+    /** 測試牌面的寬度。 */
     private val tileWidth = 20f
+
+    /** 測試牌面的高度。 */
     private val tileHeight = 28f
+
+    /** 測試牌面之間的間距。 */
     private val gap = 2f
 
+    /**
+     * 以測試尺寸建立預覽牌列。
+     *
+     * @param entries 依顯示順序排列的牌組項目。
+     * @return 使用固定測試尺寸計算的牌組版面。
+     */
     private fun layoutOf(vararg entries: TileGroupPreviewEntry) = TileGroupPreviewLayoutCalculator.calculate(entries.toList(), tileWidth, tileHeight, gap)
 
     /** 牌依傳入順序等距排開，整列水平置中於原點，垂直維持同一列。 */

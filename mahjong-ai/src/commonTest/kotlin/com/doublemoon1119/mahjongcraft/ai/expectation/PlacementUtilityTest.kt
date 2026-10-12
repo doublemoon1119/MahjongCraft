@@ -44,7 +44,13 @@ class PlacementUtilityTest {
         assertEquals(3000.0, disabled.loss(3000.0))
     }
 
-    /** 東風戰第 [sequenceIndex] + 1 局、以南家為評估者的名次換算。 */
+    /**
+     * 建立東風戰第 [sequenceIndex] + 1 局、以南家為評估者的名次換算。
+     *
+     * @param sequenceIndex 局數的零起始索引。
+     * @param considersPlacement 是否啟用名次換算設定。
+     * @return 對應賽程位置與設定的換算器。
+     */
     private fun utility(sequenceIndex: Int, considersPlacement: Boolean): PlacementUtility = PlacementUtility.from(
         snapshot = snapshotAt(sequenceIndex),
         selfId = selfId,
@@ -53,7 +59,12 @@ class PlacementUtilityTest {
         stepPoints = STEP_POINTS,
     )
 
-    /** 東風戰第 [sequenceIndex] + 1 局的快照。 */
+    /**
+     * 建立東風戰第 [sequenceIndex] + 1 局的快照。
+     *
+     * @param sequenceIndex 局數的零起始索引。
+     * @return 該局數的桌況快照。
+     */
     private fun snapshotAt(sequenceIndex: Int): TableStateSnapshot = table(players)
         .copy(
             config = RiichiRuleConfig(gameLength = RiichiGameLength.East),

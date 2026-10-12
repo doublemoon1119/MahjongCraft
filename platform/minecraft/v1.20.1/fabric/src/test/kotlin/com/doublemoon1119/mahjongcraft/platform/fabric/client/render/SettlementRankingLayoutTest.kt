@@ -113,7 +113,13 @@ class SettlementRankingLayoutTest {
         assertEquals("±0", SettlementRankingLayout.formatDelta(0))
     }
 
-    /** 以兩個面板共用的欄位建立版面：頭像 10、分數 48、增減 56。 */
+    /**
+     * 以共用欄位建立結算排名版面。
+     *
+     * @param statusWidth 狀態欄寬；null 表示不顯示狀態欄。
+     * @param panelPadding 面板左右留白寬度。
+     * @return 使用固定頭像、分數及增減欄寬的版面。
+     */
     private fun layout(
         statusWidth: Float?,
         panelPadding: Float,

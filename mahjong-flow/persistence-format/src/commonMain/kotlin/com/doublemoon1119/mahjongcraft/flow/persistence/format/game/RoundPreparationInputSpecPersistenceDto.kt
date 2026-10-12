@@ -11,25 +11,23 @@ sealed interface RoundPreparationInputSpecPersistenceDto {
     @SerialName("confirmation")
     data object Confirmation : RoundPreparationInputSpecPersistenceDto
 
-    /** 單選輸入。 */
-    @Serializable
-    @SerialName("single_choice")
     /**
-     * SingleChoice 的 persistence 資料型別。
+     * 單選輸入規格。
      *
      * @property optionIds 可選項目的識別碼。
      */
+    @Serializable
+    @SerialName("single_choice")
     data class SingleChoice(val optionIds: List<String>) : RoundPreparationInputSpecPersistenceDto
 
-    /** 牌張選擇輸入。 */
-    @Serializable
-    @SerialName("tile_selection")
     /**
-     * TileSelection 的 persistence 資料型別。
+     * 牌張選擇輸入規格。
      *
      * @property eligibleTileIds 可選取的牌張識別碼。
      * @property minCount 允許選取的最少數量。
      * @property maxCount 允許選取的最多數量。
      */
+    @Serializable
+    @SerialName("tile_selection")
     data class TileSelection(val eligibleTileIds: Set<String>, val minCount: Int, val maxCount: Int) : RoundPreparationInputSpecPersistenceDto
 }

@@ -24,6 +24,7 @@ import kotlin.test.assertTrue
 
 /** [RiichiWinSettlementDetailResolver] 輸出的日麻語意詳情與特殊 outcome 判別測試。 */
 class RiichiWinSettlementDetailResolverTest {
+    /** 和牌詳情使用的立直規則設定。 */
     private val config = RiichiRuleConfig()
 
     /**
@@ -171,6 +172,11 @@ class RiichiWinSettlementDetailResolverTest {
         assertNull(RiichiWinSettlementDetailResolver.resolveSpecialOutcome(state, outcome))
     }
 
-    /** 取得指定欄位的值。 */
+    /**
+     * 取得指定詳情欄位的值。
+     *
+     * @param id 欄位識別碼。
+     * @return 第一個相符欄位的值；不存在時為 null。
+     */
     private fun List<WinSettlementDetailField>.value(id: String): WinSettlementDetailValue? = firstOrNull { it.id == id }?.value
 }

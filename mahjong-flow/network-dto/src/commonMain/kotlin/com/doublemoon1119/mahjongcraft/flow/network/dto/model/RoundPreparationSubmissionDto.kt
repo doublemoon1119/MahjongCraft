@@ -11,23 +11,21 @@ sealed interface RoundPreparationSubmissionDto {
     @SerialName("confirmed")
     data object Confirmed : RoundPreparationSubmissionDto
 
-    /** 單選結果。 */
-    @Serializable
-    @SerialName("choice")
     /**
-     * Choice 網路 DTO。
+     * 單選提交結果。
      *
      * @property optionId 選定的選項識別碼。
      */
+    @Serializable
+    @SerialName("choice")
     data class Choice(val optionId: String) : RoundPreparationSubmissionDto
 
-    /** 牌張選擇結果。 */
-    @Serializable
-    @SerialName("tiles")
     /**
-     * Tiles 網路 DTO。
+     * 牌張選擇提交結果。
      *
      * @property tileIds 牌的識別碼集合。
      */
+    @Serializable
+    @SerialName("tiles")
     data class Tiles(val tileIds: Set<String>) : RoundPreparationSubmissionDto
 }

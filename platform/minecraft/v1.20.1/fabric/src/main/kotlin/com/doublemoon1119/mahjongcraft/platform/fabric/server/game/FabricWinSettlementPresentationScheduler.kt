@@ -24,13 +24,31 @@ import net.minecraft.util.math.BlockPos
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
-/** 將平台無關 request 轉成可持久化 Fabric 胡牌結算舞台。 */
+/**
+ * 將平台無關 request 轉成可持久化 Fabric 胡牌結算舞台。
+ *
+ * @property templateRegistry 查詢規則專屬胡牌結算版型與格式器。
+ * @property overlays 管理桌面 overlay 的暫時隱藏。
+ * @property spawnGateway 生成並追蹤舞台 entity。
+ */
 @Single
 class FabricWinSettlementPresentationScheduler(
     private val templateRegistry: WinSettlementPresentationTemplateRegistry,
     private val overlays: PersistentTableOverlayCoordinator,
     private val spawnGateway: FabricEntitySpawnGateway,
 ) {
+    /**
+     * 排程並生成結算舞台；成功時依內容隱藏桌面 overlay 至舞台交接完成。
+     *
+     * @param world 生成舞台的世界。
+     * @param tableId 對局所在牌桌識別碼。
+     * @param controllerPos 牌桌 controller 方塊位置。
+     * @param placement 舞台的位置與朝向。
+     * @param earliestStartGameTime 舞台可開始的最早絕對 game time。
+     * @param request 胡牌結算舞台顯示資料。
+     * @param tileAssetsById 牌張識別碼到可顯示素材 key 的對應。
+     * @return 舞台固定結束的絕對 game time；未能生成時為 null。
+     */
     fun schedule(
         world: ServerWorld,
         tableId: Uuid,
@@ -109,6 +127,15 @@ class FabricWinSettlementPresentationScheduler(
         return stage.endGameTime
     }
 
+    /**
+     * 依贏家揭示時間軸建立聲音事件快照。
+     *
+     * @param winners 要顯示的贏家快照。
+     * @param reveal 版型的聲音與揭示設定。
+     * @param timing 舞台各階段的時間長度。
+     * @param scoreRevealDelayTicks 分數揭示延遲的 tick 數。
+     * @return 依時間軸排序的聲音快照。
+     */
     private fun buildSoundCues(
         winners: List<WinSettlementWinnerSnapshot>,
         reveal: WinSettlementRevealSequence,
@@ -164,7 +191,12 @@ class FabricWinSettlementPresentationScheduler(
     }
 }
 
-/** 把一個顯示條目攤平成快照欄位，順序與數量見 [WinSettlementPresentationEntity.ENTRY_VALUE_COUNT]。 */
+/**
+ * 把一個顯示條目攤平成快照欄位，順序與數量見 [WinSettlementPresentationEntity.ENTRY_VALUE_COUNT]。
+ *
+ * @param entry 要轉換的顯示條目。
+ * @return 依持久化欄位順序展開的字串。
+ */
 private fun entrySnapshotValues(entry: PresentationValue.EntryListValue.Entry): List<String> = listOf(
     entry.translationKey,
     entry.trailingText,

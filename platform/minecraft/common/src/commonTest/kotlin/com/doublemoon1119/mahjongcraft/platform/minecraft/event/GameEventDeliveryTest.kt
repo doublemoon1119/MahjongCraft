@@ -382,12 +382,25 @@ class GameEventDeliveryTest {
         assertEquals(listOf(game.matchId), received)
     }
 
-    /** 建立單一開始事件監聽端點。 */
+    /**
+     * 建立單一開始事件監聽端點。
+     *
+     * @param listener 收到事件時呼叫的測試監聽器。
+     * @return 已建立並註冊監聽器的事件端點。
+     */
     private fun endpoint(listener: (MatchStartedEvent, GameEventContext) -> Unit): MahjongCraftEvent<MatchStartedListener> = MahjongCraftEvent.create<MatchStartedListener>().also {
         it.register(MatchStartedListener(listener))
     }
 
-    /** 建立使用指定測試端點的事件交付器。 */
+    /**
+     * 建立使用指定測試端點的事件交付器。
+     *
+     * @param scheduler 控制工作執行時機的測試排程器。
+     * @param endpoint 開始事件監聽端點。
+     * @param locations 提供桌子位置的測試來源。
+     * @param reporter 收集交付診斷的測試回報器。
+     * @return 配置完成的事件交付器。
+     */
     private fun delivery(
         scheduler: ManualScheduler,
         endpoint: MahjongCraftEvent<MatchStartedListener>,
@@ -405,7 +418,11 @@ class GameEventDeliveryTest {
         matchEnded = MahjongCraftEvent.create(),
     )
 
-    /** 建立一筆對局開始事實。 */
+    /**
+     * 建立一筆對局開始事實。
+     *
+     * @return 包含本測試對局開始事件的已提交事實。
+     */
     private fun startFacts(): CommittedGameFacts = CommittedGameFacts(
         venueId = game.id,
         previousGame = null,
@@ -413,7 +430,11 @@ class GameEventDeliveryTest {
         facts = listOf(HistoryEventDraft(null, HistoryFact.MatchStarted(game.tableState, GameFlowConfig(), emptyMap()))),
     )
 
-    /** 建立測試用四人日麻對局。 */
+    /**
+     * 建立測試用四人日麻對局。
+     *
+     * @return 四人各帶 25,000 分的日麻對局。
+     */
     private fun game(): Game {
         val players = listOf(Wind.EAST, Wind.SOUTH, Wind.WEST, Wind.NORTH).map { wind ->
             FakeMahjongPlayerFactory.create(initialSeat = wind).copy(score = 25_000)
@@ -429,6 +450,7 @@ class GameEventDeliveryTest {
         )
     }
 
+    /** 可由測試明確執行或令下一次失敗的排程器。 */
     private class ManualScheduler : GameEventScheduler {
         /** 尚未執行的工作。 */
         val tasks = ArrayDeque<() -> Unit>()
@@ -436,6 +458,11 @@ class GameEventDeliveryTest {
         /** 下一次排程是否故意失敗。 */
         var failNext: Boolean = false
 
+        /**
+         * 將工作加入待執行佇列，或依測試設定拒絕一次排程。
+         *
+         * @param task 要排入佇列的工作。
+         */
         override fun enqueue(task: () -> Unit) {
             if (failNext) {
                 failNext = false
@@ -444,13 +471,14 @@ class GameEventDeliveryTest {
             tasks += task
         }
 
-        /** 執行一個已排程工作。 */
+        /** 執行一個已排程工作；若佇列為空則拋出檢查例外。 */
         fun runNext() {
             check(tasks.isNotEmpty())
             tasks.removeFirst().invoke()
         }
     }
 
+    /** 記錄交付過程發生的位置缺漏與 listener 失敗。 */
     private class RecordingReporter : GameEventDeliveryReporter {
         /** 找不到位置的事件。 */
         val missingLocations = mutableListOf<Pair<Uuid, Uuid>>()
@@ -458,17 +486,35 @@ class GameEventDeliveryTest {
         /** 監聽者失敗次數。 */
         var listenerFailures: Int = 0
 
+        /**
+         * 記錄缺少桌位的比賽與場地識別碼。
+         *
+         * @param matchId 比賽 UUID。
+         * @param venueId 場地 UUID。
+         */
         override fun missingLocation(matchId: Uuid, venueId: Uuid) {
             missingLocations += matchId to venueId
         }
 
+        /**
+         * 累計監聽者失敗次數。
+         *
+         * @param event 觸發失敗的事件。
+         * @param cause 監聽者拋出的原因。
+         */
         override fun listenerFailed(event: MatchEvent, cause: Throwable) {
             listenerFailures++
         }
 
+        /**
+         * 排程失敗不另行記錄，測試直接檢查保留與重試結果。
+         *
+         * @param cause 排程器拋出的原因。
+         */
         override fun schedulingFailed(cause: Throwable) = Unit
     }
 
+    /** 共用測試規則模組識別碼。 */
     private companion object {
         /** 測試規則模組 ID。 */
         const val RULE_MODULE_ID = "mahjongcraft:riichi"

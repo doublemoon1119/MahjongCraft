@@ -28,6 +28,9 @@ import kotlin.uuid.Uuid
  * `MahjongTileSelectionConfirmEntityRenderer`），其餘 instance 純粹提供額外可點擊範圍；每個 instance
  * 是否真的回應右鍵由 [isActive] 決定，每幀依目前實際渲染出的文字寬度重新計算，讓可點擊範圍精確貼合
  * 當下顯示的文字，而不是整組 instance 涵蓋的固定最大寬度。
+ *
+ * @param type Minecraft entity 類型。
+ * @param world 實體所屬世界。
  */
 class MahjongTileSelectionConfirmEntity(
     type: EntityType<out MahjongTileSelectionConfirmEntity> = ModEntities.mahjongTileSelectionConfirm,
@@ -111,6 +114,11 @@ class MahjongTileSelectionConfirmEntity(
     /**
      * 指派這個確認面板屬於哪位玩家、哪張桌子、在整組拼湊面板中的位置索引（見 [segmentIndex]），並標記
      * 是否為負責顯示的那個 instance（見 [isPrimary]）。
+     *
+     * @param tableId 所屬麻將桌 UUID。
+     * @param playerId 可互動確認面板的玩家 UUID。
+     * @param segmentIndex 此面板片段在排列中的索引。
+     * @param isPrimary 是否為負責繪製面板的主要片段。
      */
     fun assignToHolder(tableId: Uuid, playerId: Uuid, segmentIndex: Int, isPrimary: Boolean) {
         check(!world.isClient) { "Confirm panel holder must be assigned by the server" }
@@ -120,16 +128,34 @@ class MahjongTileSelectionConfirmEntity(
         this.isPrimary = isPrimary
     }
 
-    /** 確認面板沒有專屬瞬間動畫。 */
+    /**
+     * 確認面板沒有專屬瞬間動畫。
+     *
+     * @param step 不支援的自訂動畫步驟（型別本身為 `Nothing`）。
+     */
     override fun applyCustomStep(step: Nothing) = error("Tile selection confirm panel has no custom animation step")
 
-    /** 確認面板不支援位移動畫。 */
+    /**
+     * 確認面板不支援位移動畫。
+     *
+     * @param step 不支援的位移動畫步驟。
+     * @param startGameTime 位移動畫原定的絕對開始時間；此 entity 不接受該步驟。
+     */
     override fun applyPlayMotion(step: AnimationStep.PlayMotion, startGameTime: Long) = error("Tile selection confirm panel does not support motion animation")
 
-    /** 確認面板沒有可序列化的專屬動畫。 */
+    /**
+     * 確認面板沒有可序列化的專屬動畫。
+     *
+     * @param step 不支援的自訂動畫步驟（型別本身為 `Nothing`）。
+     * @param nbt 動畫步驟原定寫入的 NBT；此 entity 不接受該步驟。
+     */
     override fun serializeCustomStep(step: Nothing, nbt: NbtCompound) = error("Tile selection confirm panel has no custom animation step")
 
-    /** 確認面板沒有可還原的專屬動畫。 */
+    /**
+     * 確認面板沒有可還原的專屬動畫。
+     *
+     * @param nbt 動畫步驟原定讀取的 NBT；此 entity 不接受自訂動畫步驟。
+     */
     override fun deserializeCustomStep(nbt: NbtCompound): Nothing = error("Tile selection confirm panel has no custom animation step")
 
     override fun initDataTracker() {
@@ -139,6 +165,11 @@ class MahjongTileSelectionConfirmEntity(
         dataTracker.startTracking(SEGMENT_INDEX, 0)
     }
 
+    /**
+     * 從世界存檔還原面板持有者、桌子及拼湊片段資料。
+     *
+     * @param nbt entity 的持久化資料。
+     */
     override fun readCustomDataFromNbt(nbt: NbtCompound) {
         holderId = nbt.getString(NBT_KEY_HOLDER_ID)
             .takeIf(String::isNotBlank)
@@ -150,6 +181,11 @@ class MahjongTileSelectionConfirmEntity(
         segmentIndex = nbt.getInt(NBT_KEY_SEGMENT_INDEX)
     }
 
+    /**
+     * 將面板持有者、桌子及拼湊片段資料寫入世界存檔。
+     *
+     * @param nbt 接收 entity 持久化資料的 NBT。
+     */
     override fun writeCustomDataToNbt(nbt: NbtCompound) {
         holderId?.let { nbt.putString(NBT_KEY_HOLDER_ID, it.toString()) }
         managedTableId?.let { nbt.putString(NBT_KEY_MANAGED_TABLE_ID, it.toString()) }
@@ -169,9 +205,16 @@ class MahjongTileSelectionConfirmEntity(
         /** 面板高度，固定值，理由同 [WIDTH]。 */
         const val HEIGHT: Float = 0.5f
 
+        /** 面板持有者 UUID 的世界存檔 key。 */
         private const val NBT_KEY_HOLDER_ID = "HolderId"
+
+        /** 所屬麻將桌 UUID 的世界存檔 key。 */
         private const val NBT_KEY_MANAGED_TABLE_ID = "ManagedTableId"
+
+        /** 是否為主要顯示片段的世界存檔 key。 */
         private const val NBT_KEY_IS_PRIMARY = "IsPrimary"
+
+        /** 拼湊片段索引的世界存檔 key。 */
         private const val NBT_KEY_SEGMENT_INDEX = "SegmentIndex"
 
         /** fallback 自動清除門檻（見 [tick]）——5 分鐘，遠大於正常選牌所需時間，只用來兜底意外情境。 */

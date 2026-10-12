@@ -33,7 +33,11 @@ class ModSoundResourceTest {
         expectedSounds.values.toSet().forEach(::assertMonoFortyEightKilohertzVorbis)
     }
 
-    /** 驗證指定資源的 Vorbis identification header 宣告單聲道與 48 kHz。 */
+    /**
+     * 驗證指定資源的 Vorbis 識別標頭宣告單聲道與 48 kHz。
+     *
+     * @param resourcePath 帶命名空間、不含副檔名的聲音資源路徑。
+     */
     private fun assertMonoFortyEightKilohertzVorbis(resourcePath: String) {
         val path = "/assets/${resourcePath.substringBefore(':')}/sounds/${resourcePath.substringAfter(':')}.ogg"
         val bytes = checkNotNull(javaClass.getResourceAsStream(path)).use { it.readBytes() }
@@ -46,7 +50,12 @@ class ModSoundResourceTest {
         assertEquals(EXPECTED_SAMPLE_RATE, sampleRate, "Sound must use 48 kHz: $resourcePath")
     }
 
-    /** 尋找 [subsequence] 在位元組陣列中的第一個起點；找不到時回傳 `-1`。 */
+    /**
+     * 尋找指定的連續位元組序列。
+     *
+     * @param subsequence 要尋找的位元組序列。
+     * @return 第一個符合的起點；找不到時為 `-1`。
+     */
     private fun ByteArray.findSubsequence(subsequence: ByteArray): Int = indices.firstOrNull { startIndex ->
         startIndex + subsequence.size <= size && subsequence.indices.all { index -> this[startIndex + index] == subsequence[index] }
     } ?: -1
@@ -71,6 +80,7 @@ class ModSoundResourceTest {
         MahjongAnimationSounds.WIN_LIGHTNING to "mahjongcraft:win/lightning",
     )
 
+    /** Vorbis 檔案格式驗證使用的常數。 */
     private companion object {
         /** Vorbis identification header 中聲道數相對 packet type 的位移。 */
         const val VORBIS_CHANNEL_OFFSET: Int = 11

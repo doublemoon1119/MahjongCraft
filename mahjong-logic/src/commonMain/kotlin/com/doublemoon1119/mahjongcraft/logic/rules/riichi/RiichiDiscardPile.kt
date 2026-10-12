@@ -11,6 +11,8 @@ import kotlin.uuid.Uuid
  * 明確指定紀錄型別為 [RiichiDiscardEntry]，以便精確追蹤立直與振聽相關狀態。
  *
  * 本類別為不可變值物件：[discard]、[takeLast] 皆不修改原實例，而是回傳新的 [RiichiDiscardPile] 實例。
+ *
+ * @property _entries 依捨牌順序保存的日本麻將捨牌紀錄。
  */
 data class RiichiDiscardPile(
     private val _entries: List<RiichiDiscardEntry> = emptyList(),

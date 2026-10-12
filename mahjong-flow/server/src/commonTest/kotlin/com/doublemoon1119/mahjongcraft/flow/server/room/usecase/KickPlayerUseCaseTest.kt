@@ -23,8 +23,13 @@ import kotlin.uuid.Uuid
  */
 class KickPlayerUseCaseTest {
 
+    /** 測試房間的識別碼。 */
     private val roomId: Uuid = Uuid.random()
+
+    /** 測試房間房主的玩家識別碼。 */
     private val hostId: Uuid = Uuid.random()
+
+    /** 測試房間使用的規則設定。 */
     private val config: MahjongRuleConfig = FakeMahjongRuleConfig()
 
     /**
@@ -99,7 +104,7 @@ class KickPlayerUseCaseTest {
     }
 
     /**
-     * 測試當房主試圖剔除自己時應拋出異常。
+     * 驗證房主嘗試剔除自己時回傳錯誤結果。
      */
     @Test
     fun `test host cannot kick themselves`() = runTest {
@@ -116,7 +121,7 @@ class KickPlayerUseCaseTest {
     }
 
     /**
-     * 測試非房主玩家試圖剔除他人時應拋出異常。
+     * 驗證非房主嘗試剔除其他玩家時回傳錯誤結果。
      */
     @Test
     fun `test non host cannot kick player`() = runTest {

@@ -9,15 +9,16 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollbarLayou
  * 計算座標。進行中對局的卡片內另有一段可捲動的資訊清單，它的幾何由 [infoScrollbar] 與相關成員提供。
  *
  * 純資料，不依賴任何 Minecraft 型別；視窗尺寸、玩家數與捲動位置都由呼叫端傳入。
+ *
+ * @property windowWidth 目前視窗寬度。
+ * @property windowHeight 目前視窗高度。
+ * @property playerCount 目前要排版的玩家數。
+ * @property scrollIndex 目前第一個可見列的索引。
  */
 internal data class RoomMemberGridLayout(
-    /** 目前視窗寬度。 */
     val windowWidth: Int,
-    /** 目前視窗高度。 */
     val windowHeight: Int,
-    /** 目前要排版的玩家數。 */
     val playerCount: Int,
-    /** 目前第一個可見列的 index。 */
     val scrollIndex: Int,
 ) {
     /** 排版時至少視為一位玩家，避免空清單算出零欄。 */
@@ -60,19 +61,46 @@ internal data class RoomMemberGridLayout(
     /** 卡片內資訊清單一次能顯示幾行。 */
     val visibleInfoRows: Int = ((CARD_HEIGHT - INFO_OFFSET) / INFO_ROW_HEIGHT).coerceAtLeast(1)
 
-    /** 指定列的卡片頂端 Y。 */
+    /**
+     * 計算指定列的卡片頂端。
+     *
+     * @param row 從零開始的完整清單列索引。
+     * @return 扣除捲動偏移後的頂端 Y 座標。
+     */
     fun cardTop(row: Int): Int = CARD_TOP + (row - scrollIndex) * ROW_HEIGHT
 
-    /** 指定列的卡片底端 Y。 */
+    /**
+     * 計算指定列的卡片底端。
+     *
+     * @param row 從零開始的完整清單列索引。
+     * @return 卡片底端的 Y 座標。
+     */
     fun cardBottom(row: Int): Int = cardTop(row) + CARD_HEIGHT
 
-    /** 指定列資訊清單的起始 Y。 */
+    /**
+     * 計算指定列資訊清單的起點。
+     *
+     * @param row 從零開始的完整清單列索引。
+     * @return 資訊清單頂端的 Y 座標。
+     */
     fun infoTop(row: Int): Int = cardTop(row) + INFO_OFFSET
 
-    /** 資訊清單的最大合法捲動位置。 */
+    /**
+     * 計算資訊清單的最大合法捲動位置。
+     *
+     * @param totalInfoRows 完整資訊清單的行數。
+     * @return 最大首行索引；內容未超出可見範圍時為零。
+     */
     fun maximumInfoScroll(totalInfoRows: Int): Int = (totalInfoRows - visibleInfoRows).coerceAtLeast(0)
 
-    /** 指定列資訊清單 scrollbar 的垂直幾何；每列各自一段，共用同一個捲動位置。 */
+    /**
+     * 建立指定列資訊清單捲軸的垂直幾何。
+     *
+     * @param row 從零開始的完整清單列索引。
+     * @param totalInfoRows 完整資訊清單的行數。
+     * @param infoScrollIndex 資訊清單第一個可見行的索引。
+     * @return 該列資訊區的捲軸幾何。
+     */
     fun infoScrollbar(row: Int, totalInfoRows: Int, infoScrollIndex: Int): ScrollbarLayout = ScrollbarLayout(
         trackTop = infoTop(row),
         trackBottom = cardBottom(row),
@@ -82,13 +110,26 @@ internal data class RoomMemberGridLayout(
         minimumThumbHeight = MINIMUM_THUMB_HEIGHT,
     )
 
-    /** 游標是否落在卡片 grid scrollbar 的可拖曳範圍內；內容未超出可見範圍時不可拖曳。 */
+    /**
+     * 判斷游標是否落在成員卡片捲軸的命中範圍內；內容未超出可見範圍時回傳 false。
+     *
+     * @param mouseX 游標水平座標。
+     * @param mouseY 游標垂直座標。
+     * @return 需要捲動且游標位於命中範圍內時為 true。
+     */
     fun isOverGridScrollbar(mouseX: Double, mouseY: Double): Boolean = rows > visibleRows &&
         scrollbarColumn.containsHorizontally(mouseX) &&
         mouseY >= CARD_TOP &&
         mouseY <= gridBottom
 
-    /** 游標所在的那一列資訊 scrollbar 索引；不在任何一列範圍內時為 `null`。 */
+    /**
+     * 尋找游標所在的可見資訊捲軸列。
+     *
+     * @param mouseX 游標水平座標。
+     * @param mouseY 游標垂直座標。
+     * @param totalInfoRows 每列資訊清單的完整行數。
+     * @return 完整清單中的列索引；不需捲動或未命中任何可見列時為 null。
+     */
     fun infoScrollbarRowAt(mouseX: Double, mouseY: Double, totalInfoRows: Int): Int? {
         if (maximumInfoScroll(totalInfoRows) <= 0) return null
         if (!scrollbarColumn.containsHorizontally(mouseX)) return null

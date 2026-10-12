@@ -26,9 +26,16 @@ import kotlin.uuid.Uuid
  */
 class UpdateConfigUseCaseTest {
 
+    /** 受測房間的識別碼。 */
     private val roomId: Uuid = Uuid.random()
+
+    /** 房主的玩家識別碼。 */
     private val hostId: Uuid = Uuid.random()
+
+    /** 受測房間目前的規則設定。 */
     private val initialConfig: MahjongRuleConfig = FakeMahjongRuleConfig()
+
+    /** 更新後的規則設定。 */
     private val newConfig: MahjongRuleConfig = FakeMahjongRuleConfig()
 
     /**
@@ -83,7 +90,7 @@ class UpdateConfigUseCaseTest {
     }
 
     /**
-     * 測試當非房主玩家試圖修改配置時，應拋出異常且數據不應變動。
+     * 驗證非房主嘗試修改設定時回傳錯誤結果，且房間設定維持不變。
      */
     @Test
     fun `test update config fails when operator is not host`() = runTest {
@@ -106,7 +113,7 @@ class UpdateConfigUseCaseTest {
     }
 
     /**
-     * 測試針對不存在的房間 ID 進行操作時應拋出異常。
+     * 驗證更新不存在的房間時回傳錯誤結果。
      */
     @Test
     fun `test update config fails when room does not exist`() = runTest {
@@ -120,6 +127,7 @@ class UpdateConfigUseCaseTest {
         assertTrue(result is Outcome.Error, "Expected Error but got $result")
     }
 
+    /** 變更規則設定時清除人類玩家的準備狀態並保留 AI 玩家狀態。 */
     @Test
     fun `changed config clears human ready state but preserves AI ready state`() = runTest {
         val roomRepo = FakeRoomRepository()
@@ -143,6 +151,7 @@ class UpdateConfigUseCaseTest {
         assertEquals(listOf(aiId), roomRepo.getRoom(roomId)?.readyPlayerIds)
     }
 
+    /** 新設定的人數上限低於現有人數時，整筆更新應被拒絕。 */
     @Test
     fun `config with smaller maximum player count is rejected atomically`() = runTest {
         val roomRepo = FakeRoomRepository()
@@ -161,6 +170,7 @@ class UpdateConfigUseCaseTest {
         assertEquals(original.gameConfig, roomRepo.getRoom(roomId)?.gameConfig)
     }
 
+    /** 停用旁觀時將旁觀者手牌可見度一併限制為隱藏。 */
     @Test
     fun `disabling spectating also hides spectator hands`() = runTest {
         val roomRepo = FakeRoomRepository()

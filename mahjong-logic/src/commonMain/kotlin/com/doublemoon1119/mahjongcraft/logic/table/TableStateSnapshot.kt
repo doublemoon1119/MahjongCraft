@@ -21,8 +21,7 @@ import kotlin.uuid.Uuid
  * @property comboCount 當前連莊次數
  * @property currentPlayerIndex 當前回合玩家的索引
  * @property dynamicRuleState 規則特定的動態桌況狀態
- * @property finishedPlayerIds 本局已完成、不再參與後續回合的玩家 Uuid 集合，供呈現層顯示牌面與
- * 觀戰狀態使用。
+ * @property finishedPlayerIds 本局已完成、不再參與後續回合的玩家 Uuid 集合。
  * @property physicalWallLayout 目前仍在牌牆中的牌張實體位置；規則不支援時為 null。
  * @property revealedHandTiles 仍在某位玩家手牌中、但已經公開的牌（見 [TableState.revealedHandTileIds]），對所有玩家
  * 可見；沒有時為空清單。
@@ -85,7 +84,11 @@ fun TableState.toSnapshot(
     )
 }
 
-/** 仍在手牌中、且列在 [TableState.revealedHandTileIds] 的牌。 */
+/**
+ * 仍在手牌中、且列在 [TableState.revealedHandTileIds] 的牌。
+ *
+ * @return 目前仍在玩家手牌中的已公開牌張。
+ */
 private fun TableState.revealedHandTiles(): List<IdentifiedTile> = players.flatMap { player ->
     player.hand.standingTiles.filter { it.id in revealedHandTileIds }
 }
@@ -96,6 +99,8 @@ private fun TableState.revealedHandTiles(): List<IdentifiedTile> = players.flatM
  * 來源包含：各家手牌與副露中看得到牌面的牌（他家立牌與暗槓是否看得到，由建立快照時的可見範圍決定）、牌河中
  * 未被鳴走的牌、移出手牌公開擺在桌上的牌、牌山中已公開的牌，以及仍在手牌中但已公開的牌。同一張牌可能同時出現在
  * 多個來源，例如被鳴走的捨牌或被搶和的牌，只計一次。
+ *
+ * @return 依實體牌張 ID 去重的可見牌列表。
  */
 fun TableStateSnapshot.visibleTiles(): List<IdentifiedTile> = buildList {
     players.forEach { player ->
@@ -110,6 +115,8 @@ fun TableStateSnapshot.visibleTiles(): List<IdentifiedTile> = buildList {
  * 這位玩家手上看得到牌面的牌：立牌、剛摸到的牌、副露與移出手牌公開擺在桌上的牌，依實體 ID 去重。
  *
  * 立牌與暗槓是否看得到，由建立快照時的可見範圍決定。
+ *
+ * @return 這位玩家快照中可見牌面的牌張，依實體 ID 去重。
  */
 fun MahjongPlayerSnapshot.heldTiles(): List<IdentifiedTile> = buildList {
     (hand.standingTiles + listOfNotNull(hand.lastDrawn) + hand.melds.flatMap { it.tiles }).forEach { snapshot ->

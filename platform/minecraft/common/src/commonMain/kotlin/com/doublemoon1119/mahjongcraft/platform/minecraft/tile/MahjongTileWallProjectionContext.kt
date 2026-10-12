@@ -28,7 +28,12 @@ data class MahjongTileWallProjectionContext(
         require(sideCount > 0) { "Wall side count must be positive" }
     }
 
-    /** 將 [placement] 投影成此桌的世界座標與朝向。 */
+    /**
+     * 將 [placement] 投影成此桌的世界座標與朝向。
+     *
+     * @param placement 抽象牌牆格位。
+     * @return 此桌中的世界座標與朝向。
+     */
     fun project(placement: TileWallPlacement): MahjongTileWallPlacement = MahjongTileTableLayout.wallPlacement(
         controllerX = controllerX,
         controllerY = controllerY,

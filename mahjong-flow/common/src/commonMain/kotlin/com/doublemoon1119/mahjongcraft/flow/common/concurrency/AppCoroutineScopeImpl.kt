@@ -10,28 +10,21 @@ import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.time.Duration
 
 /**
- * [AppCoroutineScope] 的具體實作。
+ * 使用 [SupervisorJob] 隔離子工作失敗的共用作用域。
  *
- * 採用 [SupervisorJob] 以實現異常隔離，並允許透過傳入 [CoroutineExceptionHandler] 自定義未捕獲異常的處理策略。
- *
- * @param dispatchers 提供協程執行所需的調度器。
- * @param exceptionHandler 可選的異常處理器。若為 null，則異常將傳播至協程預設的處理機制。
+ * @param dispatchers 提供作用域預設使用的調度器。
+ * @param exceptionHandler 未捕獲例外的處理器；null 時使用協程預設的例外處理機制。
  */
 class AppCoroutineScopeImpl(
     dispatchers: CoroutineDispatchers,
     exceptionHandler: CoroutineExceptionHandler? = null,
 ) : AppCoroutineScope {
 
-    /**
-     * [SupervisorJob] 本身回傳的是 [CompletableJob]（有 `complete()`），但放進 [CoroutineContext] 後
-     * 用 `coroutineContext[Job]` 拿回來的靜態型別只有 [kotlinx.coroutines.Job]——[shutdown] 需要呼叫
-     * `complete()`，所以额外保留這個型別正確的參照，不從 context 裡再拿一次。
-     */
+    /** 管理子工作，供 [shutdown] 等待完成或要求取消的根工作。 */
     private val job: CompletableJob = SupervisorJob()
 
     /**
-     * 組合協程上下文。
-     * 包含：SupervisorJob (隔離異常)、指定調度器、以及可選的異常處理器。
+     * 組合根工作、預設調度器與可選的例外處理器。
      */
     override val coroutineContext: CoroutineContext =
         job + dispatchers.default + (exceptionHandler ?: EmptyCoroutineContext)

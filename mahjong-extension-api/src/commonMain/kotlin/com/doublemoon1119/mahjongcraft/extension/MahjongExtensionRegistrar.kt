@@ -9,6 +9,8 @@ object MahjongExtensionRegistrar {
      *
      * 呼叫前已存在的登記與 [builtIn] 的登記視為內建登記；之後每個 extension 新增的登記歸在該 extension 名下。
      *
+     * @param extensions 依此順序執行登記回呼的 extension 集合。
+     * @param registries extension 要使用並在成功後凍結的 core registry 集合。
      * @param builtIn 不屬於任何規則的內建整合；沒有時為 null。
      * @return 依來源分組的所有登記：內建登記在前，接著依 [extensions] 順序排列每個 extension。
      * @throws MahjongExtensionRegistrationException 若任一 extension 註冊失敗。
@@ -33,7 +35,13 @@ object MahjongExtensionRegistrar {
         return sources
     }
 
-    /** 檢查 [extension] 的 ID 尚未使用後，依固定順序呼叫它的所有登記回呼。 */
+    /**
+     * 檢查 [extension] 的 ID 尚未使用後，依固定順序呼叫它的所有登記回呼。
+     *
+     * @param extension 要執行登記回呼的 extension。
+     * @param registries 提供給 extension 回呼使用的 core registry 集合。
+     * @param registeredExtensionIds 已使用的 extension ID 集合；目前 ID 通過檢查後會立即加入此集合。
+     */
     private fun register(
         extension: MahjongExtension,
         registries: CoreExtensionRegistries,

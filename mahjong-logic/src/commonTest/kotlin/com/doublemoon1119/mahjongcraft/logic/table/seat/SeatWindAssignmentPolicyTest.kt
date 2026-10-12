@@ -89,7 +89,14 @@ class SeatWindAssignmentPolicyTest {
         assertFailsWith<IllegalArgumentException> { missingPlayerPolicy.assignValidated(context(players, players[0])) }
     }
 
-    /** 建立測試用自風指派上下文。 */
+    /**
+     * 建立測試用自風指派上下文。
+     *
+     * @param players 依行動順序排列的玩家 ID。
+     * @param dealerPlayerId 莊家玩家 ID。
+     * @param wallOpening 可選的開門結果。
+     * @return 傳入自風 policy 的上下文。
+     */
     private fun context(
         players: List<Uuid>,
         dealerPlayerId: Uuid,

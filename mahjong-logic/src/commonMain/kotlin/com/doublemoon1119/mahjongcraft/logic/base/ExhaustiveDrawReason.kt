@@ -11,7 +11,10 @@ interface ExhaustiveDrawReason {
     val id: String
 
     /**
-     * 選擇宣告這個流局理由的動作後，呈現層要預覽哪些立牌；預設不特別預覽（回傳空清單）。
+     * 選擇宣告這個流局理由的動作後，供呼叫端預覽哪些立牌；預設不特別預覽（回傳空清單）。
+     *
+     * @param hand 宣告流局的玩家手牌。
+     * @return 此理由要求預覽的牌；不需預覽時為空清單。
      */
     fun previewTiles(hand: Hand): List<Tile> = emptyList()
 }

@@ -59,7 +59,36 @@ import org.koin.core.annotation.Single
 /** Minecraft loader 與版本無關、client／server 共用的 Koin 定義。 */
 @Module
 class MinecraftCommonModule {
-    /** 將 Koin 管理的 Minecraft presentation registry single 組成 bootstrap 專用集合。 */
+    /**
+     * 將 Koin 管理的 Minecraft presentation registry single 組成 bootstrap 專用集合。
+     *
+     * @param gameActionVocabularyRegistry 各規則動作用語來源。
+     * @param automaticControlDisplayRegistry 自動操作顯示資料來源。
+     * @param decisionStatusDisplayNameRegistry 捨牌分析狀態名稱來源。
+     * @param aiStrategyDisplayNameRegistry AI 策略名稱來源。
+     * @param playerPortraitSourceRegistry 玩家頭像來源。
+     * @param publicPlayerIndicatorDisplayRegistry 公開玩家指示器顯示來源。
+     * @param roundPreparationDisplayNameRegistry 開局準備名稱來源。
+     * @param gameConfigPresentationRegistry 房間設定呈現來源。
+     * @param roomMemberAppearanceSourceRegistry 房間成員外觀來源。
+     * @param ruleModuleDisplayNameRegistry 規則模組名稱來源。
+     * @param exhaustiveDrawReasonDisplayNameRegistry 流局原因名稱來源。
+     * @param roundOutcomeDisplayNameRegistry 本局結果名稱來源。
+     * @param historyDiscardMarkerDisplayRegistry 歷史牌河標記呈現來源。
+     * @param matchSettlementTemplateRegistry 終局結算模板來源。
+     * @param winSettlementTemplateRegistry 胡牌結算模板來源。
+     * @param winCelebrationShowcaseRegistry 胡牌 showcase 來源。
+     * @param gameActionSoundPresentationRegistry 遊戲動作音效來源。
+     * @param roundInfoLineDisplayRegistry 局況顯示行來源。
+     * @param tablePropDescriberRegistry 桌上物件描述來源。
+     * @param tileAssetRegistry 牌面資產來源。
+     * @param tileDisplayNameRegistry 牌面名稱來源。
+     * @param tileEmojiRegistry 牌面 emoji 來源。
+     * @param tileLabelRegistry 牌面輔助標籤來源。
+     * @param ruleCatalogueRegistry 規則說明目錄來源。
+     * @param gameAchievementResolverRegistry 規則專屬成果判定來源。
+     * @return 供 extension bootstrap 註冊及凍結使用的呈現 registry 集合。
+     */
     @Single
     fun provideMinecraftPresentationRegistries(
         gameActionVocabularyRegistry: GameActionVocabularyRegistry,
@@ -127,7 +156,13 @@ class MinecraftCommonModule {
     @Single
     fun provideGameActionSoundPresentationRegistry(): GameActionSoundPresentationRegistry = GameActionSoundPresentationRegistryImpl()
 
-    /** 建立 GUI 與聊天 hover 共用的設定解析器。 */
+    /**
+     * 建立 GUI 與聊天 hover 共用的設定解析器。
+     *
+     * @param registry 宣告式設定呈現資料來源。
+     * @param moduleRegistry 提供設定對應規則模組的 registry。
+     * @return 可解析 GUI 與聊天 hover 設定呈現的元件。
+     */
     @Single
     fun provideGameConfigPresentationResolver(
         registry: GameConfigPresentationRegistry,

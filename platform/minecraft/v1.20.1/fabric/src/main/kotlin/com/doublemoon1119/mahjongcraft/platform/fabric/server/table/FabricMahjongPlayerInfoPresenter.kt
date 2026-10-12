@@ -22,7 +22,12 @@ import net.minecraft.util.math.Box
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
-/** Fabric 1.20.1 的一桌一 entity 玩家公開資訊 presenter。 */
+/**
+ * Fabric 1.20.1 的一桌一 entity 玩家公開資訊 presenter。
+ *
+ * @property serverHolder 取得目前伺服器世界。
+ * @property spawnGateway 透過平台入口生成玩家資訊 entity。
+ */
 @Single(binds = [MahjongPlayerInfoPresenter::class])
 class FabricMahjongPlayerInfoPresenter(private val serverHolder: FabricServerHolder, private val spawnGateway: FabricEntitySpawnGateway) : MahjongPlayerInfoPresenter {
     override fun present(
@@ -65,17 +70,44 @@ class FabricMahjongPlayerInfoPresenter(private val serverHolder: FabricServerHol
         return displays.size
     }
 
+    /**
+     * 依桌子位置的維度 ID 找出已載入的伺服器世界。
+     *
+     * @param location 桌子位置。
+     * @return 對應世界；無法解析或尚未載入時為 null。
+     */
     private fun resolveWorld(location: TableLocation): ServerWorld? {
         val identifier = Identifier.tryParse(location.dimensionId) ?: return null
         return serverHolder.current()?.getWorld(RegistryKey.of(RegistryKeys.WORLD, identifier))
     }
 
+    /**
+     * 找出桌子附近第一個由該桌管理的玩家資訊 entity。
+     *
+     * @param world 要搜尋的伺服器世界。
+     * @param tableId 桌子 UUID。
+     * @param pos 桌子 controller 方塊位置。
+     * @return 找到的 entity；不存在時為 null。
+     */
     private fun find(world: ServerWorld, tableId: Uuid, pos: BlockPos): MahjongPlayerInfoEntity? = findAll(world, tableId, pos).firstOrNull()
 
+    /**
+     * 搜尋桌子 controller 附近且 table UUID 相符的玩家資訊 entity。
+     *
+     * @param world 要搜尋的伺服器世界。
+     * @param tableId 桌子 UUID。
+     * @param pos 桌子 controller 方塊位置。
+     * @return 符合桌子 UUID 的 entity 清單。
+     */
     private fun findAll(world: ServerWorld, tableId: Uuid, pos: BlockPos): List<MahjongPlayerInfoEntity> = world.getEntitiesByClass(
         MahjongPlayerInfoEntity::class.java,
         Box(pos).expand(TableOverlayEntitySearch.HORIZONTAL_RADIUS, TableOverlayEntitySearch.VERTICAL_RADIUS, TableOverlayEntitySearch.HORIZONTAL_RADIUS),
     ) { it.managedTableId == tableId }
 
+    /**
+     * 將版本無關桌子位置轉為 Fabric 方塊位置。
+     *
+     * @return 對應的 Minecraft 方塊座標。
+     */
     private fun TableLocation.toBlockPos() = BlockPos(x, y, z)
 }

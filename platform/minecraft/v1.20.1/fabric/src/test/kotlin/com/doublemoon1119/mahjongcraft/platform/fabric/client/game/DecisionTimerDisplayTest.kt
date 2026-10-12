@@ -56,6 +56,7 @@ class DecisionTimerDisplayTest {
         /** 目前測試時間。 */
         var nowMillis: Long = 0L
 
+        /** 回傳可由測試直接控制的單調時間。 */
         override fun nowMillis(): Long = nowMillis
     }
 }

@@ -83,7 +83,12 @@ internal object HistoryTileGroupLayoutCalculator {
             lineStart = placements.size
         }
 
-        /** 將一張牌加入目前列，必要時先換列並維持牌底線對齊。 */
+        /**
+         * 將一張牌加入目前列，必要時先換列並維持牌底線對齊。
+         *
+         * @param tile 牌目錄索引。
+         * @param extraGap 相對前一張牌額外保留的水平間距。
+         */
         fun append(tile: Int, extraGap: Float = 0f) {
             val sideways = tile in sidewaysTiles
             val width = if (sideways) tileHeight else tileWidth

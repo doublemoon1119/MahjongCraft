@@ -27,7 +27,13 @@ object RiichiWallRevealPolicy : WallRevealPolicy {
         }
     }
 
-    /** 依來源動作決定新指示牌立即公開或加入等待佇列；拔北的補牌不公開新指示牌。 */
+    /**
+     * 依來源動作決定新指示牌立即公開或加入等待佇列；拔北的補牌不公開新指示牌。
+     *
+     * @param context 補牌完成的節點情境。
+     * @param state 目前立直動態狀態。
+     * @return 新狀態、無變更或拒絕原因。
+     */
     private fun afterSupplementalDraw(
         context: WallRevealContext,
         state: RiichiDynamicState,
@@ -52,14 +58,27 @@ object RiichiWallRevealPolicy : WallRevealPolicy {
         }
     }
 
-    /** 公開目前所有等待項目。 */
+    /**
+     * 公開目前所有等待項目。
+     *
+     * @param context 目前公開節點與桌況。
+     * @param state 含待公開項目的動態狀態。
+     * @return 更新結果；沒有等待項目時為無變更。
+     */
     private fun revealPending(context: WallRevealContext, state: RiichiDynamicState): WallRevealDecision {
         val targetCount = state.pendingKanDoraReveals.maxOfOrNull { it.supplementalDrawNumber }
             ?: return WallRevealDecision.NoChange
         return revealThrough(context, state, targetCount)
     }
 
-    /** 將公開進度推進到 [targetCount]，並回傳新公開的實際牌張。 */
+    /**
+     * 將公開進度推進到 [targetCount]，並回傳新公開的實際牌張。
+     *
+     * @param context 提供指示牌位置的桌況情境。
+     * @param state 原始公開進度與待處理項目。
+     * @param targetCount 要公開至第幾次槓補牌。
+     * @return 含新增公開牌識別碼的更新；進度或牌數不符時拒絕。
+     */
     private fun revealThrough(
         context: WallRevealContext,
         state: RiichiDynamicState,
@@ -85,14 +104,24 @@ object RiichiWallRevealPolicy : WallRevealPolicy {
         }
     }
 
-    /** 胡牌成立時取消尚未公開的項目。 */
+    /**
+     * 胡牌成立時取消尚未公開的項目。
+     *
+     * @param state 目前立直動態狀態。
+     * @return 清除等待項目的更新；原本為空時不變。
+     */
     private fun cancelPending(state: RiichiDynamicState): WallRevealDecision = if (state.pendingKanDoraReveals.isEmpty()) {
         WallRevealDecision.NoChange
     } else {
         WallRevealDecision.Updated(state.copy(pendingKanDoraReveals = emptyList()))
     }
 
-    /** 驗證公開進度與等待項目沒有超出已完成補牌範圍。 */
+    /**
+     * 驗證公開進度與等待項目沒有超出已完成補牌範圍。
+     *
+     * @param context 提供目前玩家識別碼的桌況情境。
+     * @return 次數在範圍內、等待槓次不重複且來源玩家存在時為 true。
+     */
     private fun RiichiDynamicState.isValid(context: WallRevealContext): Boolean {
         val pendingNumbers = pendingKanDoraReveals.map { it.supplementalDrawNumber }
         val playerIds = context.tableState.players.mapTo(mutableSetOf()) { it.id }

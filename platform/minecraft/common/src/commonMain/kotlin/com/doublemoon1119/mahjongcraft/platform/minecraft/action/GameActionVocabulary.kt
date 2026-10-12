@@ -32,6 +32,9 @@ data class GameActionVocabulary(
  *
  * 核心動作為 [BuiltInGameActionIds] 的固定 ID；流局宣告用流局原因 ID，規則擴充動作用動作自己的 ID，
  * 兩者都由規則決定。
+ *
+ * @receiver 要轉成顯示用語識別碼的動作。
+ * @return 用語查詢的穩定 ID；沒有對應核心種類時回傳未知動作 ID。
  */
 fun GameAction.vocabularyActionId(): String = when (this) {
     is GameAction.Chi -> BuiltInGameActionIds.CHI

@@ -8,6 +8,6 @@ enum class AiDecisionOutcome {
     /** 等待超過上限，使用固定結果。 */
     TIMED_OUT,
 
-    /** 這一局先前逾時的策略呼叫尚未結束，直接使用固定結果。 */
+    /** 這一局先前已逾時或已取消等待的策略呼叫尚未結束，直接使用固定結果。 */
     PREVIOUS_STILL_RUNNING,
 }

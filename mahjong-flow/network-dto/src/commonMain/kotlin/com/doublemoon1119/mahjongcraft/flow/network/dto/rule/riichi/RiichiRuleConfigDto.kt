@@ -7,7 +7,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import kotlinx.serialization.Serializable
 
 /**
- * [RiichiRuleConfig] 的完整網路 DTO。
+ * [RiichiRuleConfig] 的完整網路 DTO。起始手牌張數、王牌張數、玩家人數與暗槓揭示欄位還原時使用規則固定值。
  *
  * @property initialHandSize 起始手牌張數。
  * @property deadTileCount 王牌張數。

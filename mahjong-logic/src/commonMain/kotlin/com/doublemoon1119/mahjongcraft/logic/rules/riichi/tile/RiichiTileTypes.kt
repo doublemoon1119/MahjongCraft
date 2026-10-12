@@ -18,7 +18,12 @@ object RiichiTileTypes {
     /** 依萬、筒、條順序排列的全部內建赤五 ID。 */
     val ALL: List<TileTypeId> = listOf(RED_FIVE_CHARACTER, RED_FIVE_DOT, RED_FIVE_BAMBOO)
 
-    /** 建立指定花色的赤五擴充牌。 */
+    /**
+     * 建立指定花色的赤五擴充牌。
+     *
+     * @param suit 赤五的花色。
+     * @return 對應花色的內建赤五擴充牌。
+     */
     fun redFive(suit: Tile.Suit): Tile.Extension = Tile.Extension(
         when (suit) {
             Tile.Suit.Character -> RED_FIVE_CHARACTER

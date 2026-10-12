@@ -29,10 +29,19 @@ class FabricAppCoroutineScopeTest {
 
     /** 不需要 Minecraft 執行緒即可驗證 Job 替換語意的測試 dispatcher。 */
     private object UnconfinedCoroutineDispatchers : CoroutineDispatchers {
+        /** CPU 工作使用不分派的測試 dispatcher。 */
         override val default: CoroutineDispatcher = Dispatchers.Unconfined
+
+        /** I/O 工作使用不分派的測試 dispatcher。 */
         override val io: CoroutineDispatcher = Dispatchers.Unconfined
+
+        /** 主執行緒工作使用不分派的測試 dispatcher。 */
         override val main: CoroutineDispatcher = Dispatchers.Unconfined
+
+        /** AI 決策工作使用不分派的測試 dispatcher。 */
         override val aiDecision: CoroutineDispatcher = Dispatchers.Unconfined
+
+        /** 測試允許的 AI 決策平行工作數。 */
         override val aiDecisionParallelism = 1
     }
 }

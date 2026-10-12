@@ -10,7 +10,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
 /**
  * 日本麻將特有的玩家狀態。
  *
- * 用於記錄玩家在遊戲過程中的立直相關狀態。
+ * 記錄立直、一發、永久振聽、包牌責任與拔北牌。
  *
  * @property riichiTile 玩家立直時打出的牌，若未立直則為 null。
  * @property doubleRiichiTile 玩家雙立直時打出的牌，若未雙立直則為 null。

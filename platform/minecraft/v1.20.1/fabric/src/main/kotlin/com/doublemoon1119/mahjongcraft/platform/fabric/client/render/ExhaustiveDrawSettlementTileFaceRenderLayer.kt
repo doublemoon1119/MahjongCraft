@@ -11,9 +11,20 @@ import java.util.concurrent.ConcurrentHashMap
 internal object ExhaustiveDrawSettlementTileFaceRenderLayer {
     private val layers = ConcurrentHashMap<Identifier, RenderLayer>()
 
-    /** 取得指定牌面材質的 full-bright 半透明層；同一材質只建立一次。 */
+    /**
+     * 取得指定牌面材質的 full-bright 半透明層；同一材質只建立一次。
+     *
+     * @param texture 牌面貼圖識別碼。
+     * @return 對應貼圖的 render layer。
+     */
     fun get(texture: Identifier): RenderLayer = layers.computeIfAbsent(texture, ::create)
 
+    /**
+     * 建立單一貼圖的 render layer。
+     *
+     * @param texture 此層使用的牌面貼圖。
+     * @return 使用此貼圖設定的 render layer。
+     */
     private fun create(texture: Identifier): RenderLayer = RenderLayer.of(
         "mahjongcraft_exhaustive_draw_settlement_tile_face",
         VertexFormats.POSITION_COLOR_TEXTURE_LIGHT,

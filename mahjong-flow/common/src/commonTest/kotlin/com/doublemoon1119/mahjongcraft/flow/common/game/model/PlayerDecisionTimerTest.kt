@@ -132,7 +132,12 @@ class PlayerDecisionTimerTest {
         }
     }
 
-    /** 建立使用五秒基本思考時間與二十秒保留思考時間的測試計時器。 */
+    /**
+     * 建立使用五秒基本思考時間與二十秒保留思考時間的測試計時器。
+     *
+     * @param startedAtMillis 計時器開始的單調時間毫秒數。
+     * @return 使用指定開始時間建立的測試計時器。
+     */
     private fun timer(startedAtMillis: Long): PlayerDecisionTimer = ActionTimeControl.Custom(
         baseSeconds = 5,
         reserveSeconds = 20,

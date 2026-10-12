@@ -60,6 +60,7 @@ class ClientHistoryQueryCoordinator(
      * 送出新清單要求並使舊條件的回覆失效。
      *
      * @param request 查詢條件；配對 ID 由此處替換成唯一值。
+     * @return 此次要求的配對識別碼，即使傳送失敗仍回傳。
      */
     override fun queryList(request: HistoryListRequestDto): String {
         val pending = request.copy(requestId = Uuid.random().toString())
@@ -70,6 +71,7 @@ class ClientHistoryQueryCoordinator(
      * 送出單場摘要要求並使舊選取的回覆失效。
      *
      * @param request 目標對局與查閱範圍。
+     * @return 此次要求的配對識別碼，即使傳送失敗仍回傳。
      */
     override fun querySummary(request: HistorySummaryRequestDto): String {
         val pending = request.copy(requestId = Uuid.random().toString())
@@ -147,7 +149,7 @@ class ClientHistoryQueryCoordinator(
     }
 
     /**
-     * 套用目前單局事件回覆；request ID 與查詢種類不符時忽略。
+     * 套用目前單局事件回覆；配對識別碼、查詢種類、對局、局序號或起始交易索引不符時忽略。
      *
      * @param response 伺服器線路回應。
      */
@@ -166,7 +168,7 @@ class ClientHistoryQueryCoordinator(
     }
 
     /**
-     * 套用目前單局桌況回覆；request ID 與查詢種類不符時忽略。
+     * 套用目前單局桌況回覆；配對識別碼、查詢種類、對局、局序號或局內位置不符時忽略。
      *
      * @param response 伺服器線路回應。
      */

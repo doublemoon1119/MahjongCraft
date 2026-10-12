@@ -15,13 +15,29 @@ data class YakuResult(
     val isDoubleYakuman: Boolean = han == -2,
 ) {
     companion object {
-        /** 一般役滿（1 倍） */
+        /**
+         * 建立一般役滿（1 倍）的結果。
+         *
+         * @param yaku 役種。
+         * @return 番數為 -1 的役滿結果。
+         */
         fun yakuman(yaku: YakuType) = YakuResult(yaku, -1)
 
-        /** 雙倍役滿（2 倍） */
+        /**
+         * 建立雙倍役滿（2 倍）的結果。
+         *
+         * @param yaku 役種。
+         * @return 番數為 -2 的雙倍役滿結果。
+         */
         fun doubleYakuman(yaku: YakuType) = YakuResult(yaku, -2)
 
-        /** 一般番數 */
+        /**
+         * 建立一般番數的役種結果。
+         *
+         * @param yaku 役種。
+         * @param han 番數。
+         * @return 使用指定役種與番數的結果。
+         */
         fun han(yaku: YakuType, han: Int) = YakuResult(yaku, han)
     }
 }

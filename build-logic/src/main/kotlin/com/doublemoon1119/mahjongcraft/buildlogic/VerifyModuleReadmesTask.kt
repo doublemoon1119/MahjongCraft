@@ -32,7 +32,12 @@ abstract class VerifyModuleReadmesTask : DefaultTask() {
     }
 }
 
-/** 即使在大小寫不敏感的檔案系統，也只接受精確的 `README.md` 名稱。 */
+/**
+ * 即使在大小寫不敏感的檔案系統，也只接受精確的 `README.md` 名稱。
+ *
+ * @param readme 預期的 README.md 檔案路徑。
+ * @return 父目錄中存在精確檔名的檔案時為 true。
+ */
 private fun hasExactReadmeName(readme: File): Boolean = readme.parentFile
     ?.listFiles()
     ?.any { it.isFile && it.name == "README.md" }

@@ -4,7 +4,10 @@ import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 
 /** [ExhaustiveDrawReasonDisplayNameRegistry] 的記憶體實作。 */
 class ExhaustiveDrawReasonDisplayNameRegistryImpl : ExhaustiveDrawReasonDisplayNameRegistry {
+    /** 流局原因 ID 對應的本地化名稱。 */
     private val translations = mutableMapOf<String, String>()
+
+    /** 流局原因 ID 對應的玩家結算身分用語。 */
     private val statusLabels = mutableMapOf<String, ExhaustiveDrawSettlementStatusLabels>()
     override var isFrozen: Boolean = false
         private set

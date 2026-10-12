@@ -26,13 +26,28 @@ internal class PlacementUtility private constructor(
     private val enabled: Boolean,
     private val stepPoints: Int,
 ) {
-    /** 自己得到 [points] 點的價值。 */
+    /**
+     * 自己得到 [points] 點的價值。
+     *
+     * @param points 得到的點數。
+     * @return 依設定換算的得分價值。
+     */
     fun gain(points: Double): Double = if (enabled) points + placementChange(points) else points
 
-    /** 自己失去 [points] 點的損失；恆為正數。 */
+    /**
+     * 依 [points] 計算自己失去點數的價值；若啟用名次換算，也會納入名次變化。
+     *
+     * @param points 傳入的損失點數；此函式不驗證正負。
+     * @return 未啟用名次換算時為原始點數；啟用時為納入名次變化後的價值。
+     */
     fun loss(points: Double): Double = if (enabled) points - placementChange(-points) else points
 
-    /** 自己分數變動 [delta] 後，名次變化換算的點數；名次上升為正。 */
+    /**
+     * 自己分數變動 [delta] 後，名次變化換算的點數；名次上升為正。
+     *
+     * @param delta 自己的分數變化量。
+     * @return 名次變化對應的點數價值。
+     */
     private fun placementChange(delta: Double): Double {
         val self = players[selfIndex]
         val moved = RankedSeat(
@@ -45,7 +60,13 @@ internal class PlacementUtility private constructor(
         return (placeBefore - placeAfter) * stepPoints.toDouble()
     }
 
-    /** [target] 在 [candidates] 中依規則排名的位置，第一名為 0。 */
+    /**
+     * [target] 在 [candidates] 中依規則排名的位置，第一名為 0。
+     *
+     * @param candidates 依規則排名比較器排序的玩家資料。
+     * @param target 要查找名次的玩家。
+     * @return 排序後的位置索引。
+     */
     private fun placeOf(candidates: List<RankablePlayer>, target: RankablePlayer): Int = candidates.sortedWith(ranking).indexOf(target)
 
     /**
@@ -68,6 +89,10 @@ internal class PlacementUtility private constructor(
          *
          * @param ranking 規則的整場排名順序。
          * @param stepPoints 名次每升降一位相當的點數。
+         * @param snapshot 用來讀取目前玩家分數與賽程位置的桌況快照。
+         * @param selfId 評估者的玩家識別碼。
+         * @param considersPlacement 是否允許啟用名次換算。
+         * @return 依目前賽程與設定建立的點數／名次換算器。
          */
         fun from(
             snapshot: TableStateSnapshot,

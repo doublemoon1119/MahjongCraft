@@ -31,6 +31,10 @@ class DebugPreviewEntityLifecycle {
 
     /**
      * 排定 [entities] 在 [endGameTime]（[world] 的絕對 game time）到期時自動清除。
+     *
+     * @param world 提供絕對 game time 的世界。
+     * @param endGameTime 清除工作的到期 game time。
+     * @param entities 到期時要清除的 entity。
      */
     fun schedule(
         world: ServerWorld,

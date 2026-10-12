@@ -75,9 +75,14 @@ object MahjongChannels {
 
     /** 僅包含歷史開局設定或安全錯誤碼的有界回應。 */
     val historyRuleSettingsResponse = S2CChannel("history_rule_settings_response", HistoryRuleSettingsResponseDto.serializer(), HistoryQueryLimits.RESPONSE_BYTES)
+
+    /** 玩家送出的正式對局命令。 */
     val gameCommand = C2SChannel("game_command", GameCommandEnvelopeDto.serializer())
+
+    /** 操作面板中玩家選定的決策項目。 */
     val decisionSelection = C2SChannel("decision_selection", PlayerDecisionSelectionDto.serializer())
 
+    /** 等待室內玩家送出的房間操作。 */
     val roomAction = C2SChannel("room_action", RoomActionDto.serializer())
 
     /**
@@ -99,20 +104,35 @@ object MahjongChannels {
      * 知道才能實際重新排列座標，不像牌角標籤那種純客戶端疊加。
      */
     val setAutoSortHand = C2SChannel("set_auto_sort_hand", Boolean.serializer())
+
+    /** 更新本局由玩家指定的自動操作集合。 */
     val automaticControlUpdate = C2SChannel(
         "automatic_control_update",
         AutomaticControlUpdateRequestDto.serializer(),
     )
+
+    /** 同步目前決策階段的倒數與操作提示。 */
     val decisionTimerUpdate = S2CChannel("decision_timer_update", DecisionTimerUpdatePayloadDto.serializer())
+
+    /** 回覆玩家送出的操作選擇是否被伺服器接受。 */
     val decisionSubmissionResult = S2CChannel("decision_submission_result", PlayerDecisionSubmissionResultDto.serializer())
+
+    /** 同步單一遊戲動作及其更新後的遊戲快照。 */
     val gameUpdate = S2CChannel("game_update", GameUpdatePayloadDto.serializer())
 
     /** 和牌或流局結算的前後分數與名次，只送給入座的真人玩家。 */
     val roundResult = S2CChannel("round_result", RoundResultPayloadDto.serializer())
 
+    /** 同步等待室事件及更新後快照。 */
     val roomUpdate = S2CChannel("room_update", RoomUpdatePayloadDto.serializer())
+
+    /** 主動同步目前對局快照及其輔助資料。 */
     val gameSnapshot = S2CChannel("game_snapshot", GameSnapshotSyncPayloadDto.serializer())
+
+    /** 主動同步目前等待室快照。 */
     val roomSnapshot = S2CChannel("room_snapshot", RoomSnapshotSyncPayloadDto.serializer())
+
+    /** 同步桌子在大廳的占用狀態及可選房間資訊。 */
     val tableOccupancy = S2CChannel("table_occupancy", TableOccupancyPayloadDto.serializer())
 
     /**
@@ -120,10 +140,14 @@ object MahjongChannels {
      * 這個頻道不會開啟任何畫面，收到時只更新已保存的狀態。
      */
     val snapshotCleared = S2CChannel("snapshot_cleared", SnapshotClearedPayloadDto.serializer())
+
+    /** 回覆自動操作集合更新的權威結果。 */
     val automaticControlUpdateResult = S2CChannel(
         "automatic_control_update_result",
         AutomaticControlUpdateResultDto.serializer(),
     )
+
+    /** 同步目前自動操作集合；`null` 表示清除。 */
     val automaticControlSnapshot = S2CChannel(
         "automatic_control_snapshot",
         AutomaticControlSnapshotDto.serializer().nullable,

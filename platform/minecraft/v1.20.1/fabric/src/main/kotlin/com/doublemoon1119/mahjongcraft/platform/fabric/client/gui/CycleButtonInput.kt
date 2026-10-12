@@ -29,6 +29,7 @@ internal object CycleButtonInput {
      * @param size 選項數量。
      * @param step 方向，1 為下一項、-1 為上一項。
      * @return 下一個選項的索引；目前選項不在範圍內時，往下從第一項開始、往上從最後一項開始。
+     * @throws IllegalArgumentException [size] 不大於 0 時拋出。
      */
     fun nextIndex(
         currentIndex: Int,
@@ -43,10 +44,12 @@ internal object CycleButtonInput {
     /**
      * 依方向從選項清單取得下一個選項。
      *
+     * @param T 選項型別。
      * @param options 依顯示順序排列的選項。
      * @param current 目前選項。
      * @param step 方向，1 為下一項、-1 為上一項。
      * @return 下一個選項。
+     * @throws IllegalArgumentException [options] 為空時拋出。
      */
     fun <T> next(
         options: List<T>,

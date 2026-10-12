@@ -12,6 +12,9 @@ import org.koin.core.annotation.Single
  *
  * [aiDecision] 是 [Dispatchers.Default] 上限制為 [aiDecisionParallelism] 條執行緒的視圖，初始值為可用核心數減一（至少一條）；
  * 它只限制 AI 同時使用的執行緒數，不保證替伺服器主執行緒保留一個核心。
+ *
+ * @param serverHolder 提供目前 Fabric server session。
+ * @param tickClock 以遊戲 tick 排程延遲工作的時鐘。
  */
 @Single(binds = [CoroutineDispatchers::class])
 class FabricCoroutineDispatchers(serverHolder: FabricServerHolder, tickClock: FabricTickMonotonicClock) : CoroutineDispatchers {

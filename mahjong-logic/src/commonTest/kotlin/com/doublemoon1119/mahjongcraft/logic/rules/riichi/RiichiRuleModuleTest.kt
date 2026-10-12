@@ -39,6 +39,7 @@ import kotlin.uuid.Uuid
  */
 class RiichiRuleModuleTest {
 
+    /** 以標準四人日麻配置建立受測規則模組。 */
     private val module: RiichiRuleModule = RiichiRuleModule(
         id = "mahjongcraft:riichi",
         config = RiichiRuleConfig(),
@@ -339,7 +340,12 @@ class RiichiRuleModuleTest {
         assertEquals(PaoLiability(PaoYaku.Daisangen, RelativeDirection.Right), (result.playerRuleState as RiichiPlayerState).paoLiability)
     }
 
-    /** 建立已碰出中、發兩組副露，並持有 [whiteCount] 張白的手牌。 */
+    /**
+     * 建立已碰出中、發兩組副露，並持有指定白板數量的手牌。
+     *
+     * @param whiteCount 手牌中的白板張數。
+     * @return 含兩組三元牌副露及指定白板的測試手牌。
+     */
     private fun twoDragonMeldsHand(whiteCount: Int) = FakeHandFactory.create(
         tiles = List(whiteCount) { Tile.Honor.White },
         melds = listOf(Tile.Honor.Red, Tile.Honor.Green).map { tile ->
@@ -735,6 +741,11 @@ class RiichiRuleModuleTest {
 
     // 手牌：白白白（役牌刻子，1 翻）、234m、567p、89s（等 7s）、99p，供搶槓（isRobbingKan）測試共用。
     // 刻意只有單一役牌（而非 daisangenTiles 那種役滿），讓搶槓多算的 1 翻能真正反映在點數差異上。
+    /**
+     * 建立單一白板役牌與一般面子組成的榮和前手牌。
+     *
+     * @return 供搶槓比較測試使用的手牌牌面。
+     */
     private fun singleYakuhaiTiles() = listOf(
         Tile.Honor.White, Tile.Honor.White, Tile.Honor.White,
         Tile.Numeric(Tile.Suit.Character, 2), Tile.Numeric(Tile.Suit.Character, 3), Tile.Numeric(Tile.Suit.Character, 4),
@@ -1252,11 +1263,23 @@ class RiichiRuleModuleTest {
         assertNull(module.resolveSuuchaRiichi(table))
     }
 
+    /**
+     * 建立指定 [type] 的四張牌槓子。
+     *
+     * @param type 槓子種類。
+     * @return 測試用槓子副露。
+     */
     private fun kanMeld(type: MeldType): Meld {
         val tile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
         return Meld(type, listOf(tile, tile, tile, tile), sourceDirection = RelativeDirection.Self)
     }
 
+    /**
+     * 建立持有 [count] 組暗槓的測試玩家。
+     *
+     * @param count 暗槓數量。
+     * @return 持有指定槓數的測試玩家。
+     */
     private fun playerWithKans(count: Int) = FakeMahjongPlayerFactory.create(
         hand = Hand(melds = List(count) { kanMeld(MeldType.CLOSED_KAN) }),
     )

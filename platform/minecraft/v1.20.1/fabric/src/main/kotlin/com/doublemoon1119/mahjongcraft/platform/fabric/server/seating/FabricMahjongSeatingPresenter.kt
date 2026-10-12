@@ -22,6 +22,10 @@ import kotlin.uuid.Uuid
  * 使用 Fabric 1.20.1 玩家傳送實作 [MahjongSeatingPresenter]。
  *
  * 每位玩家傳送到分配到的座位位置並面向桌子；該位置是麻將凳時接著坐上去。已經坐在分配到的凳子上的玩家不移動。
+ *
+ * @property tableLocationRegistry 查詢桌子目前的位置。
+ * @property serverHolder 取得目前伺服器世界與在線玩家。
+ * @property seatService 讓玩家坐上麻將凳的服務。
  */
 @Single(binds = [MahjongSeatingPresenter::class])
 class FabricMahjongSeatingPresenter(
@@ -29,6 +33,12 @@ class FabricMahjongSeatingPresenter(
     private val serverHolder: FabricServerHolder,
     private val seatService: MahjongStoolSeatService,
 ) : MahjongSeatingPresenter {
+    /**
+     * 將入座名單移至對應座位，並在座位是凳子時安排乘坐。
+     *
+     * @param tableId 對局桌子 UUID。
+     * @param seatedPlayerIds 依座位順序排列的玩家 UUID。
+     */
     override fun present(tableId: Uuid, seatedPlayerIds: List<Uuid>) {
         val location = tableLocationRegistry.get(tableId)?.location ?: return
         val world = resolveWorld(location) ?: return
@@ -48,13 +58,25 @@ class FabricMahjongSeatingPresenter(
         }
     }
 
-    /** [player] 是否已經坐在 [world] 中位於 [stoolPos] 的麻將凳上。 */
+    /**
+     * [player] 是否已經坐在 [world] 中位於 [stoolPos] 的麻將凳上。
+     *
+     * @param player 要檢查的玩家。
+     * @param world 凳子所在世界。
+     * @param stoolPos 凳子方塊座標。
+     * @return 玩家正乘坐該凳子的座位實體時為 true。
+     */
     private fun isSeatedOn(player: ServerPlayerEntity, world: ServerWorld, stoolPos: BlockPos): Boolean {
         val seat = player.vehicle as? MahjongStoolSeatEntity ?: return false
         return seat.world === world && seat.blockPos == stoolPos
     }
 
-    /** 由版本無關 dimension ID 取得目前 server session 的世界。 */
+    /**
+     * 由版本無關 dimension ID 取得目前 server session 的世界。
+     *
+     * @param location 含 dimension ID 的桌子位置。
+     * @return 對應的已載入伺服器世界；無法解析時為 null。
+     */
     private fun resolveWorld(location: TableLocation): ServerWorld? {
         val identifier = Identifier.tryParse(location.dimensionId) ?: return null
         val worldKey = RegistryKey.of(RegistryKeys.WORLD, identifier)

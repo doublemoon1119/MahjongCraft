@@ -34,7 +34,7 @@ import org.koin.core.annotation.Single
  * 以範例內容畫出 HUD 位置編輯器中的真實 HUD 預覽，並量測它們的實際尺寸。
  *
  * 每種 HUD 都使用遊戲中相同的繪製程式與版面計算，只把即時狀態換成固定的範例內容，因此預覽的外觀、尺寸與位置都與
- * 遊戲中一致。預覽只供觀看：按鈕沒有 hover 效果，也不顯示卡片說明。
+ * 相同範例內容在遊戲中的結果一致。預覽只供觀看：按鈕沒有 hover 效果，也不顯示卡片說明。
  *
  * @property decisionHud 操作面板、精簡提示與手牌分析的繪製。
  * @property automaticControlHud 自動操作狀態的繪製。
@@ -47,8 +47,12 @@ class MahjongHudPreviewRenderer(
     /**
      * [element] 以範例內容在 [screenWidth] × [screenHeight] 畫面上的實際尺寸。
      *
+     * @param element 要量測的 HUD 類型。
      * @param scenario 操作面板使用的預覽情境。
      * @param automaticControlLabels 自動操作狀態要列出的項目名稱；沒有項目時自動操作狀態沒有尺寸。
+     * @param screenWidth 畫面寬度。
+     * @param screenHeight 畫面高度。
+     * @return HUD 的實際尺寸；自動操作狀態沒有項目時為 `null`。
      */
     internal fun size(
         element: HudElement,
@@ -74,8 +78,12 @@ class MahjongHudPreviewRenderer(
     /**
      * 以 [opacity] 不透明度畫出 [element] 的範例內容，位置依 [layout] 草稿決定。
      *
+     * @param context 遊戲 GUI 繪製環境。
+     * @param element 要繪製的 HUD 類型。
      * @param scenario 操作面板使用的預覽情境。
+     * @param layout 預覽使用的 HUD 位置草稿。
      * @param automaticControlLabels 自動操作狀態要列出的項目名稱。
+     * @param opacity 預覽的不透明度。
      */
     internal fun render(
         context: DrawContext,
@@ -110,13 +118,22 @@ class MahjongHudPreviewRenderer(
         RenderSystem.disableBlend()
     }
 
-    /** 畫出操作面板與它的按鈕及倒數；原版按鈕繪製時會重設著色，因此每顆按鈕畫完後重新套用 [opacity]。 */
+    /**
+     * 畫出操作面板與它的按鈕及倒數；原版按鈕繪製時會重設著色，因此每顆按鈕畫完後重新套用 [opacity]。
+     *
+     * @param context 畫面繪製環境。
+     * @param scenario 操作面板預覽情境。
+     * @param panelRatioY 面板垂直位置比例。
+     * @param opacity 預覽不透明度。
+     */
     private fun renderDecisionPanel(context: DrawContext, scenario: HudPreviewScenario, panelRatioY: Double, opacity: Float) {
         val renderer = MinecraftClient.getInstance().textRenderer
         val content = decisionContent(scenario, context.scaledWindowWidth)
         val layout = decisionLayout(content, context.scaledWindowWidth, context.scaledWindowHeight, panelRatioY)
         val scroll = layout.maximumScroll
         val placements = layout.cardPlacements(scroll)
+
+        /** 以預覽不透明度繪製按鈕，並恢復後續內容使用的著色。 */
         fun renderButton(label: Text, bounds: DecisionBounds) {
             val button = ButtonWidget.builder(label) {}.dimensions(bounds.x, bounds.y, bounds.width, bounds.height).build()
             button.setAlpha(opacity)
@@ -148,7 +165,13 @@ class MahjongHudPreviewRenderer(
         )
     }
 
-    /** [scenario] 的操作面板內容。 */
+    /**
+     * 建立 [scenario] 的操作面板內容。
+     *
+     * @param scenario 操作面板預覽情境。
+     * @param screenWidth 畫面寬度。
+     * @return 可供版面計算與繪製使用的面板內容。
+     */
     private fun decisionContent(scenario: HudPreviewScenario, screenWidth: Int): DecisionPanelContent = decisionPanelContent(
         prompt = scenario.prompt,
         texts = decisionHud.decisionTexts,
@@ -157,7 +180,15 @@ class MahjongHudPreviewRenderer(
         screenWidth = screenWidth,
     )
 
-    /** [scenario] 的操作面板版面。 */
+    /**
+     * 建立 [scenario] 的操作面板版面。
+     *
+     * @param scenario 操作面板預覽情境。
+     * @param screenWidth 畫面寬度。
+     * @param screenHeight 畫面高度。
+     * @param panelRatioY 面板垂直位置比例。
+     * @return 對應的操作面板版面幾何。
+     */
     private fun decisionLayout(
         scenario: HudPreviewScenario,
         screenWidth: Int,
@@ -165,7 +196,15 @@ class MahjongHudPreviewRenderer(
         panelRatioY: Double,
     ): DecisionCardLayout = decisionLayout(decisionContent(scenario, screenWidth), screenWidth, screenHeight, panelRatioY)
 
-    /** [content] 的操作面板版面；倒數保留寬度依範例倒數量測。 */
+    /**
+     * 建立 [content] 的操作面板版面；倒數保留寬度依範例倒數量測。
+     *
+     * @param content 面板內容。
+     * @param screenWidth 畫面寬度。
+     * @param screenHeight 畫面高度。
+     * @param panelRatioY 面板垂直位置比例。
+     * @return 對應的操作面板版面幾何。
+     */
     private fun decisionLayout(
         content: DecisionPanelContent,
         screenWidth: Int,
@@ -183,7 +222,11 @@ class MahjongHudPreviewRenderer(
         )
     }
 
-    /** 手牌分析的範例內容：聽二、五、八萬三面，各自剩下不同張數。 */
+    /**
+     * 建立手牌分析範例內容：聽二、五、八萬三面，各自剩下不同張數。
+     *
+     * @return 供預覽繪製使用的分析內容。
+     */
     private fun analysisContent() = discardAnalysisContent(
         texts = decisionHud.decisionTexts,
         ruleModuleId = BuiltInRuleModuleIds.RIICHI,
@@ -200,12 +243,24 @@ class MahjongHudPreviewRenderer(
         ),
     )
 
-    /** 自動操作狀態的範例：依序交替顯示開啟與關閉的 [labels]。 */
+    /**
+     * 建立自動操作狀態範例：依序交替顯示開啟與關閉的 [labels]。
+     *
+     * @param labels 要呈現的項目名稱。
+     * @return 與名稱順序相同的範例狀態列。
+     */
     private fun automaticControlRows(labels: List<Text>): List<AutomaticControlStatusRow> = labels.mapIndexed { index, label ->
         AutomaticControlStatusRow(controlId = "preview:$index", label = label, enabled = index % 2 == 0)
     }
 
-    /** 自動操作狀態在指定畫面上的版面；沒有項目時為 null。 */
+    /**
+     * 計算自動操作狀態在指定畫面上的版面；沒有項目時為 null。
+     *
+     * @param labels 要呈現的項目名稱。
+     * @param screenWidth 畫面寬度。
+     * @param screenHeight 畫面高度。
+     * @return 自動操作狀態版面；沒有項目時為 `null`。
+     */
     private fun automaticControlLayout(labels: List<Text>, screenWidth: Int, screenHeight: Int) = labels.takeIf { it.isNotEmpty() }?.let {
         val renderer = MinecraftClient.getInstance().textRenderer
         automaticControlStatusHudLayout(

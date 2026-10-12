@@ -13,6 +13,7 @@ import kotlin.test.assertTrue
 
 /** [ClientAutoSortHandPreferenceService] 的保存順序與同步語意測試。 */
 class ClientAutoSortHandPreferenceServiceTest {
+    /** 成功變更先儲存本機偏好，再傳送 USER_CHANGE。 */
     @Test
     fun `successful change saves locally before sending user change`() = withService { service, sender, store ->
         assertIs<MahjongClientConfigUpdateResult.Success>(store.load())
@@ -23,6 +24,7 @@ class ClientAutoSortHandPreferenceServiceTest {
         assertEquals(listOf(false), sender.userChanges)
     }
 
+    /** 設定值未變時不儲存也不傳送。 */
     @Test
     fun `unchanged value does not save or send`() = withService { service, sender, store ->
         assertIs<MahjongClientConfigUpdateResult.Success>(store.load())
@@ -34,6 +36,7 @@ class ClientAutoSortHandPreferenceServiceTest {
         assertTrue(sender.userChanges.isEmpty())
     }
 
+    /** 儲存失敗時不傳送 USER_CHANGE。 */
     @Test
     fun `save failure does not send user change`() = withService { service, sender, store ->
         assertIs<MahjongClientConfigUpdateResult.Success>(store.load())
@@ -45,6 +48,7 @@ class ClientAutoSortHandPreferenceServiceTest {
         assertTrue(sender.userChanges.isEmpty())
     }
 
+    /** 傳送失敗時仍保留已儲存的本機值。 */
     @Test
     fun `send failure keeps locally saved value`() = withService(sendFailure = IllegalStateException("offline")) { service, _, store ->
         assertIs<MahjongClientConfigUpdateResult.Success>(store.load())
@@ -55,6 +59,7 @@ class ClientAutoSortHandPreferenceServiceTest {
         assertTrue(Files.readString(store.path).contains("auto-sort-hand-enabled = false"))
     }
 
+    /** 完整草稿只儲存一次，並能重試失敗的偏好同步。 */
     @Test
     fun `full draft saves once and retries failed preference sync`() = withService { service, sender, store ->
         assertIs<MahjongClientConfigUpdateResult.Success>(store.load())
@@ -73,6 +78,7 @@ class ClientAutoSortHandPreferenceServiceTest {
         assertFalse(service.hasPendingSync)
     }
 
+    /** 離線儲存完整草稿時不傳送偏好同步。 */
     @Test
     fun `full draft does not send preference while disconnected`() = withService { service, sender, store ->
         assertIs<MahjongClientConfigUpdateResult.Success>(store.load())
@@ -85,6 +91,7 @@ class ClientAutoSortHandPreferenceServiceTest {
         assertTrue(sender.userChanges.isEmpty())
     }
 
+    /** RESTORE 傳送目前值但不修改設定檔。 */
     @Test
     fun `restore sends current value without modifying config`() = withService { service, sender, store ->
         assertIs<MahjongClientConfigUpdateResult.Success>(store.load())
@@ -128,7 +135,12 @@ class ClientAutoSortHandPreferenceServiceTest {
         assertTrue(service.syncFailureReported, "The first failure on the new connection must be reported again.")
     }
 
-    /** 建立隔離設定檔與記錄型 sender，並在測試後移除暫存目錄。 */
+    /**
+     * 建立隔離設定檔與記錄型 sender，並在測試後移除暫存目錄。
+     *
+     * @param sendFailure sender 遇到的同步錯誤；未指定時傳送成功。
+     * @param block 使用建立之服務、sender 與 store 執行測試。
+     */
     private fun withService(
         sendFailure: RuntimeException? = null,
         block: (ClientAutoSortHandPreferenceService, RecordingSender, MahjongClientConfigStore) -> Unit,
@@ -143,14 +155,22 @@ class ClientAutoSortHandPreferenceServiceTest {
         }
     }
 
-    /** 刪除測試暫存目錄。 */
+    /**
+     * 刪除測試暫存目錄。
+     *
+     * @param path 要刪除的目錄及其內容。
+     */
     private fun deleteRecursively(path: Path) {
         Files.walk(path).use { paths ->
             paths.sorted(Comparator.reverseOrder()).forEach(Files::deleteIfExists)
         }
     }
 
-    /** 記錄兩種偏好同步語意。 */
+    /**
+     * 記錄兩種偏好同步語意，並可模擬傳送失敗。
+     *
+     * @property failure 模擬的同步傳送錯誤；未指定時傳送成功。
+     */
     private class RecordingSender(var failure: RuntimeException?) : ClientAutoSortHandPreferenceSender {
         /** 玩家主動變更紀錄。 */
         val userChanges = mutableListOf<Boolean>()

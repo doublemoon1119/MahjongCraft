@@ -20,6 +20,8 @@ interface TileEmojiRegistry {
     /**
      * 註冊一個 asset key 對應的牌面 emoji 字元。
      *
+     * @param assetKey 牌資產 key。
+     * @param emoji 顯示用 emoji 字元。
      * @throws IllegalStateException 當 registry 已凍結時拋出。
      * @throws IllegalArgumentException 當 [assetKey] 已存在對應映射時拋出。
      */
@@ -28,6 +30,11 @@ interface TileEmojiRegistry {
     /** 凍結 registry；後續呼叫 [register] 將失敗。 */
     fun freeze()
 
-    /** 依 [assetKey] 尋找對應的牌面 emoji 字元；尚未註冊時回傳 null。 */
+    /**
+     * 依 [assetKey] 尋找對應的牌面 emoji 字元；尚未註冊時回傳 null。
+     *
+     * @param assetKey 牌資產 key。
+     * @return 已登記的 emoji；未登記時為 `null`。
+     */
     fun find(assetKey: String): String?
 }

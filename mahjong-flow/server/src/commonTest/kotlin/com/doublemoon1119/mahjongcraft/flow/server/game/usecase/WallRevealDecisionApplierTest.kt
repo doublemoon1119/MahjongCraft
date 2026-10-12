@@ -55,7 +55,11 @@ class WallRevealDecisionApplierTest {
         )
     }
 
-    /** 建立含一筆延後槓寶牌的有效日麻桌況。 */
+    /**
+     * 建立含一筆延後槓寶牌的有效日麻桌況。
+     *
+     * @return 桌況與對應動態規則狀態。
+     */
     private fun fixture(): Fixture {
         val player = FakeMahjongPlayerFactory.create()
         val dynamicState = RiichiDynamicState(
@@ -78,7 +82,12 @@ class WallRevealDecisionApplierTest {
         )
     }
 
-    /** 測試共用桌況與對應日麻動態狀態。 */
+    /**
+     * 測試共用桌況與對應日麻動態狀態。
+     *
+     * @property tableState 含保留牌與一筆待翻槓寶牌的桌況。
+     * @property dynamicState 與桌況一致的日麻動態規則狀態。
+     */
     private data class Fixture(
         val tableState: TableState,
         val dynamicState: RiichiDynamicState,

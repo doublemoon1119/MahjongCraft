@@ -21,17 +21,34 @@ internal object BuiltInGameConfigFields {
     /** 流程分類。 */
     const val FLOW = "mahjongcraft:flow"
 
-    /** 規則、分數與流程三個分類，依畫面順序排列。 */
+    /**
+     * 規則、分數與流程三個分類，依畫面順序排列。
+     *
+     * @return 依設定畫面順序排列的分類定義。
+     */
     fun categories(): List<GameConfigCategoryDefinition> = listOf(
         GameConfigCategoryDefinition(RULE, translationKey("category.rule")),
         GameConfigCategoryDefinition(SCORE, translationKey("category.score")),
         GameConfigCategoryDefinition(FLOW, translationKey("category.flow")),
     )
 
-    /** 設定畫面使用的 translation key。 */
+    /**
+     * 建立設定畫面使用的 translation key。
+     *
+     * @param path 設定資源路徑片段。
+     * @return 加上設定畫面前綴的翻譯鍵。
+     */
     fun translationKey(path: String): String = "mahjongcraft.room.config.$path"
 
-    /** 可編輯的開關欄位。 */
+    /**
+     * 建立可編輯的開關欄位。
+     *
+     * @param name 欄位 ID 的路徑片段。
+     * @param category 欄位所屬分類 ID。
+     * @param read 從遊戲設定讀取開關值的函式。
+     * @param update 將新開關值寫回遊戲設定的函式。
+     * @return 使用布林切換編輯器的欄位定義。
+     */
     fun boolField(
         name: String,
         category: String,
@@ -48,7 +65,18 @@ internal object BuiltInGameConfigFields {
         update = { config, value -> update(config, (value as GameConfigPresentationValue.BooleanValue).enabled) },
     )
 
-    /** 可編輯的整數欄位。 */
+    /**
+     * 建立可編輯的整數欄位。
+     *
+     * @param name 欄位 ID 的路徑片段。
+     * @param category 欄位所屬分類 ID。
+     * @param minimum 可輸入的最小值。
+     * @param maximum 可輸入的最大值。
+     * @param step 一般輸入的步進值。
+     * @param read 從遊戲設定讀取整數值的函式。
+     * @param update 將新整數值寫回遊戲設定的函式。
+     * @return 使用整數輸入編輯器的欄位定義。
+     */
     fun intField(
         name: String,
         category: String,
@@ -68,7 +96,16 @@ internal object BuiltInGameConfigFields {
         update = { config, value -> update(config, requireNotNull((value as GameConfigPresentationValue.IntegerValue).number)) },
     )
 
-    /** 可編輯的單選欄位；選項 ID 為 `mahjongcraft:<option>`。 */
+    /**
+     * 建立可編輯的單選欄位；選項 ID 為 `mahjongcraft:<option>`。
+     *
+     * @param name 欄位 ID 的路徑片段。
+     * @param category 欄位所屬分類 ID。
+     * @param options 可選項目的路徑片段。
+     * @param read 從遊戲設定讀取選項值的函式。
+     * @param update 將新選項值寫回遊戲設定的函式。
+     * @return 使用單選編輯器的欄位定義。
+     */
     fun choiceField(
         name: String,
         category: String,
@@ -86,7 +123,14 @@ internal object BuiltInGameConfigFields {
         update = { config, value -> update(config, (value as GameConfigPresentationValue.ChoiceValue).optionId.substringAfter(':')) },
     )
 
-    /** 只顯示、不能編輯的整數欄位。 */
+    /**
+     * 建立只顯示、不能編輯的整數欄位。
+     *
+     * @param name 欄位 ID 的路徑片段。
+     * @param category 欄位所屬分類 ID。
+     * @param read 從遊戲設定讀取整數值的函式。
+     * @return 使用唯讀整數呈現的欄位定義。
+     */
     fun readOnlyInt(
         name: String,
         category: String,
@@ -101,7 +145,14 @@ internal object BuiltInGameConfigFields {
         read = { GameConfigPresentationValue.IntegerValue(read(it)) },
     )
 
-    /** 只顯示、不能編輯的開關欄位。 */
+    /**
+     * 建立只顯示、不能編輯的開關欄位。
+     *
+     * @param name 欄位 ID 的路徑片段。
+     * @param category 欄位所屬分類 ID。
+     * @param read 從遊戲設定讀取開關值的函式。
+     * @return 使用唯讀布林呈現的欄位定義。
+     */
     fun readOnlyBoolean(
         name: String,
         category: String,
@@ -116,7 +167,11 @@ internal object BuiltInGameConfigFields {
         read = { GameConfigPresentationValue.BooleanValue(read(it)) },
     )
 
-    /** 所有內建規則共用的思考時間與觀戰欄位，依畫面順序排列。 */
+    /**
+     * 建立所有內建規則共用的思考時間與觀戰欄位，依畫面順序排列。
+     *
+     * @return 共用流程設定欄位。
+     */
     fun flowFields(): List<GameConfigFieldDefinition> = listOf(
         baseSecondsField(),
         reserveSecondsField(),
@@ -124,6 +179,7 @@ internal object BuiltInGameConfigFields {
         handVisibilityField(),
     )
 
+    /** @return 主要思考時間欄位定義。 */
     private fun baseSecondsField(): GameConfigFieldDefinition = intField(
         "base_seconds",
         FLOW,
@@ -133,6 +189,7 @@ internal object BuiltInGameConfigFields {
         update = { config, number -> config.copy(flowConfig = config.flowConfig.copy(timeControl = ActionTimeControl.from(number, config.flowConfig.timeControl.reserveSeconds))) },
     )
 
+    /** @return 保留思考時間欄位定義。 */
     private fun reserveSecondsField(): GameConfigFieldDefinition = intField(
         "reserve_seconds",
         FLOW,
@@ -142,6 +199,7 @@ internal object BuiltInGameConfigFields {
         update = { config, number -> config.copy(flowConfig = config.flowConfig.copy(timeControl = ActionTimeControl.from(config.flowConfig.timeControl.baseSeconds, number))) },
     )
 
+    /** @return 觀戰政策單選欄位定義。 */
     private fun spectatingField(): GameConfigFieldDefinition = choiceField(
         "spectating_policy",
         FLOW,
@@ -150,6 +208,7 @@ internal object BuiltInGameConfigFields {
         update = { config, option -> config.copy(flowConfig = config.flowConfig.copy(spectatingPolicy = SpectatingPolicy.valueOf(option.uppercase()))) },
     )
 
+    /** @return 觀戰時手牌可見度單選欄位定義。 */
     private fun handVisibilityField(): GameConfigFieldDefinition = choiceField(
         "spectator_hand_visibility",
         FLOW,
@@ -158,7 +217,19 @@ internal object BuiltInGameConfigFields {
         update = { config, option -> config.copy(flowConfig = config.flowConfig.copy(spectatorHandVisibility = SpectatorHandVisibility.valueOf(option.uppercase()))) },
     ).copy(isEnabled = { it.flowConfig.spectatingPolicy == SpectatingPolicy.ENABLED })
 
+    /**
+     * 為內建設定欄位路徑加上固定命名空間。
+     *
+     * @param path 欄位 ID 的路徑片段。
+     * @return 以 `mahjongcraft:` 開頭的完整 ID。
+     */
     private fun id(path: String): String = "mahjongcraft:$path"
 
+    /**
+     * 為內建單選項目路徑加上固定命名空間。
+     *
+     * @param path 選項 ID 的路徑片段。
+     * @return 以 `mahjongcraft:` 開頭的完整 ID。
+     */
     private fun option(path: String): String = "mahjongcraft:$path"
 }

@@ -68,7 +68,11 @@ class StressTestChatFormattingTest {
         assertTrue(hand.size >= MIN_STANDING_TILES && hand.all { TILE_NOTATION.matches(it) }, text)
     }
 
-    /** 測試用的完整報告。 */
+    /**
+     * 建立具有固定量測值的報告，供輸出格式斷言使用。
+     *
+     * @return 包含各項量測欄位的測試報告。
+     */
     private fun sampleReport() = StressTestReport(
         scenarioId = "mahjongcraft:riichi_east",
         mode = StressTestMode.Ramp(StressRampPlan()),
@@ -132,6 +136,7 @@ class StressTestChatFormattingTest {
         sustainedTables = 4,
     )
 
+    /** AI 手牌簡寫檢查使用的界限與格式。 */
     private companion object {
         /** 立牌最少的張數：四組副露後只剩一張。 */
         const val MIN_STANDING_TILES = 1

@@ -33,7 +33,7 @@ interface HeadlessHistoryMatchRuntime {
     /**
      * 讀取來源目前對局。
      *
-     * @return 目前對局，或已返回房間的 null。
+     * @return 目前對局；已返回房間或因其他原因移除對局時為 null。
      */
     suspend fun currentGame(): Game?
 }

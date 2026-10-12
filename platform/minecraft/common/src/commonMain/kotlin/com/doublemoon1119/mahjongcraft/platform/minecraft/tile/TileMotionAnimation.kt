@@ -14,7 +14,14 @@ import kotlin.math.sin
 class TileMotionAnimation(
     private val spec: TileMotionAnimationSpec,
 ) {
-    /** 計算指定經過 ticks、指定起點相對終點偏移的視覺 frame。 */
+    /**
+     * 計算指定經過 ticks、指定起點相對終點偏移的視覺 frame。
+     *
+     * @param elapsedTicks 已經過的 server ticks。
+     * @param startOffset 起點相對於終點的位移。
+     * @param startYawOffsetDegrees 起點相對終點的 yaw 差。
+     * @return 指定時間點的動畫狀態。
+     */
     fun frame(
         elapsedTicks: Double,
         startOffset: DiceAnimationVector,
@@ -31,10 +38,8 @@ class TileMotionAnimation(
             )
         }
 
-        // 位移用 ease-out（1 減去「1 減 progress」的平方）取代原始 progress 直接線性內插——遊戲內
-        // 實際比較過先慢後快（ease-in）跟先快後慢（ease-out）兩種曲線，後者落地前明顯減速的感覺更好；
-        // 姿態旋轉角預設維持線性內插，不受此影響（旋轉的速度感不需要跟位移的曲線綁在一起）——只有
-        // [TileMotionAnimationSpec.easeRotation] 明確要求時才套用同一條 ease-out 曲線，見該欄位 KDoc。
+        // 位移使用 ease-out；姿態旋轉預設線性內插，只有 [TileMotionAnimationSpec.easeRotation] 為 true
+        // 時才使用相同的 ease-out 進度。
         val remaining = 1.0 - progress
         val easedProgress = 1.0 - remaining * remaining
         val offset = DiceAnimationVector(

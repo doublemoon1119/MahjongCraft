@@ -26,6 +26,9 @@ class MahjongStoolSeatService(
      *
      * 該位置不是麻將凳、凳子已經有座位、[entity] 正在騎乘、不在 [world] 中，或坐下後會卡進上方方塊時不坐下。
      *
+     * @param world 麻將凳所在的伺服器世界。
+     * @param stoolPos 要坐上的凳子方塊座標。
+     * @param entity 要乘坐凳子的實體。
      * @return 是否坐下。
      */
     fun sit(world: ServerWorld, stoolPos: BlockPos, entity: Entity): Boolean {
@@ -46,7 +49,15 @@ class MahjongStoolSeatService(
         return true
     }
 
-    /** [entity] 坐上 [seat] 後，凳面以上的身體範圍是否沒有方塊阻擋。 */
+    /**
+     * [entity] 坐上 [seat] 後，凳面以上的身體範圍是否沒有方塊阻擋。
+     *
+     * @param world 凳子所在世界。
+     * @param entity 要檢查碰撞空間的實體。
+     * @param seat 即將乘坐的座位實體。
+     * @param seatTopY 凳面高度。
+     * @return 乘坐者身體範圍沒有方塊阻擋時為 true。
+     */
     private fun hasRoomAbove(
         world: ServerWorld,
         entity: Entity,

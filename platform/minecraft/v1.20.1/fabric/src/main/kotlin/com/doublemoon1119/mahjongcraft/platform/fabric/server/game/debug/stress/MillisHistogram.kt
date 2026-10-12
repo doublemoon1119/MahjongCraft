@@ -33,7 +33,11 @@ class MillisHistogram(
     /** 累計的最大毫秒數。 */
     private var maxMillis = 0.0
 
-    /** 加入一筆毫秒數；負值視為 0。 */
+    /**
+     * 加入一筆毫秒數；負值視為零。
+     *
+     * @param millis 量得的有限毫秒數。
+     */
     fun add(millis: Double) {
         val value = millis.coerceAtLeast(0.0)
         counts[(value / resolutionMillis).toInt().coerceAtMost(counts.lastIndex)]++
@@ -48,7 +52,13 @@ class MillisHistogram(
     /** 最大值；沒有數值時為 0。 */
     fun max(): Double = maxMillis
 
-    /** 第 [fraction] 分位數（例如 0.99），以最接近的排名取值；沒有數值時為 0。 */
+    /**
+     * 依向上取整的分位排名取得直方圖格子的上緣，最後一格改回報實際最大值。
+     *
+     * @param fraction 分位比例，須介於 0 與 1；例如 0.99 代表 P99。
+     * @return 對應格子的近似毫秒數，不超過實際最大值；沒有樣本時為零。
+     * @throws IllegalArgumentException 比例不在有效範圍時拋出。
+     */
     fun percentile(fraction: Double): Double {
         require(fraction in 0.0..1.0) { "Percentile fraction must be between 0 and 1" }
         if (count == 0L) return 0.0

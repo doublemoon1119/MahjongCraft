@@ -10,6 +10,7 @@ import kotlin.uuid.Uuid
  * 依權威 [Game] 桌況解析目前需要做出決策的玩家與階段。
  *
  * @property actionContextResolver 玩家目前操作情境的權威解析器。
+ * @property automaticDecisionEvaluator 檢查已啟用自動操作是否能立即執行；未提供時不可在本解析器中評估此類玩家。
  */
 @Single
 class GameDecisionAuthorityResolver(

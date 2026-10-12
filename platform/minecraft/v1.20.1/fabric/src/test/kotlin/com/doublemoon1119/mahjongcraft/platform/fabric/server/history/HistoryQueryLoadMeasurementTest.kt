@@ -578,12 +578,12 @@ class HistoryQueryLoadMeasurementTest {
      * @property queryP50Millis 查詢延遲近似第 50 百分位，單位為毫秒。
      * @property queryP95Millis 查詢延遲近似第 95 百分位，單位為毫秒。
      * @property queryThroughputPerSecond 每秒完成的查詢數量近似值。
-     * @property writeSamples 已收集的待寫事件提交延遲樣本數。
+     * @property writeSamples 已完成的待寫事件提交數；僅正式量測時另外保留延遲樣本。
      * @property writeP95Millis 待寫事件提交延遲近似第 95 百分位，單位為毫秒。
      * @property processCpuMillis 本輪處理程序 CPU 時間；不支援時為 null。
      * @property initialHeapBytes 本輪起始 heap 使用量；不支援時為 null。
      * @property peakHeapBytes 本輪取樣到的最大 heap 使用量；不支援時為 null。
-     * @property garbageCollections 本 JVM GC 累積次數；不支援時為 null。
+     * @property garbageCollections 本輪觀察到的 GC 次數增量；不支援時為 null。
      */
     private data class LoadMeasurement(
         val cap: Int,

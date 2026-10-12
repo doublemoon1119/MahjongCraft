@@ -36,8 +36,19 @@ import kotlin.uuid.Uuid
  */
 class DeclareExhaustiveDrawUseCaseTest {
 
+    /** 受測對局識別碼。 */
     private val gameId = Uuid.random()
 
+    /**
+     * 一般流局結算共用的測試環境。
+     *
+     * @property gameRepo 保存權威對局的測試倉庫。
+     * @property moduleRegistry 已註冊內建規則的中心。
+     * @property snapshotRepo 保存玩家可見快照的替身。
+     * @property snapshotSynchronizer 更新快照的元件。
+     * @property eventPublisher 記錄動作通知的替身。
+     * @property useCase 受測流局用例。
+     */
     private class Fixtures {
         val gameRepo = FakeGameRepository()
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
@@ -47,7 +58,7 @@ class DeclareExhaustiveDrawUseCaseTest {
         val useCase = DeclareExhaustiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher)
     }
 
-    // 聽牌手牌：1112345678999m（聽 1m 對倒）
+    // 十三張萬子立牌 1112345678999m；加入任一種萬子都能和牌。
     private fun tenpaiHand() = FakeHandFactory.create(
         listOf(
             Tile.Numeric(Tile.Suit.Character, 1),
@@ -66,7 +77,7 @@ class DeclareExhaustiveDrawUseCaseTest {
         ),
     )
 
-    // 明顯遠離聽牌的手牌（13 張互不相干的孤立牌）
+    // 三種數牌各取 1、4、7，再加四種風牌，建立未聽牌的十三張立牌。
     private fun notTenpaiHand() = FakeHandFactory.create(
         listOf(
             Tile.Numeric(Tile.Suit.Character, 1),
@@ -161,7 +172,7 @@ class DeclareExhaustiveDrawUseCaseTest {
     @Test
     fun `test declare exhaustive draw ignores multiple nagashi mangan candidates`() = runTest {
         val fixtures = Fixtures()
-        // 莊家自己也是成立者，順位距離莊家為 0，理應是頭跳的那一位
+        // 讓莊家與南家都符合牌河條件，確認本用例不替流局滿貫進行結算。
         val dealerAchiever = FakeMahjongPlayerFactory.create(
             initialSeat = Wind.EAST,
             hand = notTenpaiHand(),

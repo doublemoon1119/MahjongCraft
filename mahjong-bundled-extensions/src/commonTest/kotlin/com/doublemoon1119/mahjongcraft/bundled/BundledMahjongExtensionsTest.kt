@@ -74,7 +74,12 @@ class BundledMahjongExtensionsTest {
         assertEquals(listOf("mahjongcraft:taiwan/discard_pile"), taiwan.ids("mahjongcraft:history_replay_discard"))
     }
 
-    /** 指定類別中這個來源登記的 ID；沒有登記時為空清單。 */
+    /**
+     * 取得這個來源在指定分類中登記的 ID；沒有登記時為空清單。
+     *
+     * @param categoryId 要查詢的登記分類 ID。
+     * @return 該分類登記的 ID 清單。
+     */
     private fun ExtensionRegistrationSource.ids(categoryId: String): List<String> = categories.firstOrNull { it.id == categoryId }?.registrationIds.orEmpty()
 
     /** 所有子 registry 皆為空的測試集合。 */

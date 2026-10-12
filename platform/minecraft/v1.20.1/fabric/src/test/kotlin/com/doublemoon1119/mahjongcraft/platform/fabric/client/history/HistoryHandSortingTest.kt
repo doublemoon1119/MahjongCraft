@@ -44,7 +44,7 @@ class HistoryHandSortingTest {
         assertEquals(listOf(2, 1, 0), HistoryHandSorting().orderedTiles(player, catalog, RiichiTileOrder))
     }
 
-    /** 切換回規則排序時仍可重新取得原本的保存順序。 */
+    /** 連續切換兩次會恢復預設的規則排序偏好。 */
     @Test
     fun `toggle restores default preference`() {
         val sorting = HistoryHandSorting()

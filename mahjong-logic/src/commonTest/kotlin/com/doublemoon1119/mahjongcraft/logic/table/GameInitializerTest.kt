@@ -26,6 +26,7 @@ import kotlin.uuid.Uuid
  */
 class GameInitializerTest {
 
+    /** 提供開局與換局政策的日麻規則模組。 */
     private val module = RiichiRuleModule(id = "mahjongcraft:riichi", config = RiichiRuleConfig())
 
     /**
@@ -247,14 +248,23 @@ class GameInitializerTest {
         )
     }
 
-    /** 取得公開指示牌在王牌區中的位置，與牌張 UUID 無關以便跨局比較。 */
+    /**
+     * 取得公開指示牌在王牌區中的位置，與牌張 UUID 無關以便跨局比較。
+     *
+     * @param table 要檢查的桌況。
+     * @return 目前公開指示牌在王牌區中的索引。
+     */
     private fun indicatorPositions(table: TableState): List<Int> {
         val dynamicState = assertIs<RiichiDynamicState>(table.dynamicRuleState)
         val visibleIds = dynamicState.getVisibleTileIds(table)
         return table.reservedWallTiles.withIndex().filter { it.value.id in visibleIds }.map { it.index }
     }
 
-    /** 建立測試用的連莊/過莊判定結果。 */
+    /**
+     * 建立測試用的連莊/過莊判定結果。
+     *
+     * @return 含四位玩家及預設局數、場風的測試結果。
+     */
     private fun roundAdvancement(): RoundAdvancementResult {
         val players = listOf(Wind.EAST, Wind.SOUTH, Wind.WEST, Wind.NORTH).map(FakeMahjongPlayerFactory::create)
         return RoundAdvancementResult(
@@ -401,8 +411,7 @@ class GameInitializerTest {
     }
 
     /**
-     * 驗證 [GameInitializer.startNextRound] 單純延續傳入的動態桌況狀態，不會重置或另外處理
-     * （例如供託是否歸零，已經在胡牌結算階段決定好，這裡只負責套用）。
+     * 驗證 [GameInitializer.startNextRound] 保留供託；輸入只含跨局資料時，換局後的動態狀態與輸入相等。
      */
     @Test
     fun `test startNextRound carries over dynamic rule state unchanged`() {

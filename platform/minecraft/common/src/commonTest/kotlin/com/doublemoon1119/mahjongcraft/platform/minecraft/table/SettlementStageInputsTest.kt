@@ -153,7 +153,12 @@ class SettlementStageInputsTest {
         assertEquals(without.getValue(1), with.getValue(1), "Expected an unlisted seat to reserve no corner prop width.")
     }
 
-    /** 取得各座位的桌角預留寬度。 */
+    /**
+     * 取得各座位的桌角預留寬度。
+     *
+     * @param cornerWidthsBySeat 指定座位的物件寬度。
+     * @return 計入指定物件後，各座位的預留寬度。
+     */
     private fun cornerWidths(cornerWidthsBySeat: Map<Int, Double>) = exhaustiveDrawSettlementStageInputs(
         request = requestOf(playerPresentation(seatIndex = 0)),
         tableState = stateWith(),
@@ -162,10 +167,22 @@ class SettlementStageInputsTest {
         tileAssetRegistry = FakeTileAssetRegistry,
     ).reservedCornerWidthsBySeat
 
-    /** 建立測試用的牌張。 */
+    /**
+     * 建立測試用的牌張。
+     *
+     * @param tile 牌面。
+     * @return 帶有測試識別碼的牌張。
+     */
     private fun tileOf(tile: Tile): IdentifiedTile = FakeIdentifiedTileFactory.create(tile)
 
-    /** 建立測試用的桌況。 */
+    /**
+     * 建立測試用的桌況。
+     *
+     * @param handTiles 莊家手牌。
+     * @param wallTiles 活牌牆牌序。
+     * @param deadWallTiles 王牌區牌序。
+     * @return 含東、南兩位玩家及指定牌區的桌況。
+     */
     private fun stateWith(
         handTiles: List<IdentifiedTile> = emptyList(),
         wallTiles: List<IdentifiedTile> = emptyList(),
@@ -181,10 +198,22 @@ class SettlementStageInputsTest {
         )
     }
 
-    /** 建立測試用的結算請求。 */
+    /**
+     * 建立測試用的結算請求。
+     *
+     * @param players 要放入請求的玩家呈現資料。
+     * @return 一般荒牌流局原因的結算請求。
+     */
     private fun requestOf(vararg players: ExhaustiveDrawSettlementPlayerPresentation) = ExhaustiveDrawSettlementPresentationRequest(reasonId = "mahjongcraft:exhaustive_draw", players = players.toList())
 
-    /** 建立測試用的玩家結算資料。 */
+    /**
+     * 建立測試用的玩家結算資料。
+     *
+     * @param seatIndex 座位索引，也用來選擇測試自風。
+     * @param waitingTiles 等待牌面。
+     * @param revealedHandTileIds 要公開的手牌 ID。
+     * @return 排名、聽牌與公開手牌欄位均已填入的玩家呈現資料。
+     */
     private fun playerPresentation(
         seatIndex: Int,
         waitingTiles: List<Tile> = emptyList(),
@@ -207,16 +236,12 @@ class SettlementStageInputsTest {
         statusId = null,
     )
 
-    /**
-     * 只在解析擴充牌種時才會被查詢的 registry 測試替身。
-     *
-     * 內建牌種的資產名稱不經過 registry（見 `Tile.toAssetKey`），本測試也只使用內建牌種。
-     */
     /** 副露寬度與牌序無關，測試只需要一個穩定的比較器。 */
     private object FakeTileOrder : TileOrder {
         override fun compare(first: Tile, second: Tile): Int = 0
     }
 
+    /** 只接受 lookup 的測試替身；任何註冊或凍結呼叫都表示測試走錯路徑。 */
     private object FakeTileAssetRegistry : MinecraftTileAssetRegistry {
         override val registrationKeys: Set<String> get() = emptySet()
 

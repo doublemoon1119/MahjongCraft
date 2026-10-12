@@ -33,12 +33,26 @@ object TaiwanTileTypes {
     /** 依春、夏、秋、冬、梅、蘭、菊、竹排列的全部內建花牌 ID。 */
     val ALL: List<TileTypeId> = listOf(SPRING, SUMMER, AUTUMN, WINTER, PLUM, ORCHID, CHRYSANTHEMUM, BAMBOO)
 
-    /** 建立八張各一張的台灣麻將花牌。 */
+    /**
+     * 建立八張各一張的台灣麻將花牌。
+     *
+     * @return 依內建排序排列的八張花牌。
+     */
     fun createAll(): List<Tile.Extension> = ALL.map(Tile::Extension)
 
-    /** 判斷 [tile] 是否為台灣麻將內建花牌。 */
+    /**
+     * 判斷 [tile] 是否為台灣麻將內建花牌。
+     *
+     * @param tile 要檢查的牌。
+     * @return 若為內建花牌則為 true。
+     */
     fun isFlower(tile: Tile): Boolean = (tile as? Tile.Extension)?.typeId in ALL
 
-    /** 取得內建花牌的既定排序索引；非內建花牌回傳 null。 */
+    /**
+     * 取得內建花牌的既定排序索引。
+     *
+     * @param tile 要查詢排序的牌。
+     * @return 內建花牌的排序索引；非內建花牌為 null。
+     */
     fun orderIndex(tile: Tile): Int? = (tile as? Tile.Extension)?.typeId?.let(ALL::indexOf)?.takeIf { it >= 0 }
 }

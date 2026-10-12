@@ -15,7 +15,7 @@ import org.koin.core.annotation.Single
  */
 @Single
 internal class FabricHistoryScreenCommand(private val screens: HistoryScreenController, private val chatEntries: ClientHistoryChatEntryStore) {
-    /** 註冊 `/mahjongcraft_client history screen`。 */
+    /** 註冊一般歷史畫面指令及使用本地入口識別碼的聊天點擊指令。 */
     fun register() {
         ClientCommandRegistrationCallback.EVENT.register { dispatcher, _ ->
             dispatcher.register(

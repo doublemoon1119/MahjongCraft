@@ -25,13 +25,23 @@ import net.minecraft.util.math.Box
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
-/** 使用 Fabric 1.20.1 entity 呈現並替換指定麻將桌的正式骰子。 */
+/**
+ * 使用實體呈現擲骰與結果，成功建立後替換指定麻將桌的舊骰子。
+ *
+ * @property serverHolder 取得目前 server session 與世界。
+ * @property spawnGateway 執行並診斷正式 entity 生成。
+ */
 @Single(binds = [MahjongDiceRollPresenter::class])
 class FabricMahjongDiceRollPresenter(
     private val serverHolder: FabricServerHolder,
     private val spawnGateway: FabricEntitySpawnGateway,
 ) : MahjongDiceRollPresenter {
-    /** 驗證 controller 後先建立新骰子；全部成功才移除同桌舊骰子。 */
+    /**
+     * 驗證 controller 後先建立新骰子；全部成功才移除同桌舊骰子。
+     *
+     * @param presentation 權威骰子結果、桌位與投擲時間資料。
+     * @return 已呈現、找不到相符牌桌，或實體生成失敗的結果。
+     */
     override fun present(presentation: MahjongDiceRollPresentation): MahjongDiceRollPresentationResult {
         val world = resolveWorld(presentation.tableLocation) ?: return MahjongDiceRollPresentationResult.TABLE_NOT_FOUND
         val controllerPos = presentation.tableLocation.toBlockPos()
@@ -108,7 +118,13 @@ class FabricMahjongDiceRollPresenter(
         return MahjongDiceRollPresentationResult.PRESENTED
     }
 
-    /** 清除指定 controller 周圍且 table UUID 相符的正式骰子。 */
+    /**
+     * 清除指定 controller 周圍且 table UUID 相符的正式骰子。
+     *
+     * @param tableId 所屬麻將桌 UUID。
+     * @param tableLocation 桌子所在 dimension 與方塊位置。
+     * @return 移除的骰子與結果舞台 entity 總數。
+     */
     override fun clear(tableId: Uuid, tableLocation: TableLocation): Int {
         val world = resolveWorld(tableLocation) ?: return 0
         val dice = findManagedDice(world, tableId, tableLocation.toBlockPos())
@@ -118,14 +134,27 @@ class FabricMahjongDiceRollPresenter(
         return dice.size + stages.size
     }
 
-    /** 由版本無關 dimension ID 取得目前 server session 的世界。 */
+    /**
+     * 依位置中的維度識別碼取得目前伺服器世界。
+     *
+     * @param location 包含維度識別碼的桌子位置。
+     * @return 相符世界；識別碼無效、伺服器不存在或世界未載入時為 null。
+     */
     private fun resolveWorld(location: TableLocation): ServerWorld? {
         val identifier = Identifier.tryParse(location.dimensionId) ?: return null
         val worldKey = RegistryKey.of(RegistryKeys.WORLD, identifier)
         return serverHolder.current()?.getWorld(worldKey)
     }
 
-    /** 驗證指定位置確實是 UUID 與朝向資料可用的 controller。 */
+    /**
+     * 驗證指定位置是身分相符且具水平朝向資料的桌子控制方塊。
+     *
+     * @param world 桌子所在世界。
+     * @param controllerPos 控制方塊座標。
+     * @param state 該位置目前的方塊狀態。
+     * @param tableId 預期的麻將桌 UUID。
+     * @return 相符的桌子方塊實體；結構、朝向欄位或身分不符時為 null。
+     */
     private fun resolveTable(
         world: ServerWorld,
         controllerPos: BlockPos,
@@ -141,7 +170,14 @@ class FabricMahjongDiceRollPresenter(
         }
     }
 
-    /** 只查詢桌子結構附近並以同步 UUID 精確篩選，避免掃描整個 dimension。 */
+    /**
+     * 查詢桌子附近且所屬桌子 UUID 相符的骰子，不掃描整個維度。
+     *
+     * @param world 要查詢的世界。
+     * @param tableId 預期的麻將桌 UUID。
+     * @param controllerPos 查詢範圍中心的控制方塊座標。
+     * @return 範圍內屬於該桌的骰子實體。
+     */
     private fun findManagedDice(
         world: ServerWorld,
         tableId: Uuid,
@@ -151,7 +187,14 @@ class FabricMahjongDiceRollPresenter(
         Box(controllerPos).expand(DICE_SEARCH_HORIZONTAL, DICE_SEARCH_VERTICAL, DICE_SEARCH_HORIZONTAL),
     ) { dice -> dice.managedTableId == tableId }
 
-    /** 只查詢桌子附近並以 UUID 精確篩選正式擲骰結果舞台。 */
+    /**
+     * 查詢桌子附近且所屬桌子 UUID 相符的擲骰結果舞台。
+     *
+     * @param world 要查詢的世界。
+     * @param tableId 預期的麻將桌 UUID。
+     * @param controllerPos 查詢範圍中心的控制方塊座標。
+     * @return 範圍內屬於該桌的結果舞台。
+     */
     private fun findManagedStages(
         world: ServerWorld,
         tableId: Uuid,
@@ -161,7 +204,7 @@ class FabricMahjongDiceRollPresenter(
         Box(controllerPos).expand(DICE_SEARCH_HORIZONTAL, DICE_SEARCH_VERTICAL, DICE_SEARCH_HORIZONTAL),
     ) { stage -> stage.managedTableId == tableId }
 
-    /** 將版本無關 table location 轉回 Fabric 方塊座標。 */
+    /** @return 桌子位置對應的 Minecraft 方塊座標，不含維度資訊。 */
     private fun TableLocation.toBlockPos(): BlockPos = BlockPos(x, y, z)
 
     /** 正式骰子建立與查詢使用的固定參數。 */

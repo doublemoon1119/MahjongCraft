@@ -8,6 +8,9 @@ import kotlin.uuid.Uuid
  *
  * [settlement] 供權威流程套用分數；[handValueResult] 供外層流程解析規則中立的呈現提示。呈現提示本身
  * 不放入 logic 層，避免規則計算依賴任何平台演出概念。
+ *
+ * @property settlement 贏家收取與付款者支出的結算資料。
+ * @property handValueResult 此次胡牌的手牌價值計算結果。
  */
 data class WinResolutionResult(
     val settlement: WinSettlementResult,

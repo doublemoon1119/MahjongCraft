@@ -418,7 +418,21 @@ class DecisionCardLayoutTest {
         assertEquals(1, DecisionCardLayout.triggerTextMaximumWidth(screenWidth = 1))
     }
 
-    /** 建立測試用的版面。 */
+    /**
+     * 建立測試用的版面。
+     *
+     * @param cardCount 卡片數量。
+     * @param previewTileCount 每張卡片的預覽牌數量。
+     * @param screenWidth 畫面寬度。
+     * @param screenHeight 畫面高度。
+     * @param headerTextWidth 標題文字寬度。
+     * @param triggerLineCount 觸發文字行數。
+     * @param triggerTextWidth 觸發文字寬度。
+     * @param hasTriggerTile 是否顯示觸發牌。
+     * @param panelRatioY 面板的垂直位置比例。
+     * @param timerWidth 倒數文字寬度。
+     * @return 以指定尺寸與內容建立的版面。
+     */
     private fun layout(
         cardCount: Int,
         previewTileCount: Int = 0,

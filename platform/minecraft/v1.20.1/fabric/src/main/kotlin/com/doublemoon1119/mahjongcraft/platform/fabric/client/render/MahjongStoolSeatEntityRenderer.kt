@@ -5,7 +5,11 @@ import net.minecraft.client.render.entity.EntityRenderer
 import net.minecraft.client.render.entity.EntityRendererFactory
 import net.minecraft.util.Identifier
 
-/** 麻將凳隱形座位的空 renderer。 */
+/**
+ * 麻將凳隱形座位的空 renderer。
+ *
+ * @param context Minecraft renderer factory 提供的 client context。
+ */
 class MahjongStoolSeatEntityRenderer(
     context: EntityRendererFactory.Context,
 ) : EntityRenderer<MahjongStoolSeatEntity>(context) {

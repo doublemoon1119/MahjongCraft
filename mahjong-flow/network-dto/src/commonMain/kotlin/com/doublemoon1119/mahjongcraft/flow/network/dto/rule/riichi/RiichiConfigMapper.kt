@@ -19,7 +19,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDomain as toRuleD
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDto as toRuleDto
 
 /**
- * 執行網路資料轉換。
+ * 將日麻規則設定轉為網路 DTO。
  *
  * @param registries 網路 DTO 的動態註冊表集合。
  * @return 轉換後的資料。
@@ -40,7 +40,7 @@ fun RiichiRuleConfig.toRiichiDto(registries: NetworkDtoRegistries): RiichiRuleCo
 )
 
 /**
- * 將網路 DTO 還原為領域資料。
+ * 將日麻規則設定 DTO 還原為領域資料；固定的起始手牌、王牌與玩家人數使用規則值。
  *
  * @param registries 網路 DTO 的動態註冊表集合。
  * @return 轉換後的資料。
@@ -56,7 +56,7 @@ fun RiichiRuleConfigDto.toDomain(registries: NetworkDtoRegistries): RiichiRuleCo
 )
 
 /**
- * 執行網路資料轉換。
+ * 將三人日麻規則設定轉為網路 DTO。
  *
  * @param registries 網路 DTO 的動態註冊表集合。
  * @return 轉換後的資料。
@@ -77,7 +77,7 @@ fun ThreePlayerRiichiRuleConfig.toThreePlayerRiichiDto(registries: NetworkDtoReg
 )
 
 /**
- * 將網路 DTO 還原為領域資料。
+ * 將三人日麻規則設定 DTO 還原為領域資料；固定的起始手牌、王牌與玩家人數使用規則值。
  *
  * @param registries 網路 DTO 的動態註冊表集合。
  * @return 轉換後的資料。
@@ -93,7 +93,7 @@ fun ThreePlayerRiichiRuleConfigDto.toDomain(registries: NetworkDtoRegistries): T
 )
 
 /**
- * 執行網路資料轉換。
+ * 將日麻計分設定轉為網路 DTO。
  *
  * @return 轉換後的資料。
  */
@@ -105,7 +105,7 @@ fun RiichiScoreConfig.toRiichiDto(): RiichiScoreConfigDto = RiichiScoreConfigDto
 )
 
 /**
- * 將網路 DTO 還原為領域資料。
+ * 將日麻計分設定 DTO 還原為領域資料。
  *
  * @return 轉換後的資料。
  */
@@ -117,7 +117,7 @@ fun RiichiScoreConfigDto.toDomain(): RiichiScoreConfig = RiichiScoreConfig(
 )
 
 /**
- * 執行網路資料轉換。
+ * 將日麻動態桌況狀態轉為網路 DTO。
  *
  * @return 轉換後的資料。
  */
@@ -136,7 +136,7 @@ fun RiichiDynamicState.toRiichiDto(): RiichiDynamicStateDto = RiichiDynamicState
 )
 
 /**
- * 將網路 DTO 還原為領域資料。
+ * 將日麻動態桌況狀態 DTO 還原為領域資料。
  *
  * @return 轉換後的資料。
  */
@@ -177,7 +177,7 @@ private fun RiichiPendingKanTypeDto.toDomain(): GameAction.KanType = when (this)
 }
 
 /**
- * 將領域資料轉換為網路 DTO。
+ * 將包責任資料轉為日麻網路 DTO。
  *
  * @return 轉換後的資料。
  */
@@ -190,7 +190,7 @@ fun PaoLiability.toDto(): PaoLiabilityDto = PaoLiabilityDto(
 )
 
 /**
- * 將網路 DTO 還原為領域資料。
+ * 將日麻包責任 DTO 還原為領域資料。
  *
  * @return 轉換後的資料。
  */
@@ -203,7 +203,7 @@ fun PaoLiabilityDto.toDomain(): PaoLiability = PaoLiability(
 )
 
 /**
- * 執行網路資料轉換。
+ * 將日麻玩家規則狀態轉為網路 DTO。
  *
  * @return 轉換後的資料。
  */
@@ -216,7 +216,7 @@ fun RiichiPlayerState.toRiichiDto(): RiichiPlayerStateDto = RiichiPlayerStateDto
 )
 
 /**
- * 將網路 DTO 還原為領域資料。
+ * 將日麻玩家規則狀態 DTO 還原為領域資料。
  *
  * @return 轉換後的資料。
  */
@@ -229,7 +229,7 @@ fun RiichiPlayerStateDto.toDomain(): RiichiPlayerState = RiichiPlayerState(
 )
 
 /**
- * 執行網路資料轉換。
+ * 將日麻牌河轉為網路 DTO。
  *
  * @return 轉換後的資料。
  */
@@ -238,7 +238,7 @@ fun RiichiDiscardPile.toRiichiDto(): RiichiDiscardPileDto = RiichiDiscardPileDto
 )
 
 /**
- * 將網路 DTO 還原為領域資料。
+ * 將日麻牌河 DTO 還原為領域資料。
  *
  * @return 轉換後的資料。
  */

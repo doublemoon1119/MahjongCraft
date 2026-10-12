@@ -23,6 +23,9 @@ class OpponentModelRegistry {
      * 登記 [ruleModuleId] 使用的對手模型；[factory] 每次決策時以該局的規則模組與決策者的讀牌深度呼叫一次。
      *
      * 凍結後或重複登記同一個規則時拋出例外。
+     *
+     * @param ruleModuleId 對應的規則模組識別碼。
+     * @param factory 建立該規則對手模型的函式。
      */
     fun register(ruleModuleId: String, factory: (MahjongRuleModule<*>, ReadingDepth) -> OpponentModel) {
         check(!frozen) { "Opponent model registry is frozen" }
@@ -30,7 +33,11 @@ class OpponentModelRegistry {
         factoriesByRuleModuleId[ruleModuleId] = factory
     }
 
-    /** 禁止後續登記。 */
+    /**
+     * 禁止後續登記。
+     *
+     * 凍結後呼叫 [register] 會拋出例外；既有登記仍可用於 [create]。
+     */
     fun freeze() {
         frozen = true
     }
@@ -40,6 +47,10 @@ class OpponentModelRegistry {
      *
      * 進階深度時外面再套用共用的讀牌。沒有登記的規則，讀牌倍率限制在 [NEUTRAL_READING_FACTOR_RANGE]：
      * 不知道規則時無法確認推測的準確度，因此只做溫和的調整；規則確定不能榮和的牌不受這個限制。
+     *
+     * @param module 本局使用的規則模組。
+     * @param depth 決策者要求的讀牌深度。
+     * @return 該規則與深度對應的對手模型。
      */
     fun create(module: MahjongRuleModule<*>, depth: ReadingDepth): OpponentModel {
         val registered = factoriesByRuleModuleId[module.id]?.invoke(module, depth)

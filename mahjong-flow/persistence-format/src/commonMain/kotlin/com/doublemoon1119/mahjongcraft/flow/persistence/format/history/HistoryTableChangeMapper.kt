@@ -27,7 +27,7 @@ internal class HistoryTableChangeMapper(
     /**
      * 將規則中立差異或完整檢查點轉為持久化 DTO。
      *
-     * @param result 動作套用後的結果。
+     * @param result 本次權威交易的桌況結果。
      * @return 轉換後的結果。
      */
     fun encode(result: HistoryTableResult): HistoryTableResultPersistenceDto = when (result) {
@@ -46,7 +46,7 @@ internal class HistoryTableChangeMapper(
         )
     }
 
-/**
+    /**
      * 從持久化 DTO 還原規則中立差異或完整檢查點。
      *
      * @param dto 待還原的桌況結果 DTO。
@@ -68,7 +68,12 @@ internal class HistoryTableChangeMapper(
         )
     }
 
-    /** 只編碼本次交易實際改變的欄位。 */
+    /**
+     * 只編碼本次交易實際改變的欄位。
+     *
+     * @param change 相對於前一桌況的結構差異。
+     * @return 保存該差異的 DTO。
+     */
     private fun encodeChange(change: HistoryTableChange): HistoryTableChangePersistenceDto = HistoryTableChangePersistenceDto(
         changedPlayers = change.changedPlayers.map { playerChange ->
             HistoryPlayerChangePersistenceDto(
@@ -111,7 +116,12 @@ internal class HistoryTableChangeMapper(
         revealedHandTileIds = change.revealedHandTileIds?.map(Uuid::toString)?.toSet(),
     )
 
-    /** 將局部 DTO 還原成可套用於前一桌況的差異。 */
+    /**
+     * 將局部 DTO 還原成可套用於前一桌況的差異。
+     *
+     * @param dto 已保存的桌況差異。
+     * @return 可套用於前一桌況的結構差異。
+     */
     private fun decodeChange(dto: HistoryTableChangePersistenceDto): HistoryTableChange = HistoryTableChange(
         changedPlayers = dto.changedPlayers.map { playerChange ->
             HistoryPlayerChange(

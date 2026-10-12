@@ -20,7 +20,7 @@ import kotlin.math.min
  */
 internal class LegacyRiichiShantenCalculator : ShantenCalculator {
 
-    // 為了方便計算，將所有牌型映射到 0-33 的索引
+    /** 將一般化後的 34 種牌映射到向聽計數陣列索引。 */
     private val tileMap: Map<Tile, Int> = buildMap {
         // 萬子 1-9 (0-8)
         (1..9).forEach { put(Tile.Numeric(Tile.Suit.Character, it), it - 1) }
@@ -182,6 +182,12 @@ internal class LegacyRiichiShantenCalculator : ShantenCalculator {
 
     /**
      * 遞迴計算能夠組成的最多面子數。
+     *
+     * @param counts 各牌的可用張數；遞迴時會暫時修改並還原。
+     * @param index 下一個要檢查的牌索引。
+     * @param currentMelds 已組成的面子數。
+     * @param targetMelds 本次搜尋的目標面子數。
+     * @return 在目標上限內可組成的最多面子數。
      */
     private fun countMeldsRecursive(counts: IntArray, index: Int, currentMelds: Int, targetMelds: Int): Int {
         if (currentMelds >= targetMelds || index >= 34) {
@@ -224,6 +230,7 @@ internal class LegacyRiichiShantenCalculator : ShantenCalculator {
      *
      * @param counts 立牌的計數陣列。
      * @param initialMelds 已副露的面子數。
+     * @return 手牌完成標準型所需的向聽數。
      */
     private fun calculateStandardShanten(counts: IntArray, initialMelds: Int): Int {
         var minShanten = 8 // 立直麻將的初始最大向聽數
@@ -337,6 +344,9 @@ internal class LegacyRiichiShantenCalculator : ShantenCalculator {
      * 規則：必須有 7 個不同的對子。
      * 向聽數 = 6 - 對子數 + max(0, 7 - 牌種類數)
      * 若已湊齊 7 對子，返回 -1 表示胡牌。
+     *
+     * @param counts 各牌在立牌中的張數。
+     * @return 七對子的向聽數；已完成時為 -1。
      */
     private fun calculateSevenPairsShanten(counts: IntArray): Int {
         var pairs = 0
@@ -367,6 +377,9 @@ internal class LegacyRiichiShantenCalculator : ShantenCalculator {
      * 規則：13 種么九牌各一張，其中一種有兩張。
      * 向聽數 = 13 - (現有的么九牌種類數) - (是否有任何一種么九牌 >= 2 ? 1 : 0)
      * 若已湊齊 13 種么九牌且有雀頭，返回 -1 表示胡牌。
+     *
+     * @param counts 各牌在立牌中的張數。
+     * @return 國士無雙的向聽數；已完成時為 -1。
      */
     private fun calculateKokushiShanten(counts: IntArray): Int {
         // 么九牌的索引列表: 1,9m (0,8), 1,9p (9,17), 1,9s (18,26), z (27-33)

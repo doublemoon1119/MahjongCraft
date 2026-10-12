@@ -44,7 +44,13 @@ class DebugPlayerTableScope(
     private val scope: AppCoroutineScope,
     private val dispatchers: CoroutineDispatchers,
 ) {
-    /** 解析呼叫者的牌桌後，在 main thread 執行 [action] 並送出它回傳的訊息。 */
+    /**
+     * 解析呼叫者的牌桌後，在 main thread 執行 [action] 並送出它回傳的訊息。
+     *
+     * @param source 指令呼叫來源。
+     * @param action 以牌桌識別碼產生回饋文字的動作。
+     * @return Brigadier 命令成功或失敗代碼；玩家查詢與動作在背景協程執行。
+     */
     fun runOnMain(source: ServerCommandSource, action: (tableId: Uuid) -> String): Int {
         val player = requirePlayer(source) ?: return COMMAND_FAILURE
         scope.launch {
@@ -61,7 +67,13 @@ class DebugPlayerTableScope(
         return COMMAND_SUCCESS
     }
 
-    /** 解析呼叫者的牌桌後，在協程中執行 [action]，再回到 main thread 送出它回傳的訊息。 */
+    /**
+     * 解析呼叫者的牌桌後，在協程中執行 [action]，再回到 main thread 送出它回傳的訊息。
+     *
+     * @param source 指令呼叫來源。
+     * @param action 以牌桌與玩家識別碼執行掛起動作並產生回饋文字。
+     * @return Brigadier 命令成功或失敗代碼；查詢與動作在背景協程執行。
+     */
     fun runSuspending(
         source: ServerCommandSource,
         action: suspend (tableId: Uuid, playerId: Uuid) -> String,
@@ -87,20 +99,33 @@ class DebugPlayerTableScope(
         return COMMAND_SUCCESS
     }
 
-    /** 讓 [tableId] 目前的場次不再產生進度、統計、事件掛勾與歷史紀錄。 */
+    /**
+     * 讓 [tableId] 目前的場次不再產生進度、統計、事件掛勾與歷史紀錄。
+     *
+     * @param tableId 要排除目前場次的牌桌識別碼。
+     */
     internal suspend fun excludeCurrentMatch(tableId: Uuid) {
         val game = gameRepository.getGame(tableId) ?: return
         exclusions.exclude(game.matchId)
         stateStore.stopHistoryRecording(game.matchId)
     }
 
-    /** 取得執行指令的玩家；由非玩家執行時回報錯誤並回傳 `null`。 */
+    /**
+     * 取得執行指令的玩家；由非玩家執行時回報錯誤並回傳 `null`。
+     *
+     * @param source 指令呼叫來源。
+     * @return 指令來源中的玩家；非玩家來源時為 null。
+     */
     private fun requirePlayer(source: ServerCommandSource) = source.player ?: run {
         source.sendError(Text.literal("This debug subcommand must be run by a player seated at a table"))
         null
     }
 
-    /** 回報呼叫者目前沒有入座任何牌桌。 */
+    /**
+     * 回報呼叫者目前沒有入座任何牌桌。
+     *
+     * @param source 指令呼叫來源。
+     */
     private fun sendNotSeated(source: ServerCommandSource) {
         source.sendError(Text.literal("You are not seated at any mahjong table"))
     }

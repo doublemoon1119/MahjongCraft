@@ -82,7 +82,12 @@ class ExtensionAutomaticControlTest {
         )
     }
 
-    /** 建立一場有鳴牌反應視窗的對局，反應者即為受測玩家。 */
+    /**
+     * 建立有鳴牌反應視窗的對局，反應者即為受測玩家。
+     *
+     * @param enabledControlIds 替反應者啟用的自動操作識別碼。
+     * @return 測試對局與反應者識別碼。
+     */
     private fun createGame(enabledControlIds: Set<String> = emptySet()): Pair<Game, Uuid> {
         val discarded = FakeIdentifiedTileFactory.create(Tile.Honor.South)
         val discarder = FakeMahjongPlayerFactory.create(discardPile = FakeDiscardPile().discardTile(discarded))
@@ -115,7 +120,11 @@ class ExtensionAutomaticControlTest {
         freeze()
     }
 
-    /** 額外宣告一個自訂控制與對應政策的規則模組測試替身。 */
+    /**
+     * 額外宣告一個自訂控制與對應政策的規則模組測試替身。
+     *
+     * @property delegate 提供其餘規則行為的模組。
+     */
     private class ExtensionControlRuleModule(
         private val delegate: MahjongRuleModule<RiichiRuleConfig>,
     ) : MahjongRuleModule<RiichiRuleConfig> by delegate {
@@ -130,6 +139,7 @@ class ExtensionAutomaticControlTest {
         }
     }
 
+    /** 測試替身使用的識別碼。 */
     private companion object {
         /** 測試替身規則的 ID，不屬於任何內建規則。 */
         const val EXTENSION_RULE_MODULE_ID = "example:extension_rule"

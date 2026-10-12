@@ -27,6 +27,7 @@ data class HistoryRecordingPersistenceDto(
         require(formatVersion == FORMAT_VERSION) { "Unsupported history outbox format $formatVersion" }
     }
 
+    /** 待寫事件快照的格式版本與空值。 */
     companion object {
         /** 目前的待寫事件快照格式版本。 */
         const val FORMAT_VERSION: Int = 1

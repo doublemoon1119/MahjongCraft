@@ -8,10 +8,10 @@ import kotlin.time.Duration.Companion.seconds
 /**
  * 單場生成與逐批交付的有界限制。
  *
- * @property maxSteps 最多允許的權威流程步數。
- * @property maxDuration 單場包含保存等待的最大時間。
- * @property maxTransferBatchSize 單批最多事件數；不得切斷權威交易。
- * @property transferWaitTimeout 收集端每批保存及確認的最大時間。
+ * @property maxSteps 最多允許的權威流程步數，必須大於零。
+ * @property maxDuration 單場包含保存等待的最大時間，必須為正值。
+ * @property maxTransferBatchSize 單批最多事件數，必須介於 1～64；不得切斷權威交易。
+ * @property transferWaitTimeout 收集端每批保存及確認的最大時間，必須為正值。
  */
 data class HeadlessHistoryRunLimits(
     val maxSteps: Int = 10_000,

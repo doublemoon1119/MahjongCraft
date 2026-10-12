@@ -5,7 +5,12 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFe
 
 /** 將 Minecraft 對局操作結果轉換成不含呈現方式的玩家回饋。 */
 internal object MinecraftGameFeedbackResolver {
-    /** 將對局操作的 [error] 轉成可呈現的回饋。 */
+    /**
+     * 將對局操作的 [error] 轉成可呈現的回饋。
+     *
+     * @param error 對局命令回傳的錯誤種類。
+     * @return 對應的玩家回饋，不包含具體呈現方式。
+     */
     fun actionError(error: GameError): MinecraftPlayerFeedback = when (error) {
         is GameError.GameNotFound, is GameError.PlayerNotInGame -> MinecraftPlayerFeedback.PlayerNotInGame
         is GameError.ForcedAutoPlayActive -> MinecraftPlayerFeedback.ForcedAutoPlayActive

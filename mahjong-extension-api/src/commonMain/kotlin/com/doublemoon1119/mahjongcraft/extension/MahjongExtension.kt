@@ -35,58 +35,120 @@ import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
  * MahjongCraft 的初始化順序。
  */
 interface MahjongExtension {
-    /** 第三方 extension 的穩定識別字串，用於診斷註冊錯誤。 */
+    /** extension 的穩定識別字串，用於標示登記來源、檢查重複並診斷註冊錯誤。 */
     val id: String
 
-    /** 登記規則配置與 [MahjongRuleModule] factory。 */
+    /**
+     * 登記規則配置與 [MahjongRuleModule] factory。
+     *
+     * @param registry 用於登記規則模組與其 factory 的 registry。
+     */
     fun registerRuleModules(registry: MahjongModuleRegistry)
 
     /**
      * 登記第三方規則使用的擴充牌種。
      *
      * 預設不註冊任何牌，使只提供既有 Numeric／Honor 規則的 extension 不必加入空實作。
+     *
+     * @param registry 用於登記擴充牌種類型的 registry。
      */
     fun registerTileTypes(registry: TileTypeRegistry) = Unit
 
-    /** 登記此規則模組的胡牌展示提示解析器。 */
+    /**
+     * 登記此規則模組的胡牌展示提示解析器。
+     *
+     * @param registry 用於登記胡牌展示提示解析器的 registry。
+     */
     fun registerWinCelebrationCueResolvers(registry: WinCelebrationCueResolverRegistry) = Unit
 
-    /** 登記所有第三方規則需要的 network DTO mapper。 */
+    /**
+     * 登記所有第三方規則需要的 network DTO mapper。
+     *
+     * @param registries 提供各 network DTO 類型 mapper 登記入口的 registry 集合。
+     */
     fun registerNetworkDtos(registries: NetworkDtoRegistries)
 
-    /** 登記所有第三方規則需要的 persistence DTO mapper。 */
+    /**
+     * 登記所有第三方規則需要的 persistence DTO mapper。
+     *
+     * @param registries 提供各 persistence DTO 類型 mapper 登記入口的 registry 集合。
+     */
     fun registerPersistenceDtos(registries: PersistenceRegistries)
 
-    /** 登記對局歷史公開投影的必要轉換器與可選規則資訊。 */
+    /**
+     * 登記對局歷史公開投影的必要轉換器與可選規則資訊。
+     *
+     * @param registry 用於登記歷史投影轉換器與規則資訊解析器的 registry。
+     */
     fun registerHistoryReplayProjections(registry: HistoryReplayProjectionRegistry) = Unit
 
-    /** 登記規則擴充動作供 AI 建立命令的 handler；handler 被呼叫時會拿到這一局的規則模組。 */
+    /**
+     * 登記規則擴充動作供 AI 建立命令的 handler；handler 被呼叫時會拿到這一局的規則模組。
+     *
+     * @param registry 用於登記擴充動作 AI handler 的 registry。
+     */
     fun registerGameActionAiHandlers(registry: ExtensionGameActionAiRegistry) = Unit
 
-    /** 登記平台無關的 AI 策略；策略顯示名稱由各平台的呈現 extension 另行登記。 */
+    /**
+     * 登記平台無關的 AI 策略；策略顯示名稱由各平台的呈現 extension 另行登記。
+     *
+     * @param registry 用於登記 AI 策略的 registry。
+     */
     fun registerAiStrategies(registry: MahjongAiStrategyRegistry) = Unit
 
-    /** 登記規則專屬的 AI 對手模型；沒有登記的規則，AI 改用規則中立的對手模型估計對手。 */
+    /**
+     * 登記規則專屬的 AI 對手模型；沒有登記的規則，AI 改用規則中立的對手模型估計對手。
+     *
+     * @param registry 用於登記規則專屬對手模型的 registry。
+     */
     fun registerOpponentModels(registry: OpponentModelRegistry) = Unit
 
-    /** 登記需要額外選牌的規則擴充動作如何建立伺服器命令。 */
+    /**
+     * 登記需要額外選牌的規則擴充動作如何建立伺服器命令。
+     *
+     * @param registry 用於登記擴充動作命令 factory 的 registry。
+     */
     fun registerGameActionCommandFactories(registry: ExtensionGameActionCommandFactoryRegistry) = Unit
 
-    /** 登記規則擴充命令的 handler 建立方式；每個執行環境以自己的對局流程服務建立 handler。 */
+    /**
+     * 登記規則擴充命令的 handler 建立方式；每個執行環境以自己的對局流程服務建立 handler。
+     *
+     * @param registry 用於登記擴充命令 executor factory 的 registry。
+     */
     fun registerGameCommandHandlers(registry: ExtensionGameCommandExecutorRegistry) = Unit
 
-    /** 登記最後捨牌反應結束後才判定的特殊 round outcome resolver。 */
+    /**
+     * 登記最後捨牌反應結束後才判定的特殊 round outcome resolver。
+     *
+     * @param registry 用於登記反應階段結束後局結果 resolver 的 registry。
+     */
     fun registerPostReactionRoundOutcomeResolvers(registry: PostReactionRoundOutcomeResolverRegistry) = Unit
 
-    /** 登記由特定玩家動作主動觸發（而非最後捨牌反應結束後被動判定）的途中流局 resolver。 */
+    /**
+     * 登記由特定玩家動作主動觸發（而非最後捨牌反應結束後被動判定）的途中流局 resolver。
+     *
+     * @param registry 用於登記動作觸發途中流局 resolver 的 registry。
+     */
     fun registerPostActionExhaustiveDrawResolvers(registry: PostActionExhaustiveDrawResolverRegistry) = Unit
 
-    /** 登記發牌後、正常摸打前的規則準備流程。 */
+    /**
+     * 登記發牌後、正常摸打前的規則準備流程。
+     *
+     * @param registry 用於登記開局準備 resolver 的 registry。
+     */
     fun registerRoundPreparationResolvers(registry: RoundPreparationResolverRegistry) = Unit
 
-    /** 登記胡牌即時結算完成後、判斷本局是否結束的 resolver。 */
+    /**
+     * 登記胡牌即時結算完成後、判斷本局是否結束的 resolver。
+     *
+     * @param registry 用於登記胡牌後局況延續 resolver 的 registry。
+     */
     fun registerWinRoundContinuationResolvers(registry: WinRoundContinuationResolverRegistry) = Unit
 
-    /** 登記規則專屬胡牌詳情欄位的解析器；欄位只含語意資料，顯示方式由平台決定。 */
+    /**
+     * 登記規則專屬胡牌詳情欄位的解析器；欄位只含語意資料，顯示方式由平台決定。
+     *
+     * @param registry 用於登記胡牌結算詳情解析器的 registry。
+     */
     fun registerWinSettlementDetailResolvers(registry: WinSettlementDetailResolverRegistry) = Unit
 }

@@ -39,6 +39,7 @@ internal fun selectHistoryDataSource(
  * @param canQueryAll 是否可查詢全部對局。
  * @param isDevelopment 是否為開發環境。
  * @param stressTestAvailable 是否存在壓力測試資料庫。
+ * @return 僅在全部對局查詢權限、開發環境與資料庫均可用時為 `true`。
  */
 internal fun canQueryStressTest(
     canQueryAll: Boolean,

@@ -58,7 +58,12 @@ class TaiwanWallOpeningPolicyTest {
         }
     }
 
-    /** 建立具有指定總和的合法三骰結果。 */
+    /**
+     * 建立具有指定總和的合法三骰結果。
+     *
+     * @param total 三顆骰子的點數總和，範圍為 3 到 18。
+     * @return 點數總和等於 `total` 的三骰結果。
+     */
     private fun diceRollWithTotal(total: Int): DiceRollResult {
         val first = (total - 12).coerceAtLeast(1)
         val second = (total - first - 6).coerceAtLeast(1)

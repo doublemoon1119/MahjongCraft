@@ -14,7 +14,7 @@ interface AiDecisionReporter {
     fun onTimedOut(gameId: Uuid, playerId: Uuid, strategyKey: String?)
 
     /**
-     * 這一局先前逾時的策略呼叫尚未結束，這次直接使用固定命令；同一個未結束的呼叫只回報一次。
+     * 這一局先前已逾時或已取消等待的策略呼叫尚未結束，這次直接使用固定命令；同一個未結束的呼叫只回報一次。
      *
      * @param gameId 對局。
      * @param playerId 決策的 AI 玩家。

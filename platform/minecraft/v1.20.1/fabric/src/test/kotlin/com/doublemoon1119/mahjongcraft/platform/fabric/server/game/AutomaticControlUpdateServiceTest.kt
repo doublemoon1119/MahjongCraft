@@ -13,13 +13,18 @@ import kotlin.uuid.Uuid
 
 /** [AutomaticControlUpdateService] 使用的 Flow result 至線路 DTO 映射測試。 */
 class AutomaticControlUpdateServiceTest {
+    /** 請求與回覆共用的測試對局識別碼。 */
     private val gameId = Uuid.random()
+
+    /** 預期修訂為 3、要求開啟自動和牌的測試請求。 */
     private val request = AutomaticControlUpdateRequestDto(
         requestId = "request-1",
         gameId = gameId.toString(),
         expectedRevision = 3L,
         enabledControlIds = setOf("mahjongcraft:auto_win"),
     )
+
+    /** 修訂為 4、已開啟自動和牌的權威快照。 */
     private val snapshot = PlayerAutomaticControlSnapshot(
         gameId = gameId,
         revision = 4L,

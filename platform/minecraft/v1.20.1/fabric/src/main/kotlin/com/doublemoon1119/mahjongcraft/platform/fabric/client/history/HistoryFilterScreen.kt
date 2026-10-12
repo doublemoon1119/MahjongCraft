@@ -318,7 +318,13 @@ internal class HistoryFilterScreen(
         .coerceAtMost(layout.contentBottom.toDouble())
         .coerceAtLeast((rowTop(0) + layout.rowHeight + 2 + RULE_OPTION_HEIGHT).toDouble())
 
-    /** 判斷游標是否位於展開的規則選項清單。 */
+    /**
+     * 判斷游標是否位於規則選項清單範圍；不檢查選單是否展開。
+     *
+     * @param mouseX 游標水平座標。
+     * @param mouseY 游標垂直座標。
+     * @return 游標是否落在選項清單範圍內。
+     */
     private fun isInsideRulePicker(mouseX: Double, mouseY: Double): Boolean = mouseX >= controlLeft() &&
         mouseX < controlLeft() + controlWidth() &&
         mouseY >= rowTop(0) + layout.rowHeight + 2 &&
@@ -357,21 +363,37 @@ internal class HistoryFilterScreen(
         )
     }
 
-    /** 將結果篩選值轉成顯示文字。 */
+    /**
+     * 將結果篩選值轉成顯示文字。
+     *
+     * @param value 篩選值；null 表示不限。
+     * @return 本地化選項文字。
+     */
     private fun outcomeLabel(value: HistoryOutcomeFilterDto?): Text = value?.let { Text.translatable("${MinecraftHistoryScreenKeys.FILTER_OUTCOME}.${it.name.lowercase()}") }
         ?: Text.translatable(MinecraftHistoryScreenKeys.FILTER_ANY)
 
-    /** 將完整性篩選值轉成顯示文字。 */
+    /**
+     * 將完整性篩選值轉成顯示文字。
+     *
+     * @param value 篩選值；null 表示不限。
+     * @return 本地化選項文字。
+     */
     private fun integrityLabel(value: HistoryIntegrityFilterDto?): Text = value?.let { Text.translatable("${MinecraftHistoryScreenKeys.FILTER_INTEGRITY}.${it.name.lowercase()}") }
         ?: Text.translatable(MinecraftHistoryScreenKeys.FILTER_ANY)
 
-    /** 將 AI 篩選值轉成顯示文字。 */
+    /**
+     * 將 AI 篩選值轉成顯示文字。
+     *
+     * @param value 篩選值；null 表示不限。
+     * @return 本地化選項文字。
+     */
     private fun aiLabel(value: HistoryAiFilterDto?): Text = value?.let { Text.translatable("${MinecraftHistoryScreenKeys.FILTER_AI}.${it.name.lowercase()}") }
         ?: Text.translatable(MinecraftHistoryScreenKeys.FILTER_ANY)
 
     /**
      * 取得循環選項中的下一個值；「不限」排在第一項，按住 Shift 時往回選。
      *
+     * @param T 選項型別。
      * @param value 目前選值；null 表示不限。
      * @param values 不含「不限」的可循環值清單。
      * @return 下一個值；null 表示不限。
@@ -595,6 +617,7 @@ internal class HistoryFilterScreen(
         super.removed()
     }
 
+    /** 規則選單與輸入框的固定繪製尺寸。 */
     private companion object {
         /** 高於背景控制項與其文字的選單繪製深度。 */
         const val RULE_PICKER_Z = 400.0

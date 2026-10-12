@@ -150,7 +150,11 @@ class HistoryRoundCacheTest {
         assertEquals(cacheState(), cache.getState(retained))
     }
 
-    /** 建立快取測試用最小合法桌況。 */
+    /**
+     * 建立快取測試用最小合法桌況。
+     *
+     * @return 包含單張牌目錄與一名玩家的初始牌面。
+     */
     private fun cacheState(): HistoryRoundStateDto = HistoryRoundStateDto(
         identity = HistoryReplayIdentityDto(TEST_MATCH_ID, TEST_TABLE_ID, listOf(HistoryReplayPlayerIdentityDto(0, null, "test:ai"))),
         roundNumber = 1,

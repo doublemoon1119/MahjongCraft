@@ -62,6 +62,11 @@ class AuthoritativeTileStatePersistenceTest {
         assertEquals(wall, restored)
     }
 
-    /** 建立具有隨機穩定識別碼的測試牌。 */
+    /**
+     * 為指定牌種建立具有隨機識別碼的測試牌。
+     *
+     * @param tile 測試牌的牌種。
+     * @return 帶有獨立 UUID 的測試牌。
+     */
     private fun tile(tile: Tile): IdentifiedTile = IdentifiedTile(Uuid.random(), tile)
 }

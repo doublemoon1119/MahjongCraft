@@ -225,7 +225,12 @@ internal class HistoryListScreen(
         val filters = session.controller.state.value.query.filters
         val lines = mutableListOf<Text>()
 
-        /** 將欄位名稱與已套用值加入提示。 */
+        /**
+         * 將欄位名稱與已套用值加入提示。
+         *
+         * @param key 欄位名稱的翻譯鍵。
+         * @param value 已套用值的呈現文字。
+         */
         fun add(key: String, value: Text) {
             lines += Text.translatable(key).copy().append(": ").append(value)
         }
@@ -462,7 +467,7 @@ internal class HistoryListScreen(
     private fun inlineHeader(entry: HistoryMatchSummaryDto): Boolean = textRenderer.getWidth(HistoryScreenText.rule(entry.ruleId, session.ruleNames)) + textRenderer.getWidth(HistoryScreenText.endedAt(entry.endedAtEpochMillis)) + 24 <= width - 46
 
     /**
-     * 按實際字寬換行卡片資訊，避免日期、時長與個人成績互相覆蓋。
+     * 按實際字寬換行規則、日期、局數、時長與結果資訊。
      *
      * @param entry 對局摘要。
      * @return 已按目前可用寬度排列的資訊文字行。

@@ -16,7 +16,13 @@ interface GameVisibilityPolicy {
      */
     fun snapshotFor(game: Game, observerId: Uuid): TableStateSnapshot
 
-    /** 產生只向本人公開輸入與提交內容的開局準備快照。 */
+    /**
+     * 產生只向本人公開輸入與提交內容的開局準備快照。
+     *
+     * @param game 含有目前待處理準備步驟的權威遊戲。
+     * @param observerId 欲取得快照的讀取者識別碼。
+     * @return 含該讀取者輸入規格與提交的快照；沒有準備步驟時為 null。
+     */
     fun roundPreparationSnapshotFor(game: Game, observerId: Uuid): RoundPreparationSnapshot? {
         val preparation = game.pendingRoundPreparation ?: return null
         return RoundPreparationSnapshot(

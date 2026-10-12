@@ -16,7 +16,7 @@ import kotlinx.serialization.Serializable
  * @property tileWall 牌牆快照。
  * @property dealerPlayerId 莊家玩家 UUID 字串。
  * @property prevalentWind 場風。
- * @property roundNumber 局數索引。
+ * @property roundNumber 跨場風累計、從一開始計算的局數。
  * @property roundPosition 場次位置。
  * @property comboCount 本場數。
  * @property currentPlayerIndex 目前玩家的座位索引。
@@ -42,5 +42,3 @@ data class TableStateSnapshotDto(
     val physicalWallLayout: TileWallPhysicalLayoutDto?,
     val revealedHandTiles: List<IdentifiedTileDto>,
 )
-
-/** 將 observer-specific 桌況快照轉成網路 DTO。 */

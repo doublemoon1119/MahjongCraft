@@ -19,7 +19,12 @@ internal object WinSettlementRankingCodec {
     /** 目前格式的欄位數。 */
     private const val FIELD_COUNT = 8
 
-    /** 把排名編碼成單一字串。 */
+    /**
+     * 把排名編碼成單一字串。
+     *
+     * @param values 權威排名快照。
+     * @return 依列與欄位分隔字元串接的排名字串。
+     */
     fun encode(values: List<WinSettlementRankingSnapshot>): String = values.joinToString(ROW_SEPARATOR.toString()) {
         listOf(
             it.playerId,
@@ -33,7 +38,12 @@ internal object WinSettlementRankingCodec {
         ).joinToString(FIELD_SEPARATOR.toString())
     }
 
-    /** 由 [encode] 的結果讀回排名。 */
+    /**
+     * 由 [encode] 的結果讀回排名；欄位數或數字格式不符的列會略過。
+     *
+     * @param encoded 編碼後的排名字串。
+     * @return 成功解析的排名快照清單。
+     */
     fun decode(encoded: String): List<WinSettlementRankingSnapshot> = encoded.split(ROW_SEPARATOR).mapNotNull { row ->
         val fields = row.split(FIELD_SEPARATOR)
         if (fields.size != FIELD_COUNT) return@mapNotNull null

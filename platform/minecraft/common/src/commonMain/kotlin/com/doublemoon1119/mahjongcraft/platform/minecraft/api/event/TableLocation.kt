@@ -23,6 +23,7 @@ class TableLocation private constructor(
          * @param x 方塊 X 座標。
          * @param y 方塊 Y 座標。
          * @param z 方塊 Z 座標。
+         * @return 複製指定維度與方塊座標的事件位置。
          */
         @JvmSynthetic
         fun create(

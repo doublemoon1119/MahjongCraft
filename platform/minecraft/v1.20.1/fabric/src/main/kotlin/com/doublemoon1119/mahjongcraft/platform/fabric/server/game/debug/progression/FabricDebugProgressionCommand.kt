@@ -24,7 +24,7 @@ import org.koin.core.annotation.Single
  *
  * 每個情境以呼叫者目前牌桌的玩家身分建立一份只存在於記憶體的 [MatchProgressionContext]——替換分數、
  * 對局長度與局位後交給正式的 [RiichiMatchProgressionPolicy]，把它的決策直接回報給呼叫者。牌桌本身的
- * 權威狀態完全不變，因此本類別只取得讀取用的 [GameRepository]，不持有任何可寫入權威狀態的依賴。
+ * 權威狀態不會被此指令修改；本類別只使用 [GameRepository] 的查詢方法建立預覽。
  *
  * @property gameRepository 讀取呼叫者目前牌桌的狀態作為情境基礎。
  * @property playerTableScope 解析呼叫者目前入座的桌子。
@@ -34,7 +34,11 @@ class FabricDebugProgressionCommand(
     private val gameRepository: GameRepository,
     private val playerTableScope: DebugPlayerTableScope,
 ) {
-    /** 建立不修改權威對局、只預覽日麻 progression 決策的測試指令樹。 */
+    /**
+     * 建立不修改權威對局、只預覽日麻終局推進決策的指令樹。
+     *
+     * @return 包含各預覽情境的指令節點。
+     */
     fun buildMatchProgressionCommand(): LiteralArgumentBuilder<ServerCommandSource> = MatchProgressionPreview.entries.fold(literal(MATCH_PROGRESSION_SUBCOMMAND)) { node, preview ->
         node.then(
             literal(preview.commandName).executes { context ->
@@ -43,7 +47,13 @@ class FabricDebugProgressionCommand(
         )
     }
 
-    /** 使用執行者目前牌桌的玩家身分建立唯讀情境，回報正式日麻 policy 的決策。 */
+    /**
+     * 使用執行者目前牌桌的玩家身分建立唯讀情境，回報正式日麻推進策略的決策。
+     *
+     * @param source 指令發起來源。
+     * @param preview 要建立的預覽情境。
+     * @return 指令執行狀態碼。
+     */
     private fun previewMatchProgression(source: ServerCommandSource, preview: MatchProgressionPreview): Int = playerTableScope.runSuspending(source) { tableId, _ ->
         val current = gameRepository.getTableState(tableId)
             ?: return@runSuspending "Game not found"
@@ -76,19 +86,22 @@ class FabricDebugProgressionCommand(
         "${preview.commandName}: $decision"
     }
 
-    /** Development-only 日麻終局 progression 預覽情境。 */
+    /**
+     * 開發用日麻終局推進預覽情境。
+     *
+     * @property commandName 指令節點名稱。
+     * @property gameLength 情境使用的對局長度。
+     * @property position 情境的局位。
+     * @property directive 本局莊家推進決策。
+     * @property classification 本局結果分類。
+     * @property dealerIsBeneficiary 是否將莊家列為本局得利者。
+     */
     private enum class MatchProgressionPreview(
-        /** 指令 literal 名稱。 */
         val commandName: String,
-        /** 此情境使用的對局長度。 */
         val gameLength: RiichiGameLength,
-        /** 此情境的權威局位。 */
         val position: MatchRoundPosition,
-        /** 本局莊家推進決策。 */
         val directive: RoundTransitionDirective,
-        /** 本局結果分類。 */
         val classification: RoundCompletionClassification = RoundCompletionClassification.WIN,
-        /** 此情境是否把莊家列為本局權威得利者。 */
         val dealerIsBeneficiary: Boolean = false,
     ) {
         /** 東四未達返點，預期南入。 */
@@ -159,7 +172,12 @@ class FabricDebugProgressionCommand(
         ),
         ;
 
-        /** 依情境與目前莊家索引建立四位玩家的測試分數。 */
+        /**
+         * 依情境與目前莊家索引建立四位玩家的測試分數。
+         *
+         * @param dealerIndex 目前莊家在玩家清單中的索引。
+         * @return 依座位順序排列的四位玩家分數。
+         */
         fun scores(dealerIndex: Int): List<Int> = when (this) {
             EAST_OVERTIME, WEST_OVERTIME, EXTRA_LIMIT -> listOf(29_900, 25_100, 25_000, 20_000)
             EAST_END, EXTRA_SUDDEN_DEATH -> listOf(30_000, 25_000, 25_000, 20_000)
@@ -170,6 +188,7 @@ class FabricDebugProgressionCommand(
         }
     }
 
+    /** 終局推進預覽的指令名稱與玩家數限制。 */
     private companion object {
         /** `match_progression` 子指令 literal。 */
         const val MATCH_PROGRESSION_SUBCOMMAND: String = "match_progression"

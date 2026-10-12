@@ -106,7 +106,11 @@ class MahjongClientConfigStoreTest {
         assertEquals(1L, store.revision)
     }
 
-    /** 建立隔離設定路徑並於測試結束後清理。 */
+    /**
+     * 建立隔離設定路徑並於測試結束後清理。
+     *
+     * @param block 使用測試 store 與設定檔路徑執行斷言。
+     */
     private fun withTemporaryConfig(block: (MahjongClientConfigStore, Path) -> Unit) {
         val directory = Files.createTempDirectory("mahjongcraft-client-config-")
         try {

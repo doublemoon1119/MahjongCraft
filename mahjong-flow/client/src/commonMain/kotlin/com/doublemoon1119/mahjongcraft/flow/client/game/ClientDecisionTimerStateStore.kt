@@ -16,7 +16,15 @@ class ClientDecisionTimerStateStore(
     var state: ClientDecisionTimerState? = null
         private set
 
-    /** 套用一次有效的權威計時同步。 */
+    /**
+     * 套用一次權威計時同步，並記錄接收時的本地單調時間。
+     *
+     * @param gameId 計時所屬遊戲。
+     * @param phase 同步時的決策階段。
+     * @param baseRemainingMillis 剩餘基本思考時間，單位為毫秒。
+     * @param reserveRemainingMillis 剩餘保留思考時間，單位為毫秒。
+     * @throws IllegalArgumentException 任一剩餘時間為負數時拋出。
+     */
     fun apply(
         gameId: Uuid,
         phase: PlayerDecisionPhase,
@@ -34,7 +42,11 @@ class ClientDecisionTimerStateStore(
         )
     }
 
-    /** 停止指定遊戲的計時；其他遊戲的較新狀態不受影響。 */
+    /**
+     * 停止指定遊戲的計時；其他遊戲的較新狀態不受影響。
+     *
+     * @param gameId 要停止計時的遊戲。
+     */
     fun stop(gameId: Uuid) {
         if (state?.gameId == gameId) state = null
     }

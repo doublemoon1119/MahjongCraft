@@ -20,7 +20,7 @@ class RiichiHandDecomposerTest {
     /**
      * 測試不完整的手牌無法分割。
      *
-     * 牌數不足 14 張時，應返回 null。
+     * 牌數不足 14 張時，應回傳空的分割結果。
      */
     @Test
     fun `test invalid hand returns empty hand structure`() {

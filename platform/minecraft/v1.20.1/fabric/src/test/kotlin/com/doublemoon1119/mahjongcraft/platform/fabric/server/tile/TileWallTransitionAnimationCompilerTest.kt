@@ -100,17 +100,37 @@ class TileWallTransitionAnimationCompilerTest {
         }
     }
 
-    /** 建立一張牌在單一 phase 內的測試路徑。 */
+    /**
+     * 建立一張牌在單一 phase 內的測試路徑。
+     *
+     * @param tileId 路徑所屬牌張的 UUID。
+     * @param segments 依執行順序排列的移動路徑段。
+     * @return 包含指定路徑段的牌牆 phase 動作。
+     */
     private fun motion(tileId: Uuid, vararg segments: TileWallMotionSegment): TileWallPhaseMotion = TileWallPhaseMotion(tileId, segments.toList())
 
-    /** 建立沿 X 軸移動的測試路徑段。 */
+    /**
+     * 建立沿 X 軸移動的測試路徑段。
+     *
+     * @param durationTicks 路徑段持續的 tick 數。
+     * @param startX 路徑起點的 X 座標。
+     * @return 從起點向正 X 軸移動一格的路徑段。
+     */
     private fun segment(durationTicks: Int, startX: Double = 0.0): TileWallMotionSegment = TileWallMotionSegment(
         placement(startX, 0.0, 0.0, 0.0f),
         placement(startX + 1.0, 0.0, 0.0, 0.0f),
         durationTicks,
     )
 
-    /** 建立測試用世界 placement。 */
+    /**
+     * 建立測試用世界座標與朝向。
+     *
+     * @param x X 座標。
+     * @param y Y 座標。
+     * @param z Z 座標。
+     * @param yaw 水平朝向角度。
+     * @return 指定座標與朝向的牌牆位置。
+     */
     private fun placement(x: Double, y: Double, z: Double, yaw: Float): MahjongTileWallPlacement = MahjongTileWallPlacement(x, y, z, yaw)
 
     /** 測試共用常數。 */

@@ -49,16 +49,37 @@ class DebugGameScenarioLoader(
     private val stateStore: AuthoritativeStateStore,
     private val dispatchers: CoroutineDispatchers,
 ) {
-    /** 將 [scenarioId] 套用到 [playerId] 目前所在的進行中遊戲。 */
+    /**
+     * 將情境套用到玩家目前所在的進行中遊戲。
+     *
+     * @param playerId 發起指令的玩家識別碼。
+     * @param scenarioId 已登記的開發情境識別碼。
+     * @return 載入成功或拒絕原因；呈現失敗時權威替換可能已完成，不會回復原局面。
+     */
     suspend fun load(playerId: Uuid, scenarioId: String): DebugGameScenarioLoadResult = loadAndRepeatPresentation(playerId, scenarioId, presentationCount = 1)
 
-    /** 載入 [scenarioId]，並連續重建 [presentationCount] 次正式桌面呈現以重現生命週期問題。 */
+    /**
+     * 載入情境並連續重建正式桌面呈現，以重現生命週期問題。
+     *
+     * @param playerId 發起指令的玩家識別碼。
+     * @param scenarioId 已登記的開發情境識別碼。
+     * @param presentationCount 重建呈現的次數，必須為正數。
+     * @return 載入成功或拒絕原因；失敗不保證權威狀態尚未變更。
+     * @throws IllegalArgumentException 次數不是正數時拋出。
+     */
     suspend fun stress(playerId: Uuid, scenarioId: String, presentationCount: Int): DebugGameScenarioLoadResult {
         require(presentationCount > 0) { "Presentation count must be positive" }
         return loadAndRepeatPresentation(playerId, scenarioId, presentationCount)
     }
 
-    /** 共用一般載入與壓力重建的驗證、權威狀態替換及同步流程。 */
+    /**
+     * 共用一般載入與壓力重建的驗證、權威狀態替換及同步流程。
+     *
+     * @param playerId 發起指令的玩家識別碼。
+     * @param scenarioId 已登記的情境識別碼。
+     * @param presentationCount 要重建的呈現次數。
+     * @return 載入成功或拒絕原因；對局排除標記與已提交狀態不因後續失敗回復。
+     */
     private suspend fun loadAndRepeatPresentation(
         playerId: Uuid,
         scenarioId: String,
@@ -98,13 +119,19 @@ class DebugGameScenarioLoader(
         return DebugGameScenarioLoadResult.Success(scenarioId, presentationCount)
     }
 
-    /** 等待上一輪 presentation 解除 busy；逾時時保留明確的壓力測試失敗。 */
+    /**
+     * 等待上一輪桌面呈現解除忙碌，最多等待設定的上限。
+     *
+     * @param tableId 要等待的牌桌識別碼。
+     * @throws kotlinx.coroutines.TimeoutCancellationException 超過呈現等待上限時拋出。
+     */
     private suspend fun awaitPresentationAvailable(tableId: Uuid) {
         withTimeout(PRESENTATION_TIMEOUT) {
             while (busyTracker.isBusy(tableId)) delay(PRESENTATION_POLL_INTERVAL)
         }
     }
 
+    /** 重建呈現時的等待上限與檢查間隔。 */
     private companion object {
         /** 每輪等待桌面呈現完成的上限。 */
         val PRESENTATION_TIMEOUT: Duration = 30.seconds

@@ -14,7 +14,12 @@ data class HistoryWallLayoutChange(
     val removedTileIds: Set<Uuid>,
     val updatedPlacements: Map<Uuid, TileWallPlacement>,
 ) {
-    /** 將局部變化套用到前一個布局。 */
+    /**
+     * 將局部變化套用到前一個布局；新位置取代同一張牌的舊位置。
+     *
+     * @param before 交易前的牌牆布局。
+     * @return 移除指定牌張並套用新位置後的布局。
+     */
     fun applyTo(before: TileWallPhysicalLayout): TileWallPhysicalLayout = TileWallPhysicalLayout(
         before.placements.filterKeys { it !in removedTileIds } + updatedPlacements,
     )

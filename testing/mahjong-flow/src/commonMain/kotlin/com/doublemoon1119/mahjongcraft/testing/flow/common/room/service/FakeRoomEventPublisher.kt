@@ -9,7 +9,8 @@ import kotlin.uuid.Uuid
 /**
  * 供測試使用的 [RoomEventPublisher] 模擬實作。
  *
- * 紀錄所有發送出的房間事件通知，以便在單元測試中驗證業務邏輯是否正確向特定玩家發送了關於特定目標的事件。
+ * 依事件鍵紀錄最近一次發送的房間事件通知，以便在單元測試中驗證業務邏輯是否正確向特定玩家發送了關於特定目標的事件。
+ * 相同事件鍵再次收到通知時會取代先前的紀錄，不保留完整歷史。
  */
 class FakeRoomEventPublisher : RoomEventPublisher {
     /**
@@ -76,7 +77,7 @@ class FakeRoomEventPublisher : RoomEventPublisher {
     }
 
     /**
-     * 獲取特定玩家收到的加入通知原因。
+     * 獲取特定玩家收到的最近一次加入通知原因。
      *
      * @param roomId 房間 Uuid。
      * @param targetPlayerId 接收通知的成員 Uuid。
@@ -90,7 +91,7 @@ class FakeRoomEventPublisher : RoomEventPublisher {
     ): JoinReason? = joinNotifications[Triple(roomId, targetPlayerId, joinedPlayerId)]
 
     /**
-     * 獲取特定玩家收到的離開通知原因。
+     * 獲取特定玩家收到的最近一次離開通知原因。
      *
      * @param roomId 房間 Uuid。
      * @param targetPlayerId 接收通知的成員 Uuid。
@@ -104,7 +105,7 @@ class FakeRoomEventPublisher : RoomEventPublisher {
     ): LeaveReason? = leaveNotifications[Triple(roomId, targetPlayerId, leftPlayerId)]
 
     /**
-     * 獲取特定玩家收到的準備狀態通知。
+     * 獲取特定玩家收到的最近一次準備狀態通知。
      *
      * @param roomId 房間 Uuid。
      * @param targetPlayerId 接收通知的成員 Uuid。

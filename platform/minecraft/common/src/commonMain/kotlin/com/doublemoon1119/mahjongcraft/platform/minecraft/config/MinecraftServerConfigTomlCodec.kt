@@ -19,7 +19,13 @@ class MinecraftServerConfigTomlCodec {
         ),
     )
 
-    /** 將 [content] 解碼並驗證成完整的 [MinecraftServerConfig]。 */
+    /**
+     * 將 [content] 解碼並驗證成完整的 [MinecraftServerConfig]。
+     *
+     * @param content TOML 設定檔文字。
+     * @return 解碼並通過驗證的設定。
+     * @throws InvalidMinecraftServerConfigException TOML 無法解碼或欄位驗證失敗時。
+     */
     fun decode(content: String): MinecraftServerConfig {
         val dto = try {
             toml.decodeFromString<MinecraftServerConfigTomlDto>(content)
@@ -32,7 +38,12 @@ class MinecraftServerConfigTomlCodec {
         return dto.toConfig()
     }
 
-    /** 將 [config] 格式化為不含註解且可再次解碼的標準 TOML。 */
+    /**
+     * 將 [config] 格式化為不含註解的標準 TOML；此方法不另外驗證設定值。
+     *
+     * @param config 欲編碼的完整伺服器設定。
+     * @return 使用穩定欄位名稱的 TOML 文字；欄位值仍須符合解碼時的驗證規則。
+     */
     fun encode(config: MinecraftServerConfig): String = toml.encodeToString(
         MinecraftServerConfigTomlDto.fromConfig(config),
     )
@@ -55,7 +66,12 @@ private data class MinecraftServerConfigTomlDto(
     val mahjongTile: MahjongTileTomlDto = MahjongTileTomlDto(),
     val history: HistoryTomlDto = HistoryTomlDto(),
 ) {
-    /** 將字串欄位驗證並轉成 runtime config。 */
+    /**
+     * 驗證設定欄位並轉成執行期設定。
+     *
+     * @return 通過欄位驗證的完整伺服器設定。
+     * @throws InvalidMinecraftServerConfigException 政策名稱或數值不合法時拋出。
+     */
     fun toConfig(): MinecraftServerConfig = MinecraftServerConfig(
         disconnectedPlayerPolicy = enumValue(
             field = "player-disconnection.policy",
@@ -92,7 +108,12 @@ private data class MinecraftServerConfigTomlDto(
 
     /** 建立反映目前 runtime config 的完整 TOML DTO。 */
     companion object {
-        /** 將 [config] 映射成可序列化的穩定設定檔結構。 */
+        /**
+         * 將 [config] 映射成可序列化的穩定設定檔結構。
+         *
+         * @param config 欲輸出的完整伺服器設定。
+         * @return 不額外驗證欄位值的 TOML 資料。
+         */
         fun fromConfig(config: MinecraftServerConfig): MinecraftServerConfigTomlDto = MinecraftServerConfigTomlDto(
             playerDisconnection = PlayerDisconnectionTomlDto(
                 policy = config.disconnectedPlayerPolicy.configValue,
@@ -181,7 +202,12 @@ private data class HistoryTomlDto(
     @SerialName("retention-days") val retentionDays: Int = MinecraftHistoryConfig.DEFAULT_RETENTION_DAYS,
     @SerialName("max-disk-mib") val maxDiskMiB: Long = MinecraftHistoryConfig.DEFAULT_MAX_DISK_MIB,
 ) {
-    /** 驗證 TOML 欄位並建立歷史資料設定。 */
+    /**
+     * 驗證 TOML 欄位並建立歷史資料設定。
+     *
+     * @return 通過驗證的歷史設定。
+     * @throws InvalidMinecraftServerConfigException 歷史設定的數值不合法時拋出。
+     */
     fun toConfig(): MinecraftHistoryConfig = try {
         MinecraftHistoryConfig(
             enabled = enabled,
@@ -224,7 +250,17 @@ private data class HistoryTomlDto(
     }
 }
 
-/** 將 config 字串驗證並映射到 enum。 */
+/**
+ * 將 config 字串驗證並映射到 enum。
+ *
+ * @param T enum 值的型別。
+ * @param field 設定欄位名稱，供錯誤訊息指出問題位置。
+ * @param value 欄位中讀取到的字串值。
+ * @param values 可接受的 enum 值。
+ * @param configValue 將 enum 值轉成設定字串的映射。
+ * @return 字串所對應的 enum 值。
+ * @throws InvalidMinecraftServerConfigException 找不到相符值時。
+ */
 private fun <T> enumValue(
     field: String,
     value: String,
@@ -234,7 +270,12 @@ private fun <T> enumValue(
     "$field has unsupported value '$value'; allowed values: ${values.joinToString { configValue(it) }}",
 )
 
-/** 以 config 專用例外回報驗證失敗。 */
+/**
+ * 以 config 專用例外回報驗證失敗。
+ *
+ * @param condition 欄位是否通過驗證。
+ * @param lazyMessage 驗證失敗時才產生的錯誤訊息。
+ */
 private inline fun requireConfig(condition: Boolean, lazyMessage: () -> String) {
     if (!condition) throw InvalidMinecraftServerConfigException(lazyMessage())
 }

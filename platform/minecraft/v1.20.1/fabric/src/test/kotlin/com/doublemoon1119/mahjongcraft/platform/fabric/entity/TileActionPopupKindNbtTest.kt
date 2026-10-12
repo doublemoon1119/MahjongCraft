@@ -6,8 +6,10 @@ import kotlin.test.assertEquals
 
 /** 短暫牌面提示 NBT 以名稱保存。 */
 class TileActionPopupKindNbtTest {
+    /** 測試讀寫提示種類使用的 NBT 欄位名稱。 */
     private val key = "ActionPopupKind"
 
+    /** 各提示種類以名稱保存後可原樣讀回。 */
     @Test
     fun `all kinds survive a name round trip`() {
         TileActionPopupKind.entries.forEach { kind ->
@@ -19,6 +21,7 @@ class TileActionPopupKindNbtTest {
         }
     }
 
+    /** 缺少欄位、未知名稱或型別錯誤時隱藏提示。 */
     @Test
     fun `unknown or malformed values hide the popup`() {
         assertEquals(TileActionPopupKind.NONE, TileActionPopupKindNbt.read(NbtCompound(), key))

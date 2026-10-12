@@ -20,6 +20,7 @@ import kotlin.test.assertTrue
 
 /** [ClientAutomaticControlCommandService] 的控制路由、集合替換與 ACK 配對測試。 */
 class ClientAutomaticControlCommandServiceTest {
+    /** 可用控制項合併永久偏好與伺服器支援的本局控制項。 */
     @Test
     fun `available controls combine permanent preference and authoritative round controls`() = withFixture { fixture ->
         fixture.coordinator.applySnapshot(snapshot(supported = setOf("test:auto_win", "test:no_calls")))
@@ -30,6 +31,7 @@ class ClientAutomaticControlCommandServiceTest {
         )
     }
 
+    /** 更新單一本局控制項時保留其他已確認的啟用項目。 */
     @Test
     fun `round control update preserves every other confirmed control`() = withFixture { fixture ->
         fixture.coordinator.applySnapshot(
@@ -52,6 +54,7 @@ class ClientAutomaticControlCommandServiceTest {
         )
     }
 
+    /** OFF 與切換依已確認狀態計算，送出期間不樂觀修改快照。 */
     @Test
     fun `off and toggle use confirmed state without optimistic mutation`() = withFixture { fixture ->
         fixture.coordinator.applySnapshot(
@@ -74,6 +77,7 @@ class ClientAutomaticControlCommandServiceTest {
         assertTrue("test:no_calls" in fixture.coordinator.snapshot()!!.enabledControlIds)
     }
 
+    /** 本局控制項更新回報不可用、不支援、待處理與傳送失敗狀態。 */
     @Test
     fun `round control reports unavailable unsupported pending and send failure`() = withFixture { fixture ->
         assertIs<ClientAutomaticControlCommandResult.Unavailable>(
@@ -91,6 +95,7 @@ class ClientAutomaticControlCommandServiceTest {
         )
     }
 
+    /** 本局控制項傳送失敗後清除 pending request。 */
     @Test
     fun `round control send failure clears pending request`() = withFixture(
         roundFailure = IllegalStateException("offline"),
@@ -104,6 +109,7 @@ class ClientAutomaticControlCommandServiceTest {
         assertNull(fixture.coordinator.pendingRequest())
     }
 
+    /** 完成結果依 request 配對，並提供權威最終狀態。 */
     @Test
     fun `completion is request scoped and exposes authoritative final state`() = withFixture { fixture ->
         fixture.coordinator.applySnapshot(snapshot(supported = setOf("test:auto_win")))
@@ -132,6 +138,7 @@ class ClientAutomaticControlCommandServiceTest {
         assertNull(fixture.service.takeCompletion(submitted.requestId, "test:auto_win"))
     }
 
+    /** 自動理牌指令委派至永久偏好服務。 */
     @Test
     fun `auto sort command delegates to persistent preference service`() = withFixture { fixture ->
         val controlId = BuiltInMinecraftAutomaticControlIds.AUTO_SORT_HAND
@@ -188,17 +195,20 @@ class ClientAutomaticControlCommandServiceTest {
         }
     }
 
-    /** 測試所需服務與記錄器。 */
+    /**
+     * 測試所需的指令服務與記錄器。
+     *
+     * @property service 受測的指令服務。
+     * @property preferenceService 永久偏好服務。
+     * @property preferenceSender 永久偏好要求記錄器。
+     * @property coordinator 本局自動操作更新協調器。
+     * @property roundSender 本局更新要求記錄器。
+     */
     private data class Fixture(
-        /** 被測指令服務。 */
         val service: ClientAutomaticControlCommandService,
-        /** 永久偏好服務。 */
         val preferenceService: ClientAutoSortHandPreferenceService,
-        /** 永久偏好 sender。 */
         val preferenceSender: RecordingPreferenceSender,
-        /** 本局更新協調器。 */
         val coordinator: ClientAutomaticControlUpdateCoordinator,
-        /** 本局 request sender。 */
         val roundSender: RecordingRoundSender,
     )
 
@@ -216,7 +226,11 @@ class ClientAutomaticControlCommandServiceTest {
         override fun sendRestore(enabled: Boolean) = Unit
     }
 
-    /** 記錄本局完整替換 request，並可模擬傳送失敗。 */
+    /**
+     * 記錄本局完整替換要求，並可模擬傳送失敗。
+     *
+     * @property failure 模擬的同步傳送錯誤；未指定時傳送成功。
+     */
     private class RecordingRoundSender(private val failure: RuntimeException?) : ClientAutomaticControlRequestSender {
         /** 成功交給 sender 的 requests。 */
         val requests = mutableListOf<AutomaticControlUpdateRequestDto>()

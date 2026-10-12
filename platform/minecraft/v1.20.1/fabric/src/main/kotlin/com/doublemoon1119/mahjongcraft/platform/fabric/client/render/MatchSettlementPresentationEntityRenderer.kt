@@ -23,7 +23,15 @@ import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlin.uuid.Uuid
 
-/** 與回合結算共用視覺語言，但以冠軍為主角的 client-only 終局頒獎面板。 */
+/**
+ * 與回合結算共用視覺語言，但以冠軍為主角的 client-only 終局頒獎面板。
+ *
+ * @param context Minecraft renderer factory 提供的 client context。
+ * @param templates 提供內建與擴充頒獎面板模板。
+ * @param portraitRenderer 繪製玩家頭像。
+ * @param playerNames 依桌子及玩家 ID 解析顯示名稱。
+ * @param configStore 提供終局頒獎面板的可見性設定。
+ */
 class MatchSettlementPresentationEntityRenderer(
     context: EntityRendererFactory.Context,
     private val templates: MatchSettlementPresentationTemplateRegistry,
@@ -83,7 +91,17 @@ class MatchSettlementPresentationEntityRenderer(
         matrices.pop()
     }
 
-    /** 在固定頒獎位置繪製玩家；第一名居中並使用較大的 FACE 與冠軍資訊框。 */
+    /**
+     * 在固定頒獎位置繪製玩家；第一名居中並使用較大的 FACE 與冠軍資訊框。
+     *
+     * @param player 要繪製的最終排名玩家。
+     * @param layout 依玩家數量量測的頒獎版面。
+     * @param template 控制文字與色彩的模板。
+     * @param alpha 此列透明度。
+     * @param revealProgress 此列揭曉進度。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供頭像、框線與文字頂點緩衝。
+     */
     private fun renderPlacement(
         player: MatchSettlementPlayerSnapshot,
         layout: Layout,
@@ -127,7 +145,17 @@ class MatchSettlementPresentationEntityRenderer(
         matrices.pop()
     }
 
-    /** 第一名揭曉期間繪製向內收束的金色角標與短暫像素星點。 */
+    /**
+     * 第一名揭曉期間繪製向內收束的金色角標與短暫像素星點。
+     *
+     * @param displayName 已裁切的顯示名稱。
+     * @param rankText 名次文字。
+     * @param y 冠軍資訊卡頂部位置。
+     * @param alpha 顯示透明度。
+     * @param progress 揭曉動畫進度。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供像素幾何頂點緩衝。
+     */
     private fun renderChampionHighlight(
         displayName: String,
         rankText: Text,
@@ -167,13 +195,33 @@ class MatchSettlementPresentationEntityRenderer(
         }
     }
 
-    /** 繪製一個指向完整冠軍資訊卡的 L 形像素角標。 */
+    /**
+     * 繪製一個指向完整冠軍資訊卡的 L 形像素角標。
+     *
+     * @param buffer 接收角標頂點的緩衝。
+     * @param matrix 目前的頂點位置矩陣。
+     * @param x 角標的轉角 X 座標。
+     * @param y 角標的轉角 Y 座標。
+     * @param xDirection 水平延伸方向，正負值分別代表右、左。
+     * @param yDirection 垂直延伸方向，正負值分別代表下、上。
+     * @param alpha 頂點透明度。
+     */
     private fun renderCorner(buffer: VertexConsumer, matrix: Matrix4f, x: Float, y: Float, xDirection: Float, yDirection: Float, alpha: Int) {
         renderQuad(buffer, matrix, x, y, x + CORNER_LENGTH * xDirection, y + CORNER_THICKNESS * yDirection, alpha)
         renderQuad(buffer, matrix, x, y, x + CORNER_THICKNESS * xDirection, y + CORNER_LENGTH * yDirection, alpha)
     }
 
-    /** 以金色繪製一個固定深度的面板矩形。 */
+    /**
+     * 以金色繪製一個固定深度的面板矩形。
+     *
+     * @param buffer 接收矩形頂點的緩衝。
+     * @param matrix 目前的頂點位置矩陣。
+     * @param x1 第一個角的 X 座標。
+     * @param y1 第一個角的 Y 座標。
+     * @param x2 對角的 X 座標。
+     * @param y2 對角的 Y 座標。
+     * @param alpha 頂點透明度。
+     */
     private fun renderQuad(buffer: VertexConsumer, matrix: Matrix4f, x1: Float, y1: Float, x2: Float, y2: Float, alpha: Int) {
         val left = minOf(x1, x2)
         val right = maxOf(x1, x2)
@@ -185,7 +233,15 @@ class MatchSettlementPresentationEntityRenderer(
         buffer.vertex(matrix, left, bottom, HIGHLIGHT_Z).color(255, 211, 82, alpha).next()
     }
 
-    /** 繪製完整半透明背景板並正常寫入深度。 */
+    /**
+     * 繪製完整半透明背景板並正常寫入深度。
+     *
+     * @param layout 面板尺寸與玩家位置。
+     * @param template 提供背景顏色的模板。
+     * @param alpha 顯示透明度。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供背景頂點緩衝。
+     */
     private fun renderPanel(
         layout: Layout,
         template: MatchSettlementPresentationTemplate,
@@ -206,7 +262,17 @@ class MatchSettlementPresentationEntityRenderer(
         buffer.vertex(matrix, -layout.panelHalfWidth, layout.panelBottom, PANEL_Z).color(red, green, blue, a).next()
     }
 
-    /** 交由共用 renderer 解析第三方來源與真人／AI fallback。 */
+    /**
+     * 交由共用 renderer 解析第三方來源與真人／AI fallback。
+     *
+     * @param player 頭像所屬玩家快照。
+     * @param x 頭像左側 X 座標。
+     * @param y 頭像上側 Y 座標。
+     * @param size 頭像邊長。
+     * @param alpha 頭像透明度。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供頭像頂點緩衝。
+     */
     private fun renderPortrait(
         player: MatchSettlementPlayerSnapshot,
         x: Float,
@@ -227,7 +293,12 @@ class MatchSettlementPresentationEntityRenderer(
         consumers = consumers,
     )
 
-    /** 依玩家數建立冠軍居中、其餘名次分層的自適應頒獎位置。 */
+    /**
+     * 依玩家數建立冠軍居中、其餘名次分層的自適應頒獎位置。
+     *
+     * @param playerCount 頒獎名單中的玩家數量。
+     * @return 含面板範圍與各最終名次位置的版面。
+     */
     private fun measureLayout(playerCount: Int): Layout {
         val otherCount = (playerCount - 1).coerceAtLeast(0)
         val columnCount = otherCount.coerceIn(1, MAX_PLACEMENTS_PER_ROW)
@@ -251,19 +322,41 @@ class MatchSettlementPresentationEntityRenderer(
         return Layout(panelWidth / 2f, panelBottom, placements)
     }
 
-    /** 解析模板；未知 key 去重警告後使用內建 fallback。 */
+    /**
+     * 解析模板；未知 key 去重警告後使用內建 fallback。
+     *
+     * @param key entity 同步的模板 key。
+     * @return 找到的模板或內建 fallback；fallback 也不存在時為 `null`。
+     */
     private fun resolveTemplate(key: String): MatchSettlementPresentationTemplate? = templates.find(key) ?: run {
         if (warnedUnknownTemplateKeys.add(key)) logger.warn("Unknown match settlement template on client: {}", key)
         templates.find(BUILT_IN_MATCH_SETTLEMENT_TEMPLATE_KEY)
     }
 
-    /** 保證標準玩家名稱完整顯示，超寬名稱以省略號收尾。 */
+    /**
+     * 保證標準玩家名稱完整顯示，超寬名稱以省略號收尾。
+     *
+     * @param name 原始玩家名稱。
+     * @param maxWidth 名稱可用像素寬度。
+     * @return 寬度符合限制的名稱文字。
+     */
     private fun fitPlayerName(name: String, maxWidth: Int): String = WorldPanelRenderer.fitText(textRenderer, name, maxWidth)
 
-    /** 從 client player list 解析名稱，AI 與離線玩家使用穩定 fallback。 */
+    /**
+     * 從 client player list 解析名稱，AI 與離線玩家使用穩定 fallback。
+     *
+     * @param player 要解析名稱的玩家快照。
+     * @return 玩家顯示名稱。
+     */
     private fun resolvePlayerName(player: MatchSettlementPlayerSnapshot): String = playerNames.resolve(currentTableId, player.playerId, player.isAi)
 
-    /** 計算面板淡入、閱讀與淡出透明度。 */
+    /**
+     * 計算面板淡入、閱讀與淡出透明度。
+     *
+     * @param elapsed 演出已經過的 tick。
+     * @param duration 整段演出長度。
+     * @return 當前面板透明度。
+     */
     private fun panelAlpha(elapsed: Double, duration: Double): Float = WorldPanelRenderer.phaseAlpha(
         elapsed,
         MatchSettlementPresentationEntity.PANEL_FADE_IN_START_TICK.toDouble(),
@@ -272,19 +365,42 @@ class MatchSettlementPresentationEntityRenderer(
         duration,
     )
 
-    /** 計算指定揭曉序列 index 的淡入進度。 */
+    /**
+     * 計算指定揭曉序列 index 的淡入進度。
+     *
+     * @param elapsed 演出已經過的 tick。
+     * @param index 玩家在揭曉序列中的索引。
+     * @param interval 相鄰玩家揭曉間隔。
+     * @return 此列介於 0 到 1 的顯示進度。
+     */
     private fun rowRevealProgress(elapsed: Double, index: Int, interval: Int): Float {
         val start = MatchSettlementPresentationEntity.rowRevealTick(index, interval).toDouble()
         return ((elapsed - start) / MatchSettlementPresentationEntity.ROW_REVEAL_DURATION_TICKS).toFloat().coerceIn(0f, 1f)
     }
 
-    /** 第一名使用略微超越後回到一倍大小的回彈曲線。 */
+    /**
+     * 第一名使用略微超越後回到一倍大小的回彈曲線。
+     *
+     * @param progress 冠軍列揭曉進度。
+     * @return 此時的縮放倍率。
+     */
     private fun championScale(progress: Float): Float = when {
         progress < 0.7f -> 0.92f + progress / 0.7f * 0.14f
         else -> 1.06f - (progress - 0.7f) / 0.3f * 0.06f
     }
 
-    /** 繪製指定對齊方式的全亮文字。 */
+    /**
+     * 繪製指定對齊方式的全亮文字。
+     *
+     * @param text 要繪製的文字。
+     * @param anchorX 文字對齊錨點的 X 座標。
+     * @param y 文字頂部 Y 座標。
+     * @param alignment 水平對齊方式。
+     * @param color 文字 ARGB 顏色。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供文字頂點緩衝。
+     * @param scale 文字縮放倍率。
+     */
     private fun drawText(
         text: Text,
         anchorX: Float,
@@ -308,20 +424,39 @@ class MatchSettlementPresentationEntityRenderer(
         matrices.pop()
     }
 
-    /** 將 RGB 與動畫透明度合成 ARGB。 */
+    /**
+     * 將 RGB 與動畫透明度合成 ARGB。
+     *
+     * @param rgb 不含 alpha 的 RGB 顏色。
+     * @param alpha 動畫透明度。
+     * @return 合成後的 ARGB 顏色。
+     */
     private fun withAlpha(rgb: Int, alpha: Float): Int = WorldPanelRenderer.withAlpha(rgb, alpha)
 
     override fun getTexture(entity: MatchSettlementPresentationEntity): Identifier? = null
 
     private enum class Alignment { LEFT, CENTER, RIGHT }
 
+    /**
+     * 頒獎面板尺寸及各名次的定位資料。
+     *
+     * @property panelHalfWidth 面板半寬。
+     * @property panelBottom 面板底部 Y 座標。
+     * @property placements 以最終名次索引的玩家版位。
+     */
     private data class Layout(
         val panelHalfWidth: Float,
         val panelBottom: Float,
         val placements: Map<Int, Placement>,
     )
 
-    /** 單一名次在頒獎面板上的中心位置與名稱寬度。 */
+    /**
+     * 單一名次在頒獎面板上的中心位置與名稱寬度。
+     *
+     * @property x 水平中心位置。
+     * @property y 垂直位置。
+     * @property nameWidth 玩家名稱可用寬度。
+     */
     private data class Placement(val x: Float, val y: Float, val nameWidth: Int)
 
     private companion object {

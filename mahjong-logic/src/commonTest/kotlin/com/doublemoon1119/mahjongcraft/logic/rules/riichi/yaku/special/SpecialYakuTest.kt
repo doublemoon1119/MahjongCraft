@@ -23,6 +23,7 @@ import kotlin.test.assertNull
  */
 class SpecialYakuTest : RiichiHandValueCalculatorTestBase() {
 
+    /** 建立用於一般特殊役種測試的基礎手牌。 */
     private fun createBasicHand(): List<Tile> = listOf(
         Tile.Numeric(Tile.Suit.Character, 1),
         Tile.Numeric(Tile.Suit.Character, 1),

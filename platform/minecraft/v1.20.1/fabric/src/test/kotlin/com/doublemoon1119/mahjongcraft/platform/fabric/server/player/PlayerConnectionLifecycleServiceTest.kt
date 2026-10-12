@@ -196,7 +196,13 @@ class PlayerConnectionLifecycleServiceTest {
         assertNull(fixture.memberships.getVenueId(fixture.playerId))
     }
 
-    /** 建立使用目前測試 scheduler 的斷線政策測試資料。 */
+    /**
+     * 建立使用目前測試 scheduler 的斷線政策測試資料。
+     *
+     * @param policy 本次測試套用的斷線政策。
+     * @param timeoutSeconds 逾時離開的寬限秒數。
+     * @return 包含受測服務與測試 repository 的 fixture。
+     */
     private suspend fun TestScope.createFixture(
         policy: DisconnectedPlayerPolicy,
         timeoutSeconds: Long = 300,
@@ -275,6 +281,7 @@ class PlayerConnectionLifecycleServiceTest {
      * @property memberships 玩家唯一桌子歸屬 repository。
      * @property roomSnapshotRepository 房間快照 read-side repository，用來驗證重連是否補送快照。
      * @property gameSnapshotRepository 對局快照 read-side repository，用來驗證重連是否補送快照。
+     * @property automaticControlSnapshots 記錄重連時送出或清除的自動操作快照。
      * @property tableId 測試麻將桌 UUID。
      * @property playerId 測試玩家 UUID。
      * @property players 測試房主與測試玩家組成的固定玩家清單，供對局測試建立 [FakeTableStateFactory] 用。
@@ -295,7 +302,10 @@ class PlayerConnectionLifecycleServiceTest {
 
     /** 記錄重連流程要求送出或清除的個人自動操作快照。 */
     private class RecordingAutomaticControlSnapshotSender : AutomaticControlSnapshotSender {
+        /** 已記錄送出的對局與玩家快照要求。 */
         val sentSnapshots = mutableListOf<Pair<Uuid, Uuid>>()
+
+        /** 已記錄清除自動操作狀態的玩家。 */
         val clearedPlayerIds = mutableListOf<Uuid>()
 
         override suspend fun send(gameId: Uuid, playerId: Uuid) {

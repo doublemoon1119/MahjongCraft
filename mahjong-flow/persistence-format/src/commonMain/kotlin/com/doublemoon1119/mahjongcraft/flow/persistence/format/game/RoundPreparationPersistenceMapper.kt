@@ -29,6 +29,7 @@ fun PendingRoundPreparationPersistenceDto.toDomain(): PendingRoundPreparation = 
     submissionsByPlayerId = submissionsByPlayerId.mapKeys { Uuid.parse(it.key) }.mapValues { it.value.toDomain() },
 )
 
+/** 將開局準備輸入規格轉成存檔 DTO。 */
 private fun RoundPreparationInputSpec.toPersistenceDto(): RoundPreparationInputSpecPersistenceDto = when (this) {
     RoundPreparationInputSpec.Confirmation -> RoundPreparationInputSpecPersistenceDto.Confirmation
     is RoundPreparationInputSpec.SingleChoice -> RoundPreparationInputSpecPersistenceDto.SingleChoice(optionIds)
@@ -39,6 +40,7 @@ private fun RoundPreparationInputSpec.toPersistenceDto(): RoundPreparationInputS
     )
 }
 
+/** 將已保存的開局準備輸入規格還原。 */
 private fun RoundPreparationInputSpecPersistenceDto.toDomain(): RoundPreparationInputSpec = when (this) {
     RoundPreparationInputSpecPersistenceDto.Confirmation -> RoundPreparationInputSpec.Confirmation
     is RoundPreparationInputSpecPersistenceDto.SingleChoice -> RoundPreparationInputSpec.SingleChoice(optionIds)

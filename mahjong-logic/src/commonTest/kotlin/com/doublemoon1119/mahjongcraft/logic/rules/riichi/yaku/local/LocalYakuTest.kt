@@ -199,7 +199,11 @@ class LocalYakuTest {
         }
     }
 
-    /** 和牌前 13 張：m1-8、p456、s789 的兩面等待（m6-9 不會成立其他古役）。 */
+    /**
+     * 和牌前 13 張：m1-8、p456、s789 的兩面等待（m6-9 不會成立其他古役）。
+     *
+     * @return 用於隔離古役判定的固定手牌。
+     */
     private fun plainHand() = FakeHandFactory.create(listOf(m(1), m(2), m(3), p(4), p(5), p(6), s(7), s(8), s(9), s(2), s(2), m(7), m(8)))
 
     /**
@@ -246,25 +250,55 @@ class LocalYakuTest {
         isDiscardAfterKan = isDiscardAfterKan,
     )
 
-    /** 萬子。 */
+    /**
+     * 建立指定數值的萬牌。
+     *
+     * @param value 牌面數值。
+     * @return 對應萬牌。
+     */
     private fun m(value: Int): Tile = Tile.Numeric(Tile.Suit.Character, value)
 
-    /** 筒子。 */
+    /**
+     * 建立指定數值的筒牌。
+     *
+     * @param value 牌面數值。
+     * @return 對應筒牌。
+     */
     private fun p(value: Int): Tile = Tile.Numeric(Tile.Suit.Dot, value)
 
-    /** 索子。 */
+    /**
+     * 建立指定數值的索牌。
+     *
+     * @param value 牌面數值。
+     * @return 對應索牌。
+     */
     private fun s(value: Int): Tile = Tile.Numeric(Tile.Suit.Bamboo, value)
 
-    /** 碰。 */
+    /**
+     * 建立指定牌面的碰子。
+     *
+     * @param tile 碰子的牌面。
+     * @return 測試用碰子副露。
+     */
     private fun pon(tile: Tile): Meld = meld(MeldType.PON, List(3) { tile })
 
-    /** 以最小數字為首的吃。 */
+    /**
+     * 建立以指定數值為起點的吃子。
+     *
+     * @param head 順子的起始牌。
+     * @return 測試用吃子副露。
+     */
     private fun chi(head: Tile): Meld {
         val numeric = head as Tile.Numeric
         return meld(MeldType.CHI, (0..2).map { Tile.Numeric(numeric.suit, numeric.value + it) })
     }
 
-    /** 暗槓。 */
+    /**
+     * 建立指定牌面的暗槓。
+     *
+     * @param tile 暗槓的牌面。
+     * @return 測試用暗槓副露。
+     */
     private fun closedKan(tile: Tile): Meld = Meld(
         type = MeldType.CLOSED_KAN,
         tiles = List(4) { FakeIdentifiedTileFactory.create(tile) },
@@ -283,9 +317,19 @@ class LocalYakuTest {
         return Meld(type = type, tiles = identified, sourceTile = identified.last(), sourceDirection = RelativeDirection.Left)
     }
 
-    /** 結果中是否含有指定役。 */
+    /**
+     * 判斷計算結果是否包含指定役。
+     *
+     * @param yaku 要查詢的役種。
+     * @return 結果包含該役時為 `true`。
+     */
     private fun RiichiHandValueResult.has(yaku: YakuType): Boolean = yakuResults.any { it.yaku == yaku }
 
-    /** 結果中指定役的翻數；沒有時為 0。 */
+    /**
+     * 取得計算結果中指定役的翻數。
+     *
+     * @param yaku 要查詢的役種。
+     * @return 該役翻數；結果沒有該役時為 `0`。
+     */
     private fun RiichiHandValueResult.han(yaku: YakuType): Int = yakuResults.firstOrNull { it.yaku == yaku }?.han ?: 0
 }

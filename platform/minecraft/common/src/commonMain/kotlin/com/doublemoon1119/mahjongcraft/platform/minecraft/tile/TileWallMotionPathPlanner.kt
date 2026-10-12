@@ -13,7 +13,14 @@ import kotlin.math.sqrt
  * 此類別只處理幾何，不讀桌況、不安排絕對時間，也不建立 entity 動畫佇列。
  */
 object TileWallMotionPathPlanner {
-    /** 依 [context] 規劃由 [start] 移至 [end] 的路徑。 */
+    /**
+     * 依 [context] 規劃由 [start] 移至 [end] 的路徑。
+     *
+     * @param context 此桌的幾何投影資料。
+     * @param start 路徑起點。
+     * @param end 路徑終點。
+     * @return 安全路徑，或拒絕規劃的原因。
+     */
     fun plan(
         context: MahjongTileWallProjectionContext,
         start: TileWallPlacement,
@@ -42,7 +49,14 @@ object TileWallMotionPathPlanner {
         return TileWallMotionPathDecision.Completed(roundedCornerSegments(context, startWorld, endWorld))
     }
 
-    /** 以直線入口、四分之一圓近似及直線出口建立相鄰牆面的貼桌路徑。 */
+    /**
+     * 以直線入口、四分之一圓近似及直線出口建立相鄰牆面的貼桌路徑。
+     *
+     * @param context 桌面幾何投影資料。
+     * @param start 路徑起點的世界座標與朝向。
+     * @param end 路徑終點的世界座標與朝向。
+     * @return 依序連接入口、圓角近似點及出口的路徑段。
+     */
     private fun roundedCornerSegments(
         context: MahjongTileWallProjectionContext,
         start: MahjongTileWallPlacement,
@@ -71,7 +85,13 @@ object TileWallMotionPathPlanner {
         return points.zipWithNext(::segment)
     }
 
-    /** 建立一段按世界距離換算時長的路徑。 */
+    /**
+     * 建立一段按世界距離換算時長的路徑。
+     *
+     * @param start 路徑段起點。
+     * @param end 路徑段終點。
+     * @return 含換算播放時長的路徑段。
+     */
     private fun segment(start: MahjongTileWallPlacement, end: MahjongTileWallPlacement): TileWallMotionSegment {
         val dx = end.x - start.x
         val dy = end.y - start.y
@@ -81,7 +101,14 @@ object TileWallMotionPathPlanner {
         return TileWallMotionSegment(start, end, duration)
     }
 
-    /** 回傳 [from] 朝 [toward] 前進最多 [distance] 的點。 */
+    /**
+     * 回傳 [from] 朝 [toward] 前進最多 [distance] 的點。
+     *
+     * @param from 移動起點。
+     * @param toward 移動方向上的目標點。
+     * @param distance 沿方向前進的最大距離。
+     * @return 未超過目標點的水平座標。
+     */
     private fun pointToward(from: HorizontalPoint, toward: HorizontalPoint, distance: Double): HorizontalPoint {
         val dx = toward.x - from.x
         val dz = toward.z - from.z
@@ -90,7 +117,15 @@ object TileWallMotionPathPlanner {
         return HorizontalPoint(from.x + dx / length * distance, from.z + dz / length * distance)
     }
 
-    /** 計算二次貝茲曲線上的一點。 */
+    /**
+     * 計算二次貝茲曲線上的一點。
+     *
+     * @param start 曲線起點。
+     * @param control 曲線控制點。
+     * @param end 曲線終點。
+     * @param progress 沿曲線的位置比例。
+     * @return 指定比例上的水平座標。
+     */
     private fun quadraticBezier(
         start: HorizontalPoint,
         control: HorizontalPoint,
@@ -104,11 +139,24 @@ object TileWallMotionPathPlanner {
         )
     }
 
-    /** 將 placement 轉成包含小數沿牆位移的環狀墩座標。 */
+    /**
+     * 將 placement 轉成包含小數沿牆位移的環狀墩座標。
+     *
+     * @param placement 要換算的牌牆位置。
+     * @param stacksPerSide 每一側的墩數。
+     * @return 沿牌牆一圈累計的墩座標。
+     */
     private fun circularCoordinate(placement: TileWallPlacement, stacksPerSide: Int): Double = placement.position.side *
         stacksPerSide + placement.position.stack + placement.offset.alongWallStacks
 
-    /** 將 [coordinate] 展開到最接近 [reference] 的同一圈表示；[stackCount] 是整圈牌牆的墩數。 */
+    /**
+     * 將 [coordinate] 展開到最接近 [reference] 的同一圈表示；[stackCount] 是整圈牌牆的墩數。
+     *
+     * @param reference 用來選擇同圈表示的參考座標。
+     * @param coordinate 原始環狀座標。
+     * @param stackCount 整圈牌牆的墩數。
+     * @return 與參考座標距離最近的等價座標。
+     */
     private fun unwrapNear(reference: Double, coordinate: Double, stackCount: Int): Double {
         val circumference = stackCount.toDouble()
         var result = coordinate
@@ -119,6 +167,11 @@ object TileWallMotionPathPlanner {
 
     /**
      * 列出起訖座標經過的牆角格；每一面最後一墩到下一面第一墩之間的完整單位區間視為牆角。
+     *
+     * @param start 起始環狀座標。
+     * @param end 結束環狀座標。
+     * @param stacksPerSide 每一側的墩數。
+     * @return 起訖範圍內代表牆角的格子索引。
      */
     private fun traversedCornerCells(start: Double, end: Double, stacksPerSide: Int): Set<Int> {
         val lower = floor(minOf(start, end)).toInt()
@@ -129,14 +182,26 @@ object TileWallMotionPathPlanner {
         }
     }
 
-    /** 只替換 placement 的水平位置與 yaw。 */
+    /**
+     * 只替換 placement 的水平位置與 yaw。
+     *
+     * @param point 新的水平座標。
+     * @param targetYaw 新的 yaw 角度。
+     * @return 保留高度並套用新水平位置與標準化 yaw 的 placement。
+     */
     private fun MahjongTileWallPlacement.withHorizontal(point: HorizontalPoint, targetYaw: Float): MahjongTileWallPlacement = copy(
         x = point.x,
         z = point.z,
         yaw = targetYaw.mod(FULL_TURN_DEGREES),
     )
 
-    /** 兩個世界 placement 的水平距離。 */
+    /**
+     * 兩個世界 placement 的水平距離。
+     *
+     * @param first 第一個世界座標。
+     * @param second 第二個世界座標。
+     * @return 忽略高度後的直線距離。
+     */
     private fun horizontalDistance(first: MahjongTileWallPlacement, second: MahjongTileWallPlacement): Double = hypot(
         second.x - first.x,
         second.z - first.z,
@@ -166,7 +231,13 @@ object TileWallMotionPathPlanner {
 
 /** 路徑規劃內部使用的水平座標。 */
 private data class HorizontalPoint(val x: Double, val z: Double) {
-    /** 與指定桌心的平方距離。 */
+    /**
+     * 與指定桌心的平方距離。
+     *
+     * @param centerX 桌心的 X 座標。
+     * @param centerZ 桌心的 Z 座標。
+     * @return 此點到桌心的水平平方距離。
+     */
     fun distanceSquaredFrom(centerX: Double, centerZ: Double): Double {
         val dx = x - centerX
         val dz = z - centerZ

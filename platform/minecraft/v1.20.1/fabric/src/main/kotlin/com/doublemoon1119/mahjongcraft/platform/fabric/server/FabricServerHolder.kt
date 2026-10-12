@@ -16,17 +16,35 @@ import kotlin.uuid.toJavaUuid
  */
 @Single
 class FabricServerHolder {
+    /** 目前由 Fabric lifecycle callback 設定的 server。 */
     private var server: MinecraftServer? = null
 
+    /**
+     * 設定目前運行中的 server。
+     *
+     * @param server Fabric lifecycle callback 提供的 server。
+     */
     fun set(server: MinecraftServer) {
         this.server = server
     }
 
+    /** 清除目前 server；server 停止時呼叫。 */
     fun clear() {
         server = null
     }
 
+    /**
+     * 取得目前伺服器。
+     *
+     * @return 已設定的伺服器；尚未設定或已清除時為 null。
+     */
     fun current(): MinecraftServer? = server
 
+    /**
+     * 依玩家 UUID 查找目前在線玩家。
+     *
+     * @param playerId 要查找的玩家 UUID。
+     * @return 找到的玩家，或玩家不在線／server 不存在時的 null。
+     */
     fun findPlayer(playerId: Uuid): ServerPlayerEntity? = server?.playerManager?.getPlayer(playerId.toJavaUuid())
 }

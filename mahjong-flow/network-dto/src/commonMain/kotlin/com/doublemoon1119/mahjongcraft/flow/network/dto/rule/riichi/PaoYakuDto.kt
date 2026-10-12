@@ -5,4 +5,10 @@ import kotlinx.serialization.Serializable
 
 /** [PaoYaku] 的網路 DTO。 */
 @Serializable
-enum class PaoYakuDto { Daisangen, Daisuushii }
+enum class PaoYakuDto {
+    /** 大三元。 */
+    Daisangen,
+
+    /** 大四喜。 */
+    Daisuushii,
+}

@@ -12,7 +12,7 @@ import kotlin.test.assertIs
 
 /** 動作選牌期間手牌分析來源切換的測試。 */
 class DecisionHudDiscardAnalysisScopeTest {
-    /** 進入立直選牌後使用立直專屬分析，離開後恢復一般分析。 */
+    /** 選取立直牌張時使用該動作專屬的捨牌分析，未選取動作時沿用一般分析。 */
     @Test
     fun `test riichi selection uses action-scoped analyses`() {
         val ordinary = analysis("ordinary")
@@ -48,7 +48,7 @@ class DecisionHudDiscardAnalysisScopeTest {
         assertEquals(listOf(ordinary), prompt.discardAnalysesForAction(null))
     }
 
-    /** 未知動作或沒有專屬分析的動作仍安全沿用一般分析。 */
+    /** 未知動作或沒有專屬分析時沿用 prompt 的一般分析。 */
     @Test
     fun `test absent action analyses fall back to prompt analyses`() {
         val ordinary = analysis("ordinary")
@@ -83,6 +83,7 @@ class DecisionHudDiscardAnalysisScopeTest {
         assertEquals(listOf(ordinary), prompt.discardAnalysesForAction("missing"))
     }
 
+    /** 指向合法捨牌時優先選取該牌的投影分析。 */
     @Test
     fun `pointing at a legal discard prefers its projected analysis`() {
         val projected = analysis("tile")
@@ -107,6 +108,7 @@ class DecisionHudDiscardAnalysisScopeTest {
         assertEquals(projected, selected.analysis)
     }
 
+    /** 沒有合法指向牌時使用目前手牌分析。 */
     @Test
     fun `current hand analysis is used without a legal pointed discard`() {
         val current = HandReadinessAnalysisDto("mahjongcraft:riichi", emptyList(), statusIndicatorId = null)
@@ -118,7 +120,12 @@ class DecisionHudDiscardAnalysisScopeTest {
         assertEquals(current, selected.analysis)
     }
 
-    /** 建立只需辨識來源的最小捨牌分析。 */
+    /**
+     * 建立只需辨識來源的最小捨牌分析。
+     *
+     * @param id 作為來源識別的牌 ID。
+     * @return 不含等待牌與狀態指示的捨牌分析。
+     */
     private fun analysis(id: String) = DiscardReadinessAnalysisDto(
         discardTileId = id,
         waitingTiles = emptyList(),

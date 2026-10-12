@@ -79,6 +79,9 @@ object RiichiHandDecomposer {
      *
      * 窮舉所有可能的分割方式，並根據 [winningTile] 在牌型中的位置計算 [CompletionType]。
      *
+     * @param handTiles 手牌中的立牌，不含和牌張與副露。
+     * @param winningTile 本次和牌的牌張。
+     * @param fuuro 已曝光的副露面子。
      * @return 所有可行的標準手牌結構列表，若無法分割則返回空列表。
      */
     private fun tryDecomposeStandard(
@@ -199,7 +202,10 @@ object RiichiHandDecomposer {
      * - 邊張 (Penchan)：[winTile] 在順子邊緣
      * - 兩面 (Ryanmen)：[winTile] 在順子兩頭
      *
-     * @param tileCounts 剩餘牌張計數（用於檢查構成順子所需的相鄰牌是否存在）
+     * @param winTile 和牌張（已正規化）的牌值。
+     * @param winTileCount 可用和牌張的數量。
+     * @param pairTile 已選作雀頭的牌值。
+     * @param tileCounts 移除雀頭後剩餘牌張的計數。
      * @return [CompletionType] 以及對應的 [Mentsu] (單騎的話 [Mentsu] 為 `null`)
      */
     private fun computePossibleMenstuCompletions(
@@ -288,6 +294,11 @@ object RiichiHandDecomposer {
 
     /**
      * 從 TileCountMap 遞迴尋找指定數量的面子。
+     *
+     * @param tileCounts 尚未分組的牌張數量。
+     * @param requiredMentsus 需要組成的面子數量。
+     * @param currentMentsus 遞迴中已選取的面子。
+     * @return 恰好組成指定數量的面子時回傳其副本，否則為 null。
      */
     private fun tryFindMentsusFromCounts(
         tileCounts: Map<Tile, Int>,
@@ -367,6 +378,11 @@ object RiichiHandDecomposer {
 
     /**
      * 嘗試分割為七對子。
+     *
+     * @param handTiles 手牌中的立牌，不含和牌張。
+     * @param winningTile 本次和牌的牌張。
+     * @param fuuro 已曝光的副露面子。
+     * @return 符合七對子的結構；有副露或牌數／牌型不符時為 null。
      */
     private fun tryDecomposeChiitoitsu(
         handTiles: List<Tile>,
@@ -402,6 +418,11 @@ object RiichiHandDecomposer {
 
     /**
      * 嘗試分割為國士無雙。
+     *
+     * @param handTiles 手牌中的立牌，不含和牌張。
+     * @param winningTile 本次和牌的牌張。
+     * @param fuuro 已曝光的副露面子。
+     * @return 符合國士無雙的結構；有副露或牌型不符時為 null。
      */
     private fun tryDecomposeKokushiMusou(
         handTiles: List<Tile>,

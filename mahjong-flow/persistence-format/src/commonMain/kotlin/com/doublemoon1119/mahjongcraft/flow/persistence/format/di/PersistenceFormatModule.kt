@@ -22,7 +22,12 @@ class PersistenceFormatModule {
     @Single
     fun providePersistenceRegistries(): PersistenceRegistries = emptyPersistenceRegistries()
 
-    /** 建立使用 runtime persistence registries 的權威狀態 codec。 */
+    /**
+     * 建立使用執行期存檔註冊表的權威狀態編解碼器。
+     *
+     * @param registries 內建與擴充規則共用的存檔型別註冊表。
+     * @return 使用指定註冊表的權威狀態編解碼器。
+     */
     @Single
     fun provideAuthoritativeStatePersistenceCodec(
         registries: PersistenceRegistries,

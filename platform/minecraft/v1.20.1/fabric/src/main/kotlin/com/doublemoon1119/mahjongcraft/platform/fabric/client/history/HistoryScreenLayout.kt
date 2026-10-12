@@ -118,7 +118,7 @@ internal data class HistoryScreenLayout(
     data class Bounds(val x: Int, val y: Int, val width: Int, val height: Int)
 
     /**
-     * 依可用寬度配置工具列，確保每個控制項都在畫面內。
+     * 依可用寬度配置工具列；窄畫面改排成兩列，寬度低於按鈕最小寬時仍可能超出畫面。
      *
      * @param width 畫面可用寬度。
      * @return 工具列控制項的界線。

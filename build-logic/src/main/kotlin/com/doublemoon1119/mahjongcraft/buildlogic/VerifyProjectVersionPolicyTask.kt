@@ -8,7 +8,7 @@ import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.TaskAction
 import java.io.File
 
-/** 驗證所有載入的 project 都明確使用其 release train 版本。 */
+/** 驗證所有載入的 project 都符合 repository 的版本政策，包括 root 與 testing 專案的固定版本。 */
 abstract class VerifyProjectVersionPolicyTask : DefaultTask() {
     /** repository 根目錄。 */
     @get:Internal

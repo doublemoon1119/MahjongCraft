@@ -10,6 +10,11 @@ object AnimationQueueDriver {
     /**
      * 把 [steps] 附加至 [queue]，並把相鄰的 [AnimationStep.WaitUntil] 合併成較晚的絕對時間；等待之間若有
      * 任何實際動作就維持原序，避免改變不同動畫階段的時間語意。
+     *
+     * @param C 實體專屬自訂步驟的資料型別。
+     * @param queue 目前待執行的步驟。
+     * @param steps 要依序附加的步驟。
+     * @return 合併相鄰等待步驟後的新佇列。
      */
     fun <C> append(
         queue: List<AnimationStep<C>>,
@@ -37,6 +42,12 @@ object AnimationQueueDriver {
      * 本身就攜帶絕對到期時間，不需要 [activeStepEndGameTime] 追蹤；[activeStepEndGameTime] 只用來記錄
      * [AnimationStep.PlayMotion] 是不是剛開始（讓呼叫端只在啟動當下同步一次 render 用欄位），存的是
      * 絕對 game time，跨存讀檔正確恢復。
+     *
+     * @param C 實體專屬自訂步驟的資料型別。
+     * @param queue 目前待處理的步驟。
+     * @param activeStepEndGameTime 已開始播放之動作的絕對結束時間；沒有進行中的動作時為 null。
+     * @param currentGameTime 目前的絕對 game time。
+     * @return 套用步驟及剩餘佇列的快照。
      */
     fun <C> tick(
         queue: List<AnimationStep<C>>,

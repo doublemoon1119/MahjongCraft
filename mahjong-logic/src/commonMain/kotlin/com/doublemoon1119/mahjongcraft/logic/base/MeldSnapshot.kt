@@ -22,6 +22,10 @@ data class MeldSnapshot(
  * 除暗槓外，副露永遠公開，牌面固定可見；暗槓則依 [handIsVisible]（是否為手牌本人／被授權觀察者）
  * 與 [revealsClosedKanTiles]（該規則是否公開暗槓身份）決定——兩者任一成立即完整可見，都不成立時
  * 只保留牌張 ID。
+ *
+ * @param handIsVisible 觀察者是否為手牌本人或獲授權查看者。
+ * @param revealsClosedKanTiles 規則是否公開暗槓牌面。
+ * @return 依規則與觀察者可見性建立的副露快照。
  */
 fun Meld.toSnapshot(handIsVisible: Boolean, revealsClosedKanTiles: Boolean): MeldSnapshot {
     val tilesVisible = handIsVisible || type != MeldType.CLOSED_KAN || revealsClosedKanTiles

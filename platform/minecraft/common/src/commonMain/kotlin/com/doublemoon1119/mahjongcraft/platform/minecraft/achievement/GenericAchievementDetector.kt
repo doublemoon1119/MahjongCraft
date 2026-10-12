@@ -18,6 +18,8 @@ internal object GenericAchievementDetector {
      */
     fun detect(facts: CommittedGameFacts, module: MahjongRuleModule<*>): Map<Uuid, Set<String>> {
         val achievements = mutableMapOf<Uuid, MutableSet<String>>()
+
+        /** 將成果加入指定玩家的集合，同一成果只保留一次。 */
         fun add(playerId: Uuid, achievementId: String) {
             achievements.getOrPut(playerId) { linkedSetOf() } += achievementId
         }

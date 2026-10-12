@@ -62,7 +62,21 @@ import kotlin.uuid.Uuid
 
 /** 驗證第三方 Minecraft extension 的統一註冊順序、錯誤診斷與 registry freeze。 */
 class MinecraftMahjongExtensionRegistrarTest {
-    /** 以明確的獨立 registry graph 執行 registrar，供隔離的單元測試使用。 */
+    /**
+     * 以明確的獨立 registry graph 執行 registrar，供隔離的單元測試使用。
+     *
+     * @param extensions 要依序執行註冊的 extension。
+     * @param tileAssetRegistry 麻將牌資產 registry。
+     * @param aiStrategyDisplayNameRegistry AI 策略名稱 registry。
+     * @param tileDisplayNameRegistry 牌面顯示名稱 registry。
+     * @param ruleModuleDisplayNameRegistry 規則模組名稱 registry。
+     * @param tileEmojiRegistry 牌面 emoji registry。
+     * @param tileLabelRegistry 牌面輔助標籤 registry。
+     * @param automaticControlDisplayRegistry 自動控制顯示 registry。
+     * @param ruleCatalogueRegistry 規則目錄 registry。
+     * @param gameAchievementResolverRegistry 成果判定 registry。
+     * @return 註冊來源與分類 key 的結果快照。
+     */
     private fun registerAndFreeze(
         extensions: Iterable<MinecraftMahjongExtension>,
         tileAssetRegistry: MinecraftTileAssetRegistry,
@@ -410,7 +424,12 @@ class MinecraftMahjongExtensionRegistrarTest {
     }
 }
 
-/** 取得第三方 extension（不含內建映射與內建規則 extension）在指定診斷分類登記的 key。 */
+/**
+ * 取得第三方 extension（不含內建映射與內建規則 extension）在指定診斷分類登記的 key。
+ *
+ * @param categoryId 要查詢的診斷分類 ID。
+ * @return 該分類中由第三方 extension 新增的登記 key。
+ */
 private fun MinecraftMahjongExtensionRegistrationResult.registrationKeys(categoryId: String): Set<String> = sources
     .filter { source -> source.extensionId != null && BundledMinecraftMahjongExtensions.all.none { it.id == source.extensionId } }
     .flatMap { it.categories }

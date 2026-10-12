@@ -28,7 +28,11 @@ import kotlin.math.abs
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 
-/** 使用 Fabric 1.20.1 entity 呈現正式牌河：把牌牆管理中的既有 entity 領走並移動，不重新生成。 */
+/**
+ * 使用 Fabric 1.20.1 entity 呈現正式牌河：把牌牆管理中的既有 entity 領走並移動，不重新生成。
+ *
+ * @property serverHolder 取得目前伺服器世界。
+ */
 @Single(binds = [MahjongDiscardPresenter::class])
 class FabricMahjongDiscardPresenter(
     private val serverHolder: FabricServerHolder,
@@ -49,6 +53,9 @@ class FabricMahjongDiscardPresenter(
      * 這次呼叫不做「清除上一局遺留牌河」的整批清除——牌牆 presenter 每次重新生成牌牆時已經整批清空
      * 這張桌子所有管理中的麻將牌（見 [FabricMahjongTileWallPresenter.present] KDoc），牌牆一定比
      * 摸牌/丟牌先執行，上一局的舊 entity 早就不存在了。
+     *
+     * @param presentation 牌河順序、側身標記與桌子位置等呈現資料。
+     * @return 桌子無效時為 `TABLE_NOT_FOUND`；缺少既有牌時為 `SPAWN_FAILED`；否則為 `PRESENTED`。
      */
     override fun present(presentation: MahjongDiscardPresentation): MahjongDiscardPresentationResult {
         val world = resolveWorld(presentation.tableLocation) ?: return MahjongDiscardPresentationResult.TABLE_NOT_FOUND
@@ -123,6 +130,10 @@ class FabricMahjongDiscardPresenter(
      * 清除指定 controller 周圍且 table UUID 相符的所有正式管理中麻將牌——跟
      * [FabricMahjongTileWallPresenter.clear] 效果相同（都是清這張桌子的全部管理中麻將牌，不分子
      * 系統），保留成獨立方法只是維持介面對稱，呼叫端仍可能只想觸發牌河這條路徑的清除。
+     *
+     * @param tableId 桌子 UUID。
+     * @param tableLocation 桌子位置。
+     * @return 移除的牌 entity 數量。
      */
     override fun clear(tableId: Uuid, tableLocation: TableLocation): Int {
         val world = resolveWorld(tableLocation) ?: return 0
@@ -131,14 +142,27 @@ class FabricMahjongDiscardPresenter(
         return tiles.size
     }
 
-    /** 由版本無關 dimension ID 取得目前 server session 的世界。 */
+    /**
+     * 由版本無關 dimension ID 取得目前 server session 的世界。
+     *
+     * @param location 桌子位置。
+     * @return 對應的已載入伺服器世界；無法解析時為 null。
+     */
     private fun resolveWorld(location: TableLocation): ServerWorld? {
         val identifier = Identifier.tryParse(location.dimensionId) ?: return null
         val worldKey = RegistryKey.of(RegistryKeys.WORLD, identifier)
         return serverHolder.current()?.getWorld(worldKey)
     }
 
-    /** 驗證指定位置確實是 UUID 與朝向資料可用的 controller。 */
+    /**
+     * 驗證指定位置確實是 UUID 與朝向資料可用的 controller。
+     *
+     * @param world 桌子所在世界。
+     * @param controllerPos controller 方塊位置。
+     * @param state 該方塊的狀態。
+     * @param tableId 預期桌子 UUID。
+     * @return 狀態與桌子 UUID 相符時的 block entity；否則為 null。
+     */
     private fun resolveTable(
         world: ServerWorld,
         controllerPos: BlockPos,
@@ -171,6 +195,13 @@ class FabricMahjongDiscardPresenter(
      *
      * 王牌區的牌被移出開門位置（[FabricMahjongTileWallPresenter.moveDeadWallToOpenPosition]）時只改
      * 位置，姿態與 yaw 都不變，因此天然滿足「王牌區視同牌牆」——不需要額外標記或排除。
+     *
+     * @param world 桌子所在世界。
+     * @param tableId 桌子 UUID。
+     * @param controllerPos controller 方塊位置。
+     * @param tableFacing 桌子朝向。
+     * @param seatIndex 要檢查牌牆的座位索引。
+     * @return 指定座位朝向的牌牆仍有牌時為 true。
      */
     private fun sideStillHasWall(
         world: ServerWorld,
@@ -193,14 +224,27 @@ class FabricMahjongDiscardPresenter(
         }
     }
 
-    /** 容許浮點誤差比較兩個 yaw 是否代表同一個世界朝向，先各自正規化到 `[0, 360)` 再比較差距。 */
+    /**
+     * 容許浮點誤差比較兩個 yaw 是否代表同一個世界朝向，先各自正規化到 `[0, 360)` 再比較差距。
+     *
+     * @param a 第一個 yaw 角度。
+     * @param b 第二個 yaw 角度。
+     * @return 兩角度差距小於容許誤差時為 true。
+     */
     private fun yawMatches(a: Float, b: Float): Boolean {
         val normalizedA = ((a % FULL_YAW_DEGREES) + FULL_YAW_DEGREES) % FULL_YAW_DEGREES
         val normalizedB = ((b % FULL_YAW_DEGREES) + FULL_YAW_DEGREES) % FULL_YAW_DEGREES
         return abs(normalizedA - normalizedB) < YAW_TOLERANCE_DEGREES
     }
 
-    /** 只查詢桌子結構附近並以同步 UUID 精確篩選，避免掃描整個 dimension。 */
+    /**
+     * 只查詢桌子結構附近並以同步 UUID 精確篩選，避免掃描整個 dimension。
+     *
+     * @param world 要搜尋的伺服器世界。
+     * @param tableId 桌子 UUID。
+     * @param controllerPos controller 方塊位置。
+     * @return 由該桌管理的牌 entity。
+     */
     private fun findManagedTiles(
         world: ServerWorld,
         tableId: Uuid,
@@ -210,7 +254,12 @@ class FabricMahjongDiscardPresenter(
         Box(controllerPos).expand(TILE_SEARCH_HORIZONTAL, TILE_SEARCH_VERTICAL, TILE_SEARCH_HORIZONTAL),
     ) { tile -> tile.managedTableId == tableId }
 
-    /** 將版本無關 table location 轉回 Fabric 方塊座標。 */
+    /**
+     * 將版本無關 table location 轉回 Fabric 方塊座標。
+     *
+     * @param location 版本無關桌子位置。
+     * @return 對應的 Minecraft 方塊位置。
+     */
     private fun TableLocation.toBlockPos(): BlockPos = BlockPos(x, y, z)
 
     /** 正式牌河建立與查詢使用的固定參數。 */

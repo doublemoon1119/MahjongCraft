@@ -27,7 +27,12 @@ import kotlin.uuid.Uuid
  * 不是所有贏家均分。
  */
 internal object RonSettlementResolver {
-    /** 榮和後桌況與每位贏家的完整算役結果。 */
+    /**
+     * 榮和後桌況與每位贏家的完整算役結果。
+     *
+     * @property tableState 榮和結算後的桌況；反應視窗是否清除由呼叫端決定。
+     * @property resolutions 各贏家的規則結算結果。
+     */
     data class Result(val tableState: TableState, val resolutions: Map<Uuid, WinResolutionResult>)
 
     /**

@@ -239,6 +239,10 @@ class RiichiHandValueCalculator(
      * - 清一色 > 混一色（保留較高番數者）
      * - 兩杯口 > 一杯口（保留較高番數者）
      * - 七對子與一杯口、兩杯口互斥（按點數決定）
+     *
+     * @param context 和牌情境與規則狀態。
+     * @param handStructure 本次候選的手牌結構。
+     * @param results 收集計算結果的清單。
      */
     private fun calculateStandardYaku(
         context: RiichiHandValueContext,
@@ -368,6 +372,10 @@ class RiichiHandValueCalculator(
 
     /**
      * 計算字牌役（場風、自風、役牌）。
+     *
+     * @param context 和牌情境與規則狀態。
+     * @param fuuro 已曝光的副露面子。
+     * @param results 收集計算結果的清單。
      */
     private fun calculateHonorYaku(
         context: RiichiHandValueContext,
@@ -391,6 +399,9 @@ class RiichiHandValueCalculator(
 
     /**
      * 計算特殊役（立直、一發、嶺上花等）。
+     *
+     * @param context 和牌情境與規則狀態。
+     * @param results 收集計算結果的清單。
      */
     private fun calculateSpecialYaku(context: RiichiHandValueContext, results: MutableList<YakuResult>) {
         // 立直 和 雙立直
@@ -435,6 +446,10 @@ class RiichiHandValueCalculator(
 
     /**
      * 計算非役滿的古役。一筒摸月、九筒撈魚分別取代海底摸月、河底撈魚。
+     *
+     * @param context 和牌情境與規則狀態。
+     * @param handStructure 本次候選的手牌結構。
+     * @param results 收集計算結果的清單。
      */
     private fun calculateLocalYaku(
         context: RiichiHandValueContext,
@@ -472,6 +487,10 @@ class RiichiHandValueCalculator(
 
     /**
      * 計算役滿古役。大七星取代字一色。
+     *
+     * @param context 和牌情境與規則狀態。
+     * @param handStructure 本次候選的手牌結構。
+     * @param results 收集計算結果的清單。
      */
     private fun calculateLocalYakuman(
         context: RiichiHandValueContext,
@@ -501,6 +520,10 @@ class RiichiHandValueCalculator(
      * 計算役滿。
      *
      * 可能會含有小三元 (非役滿)
+     *
+     * @param context 和牌情境與規則狀態。
+     * @param handStructure 本次候選的手牌結構。
+     * @param results 收集計算結果的清單。
      */
     private fun calculateYakuman(
         context: RiichiHandValueContext,

@@ -2,19 +2,30 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.config
 
 /** 小畫面分類按鈕排數與欄位起點；欄位從最後一排按鈕下方開始。 */
 internal object ClientConfigCategoryLayout {
-    /** 計算兩欄分類按鈕佔用的排數。 */
+    /**
+     * 計算兩欄分類按鈕佔用的排數。
+     *
+     * @param categoryCount 分類按鈕數量。
+     * @return 兩欄排版所需的列數。
+     */
     fun compactRowCount(categoryCount: Int): Int = (categoryCount + 1) / 2
 
-    /** 由面板頂端計算小畫面欄位起點。 */
+    /**
+     * 由面板頂端計算小畫面欄位起點。
+     *
+     * @param panelTop 面板上界。
+     * @param categoryCount 分類按鈕數量。
+     * @return 最後一排分類按鈕下方的欄位起點。
+     */
     fun compactFieldsTop(panelTop: Int, categoryCount: Int): Int = panelTop + CATEGORY_TOP_OFFSET +
         compactRowCount(categoryCount) * CATEGORY_ROW_HEIGHT + FIELDS_GAP
 
-    /** 分類按鈕相對面板上緣的起點。 */
+    /** 分類按鈕相對面板上緣的起點（像素）。 */
     const val CATEGORY_TOP_OFFSET: Int = 42
 
-    /** 分類按鈕每排的垂直間距。 */
+    /** 分類按鈕每排的垂直間距（像素）。 */
     const val CATEGORY_ROW_HEIGHT: Int = 25
 
-    /** 最後一排按鈕與欄位之間的額外間距。 */
+    /** 最後一排按鈕與欄位之間的額外間距（像素）。 */
     const val FIELDS_GAP: Int = 4
 }

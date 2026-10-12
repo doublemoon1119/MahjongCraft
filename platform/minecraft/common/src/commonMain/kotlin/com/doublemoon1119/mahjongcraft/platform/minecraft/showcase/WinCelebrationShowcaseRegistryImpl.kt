@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.showcase
 
 /** [WinCelebrationShowcaseRegistry] 的記憶體實作。 */
 class WinCelebrationShowcaseRegistryImpl : WinCelebrationShowcaseRegistry {
+    /** 依 cue key 保存的胡牌演出定義。 */
     private val definitions = mutableMapOf<String, WinCelebrationShowcaseDefinition>()
     override var isFrozen: Boolean = false
         private set

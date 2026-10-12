@@ -8,8 +8,10 @@ import kotlin.uuid.Uuid
 
 /** 驗證 portrait provider 的穩定排序、驗證與凍結契約。 */
 class PlayerPortraitSourceRegistryTest {
+    /** 固定玩家識別碼與非 AI 身分，供 provider resolve 測試共用。 */
     private val context = PlayerPortraitSourceContext(Uuid.parse("00000000-0000-0000-0000-000000000001"), false)
 
+    /** 優先序較高者勝出，同優先序依 provider ID 排序。 */
     @Test
     fun `higher priority wins and equal priority uses provider ID order`() {
         val registry = PlayerPortraitSourceRegistryImpl()
@@ -23,6 +25,7 @@ class PlayerPortraitSourceRegistryTest {
         assertEquals(PlayerPortraitSource.TileFace("a"), registry.resolve(context)?.source)
     }
 
+    /** 不適用的 provider 會略過並繼續查詢後續候選。 */
     @Test
     fun `skips providers that do not apply`() {
         val registry = PlayerPortraitSourceRegistryImpl()
@@ -32,6 +35,7 @@ class PlayerPortraitSourceRegistryTest {
         assertEquals("test:second", registry.resolve(context)?.providerId)
     }
 
+    /** 重複識別碼與 freeze 後註冊都應失敗。 */
     @Test
     fun `rejects duplicate IDs and registration after freeze`() {
         val registry = PlayerPortraitSourceRegistryImpl()
@@ -46,6 +50,7 @@ class PlayerPortraitSourceRegistryTest {
         }
     }
 
+    /** TextureRegion 要求 namespaced 資源 ID 與正規化 UV 範圍。 */
     @Test
     fun `validates namespaced texture and normalized UV`() {
         assertFailsWith<IllegalArgumentException> { PlayerPortraitSource.TextureRegion("texture", 0f, 0f, 1f, 1f) }

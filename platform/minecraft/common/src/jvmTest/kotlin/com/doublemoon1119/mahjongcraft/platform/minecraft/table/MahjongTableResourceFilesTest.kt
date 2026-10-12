@@ -63,13 +63,27 @@ class MahjongTableResourceFilesTest {
         assertEquals(concreteIds, values)
     }
 
-    /** 讀取配方指定符號的 ingredient 物件。 */
+    /**
+     * 讀取配方指定符號的 ingredient 物件。
+     *
+     * @param symbol 配方 key 中的符號。
+     * @return 對應的 ingredient JSON object。
+     */
     private fun JsonObject.keyEntry(symbol: String): JsonObject = getValue("key").jsonObject.getValue(symbol).jsonObject
 
-    /** 讀取配方輸出的 item ID。 */
+    /**
+     * 讀取配方輸出的 item ID。
+     *
+     * @return recipe result 中的 item ID。
+     */
     private fun JsonObject.resultItem(): String = getValue("result").jsonObject.getValue("item").jsonPrimitive.content
 
-    /** 從測試 classpath 載入並解析指定 JSON object。 */
+    /**
+     * 從測試 classpath 載入並解析指定 JSON object。
+     *
+     * @param resourcePath classpath 資源路徑。
+     * @return 解析後的 JSON object。
+     */
     private fun loadJson(resourcePath: String): JsonObject {
         val content = checkNotNull(javaClass.getResourceAsStream(resourcePath)) {
             "Resource not found: $resourcePath"

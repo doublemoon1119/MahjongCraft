@@ -368,7 +368,18 @@ class RespondToRobbingUseCase(
      * [ronWinningTileId] 只在搶槓成功時非空，供呼叫端逐一觸發胡牌慶祝演出——跟 [declarerId] 是互斥的
      * 兩個視窗，同一次結算只會有其中一種非空。[ruleStateChanged] 代表成立的是移出手牌的擴充動作，規則狀態（例如移出的牌）已改變。
      *
+     * @property tableState 本次交易提交的權威桌況。
+     * @property drawHappened 全員放過且槓成功後是否已完成補牌。
+     * @property declarerId 全員放過且槓成功時的宣告者識別碼。
+     * @property ruleStateChanged 成立的擴充動作是否改變規則狀態。
+     * @property ronWinnerIds 搶槓榮和成立的贏家識別碼集合。
+     * @property ronWinningTileId 搶槓榮和使用的牌張識別碼。
+     * @property ronResolutions 各榮和贏家的算役結果。
+     * @property ruleModuleId 本次榮和所用規則模組的識別碼。
+     * @property ronDiscarderId 搶槓榮和結算中的放銃者識別碼。
      * @property settlement 同一搶槓榮和交易建立的胡牌呈現詳情。
+     * @property wallRevealBatches 依 checkpoint 順序新增公開的牌張 ID 批次。
+     * @property physicalWallTransitionPhases 已驗證的實體牌牆移動階段。
      */
     private data class RobbingResult(
         val tableState: TableState,

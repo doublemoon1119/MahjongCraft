@@ -39,12 +39,25 @@ import kotlin.uuid.Uuid
 /**
  * [AdvanceRoundUseCase] 的單元測試類別。
  *
- * 驗證連莊/過莊判定、開下一局、整場對局結束時的過渡行為，以及快照與事件的同步行為。
+ * 驗證連莊與過莊指示的套用、開下一局、整場對局結束時的過渡行為，以及快照與事件的同步行為。
  */
 class AdvanceRoundUseCaseTest {
 
+    /** 各測試共用的對局識別碼。 */
     private val gameId = Uuid.random()
 
+    /**
+     * 組成換局用例與同步、事件發布替身的測試環境。
+     *
+     * @property gameRepo 保存測試對局的權威倉庫。
+     * @property moduleRegistry 內建規則模組註冊中心。
+     * @property snapshotRepo 保存觀察者快照的替身。
+     * @property snapshotSynchronizer 依可見性政策產生同步快照的元件。
+     * @property handSortPreferenceStore 玩家手牌排序偏好。
+     * @property eventPublisher 記錄流程事件的替身。
+     * @property presentationPublisher 記錄呈現要求的替身。
+     * @property useCase 受測換局用例。
+     */
     private class Fixtures {
         val gameRepo = FakeGameRepository()
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
@@ -62,7 +75,13 @@ class AdvanceRoundUseCaseTest {
             presentationPublisher,
         )
 
-        /** 以測試桌況中的正式結算記錄建立權威本局摘要。 */
+        /**
+         * 依測試桌況的動作紀錄建立本局摘要，再寫入測試倉庫；不重新計算和牌或流局結算。
+         *
+         * @param tableState 含有本局結算動作的桌況。
+         * @param remainingReserveMillisByPlayerId 要保留的玩家思考時間；null 時沿用預設值。
+         * @param enabledAutomaticControlIdsByPlayerId 玩家目前啟用的自動控制項目。
+         */
         suspend fun setCompletedState(
             tableState: TableState,
             remainingReserveMillisByPlayerId: Map<Uuid, Long>? = null,
@@ -125,9 +144,7 @@ class AdvanceRoundUseCaseTest {
         val p3 = FakeMahjongPlayerFactory.create(Wind.WEST)
         val p4 = FakeMahjongPlayerFactory.create(Wind.NORTH)
         val players = listOf(dealer, p2, p3, p4)
-        // 用 East（4 局）而非預設的 OneGame（1 局），確保「連莊」跟「整場對局是否已依局數結束」是
-        // 兩件互不干擾的事——OneGame 下第 1 局連莊本身就會正確結束對局（見 TableStateTest 新增的
-        // 迴歸測試），但這裡要驗證的是連莊機制本身（本場數/莊家/新牌），不該被 OneGame 的預設值誤觸。
+        // 使用東風戰，避免單局模式在第一局完成時直接終局，讓測試能檢查連莊後的新局狀態。
         val config = RiichiRuleConfig(gameLength = RiichiGameLength.East)
         val table = FakeTableStateFactory.create(
             id = gameId,
@@ -341,7 +358,7 @@ class AdvanceRoundUseCaseTest {
 
     /**
      * 驗證整場對局結束時，桌上未被任何人收下的立直棒歸給最終第一名（分數最高者）——這位玩家的分數
-     * 應加上 `立直棒數 * 1000`，`dynamicRuleState` 應歸零。
+     * 應加上 `立直棒數 * 1000`，動態規則狀態中的立直棒數應歸零。
      */
     @Test
     fun `test advance round awards leftover stick pot to the top-ranked player at match end`() = runTest {
@@ -377,9 +394,9 @@ class AdvanceRoundUseCaseTest {
     }
 
     /**
-     * 驗證終局排名同分決勝依 `initialSeat`（起家順位）：A(南) 跟 B(西) 並列最高分 28000，A 起家順位
+     * 驗證終局排名同分決勝依 `initialSeatIndex`（起家順位）：A(南) 跟 B(西) 並列最高分 28000，A 起家順位
      * 較前（南 < 西），供託應該歸給 A，不是 B——用來確認 `compareForMatchRanking` 真的有在比
-     * `initialSeat`，不是只比分數。
+     * 起家順位，不是只比分數。
      */
     @Test
     fun `test advance round breaks tied match ranking by initialSeat when awarding leftover stick pot`() = runTest {
@@ -468,7 +485,7 @@ class AdvanceRoundUseCaseTest {
     }
 
     /**
-     * 驗證開新的一局後，所有觀察者的快照皆同步更新、所有玩家皆收到 [GameAction.RoundStarted] 事件通知，
+     * 驗證開新的一局後，兩名已登記玩家的快照皆同步更新，且皆收到 [GameAction.RoundStarted] 事件通知，
      * 且平台收到一次規則狀態更新通知。
      */
     @Test

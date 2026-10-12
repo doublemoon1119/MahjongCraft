@@ -68,7 +68,11 @@ class PlayerConnectionLifecycleService(
         cancelPendingLeaveJob(playerId)
     }
 
-    /** 取消玩家尚未到期的逾時離開工作；重連與斷線都需要這個動作，見 [onConnected]／[onDisconnected]。 */
+    /**
+     * 取消玩家尚未到期的逾時離開工作；重連與斷線都需要這個動作，見 [onConnected]／[onDisconnected]。
+     *
+     * @param playerId 要取消延遲離開工作的玩家 UUID。
+     */
     private fun cancelPendingLeaveJob(playerId: Uuid) {
         val pendingJob = synchronized(pendingLeaveJobsLock) { pendingLeaveJobs.remove(playerId) }
         if (pendingJob != null) {
@@ -88,6 +92,8 @@ class PlayerConnectionLifecycleService(
      * 產生完整快照才補上——這是遊戲內實際回報過的問題。改成由客戶端自己決定「我剛加入、還沒收到任何
      * 快照」這件事、主動送一個請求信號過來，伺服器單純依當下查得到的狀態重建，不需要再靠伺服器自己猜測
      * 時機、也不需要重試邏輯。畫面資料本身由觀察者推送送達，這裡只確保倉庫內容是最新的。
+     *
+     * @param playerId 要重建快照的玩家 UUID。
      */
     fun onSnapshotRequested(playerId: Uuid) {
         scope.launch { resyncSnapshot(playerId) }
@@ -97,6 +103,8 @@ class PlayerConnectionLifecycleService(
      * 依玩家目前的房間歸屬重建他的對局或房間快照——沒有歸屬時代表玩家不在任何桌子上，略過。
      *
      * 只寫入快照倉庫，讓重連後的事件仍帶得出正確內容；把資料送到客戶端是觀察者推送的職責。
+     *
+     * @param playerId 要重建快照的玩家 UUID。
      */
     private suspend fun resyncSnapshot(playerId: Uuid) {
         val tableId = membershipRepository.getVenueId(playerId)
@@ -136,7 +144,12 @@ class PlayerConnectionLifecycleService(
         }
     }
 
-    /** 依設定秒數安排離開工作，完成或取消後移除工作索引。 */
+    /**
+     * 依設定秒數安排離開工作，完成或取消後移除工作索引。
+     *
+     * @param playerId 逾時後要離開等待室的玩家 UUID。
+     * @param timeoutSeconds 延遲離開的秒數。
+     */
     private fun scheduleTimeout(playerId: Uuid, timeoutSeconds: Long) {
         logger.debug("Scheduled disconnected-player timeout of {} second(s) for player {}", timeoutSeconds, playerId)
         val job = scope.launch {
@@ -152,7 +165,11 @@ class PlayerConnectionLifecycleService(
         }
     }
 
-    /** 僅讓仍處於等待室的玩家離開；進行中的對局一律保留座位。 */
+    /**
+     * 僅讓仍處於等待室的玩家離開；進行中的對局一律保留座位。
+     *
+     * @param playerId 要處理離開的玩家 UUID。
+     */
     private suspend fun leaveWaitingRoom(playerId: Uuid) {
         val tableId = membershipRepository.getVenueId(playerId)
         if (tableId == null) {

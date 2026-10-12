@@ -36,8 +36,13 @@ import kotlin.uuid.Uuid
  * 和牌者的手牌另有役牌（發）成立，因此關閉古役時同一張牌仍能榮和，可以比較兩種設定的結算差異。
  */
 class RiichiLocalYakuFlowTest {
+    /** 測試對局識別碼。 */
     private val gameId = Uuid.random()
+
+    /** 打出和牌張的玩家識別碼。 */
     private val discarderId = Uuid.random()
+
+    /** 榮和玩家識別碼。 */
     private val winnerId = Uuid.random()
 
     /** 暗槓補牌後打出的牌被榮和：啟用古役時結算有槓振，關閉時沒有任何古役，役牌照常計算。 */
@@ -62,7 +67,12 @@ class RiichiLocalYakuFlowTest {
         assertTrue(disabled.none { it.isLocal }, "Settled yaku: $disabled")
     }
 
-    /** 莊家暗槓、補嶺上牌後打出紅中，由和牌者榮和；回傳結算的役種。 */
+    /**
+     * 莊家暗槓並補牌後打出紅中，由和牌者榮和。
+     *
+     * @param useLocalYaku 是否啟用古役。
+     * @return 實際和牌結算中的役種。
+     */
     private suspend fun ronOnDiscardAfterKan(useLocalYaku: Boolean): Set<YakuType> {
         val kanTiles = List(4) { tile(m(1)) }
         val red = tile(Tile.Honor.Red)
@@ -85,7 +95,12 @@ class RiichiLocalYakuFlowTest {
         )
     }
 
-    /** 莊家以紅中宣告立直（打完仍聽 1、4 索），由和牌者榮和這張宣言牌；回傳結算的役種。 */
+    /**
+     * 莊家以紅中宣告立直，由和牌者榮和宣言牌。
+     *
+     * @param useLocalYaku 是否啟用古役。
+     * @return 實際和牌結算中的役種。
+     */
     private suspend fun ronOnRiichiDeclaration(useLocalYaku: Boolean): Set<YakuType> {
         val red = tile(Tile.Honor.Red)
         val standing = listOf(m(1), m(2), m(3), p(4), p(5), p(6), s(7), s(8), s(9), Tile.Honor.East, Tile.Honor.East, s(2)).map(::tile)
@@ -105,7 +120,13 @@ class RiichiLocalYakuFlowTest {
         )
     }
 
-    /** 依序送出 [commands]，每一步都必須成功；回傳和牌者在胡牌結算裡的役種。 */
+    /**
+     * 依序執行命令並檢查每一步成功，再取得和牌結算。
+     *
+     * @param table 初始桌況。
+     * @param commands 玩家識別碼與命令的執行序列。
+     * @return 和牌者在結算中的役種。
+     */
     private suspend fun play(table: TableState, vararg commands: Pair<Uuid, GameCommand>): Set<YakuType> {
         val runtime = SimulationRuntime(defaultStrategyKey = "unused")
         runtime.gameRepository.setTableState(table)
@@ -119,7 +140,12 @@ class RiichiLocalYakuFlowTest {
         return yaku.entries.mapNotNull { RiichiWinSettlementIds.yakuType(it.id) }.toSet()
     }
 
-    /** 已打過一巡、這一巡剛摸牌、點數足夠立直的莊家。 */
+    /**
+     * 建立已打過牌、點數足夠立直的莊家。
+     *
+     * @param hand 莊家本次行動前的手牌。
+     * @return 已記錄摸牌、捨牌及再次摸牌的玩家。
+     */
     private fun discarder(hand: Hand): MahjongPlayer {
         val earlier = tile(Tile.Honor.North)
         return FakeMahjongPlayerFactory.create(
@@ -158,17 +184,39 @@ class RiichiLocalYakuFlowTest {
         ).copy(score = STARTING_SCORE).recordAction(GameAction.Draw).recordAction(GameAction.Discard(earlier.id))
     }
 
+    /**
+     * 替牌種建立獨立的牌識別碼。
+     *
+     * @param tile 要建立的牌種。
+     * @return 具識別碼的牌。
+     */
     private fun tile(tile: Tile): IdentifiedTile = FakeIdentifiedTileFactory.create(tile)
 
-    /** 萬子。 */
+    /**
+     * 建立萬子牌種。
+     *
+     * @param value 牌面數字。
+     * @return 指定數字的萬子。
+     */
     private fun m(value: Int): Tile = Tile.Numeric(Tile.Suit.Character, value)
 
-    /** 筒子。 */
+    /**
+     * 建立筒子牌種。
+     *
+     * @param value 牌面數字。
+     * @return 指定數字的筒子。
+     */
     private fun p(value: Int): Tile = Tile.Numeric(Tile.Suit.Dot, value)
 
-    /** 索子。 */
+    /**
+     * 建立索子牌種。
+     *
+     * @param value 牌面數字。
+     * @return 指定數字的索子。
+     */
     private fun s(value: Int): Tile = Tile.Numeric(Tile.Suit.Bamboo, value)
 
+    /** 共用的測試點數。 */
     private companion object {
         /** 兩位玩家的點數。 */
         const val STARTING_SCORE = 25_000

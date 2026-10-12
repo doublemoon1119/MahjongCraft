@@ -190,7 +190,11 @@ internal class SqliteHistoryDatabase private constructor(
         }
     }
 
-    /** 在呼叫端的 SQLite 交易中插入或核對單筆事件。 */
+    /**
+     * 在呼叫端的 SQLite 交易中插入或核對單筆事件。
+     *
+     * @param record 待寫入的歷史事件。
+     */
     private fun appendPendingInTransaction(record: PendingHistoryRecord) {
         if (isTombstoned(record.matchId)) return
         HistoryPendingEventTable.insertIgnore {
@@ -296,14 +300,22 @@ internal class SqliteHistoryDatabase private constructor(
             .map { it.toPendingRecord() }
     }
 
-    /** 讀取所有未封存事件，供啟動時與權威 outbox 對帳。 */
+    /**
+     * 讀取所有未封存事件，供啟動時與權威 outbox 對帳。
+     *
+     * @return 依場次及序號排序的待寫事件。
+     */
     fun readAllPending(): List<PendingHistoryRecord> = transaction(database) {
         HistoryPendingEventTable.selectAll()
             .orderBy(HistoryPendingEventTable.matchId to SortOrder.ASC, HistoryPendingEventTable.sequence to SortOrder.ASC)
             .map { it.toPendingRecord() }
     }
 
-    /** 讀取已確認缺口，不以無內容事件填補。 */
+    /**
+     * 讀取已確認缺口，不以無內容事件填補。
+     *
+     * @return 對局 ID 與最早缺少序號的對照。
+     */
     fun readGaps(): Map<String, Long> = transaction(database) {
         HistoryGapTable.selectAll().associate { it[HistoryGapTable.matchId] to it[HistoryGapTable.firstMissingSequence] }
     }
@@ -367,7 +379,11 @@ internal class SqliteHistoryDatabase private constructor(
         }
     }
 
-    /** 已封存場次 ID；用於略過其原始事件的缺口推導。 */
+    /**
+     * 已封存場次 ID；用於略過其原始事件的缺口推導。
+     *
+     * @return 已有 Replay 的對局 ID 集合。
+     */
     fun readReplayIds(): Set<String> = transaction(database) {
         HistoryReplayTable.selectAll().mapTo(mutableSetOf()) { it[HistoryReplayTable.matchId] }
     }
@@ -444,7 +460,12 @@ internal class SqliteHistoryDatabase private constructor(
         return HistoryGenerationReceipt(sizes, pruned, measureDiskUsage())
     }
 
-    /** 完成資料表摘要與 Replay 的單一交易；成功後才刪除原始事件。 */
+    /**
+     * 完成資料表摘要與 Replay 的單一交易；成功後才刪除原始事件。
+     *
+     * @param record 已驗證完整的封存資料。
+     * @return 新封存成功時為 `true`；已清理或相同 Replay 已存在時為 `false`。
+     */
     fun archive(record: HistoryArchiveRecord): Boolean = transaction(database) {
         if (isTombstoned(record.matchId)) return@transaction false
         check(
@@ -959,7 +980,11 @@ internal class SqliteHistoryDatabase private constructor(
      */
     fun readRetentionCandidates(): List<HistoryRetentionCandidate> = transaction(database) { retentionCandidatesInTransaction() }
 
-    /** 在目前 SQLite 交易內建立候選，不開啟另一個快照。 */
+    /**
+     * 在目前 SQLite 交易中建立可供保留政策評估的場次候選。
+     *
+     * @return 目前交易中可供保留政策評估的完整或已確認部分場次。
+     */
     private fun retentionCandidatesInTransaction(): List<HistoryRetentionCandidate> {
         val complete = HistoryMatchTable.selectAll().mapNotNull { summary ->
             val matchId = summary[HistoryMatchTable.matchId]
@@ -1112,15 +1137,30 @@ internal class SqliteHistoryDatabase private constructor(
         return HistoryDiskRecovery(busy = busy, incrementalSupported = supported)
     }
 
-    /** 判斷場次是否已有清理墓碑；須在同一交易中呼叫。 */
+    /**
+     * 判斷場次是否已有清理墓碑；須在同一交易中呼叫。
+     *
+     * @param matchId 對局識別字串。
+     * @return 已存在清理收據時為 `true`。
+     */
     private fun isTombstoned(matchId: String): Boolean = HistoryTombstoneTable.selectAll()
         .where { HistoryTombstoneTable.matchId eq matchId }.any()
 
-    /** 讀取檔案大小；主資料庫大小未知時不得回報零。 */
+    /**
+     * 讀取檔案大小；主資料庫大小未知時不得回報零。
+     *
+     * @param file 要量測的檔案。
+     * @return 檔案位元組數；無法量測時拋出例外。
+     */
     private fun fileSize(file: Path): Long = runCatching { Files.size(file) }
         .getOrElse { throw IllegalStateException("History database size is unavailable", it) }
 
-    /** 不存在的 SQLite sidecar 視為零；存在但大小未知時回報錯誤。 */
+    /**
+     * 不存在的 SQLite sidecar 視為零；存在但大小未知時回報錯誤。
+     *
+     * @param file sidecar 檔案路徑。
+     * @return sidecar 位元組數；檔案不存在時為 0。
+     */
     private fun sidecarSize(file: Path): Long = if (Files.notExists(file)) 0L else fileSize(file)
 
     companion object {
@@ -1216,7 +1256,11 @@ internal class SqliteHistoryDatabase private constructor(
     }
 }
 
-/** 把待寫事件資料列轉成 [PendingHistoryRecord]。 */
+/**
+ * 把待寫事件資料列轉成 [PendingHistoryRecord]。
+ *
+ * @return 對應的待寫事件資料。
+ */
 private fun ResultRow.toPendingRecord(): PendingHistoryRecord = PendingHistoryRecord(
     matchId = this[HistoryPendingEventTable.matchId],
     sequence = this[HistoryPendingEventTable.sequence],

@@ -45,6 +45,20 @@ import kotlin.uuid.toKotlinUuid
  * 訊息裡的連結不會觸發 `ChatScreen` 這段收尾邏輯，本來就不受影響。
  *
  * 根節點用共用的 [CLIENT_COMMAND_ROOT]，理由見該常數 KDoc。
+ *
+ * @property stateStore 查詢本地玩家座位與房間快照。
+ * @property configPresentations 已登記的設定欄位與規則呈現定義。
+ * @property configResolver 將遊戲設定解析為欄位值。
+ * @property ruleNames 規則模組顯示名稱登錄表。
+ * @property portraitRenderer 成員頭像繪製器。
+ * @property aiStrategies 可選 AI 策略登錄表。
+ * @property aiStrategyNames AI 策略顯示名稱登錄表。
+ * @property appearanceSources 成員外觀來源登錄表。
+ * @property indicatorTextResolver 規則公開指標的文字解析器。
+ * @property json 編碼設定更新使用的 JSON 格式。
+ * @property networkRegistries 設定與網路 DTO 轉換所需的登錄表。
+ * @property profileResolver 玩家名稱與外觀資料解析器。
+ * @property ruleCatalogue 從房間設定開啟規則一覽的控制器。
  */
 @Single
 class FabricRoomConfigScreenCommand(
@@ -62,6 +76,7 @@ class FabricRoomConfigScreenCommand(
     private val profileResolver: ClientPlayerProfileResolver,
     private val ruleCatalogue: RuleCatalogueScreenController,
 ) {
+    /** 已收到開啟指令，等待下一次客戶端週期處理。 */
     private var pendingOpen = false
 
     /** 註冊指令；只能在 client entrypoint 呼叫。 */

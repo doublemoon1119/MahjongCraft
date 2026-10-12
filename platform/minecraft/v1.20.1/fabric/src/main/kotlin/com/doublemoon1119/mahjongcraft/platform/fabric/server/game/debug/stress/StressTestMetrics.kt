@@ -11,7 +11,15 @@ internal val STRESS_TIME_SERIES_HEADER: String = listOf(
     "lostSegments", "completedMatches", "usedMemoryMiB", "gcCount", "gcMs",
 ).joinToString(",")
 
-/** 把一列時間序列格式化成 CSV，欄位順序與 [STRESS_TIME_SERIES_HEADER] 相同。 */
+/**
+ * 把一列時間序列格式化成 CSV，欄位順序與 [STRESS_TIME_SERIES_HEADER] 相同。
+ *
+ * @param scenarioId 對局情境識別碼。
+ * @param pace 每桌推進節奏。
+ * @param historyMode 歷史處理方式。
+ * @param row 要格式化的時間序列資料。
+ * @return CSV 格式的一列文字。
+ */
 internal fun stressTimeSeriesCsvLine(
     scenarioId: String,
     pace: StressTestPace,
@@ -31,5 +39,10 @@ internal fun stressTimeSeriesCsvLine(
     ).joinToString(",")
 }
 
-/** 以兩位小數格式化。 */
+/**
+ * 以兩位小數格式化。
+ *
+ * @param value 要格式化的數值。
+ * @return 使用小數點格式化的文字。
+ */
 private fun formatDecimal(value: Double): String = String.format(Locale.ROOT, "%.2f", value)

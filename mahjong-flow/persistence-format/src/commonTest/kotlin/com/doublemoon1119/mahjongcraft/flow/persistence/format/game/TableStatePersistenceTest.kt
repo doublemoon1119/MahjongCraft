@@ -30,7 +30,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.uuid.Uuid
 
-/** 驗證完整 Game 權威狀態的 encoded persistence round-trip。 */
+/** 驗證完整權威桌況經存檔 JSON 編解碼後仍保持一致。 */
 class TableStatePersistenceTest {
     /** persistence 測試使用的 JSON 編解碼器。 */
     private val json = Json
@@ -53,7 +53,7 @@ class TableStatePersistenceTest {
     /** 內建流局原因的 persistence registry。 */
     private val exhaustiveDrawReasonRegistry = bundledPersistenceRegistries().exhaustiveDrawReasons
 
-    /** 驗證一般摸打狀態保留完整牌山、隱藏手牌與 AI 玩家資訊。 */
+    /** 驗證一般摸打狀態保留完整牌山、隱藏手牌與實體牌牆配置。 */
     @Test
     fun `active turn round-trips with hidden authoritative state`() {
         val state = createTableState()
@@ -132,10 +132,7 @@ class TableStatePersistenceTest {
         )
     }
 
-    /**
-     * 驗證已標記為 finished 的玩家集合正確保留（不影響 `currentPlayerIndex` 所指向的 active 玩家，
-     * 標記 human 而非 currentPlayerIndex 指向的 ai）。
-     */
+    /** 驗證本局已完成玩家集合保持不變，且不改變目前行動玩家。 */
     @Test
     fun `finished players round-trip in complete game state`() {
         val state = createTableState()
@@ -162,7 +159,7 @@ class TableStatePersistenceTest {
         assertFailsWith<IllegalArgumentException> { corrupted.toDomain() }
     }
 
-    /** 建立同時包含人類、AI、隱藏手牌、牌河與動態牌桌狀態的測試牌局。 */
+    /** 建立含兩位玩家、隱藏手牌、牌河與日麻動態規則狀態的測試桌況。 */
     private fun createTableState(): TableState {
         val humanDiscard = identified(Tile.Honor.East)
         val human = MahjongPlayer(
@@ -214,7 +211,11 @@ class TableStatePersistenceTest {
         )
     }
 
-    /** 驗證完整狀態經 JSON 編解碼與 domain 還原後仍產生相同 persistence DTO。 */
+    /**
+     * 驗證完整桌況經 JSON 編解碼還原後仍產生相同的存檔 DTO。
+     *
+     * @param state 要進行存檔往返驗證的桌況。
+     */
     private fun assertEncodedRoundTrip(state: TableState) {
         val expectedDto = state.toPersistenceDto()
         val encoded = json.encodeToString(TableStatePersistenceDto.serializer(), expectedDto)
@@ -249,6 +250,11 @@ class TableStatePersistenceTest {
         json,
     )
 
-    /** 建立具有隨機穩定識別碼的測試牌。 */
+    /**
+     * 為指定牌種建立具有隨機識別碼的測試牌。
+     *
+     * @param tile 測試牌的牌種。
+     * @return 帶有獨立 UUID 的測試牌。
+     */
     private fun identified(tile: Tile): IdentifiedTile = IdentifiedTile(Uuid.random(), tile)
 }

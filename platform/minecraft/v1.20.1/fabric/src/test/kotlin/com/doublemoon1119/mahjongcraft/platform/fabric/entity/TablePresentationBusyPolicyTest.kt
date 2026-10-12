@@ -7,11 +7,10 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 /**
- * 驗證「一張正在動畫的牌該不該讓整桌忙碌」的判斷規則，以及該規則所依賴的豁免到期時間欄位。
+ * 驗證牌動畫對整桌忙碌狀態的影響，以及動畫豁免的到期時間。
  *
- * 這條判斷會擋住玩家輸入、AI、強制自動操作與決策計時器，判斷錯誤的後果是整桌卡住（該放行的沒放行）
- * 或搶跑（該擋的沒擋），因此值得直接覆蓋。規則本身刻意抽成不依賴 `World`／`Entity` 的
- * [TablePresentationBusyPolicy]，才能在沒有 Minecraft 世界的情況下測試。
+ * 測試涵蓋一般牌局動畫、中途和牌演出與到期豁免。判斷規則由不依賴 `World`／`Entity` 的
+ * [TablePresentationBusyPolicy] 提供。
  */
 class TablePresentationBusyPolicyTest {
     /** 沒有豁免的一般牌局動畫（發牌、摸牌、捨牌）必須照舊讓整桌忙碌。 */
@@ -67,13 +66,10 @@ class TablePresentationBusyPolicyTest {
     }
 
     /**
-     * 含役滿 showcase 的中途胡牌：showcase 觀看期間必須擋住全桌，但**收尾的蓋牌動畫仍在播放時不擋**。
+     * 含役滿 showcase 的中途和牌：showcase 期間阻擋全桌，蓋牌動畫期間不阻擋。
      *
-     * 兩者由不同機制負責，這正是分開建模的重點：
-     * - showcase 期間的阻塞來自牌桌的 `presentationBusyUntilGameTime`（本測試以 `tableIsPresenting`
-     *   模擬 `TablePresentationBusyTracker` 先檢查的那一項）。
-     * - 牌本身自始至終持有豁免，所以 showcase 結束、牌桌時間戳到期之後，即使收尾動畫還在播，整桌也
-     *   立刻恢復可操作。
+     * showcase 期間由牌桌的 `presentationBusyUntilGameTime` 阻擋操作；牌的動畫豁免則讓 showcase
+     * 結束後即使蓋牌動畫仍在播放，也不會延長整桌忙碌狀態。本測試以 `tableIsPresenting` 模擬牌桌忙碌檢查。
      */
     @Test
     fun `a continuing yakuman blocks only until its showcase ends, not through the conceal animation`() {
@@ -81,6 +77,12 @@ class TablePresentationBusyPolicyTest {
         val presentationEnd = 1_000L
         val exemptUntil = presentationEnd + MahjongTileTableLayout.WIN_LAYDOWN_DURATION_TICKS
 
+        /**
+         * 合併牌桌演出與牌動畫的忙碌判斷。
+         *
+         * @param now 要檢查的遊戲時間。
+         * @return 此時是否仍應阻擋整桌操作。
+         */
         fun tableBusyAt(now: Long): Boolean {
             // 比照 TablePresentationBusyTracker.isBusy 的順序：先看牌桌共用時間軸，再看牌的動畫。
             val tableIsPresenting = now < showcaseEnd

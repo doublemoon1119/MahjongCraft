@@ -308,10 +308,29 @@ class RiichiMatchProgressionPolicyTest {
         )
     }
 
-    /** 依測試 context 的規則設定建立 policy。 */
+    /**
+     * 依測試情境的規則設定建立對局進程政策。
+     *
+     * @param context 測試用進程上下文。
+     * @return 使用該上下文規則配置的政策。
+     */
     private fun policy(context: MatchProgressionContext): RiichiMatchProgressionPolicy = RiichiMatchProgressionPolicy(context.tableState.config as RiichiRuleConfig)
 
-    /** 建立指定局位、分數、莊家決策與權威排行的 progression context。 */
+    /**
+     * 建立指定局位、分數、莊家決策與權威排行的對局進程情境。
+     *
+     * @param gameLength 對局長度。
+     * @param roundNumber 從 1 開始的局數。
+     * @param prevalentWind 場風。
+     * @param phase 一般局或延長局階段。
+     * @param scores 依玩家順序排列的分數。
+     * @param directive 莊家的續局決策。
+     * @param dealerIndex 莊家在玩家清單中的索引。
+     * @param rankedIndices 依排名排列的玩家索引。
+     * @param classification 本局結束分類。
+     * @param beneficiaryIndices 本局受益玩家索引。
+     * @return 對應設定的進程判斷輸入。
+     */
     private fun context(
         gameLength: RiichiGameLength,
         roundNumber: Int,
@@ -340,7 +359,16 @@ class RiichiMatchProgressionPolicyTest {
         return progressionContext(state, directive, rankedIndices, classification, beneficiaryIndices)
     }
 
-    /** 由桌況建立最小完整的本局摘要與權威排名。 */
+    /**
+     * 由桌況建立最小完整的本局摘要與權威排名。
+     *
+     * @param state 已結算的桌況。
+     * @param directive 本局續局決策。
+     * @param rankedIndices 依排名排列的玩家索引。
+     * @param classification 本局結束分類。
+     * @param beneficiaryIndices 本局受益玩家索引。
+     * @return 進程判斷所需的上下文。
+     */
     private fun progressionContext(
         state: TableState,
         directive: RoundTransitionDirective,

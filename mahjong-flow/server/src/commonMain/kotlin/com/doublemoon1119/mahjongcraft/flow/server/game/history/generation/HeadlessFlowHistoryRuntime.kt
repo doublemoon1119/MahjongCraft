@@ -114,9 +114,9 @@ class HeadlessFlowHistoryRuntime private constructor(
     override suspend fun step(): Boolean = advances.runExclusive(gameId) { coordinator.advanceAutomatedPlayerStep(gameId) } ?: false
 
     /**
-     * 取得目前對局；返回房間後為 null。
+     * 取得目前對局；對局已移出權威狀態時為 null。
      *
-     * @return 目前對局，或已返回房間時的 null。
+     * @return 目前對局，或對局已移除時的 null。
      */
     override suspend fun currentGame(): Game? = gameRepository.getGame(gameId)
 
@@ -358,7 +358,7 @@ private class NoOpPresentation : GamePresentationPublisher {
     /** 丟棄初始發牌通知。 */
     override fun publishInitialDeal(gameId: Uuid, handTileIdsBySeatIndex: Map<Int, List<Uuid>>, postFlipHandTileIdsBySeatIndex: Map<Int, List<Uuid>>, dealerSeatIndex: Int, dealBatchSizes: List<Int>, diceCount: Int) = Unit
 
-    /** 清除玩家區域呈現。 */
+    /** 丟棄清除玩家區域呈現的要求。 */
     override fun clearPlayerTiles(gameId: Uuid) = Unit
 
     /** 丟棄開局通知。 */

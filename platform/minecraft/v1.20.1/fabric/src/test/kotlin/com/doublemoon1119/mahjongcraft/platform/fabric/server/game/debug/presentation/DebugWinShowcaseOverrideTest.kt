@@ -15,11 +15,13 @@ import kotlin.uuid.Uuid
 /**
  * [DebugWinShowcaseOverride] 的一次性、以桌為範圍與「只動呈現」保證的測試。
  *
- * 最後一項特別重要：這個覆寫的整個正當性建立在「它動不到權威資料」上，因此除了驗證行為，也直接
- * 驗證被覆寫的 [WinCelebrationRequest] 除了展示理由以外一個欄位都沒變。
+ * 驗證覆寫僅改變慶祝提示，不改變和牌張、自摸標記或贏家座位。
  */
 class DebugWinShowcaseOverrideTest {
+    /** 受測的牌桌識別碼。 */
     private val tableId = Uuid.random()
+
+    /** 在開發環境中啟用的展示覆寫器。 */
     private val override = DebugWinShowcaseOverride(DevelopmentEnvironment)
 
     /** 武裝後下一次胡牌的所有贏家都會拿到指定 cue。 */
@@ -71,7 +73,7 @@ class DebugWinShowcaseOverrideTest {
         assertNull(override.consume(tableId))
     }
 
-    /** 正式產物裡完全 inert：武裝被拒絕，套用永遠原樣回傳。 */
+    /** 非開發環境拒絕設定覆寫，並原樣回傳慶祝請求。 */
     @Test
     fun `a production build refuses to arm`() {
         val production = DebugWinShowcaseOverride(ProductionEnvironment)
@@ -116,19 +118,29 @@ class DebugWinShowcaseOverrideTest {
         assertTrue(override.applyTo(tableId, celebration).winners.any { it.cueIds.isNotEmpty() })
     }
 
+    /**
+     * 建立含指定贏家 cue 的慶祝請求。
+     *
+     * @param cues 每位贏家的 cue 清單，索引同時作為座位索引。
+     * @return 測試用慶祝請求。
+     */
     private fun request(cues: List<List<String>>): WinCelebrationRequest = WinCelebrationRequest(
         winningTileId = Uuid.random(),
         isTsumo = true,
         winners = cues.mapIndexed { index, ids -> WinCelebrationWinner(seatIndex = index, cueIds = ids) },
     )
 
+    /** 測試共用的慶祝提示與環境替身。 */
     private companion object {
+        /** 測試指定的國士無雙慶祝提示。 */
         val CUE_KEY: String = BuiltInWinCelebrationCueIds.riichiYakuman("kokushi_musou")
 
+        /** 允許開發功能的環境替身。 */
         object DevelopmentEnvironment : MinecraftEnvironment {
             override val isDevelopment: Boolean = true
         }
 
+        /** 禁用開發功能的環境替身。 */
         object ProductionEnvironment : MinecraftEnvironment {
             override val isDevelopment: Boolean = false
         }

@@ -33,9 +33,16 @@ import kotlin.uuid.Uuid
 
 /** 驗證日麻規則查詢與正式結算一致，並只依公開資訊回答不能榮和的牌與寶牌。 */
 class RiichiPositionRulesTest {
+    /** 用於比對查詢結果與實際結算的四人日麻規則模組。 */
     private val module = RiichiRuleModule(BuiltInRuleModuleIds.RIICHI, RiichiRuleConfig())
+
+    /** 四人日麻的資訊公開查詢介面。 */
     private val rules = module.createPositionRules()
+
+    /** 用於比對拔北等結算的三人日麻規則模組。 */
     private val threePlayerModule = ThreePlayerRiichiRuleModule(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, ThreePlayerRiichiRuleConfig())
+
+    /** 三人日麻的資訊公開查詢介面。 */
     private val threePlayerRules = threePlayerModule.createPositionRules()
 
     /** 和牌價值等於正式榮和結算的點數，加上場上可收下的立直棒與本場。 */
@@ -325,19 +332,35 @@ class RiichiPositionRulesTest {
         override val id: String = "example:other"
     }
 
-    /** 二三四萬、四五六筒、七八九筒、中中中、二條：單騎聽二條，中提供役牌役；[fiveDot] 可換成赤五筒。 */
+    /**
+     * 二三四萬、四五六筒、七八九筒、中中中、二條：單騎聽二條，中提供役牌役；[fiveDot] 可換成赤五筒。
+     *
+     * @param fiveDot 用於替換一般五筒的牌面。
+     * @return 三人與四人日麻皆可用的測試手牌。
+     */
     private fun yakuhaiTankiOnTwoBamboo(fiveDot: Tile = dot(5)): Hand = handOf(
         listOf(character(2), character(3), character(4), dot(4), fiveDot, dot(6), dot(7), dot(8), dot(9)) +
             List(3) { Tile.Honor.Red } + TWO_BAMBOO,
     )
 
-    /** 二三四萬、四五六筒、七八九筒、二三四條、五條：單騎聽五條，門前榮和沒有役；[fiveDot] 可換成赤五筒。 */
+    /**
+     * 二三四萬、四五六筒、七八九筒、二三四條、五條：單騎聽五條，門前榮和沒有役；[fiveDot] 可換成赤五筒。
+     *
+     * @param fiveDot 用於替換一般五筒的牌面。
+     * @return 門前榮和無役的測試手牌。
+     */
     private fun noYakuTankiOnFiveBamboo(fiveDot: Tile = dot(5)): Hand = handOf(
         listOf(character(2), character(3), character(4), dot(4), fiveDot, dot(6), dot(7), dot(8), dot(9)) +
             listOf(bamboo(2), bamboo(3), bamboo(4), FIVE_BAMBOO),
     )
 
-    /** 東家在打出 [discardsBefore] 之後，以 [declarationTile] 宣告立直，宣告牌之後沒有再打牌。 */
+    /**
+     * 東家在打出 [discardsBefore] 之後，以 [declarationTile] 宣告立直，宣告牌之後沒有再打牌。
+     *
+     * @param discardsBefore 立直宣言前的牌河內容。
+     * @param declarationTile 立直宣言牌。
+     * @return 已立直且牌河包含宣言牌的測試玩家。
+     */
     private fun riichiDeclarer(discardsBefore: List<Tile>, declarationTile: Tile = Tile.Honor.West): MahjongPlayer {
         val riichiTile = FakeIdentifiedTileFactory.create(declarationTile)
         val pile = discardsBefore
@@ -356,6 +379,12 @@ class RiichiPositionRulesTest {
             List(3) { Tile.Honor.Red } + TWO_BAMBOO,
     )
 
+    /**
+     * 以 [players] 建立三人日麻桌況。
+     *
+     * @param players 依座位排列的三名玩家。
+     * @return 三人日麻測試桌況。
+     */
     private fun threePlayerTable(players: List<MahjongPlayer>): TableState = FakeTableStateFactory.create(
         players = players,
         dealerPlayerId = players.first().id,
@@ -363,7 +392,14 @@ class RiichiPositionRulesTest {
         dynamicRuleState = RiichiDynamicState(),
     )
 
-    /** 以 [player] 為觀察者的三人麻將視角；[doraIndicators] 不為空時，牌山只包含這些公開的寶牌指示牌。 */
+    /**
+     * 以 [player] 為觀察者的三人麻將視角；[doraIndicators] 不為空時，牌山只包含這些公開的寶牌指示牌。
+     *
+     * @param table 權威桌況。
+     * @param player 觀察桌況的玩家。
+     * @param doraIndicators 公開寶牌指示牌；預設不提供。
+     * @return 隱藏其他玩家手牌的三人日麻查詢視角。
+     */
     private fun threePlayerView(
         table: TableState,
         player: MahjongPlayer,
@@ -378,14 +414,37 @@ class RiichiPositionRulesTest {
         return PositionView(snapshot = withIndicators, evaluatorId = player.id)
     }
 
+    /**
+     * 將 [tiles] 與可選的 [melds] 包裝成測試手牌。
+     *
+     * @param tiles 手牌中的牌面。
+     * @param melds 已完成的副露。
+     * @return 包含指定牌與副露的手牌。
+     */
     private fun handOf(tiles: List<Tile>, melds: List<Meld> = emptyList()): Hand = Hand(tiles = tiles.map(FakeIdentifiedTileFactory::create), melds = melds)
 
+    /**
+     * 建立由三張 [tile] 組成的測試碰牌。
+     *
+     * @param tile 碰牌的牌面。
+     * @return 測試用碰牌副露。
+     */
     private fun pon(tile: Tile): Meld = Meld(
         type = MeldType.PON,
         tiles = List(3) { FakeIdentifiedTileFactory.create(tile) },
         sourceDirection = RelativeDirection.Across,
     )
 
+    /**
+     * 依座位與指定手牌、牌河、鳴牌及立直狀態建立測試玩家。
+     *
+     * @param wind 玩家座位風。
+     * @param hand 玩家手牌。
+     * @param discards 玩家牌河。
+     * @param melds 額外加入手牌的副露。
+     * @param riichi 是否已立直。
+     * @return 對應設定的測試玩家。
+     */
     private fun seat(
         wind: Wind,
         hand: Hand = Hand(),
@@ -399,6 +458,14 @@ class RiichiPositionRulesTest {
         playerRuleState = RiichiPlayerState(riichiTile = if (riichi) FakeIdentifiedTileFactory.create(Tile.Honor.West) else null),
     )
 
+    /**
+     * 依 [players] 建立四人日麻桌況，並設定供託與本場數。
+     *
+     * @param players 依座位排列的玩家。
+     * @param riichiSticks 供託立直棒數。
+     * @param comboCount 本場數。
+     * @return 四人日麻測試桌況。
+     */
     private fun table(
         players: List<MahjongPlayer>,
         riichiSticks: Int = 0,
@@ -411,7 +478,14 @@ class RiichiPositionRulesTest {
         dynamicRuleState = RiichiDynamicState(riichiStickCount = riichiSticks),
     )
 
-    /** 以 [player] 為觀察者的視角；[doraIndicators] 不為空時，牌山只包含這些公開的寶牌指示牌。 */
+    /**
+     * 以 [player] 為觀察者的視角；[doraIndicators] 不為空時，牌山只包含這些公開的寶牌指示牌。
+     *
+     * @param table 權威桌況。
+     * @param player 觀察桌況的玩家。
+     * @param doraIndicators 公開寶牌指示牌；預設不提供。
+     * @return 隱藏其他玩家手牌的查詢視角。
+     */
     private fun view(
         table: TableState,
         player: MahjongPlayer,
@@ -426,12 +500,31 @@ class RiichiPositionRulesTest {
         return PositionView(snapshot = withIndicators, evaluatorId = player.id)
     }
 
+    /**
+     * 建立指定數值的萬牌。
+     *
+     * @param value 牌面數值。
+     * @return 對應牌面。
+     */
     private fun character(value: Int): Tile = Tile.Numeric(Tile.Suit.Character, value)
 
+    /**
+     * 建立指定數值的筒牌。
+     *
+     * @param value 牌面數值。
+     * @return 對應牌面。
+     */
     private fun dot(value: Int): Tile = Tile.Numeric(Tile.Suit.Dot, value)
 
+    /**
+     * 建立指定數值的索牌。
+     *
+     * @param value 牌面數值。
+     * @return 對應牌面。
+     */
     private fun bamboo(value: Int): Tile = Tile.Numeric(Tile.Suit.Bamboo, value)
 
+    /** 測試共用的固定牌面。 */
     private companion object {
         val TWO_BAMBOO: Tile = Tile.Numeric(Tile.Suit.Bamboo, 2)
         val FIVE_BAMBOO: Tile = Tile.Numeric(Tile.Suit.Bamboo, 5)

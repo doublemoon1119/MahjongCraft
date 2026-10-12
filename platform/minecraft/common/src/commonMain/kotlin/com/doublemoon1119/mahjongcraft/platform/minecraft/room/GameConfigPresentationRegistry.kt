@@ -11,10 +11,19 @@ interface GameConfigPresentationRegistry {
     /** 目前已登記的規則模組 ID。 */
     val ruleModuleIds: Set<String>
 
-    /** 登記設定呈現定義。 */
+    /**
+     * 登記設定呈現定義。
+     *
+     * @param definition 要登記的規則設定呈現定義。
+     */
     fun register(definition: GameConfigPresentationDefinition)
 
-    /** 查詢設定呈現定義。 */
+    /**
+     * 查詢設定呈現定義。
+     *
+     * @param ruleModuleId 要查詢的規則模組 ID。
+     * @return 已登記的呈現定義，或未知 ID 時的 null。
+     */
     fun find(ruleModuleId: String): GameConfigPresentationDefinition?
 
     /** 凍結 registry。 */

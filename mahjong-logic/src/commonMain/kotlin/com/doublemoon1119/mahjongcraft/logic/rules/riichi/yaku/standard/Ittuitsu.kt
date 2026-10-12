@@ -10,7 +10,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
  * 一氣通貫 (Ittuitsu) 役種檢測器。
  *
  * 萬、筒、條三種花色中，某種花色同時擁有 123、456、789 三個順子。
- * 必須門前清。
+ * 門前清時為 2 番，副露時為 1 番。
  *
  * @param hand 玩家手牌（包含立牌與副露）。
  * @param winningTile 胡牌張。
@@ -42,6 +42,12 @@ fun calculateIttuitsu(
 
 /**
  * 檢查是否包含指定數值的三張牌（可來自順子或刻子）。
+ *
+ * @param tiles 要檢查的牌。
+ * @param first 第一個必須出現的數值。
+ * @param second 第二個必須出現的數值。
+ * @param third 第三個必須出現的數值。
+ * @return 三個數值都至少出現一次時為 true。
  */
 private fun hasMelds(tiles: List<Tile>, first: Int, second: Int, third: Int): Boolean {
     val counts = tiles.filterIsInstance<Tile.Numeric>().groupBy { it.value }.mapValues { it.value.size }

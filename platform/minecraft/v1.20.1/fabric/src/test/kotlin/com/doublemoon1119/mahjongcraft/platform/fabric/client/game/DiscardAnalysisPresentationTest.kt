@@ -278,20 +278,50 @@ class DiscardAnalysisPresentationTest {
         assertEquals(withoutStatus.gridLeft, withNarrowStatus.gridLeft)
     }
 
-    /** 建立測試用的分析。 */
+    /**
+     * 建立測試用的分析。
+     *
+     * @param waiting 等待牌與各自的和牌資格。
+     * @param statusIndicatorId 分析狀態指示 ID；未指定時不顯示狀態。
+     * @return 指定捨牌 ID 與分析內容的 DTO。
+     */
     private fun analysisOf(vararg waiting: WaitingTileAvailabilityDto, statusIndicatorId: String? = null) = DiscardReadinessAnalysisDto(
         discardTileId = "tile-1",
         waitingTiles = waiting.toList(),
         statusIndicatorId = statusIndicatorId,
     )
 
-    /** 建立測試用的等待牌。 */
+    /**
+     * 建立測試用的等待牌。
+     *
+     * @param label 測試牌種標籤。
+     * @param remainingCount 剩餘張數。
+     * @param availability 和牌資格狀態 ID。
+     * @return 以標籤建立的等待牌資料。
+     */
     private fun waiting(label: String, remainingCount: Int, availability: String = WaitingTileAvailabilityIds.WIN_AVAILABLE) = WaitingTileAvailabilityDto(tile(label), remainingCount, availability)
 
-    /** 以標籤區分的測試牌種。 */
+    /**
+     * 以標籤區分的測試牌種。
+     *
+     * @param label 測試牌種標籤。
+     * @return 使用 `test` namespace 的牌 DTO。
+     */
     private fun tile(label: String) = TileDto.Extension("test:$label")
 
-    /** 建立測試用的版面。 */
+    /**
+     * 建立測試用的版面。
+     *
+     * @param cellCount 等待牌格數。
+     * @param statusLineCount 狀態列行數。
+     * @param widestCellContentWidth 最寬格子內容寬度。
+     * @param widestStatusTextWidth 最寬狀態文字寬度。
+     * @param hasAvailabilityRow 是否顯示和牌資格列。
+     * @param screenWidth 畫面寬度。
+     * @param screenHeight 畫面高度。
+     * @param ratioY 面板垂直位置比例。
+     * @return 依指定內容與畫面尺寸計算的版面。
+     */
     private fun layout(
         cellCount: Int,
         statusLineCount: Int = 0,

@@ -24,7 +24,13 @@ internal class RoomMemberAppearanceResolver(private val sources: RoomMemberAppea
     /** 已警告過的 provider ID，避免每一幀重複記錄。 */
     private val warnedProviderIds = mutableSetOf<String>()
 
-    /** 解析指定成員的外觀呈現方式。 */
+    /**
+     * 解析指定成員的外觀呈現方式，並對相同失敗來源只回傳一次警告。
+     *
+     * @param playerId 成員的玩家識別碼。
+     * @param isAi 成員是否由 AI 操控。
+     * @return 外觀方式與本次尚未回報的降級警告。
+     */
     fun resolve(playerId: Uuid, isAi: Boolean): Resolution {
         val result = runCatching { sources.resolve(RoomMemberAppearanceContext(playerId, isAi)) }
         val failure = result.exceptionOrNull()
@@ -43,11 +49,14 @@ internal class RoomMemberAppearanceResolver(private val sources: RoomMemberAppea
         }
     }
 
-    /** 外觀解析結果。 */
+    /**
+     * 外觀解析結果。
+     *
+     * @property appearance 要使用的呈現方式。
+     * @property warning 本次需要記錄的警告；相同來源已警告過時為 null。
+     */
     data class Resolution(
-        /** 要使用的呈現方式。 */
         val appearance: Appearance,
-        /** 本次需要記錄的警告；已警告過的相同來源為 `null`。 */
         val warning: Warning?,
     )
 
@@ -62,10 +71,19 @@ internal class RoomMemberAppearanceResolver(private val sources: RoomMemberAppea
 
     /** 需要記錄一次的降級原因。 */
     sealed interface Warning {
-        /** 外觀來源 provider 解析失敗。 */
+        /**
+         * 外觀來源提供者解析失敗。
+         *
+         * @property providerId 失敗的提供者識別碼；無法辨識時使用 registry 的替代識別字。
+         * @property cause 解析失敗的原始例外。
+         */
         data class ProviderFailed(val providerId: String, val cause: Throwable) : Warning
 
-        /** 第三方宣告了 actor 預覽，但沒有對應的預覽工廠。 */
+        /**
+         * 第三方宣告了 actor 預覽，但沒有對應的預覽工廠。
+         *
+         * @property actorKey 找不到預覽工廠的 actor 識別字。
+         */
         data class MissingActorPreviewFactory(val actorKey: String) : Warning
     }
 

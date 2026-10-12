@@ -141,7 +141,7 @@ class GetPlayerDecisionOptionsUseCaseTest {
         assertEquals(discarded.tile, result.value.referenceTile)
     }
 
-    /** 驗證不吃碰槓由同一查詢邊界隱藏鳴牌選項，而不是交由平台自行過濾。 */
+    /** 驗證不吃碰槓設定會在決策選項查詢中隱藏鳴牌動作。 */
     @Test
     fun `test decline calls filters call actions from decision options`() = runTest {
         val fixtures = Fixtures()

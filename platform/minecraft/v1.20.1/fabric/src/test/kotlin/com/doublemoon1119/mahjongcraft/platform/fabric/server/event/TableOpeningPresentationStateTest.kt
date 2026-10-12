@@ -11,6 +11,7 @@ import kotlin.uuid.Uuid
 
 /** 驗證開局四個階段之間的暫存資料。 */
 class TableOpeningPresentationStateTest {
+    /** 各測試使用的獨立開局呈現暫存狀態。 */
     private val state = TableOpeningPresentationState()
 
     /** 沒有發布過牌牆時動畫不需要延後。 */
@@ -134,7 +135,11 @@ class TableOpeningPresentationStateTest {
         assertEquals(9, state.wallStacksPerSide(OTHER_TABLE))
     }
 
-    /** 建立測試用的開門呈現資料。 */
+    /**
+     * 建立測試用的開門呈現資料。
+     *
+     * @return 主測試牌桌使用、未配置牌實體的開門資料。
+     */
     private fun openingPresentation() = MahjongTileWallPresentation(
         tableId = TABLE,
         tableLocation = TableLocation(dimensionId = "minecraft:overworld", x = 0, y = 64, z = 0),
@@ -146,8 +151,12 @@ class TableOpeningPresentationStateTest {
         diceCount = 2,
     )
 
+    /** 測試共用的牌桌識別碼。 */
     private companion object {
+        /** 主要受測牌桌識別碼。 */
         val TABLE: Uuid = Uuid.parse("00000000-0000-0000-0000-000000000001")
+
+        /** 用來驗證桌間隔離的另一張牌桌識別碼。 */
         val OTHER_TABLE: Uuid = Uuid.parse("00000000-0000-0000-0000-000000000002")
     }
 }

@@ -6,6 +6,14 @@ import kotlin.test.assertTrue
 
 /** 驗證連續像素水平捲動的 thumb 幾何與拖曳、滾輪換算。 */
 class HorizontalScrollLayoutTest {
+    /**
+     * 建立固定軌道邊界與最小滑塊寬度的測試版面。
+     *
+     * @param contentWidth 可捲動內容寬度。
+     * @param viewportWidth 可見區寬度。
+     * @param viewportLeft 可見區左界。
+     * @return 依測試尺寸建立的水平捲動版面。
+     */
     private fun layout(contentWidth: Int, viewportWidth: Int = 100, viewportLeft: Int = 10) = HorizontalScrollLayout(
         viewportLeft = viewportLeft,
         viewportWidth = viewportWidth,

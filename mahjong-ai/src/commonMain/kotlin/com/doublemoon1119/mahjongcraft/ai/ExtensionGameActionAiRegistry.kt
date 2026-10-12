@@ -10,7 +10,12 @@ import kotlin.reflect.KClass
  * @property moduleRegistry 依決策情境的對局設定取得交給 handler 的規則模組。
  */
 class ExtensionGameActionAiRegistry(private val moduleRegistry: MahjongModuleRegistry) {
-    /** 未擦除型別前的單一 handler 包裝。 */
+    /**
+     * 保存單一動作型別與其命令候選建立方式的對應。
+     *
+     * @param A 此項目可處理的擴充動作型別。
+     * @property handler 為此型別建立 AI 命令候選的策略。
+     */
     private class Entry<A : ExtensionGameAction>(val handler: ExtensionGameActionAiHandler<A>)
 
     /** 依擴充動作具體型別索引的 handler。 */
@@ -22,7 +27,15 @@ class ExtensionGameActionAiRegistry(private val moduleRegistry: MahjongModuleReg
     /** 目前已登記動作型別的穩定類別名稱快照。 */
     val registrationKeys: Set<String> get() = entries.keys.mapTo(mutableSetOf()) { it.qualifiedName ?: it.toString() }
 
-    /** 註冊一種擴充動作的 AI handler。 */
+    /**
+     * 註冊一種擴充動作的 AI 命令候選建立方式。
+     *
+     * @param A 要登記的擴充動作型別。
+     * @param actionClass 用來查找處理策略的具體動作型別。
+     * @param handler 為此動作建立命令候選的策略。
+     * @throws IllegalStateException 註冊表已凍結。
+     * @throws IllegalArgumentException 此動作型別已登記。
+     */
     fun <A : ExtensionGameAction> register(
         actionClass: KClass<A>,
         handler: ExtensionGameActionAiHandler<A>,
@@ -37,10 +50,21 @@ class ExtensionGameActionAiRegistry(private val moduleRegistry: MahjongModuleReg
         frozen = true
     }
 
-    /** 查詢指定擴充動作是否已有 AI handler。 */
+    /**
+     * 查詢指定擴充動作是否已有 AI 處理策略。
+     *
+     * @param actionClass 要查詢的具體動作型別。
+     * @return 此型別已登記時為 true。
+     */
     fun isRegistered(actionClass: KClass<out ExtensionGameAction>): Boolean = actionClass in entries
 
-    /** 將擴充動作轉換成命令候選；未知或無法安全決策的動作回傳空清單。 */
+    /**
+     * 以已登記的處理策略轉換擴充動作；未登記此動作型別時回傳空清單。
+     *
+     * @param action 要轉換的擴充動作。
+     * @param context 用來選擇規則模組並建立命令的決策資訊。
+     * @return 處理策略產生的命令候選；不攔截規則查找或處理策略拋出的例外。
+     */
     @Suppress("UNCHECKED_CAST")
     fun createCandidates(action: ExtensionGameAction, context: AiDecisionContext): List<ExtensionCommandCandidate> {
         val entry = entries[action::class] as? Entry<ExtensionGameAction> ?: return emptyList()

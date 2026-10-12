@@ -33,6 +33,7 @@ import kotlin.uuid.Uuid
  * @property respondToRobbingUseCase 回應搶和反應視窗用例。
  * @property declareAbortiveDrawUseCase 通用途中流局宣告用例。
  * @property extensionCommandExecutor 規則擴充命令的執行者。
+ * @property submitRoundPreparationUseCase 提交開局準備資料的用例；未提供時該命令回傳不可用錯誤。
  */
 @Factory
 class GameActionRouter(

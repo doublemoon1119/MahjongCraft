@@ -9,5 +9,3 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 data class TileWallPhysicalLayoutDto(val placements: Map<String, TileWallPlacementDto>)
-
-/** 將權威實體牌牆布局轉為網路 DTO。 */

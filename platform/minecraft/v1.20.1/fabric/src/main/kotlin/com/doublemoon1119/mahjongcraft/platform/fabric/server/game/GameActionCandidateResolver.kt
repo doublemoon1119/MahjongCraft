@@ -33,7 +33,12 @@ class GameActionCandidateResolver(
     private val membershipRepository: PlayerMembershipRepository,
     private val getPlayerDecisionOptions: GetPlayerDecisionOptionsUseCase,
 ) {
-    /** 列出玩家目前手牌（含剛摸到的牌）作為捨牌或動作選牌候選。 */
+    /**
+     * 列出玩家目前手牌（含剛摸到的牌）作為捨牌或動作選牌候選。
+     *
+     * @param playerId 要查詢的玩家識別碼。
+     * @return 可選手牌候選；玩家不在對局中時為空清單。
+     */
     suspend fun listHandTileCandidates(playerId: Uuid): List<HandTileCandidate> {
         val state = resolveTableState(playerId) ?: return emptyList()
         val player = state.players.firstOrNull { it.id == playerId } ?: return emptyList()
@@ -42,16 +47,32 @@ class GameActionCandidateResolver(
         }
     }
 
-    /** 列出玩家目前合法的特殊動作及各動作的額外選牌契約。 */
+    /**
+     * 列出玩家目前合法的特殊動作及各動作的額外選牌契約。
+     *
+     * @param playerId 要查詢的玩家識別碼。
+     * @return 合法動作候選；無法解析對局時為空清單。
+     */
     suspend fun listActionCandidates(playerId: Uuid): List<GameActionCandidate> = resolveActionCandidates(playerId)?.actions.orEmpty()
 
-    /** 以同一次 Flow 查詢解析特殊動作候選與一般捨牌分析。 */
+    /**
+     * 以同一次 Flow 查詢解析特殊動作候選與一般捨牌分析。
+     *
+     * @param playerId 要查詢的玩家識別碼。
+     * @return 候選及捨牌分析；玩家不在桌上或查詢失敗時為 null。
+     */
     suspend fun resolveActionCandidates(playerId: Uuid): ResolvedGameActionCandidates? {
         val gameId = membershipRepository.getVenueId(playerId) ?: return null
         return resolveActionCandidates(gameId, playerId)
     }
 
-    /** 依已知對局解析特殊動作候選與一般捨牌分析，避免再次透過房間歸屬反查對局。 */
+    /**
+     * 依已知對局解析特殊動作候選與一般捨牌分析，避免再次透過房間歸屬反查對局。
+     *
+     * @param gameId 已知的對局識別碼。
+     * @param playerId 要查詢的玩家識別碼。
+     * @return 候選及捨牌分析；查詢沒有成功時為 null。
+     */
     suspend fun resolveActionCandidates(gameId: Uuid, playerId: Uuid): ResolvedGameActionCandidates? {
         val outcome = getPlayerDecisionOptions(gameId, playerId)
         if (outcome !is Outcome.Success) return null
@@ -59,7 +80,12 @@ class GameActionCandidateResolver(
         return outcome.value.toCandidates(moduleRegistry.getModule(state.config).id)
     }
 
-    /** 將 Flow 的完整決策選項映射成 Minecraft 指令與 HUD 共用的候選資料。 */
+    /**
+     * 將 Flow 的完整決策選項映射成 Minecraft 指令與 HUD 共用的候選資料。
+     *
+     * @param ruleModuleId 對局所用規則模組識別碼。
+     * @return 映射後的動作候選與捨牌分析。
+     */
     private fun PlayerDecisionOptions.toCandidates(ruleModuleId: String): ResolvedGameActionCandidates {
         val candidates = disambiguateTokens(actions, { it.action.baseToken() }) { option, token ->
             GameActionCandidate(
@@ -73,7 +99,13 @@ class GameActionCandidateResolver(
         return ResolvedGameActionCandidates(ruleModuleId, candidates, discardAnalyses)
     }
 
-    /** 列出指定動作契約允許選取的手牌候選。 */
+    /**
+     * 列出指定動作契約允許選取的手牌候選。
+     *
+     * @param playerId 要查詢的玩家識別碼。
+     * @param candidate 已選取的動作候選。
+     * @return 符合選牌契約的手牌；動作不需選牌時為空清單。
+     */
     suspend fun listTileSelectionCandidates(
         playerId: Uuid,
         candidate: GameActionCandidate,
@@ -85,6 +117,11 @@ class GameActionCandidateResolver(
     /**
      * 依 [baseToken] 把 [items] 各自組成候選 token：第一次出現該 base token 時直接使用，之後重複出現
      * 依序加上 `_2`／`_3`……避免碰撞。
+     *
+     * @param items 要建立候選的項目。
+     * @param baseToken 取得每個項目未消歧的 token。
+     * @param build 以項目和唯一 token 建立結果。
+     * @return 依輸入順序建立的結果清單。
      */
     private fun <T, R> disambiguateTokens(items: List<T>, baseToken: (T) -> String, build: (T, String) -> R): List<R> {
         val seenCounts = mutableMapOf<String, Int>()
@@ -96,7 +133,12 @@ class GameActionCandidateResolver(
         }
     }
 
-    /** 以玩家目前的房間歸屬解析目標桌況；不在任何桌子或桌況不是對局時回傳 null。 */
+    /**
+     * 以玩家目前的房間歸屬解析目標桌況；不在任何桌子或桌況不是對局時回傳 null。
+     *
+     * @param playerId 要查詢的玩家識別碼。
+     * @return 對局桌況；玩家不在對局中時為 null。
+     */
     private suspend fun resolveTableState(playerId: Uuid): TableState? {
         val gameId = membershipRepository.getVenueId(playerId) ?: return null
         return gameRepository.getTableState(gameId)

@@ -14,14 +14,22 @@ class TimingAccumulator {
     /** 最大耗時。 */
     private var max = Duration.ZERO
 
-    /** 加入一筆耗時。 */
+    /**
+     * 加入一筆耗時。
+     *
+     * @param duration 要累計的耗時。
+     */
     fun add(duration: Duration) {
         count++
         total += duration
         if (duration > max) max = duration
     }
 
-    /** 目前的統計結果。 */
+    /**
+     * 目前的統計結果；尚無樣本時回傳 [TimingSummary.EMPTY]。
+     *
+     * @return 筆數、平均值、最大值與總和。
+     */
     fun summary(): TimingSummary = if (count == 0L) {
         TimingSummary.EMPTY
     } else {

@@ -55,6 +55,12 @@ class RepositoryTasksConfigurationCacheTest {
         assertTrue(!root.resolve("local.dev.properties").exists())
     }
 
+    /**
+     * 確認第一次建置儲存 configuration cache，第二次建置重用該快取。
+     *
+     * @param first 第一次執行的結果。
+     * @param second 第二次執行的結果。
+     */
     private fun assertStoredThenReused(
         first: BuildResult,
         second: BuildResult,
@@ -63,6 +69,11 @@ class RepositoryTasksConfigurationCacheTest {
         assertTrue(second.output.contains("Configuration cache entry reused"), second.output)
     }
 
+    /**
+     * 建立 repository 驗證與 target 管理測試所需的最小專案。
+     *
+     * @param root 測試專案根目錄。
+     */
     private fun prepareBuild(root: File) {
         listOf("gradle", "mahjong-logic", "build-logic", "platform/minecraft", "platform/catalog-only", LANG_DIRECTORY)
             .forEach { root.resolve(it).toPath().createDirectories() }
@@ -110,6 +121,13 @@ class RepositoryTasksConfigurationCacheTest {
         root.resolve(LANG_DIRECTORY).resolve("en_us.json").writeText("{\n  \"a.key\": \"A\",\n  \"b.key\": \"B\"\n}\n")
     }
 
+    /**
+     * 建立執行測試 fixture Gradle 任務的 runner。
+     *
+     * @param root 測試專案根目錄。
+     * @param arguments 傳給 Gradle 的任務與選項。
+     * @return 已設定專案目錄與 plugin classpath 的 runner。
+     */
     private fun runner(
         root: File,
         vararg arguments: String,
@@ -119,6 +137,11 @@ class RepositoryTasksConfigurationCacheTest {
         .withArguments(*arguments)
         .forwardOutput()
 
+    /**
+     * 建立並在測試完成後刪除暫存專案。
+     *
+     * @param block 使用暫存專案根目錄的測試動作。
+     */
     private fun withFixture(block: (File) -> Unit) {
         createTempDirectory("mahjongcraft-configuration-cache-test").toFile().apply {
             try {

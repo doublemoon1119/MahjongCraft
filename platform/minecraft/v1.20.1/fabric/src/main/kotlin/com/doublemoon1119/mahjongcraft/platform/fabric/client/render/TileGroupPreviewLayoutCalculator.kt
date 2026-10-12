@@ -7,6 +7,12 @@ object TileGroupPreviewLayoutCalculator {
      *
      * 牌一律直立、依傳入順序排列，比照決策卡片的呈現；鳴取的那張由 [TileGroupPreviewEntry.claimed] 指出，
      * 位置不因此改變。
+     *
+     * @param entries 依繪製順序排列的牌面與鳴牌標記。
+     * @param tileWidth 每張牌的顯示寬度。
+     * @param tileHeight 每張牌的顯示高度。
+     * @param gap 相鄰牌面之間的水平間距。
+     * @return 置中排列及其總寬高；空輸入時尺寸為零且沒有 placement。
      */
     fun calculate(
         entries: List<TileGroupPreviewEntry>,

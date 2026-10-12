@@ -21,15 +21,26 @@ import kotlin.reflect.KClass
  */
 class DtoRegistry<Domain : Any, Dto : Any> {
 
-    /** 將具體 DTO serializer 與雙向 mapper 綁在同一筆註冊資料。 */
+    /**
+     * 將具體 DTO serializer 與雙向 mapper 綁在同一筆註冊資料。
+     *
+     * @property serializer 對應 DTO 型別的 serializer。
+     * @property toDto 將領域物件轉為 DTO 的函式。
+     * @property toDomain 將 DTO 還原為領域物件的函式。
+     */
     private inner class Entry<D : Domain, T : Dto>(
         val serializer: KSerializer<T>,
         val toDto: (D) -> T,
         val toDomain: (T) -> D,
     )
 
+    /** 以領域具體型別查找註冊項目的索引。 */
     private val byDomainClass = mutableMapOf<KClass<out Domain>, Entry<*, *>>()
+
+    /** 以 DTO 具體型別查找註冊項目的索引。 */
     private val byDtoClass = mutableMapOf<KClass<out Dto>, Entry<*, *>>()
+
+    /** 以序列化名稱查找註冊項目的索引。 */
     private val bySerialName = mutableMapOf<String, Entry<*, *>>()
 
     /** 是否已禁止後續註冊。 */
@@ -73,6 +84,8 @@ class DtoRegistry<Domain : Any, Dto : Any> {
     /**
      * 將領域物件轉換成對應的 DTO。
      *
+     * @param domain 要轉換的領域物件。
+     * @return 對應的 DTO。
      * @throws IllegalStateException 若 [domain] 的具體類別尚未透過 [register] 註冊過。
      */
     @Suppress("UNCHECKED_CAST")
@@ -85,6 +98,8 @@ class DtoRegistry<Domain : Any, Dto : Any> {
     /**
      * 將 DTO 轉換回對應的領域物件。
      *
+     * @param dto 要轉換的 DTO。
+     * @return 對應的領域物件。
      * @throws IllegalStateException 若 [dto] 的具體類別尚未透過 [register] 註冊過。
      */
     @Suppress("UNCHECKED_CAST")
@@ -99,12 +114,18 @@ class DtoRegistry<Domain : Any, Dto : Any> {
      *
      * 這個查詢刻意保留動態性：即使 `Json` 早於 extension bootstrap 建立，之後完成的 DTO
      * 註冊仍可由 polymorphic default provider 看見。
+     *
+     * @param dto 要查詢 serializer 的 DTO。
+     * @return 已註冊時回傳 serializer；未註冊時回傳 null。
      */
     @Suppress("UNCHECKED_CAST")
     fun serializerFor(dto: Dto): KSerializer<Dto>? = (byDtoClass[dto::class] as? Entry<Domain, Dto>)?.serializer
 
     /**
      * 依序列化資料中的 discriminator 名稱取得 serializer，供動態 polymorphic 解碼使用。
+     *
+     * @param serialName 序列化資料中的 discriminator 名稱。
+     * @return 已註冊時回傳 serializer；未註冊時回傳 null。
      */
     @Suppress("UNCHECKED_CAST")
     fun serializerFor(serialName: String): KSerializer<out Dto>? = (bySerialName[serialName] as? Entry<Domain, Dto>)?.serializer

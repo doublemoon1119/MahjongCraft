@@ -25,6 +25,7 @@ import net.minecraft.world.World
  *
  * 右鍵即可坐下，不論手上拿著什麼；蹲下或正在騎乘時不坐下。凳子本身不保存牌局或座位狀態。
  *
+ * @param settings Minecraft 方塊設定。
  * @property design 此方塊 registry ID 對應的固定凳子款式。
  * @property seatService 讓玩家坐上凳子的伺服器端入口。
  */

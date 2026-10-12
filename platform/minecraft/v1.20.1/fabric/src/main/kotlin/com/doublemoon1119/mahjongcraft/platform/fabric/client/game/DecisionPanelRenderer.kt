@@ -27,7 +27,12 @@ internal data class DecisionPanelContent(
 /**
  * 由 [prompt] 組出操作面板的內容；操作畫面與 HUD 位置編輯器的預覽共用。
  *
+ * @param prompt 目前權威決策提示。
+ * @param texts 動作與狀態文字解析器。
  * @param resolvePlayerName 依玩家 UUID 字串取得顯示名稱，用於 prompt 沒有附上名稱的觸發玩家。
+ * @param renderer Minecraft 文字量測器。
+ * @param screenWidth 畫面寬度。
+ * @return 可供版面計算與繪製使用的操作面板內容。
  */
 internal fun decisionPanelContent(
     prompt: PlayerDecisionPromptDto,
@@ -44,7 +49,14 @@ internal fun decisionPanelContent(
     entries = decisionEntriesFrom(texts, prompt),
 )
 
-/** 使用共用玩家名稱來源與完整本地化句型；自己摸牌沒有來源玩家時使用專用句型。 */
+/**
+ * 依觸發玩家與動作建立本地化提示；沒有來源玩家的摸牌使用自摸牌句型。
+ *
+ * @param prompt 目前權威決策提示。
+ * @param texts 動作文字解析器。
+ * @param resolvePlayerName 提示未附名稱時使用的玩家名稱查詢。
+ * @return 觸發動作說明；沒有可描述的觸發牌或玩家方位時為 null。
+ */
 private fun decisionTriggerText(
     prompt: PlayerDecisionPromptDto,
     texts: DecisionTextResolver,
@@ -63,7 +75,17 @@ private fun decisionTriggerText(
     return Text.translatable("mahjongcraft.hud.trigger", playerName, Text.translatable(relationKey), action)
 }
 
-/** [content] 在指定畫面、玩家設定的位置比例與倒數保留寬度下的版面幾何。 */
+/**
+ * [content] 在指定畫面、玩家設定的位置比例與倒數保留寬度下的版面幾何。
+ *
+ * @param content 操作面板繪製內容。
+ * @param renderer Minecraft 文字量測器。
+ * @param screenWidth 畫面寬度。
+ * @param screenHeight 畫面高度。
+ * @param panelRatioY 玩家設定的面板垂直位置比例。
+ * @param timerWidth 標題列保留的倒數寬度。
+ * @return 面板版面幾何。
+ */
 internal fun decisionPanelLayout(
     content: DecisionPanelContent,
     renderer: TextRenderer,
@@ -88,9 +110,15 @@ internal fun decisionPanelLayout(
  *
  * 卡片按鈕由 [renderCardButtons] 在卡片列的裁切範圍內畫出；跳過按鈕、倒數與卡片說明由呼叫端另外畫。
  *
+ * @param renderer Minecraft 文字繪製器。
+ * @param layout 面板版面幾何。
+ * @param content 要繪製的面板內容。
  * @param placements [layout] 依目前捲動量算出的卡片版位。
  * @param scroll 目前捲動量，決定 scrollbar thumb 的位置。
+ * @param mouseX 游標水平座標；傳入畫面外座標可停用 hover。
+ * @param mouseY 游標垂直座標；傳入畫面外座標可停用 hover。
  * @param drawTile 在指定左上角畫出一張預覽尺寸的牌面。
+ * @param renderCardButtons 在裁切區內繪製卡片按鈕的回呼。
  */
 internal fun DrawContext.drawDecisionPanel(
     renderer: TextRenderer,
@@ -129,7 +157,16 @@ internal fun DrawContext.drawDecisionPanel(
     }
 }
 
-/** 繪製單一卡片的背景、預覽牌與鳴牌指標。 */
+/**
+ * 繪製單一卡片的背景、預覽牌與鳴牌指標。
+ *
+ * @param layout 操作面板版面幾何。
+ * @param entry 卡片內容。
+ * @param placement 卡片目前的畫面範圍。
+ * @param mouseX 游標水平座標。
+ * @param mouseY 游標垂直座標。
+ * @param drawTile 在指定左上角繪製預覽牌面的回呼。
+ */
 private fun DrawContext.drawDecisionCard(
     layout: DecisionCardLayout,
     entry: DecisionEntry,
@@ -159,6 +196,9 @@ private fun DrawContext.drawDecisionCard(
 /**
  * 在 [centerX], [top] 位置畫一個寬扁的倒三角形指標，逐列縮減寬度來模擬三角形，
  * 不依賴字型字符，形狀比例可完全自訂。
+ *
+ * @param centerX 指標中心的水平座標。
+ * @param top 指標最上方的垂直座標。
  */
 private fun DrawContext.drawClaimedTileMarker(centerX: Int, top: Int) {
     ClaimedTileMarker.ROW_WIDTHS.forEachIndexed { row, width ->
@@ -167,13 +207,26 @@ private fun DrawContext.drawClaimedTileMarker(centerX: Int, top: Int) {
     }
 }
 
-/** 標題列內的倒數與標題同尺寸，並與標題文字上緣對齊。 */
+/** 標題列內的倒數縮放，與標題同尺寸並對齊文字上緣。 */
 internal const val HEADER_TIMER_SCALE = 1f
 
+/** 操作面板底色 ARGB。 */
 private const val DECISION_PANEL_BACKGROUND = 0xCC101820.toInt()
+
+/** 標題文字顏色。 */
 private const val HEADER_TEXT_COLOR = 0xFFD54F
+
+/** 觸發玩家及觸發動作文字顏色。 */
 private const val TRIGGER_TEXT_COLOR = 0xFFFFFF
+
+/** 一般卡片底色 ARGB。 */
 private const val CARD_BACKGROUND = 0xCC2A3844.toInt()
+
+/** 游標懸停卡片時的底色 ARGB。 */
 private const val CARD_HOVER_BACKGROUND = 0xDD3A4B59.toInt()
+
+/** 水平捲軸軌道顏色。 */
 private const val SCROLLBAR_TRACK_COLOR = 0xFF26333D.toInt()
+
+/** 水平捲軸滑塊顏色。 */
 private const val SCROLLBAR_THUMB_COLOR = 0xFF8796A3.toInt()

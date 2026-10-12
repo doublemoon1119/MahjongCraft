@@ -65,7 +65,12 @@ class FabricPlayerFeedbackPublisher(
     /** 記錄包含大量 hover 資訊的正式回饋原始資料。 */
     private val logger = mahjongCraftLogger(FabricPlayerFeedbackPublisher::class)
 
-    /** 切換至 server thread，並在玩家仍在線時傳送目前版本選定的回饋。 */
+    /**
+     * 切換至 server thread，並在玩家仍在線時傳送目前版本選定的回饋。
+     *
+     * @param playerId 回饋目標玩家 UUID。
+     * @param feedback 要呈現的一次性玩家回饋。
+     */
     override fun publish(playerId: Uuid, feedback: MinecraftPlayerFeedback) {
         if (serverHolder.current() == null) return
         scope.launch(dispatchers.main) {
@@ -180,6 +185,9 @@ class FabricPlayerFeedbackPublisher(
     /**
      * 建立「已建立麻將遊戲」訊息；[location] 存在時句尾附上可 hover 顯示座標的 `[位置]` 標籤，主世界
      * 以外的維度會額外多顯示一行維度 ID（多數桌子都在主世界，省略維度可以維持提示簡潔）。
+     *
+     * @param location 可選的桌子位置；為 null 時只顯示建立成功文字。
+     * @return 可供玩家閱讀的建立成功訊息。
      */
     private fun gameCreatedMessage(location: TableLocation?): MutableText {
         val message = Text.translatable(MinecraftMessageKeys.GAME_CREATED)
@@ -193,13 +201,23 @@ class FabricPlayerFeedbackPublisher(
             .append(bracketedInteractiveLabel(Text.translatable(MinecraftMessageKeys.GAME_CREATED_LOCATION_LABEL), hoverText))
     }
 
-    /** 建立「已新增 AI 玩家」訊息，策略名稱與 `kick` 補全 tooltip 使用同一套顯示名稱解析。 */
+    /**
+     * 建立「已新增 AI 玩家」訊息，策略名稱與 `kick` 補全 tooltip 使用同一套顯示名稱解析。
+     *
+     * @param strategyKey AI 策略註冊 key。
+     * @return 含策略顯示名稱的新增訊息。
+     */
     private fun aiAddedMessage(strategyKey: String): MutableText = Text.translatable(
         MinecraftMessageKeys.AI_ADDED,
         aiStrategyDisplayNames.resolveDisplayText(strategyKey),
     )
 
-    /** 建立「部分成員離線或太遠，無法開始對局」訊息；兩種原因各自成行，只有真的有內容的那一種才會出現。 */
+    /**
+     * 建立「部分成員離線或太遠，無法開始對局」訊息；兩種原因各自成行，只有真的有內容的那一種才會出現。
+     *
+     * @param feedback 開局遭阻擋的離線與距離過遠玩家 UUID。
+     * @return 分別列出有問題成員的訊息。
+     */
     private fun startBlockedByPlayersMessage(feedback: MinecraftPlayerFeedback.StartBlockedByPlayers): MutableText {
         val lines = buildList {
             if (feedback.offlinePlayerIds.isNotEmpty()) {
@@ -217,7 +235,12 @@ class FabricPlayerFeedbackPublisher(
         return message
     }
 
-    /** 用逗號串接每個玩家目前已知的名稱；查不到名稱時退回 UUID 前 8 碼，與其他玩家名稱 fallback 慣例一致。 */
+    /**
+     * 用逗號串接每個玩家目前已知的名稱；查不到名稱時顯示未知玩家文字。
+     *
+     * @param playerIds 要顯示的玩家 UUID 清單。
+     * @return 以逗號分隔的名稱文字。
+     */
     private fun joinPlayerNames(playerIds: List<Uuid>): String = playerIds.joinToString {
         playerIdentities.resolveKnownName(it) ?: Text.translatable("mahjongcraft.history_screen.player_unknown").string
     }
@@ -227,6 +250,9 @@ class FabricPlayerFeedbackPublisher(
      * 舊值紅色、新值綠色。新舊策略相同時改用 [MinecraftMessageKeys.AI_STRATEGY_UNCHANGED]——這個操作
      * 本身仍是成功的冪等操作，只是換一句不會出現「同一個策略 → 同一個策略」這種容易讓人誤以為系統
      * 異常的說法，此時維持無色。
+     *
+     * @param feedback AI 策略變更結果與策略序號。
+     * @return 本地化的新舊策略訊息。
      */
     private fun aiStrategyChangedMessage(feedback: MinecraftPlayerFeedback.AiStrategyChanged): MutableText {
         if (feedback.oldStrategyKey == feedback.newStrategyKey) {
@@ -244,7 +270,12 @@ class FabricPlayerFeedbackPublisher(
         )
     }
 
-    /** 建立「已變更遊戲設定」訊息；實際的「舊值 → 新值」差異位於可互動標籤的 hover。 */
+    /**
+     * 建立「已變更遊戲設定」訊息；實際的「舊值 → 新值」差異位於可互動標籤的 hover。
+     *
+     * @param feedback 含舊、新設定 JSON 的回饋。
+     * @return 可點擊並顯示設定差異的訊息。
+     */
     private fun gameConfigChangedMessage(feedback: MinecraftPlayerFeedback.GameConfigChanged): MutableText = Text.translatable(
         MinecraftMessageKeys.GAME_CONFIG_CHANGED,
         bracketedInteractiveLabel(
@@ -255,7 +286,12 @@ class FabricPlayerFeedbackPublisher(
         ),
     )
 
-    /** 建立「新設定與目前設定相同」訊息，比照 [aiStrategyChangedMessage] 對新舊相同時的特殊處理，維持無色。 */
+    /**
+     * 建立「新設定與目前設定相同」訊息，比照 [aiStrategyChangedMessage] 對新舊相同時的特殊處理，維持無色。
+     *
+     * @param feedback 含目前設定 JSON 的回饋。
+     * @return 顯示目前設定的訊息。
+     */
     private fun gameConfigUnchangedMessage(feedback: MinecraftPlayerFeedback.GameConfigUnchanged): MutableText = Text.translatable(
         MinecraftMessageKeys.GAME_CONFIG_UNCHANGED,
         gameConfigText(feedback.configJson),
@@ -265,6 +301,9 @@ class FabricPlayerFeedbackPublisher(
      * 建立「顯示目前遊戲設定」訊息；可互動文字點擊後透過 [ClickEvent.Action.RUN_COMMAND] 觸發
      * client-only 指令開啟設定編輯畫面（見 [FabricRoomConfigScreenCommand]），
      * 不是複製 JSON。
+     *
+     * @param feedback 含要呈現之設定 JSON 的回饋。
+     * @return 可點擊開啟設定編輯畫面的訊息。
      */
     private fun showGameConfigMessage(feedback: MinecraftPlayerFeedback.ShowGameConfig): MutableText = Text.translatable(
         MinecraftMessageKeys.SHOW_GAME_CONFIG,
@@ -275,7 +314,13 @@ class FabricPlayerFeedbackPublisher(
         ),
     )
 
-    /** 將設定轉成可開啟 RoomScreen 的互動標籤，hover 顯示本地化完整內容。 */
+    /**
+     * 將設定轉成可開啟 RoomScreen 的互動標籤，hover 顯示本地化完整內容。
+     *
+     * @param configJson 遊戲設定 JSON。
+     * @param color 互動標籤顏色。
+     * @return 可開啟設定畫面的互動文字。
+     */
     private fun gameConfigText(configJson: String, color: Formatting = Formatting.AQUA): MutableText = bracketedInteractiveLabel(
         Text.translatable(MinecraftMessageKeys.GAME_CONFIG_LABEL),
         gameConfigHoverText(configJson),
@@ -283,12 +328,20 @@ class FabricPlayerFeedbackPublisher(
         color,
     )
 
-    /** 將設定轉成本地化 hover 文字，與 RoomScreen 共用宣告式設定 schema。 */
+    /**
+     * 將設定轉成本地化 hover 文字，與 RoomScreen 共用宣告式設定 schema。
+     *
+     * @param configJson 遊戲設定 JSON。
+     * @return 完整設定的本地化 hover 文字。
+     */
     private fun gameConfigHoverText(configJson: String): MutableText = gameConfigFormatter.full(configJson)
 
     /**
      * 建立 `/mahjongcraft game hand` 的手牌畫面：手牌列表、副露（有的話）、目前可執行的特殊動作
      * （沒有的話顯示 [MinecraftMessageKeys.HAND_NO_LEGAL_ACTIONS] 提示玩家改用 `discard`）。
+     *
+     * @param feedback 手牌、副露、回合狀態與合法動作資料。
+     * @return 組合後的手牌及可執行動作訊息。
      */
     private fun showHandMessage(feedback: MinecraftPlayerFeedback.ShowHand): MutableText {
         val message = Text.translatable(MinecraftMessageKeys.HAND_TITLE)
@@ -335,7 +388,12 @@ class FabricPlayerFeedbackPublisher(
         return message
     }
 
-    /** 組合準備狀態切換訊息：前綴 + 切換前狀態 → 切換後狀態，「準備」亮綠、「尚未準備」亮紅。 */
+    /**
+     * 組合準備狀態切換訊息：前綴 + 切換前狀態 → 切換後狀態，「準備」亮綠、「尚未準備」亮紅。
+     *
+     * @param isReady 切換完成後是否已準備。
+     * @return 顯示狀態變化的訊息。
+     */
     private fun readyToggledMessage(isReady: Boolean): MutableText {
         val fromKey = if (isReady) MinecraftMessageKeys.READY_STATE_NOT_READY else MinecraftMessageKeys.READY_STATE_READY
         val fromColor = if (isReady) Formatting.RED else Formatting.GREEN

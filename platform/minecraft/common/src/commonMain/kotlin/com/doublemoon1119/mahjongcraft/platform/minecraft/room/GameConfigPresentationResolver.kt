@@ -13,7 +13,12 @@ class GameConfigPresentationResolver(
     private val presentations: GameConfigPresentationRegistry,
     private val modules: MahjongModuleRegistry,
 ) {
-    /** 解析設定的規則呈現。 */
+    /**
+     * 解析設定所屬規則模組的呈現定義與各欄位目前值。
+     *
+     * @param config 要解析的遊戲設定。
+     * @return 規則模組 ID、可用定義及已解析欄位值。
+     */
     fun resolve(config: GameConfig): ResolvedGameConfigPresentation {
         val moduleId = modules.getModule(config.ruleConfig).id
         val definition = presentations.find(moduleId)

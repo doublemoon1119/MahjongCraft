@@ -5,4 +5,16 @@ import kotlinx.serialization.Serializable
 
 /** [RelativeDirection] 的 persistence DTO。 */
 @Serializable
-enum class RelativeDirectionPersistenceDto { LEFT, ACROSS, RIGHT, SELF }
+enum class RelativeDirectionPersistenceDto {
+    /** 左側玩家。 */
+    LEFT,
+
+    /** 對面玩家。 */
+    ACROSS,
+
+    /** 右側玩家。 */
+    RIGHT,
+
+    /** 自身。 */
+    SELF,
+}

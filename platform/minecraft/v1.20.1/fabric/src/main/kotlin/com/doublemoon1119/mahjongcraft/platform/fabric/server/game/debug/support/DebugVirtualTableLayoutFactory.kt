@@ -11,7 +11,15 @@ import org.koin.core.annotation.Single
  */
 @Single
 class DebugVirtualTableLayoutFactory {
-    /** 以玩家腳下方塊為基準建立虛擬桌布局。 */
+    /**
+     * 以玩家腳下方塊為基準建立虛擬桌布局。
+     *
+     * @param playerBlockX 玩家所在方塊的 X 座標。
+     * @param playerBlockY 玩家所在方塊的 Y 座標。
+     * @param playerBlockZ 玩家所在方塊的 Z 座標。
+     * @param tableFacing 虛擬桌朝向。
+     * @return 相對玩家座標建立的虛擬桌布局。
+     */
     fun create(
         playerBlockX: Int,
         playerBlockY: Int,

@@ -511,9 +511,14 @@ class MahjongHudLayoutEditorModelTest {
         assertEquals(outside, snap(outside))
     }
 
-    /** 建立以預設配置為基準的編輯器狀態。 */
+    /**
+     * 建立以預設配置為基準的編輯器狀態。
+     *
+     * @return 初始編輯器模型。
+     */
     private fun model(): MahjongHudLayoutEditorModel = MahjongHudLayoutEditorModel(baseline = MahjongHudLayoutConfig())
 
+    /** 測試畫面尺寸。 */
     private companion object {
         /** 測試使用的最小支援畫面寬度。 */
         const val SCREEN_WIDTH = 854

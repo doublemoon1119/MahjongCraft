@@ -105,7 +105,14 @@ class ExtensionRegistrationReportTest {
         ),
     )
 
-    /** 建立測試使用的排序後註冊分類。 */
+    /**
+     * 建立測試使用的排序後註冊分類。
+     *
+     * @param id 分類識別字串。
+     * @param displayName 分類顯示名稱。
+     * @param registrationIds 此分類的登記 ID，可提供零個或多個。
+     * @return 登記 ID 依字串排序的測試分類。
+     */
     private fun category(
         id: String,
         displayName: String,

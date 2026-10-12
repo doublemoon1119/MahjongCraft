@@ -11,7 +11,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDomain as toRuleD
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDto as toRuleDto
 
 /**
- * 執行網路資料轉換。
+ * 將台灣麻將規則設定轉為網路 DTO。
  *
  * @param registries 網路 DTO 的動態註冊表集合。
  * @return 轉換後的資料。
@@ -30,7 +30,7 @@ fun TaiwanRuleConfig.toTaiwanDto(registries: NetworkDtoRegistries): TaiwanRuleCo
 )
 
 /**
- * 將網路 DTO 還原為領域資料。
+ * 將台灣麻將規則設定 DTO 還原為領域資料；固定的起始手牌、王牌與玩家人數使用規則值。
  *
  * @param registries 網路 DTO 的動態註冊表集合。
  * @return 轉換後的資料。
@@ -44,7 +44,7 @@ fun TaiwanRuleConfigDto.toDomain(registries: NetworkDtoRegistries): TaiwanRuleCo
 )
 
 /**
- * 執行網路資料轉換。
+ * 將台灣麻將計分設定轉為網路 DTO。
  *
  * @return 轉換後的資料。
  */
@@ -56,7 +56,7 @@ fun TaiwanScoreConfig.toTaiwanDto(): TaiwanScoreConfigDto = TaiwanScoreConfigDto
 )
 
 /**
- * 將網路 DTO 還原為領域資料。
+ * 將台灣麻將計分設定 DTO 還原為領域資料。
  *
  * @return 轉換後的資料。
  */
@@ -68,7 +68,7 @@ fun TaiwanScoreConfigDto.toDomain(): TaiwanScoreConfig = TaiwanScoreConfig(
 )
 
 /**
- * 執行網路資料轉換。
+ * 將台灣麻將牌河轉為網路 DTO。
  *
  * @return 轉換後的資料。
  */
@@ -77,7 +77,7 @@ fun TaiwanDiscardPile.toTaiwanDto(): TaiwanDiscardPileDto = TaiwanDiscardPileDto
 )
 
 /**
- * 將網路 DTO 還原為領域資料。
+ * 將台灣麻將牌河 DTO 還原為領域資料。
  *
  * @return 轉換後的資料。
  */

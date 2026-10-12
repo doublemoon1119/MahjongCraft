@@ -9,7 +9,7 @@ import kotlinx.serialization.Serializable
  *
  * @property tile 牌張資料。
  * @property isRiichi 該牌是否為立直宣告牌。
- * @property isTaken 該牌是否已被其他區域取用。
+ * @property isTaken 該牌是否已被其他玩家鳴走。
  */
 @Serializable
 data class RiichiDiscardEntryPersistenceDto(

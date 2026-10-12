@@ -51,7 +51,11 @@ class HistoryGenerationChatFormattingTest {
         assertTrue(!message.string.contains("mahjongcraft.debug.history."))
     }
 
-    /** 建立固定批次進度資料。 */
+    /**
+     * 建立固定批次進度資料。
+     *
+     * @return 含生成、封存、清理與磁碟用量數字的測試進度。
+     */
     private fun progress(): HistoryGenerationProgress = HistoryGenerationProgress(
         scenarioId = "small",
         requested = 7,

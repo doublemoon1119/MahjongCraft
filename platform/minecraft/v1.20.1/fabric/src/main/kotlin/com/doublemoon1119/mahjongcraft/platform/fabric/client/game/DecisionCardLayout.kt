@@ -5,7 +5,14 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ClaimedTileMar
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.HorizontalScrollLayout
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.HorizontalScrollThumb
 
-/** 一個矩形版位。 */
+/**
+ * 一個矩形版位。
+ *
+ * @property x 左界。
+ * @property y 上界。
+ * @property width 寬度。
+ * @property height 高度。
+ */
 internal data class DecisionBounds(
     val x: Int,
     val y: Int,
@@ -56,7 +63,12 @@ internal data class DecisionCardLayout(
     val panelRatioY: Double,
     val timerWidth: Int,
 ) {
-    /** 單一卡片的寬度；預覽牌不多時維持緊湊，牌多時優先橫向擴張到畫面允許的上限。 */
+    /**
+     * 單一卡片的寬度；預覽牌不多時維持緊湊，牌多時優先橫向擴張到畫面允許的上限。
+     *
+     * @param card 要計算寬度的卡片特徵。
+     * @return 卡片寬度。
+     */
     fun cardWidth(card: DecisionCard): Int {
         if (card.previewTileCount <= COMPACT_PREVIEW_TILE_COUNT) return CARD_WIDTH
         val desired = CARD_PADDING * 2 +
@@ -65,7 +77,12 @@ internal data class DecisionCardLayout(
         return desired.coerceIn(CARD_WIDTH, (screenWidth - SCREEN_MARGIN * 2 - PANEL_PADDING * 2).coerceAtLeast(CARD_WIDTH))
     }
 
-    /** 單一卡片的高度；預覽牌只有在卡片寬度不足時才換行。 */
+    /**
+     * 單一卡片的高度；預覽牌只有在卡片寬度不足時才換行。
+     *
+     * @param card 要計算高度的卡片特徵。
+     * @return 卡片高度。
+     */
     fun cardHeight(card: DecisionCard): Int {
         val columns = previewColumns(cardWidth(card))
         val tileRows = ((card.previewTileCount + columns - 1) / columns).coerceAtLeast(1)
@@ -76,7 +93,12 @@ internal data class DecisionCardLayout(
         )
     }
 
-    /** 指定寬度的卡片一列可容納的預覽牌數。 */
+    /**
+     * 指定寬度的卡片一列可容納的預覽牌數。
+     *
+     * @param cardWidth 卡片寬度。
+     * @return 每列可容納的預覽牌數，至少為一。
+     */
     fun previewColumns(cardWidth: Int): Int = ((cardWidth - CARD_PADDING * 2 + PREVIEW_TILE_GAP) / (PREVIEW_TILE_WIDTH + PREVIEW_TILE_GAP)).coerceAtLeast(1)
 
     /** 卡片列的高度，取最高的一張。 */
@@ -148,7 +170,12 @@ internal data class DecisionCardLayout(
     val panelBottom: Int
         get() = panelTop + panelHeight
 
-    /** 標題文字的上緣；在 header 的按鈕高度內垂直置中。 */
+    /**
+     * 標題文字的上緣；在 header 的按鈕高度內垂直置中。
+     *
+     * @param fontHeight 字型高度。
+     * @return 標題文字上緣座標。
+     */
     fun headerTextTop(fontHeight: Int): Int = panelTop + PANEL_PADDING + (BUTTON_HEIGHT - fontHeight) / 2
 
     /** 卡片列上界。 */
@@ -188,7 +215,12 @@ internal data class DecisionCardLayout(
             height = BUTTON_HEIGHT,
         )
 
-    /** 全部卡片排成單列後的版位；內容未溢出時置中，溢出時套用捲動 offset。 */
+    /**
+     * 全部卡片排成單列後的版位；內容未溢出時置中，溢出時套用捲動 offset。
+     *
+     * @param scroll 目前水平捲動量。
+     * @return 依內容順序排列的卡片範圍。
+     */
     fun cardPlacements(scroll: Double): List<DecisionBounds> {
         var x = if (hasOverflow) viewportLeft - scroll.toInt() else viewportLeft + (viewportWidth - contentWidth) / 2
         return cards.map { card ->
@@ -197,7 +229,12 @@ internal data class DecisionCardLayout(
         }
     }
 
-    /** 卡片內動作按鈕的版位。 */
+    /**
+     * 卡片內動作按鈕的版位。
+     *
+     * @param placement 卡片範圍。
+     * @return 卡片內按鈕範圍。
+     */
     fun cardButtonBounds(placement: DecisionBounds): DecisionBounds = DecisionBounds(
         x = placement.x + CARD_PADDING,
         y = placement.y + placement.height - BUTTON_HEIGHT - CARD_PADDING,
@@ -205,7 +242,13 @@ internal data class DecisionCardLayout(
         height = BUTTON_HEIGHT,
     )
 
-    /** 卡片內預覽牌由左至右、由上而下的座標；每一列各自水平置中。 */
+    /**
+     * 卡片內預覽牌由左至右、由上而下的座標；每一列各自水平置中。
+     *
+     * @param placement 卡片範圍。
+     * @param tileCount 預覽牌數量；小於等於零時回傳空清單。
+     * @return 各張預覽牌的畫面範圍。
+     */
     fun previewTilePlacements(placement: DecisionBounds, tileCount: Int): List<DecisionBounds> {
         if (tileCount <= 0) return emptyList()
         val columns = previewColumns(placement.width)
@@ -226,26 +269,59 @@ internal data class DecisionCardLayout(
         }
     }
 
-    /** 鳴牌指標的上界，位於指定預覽牌的正上方。 */
+    /**
+     * 鳴牌指標的上界，位於指定預覽牌的正上方。
+     *
+     * @param tile 預覽牌的範圍。
+     * @return 指標上緣座標。
+     */
     fun claimedTileMarkerTop(tile: DecisionBounds): Int = tile.y - ClaimedTileMarker.GAP - ClaimedTileMarker.height
 
-    /** 依可見比例縮放的 scrollbar thumb。 */
+    /**
+     * 依可見比例縮放的 scrollbar thumb。
+     *
+     * @param scroll 目前水平捲動量。
+     * @return 捲軸滑塊範圍。
+     */
     fun scrollbarThumb(scroll: Double): HorizontalScrollThumb = this.scroll.thumb(scroll)
 
-    /** 將 thumb 左界換算回內容捲動量。 */
+    /**
+     * 將 thumb 左界換算回內容捲動量。
+     *
+     * @param thumbLeft 捲軸滑塊左界。
+     * @param scroll 目前水平捲動量。
+     * @return 對應的內容捲動量。
+     */
     fun scrollFromThumbLeft(thumbLeft: Double, scroll: Double): Double = this.scroll.scrollFromThumbLeft(thumbLeft, scroll)
 
-    /** 依 thumb 拖曳位移計算新的捲動量。 */
+    /**
+     * 依 thumb 拖曳位移計算新的捲動量。
+     *
+     * @param startScroll 拖曳開始時的內容捲動量。
+     * @param pointerDelta 游標水平位移。
+     * @return 限制在合法範圍內的新捲動量。
+     */
     fun scrollFromDrag(startScroll: Double, pointerDelta: Double): Double = scroll.scrollFromDrag(startScroll, pointerDelta)
 
-    /** 依滾輪量計算新的捲動量。 */
+    /**
+     * 依滾輪量計算新的捲動量。
+     *
+     * @param currentScroll 目前內容捲動量。
+     * @param amount 滾輪位移量。
+     * @return 限制在合法範圍內的新捲動量。
+     */
     fun scrollFromWheel(currentScroll: Double, amount: Double): Double = scroll.scrollFromWheel(currentScroll, amount, SCROLL_STEP)
 
     /**
      * 卡片說明 tooltip 內容區的左上角，[width]、[height] 為內容區尺寸（不含 tooltip 外框）。
      *
      * 水平對齊 [card] 的中心，垂直放在面板上緣外側；上方放不下時改放面板下緣外側。兩個方向都會限制在畫面內，
-     * 因此說明不會覆蓋卡片列。
+     * 當畫面空間足夠時，說明會留在卡片列外側；空間不足時仍以留在畫面內為優先。
+     *
+     * @param card 被指向的卡片範圍。
+     * @param width tooltip 內容寬度，不含外框。
+     * @param height tooltip 內容高度，不含外框。
+     * @return tooltip 內容區的畫面範圍。
      */
     fun descriptionTooltipPosition(card: DecisionBounds, width: Int, height: Int): DecisionBounds {
         val above = panelTop - TOOLTIP_GAP - TOOLTIP_FRAME - height
@@ -266,7 +342,12 @@ internal data class DecisionCardLayout(
             return DecisionBounds((screenWidth - width) / 2, panelTop - height - PANEL_GAP, width, height)
         }
 
-    /** 觸發文字第 [index] 行的上界。 */
+    /**
+     * 觸發文字第 [index] 行的上界。
+     *
+     * @param index 從零開始的文字行索引。
+     * @return 該行上緣座標。
+     */
     fun triggerTextLineTop(index: Int): Int = triggerPanelBounds.y + TRIGGER_PADDING + index * TEXT_LINE_HEIGHT
 
     /** 觸發牌的版位。 */
@@ -283,30 +364,78 @@ internal data class DecisionCardLayout(
         get() = if (triggerLineCount == 0) 0 else triggerLineCount * TEXT_LINE_HEIGHT + TRIGGER_GAP
 
     internal companion object {
-        /** 觸發文字換行前可用的最大寬度。 */
+        /**
+         * 計算觸發文字換行前可用的最大寬度。
+         *
+         * @param screenWidth GUI 縮放後的畫面寬度（像素）。
+         * @return 扣除邊界留白後的可用寬度，至少為一像素。
+         */
         fun triggerTextMaximumWidth(screenWidth: Int): Int = (screenWidth - SCREEN_MARGIN * 2 - TRIGGER_PADDING * 2).coerceAtLeast(1)
 
+        /** 每張操作卡的固定寬度（像素）。 */
         const val CARD_WIDTH = 92
+
+        /** 維持緊湊卡片寬度的預覽牌張數上限。 */
         const val COMPACT_PREVIEW_TILE_COUNT = 4
+
+        /** 操作卡的最小高度（像素）。 */
         const val MIN_CARD_HEIGHT = 62
+
+        /** 卡片內容與卡片邊緣的留白（像素）。 */
         const val CARD_PADDING = 4
+
+        /** 相鄰操作卡的間距（像素）。 */
         const val CARD_GAP = 5
+
+        /** 操作卡按鈕高度（像素）。 */
         const val BUTTON_HEIGHT = 20
+
+        /** 跳過按鈕寬度（像素）。 */
         const val SKIP_BUTTON_WIDTH = 48
+
+        /** 面板內容與面板邊緣的留白（像素）。 */
         const val PANEL_PADDING = 6
+
+        /** 面板標題列高度（像素）。 */
         const val HEADER_HEIGHT = 24
+
+        /** 標題列左右兩側保留區域的寬度（像素）。 */
         const val HEADER_SIDE_WIDTH = 58
+
+        /** 預覽牌寬度（像素）。 */
         const val PREVIEW_TILE_WIDTH = 18
+
+        /** 預覽牌高度（像素）。 */
         const val PREVIEW_TILE_HEIGHT = 24
+
+        /** 同一張卡片內相鄰預覽牌的間距（像素）。 */
         const val PREVIEW_TILE_GAP = 2
+
+        /** 預覽牌與按鈕標籤之間的間距（像素）。 */
         const val TILE_BUTTON_GAP = 3
+
+        /** 觸發牌面板內容與邊緣的留白（像素）。 */
         const val TRIGGER_PADDING = 6
+
+        /** 觸發文字與觸發牌之間的間距（像素）。 */
         const val TRIGGER_GAP = 3
+
+        /** 觸發牌面板與操作面板之間的間距（像素）。 */
         const val PANEL_GAP = 5
+
+        /** 操作面板與畫面邊緣保留的距離（像素）。 */
         const val SCREEN_MARGIN = 8
+
+        /** 多行觸發文字的行高（像素）。 */
         const val TEXT_LINE_HEIGHT = 10
+
+        /** 卡片列與水平捲軸之間的間距（像素）。 */
         const val SCROLLBAR_GAP = 4
+
+        /** 水平捲軸高度（像素）。 */
         const val SCROLLBAR_HEIGHT = 4
+
+        /** 水平捲軸滑塊的最小寬度（像素）。 */
         const val MIN_SCROLLBAR_THUMB_WIDTH = 18
 
         /** 卡片說明換行前的最大寬度。 */

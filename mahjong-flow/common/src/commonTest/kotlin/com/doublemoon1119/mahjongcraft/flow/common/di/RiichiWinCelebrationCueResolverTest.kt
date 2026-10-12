@@ -77,6 +77,12 @@ class RiichiWinCelebrationCueResolverTest {
         assertTrue(registry.resolve("custom:rule", resultOf(YakuResult.yakuman(YakuType.KokushiMusou))).isEmpty())
     }
 
+    /**
+     * 以指定役種建立測試用日麻手牌價值結果。
+     *
+     * @param yakuResults 要放入結果的役種與翻數資料。
+     * @return 翻數為役種翻數總和、符數為 0，並使用固定榮和點數的手牌結果。
+     */
     private fun resultOf(vararg yakuResults: YakuResult): RiichiHandValueResult = RiichiHandValueResult(
         yakuResults = yakuResults.toList(),
         totalHan = yakuResults.sumOf(YakuResult::han),

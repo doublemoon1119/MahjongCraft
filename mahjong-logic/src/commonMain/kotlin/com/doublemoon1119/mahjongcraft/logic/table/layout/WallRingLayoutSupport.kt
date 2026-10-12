@@ -27,6 +27,12 @@ internal object WallRingLayoutSupport {
      *
      * @throws IllegalArgumentException 當 [shuffledTiles] 張數與 [stacksPerSide] 不吻合，或 [opening]
      * 超出面數／墩數範圍時拋出。
+     * @param shuffledTiles 已洗牌、包含完整牌牆的牌張列表。
+     * @param opening 規則決定的開門面與墩數。
+     * @param stacksPerSide 每面牌牆的墩數。
+     * @param deadWallStacks 從開門缺口開始保留為規則區的連續墩數。
+     * @param sideCount 牌牆面數，預設為四面。
+     * @return 一般摸牌順序、保留牌與所有牌的結構座標。
      */
     fun resolve(
         shuffledTiles: List<IdentifiedTile>,
@@ -62,7 +68,7 @@ internal object WallRingLayoutSupport {
             floorMod(breakGlobalStack + offset, totalStacks)
         }
 
-        // 兩份清單在這裡完成規則上的摸牌分區；是否把保留牌呈現為獨立實體區域由後續 layout policy
+        // 兩份清單在這裡完成規則上的摸牌分區；是否把保留牌放在獨立實體區域由後續 layout policy
         // 決定，這個通用 helper 不賦予日麻王牌的物理語意。
         val reservedWallTiles = deadWallGlobalStacks.flatMap { stacks[it].asReversed() }
         val drawOrder = liveWallGlobalStacks.flatMap { stacks[it].asReversed() }
@@ -80,6 +86,12 @@ internal object WallRingLayoutSupport {
         return TileWallLayoutResult(drawOrder, reservedWallTiles, structure)
     }
 
-    /** 恆為非負餘數的取模，處理往回數王牌時可能產生的負值。 */
+    /**
+     * 恆為非負餘數的取模，處理往回數王牌時可能產生的負值。
+     *
+     * @param value 要取模的整數。
+     * @param modulus 正的模數。
+     * @return 位於 `0 until modulus` 的餘數。
+     */
     private fun floorMod(value: Int, modulus: Int): Int = ((value % modulus) + modulus) % modulus
 }

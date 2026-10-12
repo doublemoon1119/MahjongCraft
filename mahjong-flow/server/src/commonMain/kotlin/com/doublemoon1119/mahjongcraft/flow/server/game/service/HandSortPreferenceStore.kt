@@ -15,12 +15,23 @@ import kotlin.uuid.Uuid
  */
 @Single
 class HandSortPreferenceStore {
+    /** 以玩家識別碼索引本次 server session 的手牌整理偏好。 */
     private val preferences = ConcurrentHashMap<Uuid, Boolean>()
 
-    /** [playerId] 目前是否啟用自動整理手牌；未曾設定過視為 `false`。 */
+    /**
+     * 查詢 [playerId] 目前是否啟用自動整理手牌；未曾設定過視為 `false`。
+     *
+     * @param playerId 欲查詢的玩家識別碼。
+     * @return 已啟用時為 `true`，否則為 `false`。
+     */
     fun isEnabled(playerId: Uuid): Boolean = preferences[playerId] ?: false
 
-    /** 設定 [playerId] 的自動整理手牌偏好。 */
+    /**
+     * 設定 [playerId] 的自動整理手牌偏好。
+     *
+     * @param playerId 要更新偏好的玩家識別碼。
+     * @param enabled 是否啟用自動整理。
+     */
     fun set(playerId: Uuid, enabled: Boolean) {
         preferences[playerId] = enabled
     }

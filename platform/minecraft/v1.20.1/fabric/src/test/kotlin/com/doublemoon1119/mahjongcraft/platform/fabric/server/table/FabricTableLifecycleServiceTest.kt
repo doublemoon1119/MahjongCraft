@@ -133,7 +133,6 @@ class FabricTableLifecycleServiceTest {
             configState,
         )
 
-        /** 受測 Fabric lifecycle 服務。 */
         /** 記錄清理呼叫的骰子 presenter fake。 */
         private val diceRollPresenter = RecordingDiceRollPresenter()
 
@@ -151,6 +150,8 @@ class FabricTableLifecycleServiceTest {
 
         /** 記錄清理呼叫的桌面局況顯示 presenter fake。 */
         private val roundInfoPresenter = RecordingRoundInfoPresenter()
+
+        /** 記錄清理呼叫的玩家資訊 presenter fake。 */
         private val playerInfoPresenter = RecordingPlayerInfoPresenter()
 
         /** 記錄清理呼叫的選牌確認面板 presenter fake。 */
@@ -268,23 +269,29 @@ class FabricTableLifecycleServiceTest {
 
     /** 此測試只需要滿足玩家公開資訊清理邊界。 */
     private class RecordingPlayerInfoPresenter : MahjongPlayerInfoPresenter {
+        /** 此測試不使用正式玩家公開資訊呈現。 */
         override fun present(
             presentation: MahjongPlayerInfoPresentation,
             tableLocation: TableLocation,
             tableFacing: MahjongTableFacing,
         ): MahjongPlayerInfoPresentationResult = MahjongPlayerInfoPresentationResult.PRESENTED
 
+        /** 此測試不使用正式玩家資訊延後顯示。 */
         override fun hideUntil(tableId: Uuid, tableLocation: TableLocation, gameTime: Long) = Unit
 
+        /** 記錄清理請求並回報沒有已載入玩家資訊。 */
         override fun clear(tableId: Uuid, tableLocation: TableLocation): Int = 0
     }
 
     /** 此測試只需要滿足多選選牌確認面板清理邊界。 */
     private class RecordingTileSelectionConfirmPresenter : MahjongTileSelectionConfirmPresenter {
+        /** 此測試不使用正式選牌確認面板呈現。 */
         override fun present(presentation: MahjongTileSelectionConfirmPresentation): MahjongTileSelectionConfirmPresentationResult = MahjongTileSelectionConfirmPresentationResult.PRESENTED
 
+        /** 此測試不使用正式單一玩家面板清理。 */
         override fun clearForPlayer(tableId: Uuid, tableLocation: TableLocation, holderId: Uuid): Int = 0
 
+        /** 記錄清理請求並回報沒有已載入選牌確認面板。 */
         override fun clear(tableId: Uuid, tableLocation: TableLocation): Int = 0
     }
 }

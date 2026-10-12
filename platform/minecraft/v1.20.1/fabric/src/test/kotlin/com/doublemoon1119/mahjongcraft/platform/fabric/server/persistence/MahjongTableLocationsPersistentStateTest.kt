@@ -137,6 +137,12 @@ class MahjongTableLocationsPersistentStateTest {
         assertEquals(emptyList(), MahjongTableLocationsPersistentState.fromNbt(nbt).entries)
     }
 
+    /**
+     * 建立只含指定桌子位置的版本化 NBT 索引。
+     *
+     * @param entry 要寫入索引的桌子位置。
+     * @return 含目前格式版本與該筆位置的 NBT compound。
+     */
     private fun indexedNbt(entry: TableLocationEntry): NbtCompound = MahjongTableLocationsPersistentState.create().apply {
         update(mapOf(entry.tableId to entry))
     }.writeNbt(NbtCompound())

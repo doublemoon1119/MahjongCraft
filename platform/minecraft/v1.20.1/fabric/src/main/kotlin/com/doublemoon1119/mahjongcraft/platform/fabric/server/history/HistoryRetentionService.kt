@@ -94,7 +94,11 @@ internal class HistoryRetentionService(
         return removed
     }
 
-    /** 可接續對局與尚待寫事件的聯集；終止證據不會覆蓋此保護。 */
+    /**
+     * 可接續對局與尚待寫事件的聯集；終止證據不會覆蓋此保護。
+     *
+     * @return 清理時必須保護的對局識別字串。
+     */
     private suspend fun protectedMatchIds(): Set<String> {
         val snapshot = store.snapshot()
         return snapshot.games.values.mapTo(mutableSetOf()) { it.matchId.toString() } +

@@ -21,12 +21,18 @@ import net.minecraft.util.Identifier
 import org.koin.core.annotation.Single
 import java.util.concurrent.CompletableFuture
 
-/** 註冊自動操作 client command，並在 matching ACK 抵達後提供聊天回饋。 */
+/**
+ * 註冊客戶端自動操作指令，並在配對的伺服器回覆抵達後提供聊天回饋。
+ *
+ * @property commandService 處理控制項變更與查詢完成結果的服務。
+ * @property displayResolver 取得控制項本地化名稱的解析器。
+ */
 @Single
 class FabricAutomaticControlCommand(
     private val commandService: ClientAutomaticControlCommandService,
     private val displayResolver: AutomaticControlDisplayResolver,
 ) {
+    /** 指令已送出且尚待回覆的聊天回饋資料。 */
     private var pendingFeedback: PendingFeedback? = null
 
     /** 註冊 command tree 與 ACK 輪詢；只能在 client entrypoint 呼叫一次。 */
@@ -47,12 +53,24 @@ class FabricAutomaticControlCommand(
         ClientTickEvents.END_CLIENT_TICK.register(::pollCompletion)
     }
 
-    /** 建立一個狀態模式 literal。 */
+    /**
+     * 建立指定模式的指令節點。
+     *
+     * @param name 節點的固定文字。
+     * @param mode 節點執行時使用的開關模式。
+     * @return 綁定執行回呼的指令節點建構器。
+     */
     private fun modeLiteral(name: String, mode: AutomaticControlCommandMode) = ClientCommandManager.literal(name).executes { context ->
         execute(context, mode)
     }
 
-    /** 執行指定模式，並立即回饋本地結果或保存待 ACK 資料。 */
+    /**
+     * 執行指定模式，並立即回饋本機結果或保存待回覆資料。
+     *
+     * @param context 含控制項識別碼與回覆來源的指令情境。
+     * @param mode 要套用的開關模式。
+     * @return Brigadier 成功或失敗值。
+     */
     private fun execute(
         context: CommandContext<FabricClientCommandSource>,
         mode: AutomaticControlCommandMode,
@@ -112,7 +130,13 @@ class FabricAutomaticControlCommand(
         }
     }
 
-    /** 依顯示 registry 排序並補全目前可調整的控制 ID。 */
+    /**
+     * 依顯示登錄順序補全目前可調整的控制項識別碼。
+     *
+     * @param context Brigadier 傳入的指令情境；此補全不依其內容判斷。
+     * @param builder 累積補全建議的建構器。
+     * @return 已加入控制項名稱提示的補全結果。
+     */
     @Suppress("UNUSED_PARAMETER")
     private fun suggestControlIds(
         context: CommandContext<FabricClientCommandSource>,
@@ -124,7 +148,11 @@ class FabricAutomaticControlCommand(
         return builder.buildFuture()
     }
 
-    /** 每個 client tick 檢查 command 自己送出的 request 是否完成。 */
+    /**
+     * 每個客戶端 tick 檢查此指令送出的請求是否完成。
+     *
+     * @param client 本次 tick 的客戶端，供回覆目前玩家使用。
+     */
     private fun pollCompletion(client: MinecraftClient) {
         val pending = pendingFeedback ?: return
         val completion = commandService.takeCompletion(pending.requestId, pending.controlId)
@@ -146,13 +174,26 @@ class FabricAutomaticControlCommand(
         client.player?.sendMessage(message, false)
     }
 
-    /** 傳送 client command 錯誤並回傳 Brigadier 失敗值。 */
+    /**
+     * 傳送客戶端指令錯誤並回傳 Brigadier 失敗值。
+     *
+     * @param source 接收錯誤訊息的指令來源。
+     * @param message 要顯示的錯誤文字。
+     * @return Brigadier 失敗值。
+     */
     private fun failure(source: FabricClientCommandSource, message: Text): Int {
         source.sendError(message)
         return COMMAND_FAILURE
     }
 
-    /** 建立已套用狀態訊息。 */
+    /**
+     * 建立已套用狀態訊息。
+     *
+     * @param controlId 更新的控制項識別碼。
+     * @param previousEnabled 更新前已確認的狀態。
+     * @param enabled 更新後已確認的狀態。
+     * @return 帶成功顏色與前後狀態的訊息。
+     */
     private fun updatedMessage(controlId: String, previousEnabled: Boolean, enabled: Boolean): MutableText = Text.translatable(
         MinecraftMessageKeys.AUTOMATIC_CONTROL_UPDATED,
         displayResolver.resolve(controlId).label,
@@ -160,27 +201,41 @@ class FabricAutomaticControlCommand(
         stateText(enabled),
     ).formatted(Formatting.GREEN)
 
-    /** 建立狀態未改變訊息。 */
+    /**
+     * 建立狀態未改變訊息。
+     *
+     * @param controlId 查詢的控制項識別碼。
+     * @param enabled 目前已確認的狀態。
+     * @return 帶提示顏色的未變更訊息。
+     */
     private fun unchangedMessage(controlId: String, enabled: Boolean): MutableText = Text.translatable(
         MinecraftMessageKeys.AUTOMATIC_CONTROL_UNCHANGED,
         displayResolver.resolve(controlId).label,
         stateText(enabled),
     ).formatted(Formatting.YELLOW)
 
-    /** 建立帶顏色的開啟／關閉文字。 */
+    /**
+     * 建立帶顏色的開啟／關閉文字。
+     *
+     * @param enabled 是否啟用。
+     * @return 對應狀態的本地化文字。
+     */
     private fun stateText(enabled: Boolean): MutableText = Text.translatable(
         if (enabled) MinecraftMessageKeys.AUTOMATIC_CONTROL_STATE_ON else MinecraftMessageKeys.AUTOMATIC_CONTROL_STATE_OFF,
     ).formatted(if (enabled) Formatting.GREEN else Formatting.RED)
 
-    /** Command 送出後等待 matching ACK 所需的最小資料。 */
+    /**
+     * 指令送出後等待配對回覆的資料。
+     *
+     * @property requestId 請求識別碼。
+     * @property controlId 正在更新的控制項識別碼。
+     * @property previousEnabled 送出時已確認的狀態。
+     * @property requestedEnabled 請求要求的狀態。
+     */
     private data class PendingFeedback(
-        /** request-scoped 識別碼。 */
         val requestId: String,
-        /** 正在更新的控制 ID。 */
         val controlId: String,
-        /** 送出時已確認的控制狀態。 */
         val previousEnabled: Boolean,
-        /** 請求要求的狀態。 */
         val requestedEnabled: Boolean,
     )
 

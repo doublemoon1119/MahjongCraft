@@ -49,7 +49,12 @@ class FlowServerModule {
     @Single
     fun extensionGameCommandExecutorRegistry(): ExtensionGameCommandExecutorRegistry = ExtensionGameCommandExecutorRegistry()
 
-    /** 建立開放 extension 啟動期登記的 AI action registry。 */
+    /**
+     * 建立供擴充在啟動期登記動作評估器的 AI 註冊表。
+     *
+     * @param moduleRegistry 提供各規則模組及其合法動作判定。
+     * @return 尚待擴充登記的動作評估器註冊表。
+     */
     @Single
     fun extensionGameActionAiRegistry(moduleRegistry: MahjongModuleRegistry): ExtensionGameActionAiRegistry = ExtensionGameActionAiRegistry(moduleRegistry)
 
@@ -83,6 +88,10 @@ class FlowServerModule {
     /**
      * 建立整個程式共用的 AI 決策執行器：在 [CoroutineDispatchers.aiDecision] 上呼叫策略，同時存在的策略工作上限為 AI 執行緒數的
      * [AiDecisionExecutor.CAPACITY_PER_THREAD] 倍。
+     *
+     * @param dispatchers 提供 AI 決策調度器及平行度。
+     * @param reporter 策略逾時與未結束工作等情況的回報器。
+     * @return 共用的 AI 決策執行器。
      */
     @Single
     fun aiDecisionExecutor(dispatchers: CoroutineDispatchers, @Provided reporter: AiDecisionReporter): AiDecisionExecutor = AiDecisionExecutor(
@@ -91,7 +100,16 @@ class FlowServerModule {
         reporter = reporter,
     )
 
-    /** 建立整個程式共用的單局推進管理器：推進協程在目前 server session 的作用域、伺服器主執行緒上執行。 */
+    /**
+     * 建立共用的單局推進管理器，在目前執行階段的作用域與權威狀態調度器上推進遊戲。
+     *
+     * @param appScope 管理目前執行階段協程生命週期的作用域。
+     * @param dispatchers 提供權威狀態操作的調度器。
+     * @param coordinator 負責遊戲流程的協調器。
+     * @param followUp 推進後需執行的後續檢查。
+     * @param failureReporter 推進失敗的回報器。
+     * @return 共用的單局推進管理器。
+     */
     @Single
     fun automatedAdvanceManager(
         appScope: AppCoroutineScope,

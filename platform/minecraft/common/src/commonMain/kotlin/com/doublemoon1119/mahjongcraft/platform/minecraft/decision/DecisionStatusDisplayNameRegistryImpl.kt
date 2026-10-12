@@ -4,7 +4,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftReso
 
 /** [DecisionStatusDisplayNameRegistry] 的記憶體實作。 */
 class DecisionStatusDisplayNameRegistryImpl : DecisionStatusDisplayNameRegistry {
+    /** 預設登記的狀態翻譯鍵，以狀態 ID 為索引。 */
     private val defaults = mutableMapOf<String, String>()
+
+    /** 規則模組專屬的狀態翻譯鍵，以規則模組 ID 與狀態 ID 組成索引。 */
     private val byRuleModule = mutableMapOf<Pair<String, String>, String>()
 
     override val registrationKeys: Set<String>

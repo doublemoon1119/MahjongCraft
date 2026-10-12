@@ -29,8 +29,13 @@ import kotlin.uuid.Uuid
  */
 class CreateRoomUseCaseTest {
 
+    /** 測試房間的識別碼。 */
     private val roomId: Uuid = Uuid.random()
+
+    /** 測試房間房主的玩家識別碼。 */
     private val hostId: Uuid = Uuid.random()
+
+    /** 測試房間使用的規則設定。 */
     private val config: MahjongRuleConfig = FakeMahjongRuleConfig()
 
     /** 測試創建房間是否能正確持久化資料，並向包含房主在內的觀察者同步快照。 */

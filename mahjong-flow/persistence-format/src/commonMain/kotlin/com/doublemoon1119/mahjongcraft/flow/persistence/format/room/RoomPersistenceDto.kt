@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.TypedPersist
 import kotlinx.serialization.Serializable
 
 /**
- * 等待階段 [Room] 的完整權威 persistence DTO。
+ * 等待階段 `Room` 的完整權威 persistence DTO。
  *
  * @property id Room 與場地共用的穩定 UUID。
  * @property hostId 房主玩家 UUID。

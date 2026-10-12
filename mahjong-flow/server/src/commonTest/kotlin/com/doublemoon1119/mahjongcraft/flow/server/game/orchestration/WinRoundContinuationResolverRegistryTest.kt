@@ -15,8 +15,13 @@ import kotlin.uuid.Uuid
 
 /** [WinRoundContinuationResolverRegistry] 的順序、規則隔離、預設值與凍結測試。 */
 class WinRoundContinuationResolverRegistryTest {
+    /** 解析器所屬的立直規則模組。 */
     private val module = RiichiRuleModule("mahjongcraft:riichi", RiichiRuleConfig())
+
+    /** 用於建立和牌後去留情境的贏家。 */
     private val winner = FakeMahjongPlayerFactory.create()
+
+    /** 共用的結算前後狀態與和牌資訊。 */
     private val context = WinRoundContinuationContext(
         previousTableState = FakeTableStateFactory.create(players = listOf(winner), config = RiichiRuleConfig()),
         settledTableState = FakeTableStateFactory.create(players = listOf(winner), config = RiichiRuleConfig()),
@@ -52,7 +57,7 @@ class WinRoundContinuationResolverRegistryTest {
 
         val directive = registry.resolve(context, module)
 
-        // test:a（優先序 10，字典序早於 test:b）先執行但回傳 null，falls through 到 test:b 才成立；
+        // test:a（優先序 10，字典序早於 test:b）先執行但回傳 null，繼續交由 test:b 判定；
         // test:foreign 屬於別的規則模組，不該被呼叫；test:z 優先序較低，成立後不應再被呼叫。
         assertEquals(listOf("test:a", "test:b"), calls)
         assertEquals(expectedDirective, directive)
@@ -85,7 +90,16 @@ class WinRoundContinuationResolverRegistryTest {
         assertFailsWith<IllegalStateException> { registry.resolve(context, module) }
     }
 
-    /** 建立只記錄呼叫、回傳指定結果的測試 resolver。 */
+    /**
+     * 建立會記錄呼叫的測試解析器。
+     *
+     * @param id 解析器的註冊識別碼。
+     * @param ruleModuleId 所屬規則模組的識別碼。
+     * @param priority 解析器的執行優先序。
+     * @param calls 依呼叫順序收集解析器識別碼的清單。
+     * @param result 每次呼叫要回傳的指示；null 表示交由後續解析器判定。
+     * @return 測試解析器。
+     */
     private fun recordingResolver(
         id: String,
         ruleModuleId: String,

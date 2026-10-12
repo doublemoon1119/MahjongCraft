@@ -27,15 +27,30 @@ internal class UnseenTileCounts private constructor(
     /** 所有未見牌的總張數。 */
     val total: Int = faceCounts.values.sum()
 
-    /** 正規化牌面 [kind] 的未見張數。 */
+    /**
+     * 正規化牌面 [kind] 的未見張數。
+     *
+     * @param kind 規則正規化後的牌面。
+     * @return 該種牌所有實際牌面的未見張數總和。
+     */
     operator fun get(kind: Tile): Int = facesByKind[kind].orEmpty().sumOf { faceCounts[it] ?: 0 }
 
-    /** 正規化牌面 [kind] 的每一種實際牌面，以及各自的未見張數；未見張數為 0 的牌面不列出。 */
+    /**
+     * 正規化牌面 [kind] 的每一種實際牌面，以及各自的未見張數；未見張數為 0 的牌面不列出。
+     *
+     * @param kind 規則正規化後的牌面。
+     * @return 實際牌面與其未見張數的配對清單。
+     */
     fun faces(kind: Tile): List<Pair<Tile, Int>> = facesByKind[kind].orEmpty()
         .map { face -> face to (faceCounts[face] ?: 0) }
         .filter { (_, count) -> count > 0 }
 
-    /** 假設摸進一張實際牌面為 [face] 的牌之後的未見張數。 */
+    /**
+     * 假設摸進一張實際牌面為 [face] 的牌之後的未見張數；該牌面張數最低為 0。
+     *
+     * @param face 假設摸進的實際牌面。
+     * @return 其餘未見牌的張數快照。
+     */
     fun without(face: Tile): UnseenTileCounts = UnseenTileCounts(
         kinds = kinds,
         facesByKind = facesByKind,
@@ -50,6 +65,12 @@ internal class UnseenTileCounts private constructor(
          * [countsVisibleTiles] 為 `true` 時扣除快照中看得到的每一張牌（見 [TableStateSnapshot.visibleTiles]）；為 `false`
          * 時只扣除自己手上的牌（見 [MahjongPlayerSnapshot.heldTiles]）。看到的牌面不在規則的牌山組成中時，改從它的
          * 正規化牌面扣除。
+         *
+         * @param snapshot 供統計可見牌的桌況快照。
+         * @param selfId 評估者的玩家識別碼。
+         * @param module 本局使用的規則模組，用於取得牌山組成與牌面正規化方式。
+         * @param countsVisibleTiles 是否扣除快照中所有可見牌；否則只扣除評估者手牌。
+         * @return 依上述視角計算的未見牌分布。
          */
         fun from(
             snapshot: TableStateSnapshot,
@@ -77,6 +98,11 @@ internal class UnseenTileCounts private constructor(
          *
          * 某個牌面看到的張數超過它在牌山中的張數時，超出的部分改從同一種牌的其他牌面扣除，使這種牌的未見總數
          * 等於牌山張數減去看到的張數。
+         *
+         * @param faces 同一種正規化牌的實際牌面。
+         * @param composition 各實際牌面在牌山中的總張數。
+         * @param seen 各實際牌面已被看見的張數。
+         * @return 各實際牌面的非負未見張數。
          */
         private fun unseenFaces(
             faces: List<Tile>,

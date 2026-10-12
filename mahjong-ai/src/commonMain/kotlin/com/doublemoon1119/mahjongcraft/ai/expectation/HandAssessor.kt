@@ -28,7 +28,12 @@ internal data class HandAssessment(
     val tenpaiProfile: TenpaiProfile?,
     val estimatedValuePerWin: Double? = null,
 ) {
-    /** 把兩向聽以上假設的每次和牌點數降到不超過 [valuePerWin]；以實際手牌計算打點的評估不變。 */
+    /**
+     * 把兩向聽以上假設的每次和牌點數降到不超過 [valuePerWin]；以實際手牌計算打點的評估不變。
+     *
+     * @param valuePerWin 允許的每次和牌點數上限。
+     * @return 套用上限後的評估；估值不超過上限或非估算打點時回傳原評估。
+     */
     fun cappedAt(valuePerWin: Double): HandAssessment {
         val estimated = estimatedValuePerWin ?: return this
         if (estimated <= valuePerWin) return this
@@ -86,7 +91,13 @@ internal class HandAssessor(
     private val placement: PlacementUtility,
     private val flatWinPoints: Double,
 ) {
-    /** 手牌內容相同即視為相同的快取鍵。 */
+    /**
+     * 手牌內容相同即視為相同的快取鍵。
+     *
+     * @property tiles 依規則牌序排列的立牌牌面。
+     * @property meldTypes 副露種類，依副露順序排列。
+     * @property meldTiles 各副露中的牌面，分組並依規則牌序排列。
+     */
     private data class HandKey(
         val tiles: List<Tile>,
         val meldTypes: List<MeldType>,
@@ -120,7 +131,9 @@ internal class HandAssessor(
      * 評估 [hand] 的和牌前景。
      *
      * @param view 評估時使用的假設視角。
+     * @param hand 要評估的手牌。
      * @param declarations 假設和牌前已經宣告的動作。
+     * @return 該手牌的向聽數與和牌前景評估。
      */
     fun assess(
         hand: Hand,
@@ -145,20 +158,37 @@ internal class HandAssessor(
         }
     }
 
-    /** [hand] 的向聽數；已和牌為 -1、聽牌為 0。 */
+    /**
+     * [hand] 的向聽數；已和牌為 -1、聽牌為 0。
+     *
+     * @param hand 要查詢的手牌。
+     * @return 向聽數；已和牌為 -1。
+     */
     fun shantenOf(hand: Hand): Int = when (val result = shanten(hand)) {
         ShantenResult.Complete -> -1
         is ShantenResult.Tenpai -> 0
         is ShantenResult.NotTenpai -> result.shanten
     }
 
-    /** 依規則正規化的牌面。 */
+    /**
+     * 依規則正規化的牌面。
+     *
+     * @param tile 要正規化的牌面。
+     * @return 規則比較時使用的標準牌面。
+     */
     fun canonical(tile: Tile): Tile = interpretation.canonicalize(tile)
 
     /**
      * 聽牌手牌的和牌率與點數。
      *
      * 同一種聽牌有不同的實際牌面時（例如日麻的赤五與普通五），依各自的未見張數分別計算點數。
+     *
+     * @param hand 聽牌時的手牌。
+     * @param view 本次評估使用的假設局面。
+     * @param waits 規則計算出的可和牌面。
+     * @param declarations 假設和牌前已宣告的動作。
+     * @param counts 用來按實際牌面分配張數的未見牌計數。
+     * @return 聽牌時的和牌率與點數 profile。
      */
     private fun tenpaiProfile(
         hand: Hand,
@@ -183,6 +213,11 @@ internal class HandAssessor(
      * 一向聽手牌每一種讓它聽牌的進張，以及進張後打出最佳一張牌的聽牌結果。
      *
      * 同一種牌的不同實際牌面（例如日麻的赤五與普通五）視為不同的進張，各自依未見張數計算。聽牌時可選擇不宣告，或宣告規則回報的 [PositionRules.prospectiveDeclarations] 之一並付出宣告成本。
+     *
+     * @param hand 一向聽時的手牌。
+     * @param view 起始的假設局面。
+     * @param declarations 起始狀態已宣告的動作。
+     * @return 各種有效進張及其最佳捨牌後的聽牌選項。
      */
     private fun tenpaiBranches(
         hand: Hand,
@@ -214,7 +249,13 @@ internal class HandAssessor(
         }
     }
 
-    /** 宣告 [declarations] 立即付出的點數；和牌時會以打點的一部分收回，因此不換算名次。 */
+    /**
+     * 宣告 [declarations] 立即付出的點數；和牌時會以打點的一部分收回，因此不換算名次。
+     *
+     * @param view 宣告生效前的假設局面。
+     * @param declarations 此次新增的規則擴充宣告。
+     * @return 宣告效果的點數成本總和。
+     */
     private fun declarationCost(view: HypotheticalView, declarations: Set<GameAction.Extension>): Double = declarations.sumOf { declaration ->
         rules.declarationEffect(view.view, declaration).cost.toDouble()
     }
@@ -222,6 +263,11 @@ internal class HandAssessor(
     /**
      * 兩向聽以上：第一步使用實際的有效牌張數，之後每一步使用一般有效牌張數（實際較少時取實際值），
      * 聽牌後使用一般聽牌張數，打點使用規則的基準打點。
+     *
+     * @param hand 目前兩向聽以上的手牌。
+     * @param view 此手牌對應的假設局面。
+     * @param shanten 目前向聽數。
+     * @return 使用遠向聽近似值建立的評估。
      */
     private fun distantHandAssessment(hand: Hand, view: HypotheticalView, shanten: Int): HandAssessment {
         val value = detailedValue(opponentModel.baselineWinValue(view.view, selfId).toDouble())
@@ -247,13 +293,29 @@ internal class HandAssessor(
         )
     }
 
-    /** 摸進 [kind] 並打出最佳一張牌後，向聽數是否低於 [shanten]。 */
+    /**
+     * 摸進 [kind] 並打出最佳一張牌後，向聽數是否低於 [shanten]。
+     *
+     * @param hand 摸牌前的手牌。
+     * @param kind 假設摸進的正規化牌面。
+     * @param shanten 目前的向聽數。
+     * @return 是否至少前進一向聽。
+     */
     private fun advances(hand: Hand, kind: Tile, shanten: Int): Boolean {
         val drawn = hand.addTile(IdentifiedTile(Uuid.NIL, kind))
         return distinctDiscardIndices(drawn).any { shantenOf(drawn.withoutTileAt(it)) < shanten }
     }
 
-    /** 評估者以 [tile] 和牌的點數；依規則不能以此方式和牌時為 null。 */
+    /**
+     * 評估者以 [tile] 和牌的點數；依規則不能以此方式和牌時為 null。
+     *
+     * @param hand 和牌前的手牌。
+     * @param view 和牌時使用的假設局面。
+     * @param tile 自摸或榮和的牌面。
+     * @param isTsumo 是否以自摸方式和牌。
+     * @param declarations 假設和牌前已宣告的動作。
+     * @return 依資訊等級調整後的點數價值；規則判定不能和牌時為 null。
+     */
     private fun winValue(
         hand: Hand,
         view: HypotheticalView,
@@ -278,16 +340,31 @@ internal class HandAssessor(
         }
     }
 
-    /** 依 [InformationLevel.winValueDetail] 混合 [points] 與目前手牌的基準打點，再換算為名次考量後的價值。 */
+    /**
+     * 依 [InformationLevel.winValueDetail] 混合 [points] 與目前手牌的基準打點，再換算為名次考量後的價值。
+     *
+     * @param points 規則或對手模型提供的和牌點數估值。
+     * @return 依資訊等級與名次設定調整後的價值。
+     */
     private fun detailedValue(points: Double): Double {
         val detail = level.winValueDetail
         return placement.gain((1 - detail) * flatWinPoints + detail * points)
     }
 
-    /** 已快取的向聽計算。 */
+    /**
+     * 已快取的向聽計算。
+     *
+     * @param hand 要計算向聽數的手牌。
+     * @return 規則向聽計算器的結果。
+     */
     private fun shanten(hand: Hand): ShantenResult = shantenByHand.getOrPut(keyOf(hand)) { shantenCalculator.calculate(hand) }
 
-    /** [hand] 的快取鍵。 */
+    /**
+     * [hand] 的快取鍵。
+     *
+     * @param hand 要轉成快取鍵的手牌。
+     * @return 不包含識別碼、按牌面整理的手牌鍵。
+     */
     private fun keyOf(hand: Hand): HandKey = HandKey(
         tiles = hand.standingTiles.map { it.tile }.sortedWith(tileOrder),
         meldTypes = hand.melds.map { it.type },
@@ -295,8 +372,18 @@ internal class HandAssessor(
     )
 }
 
-/** 每種牌面各取第一張的位置，作為打出一張牌的候選。 */
+/**
+ * 每種牌面各取第一張的位置，作為打出一張牌的候選。
+ *
+ * @param hand 要列舉候選位置的手牌。
+ * @return 每種牌面各自第一張牌的索引。
+ */
 internal fun distinctDiscardIndices(hand: Hand): List<Int> = hand.tiles.withIndex().distinctBy { it.value.tile }.map { it.index }
 
-/** 拿掉第 [index] 張立牌後的手牌。 */
+/**
+ * 拿掉第 [index] 張立牌後的手牌。
+ *
+ * @param index 要移除的立牌索引。
+ * @return 不含該張牌的新手牌。
+ */
 internal fun Hand.withoutTileAt(index: Int): Hand = copy(tiles = tiles.filterIndexed { i, _ -> i != index })

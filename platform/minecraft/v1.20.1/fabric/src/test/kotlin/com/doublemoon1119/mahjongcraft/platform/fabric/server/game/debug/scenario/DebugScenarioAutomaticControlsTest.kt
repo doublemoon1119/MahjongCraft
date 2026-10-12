@@ -7,6 +7,7 @@ import kotlin.test.assertTrue
 
 /** 驗證情境載入不會讓本局自動操作的生命週期倒退。 */
 class DebugScenarioAutomaticControlsTest {
+    /** 提供自動操作情境的登錄表。 */
     private val registry = DebugGameScenarioRegistry()
 
     /** 載入沿用玩家已啟用的控制，版本號繼續往前一格。 */

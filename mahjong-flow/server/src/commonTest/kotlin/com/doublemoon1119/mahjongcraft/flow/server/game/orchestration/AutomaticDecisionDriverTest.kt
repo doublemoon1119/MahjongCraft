@@ -31,7 +31,7 @@ import kotlin.uuid.Uuid
 
 /** [AutomaticDecisionDriver] 的權威反應流程測試。 */
 class AutomaticDecisionDriverTest {
-    /** 二三四萬、四五六筒、七八九筒、中中中：補上二條對子即為聽二條的門前手牌，中提供役牌役。 */
+    /** 二三四萬、四五六筒、七八九筒、中中中；加上一張二條後單騎聽二條，中提供役牌役。 */
     private val yakuhaiHandTiles: List<Tile> = listOf(
         Tile.Numeric(Tile.Suit.Character, 2),
         Tile.Numeric(Tile.Suit.Character, 3),
@@ -235,7 +235,13 @@ class AutomaticDecisionDriverTest {
         Tile.Numeric(Tile.Suit.Bamboo, 3),
     ).map(FakeIdentifiedTileFactory::create)
 
-    /** 以這場對局的權威狀態與啟用控制建立 driver。 */
+    /**
+     * 以指定桌況與啟用控制建立自動決策解析器。
+     *
+     * @param state 欲保存於測試資料倉庫的桌況。
+     * @param enabledControlIds 各玩家啟用的自動操作識別碼。
+     * @return 使用正式規則與測試資料倉庫的解析器。
+     */
     private suspend fun createDriver(
         state: TableState,
         enabledControlIds: Map<Uuid, Set<String>>,

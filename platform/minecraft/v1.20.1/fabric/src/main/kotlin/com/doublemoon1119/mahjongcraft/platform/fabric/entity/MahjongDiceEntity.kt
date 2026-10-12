@@ -19,7 +19,12 @@ import net.minecraft.util.Hand
 import net.minecraft.world.World
 import kotlin.uuid.Uuid
 
-/** 可自由放置並保存朝上點數的麻將骰子 entity。 */
+/**
+ * 可自由放置並保存朝上點數的麻將骰子 entity。
+ *
+ * @param type Minecraft entity 類型。
+ * @param world 實體所屬世界。
+ */
 class MahjongDiceEntity(
     type: EntityType<out MahjongDiceEntity> = ModEntities.mahjongDice,
     world: World,
@@ -109,6 +114,12 @@ class MahjongDiceEntity(
      * 在點數落定後繼續維持「還在忙」一小段時間，給玩家看清楚點數的緩衝——這段緩衝過去是
      * `TablePresentationBusyTracker` 自己另外加總的，現在改成掛在骰子自己的佇列尾端；佇列播完（含
      * 這段緩衝）也正是 [tick] 判斷該自我 [discard] 的時機點，見該方法 KDoc。
+     *
+     * @param finalPoint 伺服器決定的最終朝上點數。
+     * @param seed 重建確定性動畫所用的亂數種子。
+     * @param startDelayTicks 動畫開始前等待的 tick 數。
+     * @param startOffset 玩家手部附近起點相對最終落點的位移。
+     * @param sharedViewingEndGameTime 可選的共用絕對觀看截止時間；未提供時使用單顆骰子的自然截止時間。
      */
     fun startRoll(
         finalPoint: MahjongDicePoint,
@@ -181,7 +192,11 @@ class MahjongDiceEntity(
 
     override fun deserializeCustomStep(nbt: NbtCompound): Nothing = error("MahjongDiceEntity never enqueues AnimationStep.Custom")
 
-    /** 將骰子標記為指定正式牌局桌子管理。 */
+    /**
+     * 將骰子標記為指定正式牌局桌子管理。
+     *
+     * @param tableId 所屬麻將桌 UUID。
+     */
     fun assignToTable(tableId: Uuid) {
         check(!world.isClient) { "Managed dice must be assigned by the server" }
         managedByGame = true

@@ -87,7 +87,7 @@ object ModEntities {
     lateinit var mahjongStoolSeat: EntityType<MahjongStoolSeatEntity>
         private set
 
-    /** 註冊不自然生成的輕量麻將牌 entity。 */
+    /** 註冊骰子、牌張、點棒、座位與各種呈現實體的類型；皆不自然生成。 */
     fun register() {
         mahjongSoundTimeline = Registry.register(
             Registries.ENTITY_TYPE,

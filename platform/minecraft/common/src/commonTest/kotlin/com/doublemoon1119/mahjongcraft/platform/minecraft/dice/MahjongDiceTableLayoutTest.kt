@@ -87,7 +87,16 @@ class MahjongDiceTableLayoutTest {
         assertEquals(northOffsetX, eastFacing.finalPosition.z - CONTROLLER_CENTER_Z, ABSOLUTE_TOLERANCE)
     }
 
-    /** 建立固定 controller、UUID 與可覆寫輸入的測試 placements。 */
+    /**
+     * 建立固定 controller、UUID 與可覆寫輸入的測試 placements。
+     *
+     * @param tableId 桌子 UUID。
+     * @param tableFacing 桌子的世界朝向。
+     * @param throwSide 擲骰起始側。
+     * @param rollSequence 擲骰序號。
+     * @param diceCount 骰子數量。
+     * @return 對應輸入的骰子桌面位置。
+     */
     private fun placements(
         tableId: Uuid = FIRST_TABLE_ID,
         tableFacing: MahjongTableFacing = MahjongTableFacing.NORTH,
@@ -107,10 +116,19 @@ class MahjongDiceTableLayoutTest {
 
     /** 固定 UUID、controller 中心與浮點容許誤差。 */
     private companion object {
+        /** 第一個測試桌子的固定 UUID。 */
         val FIRST_TABLE_ID: Uuid = Uuid.parse("00000000-0000-0000-0000-000000000001")
+
+        /** 第二個測試桌子的固定 UUID。 */
         val SECOND_TABLE_ID: Uuid = Uuid.parse("00000000-0000-0000-0000-000000000002")
+
+        /** 測試 controller 的世界 X 中心座標。 */
         const val CONTROLLER_CENTER_X: Double = 10.5
+
+        /** 測試 controller 的世界 Z 中心座標。 */
         const val CONTROLLER_CENTER_Z: Double = -3.5
+
+        /** 浮點座標比較所容許的最大絕對誤差。 */
         const val ABSOLUTE_TOLERANCE: Double = 1e-9
     }
 }

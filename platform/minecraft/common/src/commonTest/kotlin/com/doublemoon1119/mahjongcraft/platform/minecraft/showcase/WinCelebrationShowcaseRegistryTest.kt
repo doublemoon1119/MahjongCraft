@@ -124,6 +124,14 @@ class WinCelebrationShowcaseRegistryTest {
         assertFailsWith<IllegalStateException> { registry.register(definition()) }
     }
 
+    /**
+     * 建立測試展示定義。
+     *
+     * @param durationTicks 展示長度。
+     * @param cueKey 展示理由識別碼。
+     * @param pausesContinuingRound 展示期間是否暫停續局。
+     * @return 使用固定標題、貼圖與配色的展示定義。
+     */
     private fun definition(
         durationTicks: Int = 160,
         cueKey: String = "test:cue",

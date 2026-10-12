@@ -19,7 +19,11 @@ class StressTimeSeriesFile private constructor(
     private val historyMode: StressHistoryMode,
     private val writer: BufferedWriter,
 ) : AutoCloseable {
-    /** 寫入一列。 */
+    /**
+     * 寫入一列並立即 flush。
+     *
+     * @param row 要寫入的彙總資料。
+     */
     fun append(row: StressTimeSeriesRow) {
         writer.write(stressTimeSeriesCsvLine(scenarioId, pace, historyMode, row))
         writer.newLine()
@@ -34,6 +38,7 @@ class StressTimeSeriesFile private constructor(
          * @param scenarioId 對局情境識別碼。
          * @param pace 推進節奏。
          * @param historyMode 歷史處理方式。
+         * @return 已建立並寫入標題列的 CSV 檔案。
          */
         fun create(
             path: Path,

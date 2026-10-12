@@ -51,6 +51,10 @@ private const val UNREGISTERED_ACTION_ORDER: Int = Int.MAX_VALUE
  *
  * 動作卡在前並依固定顯示順序排列，「跳過」不佔卡片位置（由 header 右側的專屬按鈕負責）；開局準備的三種
  * 型態各自展開成確認、每個選項一張，或單一張選牌卡。
+ *
+ * @param texts 動作名稱、排序與說明的解析器。
+ * @param prompt 伺服器提供的目前決策提示。
+ * @return 依顯示順序排列、包含開局準備項目的卡片。
  */
 internal fun decisionEntriesFrom(texts: DecisionTextResolver, prompt: PlayerDecisionPromptDto): List<DecisionEntry> = buildList {
     prompt.actions.filterNot { it.actionId == PASS_ACTION_ID }

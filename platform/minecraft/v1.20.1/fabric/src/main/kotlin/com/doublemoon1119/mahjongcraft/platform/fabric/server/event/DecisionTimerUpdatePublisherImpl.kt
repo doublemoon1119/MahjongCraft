@@ -17,6 +17,7 @@ import kotlin.uuid.Uuid
  * [DecisionTimerUpdatePublisher] 的 Fabric S2C 實作。
  *
  * @property serverHolder 尋找目前在線的目標玩家。
+ * @property promptFactory 建立目標玩家可見的決策提示。
  * @property json 編碼計時 payload。
  */
 @Single(binds = [DecisionTimerUpdatePublisher::class])

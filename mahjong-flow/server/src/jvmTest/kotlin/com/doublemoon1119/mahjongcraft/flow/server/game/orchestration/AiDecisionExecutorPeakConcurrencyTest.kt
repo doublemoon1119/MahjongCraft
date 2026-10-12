@@ -66,7 +66,7 @@ class AiDecisionExecutorPeakConcurrencyTest {
         /** 執行策略的執行緒數。 */
         const val WORKER_THREADS = 4
 
-        /** 名額。 */
+        /** 策略工作可同時執行的容量上限。 */
         const val CAPACITY = 6
 
         /** 同時發出決策的呼叫端數。 */

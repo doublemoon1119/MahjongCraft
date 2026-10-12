@@ -51,6 +51,7 @@ class MahjongAchievementCriterion : AbstractCriterion<MahjongAchievementCriterio
     /**
      * 解析後的條件。
      *
+     * @param playerPredicate 原版進度系統的玩家條件。
      * @property condition 與 Minecraft 版本無關的條件內容。
      */
     class Conditions(
@@ -67,13 +68,21 @@ class MahjongAchievementCriterion : AbstractCriterion<MahjongAchievementCriterio
         }
     }
 
+    /** 進度條件識別碼與 JSON 欄位解析。 */
     companion object {
         /** 進度 JSON 引用此條件的 trigger ID。 */
         val ID: Identifier = Identifier(MinecraftModMetadata.MOD_ID, "mahjong_achievement")
 
+        /** 同次觸發必須達成的成果 ID 清單欄位。 */
         private const val ACHIEVEMENTS = "achievements"
+
+        /** 限定規則模組的欄位。 */
         private const val RULE = "rule"
+
+        /** 要檢查門檻的統計 ID 欄位。 */
         private const val STATISTIC = "statistic"
+
+        /** 統計值至少必須達到的門檻欄位。 */
         private const val AT_LEAST = "at_least"
 
         /**

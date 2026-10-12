@@ -282,7 +282,13 @@ object BuiltInMinecraftMahjongExtension : MinecraftMahjongExtension {
     }
 }
 
-/** 只在本局有效的內建自動操作的顯示設定；名稱與說明的 translation key 由 [translationId] 組成。 */
+/**
+ * 只在本局有效的內建自動操作的顯示設定；名稱與說明的 translation key 由 [translationId] 組成。
+ *
+ * @param translationId 名稱與說明翻譯鍵使用的識別片段。
+ * @param displayOrder 自動操作在清單中的排序值。
+ * @return 對應本局自動操作的顯示設定。
+ */
 private fun roundControlDisplay(translationId: String, displayOrder: Int): AutomaticControlDisplay {
     val prefix = "mahjongcraft.automatic_control.$translationId"
     return AutomaticControlDisplay(prefix, "$prefix.description", displayOrder)

@@ -42,6 +42,9 @@ internal data class HorizontalScrollLayout(
      *
      * 高 GUI scale 搭配小解析度時 [viewportWidth] 可能比 [minimumThumbWidth] 還窄，此時最小寬度本身必須
      * 先讓給可見寬度，否則下界會大於上界。
+     *
+     * @param scroll 目前水平捲動量，應介於 0 與 [maximumScroll] 之間；此方法不限制輸入範圍。
+     * @return 滑塊左右邊界。
      */
     fun thumb(scroll: Double): HorizontalScrollThumb {
         val thumbWidth = if (maximumScroll <= 0.0 || contentWidth <= 0) {
@@ -56,19 +59,38 @@ internal data class HorizontalScrollLayout(
         return HorizontalScrollThumb(left, left + thumbWidth)
     }
 
-    /** 將 thumb 左界換算回捲動量，供直接點擊軌道或拖曳使用。 */
+    /**
+     * 將滑塊左界換算回捲動量，供直接點擊軌道或拖曳使用。
+     *
+     * @param thumbLeft 預期的滑塊左界，超出軌道的部分會限制在合法範圍內。
+     * @param scroll 用於取得目前滑塊寬度的捲動量。
+     * @return 對應的水平捲動量。
+     */
     fun scrollFromThumbLeft(thumbLeft: Double, scroll: Double = 0.0): Double {
         val travel = (viewportWidth - thumb(scroll).width).coerceAtLeast(1)
         val relative = (thumbLeft - viewportLeft).coerceIn(0.0, travel.toDouble())
         return relative / travel * maximumScroll
     }
 
-    /** 依拖曳的游標位移計算新的捲動量。 */
+    /**
+     * 依拖曳的游標位移計算新的捲動量。
+     *
+     * @param startScroll 拖曳開始時的捲動量。
+     * @param pointerDelta 游標相對拖曳起點的水平位移；正值向右。
+     * @return 限制在合法範圍內的新捲動量。
+     */
     fun scrollFromDrag(startScroll: Double, pointerDelta: Double): Double {
         val travel = (viewportWidth - thumb(startScroll).width).coerceAtLeast(1)
         return (startScroll + pointerDelta / travel * maximumScroll).coerceIn(0.0, maximumScroll)
     }
 
-    /** 依滾輪量與該畫面的步進距離計算新的捲動量。 */
+    /**
+     * 依滾輪量與畫面指定的步進距離計算新的捲動量。
+     *
+     * @param currentScroll 目前捲動量。
+     * @param amount 滾輪位移；正值減少捲動量。
+     * @param step 每單位滾輪位移對應的像素距離。
+     * @return 限制在合法範圍內的新捲動量。
+     */
     fun scrollFromWheel(currentScroll: Double, amount: Double, step: Double): Double = (currentScroll - amount * step).coerceIn(0.0, maximumScroll)
 }

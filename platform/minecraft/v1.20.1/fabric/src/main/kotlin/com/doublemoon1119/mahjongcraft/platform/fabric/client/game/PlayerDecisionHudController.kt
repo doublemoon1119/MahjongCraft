@@ -121,12 +121,26 @@ class PlayerDecisionHudController(
         client.setScreen(PlayerDecisionScreen(prompt, timerStore.state?.phase?.isReaction == true, this))
     }
 
-    /** 操作介面被 Esc 收起時保留 prompt，改顯示等待提醒。 */
+    /**
+     * 操作介面被 Esc 收起時保留提示，改顯示等待提醒。
+     *
+     * @param decisionKey 被收起的決策識別碼。
+     */
     fun dismiss(decisionKey: String) {
         dismissedDecisionKey = decisionKey
     }
 
-    /** 讓操作 screen 使用與其他 HUD／showcase 相同的牌面及角落標籤 renderer。 */
+    /**
+     * 讓操作畫面使用與其他 HUD 及牌面展示相同的繪製器。
+     *
+     * @param context 繪製環境。
+     * @param assetKey 牌面素材識別碼。
+     * @param x 牌面左界。
+     * @param y 牌面上界。
+     * @param tileWidth 牌面寬度。
+     * @param tileHeight 牌面高度。
+     * @param orientation 牌面朝向。
+     */
     fun renderTileFace(
         context: DrawContext,
         assetKey: String,
@@ -142,7 +156,13 @@ class PlayerDecisionHudController(
     /** 取得目前已套用的 HUD 配置。 */
     fun hudLayout() = configStore.current.hudLayout
 
-    /** 傳送一個以目前 decision key 約束的受控選擇。 */
+    /**
+     * 傳送以決策識別碼約束的最終選擇；已有待確認提交時不重複送出。
+     *
+     * @param prompt 選擇所屬的權威決策提示。
+     * @param kind 選擇種類。
+     * @param token 動作或開局準備選項的識別；不需要時為 null。
+     */
     fun submit(prompt: PlayerDecisionPromptDto, kind: PlayerDecisionSelectionKindDto, token: String? = null) {
         sendFinalSelection(prompt, kind, token, emptyList())
     }
@@ -151,6 +171,9 @@ class PlayerDecisionHudController(
      * 明確點擊帶有選牌需求的動作卡片後，進入實體牌選取模式並啟用合法候選牌高亮；只有
      * `maxCount > 1` 才通知伺服器生成確認面板（[PlayerDecisionSelectionKindDto.BEGIN_TILE_SELECTION]）
      * ——`maxCount == 1` 維持右鍵合法牌直接自動送出，不需要面板。
+     *
+     * @param prompt 動作所屬的權威決策提示。
+     * @param action 帶有選牌需求的動作。
      */
     fun beginActionTileSelection(prompt: PlayerDecisionPromptDto, action: PlayerDecisionActionDto) {
         val request = tileSelection.beginAction(action)
@@ -160,7 +183,11 @@ class PlayerDecisionHudController(
         if (request != null) sendBeginTileSelection(prompt, request)
     }
 
-    /** 玩家明確跳過自己回合的特殊動作後，進入普通實體出牌模式。 */
+    /**
+     * 玩家明確跳過自己回合的特殊動作後，進入普通實體出牌模式。
+     *
+     * @param prompt 目前自己回合的決策提示。
+     */
     fun beginDirectDiscard(prompt: PlayerDecisionPromptDto) {
         tileSelection.beginDirectDiscard(prompt.decisionKey)
         dismissedDecisionKey = prompt.decisionKey
@@ -176,6 +203,8 @@ class PlayerDecisionHudController(
     /**
      * 進入實體手牌 preparation 選取模式；只有 `maxCount > 1` 才通知伺服器生成確認面板，理由同
      * [beginActionTileSelection]。
+     *
+     * @param prompt 帶有開局準備選牌需求的決策提示。
      */
     fun beginPreparationTileSelection(prompt: PlayerDecisionPromptDto) {
         val request = tileSelection.beginPreparation(prompt)
@@ -184,7 +213,12 @@ class PlayerDecisionHudController(
         if (request != null) sendBeginTileSelection(prompt, request)
     }
 
-    /** 右鍵一張管理中手牌；回傳是否已被進行中的選牌情境消化。 */
+    /**
+     * 將右鍵牌面交給目前選牌狀態處理。
+     *
+     * @param entity 被右鍵的麻將牌實體。
+     * @return 是否已處理此互動；沒有決策提示時為 false。
+     */
     private fun toggleTile(entity: MahjongTileEntity): Boolean {
         val prompt = promptStore.prompt ?: return false
         return applyOutcome(prompt, tileSelection.toggle(prompt, entity.uuid.toString(), promptStore.isTileSelectionActive()))
@@ -193,7 +227,12 @@ class PlayerDecisionHudController(
     /** 目前選牌是否落在合法範圍內、右鍵確認面板會不會真的送出；沒有進行中的選牌時回傳 `null`。 */
     fun currentTileSelectionConfirmable(): Boolean? = currentTileSelectionProgress()?.let { it.selectedCount in it.validRange }
 
-    /** 進行中動作選牌所屬動作的說明；沒有進行中的動作選牌或該動作沒有說明時回傳 `null`。 */
+    /**
+     * 取得目前動作選牌的說明。
+     *
+     * @param prompt 用於尋找目前選牌動作的決策提示。
+     * @return 動作說明；沒有對應動作或說明時為 null。
+     */
     private fun activeActionDescription(prompt: PlayerDecisionPromptDto): Text? {
         val token = tileSelection.activeActionToken ?: return null
         val action = prompt.actions.firstOrNull { it.token == token } ?: return null
@@ -207,8 +246,10 @@ class PlayerDecisionHudController(
     }
 
     /**
-     * 右鍵多選確認面板：只有本機玩家就是這個面板的 [MahjongTileSelectionConfirmEntity.holderId] 才處理。
-     * 回傳 `false`（面板不屬於本機玩家、或本機目前根本不在任何選牌情境）時，呼叫端應讓事件正常往下傳遞。
+     * 處理右鍵多選確認面板；沒有待確認提交時，只處理屬於本機玩家的面板。
+     *
+     * @param entity 被右鍵的確認面板。
+     * @return 是否消費互動；已有待確認提交時直接消費，其他未處理情況回傳 false 供事件繼續傳遞。
      */
     private fun confirmTileSelection(entity: MahjongTileSelectionConfirmEntity): Boolean {
         if (submissionTracker.isPending()) return true
@@ -218,7 +259,13 @@ class PlayerDecisionHudController(
         return applyOutcome(prompt, tileSelection.confirm(prompt, promptStore.isTileSelectionActive()))
     }
 
-    /** 送出狀態機要求的最終選擇，並回傳這次互動是否已被消化。 */
+    /**
+     * 送出選牌狀態機要求的最終選擇。
+     *
+     * @param prompt 選擇所屬的決策提示。
+     * @param outcome 選牌狀態機的處理結果。
+     * @return 狀態機是否已消費互動，不代表封包已成功送出。
+     */
     private fun applyOutcome(prompt: PlayerDecisionPromptDto, outcome: DecisionTileSelectionState.Outcome): Boolean = when (outcome) {
         DecisionTileSelectionState.Outcome.Ignored -> false
         is DecisionTileSelectionState.Outcome.Consumed -> {
@@ -227,12 +274,24 @@ class PlayerDecisionHudController(
         }
     }
 
-    /** 通知伺服器為需要多選的情境生成確認面板。 */
+    /**
+     * 通知伺服器為需要多選的情境生成確認面板。
+     *
+     * @param prompt 選牌所屬的決策提示。
+     * @param request 選牌狀態機產生的開始要求。
+     */
     private fun sendBeginTileSelection(prompt: PlayerDecisionPromptDto, request: DecisionTileSelectionState.BeginRequest) {
         sendSelection(prompt, PlayerDecisionSelectionKindDto.BEGIN_TILE_SELECTION, request.token, emptyList())
     }
 
-    /** 送出一個以目前 decision key 約束的受控選擇，不觸發 [submit] 額外的關閉面板／dismiss 副作用。 */
+    /**
+     * 傳送不追蹤最終提交確認的選擇；沒有有效遊戲計時狀態時不送出。
+     *
+     * @param prompt 選擇所屬的決策提示。
+     * @param kind 選擇種類。
+     * @param token 動作識別；不需要時為 null。
+     * @param tileIds 選取的牌實體 UUID 字串。
+     */
     private fun sendSelection(prompt: PlayerDecisionPromptDto, kind: PlayerDecisionSelectionKindDto, token: String?, tileIds: List<String>) {
         val gameId = timerStore.state?.gameId ?: return
         MahjongChannels.decisionSelection.sendToServer(
@@ -241,7 +300,15 @@ class PlayerDecisionHudController(
         )
     }
 
-    /** 送出具有唯一 ID 的最終選擇，並在收到 ACK 前保留所有畫面與實體選牌狀態。 */
+    /**
+     * 傳送具有唯一識別碼的最終選擇，並保留選牌狀態等待伺服器確認或權威決策更新。
+     * 已有待確認提交或沒有有效遊戲計時狀態時不送出。
+     *
+     * @param prompt 選擇所屬的決策提示。
+     * @param kind 選擇種類。
+     * @param token 動作或準備選項識別；不需要時為 null。
+     * @param tileIds 選取的牌實體 UUID 字串。
+     */
     private fun sendFinalSelection(
         prompt: PlayerDecisionPromptDto,
         kind: PlayerDecisionSelectionKindDto,
@@ -259,7 +326,11 @@ class PlayerDecisionHudController(
         (MinecraftClient.getInstance().currentScreen as? PlayerDecisionScreen)?.refreshSubmissionState()
     }
 
-    /** 套用 server ACK；過期或不屬於目前提交的回覆一律忽略。 */
+    /**
+     * 套用伺服器提交確認；過期或不屬於目前提交的回覆忽略。
+     *
+     * @param result 伺服器回傳的提交結果。
+     */
     fun handleSubmissionResult(result: PlayerDecisionSubmissionResultDto) {
         if (submissionTracker.acknowledge(result) == AcknowledgementEffect.UNLOCKED) {
             (MinecraftClient.getInstance().currentScreen as? PlayerDecisionScreen)?.refreshSubmissionState()
@@ -272,10 +343,19 @@ class PlayerDecisionHudController(
         clearLocalDecisionState()
     }
 
-    /** 是否正等待目前 decision 的最終提交結果。 */
+    /**
+     * 判斷指定決策是否仍在等待最終提交結果。
+     *
+     * @param decisionKey 要查詢的決策識別碼。
+     * @return 是否有屬於該決策的待確認提交。
+     */
     fun isSubmissionPending(decisionKey: String): Boolean = submissionTracker.isPending(decisionKey)
 
-    /** 新 prompt 第一次出現時自動開啟；普通出牌回合只保留精簡倒數。 */
+    /**
+     * 同步選牌與提交狀態，並在新的可互動提示首次出現且沒有其他畫面時自動開啟。
+     *
+     * @param client 目前客戶端。
+     */
     private fun tick(client: MinecraftClient) {
         syncSelectionHighlights(client)
         val prompt = promptStore.prompt
@@ -311,10 +391,9 @@ class PlayerDecisionHudController(
     }
 
     /**
-     * 逐 tick 依 [DecisionTileSelectionState.highlightedTileIds] 同步管理中手牌的本地選取發光——先清除
-     * 所有管理中手牌的選取發光，再對目前選取集合套用，比照 [MatchingTileHighlightController] 的「先清除
-     * 再重算」手法，不用在每個新增／移除選取的分支各自手動維護高亮狀態，也不怕漏掉某條重置路徑
-     * （decisionKey 改變、prompt 消失等）忘記清除。
+     * 每個客戶端 tick 重新核對世界中的麻將牌實體：選取集合內套用描邊，其餘清除選取描邊。
+     *
+     * @param client 提供目前世界與牌實體的客戶端。
      */
     private fun syncSelectionHighlights(client: MinecraftClient) {
         val selectedIds = tileSelection.highlightedTileIds()
@@ -328,7 +407,11 @@ class PlayerDecisionHudController(
         }
     }
 
-    /** 在原版聊天欄之前繪製被動提示，讓聊天背景保有自然的半透明覆蓋效果。 */
+    /**
+     * 在原版聊天欄之前繪製被動提示；隱藏 HUD 或編輯 HUD 位置時不繪製。
+     *
+     * @param context 本幀繪製環境。
+     */
     private fun renderBeforeChat(context: DrawContext) {
         val client = MinecraftClient.getInstance()
         if (client.options.hudHidden) return
@@ -340,7 +423,11 @@ class PlayerDecisionHudController(
         if (client.currentScreen == null) renderHandAnalysis(context, promptStore.prompt, client.crosshairTarget)
     }
 
-    /** 繪製一般遊戲畫面與聊天畫面共用的等待提示及倒數；正在多選選牌時改顯示選牌進度提示。 */
+    /**
+     * 繪製共用的等待提示及倒數；正在選牌時改顯示選牌進度。
+     *
+     * @param context 本幀繪製環境。
+     */
     private fun renderCompactDecisionHud(context: DrawContext) {
         val client = MinecraftClient.getInstance()
         if (!configStore.current.presentationVisibility.compactPromptEnabled) return
@@ -364,7 +451,15 @@ class PlayerDecisionHudController(
         )
     }
 
-    /** 依 [content] 與 [timerParts] 在 [ratioX]、[ratioY] 的位置畫出精簡 HUD；HUD 位置編輯器的預覽也使用這裡。 */
+    /**
+     * 在指定位置畫出精簡 HUD；HUD 位置編輯器的預覽也使用此方法。
+     *
+     * @param context 繪製環境。
+     * @param content 精簡提示內容。
+     * @param timerParts 倒數文字片段。
+     * @param ratioX 水平位置比例。
+     * @param ratioY 垂直位置比例。
+     */
     internal fun renderCompactHud(
         context: DrawContext,
         content: CompactDecisionHudContent,
@@ -404,7 +499,16 @@ class PlayerDecisionHudController(
         }
     }
 
-    /** [content] 在指定畫面上的精簡 HUD 版位；說明行數依實際換行結果計算。 */
+    /**
+     * 計算精簡 HUD 版位；說明行數依實際換行結果計算。
+     *
+     * @param screenWidth 畫面寬度。
+     * @param screenHeight 畫面高度。
+     * @param content 精簡提示內容。
+     * @param ratioX 水平位置比例。
+     * @param ratioY 垂直位置比例。
+     * @return 精簡 HUD 的版面資訊。
+     */
     internal fun compactHudLayout(
         screenWidth: Int,
         screenHeight: Int,
@@ -420,24 +524,45 @@ class PlayerDecisionHudController(
         descriptionLineCount = compactDescriptionLines(content, screenWidth).size,
     )
 
-    /** 選牌進度提示的動作說明依精簡 HUD 寬度換行後的每一行；其他內容沒有說明。 */
+    /**
+     * 將選牌進度的動作說明依精簡 HUD 寬度換行。
+     *
+     * @param content 精簡提示內容。
+     * @param screenWidth 畫面寬度，用於限制換行寬度。
+     * @return 說明文字行；非選牌進度或沒有說明時為空清單。
+     */
     private fun compactDescriptionLines(content: CompactDecisionHudContent, screenWidth: Int) = (content as? CompactDecisionHudContent.TileSelection)?.description
         ?.let { MinecraftClient.getInstance().textRenderer.wrapLines(it, CompactDecisionHudLayout.GROUP_WIDTH.coerceAtMost(screenWidth)) }
         .orEmpty()
 
-    /** 繪製精簡 HUD 倒數上方的兩行提示。 */
+    /**
+     * 繪製精簡 HUD 倒數上方的兩行提示。
+     *
+     * @param context 繪製環境。
+     * @param layout 精簡 HUD 的版面資訊。
+     * @param title 第一行提示。
+     * @param detail 第二行提示。
+     */
     private fun renderCompactLines(context: DrawContext, layout: CompactDecisionHudLayout, title: Text, detail: Text) {
         val renderer = MinecraftClient.getInstance().textRenderer
         context.drawCenteredTextWithShadow(renderer, title, layout.centerX, layout.groupTop, COMPACT_HUD_TITLE_COLOR)
         context.drawCenteredTextWithShadow(renderer, detail, layout.centerX, layout.detailTextTop, COMPACT_HUD_DETAIL_COLOR)
     }
 
-    /** 玩家已明確進入實體牌選擇階段時，不再顯示「重新開啟操作介面」提醒。 */
+    /**
+     * 判斷玩家是否已進入目前決策的實體選牌階段。
+     *
+     * @param prompt 目前決策提示。
+     * @return 是否處於實體選牌階段，供呼叫端決定是否隱藏重新開啟提醒。
+     */
     private fun isPhysicalSelectionActive(prompt: PlayerDecisionPromptDto): Boolean = tileSelection.isPhysicalSelectionActive(prompt.decisionKey, promptStore.isTileSelectionActive())
 
     /**
      * 在一般 HUD 或操作畫面的最上層繪製同一份權威倒數，避免被 Screen 背景遮住。
      *
+     * @param context 繪製環境。
+     * @param y 倒數文字上界。
+     * @param centerX 倒數文字水平中心。
      * @param scale 文字縮放；單獨顯示的精簡倒數放大以便辨識，操作面板標題列內與標題同尺寸。
      */
     fun renderTimerOverlay(
@@ -450,7 +575,12 @@ class PlayerDecisionHudController(
         context.drawDecisionTimer(MinecraftClient.getInstance().textRenderer, parts, y, centerX, scale)
     }
 
-    /** 目前倒數以 [scale] 縮放後的畫面寬度；沒有有效計時時為 null。 */
+    /**
+     * 量測目前倒數文字縮放後的寬度。
+     *
+     * @param scale 文字縮放比例。
+     * @return 倒數寬度；沒有有效計時時為 null。
+     */
     fun timerOverlayWidth(scale: Float = TIMER_SCALE): Int? = currentTimerParts()?.let { parts ->
         decisionTimerWidth(MinecraftClient.getInstance().textRenderer, parts, scale)
     }
@@ -464,7 +594,13 @@ class PlayerDecisionHudController(
         )
     }
 
-    /** 優先依準星指向的手牌 UUID 顯示捨牌後預測，沒有合法候選時顯示目前手牌的權威分析。 */
+    /**
+     * 優先依準星指向的手牌 UUID 顯示捨牌後預測，沒有合法候選時顯示目前手牌的權威分析。
+     *
+     * @param context 繪製環境。
+     * @param prompt 目前決策提示，沒有時為 null。
+     * @param hit 準星命中結果，沒有時為 null。
+     */
     private fun renderHandAnalysis(context: DrawContext, prompt: PlayerDecisionPromptDto?, hit: HitResult?) {
         if (!configStore.current.presentationVisibility.discardAnalysisEnabled) return
         val pointedTile = (hit as? EntityHitResult)?.entity as? MahjongTileEntity
@@ -491,6 +627,12 @@ class PlayerDecisionHudController(
      *
      * 欄寬與狀態列寬度都依實際文字寬度動態計算：前者避免不同語系下的剩餘張數與和牌資格文字互相碰撞，
      * 後者讓較長的狀態列不會超出面板背景。
+     *
+     * @param screenWidth 畫面寬度。
+     * @param screenHeight 畫面高度。
+     * @param content 手牌分析內容。
+     * @param ratioY 垂直位置比例。
+     * @return 手牌分析面板的版面資訊。
      */
     internal fun analysisLayout(
         screenWidth: Int,
@@ -517,7 +659,13 @@ class PlayerDecisionHudController(
         )
     }
 
-    /** 在 [ratioY] 的位置畫出 [content] 的手牌分析面板；HUD 位置編輯器的預覽也使用這裡。 */
+    /**
+     * 在指定位置畫出手牌分析面板；HUD 位置編輯器的預覽也使用此方法。
+     *
+     * @param context 繪製環境。
+     * @param content 手牌分析內容。
+     * @param ratioY 垂直位置比例。
+     */
     internal fun renderAnalysisPanel(context: DrawContext, content: DiscardAnalysisContent, ratioY: Double) {
         val renderer = MinecraftClient.getInstance().textRenderer
         val layout = analysisLayout(context.scaledWindowWidth, context.scaledWindowHeight, content, ratioY)
@@ -551,12 +699,17 @@ class PlayerDecisionHudController(
         }
     }
 
+    /** 提供 HUD 橋接入口與共用繪製常數。 */
     companion object {
         /** 由客戶端初始化後提供給版本限定 mixin 的唯一 controller。 */
         @Volatile
         private var activeController: PlayerDecisionHudController? = null
 
-        /** Minecraft 1.20.1 缺少可排序 HUD layer API，故由精準 mixin 在聊天欄前呼叫。 */
+        /**
+         * 供聊天欄前方的 mixin 繪製被動 HUD；尚未註冊控制器時不繪製。
+         *
+         * @param context 繪製環境。
+         */
         @JvmStatic
         fun renderPassiveHudBeforeChat(context: DrawContext) {
             activeController?.renderBeforeChat(context)
@@ -566,12 +719,25 @@ class PlayerDecisionHudController(
         @JvmStatic
         fun isTileSelectionConfirmable(): Boolean? = activeController?.currentTileSelectionConfirmable()
 
+        /** 單獨顯示倒數時的文字縮放比例。 */
         private const val TIMER_SCALE = 1.5f
+
+        /** 精簡提示標題的 RGB 色值。 */
         private const val COMPACT_HUD_TITLE_COLOR = 0xFFD54F
+
+        /** 精簡提示細節的 RGB 色值。 */
         private const val COMPACT_HUD_DETAIL_COLOR = 0xFFFFFF
+
+        /** 手牌分析面板背景的 ARGB 色值。 */
         private const val ANALYSIS_PANEL_BACKGROUND = 0xCC101820.toInt()
+
+        /** 手牌分析狀態文字的 RGB 色值。 */
         private const val ANALYSIS_STATUS_COLOR = 0xFF6B6B
+
+        /** 和牌資格文字的 RGB 色值。 */
         private const val ANALYSIS_AVAILABILITY_COLOR = 0xFFB05A
+
+        /** 手牌分析分隔線的 ARGB 色值。 */
         private const val ANALYSIS_DIVIDER_COLOR = 0x66708088
 
         /**
@@ -583,7 +749,11 @@ class PlayerDecisionHudController(
 }
 
 /**
- * 取得目前動作選牌情境的捨牌分析；該動作沒有專屬分析或已離開選牌情境時，沿用 prompt 的一般分析。
+ * 取得指定動作的捨牌分析；動作不存在或沒有專屬分析時，沿用提示的一般分析。
+ * 此函式不判斷目前是否仍在選牌情境。
+ *
+ * @param actionToken 要尋找的動作識別；null 時使用一般分析。
+ * @return 動作專屬分析或一般分析清單。
  */
 internal fun PlayerDecisionPromptDto.discardAnalysesForAction(actionToken: String?) = actionToken
     ?.let { token -> actions.firstOrNull { it.token == token } }

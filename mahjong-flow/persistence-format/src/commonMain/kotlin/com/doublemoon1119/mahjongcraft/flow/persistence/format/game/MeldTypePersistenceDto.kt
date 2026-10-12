@@ -39,10 +39,5 @@ sealed interface MeldTypePersistenceDto {
      */
     @Serializable
     @SerialName("extension")
-    /**
-     * Extension 的 persistence 資料型別。
-     *
-     * @property typeId 第三方型別的穩定識別碼。
-     */
     data class Extension(val typeId: String) : MeldTypePersistenceDto
 }

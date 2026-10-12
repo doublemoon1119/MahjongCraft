@@ -15,16 +15,21 @@ import org.koin.core.annotation.Single
 import kotlin.coroutines.CoroutineContext
 import kotlin.time.Duration
 
-/** 可隨 integrated/dedicated server session 重新建立工作的 Fabric 應用協程作用域。 */
+/**
+ * 隨單人或專用伺服器啟動週期重新建立工作的 Fabric 應用協程作用域。
+ *
+ * @property dispatchers 提供預設工作 dispatcher 的平台 dispatcher 集合。
+ */
 @Single(binds = [AppCoroutineScope::class])
 class FabricAppCoroutineScope(
     private val dispatchers: CoroutineDispatchers,
 ) : AppCoroutineScope {
     /**
-     * 兜底記錄未被個別呼叫端攔截的協程例外；[SupervisorJob] 下每個 child 各自獨立，這裡不會影響
-     *  其他任務繼續執行，純粹是最後一道防線的 log。 */
+     * 記錄未被個別呼叫端攔截的協程例外；各子工作由 [SupervisorJob] 隔離失敗。
+     */
     private val logger = mahjongCraftLogger(FabricAppCoroutineScope::class)
 
+    /** 目前伺服器啟動週期所用的協程情境。 */
     @Volatile
     private var sessionContext: CoroutineContext = newContext()
 
@@ -46,14 +51,12 @@ class FabricAppCoroutineScope(
     }
 
     /**
-     * 不加 `@Synchronized`：掛起函式裡面呼叫 [withTimeoutOrNull]／[Job.join] 這種真正會掛起的呼叫，
-     * 不能包在 synchronized 區塊裡（會在掛起期間持有 monitor，Kotlin 編譯器本來就禁止這樣寫）。
-     * 這裡只讀取 [sessionContext] 一次取得目前的 [Job]，不修改欄位本身，跟 [coroutineContext] 這個
-     * getter 一樣不需要跟 [startSession]／[cancel] 互斥。
+     * 等待呼叫時的伺服器工作結束，最多等待 [timeout]，之後取消該週期尚未完成的工作。
      *
-     * [newContext] 放進去的一定是 [SupervisorJob] 建立的 [CompletableJob]（`complete()` 定義在
-     * [CompletableJob]，不在 [Job] 本身），從 [CoroutineContext] 用 `[Job]` 拿回來的靜態型別只有
-     * [Job]，所以這裡轉型還原——執行期一定成立，拿不到才代表 context 本身有問題，直接放棄。
+     * 僅讀取一次 [sessionContext]，不在等待期間持有同步鎖。呼叫端必須先停止啟動新工作；
+     * 此方法不保證拒絕關閉期間新增的子工作。若情境中沒有 [CompletableJob]，直接返回。
+     *
+     * @param timeout 等待工作完成的最長時間。
      */
     override suspend fun shutdown(timeout: Duration) {
         val job = sessionContext[Job] as? CompletableJob ?: return
@@ -63,11 +66,12 @@ class FabricAppCoroutineScope(
     }
 
     /**
-     * 建立使用平台預設 dispatcher 且彼此錯誤隔離的新 session context。
+     * 建立使用平台預設排程器、以 [SupervisorJob] 隔離子工作失敗的協程情境。
      *
-     * 掛上 [CoroutineExceptionHandler] 當作最後一道防線——個別呼叫端（例如[MahjongTableGameActionService]／[FabricDecisionTimerScheduler]）
-     * 已經在自己的呼叫路徑上攔截並記錄例外；這裡只處理任何遺漏、沒有各自 try/catch 的
-     * `scope.launch { ... }`，避免例外完全不留 log 就讓協程靜默死掉。
+     * [CoroutineExceptionHandler] 記錄未由呼叫端處理的例外，例如
+     * [MahjongTableGameActionService] 或 [FabricDecisionTimerScheduler] 未自行攔截的失敗。
+     *
+     * @return 包含工作、預設排程器與例外處理器的新情境。
      */
     private fun newContext(): CoroutineContext = SupervisorJob() +
         dispatchers.default +

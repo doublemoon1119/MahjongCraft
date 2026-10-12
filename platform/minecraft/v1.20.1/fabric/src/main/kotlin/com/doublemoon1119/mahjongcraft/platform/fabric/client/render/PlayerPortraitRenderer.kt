@@ -39,7 +39,19 @@ class PlayerPortraitRenderer(
     private val warnedProviderIds = mutableSetOf<String>()
     private val tileTextures = mutableMapOf<String, Identifier>()
 
-    /** 將宣告式來源繪製於正方形 slot；牌面會保持 3:4 比例並水平置中。 */
+    /**
+     * 將宣告式頭像來源繪製於世界空間的正方形 slot；牌面保持 3:4 比例並水平置中。
+     *
+     * @param playerId 頭像所屬玩家 ID。
+     * @param isAi 玩家是否為 AI，影響內建 fallback。
+     * @param x slot 左上角 X 座標。
+     * @param y slot 左上角 Y 座標。
+     * @param size slot 邊長。
+     * @param alpha 顯示透明度。
+     * @param z 局部深度。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供頭像頂點緩衝。
+     */
     fun render(
         playerId: Uuid,
         isAi: Boolean,
@@ -141,6 +153,19 @@ class PlayerPortraitRenderer(
         }
     }
 
+    /**
+     * 依已解析來源選擇世界空間的皮膚、牌面或自訂貼圖區域。
+     *
+     * @param source 已解析的頭像來源。
+     * @param playerId 頭像所屬玩家 ID。
+     * @param x slot 左上角 X 座標。
+     * @param y slot 左上角 Y 座標。
+     * @param size slot 邊長。
+     * @param alpha 顯示透明度。
+     * @param z 局部深度。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供頭像頂點緩衝。
+     */
     private fun renderSource(
         source: PlayerPortraitSource,
         playerId: Uuid,
@@ -163,6 +188,18 @@ class PlayerPortraitRenderer(
         )
     }
 
+    /**
+     * 解析並繪製真人玩家的原生皮膚臉部區域。
+     *
+     * @param playerId 玩家 ID。
+     * @param x slot 左上角 X 座標。
+     * @param y slot 左上角 Y 座標。
+     * @param size slot 邊長。
+     * @param alpha 顯示透明度。
+     * @param z 局部深度。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供頭像頂點緩衝。
+     */
     private fun renderSkin(
         playerId: Uuid,
         x: Float,
@@ -180,6 +217,24 @@ class PlayerPortraitRenderer(
         renderRegion(texture, x, y, size, size, alpha, z, 8f / 64f, 8f / 64f, 16f / 64f, 16f / 64f, true, matrices, consumers)
     }
 
+    /**
+     * 以指定 UV 範圍繪製貼圖矩形。
+     *
+     * @param texture 要繪製的貼圖識別碼。
+     * @param x 矩形左側 X 座標。
+     * @param y 矩形上側 Y 座標。
+     * @param width 矩形寬度。
+     * @param height 矩形高度。
+     * @param alpha 顯示透明度。
+     * @param z 局部深度。
+     * @param u0 UV 左側起點。
+     * @param v0 UV 上側起點。
+     * @param u1 UV 右側終點。
+     * @param v1 UV 下側終點。
+     * @param usesEntityLayer 是否使用含 overlay/normal 的 entity render layer。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供貼圖頂點緩衝。
+     */
     private fun renderRegion(
         texture: Identifier,
         x: Float,
@@ -214,6 +269,12 @@ class PlayerPortraitRenderer(
         vertex(x, y + height, u0, v1)
     }
 
+    /**
+     * 解析牌面貼圖，並快取結果；資源不存在時使用 unknown 牌面。
+     *
+     * @param assetKey 牌面資產 key。
+     * @return 可用的貼圖識別碼。
+     */
     private fun resolveTileTexture(assetKey: String): Identifier = tileTextures.getOrPut(assetKey) {
         val requested = Identifier(MinecraftModMetadata.MOD_ID, tileTextureAssetPath(assetKey))
         if (MinecraftClient.getInstance().resourceManager.getResource(requested).isPresent) {
@@ -223,6 +284,12 @@ class PlayerPortraitRenderer(
         }
     }
 
+    /**
+     * 取得內建頭像 fallback：AI 使用牌背，真人使用玩家皮膚。
+     *
+     * @param isAi 玩家是否為 AI。
+     * @return 對應類型的內建頭像來源。
+     */
     private fun fallbackSource(isAi: Boolean): PlayerPortraitSource = if (isAi) {
         PlayerPortraitSource.TileFace(UNKNOWN_TILE_ASSET_KEY)
     } else {

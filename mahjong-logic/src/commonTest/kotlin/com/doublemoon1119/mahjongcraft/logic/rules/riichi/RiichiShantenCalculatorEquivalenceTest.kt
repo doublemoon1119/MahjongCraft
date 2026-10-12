@@ -18,7 +18,10 @@ import kotlin.test.Test
  * 結果包含是否和牌、向聽數，以及聽牌列表的內容與順序。
  */
 class RiichiShantenCalculatorEquivalenceTest {
+    /** 尚未最佳化的舊版結果，作為等價性對照基準。 */
     private val legacy = LegacyRiichiShantenCalculator()
+
+    /** 目前使用的向聽數計算器。 */
     private val current = RiichiShantenCalculator()
 
     /** 副露 0～4 組時，聽牌前（13 張起）與摸牌後（14 張起）的立牌張數。 */
@@ -121,6 +124,7 @@ class RiichiShantenCalculatorEquivalenceTest {
         hands.forEach { tiles -> assertSameResult(legacy, current, FakeHandFactory.create(tiles), "special hand") }
     }
 
+    /** 固定亂數種子與抽樣數，讓隨機對照可重現。 */
     private companion object {
         const val SEED = 20261009
         const val RANDOM_HANDS = 3000

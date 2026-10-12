@@ -53,7 +53,11 @@ abstract class ListPlatformTargetsTask : DefaultTask() {
     @get:Internal
     abstract val rootDirectory: DirectoryProperty
 
-    /** 設定 `text` 或 `json` 輸出格式。 */
+    /**
+     * 設定 `text` 或 `json` 輸出格式。
+     *
+     * @param value 要使用的輸出格式。
+     */
     @Option(option = "format", description = "Output format: text or json.")
     fun setOutputFormat(value: String) {
         outputFormat = value
@@ -123,13 +127,23 @@ abstract class SwitchTargetTask : DefaultTask() {
     }
 }
 
-/** 從 [root] 下的 catalog 載入 target。 */
+/**
+ * 從 [root] 下的 catalog 載入 target。
+ *
+ * @param root repository 根目錄。
+ * @return 已驗證且依 catalog 順序排列的 target。
+ */
 private fun loadTargets(root: File): List<PlatformTarget> = PlatformTargetCatalog.load(
     root.resolve("gradle/platform-targets.toml"),
     root,
 )
 
-/** 只替換 target property，保留 local file 中其餘內容。 */
+/**
+ * 只替換 target property，保留 local file 中其餘內容。
+ *
+ * @param file 要更新或移除的本機設定檔。
+ * @param targetId 要寫入的 target ID；為 null 時移除 target property。
+ */
 internal fun updateLocalProperty(file: File, targetId: String?) {
     val originalLines = if (file.isFile) file.readLines() else emptyList()
     val propertyPrefix = "${PlatformTargetCatalog.TARGET_PROPERTY_NAME}="

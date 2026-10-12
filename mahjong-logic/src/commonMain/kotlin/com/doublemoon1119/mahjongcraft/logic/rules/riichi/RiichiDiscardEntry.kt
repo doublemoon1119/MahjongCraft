@@ -9,7 +9,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
  * 擴充基礎紀錄以支援日本麻將特有的立直狀態。
  *
  * @param tile 被打出的具有唯一標識的麻將牌。
- * @param isRiichi 標記該張牌是否為宣告立直時所打出的牌。
+ * @property isRiichi 標記該張牌是否為宣告立直時所打出的牌。
  * @param isTaken 標記該張牌是否已被其他玩家鳴走。
  */
 class RiichiDiscardEntry(

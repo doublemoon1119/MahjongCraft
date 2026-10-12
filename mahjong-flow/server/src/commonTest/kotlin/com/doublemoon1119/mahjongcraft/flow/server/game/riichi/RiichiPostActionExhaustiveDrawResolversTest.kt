@@ -31,9 +31,18 @@ import kotlin.uuid.Uuid
  * 不同途中流局共用同一個 [TableState] 形狀，resolver 必須以 context 內的實際完成動作區分。
  */
 class RiichiPostActionExhaustiveDrawResolversTest {
+    /** 判定途中流局的立直規則模組。 */
     private val riichiModule = RiichiRuleModule("mahjongcraft:riichi", RiichiRuleConfig())
+
+    /** 用來驗證規則隔離的台灣規則模組。 */
     private val taiwanModule = TaiwanRuleModule("mahjongcraft:taiwan", TaiwanRuleConfig())
 
+    /**
+     * 依座位順序建立各家只打過一張牌的桌況。
+     *
+     * @param discards 與東南西北座位配對的首次捨牌。
+     * @return 已設定首次捨牌的桌況。
+     */
     private fun tableWithFirstDiscards(discards: List<Tile>): TableState {
         val winds = listOf(Wind.EAST, Wind.SOUTH, Wind.WEST, Wind.NORTH)
         val players = winds.zip(discards).map { (wind, tile) ->
@@ -45,6 +54,11 @@ class RiichiPostActionExhaustiveDrawResolversTest {
         return FakeTableStateFactory.create(players = players, config = riichiModule.config)
     }
 
+    /**
+     * 建立四位玩家都具有立直宣告牌的桌況。
+     *
+     * @return 四家立直的測試桌況。
+     */
     private fun allRiichiTable(): TableState {
         val players = List(4) {
             FakeMahjongPlayerFactory.create(
@@ -54,24 +68,46 @@ class RiichiPostActionExhaustiveDrawResolversTest {
         return FakeTableStateFactory.create(players = players, config = riichiModule.config)
     }
 
+    /**
+     * 建立四張牌共用同一識別碼的簡化暗槓，僅供槓數判定。
+     *
+     * @return 一萬暗槓。
+     */
     private fun kanMeld(): Meld {
         val tile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
         return Meld(MeldType.CLOSED_KAN, listOf(tile, tile, tile, tile), sourceDirection = RelativeDirection.Self)
     }
 
+    /**
+     * 建立四家各有一組暗槓的桌況。
+     *
+     * @return 四槓分屬四位玩家的桌況。
+     */
     private fun allKansTable(): TableState {
         val players = List(4) { FakeMahjongPlayerFactory.create(hand = Hand(melds = listOf(kanMeld()))) }
         return FakeTableStateFactory.create(players = players, config = riichiModule.config)
     }
 
-    /** 建立指定動作的通用完成 context。 */
+    /**
+     * 建立以第一位玩家為行動者的動作完成情境。
+     *
+     * @param table 動作完成後的桌況。
+     * @param action 已完成的動作。
+     * @return 供途中流局解析器使用的情境。
+     */
     private fun context(table: TableState, action: GameAction): CompletedGameActionContext = CompletedGameActionContext(
         table.players.first().id,
         action,
         table,
     )
 
-    /** 將第一位玩家的動作歷史替換為指定動作，並建立最後一個動作的完成 context。 */
+    /**
+     * 替換第一位玩家的動作紀錄，並以最後一個動作建立完成情境。
+     *
+     * @param table 原始桌況。
+     * @param actions 要設定的非空動作紀錄。
+     * @return 使用更新後桌況及最後一個動作的情境。
+     */
     private fun contextWithActorHistory(table: TableState, actions: List<GameAction>): CompletedGameActionContext {
         val actor = table.players.first().copy(actionHistory = actions)
         val updatedTable = table.copy(players = listOf(actor) + table.players.drop(1))

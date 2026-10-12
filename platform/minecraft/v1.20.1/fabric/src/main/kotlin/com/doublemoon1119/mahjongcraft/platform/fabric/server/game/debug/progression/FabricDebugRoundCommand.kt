@@ -41,7 +41,11 @@ class FabricDebugRoundCommand(
     private val presentationPublisher: GamePresentationPublisher,
     private val playerTableScope: DebugPlayerTableScope,
 ) {
-    /** 建立直接操作本局推進與本場數的測試指令樹。 */
+    /**
+     * 建立操作換局與本場數的開發指令樹。
+     *
+     * @return 包含換局及本場數設定的指令節點。
+     */
     fun buildRoundCommand(): LiteralArgumentBuilder<ServerCommandSource> = literal(ROUND_SUBCOMMAND)
         .then(literal(NEXT_SUBCOMMAND).executes { context -> advanceToNextRound(context.source) })
         .then(
@@ -51,7 +55,12 @@ class FabricDebugRoundCommand(
             ),
         )
 
-    /** 以流局結束本局，並登記換局讓正式流程接手開下一局。 */
+    /**
+     * 以流局結束本局，並登記換局讓正式流程接手開下一局。
+     *
+     * @param source 指令發起來源。
+     * @return 指令執行狀態碼。
+     */
     private fun advanceToNextRound(source: ServerCommandSource): Int = playerTableScope.runSuspending(source) { tableId, _ ->
         gameRepository.getTableState(tableId)
             ?: return@runSuspending "Game not found"
@@ -69,6 +78,10 @@ class FabricDebugRoundCommand(
      *
      * 本場數決定莊家桌角的積棒支數，局況顯示也帶本場數，因此桌上物件與局況顯示一起重新發布，與正式換局
      * 路徑（`AdvanceRoundUseCase`）發布的內容相同。
+     *
+     * @param source 指令發起來源。
+     * @param comboCount 指令參數已驗證的本場數。
+     * @return 指令執行狀態碼。
      */
     private fun setComboCount(source: ServerCommandSource, comboCount: Int): Int = playerTableScope.runSuspending(source) { tableId, _ ->
         val state = gameRepository.updateGame(tableId) { game ->
@@ -81,12 +94,18 @@ class FabricDebugRoundCommand(
         "Set the combo count to $comboCount"
     }
 
-    /** 重新發布桌上物件與局況顯示。 */
+    /**
+     * 重新發布桌上物件與局況顯示。
+     *
+     * @param tableId 牌桌識別碼。
+     * @param state 本場數已更新的權威桌況。
+     */
     private suspend fun publishStickPresentation(tableId: Uuid, state: TableState) {
         presentationPublisher.publishRuleStateUpdated(tableId)
         presentationPublisher.publishRoundInfoUpdated(tableId, state)
     }
 
+    /** 換局開發指令的節點名稱與本場數範圍。 */
     private companion object {
         /** 換局測試指令的根 literal。 */
         const val ROUND_SUBCOMMAND: String = "round"

@@ -39,8 +39,17 @@ import kotlin.uuid.Uuid
  */
 class AiTurnDriverTest {
 
+    /** 各測試使用的對局識別碼。 */
     private val gameId = Uuid.random()
 
+    /**
+     * 記錄決策情境並回傳固定命令的策略替身。
+     *
+     * @property command 正常完成時回傳的命令。
+     * @property hangs 是否掛起直到取消，用於等待上限測試。
+     * @property lastContext 最近一次收到的決策情境。
+     * @property callCount 已接收的決策呼叫次數。
+     */
     private class FakeMahjongAiStrategy(
         private val command: GameCommand = GameCommand.Draw,
         private val hangs: Boolean = false,
@@ -61,6 +70,18 @@ class AiTurnDriverTest {
     /** 每局 AI 玩家測試共用的策略 key，對應到 [Fixtures] 裡註冊的假策略。 */
     private val strategyKey = "fake"
 
+    /**
+     * 共用假策略與正式規則解析器的受測環境。
+     *
+     * @param strategyCommand 策略正常完成時回傳的命令。
+     * @param strategyHangs 是否讓策略掛起直到取消。
+     * @property gameRepo 保存測試對局的資料倉庫。
+     * @property moduleRegistry 登記內建規則的註冊中心。
+     * @property strategy 記錄情境的固定策略。
+     * @property strategyRegistry 將測試識別碼解析為固定策略的註冊中心。
+     * @property actionContextResolver 解析玩家可操作情境的元件。
+     * @property driver 受測的 AI 行動解析器。
+     */
     private class Fixtures(strategyCommand: GameCommand = GameCommand.Draw, strategyHangs: Boolean = false) {
         val gameRepo = FakeGameRepository()
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }

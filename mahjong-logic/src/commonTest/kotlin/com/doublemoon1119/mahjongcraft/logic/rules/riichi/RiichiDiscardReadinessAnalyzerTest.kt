@@ -38,15 +38,23 @@ import kotlin.test.assertTrue
  */
 class RiichiDiscardReadinessAnalyzerTest {
 
+    /** 分析手牌向聽結果的計算器。 */
     private val shantenCalculator = RiichiShantenCalculator()
+
+    /** 供分析器判定各等待牌和牌資格的合法動作驗證器。 */
     private val legalActionValidator = RiichiLegalActionValidator(
         shantenCalculator = shantenCalculator,
         handValueCalculator = RiichiHandValueCalculator(),
         contextCalculator = RiichiHandValueContextCalculator(RiichiRuleConfig()),
     )
+
+    /** 本測試驗證的捨牌準備度分析器。 */
     private val analyzer = RiichiDiscardReadinessAnalyzer(shantenCalculator, legalActionValidator)
 
+    /** 分析器兩面聽測例中的 3 條等待牌。 */
     private val threeSou = Tile.Numeric(Tile.Suit.Bamboo, 3)
+
+    /** 分析器兩面聽測例中的 6 條等待牌。 */
     private val sixSou = Tile.Numeric(Tile.Suit.Bamboo, 6)
 
     /**
@@ -54,6 +62,8 @@ class RiichiDiscardReadinessAnalyzerTest {
      * 完成、花色彼此不重疊，唯一能維持聽牌的捨牌只有這張孤立東風，不會有其他捨牌候選誤判成聽牌。
      */
     private val floatingTile = Tile.Honor.East
+
+    /** 由 123456789 萬、55 筒與 45 條組成，等待 3 條或 6 條的十三張手牌。 */
     private val tenpaiTiles = listOf(
         Tile.Numeric(Tile.Suit.Character, 1),
         Tile.Numeric(Tile.Suit.Character, 2),
@@ -555,7 +565,14 @@ class RiichiDiscardReadinessAnalyzerTest {
         assertEquals(0, analysis.waitingTiles.single().remainingCount)
     }
 
-    /** 以 [player] 本人的桌況快照列出看得到的牌。 */
+    /**
+     * 以指定玩家可見的桌況快照列出看得到的牌。
+     *
+     * @param tableState 要擷取快照的桌況。
+     * @param player 決定手牌可見範圍的觀察者。
+     * @param setAsideTiles 擷取快照時要另行排除的牌。
+     * @return 快照中可見的牌。
+     */
     private fun visibleTo(
         tableState: TableState,
         player: MahjongPlayer,

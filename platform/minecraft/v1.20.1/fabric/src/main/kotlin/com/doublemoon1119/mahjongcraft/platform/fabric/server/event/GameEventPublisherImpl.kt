@@ -20,8 +20,7 @@ import kotlin.uuid.Uuid
 /**
  * [GameEventPublisher] 的 Fabric 實作。呼叫端（各 use case）在呼叫 `publish` 前已經把最新快照寫進
  * [gameSnapshotRepository]，這裡只需要讀出來組 DTO 送出，不用重新呼叫任何 sync use case。
- * 目標玩家若目前不在線（[FabricServerHolder.findPlayer] 回傳 null），直接跳過——快照已經
- * 留在 repository 裡，等玩家下次同步即可，不是遺失事件。
+ * 目標玩家不在線或沒有可見快照時不送出；後續同步可取得最新狀態，但不補發這次動作事件。
  *
  * @property gameSnapshotRepository 玩家可見的對局快照來源。
  * @property authoritativeStateStore 對局結束時的權威場次識別與記錄決策來源。

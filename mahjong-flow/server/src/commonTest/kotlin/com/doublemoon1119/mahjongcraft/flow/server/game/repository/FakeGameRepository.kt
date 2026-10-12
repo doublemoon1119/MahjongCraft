@@ -12,8 +12,10 @@ import kotlin.uuid.Uuid
  * 供測試使用的 [GameRepository] 簡易實作。
  *
  * 權威寫入與正式實作一樣遵守 [GameRepository.withExpectedGame] 的範圍；[setGame] 是測試直接設定狀態用，不受範圍限制。
+ * 此實作沒有鎖定或並行交易隔離，僅適用於由測試控制呼叫順序的情境。
  */
 class FakeGameRepository : GameRepository {
+    /** 依遊戲識別碼保存測試狀態；不提供並行存取保護。 */
     private val games = mutableMapOf<Uuid, Game>()
 
     /** 權威寫入（[updateGame]、[update]、[setTableState]、[removeTableState]、[clearAll]）的累計次數；[setGame] 不計入。 */
@@ -30,7 +32,11 @@ class FakeGameRepository : GameRepository {
 
     override suspend fun getAllGameIds(): Set<Uuid> = games.keys.toSet()
 
-    /** 直接寫入包含流程設定的 [Game]，供需驗證 flow policy 的測試使用。 */
+    /**
+     * 直接寫入包含流程設定的 [Game]，不計入權威寫入次數。
+     *
+     * @param game 要建立或取代的測試遊戲。
+     */
     suspend fun setGame(game: Game) {
         games[game.id] = game
     }
@@ -49,7 +55,12 @@ class FakeGameRepository : GameRepository {
         games[state.id] = games[state.id]?.copy(tableState = state) ?: Game(state, GameFlowConfig())
     }
 
-    /** 寫入 [state] 並指定由 AI 操控的玩家，供需要 AI 座位的測試使用。 */
+    /**
+     * 寫入桌況後設定 AI 座位；AI 設定的直接更新不另計一次權威寫入。
+     *
+     * @param state 要寫入的桌況。
+     * @param aiPlayerStrategyKeys AI 玩家識別碼與策略識別碼的對照。
+     */
     suspend fun setTableState(state: TableState, aiPlayerStrategyKeys: Map<Uuid, String>) {
         setTableState(state)
         games[state.id] = games.getValue(state.id).copy(aiPlayerStrategyKeys = aiPlayerStrategyKeys)

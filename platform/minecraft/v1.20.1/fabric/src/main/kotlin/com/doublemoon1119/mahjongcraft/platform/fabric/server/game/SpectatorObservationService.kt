@@ -24,6 +24,11 @@ import kotlin.uuid.Uuid
  * 在場玩家（座位上的四人）完全不受這裡影響——他們的快照走既有的右鍵互動桌子流程，這裡看到在場
  * 玩家一律直接跳過，避免搶著處理同一件事，也避免不小心把在場玩家暫時看不到 entity（例如短暫斷線）
  * 誤判成「這個人不玩了、把他的快照清掉」。
+ *
+ * @property scope 執行旁觀者登記與清理的協程範圍。
+ * @property gameRepository 讀取對局及玩家座位狀態。
+ * @property syncGame 產生並同步符合旁觀政策的快照。
+ * @property gameSnapshotRepository 移除離開視野的旁觀者快照。
  */
 @Single
 class SpectatorObservationService(
@@ -39,6 +44,9 @@ class SpectatorObservationService(
      * 如果他是外人，且房間設定允許旁觀，就依旁觀規則產生一份過濾過的快照登記起來（例如要不要看得到
      * 手牌，由 [SpectatingPolicy] 決定）；房間不允許旁觀的話，這裡就什麼都不做，他不會成為這場對局的
      * 事件收件人。
+     *
+     * @param playerId 開始看到桌面的玩家識別碼。
+     * @param tableId 桌面所屬對局識別碼。
      */
     fun onStartedObserving(playerId: Uuid, tableId: Uuid) {
         scope.launch {
@@ -54,6 +62,9 @@ class SpectatorObservationService(
      *
      * 只清掉旁觀者的快照，讓伺服器不用一直留著「已經沒人在看」的舊資料；在場玩家的快照不會被這裡
      * 動到，理由見類別 KDoc。
+     *
+     * @param playerId 停止看到桌面的玩家識別碼。
+     * @param tableId 桌面所屬對局識別碼。
      */
     fun onStoppedObserving(playerId: Uuid, tableId: Uuid) {
         scope.launch {

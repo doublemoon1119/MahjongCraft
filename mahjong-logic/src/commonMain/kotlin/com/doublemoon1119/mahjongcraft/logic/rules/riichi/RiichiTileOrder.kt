@@ -7,8 +7,8 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileInterpr
 /**
  * 日本麻將 (Riichi) 標準排序策略。
  * 排序權重：
- * 1. 數牌 (萬 > 筒 > 條)，同數值時「普通牌」在「赤寶牌」之前。
- * 2. 字牌 (東南西北 > 白發中)。
+ * 1. 數牌依萬、筒、索排序，各花色由一至九；同數值時普通牌在赤寶牌之前。
+ * 2. 字牌依東、南、西、北、白、發、中排序。
  * 3. 花牌與尚未由日麻規則解讀的擴充牌 (若存在，排在最後)。
  */
 object RiichiTileOrder : TileOrder {

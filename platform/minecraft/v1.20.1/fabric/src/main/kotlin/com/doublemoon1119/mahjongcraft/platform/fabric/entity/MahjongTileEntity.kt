@@ -46,6 +46,9 @@ import kotlin.uuid.toKotlinUuid
  * 正式牌局接線後，權威 [IdentifiedTile] 的 ID 會直接使用此 entity 的 UUID，
  * 不在 entity 內複製麻將規則狀態；牌局管理中的 entity 由 [managedByGame]／[managedTableId] 區分自由放置模式，
  * 比照 [MahjongDiceEntity] 的雙態設計。
+ *
+ * @param type Minecraft entity 類型。
+ * @param world 實體所屬世界。
  */
 class MahjongTileEntity(
     type: EntityType<out MahjongTileEntity> = ModEntities.mahjongTile,
@@ -146,7 +149,13 @@ class MahjongTileEntity(
             MeldActionPopupTile(tileId, claimed = parts.getOrNull(1) == "1")
         }
 
-    /** 在 server 端設定一次可持久化的落地牌面提示時間線。 */
+    /**
+     * 在 server 端設定一次可持久化的落地牌面提示時間線。
+     *
+     * @param kind 要顯示的提示種類，不可為 `NONE`。
+     * @param startGameTime 提示開始的絕對遊戲時間。
+     * @param endGameTime 提示結束的絕對遊戲時間，必須晚於開始時間。
+     */
     fun showActionPopup(kind: TileActionPopupKind, startGameTime: Long, endGameTime: Long) {
         check(!world.isClient) { "Tile action popup is server-only" }
         require(kind != TileActionPopupKind.NONE) { "Tile action popup kind must be visible" }
@@ -156,7 +165,13 @@ class MahjongTileEntity(
         dataTracker.set(ACTION_POPUP_END_GAME_TIME, endGameTime)
     }
 
-    /** 在一張錨點牌上保存整組副露的顯示順序、哪一張是鳴取牌，以及顯示時間線。 */
+    /**
+     * 在一張錨點牌上保存整組副露的顯示順序、哪一張是鳴取牌，以及顯示時間線。
+     *
+     * @param tiles 依顯示順序排列的牌與鳴取標記，不可為空。
+     * @param startGameTime 提示開始的絕對遊戲時間。
+     * @param endGameTime 提示結束的絕對遊戲時間。
+     */
     fun showMeldActionPopup(tiles: List<MeldActionPopupTile>, startGameTime: Long, endGameTime: Long) {
         require(tiles.isNotEmpty()) { "Meld action popup must contain tiles" }
         showActionPopup(TileActionPopupKind.MELD, startGameTime, endGameTime)
@@ -168,7 +183,12 @@ class MahjongTileEntity(
         )
     }
 
-    /** 只在 server 端建立可持久化的公開牌面 lease；重複呼叫只允許延長。 */
+    /**
+     * 只在 server 端建立可持久化的公開牌面 lease；重複呼叫只允許延長。
+     *
+     * @param assetKey 要暫時公開的牌面資源 key；會正規化為支援值或 `unknown`。
+     * @param endGameTime 公開 lease 的絕對到期時間。
+     */
     fun revealForPresentation(assetKey: String, endGameTime: Long) {
         check(!world.isClient) { "Presentation reveal lease is server-only" }
         if (endGameTime < presentationAssetEndGameTime) return
@@ -195,6 +215,8 @@ class MahjongTileEntity(
      *
      * 呼叫端負責涵蓋整段中途胡牌演出（含收尾的蓋牌動畫），見
      * `FabricGamePresentationPublisher.publishWinPresentation`。
+     *
+     * @param endGameTime 不阻塞整桌忙碌判定的 lease 到期時間。
      */
     fun exemptFromTableBusyUntil(endGameTime: Long) {
         check(!world.isClient) { "Non-blocking presentation lease is server-only" }
@@ -204,6 +226,8 @@ class MahjongTileEntity(
 
     /**
      * 這張牌目前的動畫是否應該讓整桌進入忙碌狀態；判斷規則本身見 [TablePresentationBusyPolicy]。
+     *
+     * @param currentGameTime 目前的絕對 server game time。
      */
     fun blocksTableBusy(currentGameTime: Long): Boolean = TablePresentationBusyPolicy.tileBlocksTableBusy(
         isAnimating = isAnimating,
@@ -297,7 +321,11 @@ class MahjongTileEntity(
     /** 還原姿態名稱，非法值使用安全預設。 */
     override fun deserializeCustomStep(nbt: NbtCompound): MahjongTilePose = MahjongTilePose.fromNameOrDefault(nbt.getString(NBT_KEY_POSE))
 
-    /** 將牌標記為指定正式牌局桌子管理；[tileAssetKey] 的 setter 會因此自動鎖定為 [UNKNOWN_TILE_ASSET_KEY]。 */
+    /**
+     * 將牌標記為指定正式牌局桌子管理；[tileAssetKey] 的 setter 會因此自動鎖定為 [UNKNOWN_TILE_ASSET_KEY]。
+     *
+     * @param tableId 所屬麻將桌 UUID。
+     */
     fun assignToTable(tableId: Uuid) {
         check(!world.isClient) { "Managed tiles must be assigned by the server" }
         managedByGame = true
@@ -383,6 +411,9 @@ class MahjongTileEntity(
     /**
      * 普通右鍵循環牌面；蹲下右鍵循環姿態。牌局管理中的牌改右鍵直接捨牌（見 [interactManaged]），
      * 不區分蹲下——立直宣告改由 GUI／HUD 詢問玩家，不使用蹲下右鍵麻將牌。
+     *
+     * @param player 互動的玩家。
+     * @param hand 使用的手；此 entity 的互動不區分主手與副手。
      */
     override fun interact(player: PlayerEntity, hand: Hand): ActionResult {
         if (managedByGame) return interactManaged(player)
@@ -403,6 +434,8 @@ class MahjongTileEntity(
      * 指令，避免點別人的手牌、牌牆或牌河都各送一趟權威流程；[MahjongTableGameActionService.discard]
      * 內部仍會經過 `DiscardTileUseCase` 完整驗證（是否輪到這位玩家、振聽等規則限制），這裡的過濾
      * 只是提早擋掉明顯不合理的點擊，不是唯一防線。
+     *
+     * @param player 嘗試操作這張受牌局管理麻將牌的玩家。
      */
     private fun interactManaged(player: PlayerEntity): ActionResult {
         if (world.isClient) return ActionResult.SUCCESS
@@ -430,7 +463,11 @@ class MahjongTileEntity(
         return ActionResult.CONSUME
     }
 
-    /** 玩家左鍵攻擊時回收牌張；生存模式掉落保留牌面的物品，創造模式只移除 entity。牌局管理中的牌不能被回收。 */
+    /**
+     * 玩家左鍵攻擊時回收牌張；生存模式掉落保留牌面的物品，創造模式只移除 entity。牌局管理中的牌不能被回收。
+     *
+     * @param attacker 攻擊此牌的 entity；只有玩家能回收自由放置的牌。
+     */
     override fun handleAttack(attacker: Entity): Boolean {
         if (managedByGame) return false
         val player = attacker as? PlayerEntity ?: return false
@@ -537,29 +574,46 @@ class MahjongTileEntity(
 
         /** 正式牌局所屬桌子 UUID 的世界存檔 key。 */
         private const val NBT_KEY_MANAGED_TABLE_ID = "ManagedTableId"
+
+        /** 結算展示期間暫時公開牌面素材的世界存檔 key。 */
         private const val NBT_KEY_PRESENTATION_ASSET = "PresentationAsset"
+
+        /** 暫時公開牌面的到期遊戲時間世界存檔 key。 */
         private const val NBT_KEY_PRESENTATION_ASSET_END_GAME_TIME = "PresentationAssetEndGameTime"
+
+        /** 捨牌或鳴牌提示種類的世界存檔 key。 */
         private const val NBT_KEY_ACTION_POPUP_KIND = "ActionPopupKind"
+
+        /** 捨牌或鳴牌提示淡入開始時間的世界存檔 key。 */
         private const val NBT_KEY_ACTION_POPUP_START_GAME_TIME = "ActionPopupStartGameTime"
+
+        /** 捨牌或鳴牌提示淡出完成時間的世界存檔 key。 */
         private const val NBT_KEY_ACTION_POPUP_END_GAME_TIME = "ActionPopupEndGameTime"
+
+        /** 副露提示排列的世界存檔 key。 */
         private const val NBT_KEY_MELD_ACTION_POPUP_TILES = "MeldActionPopupTiles"
 
         /** 同步牌面素材 key。 */
         private val TILE_ASSET_KEY: TrackedData<String> =
             DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.STRING)
 
+        /** 同步結算展示期間暫時公開的牌面素材 key。 */
         private val PRESENTATION_ASSET_KEY: TrackedData<String> =
             DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.STRING)
 
+        /** 同步暫時公開牌面的絕對到期遊戲時間。 */
         private val PRESENTATION_ASSET_END_GAME_TIME: TrackedData<Long> =
             DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.LONG)
 
+        /** 同步最近一次捨牌或鳴牌的提示種類。 */
         private val ACTION_POPUP_KIND: TrackedData<String> =
             DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.STRING)
 
+        /** 同步提示淡入開始的絕對遊戲時間。 */
         private val ACTION_POPUP_START_GAME_TIME: TrackedData<Long> =
             DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.LONG)
 
+        /** 同步提示淡出完成的絕對遊戲時間。 */
         private val ACTION_POPUP_END_GAME_TIME: TrackedData<Long> =
             DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.LONG)
 

@@ -15,13 +15,30 @@ interface DecisionStatusDisplayNameRegistry {
     /** registry 是否已凍結。 */
     val isFrozen: Boolean
 
-    /** 登記所有規則共用的中立預設。 */
+    /**
+     * 登記所有規則共用的中立預設。
+     *
+     * @param statusId 狀態的穩定 ID。
+     * @param translationKey 顯示狀態名稱的 translation key。
+     */
     fun registerDefault(statusId: String, translationKey: String)
 
-    /** 登記指定規則模組專屬的顯示名稱，覆寫同一個狀態的中立預設。 */
+    /**
+     * 登記指定規則模組專屬的顯示名稱，優先於同一狀態的中立預設。
+     *
+     * @param ruleModuleId 規則模組 ID。
+     * @param statusId 狀態的穩定 ID。
+     * @param translationKey 顯示狀態名稱的 translation key。
+     */
     fun register(ruleModuleId: String, statusId: String, translationKey: String)
 
-    /** 查詢顯示名稱：先查 [ruleModuleId] 的登記，再查中立預設；都沒有時回傳 null。 */
+    /**
+     * 查詢顯示名稱：先查 [ruleModuleId] 的登記，再查中立預設；都沒有時回傳 null。
+     *
+     * @param ruleModuleId 規則模組 ID；null 時只查中立預設。
+     * @param statusId 狀態的穩定 ID。
+     * @return 找到的 translation key；都未登記時為 null。
+     */
     fun find(ruleModuleId: String?, statusId: String): String?
 
     /** 凍結 registry，禁止後續登記。 */

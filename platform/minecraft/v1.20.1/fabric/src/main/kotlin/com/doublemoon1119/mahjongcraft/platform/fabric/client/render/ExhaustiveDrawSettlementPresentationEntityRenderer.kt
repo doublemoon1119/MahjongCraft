@@ -22,7 +22,16 @@ import net.minecraft.util.Identifier
 import kotlin.math.roundToInt
 import kotlin.uuid.Uuid as KotlinUuid
 
-/** 統一流局結算的 client-only billboard 排行榜。 */
+/**
+ * 統一流局結算的 client-only billboard 排行榜。
+ *
+ * @param context Minecraft entity renderer 共用資源。
+ * @param reasonDisplayNames 流局原因的本地化顯示名稱。
+ * @param portraitRenderer 共用真人／AI 頭像 renderer。
+ * @param tileFaceRenderer 共用牌面 renderer。
+ * @param playerNames 共用玩家顯示名稱解析器。
+ * @param configStore 控制流局結算呈現可見性的客戶端設定。
+ */
 class ExhaustiveDrawSettlementPresentationEntityRenderer(
     context: EntityRendererFactory.Context,
     private val reasonDisplayNames: ExhaustiveDrawReasonDisplayNameRegistry,
@@ -129,6 +138,15 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         matrices.pop()
     }
 
+    /**
+     * 繪製排行榜與公開資訊共用的半透明背景。
+     *
+     * @param panelHalfWidth 面板半寬。
+     * @param panelBottom 面板下界。
+     * @param alpha 背景透明度基準。
+     * @param matrices 目前繪製矩陣。
+     * @param vertexConsumers 頂點消費者。
+     */
     private fun renderPanel(
         panelHalfWidth: Float,
         panelBottom: Float,
@@ -145,6 +163,14 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         buffer.vertex(matrix, -panelHalfWidth, panelBottom, PANEL_Z).color(0, 0, 0, panelAlpha).next()
     }
 
+    /**
+     * 繪製流局原因標題。
+     *
+     * @param reasonId 流局原因識別碼。
+     * @param alpha 文字透明度。
+     * @param matrices 目前繪製矩陣。
+     * @param vertexConsumers 頂點消費者。
+     */
     private fun renderTitle(reasonId: String, alpha: Float, matrices: MatrixStack, vertexConsumers: VertexConsumerProvider) {
         matrices.push()
         matrices.translate(0f, TITLE_Y, 0f)
@@ -153,6 +179,20 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         matrices.pop()
     }
 
+    /**
+     * 繪製單一排名列及結算動態效果。
+     *
+     * @param player 保存的玩家結算資料。
+     * @param displayedRank 動畫期間顯示的即時名次。
+     * @param layout 排名欄位幾何。
+     * @param score 動畫期間顯示的分數。
+     * @param delta 動畫期間顯示的分數變化。
+     * @param y 此列目前的垂直位置。
+     * @param alpha 此列透明度。
+     * @param settledEffect 名次結算動畫狀態。
+     * @param matrices 目前繪製矩陣。
+     * @param vertexConsumers 頂點消費者。
+     */
     private fun drawRow(
         player: ExhaustiveDrawSettlementPlayerSnapshot,
         displayedRank: Int,
@@ -199,6 +239,16 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         matrices.pop()
     }
 
+    /**
+     * 在已變動名次列後方繪製掃過的強調底光。
+     *
+     * @param panelHalfWidth 面板半寬。
+     * @param y 名次列垂直位置。
+     * @param alpha 排名階段透明度。
+     * @param effect 名次穩定效果狀態。
+     * @param matrices 目前繪製矩陣。
+     * @param vertexConsumers 頂點消費者。
+     */
     private fun renderRankingSettledHighlight(
         panelHalfWidth: Float,
         y: Float,
@@ -223,6 +273,17 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         )
     }
 
+    /**
+     * 繪製指定矩形的漸層強調 quad。
+     *
+     * @param left 矩形左界。
+     * @param right 矩形右界。
+     * @param top 矩形上界。
+     * @param bottom 矩形下界。
+     * @param alpha 透明度。
+     * @param matrices 目前繪製矩陣。
+     * @param vertexConsumers 頂點消費者。
+     */
     private fun renderHighlightQuad(
         left: Float,
         right: Float,
@@ -242,13 +303,37 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         buffer.vertex(matrix, left, bottom, RANKING_HIGHLIGHT_Z).color(255, 205, 92, a).next()
     }
 
+    /**
+     * 依進度逐色頻道混合兩個 RGB 顏色。
+     *
+     * @param from 起始 RGB 顏色。
+     * @param to 目標 RGB 顏色。
+     * @param progress 混色進度，會限制在 0 到 1。
+     * @return 混合後的 RGB 顏色。
+     */
     private fun mixRgb(from: Int, to: Int, progress: Float): Int {
         val amount = progress.coerceIn(0f, 1f)
+
+        /**
+         * 混合 RGB 顏色中指定位移的單一色彩頻道。
+         *
+         * @param shift 色彩頻道的位元位移。
+         * @return 混合後的頻道值。
+         */
         fun channel(shift: Int): Int = (((from shr shift) and 0xFF) + ((((to shr shift) and 0xFF) - ((from shr shift) and 0xFF)) * amount)).roundToInt()
         return (channel(16) shl 16) or (channel(8) shl 8) or channel(0)
     }
 
-    /** 第一階段的公開資訊列：玩家身分、狀態與全部等待牌使用固定欄位對齊。 */
+    /**
+     * 繪製第一階段公開資訊列：玩家身分、狀態與全部等待牌使用固定欄位對齊。
+     *
+     * @param player 玩家結算資料。
+     * @param layout 公開資訊列欄位幾何。
+     * @param y 此列垂直位置。
+     * @param alpha 此列透明度。
+     * @param matrices 目前繪製矩陣。
+     * @param vertexConsumers 頂點消費者。
+     */
     private fun drawInformationRow(
         player: ExhaustiveDrawSettlementPlayerSnapshot,
         layout: InformationLayout,
@@ -286,7 +371,16 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         }
     }
 
-    /** 交由共用 renderer 解析第三方來源與真人／AI fallback。 */
+    /**
+     * 交由共用 renderer 解析第三方來源與真人／AI fallback。
+     *
+     * @param player 玩家結算資料。
+     * @param x 頭像左界。
+     * @param y 頭像上界。
+     * @param alpha 頭像透明度。
+     * @param matrices 目前繪製矩陣。
+     * @param vertexConsumers 頂點消費者。
+     */
     private fun renderPortrait(
         player: ExhaustiveDrawSettlementPlayerSnapshot,
         x: Float,
@@ -309,6 +403,15 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
     /**
      * 直接將既有麻將牌正面材質繪製成指定尺寸的 quad，避免 ItemRenderer 的 HEAD transform 再次縮小
      * 結算 UI。找不到第三方材質時安全退回 unknown 牌面。
+     *
+     * @param assetKey 牌面素材識別鍵。
+     * @param centerX 牌面中心水平位置。
+     * @param centerY 牌面中心垂直位置。
+     * @param width 牌面寬度。
+     * @param height 牌面高度。
+     * @param alpha 牌面透明度。
+     * @param matrices 目前繪製矩陣。
+     * @param vertexConsumers 頂點消費者。
      */
     private fun renderTileFace(
         assetKey: String,
@@ -323,6 +426,17 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         tileFaceRenderer.renderWorldPanel(assetKey, centerX, centerY, width, height, alpha, TILE_FACE_Z, matrices, vertexConsumers)
     }
 
+    /**
+     * 依指定錨點與對齊方式繪製文字。
+     *
+     * @param text 要繪製的文字。
+     * @param anchorX 對齊錨點的水平位置。
+     * @param y 文字上界。
+     * @param alignment 文字相對錨點的對齊方式。
+     * @param color 含透明度的文字顏色。
+     * @param matrices 目前繪製矩陣。
+     * @param vertexConsumers 頂點消費者。
+     */
     private fun drawText(
         text: Text,
         anchorX: Float,
@@ -341,16 +455,39 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         textRenderer.draw(text, x, y, color, false, matrices.peek().positionMatrix, vertexConsumers, TextRenderer.TextLayerType.NORMAL, 0, LightmapTextureManager.MAX_LIGHT_COORDINATE)
     }
 
-    /** 保證原版最多 16 字元的玩家名稱完整顯示；非標準長名稱以 `...` 收尾。 */
+    /**
+     * 保證原版最多 16 字元的玩家名稱完整顯示；非標準長名稱以 `...` 收尾。
+     *
+     * @param name 玩家顯示名稱。
+     * @return 符合名稱欄寬度的文字。
+     */
     private fun fitPlayerName(name: String): String = WorldPanelRenderer.fitText(textRenderer, name, NAME_MAX_WIDTH)
 
+    /**
+     * 依目前桌子與保存身分解析玩家名稱。
+     *
+     * @param player 玩家結算資料。
+     * @return 玩家顯示名稱。
+     */
     private fun resolvePlayerName(player: ExhaustiveDrawSettlementPlayerSnapshot): String = playerNames.resolve(currentTableId, player.playerId, player.isAi)
 
+    /**
+     * 將流局原因 ID 解析為名稱，未知 ID 使用中立預設並只警告一次。
+     *
+     * @param reasonId 流局原因 ID。
+     * @return 原因本地化文字。
+     */
     private fun reasonText(reasonId: String): Text = reasonDisplayNames.find(reasonId)?.let(Text::translatable) ?: run {
         if (warnedUnknownReasonIds.add(reasonId)) logger.warn("Unknown exhaustive-draw reason display name: {}", reasonId)
         Text.translatable(MinecraftMessageKeys.EXHAUSTIVE_DRAW_REASON_NORMAL)
     }
 
+    /**
+     * 將已知流局狀態 ID 尾段映射至翻譯鍵。
+     *
+     * @param statusId 可為 null 的狀態 ID。
+     * @return 已知狀態的翻譯鍵；未知或空值時為 null。
+     */
     private fun statusTranslationKey(statusId: String?): String? = when (statusId?.substringAfter(':')) {
         "tenpai" -> MinecraftMessageKeys.EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_TENPAI
         "noten" -> MinecraftMessageKeys.EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_NOTEN
@@ -358,26 +495,55 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         else -> null
     }
 
-    /** 中央排行榜只顯示語意狀態；等待牌由手牌上方的獨立牌面面板承擔。 */
+    /**
+     * 中央排行榜只顯示語意狀態；等待牌由手牌上方的獨立牌面面板承擔。
+     *
+     * @param player 玩家結算資料。
+     * @return 已知狀態的翻譯文字；沒有對應狀態時為 null。
+     */
     private fun settlementStatusText(player: ExhaustiveDrawSettlementPlayerSnapshot): Text? = statusTranslationKey(player.statusId)?.let(Text::translatable)
 
+    /**
+     * 計算排行榜單列的揭示進度。
+     *
+     * @param elapsed 動畫開始後經過的遊戲 tick。
+     * @param rowIndex 排名列索引。
+     * @param hasInformationPhase 是否先播放公開資訊階段。
+     * @return 限制在 0 到 1 的列揭示進度。
+     */
     private fun rowRevealProgress(elapsed: Double, rowIndex: Int, hasInformationPhase: Boolean): Float {
         val start = ExhaustiveDrawSettlementPresentationEntity.rowRevealTick(rowIndex, hasInformationPhase).toDouble()
         return ((elapsed - start) / ROW_REVEAL_DURATION).coerceIn(0.0, 1.0).toFloat()
     }
 
-    /** 手牌完成翻開後逐列顯示公開資訊。 */
+    /**
+     * 手牌完成翻開後逐列顯示公開資訊。
+     *
+     * @param elapsed 動畫開始後經過的遊戲 tick。
+     * @param rowIndex 公開資訊列索引。
+     * @return 限制在 0 到 1 的列揭示進度。
+     */
     private fun informationRowRevealProgress(elapsed: Double, rowIndex: Int): Float {
         val start = ExhaustiveDrawSettlementPresentationEntity.informationRowRevealTick(rowIndex).toDouble()
         return ((elapsed - start) / INFORMATION_ROW_REVEAL_DURATION).coerceIn(0.0, 1.0).toFloat()
     }
 
-    /** 取得第一階段值得列出的玩家；未聽者已由桌上的蓋牌清楚表達，不重複占用面板。 */
+    /**
+     * 取得第一階段值得列出的玩家；未聽者已由桌上的蓋牌清楚表達，不重複占用面板。
+     *
+     * @param players 本局所有玩家的保存結算資料。
+     * @return 有等待牌需要公開資訊列的玩家。
+     */
     private fun informationPlayers(players: List<ExhaustiveDrawSettlementPlayerSnapshot>): List<ExhaustiveDrawSettlementPlayerSnapshot> = players.filter { player ->
         player.waitingTileAssetKeys.isNotEmpty()
     }
 
-    /** 建立集中式公開資訊欄位，最多十三張等待牌仍維持單列且不壓縮玩家名稱。 */
+    /**
+     * 建立集中式公開資訊欄位，最多十三張等待牌仍維持單列且不壓縮玩家名稱。
+     *
+     * @param players 要呈現公開資訊的玩家。
+     * @return 公開資訊面板尺寸及欄位位置。
+     */
     private fun measureInformationLayout(players: List<ExhaustiveDrawSettlementPlayerSnapshot>): InformationLayout {
         val maximumWaitingTileCount = players.maxOfOrNull { it.waitingTileAssetKeys.size } ?: 0
         val waitingTilesWidth = maximumWaitingTileCount * WAIT_TILE_WIDTH +
@@ -397,7 +563,12 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         return InformationLayout(totalWidth / 2f, panelBottom, faceLeftX, nameLeftX, statusLeftX, waitingTilesLeftX)
     }
 
-    /** 依所有起訖數值及本地化狀態的實際像素寬度建立穩定欄位；動畫中途不會改變面板尺寸。 */
+    /**
+     * 依所有起訖數值及本地化狀態的實際像素寬度建立穩定欄位；動畫中途不會改變面板尺寸。
+     *
+     * @param players 本局所有玩家的保存結算資料。
+     * @return 排名面板欄位及尺寸。
+     */
     private fun measureLayout(players: List<ExhaustiveDrawSettlementPlayerSnapshot>): TableLayout {
         val scoreWidth = SettlementRankingLayout.contentColumnWidth(
             contentWidths = players.flatMap { listOf(it.previousScore, it.currentScore) }.map { textRenderer.getWidth(it.toString()).toFloat() },
@@ -436,7 +607,12 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         )
     }
 
-    /** 將可持久化 Fabric snapshot 投影為 Flow 層共用的規則中立排行關鍵影格。 */
+    /**
+     * 將可持久化 Fabric snapshot 投影為 Flow 層共用的規則中立排行關鍵影格。
+     *
+     * @param player 可持久化的流局結算玩家快照。
+     * @return 共用排行動畫使用的玩家資料。
+     */
     private fun ExhaustiveDrawSettlementPlayerSnapshot.toScoreRankingPlayer(): ScoreRankingPlayer = ScoreRankingPlayer(
         playerId = KotlinUuid.parse(playerId),
         seatIndex = seatIndex,
@@ -447,11 +623,40 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         currentRank = currentRank,
     )
 
+    /**
+     * 將透明度套用至 RGB 顏色。
+     *
+     * @param rgb 不含 alpha 的 RGB 顏色。
+     * @param alpha 透明度比例。
+     * @return 合成後的 ARGB 顏色。
+     */
     private fun withAlpha(rgb: Int, alpha: Float): Int = WorldPanelRenderer.withAlpha(rgb, alpha)
     override fun getTexture(entity: ExhaustiveDrawSettlementPresentationEntity): Identifier? = null
 
-    private enum class Alignment { LEFT, CENTER, RIGHT }
+    /** 文字相對水平錨點的對齊方式。 */
+    private enum class Alignment {
+        /** 從錨點向右繪製。 */
+        LEFT,
 
+        /** 以錨點置中。 */
+        CENTER,
+
+        /** 從錨點向左繪製。 */
+        RIGHT,
+    }
+
+    /**
+     * 排名面板固定欄位位置與整體尺寸。
+     *
+     * @property panelHalfWidth 排名面板半寬。
+     * @property panelBottom 面板下界。
+     * @property rankRightX 名次欄右界。
+     * @property faceLeftX 頭像欄左界。
+     * @property nameLeftX 名稱欄左界。
+     * @property statusCenterX 狀態欄中心。
+     * @property scoreRightX 分數欄右界。
+     * @property deltaRightX 分數變化欄右界。
+     */
     private data class TableLayout(
         val panelHalfWidth: Float,
         val panelBottom: Float,
@@ -463,6 +668,15 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         val deltaRightX: Float,
     )
 
+    /**
+     * 單列排名動畫的已解析內容。
+     *
+     * @property player 對應的保存玩家資料。
+     * @property revealIndex 揭示順序索引。
+     * @property score 動畫中的分數。
+     * @property delta 動畫中的分數差額。
+     * @property position 動畫中的排名位置。
+     */
     private data class AnimatedRow(
         val player: ExhaustiveDrawSettlementPlayerSnapshot,
         val revealIndex: Int,
@@ -471,6 +685,16 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         val position: Double,
     )
 
+    /**
+     * 第一階段公開資訊面板的尺寸與欄位位置。
+     *
+     * @property panelHalfWidth 面板半寬。
+     * @property panelBottom 面板下界。
+     * @property faceLeftX 頭像欄左界。
+     * @property nameLeftX 名稱欄左界。
+     * @property statusLeftX 狀態欄左界。
+     * @property waitingTilesLeftX 等待牌列左界。
+     */
     private data class InformationLayout(
         val panelHalfWidth: Float,
         val panelBottom: Float,

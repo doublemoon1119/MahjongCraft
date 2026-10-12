@@ -24,7 +24,7 @@ import kotlin.test.assertNull
 import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
-/** 驗證歷史清單回覆的 UTF-8 大小限制與縮頁 cursor。 */
+/** 驗證歷史清單回覆的 UTF-8 大小限制與縮頁游標。 */
 class HistoryQueryResponseBudgetTest {
     /** 規則設定回應通過正式 registry，大小超限時移除整份設定而不截斷欄位。 */
     @Test
@@ -54,7 +54,7 @@ class HistoryQueryResponseBudgetTest {
         assertNull(response.config)
     }
 
-    /** 缩頁後 cursor 應指向實際傳出的最後一筆，不能跳過未傳資料。 */
+    /** 縮頁後的游標應指向實際傳出的最後一筆，不能跳過未傳資料。 */
     @Test
     fun `budget truncation uses last sent entry as cursor`() {
         val first = summary(Uuid.random(), score = 1000)
@@ -110,7 +110,14 @@ class HistoryQueryResponseBudgetTest {
         assertEquals(HistoryQueryErrorCodeDto.CONTENT_TOO_LARGE, response.errorCode)
     }
 
-    /** 建立測試用摘要。 */
+    /**
+     * 建立測試用歷史場次摘要。
+     *
+     * @param matchId 場次識別碼。
+     * @param score 測試結果中玩家的分數。
+     * @param diagnostic 選用的完整性診斷文字。
+     * @return 使用指定識別碼、分數與診斷，且只有一位玩家與一回合的已完成場次摘要。
+     */
     private fun summary(
         matchId: Uuid,
         score: Int = 1000,

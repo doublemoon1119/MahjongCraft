@@ -9,7 +9,14 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import org.koin.core.annotation.Factory
 import kotlin.uuid.Uuid
 
-/** 在呈現層閒置後，收斂不需要玩家輸入的開局準備步驟。 */
+/**
+ * 在呈現閒置後，收斂不需要玩家輸入的開局準備步驟。
+ *
+ * @property gameRepository 讀取與更新權威遊戲。
+ * @property moduleRegistry 依桌況設定取得規則模組。
+ * @property resolverRegistry 取得規則提供的準備流程解析器。
+ * @property snapshotSynchronizer 更新準備流程變更後的觀看者快照。
+ */
 @Factory
 class AdvanceAutomaticRoundPreparationUseCase(
     private val gameRepository: GameRepository,
@@ -70,13 +77,20 @@ class AdvanceAutomaticRoundPreparationUseCase(
         return update.changed
     }
 
+    /**
+     * 一次自動準備收斂所產生的歷史事實。
+     *
+     * @property historyDrafts 此次收斂需要記錄的自動步驟事實。
+     */
     private data class AutomaticPreparationUpdate(
         val historyDrafts: List<HistoryEventDraft>,
     ) {
+        /** 是否至少完成一個準備步驟。 */
         val changed: Boolean get() = historyDrafts.isNotEmpty()
     }
 
     private companion object {
+        /** 單次呼叫最多自動收斂的步驟數，避免錯誤 resolver 無限產生空參與者步驟。 */
         const val MAX_AUTOMATIC_PREPARATION_STEPS: Int = 128
     }
 }

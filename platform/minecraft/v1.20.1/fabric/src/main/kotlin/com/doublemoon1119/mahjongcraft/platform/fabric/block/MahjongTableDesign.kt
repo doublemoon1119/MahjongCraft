@@ -18,7 +18,14 @@ enum class MahjongTableDesign {
     PEDESTAL,
     ;
 
-    /** 取得指定 part 與朝向的碰撞形狀。 */
+    /**
+     * 取得指定 part 與朝向的碰撞形狀。
+     *
+     * @param part 結構中的方塊位置。
+     * @param facing 麻將桌朝向，必須為水平方向。
+     * @return 以目前方塊為基準的碰撞形狀。
+     * @throws IllegalArgumentException 當 [facing] 不是水平方向時。
+     */
     fun collisionShape(part: MahjongTablePart, facing: Direction): VoxelShape {
         require(facing.axis.isHorizontal) { "Mahjong table facing must be horizontal" }
         val northFacingShape = when {
@@ -30,15 +37,24 @@ enum class MahjongTableDesign {
     }
 
     /**
-     * 取得可選取範圍：只涵蓋實際渲染出來的幾何。
+     * 取得指定 part 與朝向的選取形狀；目前與碰撞形狀相同。
      *
-     * 上層中央沒有靜態模型，因此不提供選取框，否則玩家會在桌面上方看到一個內部空無一物的整格線框。
-     * 該位置的互動與拆除改由正下方的 controller 承接——桌面是底層方塊最上緣，射線穿過空的上層中央
-     * 後會直接命中桌面。空間本身仍由不可替換的 part 佔用，其他方塊放不進來。
+     * 上層中央沒有靜態模型，因此不提供選取框；該位置的互動與拆除由正下方的 controller 承接。
+     * 空間仍由不可替換的 part 佔用，其他方塊無法放入。
+     *
+     * @param part 結構中的方塊位置。
+     * @param facing 麻將桌朝向，必須為水平方向。
+     * @return 以目前方塊為基準的選取形狀。
+     * @throws IllegalArgumentException 當 [facing] 不是水平方向時。
      */
     fun outlineShape(part: MahjongTablePart, facing: Direction): VoxelShape = collisionShape(part, facing)
 
-    /** 取得上層桌緣碰撞；中央保留空間沒有碰撞。 */
+    /**
+     * 取得上層桌緣碰撞；中央保留空間沒有碰撞。
+     *
+     * @param part 要量測的上層結構位置。
+     * @return 上層桌緣的 voxel shape。
+     */
     private fun topCollisionShape(part: MahjongTablePart): VoxelShape {
         if (part == MahjongTablePart.TOP_CENTER) return VoxelShapes.empty()
         val boxes = buildList {
@@ -50,7 +66,12 @@ enum class MahjongTableDesign {
         return boxes.fold(VoxelShapes.empty(), VoxelShapes::union)
     }
 
-    /** 取得四腳桌底層桌面與外角桌腳碰撞。 */
+    /**
+     * 取得四腳桌底層桌面與外角桌腳碰撞。
+     *
+     * @param part 要量測的底層結構位置。
+     * @return 底層桌面及必要桌腳的 voxel shape。
+     */
     private fun fourLegBottomCollisionShape(part: MahjongTablePart): VoxelShape {
         val tabletop = cuboid(0.0, 14.0, 0.0, 16.0, 16.0, 16.0)
         if (part.localX == 0 || part.localZ == 0) return tabletop
@@ -60,7 +81,12 @@ enum class MahjongTableDesign {
         return VoxelShapes.union(tabletop, leg)
     }
 
-    /** 取得中央柱桌底層桌面、controller 底座與中央柱碰撞。 */
+    /**
+     * 取得中央柱桌底層桌面、controller 底座與中央柱碰撞。
+     *
+     * @param part 要量測的底層結構位置。
+     * @return 底層桌面及 controller 支撐結構的 voxel shape。
+     */
     private fun pedestalBottomCollisionShape(part: MahjongTablePart): VoxelShape {
         val tabletop = cuboid(0.0, 12.0, 0.0, 16.0, 16.0, 16.0)
         if (part != MahjongTablePart.BOTTOM_CENTER) return tabletop
@@ -69,7 +95,13 @@ enum class MahjongTableDesign {
         return VoxelShapes.union(tabletop, base, column)
     }
 
-    /** 將朝北局部形狀繞方塊中心旋轉至指定世界朝向。 */
+    /**
+     * 將朝北局部形狀繞方塊中心旋轉至指定世界朝向。
+     *
+     * @param shape 朝北方向的局部形狀。
+     * @param facing 目標水平朝向。
+     * @return 旋轉後的形狀。
+     */
     private fun rotateFromNorth(shape: VoxelShape, facing: Direction): VoxelShape {
         if (facing == Direction.NORTH || shape.isEmpty) return shape
         val rotatedBoxes = shape.boundingBoxes.map { box ->
@@ -104,7 +136,17 @@ enum class MahjongTableDesign {
         return rotatedBoxes.fold(VoxelShapes.empty(), VoxelShapes::union)
     }
 
-    /** 以模型像素為單位建立不觸發 Minecraft block registry 初始化的長方體。 */
+    /**
+     * 以模型像素為單位建立不觸發 Minecraft block registry 初始化的長方體。
+     *
+     * @param minX X 軸最小座標。
+     * @param minY Y 軸最小座標。
+     * @param minZ Z 軸最小座標。
+     * @param maxX X 軸最大座標。
+     * @param maxY Y 軸最大座標。
+     * @param maxZ Z 軸最大座標。
+     * @return 對應的 Minecraft voxel shape。
+     */
     private fun cuboid(
         minX: Double,
         minY: Double,
@@ -123,6 +165,7 @@ enum class MahjongTableDesign {
 
     /** 共用桌緣寬度與高度，單位為模型像素。 */
     private companion object {
+        /** 桌緣在模型像素中的寬度。 */
         const val RIM: Double = 1.0
     }
 }

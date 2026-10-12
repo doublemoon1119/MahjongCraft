@@ -88,12 +88,14 @@ fun GameActionPersistenceDto.Kan.toDomain(): GameAction.Kan = GameAction.Kan(
     withTiles = withTileIds.map(Uuid::parse),
 )
 
+/** 將槓種類轉成存檔 DTO。 */
 private fun GameAction.KanType.toPersistenceDto(): KanTypePersistenceDto = when (this) {
     GameAction.KanType.OPEN_KAN -> KanTypePersistenceDto.OPEN_KAN
     GameAction.KanType.CLOSED_KAN -> KanTypePersistenceDto.CLOSED_KAN
     GameAction.KanType.ADDED_KAN -> KanTypePersistenceDto.ADDED_KAN
 }
 
+/** 將已保存的槓種類還原成領域值。 */
 private fun KanTypePersistenceDto.toDomain(): GameAction.KanType = when (this) {
     KanTypePersistenceDto.OPEN_KAN -> GameAction.KanType.OPEN_KAN
     KanTypePersistenceDto.CLOSED_KAN -> GameAction.KanType.CLOSED_KAN

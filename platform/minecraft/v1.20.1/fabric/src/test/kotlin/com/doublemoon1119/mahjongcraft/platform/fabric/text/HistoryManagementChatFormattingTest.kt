@@ -126,7 +126,11 @@ class HistoryManagementChatFormattingTest {
         bullets.forEach { assertEquals(Formatting.GRAY.colorValue, it.style.color?.rgb) }
     }
 
-    /** 建立具有固定磁碟與政策值的測試快照。 */
+    /**
+     * 建立具有固定磁碟與政策值的測試快照。
+     *
+     * @return 各類場次數、佇列數與磁碟用量皆固定的儲存摘要。
+     */
     private fun snapshot(): HistoryStorageSnapshot = HistoryStorageSnapshot(
         completedMatchCount = 3L,
         activeMatchCount = 2L,
@@ -140,7 +144,11 @@ class HistoryManagementChatFormattingTest {
         updatedAt = Instant.parse("2026-01-01T00:00:00Z"),
     )
 
-    /** 建立不限制場數與天數的固定保留政策。 */
+    /**
+     * 建立不限制場數與天數的固定保留政策。
+     *
+     * @return 保留政策設定，磁碟上限為 16 MiB。
+     */
     private fun policy(): HistoryRetentionPolicy = HistoryRetentionPolicy(
         includeInterruptedMatches = false,
         maxMatches = 0,

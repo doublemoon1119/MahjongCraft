@@ -47,7 +47,7 @@ class FabricDecisionTimerScheduler(
     /** 決策逾時處理錯誤的專用 logger。 */
     private val logger = mahjongCraftLogger(FabricDecisionTimerScheduler::class)
 
-    /** 每個 tick 的推進與每秒一次的全域處理。 */
+    /** 協調每個 tick 的推進與每秒一次的全域處理。 */
     private val processor = DecisionTickProcessor(
         rotation = GameAdvanceRotation(TICKS_PER_SECOND),
         listGames = { gameRepository.getAllGameIds() },

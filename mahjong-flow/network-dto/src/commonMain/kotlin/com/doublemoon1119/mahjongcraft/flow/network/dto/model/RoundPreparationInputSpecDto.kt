@@ -11,14 +11,13 @@ sealed interface RoundPreparationInputSpecDto {
     @SerialName("confirmation")
     data object Confirmation : RoundPreparationInputSpecDto
 
-    /** 單選輸入。 */
-    @Serializable
-    @SerialName("single_choice")
     /**
-     * SingleChoice 網路 DTO。
+     * 單選輸入規格。
      *
      * @property optionIds 可選項目的識別碼列表。
      */
+    @Serializable
+    @SerialName("single_choice")
     data class SingleChoice(val optionIds: List<String>) : RoundPreparationInputSpecDto
 
     /**

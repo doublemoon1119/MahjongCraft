@@ -45,6 +45,11 @@ class PlatformTargetsSettingsPluginTest {
         assertTrue(result.output.contains("core, minecraft-test"))
     }
 
+    /**
+     * 建立 Settings plugin 測試所需的 catalog 與 Gradle 專案。
+     *
+     * @param root 測試專案根目錄。
+     */
     private fun prepareBuild(root: File) {
         root.resolve("gradle").mkdirs()
         root.toPath().resolve("platform/test").createDirectories()
@@ -82,11 +87,22 @@ class PlatformTargetsSettingsPluginTest {
         root.resolve("platform/test/build.gradle.kts").writeText("")
     }
 
+    /**
+     * 建立執行測試 fixture 的 Gradle runner。
+     *
+     * @param root 測試專案根目錄。
+     * @return 已設定專案目錄與 plugin classpath 的 runner。
+     */
     private fun runner(root: File): GradleRunner = GradleRunner.create()
         .withProjectDir(root)
         .withPluginClasspath()
         .forwardOutput()
 
+    /**
+     * 建立並在測試完成後刪除暫存專案。
+     *
+     * @param block 使用暫存專案根目錄的測試動作。
+     */
     private fun withFixture(block: (File) -> Unit) {
         createTempDirectory("mahjongcraft-settings-test").toFile().apply {
             try {

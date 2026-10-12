@@ -33,7 +33,7 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
-/** Development-only 權威對局情境的 registry、fixture 與驗證測試。 */
+/** 驗證開發用對局情境的登錄、建構與權威狀態約束。 */
 class DebugGameScenarioTest {
     /** Registry 應以穩定順序列出並解析所有內建情境。 */
     @Test
@@ -390,7 +390,12 @@ class DebugGameScenarioTest {
         }
     }
 
-    /** 建立測試所需的正式日麻遊戲、module registry 與 validator。 */
+    /**
+     * 建立測試所需的正式日麻遊戲、module registry 與 validator。
+     *
+     * @param config 情境使用的日麻規則設定。
+     * @return 同時持有遊戲輸入、模組 registry 與驗證器的 fixture。
+     */
     private fun createFixture(config: RiichiRuleConfig = RiichiRuleConfig()): Fixture {
         val playerIds = List(4) { Uuid.random() }
         val module = RiichiRuleModule("mahjongcraft:riichi", config)
@@ -414,14 +419,24 @@ class DebugGameScenarioTest {
         return Fixture(context, moduleRegistry, DebugGameScenarioValidator(moduleRegistry))
     }
 
-    /** 依情境適用的人數建立四人或三人日麻的情境輸入。 */
+    /**
+     * 依情境適用的人數建立四人或三人日麻的情境輸入。
+     *
+     * @param id 情境完整識別碼。
+     * @return 符合該情境人數規則的輸入。
+     */
     private fun contextFor(id: String): DebugGameScenarioContext = if (id in THREE_PLAYER_IDS) {
         createThreePlayerRiichiScenarioContext()
     } else {
         createFixture().context
     }
 
-    /** 收集結果內所有權威牌 UUID。 */
+    /**
+     * 收集結果內所有權威牌 UUID。
+     *
+     * @param result 要檢視的情境結果。
+     * @return 玩家手牌、牌河與牌牆中的牌識別碼集合。
+     */
     private fun allTileIds(result: DebugGameScenarioResult): Set<Uuid> = result.game.tableState.let { state ->
         (
             state.players.flatMap { it.hand.allTiles + it.discardPile.entries.map { entry -> entry.tile } } +
@@ -438,13 +453,16 @@ class DebugGameScenarioTest {
         fixture.validator.validate(fixture.context, result)
     }
 
-    /** 測試共用的遊戲 context 與規則依賴。 */
+    /**
+     * 測試共用的情境輸入與規則依賴。
+     *
+     * @property context 情境建構輸入。
+     * @property moduleRegistry 已註冊內建規則的模組登錄表。
+     * @property validator 檢查情境結果是否符合對局約束的驗證器。
+     */
     private data class Fixture(
-        /** 情境建構輸入。 */
         val context: DebugGameScenarioContext,
-        /** 已註冊內建規則的 module registry。 */
         val moduleRegistry: MahjongModuleRegistryImpl,
-        /** 權威情境 validator。 */
         val validator: DebugGameScenarioValidator,
     )
 
@@ -464,6 +482,7 @@ class DebugGameScenarioTest {
         assertEquals(config, result.game.tableState.config)
     }
 
+    /** 情境排序與牌牆消耗斷言使用的共用資料。 */
     private companion object {
         /** 四人日麻完成開局發牌後離開牌牆的牌張數。 */
         const val INITIAL_DEAL_TILE_COUNT: Int = 52
@@ -471,7 +490,7 @@ class DebugGameScenarioTest {
         /** 情境停點前，當前玩家已完成的一次一般摸牌。 */
         const val CURRENT_DRAW_TILE_COUNT: Int = 1
 
-        /** 首批情境的固定排序。 */
+        /** 所有內建情境應採用的固定排序。 */
         val EXPECTED_IDS: List<String> = listOf(
             "mahjongcraft:automatic_auto_win_ron",
             "mahjongcraft:automatic_auto_win_tsumo",

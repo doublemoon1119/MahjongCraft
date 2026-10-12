@@ -180,14 +180,25 @@ class CoreExtensionRegistries(
     }
 }
 
-/** 建立固定 ID 與顯示名稱的診斷快照類別。 */
+/**
+ * 建立固定 ID 與顯示名稱的診斷快照類別。
+ *
+ * @param id 診斷分類的穩定識別字串。
+ * @param displayName 診斷分類的顯示名稱。
+ * @param registrationKeys 此分類目前登記的 key。
+ */
 private fun snapshotCategory(
     id: String,
     displayName: String,
     registrationKeys: Iterable<String>,
 ): ExtensionRegistrationSnapshotCategory = ExtensionRegistrationSnapshotCategory(id, displayName, registrationKeys.toSet())
 
-/** 將子 registry 名稱加入 key，避免不同 DTO registry 使用相同 serial name 時互相抵銷。 */
+/**
+ * 將子 registry 名稱加入 key，避免不同 DTO registry 使用相同 serial name 時互相抵銷。
+ *
+ * @param prefix 子 registry 名稱前綴。
+ * @param keys 要加入接收集合的登記 key。
+ */
 private fun MutableSet<String>.addPrefixed(prefix: String, keys: Iterable<String>) {
     keys.forEach { key -> add("$prefix:$key") }
 }

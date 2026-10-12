@@ -47,7 +47,11 @@ class FabricDebugTextCommand(
     @Provided private val json: Json,
     @Provided private val networkRegistries: NetworkDtoRegistries,
 ) {
-    /** 建立 `hovered_text` 的六種訊息排版預覽。 */
+    /**
+     * 建立 `hovered_text` 的六種訊息排版預覽。
+     *
+     * @return 可掛入 debug 指令樹的節點。
+     */
     fun buildHoveredTextCommand(): LiteralArgumentBuilder<ServerCommandSource> = literal(HOVERED_TEXT_SUBCOMMAND)
         .then(
             literal(EXHAUSTIVE_DRAW_SETTLEMENT_ARGUMENT)
@@ -70,7 +74,12 @@ class FabricDebugTextCommand(
         )
         .then(literal(SERVER_CONFIG_ARGUMENT).executes { context -> previewServerConfigHoveredText(context.source) })
 
-    /** `hovered_text exhaustive_draw_settlement`：以正式 builder 發送一筆可懸停檢查的 round-result 訊息。 */
+    /**
+     * `hovered_text exhaustive_draw_settlement`：以正式 builder 發送一筆可懸停檢查的 round-result 訊息。
+     *
+     * @param source 指令呼叫來源。
+     * @return Brigadier 命令結果碼。
+     */
     private fun previewExhaustiveDrawSettlementHoveredText(source: ServerCommandSource): Int {
         val details = Text.empty()
         HOVERED_TEXT_SAMPLE_ROWS.forEachIndexed { index, row ->
@@ -100,7 +109,12 @@ class FabricDebugTextCommand(
         return COMMAND_SUCCESS
     }
 
-    /** `hovered_text win_settlement`：以正式 round-result builder 預覽胡牌結算摘要。 */
+    /**
+     * `hovered_text win_settlement`：以正式 round-result builder 預覽胡牌結算摘要。
+     *
+     * @param source 指令呼叫來源。
+     * @return Brigadier 命令結果碼。
+     */
     private fun previewWinSettlementHoveredText(source: ServerCommandSource): Int {
         val details = Text.empty()
             .append(Text.translatable(WinSettlementTextKeys.RON_SUMMARY, "Player", "AI 1"))
@@ -115,7 +129,12 @@ class FabricDebugTextCommand(
         return COMMAND_SUCCESS
     }
 
-    /** `hovered_text match_settlement`：以正式 match-result builder 預覽最終排行 hover。 */
+    /**
+     * `hovered_text match_settlement`：以正式 match-result builder 預覽最終排行 hover。
+     *
+     * @param source 指令呼叫來源。
+     * @return Brigadier 命令結果碼。
+     */
     private fun previewMatchSettlementHoveredText(source: ServerCommandSource): Int {
         val details = Text.empty()
         listOf("PlayerLongName123" to "120000", "AI 1" to "45000", "PlayerC" to "25000", "PlayerD" to "-12000")
@@ -127,7 +146,12 @@ class FabricDebugTextCommand(
         return COMMAND_SUCCESS
     }
 
-    /** 使用正式 feedback publisher 發送建立牌桌位置的 hover 預覽。 */
+    /**
+     * 使用正式 feedback publisher 發送建立牌桌位置的 hover 預覽。
+     *
+     * @param source 指令呼叫來源。
+     * @return Brigadier 命令結果碼。
+     */
     private fun previewGameCreatedLocationHoveredText(source: ServerCommandSource): Int {
         val player = source.player ?: return COMMAND_FAILURE
         feedbackPublisher.publish(
@@ -144,7 +168,13 @@ class FabricDebugTextCommand(
         return COMMAND_SUCCESS
     }
 
-    /** 使用正式 feedback publisher 發送遊戲設定 show／changed／unchanged hover 預覽。 */
+    /**
+     * 使用正式 feedback publisher 發送遊戲設定 show／changed／unchanged hover 預覽。
+     *
+     * @param source 指令呼叫來源。
+     * @param variant 設定顯示狀態，使用 `show`、`changed` 或 `unchanged`。
+     * @return Brigadier 命令結果碼。
+     */
     private fun previewGameConfigHoveredText(source: ServerCommandSource, variant: String): Int {
         val player = source.player ?: return COMMAND_FAILURE
         val current = json.encodeToString(GameConfig(DebugPreviewDefaults.RULE_CONFIG).toDto(networkRegistries))
@@ -160,7 +190,12 @@ class FabricDebugTextCommand(
         return COMMAND_SUCCESS
     }
 
-    /** 使用正式 config builder 發送目前 server config 的 hover 預覽。 */
+    /**
+     * 使用正式 config builder 發送目前 server config 的 hover 預覽。
+     *
+     * @param source 指令呼叫來源。
+     * @return Brigadier 命令結果碼。
+     */
     private fun previewServerConfigHoveredText(source: ServerCommandSource): Int {
         source.sendFeedback(
             {
@@ -175,7 +210,16 @@ class FabricDebugTextCommand(
         return COMMAND_SUCCESS
     }
 
-    /** 正式 round-result hover builder 的單列測試資料。 */
+    /**
+     * 正式 round-result hover builder 的單列測試資料。
+     *
+     * @property playerName 顯示名稱。
+     * @property previousRank 前一排名次。
+     * @property currentRank 本次排名次。
+     * @property rankSymbol 名次變化符號。
+     * @property previousScore 前一分數。
+     * @property currentScore 本次分數。
+     */
     private data class HoveredTextSampleRow(
         val playerName: String,
         val previousRank: Int,

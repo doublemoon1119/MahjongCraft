@@ -9,7 +9,14 @@ import kotlin.uuid.Uuid
 
 /** 將規則 transition phases 轉成同步且碰撞安全的世界路徑。 */
 object TileWallTransitionMotionPlanner {
-    /** 將砌牆格位到規則最終布局建立為單一同步開門 phase。 */
+    /**
+     * 將砌牆格位到規則最終布局建立為單一同步開門 phase。
+     *
+     * @param context 此桌的幾何投影資料。
+     * @param assemblyStructure 開門前各牌的組裝格位。
+     * @param finalLayout 規則指定的開門後布局。
+     * @return 全部移動的同步路徑，或無法安全規劃的牌與原因。
+     */
     fun planOpening(
         context: MahjongTileWallProjectionContext,
         assemblyStructure: Map<Uuid, TileWallPosition>,
@@ -30,7 +37,13 @@ object TileWallTransitionMotionPlanner {
         return plan(context, listOf(PhysicalWallLayoutTransitionPhase(moves)))
     }
 
-    /** 依 [context] 規劃所有 [phases]，任一移動失敗時不回傳部分結果。 */
+    /**
+     * 依 [context] 規劃所有 [phases]，任一移動失敗時不回傳部分結果。
+     *
+     * @param context 此桌的幾何投影資料。
+     * @param phases 依規則順序排列的移動階段。
+     * @return 完整移動計畫，或第一個無法安全規劃的牌與原因。
+     */
     fun plan(
         context: MahjongTileWallProjectionContext,
         phases: List<PhysicalWallLayoutTransitionPhase>,
@@ -51,7 +64,13 @@ object TileWallTransitionMotionPlanner {
         return TileWallTransitionMotionDecision.Completed(TileWallTransitionMotionPlan(plannedPhases))
     }
 
-    /** 將同時包含水平與升降的 move 拆成不穿過同墩牌的兩段 placement 路徑。 */
+    /**
+     * 將同時包含水平與升降的 move 拆成不穿過同墩牌的兩段 placement 路徑。
+     *
+     * @param context 此桌的幾何投影資料。
+     * @param move 要規劃的牌移動。
+     * @return 拆分後的成功路徑，或幾何規劃拒絕的原因。
+     */
     private fun planMove(
         context: MahjongTileWallProjectionContext,
         move: PhysicalWallTileMove,

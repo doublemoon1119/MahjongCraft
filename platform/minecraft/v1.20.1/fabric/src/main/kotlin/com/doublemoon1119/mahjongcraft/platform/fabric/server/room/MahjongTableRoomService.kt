@@ -55,6 +55,33 @@ import kotlin.uuid.toKotlinUuid
  * 目前由右鍵／蹲下右鍵桌子（[interact]／[leave]）與 `/mahjongcraft` 玩家指令
  * （[ready]／[start]）共用；日後若互動方式改成懸浮 HUD 等其他觸發，只需要新增呼叫端，這裡的方法
  * 本身不需要更動。
+ *
+ * @property scope 執行房間與遊戲操作的協程作用域。
+ * @property roomRepository 查詢等待室狀態。
+ * @property roomSnapshotRepository 管理等待室快照。
+ * @property gameRepository 查詢對局狀態。
+ * @property membershipRepository 查詢玩家桌子歸屬。
+ * @property defaultGameConfigProvider 建立新房間預設設定。
+ * @property createRoom 建立房間的權威操作。
+ * @property joinRoom 加入房間的權威操作。
+ * @property leaveRoom 離開房間的權威操作。
+ * @property toggleReady 切換準備狀態的權威操作。
+ * @property startGame 開始對局的權威操作。
+ * @property addAiPlayer 新增 AI 成員的權威操作。
+ * @property changeAiStrategy 變更 AI 策略的權威操作。
+ * @property kickPlayer 移除房間成員的權威操作。
+ * @property updateConfig 更新房間設定的權威操作。
+ * @property syncRoom 寫入等待室快照。
+ * @property syncGame 寫入對局快照。
+ * @property feedbackPublisher 發布玩家回饋。
+ * @property tableLocationRegistry 查詢麻將桌座標。
+ * @property reachableTableResolver 驗證玩家能否互動桌子。
+ * @property memberCandidateResolver 查詢房間成員候選。
+ * @property advanceManager 請求自動推進對局。
+ * @property serverHolder 查詢目前伺服器與線上玩家。
+ * @property dispatchers 提供伺服器主執行緒調度器。
+ * @property json 編碼網路訊息的 JSON 設定。
+ * @property networkRegistries 轉換網路 DTO 所需的規則註冊表。
  */
 @Single
 class MahjongTableRoomService(
@@ -85,7 +112,12 @@ class MahjongTableRoomService(
     @Provided private val json: Json,
     @Provided private val networkRegistries: NetworkDtoRegistries,
 ) {
-    /** 將 RoomScreen 的強型別操作路由到既有權威 use case；封包中的玩家身分一律忽略。 */
+    /**
+     * 將 RoomScreen 的強型別操作路由到既有權威 use case；封包中的玩家身分一律忽略。
+     *
+     * @param player Fabric 驗證過的封包來源玩家。
+     * @param action RoomScreen 傳來的操作 DTO。
+     */
     fun handleRoomAction(player: ServerPlayerEntity, action: RoomActionDto) {
         val tableId = runCatching { Uuid.parse(action.venueId) }.getOrNull() ?: return
         when (action) {
@@ -111,7 +143,13 @@ class MahjongTableRoomService(
         }
     }
 
-    /** 防止客戶端以另一張桌子的 ID 操作自己目前所在的房間。 */
+    /**
+     * 防止客戶端以另一張桌子的 ID 操作自己目前所在的房間。
+     *
+     * @param player 經伺服器驗證的玩家。
+     * @param tableId 操作要求指定的桌子 UUID。
+     * @param action membership 相符時執行的操作。
+     */
     private fun withMatchingMembership(player: ServerPlayerEntity, tableId: Uuid, action: (ServerPlayerEntity) -> Unit) {
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
@@ -128,6 +166,14 @@ class MahjongTableRoomService(
      *
      * 座標是客戶端判斷「玩家是否還在桌子附近」與「桌子是否還在」的依據；少帶座標的話，該關閉的畫面會
      * 一直留著。集中在這裡建立，就不會有呼叫端漏帶。
+     *
+     * @param tableId 桌子 UUID。
+     * @param occupancy 桌子目前的空桌、等待室或對局狀態。
+     * @param roomSnapshot 可選的等待室快照。
+     * @param playingPlayerIds 對局中的真人 UUID 字串。
+     * @param playingAiPlayerIds 對局中的 AI UUID 字串。
+     * @param playingGameConfig 對局使用的遊戲設定 DTO。
+     * @return 包含狀態、可選快照與桌子位置的 payload。
      */
     private fun tableOccupancyPayload(
         tableId: Uuid,
@@ -152,7 +198,12 @@ class MahjongTableRoomService(
         )
     }
 
-    /** 只送出桌子目前的公開佔用狀態並開啟 RoomScreen，不建立、加入或離開房間。 */
+    /**
+     * 只送出桌子目前的公開佔用狀態並開啟 RoomScreen，不建立、加入或離開房間。
+     *
+     * @param table 要顯示的麻將桌方塊實體。
+     * @param player 接收桌子狀態的玩家。
+     */
     fun openRoomScreen(table: MahjongTableBlockEntity, player: ServerPlayerEntity) {
         val tableId = table.tableId
         val playerId = player.uuid.toKotlinUuid()
@@ -202,7 +253,12 @@ class MahjongTableRoomService(
         }
     }
 
-    /** RoomScreen 明確建立空桌房間。 */
+    /**
+     * RoomScreen 明確建立空桌房間。
+     *
+     * @param tableId 要建立房間的桌子 UUID。
+     * @param player 發起建立操作的玩家。
+     */
     fun createFromScreen(tableId: Uuid, player: ServerPlayerEntity) {
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
@@ -220,7 +276,12 @@ class MahjongTableRoomService(
         }
     }
 
-    /** RoomScreen 明確加入既有等待房間。 */
+    /**
+     * RoomScreen 明確加入既有等待房間。
+     *
+     * @param tableId 要加入的桌子 UUID。
+     * @param player 發起加入操作的玩家。
+     */
     fun joinFromScreen(tableId: Uuid, player: ServerPlayerEntity) {
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
@@ -236,14 +297,25 @@ class MahjongTableRoomService(
         }
     }
 
-    /** 建立與加入屬於桌旁操作，拒絕偽造的遠端 table ID。 */
+    /**
+     * 建立與加入屬於桌旁操作，拒絕偽造的遠端 table ID。
+     *
+     * @param tableId 要確認位置的桌子 UUID。
+     * @param player 執行桌旁操作的玩家。
+     * @return 玩家與桌子位於同一維度且距離在設定範圍內時為 true。
+     */
     private fun isTableReachable(tableId: Uuid, player: ServerPlayerEntity): Boolean {
         val location = tableLocationRegistry.get(tableId)?.location ?: return false
         if (player.serverWorld.registryKey.value.toString() != location.dimensionId) return false
         return player.squaredDistanceTo(location.x + 0.5, location.y + 0.5, location.z + 0.5) <= MAX_ROOM_SCREEN_DISTANCE_SQUARED
     }
 
-    /** RoomScreen 明確離開等待房間；房主會沿用既有語意解散房間。 */
+    /**
+     * RoomScreen 明確離開等待房間；房主會沿用既有語意解散房間。
+     *
+     * @param tableId 要離開的桌子 UUID。
+     * @param player 發起離開操作的玩家。
+     */
     private fun leaveFromScreen(tableId: Uuid, player: ServerPlayerEntity) {
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
@@ -288,7 +360,12 @@ class MahjongTableRoomService(
         }
     }
 
-    /** 依麻將桌目前處於空桌、等待室或遊戲階段，建立、加入或重新同步玩家狀態。 */
+    /**
+     * 依麻將桌目前處於空桌、等待室或遊戲階段，建立、加入或重新同步玩家狀態。
+     *
+     * @param table 玩家互動的麻將桌。
+     * @param player 發起互動的玩家。
+     */
     fun interact(table: MahjongTableBlockEntity, player: ServerPlayerEntity) {
         val tableId = table.tableId
         val playerId = player.uuid.toKotlinUuid()
@@ -339,7 +416,12 @@ class MahjongTableRoomService(
         }
     }
 
-    /** 讓玩家以蹲下右鍵離開目前麻將桌的等待階段；進行中的對局暫時禁止離開。 */
+    /**
+     * 讓玩家以蹲下右鍵離開目前麻將桌的等待階段；進行中的對局暫時禁止離開。
+     *
+     * @param table 玩家互動的麻將桌。
+     * @param player 發起離開操作的玩家。
+     */
     fun leave(table: MahjongTableBlockEntity, player: ServerPlayerEntity) {
         val tableId = table.tableId
         val playerId = player.uuid.toKotlinUuid()
@@ -382,6 +464,8 @@ class MahjongTableRoomService(
      *
      * 房主不參與準備機制（開局用 [start]），這裡先擋在呼叫 [toggleReady] 之前給出專屬回饋，避免
      * [ToggleReadyUseCase] 內部對房主的無操作分支被誤讀成一次真正的狀態切換。
+     *
+     * @param player 要切換準備狀態的玩家。
      */
     fun ready(player: ServerPlayerEntity) {
         val playerId = player.uuid.toKotlinUuid()
@@ -418,6 +502,8 @@ class MahjongTableRoomService(
      *
      * 開局後向 [AutomatedAdvanceManager] 請求推進：推進同時涵蓋第一位是 AI（驅動自動操作）與第一位是真人（推進最後的
      * 自動摸牌）兩種開局。
+     *
+     * @param player 發起開始操作的房主。
      */
     fun start(player: ServerPlayerEntity) {
         val playerId = player.uuid.toKotlinUuid()
@@ -462,6 +548,10 @@ class MahjongTableRoomService(
      *
      * 內部會讀取 [TableLocationRegistry] 與世界的 BlockEntity 狀態，兩者都只能在伺服器主執行緒存取；
      * 呼叫端必須先 `withContext(dispatchers.main)` 切回主執行緒，不能直接在 [scope] 的背景協程裡呼叫。
+     *
+     * @param player 要驗證的線上玩家。
+     * @param tableId 玩家所屬桌子 UUID。
+     * @return 玩家可在桌旁互動時為 true。
      */
     private fun isPlayerReachable(player: ServerPlayerEntity, tableId: Uuid): Boolean {
         val location = tableLocationRegistry.get(tableId)?.location ?: return false
@@ -471,6 +561,7 @@ class MahjongTableRoomService(
     /**
      * 讓房主替房間新增一名 AI 玩家。同樣以玩家目前的房間歸屬解析目標房間。
      *
+     * @param player 發起新增操作的房主。
      * @param strategyKey AI 使用的策略登記 key；不傳時使用 [AddAiPlayerUseCase] 的預設策略。
      */
     fun addAi(player: ServerPlayerEntity, strategyKey: String?) {
@@ -494,6 +585,9 @@ class MahjongTableRoomService(
     /**
      * 讓房主將指定玩家（含 AI）移出房間。同樣以玩家目前的房間歸屬解析目標房間。成功時被踢者與房主
      * 各自收到專屬回饋。
+     *
+     * @param player 發起踢除操作的房主。
+     * @param targetPlayerId 要移出房間的成員 UUID。
      */
     fun kick(player: ServerPlayerEntity, targetPlayerId: Uuid) {
         val playerId = player.uuid.toKotlinUuid()
@@ -530,6 +624,7 @@ class MahjongTableRoomService(
     /**
      * 讓房主替房間內既有的 AI 玩家更換策略。同樣以玩家目前的房間歸屬解析目標房間。
      *
+     * @param player 發起策略變更操作的房主。
      * @param targetAiId 欲更換策略的 AI 玩家 Uuid，必須是房間內的 AI。
      * @param strategyKey 新的策略登記 key。
      */
@@ -562,6 +657,8 @@ class MahjongTableRoomService(
     /**
      * 顯示玩家目前所在房間的完整遊戲設定，供指令印出可 hover／可點擊開啟編輯畫面的訊息。同樣以玩家
      * 目前的房間歸屬解析目標房間；沒有房主限制，任何在房間內的玩家都能查看目前設定。
+     *
+     * @param player 要查看房間設定的玩家。
      */
     fun showConfig(player: ServerPlayerEntity) {
         val playerId = player.uuid.toKotlinUuid()
@@ -579,6 +676,9 @@ class MahjongTableRoomService(
 
     /**
      * 讓房主以強型別設定更新目前所在房間。同樣以玩家目前的房間歸屬解析目標房間。
+     *
+     * @param player 發起更新操作的房主。
+     * @param newConfig 要套用的新設定。
      */
     fun updateConfig(player: ServerPlayerEntity, newConfig: GameConfig) {
         val playerId = player.uuid.toKotlinUuid()
@@ -613,7 +713,12 @@ class MahjongTableRoomService(
         }
     }
 
-    /** 將可辨識的房間錯誤映射成結構化回饋，其餘錯誤使用通用加入失敗提示。 */
+    /**
+     * 將可辨識的房間錯誤映射成結構化回饋，其餘錯誤使用通用加入失敗提示。
+     *
+     * @param playerId 收到回饋的玩家 UUID。
+     * @param error 權威房間操作回傳的錯誤。
+     */
     private fun publishRoomError(playerId: Uuid, error: RoomError) {
         feedbackPublisher.publish(playerId, MinecraftRoomFeedbackResolver.joinError(error))
     }

@@ -9,5 +9,6 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueCalcula
  */
 abstract class RiichiHandValueCalculatorTestBase {
 
+    /** 共用的日麻手牌番數計算器。 */
     protected val calculator = RiichiHandValueCalculator()
 }

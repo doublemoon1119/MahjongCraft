@@ -20,21 +20,31 @@ class WinRoundContinuationResolverRegistry {
     /** 目前已登記 resolver ID 的快照。 */
     val registrationKeys: Set<String> get() = resolvers.mapTo(mutableSetOf()) { it.id }
 
-    /** 登記 resolver；ID 不得重複。 */
+    /**
+     * 登記 resolver；ID 不得重複，註冊表凍結後不可登記。
+     *
+     * @param resolver 要登記的胡牌後續判定器。
+     */
     fun register(resolver: WinRoundContinuationResolver) {
         check(!frozen) { "Win round continuation resolver registry is frozen" }
         require(resolvers.none { it.id == resolver.id }) { "Win round continuation resolver already registered: ${resolver.id}" }
         resolvers += resolver
     }
 
-    /** 凍結並固定後續判定順序。 */
+    /** 凍結註冊表並依優先序、ID 固定判定順序；重複呼叫不改變結果。 */
     fun freeze() {
         if (frozen) return
         resolvers.sortWith(compareBy(WinRoundContinuationResolver::priority, WinRoundContinuationResolver::id))
         frozen = true
     }
 
-    /** 依 [ruleModule] 解析本次胡牌後的權威決策；沒有任何 resolver 成立時固定回傳 [WinRoundDirective.EndRound]。 */
+    /**
+     * 依 [ruleModule] 解析本次胡牌後的權威決策；沒有任何 resolver 成立時固定回傳 [WinRoundDirective.EndRound]。
+     *
+     * @param context 胡牌即時結算後的流程情境。
+     * @param ruleModule 目前對局使用的規則模組。
+     * @return 第一個成立的後續決策；沒有 resolver 成立時為 [WinRoundDirective.EndRound]。
+     */
     fun resolve(context: WinRoundContinuationContext, ruleModule: MahjongRuleModule<*>): WinRoundDirective {
         check(frozen) { "Win round continuation resolver registry must be frozen before use" }
         return resolvers.asSequence()

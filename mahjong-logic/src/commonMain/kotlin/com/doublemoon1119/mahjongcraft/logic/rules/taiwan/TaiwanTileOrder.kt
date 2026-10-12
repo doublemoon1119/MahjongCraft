@@ -15,6 +15,12 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 object TaiwanTileOrder : TileOrder {
     override fun compare(t1: Tile, t2: Tile): Int = getWeight(t1).compareTo(getWeight(t2))
 
+    /**
+     * 取得牌的排序權重。
+     *
+     * @param tile 要排序的牌。
+     * @return 依本檔規則排序的數值權重。
+     */
     private fun getWeight(tile: Tile): Double = when (tile) {
         is Tile.Numeric -> {
             val suitBase = when (tile.suit) {

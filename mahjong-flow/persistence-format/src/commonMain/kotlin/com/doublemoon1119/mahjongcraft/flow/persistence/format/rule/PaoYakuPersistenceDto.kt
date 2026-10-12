@@ -5,4 +5,10 @@ import kotlinx.serialization.Serializable
 
 /** [PaoYaku] 的 persistence DTO。 */
 @Serializable
-enum class PaoYakuPersistenceDto { DAISANGEN, DAISUUSHII }
+enum class PaoYakuPersistenceDto {
+    /** 大三元。 */
+    DAISANGEN,
+
+    /** 大四喜。 */
+    DAISUUSHII,
+}

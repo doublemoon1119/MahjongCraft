@@ -117,7 +117,15 @@ class RoomMemberGridLayoutTest {
         assertNull(grid.infoScrollbarRowAt(0.0, grid.infoTop(0).toDouble(), totalInfoRows))
     }
 
-    /** 建立測試用版面；未指定的輸入使用不影響該測試的預設值。 */
+    /**
+     * 建立測試用版面；未指定的輸入使用不影響該測試的預設值。
+     *
+     * @param width 視窗寬度。
+     * @param height 視窗高度。
+     * @param playerCount 成員數量。
+     * @param scrollIndex 捲動位置索引。
+     * @return 與輸入尺寸及成員數相符的網格版面。
+     */
     private fun grid(
         width: Int,
         height: Int = 480,

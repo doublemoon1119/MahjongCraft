@@ -180,7 +180,13 @@ class SqliteHistoryRetentionDatabaseTest {
         assertTrue(database.readReplayIds().isEmpty())
     }
 
-    /** 建立最小暫存事件。 */
+    /**
+     * 建立測試用暫存事件。
+     *
+     * @param matchId 事件所屬的對局 ID。
+     * @param sequence 事件序號，預設為第一筆。
+     * @return 帶有固定時間與空 payload 的暫存事件。
+     */
     private fun pending(matchId: String, sequence: Long = 1L): PendingHistoryRecord = PendingHistoryRecord(
         matchId = matchId,
         sequence = sequence,

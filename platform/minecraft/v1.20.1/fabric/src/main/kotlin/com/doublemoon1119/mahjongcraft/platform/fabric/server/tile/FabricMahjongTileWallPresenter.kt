@@ -40,7 +40,12 @@ import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 import kotlin.uuid.toKotlinUuid
 
-/** 使用 Fabric 1.20.1 entity 呈現並替換指定麻將桌的正式牌牆。 */
+/**
+ * 使用 Fabric 1.20.1 entity 呈現並替換指定麻將桌的正式牌牆。
+ *
+ * @property serverHolder 取得目前伺服器工作階段及已載入世界。
+ * @property spawnGateway 將新牌 entity 加入指定伺服器世界。
+ */
 @Single(binds = [MahjongTileWallPresenter::class])
 class FabricMahjongTileWallPresenter(
     private val serverHolder: FabricServerHolder,
@@ -68,6 +73,9 @@ class FabricMahjongTileWallPresenter(
      * 全部都已經沒有意義，應該整批清空，不需要區分「這張舊牌上一局屬於哪個呈現子系統」再各自分開
      * 清理。這也是本方法是這條開局呈現鏈裡第一個被呼叫的原因：由它負責一次把整張桌子清乾淨，之後
      * 手牌 presenter 只需要專心「領走這局的新牌」，不用再自己額外清理上一局的殘留。
+     *
+     * @param presentation 此次要呈現的牌牆資料與布局。
+     * @return 桌子有效且替換成功時為 `PRESENTED`，否則回報桌子或生成錯誤。
      */
     override fun present(presentation: MahjongTileWallPresentation): MahjongTileWallPresentationResult {
         val world = resolveWorld(presentation.tableLocation) ?: return MahjongTileWallPresentationResult.TABLE_NOT_FOUND
@@ -127,7 +135,12 @@ class FabricMahjongTileWallPresenter(
         return MahjongTileWallPresentationResult.PRESENTED
     }
 
-    /** 驗證既有牌牆後，把保留牌整理與初始公開牌翻面原子排入各牌 entity 的持久化佇列。 */
+    /**
+     * 驗證既有牌牆後，把保留牌整理與初始公開牌翻面原子排入各牌 entity 的持久化佇列。
+     *
+     * @param presentation 包含牌牆、公開牌、開始 tick 與桌子位置的呈現要求。
+     * @return 排程成功或找不到桌子、牌、有效路徑時的結果。
+     */
     override fun presentOpening(
         presentation: MahjongTileWallOpeningPresentation,
     ): MahjongTileWallPresentationResult {
@@ -187,7 +200,12 @@ class FabricMahjongTileWallPresenter(
         return MahjongTileWallPresentationResult.PRESENTED
     }
 
-    /** 將完整 transition 預先解析後，原子附加到同桌既有牌張的持久化佇列。 */
+    /**
+     * 將完整 transition 預先解析後，原子附加到同桌既有牌張的持久化佇列。
+     *
+     * @param presentation 包含移動階段、牌姿態與開始 tick 的轉場要求。
+     * @return 排程成功或桌子、牌、路徑驗證失敗的結果。
+     */
     override fun presentTransition(
         presentation: MahjongTileWallTransitionPresentation,
     ): MahjongTileWallTransitionResult {
@@ -229,6 +247,9 @@ class FabricMahjongTileWallPresenter(
      * 本方法只排牌牆由半空落桌的動畫；開門整理與初始公開牌翻面由 [presentOpening] 在初次發牌及四家
      * 手牌翻起後另行排入。[MahjongTileWallPresentation.animateOpening] 為 `false` 時代表 recovery 或
      * 靜態同步，牌牆會直接在最終座標與權威公開姿態生成，不重播已過去的開門或翻面動畫。
+     *
+     * @param world 牌牆所在的伺服器世界。
+     * @param tilesWithPosition 每張牌的牌牆位置與 entity 配對。
      */
     private fun startWallDropAnimations(
         world: ServerWorld,
@@ -259,7 +280,12 @@ class FabricMahjongTileWallPresenter(
         }
     }
 
-    /** 建立此牌牆請求使用的抽象 placement 世界投影資料。 */
+    /**
+     * 建立此牌牆請求使用的抽象 placement 世界投影資料。
+     *
+     * @param controllerPos 桌子 controller 的方塊座標。
+     * @return 包含此桌座標、朝向與牌牆尺寸的投影 context。
+     */
     private fun MahjongTileWallPresentation.projectionContext(controllerPos: BlockPos): MahjongTileWallProjectionContext = MahjongTileWallProjectionContext(
         controllerX = controllerPos.x,
         controllerY = controllerPos.y,
@@ -272,7 +298,12 @@ class FabricMahjongTileWallPresenter(
         sideCount = MahjongTileTableLayout.wallSideCount(assemblyStructure.values),
     )
 
-    /** 建立此 transition 請求使用的抽象 placement 世界投影資料。 */
+    /**
+     * 建立此 transition 請求使用的抽象 placement 世界投影資料。
+     *
+     * @param controllerPos 桌子 controller 的方塊座標。
+     * @return 包含此桌座標、朝向與牌牆尺寸的投影 context。
+     */
     private fun MahjongTileWallTransitionPresentation.projectionContext(
         controllerPos: BlockPos,
     ): MahjongTileWallProjectionContext = MahjongTileWallProjectionContext(
@@ -285,7 +316,12 @@ class FabricMahjongTileWallPresenter(
         sideCount = sideCount,
     )
 
-    /** 建立一墩牌牆落桌時的小音量聲音 step；同墩只由上層牌播放一次。 */
+    /**
+     * 建立一墩牌牆落桌時的小音量聲音 step；同墩只由上層牌播放一次。
+     *
+     * @param gameTime 預定落桌音效的絕對遊戲 tick。
+     * @return 帶播放與過期時刻的落桌音效步驟。
+     */
     private fun wallStackLandingSound(gameTime: Long): AnimationStep.PlaySound = AnimationStep.PlaySound(
         soundId = MahjongAnimationSounds.WALL_STACK_LAND,
         volume = 0.3f,
@@ -294,7 +330,12 @@ class FabricMahjongTileWallPresenter(
         expiresAtGameTime = gameTime + MahjongAnimationSounds.EVENT_GRACE_TICKS,
     )
 
-    /** 建立只在寶牌指示牌正式開始翻面時有效的提示聲音 step。 */
+    /**
+     * 建立只在寶牌指示牌正式開始翻面時有效的提示聲音 step。
+     *
+     * @param gameTime 預定播放提示聲的絕對遊戲 tick。
+     * @return 帶播放與過期時刻的提示音效步驟。
+     */
     private fun doraRevealSound(gameTime: Long): AnimationStep.PlaySound = AnimationStep.PlaySound(
         soundId = MahjongAnimationSounds.DORA_REVEAL,
         volume = 0.7f,
@@ -316,6 +357,13 @@ class FabricMahjongTileWallPresenter(
      * 毫無預兆地瞬間停住，跟位移早已有的減速收尾比起來明顯生硬；套用同一條曲線後兩者收尾節奏一致，
      * 翻面本身也有先快後慢的自然感，不是等速旋轉。這是刻意只在這個呼叫點加上的行為，不影響開局發牌
      * 翻牌／摸牌換面等其他既有呼叫點的線性旋轉手感，見 [AnimationStep.PlayMotion.easeRotation] KDoc。
+     *
+     * @param x 動畫往返的世界 X 座標。
+     * @param y 動畫往返的起始世界 Y 座標。
+     * @param z 動畫往返的世界 Z 座標。
+     * @param yaw 動畫期間維持的水平朝向。
+     * @param soundGameTime 選用提示聲的絕對播放 tick；null 時不加聲音步驟。
+     * @return 起飛、翻面與落下的持久化動畫步驟。
      */
     private fun revealFlipAnimationSteps(
         x: Double,
@@ -376,6 +424,11 @@ class FabricMahjongTileWallPresenter(
      * 讀取 entity 自身座標的既有慣例。同一次呼叫裡的牌全部立刻起飛，不需要額外的共用等待時刻：這裡
      * 是同步方法、一個 tick 內跑完整個迴圈，[net.minecraft.server.world.ServerWorld.getTime] 對每張牌
      * 而言都是同一個值，天然同步。
+     *
+     * @param tableId 牌所屬桌子的 UUID。
+     * @param tableLocation 桌子 controller 的版本無關位置。
+     * @param revealedTileIds 要翻面的管理中牌 UUID。
+     * @return 桌子有效時回報呈現結果；世界未載入時回報 `TABLE_NOT_FOUND`。
      */
     override fun revealDeadWallTiles(tableId: Uuid, tableLocation: TableLocation, revealedTileIds: Set<Uuid>): MahjongTileWallPresentationResult {
         val world = resolveWorld(tableLocation) ?: return MahjongTileWallPresentationResult.TABLE_NOT_FOUND
@@ -398,7 +451,13 @@ class FabricMahjongTileWallPresenter(
         return MahjongTileWallPresentationResult.PRESENTED
     }
 
-    /** 清除指定 controller 周圍且 table UUID 相符的所有正式管理中麻將牌（含手牌），理由同 [present] KDoc。 */
+    /**
+     * 清除指定 controller 周圍且 table UUID 相符的所有正式管理中麻將牌（含手牌），理由同 [present] KDoc。
+     *
+     * @param tableId 要清除牌張所屬的桌子 UUID。
+     * @param tableLocation 桌子 controller 的版本無關位置。
+     * @return 實際移除的牌 entity 數；世界未載入時為 0。
+     */
     override fun clear(tableId: Uuid, tableLocation: TableLocation): Int {
         val world = resolveWorld(tableLocation) ?: return 0
         val tiles = findManagedTiles(world, tableId, tableLocation.toBlockPos())
@@ -406,14 +465,27 @@ class FabricMahjongTileWallPresenter(
         return tiles.size
     }
 
-    /** 由版本無關 dimension ID 取得目前 server session 的世界。 */
+    /**
+     * 由版本無關 dimension ID 取得目前 server session 的世界。
+     *
+     * @param location 要解析世界的桌子位置。
+     * @return 對應的已載入伺服器世界；ID 無效或未載入時為 null。
+     */
     private fun resolveWorld(location: TableLocation): ServerWorld? {
         val identifier = Identifier.tryParse(location.dimensionId) ?: return null
         val worldKey = RegistryKey.of(RegistryKeys.WORLD, identifier)
         return serverHolder.current()?.getWorld(worldKey)
     }
 
-    /** 驗證指定位置確實是 UUID 與朝向資料可用的 controller。 */
+    /**
+     * 驗證指定位置確實是 UUID 與朝向資料可用的 controller。
+     *
+     * @param world 桌子所在的伺服器世界。
+     * @param controllerPos 要驗證的桌子 controller 座標。
+     * @param state 該位置目前的方塊狀態。
+     * @param tableId 預期的桌子 UUID。
+     * @return UUID 相符的桌子 block entity；驗證失敗時為 null。
+     */
     private fun resolveTable(
         world: ServerWorld,
         controllerPos: BlockPos,
@@ -433,6 +505,11 @@ class FabricMahjongTileWallPresenter(
      * 只查詢桌子結構附近並以同步 UUID 精確篩選，避免掃描整個 dimension。不篩選角色——同一張桌子
      * 目前所有管理中的麻將牌（不管是牌牆、王牌還是已經被領走的手牌）都在查詢範圍內，理由見 [present]
      * KDoc。
+     *
+     * @param world 桌子所在的伺服器世界。
+     * @param tableId 要比對的桌子 UUID。
+     * @param controllerPos 桌子 controller 座標。
+     * @return 搜尋範圍內由該桌管理的牌 entity。
      */
     private fun findManagedTiles(
         world: ServerWorld,
@@ -443,7 +520,11 @@ class FabricMahjongTileWallPresenter(
         Box(controllerPos).expand(TILE_SEARCH_HORIZONTAL, TILE_SEARCH_VERTICAL, TILE_SEARCH_HORIZONTAL),
     ) { tile -> tile.managedTableId == tableId }
 
-    /** 將版本無關 table location 轉回 Fabric 方塊座標。 */
+    /**
+     * 將版本無關 table location 轉回 Fabric 方塊座標。
+     *
+     * @return 對應的 Fabric 方塊座標。
+     */
     private fun TableLocation.toBlockPos(): BlockPos = BlockPos(x, y, z)
 
     /** 正式牌牆建立與查詢使用的固定參數。 */

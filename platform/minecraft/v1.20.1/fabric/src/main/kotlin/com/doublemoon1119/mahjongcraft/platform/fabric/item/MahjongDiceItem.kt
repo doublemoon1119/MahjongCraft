@@ -10,9 +10,17 @@ import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.ActionResult
 import net.minecraft.util.math.Direction
 
-/** 蹲下對方塊右鍵時放置自由測試用麻將骰子的 item。 */
+/**
+ * 蹲下對方塊右鍵時放置自由測試用麻將骰子的 item。
+ *
+ * @param settings 原版物品設定。
+ */
 class MahjongDiceItem(settings: Settings) : Item(settings) {
-    /** 蹲下時精確放置骰子；普通右鍵上表面時由玩家手部附近向命中點投擲。 */
+    /**
+     * 蹲下時精確放置骰子；普通右鍵上表面時由玩家手部附近向命中點投擲。
+     *
+     * @param context 方塊互動位置、玩家及物品堆疊。
+     */
     override fun useOnBlock(context: ItemUsageContext): ActionResult {
         val player = context.player ?: return ActionResult.PASS
         if (!player.isSneaking && context.side != Direction.UP) return ActionResult.PASS

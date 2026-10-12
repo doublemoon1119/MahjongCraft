@@ -7,6 +7,7 @@ import net.minecraft.client.render.VertexFormats
 
 /** 結算面板使用的半透明純色層；寫入自身深度，避免稍後繪製的雲層穿透面板。 */
 internal object ExhaustiveDrawSettlementPanelRenderLayer {
+    /** 結算面板 quad 使用的半透明且寫入深度的 render layer。 */
     val layer: RenderLayer = RenderLayer.of(
         "mahjongcraft_exhaustive_draw_settlement_panel",
         VertexFormats.POSITION_COLOR,

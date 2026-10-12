@@ -16,6 +16,7 @@ const val UNKNOWN_TILE_ASSET_KEY = "unknown"
  * @param registry 保存 [Tile.Extension] 對應 asset key 的 runtime registry；內建與第三方牌種共用
  * 同一份查詢流程。無法解析的 Extension ID 會回退至 [UNKNOWN_TILE_ASSET_KEY]，讓物品與 entity 使用
  * 相同的佔位外觀；此 fallback 不會改寫權威狀態保存的原始牌種 ID。
+ * @return 對應的 Minecraft 素材 key。
  */
 fun Tile.toAssetKey(registry: MinecraftTileAssetRegistry): String = when (this) {
     is Tile.Numeric -> "${suit.assetPrefix}$value"
@@ -29,6 +30,11 @@ fun Tile.toAssetKey(registry: MinecraftTileAssetRegistry): String = when (this) 
     is Tile.Extension -> registry.find(typeId) ?: UNKNOWN_TILE_ASSET_KEY
 }
 
+/**
+ * 數牌花色對應的單字母素材前綴。
+ *
+ * @return 萬、餅、條分別對應的素材前綴。
+ */
 private val Tile.Suit.assetPrefix: Char
     get() = when (this) {
         Tile.Suit.Character -> 'm'
@@ -52,6 +58,8 @@ val STANDARD_TILE_ASSET_KEYS: List<String> = buildList {
  * 並作為循環換牌的順序；登記擴充牌種的 extension 須提供對應的材質與模型。
  *
  * @throws IllegalStateException registry 尚未凍結時拋出；擴充牌種要等所有 extension 登記完成才確定。
+ * @param registry 已凍結的牌資產 registry。
+ * @return 內建、已登記擴充與未知牌 key 的固定順序清單。
  */
 fun MinecraftTileAssetRegistry.allTileAssetKeys(): List<String> {
     check(isFrozen) { "Tile asset keys are only complete after the tile asset registry is frozen" }
@@ -61,6 +69,9 @@ fun MinecraftTileAssetRegistry.allTileAssetKeys(): List<String> {
 /**
  * 將外部讀取的素材 key 正規化；基本牌 key（[STANDARD_TILE_ASSET_KEYS]）或 [registry] 已註冊的擴充牌種 key
  * 保持不變，其餘一律回退至 [UNKNOWN_TILE_ASSET_KEY]。
+ *
+ * @param registry 用來確認擴充 key 是否已登記的 registry。
+ * @return 可識別的原 key，或未知牌 key。
  */
 fun String?.normalizedTileAssetKey(registry: MinecraftTileAssetRegistry): String = this
     ?.takeIf { it in STANDARD_TILE_ASSET_KEYS || registry.isRegisteredAssetKey(it) }
@@ -72,6 +83,7 @@ fun String?.normalizedTileAssetKey(registry: MinecraftTileAssetRegistry): String
  * 無效或缺失值視為尚未選擇牌面，因此回到第一張 `m1`，而不是從 `unknown` 繼續循環。
  *
  * @param registry 已凍結的 asset key registry。
+ * @return 循環順序中的下一個素材 key。
  */
 fun String?.nextTileAssetKey(registry: MinecraftTileAssetRegistry): String {
     val keys = registry.allTileAssetKeys()

@@ -9,10 +9,20 @@ import net.minecraft.util.math.BlockPos
  * 因為 Brigadier 未加引號的字串引數不允許逗號，底線則不受限制，可以維持「一次 Tab 補全整串帶入」。
  */
 internal object TableCoordinateArgument {
-    /** 將方塊座標格式化成 Tab 補全與指令引數共用的字串表示法。 */
+    /**
+     * 將方塊座標格式化成 Tab 補全與指令引數共用的字串表示法。
+     *
+     * @param pos 要格式化的方塊座標。
+     * @return `x_y_z` 格式字串。
+     */
     fun format(pos: BlockPos): String = "${pos.x}_${pos.y}_${pos.z}"
 
-    /** 將 [format] 產生的字串解析回方塊座標；格式不符時回傳 `null`。 */
+    /**
+     * 將 [format] 產生的字串解析回方塊座標；格式不符時回傳 `null`。
+     *
+     * @param raw 要解析的座標字串。
+     * @return 三個整數座標皆有效時的方塊位置，否則為 null。
+     */
     fun parse(raw: String): BlockPos? {
         val parts = raw.split("_")
         if (parts.size != COORDINATE_COMPONENT_COUNT) return null

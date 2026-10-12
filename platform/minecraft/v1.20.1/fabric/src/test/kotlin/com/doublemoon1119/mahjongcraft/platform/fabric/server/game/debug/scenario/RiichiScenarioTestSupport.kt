@@ -22,17 +22,20 @@ import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleM
 import kotlin.uuid.Uuid
 
 /**
- * 座位設定情境測試共用的桌況查詢。
- *
- * 這些查詢都不改動權威狀態：需要「如果摸到／被打出這張牌會怎樣」時，只複製一份玩家交給
- * [LegalActionValidator]，桌況本身維持情境載入後的樣子。
+ * 情境測試共用的內建規則模組登錄表；建立後即凍結，供合法動作查詢使用。
  */
 internal val scenarioModuleRegistry: MahjongModuleRegistry = MahjongModuleRegistryImpl().apply {
     registerBundledRuleModules()
     freeze()
 }
 
-/** 建立呼叫者以外有 [aiOpponentCount] 位 AI 的正式日麻對局。 */
+/**
+ * 建立呼叫者以外有 [aiOpponentCount] 位 AI 的正式日麻對局。
+ *
+ * @param aiOpponentCount 由 AI 操控的對手數量。
+ * @param config 要使用的日麻規則設定。
+ * @return 以第一位玩家為呼叫者的情境輸入。
+ */
 internal fun createRiichiScenarioContext(
     aiOpponentCount: Int = 3,
     config: RiichiRuleConfig = RiichiRuleConfig(),
@@ -42,7 +45,12 @@ internal fun createRiichiScenarioContext(
     aiOpponentCount = aiOpponentCount,
 )
 
-/** 建立呼叫者以外兩位都是 AI 的正式三人日麻對局。 */
+/**
+ * 建立呼叫者以外兩位都是 AI 的正式三人日麻對局。
+ *
+ * @param config 要使用的三人日麻規則設定。
+ * @return 以第一位玩家為呼叫者的情境輸入。
+ */
 internal fun createThreePlayerRiichiScenarioContext(
     config: ThreePlayerRiichiRuleConfig = ThreePlayerRiichiRuleConfig(),
 ): DebugGameScenarioContext = createScenarioContext(
@@ -51,7 +59,14 @@ internal fun createThreePlayerRiichiScenarioContext(
     aiOpponentCount = 2,
 )
 
-/** 以 [module] 正式開局，第一位玩家是呼叫者，接著 [aiOpponentCount] 位是 AI。 */
+/**
+ * 以 [module] 正式開局，第一位玩家是呼叫者，接著 [aiOpponentCount] 位是 AI。
+ *
+ * @param module 要用於正式初始化的規則模組。
+ * @param playerCount 桌上的玩家數量。
+ * @param aiOpponentCount 呼叫者以外由 AI 操控的玩家數量。
+ * @return 包含初始化遊戲與呼叫者識別碼的情境輸入。
+ */
 private fun createScenarioContext(
     module: MahjongRuleModule<*>,
     playerCount: Int,
@@ -73,21 +88,51 @@ private fun createScenarioContext(
     return DebugGameScenarioContext(game, playerIds.first())
 }
 
-/** 以呼叫者為 0，依打牌順序取得座位。 */
+/**
+ * 以目前玩家為 0，依打牌順序取得座位。
+ *
+ * @param offset 從目前玩家起算的座位偏移。
+ * @return 指定偏移的玩家。
+ */
 internal fun TableState.seat(offset: Int): MahjongPlayer = players[(currentPlayerIndex + offset) % players.size]
 
-/** 呼叫者打出剛摸到的牌後、他家行動時的手牌狀態。 */
+/**
+ * 取得指定座位不含摸牌位的玩家快照，供他家行動時的反應查詢使用。
+ *
+ * @param offset 從目前玩家起算的座位偏移。
+ * @return 清除摸牌位狀態的玩家快照。
+ */
 internal fun TableState.waitingSeat(offset: Int): MahjongPlayer = seat(offset).let { player ->
     player.copy(hand = player.hand.copy(lastDrawn = null))
 }
 
+/** @return 目前桌況規則模組建立的合法動作驗證器。 */
 internal fun TableState.scenarioValidator(): LegalActionValidator = scenarioModuleRegistry.getModule(config).createLegalActionValidator()
 
+/**
+ * 依活牌索引取得牌張。
+ *
+ * @param index 活牌序列中的索引。
+ * @return 指定位置的牌。
+ */
 internal fun TableState.liveWallTile(index: Int): IdentifiedTile = tileWall.getAllTiles()[index]
 
+/**
+ * 取得活牌序列前端的牌面。
+ *
+ * @param count 要取得的牌數。
+ * @return 活牌前端至多 count 張牌面。
+ */
 internal fun TableState.liveWallFront(count: Int): List<Tile> = tileWall.getAllTiles().take(count).map { it.tile }
 
-/** [offset] 座位對 [discarderOffset] 座位打出的一張 [tile] 可做的反應。 */
+/**
+ * [offset] 座位對 [discarderOffset] 座位打出的一張 [tile] 可做的反應。
+ *
+ * @param offset 回應玩家的座位偏移。
+ * @param discarderOffset 捨牌玩家的座位偏移。
+ * @param tile 被打出的牌。
+ * @return 該情境下可用的反應動作。
+ */
 internal fun TableState.reactionsOf(
     offset: Int,
     discarderOffset: Int,
@@ -100,13 +145,27 @@ internal fun TableState.reactionsOf(
     incomingTile = tile,
 )
 
+/**
+ * 判斷指定座位能否對另一座位打出的牌榮和。
+ *
+ * @param offset 回應玩家的座位偏移。
+ * @param discarderOffset 捨牌玩家的座位偏移。
+ * @param tile 被打出的牌面。
+ * @return 合法反應包含榮和時為 true。
+ */
 internal fun TableState.canRon(
     offset: Int,
     discarderOffset: Int,
     tile: Tile,
 ): Boolean = reactionsOf(offset, discarderOffset, IdentifiedTile(Uuid.random(), tile)).any { it is GameAction.Ron }
 
-/** [offset] 座位摸到 [drawnTile] 時，自己回合可宣告的特殊動作。 */
+/**
+ * [offset] 座位摸到 [drawnTile] 時，自己回合可宣告的特殊動作。
+ *
+ * @param offset 玩家座位偏移。
+ * @param drawnTile 假設摸到的牌。
+ * @return 該摸牌情境下可用的特殊動作。
+ */
 internal fun TableState.ownTurnActions(
     offset: Int,
     drawnTile: IdentifiedTile,
@@ -118,7 +177,11 @@ internal fun TableState.ownTurnActions(
     incomingTile = drawnTile,
 )
 
-/** 情境載入當下，呼叫者以手上剛摸到的牌可宣告的特殊動作。 */
+/**
+ * 情境載入當下，呼叫者以手上剛摸到的牌可宣告的特殊動作。
+ *
+ * @return 當前玩家可用的特殊動作。
+ */
 internal fun TableState.currentOwnTurnActions(): List<GameAction> = scenarioValidator().getLegalActions(
     tableState = this,
     player = currentPlayer,
@@ -126,7 +189,12 @@ internal fun TableState.currentOwnTurnActions(): List<GameAction> = scenarioVali
     sourceDirection = RelativeDirection.Self,
 )
 
-/** [offset] 座位摸到活牌第一張後，自己回合可宣告的槓。 */
+/**
+ * [offset] 座位摸到活牌第一張後，自己回合可宣告的槓。
+ *
+ * @param offset 玩家座位偏移。
+ * @return 該摸牌情境下可用的槓動作。
+ */
 internal fun TableState.ownTurnKans(offset: Int): List<GameAction.Kan> {
     val player = seat(offset).let { it.copy(hand = it.hand.copy(lastDrawn = liveWallTile(0))) }
     return scenarioValidator().getLegalActions(
@@ -137,7 +205,13 @@ internal fun TableState.ownTurnKans(offset: Int): List<GameAction.Kan> {
     ).filterIsInstance<GameAction.Kan>()
 }
 
-/** [offset] 座位能否搶下家以活牌第一張宣告的槓。 */
+/**
+ * [offset] 座位能否搶下家以活牌第一張宣告的槓。
+ *
+ * @param offset 回應玩家的座位偏移。
+ * @param type 下家宣告的槓種類。
+ * @return 該情境下存在榮和反應時為 true。
+ */
 internal fun TableState.canRobKan(offset: Int, type: GameAction.KanType): Boolean {
     val kanTile = liveWallTile(0)
     return scenarioValidator().getLegalActions(

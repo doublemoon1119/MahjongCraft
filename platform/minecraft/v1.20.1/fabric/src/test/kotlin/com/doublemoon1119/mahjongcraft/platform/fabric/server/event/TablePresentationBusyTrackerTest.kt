@@ -87,6 +87,10 @@ class TablePresentationBusyTrackerTest {
         lease.complete()
     }
 
-    /** 建立不含世界狀態的 tracker。 */
+    /**
+     * 建立未連接世界與牌桌位置的忙碌追蹤器。
+     *
+     * @return 僅依待完成工作判斷忙碌狀態的測試追蹤器。
+     */
     private fun tracker(): TablePresentationBusyTracker = TablePresentationBusyTracker(FabricServerHolder(), TableLocationRegistry())
 }

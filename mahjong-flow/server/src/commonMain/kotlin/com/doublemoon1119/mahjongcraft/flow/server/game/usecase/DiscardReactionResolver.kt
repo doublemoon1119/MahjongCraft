@@ -22,9 +22,8 @@ import kotlin.uuid.Uuid
  * [MultiRonPolicy.doubleRonResolution]，3 人（含）以上則查 [MultiRonPolicy.tripleRonResolution]——
  * [RonResolution.ALL_WINNERS] 全部開放；[RonResolution.NEAREST_WINNER] 只開放依
  * [TableState.nearestPlayerInTurnOrder] 判定、
- * 順位最接近放銃者下家的那一位（頭跳）；[RonResolution.ABORTIVE_DRAW] 這張捨牌會讓本局直接結束
- * （途中流局），吃/碰/槓資格一併作廢、不開反應視窗，把 [GameAction.ExhaustiveDraw] 記錄進全員
- * 的 `actionHistory`，不結算任何點數（供託延續到下一局）。
+ * 順位最接近放銃者下家的那一位（頭跳）；[RonResolution.ABORTIVE_DRAW] 且規則模組提供途中流局原因時，這張捨牌會讓本局直接結束；
+ * 吃/碰/槓資格一併作廢、不開反應視窗，把 [GameAction.ExhaustiveDraw] 記錄進全員的 `actionHistory`，不結算任何點數（供託延續到下一局）。
  */
 internal object DiscardReactionResolver {
 

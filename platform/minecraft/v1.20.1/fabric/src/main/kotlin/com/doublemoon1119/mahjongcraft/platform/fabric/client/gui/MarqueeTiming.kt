@@ -18,7 +18,7 @@ internal object MarqueeTiming {
      *
      * @param elapsedMillis 從開始顯示起經過的毫秒數。
      * @param overflow 超出可視範圍的像素數；不大於 0 時不移動。
-     * @return 介於 0 與 [overflow] 之間的位移。
+     * @return 超出寬度為正時，回傳介於 0 與 [overflow] 之間的位移；否則為 0。
      */
     fun offset(elapsedMillis: Long, overflow: Int): Int {
         if (overflow <= 0 || elapsedMillis <= START_PAUSE_MILLIS) return 0

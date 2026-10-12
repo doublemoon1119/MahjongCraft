@@ -21,6 +21,8 @@ data class MeldActionPopupTile(
  * 鳴取的那張牌在副露中的朝向：上家鳴取往左轉，對家與下家往右轉。
  *
  * 暗槓沒有鳴取來源（[RelativeDirection.Self]），四張都維持直立。
+ *
+ * @return 鳴取牌的方向對應朝向；沒有鳴取來源時維持直立。
  */
 fun RelativeDirection.claimedTileOrientation(): DecisionTileOrientationDto = when (this) {
     RelativeDirection.Left -> DecisionTileOrientationDto.ROTATED_LEFT

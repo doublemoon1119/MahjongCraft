@@ -22,14 +22,23 @@ import kotlin.random.Random
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 
-/** 胡牌加碼 showcase 舞台的生成與真實牌／局況顯示交接服務。 */
+/**
+ * 胡牌加碼 showcase 舞台的生成與真實牌／局況顯示交接服務。
+ *
+ * @property showcaseRegistry 依贏家提供的 cue 選取展示定義。
+ * @property overlays 管理桌面局況顯示的暫時隱藏。
+ * @property spawnGateway 生成並追蹤 showcase 舞台 entity。
+ */
 @Single
 class FabricWinCelebrationShowcaseScheduler(
     private val showcaseRegistry: WinCelebrationShowcaseRegistry,
     private val overlays: PersistentTableOverlayCoordinator,
     private val spawnGateway: FabricEntitySpawnGateway,
 ) {
+    /** 記錄未知 showcase cue 的 logger。 */
     private val logger = mahjongCraftLogger(FabricWinCelebrationShowcaseScheduler::class)
+
+    /** 已記錄過警告的未知 cue 組合，避免重複警告。 */
     private val warnedUnknownCues = mutableSetOf<String>()
 
     /**
@@ -90,6 +99,16 @@ class FabricWinCelebrationShowcaseScheduler(
      *
      * [wings] 只能包含 [hasShowcase] 為 `true` 的贏家。找不到和牌張、或有贏家一張牌都找不到時不播放；
      * 有牌找不到時記錄一筆警告，列出各座位缺少的牌。
+     *
+     * @param world 生成舞台與查找真實牌 entity 的世界。
+     * @param tableId 對局所在牌桌識別碼。
+     * @param controllerPos 牌桌 controller 方塊位置。
+     * @param stagePlacement showcase 舞台位置與朝向。
+     * @param startGameTime 展示時間軸的絕對起始 game time。
+     * @param winningTileId 真實胡牌張識別碼。
+     * @param winningTileAssetKey 胡牌張在舞台中的牌面素材 key。
+     * @param wings 需播放展示的贏家翼。
+     * @return 舞台固定結束的絕對 game time；無法播放或生成時為 null。
      */
     fun schedule(
         world: ServerWorld,

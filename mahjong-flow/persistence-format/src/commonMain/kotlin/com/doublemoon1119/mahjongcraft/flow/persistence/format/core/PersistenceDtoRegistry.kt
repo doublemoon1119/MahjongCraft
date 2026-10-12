@@ -12,17 +12,38 @@ import kotlin.reflect.KClass
  * @param Domain 可由內建或第三方規則模組提供具體實作的領域介面。
  */
 class PersistenceDtoRegistry<Domain : Any> {
-    /** 保存單一具體領域型別與 persistence DTO 的雙向轉換。 */
+    /**
+     * 保存單一具體領域型別與存檔 DTO 的雙向轉換。
+     *
+     * @param D 此項目接受的領域型別。
+     * @param T 對應的存檔 DTO 型別。
+     * @property serializer DTO 的序列化器。
+     * @property toDto 將領域物件轉成 DTO 的函式。
+     * @property toDomain 將 DTO 還原成領域物件的函式。
+     */
     private inner class Entry<D : Domain, T : Any>(
         val serializer: KSerializer<T>,
         val toDto: (D) -> T,
         val toDomain: (T) -> D,
     ) {
-        /** 將領域物件轉換成 JSON object payload。 */
+        /**
+         * 將領域物件轉成 JSON 物件。
+         *
+         * @param domain 要保存的領域物件。
+         * @param json 使用的 JSON 編碼設定。
+         * @return 編碼後的 DTO 內容。
+         * @throws IllegalStateException DTO 編碼結果不是 JSON 物件時拋出。
+         */
         fun encode(domain: D, json: Json): JsonObject = json.encodeToJsonElement(serializer, toDto(domain)) as? JsonObject
             ?: error("Persistence DTO must encode to a JSON object")
 
-        /** 將 JSON object payload 還原成領域物件。 */
+        /**
+         * 將 JSON 物件還原成領域物件。
+         *
+         * @param payload 已保存的 DTO 內容。
+         * @param json 使用的 JSON 解碼設定。
+         * @return 還原後的領域物件。
+         */
         fun decode(payload: JsonObject, json: Json): D = toDomain(json.decodeFromJsonElement(serializer, payload))
     }
 
@@ -47,6 +68,8 @@ class PersistenceDtoRegistry<Domain : Any> {
     /**
      * 註冊一組具體領域型別與 persistence DTO 的雙向轉換。
      *
+     * @param D 要登記的具體領域型別。
+     * @param T 對應的存檔 DTO 型別。
      * @param typeKey 穩定的 namespaced type key。
      * @param domainClass 具體領域類別。
      * @param serializer persistence DTO 的序列化器。
@@ -55,6 +78,7 @@ class PersistenceDtoRegistry<Domain : Any> {
      * @param compactInReplay 為 `true` 時，精簡牌譜會把這份資料內的牌與玩家 UUID 換成局內索引，並壓縮其中的欄位名稱；
      * 只有資料內的 UUID 都是本局的牌或玩家、且讀取牌譜時能處理局內索引的格式才可設為 `true`。預設保留原始內容。
      * @throws IllegalArgumentException 若 [typeKey] 不是 namespaced ID，或領域類別／type key 已被註冊。
+     * @throws IllegalStateException 註冊表已凍結時拋出。
      */
     fun <D : Domain, T : Any> register(
         typeKey: String,
@@ -80,7 +104,14 @@ class PersistenceDtoRegistry<Domain : Any> {
         frozen = true
     }
 
-    /** 將已註冊的領域物件轉換成帶 type key 的 persistence DTO。 */
+    /**
+     * 將已註冊的領域物件轉成附有型別識別碼的存檔 DTO。
+     *
+     * @param domain 要保存的領域物件。
+     * @param json 使用的 JSON 編碼設定。
+     * @return 型別識別碼與編碼後的內容。
+     * @throws IllegalStateException 領域型別尚未註冊，或 DTO 編碼結果不是 JSON 物件時拋出。
+     */
     @Suppress("UNCHECKED_CAST")
     fun encode(domain: Domain, json: Json = Json): TypedPersistenceDto {
         val (typeKey, rawEntry) = byDomainClass[domain::class]
@@ -89,7 +120,14 @@ class PersistenceDtoRegistry<Domain : Any> {
         return TypedPersistenceDto(typeKey, entry.encode(domain, json))
     }
 
-    /** 依 type key 將 persistence DTO 還原成領域物件。 */
+    /**
+     * 依型別識別碼將存檔 DTO 還原成領域物件。
+     *
+     * @param dto 型別識別碼與已保存的內容。
+     * @param json 使用的 JSON 解碼設定。
+     * @return 還原後的領域物件。
+     * @throws IllegalStateException 型別識別碼尚未註冊時拋出。
+     */
     @Suppress("UNCHECKED_CAST")
     fun decode(dto: TypedPersistenceDto, json: Json = Json): Domain {
         val entry = byTypeKey[dto.typeKey] as? Entry<Domain, Any>

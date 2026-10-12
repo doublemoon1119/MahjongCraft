@@ -2,13 +2,16 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.dice
 
 import kotlin.math.sqrt
 
-/** 不依賴 Minecraft API 的骰子動畫三維向量。 */
+/**
+ * 不依賴 Minecraft API 的骰子動畫三維向量。
+ *
+ * @property x X 軸分量。
+ * @property y Y 軸分量。
+ * @property z Z 軸分量。
+ */
 data class DiceAnimationVector(
-    /** X 軸分量。 */
     val x: Double,
-    /** Y 軸分量。 */
     val y: Double,
-    /** Z 軸分量。 */
     val z: Double,
 ) {
     /** 向量長度。 */

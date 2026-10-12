@@ -162,7 +162,12 @@ class AuthoritativeStatePersistenceCodecTest {
         assertFailsWith<IllegalStateException> { codecWithoutRules.encode(listOf(createRoom()), emptyList()) }
     }
 
-    /** 建立使用台麻規則的等待階段 Room。 */
+    /**
+     * 建立使用台麻規則的等待階段房間。
+     *
+     * @param id 房間的識別碼，省略時隨機產生。
+     * @return 僅有房主的測試房間。
+     */
     private fun createRoom(id: Uuid = Uuid.random()): Room {
         val hostId = Uuid.random()
         return Room(
@@ -173,7 +178,12 @@ class AuthoritativeStatePersistenceCodecTest {
         )
     }
 
-    /** 建立使用台麻規則的最小 Game。 */
+    /**
+     * 建立使用台麻規則的最小桌況。
+     *
+     * @param id 桌況的識別碼，省略時隨機產生。
+     * @return 含一位玩家與空牌山的測試桌況。
+     */
     private fun createGame(id: Uuid = Uuid.random()): TableState {
         val player = MahjongPlayer(
             id = Uuid.random(),

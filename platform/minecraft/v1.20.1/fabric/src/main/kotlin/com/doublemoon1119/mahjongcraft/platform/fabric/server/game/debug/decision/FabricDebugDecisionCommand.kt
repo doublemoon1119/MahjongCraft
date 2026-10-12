@@ -103,7 +103,13 @@ class FabricDebugDecisionCommand(
         node.then(literal(preview.commandName).executes { context -> previewDecisionHud(context.source, preview) })
     }
 
-    /** 直接傳送正式 S2C prompt DTO，讓 client 使用與真實對局相同的 HUD renderer。 */
+    /**
+     * 直接傳送正式 S2C prompt DTO，讓 client 使用與真實對局相同的 HUD renderer。
+     *
+     * @param source 執行指令的玩家來源。
+     * @param preview 要展示的固定決策情境。
+     * @return Brigadier 指令結果碼。
+     */
     private fun previewDecisionHud(source: ServerCommandSource, preview: DecisionHudPreview): Int {
         val player = source.player ?: return COMMAND_FAILURE
         val gameId = Uuid.random().toString()
@@ -144,7 +150,12 @@ class FabricDebugDecisionCommand(
         return COMMAND_SUCCESS
     }
 
-    /** 清除 HUD 預覽使用的 client timer/prompt。 */
+    /**
+     * 清除 HUD 預覽使用的 client timer/prompt。
+     *
+     * @param source 執行指令的玩家來源。
+     * @return Brigadier 指令結果碼。
+     */
     private fun clearDecisionHud(source: ServerCommandSource): Int {
         val player = source.player ?: return COMMAND_FAILURE
         val gameId = debugDecisionGameIds.remove(player.uuid) ?: return COMMAND_SUCCESS
@@ -213,7 +224,13 @@ class FabricDebugDecisionCommand(
         .then(literal(TIMEOUT_ARGUMENT).executes(::timeoutPreparation))
         .then(literal(CANCEL_ARGUMENT).executes(::cancelPreparation))
 
-    /** 只補全執行者目前 preparation 步驟允許選擇的完整 option ID。 */
+    /**
+     * 只補全執行者目前 preparation 步驟允許選擇的完整 option ID。
+     *
+     * @param context Brigadier 指令內容。
+     * @param builder 補全結果建構器。
+     * @return 非同步補全結果。
+     */
     private fun suggestPreparationOptions(
         context: CommandContext<ServerCommandSource>,
         builder: SuggestionsBuilder,
@@ -226,6 +243,10 @@ class FabricDebugDecisionCommand(
 
     /**
      * 只補全執行者目前可選的手牌 UUID；已輸入的 UUID 不重複建議，達到最大張數後停止補全。
+     *
+     * @param context Brigadier 指令內容。
+     * @param builder 補全結果建構器。
+     * @return 非同步補全結果。
      */
     private fun suggestPreparationTileIds(
         context: CommandContext<ServerCommandSource>,
@@ -251,6 +272,11 @@ class FabricDebugDecisionCommand(
 
     /**
      * 非同步解析執行者所在牌桌的私有 preparation input，讓 Brigadier suggestions 不阻塞伺服器執行緒。
+     *
+     * @param source 提供目前玩家資訊的指令來源。
+     * @param builder 補全結果建構器。
+     * @param appendSuggestions 依目前 input spec 加入允許選項的函式。
+     * @return 非同步補全結果。
      */
     private fun suggestFromPlayerPreparation(
         source: ServerCommandSource,
@@ -291,6 +317,12 @@ class FabricDebugDecisionCommand(
      * [PlayerDecisionPhase.ROUND_PREPARATION]
      * 計時器——直接寫入 repository 不會經過 coordinator 的指令派送流程，計時器不會自動產生，逾時、
      * 強制 fallback 等行為在 debug 情境下就永遠測不到。
+     *
+     * @param source 執行指令的玩家來源。
+     * @param preview 要建立的 preparation 輸入種類。
+     * @param minCount 選牌情境允許的最少張數；其他情境忽略。
+     * @param maxCount 選牌情境允許的最多張數；其他情境忽略。
+     * @return Brigadier 指令結果碼。
      */
     private fun startPreparation(source: ServerCommandSource, preview: PreparationPreview, minCount: Int = 3, maxCount: Int = 3): Int = playerTableScope.runSuspending(source) { tableId, playerId ->
         val changed = gameRepository.updateGame(tableId) { game ->
@@ -320,14 +352,25 @@ class FabricDebugDecisionCommand(
         "Round preparation ${preview.name.lowercase()} preview ${if (changed) "started" else "failed"}"
     }
 
-    /** 透過正式 coordinator 提交測試 preparation 選擇。 */
+    /**
+     * 透過正式 coordinator 提交測試 preparation 選擇。
+     *
+     * @param source 執行指令的玩家來源。
+     * @param submission 要送出的測試選擇。
+     * @return Brigadier 指令結果碼。
+     */
     private fun submitPreparation(source: ServerCommandSource, submission: RoundPreparationSubmission): Int = playerTableScope.runSuspending(source) { tableId, playerId ->
         gameFlowCoordinator.dispatch(tableId, playerId, GameCommand.SubmitRoundPreparation(submission))
         advanceManager.request(tableId)
         "Round preparation submission sent"
     }
 
-    /** 將執行者標記為逾時，讓正式 fallback driver 在下一次推進時代為提交。 */
+    /**
+     * 將執行者標記為逾時，讓正式 fallback driver 在下一次推進時代為提交。
+     *
+     * @param context Brigadier 指令內容。
+     * @return Brigadier 指令結果碼。
+     */
     private fun timeoutPreparation(context: CommandContext<ServerCommandSource>): Int = playerTableScope.runSuspending(context.source) { tableId, playerId ->
         gameRepository.updateGame(tableId) { game ->
             game?.copy(forcedAutoPlayPlayerIds = game.forcedAutoPlayPlayerIds + playerId) to Unit
@@ -340,6 +383,9 @@ class FabricDebugDecisionCommand(
      * 清除 development-only 測試 preparation state。連同呼叫 [GameDecisionAvailabilityService.reconcile]
      * 立即結算 [startPreparation] 建立的計時器，理由同該函式 KDoc——不清掉的話，計時器要等到下一次
      * 剛好觸發 reconcile 的操作才會被結算掉。
+     *
+     * @param context Brigadier 指令內容。
+     * @return Brigadier 指令結果碼。
      */
     private fun cancelPreparation(context: CommandContext<ServerCommandSource>): Int = playerTableScope.runSuspending(context.source) { tableId, _ ->
         gameRepository.updateGame(tableId) { game ->
@@ -350,14 +396,20 @@ class FabricDebugDecisionCommand(
         "Round preparation preview cancelled"
     }
 
-    /** `/debug decision_hud` 的固定、可補全測試情境；動作 ID 與正式對局送出的相同。 */
+    /**
+     * `/debug decision_hud` 的固定、可補全測試情境；動作 ID 與正式對局送出的相同。
+     *
+     * @property commandName 子指令名稱。
+     * @property phase 預覽所處的決策階段。
+     * @property isDiscardAnalysis 是否附帶捨牌分析資料。
+     * @property selfDrawTileAssetKey 自己回合「摸到這張牌」情境的觸發牌資產鍵；例如計時器情境不給值。
+     * @property ruleModuleId 預覽使用的規則模組 ID，動作用語與振聽用語依此查詢。
+     */
     internal enum class DecisionHudPreview(
         val commandName: String,
         val phase: PlayerDecisionPhaseDto = PlayerDecisionPhaseDto.OWN_TURN,
         val isDiscardAnalysis: Boolean = false,
-        /** 自己回合摸牌的觸發牌 asset key；只有真的代表「摸到這張牌」的情境才給值，例如 [TIMER] 不給。 */
         val selfDrawTileAssetKey: String? = null,
-        /** 預覽使用的規則；動作用語與振聽用語依此查詢，例如拔北只登記在三人日麻。 */
         val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI,
     ) {
         TIMER("timer"),
@@ -385,6 +437,13 @@ class FabricDebugDecisionCommand(
         PREPARATION_TILES("preparation_tiles", PlayerDecisionPhaseDto.ROUND_PREPARATION),
         ;
 
+        /**
+         * 建立此情境的提示 DTO。
+         *
+         * @param decisionKey 此次預覽的識別鍵。
+         * @param analysisTileId 分析情境使用的臨時牌 UUID；不需要分析時為 null。
+         * @return 包含動作或 preparation 選項的提示。
+         */
         fun prompt(decisionKey: String, analysisTileId: String?): PlayerDecisionPromptDto = PlayerDecisionPromptDto(
             decisionKey = decisionKey,
             ruleModuleId = ruleModuleId,
@@ -398,6 +457,11 @@ class FabricDebugDecisionCommand(
             discardAnalyses = analysisTileId?.let { listOf(analysis(it)) }.orEmpty(),
         )
 
+        /**
+         * 建立此固定情境要顯示的動作候選與選牌需求。
+         *
+         * @return 此情境的 HUD 動作清單；不展示動作時為空集合。
+         */
         private fun actions(): List<PlayerDecisionActionDto> {
             fun action(id: String, tiles: List<String>, claimedIndex: Int? = null) = PlayerDecisionActionDto(
                 token = "$commandName:$id",
@@ -461,6 +525,11 @@ class FabricDebugDecisionCommand(
             }
         }
 
+        /**
+         * 取得此情境使用的 preparation prompt。
+         *
+         * @return 確認、選項或選牌 prompt；非 preparation 情境時為 null。
+         */
         private fun preparation(): RoundPreparationPromptDto? = when (this) {
             PREPARATION_CONFIRM -> RoundPreparationPromptDto.Confirmation
             PREPARATION_CHOICE -> RoundPreparationPromptDto.SingleChoice(listOf("mahjongcraft:alpha", "mahjongcraft:beta", "mahjongcraft:gamma"))
@@ -475,6 +544,12 @@ class FabricDebugDecisionCommand(
             else -> null
         }
 
+        /**
+         * 建立指定分析情境的等待牌可用性資料。
+         *
+         * @param discardTileId 預覽中被捨棄牌的 UUID。
+         * @return 此情境的聽牌與可和牌狀態資料。
+         */
         private fun analysis(discardTileId: String): DiscardReadinessAnalysisDto {
             val tiles = if (this == DISCARD_MANY_WAITS) {
                 (1..9).map { TileDto.Numeric(SuitDto.CHARACTER, it) } +

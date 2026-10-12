@@ -6,10 +6,8 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.HorizontalScro
 /**
  * HUD 位置編輯器頂部工具列的版位計算，與原版 widget 完全分離。
  *
- * 第一行固定放 HUD、其他 HUD 預覽方式、隱藏控制項三顆全域按鈕，版位直接固定、不需要這個類別。這個
- * 類別只負責第二行——目前編輯的 HUD 有二級選項（例如操作面板的情境）時才出現的那一行——的水平捲動
- * 幾何；選項數量不多時不需要捲動，但保留這個機制讓未來規則模組能安全地為自己的 HUD 元件登記更多
- * 二級選項，不會因為選項變多就擠出畫面外。
+ * 只計算第二行選項的水平捲動幾何，例如操作面板的預覽情境。第一行三顆全域按鈕由畫面另外配置。
+ * 第二行內容超出可見寬度時顯示水平捲軸。
  *
  * @property screenWidth 目前 GUI scaled 畫面寬度。
  * @property contentWidth 這一行全部按鈕與間距所需的內容寬度。
@@ -40,21 +38,45 @@ internal data class MahjongHudToolbarLayout(
         get() = scroll.maximumScroll
 
     /**
-     * 依捲動量計算這一行內容的實際起始 X；一律靠左對齊，未溢出時 [scroll] 必為 0，公式自然回到
-     * [MARGIN] 本身，不需要另外處理置中。
+     * 依捲動量計算內容起始 X；內容一律靠左對齊。
+     *
+     * @param scroll 呼叫端已限制在合法範圍內的捲動量；未溢出時應為零。
+     * @return 扣除捲動量後的內容左界。
      */
     fun contentOffset(scroll: Double): Int = MARGIN - scroll.toInt()
 
-    /** 依可見比例與目前捲動量計算 scrollbar thumb 邊界。 */
+    /**
+     * 依可見比例與目前捲動量計算捲軸滑塊邊界。
+     *
+     * @param scroll 目前水平捲動量。
+     * @return 捲軸滑塊的水平範圍。
+     */
     fun thumb(scroll: Double): HorizontalScrollThumb = this.scroll.thumb(scroll)
 
-    /** 將 thumb 左界轉換回捲動量，供直接點擊或拖曳 scrollbar 使用。 */
+    /**
+     * 將滑塊左界轉換成捲動量。
+     *
+     * @param thumbLeft 滑塊左界座標。
+     * @return 對應的合法內容捲動量。
+     */
     fun scrollFromThumb(thumbLeft: Double): Double = scroll.scrollFromThumbLeft(thumbLeft)
 
-    /** 依 thumb 拖曳位移計算新的捲動量，並限制在合法範圍內。 */
+    /**
+     * 依滑塊拖曳位移計算新的合法捲動量。
+     *
+     * @param startScroll 拖曳開始時的內容捲動量。
+     * @param pointerDelta 游標水平位移。
+     * @return 限制在合法範圍內的新捲動量。
+     */
     fun scrollFromDrag(startScroll: Double, pointerDelta: Double): Double = scroll.scrollFromDrag(startScroll, pointerDelta)
 
-    /** 依滾輪量計算新的捲動量，並限制在合法範圍內。 */
+    /**
+     * 依滾輪量計算新的合法捲動量。
+     *
+     * @param currentScroll 目前內容捲動量。
+     * @param amount 滾輪位移量。
+     * @return 限制在合法範圍內的新捲動量。
+     */
     fun scrollFromWheel(currentScroll: Double, amount: Double): Double = scroll.scrollFromWheel(currentScroll, amount, SCROLL_STEP)
 
     /** 版位常數。 */

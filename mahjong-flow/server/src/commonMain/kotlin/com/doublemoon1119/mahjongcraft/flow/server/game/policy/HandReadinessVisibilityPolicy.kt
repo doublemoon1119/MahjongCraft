@@ -18,7 +18,13 @@ class HandReadinessVisibilityPolicy(
     private val moduleRegistry: MahjongModuleRegistry,
     private val visibilityPolicy: GameVisibilityPolicy,
 ) {
-    /** 未參與對局、規則未提供 analyzer 或目前未聽牌時回傳 `null`。 */
+    /**
+     * 取得參與者本人的手牌分析；未參與對局、規則未提供分析器或分析結果不存在時回傳 null。
+     *
+     * @param game 欲分析的權威遊戲。
+     * @param observerId 欲查詢的玩家識別碼。
+     * @return 玩家的手牌分析快照；無法提供分析時為 null。
+     */
     fun snapshotFor(game: Game, observerId: Uuid): HandReadinessSnapshot? {
         val player = game.tableState.players.firstOrNull { it.id == observerId } ?: return null
         val module = moduleRegistry.getModule(game.tableState.config)

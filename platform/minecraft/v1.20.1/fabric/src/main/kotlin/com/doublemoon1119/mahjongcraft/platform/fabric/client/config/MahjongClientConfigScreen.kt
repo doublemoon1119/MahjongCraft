@@ -218,7 +218,14 @@ class MahjongClientConfigScreen(
         return super.mouseReleased(mouseX, mouseY, button)
     }
 
-    /** 建立分類切換按鈕。 */
+    /**
+     * 建立分類切換按鈕。
+     *
+     * @param x 按鈕左側座標。
+     * @param y 按鈕上緣座標。
+     * @param buttonWidth 按鈕寬度。
+     * @param target 點擊後切換的分類。
+     */
     private fun addCategoryButton(x: Int, y: Int, buttonWidth: Int, target: Category) {
         addDrawableChild(
             RestartableMarqueeButtonWidget.builder(Text.translatable(target.translationKey)) {
@@ -231,7 +238,11 @@ class MahjongClientConfigScreen(
         )
     }
 
-    /** 依分類建立目前可見的欄位控制項。 */
+    /**
+     * 依分類建立目前可見的欄位控制項。
+     *
+     * @param bounds 中央面板的邊界與控制項位置。
+     */
     private fun addFieldButtons(bounds: PanelBounds) {
         val rows = rows()
         val visible = visibleRowCount(bounds)
@@ -265,7 +276,11 @@ class MahjongClientConfigScreen(
         }
     }
 
-    /** 建立固定單行的 Reset to Defaults、Undo、Apply、Done。 */
+    /**
+     * 建立固定單行的 Reset to Defaults、Undo、Apply、Done。
+     *
+     * @param bounds 中央面板的邊界與控制項位置。
+     */
     private fun addBottomButtons(bounds: PanelBounds) {
         val availableWidth = bounds.width - PANEL_PADDING * 2
         val footer = SettingsFooterLayout.create(
@@ -304,7 +319,12 @@ class MahjongClientConfigScreen(
         )
     }
 
-    /** 先保存本機設定，再送出本局草稿並等待配對的伺服器確認。 */
+    /**
+     * 先保存本機設定，再送出本局草稿並等待配對的伺服器確認。
+     *
+     * @param closeAfterSave 套用完成後是否關閉畫面。
+     * @return 本機套用完成或已送出本局設定請求時為 true；不代表伺服器已接受請求。
+     */
     private fun applyDraft(closeAfterSave: Boolean): Boolean {
         if (draftStale || automaticDraft.state().pending) return false
         if (draft != baseline || preferenceService.hasPendingSync) {
@@ -357,7 +377,12 @@ class MahjongClientConfigScreen(
     /** 目前完整草稿，供 HUD editor 在不建立第二份設定來源的情況下承接。 */
     internal fun currentDraft(): MahjongClientConfigState = draft
 
-    /** 將 HUD 配置併入完整草稿並透過既有原子保存流程套用。 */
+    /**
+     * 將 HUD 配置併入完整草稿並透過既有原子保存流程套用。
+     *
+     * @param layout 欲套用的 HUD 配置。
+     * @return 本機保存與所需同步成功時為 true；失敗時仍保留修改後的草稿。
+     */
     internal fun applyHudLayout(layout: MahjongHudLayoutConfig): Boolean {
         if (draftStale || automaticDraft.state().pending) return false
         draft = draft.copy(hudLayout = layout)
@@ -419,6 +444,12 @@ class MahjongClientConfigScreen(
     /**
      * 繪製欄位名稱，控制項寬度固定且名稱依實際像素寬度安全截斷；名稱被截斷且滑鼠懸停時回傳完整
      * 名稱供呼叫端繪製 tooltip。
+     *
+     * @param context 畫面繪製環境。
+     * @param bounds 中央面板邊界。
+     * @param mouseX 游標水平座標。
+     * @param mouseY 游標垂直座標。
+     * @return 游標下被截斷的完整欄位名稱；未懸停於截斷名稱時為 null。
      */
     private fun renderFieldLabels(context: DrawContext, bounds: PanelBounds, mouseX: Int, mouseY: Int): Text? {
         var hoveredLabel: Text? = null
@@ -442,7 +473,12 @@ class MahjongClientConfigScreen(
         return hoveredLabel
     }
 
-    /** 繪製草稿過期或保存失敗狀態。 */
+    /**
+     * 繪製草稿過期或保存失敗狀態。
+     *
+     * @param context 畫面繪製環境。
+     * @param bounds 中央面板邊界。
+     */
     private fun renderStatus(context: DrawContext, bounds: PanelBounds) {
         val status = when {
             draftStale -> Text.translatable(MinecraftClientConfigScreenKeys.DRAFT_STALE).formatted(Formatting.RED)
@@ -462,7 +498,12 @@ class MahjongClientConfigScreen(
         )
     }
 
-    /** 將本地提交錯誤與 ACK 結果映射到既有玩家訊息。 */
+    /**
+     * 將本地提交錯誤與 ACK 結果映射到既有玩家訊息。
+     *
+     * @param error 本地提交或伺服器確認的錯誤代碼。
+     * @return 對應的訊息翻譯鍵；未知代碼使用通用拒絕訊息。
+     */
     private fun automaticErrorKey(error: String): String = when (error) {
         "PENDING" -> "mahjongcraft.message.automatic_control_pending"
         "UNAVAILABLE" -> "mahjongcraft.message.automatic_control_unavailable"
@@ -472,7 +513,12 @@ class MahjongClientConfigScreen(
         else -> "mahjongcraft.message.automatic_control_rejected"
     }
 
-    /** 只有欄位超出可見範圍時繪製 scrollbar。 */
+    /**
+     * 只有欄位超出可見範圍時繪製 scrollbar。
+     *
+     * @param context 畫面繪製環境。
+     * @param bounds 中央面板邊界。
+     */
     private fun renderScrollbar(context: DrawContext, bounds: PanelBounds) {
         val layout = scrollbarLayout(bounds)
         if (layout.maximumScroll <= 0) return
@@ -487,7 +533,12 @@ class MahjongClientConfigScreen(
         )
     }
 
-    /** 建立目前分類的 scrollbar 幾何。 */
+    /**
+     * 建立目前分類的 scrollbar 幾何。
+     *
+     * @param bounds 中央面板邊界。
+     * @return 依可見列數與捲動位置建立的捲軸配置。
+     */
     private fun scrollbarLayout(bounds: PanelBounds): ScrollbarLayout = ScrollbarLayout(
         trackTop = rowsTop(bounds),
         trackBottom = bounds.bottom - BOTTOM_AREA_HEIGHT,
@@ -497,13 +548,27 @@ class MahjongClientConfigScreen(
         minimumThumbHeight = MIN_SCROLLBAR_THUMB_HEIGHT,
     )
 
-    /** 判斷游標是否位於欄位內容區。 */
+    /**
+     * 判斷游標是否位於欄位內容區。
+     *
+     * @param mouseX 游標水平座標。
+     * @param mouseY 游標垂直座標。
+     * @param bounds 中央面板邊界。
+     * @return 游標位於欄位內容區時為 true。
+     */
     private fun isInsideFields(mouseX: Double, mouseY: Double, bounds: PanelBounds): Boolean = mouseX >= bounds.contentLeft &&
         mouseX < bounds.right &&
         mouseY >= rowsTop(bounds) &&
         mouseY < bounds.bottom - BOTTOM_AREA_HEIGHT
 
-    /** 判斷游標是否位於有效 scrollbar。 */
+    /**
+     * 判斷游標是否位於有效 scrollbar。
+     *
+     * @param mouseX 游標水平座標。
+     * @param mouseY 游標垂直座標。
+     * @param bounds 中央面板邊界。
+     * @return 存在可捲動內容且游標位於捲軸範圍時為 true。
+     */
     private fun isOverScrollbar(mouseX: Double, mouseY: Double, bounds: PanelBounds): Boolean = maximumScroll() > 0 &&
         mouseX >= bounds.right - SCROLLBAR_MARGIN &&
         mouseX < bounds.right - SCROLLBAR_MARGIN + SCROLLBAR_WIDTH &&
@@ -606,7 +671,12 @@ class MahjongClientConfigScreen(
         }
     }
 
-    /** 建立 HUD、遊戲面板與視覺效果的個別開關列。 */
+    /**
+     * 建立 HUD、遊戲面板與視覺效果的個別開關列。
+     *
+     * @param includedIds 要保留的顯示項目識別碼。
+     * @return 符合識別碼篩選的開關列。
+     */
     private fun presentationRows(vararg includedIds: String): List<ConfigRow> = listOf(
         presentationRow("round_info", { it.roundInfoEnabled }) { state, enabled -> state.copy(roundInfoEnabled = enabled) },
         presentationRow("player_info", { it.playerInfoEnabled }) { state, enabled -> state.copy(playerInfoEnabled = enabled) },
@@ -622,7 +692,14 @@ class MahjongClientConfigScreen(
         presentationRow("meld_popup", { it.meldPopupEnabled }) { state, enabled -> state.copy(meldPopupEnabled = enabled) },
     ).filter { it.id in includedIds }
 
-    /** 建立一列 [MahjongPresentationVisibilityConfig] Boolean 開關。 */
+    /**
+     * 建立一列 [MahjongPresentationVisibilityConfig] Boolean 開關。
+     *
+     * @param id 顯示項目識別碼，用於取得名稱與說明。
+     * @param read 讀取目前開關值。
+     * @param update 將切換後的值寫入新的顯示設定。
+     * @return 可切換指定顯示項目的設定列。
+     */
     private fun presentationRow(
         id: String,
         read: (MahjongPresentationVisibilityConfig) -> Boolean,
@@ -638,12 +715,23 @@ class MahjongClientConfigScreen(
         id = id,
     )
 
-    /** 將 Boolean 轉換成本地化的開關狀態。 */
+    /**
+     * 將 Boolean 轉換成本地化的開關狀態。
+     *
+     * @param value 是否啟用。
+     * @return 啟用或停用的本地化文字。
+     */
     private fun booleanText(value: Boolean): Text = Text.translatable(
         if (value) MinecraftClientConfigScreenKeys.ENABLED else MinecraftClientConfigScreenKeys.DISABLED,
     )
 
-    /** 依實際像素寬度截斷過寬文字並補省略號。 */
+    /**
+     * 依實際像素寬度截斷過寬文字並補省略號。
+     *
+     * @param text 原始文字。
+     * @param maximumWidth 可使用的像素寬度。
+     * @return 原始文字或補上省略號的截斷文字；寬度不為正時為空文字。
+     */
     private fun fitText(text: Text, maximumWidth: Int): Text {
         if (maximumWidth <= 0) return Text.empty()
         if (textRenderer.getWidth(text) <= maximumWidth) return text
@@ -668,16 +756,30 @@ class MahjongClientConfigScreen(
         return PanelBounds(left, top, left + panelWidth, top + panelHeight)
     }
 
-    /** 目前面板可容納的完整欄位列數。 */
+    /**
+     * 目前面板可容納的完整欄位列數。
+     *
+     * @param bounds 中央面板邊界。
+     * @return 可容納的列數，至少為一列。
+     */
     private fun visibleRowCount(bounds: PanelBounds): Int = ((bounds.bottom - BOTTOM_AREA_HEIGHT - rowsTop(bounds)) / FIELD_ROW_HEIGHT).coerceAtLeast(1)
 
-    /** 目前分類可捲動欄位的起始位置。 */
+    /**
+     * 目前分類可捲動欄位的起始位置。
+     *
+     * @param bounds 中央面板邊界。
+     * @return 欄位區的上緣座標。
+     */
     private fun rowsTop(bounds: PanelBounds): Int = bounds.fieldsTop
 
     /** 目前分類最大的捲動列數。 */
     private fun maximumScroll(): Int = (rows().size - visibleRowCount(panelBounds())).coerceAtLeast(0)
 
-    /** 設定分類。 */
+    /**
+     * 設定分類。
+     *
+     * @property translationKey 分類名稱的翻譯鍵。
+     */
     private enum class Category(val translationKey: String) {
         /** HUD 顯示。 */
         HUD(MinecraftClientConfigScreenKeys.CATEGORY_HUD),
@@ -718,8 +820,10 @@ class MahjongClientConfigScreen(
         val information: Boolean = false,
         val remote: Boolean = false,
     ) {
+        /** 取得自訂名稱，或由名稱翻譯鍵建立文字。 */
         fun nameText(): Text = nameOverride ?: Text.translatable(nameKey)
 
+        /** 取得自訂說明或翻譯文字；未指定說明的資訊列回傳 null。 */
         fun descriptionText(): Text? = descriptionOverride ?: if (information) null else Text.translatable(descriptionKey)
     }
 
@@ -811,7 +915,6 @@ class MahjongClientConfigScreen(
         /** 欄位相對面板上緣的 Y 位移。 */
         const val FIELDS_OFFSET_Y = 50
 
-        /** 單欄版面分類按鈕結束後的欄位間距。 */
         /** 低於此面板寬度時改用單欄版面。 */
         const val TWO_COLUMN_MIN_WIDTH = 400
 

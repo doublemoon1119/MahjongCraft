@@ -65,6 +65,8 @@ interface MinecraftMahjongExtension {
      * 登記第三方牌種對應的 Minecraft asset key；asset key 命名建議見 [MinecraftTileAssetRegistry.register]。
      *
      * 預設不註冊任何映射，使只提供規則層整合的 extension 不必加入空實作。
+     *
+     * @param registry 與內建映射共用的牌種 asset registry。
      */
     fun registerTileAssets(registry: MinecraftTileAssetRegistry) = Unit
 
@@ -72,16 +74,24 @@ interface MinecraftMahjongExtension {
      * 登記第三方 AI 策略對應的顯示名稱。
      *
      * 預設不註冊任何映射，使不提供 AI 策略的 extension 不必加入空實作。
+     *
+     * @param registry 與內建映射共用的 AI 策略顯示名稱 registry。
      */
     fun registerAiStrategyDisplayNames(registry: AiStrategyDisplayNameRegistry) = Unit
 
-    /** 登記第三方自動操作在 Minecraft 中使用的名稱、說明與排列順序。 */
+    /**
+     * 登記第三方自動操作在 Minecraft 中使用的名稱、說明與排列順序。
+     *
+     * @param registry 自動操作顯示 registry。
+     */
     fun registerAutomaticControlDisplays(registry: AutomaticControlDisplayRegistry) = Unit
 
     /**
      * 登記規則動作在 Minecraft 中使用的用語與操作卡順序。
      *
      * 同一個動作在不同規則可能有不同說法，登記同一個動作 ID 即可覆寫中立預設。
+     *
+     * @param registry 與中立預設共用的動作用語 registry。
      */
     fun registerGameActionVocabulary(registry: GameActionVocabularyRegistry) = Unit
 
@@ -89,10 +99,16 @@ interface MinecraftMahjongExtension {
      * 登記捨牌分析狀態（例如振聽、和牌資格）在 Minecraft 中使用的顯示名稱。
      *
      * 與動作用語相同，登記同一個狀態 ID 即可覆寫中立預設。
+     *
+     * @param registry 與中立預設共用的決策狀態名稱 registry。
      */
     fun registerDecisionStatusDisplayNames(registry: DecisionStatusDisplayNameRegistry) = Unit
 
-    /** 登記規則動作成立後在 Minecraft 世界中播放的宣告式語音。 */
+    /**
+     * 登記規則動作成立後在 Minecraft 世界中播放的宣告式語音。
+     *
+     * @param registry 遊戲動作音效呈現 registry。
+     */
     fun registerGameActionSounds(registry: GameActionSoundPresentationRegistry) = Unit
 
     /**
@@ -100,25 +116,45 @@ interface MinecraftMahjongExtension {
      *
      * 描述裡使用的物件種類若不是內建種類，需另外在該 Minecraft 版本的平台端登記種類，說明如何生成與辨識
      * 對應的 entity。預設不登記，桌上就不會擺任何由規則描述的物件。
+     *
+     * @param registry 桌面物件描述 registry。
      */
     fun registerTablePropDescribers(registry: TablePropDescriberRegistry) = Unit
 
-    /** 登記第三方流局原因在 Minecraft 中使用的本地化顯示名稱。 */
+    /**
+     * 登記第三方流局原因在 Minecraft 中使用的本地化顯示名稱。
+     *
+     * @param registry 流局原因顯示名稱 registry。
+     */
     fun registerExhaustiveDrawReasonDisplayNames(registry: ExhaustiveDrawReasonDisplayNameRegistry) = Unit
 
-    /** 登記規則特殊本局結果（例如日麻的流局滿貫）在歷史畫面的名稱。 */
+    /**
+     * 登記規則特殊本局結果（例如日麻的流局滿貫）在歷史畫面的名稱。
+     *
+     * @param registry 本局結果顯示名稱 registry。
+     */
     fun registerRoundOutcomeDisplayNames(registry: RoundOutcomeDisplayNameRegistry) = Unit
 
-    /** 登記規則在歷史牌河上的公開標記如何呈現，例如日麻立直宣告的牌要橫擺。 */
+    /**
+     * 登記規則在歷史牌河上的公開標記如何呈現，例如日麻立直宣告的牌要橫擺。
+     *
+     * @param registry 歷史牌河標記顯示 registry。
+     */
     fun registerHistoryDiscardMarkerDisplays(registry: HistoryDiscardMarkerDisplayRegistry) = Unit
 
-    /** 登記第三方開局準備 step／option 的本地化顯示名稱。 */
+    /**
+     * 登記第三方開局準備 step／option 的本地化顯示名稱。
+     *
+     * @param registry 開局準備顯示名稱 registry。
+     */
     fun registerRoundPreparationDisplayNames(registry: RoundPreparationDisplayNameRegistry) = Unit
 
     /**
      * 登記第三方牌種對應的顯示名稱。
      *
      * 預設不註冊任何映射，使不提供自訂牌種顯示名稱的 extension 不必加入空實作。
+     *
+     * @param registry 與內建映射共用的牌種顯示名稱 registry。
      */
     fun registerTileDisplayNames(registry: TileDisplayNameRegistry) = Unit
 
@@ -126,6 +162,8 @@ interface MinecraftMahjongExtension {
      * 登記第三方規則模組對應的顯示名稱。
      *
      * 預設不註冊任何映射，使不提供自訂規則模組顯示名稱的 extension 不必加入空實作。
+     *
+     * @param registry 與內建映射共用的規則模組顯示名稱 registry。
      */
     fun registerRuleModuleDisplayNames(registry: RuleModuleDisplayNameRegistry) = Unit
 
@@ -135,6 +173,8 @@ interface MinecraftMahjongExtension {
      * 預設不註冊任何映射，使不提供自訂牌面 emoji 的 extension 不必加入空實作。字元本身要能顯示成
      * 貼圖，還需要第三方 mod／資源包另外提供對應的 `assets/minecraft/font/default.json` bitmap
      * provider；這個 registry 只負責保存字元對照，不管字型檔案。
+     *
+     * @param registry 牌種 asset key 至 emoji 字元的 registry。
      */
     fun registerTileEmojis(registry: TileEmojiRegistry) = Unit
 
@@ -143,30 +183,64 @@ interface MinecraftMahjongExtension {
      *
      * 預設不註冊任何映射，使不提供自訂標籤的 extension 不必加入空實作；未註冊的 asset key 呈現端會
      * 視為不顯示標籤，不是錯誤。
+     *
+     * @param registry 牌種 asset key 至角落標籤的 registry。
      */
     fun registerTileLabels(registry: TileLabelRegistry) = Unit
 
-    /** 登記第三方宣告式胡牌 showcase 定義。 */
+    /**
+     * 登記第三方宣告式胡牌 showcase 定義。
+     *
+     * @param registry 胡牌 showcase registry。
+     */
     fun registerWinCelebrationShowcases(registry: WinCelebrationShowcaseRegistry) = Unit
 
-    /** 登記第三方胡牌結算欄位 provider 與完整宣告式模板。 */
+    /**
+     * 登記第三方胡牌結算欄位 provider 與完整宣告式模板。
+     *
+     * @param registry 胡牌結算模板 registry。
+     */
     fun registerWinSettlementPresentationTemplates(registry: WinSettlementPresentationTemplateRegistry) = Unit
 
-    /** 登記第三方終局排行面板模板。 */
+    /**
+     * 登記第三方終局排行面板模板。
+     *
+     * @param registry 終局結算模板 registry。
+     */
     fun registerMatchSettlementPresentationTemplates(registry: MatchSettlementPresentationTemplateRegistry) = Unit
 
-    /** 登記第三方玩家頭像來源；來源只能是 skin、牌面或 texture region。 */
+    /**
+     * 登記第三方玩家頭像來源；來源只能是 skin、牌面或 texture region。
+     *
+     * @param registry 玩家頭像來源 registry。
+     */
     fun registerPlayerPortraitSources(registry: PlayerPortraitSourceRegistry) = Unit
 
-    /** 登記規則公開 indicator／option 的本地化顯示。 */
+    /**
+     * 登記規則公開 indicator／option 的本地化顯示。
+     *
+     * @param registry 公開玩家標記顯示 registry。
+     */
     fun registerPublicPlayerIndicatorDisplays(registry: PublicPlayerIndicatorDisplayRegistry) = Unit
 
-    /** 登記第三方規則的宣告式房間設定欄位。 */
+    /**
+     * 登記第三方規則的宣告式房間設定欄位。
+     *
+     * @param registry 遊戲設定呈現 registry。
+     */
     fun registerGameConfigPresentations(registry: GameConfigPresentationRegistry) = Unit
 
-    /** 登記第三方房間成員外觀來源；完整 entity factory 留待 SeatActorProvider 階段。 */
+    /**
+     * 登記第三方房間成員外觀來源；完整 entity factory 留待 SeatActorProvider 階段。
+     *
+     * @param registry 房間成員外觀來源 registry。
+     */
     fun registerRoomMemberAppearanceSources(registry: RoomMemberAppearanceSourceRegistry) = Unit
 
-    /** 登記第三方規則的桌面局況 provider 與其顯示行翻譯資訊。 */
+    /**
+     * 登記第三方規則的桌面局況 provider 與其顯示行翻譯資訊。
+     *
+     * @param registry 桌面局況資訊行 registry。
+     */
     fun registerRoundInfoPresentations(registry: RoundInfoLineDisplayRegistry) = Unit
 }

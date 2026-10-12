@@ -13,9 +13,18 @@ class DebugGameScenarioRegistry {
         .also { indexed -> require(indexed.size == RiichiDebugGameScenarios.all.size) { "Duplicate debug scenario ID" } }
         .toSortedMap()
 
-    /** 取得指定 ID 的情境；未知 ID 回傳 null。 */
+    /**
+     * 取得指定識別碼的情境。
+     *
+     * @param id 情境的完整識別碼。
+     * @return 已登記的情境；未知識別碼為 null。
+     */
     fun get(id: String): DebugGameScenario? = scenariosById[id]
 
-    /** 取得依 ID 排序的全部已登記情境。 */
+    /**
+     * 取得全部已登記情境。
+     *
+     * @return 依識別碼排序的情境清單副本。
+     */
     fun getAll(): List<DebugGameScenario> = scenariosById.values.toList()
 }

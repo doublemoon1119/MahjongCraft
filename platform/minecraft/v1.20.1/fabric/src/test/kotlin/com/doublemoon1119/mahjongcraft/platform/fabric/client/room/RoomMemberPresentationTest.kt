@@ -18,6 +18,7 @@ import kotlin.uuid.Uuid
 
 /** 驗證成員卡片內容的組成與降級玩家清單。 */
 class RoomMemberPresentationTest {
+    /** 使用空的公開指示器登記表建立成員呈現器。 */
     private val presentation = RoomMemberPresentation(
         PublicPlayerIndicatorTextResolver(PublicPlayerIndicatorDisplayRegistryImpl()),
     )
@@ -129,7 +130,14 @@ class RoomMemberPresentationTest {
         assertEquals(emptyList(), entries.single().indicators)
     }
 
-    /** 建立測試用的資訊列來源。 */
+    /**
+     * 建立測試用的資訊列來源。
+     *
+     * @param seatWind 玩家自風。
+     * @param score 玩家分數。
+     * @param indicators 公開指示器清單。
+     * @return 使用指定資訊的玩家項目。
+     */
     private fun entry(
         seatWind: Wind = Wind.EAST,
         score: Int = 25000,
@@ -144,11 +152,18 @@ class RoomMemberPresentationTest {
         indicators = indicators,
     )
 
-    /** 建立測試用的玩家快照。 */
+    /**
+     * 建立測試用的玩家快照。
+     *
+     * @param seatWind 玩家自風。
+     * @param score 玩家分數。
+     * @return 具有指定自風及分數的玩家快照。
+     */
     private fun snapshot(seatWind: Wind, score: Int = 25000) = FakeMahjongPlayerFactory.create(initialSeat = seatWind)
         .copy(score = score)
         .toSnapshot(isVisible = true, revealsClosedKanTiles = false, setAsideTiles = emptyList())
 
+    /** 測試共用的玩家識別碼。 */
     private companion object {
         /** 測試用的玩家 ID。 */
         val PLAYER_ID: Uuid = Uuid.parse("00000000-0000-0000-0000-000000000001")

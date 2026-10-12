@@ -23,7 +23,11 @@ interface GameActionSoundPresentationRegistry {
     fun freeze()
 }
 
-/** 取得動作在 Minecraft 宣告式聲音 registry 中使用的穩定 ID。 */
+/**
+ * 取得動作在 Minecraft 宣告式聲音 registry 中使用的穩定 ID。
+ *
+ * @return 對應的穩定聲音 ID；不支援語音的動作為 `null`。
+ */
 fun GameAction.soundPresentationId(): String? = when (this) {
     is GameAction.Chi -> BuiltInGameActionSoundIds.CHII
     is GameAction.Pon -> BuiltInGameActionSoundIds.PON

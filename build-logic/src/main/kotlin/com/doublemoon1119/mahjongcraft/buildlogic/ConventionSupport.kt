@@ -16,14 +16,24 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinJvmProjectExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-/** 從 root version catalog 取得指定 version alias。 */
+/**
+ * 從 root version catalog 取得指定 version alias。
+ *
+ * @param alias 要查詢的 version catalog alias。
+ */
 internal fun Project.catalogVersion(alias: String): String = extensions.getByType<VersionCatalogsExtension>()
     .named("libs")
     .findVersion(alias)
     .orElseThrow { IllegalStateException("Missing version catalog alias: $alias") }
     .requiredVersion
 
-/** 將共用 JVM 編譯政策套用到 KMP 專案。 */
+/**
+ * 將共用 JVM 編譯政策套用到 KMP 專案。
+ *
+ * @param toolchain 編譯與測試使用的 JDK toolchain 版本。
+ * @param release 編譯輸出的 JVM bytecode release。
+ * @param overrideDefaults 是否直接設定 release 與 jvmTarget；false 時以 convention 提供。
+ */
 internal fun Project.configureMultiplatformJvm(toolchain: Int, release: Int, overrideDefaults: Boolean) {
     extensions.configure<KotlinMultiplatformExtension> {
         jvmToolchain(toolchain)
@@ -31,7 +41,13 @@ internal fun Project.configureMultiplatformJvm(toolchain: Int, release: Int, ove
     configureCompilerTasks(toolchain, release, overrideDefaults)
 }
 
-/** 將共用 JVM 編譯政策套用到 Kotlin JVM 專案。 */
+/**
+ * 將共用 JVM 編譯政策套用到 Kotlin JVM 專案。
+ *
+ * @param toolchain 編譯與測試使用的 JDK toolchain 版本。
+ * @param release 編譯輸出的 JVM bytecode release。
+ * @param overrideDefaults 是否直接設定 release 與 jvmTarget；false 時以 convention 提供。
+ */
 internal fun Project.configureKotlinJvm(toolchain: Int, release: Int, overrideDefaults: Boolean) {
     extensions.configure<KotlinJvmProjectExtension> {
         jvmToolchain(toolchain)
@@ -39,7 +55,13 @@ internal fun Project.configureKotlinJvm(toolchain: Int, release: Int, overrideDe
     configureCompilerTasks(toolchain, release, overrideDefaults)
 }
 
-/** 設定 Java/Kotlin bytecode release 與測試 launcher。 */
+/**
+ * 設定 Java/Kotlin bytecode release 與測試 launcher。
+ *
+ * @param toolchain 測試 launcher 使用的 JDK toolchain 版本。
+ * @param release Java 與 Kotlin 編譯輸出的 JVM bytecode release。
+ * @param overrideDefaults 是否直接設定 release 與 jvmTarget；false 時以 convention 提供。
+ */
 private fun Project.configureCompilerTasks(toolchain: Int, release: Int, overrideDefaults: Boolean) {
     tasks.withType<JavaCompile>().configureEach {
         options.encoding = "UTF-8"

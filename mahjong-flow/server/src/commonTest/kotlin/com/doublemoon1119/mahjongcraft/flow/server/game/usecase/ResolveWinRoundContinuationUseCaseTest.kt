@@ -30,10 +30,19 @@ import kotlin.uuid.Uuid
 
 /** [ResolveWinRoundContinuationUseCase] 的 context 重建、預設值與 directive 套用測試。 */
 class ResolveWinRoundContinuationUseCaseTest {
+    /** 受測對局的識別碼。 */
     private val gameId = Uuid.random()
+
+    /** 保存受測對局的記憶體資料倉庫。 */
     private val gameRepo = FakeGameRepository()
+
+    /** 已註冊內建規則的模組註冊中心。 */
     private val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
+
+    /** 依觀看政策同步對局快照的元件。 */
     private val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, FakeGameSnapshotRepository(), GameVisibilityPolicyImpl(moduleRegistry))
+
+    /** 測試規則模組的識別碼。 */
     private val ruleModuleId = moduleRegistry.getModule(RiichiRuleConfig()).id
 
     /** 未替該規則模組登記任何 resolver 時，回傳 EndRound 且完全不修改已結算的桌況。 */
@@ -136,7 +145,13 @@ class ResolveWinRoundContinuationUseCaseTest {
         assertEquals(1, updated.currentPlayerIndex)
     }
 
-    /** 呼叫 [useCase] 一次並回傳唯一登記的 resolver 觀察到的 context（該 resolver 固定回傳 null）。 */
+    /**
+     * 呼叫續局判定案例，取得唯一登記的判定器所收到的情境；該判定器固定回傳 null。
+     *
+     * @param previousState 和牌結算前的桌況。
+     * @param winnerPlayerIds 本次和牌的玩家識別碼。
+     * @return resolver 收到的續局情境。
+     */
     private suspend fun observeContext(previousState: TableState, winnerPlayerIds: Set<Uuid>): WinRoundContinuationContext {
         var observed: WinRoundContinuationContext? = null
         val registry = WinRoundContinuationResolverRegistry().apply {
@@ -159,7 +174,12 @@ class ResolveWinRoundContinuationUseCaseTest {
         return checkNotNull(observed) { "resolver was not invoked" }
     }
 
-    /** 建立固定回傳 [directive] 的測試 resolver。 */
+    /**
+     * 建立固定回傳 [directive] 的測試 resolver。
+     *
+     * @param directive resolver 要回傳的續局指令。
+     * @return 對指定指令作固定回應的 resolver。
+     */
     private fun fixedDirectiveResolver(directive: WinRoundDirective): WinRoundContinuationResolver = object : WinRoundContinuationResolver {
         override val id: String = "test:fixed"
         override val ruleModuleId: String = this@ResolveWinRoundContinuationUseCaseTest.ruleModuleId

@@ -18,7 +18,10 @@ import kotlin.test.assertTrue
 
 /** 驗證一發驗收情境的桌況能讓呼叫者在立直後一巡內和牌。 */
 class RiichiIppatsuDebugGameScenariosTest {
+    /** 提供一發情境的登錄表。 */
     private val registry = DebugGameScenarioRegistry()
+
+    /** 使用內建規則檢查情境結果的驗證器。 */
     private val scenarioValidator = DebugGameScenarioValidator(
         MahjongModuleRegistryImpl().apply {
             registerBundledRuleModules()
@@ -72,12 +75,22 @@ class RiichiIppatsuDebugGameScenariosTest {
         assertTrue(state.canRon(offset = 0, discarderOffset = 1, tile = FOUR_CHARACTER))
     }
 
+    /**
+     * 由 registry 建立指定一發情境的桌況。
+     *
+     * @param idPath 情境識別碼中 namespace 後的路徑。
+     * @return 建立後的對局桌況。
+     */
     private fun build(idPath: String): TableState = registry.get("mahjongcraft:$idPath")!!
         .build(createRiichiScenarioContext())
         .game
         .tableState
 
-    /** 呼叫者以剛摸到的牌宣告立直後的桌況；回合位置不變，座位偏移仍以呼叫者為 0。 */
+    /**
+     * 以目前玩家剛摸到的牌建立立直後桌況，保留目前玩家索引。
+     *
+     * @return 更新玩家與動態規則狀態後的桌況。
+     */
     private fun TableState.afterInvokerRiichi(): TableState {
         val invoker = currentPlayer
         val discardResult = assertNotNull(invoker.hand.discardById(assertNotNull(invoker.hand.lastDrawn).id))
@@ -88,12 +101,18 @@ class RiichiIppatsuDebugGameScenariosTest {
         )
     }
 
+    /** 一發情境共用的規則選項與牌面。 */
     private companion object {
         /** 房間設定可選的赤寶牌張數。 */
         val RED_DORA_COUNTS: List<Int> = listOf(0, 3, 4)
 
+        /** 一萬，需排除於王牌區的等待牌。 */
         val ONE_CHARACTER: Tile = Tile.Numeric(Tile.Suit.Character, 1)
+
+        /** 四萬，情境中的和牌張。 */
         val FOUR_CHARACTER: Tile = Tile.Numeric(Tile.Suit.Character, 4)
+
+        /** 九萬，中途摸切的牌面。 */
         val NINE_CHARACTER: Tile = Tile.Numeric(Tile.Suit.Character, 9)
     }
 }

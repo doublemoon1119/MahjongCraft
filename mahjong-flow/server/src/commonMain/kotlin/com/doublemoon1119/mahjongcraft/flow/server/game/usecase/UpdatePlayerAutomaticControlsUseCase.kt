@@ -14,6 +14,9 @@ import kotlin.uuid.Uuid
  *
  * 本用例只接受完整集合，並在同一次 [GameRepository.updateGame] 中完成成員、規則支援清單及 revision
  * 驗證。呼叫端必須以可信任的連線身分提供 [playerId]，不得採用提交內容自行宣稱的玩家 ID。
+ *
+ * @property gameRepository 權威對局資料倉庫。
+ * @property moduleRegistry 麻將規則模組註冊中心，用於取得支援的自動操作 ID。
  */
 @Factory
 class UpdatePlayerAutomaticControlsUseCase(
@@ -27,6 +30,7 @@ class UpdatePlayerAutomaticControlsUseCase(
      * @param playerId 由可信任呼叫邊界確認的玩家識別碼。
      * @param expectedRevision 提交草稿所依據的權威 revision。
      * @param enabledControlIds 欲啟用的完整控制 ID 集合。
+     * @return 權威更新結果，包含接受、版本過期、拒絕或無法提供狀態的情況。
      */
     suspend operator fun invoke(
         gameId: Uuid,
@@ -89,7 +93,13 @@ class UpdatePlayerAutomaticControlsUseCase(
     }
 }
 
-/** 建立只包含 [playerId] 自身控制集合的權威快照。 */
+/**
+ * 建立只包含 [playerId] 自身控制集合的權威快照。
+ *
+ * @param playerId 快照所屬玩家的識別碼。
+ * @param supportedControlIds 規則支援的自動操作 ID 集合。
+ * @return 僅包含指定玩家已啟用控制的權威快照。
+ */
 private fun Game.toAutomaticControlSnapshot(
     playerId: Uuid,
     supportedControlIds: Set<String>,

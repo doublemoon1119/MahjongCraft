@@ -321,6 +321,7 @@ class RoomSettingsDraftTest {
         assertTrue(draft.canReset(withPreparationSeconds(45)))
     }
 
+    /** 測試共用的設定與欄位資料。 */
     private companion object {
         /** 測試用的權威設定。 */
         val AUTHORITATIVE = GameConfig(RiichiRuleConfig(), GameFlowConfig())
@@ -340,10 +341,19 @@ class RoomSettingsDraftTest {
         /** 一定會被 updater 拒絕的欄位 ID。 */
         const val REJECTING_FIELD_ID = "mahjongcraft:rejecting"
 
-        /** 依開局準備秒數建立權威設定。 */
+        /**
+         * 依開局準備秒數建立權威設定。
+         *
+         * @param seconds 開局準備秒數。
+         * @return 僅更新準備秒數的權威設定。
+         */
         fun withPreparationSeconds(seconds: Int): GameConfig = AUTHORITATIVE.copy(flowConfig = AUTHORITATIVE.flowConfig.copy(preparationBaseSeconds = seconds))
 
-        /** 可更新開局準備秒數的測試欄位。 */
+        /**
+         * 建立可更新開局準備秒數的測試欄位。
+         *
+         * @return 讀寫準備秒數的整數欄位定義。
+         */
         fun preparationSecondsField(): GameConfigFieldDefinition = GameConfigFieldDefinition(
             id = "mahjongcraft:preparation_seconds",
             categoryId = "mahjongcraft:flow",
@@ -358,7 +368,11 @@ class RoomSettingsDraftTest {
             },
         )
 
-        /** 可切換旁觀開關的測試欄位。 */
+        /**
+         * 建立可切換旁觀開關的測試欄位。
+         *
+         * @return 讀寫旁觀政策的布林欄位定義。
+         */
         fun spectatingPolicyField(): GameConfigFieldDefinition = GameConfigFieldDefinition(
             id = "mahjongcraft:spectating",
             categoryId = "mahjongcraft:flow",
@@ -377,7 +391,11 @@ class RoomSettingsDraftTest {
             },
         )
 
-        /** updater 一律拋例外的測試欄位。 */
+        /**
+         * 建立 updater 固定拋出例外的測試欄位。
+         *
+         * @return 用於驗證無效欄位狀態的欄位定義。
+         */
         fun rejectingField(): GameConfigFieldDefinition = GameConfigFieldDefinition(
             id = REJECTING_FIELD_ID,
             categoryId = "mahjongcraft:flow",

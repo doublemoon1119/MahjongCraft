@@ -40,7 +40,12 @@ data class WinSettlementPresentationFieldSnapshot(
     val scoreRevealTicks: Int = 18,
     val scoreRevealDelayTicks: Int = 0,
 ) {
-    /** 依完整 ID 取得強型別 extension 欄位；重複 ID 由建構端拒絕。 */
+    /**
+     * 依完整 ID 取得強型別 extension 欄位；重複 ID 由建構端拒絕。
+     *
+     * @param id 欄位的完整識別碼。
+     * @return 對應欄位值；未提供時為 `null`。
+     */
     fun extensionField(id: PresentationFieldId): PresentationValue? = extensionFields.firstOrNull { it.id == id }?.value
 
     init {

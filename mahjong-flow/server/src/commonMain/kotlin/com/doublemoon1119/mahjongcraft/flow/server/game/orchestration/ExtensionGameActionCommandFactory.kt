@@ -4,7 +4,11 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExtensionGameComma
 import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
 import kotlin.uuid.Uuid
 
-/** 將一種規則擴充動作及其選牌結果轉換為可執行命令。 */
+/**
+ * 將一種規則擴充動作及其選牌結果轉換為可執行命令。
+ *
+ * @param A 此 factory 接受的規則擴充動作型別。
+ */
 fun interface ExtensionGameActionCommandFactory<A : ExtensionGameAction> {
     /**
      * 建立命令；選牌資料不符合動作契約時回傳 null。

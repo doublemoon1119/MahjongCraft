@@ -23,6 +23,7 @@ import kotlin.math.roundToInt
  * 選取中的 HUD 以真實內容的半透明預覽畫在草稿位置（見 [MahjongHudPreviewRenderer]），並在外框旁標示名稱與位置。
  *
  * @property parent 開啟這個編輯器的設定畫面，套用草稿與返回都交由它處理。
+ * @param initialLayout 開啟編輯器時的配置，作為草稿與復原基準。
  * @property automaticControlLabels 自動操作狀態面板要呈現的項目名稱，由父畫面決定內容。
  * @property previewRenderer 以範例內容畫出真實 HUD 並量測其尺寸。
  */
@@ -47,10 +48,7 @@ class MahjongHudLayoutEditorScreen(
     /** 重設配置按鈕。 */
     private var resetButton: ButtonWidget? = null
 
-    /**
-     * 第二行二級選項按鈕與其不受捲動影響的內容座標；目前只有操作面板的情境選擇會用到，但保留清單
-     * 結構讓未來規則模組能安全地登記更多二級選項。
-     */
+    /** 第二行選項按鈕與各按鈕未套用捲動量的內容座標。 */
     private val secondaryRowEntries = mutableListOf<Pair<ButtonWidget, Int>>()
 
     /** 第二行目前的水平捲動量。 */
@@ -61,6 +59,8 @@ class MahjongHudLayoutEditorScreen(
 
     /** 拖曳第二行 scrollbar 起點的游標 X 與捲動量。 */
     private var secondaryRowDragStartX = 0.0
+
+    /** 開始拖曳第二行捲軸時的捲動量。 */
     private var secondaryRowDragStartScroll = 0.0
 
     /**
@@ -150,7 +150,12 @@ class MahjongHudLayoutEditorScreen(
         updateSecondaryRowPositions()
     }
 
-    /** 循環切換目前編輯的 HUD；tooltip 條列所有 HUD 補足失去的一覽性。 */
+    /**
+     * 循環切換目前編輯的 HUD；tooltip 條列所有 HUD 補足失去的一覽性。
+     *
+     * @param width 按鈕寬度。
+     * @return 點擊可循環切換 HUD 的按鈕。
+     */
     private fun hudSelectorButton(width: Int): ButtonWidget {
         val button = RestartableMarqueeButtonWidget.builder(
             Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_SELECTOR_HUD, Text.translatable(model.selectedElement.translationKey)),
@@ -176,7 +181,12 @@ class MahjongHudLayoutEditorScreen(
         return button
     }
 
-    /** 循環切換非作用中 HUD 的預覽方式；與目前編輯哪個 HUD 無關，屬於全域設定。 */
+    /**
+     * 循環切換非作用中 HUD 的預覽方式；與目前編輯哪個 HUD 無關，屬於全域設定。
+     *
+     * @param width 按鈕寬度。
+     * @return 切換其他 HUD 預覽方式的按鈕。
+     */
     private fun visibilitySelectorButton(width: Int): ButtonWidget {
         val button = RestartableMarqueeButtonWidget.builder(
             Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_SELECTOR_VISIBILITY, Text.translatable(model.otherHudVisibility.translationKey)),
@@ -189,13 +199,23 @@ class MahjongHudLayoutEditorScreen(
         return button
     }
 
-    /** 全域的隱藏控制項按鈕；與目前編輯哪個 HUD 無關。 */
+    /**
+     * 全域的隱藏控制項按鈕；與目前編輯哪個 HUD 無關。
+     *
+     * @param width 按鈕寬度。
+     * @return 點擊後隱藏編輯控制項的按鈕。
+     */
     private fun hideControlsButtonWidget(width: Int): ButtonWidget = ButtonWidget.builder(Text.translatable(MinecraftClientConfigScreenKeys.HUD_LAYOUT_HIDE_CONTROLS)) {
         model = model.withControlsHidden(true)
         updateControlVisibility()
     }.dimensions(0, 0, width, MahjongHudToolbarLayout.BUTTON_HEIGHT).build()
 
-    /** 建立「目前值＋可用選項」清單 tooltip（每行一個元素），補足循環切換按鈕無法一次看到所有選項的缺點；選項至少三個時附上點擊操作說明。 */
+    /**
+     * 建立「目前值＋可用選項」清單 tooltip（每行一個元素），補足循環切換按鈕無法一次看到所有選項的缺點；選項至少三個時附上點擊操作說明。
+     *
+     * @param options 選項名稱與是否選取，須有一個已選取項目。
+     * @return 目前值、全部選項與適用操作提示，每個元素各占一行。
+     */
     private fun selectionTooltip(options: List<Pair<Text, Boolean>>): List<Text> = CycleButtonInput.withHintLines(
         lines = buildList {
             val current = options.first { it.second }.first
@@ -211,11 +231,13 @@ class MahjongHudLayoutEditorScreen(
     /** 第二行內容總寬度，供水平捲動幾何使用。 */
     private fun secondaryRowContentWidth(): Int = secondaryRowEntries.lastOrNull()?.let { (button, contentX) -> contentX + button.width } ?: 0
 
+    /** 依畫面與第二行內容寬度建立水平捲動配置。 */
     private fun secondaryRowLayout(): MahjongHudToolbarLayout = MahjongHudToolbarLayout(width, secondaryRowContentWidth())
 
     /** 第二行按鈕上界；緊接在第一行下方。 */
     private fun secondaryRowTop(): Int = MahjongHudToolbarLayout.TOP + MahjongHudToolbarLayout.BUTTON_HEIGHT + MahjongHudToolbarLayout.ROW_GAP
 
+    /** 第二行按鈕下方捲軸的上緣座標。 */
     private fun secondaryRowScrollbarTop(): Int = secondaryRowTop() + MahjongHudToolbarLayout.BUTTON_HEIGHT + MahjongHudToolbarLayout.ROW_GAP
 
     /** 依目前捲動量更新第二行按鈕的實際畫面座標。 */
@@ -227,7 +249,13 @@ class MahjongHudLayoutEditorScreen(
         }
     }
 
-    /** 游標是否位於第二行按鈕列或其下方 scrollbar 的整體區域，決定滾輪是否轉為水平捲動。 */
+    /**
+     * 判斷游標是否位於第二行按鈕列及捲軸的整體範圍。
+     *
+     * @param mouseX 游標水平座標。
+     * @param mouseY 游標垂直座標。
+     * @return 位於第二行互動範圍時為 true，供呼叫端決定是否水平捲動。
+     */
     private fun isInsideSecondaryRowArea(mouseX: Double, mouseY: Double): Boolean {
         val layout = secondaryRowLayout()
         return mouseX >= MahjongHudToolbarLayout.MARGIN &&
@@ -236,6 +264,13 @@ class MahjongHudLayoutEditorScreen(
             mouseY < secondaryRowScrollbarTop() + MahjongHudToolbarLayout.SCROLLBAR_HEIGHT
     }
 
+    /**
+     * 判斷游標是否位於可用的第二行捲軸上。
+     *
+     * @param mouseX 游標水平座標。
+     * @param mouseY 游標垂直座標。
+     * @return 有溢出內容且游標位於捲軸範圍時為 true。
+     */
     private fun isOverSecondaryRowScrollbar(mouseX: Double, mouseY: Double): Boolean {
         val layout = secondaryRowLayout()
         if (!layout.hasOverflow) return false
@@ -302,6 +337,10 @@ class MahjongHudLayoutEditorScreen(
      * 外框預覽太窄而讓名稱被截斷時，補一個完整名稱與位置的 tooltip；選取中的元素已在外框旁標示完整內容，不另外顯示。
      *
      * 只在沒有拖曳、且游標不在任何工具列按鈕上時顯示，避免與按鈕本身的 tooltip 疊在一起。
+     *
+     * @param context 畫面繪製環境。
+     * @param mouseX 游標水平座標。
+     * @param mouseY 游標垂直座標。
      */
     private fun renderTrimmedPreviewTooltip(context: DrawContext, mouseX: Int, mouseY: Int) {
         if (model.dragging != null) return
@@ -403,7 +442,11 @@ class MahjongHudLayoutEditorScreen(
         return super.mouseScrolled(mouseX, mouseY, amount)
     }
 
-    /** 透過父畫面的完整草稿保存流程套用 HUD 配置。 */
+    /**
+     * 透過父畫面的完整草稿保存流程套用 HUD 配置。
+     *
+     * @param returnAfterSave 沒有變更或保存成功時是否返回父畫面。
+     */
     private fun apply(returnAfterSave: Boolean) {
         if (!model.hasUnsavedChanges) {
             if (returnAfterSave) client?.setScreen(parent)
@@ -466,6 +509,11 @@ class MahjongHudLayoutEditorScreen(
     /**
      * 繪製全部按鈕的不透明底色與本體；第二行按鈕額外裁切以支援水平捲動。所有按鈕的 tooltip 都延後到
      * 最後才畫，確保不會被之後繪製的按鈕（尤其是垂直距離很近的第二行）蓋住。
+     *
+     * @param context 畫面繪製環境。
+     * @param mouseX 游標水平座標。
+     * @param mouseY 游標垂直座標。
+     * @param delta 本次繪製使用的 tick 內插比例。
      */
     private fun renderControls(context: DrawContext, mouseX: Int, mouseY: Int, delta: Float) {
         val secondaryButtons = secondaryRowEntries.map { it.first }.toSet()
@@ -522,10 +570,21 @@ class MahjongHudLayoutEditorScreen(
         }
     }
 
-    /** 預覽框內可用於文字的寬度，左右各留一點內距。 */
+    /**
+     * 預覽框內可用於文字的寬度，左右各留一點內距。
+     *
+     * @param bounds 預覽框邊界。
+     * @return 扣除左右內距的文字寬度，至少為一像素。
+     */
     private fun previewTextWidth(bounds: MahjongHudBounds): Int = (bounds.width - PREVIEW_TEXT_PADDING * 2).coerceAtLeast(1)
 
-    /** 依可用寬度截斷預覽框內的文字。 */
+    /**
+     * 依可用寬度截斷預覽框內的文字。
+     *
+     * @param text 原始文字。
+     * @param maxWidth 可用的像素寬度。
+     * @return 適合預覽框寬度的純文字。
+     */
     private fun trimToPreview(text: Text, maxWidth: Int): Text = Text.literal(
         trimPreviewText(
             text = text.string,
@@ -534,7 +593,12 @@ class MahjongHudLayoutEditorScreen(
         ),
     )
 
-    /** 預覽框內顯示的位置百分比；只可調整垂直位置的元素不顯示 X。 */
+    /**
+     * 預覽框內顯示的位置百分比；只可調整垂直位置的元素不顯示 X。
+     *
+     * @param element 欲顯示位置的 HUD 元件。
+     * @return 可調整軸的位置百分比文字。
+     */
     private fun positionText(element: HudElement): String = when (element) {
         HudElement.DECISION -> "Y ${percent(model.draft.decisionPanelY)}%"
         HudElement.COMPACT -> "X ${percent(model.draft.compactPromptX)}%  Y ${percent(model.draft.compactPromptY)}%"
@@ -543,17 +607,35 @@ class MahjongHudLayoutEditorScreen(
             "X ${percent(model.draft.automaticControlStatusX)}%  Y ${percent(model.draft.automaticControlStatusY)}%"
     }
 
-    /** 將比例轉為整數百分比。 */
+    /**
+     * 將比例轉為整數百分比。
+     *
+     * @param value 位置比例。
+     * @return 四捨五入後的整數百分比。
+     */
     private fun percent(value: Double): Int = (value * 100).roundToInt()
 
-    /** 取得一個預覽框目前的完整 bounds。 */
+    /**
+     * 取得一個預覽框目前的完整 bounds。
+     *
+     * @param element 欲查詢的 HUD 元件。
+     * @return 依目前草稿、畫面尺寸與量測值計算的邊界。
+     */
     private fun bounds(element: HudElement): MahjongHudBounds = model.bounds(
         element = element,
         screenWidth = width,
         screenHeight = height,
     )
 
-    /** 繪製與正式 HUD 視覺語言一致的簡化拖曳預覽。 */
+    /**
+     * 繪製與正式 HUD 視覺語言一致的拖曳預覽。
+     *
+     * @param context 畫面繪製環境。
+     * @param element 欲繪製的 HUD 元件。
+     * @param bounds 預覽框邊界。
+     * @param mouseX 游標水平座標。
+     * @param mouseY 游標垂直座標。
+     */
     private fun renderPreview(
         context: DrawContext,
         element: HudElement,
@@ -574,7 +656,14 @@ class MahjongHudLayoutEditorScreen(
         renderPreviewLabel(context, element, bounds, hovered)
     }
 
-    /** 在預覽外框上方標示名稱與位置；上方空間不足時改標在外框下方。 */
+    /**
+     * 在預覽外框上方標示名稱與位置；上方空間不足時改標在下方。
+     *
+     * @param context 畫面繪製環境。
+     * @param element 欲標示的 HUD 元件。
+     * @param bounds 預覽框邊界。
+     * @param hovered 游標是否位於預覽框內，影響文字顏色。
+     */
     private fun renderPreviewLabel(context: DrawContext, element: HudElement, bounds: MahjongHudBounds, hovered: Boolean) {
         val label = Text.translatable(element.translationKey).append("  ").append(positionText(element))
         val labelWidth = (textRenderer.getWidth(label) + PREVIEW_LABEL_PADDING * 2).coerceAtMost(width)
@@ -592,7 +681,13 @@ class MahjongHudLayoutEditorScreen(
         )
     }
 
-    /** 非作用中 HUD 以淡暗背景、外框與置中名稱表示，不使用額外名稱色塊。 */
+    /**
+     * 以淡暗背景、外框與置中名稱表示非作用中的 HUD。
+     *
+     * @param context 畫面繪製環境。
+     * @param element 欲繪製的 HUD 元件。
+     * @param bounds 預覽框邊界。
+     */
     private fun renderOutline(context: DrawContext, element: HudElement, bounds: MahjongHudBounds) {
         context.fill(bounds.left, bounds.top, bounds.right, bounds.bottom, OUTLINE_BACKGROUND_COLOR)
         context.drawBorder(bounds.left, bounds.top, bounds.width, bounds.height, OUTLINE_COLOR)

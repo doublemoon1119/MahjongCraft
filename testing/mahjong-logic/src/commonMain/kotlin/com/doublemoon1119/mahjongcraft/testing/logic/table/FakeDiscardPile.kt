@@ -10,7 +10,9 @@ import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile.DiscardEntry
  * 透過繼承 [DiscardEntry] 來定義測試用的捨牌紀錄實體，
  * 並實作 [DiscardPile] 介面以提供紀錄的存取與管理邏輯。
  *
- * 本類別為不可變值物件：[discard]、[takeLast] 皆不修改原實例，而是回傳新的 [FakeDiscardPile] 實例。
+ * [discard]、[takeLast] 都會回傳新實例，不會直接修改原牌河紀錄。
+ *
+ * @property _entries 建立時的牌河紀錄，預設為空列表。
  */
 data class FakeDiscardPile(
     private val _entries: List<FakeEntry> = emptyList(),
@@ -49,6 +51,9 @@ data class FakeDiscardPile(
      * 測試用的捨牌紀錄實體類別。
      *
      * 透過建構子將 [tile] 與 [isTaken] 傳遞給父類別 [DiscardEntry]。
+     *
+     * @param tile 這筆捨牌紀錄所指的牌及其 UUID。
+     * @param isTaken 這張牌是否已被吃、碰或槓走，預設為 false。
      */
     class FakeEntry(
         tile: IdentifiedTile,

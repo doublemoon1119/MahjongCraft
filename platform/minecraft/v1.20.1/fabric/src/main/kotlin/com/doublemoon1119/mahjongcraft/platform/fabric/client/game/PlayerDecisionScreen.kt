@@ -14,6 +14,10 @@ import org.joml.Vector2i
  *
  * 內容由 [decisionPanelContent] 組出、版面幾何由 [DecisionCardLayout] 計算、面板由 [drawDecisionPanel] 畫出；
  * 本類別只負責建立 widget、分派滑鼠輸入、畫出按鈕、倒數與卡片說明，並把點擊意圖接回 [PlayerDecisionHudController]。
+ *
+ * @property prompt 此畫面呈現的權威決策提示。
+ * @property isReaction 是否為回應他家動作的決策，決定跳過時提交 Pass 或進入直接出牌。
+ * @property controller 接收玩家操作並提供文字、倒數與牌面繪製功能的控制器。
  */
 internal class PlayerDecisionScreen(
     private val prompt: PlayerDecisionPromptDto,
@@ -45,8 +49,10 @@ internal class PlayerDecisionScreen(
     /** 本次決策出現過的最大倒數寬度；只增不減，讓標題列與面板寬度不隨秒數位數變化。 */
     private var reservedTimerWidth = 0
 
-    /** 開始拖曳時的游標與捲動位置。 */
+    /** 開始拖曳時的游標水平座標。 */
     private var scrollbarDragStartX = 0.0
+
+    /** 開始拖曳時的內容水平捲動量。 */
     private var scrollbarDragStartScroll = 0.0
 
     /** 讓多人遊戲與 integrated server 在畫面開啟時持續推進。 */
@@ -81,7 +87,11 @@ internal class PlayerDecisionScreen(
         refreshSubmissionState()
     }
 
-    /** 把卡片的點擊意圖接回 controller。 */
+    /**
+     * 把卡片的點擊意圖交給控制器。
+     *
+     * @param entry 被點擊的操作卡片。
+     */
     private fun onEntryClicked(entry: DecisionEntry) {
         when (val intent = entry.intent) {
             is DecisionEntryIntent.SubmitAction ->
@@ -213,7 +223,15 @@ internal class PlayerDecisionScreen(
         renderDescriptionTooltip(context, layout, placements, mouseX, mouseY)
     }
 
-    /** 游標停在有說明的卡片上時，在面板外緣對齊該卡片顯示說明，不覆蓋卡片列。 */
+    /**
+     * 游標停在有說明的卡片上時，在面板外緣對齊該卡片顯示說明，不覆蓋卡片列。
+     *
+     * @param context 本幀繪製環境。
+     * @param layout 操作面板的版面資訊。
+     * @param placements 與選項順序一致的卡片範圍。
+     * @param mouseX 游標水平座標。
+     * @param mouseY 游標垂直座標。
+     */
     private fun renderDescriptionTooltip(
         context: DrawContext,
         layout: DecisionCardLayout,
@@ -244,7 +262,12 @@ internal class PlayerDecisionScreen(
         screenWidth = width,
     )
 
-    /** 目前畫面尺寸、玩家設定與實際文字量測結果下的版面幾何。 */
+    /**
+     * 依目前畫面尺寸、玩家設定與實際文字量測結果計算版面位置。
+     *
+     * @param content 面板內容；預設重新取得目前內容。
+     * @return 操作面板與各控制項的版面資訊。
+     */
     private fun layout(content: DecisionPanelContent = panelContent()): DecisionCardLayout = decisionPanelLayout(
         content = content,
         renderer = textRenderer,
@@ -254,7 +277,14 @@ internal class PlayerDecisionScreen(
         timerWidth = reservedTimerWidth,
     )
 
-    /** 使用完整牌面 UV 等比例縮放預覽牌；卡片預覽一律直立，不套用鳴牌後最終桌面朝向。 */
+    /**
+     * 使用完整牌面 UV 等比例縮放預覽牌；卡片預覽一律直立，不套用鳴牌後最終桌面朝向。
+     *
+     * @param context 本幀繪製環境。
+     * @param assetKey 牌面素材識別碼。
+     * @param x 牌面左界。
+     * @param y 牌面上界。
+     */
     private fun drawTile(context: DrawContext, assetKey: String, x: Int, y: Int) {
         controller.renderTileFace(
             context,
@@ -266,7 +296,12 @@ internal class PlayerDecisionScreen(
         )
     }
 
-    /** 每幀同步因拖曳／滾輪移動後的原版按鈕座標。 */
+    /**
+     * 每幀同步因拖曳或滾輪移動後的按鈕座標。
+     *
+     * @param layout 操作面板的版面資訊。
+     * @param placements 與按鈕順序一致的卡片範圍。
+     */
     private fun updateCardButtonPositions(layout: DecisionCardLayout, placements: List<DecisionBounds>) {
         cardButtons.forEachIndexed { index, button ->
             val bounds = layout.cardButtonBounds(placements[index])

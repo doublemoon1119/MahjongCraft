@@ -100,8 +100,14 @@ class DecisionTimerSynchronizationServiceTest {
         }
     }
 
+    /** 共用的決策計時資料。 */
     private companion object {
-        /** 建立固定剩餘時間的 active decision status。 */
+        /**
+         * 建立固定剩餘時間的有效決策狀態。
+         *
+         * @param playerId 持有決策權的玩家。
+         * @return 自己回合、基本時間四秒與保留時間二十秒的狀態。
+         */
         fun status(playerId: Uuid) = ActivePlayerDecisionStatus(
             playerId,
             PlayerDecisionPhase.OWN_TURN,

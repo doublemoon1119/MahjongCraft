@@ -18,7 +18,14 @@ import net.minecraft.util.math.RotationAxis
 import kotlin.math.max
 import kotlin.uuid.Uuid
 
-/** 從單一桌級 entity 在各固定座位頭頂後方繪製雙面公開資訊。 */
+/**
+ * 從單一桌級 entity 在各固定座位頭頂後方繪製雙面公開資訊。
+ *
+ * @param context Minecraft renderer factory 提供的 client context。
+ * @param portraits 繪製各玩家頭像的共用 renderer。
+ * @param indicatorTextResolver 將公開指示器轉成文字與顏色。
+ * @param configStore 提供玩家資訊面板可見性設定。
+ */
 class MahjongPlayerInfoEntityRenderer(
     context: EntityRendererFactory.Context,
     private val portraits: PlayerPortraitRenderer,
@@ -58,6 +65,16 @@ class MahjongPlayerInfoEntityRenderer(
         }
     }
 
+    /**
+     * 繪製單一玩家的正面資訊列與其餘公開指示器。
+     *
+     * @param player 要顯示的座位資訊。
+     * @param isDealer 該玩家是否為莊家。
+     * @param width 所有玩家共用的面板寬度。
+     * @param light 世界光照值。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供面板與文字頂點緩衝。
+     */
     private fun renderFace(
         player: MahjongPlayerInfoEntry,
         isDealer: Boolean,
@@ -96,6 +113,13 @@ class MahjongPlayerInfoEntityRenderer(
         }
     }
 
+    /**
+     * 依名稱、分數與指示器文字量測所有玩家共用的面板寬度。
+     *
+     * @param players 本桌公開的玩家資訊。
+     * @param dealerPlayerId 莊家玩家 ID；若與某位玩家相符，量測時預留莊家標記空間。
+     * @return 介於最小與最大寬度之間的共用面板寬度。
+     */
     private fun measureSharedWidth(
         players: List<MahjongPlayerInfoEntry>,
         dealerPlayerId: Uuid?,
@@ -115,6 +139,12 @@ class MahjongPlayerInfoEntityRenderer(
         return width.coerceAtMost(MAX_PANEL_WIDTH)
     }
 
+    /**
+     * 將座風轉成對應的本地化文字。
+     *
+     * @param wind 要顯示的座風。
+     * @return 對應風牌翻譯 key 的文字。
+     */
     private fun windText(wind: Wind): Text = Text.translatable(
         when (wind) {
             Wind.EAST -> MinecraftMessageKeys.TILE_HONOR_EAST
@@ -124,11 +154,24 @@ class MahjongPlayerInfoEntityRenderer(
         },
     )
 
+    /**
+     * 依桌面朝向將座位側別旋轉指定的四方位步數。
+     *
+     * @param side 未旋轉的桌面側別。
+     * @param steps 順時針索引位移；會依四個方位取餘數。
+     * @return 旋轉後的桌面側別。
+     */
     private fun rotateSide(side: MahjongTableSide, steps: Int): MahjongTableSide {
         val order = listOf(MahjongTableSide.NORTH, MahjongTableSide.EAST, MahjongTableSide.SOUTH, MahjongTableSide.WEST)
         return order[(order.indexOf(side) + steps).mod(order.size)]
     }
 
+    /**
+     * 取得指定側別面板相對桌面中心的水平偏移。
+     *
+     * @param side 面板所屬桌面側別。
+     * @return X、Z 軸偏移量。
+     */
     private fun sideOffset(side: MahjongTableSide): Pair<Double, Double> = when (side) {
         MahjongTableSide.NORTH -> 0.0 to -PANEL_DISTANCE
         MahjongTableSide.EAST -> PANEL_DISTANCE to 0.0
@@ -136,6 +179,12 @@ class MahjongPlayerInfoEntityRenderer(
         MahjongTableSide.WEST -> -PANEL_DISTANCE to 0.0
     }
 
+    /**
+     * 取得指定側別面板朝向觀看者的 yaw 角度。
+     *
+     * @param side 面板所屬桌面側別。
+     * @return 面板旋轉角度（度）。
+     */
     private fun sideYaw(side: MahjongTableSide): Float = when (side) {
         MahjongTableSide.NORTH -> 180f
         MahjongTableSide.EAST -> -90f

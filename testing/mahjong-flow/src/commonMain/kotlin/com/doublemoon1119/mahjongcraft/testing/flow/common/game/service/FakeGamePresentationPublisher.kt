@@ -18,7 +18,7 @@ import kotlin.uuid.Uuid
 /**
  * 供測試使用的 [GamePresentationPublisher] 模擬實作。
  *
- * 紀錄每個對局最後一次收到的擲骰結果、牌牆結構與開局座位傳送，以便在單元測試中驗證業務邏輯是否
+ * 紀錄每個對局最後一次收到的擲骰結果、牌牆結構與開局座位安排，以便在單元測試中驗證業務邏輯是否
  * 正確觸發呈現。
  */
 class FakeGamePresentationPublisher : GamePresentationPublisher {
@@ -68,7 +68,7 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
     /** 依對局 Uuid 紀錄是否收到過 [clearPlayerTiles]。 */
     private val clearedPlayerTiles = mutableSetOf<Uuid>()
 
-    /** 依對局 Uuid 紀錄最後一次收到的開局座位傳送清單。 */
+    /** 依對局 Uuid 紀錄最後一次收到的開局座位安排。 */
     private val gameStartedSeatings = mutableMapOf<Uuid, List<Uuid>>()
 
     /** 依對局 Uuid 紀錄最後一次收到的牌河更新資料。 */
@@ -77,10 +77,16 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
     /** 依對局 Uuid 紀錄最後一次收到的王牌追加公開集合。 */
     private val deadWallReveals = mutableMapOf<Uuid, Set<Uuid>>()
 
-    /** 依對局 Uuid 紀錄收到的每一筆胡牌慶祝演出呼叫，依呼叫順序排列——一炮多響可能同一局收到多筆。 */
+    /** 依對局 Uuid 依序紀錄單獨慶祝呼叫及完整呈現請求所含的慶祝內容；一炮多響可能同一局收到多筆。 */
     private val winCelebrations = mutableMapOf<Uuid, MutableList<WinCelebrationContext>>()
+
+    /** 依對局 Uuid 依序紀錄單獨結算呼叫及完整呈現請求所含的結算內容。 */
     private val winSettlements = mutableMapOf<Uuid, MutableList<WinSettlementContext>>()
+
+    /** 依對局 Uuid 紀錄收到的完整胡牌呈現請求，依呼叫順序排列。 */
     private val winPresentations = mutableMapOf<Uuid, MutableList<WinPresentationRequest>>()
+
+    /** 依對局 Uuid 紀錄每次完整胡牌呈現內的段落順序。 */
     private val publishOrder = mutableMapOf<Uuid, MutableList<List<WinPresentationSegment>>>()
 
     override fun publishExhaustiveDrawSettlement(gameId: Uuid, request: ExhaustiveDrawSettlementPresentationRequest) {
@@ -244,7 +250,7 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
     /** 指定對局是否曾經收到過 [clearPlayerTiles]。 */
     fun werePlayerTilesCleared(gameId: Uuid): Boolean = gameId in clearedPlayerTiles
 
-    /** 取得指定對局最後一次收到的開局座位傳送清單；若無紀錄則回傳 null。 */
+    /** 取得指定對局最後一次收到的開局座位安排；若無紀錄則回傳 null。 */
     fun getPublishedGameStartedSeating(gameId: Uuid): List<Uuid>? = gameStartedSeatings[gameId]
 
     /** 取得指定對局最後一次收到的牌河更新資料；若無紀錄則回傳 null。 */

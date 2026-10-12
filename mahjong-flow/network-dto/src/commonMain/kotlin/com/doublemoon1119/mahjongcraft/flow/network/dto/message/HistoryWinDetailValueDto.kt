@@ -8,17 +8,12 @@ import kotlinx.serialization.Serializable
 @Serializable
 sealed interface HistoryWinDetailValueDto {
     /**
-     * 有單位的數值。
+     * 依規則順序排列、各自附有單位的數值清單。
      *
      * @property quantities 依規則順序排列的數值。
      */
     @Serializable
     @SerialName(HistoryDetailValueTypeKeys.QUANTITIES)
-    /**
-     * Quantities 網路 DTO。
-     *
-     * @property quantities 按規則排列的數值清單。
-     */
     data class Quantities(val quantities: List<HistoryWinDetailQuantityDto>) : HistoryWinDetailValueDto
 
     /**
@@ -49,10 +44,5 @@ sealed interface HistoryWinDetailValueDto {
      */
     @Serializable
     @SerialName(HistoryDetailValueTypeKeys.TILES)
-    /**
-     * Tiles 網路 DTO。
-     *
-     * @property tiles 牌索引列表。
-     */
     data class Tiles(val tiles: List<Int>) : HistoryWinDetailValueDto
 }

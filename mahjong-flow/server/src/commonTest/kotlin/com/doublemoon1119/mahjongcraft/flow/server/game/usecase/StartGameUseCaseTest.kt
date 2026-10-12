@@ -35,10 +35,21 @@ import kotlin.uuid.Uuid
  */
 class StartGameUseCaseTest {
 
+    /** 開局操作人的玩家識別碼。 */
     private val hostId = Uuid.random()
+
+    /** 房間內三位訪客的玩家識別碼。 */
     private val guestIds = List(3) { Uuid.random() }
+
+    /** 測試房間及開局後對局共用的識別碼。 */
     private val roomId = Uuid.random()
 
+    /**
+     * 建立所有訪客皆已準備的測試房間。
+     *
+     * @param gameConfig 測試房間使用的遊戲設定。
+     * @return 房主與三位已準備訪客組成的測試房間。
+     */
     private fun readyRoom(gameConfig: GameConfig = GameConfig(RiichiRuleConfig())): Room = Room(
         id = roomId,
         hostId = hostId,
@@ -47,16 +58,36 @@ class StartGameUseCaseTest {
         readyPlayerIds = guestIds,
     )
 
+    /** 使用權威狀態儲存與記憶體替身組成的開局測試環境。 */
     private class Fixtures {
+        /** 同時保存測試房間與對局的權威狀態。 */
         val store = AuthoritativeStateStore()
+
+        /** 測試用房間資料倉庫。 */
         val roomRepo = RoomRepositoryImpl(store)
+
+        /** 測試用對局資料倉庫。 */
         val gameRepo = GameRepositoryImpl(store)
+
+        /** 已註冊內建規則的模組註冊中心。 */
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
+
+        /** 記錄同步快照的倉庫。 */
         val snapshotRepo = FakeGameSnapshotRepository()
+
+        /** 根據觀看政策同步玩家快照的元件。 */
         val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(moduleRegistry))
+
+        /** 測試用手牌排序偏好儲存。 */
         val handSortPreferenceStore = HandSortPreferenceStore()
+
+        /** 記錄遊戲事件的發布替身。 */
         val eventPublisher = FakeGameEventPublisher()
+
+        /** 記錄呈現要求的發布替身。 */
         val presentationPublisher = FakeGamePresentationPublisher()
+
+        /** 受測開局用例。 */
         val useCase = StartGameUseCase(
             store,
             moduleRegistry,
@@ -186,7 +217,7 @@ class StartGameUseCaseTest {
         assertTrue(wallContext.isNewOpening)
     }
 
-    /** 驗證開局時通知平台一次規則狀態更新。 */
+    /** 驗證開局時只發布一次規則狀態更新要求。 */
     @Test
     fun `test start game publishes table props update once`() = runTest {
         val fixtures = Fixtures()

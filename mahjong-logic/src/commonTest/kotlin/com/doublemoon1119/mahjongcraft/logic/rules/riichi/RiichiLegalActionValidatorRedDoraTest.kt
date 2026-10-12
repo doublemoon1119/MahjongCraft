@@ -25,6 +25,7 @@ import kotlin.test.assertTrue
  */
 class RiichiLegalActionValidatorRedDoraTest {
 
+    /** 依日麻牌面等價關係產生吃、碰、槓等合法動作的驗證器。 */
     private val validator = RiichiLegalActionValidator(
         shantenCalculator = RiichiShantenCalculator(),
         handValueCalculator = RiichiHandValueCalculator(),

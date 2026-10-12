@@ -42,10 +42,27 @@ import kotlin.uuid.Uuid
 
 /** [DeclareTileSetAsideUseCase] 以三人日麻拔北驗證：直接成立、搶北視窗，以及視窗內放過與榮和的結果。 */
 class DeclareTileSetAsideUseCaseTest {
+    /** 受測對局識別碼。 */
     private val gameId = Uuid.random()
+
+    /** 宣告拔北的玩家。 */
     private val pullerId = Uuid.random()
+
+    /** 可配置為等待北牌的玩家。 */
     private val waiterId = Uuid.random()
 
+    /**
+     * 拔北與搶北回應共用的測試環境。
+     *
+     * @property gameRepo 保存對局的測試倉庫。
+     * @property moduleRegistry 內建規則註冊中心。
+     * @property snapshotSynchronizer 更新玩家可見快照的元件。
+     * @property eventPublisher 記錄流程事件的替身。
+     * @property presentationPublisher 記錄呈現要求的替身。
+     * @property winPresentationHandoff 暫存和牌呈現要求的元件。
+     * @property useCase 受測拔北用例。
+     * @property respondToRobbing 處理搶北視窗回應的用例。
+     */
     private class Fixtures {
         val gameRepo = FakeGameRepository()
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
@@ -69,11 +86,14 @@ class DeclareTileSetAsideUseCaseTest {
         )
     }
 
+    /** 宣告拔出的實體北牌。 */
     private val north = FakeIdentifiedTileFactory.create(Tile.Honor.North)
+
+    /** 拔北成立後準備補入的實體牌。 */
     private val rinshan = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 9))
 
     /**
-     * 驗證沒有人能榮和時，北移到拔北區、補一張嶺上牌，並依序記錄拔北與摸牌；畫面收到這次拔出的北。
+     * 驗證沒有人能榮和時，北移到拔北區、補一張嶺上牌，依序記錄拔北與摸牌，且呈現要求包含新拔出的北。
      *
      * 以目前的遊戲為預期遊戲執行，確認命令只寫入這一局一次（AI 命令的條件式提交契約）。
      */
@@ -111,7 +131,7 @@ class DeclareTileSetAsideUseCaseTest {
         assertEquals(Outcome.Error(GameError.IllegalAction(pullerId, gameId, PULL_NORTH_GAME_ACTION)), result)
     }
 
-    /** 驗證有人單騎等北時開啟搶和視窗，拔北與補牌都暫緩套用；畫面先呈現北已拔出、尚未補牌的樣子。 */
+    /** 驗證等待北牌的玩家取得搶和機會，拔北與補牌暫緩套用，呈現要求先包含北牌、不包含補牌。 */
     @Test
     fun `a player waiting on north opens a robbing window`() = runTest {
         val fixtures = Fixtures()
@@ -136,7 +156,7 @@ class DeclareTileSetAsideUseCaseTest {
         assertTrue(north.id !in presented.standingTileIds)
     }
 
-    /** 驗證搶和視窗全員放過後，拔北才成立並補牌，放過的玩家記入同巡放過的牌；北已在宣告時擺好，畫面只呈現補牌。 */
+    /** 驗證全員放過後拔北成立並補牌，放過者記入同巡放過的牌，後續要求不再把北標為新拔出的牌。 */
     @Test
     fun `passing the robbing window completes the pull`() = runTest {
         val fixtures = Fixtures()
@@ -185,7 +205,11 @@ class DeclareTileSetAsideUseCaseTest {
         assertTrue(!winner.detailFields.toString().contains("chankan"))
     }
 
-    /** 拔北的玩家：剛摸到北，手中還有一張北以外的牌。 */
+    /**
+     * 拔北的玩家：剛摸到北，手中還有兩張北以外的立牌。
+     *
+     * @return 持有剛摸到的北與兩張立牌的測試玩家。
+     */
     private fun puller(): MahjongPlayer = FakeMahjongPlayerFactory.create(
         id = pullerId,
         initialSeat = Wind.EAST,
@@ -193,7 +217,11 @@ class DeclareTileSetAsideUseCaseTest {
         playerRuleState = RiichiPlayerState(),
     ).copy(score = INITIAL_SCORE)
 
-    /** 一筒到九筒加一二三條、單騎等北的玩家（一氣通貫）。 */
+    /**
+     * 一筒到九筒加一二三條、單騎等北的玩家（一氣通貫）。
+     *
+     * @return 以北單騎聽牌的測試玩家。
+     */
     private fun northWaiter(): MahjongPlayer = FakeMahjongPlayerFactory.create(
         id = waiterId,
         initialSeat = Wind.SOUTH,
@@ -205,7 +233,13 @@ class DeclareTileSetAsideUseCaseTest {
         playerRuleState = RiichiPlayerState(),
     ).copy(score = INITIAL_SCORE)
 
-    /** 不會對北有任何反應的玩家。 */
+    /**
+     * 不會對北有任何反應的玩家。
+     *
+     * @param id 玩家識別碼。
+     * @param seat 初始座位。
+     * @return 不會對北作出反應的測試玩家。
+     */
     private fun bystander(id: Uuid, seat: Wind): MahjongPlayer = FakeMahjongPlayerFactory.create(
         id = id,
         initialSeat = seat,
@@ -213,6 +247,13 @@ class DeclareTileSetAsideUseCaseTest {
         playerRuleState = RiichiPlayerState(),
     ).copy(score = INITIAL_SCORE)
 
+    /**
+     * 建立拔北者目前可行動的三人日麻桌況。
+     *
+     * @param puller 拔北玩家；預設為持有剛摸到北牌的玩家。
+     * @param waiter 可搶北或不作反應的另一位玩家。
+     * @return 包含指定補牌、第三位旁觀玩家與預設三人日麻設定的桌況。
+     */
     private fun table(
         puller: MahjongPlayer = puller(),
         waiter: MahjongPlayer,
@@ -225,9 +266,16 @@ class DeclareTileSetAsideUseCaseTest {
         dynamicRuleState = RiichiDynamicState(),
     )
 
+    /**
+     * 建立具有測試識別碼的實體牌。
+     *
+     * @param tile 要建立的牌種。
+     * @return 該牌種的新實體牌。
+     */
     private fun tile(tile: Tile): IdentifiedTile = FakeIdentifiedTileFactory.create(tile)
 
     private companion object {
+        /** 各測試玩家的起始分數。 */
         const val INITIAL_SCORE = 35000
     }
 }

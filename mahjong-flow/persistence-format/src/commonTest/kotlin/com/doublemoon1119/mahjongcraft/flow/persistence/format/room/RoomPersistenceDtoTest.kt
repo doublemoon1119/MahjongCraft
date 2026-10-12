@@ -85,7 +85,11 @@ class RoomPersistenceDtoTest {
         assertFailsWith<IllegalStateException> { dto.toDomain(registry) }
     }
 
-    /** 針對指定規則配置執行 Room encoded round-trip 並比對完整領域狀態。 */
+    /**
+     * 針對指定規則配置驗證房間存檔往返後的完整狀態。
+     *
+     * @param config 測試房間使用的規則配置。
+     */
     private fun assertRoomRoundTrip(config: MahjongRuleConfig) {
         val registry = bundledPersistenceRegistries().ruleConfigs
         val room = createRoom(config)
@@ -95,7 +99,12 @@ class RoomPersistenceDtoTest {
         assertEquals(room, restored)
     }
 
-    /** 建立同時包含人類、AI 與準備狀態的完整測試 Room。 */
+    /**
+     * 建立同時包含真人、AI 與準備狀態的測試房間。
+     *
+     * @param config 房間使用的規則配置。
+     * @return 帶有房主、另一位真人與 AI 的房間。
+     */
     private fun createRoom(config: MahjongRuleConfig): Room {
         val hostId = Uuid.random()
         val humanId = Uuid.random()
@@ -111,7 +120,20 @@ class RoomPersistenceDtoTest {
     }
 }
 
-/** 測試第三方 persistence registry 擴充能力的最小規則配置。 */
+/**
+ * 測試第三方存檔註冊表擴充能力的最小規則配置。
+ *
+ * @property marker 驗證自訂資料往返後保持不變的標記。
+ * @property initialHandSize 起始手牌張數。
+ * @property deadTileCount 保留牌張數。
+ * @property scoreConfig 計分設定。
+ * @property gameLength 對局長度。
+ * @property minimumWinConstraint 最低和牌門檻。
+ * @property minPlayers 最少玩家數。
+ * @property maxPlayers 最多玩家數。
+ * @property multiRonPolicy 多家榮和處理政策。
+ * @property revealsClosedKanTiles 是否公開暗槓牌面。
+ */
 private data class ThirdPartyRuleConfig(
     val marker: String,
     override val initialHandSize: Int = 13,
@@ -128,6 +150,10 @@ private data class ThirdPartyRuleConfig(
     override val revealsClosedKanTiles: Boolean = true,
 ) : MahjongRuleConfig
 
-/** 測試第三方規則配置的 persistence DTO。 */
+/**
+ * 測試第三方規則配置的存檔 DTO。
+ *
+ * @property marker 保存自訂規則資料的測試標記。
+ */
 @Serializable
 private data class ThirdPartyRuleConfigPersistenceDto(val marker: String)

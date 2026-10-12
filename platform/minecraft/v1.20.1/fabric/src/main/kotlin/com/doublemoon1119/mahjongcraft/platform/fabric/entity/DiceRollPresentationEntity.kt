@@ -12,7 +12,12 @@ import net.minecraft.util.math.Box
 import net.minecraft.world.World
 import kotlin.uuid.Uuid
 
-/** 一次正式擲骰的聚合結果舞台；client 依絕對時間與最終點數繪製 3D 結果面板。 */
+/**
+ * 一次正式擲骰的聚合結果舞台；client 依絕對時間與最終點數繪製 3D 結果面板。
+ *
+ * @param type Minecraft entity 類型。
+ * @param world 實體所屬世界。
+ */
 class DiceRollPresentationEntity(
     type: EntityType<out DiceRollPresentationEntity> = ModEntities.diceRollPresentation,
     world: World,
@@ -39,7 +44,14 @@ class DiceRollPresentationEntity(
         setNoGravity(true)
     }
 
-    /** 生成前設定完整且不可變的擲骰結果時間線。 */
+    /**
+     * 生成前設定完整且不可變的擲骰結果時間線。
+     *
+     * @param tableId 所屬麻將桌 UUID。
+     * @param points 依投擲順序排列的骰子點數。
+     * @param revealGameTime 最後一顆骰子停穩並開始揭示結果的絕對遊戲時間。
+     * @param endGameTime 結果面板與桌面骰子共同結束的絕對遊戲時間。
+     */
     fun configure(
         tableId: Uuid,
         points: List<Int>,
@@ -58,7 +70,11 @@ class DiceRollPresentationEntity(
         dataTracker.set(END_GAME_TIME, endGameTime)
     }
 
-    /** 取得含 partial tick 的結果階段相對時間。 */
+    /**
+     * 取得含 partial tick 的結果階段相對時間。
+     *
+     * @param tickDelta 本 tick 的部分經過時間。
+     */
     fun elapsedResultTicks(tickDelta: Float): Double = world.time + tickDelta.toDouble() - revealGameTime
 
     /** 純視覺舞台不提供碰撞。 */

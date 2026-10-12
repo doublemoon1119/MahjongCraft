@@ -14,6 +14,7 @@ import kotlin.test.fail
 
 /** 驗證內建進度 JSON 與成果、統計、語系資料彼此一致，並驗證條件 JSON 的解析。 */
 class MahjongAchievementResourcesTest {
+    /** 必須具有完整成果翻譯的語言清單。 */
     private val locales = listOf("en_us", "ja_jp", "zh_cn", "zh_tw")
 
     /** 內建的全部成果 ID。 */
@@ -95,7 +96,11 @@ class MahjongAchievementResourcesTest {
         assertFailsWith<RuntimeException> { MahjongAchievementCriterion.conditionFromJson(JsonObject()) }
     }
 
-    /** 以 `mahjongcraft:<相對路徑>` 為鍵載入全部內建進度。 */
+    /**
+     * 以 `mahjongcraft:<相對路徑>` 為鍵載入全部內建進度。
+     *
+     * @return 進度識別碼與 JSON 的對照；找不到資源或內容為空時使測試失敗。
+     */
     private fun loadAdvancements(): Map<String, JsonObject> {
         val root = javaClass.classLoader.getResource(ADVANCEMENT_ROOT) ?: fail("Missing $ADVANCEMENT_ROOT")
         val directory = File(root.toURI())
@@ -108,12 +113,19 @@ class MahjongAchievementResourcesTest {
             .also { assertTrue(it.isNotEmpty(), "No advancements found") }
     }
 
+    /**
+     * 讀取指定語言已提供的翻譯鍵。
+     *
+     * @param locale 語言資源名稱。
+     * @return 該語言檔的所有翻譯鍵；找不到檔案時使測試失敗。
+     */
     private fun loadTranslations(locale: String): Set<String> {
         val resource = javaClass.classLoader.getResource("assets/mahjongcraft/lang/$locale.json") ?: fail("Missing $locale language file")
         return JsonParser.parseString(resource.readText()).asJsonObject.keySet()
     }
 
     private companion object {
+        /** 內建進度 JSON 的資源根目錄。 */
         const val ADVANCEMENT_ROOT = "data/mahjongcraft/advancements"
     }
 }

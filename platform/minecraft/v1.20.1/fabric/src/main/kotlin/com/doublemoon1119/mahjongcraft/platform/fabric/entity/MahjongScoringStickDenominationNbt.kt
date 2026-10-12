@@ -10,12 +10,24 @@ import net.minecraft.nbt.NbtElement
  * 一律以 enum 名稱保存：名稱不受 enum 宣告順序影響，在中間插入新面額時既有存檔仍然指向同一種點棒。
  */
 internal object MahjongScoringStickDenominationNbt {
-    /** 以名稱寫入面額。 */
+    /**
+     * 以名稱寫入面額。
+     *
+     * @param nbt 目的 NBT compound。
+     * @param key 面額欄位名稱。
+     * @param denomination 要保存的面額。
+     */
     fun write(nbt: NbtCompound, key: String, denomination: MahjongScoringStickDenomination) {
         nbt.putString(key, denomination.name)
     }
 
-    /** 讀取面額；缺少名稱或名稱無效時使用百分棒。 */
+    /**
+     * 讀取面額；缺少名稱或名稱無效時使用百分棒。
+     *
+     * @param nbt 含面額欄位的 NBT compound。
+     * @param key 面額欄位名稱。
+     * @return 欄位中的有效面額；欄位不存在或名稱無效時為百分棒。
+     */
     fun read(nbt: NbtCompound, key: String): MahjongScoringStickDenomination = when {
         nbt.contains(key, NbtElement.STRING_TYPE.toInt()) ->
             MahjongScoringStickDenomination.fromNameOrDefault(nbt.getString(key))

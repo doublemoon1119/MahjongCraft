@@ -12,7 +12,7 @@ import kotlin.uuid.Uuid
 /**
  * 一局的開局桌況與目前為止最後一次寫入的桌況。
  *
- * @property start 這一局第一次寫入的權威桌況；從它重新推進可以重播整局。
+ * @property start 這一局第一次寫入的權威桌況，可作為重新推進的起點，不包含策略的亂數狀態。
  * @property final 這一局最後一次寫入的權威桌況；換局後即為這一局結束時的桌況。
  */
 internal class RecordedRound(val start: TableState) {
@@ -52,7 +52,12 @@ internal class RoundRecordingGameRepository(
     /** 目前為止每筆有事實的交易提交的前後對局與事實，依提交順序排列。 */
     val committedFacts: List<CommittedGameFacts> get() = delegate.committedFacts
 
-    /** [gameId] 目前為止記錄的所有局，依開局順序排列。 */
+    /**
+     * [gameId] 目前為止記錄的所有局，依開局順序排列。
+     *
+     * @param gameId 對局識別碼。
+     * @return 依開局順序記錄的局。
+     */
     fun rounds(gameId: Uuid): List<RecordedRound> = roundsByGame[gameId].orEmpty().map { it.second }
 
     override suspend fun setTableState(state: TableState) {
@@ -60,7 +65,12 @@ internal class RoundRecordingGameRepository(
         observe(state.id)
     }
 
-    /** 寫入 [state] 並指定由 AI 操控的玩家。 */
+    /**
+     * 寫入 [state] 並指定由 AI 操控的玩家。
+     *
+     * @param state 要寫入的權威桌況。
+     * @param aiPlayerStrategyKeys 由 AI 操控的玩家與策略 key 對應。
+     */
     suspend fun setTableState(state: TableState, aiPlayerStrategyKeys: Map<Uuid, String>) {
         delegate.setTableState(state, aiPlayerStrategyKeys)
         observe(state.id)
@@ -78,7 +88,11 @@ internal class RoundRecordingGameRepository(
         block: suspend (TableState?) -> Pair<TableState?, T>,
     ): T = delegate.update(gameId, history, block).also { observe(gameId) }
 
-    /** 依最新的桌況更新目前這一局，或記錄新的一局。 */
+    /**
+     * 依最新的桌況更新目前這一局，或記錄新的一局。
+     *
+     * @param gameId 要觀察的對局識別碼。
+     */
     private suspend fun observe(gameId: Uuid) {
         val state = delegate.getTableState(gameId) ?: return
         val key = RoundKey(position = state.roundPosition, comboCount = state.comboCount, dealerPlayerId = state.dealerPlayerId)

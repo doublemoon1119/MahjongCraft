@@ -10,7 +10,11 @@ interface MatchSettlementPresentationTemplateRegistry {
     /** 目前已登記模板 key 的快照。 */
     val registrationKeys: Set<String>
 
-    /** 登記一個完整模板；重複 key 視為錯誤。 */
+    /**
+     * 登記一個完整模板；重複 key 視為錯誤。
+     *
+     * @param template 要登記的終局模板。
+     */
     fun register(template: MatchSettlementPresentationTemplate)
 
     /**
@@ -21,7 +25,12 @@ interface MatchSettlementPresentationTemplateRegistry {
      */
     fun bindRuleTemplate(ruleModuleId: String, templateKey: String)
 
-    /** 查詢指定 key 的模板。 */
+    /**
+     * 查詢指定 key 的模板。
+     *
+     * @param key 完整模板 key。
+     * @return 已登記的模板；未知 key 回傳 null。
+     */
     fun find(key: String): MatchSettlementPresentationTemplate?
 
     /**

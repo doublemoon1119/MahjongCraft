@@ -5,7 +5,16 @@ import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.widget.TextFieldWidget
 import net.minecraft.text.Text
 
-/** 保留原版輸入、游標與選取行為，並將短整數文字置中的文字輸入框。 */
+/**
+ * 保留原版輸入、游標與選取行為，並將短整數文字置中的文字輸入框。
+ *
+ * @property fieldTextRenderer 測量與繪製輸入文字的字型繪製器。
+ * @param x 輸入框左界。
+ * @param y 輸入框頂端。
+ * @param width 輸入框寬度。
+ * @param height 輸入框高度。
+ * @param narration 供輔助朗讀使用的欄位名稱。
+ */
 internal class CenteredIntegerTextFieldWidget(
     private val fieldTextRenderer: TextRenderer,
     x: Int,

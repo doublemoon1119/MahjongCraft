@@ -13,6 +13,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
+/** 七對子役種條件與番數的測試。 */
 class ChiitoitsuTest : RiichiHandValueCalculatorTestBase() {
 
     /**

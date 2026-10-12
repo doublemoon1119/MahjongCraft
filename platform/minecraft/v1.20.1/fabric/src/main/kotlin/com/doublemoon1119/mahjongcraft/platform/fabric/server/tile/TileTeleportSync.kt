@@ -17,6 +17,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPl
  * 改成排一個 [AnimationStep.Teleport] 瞬間 step——[AnimatedMahjongEntity] 處理 `Teleport` 這個 step
  * 時本來就會呼叫 `refreshPositionAndAngles` 並排定那次延遲重播，兩者行為完全相容，只多了不到一個
  * tick 的排隊延遲（下一次這個 entity 自己的 `tick()` 才會真正套用），視覺上不可感知。
+ *
+ * @param placement 既有牌要移到的最終位置與朝向。
  */
 internal fun MahjongTileEntity.teleportExistingManagedTile(placement: MahjongTileWallPlacement) {
     enqueue(AnimationStep.Teleport(placement.x, placement.y, placement.z, placement.yaw))

@@ -13,7 +13,10 @@ import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFact
  * 為第一次日麻槓牌補摸建立足以驗證 Flow 發布行為的權威實體牌牆布局。
  *
  * 王牌集中於開門面，前八格保存開局王牌，後兩格預留四次槓的補入位置；活牌末端另放在相鄰牆面，
- * 以便驗證第一次補入及上層下降的兩階段 transition。
+ * 以便驗證第一次補入及上層下降的兩階段布局變更。
+ *
+ * @return 保留原桌況資料、替換實體牌牆布局的桌況。
+ * @throws IllegalArgumentException 活牌不足兩張，或剩餘活牌超過測試布局容量時拋出。
  */
 internal fun TableState.withFirstKanPhysicalWallLayout(): TableState {
     val liveTiles = tileWall.getAllTiles()
@@ -54,7 +57,12 @@ internal fun TableState.withFirstKanPhysicalWallLayout(): TableState {
     return copy(physicalWallLayout = TileWallPhysicalLayout(placements))
 }
 
-/** 以 [firstSupplementalTile] 為第一張嶺上牌建立完整十四張日麻王牌測試資料。 */
+/**
+ * 建立完整十四張日麻王牌測試資料。
+ *
+ * @param firstSupplementalTile 第一張嶺上牌；其餘十三張使用獨立的白板牌實體。
+ * @return 以指定嶺上牌為首的王牌清單。
+ */
 internal fun completeRiichiReservedWall(firstSupplementalTile: IdentifiedTile): List<IdentifiedTile> = listOf(firstSupplementalTile) +
     List(RIICHI_RESERVED_TILE_COUNT - 1) {
         FakeIdentifiedTileFactory.create(Tile.Honor.White)

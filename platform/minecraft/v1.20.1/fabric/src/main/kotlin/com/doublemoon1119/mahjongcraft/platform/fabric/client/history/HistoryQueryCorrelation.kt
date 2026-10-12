@@ -30,7 +30,7 @@ internal class HistoryQueryCorrelation {
      * 以新要求取代上一個要求。
      *
      * @param requestId 新要求的唯一識別碼，不能沿用舊要求。
-     * @param kind 新要求期待的回應種類。
+     * @param kind 新要求期待的回應種類；null 時不限制種類。
      */
     fun begin(requestId: String, kind: HistoryQueryKind? = null) {
         pendingId = requestId
@@ -41,7 +41,7 @@ internal class HistoryQueryCorrelation {
      * 配對目前要求，成功後只接受一次。
      *
      * @param requestId 回應攜帶的要求識別碼。
-     * @param kind 回應種類；若省略則只驗證要求識別碼。
+     * @param kind 回應種類；此值或記錄中的種類為 null 時只驗證要求識別碼。
      * @return 是否為尚未完成的最新要求。
      */
     fun complete(requestId: String, kind: HistoryQueryKind? = null): Boolean {

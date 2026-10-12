@@ -48,9 +48,23 @@ import kotlin.uuid.Uuid
  */
 class DeclareKanUseCaseTest {
 
+    /** 受測對局識別碼。 */
     private val gameId = Uuid.random()
+
+    /** 宣告槓牌的玩家識別碼。 */
     private val playerId = Uuid.random()
 
+    /**
+     * 槓牌宣告共用的測試環境。
+     *
+     * @property gameRepo 保存權威對局的測試倉庫。
+     * @property moduleRegistry 已註冊內建規則的中心。
+     * @property snapshotRepo 保存玩家可見快照的替身。
+     * @property snapshotSynchronizer 更新快照的元件。
+     * @property eventPublisher 記錄動作通知的替身。
+     * @property presentationPublisher 記錄呈現要求的替身。
+     * @property useCase 受測槓牌用例。
+     */
     private class Fixtures {
         val gameRepo = FakeGameRepository()
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
@@ -61,6 +75,7 @@ class DeclareKanUseCaseTest {
         val useCase = DeclareKanUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher, presentationPublisher)
     }
 
+    /** 槓牌成立後補摸的實體一筒。 */
     private val rinshanTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
 
     /**
@@ -264,9 +279,7 @@ class DeclareKanUseCaseTest {
     }
 
     /**
-     * 驗證立直後暗槓會改變面子結構時（`isMeldStructureChanged`：手牌中有與槓牌同花色、數字距離
-     * 2 以內的牌，代表這組刻子與其他牌具有組成順子的「血緣關係」）不合法，不需要驗證聽牌本身
-     * 是否改變——`checkClosedKanAfterRiichi` 會先做這個結構檢查，成立就直接擋下。
+     * 驗證立直後宣告五萬暗槓時，立牌中的四萬會觸發面子結構檢查，宣告遭到拒絕。
      */
     @Test
     fun `test closed kan fails after riichi when it would change meld structure`() = runTest {
@@ -511,7 +524,7 @@ class DeclareKanUseCaseTest {
     /**
      * 驗證加槓時若有其他玩家可以搶槓：開啟 `pendingRobbingReaction` 反應視窗，副露**未**套用（宣告者手牌
      * 維持原樣、`lastDrawn` 不變）、牌山**未**縮減、只廣播 `Kan`（不廣播 `Draw`，因為嶺上摸牌
-     * 尚未真正發生）；畫面先呈現加槓完成的樣子，加上去的那張移入副露、尚未補牌。
+     * 尚未真正發生）；呈現要求先將加槓牌列入副露，但不包含補牌。
      */
     @Test
     fun `test declare added kan opens chankan window when another player can rob it`() = runTest {
@@ -621,8 +634,12 @@ class DeclareKanUseCaseTest {
     }
 
     /**
-     * 建立一位對 [robbedTile]（役牌發 1 翻 + 單騎聽）有資格搶槓的玩家，供多響搶槓測試共用——
-     * 手牌結構與既有的單一搶槓測試相同，只是每次呼叫都用全新的牌實例，讓多位搶槓者可以並存。
+     * 建立含發刻子、單騎等待 [robbedTileType] 的搶槓玩家；每次建立新的實體牌，供多家搶槓測試使用。
+     *
+     * @param id 玩家識別碼。
+     * @param initialSeat 玩家初始座位。
+     * @param robbedTileType 被搶槓的牌種。
+     * @return 具備該牌種單騎搶槓資格的測試玩家。
      */
     private fun createChankanRobber(id: Uuid, initialSeat: Wind, robbedTileType: Tile): MahjongPlayer {
         val tanki = FakeIdentifiedTileFactory.create(robbedTileType)
@@ -642,8 +659,7 @@ class DeclareKanUseCaseTest {
     }
 
     /**
-     * 驗證雙人同時可搶槓、規則設定為多家和（預設值）時，兩位都留在 `eligiblePlayerIds` 裡——
-     * 確認套用 `MultiRonPolicy` 判定後，預設行為與過去（全部開放）維持一致，沒有回歸。
+     * 驗證兩人都可搶槓、規則採用預設的多家和政策時，兩人都列入 `eligiblePlayerIds`。
      */
     @Test
     fun `test double chankan opens window for both robbers under default all-winners policy`() = runTest {
@@ -812,7 +828,12 @@ class DeclareKanUseCaseTest {
         )
     }
 
-    /** 建立具有完整十四張槽位、且第一張可作為嶺上牌的日麻王牌區。 */
+    /**
+     * 建立具有完整十四張槽位、且第一張可作為嶺上牌的日麻王牌區。
+     *
+     * @param firstSupplementalTile 要置於第一個嶺上槽位的牌。
+     * @return 首牌為指定摸牌的完整日麻王牌區。
+     */
     private fun completeDeadWall(firstSupplementalTile: IdentifiedTile): List<IdentifiedTile> = listOf(firstSupplementalTile) +
         List(13) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 1)) }
 }

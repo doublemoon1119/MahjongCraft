@@ -245,8 +245,24 @@ class RiichiGameAchievementResolverTest {
         assertTrue(result.flatMap { it.achievementIds }.none { it.startsWith("mahjongcraft:riichi/") })
     }
 
+    /**
+     * 以日麻 resolver 判定單一測試事實。
+     *
+     * @param game 要判定的對局。
+     * @param fact 要加入歷史資料的事實。
+     * @return 玩家 UUID 對應的成果 ID 集合。
+     */
     private fun resolve(game: Game, fact: HistoryFact): Map<Uuid, Set<String>> = RiichiGameAchievementResolver().resolve(facts(game, fact))
 
+    /**
+     * 建立可覆寫牌局進度與莊家狀態的四人日麻測試對局。
+     *
+     * @param firstPlayerRuleState 東家規則狀態；未提供時使用預設狀態。
+     * @param prevalentWind 場風。
+     * @param roundNumber 場風內局數。
+     * @param comboCount 本場數。
+     * @return 對應設定的測試對局。
+     */
     private fun riichiGame(
         firstPlayerRuleState: RiichiPlayerState? = null,
         prevalentWind: Wind = Wind.EAST,
@@ -260,6 +276,16 @@ class RiichiGameAchievementResolverTest {
         comboCount = comboCount,
     )
 
+    /**
+     * 以指定規則設定與牌局進度建立四人測試對局。
+     *
+     * @param config 對局規則設定。
+     * @param firstPlayerRuleState 東家規則狀態；其他玩家使用測試工廠預設值。
+     * @param prevalentWind 場風。
+     * @param roundNumber 場風內局數。
+     * @param comboCount 本場數。
+     * @return 建立完成的對局。
+     */
     private fun gameOf(
         config: MahjongRuleConfig,
         firstPlayerRuleState: RiichiPlayerState? = null,
@@ -280,6 +306,13 @@ class RiichiGameAchievementResolverTest {
         return Game(tableState, GameFlowConfig())
     }
 
+    /**
+     * 將單一歷史事實包裝為 resolver 輸入。
+     *
+     * @param game 事實所屬的對局。
+     * @param fact 要包裝的歷史事實。
+     * @return 對應的已提交對局事實。
+     */
     private fun facts(game: Game, fact: HistoryFact) = CommittedGameFacts(
         venueId = game.id,
         previousGame = game,
@@ -287,11 +320,25 @@ class RiichiGameAchievementResolverTest {
         facts = listOf(HistoryEventDraft(null, fact)),
     )
 
+    /**
+     * 建立自摸結算事實。
+     *
+     * @param winnerId 和牌玩家 UUID。
+     * @param fields 和牌結算欄位。
+     * @return 對應的和牌歷史事實。
+     */
     private fun win(winnerId: Uuid, fields: List<WinSettlementDetailField>) = HistoryFact.WinSettled(
         outcomeId = BuiltInRoundOutcomeIds.TSUMO,
         winDetails = listOf(HistoryWinDetails(winnerId, fields)),
     )
 
+    /**
+     * 建立一般役種與番符結算欄位。
+     *
+     * @param han 總番數。
+     * @param yaku 和牌成立的一般役種。
+     * @return 役種與番符欄位。
+     */
     private fun nonYakumanFields(han: Int, vararg yaku: YakuType) = listOf(
         yakuField(yaku.toList()),
         WinSettlementDetailField(
@@ -300,6 +347,12 @@ class RiichiGameAchievementResolverTest {
         ),
     )
 
+    /**
+     * 建立役滿役種與役滿總數結算欄位。
+     *
+     * @param yaku 和牌成立的役滿役種。
+     * @return 役種與役滿數量欄位。
+     */
     private fun yakumanFields(vararg yaku: YakuType) = listOf(
         WinSettlementDetailField(
             RiichiWinSettlementIds.YAKU_FIELD,
@@ -311,6 +364,12 @@ class RiichiGameAchievementResolverTest {
         ),
     )
 
+    /**
+     * 將一般役種轉為和牌役種結算欄位。
+     *
+     * @param yaku 成立的一般役種。
+     * @return 對應的役種欄位。
+     */
     private fun yakuField(yaku: List<YakuType>) = WinSettlementDetailField(
         RiichiWinSettlementIds.YAKU_FIELD,
         WinSettlementDetailValue.Entries(yaku.map { RiichiWinSettlementIds.yakuEntry(it, 1) }),

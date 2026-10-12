@@ -10,7 +10,9 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
+/** 驗證遊戲設定呈現 schema 的可編輯性、欄位契約與 registry 凍結。 */
 class GameConfigPresentationRegistryTest {
+    /** 內建規則提供相應選項，台麻目前明確標示為不可選。 */
     @Test
     fun `built-in schemas expose editable Riichi and unavailable Taiwan rules`() {
         val registry = GameConfigPresentationRegistryImpl()
@@ -32,6 +34,7 @@ class GameConfigPresentationRegistryTest {
         assertNotNull(taiwan.unavailableReasonTranslationKey)
     }
 
+    /** 可編輯欄位必須有 updater，重複規則 ID 不可登記。 */
     @Test
     fun `editable fields require updater and duplicate IDs are rejected`() {
         assertFailsWith<IllegalArgumentException> {
@@ -51,6 +54,7 @@ class GameConfigPresentationRegistryTest {
         assertFailsWith<IllegalArgumentException> { registry.register(definition) }
     }
 
+    /** malformed config、field 與 option ID 會在 schema 建立時拒絕。 */
     @Test
     fun `malformed config IDs are rejected`() {
         assertFailsWith<IllegalArgumentException> {
@@ -69,6 +73,7 @@ class GameConfigPresentationRegistryTest {
         }
     }
 
+    /** 已凍結的 registry 拒絕後續登記。 */
     @Test
     fun `frozen registry rejects later registration`() {
         val registry = GameConfigPresentationRegistryImpl()
@@ -77,6 +82,11 @@ class GameConfigPresentationRegistryTest {
         assertFailsWith<IllegalStateException> { registry.register(minimalDefinition()) }
     }
 
+    /**
+     * 建立可登記的最小唯讀設定 schema。
+     *
+     * @return 含一個唯讀布林欄位的設定定義。
+     */
     private fun minimalDefinition() = GameConfigPresentationDefinition(
         ruleModuleId = "test:rule",
         descriptionTranslationKey = "test.rule.description",

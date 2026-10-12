@@ -3,10 +3,9 @@ package com.doublemoon1119.mahjongcraft.flow.persistence.format.game
 import kotlinx.serialization.Serializable
 
 /**
- * [PendingGameTransition] 的持久化表示。
+ * 待完成流程 [com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransition] 的存檔表示。
  *
- * 領域層保留 sealed interface 作為可擴充的強型別流程；DTO 目前只保存分支類型，
- * 未來某個分支需要參數時再新增 payload 欄位。
+ * 保存尚待執行的流程類型。
  *
  * @property type 可持久化的待完成流程類型。
  */
@@ -17,7 +16,10 @@ data class PendingGameTransitionPersistenceDto(
     /** 可持久化的待完成流程類型。 */
     @Serializable
     enum class Type {
+        /** 推進到下一局。 */
         ADVANCE_ROUND,
+
+        /** 返回房間。 */
         RETURN_TO_ROOM,
     }
 }

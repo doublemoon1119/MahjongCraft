@@ -14,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.Wind
 /**
  * 測試用欄位變更；外層不存在表示未變動，欄位值本身可為 null。
  *
+ * @param T 欄位的值型別。
  * @property value 變更後的欄位值。
  */
 internal data class TestChanged<T>(val value: T)
@@ -21,6 +22,7 @@ internal data class TestChanged<T>(val value: T)
 /**
  * 測試用有序列表差異，保留共同前綴與後綴，只替換中間片段。
  *
+ * @param T 列表元素型別。
  * @property prefixCount 保留的前綴元素數量。
  * @property removedCount 自舊列表中移除的中間元素數量。
  * @property inserted 插入至中間位置的新元素。
@@ -32,7 +34,12 @@ internal data class TestListSplice<T>(
     val inserted: List<T>,
     val suffixCount: Int,
 ) {
-    /** 將中間片段差異套用至舊列表並驗證原長度。 */
+    /**
+     * 將中間片段差異套用至舊列表並驗證原長度。
+     *
+     * @param before 套用差異前的列表。
+     * @return 套用插入與移除片段後的列表。
+     */
     fun applyTo(before: List<T>): List<T> {
         require(prefixCount + removedCount + suffixCount == before.size)
         return before.take(prefixCount) + inserted + before.takeLast(suffixCount)
@@ -40,7 +47,14 @@ internal data class TestListSplice<T>(
 
     /** 建立兩份有序列表之間的最短共同前後綴差異。 */
     companion object {
-        /** 列表內容相同時回傳 null，否則回傳可還原的新片段。 */
+        /**
+         * 列表內容相同時回傳 null，否則回傳可還原的新片段。
+         *
+         * @param T 列表元素型別。
+         * @param before 原列表。
+         * @param after 變更後的列表。
+         * @return 可將 [before] 還原為 [after] 的差異；內容相同時為 null。
+         */
         fun <T> between(before: List<T>, after: List<T>): TestListSplice<T>? {
             if (before == after) return null
             val prefix = before.zip(after).takeWhile { (old, new) -> old == new }.size
@@ -60,7 +74,12 @@ internal data class TestListSplice<T>(
 
 /** 牌河優先以日麻紀錄片段表示；未支援的規則仍明確保留完整替換值。 */
 internal sealed interface TestDiscardDelta {
-    /** 將牌河差異套用至前一牌河。 */
+    /**
+     * 將牌河差異套用至前一牌河。
+     *
+     * @param before 差異套用前的牌河。
+     * @return 套用差異後的牌河。
+     */
     fun applyTo(before: DiscardPile<*>): DiscardPile<*>
 
     /**
@@ -111,7 +130,12 @@ internal data class TestPlayerDelta(
     val actions: TestListSplice<GameAction>? = null,
     val seatWind: Wind? = null,
 ) {
-    /** 將所有有變更的玩家欄位套用至前一權威狀態。 */
+    /**
+     * 將所有有變更的玩家欄位套用至前一權威狀態。
+     *
+     * @param before 差異套用前的玩家狀態。
+     * @return 套用差異後的玩家狀態。
+     */
     fun applyTo(before: MahjongPlayer): MahjongPlayer = before.copy(
         hand = before.hand.copy(
             tiles = standing?.applyTo(before.hand.tiles) ?: before.hand.tiles,
@@ -128,7 +152,13 @@ internal data class TestPlayerDelta(
 
     /** 建立同一玩家的狀態差異；玩家身分及初始座位不得改變。 */
     companion object {
-        /** 玩家狀態相同時回傳 null，否則回傳可套用的差異。 */
+        /**
+         * 玩家狀態相同時回傳 null，否則回傳可套用的差異。
+         *
+         * @param before 同一玩家的先前狀態。
+         * @param after 該玩家的後續狀態。
+         * @return 可還原後續狀態的差異；狀態相同時為 null。
+         */
         fun between(before: MahjongPlayer, after: MahjongPlayer): TestPlayerDelta? {
             require(before.id == after.id && before.initialSeatIndex == after.initialSeatIndex)
             if (before == after) return null

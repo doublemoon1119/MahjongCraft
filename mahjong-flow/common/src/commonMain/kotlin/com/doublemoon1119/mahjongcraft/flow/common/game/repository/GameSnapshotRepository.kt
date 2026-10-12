@@ -27,10 +27,22 @@ interface GameSnapshotRepository {
      */
     suspend fun setSnapshot(observerId: Uuid, snapshot: TableStateSnapshot)
 
-    /** 取得指定觀看者可見的開局準備快照。 */
+    /**
+     * 取得指定觀看者可見的開局準備快照；預設實作回傳 null，表示沒有提供此類快照。
+     *
+     * @param gameId 快照所屬遊戲的識別碼。
+     * @param observerId 要取得快照的觀看者識別碼。
+     * @return 觀看者可見的開局準備快照；沒有快照或使用預設實作時為 null。
+     */
     suspend fun getRoundPreparationSnapshot(gameId: Uuid, observerId: Uuid): RoundPreparationSnapshot? = null
 
-    /** 設定或清除指定觀看者的開局準備快照。 */
+    /**
+     * 設定或清除指定觀看者的開局準備快照；預設實作不保存資料。
+     *
+     * @param gameId 快照所屬遊戲的識別碼。
+     * @param observerId 接收或移除快照的觀看者識別碼。
+     * @param snapshot 要保存的快照；null 表示清除快照。
+     */
     suspend fun setRoundPreparationSnapshot(gameId: Uuid, observerId: Uuid, snapshot: RoundPreparationSnapshot?) = Unit
 
     /**

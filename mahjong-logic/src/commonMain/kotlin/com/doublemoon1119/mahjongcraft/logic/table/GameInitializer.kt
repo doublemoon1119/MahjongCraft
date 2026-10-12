@@ -32,7 +32,7 @@ object GameInitializer {
      * @param playerIds 參與對局的玩家 Uuid 列表（尚未分配座位，內部會隨機排序）。
      * @param module 該對局採用的規則模組，提供牌山工廠、牌河實作與規則配置。
      * @return 已完成洗牌、（若規則支援）擲骰開門、發牌、分數初始化的新結果，含權威 [TableState] 與
-     * 只有平台呈現層需要的一次性擲骰／牌牆結構資料。
+     * 供呼叫端處理的一次性擲骰結果與牌牆結構資料。
      * @throws IllegalArgumentException 當玩家人數不在該規則允許的範圍內時拋出。
      */
     fun initialize(
@@ -100,12 +100,12 @@ object GameInitializer {
      * 一局，也會重新擲骰開門。
      *
      * @param gameId 對局 Uuid（延續同一場對局，不是新對局）。
-     * @param roundAdvancement 連莊/過莊判定後的結果（見 [TableState.advanceRound]），提供新的
-     *        玩家列表（含已重新指派的座位方位）、局數、本場數、場風。
+     * @param roundAdvancement 連莊/過莊判定後的結果（見 [TableState.advanceRound]），提供下一局的
+     *        玩家列表與局位資料；玩家自風會依規則 policy 重新指派。
      * @param previousDynamicRuleState 上一局結束時的動態桌況狀態（例如供託／立直棒數量）。
      * @param module 該對局採用的規則模組。
      * @return 已完成重新擲骰開門、重新建牌山、發牌，並套用連莊/過莊結果的新結果，代表下一局的起始
-     * 狀態，含權威 [TableState] 與只有平台呈現層需要的一次性擲骰／牌牆結構資料。
+     * 狀態，含權威 [TableState] 與供呼叫端處理的一次性擲骰結果／牌牆結構資料。
      */
     fun startNextRound(
         gameId: Uuid,
@@ -162,7 +162,14 @@ object GameInitializer {
         )
     }
 
-    /** 依規則 policy 指派並驗證本局所有玩家的自風。 */
+    /**
+     * 依規則 policy 指派並驗證本局所有玩家的自風。
+     *
+     * @param playerIdsInTurnOrder 依回合順序排列的玩家 ID。
+     * @param dealerPlayerId 本局莊家 ID。
+     * @param openedWall 已建立的牌牆及其開門資料。
+     * @return 每位玩家對應的自風。
+     */
     private fun MahjongRuleModule<*>.assignSeatWinds(
         playerIdsInTurnOrder: List<Uuid>,
         dealerPlayerId: Uuid,
@@ -183,6 +190,8 @@ object GameInitializer {
      * 分離，回傳的 [OpenedWall.wall] 因此只包含一般摸牌序列，後續會直接成為 [TableState.tileWall]。
      * 任一能力尚未支援時，直接沿用原始洗牌結果、不擲骰、沒有保留牌——通用初始化流程不得自行套用
      * 其他玩法的公式、固定張數或實體布局。
+     *
+     * @return 已整理的摸牌牌山，以及可用時的開門、保留牌和牌牆布局資料。
      */
     private fun MahjongRuleModule<*>.buildOpenedWall(): OpenedWall {
         val shuffledWall = createWallFactory().create()
@@ -214,7 +223,14 @@ object GameInitializer {
 
     /**
      * [buildOpenedWall] 的結果：已套用（或未套用）開門結果的一般摸牌序列、保留牌與開門位置，以及
-     * 平台呈現層需要的權威擲骰結果與牌牆結構座標。
+     * 本次擲骰結果與牌牆結構座標。
+     *
+     * @property wall 已套用開門結果的一般摸牌序列。
+     * @property wallOpening 開門位置；規則未提供開門能力時為 null。
+     * @property reservedWallTiles 不屬於一般摸牌序列的規則保留牌。
+     * @property diceRoll 本次開門擲骰結果；沒有執行開門時為 null。
+     * @property structure 依開門結果排列的牌牆結構座標；未建立布局時為 null。
+     * @property layoutResult 開門布局結果；規則未提供所需布局能力時為 null。
      */
     private data class OpenedWall(
         val wall: TileWall,
@@ -224,7 +240,14 @@ object GameInitializer {
         val structure: Map<Uuid, TileWallPosition>?,
         val layoutResult: TileWallLayoutResult?,
     ) {
-        /** 在初次發牌結果已知後建立完整呈現布局與目前仍留在牌牆中的權威布局。 */
+        /**
+         * 在初次發牌結果已知後建立完整初始布局與目前仍留在牌牆中的布局。
+         *
+         * @param module 提供牌牆實體布局 policy 的規則模組。
+         * @param remainingWall 發牌後的一般摸牌牌山。
+         * @return 完整初始牌牆布局與只保留仍在牌牆牌張的目前布局；沒有牌牆布局結果時為 null。
+         * @throws IllegalStateException 規則拒絕建立初始布局時拋出。
+         */
         fun createPhysicalLayouts(module: MahjongRuleModule<*>, remainingWall: TileWall): PhysicalLayouts? {
             val result = layoutResult ?: return null
             val retainedIds = (remainingWall.getAllTiles() + reservedWallTiles).mapTo(mutableSetOf()) { it.id }
@@ -244,9 +267,9 @@ object GameInitializer {
     }
 
     /**
-     * 初始呈現使用的完整布局與發牌後桌況保存的目前布局。
+     * 完整初始牌牆布局與發牌後桌況保存的目前布局。
      *
-     * @property complete 包含整副牌的初始呈現終點。
+     * @property complete 包含整副牌的初始布局。
      * @property current 僅包含初次發牌後仍留在牌牆與保留牌區的布局。
      */
     private data class PhysicalLayouts(
@@ -261,6 +284,7 @@ object GameInitializer {
      * 連續從牌山最前方摸取 [count] 張牌。
      *
      * @return 摸到的牌列表（依摸牌順序排列）與摸牌後的新 [TileWall] 實例。
+     * @param count 要連續摸取的牌張數。
      * @throws IllegalStateException 當牌山在發牌途中就已摸盡時拋出。
      */
     private fun TileWall.drawN(count: Int): Pair<List<IdentifiedTile>, TileWall> {
@@ -288,6 +312,8 @@ object GameInitializer {
      * [MahjongRuleModule.createWallFactory] 的隨機洗牌，測試端無法控制牌張順序，驗證不了輪轉節奏）。
      *
      * @return 依 [playerIds] 對應順序排列的手牌列表，與發牌後剩餘的牌山。
+     * @param wall 開始發牌前的牌山。
+     * @param playerIds 發牌輪轉順序；第一位玩家先拿牌。
      */
     internal fun MahjongRuleModule<*>.dealInitialHands(
         wall: TileWall,

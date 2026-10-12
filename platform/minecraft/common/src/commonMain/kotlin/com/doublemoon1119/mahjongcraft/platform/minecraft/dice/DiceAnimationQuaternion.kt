@@ -5,15 +5,18 @@ import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
 
-/** 不依賴 renderer library 的單位 quaternion，用於確定性骰子旋轉。 */
+/**
+ * 用於確定性骰子旋轉的四元數，不依賴渲染函式庫；建構時不驗證單位長度。
+ *
+ * @property x X 虛部分量。
+ * @property y Y 虛部分量。
+ * @property z Z 虛部分量。
+ * @property w 實部分量。
+ */
 data class DiceAnimationQuaternion(
-    /** X 虛部分量。 */
     val x: Double,
-    /** Y 虛部分量。 */
     val y: Double,
-    /** Z 虛部分量。 */
     val z: Double,
-    /** 實部分量。 */
     val w: Double,
 ) {
     /** 回傳正規化 quaternion；零長度值固定回傳 [IDENTITY]。 */
@@ -22,7 +25,13 @@ data class DiceAnimationQuaternion(
         return if (length == 0.0) IDENTITY else DiceAnimationQuaternion(x / length, y / length, z / length, w / length)
     }
 
-    /** 使用最短路徑球面插值至 [target]。 */
+    /**
+     * 使用最短路徑球面插值至 [target]。
+     *
+     * @param target 插值終點 quaternion。
+     * @param progress 插值進度；計算前會限制在 0 到 1。
+     * @return 插值後的正規化 quaternion。
+     */
     fun slerp(target: DiceAnimationQuaternion, progress: Double): DiceAnimationQuaternion {
         val start = normalized()
         var end = target.normalized()
@@ -56,7 +65,13 @@ data class DiceAnimationQuaternion(
         /** 不產生額外旋轉的 identity quaternion。 */
         val IDENTITY: DiceAnimationQuaternion = DiceAnimationQuaternion(0.0, 0.0, 0.0, 1.0)
 
-        /** 建立繞指定軸旋轉指定弧度的 quaternion。 */
+        /**
+         * 建立繞指定軸旋轉指定弧度的 quaternion。
+         *
+         * @param axis 旋轉軸；計算前會先正規化。
+         * @param angleRadians 旋轉角度，單位為弧度。
+         * @return 表示指定旋轉的正規化 quaternion。
+         */
         fun fromAxisAngle(axis: DiceAnimationVector, angleRadians: Double): DiceAnimationQuaternion {
             val normalizedAxis = axis.normalized()
             val halfAngle = angleRadians / 2.0

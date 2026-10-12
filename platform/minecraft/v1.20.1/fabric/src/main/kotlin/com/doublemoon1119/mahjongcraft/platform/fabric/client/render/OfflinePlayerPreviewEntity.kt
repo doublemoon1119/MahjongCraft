@@ -15,6 +15,9 @@ import net.minecraft.util.Identifier
  * 的 `resolvePlayerPreview`。強制回傳 `"default"` model，確保套用的貼圖（手臂 4px 寬的經典版型）
  * 跟角色模型的手臂寬度一致，不受 [profile] 本身雜湊出來的模型類型影響。名稱標籤固定顯示為多國語系的
  * 「離線玩家」，不使用 [profile] 內部識別用的固定英文名稱。
+ *
+ * @param world 此替身所屬的 client world。
+ * @param profile 與原玩家關聯的 profile；此類別不使用其中的皮膚或名稱顯示。
  */
 class OfflinePlayerPreviewEntity(world: ClientWorld, profile: GameProfile) : OtherClientPlayerEntity(world, profile) {
     override fun hasSkinTexture(): Boolean = true

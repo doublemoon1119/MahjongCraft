@@ -11,23 +11,21 @@ sealed interface RoundPreparationSubmissionPersistenceDto {
     @SerialName("confirmed")
     data object Confirmed : RoundPreparationSubmissionPersistenceDto
 
-    /** 單選結果。 */
-    @Serializable
-    @SerialName("choice")
     /**
-     * Choice 的 persistence 資料型別。
+     * 單選提交結果。
      *
      * @property optionId 選取項目的識別碼。
      */
+    @Serializable
+    @SerialName("choice")
     data class Choice(val optionId: String) : RoundPreparationSubmissionPersistenceDto
 
-    /** 牌張選擇結果。 */
+    /**
+     * 牌張選擇提交結果。
+     *
+     * @property tileIds 已選取的牌張識別碼集合。
+     */
     @Serializable
     @SerialName("tiles")
-    /**
-     * Tiles 的 persistence 資料型別。
-     *
-     * @property tileIds 牌張識別碼列表。
-     */
     data class Tiles(val tileIds: Set<String>) : RoundPreparationSubmissionPersistenceDto
 }

@@ -72,6 +72,11 @@ class ExtensionGameActionCommandFactoryRegistryTest {
         override val id: String = "test:select_tiles"
     }
 
-    /** 測試用擴充命令。 */
+    /**
+     * 測試用擴充命令。
+     *
+     * @property actionId 來源動作識別碼。
+     * @property selectedTileIds 保留選取順序的牌識別碼。
+     */
     private data class TestCommand(val actionId: String, val selectedTileIds: List<Uuid>) : ExtensionGameCommand
 }

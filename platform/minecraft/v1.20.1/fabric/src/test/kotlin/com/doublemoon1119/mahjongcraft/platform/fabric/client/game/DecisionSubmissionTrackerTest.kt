@@ -73,7 +73,12 @@ class DecisionSubmissionTrackerTest {
         assertFalse(tracker.isPending())
     }
 
-    /** 建立目前提交的 ACK。 */
+    /**
+     * 建立目前提交的 ACK。
+     *
+     * @param result 權威回覆結果。
+     * @return 使用測試對局、決策與提交識別的 ACK。
+     */
     private fun ack(result: PlayerDecisionSubmissionResultKindDto) = PlayerDecisionSubmissionResultDto(
         gameId = "game",
         decisionKey = "decision",

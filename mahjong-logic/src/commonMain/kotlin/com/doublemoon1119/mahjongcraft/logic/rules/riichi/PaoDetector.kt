@@ -45,6 +45,13 @@ object PaoDetector {
      * 檢查扣除 [calledTile] 後，[group] 中其餘的牌是否都已經是副露。
      *
      * 若成立，代表這次鳴牌正是大三元／大四喜的最後一組副露，須成立包牌責任。
+     *
+     * @param hand 本次鳴牌前的手牌。
+     * @param calledTile 本次鳴取的牌。
+     * @param group 用來判定大三元或大四喜的牌組。
+     * @param yaku 對應的包牌役滿種類。
+     * @param sourceDirection 本次鳴取來源的相對方位。
+     * @return 若其餘牌均已副露，回傳責任資料；否則為 null。
      */
     private fun checkGroup(
         hand: Hand,

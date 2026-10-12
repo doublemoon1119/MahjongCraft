@@ -171,7 +171,7 @@ class CompactReplayRoundReaderGenuineTest {
         assertEquals(seats.map { it.initialSeatIndex }, events.identity.players.map { it.initialSeatIndex })
     }
 
-    /** 驗證交易分頁、相對時間與局內交易索引。 */
+    /** 驗證交易分頁、重建後的時間戳記與局內交易索引。 */
     @Test
     fun `reader paginates genuine encoded transactions`() = runTest {
         val fixture = fixture()
@@ -439,6 +439,13 @@ class CompactReplayRoundReaderGenuineTest {
         val next = repeated.copy(roundNumber = 2, roundPosition = MatchRoundPosition(sequenceIndex = 1, prevalentWind = Wind.EAST, localRoundNumber = 2)).reversedScores(27_000)
         assertEquals(first.roundNumber, repeated.roundNumber)
         val matchId = Uuid.random()
+
+        /**
+         * 建立連莊的局完成摘要。
+         *
+         * @param settled 結算後的桌況。
+         * @return 含指定分數的流局摘要。
+         */
         fun completion(settled: TableState) = RoundCompletionSummary(
             "test:round_completed",
             RoundCompletionClassification.EXHAUSTIVE_DRAW,
@@ -692,7 +699,7 @@ class CompactReplayRoundReaderGenuineTest {
      * @param matchId 對局識別碼。
      * @param venueId 場地識別碼。
      * @param sequence 事件與交易序號。
-     * @param time 保存時間。
+     * @param time 保存的 Unix epoch 毫秒時間戳記。
      * @param fact 語意事實。
      * @return 同局有序事件。
      */
@@ -720,7 +727,7 @@ class CompactReplayRoundReaderGenuineTest {
      * @property matchId 對局識別碼。
      * @property table 開局桌況。
      * @property changed 第二筆交易完成後桌況。
-     * @property settled 保存於結算摘要的分數。
+     * @property settled 提供結算摘要分數的預期桌況。
      */
     private data class Fixture(
         val document: JsonObject,

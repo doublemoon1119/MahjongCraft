@@ -63,14 +63,23 @@ class FabricMahjongLobbyInfoLifecycleService(
         lastRoomsById = emptyMap()
     }
 
-    /** 只更新與上次相比有變化的桌子；房間消失的桌子清除提示。 */
+    /**
+     * 只更新與上次相比有變化的桌子；房間消失的桌子清除提示。
+     *
+     * @param rooms 目前權威房間索引。
+     */
     private fun onState(rooms: Map<Uuid, Room>) {
         val changedTableIds = (rooms.keys + lastRoomsById.keys).filter { rooms[it] !== lastRoomsById[it] }
         lastRoomsById = rooms
         changedTableIds.forEach { tableId -> refresh(tableId, rooms[tableId]) }
     }
 
-    /** 依該桌目前是否有房間，建立／更新或清除提示；區塊未載入時呈現器自行忽略。 */
+    /**
+     * 依該桌目前是否有房間，建立／更新或清除提示；區塊未載入時呈現器自行忽略。
+     *
+     * @param tableId 桌子 UUID。
+     * @param room 該桌目前的等待室；為 null 時清除提示。
+     */
     private fun refresh(tableId: Uuid, room: Room?) {
         if (room == null) {
             presenter.clear(tableId)

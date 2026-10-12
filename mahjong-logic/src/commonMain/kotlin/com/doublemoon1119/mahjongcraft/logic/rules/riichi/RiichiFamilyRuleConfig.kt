@@ -8,6 +8,8 @@ import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
  * @property allowOpenTanyao 是否允許食斷（斷么九鳴牌有效）。
  * @property useLocalYaku 是否啟用古役。
  * @property redDoraCount 赤寶牌總張數。
+ * @property scoreConfig 日麻計分設定。
+ * @property gameLength 日麻對局長度。
  * @property usesThreePlayerTiles 是否使用三人麻將的牌組（沒有二～八萬）；此時一萬與九萬互為寶牌指示牌。
  * @property rinshanTileCount 王牌最前方供補牌的嶺上牌張數；寶牌指示牌從這些牌之後開始。
  */

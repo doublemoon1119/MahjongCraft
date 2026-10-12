@@ -33,9 +33,16 @@ import kotlin.test.assertTrue
  */
 class RiichiHandValueContextCalculatorTest {
 
+    /** 建立使用預設日麻規則設定的測試計算器。 */
     private fun createCalculator(): RiichiHandValueContextCalculator = RiichiHandValueContextCalculator(RiichiRuleConfig())
 
-    /** 建立已取走前段嶺上牌、並由活牌尾端補足張數的死牌區測試資料。 */
+    /**
+     * 建立已取走前段嶺上牌、並由活牌尾端補足張數的死牌區測試資料。
+     *
+     * @param originalDeadWall 原始王牌區牌序。
+     * @param completedDrawCount 已完成的補牌次數。
+     * @return 保持原張數且已補入測試牌的王牌區。
+     */
     private fun afterSupplementalDraws(
         originalDeadWall: List<IdentifiedTile>,
         completedDrawCount: Int,
@@ -43,11 +50,25 @@ class RiichiHandValueContextCalculatorTest {
         FakeIdentifiedTileFactory.create(Tile.Honor.Red)
     }
 
+    /**
+     * 建立具有指定手牌與可選立直狀態的測試玩家。
+     *
+     * @param hand 玩家手牌。
+     * @param riichiState 規則狀態；未提供時使用空的立直狀態。
+     * @return 測試玩家。
+     */
     private fun createPlayer(hand: Hand, riichiState: RiichiPlayerState? = null): MahjongPlayer = FakeMahjongPlayerFactory.create(
         hand = hand,
         playerRuleState = riichiState ?: RiichiPlayerState(),
     )
 
+    /**
+     * 建立帶有指定數量明槓的測試玩家。
+     *
+     * @param standingTiles 玩家立牌。
+     * @param kanCount 要建立的槓數。
+     * @return 帶有指定手牌與明槓副露的測試玩家。
+     */
     private fun createPlayerWithKan(standingTiles: List<IdentifiedTile>, kanCount: Int): MahjongPlayer {
         val melds = mutableListOf<Meld>()
         for (i in 0 until kanCount) {
@@ -679,6 +700,14 @@ class RiichiHandValueContextCalculatorTest {
         ).recordAction(RIICHI_GAME_ACTION).recordAction(GameAction.Discard(declared.id))
         val tableState = FakeTableStateFactory.create(players = listOf(winner, discarder), tileWall = TileWall(List(20) { FakeIdentifiedTileFactory.create(Tile.Honor.Red) }), config = RiichiRuleConfig())
 
+        /**
+         * 以指定和牌方式與牌張計算贏家的上下文。
+         *
+         * @param isTsumo 是否自摸。
+         * @param isRobbingKan 是否搶槓。
+         * @param tile 本次和牌或搶槓的牌張。
+         * @return 依目前桌況計算的和牌上下文。
+         */
         fun context(isTsumo: Boolean = false, isRobbingKan: Boolean = false, tile: IdentifiedTile = declared) = calculator.calculate(
             RiichiHandValueContextCalculator.Input(tableState = tableState, player = winner, incomingTile = tile, isTsumo = isTsumo, isRobbingKan = isRobbingKan),
         )
@@ -698,6 +727,12 @@ class RiichiHandValueContextCalculatorTest {
         val discard = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
         val kan = GameAction.Kan(type = GameAction.KanType.CLOSED_KAN, tileId = discard.id, withTiles = emptyList())
 
+        /**
+         * 建立南家，並依序記錄指定動作。
+         *
+         * @param history 要記錄在玩家動作歷史中的動作。
+         * @return 具有指定動作歷史與固定測試牌河的南家。
+         */
         fun discarder(vararg history: GameAction): MahjongPlayer = history.fold(
             FakeMahjongPlayerFactory.create(
                 initialSeat = Wind.SOUTH,
@@ -706,6 +741,12 @@ class RiichiHandValueContextCalculatorTest {
             ),
         ) { player, action -> player.recordAction(action) }
 
+        /**
+         * 以指定放銃者計算贏家的榮和上下文。
+         *
+         * @param discarder 提供動作歷史的放銃玩家。
+         * @return 依目前測試桌況計算的和牌上下文。
+         */
         fun context(discarder: MahjongPlayer) = calculator.calculate(
             RiichiHandValueContextCalculator.Input(
                 tableState = FakeTableStateFactory.create(players = listOf(winner, discarder), tileWall = TileWall(List(20) { FakeIdentifiedTileFactory.create(Tile.Honor.Red) }), config = RiichiRuleConfig()),

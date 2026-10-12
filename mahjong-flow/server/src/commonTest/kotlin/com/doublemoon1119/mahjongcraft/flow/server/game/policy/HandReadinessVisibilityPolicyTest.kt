@@ -20,13 +20,18 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.uuid.Uuid
 
+/** 驗證手牌分析只向本人提供，且剩餘張數會扣除他家公開的拔北牌。 */
 class HandReadinessVisibilityPolicyTest {
+    /** 提供測試所需的內建規則。 */
     private val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
+
+    /** 依觀察者身分決定手牌分析可見性的政策。 */
     private val policy = HandReadinessVisibilityPolicy(
         moduleRegistry = moduleRegistry,
         visibilityPolicy = GameVisibilityPolicyImpl(moduleRegistry),
     )
 
+    /** 參與者可取得自己的等待牌分析，不在對局中的觀察者無法取得。 */
     @Test
     fun `participant receives only their own current hand analysis`() {
         val player = FakeMahjongPlayerFactory.create(hand = FakeHandFactory.create(tiles = tenpaiTiles))
@@ -74,7 +79,9 @@ class HandReadinessVisibilityPolicyTest {
         assertEquals(1, wait.remainingCount)
     }
 
+    /** 共用的聽牌牌型。 */
     private companion object {
+        /** 三組萬子順子、五餅雀頭與四五索搭子，等待三索或六索。 */
         val tenpaiTiles = listOf(
             Tile.Numeric(Tile.Suit.Character, 1),
             Tile.Numeric(Tile.Suit.Character, 2),

@@ -15,6 +15,7 @@ import kotlin.test.assertTrue
 
 /** 驗證以實體手牌選牌的本機狀態機。 */
 class DecisionTileSelectionStateTest {
+    /** 測試操作共用的選牌狀態機。 */
     private val state = DecisionTileSelectionState()
 
     /** 只需選一張時不請求確認面板。 */
@@ -306,13 +307,29 @@ class DecisionTileSelectionStateTest {
         assertEquals(emptySet(), state.highlightedTileIds())
     }
 
-    /** 取出必定存在的確認面板請求。 */
+    /**
+     * 取出必定存在的確認面板請求。
+     *
+     * @param request 選牌開始操作的結果。
+     * @return 非空的確認面板請求。
+     */
     private fun assertNotNullRequest(request: DecisionTileSelectionState.BeginRequest?) = assertIs<DecisionTileSelectionState.BeginRequest>(request)
 
-    /** 取出已消化互動所附帶的最終選擇。 */
+    /**
+     * 取出已消化互動所附帶的最終選擇。
+     *
+     * @param outcome 牌張切換或確認結果。
+     * @return 已送出的最終選擇；若尚未符合送出條件則為 `null`。
+     */
     private fun consumedSelection(outcome: DecisionTileSelectionState.Outcome) = assertIs<DecisionTileSelectionState.Outcome.Consumed>(outcome).selection
 
-    /** 建立需要選取實體手牌的 preparation prompt。 */
+    /**
+     * 建立需要選取實體手牌的 preparation prompt。
+     *
+     * @param minCount 最少選取張數。
+     * @param maxCount 最多選取張數。
+     * @return 使用固定候選牌與測試決策鍵的 prompt。
+     */
     private fun preparationPrompt(minCount: Int = 1, maxCount: Int = 1) = PlayerDecisionPromptDto(
         decisionKey = DECISION_KEY,
         preparation = RoundPreparationPromptDto.TileSelection(
@@ -331,7 +348,13 @@ class DecisionTileSelectionStateTest {
         discardAnalyses = emptyList(),
     )
 
-    /** 建立帶選牌需求的動作 prompt。 */
+    /**
+     * 建立帶選牌需求的動作 prompt。
+     *
+     * @param minCount 最少選取張數。
+     * @param maxCount 最多選取張數。
+     * @return 含固定動作 token 與候選牌的 prompt。
+     */
     private fun actionPrompt(minCount: Int, maxCount: Int) = PlayerDecisionPromptDto(
         decisionKey = DECISION_KEY,
         actions = listOf(
@@ -359,11 +382,21 @@ class DecisionTileSelectionStateTest {
         discardAnalyses = emptyList(),
     )
 
+    /** 測試使用的識別值。 */
     private companion object {
+        /** 測試用決策鍵。 */
         const val DECISION_KEY = "decision-1"
+
+        /** 測試用動作 token。 */
         const val ACTION_TOKEN = "token-1"
+
+        /** 第一張候選牌 ID。 */
         const val TILE_A = "tile-a"
+
+        /** 第二張候選牌 ID。 */
         const val TILE_B = "tile-b"
+
+        /** 第三張候選牌 ID。 */
         const val TILE_C = "tile-c"
     }
 }

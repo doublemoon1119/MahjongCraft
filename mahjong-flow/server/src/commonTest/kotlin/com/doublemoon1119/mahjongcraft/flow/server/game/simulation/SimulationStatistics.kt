@@ -19,14 +19,25 @@ internal data class Estimate(
         /** 常態近似下 95% 信賴區間的 z 值。 */
         private const val Z_95: Double = 1.96
 
-        /** [successes] / [trials] 的比例；以常態近似計算區間。 */
+        /**
+         * [successes] / [trials] 的比例；以常態近似計算區間。
+         *
+         * @param successes 成功次數；呼叫端須保證介於零與試驗次數之間。
+         * @param trials 非負試驗次數；此處不驗證輸入範圍。
+         * @return 比例與其 95% 信賴區間半寬；試驗次數為 0 時兩者皆為 0。
+         */
         fun rate(successes: Int, trials: Int): Estimate {
             if (trials == 0) return Estimate(value = 0.0, halfWidth95 = 0.0)
             val p = successes.toDouble() / trials
             return Estimate(value = p, halfWidth95 = Z_95 * sqrt(p * (1 - p) / trials))
         }
 
-        /** [samples] 的平均；以樣本標準差計算區間，少於兩個樣本時半寬為 0。 */
+        /**
+         * [samples] 的平均；以樣本標準差計算區間，少於兩個樣本時半寬為 0。
+         *
+         * @param samples 樣本值。
+         * @return 樣本平均與其 95% 信賴區間半寬；空集合時兩者皆為 0。
+         */
         fun mean(samples: List<Int>): Estimate {
             if (samples.isEmpty()) return Estimate(value = 0.0, halfWidth95 = 0.0)
             val mean = samples.average()
@@ -105,17 +116,30 @@ internal class SimulationStatistics {
     /** 已加入的對局數。 */
     val matchCount: Int get() = matches.size
 
-    /** 加入一場對局的結果。 */
+    /**
+     * 加入一場對局的結果。
+     *
+     * @param match 要累計的對局結果。
+     */
     fun add(match: MatchResult) {
         matches += match
     }
 
-    /** 加入一份決策時間紀錄。 */
+    /**
+     * 加入一份決策時間紀錄。
+     *
+     * @param recorded 依策略彙整的決策時間。
+     */
     fun addTimings(recorded: Map<String, DecisionTiming>) {
         recorded.forEach { (key, timing) -> timings[key] = timings.getOrElse(key) { DecisionTiming() } + timing }
     }
 
-    /** 依策略彙整，依 [order] 排列；不在 [order] 中的策略排在後面。 */
+    /**
+     * 依策略彙整，依 [order] 排列；不在 [order] 中的策略排在後面。
+     *
+     * @param order 優先排列的策略 key；未列出的策略接續排列。
+     * @return 按策略彙整的統計資料。
+     */
     fun byStrategy(order: List<String> = emptyList()): List<StrategyStatistics> {
         val seats = matches.flatMap { match -> match.rounds.flatten() }.groupBy { it.strategyKey }
         val placements = matches.flatMap { match ->
@@ -145,6 +169,9 @@ internal class SimulationStatistics {
     /**
      * 以文字表格呈現的彙整結果：第一張表為和牌、放銃、名次與決策時間，第二張表為分數得失、
      * 其他玩家放銃給它的比例，以及有其他玩家立直時的攻守。
+     *
+     * @param order 優先排列的策略 key；未列出的策略接續排列。
+     * @return 兩張統計表組成的文字。
      */
     fun report(order: List<String> = emptyList()): String = buildString {
         val statistics = byStrategy(order)
@@ -184,10 +211,19 @@ internal class SimulationStatistics {
         }
     }
 
-    /** 以「值 ± 半寬」呈現，四捨五入到小數點後三位。 */
+    /**
+     * 以「值 ± 半寬」呈現，各值取至小數點後三位，正好位於中間時取末位為偶數的一側。
+     *
+     * @return 格式化的估計值與半寬。
+     */
     private fun Estimate.format(): String = "${value.rounded()} ± ${halfWidth95.rounded()}"
 
-    /** 四捨五入到小數點後三位的文字。 */
+    /**
+     * 取至小數點後三位的文字，正好位於中間時取末位為偶數的一側。
+     *
+     * @receiver 要格式化的數值。
+     * @return 固定三位小數的文字。
+     */
     private fun Double.rounded(): String {
         val scaled = round(this * THOUSAND).toLong()
         val sign = if (scaled < 0) "-" else ""

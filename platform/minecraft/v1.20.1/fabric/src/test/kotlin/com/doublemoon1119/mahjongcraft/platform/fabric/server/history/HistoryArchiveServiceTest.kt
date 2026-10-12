@@ -537,7 +537,11 @@ class HistoryArchiveServiceTest {
             Json,
         )
 
-        /** 開局、一局、終局與返回房間的完整事件。 */
+        /**
+         * 建立開局、一局、終局與返回房間的完整事件序列。
+         *
+         * @return 依序排列的場次與牌局事件。
+         */
         fun matchEvents(): List<HistoryOutboxEvent> {
             val table = FakeTableStateFactory.create(
                 id = tableId,
@@ -570,7 +574,12 @@ class HistoryArchiveServiceTest {
             }
         }
 
-        /** 寫進資料庫的待寫事件紀錄。 */
+        /**
+         * 將事件編碼成可寫入資料庫的待寫紀錄。
+         *
+         * @param event 要轉換的歷史事件。
+         * @return 對應的待寫資料庫紀錄。
+         */
         fun record(event: HistoryOutboxEvent): PendingHistoryRecord = PendingHistoryRecord(
             event.matchId.toString(),
             event.sequence,
@@ -580,7 +589,11 @@ class HistoryArchiveServiceTest {
             Json.encodeToString(HistoryOutboxEventPersistenceDto.serializer(), mapper.encodePendingEvent(event)),
         )
 
-        /** 直接在資料庫中把一筆事件的內容改成無法解碼的值。 */
+        /**
+         * 直接在資料庫中把指定序號的事件內容改成無法解碼的值。
+         *
+         * @param sequence 要損壞的事件序號。
+         */
         fun corruptPayload(sequence: Long) {
             DriverManager.getConnection("jdbc:sqlite:${path.toAbsolutePath()}").use { connection ->
                 connection.prepareStatement("UPDATE history_pending_event SET payload = '{}' WHERE match_id = ? AND sequence = ?").use { statement ->

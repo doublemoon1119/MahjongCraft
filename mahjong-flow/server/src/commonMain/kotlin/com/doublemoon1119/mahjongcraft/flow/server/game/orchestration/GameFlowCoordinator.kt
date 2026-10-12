@@ -65,6 +65,7 @@ import kotlin.uuid.Uuid
  * @property winSettlementDetailResolverRegistry 特殊 win-equivalent outcome（例如流局滿貫）的胡牌
  *   詳情解析 registry，用於 [WinSettlementPresentationRequestFactory.createSpecialOutcome]。
  * @property declareExhaustiveDrawUseCase 一般流局結算用例。
+ * @property resolvePostReactionRoundOutcomeUseCase 反應完成後解析規則專屬回合結果的用例。
  * @property resolveWinRoundContinuationUseCase 胡牌即時結算完成後，判定本局後續是否結束的用例；
  *   見 [ResolveWinRoundContinuationUseCase] KDoc。
  * @property advanceRoundUseCase 連莊/過莊/開下一局用例。
@@ -74,10 +75,14 @@ import kotlin.uuid.Uuid
  * @property forcedAutoPlayDriver 找出下一個必須由伺服器固定操作的真人玩家與命令。
  * @property automaticDecisionDriver 找出下一個由真人玩家本局自動設定立即執行的命令。
  * @property decisionAvailabilityService 在呈現忙碌時暫停玩家決策，閒置時恢復或調整計時並立即同步。
+ * @property exhaustiveDrawSettlementPresentationService 建立並發布流局結算呈現資料的服務。
  * @property winPresentationHandoff 胡牌 use case 建構好的呈現內容交接點，見 [WinPresentationHandoff]。
+ * @property presentationPublisher 發布不依賴特定平台的呈現請求。
  * @property presentationBusyGate 查詢平台是否仍在呈現需要等待的內容；[driveAutomatedPlayers] 與
  *   [resumePendingGameTransition] 都會在推進權威流程前檢查，忙碌時直接返回並留待後續心跳重試；
  *   實作由平台層提供，理由見 [GamePresentationBusyGate] KDoc。
+ * @property roundPreparationAiDriver 解析下一筆自動開局準備提交；未提供時不處理 AI 準備提交。
+ * @property advanceAutomaticRoundPreparationUseCase 收斂無須玩家輸入的開局準備步驟；未提供時略過。
  */
 @Factory
 class GameFlowCoordinator(
@@ -259,7 +264,14 @@ class GameFlowCoordinator(
         }
     }
 
-    /** 無條件分派 [command]、做系統銜接，再調整決策計時器（見 [reconcileAfter]）。 */
+    /**
+     * 無條件分派 [command]、做系統銜接，再調整決策計時器（見 [reconcileAfter]）。
+     *
+     * @param gameId 對局識別碼。
+     * @param playerId 發出命令的玩家識別碼。
+     * @param command 欲分派的命令。
+     * @return 分派及後續計時調整後的結果。
+     */
     private suspend fun dispatchAndReconcile(
         gameId: Uuid,
         playerId: Uuid,
@@ -312,6 +324,11 @@ class GameFlowCoordinator(
      *
      * 成功命令會將 [playerId] 視為完成一次決策，結算舊 timer；失敗命令只進行狀態校正，不重設該玩家
      * 已存在的基本思考時間。機械摸牌成功前沒有 timer，但完成後仍會透過相同流程建立自己回合的新 timer。
+     *
+     * @param gameId 對局識別碼。
+     * @param playerId 發出命令的玩家識別碼。
+     * @param result 命令執行結果。
+     * @return 原命令執行結果。
      */
     private suspend fun reconcileAfter(
         gameId: Uuid,
@@ -328,6 +345,9 @@ class GameFlowCoordinator(
     /**
      * 把 [playerId] 從強制自動操作名單移除，讓他下一次決策恢復由自己（或再次逾時後重新進入名單）
      * 決定，而不是繼續被伺服器代打。
+     *
+     * @param gameId 對局識別碼。
+     * @param playerId 要解除強制自動操作的玩家識別碼。
      */
     private suspend fun clearForcedAutoPlay(gameId: Uuid, playerId: Uuid) {
         gameRepository.updateGame(gameId) { game ->
@@ -339,6 +359,9 @@ class GameFlowCoordinator(
      * 分派 [command] 並自動銜接對應的系統觸發 use case。抽出成獨立方法讓 [driveAutomatedPlayers] 能
      * 直接呼叫——AI 送出的命令也必須經過同一套系統銜接邏輯，不能繞過去。
      *
+     * @param gameId 對局識別碼。
+     * @param playerId 發出命令的玩家識別碼。
+     * @param command 欲分派的命令。
      * @param dispatchCommand 實際分派 [command] 的方式；回傳 null 代表命令因過期而沒有執行，此時不做任何系統銜接。
      * @return 命令的執行結果；[dispatchCommand] 回傳 null 時為 null。
      */
@@ -408,6 +431,8 @@ class GameFlowCoordinator(
      * 持久化「待進入下一局」意圖後立即返回；真正的 [advanceRoundUseCase] 由平台心跳在呈現結束後
      * 透過 [resumePendingGameTransition] 收斂。三個呼叫點（一般流局、四槓散了、一般結束本局判斷）
      * 共用這個方法，正常遊玩與 server 重啟恢復走完全相同的路徑。
+     *
+     * @param gameId 欲排定下一局的對局識別碼。
      */
     private suspend fun chainAdvanceRound(gameId: Uuid) {
         gameRepository.updateGame(gameId) { game ->
@@ -415,7 +440,13 @@ class GameFlowCoordinator(
         }
     }
 
-    /** 若這次狀態變更新增途中流局記錄，建立統一回合結算呈現。 */
+    /**
+     * 若這次狀態變更新增途中流局記錄，建立統一回合結算呈現。
+     *
+     * @param gameId 對局識別碼。
+     * @param declarerId 觸發流局的玩家；系統觸發時為 null。
+     * @param previousState 執行命令前的桌況，用於辨識新增加的流局記錄。
+     */
     private suspend fun publishNewAbortiveDrawIfPresent(
         gameId: Uuid,
         declarerId: Uuid?,
@@ -457,6 +488,10 @@ class GameFlowCoordinator(
      * 本局；胡牌（[GameAction.Tsumo]／[GameAction.Ron]）才會詢問 [resolveWinRoundContinuationUseCase]，
      * 只有取得 [WinRoundDirective.EndRound]（含未註冊 resolver 的規則）才銜接 [chainAdvanceRound]——
      * [WinRoundDirective.ContinueRound] 的桌況變化已經由該用例原子套用完畢，這裡不需要再做任何事。
+     *
+     * @param gameId 對局識別碼。
+     * @param playerId 本次命令的玩家識別碼。
+     * @param previousState 執行命令前的桌況。
      */
     private suspend fun handleHandConclusionIfPresent(gameId: Uuid, playerId: Uuid, previousState: TableState) {
         val currentState = gameRepository.getTableState(gameId) ?: return
@@ -510,6 +545,10 @@ class GameFlowCoordinator(
 
     /**
      * 為由反應 resolver 直接產生的途中流局補上權威摘要；正式流局 use case 已寫入摘要時不覆蓋。
+     *
+     * @param gameId 對局識別碼。
+     * @param state 記錄流局後的桌況。
+     * @param newActionsByPlayerId 本次命令新增的玩家動作。
      */
     private suspend fun ensureRecordedDrawCompletion(
         gameId: Uuid,

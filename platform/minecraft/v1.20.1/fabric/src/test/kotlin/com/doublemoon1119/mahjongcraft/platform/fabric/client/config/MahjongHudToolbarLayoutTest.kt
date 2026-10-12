@@ -108,11 +108,18 @@ class MahjongHudToolbarLayoutTest {
         assertEquals(toolbar.viewportWidth, toolbar.thumb(0.0).width)
     }
 
+    /**
+     * 建立使用支援畫面寬度的工具列版面。
+     *
+     * @param contentWidth 二級選項行的內容寬度。
+     * @return 使用指定內容寬度的版面。
+     */
     private fun layout(contentWidth: Int): MahjongHudToolbarLayout = MahjongHudToolbarLayout(
         screenWidth = SCREEN_WIDTH,
         contentWidth = contentWidth,
     )
 
+    /** 測試使用的支援畫面尺寸與內容。 */
     private companion object {
         /** 測試使用的最小支援畫面寬度。 */
         const val SCREEN_WIDTH = 854

@@ -593,7 +593,13 @@ class FabricHistoryQueryService(
     /** 正式歷史的資料來源。 */
     private fun formalSource(): HistoryDataSource = HistoryDataSource(writer, store)
 
-    /** 判斷目前連線是否可使用壓力測試範圍：與全部對局相同的權限，且開發環境中存在壓力測試資料庫。 */
+    /**
+     * 判斷目前連線是否可使用壓力測試範圍：與全部對局相同的權限，且開發環境中存在壓力測試資料庫。
+     *
+     * @param access 目前可信連線身分。
+     * @param policy 目前查詢政策。
+     * @return 全部對局權限、開發環境與壓力測試資料庫皆可用時為 `true`。
+     */
     private fun canQueryStressTest(access: HistoryQueryAccess, policy: HistoryQueryPolicy): Boolean = canQueryStressTest(
         canQueryAll = canQueryAll(access, policy),
         isDevelopment = minecraftEnvironment.isDevelopment,
@@ -645,7 +651,13 @@ class FabricHistoryQueryService(
  */
 private fun ServerPlayerEntity.queryAccess(): HistoryQueryAccess = HistoryQueryAccess(uuid.toKotlinUuid(), hasPermissionLevel(2))
 
-/** 判斷目前連線是否可使用全部對局查詢範圍。 */
+/**
+ * 判斷目前連線是否可使用全部對局查詢範圍。
+ *
+ * @param access 目前可信連線身分。
+ * @param policy 目前查詢政策。
+ * @return 查詢已啟用且管理員資格與政策均允許時為 `true`。
+ */
 private fun canQueryAll(access: HistoryQueryAccess, policy: HistoryQueryPolicy): Boolean = policy.queryEnabled && access.isAdministrator && policy.allowAdministratorQuery
 
 /**

@@ -14,6 +14,7 @@ import kotlin.test.assertTrue
 
 /** 驗證自由動畫子指令樹的 literal、參數結構與 tile 補全候選。 */
 class FabricDebugAnimationCommandTest {
+    /** 使用記憶體資產登記表與預覽服務的受測指令。 */
     private val command = FabricDebugAnimationCommand(
         tilePreviewSupport = DebugTilePreviewSupport(MinecraftTileAssetRegistryImpl()),
         layoutFactory = DebugVirtualTableLayoutFactory(),
@@ -75,7 +76,12 @@ class FabricDebugAnimationCommandTest {
         assertTrue(command.buildDealCommand() !== command.buildDealCommand())
     }
 
-    /** 檢查一個 literal 同時具備直接執行路徑與單一 tile 引數子節點。 */
+    /**
+     * 檢查固定字詞節點同時具備直接執行路徑與單一牌引數子節點。
+     *
+     * @param name 預期的節點名稱。
+     * @param builder 要檢查的指令節點建構器。
+     */
     private fun assertOptionalTileArgument(
         name: String,
         builder: LiteralArgumentBuilder<ServerCommandSource>,

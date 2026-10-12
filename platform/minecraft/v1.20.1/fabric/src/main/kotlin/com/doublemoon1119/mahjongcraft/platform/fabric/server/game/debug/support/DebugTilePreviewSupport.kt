@@ -41,6 +41,10 @@ class DebugTilePreviewSupport(private val tileAssetRegistry: MinecraftTileAssetR
      * 這裡的 `tile` 是全域固定的素材 asset key（見 [suggestTileAssetKeys]），單純選擇要渲染成什麼
      * 牌面，與任何玩家手牌無關；跟 `FabricGameCommand` 的 `tile` 引數（依玩家當下手牌動態算出的
      * candidate token，對應一張實體牌）是兩個不同概念，不應合併實作。
+     *
+     * @param node 要加入兩種執行路徑的 Brigadier 節點。
+     * @param onExecute 引數省略或提供時都會呼叫的執行動作。
+     * @return 已加入可選 `tile` 引數的節點。
      */
     fun withOptionalTileArgument(
         node: LiteralArgumentBuilder<ServerCommandSource>,
@@ -56,7 +60,13 @@ class DebugTilePreviewSupport(private val tileAssetRegistry: MinecraftTileAssetR
     /** 預覽用的所有牌面，依 [allTileAssetKeys] 的順序，排除佔位用的 [UNKNOWN_TILE_ASSET_KEY]。 */
     val previewAssetKeys: List<String> get() = tileAssetRegistry.allTileAssetKeys().filterNot { it == UNKNOWN_TILE_ASSET_KEY }
 
-    /** 補全 `tile` 引數：所有牌面的 asset key，排除佔位用的 [UNKNOWN_TILE_ASSET_KEY]。 */
+    /**
+     * 補全 `tile` 引數：所有牌面的 asset key，排除佔位用的 [UNKNOWN_TILE_ASSET_KEY]。
+     *
+     * @param context Brigadier 補全查詢情境；此處不讀取其內容。
+     * @param builder 收集候選字串並建立回覆的 builder。
+     * @return 已建立的候選結果。
+     */
     fun suggestTileAssetKeys(
         @Suppress("UNUSED_PARAMETER") context: CommandContext<ServerCommandSource>,
         builder: SuggestionsBuilder,
@@ -65,11 +75,24 @@ class DebugTilePreviewSupport(private val tileAssetRegistry: MinecraftTileAssetR
         return builder.buildFuture()
     }
 
-    /** 省略 `tile` 引數時隨機抽一個牌面（排除佔位用的 `unknown`），否則正規化呼叫者輸入的字串。 */
+    /**
+     * 省略 `tile` 引數時隨機抽一個牌面（排除佔位用的 `unknown`），否則正規化呼叫者輸入的字串。
+     *
+     * @param tileArg 選擇性的牌面 asset key。
+     * @return 可用的正規化 asset key。
+     */
     fun resolveAssetKey(tileArg: String?): String = tileArg?.normalizedTileAssetKey(tileAssetRegistry)
         ?: previewAssetKeys.random()
 
-    /** 生成一張自由放置（不掛任何桌子/對局）的臨時牌 entity，理由見類別 KDoc 的牌面說明。 */
+    /**
+     * 生成一張自由放置（不掛任何桌子/對局）的臨時牌 entity，理由見類別 KDoc 的牌面說明。
+     *
+     * @param world 生成牌 entity 的世界。
+     * @param placement entity 的位置與朝向。
+     * @param pose entity 的牌姿態。
+     * @param assetKey entity 顯示的牌面 asset key。
+     * @return 已生成並加入世界的臨時牌 entity。
+     */
     fun spawnFreeTile(
         world: ServerWorld,
         placement: MahjongTileWallPlacement,
@@ -92,7 +115,13 @@ class DebugTilePreviewSupport(private val tileAssetRegistry: MinecraftTileAssetR
     }
 }
 
-/** 依目前輸入內容，從 [assetKeys] 依原順序挑出 `tile` 引數的補全候選。 */
+/**
+ * 依目前輸入內容，從 [assetKeys] 依原順序挑出 `tile` 引數的補全候選。
+ *
+ * @param remaining 使用者尚未完成的輸入前綴。
+ * @param assetKeys 可供選擇的牌面 asset key。
+ * @return 忽略大小寫符合前綴的 key，並維持來源順序。
+ */
 internal fun buildTileAssetKeySuggestions(
     remaining: String,
     assetKeys: List<String>,

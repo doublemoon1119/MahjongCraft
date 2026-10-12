@@ -774,7 +774,12 @@ class HistoryBrowseControllerTest {
      */
     private fun TestScope.controller(transport: FakeHistoryQueryTransport): HistoryBrowseController = HistoryBrowseController(transport, backgroundScope, now = { testScheduler.currentTime.milliseconds })
 
-    /** 建立最小可用的歷史摘要。 */
+    /**
+     * 建立最小可用的歷史摘要。
+     *
+     * @param matchId 對局識別碼。
+     * @return 不含參與者或結算明細的摘要。
+     */
     private fun summary(matchId: String): HistoryMatchSummaryDto = HistoryMatchSummaryDto(
         matchId = matchId,
         ruleId = null,
@@ -790,7 +795,12 @@ class HistoryBrowseControllerTest {
         results = emptyList(),
     )
 
-    /** 建立指定對局的摘要回覆內容。 */
+    /**
+     * 建立指定對局的摘要回覆內容。
+     *
+     * @param matchId 對局識別碼。
+     * @return 含最小摘要與空局清單的回覆內容。
+     */
     private fun detail(matchId: String): HistoryMatchDetailDto = HistoryMatchDetailDto(summary(matchId), emptyList())
 
     /**
@@ -890,7 +900,12 @@ class HistoryBrowseControllerTest {
             return actual.requestId
         }
 
-        /** 記錄控制器取消的要求。 */
+        /**
+         * 記錄控制器取消的要求。
+         *
+         * @param requestId 已取消的要求識別碼。
+         * @return 固定回傳 `true` 表示替身接受取消。
+         */
         override fun cancel(requestId: String): Boolean {
             cancelledIds += requestId
             return true
@@ -913,6 +928,7 @@ class HistoryBrowseControllerTest {
          * @param nextCursor 下一頁游標。
          * @param errorCode 回應中的穩定錯誤碼。
          * @param allowAll 伺服器目前允許全部紀錄查詢。
+         * @param allowStressTest 伺服器目前允許壓力測試紀錄查詢。
          */
         fun respondList(
             requestId: String = listRequests.last().requestId,

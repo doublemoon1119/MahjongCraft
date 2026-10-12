@@ -77,23 +77,40 @@ class HeadlessStepTimer : HistoryRecordingObserver {
         slowestAiDecision = null
     }
 
-    /** 一次 AI 出牌決策開始。 */
+    /**
+     * 記錄一次 AI 出牌決策的開始時刻。
+     *
+     * @param context 此次決策使用的情境。
+     */
     internal fun beginAiDecision(context: AiDecisionContext) {
         ongoingAiDecision = OngoingAiDecision(context, TimeSource.Monotonic.markNow())
     }
 
-    /** 進行中的 AI 出牌決策結束，耗時 [duration]。 */
+    /**
+     * 結束進行中的 AI 出牌決策，並更新本區間最慢決策。
+     *
+     * @param context 已結束決策使用的情境。
+     * @param duration 該次策略呼叫耗時，包含失敗或取消前已花費的時間。
+     */
     internal fun endAiDecision(context: AiDecisionContext, duration: Duration) {
         ongoingAiDecision = null
         if (duration > (slowestAiDecision?.duration ?: Duration.ZERO)) slowestAiDecision = TimedAiDecision(context, duration)
     }
 
-    /** 累計一次策略思考耗時。 */
+    /**
+     * 累計一次策略思考耗時。
+     *
+     * @param duration 此次策略呼叫耗時。
+     */
     internal fun addAiDecision(duration: Duration) {
         aiDecision += duration
     }
 
-    /** 累計一次建立 AI 視角快照的耗時。 */
+    /**
+     * 累計一次建立 AI 視角快照的耗時。
+     *
+     * @param duration 此次建立情境快照的耗時。
+     */
     internal fun addAiContext(duration: Duration) {
         aiContext += duration
     }
@@ -112,7 +129,11 @@ class HeadlessStepTimer : HistoryRecordingObserver {
         staleDecisions++
     }
 
-    /** 累計一次快照同步耗時。 */
+    /**
+     * 累計一次快照同步耗時。
+     *
+     * @param duration 此次快照同步的耗時。
+     */
     internal fun addSnapshotSync(duration: Duration) {
         snapshotSync += duration
     }
@@ -137,7 +158,13 @@ internal class TimedVisibilityPolicy(
 
     override fun roundPreparationSnapshotFor(game: Game, observerId: Uuid): RoundPreparationSnapshot? = measured { delegate.roundPreparationSnapshotFor(game, observerId) }
 
-    /** 執行 [block] 並記錄耗時。 */
+    /**
+     * 執行 [block]，成功返回後回報耗時；拋出例外時不回報。
+     *
+     * @param T 工作的回傳型別。
+     * @param block 要量測的快照工作。
+     * @return [block] 的回傳值。
+     */
     private inline fun <T> measured(block: () -> T): T {
         val mark = TimeSource.Monotonic.markNow()
         return block().also { record(mark.elapsedNow()) }

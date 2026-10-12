@@ -271,6 +271,13 @@ class ExpectedValueAiStrategyTest {
         val north = checkNotNull(self.hand.lastDrawn)
         val dama = DecisionCandidate.Discard(tile = north, declaration = null, command = GameCommand.Discard(north.id))
         val riichi = DecisionCandidate.Discard(tile = north, declaration = RIICHI_GAME_ACTION, command = GameCommand.Extension(RiichiGameCommand(north.id)))
+
+        /**
+         * 計算指定打點細節下立直相對默聽的期望值差。
+         *
+         * @param detail 和牌打點細節比例。
+         * @return 立直評分減去默聽評分的差值。
+         */
         fun riichiAdvantage(detail: Double): Double {
             val level = InformationLevel.INTERMEDIATE.copy(winValueDetail = detail)
             val (damaScore, riichiScore) = ExpectedValueEvaluator(level, ExpectationParameters.DEFAULT, ExpectationFixtures.module, ExpectationFixtures.opponentModel(level), context).scoreAll(listOf(dama, riichi))
@@ -291,6 +298,12 @@ class ExpectedValueAiStrategyTest {
      */
     @Test
     fun `an unseen red five adds value to a wait on five`() {
+        /**
+         * 以指定已公開五筒計算單騎聽五筒的期望值。
+         *
+         * @param visibleFive 桌上可見的普通五筒或赤五筒。
+         * @return 單一捨牌候選的期望值。
+         */
         fun expectedValue(visibleFive: Tile): Double {
             val self = player(
                 Wind.SOUTH,
@@ -364,6 +377,13 @@ class ExpectedValueAiStrategyTest {
         val context = context(table, self)
         val six = checkNotNull(self.hand.lastDrawn)
         val discard = DecisionCandidate.Discard(tile = six, declaration = null, command = GameCommand.Discard(six.id))
+
+        /**
+         * 以指定參數評估同一捨牌候選。
+         *
+         * @param parameters 後續風險估計參數。
+         * @return 候選的期望值。
+         */
         fun score(parameters: ExpectationParameters): Double = ExpectedValueEvaluator(WITH_FUTURE_RISK, parameters, ExpectationFixtures.module, ExpectationFixtures.opponentModel(WITH_FUTURE_RISK), context).scoreAll(listOf(discard)).single().expectedValue
 
         assertTrue(score(ExpectationParameters(futureRiskHighThreatOnly = true)) > score(ExpectationParameters.DEFAULT))
@@ -387,6 +407,13 @@ class ExpectedValueAiStrategyTest {
         val eight = checkNotNull(self.hand.lastDrawn)
         val dama = DecisionCandidate.Discard(tile = eight, declaration = null, command = GameCommand.Discard(eight.id))
         val riichi = DecisionCandidate.Discard(tile = eight, declaration = RIICHI_GAME_ACTION, command = GameCommand.Extension(RiichiGameCommand(eight.id)))
+
+        /**
+         * 以指定參數評估默聽與立直候選。
+         *
+         * @param parameters 後續風險估計參數。
+         * @return 依候選輸入順序排列的評分。
+         */
         fun scores(parameters: ExpectationParameters): List<CandidateScore> = ExpectedValueEvaluator(WITH_FUTURE_RISK, parameters, ExpectationFixtures.module, ExpectationFixtures.opponentModel(WITH_FUTURE_RISK), context).scoreAll(listOf(dama, riichi))
 
         val (defaultDama, defaultRiichi) = scores(ExpectationParameters.DEFAULT)
@@ -474,10 +501,22 @@ class ExpectedValueAiStrategyTest {
         }
     }
 
-    /** 以 [self] 為南家、其他三家沒有手牌的四人桌。 */
+    /**
+     * 將 [self] 放在第二個座位，其他三家沒有手牌的四人桌。
+     *
+     * @param self 南家及測試決策者。
+     * @return 依東、[self]、西、北順序排列的四人桌。
+     */
     private fun fourPlayers(self: MahjongPlayer): TableState = table(listOf(player(Wind.EAST), self, player(Wind.WEST), player(Wind.NORTH)))
 
-    /** 命令打出的牌面。 */
+    /**
+     * 取得命令打出的牌面。
+     *
+     * @param table 執行命令前的桌況。
+     * @param self 執行命令的玩家。
+     * @param command 待檢查的遊戲命令。
+     * @return 命令指定牌識別碼對應的手牌牌面。
+     */
     private fun discardedTile(
         table: TableState,
         self: MahjongPlayer,
@@ -491,6 +530,10 @@ class ExpectedValueAiStrategyTest {
      * 西家剛打出 [ponTile]、南家可以用手中兩張碰的局面。
      *
      * 南家手牌：一二三萬、七八九筒、五六條、一一條，加上三張 [others]。
+     *
+     * @param ponTile 西家剛打出的牌面。
+     * @param others 南家手牌中補足牌型的三張牌。
+     * @return 桌況、南家玩家與對應的碰牌合法動作。
      */
     private fun ponSituation(ponTile: Tile, others: List<Tile>): Triple<TableState, MahjongPlayer, GameAction.Pon> {
         val self = player(Wind.SOUTH, hand = hand(listOf(m(1), m(2), m(3), p(7), p(8), p(9), s(5), s(6), s(1), s(1)) + others))

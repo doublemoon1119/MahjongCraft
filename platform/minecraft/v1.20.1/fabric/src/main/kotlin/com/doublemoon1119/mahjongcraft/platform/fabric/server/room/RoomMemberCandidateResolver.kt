@@ -23,7 +23,12 @@ class RoomMemberCandidateResolver(
     private val roomRepository: RoomRepository,
     private val serverHolder: FabricServerHolder,
 ) {
-    /** 列出 [playerId] 目前所在房間內，除房主外的所有候選成員。 */
+    /**
+     * 列出 [playerId] 目前所在房間內，除房主外的所有候選成員。
+     *
+     * @param playerId 用來解析目前房間的玩家 UUID。
+     * @return 房間候選成員；玩家沒有房間或房間不存在時為空清單。
+     */
     suspend fun listCandidates(playerId: Uuid): List<RoomMemberCandidate> {
         val tableId = membershipRepository.getVenueId(playerId) ?: return emptyList()
         val room = roomRepository.getRoom(tableId) ?: return emptyList()
@@ -45,11 +50,22 @@ class RoomMemberCandidateResolver(
         }
     }
 
-    /** 列出 [playerId] 目前所在房間內，除房主外的所有 AI 候選成員。 */
+    /**
+     * 列出 [playerId] 目前所在房間內，除房主外的所有 AI 候選成員。
+     *
+     * @param playerId 用來解析目前房間的玩家 UUID。
+     * @return 房間內可作為 AI 策略變更目標的候選成員。
+     */
     suspend fun listAiCandidates(playerId: Uuid): List<RoomMemberCandidate> = listCandidates(playerId)
         .filter { it.aiSequence != null }
 
-    /** 解析 [playerId] 目前所在房間內，與 [token] 完全相符的候選成員 Uuid。 */
+    /**
+     * 解析 [playerId] 目前所在房間內，與 [token] 完全相符的候選成員 Uuid。
+     *
+     * @param playerId 用來解析目前房間的玩家 UUID。
+     * @param token 指令輸入的完整候選 token。
+     * @return 相符的成員 UUID；找不到時為 null。
+     */
     suspend fun resolve(playerId: Uuid, token: String): Uuid? = listCandidates(playerId)
         .firstOrNull { it.token == token }
         ?.playerId

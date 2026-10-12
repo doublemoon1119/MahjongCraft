@@ -85,7 +85,11 @@ class MahjongClientConfigScreenController(
         client.execute { open(client, null) }
     }
 
-    /** 消耗快捷鍵事件；其他 Screen 開啟時不搶占使用者輸入。 */
+    /**
+     * 消耗快捷鍵事件；其他畫面開啟時不搶占使用者輸入。
+     *
+     * @param client 本次 tick 的客戶端。
+     */
     private fun tick(client: MinecraftClient) {
         while (openKeyBinding.wasPressed()) {
             if (client.currentScreen == null) {
@@ -104,7 +108,12 @@ class MahjongClientConfigScreenController(
         }
     }
 
-    /** 建立設定畫面並保留指定 parent。 */
+    /**
+     * 建立設定畫面並保留返回目標。
+     *
+     * @param client 要開啟畫面的客戶端。
+     * @param parent 返回目標；null 表示關回遊戲。
+     */
     private fun open(client: MinecraftClient, parent: Screen?) {
         client.setScreen(
             MahjongClientConfigScreen(

@@ -16,6 +16,7 @@ internal sealed interface CompactDecisionHudContent {
     /**
      * 進行中選牌的進度提示。
      *
+     * @property progress 已選張數與可選範圍。
      * @property description 選牌所屬動作的說明；開局準備或沒有說明的動作為 `null`。
      */
     data class TileSelection(
@@ -33,6 +34,13 @@ internal sealed interface CompactDecisionHudContent {
  * 進行中的選牌進度優先；沒有選牌但玩家把仍然有效的互動式操作介面收起來時顯示重開提醒。玩家已明確進入
  * 任何一種實體牌操作模式（[isPhysicalSelectionActive]）就不再提醒重開——那是刻意收起畫面去點實體牌，
  * 不是忘記。
+ *
+ * @param prompt 目前權威決策提示；沒有提示時為 null。
+ * @param dismissedDecisionKey 玩家已收起的操作介面所屬決策鍵。
+ * @param isPhysicalSelectionActive 是否正在透過實體牌選牌。
+ * @param tileSelectionProgress 進行中的選牌進度；未選牌時為 null。
+ * @param tileSelectionDescription 選牌動作的補充說明。
+ * @return 選牌進度、重開提醒或僅顯示倒數。
  */
 internal fun compactDecisionHudContent(
     prompt: PlayerDecisionPromptDto?,
@@ -54,6 +62,9 @@ internal fun compactDecisionHudContent(
  *
  * 還沒選到 `minCount` 張時提示還缺幾張，落在合法範圍內（含剛好選滿 `maxCount`）時提示可以確認——選滿
  * 本身已經隱含「已達上限」，不需要額外的一次性提醒。
+ *
+ * @param progress 已選張數與可選範圍。
+ * @return 尚缺張數或可確認選牌的本地化提示。
  */
 internal fun tileSelectionDetailText(progress: DecisionTileSelectionState.Progress): Text = if (progress.selectedCount < progress.validRange.first) {
     Text.translatable(
@@ -111,7 +122,12 @@ internal data class CompactDecisionHudLayout(
     val timerTop: Int
         get() = groupTop + groupHeight - TIMER_HEIGHT
 
-    /** 第 [index] 行說明的上緣，緊接在標題下方。 */
+    /**
+     * 計算緊接在標題下方的說明行上緣。
+     *
+     * @param index 從零開始的說明行索引。
+     * @return 該行的上緣座標。
+     */
     fun descriptionLineTop(index: Int): Int = groupTop + TEXT_LINE_HEIGHT * (1 + index)
 
     /** 細節文字的上緣，在所有說明行之後。 */
@@ -119,9 +135,16 @@ internal data class CompactDecisionHudLayout(
         get() = groupTop + TEXT_LINE_HEIGHT * (1 + descriptionLineCount)
 
     internal companion object {
+        /** 精簡 HUD 群組的標準寬度。 */
         const val GROUP_WIDTH = 220
+
+        /** 倒數文字保留的高度。 */
         const val TIMER_HEIGHT = 14
+
+        /** 展開提示且不含額外說明行時的高度。 */
         const val EXPANDED_HEIGHT = 38
+
+        /** 每行提示文字占用的高度。 */
         const val TEXT_LINE_HEIGHT = 11
     }
 }

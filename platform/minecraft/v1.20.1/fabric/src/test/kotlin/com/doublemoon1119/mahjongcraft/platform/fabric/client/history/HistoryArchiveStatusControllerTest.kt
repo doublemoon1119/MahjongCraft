@@ -162,13 +162,22 @@ class HistoryArchiveStatusControllerTest {
         private val responses: List<HistoryArchiveStatusDto>,
         private val errorCode: HistoryQueryErrorCodeDto? = null,
     ) : HistoryArchiveStatusTransport {
+        /** 模擬伺服器保存狀態的查詢結果。 */
         private val mutableState = MutableStateFlow<ClientHistoryArchiveStatusState>(ClientHistoryArchiveStatusState.Idle)
+
+        /** 目前保存狀態查詢狀態。 */
         override val state: StateFlow<ClientHistoryArchiveStatusState> = mutableState
+
+        /** 測試連線工作階段版本。 */
         override val sessionRevision = MutableStateFlow(0L)
 
         /** 保存狀態輪詢替身保留測試使用的短查詢冷卻。 */
         override val minimumInterval = MutableStateFlow(10.milliseconds)
+
+        /** 傳送過的保存狀態要求。 */
         val requests = mutableListOf<HistoryArchiveStatusRequestDto>()
+
+        /** 取消過的要求 ID。 */
         val cancelled = mutableListOf<String>()
 
         /**
@@ -180,6 +189,12 @@ class HistoryArchiveStatusControllerTest {
             mutableState.value = ClientHistoryArchiveStatusState.Result(HistoryArchiveStatusResponseDto(requests.last().requestId, status, errorCode = null))
         }
 
+        /**
+         * 記錄查詢並依 fixture 順序立即提供預設回覆。
+         *
+         * @param matchId 要查詢保存狀態的對局 ID。
+         * @return 新要求的識別碼。
+         */
         override fun query(matchId: String): String {
             val request = HistoryArchiveStatusRequestDto("request-${requests.size}", matchId)
             requests += request
@@ -189,6 +204,12 @@ class HistoryArchiveStatusControllerTest {
             return request.requestId
         }
 
+        /**
+         * 記錄取消要求並將替身狀態設為閒置。
+         *
+         * @param requestId 欲取消的要求 ID。
+         * @return 固定回傳 `true` 表示替身已處理取消。
+         */
         override fun cancel(requestId: String): Boolean {
             cancelled += requestId
             mutableState.value = ClientHistoryArchiveStatusState.Idle

@@ -20,6 +20,8 @@ class RiichiHandValueCalculatorDealerTest : RiichiHandValueCalculatorTestBase() 
     /**
      * 手牌：中中、發發發、白白白、123m、55p
      * 胡牌：中（自摸）
+     *
+     * @return 大三元測試手牌。
      */
     private fun daisangenHand() = FakeHandFactory.create(
         listOf(

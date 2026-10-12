@@ -214,10 +214,20 @@ class DecisionEntryTest {
         )
     }
 
-    /** 取出卡片標題的翻譯 key；未知 ID 保留原始字串。 */
+    /**
+     * 取出卡片標題的翻譯 key；未知 ID 保留原始字串。
+     *
+     * @param entry 要讀取標題的卡片。
+     * @return 翻譯鍵或未知動作的原始標籤。
+     */
     private fun translationKeyOf(entry: DecisionEntry): String = (entry.label.content as? TranslatableTextContent)?.key ?: entry.label.string
 
-    /** 建立只含指定動作的 prompt。 */
+    /**
+     * 建立只含指定動作的 prompt。
+     *
+     * @param actionIds 要放入 prompt 的動作 ID。
+     * @return 使用測試決策鍵與指定動作的 prompt。
+     */
     private fun promptOf(vararg actionIds: String) = PlayerDecisionPromptDto(
         decisionKey = DECISION_KEY,
         ruleModuleId = BuiltInRuleModuleIds.RIICHI,
@@ -231,7 +241,12 @@ class DecisionEntryTest {
         discardAnalyses = emptyList(),
     )
 
-    /** 建立只含開局準備的 prompt。 */
+    /**
+     * 建立只含開局準備的 prompt。
+     *
+     * @param preparation 開局準備提示。
+     * @return 使用測試決策鍵的 prompt。
+     */
     private fun preparationPrompt(preparation: RoundPreparationPromptDto) = PlayerDecisionPromptDto(
         decisionKey = DECISION_KEY,
         ruleModuleId = BuiltInRuleModuleIds.RIICHI,
@@ -245,7 +260,9 @@ class DecisionEntryTest {
         discardAnalyses = emptyList(),
     )
 
+    /** 測試共用識別值。 */
     private companion object {
+        /** 測試用決策鍵。 */
         const val DECISION_KEY = "decision-1"
     }
 }

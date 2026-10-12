@@ -36,7 +36,15 @@ object FabricMahjongExtensions {
     /** Fabric extension discovery 與註冊結果使用的 logger。 */
     private val logger = mahjongCraftLogger(FabricMahjongExtensions::class)
 
-    /** 透過 [FabricLoader] 發現 entrypoint，完成一次 runtime registry 初始化。 */
+    /**
+     * 透過 [FabricLoader] 發現 entrypoint，完成一次 runtime registry 初始化並輸出來源摘要。
+     *
+     * @param coreRegistries 規則核心 registry 集合。
+     * @param presentationRegistries Minecraft 呈現 registry 集合。
+     * @param tablePropKindRegistry Fabric 桌面物件種類 registry。
+     * @param debugWinRoundContinuationState 開發用中途胡牌流程狀態。
+     * @param minecraftEnvironment 判斷是否載入開發用 extension 的環境資訊。
+     */
     fun initialize(
         coreRegistries: CoreExtensionRegistries,
         presentationRegistries: MinecraftPresentationRegistries,
@@ -70,6 +78,12 @@ object FabricMahjongExtensions {
      * 使用明確提供的 [extensions] 初始化，供平台測試驗證組裝順序。
      *
      * @return Core、Minecraft presentation 與 Fabric 依來源合併後的所有登記。
+     * @param coreRegistries 規則核心 registry 集合。
+     * @param presentationRegistries Minecraft 呈現 registry 集合。
+     * @param tablePropKindRegistry Fabric 桌面物件種類 registry。
+     * @param debugWinRoundContinuationState 開發用中途胡牌流程狀態。
+     * @param minecraftEnvironment 判斷是否載入開發用 extension 的環境資訊。
+     * @param extensions 要額外登記的 extension。
      */
     internal fun initialize(
         coreRegistries: CoreExtensionRegistries,

@@ -12,6 +12,7 @@ const val DEFAULT_REPLAY_JSON_BYTES: Int = 8 * 1024 * 1024
 
 /**
  * 以詞法預掃描與原生 JSON parser 解析有界 Replay 文件。
+ * 協程取消會以取消例外傳播，不會轉成解析失敗結果。
  *
  * @param source 原始 JSON 文字。
  * @param limits 解析上限。

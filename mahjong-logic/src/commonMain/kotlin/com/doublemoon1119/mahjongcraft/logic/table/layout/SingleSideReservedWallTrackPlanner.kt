@@ -19,6 +19,14 @@ object SingleSideReservedWallTrackPlanner {
      * [extraStacksAfterHead] 會在軌道頭端之外多保留幾格，供保留牌整體朝開門空位平移時使用——平移量
      * 為幾墩，就要保留幾墩，否則最外側的保留牌會被推出牆面。只有與候選軌道相同開門面的占位會參與碰撞
      * 判斷；上下層分開計算。
+     *
+     * @param opening 本局牌牆開門位置。
+     * @param stacksPerSide 每面牌牆的墩數。
+     * @param stackCount 保留牌軌道的墩數。
+     * @param occupiedPositions 不能與軌道初始占用格位重疊的位置。
+     * @param initialVacantStackCount 開局時已由保留牌占用的軌道前綴墩數。
+     * @param extraStacksAfterHead 軌道頭端之外需保留的額外墩數。
+     * @return 可用的單面連續軌道；尺寸無法符合或找不到不重疊位置時為 null。
      */
     fun plan(
         opening: WallOpening,

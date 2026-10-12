@@ -20,7 +20,12 @@ data class TablePropTarget(
     val z: Double,
     val yaw: Float,
 ) {
-    /** 種類與變體相同，且座標與朝向落在容差內時視為同一個物件。 */
+    /**
+     * 判斷另一目標是否代表同一個桌面物件。
+     *
+     * @param other 要比較的目標。
+     * @return 種類、變體、座標與朝向都相符時為 `true`。
+     */
     fun matches(other: TablePropTarget): Boolean = kind == other.kind &&
         variant == other.variant &&
         abs(x - other.x) <= POSITION_EPSILON &&
@@ -38,7 +43,13 @@ data class TablePropTarget(
         /** 一圈角度。 */
         const val FULL_ROTATION_DEGREES: Float = 360.0f
 
-        /** 環狀角度差，讓 `180` 與 `-180` 視為同一朝向。 */
+        /**
+         * 計算兩個水平角度在環狀角度空間中的最短距離，讓 `180` 與 `-180` 視為同一朝向。
+         *
+         * @param first 第一個角度。
+         * @param second 第二個角度。
+         * @return 兩角度間不大於半圈的距離。
+         */
         fun yawDistance(first: Float, second: Float): Float {
             val difference = abs((first - second) % FULL_ROTATION_DEGREES)
             return minOf(difference, FULL_ROTATION_DEGREES - difference)

@@ -55,7 +55,16 @@ abstract class AnimatedVisualEffectEntity(
         setNoGravity(true)
     }
 
-    /** 一次設定並同步完整效果描述；只能由伺服器在生成前呼叫。 */
+    /**
+     * 一次設定並同步完整效果描述；只能由伺服器在生成前呼叫。
+     *
+     * @param tableId 效果所屬麻將桌 UUID。
+     * @param effectKey 選擇視覺公式的穩定 key。
+     * @param targetEntityId 效果跟隨的目標 entity UUID。
+     * @param animationSeed 重建視覺效果所用的隨機 seed。
+     * @param startGameTime 效果開始的 server game time。
+     * @param endGameTime 效果結束的 server game time，必須晚於開始時間。
+     */
     fun configure(
         tableId: Uuid,
         effectKey: String,
@@ -75,13 +84,21 @@ abstract class AnimatedVisualEffectEntity(
         dataTracker.set(END_GAME_TIME, endGameTime)
     }
 
-    /** 指定畫面時間是否位於效果的可見時間窗內。 */
+    /**
+     * 指定畫面時間是否位於效果的可見時間窗內。
+     *
+     * @param tickDelta 本 tick 的部分經過時間。
+     */
     fun isActive(tickDelta: Float): Boolean {
         val sampleTime = world.time.toDouble() + tickDelta
         return endGameTime > startGameTime && sampleTime >= startGameTime && sampleTime < endGameTime
     }
 
-    /** 將指定畫面時間換算成 `0.0..1.0` 的效果進度；時間窗無效時回傳 `0.0`。 */
+    /**
+     * 將指定畫面時間換算成 `0.0..1.0` 的效果進度；時間窗無效時回傳 `0.0`。
+     *
+     * @param tickDelta 本 tick 的部分經過時間。
+     */
     fun progress(tickDelta: Float): Double {
         val duration = endGameTime - startGameTime
         if (duration <= 0L) return 0.0

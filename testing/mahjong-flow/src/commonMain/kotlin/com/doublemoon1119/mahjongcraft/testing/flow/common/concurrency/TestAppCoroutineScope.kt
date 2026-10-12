@@ -6,10 +6,12 @@ import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatch
 import kotlinx.coroutines.CoroutineExceptionHandler
 
 /**
- * 建立一個用於測試的 [AppCoroutineScope]。
+ * 建立測試用的 [AppCoroutineScope]，預設使用 [TestCoroutineDispatchers] 提供的調度器。
  *
- * 透過注入 [TestCoroutineDispatchers] 與選用的 [exceptionHandler]，
- * 可以確保在該作用域內啟動的協程遵循測試環境的同步行為，並自定義異常捕獲邏輯。
+ * 可替換調度器，並選擇是否提供未捕獲例外的處理器。
+ *
+ * @param dispatchers 提供此作用域使用的協程調度器。
+ * @param exceptionHandler 未捕獲例外的處理器；為 null 時使用協程的預設處理機制。
  */
 fun createTestAppCoroutineScope(
     dispatchers: CoroutineDispatchers = TestCoroutineDispatchers(),

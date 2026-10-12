@@ -12,7 +12,7 @@ object ClaimedTileMarker {
     /** 由上而下每列的寬度，以決策卡片的像素為單位；皆為奇數以確保左右對稱。 */
     val ROW_WIDTHS: IntArray = intArrayOf(9, 7, 5, 3, 1)
 
-    /** 指標顏色，用鮮明的紅色與牌面色調完全區隔，不受任何背景深淺影響辨識度。 */
+    /** 指標的紅色 ARGB 色值。 */
     const val COLOR: Int = 0xFFFF5555.toInt()
 
     /** 指標與牌面之間的間距，單位同 [ROW_WIDTHS]。 */

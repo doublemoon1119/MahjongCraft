@@ -21,6 +21,7 @@ import kotlin.uuid.Uuid
 /** [StressAiDecisions] 讓各輪共用名額，並把決策結果只交給建立該對局的那一輪。 */
 @OptIn(ExperimentalCoroutinesApi::class)
 class StressAiDecisionsTest {
+    /** 各輪測試共用的策略玩家識別碼。 */
     private val playerId = Uuid.random()
 
     /** 上一輪停止後仍不理會取消的策略工作占著名額，下一輪不會因此多出新的名額。 */
@@ -89,7 +90,13 @@ class StressAiDecisionsTest {
         assertEquals(listOf(AiDecisionOutcome.DECIDED), owner.outcomes)
     }
 
-    /** 以虛擬時間執行策略的共用執行器。 */
+    /**
+     * 以指定虛擬時間與策略呼叫名額建立測試執行器。
+     *
+     * @param scope 提供虛擬時間排程器的測試協程作用域。
+     * @param capacity 同時執行策略工作的共用名額。
+     * @return 使用測試 dispatcher 的壓力決策協調器。
+     */
     private fun decisions(scope: TestScope, capacity: Int) = StressAiDecisions { observer ->
         AiDecisionExecutor(
             dispatcher = StandardTestDispatcher(scope.testScheduler),
@@ -99,7 +106,12 @@ class StressAiDecisionsTest {
         )
     }
 
-    /** 不理會取消、直到 [gate] 完成才返回的策略。 */
+    /**
+     * 不理會取消、直到 [gate] 完成才返回的策略。
+     *
+     * @param gate 控制策略何時完成的測試閘門。
+     * @return 閘門完成後固定回傳的結果。
+     */
     private suspend fun uncooperative(gate: CompletableDeferred<Unit>): String = withContext(NonCancellable) {
         gate.await()
         "late"
@@ -107,6 +119,7 @@ class StressAiDecisionsTest {
 
     /** 依序記錄收到的決策結果來源。 */
     private class RecordingObserver : AiDecisionObserver {
+        /** 按通知順序保存的決策結果。 */
         val outcomes = mutableListOf<AiDecisionOutcome>()
 
         override fun onDecision(gameId: Uuid, outcome: AiDecisionOutcome, latency: Duration) {
@@ -114,6 +127,7 @@ class StressAiDecisionsTest {
         }
     }
 
+    /** 決策執行器的測試用時間設定。 */
     private companion object {
         /** 等待一次決策的上限。 */
         val TIMEOUT = 5.seconds

@@ -10,7 +10,11 @@ internal class HistoryFilterDraft {
     /** 最近一次驗證結果的欄位錯誤。 */
     var errors: Map<HistoryBrowseFilterField, HistoryBrowseFilterError> = emptyMap()
 
-    /** 將目前範圍套用到草稿，並保留所有原始文字。 */
+    /**
+     * 將查詢範圍套用到草稿；查詢不限本人時清除個人名次輸入與其錯誤，其他輸入保留。
+     *
+     * @param scope 目前選取的查詢範圍。
+     */
     fun setScope(scope: HistoryQueryScopeDto) {
         if (scope.coversAllMatches) {
             input = input.copy(ownRankMin = "", ownRankMax = "")

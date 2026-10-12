@@ -36,7 +36,10 @@ import net.minecraft.world.WorldAccess
  * 只有 [MahjongTablePart.BOTTOM_CENTER] 建立 [MahjongTableBlockEntity]；其餘 parts 的互動與生命週期皆
  * 先反查 controller。
  *
+ * @param settings Minecraft 方塊設定。
  * @property design 此方塊 registry ID 對應的固定桌型。
+ * @property roomService 開啟麻將桌房間介面的伺服器服務。
+ * @property tableLifecycleService 清理桌子替換及其遊戲生命週期的服務。
  */
 class MahjongTableBlock(
     settings: Settings,
@@ -173,7 +176,14 @@ class MahjongTableBlock(
         return ActionResult.SUCCESS
     }
 
-    /** 由任意 part 的狀態與座標取得 controller 方塊實體。 */
+    /**
+     * 由任意 part 的狀態與座標取得 controller 方塊實體。
+     *
+     * @param world 查詢方塊實體的世界存取介面。
+     * @param pos 任意結構 part 的座標。
+     * @param state 該座標目前的方塊狀態。
+     * @return 屬於此桌的 controller 方塊實體；結構不完整或方塊不符時為 null。
+     */
     internal fun resolveController(world: WorldAccess, pos: BlockPos, state: BlockState): MahjongTableBlockEntity? {
         if (state.block !== this) return null
         val controllerPos = MahjongTableStructure.controllerPosition(
@@ -185,7 +195,14 @@ class MahjongTableBlock(
         return table.takeIf { controller -> controller.cachedState.block === this }
     }
 
-    /** 確認 controller 對應的 18 個位置都具有相同朝向及預期 part。 */
+    /**
+     * 確認 controller 對應的 18 個位置都具有相同朝向及預期 part。
+     *
+     * @param world 查詢方塊狀態的世界存取介面。
+     * @param controllerPos controller 座標。
+     * @param controllerState controller 目前的方塊狀態。
+     * @return 結構完整且每個 part 的種類與朝向吻合時為 true。
+     */
     internal fun isComplete(world: WorldAccess, controllerPos: BlockPos, controllerState: BlockState): Boolean {
         if (controllerState.block !== this || controllerState.get(PART) != MahjongTablePart.BOTTOM_CENTER) return false
         val facing = controllerState.get(Properties.HORIZONTAL_FACING)
@@ -197,7 +214,13 @@ class MahjongTableBlock(
         }
     }
 
-    /** 從任意被替換 part 定位 controller，執行資料 cleanup 並移除完整結構。 */
+    /**
+     * 從任意被替換 part 定位 controller，執行資料 cleanup 並移除完整結構。
+     *
+     * @param world 伺服器世界。
+     * @param pos 被替換 part 的座標。
+     * @param state 被替換 part 的方塊狀態。
+     */
     private fun removeStructure(world: ServerWorld, pos: BlockPos, state: BlockState) {
         val facing = state.get(Properties.HORIZONTAL_FACING)
         val controllerPos = MahjongTableStructure.controllerPosition(pos, state.get(PART), facing).toImmutable()

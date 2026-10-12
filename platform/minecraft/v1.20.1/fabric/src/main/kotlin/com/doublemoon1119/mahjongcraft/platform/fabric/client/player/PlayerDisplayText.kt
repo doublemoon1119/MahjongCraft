@@ -8,5 +8,8 @@ import net.minecraft.text.Text
  * 玩家名稱唯一決定「查不到名字時要顯示什麼」的地方——已知名字直接顯示，`null`（尚未解析或確定查無
  * 此人）一律顯示成多國語系的「離線玩家」，供所有讀取 [MahjongPlayerInfoEntry.playerName]
  * 的畫面共用，避免各自重複判斷。
+ *
+ * @param name 已解析的玩家名稱；null 時使用離線玩家翻譯文字。
+ * @return 玩家名稱或本地化的離線玩家文字。
  */
 fun resolvedPlayerNameText(name: String?): Text = name?.let(Text::literal) ?: Text.translatable(MinecraftRoomScreenKeys.OFFLINE_PLAYER)

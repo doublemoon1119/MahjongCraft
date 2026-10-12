@@ -46,7 +46,11 @@ class GameEventDelivery(
     /** 以不可變快照原子更新的 session、佇列與交付水位。 */
     private val state = AtomicReference(DeliveryState(sessionId = null, releasedSequence = Long.MIN_VALUE))
 
-    /** 開始新的伺服器 session，鎖定使用中的訂閱點並捨棄舊佇列；訂閱鎖定不隨 session 結束解除。 */
+    /**
+     * 開始新的伺服器 session，鎖定使用中的訂閱點並捨棄舊佇列；訂閱鎖定不隨 session 結束解除。
+     *
+     * @return 新 session 的 UUID，供交易通知與事件情境驗證使用。
+     */
     fun startSession(): Uuid {
         matchStarted.lockRegistration()
         roundSettled.lockRegistration()

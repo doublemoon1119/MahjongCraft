@@ -12,6 +12,7 @@ import kotlin.test.assertTrue
 
 /** 驗證操作卡順序由登記決定：核心動作為吃、碰、槓、榮和、自摸，槓的三種型態同序。 */
 class DecisionHudActionDisplayOrderTest {
+    /** 以內建註冊資料解析動作顯示順序的測試 resolver。 */
     private val texts = testDecisionTextResolver()
 
     /** 依登記的順序排列後，核心動作應精確符合吃、碰、槓、榮和、自摸。 */

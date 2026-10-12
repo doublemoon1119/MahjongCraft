@@ -118,8 +118,13 @@ sealed class GameAction {
      * 槓牌的種類。
      */
     enum class KanType {
-        OPEN_KAN, // 明槓 (大明槓)
-        CLOSED_KAN, // 暗槓
-        ADDED_KAN, // 加槓 (小明槓)
+        /** 鳴取他家捨牌組成的明槓。 */
+        OPEN_KAN,
+
+        /** 以自己手中的四張相同牌組成的暗槓。 */
+        CLOSED_KAN,
+
+        /** 在既有碰牌上補入第四張相同牌的加槓。 */
+        ADDED_KAN,
     }
 }

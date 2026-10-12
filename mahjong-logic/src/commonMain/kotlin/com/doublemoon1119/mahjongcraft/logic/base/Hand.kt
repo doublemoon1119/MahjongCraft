@@ -114,7 +114,8 @@ data class Hand(
      * @param tile 欲加槓的牌。
      * @param targetMeldIndex 欲升級的碰組在 [exposedMelds] 中的索引。
      * @return 完成加槓後的新 [Hand] 實例。
-     * @throws IllegalArgumentException 當索引無效或指定的副露不是 [MeldType.PON] 時拋出。
+     * @throws IndexOutOfBoundsException 當 [targetMeldIndex] 不在副露索引範圍內時拋出。
+     * @throws IllegalArgumentException 當指定的副露不是 [MeldType.PON] 時拋出。
      */
     fun upgradeToAddedKan(tile: IdentifiedTile, targetMeldIndex: Int): Hand {
         val oldMeld = melds[targetMeldIndex]
@@ -162,7 +163,10 @@ data class Hand(
     }
 
     /**
-     * 內部輔助方法：從手牌（立牌或摸牌）中移除指定 ID 的牌，回傳移除後的新 [Hand] 實例。
+     * 從手牌（立牌或摸牌）中移除指定 ID 的牌。
+     *
+     * @param id 欲移除牌的唯一識別碼。
+     * @return 移除該牌後的新 [Hand] 實例；若 ID 不存在，牌列表內容不變。
      */
     private fun removeFromHand(id: Uuid): Hand = if (lastDrawn?.id == id) {
         copy(lastDrawn = null)

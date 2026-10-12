@@ -22,8 +22,13 @@ import kotlin.uuid.Uuid
  */
 class ToggleReadyUseCaseTest {
 
+    /** 受測房間的識別碼。 */
     private val roomId: Uuid = Uuid.random()
+
+    /** 房主的玩家識別碼。 */
     private val hostId: Uuid = Uuid.random()
+
+    /** 測試房間使用的規則設定。 */
     private val config: MahjongRuleConfig = FakeMahjongRuleConfig()
 
     /**
@@ -109,7 +114,7 @@ class ToggleReadyUseCaseTest {
     }
 
     /**
-     * 測試當非房間內玩家嘗試操作時應拋出異常。
+     * 驗證不在房間內的玩家操作會回傳錯誤結果。
      */
     @Test
     fun `test toggle ready fails when player not in room`() = runTest {

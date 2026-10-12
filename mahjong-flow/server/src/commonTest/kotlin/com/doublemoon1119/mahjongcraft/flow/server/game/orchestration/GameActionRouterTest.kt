@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiGameC
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
+import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.DeclareRiichiUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
@@ -60,9 +61,28 @@ import kotlin.uuid.Uuid
  */
 class GameActionRouterTest {
 
+    /** 受測對局識別碼。 */
     private val gameId = Uuid.random()
+
+    /** 發起命令的玩家識別碼。 */
     private val playerId = Uuid.random()
 
+    /**
+     * 使用正式用例與記憶體替身組成的路由測試環境。
+     *
+     * @property gameRepo 保存受測對局的資料倉庫。
+     * @property moduleRegistry 內建規則註冊中心。
+     * @property snapshotRepo 記錄同步結果的快照倉庫。
+     * @property snapshotSynchronizer 依觀看政策同步快照的元件。
+     * @property handSortPreferenceStore 保存玩家手牌排序偏好的元件。
+     * @property postActionExhaustiveDrawResolverRegistry 動作後途中流局解析器註冊中心。
+     * @property winSettlementDetailResolverRegistry 和牌明細解析器註冊中心。
+     * @property eventPublisher 記錄流程事件的發布替身。
+     * @property presentationPublisher 記錄呈現要求的發布替身。
+     * @property winPresentationHandoff 暫存和牌呈現要求的元件。
+     * @property extensionCommandExecutor 執行內建擴充命令的元件。
+     * @property router 受測命令路由。
+     */
     private class Fixtures {
         val gameRepo = FakeGameRepository()
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
@@ -284,6 +304,13 @@ class GameActionRouterTest {
         assertEquals(GameError.UnsupportedAction(gameId, playerId), result.error)
     }
 
+    /**
+     * 建立可碰南風的捨牌反應情境。
+     *
+     * @param discarderId 捨牌玩家。
+     * @param respondentId 尚未回應的玩家。
+     * @return 只開啟捨牌反應視窗的桌況。
+     */
     private fun discardReactionTable(discarderId: Uuid, respondentId: Uuid): TableState {
         val discardedSouthTile = FakeIdentifiedTileFactory.create(Tile.Honor.South)
         val discarder = FakeMahjongPlayerFactory.create(
@@ -308,6 +335,14 @@ class GameActionRouterTest {
         )
     }
 
+    /**
+     * 建立加槓白板且他家可搶槓的情境。
+     *
+     * @param declarerId 宣告加槓的玩家。
+     * @param robberId 尚未回應的搶槓玩家。
+     * @param reservedWallTiles 補牌使用的保留牌。
+     * @return 只開啟搶槓反應視窗的桌況。
+     */
     private fun chankanTable(declarerId: Uuid, robberId: Uuid, reservedWallTiles: List<IdentifiedTile>): TableState {
         val whiteTile1 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val whiteTile2 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
@@ -414,7 +449,7 @@ class GameActionRouterTest {
     }
 
     /**
-     * 驗證對局不存在時，任一命令皆回傳 [GameError.GameNotFound]（證明 `gameId` 有正確往下傳）。
+     * 驗證對局不存在時，摸牌命令回傳 [GameError.GameNotFound]，且錯誤保留原始對局識別碼。
      */
     @Test
     fun `test any command fails with GameNotFound when game does not exist`() = runTest {

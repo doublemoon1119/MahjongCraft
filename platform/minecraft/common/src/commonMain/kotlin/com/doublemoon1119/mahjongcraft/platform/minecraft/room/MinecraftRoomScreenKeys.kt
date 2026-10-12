@@ -67,6 +67,7 @@ object MinecraftRoomScreenKeys {
      * 取得單選欄位某個選項的翻譯鍵。
      *
      * @param optionId 帶命名空間的選項 ID（例如 `mahjongcraft:none`）；命名空間不進翻譯鍵。
+     * @return 對應選項的完整 translation key。
      */
     fun configOption(optionId: String): String = CONFIG_OPTION_PREFIX + optionId.substringAfter(':')
 }

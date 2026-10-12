@@ -30,18 +30,34 @@ import kotlin.uuid.Uuid
  */
 class SetHandSortPreferenceUseCaseTest {
 
+    /** 測試對局的識別碼。 */
     private val gameId = Uuid.random()
+
+    /** 測試玩家的識別碼。 */
     private val playerId = Uuid.random()
 
+    /** 整理手牌用例的測試相依項。 */
     private class Fixtures {
+        /** 測試用對局資料倉庫。 */
         val gameRepo = FakeGameRepository()
+
+        /** 已註冊內建規則的模組註冊中心。 */
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
+
+        /** 保存玩家手牌排序偏好的測試儲存。 */
         val preferenceStore = HandSortPreferenceStore()
+
+        /** 記錄手牌呈現要求的替身。 */
         val presentationPublisher = FakeGamePresentationPublisher()
+
+        /** 受測手牌排序偏好用例。 */
         val useCase = SetHandSortPreferenceUseCase(gameRepo, moduleRegistry, preferenceStore, presentationPublisher)
     }
 
+    /** 用來確認整理不會移動最後摸牌的牌張。 */
     private val sortedLastTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
+
+    /** 順序刻意打亂的測試手牌。 */
     private val unsortedTiles = listOf(
         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5)),
         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),

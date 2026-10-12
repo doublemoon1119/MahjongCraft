@@ -137,7 +137,11 @@ class FabricServerConfigManagerTest {
         assertFailsWith<IllegalStateException> { fixture.manager.path }
     }
 
-    /** 建立使用獨立暫存路徑的 manager 並於測試後移除。 */
+    /**
+     * 建立使用獨立暫存路徑的設定管理器，並於測試後移除暫存目錄。
+     *
+     * @param block 使用測試設定檔及服務的測試內容。
+     */
     private fun withFixture(block: suspend (Fixture) -> Unit) = runBlocking {
         val directory = createTempDirectory("mahjongcraft-server-config-test")
         try {
@@ -199,7 +203,11 @@ class FabricServerConfigManagerTest {
 
         /** 設定發布使用預設調度器。 */
         override val main: CoroutineDispatcher = Dispatchers.Default
+
+        /** 此測試未執行 AI 決策，使用預設調度器滿足介面。 */
         override val aiDecision: CoroutineDispatcher = Dispatchers.Default
+
+        /** 測試宣告的 AI 平行工作數。 */
         override val aiDecisionParallelism = 1
     }
 }

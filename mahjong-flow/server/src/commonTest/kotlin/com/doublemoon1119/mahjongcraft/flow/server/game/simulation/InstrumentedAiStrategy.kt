@@ -47,14 +47,24 @@ internal data class DecisionTiming(
     /** 單次平均時間。 */
     val average: Duration get() = if (count == 0) Duration.ZERO else total / count
 
-    /** 加入一次決策後的累計值。 */
+    /**
+     * 加入一次決策後的累計值。
+     *
+     * @param duration 新增決策花費的時間。
+     * @return 更新後的累計次數、總時間與最長時間。
+     */
     operator fun plus(duration: Duration): DecisionTiming = DecisionTiming(
         count = count + 1,
         total = total + duration,
         max = maxOf(max, duration),
     )
 
-    /** 合併兩份累計值。 */
+    /**
+     * 合併兩份累計值。
+     *
+     * @param other 要合併的另一份累計值。
+     * @return 合併後的累計次數、總時間與最長時間。
+     */
     operator fun plus(other: DecisionTiming): DecisionTiming = DecisionTiming(
         count = count + other.count,
         total = total + other.total,
@@ -80,7 +90,11 @@ internal class DecisionRecorder(private val traceLimit: Int = DEFAULT_TRACE_LIMI
     /** 最近的決策，舊的在前。 */
     val recent: List<DecisionRecord> get() = recentDecisions.toList()
 
-    /** 記錄一次決策。 */
+    /**
+     * 記錄一次決策。
+     *
+     * @param decision 要加入的決策與耗時。
+     */
     fun record(decision: DecisionRecord) {
         timingByStrategy[decision.strategyKey] = timingByStrategy.getOrElse(decision.strategyKey) { DecisionTiming() } + decision.duration
         recentDecisions.addLast(decision)
@@ -98,6 +112,7 @@ internal class DecisionRecorder(private val traceLimit: Int = DEFAULT_TRACE_LIMI
  * AI 送出不在合法範圍內的命令。
  *
  * @property decision 違規的決策。
+ * @param reason 命令不合法的原因。
  */
 internal class IllegalAiCommandException(val decision: DecisionRecord, reason: String) : IllegalStateException("${decision.strategyKey} sent an illegal command ${decision.command} (${decision.phase}): $reason")
 
@@ -136,7 +151,13 @@ internal class InstrumentedAiStrategy(
 
     override suspend fun decideRoundPreparation(context: RoundPreparationAiContext): RoundPreparationSubmission = delegate.decideRoundPreparation(context)
 
-    /** [command] 不合法的原因；合法時為 null。 */
+    /**
+     * [command] 不合法的原因；合法時為 null。
+     *
+     * @param context AI 當下的決策情境與合法動作。
+     * @param command AI 送出的命令。
+     * @return 不合法原因；合法時為 null。
+     */
     private fun illegalReason(context: AiDecisionContext, command: GameCommand): String? = when (context.phase) {
         AiDecisionPhase.RespondingToDiscard -> when (command) {
             is GameCommand.RespondToDiscard -> responseReason(context, command.action)
@@ -151,10 +172,22 @@ internal class InstrumentedAiStrategy(
         AiDecisionPhase.OwnTurn -> checkOwnTurn(context, command)
     }
 
-    /** 回應時的動作必須是過或合法動作之一。 */
+    /**
+     * 回應時的動作必須是過或合法動作之一。
+     *
+     * @param context AI 當下的決策情境與合法動作。
+     * @param action AI 送出的反應動作。
+     * @return 不合法原因；合法時為 null。
+     */
     private fun responseReason(context: AiDecisionContext, action: GameAction): String? = if (action == GameAction.Pass || action in context.legalActions) null else "action $action is not legal"
 
-    /** 自己回合的命令檢查。 */
+    /**
+     * 自己回合的命令檢查。
+     *
+     * @param context AI 當下的決策情境與合法動作。
+     * @param command AI 送出的命令。
+     * @return 不合法原因；合法時為 null。
+     */
     private fun checkOwnTurn(context: AiDecisionContext, command: GameCommand): String? {
         val legal = context.legalActions
         return when (command) {
@@ -187,6 +220,7 @@ internal class InstrumentedAiStrategy(
  * @param keys 要包裝的策略 key。
  * @param extensionActionRegistry 產生擴充動作命令候選的 registry。
  * @param recorder 決策紀錄。
+ * @receiver 要登記包裝後策略的 registry。
  */
 internal fun MahjongAiStrategyRegistry.registerInstrumented(
     source: MahjongAiStrategyRegistry,

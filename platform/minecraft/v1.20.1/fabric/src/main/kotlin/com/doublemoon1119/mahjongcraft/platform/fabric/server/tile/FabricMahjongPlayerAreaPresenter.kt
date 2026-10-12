@@ -39,6 +39,8 @@ import kotlin.uuid.toJavaUuid
  * 生成。合併原本各自獨立的 hand-tiles／meld presenter，理由見
  * [MahjongPlayerAreaPresenter] KDoc——手牌讓開副露／積棒的偏移量，只有在同一次呼叫裡同時拿到立牌、
  * 摸牌、副露、積棒支數四種狀態才算得出來。
+ *
+ * @property serverHolder 取得目前伺服器世界與既有麻將牌 entity。
  */
 @Single(binds = [MahjongPlayerAreaPresenter::class])
 class FabricMahjongPlayerAreaPresenter(
@@ -65,6 +67,9 @@ class FabricMahjongPlayerAreaPresenter(
      *
      * 找不到對應 UUID 的既有 entity 時該筆直接跳過並記警告 log，不中斷其餘牌的呈現，比照本介面
      * best-effort 的既有慣例。
+     *
+     * @param presentation 手牌、副露、角落物件寬度與動畫狀態。
+     * @return 桌子無效時為 `TABLE_NOT_FOUND`；缺少既有牌 entity 時為 `SPAWN_FAILED`；否則為 `PRESENTED`。
      */
     override fun present(presentation: MahjongPlayerAreaPresentation): MahjongPlayerAreaPresentationResult {
         val world = resolveWorld(presentation.tableLocation) ?: return MahjongPlayerAreaPresentationResult.TABLE_NOT_FOUND
@@ -299,6 +304,9 @@ class FabricMahjongPlayerAreaPresenter(
      * 不計算降臨特效本身——那是呼叫端（`FabricGamePresentationPublisher`）拿到
      * [MahjongWinCelebrationResult.handLaydownEndGameTime] 之後，另外委託
      * `FabricWinCelebrationEffectScheduler` 處理的職責，理由見該類別 KDoc。
+     *
+     * @param presentation 胡牌種類、贏牌與整理後手牌等慶祝呈現資料。
+     * @return 呈現狀態，以及成功取得贏牌 entity 時手牌倒下動畫結束時間。
      */
     override fun presentWinCelebration(presentation: MahjongWinCelebrationPresentation): MahjongWinCelebrationResult {
         val world = resolveWorld(presentation.tableLocation)
@@ -435,6 +443,9 @@ class FabricMahjongPlayerAreaPresenter(
      * 全部座位的最後一次抓取都落地後，額外統一排定一次翻牌動畫——所有
      * 已成功領走的牌（不論哪一批、哪個座位）同一時間一起原地翻起，觸發時機由
      * [MahjongTileTableLayout.dealFlipStartDelayTicks] 依總抓取次數算出。
+     *
+     * @param presentation 莊家、各座位發牌批次與最終手牌順序。
+     * @return 桌子無效時為 `TABLE_NOT_FOUND`；缺少既有牌時為 `SPAWN_FAILED`；否則為 `PRESENTED`。
      */
     override fun presentInitialDeal(presentation: MahjongInitialDealPresentation): MahjongPlayerAreaPresentationResult {
         val world = resolveWorld(presentation.tableLocation) ?: return MahjongPlayerAreaPresentationResult.TABLE_NOT_FOUND
@@ -552,6 +563,11 @@ class FabricMahjongPlayerAreaPresenter(
      * [MahjongTilePose.FACE_UP]。[MahjongMeldTileGroup.allTilesFaceDown] 為 `true`（該規則暗槓完全不
      * 公開）時四張全部蓋牌；為 `false`（該規則暗槓身份公開）時只蓋組內第一、最後一格（兩端），中間
      * 攤牌，比照真實麻將暗槓的傳統擺法。
+     *
+     * @param meld 要判定姿態的副露。
+     * @param slot 副露組內的索引。
+     * @param slotCount 該副露組的牌數。
+     * @return 該格應使用的牌姿態。
      */
     private fun closedKanPose(meld: MahjongMeldTileGroup, slot: Int, slotCount: Int): MahjongTilePose {
         if (meld.type != MeldType.CLOSED_KAN) return MahjongTilePose.FACE_UP
@@ -564,6 +580,10 @@ class FabricMahjongPlayerAreaPresenter(
      * [FabricMahjongTileWallPresenter.clear] 效果相同（都是清這張桌子的全部管理中麻將牌，不分子
      * 系統），保留成獨立方法只是維持介面對稱，呼叫端仍可能只想觸發這條路徑的清除。角落物件不在這裡清除
      * （見 [TablePropPresenter]）。
+     *
+     * @param tableId 桌子 UUID。
+     * @param tableLocation 桌子位置。
+     * @return 移除的管理中牌 entity 數量。
      */
     override fun clear(tableId: Uuid, tableLocation: TableLocation): Int {
         val world = resolveWorld(tableLocation) ?: return 0
@@ -572,14 +592,27 @@ class FabricMahjongPlayerAreaPresenter(
         return tiles.size
     }
 
-    /** 由版本無關 dimension ID 取得目前 server session 的世界。 */
+    /**
+     * 由版本無關 dimension ID 取得目前 server session 的世界。
+     *
+     * @param location 桌子位置。
+     * @return 對應的已載入伺服器世界；無法解析時為 null。
+     */
     private fun resolveWorld(location: TableLocation): ServerWorld? {
         val identifier = Identifier.tryParse(location.dimensionId) ?: return null
         val worldKey = RegistryKey.of(RegistryKeys.WORLD, identifier)
         return serverHolder.current()?.getWorld(worldKey)
     }
 
-    /** 驗證指定位置確實是 UUID 與朝向資料可用的 controller。 */
+    /**
+     * 驗證指定位置確實是 UUID 與朝向資料可用的 controller。
+     *
+     * @param world 桌子所在世界。
+     * @param controllerPos controller 方塊位置。
+     * @param state 該方塊的狀態。
+     * @param tableId 預期桌子 UUID。
+     * @return 狀態與桌子 UUID 相符時的 block entity；否則為 null。
+     */
     private fun resolveTable(
         world: ServerWorld,
         controllerPos: BlockPos,
@@ -595,7 +628,14 @@ class FabricMahjongPlayerAreaPresenter(
         }
     }
 
-    /** 只查詢桌子結構附近並以同步 UUID 精確篩選，避免掃描整個 dimension。 */
+    /**
+     * 只查詢桌子結構附近並以同步 UUID 精確篩選，避免掃描整個 dimension。
+     *
+     * @param world 要搜尋的伺服器世界。
+     * @param tableId 桌子 UUID。
+     * @param controllerPos controller 方塊位置。
+     * @return 由該桌管理的牌 entity。
+     */
     private fun findManagedTiles(
         world: ServerWorld,
         tableId: Uuid,
@@ -605,7 +645,12 @@ class FabricMahjongPlayerAreaPresenter(
         Box(controllerPos).expand(TILE_SEARCH_HORIZONTAL, TILE_SEARCH_VERTICAL, TILE_SEARCH_HORIZONTAL),
     ) { tile -> tile.managedTableId == tableId }
 
-    /** 將版本無關 table location 轉回 Fabric 方塊座標。 */
+    /**
+     * 將版本無關 table location 轉回 Fabric 方塊座標。
+     *
+     * @param location 版本無關的桌子位置。
+     * @return 對應的 Fabric 方塊座標。
+     */
     private fun TableLocation.toBlockPos(): BlockPos = BlockPos(x, y, z)
 
     /** 正式手牌／副露建立與查詢使用的固定參數。 */

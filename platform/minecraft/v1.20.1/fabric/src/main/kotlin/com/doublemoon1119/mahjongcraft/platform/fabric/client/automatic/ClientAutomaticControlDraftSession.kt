@@ -8,14 +8,29 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControl
  * 維護一個設定入口的本局自動操作草稿。
  *
  * 這個 session 不送封包，也不讀取 Minecraft widget；呼叫端以 coordinator 的 snapshot、request 與 completion 驅動狀態。
+ *
+ * @param initialSnapshot 開啟草稿時可用的權威快照；null 表示目前不可編輯。
  */
 class ClientAutomaticControlDraftSession(initialSnapshot: AutomaticControlSnapshotDto?) {
+    /** 最近收到的權威快照，供復原草稿使用。 */
     private var latestAuthority = initialSnapshot
+
+    /** 目前草稿所依據的權威快照。 */
     private var currentBaseline = initialSnapshot
+
+    /** 草稿中啟用的控制項識別碼。 */
     private var currentEnabledControlIds = initialSnapshot?.enabledControlIds.orEmpty()
+
+    /** 已送出且尚未收到配對結果的請求。 */
     private var currentPendingRequest: AutomaticControlUpdateRequestDto? = null
+
+    /** 草稿依據是否已被較新的權威狀態取代。 */
     private var currentStale = false
+
+    /** 最近一次配對提交失敗的結果種類。 */
     private var currentFailure: AutomaticControlUpdateResultKindDto? = null
+
+    /** 提交成功後是否應關閉編輯入口。 */
     private var closeRequested = false
 
     /** 取得目前不可變狀態。 */
@@ -28,7 +43,12 @@ class ClientAutomaticControlDraftSession(initialSnapshot: AutomaticControlSnapsh
         unavailable = currentBaseline == null,
     )
 
-    /** 以 [enabledControlIds] 取代草稿；pending、stale 或 unavailable 時拒絕編輯。 */
+    /**
+     * 取代草稿；等待提交結果、依據已過期、不可編輯或含不支援的控制項時拒絕。
+     *
+     * @param enabledControlIds 草稿中要啟用的控制項識別碼。
+     * @return 草稿已更新時為 true；拒絕編輯時為 false。
+     */
     fun replaceDraft(enabledControlIds: Set<String>): Boolean {
         val baseline = currentBaseline ?: return false
         if (currentPendingRequest != null || currentStale) return false
@@ -38,10 +58,18 @@ class ClientAutomaticControlDraftSession(initialSnapshot: AutomaticControlSnapsh
         return true
     }
 
-    /** 將目前規則支援的本局控制全部設為關閉。 */
+    /**
+     * 將草稿中的本局控制全部設為關閉，沿用 [replaceDraft] 的編輯限制。
+     *
+     * @return 草稿已更新時為 true。
+     */
     fun reset(): Boolean = replaceDraft(emptySet())
 
-    /** 放棄未提交草稿，採用目前已知的最新權威快照。 */
+    /**
+     * 放棄未提交草稿，採用目前已知的最新權威快照。
+     *
+     * @return 已復原時為 true；等待提交結果或沒有權威快照時為 false。
+     */
     fun undo(): Boolean {
         if (currentPendingRequest != null) return false
         val authority = latestAuthority ?: return false
@@ -53,7 +81,13 @@ class ClientAutomaticControlDraftSession(initialSnapshot: AutomaticControlSnapsh
         return true
     }
 
-    /** 記錄已送出的 [request] 與成功後是否關閉入口的意圖。 */
+    /**
+     * 記錄與目前草稿及其依據相符的已送出請求。
+     *
+     * @param request 呼叫端已送出的更新請求。
+     * @param closeAfterAcceptance 請求獲接受後是否關閉編輯入口。
+     * @return 已登記時為 true；草稿不可提交或請求與草稿不符時為 false。
+     */
     fun markSubmitted(request: AutomaticControlUpdateRequestDto, closeAfterAcceptance: Boolean): Boolean {
         val baseline = currentBaseline ?: return false
         if (currentPendingRequest != null || currentStale) return false
@@ -69,6 +103,8 @@ class ClientAutomaticControlDraftSession(initialSnapshot: AutomaticControlSnapsh
      * 接收新的權威快照。
      *
      * 未修改的草稿直接刷新；已修改或等待 ACK 時保留輸入，並在快照與原依據不相容時標記 stale。
+     *
+     * @param snapshot 新權威快照；null 表示目前不可編輯，會清除草稿狀態。
      */
     fun applySnapshot(snapshot: AutomaticControlSnapshotDto?) {
         if (snapshot == null) {
@@ -98,7 +134,12 @@ class ClientAutomaticControlDraftSession(initialSnapshot: AutomaticControlSnapsh
         currentFailure = null
     }
 
-    /** 套用與目前 pending request 相符的 [completion]；不相符時不改變 session。 */
+    /**
+     * 套用與目前待處理請求相符的完成結果；不相符時不改變草稿狀態。
+     *
+     * @param completion 收到的提交完成事件。
+     * @return 配對後的接受與關閉結果；沒有配對請求時為 null。
+     */
     fun applyCompletion(completion: ClientAutomaticControlCompletion): ClientAutomaticControlDraftCompletion? {
         val pending = currentPendingRequest ?: return null
         if (completion.result.requestId != pending.requestId || completion.result.gameId != pending.gameId) return null
@@ -134,7 +175,11 @@ class ClientAutomaticControlDraftSession(initialSnapshot: AutomaticControlSnapsh
         closeRequested = false
     }
 
-    /** 以新對局 [snapshot] 取代整個 session 生命週期。 */
+    /**
+     * 以新對局的快照取代草稿，並清除前一局的提交狀態。
+     *
+     * @param snapshot 新對局的權威快照。
+     */
     private fun replaceLifecycle(snapshot: AutomaticControlSnapshotDto) {
         latestAuthority = snapshot
         currentBaseline = snapshot

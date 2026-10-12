@@ -23,14 +23,16 @@ sealed interface Outcome<out T, out E : ApplicationError> {
     /**
      * 操作成功的結果。
      *
-     * @param value 成功時回傳的值。
+     * @param T 成功結果中 value 的型別。
+     * @property value 成功時回傳的值。
      */
     data class Success<T>(val value: T) : Outcome<T, Nothing>
 
     /**
      * 操作失敗的結果。
      *
-     * @param error 失敗時的錯誤實例。
+     * @param E 失敗結果的應用層錯誤型別。
+     * @property error 失敗時的錯誤實例。
      */
     data class Error<E : ApplicationError>(val error: E) : Outcome<Nothing, E>
 }

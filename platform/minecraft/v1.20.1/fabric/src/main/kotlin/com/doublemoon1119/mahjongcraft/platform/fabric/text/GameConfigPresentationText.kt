@@ -4,7 +4,12 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresent
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.MinecraftRoomScreenKeys
 import net.minecraft.text.Text
 
-/** 將 RoomScreen 與 `/mahjongcraft room config` 共用的設定值轉成本地化文字。 */
+/**
+ * 將 RoomScreen 與 `/mahjongcraft room config` 共用的設定值轉成本地化文字。
+ *
+ * @param value 要顯示的設定值。
+ * @return 對應設定值的 Minecraft 文字。
+ */
 fun gameConfigPresentationText(value: GameConfigPresentationValue): Text = when (value) {
     is GameConfigPresentationValue.BooleanValue -> Text.translatable(
         if (value.enabled) MinecraftRoomScreenKeys.TRUE else MinecraftRoomScreenKeys.FALSE,

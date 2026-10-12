@@ -104,7 +104,16 @@ class RoomSettingsLayoutTest {
         assertFalse(layout.isOverScrollbar(0.0, layout.fieldsTop.toDouble()))
     }
 
-    /** 建立測試用版面；未指定的輸入使用不影響該測試的預設值。 */
+    /**
+     * 建立測試用版面；未指定的輸入使用不影響該測試的預設值。
+     *
+     * @param width 視窗寬度。
+     * @param height 視窗高度。
+     * @param categoryCount 設定分類數量。
+     * @param fieldCount 設定欄位數量。
+     * @param scrollIndex 欄位捲動索引。
+     * @return 與指定測試尺寸及內容數量相符的版面。
+     */
     private fun layout(
         width: Int,
         height: Int = 480,

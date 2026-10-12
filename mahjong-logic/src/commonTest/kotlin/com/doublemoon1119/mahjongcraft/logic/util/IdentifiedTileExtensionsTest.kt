@@ -8,6 +8,7 @@ import kotlin.test.assertEquals
 
 /** 驗證 [preferPlainTiles] 優先選一般牌、擴充牌型只在數量不足時才被選中的行為。 */
 class IdentifiedTileExtensionsTest {
+    /** 測試中代表擴充赤五的牌種識別碼。 */
     private val extensionTypeId = TileTypeId.parse("example:red_five")
 
     /** 一般牌數量足夠時，擴充牌型完全不會被選中。 */

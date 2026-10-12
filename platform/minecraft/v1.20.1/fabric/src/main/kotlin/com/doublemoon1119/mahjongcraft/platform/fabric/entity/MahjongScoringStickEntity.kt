@@ -26,6 +26,9 @@ import kotlin.uuid.Uuid
  *
  * 正式牌局中由規則的桌面物件描述擺上桌（例如日麻的立直棒與積棒），管理中的 entity 由
  * [managedByGame]／[managedTableId] 區分自由放置模式，比照 [MahjongTileEntity] 的雙態設計。
+ *
+ * @param type Minecraft entity 類型。
+ * @param world 實體所屬世界。
  */
 class MahjongScoringStickEntity(
     type: EntityType<out MahjongScoringStickEntity> = ModEntities.mahjongScoringStick,
@@ -112,7 +115,12 @@ class MahjongScoringStickEntity(
     /** 允許自由放置點棒成為左鍵回收目標。 */
     override fun isAttackable(): Boolean = !isRemoved && !managedByGame
 
-    /** 右鍵自由放置點棒時循環面額；管理中的點棒不接受此互動。 */
+    /**
+     * 右鍵自由放置點棒時循環面額；管理中的點棒不接受此互動。
+     *
+     * @param player 進行互動的玩家。
+     * @param hand 玩家使用的手。
+     */
     override fun interact(player: PlayerEntity, hand: Hand): ActionResult {
         if (managedByGame) return ActionResult.PASS
         if (world.isClient) return ActionResult.SUCCESS
@@ -120,7 +128,11 @@ class MahjongScoringStickEntity(
         return ActionResult.CONSUME
     }
 
-    /** 左鍵回收自由放置點棒；創造模式只移除 entity。管理中的點棒不能被回收。 */
+    /**
+     * 左鍵回收自由放置點棒；創造模式只移除 entity。管理中的點棒不能被回收。
+     *
+     * @param attacker 發起攻擊的 entity；非玩家不會回收點棒。
+     */
     override fun handleAttack(attacker: Entity): Boolean {
         if (managedByGame) return false
         val player = attacker as? PlayerEntity ?: return false
@@ -132,7 +144,11 @@ class MahjongScoringStickEntity(
         return true
     }
 
-    /** 將點棒標記為指定正式牌局桌子管理。 */
+    /**
+     * 將點棒標記為指定正式牌局桌子管理。
+     *
+     * @param tableId 所屬麻將桌 UUID。
+     */
     fun assignToTable(tableId: Uuid) {
         check(!world.isClient) { "Managed scoring sticks must be assigned by the server" }
         managedByGame = true
@@ -162,7 +178,12 @@ class MahjongScoringStickEntity(
         )
     }
 
-    /** 依 [AnimationStep.PlayMotion] 同步既有的 render 用 tracked data 欄位，理由同 [MahjongTileEntity.applyPlayMotion]。 */
+    /**
+     * 依 [AnimationStep.PlayMotion] 同步既有的 render 用 tracked data 欄位，理由同 [MahjongTileEntity.applyPlayMotion]。
+     *
+     * @param step 已排程的點棒落下動畫設定。
+     * @param startGameTime 動畫的絕對開始遊戲時間。
+     */
     override fun applyPlayMotion(step: AnimationStep.PlayMotion, startGameTime: Long) {
         dataTracker.set(ANIMATION_START_GAME_TIME, startGameTime)
         dataTracker.set(ANIMATION_DURATION_TICKS, step.durationTicks)
@@ -178,11 +199,26 @@ class MahjongScoringStickEntity(
         animating = false
     }
 
-    /** 點棒沒有專屬瞬間動作，這三個方法永遠不會被呼叫（[Nothing] 沒有任何實例）。 */
+    /**
+     * 點棒沒有專屬瞬間動作，這三個方法永遠不會被呼叫（[Nothing] 沒有任何實例）。
+     *
+     * @param step 不存在的自訂動畫步驟。
+     */
     override fun applyCustomStep(step: Nothing) = step
 
+    /**
+     * 點棒沒有可序列化的自訂動畫步驟。
+     *
+     * @param step 不存在的自訂動畫步驟。
+     * @param nbt 原定接收動畫資料的 NBT compound。
+     */
     override fun serializeCustomStep(step: Nothing, nbt: NbtCompound) = step
 
+    /**
+     * 點棒沒有可還原的自訂動畫步驟。
+     *
+     * @param nbt 原定提供動畫資料的 NBT compound。
+     */
     override fun deserializeCustomStep(nbt: NbtCompound): Nothing = error("MahjongScoringStickEntity never enqueues AnimationStep.Custom")
 
     /** 建立保留目前面額的點棒物品。 */
@@ -210,6 +246,8 @@ class MahjongScoringStickEntity(
     /**
      * 從世界存檔還原面額、管理狀態與動畫佇列，非法值使用安全預設。動畫佇列一併還原理由同
      * [MahjongTileEntity.readCustomDataFromNbt]。
+     *
+     * @param nbt entity 的持久化資料。
      */
     override fun readCustomDataFromNbt(nbt: NbtCompound) {
         denomination = MahjongScoringStickDenominationNbt.read(nbt, NBT_KEY_DENOMINATION)
@@ -220,7 +258,11 @@ class MahjongScoringStickEntity(
         readAnimationQueueFromNbt(nbt)
     }
 
-    /** 將面額、管理狀態與動畫佇列寫入世界存檔。 */
+    /**
+     * 將面額、管理狀態與動畫佇列寫入世界存檔。
+     *
+     * @param nbt 接收 entity 持久化資料的 NBT。
+     */
     override fun writeCustomDataToNbt(nbt: NbtCompound) {
         MahjongScoringStickDenominationNbt.write(nbt, NBT_KEY_DENOMINATION, denomination)
         nbt.putBoolean(NBT_KEY_MANAGED_BY_GAME, managedByGame)

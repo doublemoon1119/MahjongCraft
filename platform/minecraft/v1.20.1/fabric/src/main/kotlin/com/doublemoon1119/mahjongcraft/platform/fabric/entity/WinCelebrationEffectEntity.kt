@@ -7,6 +7,9 @@ import net.minecraft.world.World
 /**
  * 承載胡牌與後續役種動畫的具體視覺 entity type；共用時間軸、目標追蹤與持久化由
  * [AnimatedVisualEffectEntity] 提供，client renderer 依 `effectKey` 選擇實際畫面。
+ *
+ * @param type Minecraft entity 類型。
+ * @param world 實體所屬世界。
  */
 class WinCelebrationEffectEntity(
     type: EntityType<out WinCelebrationEffectEntity> = ModEntities.winCelebrationEffect,

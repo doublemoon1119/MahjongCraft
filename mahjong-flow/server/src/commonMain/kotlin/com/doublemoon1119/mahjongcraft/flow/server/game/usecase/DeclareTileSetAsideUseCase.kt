@@ -235,8 +235,12 @@ class DeclareTileSetAsideUseCase(
      * `update` 區塊內部使用的中繼結果。[drawHappened] 為 false 代表開啟了搶和視窗或判定為途中流局，動作與補牌皆尚未套用。
      *
      * @property setAsideTile 這次要移出手牌的牌。
+     * @property tableState 本次交易提交的權威桌況。
+     * @property drawHappened 是否已完成補牌；開啟搶和視窗或判定途中流局時為 false。
      * @property abortiveDrawReason 一炮多響依規則設定判定為流局時的原因；此時這次動作視為未成立。
      * @property declaredState 開啟搶和視窗時，牌已移出、尚未補牌的候選桌況，供呈現使用；其他情況為 null。
+     * @property wallRevealBatches 依規則 checkpoint 順序新增公開的牌張 ID 批次。
+     * @property physicalWallTransitionPhases 已驗證的實體牌牆移動階段。
      */
     private data class SetAsideResult(
         val tableState: TableState,

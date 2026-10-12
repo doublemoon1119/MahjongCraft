@@ -7,6 +7,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationEnt
  *
  * [S] 表示 server session，[W] 表示世界參考。外層 adapter 提供 chunk 狀態、位置索引與 BlockEntity
  * 查詢，使排程、session 隔離與第二次確認可獨立測試。
+ *
+ * @param S 代表伺服器 session 的參考型別。
+ * @param W 代表世界的參考型別。
  */
 internal class TableLocationValidationQueue<S : Any, W : Any> {
     /** 目前允許處理工作的 server session。 */
@@ -50,6 +53,13 @@ internal class TableLocationValidationQueue<S : Any, W : Any> {
      *
      * 第一次定點查詢缺失時只排入確認；下一個 tick 仍符合 session、chunk、revision 與缺失條件才呼叫
      * [cleanup]。
+     *
+     * @param session 目前 tick 所屬的 server session。
+     * @param isChunkUsable 判斷 chunk 是否仍在 session 中載入。
+     * @param entriesForChunk 取得該 chunk 的預期位置索引。
+     * @param isEntryCurrent 確認索引項目的 revision 尚未改變。
+     * @param matchesExpectedTable 驗證方塊位置仍有預期桌子。
+     * @param cleanup 第二次確認仍缺失時執行的清理操作。
      */
     suspend fun advance(
         session: S,
@@ -90,21 +100,27 @@ internal class TableLocationValidationQueue<S : Any, W : Any> {
         get() = nextChunkLoads.size + readyChunkLoads.size +
             nextMissingConfirmations.size + readyMissingConfirmations.size
 
-    /** 尚待第一次定點查詢的 chunk。 */
+    /**
+     * 尚待第一次定點查詢的 chunk。
+     *
+     * @property world chunk 所在世界。
+     * @property chunkX chunk X 座標。
+     * @property chunkZ chunk Z 座標。
+     */
     private data class PendingChunkLoad<W : Any>(
-        /** Chunk 所在世界。 */
         val world: W,
-        /** Chunk X 座標。 */
         val chunkX: Int,
-        /** Chunk Z 座標。 */
         val chunkZ: Int,
     )
 
-    /** 第一次查詢缺失、等待下一個 tick 再確認的位置。 */
+    /**
+     * 第一次查詢缺失、等待下一個 tick 再確認的位置。
+     *
+     * @property world 預期位置所在世界。
+     * @property entry 排程時的位置與 revision。
+     */
     private data class PendingMissingConfirmation<W : Any>(
-        /** 預期位置所在世界。 */
         val world: W,
-        /** 排程時的位置與 revision。 */
         val entry: TableLocationEntry,
     )
 }

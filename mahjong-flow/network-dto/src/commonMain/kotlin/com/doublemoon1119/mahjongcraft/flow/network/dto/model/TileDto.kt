@@ -12,7 +12,7 @@ sealed interface TileDto {
      * 數字牌的網路 DTO，包含花色與牌面數值。
      *
      * @property suit 牌的花色。
-     * @property value 擴充值或牌面數值。
+     * @property value 數字牌的牌面數值。
      */
     @Serializable
     data class Numeric(val suit: SuitDto, val value: Int) : TileDto
@@ -25,20 +25,28 @@ sealed interface TileDto {
     @Serializable
     data class Extension(val typeId: String) : TileDto
 
+    /** 風牌與三元牌的 DTO 變體。 */
     @Serializable
     sealed interface Honor : TileDto {
+        /** 東風。 */
         @Serializable data object East : Honor
 
+        /** 南風。 */
         @Serializable data object South : Honor
 
+        /** 西風。 */
         @Serializable data object West : Honor
 
+        /** 北風。 */
         @Serializable data object North : Honor
 
+        /** 紅中。 */
         @Serializable data object Red : Honor
 
+        /** 發財。 */
         @Serializable data object Green : Honor
 
+        /** 白板。 */
         @Serializable data object White : Honor
     }
 }

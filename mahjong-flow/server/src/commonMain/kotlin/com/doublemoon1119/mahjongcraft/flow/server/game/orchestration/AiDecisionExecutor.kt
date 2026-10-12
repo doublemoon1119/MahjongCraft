@@ -27,13 +27,13 @@ import kotlin.uuid.Uuid
  * - 同一局：同一局同一時間只會有一次策略呼叫在執行。已有呼叫正在正常計算時，這次不決策；先前的呼叫逾時（或等待它的協程被
  *   取消）但尚未結束時，這次直接使用固定命令，直到那個呼叫結束。
  *
- * 名額與每局記錄都屬於這個實例，不隨 server session 重建：舊 session 留下的不合作工作仍計入名額，且同一局在它結束前都使用
- * 固定命令；等待它的協程隨舊 session 取消，因此結果不會提交。每局記錄由完成回呼依工作識別碼清除，可能在任何執行緒上更新，
+ * 名額與每局記錄都屬於這個實例。跨執行階段共用同一實例時，先前留下的不合作工作仍計入名額，同一局在它結束前使用固定命令。
+ * 呼叫端須取消先前階段等待結果的協程，避免提交舊結果。每局記錄由完成回呼依工作識別碼清除，可能在任何執行緒上更新，
  * 以原子操作保護。
  *
  * @param dispatcher 執行策略的調度器。
- * @property capacity 同時存在、尚未結束的策略工作上限。
- * @property timeout 等待一次決策結果的上限。
+ * @property capacity 同時存在、尚未結束的策略工作上限，必須大於零。
+ * @property timeout 等待一次決策結果的上限，必須為正值。
  * @property reporter 接收逾時與舊呼叫仍未結束的情況。
  * @property observer 接收每次有結果的決策；不需要量測時為 null。
  * @property timeSource 量測決策延遲的時間來源。
@@ -131,7 +131,13 @@ class AiDecisionExecutor(
         return fallback().also { observer?.onDecision(gameId, AiDecisionOutcome.TIMED_OUT, start.elapsedNow()) }
     }
 
-    /** 嘗試讓 [call] 成為 [gameId] 目前的策略呼叫。 */
+    /**
+     * 嘗試登記一局目前的策略呼叫。
+     *
+     * @param gameId 對局識別碼。
+     * @param call 欲登記的呼叫。
+     * @return 登記成功、已有正常呼叫，或先前已放棄等待的呼叫仍未結束。
+     */
     private fun claim(gameId: Uuid, call: StrategyCall): Claim {
         while (true) {
             val current = calls.load()
@@ -146,7 +152,13 @@ class AiDecisionExecutor(
         }
     }
 
-    /** 不再等待 [call]：沒有建立工作時直接清除記錄，否則要求取消工作，並在它結束前把這一局標成仍有未結束的呼叫。 */
+    /**
+     * 放棄等待策略；未建立工作時清除記錄，否則要求取消並保留記錄直到工作結束。
+     *
+     * @param gameId 對局識別碼。
+     * @param call 欲放棄等待的呼叫。
+     * @param work 已建立的策略工作；尚未建立時為 null。
+     */
     private fun abandon(gameId: Uuid, call: StrategyCall, work: Deferred<*>?) {
         if (work == null) {
             finish(gameId, call)
@@ -156,7 +168,11 @@ class AiDecisionExecutor(
         update(gameId, call) { it.copy(abandoned = true) }
     }
 
-    /** 尚未真正結束的策略工作數增減 [delta]，增加時一併更新峰值。 */
+    /**
+     * 更新尚未真正結束的策略工作數，增加時一併更新峰值。
+     *
+     * @param delta 數量增減值；開始工作加一，結束工作減一。
+     */
     private fun countStrategyCall(delta: Int) {
         while (true) {
             val current = strategyCalls.load()
@@ -165,10 +181,21 @@ class AiDecisionExecutor(
         }
     }
 
-    /** 清除 [call] 的記錄；記錄已不是 [call] 時不做事。 */
+    /**
+     * 清除指定呼叫的記錄；目前記錄已屬於其他呼叫時不做事。
+     *
+     * @param gameId 對局識別碼。
+     * @param call 欲清除的呼叫。
+     */
     private fun finish(gameId: Uuid, call: StrategyCall) = update(gameId, call) { null }
 
-    /** 只在 [gameId] 目前的記錄仍是 [call] 時以 [transform] 更新（回傳 null 代表移除）。 */
+    /**
+     * 只更新仍屬於指定呼叫的記錄。
+     *
+     * @param gameId 對局識別碼。
+     * @param call 預期擁有目前記錄的呼叫。
+     * @param transform 計算新記錄；回傳 null 代表移除，競爭更新時可能重算。
+     */
     private fun update(gameId: Uuid, call: StrategyCall, transform: (StrategyCall) -> StrategyCall?) {
         while (true) {
             val current = calls.load()
@@ -210,7 +237,7 @@ class AiDecisionExecutor(
         data object Busy : Claim
 
         /**
-         * 先前的呼叫已逾時但尚未結束。
+         * 先前的呼叫已逾時或呼叫端已取消等待，但策略工作尚未結束。
          *
          * @property firstReport 這是第一次遇到這個未結束的呼叫，需要回報。
          */
@@ -226,10 +253,11 @@ class AiDecisionExecutor(
         const val CAPACITY_PER_THREAD: Int = 2
 
         /**
-         * 在呼叫端的執行緒上直接執行策略的執行器：策略沒有掛起時，計算在呼叫內同步完成。供不需要背景計算的執行環境
-         * （例如測試或依序推進的離線對局）使用。
+         * 使用 [Dispatchers.Unconfined] 啟動策略：首次掛起前在呼叫端執行緒執行，恢復執行的執行緒由掛起操作決定。
+         * 策略沒有掛起時同步完成，供不需要背景計算的環境（例如測試或依序推進的離線對局）使用。
          *
          * @param reporter 接收逾時與舊呼叫仍未結束的情況。
+         * @return 不主動將策略排入背景調度器的執行器。
          */
         fun direct(reporter: AiDecisionReporter = AiDecisionReporter.NONE): AiDecisionExecutor = AiDecisionExecutor(Dispatchers.Unconfined, capacity = Int.MAX_VALUE, reporter = reporter)
     }

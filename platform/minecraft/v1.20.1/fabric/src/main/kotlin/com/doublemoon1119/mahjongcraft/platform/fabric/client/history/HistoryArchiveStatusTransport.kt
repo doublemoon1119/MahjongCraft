@@ -150,7 +150,7 @@ internal class ClientHistoryArchiveStatusCoordinator(
     }
 }
 
-/** 保存狀態要求的唯一配對記錄。 */
+/** 保存目前要求識別碼與對局識別碼；完成回覆時只比對要求識別碼，不另比對對局。 */
 internal class HistoryArchiveStatusCorrelation {
     /** 目前有效的要求與對局識別碼配對。 */
     private var active: Pair<String, String>? = null

@@ -16,6 +16,11 @@ import org.koin.core.annotation.Single
  * 規則沒有登記時退回中立預設，連中立預設都沒有時顯示原始 ID，讓第三方的未登記項目仍看得出是什麼。
  *
  * 規則模組由伺服器隨決策提示送來（[PlayerDecisionPromptDto.ruleModuleId]），不由客戶端自行推算。
+ *
+ * @property actionVocabulary 規則專屬動作用語。
+ * @property decisionStatusDisplayNames 決策狀態的顯示名稱。
+ * @property exhaustiveDrawReasonDisplayNames 流局原因的顯示名稱。
+ * @property roundPreparationDisplayNames 開局準備選項的顯示名稱。
  */
 @Single
 class DecisionTextResolver(
@@ -28,6 +33,10 @@ class DecisionTextResolver(
      * 動作或開局準備選項顯示在操作卡上的名稱。
      *
      * 依序查動作用語、流局原因與開局準備選項——後兩者的 ID 本身就屬於規則，各自已有登記處。
+     *
+     * @param ruleModuleId 決策所屬規則；null 時使用中立用語。
+     * @param actionId 動作或準備選項識別碼。
+     * @return 已登記的本地化名稱；未登記時顯示原始識別碼。
      */
     fun actionLabel(ruleModuleId: String?, actionId: String): Text {
         val translationKey = actionVocabulary.find(ruleModuleId, actionId)?.labelKey
@@ -36,15 +45,33 @@ class DecisionTextResolver(
         return translationKey?.let(Text::translatable) ?: Text.literal(actionId)
     }
 
-    /** 動作的說明，顯示在操作卡的提示框與選牌提示；規則沒有提供說明時為 null。 */
+    /**
+     * 取得操作卡提示框與選牌提示使用的動作說明。
+     *
+     * @param ruleModuleId 決策所屬規則；null 時使用中立用語。
+     * @param actionId 動作識別碼。
+     * @return 本地化說明；未登記說明時為 null。
+     */
     fun actionDescription(ruleModuleId: String?, actionId: String): Text? = actionVocabulary.find(ruleModuleId, actionId)
         ?.descriptionKey
         ?.let(Text::translatable)
 
-    /** 動作在操作卡中的順序；未登記時為 null，代表排在所有已登記的動作之後。 */
+    /**
+     * 取得動作在操作卡中的顯示順序。
+     *
+     * @param ruleModuleId 決策所屬規則；null 時使用中立用語。
+     * @param actionId 動作識別碼。
+     * @return 已登記的順序；未登記時為 null，由呼叫端排在已登記動作之後。
+     */
     fun actionOrder(ruleModuleId: String?, actionId: String): Int? = actionVocabulary.find(ruleModuleId, actionId)?.order
 
-    /** 捨牌分析狀態（振聽、和牌資格）的顯示名稱。 */
+    /**
+     * 取得振聽、和牌資格等捨牌分析狀態的名稱。
+     *
+     * @param ruleModuleId 決策所屬規則；null 時使用中立用語。
+     * @param statusId 狀態識別碼。
+     * @return 本地化名稱；未登記時顯示原始識別碼。
+     */
     fun statusText(ruleModuleId: String?, statusId: String): Text = decisionStatusDisplayNames.find(ruleModuleId, statusId)
         ?.let(Text::translatable)
         ?: Text.literal(statusId)

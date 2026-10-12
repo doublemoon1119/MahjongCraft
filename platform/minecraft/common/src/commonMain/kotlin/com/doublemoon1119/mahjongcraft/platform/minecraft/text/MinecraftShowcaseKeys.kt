@@ -32,7 +32,12 @@ object MinecraftShowcaseKeys {
     const val TENHOU = RIICHI_PREFIX + "tenhou"
     const val TSUUIISOU = RIICHI_PREFIX + "tsuuiisou"
 
-    /** 由日麻役滿的役種名稱取得對應的 showcase 標題 key。 */
+    /**
+     * 由日麻役滿的役種名稱取得對應的 showcase 標題 key。
+     *
+     * @param path 不含命名空間分隔符的役滿 key 路徑。
+     * @return 對應的完整 translation key。
+     */
     fun riichiYakuman(path: String): String {
         require(path.isNotBlank()) { "Showcase cue path must not be blank" }
         require(':' !in path && '.' !in path && '/' !in path) { "Showcase cue path must not contain namespace separators: $path" }

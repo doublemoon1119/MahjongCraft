@@ -349,12 +349,16 @@ private object RiichiWallOpeningScenario : DebugGameScenario {
     }
 }
 
-/** 建立固定停在下一次暗槓宣告前的四人日麻情境。 */
+/**
+ * 建立固定停在下一次暗槓宣告前的四人日麻情境。
+ *
+ * @property id 情境的完整識別碼。
+ * @property completedKanCount 已成立並完成補牌的槓數。
+ * @property opening 開門位置，決定王牌區的物理格位。
+ */
 private class RiichiBeforeAnkanScenario(
     override val id: String,
-    /** 已在桌上成立並完成補牌的槓數。 */
     private val completedKanCount: Int,
-    /** 本情境使用的開門位置，決定王牌區落在哪裡。 */
     private val opening: WallOpening = DEFAULT_WALL_OPENING,
 ) : DebugGameScenario {
     override fun build(context: DebugGameScenarioContext): DebugGameScenarioResult {
@@ -469,7 +473,16 @@ private class RiichiBeforeAnkanScenario(
         )
     }
 
-    /** 依正式 policy 重播既有槓數，取得目前仍留在牌牆中的權威 placement。 */
+    /**
+     * 依正式布局政策重播既有槓牌，取得目前仍留在牌牆中的權威位置。
+     *
+     * @param module 日麻規則模組。
+     * @param stateTemplate 提供玩家與規則設定的桌況模板。
+     * @param initialLayout 補牌前的物理布局。
+     * @param wallStages 補牌前及每次補牌後的活牌、保留牌快照，至少包含初始階段。
+     * @return 重播各次槓後得到的物理布局。
+     * @throws IllegalStateException 布局政策拒絕轉換，或未回報槓後的布局變動時拋出。
+     */
     private fun resolveCurrentPhysicalLayout(
         module: RiichiRuleModule,
         stateTemplate: TableState,
@@ -510,7 +523,15 @@ private class RiichiBeforeAnkanScenario(
         return currentLayout
     }
 
-    /** 建立四家開局十三張手牌；預定槓牌只會出現在指定玩家手中。 */
+    /**
+     * 建立四家開局十三張手牌，將預定槓牌配置給指定玩家。
+     *
+     * @param availableTiles 尚未分配的實體牌；填充牌會從中移除。
+     * @param dealerIndex 莊家在玩家清單中的索引。
+     * @param targetKan 莊家準備宣告的槓牌組；null 時不預放該組。
+     * @param establishedKans 按對手順序配置的已成立槓牌組。
+     * @return 按玩家索引排列的初始手牌。
+     */
     private fun createInitialHands(
         availableTiles: MutableList<IdentifiedTile>,
         dealerIndex: Int,
@@ -534,7 +555,14 @@ private class RiichiBeforeAnkanScenario(
         }
     }
 
-    /** 依正式開局的批次輪轉順序，把四家手牌攤平成牌牆前端消耗順序。 */
+    /**
+     * 依正式開局的批次輪轉順序，把各家手牌攤平成牌牆前端消耗順序。
+     *
+     * @param hands 按玩家索引排列的初始手牌。
+     * @param dealerIndex 第一個發牌的玩家索引。
+     * @param batchSizes 各輪每家取得的牌數；總和不得超過任一家手牌張數。
+     * @return 按發牌順序串接的實體牌。
+     */
     private fun interleaveInitialDeal(
         hands: List<List<IdentifiedTile>>,
         dealerIndex: Int,
@@ -553,14 +581,27 @@ private class RiichiBeforeAnkanScenario(
         }
     }
 
-    /** 將玩家 index 換算成不包含莊家的對手順序；莊家回傳不可能命中的索引。 */
+    /**
+     * 將玩家索引換算成不包含莊家的對手順序。
+     *
+     * @param playerIndex 玩家在四人清單中的索引。
+     * @param dealerIndex 莊家的索引。
+     * @return 非莊家的對手順序；莊家回傳 [Int.MAX_VALUE]，供安全查詢回傳無項目。
+     */
     private fun opponentOrder(playerIndex: Int, dealerIndex: Int): Int = if (playerIndex == dealerIndex) {
         Int.MAX_VALUE
     } else {
         (playerIndex - dealerIndex + PLAYER_COUNT - 1) % PLAYER_COUNT
     }
 
-    /** 從牌組庫選出指定數量、每組四張完全相同的牌。 */
+    /**
+     * 從牌庫選出每組四張同牌種的牌組，並移除已選取的實體牌。
+     *
+     * @param tiles 尚未分配的實體牌。
+     * @param count 所需完整牌組數，須為非負值。
+     * @return 依牌庫中牌種首次出現順序選出的牌組。
+     * @throws IllegalArgumentException 數量為負值，或完整牌組不足時拋出。
+     */
     private fun selectCompleteGroups(tiles: MutableList<IdentifiedTile>, count: Int): List<List<IdentifiedTile>> {
         val groups = tiles.groupBy { it.tile }.values.filter { it.size == KAN_SIZE }.take(count)
         require(groups.size == count) { "Not enough complete tile groups in the wall" }
@@ -577,18 +618,25 @@ private class RiichiBeforeAnkanScenario(
     }
 }
 
-/** 一次已完成槓牌前後重建 policy 所需的活牌與保留牌快照。 */
+/**
+ * 重播槓牌布局轉換所需的單一階段牌牆快照。
+ *
+ * @property liveTiles 此階段仍可一般摸取的活牌。
+ * @property reservedTiles 此階段由規則管理的保留牌。
+ */
 private data class WallStage(
-    /** 此階段仍可一般摸取的活牌。 */
     val liveTiles: List<IdentifiedTile>,
-    /** 此階段由規則管理的保留牌。 */
     val reservedTiles: List<IdentifiedTile>,
 )
 
-/** 建立固定停在呼叫者可對上一張捨牌宣告大明槓的四人日麻情境。 */
+/**
+ * 建立固定停在呼叫者可對上一張捨牌宣告大明槓的四人日麻情境。
+ *
+ * @property id 情境的完整識別碼。
+ * @property opening 開門位置，決定王牌區的物理格位。
+ */
 private class RiichiBeforeMinkanScenario(
     override val id: String,
-    /** 本情境使用的開門位置，決定王牌區落在哪裡。 */
     private val opening: WallOpening = DEFAULT_WALL_OPENING,
 ) : DebugGameScenario {
     override fun build(context: DebugGameScenarioContext): DebugGameScenarioResult {
@@ -629,7 +677,11 @@ private class RiichiBeforeMinkanScenario(
  *
  * 情境的用途是重現這一桌的狀況，不是換一套規則，因此**整份設定原封不動沿用**，不用預設值覆蓋——對局
  * 長度、紅寶牌、供託規則與初始點數都必須維持玩家在房間裡選的那一份。情境需要的張數與節奏本來就全部由
- * 設定推導（牌張工廠、`deadTileCount`、`dealBatchSizes()`、初始點數），沿用設定不會破壞可重現性。
+ * 設定推導（牌張工廠、`deadTileCount`、`dealBatchSizes()`、初始點數），不在此改回預設值。
+ *
+ * @param currentGame 目前的四人日麻對局。
+ * @return 目前桌況所持有的原設定物件。
+ * @throws ClassCastException 桌況使用的不是四人日麻設定時拋出。
  */
 internal fun scenarioConfig(currentGame: Game): RiichiRuleConfig = currentGame.tableState.config as RiichiRuleConfig
 
@@ -637,6 +689,11 @@ internal fun scenarioConfig(currentGame: Game): RiichiRuleConfig = currentGame.t
  * 依目前這一桌的日麻設定建立情境使用的規則模組，四人與三人日麻都適用。
  *
  * 設定整份沿用，理由同 [scenarioConfig]；[multiRonPolicy] 不為 null 時只覆寫一炮多響設定。
+ *
+ * @param currentGame 提供四人或三人日麻設定的對局。
+ * @param multiRonPolicy 要覆寫的一炮多響政策；null 時沿用原值。
+ * @return 採用該設定的日麻規則模組。
+ * @throws IllegalStateException 對局不屬於支援的日麻規則時拋出。
  */
 internal fun riichiFamilyScenarioModule(
     currentGame: Game,
@@ -653,7 +710,14 @@ internal fun riichiFamilyScenarioModule(
     else -> error("Riichi debug scenarios require a Riichi game")
 }
 
-/** 從牌庫依指定牌種順序各取出一張具有唯一 UUID 的實體牌。 */
+/**
+ * 從牌庫依指定牌種順序各取出一張實體牌。
+ *
+ * @param tiles 尚未分配的實體牌；每次找到的牌會立即移除。
+ * @param requestedTiles 依取牌順序排列的指定牌種。
+ * @return 與指定牌種順序相同的實體牌。
+ * @throws IllegalArgumentException 指定牌種不足時拋出；先前已取出的牌不會放回。
+ */
 internal fun takeTiles(
     tiles: MutableList<IdentifiedTile>,
     requestedTiles: List<Tile>,
@@ -663,7 +727,14 @@ internal fun takeTiles(
     tiles.removeAt(index)
 }
 
-/** 取出牌種互異的情境填充牌，避免意外建立特殊牌型。 */
+/**
+ * 取出牌種互異的情境填充牌，減少意外形成相同牌種組合的機會。
+ *
+ * @param tiles 尚未分配的實體牌；選取成功後移除所選項目。
+ * @param count 所需張數，須為非負值。
+ * @return 依原清單順序選出的不同牌種實體牌。
+ * @throws IllegalArgumentException 張數為負值，或不同牌種不足時拋出。
+ */
 internal fun takeDistinctFillers(tiles: MutableList<IdentifiedTile>, count: Int): List<IdentifiedTile> {
     val selected = tiles.distinctBy { tile -> tile.tile }.take(count)
     require(selected.size == count) { "Not enough distinct filler tiles" }
@@ -671,13 +742,29 @@ internal fun takeDistinctFillers(tiles: MutableList<IdentifiedTile>, count: Int)
     return selected
 }
 
-/** 從清單前端取出固定張數並同步移除。 */
+/**
+ * 從清單前端取出固定張數並同步移除。
+ *
+ * @param tiles 尚未分配的實體牌。
+ * @param count 要取出的張數，須為非負值。
+ * @return 按原順序取出的牌。
+ * @throws IllegalArgumentException 張數為負值或牌不足時拋出；先前取出的牌不會放回。
+ */
 internal fun takeFirst(tiles: MutableList<IdentifiedTile>, count: Int): List<IdentifiedTile> = List(count) {
     require(tiles.isNotEmpty()) { "Debug scenario ran out of tiles" }
     tiles.removeAt(0)
 }
 
-/** 把情境指定的活牌與保留牌配置到正式 layout 的物理格位。 */
+/**
+ * 將情境指定的活牌與保留牌依序對應到模板的物理格位。
+ *
+ * @param template 提供兩區順序與各牌物理格位的布局模板。
+ * @param liveTiles 情境的活牌順序，張數須與模板相同。
+ * @param reservedTiles 情境的保留牌順序，張數須與模板相同。
+ * @return 以情境實體牌 UUID 為鍵的物理格位。
+ * @throws IllegalArgumentException 任一區的張數與模板不符時拋出。
+ * @throws NoSuchElementException 模板缺少所需牌的物理格位時拋出。
+ */
 internal fun remapStructure(
     template: TileWallLayoutResult,
     liveTiles: List<IdentifiedTile>,
@@ -691,7 +778,11 @@ internal fun remapStructure(
     }
 }
 
-/** 產生不受 factory 洗牌結果影響的牌種排序鍵。 */
+/**
+ * 產生不受牌張工廠洗牌結果影響的牌種排序鍵。
+ *
+ * @return 數牌按花色與數字、字牌按固定順序、擴充牌按完整 ID 排列的字串鍵。
+ */
 internal fun Tile.stableSortKey(): String = when (this) {
     is Tile.Numeric -> "0:${suit.ordinal}:$value"
     is Tile.Honor -> "1:${HONORS.indexOf(this)}"

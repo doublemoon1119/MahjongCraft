@@ -39,7 +39,15 @@ class PostReactionRoundOutcomeResolverRegistryTest {
         }
     }
 
-    /** 建立只記錄呼叫、不產生 outcome 的測試 resolver。 */
+    /**
+     * 建立會記錄呼叫的測試解析器。
+     *
+     * @param id 解析器的註冊識別碼。
+     * @param ruleModuleId 所屬規則模組的識別碼。
+     * @param priority 解析器的執行優先序。
+     * @param calls 依呼叫順序收集解析器識別碼的清單。
+     * @return 測試解析器。
+     */
     private fun recordingResolver(
         id: String,
         ruleModuleId: String,

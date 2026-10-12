@@ -22,6 +22,7 @@ import kotlin.test.assertTrue
  */
 class TenhouChiihouTest : RiichiHandValueCalculatorTestBase() {
 
+    /** 建立用於天和與地和測試的基礎手牌牌面。 */
     private fun createBasicHand(): List<Tile> = listOf(
         Tile.Numeric(Tile.Suit.Character, 1),
         Tile.Numeric(Tile.Suit.Character, 1),

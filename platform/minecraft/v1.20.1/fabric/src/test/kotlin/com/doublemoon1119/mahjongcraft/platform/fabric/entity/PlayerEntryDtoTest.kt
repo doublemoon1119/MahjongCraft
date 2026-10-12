@@ -8,6 +8,7 @@ import kotlin.test.assertNull
 
 /** 驗證玩家資訊同步快照使用穩定名稱傳遞座位風位。 */
 class PlayerEntryDtoTest {
+    /** 座位風位以名稱往返後保持不變。 */
     @Test
     fun `seat wind round trips by stable name`() {
         val original = PlayerEntryDto(
@@ -25,6 +26,7 @@ class PlayerEntryDtoTest {
         assertEquals(Wind.SOUTH.name, PlayerEntryDto.fromDomain(domain).seatWind)
     }
 
+    /** 無法辨識風位時捨棄玩家資料，不改用其他風位。 */
     @Test
     fun `unknown seat wind is discarded instead of falling back to another wind`() {
         val malformed = PlayerEntryDto(
@@ -40,6 +42,7 @@ class PlayerEntryDtoTest {
         assertNull(malformed.toDomain())
     }
 
+    /** 指示資訊格式無效時一併捨棄所屬玩家資料。 */
     @Test
     fun `malformed indicator is discarded with its player entry`() {
         val malformed = PlayerEntryDto(

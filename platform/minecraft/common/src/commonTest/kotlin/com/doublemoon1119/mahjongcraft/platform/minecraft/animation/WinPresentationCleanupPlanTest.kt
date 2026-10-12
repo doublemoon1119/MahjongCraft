@@ -93,8 +93,22 @@ class WinPresentationCleanupPlanTest {
         )
     }
 
+    /**
+     * 建立隨機 UUID 的指定牌面測試牌。
+     *
+     * @param face 牌面種類。
+     * @return 帶唯一識別碼的測試牌。
+     */
     private fun tile(face: Tile): IdentifiedTile = IdentifiedTile(id = Uuid.random(), tile = face)
 
+    /**
+     * 建立指定種類與來源的測試副露。
+     *
+     * @param type 副露種類。
+     * @param size 副露張數。
+     * @param sourceDirection 鳴取來源；自家方向代表沒有來源牌。
+     * @return 由測試牌組成的副露。
+     */
     private fun meld(
         type: MeldType,
         size: Int,

@@ -8,7 +8,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
 
 /**
- * 將平台發現的第三方 [MinecraftMahjongExtension] 登記至 runtime 實際使用的
+ * 將內建平台映射、內建規則及第三方 [MinecraftMahjongExtension] 的呈現映射登記至 runtime 實際使用的
  * [MinecraftTileAssetRegistry]／[AiStrategyDisplayNameRegistry]／[TileDisplayNameRegistry]／
  * [RuleModuleDisplayNameRegistry]／[TileEmojiRegistry]／[TileLabelRegistry] 及其他 Minecraft 呈現 registry，
  * 完成後統一凍結。
@@ -22,6 +22,8 @@ object MinecraftMahjongExtensionRegistrar {
      *
      * 內建規則的映射由 [BundledMinecraftMahjongExtensions] 提供，呼叫端應把它們排在第三方 extension 之前。
      *
+     * @param extensions 依序登記的內建規則與第三方 Minecraft extension；內建規則 extension 應排在第三方之前。
+     * @param registries runtime 實際使用並於成功後凍結的呈現 registries。
      * @return 依來源分組的所有映射：內建映射在前，接著依 [extensions] 順序排列每個 extension，供呼叫端記錄診斷資訊。
      * @throws MinecraftMahjongExtensionRegistrationException 若任一 extension 註冊失敗。
      */
@@ -54,7 +56,12 @@ object MinecraftMahjongExtensionRegistrar {
         return MinecraftMahjongExtensionRegistrationResult(sources = sources)
     }
 
-    /** 依固定順序呼叫 [extension] 的所有登記回呼；任一回呼失敗時包裝成 [MinecraftMahjongExtensionRegistrationException]。 */
+    /**
+     * 依固定順序呼叫 [extension] 的所有登記回呼；任一回呼失敗時包裝成 [MinecraftMahjongExtensionRegistrationException]。
+     *
+     * @param extension 正在登記的 extension。
+     * @param registries extension 要使用的呈現 registries。
+     */
     private fun registerCallbacks(
         extension: MinecraftMahjongExtension,
         registries: MinecraftPresentationRegistries,
@@ -90,6 +97,10 @@ object MinecraftMahjongExtensionRegistrar {
         }
     }
 
-    /** 只保留有登記項目的類別。 */
+    /**
+     * 只保留有登記項目的類別。
+     *
+     * @return 至少有一個登記項目的類別，順序與原清單相同。
+     */
     private fun List<MinecraftPresentationRegistrationSnapshotCategory>.nonEmpty() = filter { it.registrationKeys.isNotEmpty() }
 }

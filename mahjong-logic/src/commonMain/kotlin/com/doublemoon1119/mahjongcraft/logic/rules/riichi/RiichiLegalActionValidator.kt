@@ -41,8 +41,13 @@ class RiichiLegalActionValidator(
     /**
      * 分析一張完整牌型在目前桌況下的榮和與自摸資格。
      *
-     * [player] 的手牌須為尚未加入 [incomingTile] 的十三張狀態；本方法不套用振聽，振聽仍由呼叫端
+     * [player] 的手牌須為尚未加入 [incomingTile] 的待和牌狀態；本方法不套用振聽，振聽仍由呼叫端
      * 以整組等待牌判斷。
+     *
+     * @param tableState 判定役種與起胡門檻的目前桌況。
+     * @param player 尚未加入和牌張的玩家狀態。
+     * @param incomingTile 要分析的和牌張。
+     * @return 榮和、自摸或尚未符合門檻的可用性分類。
      */
     fun analyzeWinAvailability(
         tableState: TableState,
@@ -104,7 +109,7 @@ class RiichiLegalActionValidator(
         val wallAllowsKan = tableState.tileWall.remainingCount >= MIN_LIVE_TILES_FOR_KAN
 
         // incomingTile == null 表示玩家正在打牌（準備捨牌）
-        // 捨牌動作由 UI 層處理，讓玩家選擇要打的牌
+        // 捨牌候選由呼叫端依手牌建立，此處不列舉一般捨牌
         // 此 Validator 只處理「額外動作」（鳴牌、胡牌、立直）
         if (incomingTile == null) {
             // 檢查是否可以立直 (Riichi)
@@ -335,7 +340,12 @@ class RiichiLegalActionValidator(
         return legalActions
     }
 
-    /** 本局拔北補牌是否還沒用完；四張北全部拔出後就不能再拔。 */
+    /**
+     * 判定本局拔北補牌次數是否尚未用完。
+     *
+     * @param tableState 目前桌況。
+     * @return 存在立直動態狀態且拔北補牌次數小於四時為 true。
+     */
     private fun canPullAnotherNorth(tableState: TableState): Boolean {
         val dynamicState = tableState.dynamicRuleState as? RiichiDynamicState ?: return false
         return dynamicState.completedNorthDrawCount < RiichiSupplementalDrawPolicy.MAX_SUPPLEMENTAL_DRAWS
@@ -410,7 +420,16 @@ class RiichiLegalActionValidator(
         return result.value >= tableState.config.minimumWinConstraint
     }
 
-    /** 計算不含寶牌的役種番數；役滿以獨立旗標表示。 */
+    /**
+     * 計算不含各類寶牌的起胡番數。
+     *
+     * @param tableState 目前桌況。
+     * @param player 待判定的玩家。
+     * @param incomingTile 和牌張。
+     * @param isTsumo 是否為自摸。
+     * @param isRobbingKan 是否為搶槓。
+     * @return 非寶牌番數與役滿標記。
+     */
     private fun qualifyingHan(
         tableState: TableState,
         player: MahjongPlayer,
@@ -432,7 +451,7 @@ class RiichiLegalActionValidator(
      * 2. 暗槓前與暗槓後的聽牌列表必須完全相同才能暗槓。
      *
      * @param player 玩家。
-     * @param incomingTile 即将暗槓的牌。
+     * @param incomingTile 即將暗槓的牌。
      * @return 是否允許暗槓。
      */
     private fun checkClosedKanAfterRiichi(player: MahjongPlayer, incomingTile: IdentifiedTile): Boolean {
@@ -470,7 +489,7 @@ class RiichiLegalActionValidator(
             sourceDirection = RelativeDirection.Self,
         )
 
-        // 建立新的 Hand，包含剩余立牌和新增的暗槓
+        // 建立新的 Hand，包含剩餘立牌和新增的暗槓
         val meldsAfterKan = (player.hand.exposedMelds + closedKanMeld).toMutableList()
         val handAfterKan = Hand(remainingTiles.toMutableList(), meldsAfterKan)
 
@@ -492,7 +511,12 @@ class RiichiLegalActionValidator(
      * 檢查暗槓是否會改變面子結構 (日麻立直專用規則)。
      *
      * 規則：被槓掉的四張牌，在原本的手牌解釋中，必須「只能」是刻子。
-     * 如果這四張牌與手牌中其他牌存在數字連結（1, 2格內），則視為結構改變。
+     * 如果這四張牌與手牌中其他牌存在數字連結（1, 2 格內），則視為結構改變。
+     * 此處採用同花色鄰近牌檢查，不列舉所有面子拆法。
+     *
+     * @param standingTiles 暗槓前、不含新摸入牌的立牌。
+     * @param kanTile 本次摸入並要組成暗槓的牌。
+     * @return 其他立牌存在同花色且數字距離不超過二的牌時為 true；字牌為 false。
      */
     private fun isMeldStructureChanged(standingTiles: List<IdentifiedTile>, kanTile: IdentifiedTile): Boolean {
         // 轉換換成數牌，非數牌(字牌)沒有順子問題，只要聽牌不變，字牌暗槓永遠合法
@@ -512,6 +536,7 @@ class RiichiLegalActionValidator(
         }
     }
 
+    /** 槓牌次數與活牌餘量限制。 */
     private companion object {
         /** 全場槓子數上限（明槓/暗槓/加槓皆算），見 [getLegalActions] 對這個上限的說明。 */
         const val MAX_KAN_COUNT = 4

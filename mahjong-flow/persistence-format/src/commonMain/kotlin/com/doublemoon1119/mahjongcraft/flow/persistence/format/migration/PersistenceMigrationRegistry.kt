@@ -25,6 +25,7 @@ class PersistenceMigrationRegistry(
     /**
      * 將 [envelope] 逐版轉換成 [currentVersion]。
      *
+     * @param envelope 待轉換的權威存檔封套。
      * @throws InvalidPersistenceSchemaVersionException 若存檔版本小於第一版。
      * @throws UnsupportedPersistenceSchemaVersionException 若存檔來自較新的未知版本。
      * @throws MissingPersistenceMigrationException 若任一連續 migration 尚未註冊。

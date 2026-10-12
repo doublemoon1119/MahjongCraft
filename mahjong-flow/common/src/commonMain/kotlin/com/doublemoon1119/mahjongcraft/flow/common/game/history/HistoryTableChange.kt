@@ -35,7 +35,12 @@ data class HistoryTableChange(
     val finishedPlayerIds: Set<Uuid>? = null,
     val revealedHandTileIds: Set<Uuid>? = null,
 ) {
-    /** 將差異套用到前一個完整桌況。 */
+    /**
+     * 將差異套用到前一個完整桌況。
+     *
+     * @param before 產生此差異時所依據的完整桌況。
+     * @return 套用玩家、牌牆與流程欄位差異後的新桌況。
+     */
     fun applyTo(before: TableState): TableState {
         val replacements = changedPlayers.associateBy { it.playerWithoutHistory.id }
         require(replacements.size == changedPlayers.size && replacements.keys.all { id -> before.players.any { it.id == id } }) {
@@ -56,8 +61,15 @@ data class HistoryTableChange(
         )
     }
 
+    /** 從前後桌況建立可重建差異的入口。 */
     companion object {
-        /** 只建立可驗證的結構差異；無法安全表示時回傳 null。 */
+        /**
+         * 建立差異，並確認套用後能還原交易後桌況；無法安全表示時回傳 null。
+         *
+         * @param before 交易前的完整桌況。
+         * @param after 交易後的完整桌況。
+         * @return 可重建 [after] 的差異；包含不支援的變更或驗證失敗時為 null。
+         */
         fun between(before: TableState, after: TableState): HistoryTableChange? {
             if (
                 before.id != after.id ||
@@ -110,7 +122,13 @@ data class HistoryTableChange(
             return result.takeIf { runCatching { it.applyTo(before) == after }.getOrDefault(false) }
         }
 
-        /** 只接受原牌牆頭尾移除，避免把重排誤認為一般摸牌。 */
+        /**
+         * 只接受原牌牆頭尾移除，避免把重排誤認為一般摸牌。
+         *
+         * @param before 交易前的活牌牆。
+         * @param after 交易後的活牌牆。
+         * @return 兩端移除的張數；新牌序不是原牌序的連續片段時為 null。
+         */
         private fun wallChange(before: TileWall, after: TileWall): HistoryWallChange? {
             val old = before.getAllTiles()
             val new = after.getAllTiles()

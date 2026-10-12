@@ -136,7 +136,14 @@ class HistoryRetentionPolicyTest {
         assertTrue(exception.message.orEmpty().contains("unique"))
     }
 
-    /** 建立測試用保留政策。 */
+    /**
+     * 建立測試用保留政策。
+     *
+     * @param includeInterruptedMatches 是否將中斷場次納入保留評估。
+     * @param maxMatches 最多保留場次數；零表示不設此數量上限。
+     * @param retentionDuration 場次超過此保留時間後可被清理。
+     * @return 使用指定保留條件且磁碟上限為一位元組的政策。
+     */
     private fun policy(
         includeInterruptedMatches: Boolean = true,
         maxMatches: Int = 0,
@@ -148,7 +155,15 @@ class HistoryRetentionPolicyTest {
         maxDiskBytes = 1,
     )
 
-    /** 建立測試用候選摘要。 */
+    /**
+     * 建立測試用清理候選。
+     *
+     * @param matchId 對局 ID。
+     * @param startedAt 開始時間的 epoch milliseconds。
+     * @param endedAt 結束時間的 epoch milliseconds。
+     * @param interrupted 對局是否中斷。
+     * @return 對應指定時間與中斷狀態的清理候選。
+     */
     private fun candidate(
         matchId: String,
         startedAt: Long = 0,
@@ -161,6 +176,11 @@ class HistoryRetentionPolicyTest {
         interrupted = interrupted,
     )
 
-    /** 將 epoch milliseconds 轉為測試用 UTC 時刻。 */
+    /**
+     * 將 epoch milliseconds 轉為測試用 UTC 時刻。
+     *
+     * @param epochMilliseconds 自 Unix epoch 起算的毫秒數。
+     * @return 對應的 UTC 時刻。
+     */
     private fun instant(epochMilliseconds: Long): Instant = Instant.fromEpochMilliseconds(epochMilliseconds)
 }

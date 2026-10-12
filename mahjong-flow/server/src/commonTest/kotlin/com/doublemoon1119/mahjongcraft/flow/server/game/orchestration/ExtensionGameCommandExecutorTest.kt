@@ -22,7 +22,10 @@ import kotlin.uuid.Uuid
 
 /** 驗證擴充命令依各執行環境的流程服務建立 handler 並執行。 */
 class ExtensionGameCommandExecutorTest {
+    /** 擴充命令使用的對局識別碼。 */
     private val gameId = Uuid.random()
+
+    /** 發起擴充命令的玩家識別碼。 */
     private val playerId = Uuid.random()
 
     /** 同一份登記可供多個執行環境使用，每個環境的 handler 只拿到自己的流程服務。 */
@@ -76,7 +79,12 @@ class ExtensionGameCommandExecutorTest {
         }
     }
 
-    /** 建立會記錄收到哪個 context 的已凍結註冊表。 */
+    /**
+     * 建立會記錄流程情境的已凍結註冊表。
+     *
+     * @param receivedContexts 累積建立 handler 時收到的情境。
+     * @return 登記測試命令的凍結註冊表。
+     */
     private fun recordingRegistry(receivedContexts: MutableList<ExtensionGameCommandContext>) = ExtensionGameCommandExecutorRegistry().apply {
         register(TestCommand::class) { context ->
             receivedContexts += context

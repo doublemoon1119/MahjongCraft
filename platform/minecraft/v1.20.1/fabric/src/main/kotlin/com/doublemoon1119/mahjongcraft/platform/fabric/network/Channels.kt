@@ -26,6 +26,7 @@ private const val MAX_STRING_PREFIX_BYTES = 5
  * @param json 線路序列化設定。
  * @param serializer 要求的 DTO 契約。
  * @param maxPayloadBytes JSON 的 UTF-8 位元組上限。
+ * @param T 解碼後的線路 DTO 型別。
  * @return 完整且合法的 DTO；拒絕時為 null。
  */
 internal fun <T> decodeBoundedPayload(buf: PacketByteBuf, json: Json, serializer: KSerializer<T>, maxPayloadBytes: Int): T? {
@@ -40,9 +41,9 @@ internal fun <T> decodeBoundedPayload(buf: PacketByteBuf, json: Json, serializer
 }
 
 /**
- * 伺服器→客戶端頻道：把 [T]（線路 DTO）序列化成 JSON 字串，包進 1.20.1 舊式 raw-buffer 封包
- * （[net.minecraft.network.PacketByteBuf]）送給單一玩家。
+ * 伺服器→客戶端頻道：把 [T] 序列化成 JSON 字串，透過 [PacketByteBuf] 送給單一玩家。
  *
+ * @param T 傳送的線路 DTO 型別。
  * @param id 模組命名空間內的頻道名稱。
  * @property serializer 線路資料的序列化契約。
  * @property maxPayloadBytes JSON UTF-8 位元組上限；null 保持既有頻道行為。
@@ -98,7 +99,12 @@ class S2CChannel<T>(id: String, private val serializer: KSerializer<T>, private 
         }
     }
 
-    /** 丟棄過大的回應；每個頻道第一次以警告記錄，之後改用 debug。 */
+    /**
+     * 記錄過大回應的診斷；每個頻道第一次以警告記錄，之後改用 debug。
+     *
+     * @param bytes 被拒絕內容的位元組數。
+     * @param limit 頻道允許的最大位元組數。
+     */
     private fun reportOversized(bytes: Int, limit: Int) {
         if (oversizedWarned.compareAndSet(false, true)) {
             logger.warn("Dropped an oversized message on {}: {} bytes exceeds the limit of {} bytes; later drops on this channel are logged at debug level", channelId, bytes, limit)
@@ -109,10 +115,11 @@ class S2CChannel<T>(id: String, private val serializer: KSerializer<T>, private 
 }
 
 /**
- * 客戶端→伺服器頻道。[registerServerReceiver] 的 receive callback 跑在網路執行緒——`buf` 在回呼結束後
- * 可能被釋放，必須同步讀完；實際處理邏輯透過 [handler] 丟回伺服器執行緒執行，玩家身分一律用回呼收到
+ * 客戶端→伺服器頻道。[registerServerReceiver] 的接收回呼在網路執行緒執行，封包緩衝區在回呼結束後
+ * 可能被釋放，必須同步讀完；解碼後的資料交由伺服器主執行緒上的處理函式接收，玩家身分一律用回呼收到
  * 的 [ServerPlayerEntity] 自己的 UUID，不信任封包內容宣稱的身分。
  *
+ * @param T 傳送的線路 DTO 型別。
  * @param id 模組命名空間內的頻道名稱。
  * @property serializer 線路資料的序列化契約。
  * @property maxPayloadBytes 解碼前的 JSON UTF-8 位元組上限；null 保持既有頻道行為。

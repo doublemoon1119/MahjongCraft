@@ -25,10 +25,19 @@ import kotlin.uuid.Uuid
  */
 class JoinRoomUseCaseTest {
 
+    /** 測試房間的識別碼。 */
     private val roomId: Uuid = Uuid.random()
+
+    /** 測試房間房主的玩家識別碼。 */
     private val hostId: Uuid = Uuid.random()
+
+    /** 測試中加入房間的玩家識別碼。 */
     private val otherPlayerId: Uuid = Uuid.random()
+
+    /** 用來驗證通知不會發給房間成員以外觀察者的玩家識別碼。 */
     private val observerOnlyId: Uuid = Uuid.random()
+
+    /** 測試房間使用的規則設定。 */
     private val config: MahjongRuleConfig = FakeMahjongRuleConfig()
 
     /**
@@ -102,7 +111,7 @@ class JoinRoomUseCaseTest {
     }
 
     /**
-     * test only players in room receive join notification
+     * 驗證加入通知只傳送給房間成員。
      *
      * 驗證點：
      * 1. 房主與新玩家（房間成員）應收到通知。

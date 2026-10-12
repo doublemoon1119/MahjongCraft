@@ -22,7 +22,7 @@ class FakeGameEventPublisher : GameEventPublisher {
         notifications.getOrPut(Triple(gameId, targetPlayerId, actorId)) { mutableListOf() }.add(action)
     }
 
-    /** 測試替身沒有旁觀者名單，單純逐一轉呼叫 [publish]，行為等同呼叫端自己迴圈呼叫 [seatedPlayerIds]。 */
+    /** 測試替身只將事件逐一記錄給 [seatedPlayerIds] 中的玩家，不會另行查找或模擬在場玩家以外的旁觀者。 */
     override suspend fun publishToAllObservers(gameId: Uuid, seatedPlayerIds: Collection<Uuid>, actorId: Uuid, action: GameAction) {
         seatedPlayerIds.forEach { targetPlayerId -> publish(gameId, targetPlayerId, actorId, action) }
     }

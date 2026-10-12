@@ -5,4 +5,13 @@ import kotlinx.serialization.Serializable
 
 /** [Tile.Suit] 的 persistence DTO。 */
 @Serializable
-enum class SuitPersistenceDto { CHARACTER, DOT, BAMBOO }
+enum class SuitPersistenceDto {
+    /** 萬子。 */
+    CHARACTER,
+
+    /** 筒子。 */
+    DOT,
+
+    /** 索子。 */
+    BAMBOO,
+}

@@ -16,7 +16,13 @@ class PresentationLayoutSolver(
     private val templateRegistry: WinSettlementPresentationTemplateRegistry,
     private val textMeasurer: PresentationTextMeasurer,
 ) {
-    /** 解析節點引用的欄位內容；不引用欄位的節點為 `null`。 */
+    /**
+     * 解析節點引用的欄位內容；不引用欄位的節點為 `null`。
+     *
+     * @param layout 要解析的布局節點。
+     * @param snapshot 本次呈現使用的結算欄位快照。
+     * @return 節點欄位值；不含欄位或找不到 provider 時為 `null`。
+     */
     fun resolve(layout: PresentationLayout, snapshot: WinSettlementPresentationFieldSnapshot): PresentationValue? {
         val id = when (layout) {
             is PresentationLayout.Text -> layout.fieldId
@@ -35,6 +41,10 @@ class PresentationLayoutSolver(
      *
      * 引用欄位但解析不到內容的節點為 [PresentationNodeSize.ZERO]——不佔空間、也不留間距，這樣同一份
      * 模板可以直接套用在缺少該欄位的結算上，不需要為每種組合各寫一份模板。
+     *
+     * @param layout 要量測的布局節點。
+     * @param snapshot 本次呈現使用的結算欄位快照。
+     * @return 節點的寬高；缺失欄位回傳零尺寸。
      */
     fun measure(layout: PresentationLayout, snapshot: WinSettlementPresentationFieldSnapshot): PresentationNodeSize = when (layout) {
         is PresentationLayout.Text -> (resolve(layout, snapshot) as? PresentationValue.TextValue)?.let {
@@ -119,6 +129,12 @@ class PresentationLayoutSolver(
      *
      * 非權重子節點取自己的量測寬度；剩下的空間依權重比例分給權重子節點，`fill` 為 `false` 的權重子節點
      * 最多只拿到自己的量測寬度，不會被撐大。
+     *
+     * @param children 主軸上的子節點。
+     * @param available 可用主軸寬度。
+     * @param spacing 子節點固定間距。
+     * @param snapshot 本次呈現使用的結算欄位快照。
+     * @return 依原順序排列的節點與分配寬度。
      */
     fun allocateMainAxis(
         children: List<PresentationLayout>,
@@ -142,7 +158,15 @@ class PresentationLayoutSolver(
         }
     }
 
-    /** 分配垂直主軸空間；規則與 [allocateMainAxis] 相同，只是換成高度。 */
+    /**
+     * 分配垂直主軸空間；規則與 [allocateMainAxis] 相同，只是換成高度。
+     *
+     * @param children 主軸上的子節點。
+     * @param available 可用主軸高度。
+     * @param spacing 子節點固定間距。
+     * @param snapshot 本次呈現使用的結算欄位快照。
+     * @return 各子節點分配到的高度，順序與輸入相同。
+     */
     fun allocateVerticalMainAxis(
         children: List<PresentationLayout>,
         available: Float,
@@ -169,6 +193,12 @@ class PresentationLayoutSolver(
          * 依 arrangement 算出每個子節點沿主軸的起點。
          *
          * 內容超出 [available] 時沒有多餘空間可分配，六種 arrangement 都退化成從 0 依序排開。
+         *
+         * @param widths 子節點寬度。
+         * @param available 可用主軸空間。
+         * @param spacing 固定子節點間距。
+         * @param arrangement 剩餘空間分配方式。
+         * @return 各子節點沿主軸的起點。
          */
         fun arrange(widths: List<Float>, available: Float, spacing: Float, arrangement: PresentationArrangement): List<Float> {
             if (widths.isEmpty()) return emptyList()

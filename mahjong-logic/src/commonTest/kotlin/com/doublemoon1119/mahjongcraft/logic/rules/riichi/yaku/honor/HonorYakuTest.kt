@@ -336,7 +336,11 @@ class HonorYakuTest : RiichiHandValueCalculatorTestBase() {
         assertNull(result.yakuResults.find { it.yaku == YakuType.RedDragon })
     }
 
-    /** 四五六筒、七八九筒、二三四條、中中、二二條：雙碰聽中與二條。 */
+    /**
+     * 四五六筒、七八九筒、二三四條、中中、二二條：雙碰聽中與二條。
+     *
+     * @return 雙碰聽中與二條的手牌牌面。
+     */
     private fun shanponOnRedDragon(): List<Tile> = listOf(
         Tile.Numeric(Tile.Suit.Dot, 4),
         Tile.Numeric(Tile.Suit.Dot, 5),
@@ -353,11 +357,17 @@ class HonorYakuTest : RiichiHandValueCalculatorTestBase() {
         Tile.Numeric(Tile.Suit.Bamboo, 2),
     )
 
-    /** 以 [wind] 取代三元牌的同型雙碰手牌。 */
+    /**
+     * 以 [wind] 取代三元牌的同型雙碰手牌。
+     *
+     * @param wind 用來替換紅中的風牌。
+     * @return 雙碰聽指定風牌與二條的手牌牌面。
+     */
     private fun shanponOnWind(wind: Tile.Honor): List<Tile> = shanponOnRedDragon().map { tile ->
         if (tile == Tile.Honor.Red) wind else tile
     }
 
+    /** 存放此測試類別共用的役種常數。 */
     private companion object {
         /** 三種三元牌的役牌。 */
         val DRAGON_YAKU: Set<YakuType> = setOf(YakuType.WhiteDragon, YakuType.GreenDragon, YakuType.RedDragon)

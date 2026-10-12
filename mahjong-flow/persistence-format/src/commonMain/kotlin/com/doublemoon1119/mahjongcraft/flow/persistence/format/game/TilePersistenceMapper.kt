@@ -31,18 +31,21 @@ fun TilePersistenceDto.toDomain(): Tile = when (this) {
     is TilePersistenceDto.Honor -> value.toDomain()
 }
 
+/** 將數字牌花色轉成存檔 DTO。 */
 private fun Tile.Suit.toPersistenceDto(): SuitPersistenceDto = when (this) {
     Tile.Suit.Character -> SuitPersistenceDto.CHARACTER
     Tile.Suit.Dot -> SuitPersistenceDto.DOT
     Tile.Suit.Bamboo -> SuitPersistenceDto.BAMBOO
 }
 
+/** 將已保存的數字牌花色還原。 */
 private fun SuitPersistenceDto.toDomain(): Tile.Suit = when (this) {
     SuitPersistenceDto.CHARACTER -> Tile.Suit.Character
     SuitPersistenceDto.DOT -> Tile.Suit.Dot
     SuitPersistenceDto.BAMBOO -> Tile.Suit.Bamboo
 }
 
+/** 將已保存的字牌種類還原。 */
 private fun HonorPersistenceValue.toDomain(): Tile.Honor = when (this) {
     HonorPersistenceValue.EAST -> Tile.Honor.East
     HonorPersistenceValue.SOUTH -> Tile.Honor.South

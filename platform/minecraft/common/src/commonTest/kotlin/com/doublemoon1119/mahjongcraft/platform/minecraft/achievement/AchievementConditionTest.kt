@@ -60,6 +60,13 @@ class AchievementConditionTest {
         assertEquals(emptySet(), AchievementStatisticIds.statisticsFor(setOf(BuiltInAchievementIds.LAST_PLACE, "mahjongcraft:riichi/ippatsu")))
     }
 
+    /**
+     * 建立包含指定成果與規則的測試快照。
+     *
+     * @param ids 玩家已取得的成果 ID。
+     * @param rule 對局規則模組 ID。
+     * @return 可供條件比對的玩家成果資料。
+     */
     private fun achievements(vararg ids: String, rule: String = BuiltInRuleModuleIds.RIICHI) = PlayerAchievements(
         playerId = Uuid.random(),
         matchId = Uuid.random(),

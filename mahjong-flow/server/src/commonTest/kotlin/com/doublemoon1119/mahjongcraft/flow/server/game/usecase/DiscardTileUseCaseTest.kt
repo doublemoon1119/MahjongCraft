@@ -467,6 +467,8 @@ class DiscardTileUseCaseTest {
      * 手牌：白白白、發發發、234p、567s，加上單張中（役牌白＋役牌發已成立，單騎聽中）,
      * 供榮和資格測試共用。刻意採用單騎聽牌（聽的牌手牌中只有 1 張），而非碰/槓聽牌那種
      * 手牌中已有 2 張的形狀，避免榮和資格意外與碰牌資格重疊，干擾測試判斷。
+     *
+     * @return 具備中單騎聽牌形狀的牌種清單。
      */
     private fun ronTankiWaitTiles() = listOf(
         Tile.Honor.White, Tile.Honor.White, Tile.Honor.White,
@@ -1321,7 +1323,12 @@ class DiscardTileUseCaseTest {
         )
     }
 
-    /** 只有目前玩家的日麻桌況。 */
+    /**
+     * 只有目前玩家的日麻桌況。
+     *
+     * @param hand 目前玩家的手牌。
+     * @return 只有目前玩家的日麻桌況。
+     */
     private fun singlePlayerTable(hand: Hand) = FakeTableStateFactory.create(
         id = gameId,
         players = listOf(FakeMahjongPlayerFactory.create(id = currentPlayerId, initialSeat = Wind.EAST, hand = hand)),
@@ -1330,7 +1337,11 @@ class DiscardTileUseCaseTest {
         currentPlayerIndex = 0,
     )
 
-    /** 門前清單騎聽西風、剛摸到第二張西風，可以門前清自摸。 */
+    /**
+     * 門前清單騎聽西風、剛摸到第二張西風，可以門前清自摸。
+     *
+     * @return 西風單騎聽牌且剛摸到西風的手牌。
+     */
     private fun westWaitHand() = Hand(
         tiles = listOf(
             Tile.Numeric(Tile.Suit.Character, 1),
@@ -1350,7 +1361,11 @@ class DiscardTileUseCaseTest {
         lastDrawn = FakeIdentifiedTileFactory.create(Tile.Honor.West),
     )
 
-    /** 以日麻模組為基礎、只替換捨牌相關 hook 並記錄呼叫的測試規則。 */
+    /**
+     * 以日麻模組為基礎、只替換捨牌相關 hook 並記錄呼叫的測試規則。
+     *
+     * @property forcedTileId 強制捨牌牌張識別碼；為 null 時不額外限制。
+     */
     private class HookProbe(private val forcedTileId: Uuid? = null) {
         val declinedPlayerIds = mutableListOf<Uuid>()
 

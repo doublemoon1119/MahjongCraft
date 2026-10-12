@@ -39,6 +39,14 @@ internal object TileAnimationSteps {
      * [MahjongTileTableLayout.DEAL_SNAP_GAP_TICKS] 的隱形，讓「重新排成一列」感覺像是刻意的一個轉場
      * 動作，不是無縫瞬移。翻牌後在觀看緩衝（[DEAL_VIEWING_BUFFER_TICKS]）播完那一刻，才傳送到
      * [postFlipPlacement]（可能與 [finalPlacement] 不同格，見 `MahjongInitialDealPresentation` KDoc）。
+     *
+     * @param tile 要排定發牌動畫的牌 entity。
+     * @param finalPlacement 翻牌前落下的位置。
+     * @param postFlipPlacement 觀看緩衝結束後的位置。
+     * @param liftAbsoluteGameTime 這批牌共用的起飛絕對 tick。
+     * @param flipAbsoluteGameTime 這批牌共用的翻牌絕對 tick。
+     * @param playDealSound 是否為此牌播放發牌聲。
+     * @param playFlipSound 是否為此牌播放翻牌聲。
      */
     fun scheduleDealBatch(
         tile: MahjongTileEntity,
@@ -123,6 +131,10 @@ internal object TileAnimationSteps {
      * 落地後另外播放的旋轉動畫，而是在隱形傳送那一刻直接切換姿態——因為切換當下牌本身是隱形的，玩家
      * 看不到姿態瞬間跳變。只有這一張牌，不需要像開局發牌那樣排定跨座位／跨批次的延遲；[startDelayTicks] 為 0 時起飛立刻
      * 開始，槓或移出手牌後的補牌則等宣告的牌落地後才起飛。
+     *
+     * @param tile 要排定摸牌動畫的牌 entity。
+     * @param finalPlacement 摸牌動畫的落定位置。
+     * @param startDelayTicks 起飛前等待的 tick 數；0 時立即開始。
      */
     fun scheduleDrawnTile(
         tile: MahjongTileEntity,
@@ -174,6 +186,9 @@ internal object TileAnimationSteps {
      * 那樣中途隱形傳送——理由見 [MahjongTileTableLayout.DISCARD_ARC_HEIGHT] KDoc。姿態
      * （[MahjongTilePose.STANDING] 轉 [MahjongTilePose.FACE_UP]）跟位移用同一段動畫連續內插。側身旋轉
      * 不連續內插——[finalPlacement] 的 yaw 本身已經是算好的最終朝向，起飛那一刻就以最終朝向飛過去。
+     *
+     * @param tile 要飛往牌河位置的牌 entity。
+     * @param finalPlacement 牌河中的最終座標與朝向。
      */
     fun scheduleDiscardFlight(tile: MahjongTileEntity, finalPlacement: MahjongTileWallPlacement) {
         val startX = tile.x
@@ -206,6 +221,11 @@ internal object TileAnimationSteps {
      * 起訖姿態相同時就不會多插入一個沒有效果的 [AnimationStep.Custom]。側身旋轉（被鳴取的那張若落在
      * 側身格）跟捨牌動畫同一個既有簡化：[finalPlacement] 的 yaw 本身已經是算好的最終朝向，起飛那一刻
      * 就用最終 yaw 傳送，不連續內插旋轉角。
+     *
+     * @param tile 要移入副露區的牌 entity。
+     * @param finalPlacement 副露區的最終座標與朝向。
+     * @param endPose 動畫結束後使用的牌姿態。
+     * @param playLandingSound 是否播放副露落桌聲。
      */
     fun scheduleMeldClaim(
         tile: MahjongTileEntity,
@@ -245,6 +265,10 @@ internal object TileAnimationSteps {
      * 牌共用同一份的絕對起飛時刻，不是相對等待。沒有實際移動的牌（已經在整理後該在的格位）也會照樣
      * 走一次這個 step（起訖位置相同，視覺上等同無位移），讓全部牌的動畫佇列時長一致，方便呼叫端用
      * 同一個絕對「重排播完」時刻接續排定後續步驟。
+     *
+     * @param tile 要重排的牌 entity。
+     * @param finalPlacement 整理後的座標與朝向。
+     * @param startGameTime 這批牌共用的絕對開始 tick。
      */
     fun scheduleReorder(
         tile: MahjongTileEntity,
@@ -280,6 +304,10 @@ internal object TileAnimationSteps {
      * 隨動畫進度內插——硬性限制要求所有姿態轉換都要走 [AnimationStep.Custom] + [AnimationStep.PlayMotion]，
      * 不直接賦值 [MahjongTileEntity.tilePose]。[startGameTime] 是呼叫端算好、同一批牌共用同一份的絕對
      * 起飛時刻，理由同 [scheduleReorder]。
+     *
+     * @param tile 要翻倒的牌 entity。
+     * @param startGameTime 同組牌共用的絕對開始 tick。
+     * @param playGroupSound 是否為整組播放一次翻牌聲。
      */
     fun scheduleLaydown(tile: MahjongTileEntity, startGameTime: Long, playGroupSound: Boolean = false) {
         tile.enqueueAll(
@@ -309,6 +337,10 @@ internal object TileAnimationSteps {
     /**
      * 流局時將未公開手牌由目前姿態平滑蓋成牌背朝上。姿態與動畫步驟一起寫入 entity NBT，重新載入
      * 世界後會接續尚未完成的旋轉，不會瞬間跳到終點。
+     *
+     * @param tile 要蓋回牌背的牌 entity。
+     * @param startGameTime 同組牌共用的絕對開始 tick。
+     * @param playGroupSound 是否為整組播放一次翻牌聲。
      */
     fun scheduleConceal(tile: MahjongTileEntity, startGameTime: Long, playGroupSound: Boolean = false) {
         val startPose = tile.tilePose
@@ -346,7 +378,12 @@ internal object TileAnimationSteps {
      */
     private const val DEAL_VIEWING_BUFFER_TICKS: Int = 25
 
-    /** 建立只在預定時刻附近有效的捨牌落桌聲音 step。 */
+    /**
+     * 建立只在預定時刻附近有效的捨牌落桌聲音 step。
+     *
+     * @param gameTime 預定播放的絕對遊戲 tick。
+     * @return 帶播放與過期時刻的捨牌音效步驟。
+     */
     private fun discardLandingSound(gameTime: Long): AnimationStep.PlaySound = AnimationStep.PlaySound(
         soundId = MahjongAnimationSounds.TILE_DISCARD_LAND,
         volume = 1.05f,
@@ -355,7 +392,12 @@ internal object TileAnimationSteps {
         expiresAtGameTime = gameTime + MahjongAnimationSounds.EVENT_GRACE_TICKS,
     )
 
-    /** 建立只在預定時刻附近有效的副露落桌聲音 step。 */
+    /**
+     * 建立只在預定時刻附近有效的副露落桌聲音 step。
+     *
+     * @param gameTime 預定播放的絕對遊戲 tick。
+     * @return 帶播放與過期時刻的副露音效步驟。
+     */
     private fun meldLandingSound(gameTime: Long): AnimationStep.PlaySound = AnimationStep.PlaySound(
         soundId = MahjongAnimationSounds.TILE_MELD_LAND,
         volume = 1.1f,
@@ -364,7 +406,12 @@ internal object TileAnimationSteps {
         expiresAtGameTime = gameTime + MahjongAnimationSounds.EVENT_GRACE_TICKS,
     )
 
-    /** 建立只在預定時刻附近有效的整組手牌翻轉聲音 step。 */
+    /**
+     * 建立只在預定時刻附近有效的整組手牌翻轉聲音 step。
+     *
+     * @param gameTime 預定播放的絕對遊戲 tick。
+     * @return 帶播放與過期時刻的手牌翻轉音效步驟。
+     */
     private fun handTurnSound(gameTime: Long): AnimationStep.PlaySound = AnimationStep.PlaySound(
         soundId = MahjongAnimationSounds.TILE_HAND_TURN,
         volume = 1.2f,
@@ -373,7 +420,12 @@ internal object TileAnimationSteps {
         expiresAtGameTime = gameTime + MahjongAnimationSounds.EVENT_GRACE_TICKS,
     )
 
-    /** 建立只在預定時刻附近有效的開局發牌批次聲音 step。 */
+    /**
+     * 建立只在預定時刻附近有效的開局發牌批次聲音 step。
+     *
+     * @param gameTime 預定播放的絕對遊戲 tick。
+     * @return 帶播放與過期時刻的發牌音效步驟。
+     */
     private fun dealBatchSound(gameTime: Long): AnimationStep.PlaySound = AnimationStep.PlaySound(
         soundId = MahjongAnimationSounds.DEAL_BATCH,
         volume = 0.5f,
@@ -382,7 +434,12 @@ internal object TileAnimationSteps {
         expiresAtGameTime = gameTime + MahjongAnimationSounds.EVENT_GRACE_TICKS,
     )
 
-    /** 建立只在摸牌抵達右側摸牌位時播放的低音量聲音 step。 */
+    /**
+     * 建立只在摸牌抵達右側摸牌位時播放的低音量聲音 step。
+     *
+     * @param gameTime 摸牌抵達時的絕對遊戲 tick。
+     * @return 帶播放與過期時刻的摸牌音效步驟。
+     */
     private fun drawnTileLandingSound(gameTime: Long): AnimationStep.PlaySound = AnimationStep.PlaySound(
         soundId = MahjongAnimationSounds.DRAW_TILE_LAND,
         volume = 0.35f,

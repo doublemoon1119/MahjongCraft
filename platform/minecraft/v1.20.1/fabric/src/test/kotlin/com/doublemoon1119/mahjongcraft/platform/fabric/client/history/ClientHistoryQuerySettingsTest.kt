@@ -47,8 +47,13 @@ class ClientHistoryQuerySettingsTest {
         settings.apply(HistoryQuerySettingsPayload(500))
         val coordinator = ClientHistoryQueryCoordinator(
             sender = object : HistoryQuerySender {
+                /** 設定清理測試不送出清單查詢。 */
                 override fun sendList(request: HistoryListRequestDto) = Unit
+
+                /** 設定清理測試不送出摘要查詢。 */
                 override fun sendSummary(request: HistorySummaryRequestDto) = Unit
+
+                /** 設定清理測試不送出規則設定查詢。 */
                 override fun sendRuleSettings(request: HistoryRuleSettingsRequestDto) = Unit
 
                 /**

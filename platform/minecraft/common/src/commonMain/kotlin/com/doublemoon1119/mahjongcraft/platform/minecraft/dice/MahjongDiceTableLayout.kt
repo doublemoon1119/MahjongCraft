@@ -5,27 +5,13 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableL
 import kotlin.uuid.Uuid
 
 /**
- * 把座位 index 換算成桌子局部側面：index 0 固定對應局部南側，之後依序旋轉。任何需要「某位座位玩家的
- * 局部側面」的呈現層計算（骰子投入側、座位站立位置、手牌／摸牌位／牌河座位方向、[MahjongTileTableLayout.wallPlacement] 的
- * `dealerSeatIndex` 錨點）都共用這個函式，不各自重複定義。
+ * 將座位索引換算成桌子的局部側面，供玩家站位、牌面方向與骰子投入側共用。
  *
- * 這裡採用 SOUTH→EAST→NORTH→WEST（順時針），刻意跟 [MahjongTileTableLayout]
- * 內部 `SIDE_ORDER`／`advance`／`localWallVector` 使用的 SOUTH→WEST→NORTH→EAST（逆時針）**不是同一個
- * 方向**——這兩者過去被誤以為必須共用同一套旋轉順序，因而耦合修改了三次，三次都在牌牆密合度或墩的
- * 左右手方向上被實際遊玩截圖推翻。實際上這是兩個各自
- * 獨立的問題：
+ * 索引 0、1、2、3 依序對應南、東、北、西，使 [TableState.getNextPlayer] 的下家位於目前玩家右側。
+ * 這是玩家的座位順序，不是 [MahjongTileTableLayout] 組裝牌牆時使用的環狀順序；兩者不可互相替代。
  *
- * - **牌牆自身是否密合、墩的左右手方向是否正確**：只取決於 [MahjongTileTableLayout] 內部
- *   `SIDE_ORDER`／`advance`／`localWallVector` 三者的相對關係，屬於牌牆環狀結構本身的幾何自洽性，
- *   跟這裡的 `seatIndexToTableSide` 選哪個方向、從哪個側面開始編號完全無關（`advance` 只是把
- *   `SIDE_ORDER` 這個固定環從任意起點開始走，起點在哪裡不影響環本身密不密合、左右手對不對）。
- * - **玩家（連同手牌／摸牌位／牌河，因為這些本來就該跟著玩家站的位置走）該站在哪個物理側面**：只取決於
- *   這裡的 `seatIndexToTableSide`，需要滿足「回合順序中的下一位玩家（[TableState.getNextPlayer]，即下家）物理站位在目前
- *   玩家的右手邊」這個真實麻將慣例，這件事跟牌牆內部怎麼組裝完全無關。
- *
- * 因此這裡改成順時針（`seatIndex + 1` 落在右手邊），[MahjongTileTableLayout] 的 `SIDE_ORDER`／
- * `advance`／`localWallVector` 完全不動、繼續維持已證實正確的逆時針版本——兩邊各自獨立正確，不需要
- * 也不應該再耦合修改。
+ * @param seatIndex 回合順序中的座位索引；會依四席循環取餘數。
+ * @return 對應的桌子局部側面。
  */
 fun seatIndexToTableSide(seatIndex: Int): MahjongTableSide = when (seatIndex.mod(SEAT_COUNT)) {
     0 -> MahjongTableSide.SOUTH
@@ -45,6 +31,17 @@ object MahjongDiceTableLayout {
      * 基準 variant 皆由桌子局部南側投入。桌子 UUID 決定四組 variant 的固定排列，投擲序號依序輪替；
      * 之後先旋轉至 [throwSide]，再依 [tableFacing] 旋轉至世界方向。桌面高度固定為 controller 的
      * `Y + 1.0`。
+     *
+     * @param controllerX 桌子 controller 的方塊 X 座標。
+     * @param controllerY 桌子 controller 的方塊 Y 座標。
+     * @param controllerZ 桌子 controller 的方塊 Z 座標。
+     * @param tableId 用來穩定選擇 variant 起點與輪替方向的桌子 UUID。
+     * @param tableFacing 桌子在世界中的水平朝向。
+     * @param throwSide 擲骰者所在的桌子局部側面。
+     * @param rollSequence 此桌目前的投擲序號。
+     * @param diceCount 本次擲骰的數量，只支援 2 或 3 顆。
+     * @return 依骰子擲出順序排列的桌面位置。
+     * @throws IllegalArgumentException 骰子數量不是 2 或 3 時。
      */
     fun placements(
         controllerX: Int,
@@ -77,6 +74,10 @@ object MahjongDiceTableLayout {
      * 對同一顆骰子（依丟出順序）的延遲皆相同，只有落點座標不同，取任一組 variant 即可。用於呼叫端
      * 計算「最後一顆骰子開始動畫」到「整組擲骰動畫全部結束」所需的總 tick 數
      * （= 這個值 + [DiceRollAnimationSpec.DEFAULT_DURATION_TICKS]）。
+     *
+     * @param diceCount 本次擲骰數量，只支援 2 或 3 顆。
+     * @return 最後一顆骰子的起始延遲 tick 數。
+     * @throws IllegalArgumentException 骰子數量不是 2 或 3 時。
      */
     fun maxStartDelayTicks(diceCount: Int): Int = variantsFor(diceCount).first().maxOf { it.startDelayTicks }
 
@@ -84,19 +85,36 @@ object MahjongDiceTableLayout {
      * 依骰子數量取得從「呼叫端觸發擲骰呈現」到「整組擲骰動畫（含額外觀看時間）全部播完」所需的總
      * tick 數。單一來源，供 [maxStartDelayTicks] 呼叫端計算忙碌時長，以及任何需要「等骰子動畫播完
      * 才執行」的後續動作（例如牌牆事後接線）共用，不各自重複組合這三個數字。
+     *
+     * @param diceCount 本次擲骰數量，只支援 2 或 3 顆。
+     * @return 從觸發呈現到所有骰子及結果展示結束的 tick 數。
+     * @throws IllegalArgumentException 骰子數量不是 2 或 3 時。
      */
     fun totalAnimationTicks(diceCount: Int): Int = maxStartDelayTicks(diceCount) +
         DiceRollAnimationSpec.DEFAULT_DURATION_TICKS +
         DiceRollAnimationSpec.EXTRA_VIEWING_TICKS
 
-    /** 依骰子數量選擇已驗證的基準 variant。 */
+    /**
+     * 依骰子數量選擇已驗證的基準 variant。
+     *
+     * @param diceCount 本次擲骰數量。
+     * @return 對應數量的預先驗證位置組合。
+     * @throws IllegalArgumentException 不支援該骰子數量時。
+     */
     private fun variantsFor(diceCount: Int): List<List<MahjongDiceTablePlacement>> = when (diceCount) {
         2 -> TWO_DICE_VARIANTS
         3 -> THREE_DICE_VARIANTS
         else -> throw IllegalArgumentException("Dice table layout supports two or three dice")
     }
 
-    /** 使用跨平台穩定的 UUID 字串雜湊決定 variant 起點及正向／反向輪替。 */
+    /**
+     * 使用跨平台穩定的 UUID 字串雜湊決定 variant 起點及正向／反向輪替。
+     *
+     * @param tableId 用來決定 variant 順序的桌子 UUID。
+     * @param rollSequence 同桌遞增的投擲序號。
+     * @param variantCount 可選 variant 數量。
+     * @return 此桌此序號使用的 variant 索引。
+     */
     private fun variantIndex(tableId: Uuid, rollSequence: Long, variantCount: Int): Int {
         val hash = tableId.toString().fold(STABLE_HASH_OFFSET) { value, character ->
             (value xor character.code.toLong()) * STABLE_HASH_MULTIPLIER
@@ -106,14 +124,27 @@ object MahjongDiceTableLayout {
         return floorMod(start.toLong() + rollSequence * step, variantCount)
     }
 
-    /** 將基準南側向量旋轉至局部投入側，再跟著桌子旋轉至世界朝向。 */
+    /**
+     * 將基準南側向量旋轉至局部投入側，再跟著桌子旋轉至世界朝向。
+     *
+     * @param vector 以局部南側為基準的向量。
+     * @param throwSide 向量要旋轉至的投入側。
+     * @param tableFacing 桌子在世界中的朝向。
+     * @return 世界座標方向的向量。
+     */
     private fun rotateToWorld(
         vector: DiceAnimationVector,
         throwSide: MahjongTableSide,
         tableFacing: MahjongTableFacing,
     ): DiceAnimationVector = rotateForFacing(rotateForSide(vector, throwSide), tableFacing)
 
-    /** 將局部南側基準旋轉至指定投入側。 */
+    /**
+     * 將局部南側基準旋轉至指定投入側。
+     *
+     * @param vector 以局部南側為基準的向量。
+     * @param side 要旋轉至的桌面側面。
+     * @return 以指定側面為基準的向量。
+     */
     private fun rotateForSide(vector: DiceAnimationVector, side: MahjongTableSide): DiceAnimationVector = when (side) {
         MahjongTableSide.SOUTH -> vector
         MahjongTableSide.WEST -> DiceAnimationVector(-vector.z, vector.y, vector.x)
@@ -121,7 +152,13 @@ object MahjongDiceTableLayout {
         MahjongTableSide.EAST -> DiceAnimationVector(vector.z, vector.y, -vector.x)
     }
 
-    /** 將朝北擺放桌子的局部向量旋轉至指定世界朝向。 */
+    /**
+     * 將朝北擺放桌子的局部向量旋轉至指定世界朝向。
+     *
+     * @param vector 以桌子局部方向為基準的向量。
+     * @param facing 桌子在世界中的朝向。
+     * @return 世界座標方向的向量。
+     */
     private fun rotateForFacing(vector: DiceAnimationVector, facing: MahjongTableFacing): DiceAnimationVector = when (facing) {
         MahjongTableFacing.NORTH -> vector
         MahjongTableFacing.EAST -> DiceAnimationVector(-vector.z, vector.y, vector.x)
@@ -129,10 +166,26 @@ object MahjongDiceTableLayout {
         MahjongTableFacing.WEST -> DiceAnimationVector(vector.z, vector.y, -vector.x)
     }
 
-    /** 對負數保持非負結果的餘數計算。 */
+    /**
+     * 對負數保持非負結果的餘數計算。
+     *
+     * @param value 要取餘數的值。
+     * @param divisor 正除數。
+     * @return 範圍在 0（含）至除數（不含）之間的餘數。
+     */
     private fun floorMod(value: Long, divisor: Int): Int = ((value % divisor) + divisor).toInt() % divisor
 
-    /** 建立單顆基準位置。 */
+    /**
+     * 建立單顆基準位置。
+     *
+     * @param finalX 最終位置的 X 偏移。
+     * @param finalZ 最終位置的 Z 偏移。
+     * @param startX 起點相對最終位置的 X 偏移。
+     * @param startY 起點相對最終位置的 Y 偏移。
+     * @param startZ 起點相對最終位置的 Z 偏移。
+     * @param delay 動畫開始延遲 tick 數。
+     * @return 指定最終位置、起點與延遲的骰子呈現位置。
+     */
     private fun placement(
         finalX: Double,
         finalZ: Double,
@@ -146,10 +199,16 @@ object MahjongDiceTableLayout {
         startDelayTicks = delay,
     )
 
-    /** 固定桌面幾何與 UUID 雜湊常數。 */
+    /** 方塊中心相對整數座標的偏移。 */
     private const val BLOCK_CENTER: Double = 0.5
+
+    /** 桌面相對 controller 方塊底部的高度。 */
     private const val TABLETOP_HEIGHT: Double = 1.0
+
+    /** UUID 字串穩定雜湊的初始值。 */
     private const val STABLE_HASH_OFFSET: Long = -3750763034362895579L
+
+    /** UUID 字串每一步雜湊使用的乘數。 */
     private const val STABLE_HASH_MULTIPLIER: Long = 1099511628211L
 
     /** 由局部南側投入的四組雙骰安全位置。 */

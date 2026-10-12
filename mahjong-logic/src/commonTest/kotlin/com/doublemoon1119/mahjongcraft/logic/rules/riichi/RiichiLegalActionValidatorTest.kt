@@ -28,6 +28,7 @@ import kotlin.test.assertTrue
  */
 class RiichiLegalActionValidatorTest {
 
+    /** 依日麻規則判定牌局動作資格的合法動作驗證器。 */
     private val validator = RiichiLegalActionValidator(
         shantenCalculator = RiichiShantenCalculator(),
         handValueCalculator = RiichiHandValueCalculator(),

@@ -7,7 +7,7 @@ import org.gradle.api.artifacts.VersionCatalogsExtension
 import java.io.File
 
 /**
- * 在 root project 集中註冊 repository 層級的靜態驗證。
+ * 在 root project 集中註冊 repository 層級的驗證，以及語系檔排序任務。
  *
  * 各任務需要的 project 資料都在設定階段以 provider 交給任務屬性，執行時不讀取 `Task.project`，
  * 因此相容於 configuration cache。
@@ -83,13 +83,23 @@ private val RELEASE_TRAIN_VERSION_NAMES: List<String> = listOf(
     "bundled-extensions-version",
 )
 
-/** 從 `libs` version catalog 讀取所有 release train 版本。 */
+/**
+ * 從 `libs` version catalog 讀取所有 release train 版本。
+ *
+ * @param project 提供 root version catalog 的 project。
+ * @return 以 catalog alias 為 key 的 release train 版本。
+ */
 private fun releaseTrainVersions(project: Project): Map<String, String> {
     val catalog = project.extensions.getByType(VersionCatalogsExtension::class.java).named("libs")
     return RELEASE_TRAIN_VERSION_NAMES.associateWith { name -> catalog.findVersion(name).get().requiredVersion }
 }
 
-/** 目錄中的所有語系檔，依檔名排序；模組未載入時目錄仍在磁碟上，不受目前 target 選擇影響。 */
+/**
+ * 取得目錄中的所有語系檔並依檔名排序；模組未載入時目錄仍在磁碟上，不受目前 target 選擇影響。
+ *
+ * @param dir 要搜尋語系檔的目錄。
+ * @return 依檔名排序的 JSON 語系檔；目錄不存在時為空清單。
+ */
 internal fun minecraftLangFiles(dir: File): List<File> {
     if (!dir.isDirectory) return emptyList()
     return dir.listFiles { file -> file.isFile && file.extension == "json" }
@@ -102,7 +112,9 @@ internal fun minecraftLangFiles(dir: File): List<File> {
  *
  * 換行符號不影響判斷：CRLF 與 LF 內容相同的檔案視為相同。
  *
- * @throws IllegalArgumentException [text] 不符合 [sortedLangFileText] 要求的固定單行條目格式。
+ * @param text 要檢查的語系檔內容。
+ * @return 條目已依 key 字典序排列時為 true。
+ * @throws IllegalArgumentException [text] 不符合 [sortedLangFileText] 要求的首尾行與結尾換行格式。
  */
 internal fun isLangFileSorted(text: String): Boolean = text.withLfLineEndings() == sortedLangFileText(text)
 
@@ -111,8 +123,11 @@ internal fun isLangFileSorted(text: String): Boolean = text.withLfLineEndings() 
  *
  * 每個條目固定佔一整行（`  "key": "value",`），排序只搬動整行，不解析或改寫 value 內容與跳脫字元。
  * 純文字轉換，不特定於任何平台的語系檔格式。輸入可以是 CRLF 或 LF 換行，輸出一律使用 LF。
+ * 呼叫端需提供符合上述格式的內容；此函式只檢查首尾行與結尾換行，不驗證每筆條目或 JSON 語法。
  *
- * @throws IllegalArgumentException [original] 不符合這個固定的單行條目格式。
+ * @param original 要排序的語系檔內容。
+ * @return 依 key 字典序排列且使用 LF 換行的內容。
+ * @throws IllegalArgumentException [original] 首行不是左大括號，或末尾不是右大括號加換行時拋出。
  */
 internal fun sortedLangFileText(original: String): String {
     val lines = original.withLfLineEndings().split("\n")
@@ -128,7 +143,12 @@ internal fun sortedLangFileText(original: String): String {
 /** 將 CRLF 換行統一為 LF。 */
 private fun String.withLfLineEndings(): String = replace("\r\n", "\n")
 
-/** 合併目前載入的 project、catalog 模組與非 Gradle 平台索引。 */
+/**
+ * 合併目前載入的 project、catalog 模組與非 Gradle 平台索引。
+ *
+ * @param project 用於取得 root、已載入專案及平台 catalog 的 project。
+ * @return 所有應存在 README.md 的檔案路徑集合。
+ */
 internal fun expectedModuleReadmes(project: Project): Set<File> {
     val root = project.rootDir
     val catalog = root.resolve("gradle/platform-targets.toml")

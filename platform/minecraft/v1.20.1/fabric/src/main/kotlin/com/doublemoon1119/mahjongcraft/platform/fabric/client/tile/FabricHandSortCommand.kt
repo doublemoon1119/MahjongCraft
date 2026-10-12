@@ -71,6 +71,8 @@ class FabricHandSortCommand(
     /**
      * 組合切換訊息：前綴 + 切換前狀態 → 切換後狀態，「開啟」亮綠、「關閉」亮紅，
      * 比照 [FabricPlayerFeedbackPublisher] 的 `readyToggledMessage` 配色慣例。
+     *
+     * @param enabled 切換後是否為開啟狀態。
      */
     private fun handSortToggledMessage(enabled: Boolean): MutableText {
         val fromKey =

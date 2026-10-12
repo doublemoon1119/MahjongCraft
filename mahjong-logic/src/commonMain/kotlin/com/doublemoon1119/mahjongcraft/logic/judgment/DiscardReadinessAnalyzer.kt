@@ -25,6 +25,7 @@ interface DiscardReadinessAnalyzer {
      * @param tableState 目前的權威桌況。
      * @param player 欲分析的玩家。
      * @param visibleTiles 這位玩家看得到牌面的每一張實體牌。
+     * @return 目前手牌的等待牌分析；無法判定或尚未聽牌時為 null。
      */
     fun analyzeCurrentHand(
         tableState: TableState,
@@ -51,6 +52,9 @@ interface DiscardReadinessAnalyzer {
      *
      * @param action 玩家已明確選擇、但尚未完成其選牌階段的動作。
      * @param visibleTiles 這位玩家看得到牌面的每一張實體牌。
+     * @param tableState 目前的權威桌況。
+     * @param player 欲分析的玩家。
+     * @return 依立牌順序排列的動作後捨牌分析。
      */
     fun analyzeForAction(
         tableState: TableState,

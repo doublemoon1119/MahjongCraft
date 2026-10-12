@@ -89,7 +89,12 @@ class ClientHistoryChatEntryStoreTest {
          */
         override fun queryRoundState(request: HistoryRoundStateRequestDto): String = error("Chat entries must not query round state directly")
 
-        /** 此替身不擁有在途要求。 */
+        /**
+         * 此替身不追蹤要求，因此沒有可取消的 request。
+         *
+         * @param requestId 欲取消的要求 ID。
+         * @return 固定回傳 `false`。
+         */
         override fun cancel(requestId: String): Boolean = false
     }
 }

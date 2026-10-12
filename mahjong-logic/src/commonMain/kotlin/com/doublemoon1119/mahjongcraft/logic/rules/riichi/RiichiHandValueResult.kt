@@ -22,6 +22,6 @@ data class RiichiHandValueResult(
     val isYakuman: Boolean = totalHan < 0,
     val paoLiability: PaoLiability? = null,
 ) : HandValueResult {
-    /** 贏家實際獲得的點數總和，等同於 [pointResult] 的 [RiichiPointResult.total]。 */
+    /** 點數結果按四人付款結構加總的金額；人數不足四人時應改用 [RiichiPointResult.totalFor]。 */
     val totalPoint: Int get() = pointResult.total
 }

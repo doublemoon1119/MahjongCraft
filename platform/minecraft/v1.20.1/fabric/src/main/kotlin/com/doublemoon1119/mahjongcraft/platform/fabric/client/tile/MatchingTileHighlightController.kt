@@ -23,7 +23,11 @@ class MatchingTileHighlightController(
         ClientTickEvents.END_CLIENT_TICK.register(::tick)
     }
 
-    /** 依準星目標與目前可見牌面更新所有管理中麻將牌。 */
+    /**
+     * 依準星目標與目前可見牌面更新所有管理中麻將牌。
+     *
+     * @param client Minecraft client 狀態與當前世界。
+     */
     private fun tick(client: MinecraftClient) {
         val tiles = client.world?.entities?.filterIsInstance<MahjongTileEntity>()?.toList().orEmpty()
         tiles.forEach(MahjongTileEntity::clearMatchingHighlight)
@@ -51,7 +55,13 @@ class MatchingTileHighlightController(
         !animating &&
         managedTableId?.let { tableId -> stateStore.findManagedTileSnapshot(tableId, uuid.toKotlinUuid())?.tile != null } == true
 
-    /** 在兩個 RGB 色彩之間線性內插。 */
+    /**
+     * 在兩個 RGB 色彩之間線性內插。
+     *
+     * @param from 起始 RGB 色彩。
+     * @param to 結束 RGB 色彩。
+     * @param progress 內插比例；計算後的色彩通道會限制在 0–255。
+     */
     private fun interpolateColor(from: Int, to: Int, progress: Float): Int {
         fun component(shift: Int): Int {
             val start = from shr shift and 0xFF

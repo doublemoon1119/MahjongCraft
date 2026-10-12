@@ -29,6 +29,9 @@ import kotlin.uuid.Uuid
  * （見 `MahjongTileSelectionConfirmEntity` 類別 KDoc「多個 instance 拼湊」的設計），所以每次 [present]
  * 一律先清掉這位玩家既有的整組、再重新生成一組全新的，不採用「找到既有的就更新」模式——這個決策目前
  * 只在多選選牌開始時觸發一次，不會頻繁呼叫，重新生成的成本可以忽略。
+ *
+ * @property serverHolder 取得目前伺服器世界。
+ * @property spawnGateway 透過平台入口生成面板 entity。
  */
 @Single(binds = [MahjongTileSelectionConfirmPresenter::class])
 class FabricMahjongTileSelectionConfirmPresenter(
@@ -92,14 +95,27 @@ class FabricMahjongTileSelectionConfirmPresenter(
         return panels.size
     }
 
-    /** 由版本無關 dimension ID 取得目前 server session 的世界。 */
+    /**
+     * 由版本無關 dimension ID 取得目前 server session 的世界。
+     *
+     * @param location 桌子位置。
+     * @return 對應的已載入伺服器世界；無法解析時為 null。
+     */
     private fun resolveWorld(location: TableLocation): ServerWorld? {
         val identifier = Identifier.tryParse(location.dimensionId) ?: return null
         val worldKey = RegistryKey.of(RegistryKeys.WORLD, identifier)
         return serverHolder.current()?.getWorld(worldKey)
     }
 
-    /** 驗證指定位置確實是 UUID 與朝向資料可用的 controller。 */
+    /**
+     * 驗證指定位置確實是 UUID 與朝向資料可用的 controller。
+     *
+     * @param world 桌子所在世界。
+     * @param controllerPos controller 方塊位置。
+     * @param state 該方塊目前狀態。
+     * @param tableId 預期桌子 UUID。
+     * @return 狀態完整且 UUID 相符的桌子 block entity；否則為 null。
+     */
     private fun resolveTable(
         world: ServerWorld,
         controllerPos: BlockPos,
@@ -118,6 +134,12 @@ class FabricMahjongTileSelectionConfirmPresenter(
     /**
      * 只查詢桌子結構附近並以同步 UUID／持有玩家精確篩選，避免掃描整個 dimension。回傳這位玩家目前
      * 那一組拼湊面板的所有 instance（見 `MahjongTileSelectionConfirmEntity` 類別 KDoc）。
+     *
+     * @param world 要搜尋的伺服器世界。
+     * @param tableId 桌子 UUID。
+     * @param controllerPos controller 方塊位置。
+     * @param holderId 持有這組面板的玩家 UUID。
+     * @return 指定玩家所持有的面板 entity。
      */
     private fun findManagedPanelsForHolder(
         world: ServerWorld,
@@ -129,7 +151,14 @@ class FabricMahjongTileSelectionConfirmPresenter(
         searchBox(controllerPos),
     ) { panel -> panel.managedTableId == tableId && panel.holderId == holderId }
 
-    /** 只查詢桌子結構附近並以同步 UUID 精確篩選（任何持有者），避免掃描整個 dimension。 */
+    /**
+     * 只查詢桌子結構附近並以同步 UUID 精確篩選（任何持有者），避免掃描整個 dimension。
+     *
+     * @param world 要搜尋的伺服器世界。
+     * @param tableId 桌子 UUID。
+     * @param controllerPos controller 方塊位置。
+     * @return 該桌所有持有者的面板 entity。
+     */
     private fun findManagedPanels(
         world: ServerWorld,
         tableId: Uuid,
@@ -139,12 +168,23 @@ class FabricMahjongTileSelectionConfirmPresenter(
         searchBox(controllerPos),
     ) { panel -> panel.managedTableId == tableId }
 
+    /**
+     * 建立覆蓋桌上確認面板的搜尋範圍。
+     *
+     * @param pos 桌子 controller 方塊位置。
+     * @return 面板 entity 查詢用的範圍。
+     */
     private fun searchBox(pos: BlockPos) = Box(pos).expand(
         TableOverlayEntitySearch.HORIZONTAL_RADIUS,
         TableOverlayEntitySearch.VERTICAL_RADIUS,
         TableOverlayEntitySearch.HORIZONTAL_RADIUS,
     )
 
-    /** 將版本無關 table location 轉回 Fabric 方塊座標。 */
+    /**
+     * 將版本無關 table location 轉回 Fabric 方塊座標。
+     *
+     * @param location 版本無關桌子位置。
+     * @return 對應的 Minecraft 方塊位置。
+     */
     private fun TableLocation.toBlockPos(): BlockPos = BlockPos(x, y, z)
 }

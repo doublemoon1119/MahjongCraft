@@ -14,9 +14,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
  * [AiDecisionContext.legalActions] 裡），AI 選完合法動作後還要自己決定「打哪張牌」，這個轉換
  * 本身就是策略的一部分，不能交給呼叫端做。
  *
- * 介面方法刻意標成 `suspend`：是為未來可能引入的 LLM 型策略（例如透過 Koog 呼叫語言模型）預留
- * 的空間——真正呼叫遠端模型本來就需要非同步等待，現在就把介面定成 `suspend`，未來新增那樣的實作
- * 不需要更動這個介面。
+ * 決策方法使用 `suspend`，讓策略能在等待外部計算結果時暫停，而不必阻塞呼叫執行緒。
  *
  * 執行緒契約：
  * - 方法可能在伺服器主執行緒以外的背景執行緒上呼叫，不得假設在主執行緒上，也不得存取只能在主執行緒使用的物件。
@@ -28,9 +26,17 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 interface MahjongAiStrategy {
     /**
      * 依 [context] 決定這位 AI 玩家接下來要執行的操作。
+     *
+     * @param context 本次決策可見的桌況、合法動作與規則限制。
+     * @return 要求呼叫端驗證並套用的命令；回傳命令本身不會修改桌況。
      */
     suspend fun decideGameCommand(context: AiDecisionContext): GameCommand
 
-    /** 依 [context] 決定開局準備步驟的提交內容。 */
+    /**
+     * 依 [context] 決定開局準備步驟的提交內容；未覆寫時使用情境提供的預設提交。
+     *
+     * @param context 本次準備步驟的可見資訊與可提交選項。
+     * @return 要求呼叫端驗證並套用的準備提交。
+     */
     suspend fun decideRoundPreparation(context: RoundPreparationAiContext): RoundPreparationSubmission = context.defaultSubmission()
 }

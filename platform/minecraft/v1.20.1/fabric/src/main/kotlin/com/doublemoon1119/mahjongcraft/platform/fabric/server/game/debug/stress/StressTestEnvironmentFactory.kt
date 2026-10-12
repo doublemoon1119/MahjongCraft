@@ -58,6 +58,9 @@ class StressTestEnvironmentFactory(
      * 建立環境；[StressHistoryMode.WRITE] 時在 [server] 的存檔資料夾建立新的壓力測試資料庫，同名舊檔會先刪除。
      *
      * @return 環境；資料庫無法開啟時為 null。
+     *
+     * @param server 用來解析存檔資料夾的伺服器。
+     * @param historyMode 歷史處理方式。
      */
     suspend fun open(server: MinecraftServer, historyMode: StressHistoryMode): StressTestEnvironment? = openAt(FabricHistoryDatabasePath.resolve(server).resolveSibling(DATABASE_FILE_NAME), historyMode)
 
@@ -65,6 +68,9 @@ class StressTestEnvironmentFactory(
      * 建立環境；[StressHistoryMode.WRITE] 時在 [path] 建立新的壓力測試資料庫，同名舊檔會先刪除。
      *
      * @return 環境；資料庫無法開啟時為 null。
+     *
+     * @param path 壓力測試資料庫所在路徑。
+     * @param historyMode 歷史處理方式。
      */
     internal suspend fun openAt(path: Path, historyMode: StressHistoryMode): StressTestEnvironment? {
         val historyTimer = HeadlessStepTimer()
@@ -78,7 +84,14 @@ class StressTestEnvironmentFactory(
         return StressTestEnvironment(store, historyMode, historyTimer, writerTimer, sink)
     }
 
-    /** 以正式寫入元件開啟 [path] 的新資料庫；無法開啟時刪除殘檔並回傳 null。 */
+    /**
+     * 以正式寫入元件開啟 [path] 的新資料庫；無法開啟時刪除殘檔並回傳 null。
+     *
+     * @param store 接收歷史事件的權威狀態來源。
+     * @param writerTimer 記錄背景寫入各環節的計時器。
+     * @param path 新資料庫的檔案路徑。
+     * @return 可用的資料庫歷史接收器；開啟失敗時為 null。
+     */
     private suspend fun openDatabase(store: AuthoritativeStateStore, writerTimer: StressWriterTimer, path: Path): StressHistorySink.Database? {
         val retention = HistoryRetentionCoordinator().apply { apply(STRESS_HISTORY_CONFIG.retentionPolicy()) }
         val writer = FabricHistoryOutboxWriter(
@@ -93,7 +106,13 @@ class StressTestEnvironmentFactory(
         return if (writer.status().databaseConnected) sink else null.also { sink.close() }
     }
 
-    /** 啟動只編碼不寫入的背景工作。 */
+    /**
+     * 啟動只編碼不寫入的背景工作。
+     *
+     * @param store 提供待編碼歷史事件的權威狀態來源。
+     * @param writerTimer 記錄背景編碼耗時與事件數的計時器。
+     * @return 執行中的編碼接收器。
+     */
     private fun startEncoding(store: AuthoritativeStateStore, writerTimer: StressWriterTimer): StressHistorySink.EncodeOnly {
         val mapper = HistoryRecordingPersistenceMapper(registries, json)
         val failed = AtomicBoolean(false)

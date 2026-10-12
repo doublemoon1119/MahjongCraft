@@ -25,7 +25,7 @@ import kotlin.test.assertTrue
 
 /** 驗證規則一覽 card 的文字、牌例排列與缺少翻譯／圖案時的處理。 */
 class RuleCataloguePresenterTest {
-    /** 條目文字依序為名稱、標籤、說明與無法使用的原因，長文字換行後不超出 card。 */
+    /** 條目文字依序呈現，長說明換行後仍限制在 card 範圍內。 */
     @Test
     fun `card shows name labels description and reason in order within the width`() {
         val entry = entry(
@@ -46,7 +46,7 @@ class RuleCataloguePresenterTest {
         assertTrue(card.lines.zipWithNext().all { (first, second) -> first.y <= second.y })
     }
 
-    /** 有說明的標籤在指到時顯示說明，沒有說明的標籤與分隔符號不顯示提示。 */
+    /** 有說明的標籤顯示提示，無說明的標籤與分隔符不顯示提示。 */
     @Test
     fun `labels with descriptions show them as tooltips`() {
         val card = presenter().measure(
@@ -62,7 +62,7 @@ class RuleCataloguePresenterTest {
         assertEquals(separator.x + separator.width, described.x)
     }
 
-    /** 標籤說明缺少翻譯時，提示改為缺少翻譯的說明。 */
+    /** 標籤說明缺少翻譯時以缺少翻譯訊息作為提示。 */
     @Test
     fun `missing label descriptions report the missing key`() {
         val card = presenter().measure(entry = entry(labels = listOf(RuleCatalogueLabel(LABEL_A, MISSING_KEY))), width = CARD_WIDTH)
@@ -70,7 +70,7 @@ class RuleCataloguePresenterTest {
         assertEquals(listOf("missing translation $MISSING_KEY"), card.lines[1].tooltip)
     }
 
-    /** 放不下的標籤整個移到下一行，行首不放分隔符號，每個標籤仍各自帶提示且都在 card 內。 */
+    /** 無法放入同列的標籤整個換行且保留各自提示。 */
     @Test
     fun `labels that do not fit move to the next line whole`() {
         val labels = List(4) { RuleCatalogueLabel(LABEL_B, LABEL_B_DESCRIPTION) }
@@ -85,7 +85,7 @@ class RuleCataloguePresenterTest {
         assertInside(card, width = NARROW_CARD_WIDTH + 60)
     }
 
-    /** 沒有範例的條目不保留牌例區，也沒有牌面。 */
+    /** 沒有範例時不保留牌例區域。 */
     @Test
     fun `entries without examples have no tile area`() {
         val presenter = presenter()
@@ -97,7 +97,7 @@ class RuleCataloguePresenterTest {
         assertEquals(plain.height, plain.lines.last().y + RuleCataloguePresenter.LINE_HEIGHT + RuleCataloguePresenter.PADDING)
     }
 
-    /** 多個範例依原順序顯示，各有完整手牌或局部示意的標題，牌組標題與牌面都在 card 內。 */
+    /** 多個範例維持順序並顯示各自標題。 */
     @Test
     fun `multiple examples keep order and titles`() {
         val card = presenter().measure(
@@ -114,7 +114,7 @@ class RuleCataloguePresenterTest {
         assertInside(card)
     }
 
-    /** 四槓加雀頭的 18 張完整範例在窄 card 中換列，所有牌面都在 card 內且按原順序。 */
+    /** 窄 card 的 18 張完整牌例可換列且維持順序。 */
     @Test
     fun `eighteen tile example wraps inside a narrow card`() {
         val groups = List(4) { RuleCatalogueTileGroup(RuleCatalogueTileGroupRole.CLOSED_KAN, List(4) { Tile.Honor.East }) } +
@@ -130,7 +130,7 @@ class RuleCataloguePresenterTest {
         assertTrue(card.tiles.map { it.placement.y }.distinct().size > 1)
     }
 
-    /** 缺少翻譯時顯示翻譯鍵，並在指向該行時提示缺少的翻譯。 */
+    /** 名稱翻譯缺失時顯示翻譯鍵與提示。 */
     @Test
     fun `missing translations show the key with a tooltip`() {
         val card = presenter().measure(entry = entry(name = MISSING_KEY), width = CARD_WIDTH)
@@ -141,7 +141,7 @@ class RuleCataloguePresenterTest {
         assertTrue(card.lines.drop(1).all { it.tooltip.isEmpty() })
     }
 
-    /** 缺少圖案的牌使用未知牌面並提示牌種，其他牌照常顯示。 */
+    /** 缺少牌面圖案時以未知牌面呈現並提示牌種。 */
     @Test
     fun `missing tile art falls back to the unknown face with a tooltip`() {
         val custom = Tile.Extension(TileTypeId("example", "flower_plum"))
@@ -163,7 +163,7 @@ class RuleCataloguePresenterTest {
         assertEquals(listOf("missing art example:flower_plum"), card.tiles[1].tooltip)
     }
 
-    /** 牌組標題比可用寬度長時截短，不超出 card。 */
+    /** 過長牌組標題會截短以避免超出 card。 */
     @Test
     fun `long group headings are trimmed`() {
         val card = presenter(extra = mapOf(MinecraftRuleCatalogueScreenKeys.GROUP_WINNING_TILE to "W".repeat(80))).measure(
@@ -181,7 +181,7 @@ class RuleCataloguePresenterTest {
         assertInside(card, width = NARROW_CARD_WIDTH)
     }
 
-    /** 自訂分類、自訂牌種與非日麻價值標籤的第三方規則，不需修改共用畫面就能篩選並排成 card。 */
+    /** 第三方規則可透過共用 presenter 呈現與篩選。 */
     @Test
     fun `third party rules render through the shared presenter`() {
         val custom = Tile.Extension(TileTypeId("example", "season_spring"))
@@ -241,7 +241,7 @@ class RuleCataloguePresenterTest {
         assertEquals(RuleCatalogueBrowseStatus.NO_RESULTS, browser.snapshot(presenter::translation).status)
     }
 
-    /** 每個瀏覽狀態與設定來源都有對應文字，有內容時不顯示狀態說明。 */
+    /** 所有瀏覽狀態、牌組角色與設定來源都有翻譯鍵。 */
     @Test
     fun `every status and source has text`() {
         RuleCatalogueBrowseStatus.entries.forEach { status ->
@@ -342,10 +342,13 @@ class RuleCataloguePresenterTest {
 
     /** 每個字元 6 像素寬、逐字換行的測試字型。 */
     private object FixedWidthMetrics : RuleCatalogueTextMetrics {
+        /** 以固定字寬計算文字寬度。 */
         override fun width(text: String): Int = text.length * CHAR_WIDTH
 
+        /** 以固定字元數將文字逐字分段。 */
         override fun wrap(text: String, maxWidth: Int): List<String> = text.chunked((maxWidth / CHAR_WIDTH).coerceAtLeast(1)).ifEmpty { listOf("") }
 
+        /** 依可用寬度截取字元。 */
         override fun trim(text: String, maxWidth: Int): String = text.take((maxWidth / CHAR_WIDTH).coerceAtLeast(0))
     }
 
@@ -359,8 +362,10 @@ class RuleCataloguePresenterTest {
         override val ruleModuleId: String,
         private val catalogue: RuleCatalogue,
     ) : RuleCatalogueProvider {
+        /** 回傳台灣規則的預設設定。 */
         override fun defaultRuleConfig(): MahjongRuleConfig = TaiwanRuleConfig()
 
+        /** 回傳 fixture 保存的固定目錄，不依設定改變。 */
         override fun catalogue(config: MahjongRuleConfig): RuleCatalogue = catalogue
     }
 

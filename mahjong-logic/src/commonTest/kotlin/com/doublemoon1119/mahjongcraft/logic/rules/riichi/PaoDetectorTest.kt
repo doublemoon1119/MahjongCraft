@@ -149,7 +149,13 @@ class PaoDetectorTest {
         assertNull(result, "Non-honor tiles should never trigger pao")
     }
 
-    /** 建立指定種類、由同一種牌組成的副露；槓為 4 張，其餘為 3 張。 */
+    /**
+     * 建立指定種類、由同一種牌組成的副露；明槓與暗槓為 4 張，其餘種類為 3 張。
+     *
+     * @param type 副露種類。
+     * @param tile 組成副露的牌種。
+     * @return 依種類建立的測試副露。
+     */
     private fun meld(
         type: MeldType,
         tile: Tile,

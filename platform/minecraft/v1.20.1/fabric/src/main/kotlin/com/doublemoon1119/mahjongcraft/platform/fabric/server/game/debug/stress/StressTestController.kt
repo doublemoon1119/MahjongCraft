@@ -171,13 +171,25 @@ class StressTestController(
         return StressTestStartResult.Started
     }
 
-    /** 要求停止執行中的壓力測試；沒有執行中的測試時回傳 false。 */
+    /**
+     * 要求停止執行中的壓力測試；沒有執行中的測試時回傳 false。
+     *
+     * @return 有停止執行中的測試時為 `true`。
+     */
     suspend fun stop(): Boolean = stopRun(StressStopReason.REQUESTED) != null
 
-    /** 目前或最近一次的報告；從未執行過時為 null。 */
+    /**
+     * 目前或最近一次的報告；從未執行過時為 null。
+     *
+     * @return 執行中或最近一次停止後的報告。
+     */
     fun report(): StressTestReport? = run?.report(running = true, stopReason = null) ?: lastReport
 
-    /** 刪除壓力測試資料庫；測試仍在執行時不刪除。 */
+    /**
+     * 刪除壓力測試資料庫；測試仍在執行時不刪除。
+     *
+     * @return 資料庫已刪除、無資料庫可刪，或因測試執行中而未刪除的結果。
+     */
     suspend fun clear(): StressTestClearResult {
         if (run != null) return StressTestClearResult.RUNNING
         val current = environment ?: return StressTestClearResult.NOTHING_TO_CLEAR
@@ -187,7 +199,15 @@ class StressTestController(
         return StressTestClearResult.CLEARED
     }
 
-    /** 在存檔資料夾建立這一輪的時間序列 CSV；無法建立時記錄警告並回傳 null。 */
+    /**
+     * 在存檔資料夾建立這一輪的時間序列 CSV；無法建立時記錄警告並回傳 null。
+     *
+     * @param server 用來解析存檔資料夾的伺服器。
+     * @param scenario 對局情境。
+     * @param pace 每桌推進節奏。
+     * @param historyMode 歷史處理方式。
+     * @return 已建立的時間序列檔；建立失敗時為 null。
+     */
     private fun openTimeSeries(
         server: MinecraftServer,
         scenario: HeadlessHistoryScenario,
@@ -204,7 +224,11 @@ class StressTestController(
         }
     }
 
-    /** tick 結束時推進到期的對局，並以本 tick 的耗時檢查安全閥。 */
+    /**
+     * tick 結束時推進到期的對局，並以本 tick 的耗時檢查安全閥。
+     *
+     * @param server 目前執行的伺服器。
+     */
     private fun onTickEnd(server: MinecraftServer) {
         val current = run ?: return
         current.onServerTick()
@@ -227,7 +251,12 @@ class StressTestController(
         }
     }
 
-    /** 停止執行中的測試並保留報告：剩下的桌從權威來源移除，沒有寫進資料庫的環境一併關閉。沒有執行中的測試時回傳 null。 */
+    /**
+     * 停止執行中的測試並保留報告：剩下的桌從權威來源移除，沒有寫進資料庫的環境一併關閉。沒有執行中的測試時回傳 null。
+     *
+     * @param reason 停止原因。
+     * @return 停止後的報告；原本沒有執行中的測試時為 null。
+     */
     private suspend fun stopRun(reason: StressStopReason): StressTestReport? {
         val current = run ?: return null
         run = null
@@ -250,7 +279,13 @@ class StressTestController(
         return report
     }
 
-    /** 把安全閥觸發後的最終報告送給下指令的玩家。 */
+    /**
+     * 把安全閥觸發後的最終報告送給下指令的玩家。
+     *
+     * @param server 目前執行的伺服器。
+     * @param starterId 下指令玩家的識別碼；主控台執行時為 null。
+     * @param report 要送出的最終報告。
+     */
     private fun notifyStarter(server: MinecraftServer, starterId: Uuid?, report: StressTestReport) {
         val player = starterId?.let { server.playerManager.getPlayer(it.toJavaUuid()) } ?: return
         player.sendMessage(stressTestReportMessage(report))
@@ -471,7 +506,12 @@ class StressTestController(
             if (elapsedTicks % WRITER_CHECK_INTERVAL_TICKS == 0L) writerFailed = environment.historyFailed()
         }
 
-        /** 推進一桌一步；這一步的統計在它最後一個片段結束時記錄。未預期的錯誤留給下一個 tick 停止測試。 */
+        /**
+         * 推進一桌一步；這一步的統計在它最後一個片段結束時記錄。未預期的錯誤留給下一個 tick 停止測試。
+         *
+         * @param venueId 牌桌場地識別碼。
+         * @param table 要推進的牌桌狀態。
+         */
         private suspend fun step(venueId: Uuid, table: StressTable) {
             try {
                 stepOnce(venueId, table)
@@ -485,7 +525,12 @@ class StressTestController(
             }
         }
 
-        /** 推進一桌一步並記錄；打完或卡住的桌從權威來源移除。 */
+        /**
+         * 推進一桌一步並記錄；打完或卡住的桌從權威來源移除。
+         *
+         * @param venueId 牌桌場地識別碼。
+         * @param table 要推進的牌桌狀態。
+         */
         private suspend fun stepOnce(venueId: Uuid, table: StressTable) {
             table.timer.reset()
             val progressed = table.runtime.step()
@@ -520,7 +565,12 @@ class StressTestController(
             if (stepTime >= SLOW_STEP_LOG_THRESHOLD) logSlowStep(stepTime, table.timer)
         }
 
-        /** 把一桌從進行中的桌與權威來源移除。 */
+        /**
+         * 把一桌從進行中的桌與權威來源移除。
+         *
+         * @param venueId 要移除的牌桌場地識別碼。
+         * @param table 要移除的牌桌狀態。
+         */
         private suspend fun removeTable(venueId: Uuid, table: StressTable) {
             tables.remove(venueId)
             table.gameId?.let {
@@ -530,7 +580,13 @@ class StressTestController(
             discardStressTables(environment.store, listOf(venueId))
         }
 
-        /** 記錄這一輪對局的一次有結果的 AI 決策；在等待決策的推進協程（伺服器主執行緒）上呼叫。 */
+        /**
+         * 記錄這一輪對局的一次有結果的 AI 決策；在等待決策的推進協程（伺服器主執行緒）上呼叫。
+         *
+         * @param gameId 對局識別碼。
+         * @param outcome 決策結果類型。
+         * @param latency 開始等待至取得結果的耗時。
+         */
         private fun onDecision(gameId: Uuid, outcome: AiDecisionOutcome, latency: Duration) {
             tablesByGameId[gameId]?.timer?.addAiWait(latency)
             bucket.addDecision(latency, outcome)
@@ -561,7 +617,12 @@ class StressTestController(
             measureStart = TimeSource.Monotonic.markNow()
         }
 
-        /** 在 log 記下一個過久的步驟與該步最久的 AI 決策情境。 */
+        /**
+         * 在 log 記下一個過久的步驟與該步最久的 AI 決策情境。
+         *
+         * @param total 該步在主執行緒片段的總耗時。
+         * @param timer 該桌記錄各決策環節耗時的計時器。
+         */
         private fun logSlowStep(total: Duration, timer: HeadlessStepTimer) {
             logger.warn(
                 "Stress test step took {} ms on the server thread (aiContext={} ms, snapshotSync={} ms, aiWait={} ms, aiDecision={} ms); slowest AI decision: {} ms, {}",
@@ -598,7 +659,12 @@ class StressTestController(
             decisionWatch = null
         }
 
-        /** 記錄一步主執行緒上的耗時與各環節耗時。 */
+        /**
+         * 記錄一步主執行緒上的耗時與各環節耗時。
+         *
+         * @param total 該步在主執行緒片段的總耗時。
+         * @param timer 該桌記錄各決策環節耗時的計時器。
+         */
         private fun recordStep(total: Duration, timer: HeadlessStepTimer) {
             val stages = mapOf(
                 StressStepStage.AI_CONTEXT to timer.aiContext,
@@ -828,7 +894,13 @@ class StressTestController(
             /** 這段期間同時存在、尚未結束的策略工作數的最大值。 */
             private var strategyPeak = 0
 
-            /** 加入一步。 */
+            /**
+             * 加入一步。
+             *
+             * @param total 單步總耗時。
+             * @param stages 各環節耗時。
+             * @param staleDecisions 未套用的過期決策數。
+             */
             fun addStep(total: Duration, stages: Map<StressStepStage, Duration>, staleDecisions: Int) {
                 steps++
                 stepTotal += total
@@ -836,7 +908,12 @@ class StressTestController(
                 stale += staleDecisions
             }
 
-            /** 加入一次有結果的 AI 決策。 */
+            /**
+             * 加入一次有結果的 AI 決策。
+             *
+             * @param latency 決策延遲。
+             * @param outcome 決策結果類型。
+             */
             fun addDecision(latency: Duration, outcome: AiDecisionOutcome) {
                 decisions++
                 latencyTotal += latency
@@ -844,7 +921,17 @@ class StressTestController(
                 if (outcome == AiDecisionOutcome.TIMED_OUT) timeouts++
             }
 
-            /** 加入一個 tick。 */
+            /**
+             * 加入一個 tick。
+             *
+             * @param msptMillis tick 本身處理時間毫秒數。
+             * @param intervalMillis 與前一個 tick 的開始時間差毫秒數；第一個 tick 時為 null。
+             * @param events 這個 tick 新加入待寫佇列的歷史事件數。
+             * @param history 這個 tick 記錄歷史所花的時間。
+             * @param strategyCallsPeak 這個 tick 內同時存在的策略工作數峰值。
+             * @param advance 這個 tick 的主執行緒推進時間。
+             * @param lagMillis 這個 tick 結束時相對目標節奏的落後毫秒數。
+             */
             fun addTick(
                 msptMillis: Double,
                 intervalMillis: Double?,
@@ -869,7 +956,14 @@ class StressTestController(
                 strategyPeak = maxOf(strategyPeak, strategyCallsPeak)
             }
 
-            /** 以目前狀態組成一列。 */
+            /**
+             * 以目前狀態組成一列。
+             *
+             * @param elapsedSeconds 開始後經過的實際秒數。
+             * @param eventsWritten 本列期間已處理的歷史事件數。
+             * @param gc 本列期間的記憶體回收統計。
+             * @return 目前累計資料組成的時間序列資料列。
+             */
             fun toRow(elapsedSeconds: Double, eventsWritten: Long, gc: GcTotals): StressTimeSeriesRow {
                 val runtime = Runtime.getRuntime()
                 return StressTimeSeriesRow(

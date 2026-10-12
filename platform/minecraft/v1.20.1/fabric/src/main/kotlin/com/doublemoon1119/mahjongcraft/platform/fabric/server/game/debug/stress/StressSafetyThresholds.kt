@@ -14,7 +14,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.stress
  *
  * @property sustainedWindows 連續這麼多個不重疊的視窗都跟不上，才判定伺服器持續跟不上而停止。
  * @property targetIntervalMillis 目標 tick 間隔。
- * @property maxLagMillis 相對目標節奏的落後量上限；超過時不等視窗判定就緊急停止，搶在 Minecraft 的 watchdog 強制關閉之前。
+ * @property maxLagMillis 相對目標節奏的落後量上限；超過時不等視窗判定就停止測試，不保證能攔截主執行緒完全卡住的情況。
  * @property backlogRatio 歷史待寫佇列積壓佔容量的比例上限。
  */
 data class StressSafetyThresholds(

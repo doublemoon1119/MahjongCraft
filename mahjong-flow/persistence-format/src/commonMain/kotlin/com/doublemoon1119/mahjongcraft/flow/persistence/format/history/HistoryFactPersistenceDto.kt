@@ -171,7 +171,7 @@ sealed interface HistoryFactPersistenceDto {
     ) : HistoryFactPersistenceDto
 
     /**
-     * 規則效果完成後的桌況與可能的本局結算。
+     * 已完成的規則效果與可能的本局結算。
      *
      * @property reasonId 規則效果的識別碼。
      * @property roundCompletion 規則效果同時完成本局時的結算摘要；否則為 null。

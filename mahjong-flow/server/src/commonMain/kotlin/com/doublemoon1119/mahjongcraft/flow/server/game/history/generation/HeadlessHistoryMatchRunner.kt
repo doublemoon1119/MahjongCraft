@@ -22,6 +22,7 @@ class HeadlessHistoryMatchRunner(
      *
      * @return 完整交易進度，以及最後唯一一筆空事件終點。
      * @throws IllegalStateException 當交易過大、來源有缺口、未確認或無法收斂時。
+     * @throws kotlinx.coroutines.TimeoutCancellationException 整場執行或單次交付等待超時時，在收集期間拋出。
      */
     fun events(): Flow<HeadlessHistoryProgress> = flow {
         withTimeout(limits.maxDuration) {

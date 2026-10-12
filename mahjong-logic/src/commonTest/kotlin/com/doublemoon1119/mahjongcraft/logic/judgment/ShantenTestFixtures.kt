@@ -52,6 +52,7 @@ internal object ShantenTestFixtures {
      * @param counts 該段每格的張數。
      * @param offset 該段第一格在 34 格中的位置。
      * @param meldCount 副露組數。
+     * @return 由指定牌張與副露組成的測試手牌。
      */
     fun handOf(counts: IntArray, offset: Int, meldCount: Int): Hand {
         val tiles = counts.withIndex().flatMap { (index, count) -> List(count) { TILE_KINDS[offset + index] } }
@@ -63,6 +64,7 @@ internal object ShantenTestFixtures {
      *
      * @param tiles 立牌。
      * @param meldCount 副露組數。
+     * @return 含指定立牌與副露的測試手牌。
      */
     fun handOf(tiles: List<Tile>, meldCount: Int): Hand = FakeHandFactory.create(tiles = tiles, melds = melds(meldCount))
 
@@ -131,7 +133,12 @@ internal object ShantenTestFixtures {
         }
     }
 
-    /** 向聽數：和牌為 -1、聽牌為 0。 */
+    /**
+     * 取得測試比對使用的向聽數：和牌為 -1、聽牌為 0。
+     *
+     * @param result 計算器回傳的向聽結果。
+     * @return 對應的整數向聽數。
+     */
     private fun shantenValue(result: ShantenResult): Int = when (result) {
         ShantenResult.Complete -> -1
         is ShantenResult.Tenpai -> 0
@@ -156,6 +163,7 @@ internal object ShantenTestFixtures {
      * @param standing 立牌張數。
      * @param meldCount 副露組數。
      * @param extra 另外加進牌山的牌，例如該花色的赤牌。
+     * @return 由單一花色牌山抽出的測試手牌。
      */
     fun randomSingleSuitHand(random: Random, suit: Tile.Suit, standing: Int, meldCount: Int, extra: List<Tile> = emptyList()): Hand {
         val wall = (1..9).flatMap { value -> List(4) { Tile.Numeric(suit, value) } } + extra
@@ -166,6 +174,7 @@ internal object ShantenTestFixtures {
      * 每種牌各四張的牌山。
      *
      * @param replace 接收每張牌與它是第幾張（0～3），回傳替換後的牌；回傳 null 表示移除，例如換成赤牌或拿掉三人麻將不用的牌。
+     * @return 依替換函式產生的牌山列表。
      */
     fun fullWall(replace: (Tile, Int) -> Tile? = { tile, _ -> tile }): List<Tile> = TILE_KINDS.flatMap { tile -> (0 until 4).mapNotNull { copy -> replace(tile, copy) } }
 
@@ -181,10 +190,20 @@ internal object ShantenTestFixtures {
         assertEquals(legacy.calculate(hand), current.calculate(hand), "$label: ${describe(hand)}")
     }
 
-    /** 失敗訊息中的手牌內容：立牌與副露組數。 */
+    /**
+     * 建立失敗訊息中的手牌摘要。
+     *
+     * @param hand 要描述的手牌。
+     * @return 立牌內容與副露組數的文字。
+     */
     private fun describe(hand: Hand): String = "standing=${hand.standingTiles.map { it.tile }}, melds=${hand.exposedMelds.size}"
 
-    /** [count] 組副露；內容固定為白板，向聽計算只看組數。 */
+    /**
+     * 建立 [count] 組白板副露，供向聽測試使用。
+     *
+     * @param count 要建立的副露組數。
+     * @return 副露清單；每組的型別依測試用清單輪替。
+     */
     private fun melds(count: Int): List<Meld> = List(count) { index ->
         val type = MELD_TYPES[index % MELD_TYPES.size]
         val size = if (type == MeldType.PON || type == MeldType.CHI) 3 else 4

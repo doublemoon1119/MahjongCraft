@@ -17,6 +17,12 @@ class PublicPlayerIndicatorTextResolver(
 
     private val warnedIndicatorIds = mutableSetOf<String>()
 
+    /**
+     * 將規則公開指示器解析為文字與不透明 ARGB 顏色；未知顯示設定使用 ID 字面值與預設色。
+     *
+     * @param indicator 要顯示的公開指示器。
+     * @return 本地化或 fallback 文字及對應顏色。
+     */
     fun resolve(indicator: PublicPlayerIndicator): Pair<Text, Int> {
         val valueId = (indicator.indicatorValue as? PublicPlayerIndicatorValue.Option)?.optionId
         val displayId = valueId ?: indicator.id

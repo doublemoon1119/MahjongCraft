@@ -224,7 +224,13 @@ class PhysicalWallLayoutPolicyTest {
         }
     }
 
-    /** 建立固定回傳完成結果的測試 policy。 */
+    /**
+     * 建立固定回傳完成結果的測試 policy。
+     *
+     * @param layout 初始及轉場完成後要回傳的布局。
+     * @param phases 轉場時要回傳的移動階段。
+     * @return 對兩種請求都回傳指定完成結果的 policy。
+     */
     private fun completedPolicy(
         layout: TileWallPhysicalLayout,
         phases: List<PhysicalWallLayoutTransitionPhase>,
@@ -238,7 +244,14 @@ class PhysicalWallLayoutPolicyTest {
         ): PhysicalWallLayoutTransitionDecision = PhysicalWallLayoutTransitionDecision.Completed(layout, phases)
     }
 
-    /** 建立共用的牌牆 transition 測試 context。 */
+    /**
+     * 建立共用的牌牆 transition 測試 context。
+     *
+     * @param before 動作前桌況。
+     * @param after 動作後桌況。
+     * @param current 動作前的實體牌牆布局。
+     * @return 以第一位玩家作為操作者、動作為摸牌的轉場上下文。
+     */
     private fun transitionContext(
         before: TableState,
         after: TableState,
@@ -251,6 +264,10 @@ class PhysicalWallLayoutPolicyTest {
         action = GameAction.Draw,
     )
 
-    /** 建立具有獨立 Uuid 的測試牌。 */
+    /**
+     * 建立具有獨立 Uuid 的測試牌。
+     *
+     * @return 一張牌面為五筒的測試牌。
+     */
     private fun testTile(): IdentifiedTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5))
 }

@@ -26,20 +26,31 @@ import net.minecraft.world.World
  *
  * @param C 這個實體類型專屬的瞬間動作型別（[AnimationStep.Custom] 攜帶的資料），沒有專屬動作的實體
  *   類型用 [Nothing]。
+ * @param type Minecraft entity 類型。
+ * @param world 實體所屬世界。
  */
 abstract class AnimatedMahjongEntity<C>(
     type: EntityType<out AnimatedMahjongEntity<C>>,
     world: World,
 ) : Entity(type, world) {
+    /** 尚未完成的持久化動畫步驟，依序由 server tick 推進。 */
     private val queue: ArrayDeque<AnimationStep<C>> = ArrayDeque()
+
+    /** 目前播放中動作的絕對結束時間；沒有啟動中的動作時為 `null`。 */
     private var activeStepEndGameTime: Long? = null
+
+    /** 傳送後等待廣播完整定位封包的絕對時間；沒有待同步傳送時為 `null`。 */
     private var pendingTrackerResyncGameTime: Long? = null
 
     /** 佇列是否還有未播完的 step；`false` 代表這個 entity 目前完全靜止。 */
     val isAnimating: Boolean
         get() = queue.isNotEmpty()
 
-    /** 依序附加 [steps] 到佇列尾端；相鄰的絕對等待會自動合併為較晚時間，只能在 server 端呼叫。 */
+    /**
+     * 依序附加 [steps] 到佇列尾端；相鄰的絕對等待會自動合併為較晚時間，只能在 server 端呼叫。
+     *
+     * @param steps 要附加的動畫步驟。
+     */
     fun enqueueAll(steps: List<AnimationStep<C>>) {
         check(!world.isClient) { "Animation steps must be enqueued by the server" }
         val normalizedQueue = AnimationQueueDriver.append(queue, steps)
@@ -47,11 +58,17 @@ abstract class AnimatedMahjongEntity<C>(
         queue.addAll(normalizedQueue)
     }
 
-    /** 附加單一 step，等同 `enqueueAll(listOf(step))`。 */
+    /**
+     * 附加單一 step，等同 `enqueueAll(listOf(step))`。
+     *
+     * @param step 要附加的動畫步驟。
+     */
     fun enqueue(step: AnimationStep<C>) = enqueueAll(listOf(step))
 
     /**
      * 以 [steps] 完整取代尚未完成的佇列，供具有「較晚期限覆蓋較早期限」語意的子類別使用。
+     *
+     * @param steps 要取代成的新動畫步驟。
      */
     protected fun replaceAnimationQueue(steps: List<AnimationStep<C>>) {
         check(!world.isClient) { "Animation steps must be replaced by the server" }
@@ -170,7 +187,11 @@ abstract class AnimatedMahjongEntity<C>(
         (world as ServerWorld).chunkManager.sendToNearbyPlayers(this, EntityPositionS2CPacket(this))
     }
 
-    /** 把目前佇列與計時進度寫進世界存檔，供子類別的 `writeCustomDataToNbt` 呼叫。 */
+    /**
+     * 把目前佇列與計時進度寫進世界存檔，供子類別的 `writeCustomDataToNbt` 呼叫。
+     *
+     * @param nbt 要寫入佇列資料的 NBT compound。
+     */
     protected fun writeAnimationQueueToNbt(nbt: NbtCompound) {
         val stepList = NbtList()
         queue.forEach { step -> stepList.add(serializeStep(step)) }
@@ -187,6 +208,8 @@ abstract class AnimatedMahjongEntity<C>(
      * 內插的欄位——這些欄位只存在 tracked data、沒有另外寫進世界存檔，世界重新載入後預設會被重置，
      * 若不補回，畫面會直接跳到這段動畫的終點，而不是接續播完剩下的進度，理由見 [applyPlayMotion]
      * KDoc。
+     *
+     * @param nbt 含有已保存佇列資料的 NBT compound。
      */
     protected fun readAnimationQueueFromNbt(nbt: NbtCompound) {
         queue.clear()
@@ -202,6 +225,12 @@ abstract class AnimatedMahjongEntity<C>(
         }
     }
 
+    /**
+     * 將單一動畫步驟編碼為 NBT，供佇列存檔使用。
+     *
+     * @param step 要序列化的動畫步驟。
+     * @return 包含步驟種類及資料的 NBT compound。
+     */
     private fun serializeStep(step: AnimationStep<C>): NbtCompound {
         val stepNbt = NbtCompound()
         when (step) {
@@ -253,6 +282,12 @@ abstract class AnimatedMahjongEntity<C>(
         return stepNbt
     }
 
+    /**
+     * 依 NBT 內的步驟種類還原動畫步驟。
+     *
+     * @param stepNbt 已保存的步驟資料。
+     * @return 還原後的動畫步驟。
+     */
     private fun deserializeStep(stepNbt: NbtCompound): AnimationStep<C> = when (stepNbt.getString(NBT_KEY_TYPE)) {
         TYPE_WAIT_UNTIL -> AnimationStep.WaitUntil(stepNbt.getLong(NBT_KEY_GAME_TIME))
         TYPE_TELEPORT -> AnimationStep.Teleport(

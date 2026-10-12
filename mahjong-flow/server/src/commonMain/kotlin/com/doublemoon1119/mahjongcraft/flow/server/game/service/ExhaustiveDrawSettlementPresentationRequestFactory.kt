@@ -18,6 +18,15 @@ object ExhaustiveDrawSettlementPresentationRequestFactory {
      * 依結算前後桌況及規則公開結果建立 request。
      *
      * [tenpaiPlayerIds] 為 null 代表途中流局，不顯示一般荒牌流局的聽牌／未聽狀態；[aiPlayerIds] 為由 AI 操控的玩家。
+     *
+     * @param previousState 結算前的權威桌況。
+     * @param currentState 結算後的權威桌況。
+     * @param module 本局使用的規則模組，提供牌序及排行規則。
+     * @param aiPlayerIds 由 AI 操控的玩家識別碼。
+     * @param reason 本次流局原因。
+     * @param tenpaiPlayerIds 一般荒牌流局的聽牌玩家；途中流局時為 null。
+     * @param revealedHands 規則判定可公開的手牌結算資料。
+     * @return 供後續發布的流局結算資料。
      */
     fun create(
         previousState: TableState,

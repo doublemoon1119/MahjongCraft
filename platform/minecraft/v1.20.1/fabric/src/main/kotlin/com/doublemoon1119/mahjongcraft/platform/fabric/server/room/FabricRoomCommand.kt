@@ -139,32 +139,57 @@ class FabricRoomCommand(
         }
     }
 
-    /** 建立或加入指定座標的麻將桌房間，等同右鍵桌子。 */
+    /**
+     * 建立或加入指定座標的麻將桌房間，等同右鍵桌子。
+     *
+     * @param context Brigadier 的指令來源與引數。
+     */
     private fun join(context: CommandContext<ServerCommandSource>): Int = withResolvedTable(context) { player, table ->
         roomService.interact(table, player)
     }
 
-    /** 離開指定座標麻將桌的等待階段，等同蹲下右鍵桌子。 */
+    /**
+     * 離開指定座標麻將桌的等待階段，等同蹲下右鍵桌子。
+     *
+     * @param context Brigadier 的指令來源與引數。
+     */
     private fun leave(context: CommandContext<ServerCommandSource>): Int = withResolvedTable(context) { player, table ->
         roomService.leave(table, player)
     }
 
-    /** 切換玩家目前所在房間的準備狀態。 */
+    /**
+     * 切換玩家目前所在房間的準備狀態。
+     *
+     * @param source Brigadier 指令來源。
+     */
     private fun ready(source: ServerCommandSource): Int = withPlayer(source) { player ->
         roomService.ready(player)
     }
 
-    /** 房主在所有人皆已準備完成時開始遊戲。 */
+    /**
+     * 房主在所有人皆已準備完成時開始遊戲。
+     *
+     * @param source Brigadier 指令來源。
+     */
     private fun start(source: ServerCommandSource): Int = withPlayer(source) { player ->
         roomService.start(player)
     }
 
-    /** 房主替目前所在房間新增一名 AI 玩家，[strategyKey] 省略時使用預設策略。 */
+    /**
+     * 房主替目前所在房間新增一名 AI 玩家，[strategyKey] 省略時使用預設策略。
+     *
+     * @param source Brigadier 指令來源。
+     * @param strategyKey 可選的 AI 策略註冊 key。
+     */
     private fun addAi(source: ServerCommandSource, strategyKey: String?): Int = withPlayer(source) { player ->
         roomService.addAi(player, strategyKey)
     }
 
-    /** 房主將指定的候選成員（真人或 AI）移出目前所在房間。 */
+    /**
+     * 房主將指定的候選成員（真人或 AI）移出目前所在房間。
+     *
+     * @param context Brigadier 的指令來源與候選標籤。
+     */
     private fun kick(context: CommandContext<ServerCommandSource>): Int = withPlayer(context.source) { player ->
         val label = StringArgumentType.getString(context, TARGET_ARGUMENT)
         val playerId = player.uuid.toKotlinUuid()
@@ -178,7 +203,11 @@ class FabricRoomCommand(
         }
     }
 
-    /** 房主替目前所在房間內的某個 AI 更換策略。 */
+    /**
+     * 房主替目前所在房間內的某個 AI 更換策略。
+     *
+     * @param context Brigadier 的指令來源、目標標籤與策略 key。
+     */
     private fun changeAiStrategy(context: CommandContext<ServerCommandSource>): Int = withPlayer(context.source) { player ->
         val label = StringArgumentType.getString(context, TARGET_ARGUMENT)
         val strategyKey = StringArgumentType.getString(context, STRATEGY_ARGUMENT)
@@ -193,12 +222,21 @@ class FabricRoomCommand(
         }
     }
 
-    /** 顯示玩家目前所在房間的完整遊戲設定，訊息本身可點擊開啟編輯畫面。 */
+    /**
+     * 顯示玩家目前所在房間的完整遊戲設定，訊息本身可點擊開啟編輯畫面。
+     *
+     * @param source Brigadier 指令來源。
+     */
     private fun showConfig(source: ServerCommandSource): Int = withPlayer(source) { player ->
         roomService.showConfig(player)
     }
 
-    /** 解析指令帶入的座標引數，找不到對應且可互動的桌子時回報原因並中止。 */
+    /**
+     * 解析指令帶入的座標引數，找不到對應且可互動的桌子時回報原因並中止。
+     *
+     * @param context Brigadier 指令來源與桌子座標引數。
+     * @param action 桌子解析成功後要執行的操作。
+     */
     private fun withResolvedTable(
         context: CommandContext<ServerCommandSource>,
         action: (ServerPlayerEntity, MahjongTableBlockEntity) -> Unit,
@@ -212,14 +250,25 @@ class FabricRoomCommand(
         action(player, table)
     }
 
-    /** 解析執行指令的玩家，非玩家（例如主控台）執行時直接以指令失敗回應。 */
+    /**
+     * 解析執行指令的玩家，非玩家（例如主控台）執行時直接以指令失敗回應。
+     *
+     * @param source Brigadier 指令來源。
+     * @param action 解析到玩家時要執行的操作。
+     */
     private fun withPlayer(source: ServerCommandSource, action: (ServerPlayerEntity) -> Unit): Int {
         val player = source.player ?: return COMMAND_FAILURE
         action(player)
         return COMMAND_SUCCESS
     }
 
-    /** 列出執行指令玩家目前可互動範圍內所有桌子的座標，作為 `<table>` 引數的 Tab 補全建議。 */
+    /**
+     * 列出執行指令玩家目前可互動範圍內所有桌子的座標，作為 `<table>` 引數的 Tab 補全建議。
+     *
+     * @param context Brigadier 指令來源。
+     * @param builder 收集補全候選的 builder。
+     * @return 完成桌子座標候選的 future。
+     */
     private fun suggestReachableTables(
         context: CommandContext<ServerCommandSource>,
         builder: SuggestionsBuilder,
@@ -236,6 +285,10 @@ class FabricRoomCommand(
     /**
      * 列出目前已註冊的 AI 策略 key，作為 `ai add`／`ai strategy` 的策略引數 Tab 補全建議；tooltip
      * 顯示該策略翻譯後的顯示名稱，與 AI 候選項目的呈現方式一致。
+     *
+     * @param context Brigadier 指令來源。
+     * @param builder 收集補全候選的 builder。
+     * @return 完成策略 key 候選的 future。
      */
     private fun suggestAiStrategies(
         context: CommandContext<ServerCommandSource>,
@@ -247,7 +300,13 @@ class FabricRoomCommand(
         return builder.buildFuture()
     }
 
-    /** 列出執行指令玩家目前所在房間內所有候選成員（含真人與 AI），作為 `kick <target>` 引數的建議。 */
+    /**
+     * 列出執行指令玩家目前所在房間內所有候選成員（含真人與 AI），作為 `kick <target>` 引數的建議。
+     *
+     * @param context Brigadier 指令來源。
+     * @param builder 收集補全候選的 builder。
+     * @return 完成成員候選的 future。
+     */
     private fun suggestAllTargets(
         context: CommandContext<ServerCommandSource>,
         builder: SuggestionsBuilder,
@@ -255,7 +314,13 @@ class FabricRoomCommand(
         memberCandidateResolver.listCandidates(playerId)
     }
 
-    /** 列出執行指令玩家目前所在房間內的 AI 候選成員，作為 `ai strategy <target>` 引數的建議。 */
+    /**
+     * 列出執行指令玩家目前所在房間內的 AI 候選成員，作為 `ai strategy <target>` 引數的建議。
+     *
+     * @param context Brigadier 指令來源。
+     * @param builder 收集補全候選的 builder。
+     * @return 完成 AI 成員候選的 future。
+     */
     private fun suggestAiTargets(
         context: CommandContext<ServerCommandSource>,
         builder: SuggestionsBuilder,
@@ -270,6 +335,11 @@ class FabricRoomCommand(
      * 候選清單是一次 suspend 查詢，這裡用 [CompletableFuture] 手動橋接：[SuggestionsBuilder.build]
      * 本身是同步、立即可用的操作，協程完成查詢後直接呼叫它並完成回傳的 future，不需要額外的執行緒
      * 切換或阻塞等待。
+     *
+     * @param context Brigadier 指令來源。
+     * @param builder 收集補全候選的 builder。
+     * @param listCandidates 依執行者 UUID 取得可建議成員的非同步查詢。
+     * @return 完成候選成員與 tooltip 的 future。
      */
     private fun suggestTargets(
         context: CommandContext<ServerCommandSource>,

@@ -18,16 +18,22 @@ import kotlin.uuid.Uuid
 /**
  * [DebugWinRoundContinuationResolver] 的判定測試。
  *
- * 這是開發用的測試輔助工具，但它決定的是**權威**桌況（誰被標記為已完成、回合交給誰），判斷錯誤會讓
- * 進遊戲驗證中途胡牌時看到的是工具本身的 bug 而不是被測機制的 bug，因此照樣覆蓋。
+ * 驗證贏家完成標記、下一位玩家與結束本局的條件。
  */
 class DebugWinRoundContinuationResolverTest {
+    /** 提供測試所需的內建規則模組。 */
     private val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
+
+    /** 用於續局判定的日麻規則模組。 */
     private val ruleModule = moduleRegistry.getModule(RiichiRuleConfig())
+
+    /** 各桌的測試用續局模式設定。 */
     private val state = DebugWinRoundContinuationState()
+
+    /** 受測的續局判定器。 */
     private val resolver = DebugWinRoundContinuationResolver(ruleModuleId = ruleModule.id, state = state)
 
-    /** 預設關閉時完全 inert：回傳 `null`，registry 因此落回 EndRound，胡牌後立即結束本局。 */
+    /** 預設關閉時不提供續局判定。 */
     @Test
     fun `an off resolver stays inert`() {
         val table = table(playerCount = 4)
@@ -35,7 +41,7 @@ class DebugWinRoundContinuationResolverTest {
         assertNull(resolver.resolve(tsumoContext(table, winnerIndex = 0), ruleModule))
     }
 
-    /** 自摸：贏家標記為已完成，回合交給贏家之後的第一位 active 玩家。 */
+    /** 自摸後將贏家標記為已完成，回合交給其後第一位仍在局中的玩家。 */
     @Test
     fun `a tsumo continues the round and passes the turn to the next active player`() {
         val table = table(playerCount = 4)
@@ -49,7 +55,7 @@ class DebugWinRoundContinuationResolverTest {
         assertEquals(ContinuingWinSettlementDetail.WINNER_DETAILS, continueRound.settlementDetail)
     }
 
-    /** 榮和：回合接在放銃者之後，而不是贏家之後——維持原本的順位感。 */
+    /** 榮和後從放銃者之後選擇下一位玩家。 */
     @Test
     fun `a ron passes the turn to the player after the discarder`() {
         val table = table(playerCount = 4)
@@ -83,7 +89,7 @@ class DebugWinRoundContinuationResolverTest {
         assertEquals(table.players[2].id, continueRound.nextPlayerId)
     }
 
-    /** 這次胡牌後只剩一位 active 就沒得繼續打，必須回到既有的結束本局流程。 */
+    /** 胡牌後仍在局中的玩家少於兩位時結束本局。 */
     @Test
     fun `the round ends once fewer than two active players would remain`() {
         val base = table(playerCount = 4)
@@ -111,7 +117,7 @@ class DebugWinRoundContinuationResolverTest {
         }
     }
 
-    /** 產出的 directive 必須通過 [applyTo] 的所有 invariant——它會被直接套用到權威桌況。 */
+    /** 續局判定套用至桌況後，完成標記與目前玩家符合預期。 */
     @Test
     fun `the produced directive satisfies the authoritative apply invariants`() {
         val table = table(playerCount = 4)
@@ -135,7 +141,7 @@ class DebugWinRoundContinuationResolverTest {
         assertContinueRound(resolver.resolve(tsumoContext(enabled, winnerIndex = 0), ruleModule))
     }
 
-    /** 清除之後該桌立刻回到 inert，對局結束／桌子被破壞時就是走這條路徑。 */
+    /** 清除該桌設定後不再提供續局判定。 */
     @Test
     fun `clearing a table returns it to inert`() {
         val table = table(playerCount = 4)
@@ -146,7 +152,7 @@ class DebugWinRoundContinuationResolverTest {
         assertNull(resolver.resolve(tsumoContext(table, winnerIndex = 0), ruleModule))
     }
 
-    /** 設為 OFF 等同移除條目，不會留下殘骸。 */
+    /** 設為 OFF 時移除該桌設定。 */
     @Test
     fun `setting a table to off removes its entry`() {
         val table = table(playerCount = 4)
@@ -156,12 +162,25 @@ class DebugWinRoundContinuationResolverTest {
         assertEquals(emptySet(), state.activeTableIds())
     }
 
+    /**
+     * 建立供 resolver 測試使用的桌況。
+     *
+     * @param playerCount 桌上的玩家數量。
+     * @return 使用內建日麻規則設定的桌況。
+     */
     private fun table(playerCount: Int): TableState = FakeTableStateFactory.create(
         id = Uuid.random(),
         players = List(playerCount) { FakeMahjongPlayerFactory.create() },
         config = RiichiRuleConfig(),
     )
 
+    /**
+     * 建立單一玩家自摸的 resolver 輸入。
+     *
+     * @param table 自摸前後的桌況。
+     * @param winnerIndex 贏家在玩家清單中的索引。
+     * @return 對應的胡牌後流程判定情境。
+     */
     private fun tsumoContext(table: TableState, winnerIndex: Int): WinRoundContinuationContext = WinRoundContinuationContext(
         previousTableState = table,
         settledTableState = table,
@@ -170,6 +189,12 @@ class DebugWinRoundContinuationResolverTest {
         winningTileId = Uuid.random(),
     )
 
+    /**
+     * 斷言結果是續局 directive，並回傳其內容供後續欄位檢查。
+     *
+     * @param directive resolver 產生的判定結果。
+     * @return 續局 directive；其他結果會使測試失敗。
+     */
     private fun assertContinueRound(directive: WinRoundDirective?): WinRoundDirective.ContinueRound {
         check(directive is WinRoundDirective.ContinueRound) { "Expected ContinueRound but was $directive" }
         return directive

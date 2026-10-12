@@ -58,7 +58,25 @@ import java.util.UUID
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 
-/** 空桌、等待房間與進行中對局共用的桌級畫面。 */
+/**
+ * 空桌、等待房間與進行中對局共用的桌級畫面。
+ *
+ * @property stateStore 目前客戶端持有的房間、對局與牌桌快照。
+ * @property tableId 本畫面對應的牌桌識別碼。
+ * @property configPresentations 規則設定的呈現定義登錄表。
+ * @property configResolver 將設定解析成欄位定義與值的解析器。
+ * @property ruleNames 規則名稱登錄表。
+ * @property portraitRenderer 成員頭像繪製器。
+ * @property aiStrategies 可選 AI 策略登錄表。
+ * @property aiStrategyNames AI 策略名稱登錄表。
+ * @property json 傳送房間操作使用的 JSON 格式。
+ * @property networkRegistries 設定與網路 DTO 的轉換登錄表。
+ * @property profileResolver 玩家名稱與外觀資料解析器。
+ * @property ruleCatalogue 開啟規則一覽的控制器。
+ * @param appearanceSources 成員外觀來源登錄表。
+ * @param indicatorTextResolver 規則公開指標的文字解析器。
+ * @param openSettings 是否直接進入設定頁。
+ */
 class RoomScreen(
     private val stateStore: ClientMahjongStateStore,
     private val tableId: Uuid,
@@ -76,12 +94,22 @@ class RoomScreen(
     private val ruleCatalogue: RuleCatalogueScreenController,
     openSettings: Boolean = false,
 ) : Screen(Text.translatable(MinecraftRoomScreenKeys.TITLE)) {
+    /** 外觀解析與呈現降級的診斷記錄。 */
     private val logger = mahjongCraftLogger(RoomScreen::class)
 
+    /** 目前顯示的房間或設定頁。 */
     private var page = if (openSettings) Page.SETTINGS else Page.ROOM
+
+    /** 設定頁選中的分類；尚未選定時為 null。 */
     private var selectedCategoryId: String? = null
+
+    /** 設定欄位清單的捲動與拖曳狀態。 */
     private val fieldScroll = ScrollState()
+
+    /** 尚未送出或等待權威確認的設定草稿。 */
     private val draft = RoomSettingsDraft()
+
+    /** 對局成員卡片內資訊列共用的捲動狀態。 */
     private val playingInfoScroll = ScrollState()
 
     /** 目前正在拖曳哪一列（grid row）的對局資訊 scrollbar；兩列共用同一個捲動位置，但幾何各自獨立。 */
@@ -89,12 +117,26 @@ class RoomScreen(
 
     /** 等待室玩家卡片 grid 換列時的垂直捲動狀態，避免超出範圍的列疊在底部操作列上。 */
     private val memberScroll = ScrollState()
+
+    /** 目前設定頁的套用按鈕；其他頁面為 null。 */
     private var applyButton: ButtonWidget? = null
+
+    /** 目前設定頁的復原按鈕。 */
     private var undoButton: ButtonWidget? = null
+
+    /** 目前設定頁的預設值重設按鈕。 */
     private var resetButton: ButtonWidget? = null
+
+    /** 目前設定頁的完成按鈕。 */
     private var doneButton: ButtonWidget? = null
+
+    /** 等目前輸入事件結束後再重建控制項的旗標。 */
     private var rebuildRequested = false
+
+    /** 上次處理過的房間快照，用於偵測權威更新。 */
     private var lastRoomSnapshot = stateStore.roomSnapshot(tableId)
+
+    /** 上次處理過的牌桌占用狀態。 */
     private var lastTable = stateStore.tableOccupancy(tableId)
 
     /**
@@ -104,8 +146,14 @@ class RoomScreen(
      * 記錄的是「當時」的身分，不是「曾經加入過」——加入後又離開的玩家，開局時不該被關閉畫面。
      */
     private var wasRoomMember = stateStore.tableOccupancy(tableId)?.occupancy == TableOccupancyDto.ROOM && stateStore.roomSnapshot(tableId)?.isInRoom == true
+
+    /** 玩家模型預覽快取；未取得外觀資料時也可保存佔位模型。 */
     private val profilePreviews = mutableMapOf<Uuid, OtherClientPlayerEntity>()
+
+    /** 決定各成員的模型或頭像呈現方式。 */
     private val appearanceResolver = RoomMemberAppearanceResolver(appearanceSources)
+
+    /** 組成成員自風、分數與公開指標文字。 */
     private val memberPresentation = RoomMemberPresentation(indicatorTextResolver)
 
     override fun init() {
@@ -125,11 +173,20 @@ class RoomScreen(
         }
     }
 
+    /**
+     * 建立頁籤按鈕；目前所在頁籤不可再次點擊。
+     *
+     * @param x 按鈕左界。
+     * @param key 頁籤名稱翻譯鍵。
+     * @param target 點擊後要顯示的頁面。
+     * @return 切換頁面並要求重建控制項的按鈕。
+     */
     private fun tabButton(x: Int, key: String, target: Page): ButtonWidget = RestartableMarqueeButtonWidget.builder(Text.translatable(key)) {
         page = target
         rebuild()
     }.dimensions(x, 24, 100, 20).build().also { it.active = page != target }
 
+    /** 依牌桌占用狀態與本地成員身分建立房間頁的操作按鈕。 */
     private fun initRoomPage() {
         val table = stateStore.tableOccupancy(tableId) ?: return
         val room = stateStore.roomSnapshot(tableId)
@@ -143,6 +200,15 @@ class RoomScreen(
             TableOccupancyDto.ROOM -> {
                 if (room == null) return
                 val actions = mutableListOf<ActionButton>()
+
+                /**
+                 * 將操作加入本次房間頁的按鈕清單。
+                 *
+                 * @param key 按鈕文字翻譯鍵。
+                 * @param action 點擊後傳送的房間操作。
+                 * @param active 按鈕是否可點擊。
+                 * @return 清單加入結果。
+                 */
                 fun button(key: String, action: RoomActionDto, active: Boolean = true) = actions.add(ActionButton(key, action, active))
                 if (!room.isInRoom) {
                     button(MinecraftRoomScreenKeys.JOIN, RoomActionDto.Join(table.tableId), room.playerIds.size < room.gameConfig.ruleConfig.maxPlayers)
@@ -170,6 +236,9 @@ class RoomScreen(
      *
      * AI 策略對所有觀看者都顯示，非房主取得的是不可點擊的版本——策略是房間的公開資訊，只有變更它需要
      * 房主身分。踢除按鈕只有房主才有。房主本人的卡片兩者都不加。
+     *
+     * @param tableIdText 傳送房間操作使用的牌桌識別碼。
+     * @param room 當前房間快照。
      */
     private fun addMemberCardWidgets(tableIdText: String, room: RoomSnapshot) {
         val grid = memberGrid(room.playerIds.size)
@@ -214,6 +283,7 @@ class RoomScreen(
         }
     }
 
+    /** 依目前草稿建立分類、欄位與底部操作列，非房主只提供唯讀控制項。 */
     private fun initSettingsPage() {
         val authoritative = currentConfig() ?: return
         val room = stateStore.roomSnapshot(tableId)
@@ -305,6 +375,14 @@ class RoomScreen(
         }
     }
 
+    /**
+     * 依欄位編輯器規格建立布林、單選或整數控制項。
+     *
+     * @param field 欄位定義。
+     * @param config 用於讀取目前值與提示內容的設定。
+     * @param y 控制項頂端座標。
+     * @param editable 是否允許修改此欄位。
+     */
     private fun addFieldControls(field: GameConfigFieldDefinition, config: GameConfig, y: Int, editable: Boolean) {
         val value = field.read(config)
         val controlY = y
@@ -397,15 +475,36 @@ class RoomScreen(
         }
     }
 
-    /** 窄視窗時控制項改用單欄、依可用寬度伸縮的版面，取代固定從右邊界回推的座標。 */
+    /**
+     * 計算窄視窗控制項的單欄水平範圍。
+     *
+     * @return 控制項左界與寬度；寬度至少為設定的最小值。
+     */
     private fun compactControlBounds(): Pair<Int, Int> {
         val left = COMPACT_CONTENT_MARGIN
         val controlWidth = (width - COMPACT_CONTENT_MARGIN - COMPACT_SCROLLBAR_RESERVE).coerceAtLeast(MIN_COMPACT_CONTROL_WIDTH)
         return left to controlWidth
     }
 
+    /**
+     * 整數欄位三個控制項的水平範圍。
+     *
+     * @property minusX 減號按鈕左界。
+     * @property textX 輸入框左界。
+     * @property textWidth 輸入框寬度。
+     * @property plusX 加號按鈕左界。
+     */
     private data class IntegerControlBounds(val minusX: Int, val textX: Int, val textWidth: Int, val plusX: Int)
 
+    /**
+     * 設定欄位按鈕的啟用狀態與含操作提示的 tooltip。
+     *
+     * @param field 欄位定義。
+     * @param config 讀取目前值使用的設定。
+     * @param active 是否可操作。
+     * @param optionCount 循環選項數；零表示不附加切換提示。
+     * @return 原按鈕本身。
+     */
     private fun ButtonWidget.withFieldTooltip(
         field: GameConfigFieldDefinition,
         config: GameConfig,
@@ -416,12 +515,24 @@ class RoomScreen(
         tooltip = Tooltip.of(CycleButtonInput.withHint(tooltip = fieldTooltip(field, config), optionCount = optionCount, active = active))
     }
 
+    /**
+     * 更新草稿欄位並要求重建控制項。
+     *
+     * @param field 要更新的欄位。
+     * @param value 新欄位值。
+     */
     private fun updateDraft(field: GameConfigFieldDefinition, value: GameConfigPresentationValue) {
         draft.updateField(field, value)
         rebuild()
     }
 
-    /** 直接輸入整數時保留焦點，只更新草稿與驗證狀態。 */
+    /**
+     * 直接輸入整數時保留焦點，只更新草稿、驗證狀態與底部按鈕。
+     *
+     * @param field 要更新的欄位。
+     * @param editor 整數輸入範圍與可空規格。
+     * @param raw 原始輸入文字。
+     */
     private fun updateNumericDraft(
         field: GameConfigFieldDefinition,
         editor: GameConfigEditorSpec.IntegerInput,
@@ -462,7 +573,14 @@ class RoomScreen(
         )
     }
 
-    /** 以切換按鈕顯示規則，tooltip 見 [roomRuleSelectorTooltip]；右側保留規則一覽按鈕，窄視窗時兩者合計佔滿內容寬度。 */
+    /**
+     * 建立規則切換鈕與規則一覽入口，窄視窗時兩者合計佔滿內容寬度。
+     *
+     * @param config 切換規則時保留其流程設定的目前設定。
+     * @param moduleId 目前規則模組識別碼。
+     * @param canEdit 是否有編輯房間的權限。
+     * @param compact 是否採用窄視窗版面。
+     */
     private fun addRuleSelector(config: GameConfig, moduleId: String, canEdit: Boolean, compact: Boolean) {
         val candidates = configPresentations.ruleModuleIds.sorted()
         val currentName = ruleName(moduleId)
@@ -496,7 +614,13 @@ class RoomScreen(
         )
     }
 
-    /** 建立包含說明、目前值、選項或數值限制的通用條列 tooltip。 */
+    /**
+     * 建立包含說明、目前值、選項或數值限制的條列提示。
+     *
+     * @param field 欄位呈現定義。
+     * @param config 讀取目前值及相依條件使用的設定。
+     * @return 完整的多行欄位提示文字。
+     */
     private fun fieldTooltip(field: GameConfigFieldDefinition, config: GameConfig): Text {
         val result = Text.empty().append(Text.translatable(field.descriptionTranslationKey).formatted(Formatting.GRAY))
         val current = field.read(config)
@@ -538,11 +662,28 @@ class RoomScreen(
         return result
     }
 
+    /**
+     * 將欄位值轉成顯示文字。
+     *
+     * @param value 要呈現的欄位值。
+     * @return 值對應的文字。
+     */
     private fun presentationText(value: GameConfigPresentationValue): Text = gameConfigPresentationText(value)
 
+    /**
+     * 取得規則名稱，未登記時顯示原始識別碼。
+     *
+     * @param moduleId 規則模組識別碼。
+     * @return 本地化名稱或識別碼。
+     */
     private fun ruleName(moduleId: String): Text = ruleNames.find(moduleId)?.let(Text::translatable) ?: Text.literal(moduleId)
 
-    /** 依目前實際按鈕數量將底部操作列整組置中。 */
+    /**
+     * 將房間操作與關閉按鈕整組置中。
+     *
+     * @param actions 依顯示順序排列的房間操作。
+     * @param y 按鈕列頂端座標。
+     */
     private fun addCenteredActions(actions: List<ActionButton>, y: Int) {
         val buttonCount = actions.size + 1
         val gap = 6
@@ -571,6 +712,12 @@ class RoomScreen(
         )
     }
 
+    /**
+     * 建立目前策略與全部可選策略的提示。
+     *
+     * @param current 目前策略識別碼；未知時為 null。
+     * @return 將目前策略標色的多行提示。
+     */
     private fun aiStrategyTooltip(current: String?): Text = Text.empty()
         .append(Text.translatable(MinecraftRoomScreenKeys.AI_STRATEGY_TITLE).formatted(Formatting.GOLD))
         .append("\n• ")
@@ -583,6 +730,7 @@ class RoomScreen(
             }
         }
 
+    /** 草稿未過期且驗證通過時送出設定更新；不自行判定伺服器是否接受。 */
     private fun applyDraft() {
         if (!draft.canDone(roomPlayerCount())) return
         val table = stateStore.tableOccupancy(tableId) ?: return
@@ -603,14 +751,24 @@ class RoomScreen(
         applyDraft()
     }
 
-    /** 將草稿恢復成目前權威設定。 */
+    /**
+     * 將草稿恢復成權威設定並要求重建。
+     *
+     * @param authoritative 要採用的權威設定；未知時不處理。
+     */
     private fun restoreAuthoritativeDraft(authoritative: GameConfig? = currentConfig()) {
         val resolvedAuthoritative = authoritative ?: return
         draft.restoreAuthoritative(resolvedAuthoritative)
         rebuild()
     }
 
-    /** 依草稿、權威值與預設值同步儲存、取消及重設按鈕狀態。 */
+    /**
+     * 依草稿、權威值與預設值同步底部按鈕及差異提示。
+     *
+     * @param current 目前草稿。
+     * @param authoritative 目前權威設定。
+     * @param defaults 用於判斷是否可重設的預設設定。
+     */
     private fun refreshDraftButtons(
         current: GameConfig? = draft.config,
         authoritative: GameConfig? = currentConfig(),
@@ -639,7 +797,13 @@ class RoomScreen(
     /** 房間目前人數（含 AI）；房間資料尚未同步時為 0。 */
     private fun roomPlayerCount(): Int = stateStore.roomSnapshot(tableId)?.playerIds?.size ?: 0
 
-    /** 說明房間人數超過 [config] 規則人數上限、因此無法套用。 */
+    /**
+     * 建立房間人數超過規則上限的說明。
+     *
+     * @param config 用於取得規則名稱與人數上限的設定。
+     * @param roomPlayerCount 目前房間人數。
+     * @return 超過人數上限的提示文字。
+     */
     private fun playerLimitExceededText(config: GameConfig, roomPlayerCount: Int): Text = Text.translatable(
         MinecraftRoomScreenKeys.PLAYER_LIMIT_EXCEEDED,
         roomPlayerCount,
@@ -647,16 +811,28 @@ class RoomScreen(
         config.ruleConfig.maxPlayers,
     )
 
+    /** 建立復原按鈕的放棄草稿說明。 */
     private fun undoTooltip(): Text = Text.empty()
         .append(Text.translatable(MinecraftRoomScreenKeys.UNDO).formatted(Formatting.GOLD))
         .append("\n• ").append(Text.translatable(MinecraftRoomScreenKeys.UNDO_DISCARD).formatted(Formatting.WHITE))
         .append("\n• ").append(Text.translatable(MinecraftRoomScreenKeys.UNDO_RESTORE).formatted(Formatting.GRAY))
 
+    /** 建立重設預設值按鈕的說明，提醒尚未儲存。 */
     private fun resetTooltip(): Text = Text.empty()
         .append(Text.translatable(MinecraftRoomScreenKeys.RESET_DEFAULTS_BUTTON).formatted(Formatting.GOLD))
         .append("\n• ").append(Text.translatable(MinecraftRoomScreenKeys.RESET_DEFAULTS).formatted(Formatting.WHITE))
         .append("\n• ").append(Text.translatable(MinecraftRoomScreenKeys.RESET_NOT_SAVED).formatted(Formatting.GRAY))
 
+    /**
+     * 建立並加入一個房間操作按鈕。
+     *
+     * @param x 按鈕左界。
+     * @param y 按鈕頂端。
+     * @param width 按鈕寬度。
+     * @param key 按鈕名稱翻譯鍵。
+     * @param action 點擊後傳送的房間操作。
+     * @param active 是否可點擊。
+     */
     private fun addActionButton(x: Int, y: Int, width: Int, key: String, action: RoomActionDto, active: Boolean = true) {
         addDrawableChild(
             RestartableMarqueeButtonWidget.builder(Text.translatable(key)) {
@@ -665,8 +841,19 @@ class RoomScreen(
         )
     }
 
+    /**
+     * 將房間操作傳送至伺服器。
+     *
+     * @param action 要傳送的操作。
+     */
     private fun send(action: RoomActionDto) = MahjongChannels.roomAction.sendToServer(json, action)
 
+    /**
+     * 取得策略名稱；未知識別碼直接顯示，未提供識別碼時顯示 AI。
+     *
+     * @param strategyKey 策略識別碼。
+     * @return 策略的顯示文字。
+     */
     private fun aiStrategyText(strategyKey: String?): Text = strategyKey?.let { key ->
         aiStrategyNames.find(key)?.let(Text::translatable) ?: Text.literal(key)
     } ?: Text.literal("AI")
@@ -802,12 +989,13 @@ class RoomScreen(
         }
     }
 
-    /** 離開桌旁或切換維度時關閉畫面，讓 removed() 清除暫時 observer。 */
     /**
      * 這張桌子目前是否仍可使用：玩家在同一個維度、距離夠近，而且桌子本身還在。
      *
      * 桌子可能在畫面開著時被其他玩家破壞，因此距離之外還要確認方塊實體仍然存在；距離條件已經保證所在
      * 區塊是載入的，查不到方塊實體就代表桌子真的沒了。payload 沒有帶座標時無從判斷，一律視為仍可使用。
+     *
+     * @return 牌桌資料存在且可用時為 true；缺少位置資訊時也視為可用。
      */
     internal fun isTableStillAvailable(): Boolean {
         val table = stateStore.tableOccupancy(tableId) ?: return false
@@ -822,6 +1010,13 @@ class RoomScreen(
         return world.getBlockEntity(BlockPos(x, y, z)) is MahjongTableBlockEntity
     }
 
+    /**
+     * 依牌桌狀態繪製空桌說明、等待成員或對局成員。
+     *
+     * @param context 畫面繪製情境。
+     * @param mouseX 游標水平座標。
+     * @param mouseY 游標垂直座標。
+     */
     private fun renderRoom(context: DrawContext, mouseX: Int, mouseY: Int) {
         val table = stateStore.tableOccupancy(tableId) ?: return
         when (table.occupancy) {
@@ -848,6 +1043,11 @@ class RoomScreen(
      * （[renderMembers]）共用同一套固定尺寸 grid 與捲動機制（[memberScroll]），差異只在名稱下方
      * 顯示的是 player info（[resolvePlayingPlayerInfo]）而不是加入狀態，且該區塊內容過長時另外用
      * [playingInfoScroll] 捲動。
+     *
+     * @param context 畫面繪製情境。
+     * @param players 對局玩家的公開資訊。
+     * @param mouseX 游標水平座標，用於模型預覽朝向。
+     * @param mouseY 游標垂直座標，用於模型預覽朝向。
      */
     private fun renderPlayingMembers(
         context: DrawContext,
@@ -898,6 +1098,11 @@ class RoomScreen(
         return roomMemberEntriesFrom(snapshot.players, stateStore.gameAiPlayerIds(tableId), ::resolveLocalPlayerName)
     }
 
+    /**
+     * 在牌桌周圍搜尋屬於此牌桌的玩家資訊實體。
+     *
+     * @return 第一個相符實體；世界、位置或實體尚未可用時為 null。
+     */
     private fun resolvePlayerInfoEntity(): MahjongPlayerInfoEntity? {
         val table = stateStore.tableOccupancy(tableId) ?: return null
         val world = client?.world ?: return null
@@ -910,6 +1115,16 @@ class RoomScreen(
         ) { it.managedTableId == tableId }.firstOrNull()
     }
 
+    /**
+     * 依輸入順序繪製等待室成員卡片與準備狀態。
+     *
+     * @param context 畫面繪製情境。
+     * @param playerIds 依顯示順序排列的成員識別碼。
+     * @param aiIds 由 AI 操控的成員識別碼。
+     * @param memberStatus 要顯示的房主與準備狀態。
+     * @param mouseX 游標水平座標，用於模型預覽朝向。
+     * @param mouseY 游標垂直座標，用於模型預覽朝向。
+     */
     private fun renderMembers(
         context: DrawContext,
         playerIds: List<Uuid>,
@@ -954,6 +1169,18 @@ class RoomScreen(
         renderMemberGridScrollbar(context, grid)
     }
 
+    /**
+     * 繪製成員模型或降級頭像，並記錄解析器本次提供的診斷警告。
+     *
+     * @param context 畫面繪製情境。
+     * @param playerId 成員識別碼。
+     * @param ai 是否由 AI 操控。
+     * @param x 卡片左界。
+     * @param y 卡片頂端。
+     * @param cardWidth 卡片寬度。
+     * @param mouseX 游標水平座標，用於模型朝向。
+     * @param mouseY 游標垂直座標，用於模型朝向。
+     */
     private fun renderMemberAppearance(
         context: DrawContext,
         playerId: Uuid,
@@ -1003,7 +1230,12 @@ class RoomScreen(
         return resolvePlayingPlayerInfo().maxOfOrNull { memberPresentation.infoRows(it, dealerPlayerId).size } ?: 0
     }
 
-    /** 只在卡片列超出可見範圍時繪製 grid scrollbar；等待室與進行中對局共用。 */
+    /**
+     * 只在卡片列超出可見範圍時繪製捲軸。
+     *
+     * @param context 畫面繪製情境。
+     * @param grid 成員卡片版面幾何。
+     */
     private fun renderMemberGridScrollbar(context: DrawContext, grid: RoomMemberGridLayout) {
         if (grid.rows <= grid.visibleRows) return
         val column = grid.scrollbarColumn
@@ -1012,7 +1244,13 @@ class RoomScreen(
         context.fill(column.trackLeft, layout.thumbTop, column.trackRight, layout.thumbTop + layout.thumbHeight, 0xFFD0D0D0.toInt())
     }
 
-    /** 每一列各自畫一段 scrollbar，共用同一個捲動位置；只畫目前捲動位置下看得到的列。 */
+    /**
+     * 為每個可見成員列繪製資訊捲軸，所有列共用資訊捲動位置。
+     *
+     * @param context 畫面繪製情境。
+     * @param grid 成員卡片版面幾何。
+     * @param totalInfoRows 完整資訊清單的最大行數。
+     */
     private fun renderPlayingInfoScrollbar(context: DrawContext, grid: RoomMemberGridLayout, totalInfoRows: Int) {
         if (grid.maximumInfoScroll(totalInfoRows) == 0) return
         val column = grid.scrollbarColumn
@@ -1023,6 +1261,16 @@ class RoomScreen(
         }
     }
 
+    /**
+     * 在卡片上方置中繪製成員頭像。
+     *
+     * @param context 畫面繪製情境。
+     * @param playerId 成員識別碼。
+     * @param isAi 是否使用 AI 外觀。
+     * @param x 卡片左界。
+     * @param y 卡片頂端。
+     * @param cardWidth 卡片寬度，用於計算頭像大小與位置。
+     */
     private fun renderPortrait(context: DrawContext, playerId: Uuid, isAi: Boolean, x: Int, y: Int, cardWidth: Int) {
         val portraitSize = (cardWidth - 24).coerceIn(28, 38)
         portraitRenderer.render(
@@ -1038,6 +1286,14 @@ class RoomScreen(
         )
     }
 
+    /**
+     * 繪製設定欄位標籤、捲軸與驗證狀態。
+     *
+     * @param context 畫面繪製情境。
+     * @param mouseX 游標水平座標。
+     * @param mouseY 游標垂直座標。
+     * @return 被截斷且正被游標指向的標籤原文；沒有時為 null。
+     */
     private fun renderSettings(context: DrawContext, mouseX: Int, mouseY: Int): Text? {
         val config = draft.config ?: currentConfig() ?: return null
         val resolved = configResolver.resolve(config)
@@ -1110,17 +1366,28 @@ class RoomScreen(
         return hoveredLabel
     }
 
+    /** 取得房間設定，沒有房間快照時改用進行中對局的設定；兩者皆無時為 null。 */
     private fun currentConfig(): GameConfig? = stateStore.roomSnapshot(tableId)?.gameConfig
         ?: stateStore.tableOccupancy(tableId)?.playingGameConfig?.let { dto -> dto.toDomain(networkRegistries) }
 
+    /**
+     * 取得成員名稱，AI 使用指定順序的編號名稱，真人使用本地名稱解析。
+     *
+     * @param playerId 成員識別碼。
+     * @param ai 是否由 AI 操控。
+     * @param orderedAiPlayerIds 用於分配 AI 顯示編號的順序。
+     * @return 名稱或尚未解析完成的替代文字。
+     */
     private fun memberName(playerId: Uuid, ai: Boolean, orderedAiPlayerIds: List<Uuid>): Text {
         if (ai) return Text.literal(aiPlayerDisplayName(playerId, orderedAiPlayerIds))
         return resolvedPlayerNameText(resolveLocalPlayerName(playerId))
     }
 
     /**
-     * 真人玩家名稱的本地解析：在線就用 player list 的 profile；不在線時看之前有沒有非同步向 Mojang
-     * 查詢過這個 UUID 並已經拿到結果，兩者都沒有就觸發一次查詢並回傳 `null`，交由呼叫端決定顯示什麼。
+     * 優先使用玩家列表或已解析的名稱；未知時要求解析器載入，依解析器的帳號政策決定是否外部查詢。
+     *
+     * @param playerId 真人玩家識別碼。
+     * @return 已知名稱；載入中或無法解析時為 null。
      */
     private fun resolveLocalPlayerName(playerId: Uuid): String? {
         val name = client?.networkHandler?.getPlayerListEntry(playerId.toJavaUuid())?.profile?.name
@@ -1129,7 +1396,12 @@ class RoomScreen(
         return name
     }
 
-    /** 依目前視窗尺寸與玩家數建立成員卡片版面；幾何公式見 [RoomMemberGridLayout]。 */
+    /**
+     * 依目前視窗尺寸與捲動位置建立成員卡片版面。
+     *
+     * @param playerCount 要排列的玩家數。
+     * @return 成員卡片版面幾何。
+     */
     private fun memberGrid(playerCount: Int): RoomMemberGridLayout = RoomMemberGridLayout(
         windowWidth = width,
         windowHeight = height,
@@ -1147,7 +1419,12 @@ class RoomScreen(
         else -> null
     }
 
-    /** 依目前視窗尺寸與草稿內容建立設定頁版面；幾何公式見 [RoomSettingsLayout]。 */
+    /**
+     * 依目前視窗尺寸、草稿分類與捲動位置建立設定頁版面。
+     *
+     * @param fieldCount 目前分類的完整欄位數。
+     * @return 設定頁版面幾何。
+     */
     private fun settingsLayout(fieldCount: Int = currentFieldCount()): RoomSettingsLayout = RoomSettingsLayout(
         windowWidth = width,
         windowHeight = height,
@@ -1162,7 +1439,12 @@ class RoomScreen(
     /** 目前分類的完整欄位數，供 scrollbar 幾何與捲動上限共用。 */
     private fun currentFieldCount(): Int = resolvedDefinition()?.fields?.count { it.categoryId == selectedCategoryId } ?: 0
 
-    /** 只在內容超出可見範圍時繪製可拖曳 scrollbar。 */
+    /**
+     * 只在設定欄位超出可見範圍時繪製捲軸。
+     *
+     * @param context 畫面繪製情境。
+     * @param fieldCount 目前分類的完整欄位數。
+     */
     private fun renderScrollbar(context: DrawContext, fieldCount: Int) {
         val settings = settingsLayout(fieldCount)
         val scrollbar = settings.scrollbar
@@ -1172,7 +1454,13 @@ class RoomScreen(
         context.fill(column.trackLeft, scrollbar.thumbTop, column.trackRight, scrollbar.thumbTop + scrollbar.thumbHeight, 0xFFD0D0D0.toInt())
     }
 
-    /** 依實際像素寬度截斷成員名稱並補省略號。 */
+    /**
+     * 依像素寬度截斷文字並補省略號；寬度不足以容納省略號時仍保留省略號。
+     *
+     * @param text 原始文字。
+     * @param maximumWidth 可用像素寬度；非正值時回傳空文字。
+     * @return 原文或去除原樣式後附省略號的文字。
+     */
     private fun fitText(text: Text, maximumWidth: Int): Text {
         if (maximumWidth <= 0) return Text.empty()
         if (textRenderer.getWidth(text) <= maximumWidth) return text
@@ -1184,10 +1472,12 @@ class RoomScreen(
     }
 
     /**
-     * 優先使用世界中的真人；不在載入範圍時以 player-list profile 建立純客戶端預覽；連 player-list
-     * 都沒有這個人時，改用 [profileResolver] 非同步向 Mojang 查詢真實名稱與皮膚——查到之前（或最終
-     * 查無此人，例如 offline-mode 帳號）先用 [OfflinePlayerPreviewEntity] 畫一個固定黑底問號的替身，
-     * 而不是完全不畫。一旦 [profileResolver] 查到結果，下一次呼叫就會改用真人皮膚，不會卡在替身上。
+     * 優先使用世界中的玩家，否則以玩家列表或已解析 profile 建立純客戶端預覽。
+     * 未取得 profile 時要求 [profileResolver] 載入並使用問號佔位模型；是否外部查詢由解析器的帳號政策決定。
+     * 取得 profile 後，下次呼叫會取代佔位模型。
+     *
+     * @param playerId 真人玩家識別碼。
+     * @return 可用的玩家或預覽模型；客戶端世界不可用時為 null。
      */
     private fun resolvePlayerPreview(playerId: Uuid): LivingEntity? {
         val minecraft = client ?: return null
@@ -1205,10 +1495,22 @@ class RoomScreen(
         return OtherClientPlayerEntity(world, profile).also { profilePreviews[playerId] = it }
     }
 
+    /**
+     * 取得布林值的本地化文字。
+     *
+     * @param enabled 是否啟用。
+     * @return 對應真或假的文字。
+     */
     private fun booleanText(enabled: Boolean): Text = Text.translatable(
         if (enabled) MinecraftRoomScreenKeys.TRUE else MinecraftRoomScreenKeys.FALSE,
     )
 
+    /**
+     * 取得設定選項的本地化文字。
+     *
+     * @param optionId 選項識別碼。
+     * @return 對應翻譯鍵的文字。
+     */
     private fun optionText(optionId: String): Text = Text.translatable(MinecraftRoomScreenKeys.configOption(optionId))
 
     /**
@@ -1263,27 +1565,56 @@ class RoomScreen(
 
     override fun shouldPause(): Boolean = false
 
-    private enum class Page { ROOM, SETTINGS }
+    /** 桌級畫面目前顯示的頁面。 */
+    private enum class Page {
+        /** 空桌、等待室或進行中對局的成員頁。 */
+        ROOM,
 
+        /** 規則與流程設定頁。 */
+        SETTINGS,
+    }
+
+    /**
+     * 房間底部操作按鈕的建立資料。
+     *
+     * @property key 名稱翻譯鍵。
+     * @property action 點擊後傳送的房間操作。
+     * @property active 是否可點擊。
+     */
     private data class ActionButton(
         val key: String,
         val action: RoomActionDto,
         val active: Boolean,
     )
 
+    /** 成員卡片下方要呈現的房間狀態。 */
     private sealed interface MemberStatus {
+        /**
+         * 等待開局的成員狀態。
+         *
+         * @property readyPlayerIds 已準備完成的成員識別碼。
+         * @property hostId 房主識別碼。
+         */
         data class Waiting(
             val readyPlayerIds: Set<Uuid>,
             val hostId: Uuid,
         ) : MemberStatus
 
+        /** 已進入對局，不顯示等待室準備狀態。 */
         data object Playing : MemberStatus
     }
 
     private companion object {
+        /** 一般版面設定欄位標籤的左界。 */
         const val SETTINGS_FIELD_LABEL_X = 150
+
+        /** 欄位標籤與控制項之間的水平間距。 */
         const val SETTINGS_FIELD_LABEL_GAP = 8
+
+        /** 輸入文字置中計算使用的可視字高。 */
         const val VANILLA_VISIBLE_TEXT_HEIGHT = 8
+
+        /** 窄視窗內容區的水平邊距。 */
         const val COMPACT_CONTENT_MARGIN = 18
 
         /** 規則切換鈕與規則一覽按鈕的上界。 */
@@ -1297,13 +1628,23 @@ class RoomScreen(
 
         /** 規則一覽按鈕上的文字。 */
         const val RULE_CATALOGUE_BUTTON_LABEL = "?"
+
+        /** 窄視窗整數欄位加減按鈕的寬度。 */
         const val COMPACT_INTEGER_BUTTON_WIDTH = 24
+
+        /** 整數輸入框與加減按鈕之間的間距。 */
         const val COMPACT_INTEGER_BUTTON_GAP = 4
 
         /** 右側需保留給 scrollbar 的寬度，避免 compact 控制項覆蓋到它。 */
         const val COMPACT_SCROLLBAR_RESERVE = 20
+
+        /** 窄視窗控制項的最小寬度。 */
         const val MIN_COMPACT_CONTROL_WIDTH = 80
+
+        /** 成員名稱相對卡片頂端的垂直偏移。 */
         const val MEMBER_NAME_OFFSET = 96
+
+        /** 成員卡片的 ARGB 背景顏色。 */
         const val MEMBER_CARD_BACKGROUND = 0xA0202838.toInt()
 
         /** [resolvePlayerPreview] 為找不到 player-list profile 的玩家組出佔位 [GameProfile] 時使用的名稱。 */
@@ -1314,6 +1655,8 @@ class RoomScreen(
 
         /** 踢出按鈕相對卡片頂端（[RoomMemberGridLayout.CARD_TOP]）的垂直偏移。 */
         const val KICK_BUTTON_OFFSET_Y = 4
+
+        /** 對局成員卡片依東、南、西、北排列的自風順序。 */
         val WIND_ORDER = mapOf(Wind.EAST to 0, Wind.SOUTH to 1, Wind.WEST to 2, Wind.NORTH to 3)
     }
 }

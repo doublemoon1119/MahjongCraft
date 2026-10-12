@@ -33,6 +33,7 @@ import kotlin.uuid.Uuid
  * @property handSortPreferenceStore 查詢玩家是否啟用自動整理手牌，見該類別 KDoc。
  * @property eventPublisher 對局通知服務。
  * @property presentationPublisher 對局 in-process 呈現觸發器。
+ * @property beginRoundPreparationUseCase 開局後啟動第一個回合準備步驟的用例；未提供時不啟動準備流程。
  */
 @Factory
 class StartGameUseCase(
@@ -178,6 +179,9 @@ class StartGameUseCase(
      * `update` 區塊內部使用的中繼結果，讓 [dealOrderHandTileIdsBySeatIndex]（發牌順序，在
      * [initializationResult] 的手牌已經被整理過之後就無法再從它反推出來）能跟著
      * [initializationResult] 一起帶出 `authoritativeStateStore.update` 的作用域。
+     *
+     * @property initializationResult 初始化完成且已整理手牌的桌況與發牌資訊。
+     * @property dealOrderHandTileIdsBySeatIndex 各座位實際發牌順序的牌張 ID。
      */
     private data class StartGameOutcome(
         val initializationResult: GameInitializationResult,

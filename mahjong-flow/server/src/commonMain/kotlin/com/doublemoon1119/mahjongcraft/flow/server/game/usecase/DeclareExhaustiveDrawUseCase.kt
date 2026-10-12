@@ -151,6 +151,9 @@ class DeclareExhaustiveDrawUseCase(
      * [TableState.nearestPlayerInTurnOrder] 判定的那位收下，不是均分），榮和沒有「放銃者」可用
      * 來判斷順位，改以莊家為基準。
      *
+     * @param state 流局結算後的權威桌況。
+     * @param stickPotCollectorPlayerIds 規則判定可收下供託的玩家。
+     * @param stickPotAmount 本次可分配的供託總額。
      * @return 收下者應得的供託金額（單一 entry 的 map）；無人該收下（或供託金額為 0）時回傳空 map。
      */
     private fun distributeStickPot(state: TableState, stickPotCollectorPlayerIds: Set<Uuid>, stickPotAmount: Int): Map<Uuid, Int> {
@@ -166,6 +169,9 @@ class DeclareExhaustiveDrawUseCase(
      * `update` 區塊內部使用的中繼結果，讓 [reason] 能跟著 [tableState] 一起帶出
      * `gameRepository.update` 的作用域，供廣播事件時使用（[reason] 不是 [TableState] 的欄位，
      * 無法在作用域外從 [tableState] 反推）。
+     *
+     * @property tableState 流局結算後的權威桌況。
+     * @property reason 實際成立的流局原因。
      */
     private data class ExhaustiveDrawResult(val tableState: TableState, val reason: ExhaustiveDrawReason)
 }

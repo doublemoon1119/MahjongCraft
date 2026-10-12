@@ -31,6 +31,7 @@ import kotlin.uuid.Uuid
 
 /** [SubmitRoundPreparationUseCase] 的單元測試。 */
 class SubmitRoundPreparationUseCaseTest {
+    /** 測試對局中唯一玩家的識別碼。 */
     private val playerId = Uuid.random()
 
     /**
@@ -73,6 +74,7 @@ class SubmitRoundPreparationUseCaseTest {
     }
 
     /** 收齊確認後不改桌況、也沒有下一步的解析器。 */
+    /** 測試用解析器：不建立步驟，並在確認完成後結束準備流程。 */
     private object ConfirmationResolver : RoundPreparationResolver {
         override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI
 

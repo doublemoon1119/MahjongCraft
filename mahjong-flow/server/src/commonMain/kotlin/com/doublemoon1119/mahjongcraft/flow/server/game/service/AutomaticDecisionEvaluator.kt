@@ -25,7 +25,13 @@ class AutomaticDecisionEvaluator(
     private val visibilityPolicy: GameVisibilityPolicy,
     private val actionContextResolver: PlayerActionContextResolver = PlayerActionContextResolver(),
 ) {
-    /** 針對指定玩家解析目前決策；沒有操作權時仍回傳空選項，不自行推測動作。 */
+    /**
+     * 針對指定玩家解析目前決策；玩家不在對局時回傳 null，沒有操作權時回傳空選項，不自行推測動作。
+     *
+     * @param game 欲解析的權威遊戲。
+     * @param playerId 欲解析決策的玩家識別碼。
+     * @return 決策選項與政策指定的立即動作；玩家不在對局時為 null。
+     */
     fun evaluate(game: Game, playerId: Uuid): EvaluatedPlayerDecision? {
         val state = game.tableState
         val player = state.players.firstOrNull { it.id == playerId } ?: return null
@@ -53,7 +59,14 @@ class AutomaticDecisionEvaluator(
         )
     }
 
-    /** 防止規則擴充政策繞過合法動作與選牌契約。 */
+    /**
+     * 防止規則擴充政策繞過合法動作與選牌契約。
+     *
+     * @param decision 規則政策要求立即執行的動作及選牌。
+     * @param options 本次決策的合法選項。
+     * @param playerId 決策玩家識別碼。
+     * @param game 目前權威遊戲。
+     */
     private fun validateImmediateAction(
         decision: AutomaticControlAction,
         options: PlayerDecisionOptions,

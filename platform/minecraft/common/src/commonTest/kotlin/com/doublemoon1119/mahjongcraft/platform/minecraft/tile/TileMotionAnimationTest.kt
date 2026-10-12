@@ -111,6 +111,12 @@ class TileMotionAnimationTest {
         assertEquals(-90.0f, midpoint.poseRotationDegrees)
     }
 
+    /**
+     * 比較兩個位移向量的各軸分量，允許 [ABSOLUTE_TOLERANCE_DOUBLE] 的浮點誤差。
+     *
+     * @param expected 預期向量。
+     * @param actual 實際向量。
+     */
     private fun assertVectorEquals(expected: DiceAnimationVector, actual: DiceAnimationVector) {
         assertEquals(expected.x, actual.x, ABSOLUTE_TOLERANCE_DOUBLE)
         assertEquals(expected.y, actual.y, ABSOLUTE_TOLERANCE_DOUBLE)
@@ -118,7 +124,10 @@ class TileMotionAnimationTest {
     }
 
     private companion object {
+        /** 向量分量比較使用的絕對誤差容許值。 */
         const val ABSOLUTE_TOLERANCE_DOUBLE: Double = 1e-9
+
+        /** 浮點姿態角比較使用的絕對誤差容許值。 */
         const val ABSOLUTE_TOLERANCE_FLOAT: Float = 1e-4f
     }
 }

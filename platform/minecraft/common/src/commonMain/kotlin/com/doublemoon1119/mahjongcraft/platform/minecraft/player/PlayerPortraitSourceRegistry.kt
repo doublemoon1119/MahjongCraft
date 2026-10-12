@@ -11,10 +11,21 @@ interface PlayerPortraitSourceRegistry {
     /** 目前已登記 provider ID 的集合。 */
     val providerIds: Set<String>
 
-    /** 登記一個 portrait provider。 */
+    /**
+     * 登記一個 portrait provider。
+     *
+     * @param providerId provider 的穩定 namespaced ID。
+     * @param priority 解析優先順序；數值較大者先執行。
+     * @param provider 依玩家身分解析 portrait 來源的 provider。
+     */
     fun register(providerId: String, priority: Int = 0, provider: PlayerPortraitSourceProvider)
 
-    /** 依 provider 優先順序解析玩家 portrait；無 provider 能提供來源時回傳 null。 */
+    /**
+     * 依 provider 優先順序解析玩家 portrait；無 provider 能提供來源時回傳 null。
+     *
+     * @param context 要解析的玩家身分。
+     * @return 第一個提供來源的 provider ID 與來源，或沒有來源時的 null。
+     */
     fun resolve(context: PlayerPortraitSourceContext): ResolvedPlayerPortraitSource?
 
     /** 凍結 registry，禁止後續登記。 */

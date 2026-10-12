@@ -12,7 +12,9 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
+/** 驗證內建與擴充和牌結算模板的版面、欄位、動畫及 registry 契約。 */
 class WinSettlementPresentationTemplateRegistryTest {
+    /** 預設容器不繪製底色、框線或內容留白。 */
     @Test
     fun `container appearance defaults to transparent borderless and padding free`() {
         val style = PresentationContainerStyle()
@@ -23,6 +25,7 @@ class WinSettlementPresentationTemplateRegistryTest {
         assertEquals(0f, style.dividerWidth)
     }
 
+    /** 內建通用模板不包含日麻專屬的寶牌、翻數或符數欄位。 */
     @Test
     fun `built in generic template stays rule neutral`() {
         val registry = WinSettlementPresentationTemplateRegistryImpl()
@@ -33,6 +36,7 @@ class WinSettlementPresentationTemplateRegistryTest {
         assertFalse(rendered.contains(":fu", ignoreCase = true))
     }
 
+    /** 日麻模板沿用共用的玩家身分、版面及動畫節點。 */
     @Test
     fun `built in riichi template uses the same public animation and identity primitives`() {
         val registry = WinSettlementPresentationTemplateRegistryImpl()
@@ -46,6 +50,7 @@ class WinSettlementPresentationTemplateRegistryTest {
         assertTrue(rendered.contains("TileGroups"))
     }
 
+    /** 未揭示的指示牌欄位以牌背填滿固定槽位。 */
     @Test
     fun `riichi indicator providers fill unrevealed slots with tile backs`() {
         val registry = WinSettlementPresentationTemplateRegistryImpl()
@@ -90,6 +95,7 @@ class WinSettlementPresentationTemplateRegistryTest {
         )
     }
 
+    /** 版面提供預期的排列、權重及預設垂直對齊選項。 */
     @Test
     fun `layout exposes compose style arrangements and weighted children`() {
         assertEquals(
@@ -107,6 +113,7 @@ class WinSettlementPresentationTemplateRegistryTest {
         )
     }
 
+    /** 第三方可組合玩家身分、受控動畫與詳情欄位標題。 */
     @Test
     fun `third party template can compose player identity and controlled reveal effects`() {
         val identity = PresentationFieldId("example:winner")
@@ -142,6 +149,7 @@ class WinSettlementPresentationTemplateRegistryTest {
         assertEquals("example.detail.label", registry.findTemplate("example:animated")?.detailFieldLabelKeys?.get(labelField))
     }
 
+    /** 宣告式聲音拒絕非 namespaced ID。 */
     @Test
     fun `declarative sounds require namespaced identifiers and bounded values`() {
         val cue = PresentationSoundCue(

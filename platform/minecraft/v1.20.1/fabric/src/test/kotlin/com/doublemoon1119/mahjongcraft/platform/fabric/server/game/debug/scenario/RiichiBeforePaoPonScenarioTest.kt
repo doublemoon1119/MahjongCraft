@@ -22,7 +22,10 @@ import kotlin.test.assertTrue
 
 /** 驗證包牌碰牌情境停在「碰了就成立包牌」的前一刻，且後續摸牌能讓呼叫者和牌。 */
 class RiichiBeforePaoPonScenarioTest {
+    /** 包牌情境使用的日麻規則設定。 */
     private val config = RiichiRuleConfig()
+
+    /** 提供合法動作與包牌判定的規則模組。 */
     private val module = RiichiRuleModule(BuiltInRuleModuleIds.RIICHI, config)
 
     /** 情境停在上家剛打出白、只有呼叫者能回應的反應視窗。 */
@@ -111,7 +114,12 @@ class RiichiBeforePaoPonScenarioTest {
         assertEquals(module.createWallFactory().create().getAllTiles().size, placed.size)
     }
 
-    /** 以四人日麻桌建立情境，回傳建立後的桌況與呼叫者。 */
+    /**
+     * 建立四人日麻的包牌情境並回傳指定呼叫者。
+     *
+     * @param invokingSeat 呼叫者的座位索引。
+     * @return 情境桌況與呼叫者玩家。
+     */
     private fun buildScenario(invokingSeat: Int): Pair<TableState, MahjongPlayer> {
         val players = Wind.entries.map { FakeMahjongPlayerFactory.create(initialSeat = it, playerRuleState = RiichiPlayerState()) }
         val game = Game(tableState = FakeTableStateFactory.create(players = players, config = config), flowConfig = GameFlowConfig())

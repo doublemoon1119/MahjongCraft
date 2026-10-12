@@ -22,7 +22,10 @@ import kotlin.test.assertTrue
 
 /** [ExhaustiveDrawSettlementPresentationRequestFactory] 的手牌公開策略與玩家數測試。 */
 class ExhaustiveDrawSettlementPresentationRequestFactoryTest {
+    /** 各測試使用的日麻設定。 */
     private val config = RiichiRuleConfig()
+
+    /** 解析流局揭露政策與牌序的日麻模組。 */
     private val module = RiichiRuleModule("mahjongcraft:riichi", config)
 
     /** 一般流局應翻開聽牌者並蓋起未聽者。 */
@@ -107,10 +110,7 @@ class ExhaustiveDrawSettlementPresentationRequestFactoryTest {
         }
     }
 
-    /**
-     * 蓋牌範圍只能是立牌，**絕不包含副露**：吃、碰、明槓、暗槓本來就是公開資訊，蓋起來既不合規則，
-     * 也會摧毀既有的牌面、橫置方向與加槓疊牌版面。
-     */
+    /** 驗證流局手牌處理範圍只包含立牌，不包含副露中的實體牌。 */
     @Test
     fun `conceal targets standing tiles only and never melds`() {
         val meldTiles = List(3) { FakeIdentifiedTileFactory.create(Tile.Honor.White) }
@@ -146,7 +146,7 @@ class ExhaustiveDrawSettlementPresentationRequestFactoryTest {
         }
     }
 
-    /** 流局展示會依規則牌序整理立牌，避免 AI 或未開啟自動理牌的手牌以雜亂順序倒下。 */
+    /** 驗證流局要求中的立牌清單依規則牌序排列。 */
     @Test
     fun `settlement hand tiles follow the rule tile order`() {
         val nineCharacters = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9))
@@ -177,10 +177,7 @@ class ExhaustiveDrawSettlementPresentationRequestFactoryTest {
         )
     }
 
-    /**
-     * 本局已胡牌退場的玩家不參與流局收尾：手牌在他胡牌時就收好了，不能再排一次動畫，也不該被標成
-     * 不聽——他根本沒有參與這次流局。分數排行那一列仍然保留。
-     */
+    /** 驗證本局已和牌的玩家保留排名資料，但不再包含流局手牌處理要求或聽牌狀態。 */
     @Test
     fun `a finished player keeps its ranking row but gets no conceal animation or status`() {
         val base = tableState(4)
@@ -208,7 +205,12 @@ class ExhaustiveDrawSettlementPresentationRequestFactoryTest {
         )
     }
 
-    /** 建立指定玩家數、每人持有一張可追蹤測試牌的日麻桌況。 */
+    /**
+     * 建立指定玩家數、每人持有一張可追蹤測試牌的日麻桌況。
+     *
+     * @param playerCount 桌況中的玩家數。
+     * @return 每位玩家各持一張可追蹤測試牌的桌況。
+     */
     private fun tableState(playerCount: Int) = FakeTableStateFactory.create(
         players = Wind.entries.take(playerCount).mapIndexed { index, wind ->
             FakeMahjongPlayerFactory.create(

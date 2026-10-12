@@ -15,6 +15,10 @@ import org.koin.core.annotation.Single
  * 送出任何封包。推送在 [CoroutineDispatchers.main]（伺服器 tick 佇列）上執行，觀察者查詢需要讀取世界
  * 狀態，本來就只能在該執行緒進行。[broadcastInProgress] 只是避免 tick 比推送本身更快時堆積重複的
  * 工作，實際的互斥由 [ObserverSnapshotBroadcaster] 自己負責。
+ *
+ * @property scope 執行 session 觀察與推送工作的協程作用域。
+ * @property dispatchers 提供伺服器主執行緒排程器。
+ * @property broadcaster 訂閱狀態並推送觀察者快照的共用服務。
  */
 @Single
 class FabricObserverSnapshotBroadcastService(

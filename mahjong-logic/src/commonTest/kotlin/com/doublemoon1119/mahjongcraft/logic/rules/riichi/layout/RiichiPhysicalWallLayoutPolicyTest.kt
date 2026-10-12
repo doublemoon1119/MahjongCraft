@@ -153,8 +153,8 @@ class RiichiPhysicalWallLayoutPolicyTest {
     /**
      * 驗證整局牌牆不存在空間重疊。
      *
-     * 牌張寬度為一墩，因此同一面同一層的任兩張牌中心距不得小於一墩。這條不變式涵蓋開局、開局發牌後與
-     * 四次槓的每一個時點；`TileWallPhysicalLayout` 本身只擋完全相同的 placement，帶位移的半墩重疊會通過。
+     * 牌張寬度為一墩，因此同一面同一層的任兩張牌中心距不得小於一墩。這條不變式涵蓋初次發牌完成後
+     * 與四次槓的每個檢查點；`TileWallPhysicalLayout` 本身只擋完全相同的 placement，帶位移的半墩重疊會通過。
      */
     @Test
     fun `no two wall tiles ever overlap in space`() {
@@ -212,6 +212,9 @@ class RiichiPhysicalWallLayoutPolicyTest {
      * 第一個檢查點是開局發牌完成後，不是剛建立布局時：初始布局是以「開局發牌已完成」為前提規劃的
      * （見 [initialPhysicalLayout] 傳入的 `occupiedTileIds`），發牌前那 53 張牌仍名義上佔著牌牆位置，
      * 那個瞬間的重疊在玩家看到桌面之前就已經不存在。
+     *
+     * @param opening 牌牆開門位置。
+     * @param check 每個檢查點要執行的斷言。
      */
     private fun playFourKans(
         opening: WallOpening,
@@ -261,10 +264,21 @@ class RiichiPhysicalWallLayoutPolicyTest {
         }
     }
 
-    /** 仍在牌牆中（活牌與王牌）的牌張 ID。 */
+    /**
+     * 仍在牌牆中（活牌與王牌）的牌張 ID。
+     *
+     * @param tableState 要檢查的牌桌狀態。
+     * @return 活牌牆與王牌區牌張 ID 的集合。
+     */
     private fun presentTileIds(tableState: TableState): Set<Uuid> = (tableState.tileWall.getAllTiles() + tableState.reservedWallTiles).mapTo(mutableSetOf()) { it.id }
 
-    /** 同一面同一層中心距小於一墩的相鄰牌張對。 */
+    /**
+     * 同一面同一層中心距小於一墩的相鄰牌張對。
+     *
+     * @param layout 要檢查的實體布局。
+     * @param tableState 用來篩選仍在牌牆中的牌張。
+     * @return 每組重疊牌的牆面、層與中心座標摘要。
+     */
     private fun overlappingPairs(layout: TileWallPhysicalLayout, tableState: TableState): List<String> = layout.placements.filterKeys { it in presentTileIds(tableState) }
         .values
         .groupBy { it.position.side to it.position.layer }
@@ -280,6 +294,10 @@ class RiichiPhysicalWallLayoutPolicyTest {
      * 王牌區與活牌區最接近的一對牌之間的空隙寬度（墩）。
      *
      * 兩區不在同一面時沒有可比較的配對，回傳 `null`。
+     *
+     * @param layout 要檢查的實體布局。
+     * @param tableState 提供活牌牆與王牌區牌張。
+     * @return 最近牌張對的空隙寬度；沒有同面配對時為 `null`。
      */
     private fun nearestGap(layout: TileWallPhysicalLayout, tableState: TableState): Double? {
         val liveIds = tableState.tileWall.getAllTiles().mapTo(mutableSetOf()) { it.id }
@@ -292,10 +310,19 @@ class RiichiPhysicalWallLayoutPolicyTest {
         }.minOrNull()
     }
 
-    /** Placement 沿牆方向的中心座標（墩）。 */
+    /**
+     * Placement 沿牆方向的中心座標（墩）。
+     *
+     * @param placement 要換算座標的牌張位置。
+     * @return 以墩為單位的中心座標。
+     */
     private fun wallCoordinate(placement: TileWallPlacement): Double = placement.position.stack + placement.offset.alongWallStacks
 
-    /** 建立可覆蓋一般開門、面內邊界與跨面邊界的日麻布局。 */
+    /**
+     * 建立可覆蓋一般開門、面內邊界與跨面邊界的日麻布局。
+     *
+     * @return 測試使用的四種開門位置。
+     */
     private fun openings(): List<WallOpening> = listOf(
         WallOpening(0, 2),
         WallOpening(1, 5),
@@ -303,13 +330,24 @@ class RiichiPhysicalWallLayoutPolicyTest {
         WallOpening(3, 12),
     )
 
-    /** 建立指定開門位置的固定 136 張測試牌牆。 */
+    /**
+     * 建立指定開門位置的固定 136 張測試牌牆。
+     *
+     * @param opening 牌牆開門位置。
+     * @return 由指定開門位置排出的牌牆。
+     */
     private fun createWallLayout(opening: WallOpening): TileWallLayoutResult = RiichiWallLayout(RiichiRuleConfig()).resolve(
         List(136) { FakeIdentifiedTileFactory.create(Tile.Honor.East) },
         opening,
     )
 
-    /** 取得並斷言有效的日麻初始實體布局。 */
+    /**
+     * 取得並斷言有效的日麻初始實體布局。
+     *
+     * @param wallLayout 日麻牌牆邏輯布局。
+     * @param opening 牌牆開門位置。
+     * @return 開局發牌後有效的實體布局。
+     */
     private fun initialPhysicalLayout(
         wallLayout: TileWallLayoutResult,
         opening: WallOpening,
@@ -324,7 +362,11 @@ class RiichiPhysicalWallLayoutPolicyTest {
         ),
     ).layout
 
-    /** 建立不依賴實際手牌內容的暗槓動作識別。 */
+    /**
+     * 建立不依賴實際手牌內容的暗槓動作識別。
+     *
+     * @return 使用隨機 ID 的測試暗槓動作。
+     */
     private fun kanAction(): GameAction.Kan = GameAction.Kan(GameAction.KanType.CLOSED_KAN, Uuid.random(), emptyList())
 
     /** 日麻王牌區整體朝開門空位平移的分界位移。 */

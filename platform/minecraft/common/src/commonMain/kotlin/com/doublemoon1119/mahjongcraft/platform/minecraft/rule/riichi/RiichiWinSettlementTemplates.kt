@@ -143,6 +143,7 @@ internal object RiichiWinSettlementTemplates {
     }
 }
 
+/** 建立役種列表揭示完成後才出現的單一結算摘要欄位。 */
 private fun postEntrySummary(fieldId: PresentationFieldId, argb: Int): PresentationLayout = PresentationLayout.IfPresent(
     fieldId,
     PresentationLayout.Animated(
@@ -152,6 +153,7 @@ private fun postEntrySummary(fieldId: PresentationFieldId, argb: Int): Presentat
     ),
 )
 
+/** 建立胡牌者與可選放銃者的身分列。 */
 private fun playerRelationship(): PresentationLayout = PresentationLayout.Row(
     children = listOf(
         PresentationLayout.PlayerIdentity(BuiltInWinSettlementFieldIds.WINNER_IDENTITY),
@@ -171,6 +173,7 @@ private fun playerRelationship(): PresentationLayout = PresentationLayout.Row(
     fillMaxWidth = true,
 )
 
+/** 建立寶牌與裏寶牌指示牌的等寬欄位列。 */
 private fun doraIndicators(dora: PresentationFieldId, uraDora: PresentationFieldId): PresentationLayout = PresentationLayout.Row(
     children = listOf(
         PresentationLayout.Weighted(indicator(BuiltInWinSettlementFieldIds.DORA_LABEL, dora)),
@@ -180,6 +183,7 @@ private fun doraIndicators(dora: PresentationFieldId, uraDora: PresentationField
     fillMaxWidth = true,
 )
 
+/** 建立包含標籤與牌列的單一指示牌欄位。 */
 private fun indicator(label: PresentationFieldId, tiles: PresentationFieldId): PresentationLayout = PresentationLayout.Row(
     children = listOf(
         PresentationLayout.Text(label, scale = 0.82f, argb = 0xFFE5C16A.toInt()),
@@ -190,6 +194,7 @@ private fun indicator(label: PresentationFieldId, tiles: PresentationFieldId): P
     fillMaxWidth = true,
 )
 
+/** 將 [child] 以中心對齊放在指定座標。 */
 private fun positioned(child: PresentationLayout, x: Float, y: Float): PresentationLayout.Positioned = PresentationLayout.Positioned(
     child = child,
     x = x,
@@ -197,8 +202,10 @@ private fun positioned(child: PresentationLayout, x: Float, y: Float): Presentat
     horizontalAnchor = PresentationAlignment.CENTER,
 )
 
+/** 建立分數揭示時由放大回到原尺寸的動畫。 */
 private fun scoreRevealScale() = PresentationAnimationEffect.ScaleKeyframes(
     listOf(ScaleKeyframe(0f, 1.35f), ScaleKeyframe(1f, 1f)),
 )
 
+/** 每種指示牌固定預留的顯示位置數。 */
 private const val INDICATOR_SLOT_COUNT = 5

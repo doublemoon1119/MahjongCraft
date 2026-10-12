@@ -12,7 +12,11 @@ enum class MahjongTilePose {
     FACE_DOWN,
     ;
 
-    /** 取得固定循環順序中的下一個姿態。 */
+    /**
+     * 取得固定循環順序中的下一個姿態。
+     *
+     * @return 姿態列舉中緊接在目前值之後的姿態，並在末項後回到首項。
+     */
     fun next(): MahjongTilePose = entries[(ordinal + 1) % entries.size]
 
     /**
@@ -29,7 +33,12 @@ enum class MahjongTilePose {
         }
 
     companion object {
-        /** 從同步或持久化名稱安全還原姿態，非法值回退為 [STANDING]。 */
+        /**
+         * 從同步或持久化名稱安全還原姿態，非法值回退為 [STANDING]。
+         *
+         * @param name 同步或持久化的姿態名稱；可為 `null`。
+         * @return 對應的姿態；名稱無效或為 `null` 時回傳 [STANDING]。
+         */
         fun fromNameOrDefault(name: String?): MahjongTilePose = entries.firstOrNull { it.name == name } ?: STANDING
     }
 }

@@ -16,6 +16,7 @@ import kotlin.uuid.Uuid
 
 /** 驗證 [TableState.localRoundNumber] 換算邏輯，以及 [TableState] 的 active/finished 玩家概念。 */
 class TableStateTest {
+    /** 依東、南、西、北順序建立的四位共用玩家。 */
     private val fourPlayers = Wind.entries.map { FakeMahjongPlayerFactory.create(it) }
 
     /** 實體布局只要缺少或多出目前牌牆的一張牌，就必須在建立桌況時立即拒絕。 */
@@ -212,10 +213,7 @@ class TableStateTest {
     /**
      * 建構 [TableState] 時，若 `currentPlayerIndex` 指向一位已經 finished 的玩家，應立即拋出例外。
      *
-     * 這是所有回合推進呼叫點都必須改用 [nextActivePlayerAfter] 而非直接 modulo 運算的防呆——
-     * 一旦有呼叫點遺漏，這裡會在建構當下就炸出來，而不是等到 in-game 出現「finished 玩家收到回合」
-     * 這種難以定位的 bug。全員 finished（因此不存在任何 active 玩家）必然也會撞到這個檢查，因為
-     * `currentPlayer` 此時必定屬於 [finishedPlayerIds]。
+     * 同時驗證全員都已完成的桌況也遭到拒絕，避免把當前回合交給不能再行動的玩家。
      */
     @Test
     fun `test constructing TableState throws when currentPlayerIndex points at a finished player`() {

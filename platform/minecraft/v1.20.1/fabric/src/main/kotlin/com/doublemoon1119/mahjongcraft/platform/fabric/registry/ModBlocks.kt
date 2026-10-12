@@ -45,7 +45,13 @@ object ModBlocks {
     lateinit var mahjongTableBlockEntity: BlockEntityType<MahjongTableBlockEntity>
         private set
 
-    /** 註冊麻將桌與麻將凳方塊、對應物品與方塊實體型別。 */
+    /**
+     * 註冊麻將桌與麻將凳方塊、對應物品與方塊實體型別。
+     *
+     * @param roomService 桌子建立、互動所用的房間服務。
+     * @param tableLifecycleService 桌子生命週期與方塊實體操作服務。
+     * @param seatService 麻將凳乘坐服務。
+     */
     fun register(
         roomService: MahjongTableRoomService,
         tableLifecycleService: FabricTableLifecycleService,
@@ -95,7 +101,15 @@ object ModBlocks {
         )
     }
 
-    /** 註冊具有指定 ID 與碰撞 profile 的麻將桌方塊及 BlockItem。 */
+    /**
+     * 註冊具有指定 ID 與碰撞 profile 的麻將桌方塊及 BlockItem。
+     *
+     * @param path 方塊 registry 路徑。
+     * @param design 桌面外觀與碰撞設計。
+     * @param baseBlock 提供材質設定基礎的原版方塊。
+     * @param roomService 桌子互動所用的房間服務。
+     * @param tableLifecycleService 桌子生命週期服務。
+     */
     private fun registerTable(
         path: String,
         design: MahjongTableDesign,
@@ -120,7 +134,14 @@ object ModBlocks {
         return block
     }
 
-    /** 註冊具有指定固定款式的單方塊麻將凳及 BlockItem。 */
+    /**
+     * 註冊具有指定固定款式的單方塊麻將凳及 BlockItem。
+     *
+     * @param path 方塊 registry 路徑。
+     * @param design 麻將凳外觀與碰撞設計。
+     * @param settings 原版方塊設定。
+     * @param seatService 乘客上下座服務。
+     */
     private fun registerStool(
         path: String,
         design: MahjongStoolDesign,

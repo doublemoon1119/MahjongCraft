@@ -7,6 +7,7 @@ class RoundInfoLineDisplayRegistryImpl : RoundInfoLineDisplayRegistry {
     /** 依局況顯示行 key 索引的翻譯資訊。 */
     private val displays = mutableMapOf<String, RoundInfoLineDisplay>()
 
+    /** 規則模組 ID 對應的局況顯示行 provider。 */
     private val providers = mutableMapOf<String, RoundInfoLineProvider>()
 
     override val registrationKeys: Set<String> get() = displays.keys + providers.keys

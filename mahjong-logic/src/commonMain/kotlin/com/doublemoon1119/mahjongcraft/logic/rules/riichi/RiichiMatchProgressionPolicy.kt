@@ -16,6 +16,8 @@ import com.doublemoon1119.mahjongcraft.logic.table.Wind
  *
  * 原定最後局與延長局一律莊家連莊優先：莊家連莊時，即使其他玩家（例如包含莊家的雙響中的子家）已達返點也繼續連莊，
  * 只有莊家本人和牌或聽牌、居首且達返點才終局；莊家沒有連莊時，有人達返點即終局，延長局打完最後一局也終局。
+ *
+ * @property config 賽程長度、返點與擊飛門檻等立直規則設定。
  */
 class RiichiMatchProgressionPolicy(
     private val config: RiichiFamilyRuleConfig,
@@ -78,7 +80,16 @@ class RiichiMatchProgressionPolicy(
         )
     }
 
-    /** 依莊家 directive 產生連莊或下一局決策；過莊時依 [continuesCombo] 決定本場數累加或歸零。 */
+    /**
+     * 依莊家去留指示產生下一步賽程決策。
+     *
+     * @param current 目前局位。
+     * @param directive 連莊或過莊指示。
+     * @param regularLastIndex 原定賽程最後一局的零起算索引。
+     * @param roundsPerWind 每圈局數。
+     * @param continuesCombo 過莊後是否繼續累加本場數。
+     * @return 連莊或前進到下一局的決策。
+     */
     private fun continueByDirective(
         current: MatchRoundPosition,
         directive: RoundTransitionDirective,
@@ -106,7 +117,14 @@ class RiichiMatchProgressionPolicy(
         -> false
     }
 
-    /** 由 sequence index 建立局位；每圈 [roundsPerWind] 局。 */
+    /**
+     * 依連續局序建立場風、圈內局數與賽程階段。
+     *
+     * @param sequenceIndex 零起算的連續局序。
+     * @param regularLastIndex 原定賽程的最後局序。
+     * @param roundsPerWind 每圈局數。
+     * @return 對應的局位。
+     */
     private fun position(
         sequenceIndex: Int,
         regularLastIndex: Int,
@@ -121,16 +139,28 @@ class RiichiMatchProgressionPolicy(
         )
     }
 
-    /** 依對局長度與每圈局數取得原定最後局與延長最後局；延長最多再打一圈。 */
+    /**
+     * 依賽程長度取得原定及延長上限。
+     *
+     * @param gameLength 對局賽程長度。
+     * @param roundsPerWind 每圈局數。
+     * @return 原定最後局與最多再一圈的延長最後局；單局制不延長。
+     */
     private fun scheduleFor(gameLength: RiichiGameLength, roundsPerWind: Int): Schedule = when (gameLength) {
         RiichiGameLength.OneGame -> Schedule(regularLastIndex = 0, extraLastIndex = 0)
         RiichiGameLength.East -> Schedule(regularLastIndex = roundsPerWind - 1, extraLastIndex = roundsPerWind * 2 - 1)
         RiichiGameLength.TwoWinds -> Schedule(regularLastIndex = roundsPerWind * 2 - 1, extraLastIndex = roundsPerWind * 3 - 1)
     }
 
-    /** 日麻賽程的原定與延長局位上限。 */
+    /**
+     * 立直賽程的局序上限。
+     *
+     * @property regularLastIndex 原定賽程最後一局的零起算局序。
+     * @property extraLastIndex 延長賽程最後一局的零起算局序。
+     */
     private data class Schedule(val regularLastIndex: Int, val extraLastIndex: Int)
 
+    /** 內建立直賽程允許的人數範圍。 */
     private companion object {
         /** 允許的最少玩家數。 */
         const val MIN_SUPPORTED_PLAYER_COUNT: Int = 2

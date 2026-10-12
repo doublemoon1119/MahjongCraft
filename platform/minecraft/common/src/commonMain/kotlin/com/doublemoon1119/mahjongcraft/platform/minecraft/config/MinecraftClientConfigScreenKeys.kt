@@ -53,10 +53,20 @@ object MinecraftClientConfigScreenKeys {
     /** 牌面輔助標籤說明。 */
     const val TILE_LABELS_DESCRIPTION: String = "mahjongcraft.client_config.tile_labels.description"
 
-    /** 建立呈現開關名稱鍵。 */
+    /**
+     * 建立呈現開關名稱鍵。
+     *
+     * @param id 呈現開關的穩定 ID。
+     * @return 對應的名稱 translation key。
+     */
     fun presentationName(id: String): String = "mahjongcraft.client_config.presentation.$id"
 
-    /** 建立呈現開關說明鍵。 */
+    /**
+     * 建立呈現開關說明鍵。
+     *
+     * @param id 呈現開關的穩定 ID。
+     * @return 對應的說明 translation key。
+     */
     fun presentationDescription(id: String): String = "${presentationName(id)}.description"
 
     /** HUD 位置編輯器入口。 */

@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.Headl
 
 /** 為生成工作建立一次性的隔離 Flow 環境，不使用正式玩家集合。 */
 fun interface HistoryGenerationRuntimeFactory {
-/**
+    /**
      * 建立採用指定規則與場長的全 AI 對局。
      *
      * @param scenario 場長情境。

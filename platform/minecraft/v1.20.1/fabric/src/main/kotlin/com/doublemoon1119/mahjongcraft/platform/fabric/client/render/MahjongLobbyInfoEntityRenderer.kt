@@ -11,7 +11,13 @@ import net.minecraft.client.util.math.MatrixStack
 import net.minecraft.text.Text
 import net.minecraft.util.Identifier
 
-/** 將等待中遊戲渲染成面向觀看者的三行半透明提示面板。 */
+/**
+ * 將等待中遊戲渲染成面向觀看者的三行半透明提示面板。
+ *
+ * @param context Minecraft renderer factory 提供的 client context。
+ * @param ruleNames 將規則模組 ID 解析為本地化名稱的 registry。
+ * @param configStore 提供 lobby 面板可見性設定。
+ */
 class MahjongLobbyInfoEntityRenderer(
     context: EntityRendererFactory.Context,
     private val ruleNames: RuleModuleDisplayNameRegistry,

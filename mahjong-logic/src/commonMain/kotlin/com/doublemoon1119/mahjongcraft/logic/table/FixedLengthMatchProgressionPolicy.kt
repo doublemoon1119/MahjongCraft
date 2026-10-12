@@ -26,7 +26,13 @@ class FixedLengthMatchProgressionPolicy(
         }
     }
 
-    /** 依既有固定局數慣例產生下一個局位。 */
+    /**
+     * 依既有固定局數慣例產生下一個局位。
+     *
+     * @param current 目前局位。
+     * @param playerCount 對局玩家人數。
+     * @return 下一個序號與場風內局數已更新的局位。
+     */
     private fun nextPosition(current: MatchRoundPosition, playerCount: Int): MatchRoundPosition {
         val nextIndex = current.sequenceIndex + 1
         val winds = listOf(Wind.EAST, Wind.SOUTH, Wind.WEST, Wind.NORTH)

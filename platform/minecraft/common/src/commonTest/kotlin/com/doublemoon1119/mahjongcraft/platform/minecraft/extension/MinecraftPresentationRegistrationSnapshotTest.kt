@@ -26,12 +26,24 @@ class MinecraftPresentationRegistrationSnapshotTest {
         )
     }
 
-    /** 建立測試使用的 presentation 快照。 */
+    /**
+     * 建立測試使用的 presentation 快照。
+     *
+     * @param categories 快照內的登記分類。
+     * @return 以指定分類建立的快照。
+     */
     private fun snapshot(vararg categories: MinecraftPresentationRegistrationSnapshotCategory) = MinecraftPresentationRegistrationSnapshot(
         categories.toList(),
     )
 
-    /** 建立測試使用的 presentation 分類。 */
+    /**
+     * 建立測試使用的 presentation 分類。
+     *
+     * @param id 分類識別碼。
+     * @param displayName 分類顯示名稱。
+     * @param registrationKeys 分類內的登記 key。
+     * @return 建立完成的分類快照。
+     */
     private fun category(
         id: String,
         displayName: String,

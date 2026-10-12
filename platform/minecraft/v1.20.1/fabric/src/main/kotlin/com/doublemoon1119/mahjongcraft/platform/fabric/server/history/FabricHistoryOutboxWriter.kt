@@ -830,7 +830,12 @@ class FabricHistoryOutboxWriter(
         synchronizedStops = activeDatabase.readRecordingStops()
     }
 
-    /** 清理後歷史記錄因磁碟用量上限而暫停或恢復時，在目前存檔 session 內各記錄一次。 */
+    /**
+     * 清理後歷史記錄因磁碟用量上限而暫停或恢復時，在目前存檔 session 內各記錄一次。
+     *
+     * @param result 清理後的可用狀態與磁碟用量。
+     * @param policy 這次清理使用的有效保留政策。
+     */
     private fun logDiskLimitTransition(result: HistoryCleanupResult, policy: HistoryRetentionPolicy) {
         val session = currentSessionId ?: return
         when (diskLimitTracker.update(session, result.storageAvailable)) {
@@ -912,7 +917,13 @@ class FabricHistoryOutboxWriter(
         return true
     }
 
-    /** 執行 [block]，並在有 [observer] 時回報 [stage] 的耗時。 */
+    /**
+     * 執行 [block]，並在有 [observer] 時回報 [stage] 的耗時。
+     *
+     * @param stage 要記錄的背景工作階段。
+     * @param block 要計時執行的操作。
+     * @return [block] 傳回的值。
+     */
     private inline fun <T> measured(stage: HistoryWriterStage, block: () -> T): T {
         val currentObserver = observer ?: return block()
         val mark = TimeSource.Monotonic.markNow()
@@ -1004,12 +1015,6 @@ class FabricHistoryOutboxWriter(
     }
 }
 
-/**
- * 保留已提交刪除結果的內部管理失敗，不直接傳送給玩家。
- *
- * @property report 失敗前可證實的部分清理結果。
- * @param cause 原始內部例外，僅供 server log。
- */
 /** 每次提交的最大待寫事件數量。 */
 internal const val HISTORY_WRITE_BATCH_SIZE = 64
 
@@ -1038,4 +1043,10 @@ internal fun HistoryRecordingPersistenceMapper.encodePendingRecord(event: Histor
     )
 }
 
+/**
+ * 保留已提交刪除結果的內部管理失敗，不直接傳送給玩家。
+ *
+ * @property report 失敗前可證實的部分清理結果。
+ * @param cause 原始內部例外，僅供 server log。
+ */
 private class HistoryManagementFailure(val report: HistoryCleanupReport, cause: Exception) : Exception("History cleanup did not finish", cause)

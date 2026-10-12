@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.config
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.DecisionTimeoutPolicy
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.SpectatingPolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.SpectatorHandVisibility
 import kotlinx.serialization.Serializable

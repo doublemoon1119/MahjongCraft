@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.bundled.BundledRiichiExtension
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ResolvedRoundOutcome
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundOutcomePresentationClassification
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementWinnerPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
@@ -27,15 +28,20 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
-/** 驗證特殊 win-equivalent outcome 結算時，贏家手牌與副露的呈現分離。 */
+/** 驗證一般和牌與視同和牌結果的手牌、付款原因及 AI 標記轉換。 */
 class WinSettlementPresentationRequestFactoryTest {
+    /** 各測試使用的日麻設定。 */
     private val config = RiichiRuleConfig()
+
+    /** 提供牌序與結算政策的日麻模組。 */
     private val module = RiichiRuleModule("mahjongcraft:riichi", config)
+
+    /** 未額外註冊規則明細的解析器集合。 */
     private val detailResolverRegistry = WinSettlementDetailResolverRegistry()
 
     /**
-     * 副露牌張只能出現在 [WinSettlementWinnerPresentation.melds]，絕不能同時混進
-     * [WinSettlementWinnerPresentation.standingTileIds]——否則 renderer 會把同一組副露多畫一次在手牌裡。
+     * 驗證副露牌只出現在 [WinSettlementWinnerPresentation.melds]，
+     * 不重複加入 [WinSettlementWinnerPresentation.standingTileIds]。
      */
     @Test
     fun `special outcome hand tiles exclude meld tiles`() {
@@ -73,7 +79,7 @@ class WinSettlementPresentationRequestFactoryTest {
         }
     }
 
-    /** 一般胡牌時，不論手牌原本的順序，面板拿到的立牌都依規則牌序排好，胡牌張不在立牌裡。 */
+    /** 驗證一般和牌要求中的立牌依規則牌序排列，且不包含獨立的和牌張。 */
     @Test
     fun `win hand tiles follow the rule tile order`() {
         val east = FakeIdentifiedTileFactory.create(Tile.Honor.East)
@@ -137,10 +143,7 @@ class WinSettlementPresentationRequestFactoryTest {
         assertEquals(listOf(sevenDots.id, threeBamboo.id, white.id), request.winners.single().standingTileIds)
     }
 
-    /**
-     * 流局滿貫的 outcome id 必須透過 [WinSettlementDetailResolverRegistry] 正確分派到日麻樣板與役種
-     * 欄位——這條路徑在遊戲內很難自然重現（需要真的打出流局滿貫），靠這個測試取代進遊戲驗證。
-     */
+    /** 驗證流局滿貫透過 [WinSettlementDetailResolverRegistry] 取得日麻規則 ID 與役種欄位。 */
     @Test
     fun `dispatches nagashi mangan special outcome through the registry`() {
         val registry = WinSettlementDetailResolverRegistry().apply { BundledRiichiExtension.registerWinSettlementDetailResolvers(this) }
@@ -231,7 +234,6 @@ class WinSettlementPresentationRequestFactoryTest {
         assertEquals(mapOf(seat1.id to "test:first"), reasons)
     }
 
-    /** 建立四人桌況。 */
     /** 排名只把傳入的 AI 玩家標成 AI。 */
     @Test
     fun `ranking marks only the given players as ai`() {
@@ -248,12 +250,25 @@ class WinSettlementPresentationRequestFactoryTest {
         assertEquals(listOf(aiPlayer.id), request.ranking.players.filter { it.isAi }.map { it.playerId })
     }
 
+    /**
+     * 建立四人測試桌況。
+     *
+     * @return 使用四個初始風位的測試桌況。
+     */
     private fun fourPlayerState(): TableState = FakeTableStateFactory.create(
         players = listOf(Wind.EAST, Wind.SOUTH, Wind.WEST, Wind.NORTH).map { FakeMahjongPlayerFactory.create(initialSeat = it) },
         config = config,
     )
 
-    /** 以一般榮和呼叫 [WinSettlementPresentationRequestFactory.create]。 */
+    /**
+     * 使用榮和結果 ID 建立測試結算要求，自摸旗標則依是否有放銃者決定。
+     *
+     * @param state 結算前的桌況。
+     * @param responsiblePlayerId 放銃者；為 null 時建立自摸呈現請求。
+     * @param resolutions 每位贏家的權威結算結果。
+     * @param aiPlayerIds AI 玩家識別碼。
+     * @return 建立的胡牌結算呈現請求。
+     */
     private fun createRequest(
         state: TableState,
         responsiblePlayerId: Uuid?,
@@ -272,7 +287,13 @@ class WinSettlementPresentationRequestFactoryTest {
         detailResolverRegistry = detailResolverRegistry,
     )
 
-    /** 建立每位付款者各付 1000 點的結算。 */
+    /**
+     * 建立每位付款者各付 1000 點的結算。
+     *
+     * @param payments 付款者識別碼。
+     * @param reasons 付款者對應的結算原因識別碼。
+     * @return 測試用的權威胡牌結算。
+     */
     private fun resolution(
         payments: List<Uuid>,
         reasons: Map<Uuid, String> = emptyMap(),

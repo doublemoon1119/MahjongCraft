@@ -185,11 +185,7 @@ class GameDecisionAuthorityResolverTest {
         assertEquals(emptyMap(), automaticResolver.resolve(game))
     }
 
-    /**
-     * 驗證 AI 玩家摸牌後不會被視為需要決策——AI 的下一步由 `AiTurnDriver` 同步解析，不涉及等待，
-     * 誤判成需要決策會讓它被建立思考計時器，計時器真的耗盡時就會被誤標記進
-     * `forcedAutoPlayPlayerIds`，改由 `ForcedAutoPlayDriver` 的固定邏輯接管，而不是它自己的策略。
-     */
+    /** 驗證 AI 玩家摸牌後不建立真人決策計時；AI 策略的執行與逾時由其他元件管理。 */
     @Test
     fun `test ai current player does not resolve own turn decision`() {
         val playerId = Uuid.random()
@@ -234,7 +230,13 @@ class GameDecisionAuthorityResolverTest {
         )
     }
 
-    /** 建立指定玩家及捨牌反應視窗的權威遊戲。 */
+    /**
+     * 建立指定玩家及捨牌反應視窗的權威遊戲。
+     *
+     * @param playerIds 遊戲中的玩家識別碼。
+     * @param pendingReaction 可選的待處理捨牌反應。
+     * @return 使用測試流程設定建立的遊戲。
+     */
     private fun game(
         playerIds: List<Uuid>,
         pendingReaction: PendingReaction? = null,

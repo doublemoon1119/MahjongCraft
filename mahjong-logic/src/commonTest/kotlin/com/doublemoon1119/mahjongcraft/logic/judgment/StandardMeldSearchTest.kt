@@ -43,6 +43,12 @@ class StandardMeldSearchTest {
         assertFailsWith<IllegalArgumentException> { StandardMeldSearch(targetMelds = 8) }
     }
 
+    /**
+     * 建立指定索引與張數的 34 種牌計數陣列。
+     *
+     * @param entries 牌索引與該牌張數的配對。
+     * @return 對應的 34 格計數陣列。
+     */
     private fun counts(vararg entries: Pair<Int, Int>): IntArray = IntArray(34).also { counts ->
         entries.forEach { (index, count) -> counts[index] = count }
     }

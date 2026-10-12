@@ -8,7 +8,13 @@ import net.minecraft.server.MinecraftServer
 import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single
 
-/** 將單次 Minecraft server session 與其 overworld [MahjongAuthoritativePersistentState] 接起來。 */
+/**
+ * 將單次 Minecraft server session 與其 overworld [MahjongAuthoritativePersistentState] 接起來。
+ *
+ * @property codec 編碼與解碼權威狀態的持久化 codec。
+ * @property store 目前的權威狀態儲存庫。
+ * @property stateRestorer 將持久化快照還原到領域儲存庫。
+ */
 @Single
 class FabricAuthoritativeStatePersistence(
     @Provided private val codec: AuthoritativeStatePersistenceCodec,
@@ -20,7 +26,11 @@ class FabricAuthoritativeStatePersistence(
     /** 目前 server session 使用的 Minecraft persistent state。 */
     private var persistentState: MahjongAuthoritativePersistentState? = null
 
-    /** 載入 [server] 所屬世界的權威狀態，並開始轉送後續 dirty snapshot。 */
+    /**
+     * 載入 [server] 所屬世界的權威狀態，並開始轉送後續 dirty snapshot。
+     *
+     * @param server 要載入權威狀態的 Minecraft 伺服器。
+     */
     suspend fun attach(server: MinecraftServer) {
         check(persistentState == null) { "Authoritative persistence is already attached to a server session" }
         try {

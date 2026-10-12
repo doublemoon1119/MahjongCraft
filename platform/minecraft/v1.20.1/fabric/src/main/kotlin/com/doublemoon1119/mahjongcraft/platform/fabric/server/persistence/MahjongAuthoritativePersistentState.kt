@@ -13,6 +13,9 @@ import net.minecraft.world.PersistentState
  *
  * NBT 字串最多只能保存 65,535 bytes，超過時原版會改寫成空字串；位元組陣列以 int 記錄長度，不受此限制。
  * schema migration 與領域 DTO mapping 全部交由 [codec]；此類別只處理 NBT 容器與 Minecraft dirty flag。
+ *
+ * @param codec 權威狀態 JSON 編碼與解碼器。
+ * @param initialSnapshot 初始的不可變權威狀態。
  */
 class MahjongAuthoritativePersistentState private constructor(
     private val codec: AuthoritativeStatePersistenceCodec,
@@ -26,13 +29,22 @@ class MahjongAuthoritativePersistentState private constructor(
     var snapshot: AuthoritativeStateSnapshot = initialSnapshot
         private set
 
-    /** 更新待保存 snapshot，並通知 Minecraft 此 [PersistentState] 需要寫入磁碟。 */
+    /**
+     * 更新待保存 snapshot，並通知 Minecraft 此 [PersistentState] 需要寫入磁碟。
+     *
+     * @param snapshot 新的權威狀態快照。
+     */
     fun update(snapshot: AuthoritativeStateSnapshot) {
         this.snapshot = snapshot
         markDirty()
     }
 
-    /** 將目前 snapshot 編碼至 [nbt]；編碼結果過大時記錄警告，仍完整寫入。 */
+    /**
+     * 將目前 snapshot 編碼至 [nbt]；編碼結果過大時記錄警告，仍完整寫入。
+     *
+     * @param nbt Minecraft 提供的 NBT compound。
+     * @return 寫入權威狀態 payload 後的 NBT compound。
+     */
     override fun writeNbt(nbt: NbtCompound): NbtCompound {
         val current = snapshot
         val encoded = codec.encode(current.rooms.values, current.games.values, current.historyRecordingState).encodeToByteArray()
@@ -60,13 +72,24 @@ class MahjongAuthoritativePersistentState private constructor(
         /** NBT 中保存 codec JSON UTF-8 位元組的欄位名稱。 */
         internal const val NBT_KEY_STATE: String = "state"
 
-        /** 建立沒有既有存檔的空狀態。 */
+        /**
+         * 建立沒有既有存檔的空狀態。
+         *
+         * @param codec 權威狀態 JSON 編碼與解碼器。
+         * @return 初始為空的持久化狀態。
+         */
         fun create(codec: AuthoritativeStatePersistenceCodec): MahjongAuthoritativePersistentState = MahjongAuthoritativePersistentState(
             codec,
             AuthoritativeStateSnapshot(),
         )
 
-        /** 從 [nbt] 載入既有狀態；沒有 payload 時視為空狀態。 */
+        /**
+         * 從 [nbt] 載入既有狀態；沒有 payload 時視為空狀態。
+         *
+         * @param nbt Minecraft 讀出的持久化 NBT。
+         * @param codec 權威狀態 JSON 解碼器。
+         * @return 還原的持久化狀態；缺少 payload 時為空狀態。
+         */
         fun fromNbt(
             nbt: NbtCompound,
             codec: AuthoritativeStatePersistenceCodec,

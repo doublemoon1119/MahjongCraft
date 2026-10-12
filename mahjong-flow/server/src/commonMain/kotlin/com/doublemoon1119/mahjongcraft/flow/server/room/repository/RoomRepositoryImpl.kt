@@ -6,6 +6,11 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdat
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
+/**
+ * 將房間讀寫委派給共用權威狀態儲存的記憶體實作。
+ *
+ * @property store Room 與 Game 共用的權威狀態儲存。
+ */
 @Single(binds = [RoomRepository::class])
 class RoomRepositoryImpl(
     private val store: AuthoritativeStateStore,

@@ -28,6 +28,16 @@ import kotlin.test.assertTrue
  */
 class FuCalculatorTest {
 
+    /**
+     * 建立符數測試用的和牌情境。
+     *
+     * @param isMenzen 手牌是否門前清。
+     * @param isTsumo 是否自摸。
+     * @param roundWind 場風。
+     * @param seatWind 自風。
+     * @param winningTile 和牌牌種。
+     * @return 由測試工廠建立的和牌情境。
+     */
     private fun createContext(
         isMenzen: Boolean = true,
         isTsumo: Boolean = false,
@@ -43,6 +53,13 @@ class FuCalculatorTest {
         seatWind = seatWind,
     )
 
+    /**
+     * 建立沒有副露且沒有面子的標準型牌型。
+     *
+     * @param pair 雀頭。
+     * @param completionType 完成牌型的聽牌型態。
+     * @return 使用指定雀頭與完成型態的標準型牌型。
+     */
     private fun createStandardStructure(
         pair: Janto,
         completionType: CompletionType = CompletionType.Ryanmen,
@@ -236,7 +253,12 @@ class FuCalculatorTest {
         assertTrue(result >= 20)
     }
 
-    // 雀頭固定用三元牌（白），固定 +2 符，已經算進下方每個測試案例的預期總符數。
+    /**
+     * 建立含一組指定副露的牌型；雀頭固定為白板，另計 2 符。
+     *
+     * @param mentsu 要放入牌型的副露面子。
+     * @return 僅含指定副露及白板雀頭的標準型牌型。
+     */
     private fun createStructureWithFuuro(mentsu: Mentsu): HandStructure.Standard = HandStructure.Standard(
         mentsus = emptyList(),
         pair = Janto(Tile.Honor.White),

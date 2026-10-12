@@ -14,6 +14,7 @@ import net.minecraft.util.Formatting
  * @param currentModuleId 設定頁目前顯示的規則模組。
  * @param candidates 依顯示順序排列的所有已登記規則。
  * @param ruleName 取得規則模組顯示名稱。
+ * @return 包含目前值、候選規則與不可選原因的多行提示文字。
  */
 internal fun roomRuleSelectorTooltip(
     currentModuleId: String,

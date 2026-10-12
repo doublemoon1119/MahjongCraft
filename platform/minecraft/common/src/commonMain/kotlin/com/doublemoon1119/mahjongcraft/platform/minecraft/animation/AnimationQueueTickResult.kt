@@ -9,6 +9,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.animation
  * 需要據此同步 render 用欄位；[completedPlayMotion] 為 `true` 代表這個 tick 有一段
  * [AnimationStep.PlayMotion] 播完了（`durationTicks` 為 `0` 時同一個 tick 內可能兩者都成立）。
  *
+ * @param C 實體專屬自訂步驟的資料型別。
  * @property appliedInstantSteps 這次 tick 實際套用的瞬間動畫步驟。
  * @property startedPlayMotion 這次 tick 剛開始播放的動作；沒有開始播放時為 `null`。
  * @property completedPlayMotion 這次 tick 是否完成一段動作。

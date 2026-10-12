@@ -101,29 +101,61 @@ class TileWallTransitionMotionPlannerTest {
         }
     }
 
-    /** 建立單張測試 move。 */
+    /**
+     * 建立單張測試 move。
+     *
+     * @param source 起始 placement。
+     * @param destination 目的 placement。
+     * @return 帶有新測試 tile ID 的移動描述。
+     */
     private fun move(source: TileWallPlacement, destination: TileWallPlacement): PhysicalWallTileMove = PhysicalWallTileMove(Uuid.random(), source, destination)
 
-    /** 建立一個同步測試 phase。 */
+    /**
+     * 建立一個同步測試 phase。
+     *
+     * @param moves 同一 phase 中同步移動的牌。
+     * @return 包含指定移動的 transition phase。
+     */
     private fun phase(vararg moves: PhysicalWallTileMove): PhysicalWallLayoutTransitionPhase = PhysicalWallLayoutTransitionPhase(moves.toList())
 
-    /** 取得成功規劃的 transition。 */
+    /**
+     * 取得成功規劃的 transition。
+     *
+     * @param phases 要交給 planner 的依序執行 phases。
+     * @return planner 成功產生的 transition 計畫。
+     */
     private fun completedPlan(phases: List<PhysicalWallLayoutTransitionPhase>): TileWallTransitionMotionPlan = assertIs<TileWallTransitionMotionDecision.Completed>(
         TileWallTransitionMotionPlanner.plan(CONTEXT, phases),
     ).plan
 
-    /** 建立測試用 placement。 */
+    /**
+     * 建立測試用 placement。
+     *
+     * @param side 牌牆側面索引。
+     * @param stack 側面上的墩索引。
+     * @param layer 墩的層索引。
+     * @param along 沿側面的分數墩位偏移；預設為零。
+     * @return 對應的牌牆 placement。
+     */
     private fun placement(side: Int, stack: Int, layer: Int, along: Double = 0.0): TileWallPlacement = TileWallPlacement(
         position = TileWallPosition(side, stack, layer),
         offset = TileWallPlacementOffset(alongWallStacks = along),
     )
 
-    /** 投影指定 placement。 */
+    /**
+     * 投影指定 placement。
+     *
+     * @param placement 要投影的 placement。
+     * @return placement 對應的世界座標與朝向。
+     */
     private fun destinationWorld(placement: TileWallPlacement): MahjongTileWallPlacement = CONTEXT.project(placement)
 
     /** 測試共用常數。 */
     private companion object {
+        /** 測試共用的桌面投影情境。 */
         val CONTEXT = MahjongTileWallProjectionContext(0, 64, 0, MahjongTableFacing.NORTH, 0, 17, 4)
+
+        /** 世界座標與高度差比較使用的誤差容許值。 */
         const val TOLERANCE = 1e-9
     }
 }

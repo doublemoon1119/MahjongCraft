@@ -69,8 +69,16 @@ data class RiichiHandValueContext(
          * 規則設定（食斷、三人牌組）與玩家狀態（立直、兩立直、拔出的北、包牌責任）一律在這裡帶入；只有正式結算才知道的
          * 和牌情境（一發、裏寶牌、海底、河底、搶槓、嶺上、第一巡、燕返、槓振）一律為否或空，由正式結算另外補上。
          *
+         * @param config 建立此上下文時使用的日麻規則配置。
+         * @param riichiState 和牌者的立直規則狀態。
          * @param hand 不含和牌張的手牌；門前清依副露是否全為暗槓判定。
+         * @param winningTile 本次和牌的牌張。
+         * @param isTsumo 是否為自摸。
+         * @param roundWind 本局場風。
+         * @param seatWind 和牌者自風。
+         * @param isDealer 和牌者是否為本局莊家。
          * @param doraIndicators 和牌者看得到的寶牌指示牌。
+         * @return 依玩家規則狀態與目前牌況建立的手牌價值上下文。
          */
         fun forPlayer(
             config: RiichiFamilyRuleConfig,

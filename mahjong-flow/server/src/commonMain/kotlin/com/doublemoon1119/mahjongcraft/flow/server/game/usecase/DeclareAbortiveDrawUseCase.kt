@@ -141,9 +141,15 @@ class DeclareAbortiveDrawUseCase(
     }
 
     /**
-     * `update` 區塊內部使用的中繼結果，讓 [reason] 能跟著 [tableState] 一起帶出
-     * `gameRepository.update` 的作用域，供廣播事件時使用（[reason] 不是 [TableState] 的欄位，
-     * 無法在作用域外從 [tableState] 反推）。
+     * 原子更新後的桌況及實際採用的途中流局原因。此中繼結果讓 [reason] 能與 [tableState]
+     * 一起帶出 `gameRepository.update` 的作用域，供廣播事件使用；[reason] 不是 [TableState]
+     * 的欄位，無法在作用域外從桌況反推。
+     *
+     * @property tableState 記錄途中流局後的權威桌況。
+     * @property reason 規則判定成立的流局原因。
      */
-    private data class AbortiveDrawResult(val tableState: TableState, val reason: ExhaustiveDrawReason)
+    private data class AbortiveDrawResult(
+        val tableState: TableState,
+        val reason: ExhaustiveDrawReason,
+    )
 }

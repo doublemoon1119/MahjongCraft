@@ -98,7 +98,18 @@ class SimulationStatisticsTest {
         assertEquals(Estimate.rate(successes = 0, trials = 2), stats.dealInRateAgainstRiichi)
     }
 
-    /** 測試用的一位玩家在一局的結果。 */
+    /**
+     * 測試用的一位玩家在一局的結果。
+     *
+     * @param playerId 玩家識別碼。
+     * @param strategyKey 策略 key。
+     * @param scoreDelta 分數變化。
+     * @param won 是否和牌。
+     * @param dealtIn 是否放銃。
+     * @param wonByRon 是否以榮和和牌。
+     * @param opponentRiichi 局結束時是否有其他玩家已立直。
+     * @return 該玩家的單局統計資料。
+     */
     private fun seat(
         playerId: Uuid,
         strategyKey: String,

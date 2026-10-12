@@ -90,20 +90,41 @@ class MahjongDiceResourceFilesTest {
         assertEquals(2, result.getValue("count").jsonPrimitive.content.toInt())
     }
 
-    /** 讀取模型的指定材質路徑。 */
+    /**
+     * 讀取模型的指定材質路徑。
+     *
+     * @param name textures 物件中的材質別名。
+     * @return 該別名指向的材質路徑。
+     */
     private fun JsonObject.texture(name: String): String = getValue("textures").jsonObject
         .getValue(name).jsonPrimitive.content
 
-    /** 讀取模型 element 的小數座標。 */
+    /**
+     * 讀取模型物件中指定欄位的小數座標。
+     *
+     * @param name 要讀取的欄位名稱。
+     * @return 欄位中的小數座標。
+     */
     private fun JsonObject.coordinates(name: String): List<Double> = getValue(name).jsonArray.decimalCoordinates()
 
-    /** 讀取指定模型面的 UV 座標。 */
+    /**
+     * 讀取指定模型面的 UV 座標。
+     *
+     * @param name faces 物件中的面名稱。
+     * @return 面的 UV 座標。
+     */
     private fun JsonObject.faceUv(name: String): List<Double> = getValue(name).jsonObject.coordinates("uv")
 
     /** 將 JSON 座標陣列轉為小數清單。 */
     private fun JsonArray.decimalCoordinates(): List<Double> = map { it.jsonPrimitive.content.toDouble() }
 
-    /** 計算指定 16×16 面內互不相連的點數圖案數量。 */
+    /**
+     * 計算指定 16×16 面內互不相連的點數圖案數量。
+     *
+     * @param originX 面區塊在貼圖中的左側像素座標。
+     * @param originY 面區塊在貼圖中的上側像素座標。
+     * @return 四方向連通的點數像素群組數。
+     */
     private fun BufferedImage.countPips(originX: Int, originY: Int): Int {
         val visited = Array(16) { BooleanArray(16) }
         var components = 0
@@ -139,7 +160,12 @@ class MahjongDiceResourceFilesTest {
         return (red < 100 && green < 100 && blue < 100) || (red > 120 && green < 100 && blue < 100)
     }
 
-    /** 從測試 classpath 載入並解析指定 JSON object。 */
+    /**
+     * 從測試 classpath 載入並解析指定 JSON object。
+     *
+     * @param resourcePath classpath 資源路徑。
+     * @return 解析後的 JSON object。
+     */
     private fun loadJson(resourcePath: String): JsonObject {
         val content = checkNotNull(javaClass.getResourceAsStream(resourcePath)) {
             "Resource not found: $resourcePath"

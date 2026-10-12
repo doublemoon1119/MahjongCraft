@@ -53,7 +53,12 @@ class RiichiWallOpeningPolicyTest {
         }
     }
 
-    /** 建立具有指定總和的合法雙骰結果。 */
+    /**
+     * 建立具有指定總和的合法雙骰結果。
+     *
+     * @param total 兩顆六面骰的總點數，範圍為 2..12。
+     * @return 個別點數總和等於 [total] 的雙骰結果。
+     */
     private fun diceRollWithTotal(total: Int): DiceRollResult {
         val first = (total - 6).coerceAtLeast(1)
         return DiceRollResult.of(listOf(first, total - first))

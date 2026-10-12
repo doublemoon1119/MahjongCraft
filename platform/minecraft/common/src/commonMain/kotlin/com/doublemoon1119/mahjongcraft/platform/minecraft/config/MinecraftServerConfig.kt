@@ -8,7 +8,13 @@ val DisconnectedPlayerPolicy.configValue: String
 val TableBreakPolicy.configValue: String
     get() = name.lowercase()
 
-/** 依目前是否存在 Room／Game 判斷此政策是否允許玩家破壞桌子。 */
+/**
+ * 依目前是否存在 Room／Game 判斷此政策是否允許玩家破壞桌子。
+ *
+ * @param hasRoom 目前是否有等待中的房間使用此桌。
+ * @param hasGame 目前是否有進行中的對局使用此桌。
+ * @return 依破壞政策允許玩家執行破壞時為 true。
+ */
 fun TableBreakPolicy.allowsTableBreak(hasRoom: Boolean, hasGame: Boolean): Boolean = when (this) {
     TableBreakPolicy.DENY_WHILE_OCCUPIED -> !hasRoom && !hasGame
     TableBreakPolicy.ALLOW_WAITING_ROOM_ONLY -> !hasGame

@@ -23,7 +23,15 @@ data class SingleSideReservedWallTrack(
         }
     }
 
-    /** 取得軌道上第 [index] 墩指定 [layer] 的基本牌牆位置。 */
+    /**
+     * 取得軌道上第 [index] 墩指定 [layer] 的基本牌牆位置。
+     *
+     * @param index 軌道墩序列中的零基底索引。
+     * @param layer 墩內層數，只接受 0 或 1。
+     * @return 對應的基本牌牆位置。
+     * @throws IllegalArgumentException 當 layer 不在 0..1 時拋出。
+     * @throws IndexOutOfBoundsException 當 index 超出 stackIndices 索引範圍時拋出。
+     */
     fun position(index: Int, layer: Int): TileWallPosition {
         require(layer in 0..1) { "Reserved wall track layer must be 0 or 1" }
         return TileWallPosition(side, stackIndices[index], layer)

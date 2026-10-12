@@ -10,6 +10,7 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 sealed interface RoomActionDto {
+    /** 房間或場地識別碼，適用於所有房間操作。 */
     val venueId: String
 
     /**

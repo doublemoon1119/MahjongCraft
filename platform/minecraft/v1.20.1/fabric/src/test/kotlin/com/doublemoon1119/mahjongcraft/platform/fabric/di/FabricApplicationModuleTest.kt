@@ -96,11 +96,9 @@ import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
-/**
- * Smoke test：確認 dedicated server 與 Minecraft client 使用的 Koin application 各自具有完整且隔離的
- * 依賴圖。
- */
+/** 驗證獨立伺服器與客戶端的 Koin 依賴完整、互相隔離，且擴充登記完成後凍結。 */
 class FabricApplicationModuleTest {
+    /** 每個測試結束後清除全域 Koin 容器，避免依賴登記互相影響。 */
     @AfterTest
     fun tearDown() {
         stopKoin()
@@ -113,18 +111,44 @@ class FabricApplicationModuleTest {
         val strategyRegistry = koin.get<MahjongAiStrategyRegistry>()
         val displayNames = koin.get<AiStrategyDisplayNameRegistry>()
         val extension = object : MahjongExtension, MinecraftMahjongExtension {
+            /** 測試擴充的識別碼。 */
             override val id: String = "example:ai_strategy"
 
+            /**
+             * 此測試不登記規則模組。
+             *
+             * @param registry 規則模組登記表。
+             */
             override fun registerRuleModules(registry: MahjongModuleRegistry) = Unit
 
+            /**
+             * 此測試不登記網路 DTO。
+             *
+             * @param registries 網路 DTO 登記集合。
+             */
             override fun registerNetworkDtos(registries: NetworkDtoRegistries) = Unit
 
+            /**
+             * 此測試不登記持久化 DTO。
+             *
+             * @param registries 持久化 DTO 登記集合。
+             */
             override fun registerPersistenceDtos(registries: PersistenceRegistries) = Unit
 
+            /**
+             * 登記測試用 AI 策略。
+             *
+             * @param registry AI 策略登記表。
+             */
             override fun registerAiStrategies(registry: MahjongAiStrategyRegistry) {
                 registry.register("example:custom_strategy") { RandomAiStrategy(koin.get<ExtensionGameActionAiRegistry>()) }
             }
 
+            /**
+             * 登記測試用 AI 策略顯示名稱。
+             *
+             * @param registry AI 策略顯示名稱登記表。
+             */
             override fun registerAiStrategyDisplayNames(registry: AiStrategyDisplayNameRegistry) {
                 registry.register("example:custom_strategy", "example.ai.custom_strategy")
             }
@@ -158,6 +182,7 @@ class FabricApplicationModuleTest {
             presentationRegistries = koin.get<MinecraftPresentationRegistries>(),
             tablePropKindRegistry = koin.get<FabricTablePropKindRegistry>(),
             minecraftEnvironment = object : MinecraftEnvironment {
+                /** 此案例以開發環境啟動擴充。 */
                 override val isDevelopment: Boolean = true
             },
             extensions = emptyList(),
@@ -169,6 +194,7 @@ class FabricApplicationModuleTest {
         assertTrue(result.sources.first().categories.none { category -> DebugScriptedAiStrategy.TSUMOGIRI_KEY in category.registrationIds })
     }
 
+    /** 驗證伺服器服務、內建擴充與除錯指令可解析，且不包含客戶端狀態儲存。 */
     @Test
     fun `server graph resolves gameplay services without client stores`() {
         val koin = startKoin<MahjongCraftServerApp>().koin
@@ -381,6 +407,7 @@ class FabricApplicationModuleTest {
         assertNull(koin.getOrNull<ClientDecisionTimerStateStore>())
     }
 
+    /** 驗證客戶端依賴同時提供整合式伺服器服務與客戶端狀態儲存。 */
     @Test
     fun `client graph resolves integrated server services and client stores`() {
         val koin = startKoin<MahjongCraftClientApp>().koin

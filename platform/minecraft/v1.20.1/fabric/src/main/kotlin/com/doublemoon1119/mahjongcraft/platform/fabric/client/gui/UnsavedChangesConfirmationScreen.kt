@@ -10,6 +10,11 @@ import net.minecraft.text.Text
 /**
  * 離開仍有未套用變更的編輯畫面時共用的「套用並返回／放棄變更／繼續編輯」三選一確認畫面；
  * Client Config、HUD 版面編輯器與 Room 設定頁共用同一份，避免各自複製一份後各自漂移。
+ *
+ * @property previousScreen 選擇繼續編輯或按 Esc 時返回的畫面。
+ * @property onApply 套用變更的動作；呼叫端也負責後續畫面切換。
+ * @property onDiscard 放棄變更的動作；呼叫端也負責後續畫面切換。
+ * @property changesPreview 套用按鈕的變更預覽提示；null 時不顯示提示。
  */
 internal class UnsavedChangesConfirmationScreen(
     private val previousScreen: Screen,

@@ -376,7 +376,11 @@ class HistoryRoundQueryReaderTest {
         val tableId: Uuid,
         val playerId: Uuid,
     ) {
-        /** 取得讀模型公開身分。 */
+        /**
+         * 取得讀模型公開身分。
+         *
+         * @return 由對局、牌桌與單一參與者識別碼組成的 Replay 身分。
+         */
         fun identity() = HistoryReplayIdentity(
             matchId = matchId,
             venueId = tableId,
@@ -386,7 +390,10 @@ class HistoryRoundQueryReaderTest {
 
     /** 測試用識別碼常數。 */
     private companion object {
+        /** 測試參與者的固定識別碼。 */
         val PLAYER_ID: Uuid = Uuid.parse("00000000-0000-0000-0000-000000000010")
+
+        /** 測試牌桌的固定識別碼。 */
         val TABLE_ID: Uuid = Uuid.parse("00000000-0000-0000-0000-000000000020")
     }
 }

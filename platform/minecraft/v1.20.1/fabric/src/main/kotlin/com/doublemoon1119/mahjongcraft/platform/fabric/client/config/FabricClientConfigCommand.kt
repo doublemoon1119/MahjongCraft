@@ -27,6 +27,10 @@ import org.koin.core.annotation.Single
  * 根節點用共用的 [CLIENT_COMMAND_ROOT]，理由見該常數 KDoc；`config` 子節點在這裡跟 [FabricTileLabelCommand] 的 `label`
  * 子節點是各自獨立註冊、共用同一個根節點，跟 server 端 `FabricRoomCommand`／`FabricServerConfigCommand`
  * 共用 `mahjongcraft` 根節點的既有慣例一致。
+ *
+ * @property configStore 本機設定的讀取與保存來源。
+ * @property screenController 開啟設定畫面的入口。
+ * @property minecraftEnvironment 判斷是否註冊開發環境診斷指令的來源。
  */
 @Single
 class FabricClientConfigCommand(
@@ -69,13 +73,23 @@ class FabricClientConfigCommand(
         }
     }
 
-    /** 以正式 config builder 發送 client config hovered-text 預覽。 */
+    /**
+     * 以正式設定訊息建構器發送客戶端設定懸停預覽。
+     *
+     * @param source 接收預覽的指令來源。
+     * @return Brigadier 成功值。
+     */
     private fun previewHoveredText(source: FabricClientCommandSource): Int {
         source.sendFeedback(clientConfigShowMessage())
         return COMMAND_SUCCESS
     }
 
-    /** 重新載入設定並向執行者回報結果。 */
+    /**
+     * 重新載入設定並向執行者回報結果。
+     *
+     * @param source 接收結果的指令來源。
+     * @return 載入成功時為成功值，失敗時為失敗值。
+     */
     private fun reload(source: FabricClientCommandSource): Int = when (val result = configStore.load()) {
         is MahjongClientConfigUpdateResult.Success -> {
             logger.info("Client config reloaded")
@@ -102,6 +116,9 @@ class FabricClientConfigCommand(
 
     /**
      * 顯示目前記憶體內實際生效的本地化設定欄位；完整內容收進單行可 hover 的詳情標籤。
+     *
+     * @param source 接收設定訊息的指令來源。
+     * @return Brigadier 成功值。
      */
     private fun show(source: FabricClientCommandSource): Int {
         logger.debug(

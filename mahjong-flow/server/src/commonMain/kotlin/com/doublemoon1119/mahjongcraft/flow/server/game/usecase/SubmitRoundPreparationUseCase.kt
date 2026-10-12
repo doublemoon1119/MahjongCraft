@@ -13,7 +13,14 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import org.koin.core.annotation.Factory
 import kotlin.uuid.Uuid
 
-/** 驗證並提交一位玩家的開局準備選擇。 */
+/**
+ * 驗證並提交一位玩家的開局準備選擇。
+ *
+ * @property gameRepository 權威對局資料倉庫。
+ * @property moduleRegistry 麻將規則模組註冊中心。
+ * @property resolverRegistry 開局準備步驟解析器註冊中心。
+ * @property snapshotSynchronizer 對局快照同步服務。
+ */
 @Factory
 class SubmitRoundPreparationUseCase(
     private val gameRepository: GameRepository,
@@ -21,7 +28,14 @@ class SubmitRoundPreparationUseCase(
     private val resolverRegistry: RoundPreparationResolverRegistry,
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
 ) {
-    /** 對指定對局提交一次準備選擇。 */
+    /**
+     * 對指定對局提交一次準備選擇。
+     *
+     * @param gameId 對局識別碼。
+     * @param playerId 提交選擇的玩家識別碼。
+     * @param submission 玩家提交的準備選擇。
+     * @return 提交結果；對局不存在、準備步驟不可用或內容無效時回傳 [GameError]。
+     */
     suspend operator fun invoke(
         gameId: Uuid,
         playerId: Uuid,
@@ -91,6 +105,12 @@ class SubmitRoundPreparationUseCase(
         return outcome
     }
 
+    /**
+     * 將更新結果與可選的歷史事件草稿帶出交易區塊。
+     *
+     * @property outcome 對外回傳的提交結果。
+     * @property historyDraft 本次成功提交的歷史事件；失敗時為 null。
+     */
     private data class PreparationSubmissionUpdate(
         val outcome: Outcome<Unit, GameError>,
         val historyDraft: HistoryEventDraft?,

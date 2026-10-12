@@ -32,7 +32,10 @@ import kotlin.uuid.Uuid
 /**
  * 日本麻將規則模組實作。
  *
- * 負責串接日本麻將特有的組件，包含 [RiichiWallFactory] 與 [RiichiDiscardPile]...等等。
+ * 串接四人立直的牌山、牌河、動作判定、結算與賽程政策。
+ *
+ * @property id 規則模組的命名空間識別碼。
+ * @property config 四人立直規則設定。
  */
 class RiichiRuleModule(
     override val id: String,
@@ -327,7 +330,10 @@ class RiichiRuleModule(
      * 全場尚未有人鳴牌，且全員恰好都打過一張牌（`entries.singleOrNull()` 只有在這個情境下才會
      * 全員非 null），這些第一張捨牌若皆為同一種風牌則成立。
      *
-     * 只應在確定這次捨牌沒有任何人可以吃/碰/槓/榮和之後才呼叫；呼叫時機由呼叫端掌控，這裡只負責純邏輯判定。
+     * 呼叫端須先處理捨牌反應，確認無鳴牌或和牌結果後再判定；此方法本身不檢查反應狀態。
+     *
+     * @param tableStateAfterDiscard 捨牌後的桌況。
+     * @return 首次捨牌符合四風連打條件時的原因，否則為 null。
      */
     fun resolveSuufonRenda(tableStateAfterDiscard: TableState): ExhaustiveDrawReason? {
         if (tableStateAfterDiscard.players.any { it.hand.exposedMelds.isNotEmpty() }) return null
@@ -341,6 +347,9 @@ class RiichiRuleModule(
      * 呼叫這個方法，所以「全員皆立直」這個條件只可能在恰好完成的那次宣告變成 true
      * （玩家只能宣告立直一次，見 [RiichiLegalActionValidator] 的 `!isRiichi` 合法性檢查）。日麻限定，不屬於
      * 通用規則契約。
+     *
+     * @param tableStateAfterDeclaration 立直宣告後的桌況。
+     * @return 所有玩家都已立直時的四家立直原因，否則為 null。
      */
     fun resolveSuuchaRiichi(tableStateAfterDeclaration: TableState): ExhaustiveDrawReason? {
         val allRiichi = tableStateAfterDeclaration.players.all { (it.playerRuleState as? RiichiPlayerState)?.isRiichi == true }
@@ -362,7 +371,12 @@ class RiichiRuleModule(
     override fun isBonusTile(tile: Tile, revealedWallTiles: List<Tile>): Boolean = RiichiTileInterpretationPolicy.isRedDora(tile) ||
         revealedWallTiles.any { indicator -> tile.riichiCanonical == getNextDora(indicator).riichiCanonical }
 
-    /** 這位玩家目前是否立直中；直接查詢 [RiichiPlayerState.isRiichi]。 */
+    /**
+     * 判定玩家是否已宣告立直或雙立直。
+     *
+     * @param player 待判定玩家。
+     * @return 具有立直狀態時為 true；不是立直玩家狀態時為 false。
+     */
     fun isPlayerInRiichi(player: MahjongPlayer): Boolean = (player.playerRuleState as? RiichiPlayerState)?.isRiichi ?: false
 
     /**
@@ -370,7 +384,12 @@ class RiichiRuleModule(
      */
     override fun forcedDiscardTileId(tableState: TableState, player: MahjongPlayer): Uuid? = player.hand.lastDrawn?.id?.takeIf { isPlayerInRiichi(player) }
 
-    /** 場上尚未被收下的供託支數；直接讀取 [RiichiDynamicState.riichiStickCount]，不像 [collectStickPot] 會連帶歸零。 */
+    /**
+     * 讀取尚未被收下的立直棒數，不修改供託。
+     *
+     * @param tableState 目前桌況。
+     * @return 立直棒數；不是立直動態狀態時為零。
+     */
     fun getStickPotCount(tableState: TableState): Int = (tableState.dynamicRuleState as? RiichiDynamicState)?.riichiStickCount ?: 0
 
     /**
@@ -383,6 +402,7 @@ class RiichiRuleModule(
         return player.copy(playerRuleState = riichiState.copy(isPermanentlyFuriten = true))
     }
 
+    /** 公開狀態的註冊識別碼。 */
     companion object {
         /** 玩家已公開宣告立直的 indicator ID。 */
         const val RIICHI_INDICATOR_ID = "mahjongcraft:riichi/riichi_indicator"

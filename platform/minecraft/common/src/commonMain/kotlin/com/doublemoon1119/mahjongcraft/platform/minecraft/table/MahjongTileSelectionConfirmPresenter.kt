@@ -9,12 +9,30 @@ import kotlin.uuid.Uuid
  * [MahjongRoundInfoPresenter] 的「找到、更新」慣例。
  */
 interface MahjongTileSelectionConfirmPresenter {
-    /** 在指定桌面、指定玩家座位上方呈現確認面板；找不到既有 entity 時建立一個。 */
+    /**
+     * 在指定桌面、指定玩家座位上方呈現確認面板；找不到既有 entity 時建立一個。
+     *
+     * @param presentation 已由伺服器決定的選牌確認面板資料。
+     * @return 確認面板呈現結果。
+     */
     fun present(presentation: MahjongTileSelectionConfirmPresentation): MahjongTileSelectionConfirmPresentationResult
 
-    /** 清除指定玩家的確認面板（選牌送出或情境失效時使用）；回傳實際移除數量。 */
+    /**
+     * 清除指定玩家的確認面板（選牌送出或情境失效時使用）。
+     *
+     * @param tableId 麻將桌 UUID。
+     * @param tableLocation 麻將桌位置。
+     * @param holderId 確認面板持有者的玩家 UUID。
+     * @return 實際移除的 entity 數量。
+     */
     fun clearForPlayer(tableId: Uuid, tableLocation: TableLocation, holderId: Uuid): Int
 
-    /** 清除指定桌子（任何持有者）目前的確認面板；桌子被移除時使用，回傳實際移除數量。 */
+    /**
+     * 清除指定桌子（任何持有者）目前的確認面板；桌子被移除時使用。
+     *
+     * @param tableId 麻將桌 UUID。
+     * @param tableLocation 麻將桌位置。
+     * @return 實際移除的 entity 數量。
+     */
     fun clear(tableId: Uuid, tableLocation: TableLocation): Int
 }

@@ -125,6 +125,10 @@ internal enum class HudPreviewScenario(
      * 這個情境在 [screenWidth] × [screenHeight] 畫面上的操作面板版面；不含標題文字寬度與倒數寬度。
      *
      * 編輯器量測到實際文字後的尺寸優先，這裡只在尚未量測時提供預覽尺寸。
+     *
+     * @param screenWidth 畫面寬度。
+     * @param screenHeight 畫面高度。
+     * @return 範例操作面板版面。
      */
     fun layout(screenWidth: Int, screenHeight: Int): DecisionCardLayout = DecisionCardLayout(
         screenWidth = screenWidth,
@@ -144,7 +148,14 @@ internal enum class HudPreviewScenario(
 /** 立直卡片的範例預覽牌：可以打出宣告立直的牌。 */
 private val RIICHI_PREVIEW_TILES: List<String> = listOf("m1", "m4", "m7", "p2", "p5", "p8", "s3", "s6", "s9")
 
-/** 預覽情境的範例決策提示；來自上家捨牌時附上來源玩家，否則是自己摸到 [triggerTileAssetKey]。 */
+/**
+ * 預覽情境的範例決策提示；來自上家捨牌時附上來源玩家，否則是自己摸到 [triggerTileAssetKey]。
+ *
+ * @param triggerTileAssetKey 觸發決策的牌面素材鍵。
+ * @param fromLeftPlayer 是否由左手邊玩家打出觸發牌。
+ * @param actions 範例決策動作。
+ * @return 用於預覽的決策提示 DTO。
+ */
 private fun previewPrompt(
     triggerTileAssetKey: String,
     fromLeftPlayer: Boolean,
@@ -162,7 +173,14 @@ private fun previewPrompt(
     discardAnalyses = emptyList(),
 )
 
-/** 預覽情境的一張動作卡。 */
+/**
+ * 預覽情境的一張動作卡。
+ *
+ * @param actionId 動作識別碼。
+ * @param previewTileAssetKeys 動作卡顯示的牌面素材鍵。
+ * @param claimedTileIndex 被鳴取牌在牌列中的索引；沒有鳴取牌時為 null。
+ * @return 用於預覽的動作 DTO。
+ */
 private fun previewAction(
     actionId: String,
     previewTileAssetKeys: List<String>,
@@ -176,8 +194,10 @@ private fun previewAction(
     tileSelection = null,
 )
 
-/** 鳴牌情境中打出觸發牌的範例玩家。 */
+/** 鳴牌情境中打出觸發牌的範例玩家 UUID。 */
 private const val PREVIEW_TRIGGER_PLAYER_ID: String = "00000000-0000-0000-0000-000000000000"
+
+/** 鳴牌情境中打出觸發牌的範例玩家名稱。 */
 private const val PREVIEW_TRIGGER_PLAYER_NAME: String = "Alex"
 
 /**
@@ -233,7 +253,14 @@ internal data class MahjongHudLayoutEditorModel(
     val controlsVisible: Boolean
         get() = !controlsManuallyHidden && dragging == null
 
-    /** 依畫面大小限制單一預覽框尺寸，確保極小解析度下仍留有可見邊界。 */
+    /**
+     * 依畫面大小限制單一預覽框尺寸，確保極小解析度下仍留有可見邊界。
+     *
+     * @param element 要量測的 HUD 區塊。
+     * @param screenWidth 畫面寬度。
+     * @param screenHeight 畫面高度。
+     * @return 以像素表示且至少為 1×1 的預覽尺寸。
+     */
     fun previewSize(
         element: HudElement,
         screenWidth: Int,
@@ -251,7 +278,14 @@ internal data class MahjongHudLayoutEditorModel(
         )
     }
 
-    /** 取得一個預覽框目前的完整 bounds；不可調整水平位置的區塊固定水平置中。 */
+    /**
+     * 取得一個預覽框目前的完整 bounds；不可調整水平位置的區塊固定水平置中。
+     *
+     * @param element 要取得範圍的 HUD 區塊。
+     * @param screenWidth 畫面寬度。
+     * @param screenHeight 畫面高度。
+     * @return 預覽框的畫面座標範圍。
+     */
     fun bounds(
         element: HudElement,
         screenWidth: Int,
@@ -286,6 +320,10 @@ internal data class MahjongHudLayoutEditorModel(
     /**
      * 找出畫面座標命中的 HUD 區塊；目前選取的區塊優先於其他區塊，而其他區塊只在未被隱藏時可命中。
      *
+     * @param mouseX 游標水平座標。
+     * @param mouseY 游標垂直座標。
+     * @param screenWidth 畫面寬度。
+     * @param screenHeight 畫面高度。
      * @return 命中的區塊；沒有命中任何區塊時為 `null`。
      */
     fun hitTest(
@@ -309,7 +347,16 @@ internal data class MahjongHudLayoutEditorModel(
         }
     }
 
-    /** 開始拖曳指定區塊，並記錄游標相對該區塊左上角的位移，使拖曳不會瞬間跳動。 */
+    /**
+     * 開始拖曳指定區塊，並記錄游標相對該區塊左上角的位移，使拖曳不會瞬間跳動。
+     *
+     * @param element 要拖曳的區塊。
+     * @param mouseX 游標水平座標。
+     * @param mouseY 游標垂直座標。
+     * @param screenWidth 畫面寬度。
+     * @param screenHeight 畫面高度。
+     * @return 開始拖曳後的新模型狀態。
+     */
     fun beginDrag(
         element: HudElement,
         mouseX: Double,
@@ -333,6 +380,12 @@ internal data class MahjongHudLayoutEditorModel(
     /**
      * 依目前游標位置更新草稿；只寫入該區塊允許調整的軸，且比例本身即受
      * [hudRatio] 限制，因此 bounds 永遠不會超出畫面。沒有拖曳進行中時原樣回傳。
+     *
+     * @param mouseX 游標水平座標。
+     * @param mouseY 游標垂直座標。
+     * @param screenWidth 畫面寬度。
+     * @param screenHeight 畫面高度。
+     * @return 更新草稿後的新狀態；沒有拖曳時為原狀態。
      */
     fun dragTo(
         mouseX: Double,
@@ -384,22 +437,48 @@ internal data class MahjongHudLayoutEditorModel(
     /** 記錄草稿已成功保存，成為新的比較基準。 */
     fun markApplied(): MahjongHudLayoutEditorModel = copy(baseline = draft)
 
-    /** 選取要編輯的 HUD 區塊。 */
+    /**
+     * 選取要編輯的 HUD 區塊。
+     *
+     * @param element 要選取的 HUD 區塊。
+     * @return 更新選取狀態後的新模型。
+     */
     fun selectElement(element: HudElement): MahjongHudLayoutEditorModel = copy(selectedElement = element)
 
-    /** 切換操作面板的預覽情境；舊情境量到的操作面板尺寸隨之失效，等待重新量測。 */
+    /**
+     * 切換操作面板的預覽情境；舊情境量到的操作面板尺寸隨之失效，等待重新量測。
+     *
+     * @param scenario 要顯示的預覽情境。
+     * @return 更新情境及量測快取後的新模型。
+     */
     fun selectScenario(scenario: HudPreviewScenario): MahjongHudLayoutEditorModel = copy(
         scenario = scenario,
         measuredSizes = measuredSizes - HudElement.DECISION,
     )
 
-    /** 記錄 [element] 以範例內容量到的實際尺寸，讓預覽框與實際 HUD 一樣大。 */
+    /**
+     * 記錄 [element] 以範例內容量到的實際尺寸，讓預覽框與實際 HUD 一樣大。
+     *
+     * @param element 已量測的 HUD 區塊。
+     * @param size 該區塊目前的像素尺寸。
+     * @return 更新量測尺寸後的新模型。
+     */
     fun withMeasuredSize(element: HudElement, size: MahjongHudPreviewSize): MahjongHudLayoutEditorModel = copy(measuredSizes = measuredSizes + (element to size))
 
-    /** 切換未選取 HUD 的預覽方式。 */
+    /**
+     * 切換未選取 HUD 的預覽方式。
+     *
+     * @param visibility 未選取 HUD 的顯示方式。
+     * @return 更新可見性後的新模型。
+     */
     fun selectVisibility(visibility: HudPreviewVisibility): MahjongHudLayoutEditorModel = copy(otherHudVisibility = visibility)
 
-    /** 設定控制項是否被玩家手動隱藏。 */
+    /**
+     * 設定控制項是否被玩家手動隱藏。
+     *
+     * @param hidden 是否隱藏編輯器控制項。
+     * @return 更新控制項可見性狀態後的新模型。
+     */
     fun withControlsHidden(hidden: Boolean): MahjongHudLayoutEditorModel = copy(controlsManuallyHidden = hidden)
 
     /** 取得指定區塊目前的水平位置比例；不可水平調整的區塊回傳置中比例。 */
@@ -448,7 +527,12 @@ internal data class MahjongHudLayoutEditorModel(
     }
 }
 
-/** 靠近畫面中線時吸附至正中央，避免玩家難以手動對齊。 */
+/**
+ * 靠近畫面中線時吸附至正中央，避免玩家難以手動對齊。
+ *
+ * @param value 要檢查的水平或垂直位置比例。
+ * @return 位於吸附範圍時為中線比例，否則保留原值。
+ */
 internal fun snap(value: Double): Double = if (abs(value - MahjongHudLayoutEditorModel.CENTER_RATIO) <= MahjongHudLayoutEditorModel.SNAP_THRESHOLD) {
     MahjongHudLayoutEditorModel.CENTER_RATIO
 } else {

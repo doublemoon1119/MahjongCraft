@@ -4,16 +4,10 @@ import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 
 /**
- * 管理 AI 策略 key 對應顯示名稱 translation key 的 runtime registry。
+ * 登記 AI 策略識別碼對應的名稱翻譯鍵，供聊天、指令與提示文字使用。
  *
- * 比照 [MinecraftTileAssetRegistry] 的開放
- * 註冊表設計：內建與（未來的）第三方策略共用同一套 [register] 流程，不具特權。純粹服務聊天／指令
- * tooltip 等呈現用途，刻意獨立於 [MahjongAiStrategyRegistry] 之外
- * ——那個介面刻意不讓策略透過參數夾帶額外設定，避免外洩到 `Room`／快照。
- *
- * 這裡只處理 AI 策略；日後若麻將規則等其他可擴充識別碼也需要顯示名稱對照，應該複製這個檔案改型別，
- * 而不是把所有概念塞進同一個通用 registry——不同概念的 key 空間放在一起容易撞名，個別介面能讓型別
- * 替呼叫端防呆。
+ * 與 [MinecraftTileAssetRegistry] 一樣，內建與第三方資料共用註冊流程。
+ * 此處只管理平台顯示名稱；策略本身由 [MahjongAiStrategyRegistry] 管理。
  */
 interface AiStrategyDisplayNameRegistry {
     /** 目前已登記策略 key 的快照。 */
@@ -25,6 +19,8 @@ interface AiStrategyDisplayNameRegistry {
     /**
      * 註冊一個策略對應的顯示名稱 translation key。
      *
+     * @param strategyKey AI 策略的穩定 key。
+     * @param translationKey 顯示策略名稱的 translation key。
      * @throws IllegalStateException 當 registry 已凍結時拋出。
      * @throws IllegalArgumentException 當 [strategyKey] 已存在對應映射時拋出。
      */
@@ -33,6 +29,11 @@ interface AiStrategyDisplayNameRegistry {
     /** 凍結 registry；後續呼叫 [register] 將失敗。 */
     fun freeze()
 
-    /** 依 [strategyKey] 尋找對應的顯示名稱 translation key；尚未註冊時回傳 null。 */
+    /**
+     * 依 [strategyKey] 尋找對應的顯示名稱 translation key；尚未註冊時回傳 null。
+     *
+     * @param strategyKey AI 策略的穩定 key。
+     * @return 已登記的 translation key，或尚未登記時的 null。
+     */
     fun find(strategyKey: String): String?
 }

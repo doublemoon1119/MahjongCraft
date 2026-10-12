@@ -242,13 +242,31 @@ class GameEventProjectorTest {
         assertEquals(4, settled.players.size)
     }
 
-    /** 以一筆交易的前後對局與事實產生事件。 */
+    /**
+     * 以一筆交易的前後對局與事實產生事件。
+     *
+     * @param previous 交易前的對局；新對局時為 null。
+     * @param game 交易後的對局。
+     * @param facts 此交易提交的歷史事實。
+     * @return projector 為該交易產生的對局事件。
+     */
     private fun project(previous: Game?, game: Game, vararg facts: HistoryFact) = projector.project(CommittedGameFacts(game.id, previous, game, facts.map { HistoryEventDraft(null, it) }))
 
-    /** 四名玩家依座位東、南、西、北的分數。 */
+    /**
+     * 四名玩家依座位東、南、西、北的分數。
+     *
+     * @param values 依東、南、西、北順序提供的分數。
+     * @return 依玩家 UUID 索引的分數。
+     */
     private fun scores(vararg values: Int): Map<Uuid, Int> = listOf(east, south, west, north).zip(values.toList()).toMap()
 
-    /** 以 [scores] 建立日麻的桌況。 */
+    /**
+     * 以 [scores] 建立日麻的桌況。
+     *
+     * @param scores 依玩家 UUID 索引的分數。
+     * @param roundNumber 桌況局數，預設為 1。
+     * @return 以指定分數與局數建立的桌況。
+     */
     private fun table(scores: Map<Uuid, Int>, roundNumber: Int = 1): TableState = FakeTableStateFactory.create(
         id = VENUE_ID,
         players = listOf(east to Wind.EAST, south to Wind.SOUTH, west to Wind.WEST, north to Wind.NORTH).map { (id, wind) ->
@@ -258,7 +276,13 @@ class GameEventProjectorTest {
         roundNumber = roundNumber,
     )
 
-    /** 以 [scores] 建立對局，[aiPlayerIds] 由 AI 操控。 */
+    /**
+     * 以 [scores] 建立對局，將 [aiPlayerIds] 中的玩家設為由 AI 操控。
+     *
+     * @param scores 依玩家 UUID 索引的分數。
+     * @param aiPlayerIds 由 AI 操控的玩家 UUID，預設為空集合。
+     * @return 以指定分數及 AI 玩家建立的測試對局。
+     */
     private fun game(scores: Map<Uuid, Int>, aiPlayerIds: Set<Uuid> = emptySet()): Game = Game(
         tableState = table(scores),
         flowConfig = GameFlowConfig(),
@@ -266,27 +290,54 @@ class GameEventProjectorTest {
         matchId = MATCH_ID,
     )
 
-    /** 改變分數後的對局。 */
+    /**
+     * 以指定分數複製對局。
+     *
+     * @param scores 依玩家 UUID 索引的新分數。
+     * @return 玩家分數更新後的對局副本。
+     */
     private fun Game.withScores(scores: Map<Uuid, Int>): Game = copy(
         tableState = tableState.copy(players = tableState.players.map { it.copy(score = scores.getValue(it.id)) }),
     )
 
-    /** [playerIds] 記錄 [action] 後的對局。 */
+    /**
+     * 由指定玩家記錄一次動作後的對局。
+     *
+     * @param action 要記錄的遊戲動作。
+     * @param playerIds 要記錄該動作的玩家 UUID。
+     * @return 指定玩家新增該動作後的對局副本。
+     */
     private fun Game.recording(action: GameAction, vararg playerIds: Uuid): Game = copy(
         tableState = tableState.copy(players = tableState.players.map { if (it.id in playerIds) it.recordAction(action) else it }),
     )
 
-    /** 依座位改變本局風位後的桌況。 */
+    /**
+     * 依玩家順序指定本局風位後的桌況。
+     *
+     * @param winds 依桌況玩家順序排列的自風。
+     * @return 依指定風位更新玩家後的桌況副本。
+     */
     private fun TableState.withSeatWinds(vararg winds: Wind): TableState = copy(players = players.zip(winds.toList()).map { (player, wind) -> player.copy(seatWind = wind) })
 
-    /** [winner] 榮和、[responsible] 放銃的事實。 */
+    /**
+     * 建立 [winner] 榮和、由 [responsible] 放銃的事實。
+     *
+     * @param winner 榮和玩家的 UUID。
+     * @param responsible 放銃玩家的 UUID。
+     * @return 描述該榮和及放銃關係的結算事實。
+     */
     private fun ron(winner: Uuid, responsible: Uuid) = HistoryFact.WinSettled(
         outcomeId = BuiltInRoundOutcomeIds.RON,
         winDetails = listOf(HistoryWinDetails(playerId = winner, detailFields = emptyList())),
         responsiblePlayerIds = listOf(responsible),
     )
 
-    /** 已接受 [action] 的事實。 */
+    /**
+     * 建立已接受 [action] 的事實及其測試用結果。
+     *
+     * @param action 已接受的遊戲動作。
+     * @return 帶有固定測試結果資料的已接受動作事實。
+     */
     private fun accepted(action: GameAction) = HistoryFact.ActionAccepted(
         action = action,
         result = HistoryActionResult(
@@ -299,7 +350,15 @@ class GameEventProjectorTest {
         ),
     )
 
-    /** [game] 的本局結算摘要。 */
+    /**
+     * 建立指定對局的本局結算摘要。
+     *
+     * @param outcomeId 本局結算原因 ID。
+     * @param classification 本局結算分類。
+     * @param game 提供玩家與結算分數的對局。
+     * @param beneficiaries 本局得利玩家 UUID。
+     * @return 使用指定原因、分類、對局分數及得利者建立的結算摘要。
+     */
     private fun summary(
         outcomeId: String,
         classification: RoundCompletionClassification,

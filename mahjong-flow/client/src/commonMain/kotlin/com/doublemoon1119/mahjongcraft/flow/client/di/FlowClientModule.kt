@@ -9,7 +9,12 @@ import org.koin.core.annotation.Single
 /** `:mahjong-flow-client` 擁有的 client-side Koin 定義。 */
 @Module
 class FlowClientModule {
-    /** 建立供 client adapter 與呈現層共用的決策計時狀態。 */
+    /**
+     * 建立供客戶端資料接收與時間推算共用的決策計時狀態。
+     *
+     * @param clock 客戶端接收同步時使用的單調時鐘。
+     * @return 共用的決策計時狀態儲存元件。
+     */
     @Single
     fun provideClientDecisionTimerStateStore(
         @Provided clock: MonotonicClock,

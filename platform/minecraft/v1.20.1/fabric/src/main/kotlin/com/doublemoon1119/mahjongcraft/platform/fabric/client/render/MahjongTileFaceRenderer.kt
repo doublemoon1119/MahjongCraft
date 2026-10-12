@@ -28,13 +28,26 @@ import kotlin.math.roundToInt
  *
  * 呼叫端只決定位置、尺寸與方向；完整 UV、未知材質 fallback、`tile-labels-enabled`、forced label
  * 及標籤顏色均集中於此，避免不同 showcase 各自形成不一致的牌面。
+ *
+ * @property tileLabelRegistry 提供牌面角落標籤定義。
+ * @property clientConfigStore 提供標籤顯示設定。
  */
 @Single
 class MahjongTileFaceRenderer(
     @Provided private val tileLabelRegistry: TileLabelRegistry,
     private val clientConfigStore: MahjongClientConfigStore,
 ) {
-    /** 在 GUI 座標系繪製一張完整牌面；橫置時回傳實際佔用寬高。 */
+    /**
+     * 在 GUI 座標系繪製一張完整牌面；橫置時回傳實際佔用寬高。
+     *
+     * @param context GUI 繪製上下文。
+     * @param assetKey 牌面資產 key。
+     * @param x 牌面左上角 X 座標。
+     * @param y 牌面左上角 Y 座標。
+     * @param width 直立牌面的寬度。
+     * @param height 直立牌面的高度。
+     * @param orientation 牌面朝向；預設直立。
+     */
     fun renderGui(
         context: DrawContext,
         assetKey: String,
@@ -60,7 +73,19 @@ class MahjongTileFaceRenderer(
         context.matrices.pop()
     }
 
-    /** 在 billboard／showcase 的局部座標繪製牌面 quad 與相同的角落標籤。 */
+    /**
+     * 在 billboard／showcase 的局部座標繪製牌面 quad 與相同的角落標籤。
+     *
+     * @param assetKey 牌面資產 key。
+     * @param centerX 牌面中心 X 座標。
+     * @param centerY 牌面中心 Y 座標。
+     * @param width 牌面寬度。
+     * @param height 牌面高度。
+     * @param alpha 顯示透明度，會限制在 0 到 1。
+     * @param z 局部深度。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供牌面與標籤頂點緩衝。
+     */
     fun renderWorldPanel(
         assetKey: String,
         centerX: Float,
@@ -93,7 +118,14 @@ class MahjongTileFaceRenderer(
         label.topRight?.let { renderWorldLabel(it, left, right, top, width, height, alpha, true, z, matrices, consumers) }
     }
 
-    /** 在 ItemRenderer 已完成的牌模型印刷面上疊加共用角落標籤。 */
+    /**
+     * 在 ItemRenderer 已完成的牌模型印刷面上疊加共用角落標籤。
+     *
+     * @param assetKey 牌面資產 key。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供標籤頂點緩衝。
+     * @param light 世界光照值。
+     */
     fun renderModelLabels(
         assetKey: String,
         matrices: MatrixStack,
@@ -106,7 +138,15 @@ class MahjongTileFaceRenderer(
         label.topRight?.let { renderModelLabel(it, false, matrices, consumers, light) }
     }
 
-    /** 將一段文字固定印在 3D 牌模型的左上／右上角。 */
+    /**
+     * 在 3D 牌模型的一角繪製標籤文字，固定印在左上或右上角。
+     *
+     * @param label 標籤內容與顏色。
+     * @param isLeft 是否靠左側對齊。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供文字頂點緩衝。
+     * @param light 世界光照值。
+     */
     private fun renderModelLabel(
         label: TileLabelText,
         isLeft: Boolean,
@@ -140,9 +180,19 @@ class MahjongTileFaceRenderer(
     }
 
     /**
-     * 在世界面板牌面的左右上角繪製標籤；縮放與邊距都依實際牌面高／寬換算，比例跟真正放置在世界中的
-     * 麻將牌一致（見 [renderModelLabel]／[tileLabelMetrics]），不論面板把牌畫得多大或多小都維持相同
-     * 觀感。
+     * 在世界面板牌面的指定角落繪製標籤；縮放與邊距依實際牌面高寬換算，與 [renderModelLabel] 使用相同比例。
+     *
+     * @param label 標籤內容與顏色。
+     * @param left 牌面左緣。
+     * @param right 牌面右緣。
+     * @param top 牌面上緣。
+     * @param width 牌面寬度。
+     * @param height 牌面高度。
+     * @param alpha 標籤透明度。
+     * @param alignRight 是否靠右側對齊。
+     * @param z 標籤所在深度。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供文字頂點緩衝。
      */
     private fun renderWorldLabel(
         label: TileLabelText,
@@ -177,7 +227,16 @@ class MahjongTileFaceRenderer(
         matrices.pop()
     }
 
-    /** 繪製未旋轉材質與同一牌面座標系內的角落標籤。 */
+    /**
+     * 繪製未旋轉材質與同一牌面座標系內的角落標籤。
+     *
+     * @param context GUI 繪製上下文。
+     * @param assetKey 牌面資產 key。
+     * @param x 牌面左上角 X 座標。
+     * @param y 牌面左上角 Y 座標。
+     * @param width 牌面寬度。
+     * @param height 牌面高度。
+     */
     private fun renderUprightGui(context: DrawContext, assetKey: String, x: Int, y: Int, width: Int, height: Int) {
         context.drawTexture(
             resolveTexture(assetKey),
@@ -199,8 +258,15 @@ class MahjongTileFaceRenderer(
     }
 
     /**
-     * 依牌面實際顯示高／寬換算標籤縮放與邊距，比例跟真正放置在世界中的麻將牌一致（見
-     * [renderModelLabel]／[tileLabelMetrics]），不論面板把牌畫得多大或多小都維持相同觀感。
+     * 在 GUI 牌面的指定角落繪製標籤；縮放與邊距按牌面實際尺寸換算，與世界中的麻將牌保持相同比例（見 [renderModelLabel]）。
+     *
+     * @param context GUI 繪製上下文。
+     * @param label 標籤內容與顏色。
+     * @param x 牌面左上角 X 座標。
+     * @param y 牌面左上角 Y 座標。
+     * @param width 牌面寬度。
+     * @param height 牌面高度。
+     * @param alignRight 是否靠右側對齊。
      */
     private fun renderGuiLabel(context: DrawContext, label: TileLabelText, x: Int, y: Int, width: Int, height: Int, alignRight: Boolean) {
         val renderer = MinecraftClient.getInstance().textRenderer
@@ -224,7 +290,18 @@ class MahjongTileFaceRenderer(
         context.draw()
     }
 
-    /** 使用原版字型描邊管線繪製牌面輔助標籤。 */
+    /**
+     * 使用原版字型描邊管線繪製牌面輔助標籤。
+     *
+     * @param renderer Minecraft 字型 renderer。
+     * @param label 標籤內容與顏色。
+     * @param x 文字基準 X 座標。
+     * @param y 文字基準 Y 座標。
+     * @param matrix 目前的變換矩陣。
+     * @param consumers 提供文字頂點緩衝。
+     * @param light 世界光照值。
+     * @param alpha 顯示透明度。
+     */
     private fun drawLabelWithOutline(
         renderer: TextRenderer,
         label: TileLabelText,
@@ -248,10 +325,11 @@ class MahjongTileFaceRenderer(
     }
 
     /**
-     * 依牌面顯示尺寸換算標籤縮放與邊距的唯一入口；[renderGuiLabel]、[renderWorldLabel]、
-     * [renderModelLabel] 都改呼叫這裡，避免三種渲染路徑各自維護一份公式又各自漂移（曾經發生過的
-     * 問題）——比例直接從真正放置在世界中的麻將牌反推，見 [LABEL_SCALE_PER_HEIGHT]／
-     * [MODEL_LABEL_MARGIN_RATIO] KDoc。
+     * 依牌面顯示尺寸統一換算標籤縮放與邊距，供 GUI、世界面板與模型渲染路徑共用，避免公式漂移。
+     *
+     * @param width 牌面寬度。
+     * @param height 牌面高度。
+     * @return 供不同渲染路徑共用的標籤尺寸參數。
      */
     private fun tileLabelMetrics(width: Float, height: Float): TileLabelMetrics = TileLabelMetrics(
         scale = height * LABEL_SCALE_PER_HEIGHT,
@@ -259,10 +337,21 @@ class MahjongTileFaceRenderer(
         marginY = height * MODEL_LABEL_MARGIN_RATIO,
     )
 
-    /** 一次標籤縮放與邊距換算的結果。 */
+    /**
+     * 一次標籤縮放與邊距換算的結果。
+     *
+     * @property scale 文字縮放倍率。
+     * @property marginX 水平邊距。
+     * @property marginY 垂直邊距。
+     */
     private data class TileLabelMetrics(val scale: Float, val marginX: Float, val marginY: Float)
 
-    /** 解析材質，不存在的第三方 asset 安全退回 unknown 牌。 */
+    /**
+     * 解析牌面貼圖；指定資源不存在時使用 unknown 牌面，包含找不到的第三方資產。
+     *
+     * @param assetKey 請求的牌面資產 key。
+     * @return 可載入的牌面貼圖識別碼。
+     */
     private fun resolveTexture(assetKey: String): Identifier {
         val requested = Identifier(MinecraftModMetadata.MOD_ID, tileTextureAssetPath(assetKey))
         return if (MinecraftClient.getInstance().resourceManager.getResource(requested).isPresent) {
@@ -292,10 +381,20 @@ class MahjongTileFaceRenderer(
     }
 }
 
-/** 將既有 ARGB 套用面板淡入透明度。 */
+/**
+ * 將既有 ARGB 套用面板淡入透明度。
+ *
+ * @param color 原始 ARGB 顏色。
+ * @param alpha 要套用的透明度。
+ * @return alpha 由參數取代後的 ARGB 顏色。
+ */
 private fun withAlpha(color: Int, alpha: Float): Int = ((alpha.coerceIn(0f, 1f) * 255).roundToInt() shl 24) or (color and 0x00FFFFFF)
 
-/** 將共用標籤顏色轉成 GUI ARGB。 */
+/**
+ * 將共用標籤顏色轉成 GUI ARGB。
+ *
+ * @return 此標籤顏色的不透明 ARGB 值。
+ */
 private fun TileLabelColor.toArgb(): Int = when (this) {
     TileLabelColor.BLACK -> 0xFF000000.toInt()
     TileLabelColor.RED -> 0xFFFF0000.toInt()

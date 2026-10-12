@@ -60,7 +60,12 @@ class FabricServerConfigManager(
     val current: MinecraftServerConfig
         get() = state.current
 
-    /** 綁定 [server] 的設定位置、重設前一個 session 的值並載入設定。 */
+    /**
+     * 綁定 [server] 的設定位置、重設前一個 session 的值並載入設定。
+     *
+     * @param server 目前 Minecraft server。
+     * @return 設定初始化結果；載入失敗時保留程式預設值。
+     */
     fun attach(server: MinecraftServer): MinecraftServerConfigUpdateResult = attach(pathProvider.get(server))
 
     /** 清除目前 server session 的設定位置與有效設定。 */
@@ -69,7 +74,12 @@ class FabricServerConfigManager(
         state.reset()
     }
 
-    /** 綁定明確位置，供平台測試驗證不依賴 Minecraft server 實例的檔案行為。 */
+    /**
+     * 綁定明確位置，供平台測試驗證不依賴 Minecraft server 實例的檔案行為。
+     *
+     * @param location 此 server session 的 config 檔案位置。
+     * @return 設定初始化結果；載入失敗時保留程式預設值。
+     */
     internal fun attach(location: FabricServerConfigLocation): MinecraftServerConfigUpdateResult {
         this.location = location
         state.reset()
@@ -80,6 +90,8 @@ class FabricServerConfigManager(
      * 初始化設定檔；缺少檔案時先建立帶註解的預設 template。
      *
      * 失敗時保留 [MinecraftServerConfigState] 的程式預設值，且不覆寫損壞檔案。
+     *
+     * @return 載入的設定與預設檔案建立標記，或含原因的失敗結果。
      */
     private fun initialize(): MinecraftServerConfigUpdateResult {
         val createdDefaultFile = try {
@@ -94,7 +106,12 @@ class FabricServerConfigManager(
         return load(createdDefaultFile)
     }
 
-    /** 重新讀取並原子發布完整設定與記錄政策；檔案錯誤不修改有效值。 */
+    /**
+     * 重新讀取並原子發布完整設定與記錄政策；檔案錯誤不修改有效值。
+     *
+     * @return 更新後設定或載入失敗原因；協程取消仍向外傳遞。
+     * @throws IllegalStateException 呼叫時尚未綁定伺服器設定位置。
+     */
     suspend fun reload(): MinecraftServerConfigUpdateResult = reloadMutex.withLock {
         val attachedLocation = withContext(dispatchers.main) { requireLocation() }
         try {
@@ -119,10 +136,15 @@ class FabricServerConfigManager(
         }
     }
 
-    /** 將目前記憶體內的有效設定輸出成不含註解的標準 TOML。 */
+    /** @return 目前記憶體內有效設定的標準 TOML，不含註解。 */
     fun formattedCurrentToml(): String = codec.encode(state.current)
 
-    /** 讀取、解碼並交易式替換有效設定。 */
+    /**
+     * 讀取並解碼設定檔，成功後替換記憶體內的有效設定。
+     *
+     * @param createdDefaultFile 此次初始化是否剛建立預設檔案。
+     * @return 載入的設定及建立標記，或含原因的失敗結果。
+     */
     private fun load(createdDefaultFile: Boolean): MinecraftServerConfigUpdateResult = try {
         val content = Files.readString(path, StandardCharsets.UTF_8)
         val config = codec.decode(content)
@@ -136,7 +158,13 @@ class FabricServerConfigManager(
         )
     }
 
-    /** 在設定檔缺少時原樣複製 resource template。 */
+    /**
+     * 在設定檔缺少時原樣複製隨模組提供的預設範本。
+     *
+     * @return 已建立檔案時為 true；檔案原已存在時為 false。
+     * @throws IllegalStateException 找不到打包的預設範本。
+     * @throws java.io.IOException 建立目錄或複製檔案失敗。
+     */
     private fun createDefaultFileIfMissing(): Boolean {
         if (Files.exists(path)) return false
         Files.createDirectories(path.parent)
@@ -149,7 +177,14 @@ class FabricServerConfigManager(
         return true
     }
 
-    /** 建立失敗結果並保留完整 server log。 */
+    /**
+     * 記錄錯誤與例外，建立供呼叫端處理的失敗結果。
+     *
+     * @param userMessage 失敗結果攜帶的使用者訊息。
+     * @param logMessage 記錄至伺服器日誌的診斷文字。
+     * @param cause 原始失敗原因。
+     * @return 保留使用者訊息與原因的失敗結果。
+     */
     private fun failure(
         userMessage: String,
         logMessage: String,
@@ -159,7 +194,12 @@ class FabricServerConfigManager(
         return MinecraftServerConfigUpdateResult.Failure(userMessage, cause)
     }
 
-    /** 取得目前位置；server session 尚未綁定時拒絕檔案操作。 */
+    /**
+     * 取得目前伺服器啟動週期綁定的設定位置。
+     *
+     * @return 已綁定的設定位置。
+     * @throws IllegalStateException 尚未綁定設定位置。
+     */
     private fun requireLocation(): FabricServerConfigLocation = checkNotNull(location) {
         "Server config is not attached to a running server"
     }

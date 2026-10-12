@@ -27,6 +27,7 @@ interface LegalActionValidator {
      * 的牌），實作必須自行判斷是否需要一併檢查跟摸到的牌相關的資格（例如自摸／
      * 加槓／暗槓），一次呼叫就回傳完整清單——呼叫端只給一次 `incomingTile = null`，
      * 不會、也不應該為了拿到完整清單而自行剝離 `lastDrawn` 重複呼叫兩次。
+     *
      * @return 該玩家可以執行的合法動作列表。
      */
     fun getLegalActions(
@@ -43,6 +44,9 @@ interface LegalActionValidator {
      * [GameAction.Chi]／[GameAction.Pon]／[GameAction.Kan] 的 `withTiles`），不需要這個 hook；預設
      * 回傳 null 代表 [action] 不需要額外選牌。
      *
+     * @param tableState 目前的權威桌況。
+     * @param player 欲執行動作的玩家。
+     * @param action 欲檢查是否需要額外選牌的動作。
      * @return 描述候選牌與選牌數量限制的 [TileSelectionRequirement]；[action] 不需要額外選牌則為 null。
      */
     fun tileSelectionRequirement(

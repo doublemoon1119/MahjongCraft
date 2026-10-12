@@ -105,6 +105,12 @@ class PinfuTest : RiichiHandValueCalculatorTestBase() {
         assertNull(pinfuResult, "Pinfu should not be present when there is fuuro")
     }
 
+    /**
+     * 建立待檢查平和形的標準手牌結構。
+     *
+     * @param fuuro 副露面子。
+     * @return 使用固定順子、雀頭與兩面完成型的手牌結構。
+     */
     private fun standardStructure(fuuro: List<Fuuro>): HandStructure.Standard = HandStructure.Standard(
         mentsus = listOf(
             Mentsu.Shuntsu(Tile.Numeric(Tile.Suit.Character, 1)),

@@ -50,8 +50,13 @@ import kotlin.uuid.Uuid
 
 /** [ThreePlayerRiichiRuleModule] 與三人日本麻將專屬元件的單元測試。 */
 class ThreePlayerRiichiRuleModuleTest {
+    /** 受測三人日麻規則設定。 */
     private val config = ThreePlayerRiichiRuleConfig()
+
+    /** 依預設設定建立的受測規則模組。 */
     private val module = ThreePlayerRiichiRuleModule(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, config)
+
+    /** 東風戰設定的受測模組，用於進行局數進程測試。 */
     private val eastModule = ThreePlayerRiichiRuleModule(
         id = BuiltInRuleModuleIds.RIICHI_THREE_PLAYER,
         config = ThreePlayerRiichiRuleConfig(gameLength = RiichiGameLength.East),
@@ -511,7 +516,13 @@ class ThreePlayerRiichiRuleModuleTest {
         )
     }
 
-    /** 建立東風戰指定局數、閒家連莊結束後的 progression context。 */
+    /**
+     * 建立東風戰指定局數、閒家連莊結束後的對局進程情境。
+     *
+     * @param roundNumber 從 1 開始的局數。
+     * @param scores 依玩家順序排列的分數。
+     * @return 延長局判定所需的進程上下文。
+     */
     private fun progressionContext(roundNumber: Int, scores: List<Int>): MatchProgressionContext {
         val players = scores.mapIndexed { index, score ->
             FakeMahjongPlayerFactory.create(initialSeat = Wind.entries[index]).copy(score = score)
@@ -535,7 +546,15 @@ class ThreePlayerRiichiRuleModuleTest {
         )
     }
 
-    /** 以三人日麻設定建立桌況。 */
+    /**
+     * 以三人日麻設定建立桌況。
+     *
+     * @param players 依座位排列的三名玩家。
+     * @param dynamicRuleState 日麻動態規則狀態。
+     * @param reservedWallTiles 王牌區牌張。
+     * @param comboCount 本場數。
+     * @return 三人日麻測試桌況。
+     */
     private fun threePlayerTable(
         players: List<MahjongPlayer>,
         dynamicRuleState: RiichiDynamicState = RiichiDynamicState(),
@@ -549,7 +568,13 @@ class ThreePlayerRiichiRuleModuleTest {
         comboCount = comboCount,
     )
 
-    /** 以自摸前狀態詢問自己回合的合法動作。 */
+    /**
+     * 以自摸前狀態詢問自己回合的合法動作。
+     *
+     * @param player 當前玩家。
+     * @param dynamicRuleState 日麻動態規則狀態。
+     * @return 該玩家此時可執行的動作。
+     */
     private fun selfTurnActions(
         player: MahjongPlayer,
         dynamicRuleState: RiichiDynamicState = RiichiDynamicState(),
@@ -564,10 +589,20 @@ class ThreePlayerRiichiRuleModuleTest {
         )
     }
 
-    /** 帶有日麻玩家狀態的其他玩家。 */
+    /**
+     * 建立帶有日麻玩家狀態的其他玩家。
+     *
+     * @param seat 玩家座位風。
+     * @return 指定座位的測試玩家。
+     */
     private fun other(seat: Wind) = FakeMahjongPlayerFactory.create(initialSeat = seat, playerRuleState = RiichiPlayerState())
 
-    /** 摸到最後一張紅中、自摸大三元的玩家；已經打過牌，不會成立天和或地和。 */
+    /**
+     * 摸到最後一張紅中、自摸大三元的玩家；已經打過牌，不會成立天和或地和。
+     *
+     * @param seat 玩家座位風。
+     * @return 符合上述條件的測試玩家。
+     */
     private fun daisangenTsumoPlayer(seat: Wind) = FakeMahjongPlayerFactory.create(
         initialSeat = seat,
         hand = FakeHandFactory.create(
@@ -597,9 +632,27 @@ class ThreePlayerRiichiRuleModuleTest {
     /** 立直宣言牌。 */
     private fun riichiTile() = FakeIdentifiedTileFactory.create(Tile.Honor.East)
 
+    /**
+     * 建立指定數值的筒牌。
+     *
+     * @param value 牌面數值。
+     * @return 對應牌面。
+     */
     private fun dot(value: Int) = Tile.Numeric(Tile.Suit.Dot, value)
 
+    /**
+     * 建立指定數值的索牌。
+     *
+     * @param value 牌面數值。
+     * @return 對應牌面。
+     */
     private fun bamboo(value: Int) = Tile.Numeric(Tile.Suit.Bamboo, value)
 
+    /**
+     * 建立指定數值的萬牌。
+     *
+     * @param value 牌面數值。
+     * @return 對應牌面。
+     */
     private fun character(value: Int) = Tile.Numeric(Tile.Suit.Character, value)
 }

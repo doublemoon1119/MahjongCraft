@@ -11,7 +11,14 @@ import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
-/** 使用 Fabric S2C 頻道送出只屬於連線玩家本人的本局自動操作權威快照。 */
+/**
+ * 使用 Fabric S2C 頻道送出只屬於連線玩家本人的本局自動操作權威快照。
+ *
+ * @property serverHolder 查找目前連線玩家。
+ * @property gameRepository 讀取對局與自動操作狀態。
+ * @property moduleRegistry 解析規則支援的自動操作項目。
+ * @property json 序列化網路訊息的設定。
+ */
 @Single(binds = [AutomaticControlSnapshotSender::class])
 class FabricAutomaticControlSnapshotSender(
     private val serverHolder: FabricServerHolder,

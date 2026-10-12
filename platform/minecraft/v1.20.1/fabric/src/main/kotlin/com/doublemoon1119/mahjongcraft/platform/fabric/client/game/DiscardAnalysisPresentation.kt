@@ -39,15 +39,34 @@ internal data class DiscardAnalysisContent(
 
 /** 手牌分析 HUD 目前應採用的權威資料來源。 */
 internal sealed interface HandAnalysisSelection {
+    /**
+     * 捨出指定牌張後的預測分析。
+     *
+     * @property ruleModuleId 分析所屬規則；未提供時為 null。
+     * @property analysis 捨牌後的權威分析。
+     */
     data class AfterDiscard(
         val ruleModuleId: String?,
         val analysis: DiscardReadinessAnalysisDto,
     ) : HandAnalysisSelection
 
+    /**
+     * 目前手牌的分析。
+     *
+     * @property analysis 目前手牌的權威分析。
+     */
     data class Current(val analysis: HandReadinessAnalysisDto) : HandAnalysisSelection
 }
 
-/** 合法捨牌預測優先；沒有指向合法候選時退回目前手牌分析。 */
+/**
+ * 優先選用指向牌張的合法捨牌預測，否則使用目前手牌分析。
+ *
+ * @param prompt 最新權威決策提示。
+ * @param activeActionToken 正在選牌的動作令牌；未選牌時為 null。
+ * @param pointedTileId 游標指向的牌張識別碼。
+ * @param currentAnalysis 目前手牌的權威分析。
+ * @return 可用的分析來源；兩種來源都不存在時為 null。
+ */
 internal fun selectHandAnalysis(
     prompt: PlayerDecisionPromptDto?,
     activeActionToken: String?,
@@ -70,6 +89,11 @@ internal fun selectHandAnalysis(
  *
  * 全部等待牌共用同一種非預設和牌資格時，該資格提升到狀態列只講一次；資格不一致時改為逐格標示，只標非
  * 預設的那幾張。[WaitingTileAvailabilityIds.WIN_AVAILABLE] 代表沒有特殊限制，任何情況都不顯示。
+ *
+ * @param texts 規則用語解析器。
+ * @param ruleModuleId 分析所屬規則。
+ * @param analysis 捨牌後的權威分析。
+ * @return 等待牌格與共用狀態列。
  */
 internal fun discardAnalysisContent(
     texts: DecisionTextResolver,
@@ -77,7 +101,13 @@ internal fun discardAnalysisContent(
     analysis: DiscardReadinessAnalysisDto,
 ): DiscardAnalysisContent = readinessAnalysisContent(texts, ruleModuleId, analysis.waitingTiles, analysis.statusIndicatorId)
 
-/** 由目前手牌的權威分析組出與捨牌預測完全相同的面板內容。 */
+/**
+ * 由目前手牌的權威分析建立與捨牌預測相同格式的面板內容。
+ *
+ * @param texts 規則用語解析器。
+ * @param analysis 目前手牌的權威分析。
+ * @return 等待牌格與共用狀態列。
+ */
 internal fun handAnalysisContent(
     texts: DecisionTextResolver,
     analysis: HandReadinessAnalysisDto,
@@ -88,6 +118,15 @@ internal fun handAnalysisContent(
     analysis.statusIndicatorId,
 )
 
+/**
+ * 將等待牌與資格限制組成共用分析面板內容。
+ *
+ * @param texts 規則用語解析器。
+ * @param ruleModuleId 分析所屬規則。
+ * @param waitingTiles 等待牌與可用張數。
+ * @param statusIndicatorId 整體分析狀態識別碼；沒有狀態時為 null。
+ * @return 等待牌格、資格文字與共用狀態列。
+ */
 private fun readinessAnalysisContent(
     texts: DecisionTextResolver,
     ruleModuleId: String?,
@@ -136,6 +175,7 @@ private fun readinessAnalysisContent(
  * @property cellCount 等待牌格數。
  * @property statusLineCount 狀態列行數。
  * @property widestCellContentWidth 單格內最寬的內容寬度，已包含牌面本身的寬度。
+ * @property widestStatusTextWidth 狀態列最寬文字的像素寬度。
  * @property hasAvailabilityRow 格子內是否要保留和牌資格那一行。
  * @property ratioY 玩家設定的垂直位置比例。
  */
@@ -197,14 +237,24 @@ internal data class DiscardAnalysisLayout(
     val gridLeft: Int
         get() = panelLeft + (panelWidth - gridWidth) / 2
 
-    /** 狀態列第 [index] 行的上緣。 */
+    /**
+     * 狀態列第 [index] 行的上緣。
+     *
+     * @param index 從零開始的狀態行索引。
+     * @return 該狀態行的上緣座標。
+     */
     fun statusTextTop(index: Int): Int = panelTop + PADDING + index * STATUS_TEXT_HEIGHT
 
     /** 狀態列與格子之間分隔線的上緣；沒有狀態列時不繪製分隔線。 */
     val dividerTop: Int
         get() = panelTop + PADDING + statusLineCount * STATUS_TEXT_HEIGHT + STATUS_DIVIDER_GAP
 
-    /** 第 [index] 格的牌面版位。 */
+    /**
+     * 第 [index] 格的牌面版位。
+     *
+     * @param index 從零開始的等待牌格索引。
+     * @return 該格內置中的牌面邊界。
+     */
     fun tileBounds(index: Int): DecisionBounds {
         val cellLeft = gridLeft + (index % columns) * cellWidth
         return DecisionBounds(
@@ -215,25 +265,59 @@ internal data class DiscardAnalysisLayout(
         )
     }
 
-    /** 第 [index] 格的水平中心。 */
+    /**
+     * 第 [index] 格的水平中心。
+     *
+     * @param index 從零開始的等待牌格索引。
+     * @return 該格的水平中心座標。
+     */
     fun cellCenterX(index: Int): Int = gridLeft + (index % columns) * cellWidth + cellWidth / 2
 
-    /** 第 [index] 格剩餘張數文字的上緣。 */
+    /**
+     * 第 [index] 格剩餘張數文字的上緣。
+     *
+     * @param index 從零開始的等待牌格索引。
+     * @return 剩餘張數文字的上緣座標。
+     */
     fun countTextTop(index: Int): Int = tileBounds(index).let { it.y + it.height + 1 }
 
-    /** 第 [index] 格和牌資格文字的上緣。 */
+    /**
+     * 第 [index] 格和牌資格文字的上緣。
+     *
+     * @param index 從零開始的等待牌格索引。
+     * @return 和牌資格文字的上緣座標。
+     */
     fun availabilityTextTop(index: Int): Int = tileBounds(index).let { it.y + it.height + COUNT_HEIGHT }
 
     internal companion object {
+        /** 每列等待牌格數上限。 */
         const val MAX_COLUMNS = 7
+
+        /** 面板內距。 */
         const val PADDING = 6
+
+        /** 相鄰牌格的水平間距。 */
         const val CELL_GAP = 6
+
+        /** 牌面寬度。 */
         const val TILE_WIDTH = 18
+
+        /** 牌面高度。 */
         const val TILE_HEIGHT = 24
+
+        /** 剩餘張數文字保留高度。 */
         const val COUNT_HEIGHT = 11
+
+        /** 和牌資格文字保留高度。 */
         const val AVAILABILITY_HEIGHT = 10
+
+        /** 每行狀態文字的高度。 */
         const val STATUS_TEXT_HEIGHT = 9
+
+        /** 狀態文字與分隔線的間距。 */
         const val STATUS_DIVIDER_GAP = 3
+
+        /** 分隔線與牌格區的間距。 */
         const val STATUS_TILE_GAP = 5
     }
 }

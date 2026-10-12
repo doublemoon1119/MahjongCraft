@@ -60,6 +60,9 @@ import kotlin.uuid.toKotlinUuid
  *   面板 entity。
  * @property actionContextResolver 玩家目前操作情境的權威解析器。
  * @property actionCommandMapper 將合法動作與選牌結果轉成 Flow 命令的共用 mapper。
+ * @property promptFactory 從權威狀態建立私人操作 prompt。
+ * @property moduleRegistry 依對局設定解析規則模組。
+ * @property json 決策提交回覆使用的序列化設定。
  */
 @Single
 class MahjongTableGameActionService(
@@ -84,12 +87,20 @@ class MahjongTableGameActionService(
     /**
      * 處理實體手牌右鍵；立直等「宣告 + 選牌」動作由操作 HUD 端在進入選牌模式後直接送出
      * [PlayerDecisionSelectionKindDto.ACTION]（見 [select]），不會經過這裡，故一律視為一般捨牌。
+     *
+     * @param player 執行互動的玩家。
+     * @param tileId 被互動的手牌識別碼。
      */
     fun interactWithHandTile(player: ServerPlayerEntity, tileId: Uuid) {
         discard(player, tileId)
     }
 
-    /** 驗證 decision key 後執行操作 HUD 提交的受控選擇。 */
+    /**
+     * 驗證 decision key 後執行操作 HUD 提交的受控選擇。
+     *
+     * @param player 提交選擇的玩家。
+     * @param selection HUD 傳來的決策選擇與識別資料。
+     */
     fun select(player: ServerPlayerEntity, selection: PlayerDecisionSelectionDto) {
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
@@ -114,7 +125,13 @@ class MahjongTableGameActionService(
         }
     }
 
-    /** 完整驗證並執行一筆 final selection，所有正常拒絕路徑只回傳結果，不自行傳送 ACK。 */
+    /**
+     * 完整驗證並執行一筆 final selection，所有正常拒絕路徑只回傳結果，不自行傳送 ACK。
+     *
+     * @param playerId 提交選擇的玩家識別碼。
+     * @param selection HUD 傳來的最終決策選擇。
+     * @return 可回覆給 client 的提交結果種類。
+     */
     private suspend fun processFinalSelection(
         playerId: Uuid,
         selection: PlayerDecisionSelectionDto,
@@ -175,7 +192,13 @@ class MahjongTableGameActionService(
         }
     }
 
-    /** 解析並驗證 selection 所指向的目前權威 prompt；任一項已失效時回傳 null。 */
+    /**
+     * 解析並驗證 selection 所指向的目前權威 prompt；任一項已失效時回傳 null。
+     *
+     * @param playerId 提交選擇的玩家識別碼。
+     * @param selection 待驗證的選擇。
+     * @return 當前有效的 prompt 與對局；已過期或無效時為 null。
+     */
     private suspend fun resolveSelectionPrompt(
         playerId: Uuid,
         selection: PlayerDecisionSelectionDto,
@@ -197,10 +220,22 @@ class MahjongTableGameActionService(
         return if (prompt.decisionKey == selection.decisionKey) ResolvedSelectionPrompt(gameId, prompt) else null
     }
 
-    /** 已驗證且仍有效的 prompt 與所屬對局。 */
+    /**
+     * 已驗證且仍有效的 prompt 與所屬對局。
+     *
+     * @property gameId prompt 所屬對局識別碼。
+     * @property prompt 目前權威 prompt。
+     */
     private data class ResolvedSelectionPrompt(val gameId: Uuid, val prompt: PlayerDecisionPromptDto)
 
-    /** 驗證開始多選的呈現意圖；此訊號不屬於最終提交，因此不回傳 submission ACK。 */
+    /**
+     * 驗證開始多選的呈現意圖；此訊號不屬於最終提交，因此不回傳 submission ACK。
+     *
+     * @param gameId 對局識別碼。
+     * @param playerId 玩家識別碼。
+     * @param prompt 已驗證的目前 prompt。
+     * @param selection 開始多選的請求。
+     */
     private fun handleBeginTileSelection(
         gameId: Uuid,
         playerId: Uuid,
@@ -215,7 +250,13 @@ class MahjongTableGameActionService(
         if (maxCount != null && maxCount > 1) presentationPublisher.publishTileSelectionStarted(gameId, playerId)
     }
 
-    /** 每一筆最終提交都回傳處理結果；空 ID 也會原樣回覆，讓無效 client 封包得到確定結果。 */
+    /**
+     * 每一筆最終提交都回傳處理結果；空 ID 也會原樣回覆，讓無效 client 封包得到確定結果。
+     *
+     * @param player 收到提交結果的玩家。
+     * @param selection 原始提交資料，回覆沿用其中的識別欄位。
+     * @param result 提交處理結果。
+     */
     private fun replyToFinalSubmission(
         player: ServerPlayerEntity,
         selection: PlayerDecisionSelectionDto,
@@ -229,7 +270,12 @@ class MahjongTableGameActionService(
         )
     }
 
-    /** 打出 [tileId] 這張牌。 */
+    /**
+     * 打出 [tileId] 這張牌。
+     *
+     * @param player 執行捨牌的玩家。
+     * @param tileId 要打出的手牌識別碼。
+     */
     fun discard(player: ServerPlayerEntity, tileId: Uuid) {
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
@@ -238,7 +284,13 @@ class MahjongTableGameActionService(
         }
     }
 
-    /** 執行玩家從 [GameActionCandidateResolver.listActionCandidates] 選出的候選動作。 */
+    /**
+     * 執行玩家從 [GameActionCandidateResolver.listActionCandidates] 選出的候選動作。
+     *
+     * @param player 執行動作的玩家。
+     * @param candidate 玩家選取的候選動作。
+     * @param selectedTileIds 契約要求額外選取的手牌識別碼。
+     */
     fun act(
         player: ServerPlayerEntity,
         candidate: GameActionCandidate,
@@ -250,7 +302,14 @@ class MahjongTableGameActionService(
         }
     }
 
-    /** 重新驗證選牌契約，將候選動作轉成命令並執行。 */
+    /**
+     * 重新驗證選牌契約，將候選動作轉成命令並執行。
+     *
+     * @param playerId 執行動作的玩家識別碼。
+     * @param candidate 已選取的動作候選。
+     * @param selectedTileIds 額外選取的手牌識別碼。
+     * @return 可回覆給 client 的提交結果種類。
+     */
     private suspend fun submitAction(
         playerId: Uuid,
         candidate: GameActionCandidate,
@@ -283,7 +342,11 @@ class MahjongTableGameActionService(
         return execute(gameId, playerId, command)
     }
 
-    /** 顯示玩家目前的手牌、副露與可執行的特殊動作。 */
+    /**
+     * 顯示玩家目前的手牌、副露與可執行的特殊動作。
+     *
+     * @param player 要顯示手牌資訊的玩家。
+     */
     fun showHand(player: ServerPlayerEntity) {
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
@@ -312,7 +375,14 @@ class MahjongTableGameActionService(
         }
     }
 
-    /** 分派動作並驅動後續流程；實體捨牌本身已提供明確回饋，因此不再額外傳送成功聊天訊息。 */
+    /**
+     * 分派動作並驅動後續流程；實體捨牌本身已提供明確回饋，因此不再額外傳送成功聊天訊息。
+     *
+     * @param gameId 對局識別碼。
+     * @param playerId 發出命令的玩家識別碼。
+     * @param command 要提交給對局流程的命令。
+     * @return 可回覆給 client 的提交結果種類。
+     */
     private suspend fun execute(
         gameId: Uuid,
         playerId: Uuid,
@@ -344,7 +414,12 @@ class MahjongTableGameActionService(
         }
     }
 
-    /** 以玩家目前的房間歸屬解析目標對局；不在任何桌子或桌況不是對局時發布 [MinecraftPlayerFeedback.PlayerNotInGame] 並回傳 null。 */
+    /**
+     * 以玩家目前的房間歸屬解析目標對局；不在任何桌子或桌況不是對局時發布 [MinecraftPlayerFeedback.PlayerNotInGame] 並回傳 null。
+     *
+     * @param playerId 玩家識別碼。
+     * @return 對局識別碼；玩家未在對局桌上時為 null。
+     */
     private suspend fun resolveGameId(playerId: Uuid): Uuid? {
         val tableId = membershipRepository.getVenueId(playerId)
         if (tableId == null || gameRepository.getTableState(tableId) == null) {
@@ -355,7 +430,11 @@ class MahjongTableGameActionService(
     }
 }
 
-/** 對應到手牌查詢顯示使用的粗粒度回合狀態。 */
+/**
+ * 對應到手牌查詢顯示使用的粗粒度回合狀態。
+ *
+ * @return 對應反應中、自己的回合，或等待狀態的顯示分類。
+ */
 internal fun PlayerActionContext?.toTurnStatus(): GameTurnStatus = when (this) {
     is PlayerActionContext.RobbingReaction, is PlayerActionContext.DiscardReaction -> GameTurnStatus.AWAITING_RESPONSE
     is PlayerActionContext.OwnTurn -> GameTurnStatus.OWN_TURN

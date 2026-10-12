@@ -15,16 +15,35 @@ interface OpponentModel {
     /** 推測對手手牌的深度。 */
     val readingDepth: ReadingDepth
 
-    /** [playerId] 一手和牌的預估基準點數，用於無法具體估算手牌價值時；[playerId] 可以是評估者本人。 */
+    /**
+     * [playerId] 一手和牌的預估基準點數，用於無法具體估算手牌價值時；[playerId] 可以是評估者本人。
+     *
+     * @param view 評估所使用、以評估者為中心的局面視角。
+     * @param playerId 要估算和牌點數的玩家。
+     * @return 該玩家一手和牌的預估點數。
+     */
     fun baselineWinValue(view: PositionView, playerId: Uuid): Int
 
-    /** 評估者打出 [tile] 時，被已經聽牌的 [opponentId] 榮和的可能性，介於 0 到 1。 */
+    /**
+     * 評估者打出 [tile] 時，被已經聽牌的 [opponentId] 榮和的可能性，介於 0 到 1。
+     *
+     * @param view 評估所使用、以評估者為中心的局面視角。
+     * @param opponentId 可能榮和的對手。
+     * @param tile 評估者考慮打出的牌。
+     * @return 對手榮和這張牌的估計機率。
+     */
     fun discardDanger(
         view: PositionView,
         opponentId: Uuid,
         tile: Tile,
     ): Double
 
-    /** 從公開資訊估計 [opponentId] 的威脅。 */
+    /**
+     * 從公開資訊估計 [opponentId] 的威脅。
+     *
+     * @param view 評估所使用、以評估者為中心的局面視角。
+     * @param opponentId 要估計威脅的對手。
+     * @return 該對手的聽牌機率與和牌點數估計。
+     */
     fun threat(view: PositionView, opponentId: Uuid): ThreatEstimate
 }

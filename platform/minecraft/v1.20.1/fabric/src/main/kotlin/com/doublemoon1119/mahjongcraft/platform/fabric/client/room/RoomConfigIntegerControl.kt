@@ -13,13 +13,25 @@ internal object RoomConfigIntegerControl {
     /** 按住 Shift 時每次調整的倍率。 */
     internal const val SHIFT_STEP_MULTIPLIER = 10
 
-    /** 依是否按住 Shift 換算單次調整量。 */
+    /**
+     * 依是否按住 Shift 換算單次調整量。
+     *
+     * @param editor 整數欄位的步長與範圍規格。
+     * @param shiftHeld 是否按住 Shift。
+     * @return 基本步長或乘上 Shift 倍率後的步長。
+     */
     fun adjustment(
         editor: GameConfigEditorSpec.IntegerInput,
         shiftHeld: Boolean,
     ): Int = editor.step * if (shiftHeld) SHIFT_STEP_MULTIPLIER else 1
 
-    /** 判斷整數欄位是否仍有更低的合法狀態。 */
+    /**
+     * 判斷整數欄位是否仍有更低的合法狀態。
+     *
+     * @param current 目前數值；null 代表未設定。
+     * @param editor 整數欄位的範圍與可空規格。
+     * @return 可再減少數值或切換成未設定時為 true。
+     */
     fun canDecrease(
         current: Int?,
         editor: GameConfigEditorSpec.IntegerInput,
@@ -29,7 +41,13 @@ internal object RoomConfigIntegerControl {
         else -> editor.nullable
     }
 
-    /** 判斷整數欄位是否仍有更高的合法狀態。 */
+    /**
+     * 判斷整數欄位是否仍有更高的合法狀態。
+     *
+     * @param current 目前數值；null 代表未設定。
+     * @param editor 整數欄位的範圍規格。
+     * @return 未設定或尚未達最大值時為 true。
+     */
     fun canIncrease(
         current: Int?,
         editor: GameConfigEditorSpec.IntegerInput,
@@ -38,6 +56,9 @@ internal object RoomConfigIntegerControl {
     /**
      * 計算按下減號後的新值。
      *
+     * @param current 目前數值；null 代表未設定。
+     * @param editor 整數欄位的步長、範圍與可空規格。
+     * @param shiftHeld 是否使用 Shift 加速調整。
      * @return 新值；已經是最小值且欄位可為 null 時回傳 `null` 代表清成未設定，目前已是 `null` 時
      *   維持 `null`。
      */
@@ -54,6 +75,9 @@ internal object RoomConfigIntegerControl {
     /**
      * 計算按下加號後的新值。
      *
+     * @param current 目前數值；null 代表未設定。
+     * @param editor 整數欄位的步長與範圍規格。
+     * @param shiftHeld 是否使用 Shift 加速調整。
      * @return 新值；目前為 `null` 時回到 [GameConfigEditorSpec.IntegerInput.minimum]。
      */
     fun increment(

@@ -97,7 +97,12 @@ class RiichiOpponentModel(
         )
     }
 
-    /** 每種牌對評估者而言還沒看到的張數：總數扣除自己的手牌、所有牌河、所有公開副露與牌山中公開的牌。 */
+    /**
+     * 每種牌對評估者而言還沒看到的張數：總數扣除自己的手牌、所有牌河、所有公開副露與牌山中公開的牌。
+     *
+     * @param view 評估者可見資訊所構成的局面視角。
+     * @return 各日麻牌種剩餘未見張數。
+     */
     private fun unseenCounts(view: PositionView): Map<Tile, Int> {
         val self = view.evaluator
         val visible = buildList {
@@ -113,7 +118,12 @@ class RiichiOpponentModel(
         return TILE_KINDS.associateWith { kind -> (COPIES_PER_TILE - (seen[kind] ?: 0)).coerceAtLeast(0) }
     }
 
-    /** 從 [count] 張中挑兩張的組合數。 */
+    /**
+     * 從 [count] 張中挑兩張的組合數。
+     *
+     * @param count 可供挑選的牌張數。
+     * @return 不計順序的兩張組合數。
+     */
     private fun pairCount(count: Int): Double = count * (count - 1) / 2.0
 
     /**

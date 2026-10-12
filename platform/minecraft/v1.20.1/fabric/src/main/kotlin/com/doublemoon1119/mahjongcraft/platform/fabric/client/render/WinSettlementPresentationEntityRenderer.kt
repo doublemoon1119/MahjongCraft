@@ -42,7 +42,17 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlin.uuid.Uuid
 
-/** 逐位贏家詳情與最終共用排行的 client-only billboard renderer。 */
+/**
+ * 逐位贏家詳情與最終共用排行的 client-only billboard renderer。
+ *
+ * @param context Minecraft renderer factory 提供的 client context。
+ * @param templateRegistry 提供贏家詳情版面模板與欄位 provider。
+ * @param portraitRenderer 繪製玩家頭像。
+ * @param tileFaceRenderer 繪製版面中的牌張。
+ * @param playerNames 依桌子與玩家 ID 解析顯示名稱。
+ * @param configStore 提供胡牌結算面板可見性設定。
+ * @param indicatorTextResolver 解析排名中的付款原因指示器文字與顏色。
+ */
 class WinSettlementPresentationEntityRenderer(
     context: EntityRendererFactory.Context,
     private val templateRegistry: WinSettlementPresentationTemplateRegistry,
@@ -93,6 +103,14 @@ class WinSettlementPresentationEntityRenderer(
         matrices.pop()
     }
 
+    /**
+     * 按揭曉時間選出目前贏家並繪製該位玩家的結算詳情。
+     *
+     * @param entity 提供贏家、模板及揭曉時間的結算 entity。
+     * @param elapsed 此次結算演出已經過的 tick。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供面板與文字頂點緩衝。
+     */
     private fun renderWinnerPhase(
         entity: WinSettlementPresentationEntity,
         elapsed: Double,
@@ -113,7 +131,17 @@ class WinSettlementPresentationEntityRenderer(
         }
     }
 
-    /** 第三方模板使用受控文字／牌面／動畫原語，不接受任意 callback。 */
+    /**
+     * 第三方模板使用受控文字／牌面／動畫原語，不接受任意 callback。
+     *
+     * @param entity 提供贏家欄位資料的結算 entity。
+     * @param winner 目前要顯示的贏家資料。
+     * @param root 模板版面的根節點。
+     * @param local 此位贏家演出已經過的 tick。
+     * @param alpha 面板透明度。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供面板、文字與牌面頂點緩衝。
+     */
     private fun renderDeclarativeTemplate(
         entity: WinSettlementPresentationEntity,
         winner: WinSettlementWinnerSnapshot,
@@ -132,6 +160,12 @@ class WinSettlementPresentationEntityRenderer(
         matrices.pop()
     }
 
+    /**
+     * 將贏家與結算 entity 的同步資料轉成模板解析用欄位快照。
+     *
+     * @param entity 提供結果類型、排名與揭曉時序的結算 entity。
+     * @return 對應此贏家的模板欄位與擴充欄位快照。
+     */
     private fun WinSettlementWinnerSnapshot.toFieldSnapshot(entity: WinSettlementPresentationEntity): WinSettlementPresentationFieldSnapshot {
         val fields = details.mapNotNull { detail ->
             val id = runCatching { PresentationFieldId(detail.id) }.getOrNull() ?: return@mapNotNull null
@@ -185,6 +219,19 @@ class WinSettlementPresentationEntityRenderer(
         )
     }
 
+    /**
+     * 依版面節點型別繪製節點及子節點。
+     *
+     * @param layout 要繪製的版面節點。
+     * @param snapshot 此贏家可供模板解析的欄位快照。
+     * @param x 節點左上角 X 座標。
+     * @param y 節點左上角 Y 座標。
+     * @param local 此位贏家演出已經過的 tick。
+     * @param alpha 節點透明度。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供繪製頂點緩衝。
+     * @param allocatedWidth 父容器分配的寬度；未提供時使用節點自然寬度。
+     */
     private fun renderLayout(
         layout: PresentationLayout,
         snapshot: WinSettlementPresentationFieldSnapshot,
@@ -333,6 +380,19 @@ class WinSettlementPresentationEntityRenderer(
         }
     }
 
+    /**
+     * 根據時間軸套用動畫效果後繪製子版面。
+     *
+     * @param layout 動畫版面節點。
+     * @param snapshot 此贏家可供模板解析的欄位快照。
+     * @param x 節點左上角 X 座標。
+     * @param y 節點左上角 Y 座標。
+     * @param local 此位贏家演出已經過的 tick。
+     * @param alpha 節點透明度。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供繪製頂點緩衝。
+     * @param allocatedWidth 父容器分配的寬度；未提供時使用子節點自然寬度。
+     */
     private fun renderAnimatedLayout(
         layout: PresentationLayout.Animated,
         snapshot: WinSettlementPresentationFieldSnapshot,
@@ -381,6 +441,13 @@ class WinSettlementPresentationEntityRenderer(
         matrices.pop()
     }
 
+    /**
+     * 依動畫時間錨點計算此效果在本贏家詳情中的起始 tick。
+     *
+     * @param anchor 動畫使用的時間錨點。
+     * @param snapshot 提供進場、條目與分數時序的欄位快照。
+     * @return 相對本贏家階段起點的整數 tick。
+     */
     private fun animationAnchorTick(anchor: PresentationTimelineAnchor, snapshot: WinSettlementPresentationFieldSnapshot): Int {
         val entries = snapshot.extensionFields.mapNotNull { it.value as? PresentationValue.EntryListValue }.sumOf { it.entries.size }
         return when (anchor) {
@@ -392,6 +459,13 @@ class WinSettlementPresentationEntityRenderer(
         }
     }
 
+    /**
+     * 在相鄰縮放關鍵影格之間線性內插倍率。
+     *
+     * @param effect 含有有序縮放關鍵影格的動畫效果。
+     * @param progress 動畫進度。
+     * @return 此進度對應的縮放倍率。
+     */
     private fun scaleAt(effect: PresentationAnimationEffect.ScaleKeyframes, progress: Float): Float {
         val rightIndex = effect.keyframes.indexOfFirst { it.progress >= progress }.coerceAtLeast(1)
         val left = effect.keyframes[rightIndex - 1]
@@ -400,10 +474,33 @@ class WinSettlementPresentationEntityRenderer(
         return lerp(left.scale, right.scale, local)
     }
 
+    /**
+     * 以容器繪製器輸出動畫背景色板。
+     *
+     * @param argb 背景 ARGB 顏色。
+     * @param x 色板左上角 X 座標。
+     * @param y 色板左上角 Y 座標。
+     * @param size 色板寬高。
+     * @param alpha 顯示透明度。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供背景頂點緩衝。
+     */
     private fun renderAnimatedOverlay(argb: Int, x: Float, y: Float, size: PresentationNodeSize, alpha: Float, matrices: MatrixStack, consumers: VertexConsumerProvider) {
         renderContainer(PresentationContainerStyle(backgroundArgb = argb), x, y, size, alpha, matrices, consumers)
     }
 
+    /**
+     * 繪製依動畫進度由左至右移動的高亮掃光。
+     *
+     * @param effect 掃光寬度及顏色設定。
+     * @param x 節點左上角 X 座標。
+     * @param y 節點左上角 Y 座標。
+     * @param size 節點版面尺寸。
+     * @param progress 掃光動畫進度。
+     * @param alpha 節點透明度。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供掃光頂點緩衝。
+     */
     private fun renderHighlightSweep(
         effect: PresentationAnimationEffect.HighlightSweep,
         x: Float,
@@ -418,10 +515,34 @@ class WinSettlementPresentationEntityRenderer(
         renderAnimatedOverlay(effect.argb, left, y, PresentationNodeSize(effect.width, size.height), alpha * pulse(progress), matrices, consumers)
     }
 
+    /**
+     * 取得由 0 上升至 1 再回到 0 的三角脈衝值。
+     *
+     * @param progress 動畫進度。
+     * @return 介於 0 與 1 的脈衝值。
+     */
     private fun pulse(progress: Float): Float = 1f - abs(progress * 2f - 1f)
 
+    /**
+     * 以指定進度在線性區間內插兩個浮點值。
+     *
+     * @param from 起點值。
+     * @param to 終點值。
+     * @param progress 內插進度。
+     * @return 內插結果。
+     */
     private fun lerp(from: Float, to: Float, progress: Float): Float = from + (to - from) * progress
 
+    /**
+     * 繪製排名列玩家的頭像。
+     *
+     * @param player 排名玩家快照。
+     * @param x 頭像左側 X 座標。
+     * @param y 頭像上側 Y 座標。
+     * @param alpha 頭像透明度。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供頭像頂點緩衝。
+     */
     private fun renderRankingPortrait(
         player: WinSettlementRankingSnapshot,
         x: Float,
@@ -431,6 +552,18 @@ class WinSettlementPresentationEntityRenderer(
         consumers: VertexConsumerProvider,
     ) = renderPlayerFace(player.playerId, player.isAi, x, y, alpha, matrices, consumers)
 
+    /**
+     * 透過共用 renderer 繪製指定玩家的頭像。
+     *
+     * @param playerId 玩家 ID。
+     * @param isAi 玩家是否為 AI。
+     * @param x 頭像左側 X 座標。
+     * @param y 頭像上側 Y 座標。
+     * @param alpha 頭像透明度。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供頭像頂點緩衝。
+     * @param size 頭像邊長。
+     */
     private fun renderPlayerFace(
         playerId: String,
         isAi: Boolean,
@@ -452,6 +585,17 @@ class WinSettlementPresentationEntityRenderer(
         consumers = consumers,
     )
 
+    /**
+     * 繪製容器背景與邊框；兩者皆透明時不輸出頂點。
+     *
+     * @param style 背景、邊框顏色與邊框寬度。
+     * @param x 容器左上角 X 座標。
+     * @param y 容器左上角 Y 座標。
+     * @param size 容器寬高。
+     * @param alpha 動畫透明度。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供背景及邊框頂點緩衝。
+     */
     private fun renderContainer(style: PresentationContainerStyle, x: Float, y: Float, size: PresentationNodeSize, alpha: Float, matrices: MatrixStack, consumers: VertexConsumerProvider) {
         if ((style.backgroundArgb ushr 24) == 0 && style.borderWidth <= 0f) return
         val matrix = matrices.peek().positionMatrix
@@ -476,6 +620,14 @@ class WinSettlementPresentationEntityRenderer(
         }
     }
 
+    /**
+     * 繪製最終排名、分數變化與付款原因欄位。
+     *
+     * @param entity 提供排名快照及時間軸的結算 entity。
+     * @param local 排名階段已經過的 tick。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供面板、頭像與文字頂點緩衝。
+     */
     private fun renderRankingPhase(entity: WinSettlementPresentationEntity, local: Double, matrices: MatrixStack, consumers: VertexConsumerProvider) {
         val alpha = WorldPanelRenderer.phaseAlpha(local, 0.0, 12.0, WinSettlementPresentationEntity.RANKING_TICKS.toDouble(), (WinSettlementPresentationEntity.RANKING_TICKS + WinSettlementPresentationEntity.FADE_OUT_TICKS).toDouble())
         if (alpha <= MIN_VISIBLE_ALPHA) return
@@ -535,6 +687,16 @@ class WinSettlementPresentationEntityRenderer(
         }
     }
 
+    /**
+     * 繪製排名落定列的底色高亮與橫向掃光。
+     *
+     * @param panelHalfWidth 排名面板半寬。
+     * @param y 排名列頂部 Y 座標。
+     * @param alpha 排名列透明度。
+     * @param effect 落定效果的縮放、透明度與掃光進度。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供高亮頂點緩衝。
+     */
     private fun renderRankingSettledHighlight(
         panelHalfWidth: Float,
         y: Float,
@@ -559,6 +721,17 @@ class WinSettlementPresentationEntityRenderer(
         )
     }
 
+    /**
+     * 以金色繪製單一半透明矩形高亮。
+     *
+     * @param left 矩形左緣。
+     * @param right 矩形右緣。
+     * @param top 矩形上緣。
+     * @param bottom 矩形下緣。
+     * @param alpha 矩形透明度。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供高亮頂點緩衝。
+     */
     private fun renderHighlightQuad(
         left: Float,
         right: Float,
@@ -578,13 +751,26 @@ class WinSettlementPresentationEntityRenderer(
         buffer.vertex(matrix, left, bottom, RANKING_HIGHLIGHT_Z).color(255, 205, 92, a).next()
     }
 
+    /**
+     * 逐通道混合兩個 RGB 顏色。
+     *
+     * @param from 混合起點 RGB 顏色。
+     * @param to 混合終點 RGB 顏色。
+     * @param progress 由起點往終點的混合進度。
+     * @return 混合後的 RGB 顏色。
+     */
     private fun mixRgb(from: Int, to: Int, progress: Float): Int {
         val amount = progress.coerceIn(0f, 1f)
         fun channel(shift: Int): Int = (((from shr shift) and 0xFF) + ((((to shr shift) and 0xFF) - ((from shr shift) and 0xFF)) * amount)).roundToInt()
         return (channel(16) shl 16) or (channel(8) shl 8) or channel(0)
     }
 
-    /** 依所有起訖分數、增減與付款原因的實際像素寬度建立排名欄位；沒有任何付款原因時不含付款原因欄。 */
+    /**
+     * 依排名文字的實際像素寬度量測欄位，包含分數、增減及付款原因；沒有付款原因時省略該欄。
+     *
+     * @param players 所有排名玩家快照。
+     * @return 排名列共用的水平欄位版面。
+     */
     private fun measureRankingLayout(players: List<WinSettlementRankingSnapshot>): SettlementRankingLayout {
         val scoreWidth = SettlementRankingLayout.contentColumnWidth(
             contentWidths = players.flatMap { listOf(it.previousScore, it.currentScore) }.map { textRenderer.getWidth(it.toString()).toFloat() },
@@ -608,17 +794,55 @@ class WinSettlementPresentationEntityRenderer(
         )
     }
 
-    /** 付款原因的顯示文字與 ARGB 顏色；沒有付款原因時為 `null`。 */
+    /**
+     * 將付款原因指示器解析為顯示文字與 ARGB 顏色；沒有有效原因時回傳 `null`。
+     *
+     * @return 有效付款原因的文字與 ARGB 顏色；沒有原因或 ID 格式不符時為 `null`。
+     */
     private fun WinSettlementRankingSnapshot.paymentReasonText(): Pair<Text, Int>? = paymentReasonId
         ?.takeIf { ':' in it }
         ?.let { indicatorTextResolver.resolve(PublicPlayerIndicator(it)) }
 
+    /**
+     * 將玩家名稱裁切至排名欄位的固定最大寬度。
+     *
+     * @param name 原始玩家名稱。
+     * @return 可放入名稱欄的文字。
+     */
     private fun fitPlayerName(name: String): String = WorldPanelRenderer.fitText(textRenderer, name, SettlementRankingLayout.NAME_MAX_WIDTH)
 
+    /**
+     * 將詳情快照的第一個值當翻譯 key，其餘值作為翻譯參數。
+     *
+     * @return 依本機語系建立的詳情文字。
+     */
     private fun WinSettlementDetailSnapshot.text(): Text = Text.translatable(values.firstOrNull().orEmpty(), *values.drop(1).toTypedArray())
+
+    /**
+     * 將同步排名快照轉成共用分數動畫模型。
+     *
+     * @return 含玩家、分數與名次變化的動畫資料。
+     */
     private fun WinSettlementRankingSnapshot.toRankingPlayer() = ScoreRankingPlayer(Uuid.parse(playerId), seatIndex, isAi, previousScore, currentScore, previousRank, currentRank)
+
+    /**
+     * 依目前結算所屬桌子解析玩家顯示名稱。
+     *
+     * @param id 玩家 ID。
+     * @return 共用名稱解析器提供的顯示名稱。
+     */
     private fun playerName(id: String): String = playerNames.resolve(currentTableId, id)
 
+    /**
+     * 繪製排名階段使用的半透明黑色面板。
+     *
+     * @param halfWidth 面板半寬。
+     * @param top 面板上緣 Y 座標。
+     * @param bottom 面板下緣 Y 座標。
+     * @param alpha 面板透明度。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供面板頂點緩衝。
+     */
     private fun renderPanel(halfWidth: Float, top: Float, bottom: Float, alpha: Float, matrices: MatrixStack, consumers: VertexConsumerProvider) {
         val matrix = matrices.peek().positionMatrix
         val buffer = consumers.getBuffer(ExhaustiveDrawSettlementPanelRenderLayer.layer)
@@ -629,10 +853,34 @@ class WinSettlementPresentationEntityRenderer(
         buffer.vertex(matrix, -halfWidth, bottom, 0.5f).color(0, 0, 0, a).next()
     }
 
+    /**
+     * 在模板版面指定中心繪製一張牌面。
+     *
+     * @param asset 牌面資產 key。
+     * @param cx 牌面中心 X 座標。
+     * @param cy 牌面中心 Y 座標。
+     * @param width 牌面寬度。
+     * @param height 牌面高度。
+     * @param alpha 牌面透明度。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供牌面頂點緩衝。
+     */
     private fun renderTile(asset: String, cx: Float, cy: Float, width: Float, height: Float, alpha: Float, matrices: MatrixStack, consumers: VertexConsumerProvider) {
         tileFaceRenderer.renderWorldPanel(asset, cx, cy, width, height, alpha, 0f, matrices, consumers)
     }
 
+    /**
+     * 依指定水平對齊方式、顏色與縮放繪製文字。
+     *
+     * @param text 要繪製的文字。
+     * @param x 對齊錨點 X 座標。
+     * @param y 文字基準 Y 座標。
+     * @param align 文字相對錨點的水平對齊方式。
+     * @param color 文字 ARGB 顏色。
+     * @param scale 文字縮放倍率。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供文字頂點緩衝。
+     */
     private fun draw(text: Text, x: Float, y: Float, align: Align, color: Int, scale: Float, matrices: MatrixStack, consumers: VertexConsumerProvider) {
         matrices.push()
         matrices.translate(x, y, 0f)
@@ -647,10 +895,27 @@ class WinSettlementPresentationEntityRenderer(
         matrices.pop()
     }
 
+    /**
+     * 將 RGB 顏色與動畫透明度合成 ARGB。
+     *
+     * @param rgb 不含 alpha 的 RGB 顏色。
+     * @param alpha 動畫透明度。
+     * @return 合成後的 ARGB 顏色。
+     */
     private fun color(rgb: Int, alpha: Float) = WorldPanelRenderer.withAlpha(rgb, alpha)
     override fun getTexture(entity: WinSettlementPresentationEntity): Identifier? = null
 
-    private enum class Align { LEFT, CENTER, RIGHT }
+    /** 文字相對水平錨點的對齊方式。 */
+    private enum class Align {
+        /** 錨點為文字左緣。 */
+        LEFT,
+
+        /** 錨點為文字中心。 */
+        CENTER,
+
+        /** 錨點為文字右緣。 */
+        RIGHT,
+    }
 
     private companion object {
         const val SCALE = 0.02f

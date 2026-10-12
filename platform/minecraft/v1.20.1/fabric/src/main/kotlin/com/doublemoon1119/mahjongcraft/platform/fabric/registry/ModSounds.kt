@@ -36,7 +36,13 @@ object ModSounds {
         BuiltInGameActionVoiceSoundIds.ALL.forEach(::register)
     }
 
-    /** 依完整 namespaced ID 建立並註冊聲音事件。 */
+    /**
+     * 依完整 namespaced ID 建立並註冊聲音事件。
+     *
+     * @param soundId 要註冊的聲音事件完整 ID。
+     * @param fixedRange 指定時使用的固定最大可聽距離；省略時使用一般聲音事件範圍。
+     * @return 已加入聲音登錄表的事件實例。
+     */
     private fun register(soundId: String, fixedRange: Float? = null): SoundEvent {
         val id = Identifier(soundId)
         val soundEvent = fixedRange?.let { SoundEvent.of(id, it) } ?: SoundEvent.of(id)

@@ -25,6 +25,7 @@ import kotlin.test.assertTrue
  */
 class RiichiShantenCalculatorTest {
 
+    /** 受測日麻向聽數計算器。 */
     private val calculator = RiichiShantenCalculator()
 
     /**
@@ -279,6 +280,7 @@ class RiichiShantenCalculatorTest {
         }
     }
 
+    /** 固定亂數種子與測試抽樣數，確保結果可重現。 */
     private companion object {
         const val PROPERTY_SEED = 20261011
         const val PROPERTY_HANDS = 300

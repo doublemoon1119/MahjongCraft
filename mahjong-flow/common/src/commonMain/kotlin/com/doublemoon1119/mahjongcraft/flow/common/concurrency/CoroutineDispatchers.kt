@@ -3,13 +3,9 @@ package com.doublemoon1119.mahjongcraft.flow.common.concurrency
 import kotlinx.coroutines.CoroutineDispatcher
 
 /**
- * 定義協程 Dispatcher 的抽象介面 (Port)，遵循 Clean Architecture 原則。
+ * 提供流程所需的協程調度器，由執行環境決定實作。
  *
- * 此介面的主要職責是讓 `application` 層能夠以平台無關的方式宣告對協程調度器的需求。
- * 具體的 Dispatcher 實作 (Adapter) 由 `platform` 層根據其執行環境（例如平台的遊戲主執行緒）提供。
- *
- * 此外，此抽象化設計也使得在單元測試中可以輕易地注入一個測試專用的 Dispatcher (如 `TestCoroutineDispatchers`)，
- * 從而實現對協程行為的精確控制與驗證。
+ * 測試可替換調度器，控制工作的排程與執行時機。
  */
 interface CoroutineDispatchers {
     /**
@@ -23,7 +19,7 @@ interface CoroutineDispatchers {
     val io: CoroutineDispatcher
 
     /**
-     * 主執行緒或與平台 UI/主循環相關的協程調度器。
+     * 用於權威狀態操作與流程推進的主執行緒調度器。
      */
     val main: CoroutineDispatcher
 

@@ -288,10 +288,7 @@ class AuthoritativeStatePersistenceDtoTest {
         assertEquals(12L, restored.automaticControlRevision)
     }
 
-    /**
-     * 驗證中斷基本思考時間能完整存檔與還原，不受存在於還原後 `Game.interruptedBaseMillisByPlayerId` 上的 mock 影響，
-     * 以免玩家退出重進 server session 後這筆權威資料實際逐行遺失。
-     */
+    /** 驗證中斷時尚未使用的基本思考時間能完整保存及還原。 */
     @Test
     fun `interrupted base time round-trips`() {
         val tableState = createGame()
@@ -354,7 +351,12 @@ class AuthoritativeStatePersistenceDtoTest {
         }
     }
 
-    /** 建立使用台麻規則的等待階段 Room。 */
+    /**
+     * 建立使用台麻規則的等待階段房間。
+     *
+     * @param id 房間識別碼，省略時隨機產生。
+     * @return 僅有房主的測試房間。
+     */
     private fun createRoom(id: Uuid = Uuid.random()): Room {
         val hostId = Uuid.random()
         return Room(
@@ -365,7 +367,12 @@ class AuthoritativeStatePersistenceDtoTest {
         )
     }
 
-    /** 建立使用台麻規則的最小進行中 Game。 */
+    /**
+     * 建立使用台麻規則的最小桌況。
+     *
+     * @param id 桌況識別碼，省略時隨機產生。
+     * @return 含一位玩家與空牌山的測試桌況。
+     */
     private fun createGame(id: Uuid = Uuid.random()): TableState {
         val player = MahjongPlayer(
             id = Uuid.random(),
@@ -382,7 +389,13 @@ class AuthoritativeStatePersistenceDtoTest {
         )
     }
 
-    /** 使用所有內建 registry 建立伺服器權威狀態 DTO。 */
+    /**
+     * 使用所有內建註冊表建立伺服器權威狀態 DTO。
+     *
+     * @param rooms 要保存的房間。
+     * @param games 要以預設流程設定包裝成遊戲後保存的桌況。
+     * @return 同批保存房間與遊戲的權威狀態 DTO。
+     */
     private fun createState(
         rooms: Collection<Room>,
         games: Collection<TableState>,
@@ -398,7 +411,7 @@ class AuthoritativeStatePersistenceDtoTest {
         json,
     )
 
-    /** 使用所有內建 registry 還原 Game 索引。 */
+    /** 使用所有內建註冊表還原遊戲，再取出以遊戲 ID 索引的桌況。 */
     private fun AuthoritativeStatePersistenceDto.toGames(): Map<Uuid, TableState> = toGames(
         ruleConfigRegistry,
         discardPileRegistry,

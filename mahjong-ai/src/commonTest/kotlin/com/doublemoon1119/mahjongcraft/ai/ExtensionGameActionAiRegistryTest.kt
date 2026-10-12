@@ -48,7 +48,12 @@ class ExtensionGameActionAiRegistryTest {
         assertNull(registry.registrationKeys.firstOrNull())
     }
 
-    /** 以 [config] 對局建立的決策情境。 */
+    /**
+     * 以 [config] 對局建立的決策情境。
+     *
+     * @param config 此測試局使用的規則設定。
+     * @return 對應規則設定的決策情境。
+     */
     private fun contextWith(config: MahjongRuleConfig): AiDecisionContext {
         val selfId = Uuid.random()
         val table = FakeTableStateFactory.create(players = listOf(FakeMahjongPlayerFactory.create(id = selfId)), config = config)

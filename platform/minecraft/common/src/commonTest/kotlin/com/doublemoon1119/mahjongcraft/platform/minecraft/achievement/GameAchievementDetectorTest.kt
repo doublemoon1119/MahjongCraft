@@ -25,6 +25,7 @@ import kotlin.uuid.Uuid
 
 /** 驗證 [GameAchievementDetector] 從已提交事實判定的通用成果與規則專屬成果分派。 */
 class GameAchievementDetectorTest {
+    /** 含內建規則模組的測試 registry。 */
     private val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
 
     /** 自摸的贏家取得胡牌與自摸。 */
@@ -165,11 +166,24 @@ class GameAchievementDetectorTest {
         assertEquals(game.matchId, result.single().matchId)
     }
 
+    /**
+     * 建立使用指定成果 resolver registry 的 detector。
+     *
+     * @param registry 規則專屬成果 resolver registry。
+     * @return 通用與規則成果合併 detector。
+     */
     private fun detector(registry: GameAchievementResolverRegistry = GameAchievementResolverRegistryImpl()) = GameAchievementDetector(
         moduleRegistry = moduleRegistry,
         resolverRegistry = registry,
     )
 
+    /**
+     * 建立只回傳指定結果的測試 resolver。
+     *
+     * @param ruleModuleId resolver 支援的規則模組 ID。
+     * @param resolve 測試用成果判定函式。
+     * @return 測試 resolver。
+     */
     private fun resolver(
         ruleModuleId: String,
         resolve: (CommittedGameFacts) -> Map<Uuid, Set<String>>,
@@ -179,10 +193,28 @@ class GameAchievementDetectorTest {
         override fun resolve(facts: CommittedGameFacts): Map<Uuid, Set<String>> = resolve(facts)
     }
 
+    /**
+     * 建立四人日麻測試對局。
+     *
+     * @return 使用四個不同座位玩家建立的測試對局。
+     */
     private fun fourPlayerGame(): Game = gameOf(listOf(Wind.EAST, Wind.SOUTH, Wind.WEST, Wind.NORTH).map { FakeMahjongPlayerFactory.create(initialSeat = it) })
 
+    /**
+     * 將指定玩家組成日麻測試對局。
+     *
+     * @param players 對局玩家。
+     * @return 測試對局。
+     */
     private fun gameOf(players: List<MahjongPlayer>): Game = Game(FakeTableStateFactory.create(players = players, config = RiichiRuleConfig()), GameFlowConfig())
 
+    /**
+     * 將歷史事實包裝成成果 detector 輸入。
+     *
+     * @param game 事實所屬對局。
+     * @param fact 要判定的歷史事實。
+     * @return 已提交對局事實。
+     */
     private fun facts(game: Game, fact: HistoryFact) = CommittedGameFacts(
         venueId = game.id,
         previousGame = game,
@@ -190,8 +222,21 @@ class GameAchievementDetectorTest {
         facts = listOf(HistoryEventDraft(null, fact)),
     )
 
+    /**
+     * 建立沒有結算欄位的測試和牌明細。
+     *
+     * @param playerId 和牌者 UUID。
+     * @return 對應的和牌明細。
+     */
     private fun winDetails(playerId: Uuid) = HistoryWinDetails(playerId = playerId, detailFields = emptyList())
 
+    /**
+     * 建立指定流局分類的回合摘要。
+     *
+     * @param game 回合所屬對局。
+     * @param classification 流局分類。
+     * @return 使用目前玩家分數的回合摘要。
+     */
     private fun roundSummary(game: Game, classification: RoundCompletionClassification) = RoundCompletionSummary(
         outcomeId = "mahjongcraft:test_draw",
         classification = classification,

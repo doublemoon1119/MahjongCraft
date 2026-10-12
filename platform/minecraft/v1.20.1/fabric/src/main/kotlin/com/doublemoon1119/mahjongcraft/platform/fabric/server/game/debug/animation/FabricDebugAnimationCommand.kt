@@ -73,7 +73,13 @@ class FabricDebugAnimationCommand(
         .then(tilePreviewSupport.withOptionalTileArgument(literal(KAN_ARGUMENT)) { source, tileArg -> previewMeld(source, MeldType.OPEN_KAN, tileArg) })
         .then(tilePreviewSupport.withOptionalTileArgument(literal(ADDED_KAN_ARGUMENT)) { source, tileArg -> previewAddedKanMeld(source, tileArg) })
 
-    /** `dice [2|3]`：臨時生成完整桌面骰子與聚合結果面板，結束後自行清除。 */
+    /**
+     * `dice [2|3]`：臨時生成完整桌面骰子與聚合結果面板，結束後自行清除。
+     *
+     * @param source 執行指令的玩家來源。
+     * @param diceCount 要預覽的骰子數量。
+     * @return Brigadier 指令結果碼。
+     */
     private fun previewDice(source: ServerCommandSource, diceCount: Int): Int {
         val player = source.player ?: return COMMAND_FAILURE
         val world = player.serverWorld
@@ -133,6 +139,10 @@ class FabricDebugAnimationCommand(
      * 動畫（起飛→落下→翻牌）飛到手牌列；不模擬多座位/多批次，全部視為單一批次、單一座位，理由見
      * [TileAnimationSteps.scheduleDealBatch] KDoc——它本身只吃單張牌與絕對時刻，不需要真正的多座位
      * 協調也能正確播放同一段動畫。
+     *
+     * @param source 執行指令的玩家來源。
+     * @param tileArg 可選的牌面資產引數；省略時使用支援元件的預設值。
+     * @return Brigadier 指令結果碼。
      */
     private fun previewDeal(source: ServerCommandSource, tileArg: String?): Int {
         val player = source.player ?: return COMMAND_FAILURE
@@ -174,6 +184,10 @@ class FabricDebugAnimationCommand(
     /**
      * `draw`：臨時生成一張牌在模擬牌牆位置（蓋牌），重播摸牌動畫（起飛→隱形傳送→翻面→落下）飛到
      * 摸牌位。
+     *
+     * @param source 執行指令的玩家來源。
+     * @param tileArg 可選的牌面資產引數；省略時使用支援元件的預設值。
+     * @return Brigadier 指令結果碼。
      */
     private fun previewDraw(source: ServerCommandSource, tileArg: String?): Int {
         val player = source.player ?: return COMMAND_FAILURE
@@ -194,7 +208,13 @@ class FabricDebugAnimationCommand(
         return COMMAND_SUCCESS
     }
 
-    /** `discard`：臨時生成一張手牌位置的立牌，重播捨牌動畫（連續可見拋物線飛行）飛到模擬牌河位置。 */
+    /**
+     * `discard`：臨時生成一張手牌位置的立牌，重播捨牌動畫（連續可見拋物線飛行）飛到模擬牌河位置。
+     *
+     * @param source 執行指令的玩家來源。
+     * @param tileArg 可選的牌面資產引數；省略時使用支援元件的預設值。
+     * @return Brigadier 指令結果碼。
+     */
     private fun previewDiscard(source: ServerCommandSource, tileArg: String?): Int {
         val player = source.player ?: return COMMAND_FAILURE
         val world = player.serverWorld
@@ -213,6 +233,11 @@ class FabricDebugAnimationCommand(
     /**
      * `meld <chi|pon|kan>`：臨時生成幾張手牌位置的立牌（吃/碰 3 張，槓 4 張），重播鳴牌動畫（連續可見
      * 拋物線飛行）飛到模擬副露區位置，姿態轉為面朝上。
+     *
+     * @param source 執行指令的玩家來源。
+     * @param type 要預覽的副露種類。
+     * @param tileArg 可選的牌面資產引數；省略時使用支援元件的預設值。
+     * @return Brigadier 指令結果碼。
      */
     private fun previewMeld(source: ServerCommandSource, type: MeldType, tileArg: String?): Int {
         val player = source.player ?: return COMMAND_FAILURE
@@ -255,6 +280,10 @@ class FabricDebugAnimationCommand(
      * `meld added_kan`：臨時生成一組碰（3 張）加上第 4 張加槓牌，重播鳴牌動畫飛到模擬副露區位置，並在
      * 其中一張牌上掛一次鳴牌牌面提示（[MahjongTileEntity.showMeldActionPopup]）——加槓的疊牌排列只在
      * 真正對局中湊出一次加槓才會觸發，加這個子指令讓它可以獨立重播測試。
+     *
+     * @param source 執行指令的玩家來源。
+     * @param tileArg 可選的牌面資產引數；省略時使用支援元件的預設值。
+     * @return Brigadier 指令結果碼。
      */
     private fun previewAddedKanMeld(source: ServerCommandSource, tileArg: String?): Int {
         val player = source.player ?: return COMMAND_FAILURE

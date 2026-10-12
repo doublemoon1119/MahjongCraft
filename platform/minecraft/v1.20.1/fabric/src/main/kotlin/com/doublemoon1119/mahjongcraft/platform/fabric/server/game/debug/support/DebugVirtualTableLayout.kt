@@ -15,21 +15,36 @@ import kotlin.uuid.Uuid
  *
  * 所有格位一律轉呼叫正式的 [MahjongTileTableLayout]，debug 預覽與正式對局因此共用同一份幾何規則。
  * 由 [DebugVirtualTableLayoutFactory] 依呼叫者所在座標建立。
+ *
+ * @property controllerX 虛擬 controller 的方塊 X 座標。
+ * @property controllerY 虛擬 controller 的方塊 Y 座標。
+ * @property controllerZ 虛擬 controller 的方塊 Z 座標。
+ * @property tableFacing 虛擬桌的朝向。
  */
 data class DebugVirtualTableLayout(
-    /** 虛擬 controller 的方塊 X 座標。 */
     val controllerX: Int,
-    /** 虛擬 controller 的方塊 Y 座標。 */
     val controllerY: Int,
-    /** 虛擬 controller 的方塊 Z 座標。 */
     val controllerZ: Int,
-    /** 虛擬桌的朝向。 */
     val tableFacing: MahjongTableFacing,
 ) {
-    /** 取得座位 0 的正式手牌格位。 */
+    /**
+     * 取得座位 0 的正式手牌格位。
+     *
+     * @param handSize 手牌張數。
+     * @param tileIndex 手牌中的格位索引。
+     * @return 指定手牌的世界格位。
+     */
     fun handPlacement(handSize: Int, tileIndex: Int): MahjongTileWallPlacement = handPlacement(DEBUG_SEAT_INDEX, handSize, tileIndex)
 
-    /** 取得指定座位的正式手牌格位，供多家和 showcase 使用。 */
+    /**
+     * 取得指定座位的正式手牌格位，供多家和 showcase 使用。
+     *
+     * @param seatIndex 座位索引。
+     * @param handSize 手牌張數。
+     * @param tileIndex 手牌中的格位索引。
+     * @param cornerYieldShift 沿桌角方向額外讓出的距離。
+     * @return 指定手牌的世界格位。
+     */
     fun handPlacement(
         seatIndex: Int,
         handSize: Int,
@@ -46,10 +61,19 @@ data class DebugVirtualTableLayout(
         cornerYieldShift = cornerYieldShift,
     )
 
-    /** 取得與正式桌面完全一致的 showcase 世界中心。 */
+    /**
+     * 取得與正式桌面完全一致的 showcase 世界中心。
+     *
+     * @return showcase 舞台中心的世界格位。
+     */
     fun showcaseStagePlacement(): MahjongTileWallPlacement = MahjongTileTableLayout.showcaseStagePlacement(controllerX, controllerY, controllerZ)
 
-    /** 取得座位 0 的正式摸牌格位。 */
+    /**
+     * 取得座位 0 的正式摸牌格位。
+     *
+     * @param standingTileCount 摸牌前手牌中的直立牌張數。
+     * @return 摸牌牌張的世界格位。
+     */
     fun drawnTilePlacement(standingTileCount: Int): MahjongTileWallPlacement = MahjongTileTableLayout.drawnTilePlacement(
         controllerX = controllerX,
         controllerY = controllerY,
@@ -59,7 +83,12 @@ data class DebugVirtualTableLayout(
         standingTileCount = standingTileCount,
     )
 
-    /** 取得標準 17 墩牌牆第一面的正式牌張格位。 */
+    /**
+     * 取得標準 17 墩牌牆第一面的正式牌張格位。
+     *
+     * @param tileIndex 牌牆牌張索引。
+     * @return 指定牌張的世界格位。
+     */
     fun wallPlacement(tileIndex: Int): MahjongTileWallPlacement = MahjongTileTableLayout.wallPlacement(
         controllerX = controllerX,
         controllerY = controllerY,
@@ -74,7 +103,12 @@ data class DebugVirtualTableLayout(
         ),
     )
 
-    /** 取得座位 0 第一張正式牌河格位。 */
+    /**
+     * 取得座位 0 第一張正式牌河格位。
+     *
+     * @param discardIndex 牌河中的牌張索引。
+     * @return 指定牌河牌張的世界格位。
+     */
     fun discardPlacement(discardIndex: Int): MahjongTileWallPlacement = MahjongTileTableLayout.discardPlacement(
         controllerX = controllerX,
         controllerY = controllerY,
@@ -87,7 +121,13 @@ data class DebugVirtualTableLayout(
         wallRemaining = true,
     )
 
-    /** 依正式副露游標、鳴牌來源與牌寬規則，取得單組吃、碰或明槓的格位。 */
+    /**
+     * 依正式副露游標、鳴牌來源與牌寬規則，取得單組吃、碰或明槓的格位。
+     *
+     * @param type 副露類型。
+     * @param tileCount 這組副露要排出的牌張數。
+     * @return 由桌角向手牌方向排列的格位。
+     */
     fun meldPlacements(type: MeldType, tileCount: Int): List<MahjongTileWallPlacement> {
         val sourceDirection = if (type == MeldType.CHI) RelativeDirection.Left else RelativeDirection.Across
         return singleMeld(sourceDirection, tileCount).placements
@@ -98,6 +138,9 @@ data class DebugVirtualTableLayout(
      *
      * 疊放位置與正式路徑相同：沿排列方向對齊橫置的鳴取牌，往桌子深度方向讓開一個
      * [MahjongTileTableLayout.ADDED_KAN_DEPTH_OFFSET]。
+     *
+     * @param tileCount 加槓疊放前的碰牌張數。
+     * @return 包含碰牌排列及加槓疊放位置的格位。
      */
     fun addedKanMeldPlacements(tileCount: Int): List<MahjongTileWallPlacement> {
         val meld = singleMeld(RelativeDirection.Across, tileCount)
@@ -114,7 +157,13 @@ data class DebugVirtualTableLayout(
         return meld.placements + addedPlacement
     }
 
-    /** 依正式副露游標排出單一組副露，並記下橫置鳴取牌的游標位移供加槓疊放使用。 */
+    /**
+     * 依正式副露游標排出單一組副露，並記下橫置鳴取牌的游標位移供加槓疊放使用。
+     *
+     * @param sourceDirection 鳴取牌來源方向。
+     * @param tileCount 副露牌張數。
+     * @return 每張牌的格位與橫置牌沿排列方向的位移。
+     */
     private fun singleMeld(sourceDirection: RelativeDirection, tileCount: Int): SingleMeldPlacements {
         val sidewaysSlot = MahjongTileTableLayout.sidewaysSlotIndex(sourceDirection, tileCount)
         var cursorAlong = 0.0
@@ -157,6 +206,7 @@ data class DebugVirtualTableLayout(
      *
      * @param melds 依鳴牌順序的副露。
      * @param seatIndex 副露所屬的座位。
+     * @return 以牌張識別碼索引的世界格位。
      */
     fun meldPlacements(
         melds: List<MahjongMeldTileGroup>,

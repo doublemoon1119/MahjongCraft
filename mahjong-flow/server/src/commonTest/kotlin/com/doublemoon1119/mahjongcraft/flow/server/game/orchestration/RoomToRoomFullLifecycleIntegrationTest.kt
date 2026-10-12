@@ -64,18 +64,46 @@ import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
 /**
- * 端對端整合測試：從創建房間、加入固定邏輯的 AI、開局、打完整場對局、自動退回房間，到重新開下一場
- * 對局——完整走一輪 Room → Game → Room → Game 的生命週期，全程透過真正的 use case 與共用同一個
- * [AuthoritativeStateStore]（比照 `MahjongAutoDrawServiceTest` 的 Fixtures 寫法，而不是像
- * `GameFlowCoordinatorTest`/`FullMatchIntegrationTest` 那樣用互不相通的假物件）。
+ * 驗證創建房間、加入 AI、開局、完成對局、返回房間及再次開局的完整生命週期。
+ * 房間與遊戲用例共用同一個 [AuthoritativeStateStore]，檢查房主、座位、準備狀態與新對局分數。
  *
- * 牌山本身仍是真隨機——`GameInitializer` 目前沒有任何可注入固定牌序的機制，這裡刻意不為了這支測試
- * 去加（純測試用途，暫無實際場景需要）。改用固定的 AI 決策邏輯（[FakeAiStrategy]，摸切、只在自然
- * 自摸/榮和時才拿）搭配不變量斷言（分數守恆、局數跑完、房間正確重建、能再次開局），驗證整條
- * 生命週期撐得住，而不是驗證某一局一定摸到什麼牌。
+ * 此測試未固定牌山與座位的隨機來源。固定的 [FakeAiStrategy] 只限制決策方式，
+ * 不保證每次產生相同對局；斷言著重狀態轉換，不依賴特定牌序。
  */
 class RoomToRoomFullLifecycleIntegrationTest {
 
+    /**
+     * 串接房間、遊戲與決策流程的測試依賴。
+     *
+     * @param historyRecordingEnabled 是否保留權威交易的待寫歷史事件。
+     * @property store 房間與對局共用的權威狀態儲存區。
+     * @property gameRepo 權威遊戲儲存庫。
+     * @property roomRepo 權威房間儲存庫。
+     * @property membershipRepo 玩家成員關係儲存庫。
+     * @property roomSnapshotRepo 房間快照儲存庫。
+     * @property roomEventPublisher 收集房間通知的測試發佈器。
+     * @property gameSnapshotRepo 遊戲快照儲存庫。
+     * @property gameEventPublisher 收集遊戲通知的測試發佈器。
+     * @property presentationPublisher 收集呈現請求的測試發佈器。
+     * @property winPresentationHandoff 保存和牌呈現交接資料的元件。
+     * @property presentationBusyGate 控制呈現忙碌狀態的測試閘門。
+     * @property moduleRegistry 提供內建規則的模組登錄表。
+     * @property snapshotSynchronizer 更新觀察者快照的服務。
+     * @property handSortPreferenceStore 玩家理牌偏好儲存區。
+     * @property createRoomUseCase 建立房間的用例。
+     * @property addAiPlayerUseCase 加入 AI 玩家的用例。
+     * @property startGameUseCase 將房間轉為對局的用例。
+     * @property postActionExhaustiveDrawResolverRegistry 動作完成後的途中流局解析器。
+     * @property winSettlementDetailResolverRegistry 和牌詳情解析器。
+     * @property extensionCommandExecutor 執行規則擴充命令的元件。
+     * @property router 分派玩家命令的路由。
+     * @property getLegalActionsUseCase 查詢合法動作的用例。
+     * @property aiStrategyRegistry 提供固定決策策略的登錄表。
+     * @property aiTurnDriver 建立 AI 決策情境與命令的驅動器。
+     * @property clock 決策計時使用的單調時鐘。
+     * @property decisionTimerManager 管理玩家決策時間的元件。
+     * @property coordinator 推進用例與局間流程的協調器。
+     */
     private class Fixtures(historyRecordingEnabled: Boolean = false) {
         val store = AuthoritativeStateStore(historyRecordingEnabled = historyRecordingEnabled, maxPendingHistoryEvents = 10_000)
         val gameRepo = GameRepositoryImpl(store)
@@ -252,12 +280,24 @@ class RoomToRoomFullLifecycleIntegrationTest {
         testFullLifecycle(RiichiGameLength.TwoWinds)
     }
 
+    /**
+     * 執行兩場完整對局並收集各場的待寫歷史事件。
+     *
+     * @param gameLength 兩場對局使用的賽程長度。
+     * @return 依對局完成順序排列的事件清單。
+     */
     internal suspend fun measureFullLifecycle(gameLength: RiichiGameLength): List<List<HistoryOutboxEvent>> {
         val measurements = mutableListOf<List<HistoryOutboxEvent>>()
         testFullLifecycle(gameLength) { measurements += it }
         return measurements
     }
 
+    /**
+     * 驗證同一房間連續完成兩場對局後仍可恢復房間狀態。
+     *
+     * @param gameLength 對局使用的賽程長度。
+     * @param recordMatch 每場結束後接收待寫歷史事件；null 表示不啟用歷史記錄。
+     */
     private suspend fun testFullLifecycle(
         gameLength: RiichiGameLength,
         recordMatch: ((List<HistoryOutboxEvent>) -> Unit)? = null,
@@ -328,8 +368,9 @@ class RoomToRoomFullLifecycleIntegrationTest {
      * `driveAutomatedPlayers` 不會替他行動——這正是端對端測試「真的有一個人類玩家」這件事，不能
      * 跳過。
      *
-     * @throws IllegalStateException 跑滿 [MAX_HOST_TURNS] 輪後，AI 與房主都沒有任何動作可做，
-     *   但對局依然沒有結束——代表流程真的卡住了。
+     * @param gameId 要推進的遊戲識別碼。
+     * @param hostId 由測試策略代為操作的真人房主識別碼。
+     * @throws IllegalStateException AI 推進後房主無可執行決策，或超過 [MAX_HOST_TURNS] 仍未結束。
      */
     private suspend fun Fixtures.playFullMatch(gameId: Uuid, hostId: Uuid) {
         val strategy = FakeAiStrategy()
@@ -345,10 +386,12 @@ class RoomToRoomFullLifecycleIntegrationTest {
 
     /**
      * 替 [hostId] 解出目前是否有反應／自己回合的決策要做，有的話比照 [AiTurnDriver] 的判斷順序
-     * （搶槓反應 → 捨牌反應 → 自己回合）用 [strategy] 決定命令並透過 [GameFlowCoordinator.invoke]
-     * 送出。
+     * （搶槓反應 → 捨牌反應 → 自己回合）用 [strategy] 決定命令並透過測試用的 [dispatchThenDrive] 送出。
      *
-     * @return 是否真的替房主送出了一個命令；沒有任何決策要做時回傳 false。
+     * @param gameId 要查詢與操作的遊戲識別碼。
+     * @param hostId 真人房主識別碼。
+     * @param strategy 替房主選擇動作的策略。
+     * @return 是否已送出命令；不代表命令執行成功。無決策或遊戲不存在時為 false。
      */
     private suspend fun Fixtures.driveHostTurn(gameId: Uuid, hostId: Uuid, strategy: MahjongAiStrategy): Boolean {
         val game = gameRepo.getGame(gameId) ?: return false
@@ -383,7 +426,19 @@ class RoomToRoomFullLifecycleIntegrationTest {
         return false
     }
 
-    /** 組出 [AiDecisionContext] 並問 [strategy] 該怎麼行動，邏輯與 [AiTurnDriver.decide] 完全對應。 */
+    /**
+     * 以指定快照及另外查詢的合法動作建立決策情境，直接呼叫策略。
+     *
+     * 此測試輔助函式不經 AI 決策執行器，也不提供正式驅動器的逾時與條件式提交保護。
+     *
+     * @param gameId 查詢合法動作的遊戲識別碼。
+     * @param game 用於建立觀察者快照的遊戲。
+     * @param playerId 要代為決策的玩家。
+     * @param phase 本次決策階段。
+     * @param strategy 選擇命令的策略。
+     * @param visibilityPolicy 建立玩家可見快照的政策。
+     * @return 策略選擇的命令。
+     */
     private suspend fun Fixtures.decideFor(
         gameId: Uuid,
         game: Game,
@@ -403,6 +458,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
         return strategy.decideGameCommand(context)
     }
 
+    /** 測試推進的安全上限。 */
     private companion object {
         /** [playFullMatch] 的最大輪次上限，避免測試真的卡住時無限迴圈。 */
         const val MAX_HOST_TURNS = 2000
@@ -414,7 +470,9 @@ class RoomToRoomFullLifecycleIntegrationTest {
      * 既有寫法，這裡關心的是完整生命週期撐不撐得住，不是驗證每種行牌路徑。
      */
     private class FakeAiStrategy : MahjongAiStrategy {
+        /** 策略註冊用識別碼。 */
         companion object {
+            /** 生命週期測試使用的固定決策策略。 */
             const val KEY = "fake-deterministic-lifecycle"
         }
 

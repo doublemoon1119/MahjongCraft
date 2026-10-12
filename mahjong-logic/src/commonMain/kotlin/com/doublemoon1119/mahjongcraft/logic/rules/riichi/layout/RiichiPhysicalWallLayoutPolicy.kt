@@ -38,7 +38,12 @@ class RiichiPhysicalWallLayoutPolicy(
         }
     }
 
-    /** 建立帶王牌分界，並將第一張嶺上牌預先放到缺口外側下層的開局布局。 */
+    /**
+     * 建立帶王牌分界，並將第一張嶺上牌預先放到缺口外側下層的開局布局。
+     *
+     * @param context 初始牌牆結構、開門位置與占用牌位置。
+     * @return 完成的初始布局，或說明無法建立布局的拒絕結果。
+     */
     override fun createInitialLayout(context: InitialPhysicalWallLayoutContext): InitialPhysicalWallLayoutDecision {
         val wallLayout = context.wallLayout
         val reservedTileCount = wallLayout.reservedWallTiles.size
@@ -68,7 +73,13 @@ class RiichiPhysicalWallLayoutPolicy(
         return InitialPhysicalWallLayoutDecision.Completed(TileWallPhysicalLayout(placements))
     }
 
-    /** 將日麻王牌依「嶺 1、嶺 2、其餘完整牌墩」投影到開門面的連續軌道。 */
+    /**
+     * 依軌道位置建立各保留牌的初始實體布局。
+     *
+     * @param wallLayout 開局牌牆位置與保留牌清單。
+     * @param track 保留牌排列所在的單側軌道。
+     * @return 以牌 UUID 索引的實體位置。
+     */
     private fun createReservedPlacements(
         wallLayout: TileWallLayoutResult,
         track: SingleSideReservedWallTrack,
@@ -85,6 +96,9 @@ class RiichiPhysicalWallLayoutPolicy(
 
     /**
      * 依補牌完成次數（槓與拔北合計）重排活牌末端：奇數次先形成半墩，偶數次再把剩餘牌疊回完整一墩。
+     *
+     * @param context 補牌動作前後的桌況及目前牌牆布局。
+     * @return 完成的牌牆布局與移動階段，或拒絕結果。
      */
     override fun resolveTransition(context: PhysicalWallLayoutTransitionContext): PhysicalWallLayoutTransitionDecision {
         if (context.action !is GameAction.Kan && context.action != PULL_NORTH_GAME_ACTION) return unchangedOrRemoveDepartedTiles(context)
@@ -130,7 +144,15 @@ class RiichiPhysicalWallLayoutPolicy(
         )
     }
 
-    /** 奇數次補牌時，先讓下層補充牌滑入王牌區，再讓同墩上層活牌下降。 */
+    /**
+     * 奇數次補牌時，先讓下層補充牌滑入王牌區，再讓同墩上層活牌下降。
+     *
+     * @param context 補牌動作前後的桌況及目前牌牆布局。
+     * @param drawNumber 本局已完成的補牌次數。
+     * @param replenishmentId 從活牌尾端補入的牌 UUID。
+     * @param placements 移除本次摸取牌後的剩餘牌位置。
+     * @return 兩階段移動；位置不符合預期時為 null。
+     */
     private fun resolveOddDrawPhases(
         context: PhysicalWallLayoutTransitionContext,
         drawNumber: Int,
@@ -153,7 +175,15 @@ class RiichiPhysicalWallLayoutPolicy(
         )
     }
 
-    /** 偶數次補牌時，把前次已下降的上層活牌移入王牌區並疊在前一張補充牌上。 */
+    /**
+     * 偶數次補牌時，把前次已下降的上層活牌移入王牌區並疊在前一張補充牌上。
+     *
+     * @param context 補牌動作前後的桌況及目前牌牆布局。
+     * @param drawNumber 本局已完成的補牌次數。
+     * @param replenishmentId 從活牌尾端補入的牌 UUID。
+     * @param placements 移除本次摸取牌後的剩餘牌位置。
+     * @return 本次牌張移動；位置不符合預期時為 null。
+     */
     private fun resolveEvenDrawMoves(
         context: PhysicalWallLayoutTransitionContext,
         drawNumber: Int,
@@ -172,7 +202,14 @@ class RiichiPhysicalWallLayoutPolicy(
         )
     }
 
-    /** 依補牌序號取得開門面軌道尾端的補入位置；每兩次補牌共用同一墩。 */
+    /**
+     * 依補牌序號取得開門面軌道尾端的補入位置；每兩次補牌共用同一墩。
+     *
+     * @param context 補牌動作前後的桌況及目前牌牆布局。
+     * @param drawNumber 本局已完成的補牌次數。
+     * @param layer 補入位置所在的牌層。
+     * @return 補牌位置；無法取得下一張保留牌或推導出無效位置時為 null。
+     */
     private fun replenishmentDestination(
         context: PhysicalWallLayoutTransitionContext,
         drawNumber: Int,
@@ -194,7 +231,12 @@ class RiichiPhysicalWallLayoutPolicy(
         )
     }
 
-    /** 不需要補牌的動作只移除已離開牌牆的牌，不建立補位移動階段。 */
+    /**
+     * 不需要補牌的動作只移除已離開牌牆的牌，不建立補位移動階段。
+     *
+     * @param context 動作前後的桌況及目前牌牆布局。
+     * @return 未變更、移除離牆牌後的布局，或拒絕結果。
+     */
     private fun unchangedOrRemoveDepartedTiles(
         context: PhysicalWallLayoutTransitionContext,
     ): PhysicalWallLayoutTransitionDecision {
@@ -212,7 +254,12 @@ class RiichiPhysicalWallLayoutPolicy(
         )
     }
 
-    /** 從完整四面結構推導每一面的墩數，並拒絕不對稱或空布局。 */
+    /**
+     * 從完整四面結構推導每一面的墩數，並拒絕不對稱或空布局。
+     *
+     * @receiver 待檢查的完整牌牆結構。
+     * @return 每面墩數；結構不對稱、空白或不完整時為 null。
+     */
     private fun TileWallLayoutResult.stacksPerSideOrNull(): Int? {
         val counts = structure.values.groupBy { it.side }.values.map { positions -> positions.maxOf { it.stack } + 1 }
         return counts.distinct().singleOrNull()
@@ -225,6 +272,9 @@ class RiichiPhysicalWallLayoutPolicy(
     /**
      * 開局時王牌使用的軌道墩數：嶺 1、嶺 2 各佔一格，其餘牌兩張一墩。其後的墩仍屬活牌，補牌後才補入，
      * 每兩次補牌使用一墩。
+     *
+     * @param reservedTileCount 王牌保留牌數。
+     * @return 開局時保留牌所占用的軌道墩數。
      */
     private fun initialReservedStackCount(reservedTileCount: Int): Int = reservedTileCount / 2 + 1
 

@@ -181,7 +181,11 @@ class ClientPlayerProfileResolver {
         }
     }
 
-    /** 將失敗 skin 請求放入有界索引。 */
+    /**
+     * 將失敗 skin 請求放入有界索引。
+     *
+     * @param playerId 無法取得 skin 的玩家 UUID。
+     */
     private fun rememberSkinFailure(playerId: Uuid) = synchronized(skinFailures) {
         while (skinFailures.size >= SKIN_FAILURE_LIMIT) skinFailures.remove(skinFailures.first())
         skinFailures.add(playerId)

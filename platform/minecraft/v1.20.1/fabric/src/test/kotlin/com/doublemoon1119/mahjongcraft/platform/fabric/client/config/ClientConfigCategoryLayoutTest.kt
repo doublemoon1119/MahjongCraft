@@ -6,6 +6,7 @@ import kotlin.test.assertTrue
 
 /** 小畫面分類列數改變時，欄位起點仍位於最後一排按鈕下方。 */
 class ClientConfigCategoryLayoutTest {
+    /** 五個分類分成三列，欄位起點位於第三列按鈕下方。 */
     @Test
     fun `five categories use three compact rows`() {
         assertEquals(3, ClientConfigCategoryLayout.compactRowCount(5))
@@ -15,6 +16,7 @@ class ClientConfigCategoryLayoutTest {
         assertTrue(top >= lastButtonTop + 20)
     }
 
+    /** 四個分類只需兩列，新增第五個分類會再向下移一列高度。 */
     @Test
     fun `four categories use only two compact rows`() {
         assertEquals(2, ClientConfigCategoryLayout.compactRowCount(4))

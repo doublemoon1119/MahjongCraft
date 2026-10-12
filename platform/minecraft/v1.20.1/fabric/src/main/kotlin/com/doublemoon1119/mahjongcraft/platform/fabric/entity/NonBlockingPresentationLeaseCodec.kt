@@ -18,11 +18,21 @@ internal object NonBlockingPresentationLeaseCodec {
     /** 沒有豁免時的欄位值。 */
     const val NO_LEASE: Long = 0L
 
-    /** 把豁免到期時間寫進 [nbt]。 */
+    /**
+     * 把豁免到期時間寫進 [nbt]。
+     *
+     * @param nbt 目的 NBT compound。
+     * @param untilGameTime 豁免 lease 的絕對到期時間。
+     */
     fun write(nbt: NbtCompound, untilGameTime: Long) {
         nbt.putLong(NBT_KEY, untilGameTime)
     }
 
-    /** 從 [nbt] 讀回豁免到期時間；欄位不存在或型別不符時回傳 [NO_LEASE]。 */
+    /**
+     * 從 [nbt] 讀回豁免到期時間；欄位不存在或型別不符時回傳 [NO_LEASE]。
+     *
+     * @param nbt 含豁免到期欄位的 NBT compound。
+     * @return 豁免的絕對到期時間；缺少欄位時使用 [NO_LEASE]。
+     */
     fun read(nbt: NbtCompound): Long = nbt.getLong(NBT_KEY)
 }

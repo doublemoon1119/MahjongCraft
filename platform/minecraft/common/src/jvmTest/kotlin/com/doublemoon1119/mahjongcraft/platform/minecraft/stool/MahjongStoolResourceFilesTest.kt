@@ -127,27 +127,54 @@ class MahjongStoolResourceFilesTest {
         assertEquals(1, recipe.resultCount())
     }
 
-    /** 讀取模型的指定材質路徑。 */
+    /**
+     * 讀取模型的指定材質路徑。
+     *
+     * @param name textures 物件中的材質別名。
+     * @return 該別名指向的材質路徑。
+     */
     private fun JsonObject.texture(name: String): String = getValue("textures").jsonObject
         .getValue(name).jsonPrimitive.content
 
-    /** 讀取指定 blockstate variant 的水平旋轉角度。 */
+    /**
+     * 讀取指定 blockstate variant 的水平旋轉角度。
+     *
+     * @param variant 要讀取的 variant 名稱。
+     * @return 該 variant 的 Y 軸旋轉角度。
+     */
     private fun JsonObject.rotation(variant: String): Int = getValue(variant).jsonObject
         .getValue("y").jsonPrimitive.content.toInt()
 
-    /** 讀取有形配方指定符號的 ingredient。 */
+    /**
+     * 讀取有形配方指定符號的 ingredient。
+     *
+     * @param symbol 配方 key 中的符號。
+     * @return 對應的 ingredient JSON object。
+     */
     private fun JsonObject.keyEntry(symbol: String): JsonObject = getValue("key").jsonObject
         .getValue(symbol).jsonObject
 
-    /** 讀取配方輸出的物品 ID。 */
+    /**
+     * 讀取配方輸出的物品 ID。
+     *
+     * @return recipe result 中的 item ID。
+     */
     private fun JsonObject.resultItem(): String = getValue("result").jsonObject
         .getValue("item").jsonPrimitive.content
 
-    /** 讀取配方輸出的物品數量。 */
+    /**
+     * 讀取配方輸出的物品數量。
+     *
+     * @return recipe result 中的物品數量。
+     */
     private fun JsonObject.resultCount(): Int = getValue("result").jsonObject
         .getValue("count").jsonPrimitive.content.toInt()
 
-    /** 將 block model elements 轉成可直接比對的 cuboids。 */
+    /**
+     * 將 block model elements 轉成可直接比對的 cuboids。
+     *
+     * @return 依資源順序排列的 cuboid 清單。
+     */
     private fun JsonObject.modelCuboids(): List<ModelCuboid> = getValue("elements").jsonArray.map { element ->
         val objectValue = element.jsonObject
         ModelCuboid(
@@ -156,12 +183,21 @@ class MahjongStoolResourceFilesTest {
         )
     }
 
-    /** 將 JSON 座標陣列轉為小數清單。 */
+    /**
+     * 將 JSON 座標陣列轉為小數清單。
+     *
+     * @return 座標的小數值清單。
+     */
     private fun JsonArray.decimalCoordinates(): List<Double> = map { coordinate ->
         coordinate.jsonPrimitive.content.toDouble()
     }
 
-    /** 從測試 classpath 載入並解析指定 JSON object。 */
+    /**
+     * 從測試 classpath 載入並解析指定 JSON object。
+     *
+     * @param resourcePath classpath 資源路徑。
+     * @return 解析後的 JSON object。
+     */
     private fun loadJson(resourcePath: String): JsonObject {
         val content = checkNotNull(javaClass.getResourceAsStream(resourcePath)) {
             "Resource not found: $resourcePath"

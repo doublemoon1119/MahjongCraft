@@ -109,7 +109,12 @@ class PersistenceMigrationRegistryTest {
         }
     }
 
-    /** 建立只包含測試標記的指定版本 envelope。 */
+    /**
+     * 建立只包含測試標記的指定版本存檔封套。
+     *
+     * @param version 測試使用的格式版本。
+     * @return 帶有指定版本與測試標記的封套。
+     */
     private fun envelope(version: Int): PersistenceEnvelopeDto = PersistenceEnvelopeDto(
         schemaVersion = version,
         state = buildJsonObject { put("value", true) },

@@ -10,6 +10,7 @@ import kotlin.test.assertNotNull
 
 /** 驗證 `decision_hud` 預覽情境使用正式對局登記過的動作。 */
 class DecisionHudPreviewTest {
+    /** 預覽情境所需的內建動作用語登記表。 */
     private val vocabulary = GameActionVocabularyRegistryImpl().apply {
         BuiltInMinecraftMahjongExtension.registerGameActionVocabulary(this)
         BundledRiichiMinecraftExtension.registerGameActionVocabulary(this)

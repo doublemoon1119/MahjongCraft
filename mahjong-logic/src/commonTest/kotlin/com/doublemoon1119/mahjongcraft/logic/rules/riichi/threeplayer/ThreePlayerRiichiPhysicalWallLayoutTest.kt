@@ -28,6 +28,7 @@ import kotlin.uuid.Uuid
 
 /** 三人日麻 18 張王牌的實體牌牆布局：開局與八次補牌（拔北與槓交錯）都不重疊、王牌與活牌之間留有分界。 */
 class ThreePlayerRiichiPhysicalWallLayoutTest {
+    /** 受測三人日麻牌牆與補牌設定。 */
     private val config = ThreePlayerRiichiRuleConfig()
 
     /** 驗證每一種骰子總和的開門位置都能建立布局，並完成八次補牌而不讓牌重疊。 */
@@ -108,6 +109,7 @@ class ThreePlayerRiichiPhysicalWallLayoutTest {
     /** 不依賴實際手牌內容的暗槓動作。 */
     private fun kanAction(): GameAction.Kan = GameAction.Kan(GameAction.KanType.CLOSED_KAN, Uuid.random(), emptyList())
 
+    /** 實體牌牆開局發牌使用的牌數常數。 */
     private companion object {
         /** 三人日麻開局發牌後離開牌牆的牌張數（每人 13 張加莊家第一次摸牌）。 */
         const val INITIAL_DEAL_TILE_COUNT = 40

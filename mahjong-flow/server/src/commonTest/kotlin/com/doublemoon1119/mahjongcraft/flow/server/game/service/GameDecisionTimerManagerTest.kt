@@ -19,7 +19,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
-/** [GameDecisionTimerManager] 的決策保留與 B 結算測試。 */
+/** [GameDecisionTimerManager] 的決策保留與剩餘思考時間結算測試。 */
 class GameDecisionTimerManagerTest {
     /** 驗證一位玩家回應時保留其他 reaction timer，並只結算已完成玩家的保留思考時間。 */
     @Test
@@ -109,14 +109,7 @@ class GameDecisionTimerManagerTest {
         )
     }
 
-    /**
-     * 驗證玩家在基本思考時間到一半時退出兩人麻將進金重進後（比照新 server session），新計時器接續中斷時剩餘的
-     * 基本思考時間，而不是重新取得完整基本思考時間。
-     *
-     * 重現實際 bug：玩家輪到自己行動時退出單人遊戲後重進，此前 `baseDurationMillis` 倒數會重新跑完整基本思考時間，
-     * 而不是接續 `interruptedBaseMillisByPlayerId` 剩餘量。`settleAll()` 比照真實 server 停止流程寫回中斷基本思考時間，
-     * 另建一個不共享 runtime timer 的新 manager 實例比照全新 session。
-     */
+    /** 驗證結算計時後重建管理器，會接續已保存的基本思考時間，而非重新給滿；不執行平台存檔或重啟。 */
     @Test
     fun `test session restart resumes interrupted base time instead of granting a fresh one`() = runTest {
         val fixtures = Fixtures()
@@ -271,11 +264,7 @@ class GameDecisionTimerManagerTest {
         assertEquals(setOf(playerId), updatedGame.forcedAutoPlayPlayerIds)
     }
 
-    /**
-     * 驗證玩家離開 [PlayerDecisionPhase.ROUND_PREPARATION]（例如提交選擇）結算舊 timer 時，不會把
-     * 「這個階段自己假裝 0 保留」算出的剩餘保留思考時間寫回共用池，玩家原本存下的保留思考時間維持
-     * 不變。
-     */
+    /** 驗證離開開局準備階段時，不把此階段未使用的保留時間零值寫回玩家共用時間池。 */
     @Test
     fun `test leaving round preparation does not overwrite reserve pool`() = runTest {
         val fixtures = Fixtures()
@@ -323,7 +312,7 @@ class GameDecisionTimerManagerTest {
         assertEquals(2_500L, fixtures.manager.getStatuses(game.id).getValue(playerId).time.baseRemainingMillis)
     }
 
-    /** 驗證造成 blocking presentation 的已完成玩家不會把舊決策基本時間帶進下一次決策。 */
+    /** 驗證暫停時已完成決策的玩家，不會把舊決策的基本時間帶進下一次決策。 */
     @Test
     fun `test pause does not preserve completed player decision`() = runTest {
         val fixtures = Fixtures()
@@ -376,7 +365,12 @@ class GameDecisionTimerManagerTest {
             clock = clock,
         )
 
-        /** 建立指定合資格玩家的捨牌反應遊戲。 */
+        /**
+         * 建立指定合資格玩家的捨牌反應遊戲。
+         *
+         * @param eligiblePlayerIds 可回應捨牌反應的玩家識別碼。
+         * @return 含指定待處理反應的測試遊戲。
+         */
         fun reactionGame(vararg eligiblePlayerIds: Uuid): Game {
             val players = eligiblePlayerIds.map { FakeMahjongPlayerFactory.create(id = it) }
             return Game(
@@ -392,7 +386,12 @@ class GameDecisionTimerManagerTest {
             )
         }
 
-        /** 建立單一玩家剛摸到牌、輪到自己一般回合的遊戲，比照使用者實際碰到的情境。 */
+        /**
+         * 建立單一玩家剛摸到牌、輪到自己一般回合的遊戲。
+         *
+         * @param playerId 玩家識別碼。
+         * @return 該玩家持有摸牌且輪到自己回合的測試遊戲。
+         */
         fun ownTurnGame(playerId: Uuid): Game {
             val player = FakeMahjongPlayerFactory.create(
                 id = playerId,
@@ -404,7 +403,12 @@ class GameDecisionTimerManagerTest {
             )
         }
 
-        /** 建立單一玩家正在 [PlayerDecisionPhase.ROUND_PREPARATION] 的遊戲。 */
+        /**
+         * 建立單一玩家正在 [PlayerDecisionPhase.ROUND_PREPARATION] 的遊戲。
+         *
+         * @param playerId 玩家識別碼。
+         * @return 該玩家等待局前確認的測試遊戲。
+         */
         fun preparationGame(playerId: Uuid): Game {
             val player = FakeMahjongPlayerFactory.create(id = playerId)
             return Game(

@@ -204,7 +204,11 @@ class MinecraftLanguageFilesTest {
                 ?.takeIf { it.startsWith(MinecraftModMetadata.MOD_ID + ".") && !it.endsWith(".") }
         }
 
-    /** 收集內建設定 schema 的分類、欄位、說明、單位與單選選項翻譯鍵。 */
+    /**
+     * 收集內建設定 schema 的分類、欄位、說明、單位與單選選項翻譯鍵。
+     *
+     * @return 所有內建設定所需翻譯鍵的集合。
+     */
     private fun builtInGameConfigTranslationKeys(): Set<String> {
         val registry = GameConfigPresentationRegistryImpl().apply {
             BundledMinecraftMahjongExtensions.all.forEach { it.registerGameConfigPresentations(this) }
@@ -231,7 +235,12 @@ class MinecraftLanguageFilesTest {
         }
     }
 
-    /** 從測試 classpath 載入並解析指定 Minecraft 語系資源。 */
+    /**
+     * 從測試 classpath 載入並解析指定 Minecraft 語系資源。
+     *
+     * @param locale Minecraft 語系代碼。
+     * @return 語系資源的 JSON object。
+     */
     private fun loadTranslations(locale: String): JsonObject {
         val resourcePath = "/assets/mahjongcraft/lang/$locale.json"
         val content = checkNotNull(javaClass.getResourceAsStream(resourcePath)) {

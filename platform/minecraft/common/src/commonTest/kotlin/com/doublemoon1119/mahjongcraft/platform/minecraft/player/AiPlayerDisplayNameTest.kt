@@ -6,6 +6,7 @@ import kotlin.uuid.Uuid
 
 /** [aiPlayerDisplayName] 的穩定 AI 順序測試。 */
 class AiPlayerDisplayNameTest {
+    /** 顯示名稱依 AI 專用順序編號，而非包含一般玩家的全體順序。 */
     @Test
     fun `test AI names use AI-only order`() {
         val first = Uuid.random()
@@ -15,6 +16,7 @@ class AiPlayerDisplayNameTest {
         assertEquals("AI 2", aiPlayerDisplayName(second, listOf(first, second)))
     }
 
+    /** 缺少 AI 順序資料時，以 UUID 前綴產生穩定名稱。 */
     @Test
     fun `test missing AI order uses stable UUID fallback`() {
         val playerId = Uuid.parse("12345678-1234-1234-1234-123456789abc")

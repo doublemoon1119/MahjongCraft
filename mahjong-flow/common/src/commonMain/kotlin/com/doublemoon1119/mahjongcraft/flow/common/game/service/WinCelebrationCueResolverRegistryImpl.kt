@@ -4,7 +4,10 @@ import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueResult
 
 /** [WinCelebrationCueResolverRegistry] 的記憶體實作。 */
 class WinCelebrationCueResolverRegistryImpl : WinCelebrationCueResolverRegistry {
+    /** 依規則模組 ID 登記的胡牌展示理由 resolver。 */
     private val resolvers = mutableMapOf<String, WinCelebrationCueResolver>()
+
+    /** registry 是否已凍結並禁止新增 resolver。 */
     private var frozen = false
 
     override val registrationKeys: Set<String> get() = resolvers.keys.toSet()

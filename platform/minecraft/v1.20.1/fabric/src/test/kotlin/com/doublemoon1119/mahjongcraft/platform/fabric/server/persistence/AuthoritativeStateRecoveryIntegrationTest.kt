@@ -449,7 +449,11 @@ class AuthoritativeStateRecoveryIntegrationTest {
             AiDecisionExecutor.direct(),
         )
 
-        /** 將 [source] 寫入 NBT，再由新 adapter 載入目前 runtime。 */
+        /**
+         * 將 [source] 寫入 NBT，再由新 adapter 載入目前 runtime。
+         *
+         * @param source 要序列化並恢復的權威狀態快照。
+         */
         suspend fun restore(source: AuthoritativeStateSnapshot) {
             val savedState = MahjongAuthoritativePersistentState.create(codec).apply { update(source) }
             val nbt = savedState.writeNbt(NbtCompound())
@@ -458,7 +462,12 @@ class AuthoritativeStateRecoveryIntegrationTest {
             restorer.restore(restored)
         }
 
-        /** 建立使用正式日麻 module 初始化的牌局。 */
+        /**
+         * 建立使用正式日麻 module 初始化的牌局。
+         *
+         * @param playerIds 牌局中的玩家 UUID；省略時建立四位隨機玩家。
+         * @return 已初始化的牌桌狀態。
+         */
         fun createGame(
             playerIds: List<Uuid> = List(4) { Uuid.random() },
         ): TableState = GameInitializer.initialize(
@@ -467,7 +476,14 @@ class AuthoritativeStateRecoveryIntegrationTest {
             module = moduleRegistry.getModule(RiichiRuleConfig()),
         ).tableState
 
-        /** 將單一 [state] 包裝成權威 snapshot，可選帶上進行中的開局準備步驟與由 AI 操控的玩家。 */
+        /**
+         * 將單一牌桌狀態包裝成權威 snapshot，可選帶上進行中的開局準備步驟與 AI 玩家。
+         *
+         * @param state 要保存的牌桌狀態。
+         * @param pendingRoundPreparation 尚未完成的開局準備資料；預設沒有準備步驟。
+         * @param aiPlayerStrategyKeys 由玩家 UUID 對應至 AI 策略 key 的映射；預設沒有 AI 玩家。
+         * @return 僅包含此牌局的權威 snapshot。
+         */
         fun snapshotWith(
             state: TableState,
             pendingRoundPreparation: PendingRoundPreparation? = null,
@@ -483,7 +499,13 @@ class AuthoritativeStateRecoveryIntegrationTest {
             ),
         )
 
-        /** 使用恢復後 repository 執行摸牌。 */
+        /**
+         * 使用恢復後 repository 執行摸牌。
+         *
+         * @param gameId 牌局 UUID。
+         * @param playerId 提交摸牌的玩家 UUID。
+         * @return 摸牌 use case 的結果。
+         */
         suspend fun drawTile(gameId: Uuid, playerId: Uuid): Outcome<Unit, *> = DrawTileUseCase(
             gameRepository,
             moduleRegistry,
@@ -492,7 +514,13 @@ class AuthoritativeStateRecoveryIntegrationTest {
             FakeGamePresentationPublisher(),
         )(gameId, playerId)
 
-        /** 使用恢復後 repository 提交捨牌反應 Pass。 */
+        /**
+         * 使用恢復後 repository 提交捨牌反應 Pass。
+         *
+         * @param gameId 牌局 UUID。
+         * @param playerId 提交反應的玩家 UUID。
+         * @return 捨牌反應 use case 的結果。
+         */
         suspend fun respondToDiscard(gameId: Uuid, playerId: Uuid): Outcome<Unit, *> = RespondToDiscardUseCase(
             gameRepository,
             moduleRegistry,
@@ -509,7 +537,13 @@ class AuthoritativeStateRecoveryIntegrationTest {
             postActionExhaustiveDrawResolverRegistry = PostActionExhaustiveDrawResolverRegistry().apply { freeze() },
         )(gameId, playerId, GameAction.Pass)
 
-        /** 使用恢復後 repository 提交搶槓反應 Pass。 */
+        /**
+         * 使用恢復後 repository 提交搶槓反應 Pass。
+         *
+         * @param gameId 牌局 UUID。
+         * @param playerId 提交反應的玩家 UUID。
+         * @return 搶槓反應 use case 的結果。
+         */
         suspend fun respondToRobbing(gameId: Uuid, playerId: Uuid): Outcome<Unit, *> = RespondToRobbingUseCase(
             gameRepository,
             moduleRegistry,

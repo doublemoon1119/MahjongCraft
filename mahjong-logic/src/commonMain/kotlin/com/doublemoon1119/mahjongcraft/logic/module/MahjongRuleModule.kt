@@ -70,6 +70,8 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      *
      * 控制 ID 只宣告能力；如何依合法動作解析並提交自動決策由呼叫端負責。沒有本局自動操作能力的
      * 規則沿用空集合。
+     *
+     * @return 此規則支援的自動操作控制 ID 集合。
      */
     fun getSupportedAutomaticControlIds(): Set<String> = emptySet()
 
@@ -77,6 +79,8 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * 建立解析本局自動操作行為的規則 policy。
      *
      * 沒有自動操作行為的規則沿用 no-op；通用呼叫端不得自行套用其他玩法的動作分類。
+     *
+     * @return 此規則的自動操作 policy。
      */
     fun createAutomaticControlPolicy(): AutomaticControlPolicy = NoOpAutomaticControlPolicy
 
@@ -84,6 +88,8 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * 建立整場對局的局位與終局 progression policy。
      *
      * 未覆寫的規則沿用 [MahjongRuleConfig.gameLength] 的固定局數，不啟用延長賽。
+     *
+     * @return 此規則的局位與終局 policy。
      */
     fun createMatchProgressionPolicy(): MatchProgressionPolicy = FixedLengthMatchProgressionPolicy(config.scheduledRoundCount)
 
@@ -107,6 +113,8 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * 建立本規則每局用來指派自風／門風的 policy。
      *
      * 預設以莊家為東並依實際玩家數分配風位；使用開門定風或其他風位規則的模組可覆寫。
+     *
+     * @return 此規則的座位風指派 policy。
      */
     fun createSeatWindAssignmentPolicy(): SeatWindAssignmentPolicy = DealerAnchoredSeatWindAssignmentPolicy
 
@@ -124,6 +132,8 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      *
      * 未覆寫的規則維持 [TileWallLayout] 產生的基本格位，只移除已離開牌牆的牌，不建立特定玩法的
      * 王牌分界、特殊嶺上牌位置或補牌重排。
+     *
+     * @return 此規則的實體牌牆布局 policy。
      */
     fun createPhysicalWallLayoutPolicy(): PhysicalWallLayoutPolicy = ContinuousPhysicalWallLayoutPolicy
 
@@ -131,6 +141,8 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * 建立目前規則用於一般牌面比較的解讀 policy。
      *
      * 沒有規則特有等價牌面的模組可使用預設原樣實作；共用流程不得自行判斷特定 extension ID。
+     *
+     * @return 此規則的牌面解讀 policy。
      */
     fun createTileInterpretationPolicy(): TileInterpretationPolicy = IdentityTileInterpretationPolicy
 
@@ -138,6 +150,8 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * 建立動作完成後的規則特有補牌 policy。
      *
      * 未提供補牌能力的規則使用安全拒絕實作，不會自動套用其他玩法的補牌來源或張數。
+     *
+     * @return 此規則的補牌 policy。
      */
     fun createSupplementalDrawPolicy(): SupplementalDrawPolicy = UnsupportedSupplementalDrawPolicy
 
@@ -145,6 +159,8 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * 建立適用於該規則的牌牆公開時序 policy。
      *
      * 沒有額外公開時序的規則使用 no-op 實作，不會套用其他玩法的行為。
+     *
+     * @return 此規則的牌牆公開時序 policy。
      */
     fun createWallRevealPolicy(): WallRevealPolicy = NoOpWallRevealPolicy
 
@@ -186,6 +202,8 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * 建立適用於該規則的規則查詢，供需要依和牌價值、宣告效果與不能榮和的牌做決策的呼叫端使用。
      *
      * 沒有專屬查詢的規則沿用 [NeutralPositionRules]。
+     *
+     * @return 此規則的局面查詢規則。
      */
     fun createPositionRules(): PositionRules = NeutralPositionRules
 
@@ -410,6 +428,7 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * @param tableState 途中流局成立時的桌況。
      * @param declarerId 主動宣告者 Uuid；系統判定的途中流局為 null。
      * @param reason 本次途中流局原因。
+     * @return 需要公開的玩家手牌資訊；預設不公開任何手牌。
      */
     fun resolveAbortiveDrawRevealedHands(
         tableState: TableState,
@@ -456,6 +475,10 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * 取得可公開給全桌與旁觀者的玩家狀態；預設不公開任何 indicator。
      *
      * 實作不得回傳振聽、手牌或其他只有本人可見的資訊。
+     *
+     * @param tableState 目前的權威桌況。
+     * @param player 要查詢公開狀態的玩家。
+     * @return 可公開給全桌與旁觀者的玩家狀態。
      */
     fun getPublicPlayerIndicators(tableState: TableState, player: MahjongPlayer): List<PublicPlayerIndicator> = emptyList()
 
@@ -464,6 +487,8 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * 用於回合結束的名次升降呈現，不是終局排名——同分決勝的座位基準不同，見 [compareForMatchRanking]。
      *
      * 這是所有規則共用的預設慣例，規則可以整個覆寫成自己的排名邏輯（甚至完全不同的判準）。
+     *
+     * @return 同局名次的排序器。
      */
     fun compareForRoundRanking(): Comparator<RankablePlayer> {
         val byScoreDescending = compareByDescending<RankablePlayer> { it.score }
@@ -475,6 +500,8 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * 對局開始時就固定、不會隨連莊/過莊改變，是最終名次同分決勝的傳統依據。
      *
      * 這是所有規則共用的預設慣例，規則可以整個覆寫成自己的排名邏輯（甚至完全不同的判準）。
+     *
+     * @return 整場對局最終名次的排序器。
      */
     fun compareForMatchRanking(): Comparator<RankablePlayer> {
         val byScoreDescending = compareByDescending<RankablePlayer> { it.score }
@@ -503,6 +530,7 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      *
      * @param player 宣告動作的玩家。
      * @param action 宣告的擴充動作。
+     * @return 要移出手牌的牌；不適用此動作或找不到對應牌時為 null。
      */
     fun tileSetAsideBy(player: MahjongPlayer, action: GameAction.Extension): IdentifiedTile? = null
 
@@ -526,6 +554,7 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * 這些牌對所有玩家公開，牌局快照依此帶出（見 [MahjongPlayerSnapshot.setAsideTiles]）。
      *
      * @param player 要查詢的玩家。
+     * @return 依移出順序排列的公開牌張。
      */
     fun setAsideTiles(player: MahjongPlayer): List<IdentifiedTile> = emptyList()
 }

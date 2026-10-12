@@ -6,6 +6,7 @@ import kotlin.test.assertFailsWith
 
 /** 驗證公開 indicator 顯示 registry 的 namespaced ID 與凍結契約。 */
 class PublicPlayerIndicatorDisplayRegistryTest {
+    /** 可查回已登記顯示，且 freeze 後禁止新登記。 */
     @Test
     fun `registers and freezes displays`() {
         val registry = PublicPlayerIndicatorDisplayRegistryImpl()
@@ -18,6 +19,7 @@ class PublicPlayerIndicatorDisplayRegistryTest {
         }
     }
 
+    /** 非 namespaced 與重複 ID 均應拒絕。 */
     @Test
     fun `rejects invalid IDs and duplicate displays`() {
         val registry = PublicPlayerIndicatorDisplayRegistryImpl()

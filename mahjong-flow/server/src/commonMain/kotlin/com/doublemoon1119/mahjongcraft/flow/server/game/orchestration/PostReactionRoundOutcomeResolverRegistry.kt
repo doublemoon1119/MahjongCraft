@@ -15,7 +15,11 @@ class PostReactionRoundOutcomeResolverRegistry {
     /** 目前已登記 resolver ID 的快照。 */
     val registrationKeys: Set<String> get() = resolvers.mapTo(mutableSetOf()) { it.id }
 
-    /** 登記 resolver；同一規則模組內 ID 不得重複，同一個 ID 可由不同規則模組各自登記。 */
+    /**
+     * 登記 resolver；同一規則模組內 ID 不得重複，同一個 ID 可由不同規則模組各自登記。
+     *
+     * @param resolver 要登記的判定器。
+     */
     fun register(resolver: PostReactionRoundOutcomeResolver) {
         check(!frozen) { "Post-reaction round outcome resolver registry is frozen" }
         require(resolvers.none { it.id == resolver.id && it.ruleModuleId == resolver.ruleModuleId }) {
@@ -24,14 +28,20 @@ class PostReactionRoundOutcomeResolverRegistry {
         resolvers += resolver
     }
 
-    /** 凍結並固定後續判定順序。 */
+    /** 凍結註冊表並依優先序、ID 固定判定順序；重複呼叫不改變結果。 */
     fun freeze() {
         if (frozen) return
         resolvers.sortWith(compareBy(PostReactionRoundOutcomeResolver::priority, PostReactionRoundOutcomeResolver::id))
         frozen = true
     }
 
-    /** 依穩定順序回傳第一個成立的 outcome。 */
+    /**
+     * 依穩定順序回傳第一個成立的回合結果；註冊表必須先凍結。
+     *
+     * @param tableState 完成反應後的權威桌況。
+     * @param ruleModule 目前對局使用的規則模組。
+     * @return 第一個成立的特殊回合結果；沒有 resolver 成立時為 null。
+     */
     fun resolve(tableState: TableState, ruleModule: MahjongRuleModule<*>): ResolvedRoundOutcome? {
         check(frozen) { "Post-reaction round outcome resolver registry must be frozen before use" }
         return resolvers.asSequence()

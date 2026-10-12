@@ -54,6 +54,10 @@ import kotlin.math.sqrt
 
 /**
  * 繪製持久化役種 showcase：逐牌收束波紋、微幅抖動、鞘翅與懸浮煙火起飛、弧形展示翼及徽記光場。
+ *
+ * @param context Minecraft renderer factory 提供的 client context。
+ * @param showcaseRegistry 解析各翼演出定義與標題資訊。
+ * @param tileFaceRenderer 為展示牌面繪製共用標籤。
  */
 class WinCelebrationShowcaseEntityRenderer(
     context: EntityRendererFactory.Context,
@@ -105,7 +109,17 @@ class WinCelebrationShowcaseEntityRenderer(
         }
     }
 
-    /** 單一低成本 TNT 模型、可辨識的引信閃白，以及向外擴張的原版風白色爆炸。 */
+    /**
+     * 播放 TNT 放置、引信點燃及爆炸煙霧的完整段落，使用單一低成本模型、引信閃白與向外擴張的白色爆炸。
+     *
+     * @param entity 提供演出 seed、翼資料及世界資訊的 showcase entity。
+     * @param formation 最終編隊，用於將煙霧分配到各翼。
+     * @param elapsed 演出已經過的 tick。
+     * @param billboardRotation 面板朝向觀看者的旋轉。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供 TNT 與特效頂點緩衝。
+     * @param light 世界光照值。
+     */
     private fun renderTntCinematic(
         entity: WinCelebrationShowcaseEntity,
         formation: ShowcaseFormationLayout,
@@ -135,6 +149,13 @@ class WinCelebrationShowcaseEntityRenderer(
         }
     }
 
+    /**
+     * 繪製覆蓋 TNT 模型的白色閃光面。
+     *
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供閃光頂點緩衝。
+     * @param fuse 引信燃燒進度，用來調整範圍與透明度。
+     */
     private fun renderTntFlash(matrices: MatrixStack, consumers: VertexConsumerProvider, fuse: Double) {
         val buffer = consumers.getBuffer(RenderLayer.getLightning())
         val matrix = matrices.peek().positionMatrix
@@ -156,6 +177,15 @@ class WinCelebrationShowcaseEntityRenderer(
         }
     }
 
+    /**
+     * 依演出 seed 繪製引信點燃時向外散出的短火花。
+     *
+     * @param entity 提供動畫 seed 的 showcase entity。
+     * @param elapsed 演出已經過的 tick。
+     * @param billboardRotation 面板朝向觀看者的旋轉。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供火花頂點緩衝。
+     */
     private fun renderIgnitionSparks(
         entity: WinCelebrationShowcaseEntity,
         elapsed: Double,
@@ -175,6 +205,16 @@ class WinCelebrationShowcaseEntityRenderer(
         }
     }
 
+    /**
+     * 繪製 TNT 閃光、擴張波紋及依翼數分配的煙霧。
+     *
+     * @param entity 提供演出 seed、翼資料及世界資訊的 showcase entity。
+     * @param formation 各翼中心位置，用於定位煙霧。
+     * @param elapsed 演出已經過的 tick。
+     * @param billboardRotation 面板朝向觀看者的旋轉。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供爆炸頂點緩衝。
+     */
     private fun renderTntExplosion(
         entity: WinCelebrationShowcaseEntity,
         formation: ShowcaseFormationLayout,
@@ -238,6 +278,16 @@ class WinCelebrationShowcaseEntityRenderer(
         }
     }
 
+    /**
+     * 依進度與序號繪製單個 billboard 煙霧粒子。
+     *
+     * @param position 粒子世界位置。
+     * @param progress 粒子生命週期進度。
+     * @param index 決定粒子尺寸與顏色的穩定索引。
+     * @param billboardRotation 面板朝向觀看者的旋轉。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供煙霧貼圖頂點緩衝。
+     */
     private fun renderSmokePuff(
         position: Vector3f,
         progress: Double,
@@ -266,7 +316,19 @@ class WinCelebrationShowcaseEntityRenderer(
         matrices.pop()
     }
 
-    /** 在共享舞台中央只繪製一張權威胡牌張的視覺代理。 */
+    /**
+     * 在共享舞台中央繪製權威和牌快照；缺少快照時於起飛後只繪製一張本地視覺代理。
+     *
+     * @param entity 提供和牌快照、時間與世界資訊的 showcase entity。
+     * @param formation 最終牌組版面。
+     * @param cardLayouts 各牌位的目標位置與歸位時間。
+     * @param elapsed 演出已經過的 tick。
+     * @param fadeStart 開始整體淡出的 tick。
+     * @param billboardRotation 面板朝向觀看者的旋轉。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供牌面及接觸波紋頂點緩衝。
+     * @param light 世界光照值。
+     */
     private fun renderWinningTile(
         entity: WinCelebrationShowcaseEntity,
         formation: ShowcaseFormationLayout,
@@ -336,7 +398,22 @@ class WinCelebrationShowcaseEntityRenderer(
         matrices.pop()
     }
 
-    /** 依固定時間軸定位並繪製單張視覺牌。 */
+    /**
+     * 依固定演出時間軸定位並繪製單張手牌或和牌視覺牌。
+     *
+     * @param entity 提供演出 seed 與世界資訊的 showcase entity。
+     * @param card 要繪製的卡片快照。
+     * @param wingIndex 所屬翼索引；合成和牌張使用保留值。
+     * @param elapsed 演出已經過的 tick。
+     * @param fadeStart 開始淡出的 tick。
+     * @param billboardRotation 面板朝向觀看者的旋轉。
+     * @param matrices 目前的模型矩陣。
+     * @param vertexConsumers 提供牌面與特效頂點緩衝。
+     * @param light 世界光照值。
+     * @param localTargetX 編隊中的局部目標 X 座標。
+     * @param returnStart 此牌開始歸位的 tick。
+     * @param winningTile 此牌是否為和牌張。
+     */
     private fun renderCard(
         entity: WinCelebrationShowcaseEntity,
         card: ShowcaseCardSnapshot,
@@ -482,7 +559,14 @@ class WinCelebrationShowcaseEntityRenderer(
         matrices.pop()
     }
 
-    /** 繪製貼在牌背的原版鞘翅；抵達並完成 billboard 後才收攏、縮小並淡出。 */
+    /**
+     * 繪製貼在牌背的原版鞘翅，並依時間軸調整展開；抵達且完成 billboard 後才收攏、縮小並淡出。
+     *
+     * @param elapsed 演出已經過的 tick。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供鞘翅頂點緩衝。
+     * @param light 世界光照值。
+     */
     private fun renderElytra(elapsed: Double, matrices: MatrixStack, consumers: VertexConsumerProvider, light: Int) {
         val open = when {
             elapsed < ELYTRA_OPEN_TICK -> 0.0
@@ -508,7 +592,16 @@ class WinCelebrationShowcaseEntityRenderer(
         matrices.pop()
     }
 
-    /** 以左手握持點為樞紐快速擺動煙火；不再用前後平移模仿右鍵。 */
+    /**
+     * 繪製卡片手持的煙火，以左手握持點為樞紐快速擺動，不以前後平移模仿使用動作。
+     *
+     * @param elapsed 演出已經過的 tick。
+     * @param order 卡片的穩定順序索引。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供物品模型頂點緩衝。
+     * @param light 世界光照值。
+     * @param entity 提供手持高度變化 seed 與世界資訊。
+     */
     private fun renderHeldFirework(
         elapsed: Double,
         order: Int,
@@ -535,7 +628,15 @@ class WinCelebrationShowcaseEntityRenderer(
         matrices.pop()
     }
 
-    /** 胡牌張右手依序拿出 TNT、完成放置交接，再換成打火石點燃。 */
+    /**
+     * 繪製和牌張依序拿取 TNT、完成放置交接，再改拿打火石點燃的手持物品。
+     *
+     * @param elapsed 演出已經過的 tick。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供物品模型頂點緩衝。
+     * @param light 世界光照值。
+     * @param entity 提供世界資訊的 showcase entity。
+     */
     private fun renderWinningTileHeldItem(
         elapsed: Double,
         matrices: MatrixStack,
@@ -570,7 +671,13 @@ class WinCelebrationShowcaseEntityRenderer(
         matrices.pop()
     }
 
-    /** 在水平面逐環向外擴散；最後一環會在牌完成轉正時淡出。 */
+    /**
+     * 依時間展開牌張起飛時逐環向外擴散的水平波紋；最後一環在牌完成轉正時淡出。
+     *
+     * @param elapsed 演出已經過的 tick。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供波紋頂點緩衝。
+     */
     private fun renderExpandingRipples(elapsed: Double, matrices: MatrixStack, consumers: VertexConsumerProvider) {
         repeat(RIPPLE_COUNT) { ring ->
             val age = elapsed - RIPPLE_START_TICK - ring * RIPPLE_DELAY_TICKS
@@ -599,7 +706,22 @@ class WinCelebrationShowcaseEntityRenderer(
         }
     }
 
-    /** 由絕對時間與 seed 重建飛行位置，讓重載後的亂序飛行與拖尾仍保持一致。 */
+    /**
+     * 由絕對時間與 seed 重建飛行位置，讓重載後的亂序飛行與拖尾仍保持一致。
+     *
+     * @param entity 提供演出 seed 的 showcase entity。
+     * @param card 牌張的起始快照。
+     * @param wingIndex 所屬翼索引。
+     * @param startX 起始 X 座標。
+     * @param startY 起始 Y 座標。
+     * @param startZ 起始 Z 座標。
+     * @param localTargetX 最終編隊目標 X 座標。
+     * @param returnStart 開始歸位的 tick。
+     * @param elapsed 要取樣的位置時間。
+     * @param billboardRotation 面板朝向觀看者的旋轉。
+     * @param winningTile 此牌是否為和牌張。
+     * @return 該時間點的位置及飛行切線方向。
+     */
     private fun flightPose(
         entity: WinCelebrationShowcaseEntity,
         card: ShowcaseCardSnapshot,
@@ -620,6 +742,22 @@ class WinCelebrationShowcaseEntityRenderer(
         return FlightPose(now, velocity.normalize())
     }
 
+    /**
+     * 由演出 seed 與時間重建牌張在起飛、環繞、爆炸及歸位階段的位置。
+     *
+     * @param entity 提供演出 seed 的 showcase entity。
+     * @param card 牌張的起始快照。
+     * @param wingIndex 所屬翼索引。
+     * @param startX 起始 X 座標。
+     * @param startY 起始 Y 座標。
+     * @param startZ 起始 Z 座標。
+     * @param localTargetX 最終編隊目標 X 座標。
+     * @param returnStart 開始歸位的 tick。
+     * @param elapsed 要取樣的位置時間。
+     * @param billboardRotation 面板朝向觀看者的旋轉。
+     * @param winningTile 此牌是否為和牌張。
+     * @return 指定時間的世界座標位置。
+     */
     private fun flightPosition(
         entity: WinCelebrationShowcaseEntity,
         card: ShowcaseCardSnapshot,
@@ -703,6 +841,17 @@ class WinCelebrationShowcaseEntityRenderer(
         return result.add(0.0f, arc.toFloat(), 0.0f)
     }
 
+    /**
+     * 為指定牌張計算由 seed 決定的環繞軌道位置。
+     *
+     * @param entity 提供演出 seed 的 showcase entity。
+     * @param wingIndex 所屬翼索引。
+     * @param order 牌張在翼中的順序。
+     * @param elapsed 演出已經過的 tick。
+     * @param billboardRotation 面板朝向觀看者的旋轉。
+     * @param winningTile 此牌是否為和牌張。
+     * @return 該時間點的世界座標位置。
+     */
     private fun orbitPosition(entity: WinCelebrationShowcaseEntity, wingIndex: Int, order: Int, elapsed: Double, billboardRotation: Quaternionf, winningTile: Boolean): Vector3f {
         val salt = wingIndex * 67 + order * 19 + if (winningTile) 701 else 0
         val wingCount = entity.wings.size.coerceAtLeast(1)
@@ -722,7 +871,15 @@ class WinCelebrationShowcaseEntityRenderer(
         return horizontalRelative(cos(phase) * radius, height, sin(phase) * radius * flattening, billboardRotation)
     }
 
-    /** 只取 camera billboard 的水平朝向，讓牌流繞桌而不會因玩家抬頭而傾斜整條軌道。 */
+    /**
+     * 將面板局部水平座標依 camera billboard 的水平朝向轉成世界方向，保留指定高度且不受抬頭傾斜影響。
+     *
+     * @param localX 面板局部右方位移。
+     * @param y 世界垂直座標。
+     * @param localZ 面板局部前方位移。
+     * @param billboardRotation 面板朝向觀看者的旋轉。
+     * @return 對應的世界座標向量。
+     */
     private fun horizontalRelative(localX: Double, y: Double, localZ: Double, billboardRotation: Quaternionf): Vector3f {
         val right = Vector3f(1.0f, 0.0f, 0.0f).rotate(billboardRotation).setComponent(1, 0.0f)
         val forward = Vector3f(0.0f, 0.0f, 1.0f).rotate(billboardRotation).setComponent(1, 0.0f)
@@ -731,22 +888,44 @@ class WinCelebrationShowcaseEntityRenderer(
         return right.mul(localX.toFloat()).add(forward.mul(localZ.toFloat())).add(0.0f, y.toFloat(), 0.0f)
     }
 
-    /** 每幀只建立一次最終版面，供全部牌的目標 X 與歸位起點共用。 */
+    /**
+     * 每幀為所有牌位建立共用的最終 X 座標與錯開歸位時間，供目標位置及歸位起點共用。
+     *
+     * @param formation 最終編隊版面與歸位順序。
+     * @return 以牌位為鍵的目標位置及歸位時間。
+     */
     private fun buildCardLayouts(formation: ShowcaseFormationLayout): Map<ShowcaseCardSlot, CardLayout> = formation.returnOrder.withIndex().associate { (rank, slot) ->
         slot to CardLayout(formation.targetX(slot), WinCelebrationCinematicTimeline.returnStartTick(rank, formation.returnOrder.size))
     }
 
-    /** 讓牌的長軸沿路徑切線，使牌面平面與飛行方向平行。 */
+    /**
+     * 取得使牌張長軸沿路徑切線、牌面平面與飛行方向平行的旋轉。
+     *
+     * @param velocity 飛行方向向量。
+     * @return 將模型上方向旋至飛行方向的旋轉。
+     */
     private fun flightRotation(velocity: Vector3f): Quaternionf = Quaternionf().rotationTo(Vector3f(0.0f, 1.0f, 0.0f), Vector3f(velocity).normalize())
 
-    /** 爆炸初段讓牌背朝爆心、牌面朝外，以直立姿態被衝擊波推出。 */
+    /**
+     * 取得爆炸初段使牌背朝爆心、牌面朝外並以直立姿態被推出的旋轉。
+     *
+     * @param position 牌張相對爆心的位置。
+     * @return 將模型正面轉向外側的旋轉。
+     */
     private fun blastFacingRotation(position: Vector3f): Quaternionf {
         val outward = Vector3f(position.x, 0.0f, position.z)
         if (outward.lengthSquared() < 0.000001f) outward.set(0.0f, 0.0f, 1.0f) else outward.normalize()
         return Quaternionf().rotationTo(Vector3f(0.0f, 0.0f, 1.0f), outward.negate())
     }
 
-    /** 牌先沿桌心到自身的放射方向滑出；只有位置退化時才用原始 yaw 作備援。 */
+    /**
+     * 計算牌張離開桌心的起始方向；通常沿桌心至自身的放射方向，位置退化時以原始 yaw 備援。
+     *
+     * @param startX 牌張起始 X 座標。
+     * @param startZ 牌張起始 Z 座標。
+     * @param startYaw 牌張起始 yaw 角度。
+     * @return 正規化的水平離桌方向。
+     */
     private fun initialDepartureDirection(startX: Double, startZ: Double, startYaw: Float): Vector3f {
         val direction = Vector3f(startX.toFloat(), 0.0f, startZ.toFloat())
         if (direction.lengthSquared() < 0.000001f) {
@@ -756,11 +935,40 @@ class WinCelebrationShowcaseEntityRenderer(
         return direction.normalize()
     }
 
+    /**
+     * 將站立姿態旋轉為平躺且牌面朝上的姿態。
+     *
+     * @param yaw 牌張原始 yaw 角度。
+     * @return 平躺牌面朝上的模型旋轉。
+     */
     private fun faceUpRotation(yaw: Float): Quaternionf = standingRotation(yaw).rotateX(Math.toRadians(90.0).toFloat())
 
+    /**
+     * 建立牌張站立並朝向觀眾的水平旋轉。
+     *
+     * @param yaw 牌張原始 yaw 角度。
+     * @return 站立姿態的模型旋轉。
+     */
     private fun standingRotation(yaw: Float): Quaternionf = Quaternionf().rotateY(Math.toRadians((-yaw + 180.0f).toDouble()).toFloat())
 
-    /** 取數個過去位置構成彎曲的短尾跡；核心靠近牌最亮，尾端逐步淡出。 */
+    /**
+     * 取數個過去位置構成彎曲的短尾跡；核心靠近牌最亮，尾端逐步淡出。
+     *
+     * @param entity 提供演出 seed 的 showcase entity。
+     * @param card 牌張起始快照。
+     * @param wingIndex 所屬翼索引。
+     * @param startX 起始 X 座標。
+     * @param startY 起始 Y 座標。
+     * @param startZ 起始 Z 座標。
+     * @param localTargetX 編隊目標 X 座標。
+     * @param returnStart 開始歸位的 tick。
+     * @param elapsed 演出已經過的 tick。
+     * @param billboardRotation 面板朝向觀看者的旋轉。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供拖尾貼圖頂點緩衝。
+     * @param light 世界光照值。
+     * @param winningTile 此牌是否為和牌張。
+     */
     private fun renderFlightTrail(
         entity: WinCelebrationShowcaseEntity,
         card: ShowcaseCardSnapshot,
@@ -796,6 +1004,19 @@ class WinCelebrationShowcaseEntityRenderer(
         }
     }
 
+    /**
+     * 沿兩點之間繪製帶有貼圖座標與光照的窄四邊形。
+     *
+     * @param buffer 接收頂點的 consumer。
+     * @param matrix 頂點位置矩陣。
+     * @param normal 頂點法線矩陣。
+     * @param start 線段起點。
+     * @param end 線段終點。
+     * @param width 四邊形半寬。
+     * @param alpha 頂點透明度。
+     * @param light 頂點光照值。
+     * @param color RGB 顏色。
+     */
     private fun texturedThinQuad(buffer: VertexConsumer, matrix: Matrix4f, normal: Matrix3f, start: Vector3f, end: Vector3f, width: Double, alpha: Int, light: Int, color: Int) {
         val dx = end.x - start.x
         val dz = end.z - start.z
@@ -817,7 +1038,13 @@ class WinCelebrationShowcaseEntityRenderer(
         vertex(end, -ox, -oz, 0.0f, 0.0f)
     }
 
-    /** 繪製煙火推出後的短促白黃點火十字。 */
+    /**
+     * 繪製煙火推出後短暫出現的白黃色點火十字。
+     *
+     * @param elapsed 演出已經過的 tick。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供火花頂點緩衝。
+     */
     private fun renderIgnition(elapsed: Double, matrices: MatrixStack, consumers: VertexConsumerProvider) {
         val progress = ((elapsed - FIREWORK_USE_START_TICK) / (FIREWORK_FLAME_END_TICK - FIREWORK_USE_START_TICK)).coerceIn(0.0, 1.0)
         val alpha = ((1.0 - progress) * 220.0).toInt()
@@ -828,7 +1055,19 @@ class WinCelebrationShowcaseEntityRenderer(
         thinQuad(buffer, matrix, LEFT_HAND_X - length / 2.0, RIGHT_HAND_Y - 0.03, RIGHT_HAND_Z, LEFT_HAND_X + length / 2.0, RIGHT_HAND_Y - 0.03, RIGHT_HAND_Z, 0.008, alpha)
     }
 
-    /** 繪製徽記 billboard、役名以及金紅色抵達光場。 */
+    /**
+     * 繪製中央金紅色抵達光場、徽記 billboard、各翼標題圖片及本地化役名。
+     *
+     * @param entity 提供翼資料與演出 seed 的 showcase entity。
+     * @param formation 提供各翼置中位置的最終編隊。
+     * @param elapsed 演出已經過的 tick。
+     * @param fadeStart 整體淡出開始 tick。
+     * @param duration 演出總長度。
+     * @param billboardRotation 面板朝向觀看者的旋轉。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供光場及圖片頂點緩衝。
+     * @param light 世界光照值。
+     */
     private fun renderShowcaseCenter(
         entity: WinCelebrationShowcaseEntity,
         formation: ShowcaseFormationLayout,
@@ -882,7 +1121,17 @@ class WinCelebrationShowcaseEntityRenderer(
         }
     }
 
-    /** 在完整牌組正上方繪製透明橫版書法役名。 */
+    /**
+     * 在指定翼上方繪製透明橫版書法役名圖片，並播放 reveal 縮放。
+     *
+     * @param definition 此翼的演出定義。
+     * @param elapsed 演出已經過的 tick。
+     * @param fade 整體顯示透明度。
+     * @param localCenterX 此翼中心的面板局部 X 座標。
+     * @param billboardRotation 面板朝向觀看者的旋轉。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供標題貼圖頂點緩衝。
+     */
     private fun renderTitleImage(
         definition: WinCelebrationShowcaseDefinition,
         elapsed: Double,
@@ -914,7 +1163,18 @@ class WinCelebrationShowcaseEntityRenderer(
         matrices.pop()
     }
 
-    /** 在書法圖下方補上清楚、可本地化的小役名。 */
+    /**
+     * 在標題圖片下方繪製清楚、可本地化的小役名文字。
+     *
+     * @param definition 此翼的演出定義。
+     * @param elapsed 演出已經過的 tick。
+     * @param fade 整體顯示透明度。
+     * @param localCenterX 此翼中心的面板局部 X 座標。
+     * @param billboardRotation 面板朝向觀看者的旋轉。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供文字頂點緩衝。
+     * @param light 世界光照值。
+     */
     private fun renderTitleText(
         definition: WinCelebrationShowcaseDefinition,
         elapsed: Double,
@@ -949,13 +1209,27 @@ class WinCelebrationShowcaseEntityRenderer(
         matrices.pop()
     }
 
+    /**
+     * 取得或建立帶有指定 asset key 的牌張渲染用物品堆疊。
+     *
+     * @param assetKey 牌面資產 key。
+     * @return 可交給 item renderer 繪製的牌張堆疊。
+     */
     private fun tileStack(assetKey: String): ItemStack = tileStacks.getOrPut(assetKey) {
         ItemStack(ModItems.MAHJONG_TILE).also { MahjongTileItem.writeTileAssetKey(it, assetKey) }
     }
 
     override fun getTexture(entity: WinCelebrationShowcaseEntity): Identifier? = null
 
-    /** 胡牌張每次接近晃動最低點時，在固定的空中水面生成兩圈短促波紋。 */
+    /**
+     * 胡牌張每次接近晃動最低點時，在固定的空中水面生成兩圈短促波紋。
+     *
+     * @param elapsed 演出已經過的 tick。
+     * @param fade 波紋透明度比例。
+     * @param horizontalOffset 和牌張的水平世界偏移。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供波紋頂點緩衝。
+     */
     private fun renderWinningTileContactRipples(
         elapsed: Double,
         fade: Double,
@@ -1001,6 +1275,21 @@ class WinCelebrationShowcaseEntityRenderer(
         matrices.pop()
     }
 
+    /**
+     * 在兩點之間繪製純色窄四邊形，並輸出正反兩面。
+     *
+     * @param buffer 接收頂點的 consumer。
+     * @param matrix 頂點位置矩陣。
+     * @param ax 起點 X 座標。
+     * @param ay 起點 Y 座標。
+     * @param az 起點 Z 座標。
+     * @param bx 終點 X 座標。
+     * @param by 終點 Y 座標。
+     * @param bz 終點 Z 座標。
+     * @param width 線段半寬。
+     * @param alpha 頂點透明度。
+     * @param color ARGB 顏色，預設為暖金色。
+     */
     private fun thinQuad(buffer: VertexConsumer, matrix: Matrix4f, ax: Double, ay: Double, az: Double, bx: Double, by: Double, bz: Double, width: Double, alpha: Int, color: Int = 0xFFFFDC64.toInt()) {
         val dx = bx - ax
         val dz = bz - az
@@ -1022,16 +1311,67 @@ class WinCelebrationShowcaseEntityRenderer(
         }
     }
 
+    /**
+     * 輸出帶 UV、法線與光照的單一貼圖頂點。
+     *
+     * @param buffer 接收頂點的 consumer。
+     * @param matrix 頂點位置矩陣。
+     * @param normal 頂點法線矩陣。
+     * @param x 頂點 X 座標。
+     * @param y 頂點 Y 座標。
+     * @param z 頂點 Z 座標。
+     * @param u 貼圖 U 座標。
+     * @param v 貼圖 V 座標。
+     * @param light 頂點光照值。
+     * @param alpha 透明度比例。
+     * @param color RGB 顏色，預設為白色。
+     */
     private fun texturedVertex(buffer: VertexConsumer, matrix: Matrix4f, normal: Matrix3f, x: Float, y: Float, z: Float, u: Float, v: Float, light: Int, alpha: Double, color: Int = 0xFFFFFF) {
         buffer.vertex(matrix, x, y, z).color(color shr 16 and 0xFF, color shr 8 and 0xFF, color and 0xFF, (alpha * 255).toInt()).texture(u, v).overlay(OverlayTexture.DEFAULT_UV).light(light).normal(normal, 0f, 0f, 1f).next()
     }
 
+    /**
+     * 輸出帶 full-bright 光照與透明度的標題圖片頂點。
+     *
+     * @param buffer 接收頂點的 consumer。
+     * @param matrix 頂點位置矩陣。
+     * @param x 頂點 X 座標。
+     * @param y 頂點 Y 座標。
+     * @param z 頂點 Z 座標。
+     * @param u 貼圖 U 座標。
+     * @param v 貼圖 V 座標。
+     * @param alpha 透明度比例。
+     */
     private fun titleVertex(buffer: VertexConsumer, matrix: Matrix4f, x: Float, y: Float, z: Float, u: Float, v: Float, alpha: Double) {
         buffer.vertex(matrix, x, y, z).color(255, 255, 255, (alpha * 255).toInt()).texture(u, v).light(FULL_BRIGHT_LIGHT).next()
     }
 
+    /**
+     * 飛行路徑在單一時刻的位置與前進方向。
+     *
+     * @property position 世界座標中的位置。
+     * @property velocity 正規化後的飛行方向。
+     */
     private data class FlightPose(val position: Vector3f, val velocity: Vector3f)
+
+    /**
+     * 一張牌在最終編隊中的定位與歸位時間。
+     *
+     * @property targetX 編隊中的水平目標位置。
+     * @property returnStart 開始歸位動畫的 tick。
+     */
     private data class CardLayout(val targetX: Double, val returnStart: Double)
+
+    /**
+     * 以端點與切線計算三次 Hermite 曲線位置。
+     *
+     * @param start 曲線起點。
+     * @param end 曲線終點。
+     * @param startTangent 起點切線向量。
+     * @param endTangent 終點切線向量。
+     * @param progress 曲線進度。
+     * @return 曲線上的插值位置。
+     */
     private fun hermite(start: Vector3f, end: Vector3f, startTangent: Vector3f, endTangent: Vector3f, progress: Double): Vector3f {
         val t = progress.toFloat()
         val t2 = t * t
@@ -1041,6 +1381,14 @@ class WinCelebrationShowcaseEntityRenderer(
             .add(Vector3f(end).mul(-2f * t3 + 3f * t2))
             .add(Vector3f(endTangent).mul(t3 - t2))
     }
+
+    /**
+     * 將 seed 與 salt 穩定映射到 0..1 的偽隨機數。
+     *
+     * @param seed 演出持久化 seed。
+     * @param salt 該次取樣的整數偏移。
+     * @return 介於 0 與 1 之間的穩定值。
+     */
     private fun seededUnit(seed: Long, salt: Int): Double = (((seed xor (salt.toLong() * -7046029254386353131L)) ushr 11) and 0xFFFF).toDouble() / 65535.0
 
     private companion object {

@@ -40,5 +40,11 @@ object BuiltInWinSettlementFieldIds {
     /** 總分欄位。 */
     val TOTAL_SCORE = field("total_score")
 
+    /**
+     * 以內建模組命名空間建立結算欄位 ID。
+     *
+     * @param path 模組命名空間下的欄位路徑。
+     * @return 完整 namespaced 欄位 ID。
+     */
     private fun field(path: String) = PresentationFieldId("${MinecraftModMetadata.MOD_ID}:$path")
 }

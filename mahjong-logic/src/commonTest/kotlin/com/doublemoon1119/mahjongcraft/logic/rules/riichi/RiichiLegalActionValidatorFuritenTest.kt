@@ -24,6 +24,7 @@ import kotlin.test.assertTrue
  */
 class RiichiLegalActionValidatorFuritenTest {
 
+    /** 在日麻設定下產生榮和、自摸與副露資格的合法動作驗證器。 */
     private val validator = RiichiLegalActionValidator(
         shantenCalculator = RiichiShantenCalculator(),
         handValueCalculator = RiichiHandValueCalculator(),
@@ -355,7 +356,12 @@ class RiichiLegalActionValidatorFuritenTest {
         assertTrue(actions.any { it is GameAction.Tsumo }, "Tsumo should stay legal while in discard furiten")
     }
 
-    /** 23萬＋456筒＋789筒＋中中中＋22條，聽 1-4 萬，門前有役牌。 */
+    /**
+     * 建立 23 萬＋456 筒＋789 筒＋中中中＋22 條、聽 1–4 萬且有役牌的測試玩家。
+     *
+     * @param discardPile 測試玩家的牌河。
+     * @return 手牌固定為上述兩面聽型態的測試玩家。
+     */
     private fun twoSidedWaitPlayer(discardPile: FakeDiscardPile) = FakeMahjongPlayerFactory.create(
         hand = FakeHandFactory.create(
             listOf(
@@ -378,8 +384,21 @@ class RiichiLegalActionValidatorFuritenTest {
         playerRuleState = RiichiPlayerState(),
     )
 
+    /**
+     * 建立只含 [tile] 一張牌的測試牌河。
+     *
+     * @param tile 要放入牌河的牌面。
+     * @return 含有該牌的測試牌河。
+     */
     private fun discardPileOf(tile: Tile) = FakeDiscardPile().discard(FakeDiscardPile.FakeEntry(FakeIdentifiedTileFactory.create(tile)))
 
+    /**
+     * 以 [player] 為當前玩家，判斷 [tile] 是否能形成榮和動作。
+     *
+     * @param player 執行榮和判定的測試玩家。
+     * @param tile 用來判定的進張牌面。
+     * @return 有榮和合法動作時為 `true`，否則為 `false`。
+     */
     private fun canRon(player: MahjongPlayer, tile: Tile): Boolean {
         val incomingTile = FakeIdentifiedTileFactory.create(tile)
         return validator.getLegalActions(

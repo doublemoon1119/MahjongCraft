@@ -84,7 +84,11 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
     }
 }
 
-/** 唯讀台麻設定畫面的 schema；台麻目前不能選用，只顯示固定的設定值。 */
+/**
+ * 建立唯讀台麻設定畫面的 schema；台麻目前不能選用，只顯示固定的設定值。
+ *
+ * @return 不可選取且欄位唯讀的台麻設定呈現定義。
+ */
 private fun taiwanGameConfigPresentation(): GameConfigPresentationDefinition = GameConfigPresentationDefinition(
     ruleModuleId = BuiltInRuleModuleIds.TAIWAN,
     descriptionTranslationKey = translationKey("rule.taiwan.description"),
@@ -99,14 +103,26 @@ private fun taiwanGameConfigPresentation(): GameConfigPresentationDefinition = G
     ) + flowFields(),
 )
 
-/** 四季花牌：右上紅色中文字、左上黑色排序數字，永遠顯示（理由見 [BundledTaiwanMinecraftExtension.registerTileLabels]）。 */
+/**
+ * 建立四季花牌標籤：右上紅色中文字、左上黑色排序數字，永遠顯示（理由見 [BundledTaiwanMinecraftExtension.registerTileLabels]）。
+ *
+ * @param chinese 花牌的中文字。
+ * @param order 春夏秋冬順序中的數字。
+ * @return 永遠顯示的季節花牌標籤。
+ */
 private fun seasonalFlower(chinese: String, order: String): TileLabel = TileLabel(
     topLeft = TileLabelText(order, TileLabelColor.BLACK),
     topRight = TileLabelText(chinese, TileLabelColor.RED),
     forced = true,
 )
 
-/** 四君子花牌：右上紅色排序數字、左上黑色中文字，永遠顯示（理由見 [BundledTaiwanMinecraftExtension.registerTileLabels]）。 */
+/**
+ * 建立四君子花牌標籤：右上紅色排序數字、左上黑色中文字，永遠顯示（理由見 [BundledTaiwanMinecraftExtension.registerTileLabels]）。
+ *
+ * @param chinese 花牌的中文字。
+ * @param order 梅蘭菊竹順序中的數字。
+ * @return 永遠顯示的四君子花牌標籤。
+ */
 private fun plantFlower(chinese: String, order: String): TileLabel = TileLabel(
     topLeft = TileLabelText(chinese, TileLabelColor.BLACK),
     topRight = TileLabelText(order, TileLabelColor.RED),

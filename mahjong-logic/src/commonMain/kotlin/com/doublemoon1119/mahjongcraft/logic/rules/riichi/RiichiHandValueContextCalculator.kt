@@ -16,7 +16,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
  * - 嶺上花判定
  * - 榮和的牌是否為立直宣言牌、是否為槓後捨牌（古役燕返、槓振）
  *
- * @param config 日本麻將（四人或三人）規則配置。
+ * @property config 日本麻將（四人或三人）規則配置。
  */
 class RiichiHandValueContextCalculator(
     private val config: RiichiFamilyRuleConfig,
@@ -24,6 +24,12 @@ class RiichiHandValueContextCalculator(
 
     /**
      * 計算役種上下文所需的輸入參數。
+     *
+     * @property tableState 判定場風、寶牌及行動經過的目前桌況。
+     * @property player 要計算和牌價值的玩家。
+     * @property incomingTile 本次自摸、榮和或搶槓的和牌張。
+     * @property isTsumo 是否為自摸。
+     * @property isRobbingKan 是否為搶槓和牌。
      */
     data class Input(
         val tableState: TableState,

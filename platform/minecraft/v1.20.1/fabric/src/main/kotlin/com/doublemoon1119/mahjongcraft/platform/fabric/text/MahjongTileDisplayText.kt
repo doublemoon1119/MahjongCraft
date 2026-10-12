@@ -24,6 +24,11 @@ import net.minecraft.text.Text
  * 字元（要實際顯示成貼圖，還需要有人提供對應的 `assets/minecraft/font/default.json` bitmap
  * provider，例如 `platform/minecraft/common/src/jvmMain/resources` 內建的那份）；查不到對應 emoji
  * （例如未登記的第三方牌種）時只顯示純文字，不強行湊一個不存在的圖案。
+ *
+ * @param displayNameRegistry 擴充牌種顯示名稱查詢來源。
+ * @param tileAssetRegistry 牌種到貼圖資產鍵的轉換來源。
+ * @param tileEmojiRegistry 牌面 emoji 查詢來源。
+ * @return 包含可用牌面 emoji 與本地化名稱的文字。
  */
 fun Tile.toDisplayText(
     displayNameRegistry: TileDisplayNameRegistry,
@@ -47,7 +52,11 @@ fun Tile.toDisplayText(
     return Text.literal("$emoji ").append(text)
 }
 
-/** 將數牌花色映射到對應的翻譯 key。 */
+/**
+ * 將數牌花色映射到對應的翻譯 key。
+ *
+ * @return 此花色的本地化翻譯鍵。
+ */
 private fun Tile.Suit.toMessageKey(): String = when (this) {
     Tile.Suit.Character -> MinecraftMessageKeys.TILE_SUIT_CHARACTER
     Tile.Suit.Dot -> MinecraftMessageKeys.TILE_SUIT_DOT

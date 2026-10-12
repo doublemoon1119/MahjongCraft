@@ -83,7 +83,14 @@ class HistoryResultProjectorTest {
         assertEquals(emptyList(), HistoryResultProjector.project(emptyList(), MahjongModuleRegistryImpl()))
     }
 
-    /** 建立包含兩位玩家的測試桌況。 */
+    /**
+     * 建立包含兩位玩家的測試桌況。
+     *
+     * @param firstScore 起家東位玩家分數。
+     * @param secondScore 起家南位玩家分數。
+     * @param id 桌況識別碼。
+     * @return 指定分數的兩人測試桌況。
+     */
     private fun tableWithScores(firstScore: Int, secondScore: Int, id: Uuid = Uuid.random()): TableState = FakeTableStateFactory.create(
         id = id,
         config = RiichiRuleConfig(),
@@ -94,7 +101,13 @@ class HistoryResultProjectorTest {
         ),
     )
 
-    /** 建立開局與終局事件。 */
+    /**
+     * 建立開局與終局事件。
+     *
+     * @param table 開局桌況。
+     * @param scores 終局分數對照表。
+     * @return 同一場次的開局與終局事件。
+     */
     private fun events(table: TableState, scores: Map<Uuid, Int>): List<HistoryOutboxEvent> {
         val matchId = Uuid.random()
         return listOf(
@@ -103,7 +116,14 @@ class HistoryResultProjectorTest {
         )
     }
 
-    /** 建立測試用歷史事件。 */
+    /**
+     * 建立測試用歷史事件。
+     *
+     * @param matchId 場次識別碼。
+     * @param sequence 事件序號，同時用作測試時間戳記。
+     * @param fact 事件攜帶的事實。
+     * @return 第一局的測試事件。
+     */
     private fun event(matchId: Uuid, sequence: Long, fact: HistoryFact): HistoryOutboxEvent = HistoryOutboxEvent(
         matchId = matchId,
         venueId = Uuid.random(),
@@ -130,7 +150,11 @@ class HistoryResultProjectorTest {
         freeze()
     }
 
-    /** 覆寫終局比較器的測試規則模組。 */
+    /**
+     * 覆寫終局比較器的測試規則模組。
+     *
+     * @property delegate 提供其餘規則行為的模組。
+     */
     private class ReverseRankingModule(
         private val delegate: MahjongRuleModule<RiichiRuleConfig>,
     ) : MahjongRuleModule<RiichiRuleConfig> by delegate {

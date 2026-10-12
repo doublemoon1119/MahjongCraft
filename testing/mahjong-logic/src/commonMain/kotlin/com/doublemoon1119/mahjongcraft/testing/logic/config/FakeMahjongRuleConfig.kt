@@ -16,6 +16,8 @@ import com.doublemoon1119.mahjongcraft.logic.config.ScoreConfig
  * @property minimumWinConstraint 起胡限制。
  * @property scoreConfig 積分配置，預設使用 [FakeScoreConfig]。
  * @property gameLength 對局長度配置，預設使用 [FakeGameLength]。
+ * @property minPlayers 可開局的最少玩家數，預設為 4。
+ * @property maxPlayers 可加入對局的最多玩家數，預設為 4。
  * @property multiRonPolicy 一炮多響時的結算方式，預設雙響、三響皆為頭跳。
  * @property revealsClosedKanTiles 暗槓身份是否公開，預設為 true。
  */

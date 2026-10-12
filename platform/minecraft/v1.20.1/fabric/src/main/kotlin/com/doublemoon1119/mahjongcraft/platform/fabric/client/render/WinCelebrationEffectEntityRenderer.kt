@@ -24,6 +24,8 @@ import kotlin.math.sin
 
 /**
  * 以小型帶狀閃電擊中胡牌張，接續短暫環繞電弧與錯時擴張的波紋；所有幾何皆保持牌面中央淨空。
+ *
+ * @param context Minecraft renderer factory 提供的 client context。
  */
 class WinCelebrationEffectEntityRenderer(
     context: EntityRendererFactory.Context,
@@ -79,7 +81,15 @@ class WinCelebrationEffectEntityRenderer(
         }
     }
 
-    /** 先讓縮小的原版附魔三叉戟落下，再以快速衰減的阻尼擺動表現插入後的顫動。 */
+    /**
+     * 先讓縮小的原版附魔三叉戟落下，再以快速衰減的阻尼擺動表現插入後的顫動。
+     *
+     * @param entity 提供演出 seed 與世界時間的效果 entity。
+     * @param elapsedTicks 從演出起始時間經過的 tick。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供三叉戟模型頂點緩衝。
+     * @param light 世界光照值。
+     */
     private fun renderTrident(
         entity: WinCelebrationEffectEntity,
         elapsedTicks: Double,
@@ -136,7 +146,14 @@ class WinCelebrationEffectEntityRenderer(
         matrices.pop()
     }
 
-    /** 以三層半透明帶狀幾何疊出縮小版原版閃電，並在前段切換數次形狀與明暗。 */
+    /**
+     * 以三層半透明帶狀幾何疊出縮小版原版閃電，並在前段切換數次形狀與明暗。
+     *
+     * @param buffer 接收閃電頂點的緩衝。
+     * @param positionMatrix 將局部座標轉換至渲染座標的矩陣。
+     * @param effectProgress 整段閃電演出的進度。
+     * @param seed 決定閃電折線形狀的持久化 seed。
+     */
     private fun lightningStrike(
         buffer: VertexConsumer,
         positionMatrix: Matrix4f,
@@ -168,7 +185,13 @@ class WinCelebrationEffectEntityRenderer(
         }
     }
 
-    /** 由持久化 seed 與離散形狀編號產生相連的閃電節點；底端固定命中胡牌張中央。 */
+    /**
+     * 由持久化 seed 與離散形狀編號產生相連的閃電節點；底端固定命中胡牌張中央。
+     *
+     * @param seed 決定節點偏移的持久化 seed。
+     * @param shapeIndex 目前使用的離散閃電形狀索引。
+     * @return 由上而下排列的折線節點。
+     */
     private fun lightningPoints(
         seed: Long,
         shapeIndex: Int,
@@ -183,7 +206,20 @@ class WinCelebrationEffectEntityRenderer(
         )
     }.reversed()
 
-    /** 每層各畫兩片互相垂直的帶狀面，從各視角都能看到近似原版的柱狀閃電。 */
+    /**
+     * 每層各畫兩片互相垂直的帶狀面，從各視角都能看到近似原版的柱狀閃電。
+     *
+     * @param buffer 接收頂點的閃電緩衝。
+     * @param positionMatrix 局部座標轉換矩陣。
+     * @param start 線段起點。
+     * @param end 線段終點。
+     * @param width 帶狀面半寬。
+     * @param maxAlpha 此層的最大透明度。
+     * @param red 紅色通道。
+     * @param green 綠色通道。
+     * @param blue 藍色通道。
+     * @param flash 閃爍亮度比例。
+     */
     private fun lightningSegment(
         buffer: VertexConsumer,
         positionMatrix: Matrix4f,
@@ -204,7 +240,20 @@ class WinCelebrationEffectEntityRenderer(
         lightningQuad(buffer, positionMatrix, start, end, diagonalWidth, -diagonalWidth, alpha, red, green, blue)
     }
 
-    /** 寫入單片不使用材質的半透明閃電帶。 */
+    /**
+     * 寫入單片不使用材質的半透明閃電帶。
+     *
+     * @param buffer 接收頂點的閃電緩衝。
+     * @param positionMatrix 局部座標轉換矩陣。
+     * @param start 線段起點。
+     * @param end 線段終點。
+     * @param xWidth X 軸半寬。
+     * @param zWidth Z 軸半寬。
+     * @param alpha 頂點透明度。
+     * @param red 紅色通道。
+     * @param green 綠色通道。
+     * @param blue 藍色通道。
+     */
     private fun lightningQuad(
         buffer: VertexConsumer,
         positionMatrix: Matrix4f,
@@ -231,7 +280,20 @@ class WinCelebrationEffectEntityRenderer(
         )
     }
 
-    /** 寫入正反兩面，避免帶狀幾何因視角或背面剔除而消失。 */
+    /**
+     * 寫入正反兩面，避免帶狀幾何因視角或背面剔除而消失。
+     *
+     * @param buffer 接收頂點的閃電緩衝。
+     * @param positionMatrix 局部座標轉換矩陣。
+     * @param first 四邊形第一個頂點。
+     * @param second 第二個頂點。
+     * @param third 第三個頂點。
+     * @param fourth 第四個頂點。
+     * @param alpha 頂點透明度。
+     * @param red 紅色通道。
+     * @param green 綠色通道。
+     * @param blue 藍色通道。
+     */
     private fun coloredQuad(
         buffer: VertexConsumer,
         positionMatrix: Matrix4f,
@@ -249,7 +311,19 @@ class WinCelebrationEffectEntityRenderer(
         }
     }
 
-    /** 閃電 render layer 使用 position-color 頂點格式。 */
+    /**
+     * 閃電 render layer 使用 position-color 頂點格式。
+     *
+     * @param buffer 接收頂點的閃電緩衝。
+     * @param positionMatrix 局部座標轉換矩陣。
+     * @param x 頂點 X 座標。
+     * @param y 頂點 Y 座標。
+     * @param z 頂點 Z 座標。
+     * @param alpha 頂點透明度。
+     * @param red 紅色通道。
+     * @param green 綠色通道。
+     * @param blue 藍色通道。
+     */
     private fun lightningVertex(
         buffer: VertexConsumer,
         positionMatrix: Matrix4f,
@@ -266,7 +340,13 @@ class WinCelebrationEffectEntityRenderer(
             .next()
     }
 
-    /** 將 seed 穩定映射至 -1 到 1，讓每次重載仍得到相同的閃電形狀。 */
+    /**
+     * 將 seed 穩定映射至 -1 到 1，讓每次重載仍得到相同的閃電形狀。
+     *
+     * @param seed 持久化演出 seed。
+     * @param salt 此次取樣使用的雜湊偏移。
+     * @return 穩定落在 -1 到 1 的取樣值。
+     */
     private fun seededOffset(
         seed: Long,
         salt: Int,
@@ -278,14 +358,28 @@ class WinCelebrationEffectEntityRenderer(
         return (value ushr 11) / LIGHTNING_HASH_DENOMINATOR * 2.0 - 1.0
     }
 
-    /** 閃電折線節點。 */
+    /**
+     * 閃電路徑上的三維折線節點。
+     *
+     * @property x 世界局部 X 座標。
+     * @property y 世界局部 Y 座標。
+     * @property z 世界局部 Z 座標。
+     */
     private data class LightningPoint(
         val x: Double,
         val y: Double,
         val z: Double,
     )
 
-    /** 閃電命中後讓鋸齒狀電流貼近牌桌向外放射，並以短分岔強化接地放電感。 */
+    /**
+     * 閃電命中後讓鋸齒狀電流貼近牌桌向外放射，並以短分岔強化接地放電感。
+     *
+     * @param buffer 接收頂點的閃電緩衝。
+     * @param positionMatrix 局部座標轉換矩陣。
+     * @param effectProgress 整段效果進度。
+     * @param seed 控制電弧形狀的持久化 seed。
+     * @param rotation 電弧排列的起始角度。
+     */
     private fun groundDischarge(
         buffer: VertexConsumer,
         positionMatrix: Matrix4f,
@@ -323,7 +417,16 @@ class WinCelebrationEffectEntityRenderer(
         }
     }
 
-    /** 由中心向外建立一條具側向偏移的接地放電路徑。 */
+    /**
+     * 由中心向外建立一條具側向偏移的接地放電路徑。
+     *
+     * @param seed 控制節點偏移的持久化 seed。
+     * @param shapeIndex 離散路徑形狀索引。
+     * @param rayIndex 放射電弧索引。
+     * @param baseAngle 電弧的基準方向角度。
+     * @param lengthScale 此路徑的長度比例。
+     * @return 由內向外排列的電弧節點。
+     */
     private fun dischargePoints(
         seed: Long,
         shapeIndex: Int,
@@ -342,7 +445,14 @@ class WinCelebrationEffectEntityRenderer(
         )
     }
 
-    /** 以淡藍外光與近白核心疊出一條水平放電路徑。 */
+    /**
+     * 以淡藍外光與近白核心疊出一條水平放電路徑。
+     *
+     * @param buffer 接收頂點的閃電緩衝。
+     * @param positionMatrix 局部座標轉換矩陣。
+     * @param points 電弧折線節點。
+     * @param intensity 此路徑的亮度比例。
+     */
     private fun drawDischargePath(
         buffer: VertexConsumer,
         positionMatrix: Matrix4f,
@@ -363,7 +473,16 @@ class WinCelebrationEffectEntityRenderer(
         }
     }
 
-    /** 依序展開一圈波紋；每個後續圓環稍晚出現、略暗且高度錯開，模擬水滴擴散。 */
+    /**
+     * 依序展開一圈波紋；每個後續圓環稍晚出現、略暗且高度錯開，模擬水滴擴散。
+     *
+     * @param buffer 接收頂點的閃電緩衝。
+     * @param positionMatrix 局部座標轉換矩陣。
+     * @param rotation 圓環起始角度。
+     * @param effectProgress 整段效果進度。
+     * @param envelope 整體淡入淡出比例。
+     * @param rippleIndex 波紋索引。
+     */
     private fun ripple(
         buffer: VertexConsumer,
         positionMatrix: Matrix4f,
@@ -400,7 +519,21 @@ class WinCelebrationEffectEntityRenderer(
         }
     }
 
-    /** 同時畫水平環帶與薄垂直側壁，讓水波紋從俯視與低角度都清楚可見。 */
+    /**
+     * 同時畫水平環帶與薄垂直側壁，讓水波紋從俯視與低角度都清楚可見。
+     *
+     * @param buffer 接收頂點的閃電緩衝。
+     * @param positionMatrix 局部座標轉換矩陣。
+     * @param startAngle 圓弧起始角度。
+     * @param endAngle 圓弧結束角度。
+     * @param radius 圓弧中心半徑。
+     * @param height 圓弧高度。
+     * @param width 環帶半寬。
+     * @param alpha 頂點透明度。
+     * @param red 紅色通道。
+     * @param green 綠色通道。
+     * @param blue 藍色通道。
+     */
     private fun rippleSegment(
         buffer: VertexConsumer,
         positionMatrix: Matrix4f,
@@ -429,7 +562,12 @@ class WinCelebrationEffectEntityRenderer(
         coloredQuad(buffer, positionMatrix, lowerStart, lowerEnd, upperEnd, upperStart, alpha, red, green, blue)
     }
 
-    /** 將持久化 seed 穩定映射到一圈內的起始角度，避免世界重載後圖樣旋轉相位改變。 */
+    /**
+     * 將持久化 seed 穩定映射到一圈內的起始角度，避免世界重載後圖樣旋轉相位改變。
+     *
+     * @param seed 持久化演出 seed。
+     * @return 0 到一整圈之間的起始角度（弧度）。
+     */
     private fun seedRotation(seed: Long): Double = Math.floorMod(seed, SEED_ROTATION_STEPS) /
         SEED_ROTATION_STEPS.toDouble() * FULL_ROTATION_RADIANS
 

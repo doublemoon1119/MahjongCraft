@@ -39,7 +39,7 @@ interface RoomSnapshotRepository {
      * 獲取目前所有正在觀察該房間的所有觀察者 Uuid 集合。
      *
      * @param roomId 房間的 Uuid。
-     * @return 觀察該房間的所有玩家 Uuid 集合。
+     * @return 觀察該房間的所有觀察者 Uuid 集合。
      */
     suspend fun getAllObservers(roomId: Uuid): Set<Uuid>
 

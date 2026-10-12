@@ -1,12 +1,15 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 
-/** 麻將骰子朝上的點數及其靜止模型旋轉。 */
+/**
+ * 麻將骰子朝上的點數及其靜止模型旋轉。
+ *
+ * @property value 骰子顯示值。
+ * @property xRotationDegrees 模型局部 X 軸旋轉角度。
+ * @property yRotationDegrees 模型局部 Y 軸旋轉角度。
+ */
 enum class MahjongDicePoint(
-    /** 骰子顯示值。 */
     val value: Int,
-    /** 模型局部 X 軸旋轉角度。 */
     val xRotationDegrees: Float,
-    /** 模型局部 Y 軸旋轉角度。 */
     val yRotationDegrees: Float,
 ) {
     /** 一點朝上。 */
@@ -32,7 +35,12 @@ enum class MahjongDicePoint(
     fun next(): MahjongDicePoint = entries[(ordinal + 1) % entries.size]
 
     companion object {
-        /** 由數值取得點數；無效值使用一點。 */
+        /**
+         * 由數值取得點數；無效值使用一點。
+         *
+         * @param value 要解析的點數值。
+         * @return 對應點數；不在一至六時回傳一點。
+         */
         fun fromValueOrDefault(value: Int): MahjongDicePoint = entries.firstOrNull { it.value == value } ?: ONE
     }
 }

@@ -35,6 +35,9 @@ data class DiceRollAnimationSpec(
 
     /**
      * 依動畫階段與 [seed] 建立三次桌面接觸的權威聲音提示；使用向上取整確保聲音不會早於畫面接觸。
+     *
+     * @param seed 用於重建確定性音高差異的動畫 seed。
+     * @return 依接觸時間排列的聲音提示。
      */
     fun landingSoundCues(seed: Long): List<DiceLandingSoundCue> {
         val random = DeterministicDiceRandom(seed xor SOUND_PITCH_SEED)
@@ -82,7 +85,14 @@ data class DiceRollAnimationSpec(
 class DiceRollAnimation(
     private val spec: DiceRollAnimationSpec = DiceRollAnimationSpec(),
 ) {
-    /** 計算指定經過 ticks 的視覺 frame。 */
+    /**
+     * 計算指定經過 ticks 的視覺 frame。
+     *
+     * @param seed 決定此動畫的固定隨機路徑。
+     * @param elapsedTicks 動畫已經過的 tick 數，可包含小數部分。
+     * @param startOffset 畫面起點相對最終落點的偏移；預設取自 [spec]。
+     * @return 指定時間的位移、旋轉、進度與完成狀態。
+     */
     fun frame(
         seed: Long,
         elapsedTicks: Double,
@@ -118,7 +128,14 @@ class DiceRollAnimation(
         )
     }
 
-    /** 計算拋出、兩次彈跳及最後靜止階段的位移。 */
+    /**
+     * 計算拋出、兩次彈跳及最後靜止階段的位移。
+     *
+     * @param progress 動畫進度。
+     * @param lateralDirection seed 產生的側向方向係數。
+     * @param startOffset 畫面起點偏移。
+     * @return 此階段的視覺位移。
+     */
     private fun calculateOffset(
         progress: Double,
         lateralDirection: Double,
@@ -145,7 +162,14 @@ class DiceRollAnimation(
         else -> DiceAnimationVector.ZERO
     }
 
-    /** 計算持續翻滾並於結尾收斂為 identity 的額外旋轉。 */
+    /**
+     * 計算持續翻滾並於結尾收斂為 identity 的額外旋轉。
+     *
+     * @param progress 動畫進度。
+     * @param spinAxis 此次動畫的旋轉軸。
+     * @param spinTurns 此次動畫的總旋轉圈數。
+     * @return 此進度的額外旋轉。
+     */
     private fun calculateRotation(
         progress: Double,
         spinAxis: DiceAnimationVector,
@@ -165,12 +189,25 @@ class DiceRollAnimation(
         )
     }
 
-    /** 計算指定階段的正弦彈跳高度。 */
+    /**
+     * 計算指定階段的正弦彈跳高度。
+     *
+     * @param progress 全動畫進度。
+     * @param start 階段開始進度。
+     * @param end 階段結束進度。
+     * @param height 此階段的最高高度。
+     * @return 此進度的彈跳高度。
+     */
     private fun bounceHeight(progress: Double, start: Double, end: Double, height: Double): Double = sin(
         PI * ((progress - start) / (end - start)),
     ) * height
 
-    /** 讓最終旋轉收斂的速度在兩端平滑。 */
+    /**
+     * 讓最終旋轉收斂的速度在兩端平滑。
+     *
+     * @param progress 收斂進度；計算前會限制在 0 到 1。
+     * @return 平滑後的進度。
+     */
     private fun smoothStep(progress: Double): Double {
         val clamped = progress.coerceIn(0.0, 1.0)
         return clamped * clamped * (3.0 - 2.0 * clamped)
@@ -212,10 +249,10 @@ private class DeterministicDiceRandom(seed: Long) {
     /** 目前內部狀態。 */
     private var state: Long = seed
 
-    /** 產生 `0.0..1.0` 的下一個值。 */
+    /** 產生大於等於 0、小於 1 的下一個值。 */
     fun nextDouble(): Double = (nextLong().ushr(11).toDouble() / DOUBLE_UNIT_DENOMINATOR)
 
-    /** 產生 `-1.0..1.0` 的下一個值。 */
+    /** 產生大於等於 -1、小於 1 的下一個值。 */
     fun nextSignedDouble(): Double = nextDouble() * 2.0 - 1.0
 
     /** 產生下一個 64-bit 雜湊值。 */

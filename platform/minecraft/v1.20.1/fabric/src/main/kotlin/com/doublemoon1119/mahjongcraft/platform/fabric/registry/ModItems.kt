@@ -9,6 +9,7 @@ import net.minecraft.registry.Registries
 import net.minecraft.registry.Registry
 import net.minecraft.util.Identifier
 
+/** 麻將骰子、牌張與點棒物品的實例及登錄入口。 */
 object ModItems {
     /** 可放置自由測試骰子的麻將骰子 item。 */
     val MAHJONG_DICE: Item = MahjongDiceItem(Item.Settings())

@@ -247,7 +247,12 @@ class DiscardTileUseCase(
         return Outcome.Success(Unit)
     }
 
-    /** 將捨牌反應結果與該 checkpoint 新公開的牌張一起帶出原子更新區塊。 */
+    /**
+     * 將捨牌反應結果與該 checkpoint 新公開的牌張一起帶出原子更新區塊。
+     *
+     * @property resolution 捨牌後的反應裁定結果。
+     * @property newlyRevealedTileIds 該 checkpoint 新公開的牌張 ID。
+     */
     private data class DiscardResult(
         val resolution: DiscardReactionResolver.Result,
         val newlyRevealedTileIds: Set<Uuid> = emptySet(),

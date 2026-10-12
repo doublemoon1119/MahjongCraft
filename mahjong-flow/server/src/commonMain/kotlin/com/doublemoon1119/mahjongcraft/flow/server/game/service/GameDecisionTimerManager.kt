@@ -170,6 +170,8 @@ class GameDecisionTimerManager(
      *
      * 玩家會在同一個 repository 交易中耗盡保留思考時間並進入強制自動操作；對應 runtime timer
      * 隨即移除，後續決策由自動操作 driver 直接處理，不再建立新的思考計時器。
+     *
+     * @return 本次取得處理權的完整逾時決策。
      */
     suspend fun claimTimedOutDecisions(): List<TimedOutPlayerDecision> = mutex.withLock {
         val nowMillis = clock.nowMillis()
@@ -251,7 +253,13 @@ class GameDecisionTimerManager(
         activeTimers.clear()
     }
 
-    /** 將指定時間點的 runtime timers 轉成對外 read model。 */
+    /**
+     * 將指定時間點的 runtime timers 轉成對外 read model。
+     *
+     * @param timers 欲轉換的玩家計時器。
+     * @param nowMillis 計算剩餘時間時使用的單調時間點。
+     * @return 以玩家識別碼索引的時間狀態。
+     */
     private fun statusesAt(
         timers: Map<Uuid, ActiveDecisionTimer>,
         nowMillis: Long,

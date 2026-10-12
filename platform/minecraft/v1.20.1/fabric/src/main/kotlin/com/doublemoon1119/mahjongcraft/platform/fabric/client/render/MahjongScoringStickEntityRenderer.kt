@@ -16,7 +16,11 @@ import net.minecraft.item.ItemStack
 import net.minecraft.util.Identifier
 import net.minecraft.util.math.RotationAxis
 
-/** 使用既有點棒 item model 呈現面額的 client renderer；面額切換交給 vanilla item model predicate 解析。 */
+/**
+ * 使用既有點棒 item model 呈現面額的 client renderer；面額切換交給 vanilla item model predicate 解析。
+ *
+ * @param context Minecraft renderer factory 提供的 client context。
+ */
 class MahjongScoringStickEntityRenderer(
     context: EntityRendererFactory.Context,
 ) : EntityRenderer<MahjongScoringStickEntity>(context) {

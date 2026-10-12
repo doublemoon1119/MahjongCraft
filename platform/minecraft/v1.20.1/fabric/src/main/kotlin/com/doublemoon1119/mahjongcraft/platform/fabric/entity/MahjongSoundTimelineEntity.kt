@@ -10,7 +10,12 @@ import net.minecraft.nbt.NbtCompound
 import net.minecraft.world.World
 import kotlin.uuid.Uuid
 
-/** 從指定世界座標播放可持久化聲音時間線、播放完畢後自行移除的無形 entity。 */
+/**
+ * 從指定世界座標播放可持久化聲音時間線、播放完畢後自行移除的無形 entity。
+ *
+ * @param type Minecraft entity 類型。
+ * @param world 實體所屬世界。
+ */
 class MahjongSoundTimelineEntity(
     type: EntityType<out MahjongSoundTimelineEntity> = ModEntities.mahjongSoundTimeline,
     world: World,
@@ -27,7 +32,15 @@ class MahjongSoundTimelineEntity(
         isInvisible = true
     }
 
-    /** 設定唯一一筆立即播放、短暫有效的聲音。 */
+    /**
+     * 設定唯一一筆立即播放、短暫有效的聲音。
+     *
+     * @param tableId 所屬麻將桌 UUID。
+     * @param soundId 聲音 registry ID。
+     * @param volume 播放音量。
+     * @param pitch 播放音高。
+     * @param playAtGameTime 預定播放的絕對 server game time。
+     */
     fun configure(tableId: Uuid, soundId: String, volume: Float, pitch: Float, playAtGameTime: Long) {
         check(!world.isClient) { "Sound timeline must be configured by the server" }
         dataTracker.set(TABLE_ID, tableId.toString())
@@ -51,11 +64,21 @@ class MahjongSoundTimelineEntity(
         dataTracker.startTracking(TABLE_ID, "")
     }
 
+    /**
+     * 從世界存檔還原所屬桌子與待播放聲音。
+     *
+     * @param nbt entity 的持久化資料。
+     */
     override fun readCustomDataFromNbt(nbt: NbtCompound) {
         dataTracker.set(TABLE_ID, nbt.getString(NBT_KEY_TABLE_ID))
         readAnimationQueueFromNbt(nbt)
     }
 
+    /**
+     * 將所屬桌子與待播放聲音寫入世界存檔。
+     *
+     * @param nbt 接收 entity 持久化資料的 NBT。
+     */
     override fun writeCustomDataToNbt(nbt: NbtCompound) {
         nbt.putString(NBT_KEY_TABLE_ID, managedTableId?.toString().orEmpty())
         writeAnimationQueueToNbt(nbt)

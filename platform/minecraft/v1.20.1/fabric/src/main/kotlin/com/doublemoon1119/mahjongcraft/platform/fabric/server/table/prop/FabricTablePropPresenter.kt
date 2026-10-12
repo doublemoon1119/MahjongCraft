@@ -30,6 +30,10 @@ import kotlin.uuid.Uuid
  * 負責生成與辨識。
  *
  * 描述裡使用了未登記的種類、或種類不認得的變體時，該物件略過不擺並記錄警告，其餘物件照常同步。
+ *
+ * @property serverHolder 取得目前伺服器世界。
+ * @property spawnGateway 透過平台入口生成桌面物件 entity。
+ * @property kindRegistry 查詢規則桌面物件種類實作。
  */
 @Single(binds = [TablePropPresenter::class])
 class FabricTablePropPresenter(
@@ -37,9 +41,15 @@ class FabricTablePropPresenter(
     private val spawnGateway: FabricEntitySpawnGateway,
     private val kindRegistry: FabricTablePropKindRegistry,
 ) : TablePropPresenter {
+    /** 記錄略過的未知種類與變體。 */
     private val logger = mahjongCraftLogger(FabricTablePropPresenter::class)
 
-    /** 驗證 controller 後保留相符的既有物件；缺少的物件全部生成成功後，才移除多餘的舊物件。 */
+    /**
+     * 驗證 controller 後保留相符的既有物件；缺少的物件全部生成成功後，才移除多餘的舊物件。
+     *
+     * @param presentation 桌子與目標桌面物件的呈現資料。
+     * @return 呈現結果；桌子無效或生成失敗時回傳對應錯誤。
+     */
     override fun present(presentation: TablePropPresentation): TablePropPresentationResult {
         val world = resolveWorld(presentation.tableLocation) ?: return TablePropPresentationResult.TABLE_NOT_FOUND
         val controllerPos = presentation.tableLocation.toBlockPos()
@@ -80,7 +90,13 @@ class FabricTablePropPresenter(
         return TablePropPresentationResult.PRESENTED
     }
 
-    /** 清除指定 controller 周圍、由這張桌子管理的全部規則桌面物件。 */
+    /**
+     * 清除指定 controller 周圍、由這張桌子管理的全部規則桌面物件。
+     *
+     * @param tableId 桌子 UUID。
+     * @param tableLocation 桌子位置。
+     * @return 被移除的桌面物件數量。
+     */
     override fun clear(tableId: Uuid, tableLocation: TableLocation): Int {
         val world = resolveWorld(tableLocation) ?: return 0
         val props = findManagedProps(world, tableId, tableLocation.toBlockPos())
@@ -88,7 +104,14 @@ class FabricTablePropPresenter(
         return props.size
     }
 
-    /** 查詢每個已登記種類在桌子結構附近、由這張桌子管理的 entity。 */
+    /**
+     * 查詢每個已登記種類在桌子結構附近、由這張桌子管理的 entity。
+     *
+     * @param world 桌子所在伺服器世界。
+     * @param tableId 桌子 UUID。
+     * @param controllerPos controller 方塊位置。
+     * @return entity 與負責種類配對的清單。
+     */
     private fun findManagedProps(world: ServerWorld, tableId: Uuid, controllerPos: BlockPos): List<ManagedProp> {
         val searchBox = Box(controllerPos).expand(SEARCH_HORIZONTAL, SEARCH_VERTICAL, SEARCH_HORIZONTAL)
         return kindRegistry.kinds.flatMap { kind ->
@@ -96,14 +119,27 @@ class FabricTablePropPresenter(
         }
     }
 
-    /** 由版本無關 dimension ID 取得目前 server session 的世界。 */
+    /**
+     * 由版本無關 dimension ID 取得目前 server session 的世界。
+     *
+     * @param location 桌子位置。
+     * @return 對應的已載入伺服器世界；無法解析時為 null。
+     */
     private fun resolveWorld(location: TableLocation): ServerWorld? {
         val identifier = Identifier.tryParse(location.dimensionId) ?: return null
         val worldKey = RegistryKey.of(RegistryKeys.WORLD, identifier)
         return serverHolder.current()?.getWorld(worldKey)
     }
 
-    /** 驗證指定位置確實是 UUID 與朝向資料可用的 controller。 */
+    /**
+     * 驗證指定位置確實是 UUID 與朝向資料可用的 controller。
+     *
+     * @param world 桌子所在世界。
+     * @param controllerPos controller 方塊位置。
+     * @param state 該方塊的狀態。
+     * @param tableId 預期桌子 UUID。
+     * @return 狀態與桌子 UUID 相符時的 block entity；否則為 null。
+     */
     private fun resolveTable(
         world: ServerWorld,
         controllerPos: BlockPos,
@@ -119,15 +155,29 @@ class FabricTablePropPresenter(
         }
     }
 
-    /** 將版本無關 table location 轉回 Fabric 方塊座標。 */
+    /**
+     * 將版本無關 table location 轉回 Fabric 方塊座標。
+     *
+     * @param location 版本無關桌子位置。
+     * @return 對應的 Minecraft 方塊位置。
+     */
     private fun TableLocation.toBlockPos(): BlockPos = BlockPos(x, y, z)
 
-    /** 桌上一個既有的規則桌面物件與負責它的種類。 */
+    /**
+     * 桌上一個既有的規則桌面物件與負責它的種類。
+     *
+     * @property kind 解讀變體及搜尋該 entity 的桌面物件種類。
+     * @property entity 桌上已存在的 Minecraft entity。
+     */
     private class ManagedProp(
         val kind: FabricTablePropKind,
         val entity: Entity,
     ) {
-        /** 讀出目前的身分與落點；種類認不得變體時為 null。 */
+        /**
+         * 讀出目前的身分與落點；種類認不得變體時為 null。
+         *
+         * @return entity 對應的桌面物件目標；無法辨識變體時為 null。
+         */
         fun target(): TablePropTarget? = kind.variantOf(entity)?.let { variant ->
             TablePropTarget(
                 kind = kind.id,

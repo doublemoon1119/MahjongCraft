@@ -15,6 +15,7 @@ import kotlin.test.assertTrue
 
 /** 驗證日麻本場點數的付款分攤。 */
 class RiichiComboBonusTest {
+    /** 計算本場點數時使用的日麻規則模組。 */
     private val module: RiichiRuleModule = RiichiRuleModule(
         id = "mahjongcraft:riichi",
         config = RiichiRuleConfig(),
@@ -145,7 +146,10 @@ class RiichiComboBonusTest {
      * @param drawn 贏家是否已摸進胡牌張，供自摸結算使用。
      */
     private class Seats(winnerPao: RelativeDirection?, drawn: Boolean = false) {
+        /** 東家測試座位。 */
         val east: MahjongPlayer = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST)
+
+        /** 南家測試座位與本組測試的贏家。 */
         val winner: MahjongPlayer = FakeMahjongPlayerFactory.create(
             initialSeat = Wind.SOUTH,
             hand = Hand(
@@ -156,17 +160,30 @@ class RiichiComboBonusTest {
             discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
             playerRuleState = RiichiPlayerState(paoLiability = winnerPao?.let { PaoLiability(PaoYaku.Daisangen, it) }),
         )
+
+        /** 西家測試座位。 */
         val west: MahjongPlayer = FakeMahjongPlayerFactory.create(initialSeat = Wind.WEST)
+
+        /** 北家測試座位。 */
         val north: MahjongPlayer = FakeMahjongPlayerFactory.create(initialSeat = Wind.NORTH)
 
-        /** 以 [comboCount] 本場建立四人桌況。 */
+        /**
+         * 以指定本場數建立四人桌況。
+         *
+         * @param comboCount 本場數。
+         * @return 由四個測試座位組成的桌況。
+         */
         fun table(comboCount: Int): TableState = FakeTableStateFactory.create(
             players = listOf(east, winner, west, north),
             comboCount = comboCount,
             config = RiichiRuleConfig(),
         )
 
-        /** 中中、發發發、白白白、123m、55p。 */
+        /**
+         * 中中、發發發、白白白、123m、55p。
+         *
+         * @return 大三元聽牌所需的 13 張牌種。
+         */
         private fun daisangenTiles() = listOf(
             Tile.Honor.Red, Tile.Honor.Red,
             Tile.Honor.Green, Tile.Honor.Green, Tile.Honor.Green,

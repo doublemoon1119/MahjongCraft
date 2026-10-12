@@ -23,8 +23,13 @@ import kotlin.uuid.Uuid
 
 /** 驗證 debug 情境腳本 AI 的固定行為。 */
 class DebugScriptedAiStrategyTest {
+    /** 策略所操控的玩家識別碼。 */
     private val selfId = Uuid.random()
+
+    /** 沒有摸牌位時，預期被打出的立牌。 */
     private val standingTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+
+    /** 自己回合預期被摸切的牌。 */
     private val drawnTile = FakeIdentifiedTileFactory.create(Tile.Honor.South)
 
     /** 他家捨牌與宣告槓時，即使可以榮和也一律跳過。 */
@@ -113,6 +118,14 @@ class DebugScriptedAiStrategyTest {
         assertIs<DebugScriptedAiStrategy>(registry.resolve(DebugScriptedAiStrategy.PULL_NORTH_FIRST_KEY))
     }
 
+    /**
+     * 建立只有策略玩家的決策情境，不公開任何另置牌。
+     *
+     * @param phase 要模擬的決策階段。
+     * @param legalActions 該階段提供給策略的合法動作。
+     * @param hand 策略玩家的手牌。
+     * @return 包含完整自身手牌的決策情境。
+     */
     private fun context(
         phase: AiDecisionPhase,
         legalActions: List<GameAction>,

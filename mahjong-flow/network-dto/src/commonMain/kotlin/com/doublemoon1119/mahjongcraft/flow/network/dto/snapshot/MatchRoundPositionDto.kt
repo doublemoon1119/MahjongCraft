@@ -6,7 +6,6 @@ import kotlinx.serialization.Serializable
 /**
  * 權威局位的網路 DTO。
  *
- *
  * @property sequenceIndex 整場賽程中從零開始的單調序號。
  * @property prevalentWind 此局權威場風。
  * @property localRoundNumber 此場風內從一開始的局數。
@@ -19,5 +18,3 @@ data class MatchRoundPositionDto(
     val localRoundNumber: Int,
     val phase: MatchRoundPhaseDto,
 )
-
-/** 將權威局位轉成網路 DTO。 */

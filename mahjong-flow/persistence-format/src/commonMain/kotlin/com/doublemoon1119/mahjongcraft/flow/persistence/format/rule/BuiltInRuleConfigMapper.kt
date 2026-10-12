@@ -105,32 +105,39 @@ fun TaiwanRuleConfigPersistenceDto.toDomain(): TaiwanRuleConfig = TaiwanRuleConf
     multiRonPolicy = multiRonPolicy.toDomain(),
 )
 
+/** 將多家榮和政策轉為持久化 DTO。 */
 private fun MultiRonPolicy.toPersistenceDto(): MultiRonPolicyPersistenceDto = MultiRonPolicyPersistenceDto(
     doubleRonResolution = doubleRonResolution.toPersistenceDto(),
     tripleRonResolution = tripleRonResolution.toPersistenceDto(),
 )
 
+/** 將持久化 DTO 還原為多家榮和政策。 */
 private fun MultiRonPolicyPersistenceDto.toDomain(): MultiRonPolicy = MultiRonPolicy(
     doubleRonResolution = doubleRonResolution.toDomain(),
     tripleRonResolution = tripleRonResolution.toDomain(),
 )
 
+/** 將榮和處理方式轉為持久化 DTO。 */
 private fun RonResolution.toPersistenceDto(): RonResolutionPersistenceDto = RonResolutionPersistenceDto.valueOf(name)
 
+/** 將持久化 DTO 還原為榮和處理方式。 */
 private fun RonResolutionPersistenceDto.toDomain(): RonResolution = RonResolution.valueOf(name)
 
+/** 將日麻對局長度轉為持久化 DTO。 */
 private fun RiichiGameLength.toPersistenceDto(): RiichiGameLengthPersistenceDto = when (this) {
     RiichiGameLength.OneGame -> RiichiGameLengthPersistenceDto.ONE_GAME
     RiichiGameLength.East -> RiichiGameLengthPersistenceDto.EAST
     RiichiGameLength.TwoWinds -> RiichiGameLengthPersistenceDto.TWO_WINDS
 }
 
+/** 將持久化 DTO 還原為日麻對局長度。 */
 private fun RiichiGameLengthPersistenceDto.toDomain(): RiichiGameLength = when (this) {
     RiichiGameLengthPersistenceDto.ONE_GAME -> RiichiGameLength.OneGame
     RiichiGameLengthPersistenceDto.EAST -> RiichiGameLength.East
     RiichiGameLengthPersistenceDto.TWO_WINDS -> RiichiGameLength.TwoWinds
 }
 
+/** 將台麻對局長度轉為持久化 DTO。 */
 private fun TaiwanGameLength.toPersistenceDto(): TaiwanGameLengthPersistenceDto = when (this) {
     TaiwanGameLength.OneGame -> TaiwanGameLengthPersistenceDto.ONE_GAME
     TaiwanGameLength.East -> TaiwanGameLengthPersistenceDto.EAST
@@ -138,6 +145,7 @@ private fun TaiwanGameLength.toPersistenceDto(): TaiwanGameLengthPersistenceDto 
     TaiwanGameLength.FourWinds -> TaiwanGameLengthPersistenceDto.FOUR_WINDS
 }
 
+/** 將持久化 DTO 還原為台麻對局長度。 */
 private fun TaiwanGameLengthPersistenceDto.toDomain(): TaiwanGameLength = when (this) {
     TaiwanGameLengthPersistenceDto.ONE_GAME -> TaiwanGameLength.OneGame
     TaiwanGameLengthPersistenceDto.EAST -> TaiwanGameLength.East

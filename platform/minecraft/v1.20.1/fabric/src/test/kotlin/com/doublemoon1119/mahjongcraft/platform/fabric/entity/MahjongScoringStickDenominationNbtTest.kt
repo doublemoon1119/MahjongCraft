@@ -7,6 +7,7 @@ import kotlin.test.assertEquals
 
 /** 點棒面額持久化的名稱往返與無效資料測試。 */
 class MahjongScoringStickDenominationNbtTest {
+    /** 測試讀寫面額使用的 NBT 欄位名稱。 */
     private val key = "Denomination"
 
     /** 每個面額都以名稱寫入並讀回同一個面額。 */

@@ -22,7 +22,13 @@ class AutomaticControlUpdateService(
     private val updateControls: UpdatePlayerAutomaticControlsUseCase,
     private val advanceManager: AutomatedAdvanceManager,
 ) {
-    /** 處理 [request]；[playerId] 必須來自已驗證的網路連線，不能來自 payload。 */
+    /**
+     * 處理 [request]；[playerId] 必須來自已驗證的網路連線，不能來自 payload。
+     *
+     * @param playerId 已驗證連線的玩家識別碼。
+     * @param request 客戶端自動操作更新要求。
+     * @return 與要求配對的更新結果。
+     */
     suspend operator fun invoke(
         playerId: Uuid,
         request: AutomaticControlUpdateRequestDto,
@@ -42,7 +48,12 @@ class AutomaticControlUpdateService(
     }
 }
 
-/** 將 Flow 權威結果映射成保留原 request 配對欄位的線路結果。 */
+/**
+ * 將 Flow 權威結果映射成保留原 request 配對欄位的線路結果。
+ *
+ * @param request 原始請求，用於保留配對欄位。
+ * @return 對應的線路結果。
+ */
 internal fun UpdatePlayerAutomaticControlsResult.toDto(
     request: AutomaticControlUpdateRequestDto,
 ): AutomaticControlUpdateResultDto = when (this) {
@@ -63,7 +74,13 @@ internal fun UpdatePlayerAutomaticControlsResult.toDto(
     )
 }
 
-/** 建立保留原 request 配對欄位的更新結果。 */
+/**
+ * 建立保留原 request 配對欄位的更新結果。
+ *
+ * @param result 權威更新結果分類。
+ * @param snapshot 可選的最新自動操作快照。
+ * @return 沿用此要求識別欄位的回覆 DTO。
+ */
 private fun AutomaticControlUpdateRequestDto.result(
     result: AutomaticControlUpdateResultKindDto,
     snapshot: AutomaticControlSnapshotDto? = null,

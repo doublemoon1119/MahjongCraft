@@ -2,6 +2,10 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
 /**
  * 回傳由 [startDegrees] 旋轉至 [endDegrees] 的最短有號角差，結果固定落在 `[-180, 180)`。
+ *
+ * @param startDegrees 起始角度。
+ * @param endDegrees 終止角度。
+ * @return 最短有號角差。
  */
 fun shortestYawDeltaDegrees(startDegrees: Float, endDegrees: Float): Float {
     require(startDegrees.isFinite() && endDegrees.isFinite()) { "Yaw angles must be finite" }

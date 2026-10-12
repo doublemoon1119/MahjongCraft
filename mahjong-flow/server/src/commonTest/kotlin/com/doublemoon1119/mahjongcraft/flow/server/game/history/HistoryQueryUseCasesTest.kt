@@ -33,7 +33,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
-/** [ListHistoryUseCase] 與 [GetHistorySummaryUseCase] 的授權邊界測試。 */
+/** 歷史清單、摘要、規則設定及單局重播查詢的授權與參數驗證測試。 */
 class HistoryQueryUseCasesTest {
     /** 非管理員不能查詢單局事件或桌況。 */
     @Test
@@ -93,7 +93,7 @@ class HistoryQueryUseCasesTest {
         assertEquals(0, repository.listCalls)
     }
 
-    /** 驗證停用查詢時即使管理員也不能取得資料。 */
+    /** 驗證停用查詢時一般玩家的個人清單要求不會抵達資料倉庫。 */
     @Test
     fun `test disabled policy rejects own query`() = runTest {
         val repository = RecordingHistoryQueryRepository()
@@ -302,6 +302,9 @@ class HistoryQueryUseCasesTest {
      * @property listCalls 清單查詢呼叫次數。
      * @property summaryCalls 摘要查詢呼叫次數。
      * @property ruleSettingsCalls 規則設定查詢呼叫次數。
+     * @property roundEventsCalls 單局事件查詢呼叫次數。
+     * @property roundStateCalls 單局牌面查詢呼叫次數。
+     * @property lastRuleSettingsAccess 最近一次規則設定查詢的授權身分。
      * @property lastListAccess 最近一次清單查詢的授權身分。
      */
     private class RecordingHistoryQueryRepository : HistoryQueryRepository {

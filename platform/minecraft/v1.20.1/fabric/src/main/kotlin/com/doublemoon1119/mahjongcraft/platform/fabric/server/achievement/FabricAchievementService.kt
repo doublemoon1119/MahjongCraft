@@ -34,6 +34,7 @@ class FabricAchievementService(
     private val gateway: AchievementGrantGateway,
     private val exclusions: GameEventExclusions,
 ) {
+    /** 記錄成果判定與授予的個別失敗。 */
     private val logger = mahjongCraftLogger(FabricAchievementService::class)
 
     /** 通用與規則專屬成果判定。 */

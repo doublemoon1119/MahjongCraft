@@ -27,6 +27,7 @@ import kotlin.uuid.Uuid
  *
  * @property store 房間與對局的權威狀態。
  * @property visibilityPolicy 產生依觀察者裁切後對局快照的政策。
+ * @property handReadinessVisibilityPolicy 產生依觀察者裁切後手牌準備分析快照的政策。
  * @property audienceSource 平台層提供的觀察者來源。
  * @property sender 平台層提供的送出管道。
  */

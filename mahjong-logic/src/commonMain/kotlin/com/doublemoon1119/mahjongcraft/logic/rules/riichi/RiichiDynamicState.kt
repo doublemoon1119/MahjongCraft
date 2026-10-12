@@ -28,7 +28,10 @@ data class RiichiDynamicState(
 ) : DynamicRuleState,
     TileWallRevealable {
     /**
-     * 取得「寶牌指示器」的 [Uuid]
+     * 取得目前公開的寶牌指示牌 UUID 集合。
+     *
+     * @param state 目前的權威桌況。
+     * @return 已公開的寶牌指示牌 UUID。
      */
     override fun getVisibleTileIds(state: TableState): Set<Uuid> = getDoraIndicators(state).first.map { it.id }.toSet()
 
@@ -45,6 +48,7 @@ data class RiichiDynamicState(
      * 指示牌實體位置依已完成補牌次數（槓與拔北合計）往前位移，而公開組數僅依已正式公開的槓寶牌數量
      * 增加；延後公開期間兩者不必相等。
      *
+     * @param state 目前的權威桌況與死牌排列。
      * @return Pair<寶牌列表, 裏寶牌列表>
      */
     fun getDoraIndicators(state: TableState): Pair<List<IdentifiedTile>, List<IdentifiedTile>> {

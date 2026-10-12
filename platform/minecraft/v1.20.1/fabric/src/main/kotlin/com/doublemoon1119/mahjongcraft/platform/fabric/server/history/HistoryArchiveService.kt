@@ -33,6 +33,7 @@ internal class HistoryArchiveService(
     private val locations: TableLocationRegistry,
     private val json: Json,
 ) {
+    /** 記錄封存與對帳診斷的 logger。 */
     private val logger = mahjongCraftLogger(HistoryArchiveService::class)
 
     /** 最近一次逐場封存失敗的安全摘要，不包含隱藏牌或 payload。 */
@@ -42,6 +43,8 @@ internal class HistoryArchiveService(
     /** 內容相衝或已損壞的場次不可再次寫入相同鍵。 */
     @Volatile var blockedMatchIds: Set<String> = emptySet()
         private set
+
+    /** 最近一次對帳中已警告過的孤兒場次，避免重複記錄同一問題。 */
     private var warnedOrphanMatchIds: Set<String> = emptySet()
 
     /** 上一次對帳已記錄過的待寫事件問題（場次與序號）；問題持續存在時不重複記錄。 */
@@ -164,6 +167,12 @@ internal class HistoryArchiveService(
      * 解碼驗證一場尚未驗證過的待寫事件；無法解碼的事件記為缺口並禁止寫入該場。
      *
      * 只讀取高於已驗證序號的事件；全部成功且從 1 起連續時推進已驗證的序號，否則移除該場的已驗證紀錄，下次重新完整解碼。
+     *
+     * @param database 目前連線的資料庫。
+     * @param matchId 場次識別字串。
+     * @param summary 該場待寫序號摘要。
+     * @param gaps 收集每場最早缺口的可變索引。
+     * @param blocked 收集不可安全繼續寫入的場次。
      */
     private fun validatePayloads(
         database: SqliteHistoryDatabase,
@@ -243,7 +252,13 @@ internal class HistoryArchiveService(
         return completed
     }
 
-    /** 拒絕版本、欄位或 DTO 不一致的暫存列。 */
+    /**
+     * 拒絕版本、欄位或 DTO 不一致的暫存列。
+     *
+     * @param record 含有 envelope 與版本化 payload 的資料庫待寫列。
+     * @return 通過版本、欄位比對及反序列化的權威事件。
+     * @throws IllegalArgumentException payload 版本或 envelope 欄位不符時。
+     */
     private fun decodeRecord(record: PendingHistoryRecord): HistoryOutboxEvent {
         require(record.payloadVersion == 1) { "Unsupported history event payload version" }
         val dto = json.decodeFromString(HistoryOutboxEventPersistenceDto.serializer(), record.payload)

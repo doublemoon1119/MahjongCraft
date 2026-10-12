@@ -9,10 +9,21 @@ import kotlin.uuid.Uuid
  * 成功後才移除多出來的舊物件。
  */
 interface TablePropPresenter {
-    /** 把指定桌子的規則桌面物件同步為 [presentation] 描述的完整清單。 */
+    /**
+     * 把指定桌子的規則桌面物件同步為 [presentation] 描述的完整清單。
+     *
+     * @param presentation 桌子目前應有的完整規則物件清單。
+     * @return 同步處理結果。
+     */
     fun present(presentation: TablePropPresentation): TablePropPresentationResult
 
-    /** 清除指定桌子目前所有的規則桌面物件；回傳實際移除數量。 */
+    /**
+     * 清除指定桌子目前所有的規則桌面物件。
+     *
+     * @param tableId 麻將桌 UUID。
+     * @param tableLocation 麻將桌目前位置。
+     * @return 實際移除的物件數量。
+     */
     fun clear(tableId: Uuid, tableLocation: TableLocation): Int
 }
 
@@ -24,6 +35,7 @@ interface TablePropPresenter {
  * @param targets 桌上應有的全部物件落點。
  * @param existing 桌上目前由這張桌子管理的物件。
  * @param targetOf 讀出既有物件目前的身分與落點。
+ * @return 需要生成的目標與需要移除的既有物件。
  */
 fun <T> planTablePropSync(
     targets: List<TablePropTarget>,

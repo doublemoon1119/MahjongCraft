@@ -18,7 +18,11 @@ import kotlin.uuid.Uuid
 
 /** 驗證 Fabric 規則桌面物件種類的登記順序、凍結與錯誤診斷。 */
 class FabricTablePropKindRegistrationTest {
-    /** 不碰世界的測試種類。 */
+    /**
+     * 不讀寫世界的測試種類。
+     *
+     * @property id 桌面物件種類識別碼。
+     */
     private class FakeKind(override val id: String) : FabricTablePropKind {
         override fun findManaged(world: ServerWorld, tableId: Uuid, searchBox: Box): List<Entity> = emptyList()
 
@@ -27,7 +31,12 @@ class FabricTablePropKindRegistrationTest {
         override fun create(world: ServerWorld, tableId: Uuid, target: TablePropTarget): Entity? = null
     }
 
-    /** 登記指定種類的測試 extension。 */
+    /**
+     * 登記指定種類的測試擴充。
+     *
+     * @property id 擴充識別碼。
+     * @property kinds 此擴充提供的桌面物件種類。
+     */
     private class KindExtension(
         override val id: String,
         private val kinds: List<FabricTablePropKind>,

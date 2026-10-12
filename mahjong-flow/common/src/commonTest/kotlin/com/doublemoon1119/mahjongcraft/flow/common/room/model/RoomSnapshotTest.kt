@@ -8,8 +8,10 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
+/** 驗證 [Room.toSnapshot] 對不同觀察者呈現的房間資訊。 */
 class RoomSnapshotTest {
 
+    /** 房主的快照標示觀察者為房主。 */
     @Test
     fun `test toSnapshot identifies host correctly`() {
         val config = FakeMahjongRuleConfig()
@@ -28,6 +30,7 @@ class RoomSnapshotTest {
         assertTrue(snapshot.isHost)
     }
 
+    /** 房間成員的快照標示其為成員但非房主。 */
     @Test
     fun `test toSnapshot identifies room member correctly`() {
         val config = FakeMahjongRuleConfig()
@@ -48,6 +51,7 @@ class RoomSnapshotTest {
         assertFalse(snapshot.isHost)
     }
 
+    /** 房間外觀察者的快照不標示房主或成員身分。 */
     @Test
     fun `test toSnapshot identifies external observer correctly`() {
         val config = FakeMahjongRuleConfig()
@@ -69,6 +73,7 @@ class RoomSnapshotTest {
         assertFalse(snapshot.isInRoom)
     }
 
+    /** 房間快照包含 AI 玩家識別碼。 */
     @Test
     fun `test toSnapshot contains ai player info`() {
         val hostId = Uuid.random()

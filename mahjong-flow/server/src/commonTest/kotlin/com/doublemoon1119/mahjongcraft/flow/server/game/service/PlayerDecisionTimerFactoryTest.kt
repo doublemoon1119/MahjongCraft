@@ -79,9 +79,12 @@ class PlayerDecisionTimerFactoryTest {
     }
 }
 
-/** 測試用可控單調時間來源。 */
+/**
+ * 測試用固定單調時間來源。
+ *
+ * @property nowMillis 回傳的固定毫秒數。
+ */
 private class FakeMonotonicClock(
-    /** [nowMillis] 回傳的固定毫秒數。 */
     private val nowMillis: Long,
 ) : MonotonicClock {
     /** 回傳測試指定的固定時間。 */

@@ -13,7 +13,8 @@ import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 /**
  * 開發環境限定的腳本 AI，讓 debug 情境的對手依排定的牌山順序行動。
  *
- * 他家捨牌或宣告槓、拔北時一律跳過；自己回合打出剛摸到的牌，沒有摸牌時打出第一張立牌；不和牌、不鳴牌、不立直。
+ * 他家捨牌或宣告槓、拔北時一律跳過；自己回合優先遵守規則限定的捨牌，否則摸切或打出第一張立牌。
+ * 不和牌、不吃碰、不立直。
  * [declaresKanFirst] 為 `true` 時，自己回合有可宣告的槓就先宣告；[pullsNorthFirst] 為 `true` 時，三人日麻自己回合
  * 可以拔北就先拔北。只依決策情境計算，沒有可變狀態。
  *
@@ -30,7 +31,12 @@ class DebugScriptedAiStrategy(
         AiDecisionPhase.OwnTurn -> decideOwnTurn(context)
     }
 
-    /** 自己回合：必要時先拔北或宣告槓，否則打出規則限定的牌、剛摸到的牌或第一張立牌。 */
+    /**
+     * 自己回合優先拔北或宣告槓，否則打出規則限定的牌、剛摸到的牌或第一張立牌。
+     *
+     * @param context 含可用動作與自身手牌的決策情境。
+     * @return 對應的拔北、槓或捨牌命令。
+     */
     private fun decideOwnTurn(context: AiDecisionContext): GameCommand {
         if (pullsNorthFirst && PULL_NORTH_GAME_ACTION in context.legalActions) {
             return GameCommand.Extension(RiichiPullNorthCommand)

@@ -63,6 +63,7 @@ class GameDecisionTimeoutServiceTest {
 
     /** 可手動調整的單調時間來源。 */
     private class ManualClock : MonotonicClock {
+        /** 目前由測試指定的單調時間，單位為毫秒。 */
         var nowMillis: Long = 0L
 
         override fun nowMillis(): Long = nowMillis

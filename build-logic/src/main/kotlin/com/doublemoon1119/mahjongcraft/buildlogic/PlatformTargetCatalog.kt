@@ -46,7 +46,13 @@ object PlatformTargetCatalog {
     /** 目前支援的 catalog schema。 */
     const val SUPPORTED_SCHEMA_VERSION: Int = 1
 
-    /** 解析 [file] 並驗證所有 target。 */
+    /**
+     * 解析 [file] 並驗證所有 target。
+     *
+     * @param file 要解析的 TOML catalog 檔案。
+     * @param rootDirectory 用於解析及驗證 target module 路徑的 repository 根目錄。
+     * @return 依 catalog 順序排列的已驗證 target。
+     */
     fun load(file: File, rootDirectory: File): List<PlatformTarget> {
         if (!file.isFile) throw GradleException("Platform target catalog does not exist: $file")
         val document = try {
@@ -74,7 +80,12 @@ object PlatformTargetCatalog {
         return targets
     }
 
-    /** 只讀取 local properties 中的 target fallback。 */
+    /**
+     * 只讀取 local properties 中的 target fallback。
+     *
+     * @param file 含有 target property 的本機設定檔。
+     * @return 去除空白後的 target ID；檔案不存在或 property 為空白時回傳 null。
+     */
     fun readLocalTarget(file: File): String? {
         if (!file.isFile) return null
         return java.util.Properties().apply { file.inputStream().use(::load) }
@@ -83,7 +94,14 @@ object PlatformTargetCatalog {
             ?.takeIf(String::isNotEmpty)
     }
 
-    /** 依固定優先序選出 target；空白輸入視為未指定。 */
+    /**
+     * 依固定優先序選出 target；空白輸入視為未指定。
+     *
+     * @param gradleProperty 命令列或 Gradle property 指定的 target ID。
+     * @param environmentVariable 環境變數指定的 target ID。
+     * @param localProperty 本機設定檔中的 fallback target ID。
+     * @return 依 Gradle property、環境變數、本機設定檔順序選出的 ID；皆未指定時回傳 core ID。
+     */
     fun resolveSelectedTargetId(
         gradleProperty: String?,
         environmentVariable: String?,
@@ -93,6 +111,12 @@ object PlatformTargetCatalog {
         .firstOrNull()
         ?: CORE_TARGET_ID
 
+    /**
+     * 驗證 target ID、平台設定、Java 版本與 repository 內的 module 目錄。
+     *
+     * @param targets 待驗證的平台 target 清單。
+     * @param rootDirectory repository 根目錄，用於檢查 target 對應的 module 目錄。
+     */
     private fun validateTargets(targets: List<PlatformTarget>, rootDirectory: File) {
         val duplicateIds = targets.groupingBy(PlatformTarget::id).eachCount().filterValues { it > 1 }.keys
         if (duplicateIds.isNotEmpty()) throw GradleException("Duplicate platform target IDs: ${duplicateIds.sorted()}")
@@ -134,9 +158,14 @@ object PlatformTargetCatalog {
     /** 簡短 target 環境變數名稱。 */
     const val TARGET_ENVIRONMENT_NAME: String = "MAHJONGCRAFT_TARGET"
 
+    /** 支援的 Java toolchain 與 release 數值範圍。 */
     private val JAVA_VERSION_RANGE = 8..99
+
+    /** 各已知平台必須提供的 attribute 名稱。 */
     private val REQUIRED_ATTRIBUTES_BY_PLATFORM = mapOf(
         "minecraft" to setOf("minecraft-version", "loader"),
     )
+
+    /** Target 與平台 ID 共用的格式限制。 */
     private val TARGET_ID_REGEX = Regex("[a-z0-9]+(?:[._-][a-z0-9]+)*")
 }

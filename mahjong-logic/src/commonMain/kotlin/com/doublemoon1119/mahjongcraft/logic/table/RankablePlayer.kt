@@ -9,7 +9,12 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
  * 加上這個標記介面就自動滿足，不需要額外實作任何成員。
  */
 interface RankablePlayer {
+    /** 玩家目前的分數。 */
     val score: Int
+
+    /** 本局由規則指派的自風。 */
     val seatWind: Wind
+
+    /** 整場固定的起家座位順位。 */
     val initialSeatIndex: Int
 }

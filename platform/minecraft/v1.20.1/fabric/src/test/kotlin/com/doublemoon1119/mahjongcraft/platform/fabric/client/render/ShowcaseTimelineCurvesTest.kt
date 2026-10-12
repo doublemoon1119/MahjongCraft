@@ -129,12 +129,18 @@ class ShowcaseTimelineCurvesTest {
         assertEquals(2.5, ShowcaseTimelineCurves.lerp(start = 2.0, end = 4.0, progress = 0.25))
     }
 
-    /** 引信進度在 [range] 內均勻取樣時，閃白的樣本比例。 */
+    /**
+     * 計算引信進度在指定區間均勻取樣時的閃白比例。
+     *
+     * @param range 引信進度取樣範圍。
+     * @return 取樣中顯示閃白的比例。
+     */
     private fun flashRatio(range: ClosedFloatingPointRange<Double>): Double {
         val samples = (0..1000).map { range.start + (range.endInclusive - range.start) * it / 1000 }
         return samples.count(ShowcaseTimelineCurves::tntFlashVisible).toDouble() / samples.size
     }
 
+    /** 測試共用的數值常數。 */
     private companion object {
         /** 浮點比較的容許誤差。 */
         const val TOLERANCE = 1e-9

@@ -16,6 +16,7 @@ import kotlin.uuid.Uuid
 
 /** [ClientAutomaticControlUpdateCoordinator] 的送出、配對與生命週期測試。 */
 class ClientAutomaticControlUpdateCoordinatorTest {
+    /** 送出以權威快照版本為基礎的完整替換請求。 */
     @Test
     fun `submit sends a complete replacement based on authoritative snapshot`() {
         val fixture = fixture()
@@ -33,6 +34,7 @@ class ClientAutomaticControlUpdateCoordinatorTest {
         assertEquals(submitted.request, fixture.coordinator.pendingRequest())
     }
 
+    /** 不可用、不支援或已有請求時拒絕更新且不重複傳送。 */
     @Test
     fun `submit rejects unavailable unsupported and concurrent updates without sending`() {
         val fixture = fixture()
@@ -49,6 +51,7 @@ class ClientAutomaticControlUpdateCoordinatorTest {
         assertEquals(listOf(submitted.request), fixture.sender.requests)
     }
 
+    /** 同步傳送失敗後還原 pending 狀態。 */
     @Test
     fun `send failure restores pending state`() {
         val failure = IllegalStateException("network unavailable")
@@ -63,6 +66,7 @@ class ClientAutomaticControlUpdateCoordinatorTest {
         assertNull(fixture.coordinator.pendingRequest())
     }
 
+    /** 僅配對結果建立 request 範圍的完成事件。 */
     @Test
     fun `only matching result creates a request scoped completion`() {
         val fixture = fixture()
@@ -92,6 +96,7 @@ class ClientAutomaticControlUpdateCoordinatorTest {
         assertNull(fixture.coordinator.takeCompletion("another-request"))
     }
 
+    /** 清除權威快照、待處理請求與完成事件。 */
     @Test
     fun `clear removes authority pending and completion`() {
         val fixture = fixture()
@@ -114,6 +119,7 @@ class ClientAutomaticControlUpdateCoordinatorTest {
         assertNull(fixture.coordinator.takeCompletion(nextRequest.requestId))
     }
 
+    /** 新對局快照到達後，舊對局結果不能完成請求。 */
     @Test
     fun `old game result cannot complete a request after a new game snapshot`() {
         val fixture = fixture()
@@ -131,7 +137,12 @@ class ClientAutomaticControlUpdateCoordinatorTest {
         assertNull(fixture.coordinator.takeCompletion(oldRequest.requestId))
     }
 
-    /** 建立隔離的 coordinator 與記錄型 sender。 */
+    /**
+     * 建立隔離的 coordinator 與記錄型 sender。
+     *
+     * @param sendFailure 模擬的同步傳送錯誤；未指定時傳送成功。
+     * @return coordinator 與其 sender 的測試 fixture。
+     */
     private fun fixture(sendFailure: RuntimeException? = null): Fixture {
         val sender = RecordingSender(sendFailure)
         return Fixture(
@@ -140,7 +151,15 @@ class ClientAutomaticControlUpdateCoordinatorTest {
         )
     }
 
-    /** 建立測試權威快照。 */
+    /**
+     * 建立測試權威快照。
+     *
+     * @param gameId 快照所屬對局 ID。
+     * @param revision 對局內的快照版本。
+     * @param supported 伺服器支援的控制項 ID。
+     * @param enabled 伺服器已啟用的控制項 ID。
+     * @return 指定狀態的權威快照。
+     */
     private fun snapshot(
         gameId: String = Uuid.random().toString(),
         revision: Long = 1L,
@@ -148,7 +167,14 @@ class ClientAutomaticControlUpdateCoordinatorTest {
         enabled: Set<String> = emptySet(),
     ): AutomaticControlSnapshotDto = AutomaticControlSnapshotDto(gameId, revision, supported, enabled)
 
-    /** 建立對應 [request] 的權威結果。 */
+    /**
+     * 建立對應 [request] 的權威結果。
+     *
+     * @param request 被回覆的更新請求。
+     * @param kind 回覆結果種類。
+     * @param snapshot 回覆攜帶的權威快照，若無則為 `null`。
+     * @return 使用請求 ID 與對局 ID 的伺服器結果。
+     */
     private fun result(
         request: AutomaticControlUpdateRequestDto,
         kind: AutomaticControlUpdateResultKindDto,
@@ -160,15 +186,22 @@ class ClientAutomaticControlUpdateCoordinatorTest {
         snapshot = snapshot,
     )
 
-    /** 測試所需的 coordinator 與 sender。 */
+    /**
+     * 測試所需的協調器與要求記錄器。
+     *
+     * @property coordinator 受測的本局更新協調器。
+     * @property sender 記錄送出要求的替身。
+     */
     private data class Fixture(
-        /** 被測 coordinator。 */
         val coordinator: ClientAutomaticControlUpdateCoordinator,
-        /** 記錄送出請求的 sender。 */
         val sender: RecordingSender,
     )
 
-    /** 記錄請求並可模擬同步傳送失敗。 */
+    /**
+     * 記錄請求並可模擬同步傳送失敗。
+     *
+     * @property failure 模擬的同步傳送錯誤；未指定時傳送成功。
+     */
     private class RecordingSender(private val failure: RuntimeException?) : ClientAutomaticControlRequestSender {
         /** 已成功交給 sender 的請求。 */
         val requests = mutableListOf<AutomaticControlUpdateRequestDto>()

@@ -30,6 +30,9 @@ class ReachableMahjongTableResolver(
      * 列出 [player] 目前可互動範圍內的所有麻將桌，供 Tab 補全建議候選。
      *
      * 只在玩家所在 chunk 與周圍 8 個 chunk 內查詢已知位置索引，避免掃描整個 dimension。
+     *
+     * @param player 要列出桌子候選的玩家。
+     * @return 玩家可互動且已載入的麻將桌。
      */
     fun findReachable(player: ServerPlayerEntity): List<MahjongTableBlockEntity> {
         val world = player.serverWorld
@@ -49,13 +52,24 @@ class ReachableMahjongTableResolver(
             .toList()
     }
 
-    /** 解析玩家指定的座標；桌子不存在或超出可互動範圍時回傳 `null`。 */
+    /**
+     * 解析玩家指定的座標；桌子不存在或超出可互動範圍時回傳 `null`。
+     *
+     * @param player 執行互動的玩家。
+     * @param pos 指定的 controller 方塊座標。
+     * @return 符合位置與距離條件的桌子；否則為 null。
+     */
     fun resolve(player: ServerPlayerEntity, pos: BlockPos): MahjongTableBlockEntity? {
         val table = player.serverWorld.getBlockEntity(pos) as? MahjongTableBlockEntity ?: return null
         return table.takeIf { distanceTo(player, pos) <= reachDistanceFor(player) }
     }
 
-    /** 依原版已知的固定可觸距離，換算玩家目前 gamemode 對應的可觸距離（方塊數）。 */
+    /**
+     * 依原版已知的固定可觸距離，換算玩家目前 gamemode 對應的可觸距離（方塊數）。
+     *
+     * @param player 要檢查遊戲模式的玩家。
+     * @return 該模式的可觸距離。
+     */
     private fun reachDistanceFor(player: ServerPlayerEntity): Double = when (player.interactionManager.gameMode) {
         GameMode.CREATIVE -> CREATIVE_REACH_DISTANCE
         GameMode.SPECTATOR -> Double.MAX_VALUE
@@ -67,6 +81,10 @@ class ReachableMahjongTableResolver(
      * [pos] 是 controller 方塊座標，實際佔用範圍由 [MahjongTablePart] 的固定相對位移換算——水平朝向
      * 不影響這個範圍：結構本身以 controller 為中心水平對稱，任何朝向的旋轉都只是把同一組相對座標互相
      * 對應，不會改變整體占用的方塊集合，因此不需要另外讀取朝向。
+     *
+     * @param player 量測距離的玩家。
+     * @param pos 桌子 controller 方塊座標。
+     * @return 玩家到桌子結構最近點的直線距離。
      */
     private fun distanceTo(player: ServerPlayerEntity, pos: BlockPos): Double {
         val minX = pos.x + MahjongTablePart.entries.minOf { it.localX }

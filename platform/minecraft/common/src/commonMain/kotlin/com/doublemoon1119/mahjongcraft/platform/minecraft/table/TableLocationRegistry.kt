@@ -18,10 +18,20 @@ class TableLocationRegistry {
     /** 位置資料實際改變時通知平台 persistence adapter。 */
     private var dirtyListener: (Map<Uuid, TableLocationEntry>) -> Unit = {}
 
-    /** 取得指定桌子的目前位置資料。 */
+    /**
+     * 取得指定桌子的目前位置資料。
+     *
+     * @param tableId 麻將桌 UUID。
+     * @return 目前位置與 revision；未登記時為 `null`。
+     */
     fun get(tableId: Uuid): TableLocationEntry? = entriesByTableId[tableId]
 
-    /** 取得指定 dimension chunk 內所有預期桌子的位置資料。 */
+    /**
+     * 取得指定 dimension chunk 內所有預期桌子的位置資料。
+     *
+     * @param key dimension 與 chunk 座標。
+     * @return 該 chunk 內已登記桌子的位置資料。
+     */
     fun getByChunk(key: DimensionChunkKey): List<TableLocationEntry> = tableIdsByChunk[key]
         .orEmpty()
         .mapNotNull(entriesByTableId::get)
@@ -29,7 +39,11 @@ class TableLocationRegistry {
     /** 取得目前所有位置資料的不可變快照。 */
     fun snapshot(): Map<Uuid, TableLocationEntry> = entriesByTableId
 
-    /** 載入已保存資料並重建反向索引，不觸發 dirty callback。 */
+    /**
+     * 載入已保存資料並重建反向索引，不觸發 dirty callback。
+     *
+     * @param entries 從存檔還原的位置資料；桌子 UUID 必須唯一。
+     */
     fun load(entries: Collection<TableLocationEntry>) {
         require(entries.map(TableLocationEntry::tableId).distinct().size == entries.size) {
             "Table location data contains duplicate table IDs"
@@ -42,6 +56,10 @@ class TableLocationRegistry {
      * 登記或修正桌子位置。
      *
      * 相同位置不改變 revision 或 dirty 狀態；位置改變時 revision 遞增。
+     *
+     * @param tableId 麻將桌 UUID。
+     * @param location 新確認的位置。
+     * @return 已登記的位置與 revision。
      */
     fun put(tableId: Uuid, location: TableLocation): TableLocationEntry {
         val existing = entriesByTableId[tableId]
@@ -54,7 +72,13 @@ class TableLocationRegistry {
         return next
     }
 
-    /** 只有 revision 仍符合延遲工作的預期時才移除位置。 */
+    /**
+     * 只有 revision 仍符合延遲工作的預期時才移除位置。
+     *
+     * @param tableId 麻將桌 UUID。
+     * @param expectedRevision 延遲工作預期的 revision；`null` 表示不比對版本。
+     * @return 確實移除資料時為 `true`。
+     */
     fun remove(tableId: Uuid, expectedRevision: Long? = null): Boolean {
         val existing = entriesByTableId[tableId] ?: return false
         if (expectedRevision != null && existing.revision != expectedRevision) return false
@@ -64,7 +88,11 @@ class TableLocationRegistry {
         return true
     }
 
-    /** 設定位置改變 callback。 */
+    /**
+     * 設定位置改變 callback。
+     *
+     * @param listener 資料變更後接收目前完整快照的 callback。
+     */
     fun setDirtyListener(listener: (Map<Uuid, TableLocationEntry>) -> Unit) {
         dirtyListener = listener
     }

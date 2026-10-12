@@ -18,7 +18,12 @@ import net.minecraft.util.math.RotationAxis
 import kotlin.math.PI
 import kotlin.math.sin
 
-/** 在桌面上方以 billboard 呈現整組放大 3D 骰子與合計點數。 */
+/**
+ * 在桌面上方以 billboard 呈現整組放大 3D 骰子與合計點數。
+ *
+ * @param context Minecraft entity renderer 共用資源。
+ * @param configStore 控制擲骰結果面板可見性的客戶端設定。
+ */
 class DiceRollPresentationEntityRenderer(
     context: EntityRendererFactory.Context,
     private val configStore: MahjongClientConfigStore,
@@ -70,7 +75,15 @@ class DiceRollPresentationEntityRenderer(
         matrices.pop()
     }
 
-    /** 依點數數量等距排列結果骰子。 */
+    /**
+     * 依點數數量等距排列結果骰子。
+     *
+     * @param points 依骰子順序排列的點數。
+     * @param scale 結果動畫目前的縮放。
+     * @param matrices 目前繪製矩陣。
+     * @param consumers 頂點消費者。
+     * @param light 世界光照值。
+     */
     private fun renderDice(
         points: List<Int>,
         scale: Float,
@@ -85,7 +98,17 @@ class DiceRollPresentationEntityRenderer(
         }
     }
 
-    /** 重用骰子 item model，將指定點數由朝上姿態轉成朝向目前觀看者。 */
+    /**
+     * 重用骰子 item model，將指定點數由朝上姿態轉成朝向目前觀看者。
+     *
+     * @param point 骰子朝上的點數與姿態。
+     * @param centerX 骰子中心的水平位置。
+     * @param centerY 骰子中心的垂直位置。
+     * @param scale 結果動畫目前的縮放。
+     * @param matrices 目前繪製矩陣。
+     * @param consumers 頂點消費者。
+     * @param light 世界光照值。
+     */
     private fun renderDie(
         point: MahjongDicePoint,
         centerX: Float,
@@ -115,7 +138,15 @@ class DiceRollPresentationEntityRenderer(
         matrices.pop()
     }
 
-    /** 在骰子下方置中繪製本地化合計。 */
+    /**
+     * 在骰子下方置中繪製本地化合計。
+     *
+     * @param total 骰子點數總和。
+     * @param alpha 文字透明度。
+     * @param matrices 目前繪製矩陣。
+     * @param consumers 頂點消費者。
+     * @param light 世界光照值。
+     */
     private fun renderTotal(
         total: Int,
         alpha: Float,
@@ -138,7 +169,13 @@ class DiceRollPresentationEntityRenderer(
         )
     }
 
-    /** 依淡入、閱讀與淡出階段取得面板透明度。 */
+    /**
+     * 依淡入、閱讀與淡出階段取得面板透明度。
+     *
+     * @param elapsed 結果揭示後經過的遊戲 tick。
+     * @param duration 結果面板總顯示 tick 數。
+     * @return 目前面板透明度。
+     */
     private fun panelAlpha(elapsed: Double, duration: Double): Float = WorldPanelRenderer.phaseAlpha(
         elapsed,
         0.0,
@@ -147,13 +184,23 @@ class DiceRollPresentationEntityRenderer(
         duration,
     )
 
-    /** 淡入時加入輕微放大回彈，提升結果落定感。 */
+    /**
+     * 淡入時加入輕微放大回彈，提升結果落定感。
+     *
+     * @param elapsed 結果揭示後經過的遊戲 tick。
+     * @return 入場動畫的縮放比例。
+     */
     private fun entranceScale(elapsed: Double): Float {
         val progress = (elapsed / ENTRANCE_TICKS).coerceIn(0.0, 1.0)
         return (ENTRANCE_START_SCALE + (1.0 - ENTRANCE_START_SCALE) * progress + sin(progress * PI) * ENTRANCE_OVERSHOOT).toFloat()
     }
 
-    /** 依骰子數量計算對稱背景寬度。 */
+    /**
+     * 依骰子數量計算對稱背景寬度。
+     *
+     * @param diceCount 結果骰子數量。
+     * @return 含左右留白的面板寬度。
+     */
     private fun panelWidth(diceCount: Int): Float = HORIZONTAL_PADDING * 2f + DICE_PIXEL_SIZE + (diceCount - 1) * DICE_CENTER_GAP
 
     /** ItemRenderer 自行解析材質，因此 entity renderer 不提供單一 texture。 */

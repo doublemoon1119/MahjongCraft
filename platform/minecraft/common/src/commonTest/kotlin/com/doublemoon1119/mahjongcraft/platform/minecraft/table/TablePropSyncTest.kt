@@ -12,6 +12,15 @@ class TablePropSyncTest {
     /** 測試用的既有物件；[target] 為 null 代表無法辨識身分。 */
     private data class Existing(val name: String, val target: TablePropTarget?)
 
+    /**
+     * 建立桌面物件的測試目標；未指定時位於原點、朝向零度。
+     *
+     * @param variant 物件外觀變體。
+     * @param x 目標 X 座標。
+     * @param yaw 目標朝向。
+     * @param kind 物件種類識別碼。
+     * @return 固定 Y/Z 座標的目標。
+     */
     private fun target(
         variant: String = "1000",
         x: Double = 0.0,

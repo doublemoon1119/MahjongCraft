@@ -23,9 +23,10 @@ import kotlin.uuid.Uuid
 
 /** [GameVisibilityPolicyImpl] 的觀看權限與手牌可見範圍測試。 */
 class GameVisibilityPolicyTest {
+    /** 使用內建規則建立快照的受測政策。 */
     private val policy = GameVisibilityPolicyImpl(MahjongModuleRegistryImpl().apply { registerBundledRuleModules() })
 
-    /** 快照帶出每位玩家移出手牌、公開擺在桌上的牌，任何觀察者都看得到。 */
+    /** 他家玩家取得的快照會帶出拔北牌，未拔北的玩家則為空清單。 */
     @Test
     fun `snapshot carries tiles every player set aside`() {
         val north = FakeIdentifiedTileFactory.create(Tile.Honor.North)
@@ -99,7 +100,13 @@ class GameVisibilityPolicyTest {
         )
     }
 
-    /** 建立指定玩家與流程設定的測試遊戲。 */
+    /**
+     * 建立指定玩家與流程設定的測試遊戲。
+     *
+     * @param playerIds 依順序建立的玩家識別碼。
+     * @param flowConfig 控制旁觀權限與手牌可見性的流程設定。
+     * @return 每位玩家各持有一張東風的遊戲。
+     */
     private fun createGame(
         vararg playerIds: Uuid,
         flowConfig: GameFlowConfig = GameFlowConfig(),

@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.config.validate
 
 /**
- * 日本麻將（Riichi Mahjong）特有的規則配置介面。
+ * 四人立直麻將的規則設定。
  *
  * 實作 [RiichiFamilyRuleConfig]，並固定四人對局的牌組與人數。
  *
@@ -15,8 +15,8 @@ import com.doublemoon1119.mahjongcraft.logic.config.validate
  * @property redDoraCount 赤牌（五萬、五筒、五條）的總張數，預設為 3，常見配置為 3 張（五萬、五筒、五條各一）或 4 張 （五筒兩張，五萬、五條各一）。
  * @property allowOpenTanyao 是否允許食斷（斷么九鳴牌有效），預設為 true。
  * @property useLocalYaku 是否啟用古役（Local Yaku），預設為 false。
- * @property initialHandSize 初始手牌張數，預設為 13。
- * @property deadTileCount 王牌（死牌）張數，預設為 14。
+ * @property initialHandSize 初始手牌張數，固定為 13。
+ * @property deadTileCount 王牌（死牌）張數，固定為 14。
  * @property minimumWinConstraint 起胡番數限制（通常為 1 番），預設為 1。
  * @property scoreConfig 日本麻將專屬的積分配置。
  * @property gameLength 遊戲長度配置，預設為 [RiichiGameLength.OneGame]。
@@ -25,6 +25,8 @@ import com.doublemoon1119.mahjongcraft.logic.config.validate
  * @property multiRonPolicy 一炮多響時的結算方式，預設雙響、三響皆為多家和。此欄位刻意不依循上述
  *   M League 基準，預設採用多家和以貼近多數玩家熟悉的體驗，可依需求另行設定。
  * @property revealsClosedKanTiles 暗槓身份是否公開，恆為 true。
+ * @property usesThreePlayerTiles 是否使用三人牌組，固定為 false。
+ * @property rinshanTileCount 嶺上牌張數，固定為 4。
  */
 data class RiichiRuleConfig(
     override val redDoraCount: Int = 3,

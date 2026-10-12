@@ -16,7 +16,7 @@ import kotlin.math.min
  */
 class RiichiShantenCalculator : ShantenCalculator {
 
-    // 為了方便計算，將所有牌型映射到 0-33 的索引
+    /** 三十四種標準牌到計數陣列索引的對照，赤牌先正規化後查詢。 */
     private val tileMap: Map<Tile, Int> = buildMap {
         // 萬子 1-9 (0-8)
         (1..9).forEach { put(Tile.Numeric(Tile.Suit.Character, it), it - 1) }
@@ -96,7 +96,8 @@ class RiichiShantenCalculator : ShantenCalculator {
     /**
      * 計算聽牌列表。
      *
-     * 嘗試將手牌中的每張牌作為「進張」，計算加入該牌後是否可胡牌。
+     * 依三十四種標準牌的索引順序試加一張，判斷是否完成和牌型；立牌已有四張的牌種略過。
+     * 此處不檢查役種、振聽或場上剩餘張數。
      *
      * @param search 這次計算使用的面子搜尋。
      * @param counts 立牌的計數陣列。
@@ -108,7 +109,7 @@ class RiichiShantenCalculator : ShantenCalculator {
 
         // 嘗試每種牌作為進張
         for (i in counts.indices) {
-            // 檢查該牌是否已經在手中（如果是，需要有超過 3 張才能再摸一張）
+            // 立牌已有四張的牌種不能再試加
             val currentCount = counts[i]
             if (currentCount >= 4) continue // 手中已有 4 張，無法再摸
 
@@ -188,6 +189,7 @@ class RiichiShantenCalculator : ShantenCalculator {
      * @param search 這次計算使用的面子搜尋。
      * @param counts 立牌的計數陣列。
      * @param initialMelds 已副露的面子數。
+     * @return 所有雀頭選擇與無雀頭情況中的最小標準型向聽數。
      */
     private fun calculateStandardShanten(search: StandardMeldSearch, counts: IntArray, initialMelds: Int): Int {
         var minShanten = 8 // 立直麻將的初始最大向聽數
@@ -215,7 +217,10 @@ class RiichiShantenCalculator : ShantenCalculator {
      * 計算七對子 (Seven Pairs) 的向聽數。
      * 規則：必須有 7 個不同的對子。
      * 向聽數 = 6 - 對子數 + max(0, 7 - 牌種類數)
-     * 若已湊齊 7 對子，返回 -1 表示胡牌。
+     * 若已湊齊 7 對子，返回 -1 表示完成牌型。
+     *
+     * @param counts 三十四種標準牌的立牌計數。
+     * @return 七對子向聽數，完成牌型時為 -1。
      */
     private fun calculateSevenPairsShanten(counts: IntArray): Int {
         var pairs = 0
@@ -245,7 +250,10 @@ class RiichiShantenCalculator : ShantenCalculator {
      * 計算國士無雙 (Thirteen Orphans) 的向聽數。
      * 規則：13 種么九牌各一張，其中一種有兩張。
      * 向聽數 = 13 - (現有的么九牌種類數) - (是否有任何一種么九牌 >= 2 ? 1 : 0)
-     * 若已湊齊 13 種么九牌且有雀頭，返回 -1 表示胡牌。
+     * 若已湊齊 13 種么九牌且有雀頭，返回 -1 表示完成牌型。
+     *
+     * @param counts 三十四種標準牌的立牌計數。
+     * @return 國士無雙向聽數，完成牌型時為 -1。
      */
     private fun calculateKokushiShanten(counts: IntArray): Int {
         // 么九牌的索引列表: 1,9m (0,8), 1,9p (9,17), 1,9s (18,26), z (27-33)

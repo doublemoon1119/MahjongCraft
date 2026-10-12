@@ -84,7 +84,11 @@ class RiichiNagashiManganOutcomeResolverTest {
         assertNull(RiichiNagashiManganOutcomeResolver().resolve(table, module))
     }
 
-    /** 建立全部由么九牌構成、且未被鳴走的牌河。 */
+    /**
+     * 建立全部由么九牌構成、且未被鳴走的牌河。
+     *
+     * @return 依序打出東風、一萬及九筒的牌河。
+     */
     private fun allYaochuuDiscardPile(): RiichiDiscardPile = RiichiDiscardPile()
         .discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.East))
         .discardTile(FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)))

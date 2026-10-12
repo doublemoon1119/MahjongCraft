@@ -47,7 +47,12 @@ internal object CompactReplayDictionary {
         return expand(encoded.getValue("d"), keys, strings)
     }
 
-    /** 走訪所有字串值以計算重複次數；物件欄位名稱另由欄位字典處理。 */
+    /**
+     * 走訪所有字串值並傳給 [emit]；物件欄位名稱另由欄位字典處理。
+     *
+     * @param value 要走訪的 JSON 節點。
+     * @param emit 接收每個字串值的函式。
+     */
     private fun visitStrings(value: JsonElement, emit: (String) -> Unit) {
         when (value) {
             is JsonObject -> value.values.forEach { visitStrings(it, emit) }
@@ -56,7 +61,14 @@ internal object CompactReplayDictionary {
         }
     }
 
-    /** 遞迴編碼欄位名稱與字串值，並跳脫原本以波浪號開頭的字串。 */
+    /**
+     * 遞迴編碼欄位名稱與字串值，並跳脫原本以波浪號開頭的字串。
+     *
+     * @param value 要編碼的 JSON 節點。
+     * @param keys 欄位名稱到索引的可變對照表。
+     * @param strings 已選入封套字串字典的字串及其索引。
+     * @return 編碼後的 JSON 節點。
+     */
     private fun compact(value: JsonElement, keys: MutableMap<String, Int>, strings: Map<String, Int>): JsonElement = when (value) {
         is JsonObject -> JsonObject(
             value.map { (key, child) -> keys.getOrPut(key) { keys.size }.toString() to compact(child, keys, strings) }.toMap(),
@@ -72,7 +84,14 @@ internal object CompactReplayDictionary {
         }
     }
 
-    /** 依欄位與字串字典逆向還原資料樹。 */
+    /**
+     * 依欄位與字串字典逆向還原資料樹。
+     *
+     * @param value 編碼後的 JSON 節點。
+     * @param keys 欄位名稱字典。
+     * @param strings 長字串字典。
+     * @return 還原後的 JSON 節點。
+     */
     private fun expand(value: JsonElement, keys: List<String>, strings: List<String>): JsonElement = when (value) {
         is JsonObject -> JsonObject(value.map { (key, child) -> keys[key.toInt()] to expand(child, keys, strings) }.toMap())
         is JsonArray -> JsonArray(value.map { expand(it, keys, strings) })

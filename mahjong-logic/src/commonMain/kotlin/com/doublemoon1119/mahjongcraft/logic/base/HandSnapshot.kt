@@ -19,6 +19,10 @@ data class HandSnapshot(
  * [isVisible] 控制立牌與剛摸到的牌，同時也是 [Meld.toSnapshot] 判斷暗槓可見性所需的「是否為手牌
  * 本人／被授權觀察者」條件；[revealsClosedKanTiles] 轉交給 [Meld.toSnapshot] 決定該規則是否公開
  * 暗槓身份，見其 KDoc。
+ *
+ * @param isVisible 觀察者是否可見手牌牌面。
+ * @param revealsClosedKanTiles 規則是否公開暗槓牌面。
+ * @return 依觀察者可見性建立的手牌快照。
  */
 fun Hand.toSnapshot(isVisible: Boolean, revealsClosedKanTiles: Boolean): HandSnapshot = HandSnapshot(
     standingTiles = this.standingTiles.map { it.toSnapshot(isVisible) },

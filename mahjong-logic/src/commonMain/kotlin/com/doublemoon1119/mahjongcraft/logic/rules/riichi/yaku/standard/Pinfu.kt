@@ -65,6 +65,7 @@ fun calculatePinfu(
  * @param tile 雀頭牌。
  * @param roundWind 場風。
  * @param seatWind 自風。
+ * @return 若為役牌則為 true。
  */
 private fun isYakuhai(
     tile: Tile,

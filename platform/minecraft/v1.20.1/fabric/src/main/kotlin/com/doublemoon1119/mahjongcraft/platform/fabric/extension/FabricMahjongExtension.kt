@@ -19,6 +19,8 @@ interface FabricMahjongExtension {
      * 登記規則桌面物件種類，說明描述裡的種類識別碼要生成哪種 entity、如何找回既有的 entity。
      *
      * 預設不登記；只使用內建種類的 extension 不必實作。
+     *
+     * @param registry Fabric 桌面物件種類 registry。
      */
     fun registerTablePropKinds(registry: FabricTablePropKindRegistry) = Unit
 }
@@ -30,6 +32,7 @@ internal const val TABLE_PROP_KIND_CATEGORY_ID: String = "mahjongcraft:table_pro
  * 先登記內建的點棒種類 [ScoringStickTablePropKind]，再依 [extensions] 順序登記各 extension 的種類，全部成功後凍結。
  *
  * @return 依來源分組的所有種類：內建種類在前，接著依 [extensions] 順序排列每個 extension。
+ * @param extensions 要按順序登記的 Fabric extensions。
  * @throws FabricMahjongExtensionRegistrationException 若任一 extension 登記失敗。
  */
 internal fun FabricTablePropKindRegistry.registerAndFreeze(extensions: Iterable<FabricMahjongExtension>): List<ExtensionRegistrationSource> {
@@ -57,7 +60,13 @@ internal fun FabricTablePropKindRegistry.registerAndFreeze(extensions: Iterable<
     return sources
 }
 
-/** 建立一個來源登記的規則桌面物件種類；沒有種類時不含任何類別。 */
+/**
+ * 建立一個來源登記的規則桌面物件種類；沒有種類時不含任何類別。
+ *
+ * @param extensionId 登記來源的擴充識別碼；內建來源為 null。
+ * @param kindIds 此來源新登記的種類識別碼。
+ * @return 對應來源及其種類分類；沒有種類時分類清單為空。
+ */
 private fun tablePropKindSource(extensionId: String?, kindIds: Set<String>): ExtensionRegistrationSource = ExtensionRegistrationSource(
     extensionId = extensionId,
     categories = listOfNotNull(

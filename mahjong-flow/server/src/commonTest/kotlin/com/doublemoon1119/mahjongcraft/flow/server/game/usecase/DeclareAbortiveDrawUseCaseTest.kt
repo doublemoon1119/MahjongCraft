@@ -39,9 +39,22 @@ import kotlin.uuid.Uuid
  */
 class DeclareAbortiveDrawUseCaseTest {
 
+    /** 受測對局識別碼。 */
     private val gameId = Uuid.random()
+
+    /** 宣告九種九牌的玩家識別碼。 */
     private val playerId = Uuid.random()
 
+    /**
+     * 九種九牌宣告共用的測試環境。
+     *
+     * @property gameRepo 保存權威對局的測試倉庫。
+     * @property moduleRegistry 已註冊內建規則的中心。
+     * @property snapshotRepo 保存玩家可見快照的替身。
+     * @property snapshotSynchronizer 更新快照的元件。
+     * @property eventPublisher 記錄動作通知的替身。
+     * @property useCase 受測宣告用例。
+     */
     private class Fixtures {
         val gameRepo = FakeGameRepository()
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
@@ -74,6 +87,12 @@ class DeclareAbortiveDrawUseCaseTest {
     // 摸到非么九牌，合計只有 8 種么九牌，未達門檻
     private val nonYaochuuTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5))
 
+    /**
+     * 將指定摸牌加入共用的十三張立牌。
+     *
+     * @param drawnTile 本次摸到的實體牌。
+     * @return 保留獨立摸牌欄位的手牌。
+     */
     private fun handWithDrawnTile(drawnTile: IdentifiedTile): Hand = FakeHandFactory.create(standingTiles()).copy(lastDrawn = drawnTile)
 
     /**
@@ -135,7 +154,7 @@ class DeclareAbortiveDrawUseCaseTest {
     }
 
     /**
-     * 驗證不是第一巡（玩家自己已經打過一輪牌）時，宣告不合法。
+     * 驗證玩家已經捨過牌時，不能再宣告九種九牌。
      */
     @Test
     fun `test declare kyuushu kyuuhai fails when not the first go-around`() = runTest {

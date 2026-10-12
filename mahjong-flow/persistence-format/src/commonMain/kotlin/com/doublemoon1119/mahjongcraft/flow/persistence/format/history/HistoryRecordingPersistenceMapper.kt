@@ -35,7 +35,7 @@ class HistoryRecordingPersistenceMapper(
     private val registries: PersistenceRegistries,
     private val json: Json = Json,
 ) {
-/**
+    /**
      * 將單筆待寫事件編碼；失敗時交由呼叫端保留並重試，絕不略過後確認。
      *
      * @param event 欲寫入持久化儲存端的單筆權威事件。
@@ -43,7 +43,7 @@ class HistoryRecordingPersistenceMapper(
      */
     fun encodePendingEvent(event: HistoryOutboxEvent): HistoryOutboxEventPersistenceDto = encodeEvent(event)
 
-/**
+    /**
      * 將單筆資料庫事件解回權威事實；失敗時交由呼叫端標記缺口，絕不略過後封存。
      *
      * @param event 從持久化儲存端讀取的單筆歷史事件 DTO。
@@ -52,10 +52,12 @@ class HistoryRecordingPersistenceMapper(
     fun decodePendingEvent(event: HistoryOutboxEventPersistenceDto): HistoryOutboxEvent = decodeEvent(event)
 
     /**
-     * 將待寫事件編成權威存檔 DTO；無法編碼的事件會記錄序號缺口並略過。
+     * 將歷史記錄狀態編成權威存檔 DTO；待寫事件編碼失敗時記錄序號缺口並略過該事件。
      *
-     * @param state 交易提交後保存的完整狀態。
-     * @return 轉換後的結果。
+     * 隔離轉移中已接受的事件不採用略過處理；這些事件的編碼錯誤會向呼叫端傳遞。
+     *
+     * @param state 待保存的歷史記錄狀態。
+     * @return 編碼後的歷史記錄狀態，包含事件編碼失敗的序號缺口。
      */
     fun encode(state: HistoryRecordingState): HistoryRecordingPersistenceDto {
         val missing = state.firstMissingSequenceByMatchId.toMutableMap()
@@ -84,8 +86,10 @@ class HistoryRecordingPersistenceMapper(
         )
     }
 
-/**
-     * 驗證並還原權威待寫事件；無法解碼的事件會記錄序號缺口並略過。
+    /**
+     * 還原歷史記錄狀態；待寫事件內容解碼失敗時記錄序號缺口並略過該事件。
+     *
+     * 此處不會略過無效的場次識別碼或其他狀態欄位；這些資料的解碼錯誤會向呼叫端傳遞。
      *
      * @param dto 待還原的歷史記錄狀態 DTO。
      * @return 還原的歷史記錄狀態，包含無法解碼事件的序號缺口。
@@ -118,7 +122,12 @@ class HistoryRecordingPersistenceMapper(
         )
     }
 
-    /** 將單筆 domain 事件轉成持久化 DTO。 */
+    /**
+     * 將單筆 domain 事件轉成持久化 DTO。
+     *
+     * @param event 要保存的權威歷史事件。
+     * @return 保存事件封套與事實的 DTO。
+     */
     private fun encodeEvent(event: HistoryOutboxEvent) = HistoryOutboxEventPersistenceDto(
         matchId = event.matchId.toString(),
         venueId = event.venueId.toString(),
@@ -130,7 +139,12 @@ class HistoryRecordingPersistenceMapper(
         fact = encodeFact(event.fact),
     )
 
-    /** 將單筆持久化事件還原成 domain 事件。 */
+    /**
+     * 將單筆持久化事件還原成 domain 事件。
+     *
+     * @param dto 已保存的事件封套與事實。
+     * @return 還原後的權威歷史事件。
+     */
     private fun decodeEvent(dto: HistoryOutboxEventPersistenceDto) = HistoryOutboxEvent(
         matchId = Uuid.parse(dto.matchId),
         venueId = Uuid.parse(dto.venueId),
@@ -142,7 +156,12 @@ class HistoryRecordingPersistenceMapper(
         fact = decodeFact(dto.fact),
     )
 
-    /** 將 domain 歷史事實轉成帶明確種類的持久化 DTO。 */
+    /**
+     * 將 domain 歷史事實轉成帶明確種類的持久化 DTO。
+     *
+     * @param fact 要保存的歷史事實。
+     * @return 具有明確事實種類的存檔 DTO。
+     */
     private fun encodeFact(fact: HistoryFact): HistoryFactPersistenceDto = when (fact) {
         is HistoryFact.MatchStarted -> HistoryFactPersistenceDto.MatchStarted(
             encodeTable(fact.tableState),
@@ -197,7 +216,12 @@ class HistoryRecordingPersistenceMapper(
         )
     }
 
-    /** 將持久化歷史事實還原成 domain 事實。 */
+    /**
+     * 將持久化歷史事實還原成 domain 事實。
+     *
+     * @param dto 已保存的歷史事實。
+     * @return 還原後的歷史事實。
+     */
     private fun decodeFact(dto: HistoryFactPersistenceDto): HistoryFact = when (dto) {
         is HistoryFactPersistenceDto.MatchStarted -> HistoryFact.MatchStarted(
             decodeTable(dto.state),
@@ -252,7 +276,12 @@ class HistoryRecordingPersistenceMapper(
         )
     }
 
-    /** 使用 registry 將桌況編成持久化 DTO。 */
+    /**
+     * 使用 registry 將桌況編成持久化 DTO。
+     *
+     * @param state 要保存的完整桌況。
+     * @return 編碼後的完整桌況 DTO。
+     */
     private fun encodeTable(state: TableState) = state.toPersistenceDto(
         registries.ruleConfigs,
         registries.discardPiles,
@@ -263,7 +292,12 @@ class HistoryRecordingPersistenceMapper(
         json,
     )
 
-    /** 使用 registry 將桌況 DTO 還原成 domain 桌況。 */
+    /**
+     * 使用 registry 將桌況 DTO 還原成 domain 桌況。
+     *
+     * @param dto 已保存的完整桌況。
+     * @return 還原後的完整桌況。
+     */
     private fun decodeTable(dto: TableStatePersistenceDto) = dto.toDomain(
         registries.ruleConfigs,
         registries.discardPiles,

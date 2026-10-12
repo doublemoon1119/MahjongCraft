@@ -48,10 +48,21 @@ internal data class TenpaiProfile(
     val tsumoValue: Double,
     val ronValue: Double,
 ) {
-    /** 一輪之中完全沒有和牌的機率。 */
+    /**
+     * 一輪之中完全沒有和牌的機率。
+     *
+     * @param outlook 本局剩餘摸牌與對手捨牌機會的估計。
+     * @return 一輪內自摸與榮和皆未發生的機率。
+     */
     fun missRate(outlook: DrawOutlook): Double = (1 - tsumoRate) * (1 - ronRate).pow(outlook.ronChancesPerCycle)
 
-    /** 剩餘 [cycles] 輪內的和牌前景。 */
+    /**
+     * 剩餘 [cycles] 輪內的和牌前景。
+     *
+     * @param cycles 可進行的輪數。
+     * @param outlook 本局剩餘摸牌與對手捨牌機會的估計。
+     * @return 期間內的和牌機率與期望值。
+     */
     fun outlook(cycles: Int, outlook: DrawOutlook): WinOutlook {
         if (cycles <= 0) return WinOutlook.NONE
         val miss = missRate(outlook)
@@ -63,7 +74,13 @@ internal data class TenpaiProfile(
         return WinOutlook(winProbability = winProbability, expectedValue = winProbability * valuePerWin)
     }
 
-    /** 剩餘 [cycles] 輪內，這手牌預期還會進行幾輪才和牌或本局結束。 */
+    /**
+     * 剩餘 [cycles] 輪內，這手牌預期還會進行幾輪才和牌或本局結束。
+     *
+     * @param cycles 可進行的輪數。
+     * @param outlook 本局剩餘摸牌與對手捨牌機會的估計。
+     * @return 預期進行的輪數。
+     */
     fun expectedCyclesInPlay(cycles: Int, outlook: DrawOutlook): Double {
         val carryOver = missRate(outlook) * outlook.continuationRate
         return (0 until cycles.coerceAtLeast(0)).sumOf { carryOver.pow(it) }
@@ -74,7 +91,13 @@ internal data class TenpaiProfile(
         /** 沒有任何可和牌的聽牌。 */
         val NONE: TenpaiProfile = TenpaiProfile(tsumoRate = 0.0, ronRate = 0.0, tsumoValue = 0.0, ronValue = 0.0)
 
-        /** 由每一張聽牌的張數與點數，在總共 [unseenTotal] 張未見牌中計算。 */
+        /**
+         * 由每一張聽牌的張數與點數，在總共 [unseenTotal] 張未見牌中計算。
+         *
+         * @param waits 每種可自摸／榮和牌面的張數與點數。
+         * @param unseenTotal 所有未見牌的總張數。
+         * @return 依未見張數加權計算的聽牌 profile；總數非正時為 [NONE]。
+         */
         fun of(waits: List<WaitValue>, unseenTotal: Int): TenpaiProfile {
             if (unseenTotal <= 0) return NONE
             val tsumoWaits = waits.filter { it.tsumoValue != null && it.count > 0 }
@@ -101,7 +124,13 @@ internal data class TenpaiOption(
     val profile: TenpaiProfile,
     val cost: Double = 0.0,
 ) {
-    /** 剩餘 [cycles] 輪內的和牌前景，期望值扣除 [cost]。 */
+    /**
+     * 剩餘 [cycles] 輪內的和牌前景，期望值扣除 [cost]。
+     *
+     * @param cycles 可進行的輪數。
+     * @param outlook 本局剩餘摸牌與對手捨牌機會的估計。
+     * @return 扣除宣告成本後的和牌機率與期望值。
+     */
     fun outlook(cycles: Int, outlook: DrawOutlook): WinOutlook {
         val result = profile.outlook(cycles, outlook)
         return result.copy(expectedValue = result.expectedValue - cost)
@@ -118,7 +147,13 @@ internal data class TenpaiBranch(
     val drawProbability: Double,
     val options: List<TenpaiOption>,
 ) {
-    /** 剩餘 [cycles] 輪內，以最佳打法計算的和牌前景。 */
+    /**
+     * 剩餘 [cycles] 輪內，以最佳打法計算的和牌前景。
+     *
+     * @param cycles 可進行的輪數。
+     * @param outlook 本局剩餘摸牌與對手捨牌機會的估計。
+     * @return 選擇期望值最高選項後的和牌機率與期望值；最佳期望值不大於 0 時為 [WinOutlook.NONE]。
+     */
     fun outlook(cycles: Int, outlook: DrawOutlook): WinOutlook = options
         .map { it.outlook(cycles, outlook) }
         .maxByOrNull { it.expectedValue }
@@ -128,6 +163,10 @@ internal data class TenpaiBranch(
 
 /**
  * 一向聽的和牌前景：第 i 輪才摸到聽牌的機率，乘上該路線在剩餘輪數內的和牌前景，逐輪加總。
+ *
+ * @param branches 各種摸牌進張與其聽牌後選項。
+ * @param outlook 本局剩餘摸牌與對手捨牌機會的估計。
+ * @return 一向聽狀態下估計的和牌機率與期望值。
  */
 internal fun oneShantenOutlook(branches: List<TenpaiBranch>, outlook: DrawOutlook): WinOutlook {
     val advanceRate = branches.sumOf { it.drawProbability }
@@ -156,6 +195,8 @@ internal fun oneShantenOutlook(branches: List<TenpaiBranch>, outlook: DrawOutloo
  * @param firstAdvanceRate 目前的手牌每次摸牌前進一向聽的機率。
  * @param laterAdvanceRate 之後的手牌每次摸牌前進一向聽的機率。
  * @param tenpaiProfile 推算到聽牌後使用的和牌率與點數。
+ * @param outlook 本局剩餘摸牌與對手捨牌機會的估計。
+ * @return 依剩餘輪數遞推的和牌機率與期望值。
  */
 internal fun distantOutlook(
     shanten: Int,

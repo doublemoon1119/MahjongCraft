@@ -5,7 +5,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.stress
  *
  * @property pace 每桌推進節奏。
  * @property historyMode 歷史處理方式。
- * @property stutterLimitMillis 單一 tick 耗時超過這個毫秒數就算一次卡頓。
+ * @property stutterLimitMillis 相鄰兩個 tick 開始的實際間隔超過此毫秒數時算一次卡頓。
  * @property warmupSeconds 開始後不列入統計與卡頓判斷的秒數；0 表示不暖機。
  */
 data class StressRunOptions(

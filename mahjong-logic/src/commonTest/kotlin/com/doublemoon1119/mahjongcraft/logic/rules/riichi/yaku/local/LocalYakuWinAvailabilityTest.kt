@@ -63,12 +63,27 @@ class LocalYakuWinAvailabilityTest {
         assertFalse(canRon(useLocalYaku = false))
     }
 
-    /** 萬子。 */
+    /**
+     * 建立指定數值的萬牌。
+     *
+     * @param value 牌面數值。
+     * @return 對應萬牌。
+     */
     private fun m(value: Int): Tile = Tile.Numeric(Tile.Suit.Character, value)
 
-    /** 筒子。 */
+    /**
+     * 建立指定數值的筒牌。
+     *
+     * @param value 牌面數值。
+     * @return 對應筒牌。
+     */
     private fun p(value: Int): Tile = Tile.Numeric(Tile.Suit.Dot, value)
 
-    /** 索子。 */
+    /**
+     * 建立指定數值的索牌。
+     *
+     * @param value 牌面數值。
+     * @return 對應索牌。
+     */
     private fun s(value: Int): Tile = Tile.Numeric(Tile.Suit.Bamboo, value)
 }

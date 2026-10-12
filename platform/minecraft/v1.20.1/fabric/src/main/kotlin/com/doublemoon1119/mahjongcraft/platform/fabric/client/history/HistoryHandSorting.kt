@@ -41,8 +41,8 @@ internal class HistoryHandSorting {
     /**
      * 依規則排序手牌立牌，並保留最近摸牌的獨立欄位語意。
      *
-     * [player.handTiles] 與 [player.lastDrawn] 是不同的保存欄位，因此回傳值只包含立牌；
-     * [player.lastDrawn] 不會被排序或附加到結果中。相同牌面的不同實體依原本索引穩定排序。
+     * 從 [player.handTiles] 排除 [player.lastDrawn] 的實體索引，使最近摸牌保留為獨立顯示。
+     * 相同牌面的不同實體依來源順序穩定排序；目錄中找不到的索引排在有效牌之後。
      *
      * @param player 已驗證的玩家桌況。
      * @param catalog 同一筆歷史桌況的牌面目錄。

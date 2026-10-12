@@ -87,6 +87,9 @@ class AiTurnDriver(
      * 依 [aiId] 在 [Game.aiPlayerStrategyKeys] 的策略 key 從 [aiStrategyRegistry] 解析出策略，組出 [AiDecisionContext]
      * 並經 [decisionExecutor] 問它該怎麼行動；沒有在等待上限內得到結果時，使用與真人逾時相同的 [fixedAutoPlayCommand]。
      *
+     * @param game 決策所依據的權威遊戲。
+     * @param aiId 要決策的 AI 玩家。
+     * @param phase 玩家目前需要決策的階段。
      * @return 決定的命令；這一局已有策略呼叫正在計算時為 null。
      */
     private suspend fun decideGameCommand(

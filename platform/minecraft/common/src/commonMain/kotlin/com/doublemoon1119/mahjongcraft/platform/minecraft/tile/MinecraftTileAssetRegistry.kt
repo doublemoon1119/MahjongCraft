@@ -23,6 +23,8 @@ interface MinecraftTileAssetRegistry {
      * `"example_cat"`），降低與其他來源選到同一個字串的機率；貼圖檔案仍統一放在本 mod 的
      * asset namespace 下（見 [tileTextureAssetPath]），與 asset key 前綴無關。
      *
+     * @param typeId 牌種的穩定識別碼。
+     * @param assetKey 對應的素材 key。
      * @throws IllegalStateException 當 registry 已凍結時拋出。
      * @throws IllegalArgumentException 當 [typeId] 已存在對應映射，或 [assetKey] 已被其他牌種
      * 註冊時拋出。
@@ -32,10 +34,20 @@ interface MinecraftTileAssetRegistry {
     /** 凍結 registry；後續呼叫 [register] 將失敗。 */
     fun freeze()
 
-    /** 依 [typeId] 尋找對應的 asset key；尚未註冊時回傳 null。 */
+    /**
+     * 依 [typeId] 尋找對應的 asset key；尚未註冊時回傳 null。
+     *
+     * @param typeId 牌種的穩定識別碼。
+     * @return 已登記的 asset key；未登記時為 `null`。
+     */
     fun find(typeId: TileTypeId): String?
 
-    /** 是否有任何已註冊的擴充牌種對應到這個 asset key；供正規化外部輸入時判斷第三方 key 是否合法。 */
+    /**
+     * 是否有任何已註冊的擴充牌種對應到這個 asset key；供正規化外部輸入時判斷第三方 key 是否合法。
+     *
+     * @param assetKey 要查詢的素材 key。
+     * @return 有對應牌種時為 `true`。
+     */
     fun isRegisteredAssetKey(assetKey: String): Boolean
 
     /** 目前所有已註冊的 asset key；供指令 Tab 補全等需要列舉第三方牌種的場景使用。 */

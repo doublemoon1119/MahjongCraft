@@ -80,7 +80,12 @@ sealed interface ActionTimeControl {
             }
         }
 
-        /** 驗證基本思考秒數與保留思考秒數可用於決策計時。 */
+        /**
+         * 驗證基本思考秒數與保留思考秒數可用於決策計時。
+         *
+         * @param baseSeconds 每次動作重新取得的基本思考秒數。
+         * @param reserveSeconds 玩家整場共用的保留思考秒數。
+         */
         private fun validate(baseSeconds: Int, reserveSeconds: Int) {
             require(baseSeconds >= 0) { "Base time must not be negative" }
             require(reserveSeconds >= 0) { "Reserve time must not be negative" }

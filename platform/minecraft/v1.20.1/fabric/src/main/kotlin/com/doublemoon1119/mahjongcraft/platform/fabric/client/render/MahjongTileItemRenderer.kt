@@ -88,7 +88,12 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
         matrices.pop()
     }
 
-    /** 依 asset key 查詢 [MahjongTileModelLoadingPlugin] 登記的已烘焙模型。 */
+    /**
+     * 依 asset key 查詢 [MahjongTileModelLoadingPlugin] 登記的已烘焙模型。
+     *
+     * @param assetKey 要查詢的牌面資產 key。
+     * @return 找到的有效烘焙模型；缺少或為 missing model 時回傳 `null`。
+     */
     private fun findBakedModel(assetKey: String): BakedModel? {
         val manager = MinecraftClient.getInstance().bakedModelManager
         val id = Identifier(MinecraftModMetadata.MOD_ID, tileModelAssetPath(assetKey))
@@ -96,7 +101,15 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
         return if (model === manager.missingModel) null else model
     }
 
-    /** 直接重繪已烘焙模型的原始 quad，沿用 atlas sprite，不重算幾何。 */
+    /**
+     * 直接重繪已烘焙模型的原始 quad，沿用 atlas sprite，不重算幾何。
+     *
+     * @param model 要繪製的烘焙模型。
+     * @param matrices 目前的模型矩陣。
+     * @param vertexConsumers 提供 atlas 頂點緩衝。
+     * @param light 世界光照值。
+     * @param overlay 覆蓋貼圖座標。
+     */
     private fun drawBakedModel(
         model: BakedModel,
         matrices: MatrixStack,
@@ -111,7 +124,15 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
         }
     }
 
-    /** 找不到已烘焙模型時，手繪與內建模型相同的立方體幾何，正面材質直接綁定。 */
+    /**
+     * 找不到已烘焙模型時，手繪與內建模型相同的立方體幾何，正面材質直接綁定。
+     *
+     * @param faceTextureId 動態解析的正面貼圖。
+     * @param matrices 目前的模型矩陣。
+     * @param vertexConsumers 提供正面及牌背貼圖頂點緩衝。
+     * @param light 世界光照值。
+     * @param overlay 覆蓋貼圖座標。
+     */
     private fun drawDynamicCuboid(
         faceTextureId: Identifier,
         matrices: MatrixStack,
@@ -139,14 +160,26 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
         }
     }
 
-    /** 立方體單一面的幾何與材質對應。 */
+    /**
+     * 立方體單一面的幾何與材質對應。
+     *
+     * @property corners 此面的四個頂點。
+     * @property normal 此面的法線方向。
+     * @property uvRect 此面的 UV 範圍。
+     * @property usesFaceTexture 是否使用牌面貼圖；否則使用牌背貼圖。
+     */
     private class CuboidFace(
         val corners: List<Vector3f>,
         val normal: Vector3f,
         val uvRect: FloatArray,
         val usesFaceTexture: Boolean,
     ) {
-        /** 依頂點索引取得對應的 UV 座標，四個角依序對應 uvRect 的 (u0,v0)/(u1,v0)/(u1,v1)/(u0,v1)。 */
+        /**
+         * 依頂點索引取得對應 UV；前三個索引對應前三角，其他值使用左下角座標；四角依序對應 uvRect 的 (u0,v0)/(u1,v0)/(u1,v1)/(u0,v1)。
+         *
+         * @param index 頂點在面內的索引。
+         * @return 對應的 U、V 座標。
+         */
         fun uvAt(index: Int): Pair<Float, Float> {
             val (u0, v0, u1, v1) = uvRect
             return when (index) {

@@ -50,6 +50,10 @@ object FuCalculator {
 
     /**
      * 計算標準手牌的符數。
+     *
+     * @param context 和牌情境與規則狀態。
+     * @param structure 已分解的標準手牌結構。
+     * @return 計算並進位後的符數。
      */
     private fun calculateFuForStandard(context: RiichiHandValueContext, structure: HandStructure.Standard): Int {
         // 特殊牌型：門前平和自摸固定 20符
@@ -94,6 +98,10 @@ object FuCalculator {
 
     /**
      * 是否為門前平和自摸
+     *
+     * @param context 和牌情境與規則狀態。
+     * @param structure 已分解的標準手牌結構。
+     * @return 是否符合門前平和自摸。
      */
     private fun isMenzenPinfuTsumo(context: RiichiHandValueContext, structure: HandStructure.Standard): Boolean {
         if (context.isMenzen && context.isTsumo) {
@@ -112,6 +120,10 @@ object FuCalculator {
 
     /**
      * 是否為副露平和型的榮和
+     *
+     * @param context 和牌情境與規則狀態。
+     * @param structure 已分解的標準手牌結構。
+     * @return 是否符合副露平和型榮和。
      */
     private fun isFuuroPinfuRon(context: RiichiHandValueContext, structure: HandStructure.Standard): Boolean {
         if (!context.isMenzen && !context.isTsumo) {
@@ -130,6 +142,10 @@ object FuCalculator {
 
     /**
      * 計算所有面子+雀頭的符數。
+     *
+     * @param context 和牌情境，用於辨識場風、自風與客風。
+     * @param structure 已分解的標準手牌結構。
+     * @return 面子、副露與雀頭的符數總和，尚未進位。
      */
     private fun calculateMentsuAndJantoFu(
         context: HandValueContext,
@@ -245,6 +261,9 @@ object FuCalculator {
 
     /**
      * 向上進到 10 的倍數。
+     *
+     * @param value 尚未進位的符數。
+     * @return 不小於原值的最小 10 倍數。
      */
     private fun ceilToTen(value: Int): Int = if (value % 10 == 0) value else (value / 10 + 1) * 10
 }

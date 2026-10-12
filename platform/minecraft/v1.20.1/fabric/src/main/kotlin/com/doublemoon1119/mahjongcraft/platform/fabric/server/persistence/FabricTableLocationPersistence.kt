@@ -5,7 +5,11 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationReg
 import net.minecraft.server.MinecraftServer
 import org.koin.core.annotation.Single
 
-/** 將單次 Minecraft server session 與桌子位置 [MahjongTableLocationsPersistentState] 接起來。 */
+/**
+ * 將單次 Minecraft server session 與桌子位置 [MahjongTableLocationsPersistentState] 接起來。
+ *
+ * @property registry 桌子位置的記憶體索引。
+ */
 @Single
 class FabricTableLocationPersistence(
     private val registry: TableLocationRegistry,
@@ -16,7 +20,11 @@ class FabricTableLocationPersistence(
     /** 目前 server session 使用的位置 persistent state。 */
     private var persistentState: MahjongTableLocationsPersistentState? = null
 
-    /** 載入 [server] 的位置索引並開始轉送 dirty snapshot。 */
+    /**
+     * 載入 [server] 的位置索引並開始轉送 dirty snapshot。
+     *
+     * @param server 要載入桌子位置索引的 Minecraft 伺服器。
+     */
     fun attach(server: MinecraftServer) {
         check(persistentState == null) { "Table location persistence is already attached to a server session" }
         val state = server.overworld.persistentStateManager.getOrCreate(

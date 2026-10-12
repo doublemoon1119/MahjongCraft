@@ -11,18 +11,20 @@ import kotlin.uuid.Uuid
 /**
  * 每一局同一時間只有一個自動推進：所有驅動自動操作的入口都向這裡請求，不直接驅動。
  *
- * - [request]：這一局已在推進時，只標記「需要再推進一輪」並立即返回；否則登記這一局、在 [scope] 上以 [dispatcher] 啟動推進
- *   協程後立即返回，不等待推進完成。推進協程每一輪結束時檢查標記，有標記就再推進一輪，因此不會漏掉推進期間的請求。
+ * - [request]：這一局已在推進時，只標記「需要再推進一輪」並返回；否則登記這一局並在 [scope] 上以 [dispatcher] 啟動推進協程，
+ *   不等待該工作完成。是否會在呼叫返回前開始或完成，取決於調度器；立即執行的調度器可能在首次掛起前同步執行推進本文。推進協程
+ *   每一輪結束時檢查標記，有標記就再推進一輪，因此不會漏掉推進期間的請求。
  * - [runExclusive]：在呼叫端協程中執行一段推進（例如逐步推進的離線對局）；這一局已在推進時略過。執行期間收到的 [request]
  *   在它結束後才推進。
  *
  * 登記在啟動協程之前完成，避免協程尚未開始時重複排入。登記的釋放不依賴推進本文：協程建立時立即登記完成回呼，由回呼依登記的
  * 識別碼清除，所以協程在開始前就被取消時也會釋放；清除以識別碼比對，重複清除不會影響之後的登記。一局推進失敗時交給
- * [failureReporter] 並停止這次推進，不影響其他局；取消會照常往外傳。[startSession] 清空所有登記，舊 session 的協程結束時
- * 因識別碼不同，不會清掉新 session 的登記。完成回呼可能在任何執行緒上觸發，登記以原子操作保護。
+ * [failureReporter] 並停止這次推進，不影響其他局；取消會照常往外傳。[startSession] 只清空登記、不取消舊 session 的工作；舊工作
+ * 仍可能繼續推進，並與新 session 對同一局的推進重疊。若不允許重疊，呼叫端須先取消或等待舊工作結束，再開始新 session。舊
+ * session 的協程結束時因識別碼不同，不會清掉新 session 的登記。完成回呼可能在任何執行緒上觸發，登記以原子操作保護。
  *
- * @property scope 啟動推進協程的作用域，通常是目前 server session 的作用域。
- * @property dispatcher 推進協程使用的調度器，通常是伺服器主執行緒。
+ * @property scope 啟動推進協程的作用域，由呼叫端配合目前執行階段管理生命週期。
+ * @property dispatcher 執行權威流程的調度器。
  * @property advanceOnce 推進一局一輪的內容；回傳是否需要立即再推進一輪。
  * @property failureReporter 接收推進失敗的情況。
  */
@@ -73,12 +75,17 @@ class AutomatedAdvanceManager(
      */
     fun isAdvancing(gameId: Uuid): Boolean = gameId in advances.load()
 
-    /** 開始新的 server session：清空所有登記。 */
+    /** 開始新的執行階段並清空登記；不會取消先前的工作，呼叫端須另外管理其生命週期。 */
     fun startSession() {
         advances.store(emptyMap())
     }
 
-    /** 推進直到沒有新的請求；每一輪開始前清除標記，結束時沒有標記才釋放登記。 */
+    /**
+     * 推進直到沒有新的請求；每輪開始前清除標記，結束時沒有標記才釋放登記。
+     *
+     * @param gameId 要推進的遊戲。
+     * @param registration 本次推進持有的登記。
+     */
     private suspend fun runRequested(gameId: Uuid, registration: Advance) {
         do {
             if (!update(gameId, registration) { it.copy(rerun = false) }) return
@@ -93,7 +100,13 @@ class AutomatedAdvanceManager(
         } while (again || !releaseIfIdle(gameId, registration))
     }
 
-    /** 這一局沒有登記時以 [advance] 登記；已有登記時標記它需要再推進一輪。 */
+    /**
+     * 嘗試登記推進；已有登記時標記需要再推進一輪。
+     *
+     * @param gameId 要推進的遊戲。
+     * @param advance 欲建立的登記。
+     * @return 是否成功建立新登記。
+     */
     private fun claimOrMarkRerun(gameId: Uuid, advance: Advance): Boolean {
         while (true) {
             val current = advances.load()
@@ -103,7 +116,13 @@ class AutomatedAdvanceManager(
         }
     }
 
-    /** 這一局沒有登記時以 [advance] 登記。 */
+    /**
+     * 只在這一局沒有登記時建立登記。
+     *
+     * @param gameId 要推進的遊戲。
+     * @param advance 欲建立的登記。
+     * @return 是否成功建立登記。
+     */
     private fun claim(gameId: Uuid, advance: Advance): Boolean {
         while (true) {
             val current = advances.load()
@@ -112,7 +131,13 @@ class AutomatedAdvanceManager(
         }
     }
 
-    /** 登記仍是 [advance] 且沒有標記時釋放並回傳 true；有標記時保留登記並回傳 false，讓推進再跑一輪。 */
+    /**
+     * 在沒有補跑請求時釋放自己的登記。
+     *
+     * @param gameId 要檢查的遊戲。
+     * @param advance 預期持有的登記。
+     * @return 登記已釋放或已不屬於本次推進時為 true；仍有補跑請求時為 false。
+     */
     private fun releaseIfIdle(gameId: Uuid, advance: Advance): Boolean {
         while (true) {
             val current = advances.load()
@@ -123,7 +148,13 @@ class AutomatedAdvanceManager(
         }
     }
 
-    /** 釋放 [advance] 的登記，回傳它是否收到過新的請求；登記已不是 [advance] 時不做事並回傳 false。 */
+    /**
+     * 釋放自己的登記並取出補跑狀態。
+     *
+     * @param gameId 要釋放的遊戲。
+     * @param advance 預期持有的登記。
+     * @return 是否有補跑請求；登記已不屬於本次推進時為 false。
+     */
     private fun releaseAndTakeRerun(gameId: Uuid, advance: Advance): Boolean {
         while (true) {
             val current = advances.load()
@@ -133,7 +164,12 @@ class AutomatedAdvanceManager(
         }
     }
 
-    /** 釋放 [advance] 的登記；登記已不是 [advance] 時不做事。 */
+    /**
+     * 釋放自己的登記；目前登記已屬於其他推進時不做事。
+     *
+     * @param gameId 要釋放的遊戲。
+     * @param advance 預期持有的登記。
+     */
     private fun release(gameId: Uuid, advance: Advance) {
         while (true) {
             val current = advances.load()
@@ -143,7 +179,14 @@ class AutomatedAdvanceManager(
         }
     }
 
-    /** 只在登記仍是 [advance] 時以 [transform] 更新；回傳登記是否仍是 [advance]。 */
+    /**
+     * 只更新仍屬於本次推進的登記。
+     *
+     * @param gameId 要更新的遊戲。
+     * @param advance 預期持有的登記。
+     * @param transform 計算新登記；競爭更新時可能重算。
+     * @return 是否成功更新自己的登記。
+     */
     private fun update(gameId: Uuid, advance: Advance, transform: (Advance) -> Advance): Boolean {
         while (true) {
             val current = advances.load()
@@ -162,8 +205,9 @@ class AutomatedAdvanceManager(
          * @param scope 啟動推進協程的作用域。
          * @param dispatcher 推進協程使用的調度器。
          * @param coordinator 推進的流程。
-         * @param followUp 每一輪最後補做的平台檢查。
+         * @param followUp 自動操作完成後的流程檢查。
          * @param failureReporter 接收推進失敗的情況。
+         * @return 統一處理待完成流程、自動操作與後續檢查的管理器。
          */
         fun forCoordinator(
             scope: CoroutineScope,

@@ -27,7 +27,11 @@ class StressTestEnvironment internal constructor(
     /** 對局歷史畫面讀取壓力測試紀錄的資料來源；只有寫進資料庫的模式才有。 */
     val historySource: HistoryDataSource? = (sink as? StressHistorySink.Database)?.let { HistoryDataSource(it.writer, store) }
 
-    /** 處理歷史的背景工作是否發生錯誤或暫停。 */
+    /**
+     * 處理歷史的背景工作是否發生錯誤或暫停。
+     *
+     * @return 背景工作已失敗或暫停時為 `true`。
+     */
     suspend fun historyFailed(): Boolean = sink.failed()
 
     /** 停止背景工作；有資料庫時一併刪除資料庫及其附屬檔案。 */

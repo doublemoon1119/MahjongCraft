@@ -37,16 +37,22 @@ class ResourceCatalogueTileArtTest {
         /** 目前是否提供貼圖。 */
         var available = false
 
+        /** 依 [available] 回傳空資源或空串流的測試資源。 */
         override fun getResource(id: Identifier): Optional<Resource> = if (available) Optional.of(Resource(null as ResourcePack?) { ByteArrayInputStream(ByteArray(0)) }) else Optional.empty()
 
+        /** 測試資源不宣告 namespace。 */
         override fun getAllNamespaces(): Set<String> = emptySet()
 
+        /** 測試資源不列出同一 ID 的多個資源。 */
         override fun getAllResources(id: Identifier): List<Resource> = emptyList()
 
+        /** 測試資源不列出符合路徑的單一資源。 */
         override fun findResources(startingPath: String, allowedPathPredicate: Predicate<Identifier>): Map<Identifier, Resource> = emptyMap()
 
+        /** 測試資源不列出符合路徑的資源集合。 */
         override fun findAllResources(startingPath: String, allowedPathPredicate: Predicate<Identifier>): Map<Identifier, List<Resource>> = emptyMap()
 
+        /** 測試資源沒有可串流的資源包。 */
         override fun streamResourcePacks(): Stream<ResourcePack> = Stream.empty()
     }
 }

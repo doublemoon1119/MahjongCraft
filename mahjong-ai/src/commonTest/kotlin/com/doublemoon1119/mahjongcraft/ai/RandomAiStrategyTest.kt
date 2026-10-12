@@ -43,6 +43,15 @@ class RandomAiStrategyTest {
 
     private val selfId = Uuid.random()
 
+    /**
+     * 以指定手牌、階段與合法動作建立決策情境。
+     *
+     * @param hand 測試玩家的手牌。
+     * @param phase AI 所處的決策階段。
+     * @param legalActions 該階段提供的合法動作。
+     * @param forcedDiscardTileId 強制捨牌的牌識別碼；null 表示未強制指定。
+     * @return 對應輸入的 AI 決策情境。
+     */
     private fun contextWithHand(
         hand: Hand,
         phase: AiDecisionPhase,

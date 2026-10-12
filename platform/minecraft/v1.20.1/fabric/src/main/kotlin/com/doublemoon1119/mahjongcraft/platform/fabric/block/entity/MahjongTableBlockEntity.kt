@@ -14,6 +14,9 @@ import kotlin.uuid.Uuid
  * 所有已排定呈現的最晚結束絕對 game time。它不需要 block entity ticker；即使 chunk 曾被卸載，
  * 下次查詢時直接與世界時間比較即可正確收斂。未來 GUI／HUD 或役種演出可在同一個呈現狀態
  * 上擴充具名 cue，但這裡不執行任何權威遊戲流程。
+ *
+ * @param pos 此方塊實體所在位置。
+ * @param state 建立時的方塊狀態。
  */
 class MahjongTableBlockEntity(
     pos: BlockPos,
@@ -27,14 +30,23 @@ class MahjongTableBlockEntity(
     var presentationBusyUntilGameTime: Long = 0L
         private set
 
-    /** 將整桌呈現時間軸延長到 [endGameTime]，已有更晚結束時間時保留原值。 */
+    /**
+     * 將整桌呈現時間軸延長到 [endGameTime]，已有更晚結束時間時保留原值。
+     *
+     * @param endGameTime 新的絕對遊戲時間期限。
+     */
     fun extendPresentationUntil(endGameTime: Long) {
         if (endGameTime <= presentationBusyUntilGameTime) return
         presentationBusyUntilGameTime = endGameTime
         markDirty()
     }
 
-    /** 以 [currentGameTime] 判斷整桌呈現時間軸是否尚未結束。 */
+    /**
+     * 以 [currentGameTime] 判斷整桌呈現時間軸是否尚未結束。
+     *
+     * @param currentGameTime 目前絕對遊戲時間。
+     * @return 目前時間早於已排定期限時為 `true`。
+     */
     fun isPresenting(currentGameTime: Long): Boolean = currentGameTime < presentationBusyUntilGameTime
 
     /**
@@ -47,17 +59,30 @@ class MahjongTableBlockEntity(
     var continuingWinPresentationBusyUntilGameTime: Long = 0L
         private set
 
-    /** 將中途胡牌呈現時間軸延長到 [endGameTime]，已有更晚結束時間時保留原值。 */
+    /**
+     * 將中途胡牌呈現時間軸延長到 [endGameTime]，已有更晚結束時間時保留原值。
+     *
+     * @param endGameTime 新的絕對遊戲時間期限。
+     */
     fun extendContinuingWinPresentationUntil(endGameTime: Long) {
         if (endGameTime <= continuingWinPresentationBusyUntilGameTime) return
         continuingWinPresentationBusyUntilGameTime = endGameTime
         markDirty()
     }
 
-    /** 以 [currentGameTime] 判斷中途胡牌呈現時間軸是否尚未結束。 */
+    /**
+     * 以 [currentGameTime] 判斷中途胡牌呈現時間軸是否尚未結束。
+     *
+     * @param currentGameTime 目前絕對遊戲時間。
+     * @return 目前時間早於已排定期限時為 `true`。
+     */
     fun isPresentingContinuingWin(currentGameTime: Long): Boolean = currentGameTime < continuingWinPresentationBusyUntilGameTime
 
-    /** 從方塊實體 NBT 還原穩定 UUID；損壞或缺失時保留新生成的 UUID。 */
+    /**
+     * 從方塊實體 NBT 還原穩定 UUID；損壞或缺失時保留新生成的 UUID。
+     *
+     * @param nbt 要讀取的 NBT 欄位。
+     */
     override fun readNbt(nbt: NbtCompound) {
         super.readNbt(nbt)
         nbt.getString(NBT_KEY_TABLE_ID)
@@ -68,7 +93,11 @@ class MahjongTableBlockEntity(
         continuingWinPresentationBusyUntilGameTime = nbt.getLong(NBT_KEY_CONTINUING_WIN_PRESENTATION_BUSY_UNTIL_GAME_TIME)
     }
 
-    /** 把穩定 UUID 寫入方塊實體 NBT。 */
+    /**
+     * 把穩定 UUID 與呈現期限寫入方塊實體 NBT。
+     *
+     * @param nbt 接收序列化欄位的 NBT。
+     */
     override fun writeNbt(nbt: NbtCompound) {
         super.writeNbt(nbt)
         nbt.putString(NBT_KEY_TABLE_ID, tableId.toString())
@@ -78,8 +107,13 @@ class MahjongTableBlockEntity(
 
     /** 麻將桌方塊實體 NBT 欄位名稱。 */
     private companion object {
+        /** 穩定桌子 UUID 的 NBT 欄位名稱。 */
         const val NBT_KEY_TABLE_ID: String = "TableId"
+
+        /** 整桌呈現忙碌期限的 NBT 欄位名稱。 */
         const val NBT_KEY_PRESENTATION_BUSY_UNTIL_GAME_TIME: String = "PresentationBusyUntilGameTime"
+
+        /** 中途胡牌呈現忙碌期限的 NBT 欄位名稱。 */
         const val NBT_KEY_CONTINUING_WIN_PRESENTATION_BUSY_UNTIL_GAME_TIME: String = "ContinuingWinPresentationBusyUntilGameTime"
     }
 }

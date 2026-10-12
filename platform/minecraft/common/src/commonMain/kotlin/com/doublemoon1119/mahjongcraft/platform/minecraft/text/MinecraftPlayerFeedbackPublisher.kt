@@ -26,6 +26,9 @@ interface MinecraftPlayerFeedbackPublisher {
      *
      * 同一回饋可以依版本需求觸發零到多個文字、視覺或聲音效果；實作應避免在多個位置重複顯示
      * 相同文字，除非該重複具有明確用途。
+     *
+     * @param playerId 接收回饋的玩家 UUID。
+     * @param feedback 要呈現的一次性操作回饋。
      */
     fun publish(playerId: Uuid, feedback: MinecraftPlayerFeedback)
 }

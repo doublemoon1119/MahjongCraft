@@ -33,7 +33,12 @@ class RoundPreparationAiDriver(
     private val visibilityPolicy: GameVisibilityPolicy,
     private val decisionExecutor: AiDecisionExecutor,
 ) {
-    /** 找出下一位需要自動提交的參與者；沒有時，或這一局已有策略呼叫正在計算時回傳 null。 */
+    /**
+     * 找出下一位需要自動提交的參與者；沒有時，或這一局已有策略呼叫正在計算時回傳 null。
+     *
+     * @param gameId 欲解析準備提交的對局。
+     * @return 可提交的玩家與命令；目前無自動提交時為 null。
+     */
     suspend fun resolveNextAction(gameId: Uuid): AutomatedRoundPreparation? {
         val game = gameRepository.getGame(gameId) ?: return null
         val preparation = game.pendingRoundPreparation ?: return null

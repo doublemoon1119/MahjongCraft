@@ -209,11 +209,11 @@ internal class HistoryReplayProjectionMapper(private val registry: HistoryReplay
     }
 
     /**
-     * 只經註冊 codec 公開規則資料，未註冊資料不可取得。
+     * 只經註冊的解碼器公開規則資料；未註冊型別只保留識別碼，不公開 payload。
      *
      * @param value 可為 null 的 typed envelope。
      * @param context 解碼預算與索引。
-     * @return 可用公開資料或 null。
+     * @return envelope 缺少時為 null；未註冊型別回傳只含 type key 的資訊；其餘回傳解碼器結果。
      */
     private fun optionalRule(value: JsonElement?, context: HistoryReplayProjectionContext): HistoryReplayRuleInformation? {
         if (value == null || value == JsonNull) return null

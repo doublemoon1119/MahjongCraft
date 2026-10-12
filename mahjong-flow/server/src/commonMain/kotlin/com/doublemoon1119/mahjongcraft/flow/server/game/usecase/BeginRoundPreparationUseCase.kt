@@ -11,7 +11,14 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import org.koin.core.annotation.Factory
 import kotlin.uuid.Uuid
 
-/** 發牌後依規則建立第一個開局準備步驟。 */
+/**
+ * 發牌後依規則建立第一個開局準備步驟。
+ *
+ * @property gameRepository 讀取與更新權威遊戲。
+ * @property moduleRegistry 依桌況設定取得規則模組。
+ * @property resolverRegistry 取得規則提供的準備流程解析器。
+ * @property snapshotSynchronizer 更新準備流程變更後的觀看者快照。
+ */
 @Factory
 class BeginRoundPreparationUseCase(
     private val gameRepository: GameRepository,
@@ -19,7 +26,12 @@ class BeginRoundPreparationUseCase(
     private val resolverRegistry: RoundPreparationResolverRegistry,
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
 ) {
-    /** 建立指定對局的第一個準備步驟；規則沒有步驟時維持 null。 */
+    /**
+     * 建立指定對局的第一個準備步驟；規則沒有步驟時維持 null。
+     *
+     * @param gameId 欲開始準備流程的對局。
+     * @return 建立結果；對局不存在時回傳錯誤。
+     */
     suspend operator fun invoke(gameId: Uuid): Outcome<Unit, GameError> {
         val result = gameRepository.updateGame(
             gameId,
@@ -55,6 +67,12 @@ class BeginRoundPreparationUseCase(
         return result.outcome
     }
 
+    /**
+     * 原子更新後的準備流程結果與可選歷史事實。
+     *
+     * @property outcome use case 對呼叫端回傳的結果。
+     * @property historyDraft 開始新準備步驟時要記錄的事實；沒有新步驟時為 null。
+     */
     private data class PreparationBeginUpdate(
         val outcome: Outcome<Unit, GameError>,
         val historyDraft: HistoryEventDraft?,

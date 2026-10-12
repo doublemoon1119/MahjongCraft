@@ -204,7 +204,18 @@ class MahjongExtensionRegistrarTest {
     }
 }
 
-/** 建立 registrar 測試使用的獨立 core registry 集合。 */
+/**
+ * 建立 registrar 測試使用的獨立 core registry 集合。
+ *
+ * @param moduleRegistry 規則模組 registry，預設建立新的實作。
+ * @param tileTypeRegistry 牌種類型 registry，預設建立新的實作。
+ * @param networkRegistries network DTO registry 集合，預設建立新的測試替身。
+ * @param persistenceRegistries persistence DTO registry 集合，預設建立 bundled 測試集合。
+ * @param historyReplayProjectionRegistry 對局歷史投影 registry，預設建立新的實例。
+ * @param aiStrategyRegistry AI 策略 registry，預設包含預設策略。
+ * @param opponentModelRegistry 對手模型 registry，預設建立新的實例。
+ * @return 使用指定或預設 registry 組成的 core registry 集合。
+ */
 private fun testCoreRegistries(
     moduleRegistry: MahjongModuleRegistry = MahjongModuleRegistryImpl(),
     tileTypeRegistry: TileTypeRegistry = TileTypeRegistryImpl(),
@@ -232,7 +243,11 @@ private fun testCoreRegistries(
     winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry(),
 )
 
-/** 記錄 registrar 呼叫順序並登記一個可解析規則的測試 extension。 */
+/**
+ * 記錄 registrar 呼叫順序並登記一個可解析規則的測試 extension。
+ *
+ * @property calls 接收每個登記回呼名稱的可變清單。
+ */
 private class RecordingExtension(
     private val calls: MutableList<String>,
 ) : MahjongExtension {
@@ -281,7 +296,11 @@ private class RecordingExtension(
     }
 }
 
-/** 不登記任何項目的 extension 測試替身。 */
+/**
+ * 不登記任何項目的 extension 測試替身。
+ *
+ * @property id 此測試 extension 的識別字串。
+ */
 private class EmptyExtension(override val id: String) : MahjongExtension {
     override fun registerRuleModules(registry: MahjongModuleRegistry) = Unit
 
@@ -290,7 +309,11 @@ private class EmptyExtension(override val id: String) : MahjongExtension {
     override fun registerPersistenceDtos(registries: PersistenceRegistries) = Unit
 }
 
-/** 僅登記 AI 策略的第三方 extension 測試替身。 */
+/**
+ * 僅登記 AI 策略的第三方 extension 測試替身。
+ *
+ * @property id 此測試 extension 的識別字串。
+ */
 private class StrategyExtension(override val id: String) : MahjongExtension {
     override fun registerRuleModules(registry: MahjongModuleRegistry) = Unit
 

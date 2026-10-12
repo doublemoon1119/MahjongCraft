@@ -46,6 +46,14 @@ import kotlin.uuid.toKotlinUuid
  * 特殊視覺強調（例如日麻寶牌發光，見 [MahjongRuleModule.isBonusTile]）也是逐幀在這裡由
  * client 端自行判斷，見 [isHighlighted]——理由跟牌面解析完全一致：這個判斷只能在真正解析出可見牌面
  * 之後才進行，對觀察者看不到牌面的隱藏牌天然不會觸發，不需要另外處理保密。
+ *
+ * @param context Minecraft renderer 建立時提供的 client context。
+ * @param stateStore 本機已收到的對局快照，用於解析管理中牌張的可見牌面。
+ * @param tileAssetRegistry 將牌張轉為註冊 asset key 的 registry。
+ * @param tileFaceRenderer 疊加牌面角落標籤的共用 renderer。
+ * @param moduleRegistry 依對局規則判斷加值牌的 registry。
+ * @param decisionPromptStore 提供目前選牌合法候選牌集合，以決定手牌是否降低亮度。
+ * @param configStore 提供牌面提示等用戶端顯示設定。
  */
 class MahjongTileEntityRenderer(
     context: EntityRendererFactory.Context,
@@ -133,7 +141,15 @@ class MahjongTileEntityRenderer(
         renderActionPopup(entity, assetKey, tickDelta, matrices, vertexConsumers)
     }
 
-    /** 在落地牌張上方繪製短暫、無文字的 billboard 牌面提示。 */
+    /**
+     * 在落地牌張上方繪製短暫、無文字的 billboard 牌面提示。
+     *
+     * @param entity 動作提示所屬牌張。
+     * @param assetKey 目前可見的牌面資產 key。
+     * @param tickDelta 本幀部分 tick 進度。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供背景與牌面頂點緩衝。
+     */
     private fun renderActionPopup(
         entity: MahjongTileEntity,
         assetKey: String,
@@ -187,7 +203,14 @@ class MahjongTileEntityRenderer(
         matrices.pop()
     }
 
-    /** 由單一錨點繪製一個共用面板：一列直立的牌，鳴取的那張上方加註指標，比照決策卡片。 */
+    /**
+     * 由單一錨點繪製一個共用面板：一列直立的牌，鳴取的那張上方加註指標，比照決策卡片。
+     *
+     * @param entity 提供鳴牌牌列及其牌張 entity 的牌張。
+     * @param alpha 面板透明度。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供背景、牌面與指標頂點緩衝。
+     */
     private fun renderMeldActionPopup(
         entity: MahjongTileEntity,
         alpha: Float,
@@ -244,7 +267,17 @@ class MahjongTileEntityRenderer(
         matrices.pop()
     }
 
-    /** 以牌面中心為錨點畫一張直立的提示牌。 */
+    /**
+     * 以牌面中心為錨點畫一張直立的提示牌。
+     *
+     * @param assetKey 牌面資產 key。
+     * @param centerX 牌面中心 X 座標。
+     * @param centerY 牌面中心 Y 座標。
+     * @param alpha 顯示透明度。
+     * @param z 局部深度。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供牌面頂點緩衝。
+     */
     private fun renderPopupTile(
         assetKey: String,
         centerX: Float,
@@ -275,6 +308,13 @@ class MahjongTileEntityRenderer(
      *
      * 列寬以決策卡片的像素描述，依牌寬比例換算成提示的單位，相對於一張牌看起來與介面一致；逐列色塊的
      * 階梯狀外觀刻意保留。
+     *
+     * @param centerX 指標中心 X 座標。
+     * @param bottom 指標底邊 Y 座標。
+     * @param alpha 指標透明度。
+     * @param z 局部深度。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供色塊頂點緩衝。
      */
     private fun renderClaimedTileMarker(
         centerX: Float,
@@ -306,6 +346,9 @@ class MahjongTileEntityRenderer(
      * 姿態旋轉前的錨點位置（entity 世界座標，經過動畫位移後的位置）——這個位移是套用在姿態旋轉
      * *之後* 的局部座標系（[render] 呼叫順序：先轉姿態、後位移），效果等同讓姿態旋轉的軸心落在牌底
      * 而非模型幾何中心，理由見 [lerpPoseOriginOffset] KDoc。
+     *
+     * @param rotationDegrees 姿態旋轉角度。
+     * @return 將旋轉軸對齊牌底所需的補償位移。
      */
     private fun poseOriginOffset(rotationDegrees: Float): Triple<Double, Double, Double> = when (rotationDegrees) {
         MahjongTilePose.STANDING.rotationDegrees -> Triple(0.0, MahjongTileEntity.TILE_HEIGHT / 2.0, 0.0)
@@ -322,6 +365,11 @@ class MahjongTileEntityRenderer(
      *
      * 因此依同一個 `progress` 在起訖姿態的補償位移之間線性內插：起訖兩端與靜態渲染完全一致，播放前後不會跳動；
      * 中間過程不是嚴格的單一軸心剛體旋轉（三個姿態的補償位移各自調校、沒有共用幾何軸心），但觀感接近繞牌底翻起。
+     *
+     * @param startRotationDegrees 起始姿態角度。
+     * @param endRotationDegrees 結束姿態角度。
+     * @param progress 內插進度，0 對應起點，1 對應終點。
+     * @return 起訖補償位移的線性內插值。
      */
     private fun lerpPoseOriginOffset(startRotationDegrees: Float, endRotationDegrees: Float, progress: Double): Triple<Double, Double, Double> {
         val (startX, startY, startZ) = poseOriginOffset(startRotationDegrees)
@@ -333,12 +381,19 @@ class MahjongTileEntityRenderer(
         )
     }
 
-    /** ItemRenderer 自行解析材質，因此 entity renderer 不提供單一 texture。 */
+    /**
+     * ItemRenderer 自行解析材質，因此 entity renderer 不提供單一 texture。
+     *
+     * @param entity 正在繪製的牌張 entity。
+     * @return `null`，表示材質由 item model renderer 動態解析。
+     */
     override fun getTexture(entity: MahjongTileEntity): Identifier? = null
 
     /**
      * 自由放置牌沿用 entity 自身 tracked data；牌局管理中的牌改查 [stateStore]——查不到（不在目前
      * 對局範圍）或未對目前觀察者揭露時顯示牌背，查得到就換算成對應正面 asset key。
+     *
+     * @return 此觀察者可見的牌面資產 key；無可見快照時為牌背 key。
      */
     private fun MahjongTileEntity.resolvedTileAssetKey(): String {
         if (!managedByGame) return tileAssetKey
@@ -353,6 +408,8 @@ class MahjongTileEntityRenderer(
      * （[MahjongRuleModule.isBonusTile]，例如日麻寶牌），需要特殊視覺強調。自由放置的牌、或牌面對目前觀察者
      * 不可見（[stateStore] 查無對應快照）的管理中牌，一律回傳 `false`——不需要另外判斷保密，理由見
      * 類別 KDoc。
+     *
+     * @return 目前觀察者是否應看到此牌張的特殊強調效果。
      *
      * 額外要求這張牌目前姿態不是 [MahjongTilePose.FACE_DOWN]、且沒有動畫正在播放中
      * （`!entity.animating`）——伺服器端一算出手牌內容就會同步進快照，這張牌實際被玩家摸到、翻開之前
@@ -380,6 +437,8 @@ class MahjongTileEntityRenderer(
      * `renderItem` 呼叫裡連同正常牌面一起疊畫，完全不用碰 [ItemStack] 本身的附魔資料
      * （見 [MahjongTileEntityRenderer] 類別 KDoc：`tileStacks` 是全部 entity 共用的靜態實例，不能
      * 每幀個別修改）也不用 `Entity.setGlowing()`（保留給其他用途）。
+     *
+     * @return 將 layer 請求包裝為直接物品光暈 consumer 的 provider。
      */
     private fun VertexConsumerProvider.withGlint(): VertexConsumerProvider = VertexConsumerProvider { layer -> ItemRenderer.getDirectItemGlintConsumer(this, layer, false, true) }
 
@@ -388,6 +447,8 @@ class MahjongTileEntityRenderer(
      * [RenderLayer.getDirectEntityGlint]，忽略呼叫端原本要求的 layer（正常牌面已經在第一次
      * `renderItem` 呼叫時畫過一次），用來在 [render] 額外疊加第二次光暈幾何、加強亮度，見 [render]
      * 內的呼叫點註解。
+     *
+     * @return 將緩衝請求導向純 entity 光暈 layer 的 provider。
      */
     private fun VertexConsumerProvider.glintOnly(): VertexConsumerProvider = VertexConsumerProvider { _ -> this.getBuffer(RenderLayer.getDirectEntityGlint()) }
 
@@ -445,7 +506,11 @@ class MahjongTileEntityRenderer(
         private const val ACTION_POPUP_BACKGROUND_ALPHA = 0.72f
     }
 
-    /** 動作選牌期間（例如立直宣告後選擇捨牌），合法候選牌以外的管理中手牌降低光照。 */
+    /**
+     * 動作選牌期間（例如立直宣告後選擇捨牌），合法候選牌以外的管理中手牌降低光照。
+     *
+     * @return 此管理中牌是否不在目前合法候選集合中。
+     */
     private fun MahjongTileEntity.isDimmedByTileSelection(): Boolean {
         if (!managedByGame) return false
         val legalTileIds = decisionPromptStore.activeTileSelectionEligibleTileIds()

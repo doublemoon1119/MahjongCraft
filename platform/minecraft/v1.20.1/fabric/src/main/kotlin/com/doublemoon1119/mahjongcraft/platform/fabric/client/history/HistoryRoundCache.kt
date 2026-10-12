@@ -57,7 +57,7 @@ internal sealed interface HistoryRoundCacheKey {
  * 有界的單局歷史成功回覆快取。
  *
  * 預設最多保存 8 個事件頁與 4 個桌況，合計 UTF-8 估算大小不超過 1 MiB，並在 30 秒後過期。
- * 快取不保存錯誤或未通過驗證的回覆；連線／世界切換時由呼叫端清除或切換 session revision。
+ * 呼叫端只應傳入已驗證的成功回覆，本類別不自行驗證內容；連線／世界切換時由呼叫端清除或切換 session revision。
  *
  * @property now 提供可測試的單調時間。
  * @property ttl 成功項目的存活時間。
@@ -113,7 +113,7 @@ internal class HistoryRoundCache(
      * @param key 事件頁快取鍵。
      * @param value 已通過驗證的事件頁。
      * @param utf8Bytes 其序列化 UTF-8 大小估算。
-     * @return 是否成功加入快取；超過單項容量時為 false。
+     * @return 是否成功加入快取；大小不大於 0、超過容量或事件頁數量上限不大於 0 時為 false。
      */
     fun putEvents(key: HistoryRoundCacheKey.Events, value: HistoryRoundEventsDto, utf8Bytes: Int): Boolean = put(key, value, utf8Bytes.toLong(), maxEventEntries)
 
@@ -123,7 +123,7 @@ internal class HistoryRoundCache(
      * @param key 桌況快取鍵。
      * @param value 已通過驗證的桌況。
      * @param utf8Bytes 其序列化 UTF-8 大小估算。
-     * @return 是否成功加入快取；超過單項容量時為 false。
+     * @return 是否成功加入快取；大小不大於 0、超過容量或桌況數量上限不大於 0 時為 false。
      */
     fun putState(key: HistoryRoundCacheKey.State, value: HistoryRoundStateDto, utf8Bytes: Int): Boolean = put(key, value, utf8Bytes.toLong(), maxStateEntries)
 

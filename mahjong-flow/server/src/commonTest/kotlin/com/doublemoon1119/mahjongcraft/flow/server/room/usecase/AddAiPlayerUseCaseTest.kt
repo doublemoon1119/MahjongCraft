@@ -21,8 +21,13 @@ import kotlin.uuid.Uuid
  */
 class AddAiPlayerUseCaseTest {
 
+    /** 測試房間的識別碼。 */
     private val roomId: Uuid = Uuid.random()
+
+    /** 測試房間房主的玩家識別碼。 */
     private val hostId: Uuid = Uuid.random()
+
+    /** 允許新增最多四名玩家的測試規則設定。 */
     private val config = FakeMahjongRuleConfig(maxPlayers = 4)
 
     /**

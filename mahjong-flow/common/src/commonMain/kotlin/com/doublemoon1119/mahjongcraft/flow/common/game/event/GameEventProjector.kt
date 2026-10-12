@@ -82,7 +82,13 @@ class GameEventProjector(
         return listOfNotNull(started, settled, ended)
     }
 
-    /** 對局開始的事件。 */
+    /**
+     * 建立包含開局玩家座位的對局開始事件。
+     *
+     * @param game 開局交易提交後的對局。
+     * @param module 對局使用的規則模組。
+     * @return 新的對局開始事件。
+     */
     private fun matchStarted(game: Game, module: MahjongRuleModule<*>): MatchStartedEvent = MatchStartedEvent.create(
         eventId = newEventId(),
         matchId = game.matchId,
@@ -93,7 +99,16 @@ class GameEventProjector(
         },
     )
 
-    /** 這筆交易的結算事件；這筆交易沒有結算時為 null。 */
+    /**
+     * 建立這筆交易的結算事件；沒有結算時為 null。
+     *
+     * @param previous 交易前的對局。
+     * @param game 交易後的對局。
+     * @param module 提供回合排名規則的模組。
+     * @param wins 本次交易提交的和牌結算事實。
+     * @param specialOutcome 本次交易直接產生的特殊結算摘要；沒有時為 null。
+     * @return 合併同筆交易贏家與分數變化的結算事件；無結算時為 null。
+     */
     private fun roundSettled(
         previous: Game,
         game: Game,
@@ -141,13 +156,24 @@ class GameEventProjector(
      *
      * 規則的流局交易同時寫入摘要時使用它（荒牌流局沒有人聽牌時，玩家的動作記錄不會新增流局，只能由摘要得知）；否則依這筆
      * 交易新增的流局記錄建立，例如由反應或動作後判定直接產生、摘要之後才補上的途中流局。
+     *
+     * @param previous 交易前的對局。
+     * @param game 交易後的對局。
+     * @return 本次交易產生的流局摘要；沒有時為 null。
      */
     private fun drawCompletion(previous: Game, game: Game): RoundCompletionSummary? {
         val committed = game.roundCompletion?.takeIf { previous.roundCompletion == null && it.classification in DRAW_CLASSIFICATIONS }
         return committed ?: recordedDrawCompletion(game.tableState, newlyRecordedActionsByPlayerId(previous.tableState, game.tableState))
     }
 
-    /** 正常打完的對局結束事件。 */
+    /**
+     * 建立正常打完的對局結束事件。
+     *
+     * @param game 正常終局交易提交後的對局。
+     * @param module 提供終局排名規則的模組。
+     * @param reasonId 正常終局的原因 ID。
+     * @return 正常完成的對局結束事件。
+     */
     private fun matchCompleted(game: Game, module: MahjongRuleModule<*>, reasonId: String): MatchEndedEvent = matchEnded(game, module, reasonId, MatchCompletion.COMPLETED)
 
     /**
@@ -196,7 +222,12 @@ class GameEventProjector(
         val beneficiaryPlayerIds: Set<Uuid>,
         val responsiblePlayerIds: Set<Uuid>,
     ) {
-        /** 由本局結算摘要建立。 */
+        /**
+         * 由本局結算摘要建立事件內容。
+         *
+         * @param summary 本局結算的權威摘要。
+         * @param kind 此事件採用的結算分類。
+         */
         constructor(summary: RoundCompletionSummary, kind: RoundSettlementKind) : this(
             outcomeId = summary.outcomeId,
             kind = kind,

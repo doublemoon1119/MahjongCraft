@@ -15,10 +15,13 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
+/** 驗證台灣麻將向聽計算器對常見手牌、花牌及摸牌前後變化的判定。 */
 class TaiwanShantenCalculatorTest {
 
+    /** 受測台灣麻將向聽計算器。 */
     private val calculator = TaiwanShantenCalculator()
 
+    /** 四個面子加兩組對子的十六張手牌應判為聽牌。 */
     @Test
     fun `test tenpai hand - 4 melds, 1 pair, 1 tatsu`() {
         // 手牌: 111m, 234m, 567m, 東東東, 南南, 88m (16張)
@@ -50,6 +53,7 @@ class TaiwanShantenCalculatorTest {
         assertTrue(result is ShantenResult.Tenpai, "Hand with 4 melds, 1 pair, 1 tatsu should be Tenpai.")
     }
 
+    /** 五個面子加一張南的十六張手牌應判為單騎聽牌。 */
     @Test
     fun `test tenpai hand - 5 melds, 1 single`() {
         // 手牌: 111m, 234m, 567m, 888m, 東東東, 南 (16張)
@@ -80,6 +84,7 @@ class TaiwanShantenCalculatorTest {
         assertTrue(result is ShantenResult.Tenpai, "Hand with 5 melds, 1 single should be Tenpai.")
     }
 
+    /** 五個面子加一組雀頭的十七張手牌應判為完成。 */
     @Test
     fun `test agari hand - 5 melds, 1 pair`() {
         // 手牌: 111m, 234m, 567m, 888m, 東東東, 南南 (17張)
@@ -145,8 +150,12 @@ class TaiwanShantenCalculatorTest {
         }
     }
 
+    /** 性質測試的固定亂數設定。 */
     private companion object {
+        /** 產生可重現牌型的亂數種子。 */
         const val PROPERTY_SEED = 20261012
+
+        /** 每項性質測試產生的牌型數。 */
         const val PROPERTY_HANDS = 300
     }
 }

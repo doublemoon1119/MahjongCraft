@@ -546,7 +546,7 @@ class HistoryBrowseRoundControllerTest {
         }
 
         /**
-         * 記錄規則設定查詢。
+         * 產生規則設定要求的測試用識別碼；此替身不需保留其 payload。
          *
          * @param request 規則設定要求。
          * @return 模擬配對識別碼。

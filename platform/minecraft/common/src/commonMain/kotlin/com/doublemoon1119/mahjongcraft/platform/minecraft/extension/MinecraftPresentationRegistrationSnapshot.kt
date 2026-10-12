@@ -8,7 +8,12 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.extension
 data class MinecraftPresentationRegistrationSnapshot(
     val categories: List<MinecraftPresentationRegistrationSnapshotCategory>,
 ) {
-    /** 與 [current] 比較並回傳新增的註冊內容。 */
+    /**
+     * 與 [current] 比較並回傳新增的註冊內容。
+     *
+     * @param current 較新的註冊快照。
+     * @return 依分類列出的新增註冊 key。
+     */
     fun additionsSince(current: MinecraftPresentationRegistrationSnapshot): List<MinecraftPresentationRegistrationSnapshotCategory> {
         val baselineById = categories.associateBy { it.id }
         return current.categories.map { category ->
@@ -16,6 +21,6 @@ data class MinecraftPresentationRegistrationSnapshot(
         }
     }
 
-    /** 取得 nullable 快照分類的註冊 key。 */
+    /** 將不存在的快照分類視為空 key 集合，供差異計算使用。 */
     private fun MinecraftPresentationRegistrationSnapshotCategory?.orEmptyKeys(): Set<String> = this?.registrationKeys.orEmpty()
 }
