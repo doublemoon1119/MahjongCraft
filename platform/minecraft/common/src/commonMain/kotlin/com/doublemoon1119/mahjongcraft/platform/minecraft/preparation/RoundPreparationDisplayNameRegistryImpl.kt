@@ -1,8 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.preparation
 
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
+import org.koin.core.annotation.Single
 
 /** [RoundPreparationDisplayNameRegistry] 的記憶體實作。 */
+@Single(binds = [RoundPreparationDisplayNameRegistry::class])
 class RoundPreparationDisplayNameRegistryImpl : RoundPreparationDisplayNameRegistry {
     /** 依完整 ID 索引的 translation key。 */
     private val translations = mutableMapOf<String, String>()

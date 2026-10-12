@@ -1,8 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.automatic
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftResourceIds
+import org.koin.core.annotation.Single
 
 /** [AutomaticControlDisplayRegistry] 的記憶體實作。 */
+@Single(binds = [AutomaticControlDisplayRegistry::class])
 class AutomaticControlDisplayRegistryImpl : AutomaticControlDisplayRegistry {
     /** 依自動操作識別碼索引的顯示資料。 */
     private val displays = mutableMapOf<String, AutomaticControlDisplay>()

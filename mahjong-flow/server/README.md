@@ -26,6 +26,12 @@ It depends on [mahjong-logic](../../mahjong-logic/README.md),
 [mahjong-ai](../../mahjong-ai/README.md), [mahjong-flow-common](../common/README.md),
 coroutines, and Koin.
 
+## Dependency injection
+
+FlowServerModule scans class-owned services and registries. Use cases remain factories;
+registries remain singles shared with extension bootstrap. Providers are retained for
+framework-neutral Logic/AI types and configured AI execution/advancement factories.
+
 ## Testing
 
 Unit and integration tests cover use cases, orchestration, AI driving, lifecycle

@@ -41,6 +41,14 @@ Client and dedicated-server runs use separate directories,
 Server startup requires the usual Minecraft server setup, including EULA acceptance;
 these tasks are interactive development launches, not automated tests.
 
+## Dependency injection
+
+The common graph scans metadata only; server and client adapters keep separate scans.
+Application includes used by Koin compiler validation are intentional, even when runtime module
+inclusion de-duplicates them. Formal graph tests reject duplicate bindings and verify registry
+identity and factory lifetimes. The Minecraft environment provider remains explicit because
+its existing implementation package belongs to the server scan, while both graphs need it.
+
 ## Testing
 
 Tests cover runtime wiring, commands, rendering calculations, persistence, resources, table lifecycle,

@@ -2,6 +2,8 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.room
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import org.koin.core.annotation.Provided
+import org.koin.core.annotation.Single
 
 /**
  * 集中解析規則 ID、schema 與欄位值，避免 GUI 和聊天各自重建同一套判斷。
@@ -9,8 +11,10 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
  * @property presentations 設定呈現定義 registry。
  * @property modules 規則模組 registry。
  */
+@Single
 class GameConfigPresentationResolver(
     private val presentations: GameConfigPresentationRegistry,
+    @Provided
     private val modules: MahjongModuleRegistry,
 ) {
     /**

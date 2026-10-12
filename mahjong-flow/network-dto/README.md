@@ -21,6 +21,12 @@ connections, authorize commands, or mutate game state.
 It depends on [mahjong-logic](../../mahjong-logic/README.md),
 [mahjong-flow-common](../common/README.md), Kotlin Serialization, and Koin.
 
+## Dependency injection
+
+NetworkDtoModule scans the runtime registry implementation and explicitly builds Json
+with its extension-aware serializers. DTO models remain plain serializable data;
+bootstrap and codecs share the same registry instance.
+
 ## Testing
 
 Tests verify DTO round trips, timer payloads, enum wire names, and extension-aware serialization behavior.

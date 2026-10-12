@@ -8,22 +8,28 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationReg
 import org.koin.core.annotation.Module
 import org.koin.core.annotation.Single
 
-/** Minecraft loader 與版本無關的 server-side Koin 定義。 */
+/**
+ * Minecraft loader 與版本無關的 server-side Koin 定義。
+ *
+ * 這些服務與共用呈現 registry 位於相同的 config／table 功能套件，無法靠套件掃描區分 graph。
+ * 因此在此明確提供，只由 server module 管理，避免共用 module 的掃描提早建立伺服器狀態；
+ * session 結束時仍由既有生命週期服務清理，而不是假設 Koin 會自動重建 single。
+ */
 @Module
 class MinecraftServerModule {
-    /** 建立保存最後一份有效伺服器設定的 runtime state。 */
+    /** 在 server graph 建立設定狀態，明確使用預設的有效設定作為初值。 */
     @Single
     fun provideMinecraftServerConfigState(): MinecraftServerConfigState = MinecraftServerConfigState(MinecraftServerConfig())
 
-    /** 建立 server config 使用的嚴格 TOML codec。 */
+    /** 在 server graph 建立嚴格 TOML codec，避免共用套件掃描擴大此服務的歸屬。 */
     @Single
     fun provideMinecraftServerConfigTomlCodec(): MinecraftServerConfigTomlCodec = MinecraftServerConfigTomlCodec()
 
-    /** 建立目前 server session 使用的桌子位置索引。 */
+    /** 在 server graph 建立桌子位置索引，其內容由 session 生命週期清理。 */
     @Single
     fun provideTableLocationRegistry(): TableLocationRegistry = TableLocationRegistry()
 
-    /** 建立目前 server session 使用的桌上物件角落寬度紀錄。 */
+    /** 在 server graph 建立桌上物件角落寬度紀錄，其內容由 session 生命週期清理。 */
     @Single
     fun provideTableCornerWidthTracker(): TableCornerWidthTracker = TableCornerWidthTracker()
 }

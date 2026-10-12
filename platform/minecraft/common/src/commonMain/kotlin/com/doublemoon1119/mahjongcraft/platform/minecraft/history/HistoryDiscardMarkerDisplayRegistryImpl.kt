@@ -1,8 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.history
 
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
+import org.koin.core.annotation.Single
 
 /** [HistoryDiscardMarkerDisplayRegistry] 的記憶體實作。 */
+@Single(binds = [HistoryDiscardMarkerDisplayRegistry::class])
 class HistoryDiscardMarkerDisplayRegistryImpl : HistoryDiscardMarkerDisplayRegistry {
     private val displays = mutableMapOf<String, HistoryDiscardMarkerDisplay>()
     override var isFrozen: Boolean = false

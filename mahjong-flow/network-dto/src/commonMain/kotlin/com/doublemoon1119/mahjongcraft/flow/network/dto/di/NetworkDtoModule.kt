@@ -1,19 +1,16 @@
 package com.doublemoon1119.mahjongcraft.flow.network.dto.di
 
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.buildMahjongDtoSerializersModule
 import kotlinx.serialization.json.Json
+import org.koin.core.annotation.ComponentScan
 import org.koin.core.annotation.Module
 import org.koin.core.annotation.Single
 
 /** `:mahjong-flow-network-dto` 模組所提供的註冊表與序列化相依項定義。 */
 @Module
+@ComponentScan("com.doublemoon1119.mahjongcraft.flow.network.dto.rule")
 class NetworkDtoModule {
-    /** 建立供擴充功能註冊與 DTO 轉換共用的執行期間註冊表。 */
-    @Single
-    fun provideNetworkDtoRegistries(): NetworkDtoRegistries = DefaultNetworkDtoRegistries()
-
     /**
      * 建立供網路訊息與狀態快照共用的 [Json]。
      *

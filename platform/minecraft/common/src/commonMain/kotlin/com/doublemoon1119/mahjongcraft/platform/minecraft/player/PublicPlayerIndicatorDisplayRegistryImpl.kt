@@ -1,8 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.player
 
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
+import org.koin.core.annotation.Single
 
 /** [PublicPlayerIndicatorDisplayRegistry] 的記憶體實作。 */
+@Single(binds = [PublicPlayerIndicatorDisplayRegistry::class])
 class PublicPlayerIndicatorDisplayRegistryImpl : PublicPlayerIndicatorDisplayRegistry {
     private val displays = mutableMapOf<String, PublicPlayerIndicatorDisplay>()
 

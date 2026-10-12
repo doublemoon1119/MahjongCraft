@@ -1,8 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.table
 
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import org.koin.core.annotation.Single
 
 /** [RoundInfoLineDisplayRegistry] 的記憶體實作。 */
+@Single(binds = [RoundInfoLineDisplayRegistry::class])
 class RoundInfoLineDisplayRegistryImpl : RoundInfoLineDisplayRegistry {
     /** 依局況顯示行 key 索引的翻譯資訊。 */
     private val displays = mutableMapOf<String, RoundInfoLineDisplay>()

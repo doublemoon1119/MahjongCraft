@@ -1,8 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.player
 
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
+import org.koin.core.annotation.Single
 
 /** [PlayerPortraitSourceRegistry] 的記憶體實作。priority 較高者先執行，同分依 ID 排序。 */
+@Single(binds = [PlayerPortraitSourceRegistry::class])
 class PlayerPortraitSourceRegistryImpl : PlayerPortraitSourceRegistry {
     /**
      * provider 的排序資料。

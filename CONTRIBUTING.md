@@ -79,6 +79,28 @@
 - **Rule-neutral IDs**: Place them directly under the namespace, for example `mahjongcraft:pao`. Rule-neutral objects must not hold rule-specific IDs.
 - **Third-party extensions**: Use their own namespace instead of `mahjongcraft`.
 
+### Koin Registration
+
+- Register directly constructible services owned by a Koin-aware module on the class with `@Single` or
+  `@Factory`, and discover them through the owning module's `@ComponentScan`. Use explicit `binds` when
+  consumers resolve an interface. Do not also register the same service through a provider function.
+- Preserve lifetime: `@Factory` creates a new instance per resolution; `@Single` shares one within the Koin
+  container. A single is not automatically a server-session scope. Preserve explicit session reset, cancellation,
+  resource release, qualifiers, parameters and eager/lazy initialization behavior.
+- Keep provider functions for third-party types, configured builders, factory methods, bootstrap aggregates,
+  runtime-owned instances, and classes intentionally kept framework-neutral. Explain the exception in the
+  provider's KDoc. Do not introduce Koin into Logic or AI, or annotate DTOs and value objects merely because
+  their module uses Koin elsewhere.
+- Keep component scans within their intended graph. Do not widen scans across client/server boundaries,
+  relocate public types, or widen visibility just to remove a provider. A provider may remain when shared
+  packages cannot express a server-only scan boundary safely; document that reason.
+- `@Provided` describes a dependency supplied outside the current module; it does not register that dependency
+  or excuse a missing binding in the final application. Preserve includes needed by compiler graph validation,
+  even when runtime module inclusion de-duplicates the same module.
+- Bootstrap, codecs and consumers must share the exact registry instances and preserve registration/freeze
+  ordering. Validate changes through the formal client and dedicated-server application graphs, reject duplicate
+  definitions, assert shared identity and factory behavior, and retain session lifecycle regression tests.
+
 ## Before Committing
 
 - Run `./gradlew build` — it compiles, tests, and lints (ktlint, `intellij_idea` code style per

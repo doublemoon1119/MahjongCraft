@@ -1,8 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.room
 
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
+import org.koin.core.annotation.Single
 
 /** [RoomMemberAppearanceSourceRegistry] 的記憶體實作。 */
+@Single(binds = [RoomMemberAppearanceSourceRegistry::class])
 class RoomMemberAppearanceSourceRegistryImpl : RoomMemberAppearanceSourceRegistry {
     /**
      * provider 的排序資料。

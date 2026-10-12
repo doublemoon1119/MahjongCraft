@@ -53,6 +53,13 @@ It depends on [mahjong-logic](../../../mahjong-logic/README.md),
 [network DTOs](../../../mahjong-flow/network-dto/README.md),
 coroutines, Koin, KToml, and Kotlin Serialization.
 
+## Dependency injection
+
+MinecraftCommonModule scans class-owned presentation registries and assembles the bootstrap
+aggregate from those same instances. Loader wrappers retain ownership of runtime display-name
+bindings. MinecraftServerModule explicitly provides server-only state and codecs whose feature
+packages overlap the common scan; session cleanup remains the lifecycle services' responsibility.
+
 ## Testing
 
 Common and JVM tests cover registries, layout, configuration codecs, animation calculations,

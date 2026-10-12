@@ -1,8 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.settlement
 
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
+import org.koin.core.annotation.Single
 
 /** [RoundOutcomeDisplayNameRegistry] 的記憶體實作。 */
+@Single(binds = [RoundOutcomeDisplayNameRegistry::class])
 class RoundOutcomeDisplayNameRegistryImpl : RoundOutcomeDisplayNameRegistry {
     /** 特殊本局結果 ID 對應的本地化名稱。 */
     private val translations = mutableMapOf<String, String>()

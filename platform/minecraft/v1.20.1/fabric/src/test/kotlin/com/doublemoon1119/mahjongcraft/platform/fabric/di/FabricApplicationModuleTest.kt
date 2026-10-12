@@ -15,16 +15,27 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiGameC
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.DecisionTimerUpdatePublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.DefaultGameConfigProvider
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.HistoryReplayProjectionRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.state.AuthoritativeStatePersistenceCodec
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionExecutor
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceManager
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetPlayerDecisionOptionsUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateCleaner
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateRestorer
+import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailabilityIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
@@ -36,11 +47,14 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongExtensions
+import com.doublemoon1119.mahjongcraft.platform.fabric.metadata.FabricRuntimeMetadata
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricAppCoroutineScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigManager
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.MahjongTileCollisionService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricDecisionTimerScheduler
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricTileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.GameActionCandidateResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.PlayerDecisionPromptFactory
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.FabricDebugCommand
@@ -59,7 +73,9 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.text.Fa
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricAuthoritativeStatePersistence
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricTableLocationPersistence
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.BuiltInDefaultGameConfigProvider
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.FabricAiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableRoomService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.rule.FabricRuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLocationValidationService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.OrphanedTableCleanupService
@@ -75,9 +91,24 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPr
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftPresentationRegistries
+import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationResolver
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSourceRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplateRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcomeDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.BuiltInTablePropKinds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropDescriberRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
@@ -107,7 +138,7 @@ class FabricApplicationModuleTest {
     /** 第三方策略與其 Minecraft 顯示名稱由同一個 extension 完成登記，並進入正式使用的 registry。 */
     @Test
     fun `third party ai strategy registers through fabric bootstrap`() {
-        val koin = startKoin<MahjongCraftServerApp>().koin
+        val koin = startKoin<MahjongCraftServerApp> { allowOverride(false) }.koin
         val strategyRegistry = koin.get<MahjongAiStrategyRegistry>()
         val displayNames = koin.get<AiStrategyDisplayNameRegistry>()
         val extension = object : MahjongExtension, MinecraftMahjongExtension {
@@ -175,7 +206,7 @@ class FabricApplicationModuleTest {
     /** 開發環境在凍結前以獨立的 debug 來源登記 debug 情境使用的腳本 AI。 */
     @Test
     fun `development environment registers scripted debug ai strategies before freezing`() {
-        val koin = startKoin<MahjongCraftServerApp>().koin
+        val koin = startKoin<MahjongCraftServerApp> { allowOverride(false) }.koin
 
         val result = FabricMahjongExtensions.initialize(
             coreRegistries = koin.get<CoreExtensionRegistries>(),
@@ -197,7 +228,7 @@ class FabricApplicationModuleTest {
     /** 驗證伺服器服務、內建擴充與除錯指令可解析，且不包含客戶端狀態儲存。 */
     @Test
     fun `server graph resolves gameplay services without client stores`() {
-        val koin = startKoin<MahjongCraftServerApp>().koin
+        val koin = startKoin<MahjongCraftServerApp> { allowOverride(false) }.koin
         val moduleRegistry = koin.get<MahjongModuleRegistry>()
         val networkRegistries = koin.get<NetworkDtoRegistries>()
         val persistenceRegistries = koin.get<PersistenceRegistries>()
@@ -407,13 +438,84 @@ class FabricApplicationModuleTest {
         assertNull(koin.getOrNull<ClientDecisionTimerStateStore>())
     }
 
+    /** 驗證 registry 集合只包裝既有 single，並保留 single 與 factory 的生命週期。 */
+    @Test
+    fun `server graph preserves registry identity and service lifetimes`() {
+        val koin = startKoin<MahjongCraftServerApp> { allowOverride(false) }.koin
+        val core = koin.get<CoreExtensionRegistries>()
+        val presentation = koin.get<MinecraftPresentationRegistries>()
+
+        assertSame(koin.get<MahjongModuleRegistry>(), core.moduleRegistry)
+        assertSame(koin.get<TileTypeRegistry>(), core.tileTypeRegistry)
+        assertSame(koin.get<NetworkDtoRegistries>(), core.networkRegistries)
+        assertSame(koin.get<PersistenceRegistries>(), core.persistenceRegistries)
+        assertSame(koin.get<HistoryReplayProjectionRegistry>(), core.historyReplayProjectionRegistry)
+        assertSame(koin.get<WinCelebrationCueResolverRegistry>(), core.winCelebrationCueResolverRegistry)
+        assertSame(koin.get<ExtensionGameActionAiRegistry>(), core.gameActionAiRegistry)
+        assertSame(koin.get<MahjongAiStrategyRegistry>(), core.aiStrategyRegistry)
+        assertSame(koin.get<OpponentModelRegistry>(), core.opponentModelRegistry)
+        assertSame(koin.get<ExtensionGameActionCommandFactoryRegistry>(), core.gameActionCommandFactoryRegistry)
+        assertSame(koin.get<ExtensionGameCommandExecutorRegistry>(), core.gameCommandRegistry)
+        assertSame(koin.get<PostReactionRoundOutcomeResolverRegistry>(), core.postReactionRoundOutcomeResolverRegistry)
+        assertSame(koin.get<PostActionExhaustiveDrawResolverRegistry>(), core.postActionExhaustiveDrawResolverRegistry)
+        assertSame(koin.get<RoundPreparationResolverRegistry>(), core.roundPreparationResolverRegistry)
+        assertSame(koin.get<WinRoundContinuationResolverRegistry>(), core.winRoundContinuationResolverRegistry)
+        assertSame(koin.get<WinSettlementDetailResolverRegistry>(), core.winSettlementDetailResolverRegistry)
+
+        assertSame(koin.get<MinecraftTileAssetRegistry>(), presentation.tileAssetRegistry)
+        assertSame(koin.get<RuleCatalogueRegistry>(), presentation.ruleCatalogueRegistry)
+        assertSame(koin.get<TileDisplayNameRegistry>(), presentation.tileDisplayNameRegistry)
+        assertSame(koin.get<TileEmojiRegistry>(), presentation.tileEmojiRegistry)
+        assertSame(koin.get<TileLabelRegistry>(), presentation.tileLabelRegistry)
+        assertSame(koin.get<GameActionVocabularyRegistry>(), presentation.gameActionVocabularyRegistry)
+        assertSame(koin.get<AutomaticControlDisplayRegistry>(), presentation.automaticControlDisplayRegistry)
+        assertSame(koin.get<DecisionStatusDisplayNameRegistry>(), presentation.decisionStatusDisplayNameRegistry)
+        assertSame(koin.get<GameActionSoundPresentationRegistry>(), presentation.gameActionSoundPresentationRegistry)
+        assertSame(koin.get<ExhaustiveDrawReasonDisplayNameRegistry>(), presentation.exhaustiveDrawReasonDisplayNameRegistry)
+        assertSame(koin.get<RoundOutcomeDisplayNameRegistry>(), presentation.roundOutcomeDisplayNameRegistry)
+        assertSame(koin.get<HistoryDiscardMarkerDisplayRegistry>(), presentation.historyDiscardMarkerDisplayRegistry)
+        assertSame(koin.get<RoundPreparationDisplayNameRegistry>(), presentation.roundPreparationDisplayNameRegistry)
+        assertSame(koin.get<RoundInfoLineDisplayRegistry>(), presentation.roundInfoLineDisplayRegistry)
+        assertSame(koin.get<TablePropDescriberRegistry>(), presentation.tablePropDescriberRegistry)
+        assertSame(koin.get<WinCelebrationShowcaseRegistry>(), presentation.winCelebrationShowcaseRegistry)
+        assertSame(koin.get<WinSettlementPresentationTemplateRegistry>(), presentation.winSettlementTemplateRegistry)
+        assertSame(koin.get<MatchSettlementPresentationTemplateRegistry>(), presentation.matchSettlementTemplateRegistry)
+        assertSame(koin.get<AiStrategyDisplayNameRegistry>(), presentation.aiStrategyDisplayNameRegistry)
+        assertSame(koin.get<RuleModuleDisplayNameRegistry>(), presentation.ruleModuleDisplayNameRegistry)
+        assertSame(koin.get<PlayerPortraitSourceRegistry>(), presentation.playerPortraitSourceRegistry)
+        assertSame(koin.get<PublicPlayerIndicatorDisplayRegistry>(), presentation.publicPlayerIndicatorDisplayRegistry)
+        assertSame(koin.get<RoomMemberAppearanceSourceRegistry>(), presentation.roomMemberAppearanceSourceRegistry)
+        assertSame(koin.get<GameConfigPresentationRegistry>(), presentation.gameConfigPresentationRegistry)
+        assertSame(koin.get<GameAchievementResolverRegistry>(), presentation.gameAchievementResolverRegistry)
+
+        assertSame(koin.get<AiDecisionExecutor>(), koin.get<AiDecisionExecutor>())
+        assertSame(koin.get<AutomatedAdvanceManager>(), koin.get<AutomatedAdvanceManager>())
+        assertSame(koin.get<AuthoritativeStateStore>(), koin.get<AuthoritativeStateStore>())
+        assertSame(koin.get<GameRepository>(), koin.get<GameRepository>())
+        assertSame(koin.get<FabricAppCoroutineScope>(), koin.get<FabricAppCoroutineScope>())
+        assertSame(koin.get<FabricRuntimeMetadata>(), koin.get<FabricRuntimeMetadata>())
+        assertSame(koin.get<MinecraftEnvironment>(), koin.get<MinecraftEnvironment>())
+        assertSame(koin.get<TableLocationRegistry>(), koin.get<TableLocationRegistry>())
+        assertSame(koin.get<MinecraftServerConfigState>(), koin.get<MinecraftServerConfigState>())
+        assertSame(koin.get<GameConfigPresentationResolver>(), koin.get<GameConfigPresentationResolver>())
+        assertSame(koin.get<FabricServerHolder>(), koin.get<FabricServerHolder>())
+        assertIs<FabricAiStrategyDisplayNameRegistry>(koin.get<AiStrategyDisplayNameRegistry>())
+        assertIs<FabricRuleModuleDisplayNameRegistry>(koin.get<RuleModuleDisplayNameRegistry>())
+        assertIs<FabricTileDisplayNameRegistry>(koin.get<TileDisplayNameRegistry>())
+        assertTrue(koin.get<GameFlowCoordinator>() !== koin.get<GameFlowCoordinator>())
+        assertTrue(koin.get<GetPlayerDecisionOptionsUseCase>() !== koin.get<GetPlayerDecisionOptionsUseCase>())
+    }
+
     /** 驗證客戶端依賴同時提供整合式伺服器服務與客戶端狀態儲存。 */
     @Test
     fun `client graph resolves integrated server services and client stores`() {
-        val koin = startKoin<MahjongCraftClientApp>().koin
+        val koin = startKoin<MahjongCraftClientApp> { allowOverride(false) }.koin
 
         koin.get<GameFlowCoordinator>()
         koin.get<ClientMahjongStateStore>()
         koin.get<ClientDecisionTimerStateStore>()
+        assertSame(koin.get<ClientDecisionTimerStateStore>(), koin.get<ClientDecisionTimerStateStore>())
+        assertSame(koin.get<FabricRuntimeMetadata>(), koin.get<FabricRuntimeMetadata>())
+        assertSame(koin.get<MinecraftEnvironment>(), koin.get<MinecraftEnvironment>())
     }
 }

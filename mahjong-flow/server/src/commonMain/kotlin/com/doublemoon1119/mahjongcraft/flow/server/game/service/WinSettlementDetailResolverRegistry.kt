@@ -5,8 +5,10 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetai
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueResult
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import org.koin.core.annotation.Single
 
 /** 以完整規則模組 ID 登記、bootstrap 後凍結的胡牌詳情解析器。 */
+@Single
 class WinSettlementDetailResolverRegistry {
     /** 以完整規則模組識別碼索引的詳情解析器。 */
     private val resolvers = linkedMapOf<String, WinSettlementDetailResolver>()

@@ -1,8 +1,10 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
+import org.koin.core.annotation.Single
 
 /** 開局準備解析器的可凍結註冊表。 */
+@Single
 class RoundPreparationResolverRegistry {
     /** 依規則模組 ID 索引的解析器。 */
     private val resolvers = mutableMapOf<String, RoundPreparationResolver>()

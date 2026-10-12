@@ -2,10 +2,12 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExtensionGameCommand
 import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
+import org.koin.core.annotation.Single
 import kotlin.reflect.KClass
 import kotlin.uuid.Uuid
 
 /** 管理規則擴充動作命令 factory 的可凍結註冊表。 */
+@Single
 class ExtensionGameActionCommandFactoryRegistry {
     /** 保留具體動作型別的 factory 包裝。 */
     private class Entry<A : ExtensionGameAction>(val factory: ExtensionGameActionCommandFactory<A>)

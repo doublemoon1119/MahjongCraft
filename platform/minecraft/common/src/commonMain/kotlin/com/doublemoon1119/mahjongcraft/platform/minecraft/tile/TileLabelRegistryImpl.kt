@@ -1,11 +1,14 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
+import org.koin.core.annotation.Single
+
 /**
  * [TileLabelRegistry] 的預設記憶體實作。
  *
  * 建構時不預先加入任何映射；內建與第三方標籤使用相同的 [register] 流程，並由外層組裝完成後呼叫
- * [freeze]。此類別不依賴 Koin，runtime single 由外層 DI module 管理。
+ * [freeze]。runtime single 由 Koin component scan 管理。
  */
+@Single(binds = [TileLabelRegistry::class])
 class TileLabelRegistryImpl : TileLabelRegistry {
     /** 依 asset key 保存牌面角落標籤。 */
     private val labelsByAssetKey = mutableMapOf<String, TileLabel>()

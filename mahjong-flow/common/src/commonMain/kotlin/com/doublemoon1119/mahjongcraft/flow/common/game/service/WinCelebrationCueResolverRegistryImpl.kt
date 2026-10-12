@@ -1,8 +1,10 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.service
 
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueResult
+import org.koin.core.annotation.Single
 
 /** [WinCelebrationCueResolverRegistry] 的記憶體實作。 */
+@Single(binds = [WinCelebrationCueResolverRegistry::class])
 class WinCelebrationCueResolverRegistryImpl : WinCelebrationCueResolverRegistry {
     /** 依規則模組 ID 登記的胡牌展示理由 resolver。 */
     private val resolvers = mutableMapOf<String, WinCelebrationCueResolver>()
