@@ -33,6 +33,11 @@ persistence format parts of [mahjong-flow](../mahjong-flow/README.md).
 
 ## Testing
 
+Core and platform registrars follow the same bootstrap workflow: built-in callbacks,
+per-extension ID validation and addition reports, then freezing after that layer succeeds.
+The Core registrar accepts a caller-supplied built-in extension to avoid depending on
+the bundled implementation. Failed initialization is not rolled back or retried.
+
 Tests verify registrar lifecycle and registry freezing.
 
 From the repository root, run

@@ -8,5 +8,9 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.extension
  */
 data class MinecraftPresentationRegistrationSource(
     val extensionId: String?,
-    val categories: List<MinecraftPresentationRegistrationSnapshotCategory>,
-)
+    val categories: List<MinecraftPresentationRegistrationCategory>,
+) {
+    init {
+        require(categories.none { it.registrationIds.isEmpty() }) { "Registration categories must not be empty" }
+    }
+}

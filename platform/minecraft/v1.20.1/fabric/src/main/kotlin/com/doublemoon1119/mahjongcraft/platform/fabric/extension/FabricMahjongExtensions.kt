@@ -10,13 +10,10 @@ import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationSource
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtensionRegistrar
 import com.doublemoon1119.mahjongcraft.extension.mergeRegistrationSources
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.FabricSeatProviderRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.DebugMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationState
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatProviderRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.MahjongStoolSeatProvider
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BundledMinecraftMahjongExtensions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtension
@@ -35,7 +32,7 @@ const val MAHJONG_EXTENSION_ENTRYPOINT: String = "${MinecraftModMetadata.MOD_ID}
  * 取得 runtime 實際使用的同一批 registry；全部成功後由 [MahjongExtensionRegistrar] 凍結 registry。
  * 啟動 log 依來源列出所有啟用的登記：INFO 只列每個來源的筆數，DEBUG 另外列出完整內容。
  */
-object FabricMahjongExtensions {
+internal object FabricMahjongExtensions {
     /** Fabric extension discovery 與註冊結果使用的 logger。 */
     private val logger = mahjongCraftLogger(FabricMahjongExtensions::class)
 
@@ -44,8 +41,7 @@ object FabricMahjongExtensions {
      *
      * @param coreRegistries 規則核心 registry 集合。
      * @param presentationRegistries Minecraft 呈現 registry 集合。
-     * @param tablePropKindRegistry Fabric 桌面物件種類 registry。
-     * @param seatProviderRegistry Fabric 座位 provider registry。
+     * @param fabricRegistries Fabric 原生整合 registry 集合。
      * @param mahjongStoolSeatProvider 內建麻將凳座位 provider。
      * @param debugWinRoundContinuationState 開發用中途胡牌流程狀態。
      * @param minecraftEnvironment 判斷是否載入開發用 extension 的環境資訊。
@@ -53,8 +49,7 @@ object FabricMahjongExtensions {
     fun initialize(
         coreRegistries: CoreExtensionRegistries,
         presentationRegistries: MinecraftPresentationRegistries,
-        tablePropKindRegistry: FabricTablePropKindRegistry,
-        seatProviderRegistry: FabricSeatProviderRegistry,
+        fabricRegistries: FabricExtensionRegistries,
         mahjongStoolSeatProvider: MahjongStoolSeatProvider,
         debugWinRoundContinuationState: DebugWinRoundContinuationState,
         minecraftEnvironment: MinecraftEnvironment,
@@ -65,8 +60,7 @@ object FabricMahjongExtensions {
             val result = initialize(
                 coreRegistries = coreRegistries,
                 presentationRegistries = presentationRegistries,
-                tablePropKindRegistry = tablePropKindRegistry,
-                seatProviderRegistry = seatProviderRegistry,
+                fabricRegistries = fabricRegistries,
                 mahjongStoolSeatProvider = mahjongStoolSeatProvider,
                 debugWinRoundContinuationState = debugWinRoundContinuationState,
                 minecraftEnvironment = minecraftEnvironment,
@@ -86,11 +80,13 @@ object FabricMahjongExtensions {
     /**
      * 使用明確提供的 [extensions] 初始化，供平台測試驗證組裝順序。
      *
+     * 所有相依都必須由呼叫端明確提供，測試與正式啟動共用相同的註冊路徑。
+     * 各層 registrar 成功後各自凍結；後續層失敗時中止啟動，不回滾先前層的登記或重試。
+     *
      * @return Core、Minecraft presentation 與 Fabric 依來源合併後的所有登記。
      * @param coreRegistries 規則核心 registry 集合。
      * @param presentationRegistries Minecraft 呈現 registry 集合。
-     * @param tablePropKindRegistry Fabric 桌面物件種類 registry。
-     * @param seatProviderRegistry Fabric 座位 provider registry。
+     * @param fabricRegistries Fabric 原生整合 registry 集合。
      * @param mahjongStoolSeatProvider 內建麻將凳座位 provider。
      * @param debugWinRoundContinuationState 開發用中途胡牌流程狀態。
      * @param minecraftEnvironment 判斷是否載入開發用 extension 的環境資訊。
@@ -99,15 +95,13 @@ object FabricMahjongExtensions {
     internal fun initialize(
         coreRegistries: CoreExtensionRegistries,
         presentationRegistries: MinecraftPresentationRegistries,
-        tablePropKindRegistry: FabricTablePropKindRegistry,
-        seatProviderRegistry: FabricSeatProviderRegistry = FabricSeatProviderRegistryImpl(),
-        mahjongStoolSeatProvider: MahjongStoolSeatProvider? = null,
-        debugWinRoundContinuationState: DebugWinRoundContinuationState = DebugWinRoundContinuationState(),
-        // 預設不註冊開發用的中途胡牌 resolver：這個多載的其他測試呼叫端只關心依賴圖，正式呼叫端
-        // （MahjongCraftMod）會傳入真正的 MinecraftEnvironment。
-        minecraftEnvironment: MinecraftEnvironment = NonDevelopmentEnvironment,
+        fabricRegistries: FabricExtensionRegistries,
+        mahjongStoolSeatProvider: MahjongStoolSeatProvider,
+        debugWinRoundContinuationState: DebugWinRoundContinuationState,
+        minecraftEnvironment: MinecraftEnvironment,
         extensions: Iterable<MahjongExtension>,
     ): FabricExtensionRegistrationResult {
+        val discoveredExtensions = extensions.toList()
         // 開發環境限定的 debug 整合排在內建規則之後、第三方之前；正式產物不登記。
         val debugExtensions = if (minecraftEnvironment.isDevelopment) {
             listOf(DebugMahjongExtension(winRoundContinuationState = debugWinRoundContinuationState))
@@ -115,7 +109,7 @@ object FabricMahjongExtensions {
             emptyList()
         }
         val coreSources = MahjongExtensionRegistrar.registerAndFreeze(
-            extensions = BundledMahjongExtensions.all + debugExtensions + extensions,
+            extensions = BundledMahjongExtensions.all + debugExtensions + discoveredExtensions,
             registries = coreRegistries,
             builtIn = BuiltInMahjongExtension(
                 moduleRegistry = coreRegistries.moduleRegistry,
@@ -127,32 +121,25 @@ object FabricMahjongExtensions {
         // 同一個第三方類別可同時實作 MahjongExtension 與 MinecraftMahjongExtension，
         // 不需要在 fabric.mod.json 額外宣告第二個 entrypoint。
         val minecraftResult = MinecraftMahjongExtensionRegistrar.registerAndFreeze(
-            extensions = BundledMinecraftMahjongExtensions.all + extensions.filterIsInstance<MinecraftMahjongExtension>(),
+            extensions = BundledMinecraftMahjongExtensions.all + discoveredExtensions.filterIsInstance<MinecraftMahjongExtension>(),
             registries = presentationRegistries,
         )
         val minecraftSources = minecraftResult.sources.map { source ->
             ExtensionRegistrationSource(
                 extensionId = source.extensionId,
                 categories = source.categories.map { category ->
-                    ExtensionRegistrationCategory(category.id, category.displayName, category.registrationKeys.sorted())
+                    ExtensionRegistrationCategory(category.id, category.displayName, category.registrationIds)
                 },
             )
         }
-        val tablePropKindSources = tablePropKindRegistry.registerAndFreeze(
-            extensions = extensions.filterIsInstance<FabricMahjongExtension>(),
-        )
-        val seatProviderSources = seatProviderRegistry.registerAndFreeze(
-            extensions = extensions.filterIsInstance<FabricMahjongExtension>(),
-            builtInProvider = mahjongStoolSeatProvider,
+        val fabricSources = FabricMahjongExtensionRegistrar.registerAndFreeze(
+            extensions = discoveredExtensions.filterIsInstance<FabricMahjongExtension>(),
+            registries = fabricRegistries,
+            builtIn = BuiltInFabricMahjongExtension(mahjongStoolSeatProvider),
         )
         return FabricExtensionRegistrationResult(
-            mergeRegistrationSources(coreSources, minecraftSources, tablePropKindSources, seatProviderSources),
+            mergeRegistrationSources(coreSources, minecraftSources, fabricSources),
         )
-    }
-
-    /** [initialize] 預設使用的環境查詢：一律回報非開發環境，見該參數上方註解。 */
-    private object NonDevelopmentEnvironment : MinecraftEnvironment {
-        override val isDevelopment: Boolean = false
     }
 }
 

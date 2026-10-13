@@ -49,6 +49,18 @@ inclusion de-duplicates them. Formal graph tests reject duplicate bindings and v
 identity and factory lifetimes. The Minecraft environment provider remains explicit because
 its existing implementation package belongs to the server scan, while both graphs need it.
 
+## Extension bootstrap
+
+Discovery materializes the extension entrypoints once and composes Core, Minecraft common,
+and Fabric registration in that order. Each registrar runs built-in callbacks first, records
+each extension's additions, and freezes its registry aggregate only after that layer succeeds.
+Extension IDs must be namespaced and unique within the layer.
+
+Fabric's aggregate holds the same registry instances used by gameplay services.
+Built-in registrations belong to `BuiltInFabricMahjongExtension`; the registrar does not
+construct replacement registries or provide a reduced initialization path for tests.
+Failure aborts startup without rolling back completed layers or retrying partial registration.
+
 ## Testing
 
 Tests cover runtime wiring, commands, rendering calculations, persistence, resources, table lifecycle,

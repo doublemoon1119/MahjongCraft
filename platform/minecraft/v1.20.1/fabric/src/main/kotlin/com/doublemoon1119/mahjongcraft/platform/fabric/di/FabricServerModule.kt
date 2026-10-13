@@ -20,6 +20,9 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundCo
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.FabricSeatProviderRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricExtensionRegistries
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.di.MinecraftCommonModule
 import com.doublemoon1119.mahjongcraft.platform.minecraft.di.MinecraftServerModule
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
@@ -53,6 +56,22 @@ import org.koin.core.annotation.Single
 )
 @ComponentScan("com.doublemoon1119.mahjongcraft.platform.fabric.server")
 class FabricServerModule {
+    /**
+     * 將既有原生 registry 組成 bootstrap 集合，不建立第二份 registry。
+     *
+     * @param tablePropKindRegistry runtime 共用的桌面物件種類 registry。
+     * @param seatProviderRegistry runtime 共用的座位提供者 registry。
+     * @return 供註冊、診斷快照與凍結使用的集合。
+     */
+    @Single
+    internal fun provideFabricExtensionRegistries(
+        tablePropKindRegistry: FabricTablePropKindRegistry,
+        seatProviderRegistry: FabricSeatProviderRegistry,
+    ): FabricExtensionRegistries = FabricExtensionRegistries(
+        tablePropKindRegistry = tablePropKindRegistry,
+        seatProviderRegistry = seatProviderRegistry,
+    )
+
     /**
      * 將 Koin 管理的 core extension registry single 組成 bootstrap 專用集合。
      *

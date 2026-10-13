@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.extension
 
+import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
+
 /**
  * 將 extension 登記至 runtime 實際使用的 registry，完成後凍結所有 registry。
  */
@@ -47,13 +49,13 @@ object MahjongExtensionRegistrar {
         registries: CoreExtensionRegistries,
         registeredExtensionIds: MutableSet<String>,
     ) {
-        if (!registeredExtensionIds.add(extension.id)) {
-            throw MahjongExtensionRegistrationException(
-                extension.id,
-                IllegalArgumentException("Duplicate Mahjong extension id: ${extension.id}"),
-            )
-        }
         try {
+            NamespacedId.requireValid(extension.id) {
+                "Mahjong extension ID must be a valid namespaced ID: ${extension.id}"
+            }
+            if (!registeredExtensionIds.add(extension.id)) {
+                throw IllegalArgumentException("Duplicate Mahjong extension id: ${extension.id}")
+            }
             extension.registerRuleModules(registries.moduleRegistry)
             extension.registerTileTypes(registries.tileTypeRegistry)
             extension.registerNetworkDtos(registries.networkRegistries)

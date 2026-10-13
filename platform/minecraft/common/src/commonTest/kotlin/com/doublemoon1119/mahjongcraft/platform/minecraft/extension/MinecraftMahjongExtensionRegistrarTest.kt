@@ -56,6 +56,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelText
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
@@ -308,7 +309,7 @@ class MinecraftMahjongExtensionRegistrarTest {
         assertEquals(listOf(null, BundledRiichiMinecraftExtension.id, BundledTaiwanMinecraftExtension.id), result.sources.map { it.extensionId })
         assertEquals(
             setOf(BuiltInRuleModuleIds.RIICHI, BuiltInRuleModuleIds.RIICHI_THREE_PLAYER),
-            result.sources[1].categories.single { it.id == "mahjongcraft:rule_catalogue" }.registrationKeys,
+            result.sources[1].categories.single { it.id == "mahjongcraft:rule_catalogue" }.registrationIds.toSet(),
         )
     }
 
@@ -344,6 +345,7 @@ class MinecraftMahjongExtensionRegistrarTest {
     /** 驗證註冊失敗時的例外會指出第三方 extension ID。 */
     @Test
     fun `registration failure identifies extension`() {
+        val tileAssetRegistry = MinecraftTileAssetRegistryImpl()
         val extension = object : MinecraftMahjongExtension {
             override val id: String = "example:broken"
 
@@ -355,7 +357,7 @@ class MinecraftMahjongExtensionRegistrarTest {
         val error = assertFailsWith<MinecraftMahjongExtensionRegistrationException> {
             registerAndFreeze(
                 extensions = listOf(extension),
-                tileAssetRegistry = MinecraftTileAssetRegistryImpl(),
+                tileAssetRegistry = tileAssetRegistry,
                 aiStrategyDisplayNameRegistry = AiStrategyDisplayNameRegistryImpl(),
                 tileDisplayNameRegistry = TileDisplayNameRegistryImpl(),
                 ruleModuleDisplayNameRegistry = RuleModuleDisplayNameRegistryImpl(),
@@ -365,6 +367,7 @@ class MinecraftMahjongExtensionRegistrarTest {
         }
 
         assertTrue(error.message.orEmpty().contains("example:broken"))
+        assertFalse(tileAssetRegistry.isFrozen)
     }
 
     /** 驗證第三方規則的成果判定會登記到共用 registry，出現在診斷分類中，完成後凍結。 */
@@ -422,6 +425,71 @@ class MinecraftMahjongExtensionRegistrarTest {
         assertTrue(error.message.orEmpty().contains(extension.id))
         assertTrue(error.cause?.message.orEmpty().contains("Duplicate"))
     }
+
+    /** 驗證不符合 namespace:path 格式的 extension ID 會在凍結前被拒絕。 */
+    @Test
+    fun `invalid extension id fails registration before freeze`() {
+        val extension = object : MinecraftMahjongExtension {
+            override val id: String = "invalid-id"
+        }
+
+        val error = assertFailsWith<MinecraftMahjongExtensionRegistrationException> {
+            registerAndFreeze(
+                extensions = listOf(extension),
+                tileAssetRegistry = MinecraftTileAssetRegistryImpl(),
+                aiStrategyDisplayNameRegistry = AiStrategyDisplayNameRegistryImpl(),
+                tileDisplayNameRegistry = TileDisplayNameRegistryImpl(),
+                ruleModuleDisplayNameRegistry = RuleModuleDisplayNameRegistryImpl(),
+                tileEmojiRegistry = TileEmojiRegistryImpl(),
+                tileLabelRegistry = TileLabelRegistryImpl(),
+            )
+        }
+
+        assertTrue(error.message.orEmpty().contains(extension.id))
+        assertTrue(error.cause?.message.orEmpty().contains("Invalid"))
+    }
+
+    /** 驗證沒有新增映射的 extension 仍保留來源但不產生空分類。 */
+    @Test
+    fun `no-op extension produces an empty source`() {
+        val result = registerAndFreeze(
+            extensions = listOf(object : MinecraftMahjongExtension {
+                override val id: String = "example:noop"
+            }),
+            tileAssetRegistry = MinecraftTileAssetRegistryImpl(),
+            aiStrategyDisplayNameRegistry = AiStrategyDisplayNameRegistryImpl(),
+            tileDisplayNameRegistry = TileDisplayNameRegistryImpl(),
+            ruleModuleDisplayNameRegistry = RuleModuleDisplayNameRegistryImpl(),
+            tileEmojiRegistry = TileEmojiRegistryImpl(),
+            tileLabelRegistry = TileLabelRegistryImpl(),
+        )
+
+        assertEquals("example:noop", result.sources.last().extensionId)
+        assertTrue(result.sources.last().categories.isEmpty())
+    }
+
+    /** 驗證保留的內建 ID 會形成具來源內容的重複 ID 錯誤。 */
+    @Test
+    fun `reserved built-in id fails with contextual duplicate error`() {
+        val extension = object : MinecraftMahjongExtension {
+            override val id: String = BuiltInMinecraftMahjongExtension.id
+        }
+
+        val error = assertFailsWith<MinecraftMahjongExtensionRegistrationException> {
+            registerAndFreeze(
+                extensions = listOf(extension),
+                tileAssetRegistry = MinecraftTileAssetRegistryImpl(),
+                aiStrategyDisplayNameRegistry = AiStrategyDisplayNameRegistryImpl(),
+                tileDisplayNameRegistry = TileDisplayNameRegistryImpl(),
+                ruleModuleDisplayNameRegistry = RuleModuleDisplayNameRegistryImpl(),
+                tileEmojiRegistry = TileEmojiRegistryImpl(),
+                tileLabelRegistry = TileLabelRegistryImpl(),
+            )
+        }
+
+        assertTrue(error.message.orEmpty().contains(BuiltInMinecraftMahjongExtension.id))
+        assertTrue(error.cause?.message.orEmpty().contains("Duplicate"))
+    }
 }
 
 /**
@@ -434,4 +502,4 @@ private fun MinecraftMahjongExtensionRegistrationResult.registrationKeys(categor
     .filter { source -> source.extensionId != null && BundledMinecraftMahjongExtensions.all.none { it.id == source.extensionId } }
     .flatMap { it.categories }
     .filter { it.id == categoryId }
-    .flatMapTo(mutableSetOf()) { it.registrationKeys }
+    .flatMapTo(mutableSetOf()) { it.registrationIds }

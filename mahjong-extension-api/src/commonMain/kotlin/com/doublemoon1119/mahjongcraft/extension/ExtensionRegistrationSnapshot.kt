@@ -3,11 +3,16 @@ package com.doublemoon1119.mahjongcraft.extension
 /**
  * 保存各診斷類別在某一時間點已存在的 registration key。
  *
- * @property categories 用於列出類別及比較前後 key 差異的快照資料。
+ * @param categories 用於列出類別及比較前後 key 差異的快照資料。
  */
 class ExtensionRegistrationSnapshot(
-    private val categories: List<ExtensionRegistrationSnapshotCategory>,
+    categories: List<ExtensionRegistrationSnapshotCategory>,
 ) {
+    /** 與呼叫端集合分離的分類及註冊 key 快照。 */
+    private val categories: List<ExtensionRegistrationSnapshotCategory> = categories.map { category ->
+        category.copy(registrationKeys = category.registrationKeys.toSet())
+    }
+
     /**
      * 轉換為登記分類，略過沒有 key 的類別，並將各類別的 key 依字串排序。
      *

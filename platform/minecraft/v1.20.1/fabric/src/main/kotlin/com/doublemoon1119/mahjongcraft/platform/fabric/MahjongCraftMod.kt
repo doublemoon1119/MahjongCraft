@@ -13,9 +13,9 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.HandSortPreferen
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.SetHandSortPreferenceUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateCleaner
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.FabricSeatProviderRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.di.MahjongCraftClientApp
 import com.doublemoon1119.mahjongcraft.platform.fabric.di.MahjongCraftServerApp
+import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricExtensionRegistries
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongExtensions
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.metadata.FabricRuntimeMetadata
@@ -58,7 +58,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.MahjongSto
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.MahjongStoolSeatService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLocationValidationService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.time.FabricTickMonotonicClock
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigUpdateResult
@@ -91,8 +90,7 @@ class MahjongCraftMod : ModInitializer {
         FabricMahjongExtensions.initialize(
             coreRegistries = koin.get<CoreExtensionRegistries>(),
             presentationRegistries = koin.get<MinecraftPresentationRegistries>(),
-            tablePropKindRegistry = koin.get<FabricTablePropKindRegistry>(),
-            seatProviderRegistry = koin.get<FabricSeatProviderRegistry>(),
+            fabricRegistries = koin.get<FabricExtensionRegistries>(),
             mahjongStoolSeatProvider = koin.get<MahjongStoolSeatProvider>(),
             debugWinRoundContinuationState = koin.get<DebugWinRoundContinuationState>(),
             minecraftEnvironment = koin.get<MinecraftEnvironment>(),

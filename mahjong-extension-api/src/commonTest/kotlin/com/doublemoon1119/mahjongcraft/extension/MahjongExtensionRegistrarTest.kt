@@ -171,6 +171,53 @@ class MahjongExtensionRegistrarTest {
         assertTrue(error.message.orEmpty().contains("example:broken"))
     }
 
+    /** 驗證回呼失敗時已完成的登記保留，且 registrar 不會凍結任何 registry。 */
+    @Test
+    fun `registration failure leaves partial registrations and registries unfrozen`() {
+        val moduleRegistry = MahjongModuleRegistryImpl()
+        val tileTypeRegistry = TileTypeRegistryImpl()
+        val registries = testCoreRegistries(
+            moduleRegistry = moduleRegistry,
+            tileTypeRegistry = tileTypeRegistry,
+        )
+        val extension = object : MahjongExtension {
+            override val id: String = "example:partial_failure"
+
+            override fun registerRuleModules(registry: MahjongModuleRegistry) {
+                registry.register(RiichiRuleConfig::class, "example:partial_rule") { config, id ->
+                    RiichiRuleModule(id, config)
+                }
+            }
+
+            override fun registerTileTypes(registry: TileTypeRegistry) {
+                registry.register(TileTypeDefinition(TileTypeId.parse("example:partial_tile")))
+                error("broken after partial registration")
+            }
+
+            override fun registerNetworkDtos(registries: NetworkDtoRegistries) = Unit
+
+            override fun registerPersistenceDtos(registries: PersistenceRegistries) = Unit
+        }
+
+        assertFailsWith<MahjongExtensionRegistrationException> {
+            MahjongExtensionRegistrar.registerAndFreeze(listOf(extension), registries)
+        }
+
+        assertTrue(moduleRegistry.getModule(RiichiRuleConfig()) is RiichiRuleModule)
+        assertEquals(
+            TileTypeId.parse("example:partial_tile"),
+            tileTypeRegistry.require(TileTypeId.parse("example:partial_tile")).id,
+        )
+        moduleRegistry.register(TaiwanRuleConfig::class, "example:after_failure") { config, id ->
+            TaiwanRuleModule(id, config)
+        }
+        tileTypeRegistry.register(TileTypeDefinition(TileTypeId.parse("example:after_failure")))
+        registries.aiStrategyRegistry.register("example:after_failure") {
+            RandomAiStrategy(ExtensionGameActionAiRegistry(registries.moduleRegistry))
+        }
+        registries.opponentModelRegistry.register("example:after_failure") { _, depth -> NeutralOpponentModel(depth) }
+    }
+
     /** 驗證相同 extension ID 不會形成無法判斷來源的部分註冊結果。 */
     @Test
     fun `duplicate extension id fails registration`() {
@@ -185,6 +232,47 @@ class MahjongExtensionRegistrarTest {
 
         assertTrue(error.message.orEmpty().contains(extension.id))
         assertTrue(error.cause?.message.orEmpty().contains("Duplicate"))
+    }
+
+    /** 驗證 built-in 與 extension 共用 ID 保留檢查。 */
+    @Test
+    fun `built in extension id cannot be reused by an extension`() {
+        val builtIn = EmptyExtension("example:built_in")
+        val error = assertFailsWith<MahjongExtensionRegistrationException> {
+            MahjongExtensionRegistrar.registerAndFreeze(
+                extensions = listOf(EmptyExtension(builtIn.id)),
+                builtIn = builtIn,
+                registries = testCoreRegistries(),
+            )
+        }
+
+        assertTrue(error.message.orEmpty().contains(builtIn.id))
+        assertTrue(error.cause?.message.orEmpty().contains("Duplicate"))
+    }
+
+    /** 驗證 extension ID 與內建 extension ID 都必須符合 namespaced ID 格式。 */
+    @Test
+    fun `invalid extension ids fail with contextual errors`() {
+        listOf("", " ", "invalid").forEach { invalidId ->
+            val error = assertFailsWith<MahjongExtensionRegistrationException> {
+                MahjongExtensionRegistrar.registerAndFreeze(
+                    extensions = listOf(EmptyExtension(invalidId)),
+                    registries = testCoreRegistries(),
+                )
+            }
+            assertTrue(error.message.orEmpty().contains(invalidId))
+            assertTrue(error.cause?.message.orEmpty().contains("namespaced"))
+        }
+
+        val error = assertFailsWith<MahjongExtensionRegistrationException> {
+            MahjongExtensionRegistrar.registerAndFreeze(
+                extensions = emptyList(),
+                builtIn = EmptyExtension("builtin"),
+                registries = testCoreRegistries(),
+            )
+        }
+        assertTrue(error.message.orEmpty().contains("builtin"))
+        assertTrue(error.cause?.message.orEmpty().contains("namespaced"))
     }
 
     /** 不同 extension 登記同一策略 key 時，錯誤指出後登記的 extension，原策略不被取代。 */
@@ -231,7 +319,7 @@ private fun testCoreRegistries(
     persistenceRegistries = persistenceRegistries,
     historyReplayProjectionRegistry = historyReplayProjectionRegistry,
     winCelebrationCueResolverRegistry = WinCelebrationCueResolverRegistryImpl(),
-    gameActionAiRegistry = ExtensionGameActionAiRegistry(MahjongModuleRegistryImpl()),
+    gameActionAiRegistry = ExtensionGameActionAiRegistry(moduleRegistry),
     aiStrategyRegistry = aiStrategyRegistry,
     opponentModelRegistry = opponentModelRegistry,
     gameActionCommandFactoryRegistry = ExtensionGameActionCommandFactoryRegistry(),

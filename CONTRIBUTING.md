@@ -85,21 +85,39 @@
   `@Factory`, and discover them through the owning module's `@ComponentScan`. Use explicit `binds` when
   consumers resolve an interface. Do not also register the same service through a provider function.
 - Preserve lifetime: `@Factory` creates a new instance per resolution; `@Single` shares one within the Koin
-  container. A single is not automatically a server-session scope. Preserve explicit session reset, cancellation,
+  container. A single is not automatically a runtime-session scope. Preserve explicit session reset, cancellation,
   resource release, qualifiers, parameters and eager/lazy initialization behavior.
 - Keep provider functions for third-party types, configured builders, factory methods, bootstrap aggregates,
   runtime-owned instances, and classes intentionally kept framework-neutral. Explain the exception in the
   provider's KDoc. Do not introduce Koin into Logic or AI, or annotate DTOs and value objects merely because
   their module uses Koin elsewhere.
-- Keep component scans within their intended graph. Do not widen scans across client/server boundaries,
+- Keep component scans within their intended graph. Do not widen scans across execution-environment boundaries,
   relocate public types, or widen visibility just to remove a provider. A provider may remain when shared
-  packages cannot express a server-only scan boundary safely; document that reason.
+  packages cannot express an environment-specific scan boundary safely; document that reason.
 - `@Provided` describes a dependency supplied outside the current module; it does not register that dependency
   or excuse a missing binding in the final application. Preserve includes needed by compiler graph validation,
   even when runtime module inclusion de-duplicates the same module.
 - Bootstrap, codecs and consumers must share the exact registry instances and preserve registration/freeze
-  ordering. Validate changes through the formal client and dedicated-server application graphs, reject duplicate
+  ordering. Validate changes through the formal application graphs for each supported execution environment, reject duplicate
   definitions, assert shared identity and factory behavior, and retain session lifecycle regression tests.
+
+### Extension Bootstrap
+
+- Registrars in the core and platform adapters follow the same workflow: register built-ins through extension
+  callbacks, capture their snapshot, register each extension in order, report its additions, and freeze that
+  layer only after all callbacks succeed. Validate namespaced extension IDs and duplicates with source context.
+- Registry aggregates hold existing runtime instances; they own snapshot creation and `freezeAll`, not
+  registration callbacks. Built-in extensions own built-in registrations. Keep report category IDs separate
+  from the feature IDs being registered, and centralize both under their respective owners.
+- Snapshots own filtering of empty categories and sorting of registration IDs. Keep source and category order
+  deterministic. Discovery code materializes the discovered extensions once, composes the layers, and logs
+  their combined report; it must not maintain a second registration implementation for tests.
+- Preserve dependency boundaries rather than adding cross-layer dependencies merely to share report classes.
+  Cross-module bootstrap entry points remain public when callers require them; module-local implementation
+  details stay internal.
+- Bootstrap is one-shot. Failure aborts startup; earlier writes or previously completed layers are not rolled
+  back, and partially initialized registries must not be reused for retry. Tests cover invalid and duplicate IDs,
+  callback order, no-op sources, snapshot differences, shared instances, and successful or failed freeze paths.
 
 ## Before Committing
 
