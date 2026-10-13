@@ -28,15 +28,14 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
 import org.koin.core.annotation.ComponentScan
 import org.koin.core.annotation.Module
-import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single
 
 /**
  * Minecraft loader 與版本無關、client／server 共用的 Koin 定義。
  *
  * 掃描共用服務上的註解，並以明確 provider 將同一份 registry 組成 bootstrap 集合。
- * server 專用狀態由 [MinecraftServerModule] 提供；loader 包裝的名稱來源仍由各 loader 綁定，
- * 不替其未標註的共用實作建立第二個定義。
+ * server 專用狀態由 [MinecraftServerModule] 提供；共用名稱來源直接由本模組綁定，
+ * 原生文字轉換留在對應平台 adapter，不為純委派另外建立 loader registry。
  */
 @Module
 @ComponentScan("com.doublemoon1119.mahjongcraft.platform.minecraft")
@@ -76,13 +75,13 @@ class MinecraftCommonModule {
         gameActionVocabularyRegistry: GameActionVocabularyRegistry,
         automaticControlDisplayRegistry: AutomaticControlDisplayRegistry,
         decisionStatusDisplayNameRegistry: DecisionStatusDisplayNameRegistry,
-        @Provided aiStrategyDisplayNameRegistry: AiStrategyDisplayNameRegistry,
+        aiStrategyDisplayNameRegistry: AiStrategyDisplayNameRegistry,
         playerPortraitSourceRegistry: PlayerPortraitSourceRegistry,
         publicPlayerIndicatorDisplayRegistry: PublicPlayerIndicatorDisplayRegistry,
         roundPreparationDisplayNameRegistry: RoundPreparationDisplayNameRegistry,
         gameConfigPresentationRegistry: GameConfigPresentationRegistry,
         roomMemberAppearanceSourceRegistry: RoomMemberAppearanceSourceRegistry,
-        @Provided ruleModuleDisplayNameRegistry: RuleModuleDisplayNameRegistry,
+        ruleModuleDisplayNameRegistry: RuleModuleDisplayNameRegistry,
         exhaustiveDrawReasonDisplayNameRegistry: ExhaustiveDrawReasonDisplayNameRegistry,
         roundOutcomeDisplayNameRegistry: RoundOutcomeDisplayNameRegistry,
         historyDiscardMarkerDisplayRegistry: HistoryDiscardMarkerDisplayRegistry,
@@ -93,7 +92,7 @@ class MinecraftCommonModule {
         roundInfoLineDisplayRegistry: RoundInfoLineDisplayRegistry,
         tablePropDescriberRegistry: TablePropDescriberRegistry,
         tileAssetRegistry: MinecraftTileAssetRegistry,
-        @Provided tileDisplayNameRegistry: TileDisplayNameRegistry,
+        tileDisplayNameRegistry: TileDisplayNameRegistry,
         tileEmojiRegistry: TileEmojiRegistry,
         tileLabelRegistry: TileLabelRegistry,
         ruleCatalogueRegistry: RuleCatalogueRegistry,

@@ -58,7 +58,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServe
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigManager
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.MahjongTileCollisionService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricDecisionTimerScheduler
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricTileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.GameActionCandidateResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.PlayerDecisionPromptFactory
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.FabricDebugCommand
@@ -79,9 +78,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.text.Fa
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricAuthoritativeStatePersistence
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricTableLocationPersistence
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.BuiltInDefaultGameConfigProvider
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.FabricAiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableRoomService
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.rule.FabricRuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.BuiltInFabricSeatProviderIds
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.MahjongStoolSeatProvider
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLifecycleService
@@ -91,6 +88,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricT
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
@@ -107,6 +105,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresent
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSourceRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcomeDisplayNameRegistry
@@ -121,6 +120,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPresent
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
@@ -553,9 +553,9 @@ class FabricApplicationModuleTest {
         assertSame(koin.get<MinecraftServerConfigState>(), koin.get<MinecraftServerConfigState>())
         assertSame(koin.get<GameConfigPresentationResolver>(), koin.get<GameConfigPresentationResolver>())
         assertSame(koin.get<FabricServerHolder>(), koin.get<FabricServerHolder>())
-        assertIs<FabricAiStrategyDisplayNameRegistry>(koin.get<AiStrategyDisplayNameRegistry>())
-        assertIs<FabricRuleModuleDisplayNameRegistry>(koin.get<RuleModuleDisplayNameRegistry>())
-        assertIs<FabricTileDisplayNameRegistry>(koin.get<TileDisplayNameRegistry>())
+        assertIs<AiStrategyDisplayNameRegistryImpl>(koin.get<AiStrategyDisplayNameRegistry>())
+        assertIs<RuleModuleDisplayNameRegistryImpl>(koin.get<RuleModuleDisplayNameRegistry>())
+        assertIs<TileDisplayNameRegistryImpl>(koin.get<TileDisplayNameRegistry>())
         assertTrue(koin.get<GameFlowCoordinator>() !== koin.get<GameFlowCoordinator>())
         assertTrue(koin.get<GetPlayerDecisionOptionsUseCase>() !== koin.get<GetPlayerDecisionOptionsUseCase>())
     }
@@ -571,5 +571,12 @@ class FabricApplicationModuleTest {
         assertSame(koin.get<ClientDecisionTimerStateStore>(), koin.get<ClientDecisionTimerStateStore>())
         assertSame(koin.get<FabricRuntimeMetadata>(), koin.get<FabricRuntimeMetadata>())
         assertSame(koin.get<MinecraftEnvironment>(), koin.get<MinecraftEnvironment>())
+        val presentation = koin.get<MinecraftPresentationRegistries>()
+        assertSame(koin.get<AiStrategyDisplayNameRegistry>(), presentation.aiStrategyDisplayNameRegistry)
+        assertSame(koin.get<RuleModuleDisplayNameRegistry>(), presentation.ruleModuleDisplayNameRegistry)
+        assertSame(koin.get<TileDisplayNameRegistry>(), presentation.tileDisplayNameRegistry)
+        assertIs<AiStrategyDisplayNameRegistryImpl>(presentation.aiStrategyDisplayNameRegistry)
+        assertIs<RuleModuleDisplayNameRegistryImpl>(presentation.ruleModuleDisplayNameRegistry)
+        assertIs<TileDisplayNameRegistryImpl>(presentation.tileDisplayNameRegistry)
     }
 }
