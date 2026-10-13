@@ -17,6 +17,7 @@ import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 import org.koin.core.annotation.Single
+import kotlin.uuid.Uuid
 
 /**
  * 註冊供 OP 查詢與恢復歷史資料庫連線的正式管理員指令。
@@ -62,16 +63,8 @@ class FabricHistoryCommand(
      */
     private fun status(source: ServerCommandSource): Int {
         val session = writer.currentSessionId
-        scope.launch {
-            if (!writer.isCurrentSession(session)) return@launch
-            val status = writer.status()
-            withContext(dispatchers.main) {
-                if (!writer.isCurrentSession(session)) return@withContext
-                source.sendFeedback(
-                    { historyStatusMessage(status) },
-                    false,
-                )
-            }
+        launchSessionBound(session, { writer.status() }) { status ->
+            source.sendFeedback({ historyStatusMessage(status) }, false)
         }
         return COMMAND_SUCCESS
     }
@@ -85,26 +78,21 @@ class FabricHistoryCommand(
     private fun retry(source: ServerCommandSource): Int {
         val session = writer.currentSessionId
         val server = source.server
-        scope.launch {
-            if (!writer.isCurrentSession(session)) return@launch
-            val result = writer.retry(server, session)
-            withContext(dispatchers.main) {
-                if (!writer.isCurrentSession(session)) return@withContext
-                when (result) {
-                    HistoryRetryResult.Reconnected -> source.sendFeedback(
-                        { prefixedConfigMessage(Text.translatable(MinecraftConfigCommandKeys.HISTORY_RECONNECTED), Formatting.GREEN) },
-                        false,
-                    )
+        launchSessionBound(session, { writer.retry(server, session) }) { result ->
+            when (result) {
+                HistoryRetryResult.Reconnected -> source.sendFeedback(
+                    { prefixedConfigMessage(Text.translatable(MinecraftConfigCommandKeys.HISTORY_RECONNECTED), Formatting.GREEN) },
+                    false,
+                )
 
-                    HistoryRetryResult.AlreadyConnected -> source.sendFeedback(
-                        { prefixedConfigMessage(Text.translatable(MinecraftConfigCommandKeys.HISTORY_ALREADY_CONNECTED), Formatting.YELLOW) },
-                        false,
-                    )
+                HistoryRetryResult.AlreadyConnected -> source.sendFeedback(
+                    { prefixedConfigMessage(Text.translatable(MinecraftConfigCommandKeys.HISTORY_ALREADY_CONNECTED), Formatting.YELLOW) },
+                    false,
+                )
 
-                    HistoryRetryResult.Failed -> source.sendError(
-                        prefixedConfigMessage(Text.translatable(MinecraftConfigCommandKeys.HISTORY_RECONNECT_FAILED), Formatting.RED),
-                    )
-                }
+                HistoryRetryResult.Failed -> source.sendError(
+                    prefixedConfigMessage(Text.translatable(MinecraftConfigCommandKeys.HISTORY_RECONNECT_FAILED), Formatting.RED),
+                )
             }
         }
         return COMMAND_SUCCESS
@@ -119,18 +107,14 @@ class FabricHistoryCommand(
     private fun storage(source: ServerCommandSource): Int {
         val session = writer.currentSessionId
         source.sendFeedback({ Text.translatable(MinecraftConfigCommandKeys.HISTORY_STORAGE_STARTED) }, false)
-        scope.launch {
-            if (!writer.isCurrentSession(session)) return@launch
-            val result = writer.storage(session)
-            withContext(dispatchers.main) {
-                if (!writer.isCurrentSession(session)) return@withContext
-                when (result) {
-                    is HistoryManagementResult.Success -> source.sendFeedback({ historyStorageMessage(result.value) }, false)
-                    is HistoryManagementResult.Busy -> storageFailure(source, MinecraftConfigCommandKeys.HISTORY_MANAGEMENT_BUSY, result.cachedSnapshot)
-                    is HistoryManagementResult.Disconnected -> storageFailure(source, MinecraftConfigCommandKeys.HISTORY_MANAGEMENT_DISCONNECTED, result.cachedSnapshot)
-                    is HistoryManagementResult.Failed -> storageFailure(source, MinecraftConfigCommandKeys.HISTORY_MANAGEMENT_FAILED, result.cachedSnapshot)
-                    HistoryManagementResult.SessionChanged -> Unit
-                }
+        launchSessionBound(session, { writer.storage(session) }) { result ->
+            when (result) {
+                is HistoryManagementResult.Success -> source.sendFeedback({ historyStorageMessage(result.value) }, false)
+                is HistoryManagementResult.Busy,
+                is HistoryManagementResult.Disconnected,
+                is HistoryManagementResult.Failed,
+                -> storageFailure(source, result.commandErrorKey() ?: MinecraftConfigCommandKeys.HISTORY_MANAGEMENT_FAILED, result.cachedSnapshot())
+                HistoryManagementResult.SessionChanged -> Unit
             }
         }
         return COMMAND_SUCCESS
@@ -145,18 +129,14 @@ class FabricHistoryCommand(
     private fun cleanupPreview(source: ServerCommandSource): Int {
         val session = writer.currentSessionId
         source.sendFeedback({ Text.translatable(MinecraftConfigCommandKeys.HISTORY_PREVIEW_STARTED) }, false)
-        scope.launch {
-            if (!writer.isCurrentSession(session)) return@launch
-            val result = writer.previewCleanup(session)
-            withContext(dispatchers.main) {
-                if (!writer.isCurrentSession(session)) return@withContext
-                when (result) {
-                    is HistoryManagementResult.Success -> source.sendFeedback({ historyCleanupPreviewMessage(result.value) }, false)
-                    is HistoryManagementResult.Busy -> source.sendError(Text.translatable(MinecraftConfigCommandKeys.HISTORY_MANAGEMENT_BUSY))
-                    is HistoryManagementResult.Disconnected -> source.sendError(Text.translatable(MinecraftConfigCommandKeys.HISTORY_MANAGEMENT_DISCONNECTED))
-                    is HistoryManagementResult.Failed -> source.sendError(Text.translatable(MinecraftConfigCommandKeys.HISTORY_MANAGEMENT_FAILED))
-                    HistoryManagementResult.SessionChanged -> Unit
-                }
+        launchSessionBound(session, { writer.previewCleanup(session) }) { result ->
+            when (result) {
+                is HistoryManagementResult.Success -> source.sendFeedback({ historyCleanupPreviewMessage(result.value) }, false)
+                is HistoryManagementResult.Busy,
+                is HistoryManagementResult.Disconnected,
+                is HistoryManagementResult.Failed,
+                -> source.sendError(Text.translatable(result.commandErrorKey() ?: MinecraftConfigCommandKeys.HISTORY_MANAGEMENT_FAILED))
+                HistoryManagementResult.SessionChanged -> Unit
             }
         }
         return COMMAND_SUCCESS
@@ -171,19 +151,15 @@ class FabricHistoryCommand(
     private fun cleanupRun(source: ServerCommandSource): Int {
         val session = writer.currentSessionId
         source.sendFeedback({ Text.translatable(MinecraftConfigCommandKeys.HISTORY_CLEANUP_STARTED) }, false)
-        scope.launch {
-            if (!writer.isCurrentSession(session)) return@launch
-            val result = writer.runCleanup(session)
-            withContext(dispatchers.main) {
-                if (!writer.isCurrentSession(session)) return@withContext
-                when (result) {
-                    is HistoryManagementResult.Success -> source.sendFeedback({ historyCleanupReportMessage(result.value) }, false)
-                    is HistoryManagementResult.Busy -> source.sendError(Text.translatable(MinecraftConfigCommandKeys.HISTORY_MANAGEMENT_BUSY))
-                    is HistoryManagementResult.Disconnected -> source.sendError(Text.translatable(MinecraftConfigCommandKeys.HISTORY_MANAGEMENT_DISCONNECTED))
-                    is HistoryManagementResult.Failed -> result.cleanup?.let { source.sendFeedback({ historyCleanupReportMessage(it) }, false) }
-                        ?: source.sendError(Text.translatable(MinecraftConfigCommandKeys.HISTORY_MANAGEMENT_FAILED))
-                    HistoryManagementResult.SessionChanged -> Unit
-                }
+        launchSessionBound(session, { writer.runCleanup(session) }) { result ->
+            when (result) {
+                is HistoryManagementResult.Success -> source.sendFeedback({ historyCleanupReportMessage(result.value) }, false)
+                is HistoryManagementResult.Busy,
+                is HistoryManagementResult.Disconnected,
+                -> source.sendError(Text.translatable(result.commandErrorKey() ?: MinecraftConfigCommandKeys.HISTORY_MANAGEMENT_FAILED))
+                is HistoryManagementResult.Failed -> result.cleanup?.let { source.sendFeedback({ historyCleanupReportMessage(it) }, false) }
+                    ?: source.sendError(Text.translatable(result.commandErrorKey() ?: MinecraftConfigCommandKeys.HISTORY_MANAGEMENT_FAILED))
+                HistoryManagementResult.SessionChanged -> Unit
             }
         }
         return COMMAND_SUCCESS
@@ -201,6 +177,27 @@ class FabricHistoryCommand(
             source.sendError(prefixedConfigMessage(Text.translatable(key), Formatting.RED))
         } else {
             source.sendFeedback({ historyStorageMessage(cached, stale = true).append("\n  ").append(Text.translatable(key).formatted(Formatting.YELLOW)) }, false)
+        }
+    }
+
+    /**
+     * 執行與固定存檔 session 綁定的管理工作，並只在 session 仍有效時回覆。
+     *
+     * @param session 工作開始時捕捉的存檔 session。
+     * @param operation 背景執行的管理操作。
+     * @param render 主執行緒上的結果回覆器。
+     */
+    private fun <T> launchSessionBound(
+        session: Uuid?,
+        operation: suspend () -> T,
+        render: (T) -> Unit,
+    ) {
+        scope.launch {
+            if (!writer.isCurrentSession(session)) return@launch
+            val result = operation()
+            withContext(dispatchers.main) {
+                if (writer.isCurrentSession(session)) render(result)
+            }
         }
     }
 

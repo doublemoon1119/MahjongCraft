@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRe
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayRuleInformation
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryTileReference
+import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import kotlinx.serialization.json.JsonElement
 import org.koin.core.annotation.Single
 
@@ -41,42 +42,37 @@ class HistoryReplayProjectionRegistry {
     /**
      * 註冊必要牌河轉換。
      *
-     * @param typeKey persistence typed envelope 的種類。
-     * @param codec 牌河轉換器。
+     * @param definition persistence typed envelope 種類與牌河轉換器。
      */
-    fun registerDiscard(typeKey: String, codec: HistoryReplayProjectionCodec<List<HistoryReplayDiscard>>) = register(discardCodecs, typeKey, codec)
+    fun register(definition: HistoryReplayProjectionDefinition.Discard) = register(discardCodecs, definition.typeKey, definition.codec)
 
     /**
      * 註冊額外事實轉換。
      *
-     * @param typeKey 已保存事實種類。
-     * @param codec 事實轉換器。
+     * @param definition 已保存事實種類與轉換器。
      */
-    fun registerFact(typeKey: String, codec: HistoryReplayProjectionCodec<HistoryReplayFact>) = register(factCodecs, typeKey, codec)
+    fun register(definition: HistoryReplayProjectionDefinition.Fact) = register(factCodecs, definition.typeKey, definition.codec, namespaced = false)
 
     /**
      * 註冊擴充動作的公開投影。
      *
-     * @param typeKey 擴充動作 typed envelope 的種類。
-     * @param codec 動作轉換器。
+     * @param definition 擴充動作種類與轉換器。
      */
-    fun registerAction(typeKey: String, codec: HistoryReplayProjectionCodec<HistoryReplayFact>) = register(actionCodecs, typeKey, codec)
+    fun register(definition: HistoryReplayProjectionDefinition.Action) = register(actionCodecs, definition.typeKey, definition.codec)
 
     /**
      * 註冊可選規則公開資訊。
      *
-     * @param typeKey persistence typed envelope 的種類。
-     * @param codec 公開資訊轉換器。
+     * @param definition persistence typed envelope 種類與公開資訊轉換器。
      */
-    fun registerOptionalRule(typeKey: String, codec: HistoryReplayProjectionCodec<HistoryReplayRuleInformation>) = register(optionalRuleCodecs, typeKey, codec)
+    fun register(definition: HistoryReplayProjectionDefinition.OptionalRule) = register(optionalRuleCodecs, definition.typeKey, definition.codec)
 
     /**
      * 註冊從玩家規則狀態取出移出手牌的牌（例如三人日麻拔出的北）的轉換。
      *
-     * @param typeKey 玩家規則狀態 typed envelope 的種類。
-     * @param codec 依移出順序回傳牌參照的轉換器。
+     * @param definition 玩家規則狀態種類與牌參照轉換器。
      */
-    fun registerSetAsideTiles(typeKey: String, codec: HistoryReplayProjectionCodec<List<HistoryTileReference>>) = register(setAsideTileCodecs, typeKey, codec)
+    fun register(definition: HistoryReplayProjectionDefinition.SetAsideTiles) = register(setAsideTileCodecs, definition.typeKey, definition.codec)
 
     /** 禁止後續註冊；不改變已註冊順序或內容。 */
     fun freeze() {
@@ -140,10 +136,12 @@ class HistoryReplayProjectionRegistry {
      * @param target 強型別分類。
      * @param typeKey 穩定種類。
      * @param codec 轉換器。
+     * @param namespaced 是否使用命名空間 ID；既有事實種類沿用保存格式中的短名稱。
      */
-    private fun <T> register(target: MutableMap<String, HistoryReplayProjectionCodec<T>>, typeKey: String, codec: HistoryReplayProjectionCodec<T>) {
+    private fun <T> register(target: MutableMap<String, HistoryReplayProjectionCodec<T>>, typeKey: String, codec: HistoryReplayProjectionCodec<T>, namespaced: Boolean = true) {
         check(!frozen) { "History replay projection registry is frozen" }
         require(typeKey.isNotBlank()) { "History replay projection type key must not be blank" }
+        if (namespaced) NamespacedId.requireValid(typeKey) { "History replay projection type key must be a namespaced ID: $typeKey" }
         require(typeKey !in target) { "Duplicate history replay projection type key: $typeKey" }
         target[typeKey] = codec
     }

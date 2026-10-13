@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.simulation
 import com.doublemoon1119.mahjongcraft.ai.AiDecisionContext
 import com.doublemoon1119.mahjongcraft.ai.AiDecisionPhase
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategy
+import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyDefinition
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransition
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
@@ -29,7 +30,7 @@ class RiichiSimulationAssertionsTest {
     @Test
     fun `fixed ron win may legally end an east match by bust`() = runTest {
         val runtime = SimulationRuntime(defaultStrategyKey = RON_STRATEGY_KEY)
-        runtime.aiStrategyRegistry.register(RON_STRATEGY_KEY) { RonOnlyStrategy() }
+        runtime.aiStrategyRegistry.register(MahjongAiStrategyDefinition(RON_STRATEGY_KEY) { RonOnlyStrategy() })
 
         val gameId = Uuid.random()
         val eastId = Uuid.random()

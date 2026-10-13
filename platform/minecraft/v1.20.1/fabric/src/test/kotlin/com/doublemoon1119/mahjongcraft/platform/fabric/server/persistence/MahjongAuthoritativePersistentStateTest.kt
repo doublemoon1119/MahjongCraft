@@ -29,13 +29,16 @@ class MahjongAuthoritativePersistentStateTest {
     /** 使用所有內建 mapper 的待測 codec。 */
     private val codec = AuthoritativeStatePersistenceCodec(bundledPersistenceRegistries())
 
-    /** 驗證沒有既有 NBT payload 時建立空且乾淨的狀態。 */
+    /** 既有 NBT 缺少 payload 時不得偽裝成新世界，空狀態只能由 create 建立。 */
     @Test
-    fun `missing payload creates empty clean state`() {
-        val state = MahjongAuthoritativePersistentState.fromNbt(NbtCompound(), codec)
-
-        assertEquals(AuthoritativeStateSnapshot(), state.snapshot)
-        assertFalse(state.isDirty)
+    fun `missing payload is rejected instead of creating empty state`() {
+        assertFailsWith<IllegalArgumentException> { MahjongAuthoritativePersistentState.fromNbt(NbtCompound(), codec) }
+        assertFailsWith<IllegalArgumentException> {
+            MahjongAuthoritativePersistentState.fromNbt(NbtCompound().apply { putString(MahjongAuthoritativePersistentState.NBT_KEY_STATE, "invalid") }, codec)
+        }
+        val created = MahjongAuthoritativePersistentState.create(codec)
+        assertEquals(AuthoritativeStateSnapshot(), created.snapshot)
+        assertFalse(created.isDirty)
     }
 
     /** 驗證更新 snapshot 會 mark dirty，並完整通過 NBT round-trip。 */

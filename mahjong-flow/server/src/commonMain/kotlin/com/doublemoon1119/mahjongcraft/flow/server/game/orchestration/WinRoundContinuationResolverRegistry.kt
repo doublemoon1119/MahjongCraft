@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundContinuationContext
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
+import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import org.koin.core.annotation.Single
 
@@ -19,16 +20,18 @@ class WinRoundContinuationResolverRegistry {
     /** 是否已禁止後續註冊。 */
     private var frozen = false
 
-    /** 目前已登記 resolver ID 的快照。 */
+    /** 目前已登記 resolver ID 的快照；ID 為跨規則模組全域唯一。 */
     val registrationKeys: Set<String> get() = resolvers.mapTo(mutableSetOf()) { it.id }
 
     /**
-     * 登記 resolver；ID 不得重複，註冊表凍結後不可登記。
+     * 登記 resolver；ID 為跨所有規則模組的全域唯一識別碼，不得重複，註冊表凍結後不可登記。
      *
      * @param resolver 要登記的胡牌後續判定器。
      */
     fun register(resolver: WinRoundContinuationResolver) {
         check(!frozen) { "Win round continuation resolver registry is frozen" }
+        NamespacedId.requireValid(resolver.ruleModuleId) { "Rule module ID must be namespaced: ${resolver.ruleModuleId}" }
+        NamespacedId.requireValid(resolver.id) { "Resolver ID must be namespaced: ${resolver.id}" }
         require(resolvers.none { it.id == resolver.id }) { "Win round continuation resolver already registered: ${resolver.id}" }
         resolvers += resolver
     }
@@ -36,7 +39,7 @@ class WinRoundContinuationResolverRegistry {
     /** 凍結註冊表並依優先序、ID 固定判定順序；重複呼叫不改變結果。 */
     fun freeze() {
         if (frozen) return
-        resolvers.sortWith(compareBy(WinRoundContinuationResolver::priority, WinRoundContinuationResolver::id))
+        resolvers.sortWith(compareByDescending<WinRoundContinuationResolver> { it.priority }.thenBy { it.id })
         frozen = true
     }
 

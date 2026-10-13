@@ -23,15 +23,14 @@ class WinSettlementDetailResolverRegistry {
     /**
      * 登記指定規則模組的胡牌詳情解析器。
      *
-     * @param ruleModuleId 完整且符合格式的規則模組識別碼。
-     * @param resolver 要登記的詳情解析器。
+     * @param definition 規則模組識別碼與胡牌詳情解析器的完整註冊定義。
      * @throws IllegalStateException registry 已凍結時拋出。
      * @throws IllegalArgumentException 識別碼格式無效或識別碼已被登記時拋出。
      */
-    fun register(ruleModuleId: String, resolver: WinSettlementDetailResolver) {
+    fun register(definition: WinSettlementDetailResolverDefinition) {
         check(!isFrozen) { "Win settlement detail resolver registry is frozen" }
-        NamespacedId.requireValid(ruleModuleId) { "Rule module ID must be namespaced: $ruleModuleId" }
-        require(resolvers.putIfAbsent(ruleModuleId, resolver) == null) { "Duplicate win settlement detail resolver: $ruleModuleId" }
+        NamespacedId.requireValid(definition.ruleModuleId) { "Rule module ID must be namespaced: ${definition.ruleModuleId}" }
+        require(resolvers.putIfAbsent(definition.ruleModuleId, definition.resolver) == null) { "Duplicate win settlement detail resolver: ${definition.ruleModuleId}" }
     }
 
     /**

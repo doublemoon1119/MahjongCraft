@@ -13,17 +13,11 @@ interface MahjongModuleRegistry {
      * 註冊一個新的規則模組。
      *
      * @param T 對應的規則配置型別。
-     * @param configClass 規則配置類別。
-     * @param id 規則模組 ID。
-     * @param factory 工廠函數。
-     * @throws IllegalArgumentException 配置類別或模組 ID 已重複註冊時拋出。
+     * @param definition 配置型別、規則模組 ID 與延遲工廠。
+     * @throws IllegalArgumentException 模組 ID 不符合命名空間格式，或配置類別／模組 ID 已重複註冊。
      * @throws IllegalStateException 註冊中心已凍結時拋出。
      */
-    fun <T : MahjongRuleConfig> register(
-        configClass: KClass<T>,
-        id: String,
-        factory: (T, id: String) -> MahjongRuleModule<T>,
-    )
+    fun <T : MahjongRuleConfig> register(definition: MahjongModuleDefinition<T>)
 
     /** 凍結註冊表；凍結後不得再新增或覆寫規則模組。 */
     fun freeze()

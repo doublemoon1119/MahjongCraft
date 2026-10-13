@@ -9,7 +9,12 @@ import kotlin.uuid.Uuid
 /** 管理規則擴充動作命令 factory 的可凍結註冊表。 */
 @Single
 class ExtensionGameActionCommandFactoryRegistry {
-    /** 保留具體動作型別的 factory 包裝。 */
+    /**
+     * 保留具體動作型別的命令建立方式，避免放入註冊表時遺失泛型資訊。
+     *
+     * @param A 此包裝保留的擴充動作型別。
+     * @property factory 將指定擴充動作轉為命令的建立函式。
+     */
     private class Entry<A : ExtensionGameAction>(val factory: ExtensionGameActionCommandFactory<A>)
 
     /** 依動作具體型別索引的 factory。 */
@@ -25,16 +30,12 @@ class ExtensionGameActionCommandFactoryRegistry {
      * 註冊一種擴充動作的命令 factory；註冊表凍結後或同一動作型別已登記時會失敗。
      *
      * @param A 動作型別。
-     * @param actionClass 要登記的動作類別。
-     * @param factory 將該動作轉為命令的 factory。
+     * @param definition 動作類別與命令 factory。
      */
-    fun <A : ExtensionGameAction> register(
-        actionClass: KClass<A>,
-        factory: ExtensionGameActionCommandFactory<A>,
-    ) {
+    fun <A : ExtensionGameAction> register(definition: ExtensionGameActionCommandFactoryDefinition<A>) {
         check(!frozen) { "Extension game action command factory registry is frozen" }
-        require(actionClass !in entries) { "Command factory already registered for $actionClass" }
-        entries[actionClass] = Entry(factory)
+        require(definition.actionClass !in entries) { "Command factory already registered for ${definition.actionClass}" }
+        entries[definition.actionClass] = Entry(definition.factory)
     }
 
     /** 凍結註冊表；後續註冊會失敗。重複呼叫不改變結果。 */

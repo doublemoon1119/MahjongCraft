@@ -18,8 +18,12 @@ interface RuleModuleDisplayNameRegistry {
     /** 是否已禁止後續註冊。 */
     val isFrozen: Boolean
 
-    /** 為 [ruleModuleId] 註冊顯示名稱的 translation key。 */
-    fun register(ruleModuleId: String, translationKey: String)
+    /**
+     * 登記完整描述；凍結後或身分重複時拒絕，不提前呼叫來源。
+     *
+     * @param definition 集中保存登記身分與內容的描述。
+     */
+    fun register(definition: RuleModuleDisplayNameDefinition)
 
     /** 凍結 registry；凍結後不得新增顯示名稱。 */
     fun freeze()

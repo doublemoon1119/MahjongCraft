@@ -9,13 +9,11 @@ interface RoomMemberAppearanceSourceRegistry {
     val isFrozen: Boolean
 
     /**
-     * 登記一個成員外觀提供者。
+     * 登記完整描述；凍結後或身分重複時拒絕，不提前呼叫來源。
      *
-     * @param providerId provider 的穩定 namespaced ID。
-     * @param priority 解析優先順序；數值較大者先執行。
-     * @param provider 依成員身分解析外觀來源的 provider。
+     * @param definition 集中保存登記身分與內容的描述。
      */
-    fun register(providerId: String, priority: Int = 0, provider: RoomMemberAppearanceSourceProvider)
+    fun register(definition: RoomMemberAppearanceSourceDefinition)
 
     /**
      * 依 provider 優先順序解析成員外觀來源；皆無來源時依成員是否為 AI 選擇預設來源。

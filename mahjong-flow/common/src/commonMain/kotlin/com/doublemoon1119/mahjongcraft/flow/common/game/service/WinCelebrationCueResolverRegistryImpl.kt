@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.service
 
+import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueResult
 import org.koin.core.annotation.Single
 
@@ -14,10 +15,10 @@ class WinCelebrationCueResolverRegistryImpl : WinCelebrationCueResolverRegistry 
 
     override val registrationKeys: Set<String> get() = resolvers.keys.toSet()
 
-    override fun register(ruleModuleId: String, resolver: WinCelebrationCueResolver) {
+    override fun register(definition: WinCelebrationCueResolverDefinition) {
         check(!frozen) { "Win celebration cue resolver registry is frozen" }
-        require(ruleModuleId.isNotBlank()) { "Rule module id must not be blank" }
-        require(resolvers.putIfAbsent(ruleModuleId, resolver) == null) { "Duplicate win celebration cue resolver: $ruleModuleId" }
+        NamespacedId.requireValid(definition.ruleModuleId) { "Rule module ID must be namespaced: ${definition.ruleModuleId}" }
+        require(resolvers.putIfAbsent(definition.ruleModuleId, definition.resolver) == null) { "Duplicate win celebration cue resolver: ${definition.ruleModuleId}" }
     }
 
     override fun freeze() {

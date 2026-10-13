@@ -10,7 +10,7 @@ class RoundOutcomeDisplayNameRegistryTest {
     /** 登記的結果可查回翻譯鍵，未登記的結果查無結果。 */
     @Test
     fun `finds registered names only`() {
-        val registry = RoundOutcomeDisplayNameRegistryImpl().apply { register("example:special", "test.special") }
+        val registry = RoundOutcomeDisplayNameRegistryImpl().apply { register(RoundOutcomeDisplayNameDefinition("example:special", "test.special")) }
 
         assertEquals("test.special", registry.find("example:special"))
         assertNull(registry.find("example:other"))
@@ -20,11 +20,11 @@ class RoundOutcomeDisplayNameRegistryTest {
     /** 重複 ID、非 namespaced ID 與凍結後登記都會失敗。 */
     @Test
     fun `rejects duplicates invalid ids and late registrations`() {
-        val registry = RoundOutcomeDisplayNameRegistryImpl().apply { register("example:special", "test.special") }
+        val registry = RoundOutcomeDisplayNameRegistryImpl().apply { register(RoundOutcomeDisplayNameDefinition("example:special", "test.special")) }
 
-        assertFailsWith<IllegalArgumentException> { registry.register("example:special", "test.other") }
-        assertFailsWith<IllegalArgumentException> { registry.register("special", "test.other") }
+        assertFailsWith<IllegalArgumentException> { registry.register(RoundOutcomeDisplayNameDefinition("example:special", "test.other")) }
+        assertFailsWith<IllegalArgumentException> { registry.register(RoundOutcomeDisplayNameDefinition("special", "test.other")) }
         registry.freeze()
-        assertFailsWith<IllegalStateException> { registry.register("example:late", "test.late") }
+        assertFailsWith<IllegalStateException> { registry.register(RoundOutcomeDisplayNameDefinition("example:late", "test.late")) }
     }
 }

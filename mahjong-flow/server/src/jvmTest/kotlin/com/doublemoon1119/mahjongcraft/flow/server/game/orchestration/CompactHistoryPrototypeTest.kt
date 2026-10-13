@@ -28,7 +28,7 @@ import kotlin.test.assertTrue
 class CompactHistoryPrototypeTest {
     /** 量測移除動作結果重複欄位前後的完整對局大小。 */
     @Test
-    fun measureSlimActions() = runBlocking {
+    fun `measure slim actions`() = runBlocking {
         val mapper = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries())
         for (length in listOf(RiichiGameLength.East, RiichiGameLength.TwoWinds)) {
             val matches = RoomToRoomFullLifecycleIntegrationTest().measureFullLifecycle(length)
@@ -63,7 +63,7 @@ class CompactHistoryPrototypeTest {
 
     /** 驗證每次權威桌況變更中的玩家差異皆可獨立還原。 */
     @Test
-    fun playerDeltasReconstructEveryChangedPlayer() = runBlocking {
+    fun `player deltas reconstruct every changed player`() = runBlocking {
         var changedPlayers = 0
         var changedTables = 0
         for (length in listOf(RiichiGameLength.East, RiichiGameLength.TwoWinds)) {
@@ -100,7 +100,7 @@ class CompactHistoryPrototypeTest {
 
     /** 量測原始歷史、玩家差異及字典化格式的容量。 */
     @Test
-    fun measure() = runBlocking {
+    fun `measure`() = runBlocking {
         val mapper = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries())
         for (length in listOf(RiichiGameLength.East, RiichiGameLength.TwoWinds)) {
             val matches = RoomToRoomFullLifecycleIntegrationTest().measureFullLifecycle(length)

@@ -18,14 +18,11 @@ interface TileLabelRegistry {
     val isFrozen: Boolean
 
     /**
-     * 註冊一個 asset key 對應的牌面角落標籤。
+     * 登記完整描述；凍結後或身分重複時拒絕，不提前呼叫來源。
      *
-     * @param assetKey 牌資產 key。
-     * @param label 牌面角落標籤資料。
-     * @throws IllegalStateException 當 registry 已凍結時拋出。
-     * @throws IllegalArgumentException 當 [assetKey] 已存在對應映射時拋出。
+     * @param definition 集中保存登記身分與內容的描述。
      */
-    fun register(assetKey: String, label: TileLabel)
+    fun register(definition: TileLabelDefinition)
 
     /** 凍結 registry；後續呼叫 [register] 將失敗。 */
     fun freeze()

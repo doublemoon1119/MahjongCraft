@@ -20,11 +20,11 @@ class MahjongAiStrategyRegistryImplTest {
     @Test
     fun `test resolve returns strategy registered for key`() {
         val strategy = RandomAiStrategy(extensionActionRegistry)
-        val registry = MahjongAiStrategyRegistryImpl(defaultKey = "default").apply {
-            register("custom") { strategy }
+        val registry = MahjongAiStrategyRegistryImpl(defaultKey = "test:default").apply {
+            register(MahjongAiStrategyDefinition("test:custom") { strategy })
         }
 
-        assertSame(strategy, registry.resolve("custom"))
+        assertSame(strategy, registry.resolve("test:custom"))
     }
 
     /**
@@ -33,8 +33,8 @@ class MahjongAiStrategyRegistryImplTest {
     @Test
     fun `test resolve with null key falls back to default`() {
         val defaultStrategy = RandomAiStrategy(extensionActionRegistry)
-        val registry = MahjongAiStrategyRegistryImpl(defaultKey = "default").apply {
-            register("default") { defaultStrategy }
+        val registry = MahjongAiStrategyRegistryImpl(defaultKey = "test:default").apply {
+            register(MahjongAiStrategyDefinition("test:default") { defaultStrategy })
         }
 
         assertSame(defaultStrategy, registry.resolve(null))
@@ -47,8 +47,8 @@ class MahjongAiStrategyRegistryImplTest {
     @Test
     fun `test resolve with unknown key falls back to default`() {
         val defaultStrategy = RandomAiStrategy(extensionActionRegistry)
-        val registry = MahjongAiStrategyRegistryImpl(defaultKey = "default").apply {
-            register("default") { defaultStrategy }
+        val registry = MahjongAiStrategyRegistryImpl(defaultKey = "test:default").apply {
+            register(MahjongAiStrategyDefinition("test:default") { defaultStrategy })
         }
 
         assertSame(defaultStrategy, registry.resolve("unknown"))
@@ -57,36 +57,36 @@ class MahjongAiStrategyRegistryImplTest {
     /** 驗證 [MahjongAiStrategyRegistryImpl.getAllStrategyKeys] 依註冊順序列出所有 key。 */
     @Test
     fun `test getAllStrategyKeys lists keys in registration order`() {
-        val registry = MahjongAiStrategyRegistryImpl(defaultKey = "b").apply {
-            register("b") { RandomAiStrategy(extensionActionRegistry) }
-            register("a") { RandomAiStrategy(extensionActionRegistry) }
+        val registry = MahjongAiStrategyRegistryImpl(defaultKey = "test:b").apply {
+            register(MahjongAiStrategyDefinition("test:b") { RandomAiStrategy(extensionActionRegistry) })
+            register(MahjongAiStrategyDefinition("test:a") { RandomAiStrategy(extensionActionRegistry) })
         }
 
-        assertEquals(listOf("b", "a"), registry.getAllStrategyKeys().toList())
+        assertEquals(listOf("test:b", "test:a"), registry.getAllStrategyKeys().toList())
     }
 
     /** 驗證同一個 key 不能註冊兩次，原本註冊的策略仍可解析。 */
     @Test
     fun `test register rejects a duplicate key`() {
         val original = RandomAiStrategy(extensionActionRegistry)
-        val registry = MahjongAiStrategyRegistryImpl(defaultKey = "default").apply {
-            register("custom") { original }
+        val registry = MahjongAiStrategyRegistryImpl(defaultKey = "test:default").apply {
+            register(MahjongAiStrategyDefinition("test:custom") { original })
         }
 
-        assertFailsWith<IllegalArgumentException> { registry.register("custom") { RandomAiStrategy(extensionActionRegistry) } }
-        assertSame(original, registry.resolve("custom"))
+        assertFailsWith<IllegalArgumentException> { registry.register(MahjongAiStrategyDefinition("test:custom") { RandomAiStrategy(extensionActionRegistry) }) }
+        assertSame(original, registry.resolve("test:custom"))
     }
 
     /** 驗證凍結後不能再註冊策略，已註冊的策略仍可解析。 */
     @Test
     fun `test register after freeze throws`() {
         val strategy = RandomAiStrategy(extensionActionRegistry)
-        val registry = MahjongAiStrategyRegistryImpl(defaultKey = "default").apply {
-            register("default") { strategy }
+        val registry = MahjongAiStrategyRegistryImpl(defaultKey = "test:default").apply {
+            register(MahjongAiStrategyDefinition("test:default") { strategy })
             freeze()
         }
 
-        assertFailsWith<IllegalStateException> { registry.register("late") { strategy } }
-        assertSame(strategy, registry.resolve("default"))
+        assertFailsWith<IllegalStateException> { registry.register(MahjongAiStrategyDefinition("test:late") { strategy }) }
+        assertSame(strategy, registry.resolve("test:default"))
     }
 }

@@ -2,9 +2,11 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.di
 
 import com.doublemoon1119.mahjongcraft.ai.BuiltInAiStrategyKeys
 import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
+import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyDefinition
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.ai.expectation.NeutralOpponentModel
+import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelDefinition
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.ai.expectation.ReadingDepth
 import com.doublemoon1119.mahjongcraft.ai.riichi.RiichiOpponentModel
@@ -87,8 +89,10 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.OrphanedTabl
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.RegisteredSeatProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
@@ -183,7 +187,11 @@ class FabricApplicationModuleTest {
              * @param registry AI 策略登記表。
              */
             override fun registerAiStrategies(registry: MahjongAiStrategyRegistry) {
-                registry.register("example:custom_strategy") { RandomAiStrategy(koin.get<ExtensionGameActionAiRegistry>()) }
+                registry.register(
+                    MahjongAiStrategyDefinition("example:custom_strategy") {
+                        RandomAiStrategy(koin.get<ExtensionGameActionAiRegistry>())
+                    },
+                )
             }
 
             /**
@@ -192,7 +200,7 @@ class FabricApplicationModuleTest {
              * @param registry AI 策略顯示名稱登記表。
              */
             override fun registerAiStrategyDisplayNames(registry: AiStrategyDisplayNameRegistry) {
-                registry.register("example:custom_strategy", "example.ai.custom_strategy")
+                registry.register(AiStrategyDisplayNameDefinition("example:custom_strategy", "example.ai.custom_strategy"))
             }
         }
 
@@ -216,7 +224,11 @@ class FabricApplicationModuleTest {
         assertTrue(extensionSource.categories.any { it.id == "mahjongcraft:ai_strategy" && "example:custom_strategy" in it.registrationIds })
         assertTrue(extensionSource.categories.any { it.id == "mahjongcraft:ai_strategy_display_name" && "example:custom_strategy" in it.registrationIds })
         assertFailsWith<IllegalStateException> {
-            strategyRegistry.register("example:late") { RandomAiStrategy(koin.get<ExtensionGameActionAiRegistry>()) }
+            strategyRegistry.register(
+                MahjongAiStrategyDefinition("example:late") {
+                    RandomAiStrategy(koin.get<ExtensionGameActionAiRegistry>())
+                },
+            )
         }
     }
 
@@ -315,7 +327,7 @@ class FabricApplicationModuleTest {
             seatProviders.entries().single { it.id == BuiltInFabricSeatProviderIds.MAHJONG_STOOL }.provider,
         )
         assertFailsWith<IllegalStateException> {
-            seatProviders.register("example:late", koin.get<MahjongStoolSeatProvider>())
+            seatProviders.register(RegisteredSeatProvider("example:late", koin.get<MahjongStoolSeatProvider>()))
         }
         assertSame(moduleRegistry, koin.get<MahjongModuleRegistry>())
         assertSame(networkRegistries, koin.get<NetworkDtoRegistries>())
@@ -359,9 +371,13 @@ class FabricApplicationModuleTest {
             listOf(BuiltInAiStrategyKeys.BEGINNER, BuiltInAiStrategyKeys.INTERMEDIATE, BuiltInAiStrategyKeys.ADVANCED, RandomAiStrategy.KEY),
             aiStrategyRegistry.getAllStrategyKeys().toList(),
         )
-        assertFailsWith<IllegalStateException> { aiStrategyRegistry.register("example:late") { aiStrategyRegistry.resolve(null) } }
+        assertFailsWith<IllegalStateException> {
+            aiStrategyRegistry.register(MahjongAiStrategyDefinition("example:late") { aiStrategyRegistry.resolve(null) })
+        }
         assertIs<RiichiOpponentModel>(opponentModelRegistry.create(moduleRegistry.getModule(RiichiRuleConfig()), ReadingDepth.BASIC))
-        assertFailsWith<IllegalStateException> { opponentModelRegistry.register("example:late") { _, depth -> NeutralOpponentModel(depth) } }
+        assertFailsWith<IllegalStateException> {
+            opponentModelRegistry.register(OpponentModelDefinition("example:late") { _, depth -> NeutralOpponentModel(depth) })
+        }
         assertTrue(gameActionCommandFactoryRegistry.isRegistered(RiichiGameAction.Riichi::class))
         assertTrue(gameCommandRegistry.isRegistered(RiichiGameCommand::class))
         assertEquals(

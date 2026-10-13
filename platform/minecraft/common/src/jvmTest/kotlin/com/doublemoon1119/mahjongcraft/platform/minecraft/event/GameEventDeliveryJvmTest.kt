@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraf
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
@@ -32,7 +33,7 @@ class GameEventDeliveryJvmTest {
         val firstGame = game()
         val secondGame = game()
         val registry = MahjongModuleRegistryImpl().apply {
-            register(RiichiRuleConfig::class, RULE_MODULE_ID) { config, id -> RiichiRuleModule(id, config) }
+            register(MahjongModuleDefinition(RiichiRuleConfig::class, RULE_MODULE_ID) { config, id -> RiichiRuleModule(id, config) })
         }
         val endpoint = MahjongCraftEvent.create<MatchStartedListener>()
         val received = Collections.synchronizedList(mutableListOf<Uuid>())
@@ -134,8 +135,11 @@ class GameEventDeliveryJvmTest {
 
     /** 不記錄診斷的回報器。 */
     private class NoopReporter : GameEventDeliveryReporter {
+
         override fun missingLocation(matchId: Uuid, venueId: Uuid) = Unit
+
         override fun listenerFailed(event: MatchEvent, cause: Throwable) = Unit
+
         override fun schedulingFailed(cause: Throwable) = Unit
     }
 

@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.bundled
 
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
+import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.DtoDefinition
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan.TaiwanDiscardPileDto
@@ -9,8 +10,10 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan.TaiwanRuleCo
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan.TaiwanScoreConfigDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan.toTaiwanDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceDtoDefinition
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toPersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.HistoryReplayProjectionDefinition
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.HistoryReplayProjectionRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.BuiltInDiscardPilePersistenceKeys
@@ -20,6 +23,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.TaiwanRuleCo
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.toPersistenceDto
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanGameLength
@@ -40,7 +44,7 @@ object BundledTaiwanExtension : MahjongExtension {
     override val id: String = MahjongCraftMetadata.id("taiwan")
 
     override fun registerRuleModules(registry: MahjongModuleRegistry) {
-        registry.register(TaiwanRuleConfig::class, BuiltInRuleModuleIds.TAIWAN) { config, id -> TaiwanRuleModule(id, config) }
+        registry.register(MahjongModuleDefinition(TaiwanRuleConfig::class, BuiltInRuleModuleIds.TAIWAN) { config, id -> TaiwanRuleModule(id, config) })
     }
 
     override fun registerTileTypes(registry: TileTypeRegistry) {
@@ -49,76 +53,94 @@ object BundledTaiwanExtension : MahjongExtension {
 
     override fun registerNetworkDtos(registries: NetworkDtoRegistries) {
         registries.ruleConfig.register(
-            TaiwanRuleConfig::class,
-            TaiwanRuleConfigDto::class,
-            TaiwanRuleConfigDto.serializer(),
-            { it.toTaiwanDto(registries) },
-            { it.toDomain(registries) },
+            DtoDefinition(
+                TaiwanRuleConfig::class,
+                TaiwanRuleConfigDto::class,
+                TaiwanRuleConfigDto.serializer(),
+                { it.toTaiwanDto(registries) },
+                { it.toDomain(registries) },
+            ),
         )
         registries.scoreConfig.register(
-            TaiwanScoreConfig::class,
-            TaiwanScoreConfigDto::class,
-            TaiwanScoreConfigDto.serializer(),
-            TaiwanScoreConfig::toTaiwanDto,
-            TaiwanScoreConfigDto::toDomain,
+            DtoDefinition(
+                TaiwanScoreConfig::class,
+                TaiwanScoreConfigDto::class,
+                TaiwanScoreConfigDto.serializer(),
+                TaiwanScoreConfig::toTaiwanDto,
+                TaiwanScoreConfigDto::toDomain,
+            ),
         )
         registries.gameLength.register(
-            TaiwanGameLength.OneGame::class,
-            TaiwanGameLengthDto.OneGame::class,
-            TaiwanGameLengthDto.OneGame.serializer(),
-            { TaiwanGameLengthDto.OneGame },
-            { TaiwanGameLength.OneGame },
+            DtoDefinition(
+                TaiwanGameLength.OneGame::class,
+                TaiwanGameLengthDto.OneGame::class,
+                TaiwanGameLengthDto.OneGame.serializer(),
+                { TaiwanGameLengthDto.OneGame },
+                { TaiwanGameLength.OneGame },
+            ),
         )
         registries.gameLength.register(
-            TaiwanGameLength.East::class,
-            TaiwanGameLengthDto.East::class,
-            TaiwanGameLengthDto.East.serializer(),
-            { TaiwanGameLengthDto.East },
-            { TaiwanGameLength.East },
+            DtoDefinition(
+                TaiwanGameLength.East::class,
+                TaiwanGameLengthDto.East::class,
+                TaiwanGameLengthDto.East.serializer(),
+                { TaiwanGameLengthDto.East },
+                { TaiwanGameLength.East },
+            ),
         )
         registries.gameLength.register(
-            TaiwanGameLength.TwoWinds::class,
-            TaiwanGameLengthDto.TwoWinds::class,
-            TaiwanGameLengthDto.TwoWinds.serializer(),
-            { TaiwanGameLengthDto.TwoWinds },
-            { TaiwanGameLength.TwoWinds },
+            DtoDefinition(
+                TaiwanGameLength.TwoWinds::class,
+                TaiwanGameLengthDto.TwoWinds::class,
+                TaiwanGameLengthDto.TwoWinds.serializer(),
+                { TaiwanGameLengthDto.TwoWinds },
+                { TaiwanGameLength.TwoWinds },
+            ),
         )
         registries.gameLength.register(
-            TaiwanGameLength.FourWinds::class,
-            TaiwanGameLengthDto.FourWinds::class,
-            TaiwanGameLengthDto.FourWinds.serializer(),
-            { TaiwanGameLengthDto.FourWinds },
-            { TaiwanGameLength.FourWinds },
+            DtoDefinition(
+                TaiwanGameLength.FourWinds::class,
+                TaiwanGameLengthDto.FourWinds::class,
+                TaiwanGameLengthDto.FourWinds.serializer(),
+                { TaiwanGameLengthDto.FourWinds },
+                { TaiwanGameLength.FourWinds },
+            ),
         )
         registries.discardPile.register(
-            TaiwanDiscardPile::class,
-            TaiwanDiscardPileDto::class,
-            TaiwanDiscardPileDto.serializer(),
-            TaiwanDiscardPile::toTaiwanDto,
-            TaiwanDiscardPileDto::toDomain,
+            DtoDefinition(
+                TaiwanDiscardPile::class,
+                TaiwanDiscardPileDto::class,
+                TaiwanDiscardPileDto.serializer(),
+                TaiwanDiscardPile::toTaiwanDto,
+                TaiwanDiscardPileDto::toDomain,
+            ),
         )
     }
 
     override fun registerPersistenceDtos(registries: PersistenceRegistries) {
         registries.ruleConfigs.register(
-            typeKey = "mahjongcraft:taiwan/rule_config",
-            domainClass = TaiwanRuleConfig::class,
-            serializer = TaiwanRuleConfigPersistenceDto.serializer(),
-            toDto = TaiwanRuleConfig::toPersistenceDto,
-            toDomain = TaiwanRuleConfigPersistenceDto::toDomain,
-            compactInReplay = true,
+            PersistenceDtoDefinition(
+                typeKey = "mahjongcraft:taiwan/rule_config",
+                domainClass = TaiwanRuleConfig::class,
+                serializer = TaiwanRuleConfigPersistenceDto.serializer(),
+                toDto = TaiwanRuleConfig::toPersistenceDto,
+                toDomain = TaiwanRuleConfigPersistenceDto::toDomain,
+                compactInReplay = true,
+            ),
         )
         registries.discardPiles.register(
-            typeKey = BuiltInDiscardPilePersistenceKeys.TAIWAN,
-            domainClass = TaiwanDiscardPile::class,
-            serializer = TaiwanDiscardPilePersistenceDto.serializer(),
-            toDto = TaiwanDiscardPile::toPersistenceDto,
-            toDomain = TaiwanDiscardPilePersistenceDto::toDomain,
-            compactInReplay = true,
+            PersistenceDtoDefinition(
+                typeKey = BuiltInDiscardPilePersistenceKeys.TAIWAN,
+                domainClass = TaiwanDiscardPile::class,
+                serializer = TaiwanDiscardPilePersistenceDto.serializer(),
+                toDto = TaiwanDiscardPile::toPersistenceDto,
+                toDomain = TaiwanDiscardPilePersistenceDto::toDomain,
+                compactInReplay = true,
+            ),
         )
     }
 
     override fun registerHistoryReplayProjections(registry: HistoryReplayProjectionRegistry) {
-        registry.registerDiscard(BuiltInDiscardPilePersistenceKeys.TAIWAN, BuiltinHistoryReplayDiscardCodecs.taiwan)
+        registry.register(HistoryReplayProjectionDefinition.Discard(BuiltInDiscardPilePersistenceKeys.TAIWAN, BuiltinHistoryReplayDiscardCodecs.taiwan))
     }
 }

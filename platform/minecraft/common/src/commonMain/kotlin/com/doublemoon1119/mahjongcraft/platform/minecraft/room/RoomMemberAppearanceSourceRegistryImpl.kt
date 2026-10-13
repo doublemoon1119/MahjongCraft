@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.room
 
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import org.koin.core.annotation.Single
+import kotlin.coroutines.cancellation.CancellationException
 
 /** [RoomMemberAppearanceSourceRegistry] 的記憶體實作。 */
 @Single(binds = [RoomMemberAppearanceSourceRegistry::class])
@@ -22,7 +23,10 @@ class RoomMemberAppearanceSourceRegistryImpl : RoomMemberAppearanceSourceRegistr
     override var isFrozen: Boolean = false
         private set
 
-    override fun register(providerId: String, priority: Int, provider: RoomMemberAppearanceSourceProvider) {
+    override fun register(definition: RoomMemberAppearanceSourceDefinition) {
+        val providerId = definition.providerId
+        val priority = definition.priority
+        val provider = definition.provider
         check(!isFrozen) { "Room member appearance registry is frozen" }
         NamespacedId.requireValid(providerId) { "Room appearance provider ID must be namespaced: $providerId" }
         require(entries.putIfAbsent(providerId, Entry(providerId, priority, provider)) == null) {
@@ -35,7 +39,9 @@ class RoomMemberAppearanceSourceRegistryImpl : RoomMemberAppearanceSourceRegistr
         return candidates.firstNotNullOfOrNull { entry ->
             try {
                 entry.provider.resolve(context)
-            } catch (cause: Throwable) {
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (cause: Exception) {
                 throw RoomMemberAppearanceSourceProviderException(entry.id, cause)
             }
         }

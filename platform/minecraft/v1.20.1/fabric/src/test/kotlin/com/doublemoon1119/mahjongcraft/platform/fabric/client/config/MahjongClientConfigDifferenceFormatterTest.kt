@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControl
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.AutomaticControlDisplayResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAutomaticControlDraftState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplay
+import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistryImpl
 import net.minecraft.text.Text
 import net.minecraft.text.TranslatableTextContent
@@ -57,7 +58,7 @@ class MahjongClientConfigDifferenceFormatterTest {
     @Test
     fun `remote-only changes include registered and unknown control names`() {
         val registry = AutomaticControlDisplayRegistryImpl().apply {
-            register("example:auto", AutomaticControlDisplay("example.auto", "example.auto.description", 1))
+            register(AutomaticControlDisplayDefinition("example:auto", AutomaticControlDisplay("example.auto", "example.auto.description", 1)))
             freeze()
         }
         val baseline = AutomaticControlSnapshotDto(

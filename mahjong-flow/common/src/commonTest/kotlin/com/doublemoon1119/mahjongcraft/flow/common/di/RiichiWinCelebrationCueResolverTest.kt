@@ -15,7 +15,7 @@ class RiichiWinCelebrationCueResolverTest {
 
     /** 自然役滿會解析成對應的展示理由。 */
     @Test
-    fun resolvesNaturalYakuman() {
+    fun `resolves natural yakuman`() {
         val result = resultOf(YakuResult.yakuman(YakuType.KokushiMusou))
 
         assertEquals(listOf("mahjongcraft:riichi/yakuman/kokushi_musou"), registry.resolve(RIICHI_RULE_MODULE_ID, result))
@@ -23,7 +23,7 @@ class RiichiWinCelebrationCueResolverTest {
 
     /** 累計役滿沒有自然役滿役種，因此沒有展示理由。 */
     @Test
-    fun excludesKazoeYakuman() {
+    fun `excludes kazoe yakuman`() {
         val result = RiichiHandValueResult(
             yakuResults = listOf(YakuResult.han(YakuType.Riichi, 13)),
             totalHan = -1,
@@ -36,7 +36,7 @@ class RiichiWinCelebrationCueResolverTest {
 
     /** 多個役滿全部列出：倍數高者在前，同倍數依役種定義順序。 */
     @Test
-    fun listsAllYakumanByMultiplierThenDefinitionOrder() {
+    fun `lists all yakuman by multiplier then definition order`() {
         val result = resultOf(
             YakuResult.yakuman(YakuType.Daisuushii),
             YakuResult.yakuman(YakuType.Daisangen),
@@ -51,7 +51,7 @@ class RiichiWinCelebrationCueResolverTest {
 
     /** 古役役滿和一般役滿一樣列出展示理由。 */
     @Test
-    fun listsLocalYakuman() {
+    fun `lists local yakuman`() {
         val result = resultOf(YakuResult.yakuman(YakuType.Renhou), YakuResult.doubleYakuman(YakuType.Daichisei), YakuResult.yakuman(YakuType.IshinoUeSannen))
 
         assertEquals(
@@ -62,7 +62,7 @@ class RiichiWinCelebrationCueResolverTest {
 
     /** 役種名稱中的數字前面也加底線。 */
     @Test
-    fun separatesDigitsInYakuNames() {
+    fun `separates digits in yaku names`() {
         val result = resultOf(YakuResult.doubleYakuman(YakuType.KokushiMusou13), YakuResult.doubleYakuman(YakuType.ChurenPoto9))
 
         assertEquals(
@@ -73,7 +73,7 @@ class RiichiWinCelebrationCueResolverTest {
 
     /** 沒有登記解析器的規則沒有展示理由。 */
     @Test
-    fun unregisteredRuleHasNoCues() {
+    fun `unregistered rule has no cues`() {
         assertTrue(registry.resolve("custom:rule", resultOf(YakuResult.yakuman(YakuType.KokushiMusou))).isEmpty())
     }
 

@@ -71,7 +71,7 @@ class ExtensionGameCommandExecutorTest {
     @Test
     fun `executing before freeze is rejected`() = runTest {
         val registry = ExtensionGameCommandExecutorRegistry().apply {
-            register(TestCommand::class) { _ -> successHandler() }
+            register(ExtensionGameCommandHandlerDefinition(TestCommand::class) { _ -> successHandler() })
         }
 
         assertFailsWith<IllegalStateException> {
@@ -86,10 +86,12 @@ class ExtensionGameCommandExecutorTest {
      * @return 登記測試命令的凍結註冊表。
      */
     private fun recordingRegistry(receivedContexts: MutableList<ExtensionGameCommandContext>) = ExtensionGameCommandExecutorRegistry().apply {
-        register(TestCommand::class) { context ->
-            receivedContexts += context
-            successHandler()
-        }
+        register(
+            ExtensionGameCommandHandlerDefinition(TestCommand::class) { context ->
+                receivedContexts += context
+                successHandler()
+            },
+        )
         freeze()
     }
 

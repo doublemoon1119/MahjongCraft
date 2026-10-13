@@ -12,18 +12,23 @@ class RoundInfoLineDisplayRegistryImpl : RoundInfoLineDisplayRegistry {
     /** 規則模組 ID 對應的局況顯示行 provider。 */
     private val providers = mutableMapOf<String, RoundInfoLineProvider>()
 
-    override val registrationKeys: Set<String> get() = displays.keys + providers.keys
+    override val registrationKeys: Set<String>
+        get() = displays.keys.mapTo(mutableSetOf()) { "line:$it" } + providers.keys.map { "provider:$it" }
 
     override var isFrozen: Boolean = false
         private set
 
-    override fun register(key: String, display: RoundInfoLineDisplay) {
+    override fun register(definition: RoundInfoLineDisplayDefinition) {
+        val key = definition.key
+        val display = definition.display
         check(!isFrozen) { "Round info line display registry is frozen" }
         require(key.isNotBlank()) { "Round info line key must not be blank" }
         require(displays.putIfAbsent(key, display) == null) { "Duplicate round info line display: $key" }
     }
 
-    override fun register(ruleModuleId: String, provider: RoundInfoLineProvider) {
+    override fun register(definition: RoundInfoLineProviderDefinition) {
+        val ruleModuleId = definition.ruleModuleId
+        val provider = definition.provider
         check(!isFrozen) { "Round info line display registry is frozen" }
         require(ruleModuleId.isNotBlank()) { "Round info provider rule module ID must not be blank" }
         require(providers.putIfAbsent(ruleModuleId, provider) == null) {

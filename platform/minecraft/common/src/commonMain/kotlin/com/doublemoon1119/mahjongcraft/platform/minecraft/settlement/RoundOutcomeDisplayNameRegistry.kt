@@ -9,15 +9,11 @@ interface RoundOutcomeDisplayNameRegistry {
     val isFrozen: Boolean
 
     /**
-     * 登記結果 ID 的本地化名稱；重複 ID 會失敗。
+     * 登記完整描述；凍結後或身分重複時拒絕，不提前呼叫來源。
      *
-     * @param outcomeId 完整特殊結果 ID。
-     * @param translationKey Minecraft translation key。
+     * @param definition 集中保存登記身分與內容的描述。
      */
-    fun register(
-        outcomeId: String,
-        translationKey: String,
-    )
+    fun register(definition: RoundOutcomeDisplayNameDefinition)
 
     /**
      * 查詢特殊結果的本地化名稱。

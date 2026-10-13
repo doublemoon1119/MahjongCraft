@@ -11,11 +11,11 @@ class PublicPlayerIndicatorDisplayRegistryTest {
     fun `registers and freezes displays`() {
         val registry = PublicPlayerIndicatorDisplayRegistryImpl()
         val display = PublicPlayerIndicatorDisplay("test.indicator", 0x123456)
-        registry.register("test:indicator", display)
+        registry.register(PublicPlayerIndicatorDisplayDefinition("test:indicator", display))
         assertEquals(display, registry.find("test:indicator"))
         registry.freeze()
         assertFailsWith<IllegalStateException> {
-            registry.register("test:late", display)
+            registry.register(PublicPlayerIndicatorDisplayDefinition("test:late", display))
         }
     }
 
@@ -24,8 +24,8 @@ class PublicPlayerIndicatorDisplayRegistryTest {
     fun `rejects invalid IDs and duplicate displays`() {
         val registry = PublicPlayerIndicatorDisplayRegistryImpl()
         val display = PublicPlayerIndicatorDisplay("test.indicator")
-        assertFailsWith<IllegalArgumentException> { registry.register("indicator", display) }
-        registry.register("test:indicator", display)
-        assertFailsWith<IllegalArgumentException> { registry.register("test:indicator", display) }
+        assertFailsWith<IllegalArgumentException> { registry.register(PublicPlayerIndicatorDisplayDefinition("indicator", display)) }
+        registry.register(PublicPlayerIndicatorDisplayDefinition("test:indicator", display))
+        assertFailsWith<IllegalArgumentException> { registry.register(PublicPlayerIndicatorDisplayDefinition("test:indicator", display)) }
     }
 }

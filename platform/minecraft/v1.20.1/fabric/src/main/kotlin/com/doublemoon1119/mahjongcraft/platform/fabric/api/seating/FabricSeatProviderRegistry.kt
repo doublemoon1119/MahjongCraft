@@ -1,7 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.api.seating
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.RegisteredSeatProvider
-import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatProvider
 import net.minecraft.entity.Entity
 import net.minecraft.server.world.ServerWorld
 
@@ -16,14 +15,10 @@ interface FabricSeatProviderRegistry {
     /**
      * 登記一個座位 provider。
      *
-     * @param id provider 的命名空間識別碼。
-     * @param provider 解析 Fabric 世界與實體座位的 provider。
-     * @param priority provider 的解析優先順序；數值較大者優先。
+     * @param definition 包含命名空間識別碼、解析能力與優先序的完整描述。
      */
     fun register(
-        id: String,
-        provider: SeatProvider<ServerWorld, Entity>,
-        priority: Int = 0,
+        definition: RegisteredSeatProvider<ServerWorld, Entity>,
     )
 
     /** 凍結 registry，禁止後續登記。 */

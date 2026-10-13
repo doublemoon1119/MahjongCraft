@@ -1,14 +1,17 @@
 package com.doublemoon1119.mahjongcraft.extension
 
 import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
+import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyDefinition
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.ai.expectation.NeutralOpponentModel
+import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelDefinition
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.bundled.BundledRiichiExtension
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistryImpl
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.HistoryReplayProjectionDefinition
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.HistoryReplayProjectionRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
@@ -38,15 +41,17 @@ class CoreExtensionRegistriesTest {
         assertTrue(registries.tileTypeRegistry.isFrozen)
         assertTrue(registries.winSettlementDetailResolverRegistry.isFrozen)
         assertFailsWith<IllegalStateException> {
-            registries.aiStrategyRegistry.register("late") { RandomAiStrategy(registries.gameActionAiRegistry) }
+            registries.aiStrategyRegistry.register(MahjongAiStrategyDefinition("example:late") { RandomAiStrategy(registries.gameActionAiRegistry) })
         }
         assertFailsWith<IllegalStateException> {
-            registries.opponentModelRegistry.register("example:late") { _, depth -> NeutralOpponentModel(depth) }
+            registries.opponentModelRegistry.register(OpponentModelDefinition("example:late") { _, depth -> NeutralOpponentModel(depth) })
         }
         assertFailsWith<IllegalStateException> {
-            registries.historyReplayProjectionRegistry.registerAction("example:late") { _, _ ->
-                HistoryReplayFact.Opaque("example:late")
-            }
+            registries.historyReplayProjectionRegistry.register(
+                HistoryReplayProjectionDefinition.Action("example:late") { _, _ ->
+                    HistoryReplayFact.Opaque("example:late")
+                },
+            )
         }
     }
 
@@ -74,7 +79,7 @@ class CoreExtensionRegistriesTest {
     fun `registration snapshot tracks ai strategies`() {
         val registries = registries()
         val before = registries.registrationSnapshot()
-        registries.aiStrategyRegistry.register(RandomAiStrategy.KEY) { RandomAiStrategy(registries.gameActionAiRegistry) }
+        registries.aiStrategyRegistry.register(MahjongAiStrategyDefinition(RandomAiStrategy.KEY) { RandomAiStrategy(registries.gameActionAiRegistry) })
 
         assertEquals(
             listOf(ExtensionRegistrationCategory("mahjongcraft:ai_strategy", "AI Strategy", listOf(RandomAiStrategy.KEY))),
@@ -87,9 +92,11 @@ class CoreExtensionRegistriesTest {
     fun `registration snapshot tracks history replay projections`() {
         val registries = registries()
         val before = registries.registrationSnapshot()
-        registries.historyReplayProjectionRegistry.registerAction("example:action") { _, _ ->
-            HistoryReplayFact.Opaque("example:action")
-        }
+        registries.historyReplayProjectionRegistry.register(
+            HistoryReplayProjectionDefinition.Action("example:action") { _, _ ->
+                HistoryReplayFact.Opaque("example:action")
+            },
+        )
 
         assertEquals(
             listOf(

@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.bundled
 
 import com.doublemoon1119.mahjongcraft.ai.BuiltInAiStrategyKeys
 import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
+import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyDefinition
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.ai.expectation.ExpectedValueAiStrategy
@@ -44,15 +45,17 @@ class BuiltInMahjongExtension(
             BuiltInAiStrategyKeys.INTERMEDIATE to InformationLevel.INTERMEDIATE,
             BuiltInAiStrategyKeys.ADVANCED to InformationLevel.ADVANCED,
         ).forEach { (key, level) ->
-            registry.register(key) {
-                ExpectedValueAiStrategy(
-                    level = level,
-                    moduleRegistry = moduleRegistry,
-                    extensionActionRegistry = extensionActionRegistry,
-                    opponentModels = opponentModelRegistry,
-                )
-            }
+            registry.register(
+                MahjongAiStrategyDefinition(key) {
+                    ExpectedValueAiStrategy(
+                        level = level,
+                        moduleRegistry = moduleRegistry,
+                        extensionActionRegistry = extensionActionRegistry,
+                        opponentModels = opponentModelRegistry,
+                    )
+                },
+            )
         }
-        registry.register(RandomAiStrategy.KEY) { RandomAiStrategy(extensionActionRegistry = extensionActionRegistry) }
+        registry.register(MahjongAiStrategyDefinition(RandomAiStrategy.KEY) { RandomAiStrategy(extensionActionRegistry = extensionActionRegistry) })
     }
 }

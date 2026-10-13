@@ -30,6 +30,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.model.SuitDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.DtoDefinition
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.MahjongRuleConfigDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
@@ -378,11 +379,13 @@ class DtoRoundTripTest {
     @Test
     fun `test a third-party MahjongRuleConfig can register itself and round-trip without touching this module`() {
         registries.ruleConfig.register(
-            ThirdPartyRuleConfig::class,
-            ThirdPartyRuleConfigDto::class,
-            ThirdPartyRuleConfigDto.serializer(),
-            { it.toThirdPartyDto() },
-            { it.toThirdPartyDomain() },
+            DtoDefinition(
+                ThirdPartyRuleConfig::class,
+                ThirdPartyRuleConfigDto::class,
+                ThirdPartyRuleConfigDto.serializer(),
+                { it.toThirdPartyDto() },
+                { it.toThirdPartyDomain() },
+            ),
         )
 
         val thirdPartyJson = Json { serializersModule = buildMahjongDtoSerializersModule(registries) }
@@ -400,6 +403,16 @@ class DtoRoundTripTest {
 /**
  * 假裝是第三方規則模組的最小 [MahjongRuleConfig] 實作，只用於驗證 [NetworkDtoRegistries] 真的
  * 對外開放，不是名義上開放、實際上寫死日麻/台麻兩種。
+ *
+ * @property initialHandSize 每位玩家的起始手牌張數。
+ * @property deadTileCount 王牌區的牌張數。
+ * @property scoreConfig 測試用分數配置。
+ * @property gameLength 測試用對局長度。
+ * @property minimumWinConstraint 和牌所需的最低限制值。
+ * @property minPlayers 允許的最少玩家數。
+ * @property maxPlayers 允許的最多玩家數。
+ * @property multiRonPolicy 多家同時和牌時的處理方式。
+ * @property revealsClosedKanTiles 是否公開暗槓相關牌張。
  */
 private data class ThirdPartyRuleConfig(
     override val initialHandSize: Int = 13,
@@ -418,6 +431,15 @@ private data class ThirdPartyRuleConfig(
     override val revealsClosedKanTiles: Boolean = true,
 ) : MahjongRuleConfig
 
+/**
+ * 第三方規則配置的最小網路 DTO，只保留 round-trip 測試需要的配置欄位。
+ *
+ * @property initialHandSize 每位玩家的起始手牌張數。
+ * @property deadTileCount 王牌區的牌張數。
+ * @property minimumWinConstraint 和牌所需的最低限制值。
+ * @property minPlayers 允許的最少玩家數。
+ * @property maxPlayers 允許的最多玩家數。
+ */
 @Serializable
 private data class ThirdPartyRuleConfigDto(
     val initialHandSize: Int,
@@ -427,6 +449,12 @@ private data class ThirdPartyRuleConfigDto(
     val maxPlayers: Int,
 ) : MahjongRuleConfigDto
 
+/**
+ * 將第三方規則配置轉為測試用網路 DTO。
+ *
+ * @receiver 要轉換的第三方規則配置。
+ * @return 對應的測試用網路 DTO。
+ */
 private fun ThirdPartyRuleConfig.toThirdPartyDto() = ThirdPartyRuleConfigDto(
     initialHandSize = initialHandSize,
     deadTileCount = deadTileCount,
@@ -435,6 +463,12 @@ private fun ThirdPartyRuleConfig.toThirdPartyDto() = ThirdPartyRuleConfigDto(
     maxPlayers = maxPlayers,
 )
 
+/**
+ * 將測試用網路 DTO 還原為第三方規則配置。
+ *
+ * @receiver 要還原的測試用網路 DTO。
+ * @return 對應的第三方規則配置。
+ */
 private fun ThirdPartyRuleConfigDto.toThirdPartyDomain() = ThirdPartyRuleConfig(
     initialHandSize = initialHandSize,
     deadTileCount = deadTileCount,

@@ -15,11 +15,15 @@ import com.doublemoon1119.mahjongcraft.logic.table.BuiltInMatchEndReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabulary
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyDefaultDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.MinecraftKanActionTokenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawSettlementStatusLabels
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawSettlementStatusLabelsDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcomeDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcomeDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import kotlinx.serialization.json.Json
@@ -153,7 +157,7 @@ class HistoryRoundEventPresentationTest {
             MinecraftKanActionTokenKeys.ADDED to BuiltInGameActionIds.KAN_ADDED,
         )
         val vocabulary = GameActionVocabularyRegistryImpl().apply {
-            aliases.values.forEach { actionId -> registerDefault(actionId, GameActionVocabulary("test.$actionId")) }
+            aliases.values.forEach { actionId -> register(GameActionVocabularyDefaultDefinition(actionId, GameActionVocabulary("test.$actionId"))) }
         }
         val presenter = HistoryRoundEventPresenter(vocabulary, ExhaustiveDrawReasonDisplayNameRegistryImpl(), RoundOutcomeDisplayNameRegistryImpl())
 
@@ -312,7 +316,7 @@ class HistoryRoundEventPresentationTest {
     @Test
     fun `extension action resolves registered vocabulary`() {
         val vocabulary = GameActionVocabularyRegistryImpl().apply {
-            registerDefault("custom:spell", GameActionVocabulary("test.spell"))
+            register(GameActionVocabularyDefaultDefinition("custom:spell", GameActionVocabulary("test.spell")))
         }
         val presenter = HistoryRoundEventPresenter(vocabulary, ExhaustiveDrawReasonDisplayNameRegistryImpl(), RoundOutcomeDisplayNameRegistryImpl())
         val fact = presenter.present(
@@ -329,19 +333,21 @@ class HistoryRoundEventPresentationTest {
      */
     private fun presenter(): HistoryRoundEventPresenter {
         val vocabulary = GameActionVocabularyRegistryImpl().apply {
-            registerDefault(BuiltInGameActionIds.DISCARD, GameActionVocabulary("test.discard"))
+            register(GameActionVocabularyDefaultDefinition(BuiltInGameActionIds.DISCARD, GameActionVocabulary("test.discard")))
         }
         val reasons = ExhaustiveDrawReasonDisplayNameRegistryImpl().apply {
-            register("example:registered_draw", "test.registered_draw")
-            registerSettlementStatusLabels(
-                RiichiExhaustiveDrawReason.Normal.id,
-                ExhaustiveDrawSettlementStatusLabels(
-                    beneficiaryTranslationKey = MinecraftMessageKeys.EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_TENPAI,
-                    othersTranslationKey = MinecraftMessageKeys.EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_NOTEN,
+            register(ExhaustiveDrawReasonDisplayNameDefinition("example:registered_draw", "test.registered_draw"))
+            register(
+                ExhaustiveDrawSettlementStatusLabelsDefinition(
+                    RiichiExhaustiveDrawReason.Normal.id,
+                    ExhaustiveDrawSettlementStatusLabels(
+                        beneficiaryTranslationKey = MinecraftMessageKeys.EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_TENPAI,
+                        othersTranslationKey = MinecraftMessageKeys.EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_NOTEN,
+                    ),
                 ),
             )
         }
-        val outcomes = RoundOutcomeDisplayNameRegistryImpl().apply { register("example:special", "test.special") }
+        val outcomes = RoundOutcomeDisplayNameRegistryImpl().apply { register(RoundOutcomeDisplayNameDefinition("example:special", "test.special")) }
         return HistoryRoundEventPresenter(vocabulary, reasons, outcomes)
     }
 

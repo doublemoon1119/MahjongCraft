@@ -18,12 +18,11 @@ interface TileDisplayNameRegistry {
     val isFrozen: Boolean
 
     /**
-     * 為 [typeId] 註冊顯示名稱的 translation key。
+     * 登記完整描述；凍結後或身分重複時拒絕，不提前呼叫來源。
      *
-     * @param typeId 牌種穩定識別碼。
-     * @param translationKey 顯示名稱翻譯 key。
+     * @param definition 集中保存登記身分與內容的描述。
      */
-    fun register(typeId: TileTypeId, translationKey: String)
+    fun register(definition: TileDisplayNameDefinition)
 
     /** 凍結 registry；凍結後不得新增顯示名稱。 */
     fun freeze()

@@ -49,6 +49,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHist
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.observer.FabricObserverSnapshotBroadcastService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricAuthoritativeStatePersistence
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricTableLocationPersistence
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.attachPersistenceState
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.PlayerConnectionLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.ServerPlayerIdentityStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.FabricMahjongLobbyInfoLifecycleService
@@ -63,8 +64,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigUpdateResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftPresentationRegistries
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import net.fabricmc.api.EnvType
 import net.fabricmc.api.ModInitializer
@@ -135,10 +138,26 @@ class MahjongCraftMod : ModInitializer {
         observerBroadcast.registerEvents()
         ServerLifecycleEvents.SERVER_STARTED.register { server ->
             initializeServerConfig(configManager, mahjongTileCollisionService, server)
-            runBlocking { statePersistence.attach(server) }
-            runBlocking { koin.get<AuthoritativeStateStore>().applyHistoryRecordingPolicy(configManager.current.historyRecordingPolicy()) }
-            tableLocationPersistence.attach(server)
-            runBlocking { historyWriter.attach(server) }
+            runBlocking {
+                attachPersistenceState(
+                    load = { Unit },
+                    initialize = {
+                        statePersistence.attach(server)
+                        koin.get<AuthoritativeStateStore>().applyHistoryRecordingPolicy(configManager.current.historyRecordingPolicy())
+                        tableLocationPersistence.attach(server)
+                        historyWriter.attach(server)
+                    },
+                    cleanupFailedAttach = {
+                        // 啟動失敗只解除接線及記憶體；先停 listener，避免清理被寫成空存檔。
+                        withContext(NonCancellable) {
+                            historyWriter.detach()
+                            tableLocationPersistence.detach()
+                            statePersistence.detach()
+                            stateCleaner.clear()
+                        }
+                    },
+                )
+            }
             tableLocationValidation.startSession(server)
             serverHolder.set(server)
             playerIdentityStore.refresh()

@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplay
+import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistryImpl
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -12,8 +13,8 @@ class AutomaticControlDisplayResolverTest {
     @Test
     fun `registered controls sort before stable unknown fallbacks`() {
         val registry = AutomaticControlDisplayRegistryImpl().apply {
-            register("example:second", AutomaticControlDisplay("example.second", "example.second.description", 20))
-            register("example:first", AutomaticControlDisplay("example.first", "example.first.description", 10))
+            register(AutomaticControlDisplayDefinition("example:second", AutomaticControlDisplay("example.second", "example.second.description", 20)))
+            register(AutomaticControlDisplayDefinition("example:first", AutomaticControlDisplay("example.first", "example.first.description", 10)))
             freeze()
         }
         val resolver = AutomaticControlDisplayResolver(registry)

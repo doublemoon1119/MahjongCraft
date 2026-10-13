@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTable
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue.RuleCatalogueScreenController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigScreen
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongHudLayoutEditorScreen
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.fitClientText
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.CycleButtonInput
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollState
@@ -1071,7 +1072,7 @@ class RoomScreen(
             renderMemberAppearance(context, player.playerId, player.isAi, x, y, grid.cardWidth, mouseX, mouseY)
             context.drawCenteredTextWithShadow(
                 textRenderer,
-                fitText(resolvedPlayerNameText(player.playerName), grid.cardWidth - 12),
+                fitClientText(textRenderer, resolvedPlayerNameText(player.playerName), grid.cardWidth - 12),
                 x + grid.cardWidth / 2,
                 y + MEMBER_NAME_OFFSET,
                 0xFFFFFF,
@@ -1080,7 +1081,7 @@ class RoomScreen(
             memberPresentation.infoRows(player, dealerPlayerId).drop(playingInfoScroll.index).take(grid.visibleInfoRows).forEachIndexed { infoRowIndex, row ->
                 context.drawCenteredTextWithShadow(
                     textRenderer,
-                    fitText(row.first, grid.cardWidth - 12),
+                    fitClientText(textRenderer, row.first, grid.cardWidth - 12),
                     x + grid.cardWidth / 2,
                     infoTop + infoRowIndex * RoomMemberGridLayout.INFO_ROW_HEIGHT,
                     row.second,
@@ -1147,7 +1148,7 @@ class RoomScreen(
             renderMemberAppearance(context, playerId, ai, x, y, grid.cardWidth, mouseX, mouseY)
             context.drawCenteredTextWithShadow(
                 textRenderer,
-                fitText(memberName(playerId, ai, playerIds.filter(aiIds::contains)), grid.cardWidth - 12),
+                fitClientText(textRenderer, memberName(playerId, ai, playerIds.filter(aiIds::contains)), grid.cardWidth - 12),
                 x + grid.cardWidth / 2,
                 y + MEMBER_NAME_OFFSET,
                 0xFFFFFF,
@@ -1334,7 +1335,7 @@ class RoomScreen(
                     hoverRight = settings.fieldControlLeft(field.editor)
                     maximumLabelWidth = (hoverRight - labelX - SETTINGS_FIELD_LABEL_GAP).coerceAtLeast(1)
                 }
-                val fittedLabel = fitText(label, maximumLabelWidth)
+                val fittedLabel = fitClientText(textRenderer, label, maximumLabelWidth)
                 context.drawTextWithShadow(textRenderer, fittedLabel, labelX, labelY, 0xFFFFFF)
                 if (
                     fittedLabel.string != label.string &&
@@ -1357,7 +1358,7 @@ class RoomScreen(
             val contentWidth = (width - statusLabelX - 20).coerceAtLeast(1)
             context.drawCenteredTextWithShadow(
                 textRenderer,
-                fitText(message, contentWidth),
+                fitClientText(textRenderer, message, contentWidth),
                 statusLabelX + contentWidth / 2,
                 settings.statusY,
                 color,
@@ -1452,23 +1453,6 @@ class RoomScreen(
         val column = settings.scrollbarColumn
         context.fill(column.trackLeft, scrollbar.trackTop, column.trackRight, scrollbar.trackBottom, 0x80505050.toInt())
         context.fill(column.trackLeft, scrollbar.thumbTop, column.trackRight, scrollbar.thumbTop + scrollbar.thumbHeight, 0xFFD0D0D0.toInt())
-    }
-
-    /**
-     * 依像素寬度截斷文字並補省略號；寬度不足以容納省略號時仍保留省略號。
-     *
-     * @param text 原始文字。
-     * @param maximumWidth 可用像素寬度；非正值時回傳空文字。
-     * @return 原文或去除原樣式後附省略號的文字。
-     */
-    private fun fitText(text: Text, maximumWidth: Int): Text {
-        if (maximumWidth <= 0) return Text.empty()
-        if (textRenderer.getWidth(text) <= maximumWidth) return text
-        val raw = text.string
-        val suffix = "..."
-        var end = raw.length
-        while (end > 0 && textRenderer.getWidth(raw.substring(0, end) + suffix) > maximumWidth) end--
-        return Text.literal(raw.substring(0, end) + suffix)
     }
 
     /**

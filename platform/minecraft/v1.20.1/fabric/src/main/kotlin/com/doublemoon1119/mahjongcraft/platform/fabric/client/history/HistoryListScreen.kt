@@ -192,16 +192,8 @@ internal class HistoryListScreen(
      * @param options 可選值。
      * @return 格式化後的 tooltip 文字。
      */
-    private fun optionTooltip(title: Text, current: Text, options: List<Text>): Text = Text.empty()
-        .append(Text.translatable(MinecraftHistoryScreenKeys.TOOLTIP_DESCRIPTION, title).formatted(Formatting.GRAY))
-        .append("\n")
-        .append(Text.translatable(MinecraftHistoryScreenKeys.TOOLTIP_CURRENT, current).formatted(Formatting.GREEN))
-        .append("\n")
-        .append(Text.translatable(MinecraftHistoryScreenKeys.TOOLTIP_OPTIONS).formatted(Formatting.GOLD))
-        .also { result -> options.forEach { option -> result.append("\n• ").append(option.copy().formatted(if (option.string == current.string) Formatting.GREEN else Formatting.WHITE)) } }
-
     /** 建立紀錄範圍按鈕的選項 tooltip。 */
-    private fun scopeTooltip(): Text = optionTooltip(Text.translatable(MinecraftHistoryScreenKeys.SCOPE_TITLE), scopeText(), availableScopes().map { Text.translatable("${MinecraftHistoryScreenKeys.SCOPE_PREFIX}${it.name.lowercase()}") })
+    private fun scopeTooltip(): Text = historyOptionTooltip(Text.translatable(MinecraftHistoryScreenKeys.SCOPE_TITLE), scopeText(), availableScopes().indexOf(session.controller.state.value.query.scope), availableScopes().map { Text.translatable("${MinecraftHistoryScreenKeys.SCOPE_PREFIX}${it.name.lowercase()}") })
 
     /** 只提供最近權威回應允許的查詢範圍。 */
     private fun availableScopes(): List<HistoryQueryScopeDto> = buildList {
@@ -215,10 +207,10 @@ internal class HistoryListScreen(
     private fun availableSortFields(): List<HistorySortFieldDto> = if (session.controller.state.value.query.scope.coversAllMatches) listOf(HistorySortFieldDto.ENDED_AT, HistorySortFieldDto.DURATION) else HistorySortFieldDto.entries
 
     /** 建立排序欄位按鈕的選項 tooltip。 */
-    private fun sortTooltip(): Text = optionTooltip(Text.translatable(MinecraftHistoryScreenKeys.SORT_TITLE), sortText(), availableSortFields().map { Text.translatable("${MinecraftHistoryScreenKeys.SORT_PREFIX}${it.name.lowercase()}") })
+    private fun sortTooltip(): Text = historyOptionTooltip(Text.translatable(MinecraftHistoryScreenKeys.SORT_TITLE), sortText(), availableSortFields().indexOf(session.controller.state.value.query.sortField), availableSortFields().map { Text.translatable("${MinecraftHistoryScreenKeys.SORT_PREFIX}${it.name.lowercase()}") })
 
     /** 建立排序方向按鈕的選項 tooltip。 */
-    private fun directionTooltip(): Text = optionTooltip(Text.translatable(MinecraftHistoryScreenKeys.DIRECTION_TITLE), directionText(), HistorySortDirectionDto.entries.map { Text.translatable("${MinecraftHistoryScreenKeys.DIRECTION_PREFIX}${it.name.lowercase()}") })
+    private fun directionTooltip(): Text = historyOptionTooltip(Text.translatable(MinecraftHistoryScreenKeys.DIRECTION_TITLE), directionText(), session.controller.state.value.query.sortDirection.ordinal, HistorySortDirectionDto.entries.map { Text.translatable("${MinecraftHistoryScreenKeys.DIRECTION_PREFIX}${it.name.lowercase()}") })
 
     /** 僅列出已套用條件，不將尚未通過驗證的草稿混入。 */
     private fun appliedFiltersTooltip(): Text {

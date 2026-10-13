@@ -19,19 +19,21 @@ class MatchSettlementPresentationTemplateRegistryImpl : MatchSettlementPresentat
 
     override fun register(template: MatchSettlementPresentationTemplate) {
         check(!frozen) { "Match settlement template registry is frozen" }
-        require(templates.putIfAbsent(template.key, template) == null) { "Duplicate match settlement template: ${template.key}" }
+        require(templates.putIfAbsent(template.key, template.snapshot()) == null) { "Duplicate match settlement template: ${template.key}" }
     }
 
-    override fun bindRuleTemplate(ruleModuleId: String, templateKey: String) {
+    override fun register(definition: MatchSettlementRuleTemplateBindingDefinition) {
+        val ruleModuleId = definition.ruleModuleId
+        val templateKey = definition.templateKey
         check(!frozen) { "Match settlement template registry is frozen" }
         NamespacedId.requireValid(ruleModuleId) { "Rule module ID must be namespaced: $ruleModuleId" }
         NamespacedId.requireValid(templateKey) { "Match settlement template key must be namespaced: $templateKey" }
         require(ruleTemplateKeys.putIfAbsent(ruleModuleId, templateKey) == null) { "Duplicate match settlement rule template: $ruleModuleId" }
     }
 
-    override fun find(key: String): MatchSettlementPresentationTemplate? = templates[key]
+    override fun find(key: String): MatchSettlementPresentationTemplate? = templates[key]?.snapshot()
 
-    override fun findForRule(ruleModuleId: String): MatchSettlementPresentationTemplate? = ruleTemplateKeys[ruleModuleId]?.let(templates::get) ?: templates[BUILT_IN_MATCH_SETTLEMENT_TEMPLATE_KEY]
+    override fun findForRule(ruleModuleId: String): MatchSettlementPresentationTemplate? = (ruleTemplateKeys[ruleModuleId]?.let(templates::get) ?: templates[BUILT_IN_MATCH_SETTLEMENT_TEMPLATE_KEY])?.snapshot()
 
     override fun freeze() {
         frozen = true

@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAu
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAutomaticControlDraftSession
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAutomaticControlSubmitResult
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAutomaticControlUpdateCoordinator
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.fitClientText
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.RestartableMarqueeButtonWidget
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollState
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ScrollbarLayout
@@ -460,7 +461,7 @@ class MahjongClientConfigScreen(
             val y = rowsTop(bounds) + index * FIELD_ROW_HEIGHT + VANILLA_TEXT_OFFSET_Y
             val left = if (row.information) bounds.contentLeft else bounds.left + SIDEBAR_WIDTH + PANEL_PADDING
             val available = if (row.information) bounds.right - PANEL_PADDING - left else bounds.controlLeft - PANEL_PADDING - left
-            val fittedLabel = fitText(label, available)
+            val fittedLabel = fitClientText(textRenderer, label, available)
             context.drawTextWithShadow(textRenderer, fittedLabel, left, y, TEXT_COLOR)
             if (
                 fittedLabel.string != label.string &&
@@ -491,7 +492,7 @@ class MahjongClientConfigScreen(
         }
         context.drawTextWithShadow(
             textRenderer,
-            fitText(status, bounds.width - PANEL_PADDING * 2),
+            fitClientText(textRenderer, status, bounds.width - PANEL_PADDING * 2),
             bounds.left + PANEL_PADDING,
             bounds.bottom - BOTTOM_AREA_HEIGHT + STATUS_OFFSET_Y,
             TEXT_COLOR,
@@ -732,16 +733,6 @@ class MahjongClientConfigScreen(
      * @param maximumWidth 可使用的像素寬度。
      * @return 原始文字或補上省略號的截斷文字；寬度不為正時為空文字。
      */
-    private fun fitText(text: Text, maximumWidth: Int): Text {
-        if (maximumWidth <= 0) return Text.empty()
-        if (textRenderer.getWidth(text) <= maximumWidth) return text
-        val raw = text.string
-        val suffix = "..."
-        var end = raw.length
-        while (end > 0 && textRenderer.getWidth(raw.substring(0, end) + suffix) > maximumWidth) end--
-        return Text.literal(raw.substring(0, end) + suffix)
-    }
-
     /** 在目前輸入事件完成後安全重建 widgets，避免舊 widget 被重新設為 focus。 */
     private fun rebuild() {
         rebuildRequested = true

@@ -63,7 +63,7 @@ class OpponentModelRegistryTest {
         val registry = OpponentModelRegistry().apply { freeze() }
 
         assertFailsWith<IllegalStateException> {
-            registry.register(BuiltInRuleModuleIds.TAIWAN) { _, depth -> NeutralOpponentModel(depth) }
+            registry.register(OpponentModelDefinition(BuiltInRuleModuleIds.TAIWAN) { _, depth -> NeutralOpponentModel(depth) })
         }
     }
 }

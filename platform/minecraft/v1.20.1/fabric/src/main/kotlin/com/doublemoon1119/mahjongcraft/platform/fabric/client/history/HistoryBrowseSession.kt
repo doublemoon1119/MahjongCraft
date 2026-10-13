@@ -51,6 +51,7 @@ import kotlin.time.TimeSource
  * @property parent 關閉後返回的原畫面，指令入口為 null。
  * @param initialMatchId 聊天入口指定的對局；null 表示一般列表。
  * @property onClosed 通知開啟控制器解除此 session。
+ * @param requestGate 同一 client 連線共用的歷史查詢送出 gate。
  */
 internal class HistoryBrowseSession(
     transport: HistoryQueryTransport,
@@ -72,15 +73,16 @@ internal class HistoryBrowseSession(
     private val parent: Screen?,
     initialMatchId: String?,
     private val onClosed: () -> Unit,
+    requestGate: ClientHistoryRequestGate,
 ) {
     /** 此瀏覽獨立的主執行緒工作。 */
     private val scope = CoroutineScope(SupervisorJob() + dispatcher)
 
     /** 指定結算對局的保存狀態監看器。 */
-    val archiveStatusController = HistoryArchiveStatusController(archiveStatus, scope)
+    val archiveStatusController = HistoryArchiveStatusController(archiveStatus, scope, requestGate = requestGate)
 
     /** 列表、摘要、規則設定與單局內容共用的權威查詢結果。 */
-    val controller = HistoryBrowseController(transport, scope, beforeDetailQuery = {
+    val controller = HistoryBrowseController(transport, scope, requestGate = requestGate, beforeDetailQuery = {
         archiveMonitoringPaused = true
         archiveStatusController.pause()
     })

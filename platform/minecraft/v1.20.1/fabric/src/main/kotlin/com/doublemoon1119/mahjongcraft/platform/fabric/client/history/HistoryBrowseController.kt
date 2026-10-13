@@ -42,6 +42,7 @@ internal class HistoryBrowseController(
     private val transport: HistoryQueryTransport,
     parentScope: CoroutineScope,
     private val now: () -> Duration = { System.nanoTime().nanoseconds },
+    private val requestGate: ClientHistoryRequestGate? = null,
     private val beforeDetailQuery: suspend () -> Unit = {},
 ) {
     /** 此瀏覽獨立的協程生命週期，不取消父作用域或其他瀏覽。 */
@@ -696,6 +697,8 @@ internal class HistoryBrowseController(
         if (!available() || intent.generation != generation) return
         if (acceptCachedRound(intent)) return
         if (intent !is Intent.ListQuery) beforeDetailQuery()
+        if (!available() || intent.generation != generation) return
+        requestGate?.awaitSendSlot(ClientHistoryRequestPriority.FOREGROUND)
         if (!available() || intent.generation != generation) return
         lastSentAt = now()
         val requestId = when (intent) {

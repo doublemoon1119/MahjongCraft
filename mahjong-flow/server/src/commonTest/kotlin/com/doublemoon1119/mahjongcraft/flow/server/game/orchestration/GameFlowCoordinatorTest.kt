@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 import com.doublemoon1119.mahjongcraft.ai.AiDecisionContext
 import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategy
+import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyDefinition
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.ai.RoundPreparationAiContext
@@ -94,6 +95,7 @@ import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFact
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -245,7 +247,9 @@ class GameFlowCoordinatorTest {
         val getLegalActionsUseCase = GetLegalActionsUseCase(gameRepo, moduleRegistry)
         val aiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = RandomAiStrategy.KEY).apply {
             registerBuiltInAiStrategies(moduleRegistry, ExtensionGameActionAiRegistry(moduleRegistry), OpponentModelRegistry().apply { BundledRiichiExtension.registerOpponentModels(this) })
-            extraStrategies.forEach { (key, strategy) -> register(key) { strategy } }
+            extraStrategies.forEach { (key, strategy) ->
+                register(MahjongAiStrategyDefinition(key) { strategy })
+            }
         }
         val aiTurnDriver = AiTurnDriver(gameRepo, getLegalActionsUseCase, aiStrategyRegistry, GameVisibilityPolicyImpl(moduleRegistry), moduleRegistry, AiDecisionExecutor.direct())
         val clock = MutableMonotonicClock()
@@ -1584,15 +1588,17 @@ class GameFlowCoordinatorTest {
         val fixtures = Fixtures(
             extraStrategies = mapOf(FIXED_STRATEGY_KEY to strategy),
             extraCommandHandlers = { registry ->
-                registry.register(DoubleWriteCommand::class) { context ->
-                    object : ExtensionGameCommandHandler<DoubleWriteCommand> {
-                        override suspend fun execute(gameId: Uuid, playerId: Uuid, command: DoubleWriteCommand): Outcome<Unit, GameError> {
-                            context.gameRepository.updateGame(gameId) { it?.copy(automaticControlRevision = it.automaticControlRevision + 1) to Unit }
-                            runCatching { context.gameRepository.updateGame(gameId) { it?.copy(isMatchOver = true) to Unit } }
-                            return Outcome.Success(Unit)
+                registry.register(
+                    ExtensionGameCommandHandlerDefinition(DoubleWriteCommand::class) { context ->
+                        object : ExtensionGameCommandHandler<DoubleWriteCommand> {
+                            override suspend fun execute(gameId: Uuid, playerId: Uuid, command: DoubleWriteCommand): Outcome<Unit, GameError> {
+                                context.gameRepository.updateGame(gameId) { it?.copy(automaticControlRevision = it.automaticControlRevision + 1) to Unit }
+                                runCatching { context.gameRepository.updateGame(gameId) { it?.copy(isMatchOver = true) to Unit } }
+                                return Outcome.Success(Unit)
+                            }
                         }
-                    }
-                }
+                    },
+                )
             },
         )
         val aiId = Uuid.random()
@@ -1623,6 +1629,7 @@ class GameFlowCoordinatorTest {
      * 驗證 AI 的開局準備策略沒有在等待上限內給出結果時，改用解析器的可重現提交並完成準備步驟。
      */
     @Test
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun `test an ai round preparation past the timeout submits the fallback`() = runTest {
         val resolvers = RoundPreparationResolverRegistry().apply { register(ConfirmationResolver) }
         val fixtures = Fixtures(extraStrategies = mapOf(HANGING_STRATEGY_KEY to HangingStrategy), roundPreparationResolvers = resolvers)

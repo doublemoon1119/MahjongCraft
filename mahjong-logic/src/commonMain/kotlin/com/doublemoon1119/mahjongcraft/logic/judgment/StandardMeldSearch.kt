@@ -50,8 +50,10 @@ class StandardMeldSearch(private val targetMelds: Int) {
      * @param counts 34 格的立牌計數；搜尋時暫時取走牌，回傳前還原。
      * @param initialMelds 已副露的面子數。
      * @return 上述公式在所有拆法中的最小值。
+     * @throws IllegalArgumentException 若 [initialMelds] 為負數。
      */
     fun meldShanten(counts: IntArray, initialMelds: Int): Int {
+        require(initialMelds >= 0) { "Initial melds must be non-negative" }
         if (initialMelds >= targetMelds) return 2 * targetMelds - 2 * initialMelds
         requireTileKinds(counts)
         var reachable = reachableInGroup(counts, start = 0, size = SUIT_SIZE, connected = true)

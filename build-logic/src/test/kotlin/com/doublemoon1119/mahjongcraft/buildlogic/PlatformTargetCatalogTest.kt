@@ -14,7 +14,7 @@ import kotlin.test.assertTrue
 class PlatformTargetCatalogTest {
     /** 合法 catalog 應完整解析 target 與 Java policy。 */
     @Test
-    fun loadsValidCatalog() = withFixture { root ->
+    fun `loads valid catalog`() = withFixture { root ->
         createModule(root, "platform/example")
         val targets = writeCatalog(
             root,
@@ -30,7 +30,7 @@ class PlatformTargetCatalogTest {
 
     /** 非 Minecraft 平台不需要提供 Minecraft 專屬欄位。 */
     @Test
-    fun loadsPlatformNeutralTarget() = withFixture { root ->
+    fun `loads platform neutral target`() = withFixture { root ->
         createModule(root, "platform/desktop")
         val catalog = writeCatalog(
             root,
@@ -55,7 +55,7 @@ class PlatformTargetCatalogTest {
 
     /** 重複 target ID 必須立即失敗。 */
     @Test
-    fun rejectsDuplicateTargetIds() = withFixture { root ->
+    fun `rejects duplicate target ids`() = withFixture { root ->
         createModule(root, "platform/one")
         createModule(root, "platform/two")
         val catalog = writeCatalog(
@@ -68,7 +68,7 @@ class PlatformTargetCatalogTest {
 
     /** 不合理的 Java version 必須立即失敗。 */
     @Test
-    fun rejectsInvalidJavaVersion() = withFixture { root ->
+    fun `rejects invalid java version`() = withFixture { root ->
         createModule(root, "platform/example")
         val catalog = writeCatalog(
             root,
@@ -80,7 +80,7 @@ class PlatformTargetCatalogTest {
 
     /** 指向不存在 module 的 catalog 必須立即失敗。 */
     @Test
-    fun rejectsMissingModule() = withFixture { root ->
+    fun `rejects missing module`() = withFixture { root ->
         val catalog = writeCatalog(root, target("minecraft-example", "platform/missing"))
 
         assertFailsWith<GradleException> { PlatformTargetCatalog.load(catalog, root) }
@@ -88,7 +88,7 @@ class PlatformTargetCatalogTest {
 
     /** 已知平台缺少必要 attributes 時必須立即失敗。 */
     @Test
-    fun rejectsMissingKnownPlatformAttribute() = withFixture { root ->
+    fun `rejects missing known platform attribute`() = withFixture { root ->
         createModule(root, "platform/example")
         val catalog = writeCatalog(
             root,
@@ -100,7 +100,7 @@ class PlatformTargetCatalogTest {
 
     /** Gradle property 應依序覆寫環境變數與 local fallback。 */
     @Test
-    fun resolvesTargetByDocumentedPrecedence() {
+    fun `resolves target by documented precedence`() {
         assertEquals(
             "cli",
             PlatformTargetCatalog.resolveSelectedTargetId(" cli ", "environment", "local"),
@@ -121,7 +121,7 @@ class PlatformTargetCatalogTest {
 
     /** 切換與清除 target 時必須保留其他 local properties。 */
     @Test
-    fun updatesOnlyTargetProperty() = withFixture { root ->
+    fun `updates only target property`() = withFixture { root ->
         val localFile = root.resolve("local.dev.properties")
         localFile.writeText("customProperty=kept\nmahjongcraftTarget=old\n")
 

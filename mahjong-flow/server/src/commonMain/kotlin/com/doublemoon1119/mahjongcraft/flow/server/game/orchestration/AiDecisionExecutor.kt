@@ -124,6 +124,10 @@ class AiDecisionExecutor(
         } catch (cancellation: CancellationException) {
             abandon(gameId, call, started)
             throw cancellation
+        } catch (failure: Exception) {
+            finish(gameId, call)
+            reporter.onStrategyFailed(gameId, playerId, strategyKey, failure)
+            return fallback().also { observer?.onDecision(gameId, AiDecisionOutcome.STRATEGY_FAILED, start.elapsedNow()) }
         }
         if (value != null) return value.also { observer?.onDecision(gameId, AiDecisionOutcome.DECIDED, start.elapsedNow()) }
         abandon(gameId, call, started)

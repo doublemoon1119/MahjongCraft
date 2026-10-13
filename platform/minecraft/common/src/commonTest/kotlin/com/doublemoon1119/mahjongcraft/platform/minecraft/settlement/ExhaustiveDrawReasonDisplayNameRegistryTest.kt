@@ -30,14 +30,14 @@ class ExhaustiveDrawReasonDisplayNameRegistryTest {
         val registry = ExhaustiveDrawReasonDisplayNameRegistryImpl()
 
         assertFailsWith<IllegalArgumentException> {
-            registry.register("custom_reason", "example.reason")
+            registry.register(ExhaustiveDrawReasonDisplayNameDefinition("custom_reason", "example.reason"))
         }
-        registry.register("example:custom_reason", "example.reason")
+        registry.register(ExhaustiveDrawReasonDisplayNameDefinition("example:custom_reason", "example.reason"))
         registry.freeze()
 
         assertTrue(registry.isFrozen)
         assertFailsWith<IllegalStateException> {
-            registry.register("example:another_reason", "example.another_reason")
+            registry.register(ExhaustiveDrawReasonDisplayNameDefinition("example:another_reason", "example.another_reason"))
         }
     }
 
@@ -45,11 +45,11 @@ class ExhaustiveDrawReasonDisplayNameRegistryTest {
     @Test
     fun `settlement status labels are registered per reason`() {
         val labels = ExhaustiveDrawSettlementStatusLabels(beneficiaryTranslationKey = "test.tenpai", othersTranslationKey = "test.noten")
-        val registry = ExhaustiveDrawReasonDisplayNameRegistryImpl().apply { registerSettlementStatusLabels("example:draw", labels) }
+        val registry = ExhaustiveDrawReasonDisplayNameRegistryImpl().apply { register(ExhaustiveDrawSettlementStatusLabelsDefinition("example:draw", labels)) }
 
         assertEquals(labels, registry.findSettlementStatusLabels("example:draw"))
         assertNull(registry.findSettlementStatusLabels("example:other"))
         assertEquals(setOf("example:draw"), registry.registrationKeys)
-        assertFailsWith<IllegalArgumentException> { registry.registerSettlementStatusLabels("example:draw", labels) }
+        assertFailsWith<IllegalArgumentException> { registry.register(ExhaustiveDrawSettlementStatusLabelsDefinition("example:draw", labels)) }
     }
 }

@@ -46,7 +46,7 @@ class DecisionStatusDisplayNameRegistryTest {
         assertEquals("mahjongcraft.hud.win_availability.available", registry.find(BuiltInRuleModuleIds.RIICHI, WaitingTileAvailabilityIds.WIN_AVAILABLE))
         assertEquals("mahjongcraft.hud.win_availability.available", registry.find(BuiltInRuleModuleIds.TAIWAN, WaitingTileAvailabilityIds.WIN_AVAILABLE))
 
-        registry.register(BuiltInRuleModuleIds.TAIWAN, WaitingTileAvailabilityIds.WIN_AVAILABLE, "example.hud.can_win")
+        registry.register(DecisionStatusDisplayNameDefinition(BuiltInRuleModuleIds.TAIWAN, WaitingTileAvailabilityIds.WIN_AVAILABLE, "example.hud.can_win"))
 
         assertEquals("example.hud.can_win", registry.find(BuiltInRuleModuleIds.TAIWAN, WaitingTileAvailabilityIds.WIN_AVAILABLE))
         assertEquals("mahjongcraft.hud.win_availability.available", registry.find(BuiltInRuleModuleIds.RIICHI, WaitingTileAvailabilityIds.WIN_AVAILABLE))
@@ -64,15 +64,15 @@ class DecisionStatusDisplayNameRegistryTest {
         val registry = registry()
 
         assertFailsWith<IllegalArgumentException> {
-            registry.register(BuiltInRuleModuleIds.RIICHI, RiichiDiscardReadinessAnalyzer.StatusIds.DISCARD_FURITEN, "example.hud.duplicate")
+            registry.register(DecisionStatusDisplayNameDefinition(BuiltInRuleModuleIds.RIICHI, RiichiDiscardReadinessAnalyzer.StatusIds.DISCARD_FURITEN, "example.hud.duplicate"))
         }
         assertFailsWith<IllegalArgumentException> {
-            registry.registerDefault(WaitingTileAvailabilityIds.WIN_AVAILABLE, "example.hud.duplicate")
+            registry.register(DecisionStatusDisplayNameDefaultDefinition(WaitingTileAvailabilityIds.WIN_AVAILABLE, "example.hud.duplicate"))
         }
 
         registry.freeze()
 
-        assertFailsWith<IllegalStateException> { registry.register(BuiltInRuleModuleIds.TAIWAN, "example:late", "example.hud.late") }
-        assertFailsWith<IllegalStateException> { registry.registerDefault("example:late", "example.hud.late") }
+        assertFailsWith<IllegalStateException> { registry.register(DecisionStatusDisplayNameDefinition(BuiltInRuleModuleIds.TAIWAN, "example:late", "example.hud.late")) }
+        assertFailsWith<IllegalStateException> { registry.register(DecisionStatusDisplayNameDefaultDefinition("example:late", "example.hud.late")) }
     }
 }

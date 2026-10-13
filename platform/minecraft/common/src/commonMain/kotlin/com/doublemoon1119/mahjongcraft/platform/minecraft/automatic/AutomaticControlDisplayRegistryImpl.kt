@@ -15,7 +15,9 @@ class AutomaticControlDisplayRegistryImpl : AutomaticControlDisplayRegistry {
     override var isFrozen: Boolean = false
         private set
 
-    override fun register(controlId: String, display: AutomaticControlDisplay) {
+    override fun register(definition: AutomaticControlDisplayDefinition) {
+        val controlId = definition.controlId
+        val display = definition.display
         check(!isFrozen) { "Automatic control display registry is frozen" }
         MinecraftResourceIds.requireValid(controlId) { "Automatic control ID must be namespaced: $controlId" }
         require(displays.putIfAbsent(controlId, display) == null) {

@@ -9,6 +9,19 @@ import kotlin.uuid.Uuid
 
 /** [TableLocationRegistry] 的位置、revision 與反向索引測試。 */
 class TableLocationRegistryTest {
+    /** 呼叫端即使轉成可變 map，也不能改動已發布的桌子位置索引。 */
+    @Test
+    fun `location snapshots cannot mutate the published index`() {
+        val registry = TableLocationRegistry()
+        val first = Uuid.random()
+        val second = Uuid.random()
+        registry.put(first, TableLocation("minecraft:overworld", 1, 64, 1))
+        registry.put(second, TableLocation("minecraft:overworld", 2, 64, 2))
+        val snapshot = registry.snapshot()
+        (snapshot as MutableMap<*, *>).clear()
+        assertEquals(setOf(first, second), registry.snapshot().keys)
+    }
+
     /** 不同 dimension 的相同座標必須由不同 chunk key 查詢。 */
     @Test
     fun `test same coordinates in different dimensions remain isolated`() {

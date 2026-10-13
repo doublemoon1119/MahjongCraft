@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 import com.doublemoon1119.mahjongcraft.ai.AiDecisionContext
 import com.doublemoon1119.mahjongcraft.ai.AiDecisionPhase
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategy
+import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyDefinition
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
@@ -23,6 +24,7 @@ import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFact
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -68,7 +70,7 @@ class AiTurnDriverTest {
     }
 
     /** 每局 AI 玩家測試共用的策略 key，對應到 [Fixtures] 裡註冊的假策略。 */
-    private val strategyKey = "fake"
+    private val strategyKey = STRATEGY_KEY
 
     /**
      * 共用假策略與正式規則解析器的受測環境。
@@ -86,7 +88,9 @@ class AiTurnDriverTest {
         val gameRepo = FakeGameRepository()
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
         val strategy = FakeMahjongAiStrategy(strategyCommand, strategyHangs)
-        val strategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = "fake").apply { register("fake") { strategy } }
+        val strategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = STRATEGY_KEY).apply {
+            register(MahjongAiStrategyDefinition(STRATEGY_KEY) { strategy })
+        }
         val actionContextResolver = PlayerActionContextResolver()
         val driver = AiTurnDriver(
             gameRepo,
@@ -97,6 +101,12 @@ class AiTurnDriverTest {
             AiDecisionExecutor.direct(),
             actionContextResolver,
         )
+    }
+
+    /** 測試策略的登記資訊。 */
+    private companion object {
+        /** 所有測試 AI 共用的命名空間策略識別碼。 */
+        const val STRATEGY_KEY = "test:fake"
     }
 
     // ---- 搶槓反應 ----
@@ -407,6 +417,7 @@ class AiTurnDriverTest {
      * 驗證策略沒有在等待上限內給出結果時，改用與真人逾時相同的固定命令：自己回合打出剛摸入的牌。
      */
     @Test
+    @OptIn(ExperimentalCoroutinesApi::class)
     fun `test a strategy past the timeout falls back to the fixed command`() = runTest {
         val fixtures = Fixtures(strategyHangs = true)
         val aiId = Uuid.random()

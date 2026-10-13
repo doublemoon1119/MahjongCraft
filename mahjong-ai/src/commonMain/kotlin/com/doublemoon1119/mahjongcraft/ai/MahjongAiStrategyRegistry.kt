@@ -9,16 +9,15 @@ package com.doublemoon1119.mahjongcraft.ai
  */
 interface MahjongAiStrategyRegistry {
     /**
-     * 註冊一個策略；[factory] 每次解析時呼叫一次，讓策略可以是 stateful 的獨立實例。
+     * 登記策略描述；每次解析時呼叫其中的建立函式，讓各策略實例獨立保存自己的狀態。
      *
-     * 凍結後呼叫，或 [key] 已經註冊過時拋出例外，避免兩個 extension 使用同一個 key 時後者悄悄取代前者。
+     * 凍結後或識別碼重複時拒絕登記，不覆寫先前擴充提供的策略。
      *
-     * @param key 用來選擇策略的唯一識別碼。
-     * @param factory 每次解析此策略時呼叫的建構函式。
+     * @param definition 策略 key 與每次解析時建立策略的延遲工廠。
      * @throws IllegalStateException 登記中心已凍結。
-     * @throws IllegalArgumentException [key] 已被使用。
+     * @throws IllegalArgumentException [definition] 的 key 已被使用或不是 namespaced ID。
      */
-    fun register(key: String, factory: () -> MahjongAiStrategy)
+    fun register(definition: MahjongAiStrategyDefinition)
 
     /** 禁止後續註冊；由啟動流程在所有內建與第三方登記完成後呼叫。 */
     fun freeze()

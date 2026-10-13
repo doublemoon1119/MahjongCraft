@@ -19,9 +19,11 @@ class ExtensionGameActionCommandFactoryRegistryTest {
     fun `registered factory creates command from selected tiles`() {
         val registry = ExtensionGameActionCommandFactoryRegistry()
         val tileIds = listOf(Uuid.random(), Uuid.random())
-        registry.register(TestAction::class) { action, selectedTileIds ->
-            TestCommand(action.id, selectedTileIds)
-        }
+        registry.register(
+            ExtensionGameActionCommandFactoryDefinition(TestAction::class) { action, selectedTileIds ->
+                TestCommand(action.id, selectedTileIds)
+            },
+        )
 
         assertEquals(TestCommand(TestAction.id, tileIds), registry.createCommand(TestAction, tileIds))
         assertTrue(registry.isRegistered(TestAction::class))
@@ -37,10 +39,10 @@ class ExtensionGameActionCommandFactoryRegistryTest {
     @Test
     fun `duplicate action registration is rejected`() {
         val registry = ExtensionGameActionCommandFactoryRegistry()
-        registry.register(TestAction::class) { _, _ -> TestCommand(TestAction.id, emptyList()) }
+        registry.register(ExtensionGameActionCommandFactoryDefinition(TestAction::class) { _, _ -> TestCommand(TestAction.id, emptyList()) })
 
         assertFailsWith<IllegalArgumentException> {
-            registry.register(TestAction::class) { _, _ -> TestCommand(TestAction.id, emptyList()) }
+            registry.register(ExtensionGameActionCommandFactoryDefinition(TestAction::class) { _, _ -> TestCommand(TestAction.id, emptyList()) })
         }
     }
 
@@ -50,7 +52,7 @@ class ExtensionGameActionCommandFactoryRegistryTest {
         val registry = ExtensionGameActionCommandFactoryRegistry().apply { freeze() }
 
         assertFailsWith<IllegalStateException> {
-            registry.register(TestAction::class) { _, _ -> TestCommand(TestAction.id, emptyList()) }
+            registry.register(ExtensionGameActionCommandFactoryDefinition(TestAction::class) { _, _ -> TestCommand(TestAction.id, emptyList()) })
         }
     }
 

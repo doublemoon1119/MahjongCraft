@@ -9,12 +9,11 @@ interface TablePropDescriberRegistry {
     val isFrozen: Boolean
 
     /**
-     * 登記一個規則模組的桌面物件描述。
+     * 登記完整描述；凍結後或身分重複時拒絕，不提前呼叫來源。
      *
-     * @param ruleModuleId 規則模組識別碼。
-     * @param describer 該規則的完整桌面物件描述器。
+     * @param definition 集中保存登記身分與內容的描述。
      */
-    fun register(ruleModuleId: String, describer: TablePropDescriber)
+    fun register(definition: TablePropDescriberDefinition)
 
     /**
      * 查詢指定規則模組的描述；未登記時回傳 null。

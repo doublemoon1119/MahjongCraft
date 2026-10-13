@@ -2,7 +2,6 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.seating
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.FabricSeatProviderRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.RegisteredSeatProvider
-import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftResourceIds
 import net.minecraft.entity.Entity
 import net.minecraft.server.world.ServerWorld
@@ -21,13 +20,12 @@ internal class FabricSeatProviderRegistryImpl : FabricSeatProviderRegistry {
         private set
 
     override fun register(
-        id: String,
-        provider: SeatProvider<ServerWorld, Entity>,
-        priority: Int,
+        definition: RegisteredSeatProvider<ServerWorld, Entity>,
     ) {
+        val id = definition.id
         check(!isFrozen) { "Seat provider registry is frozen" }
         MinecraftResourceIds.requireValid(id) { "Seat provider must be namespaced: $id" }
-        require(providersById.putIfAbsent(id, RegisteredSeatProvider(id, provider, priority)) == null) {
+        require(providersById.putIfAbsent(id, definition) == null) {
             "Duplicate seat provider: $id"
         }
     }

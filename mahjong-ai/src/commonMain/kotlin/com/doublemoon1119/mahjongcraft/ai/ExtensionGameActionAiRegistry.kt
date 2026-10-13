@@ -31,18 +31,14 @@ class ExtensionGameActionAiRegistry(private val moduleRegistry: MahjongModuleReg
      * 註冊一種擴充動作的 AI 命令候選建立方式。
      *
      * @param A 要登記的擴充動作型別。
-     * @param actionClass 用來查找處理策略的具體動作型別。
-     * @param handler 為此動作建立命令候選的策略。
+     * @param definition 動作具體型別與 handler。
      * @throws IllegalStateException 註冊表已凍結。
      * @throws IllegalArgumentException 此動作型別已登記。
      */
-    fun <A : ExtensionGameAction> register(
-        actionClass: KClass<A>,
-        handler: ExtensionGameActionAiHandler<A>,
-    ) {
+    fun <A : ExtensionGameAction> register(definition: ExtensionGameActionAiDefinition<A>) {
         check(!frozen) { "Extension game action AI registry is frozen" }
-        require(actionClass !in entries) { "AI handler already registered for $actionClass" }
-        entries[actionClass] = Entry(handler)
+        require(definition.actionClass !in entries) { "AI handler already registered for ${definition.actionClass}" }
+        entries[definition.actionClass] = Entry(definition.handler)
     }
 
     /** 凍結註冊表。 */

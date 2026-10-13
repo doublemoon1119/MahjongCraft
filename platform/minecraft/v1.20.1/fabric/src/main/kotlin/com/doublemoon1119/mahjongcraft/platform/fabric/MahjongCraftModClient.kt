@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistrie
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDomain
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.ClientSessionLifecycleOwner
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAutoSortHandPreferenceService
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAutomaticControlUpdateCoordinator
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.FabricAutomaticControlCommand
@@ -165,6 +166,17 @@ class MahjongCraftModClient : ClientModInitializer {
         val appearanceSources = koin.get<RoomMemberAppearanceSourceRegistry>()
         val playerNames = koin.get<ClientPlayerDisplayNameResolver>()
         val profileResolver = koin.get<ClientPlayerProfileResolver>()
+        val sessionLifecycle = ClientSessionLifecycleOwner(
+            clearHistoryQueries = historyQueries::clear,
+            clearHistoryArchiveStatus = historyArchiveStatus::clear,
+            clearProfiles = profileResolver::clearSession,
+            clearHistoryChatEntries = historyChatEntries::clear,
+            clearGameState = stateStore::clear,
+            clearAutomaticControl = automaticControlUpdateCoordinator::clear,
+            clearDecisionTimer = decisionTimerStore::clear,
+            clearDecisionPrompt = decisionPromptStore::clear,
+            clearDecisionHud = decisionHudController::clear,
+        )
         MahjongChannels.playerIdentity.registerClientReceiver(json) { payload ->
             if (payload.entries.size > PlayerIdentityPayload.MAX_ENTRIES) return@registerClientReceiver
             payload.entries.forEach { entry ->
@@ -314,25 +326,14 @@ class MahjongCraftModClient : ClientModInitializer {
         }
         MahjongChannels.decisionSubmissionResult.registerClientReceiver(json, decisionHudController::handleSubmissionResult)
         ClientPlayConnectionEvents.JOIN.register { _, _, _ ->
-            historyQueries.clear()
-            historyArchiveStatus.clear()
-            profileResolver.clearSession()
-            historyChatEntries.clear()
+            sessionLifecycle.beginSession()
             MahjongChannels.requestSnapshot.sendToServer(json, Unit)
             // 伺服器端的自動整理手牌偏好純記憶體、不撐過伺服器重啟（見 HandSortPreferenceStore KDoc），
             // 每次加入世界都重送一次 client 本地記得的偏好，確保重啟後不需要玩家手動再切一次。
             autoSortHandPreferenceService.restoreToServer()
         }
         ClientPlayConnectionEvents.DISCONNECT.register { _, _ ->
-            historyQueries.clear()
-            historyArchiveStatus.clear()
-            profileResolver.clearSession()
-            historyChatEntries.clear()
-            stateStore.clear()
-            automaticControlUpdateCoordinator.clear()
-            decisionTimerStore.clear()
-            decisionPromptStore.clear()
-            decisionHudController.clear()
+            sessionLifecycle.endSession()
         }
     }
 

@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.ai
 
+import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
+
 /**
  * [MahjongAiStrategyRegistry] 的預設實作。建構時是空的對照表，不預先塞入任何策略。要新增策略，
  * 直接呼叫 [register] 即可，不需要修改這個類別——連內建的 [RandomAiStrategy] 也是透過
@@ -15,10 +17,11 @@ class MahjongAiStrategyRegistryImpl(private val defaultKey: String) : MahjongAiS
     /** 是否已禁止後續註冊。 */
     private var frozen = false
 
-    override fun register(key: String, factory: () -> MahjongAiStrategy) {
+    override fun register(definition: MahjongAiStrategyDefinition) {
         check(!frozen) { "AI strategy registry is frozen" }
-        require(key !in factoriesByKey) { "AI strategy already registered: $key" }
-        factoriesByKey[key] = factory
+        NamespacedId.requireValid(definition.key) { "AI strategy key must be namespaced: ${definition.key}" }
+        require(definition.key !in factoriesByKey) { "AI strategy already registered: ${definition.key}" }
+        factoriesByKey[definition.key] = definition.factory
     }
 
     override fun freeze() {

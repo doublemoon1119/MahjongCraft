@@ -20,7 +20,7 @@ class RoundInfoLineDisplayRegistryTest {
     fun `built-in and third-party keys resolve registered displays`() {
         val registry = RoundInfoLineDisplayRegistryImpl().apply {
             BundledRiichiMinecraftExtension.registerRoundInfoPresentations(this)
-            register("example:custom", RoundInfoLineDisplay("example.message.custom"))
+            register(RoundInfoLineDisplayDefinition("example:custom", RoundInfoLineDisplay("example.message.custom")))
         }
 
         val title = registry.find("mahjongcraft:riichi/round_title")
@@ -63,8 +63,8 @@ class RoundInfoLineDisplayRegistryTest {
     fun `custom and missing providers are independent of riichi`() {
         val state = FakeTableStateFactory.create()
         val registry = RoundInfoLineDisplayRegistryImpl().apply {
-            register("example:custom", RoundInfoLineDisplay("example.message.custom"))
-            register("example:rule", RoundInfoLineProvider { listOf(RoundInfoLine("example:custom", listOf(RoundInfoArgument.Number(it.comboCount)))) })
+            register(RoundInfoLineDisplayDefinition("example:custom", RoundInfoLineDisplay("example.message.custom")))
+            register(RoundInfoLineProviderDefinition("example:rule", RoundInfoLineProvider { listOf(RoundInfoLine("example:custom", listOf(RoundInfoArgument.Number(it.comboCount)))) }))
         }
 
         assertEquals(listOf(RoundInfoLine("example:custom", listOf(RoundInfoArgument.Number(state.comboCount)))), registry.buildLines("example:rule", state))
@@ -77,7 +77,7 @@ class RoundInfoLineDisplayRegistryTest {
         val registry = RoundInfoLineDisplayRegistryImpl().apply { freeze() }
 
         assertFailsWith<IllegalStateException> {
-            registry.register("example:late", RoundInfoLineDisplay("example.message.late"))
+            registry.register(RoundInfoLineDisplayDefinition("example:late", RoundInfoLineDisplay("example.message.late")))
         }
     }
 
@@ -85,11 +85,22 @@ class RoundInfoLineDisplayRegistryTest {
     @Test
     fun `duplicate key registration is rejected`() {
         val registry = RoundInfoLineDisplayRegistryImpl().apply {
-            register("example:duplicate", RoundInfoLineDisplay("example.message.a"))
+            register(RoundInfoLineDisplayDefinition("example:duplicate", RoundInfoLineDisplay("example.message.a")))
         }
 
         assertFailsWith<IllegalArgumentException> {
-            registry.register("example:duplicate", RoundInfoLineDisplay("example.message.b"))
+            registry.register(RoundInfoLineDisplayDefinition("example:duplicate", RoundInfoLineDisplay("example.message.b")))
         }
+    }
+
+    /** 顯示行與 provider 使用同一 ID 時仍保留可辨識的診斷前綴。 */
+    @Test
+    fun `registration keys distinguish display and provider entries`() {
+        val registry = RoundInfoLineDisplayRegistryImpl().apply {
+            register(RoundInfoLineDisplayDefinition("example:same", RoundInfoLineDisplay("example.message.same")))
+            register(RoundInfoLineProviderDefinition("example:same", RoundInfoLineProvider { emptyList() }))
+        }
+
+        assertEquals(setOf("line:example:same", "provider:example:same"), registry.registrationKeys)
     }
 }

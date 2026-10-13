@@ -259,7 +259,7 @@ class RandomAiStrategyTest {
     @Test
     fun `test own turn uses explicitly injected extension action handler`() = runTest {
         val registry = ExtensionGameActionAiRegistry(MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }).apply {
-            register(TestExtensionAction::class) { _, _, _ -> listOf(ExtensionCommandCandidate(GameCommand.Extension(TestExtensionCommand))) }
+            register(ExtensionGameActionAiDefinition(TestExtensionAction::class) { _, _, _ -> listOf(ExtensionCommandCandidate(GameCommand.Extension(TestExtensionCommand))) })
             freeze()
         }
         val strategy = RandomAiStrategy(registry, Random(42))

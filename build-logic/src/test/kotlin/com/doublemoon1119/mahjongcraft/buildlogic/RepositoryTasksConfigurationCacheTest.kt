@@ -14,7 +14,7 @@ import kotlin.test.assertTrue
 class RepositoryTasksConfigurationCacheTest {
     /** `check` 串接的驗證任務在第一次執行時存入 configuration cache，第二次直接重用且結果相同。 */
     @Test
-    fun verificationTasksReuseConfigurationCache() = withFixture { root ->
+    fun `verification tasks reuse configuration cache`() = withFixture { root ->
         prepareBuild(root)
 
         val first = runner(root, "check", "--configuration-cache").build()
@@ -29,7 +29,7 @@ class RepositoryTasksConfigurationCacheTest {
 
     /** 從 configuration cache 重用時仍讀到最新的版本設定，版本不符照樣失敗。 */
     @Test
-    fun versionPolicyStillFailsWhenVersionsMismatch() = withFixture { root ->
+    fun `version policy still fails when versions mismatch`() = withFixture { root ->
         prepareBuild(root)
         root.resolve("mahjong-logic/build.gradle.kts").writeText("version = \"9.9.9\"\n")
 
@@ -40,7 +40,7 @@ class RepositoryTasksConfigurationCacheTest {
 
     /** target 管理任務可在 configuration cache 下執行與重用。 */
     @Test
-    fun targetTasksReuseConfigurationCache() = withFixture { root ->
+    fun `target tasks reuse configuration cache`() = withFixture { root ->
         prepareBuild(root)
 
         val first = runner(root, "listPlatformTargets", "--configuration-cache").build()

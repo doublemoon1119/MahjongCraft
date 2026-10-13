@@ -29,8 +29,9 @@ internal class HistoryArchiveStatusController(
     private val scope: CoroutineScope,
     private val pollInterval: Duration = 1.seconds,
     private val maxPolls: Int = 10,
-    private val responseTimeout: Duration = 5.seconds,
+    private val responseTimeout: Duration = HistoryBrowseTiming.archiveResponseTimeout,
     private val now: () -> Duration = { System.nanoTime().nanoseconds },
+    private val requestGate: ClientHistoryRequestGate? = null,
 ) {
     /** 供畫面觀察的狀態值。 */
     private val mutableView = MutableStateFlow<HistoryArchiveStatusView>(HistoryArchiveStatusView.Idle)
@@ -112,6 +113,8 @@ internal class HistoryArchiveStatusController(
     private suspend fun poll(matchId: String) {
         repeat(maxPolls.coerceAtLeast(1)) {
             awaitInterval()
+            if (paused || transport.sessionRevision.value != revision || target != matchId) return
+            requestGate?.awaitSendSlot(ClientHistoryRequestPriority.BACKGROUND)
             if (paused || transport.sessionRevision.value != revision || target != matchId) return
             lastSentAt = now()
             val requestId = runCatching { transport.query(matchId) }.getOrNull()

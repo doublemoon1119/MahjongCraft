@@ -19,7 +19,9 @@ class TileDisplayNameRegistryImpl : TileDisplayNameRegistry {
     override var isFrozen: Boolean = false
         private set
 
-    override fun register(typeId: TileTypeId, translationKey: String) {
+    override fun register(definition: TileDisplayNameDefinition) {
+        val typeId = definition.typeId
+        val translationKey = definition.translationKey
         check(!isFrozen) { "Tile display name registry is frozen" }
         require(typeId !in translationKeysByTypeId) {
             "Display name already registered for tile type: $typeId"

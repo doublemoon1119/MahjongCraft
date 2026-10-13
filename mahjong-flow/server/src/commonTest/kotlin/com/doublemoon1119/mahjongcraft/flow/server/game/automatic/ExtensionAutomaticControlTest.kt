@@ -18,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.AutomaticControlAction
 import com.doublemoon1119.mahjongcraft.logic.module.AutomaticControlPolicy
 import com.doublemoon1119.mahjongcraft.logic.module.AutomaticControlResult
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
@@ -114,9 +115,11 @@ class ExtensionAutomaticControlTest {
 
     /** 只登記測試替身的 registry；替身的規則行為完全沿用正式日麻模組，只多一個自訂控制。 */
     private fun extensionModuleRegistry() = MahjongModuleRegistryImpl().apply {
-        register(RiichiRuleConfig::class, EXTENSION_RULE_MODULE_ID) { config, _ ->
-            ExtensionControlRuleModule(RiichiRuleModule("mahjongcraft:riichi", config))
-        }
+        register(
+            MahjongModuleDefinition(RiichiRuleConfig::class, EXTENSION_RULE_MODULE_ID) { config, _ ->
+                ExtensionControlRuleModule(RiichiRuleModule("mahjongcraft:riichi", config))
+            },
+        )
         freeze()
     }
 

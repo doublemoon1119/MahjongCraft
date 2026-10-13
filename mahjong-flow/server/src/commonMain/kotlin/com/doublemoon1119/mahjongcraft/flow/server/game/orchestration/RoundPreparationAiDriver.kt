@@ -7,7 +7,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.accepts
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicy
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
-import kotlinx.coroutines.CancellationException
 import org.koin.core.annotation.Factory
 import kotlin.uuid.Uuid
 
@@ -63,12 +62,7 @@ class RoundPreparationAiDriver(
                 gameId = gameId,
                 playerId = player.id,
                 strategyKey = strategyKey,
-                decide = {
-                    runCatching { strategy.decideRoundPreparation(context) }.getOrElse { error ->
-                        if (error is CancellationException) throw error
-                        fallback
-                    }
-                },
+                decide = { strategy.decideRoundPreparation(context) },
                 fallback = { fallback },
             ) ?: return null
         } else {

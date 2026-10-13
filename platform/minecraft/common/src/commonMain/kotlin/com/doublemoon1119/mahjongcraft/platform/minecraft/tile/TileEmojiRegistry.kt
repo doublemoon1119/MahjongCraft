@@ -18,14 +18,11 @@ interface TileEmojiRegistry {
     val isFrozen: Boolean
 
     /**
-     * 註冊一個 asset key 對應的牌面 emoji 字元。
+     * 登記完整描述；凍結後或身分重複時拒絕，不提前呼叫來源。
      *
-     * @param assetKey 牌資產 key。
-     * @param emoji 顯示用 emoji 字元。
-     * @throws IllegalStateException 當 registry 已凍結時拋出。
-     * @throws IllegalArgumentException 當 [assetKey] 已存在對應映射時拋出。
+     * @param definition 集中保存登記身分與內容的描述。
      */
-    fun register(assetKey: String, emoji: String)
+    fun register(definition: TileEmojiDefinition)
 
     /** 凍結 registry；後續呼叫 [register] 將失敗。 */
     fun freeze()

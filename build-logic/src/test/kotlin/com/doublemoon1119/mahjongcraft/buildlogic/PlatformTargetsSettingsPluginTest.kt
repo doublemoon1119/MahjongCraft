@@ -13,7 +13,7 @@ import kotlin.test.assertTrue
 class PlatformTargetsSettingsPluginTest {
     /** 完全未指定 target 時必須使用內建 core。 */
     @Test
-    fun defaultsToCoreTarget() = withFixture { root ->
+    fun `defaults to core target`() = withFixture { root ->
         prepareBuild(root)
 
         val result = runner(root).withArguments("selectedTarget").build()
@@ -24,7 +24,7 @@ class PlatformTargetsSettingsPluginTest {
 
     /** CLI core target 必須覆寫 local Minecraft target。 */
     @Test
-    fun explicitCoreOverridesLocalTarget() = withFixture { root ->
+    fun `explicit core overrides local target`() = withFixture { root ->
         prepareBuild(root)
         root.resolve("local.dev.properties").writeText("mahjongcraftTarget=minecraft-test\n")
 
@@ -36,7 +36,7 @@ class PlatformTargetsSettingsPluginTest {
 
     /** 未知 target 必須列出合法選項並使 Settings 階段失敗。 */
     @Test
-    fun rejectsUnknownTarget() = withFixture { root ->
+    fun `rejects unknown target`() = withFixture { root ->
         prepareBuild(root)
 
         val result = runner(root).withArguments("help", "-PmahjongcraftTarget=unknown").buildAndFail()

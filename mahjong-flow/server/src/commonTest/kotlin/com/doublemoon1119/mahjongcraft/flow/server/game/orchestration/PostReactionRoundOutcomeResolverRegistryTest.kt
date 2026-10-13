@@ -27,7 +27,7 @@ class PostReactionRoundOutcomeResolverRegistryTest {
 
         registry.resolve(FakeTableStateFactory.create(config = RiichiRuleConfig()), module)
 
-        assertEquals(listOf("test:a", "test:b", "test:z"), calls)
+        assertEquals(listOf("test:z", "test:a", "test:b"), calls)
     }
 
     /** 驗證凍結後拒絕任何額外登記。 */

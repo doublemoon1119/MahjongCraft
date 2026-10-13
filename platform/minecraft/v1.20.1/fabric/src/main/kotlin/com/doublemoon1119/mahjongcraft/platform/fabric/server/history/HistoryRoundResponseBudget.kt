@@ -41,7 +41,7 @@ internal fun boundedHistoryRoundEvents(
             events = mapped.copy(transactions = transactions, nextTransactionIndex = next, tileCatalog = catalog),
             errorCode = null,
         )
-        if (json.encodeToString(HistoryRoundEventsResponseDto.serializer(), response).encodeToByteArray().size <= maximumBytes) return response
+        if (encodedHistoryResponseUtf8Size(json, HistoryRoundEventsResponseDto.serializer(), response) <= maximumBytes) return response
         if (count <= 1) {
             return HistoryRoundEventsResponseDto(
                 request.requestId,
@@ -72,7 +72,7 @@ internal fun boundedHistoryRoundState(
     maximumBytes: Int = HistoryQueryLimits.RESPONSE_BYTES,
 ): HistoryRoundStateResponseDto {
     val response = HistoryRoundStateResponseDto(request.requestId, request.matchId, request.roundNumber, request.position, state = state.toDto(), errorCode = null)
-    return if (json.encodeToString(HistoryRoundStateResponseDto.serializer(), response).encodeToByteArray().size <= maximumBytes) {
+    return if (encodedHistoryResponseUtf8Size(json, HistoryRoundStateResponseDto.serializer(), response) <= maximumBytes) {
         response
     } else {
         HistoryRoundStateResponseDto(request.requestId, request.matchId, request.roundNumber, request.position, errorCode = HistoryQueryErrorCodeDto.CONTENT_TOO_LARGE, state = null)

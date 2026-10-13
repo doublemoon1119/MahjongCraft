@@ -1,10 +1,12 @@
 package com.doublemoon1119.mahjongcraft.extension
 
 import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
+import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyDefinition
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.ai.expectation.NeutralOpponentModel
+import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelDefinition
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExtensionGameCommand
@@ -20,6 +22,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.MahjongRuleConfigDt
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.PlayerRuleStateDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.ScoreConfigDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.HistoryReplayProjectionDefinition
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.HistoryReplayProjectionRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
@@ -36,6 +39,7 @@ import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.config.GameLength
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.config.ScoreConfig
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
@@ -98,19 +102,21 @@ class MahjongExtensionRegistrarTest {
             tileTypeRegistry.require(TileTypeId.parse("example:flower/spring")).id,
         )
         assertFailsWith<IllegalStateException> {
-            moduleRegistry.register(TaiwanRuleConfig::class, "example:taiwan") { config, id ->
-                TaiwanRuleModule(id, config)
-            }
+            moduleRegistry.register(
+                MahjongModuleDefinition(TaiwanRuleConfig::class, "example:taiwan") { config, id ->
+                    TaiwanRuleModule(id, config)
+                },
+            )
         }
         assertFailsWith<IllegalStateException> {
             tileTypeRegistry.register(TileTypeDefinition(TileTypeId.parse("example:late")))
         }
         assertFailsWith<IllegalStateException> {
-            aiStrategyRegistry.register("example:late") { RandomAiStrategy(ExtensionGameActionAiRegistry(MahjongModuleRegistryImpl())) }
+            aiStrategyRegistry.register(MahjongAiStrategyDefinition("example:late") { RandomAiStrategy(ExtensionGameActionAiRegistry(MahjongModuleRegistryImpl())) })
         }
         assertEquals(setOf(RecordingExtension.RULE_MODULE_ID), opponentModelRegistry.registrationKeys)
         assertFailsWith<IllegalStateException> {
-            opponentModelRegistry.register("example:late") { _, depth -> NeutralOpponentModel(depth) }
+            opponentModelRegistry.register(OpponentModelDefinition("example:late") { _, depth -> NeutralOpponentModel(depth) })
         }
     }
 
@@ -118,7 +124,7 @@ class MahjongExtensionRegistrarTest {
     @Test
     fun `registrations are grouped by the source that registered them`() {
         val opponentModelRegistry = OpponentModelRegistry().apply {
-            register("example:built_in_rule") { _, depth -> NeutralOpponentModel(depth) }
+            register(OpponentModelDefinition("example:built_in_rule") { _, depth -> NeutralOpponentModel(depth) })
         }
 
         val sources = MahjongExtensionRegistrar.registerAndFreeze(
@@ -184,9 +190,11 @@ class MahjongExtensionRegistrarTest {
             override val id: String = "example:partial_failure"
 
             override fun registerRuleModules(registry: MahjongModuleRegistry) {
-                registry.register(RiichiRuleConfig::class, "example:partial_rule") { config, id ->
-                    RiichiRuleModule(id, config)
-                }
+                registry.register(
+                    MahjongModuleDefinition(RiichiRuleConfig::class, "example:partial_rule") { config, id ->
+                        RiichiRuleModule(id, config)
+                    },
+                )
             }
 
             override fun registerTileTypes(registry: TileTypeRegistry) {
@@ -208,14 +216,18 @@ class MahjongExtensionRegistrarTest {
             TileTypeId.parse("example:partial_tile"),
             tileTypeRegistry.require(TileTypeId.parse("example:partial_tile")).id,
         )
-        moduleRegistry.register(TaiwanRuleConfig::class, "example:after_failure") { config, id ->
-            TaiwanRuleModule(id, config)
-        }
+        moduleRegistry.register(
+            MahjongModuleDefinition(TaiwanRuleConfig::class, "example:after_failure") { config, id ->
+                TaiwanRuleModule(id, config)
+            },
+        )
         tileTypeRegistry.register(TileTypeDefinition(TileTypeId.parse("example:after_failure")))
-        registries.aiStrategyRegistry.register("example:after_failure") {
-            RandomAiStrategy(ExtensionGameActionAiRegistry(registries.moduleRegistry))
-        }
-        registries.opponentModelRegistry.register("example:after_failure") { _, depth -> NeutralOpponentModel(depth) }
+        registries.aiStrategyRegistry.register(
+            MahjongAiStrategyDefinition("example:after_failure") {
+                RandomAiStrategy(ExtensionGameActionAiRegistry(registries.moduleRegistry))
+            },
+        )
+        registries.opponentModelRegistry.register(OpponentModelDefinition("example:after_failure") { _, depth -> NeutralOpponentModel(depth) })
     }
 
     /** 驗證相同 extension ID 不會形成無法判斷來源的部分註冊結果。 */
@@ -343,7 +355,7 @@ private class RecordingExtension(
 
     override fun registerRuleModules(registry: MahjongModuleRegistry) {
         calls += "rule"
-        registry.register(RiichiRuleConfig::class, RULE_MODULE_ID) { config, id -> RiichiRuleModule(id, config) }
+        registry.register(MahjongModuleDefinition(RiichiRuleConfig::class, RULE_MODULE_ID) { config, id -> RiichiRuleModule(id, config) })
     }
 
     override fun registerTileTypes(registry: TileTypeRegistry) {
@@ -361,17 +373,17 @@ private class RecordingExtension(
 
     override fun registerHistoryReplayProjections(registry: HistoryReplayProjectionRegistry) {
         calls += "replay"
-        registry.registerAction("example:recorded_action") { _, _ -> HistoryReplayFact.Opaque("example:recorded_action") }
+        registry.register(HistoryReplayProjectionDefinition.Action("example:recorded_action") { _, _ -> HistoryReplayFact.Opaque("example:recorded_action") })
     }
 
     override fun registerAiStrategies(registry: MahjongAiStrategyRegistry) {
         calls += "strategy"
-        registry.register(STRATEGY_KEY) { RandomAiStrategy(ExtensionGameActionAiRegistry(MahjongModuleRegistryImpl())) }
+        registry.register(MahjongAiStrategyDefinition(STRATEGY_KEY) { RandomAiStrategy(ExtensionGameActionAiRegistry(MahjongModuleRegistryImpl())) })
     }
 
     override fun registerOpponentModels(registry: OpponentModelRegistry) {
         calls += "opponent"
-        registry.register(RULE_MODULE_ID) { _, depth -> NeutralOpponentModel(depth) }
+        registry.register(OpponentModelDefinition(RULE_MODULE_ID) { _, depth -> NeutralOpponentModel(depth) })
     }
 
     /** 此測試 extension 的常數。 */
@@ -410,7 +422,7 @@ private class StrategyExtension(override val id: String) : MahjongExtension {
     override fun registerPersistenceDtos(registries: PersistenceRegistries) = Unit
 
     override fun registerAiStrategies(registry: MahjongAiStrategyRegistry) {
-        registry.register(STRATEGY_KEY) { RandomAiStrategy(ExtensionGameActionAiRegistry(MahjongModuleRegistryImpl())) }
+        registry.register(MahjongAiStrategyDefinition(STRATEGY_KEY) { RandomAiStrategy(ExtensionGameActionAiRegistry(MahjongModuleRegistryImpl())) })
     }
 
     /** 兩個測試 extension 共用的常數。 */

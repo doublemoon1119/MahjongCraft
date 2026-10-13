@@ -9,15 +9,11 @@ interface HistoryDiscardMarkerDisplayRegistry {
     val isFrozen: Boolean
 
     /**
-     * 登記一種標記的呈現方式；重複 ID 會失敗。
+     * 登記完整描述；凍結後或身分重複時拒絕，不提前呼叫來源。
      *
-     * @param markerId 歷史牌河標記的完整 ID。
-     * @param display 該標記的顯示名稱與是否橫擺設定。
+     * @param definition 集中保存登記身分與內容的描述。
      */
-    fun register(
-        markerId: String,
-        display: HistoryDiscardMarkerDisplay,
-    )
+    fun register(definition: HistoryDiscardMarkerDisplayDefinition)
 
     /**
      * 查詢標記的呈現方式；未登記時回傳 null。

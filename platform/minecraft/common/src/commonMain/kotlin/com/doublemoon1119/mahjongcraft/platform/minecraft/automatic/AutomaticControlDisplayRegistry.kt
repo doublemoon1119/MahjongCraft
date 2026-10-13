@@ -9,12 +9,11 @@ interface AutomaticControlDisplayRegistry {
     val isFrozen: Boolean
 
     /**
-     * 登記一項自動操作的顯示資料。
+     * 登記完整描述；凍結後或身分重複時拒絕，不提前呼叫來源。
      *
-     * @param controlId 自動操作的穩定 ID。
-     * @param display 要顯示的名稱、說明與順序。
+     * @param definition 集中保存登記身分與內容的描述。
      */
-    fun register(controlId: String, display: AutomaticControlDisplay)
+    fun register(definition: AutomaticControlDisplayDefinition)
 
     /**
      * 查詢指定 control ID 的顯示資料；未登記時回傳 `null`。

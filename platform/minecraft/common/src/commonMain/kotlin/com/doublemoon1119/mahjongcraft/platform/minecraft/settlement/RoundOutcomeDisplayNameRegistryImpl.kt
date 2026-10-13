@@ -8,14 +8,15 @@ import org.koin.core.annotation.Single
 class RoundOutcomeDisplayNameRegistryImpl : RoundOutcomeDisplayNameRegistry {
     /** 特殊本局結果 ID 對應的本地化名稱。 */
     private val translations = mutableMapOf<String, String>()
+
     override var isFrozen: Boolean = false
         private set
+
     override val registrationKeys: Set<String> get() = translations.keys.toSet()
 
-    override fun register(
-        outcomeId: String,
-        translationKey: String,
-    ) {
+    override fun register(definition: RoundOutcomeDisplayNameDefinition) {
+        val outcomeId = definition.outcomeId
+        val translationKey = definition.translationKey
         check(!isFrozen) { "Round outcome display-name registry is frozen" }
         NamespacedId.requireValid(outcomeId) { "Round outcome ID must be namespaced: $outcomeId" }
         require(translationKey.isNotBlank()) { "Translation key must not be blank" }

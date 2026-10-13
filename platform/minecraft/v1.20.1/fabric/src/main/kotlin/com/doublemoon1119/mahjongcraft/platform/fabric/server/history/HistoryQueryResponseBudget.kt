@@ -10,11 +10,34 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistorySor
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryListResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryErrorCodeDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSettingsResponseDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.HistoryQueryLimits
 import kotlinx.serialization.json.Json
 import kotlin.uuid.Uuid
+
+/**
+ * 將單場摘要限制在歷史查詢回覆的 UTF-8 位元組上限內。
+ *
+ * @param requestId 回應配對識別碼。
+ * @param response 已建立的摘要回應。
+ * @param json 線路編碼設定。
+ * @param limit UTF-8 位元組上限。
+ * @return 原回應或不含摘要內容的超限錯誤。
+ */
+internal fun boundedHistorySummary(
+    requestId: String,
+    response: HistorySummaryResponseDto,
+    json: Json,
+    limit: Int = HistoryQueryLimits.RESPONSE_BYTES,
+): HistorySummaryResponseDto = if (
+    encodedHistoryResponseUtf8Size(json, HistorySummaryResponseDto.serializer(), response) <= limit
+) {
+    response
+} else {
+    HistorySummaryResponseDto(requestId, errorCode = HistoryQueryErrorCodeDto.CONTENT_TOO_LARGE, detail = null)
+}
 
 /**
  * 將清單縮減為能以完整項目傳送的頁面，不切割單筆摘要。
@@ -42,7 +65,7 @@ internal fun boundedHistoryPage(
         val entries = page.entries.take(count)
         val cursor = if (count < page.entries.size) entries.lastOrNull()?.cursorAfter(request, principalId) else page.nextCursor
         val response = HistoryListResponseDto(requestId, entries.map { it.toDto() }, cursor?.let(encodeCursor), errorCode = null, allowAll = false, allowStressTest = false)
-        if (json.encodeToString(HistoryListResponseDto.serializer(), response).toByteArray(Charsets.UTF_8).size <= limit) return response
+        if (encodedHistoryResponseUtf8Size(json, HistoryListResponseDto.serializer(), response) <= limit) return response
         if (count <= 1) return HistoryListResponseDto(requestId, emptyList(), nextCursor = null, errorCode = HistoryQueryErrorCodeDto.CONTENT_TOO_LARGE, allowAll = false, allowStressTest = false)
         count--
     }
@@ -72,7 +95,7 @@ internal fun boundedHistoryRuleSettings(
     } catch (_: IllegalStateException) {
         return HistoryRuleSettingsResponseDto(requestId, errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE, config = null)
     }
-    return if (json.encodeToString(HistoryRuleSettingsResponseDto.serializer(), response).toByteArray(Charsets.UTF_8).size <= limit) {
+    return if (encodedHistoryResponseUtf8Size(json, HistoryRuleSettingsResponseDto.serializer(), response) <= limit) {
         response
     } else {
         HistoryRuleSettingsResponseDto(requestId, errorCode = HistoryQueryErrorCodeDto.CONTENT_TOO_LARGE, config = null)

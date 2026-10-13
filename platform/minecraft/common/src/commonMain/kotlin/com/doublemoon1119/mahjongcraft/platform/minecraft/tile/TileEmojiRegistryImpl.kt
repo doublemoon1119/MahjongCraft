@@ -18,7 +18,9 @@ class TileEmojiRegistryImpl : TileEmojiRegistry {
     override var isFrozen: Boolean = false
         private set
 
-    override fun register(assetKey: String, emoji: String) {
+    override fun register(definition: TileEmojiDefinition) {
+        val assetKey = definition.assetKey
+        val emoji = definition.emoji
         check(!isFrozen) { "Tile emoji registry is frozen" }
         require(assetKey !in emojisByAssetKey) {
             "Emoji already registered for tile asset key: $assetKey"

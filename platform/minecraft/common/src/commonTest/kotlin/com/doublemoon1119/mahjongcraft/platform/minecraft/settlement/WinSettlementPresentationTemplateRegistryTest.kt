@@ -133,11 +133,13 @@ class WinSettlementPresentationTemplateRegistryTest {
             ),
         )
         val registry = WinSettlementPresentationTemplateRegistryImpl()
-        registry.registerFieldProvider(identity) {
-            PresentationValue.PlayerIdentityValue("player", "Player", isAi = false)
-        }
+        registry.register(
+            WinSettlementPresentationFieldProviderDefinition(identity) {
+                PresentationValue.PlayerIdentityValue("player", "Player", isAi = false)
+            },
+        )
         val labelField = PresentationFieldId("example:detail")
-        registry.registerTemplate(
+        registry.register(
             WinSettlementPresentationTemplate(
                 "example:animated",
                 animated,
@@ -185,9 +187,9 @@ class WinSettlementPresentationTemplateRegistryTest {
         }
         assertNull(registry.findDetailTextFormatter(RiichiWinSettlementIds.DORA_FIELD))
         assertFailsWith<IllegalArgumentException> {
-            registry.registerDetailTextFormatter(RiichiWinSettlementIds.YAKU_FIELD, FallbackWinSettlementDetailTextFormatter)
+            registry.register(WinSettlementDetailTextFormatterDefinition(RiichiWinSettlementIds.YAKU_FIELD, FallbackWinSettlementDetailTextFormatter))
         }
-        assertFailsWith<IllegalArgumentException> { registry.bindRuleTemplate(BuiltInRuleModuleIds.RIICHI, "example:other") }
+        assertFailsWith<IllegalArgumentException> { registry.register(WinSettlementRuleTemplateBindingDefinition(BuiltInRuleModuleIds.RIICHI, "example:other")) }
     }
 
     @Test
@@ -196,7 +198,7 @@ class WinSettlementPresentationTemplateRegistryTest {
         registry.registerBundledWinSettlementTemplates()
         registry.freeze()
         assertFailsWith<IllegalStateException> {
-            registry.registerTemplate(
+            registry.register(
                 WinSettlementPresentationTemplate("example:late", PresentationLayout.Spacer()),
             )
         }

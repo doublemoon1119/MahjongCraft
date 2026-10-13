@@ -9,12 +9,11 @@ interface PublicPlayerIndicatorDisplayRegistry {
     val isFrozen: Boolean
 
     /**
-     * 登記一項公開玩家標記的顯示資料。
+     * 登記完整描述；凍結後或身分重複時拒絕，不提前呼叫來源。
      *
-     * @param id 公開 indicator、option 或付款原因的完整 ID。
-     * @param display 本地化名稱與 RGB 顏色設定。
+     * @param definition 集中保存登記身分與內容的描述。
      */
-    fun register(id: String, display: PublicPlayerIndicatorDisplay)
+    fun register(definition: PublicPlayerIndicatorDisplayDefinition)
 
     /**
      * 查詢指定標記的顯示資料；未登記時回傳 null。

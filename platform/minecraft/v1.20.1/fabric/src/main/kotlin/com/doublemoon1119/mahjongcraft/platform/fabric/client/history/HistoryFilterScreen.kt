@@ -331,22 +331,6 @@ internal class HistoryFilterScreen(
         mouseY < rulePickerBottom()
 
     /**
-     * 建立列出目前值與可選值的 tooltip。
-     *
-     * @param title 選項名稱。
-     * @param current 目前選值。
-     * @param options 可選值。
-     * @return 格式化後的 tooltip 文字。
-     */
-    private fun optionTooltip(title: Text, current: Text, options: List<Text>): Text = Text.empty()
-        .append(Text.translatable(MinecraftHistoryScreenKeys.TOOLTIP_DESCRIPTION, title).formatted(Formatting.GRAY))
-        .append("\n")
-        .append(Text.translatable(MinecraftHistoryScreenKeys.TOOLTIP_CURRENT, current).formatted(Formatting.GREEN))
-        .append("\n")
-        .append(Text.translatable(MinecraftHistoryScreenKeys.TOOLTIP_OPTIONS).formatted(Formatting.GOLD))
-        .also { result -> options.forEach { option -> result.append("\n• ").append(option.copy().formatted(if (option.string == current.string) Formatting.GREEN else Formatting.WHITE)) } }
-
-    /**
      * 建立規則選擇器的 tooltip。
      *
      * @return 顯示目前規則與可選規則的 tooltip。
@@ -354,12 +338,17 @@ internal class HistoryFilterScreen(
     private fun ruleTooltip(): Text {
         val current = session.filterDraft.input.ruleId.takeUnless(String::isEmpty)?.let { Text.literal(it) }
             ?: Text.translatable(MinecraftHistoryScreenKeys.FILTER_ANY)
-        return optionTooltip(
+        val options = listOf(Text.translatable(MinecraftHistoryScreenKeys.FILTER_ANY)) + session.ruleNames.registrationKeys.sorted().map { id ->
+            session.ruleNames.find(id)?.let(Text::translatable)?.let { Text.empty().append(it).append(" (").append(id).append(")") } ?: Text.literal(id)
+        }
+        val selectedIndex = session.filterDraft.input.ruleId.takeUnless(String::isEmpty)?.let { id ->
+            session.ruleNames.registrationKeys.sorted().indexOf(id).takeIf { it >= 0 }?.plus(1)
+        } ?: 0
+        return historyOptionTooltip(
             Text.translatable(MinecraftHistoryScreenKeys.FILTER_RULE),
             current,
-            listOf(Text.translatable(MinecraftHistoryScreenKeys.FILTER_ANY)) + session.ruleNames.registrationKeys.sorted().map { id ->
-                session.ruleNames.find(id)?.let(Text::translatable)?.let { Text.empty().append(it).append(" (").append(id).append(")") } ?: Text.literal(id)
-            },
+            selectedIndex,
+            options,
         )
     }
 
@@ -507,9 +496,12 @@ internal class HistoryFilterScreen(
         outcomeButton?.message = outcomeLabel(session.filterDraft.input.outcome)
         integrityButton?.message = integrityLabel(session.filterDraft.input.integrity)
         aiButton?.message = aiLabel(session.filterDraft.input.ai)
-        outcomeButton?.tooltip = Tooltip.of(CycleButtonInput.withHint(tooltip = optionTooltip(Text.translatable(MinecraftHistoryScreenKeys.FILTER_OUTCOME), outcomeLabel(session.filterDraft.input.outcome), listOf(Text.translatable(MinecraftHistoryScreenKeys.FILTER_ANY)) + HistoryOutcomeFilterDto.entries.map(::outcomeLabel)), optionCount = HistoryOutcomeFilterDto.entries.size + 1))
-        integrityButton?.tooltip = Tooltip.of(CycleButtonInput.withHint(tooltip = optionTooltip(Text.translatable(MinecraftHistoryScreenKeys.FILTER_INTEGRITY), integrityLabel(session.filterDraft.input.integrity), listOf(Text.translatable(MinecraftHistoryScreenKeys.FILTER_ANY)) + HistoryIntegrityFilterDto.entries.map(::integrityLabel)), optionCount = HistoryIntegrityFilterDto.entries.size + 1))
-        aiButton?.tooltip = Tooltip.of(CycleButtonInput.withHint(tooltip = optionTooltip(Text.translatable(MinecraftHistoryScreenKeys.FILTER_AI), aiLabel(session.filterDraft.input.ai), listOf(Text.translatable(MinecraftHistoryScreenKeys.FILTER_ANY)) + HistoryAiFilterDto.entries.map(::aiLabel)), optionCount = HistoryAiFilterDto.entries.size + 1))
+        val outcomeOptions = listOf(Text.translatable(MinecraftHistoryScreenKeys.FILTER_ANY)) + HistoryOutcomeFilterDto.entries.map(::outcomeLabel)
+        val integrityOptions = listOf(Text.translatable(MinecraftHistoryScreenKeys.FILTER_ANY)) + HistoryIntegrityFilterDto.entries.map(::integrityLabel)
+        val aiOptions = listOf(Text.translatable(MinecraftHistoryScreenKeys.FILTER_ANY)) + HistoryAiFilterDto.entries.map(::aiLabel)
+        outcomeButton?.tooltip = Tooltip.of(CycleButtonInput.withHint(tooltip = historyOptionTooltip(Text.translatable(MinecraftHistoryScreenKeys.FILTER_OUTCOME), outcomeLabel(session.filterDraft.input.outcome), session.filterDraft.input.outcome?.ordinal?.plus(1) ?: 0, outcomeOptions), optionCount = outcomeOptions.size))
+        integrityButton?.tooltip = Tooltip.of(CycleButtonInput.withHint(tooltip = historyOptionTooltip(Text.translatable(MinecraftHistoryScreenKeys.FILTER_INTEGRITY), integrityLabel(session.filterDraft.input.integrity), session.filterDraft.input.integrity?.ordinal?.plus(1) ?: 0, integrityOptions), optionCount = integrityOptions.size))
+        aiButton?.tooltip = Tooltip.of(CycleButtonInput.withHint(tooltip = historyOptionTooltip(Text.translatable(MinecraftHistoryScreenKeys.FILTER_AI), aiLabel(session.filterDraft.input.ai), session.filterDraft.input.ai?.ordinal?.plus(1) ?: 0, aiOptions), optionCount = aiOptions.size))
         ruleButton?.tooltip = Tooltip.of(ruleTooltip())
         ruleButton?.message = ruleDisplayLabel()
         if (layout.scrollableHeight > 0) {

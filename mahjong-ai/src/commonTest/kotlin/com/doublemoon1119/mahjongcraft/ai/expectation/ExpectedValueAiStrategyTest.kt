@@ -63,7 +63,7 @@ class ExpectedValueAiStrategyTest {
     fun `the strategy builds opponent models at its own reading depth`() = runTest {
         val requested = mutableListOf<ReadingDepth>()
         val registry = OpponentModelRegistry().apply {
-            register(ExpectationFixtures.module.id) { _, depth -> NeutralOpponentModel(depth).also { requested += depth } }
+            register(OpponentModelDefinition(ExpectationFixtures.module.id) { _, depth -> NeutralOpponentModel(depth).also { requested += depth } })
         }
         val self = player(Wind.SOUTH, hand = hand(listOf(m(1), m(2), m(3), p(4), p(5), p(6), s(7), s(8), m(6), m(7), s(9), s(9), Tile.Honor.East), drawn = Tile.Honor.North))
         val table = fourPlayers(self)

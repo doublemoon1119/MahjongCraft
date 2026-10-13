@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.bundled
 
+import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiDefinition
 import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
+import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelDefinition
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.ai.riichi.RiichiDeclarationAiHandler
 import com.doublemoon1119.mahjongcraft.ai.riichi.RiichiOpponentModel
@@ -10,8 +12,10 @@ import com.doublemoon1119.mahjongcraft.flow.common.di.RiichiWinCelebrationCueRes
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiGameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiPullNorthCommand
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverDefinition
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.DtoDefinition
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiDiscardPileDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiDynamicStateDto
@@ -29,8 +33,10 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.toRiichiDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.toThreePlayerRiichiDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan.toDomain
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceDtoDefinition
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toPersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.HistoryReplayProjectionDefinition
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.HistoryReplayProjectionRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.BuiltInDiscardPilePersistenceKeys
@@ -48,9 +54,11 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.RiichiRuleCo
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.ThreePlayerRiichiRuleConfigPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.toPersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryDefinition
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandHandler
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandHandlerDefinition
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.DeclareRiichiUseCase
@@ -59,9 +67,11 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiSuuchaRiich
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiSuufonRendaResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiSuukanNagareResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiWinSettlementDetailResolver
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverDefinition
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareTileSetAsideUseCase
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PULL_NORTH_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
@@ -92,10 +102,12 @@ object BundledRiichiExtension : MahjongExtension {
     override val id: String = MahjongCraftMetadata.id("riichi")
 
     override fun registerRuleModules(registry: MahjongModuleRegistry) {
-        registry.register(RiichiRuleConfig::class, BuiltInRuleModuleIds.RIICHI) { config, id -> RiichiRuleModule(id, config) }
-        registry.register(ThreePlayerRiichiRuleConfig::class, BuiltInRuleModuleIds.RIICHI_THREE_PLAYER) { config, id ->
-            ThreePlayerRiichiRuleModule(id, config)
-        }
+        registry.register(MahjongModuleDefinition(RiichiRuleConfig::class, BuiltInRuleModuleIds.RIICHI) { config, id -> RiichiRuleModule(id, config) })
+        registry.register(
+            MahjongModuleDefinition(ThreePlayerRiichiRuleConfig::class, BuiltInRuleModuleIds.RIICHI_THREE_PLAYER) { config, id ->
+                ThreePlayerRiichiRuleModule(id, config)
+            },
+        )
     }
 
     override fun registerTileTypes(registry: TileTypeRegistry) {
@@ -103,321 +115,393 @@ object BundledRiichiExtension : MahjongExtension {
     }
 
     override fun registerWinCelebrationCueResolvers(registry: WinCelebrationCueResolverRegistry) {
-        registry.register(BuiltInRuleModuleIds.RIICHI, RiichiWinCelebrationCueResolver)
-        registry.register(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, RiichiWinCelebrationCueResolver)
+        registry.register(WinCelebrationCueResolverDefinition(BuiltInRuleModuleIds.RIICHI, RiichiWinCelebrationCueResolver))
+        registry.register(WinCelebrationCueResolverDefinition(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, RiichiWinCelebrationCueResolver))
     }
 
     override fun registerNetworkDtos(registries: NetworkDtoRegistries) {
         registries.ruleConfig.register(
-            RiichiRuleConfig::class,
-            RiichiRuleConfigDto::class,
-            RiichiRuleConfigDto.serializer(),
-            { it.toRiichiDto(registries) },
-            { it.toDomain(registries) },
+            DtoDefinition(
+                RiichiRuleConfig::class,
+                RiichiRuleConfigDto::class,
+                RiichiRuleConfigDto.serializer(),
+                { it.toRiichiDto(registries) },
+                { it.toDomain(registries) },
+            ),
         )
         registries.ruleConfig.register(
-            ThreePlayerRiichiRuleConfig::class,
-            ThreePlayerRiichiRuleConfigDto::class,
-            ThreePlayerRiichiRuleConfigDto.serializer(),
-            { it.toThreePlayerRiichiDto(registries) },
-            { it.toDomain(registries) },
+            DtoDefinition(
+                ThreePlayerRiichiRuleConfig::class,
+                ThreePlayerRiichiRuleConfigDto::class,
+                ThreePlayerRiichiRuleConfigDto.serializer(),
+                { it.toThreePlayerRiichiDto(registries) },
+                { it.toDomain(registries) },
+            ),
         )
         registries.scoreConfig.register(
-            RiichiScoreConfig::class,
-            RiichiScoreConfigDto::class,
-            RiichiScoreConfigDto.serializer(),
-            RiichiScoreConfig::toRiichiDto,
-            RiichiScoreConfigDto::toDomain,
+            DtoDefinition(
+                RiichiScoreConfig::class,
+                RiichiScoreConfigDto::class,
+                RiichiScoreConfigDto.serializer(),
+                RiichiScoreConfig::toRiichiDto,
+                RiichiScoreConfigDto::toDomain,
+            ),
         )
         registries.gameLength.register(
-            RiichiGameLength.OneGame::class,
-            RiichiGameLengthDto.OneGame::class,
-            RiichiGameLengthDto.OneGame.serializer(),
-            { RiichiGameLengthDto.OneGame },
-            { RiichiGameLength.OneGame },
+            DtoDefinition(
+                RiichiGameLength.OneGame::class,
+                RiichiGameLengthDto.OneGame::class,
+                RiichiGameLengthDto.OneGame.serializer(),
+                { RiichiGameLengthDto.OneGame },
+                { RiichiGameLength.OneGame },
+            ),
         )
         registries.gameLength.register(
-            RiichiGameLength.East::class,
-            RiichiGameLengthDto.East::class,
-            RiichiGameLengthDto.East.serializer(),
-            { RiichiGameLengthDto.East },
-            { RiichiGameLength.East },
+            DtoDefinition(
+                RiichiGameLength.East::class,
+                RiichiGameLengthDto.East::class,
+                RiichiGameLengthDto.East.serializer(),
+                { RiichiGameLengthDto.East },
+                { RiichiGameLength.East },
+            ),
         )
         registries.gameLength.register(
-            RiichiGameLength.TwoWinds::class,
-            RiichiGameLengthDto.TwoWinds::class,
-            RiichiGameLengthDto.TwoWinds.serializer(),
-            { RiichiGameLengthDto.TwoWinds },
-            { RiichiGameLength.TwoWinds },
+            DtoDefinition(
+                RiichiGameLength.TwoWinds::class,
+                RiichiGameLengthDto.TwoWinds::class,
+                RiichiGameLengthDto.TwoWinds.serializer(),
+                { RiichiGameLengthDto.TwoWinds },
+                { RiichiGameLength.TwoWinds },
+            ),
         )
         registries.dynamicRuleState.register(
-            RiichiDynamicState::class,
-            RiichiDynamicStateDto::class,
-            RiichiDynamicStateDto.serializer(),
-            RiichiDynamicState::toRiichiDto,
-            RiichiDynamicStateDto::toDomain,
+            DtoDefinition(
+                RiichiDynamicState::class,
+                RiichiDynamicStateDto::class,
+                RiichiDynamicStateDto.serializer(),
+                RiichiDynamicState::toRiichiDto,
+                RiichiDynamicStateDto::toDomain,
+            ),
         )
         registries.playerRuleState.register(
-            RiichiPlayerState::class,
-            RiichiPlayerStateDto::class,
-            RiichiPlayerStateDto.serializer(),
-            RiichiPlayerState::toRiichiDto,
-            RiichiPlayerStateDto::toDomain,
+            DtoDefinition(
+                RiichiPlayerState::class,
+                RiichiPlayerStateDto::class,
+                RiichiPlayerStateDto.serializer(),
+                RiichiPlayerState::toRiichiDto,
+                RiichiPlayerStateDto::toDomain,
+            ),
         )
         registries.discardPile.register(
-            RiichiDiscardPile::class,
-            RiichiDiscardPileDto::class,
-            RiichiDiscardPileDto.serializer(),
-            RiichiDiscardPile::toRiichiDto,
-            RiichiDiscardPileDto::toDomain,
+            DtoDefinition(
+                RiichiDiscardPile::class,
+                RiichiDiscardPileDto::class,
+                RiichiDiscardPileDto.serializer(),
+                RiichiDiscardPile::toRiichiDto,
+                RiichiDiscardPileDto::toDomain,
+            ),
         )
         registries.exhaustiveDrawReason.register(
-            RiichiExhaustiveDrawReason.Normal::class,
-            RiichiExhaustiveDrawReasonDto.Normal::class,
-            RiichiExhaustiveDrawReasonDto.Normal.serializer(),
-            { RiichiExhaustiveDrawReasonDto.Normal },
-            { RiichiExhaustiveDrawReason.Normal },
+            DtoDefinition(
+                RiichiExhaustiveDrawReason.Normal::class,
+                RiichiExhaustiveDrawReasonDto.Normal::class,
+                RiichiExhaustiveDrawReasonDto.Normal.serializer(),
+                { RiichiExhaustiveDrawReasonDto.Normal },
+                { RiichiExhaustiveDrawReason.Normal },
+            ),
         )
         registries.exhaustiveDrawReason.register(
-            RiichiExhaustiveDrawReason.KyuushuKyuuhai::class,
-            RiichiExhaustiveDrawReasonDto.KyuushuKyuuhai::class,
-            RiichiExhaustiveDrawReasonDto.KyuushuKyuuhai.serializer(),
-            { RiichiExhaustiveDrawReasonDto.KyuushuKyuuhai },
-            { RiichiExhaustiveDrawReason.KyuushuKyuuhai },
+            DtoDefinition(
+                RiichiExhaustiveDrawReason.KyuushuKyuuhai::class,
+                RiichiExhaustiveDrawReasonDto.KyuushuKyuuhai::class,
+                RiichiExhaustiveDrawReasonDto.KyuushuKyuuhai.serializer(),
+                { RiichiExhaustiveDrawReasonDto.KyuushuKyuuhai },
+                { RiichiExhaustiveDrawReason.KyuushuKyuuhai },
+            ),
         )
         registries.exhaustiveDrawReason.register(
-            RiichiExhaustiveDrawReason.SuufonRenda::class,
-            RiichiExhaustiveDrawReasonDto.SuufonRenda::class,
-            RiichiExhaustiveDrawReasonDto.SuufonRenda.serializer(),
-            { RiichiExhaustiveDrawReasonDto.SuufonRenda },
-            { RiichiExhaustiveDrawReason.SuufonRenda },
+            DtoDefinition(
+                RiichiExhaustiveDrawReason.SuufonRenda::class,
+                RiichiExhaustiveDrawReasonDto.SuufonRenda::class,
+                RiichiExhaustiveDrawReasonDto.SuufonRenda.serializer(),
+                { RiichiExhaustiveDrawReasonDto.SuufonRenda },
+                { RiichiExhaustiveDrawReason.SuufonRenda },
+            ),
         )
         registries.exhaustiveDrawReason.register(
-            RiichiExhaustiveDrawReason.SuukanNagare::class,
-            RiichiExhaustiveDrawReasonDto.SuukanNagare::class,
-            RiichiExhaustiveDrawReasonDto.SuukanNagare.serializer(),
-            { RiichiExhaustiveDrawReasonDto.SuukanNagare },
-            { RiichiExhaustiveDrawReason.SuukanNagare },
+            DtoDefinition(
+                RiichiExhaustiveDrawReason.SuukanNagare::class,
+                RiichiExhaustiveDrawReasonDto.SuukanNagare::class,
+                RiichiExhaustiveDrawReasonDto.SuukanNagare.serializer(),
+                { RiichiExhaustiveDrawReasonDto.SuukanNagare },
+                { RiichiExhaustiveDrawReason.SuukanNagare },
+            ),
         )
         registries.exhaustiveDrawReason.register(
-            RiichiExhaustiveDrawReason.SuuchaRiichi::class,
-            RiichiExhaustiveDrawReasonDto.SuuchaRiichi::class,
-            RiichiExhaustiveDrawReasonDto.SuuchaRiichi.serializer(),
-            { RiichiExhaustiveDrawReasonDto.SuuchaRiichi },
-            { RiichiExhaustiveDrawReason.SuuchaRiichi },
+            DtoDefinition(
+                RiichiExhaustiveDrawReason.SuuchaRiichi::class,
+                RiichiExhaustiveDrawReasonDto.SuuchaRiichi::class,
+                RiichiExhaustiveDrawReasonDto.SuuchaRiichi.serializer(),
+                { RiichiExhaustiveDrawReasonDto.SuuchaRiichi },
+                { RiichiExhaustiveDrawReason.SuuchaRiichi },
+            ),
         )
         registries.exhaustiveDrawReason.register(
-            RiichiExhaustiveDrawReason.SanchaHou::class,
-            RiichiExhaustiveDrawReasonDto.SanchaHou::class,
-            RiichiExhaustiveDrawReasonDto.SanchaHou.serializer(),
-            { RiichiExhaustiveDrawReasonDto.SanchaHou },
-            { RiichiExhaustiveDrawReason.SanchaHou },
+            DtoDefinition(
+                RiichiExhaustiveDrawReason.SanchaHou::class,
+                RiichiExhaustiveDrawReasonDto.SanchaHou::class,
+                RiichiExhaustiveDrawReasonDto.SanchaHou.serializer(),
+                { RiichiExhaustiveDrawReasonDto.SanchaHou },
+                { RiichiExhaustiveDrawReason.SanchaHou },
+            ),
         )
         registries.extensionGameAction.register(
-            RiichiGameAction.Riichi::class,
-            RiichiGameActionDto::class,
-            RiichiGameActionDto.serializer(),
-            { RiichiGameActionDto },
-            { RiichiGameAction.Riichi },
+            DtoDefinition(
+                RiichiGameAction.Riichi::class,
+                RiichiGameActionDto::class,
+                RiichiGameActionDto.serializer(),
+                { RiichiGameActionDto },
+                { RiichiGameAction.Riichi },
+            ),
         )
         registries.extensionGameAction.register(
-            RiichiGameAction.PullNorth::class,
-            RiichiPullNorthActionDto::class,
-            RiichiPullNorthActionDto.serializer(),
-            { RiichiPullNorthActionDto },
-            { RiichiGameAction.PullNorth },
+            DtoDefinition(
+                RiichiGameAction.PullNorth::class,
+                RiichiPullNorthActionDto::class,
+                RiichiPullNorthActionDto.serializer(),
+                { RiichiPullNorthActionDto },
+                { RiichiGameAction.PullNorth },
+            ),
         )
         registries.extensionGameCommand.register(
-            RiichiGameCommand::class,
-            RiichiGameCommandDto::class,
-            RiichiGameCommandDto.serializer(),
-            { RiichiGameCommandDto(it.tileId.toString()) },
-            { RiichiGameCommand(Uuid.parse(it.tileId)) },
+            DtoDefinition(
+                RiichiGameCommand::class,
+                RiichiGameCommandDto::class,
+                RiichiGameCommandDto.serializer(),
+                { RiichiGameCommandDto(it.tileId.toString()) },
+                { RiichiGameCommand(Uuid.parse(it.tileId)) },
+            ),
         )
         registries.extensionGameCommand.register(
-            RiichiPullNorthCommand::class,
-            RiichiPullNorthCommandDto::class,
-            RiichiPullNorthCommandDto.serializer(),
-            { RiichiPullNorthCommandDto },
-            { RiichiPullNorthCommand },
+            DtoDefinition(
+                RiichiPullNorthCommand::class,
+                RiichiPullNorthCommandDto::class,
+                RiichiPullNorthCommandDto.serializer(),
+                { RiichiPullNorthCommandDto },
+                { RiichiPullNorthCommand },
+            ),
         )
     }
 
     override fun registerPersistenceDtos(registries: PersistenceRegistries) {
         registries.ruleConfigs.register(
-            typeKey = "mahjongcraft:riichi/rule_config",
-            domainClass = RiichiRuleConfig::class,
-            serializer = RiichiRuleConfigPersistenceDto.serializer(),
-            toDto = RiichiRuleConfig::toPersistenceDto,
-            toDomain = RiichiRuleConfigPersistenceDto::toDomain,
-            compactInReplay = true,
+            PersistenceDtoDefinition(
+                typeKey = "mahjongcraft:riichi/rule_config",
+                domainClass = RiichiRuleConfig::class,
+                serializer = RiichiRuleConfigPersistenceDto.serializer(),
+                toDto = RiichiRuleConfig::toPersistenceDto,
+                toDomain = RiichiRuleConfigPersistenceDto::toDomain,
+                compactInReplay = true,
+            ),
         )
         registries.ruleConfigs.register(
-            typeKey = "mahjongcraft:riichi_three_player/rule_config",
-            domainClass = ThreePlayerRiichiRuleConfig::class,
-            serializer = ThreePlayerRiichiRuleConfigPersistenceDto.serializer(),
-            toDto = ThreePlayerRiichiRuleConfig::toPersistenceDto,
-            toDomain = ThreePlayerRiichiRuleConfigPersistenceDto::toDomain,
-            compactInReplay = true,
+            PersistenceDtoDefinition(
+                typeKey = "mahjongcraft:riichi_three_player/rule_config",
+                domainClass = ThreePlayerRiichiRuleConfig::class,
+                serializer = ThreePlayerRiichiRuleConfigPersistenceDto.serializer(),
+                toDto = ThreePlayerRiichiRuleConfig::toPersistenceDto,
+                toDomain = ThreePlayerRiichiRuleConfigPersistenceDto::toDomain,
+                compactInReplay = true,
+            ),
         )
         registries.discardPiles.register(
-            typeKey = BuiltInDiscardPilePersistenceKeys.RIICHI,
-            domainClass = RiichiDiscardPile::class,
-            serializer = RiichiDiscardPilePersistenceDto.serializer(),
-            toDto = RiichiDiscardPile::toPersistenceDto,
-            toDomain = RiichiDiscardPilePersistenceDto::toDomain,
-            compactInReplay = true,
+            PersistenceDtoDefinition(
+                typeKey = BuiltInDiscardPilePersistenceKeys.RIICHI,
+                domainClass = RiichiDiscardPile::class,
+                serializer = RiichiDiscardPilePersistenceDto.serializer(),
+                toDto = RiichiDiscardPile::toPersistenceDto,
+                toDomain = RiichiDiscardPilePersistenceDto::toDomain,
+                compactInReplay = true,
+            ),
         )
         registries.playerRuleStates.register(
-            typeKey = RIICHI_PLAYER_STATE_TYPE_KEY,
-            domainClass = RiichiPlayerState::class,
-            serializer = RiichiPlayerStatePersistenceDto.serializer(),
-            toDto = RiichiPlayerState::toPersistenceDto,
-            toDomain = RiichiPlayerStatePersistenceDto::toDomain,
-            compactInReplay = true,
+            PersistenceDtoDefinition(
+                typeKey = RIICHI_PLAYER_STATE_TYPE_KEY,
+                domainClass = RiichiPlayerState::class,
+                serializer = RiichiPlayerStatePersistenceDto.serializer(),
+                toDto = RiichiPlayerState::toPersistenceDto,
+                toDomain = RiichiPlayerStatePersistenceDto::toDomain,
+                compactInReplay = true,
+            ),
         )
         registries.dynamicRuleStates.register(
-            typeKey = "mahjongcraft:riichi/dynamic_state",
-            domainClass = RiichiDynamicState::class,
-            serializer = RiichiDynamicStatePersistenceDto.serializer(),
-            toDto = {
-                RiichiDynamicStatePersistenceDto(
-                    it.riichiStickCount,
-                    it.completedSupplementalDrawCount,
-                    it.revealedKanDoraCount,
-                    it.pendingKanDoraReveals.map(RiichiPendingKanDoraReveal::toPersistenceDto),
-                    it.completedNorthDrawCount,
-                )
-            },
-            toDomain = {
-                RiichiDynamicState(
-                    it.riichiStickCount,
-                    it.completedSupplementalDrawCount,
-                    it.revealedKanDoraCount,
-                    it.pendingKanDoraReveals.map(RiichiPendingKanDoraRevealPersistenceDto::toDomain),
-                    it.completedNorthDrawCount,
-                )
-            },
-            compactInReplay = true,
+            PersistenceDtoDefinition(
+                typeKey = "mahjongcraft:riichi/dynamic_state",
+                domainClass = RiichiDynamicState::class,
+                serializer = RiichiDynamicStatePersistenceDto.serializer(),
+                toDto = {
+                    RiichiDynamicStatePersistenceDto(
+                        it.riichiStickCount,
+                        it.completedSupplementalDrawCount,
+                        it.revealedKanDoraCount,
+                        it.pendingKanDoraReveals.map(RiichiPendingKanDoraReveal::toPersistenceDto),
+                        it.completedNorthDrawCount,
+                    )
+                },
+                toDomain = {
+                    RiichiDynamicState(
+                        it.riichiStickCount,
+                        it.completedSupplementalDrawCount,
+                        it.revealedKanDoraCount,
+                        it.pendingKanDoraReveals.map(RiichiPendingKanDoraRevealPersistenceDto::toDomain),
+                        it.completedNorthDrawCount,
+                    )
+                },
+                compactInReplay = true,
+            ),
         )
         registries.exhaustiveDrawReasons.register(
-            typeKey = RiichiExhaustiveDrawReason.Normal.id,
-            domainClass = RiichiExhaustiveDrawReason.Normal::class,
-            serializer = RiichiExhaustiveDrawReasonPersistenceDto.serializer(),
-            toDto = { RiichiExhaustiveDrawReasonPersistenceDto(RiichiExhaustiveDrawReasonPersistenceValue.NORMAL) },
-            toDomain = { RiichiExhaustiveDrawReason.Normal },
+            PersistenceDtoDefinition(
+                typeKey = RiichiExhaustiveDrawReason.Normal.id,
+                domainClass = RiichiExhaustiveDrawReason.Normal::class,
+                serializer = RiichiExhaustiveDrawReasonPersistenceDto.serializer(),
+                toDto = { RiichiExhaustiveDrawReasonPersistenceDto(RiichiExhaustiveDrawReasonPersistenceValue.NORMAL) },
+                toDomain = { RiichiExhaustiveDrawReason.Normal },
+            ),
         )
         registries.exhaustiveDrawReasons.register(
-            typeKey = RiichiExhaustiveDrawReason.KyuushuKyuuhai.id,
-            domainClass = RiichiExhaustiveDrawReason.KyuushuKyuuhai::class,
-            serializer = RiichiExhaustiveDrawReasonPersistenceDto.serializer(),
-            toDto = { RiichiExhaustiveDrawReasonPersistenceDto(RiichiExhaustiveDrawReasonPersistenceValue.KYUUSHU_KYUUHAI) },
-            toDomain = { RiichiExhaustiveDrawReason.KyuushuKyuuhai },
+            PersistenceDtoDefinition(
+                typeKey = RiichiExhaustiveDrawReason.KyuushuKyuuhai.id,
+                domainClass = RiichiExhaustiveDrawReason.KyuushuKyuuhai::class,
+                serializer = RiichiExhaustiveDrawReasonPersistenceDto.serializer(),
+                toDto = { RiichiExhaustiveDrawReasonPersistenceDto(RiichiExhaustiveDrawReasonPersistenceValue.KYUUSHU_KYUUHAI) },
+                toDomain = { RiichiExhaustiveDrawReason.KyuushuKyuuhai },
+            ),
         )
         registries.exhaustiveDrawReasons.register(
-            typeKey = RiichiExhaustiveDrawReason.SuufonRenda.id,
-            domainClass = RiichiExhaustiveDrawReason.SuufonRenda::class,
-            serializer = RiichiExhaustiveDrawReasonPersistenceDto.serializer(),
-            toDto = { RiichiExhaustiveDrawReasonPersistenceDto(RiichiExhaustiveDrawReasonPersistenceValue.SUUFON_RENDA) },
-            toDomain = { RiichiExhaustiveDrawReason.SuufonRenda },
+            PersistenceDtoDefinition(
+                typeKey = RiichiExhaustiveDrawReason.SuufonRenda.id,
+                domainClass = RiichiExhaustiveDrawReason.SuufonRenda::class,
+                serializer = RiichiExhaustiveDrawReasonPersistenceDto.serializer(),
+                toDto = { RiichiExhaustiveDrawReasonPersistenceDto(RiichiExhaustiveDrawReasonPersistenceValue.SUUFON_RENDA) },
+                toDomain = { RiichiExhaustiveDrawReason.SuufonRenda },
+            ),
         )
         registries.exhaustiveDrawReasons.register(
-            typeKey = RiichiExhaustiveDrawReason.SuukanNagare.id,
-            domainClass = RiichiExhaustiveDrawReason.SuukanNagare::class,
-            serializer = RiichiExhaustiveDrawReasonPersistenceDto.serializer(),
-            toDto = { RiichiExhaustiveDrawReasonPersistenceDto(RiichiExhaustiveDrawReasonPersistenceValue.SUUKAN_NAGARE) },
-            toDomain = { RiichiExhaustiveDrawReason.SuukanNagare },
+            PersistenceDtoDefinition(
+                typeKey = RiichiExhaustiveDrawReason.SuukanNagare.id,
+                domainClass = RiichiExhaustiveDrawReason.SuukanNagare::class,
+                serializer = RiichiExhaustiveDrawReasonPersistenceDto.serializer(),
+                toDto = { RiichiExhaustiveDrawReasonPersistenceDto(RiichiExhaustiveDrawReasonPersistenceValue.SUUKAN_NAGARE) },
+                toDomain = { RiichiExhaustiveDrawReason.SuukanNagare },
+            ),
         )
         registries.exhaustiveDrawReasons.register(
-            typeKey = RiichiExhaustiveDrawReason.SuuchaRiichi.id,
-            domainClass = RiichiExhaustiveDrawReason.SuuchaRiichi::class,
-            serializer = RiichiExhaustiveDrawReasonPersistenceDto.serializer(),
-            toDto = { RiichiExhaustiveDrawReasonPersistenceDto(RiichiExhaustiveDrawReasonPersistenceValue.SUUCHA_RIICHI) },
-            toDomain = { RiichiExhaustiveDrawReason.SuuchaRiichi },
+            PersistenceDtoDefinition(
+                typeKey = RiichiExhaustiveDrawReason.SuuchaRiichi.id,
+                domainClass = RiichiExhaustiveDrawReason.SuuchaRiichi::class,
+                serializer = RiichiExhaustiveDrawReasonPersistenceDto.serializer(),
+                toDto = { RiichiExhaustiveDrawReasonPersistenceDto(RiichiExhaustiveDrawReasonPersistenceValue.SUUCHA_RIICHI) },
+                toDomain = { RiichiExhaustiveDrawReason.SuuchaRiichi },
+            ),
         )
         registries.exhaustiveDrawReasons.register(
-            typeKey = RiichiExhaustiveDrawReason.SanchaHou.id,
-            domainClass = RiichiExhaustiveDrawReason.SanchaHou::class,
-            serializer = RiichiExhaustiveDrawReasonPersistenceDto.serializer(),
-            toDto = { RiichiExhaustiveDrawReasonPersistenceDto(RiichiExhaustiveDrawReasonPersistenceValue.SANCHA_HOU) },
-            toDomain = { RiichiExhaustiveDrawReason.SanchaHou },
+            PersistenceDtoDefinition(
+                typeKey = RiichiExhaustiveDrawReason.SanchaHou.id,
+                domainClass = RiichiExhaustiveDrawReason.SanchaHou::class,
+                serializer = RiichiExhaustiveDrawReasonPersistenceDto.serializer(),
+                toDto = { RiichiExhaustiveDrawReasonPersistenceDto(RiichiExhaustiveDrawReasonPersistenceValue.SANCHA_HOU) },
+                toDomain = { RiichiExhaustiveDrawReason.SanchaHou },
+            ),
         )
         registries.extensionGameActions.register(
-            typeKey = RiichiGameAction.Riichi.id,
-            domainClass = RiichiGameAction.Riichi::class,
-            serializer = RiichiGameActionPersistenceDto.serializer(),
-            toDto = { RiichiGameActionPersistenceDto },
-            toDomain = { RiichiGameAction.Riichi },
+            PersistenceDtoDefinition(
+                typeKey = RiichiGameAction.Riichi.id,
+                domainClass = RiichiGameAction.Riichi::class,
+                serializer = RiichiGameActionPersistenceDto.serializer(),
+                toDto = { RiichiGameActionPersistenceDto },
+                toDomain = { RiichiGameAction.Riichi },
+            ),
         )
         registries.extensionGameActions.register(
-            typeKey = RiichiGameAction.PullNorth.id,
-            domainClass = RiichiGameAction.PullNorth::class,
-            serializer = RiichiPullNorthActionPersistenceDto.serializer(),
-            toDto = { RiichiPullNorthActionPersistenceDto },
-            toDomain = { RiichiGameAction.PullNorth },
+            PersistenceDtoDefinition(
+                typeKey = RiichiGameAction.PullNorth.id,
+                domainClass = RiichiGameAction.PullNorth::class,
+                serializer = RiichiPullNorthActionPersistenceDto.serializer(),
+                toDto = { RiichiPullNorthActionPersistenceDto },
+                toDomain = { RiichiGameAction.PullNorth },
+            ),
         )
     }
 
     override fun registerHistoryReplayProjections(registry: HistoryReplayProjectionRegistry) {
-        registry.registerDiscard(BuiltInDiscardPilePersistenceKeys.RIICHI, BuiltinHistoryReplayDiscardCodecs.riichi)
-        registry.registerSetAsideTiles(RIICHI_PLAYER_STATE_TYPE_KEY, BuiltinHistoryReplaySetAsideTileCodecs.riichi)
+        registry.register(HistoryReplayProjectionDefinition.Discard(BuiltInDiscardPilePersistenceKeys.RIICHI, BuiltinHistoryReplayDiscardCodecs.riichi))
+        registry.register(HistoryReplayProjectionDefinition.SetAsideTiles(RIICHI_PLAYER_STATE_TYPE_KEY, BuiltinHistoryReplaySetAsideTileCodecs.riichi))
     }
 
     override fun registerGameActionAiHandlers(registry: ExtensionGameActionAiRegistry) {
-        registry.register(RiichiGameAction.Riichi::class, RiichiDeclarationAiHandler)
-        registry.register(RiichiGameAction.PullNorth::class, RiichiPullNorthAiHandler)
+        registry.register(ExtensionGameActionAiDefinition(RiichiGameAction.Riichi::class, RiichiDeclarationAiHandler))
+        registry.register(ExtensionGameActionAiDefinition(RiichiGameAction.PullNorth::class, RiichiPullNorthAiHandler))
     }
 
     override fun registerOpponentModels(registry: OpponentModelRegistry) {
-        registry.register(BuiltInRuleModuleIds.RIICHI) { module, depth -> RiichiOpponentModel(rules = module.createPositionRules(), readingDepth = depth) }
-        registry.register(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER) { module, depth ->
-            RiichiOpponentModel(rules = module.createPositionRules(), readingDepth = depth)
-        }
+        registry.register(OpponentModelDefinition(BuiltInRuleModuleIds.RIICHI) { module, depth -> RiichiOpponentModel(rules = module.createPositionRules(), readingDepth = depth) })
+        registry.register(
+            OpponentModelDefinition(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER) { module, depth ->
+                RiichiOpponentModel(rules = module.createPositionRules(), readingDepth = depth)
+            },
+        )
     }
 
     override fun registerGameActionCommandFactories(registry: ExtensionGameActionCommandFactoryRegistry) {
-        registry.register(RiichiGameAction.Riichi::class) { _, selectedTileIds ->
-            selectedTileIds.singleOrNull()?.let(::RiichiGameCommand)
-        }
-        registry.register(RiichiGameAction.PullNorth::class) { _, _ -> RiichiPullNorthCommand }
+        registry.register(
+            ExtensionGameActionCommandFactoryDefinition(RiichiGameAction.Riichi::class) { _, selectedTileIds ->
+                selectedTileIds.singleOrNull()?.let(::RiichiGameCommand)
+            },
+        )
+        registry.register(ExtensionGameActionCommandFactoryDefinition(RiichiGameAction.PullNorth::class) { _, _ -> RiichiPullNorthCommand })
     }
 
     /** 每個執行環境以自己的流程服務建立 [DeclareRiichiUseCase] 與拔北用的 [DeclareTileSetAsideUseCase]。 */
     override fun registerGameCommandHandlers(registry: ExtensionGameCommandExecutorRegistry) {
-        registry.register(RiichiGameCommand::class) { context ->
-            val declareRiichiUseCase = DeclareRiichiUseCase(
-                gameRepository = context.gameRepository,
-                moduleRegistry = context.moduleRegistry,
-                snapshotSynchronizer = context.snapshotSynchronizer,
-                handSortPreferenceStore = context.handSortPreferenceStore,
-                postActionExhaustiveDrawResolverRegistry = context.postActionExhaustiveDrawResolverRegistry,
-                eventPublisher = context.eventPublisher,
-                presentationPublisher = context.presentationPublisher,
-            )
-            object : ExtensionGameCommandHandler<RiichiGameCommand> {
-                override suspend fun execute(
-                    gameId: Uuid,
-                    playerId: Uuid,
-                    command: RiichiGameCommand,
-                ): Outcome<Unit, GameError> = declareRiichiUseCase(gameId, playerId, command.tileId)
-            }
-        }
-        registry.register(RiichiPullNorthCommand::class) { context ->
-            val declareTileSetAsideUseCase = DeclareTileSetAsideUseCase(
-                gameRepository = context.gameRepository,
-                moduleRegistry = context.moduleRegistry,
-                snapshotSynchronizer = context.snapshotSynchronizer,
-                eventPublisher = context.eventPublisher,
-                presentationPublisher = context.presentationPublisher,
-            )
-            object : ExtensionGameCommandHandler<RiichiPullNorthCommand> {
-                override suspend fun execute(
-                    gameId: Uuid,
-                    playerId: Uuid,
-                    command: RiichiPullNorthCommand,
-                ): Outcome<Unit, GameError> = declareTileSetAsideUseCase(gameId, playerId, PULL_NORTH_GAME_ACTION)
-            }
-        }
+        registry.register(
+            ExtensionGameCommandHandlerDefinition(RiichiGameCommand::class) { context ->
+                val declareRiichiUseCase = DeclareRiichiUseCase(
+                    gameRepository = context.gameRepository,
+                    moduleRegistry = context.moduleRegistry,
+                    snapshotSynchronizer = context.snapshotSynchronizer,
+                    handSortPreferenceStore = context.handSortPreferenceStore,
+                    postActionExhaustiveDrawResolverRegistry = context.postActionExhaustiveDrawResolverRegistry,
+                    eventPublisher = context.eventPublisher,
+                    presentationPublisher = context.presentationPublisher,
+                )
+                object : ExtensionGameCommandHandler<RiichiGameCommand> {
+                    override suspend fun execute(
+                        gameId: Uuid,
+                        playerId: Uuid,
+                        command: RiichiGameCommand,
+                    ): Outcome<Unit, GameError> = declareRiichiUseCase(gameId, playerId, command.tileId)
+                }
+            },
+        )
+        registry.register(
+            ExtensionGameCommandHandlerDefinition(RiichiPullNorthCommand::class) { context ->
+                val declareTileSetAsideUseCase = DeclareTileSetAsideUseCase(
+                    gameRepository = context.gameRepository,
+                    moduleRegistry = context.moduleRegistry,
+                    snapshotSynchronizer = context.snapshotSynchronizer,
+                    eventPublisher = context.eventPublisher,
+                    presentationPublisher = context.presentationPublisher,
+                )
+                object : ExtensionGameCommandHandler<RiichiPullNorthCommand> {
+                    override suspend fun execute(
+                        gameId: Uuid,
+                        playerId: Uuid,
+                        command: RiichiPullNorthCommand,
+                    ): Outcome<Unit, GameError> = declareTileSetAsideUseCase(gameId, playerId, PULL_NORTH_GAME_ACTION)
+                }
+            },
+        )
     }
 
     override fun registerPostReactionRoundOutcomeResolvers(registry: PostReactionRoundOutcomeResolverRegistry) {
@@ -434,8 +518,8 @@ object BundledRiichiExtension : MahjongExtension {
     }
 
     override fun registerWinSettlementDetailResolvers(registry: WinSettlementDetailResolverRegistry) {
-        registry.register(BuiltInRuleModuleIds.RIICHI, RiichiWinSettlementDetailResolver)
-        registry.register(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, RiichiWinSettlementDetailResolver)
+        registry.register(WinSettlementDetailResolverDefinition(BuiltInRuleModuleIds.RIICHI, RiichiWinSettlementDetailResolver))
+        registry.register(WinSettlementDetailResolverDefinition(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, RiichiWinSettlementDetailResolver))
     }
 }
 

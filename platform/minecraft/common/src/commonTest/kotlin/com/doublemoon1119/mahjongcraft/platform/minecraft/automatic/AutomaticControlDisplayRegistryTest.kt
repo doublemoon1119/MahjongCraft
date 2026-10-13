@@ -35,15 +35,15 @@ class AutomaticControlDisplayRegistryTest {
         val registry = AutomaticControlDisplayRegistryImpl()
         val display = AutomaticControlDisplay("example.label", "example.description", 5)
 
-        assertFailsWith<IllegalArgumentException> { registry.register("invalid", display) }
+        assertFailsWith<IllegalArgumentException> { registry.register(AutomaticControlDisplayDefinition("invalid", display)) }
         assertFailsWith<IllegalArgumentException> { AutomaticControlDisplay(" ", "example.description", 5) }
         assertFailsWith<IllegalArgumentException> { AutomaticControlDisplay("example.label", " ", 5) }
 
-        registry.register("example:control", display)
-        assertFailsWith<IllegalArgumentException> { registry.register("example:control", display) }
+        registry.register(AutomaticControlDisplayDefinition("example:control", display))
+        assertFailsWith<IllegalArgumentException> { registry.register(AutomaticControlDisplayDefinition("example:control", display)) }
         assertNull(registry.find("example:missing"))
 
         registry.freeze()
-        assertFailsWith<IllegalStateException> { registry.register("example:late", display) }
+        assertFailsWith<IllegalStateException> { registry.register(AutomaticControlDisplayDefinition("example:late", display)) }
     }
 }

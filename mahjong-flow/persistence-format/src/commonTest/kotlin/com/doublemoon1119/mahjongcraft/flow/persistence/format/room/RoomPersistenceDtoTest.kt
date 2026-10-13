@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.room
-
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceDtoDefinition
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.TypedPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.room.RoomPersistenceDto
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
@@ -60,11 +60,13 @@ class RoomPersistenceDtoTest {
     fun `third-party rule config can register without changing persistence module`() {
         val registry = bundledPersistenceRegistries().ruleConfigs.apply {
             register(
-                typeKey = "example:custom_rule_config",
-                domainClass = ThirdPartyRuleConfig::class,
-                serializer = ThirdPartyRuleConfigPersistenceDto.serializer(),
-                toDto = { ThirdPartyRuleConfigPersistenceDto(it.marker) },
-                toDomain = { ThirdPartyRuleConfig(it.marker) },
+                PersistenceDtoDefinition(
+                    typeKey = "example:custom_rule_config",
+                    domainClass = ThirdPartyRuleConfig::class,
+                    serializer = ThirdPartyRuleConfigPersistenceDto.serializer(),
+                    toDto = { ThirdPartyRuleConfigPersistenceDto(it.marker) },
+                    toDomain = { ThirdPartyRuleConfig(it.marker) },
+                ),
             )
         }
         val room = createRoom(ThirdPartyRuleConfig("custom"))

@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 import com.doublemoon1119.mahjongcraft.ai.AiDecisionContext
 import com.doublemoon1119.mahjongcraft.ai.AiDecisionPhase
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategy
+import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyDefinition
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.flow.api.event.MatchCompletion
 import com.doublemoon1119.mahjongcraft.flow.api.event.MatchEndedEvent
@@ -43,7 +44,7 @@ class FullMatchIntegrationTest {
     @Test
     fun `test four ai players play a full east-only match to completion`() = runTest {
         val runtime = SimulationRuntime(defaultStrategyKey = FakeAiStrategy.KEY).apply {
-            aiStrategyRegistry.register(FakeAiStrategy.KEY) { FakeAiStrategy() }
+            aiStrategyRegistry.register(MahjongAiStrategyDefinition(FakeAiStrategy.KEY) { FakeAiStrategy() })
         }
         val gameId = Uuid.random()
         val playerIds = List(4) { Uuid.random() }
@@ -90,7 +91,7 @@ class FullMatchIntegrationTest {
         /** 測試策略的註冊資訊。 */
         companion object {
             /** 此固定策略的測試識別碼。 */
-            const val KEY = "fake-deterministic"
+            const val KEY = "test:deterministic"
         }
 
         override suspend fun decideGameCommand(context: AiDecisionContext): GameCommand = when (context.phase) {

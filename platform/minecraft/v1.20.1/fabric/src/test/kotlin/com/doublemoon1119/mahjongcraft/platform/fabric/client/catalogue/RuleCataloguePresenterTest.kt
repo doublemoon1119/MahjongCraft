@@ -17,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogu
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueTileGroup
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueTileGroupRole
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
 import kotlin.test.Test
@@ -213,7 +214,7 @@ class RuleCataloguePresenterTest {
             ),
         )
         val registry = RuleCatalogueRegistryImpl().apply { register(FixedProvider(THIRD_PARTY_RULE, catalogue)) }
-        val names = RuleModuleDisplayNameRegistryImpl().apply { register(THIRD_PARTY_RULE, "example.rule") }
+        val names = RuleModuleDisplayNameRegistryImpl().apply { register(RuleModuleDisplayNameDefinition(THIRD_PARTY_RULE, "example.rule")) }
         val presenter = presenter(
             extra = mapOf(
                 "example.rule" to "Example Rule",

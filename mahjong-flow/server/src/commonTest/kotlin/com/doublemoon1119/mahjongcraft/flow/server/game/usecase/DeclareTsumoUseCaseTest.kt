@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.bundled.BundledRiichiExtension
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverDefinition
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistryImpl
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
@@ -57,6 +58,11 @@ class DeclareTsumoUseCaseTest {
     private val gameId = Uuid.random()
     private val winnerId = Uuid.random()
 
+    /**
+     * 提供自摸結算測試所需的 repository、事件與演出替身。
+     *
+     * @property winCelebrationCueResolverRegistry 提供和牌演出 cue 的登記表；測試可注入替身。
+     */
     private class Fixtures(
         val winCelebrationCueResolverRegistry: WinCelebrationCueResolverRegistry =
             bundledWinCelebrationCueResolverRegistry(),
@@ -405,7 +411,7 @@ class DeclareTsumoUseCaseTest {
     fun `test declare tsumo uses explicitly injected celebration resolver`() = runTest {
         val expectedCues = listOf("test:custom_tsumo")
         val registry = WinCelebrationCueResolverRegistryImpl().apply {
-            register(BuiltInRuleModuleIds.RIICHI) { expectedCues }
+            register(WinCelebrationCueResolverDefinition(ruleModuleId = BuiltInRuleModuleIds.RIICHI, resolver = { expectedCues }))
             freeze()
         }
         val fixtures = Fixtures(registry)

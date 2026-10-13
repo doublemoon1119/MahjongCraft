@@ -37,6 +37,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryWri
  * @property aiDecisions 有結果的 AI 決策數。
  * @property aiTimeouts 等待超過上限而使用固定命令的 AI 決策數。
  * @property aiPreviousStillRunning 同一局先前逾時的策略呼叫尚未結束，直接使用固定命令的 AI 決策數。
+ * @property aiStrategyFailures 策略丟出一般例外而使用固定命令的 AI 決策數。
  * @property aiLatencyAverageMillis 暖機結束後 AI 決策延遲（開始決策到得到結果，含排隊）的平均毫秒數。
  * @property aiLatencyP95Millis 暖機結束後 AI 決策延遲的第 95 百分位毫秒數。
  * @property aiLatencyP99Millis 暖機結束後 AI 決策延遲的第 99 百分位毫秒數。
@@ -121,4 +122,5 @@ data class StressTestReport(
     val timeSeriesFile: String?,
     val stopReason: StressStopReason?,
     val sustainedTables: Int?,
+    val aiStrategyFailures: Long = 0,
 )

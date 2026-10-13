@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabulary
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BuiltInMinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BundledMinecraftMahjongExtensions
@@ -99,9 +100,11 @@ class GameActionDisplayTextTest {
     @Test
     fun `a rule overrides the default wording of an action`() {
         actionVocabulary.register(
-            BuiltInRuleModuleIds.TAIWAN,
-            BuiltInGameActionIds.RON,
-            GameActionVocabulary(labelKey = "example.hud.win", messageKey = "example.message.win"),
+            GameActionVocabularyDefinition(
+                BuiltInRuleModuleIds.TAIWAN,
+                BuiltInGameActionIds.RON,
+                GameActionVocabulary(labelKey = "example.hud.win", messageKey = "example.message.win"),
+            ),
         )
 
         val taiwanKey = (

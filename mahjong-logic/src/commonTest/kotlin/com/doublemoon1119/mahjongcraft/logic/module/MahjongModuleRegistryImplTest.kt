@@ -36,7 +36,7 @@ class MahjongModuleRegistryImplTest {
     @Test
     fun `test register makes a module resolvable via getModule`() {
         val registry = MahjongModuleRegistryImpl()
-        registry.register(RiichiRuleConfig::class, "mahjongcraft:riichi") { config, id -> RiichiRuleModule(id, config) }
+        registry.register(MahjongModuleDefinition(RiichiRuleConfig::class, "mahjongcraft:riichi") { config, id -> RiichiRuleModule(id, config) })
 
         val module = registry.getModule(RiichiRuleConfig())
 
@@ -62,7 +62,7 @@ class MahjongModuleRegistryImplTest {
     @Test
     fun `test getAllModuleIds and getConfigClass reflect only what has been registered`() {
         val registry = MahjongModuleRegistryImpl()
-        registry.register(RiichiRuleConfig::class, "mahjongcraft:riichi") { config, id -> RiichiRuleModule(id, config) }
+        registry.register(MahjongModuleDefinition(RiichiRuleConfig::class, "mahjongcraft:riichi") { config, id -> RiichiRuleModule(id, config) })
 
         assertEquals(setOf("mahjongcraft:riichi"), registry.getAllModuleIds())
         assertEquals(RiichiRuleConfig::class, registry.getConfigClass("mahjongcraft:riichi"))

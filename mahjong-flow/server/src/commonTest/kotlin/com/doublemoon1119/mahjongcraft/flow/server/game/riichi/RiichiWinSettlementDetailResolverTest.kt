@@ -111,7 +111,7 @@ class RiichiWinSettlementDetailResolverTest {
 
     /** 未達滿貫且具有權威符數時應同時提供翻數與符數。 */
     @Test
-    fun includesFuWhenAvailable() {
+    fun `includes fu when available`() {
         val value = RiichiWinSettlementDetailResolver.riichiHanFuValue(totalHan = 3, totalFu = 30)
 
         assertEquals(
@@ -122,7 +122,7 @@ class RiichiWinSettlementDetailResolverTest {
 
     /** 滿貫以上的符數為零時不得提供不存在的符數。 */
     @Test
-    fun omitsFuWhenUnavailable() {
+    fun `omits fu when unavailable`() {
         val value = RiichiWinSettlementDetailResolver.riichiHanFuValue(totalHan = 5, totalFu = 0)
 
         assertEquals(listOf(WinSettlementQuantity(RiichiWinSettlementIds.HAN, 5)), value.quantities)

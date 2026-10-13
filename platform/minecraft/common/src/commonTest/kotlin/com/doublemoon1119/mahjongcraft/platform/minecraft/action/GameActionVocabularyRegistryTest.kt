@@ -52,7 +52,7 @@ class GameActionVocabularyRegistryTest {
     fun `a rule overrides the default wording of the same action`() {
         val registry = GameActionVocabularyRegistryImpl().apply {
             BuiltInMinecraftMahjongExtension.registerGameActionVocabulary(this)
-            register(BuiltInRuleModuleIds.TAIWAN, BuiltInGameActionIds.RON, GameActionVocabulary("example.hud.win", order = 9))
+            register(GameActionVocabularyDefinition(BuiltInRuleModuleIds.TAIWAN, BuiltInGameActionIds.RON, GameActionVocabulary("example.hud.win", order = 9)))
         }
 
         val taiwanRon = registry.find(BuiltInRuleModuleIds.TAIWAN, BuiltInGameActionIds.RON)
@@ -86,11 +86,11 @@ class GameActionVocabularyRegistryTest {
         val registry = GameActionVocabularyRegistryImpl().apply { BuiltInMinecraftMahjongExtension.registerGameActionVocabulary(this) }
 
         assertFailsWith<IllegalArgumentException> {
-            registry.registerDefault(BuiltInGameActionIds.CHI, GameActionVocabulary("example.hud.chi"))
+            registry.register(GameActionVocabularyDefaultDefinition(BuiltInGameActionIds.CHI, GameActionVocabulary("example.hud.chi")))
         }
-        registry.register(BuiltInRuleModuleIds.TAIWAN, BuiltInGameActionIds.CHI, GameActionVocabulary("example.hud.chi"))
+        registry.register(GameActionVocabularyDefinition(BuiltInRuleModuleIds.TAIWAN, BuiltInGameActionIds.CHI, GameActionVocabulary("example.hud.chi")))
         assertFailsWith<IllegalArgumentException> {
-            registry.register(BuiltInRuleModuleIds.TAIWAN, BuiltInGameActionIds.CHI, GameActionVocabulary("example.hud.chi2"))
+            registry.register(GameActionVocabularyDefinition(BuiltInRuleModuleIds.TAIWAN, BuiltInGameActionIds.CHI, GameActionVocabulary("example.hud.chi2")))
         }
     }
 
@@ -99,9 +99,9 @@ class GameActionVocabularyRegistryTest {
     fun `ids must be namespaced`() {
         val registry = GameActionVocabularyRegistryImpl()
 
-        assertFailsWith<IllegalArgumentException> { registry.registerDefault("chi", GameActionVocabulary("example.hud.chi")) }
+        assertFailsWith<IllegalArgumentException> { registry.register(GameActionVocabularyDefaultDefinition("chi", GameActionVocabulary("example.hud.chi"))) }
         assertFailsWith<IllegalArgumentException> {
-            registry.register("taiwan", BuiltInGameActionIds.CHI, GameActionVocabulary("example.hud.chi"))
+            registry.register(GameActionVocabularyDefinition("taiwan", BuiltInGameActionIds.CHI, GameActionVocabulary("example.hud.chi")))
         }
     }
 
@@ -110,9 +110,9 @@ class GameActionVocabularyRegistryTest {
     fun `frozen registry rejects late registration`() {
         val registry = GameActionVocabularyRegistryImpl().apply { freeze() }
 
-        assertFailsWith<IllegalStateException> { registry.registerDefault("example:late", GameActionVocabulary("example.hud.late")) }
+        assertFailsWith<IllegalStateException> { registry.register(GameActionVocabularyDefaultDefinition("example:late", GameActionVocabulary("example.hud.late"))) }
         assertFailsWith<IllegalStateException> {
-            registry.register(BuiltInRuleModuleIds.RIICHI, "example:late", GameActionVocabulary("example.hud.late"))
+            registry.register(GameActionVocabularyDefinition(BuiltInRuleModuleIds.RIICHI, "example:late", GameActionVocabulary("example.hud.late")))
         }
     }
 }

@@ -13,17 +13,16 @@ interface MatchSettlementPresentationTemplateRegistry {
     /**
      * 登記一個完整模板；重複 key 視為錯誤。
      *
-     * @param template 要登記的終局模板。
+     * @param template 要登記的終局模板；registry 會保存其獨立快照。
      */
     fun register(template: MatchSettlementPresentationTemplate)
 
     /**
      * 指定規則模組使用的模板。
      *
-     * @param ruleModuleId 規則模組 ID。
-     * @param templateKey 已登記或之後會登記的模板 key。
+     * @param definition 規則模板綁定的完整登記描述。
      */
-    fun bindRuleTemplate(ruleModuleId: String, templateKey: String)
+    fun register(definition: MatchSettlementRuleTemplateBindingDefinition)
 
     /**
      * 查詢指定 key 的模板。

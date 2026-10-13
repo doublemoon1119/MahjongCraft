@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.ai
 
+import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import org.koin.core.annotation.Single
 
 /**
@@ -18,8 +19,11 @@ class AiStrategyDisplayNameRegistryImpl : AiStrategyDisplayNameRegistry {
     override var isFrozen: Boolean = false
         private set
 
-    override fun register(strategyKey: String, translationKey: String) {
+    override fun register(definition: AiStrategyDisplayNameDefinition) {
+        val strategyKey = definition.strategyKey
+        val translationKey = definition.translationKey
         check(!isFrozen) { "AI strategy display name registry is frozen" }
+        NamespacedId.requireValid(strategyKey) { "AI strategy ID must be namespaced: $strategyKey" }
         require(strategyKey !in translationKeysByStrategyKey) {
             "Display name already registered for AI strategy: $strategyKey"
         }

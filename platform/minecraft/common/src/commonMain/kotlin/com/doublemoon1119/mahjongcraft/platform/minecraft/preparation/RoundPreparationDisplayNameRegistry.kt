@@ -9,12 +9,11 @@ interface RoundPreparationDisplayNameRegistry {
     val isFrozen: Boolean
 
     /**
-     * 登記一個 step 或 option 的本地化名稱。
+     * 登記完整描述；凍結後或身分重複時拒絕，不提前呼叫來源。
      *
-     * @param id step 或 option 的完整 ID。
-     * @param translationKey 對應的本地化名稱翻譯鍵。
+     * @param definition 集中保存登記身分與內容的描述。
      */
-    fun register(id: String, translationKey: String)
+    fun register(definition: RoundPreparationDisplayNameDefinition)
 
     /**
      * 查詢本地化名稱；未知 ID 回傳 null，呼叫端應顯示完整 ID。

@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.FabricSeatPro
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatProviderRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.RegisteredSeatProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatRequest
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatTarget
@@ -49,7 +50,7 @@ class FabricSeatProviderRegistrationTest {
         private val registrations: List<Triple<String, SeatProvider<ServerWorld, Entity>, Int>>,
     ) : FabricMahjongExtension {
         override fun registerSeatProviders(registry: FabricSeatProviderRegistry) {
-            registrations.forEach { (id, provider, priority) -> registry.register(id, provider, priority) }
+            registrations.forEach { (id, provider, priority) -> registry.register(RegisteredSeatProvider(id, provider, priority)) }
         }
     }
 
@@ -85,14 +86,14 @@ class FabricSeatProviderRegistrationTest {
             sources[1].categories.single().registrationIds,
         )
         assertTrue(registry.isFrozen)
-        assertFailsWith<IllegalStateException> { registry.register("example:late", provider) }
+        assertFailsWith<IllegalStateException> { registry.register(RegisteredSeatProvider("example:late", provider)) }
     }
 
     /** provider 識別碼沒有命名空間時拒絕登記。 */
     @Test
     fun `provider without namespace is rejected`() {
         assertFailsWith<IllegalArgumentException> {
-            FabricSeatProviderRegistryImpl().register("chair", FakeProvider())
+            FabricSeatProviderRegistryImpl().register(RegisteredSeatProvider("chair", FakeProvider()))
         }
     }
 
@@ -166,7 +167,7 @@ class FabricSeatProviderRegistrationTest {
         register(emptyList(), registry)
 
         assertTrue(registry.isFrozen)
-        assertFailsWith<IllegalStateException> { registry.register("example:late", FakeProvider()) }
+        assertFailsWith<IllegalStateException> { registry.register(RegisteredSeatProvider("example:late", FakeProvider())) }
     }
 
     /** 座位回呼失敗時兩個 registry 都不應凍結，且桌面物件回呼先於座位回呼。 */

@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 import com.doublemoon1119.mahjongcraft.ai.AiDecisionContext
 import com.doublemoon1119.mahjongcraft.ai.AiDecisionPhase
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategy
+import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyDefinition
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
 import com.doublemoon1119.mahjongcraft.bundled.BundledRiichiExtension
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
@@ -204,7 +205,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
         )
         val getLegalActionsUseCase = GetLegalActionsUseCase(gameRepo, moduleRegistry)
         val aiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = FakeAiStrategy.KEY).apply {
-            register(FakeAiStrategy.KEY) { FakeAiStrategy() }
+            register(MahjongAiStrategyDefinition(FakeAiStrategy.KEY) { FakeAiStrategy() })
         }
         val aiTurnDriver = AiTurnDriver(gameRepo, getLegalActionsUseCase, aiStrategyRegistry, GameVisibilityPolicyImpl(moduleRegistry), moduleRegistry, AiDecisionExecutor.direct())
         val clock = MonotonicClockImpl()
@@ -473,7 +474,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
         /** 策略註冊用識別碼。 */
         companion object {
             /** 生命週期測試使用的固定決策策略。 */
-            const val KEY = "fake-deterministic-lifecycle"
+            const val KEY = "test:deterministic-lifecycle"
         }
 
         override suspend fun decideGameCommand(context: AiDecisionContext): GameCommand = when (context.phase) {

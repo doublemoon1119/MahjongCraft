@@ -14,7 +14,7 @@ import net.minecraft.world.PersistentState
  * NBT 字串最多只能保存 65,535 bytes，超過時原版會改寫成空字串；位元組陣列以 int 記錄長度，不受此限制。
  * schema migration 與領域 DTO mapping 全部交由 [codec]；此類別只處理 NBT 容器與 Minecraft dirty flag。
  *
- * @param codec 權威狀態 JSON 編碼與解碼器。
+ * @property codec 權威狀態 JSON 編碼與解碼器。
  * @param initialSnapshot 初始的不可變權威狀態。
  */
 class MahjongAuthoritativePersistentState private constructor(
@@ -84,17 +84,20 @@ class MahjongAuthoritativePersistentState private constructor(
         )
 
         /**
-         * 從 [nbt] 載入既有狀態；沒有 payload 時視為空狀態。
+         * 從 [nbt] 載入既有狀態；既有資料缺少 payload 時拒絕載入，不當成新世界。
          *
          * @param nbt Minecraft 讀出的持久化 NBT。
          * @param codec 權威狀態 JSON 解碼器。
-         * @return 還原的持久化狀態；缺少 payload 時為空狀態。
+         * @return 完整還原的持久化狀態。
+         * @throws IllegalArgumentException payload 缺少或不是位元組陣列。
          */
         fun fromNbt(
             nbt: NbtCompound,
             codec: AuthoritativeStatePersistenceCodec,
         ): MahjongAuthoritativePersistentState {
-            if (!nbt.contains(NBT_KEY_STATE, NbtElement.BYTE_ARRAY_TYPE.toInt())) return create(codec)
+            require(nbt.contains(NBT_KEY_STATE, NbtElement.BYTE_ARRAY_TYPE.toInt())) {
+                "Authoritative saved state is missing its byte array payload"
+            }
 
             val decoded = codec.decode(nbt.getByteArray(NBT_KEY_STATE).decodeToString())
             return MahjongAuthoritativePersistentState(

@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
@@ -249,7 +250,7 @@ class SettlementStageInputsTest {
 
         override val isFrozen: Boolean get() = false
 
-        override fun register(typeId: TileTypeId, assetKey: String) = error("Unexpected registration")
+        override fun register(definition: MinecraftTileAssetDefinition) = error("Unexpected registration")
 
         override fun find(typeId: TileTypeId): String? = null
 

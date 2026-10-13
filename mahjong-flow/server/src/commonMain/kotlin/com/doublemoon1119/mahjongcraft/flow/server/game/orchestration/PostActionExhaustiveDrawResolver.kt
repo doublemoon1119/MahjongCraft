@@ -11,7 +11,7 @@ interface PostActionExhaustiveDrawResolver {
     /** 此 resolver 所屬的規則模組 ID。 */
     val ruleModuleId: String
 
-    /** 數值越小越先判定；同優先序再依 [id] 排序。 */
+    /** 數值越大越先判定；同優先序再依穩定登記身分排序。 */
     val priority: Int
 
     /**

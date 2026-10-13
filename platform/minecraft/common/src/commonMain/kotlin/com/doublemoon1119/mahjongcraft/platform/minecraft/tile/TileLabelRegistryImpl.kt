@@ -18,7 +18,9 @@ class TileLabelRegistryImpl : TileLabelRegistry {
     override var isFrozen: Boolean = false
         private set
 
-    override fun register(assetKey: String, label: TileLabel) {
+    override fun register(definition: TileLabelDefinition) {
+        val assetKey = definition.assetKey
+        val label = definition.label
         check(!isFrozen) { "Tile label registry is frozen" }
         require(assetKey !in labelsByAssetKey) {
             "Label already registered for tile asset key: $assetKey"

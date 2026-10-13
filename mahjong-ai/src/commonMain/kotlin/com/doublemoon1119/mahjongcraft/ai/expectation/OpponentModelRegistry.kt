@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.ai.expectation
 
+import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 
 /**
@@ -20,17 +21,17 @@ class OpponentModelRegistry {
     val registrationKeys: Set<String> get() = factoriesByRuleModuleId.keys.toSet()
 
     /**
-     * 登記 [ruleModuleId] 使用的對手模型；[factory] 每次決策時以該局的規則模組與決策者的讀牌深度呼叫一次。
+     * 登記 definition 指定的對手模型；每次建立模型時，以該局的規則模組與決策者的讀牌深度呼叫其 factory 一次。
      *
-     * 凍結後或重複登記同一個規則時拋出例外。
+     * 凍結後或重複登記同一個 definition 的規則時拋出例外。
      *
-     * @param ruleModuleId 對應的規則模組識別碼。
-     * @param factory 建立該規則對手模型的函式。
+     * @param definition 規則模組識別碼與對手模型延遲工廠。
      */
-    fun register(ruleModuleId: String, factory: (MahjongRuleModule<*>, ReadingDepth) -> OpponentModel) {
+    fun register(definition: OpponentModelDefinition) {
         check(!frozen) { "Opponent model registry is frozen" }
-        require(ruleModuleId !in factoriesByRuleModuleId) { "Opponent model already registered for $ruleModuleId" }
-        factoriesByRuleModuleId[ruleModuleId] = factory
+        NamespacedId.requireValid(definition.ruleModuleId) { "Rule module ID must be namespaced: ${definition.ruleModuleId}" }
+        require(definition.ruleModuleId !in factoriesByRuleModuleId) { "Opponent model already registered for ${definition.ruleModuleId}" }
+        factoriesByRuleModuleId[definition.ruleModuleId] = definition.factory
     }
 
     /**

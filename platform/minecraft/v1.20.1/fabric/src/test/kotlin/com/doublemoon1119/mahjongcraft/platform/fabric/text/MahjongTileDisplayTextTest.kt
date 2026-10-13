@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BuiltInMinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BundledMinecraftMahjongExtensions
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistryImpl
@@ -67,7 +68,7 @@ class MahjongTileDisplayTextTest {
         val typeId = TileTypeId.parse("example:custom")
         val registryWithCustomAsset = MinecraftTileAssetRegistryImpl().apply {
             BundledMinecraftMahjongExtensions.all.forEach { it.registerTileAssets(this) }
-            register(typeId, "custom_third_party_key")
+            register(MinecraftTileAssetDefinition(typeId, "custom_third_party_key"))
         }
 
         val text = Tile.Extension(typeId).toDisplayText(displayNameRegistry, registryWithCustomAsset, emojiRegistry)

@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.history
 
+import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryErrorCodeDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftConfigCommandKeys
 import kotlin.time.Instant
 import kotlin.uuid.Uuid
 
@@ -79,4 +81,28 @@ internal sealed interface HistoryManagementResult<out T> {
      * @property cachedSnapshot 失敗前的可選舊快照。
      */
     data class Failed(val cleanup: HistoryCleanupReport? = null, val cachedSnapshot: HistoryStorageSnapshot? = null) : HistoryManagementResult<Nothing>
+}
+
+/** 將管理工作狀態映射為查詢錯誤碼，保留 session 改變不可回覆的差異。 */
+internal fun HistoryManagementResult<*>.queryErrorCode(): HistoryQueryErrorCodeDto? = when (this) {
+    is HistoryManagementResult.Busy -> HistoryQueryErrorCodeDto.BUSY
+    is HistoryManagementResult.Disconnected, HistoryManagementResult.SessionChanged -> HistoryQueryErrorCodeDto.DISCONNECTED
+    is HistoryManagementResult.Failed -> HistoryQueryErrorCodeDto.NOT_AVAILABLE
+    is HistoryManagementResult.Success -> null
+}
+
+/** 將管理工作狀態映射為指令本地化鍵，成功與 session 改變由操作自行處理。 */
+internal fun HistoryManagementResult<*>.commandErrorKey(): String? = when (this) {
+    is HistoryManagementResult.Busy -> MinecraftConfigCommandKeys.HISTORY_MANAGEMENT_BUSY
+    is HistoryManagementResult.Disconnected -> MinecraftConfigCommandKeys.HISTORY_MANAGEMENT_DISCONNECTED
+    is HistoryManagementResult.Failed -> MinecraftConfigCommandKeys.HISTORY_MANAGEMENT_FAILED
+    is HistoryManagementResult.SessionChanged, is HistoryManagementResult.Success -> null
+}
+
+/** 取得管理失敗結果可安全展示的同 session 舊快照。 */
+internal fun HistoryManagementResult<*>.cachedSnapshot(): HistoryStorageSnapshot? = when (this) {
+    is HistoryManagementResult.Busy -> cachedSnapshot
+    is HistoryManagementResult.Disconnected -> cachedSnapshot
+    is HistoryManagementResult.Failed -> cachedSnapshot
+    is HistoryManagementResult.SessionChanged, is HistoryManagementResult.Success -> null
 }

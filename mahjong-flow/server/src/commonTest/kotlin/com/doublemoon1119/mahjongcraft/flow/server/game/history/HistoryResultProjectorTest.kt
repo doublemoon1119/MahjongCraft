@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.history
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
@@ -136,17 +137,21 @@ class HistoryResultProjectorTest {
 
     /** 建立使用正式日麻模組的 registry。 */
     private fun riichiRegistry(): MahjongModuleRegistry = MahjongModuleRegistryImpl().apply {
-        register(RiichiRuleConfig::class, "test:riichi") { config, id ->
-            RiichiRuleModule(id, config)
-        }
+        register(
+            MahjongModuleDefinition(RiichiRuleConfig::class, "test:riichi") { config, id ->
+                RiichiRuleModule(id, config)
+            },
+        )
         freeze()
     }
 
     /** 建立使用反向分數排序的 registry。 */
     private fun reverseRegistry(): MahjongModuleRegistry = MahjongModuleRegistryImpl().apply {
-        register(RiichiRuleConfig::class, "test:reverse") { config, id ->
-            ReverseRankingModule(RiichiRuleModule(id, config))
-        }
+        register(
+            MahjongModuleDefinition(RiichiRuleConfig::class, "test:reverse") { config, id ->
+                ReverseRankingModule(RiichiRuleModule(id, config))
+            },
+        )
         freeze()
     }
 

@@ -24,10 +24,12 @@ class ExtensionGameActionAiRegistryTest {
     fun `handler receives the rule module of the game`() {
         val receivedModules = mutableListOf<MahjongRuleModule<*>>()
         val registry = ExtensionGameActionAiRegistry(moduleRegistry).apply {
-            register(TestAction::class) { _, _, module ->
-                receivedModules += module
-                emptyList()
-            }
+            register(
+                ExtensionGameActionAiDefinition(TestAction::class) { _, _, module ->
+                    receivedModules += module
+                    emptyList()
+                },
+            )
             freeze()
         }
         val riichiConfig = RiichiRuleConfig()

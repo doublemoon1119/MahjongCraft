@@ -19,7 +19,9 @@ class GameActionVocabularyRegistryImpl : GameActionVocabularyRegistry {
     override var isFrozen: Boolean = false
         private set
 
-    override fun registerDefault(actionId: String, vocabulary: GameActionVocabulary) {
+    override fun register(definition: GameActionVocabularyDefaultDefinition) {
+        val actionId = definition.actionId
+        val vocabulary = definition.vocabulary
         check(!isFrozen) { "Game action vocabulary registry is frozen" }
         MinecraftResourceIds.requireValid(actionId) { "Game action ID must be namespaced: $actionId" }
         require(defaults.putIfAbsent(actionId, vocabulary) == null) {
@@ -27,7 +29,10 @@ class GameActionVocabularyRegistryImpl : GameActionVocabularyRegistry {
         }
     }
 
-    override fun register(ruleModuleId: String, actionId: String, vocabulary: GameActionVocabulary) {
+    override fun register(definition: GameActionVocabularyDefinition) {
+        val ruleModuleId = definition.ruleModuleId
+        val actionId = definition.actionId
+        val vocabulary = definition.vocabulary
         check(!isFrozen) { "Game action vocabulary registry is frozen" }
         MinecraftResourceIds.requireValid(ruleModuleId) { "Rule module ID must be namespaced: $ruleModuleId" }
         MinecraftResourceIds.requireValid(actionId) { "Game action ID must be namespaced: $actionId" }

@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.ai.AiDecisionContext
 import com.doublemoon1119.mahjongcraft.ai.AiDecisionPhase
 import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategy
+import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyDefinition
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.ai.RoundPreparationAiContext
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
@@ -90,6 +91,10 @@ internal class DecisionRecorder(private val traceLimit: Int = DEFAULT_TRACE_LIMI
     /** 最近的決策，舊的在前。 */
     val recent: List<DecisionRecord> get() = recentDecisions.toList()
 
+    /** 首次由測試策略送出的不合法命令；由模擬器在提交邊界轉成失敗。 */
+    var illegalCommand: IllegalAiCommandException? = null
+        private set
+
     /**
      * 記錄一次決策。
      *
@@ -99,6 +104,15 @@ internal class DecisionRecorder(private val traceLimit: Int = DEFAULT_TRACE_LIMI
         timingByStrategy[decision.strategyKey] = timingByStrategy.getOrElse(decision.strategyKey) { DecisionTiming() } + decision.duration
         recentDecisions.addLast(decision)
         if (recentDecisions.size > traceLimit) recentDecisions.removeFirst()
+    }
+
+    /**
+     * 記錄不合法命令，但不在策略 executor 內拋出，讓模擬器觀察正式提交結果。
+     *
+     * @param failure 本次發現的不合法命令；已有紀錄時保留最先發現的問題。
+     */
+    fun recordIllegalCommand(failure: IllegalAiCommandException) {
+        illegalCommand = illegalCommand ?: failure
     }
 
     /** [DecisionRecorder] 的預設值。 */
@@ -117,7 +131,7 @@ internal class DecisionRecorder(private val traceLimit: Int = DEFAULT_TRACE_LIMI
 internal class IllegalAiCommandException(val decision: DecisionRecord, reason: String) : IllegalStateException("${decision.strategyKey} sent an illegal command ${decision.command} (${decision.phase}): $reason")
 
 /**
- * 包裝一個策略：記錄每次決策的時間與內容，並在命令不合法時拋出 [IllegalAiCommandException]。
+ * 包裝一個策略：記錄每次決策與不合法命令，並由模擬器在命令提交邊界回報 [IllegalAiCommandException]。
  *
  * 合法範圍：回應捨牌或槓時只能送出合法動作或過；自己回合只能自摸、合法的槓與途中流局、擴充 handler 產生的命令，
  * 或打出自己手中的牌（規則強制捨牌時只能打出那張）。
@@ -145,7 +159,7 @@ internal class InstrumentedAiStrategy(
             duration = mark.elapsedNow(),
         )
         recorder.record(decision)
-        illegalReason(context, command)?.let { throw IllegalAiCommandException(decision, it) }
+        illegalReason(context, command)?.let { recorder.recordIllegalCommand(IllegalAiCommandException(decision, it)) }
         return command
     }
 
@@ -229,13 +243,15 @@ internal fun MahjongAiStrategyRegistry.registerInstrumented(
     recorder: DecisionRecorder,
 ) {
     keys.forEach { key ->
-        register(key) {
-            InstrumentedAiStrategy(
-                strategyKey = key,
-                delegate = source.resolve(key),
-                extensionActionRegistry = extensionActionRegistry,
-                recorder = recorder,
-            )
-        }
+        register(
+            MahjongAiStrategyDefinition(key) {
+                InstrumentedAiStrategy(
+                    strategyKey = key,
+                    delegate = source.resolve(key),
+                    extensionActionRegistry = extensionActionRegistry,
+                    recorder = recorder,
+                )
+            },
+        )
     }
 }

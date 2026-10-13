@@ -17,14 +17,11 @@ interface AiStrategyDisplayNameRegistry {
     val isFrozen: Boolean
 
     /**
-     * 註冊一個策略對應的顯示名稱 translation key。
+     * 登記完整描述；凍結後或身分重複時拒絕，不提前呼叫來源。
      *
-     * @param strategyKey AI 策略的穩定 key。
-     * @param translationKey 顯示策略名稱的 translation key。
-     * @throws IllegalStateException 當 registry 已凍結時拋出。
-     * @throws IllegalArgumentException 當 [strategyKey] 已存在對應映射時拋出。
+     * @param definition 集中保存登記身分與內容的描述。
      */
-    fun register(strategyKey: String, translationKey: String)
+    fun register(definition: AiStrategyDisplayNameDefinition)
 
     /** 凍結 registry；後續呼叫 [register] 將失敗。 */
     fun freeze()

@@ -79,6 +79,25 @@
 - **Rule-neutral IDs**: Place them directly under the namespace, for example `mahjongcraft:pao`. Rule-neutral objects must not hold rule-specific IDs.
 - **Third-party extensions**: Use their own namespace instead of `mahjongcraft`.
 
+### Registry Contracts
+
+- Register one typed definition containing the identity and implementation, factory, or mapping. An existing
+  self-identifying provider or template can itself be the definition; do not duplicate its ID in another argument.
+  Registration must not invoke a factory or callback to discover its identity.
+- Validate registration IDs at the registration boundary. Preserve the complete uniqueness scope, including the
+  rule ID when identity is rule-specific, in duplicate checks and diagnostic snapshots.
+  Class keys, numeric migration steps, serialized discriminators, translation keys and asset-path tokens are
+  separate contracts: do not rewrite them as namespaced IDs merely to resemble registration IDs.
+- Higher numeric priority runs first; use stable identity for ties. Compare values rather than subtracting them,
+  so minimum and maximum integer priorities remain safe. Keep built-in precedence explicit when changing a
+  registry's ordering contract.
+- Registration-key collections and registered collection data are detached snapshots, not live map views or
+  aliases of caller-owned mutable collections. Freeze forbids later registration; it must not be bypassed by
+  mutating a collection supplied before freeze.
+- Keep missing-value and failure policies domain-specific. Strategy calculation failure may select a documented
+  fallback, but cancellation, fatal errors and authoritative command failures must not become successful decisions.
+  Share lifecycle and execution mechanics without merging endpoint authorization or data-recovery policies.
+
 ### Koin Registration
 
 - Register directly constructible services owned by a Koin-aware module on the class with `@Single` or

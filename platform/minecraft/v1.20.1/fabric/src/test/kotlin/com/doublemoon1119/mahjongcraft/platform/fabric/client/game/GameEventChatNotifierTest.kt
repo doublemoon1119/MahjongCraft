@@ -10,7 +10,9 @@ import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BuiltInMinecraftMahjongExtension
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcomeDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcomeDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundResultKindDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundResultPayloadDto
@@ -85,8 +87,8 @@ class GameEventChatNotifierTest {
     /** 其他結果依序查特殊結果與流局原因名稱，都沒有登記時流局使用通用流局文字、和牌顯示結果 ID。 */
     @Test
     fun `other outcomes use registered names before falling back by kind`() {
-        roundOutcomeDisplayNameRegistry.register(SPECIAL_OUTCOME_ID, "test.special_outcome")
-        exhaustiveDrawReasonDisplayNameRegistry.register(DRAW_REASON_ID, "test.draw_reason")
+        roundOutcomeDisplayNameRegistry.register(RoundOutcomeDisplayNameDefinition(SPECIAL_OUTCOME_ID, "test.special_outcome"))
+        exhaustiveDrawReasonDisplayNameRegistry.register(ExhaustiveDrawReasonDisplayNameDefinition(DRAW_REASON_ID, "test.draw_reason"))
 
         assertEquals("test.special_outcome", buildMessage(result(SPECIAL_OUTCOME_ID)).outcomeKey())
         assertEquals("test.draw_reason", buildMessage(result(DRAW_REASON_ID, kind = RoundResultKindDto.DRAW)).outcomeKey())

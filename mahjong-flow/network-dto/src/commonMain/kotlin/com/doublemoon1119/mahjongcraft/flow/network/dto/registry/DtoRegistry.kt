@@ -24,6 +24,8 @@ class DtoRegistry<Domain : Any, Dto : Any> {
     /**
      * 將具體 DTO serializer 與雙向 mapper 綁在同一筆註冊資料。
      *
+     * @param D 此項目接受的領域型別。
+     * @param T 對應的 DTO 型別。
      * @property serializer 對應 DTO 型別的 serializer。
      * @property toDto 將領域物件轉為 DTO 的函式。
      * @property toDomain 將 DTO 還原為領域物件的函式。
@@ -52,27 +54,19 @@ class DtoRegistry<Domain : Any, Dto : Any> {
     /**
      * 註冊一組領域型別 ↔ DTO 的對應關係。
      *
-     * @param domainClass 領域層的具體實作類別（例如 `RiichiRuleConfig::class`）。
-     * @param dtoClass 對應的具體 DTO 類別。
-     * @param serializer 該 DTO 類別的序列化器。
-     * @param toDto 領域物件轉換成 DTO 的函式。
-     * @param toDomain DTO 轉換回領域物件的函式。
+     * @param D 要登記的具體領域型別。
+     * @param T 對應的 DTO 型別。
+     * @param definition 領域型別、DTO 型別、serializer 與雙向 mapper 的完整定義。
      */
-    fun <D : Domain, T : Dto> register(
-        domainClass: KClass<D>,
-        dtoClass: KClass<T>,
-        serializer: KSerializer<T>,
-        toDto: (D) -> T,
-        toDomain: (T) -> D,
-    ) {
+    fun <D : Domain, T : Dto> register(definition: DtoDefinition<D, T>) {
         check(!frozen) { "Network DTO registry is frozen" }
-        require(domainClass !in byDomainClass) { "Network DTO already registered for $domainClass" }
-        require(dtoClass !in byDtoClass) { "Network domain mapping already registered for $dtoClass" }
-        val serialName = serializer.descriptor.serialName
+        require(definition.domainClass !in byDomainClass) { "Network DTO already registered for ${definition.domainClass}" }
+        require(definition.dtoClass !in byDtoClass) { "Network domain mapping already registered for ${definition.dtoClass}" }
+        val serialName = definition.serializer.descriptor.serialName
         require(serialName !in bySerialName) { "Network DTO serial name already registered: $serialName" }
-        val entry = Entry(serializer, toDto, toDomain)
-        byDomainClass[domainClass] = entry
-        byDtoClass[dtoClass] = entry
+        val entry = Entry(definition.serializer, definition.toDto, definition.toDomain)
+        byDomainClass[definition.domainClass] = entry
+        byDtoClass[definition.dtoClass] = entry
         bySerialName[serialName] = entry
     }
 

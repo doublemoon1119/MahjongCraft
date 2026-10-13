@@ -13,9 +13,11 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchiev
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplay
+import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogue
@@ -29,6 +31,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerInd
 import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSourceRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.BundledRiichiMinecraftExtension
@@ -42,14 +45,18 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundP
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropDescriberRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabel
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelColor
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelText
@@ -136,34 +143,36 @@ class MinecraftMahjongExtensionRegistrarTest {
             override val id: String = "example:recording"
 
             override fun registerTileAssets(registry: MinecraftTileAssetRegistry) {
-                registry.register(thirdPartyId, "animal_cat")
+                registry.register(MinecraftTileAssetDefinition(thirdPartyId, "animal_cat"))
             }
 
             override fun registerAiStrategyDisplayNames(registry: AiStrategyDisplayNameRegistry) {
-                registry.register("example:aggressive", "example.ai_strategy.aggressive")
+                registry.register(AiStrategyDisplayNameDefinition("example:aggressive", "example.ai_strategy.aggressive"))
             }
 
             override fun registerAutomaticControlDisplays(registry: AutomaticControlDisplayRegistry) {
                 registry.register(
-                    "example:auto_flower",
-                    AutomaticControlDisplay("example.auto_flower", "example.auto_flower.description", 40),
+                    AutomaticControlDisplayDefinition(
+                        "example:auto_flower",
+                        AutomaticControlDisplay("example.auto_flower", "example.auto_flower.description", 40),
+                    ),
                 )
             }
 
             override fun registerTileDisplayNames(registry: TileDisplayNameRegistry) {
-                registry.register(thirdPartyId, "example.tile.cat")
+                registry.register(TileDisplayNameDefinition(thirdPartyId, "example.tile.cat"))
             }
 
             override fun registerRuleModuleDisplayNames(registry: RuleModuleDisplayNameRegistry) {
-                registry.register("example:my_rule", "example.rule_module.my_rule")
+                registry.register(RuleModuleDisplayNameDefinition("example:my_rule", "example.rule_module.my_rule"))
             }
 
             override fun registerTileEmojis(registry: TileEmojiRegistry) {
-                registry.register("animal_cat", "🐱")
+                registry.register(TileEmojiDefinition("animal_cat", "🐱"))
             }
 
             override fun registerTileLabels(registry: TileLabelRegistry) {
-                registry.register("animal_cat", exampleLabel)
+                registry.register(TileLabelDefinition("animal_cat", exampleLabel))
             }
 
             /** 登記第三方目錄來源，驗證共用 bootstrap 可發現新 hook。 */
@@ -197,7 +206,7 @@ class MinecraftMahjongExtensionRegistrarTest {
         assertEquals(setOf("animal_cat"), result.registrationKeys("mahjongcraft:tile_asset"))
         assertTrue(tileAssetRegistry.isFrozen)
         assertFailsWith<IllegalStateException> {
-            tileAssetRegistry.register(TileTypeId.parse("example:late"), "late_key")
+            tileAssetRegistry.register(MinecraftTileAssetDefinition(TileTypeId.parse("example:late"), "late_key"))
         }
 
         assertEquals(
@@ -207,7 +216,7 @@ class MinecraftMahjongExtensionRegistrarTest {
         assertEquals(setOf("example:aggressive"), result.registrationKeys("mahjongcraft:ai_strategy_display_name"))
         assertTrue(aiStrategyDisplayNameRegistry.isFrozen)
         assertFailsWith<IllegalStateException> {
-            aiStrategyDisplayNameRegistry.register("example:late", "example.ai_strategy.late")
+            aiStrategyDisplayNameRegistry.register(AiStrategyDisplayNameDefinition("example:late", "example.ai_strategy.late"))
         }
 
         assertEquals("example.auto_flower", automaticControlDisplayRegistry.find("example:auto_flower")?.labelTranslationKey)
@@ -222,7 +231,7 @@ class MinecraftMahjongExtensionRegistrarTest {
         assertEquals(setOf(thirdPartyId.toString()), result.registrationKeys("mahjongcraft:tile_display_name"))
         assertTrue(tileDisplayNameRegistry.isFrozen)
         assertFailsWith<IllegalStateException> {
-            tileDisplayNameRegistry.register(TileTypeId.parse("example:late"), "example.tile.late")
+            tileDisplayNameRegistry.register(TileDisplayNameDefinition(TileTypeId.parse("example:late"), "example.tile.late"))
         }
 
         assertTrue(ruleModuleDisplayNameRegistry.find("mahjongcraft:riichi") != null)
@@ -233,7 +242,7 @@ class MinecraftMahjongExtensionRegistrarTest {
         assertEquals(setOf("example:my_rule"), result.registrationKeys("mahjongcraft:rule_module_display_name"))
         assertTrue(ruleModuleDisplayNameRegistry.isFrozen)
         assertFailsWith<IllegalStateException> {
-            ruleModuleDisplayNameRegistry.register("example:late", "example.rule_module.late")
+            ruleModuleDisplayNameRegistry.register(RuleModuleDisplayNameDefinition("example:late", "example.rule_module.late"))
         }
 
         assertTrue(tileEmojiRegistry.find("m1") != null)
@@ -241,7 +250,7 @@ class MinecraftMahjongExtensionRegistrarTest {
         assertEquals(setOf("animal_cat"), result.registrationKeys("mahjongcraft:tile_emoji"))
         assertTrue(tileEmojiRegistry.isFrozen)
         assertFailsWith<IllegalStateException> {
-            tileEmojiRegistry.register("late_key", "🐶")
+            tileEmojiRegistry.register(TileEmojiDefinition("late_key", "🐶"))
         }
 
         assertTrue(tileLabelRegistry.find("m9") != null)
@@ -249,7 +258,7 @@ class MinecraftMahjongExtensionRegistrarTest {
         assertEquals(setOf("animal_cat"), result.registrationKeys("mahjongcraft:tile_label"))
         assertTrue(tileLabelRegistry.isFrozen)
         assertFailsWith<IllegalStateException> {
-            tileLabelRegistry.register("late_key", exampleLabel)
+            tileLabelRegistry.register(TileLabelDefinition("late_key", exampleLabel))
         }
 
         assertEquals(setOf("example:my_rule"), result.registrationKeys("mahjongcraft:rule_catalogue"))

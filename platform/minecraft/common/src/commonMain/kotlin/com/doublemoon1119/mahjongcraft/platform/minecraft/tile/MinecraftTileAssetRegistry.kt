@@ -16,20 +16,11 @@ interface MinecraftTileAssetRegistry {
     val isFrozen: Boolean
 
     /**
-     * 註冊一個擴充牌種對應的 asset key。asset key 在整個 registry 內必須唯一，避免不同牌種
-     * 共用同一個 asset key 而在正規化、Tab 補全等場景造成無法區分的撞名。
+     * 登記完整描述；凍結後或身分重複時拒絕，不提前呼叫來源。
      *
-     * 第三方擴充建議以 [typeId] 的 [TileTypeId.namespace] 當作 asset key 前綴（例如
-     * `"example_cat"`），降低與其他來源選到同一個字串的機率；貼圖檔案仍統一放在本 mod 的
-     * asset namespace 下（見 [tileTextureAssetPath]），與 asset key 前綴無關。
-     *
-     * @param typeId 牌種的穩定識別碼。
-     * @param assetKey 對應的素材 key。
-     * @throws IllegalStateException 當 registry 已凍結時拋出。
-     * @throws IllegalArgumentException 當 [typeId] 已存在對應映射，或 [assetKey] 已被其他牌種
-     * 註冊時拋出。
+     * @param definition 集中保存登記身分與內容的描述。
      */
-    fun register(typeId: TileTypeId, assetKey: String)
+    fun register(definition: MinecraftTileAssetDefinition)
 
     /** 凍結 registry；後續呼叫 [register] 將失敗。 */
     fun freeze()

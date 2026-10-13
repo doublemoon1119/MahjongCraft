@@ -59,7 +59,7 @@ class PersistenceDtoRegistry<Domain : Any> {
     /** 登記時宣告可在精簡牌譜中壓縮的 type key。 */
     private val compactTypeKeys = mutableSetOf<String>()
 
-    /** 登記時宣告可在精簡牌譜中壓縮的 type key 快照，見 [register] 的 `compactInReplay`。 */
+    /** 可在精簡牌譜中壓縮的 type key 快照，依 [PersistenceDtoDefinition.compactInReplay] 的宣告建立。 */
     val replayCompactTypeKeys: Set<String> get() = compactTypeKeys.toSet()
 
     /** 是否已禁止後續註冊。 */
@@ -70,33 +70,20 @@ class PersistenceDtoRegistry<Domain : Any> {
      *
      * @param D 要登記的具體領域型別。
      * @param T 對應的存檔 DTO 型別。
-     * @param typeKey 穩定的 namespaced type key。
-     * @param domainClass 具體領域類別。
-     * @param serializer persistence DTO 的序列化器。
-     * @param toDto 領域物件轉成 persistence DTO。
-     * @param toDomain persistence DTO 還原成領域物件。
-     * @param compactInReplay 為 `true` 時，精簡牌譜會把這份資料內的牌與玩家 UUID 換成局內索引，並壓縮其中的欄位名稱；
-     * 只有資料內的 UUID 都是本局的牌或玩家、且讀取牌譜時能處理局內索引的格式才可設為 `true`。預設保留原始內容。
-     * @throws IllegalArgumentException 若 [typeKey] 不是 namespaced ID，或領域類別／type key 已被註冊。
+     * @param definition 穩定 type key、領域型別、serializer 與雙向 mapper 的完整定義。
+     * @throws IllegalArgumentException 若 definition 的 type key 不是 namespaced ID，或領域類別／type key 已被註冊。
      * @throws IllegalStateException 註冊表已凍結時拋出。
      */
-    fun <D : Domain, T : Any> register(
-        typeKey: String,
-        domainClass: KClass<D>,
-        serializer: KSerializer<T>,
-        toDto: (D) -> T,
-        toDomain: (T) -> D,
-        compactInReplay: Boolean = false,
-    ) {
+    fun <D : Domain, T : Any> register(definition: PersistenceDtoDefinition<D, T>) {
         check(!frozen) { "Persistence DTO registry is frozen" }
-        NamespacedId.requireValid(typeKey) { "Persistence type key must be a namespaced ID: $typeKey" }
-        require(domainClass !in byDomainClass) { "Persistence DTO already registered for $domainClass" }
-        require(typeKey !in byTypeKey) { "Persistence type key already registered: $typeKey" }
+        NamespacedId.requireValid(definition.typeKey) { "Persistence type key must be a namespaced ID: ${definition.typeKey}" }
+        require(definition.domainClass !in byDomainClass) { "Persistence DTO already registered for ${definition.domainClass}" }
+        require(definition.typeKey !in byTypeKey) { "Persistence type key already registered: ${definition.typeKey}" }
 
-        val entry = Entry(serializer, toDto, toDomain)
-        byDomainClass[domainClass] = typeKey to entry
-        byTypeKey[typeKey] = entry
-        if (compactInReplay) compactTypeKeys += typeKey
+        val entry = Entry(definition.serializer, definition.toDto, definition.toDomain)
+        byDomainClass[definition.domainClass] = definition.typeKey to entry
+        byTypeKey[definition.typeKey] = entry
+        if (definition.compactInReplay) compactTypeKeys += definition.typeKey
     }
 
     /** 凍結註冊表；凍結後不得新增 persistence mapper。 */

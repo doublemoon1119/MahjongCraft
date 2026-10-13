@@ -8,7 +8,7 @@ import kotlin.test.assertFailsWith
 class ExtensionRegistrationReportTest {
     /** 摘要每個來源只列筆數，內建來源顯示為 built-in。 */
     @Test
-    fun formatSummary() {
+    fun `format summary`() {
         assertEquals(
             """
             Enabled 4 registration(s) from 3 source(s):
@@ -22,7 +22,7 @@ class ExtensionRegistrationReportTest {
 
     /** 詳細格式在每個來源底下列出所有類別與 ID。 */
     @Test
-    fun formatDetails() {
+    fun `format details`() {
         assertEquals(
             """
             Enabled 4 registration(s) from 3 source(s):
@@ -39,7 +39,7 @@ class ExtensionRegistrationReportTest {
 
     /** 合併時同一來源只出現一次，類別依結果順序串接，來源依第一次出現的順序排列。 */
     @Test
-    fun mergeKeepsFirstSeenSourceOrder() {
+    fun `merge keeps first seen source order`() {
         val merged = mergeRegistrationSources(
             listOf(ExtensionRegistrationSource(null, listOf(category("tile", "Tile", "built_in"))), ExtensionRegistrationSource("ext_a", emptyList())),
             listOf(
@@ -61,7 +61,7 @@ class ExtensionRegistrationReportTest {
 
     /** 同一來源不能在報告中出現兩次。 */
     @Test
-    fun rejectDuplicateSources() {
+    fun `reject duplicate sources`() {
         assertFailsWith<IllegalArgumentException> {
             ExtensionRegistrationReport(listOf(ExtensionRegistrationSource("ext_a", emptyList()), ExtensionRegistrationSource("ext_a", emptyList())))
         }
@@ -69,7 +69,7 @@ class ExtensionRegistrationReportTest {
 
     /** 快照列出所有非空類別，差集只回傳之後新增的 key。 */
     @Test
-    fun snapshotListsCategoriesAndAdditions() {
+    fun `snapshot lists categories and additions`() {
         val baseline = ExtensionRegistrationSnapshot(
             listOf(
                 ExtensionRegistrationSnapshotCategory("tile", "Tile", setOf("built_in")),

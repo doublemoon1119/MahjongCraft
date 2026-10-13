@@ -26,8 +26,8 @@ class MatchSettlementPresentationTemplateRegistryTest {
         val registry = MatchSettlementPresentationTemplateRegistryImpl()
         BuiltInMinecraftMahjongExtension.registerMatchSettlementPresentationTemplates(registry)
         registry.register(MatchSettlementPresentationTemplate("example:custom", "example.title"))
-        registry.bindRuleTemplate("example:rule", "example:custom")
-        registry.bindRuleTemplate("example:missing_template_rule", "example:missing")
+        registry.register(MatchSettlementRuleTemplateBindingDefinition("example:rule", "example:custom"))
+        registry.register(MatchSettlementRuleTemplateBindingDefinition("example:missing_template_rule", "example:missing"))
 
         assertEquals("example:custom", registry.findForRule("example:rule")?.key)
         assertEquals(BUILT_IN_MATCH_SETTLEMENT_TEMPLATE_KEY, registry.findForRule("example:missing_template_rule")?.key)

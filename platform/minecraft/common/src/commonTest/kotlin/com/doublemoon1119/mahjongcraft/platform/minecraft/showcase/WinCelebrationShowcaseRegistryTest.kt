@@ -11,7 +11,7 @@ import kotlin.test.assertNull
 class WinCelebrationShowcaseRegistryTest {
     /** 內建 definition 使用八秒正式展示。 */
     @Test
-    fun registersBuiltInsWithEightSecondShowcase() {
+    fun `registers built ins with eight second showcase`() {
         val registry = WinCelebrationShowcaseRegistryImpl().apply { BundledRiichiMinecraftExtension.registerWinCelebrationShowcases(this) }
 
         assertEquals(160, assertNotNull(registry.find("mahjongcraft:riichi/yakuman/kokushi_musou")).showcaseDurationTicks)
@@ -19,7 +19,7 @@ class WinCelebrationShowcaseRegistryTest {
 
     /** cue key 快照同時包含內建與第三方 definition，且不允許呼叫端修改 registry。 */
     @Test
-    fun exposesRegisteredCueKeySnapshot() {
+    fun `exposes registered cue key snapshot`() {
         val registry = WinCelebrationShowcaseRegistryImpl().apply {
             BundledRiichiMinecraftExtension.registerWinCelebrationShowcases(this)
             register(definition())
@@ -42,14 +42,14 @@ class WinCelebrationShowcaseRegistryTest {
 
     /** 第三方展示時間限制為四至十二秒。 */
     @Test
-    fun validatesExtensionDurationRange() {
+    fun `validates extension duration range`() {
         assertFailsWith<IllegalArgumentException> { definition(durationTicks = 79) }
         assertFailsWith<IllegalArgumentException> { definition(durationTicks = 241) }
     }
 
     /** 多個展示理由時挑優先序最高的已登記定義；內建順序與役滿倍數一致。 */
     @Test
-    fun selectsHighestPriorityRegisteredDefinition() {
+    fun `selects highest priority registered definition`() {
         val registry = WinCelebrationShowcaseRegistryImpl().apply { BundledRiichiMinecraftExtension.registerWinCelebrationShowcases(this) }
 
         assertEquals(
@@ -66,7 +66,7 @@ class WinCelebrationShowcaseRegistryTest {
 
     /** 內建日麻展示的 ID、標題 key 與貼圖都放在日麻專屬的命名下。 */
     @Test
-    fun scopesBuiltInsToRiichi() {
+    fun `scopes built ins to riichi`() {
         val registry = WinCelebrationShowcaseRegistryImpl().apply { BundledRiichiMinecraftExtension.registerWinCelebrationShowcases(this) }
         val definition = assertNotNull(registry.find("mahjongcraft:riichi/yakuman/daisuushii"))
 
@@ -77,7 +77,7 @@ class WinCelebrationShowcaseRegistryTest {
 
     /** 沒有指定時，展示會讓仍在本局中的玩家等它播完；內建展示全部維持等待。 */
     @Test
-    fun pausesContinuingRoundByDefault() {
+    fun `pauses continuing round by default`() {
         val registry = WinCelebrationShowcaseRegistryImpl().apply { BundledRiichiMinecraftExtension.registerWinCelebrationShowcases(this) }
 
         assertEquals(true, definition().pausesContinuingRound)
@@ -86,7 +86,7 @@ class WinCelebrationShowcaseRegistryTest {
 
     /** 只有不要求等待的展示時不暫停；任何一位贏家的展示要求等待時就暫停。 */
     @Test
-    fun pausesContinuingRoundWhenAnySelectedDefinitionRequiresIt() {
+    fun `pauses continuing round when any selected definition requires it`() {
         val registry = WinCelebrationShowcaseRegistryImpl().apply {
             register(definition(cueKey = "test:quiet", pausesContinuingRound = false))
             register(definition(cueKey = "test:loud"))
@@ -99,26 +99,26 @@ class WinCelebrationShowcaseRegistryTest {
 
     /** 展示理由選不出已登記的定義時不播放展示，也不暫停。 */
     @Test
-    fun doesNotPauseContinuingRoundForUnregisteredCues() {
+    fun `does not pause continuing round for unregistered cues`() {
         val registry = WinCelebrationShowcaseRegistryImpl().apply { BundledRiichiMinecraftExtension.registerWinCelebrationShowcases(this) }
 
         assertEquals(false, registry.pausesContinuingRound(listOf(listOf("unknown:cue"))))
     }
 
-    /** 優先序相同時取規則給的順序中較前者。 */
+    /** 優先序相同時以穩定識別碼排序，不受要求順序影響。 */
     @Test
-    fun breaksPriorityTiesByRuleOrder() {
+    fun `breaks priority ties by stable cue id`() {
         val registry = WinCelebrationShowcaseRegistryImpl().apply {
             register(definition(cueKey = "test:first"))
             register(definition(cueKey = "test:second"))
         }
 
-        assertEquals("test:second", registry.select(listOf("test:second", "test:first"))?.cueKey)
+        assertEquals("test:first", registry.select(listOf("test:second", "test:first"))?.cueKey)
     }
 
     /** registry 凍結後不得再加入 definition。 */
     @Test
-    fun rejectsRegistrationAfterFreeze() {
+    fun `rejects registration after freeze`() {
         val registry = WinCelebrationShowcaseRegistryImpl().apply { freeze() }
 
         assertFailsWith<IllegalStateException> { registry.register(definition()) }

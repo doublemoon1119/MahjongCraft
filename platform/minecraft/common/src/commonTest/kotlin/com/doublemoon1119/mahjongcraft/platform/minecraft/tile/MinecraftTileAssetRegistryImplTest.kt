@@ -17,7 +17,7 @@ class MinecraftTileAssetRegistryImplTest {
         val registry = MinecraftTileAssetRegistryImpl()
         val typeId = TileTypeId.parse("mahjongcraft:taiwan/spring")
 
-        registry.register(typeId, "flower_spring")
+        registry.register(MinecraftTileAssetDefinition(typeId, "flower_spring"))
 
         assertEquals("flower_spring", registry.find(typeId))
     }
@@ -27,19 +27,19 @@ class MinecraftTileAssetRegistryImplTest {
     fun `duplicate type id is rejected`() {
         val registry = MinecraftTileAssetRegistryImpl()
         val typeId = TileTypeId.parse("example:flower/spring")
-        registry.register(typeId, "flower_spring")
+        registry.register(MinecraftTileAssetDefinition(typeId, "flower_spring"))
 
-        assertFailsWith<IllegalArgumentException> { registry.register(typeId, "another_key") }
+        assertFailsWith<IllegalArgumentException> { registry.register(MinecraftTileAssetDefinition(typeId, "another_key")) }
     }
 
     /** 驗證不同穩定 ID 不得共用同一個 asset key，避免正規化與 Tab 補全出現無法區分的撞名。 */
     @Test
     fun `duplicate asset key across different type ids is rejected`() {
         val registry = MinecraftTileAssetRegistryImpl()
-        registry.register(TileTypeId.parse("example:animal/cat"), "shared_key")
+        registry.register(MinecraftTileAssetDefinition(TileTypeId.parse("example:animal/cat"), "shared_key"))
 
         assertFailsWith<IllegalArgumentException> {
-            registry.register(TileTypeId.parse("example:animal/dog"), "shared_key")
+            registry.register(MinecraftTileAssetDefinition(TileTypeId.parse("example:animal/dog"), "shared_key"))
         }
     }
 
@@ -48,14 +48,14 @@ class MinecraftTileAssetRegistryImplTest {
     fun `frozen registry remains readable and rejects registration`() {
         val registry = MinecraftTileAssetRegistryImpl()
         val registeredId = TileTypeId.parse("example:registered")
-        registry.register(registeredId, "registered_key")
+        registry.register(MinecraftTileAssetDefinition(registeredId, "registered_key"))
 
         registry.freeze()
 
         assertTrue(registry.isFrozen)
         assertEquals("registered_key", registry.find(registeredId))
         assertFailsWith<IllegalStateException> {
-            registry.register(TileTypeId.parse("example:late"), "late_key")
+            registry.register(MinecraftTileAssetDefinition(TileTypeId.parse("example:late"), "late_key"))
         }
     }
 
@@ -71,7 +71,7 @@ class MinecraftTileAssetRegistryImplTest {
     @Test
     fun `isRegisteredAssetKey only recognizes values that were actually registered`() {
         val registry = MinecraftTileAssetRegistryImpl()
-        registry.register(TileTypeId.parse("example:animal/cat"), "animal_cat")
+        registry.register(MinecraftTileAssetDefinition(TileTypeId.parse("example:animal/cat"), "animal_cat"))
 
         assertTrue(registry.isRegisteredAssetKey("animal_cat"))
         assertFalse(registry.isRegisteredAssetKey("animal_dog"))

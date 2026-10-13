@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.ai.AiDecisionContext
 import com.doublemoon1119.mahjongcraft.ai.AiDecisionPhase
 import com.doublemoon1119.mahjongcraft.ai.BuiltInAiStrategyKeys
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategy
+import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyDefinition
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiPullNorthCommand
@@ -76,7 +77,7 @@ class MatchSimulationSmokeTest {
     @Test
     fun `an illegal command is detected and reproduced on replay`() = runTest(timeout = SMOKE_TIMEOUT) {
         val simulator = MatchSimulator(RiichiRuleConfig()) { registry, _ ->
-            registry.register(ILLEGAL_KEY) { DiscardsForeignTileStrategy() }
+            registry.register(MahjongAiStrategyDefinition(ILLEGAL_KEY) { DiscardsForeignTileStrategy() })
         }
 
         val result = simulator.play(List(4) { ILLEGAL_KEY })

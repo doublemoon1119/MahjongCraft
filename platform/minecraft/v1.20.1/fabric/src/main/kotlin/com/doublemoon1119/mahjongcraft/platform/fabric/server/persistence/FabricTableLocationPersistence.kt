@@ -27,24 +27,40 @@ class FabricTableLocationPersistence(
      */
     fun attach(server: MinecraftServer) {
         check(persistentState == null) { "Table location persistence is already attached to a server session" }
-        val state = server.overworld.persistentStateManager.getOrCreate(
-            MahjongTableLocationsPersistentState::fromNbt,
-            MahjongTableLocationsPersistentState::create,
-            MahjongTableLocationsPersistentState.STORAGE_KEY,
-        )
-        registry.load(state.entries)
-        registry.setDirtyListener(state::update)
-        persistentState = state
-        logger.debug("Attached table location persistence with {} saved location(s)", state.entries.size)
+        try {
+            val state = attachPersistenceState(
+                load = {
+                    loadPersistentStateStrict(
+                        server = server,
+                        key = MahjongTableLocationsPersistentState.STORAGE_KEY,
+                        decode = MahjongTableLocationsPersistentState::fromNbt,
+                        create = MahjongTableLocationsPersistentState::create,
+                    )
+                },
+                initialize = { state ->
+                    registry.load(state.entries)
+                    registry.setDirtyListener(state::update)
+                    logger.debug("Attached table location persistence with {} saved location(s)", state.entries.size)
 
-        val availableDimensions = server.worlds.map { it.registryKey.value.toString() }.toSet()
-        registry.snapshot().values
-            .map { it.location.dimensionId }
-            .filterNot(availableDimensions::contains)
-            .distinct()
-            .forEach { dimensionId ->
-                logger.warn("Saved Mahjong table locations reference unavailable dimension {}", dimensionId)
-            }
+                    val availableDimensions = server.worlds.map { it.registryKey.value.toString() }.toSet()
+                    registry.snapshot().values
+                        .map { it.location.dimensionId }
+                        .filterNot(availableDimensions::contains)
+                        .distinct()
+                        .forEach { dimensionId ->
+                            logger.warn("Saved Mahjong table locations reference unavailable dimension {}", dimensionId)
+                        }
+                },
+                cleanupFailedAttach = {
+                    registry.setDirtyListener {}
+                    registry.clear()
+                },
+            )
+            persistentState = state
+        } catch (exception: Exception) {
+            logger.error("Failed to attach table location persistence for the current server session", exception)
+            throw exception
+        }
     }
 
     /** 解除 dirty listener 並清除目前 session 的位置索引記憶體。 */

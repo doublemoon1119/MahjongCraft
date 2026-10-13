@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -376,7 +377,7 @@ class RuleCatalogueBrowserTest {
         override val isFrozen: Boolean = true
 
         /** 測試不執行額外的名稱註冊。 */
-        override fun register(ruleModuleId: String, translationKey: String) = Unit
+        override fun register(definition: RuleModuleDisplayNameDefinition) = Unit
 
         /** 測試名稱來源已視為凍結。 */
         override fun freeze() = Unit

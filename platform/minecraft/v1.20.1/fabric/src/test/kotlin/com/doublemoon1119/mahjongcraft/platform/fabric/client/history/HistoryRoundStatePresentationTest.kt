@@ -18,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.MatchRoundPhase
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.MatchRoundPositionDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionTileOrientationDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplay
+import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayRegistryImpl
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -128,7 +129,7 @@ class HistoryRoundStatePresentationTest {
             ),
         )
         val markers = HistoryDiscardMarkerDisplayRegistryImpl().apply {
-            register("example:declared", HistoryDiscardMarkerDisplay(labelTranslationKey = "test.declared", sideways = true))
+            register(HistoryDiscardMarkerDisplayDefinition("example:declared", HistoryDiscardMarkerDisplay(labelTranslationKey = "test.declared", sideways = true)))
         }
         val layout = HistoryRoundStatePresenter.discards(player, 200f, markers)
 

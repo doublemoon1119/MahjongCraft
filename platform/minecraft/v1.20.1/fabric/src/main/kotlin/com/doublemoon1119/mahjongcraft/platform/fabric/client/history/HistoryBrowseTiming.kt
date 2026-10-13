@@ -11,4 +11,7 @@ internal object HistoryBrowseTiming {
 
     /** 包含傳輸與伺服器執行的 client 等待上限。 */
     val responseTimeout: Duration = 10.seconds
+
+    /** 保存狀態輪詢單次要求的等待上限；輪詢本身另有次數與間隔政策。 */
+    val archiveResponseTimeout: Duration = 5.seconds
 }

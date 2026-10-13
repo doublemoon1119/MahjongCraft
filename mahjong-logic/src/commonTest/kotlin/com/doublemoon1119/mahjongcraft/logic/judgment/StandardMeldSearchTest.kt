@@ -27,6 +27,16 @@ class StandardMeldSearchTest {
         assertEquals(-2, search.meldShanten(IntArray(34), initialMelds = 5))
     }
 
+    /** 副露面子數不可為負數，但超過目標的既有語意仍保留。 */
+    @Test
+    fun `initial melds must not be negative`() {
+        val search = StandardMeldSearch(targetMelds = 4)
+
+        assertFailsWith<IllegalArgumentException> {
+            search.meldShanten(IntArray(34), initialMelds = -1)
+        }
+    }
+
     /** 不同組牌的剩餘牌型共用記憶時互不混淆，例如數牌只剩一張 5 與字牌 1、4、1 張。 */
     @Test
     fun `memoized patterns of different groups stay apart`() {

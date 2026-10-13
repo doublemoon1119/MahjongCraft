@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.player
 
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import org.koin.core.annotation.Single
+import kotlin.coroutines.cancellation.CancellationException
 
 /** [PlayerPortraitSourceRegistry] 的記憶體實作。priority 較高者先執行，同分依 ID 排序。 */
 @Single(binds = [PlayerPortraitSourceRegistry::class])
@@ -27,9 +28,13 @@ class PlayerPortraitSourceRegistryImpl : PlayerPortraitSourceRegistry {
 
     override var isFrozen: Boolean = false
         private set
-    override val providerIds: Set<String> get() = entries.keys
 
-    override fun register(providerId: String, priority: Int, provider: PlayerPortraitSourceProvider) {
+    override val providerIds: Set<String> get() = entries.keys.toSet()
+
+    override fun register(definition: PlayerPortraitSourceDefinition) {
+        val providerId = definition.providerId
+        val priority = definition.priority
+        val provider = definition.provider
         check(!isFrozen) { "Player portrait source registry is frozen" }
         NamespacedId.requireValid(providerId) { "Player portrait provider ID must be namespaced: $providerId" }
         require(entries.putIfAbsent(providerId, Entry(providerId, priority, provider)) == null) {
@@ -42,6 +47,8 @@ class PlayerPortraitSourceRegistryImpl : PlayerPortraitSourceRegistry {
         candidates.forEach { entry ->
             val source = try {
                 entry.provider.resolve(context)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
             } catch (cause: Exception) {
                 throw PlayerPortraitSourceProviderException(entry.providerId, cause)
             }

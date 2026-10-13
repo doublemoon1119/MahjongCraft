@@ -25,7 +25,7 @@ class DebugWinRoundContinuationResolver(
     override val id: String = MahjongCraftMetadata.id("debug_continuing_win/${ruleModuleId.substringAfter(':')}")
 
     /** 排在所有真實規則 resolver 之後，開啟時也不會蓋掉規則本身的判定。 */
-    override val priority: Int = Int.MAX_VALUE
+    override val priority: Int = Int.MIN_VALUE
 
     override fun resolve(context: WinRoundContinuationContext, ruleModule: MahjongRuleModule<*>): WinRoundDirective? {
         val tableState = context.settledTableState

@@ -17,7 +17,7 @@ class TablePropDescriberRegistryTest {
         val custom = TablePropDescriber { emptyList() }
         val registry = TablePropDescriberRegistryImpl().apply {
             BundledRiichiMinecraftExtension.registerTablePropDescribers(this)
-            register("example:custom", custom)
+            register(TablePropDescriberDefinition("example:custom", custom))
         }
 
         assertSame(RiichiTableProps, registry.find(BuiltInRuleModuleIds.RIICHI))
@@ -32,7 +32,7 @@ class TablePropDescriberRegistryTest {
         val registry = TablePropDescriberRegistryImpl().apply { freeze() }
 
         assertFailsWith<IllegalStateException> {
-            registry.register("example:late", TablePropDescriber { emptyList() })
+            registry.register(TablePropDescriberDefinition("example:late", TablePropDescriber { emptyList() }))
         }
     }
 
@@ -42,7 +42,7 @@ class TablePropDescriberRegistryTest {
         val registry = TablePropDescriberRegistryImpl().apply { BundledRiichiMinecraftExtension.registerTablePropDescribers(this) }
 
         assertFailsWith<IllegalArgumentException> {
-            registry.register(BuiltInRuleModuleIds.RIICHI, TablePropDescriber { emptyList() })
+            registry.register(TablePropDescriberDefinition(BuiltInRuleModuleIds.RIICHI, TablePropDescriber { emptyList() }))
         }
     }
 

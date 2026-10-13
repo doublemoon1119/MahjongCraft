@@ -57,7 +57,7 @@ class TileAssetKeysTest {
     fun `all tile asset keys include third-party registrations`() {
         val thirdPartyRegistry = MinecraftTileAssetRegistryImpl().apply {
             BundledMinecraftMahjongExtensions.all.forEach { it.registerTileAssets(this) }
-            register(TileTypeId.parse("example:animal/cat"), "animal_cat")
+            register(MinecraftTileAssetDefinition(TileTypeId.parse("example:animal/cat"), "animal_cat"))
             freeze()
         }
 
@@ -85,7 +85,7 @@ class TileAssetKeysTest {
         val thirdPartyId = TileTypeId.parse("example:animal/cat")
         val thirdPartyRegistry = MinecraftTileAssetRegistryImpl().apply {
             BundledMinecraftMahjongExtensions.all.forEach { it.registerTileAssets(this) }
-            register(thirdPartyId, "animal_cat")
+            register(MinecraftTileAssetDefinition(thirdPartyId, "animal_cat"))
         }
 
         assertEquals("animal_cat", Tile.Extension(thirdPartyId).toAssetKey(thirdPartyRegistry))
@@ -106,7 +106,7 @@ class TileAssetKeysTest {
         val thirdPartyId = TileTypeId.parse("example:animal/cat")
         val thirdPartyRegistry = MinecraftTileAssetRegistryImpl().apply {
             BundledMinecraftMahjongExtensions.all.forEach { it.registerTileAssets(this) }
-            register(thirdPartyId, "animal_cat")
+            register(MinecraftTileAssetDefinition(thirdPartyId, "animal_cat"))
         }
 
         assertEquals("animal_cat", "animal_cat".normalizedTileAssetKey(thirdPartyRegistry))

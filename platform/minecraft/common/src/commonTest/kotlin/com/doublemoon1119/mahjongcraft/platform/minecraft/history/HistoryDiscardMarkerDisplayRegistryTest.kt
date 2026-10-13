@@ -11,7 +11,7 @@ class HistoryDiscardMarkerDisplayRegistryTest {
     @Test
     fun `finds registered displays only`() {
         val display = HistoryDiscardMarkerDisplay(labelTranslationKey = "test.marker", sideways = true)
-        val registry = HistoryDiscardMarkerDisplayRegistryImpl().apply { register("example:marker", display) }
+        val registry = HistoryDiscardMarkerDisplayRegistryImpl().apply { register(HistoryDiscardMarkerDisplayDefinition("example:marker", display)) }
 
         assertEquals(display, registry.find("example:marker"))
         assertNull(registry.find("example:other"))
@@ -21,11 +21,11 @@ class HistoryDiscardMarkerDisplayRegistryTest {
     /** 重複 ID、非 namespaced ID 與凍結後登記都會失敗。 */
     @Test
     fun `rejects duplicates invalid ids and late registrations`() {
-        val registry = HistoryDiscardMarkerDisplayRegistryImpl().apply { register("example:marker", HistoryDiscardMarkerDisplay("test.marker")) }
+        val registry = HistoryDiscardMarkerDisplayRegistryImpl().apply { register(HistoryDiscardMarkerDisplayDefinition("example:marker", HistoryDiscardMarkerDisplay("test.marker"))) }
 
-        assertFailsWith<IllegalArgumentException> { registry.register("example:marker", HistoryDiscardMarkerDisplay("test.other")) }
-        assertFailsWith<IllegalArgumentException> { registry.register("marker", HistoryDiscardMarkerDisplay("test.other")) }
+        assertFailsWith<IllegalArgumentException> { registry.register(HistoryDiscardMarkerDisplayDefinition("example:marker", HistoryDiscardMarkerDisplay("test.other"))) }
+        assertFailsWith<IllegalArgumentException> { registry.register(HistoryDiscardMarkerDisplayDefinition("marker", HistoryDiscardMarkerDisplay("test.other"))) }
         registry.freeze()
-        assertFailsWith<IllegalStateException> { registry.register("example:late", HistoryDiscardMarkerDisplay("test.late")) }
+        assertFailsWith<IllegalStateException> { registry.register(HistoryDiscardMarkerDisplayDefinition("example:late", HistoryDiscardMarkerDisplay("test.late"))) }
     }
 }

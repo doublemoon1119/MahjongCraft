@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.table
 
+import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import org.koin.core.annotation.Single
 /** [TablePropDescriberRegistry] 的記憶體實作。 */
 @Single(binds = [TablePropDescriberRegistry::class])
@@ -12,9 +13,11 @@ class TablePropDescriberRegistryImpl : TablePropDescriberRegistry {
     override var isFrozen: Boolean = false
         private set
 
-    override fun register(ruleModuleId: String, describer: TablePropDescriber) {
+    override fun register(definition: TablePropDescriberDefinition) {
+        val ruleModuleId = definition.ruleModuleId
+        val describer = definition.describer
         check(!isFrozen) { "Table prop describer registry is frozen" }
-        require(ruleModuleId.isNotBlank()) { "Rule module ID must not be blank" }
+        NamespacedId.requireValid(ruleModuleId) { "Rule module ID must be namespaced: $ruleModuleId" }
         require(describers.putIfAbsent(ruleModuleId, describer) == null) { "Duplicate table prop describer: $ruleModuleId" }
     }
 

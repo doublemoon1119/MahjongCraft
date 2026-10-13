@@ -12,13 +12,11 @@ interface PlayerPortraitSourceRegistry {
     val providerIds: Set<String>
 
     /**
-     * 登記一個 portrait provider。
+     * 登記完整描述；凍結後或身分重複時拒絕，不提前呼叫來源。
      *
-     * @param providerId provider 的穩定 namespaced ID。
-     * @param priority 解析優先順序；數值較大者先執行。
-     * @param provider 依玩家身分解析 portrait 來源的 provider。
+     * @param definition 集中保存登記身分與內容的描述。
      */
-    fun register(providerId: String, priority: Int = 0, provider: PlayerPortraitSourceProvider)
+    fun register(definition: PlayerPortraitSourceDefinition)
 
     /**
      * 依 provider 優先順序解析玩家 portrait；無 provider 能提供來源時回傳 null。

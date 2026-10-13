@@ -19,7 +19,9 @@ class MinecraftTileAssetRegistryImpl : MinecraftTileAssetRegistry {
     override var isFrozen: Boolean = false
         private set
 
-    override fun register(typeId: TileTypeId, assetKey: String) {
+    override fun register(definition: MinecraftTileAssetDefinition) {
+        val typeId = definition.typeId
+        val assetKey = definition.assetKey
         check(!isFrozen) { "Minecraft tile asset registry is frozen" }
         require(typeId !in assetKeysById) { "Tile asset key already registered for ID: $typeId" }
         require(assetKey !in assetKeysById.values) {

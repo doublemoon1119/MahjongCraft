@@ -18,6 +18,7 @@ import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.screen.Screen
 import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single
+import kotlin.time.Duration.Companion.nanoseconds
 import kotlin.uuid.Uuid
 
 /**
@@ -59,6 +60,13 @@ class HistoryScreenController internal constructor(
     private val archiveStatus: HistoryArchiveStatusTransport,
     private val dispatcher: ClientThreadCoroutineDispatcher,
 ) {
+    /** 同一 client 連線共用的歷史查詢送出 gate。 */
+    private val requestGate = ClientHistoryRequestGate(
+        minimumInterval = { transport.minimumInterval.value },
+        now = { System.nanoTime().nanoseconds },
+        sessionRevision = { transport.sessionRevision.value },
+    )
+
     /** 等待下一個 tick 的單一開啟要求。 */
     private var pending: OpenRequest? = null
 
@@ -136,7 +144,9 @@ class HistoryScreenController internal constructor(
             dispatcher,
             request.parent,
             request.matchId,
-        ) { active = null }
+            onClosed = { active = null },
+            requestGate = requestGate,
+        )
         active = session
         session.open()
     }

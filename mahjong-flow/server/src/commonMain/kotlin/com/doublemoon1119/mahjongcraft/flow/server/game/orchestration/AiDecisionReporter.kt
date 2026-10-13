@@ -22,6 +22,16 @@ interface AiDecisionReporter {
      */
     fun onPreviousStillRunning(gameId: Uuid, playerId: Uuid, strategyKey: String?)
 
+    /**
+     * 策略計算丟出一般例外，這次改用固定結果。
+     *
+     * @param gameId 對局。
+     * @param playerId 決策的 AI 玩家。
+     * @param strategyKey 玩家的策略 key；未指定時為 null。
+     * @param failure 策略丟出的例外。
+     */
+    fun onStrategyFailed(gameId: Uuid, playerId: Uuid, strategyKey: String?, failure: Exception)
+
     /** [NONE] 所在的伴生物件。 */
     companion object {
         /** 不記錄任何情況的接收者。 */
@@ -29,6 +39,8 @@ interface AiDecisionReporter {
             override fun onTimedOut(gameId: Uuid, playerId: Uuid, strategyKey: String?) = Unit
 
             override fun onPreviousStillRunning(gameId: Uuid, playerId: Uuid, strategyKey: String?) = Unit
+
+            override fun onStrategyFailed(gameId: Uuid, playerId: Uuid, strategyKey: String?, failure: Exception) = Unit
         }
     }
 }

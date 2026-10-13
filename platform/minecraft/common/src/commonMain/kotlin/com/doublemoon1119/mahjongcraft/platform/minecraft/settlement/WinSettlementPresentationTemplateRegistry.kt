@@ -14,33 +14,30 @@ interface WinSettlementPresentationTemplateRegistry {
     /**
      * 登記胡牌結算模板；重複 key 會失敗。
      *
-     * @param template 要登記的模板。
+     * @param template 要登記的模板；registry 會保存其獨立快照。
      */
-    fun registerTemplate(template: WinSettlementPresentationTemplate)
+    fun register(template: WinSettlementPresentationTemplate)
 
     /**
      * 登記結算欄位 provider；重複欄位 ID 會失敗。
      *
-     * @param fieldId provider 提供值的欄位 ID。
-     * @param provider 讀取結算快照並產生欄位值的 provider。
+     * @param definition 欄位 provider 的完整登記描述。
      */
-    fun registerFieldProvider(fieldId: PresentationFieldId, provider: WinSettlementPresentationFieldProvider)
+    fun register(definition: WinSettlementPresentationFieldProviderDefinition)
 
     /**
      * 指定規則模組使用的模板。
      *
-     * @param ruleModuleId 規則模組 ID。
-     * @param templateKey 已登記或之後會登記的模板 key。
+     * @param definition 規則模板綁定的完整登記描述。
      */
-    fun bindRuleTemplate(ruleModuleId: String, templateKey: String)
+    fun register(definition: WinSettlementRuleTemplateBindingDefinition)
 
     /**
      * 登記胡牌詳情欄位的格式化器。
      *
-     * @param fieldId 規則定義的胡牌詳情欄位 ID。
-     * @param formatter 把欄位語意值轉成顯示文字的格式化器。
+     * @param definition 詳情格式化器的完整登記描述。
      */
-    fun registerDetailTextFormatter(fieldId: String, formatter: WinSettlementDetailTextFormatter)
+    fun register(definition: WinSettlementDetailTextFormatterDefinition)
 
     /**
      * 查詢指定 key 的模板。

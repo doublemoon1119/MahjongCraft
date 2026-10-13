@@ -7,7 +7,12 @@ import kotlin.reflect.KClass
 /** 管理擴充命令與其 handler 建立方式的可凍結註冊表。 */
 @Single
 class ExtensionGameCommandExecutorRegistry {
-    /** 未擦除型別前的 handler 建立方式包裝。 */
+    /**
+     * 保留具體命令型別的 handler 建立方式，避免放入註冊表時遺失泛型資訊。
+     *
+     * @param C 此包裝保留的擴充命令型別。
+     * @property factory 依指定擴充命令建立其執行 handler 的函式。
+     */
     private class Entry<C : ExtensionGameCommand>(val factory: ExtensionGameCommandHandlerFactory<C>)
 
     /** 依命令具體型別索引的 handler 建立方式。 */
@@ -23,16 +28,12 @@ class ExtensionGameCommandExecutorRegistry {
      * 註冊一種擴充命令的 handler 建立方式；註冊表凍結後或同一命令型別已登記時會失敗。
      *
      * @param C 命令型別。
-     * @param commandClass 要登記的命令類別。
-     * @param factory 建立該命令 handler 的 factory。
+     * @param definition 命令類別與 handler factory。
      */
-    fun <C : ExtensionGameCommand> register(
-        commandClass: KClass<C>,
-        factory: ExtensionGameCommandHandlerFactory<C>,
-    ) {
+    fun <C : ExtensionGameCommand> register(definition: ExtensionGameCommandHandlerDefinition<C>) {
         check(!frozen) { "Extension game command registry is frozen" }
-        require(commandClass !in entries) { "Command handler already registered for $commandClass" }
-        entries[commandClass] = Entry(factory)
+        require(definition.commandClass !in entries) { "Command handler already registered for ${definition.commandClass}" }
+        entries[definition.commandClass] = Entry(definition.factory)
     }
 
     /** 凍結註冊表；後續註冊會失敗。重複呼叫不改變結果。 */

@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.logic.module
 
+import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import kotlin.reflect.KClass
 
@@ -14,6 +15,12 @@ import kotlin.reflect.KClass
  */
 class MahjongModuleRegistryImpl : MahjongModuleRegistry {
 
+    /**
+     * 保存規則模組的穩定識別碼與配置轉模組的建立函式。
+     *
+     * @property id 規則模組的 namespaced 識別碼。
+     * @property factory 依規則配置與模組識別碼建立規則模組的函式。
+     */
     private class Entry(
         val id: String,
         val factory: (MahjongRuleConfig, String) -> MahjongRuleModule<*>,
@@ -24,16 +31,13 @@ class MahjongModuleRegistryImpl : MahjongModuleRegistry {
     /** 是否已禁止後續註冊。 */
     private var frozen = false
 
-    override fun <T : MahjongRuleConfig> register(
-        configClass: KClass<T>,
-        id: String,
-        factory: (T, id: String) -> MahjongRuleModule<T>,
-    ) {
+    override fun <T : MahjongRuleConfig> register(definition: MahjongModuleDefinition<T>) {
         check(!frozen) { "Mahjong module registry is frozen" }
-        require(configClass !in entriesByConfigClass) { "Mahjong module already registered for $configClass" }
-        require(entriesByConfigClass.values.none { it.id == id }) { "Mahjong module ID already registered: $id" }
+        NamespacedId.requireValid(definition.id) { "Mahjong module ID must be namespaced: ${definition.id}" }
+        require(definition.configClass !in entriesByConfigClass) { "Mahjong module already registered for ${definition.configClass}" }
+        require(entriesByConfigClass.values.none { it.id == definition.id }) { "Mahjong module ID already registered: ${definition.id}" }
         @Suppress("UNCHECKED_CAST")
-        entriesByConfigClass[configClass] = Entry(id, factory as (MahjongRuleConfig, String) -> MahjongRuleModule<*>)
+        entriesByConfigClass[definition.configClass] = Entry(definition.id, definition.factory as (MahjongRuleConfig, String) -> MahjongRuleModule<*>)
     }
 
     override fun freeze() {

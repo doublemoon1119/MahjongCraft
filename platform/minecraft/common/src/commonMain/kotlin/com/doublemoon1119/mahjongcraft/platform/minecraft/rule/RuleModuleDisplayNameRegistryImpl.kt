@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.rule
 
+import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import org.koin.core.annotation.Single
 
 /**
@@ -18,8 +19,11 @@ class RuleModuleDisplayNameRegistryImpl : RuleModuleDisplayNameRegistry {
     override var isFrozen: Boolean = false
         private set
 
-    override fun register(ruleModuleId: String, translationKey: String) {
+    override fun register(definition: RuleModuleDisplayNameDefinition) {
+        val ruleModuleId = definition.ruleModuleId
+        val translationKey = definition.translationKey
         check(!isFrozen) { "Rule module display name registry is frozen" }
+        NamespacedId.requireValid(ruleModuleId) { "Rule module ID must be namespaced: $ruleModuleId" }
         require(ruleModuleId !in translationKeysByRuleModuleId) {
             "Display name already registered for rule module: $ruleModuleId"
         }

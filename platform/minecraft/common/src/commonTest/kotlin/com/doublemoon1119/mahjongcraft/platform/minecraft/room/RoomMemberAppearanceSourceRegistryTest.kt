@@ -14,9 +14,9 @@ class RoomMemberAppearanceSourceRegistryTest {
     @Test
     fun `higher priority wins and equal priority uses provider ID order`() {
         val registry = RoomMemberAppearanceSourceRegistryImpl()
-        registry.register("test:z", 10) { RoomMemberAppearanceSource.Portrait }
-        registry.register("test:b", 20) { RoomMemberAppearanceSource.ActorPreview("test:actor_b") }
-        registry.register("test:a", 20) { RoomMemberAppearanceSource.ActorPreview("test:actor_a") }
+        registry.register(RoomMemberAppearanceSourceDefinition("test:z", 10, provider = { RoomMemberAppearanceSource.Portrait }))
+        registry.register(RoomMemberAppearanceSourceDefinition("test:b", 20, provider = { RoomMemberAppearanceSource.ActorPreview("test:actor_b") }))
+        registry.register(RoomMemberAppearanceSourceDefinition("test:a", 20, provider = { RoomMemberAppearanceSource.ActorPreview("test:actor_a") }))
 
         assertEquals(RoomMemberAppearanceSource.ActorPreview("test:actor_a"), registry.resolve(context))
     }
@@ -34,9 +34,9 @@ class RoomMemberAppearanceSourceRegistryTest {
     @Test
     fun `duplicate providers and registration after freeze fail`() {
         val registry = RoomMemberAppearanceSourceRegistryImpl()
-        registry.register("test:provider", 1) { null }
-        assertFailsWith<IllegalArgumentException> { registry.register("test:provider", 2) { null } }
+        registry.register(RoomMemberAppearanceSourceDefinition("test:provider", 1, provider = { null }))
+        assertFailsWith<IllegalArgumentException> { registry.register(RoomMemberAppearanceSourceDefinition("test:provider", 2, provider = { null })) }
         registry.freeze()
-        assertFailsWith<IllegalStateException> { registry.register("test:late", 1) { null } }
+        assertFailsWith<IllegalStateException> { registry.register(RoomMemberAppearanceSourceDefinition("test:late", 1, provider = { null })) }
     }
 }

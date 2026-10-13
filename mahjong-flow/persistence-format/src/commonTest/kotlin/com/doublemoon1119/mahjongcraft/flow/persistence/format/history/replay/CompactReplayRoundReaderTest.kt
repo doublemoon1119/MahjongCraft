@@ -215,7 +215,7 @@ class CompactReplayRoundReaderTest {
          */
         fun facts(value: JsonObject) = mapper.mapFacts(listOf(JsonObject(mapOf(ReplaySourceKeys.TYPE to JsonPrimitive(HistoryFactTypeKeys.ACTION_ACCEPTED), ReplaySourceKeys.ACTION to value))), listOf(0), identity, 1, HistoryRoundTileCatalog(emptyList()), budget)
         assertEquals(HistoryReplayFact.KnownAction(HistoryFactTypeKeys.ACTION_ACCEPTED, 0, HistoryActionTypeKeys.EXTENSION, emptyList(), emptyList(), "test:spell"), facts(action).single())
-        registry.registerAction("test:spell") { _, scope -> HistoryReplayFact.Reaction("test:spell", "public", scope.seat(0)) }
+        registry.register(HistoryReplayProjectionDefinition.Action("test:spell") { _, scope -> HistoryReplayFact.Reaction("test:spell", "public", scope.seat(0)) })
         registry.freeze()
         assertEquals(HistoryReplayFact.Reaction("test:spell", "public", 0), facts(action).single())
         assertFailsWith<NoSuchElementException> { facts(JsonObject(mapOf(ReplaySourceKeys.TYPE to JsonPrimitive(HistoryActionTypeKeys.EXTENSION)))) }
@@ -226,11 +226,32 @@ class CompactReplayRoundReaderTest {
     fun `registry rejects duplicate and frozen registrations`() {
         val registry = HistoryReplayProjectionRegistry()
         val context = HistoryReplayProjectionContext(ReplayReadBudget(ReplayReadLimits()) {}, 2, 2)
-        registry.registerFact("test:fact") { _, _ -> HistoryReplayFact.Opaque("test:original") }
-        assertFailsWith<IllegalArgumentException> { registry.registerFact("test:fact") { _, _ -> HistoryReplayFact.Opaque("test:replacement") } }
+        registry.register(HistoryReplayProjectionDefinition.Fact("test:fact") { _, _ -> HistoryReplayFact.Opaque("test:original") })
+        assertFailsWith<IllegalArgumentException> { registry.register(HistoryReplayProjectionDefinition.Fact("test:fact") { _, _ -> HistoryReplayFact.Opaque("test:replacement") }) }
         assertEquals(HistoryReplayFact.Opaque("test:original"), registry.decodeFact("test:fact", JsonNull, context))
         registry.freeze()
-        assertFailsWith<IllegalStateException> { registry.registerDiscard("test:discard") { _, _ -> emptyList() } }
+        assertFailsWith<IllegalStateException> { registry.register(HistoryReplayProjectionDefinition.Discard("test:discard") { _, _ -> emptyList() }) }
+    }
+
+    /** 持久化種類需要命名空間，既有事實短名稱不因此改名；登記時不執行轉換器。 */
+    @Test
+    fun `registry validates typed keys without renaming fact tokens`() {
+        val registry = HistoryReplayProjectionRegistry()
+        var decoded = false
+        assertFailsWith<IllegalArgumentException> { registry.register(HistoryReplayProjectionDefinition.Discard("invalid") { _, _ -> emptyList() }) }
+        assertFailsWith<IllegalArgumentException> { registry.register(HistoryReplayProjectionDefinition.Action("invalid") { _, _ -> HistoryReplayFact.Opaque("invalid") }) }
+        assertFailsWith<IllegalArgumentException> { registry.register(HistoryReplayProjectionDefinition.OptionalRule("invalid") { _, _ -> HistoryReplayRuleInformation("invalid", "invalid") }) }
+        assertFailsWith<IllegalArgumentException> { registry.register(HistoryReplayProjectionDefinition.SetAsideTiles("invalid") { _, _ -> emptyList() }) }
+        registry.register(
+            HistoryReplayProjectionDefinition.Fact(HistoryFactTypeKeys.ROUND_COMPLETED) { _, _ ->
+                decoded = true
+                HistoryReplayFact.Opaque(HistoryFactTypeKeys.ROUND_COMPLETED)
+            },
+        )
+        assertEquals(false, decoded)
+        assertEquals(setOf(HistoryFactTypeKeys.ROUND_COMPLETED), registry.registrationKeys.fact)
+        registry.freeze()
+        assertFailsWith<IllegalStateException> { registry.register(HistoryReplayProjectionDefinition.Discard("invalid") { _, _ -> emptyList() }) }
     }
 
     /** 擴充可以獨立解碼必要牌河、語意事實與可選公開資訊。 */
@@ -238,15 +259,19 @@ class CompactReplayRoundReaderTest {
     fun `typed extension codecs receive bounded context`() {
         val registry = HistoryReplayProjectionRegistry()
         val context = HistoryReplayProjectionContext(ReplayReadBudget(ReplayReadLimits()) {}, 2, 2)
-        registry.registerDiscard("test:discard") { _, scope -> listOf(HistoryReplayDiscard(scope.tile(1), true, setOf("test:marker"))) }
-        registry.registerFact("test:fact") { _, scope ->
-            scope.charge()
-            HistoryReplayFact.Reaction("test:fact", "test:action", scope.seat(1))
-        }
-        registry.registerOptionalRule("test:state") { _, scope ->
-            scope.charge()
-            HistoryReplayRuleInformation("test:state", "public")
-        }
+        registry.register(HistoryReplayProjectionDefinition.Discard("test:discard") { _, scope -> listOf(HistoryReplayDiscard(scope.tile(1), true, setOf("test:marker"))) })
+        registry.register(
+            HistoryReplayProjectionDefinition.Fact("test:fact") { _, scope ->
+                scope.charge()
+                HistoryReplayFact.Reaction("test:fact", "test:action", scope.seat(1))
+            },
+        )
+        registry.register(
+            HistoryReplayProjectionDefinition.OptionalRule("test:state") { _, scope ->
+                scope.charge()
+                HistoryReplayRuleInformation("test:state", "public")
+            },
+        )
         registry.freeze()
         assertEquals(listOf(HistoryReplayDiscard(HistoryTileReference(1), true, setOf("test:marker"))), registry.decodeDiscard("test:discard", JsonNull, context))
         assertEquals(HistoryReplayFact.Reaction("test:fact", "test:action", 1), registry.decodeFact("test:fact", JsonNull, context))

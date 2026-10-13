@@ -14,7 +14,9 @@ class RoundPreparationDisplayNameRegistryImpl : RoundPreparationDisplayNameRegis
     override var isFrozen: Boolean = false
         private set
 
-    override fun register(id: String, translationKey: String) {
+    override fun register(definition: RoundPreparationDisplayNameDefinition) {
+        val id = definition.id
+        val translationKey = definition.translationKey
         check(!isFrozen) { "Round-preparation display-name registry is frozen" }
         NamespacedId.requireValid(id) {
             "Round-preparation display ID must be namespaced: $id"

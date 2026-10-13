@@ -15,19 +15,16 @@ interface GameActionVocabularyRegistry {
     /**
      * 登記所有規則共用的中立預設。
      *
-     * @param actionId 動作的穩定 ID。
-     * @param vocabulary 要使用的顯示用語。
+     * @param definition 中立預設的完整登記描述。
      */
-    fun registerDefault(actionId: String, vocabulary: GameActionVocabulary)
+    fun register(definition: GameActionVocabularyDefaultDefinition)
 
     /**
      * 登記指定規則模組專屬的用語，優先於同一動作的中立預設。
      *
-     * @param ruleModuleId 規則模組 ID。
-     * @param actionId 動作的穩定 ID。
-     * @param vocabulary 要使用的規則專屬顯示用語。
+     * @param definition 規則專屬用語的完整登記描述。
      */
-    fun register(ruleModuleId: String, actionId: String, vocabulary: GameActionVocabulary)
+    fun register(definition: GameActionVocabularyDefinition)
 
     /**
      * 查詢用語：先查 [ruleModuleId] 的登記，再查中立預設；都沒有時回傳 null。

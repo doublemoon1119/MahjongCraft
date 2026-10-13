@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
 import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
@@ -60,6 +61,11 @@ class DiscardTileUseCaseTest {
     private val currentPlayerId = Uuid.random()
     private val otherPlayerId = Uuid.random()
 
+    /**
+     * 提供捨牌測試共用的規則模組、遊戲 repository 與快照同步器。
+     *
+     * @property moduleRegistry 測試使用的規則模組註冊表。
+     */
     private class Fixtures(
         val moduleRegistry: MahjongModuleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() },
     ) {
@@ -1367,14 +1373,28 @@ class DiscardTileUseCaseTest {
      * @property forcedTileId 強制捨牌牌張識別碼；為 null 時不額外限制。
      */
     private class HookProbe(private val forcedTileId: Uuid? = null) {
+        /** 依 hook 呼叫順序收集拒絕和牌的玩家識別碼。 */
         val declinedPlayerIds = mutableListOf<Uuid>()
 
+        /**
+         * 建立將日麻規則行為委派至此 probe 的測試註冊表。
+         *
+         * @return 僅登記測試日麻規則模組的註冊表。
+         */
         fun registry(): MahjongModuleRegistry = MahjongModuleRegistryImpl().apply {
-            register(RiichiRuleConfig::class, "test:hook_probe") { config, id ->
-                ProbeRuleModule(delegate = RiichiRuleModule(id, config), probe = this@HookProbe)
-            }
+            register(
+                MahjongModuleDefinition(RiichiRuleConfig::class, "test:hook_probe") { config, id ->
+                    ProbeRuleModule(delegate = RiichiRuleModule(id, config), probe = this@HookProbe)
+                },
+            )
         }
 
+        /**
+         * 包裝日麻規則模組，只替換捨牌與拒絕和牌相關的測試 hook。
+         *
+         * @param delegate 要保留其餘行為的日麻規則模組。
+         * @property probe 提供強制捨牌牌張並記錄 hook 呼叫的測試替身。
+         */
         private class ProbeRuleModule(
             delegate: RiichiRuleModule,
             private val probe: HookProbe,

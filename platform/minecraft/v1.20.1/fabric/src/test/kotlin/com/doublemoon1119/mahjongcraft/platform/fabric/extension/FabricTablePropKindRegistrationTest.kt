@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricT
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.ScoringStickTablePropKind
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.RegisteredSeatProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatRequest
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatTarget
@@ -135,7 +136,7 @@ class FabricTablePropKindRegistrationTest {
                     "mahjongcraft:mahjong_stool" in registry.registrationKeys
                 assertFalse(tablePropRegistry.isFrozen)
                 assertFalse(seatProviderRegistry.isFrozen)
-                registry.register(providerId, FakeProvider())
+                registry.register(RegisteredSeatProvider(providerId, FakeProvider()))
             }
         }
 

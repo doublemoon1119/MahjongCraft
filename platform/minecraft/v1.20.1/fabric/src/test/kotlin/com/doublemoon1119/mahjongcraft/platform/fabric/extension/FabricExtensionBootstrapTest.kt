@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.extension
 
+import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyDefinition
 import com.doublemoon1119.mahjongcraft.extension.CoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
@@ -70,7 +71,9 @@ class FabricExtensionBootstrapTest {
         assertTrue(failure.message.orEmpty().contains(extension.id))
         assertEquals(listOf("core", "minecraft", "fabric_table", "fabric_seat"), calls)
         val core = koin.get<CoreExtensionRegistries>()
-        assertFailsWith<IllegalStateException> { core.aiStrategyRegistry.register("example:late") { error("Factory must not run") } }
+        assertFailsWith<IllegalStateException> {
+            core.aiStrategyRegistry.register(MahjongAiStrategyDefinition("example:late") { error("Factory must not run") })
+        }
         assertTrue(koin.get<MinecraftPresentationRegistries>().ruleCatalogueRegistry.isFrozen)
         assertFalse(koin.get<FabricExtensionRegistries>().tablePropKindRegistry.isFrozen)
         assertFalse(koin.get<FabricExtensionRegistries>().seatProviderRegistry.isFrozen)

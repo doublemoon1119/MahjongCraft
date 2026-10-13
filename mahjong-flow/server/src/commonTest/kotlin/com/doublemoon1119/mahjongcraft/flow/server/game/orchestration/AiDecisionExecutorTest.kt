@@ -18,6 +18,7 @@ import kotlin.coroutines.ContinuationInterceptor
 import kotlin.coroutines.CoroutineContext
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertSame
@@ -52,6 +53,41 @@ class AiDecisionExecutorTest {
         assertEquals("decided", result)
         assertSame(dispatcher, interceptor)
         assertTrue(dispatcher.dispatches > 0)
+    }
+
+    /** 一般策略例外會使用固定結果並留下診斷，但不把例外當成權威提交錯誤。 */
+    @Test
+    fun `a strategy exception uses the fallback and reports the failure`() = runTest {
+        val fixture = Fixture(this)
+
+        assertEquals(
+            "fallback",
+            fixture.executor.decide(
+                gameId,
+                playerId,
+                STRATEGY_KEY,
+                decide = { error("strategy failed") },
+                fallback = { "fallback" },
+            ),
+        )
+        assertEquals(listOf("failed:$gameId:IllegalStateException"), fixture.reporter.events)
+    }
+
+    /** 致命錯誤不可被策略 fallback 捕捉。 */
+    @Test
+    fun `an error from a strategy is propagated`() = runTest {
+        val fixture = Fixture(this)
+
+        assertFailsWith<AssertionError> {
+            fixture.executor.decide(
+                gameId,
+                playerId,
+                STRATEGY_KEY,
+                decide = { throw AssertionError("fatal strategy failure") },
+                fallback = { "fallback" },
+            )
+        }
+        assertEquals(emptyList(), fixture.reporter.events)
     }
 
     /** 等待超過上限時改用固定結果並回報，不等待不理會取消的策略結束。 */
@@ -319,6 +355,10 @@ class AiDecisionExecutorTest {
 
         override fun onPreviousStillRunning(gameId: Uuid, playerId: Uuid, strategyKey: String?) {
             events += "still-running:$gameId"
+        }
+
+        override fun onStrategyFailed(gameId: Uuid, playerId: Uuid, strategyKey: String?, failure: Exception) {
+            events += "failed:$gameId:${failure::class.simpleName}"
         }
     }
 

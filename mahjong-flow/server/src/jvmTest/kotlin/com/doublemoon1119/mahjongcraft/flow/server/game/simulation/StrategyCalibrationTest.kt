@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.simulation
 
 import com.doublemoon1119.mahjongcraft.ai.BuiltInAiStrategyKeys
+import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyDefinition
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.ai.expectation.ExpectationParameters
 import com.doublemoon1119.mahjongcraft.ai.expectation.ExpectedValueAiStrategy
@@ -60,15 +61,17 @@ class StrategyCalibrationTest {
                 opponentModelRegistry = runtime.opponentModelRegistry,
             )
             CANDIDATES.forEach { candidate ->
-                registry.register(candidate.key) {
-                    ExpectedValueAiStrategy(
-                        level = candidate.level,
-                        moduleRegistry = runtime.moduleRegistry,
-                        extensionActionRegistry = runtime.extensionActionRegistry,
-                        opponentModels = runtime.opponentModelRegistry,
-                        parameters = candidate.parameters,
-                    )
-                }
+                registry.register(
+                    MahjongAiStrategyDefinition(candidate.key) {
+                        ExpectedValueAiStrategy(
+                            level = candidate.level,
+                            moduleRegistry = runtime.moduleRegistry,
+                            extensionActionRegistry = runtime.extensionActionRegistry,
+                            opponentModels = runtime.opponentModelRegistry,
+                            parameters = candidate.parameters,
+                        )
+                    },
+                )
             }
         }
 

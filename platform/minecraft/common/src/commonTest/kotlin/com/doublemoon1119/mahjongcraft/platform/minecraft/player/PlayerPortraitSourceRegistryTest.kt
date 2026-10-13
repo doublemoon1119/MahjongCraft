@@ -15,9 +15,9 @@ class PlayerPortraitSourceRegistryTest {
     @Test
     fun `higher priority wins and equal priority uses provider ID order`() {
         val registry = PlayerPortraitSourceRegistryImpl()
-        registry.register("test:z", 10) { PlayerPortraitSource.TileFace("z") }
-        registry.register("test:b", 20) { PlayerPortraitSource.TileFace("b") }
-        registry.register("test:a", 20) { PlayerPortraitSource.TileFace("a") }
+        registry.register(PlayerPortraitSourceDefinition("test:z", 10, provider = { PlayerPortraitSource.TileFace("z") }))
+        registry.register(PlayerPortraitSourceDefinition("test:b", 20, provider = { PlayerPortraitSource.TileFace("b") }))
+        registry.register(PlayerPortraitSourceDefinition("test:a", 20, provider = { PlayerPortraitSource.TileFace("a") }))
 
         registry.freeze()
 
@@ -29,8 +29,8 @@ class PlayerPortraitSourceRegistryTest {
     @Test
     fun `skips providers that do not apply`() {
         val registry = PlayerPortraitSourceRegistryImpl()
-        registry.register("test:first", 20) { null }
-        registry.register("test:second", 10) { PlayerPortraitSource.PlayerSkinFace }
+        registry.register(PlayerPortraitSourceDefinition("test:first", 20, provider = { null }))
+        registry.register(PlayerPortraitSourceDefinition("test:second", 10, provider = { PlayerPortraitSource.PlayerSkinFace }))
 
         assertEquals("test:second", registry.resolve(context)?.providerId)
     }
@@ -39,14 +39,14 @@ class PlayerPortraitSourceRegistryTest {
     @Test
     fun `rejects duplicate IDs and registration after freeze`() {
         val registry = PlayerPortraitSourceRegistryImpl()
-        registry.register("test:portrait") { PlayerPortraitSource.PlayerSkinFace }
+        registry.register(PlayerPortraitSourceDefinition("test:portrait", provider = { PlayerPortraitSource.PlayerSkinFace }))
         assertFailsWith<IllegalArgumentException> {
-            registry.register("test:portrait") { PlayerPortraitSource.PlayerSkinFace }
+            registry.register(PlayerPortraitSourceDefinition("test:portrait", provider = { PlayerPortraitSource.PlayerSkinFace }))
         }
         registry.freeze()
         assertTrue(registry.isFrozen)
         assertFailsWith<IllegalStateException> {
-            registry.register("test:late") { PlayerPortraitSource.PlayerSkinFace }
+            registry.register(PlayerPortraitSourceDefinition("test:late", provider = { PlayerPortraitSource.PlayerSkinFace }))
         }
     }
 

@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.room
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceContext
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSource
-import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSourceProvider
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSourceDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSourceProviderException
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSourceRegistry
 import kotlin.test.Test
@@ -187,11 +187,9 @@ class RoomMemberAppearanceResolverTest {
         /**
          * 此測試不應新增外觀來源。
          *
-         * @param providerId 來源識別碼。
-         * @param priority 來源優先順序。
-         * @param provider 待登記的來源提供者。
+         * @param definition 外觀來源的完整登記描述；此替身拒絕所有登記。
          */
-        override fun register(providerId: String, priority: Int, provider: RoomMemberAppearanceSourceProvider) = error("Unexpected registration")
+        override fun register(definition: RoomMemberAppearanceSourceDefinition) = error("Unexpected registration")
 
         /** 此測試不應凍結登記表。 */
         override fun freeze() = error("Unexpected freeze")

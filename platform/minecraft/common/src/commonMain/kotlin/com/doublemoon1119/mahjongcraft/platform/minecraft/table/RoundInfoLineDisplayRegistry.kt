@@ -13,11 +13,19 @@ interface RoundInfoLineDisplayRegistry {
     /** registry 是否已凍結。 */
     val isFrozen: Boolean
 
-    /** 登記一個局況顯示行 key 的翻譯資訊。 */
-    fun register(key: String, display: RoundInfoLineDisplay)
+    /**
+     * 登記一個局況顯示行 key 的翻譯資訊。
+     *
+     * @param definition 顯示行的完整登記描述。
+     */
+    fun register(definition: RoundInfoLineDisplayDefinition)
 
-    /** 登記指定規則模組的局況資料 provider。 */
-    fun register(ruleModuleId: String, provider: RoundInfoLineProvider)
+    /**
+     * 登記指定規則模組的局況資料 provider。
+     *
+     * @param definition provider 的完整登記描述。
+     */
+    fun register(definition: RoundInfoLineProviderDefinition)
 
     /** 查詢指定 key 的翻譯資訊；未登記時回傳 null。 */
     fun find(key: String): RoundInfoLineDisplay?

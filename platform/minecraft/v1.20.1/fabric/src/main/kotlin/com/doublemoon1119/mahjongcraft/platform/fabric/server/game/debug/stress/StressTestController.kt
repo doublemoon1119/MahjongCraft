@@ -399,6 +399,9 @@ class StressTestController(
         /** 舊策略呼叫尚未結束而直接使用固定命令的 AI 決策數。 */
         private var aiPreviousStillRunning = 0L
 
+        /** 策略丟出一般例外而使用固定命令的 AI 決策數。 */
+        private var aiStrategyFailures = 0L
+
         /** 過期而沒有套用的 AI 決策數。 */
         private var staleDecisions = 0L
 
@@ -596,6 +599,7 @@ class StressTestController(
                 AiDecisionOutcome.DECIDED -> Unit
                 AiDecisionOutcome.TIMED_OUT -> aiTimeouts++
                 AiDecisionOutcome.PREVIOUS_STILL_RUNNING -> aiPreviousStillRunning++
+                AiDecisionOutcome.STRATEGY_FAILED -> aiStrategyFailures++
             }
             aiLatency.add(latency.toDouble(DurationUnit.MILLISECONDS))
         }
@@ -795,6 +799,7 @@ class StressTestController(
                 aiDecisions = aiDecisions,
                 aiTimeouts = aiTimeouts,
                 aiPreviousStillRunning = aiPreviousStillRunning,
+                aiStrategyFailures = aiStrategyFailures,
                 aiLatencyAverageMillis = aiLatency.average(),
                 aiLatencyP95Millis = aiLatency.percentile(P95),
                 aiLatencyP99Millis = aiLatency.percentile(P99),

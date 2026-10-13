@@ -185,6 +185,7 @@ internal class MatchSimulator(
     ): Pair<String, Throwable?>? {
         val cause = runCatching { runtime.coordinator.driveAutomatedPlayers(gameId) }.exceptionOrNull()
         if (cause != null) return "flow stopped with an exception" to cause
+        recorder.illegalCommand?.let { return "AI submitted an illegal command" to it }
         val rounds = runtime.gameRepository.rounds(gameId)
         rounds.firstOrNull { !isConserved(it.start) || !isConserved(it.final) }?.let {
             return "points are not conserved in round ${it.start.roundPosition}" to null

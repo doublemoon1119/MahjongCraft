@@ -8,12 +8,11 @@ interface WinCelebrationCueResolverRegistry {
     val registrationKeys: Set<String>
 
     /**
-     * 註冊指定規則模組的 resolver；ID 不可空白或重複，凍結後不可註冊。
+     * 註冊指定規則模組的 resolver；規則模組 ID 必須符合命名空間格式且不得重複，凍結後不可註冊。
      *
-     * @param ruleModuleId 要註冊 resolver 的規則模組 ID。
-     * @param resolver 負責解析該規則手牌結果的 resolver。
+     * @param definition 完整的規則模組 ID 與 resolver 定義。
      */
-    fun register(ruleModuleId: String, resolver: WinCelebrationCueResolver)
+    fun register(definition: WinCelebrationCueResolverDefinition)
 
     /** 凍結後不得再註冊。 */
     fun freeze()

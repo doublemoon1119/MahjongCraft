@@ -12,12 +12,11 @@ interface ExhaustiveDrawReasonDisplayNameRegistry {
     val reasonIds: Set<String>
 
     /**
-     * 登記流局原因 ID 的本地化名稱。
+     * 登記完整描述；凍結後或身分重複時拒絕，不提前呼叫來源。
      *
-     * @param reasonId 完整流局原因 ID。
-     * @param translationKey Minecraft translation key。
+     * @param definition 集中保存登記身分與內容的描述。
      */
-    fun register(reasonId: String, translationKey: String)
+    fun register(definition: ExhaustiveDrawReasonDisplayNameDefinition)
 
     /**
      * 查詢流局原因的本地化名稱。
@@ -30,13 +29,9 @@ interface ExhaustiveDrawReasonDisplayNameRegistry {
     /**
      * 登記這種流局的玩家結算身分用語；重複 ID 會失敗。
      *
-     * @param reasonId 完整流局原因 ID。
-     * @param labels 得分玩家與其他玩家的身分用語。
+     * @param definition 流局身分用語的完整登記描述。
      */
-    fun registerSettlementStatusLabels(
-        reasonId: String,
-        labels: ExhaustiveDrawSettlementStatusLabels,
-    )
+    fun register(definition: ExhaustiveDrawSettlementStatusLabelsDefinition)
 
     /**
      * 查詢這種流局的玩家結算身分用語；未登記時呈現端改用通用的「受益」用語。

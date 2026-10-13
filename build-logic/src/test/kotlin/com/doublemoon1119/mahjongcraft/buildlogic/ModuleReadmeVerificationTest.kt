@@ -13,7 +13,7 @@ import kotlin.test.assertTrue
 class ModuleReadmeVerificationTest {
     /** 完整的 loaded、catalog、build-logic 與索引文件集合必須通過。 */
     @Test
-    fun acceptsCompleteReadmeSet() = withFixture { root ->
+    fun `accepts complete readme set`() = withFixture { root ->
         prepareBuild(root)
         requiredDirectories(root).forEach { it.resolve("README.md").writeText("# Test\n") }
 
@@ -24,7 +24,7 @@ class ModuleReadmeVerificationTest {
 
     /** 缺少任一類文件時必須一次列出 loaded、catalog、build-logic 與索引路徑。 */
     @Test
-    fun reportsEveryMissingReadmeCategory() = withFixture { root ->
+    fun `reports every missing readme category`() = withFixture { root ->
         prepareBuild(root)
         root.resolve("README.md").writeText("# Test\n")
 
@@ -39,7 +39,7 @@ class ModuleReadmeVerificationTest {
 
     /** 大小寫不敏感的檔案系統也不能讓錯誤檔名通過。 */
     @Test
-    fun rejectsIncorrectReadmeCapitalization() = withFixture { root ->
+    fun `rejects incorrect readme capitalization`() = withFixture { root ->
         prepareBuild(root)
         requiredDirectories(root).forEach { it.resolve("README.md").writeText("# Test\n") }
         root.resolve("loaded/README.md").delete()

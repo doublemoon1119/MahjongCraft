@@ -12,5 +12,5 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating
 data class RegisteredSeatProvider<W, R>(
     val id: String,
     val provider: SeatProvider<W, R>,
-    val priority: Int,
+    val priority: Int = 0,
 )

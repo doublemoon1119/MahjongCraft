@@ -15,22 +15,32 @@ class DecisionStatusDisplayNameRegistryImpl : DecisionStatusDisplayNameRegistry 
     override val registrationKeys: Set<String>
         get() = defaults.keys.mapTo(mutableSetOf()) { statusId -> "${DecisionStatusDisplayNameRegistry.DEFAULT_KEY}/$statusId" } +
             byRuleModule.keys.map { (ruleModuleId, statusId) -> "$ruleModuleId/$statusId" }
+
     override var isFrozen: Boolean = false
         private set
-    override fun registerDefault(statusId: String, translationKey: String) {
+
+    override fun register(definition: DecisionStatusDisplayNameDefaultDefinition) {
+        val statusId = definition.statusId
+        val translationKey = definition.translationKey
         check(!isFrozen) { "Decision status display-name registry is frozen" }
         MinecraftResourceIds.requireValid(statusId) { "Decision status ID must be namespaced: $statusId" }
         require(translationKey.isNotBlank()) { "Translation key must not be blank" }
         require(defaults.putIfAbsent(statusId, translationKey) == null) { "Default decision status display name already registered: $statusId" }
     }
-    override fun register(ruleModuleId: String, statusId: String, translationKey: String) {
+
+    override fun register(definition: DecisionStatusDisplayNameDefinition) {
+        val ruleModuleId = definition.ruleModuleId
+        val statusId = definition.statusId
+        val translationKey = definition.translationKey
         check(!isFrozen) { "Decision status display-name registry is frozen" }
         MinecraftResourceIds.requireValid(ruleModuleId) { "Rule module ID must be namespaced: $ruleModuleId" }
         MinecraftResourceIds.requireValid(statusId) { "Decision status ID must be namespaced: $statusId" }
         require(translationKey.isNotBlank()) { "Translation key must not be blank" }
         require(byRuleModule.putIfAbsent(ruleModuleId to statusId, translationKey) == null) { "Decision status display name already registered: $ruleModuleId/$statusId" }
     }
+
     override fun find(ruleModuleId: String?, statusId: String): String? = ruleModuleId?.let { byRuleModule[it to statusId] } ?: defaults[statusId]
+
     override fun freeze() {
         isFrozen = true
     }

@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug
 
+import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyDefinition
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
@@ -34,11 +35,13 @@ internal class DebugMahjongExtension(
     override fun registerPersistenceDtos(registries: PersistenceRegistries) = Unit
 
     override fun registerAiStrategies(registry: MahjongAiStrategyRegistry) {
-        registry.register(DebugScriptedAiStrategy.TSUMOGIRI_KEY) { DebugScriptedAiStrategy(declaresKanFirst = false) }
-        registry.register(DebugScriptedAiStrategy.KAN_FIRST_KEY) { DebugScriptedAiStrategy(declaresKanFirst = true) }
-        registry.register(DebugScriptedAiStrategy.PULL_NORTH_FIRST_KEY) {
-            DebugScriptedAiStrategy(declaresKanFirst = false, pullsNorthFirst = true)
-        }
+        registry.register(MahjongAiStrategyDefinition(DebugScriptedAiStrategy.TSUMOGIRI_KEY) { DebugScriptedAiStrategy(declaresKanFirst = false) })
+        registry.register(MahjongAiStrategyDefinition(DebugScriptedAiStrategy.KAN_FIRST_KEY) { DebugScriptedAiStrategy(declaresKanFirst = true) })
+        registry.register(
+            MahjongAiStrategyDefinition(DebugScriptedAiStrategy.PULL_NORTH_FIRST_KEY) {
+                DebugScriptedAiStrategy(declaresKanFirst = false, pullsNorthFirst = true)
+            },
+        )
     }
 
     override fun registerRoundPreparationResolvers(registry: RoundPreparationResolverRegistry) {

@@ -18,19 +18,16 @@ interface DecisionStatusDisplayNameRegistry {
     /**
      * 登記所有規則共用的中立預設。
      *
-     * @param statusId 狀態的穩定 ID。
-     * @param translationKey 顯示狀態名稱的 translation key。
+     * @param definition 中立狀態名稱的完整登記描述。
      */
-    fun registerDefault(statusId: String, translationKey: String)
+    fun register(definition: DecisionStatusDisplayNameDefaultDefinition)
 
     /**
      * 登記指定規則模組專屬的顯示名稱，優先於同一狀態的中立預設。
      *
-     * @param ruleModuleId 規則模組 ID。
-     * @param statusId 狀態的穩定 ID。
-     * @param translationKey 顯示狀態名稱的 translation key。
+     * @param definition 規則專屬狀態名稱的完整登記描述。
      */
-    fun register(ruleModuleId: String, statusId: String, translationKey: String)
+    fun register(definition: DecisionStatusDisplayNameDefinition)
 
     /**
      * 查詢顯示名稱：先查 [ruleModuleId] 的登記，再查中立預設；都沒有時回傳 null。

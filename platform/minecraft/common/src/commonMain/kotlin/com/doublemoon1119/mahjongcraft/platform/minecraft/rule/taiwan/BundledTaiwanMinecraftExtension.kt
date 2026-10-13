@@ -14,12 +14,16 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.translationKey
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabel
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelColor
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelText
 
@@ -32,29 +36,29 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
     override val id: String = MahjongCraftMetadata.id("taiwan")
 
     override fun registerTileAssets(registry: MinecraftTileAssetRegistry) {
-        registry.register(TaiwanTileTypes.SPRING, "flower_spring")
-        registry.register(TaiwanTileTypes.SUMMER, "flower_summer")
-        registry.register(TaiwanTileTypes.AUTUMN, "flower_autumn")
-        registry.register(TaiwanTileTypes.WINTER, "flower_winter")
-        registry.register(TaiwanTileTypes.PLUM, "flower_plum")
-        registry.register(TaiwanTileTypes.ORCHID, "flower_orchid")
-        registry.register(TaiwanTileTypes.BAMBOO, "flower_bamboo")
-        registry.register(TaiwanTileTypes.CHRYSANTHEMUM, "flower_chrysanthemum")
+        registry.register(MinecraftTileAssetDefinition(TaiwanTileTypes.SPRING, "flower_spring"))
+        registry.register(MinecraftTileAssetDefinition(TaiwanTileTypes.SUMMER, "flower_summer"))
+        registry.register(MinecraftTileAssetDefinition(TaiwanTileTypes.AUTUMN, "flower_autumn"))
+        registry.register(MinecraftTileAssetDefinition(TaiwanTileTypes.WINTER, "flower_winter"))
+        registry.register(MinecraftTileAssetDefinition(TaiwanTileTypes.PLUM, "flower_plum"))
+        registry.register(MinecraftTileAssetDefinition(TaiwanTileTypes.ORCHID, "flower_orchid"))
+        registry.register(MinecraftTileAssetDefinition(TaiwanTileTypes.BAMBOO, "flower_bamboo"))
+        registry.register(MinecraftTileAssetDefinition(TaiwanTileTypes.CHRYSANTHEMUM, "flower_chrysanthemum"))
     }
 
     override fun registerRuleModuleDisplayNames(registry: RuleModuleDisplayNameRegistry) {
-        registry.register(BuiltInRuleModuleIds.TAIWAN, MinecraftMessageKeys.RULE_MODULE_TAIWAN)
+        registry.register(RuleModuleDisplayNameDefinition(BuiltInRuleModuleIds.TAIWAN, MinecraftMessageKeys.RULE_MODULE_TAIWAN))
     }
 
     override fun registerTileEmojis(registry: TileEmojiRegistry) {
-        registry.register("flower_plum", "🀣")
-        registry.register("flower_orchid", "🀤")
-        registry.register("flower_bamboo", "🀥")
-        registry.register("flower_chrysanthemum", "🀦")
-        registry.register("flower_spring", "🀧")
-        registry.register("flower_summer", "🀨")
-        registry.register("flower_autumn", "🀩")
-        registry.register("flower_winter", "🀪")
+        registry.register(TileEmojiDefinition("flower_plum", "🀣"))
+        registry.register(TileEmojiDefinition("flower_orchid", "🀤"))
+        registry.register(TileEmojiDefinition("flower_bamboo", "🀥"))
+        registry.register(TileEmojiDefinition("flower_chrysanthemum", "🀦"))
+        registry.register(TileEmojiDefinition("flower_spring", "🀧"))
+        registry.register(TileEmojiDefinition("flower_summer", "🀨"))
+        registry.register(TileEmojiDefinition("flower_autumn", "🀩"))
+        registry.register(TileEmojiDefinition("flower_winter", "🀪"))
     }
 
     /**
@@ -67,16 +71,16 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
      */
     override fun registerTileLabels(registry: TileLabelRegistry) {
         // 四季花牌：右上紅色中文字、左上黑色數字，依春夏秋冬排序
-        registry.register("flower_spring", seasonalFlower(chinese = "春", order = "1"))
-        registry.register("flower_summer", seasonalFlower(chinese = "夏", order = "2"))
-        registry.register("flower_autumn", seasonalFlower(chinese = "秋", order = "3"))
-        registry.register("flower_winter", seasonalFlower(chinese = "冬", order = "4"))
+        registry.register(TileLabelDefinition("flower_spring", seasonalFlower(chinese = "春", order = "1")))
+        registry.register(TileLabelDefinition("flower_summer", seasonalFlower(chinese = "夏", order = "2")))
+        registry.register(TileLabelDefinition("flower_autumn", seasonalFlower(chinese = "秋", order = "3")))
+        registry.register(TileLabelDefinition("flower_winter", seasonalFlower(chinese = "冬", order = "4")))
 
         // 四君子花牌：右上紅色數字、左上黑色中文字，依梅蘭菊竹排序
-        registry.register("flower_plum", plantFlower(chinese = "梅", order = "1"))
-        registry.register("flower_orchid", plantFlower(chinese = "蘭", order = "2"))
-        registry.register("flower_chrysanthemum", plantFlower(chinese = "菊", order = "3"))
-        registry.register("flower_bamboo", plantFlower(chinese = "竹", order = "4"))
+        registry.register(TileLabelDefinition("flower_plum", plantFlower(chinese = "梅", order = "1")))
+        registry.register(TileLabelDefinition("flower_orchid", plantFlower(chinese = "蘭", order = "2")))
+        registry.register(TileLabelDefinition("flower_chrysanthemum", plantFlower(chinese = "菊", order = "3")))
+        registry.register(TileLabelDefinition("flower_bamboo", plantFlower(chinese = "竹", order = "4")))
     }
 
     override fun registerGameConfigPresentations(registry: GameConfigPresentationRegistry) {

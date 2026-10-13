@@ -37,7 +37,7 @@ class TableLocationRegistry {
         .mapNotNull(entriesByTableId::get)
 
     /** 取得目前所有位置資料的不可變快照。 */
-    fun snapshot(): Map<Uuid, TableLocationEntry> = entriesByTableId
+    fun snapshot(): Map<Uuid, TableLocationEntry> = entriesByTableId.toMap()
 
     /**
      * 載入已保存資料並重建反向索引，不觸發 dirty callback。

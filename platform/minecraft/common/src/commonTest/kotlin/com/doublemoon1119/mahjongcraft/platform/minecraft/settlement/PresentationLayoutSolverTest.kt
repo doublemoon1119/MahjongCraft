@@ -369,13 +369,13 @@ class PresentationLayoutSolverTest {
 
         override val registrationKeys: Set<String> get() = emptySet()
 
-        override fun registerTemplate(template: WinSettlementPresentationTemplate) = error("Unexpected registration")
+        override fun register(template: WinSettlementPresentationTemplate) = error("Unexpected registration")
 
-        override fun registerFieldProvider(fieldId: PresentationFieldId, provider: WinSettlementPresentationFieldProvider) = error("Unexpected registration")
+        override fun register(definition: WinSettlementPresentationFieldProviderDefinition) = error("Unexpected registration")
 
-        override fun bindRuleTemplate(ruleModuleId: String, templateKey: String) = error("Unexpected registration")
+        override fun register(definition: WinSettlementRuleTemplateBindingDefinition) = error("Unexpected registration")
 
-        override fun registerDetailTextFormatter(fieldId: String, formatter: WinSettlementDetailTextFormatter) = error("Unexpected registration")
+        override fun register(definition: WinSettlementDetailTextFormatterDefinition) = error("Unexpected registration")
 
         override fun findTemplate(key: String): WinSettlementPresentationTemplate? = null
 
