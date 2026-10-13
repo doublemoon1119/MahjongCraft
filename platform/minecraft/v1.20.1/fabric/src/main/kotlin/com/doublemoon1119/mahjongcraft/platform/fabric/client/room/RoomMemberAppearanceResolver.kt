@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppeara
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSource
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSourceProviderException
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSourceRegistry
+import kotlinx.coroutines.CancellationException
 import kotlin.uuid.Uuid
 
 /**
@@ -25,21 +26,24 @@ internal class RoomMemberAppearanceResolver(private val sources: RoomMemberAppea
     private val warnedProviderIds = mutableSetOf<String>()
 
     /**
-     * 解析指定成員的外觀呈現方式，並對相同失敗來源只回傳一次警告。
+     * 解析指定成員的外觀呈現方式，並對相同的一般失敗來源只回傳一次警告。
+     * 取消例外與致命錯誤直接外傳，不改用預設外觀。
      *
      * @param playerId 成員的玩家識別碼。
      * @param isAi 成員是否由 AI 操控。
      * @return 外觀方式與本次尚未回報的降級警告。
      */
     fun resolve(playerId: Uuid, isAi: Boolean): Resolution {
-        val result = runCatching { sources.resolve(RoomMemberAppearanceContext(playerId, isAi)) }
-        val failure = result.exceptionOrNull()
-        if (failure != null) {
-            val providerId = (failure as? RoomMemberAppearanceSourceProviderException)?.providerId ?: REGISTRY_PROVIDER_ID
-            val warning = Warning.ProviderFailed(providerId, failure).takeIf { warnedProviderIds.add(providerId) }
+        val source = try {
+            sources.resolve(RoomMemberAppearanceContext(playerId, isAi))
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (cause: Exception) {
+            val providerId = (cause as? RoomMemberAppearanceSourceProviderException)?.providerId ?: REGISTRY_PROVIDER_ID
+            val warning = Warning.ProviderFailed(providerId, cause).takeIf { warnedProviderIds.add(providerId) }
             return Resolution(if (isAi) Appearance.Portrait else Appearance.PlayerModel, warning)
         }
-        return when (val source = result.getOrThrow()) {
+        return when (source) {
             RoomMemberAppearanceSource.PlayerModel -> Resolution(Appearance.PlayerModel, null)
             RoomMemberAppearanceSource.Portrait -> Resolution(Appearance.Portrait, null)
             is RoomMemberAppearanceSource.ActorPreview -> Resolution(
@@ -87,6 +91,7 @@ internal class RoomMemberAppearanceResolver(private val sources: RoomMemberAppea
         data class MissingActorPreviewFactory(val actorKey: String) : Warning
     }
 
+    /** 外觀解析失敗時使用的內部診斷識別字。 */
     private companion object {
         /** 失敗來自 registry 本身而非特定 provider 時使用的識別字。 */
         const val REGISTRY_PROVIDER_ID: String = "registry"

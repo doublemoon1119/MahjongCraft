@@ -7,8 +7,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitS
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceContext
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceProviderException
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.player.ResolvedPlayerPortraitSource
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tileTextureAssetPath
+import kotlinx.coroutines.CancellationException
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.render.LightmapTextureManager
@@ -35,12 +37,18 @@ class PlayerPortraitRenderer(
     @Provided private val sources: PlayerPortraitSourceRegistry,
     private val profiles: ClientPlayerProfileResolver,
 ) {
+    /** 記錄外觀來源或繪製失敗，並遵守相同來源只警告一次的策略。 */
     private val logger = mahjongCraftLogger(PlayerPortraitRenderer::class)
+
+    /** 已警告過的外觀來源提供者識別碼，避免每次繪製都重複記錄。 */
     private val warnedProviderIds = mutableSetOf<String>()
+
+    /** 已解析的牌面貼圖快取，避免每次繪製都查詢資源管理器。 */
     private val tileTextures = mutableMapOf<String, Identifier>()
 
     /**
      * 將宣告式頭像來源繪製於世界空間的正方形 slot；牌面保持 3:4 比例並水平置中。
+     * 一般來源失敗時使用內建頭像；取消例外與致命錯誤直接外傳。
      *
      * @param playerId 頭像所屬玩家 ID。
      * @param isAi 玩家是否為 AI，影響內建 fallback。
@@ -63,26 +71,22 @@ class PlayerPortraitRenderer(
         matrices: MatrixStack,
         consumers: VertexConsumerProvider,
     ) {
-        val resolved = runCatching { sources.resolve(PlayerPortraitSourceContext(playerId, isAi)) }
-            .onFailure { cause ->
-                val providerId = (cause as? PlayerPortraitSourceProviderException)?.providerId ?: "registry"
+        renderPortraitWithFallback(
+            resolved = runPresentationAttempt { sources.resolve(PlayerPortraitSourceContext(playerId, isAi)) },
+            fallbackSource = fallbackSource(isAi),
+            onResolutionFailure = { cause, providerId ->
                 if (warnedProviderIds.add(providerId)) logger.warn("Failed to resolve player portrait provider {}", providerId, cause)
-            }
-            .getOrNull()
-        val source = resolved?.source ?: fallbackSource(isAi)
-        val rendered = runCatching {
-            renderSource(source, playerId, x, y, size, alpha, z, matrices, consumers)
-        }.onFailure { cause ->
-            val providerId = resolved?.providerId ?: "built-in-fallback"
-            if (warnedProviderIds.add(providerId)) logger.warn("Failed to render player portrait provider {}", providerId, cause)
-        }.isSuccess
-        if (!rendered && resolved != null) {
-            renderSource(fallbackSource(isAi), playerId, x, y, size, alpha, z, matrices, consumers)
-        }
+            },
+            onDrawFailure = { cause, providerId ->
+                if (warnedProviderIds.add(providerId)) logger.warn("Failed to render player portrait provider {}", providerId, cause)
+            },
+            draw = { source -> renderSource(source, playerId, x, y, size, alpha, z, matrices, consumers) },
+        )
     }
 
     /**
      * 將同一 portrait source 繪製於 GUI；提供者失敗時使用內建來源。
+     * 取消例外與致命錯誤直接外傳，不繼續繪製內建頭像。
      *
      * @param playerId 玩家識別碼。
      * @param isAi 是否為 AI。
@@ -101,18 +105,17 @@ class PlayerPortraitRenderer(
         size: Int,
         skinTexture: Identifier? = null,
     ) {
-        val resolved = runCatching { sources.resolve(PlayerPortraitSourceContext(playerId, isAi)) }
-            .onFailure { cause ->
-                val providerId = (cause as? PlayerPortraitSourceProviderException)?.providerId ?: "registry"
+        renderPortraitWithFallback(
+            resolved = runPresentationAttempt { sources.resolve(PlayerPortraitSourceContext(playerId, isAi)) },
+            fallbackSource = fallbackSource(isAi),
+            onResolutionFailure = { cause, providerId ->
                 if (warnedProviderIds.add(providerId)) logger.warn("Failed to resolve player portrait provider {}", providerId, cause)
-            }.getOrNull()
-        val source = resolved?.source ?: fallbackSource(isAi)
-        val rendered = runCatching { renderGuiSource(source, playerId, context, x, y, size, skinTexture) }
-            .onFailure { cause ->
-                val providerId = resolved?.providerId ?: "built-in-fallback"
+            },
+            onDrawFailure = { cause, providerId ->
                 if (warnedProviderIds.add(providerId)) logger.warn("Failed to render player portrait provider {}", providerId, cause)
-            }.isSuccess
-        if (!rendered && resolved != null) renderGuiSource(fallbackSource(isAi), playerId, context, x, y, size, skinTexture)
+            },
+            draw = { source -> renderGuiSource(source, playerId, context, x, y, size, skinTexture) },
+        )
     }
 
     /**
@@ -296,7 +299,64 @@ class PlayerPortraitRenderer(
         PlayerPortraitSource.PlayerSkinFace
     }
 
+    /** 頭像繪製器使用的固定比例與其他私有常數。 */
     private companion object {
+        /** 牌面貼圖相對於頭像 slot 的寬高比例。 */
         const val TILE_ASPECT_RATIO = 0.75f
     }
+}
+
+/**
+ * 執行可使用內建外觀降級的呈現操作。
+ *
+ * 外觀提供者或繪製操作的一般例外會以失敗結果回傳；協程取消與致命錯誤則維持原樣向外傳遞。
+ *
+ * @param T 操作的回傳型別。
+ * @param operation 要執行的外觀解析或繪製操作。
+ * @return 操作成功或一般例外失敗的結果。
+ */
+internal inline fun <T> runPresentationAttempt(operation: () -> T): Result<T> = try {
+    Result.success(operation())
+} catch (cancelled: CancellationException) {
+    throw cancelled
+} catch (cause: Exception) {
+    Result.failure(cause)
+}
+
+/**
+ * 執行頭像來源解析與繪製，並在可恢復的來源失敗時使用內建來源重試。
+ *
+ * 解析失敗時會繪製內建來源，但不會再嘗試第二次；已解析的第三方來源繪製失敗時會再繪製一次內建來源。
+ * 兩個失敗回呼只接收一般例外；取消與致命錯誤會由呈現邊界直接向外傳遞。
+ *
+ * @param T 繪製操作的回傳型別。
+ * @param resolved 外觀來源解析結果。
+ * @param fallbackSource 解析或繪製失敗時使用的內建來源。
+ * @param onResolutionFailure 回報一般解析失敗的函式。
+ * @param onDrawFailure 回報一般繪製失敗的函式。
+ * @param draw 使用指定來源進行繪製的函式。
+ * @return 首次繪製或 fallback 繪製的結果；首次繪製失敗且沒有第三方來源時為 `null`。
+ */
+internal inline fun <T> renderPortraitWithFallback(
+    resolved: Result<ResolvedPlayerPortraitSource?>,
+    fallbackSource: PlayerPortraitSource,
+    onResolutionFailure: (cause: Throwable, providerId: String) -> Unit,
+    onDrawFailure: (cause: Throwable, providerId: String) -> Unit,
+    draw: (source: PlayerPortraitSource) -> T,
+): T? {
+    val resolutionFailure = resolved.exceptionOrNull()
+    if (resolutionFailure != null) {
+        val providerId = (resolutionFailure as? PlayerPortraitSourceProviderException)?.providerId ?: "registry"
+        onResolutionFailure(resolutionFailure, providerId)
+    }
+    val resolvedSource = resolved.getOrNull()
+    val firstAttempt = runPresentationAttempt { draw(resolvedSource?.source ?: fallbackSource) }
+    val drawFailure = firstAttempt.exceptionOrNull()
+    if (drawFailure != null) {
+        onDrawFailure(drawFailure, resolvedSource?.providerId ?: "built-in-fallback")
+    }
+    if (firstAttempt.isSuccess || resolvedSource == null) {
+        return firstAttempt.getOrNull()
+    }
+    return draw(fallbackSource)
 }

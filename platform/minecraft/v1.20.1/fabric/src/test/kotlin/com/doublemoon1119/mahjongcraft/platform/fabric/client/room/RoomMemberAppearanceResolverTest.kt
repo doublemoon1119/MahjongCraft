@@ -5,8 +5,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppeara
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSourceDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSourceProviderException
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSourceRegistry
+import kotlinx.coroutines.CancellationException
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.uuid.Uuid
@@ -73,6 +75,46 @@ class RoomMemberAppearanceResolverTest {
             resolver.resolve(PLAYER_ID, isAi = false).warning,
         )
         assertEquals("registry", failure.providerId)
+    }
+
+    /** 取消解析時不應被外觀 fallback 吞掉。 */
+    @Test
+    fun `propagates cancellation from the registry`() {
+        val resolver = RoomMemberAppearanceResolver(
+            object : FakeRegistry() {
+                /**
+                 * 模擬外觀來源解析被取消。
+                 *
+                 * @param context 成員外觀解析脈絡。
+                 * @return 不會回傳；此案例固定拋出取消例外。
+                 */
+                override fun resolve(context: RoomMemberAppearanceContext): RoomMemberAppearanceSource = throw CancellationException("cancelled")
+            },
+        )
+
+        assertFailsWith<CancellationException> {
+            resolver.resolve(PLAYER_ID, isAi = false)
+        }
+    }
+
+    /** 致命錯誤不應被外觀 fallback 轉成一般警告。 */
+    @Test
+    fun `propagates fatal errors from the registry`() {
+        val resolver = RoomMemberAppearanceResolver(
+            object : FakeRegistry() {
+                /**
+                 * 模擬外觀來源解析發生致命錯誤。
+                 *
+                 * @param context 成員外觀解析脈絡。
+                 * @return 不會回傳；此案例固定拋出致命錯誤。
+                 */
+                override fun resolve(context: RoomMemberAppearanceContext): RoomMemberAppearanceSource = throw AssertionError("fatal")
+            },
+        )
+
+        assertFailsWith<AssertionError> {
+            resolver.resolve(PLAYER_ID, isAi = false)
+        }
     }
 
     /** 同一個 provider 連續失敗只警告一次。 */
