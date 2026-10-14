@@ -2,14 +2,14 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerProfileResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
-import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSource
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceContext
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceProviderException
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.ResolvedPlayerPortraitSource
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tileTextureAssetPath
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tileTextureResourceId
 import kotlinx.coroutines.CancellationException
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.DrawContext
@@ -30,11 +30,13 @@ import kotlin.uuid.toJavaUuid
  * 世界結算、桌級面板及 GUI 共用的頭像來源繪製器。
  *
  * @property sources 規則與第三方提供的宣告式頭像來源。
+ * @property tileAssetRegistry 提供 AI 牌面頭像使用的完整 namespace 與路徑映射。
  * @property profiles 真人普通名稱與原生皮膚材質的共用解析器。
  */
 @Single
 class PlayerPortraitRenderer(
     @Provided private val sources: PlayerPortraitSourceRegistry,
+    @Provided private val tileAssetRegistry: MinecraftTileAssetRegistry,
     private val profiles: ClientPlayerProfileResolver,
 ) {
     /** 記錄外觀來源或繪製失敗，並遵守相同來源只警告一次的策略。 */
@@ -279,11 +281,11 @@ class PlayerPortraitRenderer(
      * @return 可用的貼圖識別碼。
      */
     private fun resolveTileTexture(assetKey: String): Identifier = tileTextures.getOrPut(assetKey) {
-        val requested = Identifier(MinecraftModMetadata.MOD_ID, tileTextureAssetPath(assetKey))
+        val requested = Identifier(tileTextureResourceId(assetKey, tileAssetRegistry))
         if (MinecraftClient.getInstance().resourceManager.getResource(requested).isPresent) {
             requested
         } else {
-            Identifier(MinecraftModMetadata.MOD_ID, tileTextureAssetPath(UNKNOWN_TILE_ASSET_KEY))
+            Identifier(tileTextureResourceId(UNKNOWN_TILE_ASSET_KEY, tileAssetRegistry))
         }
     }
 

@@ -112,6 +112,36 @@ class TileAssetKeysTest {
         assertEquals("animal_cat", "animal_cat".normalizedTileAssetKey(thirdPartyRegistry))
     }
 
+    /** 驗證資源 ID helper 會正規化未知 key，並回退至內建 unknown 資源。 */
+    @Test
+    fun `resource ids normalize unknown keys to built in fallback`() {
+        assertEquals(
+            "mahjongcraft:textures/item/mahjong_tile/mahjong_tile_unknown.png",
+            tileTextureResourceId("example:missing", registry),
+        )
+        assertEquals(
+            "mahjongcraft:item/mahjong_tile/mahjong_tile_unknown",
+            tileModelResourceId("example:missing", registry),
+        )
+    }
+
+    /** 驗證資源 ID helper 會使用登記的第三方 namespace。 */
+    @Test
+    fun `resource ids use registered custom resources`() {
+        val thirdPartyRegistry = MinecraftTileAssetRegistryImpl().apply {
+            register(
+                MinecraftTileAssetDefinition(
+                    TileTypeId.parse("example:animal/cat"),
+                    "animal_cat",
+                    MinecraftTileResources("example:textures/custom/cat.png", "example:item/custom/cat"),
+                ),
+            )
+        }
+
+        assertEquals("example:textures/custom/cat.png", tileTextureResourceId("animal_cat", thirdPartyRegistry))
+        assertEquals("example:item/custom/cat", tileModelResourceId("animal_cat", thirdPartyRegistry))
+    }
+
     /** 驗證循環涵蓋完整清單，並讓缺失或非法 key 從第一張重新開始。 */
     @Test
     fun `next asset key cycles and invalid values restart at first tile`() {

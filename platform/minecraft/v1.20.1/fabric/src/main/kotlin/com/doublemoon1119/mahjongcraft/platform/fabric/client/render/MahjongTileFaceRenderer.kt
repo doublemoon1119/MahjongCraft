@@ -3,12 +3,12 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionTileOrientationDto
-import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelColor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelText
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tileTextureAssetPath
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tileTextureResourceId
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.font.TextRenderer
 import net.minecraft.client.gui.DrawContext
@@ -30,11 +30,13 @@ import kotlin.math.roundToInt
  * 及標籤顏色均集中於此，避免不同 showcase 各自形成不一致的牌面。
  *
  * @property tileLabelRegistry 提供牌面角落標籤定義。
+ * @property tileAssetRegistry 提供牌面資源的完整 namespace 與路徑映射。
  * @property clientConfigStore 提供標籤顯示設定。
  */
 @Single
 class MahjongTileFaceRenderer(
     @Provided private val tileLabelRegistry: TileLabelRegistry,
+    @Provided private val tileAssetRegistry: MinecraftTileAssetRegistry,
     private val clientConfigStore: MahjongClientConfigStore,
 ) {
     /**
@@ -353,11 +355,11 @@ class MahjongTileFaceRenderer(
      * @return 可載入的牌面貼圖識別碼。
      */
     private fun resolveTexture(assetKey: String): Identifier {
-        val requested = Identifier(MinecraftModMetadata.MOD_ID, tileTextureAssetPath(assetKey))
+        val requested = Identifier(tileTextureResourceId(assetKey, tileAssetRegistry))
         return if (MinecraftClient.getInstance().resourceManager.getResource(requested).isPresent) {
             requested
         } else {
-            Identifier(MinecraftModMetadata.MOD_ID, tileTextureAssetPath(UNKNOWN_TILE_ASSET_KEY))
+            Identifier(tileTextureResourceId(UNKNOWN_TILE_ASSET_KEY, tileAssetRegistry))
         }
     }
 

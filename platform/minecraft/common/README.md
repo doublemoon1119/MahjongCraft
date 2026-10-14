@@ -16,6 +16,42 @@ Its Gradle project path is `:minecraft_common`; the source directory remains `pl
 - Define shared history presentation, rule catalogues, achievement mappings,
   and game-event subscriptions and delivery contracts.
 
+## Tile resource locations
+
+Register a tile through `MinecraftMahjongExtension.registerTileAssets` using a
+`MinecraftTileAssetDefinition`. Its `assetKey` remains the stable value used by tile items,
+network messages, labels, and emoji mappings; it is not the texture's resource location.
+
+Supply `MinecraftTileResources` to select a texture and a model independently, each as a full
+`namespace:path` ID. For example, a texture ID `furniture:textures/tile/five.png` refers to
+`assets/furniture/textures/tile/five.png`, while model ID `furniture:item/tile/five` refers to
+`assets/furniture/models/item/tile/five.json`. Textures include `.png`; model IDs omit `.json`.
+Model JSON texture references must also use the intended namespace.
+
+The resource namespace need not match the tile type's namespace. An integration may explicitly
+reuse MahjongCraft resources without changing its tile identity. Different asset keys may use
+the same resources; the existing unique tile-type and asset-key registration rules still apply.
+Standard tile keys and `unknown` are reserved and cannot be registered by an extension.
+
+Omitting `resources` preserves the existing `mahjongcraft` texture and model paths derived from
+the asset key. Built-in keys and stored item data are unchanged. Unknown keys use the existing
+unknown-tile fallback; a registered but missing model may use its texture-only fallback.
+Resource locations are validated during registration setup rather than silently changing an
+invalid namespace. No Minecraft-version-specific `Identifier` is needed in this common layer.
+
+In the Fabric adapter, a valid baked model supplies its own geometry, UVs, texture references,
+and display transforms. It need not inherit MahjongCraft's base model or use the built-in
+`cover` texture atlas. That atlas describes the tile body, including its sides and back;
+it is not merely a back-face image. Only the missing-model cuboid fallback combines the
+registered front texture with the built-in atlas on its other five faces.
+
+This registration describes resource locations, not unrestricted appearance adaptation.
+World layout, entity dimensions, pose-origin adjustments, and model label positions still
+assume standard tile dimensions. A differently sized or positioned model does not automatically
+adjust those systems. HUD, history, and other flat previews draw the separate front texture;
+they do not extract the model's front-face UVs. Concealed tiles retain the unknown-tile appearance
+instead of selecting a model from their hidden tile type.
+
 ## Seat extension contract
 
 The `api.seating` package defines the cross-version contract for objects that can seat a

@@ -1,10 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.model
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileItemRenderer
-import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.allTileAssetKeys
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tileModelAssetPath
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tileModelResourceId
 import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin
 import net.minecraft.util.Identifier
 import org.koin.core.context.GlobalContext
@@ -19,9 +18,10 @@ import org.koin.core.context.GlobalContext
  */
 object MahjongTileModelLoadingPlugin : ModelLoadingPlugin {
     override fun onInitializeModelLoader(pluginContext: ModelLoadingPlugin.Context) {
+        val registry = GlobalContext.get().get<MinecraftTileAssetRegistry>()
         pluginContext.addModels(
-            GlobalContext.get().get<MinecraftTileAssetRegistry>().allTileAssetKeys().map { assetKey ->
-                Identifier(MinecraftModMetadata.MOD_ID, tileModelAssetPath(assetKey))
+            registry.allTileAssetKeys().map { assetKey ->
+                Identifier(tileModelResourceId(assetKey, registry))
             },
         )
     }

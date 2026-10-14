@@ -1,10 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tileTextureAssetPath
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tileTextureResourceId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
 import net.minecraft.client.font.TextRenderer
 import net.minecraft.resource.ResourceManager
@@ -44,7 +43,7 @@ internal class ResourceCatalogueTileArt(
     override fun resolve(tile: Tile): CatalogueTileArt = resolved.getOrPut(tile) {
         val assetKey = tile.toAssetKey(assets)
         val name = if (tile is Tile.Extension) "${tile.typeId.namespace}:${tile.typeId.path}" else assetKey
-        val texture = Identifier(MinecraftModMetadata.MOD_ID, tileTextureAssetPath(assetKey))
+        val texture = Identifier(tileTextureResourceId(assetKey, assets))
         if (assetKey == UNKNOWN_TILE_ASSET_KEY || resources.getResource(texture).isEmpty) {
             CatalogueTileArt(assetKey = UNKNOWN_TILE_ASSET_KEY, missingName = name)
         } else {

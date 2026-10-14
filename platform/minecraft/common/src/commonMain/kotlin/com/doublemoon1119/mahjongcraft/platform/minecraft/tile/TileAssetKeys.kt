@@ -8,7 +8,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 const val UNKNOWN_TILE_ASSET_KEY = "unknown"
 
 /**
- * 將 [Tile] 轉換成 Minecraft 資源檔（貼圖/模型檔名、item NBT 儲存值）使用的素材識別字串。
+ * 將 [Tile] 轉換成 Minecraft 牌面資源映射使用的素材識別字串。
  *
  * 數牌格式為 `{花色字母}{數值}`，紅五額外加上 `_red` 後綴（例如 `m5_red`）；字牌則各自對應到固定的
  * 英文名稱（例如 `east`、`white_dragon`）。
@@ -53,9 +53,9 @@ val STANDARD_TILE_ASSET_KEYS: List<String> = buildList {
 }
 
 /**
- * 所有應有對應材質與模型的素材識別字串，順序固定：[STANDARD_TILE_ASSET_KEYS]、這個 registry 依登記順序的
+ * 所有應有牌面資源映射的素材識別字串，順序固定：[STANDARD_TILE_ASSET_KEYS]、這個 registry 依登記順序的
  * 擴充牌種，最後是 [UNKNOWN_TILE_ASSET_KEY] 佔位牌。各 loader adapter 依此清單註冊模型、建立渲染用物品，
- * 並作為循環換牌的順序；登記擴充牌種的 extension 須提供對應的材質與模型。
+ * 並作為循環換牌的順序；擴充牌種可在登記描述中提供自訂資源，省略時沿用內建資源路徑。
  *
  * @throws IllegalStateException registry 尚未凍結時拋出；擴充牌種要等所有 extension 登記完成才確定。
  * @param registry 已凍結的牌資產 registry。

@@ -4,9 +4,11 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.model.MahjongTileM
 import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongTileItem
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tileModelAssetPath
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tileModelResourceId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tileTextureAssetPath
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tileTextureResourceId
 import net.fabricmc.fabric.api.client.model.loading.v1.FabricBakedModelManager
 import net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry
 import net.minecraft.client.MinecraftClient
@@ -20,6 +22,7 @@ import net.minecraft.screen.PlayerScreenHandler
 import net.minecraft.util.Identifier
 import net.minecraft.util.math.random.Random
 import org.joml.Vector3f
+import org.koin.core.context.GlobalContext
 
 /**
  * 麻將牌 item 的 runtime renderer；依 NBT 存的 asset key 動態選擇材質，取代固定的 item model
@@ -72,7 +75,7 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
         if (bakedModel != null) {
             drawBakedModel(bakedModel, matrices, vertexConsumers, light, overlay)
         } else {
-            val textureId = Identifier(MinecraftModMetadata.MOD_ID, tileTextureAssetPath(assetKey))
+            val textureId = Identifier(tileTextureResourceId(assetKey, GlobalContext.get().get<MinecraftTileAssetRegistry>()))
             if (client.resourceManager.getResource(textureId).isPresent) {
                 drawDynamicCuboid(textureId, matrices, vertexConsumers, light, overlay)
             } else {
@@ -96,7 +99,7 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
      */
     private fun findBakedModel(assetKey: String): BakedModel? {
         val manager = MinecraftClient.getInstance().bakedModelManager
-        val id = Identifier(MinecraftModMetadata.MOD_ID, tileModelAssetPath(assetKey))
+        val id = Identifier(tileModelResourceId(assetKey, GlobalContext.get().get<MinecraftTileAssetRegistry>()))
         val model = (manager as FabricBakedModelManager).getModel(id) ?: return null
         return if (model === manager.missingModel) null else model
     }
@@ -125,11 +128,12 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
     }
 
     /**
-     * 找不到已烘焙模型時，手繪與內建模型相同的立方體幾何，正面材質直接綁定。
+     * 找不到有效的已烘焙模型時，以內建立方體作為回退外觀，正面綁定登記的貼圖。
+     * 其餘五面沿用內建牌體材質圖集；有效自訂模型的各面材質與 UV 則由模型自行定義。
      *
      * @param faceTextureId 動態解析的正面貼圖。
      * @param matrices 目前的模型矩陣。
-     * @param vertexConsumers 提供正面及牌背貼圖頂點緩衝。
+     * @param vertexConsumers 提供正面貼圖與牌體材質圖集的頂點緩衝。
      * @param light 世界光照值。
      * @param overlay 覆蓋貼圖座標。
      */
@@ -140,6 +144,8 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
         light: Int,
         overlay: Int,
     ) {
+        // 此處只處理缺少有效模型的回退立方體，非正面五面沿用內建 cover 牌體材質圖集。
+        // 有效的自訂模型不經此流程，其各面材質與 UV 由模型 JSON 定義。
         val coverTextureId = Identifier(MinecraftModMetadata.MOD_ID, tileTextureAssetPath("cover"))
         val entry = matrices.peek()
         val faceBuffer = vertexConsumers.getBuffer(RenderLayer.getEntityCutout(faceTextureId))
@@ -166,7 +172,7 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
      * @property corners 此面的四個頂點。
      * @property normal 此面的法線方向。
      * @property uvRect 此面的 UV 範圍。
-     * @property usesFaceTexture 是否使用牌面貼圖；否則使用牌背貼圖。
+     * @property usesFaceTexture 是否使用正面貼圖；否則使用內建牌體材質圖集。
      */
     private class CuboidFace(
         val corners: List<Vector3f>,

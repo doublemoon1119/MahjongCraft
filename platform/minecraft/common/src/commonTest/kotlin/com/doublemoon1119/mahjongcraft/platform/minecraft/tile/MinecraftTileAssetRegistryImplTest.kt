@@ -22,6 +22,21 @@ class MinecraftTileAssetRegistryImplTest {
         assertEquals("flower_spring", registry.find(typeId))
     }
 
+    /** 驗證擴充不能以保留 key 覆蓋基本牌或未知牌資源。 */
+    @Test
+    fun `reserved built in asset keys are rejected without registration`() {
+        val registry = MinecraftTileAssetRegistryImpl()
+        val typeId = TileTypeId.parse("example:tile")
+        val resources = MinecraftTileResources("example:textures/tile.png", "example:item/tile")
+        (STANDARD_TILE_ASSET_KEYS + UNKNOWN_TILE_ASSET_KEY).forEach { key ->
+            assertFailsWith<IllegalArgumentException> {
+                registry.register(MinecraftTileAssetDefinition(typeId, key, resources))
+            }
+            assertNull(registry.find(typeId))
+            assertNull(registry.findResources(key))
+        }
+    }
+
     /** 驗證同一穩定 ID 不得重複註冊。 */
     @Test
     fun `duplicate type id is rejected`() {
@@ -75,5 +90,100 @@ class MinecraftTileAssetRegistryImplTest {
 
         assertTrue(registry.isRegisteredAssetKey("animal_cat"))
         assertFalse(registry.isRegisteredAssetKey("animal_dog"))
+    }
+
+    /** 驗證省略資源描述時沿用內建 namespace 與既有路徑。 */
+    @Test
+    fun `default resources use the built in namespace`() {
+        val registry = MinecraftTileAssetRegistryImpl()
+        val definition = MinecraftTileAssetDefinition(TileTypeId.parse("example:animal/cat"), "animal_cat")
+
+        registry.register(definition)
+
+        assertEquals(
+            MinecraftTileResources(
+                textureId = "mahjongcraft:textures/item/mahjong_tile/mahjong_tile_animal_cat.png",
+                modelId = "mahjongcraft:item/mahjong_tile/mahjong_tile_animal_cat",
+            ),
+            registry.findResources("animal_cat"),
+        )
+    }
+
+    /** 驗證明確資源描述可使用第三方 namespace。 */
+    @Test
+    fun `custom resources preserve their namespace`() {
+        val registry = MinecraftTileAssetRegistryImpl()
+        val resources = MinecraftTileResources(
+            textureId = "example:textures/item/custom_tile.png",
+            modelId = "example:item/custom_tile",
+        )
+
+        registry.register(
+            MinecraftTileAssetDefinition(
+                typeId = TileTypeId.parse("example:animal/cat"),
+                assetKey = "animal_cat",
+                resources = resources,
+            ),
+        )
+
+        assertEquals(resources, registry.findResources("animal_cat"))
+    }
+
+    /** 驗證同一路徑可在不同 namespace 下各自使用。 */
+    @Test
+    fun `same resource paths in different namespaces are distinct`() {
+        val registry = MinecraftTileAssetRegistryImpl()
+        registry.register(
+            MinecraftTileAssetDefinition(
+                TileTypeId.parse("example:animal/cat"),
+                "animal_cat",
+                MinecraftTileResources("first:tile.png", "first:tile"),
+            ),
+        )
+        registry.register(
+            MinecraftTileAssetDefinition(
+                TileTypeId.parse("other:animal/cat"),
+                "other_animal_cat",
+                MinecraftTileResources("second:tile.png", "second:tile"),
+            ),
+        )
+
+        assertEquals("first:tile.png", registry.findResources("animal_cat")?.textureId)
+        assertEquals("second:tile.png", registry.findResources("other_animal_cat")?.textureId)
+    }
+
+    /** 驗證完整資源 ID 必須符合 namespaced ID 格式。 */
+    @Test
+    fun `invalid resource ids are rejected`() {
+        listOf("missing_namespace", ":tile", "example:", "Example:tile", "example:tile name", "example:tile:extra").forEach { invalid ->
+            assertFailsWith<IllegalArgumentException> {
+                MinecraftTileResources(invalid, "example:item/tile")
+            }
+            assertFailsWith<IllegalArgumentException> {
+                MinecraftTileResources("example:textures/tile.png", invalid)
+            }
+        }
+    }
+
+    /** 驗證使用預設資源位置時，不接受會形成非法資源 ID 的素材 key。 */
+    @Test
+    fun `default resources reject invalid path keys`() {
+        assertFailsWith<IllegalArgumentException> {
+            MinecraftTileAssetDefinition(TileTypeId.parse("example:tile"), "invalid key")
+        }
+    }
+
+    /** 驗證不同素材身分可以引用同一組資源，凍結後仍可查詢。 */
+    @Test
+    fun `distinct asset keys can share resources after freezing`() {
+        val registry = MinecraftTileAssetRegistryImpl()
+        val resources = MinecraftTileResources("example:textures/shared.png", "example:item/shared")
+        registry.register(MinecraftTileAssetDefinition(TileTypeId.parse("example:first"), "first", resources))
+        registry.register(MinecraftTileAssetDefinition(TileTypeId.parse("example:second"), "second", resources))
+        registry.freeze()
+
+        assertEquals(resources, registry.findResources("first"))
+        assertEquals(resources, registry.findResources("second"))
+        assertNull(registry.findResources("missing"))
     }
 }
