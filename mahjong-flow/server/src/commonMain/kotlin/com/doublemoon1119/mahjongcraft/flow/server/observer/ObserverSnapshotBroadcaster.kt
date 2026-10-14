@@ -188,14 +188,13 @@ class ObserverSnapshotBroadcaster(
         target.snapshots.keys.retainAll(observerIds)
         publishRecordObserversSnapshot()
         observerIds.forEach { observerId ->
-            val currentSource = store.state.value.games[id] ?: store.state.value.rooms[id]
-            if (currentSource !== source) return@forEach
             val snapshot = snapshotFor(id, observerId, state)
             if (target.snapshots.containsKey(observerId) && target.snapshots[observerId] == snapshot) return@forEach
-            target.snapshots[observerId] = snapshot
-            publishRecordObserversSnapshot()
+            // 來源已被取代時不送出也不記錄，否則下一輪內容相同就會被當成已送過而略過。
             val sourceBeforeSend = store.state.value.games[id] ?: store.state.value.rooms[id]
             if (sourceBeforeSend !== source) return@forEach
+            target.snapshots[observerId] = snapshot
+            publishRecordObserversSnapshot()
             sender.send(id = id, observerId = observerId, snapshot = snapshot)
         }
     }

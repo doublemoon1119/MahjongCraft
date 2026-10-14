@@ -59,15 +59,15 @@ internal class TableLocationValidationQueue<S : Any, W : Any> {
      * @param entriesForChunk 取得該 chunk 的預期位置索引。
      * @param isEntryCurrent 確認索引項目的 revision 尚未改變。
      * @param matchesExpectedTable 驗證方塊位置仍有預期桌子。
-     * @param cleanup 第二次確認仍缺失時執行的清理操作。
+     * @param cleanup 第二次確認仍缺失時執行的清理操作；在呼叫端執行緒同步呼叫，不得等待協程鎖。
      */
-    suspend fun advance(
+    fun advance(
         session: S,
         isChunkUsable: (W, Int, Int) -> Boolean,
         entriesForChunk: (W, Int, Int) -> Collection<TableLocationEntry>,
         isEntryCurrent: (TableLocationEntry) -> Boolean,
         matchesExpectedTable: (W, TableLocationEntry) -> Boolean,
-        cleanup: suspend (TableLocationEntry) -> Unit,
+        cleanup: (TableLocationEntry) -> Unit,
     ) {
         if (activeSession !== session) return
 

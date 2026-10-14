@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotR
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
+import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdate
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
@@ -52,15 +53,44 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallTr
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallTransitionResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongWinCelebrationPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongWinCelebrationResult
+import com.doublemoon1119.mahjongcraft.testing.flow.common.concurrency.TestCoroutineDispatchers
+import com.doublemoon1119.mahjongcraft.testing.flow.common.concurrency.createTestAppCoroutineScope
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
-/** [FabricTableLifecycleService] 的玩家破壞事件去重測試。 */
+/** [FabricTableLifecycleService] 的玩家破壞事件去重與破壞判斷測試。 */
 class FabricTableLifecycleServiceTest {
+    /** 另一筆交易持有權威狀態的鎖時，破壞判斷仍依已發布狀態立即回答，不等待鎖。 */
+    @Test
+    fun `break decision does not wait for a transaction holding the lock`() = runTest {
+        val fixture = Fixture()
+        fixture.initialize()
+        val entered = CompletableDeferred<Unit>()
+        val release = CompletableDeferred<Unit>()
+        val holder = launch {
+            fixture.store.update { state ->
+                entered.complete(Unit)
+                release.await()
+                AuthoritativeStateUpdate(state = state, result = Unit)
+            }
+        }
+        entered.await()
+
+        assertFalse(fixture.lifecycleService.isBreakAllowed(fixture.tableId))
+        assertTrue(fixture.lifecycleService.isBreakAllowed(Uuid.random()))
+
+        release.complete(Unit)
+        holder.join()
+    }
+
     /** 方塊替換已完成清理時，後續 Fabric AFTER event 不得再次執行清理。 */
     @Test
     fun `player break event skips cleanup after block replacement removed location`() = runTest {
@@ -168,6 +198,7 @@ class FabricTableLifecycleServiceTest {
             debugWinRoundContinuationState = DebugWinRoundContinuationState(),
             debugWinShowcaseOverride = DebugWinShowcaseOverride(NonDevelopmentEnvironment),
             cleanupService = cleanupService,
+            cleanupQueue = TableCleanupQueue(scope = createTestAppCoroutineScope(), dispatchers = TestCoroutineDispatchers()),
             configState = configState,
             diceRollPresenter = diceRollPresenter,
             tileWallPresenter = tileWallPresenter,

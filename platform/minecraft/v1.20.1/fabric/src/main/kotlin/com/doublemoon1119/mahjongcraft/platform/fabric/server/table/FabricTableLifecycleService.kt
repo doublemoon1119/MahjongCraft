@@ -20,7 +20,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPresent
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresenter
-import kotlinx.coroutines.runBlocking
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents
 import net.minecraft.block.BlockState
 import net.minecraft.server.world.ServerWorld
@@ -30,13 +29,17 @@ import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
- * 套用玩家破壞政策，並在成功破壞後同步清理桌子狀態。
+ * 套用玩家破壞政策，並在成功破壞後清理桌子狀態。
  *
- * @property store 讀取目前權威房間與對局狀態。
+ * 破壞與替換事件在伺服器主執行緒同步觸發：世界中的呈現當場清除，權威清理排入 [cleanupQueue] 後立即返回，
+ * 不在主執行緒等待權威狀態的鎖。
+ *
+ * @property store 讀取已發布的權威房間與對局狀態。
  * @property locations 查詢桌子位置索引。
  * @property debugWinRoundContinuationState 清除桌子專屬的開發用續局設定。
  * @property debugWinShowcaseOverride 清除桌子專屬的開發用胡牌展示設定。
  * @property cleanupService 執行缺失桌子的權威資料清理。
+ * @property cleanupQueue 依序執行權威清理，不讓主執行緒等待。
  * @property configState 讀取目前破壞政策。
  * @property diceRollPresenter 清理桌子的骰子呈現。
  * @property tileWallPresenter 清理桌子的牌牆。
@@ -57,6 +60,7 @@ class FabricTableLifecycleService(
     private val debugWinRoundContinuationState: DebugWinRoundContinuationState,
     private val debugWinShowcaseOverride: DebugWinShowcaseOverride,
     private val cleanupService: OrphanedTableCleanupService,
+    private val cleanupQueue: TableCleanupQueue,
     private val configState: MinecraftServerConfigState,
     private val diceRollPresenter: MahjongDiceRollPresenter,
     private val tileWallPresenter: MahjongTileWallPresenter,
@@ -80,35 +84,39 @@ class FabricTableLifecycleService(
         }
         PlayerBlockBreakEvents.AFTER.register { _, _, _, _, blockEntity ->
             val table = blockEntity as? MahjongTableBlockEntity ?: return@register
-            runBlocking { cleanupPlayerBroken(table.tableId) }
+            val tableId = table.tableId
+            cleanupQueue.submit(description = "player-broken table $tableId") { cleanupPlayerBroken(tableId) }
         }
     }
 
     /**
-     * 非玩家來源替換麻將桌方塊時，依 orphan policy 清理相關資料。
+     * 非玩家來源替換麻將桌方塊時，當場清除世界中的呈現，並排入依 orphan policy 進行的權威清理。
      *
      * @param world 被替換方塊所在世界。
      * @param table 被替換的桌子 controller block entity。
      */
     fun onBlockReplaced(world: ServerWorld, table: MahjongTableBlockEntity) {
+        val tableId = table.tableId
         val tableLocation = world.toTableLocation(table.pos)
-        val removedDiceCount = diceRollPresenter.clear(table.tableId, tableLocation)
-        val removedWallTileCount = tileWallPresenter.clear(table.tableId, tableLocation)
-        val removedPlayerAreaTileCount = playerAreaPresenter.clear(table.tableId, tableLocation)
-        val removedTablePropCount = tablePropPresenter.clear(table.tableId, tableLocation)
-        tableCornerWidths.clear(table.tableId)
-        val removedDiscardTileCount = discardPresenter.clear(table.tableId, tableLocation)
-        val removedRoundInfoCount = roundInfoPresenter.clear(table.tableId, tableLocation)
-        val removedPlayerInfoCount = playerInfoPresenter.clear(table.tableId, tableLocation)
-        val removedLobbyInfoCount = lobbyInfoPresenter.clear(table.tableId)
-        val removedTileSelectionConfirmCount = tileSelectionConfirmPresenter.clear(table.tableId, tableLocation)
-        val removedTransientPresentationCount = presentationCleaner.clear(world, table.tableId, table.pos)
-        val entry = locations.put(table.tableId, tableLocation)
-        val result = runBlocking { cleanupService.cleanupMissing(table.tableId, entry.revision) }
+        val removedDiceCount = diceRollPresenter.clear(tableId, tableLocation)
+        val removedWallTileCount = tileWallPresenter.clear(tableId, tableLocation)
+        val removedPlayerAreaTileCount = playerAreaPresenter.clear(tableId, tableLocation)
+        val removedTablePropCount = tablePropPresenter.clear(tableId, tableLocation)
+        tableCornerWidths.clear(tableId)
+        val removedDiscardTileCount = discardPresenter.clear(tableId, tableLocation)
+        val removedRoundInfoCount = roundInfoPresenter.clear(tableId, tableLocation)
+        val removedPlayerInfoCount = playerInfoPresenter.clear(tableId, tableLocation)
+        val removedLobbyInfoCount = lobbyInfoPresenter.clear(tableId)
+        val removedTileSelectionConfirmCount = tileSelectionConfirmPresenter.clear(tableId, tableLocation)
+        val removedTransientPresentationCount = presentationCleaner.clear(world, tableId, table.pos)
+        val entry = locations.put(tableId, tableLocation)
+        cleanupQueue.submit(description = "replaced table $tableId") {
+            val result = cleanupService.cleanupMissing(tableId, entry.revision)
+            logger.debug("Handled replaced Mahjong table {} with cleanup result {}", tableId, result)
+        }
         logger.debug(
-            "Handled replaced Mahjong table {} with cleanup result {}, removed {} managed dice, {} managed wall tiles, {} managed player area tiles, {} managed table props, {} managed discard tiles, {} managed round info displays, {} managed player info displays, {} managed lobby info displays, {} managed tile selection confirm panels and {} transient presentations",
-            table.tableId,
-            result,
+            "Cleared replaced Mahjong table {} presentation: removed {} managed dice, {} managed wall tiles, {} managed player area tiles, {} managed table props, {} managed discard tiles, {} managed round info displays, {} managed player info displays, {} managed lobby info displays, {} managed tile selection confirm panels and {} transient presentations",
+            tableId,
             removedDiceCount,
             removedWallTileCount,
             removedPlayerAreaTileCount,
@@ -137,22 +145,22 @@ class FabricTableLifecycleService(
             logger.warn("Allowed removal of incomplete Mahjong table part at {} because its controller is missing", pos)
             return true
         }
-        return runBlocking { canBreak(table) }
+        return isBreakAllowed(table.tableId)
     }
 
     /**
-     * 依目前 Room／Game 與最新 [TableBreakPolicy] 判斷玩家能否破壞桌子。
+     * 依已發布的 Room／Game 與最新 [TableBreakPolicy] 判斷玩家能否破壞桌子，不等待權威狀態的鎖。
      *
-     * @param table 要判斷的桌子 controller。
+     * @param tableId 要判斷的桌子 UUID。
      * @return 依狀態與政策決定是否允許破壞。
      */
-    private suspend fun canBreak(table: MahjongTableBlockEntity): Boolean {
-        val state = store.snapshot()
-        val hasRoom = state.rooms.containsKey(table.tableId)
-        val hasGame = state.games.containsKey(table.tableId)
+    internal fun isBreakAllowed(tableId: Uuid): Boolean {
+        val state = store.state.value
+        val hasRoom = state.rooms.containsKey(tableId)
+        val hasGame = state.games.containsKey(tableId)
         val policy = configState.current.tableBreakPolicy
         val allowed = policy.allowsTableBreak(hasRoom, hasGame)
-        logger.debug("Mahjong table {} break allowed={} by policy {}", table.tableId, allowed, policy)
+        logger.debug("Mahjong table {} break allowed={} by policy {}", tableId, allowed, policy)
         return allowed
     }
 

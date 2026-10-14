@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.entity
 
-import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongTileItem
@@ -20,7 +19,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAsse
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.nextTileAssetKey
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.normalizedTileAssetKey
-import kotlinx.coroutines.runBlocking
 import net.minecraft.entity.Entity
 import net.minecraft.entity.EntityDimensions
 import net.minecraft.entity.EntityPose
@@ -346,12 +344,10 @@ class MahjongTileEntity(
      * 就交給既有的「每局重建時整批清空重新生成」機制（見 [FabricMahjongTileWallPresenter.present] KDoc）
      * 保證舊局的牌會被正確換掉，不需要這裡重複驗證。
      *
-     * 只在第一個 tick 檢查一次，不是每個 tick 都查：[AuthoritativeStateStore.getGame] 是 suspend
-     * function，要用 [runBlocking] 橋接到 tick 這個同步呼叫點（比照 `FabricTableLifecycleService`
-     * 既有處理事件回呼的同一種寫法）；對「一整場遊戲可能有上百張管理中的牌」的規模，每 tick 都做
-     * 這件事會是不必要的開銷，只在 entity 剛存在（含世界重新載入後第一次 tick，也就是崩潰重啟後
-     * 最需要驗證的時機點）驗證一次就足夠——這個 entity 之後如果真的被清除，一定是走上面說的既有
-     * 明確清除路徑，不會是本機制錯過的情況。
+     * 讀取 [AuthoritativeStateStore.state] 已發布的快照，不在 tick 這個主執行緒同步呼叫點等待權威狀態的鎖。
+     * 只在第一個 tick 檢查一次，不是每個 tick 都查：對「一整場遊戲可能有上百張管理中的牌」的規模，只在
+     * entity 剛存在（含世界重新載入後第一次 tick，也就是崩潰重啟後最需要驗證的時機點）驗證一次就足夠——這個
+     * entity 之後如果真的被清除，一定是走上面說的既有明確清除路徑，不會是本機制錯過的情況。
      */
     override fun tick() {
         super.tick()
@@ -365,7 +361,7 @@ class MahjongTileEntity(
     private fun validateStillManagedByActiveGame() {
         val tableId = managedTableId ?: return
         val store = GlobalContext.get().get<AuthoritativeStateStore>()
-        val gameStillActive = runBlocking { store.getGame(tableId) } != null
+        val gameStillActive = tableId in store.state.value.games
         if (!gameStillActive) discard()
     }
 
@@ -444,15 +440,14 @@ class MahjongTileEntity(
 
         val playerId = player.uuid.toKotlinUuid()
         val tileId = uuid.toKotlinUuid()
-        val gameRepository = GlobalContext.get().get<GameRepository>()
-        val isOwnHandTile = runBlocking {
-            gameRepository.getTableState(tableId)
-                ?.players
-                ?.firstOrNull { it.id == playerId }
-                ?.hand
-                ?.standingTiles
-                ?.any { it.id == tileId }
-        } == true
+        val store = GlobalContext.get().get<AuthoritativeStateStore>()
+        val isOwnHandTile = store.state.value.games[tableId]
+            ?.tableState
+            ?.players
+            ?.firstOrNull { it.id == playerId }
+            ?.hand
+            ?.standingTiles
+            ?.any { it.id == tileId } == true
         if (!isOwnHandTile) {
             GlobalContext.get().get<MinecraftPlayerFeedbackPublisher>()
                 .publish(playerId, MinecraftPlayerFeedback.IllegalGameAction)

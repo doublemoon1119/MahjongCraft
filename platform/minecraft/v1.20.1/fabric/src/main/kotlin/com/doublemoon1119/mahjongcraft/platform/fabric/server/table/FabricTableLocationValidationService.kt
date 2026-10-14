@@ -13,7 +13,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPresent
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresenter
-import kotlinx.coroutines.runBlocking
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerBlockEntityEvents
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
@@ -27,6 +26,7 @@ import org.koin.core.annotation.Single
  *
  * @property locations 桌子位置與 revision 索引。
  * @property cleanupService 清理經延遲確認仍缺失的桌子。
+ * @property cleanupQueue 依序執行權威清理，不讓主執行緒等待。
  * @property diceRollPresenter 清理骰子呈現。
  * @property tileWallPresenter 清理牌牆呈現。
  * @property playerAreaPresenter 清理手牌與副露呈現。
@@ -38,6 +38,7 @@ import org.koin.core.annotation.Single
 class FabricTableLocationValidationService(
     private val locations: TableLocationRegistry,
     private val cleanupService: OrphanedTableCleanupService,
+    private val cleanupQueue: TableCleanupQueue,
     private val diceRollPresenter: MahjongDiceRollPresenter,
     private val tileWallPresenter: MahjongTileWallPresenter,
     private val playerAreaPresenter: MahjongPlayerAreaPresenter,
@@ -97,16 +98,14 @@ class FabricTableLocationValidationService(
         if (activeServer !== server) return
 
         readyTableLoads.forEach(::processTableLoad)
-        runBlocking {
-            validationQueue.advance(
-                session = server,
-                isChunkUsable = ::isUsable,
-                entriesForChunk = ::entriesForChunk,
-                isEntryCurrent = { entry -> locations.get(entry.tableId) == entry },
-                matchesExpectedTable = ::matchesExpectedTable,
-                cleanup = ::cleanupMissing,
-            )
-        }
+        validationQueue.advance(
+            session = server,
+            isChunkUsable = ::isUsable,
+            entriesForChunk = ::entriesForChunk,
+            isEntryCurrent = { entry -> locations.get(entry.tableId) == entry },
+            matchesExpectedTable = ::matchesExpectedTable,
+            cleanup = ::cleanupMissing,
+        )
 
         readyTableLoads = nextTableLoads.also { nextTableLoads = mutableListOf() }
     }
@@ -151,13 +150,14 @@ class FabricTableLocationValidationService(
      * 這條路徑（chunk 重新載入後驗證失敗，例如伺服器崩潰重啟後桌子方塊本身出問題）跟
      * [FabricTableLifecycleService.onBlockReplaced] 是兩條獨立的桌子消失偵測管道，但都代表同一件事：
      * 這張桌子的 3D 呈現不該再存在。因此清除順序完全比照 `onBlockReplaced`——先清掉骰子／牌牆／手牌區
-     * （含摸牌位／副露）／規則桌面物件／牌河這幾個 presenter 管理的 entity，再清權威 Room／Game 狀態；先前
-     * 這裡漏掉了 presenter 清除，只清權威狀態，會讓已經生成的管理中麻將牌 entity 變成沒有任何權威
-     * 資料支撐的孤兒，永遠留在世界存檔裡。
+     * （含摸牌位／副露）／規則桌面物件／牌河這幾個 presenter 管理的 entity，再清權威 Room／Game 狀態；只清權威
+     * 狀態會讓已經生成的管理中麻將牌 entity 變成沒有任何權威資料支撐的孤兒，永遠留在世界存檔裡。
+     *
+     * presenter 清除在主執行緒當場完成；權威清理排入 [cleanupQueue] 後立即返回，不在主執行緒等待權威狀態的鎖。
      *
      * @param entry 第二次確認後仍缺失的位置索引項目。
      */
-    private suspend fun cleanupMissing(entry: TableLocationEntry) {
+    private fun cleanupMissing(entry: TableLocationEntry) {
         logger.debug(
             "Confirmed missing Mahjong table {} at {}; applying orphan cleanup",
             entry.tableId,
@@ -178,7 +178,9 @@ class FabricTableLocationValidationService(
             removedDiscardTileCount,
             entry.tableId,
         )
-        cleanupService.cleanupMissing(entry.tableId, entry.revision)
+        cleanupQueue.submit(description = "missing table ${entry.tableId}") {
+            cleanupService.cleanupMissing(entry.tableId, entry.revision)
+        }
     }
 
     /**

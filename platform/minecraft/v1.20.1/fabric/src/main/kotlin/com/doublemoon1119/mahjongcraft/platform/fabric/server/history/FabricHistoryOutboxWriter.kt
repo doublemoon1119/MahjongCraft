@@ -186,6 +186,16 @@ class FabricHistoryOutboxWriter(
     }
 
     /**
+     * 取得最近結束場次的參與者與記錄決策。
+     *
+     * @param matchId 已結束場次識別碼。
+     * @return 記住的證據；未記住或已被較新場次擠出時為 null。
+     */
+    internal fun recentEndedMatch(matchId: Uuid): RecentHistoryMatchEvidence? = synchronized(recentMatchEvidence) {
+        recentMatchEvidence[matchId.toString()]
+    }
+
+    /**
      * 在同一 session 與正式資格政策下建立隔離歷史轉移。
      *
      * @param game 已由隔離 Flow 建立的對局，不加入玩家集合。
@@ -513,7 +523,7 @@ class FabricHistoryOutboxWriter(
         val evidence = activeDatabase.readArchiveStatusEvidence(id)
         val queryPolicy = configState.current.history
         val activeGame = snapshot.games.values.firstOrNull { it.matchId == matchId }
-        val recent = synchronized(recentMatchEvidence) { recentMatchEvidence[id] }
+        val recent = recentEndedMatch(matchId)
         val activeParticipant = activeGame?.tableState?.players?.any { it.id == access.principalId } == true
         val recentParticipant = access.principalId in (recent?.participantIds ?: emptySet())
         val authorized = access.isAdministrator &&
