@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BuiltInMinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BundledMinecraftMahjongExtensions
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -8,6 +9,7 @@ import kotlin.test.assertEquals
 class MahjongTileItemDataTest {
     /** 測試用的內建牌面 registry。 */
     private val registry: MinecraftTileAssetRegistry = MinecraftTileAssetRegistryImpl().apply {
+        BuiltInMinecraftMahjongExtension.registerTileAssets(this)
         BundledMinecraftMahjongExtensions.all.forEach { it.registerTileAssets(this) }
         freeze()
     }

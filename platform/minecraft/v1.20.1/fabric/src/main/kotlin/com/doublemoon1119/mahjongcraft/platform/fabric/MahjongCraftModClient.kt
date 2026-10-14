@@ -31,6 +31,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.history.HistoryScr
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.model.MahjongTileModelLoadingPlugin
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerDisplayNameResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.ClientPlayerProfileResolver
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.ClientTileAppearanceResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.DiceRollPresentationEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.ExhaustiveDrawSettlementPresentationEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongDiceEntityRenderer
@@ -84,7 +85,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
 import kotlinx.serialization.json.Json
 import net.fabricmc.api.ClientModInitializer
-import net.fabricmc.fabric.api.client.model.loading.v1.ModelLoadingPlugin
+import net.fabricmc.fabric.api.client.model.loading.v1.PreparableModelLoadingPlugin
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
 import net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry
 import net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry
@@ -103,7 +104,7 @@ class MahjongCraftModClient : ClientModInitializer {
     override fun onInitializeClient() {
         val koin = GlobalContext.get()
 
-        ModelLoadingPlugin.register(MahjongTileModelLoadingPlugin)
+        PreparableModelLoadingPlugin.register(MahjongTileModelLoadingPlugin.DATA_LOADER, MahjongTileModelLoadingPlugin)
         BuiltinItemRendererRegistry.INSTANCE.register(ModItems.MAHJONG_TILE, MahjongTileItemRenderer)
         ModelPredicateProviderRegistry.register(
             ModItems.MAHJONG_SCORING_STICK,
@@ -148,6 +149,7 @@ class MahjongCraftModClient : ClientModInitializer {
         val tileEmojiRegistry = koin.get<TileEmojiRegistry>()
         val tileLabelRegistry = koin.get<TileLabelRegistry>()
         val tileFaceRenderer = koin.get<MahjongTileFaceRenderer>()
+        val tileAppearanceResolver = koin.get<ClientTileAppearanceResolver>()
         val actionVocabulary = koin.get<GameActionVocabularyRegistry>()
         val moduleRegistry = koin.get<MahjongModuleRegistry>()
         val showcaseRegistry = koin.get<WinCelebrationShowcaseRegistry>()
@@ -176,6 +178,7 @@ class MahjongCraftModClient : ClientModInitializer {
             clearDecisionTimer = decisionTimerStore::clear,
             clearDecisionPrompt = decisionPromptStore::clear,
             clearDecisionHud = decisionHudController::clear,
+            clearTileAppearance = tileAppearanceResolver::clear,
         )
         MahjongChannels.playerIdentity.registerClientReceiver(json) { payload ->
             if (payload.entries.size > PlayerIdentityPayload.MAX_ENTRIES) return@registerClientReceiver
@@ -286,13 +289,13 @@ class MahjongCraftModClient : ClientModInitializer {
         }
         EntityRendererRegistry.register(ModEntities.winCelebrationEffect, ::WinCelebrationEffectEntityRenderer)
         EntityRendererRegistry.register(ModEntities.winCelebrationShowcase) { context ->
-            WinCelebrationShowcaseEntityRenderer(context, showcaseRegistry, tileFaceRenderer)
+            WinCelebrationShowcaseEntityRenderer(context, showcaseRegistry, tileFaceRenderer, tileAppearanceResolver)
         }
         EntityRendererRegistry.register(ModEntities.exhaustiveDrawSettlementPresentation) { context ->
-            ExhaustiveDrawSettlementPresentationEntityRenderer(context, exhaustiveDrawReasonDisplayNames, portraitRenderer, tileFaceRenderer, playerNames, clientConfigStore)
+            ExhaustiveDrawSettlementPresentationEntityRenderer(context, exhaustiveDrawReasonDisplayNames, portraitRenderer, tileFaceRenderer, playerNames, clientConfigStore, tileAppearanceResolver)
         }
         EntityRendererRegistry.register(ModEntities.winSettlementPresentation) { context ->
-            WinSettlementPresentationEntityRenderer(context, winSettlementTemplates, portraitRenderer, tileFaceRenderer, playerNames, clientConfigStore, indicatorTextResolver)
+            WinSettlementPresentationEntityRenderer(context, winSettlementTemplates, portraitRenderer, tileFaceRenderer, playerNames, clientConfigStore, indicatorTextResolver, tileAppearanceResolver)
         }
         EntityRendererRegistry.register(ModEntities.matchSettlementPresentation) { context ->
             MatchSettlementPresentationEntityRenderer(context, matchSettlementTemplates, portraitRenderer, playerNames, clientConfigStore)
@@ -303,6 +306,7 @@ class MahjongCraftModClient : ClientModInitializer {
                 stateStore,
                 tileAssetRegistry,
                 tileFaceRenderer,
+                tileAppearanceResolver,
                 moduleRegistry,
                 decisionPromptStore,
                 clientConfigStore,

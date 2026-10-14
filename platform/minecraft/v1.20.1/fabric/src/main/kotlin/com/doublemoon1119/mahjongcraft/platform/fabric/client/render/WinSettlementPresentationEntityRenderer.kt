@@ -30,6 +30,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ScoreRankin
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationFieldSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementTextKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileSetAppearanceDefinition
 import net.minecraft.client.font.TextRenderer
 import net.minecraft.client.render.LightmapTextureManager
 import net.minecraft.client.render.VertexConsumerProvider
@@ -52,6 +53,7 @@ import kotlin.uuid.Uuid
  * @param playerNames 依桌子與玩家 ID 解析顯示名稱。
  * @param configStore 提供胡牌結算面板可見性設定。
  * @param indicatorTextResolver 解析排名中的付款原因指示器文字與顏色。
+ * @param tileAppearanceResolver 依桌子目前公開規則解析牌組外觀。
  */
 class WinSettlementPresentationEntityRenderer(
     context: EntityRendererFactory.Context,
@@ -61,6 +63,7 @@ class WinSettlementPresentationEntityRenderer(
     private val playerNames: ClientPlayerDisplayNameResolver,
     private val configStore: MahjongClientConfigStore,
     private val indicatorTextResolver: PublicPlayerIndicatorTextResolver,
+    private val tileAppearanceResolver: ClientTileAppearanceResolver,
 ) : EntityRenderer<WinSettlementPresentationEntity>(context) {
     private val textRenderer = context.textRenderer
 
@@ -87,6 +90,7 @@ class WinSettlementPresentationEntityRenderer(
     ) {
         if (!configStore.current.presentationVisibility.winSettlementEnabled) return
         currentTableId = entity.managedTableId
+        val appearance = tileAppearanceResolver.resolve(entity.managedTableId)
         super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light)
         val elapsed = entity.elapsedTicks(tickDelta)
         if (elapsed < 0.0 || elapsed > entity.endGameTime - entity.startGameTime) return
@@ -96,7 +100,7 @@ class WinSettlementPresentationEntityRenderer(
         matrices.scale(-SCALE, -SCALE, SCALE)
         val rankingStart = entity.rankingStartTick().toDouble()
         if (elapsed < rankingStart) {
-            renderWinnerPhase(entity, elapsed, matrices, vertexConsumers)
+            renderWinnerPhase(entity, elapsed, matrices, vertexConsumers, appearance)
         } else {
             renderRankingPhase(entity, elapsed - rankingStart, matrices, vertexConsumers)
         }
@@ -110,12 +114,14 @@ class WinSettlementPresentationEntityRenderer(
      * @param elapsed 此次結算演出已經過的 tick。
      * @param matrices 目前的模型矩陣。
      * @param consumers 提供面板與文字頂點緩衝。
+     * @param appearance 本次結算使用的公開牌組外觀。
      */
     private fun renderWinnerPhase(
         entity: WinSettlementPresentationEntity,
         elapsed: Double,
         matrices: MatrixStack,
         consumers: VertexConsumerProvider,
+        appearance: MinecraftTileSetAppearanceDefinition,
     ) {
         var index = 0
         while (index + 1 < entity.winners.size && elapsed >= entity.winnerStartTick(index + 1)) index++
@@ -127,7 +133,7 @@ class WinSettlementPresentationEntityRenderer(
         val template = templateRegistry.findTemplate(entity.templateKey)
             ?: templateRegistry.findTemplate(BuiltInWinSettlementTemplateKeys.GENERIC)
         if (template != null) {
-            renderDeclarativeTemplate(entity, winner, template.root, local, alpha, matrices, consumers)
+            renderDeclarativeTemplate(entity, winner, template.root, local, alpha, matrices, consumers, appearance)
         }
     }
 
@@ -141,6 +147,7 @@ class WinSettlementPresentationEntityRenderer(
      * @param alpha 面板透明度。
      * @param matrices 目前的模型矩陣。
      * @param consumers 提供面板、文字與牌面頂點緩衝。
+     * @param appearance 本次結算使用的公開牌組外觀。
      */
     private fun renderDeclarativeTemplate(
         entity: WinSettlementPresentationEntity,
@@ -150,13 +157,14 @@ class WinSettlementPresentationEntityRenderer(
         alpha: Float,
         matrices: MatrixStack,
         consumers: VertexConsumerProvider,
+        appearance: MinecraftTileSetAppearanceDefinition,
     ) {
         val snapshot = winner.toFieldSnapshot(entity)
         val size = layoutSolver.measure(root, snapshot)
         val scale = minOf(1f, PresentationLayoutSolver.MAX_WIDTH / size.width.coerceAtLeast(1f), PresentationLayoutSolver.MAX_HEIGHT / size.height.coerceAtLeast(1f))
         matrices.push()
         matrices.scale(scale, scale, 1f)
-        renderLayout(root, snapshot, -size.width / 2f, -size.height / 2f, local, alpha, matrices, consumers)
+        renderLayout(root, snapshot, -size.width / 2f, -size.height / 2f, local, alpha, matrices, consumers, appearance = appearance)
         matrices.pop()
     }
 
@@ -230,6 +238,7 @@ class WinSettlementPresentationEntityRenderer(
      * @param alpha 節點透明度。
      * @param matrices 目前的模型矩陣。
      * @param consumers 提供繪製頂點緩衝。
+     * @param appearance 本次結算使用的公開牌組外觀。
      * @param allocatedWidth 父容器分配的寬度；未提供時使用節點自然寬度。
      */
     private fun renderLayout(
@@ -241,6 +250,7 @@ class WinSettlementPresentationEntityRenderer(
         alpha: Float,
         matrices: MatrixStack,
         consumers: VertexConsumerProvider,
+        appearance: MinecraftTileSetAppearanceDefinition,
         allocatedWidth: Float? = null,
     ) {
         val measured = layoutSolver.measure(layout, snapshot)
@@ -285,17 +295,17 @@ class WinSettlementPresentationEntityRenderer(
                 }
             }
             is PresentationLayout.Tile -> (layoutSolver.resolve(layout, snapshot) as? PresentationValue.TileValue)?.let {
-                renderTile(it.assetKey, x + layout.width / 2f, y + layout.height / 2f, layout.width, layout.height, alpha, matrices, consumers)
+                renderTile(it.assetKey, x + layout.width / 2f, y + layout.height / 2f, layout.width, layout.height, alpha, matrices, consumers, appearance)
             }
             is PresentationLayout.TileList -> (layoutSolver.resolve(layout, snapshot) as? PresentationValue.TileListValue)?.assetKeys.orEmpty().forEachIndexed { index, asset ->
-                renderTile(asset, x + layout.tileWidth / 2f + index * (layout.tileWidth + layout.spacing), y + layout.tileHeight / 2f, layout.tileWidth, layout.tileHeight, alpha, matrices, consumers)
+                renderTile(asset, x + layout.tileWidth / 2f + index * (layout.tileWidth + layout.spacing), y + layout.tileHeight / 2f, layout.tileWidth, layout.tileHeight, alpha, matrices, consumers, appearance)
             }
             is PresentationLayout.TileGroups -> {
                 var tileX = x + layout.tileWidth / 2f
                 val groups = (layoutSolver.resolve(layout, snapshot) as? PresentationValue.TileGroupsValue)?.groups.orEmpty().filter(List<String>::isNotEmpty)
                 groups.forEachIndexed { groupIndex, group ->
                     group.forEach { asset ->
-                        renderTile(asset, tileX, y + layout.tileHeight / 2f, layout.tileWidth, layout.tileHeight, alpha, matrices, consumers)
+                        renderTile(asset, tileX, y + layout.tileHeight / 2f, layout.tileWidth, layout.tileHeight, alpha, matrices, consumers, appearance)
                         tileX += layout.tileWidth + layout.tileSpacing
                     }
                     if (groupIndex != groups.lastIndex) tileX += layout.groupSpacing - layout.tileSpacing
@@ -336,7 +346,7 @@ class WinSettlementPresentationEntityRenderer(
                 layout.children.forEachIndexed { index, child ->
                     val childHeight = layoutSolver.measure(child.unweighted(), snapshot).height
                     val childY = y + layout.style.padding + crossAxisOffset(size.height - layout.style.padding * 2f, childHeight, layout.alignment)
-                    renderLayout(child.unweighted(), snapshot, x + layout.style.padding + positions[index], childY, local, alpha, matrices, consumers, slots[index].second)
+                    renderLayout(child.unweighted(), snapshot, x + layout.style.padding + positions[index], childY, local, alpha, matrices, consumers, appearance, slots[index].second)
                 }
             }
             is PresentationLayout.Column -> {
@@ -348,35 +358,35 @@ class WinSettlementPresentationEntityRenderer(
                     val childLayout = child.unweighted()
                     val childWidth = layoutSolver.measure(childLayout, snapshot).width
                     val childX = x + layout.style.padding + crossAxisOffset(size.width - layout.style.padding * 2f, childWidth, layout.alignment)
-                    renderLayout(childLayout, snapshot, childX, y + layout.style.padding + positions[index], local, alpha, matrices, consumers)
+                    renderLayout(childLayout, snapshot, childX, y + layout.style.padding + positions[index], local, alpha, matrices, consumers, appearance)
                 }
             }
-            is PresentationLayout.Weighted -> renderLayout(layout.child, snapshot, x, y, local, alpha, matrices, consumers)
+            is PresentationLayout.Weighted -> renderLayout(layout.child, snapshot, x, y, local, alpha, matrices, consumers, appearance)
             is PresentationLayout.Grid -> {
                 renderContainer(layout.style, x, y, size, alpha, matrices, consumers)
                 val childSizes = layout.children.map { layoutSolver.measure(it, snapshot) }
                 val cellWidth = childSizes.maxOfOrNull(PresentationNodeSize::width) ?: 0f
                 val cellHeight = childSizes.maxOfOrNull(PresentationNodeSize::height) ?: 0f
                 layout.children.forEachIndexed { index, child ->
-                    renderLayout(child, snapshot, x + layout.style.padding + (index % layout.columns) * (cellWidth + layout.horizontalSpacing), y + layout.style.padding + (index / layout.columns) * (cellHeight + layout.verticalSpacing), local, alpha, matrices, consumers)
+                    renderLayout(child, snapshot, x + layout.style.padding + (index % layout.columns) * (cellWidth + layout.horizontalSpacing), y + layout.style.padding + (index / layout.columns) * (cellHeight + layout.verticalSpacing), local, alpha, matrices, consumers, appearance)
                 }
             }
             is PresentationLayout.Spacer -> Unit
-            is PresentationLayout.SizeConstraint -> renderLayout(layout.child, snapshot, x, y, local, alpha, matrices, consumers)
+            is PresentationLayout.SizeConstraint -> renderLayout(layout.child, snapshot, x, y, local, alpha, matrices, consumers, appearance)
             is PresentationLayout.Box -> {
                 renderContainer(layout.style, x, y, size, alpha, matrices, consumers)
                 layout.children.forEach { positioned ->
                     val childSize = layoutSolver.measure(positioned.child, snapshot)
                     val childX = x + layout.style.padding + positioned.x - anchorOffset(childSize.width, positioned.horizontalAnchor)
                     val childY = y + layout.style.padding + positioned.y - anchorOffset(childSize.height, positioned.verticalAnchor)
-                    renderLayout(positioned.child, snapshot, childX, childY, local, alpha, matrices, consumers)
+                    renderLayout(positioned.child, snapshot, childX, childY, local, alpha, matrices, consumers, appearance)
                 }
             }
-            is PresentationLayout.Positioned -> renderLayout(layout.child, snapshot, x, y, local, alpha, matrices, consumers)
+            is PresentationLayout.Positioned -> renderLayout(layout.child, snapshot, x, y, local, alpha, matrices, consumers, appearance)
             is PresentationLayout.IfPresent -> if (templateRegistry.findFieldProvider(layout.fieldId)?.provide(snapshot) != null) {
-                renderLayout(layout.child, snapshot, x, y, local, alpha, matrices, consumers, allocatedWidth)
+                renderLayout(layout.child, snapshot, x, y, local, alpha, matrices, consumers, appearance, allocatedWidth)
             }
-            is PresentationLayout.Animated -> renderAnimatedLayout(layout, snapshot, x, y, local, alpha, matrices, consumers, allocatedWidth)
+            is PresentationLayout.Animated -> renderAnimatedLayout(layout, snapshot, x, y, local, alpha, matrices, consumers, appearance, allocatedWidth)
         }
     }
 
@@ -391,6 +401,7 @@ class WinSettlementPresentationEntityRenderer(
      * @param alpha 節點透明度。
      * @param matrices 目前的模型矩陣。
      * @param consumers 提供繪製頂點緩衝。
+     * @param appearance 本次結算使用的公開牌組外觀。
      * @param allocatedWidth 父容器分配的寬度；未提供時使用子節點自然寬度。
      */
     private fun renderAnimatedLayout(
@@ -402,6 +413,7 @@ class WinSettlementPresentationEntityRenderer(
         alpha: Float,
         matrices: MatrixStack,
         consumers: VertexConsumerProvider,
+        appearance: MinecraftTileSetAppearanceDefinition,
         allocatedWidth: Float?,
     ) {
         val start = animationAnchorTick(layout.timeline.anchor, snapshot) + layout.timeline.offsetTicks
@@ -437,7 +449,7 @@ class WinSettlementPresentationEntityRenderer(
         matrices.translate(originX + translateX, originY + translateY, 0f)
         matrices.scale(scaleX, scaleY, 1f)
         matrices.translate(-originX, -originY, 0f)
-        renderLayout(layout.child, snapshot, x, y, local, animatedAlpha, matrices, consumers, allocatedWidth)
+        renderLayout(layout.child, snapshot, x, y, local, animatedAlpha, matrices, consumers, appearance, allocatedWidth)
         matrices.pop()
     }
 
@@ -865,8 +877,18 @@ class WinSettlementPresentationEntityRenderer(
      * @param matrices 目前的模型矩陣。
      * @param consumers 提供牌面頂點緩衝。
      */
-    private fun renderTile(asset: String, cx: Float, cy: Float, width: Float, height: Float, alpha: Float, matrices: MatrixStack, consumers: VertexConsumerProvider) {
-        tileFaceRenderer.renderWorldPanel(asset, cx, cy, width, height, alpha, 0f, matrices, consumers)
+    private fun renderTile(
+        asset: String,
+        cx: Float,
+        cy: Float,
+        width: Float,
+        height: Float,
+        alpha: Float,
+        matrices: MatrixStack,
+        consumers: VertexConsumerProvider,
+        appearance: MinecraftTileSetAppearanceDefinition,
+    ) {
+        tileFaceRenderer.renderWorldPanel(asset, cx, cy, width, height, alpha, 0f, matrices, consumers, appearance)
     }
 
     /**

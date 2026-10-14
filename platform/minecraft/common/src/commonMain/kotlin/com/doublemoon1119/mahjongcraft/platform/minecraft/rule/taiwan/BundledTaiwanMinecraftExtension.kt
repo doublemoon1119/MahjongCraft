@@ -17,6 +17,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresent
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearanceIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftRuleTileAppearanceDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiDefinition
@@ -36,6 +38,7 @@ object BundledTaiwanMinecraftExtension : MinecraftMahjongExtension {
     override val id: String = MahjongCraftMetadata.id("taiwan")
 
     override fun registerTileAssets(registry: MinecraftTileAssetRegistry) {
+        registry.register(MinecraftRuleTileAppearanceDefinition(BuiltInRuleModuleIds.TAIWAN, BuiltInMinecraftTileAppearanceIds.DEFAULT))
         registry.register(MinecraftTileAssetDefinition(TaiwanTileTypes.SPRING, "flower_spring"))
         registry.register(MinecraftTileAssetDefinition(TaiwanTileTypes.SUMMER, "flower_summer"))
         registry.register(MinecraftTileAssetDefinition(TaiwanTileTypes.AUTUMN, "flower_autumn"))

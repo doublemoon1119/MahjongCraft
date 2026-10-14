@@ -20,7 +20,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcomeDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearances
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileSetAppearanceDefinition
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -165,6 +167,18 @@ internal class HistoryBrowseSession(
             sortingOrder = config?.let { runCatching { moduleRegistry.getModule(it.toDomain(networkRegistries).ruleConfig).tileOrder }.getOrNull() }
         }
         return sortingOrder
+    }
+
+    /**
+     * 依當前查詢摘要的公開規則取得牌組外觀，不使用牌目錄或手牌推測規則。
+     *
+     * @param matchId 要顯示的對局；未指定時使用當前摘要。
+     * @return 該場的公開外觀；摘要不符或缺少規則時使用內建預設。
+     */
+    fun tileAppearance(matchId: String? = null): MinecraftTileSetAppearanceDefinition {
+        val summary = controller.state.value.summary?.detail?.summary
+            ?.takeIf { matchId == null || it.matchId == matchId }
+        return summary?.ruleId?.let(tileAssets::findAppearanceForRule) ?: BuiltInMinecraftTileAppearances.DEFAULT
     }
 
     /** 正常子頁切換期間，removed 不代表關閉瀏覽。 */

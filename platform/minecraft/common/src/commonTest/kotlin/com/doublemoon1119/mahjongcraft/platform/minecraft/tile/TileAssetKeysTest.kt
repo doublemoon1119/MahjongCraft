@@ -3,6 +3,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BuiltInMinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BundledMinecraftMahjongExtensions
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -12,6 +13,7 @@ class TileAssetKeysTest {
 
     /** 只登記內建 extension 映射並凍結的 registry；供本檔所有測試共用。 */
     private val registry: MinecraftTileAssetRegistry = MinecraftTileAssetRegistryImpl().apply {
+        BuiltInMinecraftMahjongExtension.registerTileAssets(this)
         BundledMinecraftMahjongExtensions.all.forEach { it.registerTileAssets(this) }
         freeze()
     }
@@ -56,6 +58,7 @@ class TileAssetKeysTest {
     @Test
     fun `all tile asset keys include third-party registrations`() {
         val thirdPartyRegistry = MinecraftTileAssetRegistryImpl().apply {
+            BuiltInMinecraftMahjongExtension.registerTileAssets(this)
             BundledMinecraftMahjongExtensions.all.forEach { it.registerTileAssets(this) }
             register(MinecraftTileAssetDefinition(TileTypeId.parse("example:animal/cat"), "animal_cat"))
             freeze()
@@ -84,6 +87,7 @@ class TileAssetKeysTest {
     fun `third-party registered extension resolves through the provided registry`() {
         val thirdPartyId = TileTypeId.parse("example:animal/cat")
         val thirdPartyRegistry = MinecraftTileAssetRegistryImpl().apply {
+            BuiltInMinecraftMahjongExtension.registerTileAssets(this)
             BundledMinecraftMahjongExtensions.all.forEach { it.registerTileAssets(this) }
             register(MinecraftTileAssetDefinition(thirdPartyId, "animal_cat"))
         }
@@ -105,6 +109,7 @@ class TileAssetKeysTest {
     fun `normalization preserves third-party asset keys registered at runtime`() {
         val thirdPartyId = TileTypeId.parse("example:animal/cat")
         val thirdPartyRegistry = MinecraftTileAssetRegistryImpl().apply {
+            BuiltInMinecraftMahjongExtension.registerTileAssets(this)
             BundledMinecraftMahjongExtensions.all.forEach { it.registerTileAssets(this) }
             register(MinecraftTileAssetDefinition(thirdPartyId, "animal_cat"))
         }

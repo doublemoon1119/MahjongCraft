@@ -5,6 +5,12 @@ internal object MinecraftExtensionRegistrationCategoryIds {
     /** 牌種 asset 分類。 */
     const val TILE_ASSET = "mahjongcraft:tile_asset"
 
+    /** 牌組共用外觀分類。 */
+    const val TILE_SET_APPEARANCE = "mahjongcraft:tile_set_appearance"
+
+    /** 規則牌組外觀綁定分類。 */
+    const val RULE_TILE_APPEARANCE = "mahjongcraft:rule_tile_appearance"
+
     /** 牌種顯示名稱分類。 */
     const val TILE_DISPLAY_NAME = "mahjongcraft:tile_display_name"
 

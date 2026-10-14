@@ -186,4 +186,70 @@ class MinecraftTileAssetRegistryImplTest {
         assertEquals(resources, registry.findResources("second"))
         assertNull(registry.findResources("missing"))
     }
+
+    /** 驗證牌組外觀與規則綁定可在同一 registry 中查詢。 */
+    @Test
+    fun `tile set appearances and rule bindings are resolved`() {
+        val registry = MinecraftTileAssetRegistryImpl()
+        val appearance = MinecraftTileSetAppearanceDefinition(
+            id = "example:wood",
+            coverTextureId = "example:item/mahjong_tile/cover",
+            unknownFaceTextureId = "example:item/mahjong_tile/hidden",
+        )
+        registry.register(appearance)
+        registry.register(MinecraftRuleTileAppearanceDefinition("example:rule", appearance.id))
+
+        assertEquals(setOf(appearance.id), registry.appearanceRegistrationKeys)
+        assertEquals(setOf("example:rule"), registry.ruleAppearanceBindingKeys)
+        assertEquals(listOf(appearance), registry.registeredAppearances)
+        assertEquals(appearance, registry.findAppearance(appearance.id))
+        assertEquals(appearance, registry.findAppearanceForRule("example:rule"))
+    }
+
+    /** 驗證沒有規則綁定時會使用已登記的內建預設外觀。 */
+    @Test
+    fun `unbound rule uses built in default appearance`() {
+        val registry = MinecraftTileAssetRegistryImpl()
+        registry.register(BuiltInMinecraftTileAppearances.DEFAULT)
+
+        assertEquals(BuiltInMinecraftTileAppearances.DEFAULT, registry.findAppearanceForRule("example:rule"))
+    }
+
+    /** 驗證凍結前會拒絕指向不存在外觀的規則綁定。 */
+    @Test
+    fun `freeze rejects a binding to an unknown appearance`() {
+        val registry = MinecraftTileAssetRegistryImpl()
+        registry.register(MinecraftRuleTileAppearanceDefinition("example:rule", "example:missing"))
+
+        assertFailsWith<IllegalArgumentException> { registry.freeze() }
+        assertFalse(registry.isFrozen)
+    }
+
+    /** 驗證外觀與綁定的註冊快照不會暴露 registry 的可變集合。 */
+    @Test
+    fun `appearance snapshots are detached`() {
+        val registry = MinecraftTileAssetRegistryImpl()
+        val appearance = MinecraftTileSetAppearanceDefinition(
+            id = "example:wood",
+            coverTextureId = "example:item/cover",
+            unknownFaceTextureId = "example:item/hidden",
+        )
+        registry.register(appearance)
+        val appearanceKeys = registry.appearanceRegistrationKeys
+        val bindingKeys = registry.ruleAppearanceBindingKeys
+        val appearances = registry.registeredAppearances
+
+        registry.register(
+            MinecraftTileSetAppearanceDefinition(
+                id = "example:stone",
+                coverTextureId = "example:item/cover2",
+                unknownFaceTextureId = "example:item/hidden2",
+            ),
+        )
+        registry.register(MinecraftRuleTileAppearanceDefinition("example:rule", "example:stone"))
+
+        assertEquals(setOf("example:wood"), appearanceKeys)
+        assertEquals(emptySet(), bindingKeys)
+        assertEquals(listOf(appearance), appearances)
+    }
 }

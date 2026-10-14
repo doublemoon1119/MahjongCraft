@@ -349,7 +349,7 @@ internal class HistoryRoundEventsScreen(
                         is Row.Tiles -> row.tiles.forEachIndexed { index, tile ->
                             val asset = tile.toDomain().toAssetKey(tileAssetRegistry)
                             val x = layout.left + row.indent + index * TILE_STEP
-                            tileFaceRenderer.renderGui(context, asset, x, y, TILE_WIDTH, TILE_HEIGHT)
+                            tileFaceRenderer.renderGui(context, asset, x, y, TILE_WIDTH, TILE_HEIGHT, appearance = session.tileAppearance())
                             if (hovered && mouseX >= x && mouseX < x + TILE_WIDTH && mouseY >= y && mouseY < y + TILE_HEIGHT) tooltip = listOf(Text.literal(asset))
                         }
                         is Row.Space -> Unit
@@ -371,7 +371,7 @@ internal class HistoryRoundEventsScreen(
                             if (linkHover) tooltip = listOf(Text.translatable(if (row.inline) MinecraftHistoryScreenKeys.STATE_LOAD_WINNING_HAND_TOOLTIP else MinecraftHistoryScreenKeys.STATE_OPEN_TOOLTIP))
                         }
                         is Row.Hand -> {
-                            val hit = tileGroups.render(context, row.layout, row.catalog, layout.left + 46, y, mouseX, mouseY)
+                            val hit = tileGroups.render(context, row.layout, row.catalog, layout.left + 46, y, mouseX, mouseY, appearance = session.tileAppearance())
                             if (hovered) hit?.let { tooltip = it }
                         }
                     }

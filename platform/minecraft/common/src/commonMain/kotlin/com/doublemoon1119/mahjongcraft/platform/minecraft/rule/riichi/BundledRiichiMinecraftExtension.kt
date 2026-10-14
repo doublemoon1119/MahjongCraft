@@ -62,6 +62,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLinePro
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropDescriberDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropDescriberRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearanceIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftRuleTileAppearanceDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameDefinition
@@ -82,6 +84,8 @@ object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
     override val id: String = MahjongCraftMetadata.id("riichi")
 
     override fun registerTileAssets(registry: MinecraftTileAssetRegistry) {
+        registry.register(MinecraftRuleTileAppearanceDefinition(BuiltInRuleModuleIds.RIICHI, BuiltInMinecraftTileAppearanceIds.DEFAULT))
+        registry.register(MinecraftRuleTileAppearanceDefinition(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, BuiltInMinecraftTileAppearanceIds.DEFAULT))
         registry.register(MinecraftTileAssetDefinition(RiichiTileTypes.RED_FIVE_CHARACTER, "m5_red"))
         registry.register(MinecraftTileAssetDefinition(RiichiTileTypes.RED_FIVE_DOT, "p5_red"))
         registry.register(MinecraftTileAssetDefinition(RiichiTileTypes.RED_FIVE_BAMBOO, "s5_red"))

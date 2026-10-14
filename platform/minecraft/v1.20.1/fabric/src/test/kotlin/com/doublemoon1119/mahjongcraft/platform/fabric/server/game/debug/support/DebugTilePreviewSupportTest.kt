@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support
 
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BuiltInMinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BundledMinecraftMahjongExtensions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
@@ -16,6 +17,7 @@ class DebugTilePreviewSupportTest {
     @Test
     fun `preview asset keys list every tile except the placeholder`() {
         val registry = MinecraftTileAssetRegistryImpl().apply {
+            BuiltInMinecraftMahjongExtension.registerTileAssets(this)
             BundledMinecraftMahjongExtensions.all.forEach { it.registerTileAssets(this) }
             register(MinecraftTileAssetDefinition(TileTypeId.parse("example:cat"), "example_cat"))
             freeze()

@@ -1,10 +1,13 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BuiltInMinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BundledMinecraftMahjongExtensions
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.float
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import javax.imageio.ImageIO
@@ -17,6 +20,7 @@ import kotlin.test.assertNotNull
 class MahjongTileResourceFilesTest {
     /** 模組自帶資源的所有牌面：基本牌、內建 extension 登記的擴充牌種與 unknown。 */
     private val assetKeys: List<String> = MinecraftTileAssetRegistryImpl().apply {
+        BuiltInMinecraftMahjongExtension.registerTileAssets(this)
         BundledMinecraftMahjongExtensions.all.forEach { it.registerTileAssets(this) }
         freeze()
     }.allTileAssetKeys()
@@ -86,6 +90,21 @@ class MahjongTileResourceFilesTest {
         }.use(ImageIO::read)
         assertEquals(256, cover.width, "Unexpected Mahjong tile cover texture width")
         assertEquals(256, cover.height, "Unexpected Mahjong tile cover texture height")
+    }
+
+    /** 牌背預覽的 south UV 取自 canonical 牌體模型，而不是只靠重複的 magic number。 */
+    @Test
+    fun `flat back preview matches canonical south face uv`() {
+        val model = loadJson("/assets/mahjongcraft/models/item/mahjong_tile_base.json")
+        val southUv = model["elements"]!!.jsonArray
+            .single().jsonObject["faces"]!!.jsonObject["south"]!!.jsonObject["uv"]!!.jsonArray
+            .map { it.jsonPrimitive.float }
+        val preview = tilePreviewTexture(TILE_BACK_PREVIEW_ASSET_KEY, MinecraftTileAssetRegistryImpl())
+
+        assertEquals(southUv[0] / 16f, preview.u0)
+        assertEquals(southUv[1] / 16f, preview.v0)
+        assertEquals(southUv[2] / 16f, preview.u1)
+        assertEquals(southUv[3] / 16f, preview.v1)
     }
 
     /** 驗證麻將牌配方使用穩定染料 tag、固定牌體材料，並一次產出 32 張。 */

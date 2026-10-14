@@ -172,7 +172,7 @@ internal class HistoryRoundStateScreen(
                         }
                         is Row.Group -> {
                             context.fill(layout.left, y, layout.cardRight, y + row.height - 4, if (hover) HOVER_COLOR else CARD_COLOR)
-                            val hit = groups.render(context, row.layout, state.tileCatalog, layout.left + 8, y + 4, mouseX, mouseY, row.taken, row.markers)
+                            val hit = groups.render(context, row.layout, state.tileCatalog, layout.left + 8, y + 4, mouseX, mouseY, row.taken, row.markers, session.tileAppearance(state.identity.matchId))
                             if (hover) tooltip = hit?.plus(row.hint?.let(::listOf).orEmpty())
                         }
                         is Row.HandHeading -> Unit
@@ -207,7 +207,7 @@ internal class HistoryRoundStateScreen(
                                         if (actionHover || (!nested.actionEnabled && nestedHover)) tooltip = listOf(nested.tooltip)
                                     }
                                     is Row.Group -> {
-                                        val hit = groups.render(context, nested.layout, state.tileCatalog, layout.left + 16, nestedY + 4, mouseX, mouseY, nested.taken, nested.markers)
+                                        val hit = groups.render(context, nested.layout, state.tileCatalog, layout.left + 16, nestedY + 4, mouseX, mouseY, nested.taken, nested.markers, session.tileAppearance(state.identity.matchId))
                                         if (nestedHover) tooltip = hit?.plus(nested.hint?.let(::listOf).orEmpty())
                                     }
                                     is Row.Space, is Row.PlayerCard, is Row.WallSection -> Unit
@@ -234,7 +234,7 @@ internal class HistoryRoundStateScreen(
                                     context.drawTextWithShadow(textRenderer, sectionLabel, layout.left + 16, nestedY, MUTED_COLOR)
                                     nestedY += LINE_HEIGHT
                                     val nestedHover = !dragging && layout.containsCard(mouseX.toDouble(), mouseY.toDouble(), nestedY, nested.height)
-                                    val hit = groups.render(context, nested.layout, state.tileCatalog, layout.left + 16, nestedY + 4, mouseX, mouseY, nested.taken, nested.markers)
+                                    val hit = groups.render(context, nested.layout, state.tileCatalog, layout.left + 16, nestedY + 4, mouseX, mouseY, nested.taken, nested.markers, session.tileAppearance(state.identity.matchId))
                                     if (nestedHover) tooltip = hit?.plus(nested.hint?.let(::listOf).orEmpty())
                                     nestedY += nested.height
                                 }

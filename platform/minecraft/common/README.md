@@ -39,18 +39,37 @@ unknown-tile fallback; a registered but missing model may use its texture-only f
 Resource locations are validated during registration setup rather than silently changing an
 invalid namespace. No Minecraft-version-specific `Identifier` is needed in this common layer.
 
-In the Fabric adapter, a valid baked model supplies its own geometry, UVs, texture references,
-and display transforms. It need not inherit MahjongCraft's base model or use the built-in
-`cover` texture atlas. That atlas describes the tile body, including its sides and back;
-it is not merely a back-face image. Only the missing-model cuboid fallback combines the
-registered front texture with the built-in atlas on its other five faces.
+## Shared tile-set appearance
 
-This registration describes resource locations, not unrestricted appearance adaptation.
-World layout, entity dimensions, pose-origin adjustments, and model label positions still
-assume standard tile dimensions. A differently sized or positioned model does not automatically
-adjust those systems. HUD, history, and other flat previews draw the separate front texture;
-they do not extract the model's front-face UVs. Concealed tiles retain the unknown-tile appearance
-instead of selecting a model from their hidden tile type.
+The same `MinecraftTileAssetRegistry` also registers `MinecraftTileSetAppearanceDefinition`
+and `MinecraftRuleTileAppearanceDefinition`. An appearance has three fields: its `id`,
+the shared `coverTextureId`, and an optional `unknownFaceTextureId` that defaults to the built-in
+unknown face. The rule definition binds a public rule module to that appearance.
+These definitions are registered through `registerTileAssets` and frozen
+with the existing tile definitions. Appearance IDs are not tile asset keys or item data.
+
+Loader adapters are responsible for preparing material variants during resource reload.
+Supported visible models inherit `mahjongcraft:item/mahjong_tile_base` without overriding
+geometry or display transforms. The unknown model uses that same fixed base directly;
+extensions do not provide a separate concealed model.
+Variants replace texture slot `#0` with the visible tile's front or the appearance's unknown face,
+and slot `#1` with its shared cover atlas. The particle texture also uses that cover.
+The body atlas includes the sides and back, not merely the back face. A missing or unsupported
+visible model uses the standard template with the same front and body textures.
+A missing front uses the appearance's unknown face; an invalid complete appearance falls back
+to the built-in appearance as a whole.
+
+Tile size, thickness, origin, display transforms, table layout, and label anchors remain fixed.
+Third-party resources customize material style, not these geometry contracts.
+The cover atlas has a fixed layout: its back uses the base model's south-face UV rectangle
+`[3, 0, 6, 4]` on Minecraft's 0–16 UV scale. A flat back preview crops this same rectangle,
+or normalized coordinates `[3/16, 0, 6/16, 4/16]`; no separate back-preview image is needed.
+Higher-resolution cover textures are allowed, but their face regions must keep the same
+normalized layout. Front previews use the full front texture instead of the cover atlas.
+To match an appearance's front background as well as its body, provide a custom unknown-face
+texture; omitting it deliberately retains the built-in unknown face, not the white-dragon tile.
+Concealed appearance comes only from the publicly known rule, never the concealed tile type.
+Thus visible and concealed tiles share their body style without leaking hidden information.
 
 ## Seat extension contract
 

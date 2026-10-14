@@ -10,14 +10,12 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjon
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.TileActionPopupKind
-import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongTileItem
-import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileSetAppearanceDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileMotionAnimation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileMotionAnimationFrame
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileMotionAnimationSpec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.allTileAssetKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
 import net.minecraft.client.render.OverlayTexture
 import net.minecraft.client.render.RenderLayer
@@ -28,10 +26,8 @@ import net.minecraft.client.render.item.ItemRenderer
 import net.minecraft.client.render.model.json.ModelTransformationMode
 import net.minecraft.client.util.math.MatrixStack
 import net.minecraft.client.world.ClientWorld
-import net.minecraft.item.ItemStack
 import net.minecraft.util.Identifier
 import net.minecraft.util.math.RotationAxis
-import org.koin.core.context.GlobalContext
 import kotlin.uuid.toJavaUuid
 import kotlin.uuid.toKotlinUuid
 
@@ -51,6 +47,7 @@ import kotlin.uuid.toKotlinUuid
  * @param stateStore 本機已收到的對局快照，用於解析管理中牌張的可見牌面。
  * @param tileAssetRegistry 將牌張轉為註冊 asset key 的 registry。
  * @param tileFaceRenderer 疊加牌面角落標籤的共用 renderer。
+ * @param tileAppearanceResolver 依桌子目前公開規則解析牌組外觀。
  * @param moduleRegistry 依對局規則判斷加值牌的 registry。
  * @param decisionPromptStore 提供目前選牌合法候選牌集合，以決定手牌是否降低亮度。
  * @param configStore 提供牌面提示等用戶端顯示設定。
@@ -60,13 +57,11 @@ class MahjongTileEntityRenderer(
     private val stateStore: ClientMahjongStateStore,
     private val tileAssetRegistry: MinecraftTileAssetRegistry,
     private val tileFaceRenderer: MahjongTileFaceRenderer,
+    private val tileAppearanceResolver: ClientTileAppearanceResolver,
     private val moduleRegistry: MahjongModuleRegistry,
     private val decisionPromptStore: ClientDecisionPromptStore,
     private val configStore: MahjongClientConfigStore,
 ) : EntityRenderer<MahjongTileEntity>(context) {
-    /** 共用 Vanilla item renderer，避免建立第二套牌面模型格式。 */
-    private val itemRenderer = context.itemRenderer
-
     /** 依 entity yaw 與姿態旋轉模型，並補償原點使牌底貼齊所在表面。 */
     override fun render(
         entity: MahjongTileEntity,
@@ -115,30 +110,79 @@ class MahjongTileEntityRenderer(
         }
         matrices.translate(poseOffsetX, poseOffsetY, poseOffsetZ)
         val assetKey = entity.resolvedTileAssetKey()
+        val appearance = TileRenderAppearanceContext(tileAppearanceResolver.resolve(entity.managedTableId))
         val highlighted = entity.isHighlighted()
         val effectiveLight = if (entity.isDimmedByTileSelection()) DIMMED_LIGHT else light
-        val stack = tileStacks[assetKey] ?: tileStacks.getValue(UNKNOWN_TILE_ASSET_KEY)
         val consumers = if (highlighted) vertexConsumers.withGlint() else vertexConsumers
-        itemRenderer.renderItem(stack, ModelTransformationMode.HEAD, effectiveLight, OverlayTexture.DEFAULT_UV, matrices, consumers, entity.world, entity.id)
+        renderTile(
+            assetKey = assetKey,
+            appearance = appearance,
+            mode = ModelTransformationMode.HEAD,
+            light = effectiveLight,
+            overlay = OverlayTexture.DEFAULT_UV,
+            matrices = matrices,
+            consumers = consumers,
+        )
         if (highlighted) {
             // 遊戲內驗證時發現單層光暈疊圖不夠明顯，額外疊一次「只有光暈、不含正常牌面」的
             // pass，讓同一個模型的光暈幾何再疊加一次（GLINT_TRANSPARENCY 是相加混合，疊兩次亮度會
             // 明顯提升），比單純換 solid 參數（改變的是光暈貼圖本身的縮放／滾動速度，不是強度）更
             // 直接有效，且不影響正常牌面只畫一次、不會有額外的不透明面覆寫。
-            itemRenderer.renderItem(
-                stack,
-                ModelTransformationMode.HEAD,
-                effectiveLight,
-                OverlayTexture.DEFAULT_UV,
-                matrices,
-                vertexConsumers.glintOnly(),
-                entity.world,
-                entity.id,
+            renderTile(
+                assetKey = assetKey,
+                appearance = appearance,
+                mode = ModelTransformationMode.HEAD,
+                light = effectiveLight,
+                overlay = OverlayTexture.DEFAULT_UV,
+                matrices = matrices,
+                consumers = vertexConsumers.glintOnly(),
             )
         }
         tileFaceRenderer.renderModelLabels(assetKey, matrices, vertexConsumers, effectiveLight)
         matrices.pop()
-        renderActionPopup(entity, assetKey, tickDelta, matrices, vertexConsumers)
+        renderActionPopup(entity, assetKey, appearance.definition, tickDelta, matrices, vertexConsumers)
+    }
+
+    /**
+     * 以同一組公開牌組外觀繪製可見牌或蓋牌。
+     *
+     * @param assetKey 可見牌面資產 key；蓋牌時只用來保持呼叫端資料流，不會被讀取。
+     * @param appearance 本次繪製使用的公開牌組外觀。
+     * @param mode Minecraft item 顯示模式。
+     * @param light 世界光照值。
+     * @param overlay 覆蓋貼圖座標。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供牌面頂點緩衝。
+     */
+    private fun renderTile(
+        assetKey: String,
+        appearance: TileRenderAppearanceContext,
+        mode: ModelTransformationMode,
+        light: Int,
+        overlay: Int,
+        matrices: MatrixStack,
+        consumers: VertexConsumerProvider,
+    ) {
+        if (assetKey == UNKNOWN_TILE_ASSET_KEY) {
+            MahjongTileItemRenderer.renderUnknownWithAppearance(
+                appearanceId = appearance.appearanceId,
+                mode = mode,
+                matrices = matrices,
+                vertexConsumers = consumers,
+                light = light,
+                overlay = overlay,
+            )
+        } else {
+            MahjongTileItemRenderer.renderWithAppearance(
+                appearanceId = appearance.appearanceId,
+                assetKey = assetKey,
+                mode = mode,
+                matrices = matrices,
+                vertexConsumers = consumers,
+                light = light,
+                overlay = overlay,
+            )
+        }
     }
 
     /**
@@ -146,6 +190,7 @@ class MahjongTileEntityRenderer(
      *
      * @param entity 動作提示所屬牌張。
      * @param assetKey 目前可見的牌面資產 key。
+     * @param appearance 目前牌局公開的牌組外觀。
      * @param tickDelta 本幀部分 tick 進度。
      * @param matrices 目前的模型矩陣。
      * @param consumers 提供背景與牌面頂點緩衝。
@@ -153,6 +198,7 @@ class MahjongTileEntityRenderer(
     private fun renderActionPopup(
         entity: MahjongTileEntity,
         assetKey: String,
+        appearance: MinecraftTileSetAppearanceDefinition,
         tickDelta: Float,
         matrices: MatrixStack,
         consumers: VertexConsumerProvider,
@@ -171,7 +217,7 @@ class MahjongTileEntityRenderer(
         val remaining = entity.actionPopupEndGameTime - now
         val alpha = minOf(elapsed / ACTION_POPUP_FADE_TICKS, remaining / ACTION_POPUP_FADE_TICKS, 1.0).toFloat()
         if (kind == TileActionPopupKind.MELD) {
-            renderMeldActionPopup(entity, alpha, matrices, consumers)
+            renderMeldActionPopup(entity, appearance, alpha, matrices, consumers)
             return
         }
         if (assetKey == UNKNOWN_TILE_ASSET_KEY) return
@@ -199,6 +245,7 @@ class MahjongTileEntityRenderer(
             -0.02f,
             matrices,
             consumers,
+            appearance,
         )
         matrices.pop()
     }
@@ -207,12 +254,14 @@ class MahjongTileEntityRenderer(
      * 由單一錨點繪製一個共用面板：一列直立的牌，鳴取的那張上方加註指標，比照決策卡片。
      *
      * @param entity 提供鳴牌牌列及其牌張 entity 的牌張。
+     * @param appearance 目前牌局公開的牌組外觀。
      * @param alpha 面板透明度。
      * @param matrices 目前的模型矩陣。
      * @param consumers 提供背景、牌面與指標頂點緩衝。
      */
     private fun renderMeldActionPopup(
         entity: MahjongTileEntity,
+        appearance: MinecraftTileSetAppearanceDefinition,
         alpha: Float,
         matrices: MatrixStack,
         consumers: VertexConsumerProvider,
@@ -252,7 +301,7 @@ class MahjongTileEntityRenderer(
         val tileCenterY = markerHeight / 2f
         layout.placements.forEachIndexed { index, placement ->
             val z = -0.02f - index * 0.001f
-            renderPopupTile(placement.assetKey, placement.centerX, placement.centerY + tileCenterY, alpha, z, matrices, consumers)
+            renderPopupTile(placement.assetKey, placement.centerX, placement.centerY + tileCenterY, alpha, z, matrices, consumers, appearance)
             if (placement.claimed) {
                 renderClaimedTileMarker(
                     placement.centerX,
@@ -271,6 +320,7 @@ class MahjongTileEntityRenderer(
      * 以牌面中心為錨點畫一張直立的提示牌。
      *
      * @param assetKey 牌面資產 key。
+     * @param appearance 目前牌局公開的牌組外觀。
      * @param centerX 牌面中心 X 座標。
      * @param centerY 牌面中心 Y 座標。
      * @param alpha 顯示透明度。
@@ -286,6 +336,7 @@ class MahjongTileEntityRenderer(
         z: Float,
         matrices: MatrixStack,
         consumers: VertexConsumerProvider,
+        appearance: MinecraftTileSetAppearanceDefinition,
     ) {
         matrices.push()
         matrices.translate(centerX.toDouble(), centerY.toDouble(), 0.0)
@@ -299,6 +350,7 @@ class MahjongTileEntityRenderer(
             z,
             matrices,
             consumers,
+            appearance,
         )
         matrices.pop()
     }
@@ -433,10 +485,8 @@ class MahjongTileEntityRenderer(
     /**
      * 疊加附魔物品光暈疊圖層——用 [ItemRenderer.getDirectItemGlintConsumer]（entity 世界渲染用的
      * direct 版本，不是 GUI 用的 [ItemRenderer.getItemGlintConsumer]）包一層，讓
-     * [itemRenderer]（`solid` 參數暫定 `false`，遊戲內驗證光暈貼合效果後可再調整）在同一次
-     * `renderItem` 呼叫裡連同正常牌面一起疊畫，完全不用碰 [ItemStack] 本身的附魔資料
-     * （見 [MahjongTileEntityRenderer] 類別 KDoc：`tileStacks` 是全部 entity 共用的靜態實例，不能
-     * 每幀個別修改）也不用 `Entity.setGlowing()`（保留給其他用途）。
+     * item renderer（`solid` 參數暫定 `false`，遊戲內驗證光暈貼合效果後可再調整）在同一次
+     * render 呼叫裡連同正常牌面一起疊畫，也不用 `Entity.setGlowing()`（保留給其他用途）。
      *
      * @return 將 layer 請求包裝為直接物品光暈 consumer 的 provider。
      */
@@ -453,13 +503,6 @@ class MahjongTileEntityRenderer(
     private fun VertexConsumerProvider.glintOnly(): VertexConsumerProvider = VertexConsumerProvider { _ -> this.getBuffer(RenderLayer.getDirectEntityGlint()) }
 
     companion object {
-        /** 每個合法 asset key 共用一個只供渲染使用的 ItemStack；第一次渲染時 asset key registry 已凍結。 */
-        private val tileStacks: Map<String, ItemStack> by lazy {
-            GlobalContext.get().get<MinecraftTileAssetRegistry>().allTileAssetKeys().associateWith { assetKey ->
-                ItemStack(ModItems.MAHJONG_TILE).also { MahjongTileItem.writeTileAssetKey(it, assetKey) }
-            }
-        }
-
         /** 保留牌面可辨識度的低光照 packed value。 */
         private const val DIMMED_LIGHT = 0x00300030
 

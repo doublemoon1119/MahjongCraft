@@ -1,14 +1,17 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.model.MahjongTileModelLoadingPlugin
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionTileOrientationDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearances
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTilePreviewTexture
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileSetAppearanceDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelColor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelText
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tileTextureResourceId
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.tilePreviewTexture
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.font.TextRenderer
 import net.minecraft.client.gui.DrawContext
@@ -49,6 +52,7 @@ class MahjongTileFaceRenderer(
      * @param width 直立牌面的寬度。
      * @param height 直立牌面的高度。
      * @param orientation 牌面朝向；預設直立。
+     * @param appearance 公開規則指定的牌組外觀，不依隱藏牌種選擇。
      */
     fun renderGui(
         context: DrawContext,
@@ -58,9 +62,10 @@ class MahjongTileFaceRenderer(
         width: Int,
         height: Int,
         orientation: DecisionTileOrientationDto = DecisionTileOrientationDto.UPRIGHT,
+        appearance: MinecraftTileSetAppearanceDefinition = BuiltInMinecraftTileAppearances.DEFAULT,
     ) {
         if (orientation == DecisionTileOrientationDto.UPRIGHT) {
-            renderUprightGui(context, assetKey, x, y, width, height)
+            renderUprightGui(context, assetKey, x, y, width, height, appearance)
             return
         }
         context.matrices.push()
@@ -71,7 +76,7 @@ class MahjongTileFaceRenderer(
             context.matrices.translate(x.toDouble(), (y + width).toDouble(), 0.0)
             context.matrices.multiply(RotationAxis.POSITIVE_Z.rotationDegrees(-90f))
         }
-        renderUprightGui(context, assetKey, 0, 0, width, height)
+        renderUprightGui(context, assetKey, 0, 0, width, height, appearance)
         context.matrices.pop()
     }
 
@@ -87,6 +92,7 @@ class MahjongTileFaceRenderer(
      * @param z 局部深度。
      * @param matrices 目前的模型矩陣。
      * @param consumers 提供牌面與標籤頂點緩衝。
+     * @param appearance 公開規則指定的牌組外觀，不依隱藏牌種選擇。
      */
     fun renderWorldPanel(
         assetKey: String,
@@ -98,8 +104,10 @@ class MahjongTileFaceRenderer(
         z: Float,
         matrices: MatrixStack,
         consumers: VertexConsumerProvider,
+        appearance: MinecraftTileSetAppearanceDefinition = BuiltInMinecraftTileAppearances.DEFAULT,
     ) {
-        val buffer = consumers.getBuffer(ExhaustiveDrawSettlementTileFaceRenderLayer.get(resolveTexture(assetKey)))
+        val preview = resolvePreviewTexture(assetKey, appearance)
+        val buffer = consumers.getBuffer(ExhaustiveDrawSettlementTileFaceRenderLayer.get(Identifier(preview.resourceId)))
         val matrix = matrices.peek().positionMatrix
         val left = centerX - width / 2f
         val right = centerX + width / 2f
@@ -110,10 +118,10 @@ class MahjongTileFaceRenderer(
             buffer.vertex(matrix, x, y, z).color(255, 255, 255, opacity).texture(u, v)
                 .light(LightmapTextureManager.MAX_LIGHT_COORDINATE).next()
         }
-        vertex(left, top, 0f, 0f)
-        vertex(right, top, 1f, 0f)
-        vertex(right, bottom, 1f, 1f)
-        vertex(left, bottom, 0f, 1f)
+        vertex(left, top, preview.u0, preview.v0)
+        vertex(right, top, preview.u1, preview.v0)
+        vertex(right, bottom, preview.u1, preview.v1)
+        vertex(left, bottom, preview.u0, preview.v1)
         val label = tileLabelRegistry.find(assetKey) ?: return
         if (!clientConfigStore.current.tileLabelsEnabled && !label.forced) return
         label.topLeft?.let { renderWorldLabel(it, left, right, top, width, height, alpha, false, z, matrices, consumers) }
@@ -238,20 +246,22 @@ class MahjongTileFaceRenderer(
      * @param y 牌面左上角 Y 座標。
      * @param width 牌面寬度。
      * @param height 牌面高度。
+     * @param appearance 公開規則指定的牌組外觀。
      */
-    private fun renderUprightGui(context: DrawContext, assetKey: String, x: Int, y: Int, width: Int, height: Int) {
+    private fun renderUprightGui(context: DrawContext, assetKey: String, x: Int, y: Int, width: Int, height: Int, appearance: MinecraftTileSetAppearanceDefinition) {
+        val preview = resolvePreviewTexture(assetKey, appearance)
         context.drawTexture(
-            resolveTexture(assetKey),
+            Identifier(preview.resourceId),
             x,
             y,
             width,
             height,
-            0f,
-            0f,
-            TEXTURE_WIDTH,
-            TEXTURE_HEIGHT,
-            TEXTURE_WIDTH,
-            TEXTURE_HEIGHT,
+            preview.u0 * UV_DRAW_SCALE,
+            preview.v0 * UV_DRAW_SCALE,
+            ((preview.u1 - preview.u0) * UV_DRAW_SCALE).roundToInt(),
+            ((preview.v1 - preview.v0) * UV_DRAW_SCALE).roundToInt(),
+            UV_DRAW_SCALE,
+            UV_DRAW_SCALE,
         )
         val label = tileLabelRegistry.find(assetKey) ?: return
         if (!clientConfigStore.current.tileLabelsEnabled && !label.forced) return
@@ -349,23 +359,31 @@ class MahjongTileFaceRenderer(
     private data class TileLabelMetrics(val scale: Float, val marginX: Float, val marginY: Float)
 
     /**
-     * 解析牌面貼圖；指定資源不存在時使用 unknown 牌面，包含找不到的第三方資產。
+     * 解析牌面預覽；指定資源不存在時使用同牌組的未知牌正面，整組無效時使用內建外觀。
      *
      * @param assetKey 請求的牌面資產 key。
-     * @return 可載入的牌面貼圖識別碼。
+     * @param appearance 公開規則指定的牌組外觀。
+     * @return 可載入的貼圖與正規化 UV 範圍。
      */
-    private fun resolveTexture(assetKey: String): Identifier {
-        val requested = Identifier(tileTextureResourceId(assetKey, tileAssetRegistry))
-        return if (MinecraftClient.getInstance().resourceManager.getResource(requested).isPresent) {
+    private fun resolvePreviewTexture(assetKey: String, appearance: MinecraftTileSetAppearanceDefinition): MinecraftTilePreviewTexture {
+        val effectiveAppearance = MahjongTileModelLoadingPlugin.effectiveAppearance(appearance)
+        val requested = tilePreviewTexture(assetKey, tileAssetRegistry, effectiveAppearance)
+        val requestedId = Identifier(requested.resourceId)
+        return if (MinecraftClient.getInstance().resourceManager.getResource(requestedId).isPresent) {
             requested
         } else {
-            Identifier(tileTextureResourceId(UNKNOWN_TILE_ASSET_KEY, tileAssetRegistry))
+            val unknownPreview = MinecraftTilePreviewTexture(effectiveAppearance.unknownFaceTextureId, 0f, 0f, 1f, 1f)
+            if (MinecraftClient.getInstance().resourceManager.getResource(Identifier(unknownPreview.resourceId)).isPresent) {
+                unknownPreview
+            } else {
+                MinecraftTilePreviewTexture(BuiltInMinecraftTileAppearances.DEFAULT.unknownFaceTextureId, 0f, 0f, 1f, 1f)
+            }
         }
     }
 
     private companion object {
-        const val TEXTURE_WIDTH = 48
-        const val TEXTURE_HEIGHT = 64
+        /** 將正規化 UV 換算為原版繪圖 API 的參考刻度；不限制實際貼圖解析度。 */
+        const val UV_DRAW_SCALE = 1024
         const val LABEL_Z = 10.0
         const val WORLD_LABEL_Z_OFFSET = 0.001f
         const val MODEL_LABEL_SURFACE_OFFSET = 0.0005

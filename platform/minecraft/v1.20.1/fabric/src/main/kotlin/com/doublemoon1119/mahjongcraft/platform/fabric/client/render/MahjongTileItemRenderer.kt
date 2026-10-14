@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.model.FixedMahjongTileModelPreparedData
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.model.MahjongTileModelLoadingPlugin
 import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongTileItem
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
@@ -53,9 +54,178 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
         light: Int,
         overlay: Int,
     ) {
-        val assetKey = MahjongTileItem.readTileAssetKey(stack)
+        renderInternal(
+            assetKey = MahjongTileItem.readTileAssetKey(stack),
+            appearanceId = null,
+            mode = mode,
+            matrices = matrices,
+            vertexConsumers = vertexConsumers,
+            light = light,
+            overlay = overlay,
+        )
+    }
+
+    /**
+     * 以公開牌組外觀繪製一張可見牌；牌的幾何與 display 仍由固定模型模板提供。
+     *
+     * @param appearanceId 牌組共用外觀的完整識別碼。
+     * @param assetKey 牌面素材 key。
+     * @param mode Minecraft item 顯示模式。
+     * @param matrices 目前的模型矩陣。
+     * @param vertexConsumers 頂點緩衝提供者。
+     * @param light 世界光照值。
+     * @param overlay 覆蓋貼圖座標。
+     */
+    fun renderWithAppearance(
+        appearanceId: String,
+        assetKey: String,
+        mode: ModelTransformationMode,
+        matrices: MatrixStack,
+        vertexConsumers: VertexConsumerProvider,
+        light: Int,
+        overlay: Int,
+    ) {
+        matrices.push()
+        matrices.translate(-0.5, -0.5, -0.5)
+        try {
+            renderInternal(
+                assetKey = assetKey,
+                appearanceId = appearanceId,
+                mode = mode,
+                matrices = matrices,
+                vertexConsumers = vertexConsumers,
+                light = light,
+                overlay = overlay,
+            )
+        } finally {
+            matrices.pop()
+        }
+    }
+
+    /**
+     * 以公開牌組外觀繪製一張未知牌；不會讀取或推導未知牌背後的真實牌種。
+     *
+     * @param appearanceId 牌組共用外觀的完整識別碼。
+     * @param mode Minecraft item 顯示模式。
+     * @param matrices 目前的模型矩陣。
+     * @param vertexConsumers 頂點緩衝提供者。
+     * @param light 世界光照值。
+     * @param overlay 覆蓋貼圖座標。
+     */
+    fun renderUnknownWithAppearance(
+        appearanceId: String,
+        mode: ModelTransformationMode,
+        matrices: MatrixStack,
+        vertexConsumers: VertexConsumerProvider,
+        light: Int,
+        overlay: Int,
+    ) {
+        matrices.push()
+        matrices.translate(-0.5, -0.5, -0.5)
+        try {
+            val registry = GlobalContext.get().get<MinecraftTileAssetRegistry>()
+            val appearance = registry.findAppearance(appearanceId)?.let(MahjongTileModelLoadingPlugin::effectiveAppearance)
+                ?: return renderInternal(
+                    assetKey = UNKNOWN_TILE_ASSET_KEY,
+                    appearanceId = null,
+                    mode = mode,
+                    matrices = matrices,
+                    vertexConsumers = vertexConsumers,
+                    light = light,
+                    overlay = overlay,
+                )
+            renderModel(
+                model = findBakedModel(FixedMahjongTileModelPreparedData.syntheticUnknownModelId(appearance.id)),
+                fallbackTextureId = Identifier(appearance.unknownFaceTextureId),
+                coverTextureId = Identifier(appearance.coverTextureId),
+                mode = mode,
+                matrices = matrices,
+                vertexConsumers = vertexConsumers,
+                light = light,
+                overlay = overlay,
+            )
+        } finally {
+            matrices.pop()
+        }
+    }
+
+    /**
+     * 依牌面 key 與牌組外觀選擇已烘焙或固定幾何 fallback 後繪製牌面。
+     *
+     * @param assetKey 牌面素材 key。
+     * @param appearanceId 牌組外觀識別碼；未指定時使用原生模型。
+     * @param mode Minecraft item 顯示模式。
+     * @param matrices 目前的模型矩陣。
+     * @param vertexConsumers 頂點緩衝提供者。
+     * @param light 世界光照值。
+     * @param overlay 覆蓋貼圖座標。
+     */
+    private fun renderInternal(
+        assetKey: String,
+        appearanceId: String?,
+        mode: ModelTransformationMode,
+        matrices: MatrixStack,
+        vertexConsumers: VertexConsumerProvider,
+        light: Int,
+        overlay: Int,
+    ) {
+        val registry = GlobalContext.get().get<MinecraftTileAssetRegistry>()
+        val appearance = appearanceId?.let(registry::findAppearance)
+            ?.let(MahjongTileModelLoadingPlugin::effectiveAppearance)
+        val resource = registry.findResources(assetKey)
+        val textureId = resource?.textureId?.let(::Identifier)
+            ?: Identifier(tileTextureResourceId(assetKey, registry))
+        val coverTextureId = appearance?.coverTextureId?.let(::Identifier)
+            ?: Identifier(MinecraftModMetadata.MOD_ID, tileTextureAssetPath("cover"))
+        val bakedModel = if (appearance != null) {
+            findBakedModel(FixedMahjongTileModelPreparedData.syntheticModelId(appearance.id, assetKey))
+        } else {
+            findBakedModel(assetKey)
+        }
+        val fallbackModel = appearance?.let {
+            findBakedModel(FixedMahjongTileModelPreparedData.syntheticUnknownModelId(it.id))
+        }
+        renderModel(
+            model = bakedModel,
+            fallbackModel = fallbackModel,
+            fallbackTextureId = textureId,
+            coverTextureId = coverTextureId,
+            mode = mode,
+            matrices = matrices,
+            vertexConsumers = vertexConsumers,
+            light = light,
+            overlay = overlay,
+            assetKey = assetKey,
+        )
+    }
+
+    /**
+     * 套用 item 模型 transform 並繪製已烘焙模型或動態固定幾何。
+     *
+     * @param model 已驗證的牌面模型；缺少時使用 fallback。
+     * @param fallbackModel 同牌組的隱藏模型 fallback。
+     * @param fallbackTextureId 缺少模型時使用的正面貼圖。
+     * @param coverTextureId 缺少模型時使用的牌組共用牌體貼圖。
+     * @param mode Minecraft item 顯示模式。
+     * @param matrices 目前的模型矩陣。
+     * @param vertexConsumers 頂點緩衝提供者。
+     * @param light 世界光照值。
+     * @param overlay 覆蓋貼圖座標。
+     * @param assetKey 用於缺少資源警告的素材 key。
+     */
+    private fun renderModel(
+        model: BakedModel?,
+        fallbackModel: BakedModel? = null,
+        fallbackTextureId: Identifier,
+        coverTextureId: Identifier,
+        mode: ModelTransformationMode,
+        matrices: MatrixStack,
+        vertexConsumers: VertexConsumerProvider,
+        light: Int,
+        overlay: Int,
+        assetKey: String = UNKNOWN_TILE_ASSET_KEY,
+    ) {
         val client = MinecraftClient.getInstance()
-        val bakedModel = findBakedModel(assetKey)
 
         matrices.push()
         // vanilla ItemRenderer.renderItem(...BakedModel) 在呼叫 builtin renderer 前，已經對「這個
@@ -68,16 +238,17 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
         matrices.translate(0.5, 0.5, 0.5)
         // 所有內建子模型共用同一個 display transform；找不到已烘焙模型時借用 unknown 子模型的
         // transform，避免手動抄寫 mahjong_tile_base.json 的 8 組數值造成打字誤差。
-        val referenceTransform = (bakedModel ?: findBakedModel(UNKNOWN_TILE_ASSET_KEY))?.transformation
+        val referenceTransform = (model ?: fallbackModel ?: findBakedModel(UNKNOWN_TILE_ASSET_KEY))?.transformation
         referenceTransform?.getTransformation(mode)?.apply(false, matrices)
         matrices.translate(-0.5, -0.5, -0.5)
 
-        if (bakedModel != null) {
-            drawBakedModel(bakedModel, matrices, vertexConsumers, light, overlay)
+        if (model != null) {
+            drawBakedModel(model, matrices, vertexConsumers, light, overlay)
+        } else if (fallbackModel != null && !client.resourceManager.getResource(fallbackTextureId).isPresent) {
+            drawBakedModel(fallbackModel, matrices, vertexConsumers, light, overlay)
         } else {
-            val textureId = Identifier(tileTextureResourceId(assetKey, GlobalContext.get().get<MinecraftTileAssetRegistry>()))
-            if (client.resourceManager.getResource(textureId).isPresent) {
-                drawDynamicCuboid(textureId, matrices, vertexConsumers, light, overlay)
+            if (client.resourceManager.getResource(fallbackTextureId).isPresent) {
+                drawDynamicCuboid(fallbackTextureId, coverTextureId, matrices, vertexConsumers, light, overlay)
             } else {
                 if (reportedMissingTextureKeys.add(assetKey)) {
                     logger.warn("No mahjong tile texture found for asset key '{}'; falling back to unknown", assetKey)
@@ -98,9 +269,19 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
      * @return 找到的有效烘焙模型；缺少或為 missing model 時回傳 `null`。
      */
     private fun findBakedModel(assetKey: String): BakedModel? {
+        val registry = GlobalContext.get().get<MinecraftTileAssetRegistry>()
+        return findBakedModel(Identifier(tileModelResourceId(assetKey, registry)))
+    }
+
+    /**
+     * 依完整 model ID 查詢已烘焙模型。
+     *
+     * @param modelId 要查詢的模型 ID。
+     * @return 找到的有效烘焙模型；缺少或為 missing model 時回傳 `null`。
+     */
+    private fun findBakedModel(modelId: Identifier): BakedModel? {
         val manager = MinecraftClient.getInstance().bakedModelManager
-        val id = Identifier(tileModelResourceId(assetKey, GlobalContext.get().get<MinecraftTileAssetRegistry>()))
-        val model = (manager as FabricBakedModelManager).getModel(id) ?: return null
+        val model = (manager as FabricBakedModelManager).getModel(modelId) ?: return null
         return if (model === manager.missingModel) null else model
     }
 
@@ -139,14 +320,14 @@ object MahjongTileItemRenderer : BuiltinItemRendererRegistry.DynamicItemRenderer
      */
     private fun drawDynamicCuboid(
         faceTextureId: Identifier,
+        coverTextureId: Identifier,
         matrices: MatrixStack,
         vertexConsumers: VertexConsumerProvider,
         light: Int,
         overlay: Int,
     ) {
-        // 此處只處理缺少有效模型的回退立方體，非正面五面沿用內建 cover 牌體材質圖集。
+        // 此處只處理缺少有效模型的回退立方體，非正面五面沿用牌組共用 cover 牌體材質圖集。
         // 有效的自訂模型不經此流程，其各面材質與 UV 由模型 JSON 定義。
-        val coverTextureId = Identifier(MinecraftModMetadata.MOD_ID, tileTextureAssetPath("cover"))
         val entry = matrices.peek()
         val faceBuffer = vertexConsumers.getBuffer(RenderLayer.getEntityCutout(faceTextureId))
         val coverBuffer = vertexConsumers.getBuffer(RenderLayer.getEntityCutout(coverTextureId))

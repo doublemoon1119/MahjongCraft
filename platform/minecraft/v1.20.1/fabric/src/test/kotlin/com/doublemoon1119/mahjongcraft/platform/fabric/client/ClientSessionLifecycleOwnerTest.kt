@@ -29,6 +29,18 @@ class ClientSessionLifecycleOwnerTest {
         assertEquals(RESOURCES, calls)
     }
 
+    /** JOIN 與 DISCONNECT 都會清除牌組外觀快取，避免不同世界沿用上一桌的外觀。 */
+    @Test
+    fun `join and disconnect both clear tile appearance cache`() {
+        val calls = mutableListOf<String>()
+        val owner = owner(calls)
+
+        owner.beginSession()
+        owner.endSession()
+
+        assertEquals(2, calls.count { it == "tile-appearance" })
+    }
+
     /**
      * 建立只記錄呼叫順序的清理入口。
      *
@@ -45,11 +57,12 @@ class ClientSessionLifecycleOwnerTest {
         clearDecisionTimer = { calls += "timer" },
         clearDecisionPrompt = { calls += "prompt" },
         clearDecisionHud = { calls += "hud" },
+        clearTileAppearance = { calls += "tile-appearance" },
     )
 
     /** 預期的單次清理順序；不包含持久化偏好。 */
     private companion object {
         /** 每個資源僅出現一次。 */
-        val RESOURCES = listOf("history-and-settings", "archive", "profiles", "chat", "game", "automatic", "timer", "prompt", "hud")
+        val RESOURCES = listOf("history-and-settings", "archive", "profiles", "chat", "game", "automatic", "timer", "prompt", "hud", "tile-appearance")
     }
 }

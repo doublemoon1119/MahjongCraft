@@ -17,7 +17,20 @@ class MinecraftTileAssetRegistryImpl : MinecraftTileAssetRegistry {
     /** 依 asset key 保存完整資源描述。 */
     private val resourcesByAssetKey = mutableMapOf<String, MinecraftTileResources>()
 
+    /** 依外觀 ID 保存牌組外觀。 */
+    private val appearancesById = mutableMapOf<String, MinecraftTileSetAppearanceDefinition>()
+
+    /** 依規則模組 ID 保存牌組外觀綁定。 */
+    private val appearanceIdsByRuleModuleId = mutableMapOf<String, String>()
+
     override val registrationKeys: Set<String> get() = assetKeysById.values.toSet()
+
+    override val appearanceRegistrationKeys: Set<String> get() = appearancesById.keys.toSet()
+
+    override val ruleAppearanceBindingKeys: Set<String> get() = appearanceIdsByRuleModuleId.keys.toSet()
+
+    override val registeredAppearances: List<MinecraftTileSetAppearanceDefinition>
+        get() = appearancesById.values.toList()
 
     override var isFrozen: Boolean = false
         private set
@@ -37,13 +50,40 @@ class MinecraftTileAssetRegistryImpl : MinecraftTileAssetRegistry {
         resourcesByAssetKey[assetKey] = definition.resources
     }
 
+    override fun register(definition: MinecraftTileSetAppearanceDefinition) {
+        check(!isFrozen) { "Minecraft tile asset registry is frozen" }
+        require(definition.id !in appearancesById) {
+            "Tile set appearance already registered: ${definition.id}"
+        }
+        appearancesById[definition.id] = definition
+    }
+
+    override fun register(definition: MinecraftRuleTileAppearanceDefinition) {
+        check(!isFrozen) { "Minecraft tile asset registry is frozen" }
+        require(definition.ruleModuleId !in appearanceIdsByRuleModuleId) {
+            "Rule tile appearance already registered: ${definition.ruleModuleId}"
+        }
+        appearanceIdsByRuleModuleId[definition.ruleModuleId] = definition.appearanceId
+    }
+
     override fun freeze() {
+        appearanceIdsByRuleModuleId.forEach { (ruleModuleId, appearanceId) ->
+            require(appearanceId in appearancesById) {
+                "Rule tile appearance references an unknown appearance: $ruleModuleId -> $appearanceId"
+            }
+        }
         isFrozen = true
     }
 
     override fun find(typeId: TileTypeId): String? = assetKeysById[typeId]
 
     override fun findResources(assetKey: String): MinecraftTileResources? = resourcesByAssetKey[assetKey]
+
+    override fun findAppearance(appearanceId: String): MinecraftTileSetAppearanceDefinition? = appearancesById[appearanceId]
+
+    override fun findAppearanceForRule(ruleModuleId: String): MinecraftTileSetAppearanceDefinition? = appearancesById[appearanceIdsByRuleModuleId[ruleModuleId]]
+        ?: appearancesById[BuiltInMinecraftTileAppearanceIds.DEFAULT]
+        ?: BuiltInMinecraftTileAppearances.DEFAULT
 
     override fun isRegisteredAssetKey(assetKey: String): Boolean = assetKeysById.containsValue(assetKey)
 

@@ -18,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogu
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueResolution
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueTileGroup
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueTileGroupRole
+import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BuiltInMinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BundledMinecraftMahjongExtensions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.BundledRiichiMinecraftExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
@@ -148,6 +149,7 @@ class RiichiCatalogueProviderTest {
     @Test
     fun `every example tile resolves a built in asset`() {
         val registry = MinecraftTileAssetRegistryImpl().apply {
+            BuiltInMinecraftMahjongExtension.registerTileAssets(this)
             BundledMinecraftMahjongExtensions.all.forEach { it.registerTileAssets(this) }
             freeze()
         }

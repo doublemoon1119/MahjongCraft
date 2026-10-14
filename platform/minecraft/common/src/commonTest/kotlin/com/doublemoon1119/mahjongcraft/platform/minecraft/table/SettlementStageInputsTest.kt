@@ -14,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileSetAppearanceDefinition
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -245,6 +246,12 @@ class SettlementStageInputsTest {
     /** 只接受 lookup 的測試替身；任何註冊或凍結呼叫都表示測試走錯路徑。 */
     private object FakeTileAssetRegistry : MinecraftTileAssetRegistry {
         override val registrationKeys: Set<String> get() = emptySet()
+
+        override val appearanceRegistrationKeys: Set<String> get() = emptySet()
+
+        override val ruleAppearanceBindingKeys: Set<String> get() = emptySet()
+
+        override val registeredAppearances: List<MinecraftTileSetAppearanceDefinition> get() = emptyList()
 
         override val registeredAssetKeys: Set<String> get() = emptySet()
 

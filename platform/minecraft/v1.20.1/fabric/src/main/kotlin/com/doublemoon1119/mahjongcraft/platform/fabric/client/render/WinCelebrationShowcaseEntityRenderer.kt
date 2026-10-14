@@ -20,8 +20,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ShowcaseCardSnapshot
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationCinematicTimeline
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationShowcaseEntity
-import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongTileItem
-import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.ShowcaseVisualLayer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
@@ -58,11 +56,13 @@ import kotlin.math.sqrt
  * @param context Minecraft renderer factory 提供的 client context。
  * @param showcaseRegistry 解析各翼演出定義與標題資訊。
  * @param tileFaceRenderer 為展示牌面繪製共用標籤。
+ * @param tileAppearanceResolver 依桌子目前公開規則解析牌組外觀。
  */
 class WinCelebrationShowcaseEntityRenderer(
     context: EntityRendererFactory.Context,
     private val showcaseRegistry: WinCelebrationShowcaseRegistry,
     private val tileFaceRenderer: MahjongTileFaceRenderer,
+    private val tileAppearanceResolver: ClientTileAppearanceResolver,
 ) : EntityRenderer<WinCelebrationShowcaseEntity>(context) {
     private val itemRenderer = context.itemRenderer
     private val blockRenderManager: BlockRenderManager = context.blockRenderManager
@@ -70,7 +70,6 @@ class WinCelebrationShowcaseEntityRenderer(
     private val elytraRoot: ModelPart = context.getPart(EntityModelLayers.ELYTRA)
     private val leftWing: ModelPart = elytraRoot.getChild("left_wing")
     private val rightWing: ModelPart = elytraRoot.getChild("right_wing")
-    private val tileStacks = mutableMapOf<String, ItemStack>()
     private val fireworkStack = ItemStack(Items.FIREWORK_ROCKET)
     private val tntStack = ItemStack(Items.TNT)
     private val flintAndSteelStack = ItemStack(Items.FLINT_AND_STEEL)
@@ -87,6 +86,7 @@ class WinCelebrationShowcaseEntityRenderer(
         val elapsed = entity.elapsedTicks(tickDelta)
         val duration = (entity.endGameTime - entity.startGameTime).toDouble()
         if (duration <= 0.0 || elapsed !in 0.0..<duration) return
+        val appearance = TileRenderAppearanceContext(tileAppearanceResolver.resolve(entity.managedTableId))
         val fadeStart = duration - WinCelebrationShowcaseEntity.FADE_OUT_TICKS
         val billboardRotation = Quaternionf(dispatcher.rotation)
         val formation = ShowcaseFormationLayout(
@@ -100,10 +100,23 @@ class WinCelebrationShowcaseEntityRenderer(
         entity.wings.forEachIndexed { wingIndex, wing ->
             wing.cards.forEach { card ->
                 val layout = cardLayouts[ShowcaseCardSlot.Hand(wingIndex, card.order)] ?: return@forEach
-                renderCard(entity, card, wingIndex, elapsed, fadeStart, billboardRotation, matrices, vertexConsumers, light, layout.targetX, layout.returnStart)
+                renderCard(
+                    entity = entity,
+                    card = card,
+                    wingIndex = wingIndex,
+                    elapsed = elapsed,
+                    fadeStart = fadeStart,
+                    billboardRotation = billboardRotation,
+                    matrices = matrices,
+                    vertexConsumers = vertexConsumers,
+                    light = light,
+                    localTargetX = layout.targetX,
+                    returnStart = layout.returnStart,
+                    appearance = appearance,
+                )
             }
         }
-        renderWinningTile(entity, formation, cardLayouts, elapsed, fadeStart, billboardRotation, matrices, vertexConsumers, light)
+        renderWinningTile(entity, formation, cardLayouts, elapsed, fadeStart, billboardRotation, matrices, vertexConsumers, light, appearance)
         if (elapsed >= TITLE_REVEAL_START_TICK) {
             renderShowcaseCenter(entity, formation, elapsed, fadeStart, duration, billboardRotation, matrices, vertexConsumers, light)
         }
@@ -328,6 +341,7 @@ class WinCelebrationShowcaseEntityRenderer(
      * @param matrices 目前的模型矩陣。
      * @param consumers 提供牌面及接觸波紋頂點緩衝。
      * @param light 世界光照值。
+     * @param appearance 本次展示使用的公開牌組外觀。
      */
     private fun renderWinningTile(
         entity: WinCelebrationShowcaseEntity,
@@ -339,6 +353,7 @@ class WinCelebrationShowcaseEntityRenderer(
         matrices: MatrixStack,
         consumers: VertexConsumerProvider,
         light: Int,
+        appearance: TileRenderAppearanceContext,
     ) {
         entity.winningTileSnapshot?.let { winningTile ->
             // 有和牌張時，編隊的歸位順序必定包含它。
@@ -364,6 +379,7 @@ class WinCelebrationShowcaseEntityRenderer(
                 localTargetX = layout.targetX,
                 returnStart = layout.returnStart,
                 winningTile = true,
+                appearance = appearance,
             )
             return
         }
@@ -393,7 +409,15 @@ class WinCelebrationShowcaseEntityRenderer(
         val entranceBounce = 1.0 + sin(entranceProgress * PI) * CARD_ENTRANCE_BOUNCE
         val scale = (fadeScale * entranceBounce).toFloat()
         matrices.scale(scale, scale, scale)
-        itemRenderer.renderItem(tileStack(entity.winningTileAssetKey), ModelTransformationMode.HEAD, light, OverlayTexture.DEFAULT_UV, matrices, consumers, entity.world, 9000)
+        renderTile(
+            assetKey = entity.winningTileAssetKey,
+            faceDown = false,
+            appearance = appearance,
+            mode = ModelTransformationMode.HEAD,
+            light = light,
+            matrices = matrices,
+            consumers = consumers,
+        )
         tileFaceRenderer.renderModelLabels(entity.winningTileAssetKey, matrices, consumers, light)
         matrices.pop()
     }
@@ -413,6 +437,7 @@ class WinCelebrationShowcaseEntityRenderer(
      * @param localTargetX 編隊中的局部目標 X 座標。
      * @param returnStart 此牌開始歸位的 tick。
      * @param winningTile 此牌是否為和牌張。
+     * @param appearance 本次展示使用的公開牌組外觀。
      */
     private fun renderCard(
         entity: WinCelebrationShowcaseEntity,
@@ -427,6 +452,7 @@ class WinCelebrationShowcaseEntityRenderer(
         localTargetX: Double,
         returnStart: Double,
         winningTile: Boolean = false,
+        appearance: TileRenderAppearanceContext,
     ) {
         val startX = card.startOffsetX
         val startY = card.startOffsetY
@@ -540,10 +566,10 @@ class WinCelebrationShowcaseEntityRenderer(
             // 繞牌自身的縱軸翻面：平躺時牌背朝上，站起來後牌背朝向觀眾。
             matrices.push()
             matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180.0f))
-            itemRenderer.renderItem(tileStack(card.assetKey), ModelTransformationMode.HEAD, light, OverlayTexture.DEFAULT_UV, matrices, vertexConsumers, entity.world, card.order)
+            renderTile(card.assetKey, true, appearance, ModelTransformationMode.HEAD, light, matrices, vertexConsumers)
             matrices.pop()
         } else {
-            itemRenderer.renderItem(tileStack(card.assetKey), ModelTransformationMode.HEAD, light, OverlayTexture.DEFAULT_UV, matrices, vertexConsumers, entity.world, card.order)
+            renderTile(card.assetKey, false, appearance, ModelTransformationMode.HEAD, light, matrices, vertexConsumers)
             tileFaceRenderer.renderModelLabels(card.assetKey, matrices, vertexConsumers, light)
         }
         if (elapsed in ELYTRA_APPEAR_TICK..<ELYTRA_FADE_END_TICK) {
@@ -1210,13 +1236,45 @@ class WinCelebrationShowcaseEntityRenderer(
     }
 
     /**
-     * 取得或建立帶有指定 asset key 的牌張渲染用物品堆疊。
+     * 以同一組公開牌組外觀繪製展示牌；蓋牌不會攜帶真實牌種。
      *
-     * @param assetKey 牌面資產 key。
-     * @return 可交給 item renderer 繪製的牌張堆疊。
+     * @param assetKey 可見牌面資產 key；蓋牌時不會讀取。
+     * @param faceDown 是否繪製牌背。
+     * @param appearance 本次展示使用的公開牌組外觀。
+     * @param mode Minecraft item 顯示模式。
+     * @param light 世界光照值。
+     * @param matrices 目前的模型矩陣。
+     * @param consumers 提供牌面頂點緩衝。
      */
-    private fun tileStack(assetKey: String): ItemStack = tileStacks.getOrPut(assetKey) {
-        ItemStack(ModItems.MAHJONG_TILE).also { MahjongTileItem.writeTileAssetKey(it, assetKey) }
+    private fun renderTile(
+        assetKey: String,
+        faceDown: Boolean,
+        appearance: TileRenderAppearanceContext,
+        mode: ModelTransformationMode,
+        light: Int,
+        matrices: MatrixStack,
+        consumers: VertexConsumerProvider,
+    ) {
+        if (faceDown) {
+            MahjongTileItemRenderer.renderUnknownWithAppearance(
+                appearanceId = appearance.appearanceId,
+                mode = mode,
+                matrices = matrices,
+                vertexConsumers = consumers,
+                light = light,
+                overlay = OverlayTexture.DEFAULT_UV,
+            )
+        } else {
+            MahjongTileItemRenderer.renderWithAppearance(
+                appearanceId = appearance.appearanceId,
+                assetKey = assetKey,
+                mode = mode,
+                matrices = matrices,
+                vertexConsumers = consumers,
+                light = light,
+                overlay = OverlayTexture.DEFAULT_UV,
+            )
+        }
     }
 
     override fun getTexture(entity: WinCelebrationShowcaseEntity): Identifier? = null

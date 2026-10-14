@@ -35,6 +35,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettleme
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementTextKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearances
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelDefinition
@@ -51,6 +53,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.redText
  */
 object BuiltInMinecraftMahjongExtension : MinecraftMahjongExtension {
     override val id: String = MahjongCraftMetadata.id("builtin")
+
+    override fun registerTileAssets(registry: MinecraftTileAssetRegistry) {
+        registry.register(BuiltInMinecraftTileAppearances.DEFAULT)
+    }
 
     override fun registerAiStrategyDisplayNames(registry: AiStrategyDisplayNameRegistry) {
         registry.register(AiStrategyDisplayNameDefinition(RandomAiStrategy.KEY, MinecraftMessageKeys.AI_STRATEGY_RANDOM))

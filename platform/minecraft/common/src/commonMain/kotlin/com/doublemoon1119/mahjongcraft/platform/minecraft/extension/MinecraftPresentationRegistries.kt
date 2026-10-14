@@ -98,6 +98,8 @@ class MinecraftPresentationRegistries(
     fun registrationSnapshot(): MinecraftPresentationRegistrationSnapshot = MinecraftPresentationRegistrationSnapshot(
         listOf(
             snapshotCategory(MinecraftExtensionRegistrationCategoryIds.TILE_ASSET, "Tile Asset", tileAssetRegistry.registrationKeys),
+            snapshotCategory(MinecraftExtensionRegistrationCategoryIds.TILE_SET_APPEARANCE, "Tile Set Appearance", tileAssetRegistry.appearanceRegistrationKeys),
+            snapshotCategory(MinecraftExtensionRegistrationCategoryIds.RULE_TILE_APPEARANCE, "Rule Tile Appearance", tileAssetRegistry.ruleAppearanceBindingKeys),
             snapshotCategory(MinecraftExtensionRegistrationCategoryIds.TILE_DISPLAY_NAME, "Tile Display Name", tileDisplayNameRegistry.registrationKeys),
             snapshotCategory(MinecraftExtensionRegistrationCategoryIds.TILE_EMOJI, "Tile Emoji", tileEmojiRegistry.registrationKeys),
             snapshotCategory(MinecraftExtensionRegistrationCategoryIds.TILE_LABEL, "Tile Label", tileLabelRegistry.registrationKeys),

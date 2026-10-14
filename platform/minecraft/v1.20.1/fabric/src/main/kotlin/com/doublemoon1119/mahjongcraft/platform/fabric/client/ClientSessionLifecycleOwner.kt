@@ -16,6 +16,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client
  * @property clearDecisionTimer 清除決策計時狀態。
  * @property clearDecisionPrompt 清除待處理的決策提示。
  * @property clearDecisionHud 清除決策 HUD 的暫態呈現。
+ * @property clearTileAppearance 清除桌級牌組外觀快取。
  */
 internal class ClientSessionLifecycleOwner(
     private val clearHistoryQueries: () -> Unit,
@@ -27,6 +28,7 @@ internal class ClientSessionLifecycleOwner(
     private val clearDecisionTimer: () -> Unit,
     private val clearDecisionPrompt: () -> Unit,
     private val clearDecisionHud: () -> Unit,
+    private val clearTileAppearance: () -> Unit,
 ) {
     /** 開始新連線時清除上一個連線的全部暫態資料。 */
     fun beginSession() = clearTransientState()
@@ -45,5 +47,6 @@ internal class ClientSessionLifecycleOwner(
         clearDecisionTimer()
         clearDecisionPrompt()
         clearDecisionHud()
+        clearTileAppearance()
     }
 }

@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogge
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ScoreRankingAnimation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileSetAppearanceDefinition
 import net.minecraft.client.font.TextRenderer
 import net.minecraft.client.render.LightmapTextureManager
 import net.minecraft.client.render.VertexConsumerProvider
@@ -31,6 +32,7 @@ import kotlin.uuid.Uuid as KotlinUuid
  * @param tileFaceRenderer 共用牌面 renderer。
  * @param playerNames 共用玩家顯示名稱解析器。
  * @param configStore 控制流局結算呈現可見性的客戶端設定。
+ * @param tileAppearanceResolver 依桌子目前公開規則解析牌組外觀。
  */
 class ExhaustiveDrawSettlementPresentationEntityRenderer(
     context: EntityRendererFactory.Context,
@@ -39,6 +41,7 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
     private val tileFaceRenderer: MahjongTileFaceRenderer,
     private val playerNames: ClientPlayerDisplayNameResolver,
     private val configStore: MahjongClientConfigStore,
+    private val tileAppearanceResolver: ClientTileAppearanceResolver,
 ) : EntityRenderer<ExhaustiveDrawSettlementPresentationEntity>(context) {
     private val logger = mahjongCraftLogger(ExhaustiveDrawSettlementPresentationEntityRenderer::class)
 
@@ -58,6 +61,7 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
     ) {
         if (!configStore.current.presentationVisibility.drawSettlementEnabled) return
         currentTableId = entity.managedTableId
+        val appearance = tileAppearanceResolver.resolve(entity.managedTableId)
         super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light)
         val elapsed = entity.elapsedTicks(tickDelta)
         val duration = (entity.endGameTime - entity.startGameTime).toDouble()
@@ -96,6 +100,7 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
                     alpha = rowAlpha,
                     matrices = matrices,
                     vertexConsumers = vertexConsumers,
+                    appearance = appearance,
                 )
             }
         }
@@ -341,6 +346,7 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         alpha: Float,
         matrices: MatrixStack,
         vertexConsumers: VertexConsumerProvider,
+        appearance: MinecraftTileSetAppearanceDefinition,
     ) {
         renderPortrait(player, layout.faceLeftX, y - FACE_TEXT_CENTER_OFFSET, alpha, matrices, vertexConsumers)
         drawText(
@@ -366,6 +372,7 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
                 alpha = alpha,
                 matrices = matrices,
                 vertexConsumers = vertexConsumers,
+                appearance = appearance,
             )
             tileCenterX += WAIT_TILE_WIDTH + WAIT_TILE_GAP
         }
@@ -422,8 +429,9 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         alpha: Float,
         matrices: MatrixStack,
         vertexConsumers: VertexConsumerProvider,
+        appearance: MinecraftTileSetAppearanceDefinition,
     ) {
-        tileFaceRenderer.renderWorldPanel(assetKey, centerX, centerY, width, height, alpha, TILE_FACE_Z, matrices, vertexConsumers)
+        tileFaceRenderer.renderWorldPanel(assetKey, centerX, centerY, width, height, alpha, TILE_FACE_Z, matrices, vertexConsumers, appearance)
     }
 
     /**
