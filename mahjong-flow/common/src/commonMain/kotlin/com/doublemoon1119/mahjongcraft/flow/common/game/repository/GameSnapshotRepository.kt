@@ -54,6 +54,18 @@ interface GameSnapshotRepository {
     suspend fun removeSnapshot(gameId: Uuid, observerId: Uuid)
 
     /**
+     * 在 repository 互斥鎖內確認來源仍有效後移除桌況與準備快照。
+     *
+     * 條件只能讀取已發布資料，不得阻塞、重新呼叫此 repository 或修改來源。
+     *
+     * @param gameId 遊戲的唯一識別碼。
+     * @param observerId 觀察者的玩家 Uuid。
+     * @param isStillValid 鎖內刪除前確認來源仍屬於這次工作的條件。
+     * @return 條件成立並完成這次移除時為 true；條件不成立時不修改資料並回傳 false。
+     */
+    suspend fun removeSnapshotIf(gameId: Uuid, observerId: Uuid, isStillValid: () -> Boolean): Boolean
+
+    /**
      * 獲取目前所有正在觀察該遊戲的所有觀察者 Uuid 集合。
      *
      * @param gameId 遊戲的唯一識別碼。

@@ -30,9 +30,12 @@ import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.LeaveRoomUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.SyncRoomSnapshotUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.ToggleReadyUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.UpdateConfigUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateDelivery
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateTicket
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.TableOccupancyDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.TableOccupancyPayloadDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
@@ -79,6 +82,8 @@ import kotlin.uuid.toKotlinUuid
  * @property memberCandidateResolver 查詢房間成員候選。
  * @property advanceManager 請求自動推進對局。
  * @property serverHolder 查詢目前伺服器與線上玩家。
+ * @property tableStateDelivery 桌況回覆的共同來源檢查及主執行緒交付序列。
+ * @property authoritativeStateStore 用於回覆當下的已發布房間與對局狀態。
  * @property dispatchers 提供伺服器主執行緒調度器。
  * @property json 編碼網路訊息的 JSON 設定。
  * @property networkRegistries 轉換網路 DTO 所需的規則註冊表。
@@ -108,6 +113,8 @@ class MahjongTableRoomService(
     private val memberCandidateResolver: RoomMemberCandidateResolver,
     private val advanceManager: AutomatedAdvanceManager,
     private val serverHolder: FabricServerHolder,
+    private val tableStateDelivery: FabricTableStateDelivery,
+    private val authoritativeStateStore: AuthoritativeStateStore,
     private val dispatchers: CoroutineDispatchers,
     @Provided private val json: Json,
     @Provided private val networkRegistries: NetworkDtoRegistries,
@@ -206,51 +213,43 @@ class MahjongTableRoomService(
      */
     fun openRoomScreen(table: MahjongTableBlockEntity, player: ServerPlayerEntity) {
         val tableId = table.tableId
+        val ticket = tableStateDelivery.capture(tableId) ?: return
+        scope.launch(dispatchers.main) { sendCurrentOccupancy(ticket, player) }
+    }
+
+    /**
+     * 在交付序列內讀取當前占用內容，不使用工作排程前保存的舊房間或對局。
+     *
+     * @param ticket 排程前捕捉的桌子與 session 來源。
+     * @param player 原請求的玩家；連線已被取代時不送出回覆。
+     */
+    private suspend fun sendCurrentOccupancy(ticket: FabricTableStateTicket, player: ServerPlayerEntity) {
         val playerId = player.uuid.toKotlinUuid()
-        val location = tableLocationRegistry.get(tableId)?.location
-        scope.launch {
-            val runtimeGame = gameRepository.getGame(tableId)
-            val game = runtimeGame?.tableState
-            if (game != null) {
-                MahjongChannels.tableOccupancy.sendTo(
-                    player,
-                    json,
-                    tableOccupancyPayload(
-                        tableId = tableId,
+        tableStateDelivery.prepareAndSend(
+            ticket = ticket,
+            prepare = {
+                if (serverHolder.findPlayer(playerId) !== player) return@prepareAndSend null
+                val state = authoritativeStateStore.state.value
+                val game = state.games[ticket.tableId]
+                val room = state.rooms[ticket.tableId]
+                when {
+                    game != null -> tableOccupancyPayload(
+                        tableId = ticket.tableId,
                         occupancy = TableOccupancyDto.GAME,
-                        playingPlayerIds = game.players.map { it.id.toString() },
-                        playingAiPlayerIds = game.players.filter { runtimeGame.isAi(it.id) }.map { it.id.toString() },
-                        playingGameConfig = GameConfig(game.config, runtimeGame.flowConfig).toDto(networkRegistries),
-                    ),
-                )
-                return@launch
-            }
-
-            val room = roomRepository.getRoom(tableId)
-            if (room == null) {
-                MahjongChannels.tableOccupancy.sendTo(
-                    player,
-                    json,
-                    tableOccupancyPayload(tableId = tableId, occupancy = TableOccupancyDto.VACANT),
-                )
-                return@launch
-            }
-
-            // 這份快照的用途是「夾在房間事件裡送出」：房間有變動時，伺服器送事件給成員，並從倉庫取出
-            // 該成員的快照一起送。非成員收不到房間事件，替他存的那份不會有人讀，所以只有成員需要存。
-            // 非成員畫面上的內容另有來源：剛開啟時由下面的 payload 當場帶一份，之後的變動由觀察者推送
-            // 送達，兩者都不經過倉庫。
-            if (playerId in room.playerIds) syncRoom(tableId, playerId)
-            MahjongChannels.tableOccupancy.sendTo(
-                player,
-                json,
-                tableOccupancyPayload(
-                    tableId = tableId,
-                    occupancy = TableOccupancyDto.ROOM,
-                    roomSnapshot = room.toSnapshot(playerId).toDto(networkRegistries),
-                ),
-            )
-        }
+                        playingPlayerIds = game.tableState.players.map { it.id.toString() },
+                        playingAiPlayerIds = game.aiPlayerIds.map { it.toString() },
+                        playingGameConfig = GameConfig(game.tableState.config, game.flowConfig).toDto(networkRegistries),
+                    )
+                    room != null -> tableOccupancyPayload(
+                        tableId = ticket.tableId,
+                        occupancy = TableOccupancyDto.ROOM,
+                        roomSnapshot = room.toSnapshot(playerId).toDto(networkRegistries),
+                    )
+                    else -> tableOccupancyPayload(tableId = ticket.tableId, occupancy = TableOccupancyDto.VACANT)
+                }
+            },
+            send = { payload -> MahjongChannels.tableOccupancy.sendTo(player, json, payload) },
+        )
     }
 
     /**
@@ -318,7 +317,8 @@ class MahjongTableRoomService(
      */
     private fun leaveFromScreen(tableId: Uuid, player: ServerPlayerEntity) {
         val playerId = player.uuid.toKotlinUuid()
-        scope.launch {
+        val ticket = tableStateDelivery.capture(tableId) ?: return
+        scope.launch(dispatchers.main) {
             if (membershipRepository.getVenueId(playerId) != tableId) {
                 feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.PlayerNotInGame)
                 return@launch
@@ -334,26 +334,8 @@ class MahjongTableRoomService(
                     feedbackPublisher.publish(playerId, MinecraftRoomFeedbackResolver.successfulLeave(wasHost))
                     if (wasHost) {
                         roomSnapshotRepository.removeSnapshot(tableId, playerId)
-                        MahjongChannels.tableOccupancy.sendTo(
-                            player,
-                            json,
-                            tableOccupancyPayload(tableId = tableId, occupancy = TableOccupancyDto.VACANT),
-                        )
-                    } else {
-                        val updatedRoom = roomRepository.getRoom(tableId)
-                        if (updatedRoom != null) {
-                            syncRoom(tableId, playerId)
-                            MahjongChannels.tableOccupancy.sendTo(
-                                player,
-                                json,
-                                tableOccupancyPayload(
-                                    tableId = tableId,
-                                    occupancy = TableOccupancyDto.ROOM,
-                                    roomSnapshot = updatedRoom.toSnapshot(playerId).toDto(networkRegistries),
-                                ),
-                            )
-                        }
                     }
+                    sendCurrentOccupancy(ticket, player)
                 }
                 is Outcome.Error -> feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.GameLeaveFailed)
             }
@@ -591,30 +573,19 @@ class MahjongTableRoomService(
      */
     fun kick(player: ServerPlayerEntity, targetPlayerId: Uuid) {
         val playerId = player.uuid.toKotlinUuid()
-        scope.launch {
+        scope.launch(dispatchers.main) {
             val tableId = membershipRepository.getVenueId(playerId)
             if (tableId == null) {
                 feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.PlayerNotInGame)
                 return@launch
             }
+            val ticket = tableStateDelivery.capture(tableId) ?: return@launch
             when (val result = kickPlayer(tableId, playerId, targetPlayerId)) {
                 is Outcome.Success -> {
                     feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.PlayerKicked)
                     feedbackPublisher.publish(targetPlayerId, MinecraftPlayerFeedback.KickedFromGame)
                     val target = serverHolder.findPlayer(targetPlayerId)
-                    val updatedRoom = roomRepository.getRoom(tableId)
-                    if (target != null && updatedRoom != null) {
-                        syncRoom(tableId, targetPlayerId)
-                        MahjongChannels.tableOccupancy.sendTo(
-                            target,
-                            json,
-                            tableOccupancyPayload(
-                                tableId = tableId,
-                                occupancy = TableOccupancyDto.ROOM,
-                                roomSnapshot = updatedRoom.toSnapshot(targetPlayerId).toDto(networkRegistries),
-                            ),
-                        )
-                    }
+                    if (target != null) sendCurrentOccupancy(ticket, target)
                 }
                 is Outcome.Error -> feedbackPublisher.publish(playerId, MinecraftRoomFeedbackResolver.kickError(result.error))
             }

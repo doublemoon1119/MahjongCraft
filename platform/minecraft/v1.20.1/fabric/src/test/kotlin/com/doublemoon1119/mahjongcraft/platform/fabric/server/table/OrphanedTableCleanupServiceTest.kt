@@ -8,7 +8,9 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.repository.GameSnapshotRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
+import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
+import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepositoryImpl
@@ -25,11 +27,14 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationReg
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
 /** [OrphanedTableCleanupService] 的政策、衍生狀態與 revision 測試。 */
@@ -50,6 +55,8 @@ class OrphanedTableCleanupServiceTest {
         fixture.memberships.claim(playerId, fixture.tableId)
         fixture.roomSnapshots.setSnapshot(playerId, room.toSnapshot(playerId))
         fixture.roomSnapshots.setSnapshot(observerId, room.toSnapshot(observerId))
+        val trackingObserverId = Uuid.random()
+        fixture.removalNotifier.trackingObserverIds = setOf(trackingObserverId)
 
         val result = fixture.service.cleanupMissing(fixture.tableId, fixture.entryRevision)
 
@@ -59,6 +66,10 @@ class OrphanedTableCleanupServiceTest {
         assertNull(fixture.roomSnapshots.getSnapshot(fixture.tableId, playerId))
         assertNull(fixture.roomSnapshots.getSnapshot(fixture.tableId, observerId))
         assertNull(fixture.locations.get(fixture.tableId))
+        assertEquals(
+            setOf(trackingObserverId, playerId, observerId),
+            fixture.removalNotifier.completedObserverIds.single(),
+        )
     }
 
     /** KEEP_AND_WARN 應保留進行中的 Game 與所有衍生狀態。 */
@@ -205,6 +216,169 @@ class OrphanedTableCleanupServiceTest {
         assertEquals(OrphanedTableCleanupResult.REMOVED_ROOM, result)
     }
 
+    /** 清理進行中對局時，應一次通知追蹤者、快照觀察者與座位玩家。 */
+    @Test
+    fun `test removal notification includes tracking snapshots and players`() = runTest {
+        val fixture = Fixture(OrphanedTablePolicy.REMOVE_ALL)
+        val player = FakeMahjongPlayerFactory.create()
+        val cachedRoomObserver = Uuid.random()
+        val cachedGameObserver = Uuid.random()
+        val trackingObserver = Uuid.random()
+        val game = FakeTableStateFactory.create(id = fixture.tableId, players = listOf(player))
+        fixture.gameRepository.setTableState(game)
+        fixture.memberships.claim(player.id, fixture.tableId)
+        fixture.gameSnapshots.setSnapshot(
+            cachedGameObserver,
+            game.toSnapshot(setOf(cachedGameObserver), setAsideTiles = { emptyList() }),
+        )
+        fixture.roomSnapshots.setSnapshot(
+            cachedRoomObserver,
+            Room(fixture.tableId, player.id, GameConfig(FakeMahjongRuleConfig())).toSnapshot(cachedRoomObserver),
+        )
+        fixture.removalNotifier.trackingObserverIds = setOf(trackingObserver)
+
+        val result = fixture.service.cleanupPlayerBroken(fixture.tableId, fixture.entryRevision)
+
+        assertEquals(OrphanedTableCleanupResult.REMOVED_GAME, result)
+        assertEquals(1, fixture.removalNotifier.completed.size)
+        assertEquals(
+            setOf(trackingObserver, cachedRoomObserver, cachedGameObserver, player.id),
+            fixture.removalNotifier.completedObserverIds.single(),
+        )
+    }
+
+    /** 沒有 Room／Game 時仍應通知已追蹤原位置的觀察者。 */
+    @Test
+    fun `test location only removal still notifies tracking observers`() = runTest {
+        val fixture = Fixture(OrphanedTablePolicy.REMOVE_ALL)
+        val trackingObserver = Uuid.random()
+        fixture.removalNotifier.trackingObserverIds = setOf(trackingObserver)
+
+        val result = fixture.service.cleanupMissing(fixture.tableId, fixture.entryRevision)
+
+        assertEquals(OrphanedTableCleanupResult.REMOVED_LOCATION, result)
+        assertEquals(1, fixture.removalNotifier.completed.size)
+        assertEquals(setOf(trackingObserver), fixture.removalNotifier.completedObserverIds.single())
+    }
+
+    /** 保留政策不得開始或完成桌子移除通知。 */
+    @Test
+    fun `test retained cleanup does not notify`() = runTest {
+        val fixture = Fixture(OrphanedTablePolicy.KEEP_AND_WARN)
+        fixture.gameRepository.setTableState(FakeTableStateFactory.create(id = fixture.tableId))
+
+        val result = fixture.service.cleanupMissing(fixture.tableId, fixture.entryRevision)
+
+        assertEquals(OrphanedTableCleanupResult.RETAINED, result)
+        assertTrue(fixture.removalNotifier.begunTableIds.isEmpty())
+        assertTrue(fixture.removalNotifier.completed.isEmpty())
+    }
+
+    /** 同一個位置只能完成一次通知；第二次清理會因位置已消失而失效。 */
+    @Test
+    fun `test duplicate cleanup notifies only once`() = runTest {
+        val fixture = Fixture(OrphanedTablePolicy.REMOVE_ALL)
+
+        assertEquals(
+            OrphanedTableCleanupResult.REMOVED_LOCATION,
+            fixture.service.cleanupMissing(fixture.tableId, fixture.entryRevision),
+        )
+        assertEquals(
+            OrphanedTableCleanupResult.STALE_REQUEST,
+            fixture.service.cleanupMissing(fixture.tableId, fixture.entryRevision),
+        )
+        assertEquals(1, fixture.removalNotifier.completed.size)
+    }
+
+    /** 捕捉通知後位置被同 revision 重新建立時，也不得清理新位置。 */
+    @Test
+    fun `test location replaced after capture is stale`() = runTest {
+        val fixture = Fixture(OrphanedTablePolicy.REMOVE_ALL)
+        fixture.removalNotifier.onCaptured = {
+            fixture.locations.remove(fixture.tableId, fixture.entryRevision)
+            fixture.locations.put(fixture.tableId, TableLocation("minecraft:overworld", 8, 64, 8))
+        }
+
+        val result = fixture.service.cleanupMissing(fixture.tableId, fixture.entryRevision)
+
+        assertEquals(OrphanedTableCleanupResult.STALE_REQUEST, result)
+        assertTrue(fixture.removalNotifier.completed.isEmpty())
+        assertNotNull(fixture.locations.get(fixture.tableId))
+    }
+
+    /** 衍生快照清理失败時，不回復已提交狀態但應釋放移除標記。 */
+    @Test
+    fun `test derived snapshot failure cancels pending notification`() = runTest {
+        val fixture = Fixture(
+            policy = OrphanedTablePolicy.REMOVE_ALL,
+            roomSnapshots = ThrowingRoomSnapshotRepository(),
+        )
+        val playerId = Uuid.random()
+        val room = Room(fixture.tableId, playerId, GameConfig(FakeMahjongRuleConfig()))
+        fixture.roomRepository.setRoom(
+            room,
+        )
+        fixture.roomSnapshots.setSnapshot(playerId, room.toSnapshot(playerId))
+
+        assertFailsWith<IllegalStateException> {
+            fixture.service.cleanupMissing(fixture.tableId, fixture.entryRevision)
+        }
+
+        assertEquals(listOf(fixture.tableId), fixture.removalNotifier.cancelledTableIds)
+        assertTrue(fixture.removalNotifier.completed.isEmpty())
+    }
+
+    /** 權威清理後來源被重用時，不得刪除新桌子的快照或位置。 */
+    @Test
+    fun `test replacement before removal claim preserves new source`() = runTest {
+        val fixture = Fixture(OrphanedTablePolicy.REMOVE_ALL)
+        val oldPlayerId = Uuid.random()
+        val newObserverId = Uuid.random()
+        val oldRoom = Room(fixture.tableId, oldPlayerId, GameConfig(FakeMahjongRuleConfig()))
+        fixture.roomRepository.setRoom(oldRoom)
+        fixture.roomSnapshots.setSnapshot(oldPlayerId, oldRoom.toSnapshot(oldPlayerId))
+        fixture.removalNotifier.onBeginRemoval = {
+            fixture.locations.remove(fixture.tableId, fixture.entryRevision)
+            fixture.locations.put(fixture.tableId, TableLocation("minecraft:overworld", 16, 64, 16))
+            runBlocking {
+                fixture.roomSnapshots.setSnapshot(newObserverId, oldRoom.toSnapshot(newObserverId))
+            }
+        }
+
+        val result = fixture.service.cleanupMissing(fixture.tableId, fixture.entryRevision)
+
+        assertEquals(OrphanedTableCleanupResult.STALE_REQUEST, result)
+        assertNotNull(fixture.locations.get(fixture.tableId))
+        assertNotNull(fixture.roomSnapshots.getSnapshot(fixture.tableId, newObserverId))
+        assertTrue(fixture.removalNotifier.completed.isEmpty())
+    }
+
+    /** 衍生快照 guard 失效時，不得刪除來源被重用後新增的快照。 */
+    @Test
+    fun `test snapshot guard preserves replacement snapshot`() = runTest {
+        val snapshots = GuardedRoomSnapshotRepository()
+        val fixture = Fixture(OrphanedTablePolicy.REMOVE_ALL, roomSnapshots = snapshots)
+        val oldPlayerId = Uuid.random()
+        val newObserverId = Uuid.random()
+        val room = Room(fixture.tableId, oldPlayerId, GameConfig(FakeMahjongRuleConfig()))
+        fixture.roomRepository.setRoom(room)
+        snapshots.setSnapshot(oldPlayerId, room.toSnapshot(oldPlayerId))
+        snapshots.onRemoveSnapshotIf = {
+            fixture.locations.remove(fixture.tableId, fixture.entryRevision)
+            fixture.locations.put(fixture.tableId, TableLocation("minecraft:overworld", 24, 64, 24))
+            runBlocking {
+                snapshots.setSnapshot(newObserverId, room.toSnapshot(newObserverId))
+            }
+        }
+
+        val result = fixture.service.cleanupMissing(fixture.tableId, fixture.entryRevision)
+
+        assertEquals(OrphanedTableCleanupResult.STALE_REQUEST, result)
+        assertNotNull(fixture.locations.get(fixture.tableId))
+        assertNotNull(snapshots.getSnapshot(fixture.tableId, newObserverId))
+        assertTrue(fixture.removalNotifier.completed.isEmpty())
+    }
+
     /**
      * 建立單一政策測試所需的共用 repository 與位置。
      *
@@ -214,6 +388,7 @@ class OrphanedTableCleanupServiceTest {
     private class Fixture(
         policy: OrphanedTablePolicy,
         recordHistory: Boolean = false,
+        roomSnapshots: RoomSnapshotRepository = RoomSnapshotRepositoryImpl(),
     ) {
         /** 測試桌子 UUID。 */
         val tableId: Uuid = Uuid.random()
@@ -231,7 +406,7 @@ class OrphanedTableCleanupServiceTest {
         val memberships = PlayerMembershipRepositoryImpl()
 
         /** Room observer snapshot repository。 */
-        val roomSnapshots = RoomSnapshotRepositoryImpl()
+        val roomSnapshots: RoomSnapshotRepository = roomSnapshots
 
         /** Game observer snapshot repository。 */
         val gameSnapshots = GameSnapshotRepositoryImpl()
@@ -241,6 +416,9 @@ class OrphanedTableCleanupServiceTest {
 
         /** 可在測試中模擬熱重載的設定 state。 */
         val configState = MinecraftServerConfigState(MinecraftServerConfig(orphanedTablePolicy = policy))
+
+        /** 記錄桌子移除通知生命週期。 */
+        val removalNotifier = RecordingTableRemovalNotifier(locations)
 
         /** 初始位置 revision。 */
         val entryRevision: Long = locations.put(
@@ -256,6 +434,7 @@ class OrphanedTableCleanupServiceTest {
             gameSnapshots,
             locations,
             configState,
+            removalNotifier,
         )
 
         /** 已提交交易的事實通知。 */
@@ -271,5 +450,46 @@ class OrphanedTableCleanupServiceTest {
                 override fun onReleased(sequence: Long) = Unit
             })
         }
+    }
+
+    /** 在移除快照時故意失敗，用來驗證通知來源的取消清理。 */
+    private class ThrowingRoomSnapshotRepository : RoomSnapshotRepository {
+        private val delegate = RoomSnapshotRepositoryImpl()
+
+        override suspend fun getSnapshot(roomId: Uuid, observerId: Uuid): RoomSnapshot? = delegate.getSnapshot(roomId, observerId)
+
+        override suspend fun setSnapshot(observerId: Uuid, snapshot: RoomSnapshot) = delegate.setSnapshot(observerId, snapshot)
+
+        override suspend fun removeSnapshot(roomId: Uuid, observerId: Uuid): Unit = error("test snapshot removal failure")
+
+        override suspend fun removeSnapshotIf(roomId: Uuid, observerId: Uuid, isStillValid: () -> Boolean): Boolean = error("test snapshot removal failure")
+
+        override suspend fun getAllObservers(roomId: Uuid): Set<Uuid> = delegate.getAllObservers(roomId)
+
+        override suspend fun clearAll() = delegate.clearAll()
+    }
+
+    /** 在第一筆移除前重用桌子來源，驗證 guard 會保留新的快照。 */
+    private class GuardedRoomSnapshotRepository : RoomSnapshotRepository {
+        private val delegate = RoomSnapshotRepositoryImpl()
+
+        var onRemoveSnapshotIf: (() -> Unit)? = null
+
+        override suspend fun getSnapshot(roomId: Uuid, observerId: Uuid): RoomSnapshot? = delegate.getSnapshot(roomId, observerId)
+
+        override suspend fun setSnapshot(observerId: Uuid, snapshot: RoomSnapshot) = delegate.setSnapshot(observerId, snapshot)
+
+        override suspend fun removeSnapshot(roomId: Uuid, observerId: Uuid) = delegate.removeSnapshot(roomId, observerId)
+
+        override suspend fun removeSnapshotIf(roomId: Uuid, observerId: Uuid, isStillValid: () -> Boolean): Boolean {
+            onRemoveSnapshotIf?.invoke()
+            if (!isStillValid()) return false
+            delegate.removeSnapshot(roomId, observerId)
+            return true
+        }
+
+        override suspend fun getAllObservers(roomId: Uuid): Set<Uuid> = delegate.getAllObservers(roomId)
+
+        override suspend fun clearAll() = delegate.clearAll()
     }
 }

@@ -42,6 +42,20 @@ class PlayerMembershipRepositoryImplTest {
         assertNull(repository.getVenueId(playerId))
     }
 
+    /** 來源已過期時 guarded release 不得清除後來仍存在的歸屬。 */
+    @Test
+    fun `guarded release preserves membership when source is stale`() = runTest {
+        val repository = PlayerMembershipRepositoryImpl()
+        val playerId = Uuid.random()
+        val venueId = Uuid.random()
+        assertTrue(repository.claim(playerId, venueId))
+
+        assertEquals(false, repository.releaseIf(playerId, venueId) { false })
+        assertEquals(venueId, repository.getVenueId(playerId))
+        assertEquals(true, repository.releaseIf(playerId, venueId) { true })
+        assertNull(repository.getVenueId(playerId))
+    }
+
     /** 完整替換歸屬時應移除舊 session 的索引並載入新索引。 */
     @Test
     fun `test replace all swaps the complete membership index`() = runTest {

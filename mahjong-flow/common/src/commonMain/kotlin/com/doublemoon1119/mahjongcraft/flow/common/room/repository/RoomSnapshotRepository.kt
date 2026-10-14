@@ -36,6 +36,18 @@ interface RoomSnapshotRepository {
     suspend fun removeSnapshot(roomId: Uuid, observerId: Uuid)
 
     /**
+     * 在 repository 互斥鎖內確認來源仍有效後移除快照。
+     *
+     * 條件只能讀取已發布資料，不得阻塞、重新呼叫此 repository 或修改來源。
+     *
+     * @param roomId 房間的 Uuid。
+     * @param observerId 觀察者的 Uuid。
+     * @param isStillValid 鎖內刪除前確認來源仍屬於這次工作的條件。
+     * @return 條件成立並完成這次移除時為 true；條件不成立時不修改資料並回傳 false。
+     */
+    suspend fun removeSnapshotIf(roomId: Uuid, observerId: Uuid, isStillValid: () -> Boolean): Boolean
+
+    /**
      * 獲取目前所有正在觀察該房間的所有觀察者 Uuid 集合。
      *
      * @param roomId 房間的 Uuid。

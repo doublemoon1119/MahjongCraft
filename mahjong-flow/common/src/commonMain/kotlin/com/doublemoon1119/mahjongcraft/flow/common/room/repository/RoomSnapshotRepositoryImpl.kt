@@ -26,7 +26,13 @@ class RoomSnapshotRepositoryImpl : RoomSnapshotRepository {
         Unit
     }
 
-    override suspend fun getAllObservers(roomId: Uuid): Set<Uuid> = mutex.withLock { snapshots[roomId]?.keys.orEmpty() }
+    override suspend fun removeSnapshotIf(roomId: Uuid, observerId: Uuid, isStillValid: () -> Boolean): Boolean = mutex.withLock {
+        if (!isStillValid()) return@withLock false
+        snapshots[roomId]?.remove(observerId)
+        true
+    }
+
+    override suspend fun getAllObservers(roomId: Uuid): Set<Uuid> = mutex.withLock { snapshots[roomId]?.keys.orEmpty().toSet() }
 
     override suspend fun clearAll() = mutex.withLock { snapshots.clear() }
 }

@@ -65,6 +65,26 @@ class ClientMahjongStateStoreTest {
         assertNull(store.gameSnapshot(tableAId))
     }
 
+    /** 真正移除桌子時，該桌的占用、快照與 managed tile 索引會一併移除，不留下 VACANT 假狀態。 */
+    @Test
+    fun `removing a table deletes its complete client state`() {
+        val store = ClientMahjongStateStore(registries)
+        val tableId = Uuid.random()
+        val tile = IdentifiedTile(Uuid.random(), Tile.Honor.North)
+        val player = FakeMahjongPlayerFactory.create(hand = Hand(lastDrawn = tile), discardPile = RiichiDiscardPile())
+        val snapshot = FakeTableStateFactory.create(id = tableId, players = listOf(player), config = RiichiRuleConfig())
+            .copy(revealedHandTileIds = setOf(tile.id))
+            .toSnapshot(visibleHandPlayerIds = setOf(player.id), setAsideTiles = { emptyList() })
+        store.apply(TableOccupancyPayloadDto(tableId.toString(), TableOccupancyDto.GAME, null, listOf(player.id.toString()), emptyList(), null, null, null, null, null))
+        store.applyGameSnapshot(tableId, snapshot, emptySet())
+
+        store.removeTable(tableId)
+
+        assertNull(store.tableOccupancy(tableId))
+        assertNull(store.gameSnapshot(tableId))
+        assertNull(store.findManagedTileSnapshot(tableId, tile.id))
+    }
+
     /** 遊戲更新附帶的 AI 玩家清單會跟著快照一起保存，下一次更新會整份取代。 */
     @Test
     fun `game updates store and replace the ai player list alongside the snapshot`() {

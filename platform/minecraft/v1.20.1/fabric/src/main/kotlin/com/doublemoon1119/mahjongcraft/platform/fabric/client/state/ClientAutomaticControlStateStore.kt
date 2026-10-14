@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControl
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlUpdateRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlUpdateResultDto
 import org.koin.core.annotation.Single
+import kotlin.uuid.Uuid
 
 /**
  * 保存本地玩家本局自動操作的暫存權威資料。
@@ -98,6 +99,20 @@ class ClientAutomaticControlStateStore {
         if (currentSnapshot == null && currentPendingRequest == null) return
         currentSnapshot = null
         currentPendingRequest = null
+        notificationRevision += 1L
+    }
+
+    /**
+     * 清除指定桌子的自動操作快照與待確認要求；其他桌子的狀態不受影響。
+     *
+     * @param tableId 已移除的桌子／對局 UUID。
+     */
+    fun clearTable(tableId: Uuid) {
+        val tableIdText = tableId.toString()
+        val removed = currentSnapshot?.gameId == tableIdText || currentPendingRequest?.gameId == tableIdText
+        if (!removed) return
+        if (currentSnapshot?.gameId == tableIdText) currentSnapshot = null
+        if (currentPendingRequest?.gameId == tableIdText) currentPendingRequest = null
         notificationRevision += 1L
     }
 }

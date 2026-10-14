@@ -23,6 +23,12 @@ class FakeGameSnapshotRepository : GameSnapshotRepository {
         snapshots.remove(gameId to observerId)
     }
 
+    override suspend fun removeSnapshotIf(gameId: Uuid, observerId: Uuid, isStillValid: () -> Boolean): Boolean {
+        if (!isStillValid()) return false
+        snapshots.remove(gameId to observerId)
+        return true
+    }
+
     override suspend fun getAllObservers(gameId: Uuid): Set<Uuid> = snapshots.keys
         .filter { it.first == gameId }
         .map { it.second }

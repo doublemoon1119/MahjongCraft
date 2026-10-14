@@ -266,6 +266,12 @@ private class MemoryRoomSnapshots : RoomSnapshotRepository {
         data.remove(roomId to observerId)
     }
 
+    override suspend fun removeSnapshotIf(roomId: Uuid, observerId: Uuid, isStillValid: () -> Boolean): Boolean {
+        if (!isStillValid()) return false
+        data.remove(roomId to observerId)
+        return true
+    }
+
     /** 列出房間觀察者。 */
     override suspend fun getAllObservers(roomId: Uuid): Set<Uuid> = data.keys.filter { it.first == roomId }.map { it.second }.toSet()
 
@@ -291,6 +297,12 @@ private class MemoryGameSnapshots : GameSnapshotRepository {
     /** 移除觀察者對局快照。 */
     override suspend fun removeSnapshot(gameId: Uuid, observerId: Uuid) {
         data.remove(gameId to observerId)
+    }
+
+    override suspend fun removeSnapshotIf(gameId: Uuid, observerId: Uuid, isStillValid: () -> Boolean): Boolean {
+        if (!isStillValid()) return false
+        data.remove(gameId to observerId)
+        return true
     }
 
     /** 列出對局觀察者。 */

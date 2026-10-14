@@ -116,6 +116,16 @@ class ClientAutomaticControlUpdateCoordinator(
         completions.clear()
     }
 
+    /**
+     * 清除指定桌子的自動操作狀態；其他桌子的待確認要求與完成結果不受影響。
+     *
+     * @param tableId 已移除的桌子／對局 UUID。
+     */
+    fun clearTable(tableId: Uuid) {
+        stateStore.clearTable(tableId)
+        completions.entries.removeIf { (_, completion) -> completion.result.gameId == tableId.toString() }
+    }
+
     private companion object {
         /** 防止已離開的提交者未取回結果時無限制累積。 */
         const val MAX_RETAINED_COMPLETIONS = 16

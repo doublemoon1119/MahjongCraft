@@ -25,6 +25,12 @@ class PlayerMembershipRepositoryImpl : PlayerMembershipRepository {
         Unit
     }
 
+    override suspend fun releaseIf(playerId: Uuid, venueId: Uuid, isStillValid: () -> Boolean): Boolean = mutex.withLock {
+        if (!isStillValid()) return@withLock false
+        if (venueIdsByPlayerId[playerId] == venueId) venueIdsByPlayerId.remove(playerId)
+        true
+    }
+
     override suspend fun replaceAll(venueIdsByPlayerId: Map<Uuid, Uuid>) = mutex.withLock {
         this.venueIdsByPlayerId.clear()
         this.venueIdsByPlayerId.putAll(venueIdsByPlayerId)

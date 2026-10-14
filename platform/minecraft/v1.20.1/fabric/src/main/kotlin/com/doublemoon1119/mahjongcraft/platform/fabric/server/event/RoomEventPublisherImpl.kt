@@ -10,11 +10,14 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDto
+import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.PlayerIdentitySender
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateDelivery
 import kotlinx.serialization.json.Json
+import net.minecraft.server.network.ServerPlayerEntity
 import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
@@ -23,6 +26,8 @@ import kotlin.uuid.Uuid
  * 將房間事件與收件玩家可見的最新快照組成封包；沒有快照或玩家不在線時不送出。
  *
  * @property roomSnapshotRepository 玩家可見的房間快照來源。
+ * @property tableStateDelivery 統一檢查桌子來源並序列化桌況封包交付的邊界。
+ * @property authoritativeStateStore 讀取仍存在的權威房間，避免使用已移除的 read-side 快照。
  * @property serverHolder 目前伺服器與有效收件玩家。
  * @property playerIdentities 房間真人參與者的普通名稱同步器。
  * @property json 封包序列化設定。
@@ -31,6 +36,8 @@ import kotlin.uuid.Uuid
 @Single(binds = [RoomEventPublisher::class])
 class RoomEventPublisherImpl(
     private val roomSnapshotRepository: RoomSnapshotRepository,
+    private val tableStateDelivery: FabricTableStateDelivery,
+    private val authoritativeStateStore: AuthoritativeStateStore,
     private val serverHolder: FabricServerHolder,
     private val playerIdentities: PlayerIdentitySender,
     @Provided private val json: Json,
@@ -60,14 +67,35 @@ class RoomEventPublisherImpl(
      * @param event 要與快照一起傳送的房間事件。
      */
     private suspend fun send(roomId: Uuid, targetPlayerId: Uuid, event: RoomUpdateEventDto) {
-        val snapshot = roomSnapshotRepository.getSnapshot(roomId, targetPlayerId) ?: return
-        val player = serverHolder.findPlayer(targetPlayerId) ?: return
-        val payload = RoomUpdatePayloadDto(
-            roomId = roomId.toString(),
-            event = event,
-            snapshot = snapshot.toDto(networkRegistries),
+        val ticket = tableStateDelivery.capture(roomId) ?: return
+        tableStateDelivery.prepareAndSend(
+            ticket = ticket,
+            prepare = {
+                authoritativeStateStore.getRoom(roomId) ?: return@prepareAndSend null
+                val snapshot = roomSnapshotRepository.getSnapshot(roomId, targetPlayerId) ?: return@prepareAndSend null
+                val player = serverHolder.findPlayer(targetPlayerId) ?: return@prepareAndSend null
+                playerIdentities.send(targetPlayerId, snapshot.playerIds.filterNot { it in snapshot.aiPlayerIds })
+                PreparedRoomUpdate(
+                    player = player,
+                    payload = RoomUpdatePayloadDto(
+                        roomId = roomId.toString(),
+                        event = event,
+                        snapshot = snapshot.toDto(networkRegistries),
+                    ),
+                )
+            },
+            send = { prepared -> MahjongChannels.roomUpdate.sendTo(prepared.player, json, prepared.payload) },
         )
-        playerIdentities.send(targetPlayerId, snapshot.playerIds.filterNot { it in snapshot.aiPlayerIds })
-        MahjongChannels.roomUpdate.sendTo(player, json, payload)
     }
+
+    /**
+     * 已在主執行緒準備完成、可在最後檢查後立即送出的房間更新。
+     *
+     * @property player 已驗證仍在線的收件玩家。
+     * @property payload 已序列化所需內容的房間更新 payload。
+     */
+    private data class PreparedRoomUpdate(
+        val player: ServerPlayerEntity,
+        val payload: RoomUpdatePayloadDto,
+    )
 }

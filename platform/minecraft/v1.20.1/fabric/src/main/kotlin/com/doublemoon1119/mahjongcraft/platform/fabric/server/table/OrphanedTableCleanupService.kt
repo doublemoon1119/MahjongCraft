@@ -24,6 +24,7 @@ import kotlin.uuid.Uuid
  * @property gameSnapshots 進行中對局的觀察者快照儲存。
  * @property locations 桌子位置與 revision 的索引。
  * @property configState 提供目前缺失桌子清理政策的伺服器設定狀態。
+ * @property removalNotifier 清理前捕捉接收者，清理後安排桌級失效通知。
  */
 @Single
 class OrphanedTableCleanupService(
@@ -33,6 +34,7 @@ class OrphanedTableCleanupService(
     private val gameSnapshots: GameSnapshotRepository,
     private val locations: TableLocationRegistry,
     private val configState: MinecraftServerConfigState,
+    private val removalNotifier: TableRemovalNotifier,
 ) {
     /** 用於記錄缺失桌子與實際採取的清理政策。 */
     private val logger = mahjongCraftLogger(OrphanedTableCleanupService::class)
@@ -83,7 +85,13 @@ class OrphanedTableCleanupService(
         val entry = locations.get(tableId)
         if (entry == null || entry.revision != expectedRevision) return OrphanedTableCleanupResult.STALE_REQUEST
 
+        val notification = removalNotifier.capture(tableId)
+        if (notification != null && notification.ticket.entry !== entry) return OrphanedTableCleanupResult.STALE_REQUEST
+
         val decision = store.update { state ->
+            if (locations.get(tableId) !== entry || (notification != null && !removalNotifier.isCurrent(notification))) {
+                return@update AuthoritativeStateUpdate(state, CleanupDecision.stale())
+            }
             val room = state.rooms[tableId]
             val game = state.games[tableId]
             when {
@@ -118,6 +126,7 @@ class OrphanedTableCleanupService(
             }
         }
 
+        if (decision.result == OrphanedTableCleanupResult.STALE_REQUEST) return decision.result
         if (decision.result == OrphanedTableCleanupResult.RETAINED) {
             logger.warn(
                 "Retained orphaned Mahjong table state {} at {} because policy is {}",
@@ -128,25 +137,57 @@ class OrphanedTableCleanupService(
             return decision.result
         }
 
-        decision.playerIds.forEach { playerId -> memberships.release(playerId, tableId) }
-        (roomSnapshots.getAllObservers(tableId) + decision.playerIds).forEach { playerId ->
-            roomSnapshots.removeSnapshot(tableId, playerId)
+        if (locations.get(tableId) !== entry ||
+            (notification != null && !removalNotifier.beginRemoval(notification))
+        ) {
+            return OrphanedTableCleanupResult.STALE_REQUEST
         }
-        (gameSnapshots.getAllObservers(tableId) + decision.playerIds).forEach { playerId ->
-            gameSnapshots.removeSnapshot(tableId, playerId)
+        var notificationScheduled = false
+        try {
+            val roomObserverIds = roomSnapshots.getAllObservers(tableId).toSet()
+            val gameObserverIds = gameSnapshots.getAllObservers(tableId).toSet()
+            val additionalObserverIds = roomObserverIds + gameObserverIds + decision.playerIds
+
+            if (locations.get(tableId) !== entry ||
+                (notification != null && !removalNotifier.isCurrent(notification))
+            ) {
+                return OrphanedTableCleanupResult.STALE_REQUEST
+            }
+
+            val isStillValid = {
+                val current = store.state.value
+                locations.get(tableId) === entry &&
+                    tableId !in current.rooms &&
+                    tableId !in current.games &&
+                    (notification == null || removalNotifier.isCurrent(notification))
+            }
+            decision.playerIds.forEach { playerId ->
+                if (!memberships.releaseIf(playerId, tableId, isStillValid)) return OrphanedTableCleanupResult.STALE_REQUEST
+            }
+            (roomObserverIds + decision.playerIds).forEach { playerId ->
+                if (!roomSnapshots.removeSnapshotIf(tableId, playerId, isStillValid)) return OrphanedTableCleanupResult.STALE_REQUEST
+            }
+            (gameObserverIds + decision.playerIds).forEach { playerId ->
+                if (!gameSnapshots.removeSnapshotIf(tableId, playerId, isStillValid)) return OrphanedTableCleanupResult.STALE_REQUEST
+            }
+            if (!isStillValid()) return OrphanedTableCleanupResult.STALE_REQUEST
+            if (locations.get(tableId) === entry) locations.remove(tableId, expectedRevision)
+            notification?.let { removalNotifier.completeRemoval(it, additionalObserverIds) }
+            notificationScheduled = true
+            if (decision.result == OrphanedTableCleanupResult.REMOVED_LOCATION) {
+                logger.debug("Removed stale Mahjong table location {} at {}", tableId, entry.location)
+            } else {
+                logger.warn(
+                    "Cleaned orphaned Mahjong table {} at {} with result {}",
+                    tableId,
+                    entry.location,
+                    decision.result,
+                )
+            }
+            return decision.result
+        } finally {
+            if (!notificationScheduled && notification != null) removalNotifier.cancelRemoval(notification)
         }
-        locations.remove(tableId, expectedRevision)
-        if (decision.result == OrphanedTableCleanupResult.REMOVED_LOCATION) {
-            logger.debug("Removed stale Mahjong table location {} at {}", tableId, entry.location)
-        } else {
-            logger.warn(
-                "Cleaned orphaned Mahjong table {} at {} with result {}",
-                tableId,
-                entry.location,
-                decision.result,
-            )
-        }
-        return decision.result
     }
 
     /**
@@ -161,6 +202,9 @@ class OrphanedTableCleanupService(
     ) {
         /** 建立固定清理決策。 */
         companion object {
+            /** 清理來源已被取代，不修改狀態或交付通知。 */
+            fun stale(): CleanupDecision = CleanupDecision(OrphanedTableCleanupResult.STALE_REQUEST, emptySet())
+
             /** 保留所有狀態。 */
             fun retain(): CleanupDecision = CleanupDecision(OrphanedTableCleanupResult.RETAINED, emptySet())
 

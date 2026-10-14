@@ -107,6 +107,20 @@ class ClientAutomaticControlStateStoreTest {
         assertEquals(revisionAfterClear, store.notificationRevision())
     }
 
+    /** 桌子移除只清除相符對局，不會誤刪另一局的控制狀態。 */
+    @Test
+    fun `clear table only removes matching game state`() {
+        val store = ClientAutomaticControlStateStore()
+        val gameId = Uuid.random()
+        store.applySnapshot(snapshot(gameId.toString(), 1L, emptySet()))
+
+        store.clearTable(Uuid.random())
+        assertEquals(gameId.toString(), store.snapshot()?.gameId)
+
+        store.clearTable(gameId)
+        assertNull(store.snapshot())
+    }
+
     /**
      * 建立測試用自動控制更新要求。
      *

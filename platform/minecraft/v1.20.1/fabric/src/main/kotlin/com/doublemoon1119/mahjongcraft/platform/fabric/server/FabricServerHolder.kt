@@ -16,8 +16,9 @@ import kotlin.uuid.toJavaUuid
  */
 @Single
 class FabricServerHolder {
-    /** 目前由 Fabric lifecycle callback 設定的 server。 */
-    private var server: MinecraftServer? = null
+    /** 一次發布伺服器與啟動身分，避免讀取到兩次啟動混合的資料。 */
+    @Volatile
+    private var activeSession: ActiveSession? = null
 
     /**
      * 設定目前運行中的 server。
@@ -25,12 +26,12 @@ class FabricServerHolder {
      * @param server Fabric lifecycle callback 提供的 server。
      */
     fun set(server: MinecraftServer) {
-        this.server = server
+        activeSession = ActiveSession(server, Uuid.random())
     }
 
     /** 清除目前 server；server 停止時呼叫。 */
     fun clear() {
-        server = null
+        activeSession = null
     }
 
     /**
@@ -38,7 +39,14 @@ class FabricServerHolder {
      *
      * @return 已設定的伺服器；尚未設定或已清除時為 null。
      */
-    fun current(): MinecraftServer? = server
+    fun current(): MinecraftServer? = activeSession?.server
+
+    /**
+     * 取得目前啟動身分，供排程工作拒絕舊世界來源。
+     *
+     * @return 目前啟動身分；未啟動或已停止時為 null。
+     */
+    fun sessionId(): Uuid? = activeSession?.id
 
     /**
      * 依玩家 UUID 查找目前在線玩家。
@@ -46,5 +54,13 @@ class FabricServerHolder {
      * @param playerId 要查找的玩家 UUID。
      * @return 找到的玩家，或玩家不在線／server 不存在時的 null。
      */
-    fun findPlayer(playerId: Uuid): ServerPlayerEntity? = server?.playerManager?.getPlayer(playerId.toJavaUuid())
+    fun findPlayer(playerId: Uuid): ServerPlayerEntity? = activeSession?.server?.playerManager?.getPlayer(playerId.toJavaUuid())
+
+    /**
+     * 一次伺服器啟動的不可變身分。
+     *
+     * @property server 目前有效的伺服器。
+     * @property id 每次啟動都重新建立的識別碼。
+     */
+    private class ActiveSession(val server: MinecraftServer, val id: Uuid)
 }

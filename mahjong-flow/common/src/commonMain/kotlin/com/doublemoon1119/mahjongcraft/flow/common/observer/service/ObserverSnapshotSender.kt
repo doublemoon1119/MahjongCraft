@@ -20,4 +20,17 @@ interface ObserverSnapshotSender {
      *   既有內容。
      */
     suspend fun send(id: Uuid, observerId: Uuid, snapshot: ObserverSnapshot?)
+
+    /**
+     * 通知觀察者指定場地已經不再提供原本的狀態。
+     *
+     * 預設實作沿用空快照通知；平台需要區分「快照清除」與「場地移除」時可以覆寫這個方法。
+     *
+     * @param id 已失效的房間或對局識別碼。
+     * @param observerId 接收失效通知的觀察者識別碼。
+     * @param requestId 本次場地失效請求的識別碼；平台可用來拒絕已被新來源取代的舊通知。
+     */
+    suspend fun invalidateVenue(id: Uuid, observerId: Uuid, requestId: Uuid) {
+        send(id = id, observerId = observerId, snapshot = null)
+    }
 }

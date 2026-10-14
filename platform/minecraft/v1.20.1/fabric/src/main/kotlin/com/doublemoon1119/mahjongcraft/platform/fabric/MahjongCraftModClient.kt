@@ -54,6 +54,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.WinSettleme
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.FabricRoomConfigScreenCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.RoomScreen
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.isShowingRoom
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.isShowingRoomForTable
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricHandSortCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricTileLabelCommand
@@ -218,7 +219,7 @@ class MahjongCraftModClient : ClientModInitializer {
             MinecraftClient.getInstance().player?.sendMessage(message)
         }
         MahjongChannels.roomSnapshot.registerClientReceiver(json) { payload ->
-            automaticControlUpdateCoordinator.clear()
+            automaticControlUpdateCoordinator.clearTable(Uuid.parse(payload.roomId))
             stateStore.applyRoomSnapshot(
                 Uuid.parse(payload.roomId),
                 payload.snapshot.toDomain(networkRegistries),
@@ -249,8 +250,19 @@ class MahjongCraftModClient : ClientModInitializer {
             }
         }
         MahjongChannels.snapshotCleared.registerClientReceiver(json) { payload ->
-            stateStore.applySnapshotCleared(Uuid.parse(payload.id))
-            automaticControlUpdateCoordinator.clear()
+            val tableId = Uuid.parse(payload.id)
+            stateStore.applySnapshotCleared(tableId)
+            automaticControlUpdateCoordinator.clearTable(tableId)
+        }
+        MahjongChannels.tableRemoved.registerClientReceiver(json) { payload ->
+            val tableId = Uuid.parse(payload.tableId)
+            stateStore.removeTable(tableId)
+            tileAppearanceResolver.clear(tableId)
+            automaticControlUpdateCoordinator.clearTable(tableId)
+            val client = MinecraftClient.getInstance()
+            if (isShowingRoomForTable(client.currentScreen, tableId)) {
+                client.setScreen(null)
+            }
         }
         MahjongChannels.gameSnapshot.registerClientReceiver(json) { payload ->
             stateStore.applyGameSnapshot(

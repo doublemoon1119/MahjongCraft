@@ -123,6 +123,9 @@ class FabricTableLifecycleServiceTest {
             MinecraftServerConfig(orphanedTablePolicy = OrphanedTablePolicy.REMOVE_ALL),
         )
 
+        /** 記錄桌子移除通知生命週期。 */
+        private val removalNotifier = RecordingTableRemovalNotifier(locations)
+
         /** 實際 orphan cleanup 服務。 */
         val cleanupService = OrphanedTableCleanupService(
             store,
@@ -131,6 +134,7 @@ class FabricTableLifecycleServiceTest {
             gameSnapshots,
             locations,
             configState,
+            removalNotifier,
         )
 
         /** 記錄清理呼叫的骰子 presenter fake。 */

@@ -23,6 +23,12 @@ class FakeRoomSnapshotRepository : RoomSnapshotRepository {
         snapshots.remove(roomId to observerId)
     }
 
+    override suspend fun removeSnapshotIf(roomId: Uuid, observerId: Uuid, isStillValid: () -> Boolean): Boolean {
+        if (!isStillValid()) return false
+        snapshots.remove(roomId to observerId)
+        return true
+    }
+
     override suspend fun getAllObservers(roomId: Uuid): Set<Uuid> = snapshots.keys
         .filter { it.first == roomId }
         .map { it.second }

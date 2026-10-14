@@ -40,6 +40,25 @@ class ClientTileAppearanceResolverTest {
         assertEquals(RIICHI_APPEARANCE, resolver.resolve(firstTable).id)
     }
 
+    /** 清除單一桌子的外觀快取時，不得影響其他桌子的外觀。 */
+    @Test
+    fun `clear table keeps another table appearance`() {
+        val (resolver, store) = fixture()
+        val firstTable = Uuid.random()
+        val secondTable = Uuid.random()
+        store.applyGameSnapshot(firstTable, snapshot(firstTable, RiichiRuleConfig()), emptySet())
+        store.applyGameSnapshot(secondTable, snapshot(secondTable, TaiwanRuleConfig()), emptySet())
+
+        assertEquals(RIICHI_APPEARANCE, resolver.resolve(firstTable).id)
+        assertEquals(TAIWAN_APPEARANCE, resolver.resolve(secondTable).id)
+        store.removeTable(firstTable)
+        store.applySnapshotCleared(secondTable)
+        resolver.clear(firstTable)
+
+        assertEquals(DEFAULT_APPEARANCE, resolver.resolve(firstTable).id)
+        assertEquals(TAIWAN_APPEARANCE, resolver.resolve(secondTable).id)
+    }
+
     /** 驗證 snapshot 清除後仍可讓正在展示的舊桌面使用原本的牌組外觀。 */
     @Test
     fun `snapshot clearing keeps appearance for an active presentation`() {

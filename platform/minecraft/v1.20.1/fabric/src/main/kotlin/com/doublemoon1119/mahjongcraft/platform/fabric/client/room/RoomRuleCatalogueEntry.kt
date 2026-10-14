@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogu
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueConfigSource
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.screen.Screen
+import kotlin.uuid.Uuid
 
 /**
  * 依設定頁目前顯示的內容建立規則一覽的開啟脈絡：與房間目前設定不同時標為尚未套用的草稿。
@@ -48,3 +49,16 @@ internal class RoomRuleCatalogueExit(private val room: RoomScreen) : RuleCatalog
  * @return 房間畫面或從房間開啟的規則一覽時為 true。
  */
 internal fun isShowingRoom(screen: Screen?): Boolean = screen is RoomScreen || (screen as? RuleCatalogueScreen)?.returnScreen is RoomScreen
+
+/**
+ * 判斷目前畫面或其返回目標是否屬於指定桌子。
+ *
+ * @param screen 目前顯示的畫面。
+ * @param tableId 要確認的桌子 UUID。
+ * @return 目前畫面屬於指定桌子時為 true。
+ */
+internal fun isShowingRoomForTable(screen: Screen?, tableId: Uuid): Boolean = when (screen) {
+    is RoomScreen -> screen.isForTable(tableId)
+    is RuleCatalogueScreen -> (screen.returnScreen as? RoomScreen)?.isForTable(tableId) == true
+    else -> false
+}

@@ -157,6 +157,9 @@ class RoomScreen(
     /** 組成成員自風、分數與公開指標文字。 */
     private val memberPresentation = RoomMemberPresentation(indicatorTextResolver)
 
+    /** 判斷這個畫面是否正在顯示指定桌子，供桌子移除通知關閉過期畫面。 */
+    internal fun isForTable(tableId: Uuid): Boolean = this.tableId == tableId
+
     override fun init() {
         applyButton = null
         undoButton = null

@@ -52,4 +52,13 @@ class ClientTileAppearanceResolver(
     fun clear() {
         appearanceIdsByTable.clear()
     }
+
+    /**
+     * 清除指定桌子的公開牌組外觀；普通 snapshot-cleared 不應呼叫此方法，避免中斷仍在播放的展示。
+     *
+     * @param tableId 已移除的桌子 UUID。
+     */
+    fun clear(tableId: Uuid) {
+        appearanceIdsByTable.remove(tableId)
+    }
 }

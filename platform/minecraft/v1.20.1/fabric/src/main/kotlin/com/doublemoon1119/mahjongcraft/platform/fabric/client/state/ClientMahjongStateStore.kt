@@ -264,6 +264,18 @@ class ClientMahjongStateStore(
     }
 
     /**
+     * 移除一張已不存在的麻將桌及其所有桌級 read-side 狀態。
+     *
+     * 與 [applySnapshotCleared] 不同，這裡不保留空桌 occupancy；同一桌子識別碼日後重新出現時，
+     * 必須由新的占用或快照 payload 重新建立完整狀態。
+     *
+     * @param tableId 要移除的桌子 UUID。
+     */
+    fun removeTable(tableId: Uuid) {
+        tables.remove(tableId)
+    }
+
+    /**
      * 保存沒有伴隨遊戲動作的主動同步快照；[aiPlayerIds] 為該對局由 AI 操控的玩家。
      *
      * @param gameId 對局／桌子 UUID。

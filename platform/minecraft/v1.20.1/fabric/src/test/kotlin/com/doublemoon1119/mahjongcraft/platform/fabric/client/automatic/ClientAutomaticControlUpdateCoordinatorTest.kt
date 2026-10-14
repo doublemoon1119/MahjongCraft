@@ -119,6 +119,36 @@ class ClientAutomaticControlUpdateCoordinatorTest {
         assertNull(fixture.coordinator.takeCompletion(nextRequest.requestId))
     }
 
+    /** 桌子移除時清除匹配狀態，延遲 ACK 不得重新建立完成事件。 */
+    @Test
+    fun `clear table rejects delayed ack and preserves another table`() {
+        val fixture = fixture()
+        val firstSnapshot = snapshot(supported = setOf("test:auto_a"))
+        fixture.coordinator.applySnapshot(firstSnapshot)
+        val firstRequest = assertIs<ClientAutomaticControlSubmitResult.Submitted>(
+            fixture.coordinator.submit(setOf("test:auto_a")),
+        ).request
+
+        fixture.coordinator.clearTable(Uuid.parse(firstRequest.gameId))
+
+        assertNull(fixture.coordinator.snapshot())
+        assertNull(fixture.coordinator.pendingRequest())
+        assertTrue(!fixture.coordinator.applyResult(result(firstRequest, AutomaticControlUpdateResultKindDto.ACCEPTED)))
+        assertNull(fixture.coordinator.takeCompletion(firstRequest.requestId))
+
+        val secondSnapshot = snapshot(supported = setOf("test:auto_b"))
+        fixture.coordinator.applySnapshot(secondSnapshot)
+        val secondRequest = assertIs<ClientAutomaticControlSubmitResult.Submitted>(
+            fixture.coordinator.submit(setOf("test:auto_b")),
+        ).request
+        assertTrue(fixture.coordinator.applyResult(result(secondRequest, AutomaticControlUpdateResultKindDto.ACCEPTED)))
+
+        fixture.coordinator.clearTable(Uuid.random())
+
+        assertEquals(secondSnapshot, fixture.coordinator.snapshot())
+        assertNotNull(fixture.coordinator.takeCompletion(secondRequest.requestId))
+    }
+
     /** 新對局快照到達後，舊對局結果不能完成請求。 */
     @Test
     fun `old game result cannot complete a request after a new game snapshot`() {
