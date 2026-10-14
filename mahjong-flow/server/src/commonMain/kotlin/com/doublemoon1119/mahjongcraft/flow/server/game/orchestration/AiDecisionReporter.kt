@@ -30,7 +30,12 @@ interface AiDecisionReporter {
      * @param strategyKey 玩家的策略 key；未指定時為 null。
      * @param failure 策略丟出的例外。
      */
-    fun onStrategyFailed(gameId: Uuid, playerId: Uuid, strategyKey: String?, failure: Exception)
+    fun onStrategyFailed(
+        gameId: Uuid,
+        playerId: Uuid,
+        strategyKey: String?,
+        failure: Exception,
+    )
 
     /** [NONE] 所在的伴生物件。 */
     companion object {
@@ -40,7 +45,12 @@ interface AiDecisionReporter {
 
             override fun onPreviousStillRunning(gameId: Uuid, playerId: Uuid, strategyKey: String?) = Unit
 
-            override fun onStrategyFailed(gameId: Uuid, playerId: Uuid, strategyKey: String?, failure: Exception) = Unit
+            override fun onStrategyFailed(
+                gameId: Uuid,
+                playerId: Uuid,
+                strategyKey: String?,
+                failure: Exception,
+            ) = Unit
         }
     }
 }

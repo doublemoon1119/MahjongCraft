@@ -299,7 +299,11 @@ class DiscardAnalysisPresentationTest {
      * @param availability 和牌資格狀態 ID。
      * @return 以標籤建立的等待牌資料。
      */
-    private fun waiting(label: String, remainingCount: Int, availability: String = WaitingTileAvailabilityIds.WIN_AVAILABLE) = WaitingTileAvailabilityDto(tile(label), remainingCount, availability)
+    private fun waiting(
+        label: String,
+        remainingCount: Int,
+        availability: String = WaitingTileAvailabilityIds.WIN_AVAILABLE,
+    ) = WaitingTileAvailabilityDto(tile(label), remainingCount, availability)
 
     /**
      * 以標籤區分的測試牌種。

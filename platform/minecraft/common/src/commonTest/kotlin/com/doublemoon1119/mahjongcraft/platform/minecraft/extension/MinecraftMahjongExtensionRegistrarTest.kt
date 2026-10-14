@@ -152,9 +152,9 @@ class MinecraftMahjongExtensionRegistrarTest {
 
             override fun registerAutomaticControlDisplays(registry: AutomaticControlDisplayRegistry) {
                 registry.register(
-                    AutomaticControlDisplayDefinition(
-                        "example:auto_flower",
-                        AutomaticControlDisplay("example.auto_flower", "example.auto_flower.description", 40),
+                    definition = AutomaticControlDisplayDefinition(
+                        controlId = "example:auto_flower",
+                        display = AutomaticControlDisplay("example.auto_flower", "example.auto_flower.description", 40),
                     ),
                 )
             }

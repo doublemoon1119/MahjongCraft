@@ -266,7 +266,11 @@ private class MemoryRoomSnapshots : RoomSnapshotRepository {
         data.remove(roomId to observerId)
     }
 
-    override suspend fun removeSnapshotIf(roomId: Uuid, observerId: Uuid, isStillValid: () -> Boolean): Boolean {
+    override suspend fun removeSnapshotIf(
+        roomId: Uuid,
+        observerId: Uuid,
+        isStillValid: () -> Boolean,
+    ): Boolean {
         if (!isStillValid()) return false
         data.remove(roomId to observerId)
         return true
@@ -299,7 +303,11 @@ private class MemoryGameSnapshots : GameSnapshotRepository {
         data.remove(gameId to observerId)
     }
 
-    override suspend fun removeSnapshotIf(gameId: Uuid, observerId: Uuid, isStillValid: () -> Boolean): Boolean {
+    override suspend fun removeSnapshotIf(
+        gameId: Uuid,
+        observerId: Uuid,
+        isStillValid: () -> Boolean,
+    ): Boolean {
         if (!isStillValid()) return false
         data.remove(gameId to observerId)
         return true

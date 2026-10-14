@@ -11,7 +11,11 @@ import net.minecraft.text.Text
  * @param maximumWidth 可用的像素寬度。
  * @return 原始文字或附加省略號的裁切文字；寬度不為正時為空文字。
  */
-internal fun fitClientText(textRenderer: TextRenderer, text: Text, maximumWidth: Int): Text = fitClientText(text, maximumWidth, textRenderer::getWidth)
+internal fun fitClientText(
+    textRenderer: TextRenderer,
+    text: Text,
+    maximumWidth: Int,
+): Text = fitClientText(text, maximumWidth, textRenderer::getWidth)
 
 /**
  * 以注入的寬度量測函式裁切文字，供沒有 client renderer 的測試驗證邊界。
@@ -21,7 +25,11 @@ internal fun fitClientText(textRenderer: TextRenderer, text: Text, maximumWidth:
  * @param width 寬度量測函式。
  * @return 原始文字或附加省略號的裁切文字。
  */
-internal fun fitClientText(text: Text, maximumWidth: Int, width: (Text) -> Int): Text {
+internal fun fitClientText(
+    text: Text,
+    maximumWidth: Int,
+    width: (Text) -> Int,
+): Text {
     if (maximumWidth <= 0) return Text.empty()
     if (width(text) <= maximumWidth) return text
     val raw = text.string

@@ -22,7 +22,7 @@ class ExtensionRegistrationSnapshotTest {
     @Test
     fun `snapshot filters empty categories and unchanged additions`() {
         val captured = ExtensionRegistrationSnapshot(
-            listOf(
+            categories = listOf(
                 ExtensionRegistrationSnapshotCategory("empty", "Empty", emptySet()),
                 ExtensionRegistrationSnapshotCategory("tile", "Tile", setOf("z", "a")),
             ),

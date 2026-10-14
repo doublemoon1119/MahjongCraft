@@ -67,11 +67,11 @@ object BuiltInMinecraftMahjongExtension : MinecraftMahjongExtension {
 
     override fun registerAutomaticControlDisplays(registry: AutomaticControlDisplayRegistry) {
         registry.register(
-            AutomaticControlDisplayDefinition(
-                BuiltInMinecraftAutomaticControlIds.AUTO_SORT_HAND,
-                AutomaticControlDisplay(
-                    MinecraftClientConfigScreenKeys.AUTO_SORT_HAND,
-                    MinecraftClientConfigScreenKeys.AUTO_SORT_HAND_DESCRIPTION,
+            definition = AutomaticControlDisplayDefinition(
+                controlId = BuiltInMinecraftAutomaticControlIds.AUTO_SORT_HAND,
+                display = AutomaticControlDisplay(
+                    labelTranslationKey = MinecraftClientConfigScreenKeys.AUTO_SORT_HAND,
+                    descriptionTranslationKey = MinecraftClientConfigScreenKeys.AUTO_SORT_HAND_DESCRIPTION,
                     displayOrder = 0,
                 ),
             ),
@@ -188,71 +188,71 @@ object BuiltInMinecraftMahjongExtension : MinecraftMahjongExtension {
     override fun registerWinSettlementPresentationTemplates(registry: WinSettlementPresentationTemplateRegistry) {
         registry.register(BuiltInWinSettlementTemplates.GENERIC)
         registry.register(
-            WinSettlementPresentationFieldProviderDefinition(BuiltInWinSettlementFieldIds.COMPLETE_HAND) { snapshot ->
+            definition = WinSettlementPresentationFieldProviderDefinition(BuiltInWinSettlementFieldIds.COMPLETE_HAND) { snapshot ->
                 PresentationValue.TileListValue(snapshot.tileAssetKeys)
             },
         )
         registry.register(
-            WinSettlementPresentationFieldProviderDefinition(BuiltInWinSettlementFieldIds.COMPLETE_HAND_GROUPS) { snapshot ->
+            definition = WinSettlementPresentationFieldProviderDefinition(BuiltInWinSettlementFieldIds.COMPLETE_HAND_GROUPS) { snapshot ->
                 PresentationValue.TileGroupsValue(snapshot.tileAssetGroups)
             },
         )
         registry.register(
-            WinSettlementPresentationFieldProviderDefinition(BuiltInWinSettlementFieldIds.OUTCOME_TITLE) { snapshot ->
+            definition = WinSettlementPresentationFieldProviderDefinition(BuiltInWinSettlementFieldIds.OUTCOME_TITLE) { snapshot ->
                 PresentationValue.TextValue(if (snapshot.isTsumo) WinSettlementTextKeys.TSUMO else WinSettlementTextKeys.RON)
             },
         )
         registry.register(
-            WinSettlementPresentationFieldProviderDefinition(BuiltInWinSettlementFieldIds.WINNER_SUMMARY) { snapshot ->
+            definition = WinSettlementPresentationFieldProviderDefinition(BuiltInWinSettlementFieldIds.WINNER_SUMMARY) { snapshot ->
                 if (snapshot.isTsumo) {
                     PresentationValue.TextValue("%s", listOf(snapshot.winnerDisplayName))
                 } else {
                     PresentationValue.TextValue(
-                        WinSettlementTextKeys.RON_RELATIONSHIP,
-                        listOf(snapshot.winnerDisplayName, snapshot.responsiblePlayerDisplayName.orEmpty()),
+                        translationKey = WinSettlementTextKeys.RON_RELATIONSHIP,
+                        arguments = listOf(snapshot.winnerDisplayName, snapshot.responsiblePlayerDisplayName.orEmpty()),
                     )
                 }
             },
         )
         registry.register(
-            WinSettlementPresentationFieldProviderDefinition(BuiltInWinSettlementFieldIds.WINNER_IDENTITY) { snapshot ->
+            definition = WinSettlementPresentationFieldProviderDefinition(BuiltInWinSettlementFieldIds.WINNER_IDENTITY) { snapshot ->
                 PresentationValue.PlayerIdentityValue(snapshot.winnerId, snapshot.winnerDisplayName, snapshot.winnerIsAi)
             },
         )
         registry.register(
-            WinSettlementPresentationFieldProviderDefinition(BuiltInWinSettlementFieldIds.RESPONSIBLE_PLAYER_IDENTITY) { snapshot ->
+            definition = WinSettlementPresentationFieldProviderDefinition(BuiltInWinSettlementFieldIds.RESPONSIBLE_PLAYER_IDENTITY) { snapshot ->
                 snapshot.responsiblePlayerId?.let { id ->
                     PresentationValue.PlayerIdentityValue(
-                        id,
-                        snapshot.responsiblePlayerDisplayName.orEmpty(),
-                        snapshot.responsiblePlayerIsAi == true,
+                        playerId = id,
+                        displayName = snapshot.responsiblePlayerDisplayName.orEmpty(),
+                        isAi = snapshot.responsiblePlayerIsAi == true,
                     )
                 }
             },
         )
         registry.register(
-            WinSettlementPresentationFieldProviderDefinition(BuiltInWinSettlementFieldIds.RELATION_ARROW) { snapshot ->
+            definition = WinSettlementPresentationFieldProviderDefinition(BuiltInWinSettlementFieldIds.RELATION_ARROW) { snapshot ->
                 snapshot.responsiblePlayerId?.let { PresentationValue.TextValue(WinSettlementTextKeys.RELATIONSHIP_ARROW) }
             },
         )
         registry.register(
-            WinSettlementPresentationFieldProviderDefinition(BuiltInWinSettlementFieldIds.DORA_LABEL) {
+            definition = WinSettlementPresentationFieldProviderDefinition(BuiltInWinSettlementFieldIds.DORA_LABEL) {
                 PresentationValue.TextValue(WinSettlementTextKeys.DORA)
             },
         )
         registry.register(
-            WinSettlementPresentationFieldProviderDefinition(BuiltInWinSettlementFieldIds.URA_DORA_LABEL) {
+            definition = WinSettlementPresentationFieldProviderDefinition(BuiltInWinSettlementFieldIds.URA_DORA_LABEL) {
                 PresentationValue.TextValue(WinSettlementTextKeys.URA_DORA)
             },
         )
         registry.register(WinSettlementPresentationFieldProviderDefinition(BuiltInWinSettlementFieldIds.PAYMENT_SUMMARY) { null })
         registry.register(
-            WinSettlementPresentationFieldProviderDefinition(BuiltInWinSettlementFieldIds.WINNING_TILE) { snapshot ->
+            definition = WinSettlementPresentationFieldProviderDefinition(BuiltInWinSettlementFieldIds.WINNING_TILE) { snapshot ->
                 snapshot.winningTileAssetKey?.let(PresentationValue::TileValue)
             },
         )
         registry.register(
-            WinSettlementPresentationFieldProviderDefinition(BuiltInWinSettlementFieldIds.TOTAL_SCORE) { snapshot ->
+            definition = WinSettlementPresentationFieldProviderDefinition(BuiltInWinSettlementFieldIds.TOTAL_SCORE) { snapshot ->
                 PresentationValue.TextValue(WinSettlementTextKeys.TOTAL_SCORE, listOf(snapshot.totalScore.toString()))
             },
         )
@@ -260,7 +260,7 @@ object BuiltInMinecraftMahjongExtension : MinecraftMahjongExtension {
 
     override fun registerMatchSettlementPresentationTemplates(registry: MatchSettlementPresentationTemplateRegistry) {
         registry.register(
-            MatchSettlementPresentationTemplate(
+            template = MatchSettlementPresentationTemplate(
                 key = BUILT_IN_MATCH_SETTLEMENT_TEMPLATE_KEY,
                 titleTranslationKey = MinecraftMessageKeys.MATCH_SETTLEMENT_TITLE,
             ),
@@ -269,9 +269,9 @@ object BuiltInMinecraftMahjongExtension : MinecraftMahjongExtension {
 
     override fun registerPublicPlayerIndicatorDisplays(registry: PublicPlayerIndicatorDisplayRegistry) {
         registry.register(
-            PublicPlayerIndicatorDisplayDefinition(
-                BuiltInPaymentReasonIds.PAO,
-                PublicPlayerIndicatorDisplay(MinecraftMessageKeys.PLAYER_INDICATOR_PAO, colorRgb = PAO_PAYMENT_REASON_COLOR),
+            definition = PublicPlayerIndicatorDisplayDefinition(
+                id = BuiltInPaymentReasonIds.PAO,
+                display = PublicPlayerIndicatorDisplay(MinecraftMessageKeys.PLAYER_INDICATOR_PAO, colorRgb = PAO_PAYMENT_REASON_COLOR),
             ),
         )
     }
@@ -279,57 +279,57 @@ object BuiltInMinecraftMahjongExtension : MinecraftMahjongExtension {
     /** 核心動作的中立預設用語與操作卡順序；說法不同的規則登記同一個動作 ID 即可覆寫，不需要改動呈現程式。 */
     override fun registerGameActionVocabulary(registry: GameActionVocabularyRegistry) {
         registry.register(
-            GameActionVocabularyDefaultDefinition(
-                BuiltInGameActionIds.CHI,
-                GameActionVocabulary(HUD_ACTION_PREFIX + "chi", MinecraftMessageKeys.GAME_ACTION_CHI, order = 0),
+            definition = GameActionVocabularyDefaultDefinition(
+                actionId = BuiltInGameActionIds.CHI,
+                vocabulary = GameActionVocabulary(HUD_ACTION_PREFIX + "chi", MinecraftMessageKeys.GAME_ACTION_CHI, order = 0),
             ),
         )
         registry.register(
-            GameActionVocabularyDefaultDefinition(
-                BuiltInGameActionIds.PON,
-                GameActionVocabulary(HUD_ACTION_PREFIX + "pon", MinecraftMessageKeys.GAME_ACTION_PON, order = 1),
+            definition = GameActionVocabularyDefaultDefinition(
+                actionId = BuiltInGameActionIds.PON,
+                vocabulary = GameActionVocabulary(HUD_ACTION_PREFIX + "pon", MinecraftMessageKeys.GAME_ACTION_PON, order = 1),
             ),
         )
         registry.register(
-            GameActionVocabularyDefaultDefinition(
-                BuiltInGameActionIds.KAN_OPEN,
-                GameActionVocabulary(HUD_ACTION_PREFIX + MinecraftKanActionTokenKeys.OPEN, MinecraftMessageKeys.GAME_ACTION_KAN_OPEN, order = 2),
+            definition = GameActionVocabularyDefaultDefinition(
+                actionId = BuiltInGameActionIds.KAN_OPEN,
+                vocabulary = GameActionVocabulary(HUD_ACTION_PREFIX + MinecraftKanActionTokenKeys.OPEN, MinecraftMessageKeys.GAME_ACTION_KAN_OPEN, order = 2),
             ),
         )
         registry.register(
-            GameActionVocabularyDefaultDefinition(
-                BuiltInGameActionIds.KAN_CLOSED,
-                GameActionVocabulary(HUD_ACTION_PREFIX + MinecraftKanActionTokenKeys.CLOSED, MinecraftMessageKeys.GAME_ACTION_KAN_CLOSED, order = 2),
+            definition = GameActionVocabularyDefaultDefinition(
+                actionId = BuiltInGameActionIds.KAN_CLOSED,
+                vocabulary = GameActionVocabulary(HUD_ACTION_PREFIX + MinecraftKanActionTokenKeys.CLOSED, MinecraftMessageKeys.GAME_ACTION_KAN_CLOSED, order = 2),
             ),
         )
         registry.register(
-            GameActionVocabularyDefaultDefinition(
-                BuiltInGameActionIds.KAN_ADDED,
-                GameActionVocabulary(HUD_ACTION_PREFIX + MinecraftKanActionTokenKeys.ADDED, MinecraftMessageKeys.GAME_ACTION_KAN_ADDED, order = 2),
+            definition = GameActionVocabularyDefaultDefinition(
+                actionId = BuiltInGameActionIds.KAN_ADDED,
+                vocabulary = GameActionVocabulary(HUD_ACTION_PREFIX + MinecraftKanActionTokenKeys.ADDED, MinecraftMessageKeys.GAME_ACTION_KAN_ADDED, order = 2),
             ),
         )
         registry.register(
-            GameActionVocabularyDefaultDefinition(
-                BuiltInGameActionIds.RON,
-                GameActionVocabulary(HUD_ACTION_PREFIX + "ron", MinecraftMessageKeys.GAME_ACTION_RON, order = 3),
+            definition = GameActionVocabularyDefaultDefinition(
+                actionId = BuiltInGameActionIds.RON,
+                vocabulary = GameActionVocabulary(HUD_ACTION_PREFIX + "ron", MinecraftMessageKeys.GAME_ACTION_RON, order = 3),
             ),
         )
         registry.register(
-            GameActionVocabularyDefaultDefinition(
-                BuiltInGameActionIds.TSUMO,
-                GameActionVocabulary(HUD_ACTION_PREFIX + "tsumo", MinecraftMessageKeys.GAME_ACTION_TSUMO, order = 4),
+            definition = GameActionVocabularyDefaultDefinition(
+                actionId = BuiltInGameActionIds.TSUMO,
+                vocabulary = GameActionVocabulary(HUD_ACTION_PREFIX + "tsumo", MinecraftMessageKeys.GAME_ACTION_TSUMO, order = 4),
             ),
         )
         registry.register(
-            GameActionVocabularyDefaultDefinition(
-                BuiltInGameActionIds.PASS,
-                GameActionVocabulary(HUD_ACTION_PREFIX + "pass", MinecraftMessageKeys.GAME_ACTION_PASS),
+            definition = GameActionVocabularyDefaultDefinition(
+                actionId = BuiltInGameActionIds.PASS,
+                vocabulary = GameActionVocabulary(HUD_ACTION_PREFIX + "pass", MinecraftMessageKeys.GAME_ACTION_PASS),
             ),
         )
         registry.register(
-            GameActionVocabularyDefaultDefinition(
-                BuiltInGameActionIds.DISCARD,
-                GameActionVocabulary(HUD_ACTION_PREFIX + "discard", MinecraftMessageKeys.GAME_ACTION_DISCARD),
+            definition = GameActionVocabularyDefaultDefinition(
+                actionId = BuiltInGameActionIds.DISCARD,
+                vocabulary = GameActionVocabulary(HUD_ACTION_PREFIX + "discard", MinecraftMessageKeys.GAME_ACTION_DISCARD),
             ),
         )
     }

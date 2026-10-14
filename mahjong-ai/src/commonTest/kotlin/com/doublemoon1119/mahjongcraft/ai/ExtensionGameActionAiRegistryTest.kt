@@ -25,7 +25,7 @@ class ExtensionGameActionAiRegistryTest {
         val receivedModules = mutableListOf<MahjongRuleModule<*>>()
         val registry = ExtensionGameActionAiRegistry(moduleRegistry).apply {
             register(
-                ExtensionGameActionAiDefinition(TestAction::class) { _, _, module ->
+                definition = ExtensionGameActionAiDefinition(TestAction::class) { _, _, module ->
                     receivedModules += module
                     emptyList()
                 },

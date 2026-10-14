@@ -142,9 +142,9 @@ object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
         registry.register(ExhaustiveDrawReasonDisplayNameDefinition(RiichiExhaustiveDrawReason.SuuchaRiichi.id, MinecraftMessageKeys.GAME_ACTION_SUUCHA_RIICHI))
         registry.register(ExhaustiveDrawReasonDisplayNameDefinition(RiichiExhaustiveDrawReason.SanchaHou.id, MinecraftMessageKeys.GAME_ACTION_SANCHA_HOU))
         registry.register(
-            ExhaustiveDrawSettlementStatusLabelsDefinition(
-                RiichiExhaustiveDrawReason.Normal.id,
-                ExhaustiveDrawSettlementStatusLabels(
+            definition = ExhaustiveDrawSettlementStatusLabelsDefinition(
+                reasonId = RiichiExhaustiveDrawReason.Normal.id,
+                labels = ExhaustiveDrawSettlementStatusLabels(
                     beneficiaryTranslationKey = MinecraftMessageKeys.EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_TENPAI,
                     othersTranslationKey = MinecraftMessageKeys.EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_NOTEN,
                 ),
@@ -159,9 +159,9 @@ object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
     /** 立直宣告的牌在歷史牌河上橫擺，提示顯示「立直」。 */
     override fun registerHistoryDiscardMarkerDisplays(registry: HistoryDiscardMarkerDisplayRegistry) {
         registry.register(
-            HistoryDiscardMarkerDisplayDefinition(
-                RiichiHistoryDiscardMarkerIds.RIICHI_DECLARED,
-                HistoryDiscardMarkerDisplay(labelTranslationKey = MinecraftMessageKeys.PLAYER_INDICATOR_RIICHI, sideways = true),
+            definition = HistoryDiscardMarkerDisplayDefinition(
+                markerId = RiichiHistoryDiscardMarkerIds.RIICHI_DECLARED,
+                display = HistoryDiscardMarkerDisplay(labelTranslationKey = MinecraftMessageKeys.PLAYER_INDICATOR_RIICHI, sideways = true),
             ),
         )
     }
@@ -171,9 +171,9 @@ object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
         registry.register(RiichiWinSettlementTemplates.RIICHI)
         RIICHI_FAMILY_RULE_MODULE_IDS.forEach { ruleModuleId -> registry.register(WinSettlementRuleTemplateBindingDefinition(ruleModuleId, RiichiWinSettlementTemplates.RIICHI_KEY)) }
         registry.register(
-            WinSettlementPresentationFieldProviderDefinition(RiichiWinSettlementTemplates.OUTCOME_TITLE) { snapshot ->
+            definition = WinSettlementPresentationFieldProviderDefinition(RiichiWinSettlementTemplates.OUTCOME_TITLE) { snapshot ->
                 PresentationValue.TextValue(
-                    when {
+                    translationKey = when {
                         snapshot.outcomeId == RiichiRoundOutcomeIds.NAGASHI_MANGAN -> WinSettlementTextKeys.NAGASHI_MANGAN
                         snapshot.isTsumo -> WinSettlementTextKeys.TSUMO
                         else -> WinSettlementTextKeys.RON
@@ -182,13 +182,13 @@ object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
             },
         )
         registry.register(
-            WinSettlementPresentationFieldProviderDefinition(RiichiWinSettlementTemplates.WINNER_SUMMARY) { snapshot ->
+            definition = WinSettlementPresentationFieldProviderDefinition(RiichiWinSettlementTemplates.WINNER_SUMMARY) { snapshot ->
                 if (snapshot.isTsumo || snapshot.outcomeId == RiichiRoundOutcomeIds.NAGASHI_MANGAN) {
                     PresentationValue.TextValue("%s", listOf(snapshot.winnerDisplayName))
                 } else {
                     PresentationValue.TextValue(
-                        WinSettlementTextKeys.RON_RELATIONSHIP,
-                        listOf(snapshot.winnerDisplayName, snapshot.responsiblePlayerDisplayName.orEmpty()),
+                        translationKey = WinSettlementTextKeys.RON_RELATIONSHIP,
+                        arguments = listOf(snapshot.winnerDisplayName, snapshot.responsiblePlayerDisplayName.orEmpty()),
                     )
                 }
             },
@@ -229,7 +229,7 @@ object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
             BuiltInGameActionSoundIds.TSUMO to BuiltInGameActionVoiceSoundIds.TSUMO,
         ).forEach { (actionId, soundId) ->
             registry.register(
-                GameActionSoundDefinition(
+                definition = GameActionSoundDefinition(
                     ruleModuleId = ruleModuleId,
                     actionId = actionId,
                     presentation = GameActionSoundPresentation(soundId),
@@ -249,10 +249,10 @@ object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
     override fun registerGameActionVocabulary(registry: GameActionVocabularyRegistry) {
         RIICHI_FAMILY_RULE_MODULE_IDS.forEach { ruleModuleId -> registerGameActionVocabulary(registry, ruleModuleId) }
         registry.register(
-            GameActionVocabularyDefinition(
-                BuiltInRuleModuleIds.RIICHI_THREE_PLAYER,
-                RiichiGameAction.PullNorth.id,
-                GameActionVocabulary(
+            definition = GameActionVocabularyDefinition(
+                ruleModuleId = BuiltInRuleModuleIds.RIICHI_THREE_PLAYER,
+                actionId = RiichiGameAction.PullNorth.id,
+                vocabulary = GameActionVocabulary(
                     labelKey = MinecraftMessageKeys.GAME_ACTION_PULL_NORTH,
                     order = PULL_NORTH_ACTION_ORDER,
                     descriptionKey = HUD_ACTION_PULL_NORTH_DESCRIPTION,
@@ -264,10 +264,10 @@ object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
     /** 為 [ruleModuleId] 登記立直與九種九牌的動作用語。 */
     private fun registerGameActionVocabulary(registry: GameActionVocabularyRegistry, ruleModuleId: String) {
         registry.register(
-            GameActionVocabularyDefinition(
-                ruleModuleId,
-                RiichiGameAction.Riichi.id,
-                GameActionVocabulary(
+            definition = GameActionVocabularyDefinition(
+                ruleModuleId = ruleModuleId,
+                actionId = RiichiGameAction.Riichi.id,
+                vocabulary = GameActionVocabulary(
                     labelKey = MinecraftMessageKeys.GAME_ACTION_RIICHI,
                     order = RIICHI_ACTION_ORDER,
                     descriptionKey = HUD_ACTION_RIICHI_DESCRIPTION,
@@ -275,10 +275,10 @@ object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
             ),
         )
         registry.register(
-            GameActionVocabularyDefinition(
-                ruleModuleId,
-                RiichiExhaustiveDrawReason.KyuushuKyuuhai.id,
-                GameActionVocabulary(
+            definition = GameActionVocabularyDefinition(
+                ruleModuleId = ruleModuleId,
+                actionId = RiichiExhaustiveDrawReason.KyuushuKyuuhai.id,
+                vocabulary = GameActionVocabulary(
                     labelKey = MinecraftMessageKeys.GAME_ACTION_KYUUSHU_KYUUHAI,
                     order = KYUUSHU_KYUUHAI_ACTION_ORDER,
                     descriptionKey = HUD_ACTION_KYUUSHU_KYUUHAI_DESCRIPTION,

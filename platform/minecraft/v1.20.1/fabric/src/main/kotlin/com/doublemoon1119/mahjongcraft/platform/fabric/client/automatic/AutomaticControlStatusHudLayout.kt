@@ -4,29 +4,35 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongHudB
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.hudCoordinate
 import kotlin.math.ceil
 
-/** 一列在未縮放面板內的位置；`rowIndex == null` 表示剩餘項目數。 */
+/**
+ * 一列在未縮放面板內的位置；`rowIndex == null` 表示剩餘項目數。
+ *
+ * @property rowIndex 對應的可見狀態列索引；摘要列為 `null`。
+ * @property x 未縮放面板中的 X 座標。
+ * @property y 未縮放面板中的 Y 座標。
+ */
 internal data class AutomaticControlStatusPlacement(
-    /** 對應的可見狀態列索引；摘要列為 `null`。 */
     val rowIndex: Int?,
-    /** 未縮放面板中的 X 座標。 */
     val x: Int,
-    /** 未縮放面板中的 Y 座標。 */
     val y: Int,
 )
 
-/** 完整狀態面板的 GUI scaled bounds 與局部繪製座標。 */
+/**
+ * 完整狀態面板的 GUI scaled bounds 與局部繪製座標。
+ *
+ * @property bounds 縮放後並限制在螢幕內的面板範圍。
+ * @property rawWidth 縮放前的面板寬度。
+ * @property rawHeight 縮放前的面板高度。
+ * @property scale 符合螢幕可用範圍的繪製縮放值。
+ * @property placements 各可見列與摘要列的未縮放座標。
+ * @property hiddenCount 未顯示的狀態列數量。
+ */
 internal data class AutomaticControlStatusHudLayout(
-    /** 縮放後並限制在螢幕內的面板範圍。 */
     val bounds: MahjongHudBounds,
-    /** 縮放前的面板寬度。 */
     val rawWidth: Int,
-    /** 縮放前的面板高度。 */
     val rawHeight: Int,
-    /** 符合螢幕可用範圍的繪製縮放值。 */
     val scale: Float,
-    /** 各可見列與摘要列的未縮放座標。 */
     val placements: List<AutomaticControlStatusPlacement>,
-    /** 未顯示的狀態列數量。 */
     val hiddenCount: Int,
 )
 

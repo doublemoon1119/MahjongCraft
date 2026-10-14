@@ -42,7 +42,7 @@ class ResourceCatalogueTileArtTest {
         val assets = MinecraftTileAssetRegistryImpl()
         val typeId = TileTypeId.parse("example:inverted_five_pin")
         assets.register(
-            MinecraftTileAssetDefinition(
+            definition = MinecraftTileAssetDefinition(
                 typeId = typeId,
                 assetKey = "example_inverted_five_pin",
                 resources = MinecraftTileResources(
@@ -57,8 +57,8 @@ class ResourceCatalogueTileArtTest {
 
         assertEquals("example_inverted_five_pin", art.resolve(Tile.Extension(typeId)).assetKey)
         assertEquals(
-            Identifier("example", "textures/item/mahjong_tile/inverted_five_pin.png"),
-            resources.requested.single(),
+            expected = Identifier("example", "textures/item/mahjong_tile/inverted_five_pin.png"),
+            actual = resources.requested.single(),
         )
 
         resources.availableIds.clear()

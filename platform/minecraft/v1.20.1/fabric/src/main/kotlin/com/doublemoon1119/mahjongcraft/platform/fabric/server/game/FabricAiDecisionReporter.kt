@@ -24,7 +24,12 @@ class FabricAiDecisionReporter : AiDecisionReporter {
         )
     }
 
-    override fun onStrategyFailed(gameId: Uuid, playerId: Uuid, strategyKey: String?, failure: Exception) {
+    override fun onStrategyFailed(
+        gameId: Uuid,
+        playerId: Uuid,
+        strategyKey: String?,
+        failure: Exception,
+    ) {
         logger.warn(
             "AI strategy for player {} in game {} with strategy {} failed; using the fixed command",
             playerId,

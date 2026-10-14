@@ -35,7 +35,11 @@ class SeatAssignmentCoordinator<W, R, S>(
      * @param request 固定席位請求。
      * @return 可供平台提示的結果。
      */
-    fun assign(world: W, rider: R, request: SeatRequest): SeatAssignmentResult {
+    fun assign(
+        world: W,
+        rider: R,
+        request: SeatRequest,
+    ): SeatAssignmentResult {
         val original = environment.snapshot(rider)
         var providerId = "unresolved"
         try {

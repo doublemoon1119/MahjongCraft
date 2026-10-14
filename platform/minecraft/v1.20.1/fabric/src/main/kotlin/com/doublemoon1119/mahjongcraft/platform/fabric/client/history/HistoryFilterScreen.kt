@@ -345,10 +345,10 @@ internal class HistoryFilterScreen(
             session.ruleNames.registrationKeys.sorted().indexOf(id).takeIf { it >= 0 }?.plus(1)
         } ?: 0
         return historyOptionTooltip(
-            Text.translatable(MinecraftHistoryScreenKeys.FILTER_RULE),
-            current,
-            selectedIndex,
-            options,
+            title = Text.translatable(MinecraftHistoryScreenKeys.FILTER_RULE),
+            current = current,
+            selectedIndex = selectedIndex,
+            options = options,
         )
     }
 

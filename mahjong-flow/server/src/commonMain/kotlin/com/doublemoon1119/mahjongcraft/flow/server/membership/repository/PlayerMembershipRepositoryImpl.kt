@@ -25,7 +25,11 @@ class PlayerMembershipRepositoryImpl : PlayerMembershipRepository {
         Unit
     }
 
-    override suspend fun releaseIf(playerId: Uuid, venueId: Uuid, isStillValid: () -> Boolean): Boolean = mutex.withLock {
+    override suspend fun releaseIf(
+        playerId: Uuid,
+        venueId: Uuid,
+        isStillValid: () -> Boolean,
+    ): Boolean = mutex.withLock {
         if (!isStillValid()) return@withLock false
         if (venueIdsByPlayerId[playerId] == venueId) venueIdsByPlayerId.remove(playerId)
         true

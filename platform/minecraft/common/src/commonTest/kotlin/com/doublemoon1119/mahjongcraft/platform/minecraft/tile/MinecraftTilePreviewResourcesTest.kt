@@ -17,20 +17,20 @@ class MinecraftTilePreviewResourcesTest {
         )
 
         assertEquals(
-            MinecraftTilePreviewTexture(appearance.coverTextureId, 3f / 16f, 0f, 6f / 16f, 4f / 16f),
-            tilePreviewTexture(TILE_BACK_PREVIEW_ASSET_KEY, registry, appearance),
+            expected = MinecraftTilePreviewTexture(appearance.coverTextureId, 3f / 16f, 0f, 6f / 16f, 4f / 16f),
+            actual = tilePreviewTexture(TILE_BACK_PREVIEW_ASSET_KEY, registry, appearance),
         )
         assertEquals(
-            MinecraftTilePreviewTexture(appearance.unknownFaceTextureId, 0f, 0f, 1f, 1f),
-            tilePreviewTexture(UNKNOWN_TILE_ASSET_KEY, registry, appearance),
+            expected = MinecraftTilePreviewTexture(appearance.unknownFaceTextureId, 0f, 0f, 1f, 1f),
+            actual = tilePreviewTexture(UNKNOWN_TILE_ASSET_KEY, registry, appearance),
         )
         assertEquals(
-            MinecraftTilePreviewTexture(appearance.unknownFaceTextureId, 0f, 0f, 1f, 1f),
-            tilePreviewTexture("unregistered", registry, appearance),
+            expected = MinecraftTilePreviewTexture(appearance.unknownFaceTextureId, 0f, 0f, 1f, 1f),
+            actual = tilePreviewTexture("unregistered", registry, appearance),
         )
         assertEquals(
-            MinecraftTilePreviewTexture("mahjongcraft:textures/item/mahjong_tile/mahjong_tile_p5.png", 0f, 0f, 1f, 1f),
-            tilePreviewTexture("p5", registry, appearance),
+            expected = MinecraftTilePreviewTexture("mahjongcraft:textures/item/mahjong_tile/mahjong_tile_p5.png", 0f, 0f, 1f, 1f),
+            actual = tilePreviewTexture("p5", registry, appearance),
         )
     }
 
@@ -38,8 +38,8 @@ class MinecraftTilePreviewResourcesTest {
     @Test
     fun `default flat back uses the built in cover crop`() {
         assertEquals(
-            BuiltInMinecraftTileAppearances.DEFAULT.coverTextureId,
-            tilePreviewTexture(TILE_BACK_PREVIEW_ASSET_KEY, MinecraftTileAssetRegistryImpl()).resourceId,
+            expected = BuiltInMinecraftTileAppearances.DEFAULT.coverTextureId,
+            actual = tilePreviewTexture(TILE_BACK_PREVIEW_ASSET_KEY, MinecraftTileAssetRegistryImpl()).resourceId,
         )
     }
 
@@ -47,8 +47,8 @@ class MinecraftTilePreviewResourcesTest {
     @Test
     fun `appearance defaults unknown face texture`() {
         assertEquals(
-            "mahjongcraft:textures/item/mahjong_tile/mahjong_tile_unknown.png",
-            MinecraftTileSetAppearanceDefinition(
+            expected = "mahjongcraft:textures/item/mahjong_tile/mahjong_tile_unknown.png",
+            actual = MinecraftTileSetAppearanceDefinition(
                 id = "example:defaulted",
                 coverTextureId = "example:textures/cover.png",
             ).unknownFaceTextureId,

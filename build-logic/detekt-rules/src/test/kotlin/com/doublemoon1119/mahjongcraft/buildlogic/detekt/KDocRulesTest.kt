@@ -11,7 +11,7 @@ class KDocRulesTest {
     @Test
     fun `opening rule reports malformed multiline opening`() {
         val findings = KDocOpeningLineRule().lint(
-            "/** description\n * @param value value\n */\nclass Sample(val value: String)",
+            content = "/** description\n * @param value value\n */\nclass Sample(val value: String)",
         )
 
         assertEquals(1, findings.size)

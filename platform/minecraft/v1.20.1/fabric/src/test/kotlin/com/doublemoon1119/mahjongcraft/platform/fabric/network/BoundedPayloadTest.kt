@@ -145,10 +145,10 @@ class BoundedPayloadTest {
         val payload = "\"${"a".repeat(128)}\""
 
         val accepted = decodeAndDispatchC2S(
-            bufferFor(payload),
-            Json,
-            String.serializer(),
-            8,
+            buf = bufferFor(payload),
+            json = Json,
+            serializer = String.serializer(),
+            maxPayloadBytes = 8,
         ) {
             dispatched = true
         }
@@ -163,10 +163,10 @@ class BoundedPayloadTest {
         var dispatched: String? = null
 
         val accepted = decodeAndDispatchC2S(
-            bufferFor("\"value\""),
-            Json,
-            String.serializer(),
-            null,
+            buf = bufferFor("\"value\""),
+            json = Json,
+            serializer = String.serializer(),
+            maxPayloadBytes = null,
         ) {
             dispatched = it
         }
@@ -266,8 +266,8 @@ class BoundedPayloadTest {
     fun `nullable dto dispatches successfully`() {
         var dispatches = 0
         assertEquals(
-            true,
-            decodeAndDispatchC2S(bufferFor("null"), Json, String.serializer().nullable, null) {
+            expected = true,
+            actual = decodeAndDispatchC2S(bufferFor("null"), Json, String.serializer().nullable, null) {
                 assertNull(it)
                 dispatches += 1
             },

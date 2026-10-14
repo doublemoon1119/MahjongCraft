@@ -94,7 +94,11 @@ class MahjongStoolSeatService(
      * @param entity 要乘坐凳子的實體。
      * @return 凳子存在、未被占用且乘坐空間足夠時為 true。
      */
-    fun canSit(world: ServerWorld, stoolPos: BlockPos, entity: Entity): Boolean {
+    fun canSit(
+        world: ServerWorld,
+        stoolPos: BlockPos,
+        entity: Entity,
+    ): Boolean {
         if (!world.chunkManager.isChunkLoaded(stoolPos.x shr 4, stoolPos.z shr 4)) return false
         val stool = world.getBlockState(stoolPos).block as? MahjongStoolBlock ?: return false
         if (entity.world !== world || entity.hasVehicle()) return false

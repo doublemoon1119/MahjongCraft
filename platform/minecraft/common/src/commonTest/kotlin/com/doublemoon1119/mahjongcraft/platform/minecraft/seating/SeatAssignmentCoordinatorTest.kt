@@ -141,8 +141,8 @@ class SeatAssignmentCoordinatorTest {
 
         assertTrue(left.identity != right.identity)
         val result = SeatAssignmentCoordinator(
-            listOf(provider("bench") { _, _ -> listOf(left, right) }),
-            FakeEnvironment(),
+            providers = listOf(provider("bench") { _, _ -> listOf(left, right) }),
+            environment = FakeEnvironment(),
         ) { _, _ -> }.assign(world, rider, request())
 
         assertEquals(SeatAssignmentResult.SEATED, result)
@@ -159,8 +159,8 @@ class SeatAssignmentCoordinatorTest {
         val secondTarget = FakeTarget("shared", slot = "main")
         val environment = FakeEnvironment()
         val coordinator = SeatAssignmentCoordinator(
-            listOf(provider("shared") { _, _ -> listOf(firstTarget, secondTarget) }),
-            environment,
+            providers = listOf(provider("shared") { _, _ -> listOf(firstTarget, secondTarget) }),
+            environment = environment,
         ) { _, _ -> }
 
         assertEquals(SeatAssignmentResult.SEATED, coordinator.assign(world, firstRider, request()))
@@ -175,8 +175,8 @@ class SeatAssignmentCoordinatorTest {
         val occupied = FakeTarget("bench", state = SeatState.OCCUPIED, slot = "left", x = 1.0)
         val available = FakeTarget("bench", slot = "right")
         val coordinator = SeatAssignmentCoordinator(
-            listOf(provider("bench") { _, _ -> listOf(occupied, available) }),
-            FakeEnvironment(),
+            providers = listOf(provider("bench") { _, _ -> listOf(occupied, available) }),
+            environment = FakeEnvironment(),
         ) { _, _ -> }
 
         val result = coordinator.assign(world, rider, request())
@@ -193,14 +193,14 @@ class SeatAssignmentCoordinatorTest {
         var attempts = 0
         val environment = FakeEnvironment(canStand = true)
         val coordinator = SeatAssignmentCoordinator(
-            listOf(
+            providers = listOf(
                 provider("retry") { _, _ ->
                     attempts++
                     if (attempts == 1) throw IllegalStateException("temporary provider failure")
                     listOf(target)
                 },
             ),
-            environment,
+            environment = environment,
         ) { _, _ -> }
 
         assertEquals(SeatAssignmentResult.FAILED, coordinator.assign(world, rider, request()))
@@ -241,8 +241,8 @@ class SeatAssignmentCoordinatorTest {
         val reports = mutableListOf<String>()
 
         val result = SeatAssignmentCoordinator(
-            listOf(provider("bad") { _, _ -> listOf(target) }),
-            environment,
+            providers = listOf(provider("bad") { _, _ -> listOf(target) }),
+            environment = environment,
         ) { id, _ -> reports += id }.assign(world, rider, request())
 
         assertEquals(SeatAssignmentResult.FAILED, result)
@@ -295,8 +295,8 @@ class SeatAssignmentCoordinatorTest {
 
     /** 建立單一測試 target 的協調器。 */
     private fun coordinator(target: FakeTarget, environment: FakeEnvironment): SeatAssignmentCoordinator<FakeWorld, FakeRider, Snapshot> = SeatAssignmentCoordinator(
-        listOf(provider("test") { _, _ -> listOf(target) }),
-        environment,
+        providers = listOf(provider("test") { _, _ -> listOf(target) }),
+        environment = environment,
     ) { _, _ -> }
 
     /** 測試用的世界型別。 */
@@ -343,13 +343,21 @@ class SeatAssignmentCoordinatorTest {
 
         override fun hasVehicle(rider: FakeRider): Boolean = rider.vehicle || rider.seated
 
-        override fun stand(world: FakeWorld, rider: FakeRider, request: SeatRequest): Boolean {
+        override fun stand(
+            world: FakeWorld,
+            rider: FakeRider,
+            request: SeatRequest,
+        ): Boolean {
             standCalls++
             if (canStand) rider.position = 1
             return canStand
         }
 
-        override fun positioned(world: FakeWorld, rider: FakeRider, geometry: SeatGeometry): Boolean = rider.seated
+        override fun positioned(
+            world: FakeWorld,
+            rider: FakeRider,
+            geometry: SeatGeometry,
+        ): Boolean = rider.seated
 
         override fun recover(rider: FakeRider, snapshot: Snapshot) {
             recoverCalls++

@@ -338,9 +338,9 @@ class HistoryRoundEventPresentationTest {
         val reasons = ExhaustiveDrawReasonDisplayNameRegistryImpl().apply {
             register(ExhaustiveDrawReasonDisplayNameDefinition("example:registered_draw", "test.registered_draw"))
             register(
-                ExhaustiveDrawSettlementStatusLabelsDefinition(
-                    RiichiExhaustiveDrawReason.Normal.id,
-                    ExhaustiveDrawSettlementStatusLabels(
+                definition = ExhaustiveDrawSettlementStatusLabelsDefinition(
+                    reasonId = RiichiExhaustiveDrawReason.Normal.id,
+                    labels = ExhaustiveDrawSettlementStatusLabels(
                         beneficiaryTranslationKey = MinecraftMessageKeys.EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_TENPAI,
                         othersTranslationKey = MinecraftMessageKeys.EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_NOTEN,
                     ),

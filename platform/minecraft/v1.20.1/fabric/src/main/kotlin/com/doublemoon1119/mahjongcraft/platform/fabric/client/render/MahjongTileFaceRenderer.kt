@@ -248,7 +248,15 @@ class MahjongTileFaceRenderer(
      * @param height 牌面高度。
      * @param appearance 公開規則指定的牌組外觀。
      */
-    private fun renderUprightGui(context: DrawContext, assetKey: String, x: Int, y: Int, width: Int, height: Int, appearance: MinecraftTileSetAppearanceDefinition) {
+    private fun renderUprightGui(
+        context: DrawContext,
+        assetKey: String,
+        x: Int,
+        y: Int,
+        width: Int,
+        height: Int,
+        appearance: MinecraftTileSetAppearanceDefinition,
+    ) {
         val preview = resolvePreviewTexture(assetKey, appearance)
         context.drawTexture(
             Identifier(preview.resourceId),

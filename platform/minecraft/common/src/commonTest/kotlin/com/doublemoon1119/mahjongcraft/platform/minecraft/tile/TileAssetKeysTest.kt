@@ -121,12 +121,12 @@ class TileAssetKeysTest {
     @Test
     fun `resource ids normalize unknown keys to built in fallback`() {
         assertEquals(
-            "mahjongcraft:textures/item/mahjong_tile/mahjong_tile_unknown.png",
-            tileTextureResourceId("example:missing", registry),
+            expected = "mahjongcraft:textures/item/mahjong_tile/mahjong_tile_unknown.png",
+            actual = tileTextureResourceId("example:missing", registry),
         )
         assertEquals(
-            "mahjongcraft:item/mahjong_tile/mahjong_tile_unknown",
-            tileModelResourceId("example:missing", registry),
+            expected = "mahjongcraft:item/mahjong_tile/mahjong_tile_unknown",
+            actual = tileModelResourceId("example:missing", registry),
         )
     }
 
@@ -135,10 +135,10 @@ class TileAssetKeysTest {
     fun `resource ids use registered custom resources`() {
         val thirdPartyRegistry = MinecraftTileAssetRegistryImpl().apply {
             register(
-                MinecraftTileAssetDefinition(
-                    TileTypeId.parse("example:animal/cat"),
-                    "animal_cat",
-                    MinecraftTileResources("example:textures/custom/cat.png", "example:item/custom/cat"),
+                definition = MinecraftTileAssetDefinition(
+                    typeId = TileTypeId.parse("example:animal/cat"),
+                    assetKey = "animal_cat",
+                    resources = MinecraftTileResources("example:textures/custom/cat.png", "example:item/custom/cat"),
                 ),
             )
         }

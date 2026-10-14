@@ -188,7 +188,7 @@ class FabricApplicationModuleTest {
              */
             override fun registerAiStrategies(registry: MahjongAiStrategyRegistry) {
                 registry.register(
-                    MahjongAiStrategyDefinition("example:custom_strategy") {
+                    definition = MahjongAiStrategyDefinition("example:custom_strategy") {
                         RandomAiStrategy(koin.get<ExtensionGameActionAiRegistry>())
                     },
                 )
@@ -225,7 +225,7 @@ class FabricApplicationModuleTest {
         assertTrue(extensionSource.categories.any { it.id == "mahjongcraft:ai_strategy_display_name" && "example:custom_strategy" in it.registrationIds })
         assertFailsWith<IllegalStateException> {
             strategyRegistry.register(
-                MahjongAiStrategyDefinition("example:late") {
+                definition = MahjongAiStrategyDefinition("example:late") {
                     RandomAiStrategy(koin.get<ExtensionGameActionAiRegistry>())
                 },
             )
@@ -323,8 +323,8 @@ class FabricApplicationModuleTest {
         assertSame(fabricRegistries, koin.get<FabricExtensionRegistries>())
         assertTrue(seatProviders.isFrozen)
         assertSame(
-            koin.get<MahjongStoolSeatProvider>(),
-            seatProviders.entries().single { it.id == BuiltInFabricSeatProviderIds.MAHJONG_STOOL }.provider,
+            expected = koin.get<MahjongStoolSeatProvider>(),
+            actual = seatProviders.entries().single { it.id == BuiltInFabricSeatProviderIds.MAHJONG_STOOL }.provider,
         )
         assertFailsWith<IllegalStateException> {
             seatProviders.register(RegisteredSeatProvider("example:late", koin.get<MahjongStoolSeatProvider>()))

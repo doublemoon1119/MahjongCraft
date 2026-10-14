@@ -41,8 +41,8 @@ class PlayerPortraitRendererTest {
 
         assertEquals("fallback drawn", result)
         assertEquals(
-            listOf<PlayerPortraitSource>(PlayerPortraitSource.TileFace("custom"), PlayerPortraitSource.TileFace("fallback")),
-            attemptedSources,
+            expected = listOf<PlayerPortraitSource>(PlayerPortraitSource.TileFace("custom"), PlayerPortraitSource.TileFace("fallback")),
+            actual = attemptedSources,
         )
         assertEquals(listOf("example:provider"), reportedProviderIds)
     }
@@ -75,7 +75,7 @@ class PlayerPortraitRendererTest {
 
         renderPortraitWithFallback(
             resolved = Result.failure(
-                PlayerPortraitSourceProviderException("example:provider", IllegalStateException("resolution failed")),
+                exception = PlayerPortraitSourceProviderException("example:provider", IllegalStateException("resolution failed")),
             ),
             fallbackSource = PlayerPortraitSource.TileFace("fallback"),
             onResolutionFailure = { _, providerId -> reportedProviderIds += providerId },
@@ -105,8 +105,8 @@ class PlayerPortraitRendererTest {
         }
 
         assertEquals(
-            listOf<PlayerPortraitSource>(PlayerPortraitSource.TileFace("custom"), PlayerPortraitSource.TileFace("fallback")),
-            attemptedSources,
+            expected = listOf<PlayerPortraitSource>(PlayerPortraitSource.TileFace("custom"), PlayerPortraitSource.TileFace("fallback")),
+            actual = attemptedSources,
         )
     }
 

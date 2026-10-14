@@ -150,19 +150,19 @@ class FabricTablePropKindRegistrationTest {
         )
 
         assertEquals(
-            listOf(
+            expected = listOf(
                 "example:first:table",
                 "example:first:seat",
                 "example:second:table",
                 "example:second:seat",
             ),
-            callbacks,
+            actual = callbacks,
         )
         assertTrue(builtInsVisible.all { it })
         assertTrue(tablePropRegistry.isFrozen)
         assertTrue(seatProviderRegistry.isFrozen)
         assertEquals(
-            listOf(
+            expected = listOf(
                 null to listOf(
                     "mahjongcraft:table_prop_kind" to listOf(BuiltInTablePropKinds.SCORING_STICK),
                     "mahjongcraft:seat_provider" to listOf("mahjongcraft:mahjong_stool"),
@@ -176,7 +176,7 @@ class FabricTablePropKindRegistrationTest {
                     "mahjongcraft:seat_provider" to listOf("example:second-seat"),
                 ),
             ),
-            sources.map { source ->
+            actual = sources.map { source ->
                 source.extensionId to source.categories.map { it.id to it.registrationIds }
             },
         )
@@ -189,7 +189,7 @@ class FabricTablePropKindRegistrationTest {
 
         val failure = assertFailsWith<FabricMahjongExtensionRegistrationException> {
             register(
-                listOf(KindExtension("example:duplicate", listOf(FakeKind(BuiltInTablePropKinds.SCORING_STICK)))),
+                extensions = listOf(KindExtension("example:duplicate", listOf(FakeKind(BuiltInTablePropKinds.SCORING_STICK)))),
                 tablePropKindRegistry = registry,
             )
         }
@@ -205,7 +205,7 @@ class FabricTablePropKindRegistrationTest {
 
         assertFailsWith<FabricMahjongExtensionRegistrationException> {
             register(
-                listOf(KindExtension("example:duplicate", emptyList()), KindExtension("example:duplicate", emptyList())),
+                extensions = listOf(KindExtension("example:duplicate", emptyList()), KindExtension("example:duplicate", emptyList())),
                 tablePropKindRegistry = registry,
             )
         }

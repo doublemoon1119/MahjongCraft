@@ -61,11 +61,11 @@ class AiDecisionExecutorTest {
         val fixture = Fixture(this)
 
         assertEquals(
-            "fallback",
-            fixture.executor.decide(
-                gameId,
-                playerId,
-                STRATEGY_KEY,
+            expected = "fallback",
+            actual = fixture.executor.decide(
+                gameId = gameId,
+                playerId = playerId,
+                strategyKey = STRATEGY_KEY,
                 decide = { error("strategy failed") },
                 fallback = { "fallback" },
             ),
@@ -80,9 +80,9 @@ class AiDecisionExecutorTest {
 
         assertFailsWith<AssertionError> {
             fixture.executor.decide(
-                gameId,
-                playerId,
-                STRATEGY_KEY,
+                gameId = gameId,
+                playerId = playerId,
+                strategyKey = STRATEGY_KEY,
                 decide = { throw AssertionError("fatal strategy failure") },
                 fallback = { "fallback" },
             )
@@ -357,7 +357,12 @@ class AiDecisionExecutorTest {
             events += "still-running:$gameId"
         }
 
-        override fun onStrategyFailed(gameId: Uuid, playerId: Uuid, strategyKey: String?, failure: Exception) {
+        override fun onStrategyFailed(
+            gameId: Uuid,
+            playerId: Uuid,
+            strategyKey: String?,
+            failure: Exception,
+        ) {
             events += "failed:$gameId:${failure::class.simpleName}"
         }
     }

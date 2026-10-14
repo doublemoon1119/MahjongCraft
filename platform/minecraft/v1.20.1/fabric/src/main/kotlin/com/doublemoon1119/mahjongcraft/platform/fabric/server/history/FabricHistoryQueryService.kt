@@ -98,9 +98,9 @@ class FabricHistoryQueryService(
 
     /** 隨 server session 重建的設定同步 publisher。 */
     private val settingsPublisher = HistoryQuerySettingsPublisher(
-        scope,
-        dispatchers,
-        configState.updates.map { it.history.queryMinimumIntervalMilliseconds }.distinctUntilChanged(),
+        scope = scope,
+        dispatchers = dispatchers,
+        updates = configState.updates.map { it.history.queryMinimumIntervalMilliseconds }.distinctUntilChanged(),
     )
 
     /** 註冊有界要求與斷線清理，不提供歷史寫入操作。 */

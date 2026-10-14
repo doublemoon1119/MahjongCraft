@@ -67,8 +67,8 @@ class OrphanedTableCleanupServiceTest {
         assertNull(fixture.roomSnapshots.getSnapshot(fixture.tableId, observerId))
         assertNull(fixture.locations.get(fixture.tableId))
         assertEquals(
-            setOf(trackingObserverId, playerId, observerId),
-            fixture.removalNotifier.completedObserverIds.single(),
+            expected = setOf(trackingObserverId, playerId, observerId),
+            actual = fixture.removalNotifier.completedObserverIds.single(),
         )
     }
 
@@ -228,12 +228,12 @@ class OrphanedTableCleanupServiceTest {
         fixture.gameRepository.setTableState(game)
         fixture.memberships.claim(player.id, fixture.tableId)
         fixture.gameSnapshots.setSnapshot(
-            cachedGameObserver,
-            game.toSnapshot(setOf(cachedGameObserver), setAsideTiles = { emptyList() }),
+            observerId = cachedGameObserver,
+            snapshot = game.toSnapshot(setOf(cachedGameObserver), setAsideTiles = { emptyList() }),
         )
         fixture.roomSnapshots.setSnapshot(
-            cachedRoomObserver,
-            Room(fixture.tableId, player.id, GameConfig(FakeMahjongRuleConfig())).toSnapshot(cachedRoomObserver),
+            observerId = cachedRoomObserver,
+            snapshot = Room(fixture.tableId, player.id, GameConfig(FakeMahjongRuleConfig())).toSnapshot(cachedRoomObserver),
         )
         fixture.removalNotifier.trackingObserverIds = setOf(trackingObserver)
 
@@ -242,8 +242,8 @@ class OrphanedTableCleanupServiceTest {
         assertEquals(OrphanedTableCleanupResult.REMOVED_GAME, result)
         assertEquals(1, fixture.removalNotifier.completed.size)
         assertEquals(
-            setOf(trackingObserver, cachedRoomObserver, cachedGameObserver, player.id),
-            fixture.removalNotifier.completedObserverIds.single(),
+            expected = setOf(trackingObserver, cachedRoomObserver, cachedGameObserver, player.id),
+            actual = fixture.removalNotifier.completedObserverIds.single(),
         )
     }
 
@@ -280,12 +280,12 @@ class OrphanedTableCleanupServiceTest {
         val fixture = Fixture(OrphanedTablePolicy.REMOVE_ALL)
 
         assertEquals(
-            OrphanedTableCleanupResult.REMOVED_LOCATION,
-            fixture.service.cleanupMissing(fixture.tableId, fixture.entryRevision),
+            expected = OrphanedTableCleanupResult.REMOVED_LOCATION,
+            actual = fixture.service.cleanupMissing(fixture.tableId, fixture.entryRevision),
         )
         assertEquals(
-            OrphanedTableCleanupResult.STALE_REQUEST,
-            fixture.service.cleanupMissing(fixture.tableId, fixture.entryRevision),
+            expected = OrphanedTableCleanupResult.STALE_REQUEST,
+            actual = fixture.service.cleanupMissing(fixture.tableId, fixture.entryRevision),
         )
         assertEquals(1, fixture.removalNotifier.completed.size)
     }
@@ -316,7 +316,7 @@ class OrphanedTableCleanupServiceTest {
         val playerId = Uuid.random()
         val room = Room(fixture.tableId, playerId, GameConfig(FakeMahjongRuleConfig()))
         fixture.roomRepository.setRoom(
-            room,
+            room = room,
         )
         fixture.roomSnapshots.setSnapshot(playerId, room.toSnapshot(playerId))
 
@@ -462,7 +462,11 @@ class OrphanedTableCleanupServiceTest {
 
         override suspend fun removeSnapshot(roomId: Uuid, observerId: Uuid): Unit = error("test snapshot removal failure")
 
-        override suspend fun removeSnapshotIf(roomId: Uuid, observerId: Uuid, isStillValid: () -> Boolean): Boolean = error("test snapshot removal failure")
+        override suspend fun removeSnapshotIf(
+            roomId: Uuid,
+            observerId: Uuid,
+            isStillValid: () -> Boolean,
+        ): Boolean = error("test snapshot removal failure")
 
         override suspend fun getAllObservers(roomId: Uuid): Set<Uuid> = delegate.getAllObservers(roomId)
 
@@ -481,7 +485,11 @@ class OrphanedTableCleanupServiceTest {
 
         override suspend fun removeSnapshot(roomId: Uuid, observerId: Uuid) = delegate.removeSnapshot(roomId, observerId)
 
-        override suspend fun removeSnapshotIf(roomId: Uuid, observerId: Uuid, isStillValid: () -> Boolean): Boolean {
+        override suspend fun removeSnapshotIf(
+            roomId: Uuid,
+            observerId: Uuid,
+            isStillValid: () -> Boolean,
+        ): Boolean {
             onRemoveSnapshotIf?.invoke()
             if (!isStillValid()) return false
             delegate.removeSnapshot(roomId, observerId)

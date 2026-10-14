@@ -92,13 +92,23 @@ class StressTestEnvironmentFactory(
      * @param path 新資料庫的檔案路徑。
      * @return 可用的資料庫歷史接收器；開啟失敗時為 null。
      */
-    private suspend fun openDatabase(store: AuthoritativeStateStore, writerTimer: StressWriterTimer, path: Path): StressHistorySink.Database? {
+    private suspend fun openDatabase(
+        store: AuthoritativeStateStore,
+        writerTimer: StressWriterTimer,
+        path: Path,
+    ): StressHistorySink.Database? {
         val retention = HistoryRetentionCoordinator().apply { apply(STRESS_HISTORY_CONFIG.retentionPolicy()) }
         val writer = FabricHistoryOutboxWriter(
-            store = store, registries = registries, json = json, dispatchers = dispatchers,
-            moduleRegistry = moduleRegistry, locations = locations,
+            store = store,
+            registries = registries,
+            json = json,
+            dispatchers = dispatchers,
+            moduleRegistry = moduleRegistry,
+            locations = locations,
             configState = MinecraftServerConfigState(MinecraftServerConfig(history = STRESS_HISTORY_CONFIG)),
-            retentionCoordinator = retention, replayProjectionRegistry = replayProjectionRegistry, observer = writerTimer,
+            retentionCoordinator = retention,
+            replayProjectionRegistry = replayProjectionRegistry,
+            observer = writerTimer,
         )
         val sink = StressHistorySink.Database(writer, path)
         sink.close()

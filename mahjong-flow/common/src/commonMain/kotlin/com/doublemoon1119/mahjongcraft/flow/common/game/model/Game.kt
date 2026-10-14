@@ -35,7 +35,7 @@ import kotlin.uuid.Uuid
  *   把 Room 轉換成 Game 後，房主身分不再能從 `Room` 讀出，保留在這裡讓對局結束轉回 Room
  *   （見 `ReturnToRoomUseCase`）時能還原同一位房主，預設值取第一位玩家僅供未指定房主的測試情境使用；
  *   `tableState` 沒有任何玩家時（同樣僅見於測試情境）退回隨機值，不受下方驗證約束。
- * @property roomPlayerIds 開局前房間成員的固定顯示順序；牌桌座位洗牌不得覆寫此順序。
+ * @property roomPlayerIds 開局前房間成員的固定顯示順序；開局的座位洗牌不得覆寫此順序。
  * @property aiPlayerStrategyKeys 由 AI 操控的玩家 Uuid 對應到其 AI 策略 key；開局時取自房間，對局結束轉回房間時還原。
  *   不在其中的玩家由真人操控。
  * @property interruptedBaseMillisByPlayerId 因 server session 結束或 blocking presentation 而暫停的那一次

@@ -86,12 +86,12 @@ class WinSettlementPresentationTemplateRegistryTest {
         val template = registry.findTemplate(RiichiWinSettlementTemplates.RIICHI_KEY) ?: error("Missing built-in riichi template")
 
         assertEquals(
-            "mahjongcraft.settlement.dora_indicator",
-            template.detailFieldLabelKeys[PresentationFieldId(RiichiWinSettlementIds.DORA_FIELD)],
+            expected = "mahjongcraft.settlement.dora_indicator",
+            actual = template.detailFieldLabelKeys[PresentationFieldId(RiichiWinSettlementIds.DORA_FIELD)],
         )
         assertEquals(
-            "mahjongcraft.settlement.ura_dora_indicator",
-            template.detailFieldLabelKeys[PresentationFieldId(RiichiWinSettlementIds.URA_DORA_FIELD)],
+            expected = "mahjongcraft.settlement.ura_dora_indicator",
+            actual = template.detailFieldLabelKeys[PresentationFieldId(RiichiWinSettlementIds.URA_DORA_FIELD)],
         )
     }
 
@@ -99,8 +99,8 @@ class WinSettlementPresentationTemplateRegistryTest {
     @Test
     fun `layout exposes compose style arrangements and weighted children`() {
         assertEquals(
-            setOf("START", "CENTER", "END", "SPACE_BETWEEN", "SPACE_AROUND", "SPACE_EVENLY"),
-            PresentationArrangement.entries.map(Enum<*>::name).toSet(),
+            expected = setOf("START", "CENTER", "END", "SPACE_BETWEEN", "SPACE_AROUND", "SPACE_EVENLY"),
+            actual = PresentationArrangement.entries.map(Enum<*>::name).toSet(),
         )
         val weighted = PresentationLayout.Weighted(PresentationLayout.Spacer(), weight = 2f)
         assertEquals(2f, weighted.weight)
@@ -108,8 +108,8 @@ class WinSettlementPresentationTemplateRegistryTest {
             PresentationLayout.Weighted(PresentationLayout.Spacer(), weight = 0f)
         }
         assertEquals(
-            PresentationAlignment.CENTER,
-            PresentationLayout.RepeatEntries(PresentationFieldId("example:entries")).verticalAlignment,
+            expected = PresentationAlignment.CENTER,
+            actual = PresentationLayout.RepeatEntries(PresentationFieldId("example:entries")).verticalAlignment,
         )
     }
 
@@ -123,7 +123,7 @@ class WinSettlementPresentationTemplateRegistryTest {
             effects = listOf(
                 PresentationAnimationEffect.Fade(),
                 PresentationAnimationEffect.ScaleKeyframes(
-                    listOf(
+                    keyframes = listOf(
                         ScaleKeyframe(0f, 1.35f),
                         ScaleKeyframe(0.55f, 0.94f),
                         ScaleKeyframe(1f, 1f),
@@ -134,15 +134,15 @@ class WinSettlementPresentationTemplateRegistryTest {
         )
         val registry = WinSettlementPresentationTemplateRegistryImpl()
         registry.register(
-            WinSettlementPresentationFieldProviderDefinition(identity) {
+            definition = WinSettlementPresentationFieldProviderDefinition(identity) {
                 PresentationValue.PlayerIdentityValue("player", "Player", isAi = false)
             },
         )
         val labelField = PresentationFieldId("example:detail")
         registry.register(
-            WinSettlementPresentationTemplate(
-                "example:animated",
-                animated,
+            template = WinSettlementPresentationTemplate(
+                key = "example:animated",
+                root = animated,
                 detailFieldLabelKeys = mapOf(labelField to "example.detail.label"),
             ),
         )
@@ -199,7 +199,7 @@ class WinSettlementPresentationTemplateRegistryTest {
         registry.freeze()
         assertFailsWith<IllegalStateException> {
             registry.register(
-                WinSettlementPresentationTemplate("example:late", PresentationLayout.Spacer()),
+                template = WinSettlementPresentationTemplate("example:late", PresentationLayout.Spacer()),
             )
         }
     }

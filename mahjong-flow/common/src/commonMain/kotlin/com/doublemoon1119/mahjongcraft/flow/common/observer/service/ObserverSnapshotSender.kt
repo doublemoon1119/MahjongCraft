@@ -30,7 +30,11 @@ interface ObserverSnapshotSender {
      * @param observerId 接收失效通知的觀察者識別碼。
      * @param requestId 本次場地失效請求的識別碼；平台可用來拒絕已被新來源取代的舊通知。
      */
-    suspend fun invalidateVenue(id: Uuid, observerId: Uuid, requestId: Uuid) {
+    suspend fun invalidateVenue(
+        id: Uuid,
+        observerId: Uuid,
+        requestId: Uuid,
+    ) {
         send(id = id, observerId = observerId, snapshot = null)
     }
 }

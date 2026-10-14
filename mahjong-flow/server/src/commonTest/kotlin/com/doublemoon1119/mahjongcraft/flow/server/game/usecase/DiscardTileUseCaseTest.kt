@@ -1383,7 +1383,7 @@ class DiscardTileUseCaseTest {
          */
         fun registry(): MahjongModuleRegistry = MahjongModuleRegistryImpl().apply {
             register(
-                MahjongModuleDefinition(RiichiRuleConfig::class, "test:hook_probe") { config, id ->
+                definition = MahjongModuleDefinition(RiichiRuleConfig::class, "test:hook_probe") { config, id ->
                     ProbeRuleModule(delegate = RiichiRuleModule(id, config), probe = this@HookProbe)
                 },
             )

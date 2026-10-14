@@ -24,7 +24,7 @@ class ClientAutomaticControlUpdateCoordinatorTest {
         fixture.coordinator.applySnapshot(snapshot)
 
         val submitted = assertIs<ClientAutomaticControlSubmitResult.Submitted>(
-            fixture.coordinator.submit(setOf("test:auto_b")),
+            value = fixture.coordinator.submit(setOf("test:auto_b")),
         )
 
         assertEquals(snapshot.gameId, submitted.request.gameId)
@@ -45,7 +45,7 @@ class ClientAutomaticControlUpdateCoordinatorTest {
         )
         assertEquals(setOf("test:unknown"), unsupported.controlIds)
         val submitted = assertIs<ClientAutomaticControlSubmitResult.Submitted>(
-            fixture.coordinator.submit(setOf("test:auto_a")),
+            value = fixture.coordinator.submit(setOf("test:auto_a")),
         )
         assertIs<ClientAutomaticControlSubmitResult.Pending>(fixture.coordinator.submit(emptySet()))
         assertEquals(listOf(submitted.request), fixture.sender.requests)
@@ -59,7 +59,7 @@ class ClientAutomaticControlUpdateCoordinatorTest {
         fixture.coordinator.applySnapshot(snapshot(supported = setOf("test:auto_a")))
 
         val result = assertIs<ClientAutomaticControlSubmitResult.SendFailed>(
-            fixture.coordinator.submit(setOf("test:auto_a")),
+            value = fixture.coordinator.submit(setOf("test:auto_a")),
         )
 
         assertSame(failure, result.cause)
@@ -72,7 +72,7 @@ class ClientAutomaticControlUpdateCoordinatorTest {
         val fixture = fixture()
         fixture.coordinator.applySnapshot(snapshot(revision = 2L, supported = setOf("test:auto_a")))
         val request = assertIs<ClientAutomaticControlSubmitResult.Submitted>(
-            fixture.coordinator.submit(setOf("test:auto_a")),
+            value = fixture.coordinator.submit(setOf("test:auto_a")),
         ).request
         val unrelated = result(request.copy(requestId = "unrelated"), AutomaticControlUpdateResultKindDto.ACCEPTED)
 
@@ -102,7 +102,7 @@ class ClientAutomaticControlUpdateCoordinatorTest {
         val fixture = fixture()
         fixture.coordinator.applySnapshot(snapshot(supported = setOf("test:auto_a")))
         val request = assertIs<ClientAutomaticControlSubmitResult.Submitted>(
-            fixture.coordinator.submit(setOf("test:auto_a")),
+            value = fixture.coordinator.submit(setOf("test:auto_a")),
         ).request
         fixture.coordinator.applyResult(result(request, AutomaticControlUpdateResultKindDto.REJECTED))
         assertNotNull(fixture.coordinator.takeCompletion(request.requestId))
@@ -126,7 +126,7 @@ class ClientAutomaticControlUpdateCoordinatorTest {
         val firstSnapshot = snapshot(supported = setOf("test:auto_a"))
         fixture.coordinator.applySnapshot(firstSnapshot)
         val firstRequest = assertIs<ClientAutomaticControlSubmitResult.Submitted>(
-            fixture.coordinator.submit(setOf("test:auto_a")),
+            value = fixture.coordinator.submit(setOf("test:auto_a")),
         ).request
 
         fixture.coordinator.clearTable(Uuid.parse(firstRequest.gameId))
@@ -139,7 +139,7 @@ class ClientAutomaticControlUpdateCoordinatorTest {
         val secondSnapshot = snapshot(supported = setOf("test:auto_b"))
         fixture.coordinator.applySnapshot(secondSnapshot)
         val secondRequest = assertIs<ClientAutomaticControlSubmitResult.Submitted>(
-            fixture.coordinator.submit(setOf("test:auto_b")),
+            value = fixture.coordinator.submit(setOf("test:auto_b")),
         ).request
         assertTrue(fixture.coordinator.applyResult(result(secondRequest, AutomaticControlUpdateResultKindDto.ACCEPTED)))
 
@@ -155,7 +155,7 @@ class ClientAutomaticControlUpdateCoordinatorTest {
         val fixture = fixture()
         fixture.coordinator.applySnapshot(snapshot(supported = setOf("test:auto_a")))
         val oldRequest = assertIs<ClientAutomaticControlSubmitResult.Submitted>(
-            fixture.coordinator.submit(setOf("test:auto_a")),
+            value = fixture.coordinator.submit(setOf("test:auto_a")),
         ).request
         val newGame = snapshot(supported = setOf("test:auto_b"))
 

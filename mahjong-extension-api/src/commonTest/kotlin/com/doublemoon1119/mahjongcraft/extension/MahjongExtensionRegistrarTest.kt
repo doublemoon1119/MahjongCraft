@@ -103,7 +103,7 @@ class MahjongExtensionRegistrarTest {
         )
         assertFailsWith<IllegalStateException> {
             moduleRegistry.register(
-                MahjongModuleDefinition(TaiwanRuleConfig::class, "example:taiwan") { config, id ->
+                definition = MahjongModuleDefinition(TaiwanRuleConfig::class, "example:taiwan") { config, id ->
                     TaiwanRuleModule(id, config)
                 },
             )
@@ -191,7 +191,7 @@ class MahjongExtensionRegistrarTest {
 
             override fun registerRuleModules(registry: MahjongModuleRegistry) {
                 registry.register(
-                    MahjongModuleDefinition(RiichiRuleConfig::class, "example:partial_rule") { config, id ->
+                    definition = MahjongModuleDefinition(RiichiRuleConfig::class, "example:partial_rule") { config, id ->
                         RiichiRuleModule(id, config)
                     },
                 )
@@ -213,17 +213,17 @@ class MahjongExtensionRegistrarTest {
 
         assertTrue(moduleRegistry.getModule(RiichiRuleConfig()) is RiichiRuleModule)
         assertEquals(
-            TileTypeId.parse("example:partial_tile"),
-            tileTypeRegistry.require(TileTypeId.parse("example:partial_tile")).id,
+            expected = TileTypeId.parse("example:partial_tile"),
+            actual = tileTypeRegistry.require(TileTypeId.parse("example:partial_tile")).id,
         )
         moduleRegistry.register(
-            MahjongModuleDefinition(TaiwanRuleConfig::class, "example:after_failure") { config, id ->
+            definition = MahjongModuleDefinition(TaiwanRuleConfig::class, "example:after_failure") { config, id ->
                 TaiwanRuleModule(id, config)
             },
         )
         tileTypeRegistry.register(TileTypeDefinition(TileTypeId.parse("example:after_failure")))
         registries.aiStrategyRegistry.register(
-            MahjongAiStrategyDefinition("example:after_failure") {
+            definition = MahjongAiStrategyDefinition("example:after_failure") {
                 RandomAiStrategy(ExtensionGameActionAiRegistry(registries.moduleRegistry))
             },
         )

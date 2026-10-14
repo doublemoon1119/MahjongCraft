@@ -109,9 +109,9 @@ class ClientTileAppearanceResolverTest {
         store.applyGameSnapshot(tableId, publicSnapshot, emptySet())
         val first = resolver.resolve(tableId)
         store.applyGameSnapshot(
-            tableId,
-            publicSnapshot.copy(revealedHandTiles = listOf(IdentifiedTile(Uuid.random(), Tile.Honor.North))),
-            emptySet(),
+            gameId = tableId,
+            snapshot = publicSnapshot.copy(revealedHandTiles = listOf(IdentifiedTile(Uuid.random(), Tile.Honor.North))),
+            aiPlayerIds = emptySet(),
         )
 
         assertEquals(first, resolver.resolve(tableId))

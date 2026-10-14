@@ -53,73 +53,73 @@ object BundledTaiwanExtension : MahjongExtension {
 
     override fun registerNetworkDtos(registries: NetworkDtoRegistries) {
         registries.ruleConfig.register(
-            DtoDefinition(
-                TaiwanRuleConfig::class,
-                TaiwanRuleConfigDto::class,
-                TaiwanRuleConfigDto.serializer(),
-                { it.toTaiwanDto(registries) },
-                { it.toDomain(registries) },
+            definition = DtoDefinition(
+                domainClass = TaiwanRuleConfig::class,
+                dtoClass = TaiwanRuleConfigDto::class,
+                serializer = TaiwanRuleConfigDto.serializer(),
+                toDto = { it.toTaiwanDto(registries) },
+                toDomain = { it.toDomain(registries) },
             ),
         )
         registries.scoreConfig.register(
-            DtoDefinition(
-                TaiwanScoreConfig::class,
-                TaiwanScoreConfigDto::class,
-                TaiwanScoreConfigDto.serializer(),
-                TaiwanScoreConfig::toTaiwanDto,
-                TaiwanScoreConfigDto::toDomain,
+            definition = DtoDefinition(
+                domainClass = TaiwanScoreConfig::class,
+                dtoClass = TaiwanScoreConfigDto::class,
+                serializer = TaiwanScoreConfigDto.serializer(),
+                toDto = TaiwanScoreConfig::toTaiwanDto,
+                toDomain = TaiwanScoreConfigDto::toDomain,
             ),
         )
         registries.gameLength.register(
-            DtoDefinition(
-                TaiwanGameLength.OneGame::class,
-                TaiwanGameLengthDto.OneGame::class,
-                TaiwanGameLengthDto.OneGame.serializer(),
-                { TaiwanGameLengthDto.OneGame },
-                { TaiwanGameLength.OneGame },
+            definition = DtoDefinition(
+                domainClass = TaiwanGameLength.OneGame::class,
+                dtoClass = TaiwanGameLengthDto.OneGame::class,
+                serializer = TaiwanGameLengthDto.OneGame.serializer(),
+                toDto = { TaiwanGameLengthDto.OneGame },
+                toDomain = { TaiwanGameLength.OneGame },
             ),
         )
         registries.gameLength.register(
-            DtoDefinition(
-                TaiwanGameLength.East::class,
-                TaiwanGameLengthDto.East::class,
-                TaiwanGameLengthDto.East.serializer(),
-                { TaiwanGameLengthDto.East },
-                { TaiwanGameLength.East },
+            definition = DtoDefinition(
+                domainClass = TaiwanGameLength.East::class,
+                dtoClass = TaiwanGameLengthDto.East::class,
+                serializer = TaiwanGameLengthDto.East.serializer(),
+                toDto = { TaiwanGameLengthDto.East },
+                toDomain = { TaiwanGameLength.East },
             ),
         )
         registries.gameLength.register(
-            DtoDefinition(
-                TaiwanGameLength.TwoWinds::class,
-                TaiwanGameLengthDto.TwoWinds::class,
-                TaiwanGameLengthDto.TwoWinds.serializer(),
-                { TaiwanGameLengthDto.TwoWinds },
-                { TaiwanGameLength.TwoWinds },
+            definition = DtoDefinition(
+                domainClass = TaiwanGameLength.TwoWinds::class,
+                dtoClass = TaiwanGameLengthDto.TwoWinds::class,
+                serializer = TaiwanGameLengthDto.TwoWinds.serializer(),
+                toDto = { TaiwanGameLengthDto.TwoWinds },
+                toDomain = { TaiwanGameLength.TwoWinds },
             ),
         )
         registries.gameLength.register(
-            DtoDefinition(
-                TaiwanGameLength.FourWinds::class,
-                TaiwanGameLengthDto.FourWinds::class,
-                TaiwanGameLengthDto.FourWinds.serializer(),
-                { TaiwanGameLengthDto.FourWinds },
-                { TaiwanGameLength.FourWinds },
+            definition = DtoDefinition(
+                domainClass = TaiwanGameLength.FourWinds::class,
+                dtoClass = TaiwanGameLengthDto.FourWinds::class,
+                serializer = TaiwanGameLengthDto.FourWinds.serializer(),
+                toDto = { TaiwanGameLengthDto.FourWinds },
+                toDomain = { TaiwanGameLength.FourWinds },
             ),
         )
         registries.discardPile.register(
-            DtoDefinition(
-                TaiwanDiscardPile::class,
-                TaiwanDiscardPileDto::class,
-                TaiwanDiscardPileDto.serializer(),
-                TaiwanDiscardPile::toTaiwanDto,
-                TaiwanDiscardPileDto::toDomain,
+            definition = DtoDefinition(
+                domainClass = TaiwanDiscardPile::class,
+                dtoClass = TaiwanDiscardPileDto::class,
+                serializer = TaiwanDiscardPileDto.serializer(),
+                toDto = TaiwanDiscardPile::toTaiwanDto,
+                toDomain = TaiwanDiscardPileDto::toDomain,
             ),
         )
     }
 
     override fun registerPersistenceDtos(registries: PersistenceRegistries) {
         registries.ruleConfigs.register(
-            PersistenceDtoDefinition(
+            definition = PersistenceDtoDefinition(
                 typeKey = "mahjongcraft:taiwan/rule_config",
                 domainClass = TaiwanRuleConfig::class,
                 serializer = TaiwanRuleConfigPersistenceDto.serializer(),
@@ -129,7 +129,7 @@ object BundledTaiwanExtension : MahjongExtension {
             ),
         )
         registries.discardPiles.register(
-            PersistenceDtoDefinition(
+            definition = PersistenceDtoDefinition(
                 typeKey = BuiltInDiscardPilePersistenceKeys.TAIWAN,
                 domainClass = TaiwanDiscardPile::class,
                 serializer = TaiwanDiscardPilePersistenceDto.serializer(),

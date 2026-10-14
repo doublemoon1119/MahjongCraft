@@ -46,7 +46,7 @@ class BuiltInMahjongExtension(
             BuiltInAiStrategyKeys.ADVANCED to InformationLevel.ADVANCED,
         ).forEach { (key, level) ->
             registry.register(
-                MahjongAiStrategyDefinition(key) {
+                definition = MahjongAiStrategyDefinition(key) {
                     ExpectedValueAiStrategy(
                         level = level,
                         moduleRegistry = moduleRegistry,

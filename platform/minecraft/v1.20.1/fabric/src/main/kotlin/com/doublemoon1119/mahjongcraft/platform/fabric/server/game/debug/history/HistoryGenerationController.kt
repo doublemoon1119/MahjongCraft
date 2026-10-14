@@ -183,10 +183,15 @@ class HistoryGenerationController(
                     recordReceipt(receipt, archived, pruned, samples)
                     state.update {
                         it?.copy(
-                            generated = completed.size, archived = archived.size, pruned = pruned.size,
-                            pending = (completed - archived - pruned).size, diskAfter = receipt.disk,
-                            replayBytes = samples.values.sum(), largestReplayBytes = samples.values.maxOrNull() ?: 0L,
-                            replaySampleCount = samples.size, elapsed = started.elapsedNow(),
+                            generated = completed.size,
+                            archived = archived.size,
+                            pruned = pruned.size,
+                            pending = (completed - archived - pruned).size,
+                            diskAfter = receipt.disk,
+                            replayBytes = samples.values.sum(),
+                            largestReplayBytes = samples.values.maxOrNull() ?: 0L,
+                            replaySampleCount = samples.size,
+                            elapsed = started.elapsedNow(),
                         )
                     }
                 }

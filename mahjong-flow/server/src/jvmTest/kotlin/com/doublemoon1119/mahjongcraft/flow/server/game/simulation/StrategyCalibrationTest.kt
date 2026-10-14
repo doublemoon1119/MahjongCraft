@@ -62,7 +62,7 @@ class StrategyCalibrationTest {
             )
             CANDIDATES.forEach { candidate ->
                 registry.register(
-                    MahjongAiStrategyDefinition(candidate.key) {
+                    definition = MahjongAiStrategyDefinition(candidate.key) {
                         ExpectedValueAiStrategy(
                             level = candidate.level,
                             moduleRegistry = runtime.moduleRegistry,

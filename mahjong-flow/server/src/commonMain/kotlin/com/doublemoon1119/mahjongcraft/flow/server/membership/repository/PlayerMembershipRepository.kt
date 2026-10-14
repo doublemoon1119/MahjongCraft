@@ -27,7 +27,11 @@ interface PlayerMembershipRepository {
      * @param isStillValid 鎖內刪除前確認來源仍屬於這次工作的條件。
      * @return 條件成立並完成這次釋放時為 true；條件不成立時不修改資料並回傳 false。
      */
-    suspend fun releaseIf(playerId: Uuid, venueId: Uuid, isStillValid: () -> Boolean): Boolean
+    suspend fun releaseIf(
+        playerId: Uuid,
+        venueId: Uuid,
+        isStillValid: () -> Boolean,
+    ): Boolean
 
     /** 以已驗證的完整內容取代目前 server session 的所有玩家歸屬。 */
     suspend fun replaceAll(venueIdsByPlayerId: Map<Uuid, Uuid>)

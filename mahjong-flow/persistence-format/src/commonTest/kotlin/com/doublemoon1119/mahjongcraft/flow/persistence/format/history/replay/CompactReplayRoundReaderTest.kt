@@ -243,7 +243,7 @@ class CompactReplayRoundReaderTest {
         assertFailsWith<IllegalArgumentException> { registry.register(HistoryReplayProjectionDefinition.OptionalRule("invalid") { _, _ -> HistoryReplayRuleInformation("invalid", "invalid") }) }
         assertFailsWith<IllegalArgumentException> { registry.register(HistoryReplayProjectionDefinition.SetAsideTiles("invalid") { _, _ -> emptyList() }) }
         registry.register(
-            HistoryReplayProjectionDefinition.Fact(HistoryFactTypeKeys.ROUND_COMPLETED) { _, _ ->
+            definition = HistoryReplayProjectionDefinition.Fact(HistoryFactTypeKeys.ROUND_COMPLETED) { _, _ ->
                 decoded = true
                 HistoryReplayFact.Opaque(HistoryFactTypeKeys.ROUND_COMPLETED)
             },
@@ -261,13 +261,13 @@ class CompactReplayRoundReaderTest {
         val context = HistoryReplayProjectionContext(ReplayReadBudget(ReplayReadLimits()) {}, 2, 2)
         registry.register(HistoryReplayProjectionDefinition.Discard("test:discard") { _, scope -> listOf(HistoryReplayDiscard(scope.tile(1), true, setOf("test:marker"))) })
         registry.register(
-            HistoryReplayProjectionDefinition.Fact("test:fact") { _, scope ->
+            definition = HistoryReplayProjectionDefinition.Fact("test:fact") { _, scope ->
                 scope.charge()
                 HistoryReplayFact.Reaction("test:fact", "test:action", scope.seat(1))
             },
         )
         registry.register(
-            HistoryReplayProjectionDefinition.OptionalRule("test:state") { _, scope ->
+            definition = HistoryReplayProjectionDefinition.OptionalRule("test:state") { _, scope ->
                 scope.charge()
                 HistoryReplayRuleInformation("test:state", "public")
             },

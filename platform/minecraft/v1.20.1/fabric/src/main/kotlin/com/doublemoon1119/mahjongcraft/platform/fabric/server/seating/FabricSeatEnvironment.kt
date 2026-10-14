@@ -57,14 +57,22 @@ internal class FabricSeatEnvironment : SeatEnvironment<ServerWorld, Entity, Fabr
     override fun hasVehicle(rider: Entity): Boolean = rider.hasVehicle()
 
     /** 固定站立點安全且乘坐者沒有載具時才移動。 */
-    override fun stand(world: ServerWorld, rider: Entity, request: SeatRequest): Boolean {
+    override fun stand(
+        world: ServerWorld,
+        rider: Entity,
+        request: SeatRequest,
+    ): Boolean {
         val placement = request.placement
         if (rider.hasVehicle() || !safeStanding(world, rider, placement.x, placement.y, placement.z)) return false
         return move(world, rider, placement.x, placement.y, placement.z, placement.yaw, 0f)
     }
 
     /** 驗證提供者已立即完成腳底定位，不要求已入座本人重新轉向。 */
-    override fun positioned(world: ServerWorld, rider: Entity, geometry: SeatGeometry): Boolean = rider.world === world && rider.squaredDistanceTo(geometry.x, geometry.y, geometry.z) <= POSITION_EPSILON
+    override fun positioned(
+        world: ServerWorld,
+        rider: Entity,
+        geometry: SeatGeometry,
+    ): Boolean = rider.world === world && rider.squaredDistanceTo(geometry.x, geometry.y, geometry.z) <= POSITION_EPSILON
 
     /** 不干預載具；僅在目前位置不安全且原位置仍安全時嘗試回復。 */
     override fun recover(rider: Entity, snapshot: FabricSeatSnapshot) {
@@ -86,7 +94,13 @@ internal class FabricSeatEnvironment : SeatEnvironment<ServerWorld, Entity, Fabr
      * @param z 目標 Z。
      * @return 可安全站立時為 true。
      */
-    private fun safeStanding(world: ServerWorld, rider: Entity, x: Double, y: Double, z: Double): Boolean {
+    private fun safeStanding(
+        world: ServerWorld,
+        rider: Entity,
+        x: Double,
+        y: Double,
+        z: Double,
+    ): Boolean {
         val halfWidth = rider.width / 2.0
         val body = Box(x - halfWidth, y, z - halfWidth, x + halfWidth, y + rider.height, z + halfWidth)
         val minimum = BlockPos.ofFloored(body.minX - CHUNK_MARGIN, y - SUPPORT_DEPTH, body.minZ - CHUNK_MARGIN)
@@ -115,7 +129,15 @@ internal class FabricSeatEnvironment : SeatEnvironment<ServerWorld, Entity, Fabr
      * @param pitch 仰角。
      * @return 已執行移動時為 true。
      */
-    private fun move(world: ServerWorld, rider: Entity, x: Double, y: Double, z: Double, yaw: Float, pitch: Float): Boolean {
+    private fun move(
+        world: ServerWorld,
+        rider: Entity,
+        x: Double,
+        y: Double,
+        z: Double,
+        yaw: Float,
+        pitch: Float,
+    ): Boolean {
         if (rider is ServerPlayerEntity) {
             rider.teleport(world, x, y, z, yaw, pitch)
         } else if (rider.world === world) {

@@ -244,7 +244,7 @@ internal fun MahjongAiStrategyRegistry.registerInstrumented(
 ) {
     keys.forEach { key ->
         register(
-            MahjongAiStrategyDefinition(key) {
+            definition = MahjongAiStrategyDefinition(key) {
                 InstrumentedAiStrategy(
                     strategyKey = key,
                     delegate = source.resolve(key),

@@ -61,7 +61,7 @@ class FabricSeatProviderRegistrationTest {
         val provider = FakeProvider()
 
         val sources = register(
-            listOf(
+            extensions = listOf(
                 ProviderExtension(
                     id = "example:chairs",
                     registrations = listOf(
@@ -74,16 +74,16 @@ class FabricSeatProviderRegistrationTest {
         )
 
         assertEquals(
-            listOf("example:high", "example:low", "mahjongcraft:mahjong_stool"),
-            registry.entries().map { it.id },
+            expected = listOf("example:high", "example:low", "mahjongcraft:mahjong_stool"),
+            actual = registry.entries().map { it.id },
         )
         assertEquals(
-            listOf("mahjongcraft:mahjong_stool"),
-            sources.first().categories.first { it.id == "mahjongcraft:seat_provider" }.registrationIds,
+            expected = listOf("mahjongcraft:mahjong_stool"),
+            actual = sources.first().categories.first { it.id == "mahjongcraft:seat_provider" }.registrationIds,
         )
         assertEquals(
-            listOf("example:high", "example:low"),
-            sources[1].categories.single().registrationIds,
+            expected = listOf("example:high", "example:low"),
+            actual = sources[1].categories.single().registrationIds,
         )
         assertTrue(registry.isFrozen)
         assertFailsWith<IllegalStateException> { registry.register(RegisteredSeatProvider("example:late", provider)) }
@@ -103,7 +103,7 @@ class FabricSeatProviderRegistrationTest {
         val provider = FakeProvider()
         assertFailsWith<FabricMahjongExtensionRegistrationException> {
             register(
-                listOf(
+                extensions = listOf(
                     ProviderExtension("example:chairs", listOf(Triple("example:one", provider, 0))),
                     ProviderExtension("example:chairs", emptyList()),
                 ),
@@ -137,8 +137,8 @@ class FabricSeatProviderRegistrationTest {
             FabricMahjongExtensionRegistrar.registerAndFreeze(
                 extensions = emptyList(),
                 registries = FabricExtensionRegistries(
-                    FabricTablePropKindRegistryImpl(),
-                    FabricSeatProviderRegistryImpl(),
+                    tablePropKindRegistry = FabricTablePropKindRegistryImpl(),
+                    seatProviderRegistry = FabricSeatProviderRegistryImpl(),
                 ),
                 builtIn = invalidBuiltIn,
             )
@@ -151,7 +151,7 @@ class FabricSeatProviderRegistrationTest {
         val provider = FakeProvider()
         assertFailsWith<FabricMahjongExtensionRegistrationException> {
             register(
-                listOf(
+                extensions = listOf(
                     ProviderExtension("example:first", listOf(Triple("example:seat", provider, 0))),
                     ProviderExtension("example:second", listOf(Triple("example:seat", provider, 0))),
                 ),

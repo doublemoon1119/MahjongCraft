@@ -12,4 +12,8 @@ import kotlinx.serialization.json.Json
  * @param value 欲計算的回應。
  * @return 編碼後 UTF-8 位元組數。
  */
-internal fun <T> encodedHistoryResponseUtf8Size(json: Json, serializer: KSerializer<T>, value: T): Int = json.encodeToString(serializer, value).encodeToByteArray().size
+internal fun <T> encodedHistoryResponseUtf8Size(
+    json: Json,
+    serializer: KSerializer<T>,
+    value: T,
+): Int = json.encodeToString(serializer, value).encodeToByteArray().size

@@ -114,7 +114,7 @@ class HistoryQueryExecutionTest {
         val player = Uuid.random()
         var queried = false
         val job = requireNotNull(
-            execution.launch(
+            value = execution.launch(
                 principalId = player,
                 query = {
                     queried = true
@@ -220,7 +220,7 @@ class HistoryQueryExecutionTest {
         val secondPlayer = Uuid.random()
         val rejections = mutableListOf<HistoryQueryAdmission.Admission>()
         val first = requireNotNull(
-            execution.launch(
+            value = execution.launch(
                 principalId = firstPlayer,
                 query = { awaitCancellation() },
                 timeoutResponse = { Unit },
@@ -232,8 +232,8 @@ class HistoryQueryExecutionTest {
         runCurrent()
 
         assertEquals(
-            null,
-            execution.launch(
+            expected = null,
+            actual = execution.launch(
                 principalId = secondPlayer,
                 onRejected = { rejections += it },
                 query = { Unit },
@@ -244,8 +244,8 @@ class HistoryQueryExecutionTest {
             ),
         )
         assertEquals(
-            null,
-            execution.launch(
+            expected = null,
+            actual = execution.launch(
                 principalId = secondPlayer,
                 onRejected = { rejections += it },
                 query = { Unit },

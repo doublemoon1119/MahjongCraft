@@ -138,7 +138,12 @@ class HistoryReplayProjectionRegistry {
      * @param codec 轉換器。
      * @param namespaced 是否使用命名空間 ID；既有事實種類沿用保存格式中的短名稱。
      */
-    private fun <T> register(target: MutableMap<String, HistoryReplayProjectionCodec<T>>, typeKey: String, codec: HistoryReplayProjectionCodec<T>, namespaced: Boolean = true) {
+    private fun <T> register(
+        target: MutableMap<String, HistoryReplayProjectionCodec<T>>,
+        typeKey: String,
+        codec: HistoryReplayProjectionCodec<T>,
+        namespaced: Boolean = true,
+    ) {
         check(!frozen) { "History replay projection registry is frozen" }
         require(typeKey.isNotBlank()) { "History replay projection type key must not be blank" }
         if (namespaced) NamespacedId.requireValid(typeKey) { "History replay projection type key must be a namespaced ID: $typeKey" }

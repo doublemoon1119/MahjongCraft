@@ -138,7 +138,7 @@ class HistoryResultProjectorTest {
     /** 建立使用正式日麻模組的 registry。 */
     private fun riichiRegistry(): MahjongModuleRegistry = MahjongModuleRegistryImpl().apply {
         register(
-            MahjongModuleDefinition(RiichiRuleConfig::class, "test:riichi") { config, id ->
+            definition = MahjongModuleDefinition(RiichiRuleConfig::class, "test:riichi") { config, id ->
                 RiichiRuleModule(id, config)
             },
         )
@@ -148,7 +148,7 @@ class HistoryResultProjectorTest {
     /** 建立使用反向分數排序的 registry。 */
     private fun reverseRegistry(): MahjongModuleRegistry = MahjongModuleRegistryImpl().apply {
         register(
-            MahjongModuleDefinition(RiichiRuleConfig::class, "test:reverse") { config, id ->
+            definition = MahjongModuleDefinition(RiichiRuleConfig::class, "test:reverse") { config, id ->
                 ReverseRankingModule(RiichiRuleModule(id, config))
             },
         )

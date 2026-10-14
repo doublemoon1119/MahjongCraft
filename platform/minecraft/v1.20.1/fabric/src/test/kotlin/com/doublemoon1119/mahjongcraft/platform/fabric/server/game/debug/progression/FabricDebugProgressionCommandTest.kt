@@ -115,7 +115,11 @@ class FabricDebugProgressionCommandTest {
 
         override suspend fun release(playerId: Uuid, venueId: Uuid) = error("Unexpected membership lookup")
 
-        override suspend fun releaseIf(playerId: Uuid, venueId: Uuid, isStillValid: () -> Boolean): Boolean = error("Unexpected membership lookup")
+        override suspend fun releaseIf(
+            playerId: Uuid,
+            venueId: Uuid,
+            isStillValid: () -> Boolean,
+        ): Boolean = error("Unexpected membership lookup")
 
         override suspend fun replaceAll(venueIdsByPlayerId: Map<Uuid, Uuid>) = error("Unexpected membership lookup")
 

@@ -22,16 +22,16 @@ class FixedMahjongTileModelVariantTest {
         assertEquals(variant.modelId.toString(), model.id)
         assertEquals(setOf(variant.templateModelId), model.modelDependencies.toSet())
         assertEquals(
-            Identifier("example", "item/mahjong_tile/inverted_five_pin"),
-            model.resolveSprite("0").textureId,
+            expected = Identifier("example", "item/mahjong_tile/inverted_five_pin"),
+            actual = model.resolveSprite("0").textureId,
         )
         assertEquals(
-            Identifier("example", "item/mahjong_tile/example_cover"),
-            model.resolveSprite("1").textureId,
+            expected = Identifier("example", "item/mahjong_tile/example_cover"),
+            actual = model.resolveSprite("1").textureId,
         )
         assertEquals(
-            Identifier("example", "item/mahjong_tile/example_cover"),
-            model.resolveSprite("particle").textureId,
+            expected = Identifier("example", "item/mahjong_tile/example_cover"),
+            actual = model.resolveSprite("particle").textureId,
         )
 
         val template = JsonUnbakedModel.deserialize(

@@ -14,7 +14,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
  * @property ruleConfigs 規則配置 registry。
  * @property discardPiles 牌河 registry。
  * @property playerRuleStates 玩家規則狀態 registry。
- * @property dynamicRuleStates 動態牌桌狀態 registry。
+ * @property dynamicRuleStates 規則專屬動態對局狀態 registry。
  * @property exhaustiveDrawReasons 流局原因 registry。
  * @property extensionGameActions 擴充動作 registry。
  */

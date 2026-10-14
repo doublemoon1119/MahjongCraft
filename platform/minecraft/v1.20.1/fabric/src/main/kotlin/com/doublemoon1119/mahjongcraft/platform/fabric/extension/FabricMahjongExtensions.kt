@@ -138,7 +138,7 @@ internal object FabricMahjongExtensions {
             builtIn = BuiltInFabricMahjongExtension(mahjongStoolSeatProvider),
         )
         return FabricExtensionRegistrationResult(
-            mergeRegistrationSources(coreSources, minecraftSources, fabricSources),
+            sources = mergeRegistrationSources(coreSources, minecraftSources, fabricSources),
         )
     }
 }

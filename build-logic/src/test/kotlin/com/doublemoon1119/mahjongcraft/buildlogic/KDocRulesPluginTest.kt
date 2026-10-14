@@ -37,7 +37,7 @@ class KDocRulesPluginTest {
         root.resolve(SOURCE_FILE).copyTo(commonSource)
         root.resolve(SOURCE_FILE).delete()
         root.resolve("build.gradle.kts").appendText(
-            """
+            text = """
 
             kotlin {
                 jvm()
@@ -54,7 +54,7 @@ class KDocRulesPluginTest {
     fun `reports text on KDoc opening line`() = withFixture { root ->
         prepareFixture(root, KOTLIN_JVM_PLUGIN)
         root.resolve(SOURCE_FILE).writeText(
-            """
+            text = """
             /** 不應與開頭標記放在同一行。
              * 這仍然是多行 KDoc。
              */
@@ -71,7 +71,7 @@ class KDocRulesPluginTest {
     fun `reports missing blank line before tag`() = withFixture { root ->
         prepareFixture(root, KOTLIN_JVM_PLUGIN)
         root.resolve(SOURCE_FILE).writeText(
-            """
+            text = """
             /**
              * 描述。
              * @property value 值。
@@ -111,7 +111,7 @@ class KDocRulesPluginTest {
         val source = root.resolve(SOURCE_FILE)
         source.parentFile.mkdirs()
         source.writeText(
-            """
+            text = """
             /**
              * 合法的類別說明。
              *
@@ -124,7 +124,7 @@ class KDocRulesPluginTest {
         )
         root.resolve("config/detekt").toPath().createDirectories()
         root.resolve("config/detekt/detekt.yml").writeText(
-            """
+            text = """
             config:
               validation: true
 
@@ -138,14 +138,14 @@ class KDocRulesPluginTest {
         )
         root.resolve("gradle").toPath().createDirectories()
         root.resolve("gradle/libs.versions.toml").writeText(
-            """
+            text = """
             [versions]
             core-java-toolchain = "17"
             core-java-release = "17"
             """.trimIndent() + "\n",
         )
         root.resolve("settings.gradle.kts").writeText(
-            """
+            text = """
             pluginManagement {
                 repositories {
                     gradlePluginPortal()
@@ -166,7 +166,7 @@ class KDocRulesPluginTest {
             """.trimIndent() + "\n",
         )
         root.resolve("build.gradle.kts").writeText(
-            """
+            text = """
             plugins {
                 id("$pluginId")
             }

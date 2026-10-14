@@ -17,7 +17,7 @@ import kotlinx.serialization.Serializable
  * @property roundPosition 當前權威局位。
  * @property comboCount 當前連莊次數。
  * @property currentPlayerIndex 目前行動玩家的索引。
- * @property dynamicRuleState 規則專屬牌桌狀態；沒有狀態時為 null。
+ * @property dynamicRuleState 規則專屬的動態對局狀態；沒有狀態時為 null。
  * @property pendingReaction 尚未完成的捨牌反應視窗。
  * @property pendingRobbingReaction 尚未完成的搶和反應視窗。
  * @property wallOpening 本局權威擲骰決定的牌牆開門位置；沒有時為 null。

@@ -20,5 +20,9 @@ sealed interface WinRoundDirectivePersistenceDto {
      */
     @Serializable
     @SerialName("continue_round")
-    data class ContinueRound(val newlyFinishedPlayerIds: Set<String>, val nextPlayerId: String, val settlementDetail: String) : WinRoundDirectivePersistenceDto
+    data class ContinueRound(
+        val newlyFinishedPlayerIds: Set<String>,
+        val nextPlayerId: String,
+        val settlementDetail: String,
+    ) : WinRoundDirectivePersistenceDto
 }

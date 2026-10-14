@@ -48,7 +48,7 @@ class CoreExtensionRegistriesTest {
         }
         assertFailsWith<IllegalStateException> {
             registries.historyReplayProjectionRegistry.register(
-                HistoryReplayProjectionDefinition.Action("example:late") { _, _ ->
+                definition = HistoryReplayProjectionDefinition.Action("example:late") { _, _ ->
                     HistoryReplayFact.Opaque("example:late")
                 },
             )
@@ -93,7 +93,7 @@ class CoreExtensionRegistriesTest {
         val registries = registries()
         val before = registries.registrationSnapshot()
         registries.historyReplayProjectionRegistry.register(
-            HistoryReplayProjectionDefinition.Action("example:action") { _, _ ->
+            definition = HistoryReplayProjectionDefinition.Action("example:action") { _, _ ->
                 HistoryReplayFact.Opaque("example:action")
             },
         )

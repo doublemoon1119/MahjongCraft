@@ -29,5 +29,9 @@ sealed interface RoundPreparationInputSpecPersistenceDto {
      */
     @Serializable
     @SerialName("tile_selection")
-    data class TileSelection(val eligibleTileIds: Set<String>, val minCount: Int, val maxCount: Int) : RoundPreparationInputSpecPersistenceDto
+    data class TileSelection(
+        val eligibleTileIds: Set<String>,
+        val minCount: Int,
+        val maxCount: Int,
+    ) : RoundPreparationInputSpecPersistenceDto
 }

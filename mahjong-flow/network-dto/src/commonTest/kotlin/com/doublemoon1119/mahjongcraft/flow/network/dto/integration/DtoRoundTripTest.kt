@@ -379,12 +379,12 @@ class DtoRoundTripTest {
     @Test
     fun `test a third-party MahjongRuleConfig can register itself and round-trip without touching this module`() {
         registries.ruleConfig.register(
-            DtoDefinition(
-                ThirdPartyRuleConfig::class,
-                ThirdPartyRuleConfigDto::class,
-                ThirdPartyRuleConfigDto.serializer(),
-                { it.toThirdPartyDto() },
-                { it.toThirdPartyDomain() },
+            definition = DtoDefinition(
+                domainClass = ThirdPartyRuleConfig::class,
+                dtoClass = ThirdPartyRuleConfigDto::class,
+                serializer = ThirdPartyRuleConfigDto.serializer(),
+                toDto = { it.toThirdPartyDto() },
+                toDomain = { it.toThirdPartyDomain() },
             ),
         )
 

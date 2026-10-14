@@ -46,7 +46,11 @@ class GameSnapshotRepositoryImpl : GameSnapshotRepository {
         Unit
     }
 
-    override suspend fun removeSnapshotIf(gameId: Uuid, observerId: Uuid, isStillValid: () -> Boolean): Boolean = mutex.withLock {
+    override suspend fun removeSnapshotIf(
+        gameId: Uuid,
+        observerId: Uuid,
+        isStillValid: () -> Boolean,
+    ): Boolean = mutex.withLock {
         if (!isStillValid()) return@withLock false
         snapshots[gameId]?.remove(observerId)
         preparationSnapshots[gameId]?.remove(observerId)

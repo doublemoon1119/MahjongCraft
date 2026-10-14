@@ -23,7 +23,11 @@ class FakeRoomSnapshotRepository : RoomSnapshotRepository {
         snapshots.remove(roomId to observerId)
     }
 
-    override suspend fun removeSnapshotIf(roomId: Uuid, observerId: Uuid, isStillValid: () -> Boolean): Boolean {
+    override suspend fun removeSnapshotIf(
+        roomId: Uuid,
+        observerId: Uuid,
+        isStillValid: () -> Boolean,
+    ): Boolean {
         if (!isStillValid()) return false
         snapshots.remove(roomId to observerId)
         return true

@@ -27,7 +27,7 @@ interface NetworkDtoRegistries {
     /** 遊戲長度 DTO registry。 */
     val gameLength: DtoRegistry<GameLength, GameLengthDto>
 
-    /** 動態牌桌狀態 DTO registry。 */
+    /** 規則專屬動態對局狀態 DTO registry。 */
     val dynamicRuleState: DtoRegistry<DynamicRuleState, DynamicRuleStateDto>
 
     /** 玩家規則狀態 DTO registry。 */

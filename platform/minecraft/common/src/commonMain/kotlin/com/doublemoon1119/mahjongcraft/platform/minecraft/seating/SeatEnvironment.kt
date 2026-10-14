@@ -44,7 +44,11 @@ interface SeatEnvironment<W, R, S> {
      * @param request 固定席位。
      * @return 安全傳送成功時為 true。
      */
-    fun stand(world: W, rider: R, request: SeatRequest): Boolean
+    fun stand(
+        world: W,
+        rider: R,
+        request: SeatRequest,
+    ): Boolean
 
     /**
      * 確認成功後位置符合實際乘坐幾何。
@@ -54,7 +58,11 @@ interface SeatEnvironment<W, R, S> {
      * @param geometry 提供者宣告的實際位置。
      * @return 確實位於目標時為 true。
      */
-    fun positioned(world: W, rider: R, geometry: SeatGeometry): Boolean
+    fun positioned(
+        world: W,
+        rider: R,
+        geometry: SeatGeometry,
+    ): Boolean
 
     /**
      * 提供者違約時嘗試安全回復，不強制解除未知載具或載入區塊。

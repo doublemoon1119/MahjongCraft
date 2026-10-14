@@ -41,7 +41,11 @@ class ObserverSnapshotBroadcasterSourceReplacementTest {
         /** 依送出順序保存的快照。 */
         val sent = mutableListOf<ObserverSnapshot?>()
 
-        override suspend fun send(id: Uuid, observerId: Uuid, snapshot: ObserverSnapshot?) {
+        override suspend fun send(
+            id: Uuid,
+            observerId: Uuid,
+            snapshot: ObserverSnapshot?,
+        ) {
             sent += snapshot
         }
     }

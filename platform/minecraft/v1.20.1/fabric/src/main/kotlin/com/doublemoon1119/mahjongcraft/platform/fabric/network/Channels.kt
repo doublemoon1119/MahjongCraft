@@ -91,7 +91,12 @@ internal fun <T> decodeAndDispatchC2S(
  * @param T 解碼後的線路 DTO 型別。
  * @return 完整且合法的 DTO；拒絕時為 null。
  */
-internal fun <T> decodeBoundedPayload(buf: PacketByteBuf, json: Json, serializer: KSerializer<T>, maxPayloadBytes: Int): T? = decodeC2SPayload(buf, json, serializer, maxPayloadBytes)?.getOrNull()
+internal fun <T> decodeBoundedPayload(
+    buf: PacketByteBuf,
+    json: Json,
+    serializer: KSerializer<T>,
+    maxPayloadBytes: Int,
+): T? = decodeC2SPayload(buf, json, serializer, maxPayloadBytes)?.getOrNull()
 
 /**
  * 伺服器→客戶端頻道：把 [T] 序列化成 JSON 字串，透過 [PacketByteBuf] 送給單一玩家。

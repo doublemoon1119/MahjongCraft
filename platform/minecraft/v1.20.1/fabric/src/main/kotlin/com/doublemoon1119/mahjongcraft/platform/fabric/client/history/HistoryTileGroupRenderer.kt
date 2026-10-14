@@ -42,7 +42,18 @@ internal class HistoryTileGroupRenderer(
      * @param appearance 該場公開規則指定的牌組外觀。
      * @return 指向牌面時的提示，或 null。
      */
-    fun render(context: DrawContext, layout: HistoryTileGroupLayout, catalog: List<TileDto>, x: Int, y: Int, mouseX: Int, mouseY: Int, taken: Set<Int> = emptySet(), markers: Map<Int, Set<String>> = emptyMap(), appearance: MinecraftTileSetAppearanceDefinition = BuiltInMinecraftTileAppearances.DEFAULT): List<Text>? {
+    fun render(
+        context: DrawContext,
+        layout: HistoryTileGroupLayout,
+        catalog: List<TileDto>,
+        x: Int,
+        y: Int,
+        mouseX: Int,
+        mouseY: Int,
+        taken: Set<Int> = emptySet(),
+        markers: Map<Int, Set<String>> = emptyMap(),
+        appearance: MinecraftTileSetAppearanceDefinition = BuiltInMinecraftTileAppearances.DEFAULT,
+    ): List<Text>? {
         var tooltip: List<Text>? = null
         layout.placements.forEach { placement ->
             val tile = catalog.getOrNull(placement.tile) ?: return@forEach

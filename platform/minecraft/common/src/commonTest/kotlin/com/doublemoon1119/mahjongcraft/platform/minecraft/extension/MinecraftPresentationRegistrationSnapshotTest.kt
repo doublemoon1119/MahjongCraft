@@ -103,8 +103,8 @@ class MinecraftPresentationRegistrationSnapshotTest {
         displayName: String,
         vararg registrationIds: String,
     ): MinecraftPresentationRegistrationCategory = MinecraftPresentationRegistrationCategory(
-        id,
-        displayName,
-        registrationIds.sorted(),
+        id = id,
+        displayName = displayName,
+        registrationIds = registrationIds.sorted(),
     )
 }

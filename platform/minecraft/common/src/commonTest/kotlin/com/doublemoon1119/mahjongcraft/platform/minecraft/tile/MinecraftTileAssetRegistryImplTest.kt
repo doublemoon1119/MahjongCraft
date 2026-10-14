@@ -101,11 +101,11 @@ class MinecraftTileAssetRegistryImplTest {
         registry.register(definition)
 
         assertEquals(
-            MinecraftTileResources(
+            expected = MinecraftTileResources(
                 textureId = "mahjongcraft:textures/item/mahjong_tile/mahjong_tile_animal_cat.png",
                 modelId = "mahjongcraft:item/mahjong_tile/mahjong_tile_animal_cat",
             ),
-            registry.findResources("animal_cat"),
+            actual = registry.findResources("animal_cat"),
         )
     }
 
@@ -119,7 +119,7 @@ class MinecraftTileAssetRegistryImplTest {
         )
 
         registry.register(
-            MinecraftTileAssetDefinition(
+            definition = MinecraftTileAssetDefinition(
                 typeId = TileTypeId.parse("example:animal/cat"),
                 assetKey = "animal_cat",
                 resources = resources,
@@ -134,17 +134,17 @@ class MinecraftTileAssetRegistryImplTest {
     fun `same resource paths in different namespaces are distinct`() {
         val registry = MinecraftTileAssetRegistryImpl()
         registry.register(
-            MinecraftTileAssetDefinition(
-                TileTypeId.parse("example:animal/cat"),
-                "animal_cat",
-                MinecraftTileResources("first:tile.png", "first:tile"),
+            definition = MinecraftTileAssetDefinition(
+                typeId = TileTypeId.parse("example:animal/cat"),
+                assetKey = "animal_cat",
+                resources = MinecraftTileResources("first:tile.png", "first:tile"),
             ),
         )
         registry.register(
-            MinecraftTileAssetDefinition(
-                TileTypeId.parse("other:animal/cat"),
-                "other_animal_cat",
-                MinecraftTileResources("second:tile.png", "second:tile"),
+            definition = MinecraftTileAssetDefinition(
+                typeId = TileTypeId.parse("other:animal/cat"),
+                assetKey = "other_animal_cat",
+                resources = MinecraftTileResources("second:tile.png", "second:tile"),
             ),
         )
 
@@ -240,7 +240,7 @@ class MinecraftTileAssetRegistryImplTest {
         val appearances = registry.registeredAppearances
 
         registry.register(
-            MinecraftTileSetAppearanceDefinition(
+            definition = MinecraftTileSetAppearanceDefinition(
                 id = "example:stone",
                 coverTextureId = "example:item/cover2",
                 unknownFaceTextureId = "example:item/hidden2",

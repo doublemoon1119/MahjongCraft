@@ -23,8 +23,8 @@ class FixedMahjongTileModelPreparedDataTest {
         val prepared = prepare(resources)
         val variant = prepared.variants.single {
             it.modelId == FixedMahjongTileModelPreparedData.syntheticModelId(
-                BuiltInMinecraftTileAppearances.DEFAULT.id,
-                "m1",
+                appearanceId = BuiltInMinecraftTileAppearances.DEFAULT.id,
+                assetKey = "m1",
             )
         }
 
@@ -38,7 +38,7 @@ class FixedMahjongTileModelPreparedDataTest {
         val prepared = prepare(TestResourceManager())
         val variant = prepared.variants.single {
             it.modelId == FixedMahjongTileModelPreparedData.syntheticUnknownModelId(
-                BuiltInMinecraftTileAppearances.DEFAULT.id,
+                appearanceId = BuiltInMinecraftTileAppearances.DEFAULT.id,
             )
         }
 
@@ -54,8 +54,8 @@ class FixedMahjongTileModelPreparedDataTest {
         val prepared = prepare(resources)
         val variant = prepared.variants.single {
             it.modelId == FixedMahjongTileModelPreparedData.syntheticModelId(
-                BuiltInMinecraftTileAppearances.DEFAULT.id,
-                "m1",
+                appearanceId = BuiltInMinecraftTileAppearances.DEFAULT.id,
+                assetKey = "m1",
             )
         }
 
@@ -70,8 +70,8 @@ class FixedMahjongTileModelPreparedDataTest {
         val prepared = prepare(resources)
         val variant = prepared.variants.single {
             it.modelId == FixedMahjongTileModelPreparedData.syntheticModelId(
-                BuiltInMinecraftTileAppearances.DEFAULT.id,
-                "m1",
+                appearanceId = BuiltInMinecraftTileAppearances.DEFAULT.id,
+                assetKey = "m1",
             )
         }
 
@@ -91,8 +91,8 @@ class FixedMahjongTileModelPreparedDataTest {
         registry.freeze()
 
         val prepared = FixedMahjongTileModelPreparedData.prepare(
-            registry,
-            TestResourceManager(missingTextures = setOf("missing")),
+            registry = registry,
+            resourceManager = TestResourceManager(missingTextures = setOf("missing")),
         )
 
         assertEquals(BuiltInMinecraftTileAppearances.DEFAULT, prepared.effectiveAppearance(custom))
@@ -111,8 +111,8 @@ class FixedMahjongTileModelPreparedDataTest {
         registry.freeze()
 
         val prepared = FixedMahjongTileModelPreparedData.prepare(
-            registry,
-            TestResourceManager(missingTextures = setOf("missing_unknown")),
+            registry = registry,
+            resourceManager = TestResourceManager(missingTextures = setOf("missing_unknown")),
         )
 
         assertEquals(BuiltInMinecraftTileAppearances.DEFAULT, prepared.effectiveAppearance(custom))

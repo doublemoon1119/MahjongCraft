@@ -87,7 +87,7 @@ class ExtensionGameCommandExecutorTest {
      */
     private fun recordingRegistry(receivedContexts: MutableList<ExtensionGameCommandContext>) = ExtensionGameCommandExecutorRegistry().apply {
         register(
-            ExtensionGameCommandHandlerDefinition(TestCommand::class) { context ->
+            definition = ExtensionGameCommandHandlerDefinition(TestCommand::class) { context ->
                 receivedContexts += context
                 successHandler()
             },

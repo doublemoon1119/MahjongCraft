@@ -39,7 +39,7 @@ class RegistrationCollectionIsolationTest {
         )
         val registry = GameConfigPresentationRegistryImpl()
         registry.register(
-            GameConfigPresentationDefinition(
+            definition = GameConfigPresentationDefinition(
                 ruleModuleId = "example:rule",
                 descriptionTranslationKey = "test.rule",
                 selectable = true,
@@ -72,7 +72,7 @@ class RegistrationCollectionIsolationTest {
         val sounds = mutableListOf(ShowcaseSound("example:first", 1), ShowcaseSound("example:second", 2))
         val registry = WinCelebrationShowcaseRegistryImpl()
         registry.register(
-            WinCelebrationShowcaseDefinition(
+            definition = WinCelebrationShowcaseDefinition(
                 cueKey = "example:cue",
                 titleTranslationKey = "test.cue",
                 titleImageResourceId = "example:textures/cue.png",

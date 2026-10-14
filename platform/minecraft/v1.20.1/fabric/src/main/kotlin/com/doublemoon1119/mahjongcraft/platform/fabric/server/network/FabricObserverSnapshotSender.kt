@@ -109,7 +109,11 @@ class FabricObserverSnapshotSender(
         }
     }
 
-    override suspend fun invalidateVenue(id: Uuid, observerId: Uuid, requestId: Uuid) {
+    override suspend fun invalidateVenue(
+        id: Uuid,
+        observerId: Uuid,
+        requestId: Uuid,
+    ) {
         val ticket = tableStateDelivery.removalTicket(id, requestId) ?: return
         tableStateDelivery.sendRemoval(ticket) {
             val player = serverHolder.findPlayer(observerId) ?: return@sendRemoval

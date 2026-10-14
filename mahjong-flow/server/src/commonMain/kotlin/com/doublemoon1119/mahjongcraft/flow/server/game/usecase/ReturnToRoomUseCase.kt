@@ -86,7 +86,7 @@ class ReturnToRoomUseCase(
         val newRoom = (outcome as Outcome.Success).value
 
         // 2. 清除本局牌牆用牌、手牌/摸牌位/副露、積棒。空 layout 觸發呈現層既有的「建空集合後
-        //    丟棄全部舊牌」語意；莊家座位、王牌集合、擲骰數量在空集合下都不影響任何座標計算，直接傳
+        //    丟棄全部舊牌」語意；莊家座位、王牌集合、擲骰數量在空集合下都不影響任何呈現的配置計算，直接傳
         //    空／零值即可。手牌/摸牌位/副露/積棒沒有座位分組資料可傳，改呼叫專用的清除方法。
         presentationPublisher.publishWallStructure(
             gameId,

@@ -42,7 +42,11 @@ class ObserverSnapshotBroadcasterTest {
             sent += Triple(id, observerId, snapshot)
         }
 
-        override suspend fun invalidateVenue(id: Uuid, observerId: Uuid, requestId: Uuid) {
+        override suspend fun invalidateVenue(
+            id: Uuid,
+            observerId: Uuid,
+            requestId: Uuid,
+        ) {
             invalidated += id to observerId
         }
     }
@@ -52,7 +56,11 @@ class ObserverSnapshotBroadcasterTest {
         val sendStarted = CompletableDeferred<Unit>()
         val releaseSend = CompletableDeferred<Unit>()
 
-        override suspend fun send(id: Uuid, observerId: Uuid, snapshot: ObserverSnapshot?) {
+        override suspend fun send(
+            id: Uuid,
+            observerId: Uuid,
+            snapshot: ObserverSnapshot?,
+        ) {
             sendStarted.complete(Unit)
             releaseSend.await()
             super.send(id, observerId, snapshot)
@@ -65,7 +73,11 @@ class ObserverSnapshotBroadcasterTest {
         val releaseFirstSend = CompletableDeferred<Unit>()
         private var sendCount = 0
 
-        override suspend fun send(id: Uuid, observerId: Uuid, snapshot: ObserverSnapshot?) {
+        override suspend fun send(
+            id: Uuid,
+            observerId: Uuid,
+            snapshot: ObserverSnapshot?,
+        ) {
             if (sendCount++ == 0) {
                 firstSendStarted.complete(Unit)
                 releaseFirstSend.await()
@@ -441,7 +453,11 @@ class ObserverSnapshotBroadcasterTest {
         val sender = object : RecordingSender() {
             var fail = true
 
-            override suspend fun invalidateVenue(id: Uuid, observerId: Uuid, requestId: Uuid) {
+            override suspend fun invalidateVenue(
+                id: Uuid,
+                observerId: Uuid,
+                requestId: Uuid,
+            ) {
                 if (fail) {
                     fail = false
                     throw IllegalStateException("test failure")
@@ -465,7 +481,11 @@ class ObserverSnapshotBroadcasterTest {
         val store = AuthoritativeStateStore()
         val audience = MutableAudienceSource()
         val sender = object : RecordingSender() {
-            override suspend fun invalidateVenue(id: Uuid, observerId: Uuid, requestId: Uuid): Unit = throw CancellationException("test cancellation")
+            override suspend fun invalidateVenue(
+                id: Uuid,
+                observerId: Uuid,
+                requestId: Uuid,
+            ): Unit = throw CancellationException("test cancellation")
         }
         val broadcaster = broadcaster(store, audience, sender)
         broadcaster.requestVenueInvalidation(id, setOf(observerId), Uuid.random()) { true }

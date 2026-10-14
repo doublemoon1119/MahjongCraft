@@ -20,7 +20,7 @@ class ExtensionGameActionCommandFactoryRegistryTest {
         val registry = ExtensionGameActionCommandFactoryRegistry()
         val tileIds = listOf(Uuid.random(), Uuid.random())
         registry.register(
-            ExtensionGameActionCommandFactoryDefinition(TestAction::class) { action, selectedTileIds ->
+            definition = ExtensionGameActionCommandFactoryDefinition(TestAction::class) { action, selectedTileIds ->
                 TestCommand(action.id, selectedTileIds)
             },
         )

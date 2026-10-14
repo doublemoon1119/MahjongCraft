@@ -23,7 +23,11 @@ class FakeGameSnapshotRepository : GameSnapshotRepository {
         snapshots.remove(gameId to observerId)
     }
 
-    override suspend fun removeSnapshotIf(gameId: Uuid, observerId: Uuid, isStillValid: () -> Boolean): Boolean {
+    override suspend fun removeSnapshotIf(
+        gameId: Uuid,
+        observerId: Uuid,
+        isStillValid: () -> Boolean,
+    ): Boolean {
         if (!isStillValid()) return false
         snapshots.remove(gameId to observerId)
         return true

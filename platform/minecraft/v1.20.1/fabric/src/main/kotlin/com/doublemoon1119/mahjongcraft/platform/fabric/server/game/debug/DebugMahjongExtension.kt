@@ -38,7 +38,7 @@ internal class DebugMahjongExtension(
         registry.register(MahjongAiStrategyDefinition(DebugScriptedAiStrategy.TSUMOGIRI_KEY) { DebugScriptedAiStrategy(declaresKanFirst = false) })
         registry.register(MahjongAiStrategyDefinition(DebugScriptedAiStrategy.KAN_FIRST_KEY) { DebugScriptedAiStrategy(declaresKanFirst = true) })
         registry.register(
-            MahjongAiStrategyDefinition(DebugScriptedAiStrategy.PULL_NORTH_FIRST_KEY) {
+            definition = MahjongAiStrategyDefinition(DebugScriptedAiStrategy.PULL_NORTH_FIRST_KEY) {
                 DebugScriptedAiStrategy(declaresKanFirst = false, pullsNorthFirst = true)
             },
         )

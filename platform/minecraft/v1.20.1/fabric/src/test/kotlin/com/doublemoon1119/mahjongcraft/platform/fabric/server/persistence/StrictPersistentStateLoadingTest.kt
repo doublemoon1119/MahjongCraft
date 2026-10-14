@@ -121,7 +121,12 @@ class StrictPersistentStateLoadingTest {
     /** 測試不遷移遊戲資料，只讓原生管理器走完整的 NBT 載入流程。 */
     private object IdentityDataFixer : DataFixer {
         /** 保留輸入資料，不對測試內容進行遊戲版本遷移。 */
-        override fun <T> update(type: DSL.TypeReference, input: Dynamic<T>, version: Int, newVersion: Int): Dynamic<T> = input
+        override fun <T> update(
+            type: DSL.TypeReference,
+            input: Dynamic<T>,
+            version: Int,
+            newVersion: Int,
+        ): Dynamic<T> = input
 
         /** 測試資料不查詢資料遷移 schema，意外呼叫時明確失敗。 */
         override fun getSchema(versionKey: Int): Schema = error("Schema lookup is not needed by this fixture")

@@ -100,10 +100,10 @@ class GameActionDisplayTextTest {
     @Test
     fun `a rule overrides the default wording of an action`() {
         actionVocabulary.register(
-            GameActionVocabularyDefinition(
-                BuiltInRuleModuleIds.TAIWAN,
-                BuiltInGameActionIds.RON,
-                GameActionVocabulary(labelKey = "example.hud.win", messageKey = "example.message.win"),
+            definition = GameActionVocabularyDefinition(
+                ruleModuleId = BuiltInRuleModuleIds.TAIWAN,
+                actionId = BuiltInGameActionIds.RON,
+                vocabulary = GameActionVocabulary(labelKey = "example.hud.win", messageKey = "example.message.win"),
             ),
         )
 

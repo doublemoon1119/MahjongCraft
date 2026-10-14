@@ -239,7 +239,7 @@ class FabricTableStateDeliveryTest {
             gameSnapshots = GameSnapshotRepositoryImpl(),
             locations = environment.locations,
             configState = MinecraftServerConfigState(
-                MinecraftServerConfig(orphanedTablePolicy = OrphanedTablePolicy.REMOVE_ALL),
+                initialConfig = MinecraftServerConfig(orphanedTablePolicy = OrphanedTablePolicy.REMOVE_ALL),
             ),
             removalNotifier = notifier,
         )
@@ -317,9 +317,17 @@ class FabricTableStateDeliveryTest {
         /** 將失效通知交給桌況交付器的 gateway。 */
         lateinit var delivery: FabricTableStateDelivery
 
-        override suspend fun send(id: Uuid, observerId: Uuid, snapshot: ObserverSnapshot?) = Unit
+        override suspend fun send(
+            id: Uuid,
+            observerId: Uuid,
+            snapshot: ObserverSnapshot?,
+        ) = Unit
 
-        override suspend fun invalidateVenue(id: Uuid, observerId: Uuid, requestId: Uuid) {
+        override suspend fun invalidateVenue(
+            id: Uuid,
+            observerId: Uuid,
+            requestId: Uuid,
+        ) {
             val ticket = delivery.removalTicket(id, requestId) ?: return
             delivery.sendRemoval(ticket) { invalidated += Triple(id, observerId, requestId) }
         }

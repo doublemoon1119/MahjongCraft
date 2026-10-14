@@ -30,12 +30,15 @@ object RoundInfoLineCodec {
     }.getOrDefault(emptyList())
 }
 
-/** JSON 中單一局況顯示行的型別化表示。 */
+/**
+ * JSON 中單一局況顯示行的型別化表示。
+ *
+ * @property key 顯示行的翻譯 key。
+ * @property args 按顯示順序排列的型別化參數。
+ */
 @Serializable
 private data class EncodedLine(
-    /** 顯示行的翻譯 key。 */
     val key: String,
-    /** 按顯示順序排列的型別化參數。 */
     val args: List<EncodedArgument>,
 ) {
     /** 還原局況顯示行；遇到無法識別的參數時回傳 null。 */
@@ -49,12 +52,15 @@ private data class EncodedLine(
     }
 }
 
-/** JSON 中單一局況顯示參數的型別化表示。 */
+/**
+ * JSON 中單一局況顯示參數的型別化表示。
+ *
+ * @property kind 參數的型別標記。
+ * @property value 參數的文字編碼值。
+ */
 @Serializable
 private data class EncodedArgument(
-    /** 參數的型別標記。 */
     val kind: String,
-    /** 參數的文字編碼值。 */
     val value: String,
 ) {
     /** 依型別標記還原數字或風位參數；無效值回傳 null。 */

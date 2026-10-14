@@ -79,7 +79,7 @@ data class FixedMahjongTileModelPreparedData(
                             CANONICAL_TILE_MODEL
                         }
                         add(
-                            FixedMahjongTileModelVariant(
+                            element = FixedMahjongTileModelVariant(
                                 modelId = syntheticModelId(appearance.id, assetKey),
                                 templateModelId = usableTemplate,
                                 frontTextureId = usableFrontTexture,
@@ -88,7 +88,7 @@ data class FixedMahjongTileModelPreparedData(
                         )
                     }
                     add(
-                        FixedMahjongTileModelVariant(
+                        element = FixedMahjongTileModelVariant(
                             modelId = syntheticUnknownModelId(appearance.id),
                             templateModelId = CANONICAL_TILE_MODEL,
                             frontTextureId = unknownFaceTexture,

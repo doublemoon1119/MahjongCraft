@@ -1589,9 +1589,13 @@ class GameFlowCoordinatorTest {
             extraStrategies = mapOf(FIXED_STRATEGY_KEY to strategy),
             extraCommandHandlers = { registry ->
                 registry.register(
-                    ExtensionGameCommandHandlerDefinition(DoubleWriteCommand::class) { context ->
+                    definition = ExtensionGameCommandHandlerDefinition(DoubleWriteCommand::class) { context ->
                         object : ExtensionGameCommandHandler<DoubleWriteCommand> {
-                            override suspend fun execute(gameId: Uuid, playerId: Uuid, command: DoubleWriteCommand): Outcome<Unit, GameError> {
+                            override suspend fun execute(
+                                gameId: Uuid,
+                                playerId: Uuid,
+                                command: DoubleWriteCommand,
+                            ): Outcome<Unit, GameError> {
                                 context.gameRepository.updateGame(gameId) { it?.copy(automaticControlRevision = it.automaticControlRevision + 1) to Unit }
                                 runCatching { context.gameRepository.updateGame(gameId) { it?.copy(isMatchOver = true) to Unit } }
                                 return Outcome.Success(Unit)

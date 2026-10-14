@@ -81,7 +81,7 @@ class RoomMemberAppearanceResolverTest {
     @Test
     fun `propagates cancellation from the registry`() {
         val resolver = RoomMemberAppearanceResolver(
-            object : FakeRegistry() {
+            sources = object : FakeRegistry() {
                 /**
                  * 模擬外觀來源解析被取消。
                  *
@@ -101,7 +101,7 @@ class RoomMemberAppearanceResolverTest {
     @Test
     fun `propagates fatal errors from the registry`() {
         val resolver = RoomMemberAppearanceResolver(
-            object : FakeRegistry() {
+            sources = object : FakeRegistry() {
                 /**
                  * 模擬外觀來源解析發生致命錯誤。
                  *
