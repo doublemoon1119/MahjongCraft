@@ -100,6 +100,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.notification.Fabri
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.observer.FabricObserverAudienceSource
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.observer.FabricObserverSnapshotBroadcastService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricAuthoritativeStatePersistence
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricMahjongDataStatus
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricTableLocationPersistence
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.PlayerConnectionLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.ServerPlayerIdentityStore
@@ -271,6 +272,7 @@ val fabricServerModule = module {
     single<FabricObserverSnapshotBroadcastService>()
 
     single<FabricAuthoritativeStatePersistence>()
+    single<FabricMahjongDataStatus>()
     single<FabricTableLocationPersistence>()
 
     single<PlayerConnectionLifecycleService>()

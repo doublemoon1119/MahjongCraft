@@ -74,6 +74,14 @@ internal fun <S : PersistentState> loadPersistentStateStrict(
     )
 }
 
+/**
+ * 取得持久化資料相對於世界存檔目錄的檔案路徑，供提示玩家與記錄使用。
+ *
+ * @param key 存檔管理器的固定資料名稱。
+ * @return 以 `/` 分隔的相對路徑，例如 `data/<key>.dat`。
+ */
+internal fun persistentStateDisplayPath(key: String): String = PersistentStateStoragePaths.DIRECTORY + "/" + key + PersistentStateStoragePaths.EXTENSION
+
 /** Minecraft 1.20.1 overworld 持久化管理器使用的檔案位置。 */
 private object PersistentStateStoragePaths {
     /** 世界根目錄內的持久化資料目錄。 */

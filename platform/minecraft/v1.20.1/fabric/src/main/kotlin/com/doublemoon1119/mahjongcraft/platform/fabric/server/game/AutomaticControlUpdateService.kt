@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.toDto
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceManager
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.UpdatePlayerAutomaticControlsResult
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.UpdatePlayerAutomaticControlsUseCase
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricMahjongDataStatus
 import kotlin.uuid.Uuid
 
 /**
@@ -15,10 +16,12 @@ import kotlin.uuid.Uuid
  *
  * @property updateControls 套用自動操作集合的用例。
  * @property advanceManager 集合實際改變時請求推進，讓新啟用的自動操作立即生效。
+ * @property dataStatus 麻將資料無法讀取時回覆無法使用。
  */
 class AutomaticControlUpdateService(
     private val updateControls: UpdatePlayerAutomaticControlsUseCase,
     private val advanceManager: AutomatedAdvanceManager,
+    private val dataStatus: FabricMahjongDataStatus,
 ) {
     /**
      * 處理 [request]；[playerId] 必須來自已驗證的網路連線，不能來自 payload。
@@ -31,6 +34,7 @@ class AutomaticControlUpdateService(
         playerId: Uuid,
         request: AutomaticControlUpdateRequestDto,
     ): AutomaticControlUpdateResultDto {
+        if (!dataStatus.isMahjongAvailable) return request.result(AutomaticControlUpdateResultKindDto.UNAVAILABLE)
         val gameId = runCatching { Uuid.parse(request.gameId) }.getOrNull()
             ?: return request.result(AutomaticControlUpdateResultKindDto.UNAVAILABLE)
         val result = updateControls(

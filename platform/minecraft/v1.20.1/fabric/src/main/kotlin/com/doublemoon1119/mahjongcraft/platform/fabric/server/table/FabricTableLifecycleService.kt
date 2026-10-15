@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTable
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationState
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinShowcaseOverride
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricMahjongDataStatus
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.FabricMahjongLobbyInfoPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.TableBreakPolicy
@@ -23,6 +24,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerArea
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresenter
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents
 import net.minecraft.block.BlockState
+import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.math.BlockPos
 import net.minecraft.world.WorldAccess
@@ -52,6 +54,7 @@ import kotlin.uuid.Uuid
  * @property lobbyInfoPresenter 清理等待室提示。
  * @property tileSelectionConfirmPresenter 清理選牌確認面板。
  * @property presentationCleaner 清理臨時呈現與演出。
+ * @property dataStatus 麻將資料無法讀取時拒絕玩家破壞桌子，並略過替換後的清理。
  */
 class FabricTableLifecycleService(
     private val store: AuthoritativeStateStore,
@@ -72,13 +75,18 @@ class FabricTableLifecycleService(
     private val lobbyInfoPresenter: FabricMahjongLobbyInfoPresenter,
     private val tileSelectionConfirmPresenter: MahjongTileSelectionConfirmPresenter,
     private val presentationCleaner: FabricTablePresentationCleaner,
+    private val dataStatus: FabricMahjongDataStatus,
 ) {
     /** 記錄麻將桌破壞政策判斷與清理入口。 */
     private val logger = mahjongCraftLogger(FabricTableLifecycleService::class)
 
     /** 註冊 Fabric 玩家破壞前後事件。 */
     fun registerEvents() {
-        PlayerBlockBreakEvents.BEFORE.register { world, _, pos, state, _ ->
+        PlayerBlockBreakEvents.BEFORE.register { world, player, pos, state, _ ->
+            val serverPlayer = player as? ServerPlayerEntity
+            if (state.block is MahjongTableBlock && serverPlayer != null && dataStatus.rejectIfUnavailable(serverPlayer)) {
+                return@register false
+            }
             canBreak(world, pos, state)
         }
         PlayerBlockBreakEvents.AFTER.register { _, _, _, _, blockEntity ->
@@ -109,11 +117,17 @@ class FabricTableLifecycleService(
     /**
      * 非玩家來源替換麻將桌方塊時，當場清除世界中的呈現，並排入依 orphan policy 進行的權威清理。
      *
+     * 麻將資料無法讀取時不清理也不登記位置：已保存的房間或對局留待下一次 session，由位置驗證發現桌子已不存在後處理。
+     *
      * @param world 被替換方塊所在世界。
      * @param table 被替換的桌子 controller block entity。
      */
     fun onBlockReplaced(world: ServerWorld, table: MahjongTableBlockEntity) {
         val tableId = table.tableId
+        if (!dataStatus.isMahjongAvailable) {
+            logger.warn("Mahjong table {} was removed while mahjong data is unavailable; its saved state is left for the next session", tableId)
+            return
+        }
         val tableLocation = world.toTableLocation(table.pos)
         val removedDiceCount = diceRollPresenter.clear(tableId, tableLocation)
         val removedWallTileCount = tileWallPresenter.clear(tableId, tableLocation)

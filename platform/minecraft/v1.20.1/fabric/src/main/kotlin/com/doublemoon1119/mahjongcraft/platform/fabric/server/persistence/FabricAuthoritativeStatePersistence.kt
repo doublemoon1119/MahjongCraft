@@ -17,12 +17,14 @@ import net.minecraft.server.MinecraftServer
  * @property store 目前的權威狀態儲存庫。
  * @property stateRestorer 將持久化快照還原到領域儲存庫。
  * @property stateCleaner 初始化失敗時清除本次 session 的衍生與權威記憶體，不寫回存檔。
+ * @property dataStatus 回報無法讀取的權威狀態。
  */
 class FabricAuthoritativeStatePersistence(
     private val codec: AuthoritativeStatePersistenceCodec,
     private val store: AuthoritativeStateStore,
     private val stateRestorer: ServerSessionStateRestorer,
     private val stateCleaner: ServerSessionStateCleaner,
+    private val dataStatus: FabricMahjongDataStatus,
 ) {
     private val logger = mahjongCraftLogger(FabricAuthoritativeStatePersistence::class)
 
@@ -88,4 +90,51 @@ class FabricAuthoritativeStatePersistence(
         persistentState = null
         logger.debug("Detached authoritative persistence from the current server session")
     }
+
+    /**
+     * 載入權威狀態；無法讀取時不中斷伺服器啟動，改為停用本次 session 的麻將功能。
+     *
+     * @param server 要載入權威狀態的 Minecraft 伺服器。
+     * @return 成功接上時為 true；無法讀取、已停用麻將功能時為 false。
+     */
+    suspend fun attachOrDisable(server: MinecraftServer): Boolean = attachAuthoritativeStateOrDisable(
+        attach = { attach(server) },
+        markUnavailable = store::markUnavailable,
+        report = { problem ->
+            logger.warn("Mahjong features are disabled for this session; {} was left unchanged", problem.file)
+            dataStatus.report(problem)
+        },
+    )
+}
+
+/**
+ * 接上權威狀態；無法讀取時拒絕之後的所有寫入並回報，讓世界照常進入、只停用麻將功能。
+ *
+ * 失敗時 [attach] 已清除本次建立的記憶體並保留原檔；之後的寫入若建立在清空的狀態上，會與原始資料衝突，
+ * 因此由 [markUnavailable] 一律拒絕。取消與致命錯誤照常往外傳。
+ *
+ * @param attach 載入並接上權威狀態。
+ * @param markUnavailable 拒絕之後所有權威狀態寫入。
+ * @param report 回報無法讀取的資料。
+ * @return 成功接上時為 true。
+ */
+internal suspend fun attachAuthoritativeStateOrDisable(
+    attach: suspend () -> Unit,
+    markUnavailable: suspend () -> Unit,
+    report: (MahjongDataProblem) -> Unit,
+): Boolean = try {
+    attach()
+    true
+} catch (cancelled: CancellationException) {
+    throw cancelled
+} catch (exception: Exception) {
+    markUnavailable()
+    report(
+        MahjongDataProblem(
+            source = MahjongDataSource.AUTHORITATIVE_STATE,
+            file = persistentStateDisplayPath(MahjongAuthoritativePersistentState.STORAGE_KEY),
+            cause = classifyDataLoadFailure(exception),
+        ),
+    )
+    false
 }

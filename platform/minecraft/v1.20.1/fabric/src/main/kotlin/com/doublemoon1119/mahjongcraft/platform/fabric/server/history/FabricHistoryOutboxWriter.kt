@@ -130,8 +130,9 @@ class FabricHistoryOutboxWriter(
     /** 保護資料庫連線與背景 worker 的 session 鎖。 */
     private val sessionMutex = Mutex()
 
-    /** 最近一次非預期寫入錯誤的安全摘要。 */
-    @Volatile private var lastError: String? = null
+    /** 最近一次非預期寫入錯誤的安全摘要；資料庫無法開啟時說明原因。 */
+    @Volatile var lastError: String? = null
+        private set
 
     /** 近期已結束場次的最小查詢證據；避免歷史狀態查詢依賴仍存在的 Game。 */
     private val recentMatchEvidence = LinkedHashMap<String, RecentHistoryMatchEvidence>()
@@ -155,8 +156,9 @@ class FabricHistoryOutboxWriter(
      * 開啟目前世界的資料庫；連線狀態不改變資格政策，失敗時待寫事件仍由有界佇列保留。
      *
      * @param server 目前執行中的 Minecraft 伺服器。
+     * @return 成功開啟並完成對帳時為 true；失敗時暫停記錄，原因見 [lastError]。
      */
-    suspend fun attach(server: MinecraftServer) = attachSession(FabricHistoryDatabasePath.resolve(server), server)
+    suspend fun attach(server: MinecraftServer): Boolean = attachSession(FabricHistoryDatabasePath.resolve(server), server)
 
     /**
      * 驗證管理要求仍屬於同一存檔；null 只代表目前未綁定 session。

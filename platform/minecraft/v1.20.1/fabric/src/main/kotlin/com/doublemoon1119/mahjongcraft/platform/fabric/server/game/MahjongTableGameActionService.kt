@@ -20,6 +20,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TablePresentationBusyTracker
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricMahjongDataStatus
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableRoomService
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSelectionDto
@@ -64,6 +65,7 @@ import kotlin.uuid.toKotlinUuid
  * @property moduleRegistry 依對局設定解析規則模組。
  * @property json 決策提交回覆使用的序列化設定。
  * @property failurePolicy 判斷命令執行中丟出的失敗能否記錄後回覆拒絕；協程取消與無法隔離的失敗原樣往外傳。
+ * @property dataStatus 麻將資料無法讀取時拒絕操作並提示玩家。
  */
 class MahjongTableGameActionService(
     private val scope: AppCoroutineScope,
@@ -81,6 +83,7 @@ class MahjongTableGameActionService(
     private val moduleRegistry: MahjongModuleRegistry,
     private val json: NetworkJson,
     private val failurePolicy: ExtensionFailurePolicy,
+    private val dataStatus: FabricMahjongDataStatus,
 ) {
     /** 對局命令與自動銜接失敗時的專用 logger。 */
     private val logger = mahjongCraftLogger(MahjongTableGameActionService::class)
@@ -93,6 +96,7 @@ class MahjongTableGameActionService(
      * @param tileId 被互動的手牌識別碼。
      */
     fun interactWithHandTile(player: ServerPlayerEntity, tileId: Uuid) {
+        if (dataStatus.rejectIfUnavailable(player)) return
         discard(player, tileId)
     }
 
@@ -103,6 +107,7 @@ class MahjongTableGameActionService(
      * @param selection HUD 傳來的決策選擇與識別資料。
      */
     fun select(player: ServerPlayerEntity, selection: PlayerDecisionSelectionDto) {
+        if (dataStatus.rejectIfUnavailable(player)) return
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
             if (selection.kind == PlayerDecisionSelectionKindDto.BEGIN_TILE_SELECTION) {
@@ -282,6 +287,7 @@ class MahjongTableGameActionService(
      * @param tileId 要打出的手牌識別碼。
      */
     fun discard(player: ServerPlayerEntity, tileId: Uuid) {
+        if (dataStatus.rejectIfUnavailable(player)) return
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
             val gameId = resolveGameId(playerId) ?: return@launch
@@ -301,6 +307,7 @@ class MahjongTableGameActionService(
         candidate: GameActionCandidate,
         selectedTileIds: List<Uuid> = emptyList(),
     ) {
+        if (dataStatus.rejectIfUnavailable(player)) return
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
             submitAction(playerId, candidate, selectedTileIds)
@@ -353,6 +360,7 @@ class MahjongTableGameActionService(
      * @param player 要顯示手牌資訊的玩家。
      */
     fun showHand(player: ServerPlayerEntity) {
+        if (dataStatus.rejectIfUnavailable(player)) return
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
             val gameId = resolveGameId(playerId) ?: return@launch

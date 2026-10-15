@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.history
 import net.minecraft.server.MinecraftServer
 import net.minecraft.util.WorldSavePath
 import java.nio.file.Path
+import kotlin.io.path.invariantSeparatorsPathString
 
 /**
  * 由目前伺服器存檔根目錄決定唯一的歷史資料庫位置。
@@ -27,4 +28,7 @@ object FabricHistoryDatabasePath {
      * @return 模組專用的歷史 SQLite 路徑。
      */
     internal fun resolve(saveRoot: Path): Path = saveRoot.resolve("mahjongcraft").resolve("history.sqlite")
+
+    /** 資料庫相對於世界存檔目錄的路徑，供提示玩家與記錄使用。 */
+    internal val displayPath: String get() = resolve(Path.of("")).invariantSeparatorsPathString
 }

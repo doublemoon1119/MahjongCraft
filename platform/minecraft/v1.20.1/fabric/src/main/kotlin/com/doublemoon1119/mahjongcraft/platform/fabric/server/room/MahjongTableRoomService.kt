@@ -35,6 +35,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricMahjongDataStatus
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateDelivery
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateTicket
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.TableOccupancyDto
@@ -85,6 +86,7 @@ import kotlin.uuid.toKotlinUuid
  * @property dispatchers 提供伺服器主執行緒調度器。
  * @property json 編碼網路訊息的 JSON 設定。
  * @property networkRegistries 轉換網路 DTO 所需的規則註冊表。
+ * @property dataStatus 麻將資料無法讀取時拒絕操作並提示玩家。
  */
 class MahjongTableRoomService(
     private val scope: AppCoroutineScope,
@@ -115,6 +117,7 @@ class MahjongTableRoomService(
     private val dispatchers: CoroutineDispatchers,
     private val json: NetworkJson,
     private val networkRegistries: NetworkDtoRegistries,
+    private val dataStatus: FabricMahjongDataStatus,
 ) {
     /**
      * 將 RoomScreen 的強型別操作路由到既有權威 use case；封包中的玩家身分一律忽略。
@@ -123,6 +126,7 @@ class MahjongTableRoomService(
      * @param action RoomScreen 傳來的操作 DTO。
      */
     fun handleRoomAction(player: ServerPlayerEntity, action: RoomActionDto) {
+        if (dataStatus.rejectIfUnavailable(player)) return
         val tableId = runCatching { Uuid.parse(action.venueId) }.getOrNull() ?: return
         when (action) {
             is RoomActionDto.Create -> createFromScreen(tableId, player)
@@ -209,6 +213,7 @@ class MahjongTableRoomService(
      * @param player 接收桌子狀態的玩家。
      */
     fun openRoomScreen(table: MahjongTableBlockEntity, player: ServerPlayerEntity) {
+        if (dataStatus.rejectIfUnavailable(player)) return
         val tableId = table.tableId
         val ticket = tableStateDelivery.capture(tableId) ?: return
         scope.launch(dispatchers.main) { sendCurrentOccupancy(ticket, player) }
@@ -256,6 +261,7 @@ class MahjongTableRoomService(
      * @param player 發起建立操作的玩家。
      */
     fun createFromScreen(tableId: Uuid, player: ServerPlayerEntity) {
+        if (dataStatus.rejectIfUnavailable(player)) return
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
             if (!isTableReachable(tableId, player)) {
@@ -279,6 +285,7 @@ class MahjongTableRoomService(
      * @param player 發起加入操作的玩家。
      */
     fun joinFromScreen(tableId: Uuid, player: ServerPlayerEntity) {
+        if (dataStatus.rejectIfUnavailable(player)) return
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
             if (!isTableReachable(tableId, player)) {
@@ -346,6 +353,7 @@ class MahjongTableRoomService(
      * @param player 發起互動的玩家。
      */
     fun interact(table: MahjongTableBlockEntity, player: ServerPlayerEntity) {
+        if (dataStatus.rejectIfUnavailable(player)) return
         val tableId = table.tableId
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
@@ -402,6 +410,7 @@ class MahjongTableRoomService(
      * @param player 發起離開操作的玩家。
      */
     fun leave(table: MahjongTableBlockEntity, player: ServerPlayerEntity) {
+        if (dataStatus.rejectIfUnavailable(player)) return
         val tableId = table.tableId
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
@@ -447,6 +456,7 @@ class MahjongTableRoomService(
      * @param player 要切換準備狀態的玩家。
      */
     fun ready(player: ServerPlayerEntity) {
+        if (dataStatus.rejectIfUnavailable(player)) return
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
             val tableId = membershipRepository.getVenueId(playerId)
@@ -485,6 +495,7 @@ class MahjongTableRoomService(
      * @param player 發起開始操作的房主。
      */
     fun start(player: ServerPlayerEntity) {
+        if (dataStatus.rejectIfUnavailable(player)) return
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
             val tableId = membershipRepository.getVenueId(playerId)
@@ -544,6 +555,7 @@ class MahjongTableRoomService(
      * @param strategyKey AI 使用的策略登記 key；不傳時使用 [AddAiPlayerUseCase] 的預設策略。
      */
     fun addAi(player: ServerPlayerEntity, strategyKey: String?) {
+        if (dataStatus.rejectIfUnavailable(player)) return
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
             val tableId = membershipRepository.getVenueId(playerId)
@@ -569,6 +581,7 @@ class MahjongTableRoomService(
      * @param targetPlayerId 要移出房間的成員 UUID。
      */
     fun kick(player: ServerPlayerEntity, targetPlayerId: Uuid) {
+        if (dataStatus.rejectIfUnavailable(player)) return
         val playerId = player.uuid.toKotlinUuid()
         scope.launch(dispatchers.main) {
             val tableId = membershipRepository.getVenueId(playerId)
@@ -597,6 +610,7 @@ class MahjongTableRoomService(
      * @param strategyKey 新的策略登記 key。
      */
     fun changeAiStrategy(player: ServerPlayerEntity, targetAiId: Uuid, strategyKey: String) {
+        if (dataStatus.rejectIfUnavailable(player)) return
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
             val tableId = membershipRepository.getVenueId(playerId)
@@ -629,6 +643,7 @@ class MahjongTableRoomService(
      * @param player 要查看房間設定的玩家。
      */
     fun showConfig(player: ServerPlayerEntity) {
+        if (dataStatus.rejectIfUnavailable(player)) return
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
             val tableId = membershipRepository.getVenueId(playerId)
@@ -649,6 +664,7 @@ class MahjongTableRoomService(
      * @param newConfig 要套用的新設定。
      */
     fun updateConfig(player: ServerPlayerEntity, newConfig: GameConfig) {
+        if (dataStatus.rejectIfUnavailable(player)) return
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
             val tableId = membershipRepository.getVenueId(playerId)

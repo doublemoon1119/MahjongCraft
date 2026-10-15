@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TablePresentationBusyTracker
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.MahjongTableGameActionService
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricMahjongDataStatus
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.FabricMahjongTileWallPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.TablePresentationBusyPolicy
@@ -357,9 +358,15 @@ class MahjongTileEntity(
         validateStillManagedByActiveGame()
     }
 
-    /** 見 [tick] KDoc。 */
+    /**
+     * 見 [tick] KDoc。
+     *
+     * 麻將資料無法讀取時權威狀態是清空的，任何對局都會被誤判為已結束，因此保留這張牌；資料恢復後重新載入世界時，
+     * entity 會重新建立並再次驗證。
+     */
     private fun validateStillManagedByActiveGame() {
         val tableId = managedTableId ?: return
+        if (!GlobalContext.get().get<FabricMahjongDataStatus>().isMahjongAvailable) return
         val store = GlobalContext.get().get<AuthoritativeStateStore>()
         val gameStillActive = tableId in store.state.value.games
         if (!gameStillActive) discard()

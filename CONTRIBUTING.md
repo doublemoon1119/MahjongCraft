@@ -371,7 +371,9 @@ Classify a format before changing it, and follow that class's compatibility stra
 
 - **Authoritative and not rebuildable**: carries an explicit schema version and evolves through consecutive
   migrations, one per version step. Data from an unknown newer version, or a gap in the migration chain, is
-  rejected loudly. Never treat state you cannot understand as empty state.
+  rejected loudly: the world still loads, the features that depend on the data are disabled for that session,
+  every write to the empty state is refused, the original file is left untouched, and administrators are told
+  which file failed, the likely cause and how to recover. Never treat state you cannot understand as empty state.
 - **Owned by the player and must survive**: keep field names stable and keep reading the previous shape until
   a migration exists. Add a version field at the first change that alters the meaning of an existing field
   rather than in advance.

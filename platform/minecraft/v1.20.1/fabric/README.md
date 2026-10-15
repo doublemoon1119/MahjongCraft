@@ -48,6 +48,24 @@ adapters live in separate modules. The Koin compiler plugin checks each applicat
 complete graph at build time. Formal graph tests reject duplicate bindings and verify registry
 identity and factory lifetimes.
 
+## Unreadable saved data
+
+The world always loads, even when saved mahjong data cannot be read.
+
+- Rooms, games and unsaved history (`data/mahjongcraft_authoritative_state.dat`): mahjong is
+  disabled for the session. Every authoritative write is refused, tables cannot be broken by
+  players, managed tiles keep their entities, and the file is left untouched.
+- Table locations (`data/mahjongcraft_table_locations.dat`): the index is rebuilt as tables load
+  and replaces the unreadable file on the next save; mahjong stays available.
+- History database (`mahjongcraft/history.sqlite`): recording and browsing history pause; games
+  continue.
+
+Players who try to use mahjong see a short message on the action bar. Administrators and the
+single-player host receive the file, the likely cause and recovery steps in chat when they join.
+When an extension that provided saved types is missing, reinstall it and restart. Moving the file
+away is a last resort that discards every room, game in progress and unsaved history; back it up
+first.
+
 ## Extension bootstrap
 
 Discovery materializes the extension entrypoints once and composes Core, Minecraft common,

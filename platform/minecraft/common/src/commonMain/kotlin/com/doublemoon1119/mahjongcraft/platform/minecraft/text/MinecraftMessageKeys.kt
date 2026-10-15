@@ -437,8 +437,68 @@ object MinecraftMessageKeys {
     /** 自動操作狀態文字「關閉」。 */
     const val AUTOMATIC_CONTROL_STATE_OFF = PREFIX + "automatic_control_state_off"
 
+    /** 麻將功能因存檔資料無法讀取而停用，請通知管理員。 */
+    const val DATA_UNAVAILABLE = PREFIX + "data_unavailable"
+
+    /** 進入世界時向管理員列出無法讀取的麻將資料。 */
+    const val DATA_PROBLEM_HEADER = PREFIX + "data_problem_header"
+
+    /** 房間、對局與待寫牌譜無法讀取，麻將功能已停用。 */
+    const val DATA_PROBLEM_AUTHORITATIVE_STATE = PREFIX + "data_problem_authoritative_state"
+
+    /** 桌子位置索引無法讀取，已改從世界重新建立。 */
+    const val DATA_PROBLEM_TABLE_LOCATIONS = PREFIX + "data_problem_table_locations"
+
+    /** 牌譜資料庫無法開啟，已暫停牌譜寫入與查閱。 */
+    const val DATA_PROBLEM_HISTORY_DATABASE = PREFIX + "data_problem_history_database"
+
+    /** 可能缺少提供某型別的擴充；參數為擴充的命名空間。 */
+    const val DATA_CAUSE_MISSING_EXTENSION = PREFIX + "data_cause_missing_extension"
+
+    /** 資料由較新版本保存；參數為資料版本與目前支援的版本。 */
+    const val DATA_CAUSE_NEWER_FORMAT = PREFIX + "data_cause_newer_format"
+
+    /** 無法判斷原因。 */
+    const val DATA_CAUSE_UNREADABLE = PREFIX + "data_cause_unreadable"
+
+    /** 無法讀取的檔案路徑；參數為相對於世界資料夾的路徑。 */
+    const val DATA_FILE = PREFIX + "data_file"
+
+    /** 無法讀取且未被變更的檔案路徑；參數為相對於世界資料夾的路徑。 */
+    const val DATA_FILE_UNCHANGED = PREFIX + "data_file_unchanged"
+
+    /** 指向檔案路徑時說明點擊可複製。 */
+    const val DATA_FILE_COPY_HINT = PREFIX + "data_file_copy_hint"
+
+    /** 指向後顯示原因細節的標籤文字。 */
+    const val DATA_DETAIL_LABEL = PREFIX + "data_detail_label"
+
+    /** 缺少擴充時的原因細節；參數為存檔中的型別識別碼。 */
+    const val DATA_CAUSE_MISSING_EXTENSION_DETAIL = PREFIX + "data_cause_missing_extension_detail"
+
+    /** 無法判斷原因時，接在錯誤摘要後的可能原因說明。 */
+    const val DATA_CAUSE_UNREADABLE_DETAIL = PREFIX + "data_cause_unreadable_detail"
+
+    /** 確定無法恢復時的最後手段與會失去的資料。 */
+    const val DATA_RECOVERY_LAST_RESORT = PREFIX + "data_recovery_last_resort"
+
     /** Minecraft 語系資源必須提供的全部玩家回饋 key。 */
     val ALL: Set<String> = setOf(
+        DATA_FILE,
+        DATA_FILE_UNCHANGED,
+        DATA_FILE_COPY_HINT,
+        DATA_DETAIL_LABEL,
+        DATA_CAUSE_MISSING_EXTENSION_DETAIL,
+        DATA_CAUSE_UNREADABLE_DETAIL,
+        DATA_UNAVAILABLE,
+        DATA_PROBLEM_HEADER,
+        DATA_PROBLEM_AUTHORITATIVE_STATE,
+        DATA_PROBLEM_TABLE_LOCATIONS,
+        DATA_PROBLEM_HISTORY_DATABASE,
+        DATA_CAUSE_MISSING_EXTENSION,
+        DATA_CAUSE_NEWER_FORMAT,
+        DATA_CAUSE_UNREADABLE,
+        DATA_RECOVERY_LAST_RESORT,
         GAME_ALREADY_STARTED,
         GAME_CREATED,
         GAME_CREATED_LOCATION_LABEL,

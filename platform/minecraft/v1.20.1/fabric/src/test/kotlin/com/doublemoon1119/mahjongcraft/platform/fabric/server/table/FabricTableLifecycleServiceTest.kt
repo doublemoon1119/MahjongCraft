@@ -14,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntit
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCelebrationEffectScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationState
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinShowcaseOverride
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricMahjongDataStatus
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.FabricMahjongLobbyInfoPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
@@ -215,6 +216,9 @@ class FabricTableLifecycleServiceTest {
         /** 依序執行權威清理的佇列。 */
         val cleanupQueue = TableCleanupQueue(scope = createTestAppCoroutineScope(), dispatchers = TestCoroutineDispatchers())
 
+        /** 麻將資料的讀取狀態。 */
+        val dataStatus = FabricMahjongDataStatus()
+
         /** 受測生命週期服務。 */
         val lifecycleService = FabricTableLifecycleService(
             store = store,
@@ -235,6 +239,7 @@ class FabricTableLifecycleServiceTest {
             lobbyInfoPresenter = FabricMahjongLobbyInfoPresenter(FabricServerHolder(), locations, FabricEntitySpawnGateway(), MahjongModuleRegistryImpl()),
             tileSelectionConfirmPresenter = tileSelectionConfirmPresenter,
             presentationCleaner = FabricTablePresentationCleaner(FabricWinCelebrationEffectScheduler(FabricEntitySpawnGateway())),
+            dataStatus = dataStatus,
         )
 
         /** 這個測試不驗證 debug 覆寫，一律回報非開發環境讓它保持 inert。 */

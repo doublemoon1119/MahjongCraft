@@ -50,11 +50,16 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.MahjongTableG
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.FabricDebugCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationState
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryDatabasePath
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryOutboxWriter
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryQueryService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.observer.FabricObserverSnapshotBroadcastService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricAuthoritativeStatePersistence
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricMahjongDataStatus
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricTableLocationPersistence
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.MahjongDataLoadCause
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.MahjongDataProblem
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.MahjongDataSource
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.attachPersistenceState
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.PlayerConnectionLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.ServerPlayerIdentityStore
@@ -144,39 +149,54 @@ class MahjongCraftMod : ModInitializer {
         val presentationBusyTracker = koin.get<TablePresentationBusyTracker>()
         val observerBroadcast = koin.get<FabricObserverSnapshotBroadcastService>()
         val committedFactsDispatcher = koin.get<CommittedFactsDispatcher>()
+        val dataStatus = koin.get<FabricMahjongDataStatus>()
         mahjongTileCollisionService.registerEvents()
         observerBroadcast.registerEvents()
         ServerLifecycleEvents.SERVER_STARTED.register { server ->
+            dataStatus.clear()
             initializeServerConfig(configManager, mahjongTileCollisionService, server)
-            runBlocking {
-                attachPersistenceState(
-                    load = { Unit },
-                    initialize = {
-                        statePersistence.attach(server)
-                        koin.get<AuthoritativeStateStore>().applyHistoryRecordingPolicy(configManager.current.historyRecordingPolicy())
-                        tableLocationPersistence.attach(server)
-                        historyWriter.attach(server)
-                    },
-                    cleanupFailedAttach = {
-                        // 啟動失敗只解除接線及記憶體；先停 listener，避免清理被寫成空存檔。
-                        withContext(NonCancellable) {
-                            historyWriter.detach()
-                            tableLocationPersistence.detach()
-                            statePersistence.detach()
-                            stateCleaner.clear()
-                        }
-                    },
-                )
+            // 房間與對局無法讀取時不中斷啟動：世界照常進入，權威狀態拒絕寫入，依賴它的服務本次不啟動。
+            val mahjongAvailable = runBlocking { statePersistence.attachOrDisable(server) }
+            if (mahjongAvailable) {
+                runBlocking {
+                    attachPersistenceState(
+                        load = { Unit },
+                        initialize = {
+                            koin.get<AuthoritativeStateStore>().applyHistoryRecordingPolicy(configManager.current.historyRecordingPolicy())
+                            tableLocationPersistence.attach(server)
+                            if (!historyWriter.attach(server)) {
+                                dataStatus.report(
+                                    MahjongDataProblem(
+                                        source = MahjongDataSource.HISTORY_DATABASE,
+                                        file = FabricHistoryDatabasePath.displayPath,
+                                        cause = MahjongDataLoadCause.Unreadable(historyWriter.lastError ?: "unknown"),
+                                    ),
+                                )
+                            }
+                        },
+                        cleanupFailedAttach = {
+                            // 啟動失敗只解除接線及記憶體；先停 listener，避免清理被寫成空存檔。
+                            withContext(NonCancellable) {
+                                historyWriter.detach()
+                                tableLocationPersistence.detach()
+                                statePersistence.detach()
+                                stateCleaner.clear()
+                            }
+                        },
+                    )
+                }
             }
-            tableLocationValidation.startSession(server)
+            if (mahjongAvailable) tableLocationValidation.startSession(server)
             serverHolder.set(server)
             playerIdentityStore.refresh()
             appScope.startSession()
             backgroundScope.startSession()
-            advanceManager.startSession()
-            observerBroadcast.startSession()
-            committedFactsDispatcher.startSession(server)
-            lobbyInfoLifecycle.startSession()
+            if (mahjongAvailable) {
+                advanceManager.startSession()
+                observerBroadcast.startSession()
+                committedFactsDispatcher.startSession(server)
+                lobbyInfoLifecycle.startSession()
+            }
         }
         ServerLifecycleEvents.SERVER_STOPPING.register {
             tableLocationValidation.stopSession()
@@ -206,6 +226,7 @@ class MahjongCraftMod : ModInitializer {
             configManager.detach()
             serverHolder.clear()
             playerIdentityStore.refresh()
+            dataStatus.clear()
         }
 
         registerGameCommandReceiver(koin)
@@ -289,11 +310,13 @@ class MahjongCraftMod : ModInitializer {
      */
     private fun registerPlayerConnectionEvents(koin: Koin) {
         val lifecycleService = koin.get<PlayerConnectionLifecycleService>()
+        val dataStatus = koin.get<FabricMahjongDataStatus>()
         ServerPlayConnectionEvents.JOIN.register { handler, _, _ ->
-            lifecycleService.onConnected(handler.player.uuid.toKotlinUuid())
+            dataStatus.notifyOnJoin(handler.player)
+            if (dataStatus.isMahjongAvailable) lifecycleService.onConnected(handler.player.uuid.toKotlinUuid())
         }
         ServerPlayConnectionEvents.DISCONNECT.register { handler, _ ->
-            lifecycleService.onDisconnected(handler.player.uuid.toKotlinUuid())
+            if (dataStatus.isMahjongAvailable) lifecycleService.onDisconnected(handler.player.uuid.toKotlinUuid())
         }
     }
 
@@ -310,7 +333,9 @@ class MahjongCraftMod : ModInitializer {
         val json = koin.get<NetworkJson>()
         val networkRegistries = koin.get<NetworkDtoRegistries>()
         val scope = koin.get<AppCoroutineScope>()
+        val dataStatus = koin.get<FabricMahjongDataStatus>()
         MahjongChannels.gameCommand.registerServerReceiver(json) { _, player, envelope ->
+            if (dataStatus.rejectIfUnavailable(player)) return@registerServerReceiver
             scope.launch {
                 val gameId = Uuid.parse(envelope.gameId)
                 val result = koin.get<GameFlowCoordinator>().dispatch(
@@ -346,7 +371,10 @@ class MahjongCraftMod : ModInitializer {
     private fun registerRequestSnapshotReceiver(koin: Koin) {
         val json = koin.get<NetworkJson>()
         val lifecycleService = koin.get<PlayerConnectionLifecycleService>()
+        val dataStatus = koin.get<FabricMahjongDataStatus>()
+        // 客戶端進入世界時自動送出，麻將停用時直接略過、不提示玩家。
         MahjongChannels.requestSnapshot.registerServerReceiver(json) { _, player, _ ->
+            if (!dataStatus.isMahjongAvailable) return@registerServerReceiver
             lifecycleService.onSnapshotRequested(player.uuid.toKotlinUuid())
         }
     }
@@ -360,12 +388,16 @@ class MahjongCraftMod : ModInitializer {
         val json = koin.get<NetworkJson>()
         val useCase = koin.get<SetHandSortPreferenceUseCase>()
         val scope = koin.get<AppCoroutineScope>()
+        val dataStatus = koin.get<FabricMahjongDataStatus>()
+        // 排序偏好由客戶端自動同步，麻將停用時直接略過、不提示玩家。
         MahjongChannels.restoreAutoSortHand.registerServerReceiver(json) { _, player, enabled ->
+            if (!dataStatus.isMahjongAvailable) return@registerServerReceiver
             scope.launch {
                 useCase(player.uuid.toKotlinUuid(), enabled, HandSortPreferenceUpdateMode.RESTORE)
             }
         }
         MahjongChannels.setAutoSortHand.registerServerReceiver(json) { _, player, enabled ->
+            if (!dataStatus.isMahjongAvailable) return@registerServerReceiver
             scope.launch {
                 useCase(player.uuid.toKotlinUuid(), enabled, HandSortPreferenceUpdateMode.USER_CHANGE)
             }
