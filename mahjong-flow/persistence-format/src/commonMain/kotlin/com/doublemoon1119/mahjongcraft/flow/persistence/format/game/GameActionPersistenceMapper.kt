@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.game
 
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceDtoRegistry
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.persistenceJson
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
@@ -19,7 +20,7 @@ import kotlin.uuid.Uuid
 fun GameAction.toPersistenceDto(
     exhaustiveDrawReasonRegistry: PersistenceDtoRegistry<ExhaustiveDrawReason>,
     extensionGameActionRegistry: PersistenceDtoRegistry<ExtensionGameAction>,
-    json: Json = Json,
+    json: Json = persistenceJson,
 ): GameActionPersistenceDto = when (this) {
     is GameAction.Extension -> GameActionPersistenceDto.Extension(extensionGameActionRegistry.encode(value, json))
     GameAction.GameStarted -> GameActionPersistenceDto.GameStarted
@@ -48,7 +49,7 @@ fun GameAction.toPersistenceDto(
 fun GameActionPersistenceDto.toDomain(
     exhaustiveDrawReasonRegistry: PersistenceDtoRegistry<ExhaustiveDrawReason>,
     extensionGameActionRegistry: PersistenceDtoRegistry<ExtensionGameAction>,
-    json: Json = Json,
+    json: Json = persistenceJson,
 ): GameAction = when (this) {
     is GameActionPersistenceDto.Extension -> GameAction.Extension(extensionGameActionRegistry.decode(value, json))
     GameActionPersistenceDto.GameStarted -> GameAction.GameStarted

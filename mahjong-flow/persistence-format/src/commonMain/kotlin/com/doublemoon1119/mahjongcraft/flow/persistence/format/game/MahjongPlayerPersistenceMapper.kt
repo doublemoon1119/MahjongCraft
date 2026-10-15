@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.game
 
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceDtoRegistry
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.persistenceJson
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
@@ -25,7 +26,7 @@ fun MahjongPlayer.toPersistenceDto(
     playerRuleStateRegistry: PersistenceDtoRegistry<PlayerRuleState>,
     exhaustiveDrawReasonRegistry: PersistenceDtoRegistry<ExhaustiveDrawReason>,
     extensionGameActionRegistry: PersistenceDtoRegistry<ExtensionGameAction>,
-    json: Json = Json,
+    json: Json = persistenceJson,
 ): MahjongPlayerPersistenceDto = MahjongPlayerPersistenceDto(
     id = id.toString(),
     initialSeatIndex = initialSeatIndex,
@@ -53,7 +54,7 @@ fun MahjongPlayerPersistenceDto.toDomain(
     playerRuleStateRegistry: PersistenceDtoRegistry<PlayerRuleState>,
     exhaustiveDrawReasonRegistry: PersistenceDtoRegistry<ExhaustiveDrawReason>,
     extensionGameActionRegistry: PersistenceDtoRegistry<ExtensionGameAction>,
-    json: Json = Json,
+    json: Json = persistenceJson,
 ): MahjongPlayer = MahjongPlayer(
     id = Uuid.parse(id),
     initialSeatIndex = initialSeatIndex,

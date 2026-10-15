@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.config.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.config.toPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceDtoRegistry
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.persistenceJson
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import kotlinx.serialization.json.Json
 import kotlin.uuid.Uuid
@@ -18,7 +19,7 @@ import kotlin.uuid.Uuid
  */
 fun Room.toPersistenceDto(
     ruleConfigRegistry: PersistenceDtoRegistry<MahjongRuleConfig>,
-    json: Json = Json,
+    json: Json = persistenceJson,
 ): RoomPersistenceDto = RoomPersistenceDto(
     id = id.toString(),
     hostId = hostId.toString(),
@@ -38,7 +39,7 @@ fun Room.toPersistenceDto(
  */
 fun RoomPersistenceDto.toDomain(
     ruleConfigRegistry: PersistenceDtoRegistry<MahjongRuleConfig>,
-    json: Json = Json,
+    json: Json = persistenceJson,
 ): Room = Room(
     id = Uuid.parse(id),
     hostId = Uuid.parse(hostId),

@@ -14,7 +14,6 @@ import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleM
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.json.Json
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.createTempDirectory
@@ -116,7 +115,6 @@ class HistoryGenerationRetentionStressTest {
             store = store,
             registries = bundledPersistenceRegistries(),
             replayProjectionRegistry = buildTestHistoryReplayProjectionRegistry(),
-            json = Json,
             dispatchers = TestDispatchers,
             moduleRegistry = modules,
             locations = TableLocationRegistry(),

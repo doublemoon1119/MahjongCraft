@@ -24,7 +24,6 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
-import kotlinx.serialization.json.Json
 import kotlin.coroutines.CoroutineContext
 import kotlin.io.path.createTempDirectory
 import kotlin.test.Test
@@ -126,7 +125,6 @@ class HistoryGenerationControllerTest {
         store = store,
         registries = bundledPersistenceRegistries(),
         replayProjectionRegistry = buildTestHistoryReplayProjectionRegistry(),
-        json = Json,
         dispatchers = TestDispatchers,
         moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() },
         locations = TableLocationRegistry(),

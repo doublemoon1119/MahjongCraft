@@ -11,7 +11,6 @@ import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRe
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
-import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
@@ -60,7 +59,6 @@ class HistoryDataSourceTest {
                 store = store,
                 registries = bundledPersistenceRegistries(),
                 replayProjectionRegistry = buildTestHistoryReplayProjectionRegistry(),
-                json = Json,
                 dispatchers = TestDispatchers,
                 moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() },
                 locations = TableLocationRegistry(),

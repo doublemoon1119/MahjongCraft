@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecording
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceEnvelopeDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.persistenceJson
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.migration.PersistenceMigrationRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.migration.buildBuiltInPersistenceMigrationRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
@@ -21,7 +22,7 @@ import kotlinx.serialization.json.Json
 class AuthoritativeStatePersistenceCodec(
     private val registries: PersistenceRegistries,
     private val migrationRegistry: PersistenceMigrationRegistry = buildBuiltInPersistenceMigrationRegistry(),
-    private val json: Json = Json,
+    private val json: Json = persistenceJson,
 ) {
     /**
      * 將完整 Room／Game 狀態編碼成帶目前 schema version 的 JSON 字串。

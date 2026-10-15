@@ -29,7 +29,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
-import kotlinx.serialization.json.Json
 import java.sql.Connection
 import java.sql.DriverManager
 import kotlin.io.path.createTempDirectory
@@ -330,7 +329,6 @@ class HistoryGenerationIntegrationTest {
         store = store,
         registries = bundledPersistenceRegistries(),
         replayProjectionRegistry = buildTestHistoryReplayProjectionRegistry(),
-        json = Json,
         dispatchers = TestDispatchers,
         moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() },
         locations = TableLocationRegistry(),

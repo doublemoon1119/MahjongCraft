@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.config.toPersiste
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceDtoRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceEnvelopeDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceSchema
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.persistenceJson
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toAiPlayerStrategyKeys
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toEnabledAutomaticControlIdsByPlayerId
@@ -54,7 +55,7 @@ fun createAuthoritativeStatePersistenceDto(
     dynamicRuleStateRegistry: PersistenceDtoRegistry<DynamicRuleState>,
     exhaustiveDrawReasonRegistry: PersistenceDtoRegistry<ExhaustiveDrawReason>,
     extensionGameActionRegistry: PersistenceDtoRegistry<ExtensionGameAction>,
-    json: Json = Json,
+    json: Json = persistenceJson,
     historyRecordingState: HistoryRecordingState = HistoryRecordingState(),
 ): AuthoritativeStatePersistenceDto {
     require(rooms.map(Room::id).distinct().size == rooms.size) { "Room IDs must be unique" }
@@ -88,7 +89,7 @@ fun createAuthoritativeStatePersistenceDto(
  * @param json 解碼歷史事件使用的 JSON 編解碼器。
  * @return 還原的歷史記錄狀態；無法還原的事件依歷史映射規則標記缺口。
  */
-fun AuthoritativeStatePersistenceDto.toHistoryRecordingState(registries: PersistenceRegistries, json: Json = Json): HistoryRecordingState = HistoryRecordingPersistenceMapper(registries, json).decode(historyRecordingState)
+fun AuthoritativeStatePersistenceDto.toHistoryRecordingState(registries: PersistenceRegistries, json: Json = persistenceJson): HistoryRecordingState = HistoryRecordingPersistenceMapper(registries, json).decode(historyRecordingState)
 
 /**
  * 還原權威存檔中的房間集合。
@@ -97,7 +98,7 @@ fun AuthoritativeStatePersistenceDto.toHistoryRecordingState(registries: Persist
  * @param json 解碼規則設定使用的 JSON 編解碼器。
  * @return 以房間識別碼為鍵的房間集合。
  */
-fun AuthoritativeStatePersistenceDto.toRooms(ruleConfigRegistry: PersistenceDtoRegistry<MahjongRuleConfig>, json: Json = Json): Map<Uuid, Room> = rooms.values.associate { room -> Uuid.parse(room.id) to room.toDomain(ruleConfigRegistry, json) }
+fun AuthoritativeStatePersistenceDto.toRooms(ruleConfigRegistry: PersistenceDtoRegistry<MahjongRuleConfig>, json: Json = persistenceJson): Map<Uuid, Room> = rooms.values.associate { room -> Uuid.parse(room.id) to room.toDomain(ruleConfigRegistry, json) }
 
 /**
  * 將保存的桌況、流程設定與執行狀態組合還原成完整 [Game]。
@@ -118,7 +119,7 @@ fun AuthoritativeStatePersistenceDto.toGames(
     dynamicRuleStateRegistry: PersistenceDtoRegistry<DynamicRuleState>,
     exhaustiveDrawReasonRegistry: PersistenceDtoRegistry<ExhaustiveDrawReason>,
     extensionGameActionRegistry: PersistenceDtoRegistry<ExtensionGameAction>,
-    json: Json = Json,
+    json: Json = persistenceJson,
 ): Map<Uuid, Game> = games.values.associate { game ->
     val id = Uuid.parse(game.id)
     val tableState = game.toDomain(
@@ -156,7 +157,7 @@ fun AuthoritativeStatePersistenceDto.toGames(
  * @param json 將權威狀態編碼成 JSON 物件的編解碼器。
  * @return 帶有目前 schema version 的權威狀態封套。
  */
-fun AuthoritativeStatePersistenceDto.toEnvelope(json: Json = Json): PersistenceEnvelopeDto = PersistenceEnvelopeDto(
+fun AuthoritativeStatePersistenceDto.toEnvelope(json: Json = persistenceJson): PersistenceEnvelopeDto = PersistenceEnvelopeDto(
     schemaVersion = PersistenceSchema.CURRENT_VERSION,
     state = json.encodeToJsonElement(AuthoritativeStatePersistenceDto.serializer(), this).jsonObject,
 )
@@ -167,7 +168,7 @@ fun AuthoritativeStatePersistenceDto.toEnvelope(json: Json = Json): PersistenceE
  * @param json 解碼封套內權威狀態的 JSON 編解碼器。
  * @return 解碼後的權威狀態 DTO；版本不符或內容無效時拋出例外。
  */
-fun PersistenceEnvelopeDto.decodeCurrentAuthoritativeState(json: Json = Json): AuthoritativeStatePersistenceDto {
+fun PersistenceEnvelopeDto.decodeCurrentAuthoritativeState(json: Json = persistenceJson): AuthoritativeStatePersistenceDto {
     require(schemaVersion == PersistenceSchema.CURRENT_VERSION) {
         "Persistence envelope must use current schema version ${PersistenceSchema.CURRENT_VERSION}"
     }

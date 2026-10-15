@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay
 
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.persistenceJson
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
@@ -19,7 +20,7 @@ const val DEFAULT_REPLAY_JSON_BYTES: Int = 8 * 1024 * 1024
  * @param json 原生 JSON 設定。
  * @return 成功時為根物件，否則為穩定失敗。
  */
-suspend fun parseBoundedReplayJson(source: String, limits: ReplayJsonParseLimits = ReplayJsonParseLimits(), json: Json = Json): ReplayReadResult<JsonObject> {
+suspend fun parseBoundedReplayJson(source: String, limits: ReplayJsonParseLimits = ReplayJsonParseLimits(), json: Json = persistenceJson): ReplayReadResult<JsonObject> {
     currentCoroutineContext().ensureActive()
     if (source.length > limits.maximumUtf8Bytes) return ReplayReadResult.Failure(ReplayReadError.LIMIT_EXCEEDED)
     val rawBytes = source.encodeToByteArray()

@@ -106,7 +106,6 @@ class GameEventPublisherImplTest {
         store = store,
         registries = bundledPersistenceRegistries(),
         replayProjectionRegistry = buildTestHistoryReplayProjectionRegistry(),
-        json = Json,
         moduleRegistry = MahjongModuleRegistryImpl(),
         locations = TableLocationRegistry(),
         configState = MinecraftServerConfigState(),

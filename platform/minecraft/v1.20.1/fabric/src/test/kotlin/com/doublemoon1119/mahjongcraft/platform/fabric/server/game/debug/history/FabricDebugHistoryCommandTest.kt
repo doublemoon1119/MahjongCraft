@@ -14,7 +14,6 @@ import com.mojang.brigadier.tree.CommandNode
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.serialization.json.Json
 import net.minecraft.server.command.ServerCommandSource
 import kotlin.coroutines.CoroutineContext
 import kotlin.test.Test
@@ -32,7 +31,6 @@ class FabricDebugHistoryCommandTest {
             store = store,
             registries = bundledPersistenceRegistries(),
             replayProjectionRegistry = buildTestHistoryReplayProjectionRegistry(),
-            json = Json,
             dispatchers = TestDispatchers,
             moduleRegistry = MahjongModuleRegistryImpl(),
             locations = TableLocationRegistry(),

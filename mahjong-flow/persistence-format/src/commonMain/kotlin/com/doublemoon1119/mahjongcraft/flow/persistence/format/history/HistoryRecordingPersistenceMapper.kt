@@ -17,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetai
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.config.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.config.toPersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.persistenceJson
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.TableStatePersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toPersistenceDto
@@ -33,7 +34,7 @@ import kotlin.uuid.Uuid
  */
 class HistoryRecordingPersistenceMapper(
     private val registries: PersistenceRegistries,
-    private val json: Json = Json,
+    private val json: Json = persistenceJson,
 ) {
     /**
      * 將單筆待寫事件編碼；失敗時交由呼叫端保留並重試，絕不略過後確認。

@@ -19,7 +19,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
-import kotlinx.serialization.json.Json
 import java.nio.file.Path
 import kotlin.io.path.createTempDirectory
 import kotlin.io.path.exists
@@ -174,7 +173,6 @@ class StressTestEnvironmentTest {
     /** @return 使用內建規則、測試排程器與獨立位置索引的環境工廠。 */
     private fun factory() = StressTestEnvironmentFactory(
         registries = bundledPersistenceRegistries(),
-        json = Json,
         dispatchers = TestDispatchers,
         moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() },
         locations = TableLocationRegistry(),

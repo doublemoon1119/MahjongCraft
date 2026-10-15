@@ -100,7 +100,7 @@ class PersistenceDtoRegistry<Domain : Any> {
      * @throws IllegalStateException 領域型別尚未註冊，或 DTO 編碼結果不是 JSON 物件時拋出。
      */
     @Suppress("UNCHECKED_CAST")
-    fun encode(domain: Domain, json: Json = Json): TypedPersistenceDto {
+    fun encode(domain: Domain, json: Json = persistenceJson): TypedPersistenceDto {
         val (typeKey, rawEntry) = byDomainClass[domain::class]
             ?: error("No persistence DTO registered for ${domain::class}")
         val entry = rawEntry as Entry<Domain, Any>
@@ -116,7 +116,7 @@ class PersistenceDtoRegistry<Domain : Any> {
      * @throws IllegalStateException 型別識別碼尚未註冊時拋出。
      */
     @Suppress("UNCHECKED_CAST")
-    fun decode(dto: TypedPersistenceDto, json: Json = Json): Domain {
+    fun decode(dto: TypedPersistenceDto, json: Json = persistenceJson): Domain {
         val entry = byTypeKey[dto.typeKey] as? Entry<Domain, Any>
             ?: error("No persistence DTO registered for type key ${dto.typeKey}")
         return entry.decode(dto.payload, json)

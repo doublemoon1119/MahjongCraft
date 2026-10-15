@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.config.GameFlowConfigPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.config.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.TypedPersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.persistenceJson
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryOutboxEventPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
@@ -50,7 +51,7 @@ object CompactReplayCodec {
         document: JsonObject,
         registries: PersistenceRegistries,
         expectedMatchId: Uuid,
-        json: Json = Json,
+        json: Json = persistenceJson,
     ): GameConfig {
         require(document.keys == setOf(ReplayFormatKeys.FORMAT_VERSION, ReplayFormatKeys.PAYLOAD)) {
             "Replay document contains unexpected fields"
@@ -99,7 +100,7 @@ object CompactReplayCodec {
         events: List<HistoryOutboxEvent>,
         mapper: HistoryRecordingPersistenceMapper,
         registries: PersistenceRegistries,
-        json: Json = Json,
+        json: Json = persistenceJson,
     ): JsonObject {
         require(events.isNotEmpty()) { "Replay requires at least one history event" }
         validateDomainEvents(events)

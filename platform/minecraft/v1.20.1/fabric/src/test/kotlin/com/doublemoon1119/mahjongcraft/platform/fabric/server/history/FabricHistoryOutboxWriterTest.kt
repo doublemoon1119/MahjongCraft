@@ -24,7 +24,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
-import kotlinx.serialization.json.Json
 import java.nio.file.Path
 import java.sql.DriverManager
 import kotlin.io.path.createTempDirectory
@@ -430,7 +429,6 @@ class FabricHistoryOutboxWriterTest {
         store = store,
         registries = bundledPersistenceRegistries(),
         replayProjectionRegistry = buildTestHistoryReplayProjectionRegistry(),
-        json = Json,
         moduleRegistry = MahjongModuleRegistryImpl(),
         locations = TableLocationRegistry(),
         configState = configState,

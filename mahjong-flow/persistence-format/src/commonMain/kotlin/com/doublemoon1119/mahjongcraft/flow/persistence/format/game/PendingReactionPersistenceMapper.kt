@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.game
 
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceDtoRegistry
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.persistenceJson
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
@@ -19,7 +20,7 @@ import kotlin.uuid.Uuid
 fun PendingReaction.toPersistenceDto(
     exhaustiveDrawReasonRegistry: PersistenceDtoRegistry<ExhaustiveDrawReason>,
     extensionGameActionRegistry: PersistenceDtoRegistry<ExtensionGameAction>,
-    json: Json = Json,
+    json: Json = persistenceJson,
 ): PendingReactionPersistenceDto = PendingReactionPersistenceDto(
     discarderId = discarderId.toString(),
     tileId = tileId.toString(),
@@ -40,7 +41,7 @@ fun PendingReaction.toPersistenceDto(
 fun PendingReactionPersistenceDto.toDomain(
     exhaustiveDrawReasonRegistry: PersistenceDtoRegistry<ExhaustiveDrawReason>,
     extensionGameActionRegistry: PersistenceDtoRegistry<ExtensionGameAction>,
-    json: Json = Json,
+    json: Json = persistenceJson,
 ): PendingReaction = PendingReaction(
     discarderId = Uuid.parse(discarderId),
     tileId = Uuid.parse(tileId),
@@ -61,7 +62,7 @@ fun PendingReactionPersistenceDto.toDomain(
 fun PendingRobbingReaction.toPersistenceDto(
     exhaustiveDrawReasonRegistry: PersistenceDtoRegistry<ExhaustiveDrawReason>,
     extensionGameActionRegistry: PersistenceDtoRegistry<ExtensionGameAction>,
-    json: Json = Json,
+    json: Json = persistenceJson,
 ): PendingRobbingReactionPersistenceDto = PendingRobbingReactionPersistenceDto(
     declarerId = declarerId.toString(),
     declaredAction = declaredAction.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json),
@@ -83,7 +84,7 @@ fun PendingRobbingReaction.toPersistenceDto(
 fun PendingRobbingReactionPersistenceDto.toDomain(
     exhaustiveDrawReasonRegistry: PersistenceDtoRegistry<ExhaustiveDrawReason>,
     extensionGameActionRegistry: PersistenceDtoRegistry<ExtensionGameAction>,
-    json: Json = Json,
+    json: Json = persistenceJson,
 ): PendingRobbingReaction = PendingRobbingReaction(
     declarerId = Uuid.parse(declarerId),
     declaredAction = declaredAction.toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json),

@@ -26,7 +26,6 @@ import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
-import kotlinx.serialization.json.Json
 import java.sql.DriverManager
 import kotlin.io.path.createTempDirectory
 import kotlin.test.Test
@@ -72,7 +71,6 @@ class FabricHistoryRoundQueryIntegrationTest {
         val writer = FabricHistoryOutboxWriter(
             store = AuthoritativeStateStore(),
             registries = registries,
-            json = Json,
             dispatchers = QueryTestDispatchers,
             moduleRegistry = MahjongModuleRegistryImpl(),
             locations = TableLocationRegistry(),

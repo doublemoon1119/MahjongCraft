@@ -2,10 +2,10 @@ package com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayIdentity
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayPlayerIdentity
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.persistenceJson
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.TilePersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toDomain
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
@@ -75,7 +75,7 @@ internal data class CompactReplayReadDocument(
             if (typesJson.size > budget.limits.maxTiles) throw ReplayReadException(ReplayReadError.LIMIT_EXCEEDED)
             val types = typesJson.map {
                 budget.charge()
-                Json.decodeFromJsonElement(TilePersistenceDto.serializer(), it).toDomain()
+                persistenceJson.decodeFromJsonElement(TilePersistenceDto.serializer(), it).toDomain()
             }
             val pathsJson = header.getValue(ReplayFormatKeys.PATCH_PATHS) as? JsonArray ?: error("Replay patch paths must be an array")
             val paths = pathsJson.map { path ->

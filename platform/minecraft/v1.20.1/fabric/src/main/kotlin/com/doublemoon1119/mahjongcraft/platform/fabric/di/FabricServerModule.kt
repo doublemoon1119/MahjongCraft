@@ -247,7 +247,6 @@ val fabricServerModule = module {
         FabricHistoryOutboxWriter(
             store = get(),
             registries = get(),
-            json = get(),
             dispatchers = get(),
             moduleRegistry = get(),
             locations = get(),

@@ -18,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRo
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryArchiveStatusDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.persistenceJson
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryOutboxEventPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.CompactReplayCodec
@@ -46,7 +47,6 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import net.minecraft.server.MinecraftServer
 import java.nio.file.Path
 import java.sql.SQLException
@@ -62,7 +62,6 @@ import kotlin.uuid.Uuid
  *
  * @property store 權威待寫事件與精確確認的來源。
  * @param registries 歷史事件與 Replay 設定的擴充型別轉換表。
- * @property json 事件 payload 的序列化設定。
  * @property dispatchers 平台提供的 I/O dispatcher。
  * @param moduleRegistry 解析開局使用的規則模組；只交給封存服務。
  * @param locations 取得牌桌位置摘要；只交給封存服務。
@@ -74,7 +73,6 @@ import kotlin.uuid.Uuid
 class FabricHistoryOutboxWriter(
     private val store: AuthoritativeStateStore,
     registries: PersistenceRegistries,
-    private val json: Json,
     private val dispatchers: CoroutineDispatchers,
     moduleRegistry: MahjongModuleRegistry,
     locations: TableLocationRegistry,
@@ -87,13 +85,13 @@ class FabricHistoryOutboxWriter(
     private val logger = mahjongCraftLogger(FabricHistoryOutboxWriter::class)
 
     /** 將權威事件映射成歷史持久化 DTO。 */
-    private val mapper = HistoryRecordingPersistenceMapper(registries, json)
+    private val mapper = HistoryRecordingPersistenceMapper(registries, persistenceJson)
 
     /** 封存 Replay 的規則設定 persistence registry 快照。 */
     private val replayRegistries: PersistenceRegistries = registries
 
     /** 對帳待寫事件並建立完整 Replay 的服務。 */
-    private val archiveService = HistoryArchiveService(mapper, registries, moduleRegistry, locations, json)
+    private val archiveService = HistoryArchiveService(mapper, registries, moduleRegistry, locations)
 
     /** 共用唯讀 preview 與清理政策的 I/O 維護服務。 */
     private val retentionService = HistoryRetentionService(store)
@@ -409,10 +407,10 @@ class FabricHistoryOutboxWriter(
             HistoryReplayPayloadRead.Missing -> throw IllegalStateException("History replay is not available")
             HistoryReplayPayloadRead.TooLarge -> throw IllegalStateException("History replay exceeds the query size limit")
             is HistoryReplayPayloadRead.Found -> {
-                val parsed = parseBoundedReplayJson(read.payload, ReplayJsonParseLimits(maximumUtf8Bytes = maximumBytes), json)
+                val parsed = parseBoundedReplayJson(read.payload, ReplayJsonParseLimits(maximumUtf8Bytes = maximumBytes), persistenceJson)
                 val document = (parsed as? ReplayReadResult.Success)?.value
                     ?: error("History replay cannot be parsed within query limits")
-                CompactReplayCodec.decodeRuleSettings(document, replayRegistries, matchId, json)
+                CompactReplayCodec.decodeRuleSettings(document, replayRegistries, matchId, persistenceJson)
             }
         }
     }
@@ -440,7 +438,7 @@ class FabricHistoryOutboxWriter(
     ): HistoryManagementResult<HistoryQueryResult<HistoryRoundEvents>> = manage(sessionId) { activeDatabase, _ ->
         readAuthorizedHistoryRound(
             activeDatabase, access, historyQueryPolicy(), matchId, queryScope, excludedHistoryMatches(),
-            { parseBoundedReplayJson(it, json = json) },
+            { parseBoundedReplayJson(it, json = persistenceJson) },
             { CompactReplayRoundReader(replayProjectionRegistry).readEvents(it, matchId, roundNumber, startIndex, limit) },
             { it.identity },
         )
@@ -467,7 +465,7 @@ class FabricHistoryOutboxWriter(
     ): HistoryManagementResult<HistoryQueryResult<HistoryRoundState>> = manage(sessionId) { activeDatabase, _ ->
         readAuthorizedHistoryRound(
             activeDatabase, access, historyQueryPolicy(), matchId, queryScope, excludedHistoryMatches(),
-            { parseBoundedReplayJson(it, json = json) },
+            { parseBoundedReplayJson(it, json = persistenceJson) },
             { CompactReplayRoundReader(replayProjectionRegistry).readState(it, matchId, roundNumber, position) },
             { it.identity },
         )
@@ -917,7 +915,7 @@ class FabricHistoryOutboxWriter(
             .filterNot { it.matchId.toString() in archiveService.blockedMatchIds || it.matchId.toString() in pruned }
             .take(HISTORY_WRITE_BATCH_SIZE)
         if (batch.isEmpty()) return false
-        val records = measured(HistoryWriterStage.ENCODE) { batch.map { event -> mapper.encodePendingRecord(event, json) } }
+        val records = measured(HistoryWriterStage.ENCODE) { batch.map { event -> mapper.encodePendingRecord(event) } }
         measured(HistoryWriterStage.BATCH_WRITE) { activeDatabase.appendPendingBatch(records) }
         store.acknowledgeHistoryEvents(batch.map { it.matchId to it.sequence }.toSet())
         observer?.onEventsWritten(batch.size)
@@ -1035,10 +1033,9 @@ private const val PENDING_PAYLOAD_VERSION = 1
  * 把一筆待寫事件編碼成寫進資料庫的紀錄。
  *
  * @param event 權威待寫佇列中的事件。
- * @param json 事件 payload 的序列化設定。
  * @return 帶有持久化 payload 的紀錄。
  */
-internal fun HistoryRecordingPersistenceMapper.encodePendingRecord(event: HistoryOutboxEvent, json: Json): PendingHistoryRecord {
+internal fun HistoryRecordingPersistenceMapper.encodePendingRecord(event: HistoryOutboxEvent): PendingHistoryRecord {
     val dto = encodePendingEvent(event)
     return PendingHistoryRecord(
         matchId = dto.matchId,
@@ -1046,7 +1043,7 @@ internal fun HistoryRecordingPersistenceMapper.encodePendingRecord(event: Histor
         roundNumber = dto.roundNumber,
         occurredAtEpochMillis = dto.occurredAtEpochMillis,
         payloadVersion = PENDING_PAYLOAD_VERSION,
-        payload = json.encodeToString(HistoryOutboxEventPersistenceDto.serializer(), dto),
+        payload = persistenceJson.encodeToString(HistoryOutboxEventPersistenceDto.serializer(), dto),
     )
 }
 

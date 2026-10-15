@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.game
 
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceDtoRegistry
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.persistenceJson
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
@@ -31,7 +32,7 @@ fun TableState.toPersistenceDto(
     dynamicRuleStateRegistry: PersistenceDtoRegistry<DynamicRuleState>,
     exhaustiveDrawReasonRegistry: PersistenceDtoRegistry<ExhaustiveDrawReason>,
     extensionGameActionRegistry: PersistenceDtoRegistry<ExtensionGameAction>,
-    json: Json = Json,
+    json: Json = persistenceJson,
 ): TableStatePersistenceDto = TableStatePersistenceDto(
     id = id.toString(),
     players = players.map {
@@ -74,7 +75,7 @@ fun TableStatePersistenceDto.toDomain(
     dynamicRuleStateRegistry: PersistenceDtoRegistry<DynamicRuleState>,
     exhaustiveDrawReasonRegistry: PersistenceDtoRegistry<ExhaustiveDrawReason>,
     extensionGameActionRegistry: PersistenceDtoRegistry<ExtensionGameAction>,
-    json: Json = Json,
+    json: Json = persistenceJson,
 ): TableState = TableState(
     id = Uuid.parse(id),
     players = players.map { it.toDomain(discardPileRegistry, playerRuleStateRegistry, exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json) },

@@ -139,7 +139,7 @@ class HistoryArchiveServiceTest {
         val registries = bundledPersistenceRegistries()
         val mapper = HistoryRecordingPersistenceMapper(registries, Json)
         val modules = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
-        val service = HistoryArchiveService(mapper, registries, modules, TableLocationRegistry(), Json)
+        val service = HistoryArchiveService(mapper, registries, modules, TableLocationRegistry())
         val path = createTempDirectory("mahjongcraft-history-repeated-round-").resolve("history.sqlite")
         val database = SqliteHistoryDatabase.open(path)
         database.appendPendingBatch(
@@ -196,7 +196,7 @@ class HistoryArchiveServiceTest {
         val registries = bundledPersistenceRegistries()
         val mapper = HistoryRecordingPersistenceMapper(registries, Json)
         val modules = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
-        val service = HistoryArchiveService(mapper, registries, modules, TableLocationRegistry(), Json)
+        val service = HistoryArchiveService(mapper, registries, modules, TableLocationRegistry())
         val path = createTempDirectory("mahjongcraft-history-archive-").resolve("history.sqlite")
         val database = SqliteHistoryDatabase.open(path)
         database.appendPendingBatch(
@@ -314,7 +314,7 @@ class HistoryArchiveServiceTest {
         val registries = bundledPersistenceRegistries()
         val mapper = HistoryRecordingPersistenceMapper(registries, Json)
         val modules = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
-        val service = HistoryArchiveService(mapper, registries, modules, TableLocationRegistry(), Json)
+        val service = HistoryArchiveService(mapper, registries, modules, TableLocationRegistry())
         val path = createTempDirectory("mahjongcraft-history-generated-table-change-").resolve("history.sqlite")
         val database = SqliteHistoryDatabase.open(path)
         database.appendPendingBatch(
@@ -534,7 +534,6 @@ class HistoryArchiveServiceTest {
             registries,
             MahjongModuleRegistryImpl().apply { registerBundledRuleModules() },
             TableLocationRegistry(),
-            Json,
         )
 
         /**

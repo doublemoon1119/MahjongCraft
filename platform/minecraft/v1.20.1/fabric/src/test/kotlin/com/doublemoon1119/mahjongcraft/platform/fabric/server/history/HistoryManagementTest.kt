@@ -18,7 +18,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.Json
 import java.sql.DriverManager
 import kotlin.io.path.createTempDirectory
 import kotlin.test.Test
@@ -166,7 +165,6 @@ class HistoryManagementTest {
         store = AuthoritativeStateStore(),
         registries = bundledPersistenceRegistries(),
         replayProjectionRegistry = buildTestHistoryReplayProjectionRegistry(),
-        json = Json,
         moduleRegistry = MahjongModuleRegistryImpl(),
         locations = TableLocationRegistry(),
         configState = MinecraftServerConfigState(MinecraftServerConfig(history = MinecraftHistoryConfig(includeInterruptedMatches = true, retentionDays = 0))),

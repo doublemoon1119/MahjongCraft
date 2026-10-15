@@ -19,6 +19,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryWi
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryWinnerDetails
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailEntry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.persistenceJson
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.MatchRoundPositionPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.MeldTypePersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.RelativeDirectionPersistenceDto
@@ -29,7 +30,6 @@ import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
@@ -62,7 +62,7 @@ internal class HistoryReplayProjectionMapper(private val registry: HistoryReplay
         require(players.map { it.initialSeatIndex }.toSet() == identity.players.indices.toSet()) { "Replay player seats must form a complete sequence" }
         val dealer = context.seat(integer(root.getValue(ReplaySourceKeys.DEALER_PLAYER_ID)))
         val current = integer(root.getValue(ReplaySourceKeys.CURRENT_PLAYER_INDEX))
-        val roundPosition = Json.decodeFromJsonElement(MatchRoundPositionPersistenceDto.serializer(), root.getValue(ReplaySourceKeys.ROUND_POSITION)).toDomain()
+        val roundPosition = persistenceJson.decodeFromJsonElement(MatchRoundPositionPersistenceDto.serializer(), root.getValue(ReplaySourceKeys.ROUND_POSITION)).toDomain()
         val wind = Wind.valueOf(string(root.getValue(ReplaySourceKeys.PREVALENT_WIND)))
         require(roundPosition.prevalentWind == wind) { "Replay round position is inconsistent" }
         val wall = refs(obj(root.getValue(ReplaySourceKeys.TILE_WALL)).getValue(ReplaySourceKeys.WALL_TILES), context)
@@ -188,7 +188,7 @@ internal class HistoryReplayProjectionMapper(private val registry: HistoryReplay
      */
     private fun meld(value: JsonObject, context: HistoryReplayProjectionContext): HistoryReplayMeld {
         context.charge()
-        val type = when (val saved = Json.decodeFromJsonElement(MeldTypePersistenceDto.serializer(), value.getValue(ReplaySourceKeys.TYPE))) {
+        val type = when (val saved = persistenceJson.decodeFromJsonElement(MeldTypePersistenceDto.serializer(), value.getValue(ReplaySourceKeys.TYPE))) {
             MeldTypePersistenceDto.Chi -> MeldType.CHI
             MeldTypePersistenceDto.Pon -> MeldType.PON
             MeldTypePersistenceDto.OpenKan -> MeldType.OPEN_KAN

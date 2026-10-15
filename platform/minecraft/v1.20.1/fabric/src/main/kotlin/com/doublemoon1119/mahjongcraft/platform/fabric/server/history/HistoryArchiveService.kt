@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.history
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryRecordingState
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.persistenceJson
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryOutboxEventPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.CompactReplayCodec
@@ -13,7 +14,6 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlin.uuid.Uuid
 
@@ -24,14 +24,12 @@ import kotlin.uuid.Uuid
  * @property registries 規則擴充的持久化登記表。
  * @property moduleRegistry 從開局規則設定解析規則 ID。
  * @property locations 可讀取不可變位置快照的牌桌位置登記表。
- * @property json 原始事件與 Replay 的序列化設定。
  */
 internal class HistoryArchiveService(
     private val mapper: HistoryRecordingPersistenceMapper,
     private val registries: PersistenceRegistries,
     private val moduleRegistry: MahjongModuleRegistry,
     private val locations: TableLocationRegistry,
-    private val json: Json,
 ) {
     /** 記錄封存與對帳診斷的 logger。 */
     private val logger = mahjongCraftLogger(HistoryArchiveService::class)
@@ -125,7 +123,7 @@ internal class HistoryArchiveService(
             overlapping.forEach { event ->
                 val onDisk = bySequence[event.sequence] ?: return@forEach
                 val comparison = compareStagedHistoryEvent(onDisk.payload) {
-                    json.encodeToString(HistoryOutboxEventPersistenceDto.serializer(), mapper.encodePendingEvent(event))
+                    persistenceJson.encodeToString(HistoryOutboxEventPersistenceDto.serializer(), mapper.encodePendingEvent(event))
                 }
                 if (comparison == StagedHistoryEventComparison.Matches) return@forEach
                 gaps[matchId] = minOf(gaps[matchId] ?: event.sequence, event.sequence)
@@ -237,7 +235,7 @@ internal class HistoryArchiveService(
                 check(events.first().sequence == 1L && events.zipWithNext().all { (a, b) -> a.sequence + 1 == b.sequence }) {
                     "History event sequence is incomplete"
                 }
-                val replay = CompactReplayCodec.encodeCompact(events, mapper, registries, json)
+                val replay = CompactReplayCodec.encodeCompact(events, mapper, registries, persistenceJson)
                 CompactReplayCodec.decodeCompact(replay)
                 val archive = buildArchive(events, replay)
                 if (database.archive(archive)) {
@@ -261,7 +259,7 @@ internal class HistoryArchiveService(
      */
     private fun decodeRecord(record: PendingHistoryRecord): HistoryOutboxEvent {
         require(record.payloadVersion == 1) { "Unsupported history event payload version" }
-        val dto = json.decodeFromString(HistoryOutboxEventPersistenceDto.serializer(), record.payload)
+        val dto = persistenceJson.decodeFromString(HistoryOutboxEventPersistenceDto.serializer(), record.payload)
         require(
             dto.matchId == record.matchId &&
                 dto.sequence == record.sequence &&
@@ -315,7 +313,7 @@ internal class HistoryArchiveService(
             endedAtEpochMillis = completion.occurredAtEpochMillis,
             participants = players,
             rounds = rounds,
-            replayPayload = json.encodeToString(JsonObject.serializer(), replay),
+            replayPayload = persistenceJson.encodeToString(JsonObject.serializer(), replay),
             participantResults = participantResults,
         )
     }

@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.stress
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.persistenceJson
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.HistoryReplayProjectionRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
@@ -25,7 +26,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
 import net.minecraft.server.MinecraftServer
 import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicBoolean
@@ -35,7 +35,6 @@ import kotlin.time.TimeSource
  * 建立 [StressTestEnvironment]。
  *
  * @property registries 歷史持久化映射使用的 registry。
- * @property json 歷史持久化的序列化設定。
  * @property dispatchers 背景工作使用的 dispatcher。
  * @property moduleRegistry 封存 Replay 時解析規則用。
  * @property locations 封存 Replay 時解析場地用。
@@ -43,7 +42,6 @@ import kotlin.time.TimeSource
  */
 class StressTestEnvironmentFactory(
     private val registries: PersistenceRegistries,
-    private val json: Json,
     private val dispatchers: CoroutineDispatchers,
     private val moduleRegistry: MahjongModuleRegistry,
     private val locations: TableLocationRegistry,
@@ -98,7 +96,6 @@ class StressTestEnvironmentFactory(
         val writer = FabricHistoryOutboxWriter(
             store = store,
             registries = registries,
-            json = json,
             dispatchers = dispatchers,
             moduleRegistry = moduleRegistry,
             locations = locations,
@@ -121,7 +118,7 @@ class StressTestEnvironmentFactory(
      * @return 執行中的編碼接收器。
      */
     private fun startEncoding(store: AuthoritativeStateStore, writerTimer: StressWriterTimer): StressHistorySink.EncodeOnly {
-        val mapper = HistoryRecordingPersistenceMapper(registries, json)
+        val mapper = HistoryRecordingPersistenceMapper(registries, persistenceJson)
         val failed = AtomicBoolean(false)
         val job = CoroutineScope(SupervisorJob() + dispatchers.io).launch {
             try {
@@ -132,7 +129,7 @@ class StressTestEnvironmentFactory(
                         continue
                     }
                     val mark = TimeSource.Monotonic.markNow()
-                    batch.forEach { event -> mapper.encodePendingRecord(event, json) }
+                    batch.forEach { event -> mapper.encodePendingRecord(event) }
                     writerTimer.onStage(HistoryWriterStage.ENCODE, mark.elapsedNow())
                     store.acknowledgeHistoryEvents(batch.mapTo(mutableSetOf()) { it.matchId to it.sequence })
                     writerTimer.onEventsWritten(batch.size)
