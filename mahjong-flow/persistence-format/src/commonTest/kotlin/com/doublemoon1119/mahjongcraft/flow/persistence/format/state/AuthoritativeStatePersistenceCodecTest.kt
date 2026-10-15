@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransit
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceDtoRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceEnvelopeDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.UnregisteredPersistenceTypeException
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.migration.InvalidPersistenceSchemaVersionException
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.migration.UnsupportedPersistenceSchemaVersionException
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
@@ -160,6 +161,21 @@ class AuthoritativeStatePersistenceCodecTest {
         val codecWithoutRules = AuthoritativeStatePersistenceCodec(registries)
 
         assertFailsWith<IllegalStateException> { codecWithoutRules.encode(listOf(createRoom()), emptyList()) }
+    }
+
+    /** 讀取存檔時遇到沒有轉換器的型別，例如提供規則的擴充已被移除，回報存檔中的型別識別碼。 */
+    @Test
+    fun `saved type without a registered mapper reports its type key`() {
+        val saved = codec.encode(listOf(createRoom()), emptyList())
+        val registries = bundledPersistenceRegistries().copy(
+            ruleConfigs = PersistenceDtoRegistry<MahjongRuleConfig>(),
+        )
+
+        val failure = assertFailsWith<UnregisteredPersistenceTypeException> {
+            AuthoritativeStatePersistenceCodec(registries).decode(saved)
+        }
+
+        assertTrue("\"${failure.typeKey}\"" in saved)
     }
 
     /**

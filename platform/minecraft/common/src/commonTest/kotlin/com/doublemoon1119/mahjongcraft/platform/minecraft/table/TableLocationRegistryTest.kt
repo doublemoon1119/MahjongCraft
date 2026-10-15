@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.table
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -68,5 +69,27 @@ class TableLocationRegistryTest {
         assertEquals(currentEntry, registry.get(tableId))
         assertTrue(registry.remove(tableId, currentEntry.revision))
         assertNull(registry.get(tableId))
+    }
+
+    /** 標記無法使用後登記與移除都被拒絕，也不通知保存；清除後恢復可用。 */
+    @Test
+    fun `unavailable registry rejects changes until cleared`() {
+        val registry = TableLocationRegistry()
+        val tableId = Uuid.random()
+        val location = TableLocation("minecraft:overworld", 0, 64, 0)
+        var savedSnapshots = 0
+        registry.setDirtyListener { savedSnapshots += 1 }
+        registry.markUnavailable()
+
+        assertFailsWith<TableLocationsUnavailableException> { registry.put(tableId, location) }
+        assertFailsWith<TableLocationsUnavailableException> { registry.remove(tableId) }
+
+        assertFalse(registry.isAvailable)
+        assertNull(registry.get(tableId))
+        assertEquals(0, savedSnapshots)
+        registry.clear()
+        registry.put(tableId, location)
+        assertTrue(registry.isAvailable)
+        assertEquals(location, registry.get(tableId)?.location)
     }
 }

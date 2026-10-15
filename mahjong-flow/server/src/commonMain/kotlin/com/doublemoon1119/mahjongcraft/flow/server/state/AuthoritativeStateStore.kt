@@ -28,7 +28,8 @@ import kotlin.uuid.Uuid
  * 以同一把互斥鎖管理 Room 與 Game 的共用狀態儲存。
  *
  * 所有變更皆透過 [update] 提交，使 Room → Game 等跨集合操作能在單次交易內完成。變更後的狀態同時
- * 發布到 [state]，供需要在狀態改變時反應的服務訂閱。
+ * 發布到 [state]，供需要在狀態改變時反應的服務訂閱。已保存資料無法讀取時以 [markUnavailable] 拒絕所有寫入，
+ * 直到下一次 [load]。
  *
  * @param historyRecordingEnabled 建立時的新場記錄預設；正式政策由伺服器組合入口套用，與儲存連線無關。
  * @property historyClock 產生歷史事件 UTC 時間戳的時鐘；事件順序仍由序號決定。
@@ -50,6 +51,10 @@ class AuthoritativeStateStore(
 
     /** 歷史儲存端目前是否可接受新的事件。 */
     @Volatile var isHistoryStorageAvailable: Boolean = true
+        private set
+
+    /** 目前 session 的權威資料是否可用；不可用時任何寫入都會拋出 [AuthoritativeStateUnavailableException]。 */
+    @Volatile var isAvailable: Boolean = true
         private set
 
     /** 目前是否記錄歷史事件。 */
@@ -78,6 +83,7 @@ class AuthoritativeStateStore(
     private var currentState: AuthoritativeStateSnapshot
         get() = mutableState.value
         set(value) {
+            if (!isAvailable) throw AuthoritativeStateUnavailableException()
             mutableState.value = value
         }
 
@@ -299,13 +305,22 @@ class AuthoritativeStateStore(
     }
 
     /**
+     * 標記目前 session 的已保存資料無法讀取，之後所有寫入都拋出 [AuthoritativeStateUnavailableException]，直到下一次 [load]。
+     *
+     * 讀取不受影響；此時的狀態是清空後的空狀態，不代表已保存的資料。
+     */
+    suspend fun markUnavailable() = mutex.withLock { isAvailable = false }
+
+    /**
      * 載入已保存的完整狀態；隔離來源不會重啟，未完成轉移固定為中止。
      *
-     * 一般載入維持乾淨；轉移恢復產生的新終點標記為待保存，但不呼叫前一 session 的 callback。
+     * 一般載入維持乾淨；轉移恢復產生的新終點標記為待保存，但不呼叫前一 session 的 callback。載入後狀態恢復可用，
+     * 解除 [markUnavailable]。
      *
      * @param state 經 schema migration 與 DTO 驗證後的狀態。
      */
     suspend fun load(state: AuthoritativeStateSnapshot) = mutex.withLock {
+        isAvailable = true
         var recording = state.historyRecordingState
         recording.transfersByMatchId.forEach { (id, transfer) ->
             recording = stopTransfer(recording, id, HistoryRecordingDecision.STOPPED_TRANSFER_INTERRUPTED).copy(
@@ -462,6 +477,7 @@ class AuthoritativeStateStore(
      * @param T 交易回傳結果的型別。
      * @param block 在交易鎖內根據目前狀態產生新狀態、事實與結果。
      * @return [block] 產生的交易結果。
+     * @throws AuthoritativeStateUnavailableException 已呼叫 [markUnavailable] 且尚未重新 [load] 時拋出。
      */
     suspend fun <T> update(
         block: suspend (AuthoritativeStateSnapshot) -> AuthoritativeStateUpdate<T>,
@@ -469,6 +485,7 @@ class AuthoritativeStateStore(
         var notification: CommittedFactsNotification? = null
         return try {
             mutex.withLock {
+                if (!isAvailable) throw AuthoritativeStateUnavailableException()
                 val update = block(currentState)
                 var recording = restoreDecisions(update.state)
                 update.state.games.values.forEach { game ->

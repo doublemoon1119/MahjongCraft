@@ -108,12 +108,12 @@ class PersistenceDtoRegistry<Domain : Any> {
      *
      * @param dto 型別識別碼與已保存的內容。
      * @return 還原後的領域物件。
-     * @throws IllegalStateException 型別識別碼尚未註冊時拋出。
+     * @throws UnregisteredPersistenceTypeException 型別識別碼尚未註冊時拋出。
      */
     @Suppress("UNCHECKED_CAST")
     fun decode(dto: TypedPersistenceDto): Domain {
         val entry = byTypeKey[dto.typeKey] as? Entry<Domain, Any>
-            ?: error("No persistence DTO registered for type key ${dto.typeKey}")
+            ?: throw UnregisteredPersistenceTypeException(dto.typeKey)
         return entry.decode(dto.payload)
     }
 }

@@ -787,6 +787,41 @@ class AuthoritativeStateStoreTest {
         assertNull(recording.firstMissingSequenceByMatchId[game.matchId])
     }
 
+    /** 標記無法使用後交易被拒絕，狀態與 dirty 都不變；重新載入後恢復可用。 */
+    @Test
+    fun `unavailable store rejects transactions until the next load`() = runTest {
+        val store = AuthoritativeStateStore()
+        val room = createRoom()
+        store.markUnavailable()
+
+        assertFailsWith<AuthoritativeStateUnavailableException> {
+            store.update { state -> AuthoritativeStateUpdate(state.copy(rooms = mapOf(room.id to room)), Unit) }
+        }
+
+        assertFalse(store.isAvailable)
+        assertTrue(store.snapshot().rooms.isEmpty())
+        assertFalse(store.isDirty())
+        store.load(AuthoritativeStateSnapshot())
+        store.update { state -> AuthoritativeStateUpdate(state.copy(rooms = mapOf(room.id to room)), Unit) }
+        assertTrue(store.isAvailable)
+        assertEquals(room, store.snapshot().rooms[room.id])
+    }
+
+    /** 不經 [AuthoritativeStateStore.update] 的歷史寫入同樣被拒絕，待寫事件保持原樣。 */
+    @Test
+    fun `unavailable store rejects history writes outside transactions`() = runTest {
+        val store = AuthoritativeStateStore()
+        val event = HistoryOutboxEvent(Uuid.random(), Uuid.random(), 1, 1, 1, 100L, null, HistoryFact.ReturnedToRoom)
+        store.load(AuthoritativeStateSnapshot(historyRecordingState = HistoryRecordingState(pendingEvents = listOf(event))))
+        store.markUnavailable()
+
+        assertFailsWith<AuthoritativeStateUnavailableException> {
+            store.acknowledgeHistoryEvents(setOf(event.matchId to event.sequence))
+        }
+
+        assertEquals(listOf(event), store.snapshot().historyRecordingState.pendingEvents)
+    }
+
     /**
      * 建立只記錄提交事實、不處理交易釋放的 listener。
      *
