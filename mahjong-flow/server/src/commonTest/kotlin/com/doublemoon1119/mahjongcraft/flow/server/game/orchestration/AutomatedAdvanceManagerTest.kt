@@ -154,6 +154,34 @@ class AutomatedAdvanceManagerTest {
         assertFalse(fixture.manager.isAdvancing(gameId))
     }
 
+    /** 停止接受推進後，持續推進的對局做完目前這一輪就結束，新的請求與逐步推進都略過。 */
+    @Test
+    fun `stopping the session ends continuing advances and ignores new requests`() = runTest {
+        val fixture = Fixture(this)
+        val gate = CompletableDeferred<Unit>()
+        fixture.onAdvance = { if (fixture.advances == 1) gate.await() }
+        fixture.again = { true }
+        fixture.manager.request(gameId)
+        testScheduler.runCurrent()
+
+        fixture.manager.stopSession()
+        gate.complete(Unit)
+        testScheduler.runCurrent()
+
+        assertEquals(1, fixture.advances, "The running round finishes and no further round starts")
+        assertFalse(fixture.manager.isAdvancing(gameId))
+        fixture.manager.request(gameId)
+        testScheduler.runCurrent()
+        assertEquals(1, fixture.advances, "Requests after stopping are ignored")
+        assertNull(fixture.manager.runExclusive(gameId) { "step" })
+
+        fixture.manager.startSession()
+        fixture.again = { false }
+        fixture.manager.request(gameId)
+        testScheduler.runCurrent()
+        assertEquals(2, fixture.advances, "A new session accepts advances again")
+    }
+
     /**
      * 記錄推進次數與同時推進數的管理器。
      *

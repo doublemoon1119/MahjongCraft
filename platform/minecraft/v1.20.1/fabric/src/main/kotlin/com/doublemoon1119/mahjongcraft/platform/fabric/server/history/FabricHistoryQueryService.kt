@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.history
 
-import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryAccess
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryPolicy
@@ -36,6 +35,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.HistoryQueryLimits
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricSessionBackgroundScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.PlayerIdentitySender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.ServerPlayerIdentityStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
@@ -59,7 +59,7 @@ import kotlin.uuid.toKotlinUuid
  * @property writer 正式資料庫的唯一生命週期。
  * @property configState 目前有效的查詢政策。
  * @property store 檢查尚在進行及轉移中的權威對局。
- * @param scope 執行非同步查詢的應用作用域；世界有效性由 writer session 另行驗證。
+ * @param scope 執行非同步查詢與設定同步的背景作用域；查詢只讀，關服時直接取消。世界有效性由 writer session 另行驗證。
  * @param dispatchers 確保資料讀取及回覆分別使用 I/O 與伺服器主執行緒。
  * @property json 線路序列化設定。
  * @property networkRegistries 將已保存的規則設定映射為網路 DTO 的正式註冊表。
@@ -73,7 +73,7 @@ class FabricHistoryQueryService(
     private val writer: FabricHistoryOutboxWriter,
     @Provided private val configState: MinecraftServerConfigState,
     private val store: AuthoritativeStateStore,
-    scope: AppCoroutineScope,
+    scope: FabricSessionBackgroundScope,
     dispatchers: CoroutineDispatchers,
     private val json: Json,
     @Provided private val networkRegistries: NetworkDtoRegistries,

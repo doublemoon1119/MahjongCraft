@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.event
 
-import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.MatchSettlementPresentationRequest
@@ -24,6 +23,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongSoundTimeli
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricSessionBackgroundScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricExhaustiveDrawSettlementPresentationScheduler
@@ -136,7 +136,7 @@ import kotlin.uuid.toJavaUuid
  * @property tileAssetRegistry 牌面資產與材質註冊表。
  * @property gameActionSoundPresentationRegistry 動作聲音與宣告語音呈現註冊表。
  * @property roundResultSender 在和牌或流局結算當下把前後分數與名次送給入座的真人玩家。
- * @property scope 承接世界／方塊狀態查詢需要切回伺服器主執行緒的工作。
+ * @property scope 承接世界／方塊狀態查詢需要切回伺服器主執行緒的呈現工作；呈現可以捨棄，關服時直接取消。
  * @property dispatchers 切回伺服器主執行緒用的 dispatcher。
  */
 @Single(binds = [GamePresentationPublisher::class])
@@ -172,7 +172,7 @@ class FabricGamePresentationPublisher(
     private val tileAssetRegistry: MinecraftTileAssetRegistry,
     private val gameActionSoundPresentationRegistry: GameActionSoundPresentationRegistry,
     private val roundResultSender: RoundResultSender,
-    private val scope: AppCoroutineScope,
+    private val scope: FabricSessionBackgroundScope,
     private val dispatchers: CoroutineDispatchers,
 ) : GamePresentationPublisher {
     /** 呈現略過、生成失敗與排程狀態的診斷記錄。 */

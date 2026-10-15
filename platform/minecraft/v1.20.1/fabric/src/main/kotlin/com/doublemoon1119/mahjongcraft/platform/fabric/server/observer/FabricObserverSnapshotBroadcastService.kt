@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.observer
 
-import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.flow.server.observer.ObserverSnapshotBroadcaster
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricSessionBackgroundScope
 import kotlinx.coroutines.launch
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import org.koin.core.annotation.Single
@@ -16,13 +16,13 @@ import org.koin.core.annotation.Single
  * 狀態，本來就只能在該執行緒進行。[broadcastInProgress] 只是避免 tick 比推送本身更快時堆積重複的
  * 工作，實際的互斥由 [ObserverSnapshotBroadcaster] 自己負責。
  *
- * @property scope 執行 session 觀察與推送工作的協程作用域。
+ * @property scope 執行 session 觀察與推送工作的背景作用域；關服時直接取消，不等待推送完成。
  * @property dispatchers 提供伺服器主執行緒排程器。
  * @property broadcaster 訂閱狀態並推送觀察者快照的共用服務。
  */
 @Single
 class FabricObserverSnapshotBroadcastService(
-    private val scope: AppCoroutineScope,
+    private val scope: FabricSessionBackgroundScope,
     private val dispatchers: CoroutineDispatchers,
     private val broadcaster: ObserverSnapshotBroadcaster,
 ) {

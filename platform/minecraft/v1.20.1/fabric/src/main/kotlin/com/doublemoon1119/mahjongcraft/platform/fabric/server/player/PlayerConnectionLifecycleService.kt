@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepositor
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.LeaveRoomUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.SyncRoomSnapshotUseCase
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricSessionBackgroundScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.AutomaticControlSnapshotSender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableRoomService
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.DisconnectedPlayerPolicy
@@ -26,6 +27,7 @@ import kotlin.uuid.Uuid
  * 重連時取消逾時離開，以及重連時重建該玩家的快照。
  *
  * @property scope 執行斷線處理與快照重建工作的伺服器 coroutine scope。
+ * @property timeoutScope 等待斷線逾時的背景作用域；關服時直接取消，不等待倒數結束。
  * @property configState 提供斷線玩家處理政策的設定狀態。
  * @property membershipRepository 查詢玩家所屬麻將桌。
  * @property roomRepository 讀取等待室狀態。
@@ -39,6 +41,7 @@ import kotlin.uuid.Uuid
 @Single
 class PlayerConnectionLifecycleService(
     private val scope: AppCoroutineScope,
+    private val timeoutScope: FabricSessionBackgroundScope,
     private val configState: MinecraftServerConfigState,
     private val membershipRepository: PlayerMembershipRepository,
     private val roomRepository: RoomRepository,
@@ -152,7 +155,7 @@ class PlayerConnectionLifecycleService(
      */
     private fun scheduleTimeout(playerId: Uuid, timeoutSeconds: Long) {
         logger.debug("Scheduled disconnected-player timeout of {} second(s) for player {}", timeoutSeconds, playerId)
-        val job = scope.launch {
+        val job = timeoutScope.launch {
             delay(timeoutSeconds.seconds)
             logger.debug("Disconnected-player timeout expired for player {}", playerId)
             leaveWaitingRoom(playerId)

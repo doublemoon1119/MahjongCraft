@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricSessionBackgroundScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.AutomaticControlSnapshotSender
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.DisconnectedPlayerPolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
@@ -208,7 +209,8 @@ class PlayerConnectionLifecycleServiceTest {
         timeoutSeconds: Long = 300,
     ): Fixture {
         val dispatcher = StandardTestDispatcher(testScheduler)
-        val scope = createTestAppCoroutineScope(TestCoroutineDispatchers(dispatcher, dispatcher, dispatcher))
+        val dispatchers = TestCoroutineDispatchers(dispatcher, dispatcher, dispatcher)
+        val scope = createTestAppCoroutineScope(dispatchers)
         val store = AuthoritativeStateStore()
         val roomRepository = RoomRepositoryImpl(store)
         val gameRepository = GameRepositoryImpl(store)
@@ -246,6 +248,7 @@ class PlayerConnectionLifecycleServiceTest {
         val automaticControlSnapshots = RecordingAutomaticControlSnapshotSender()
         val service = PlayerConnectionLifecycleService(
             scope,
+            FabricSessionBackgroundScope(dispatchers),
             configState,
             memberships,
             roomRepository,

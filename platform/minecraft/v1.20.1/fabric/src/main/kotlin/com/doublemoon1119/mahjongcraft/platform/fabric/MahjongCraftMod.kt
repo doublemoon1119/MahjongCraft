@@ -29,6 +29,10 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModItems
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModSounds
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricAppCoroutineScope
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricCoroutineDispatchers
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricServerStopRunner
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricServerStopRunner.StopStep
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricSessionBackgroundScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigManager
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.historyRecordingPolicy
@@ -122,6 +126,10 @@ class MahjongCraftMod : ModInitializer {
         val serverHolder = koin.get<FabricServerHolder>()
         val playerIdentityStore = koin.get<ServerPlayerIdentityStore>()
         val appScope = koin.get<FabricAppCoroutineScope>()
+        val backgroundScope = koin.get<FabricSessionBackgroundScope>()
+        val serverThread = koin.get<FabricCoroutineDispatchers>().main
+        val stopRunner = FabricServerStopRunner(mainDispatcher = serverThread, drain = serverThread)
+        val advanceManager = koin.get<AutomatedAdvanceManager>()
         val stateCleaner = koin.get<ServerSessionStateCleaner>()
         val statePersistence = koin.get<FabricAuthoritativeStatePersistence>()
         val historyWriter = koin.get<FabricHistoryOutboxWriter>()
@@ -162,32 +170,37 @@ class MahjongCraftMod : ModInitializer {
             serverHolder.set(server)
             playerIdentityStore.refresh()
             appScope.startSession()
-            koin.get<AutomatedAdvanceManager>().startSession()
+            backgroundScope.startSession()
+            advanceManager.startSession()
             observerBroadcast.startSession()
             committedFactsDispatcher.startSession(server)
             lobbyInfoLifecycle.startSession()
         }
         ServerLifecycleEvents.SERVER_STOPPING.register {
             tableLocationValidation.stopSession()
-            runBlocking {
-                // 順序很重要：appScope.shutdown() 必須先跑完，才能保證後面的 settleAll／detach／
-                // clear 執行時，不會有任何 Draw／討論結果之類還在等鎖、卡在中途的協程被攔腰砍斷——
-                // 那次原本該發生的權威狀態變更會完全遺失、不留任何訊號，是曾經真的踩過的問題。
-                // 比照 GameDecisionTimerManager.settleAll() 自己 KDoc 要求的「先停止新命令、再結算、
-                // 最後才解除 persistence dirty listener」。
-                appScope.shutdown()
-                observerBroadcast.stopSession()
-                committedFactsDispatcher.stopSession()
-                // 等已開始的權威工作結束並停止事件接收後，才清除事件投影使用的位置索引。
-                tableLocationPersistence.detach()
-                lobbyInfoLifecycle.stopSession()
-                presentationBusyTracker.clearAll()
-                openingPresentationOperations.clearAll()
-                decisionTimerManager.settleAll()
-                historyWriter.detach()
-                statePersistence.detach()
-                stateCleaner.clear()
-            }
+            // 不再開始新的自動推進，並直接捨棄不需要等待的背景工作（狀態訂閱、呈現、斷線倒數、歷史查詢）。
+            advanceManager.stopSession()
+            backgroundScope.cancel()
+            // 收尾以主執行緒協程執行，等待期間主執行緒持續處理排入的工作：在途協程能完成，被取消的協程也能
+            // 回到主執行緒釋放持有的鎖。超過時限時記錄停在哪一步並繼續關服。
+            stopRunner.run(
+                steps = listOf(
+                    // appScope.shutdown() 必須先結束：已開始的權威工作（例如等鎖中的摸牌或反應結果）完成後，
+                    // 才結算計時器並解除 persistence dirty listener，避免該次權威狀態變更在中途被取消而遺失。
+                    StopStep("shutdown application scope") { appScope.shutdown() },
+                    StopStep("stop observer broadcast") { observerBroadcast.stopSession() },
+                    StopStep("stop committed facts dispatch") { committedFactsDispatcher.stopSession() },
+                    // 已開始的權威工作結束並停止事件接收後，才清除事件投影使用的位置索引。
+                    StopStep("detach table locations") { tableLocationPersistence.detach() },
+                    StopStep("stop lobby info") { lobbyInfoLifecycle.stopSession() },
+                    StopStep("clear presentation busy state") { presentationBusyTracker.clearAll() },
+                    StopStep("clear opening presentation operations") { openingPresentationOperations.clearAll() },
+                    StopStep("settle decision timers") { decisionTimerManager.settleAll() },
+                    StopStep("detach history writer") { historyWriter.detach() },
+                    StopStep("detach authoritative state") { statePersistence.detach() },
+                    StopStep("clear session state") { stateCleaner.clear() },
+                ),
+            )
             configManager.detach()
             serverHolder.clear()
             playerIdentityStore.refresh()

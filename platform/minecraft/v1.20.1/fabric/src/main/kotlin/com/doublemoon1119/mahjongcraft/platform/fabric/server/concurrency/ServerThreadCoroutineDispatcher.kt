@@ -10,10 +10,12 @@ import kotlinx.coroutines.DisposableHandle
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.InternalCoroutinesApi
 import kotlin.coroutines.CoroutineContext
+import kotlin.time.Duration
 
 /**
- * 透過 [net.minecraft.server.MinecraftServer.execute] 將協程工作交給 Minecraft 伺服器主執行緒。
- * 已在主執行緒時可直接執行，否則進入伺服器任務佇列，不保證恰好在下一個 tick 邊界執行。
+ * 將協程工作交給 Minecraft 伺服器主執行緒。
+ * 已在主執行緒時可直接執行，否則排入 [MainThreadTaskQueue]，並透過 [net.minecraft.server.MinecraftServer.execute]
+ * 請伺服器處理該佇列，不保證恰好在下一個 tick 邊界執行。關服流程可用 [drainUntil] 在主執行緒直接處理佇列。
  * 沒有目前伺服器時使用 [Dispatchers.Default]，此時不提供伺服器主執行緒保證。
  *
  * [Delay] 委派給 [tickClock]，依遊戲 tick 計算延遲，而非真實時間；單人世界暫停時延遲也停止前進。
@@ -21,7 +23,7 @@ import kotlin.coroutines.CoroutineContext
  * 主執行緒上的同步程式碼（方塊、實體與 tick 回呼）不得以 runBlocking 等待協程鎖或主執行緒上的工作。
  * 協程鎖先到先得：鎖可能先交給排在前面、使用本 dispatcher 的協程，而它必須回到主執行緒才能繼續並釋放鎖；
  * 主執行緒此時正被 runBlocking 佔住，雙方會互相等待。只需讀取時使用已發布的不可變快照，需要寫入時排入
- * 協程後立即返回。伺服器啟動時 session 協程尚未開始，以及關服時作用域已關閉之後，不受此限。
+ * 協程後立即返回。伺服器啟動時 session 協程尚未開始時不受此限；關服收尾以 [drainUntil] 邊處理佇列邊等待。
  *
  * @property serverHolder 查詢目前 server session。
  * @property tickClock 依遊戲 tick 排程延遲工作的時鐘。
@@ -31,7 +33,11 @@ class ServerThreadCoroutineDispatcher(
     private val serverHolder: FabricServerHolder,
     private val tickClock: FabricTickMonotonicClock,
 ) : CoroutineDispatcher(),
-    Delay {
+    Delay,
+    MainThreadDrain {
+    /** 等待在主執行緒執行的協程工作。 */
+    private val queue = MainThreadTaskQueue()
+
     /**
      * 已在伺服器主執行緒時無須重新排程；沒有目前伺服器時交由 [dispatch] 使用預設排程器。
      *
@@ -46,7 +52,8 @@ class ServerThreadCoroutineDispatcher(
     override fun dispatch(context: CoroutineContext, block: Runnable) {
         val server = serverHolder.current()
         if (server != null) {
-            server.execute(block)
+            queue.enqueue(block)
+            server.execute { queue.drain() }
         } else {
             Dispatchers.Default.dispatch(context, block)
         }
@@ -62,4 +69,10 @@ class ServerThreadCoroutineDispatcher(
     }
 
     override fun invokeOnTimeout(timeMillis: Long, block: Runnable, context: CoroutineContext): DisposableHandle = tickClock.scheduleAfter(timeMillis) { dispatch(context, block) }
+
+    override fun drainUntil(isDone: () -> Boolean, timeout: Duration): Boolean {
+        val server = serverHolder.current()
+        check(server == null || server.isOnThread) { "Main-thread work can only be drained on the server thread" }
+        return queue.drainUntil(isDone, timeout)
+    }
 }

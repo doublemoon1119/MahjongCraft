@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.history
 
-import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -14,13 +14,13 @@ import kotlin.uuid.Uuid
 /**
  * 歷史查詢共用的有界執行流程；各端點保留資料查詢、授權政策與回應內容。
  *
- * @property scope 執行查詢的應用作用域。
+ * @property scope 執行查詢的作用域。
  * @property dispatchers 提供回覆時使用的伺服器主執行緒。
  * @property admission 管理全域與個別玩家的查詢名額。
  * @property timeout 單次查詢的最長等待時間。
  */
 internal class HistoryQueryExecution(
-    private val scope: AppCoroutineScope,
+    private val scope: CoroutineScope,
     private val dispatchers: CoroutineDispatchers,
     private val admission: HistoryQueryAdmission,
     private val timeout: Duration,

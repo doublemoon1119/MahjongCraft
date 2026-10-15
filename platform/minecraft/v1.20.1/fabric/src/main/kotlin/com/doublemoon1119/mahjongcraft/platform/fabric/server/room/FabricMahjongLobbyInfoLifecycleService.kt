@@ -1,9 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.room
 
-import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricSessionBackgroundScope
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.DimensionChunkKey
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import kotlinx.coroutines.launch
@@ -18,7 +18,7 @@ import kotlin.uuid.Uuid
  * 中的 entity，區塊沒載入時無法建立，因此不能只靠狀態變更。兩者都在伺服器主執行緒執行。
  *
  * @property store 房間與對局的權威狀態。
- * @property scope 隨 server session 建立與取消的協程作用域。
+ * @property scope 隨 server session 建立與取消的背景作用域；關服時直接取消，不等待提示更新完成。
  * @property dispatchers 提供伺服器主執行緒的調度器。
  * @property locations 麻將桌位置索引。
  * @property presenter 實際建立、更新與清除提示的呈現器。
@@ -26,7 +26,7 @@ import kotlin.uuid.Uuid
 @Single
 class FabricMahjongLobbyInfoLifecycleService(
     private val store: AuthoritativeStateStore,
-    private val scope: AppCoroutineScope,
+    private val scope: FabricSessionBackgroundScope,
     private val dispatchers: CoroutineDispatchers,
     private val locations: TableLocationRegistry,
     private val presenter: FabricMahjongLobbyInfoPresenter,

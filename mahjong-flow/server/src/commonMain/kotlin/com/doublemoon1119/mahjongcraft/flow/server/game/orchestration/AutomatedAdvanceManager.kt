@@ -4,6 +4,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import kotlin.concurrent.Volatile
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.uuid.Uuid
@@ -23,6 +24,9 @@ import kotlin.uuid.Uuid
  * 仍可能繼續推進，並與新 session 對同一局的推進重疊。若不允許重疊，呼叫端須先取消或等待舊工作結束，再開始新 session。舊
  * session 的協程結束時因識別碼不同，不會清掉新 session 的登記。完成回呼可能在任何執行緒上觸發，登記以原子操作保護。
  *
+ * [stopSession] 之後不再開始新的推進：[request] 與 [runExclusive] 直接略過，進行中的推進做完目前這一輪就結束，
+ * 不再補跑；持續推進的對局（例如全由 AI 操控）因此不會讓等待推進結束的呼叫端一直等下去。[startSession] 重新開始接受推進。
+ *
  * @property scope 啟動推進協程的作用域，由呼叫端配合目前執行階段管理生命週期。
  * @property dispatcher 執行權威流程的調度器。
  * @property advanceOnce 推進一局一輪的內容；回傳是否需要立即再推進一輪。
@@ -38,12 +42,17 @@ class AutomatedAdvanceManager(
     /** 每局目前的推進。 */
     private val advances = AtomicReference<Map<Uuid, Advance>>(emptyMap())
 
+    /** 是否接受新的推進；[stopSession] 後為 false，直到下一次 [startSession]。 */
+    @Volatile
+    private var accepting = true
+
     /**
      * 請求推進 [gameId]，不等待推進完成。
      *
      * @param gameId 要推進的遊戲。
      */
     fun request(gameId: Uuid) {
+        if (!accepting) return
         val registration = Advance()
         if (!claimOrMarkRerun(gameId, registration)) return
         val job = scope.launch(dispatcher) { runRequested(gameId, registration) }
@@ -56,9 +65,10 @@ class AutomatedAdvanceManager(
      * @param T [block] 的回傳型別。
      * @param gameId 要推進的遊戲。
      * @param block 推進的內容。
-     * @return [block] 的結果；這一局已在推進時為 null。
+     * @return [block] 的結果；這一局已在推進或已停止接受推進時為 null。
      */
     suspend fun <T> runExclusive(gameId: Uuid, block: suspend () -> T): T? {
+        if (!accepting) return null
         val registration = Advance()
         if (!claim(gameId, registration)) return null
         try {
@@ -75,9 +85,15 @@ class AutomatedAdvanceManager(
      */
     fun isAdvancing(gameId: Uuid): Boolean = gameId in advances.load()
 
-    /** 開始新的執行階段並清空登記；不會取消先前的工作，呼叫端須另外管理其生命週期。 */
+    /** 開始新的執行階段、清空登記並重新接受推進；不會取消先前的工作，呼叫端須另外管理其生命週期。 */
     fun startSession() {
         advances.store(emptyMap())
+        accepting = true
+    }
+
+    /** 停止接受新的推進；進行中的推進做完目前這一輪就結束，不取消工作。 */
+    fun stopSession() {
+        accepting = false
     }
 
     /**
@@ -88,6 +104,7 @@ class AutomatedAdvanceManager(
      */
     private suspend fun runRequested(gameId: Uuid, registration: Advance) {
         do {
+            if (!accepting) return
             if (!update(gameId, registration) { it.copy(rerun = false) }) return
             val again = try {
                 advanceOnce(gameId)
