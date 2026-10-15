@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.table
 import com.doublemoon1119.mahjongcraft.testing.flow.common.concurrency.TestCoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.testing.flow.common.concurrency.createTestAppCoroutineScope
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -10,6 +11,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 /** [TableCleanupQueue] 的提交順序與失敗隔離測試。 */
+@OptIn(ExperimentalCoroutinesApi::class)
 class TableCleanupQueueTest {
     /** 提交後立即返回；後一項工作等前一項完成才開始。 */
     @Test
