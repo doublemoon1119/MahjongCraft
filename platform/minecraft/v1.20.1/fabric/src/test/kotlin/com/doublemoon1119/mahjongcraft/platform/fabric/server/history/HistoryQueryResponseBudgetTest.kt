@@ -13,10 +13,10 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryErrorCodeDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRegistries
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.buildMahjongDtoSerializersModule
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledNetworkJson
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledNetworkDtos
-import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -30,7 +30,7 @@ class HistoryQueryResponseBudgetTest {
     @Test
     fun `rule settings budget keeps complete config or returns safe error`() {
         val registries = DefaultNetworkDtoRegistries().apply { registerBundledNetworkDtos() }
-        val json = Json { serializersModule = buildMahjongDtoSerializersModule(registries) }
+        val json = NetworkJson(registries)
         val config = GameConfig(RiichiRuleConfig())
         val response = boundedHistoryRuleSettings("rules", HistoryRuleSettings(config), registries, json)
         assertEquals(config, assertNotNull(response.config).toDomain(registries))
@@ -48,7 +48,7 @@ class HistoryQueryResponseBudgetTest {
             "rules",
             HistoryRuleSettings(GameConfig(RiichiRuleConfig())),
             DefaultNetworkDtoRegistries(),
-            Json,
+            bundledNetworkJson(),
         )
         assertEquals(HistoryQueryErrorCodeDto.NOT_AVAILABLE, response.errorCode)
         assertNull(response.config)
@@ -66,7 +66,7 @@ class HistoryQueryResponseBudgetTest {
             page = HistoryListPage(listOf(first, second, third), null),
             request = request,
             principalId = PLAYER_ID,
-            json = Json,
+            json = bundledNetworkJson(),
             encodeCursor = { it.matchId.toString() },
             limit = 900,
         )
@@ -85,7 +85,7 @@ class HistoryQueryResponseBudgetTest {
             page = HistoryListPage(listOf(summary(Uuid.random(), diagnostic = "é".repeat(200))), null),
             request = HistoryListRequest(),
             principalId = PLAYER_ID,
-            json = Json,
+            json = bundledNetworkJson(),
             encodeCursor = { it.matchId.toString() },
             limit = 128,
         )
@@ -102,7 +102,7 @@ class HistoryQueryResponseBudgetTest {
             page = HistoryListPage(listOf(summary(Uuid.random(), diagnostic = "界".repeat(20))), null),
             request = HistoryListRequest(),
             principalId = PLAYER_ID,
-            json = Json,
+            json = bundledNetworkJson(),
             encodeCursor = { it.matchId.toString() },
             limit = 220,
         )

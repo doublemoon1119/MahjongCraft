@@ -1,10 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.network
 
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.KSerializer
-import kotlinx.serialization.json.Json
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
 import net.fabricmc.fabric.api.networking.v1.PacketByteBufs
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking
@@ -36,7 +36,7 @@ private const val DEFAULT_MAX_PAYLOAD_BYTES = MAX_PAYLOAD_LENGTH * 3
  */
 internal fun <T> decodeC2SPayload(
     buf: PacketByteBuf,
-    json: Json,
+    json: NetworkJson,
     serializer: KSerializer<T>,
     maxPayloadBytes: Int?,
 ): Result<T>? {
@@ -71,7 +71,7 @@ internal fun <T> decodeC2SPayload(
  */
 internal fun <T> decodeAndDispatchC2S(
     buf: PacketByteBuf,
-    json: Json,
+    json: NetworkJson,
     serializer: KSerializer<T>,
     maxPayloadBytes: Int?,
     dispatch: (T) -> Unit,
@@ -93,7 +93,7 @@ internal fun <T> decodeAndDispatchC2S(
  */
 internal fun <T> decodeBoundedPayload(
     buf: PacketByteBuf,
-    json: Json,
+    json: NetworkJson,
     serializer: KSerializer<T>,
     maxPayloadBytes: Int,
 ): T? = decodeC2SPayload(buf, json, serializer, maxPayloadBytes)?.getOrNull()
@@ -123,7 +123,7 @@ class S2CChannel<T>(id: String, private val serializer: KSerializer<T>, private 
      * @param json 線路序列化設定。
      * @param value 要傳送的線路資料。
      */
-    fun sendTo(player: ServerPlayerEntity, json: Json, value: T) {
+    fun sendTo(player: ServerPlayerEntity, json: NetworkJson, value: T) {
         val buf = PacketByteBufs.create()
         val encoded = json.encodeToString(serializer, value)
         require(maxPayloadBytes == null || encoded.toByteArray(Charsets.UTF_8).size <= maxPayloadBytes) { "Channel response exceeds its payload limit" }
@@ -137,7 +137,7 @@ class S2CChannel<T>(id: String, private val serializer: KSerializer<T>, private 
      * @param json 線路序列化設定。
      * @param handler 主執行緒上的接收處理。
      */
-    fun registerClientReceiver(json: Json, handler: (T) -> Unit) {
+    fun registerClientReceiver(json: NetworkJson, handler: (T) -> Unit) {
         ClientPlayNetworking.registerGlobalReceiver(channelId) { client, connection, buf, _ ->
             if (maxPayloadBytes != null && buf.readableBytes() > maxPayloadBytes + MAX_STRING_PREFIX_BYTES) {
                 reportOversized(buf.readableBytes(), maxPayloadBytes)
@@ -195,7 +195,7 @@ class C2SChannel<T>(id: String, private val serializer: KSerializer<T>, private 
      * @param json 線路序列化設定。
      * @param value 要傳送的線路資料。
      */
-    fun sendToServer(json: Json, value: T) {
+    fun sendToServer(json: NetworkJson, value: T) {
         val buf = PacketByteBufs.create()
         val encoded = json.encodeToString(serializer, value)
         require(maxPayloadBytes == null || encoded.toByteArray(Charsets.UTF_8).size <= maxPayloadBytes) { "Channel request exceeds its payload limit" }
@@ -210,7 +210,7 @@ class C2SChannel<T>(id: String, private val serializer: KSerializer<T>, private 
      * @param json 線路序列化設定。
      * @param handler 伺服器主執行緒上的接收處理。
      */
-    fun registerServerReceiver(json: Json, handler: (MinecraftServer, ServerPlayerEntity, T) -> Unit) {
+    fun registerServerReceiver(json: NetworkJson, handler: (MinecraftServer, ServerPlayerEntity, T) -> Unit) {
         ServerPlayNetworking.registerGlobalReceiver(channelId) { server, player, _, buf, _ ->
             val accepted = decodeAndDispatchC2S(buf, json, serializer, maxPayloadBytes) { decoded ->
                 server.execute { handler(server, player, decoded) }

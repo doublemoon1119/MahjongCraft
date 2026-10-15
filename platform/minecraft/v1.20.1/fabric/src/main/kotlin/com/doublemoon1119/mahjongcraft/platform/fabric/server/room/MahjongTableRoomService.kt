@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomActionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.RoomSnapshotDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDto
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceManager
@@ -44,7 +45,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFe
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.util.math.BlockPos
 import kotlin.uuid.Uuid
@@ -113,7 +113,7 @@ class MahjongTableRoomService(
     private val tableStateDelivery: FabricTableStateDelivery,
     private val authoritativeStateStore: AuthoritativeStateStore,
     private val dispatchers: CoroutineDispatchers,
-    private val json: Json,
+    private val json: NetworkJson,
     private val networkRegistries: NetworkDtoRegistries,
 ) {
     /**

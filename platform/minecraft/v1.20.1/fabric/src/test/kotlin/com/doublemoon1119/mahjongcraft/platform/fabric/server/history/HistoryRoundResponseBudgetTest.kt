@@ -16,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStat
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.table.MatchRoundPosition
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledNetworkJson
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -35,9 +36,9 @@ class HistoryRoundResponseBudgetTest {
             HistoryReplayTransaction(1, 1L, false, listOf(HistoryReplayFact.Opaque("測".repeat(1000))), 2),
         )
         val page = HistoryRoundEvents(identity, 1, transactions, null, HistoryRoundTileCatalog(listOf(Tile.Honor.East, Tile.Honor.South)))
-        val single = boundedHistoryRoundEvents(request, page.copy(transactions = transactions.take(1), nextTransactionIndex = 1, tileCatalog = HistoryRoundTileCatalog(listOf(Tile.Honor.East))), Json)
+        val single = boundedHistoryRoundEvents(request, page.copy(transactions = transactions.take(1), nextTransactionIndex = 1, tileCatalog = HistoryRoundTileCatalog(listOf(Tile.Honor.East))), bundledNetworkJson())
         val maximum = Json.encodeToString(HistoryRoundEventsResponseDto.serializer(), single).encodeToByteArray().size
-        val response = boundedHistoryRoundEvents(request, page, Json, maximum)
+        val response = boundedHistoryRoundEvents(request, page, bundledNetworkJson(), maximum)
         val events = assertNotNull(response.events)
         assertEquals(listOf(0), events.transactions.map { it.index })
         assertEquals(1, events.tileCatalog.size)
@@ -51,7 +52,7 @@ class HistoryRoundResponseBudgetTest {
         val identity = HistoryReplayIdentity(Uuid.random(), Uuid.random(), emptyList())
         val request = HistoryRoundEventsRequestDto("events", identity.matchId.toString(), roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
         val page = HistoryRoundEvents(identity, 1, listOf(HistoryReplayTransaction(0, 0L, false, emptyList(), 1)), 1, HistoryRoundTileCatalog(listOf(Tile.Honor.East)))
-        val response = boundedHistoryRoundEvents(request, page, Json, 1)
+        val response = boundedHistoryRoundEvents(request, page, bundledNetworkJson(), 1)
         assertEquals(HistoryQueryErrorCodeDto.CONTENT_TOO_LARGE, response.errorCode)
         assertNull(response.events)
     }
@@ -61,7 +62,7 @@ class HistoryRoundResponseBudgetTest {
     fun `empty terminal page remains complete`() {
         val identity = HistoryReplayIdentity(Uuid.random(), Uuid.random(), emptyList())
         val page = HistoryRoundEvents(identity, 1, emptyList(), null, HistoryRoundTileCatalog(emptyList()))
-        val response = boundedHistoryRoundEvents(HistoryRoundEventsRequestDto("events", identity.matchId.toString(), roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20), page, Json)
+        val response = boundedHistoryRoundEvents(HistoryRoundEventsRequestDto("events", identity.matchId.toString(), roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20), page, bundledNetworkJson())
         assertEquals(emptyList(), assertNotNull(response.events).transactions)
         assertNull(response.events?.nextTransactionIndex)
     }
@@ -76,8 +77,8 @@ class HistoryRoundResponseBudgetTest {
             0, emptySet(), null, false, false, null,
         )
         val request = HistoryRoundStateRequestDto("state", identity.matchId.toString(), roundNumber = 1, scope = HistoryQueryScopeDto.OWN, position = HistoryRoundPositionDto.Initial)
-        assertNotNull(boundedHistoryRoundState(request, state, Json).state)
-        val rejected = boundedHistoryRoundState(request, state, Json, 1)
+        assertNotNull(boundedHistoryRoundState(request, state, bundledNetworkJson()).state)
+        val rejected = boundedHistoryRoundState(request, state, bundledNetworkJson(), 1)
         assertEquals(HistoryQueryErrorCodeDto.CONTENT_TOO_LARGE, rejected.errorCode)
         assertNull(rejected.state)
     }

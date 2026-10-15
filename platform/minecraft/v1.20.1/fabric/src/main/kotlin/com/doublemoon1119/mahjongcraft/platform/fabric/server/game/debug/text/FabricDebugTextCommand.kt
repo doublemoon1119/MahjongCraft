@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServerConfigManager
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugPreviewDefaults
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.buildMatchResultChatText
@@ -19,7 +20,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFe
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import net.minecraft.server.command.CommandManager.literal
 import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.text.Text
@@ -41,7 +41,7 @@ import kotlin.uuid.toKotlinUuid
 class FabricDebugTextCommand(
     private val feedbackPublisher: MinecraftPlayerFeedbackPublisher,
     private val serverConfigManager: FabricServerConfigManager,
-    private val json: Json,
+    private val json: NetworkJson,
     private val networkRegistries: NetworkDtoRegistries,
 ) {
     /**

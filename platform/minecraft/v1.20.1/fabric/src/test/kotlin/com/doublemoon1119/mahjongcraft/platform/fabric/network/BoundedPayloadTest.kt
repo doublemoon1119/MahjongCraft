@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryQueryScop
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundPositionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateRequestDto
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledNetworkJson
 import io.netty.buffer.Unpooled
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.KSerializer
@@ -32,14 +33,14 @@ class BoundedPayloadTest {
     fun `round replay requests share the bounded packet decoder`() {
         val events = HistoryRoundEventsRequestDto("events", Uuid.random().toString(), roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
         val eventPayload = Json.encodeToString(HistoryRoundEventsRequestDto.serializer(), events)
-        assertEquals(events, decodeBoundedPayload(bufferFor(eventPayload), Json, HistoryRoundEventsRequestDto.serializer(), HistoryQueryLimits.REQUEST_BYTES))
+        assertEquals(events, decodeBoundedPayload(bufferFor(eventPayload), bundledNetworkJson(), HistoryRoundEventsRequestDto.serializer(), HistoryQueryLimits.REQUEST_BYTES))
         val trailing = bufferFor(eventPayload).also { it.writeByte(1) }
-        assertNull(decodeBoundedPayload(trailing, Json, HistoryRoundEventsRequestDto.serializer(), HistoryQueryLimits.REQUEST_BYTES))
+        assertNull(decodeBoundedPayload(trailing, bundledNetworkJson(), HistoryRoundEventsRequestDto.serializer(), HistoryQueryLimits.REQUEST_BYTES))
         val state = HistoryRoundStateRequestDto("state", events.matchId, roundNumber = 1, position = HistoryRoundPositionDto.AfterTransaction(4), scope = HistoryQueryScopeDto.OWN)
         val statePayload = Json.encodeToString(HistoryRoundStateRequestDto.serializer(), state)
-        assertEquals(state, decodeBoundedPayload(bufferFor(statePayload), Json, HistoryRoundStateRequestDto.serializer(), HistoryQueryLimits.REQUEST_BYTES))
+        assertEquals(state, decodeBoundedPayload(bufferFor(statePayload), bundledNetworkJson(), HistoryRoundStateRequestDto.serializer(), HistoryQueryLimits.REQUEST_BYTES))
         val oversized = Json.encodeToString(HistoryRoundEventsRequestDto.serializer(), events.copy(requestId = "界".repeat(2000)))
-        assertNull(decodeBoundedPayload(bufferFor(oversized), Json, HistoryRoundEventsRequestDto.serializer(), HistoryQueryLimits.REQUEST_BYTES))
+        assertNull(decodeBoundedPayload(bufferFor(oversized), bundledNetworkJson(), HistoryRoundEventsRequestDto.serializer(), HistoryQueryLimits.REQUEST_BYTES))
     }
 
     /** 合法的長度前綴 JSON 應能完整解碼。 */
@@ -50,7 +51,7 @@ class BoundedPayloadTest {
 
         assertEquals(
             expected,
-            decodeBoundedPayload(buffer, Json, AutomaticControlUpdateRequestDto.serializer(), 1024),
+            decodeBoundedPayload(buffer, bundledNetworkJson(), AutomaticControlUpdateRequestDto.serializer(), 1024),
         )
     }
 
@@ -59,7 +60,7 @@ class BoundedPayloadTest {
     fun `default compatibility limit accepts the old maximum character payload`() {
         val payload = "\"${"a".repeat((1 shl 20) - 2)}\""
 
-        val decoded = decodeC2SPayload(bufferFor(payload), Json, String.serializer(), null)
+        val decoded = decodeC2SPayload(bufferFor(payload), bundledNetworkJson(), String.serializer(), null)
 
         assertNotNull(decoded)
         assertEquals("a".repeat((1 shl 20) - 2), decoded.getOrThrow())
@@ -71,7 +72,7 @@ class BoundedPayloadTest {
         val value = "界".repeat((1 shl 20) - 2)
         val payload = Json.encodeToString(String.serializer(), value)
 
-        val decoded = decodeC2SPayload(bufferFor(payload), Json, String.serializer(), null)
+        val decoded = decodeC2SPayload(bufferFor(payload), bundledNetworkJson(), String.serializer(), null)
 
         assertNotNull(decoded)
         assertEquals(value, decoded.getOrThrow())
@@ -80,7 +81,7 @@ class BoundedPayloadTest {
     /** 可為 null 的 DTO 仍能區分合法 null 結果與被拒絕的封包。 */
     @Test
     fun `nullable dto keeps a successful null result`() {
-        val decoded = decodeC2SPayload(bufferFor("null"), Json, String.serializer().nullable, null)
+        val decoded = decodeC2SPayload(bufferFor("null"), bundledNetworkJson(), String.serializer().nullable, null)
 
         assertNotNull(decoded)
         assertEquals(null, decoded.getOrThrow())
@@ -91,7 +92,7 @@ class BoundedPayloadTest {
     fun `utf8 byte limit rejects multibyte payload`() {
         val payload = "\"界界界界\""
 
-        assertNull(decodeBoundedPayload(bufferFor(payload), Json, String.serializer(), payload.toByteArray().size - 1))
+        assertNull(decodeBoundedPayload(bufferFor(payload), bundledNetworkJson(), String.serializer(), payload.toByteArray().size - 1))
     }
 
     /** 明確指定的歷史位元組上限在剛好符合時仍接受合法 payload。 */
@@ -100,7 +101,7 @@ class BoundedPayloadTest {
         val payload = "\"history\""
         val limit = payload.toByteArray().size
 
-        assertEquals("history", decodeBoundedPayload(bufferFor(payload), Json, String.serializer(), limit))
+        assertEquals("history", decodeBoundedPayload(bufferFor(payload), bundledNetworkJson(), String.serializer(), limit))
     }
 
     /** 原始 buffer 超過上限時應在讀取字串前拒絕。 */
@@ -110,14 +111,14 @@ class BoundedPayloadTest {
         buffer.writeBytes(ByteArray(128))
         val serializer = CountingDeserializer()
 
-        assertNull(decodeBoundedPayload(buffer, Json, serializer, 8))
+        assertNull(decodeBoundedPayload(buffer, bundledNetworkJson(), serializer, 8))
         assertEquals(0, serializer.deserializeCalls)
     }
 
     /** JSON 語法錯誤時不得產生 DTO。 */
     @Test
     fun `malformed json is rejected`() {
-        assertNull(decodeBoundedPayload(bufferFor("{bad"), Json, String.serializer(), 128))
+        assertNull(decodeBoundedPayload(bufferFor("{bad"), bundledNetworkJson(), String.serializer(), 128))
     }
 
     /** 損壞的 VarInt 字串長度前綴應安全拒絕。 */
@@ -126,7 +127,7 @@ class BoundedPayloadTest {
         val buffer = PacketByteBuf(Unpooled.buffer())
         buffer.writeBytes(ByteArray(6) { 0x80.toByte() })
 
-        assertNull(decodeBoundedPayload(buffer, Json, String.serializer(), 128))
+        assertNull(decodeBoundedPayload(buffer, bundledNetworkJson(), String.serializer(), 128))
     }
 
     /** 合法字串後的額外位元組應被拒絕，避免封包拼接內容被忽略。 */
@@ -135,7 +136,7 @@ class BoundedPayloadTest {
         val buffer = bufferFor("\"valid\"")
         buffer.writeByte(1)
 
-        assertNull(decodeBoundedPayload(buffer, Json, String.serializer(), 128))
+        assertNull(decodeBoundedPayload(buffer, bundledNetworkJson(), String.serializer(), 128))
     }
 
     /** 超出上限的 C2S payload 不得交給主執行緒排程函式。 */
@@ -146,7 +147,7 @@ class BoundedPayloadTest {
 
         val accepted = decodeAndDispatchC2S(
             buf = bufferFor(payload),
-            json = Json,
+            json = bundledNetworkJson(),
             serializer = String.serializer(),
             maxPayloadBytes = 8,
         ) {
@@ -164,7 +165,7 @@ class BoundedPayloadTest {
 
         val accepted = decodeAndDispatchC2S(
             buf = bufferFor("\"value\""),
-            json = Json,
+            json = bundledNetworkJson(),
             serializer = String.serializer(),
             maxPayloadBytes = null,
         ) {
@@ -179,7 +180,7 @@ class BoundedPayloadTest {
     @Test
     fun `cancellation from deserializer propagates`() {
         assertFailsWith<CancellationException> {
-            decodeC2SPayload(bufferFor("\"value\""), Json, ThrowingDeserializer(CancellationException()), null)
+            decodeC2SPayload(bufferFor("\"value\""), bundledNetworkJson(), ThrowingDeserializer(CancellationException()), null)
         }
     }
 
@@ -187,7 +188,7 @@ class BoundedPayloadTest {
     @Test
     fun `fatal error from deserializer propagates`() {
         assertFailsWith<AssertionError> {
-            decodeC2SPayload(bufferFor("\"value\""), Json, ThrowingDeserializer(AssertionError()), null)
+            decodeC2SPayload(bufferFor("\"value\""), bundledNetworkJson(), ThrowingDeserializer(AssertionError()), null)
         }
     }
 
@@ -195,7 +196,7 @@ class BoundedPayloadTest {
     @Test
     fun `default compatibility limit rejects one extra character`() {
         val payload = "\"${"a".repeat((1 shl 20) - 1)}\""
-        assertNull(decodeC2SPayload(rawBufferFor(payload.toByteArray(Charsets.UTF_8)), Json, String.serializer(), null))
+        assertNull(decodeC2SPayload(rawBufferFor(payload.toByteArray(Charsets.UTF_8)), bundledNetworkJson(), String.serializer(), null))
     }
 
     /** ASCII 與多位元內容都按實際 UTF-8 長度判斷顯式上限。 */
@@ -204,8 +205,8 @@ class BoundedPayloadTest {
         for (value in listOf("history", "界界", "😀😀")) {
             val payload = Json.encodeToString(String.serializer(), value)
             val bytes = payload.toByteArray(Charsets.UTF_8).size
-            assertEquals(value, decodeBoundedPayload(bufferFor(payload), Json, String.serializer(), bytes))
-            assertNull(decodeBoundedPayload(bufferFor(payload), Json, String.serializer(), bytes - 1))
+            assertEquals(value, decodeBoundedPayload(bufferFor(payload), bundledNetworkJson(), String.serializer(), bytes))
+            assertNull(decodeBoundedPayload(bufferFor(payload), bundledNetworkJson(), String.serializer(), bytes - 1))
         }
     }
 
@@ -219,9 +220,9 @@ class BoundedPayloadTest {
         val exactPayload = Json.encodeToString(serializer, exact)
 
         assertEquals(HistoryQueryLimits.REQUEST_BYTES, exactPayload.toByteArray(Charsets.UTF_8).size)
-        assertEquals(exact, decodeBoundedPayload(bufferFor(exactPayload), Json, serializer, HistoryQueryLimits.REQUEST_BYTES))
+        assertEquals(exact, decodeBoundedPayload(bufferFor(exactPayload), bundledNetworkJson(), serializer, HistoryQueryLimits.REQUEST_BYTES))
         val oversized = Json.encodeToString(serializer, exact.copy(requestId = exact.requestId + "a"))
-        assertNull(decodeBoundedPayload(bufferFor(oversized), Json, serializer, HistoryQueryLimits.REQUEST_BYTES))
+        assertNull(decodeBoundedPayload(bufferFor(oversized), bundledNetworkJson(), serializer, HistoryQueryLimits.REQUEST_BYTES))
     }
 
     /** 各種損壞資料在預設與顯式上限下都不得交給主執行緒排程。 */
@@ -243,7 +244,7 @@ class BoundedPayloadTest {
             )
             var dispatches = 0
             for (buffer in invalidBuffers) {
-                assertEquals(false, decodeAndDispatchC2S(buffer, Json, AutomaticControlUpdateRequestDto.serializer(), limit) { dispatches += 1 })
+                assertEquals(false, decodeAndDispatchC2S(buffer, bundledNetworkJson(), AutomaticControlUpdateRequestDto.serializer(), limit) { dispatches += 1 })
             }
             assertEquals(0, dispatches)
         }
@@ -257,7 +258,7 @@ class BoundedPayloadTest {
             it.writeVarInt(129)
             it.writeByte(1)
         }
-        assertNull(decodeC2SPayload(buffer, Json, serializer, 128))
+        assertNull(decodeC2SPayload(buffer, bundledNetworkJson(), serializer, 128))
         assertEquals(0, serializer.deserializeCalls)
     }
 
@@ -267,7 +268,7 @@ class BoundedPayloadTest {
         var dispatches = 0
         assertEquals(
             expected = true,
-            actual = decodeAndDispatchC2S(bufferFor("null"), Json, String.serializer().nullable, null) {
+            actual = decodeAndDispatchC2S(bufferFor("null"), bundledNetworkJson(), String.serializer().nullable, null) {
                 assertNull(it)
                 dispatches += 1
             },
@@ -281,7 +282,7 @@ class BoundedPayloadTest {
         val bytes = byteArrayOf(0x22, 0xC3.toByte(), 0x28, 0x22)
         val nativeJson = rawBufferFor(bytes).readString(1 shl 20)
         val expected = Json.decodeFromString(String.serializer(), nativeJson)
-        assertEquals(expected, decodeC2SPayload(rawBufferFor(bytes), Json, String.serializer(), null)?.getOrThrow())
+        assertEquals(expected, decodeC2SPayload(rawBufferFor(bytes), bundledNetworkJson(), String.serializer(), null)?.getOrThrow())
     }
 
     /**

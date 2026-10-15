@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdateEventD
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomUpdatePayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDto
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
@@ -16,7 +17,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.PlayerIdentitySender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateDelivery
-import kotlinx.serialization.json.Json
 import net.minecraft.server.network.ServerPlayerEntity
 import kotlin.uuid.Uuid
 
@@ -37,7 +37,7 @@ class RoomEventPublisherImpl(
     private val authoritativeStateStore: AuthoritativeStateStore,
     private val serverHolder: FabricServerHolder,
     private val playerIdentities: PlayerIdentitySender,
-    private val json: Json,
+    private val json: NetworkJson,
     private val networkRegistries: NetworkDtoRegistries,
 ) : RoomEventPublisher {
     override suspend fun publishJoin(roomId: Uuid, targetPlayerId: Uuid, joinedPlayerId: Uuid, reason: JoinReason) {

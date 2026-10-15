@@ -14,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCu
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistryImpl
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.HistoryReplayProjectionRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.emptyPersistenceRegistries
@@ -38,6 +39,9 @@ fun MahjongModuleRegistry.registerBundledRuleModules() {
 fun NetworkDtoRegistries.registerBundledNetworkDtos() {
     BundledMahjongExtensions.all.forEach { it.registerNetworkDtos(this) }
 }
+
+/** 測試用：建立已登記所有隨 MahjongCraft 發布之規則 extension 網路 DTO 的網路格式。 */
+fun bundledNetworkJson(): NetworkJson = NetworkJson(DefaultNetworkDtoRegistries().apply { registerBundledNetworkDtos() })
 
 /** 測試用：建立已登記所有隨 MahjongCraft 發布之規則 extension 存檔 mapper、尚未凍結的 persistence registries。 */
 fun bundledPersistenceRegistries(): PersistenceRegistries = emptyPersistenceRegistries().apply {

@@ -1,15 +1,15 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryArchiveStatusRequestDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
-import kotlinx.serialization.json.Json
 
 /**
  * 將有界保存狀態要求交給 Fabric 頻道，不執行本地保存判定。
  *
  * @property json 線路序列化設定。
  */
-internal class FabricHistoryArchiveStatusSender(private val json: Json) : HistoryArchiveStatusSender {
+internal class FabricHistoryArchiveStatusSender(private val json: NetworkJson) : HistoryArchiveStatusSender {
     /**
      * 傳送由狀態控制器配對的保存狀態要求。
      *

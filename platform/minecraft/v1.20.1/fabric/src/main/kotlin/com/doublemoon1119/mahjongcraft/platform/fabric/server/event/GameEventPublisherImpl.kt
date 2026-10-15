@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublish
 import com.doublemoon1119.mahjongcraft.flow.network.dto.command.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameUpdatePayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDto
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
@@ -14,7 +15,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHist
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.PlayerIdentitySender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateDelivery
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateTicket
-import kotlinx.serialization.json.Json
 import net.minecraft.server.network.ServerPlayerEntity
 import kotlin.uuid.Uuid
 
@@ -40,7 +40,7 @@ class GameEventPublisherImpl(
     private val serverHolder: FabricServerHolder,
     private val playerIdentities: PlayerIdentitySender,
     private val historyWriter: FabricHistoryOutboxWriter,
-    private val json: Json,
+    private val json: NetworkJson,
     private val networkRegistries: NetworkDtoRegistries,
 ) : GameEventPublisher {
     override suspend fun publish(gameId: Uuid, targetPlayerId: Uuid, actorId: Uuid, action: GameAction) {

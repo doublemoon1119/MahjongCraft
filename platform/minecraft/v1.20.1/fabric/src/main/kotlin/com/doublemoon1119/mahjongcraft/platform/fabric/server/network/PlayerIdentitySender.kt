@@ -1,13 +1,13 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.network
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.ServerPlayerIdentityStore
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerIdentityEntry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerIdentityPayload
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
 import kotlin.uuid.Uuid
 
 /**
@@ -22,7 +22,7 @@ class PlayerIdentitySender(
     private val names: ServerPlayerIdentityStore,
     private val serverHolder: FabricServerHolder,
     private val dispatchers: CoroutineDispatchers,
-    private val json: Json,
+    private val json: NetworkJson,
 ) {
     /**
      * 只同步呼叫端已授權內容涉及的真人，所有原生名稱讀取均在主執行緒執行。

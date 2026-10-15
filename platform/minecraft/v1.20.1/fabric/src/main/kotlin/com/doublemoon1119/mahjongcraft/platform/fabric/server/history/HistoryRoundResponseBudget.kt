@@ -8,8 +8,8 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEven
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.toDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.HistoryQueryLimits
-import kotlinx.serialization.json.Json
 
 /**
  * 一次映射後按完整交易縮頁，同步裁切截止位置的牌字典。
@@ -23,7 +23,7 @@ import kotlinx.serialization.json.Json
 internal fun boundedHistoryRoundEvents(
     request: HistoryRoundEventsRequestDto,
     page: HistoryRoundEvents,
-    json: Json,
+    json: NetworkJson,
     maximumBytes: Int = HistoryQueryLimits.RESPONSE_BYTES,
 ): HistoryRoundEventsResponseDto {
     val mapped = page.toDto()
@@ -68,7 +68,7 @@ internal fun boundedHistoryRoundEvents(
 internal fun boundedHistoryRoundState(
     request: HistoryRoundStateRequestDto,
     state: HistoryRoundState,
-    json: Json,
+    json: NetworkJson,
     maximumBytes: Int = HistoryQueryLimits.RESPONSE_BYTES,
 ): HistoryRoundStateResponseDto {
     val response = HistoryRoundStateResponseDto(request.requestId, request.matchId, request.roundNumber, request.position, state = state.toDto(), errorCode = null)

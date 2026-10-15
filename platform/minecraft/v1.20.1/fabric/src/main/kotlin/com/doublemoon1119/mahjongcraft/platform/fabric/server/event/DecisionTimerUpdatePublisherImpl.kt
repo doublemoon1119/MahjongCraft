@@ -2,13 +2,13 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.event
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.DecisionTimerUpdate
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.DecisionTimerUpdatePublisher
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.PlayerDecisionPromptFactory
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionTimerStatusDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionTimerUpdatePayloadDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.toDto
-import kotlinx.serialization.json.Json
 import kotlin.uuid.Uuid
 
 /**
@@ -21,7 +21,7 @@ import kotlin.uuid.Uuid
 class DecisionTimerUpdatePublisherImpl(
     private val serverHolder: FabricServerHolder,
     private val promptFactory: PlayerDecisionPromptFactory,
-    private val json: Json,
+    private val json: NetworkJson,
 ) : DecisionTimerUpdatePublisher {
     /** 只向目前在線的目標玩家送出權威計時更新。 */
     override suspend fun publish(targetPlayerId: Uuid, update: DecisionTimerUpdate) {

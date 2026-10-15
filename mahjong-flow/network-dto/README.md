@@ -24,7 +24,7 @@ It depends on [mahjong-logic](../../mahjong-logic/README.md),
 ## Dependency injection
 
 The module does not depend on a DI framework. Platform composition registers the runtime
-registry implementation and builds Json with its extension-aware serializers; see
+registry implementation and `NetworkJson`, the network format with its extension-aware serializers; see
 [Minecraft common](../../platform/minecraft/common/README.md). DTO models remain plain serializable data;
 bootstrap and codecs share the same registry instance.
 

@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomActionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue.RuleCatalogueScreenController
@@ -42,7 +43,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.TableOccupancyDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoEntry
 import com.mojang.authlib.GameProfile
-import kotlinx.serialization.json.Json
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.screen.Screen
@@ -89,7 +89,7 @@ class RoomScreen(
     private val aiStrategyNames: AiStrategyDisplayNameRegistry,
     appearanceSources: RoomMemberAppearanceSourceRegistry,
     indicatorTextResolver: PublicPlayerIndicatorTextResolver,
-    private val json: Json,
+    private val json: NetworkJson,
     private val networkRegistries: NetworkDtoRegistries,
     private val profileResolver: ClientPlayerProfileResolver,
     private val ruleCatalogue: RuleCatalogueScreenController,

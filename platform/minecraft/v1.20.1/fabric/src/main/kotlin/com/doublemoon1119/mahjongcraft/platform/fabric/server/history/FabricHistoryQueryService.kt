@@ -26,6 +26,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.encode
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.GetHistoryRoundEventsUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.GetHistoryRoundStateUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.GetHistoryRuleSettingsUseCase
@@ -43,7 +44,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftE
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryQuerySettingsPayload
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
-import kotlinx.serialization.json.Json
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
 import net.minecraft.server.MinecraftServer
@@ -72,7 +72,7 @@ class FabricHistoryQueryService(
     private val store: AuthoritativeStateStore,
     scope: FabricSessionBackgroundScope,
     dispatchers: CoroutineDispatchers,
-    private val json: Json,
+    private val json: NetworkJson,
     private val networkRegistries: NetworkDtoRegistries,
     private val playerIdentities: PlayerIdentitySender,
     private val identityStore: ServerPlayerIdentityStore,

@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.network.dto.command.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceManager
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
@@ -73,7 +74,6 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
 import net.fabricmc.api.EnvType
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
@@ -94,7 +94,7 @@ class MahjongCraftMod : ModInitializer {
 
     override fun onInitialize() {
         val koin = startDependencyInjection()
-        // Koin single 建立後，必須先於 Json 與遊戲流程服務第一次被解析前完成。
+        // Koin single 建立後，必須先於 NetworkJson 與遊戲流程服務第一次被解析前完成。
         FabricMahjongExtensions.initialize(
             coreRegistries = koin.get<CoreExtensionRegistries>(),
             presentationRegistries = koin.get<MinecraftPresentationRegistries>(),
@@ -230,7 +230,7 @@ class MahjongCraftMod : ModInitializer {
      * @param koin 目前 Fabric runtime 的依賴容器。
      */
     private fun registerRoomActionReceiver(koin: Koin) {
-        val json = koin.get<Json>()
+        val json = koin.get<NetworkJson>()
         val service = koin.get<MahjongTableRoomService>()
         MahjongChannels.roomAction.registerServerReceiver(json) { _, player, action ->
             service.handleRoomAction(player, action)
@@ -307,7 +307,7 @@ class MahjongCraftMod : ModInitializer {
      * @param koin 目前 Fabric runtime 的依賴容器。
      */
     private fun registerGameCommandReceiver(koin: Koin) {
-        val json = koin.get<Json>()
+        val json = koin.get<NetworkJson>()
         val networkRegistries = koin.get<NetworkDtoRegistries>()
         val scope = koin.get<AppCoroutineScope>()
         MahjongChannels.gameCommand.registerServerReceiver(json) { _, player, envelope ->
@@ -331,7 +331,7 @@ class MahjongCraftMod : ModInitializer {
      * @param koin 目前 Fabric runtime 的依賴容器。
      */
     private fun registerDecisionSelectionReceiver(koin: Koin) {
-        val json = koin.get<Json>()
+        val json = koin.get<NetworkJson>()
         val service = koin.get<MahjongTableGameActionService>()
         MahjongChannels.decisionSelection.registerServerReceiver(json) { _, player, selection ->
             service.select(player, selection)
@@ -344,7 +344,7 @@ class MahjongCraftMod : ModInitializer {
      * @param koin 目前 Fabric runtime 的依賴容器。
      */
     private fun registerRequestSnapshotReceiver(koin: Koin) {
-        val json = koin.get<Json>()
+        val json = koin.get<NetworkJson>()
         val lifecycleService = koin.get<PlayerConnectionLifecycleService>()
         MahjongChannels.requestSnapshot.registerServerReceiver(json) { _, player, _ ->
             lifecycleService.onSnapshotRequested(player.uuid.toKotlinUuid())
@@ -357,7 +357,7 @@ class MahjongCraftMod : ModInitializer {
      * @param koin 目前 Fabric runtime 的依賴容器。
      */
     private fun registerSetAutoSortHandReceiver(koin: Koin) {
-        val json = koin.get<Json>()
+        val json = koin.get<NetworkJson>()
         val useCase = koin.get<SetHandSortPreferenceUseCase>()
         val scope = koin.get<AppCoroutineScope>()
         MahjongChannels.restoreAutoSortHand.registerServerReceiver(json) { _, player, enabled ->
@@ -378,7 +378,7 @@ class MahjongCraftMod : ModInitializer {
      * @param koin 目前 Fabric runtime 的依賴容器。
      */
     private fun registerAutomaticControlUpdateReceiver(koin: Koin) {
-        val json = koin.get<Json>()
+        val json = koin.get<NetworkJson>()
         val service = koin.get<AutomaticControlUpdateService>()
         val scope = koin.get<AppCoroutineScope>()
         MahjongChannels.automaticControlUpdate.registerServerReceiver(json) { _, player, request ->

@@ -22,7 +22,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistorySor
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.GameConfigDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
-import kotlinx.serialization.json.Json
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import kotlin.uuid.Uuid
 
 /**
@@ -137,7 +137,7 @@ fun HistoryRuleSettingsRequestDto.toDomain(): HistoryRuleSettingsRequest = Histo
  * @param json 使用的 JSON codec。
  * @return 可傳送的 JSON 請求字串。
  */
-fun HistoryRuleSettingsRequestDto.encode(json: Json): String = json.encodeToString(HistoryRuleSettingsRequestDto.serializer(), this)
+fun HistoryRuleSettingsRequestDto.encode(json: NetworkJson): String = json.encodeToString(HistoryRuleSettingsRequestDto.serializer(), this)
 
 /**
  * 將傳輸字串解碼為規則設定查詢請求 DTO。
@@ -145,7 +145,7 @@ fun HistoryRuleSettingsRequestDto.encode(json: Json): String = json.encodeToStri
  * @param json 使用的 JSON codec。
  * @return 解碼後的請求 DTO。
  */
-fun String.decodeHistoryRuleSettingsRequest(json: Json): HistoryRuleSettingsRequestDto = json.decodeFromString(HistoryRuleSettingsRequestDto.serializer(), this)
+fun String.decodeHistoryRuleSettingsRequest(json: NetworkJson): HistoryRuleSettingsRequestDto = json.decodeFromString(HistoryRuleSettingsRequestDto.serializer(), this)
 
 /**
  * 將網路 cursor 內容映射為 Flow cursor。
@@ -209,7 +209,7 @@ fun HistoryQueryCursor.toDto(): HistoryQueryCursorDto = HistoryQueryCursorDto(
  * @param json 使用的 JSON codec。
  * @return 可放入網路 DTO 的 cursor 字串。
  */
-fun HistoryQueryCursor.encode(json: Json): String = json.encodeToString(HistoryQueryCursorDto.serializer(), toDto())
+fun HistoryQueryCursor.encode(json: NetworkJson): String = json.encodeToString(HistoryQueryCursorDto.serializer(), toDto())
 
 /**
  * 將傳輸字串解碼為 Flow cursor；格式錯誤由呼叫端轉成無效請求。
@@ -217,7 +217,7 @@ fun HistoryQueryCursor.encode(json: Json): String = json.encodeToString(HistoryQ
  * @param json 使用的 JSON codec。
  * @return 驗證後的 Flow cursor。
  */
-fun String.decodeHistoryCursor(json: Json): HistoryQueryCursor = json.decodeFromString(HistoryQueryCursorDto.serializer(), this).toDomain()
+fun String.decodeHistoryCursor(json: NetworkJson): HistoryQueryCursor = json.decodeFromString(HistoryQueryCursorDto.serializer(), this).toDomain()
 
 /**
  * 將 Flow 查詢錯誤映射為不暴露儲存細節的傳輸代碼。
@@ -333,7 +333,7 @@ fun HistoryRuleSettings.toDto(registries: NetworkDtoRegistries): GameConfigDto =
  * @param json 使用的 JSON codec。
  * @return 可傳送的 JSON 回覆字串。
  */
-fun HistoryRuleSettingsResponseDto.encode(json: Json): String = json.encodeToString(HistoryRuleSettingsResponseDto.serializer(), this)
+fun HistoryRuleSettingsResponseDto.encode(json: NetworkJson): String = json.encodeToString(HistoryRuleSettingsResponseDto.serializer(), this)
 
 /**
  * 將傳輸字串解碼為規則設定查詢回覆 DTO。
@@ -341,7 +341,7 @@ fun HistoryRuleSettingsResponseDto.encode(json: Json): String = json.encodeToStr
  * @param json 使用的 JSON codec。
  * @return 解碼後的回覆 DTO。
  */
-fun String.decodeHistoryRuleSettingsResponse(json: Json): HistoryRuleSettingsResponseDto = json.decodeFromString(HistoryRuleSettingsResponseDto.serializer(), this)
+fun String.decodeHistoryRuleSettingsResponse(json: NetworkJson): HistoryRuleSettingsResponseDto = json.decodeFromString(HistoryRuleSettingsResponseDto.serializer(), this)
 
 /**
  * 將網路 UUID 字串解析為 Flow UUID，錯誤由呼叫端轉成無效請求。

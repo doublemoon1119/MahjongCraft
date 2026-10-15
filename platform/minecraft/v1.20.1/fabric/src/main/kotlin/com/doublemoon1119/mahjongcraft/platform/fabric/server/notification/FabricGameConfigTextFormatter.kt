@@ -4,13 +4,13 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.GameConfigDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.gameConfigPresentationText
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.json.Json
 import net.minecraft.text.MutableText
 import net.minecraft.text.Text
 
@@ -29,7 +29,7 @@ class FabricGameConfigTextFormatter(
     private val ruleNames: RuleModuleDisplayNameRegistry,
     private val modules: MahjongModuleRegistry,
     private val resolver: GameConfigPresentationResolver,
-    private val json: Json,
+    private val json: NetworkJson,
     private val networkRegistries: NetworkDtoRegistries,
 ) {
     /**

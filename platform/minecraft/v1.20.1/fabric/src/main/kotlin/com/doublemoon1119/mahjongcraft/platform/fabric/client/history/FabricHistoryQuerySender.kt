@@ -5,8 +5,8 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEven
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSettingsRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryRequestDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
-import kotlinx.serialization.json.Json
 
 /**
  * 使用 Fabric 歷史查詢頻道傳送要求的實作。
@@ -14,7 +14,7 @@ import kotlinx.serialization.json.Json
  * @property json 歷史查詢 DTO 的線路編碼器。
  */
 class FabricHistoryQuerySender(
-    private val json: Json,
+    private val json: NetworkJson,
 ) : HistoryQuerySender {
     /**
      * 將清單要求交給 Fabric 客戶端頻道。

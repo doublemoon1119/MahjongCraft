@@ -11,10 +11,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigTomlCodec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledNetworkJson
 import com.mojang.brigadier.tree.CommandNode
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
-import kotlinx.serialization.json.Json
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.command.ServerCommandSource
 import kotlin.test.Test
@@ -35,7 +35,7 @@ class FabricDebugTextCommandTest {
             dispatchers = TestCoroutineDispatchers,
             retentionCoordinator = HistoryRetentionCoordinator(),
         ),
-        json = Json,
+        json = bundledNetworkJson(),
         networkRegistries = DefaultNetworkDtoRegistries(),
     )
 

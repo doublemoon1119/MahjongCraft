@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhas
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSubmission
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceManager
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameActionCommandMapper
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
@@ -31,7 +32,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFe
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
 import net.minecraft.server.network.ServerPlayerEntity
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
@@ -79,7 +79,7 @@ class MahjongTableGameActionService(
     private val actionContextResolver: PlayerActionContextResolver,
     private val actionCommandMapper: GameActionCommandMapper,
     private val moduleRegistry: MahjongModuleRegistry,
-    private val json: Json,
+    private val json: NetworkJson,
     private val failurePolicy: ExtensionFailurePolicy,
 ) {
     /** 對局命令與自動銜接失敗時的專用 logger。 */

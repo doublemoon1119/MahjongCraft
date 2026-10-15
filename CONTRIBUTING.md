@@ -381,10 +381,10 @@ Classify a format before changing it, and follow that class's compatibility stra
 
 Rules that apply to all of them:
 
-- **Stored JSON never uses the container's `Json`.** Formats owned by the persistence format module encode and
-  decode with its `persistenceJson`; platform-owned stored JSON, such as entity data, keeps its own fixed settings
-  beside its codec. The `Json` in the dependency container serves network messages, and its settings must not shape
-  stored data. Changing the settings of a stored format changes the data it writes.
+- **Stored JSON never uses the network format.** Formats owned by the persistence format module encode and decode
+  with its `persistenceJson`; platform-owned stored JSON, such as entity data, keeps its own fixed settings beside its
+  codec. Network messages use `NetworkJson`, the only JSON format in the dependency container, and its settings must
+  not shape stored data. Changing the settings of a stored format changes the data it writes.
 - **Enums are persisted by name.** An ordinal silently changes meaning when the enum is reordered, which turns
   stored data into wrong data instead of missing data. Add a legacy reader only when compatibility with a released
   format is required.

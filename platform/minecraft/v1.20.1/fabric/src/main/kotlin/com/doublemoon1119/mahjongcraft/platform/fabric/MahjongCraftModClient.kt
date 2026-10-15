@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.client.game.ClientDecisionTimerState
 import com.doublemoon1119.mahjongcraft.flow.network.dto.command.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDomain
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
@@ -84,7 +85,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAsse
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
-import kotlinx.serialization.json.Json
 import net.fabricmc.api.ClientModInitializer
 import net.fabricmc.fabric.api.client.model.loading.v1.PreparableModelLoadingPlugin
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
@@ -127,7 +127,7 @@ class MahjongCraftModClient : ClientModInitializer {
         decisionHudController.registerEvents()
         koin.get<MatchingTileHighlightController>().register()
 
-        val json = koin.get<Json>()
+        val json = koin.get<NetworkJson>()
         val historyQueries = koin.get<ClientHistoryQueryCoordinator>()
         val historyQuerySettings = koin.get<ClientHistoryQuerySettings>()
         MahjongChannels.historyQuerySettings.registerClientReceiver(json, historyQuerySettings::apply)

@@ -3,13 +3,13 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.network
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerAutomaticControlSnapshot
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlSnapshotDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.toDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateDelivery
-import kotlinx.serialization.json.Json
 import net.minecraft.server.network.ServerPlayerEntity
 import kotlin.uuid.Uuid
 
@@ -29,7 +29,7 @@ class FabricAutomaticControlSnapshotSender(
     private val memberships: PlayerMembershipRepository,
     private val tableStateDelivery: FabricTableStateDelivery,
     private val moduleRegistry: MahjongModuleRegistry,
-    private val json: Json,
+    private val json: NetworkJson,
 ) : AutomaticControlSnapshotSender {
     override suspend fun send(gameId: Uuid, playerId: Uuid) {
         val ticket = tableStateDelivery.capture(gameId) ?: return

@@ -13,8 +13,8 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSetti
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.HistoryQueryLimits
-import kotlinx.serialization.json.Json
 import kotlin.uuid.Uuid
 
 /**
@@ -29,7 +29,7 @@ import kotlin.uuid.Uuid
 internal fun boundedHistorySummary(
     requestId: String,
     response: HistorySummaryResponseDto,
-    json: Json,
+    json: NetworkJson,
     limit: Int = HistoryQueryLimits.RESPONSE_BYTES,
 ): HistorySummaryResponseDto = if (
     encodedHistoryResponseUtf8Size(json, HistorySummaryResponseDto.serializer(), response) <= limit
@@ -56,7 +56,7 @@ internal fun boundedHistoryPage(
     page: HistoryListPage,
     request: HistoryListRequest,
     principalId: Uuid,
-    json: Json,
+    json: NetworkJson,
     encodeCursor: (HistoryQueryCursor) -> String,
     limit: Int = HistoryQueryLimits.RESPONSE_BYTES,
 ): HistoryListResponseDto {
@@ -85,7 +85,7 @@ internal fun boundedHistoryRuleSettings(
     requestId: String,
     settings: HistoryRuleSettings,
     registries: NetworkDtoRegistries,
-    json: Json,
+    json: NetworkJson,
     limit: Int = HistoryQueryLimits.RESPONSE_BYTES,
 ): HistoryRuleSettingsResponseDto {
     val response = try {

@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DiscardReadiness
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileAvailabilityDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.SuitDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceManager
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
@@ -43,7 +44,6 @@ import com.mojang.brigadier.context.CommandContext
 import com.mojang.brigadier.suggestion.Suggestions
 import com.mojang.brigadier.suggestion.SuggestionsBuilder
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
 import net.minecraft.command.argument.IdentifierArgumentType
 import net.minecraft.server.command.CommandManager.argument
 import net.minecraft.server.command.CommandManager.literal
@@ -88,7 +88,7 @@ class FabricDebugDecisionCommand(
     private val scope: AppCoroutineScope,
     private val playerTableScope: DebugPlayerTableScope,
     private val entityLifecycle: DebugPreviewEntityLifecycle,
-    private val json: Json,
+    private val json: NetworkJson,
 ) {
     /** 每位測試者最後一次 HUD 預覽的虛擬 game ID，供 clear 精確停止同一份 client state。 */
     private val debugDecisionGameIds = mutableMapOf<UUID, String>()

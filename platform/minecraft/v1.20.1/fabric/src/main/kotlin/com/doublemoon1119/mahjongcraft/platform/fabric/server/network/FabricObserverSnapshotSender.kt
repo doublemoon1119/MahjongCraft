@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameSnapshotSync
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.RoomSnapshotSyncPayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.SnapshotClearedPayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDto
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
@@ -13,7 +14,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.ReadinessAnalysisDtoMapper
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateDelivery
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableRemovedPayloadDto
-import kotlinx.serialization.json.Json
 import net.minecraft.server.network.ServerPlayerEntity
 import kotlin.uuid.Uuid
 
@@ -42,7 +42,7 @@ class FabricObserverSnapshotSender(
     private val automaticControlSnapshotSender: AutomaticControlSnapshotSender,
     private val analysisDtoMapper: ReadinessAnalysisDtoMapper,
     private val playerIdentities: PlayerIdentitySender,
-    private val json: Json,
+    private val json: NetworkJson,
     private val networkRegistries: NetworkDtoRegistries,
 ) : ObserverSnapshotSender {
     override suspend fun send(id: Uuid, observerId: Uuid, snapshot: ObserverSnapshot?) {

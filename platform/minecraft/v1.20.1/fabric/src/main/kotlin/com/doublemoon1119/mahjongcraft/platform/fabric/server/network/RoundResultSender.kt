@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.network
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementPresentationRequest
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
@@ -11,7 +12,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundResultKindDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundResultPayloadDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundResultPlayerDto
-import kotlinx.serialization.json.Json
 import kotlin.uuid.Uuid
 
 /**
@@ -28,7 +28,7 @@ class RoundResultSender(
     private val serverHolder: FabricServerHolder,
     private val stateStore: AuthoritativeStateStore,
     private val moduleRegistry: MahjongModuleRegistry,
-    private val json: Json,
+    private val json: NetworkJson,
 ) {
     /** 記錄找不到對局而沒有送出的結算。 */
     private val logger = mahjongCraftLogger(RoundResultSender::class)

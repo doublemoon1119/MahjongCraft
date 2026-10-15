@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.history
 
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import kotlinx.serialization.KSerializer
-import kotlinx.serialization.json.Json
 
 /**
  * 集中計算 JSON 線路 UTF-8 容量，避免不同查詢族群使用不一致的字元組大小語意。
@@ -13,7 +13,7 @@ import kotlinx.serialization.json.Json
  * @return 編碼後 UTF-8 位元組數。
  */
 internal fun <T> encodedHistoryResponseUtf8Size(
-    json: Json,
+    json: NetworkJson,
     serializer: KSerializer<T>,
     value: T,
 ): Int = json.encodeToString(serializer, value).encodeToByteArray().size

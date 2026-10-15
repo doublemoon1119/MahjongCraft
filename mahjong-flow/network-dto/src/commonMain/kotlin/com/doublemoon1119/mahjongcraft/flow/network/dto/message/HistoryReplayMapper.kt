@@ -18,8 +18,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryWi
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryWinnerDetails
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDto
-import kotlinx.serialization.json.Json
 
 /**
  * 將單局事件請求 DTO 映射為 Flow 要求。
@@ -249,7 +249,7 @@ private fun HistoryReplayRuleInformation.toDto(): HistoryReplayRuleInformationDt
  * @param json 使用的 JSON codec。
  * @return 編碼後的要求字串。
  */
-fun HistoryRoundEventsRequestDto.encode(json: Json): String = json.encodeToString(HistoryRoundEventsRequestDto.serializer(), this)
+fun HistoryRoundEventsRequestDto.encode(json: NetworkJson): String = json.encodeToString(HistoryRoundEventsRequestDto.serializer(), this)
 
 /**
  * 將傳輸字串解碼為單局事件請求 DTO。
@@ -257,7 +257,7 @@ fun HistoryRoundEventsRequestDto.encode(json: Json): String = json.encodeToStrin
  * @param json 使用的 JSON codec。
  * @return 解碼後的請求 DTO。
  */
-fun String.decodeHistoryRoundEventsRequest(json: Json): HistoryRoundEventsRequestDto = json.decodeFromString(HistoryRoundEventsRequestDto.serializer(), this)
+fun String.decodeHistoryRoundEventsRequest(json: NetworkJson): HistoryRoundEventsRequestDto = json.decodeFromString(HistoryRoundEventsRequestDto.serializer(), this)
 
 /**
  * 將桌況查詢要求 DTO 編碼成傳輸字串。
@@ -265,7 +265,7 @@ fun String.decodeHistoryRoundEventsRequest(json: Json): HistoryRoundEventsReques
  * @param json 使用的 JSON codec。
  * @return 編碼後的要求字串。
  */
-fun HistoryRoundStateRequestDto.encode(json: Json): String = json.encodeToString(HistoryRoundStateRequestDto.serializer(), this)
+fun HistoryRoundStateRequestDto.encode(json: NetworkJson): String = json.encodeToString(HistoryRoundStateRequestDto.serializer(), this)
 
 /**
  * 將傳輸字串解碼為單局桌況請求 DTO。
@@ -273,4 +273,4 @@ fun HistoryRoundStateRequestDto.encode(json: Json): String = json.encodeToString
  * @param json 使用的 JSON codec。
  * @return 解碼後的請求 DTO。
  */
-fun String.decodeHistoryRoundStateRequest(json: Json): HistoryRoundStateRequestDto = json.decodeFromString(HistoryRoundStateRequestDto.serializer(), this)
+fun String.decodeHistoryRoundStateRequest(json: NetworkJson): HistoryRoundStateRequestDto = json.decodeFromString(HistoryRoundStateRequestDto.serializer(), this)

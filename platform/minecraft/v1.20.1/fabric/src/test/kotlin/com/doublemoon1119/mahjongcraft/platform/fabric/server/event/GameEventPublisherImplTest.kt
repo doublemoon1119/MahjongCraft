@@ -19,13 +19,13 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableS
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FakeTableStateDeliveryEnvironment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledNetworkJson
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.common.concurrency.TestCoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.test.runTest
-import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.uuid.Uuid
@@ -88,10 +88,10 @@ class GameEventPublisherImplTest {
                 names = ServerPlayerIdentityStore(serverHolder),
                 serverHolder = serverHolder,
                 dispatchers = dispatchers,
-                json = Json,
+                json = bundledNetworkJson(),
             ),
             historyWriter = historyWriter,
-            json = Json,
+            json = bundledNetworkJson(),
             networkRegistries = DefaultNetworkDtoRegistries(),
         )
     }

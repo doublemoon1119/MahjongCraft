@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.WindDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.MatchRoundPhaseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.MatchRoundPositionDto
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledNetworkJson
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
@@ -27,9 +28,9 @@ class HistoryQueryDtosTest {
             startTransactionIndex = 12,
             limit = 20,
         )
-        val encoded = expected.encode(Json)
+        val encoded = expected.encode(bundledNetworkJson())
         assertEquals(expected, Json.decodeFromString(HistoryRoundEventsRequestDto.serializer(), encoded))
-        assertEquals(expected, encoded.decodeHistoryRoundEventsRequest(Json))
+        assertEquals(expected, encoded.decodeHistoryRoundEventsRequest(bundledNetworkJson()))
     }
 
     /** 單局桌況請求的兩種局內位置均使用穩定名稱。 */
@@ -42,9 +43,9 @@ class HistoryQueryDtosTest {
         )
         positions.forEach { position ->
             val expected = HistoryRoundStateRequestDto("round-state", matchId, roundNumber = 2, position = position, scope = HistoryQueryScopeDto.OWN)
-            val encoded = expected.encode(Json)
+            val encoded = expected.encode(bundledNetworkJson())
             assertEquals(expected, Json.decodeFromString(HistoryRoundStateRequestDto.serializer(), encoded))
-            assertEquals(expected, encoded.decodeHistoryRoundStateRequest(Json))
+            assertEquals(expected, encoded.decodeHistoryRoundStateRequest(bundledNetworkJson()))
         }
     }
 
@@ -175,7 +176,7 @@ class HistoryQueryDtosTest {
     @Test
     fun `history cursor rejects malformed and unknown values`() {
         assertFailsWith<Exception> {
-            "not-json".decodeHistoryCursor(Json)
+            "not-json".decodeHistoryCursor(bundledNetworkJson())
         }
         assertFailsWith<Exception> {
             Json.decodeFromString(
@@ -193,8 +194,8 @@ class HistoryQueryDtosTest {
             matchId = Uuid.random().toString(),
             scope = HistoryQueryScopeDto.ALL,
         )
-        val encoded = expected.encode(Json)
-        val decoded = encoded.decodeHistoryRuleSettingsRequest(Json)
+        val encoded = expected.encode(bundledNetworkJson())
+        val decoded = encoded.decodeHistoryRuleSettingsRequest(bundledNetworkJson())
 
         assertEquals(expected, decoded)
         assertEquals(expected.matchId, decoded.toDomain().matchId.toString())
@@ -216,8 +217,8 @@ class HistoryQueryDtosTest {
             errorCode = HistoryQueryErrorCodeDto.NOT_AVAILABLE,
             config = null,
         )
-        val encoded = expected.encode(Json)
+        val encoded = expected.encode(bundledNetworkJson())
 
-        assertEquals(expected, encoded.decodeHistoryRuleSettingsResponse(Json))
+        assertEquals(expected, encoded.decodeHistoryRuleSettingsResponse(bundledNetworkJson()))
     }
 }

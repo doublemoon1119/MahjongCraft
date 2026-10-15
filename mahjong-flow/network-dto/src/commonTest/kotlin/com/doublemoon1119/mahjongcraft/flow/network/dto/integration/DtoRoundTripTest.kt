@@ -34,7 +34,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.DtoDefinition
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.MahjongRuleConfigDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
-import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.buildMahjongDtoSerializersModule
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDto
@@ -77,7 +77,8 @@ import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledNetwo
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -93,7 +94,7 @@ import kotlin.uuid.Uuid
  */
 class DtoRoundTripTest {
 
-    private lateinit var json: Json
+    private lateinit var json: NetworkJson
     private lateinit var registries: NetworkDtoRegistries
 
     @BeforeTest
@@ -101,15 +102,13 @@ class DtoRoundTripTest {
         registries = DefaultNetworkDtoRegistries().apply {
             registerBundledNetworkDtos()
         }
-        json = Json { serializersModule = buildMahjongDtoSerializersModule(registries) }
+        json = NetworkJson(registries)
     }
 
     @Test
     fun `test Json created before DTO registration observes later registrations`() {
         val lateRegistries = DefaultNetworkDtoRegistries()
-        val earlyJson = Json {
-            serializersModule = buildMahjongDtoSerializersModule(lateRegistries)
-        }
+        val earlyJson = NetworkJson(lateRegistries)
         lateRegistries.registerBundledNetworkDtos()
         lateRegistries.freeze()
 
@@ -388,7 +387,7 @@ class DtoRoundTripTest {
             ),
         )
 
-        val thirdPartyJson = Json { serializersModule = buildMahjongDtoSerializersModule(registries) }
+        val thirdPartyJson = NetworkJson(registries)
         val config: MahjongRuleConfig = ThirdPartyRuleConfig()
         val configDto = config.toDto(registries)
 
