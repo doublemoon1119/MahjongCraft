@@ -10,7 +10,6 @@ import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Box
-import org.koin.core.annotation.Single
 
 /**
  * 讓任何 entity 坐上麻將凳的伺服器端入口；玩家右鍵凳子與開局入座都透過這裡。
@@ -19,7 +18,6 @@ import org.koin.core.annotation.Single
  *
  * @property spawnGateway 正式生成座位 entity 的入口。
  */
-@Single
 class MahjongStoolSeatService(
     private val spawnGateway: FabricEntitySpawnGateway,
 ) {

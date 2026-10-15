@@ -15,8 +15,6 @@ import com.doublemoon1119.mahjongcraft.logic.base.toSnapshot
 import com.doublemoon1119.mahjongcraft.logic.table.TableStateSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.TableOccupancyDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.TableOccupancyPayloadDto
-import org.koin.core.annotation.Provided
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -96,9 +94,8 @@ private data class ClientTableState(
  *
  * @param networkRegistries 網路 DTO 與領域快照轉換所需的 registry。
  */
-@Single
 class ClientMahjongStateStore(
-    @Provided private val networkRegistries: NetworkDtoRegistries,
+    private val networkRegistries: NetworkDtoRegistries,
 ) {
     private val tables = mutableMapOf<Uuid, ClientTableState>()
 

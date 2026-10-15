@@ -15,8 +15,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableS
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableRemovedPayloadDto
 import kotlinx.serialization.json.Json
 import net.minecraft.server.network.ServerPlayerEntity
-import org.koin.core.annotation.Provided
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -37,7 +35,6 @@ import kotlin.uuid.Uuid
  * @property json 封包序列化設定。
  * @property networkRegistries 規則擴充資料的線路轉換註冊表。
  */
-@Single(binds = [ObserverSnapshotSender::class])
 class FabricObserverSnapshotSender(
     private val serverHolder: FabricServerHolder,
     private val tableStateDelivery: FabricTableStateDelivery,
@@ -45,8 +42,8 @@ class FabricObserverSnapshotSender(
     private val automaticControlSnapshotSender: AutomaticControlSnapshotSender,
     private val analysisDtoMapper: ReadinessAnalysisDtoMapper,
     private val playerIdentities: PlayerIdentitySender,
-    @Provided private val json: Json,
-    @Provided private val networkRegistries: NetworkDtoRegistries,
+    private val json: Json,
+    private val networkRegistries: NetworkDtoRegistries,
 ) : ObserverSnapshotSender {
     override suspend fun send(id: Uuid, observerId: Uuid, snapshot: ObserverSnapshot?) {
         val ticket = tableStateDelivery.capture(id) ?: return

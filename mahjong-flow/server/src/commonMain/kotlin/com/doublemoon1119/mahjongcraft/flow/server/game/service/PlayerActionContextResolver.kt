@@ -1,11 +1,9 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.service
 
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /** 依權威桌況解析目前最高優先操作情境中的所有玩家。 */
-@Single
 class PlayerActionContextResolver {
     /**
      * 解析目前取得操作權的所有玩家，優先順序為搶和反應、捨牌反應、自己回合。

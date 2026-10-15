@@ -1,8 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.room
 
-import org.koin.core.annotation.Single
 /** [GameConfigPresentationRegistry] 的記憶體實作。 */
-@Single(binds = [GameConfigPresentationRegistry::class])
 class GameConfigPresentationRegistryImpl : GameConfigPresentationRegistry {
     private val definitions = linkedMapOf<String, GameConfigPresentationDefinition>()
 

@@ -9,7 +9,6 @@ import kotlinx.coroutines.CompletableJob
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.withTimeoutOrNull
-import org.koin.core.annotation.Single
 import kotlin.coroutines.CoroutineContext
 import kotlin.time.Duration
 
@@ -22,7 +21,6 @@ import kotlin.time.Duration
  *
  * @param dispatchers 提供預設工作 dispatcher 的平台 dispatcher 集合。
  */
-@Single(binds = [AppCoroutineScope::class])
 class FabricAppCoroutineScope(
     dispatchers: CoroutineDispatchers,
 ) : AppCoroutineScope {

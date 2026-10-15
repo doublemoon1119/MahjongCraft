@@ -4,7 +4,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.HandReadinessSnapshot
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.visibleTiles
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -13,7 +12,6 @@ import kotlin.uuid.Uuid
  * @property moduleRegistry 取得這一局規則模組的手牌分析器。
  * @property visibilityPolicy 產生參與者本人的桌況快照，剩餘張數只扣除其中看得到的牌。
  */
-@Single
 class HandReadinessVisibilityPolicy(
     private val moduleRegistry: MahjongModuleRegistry,
     private val visibilityPolicy: GameVisibilityPolicy,

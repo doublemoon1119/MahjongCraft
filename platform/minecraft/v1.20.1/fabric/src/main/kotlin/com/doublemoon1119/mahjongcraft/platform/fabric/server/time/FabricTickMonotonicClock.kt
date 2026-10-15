@@ -4,7 +4,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.time.MonotonicClock
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.ServerThreadCoroutineDispatcher
 import kotlinx.coroutines.DisposableHandle
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
-import org.koin.core.annotation.Single
 import java.util.*
 
 /**
@@ -18,7 +17,6 @@ import java.util.*
  * 實作協程 `delay()` 使用，讓伺服器主執行緒上的延遲也一併具備暫停感知能力，不需要另外開一條跑真實
  * 時間的背景執行緒。
  */
-@Single(binds = [MonotonicClock::class])
 class FabricTickMonotonicClock : MonotonicClock {
     private var elapsedTicks: Long = 0
     private val pendingTasks = PriorityQueue<ScheduledTask>(compareBy { it.dueAtTick })

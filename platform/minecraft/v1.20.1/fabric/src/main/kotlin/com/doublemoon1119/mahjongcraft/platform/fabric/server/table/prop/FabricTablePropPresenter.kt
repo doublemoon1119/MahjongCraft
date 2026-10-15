@@ -22,7 +22,6 @@ import net.minecraft.state.property.Properties
 import net.minecraft.util.Identifier
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Box
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -35,7 +34,6 @@ import kotlin.uuid.Uuid
  * @property spawnGateway 透過平台入口生成桌面物件 entity。
  * @property kindRegistry 查詢規則桌面物件種類實作。
  */
-@Single(binds = [TablePropPresenter::class])
 class FabricTablePropPresenter(
     private val serverHolder: FabricServerHolder,
     private val spawnGateway: FabricEntitySpawnGateway,

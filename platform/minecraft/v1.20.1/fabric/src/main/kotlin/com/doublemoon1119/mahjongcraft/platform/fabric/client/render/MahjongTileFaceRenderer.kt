@@ -22,8 +22,6 @@ import net.minecraft.text.Text
 import net.minecraft.util.Identifier
 import net.minecraft.util.math.RotationAxis
 import org.joml.Matrix4f
-import org.koin.core.annotation.Provided
-import org.koin.core.annotation.Single
 import kotlin.math.roundToInt
 
 /**
@@ -36,10 +34,9 @@ import kotlin.math.roundToInt
  * @property tileAssetRegistry 提供牌面資源的完整 namespace 與路徑映射。
  * @property clientConfigStore 提供標籤顯示設定。
  */
-@Single
 class MahjongTileFaceRenderer(
-    @Provided private val tileLabelRegistry: TileLabelRegistry,
-    @Provided private val tileAssetRegistry: MinecraftTileAssetRegistry,
+    private val tileLabelRegistry: TileLabelRegistry,
+    private val tileAssetRegistry: MinecraftTileAssetRegistry,
     private val clientConfigStore: MahjongClientConfigStore,
 ) {
     /**

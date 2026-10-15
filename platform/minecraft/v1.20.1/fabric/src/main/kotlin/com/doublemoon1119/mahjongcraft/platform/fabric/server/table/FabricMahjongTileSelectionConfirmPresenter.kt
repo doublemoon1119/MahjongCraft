@@ -20,7 +20,6 @@ import net.minecraft.state.property.Properties
 import net.minecraft.util.Identifier
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Box
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -33,7 +32,6 @@ import kotlin.uuid.Uuid
  * @property serverHolder 取得目前伺服器世界。
  * @property spawnGateway 透過平台入口生成面板 entity。
  */
-@Single(binds = [MahjongTileSelectionConfirmPresenter::class])
 class FabricMahjongTileSelectionConfirmPresenter(
     private val serverHolder: FabricServerHolder,
     private val spawnGateway: FabricEntitySpawnGateway,

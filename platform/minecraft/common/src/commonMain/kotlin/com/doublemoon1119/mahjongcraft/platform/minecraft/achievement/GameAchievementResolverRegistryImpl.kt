@@ -2,11 +2,9 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.achievement
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.CommittedGameFacts
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /** [GameAchievementResolverRegistry] 的記憶體實作；不捕捉判定的程式錯誤。 */
-@Single(binds = [GameAchievementResolverRegistry::class])
 class GameAchievementResolverRegistryImpl : GameAchievementResolverRegistry {
     /** 依註冊順序保存判定。 */
     private val resolvers = linkedMapOf<String, GameAchievementResolver>()

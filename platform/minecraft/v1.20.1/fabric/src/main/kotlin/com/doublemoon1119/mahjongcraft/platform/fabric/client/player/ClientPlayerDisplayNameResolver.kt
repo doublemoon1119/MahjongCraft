@@ -4,7 +4,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjon
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.aiPlayerDisplayName
 import net.minecraft.text.Text
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -13,7 +12,6 @@ import kotlin.uuid.Uuid
  * @property stateStore 提供房間與對局中的 AI 座位順序。
  * @property profiles 提供線上及已快取的真人 profile。
  */
-@Single
 class ClientPlayerDisplayNameResolver(
     private val stateStore: ClientMahjongStateStore,
     private val profiles: ClientPlayerProfileResolver,

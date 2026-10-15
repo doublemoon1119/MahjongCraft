@@ -14,7 +14,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDet
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
-import org.koin.core.annotation.Factory
 import kotlin.uuid.Uuid
 
 /**
@@ -26,7 +25,6 @@ import kotlin.uuid.Uuid
  * @property snapshotSynchronizer 已提交結果的快照同步服務。
  * @property winSettlementDetailResolverRegistry 胡牌等價特殊結果的公開詳情解析器。
  */
-@Factory
 class ResolvePostReactionRoundOutcomeUseCase(
     private val gameRepository: GameRepository,
     private val moduleRegistry: MahjongModuleRegistry,

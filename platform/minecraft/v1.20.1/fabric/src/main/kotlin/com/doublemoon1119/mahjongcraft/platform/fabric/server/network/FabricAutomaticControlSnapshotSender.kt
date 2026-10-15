@@ -11,8 +11,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateDelivery
 import kotlinx.serialization.json.Json
 import net.minecraft.server.network.ServerPlayerEntity
-import org.koin.core.annotation.Provided
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -25,14 +23,13 @@ import kotlin.uuid.Uuid
  * @property moduleRegistry 解析規則支援的自動操作項目。
  * @property json 序列化網路訊息的設定。
  */
-@Single(binds = [AutomaticControlSnapshotSender::class])
 class FabricAutomaticControlSnapshotSender(
     private val serverHolder: FabricServerHolder,
     private val stateStore: AuthoritativeStateStore,
     private val memberships: PlayerMembershipRepository,
     private val tableStateDelivery: FabricTableStateDelivery,
     private val moduleRegistry: MahjongModuleRegistry,
-    @Provided private val json: Json,
+    private val json: Json,
 ) : AutomaticControlSnapshotSender {
     override suspend fun send(gameId: Uuid, playerId: Uuid) {
         val ticket = tableStateDelivery.capture(gameId) ?: return

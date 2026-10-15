@@ -5,7 +5,6 @@ import com.mojang.brigadier.arguments.StringArgumentType
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.argument
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.literal
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
-import org.koin.core.annotation.Single
 
 /**
  * 不需要房間或座位的 client 歷史畫面指令。
@@ -13,7 +12,6 @@ import org.koin.core.annotation.Single
  * @property screens 延後至下一 tick 開啟的共用入口。
  * @property chatEntries 目前連線的聊天入口識別。
  */
-@Single
 internal class FabricHistoryScreenCommand(private val screens: HistoryScreenController, private val chatEntries: ClientHistoryChatEntryStore) {
     /** 註冊一般歷史畫面指令及使用本地入口識別碼的聊天點擊指令。 */
     fun register() {

@@ -12,7 +12,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerActionCont
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerActionContextResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetLegalActionsUseCase
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
-import org.koin.core.annotation.Factory
 import kotlin.uuid.Uuid
 
 /**
@@ -31,7 +30,6 @@ import kotlin.uuid.Uuid
  * @property decisionExecutor 在 AI 專用的調度器上呼叫策略，並在等待上限內沒有結果時改用固定命令。
  * @property actionContextResolver 玩家目前操作情境的權威解析器。
  */
-@Factory
 class AiTurnDriver(
     private val gameRepository: GameRepository,
     private val getLegalActionsUseCase: GetLegalActionsUseCase,

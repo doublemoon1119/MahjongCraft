@@ -1,7 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
-import org.koin.core.annotation.Single
 
 /**
  * 依呼叫者所在的方塊座標建立 debug 預覽用的虛擬桌布局。
@@ -9,7 +8,6 @@ import org.koin.core.annotation.Single
  * 無狀態，也不接觸世界或 entity：只把虛擬 controller 沿玩家視線前推固定距離，讓座位 0 的正式布局落在
  * 玩家面前，再交由 [DebugVirtualTableLayout] 轉呼叫正式幾何。
  */
-@Single
 class DebugVirtualTableLayoutFactory {
     /**
      * 以玩家腳下方塊為基準建立虛擬桌布局。

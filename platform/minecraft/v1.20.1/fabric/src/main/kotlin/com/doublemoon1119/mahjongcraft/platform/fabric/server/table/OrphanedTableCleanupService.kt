@@ -13,7 +13,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.OrphanedTablePolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationEntry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -27,7 +26,6 @@ import kotlin.uuid.Uuid
  * @property configState 提供目前缺失桌子清理政策的伺服器設定狀態。
  * @property removalNotifier 清理前捕捉接收者，清理後安排桌級失效通知。
  */
-@Single
 class OrphanedTableCleanupService(
     private val store: AuthoritativeStateStore,
     private val memberships: PlayerMembershipRepository,

@@ -10,7 +10,6 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.MinecraftKanActionTokenKeys
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -26,7 +25,6 @@ import kotlin.uuid.Uuid
  * @property membershipRepository 玩家目前所在桌子（房間／對局共用同一個 Uuid）的歸屬查詢。
  * @property getPlayerDecisionOptions 查詢完整合法動作、選牌需求與捨牌分析的 Flow use case。
  */
-@Single
 class GameActionCandidateResolver(
     private val gameRepository: GameRepository,
     private val moduleRegistry: MahjongModuleRegistry,

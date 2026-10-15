@@ -21,7 +21,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RoundPreparat
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.aiPlayerDisplayName
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -33,7 +32,6 @@ import kotlin.uuid.Uuid
  * @property tileAssetRegistry 將牌面轉成素材 key。
  * @property analysisDtoMapper 將捨牌分析轉成同步 DTO。
  */
-@Single
 class PlayerDecisionPromptFactory(
     private val gameRepository: GameRepository,
     private val candidateResolver: GameActionCandidateResolver,

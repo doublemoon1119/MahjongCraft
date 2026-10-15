@@ -49,8 +49,6 @@ import net.minecraft.server.command.CommandManager.argument
 import net.minecraft.server.command.CommandManager.literal
 import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.text.Text
-import org.koin.core.annotation.Provided
-import org.koin.core.annotation.Single
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 import kotlin.uuid.Uuid
@@ -80,7 +78,6 @@ import kotlin.uuid.toKotlinUuid
  * @property entityLifecycle 排定分析預覽牌的到期清除。
  * @property json 序列化送往 client 的 HUD payload。
  */
-@Single
 class FabricDebugDecisionCommand(
     private val gameRepository: GameRepository,
     private val gameFlowCoordinator: GameFlowCoordinator,
@@ -91,7 +88,7 @@ class FabricDebugDecisionCommand(
     private val scope: AppCoroutineScope,
     private val playerTableScope: DebugPlayerTableScope,
     private val entityLifecycle: DebugPreviewEntityLifecycle,
-    @Provided private val json: Json,
+    private val json: Json,
 ) {
     /** 每位測試者最後一次 HUD 預覽的虛擬 game ID，供 clear 精確停止同一份 client state。 */
     private val debugDecisionGameIds = mutableMapOf<UUID, String>()

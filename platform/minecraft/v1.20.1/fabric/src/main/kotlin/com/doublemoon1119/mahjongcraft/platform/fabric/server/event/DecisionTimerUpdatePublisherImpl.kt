@@ -9,8 +9,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionTimer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionTimerUpdatePayloadDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.toDto
 import kotlinx.serialization.json.Json
-import org.koin.core.annotation.Provided
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -20,11 +18,10 @@ import kotlin.uuid.Uuid
  * @property promptFactory 建立目標玩家可見的決策提示。
  * @property json 編碼計時 payload。
  */
-@Single(binds = [DecisionTimerUpdatePublisher::class])
 class DecisionTimerUpdatePublisherImpl(
     private val serverHolder: FabricServerHolder,
     private val promptFactory: PlayerDecisionPromptFactory,
-    @Provided private val json: Json,
+    private val json: Json,
 ) : DecisionTimerUpdatePublisher {
     /** 只向目前在線的目標玩家送出權威計時更新。 */
     override suspend fun publish(targetPlayerId: Uuid, update: DecisionTimerUpdate) {

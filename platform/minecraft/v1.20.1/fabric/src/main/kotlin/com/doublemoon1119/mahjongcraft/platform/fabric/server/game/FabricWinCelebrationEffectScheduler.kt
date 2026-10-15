@@ -10,7 +10,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationSte
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.minecraft.server.world.ServerWorld
-import org.koin.core.annotation.Single
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.random.Random
 import kotlin.uuid.Uuid
@@ -33,7 +32,6 @@ import kotlin.uuid.toJavaUuid
  *
  * @property spawnGateway 生成慶祝效果 entity。
  */
-@Single
 class FabricWinCelebrationEffectScheduler(private val spawnGateway: FabricEntitySpawnGateway) {
     /** 記錄胡牌張 entity 找不到而略過效果的 logger。 */
     private val logger = mahjongCraftLogger(FabricWinCelebrationEffectScheduler::class)

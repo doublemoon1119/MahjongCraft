@@ -1,10 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.decision
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftResourceIds
-import org.koin.core.annotation.Single
 
 /** [DecisionStatusDisplayNameRegistry] 的記憶體實作。 */
-@Single(binds = [DecisionStatusDisplayNameRegistry::class])
 class DecisionStatusDisplayNameRegistryImpl : DecisionStatusDisplayNameRegistry {
     /** 預設登記的狀態翻譯鍵，以狀態 ID 為索引。 */
     private val defaults = mutableMapOf<String, String>()

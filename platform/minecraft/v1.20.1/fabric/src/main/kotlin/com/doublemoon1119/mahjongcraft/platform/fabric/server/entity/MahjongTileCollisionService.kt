@@ -5,17 +5,14 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents
 import net.minecraft.server.MinecraftServer
-import org.koin.core.annotation.Provided
-import org.koin.core.annotation.Single
 
 /**
  * 將目前 server config 的物理碰撞政策套用至已載入及後續載入的麻將牌 entity。
  *
  * @property configState 目前有效的 server config 狀態。
  */
-@Single
 class MahjongTileCollisionService(
-    @Provided private val configState: MinecraftServerConfigState,
+    private val configState: MinecraftServerConfigState,
 ) {
     /** 註冊 entity load callback，讓 chunk 載入與新放置牌張採用目前有效設定。 */
     fun registerEvents() {

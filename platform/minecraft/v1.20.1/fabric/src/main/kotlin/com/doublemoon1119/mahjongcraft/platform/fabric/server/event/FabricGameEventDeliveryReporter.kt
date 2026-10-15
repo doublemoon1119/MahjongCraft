@@ -3,11 +3,9 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.event
 import com.doublemoon1119.mahjongcraft.flow.api.event.MatchEvent
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.event.GameEventDeliveryReporter
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /** 將事件交付中的非致命錯誤寫入 Fabric mod logger。 */
-@Single(binds = [GameEventDeliveryReporter::class])
 internal class FabricGameEventDeliveryReporter : GameEventDeliveryReporter {
     /** 事件交付診斷使用的 mod logger。 */
     private val logger = mahjongCraftLogger(FabricGameEventDeliveryReporter::class)

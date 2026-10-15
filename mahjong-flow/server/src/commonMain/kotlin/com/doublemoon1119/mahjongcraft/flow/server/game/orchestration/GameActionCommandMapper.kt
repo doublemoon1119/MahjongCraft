@@ -3,11 +3,9 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerActionContext
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /** 將已通過規則驗證的玩家動作轉換為 Flow 可執行的命令。 */
-@Single
 class GameActionCommandMapper(
     private val extensionRegistry: ExtensionGameActionCommandFactoryRegistry,
 ) {

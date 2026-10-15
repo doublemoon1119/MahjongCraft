@@ -10,10 +10,8 @@ import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.config.ScoreConfig
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
-import org.koin.core.annotation.Single
 
 /** MahjongCraft runtime 目前使用的 network DTO registry 集合。 */
-@Single(binds = [NetworkDtoRegistries::class])
 class DefaultNetworkDtoRegistries : NetworkDtoRegistries {
     override val ruleConfig = DtoRegistry<MahjongRuleConfig, MahjongRuleConfigDto>()
     override val scoreConfig = DtoRegistry<ScoreConfig, ScoreConfigDto>()

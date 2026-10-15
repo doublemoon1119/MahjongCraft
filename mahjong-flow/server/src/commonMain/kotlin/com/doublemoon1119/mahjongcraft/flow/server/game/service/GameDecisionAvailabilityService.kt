@@ -1,8 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.service
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationBusyGate
-import org.koin.core.annotation.Provided
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -16,9 +14,8 @@ import kotlin.uuid.Uuid
  * @property timerManager 管理 runtime timer 及其中斷狀態。
  * @property synchronizationService 將本次 availability 結果同步給真人玩家。
  */
-@Single
 class GameDecisionAvailabilityService(
-    @Provided private val busyGate: GamePresentationBusyGate,
+    private val busyGate: GamePresentationBusyGate,
     private val timerManager: GameDecisionTimerManager,
     private val synchronizationService: DecisionTimerSynchronizationService,
 ) {

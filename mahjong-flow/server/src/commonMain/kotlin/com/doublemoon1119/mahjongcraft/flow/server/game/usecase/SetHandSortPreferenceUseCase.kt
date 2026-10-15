@@ -5,8 +5,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
-import org.koin.core.annotation.Factory
-import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
 
 /**
@@ -22,12 +20,11 @@ import kotlin.uuid.Uuid
  * @property preferenceStore 玩家自動理牌偏好儲存。
  * @property presentationPublisher 對局呈現更新觸發器。
  */
-@Factory
 class SetHandSortPreferenceUseCase(
     private val gameRepository: GameRepository,
     private val moduleRegistry: MahjongModuleRegistry,
     private val preferenceStore: HandSortPreferenceStore,
-    @Provided private val presentationPublisher: GamePresentationPublisher,
+    private val presentationPublisher: GamePresentationPublisher,
 ) {
     /**
      * 依 [mode] 更新 [enabled] 偏好；重連恢復只更新暫存值。玩家主動啟用時，若目前手牌可安全整理才立即整理並重新發布；停用不會整理手牌。

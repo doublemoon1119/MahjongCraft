@@ -4,7 +4,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.MahjongCraftMod
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.ServerThreadCoroutineDispatcher
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 
@@ -14,7 +13,6 @@ import kotlin.uuid.toJavaUuid
  * 把協程排程丟回伺服器主執行緒。set/clear 時機由 [MahjongCraftMod] 掛在
  * `ServerLifecycleEvents.SERVER_STARTED`/`SERVER_STOPPING`。
  */
-@Single
 class FabricServerHolder {
     /** 一次發布伺服器與啟動身分，避免讀取到兩次啟動混合的資料。 */
     @Volatile

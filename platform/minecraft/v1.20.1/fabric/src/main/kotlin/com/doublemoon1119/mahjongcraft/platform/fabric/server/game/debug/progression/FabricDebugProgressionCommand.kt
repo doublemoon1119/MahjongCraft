@@ -17,7 +17,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModM
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import net.minecraft.server.command.CommandManager.literal
 import net.minecraft.server.command.ServerCommandSource
-import org.koin.core.annotation.Single
 
 /**
  * 建立 `/mahjongcraft debug match_progression`：正式終局推進 policy 的唯讀決策預覽。
@@ -29,7 +28,6 @@ import org.koin.core.annotation.Single
  * @property gameRepository 讀取呼叫者目前牌桌的狀態作為情境基礎。
  * @property playerTableScope 解析呼叫者目前入座的桌子。
  */
-@Single
 class FabricDebugProgressionCommand(
     private val gameRepository: GameRepository,
     private val playerTableScope: DebugPlayerTableScope,

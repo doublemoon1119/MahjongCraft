@@ -3,7 +3,6 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.entity
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import net.minecraft.entity.Entity
 import net.minecraft.server.world.ServerWorld
-import org.koin.core.annotation.Single
 import java.util.concurrent.atomic.AtomicReference
 import kotlin.uuid.Uuid
 
@@ -11,7 +10,6 @@ import kotlin.uuid.Uuid
  * Minecraft entity 正式生成的單一入口；在觸碰 world 的 entity index 前確認目前位於 server thread，
  * 並在失敗時保留桌面、entity、執行緒與既有 mutation 的診斷上下文。
  */
-@Single
 class FabricEntitySpawnGateway {
     /** 記錄生成失敗與識別碼衝突的診斷。 */
     private val logger = mahjongCraftLogger(FabricEntitySpawnGateway::class)

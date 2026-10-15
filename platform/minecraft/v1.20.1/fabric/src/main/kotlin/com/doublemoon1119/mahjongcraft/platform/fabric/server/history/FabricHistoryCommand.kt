@@ -16,7 +16,6 @@ import net.minecraft.server.command.CommandManager.literal
 import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -26,7 +25,6 @@ import kotlin.uuid.Uuid
  * @property scope 執行非同步管理工作的應用程式協程範圍。
  * @property dispatchers 將資料庫工作與指令回覆分派至適當執行緒的 dispatcher 集合。
  */
-@Single
 class FabricHistoryCommand(
     private val writer: FabricHistoryOutboxWriter,
     private val scope: AppCoroutineScope,

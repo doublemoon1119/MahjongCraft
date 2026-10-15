@@ -4,7 +4,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.SyncRoomSnapshotUseCase
-import org.koin.core.annotation.Factory
 import kotlin.uuid.Uuid
 
 /**
@@ -15,7 +14,6 @@ import kotlin.uuid.Uuid
  *
  * @property snapshotSynchronizer 套用觀看政策並更新 read-side 快照的同步器。
  */
-@Factory
 class SyncGameSnapshotUseCase(
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
 ) {

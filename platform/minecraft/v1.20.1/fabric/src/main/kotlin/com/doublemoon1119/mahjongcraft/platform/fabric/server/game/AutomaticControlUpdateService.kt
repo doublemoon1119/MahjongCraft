@@ -8,7 +8,6 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.toDto
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceManager
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.UpdatePlayerAutomaticControlsResult
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.UpdatePlayerAutomaticControlsUseCase
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -17,7 +16,6 @@ import kotlin.uuid.Uuid
  * @property updateControls 套用自動操作集合的用例。
  * @property advanceManager 集合實際改變時請求推進，讓新啟用的自動操作立即生效。
  */
-@Single
 class AutomaticControlUpdateService(
     private val updateControls: UpdatePlayerAutomaticControlsUseCase,
     private val advanceManager: AutomatedAdvanceManager,

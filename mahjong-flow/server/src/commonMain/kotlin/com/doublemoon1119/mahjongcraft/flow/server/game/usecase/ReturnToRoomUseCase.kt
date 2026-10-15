@@ -15,8 +15,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomEventPublish
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdate
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
-import org.koin.core.annotation.Factory
-import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
 
 /**
@@ -37,12 +35,11 @@ import kotlin.uuid.Uuid
  * @property eventPublisher 房間通知服務。
  * @property presentationPublisher 平台呈現層觸發介面，用來清除本局牌牆用牌。
  */
-@Factory
 class ReturnToRoomUseCase(
     private val authoritativeStateStore: AuthoritativeStateStore,
     private val roomSnapshotRepository: RoomSnapshotRepository,
-    @Provided private val eventPublisher: RoomEventPublisher,
-    @Provided private val presentationPublisher: GamePresentationPublisher,
+    private val eventPublisher: RoomEventPublisher,
+    private val presentationPublisher: GamePresentationPublisher,
 ) {
     /**
      * 執行 Game → Room 的狀態轉移。

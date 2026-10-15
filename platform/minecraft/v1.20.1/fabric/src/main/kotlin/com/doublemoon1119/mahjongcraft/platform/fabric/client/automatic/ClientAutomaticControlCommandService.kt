@@ -1,7 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.BuiltInMinecraftAutomaticControlIds
-import org.koin.core.annotation.Single
 
 /**
  * 將通用 client 指令意圖轉成永久偏好更新或本局權威更新。
@@ -9,7 +8,6 @@ import org.koin.core.annotation.Single
  * @property autoSortHandPreferenceService 永久自動理牌偏好服務。
  * @property updateCoordinator 本局自動操作更新協調器。
  */
-@Single
 class ClientAutomaticControlCommandService(
     private val autoSortHandPreferenceService: ClientAutoSortHandPreferenceService,
     private val updateCoordinator: ClientAutomaticControlUpdateCoordinator,

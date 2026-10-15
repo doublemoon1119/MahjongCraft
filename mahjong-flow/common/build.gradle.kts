@@ -15,7 +15,6 @@ kotlin {
             implementation(project(":mahjong-logic"))
             implementation(project.dependencies.platform(libs.koin.bom))
             implementation(libs.koin.core)
-            implementation(libs.koin.annotations)
         }
 
         commonTest.dependencies {

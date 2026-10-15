@@ -17,8 +17,6 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializationResult
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.logic.table.TileWallRevealable
-import org.koin.core.annotation.Factory
-import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
 
 /**
@@ -35,14 +33,13 @@ import kotlin.uuid.Uuid
  * @property presentationPublisher 對局 in-process 呈現觸發器。
  * @property beginRoundPreparationUseCase 開局後啟動第一個回合準備步驟的用例；未提供時不啟動準備流程。
  */
-@Factory
 class StartGameUseCase(
     private val authoritativeStateStore: AuthoritativeStateStore,
     private val moduleRegistry: MahjongModuleRegistry,
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
     private val handSortPreferenceStore: HandSortPreferenceStore,
-    @Provided private val eventPublisher: GameEventPublisher,
-    @Provided private val presentationPublisher: GamePresentationPublisher,
+    private val eventPublisher: GameEventPublisher,
+    private val presentationPublisher: GamePresentationPublisher,
     private val beginRoundPreparationUseCase: BeginRoundPreparationUseCase? = null,
 ) {
     /**

@@ -9,7 +9,6 @@ import com.doublemoon1119.mahjongcraft.logic.module.AutomaticControlAction
 import com.doublemoon1119.mahjongcraft.logic.module.AutomaticControlContext
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.visibleTiles
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -19,7 +18,6 @@ import kotlin.uuid.Uuid
  * @property visibilityPolicy 產生玩家本人的桌況快照，捨牌分析的剩餘張數只扣除其中看得到的牌。
  * @property actionContextResolver 判斷玩家目前的操作情境。
  */
-@Single
 class AutomaticDecisionEvaluator(
     private val moduleRegistry: MahjongModuleRegistry,
     private val visibilityPolicy: GameVisibilityPolicy,

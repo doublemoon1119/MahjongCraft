@@ -4,14 +4,12 @@ import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
-import org.koin.core.annotation.Single
 
 /**
  * 在寫入 repository 前集中驗證開發情境的權威狀態完整性。
  *
  * @property moduleRegistry 取得情境規則的牌山組成與移出手牌區能力。
  */
-@Single
 class DebugGameScenarioValidator(
     private val moduleRegistry: MahjongModuleRegistry,
 ) {

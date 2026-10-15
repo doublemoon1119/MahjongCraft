@@ -8,7 +8,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAvai
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -21,7 +20,6 @@ import kotlin.uuid.Uuid
  * @property decisionTimerManager 對局決策計時器管理器。
  * @property decisionAvailabilityService 對局決策可用性同步服務。
  */
-@Single
 class ServerSessionStateRestorer(
     private val roomSnapshots: RoomSnapshotRepository,
     private val gameSnapshots: GameSnapshotRepository,

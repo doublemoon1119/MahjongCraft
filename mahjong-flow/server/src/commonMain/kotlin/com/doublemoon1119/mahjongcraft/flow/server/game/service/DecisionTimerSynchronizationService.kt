@@ -5,8 +5,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.DecisionTimerUpd
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import org.koin.core.annotation.Provided
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -19,11 +17,10 @@ import kotlin.uuid.Uuid
  * @property gameRepository 判斷決策者是否為真人玩家。
  * @property publisher 將平台無關的更新送至實際連線。
  */
-@Single
 class DecisionTimerSynchronizationService(
     private val timerManager: GameDecisionTimerManager,
     private val gameRepository: GameRepository,
-    @Provided private val publisher: DecisionTimerUpdatePublisher,
+    private val publisher: DecisionTimerUpdatePublisher,
 ) {
     /** 保護上次同步玩家索引，避免立即同步與週期同步交錯。 */
     private val mutex = Mutex()

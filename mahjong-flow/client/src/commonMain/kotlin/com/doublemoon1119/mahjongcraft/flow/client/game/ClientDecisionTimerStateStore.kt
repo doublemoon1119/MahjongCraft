@@ -2,8 +2,6 @@ package com.doublemoon1119.mahjongcraft.flow.client.game
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
 import com.doublemoon1119.mahjongcraft.flow.common.time.MonotonicClock
-import org.koin.core.annotation.Provided
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -11,9 +9,8 @@ import kotlin.uuid.Uuid
  *
  * @property clock 客戶端 runtime 的單調時間，用來記錄收到同步的時間。
  */
-@Single
 class ClientDecisionTimerStateStore(
-    @Provided private val clock: MonotonicClock,
+    private val clock: MonotonicClock,
 ) {
     /** 最後收到且仍有效的權威計時；停止或尚未同步時為 null。 */
     var state: ClientDecisionTimerState? = null

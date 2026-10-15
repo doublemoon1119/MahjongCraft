@@ -12,7 +12,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatTarget
 import net.minecraft.entity.Entity
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.math.BlockPos
-import org.koin.core.annotation.Single
 
 /**
  * 將固定席位上的內建麻將凳轉換成通用座位目標。
@@ -22,7 +21,6 @@ import org.koin.core.annotation.Single
  *
  * @property seatService 內建麻將凳的原生入座服務。
  */
-@Single
 class MahjongStoolSeatProvider(
     private val seatService: MahjongStoolSeatService,
 ) : SeatProvider<ServerWorld, Entity> {

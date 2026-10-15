@@ -27,8 +27,6 @@ import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.WallRevealCheckpoint
 import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionPhase
-import org.koin.core.annotation.Factory
-import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
 
 /**
@@ -59,13 +57,12 @@ import kotlin.uuid.Uuid
  * @property winCelebrationCueResolverRegistry 胡牌慶祝 cue 解析器 registry。
  * @property winSettlementDetailResolverRegistry 胡牌詳情解析器 registry。
  */
-@Factory
 class RespondToRobbingUseCase(
     private val gameRepository: GameRepository,
     private val moduleRegistry: MahjongModuleRegistry,
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
-    @Provided private val eventPublisher: GameEventPublisher,
-    @Provided private val presentationPublisher: GamePresentationPublisher,
+    private val eventPublisher: GameEventPublisher,
+    private val presentationPublisher: GamePresentationPublisher,
     private val winPresentationHandoff: WinPresentationHandoff,
     private val winCelebrationCueResolverRegistry: WinCelebrationCueResolverRegistry,
     private val winSettlementDetailResolverRegistry: WinSettlementDetailResolverRegistry,

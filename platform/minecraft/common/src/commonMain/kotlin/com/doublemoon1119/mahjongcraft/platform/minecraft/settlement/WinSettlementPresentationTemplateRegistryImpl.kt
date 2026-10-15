@@ -1,10 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.settlement
 
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
-import org.koin.core.annotation.Single
 
 /** 記憶體 registry 實作。 */
-@Single(binds = [WinSettlementPresentationTemplateRegistry::class])
 class WinSettlementPresentationTemplateRegistryImpl : WinSettlementPresentationTemplateRegistry {
     /** 依完整模板 key 保存的結算模板。 */
     private val templates = linkedMapOf<String, WinSettlementPresentationTemplate>()

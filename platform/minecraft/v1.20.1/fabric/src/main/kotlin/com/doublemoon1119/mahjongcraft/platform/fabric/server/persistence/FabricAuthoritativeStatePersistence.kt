@@ -9,8 +9,6 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
 import net.minecraft.server.MinecraftServer
-import org.koin.core.annotation.Provided
-import org.koin.core.annotation.Single
 
 /**
  * 將單次 Minecraft server session 與其 overworld [MahjongAuthoritativePersistentState] 接起來。
@@ -20,9 +18,8 @@ import org.koin.core.annotation.Single
  * @property stateRestorer 將持久化快照還原到領域儲存庫。
  * @property stateCleaner 初始化失敗時清除本次 session 的衍生與權威記憶體，不寫回存檔。
  */
-@Single
 class FabricAuthoritativeStatePersistence(
-    @Provided private val codec: AuthoritativeStatePersistenceCodec,
+    private val codec: AuthoritativeStatePersistenceCodec,
     private val store: AuthoritativeStateStore,
     private val stateRestorer: ServerSessionStateRestorer,
     private val stateCleaner: ServerSessionStateCleaner,

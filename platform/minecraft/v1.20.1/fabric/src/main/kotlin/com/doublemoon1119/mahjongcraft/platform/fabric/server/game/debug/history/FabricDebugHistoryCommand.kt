@@ -21,7 +21,6 @@ import net.minecraft.server.command.CommandManager.literal
 import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
-import org.koin.core.annotation.Single
 import java.util.concurrent.CompletableFuture
 
 /**
@@ -32,7 +31,6 @@ import java.util.concurrent.CompletableFuture
  * @property scope 執行 suspend controller 工作的應用作用域。
  * @property dispatchers 將結果回覆切回伺服器主執行緒。
  */
-@Single
 class FabricDebugHistoryCommand(
     private val controller: HistoryGenerationController,
     private val writer: FabricHistoryOutboxWriter,

@@ -16,7 +16,6 @@ import net.minecraft.server.command.CommandManager.argument
 import net.minecraft.server.command.CommandManager.literal
 import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.util.Formatting
-import org.koin.core.annotation.Single
 import kotlin.uuid.toKotlinUuid
 
 /**
@@ -34,7 +33,6 @@ import kotlin.uuid.toKotlinUuid
  * @property scope 執行 suspend 工作的應用作用域。
  * @property dispatchers 切換到伺服器主執行緒。
  */
-@Single
 class FabricDebugStressCommand(
     private val controller: StressTestController,
     private val scope: AppCoroutineScope,

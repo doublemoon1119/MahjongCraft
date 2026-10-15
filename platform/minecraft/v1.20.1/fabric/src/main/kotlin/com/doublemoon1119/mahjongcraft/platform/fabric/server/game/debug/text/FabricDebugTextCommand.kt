@@ -23,8 +23,6 @@ import kotlinx.serialization.json.Json
 import net.minecraft.server.command.CommandManager.literal
 import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.text.Text
-import org.koin.core.annotation.Provided
-import org.koin.core.annotation.Single
 import kotlin.uuid.toKotlinUuid
 
 /**
@@ -40,12 +38,11 @@ import kotlin.uuid.toKotlinUuid
  * @property json 序列化設定 DTO，供設定訊息比對變動項目。
  * @property networkRegistries 將設定轉成網路 DTO 時使用的 registry。
  */
-@Single
 class FabricDebugTextCommand(
     private val feedbackPublisher: MinecraftPlayerFeedbackPublisher,
     private val serverConfigManager: FabricServerConfigManager,
-    @Provided private val json: Json,
-    @Provided private val networkRegistries: NetworkDtoRegistries,
+    private val json: Json,
+    private val networkRegistries: NetworkDtoRegistries,
 ) {
     /**
      * 建立 `hovered_text` 的六種訊息排版預覽。

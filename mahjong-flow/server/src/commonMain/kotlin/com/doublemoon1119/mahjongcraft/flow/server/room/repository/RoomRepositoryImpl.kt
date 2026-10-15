@@ -3,7 +3,6 @@ package com.doublemoon1119.mahjongcraft.flow.server.room.repository
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdate
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -11,7 +10,6 @@ import kotlin.uuid.Uuid
  *
  * @property store Room 與 Game 共用的權威狀態儲存。
  */
-@Single(binds = [RoomRepository::class])
 class RoomRepositoryImpl(
     private val store: AuthoritativeStateStore,
 ) : RoomRepository {

@@ -22,7 +22,6 @@ import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 import net.minecraft.util.Identifier
 import net.minecraft.util.math.BlockPos
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -36,7 +35,6 @@ import kotlin.uuid.Uuid
  * @property seatProviders 已完成註冊的原生座位來源。
  * @property failurePolicy 判斷座位來源丟出的失敗能否隔離。
  */
-@Single(binds = [MahjongSeatingPresenter::class])
 class FabricMahjongSeatingPresenter(
     private val tableLocationRegistry: TableLocationRegistry,
     private val serverHolder: FabricServerHolder,

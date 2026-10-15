@@ -5,7 +5,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.observer.ObserverSnapshotBroa
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricSessionBackgroundScope
 import kotlinx.coroutines.launch
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
-import org.koin.core.annotation.Single
 
 /**
  * 驅動 [ObserverSnapshotBroadcaster]：server session 期間訂閱權威狀態，並在每次 tick 結束時檢查觀察者
@@ -20,7 +19,6 @@ import org.koin.core.annotation.Single
  * @property dispatchers 提供伺服器主執行緒排程器。
  * @property broadcaster 訂閱狀態並推送觀察者快照的共用服務。
  */
-@Single
 class FabricObserverSnapshotBroadcastService(
     private val scope: FabricSessionBackgroundScope,
     private val dispatchers: CoroutineDispatchers,

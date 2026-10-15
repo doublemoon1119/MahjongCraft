@@ -7,7 +7,6 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.TableStateSnapshot
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -15,7 +14,6 @@ import kotlin.uuid.Uuid
  *
  * @property moduleRegistry 取得這一局規則模組，用來帶出各玩家移出手牌、公開擺在桌上的牌。
  */
-@Single(binds = [GameVisibilityPolicy::class])
 class GameVisibilityPolicyImpl(
     private val moduleRegistry: MahjongModuleRegistry,
 ) : GameVisibilityPolicy {

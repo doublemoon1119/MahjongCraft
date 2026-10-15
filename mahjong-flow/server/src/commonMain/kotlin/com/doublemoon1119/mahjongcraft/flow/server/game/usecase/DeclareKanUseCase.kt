@@ -21,8 +21,6 @@ import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionPhase
-import org.koin.core.annotation.Factory
-import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
 
 /**
@@ -54,13 +52,12 @@ import kotlin.uuid.Uuid
  * @property eventPublisher 對局通知服務。
  * @property presentationPublisher 對局 in-process 呈現觸發器。
  */
-@Factory
 class DeclareKanUseCase(
     private val gameRepository: GameRepository,
     private val moduleRegistry: MahjongModuleRegistry,
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
-    @Provided private val eventPublisher: GameEventPublisher,
-    @Provided private val presentationPublisher: GamePresentationPublisher,
+    private val eventPublisher: GameEventPublisher,
+    private val presentationPublisher: GamePresentationPublisher,
 ) {
     /**
      * 執行暗槓/加槓宣告邏輯。

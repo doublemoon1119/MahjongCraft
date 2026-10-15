@@ -15,7 +15,6 @@ import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallba
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
-import org.koin.core.annotation.Single
 
 /**
  * 純 client-only 指令 `/mahjongcraft_client config reload|show|screen`：跟 server 端
@@ -32,7 +31,6 @@ import org.koin.core.annotation.Single
  * @property screenController 開啟設定畫面的入口。
  * @property minecraftEnvironment 判斷是否註冊開發環境診斷指令的來源。
  */
-@Single
 class FabricClientConfigCommand(
     private val configStore: MahjongClientConfigStore,
     private val screenController: MahjongClientConfigScreenController,

@@ -17,7 +17,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.winningHandFaceDownIndices
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.math.BlockPos
-import org.koin.core.annotation.Single
 import kotlin.random.Random
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
@@ -29,7 +28,6 @@ import kotlin.uuid.toJavaUuid
  * @property overlays 管理桌面局況顯示的暫時隱藏。
  * @property spawnGateway 生成並追蹤 showcase 舞台 entity。
  */
-@Single
 class FabricWinCelebrationShowcaseScheduler(
     private val showcaseRegistry: WinCelebrationShowcaseRegistry,
     private val overlays: PersistentTableOverlayCoordinator,

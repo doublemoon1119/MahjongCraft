@@ -8,7 +8,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationReg
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.util.math.BlockPos
 import net.minecraft.world.GameMode
-import org.koin.core.annotation.Single
 import kotlin.math.sqrt
 
 /**
@@ -22,7 +21,6 @@ import kotlin.math.sqrt
  *
  * @property tableLocationRegistry 目前 server session 的桌子位置索引。
  */
-@Single
 class ReachableMahjongTableResolver(
     private val tableLocationRegistry: TableLocationRegistry,
 ) {

@@ -4,7 +4,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClie
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigUpdateResult
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
-import org.koin.core.annotation.Single
 
 /**
  * 統一管理永久自動整理手牌偏好的原子保存與同步順序。
@@ -12,7 +11,6 @@ import org.koin.core.annotation.Single
  * @property configStore 讀取與保存本機設定的來源。
  * @property sender 將已保存偏好送往伺服器的元件。
  */
-@Single
 class ClientAutoSortHandPreferenceService(
     private val configStore: MahjongClientConfigStore,
     private val sender: ClientAutoSortHandPreferenceSender,

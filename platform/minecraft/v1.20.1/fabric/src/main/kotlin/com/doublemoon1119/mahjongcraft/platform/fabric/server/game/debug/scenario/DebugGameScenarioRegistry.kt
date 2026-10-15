@@ -1,10 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario
 
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
-import org.koin.core.annotation.Single
 
 /** 保存 MahjongCraft 內建 development-only 權威對局情境的凍結式 registry。 */
-@Single
 class DebugGameScenarioRegistry {
     /** 依 ID 排序的不可變情境索引。 */
     private val scenariosById: Map<String, DebugGameScenario> = RiichiDebugGameScenarios.all

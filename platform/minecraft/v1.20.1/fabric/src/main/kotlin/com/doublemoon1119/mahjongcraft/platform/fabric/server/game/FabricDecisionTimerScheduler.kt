@@ -13,7 +13,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogge
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
-import org.koin.core.annotation.Single
 
 /**
  * 以 Minecraft server tick 驅動權威決策逾時、自動操作心跳與時間同步的 Fabric adapter。
@@ -35,7 +34,6 @@ import org.koin.core.annotation.Single
  * @param synchronizationService 每秒同步一次所有真人決策者的權威時間。
  * @param busyGate 判斷對局是否仍在播放呈現；播放中的對局這一輪不推進。
  */
-@Single
 class FabricDecisionTimerScheduler(
     private val appScope: AppCoroutineScope,
     private val dispatchers: CoroutineDispatchers,

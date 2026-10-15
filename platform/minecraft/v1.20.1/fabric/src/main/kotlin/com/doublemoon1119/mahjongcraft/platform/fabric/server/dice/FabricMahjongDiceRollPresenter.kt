@@ -22,7 +22,6 @@ import net.minecraft.state.property.Properties
 import net.minecraft.util.Identifier
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Box
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -31,7 +30,6 @@ import kotlin.uuid.Uuid
  * @property serverHolder 取得目前 server session 與世界。
  * @property spawnGateway 執行並診斷正式 entity 生成。
  */
-@Single(binds = [MahjongDiceRollPresenter::class])
 class FabricMahjongDiceRollPresenter(
     private val serverHolder: FabricServerHolder,
     private val spawnGateway: FabricEntitySpawnGateway,

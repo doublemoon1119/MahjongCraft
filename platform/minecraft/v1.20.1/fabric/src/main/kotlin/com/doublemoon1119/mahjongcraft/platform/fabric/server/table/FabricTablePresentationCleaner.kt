@@ -6,7 +6,6 @@ import net.minecraft.entity.Entity
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Box
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -14,7 +13,6 @@ import kotlin.uuid.Uuid
  *
  * @property winCelebrationEffectScheduler 取消該桌尚未完成的和牌演出工作。
  */
-@Single
 class FabricTablePresentationCleaner(
     private val winCelebrationEffectScheduler: FabricWinCelebrationEffectScheduler,
 ) {

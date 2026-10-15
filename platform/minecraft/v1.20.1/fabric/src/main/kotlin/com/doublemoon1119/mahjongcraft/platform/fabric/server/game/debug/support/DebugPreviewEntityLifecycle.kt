@@ -3,7 +3,6 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.suppor
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.minecraft.entity.Entity
 import net.minecraft.server.world.ServerWorld
-import org.koin.core.annotation.Single
 
 /**
  * 集中保管所有 debug 預覽指令排定的臨時 entity 清除工作。
@@ -15,7 +14,6 @@ import org.koin.core.annotation.Single
  * 佇列由本類別獨佔，各 command family 只透過 [schedule] 排入工作，避免 child command 反向依賴 debug
  * root 才能清除自己生成的 entity。
  */
-@Single
 class DebugPreviewEntityLifecycle {
     /** 到期判定與佇列語意見 [DebugPreviewCleanupQueue]。 */
     private val cleanupQueue = DebugPreviewCleanupQueue()

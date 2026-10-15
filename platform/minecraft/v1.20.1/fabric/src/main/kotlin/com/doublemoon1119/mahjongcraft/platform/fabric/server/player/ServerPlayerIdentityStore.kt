@@ -3,7 +3,6 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.player
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.MahjongPlayerIdentityPersistentState
 import net.minecraft.server.network.ServerPlayerEntity
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 import kotlin.uuid.toKotlinUuid
@@ -13,7 +12,6 @@ import kotlin.uuid.toKotlinUuid
  *
  * @property serverHolder 取得目前伺服器及其 overworld 存檔服務。
  */
-@Single
 class ServerPlayerIdentityStore(
     private val serverHolder: FabricServerHolder,
 ) {

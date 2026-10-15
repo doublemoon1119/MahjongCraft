@@ -31,8 +31,6 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlinx.coroutines.sync.Mutex
-import org.koin.core.annotation.Factory
-import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
 
 /**
@@ -84,7 +82,6 @@ import kotlin.uuid.Uuid
  * @property roundPreparationAiDriver 解析下一筆自動開局準備提交；未提供時不處理 AI 準備提交。
  * @property advanceAutomaticRoundPreparationUseCase 收斂無須玩家輸入的開局準備步驟；未提供時略過。
  */
-@Factory
 class GameFlowCoordinator(
     private val gameActionRouter: GameActionRouter,
     private val gameRepository: GameRepository,
@@ -101,8 +98,8 @@ class GameFlowCoordinator(
     private val decisionAvailabilityService: GameDecisionAvailabilityService,
     private val exhaustiveDrawSettlementPresentationService: ExhaustiveDrawSettlementPresentationService,
     private val winPresentationHandoff: WinPresentationHandoff,
-    @Provided private val presentationPublisher: GamePresentationPublisher,
-    @Provided private val presentationBusyGate: GamePresentationBusyGate,
+    private val presentationPublisher: GamePresentationPublisher,
+    private val presentationBusyGate: GamePresentationBusyGate,
     private val roundPreparationAiDriver: RoundPreparationAiDriver? = null,
     private val advanceAutomaticRoundPreparationUseCase: AdvanceAutomaticRoundPreparationUseCase? = null,
 ) {

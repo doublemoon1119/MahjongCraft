@@ -28,7 +28,6 @@ import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.widget.ButtonWidget
 import net.minecraft.text.Text
-import org.koin.core.annotation.Single
 
 /**
  * 以範例內容畫出 HUD 位置編輯器中的真實 HUD 預覽，並量測它們的實際尺寸。
@@ -39,7 +38,6 @@ import org.koin.core.annotation.Single
  * @property decisionHud 操作面板、精簡提示與手牌分析的繪製。
  * @property automaticControlHud 自動操作狀態的繪製。
  */
-@Single
 class MahjongHudPreviewRenderer(
     private val decisionHud: PlayerDecisionHudController,
     private val automaticControlHud: AutomaticControlStatusHudRenderer,

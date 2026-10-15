@@ -15,7 +15,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.event.GameEventLocatio
 import com.doublemoon1119.mahjongcraft.platform.minecraft.event.GameEventScheduler
 import com.doublemoon1119.mahjongcraft.platform.minecraft.event.GameEventSubscriptions
 import net.minecraft.server.MinecraftServer
-import org.koin.core.annotation.Single
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.uuid.Uuid
@@ -32,7 +31,6 @@ import kotlin.uuid.Uuid
  * @property failurePolicy 判斷第三方事件監聽者丟出的失敗能否隔離。
  */
 @OptIn(ExperimentalAtomicApi::class)
-@Single
 class CommittedFactsDispatcher(
     private val store: AuthoritativeStateStore,
     private val achievementService: FabricAchievementService,

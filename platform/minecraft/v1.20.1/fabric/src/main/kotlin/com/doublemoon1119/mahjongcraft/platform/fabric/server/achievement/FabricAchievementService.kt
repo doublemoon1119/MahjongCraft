@@ -9,7 +9,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.GameEventExc
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementDetector
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistry
 import kotlinx.coroutines.launch
-import org.koin.core.annotation.Single
 
 /**
  * server session 期間把已提交的對局事實轉成原版統計與進度。
@@ -25,7 +24,6 @@ import org.koin.core.annotation.Single
  * @param moduleRegistry 提供通用成果判定所需的規則模組。
  * @param resolverRegistry 提供規則專屬成果判定器。
  */
-@Single
 class FabricAchievementService(
     private val scope: AppCoroutineScope,
     private val dispatchers: CoroutineDispatchers,

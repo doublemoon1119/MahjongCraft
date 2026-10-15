@@ -30,8 +30,8 @@ It depends on [mahjong-logic](../../mahjong-logic/README.md),
 
 ## Dependency injection
 
-PersistenceFormatModule scans the history replay projection registry. Providers explicitly
-assemble the persistence registry aggregate and codec with their existing defaults.
+`persistenceFormatModule` registers the history replay projection registry and assembles the
+persistence registry aggregate and codec with their existing defaults.
 Persistence DTOs are not dependency-injected services.
 
 ## Testing

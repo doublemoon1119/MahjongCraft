@@ -16,8 +16,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundCo
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
-import org.koin.core.annotation.Provided
-import org.koin.core.annotation.Single
 
 /**
  * 使用 extension 初始化完成後的 registry 建立隔離生成環境，讓生成的對局與正式對局使用同一套規則登記。
@@ -32,16 +30,15 @@ import org.koin.core.annotation.Single
  * @property gameCommands 擴充命令 handler。
  * @property failurePolicy 判斷 AI 策略丟出的失敗能否改用固定結果。
  */
-@Single
 class FabricHistoryGenerationRuntimeFactory(
-    @Provided private val moduleRegistry: MahjongModuleRegistry,
-    @Provided private val aiStrategies: MahjongAiStrategyRegistry,
-    @Provided private val winCelebrationCueResolvers: WinCelebrationCueResolverRegistry,
-    @Provided private val postActionExhaustiveDrawResolvers: PostActionExhaustiveDrawResolverRegistry,
-    @Provided private val postReactionRoundOutcomeResolvers: PostReactionRoundOutcomeResolverRegistry,
-    @Provided private val winRoundContinuationResolvers: WinRoundContinuationResolverRegistry,
-    @Provided private val winSettlementDetailResolvers: WinSettlementDetailResolverRegistry,
-    @Provided private val gameCommands: ExtensionGameCommandExecutorRegistry,
+    private val moduleRegistry: MahjongModuleRegistry,
+    private val aiStrategies: MahjongAiStrategyRegistry,
+    private val winCelebrationCueResolvers: WinCelebrationCueResolverRegistry,
+    private val postActionExhaustiveDrawResolvers: PostActionExhaustiveDrawResolverRegistry,
+    private val postReactionRoundOutcomeResolvers: PostReactionRoundOutcomeResolverRegistry,
+    private val winRoundContinuationResolvers: WinRoundContinuationResolverRegistry,
+    private val winSettlementDetailResolvers: WinSettlementDetailResolverRegistry,
+    private val gameCommands: ExtensionGameCommandExecutorRegistry,
     private val failurePolicy: ExtensionFailurePolicy,
 ) : HistoryGenerationRuntimeFactory {
 /**

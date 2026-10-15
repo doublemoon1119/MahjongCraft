@@ -6,7 +6,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TablePresentationBusyTracker
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -22,7 +21,6 @@ import kotlin.uuid.Uuid
  * @property busyTracker 呈現動畫播放期間查詢是否要暫時擋下自動摸牌，避免開局擲骰動畫還沒播完，
  *   莊家自動摸牌就已經搶先發生。輪次與合法動作改由私人操作 HUD prompt 呈現，不再主動推送聊天訊息。
  */
-@Single
 class MahjongAutoDrawService(
     private val gameRepository: GameRepository,
     private val gameFlowCoordinator: GameFlowCoordinator,

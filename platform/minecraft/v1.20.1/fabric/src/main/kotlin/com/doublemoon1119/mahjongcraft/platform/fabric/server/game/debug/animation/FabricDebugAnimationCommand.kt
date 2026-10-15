@@ -22,7 +22,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableL
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import net.minecraft.server.command.CommandManager.literal
 import net.minecraft.server.command.ServerCommandSource
-import org.koin.core.annotation.Single
 import kotlin.random.Random
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
@@ -45,7 +44,6 @@ import kotlin.uuid.toKotlinUuid
  * @property layoutFactory 依呼叫者座標建立虛擬桌布局。
  * @property entityLifecycle 排定臨時 entity 的到期清除。
  */
-@Single
 class FabricDebugAnimationCommand(
     private val tilePreviewSupport: DebugTilePreviewSupport,
     private val layoutFactory: DebugVirtualTableLayoutFactory,

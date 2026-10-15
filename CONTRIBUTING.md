@@ -58,8 +58,7 @@
   names in type declarations, expressions, properties, functions, or annotations.
 - When short names conflict, prefer an explicit import alias over repeating a fully qualified name in executable code.
 - Fully qualified names may remain when they are intentionally stored as strings for reflection, serialization,
-  component scanning, interoperability, or another identifier contract, or when an import alias cannot reasonably
-  remove an ambiguity.
+  interoperability, or another identifier contract, or when an import alias cannot reasonably remove an ambiguity.
 - Comments and KDoc may name a fully qualified declaration when the package itself is relevant to the explanation;
   otherwise, use a resolvable documentation link or short name.
 
@@ -100,25 +99,28 @@
 
 ### Koin Registration
 
-- Register directly constructible services owned by a Koin-aware module on the class with `@Single` or
-  `@Factory`, and discover them through the owning module's `@ComponentScan`. Use explicit `binds` when
-  consumers resolve an interface. Do not also register the same service through a provider function.
-- Preserve lifetime: `@Factory` creates a new instance per resolution; `@Single` shares one within the Koin
+- Declare every Koin definition in the owning module's DSL `module { }` value. Do not annotate classes with Koin
+  annotations or rely on component scanning.
+- Register directly constructible services with the compiler plugin's `single<T>()` or `factory<T>()`. Use a
+  definition lambda for third-party types, configured builders, factory methods, bootstrap aggregates,
+  runtime-owned instances, and classes intentionally kept framework-neutral, and state the reason in the module's
+  KDoc or beside the definition.
+- `single<T>()` registers only `T`. Add `bind` for every supertype consumers resolve. Runtime lookups such as
+  `getOrNull<T>()` are not compile-checked, so a missing binding there fails without a build error.
+- An unregistered nullable parameter with a `null` default fails the compile check instead of resolving to `null`.
+  When the production graph intentionally leaves such a parameter at its default, construct the class in a definition
+  lambda that omits it. Inside a lambda, give `get<T>()` an explicit type whenever the parameter type is broader than
+  the intended binding.
+- Preserve lifetime: `factory` creates a new instance per resolution; `single` shares one within the Koin
   container. A single is not automatically a runtime-session scope. Preserve explicit session reset, cancellation,
   resource release, qualifiers, parameters and eager/lazy initialization behavior.
-- Keep provider functions for third-party types, configured builders, factory methods, bootstrap aggregates,
-  runtime-owned instances, and classes intentionally kept framework-neutral. Explain the exception in the
-  provider's KDoc. Do not introduce Koin into Logic or AI, or annotate DTOs and value objects merely because
-  their module uses Koin elsewhere.
-- Keep component scans within their intended graph. Do not widen scans across execution-environment boundaries,
-  relocate public types, or widen visibility just to remove a provider. A provider may remain when shared
-  packages cannot express an environment-specific scan boundary safely; document that reason.
-- `@Provided` describes a dependency supplied outside the current module; it does not register that dependency
-  or excuse a missing binding in the final application. Preserve includes needed by compiler graph validation,
-  even when runtime module inclusion de-duplicates the same module.
-- Bootstrap, codecs and consumers must share the exact registry instances and preserve registration/freeze
-  ordering. Validate changes through the formal application graphs for each supported execution environment, reject duplicate
-  definitions, assert shared identity and factory behavior, and retain session lifecycle regression tests.
+- Do not introduce Koin into Logic or AI, or register DTOs and value objects merely because their module uses Koin
+  elsewhere.
+- Keep each module within its intended graph. A module `includes` the modules its own definitions depend on, and
+  application entry points start Koin with their top-level modules. Do not move environment-specific services into
+  a shared module, relocate public types, or widen visibility just to simplify registration.
+- The Koin compiler plugin validates the complete graph at each `startKoin` call, but only in a compilation that
+  declares at least one definition of its own. Keep application entry points in such a module.
 
 ### Extension Bootstrap
 

@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.service
 
-import org.koin.core.annotation.Single
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.uuid.Uuid
 
@@ -13,7 +12,6 @@ import kotlin.uuid.Uuid
  * 刻意純記憶體、不接進 `AuthoritativeStateStore`：伺服器重啟後回到預設值即可，玩家重新連線時用戶端會自動重送一次
  * 目前的選擇。
  */
-@Single
 class HandSortPreferenceStore {
     /** 以玩家識別碼索引本次 server session 的手牌整理偏好。 */
     private val preferences = ConcurrentHashMap<Uuid, Boolean>()

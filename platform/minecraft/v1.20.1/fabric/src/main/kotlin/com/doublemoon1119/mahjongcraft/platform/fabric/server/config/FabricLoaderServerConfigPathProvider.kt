@@ -4,11 +4,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModM
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.server.MinecraftServer
 import net.minecraft.util.WorldSavePath
-import org.koin.core.annotation.Single
 import java.nio.file.Path
 
 /** 由世界存檔或 Fabric Loader config directory 解析 server config 位置。 */
-@Single(binds = [FabricServerConfigPathProvider::class])
 class FabricLoaderServerConfigPathProvider : FabricServerConfigPathProvider {
     /**
      * 單人世界使用存檔內設定；專用伺服器使用執行個體共用設定。

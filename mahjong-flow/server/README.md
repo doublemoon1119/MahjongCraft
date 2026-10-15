@@ -28,9 +28,9 @@ coroutines, and Koin.
 
 ## Dependency injection
 
-FlowServerModule scans class-owned services and registries. Use cases remain factories;
-registries remain singles shared with extension bootstrap. Providers are retained for
-framework-neutral Logic/AI types and configured AI execution/advancement factories.
+`flowServerModule` lists each class-owned service and registry. Use cases remain factories;
+registries remain singles shared with extension bootstrap. Framework-neutral Logic/AI types and
+configured AI execution/advancement factories are built inside their definitions.
 
 ## Testing
 

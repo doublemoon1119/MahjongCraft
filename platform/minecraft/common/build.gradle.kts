@@ -19,7 +19,6 @@ kotlin {
                 implementation(project(":mahjong-flow:mahjong-flow-network-dto"))
                 implementation(project.dependencies.platform(libs.koin.bom))
                 implementation(libs.koin.core)
-                implementation(libs.koin.annotations)
                 implementation(libs.ktoml.core)
                 implementation(libs.kotlinx.serialization.json)
                 implementation(libs.kotlinx.coroutines)

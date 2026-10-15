@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.event
 
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -13,7 +12,6 @@ import kotlin.uuid.Uuid
  * 本類別只負責診斷期的同批 fail-stop，不取代 [TablePresentationBusyTracker]。第一次不可恢復例外會由
  * [fail] 標記，讓同批尚未執行的工作停止碰觸可能已損壞的世界 entity index。
  */
-@Single
 class TableOpeningPresentationOperationTracker {
     /** 各桌最新開局世代及其第一筆失敗狀態。 */
     private val latestByTable = mutableMapOf<Uuid, State>()

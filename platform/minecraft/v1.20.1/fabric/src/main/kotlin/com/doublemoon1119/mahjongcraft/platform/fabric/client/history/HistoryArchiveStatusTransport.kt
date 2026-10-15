@@ -7,7 +7,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogge
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import org.koin.core.annotation.Single
 import kotlin.time.Duration
 import kotlin.uuid.Uuid
 
@@ -74,7 +73,6 @@ internal interface HistoryArchiveStatusTransport {
  * @property sender 實際傳送保存狀態要求的邊界。
  * @param settings 目前連線伺服器公布的查詢間隔。
  */
-@Single(binds = [HistoryArchiveStatusTransport::class])
 internal class ClientHistoryArchiveStatusCoordinator(
     private val sender: HistoryArchiveStatusSender,
     settings: ClientHistoryQuerySettings,

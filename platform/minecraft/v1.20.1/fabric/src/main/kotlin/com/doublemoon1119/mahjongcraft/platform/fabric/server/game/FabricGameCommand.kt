@@ -20,7 +20,6 @@ import net.minecraft.server.command.CommandManager.argument
 import net.minecraft.server.command.CommandManager.literal
 import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.server.network.ServerPlayerEntity
-import org.koin.core.annotation.Single
 import java.util.concurrent.CompletableFuture
 import kotlin.uuid.toKotlinUuid
 
@@ -48,7 +47,6 @@ import kotlin.uuid.toKotlinUuid
  * @property tileEmojiRegistry 解析候選 tooltip 牌面 emoji 字元。
  * @property scope 橋接 suggestion provider 內部 suspend 查詢與 Brigadier 同步 API 的協程 scope。
  */
-@Single
 class FabricGameCommand(
     private val candidateResolver: GameActionCandidateResolver,
     private val gameActionService: MahjongTableGameActionService,

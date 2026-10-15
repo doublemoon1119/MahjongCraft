@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation
 
-import org.koin.core.annotation.Single
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.uuid.Uuid
 
@@ -9,7 +8,6 @@ import kotlin.uuid.Uuid
  * 判定器在初始化時註冊，指令只切換此處的桌級模式，不改變判定器註冊順序。
  * 讀寫以 [ConcurrentHashMap] 保護；對局結束或桌子清理時由呼叫端移除設定。
  */
-@Single
 class DebugWinRoundContinuationState {
     /** 各牌桌啟用的非 OFF 模式，支援跨執行緒查詢與更新。 */
     private val modesByTableId = ConcurrentHashMap<Uuid, DebugWinRoundContinuationMode>()

@@ -1,7 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.CLIENT_COMMAND_ROOT
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -9,7 +8,6 @@ import kotlin.uuid.Uuid
  *
  * @property transport 提供目前連線版本的歷史傳輸。
  */
-@Single
 class ClientHistoryChatEntryStore(private val transport: HistoryQueryTransport) {
     /** 僅本地建立的入口識別與所屬連線版本。 */
     private val entries = LinkedHashMap<String, Entry>()

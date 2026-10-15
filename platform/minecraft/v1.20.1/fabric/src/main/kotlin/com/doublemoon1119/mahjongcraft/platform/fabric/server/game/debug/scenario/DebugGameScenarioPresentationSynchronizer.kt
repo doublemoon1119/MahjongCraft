@@ -7,7 +7,6 @@ import net.minecraft.registry.RegistryKey
 import net.minecraft.registry.RegistryKeys
 import net.minecraft.util.Identifier
 import net.minecraft.util.math.BlockPos
-import org.koin.core.annotation.Single
 
 /**
  * 使用正式呈現介面重建開發情境的完整桌面；呼叫端須切換至伺服器主執行緒。
@@ -17,7 +16,6 @@ import org.koin.core.annotation.Single
  * @property presentationCleaner 清除既有桌面呈現的服務。
  * @property presentationPublisher 發布新情境桌面的服務。
  */
-@Single
 class DebugGameScenarioPresentationSynchronizer(
     private val serverHolder: FabricServerHolder,
     private val tableLocationRegistry: TableLocationRegistry,

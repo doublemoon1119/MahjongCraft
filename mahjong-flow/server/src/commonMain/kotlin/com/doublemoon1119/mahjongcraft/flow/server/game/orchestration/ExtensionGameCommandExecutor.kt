@@ -3,7 +3,6 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExtensionGameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -14,7 +13,6 @@ import kotlin.uuid.Uuid
  * @property registry 擴充命令的 handler 建立方式。
  * @property context 這個執行環境的對局流程服務。
  */
-@Single
 class ExtensionGameCommandExecutor(
     private val registry: ExtensionGameCommandExecutorRegistry,
     private val context: ExtensionGameCommandContext,

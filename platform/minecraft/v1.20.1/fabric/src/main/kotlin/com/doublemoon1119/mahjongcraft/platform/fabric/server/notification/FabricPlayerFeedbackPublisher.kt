@@ -25,7 +25,6 @@ import net.minecraft.text.ClickEvent
 import net.minecraft.text.MutableText
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -48,7 +47,6 @@ import kotlin.uuid.Uuid
  * @property scope 玩家回饋工作的伺服器作用域。
  * @property dispatchers 伺服器主執行緒排程。
  */
-@Single(binds = [MinecraftPlayerFeedbackPublisher::class])
 class FabricPlayerFeedbackPublisher(
     private val serverHolder: FabricServerHolder,
     private val playerIdentities: ServerPlayerIdentityStore,

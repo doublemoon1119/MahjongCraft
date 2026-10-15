@@ -5,7 +5,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.time.FabricTickMonotonicClock
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
-import org.koin.core.annotation.Single
 
 /**
  * [CoroutineDispatchers] 的 Fabric 實作。[main] 實際綁到伺服器主執行緒，見 [ServerThreadCoroutineDispatcher]；
@@ -17,7 +16,6 @@ import org.koin.core.annotation.Single
  * @param serverHolder 提供目前 Fabric server session。
  * @param tickClock 以遊戲 tick 排程延遲工作的時鐘。
  */
-@Single(binds = [CoroutineDispatchers::class])
 class FabricCoroutineDispatchers(serverHolder: FabricServerHolder, tickClock: FabricTickMonotonicClock) : CoroutineDispatchers {
     override val default: CoroutineDispatcher = Dispatchers.Default
     override val io: CoroutineDispatcher = Dispatchers.IO

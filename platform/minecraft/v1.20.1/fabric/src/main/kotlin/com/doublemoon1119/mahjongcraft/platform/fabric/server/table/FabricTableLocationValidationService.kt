@@ -19,7 +19,6 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.math.BlockPos
-import org.koin.core.annotation.Single
 
 /**
  * 在 tick 邊界後登記已載入桌子，並定點驗證已載入 chunk 的預期位置。
@@ -34,7 +33,6 @@ import org.koin.core.annotation.Single
  * @property tableCornerWidths 清理桌面角落寬度追蹤。
  * @property discardPresenter 清理牌河呈現。
  */
-@Single
 class FabricTableLocationValidationService(
     private val locations: TableLocationRegistry,
     private val cleanupService: OrphanedTableCleanupService,

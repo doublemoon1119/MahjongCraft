@@ -1,7 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.service
 
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceManager
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -10,7 +9,6 @@ import kotlin.uuid.Uuid
  * @property timerManager 原子取得並標記尚未處理的逾時決策。
  * @property advanceManager 為受影響的對局排程推進，由推進代打已進入強制自動操作的玩家並接續既有 AI 流程。
  */
-@Single
 class GameDecisionTimeoutService(
     private val timerManager: GameDecisionTimerManager,
     private val advanceManager: AutomatedAdvanceManager,

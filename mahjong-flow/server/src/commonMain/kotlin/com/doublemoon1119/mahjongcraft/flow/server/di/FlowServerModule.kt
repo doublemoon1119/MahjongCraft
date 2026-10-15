@@ -7,99 +7,192 @@ import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
-import com.doublemoon1119.mahjongcraft.flow.common.di.FlowCommonModule
-import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
+import com.doublemoon1119.mahjongcraft.flow.common.di.flowCommonModule
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionExecutor
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionReporter
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceFailureReporter
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceFollowUp
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiTurnDriver
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceManager
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomaticDecisionDriver
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandContext
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutor
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ForcedAutoPlayDriver
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameActionCommandMapper
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameActionRouter
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
-import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
-import org.koin.core.annotation.ComponentScan
-import org.koin.core.annotation.Module
-import org.koin.core.annotation.Provided
-import org.koin.core.annotation.Single
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationAiDriver
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicy
+import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
+import com.doublemoon1119.mahjongcraft.flow.server.game.policy.HandReadinessVisibilityPolicy
+import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
+import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
+import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.DeclareRiichiUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.AutomaticDecisionEvaluator
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.ExhaustiveDrawSettlementPresentationService
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAuthorityResolver
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAvailabilityService
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimeoutService
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerActionContextResolver
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerDecisionTimerFactory
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceAutomaticRoundPreparationUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.BeginRoundPreparationUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAbortiveDrawUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareKanUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareTsumoUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DiscardTileUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DrawTileUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetLegalActionsUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetPlayerDecisionOptionsUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ResolvePostReactionRoundOutcomeUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ResolveWinRoundContinuationUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToDiscardUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToRobbingUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ReturnToRoomUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.SetHandSortPreferenceUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.StartGameUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.SubmitRoundPreparationUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.SyncGameSnapshotUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.UpdatePlayerAutomaticControlsUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateCleaner
+import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateRestorer
+import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
+import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepositoryImpl
+import com.doublemoon1119.mahjongcraft.flow.server.observer.ObserverSnapshotBroadcaster
+import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepository
+import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepositoryImpl
+import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.AddAiPlayerUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.ChangeAiStrategyUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.CreateRoomUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.JoinRoomUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.KickPlayerUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.LeaveRoomUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.SyncRoomSnapshotUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.ToggleReadyUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.UpdateConfigUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
+import org.koin.dsl.bind
+import org.koin.dsl.module
+import org.koin.plugin.module.dsl.factory
+import org.koin.plugin.module.dsl.single
 
 /**
  * `:mahjong-flow-server` 的 Koin 模組。
  *
- * 絕大多數綁定靠 [ComponentScan] + 類別自身的 `@Factory` 或 `@Single` 標註自動完成；各 registry 的內容由
- * extension bootstrap 登記。`:mahjong-ai` 刻意不依賴 Koin（比照 `:mahjong-logic` 維持框架無關），
- * [MahjongAiStrategyRegistryImpl] 與 [OpponentModelRegistry] 因此不會被這裡的 [ComponentScan] 掃到，需要顯式提供。
- * 需要自訂建構參數或平台提供相依項的服務也保留在本模組明確組裝。
+ * 各 registry 的內容由 extension bootstrap 登記。`:mahjong-ai` 刻意不依賴 Koin（比照 `:mahjong-logic` 維持框架無關），其 registry
+ * 在這裡明確建立：AI 策略 registry 在未知或未指定策略時退回初級，內建策略由 extension bootstrap 登記；對手模型 registry 在規則
+ * 沒有登記時使用不具規則知識的對手模型。AI 決策執行器的容量依 runtime 平行度計算，同時存在的策略工作上限為 AI 執行緒數的
+ * [AiDecisionExecutor.CAPACITY_PER_THREAD] 倍；單局推進管理器以 [AutomatedAdvanceManager.forCoordinator] 將協調器組成推進
+ * callback，在目前執行階段的作用域與權威狀態調度器上推進遊戲。
  */
-@Module(includes = [FlowCommonModule::class])
-@ComponentScan("com.doublemoon1119.mahjongcraft.flow.server")
-class FlowServerModule {
-    /**
-     * 建立供擴充在啟動期登記動作評估器的 AI 註冊表。
-     *
-     * 實作位於框架無關的 `:mahjong-ai`，因此由流程組合模組明確建立。
-     *
-     * @param moduleRegistry 提供各規則模組及其合法動作判定。
-     * @return 尚待擴充登記的動作評估器註冊表。
-     */
-    @Single
-    fun extensionGameActionAiRegistry(moduleRegistry: MahjongModuleRegistry): ExtensionGameActionAiRegistry = ExtensionGameActionAiRegistry(moduleRegistry)
+val flowServerModule = module {
+    includes(flowCommonModule)
 
-    /**
-     * 建立 AI 策略 registry；未知或未指定的策略 key 退回初級。內建策略由 extension bootstrap 與其他內建項目一起登記，
-     * 這裡不預先登記任何策略。實作位於框架無關的 `:mahjong-ai`，且需要指定預設策略 key，因此保留明確組裝。
-     */
-    @Single
-    fun mahjongAiStrategyRegistry(): MahjongAiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = BuiltInAiStrategyKeys.BEGINNER)
+    single<ExtensionGameActionAiRegistry>()
+    single<MahjongAiStrategyRegistry> { MahjongAiStrategyRegistryImpl(defaultKey = BuiltInAiStrategyKeys.BEGINNER) }
+    single<OpponentModelRegistry>()
+    single {
+        val dispatchers = get<CoroutineDispatchers>()
+        AiDecisionExecutor(
+            dispatcher = dispatchers.aiDecision,
+            capacity = dispatchers.aiDecisionParallelism * AiDecisionExecutor.CAPACITY_PER_THREAD,
+            reporter = get(),
+            failurePolicy = get(),
+        )
+    }
+    single {
+        AutomatedAdvanceManager.forCoordinator(
+            scope = get<AppCoroutineScope>(),
+            dispatcher = get<CoroutineDispatchers>().main,
+            coordinator = get(),
+            followUp = get(),
+            failureReporter = get(),
+        )
+    }
 
-    /**
-     * 建立供規則 extension 登記對手模型的 registry；沒有登記的規則使用不具規則知識的對手模型。
-     *
-     * 實作位於框架無關的 `:mahjong-ai`，因此不由 Flow 的 component scan 掃描。
-     */
-    @Single
-    fun opponentModelRegistry(): OpponentModelRegistry = OpponentModelRegistry()
+    factory<AiTurnDriver>()
+    factory<AutomaticDecisionDriver>()
+    single<ExtensionGameActionCommandFactoryRegistry>()
+    single<ExtensionGameCommandContext>()
+    single<ExtensionGameCommandExecutor>()
+    single<ExtensionGameCommandExecutorRegistry>()
+    factory<ForcedAutoPlayDriver>()
+    single<GameActionCommandMapper>()
+    factory<GameActionRouter>()
+    factory<GameFlowCoordinator>()
+    single<PostActionExhaustiveDrawResolverRegistry>()
+    single<PostReactionRoundOutcomeResolverRegistry>()
+    factory<RoundPreparationAiDriver>()
+    single<RoundPreparationResolverRegistry>()
+    single<WinRoundContinuationResolverRegistry>()
+    single<GameVisibilityPolicyImpl>() bind GameVisibilityPolicy::class
+    single<HandReadinessVisibilityPolicy>()
+    single<GameRepositoryImpl>() bind GameRepository::class
+    factory<DeclareRiichiUseCase>()
+    single<AutomaticDecisionEvaluator>()
+    single<DecisionTimerSynchronizationService>()
+    factory<ExhaustiveDrawSettlementPresentationService>()
+    single<GameDecisionAuthorityResolver>()
+    single<GameDecisionAvailabilityService>()
+    single<GameDecisionTimeoutService>()
+    single<GameDecisionTimerManager>()
+    single<GameSnapshotSynchronizer>()
+    single<HandSortPreferenceStore>()
+    single<PlayerActionContextResolver>()
+    factory<PlayerDecisionTimerFactory>()
+    single<WinPresentationHandoff>()
+    single<WinSettlementDetailResolverRegistry>()
+    factory<AdvanceAutomaticRoundPreparationUseCase>()
+    factory<AdvanceRoundUseCase>()
+    factory<BeginRoundPreparationUseCase>()
+    factory<DeclareAbortiveDrawUseCase>()
+    factory<DeclareExhaustiveDrawUseCase>()
+    factory<DeclareKanUseCase>()
+    factory<DeclareTsumoUseCase>()
+    factory<DiscardTileUseCase>()
+    factory<DrawTileUseCase>()
+    factory<GetLegalActionsUseCase>()
+    factory<GetPlayerDecisionOptionsUseCase>()
+    factory<ResolvePostReactionRoundOutcomeUseCase>()
+    factory<ResolveWinRoundContinuationUseCase>()
+    factory<RespondToDiscardUseCase>()
+    factory<RespondToRobbingUseCase>()
+    factory<ReturnToRoomUseCase>()
+    factory<SetHandSortPreferenceUseCase>()
+    factory<StartGameUseCase>()
+    factory<SubmitRoundPreparationUseCase>()
+    factory<SyncGameSnapshotUseCase>()
+    factory<UpdatePlayerAutomaticControlsUseCase>()
 
-    /**
-     * 建立整個程式共用的 AI 決策執行器：在 [CoroutineDispatchers.aiDecision] 上呼叫策略，同時存在的策略工作上限為 AI 執行緒數的
-     * [AiDecisionExecutor.CAPACITY_PER_THREAD] 倍。
-     *
-     * 容量由 runtime 平行度計算，不直接對應到可注入的參數；保留此工廠組裝調度器與平台回報器。
-     *
-     * @param dispatchers 提供 AI 決策調度器及平行度。
-     * @param reporter 策略逾時與未結束工作等情況的回報器。
-     * @param failurePolicy 平台提供的擴充失敗判斷，決定策略失敗能否改用固定結果。
-     * @return 共用的 AI 決策執行器。
-     */
-    @Single
-    fun aiDecisionExecutor(
-        dispatchers: CoroutineDispatchers,
-        @Provided reporter: AiDecisionReporter,
-        @Provided failurePolicy: ExtensionFailurePolicy,
-    ): AiDecisionExecutor = AiDecisionExecutor(
-        dispatcher = dispatchers.aiDecision,
-        capacity = dispatchers.aiDecisionParallelism * AiDecisionExecutor.CAPACITY_PER_THREAD,
-        reporter = reporter,
-        failurePolicy = failurePolicy,
-    )
+    single<ServerSessionStateCleaner>()
+    single<ServerSessionStateRestorer>()
 
-    /**
-     * 建立共用的單局推進管理器，在目前執行階段的作用域與權威狀態調度器上推進遊戲。
-     *
-     * 使用 [AutomatedAdvanceManager.forCoordinator] 將協調器組成推進 callback，
-     * 保留工廠方法的調度器、後續檢查與失敗回報組合，不改成一般建構子注入。
-     *
-     * @param appScope 管理目前執行階段協程生命週期的作用域。
-     * @param dispatchers 提供權威狀態操作的調度器。
-     * @param coordinator 負責遊戲流程的協調器。
-     * @param followUp 推進後需執行的後續檢查。
-     * @param failureReporter 推進失敗的回報器。
-     * @return 共用的單局推進管理器。
-     */
-    @Single
-    fun automatedAdvanceManager(
-        appScope: AppCoroutineScope,
-        dispatchers: CoroutineDispatchers,
-        coordinator: GameFlowCoordinator,
-        @Provided followUp: AutomatedAdvanceFollowUp,
-        @Provided failureReporter: AutomatedAdvanceFailureReporter,
-    ): AutomatedAdvanceManager = AutomatedAdvanceManager.forCoordinator(appScope, dispatchers.main, coordinator, followUp, failureReporter)
+    single<PlayerMembershipRepositoryImpl>() bind PlayerMembershipRepository::class
+
+    single<ObserverSnapshotBroadcaster>()
+
+    single<RoomRepositoryImpl>() bind RoomRepository::class
+    factory<AddAiPlayerUseCase>()
+    factory<ChangeAiStrategyUseCase>()
+    factory<CreateRoomUseCase>()
+    factory<JoinRoomUseCase>()
+    factory<KickPlayerUseCase>()
+    factory<LeaveRoomUseCase>()
+    factory<SyncRoomSnapshotUseCase>()
+    factory<ToggleReadyUseCase>()
+    factory<UpdateConfigUseCase>()
+
+    // 使用建構子的預設設定；記錄政策由伺服器啟動流程套用，量測用 observer 只在壓力測試另建的實例傳入。
+    single { AuthoritativeStateStore() }
 }

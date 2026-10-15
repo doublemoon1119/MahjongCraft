@@ -9,7 +9,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModM
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import net.fabricmc.loader.api.FabricLoader
-import org.koin.core.annotation.Single
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
@@ -31,7 +30,6 @@ import java.nio.file.StandardCopyOption
  * 跟 server 設定不同的是：client 設定可由指令與 GUI 更新。[save] 會在同目錄建立暫存檔並原子替換，
  * 同時只更新受控欄位的值，保留模板註解與人工排版。
  */
-@Single
 class MahjongClientConfigStore() {
     /** 測試時覆寫的隔離設定路徑；正式執行環境維持 `null`。 */
     private var pathOverride: Path? = null

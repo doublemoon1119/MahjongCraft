@@ -4,7 +4,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatch
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
-import org.koin.core.annotation.Single
 import kotlin.coroutines.CoroutineContext
 
 /**
@@ -15,7 +14,6 @@ import kotlin.coroutines.CoroutineContext
  *
  * @param dispatchers 提供預設工作 dispatcher 的平台 dispatcher 集合。
  */
-@Single(binds = [FabricSessionBackgroundScope::class])
 class FabricSessionBackgroundScope(
     dispatchers: CoroutineDispatchers,
 ) : CoroutineScope {

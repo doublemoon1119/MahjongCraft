@@ -6,8 +6,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositor
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
-import org.koin.core.annotation.Provided
-import org.koin.core.annotation.Single
 
 /**
  * 執行擴充命令時可使用的對局流程服務。
@@ -22,13 +20,12 @@ import org.koin.core.annotation.Single
  * @property eventPublisher 對局通知服務。
  * @property presentationPublisher 對局呈現通知服務。
  */
-@Single
 class ExtensionGameCommandContext(
     val gameRepository: GameRepository,
     val moduleRegistry: MahjongModuleRegistry,
     val snapshotSynchronizer: GameSnapshotSynchronizer,
     val handSortPreferenceStore: HandSortPreferenceStore,
     val postActionExhaustiveDrawResolverRegistry: PostActionExhaustiveDrawResolverRegistry,
-    @Provided val eventPublisher: GameEventPublisher,
-    @Provided val presentationPublisher: GamePresentationPublisher,
+    val eventPublisher: GameEventPublisher,
+    val presentationPublisher: GamePresentationPublisher,
 )

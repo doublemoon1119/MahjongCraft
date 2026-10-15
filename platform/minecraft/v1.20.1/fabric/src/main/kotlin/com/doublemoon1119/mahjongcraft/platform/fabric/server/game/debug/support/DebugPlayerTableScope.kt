@@ -10,7 +10,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.text.Text
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 
@@ -35,7 +34,6 @@ import kotlin.uuid.toKotlinUuid
  * @property scope 執行查詢與動作的協程 scope。
  * @property dispatchers 取得回到 main thread 送出回饋的 dispatcher。
  */
-@Single
 class DebugPlayerTableScope(
     private val membershipRepository: PlayerMembershipRepository,
     private val gameRepository: GameRepository,

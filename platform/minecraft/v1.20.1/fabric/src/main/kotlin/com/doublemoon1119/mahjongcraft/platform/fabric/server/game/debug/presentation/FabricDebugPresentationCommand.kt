@@ -62,7 +62,6 @@ import net.minecraft.server.command.CommandManager.literal
 import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.text.Text
 import net.minecraft.util.math.BlockPos
-import org.koin.core.annotation.Single
 import java.util.concurrent.CompletableFuture
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
@@ -94,7 +93,6 @@ import kotlin.uuid.toKotlinUuid
  * @property layoutFactory 依呼叫者座標建立虛擬桌布局。
  * @property entityLifecycle 排定結算預覽臨時 entity 的到期清除。
  */
-@Single
 class FabricDebugPresentationCommand(
     private val debugWinRoundContinuationState: DebugWinRoundContinuationState,
     private val debugWinShowcaseOverride: DebugWinShowcaseOverride,

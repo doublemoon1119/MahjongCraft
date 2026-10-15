@@ -23,7 +23,6 @@ import net.minecraft.state.property.Properties
 import net.minecraft.util.Identifier
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Box
-import org.koin.core.annotation.Single
 import kotlin.math.abs
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
@@ -33,7 +32,6 @@ import kotlin.uuid.toJavaUuid
  *
  * @property serverHolder 取得目前伺服器世界。
  */
-@Single(binds = [MahjongDiscardPresenter::class])
 class FabricMahjongDiscardPresenter(
     private val serverHolder: FabricServerHolder,
 ) : MahjongDiscardPresenter {

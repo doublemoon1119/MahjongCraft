@@ -6,7 +6,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositor
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.requireValidAutomaticControlIds
-import org.koin.core.annotation.Factory
 import kotlin.uuid.Uuid
 
 /**
@@ -18,7 +17,6 @@ import kotlin.uuid.Uuid
  * @property gameRepository 權威對局資料倉庫。
  * @property moduleRegistry 麻將規則模組註冊中心，用於取得支援的自動操作 ID。
  */
-@Factory
 class UpdatePlayerAutomaticControlsUseCase(
     private val gameRepository: GameRepository,
     private val moduleRegistry: MahjongModuleRegistry,

@@ -30,7 +30,6 @@ import net.minecraft.state.property.Properties
 import net.minecraft.util.Identifier
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Box
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 
@@ -42,7 +41,6 @@ import kotlin.uuid.toJavaUuid
  *
  * @property serverHolder 取得目前伺服器世界與既有麻將牌 entity。
  */
-@Single(binds = [MahjongPlayerAreaPresenter::class])
 class FabricMahjongPlayerAreaPresenter(
     private val serverHolder: FabricServerHolder,
 ) : MahjongPlayerAreaPresenter {

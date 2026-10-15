@@ -8,7 +8,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerDecisionOp
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
-import org.koin.core.annotation.Factory
 import kotlin.uuid.Uuid
 
 /**
@@ -38,7 +37,6 @@ import kotlin.uuid.Uuid
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的合法動作判定器。
  * @property actionContextResolver 玩家目前操作情境的權威解析器。
  */
-@Factory
 class GetLegalActionsUseCase(
     private val gameRepository: GameRepository,
     private val moduleRegistry: MahjongModuleRegistry,

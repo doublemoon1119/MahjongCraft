@@ -1,11 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /** 保存目前只對本機玩家公開的權威操作 prompt。 */
-@Single
 class ClientDecisionPromptStore {
     /** Prompt 所屬遊戲。 */
     var gameId: Uuid? = null

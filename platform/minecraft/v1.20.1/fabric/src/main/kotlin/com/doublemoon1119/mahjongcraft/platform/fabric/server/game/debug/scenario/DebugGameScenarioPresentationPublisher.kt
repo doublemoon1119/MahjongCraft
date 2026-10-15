@@ -6,7 +6,6 @@ import com.doublemoon1119.mahjongcraft.logic.config.dealBatchSizes
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.SidewaysMarkedDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.TileWallRevealable
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -15,7 +14,6 @@ import kotlin.uuid.Uuid
  * @property publisher 發布桌面物件與局況的正式呈現介面。
  * @property moduleRegistry 查詢牌張排序與移出手牌區等規則能力。
  */
-@Single
 class DebugGameScenarioPresentationPublisher(
     private val publisher: GamePresentationPublisher,
     private val moduleRegistry: MahjongModuleRegistry,

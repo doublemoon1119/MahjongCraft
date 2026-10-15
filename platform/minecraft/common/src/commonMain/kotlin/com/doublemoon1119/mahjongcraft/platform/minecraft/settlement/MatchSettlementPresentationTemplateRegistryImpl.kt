@@ -1,10 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.settlement
 
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
-import org.koin.core.annotation.Single
 
 /** [MatchSettlementPresentationTemplateRegistry] 的記憶體實作。 */
-@Single(binds = [MatchSettlementPresentationTemplateRegistry::class])
 class MatchSettlementPresentationTemplateRegistryImpl : MatchSettlementPresentationTemplateRegistry {
     /** 依完整模板 key 保存的模板。 */
     private val templates = linkedMapOf<String, MatchSettlementPresentationTemplate>()

@@ -7,7 +7,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTime
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
-import org.koin.core.annotation.Single
 
 /**
  * 清除一個伺服器工作階段的所有權威狀態與觀察者讀取快照。
@@ -19,7 +18,6 @@ import org.koin.core.annotation.Single
  * @property decisionTimerManager 對局決策計時器管理器。
  * @property decisionTimerSynchronizationService 決策計時器同步服務。
  */
-@Single
 class ServerSessionStateCleaner(
     private val authoritativeStateStore: AuthoritativeStateStore,
     private val roomSnapshots: RoomSnapshotRepository,

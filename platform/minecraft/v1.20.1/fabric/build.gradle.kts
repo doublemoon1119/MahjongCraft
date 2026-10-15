@@ -83,7 +83,6 @@ dependencies {
     implementation(project(":mahjong-bundled-extensions"))
     implementation(project.dependencies.platform(libs.koin.bom))
     implementation(libs.koin.core)
-    implementation(libs.koin.annotations)
     // Client 設定檔仍由 MahjongClientConfigStore 直接使用 ktoml；:minecraft_common 的
     // implementation 不會把 Toml symbol 透傳給 loader module，因此這裡保留直接依賴。
     implementation(libs.ktoml.core)

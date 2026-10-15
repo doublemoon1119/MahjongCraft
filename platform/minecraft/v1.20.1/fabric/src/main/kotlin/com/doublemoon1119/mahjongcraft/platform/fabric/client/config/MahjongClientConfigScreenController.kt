@@ -12,7 +12,6 @@ import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.screen.Screen
 import net.minecraft.client.option.KeyBinding
 import net.minecraft.client.util.InputUtil
-import org.koin.core.annotation.Single
 import org.lwjgl.glfw.GLFW
 
 /**
@@ -26,7 +25,6 @@ import org.lwjgl.glfw.GLFW
  * @property ruleCatalogueScreenController 規則一覽畫面控制器。
  * @property hudPreviewRenderer HUD 位置編輯器的真實 HUD 預覽繪製。
  */
-@Single
 class MahjongClientConfigScreenController(
     private val configStore: MahjongClientConfigStore,
     private val automaticCoordinator: ClientAutomaticControlUpdateCoordinator,

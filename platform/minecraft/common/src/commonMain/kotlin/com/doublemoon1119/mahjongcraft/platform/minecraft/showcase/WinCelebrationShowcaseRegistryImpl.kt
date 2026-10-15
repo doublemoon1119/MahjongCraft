@@ -1,9 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.showcase
 
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
-import org.koin.core.annotation.Single
 /** [WinCelebrationShowcaseRegistry] 的記憶體實作。 */
-@Single(binds = [WinCelebrationShowcaseRegistry::class])
 class WinCelebrationShowcaseRegistryImpl : WinCelebrationShowcaseRegistry {
     /** 依 cue key 保存的胡牌演出定義。 */
     private val definitions = mutableMapOf<String, WinCelebrationShowcaseDefinition>()

@@ -50,6 +50,8 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.FabricSeatProviderRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.concurrency.ClientCoroutineScope
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.concurrency.ClientThreadCoroutineDispatcher
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricExtensionRegistries
@@ -66,6 +68,8 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.PlayerDecisio
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.FabricDebugCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.animation.FabricDebugAnimationCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decision.FabricDebugDecisionCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.history.FabricHistoryGenerationRuntimeFactory
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.history.HistoryGenerationRuntimeFactory
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationMode
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationState
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.FabricDebugPresentationCommand
@@ -94,6 +98,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNa
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.RegisteredSeatProvider
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
@@ -130,8 +135,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
-import org.koin.plugin.module.dsl.startKoin
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -154,7 +161,10 @@ class FabricApplicationModuleTest {
     /** 第三方策略與其 Minecraft 顯示名稱由同一個 extension 完成登記，並進入正式使用的 registry。 */
     @Test
     fun `third party ai strategy registers through fabric bootstrap`() {
-        val koin = startKoin<MahjongCraftServerApp> { allowOverride(false) }.koin
+        val koin = startKoin {
+            allowOverride(false)
+            modules(fabricServerModule)
+        }.koin
         val strategyRegistry = koin.get<MahjongAiStrategyRegistry>()
         val displayNames = koin.get<AiStrategyDisplayNameRegistry>()
         val extension = object : MahjongExtension, MinecraftMahjongExtension {
@@ -237,7 +247,10 @@ class FabricApplicationModuleTest {
     /** 開發環境在凍結前以獨立的 debug 來源登記 debug 情境使用的腳本 AI。 */
     @Test
     fun `development environment registers scripted debug ai strategies before freezing`() {
-        val koin = startKoin<MahjongCraftServerApp> { allowOverride(false) }.koin
+        val koin = startKoin {
+            allowOverride(false)
+            modules(fabricServerModule)
+        }.koin
 
         val result = FabricMahjongExtensions.initialize(
             coreRegistries = koin.get<CoreExtensionRegistries>(),
@@ -278,7 +291,10 @@ class FabricApplicationModuleTest {
     /** 驗證伺服器服務、內建擴充與除錯指令可解析，且不包含客戶端狀態儲存。 */
     @Test
     fun `server graph resolves gameplay services without client stores`() {
-        val koin = startKoin<MahjongCraftServerApp> { allowOverride(false) }.koin
+        val koin = startKoin {
+            allowOverride(false)
+            modules(fabricServerModule)
+        }.koin
         val moduleRegistry = koin.get<MahjongModuleRegistry>()
         val networkRegistries = koin.get<NetworkDtoRegistries>()
         val persistenceRegistries = koin.get<PersistenceRegistries>()
@@ -515,7 +531,10 @@ class FabricApplicationModuleTest {
     /** 驗證 registry 集合只包裝既有 single，並保留 single 與 factory 的生命週期。 */
     @Test
     fun `server graph preserves registry identity and service lifetimes`() {
-        val koin = startKoin<MahjongCraftServerApp> { allowOverride(false) }.koin
+        val koin = startKoin {
+            allowOverride(false)
+            modules(fabricServerModule)
+        }.koin
         val core = koin.get<CoreExtensionRegistries>()
         val presentation = koin.get<MinecraftPresentationRegistries>()
 
@@ -583,7 +602,10 @@ class FabricApplicationModuleTest {
     /** 驗證客戶端依賴同時提供整合式伺服器服務與客戶端狀態儲存。 */
     @Test
     fun `client graph resolves integrated server services and client stores`() {
-        val koin = startKoin<MahjongCraftClientApp> { allowOverride(false) }.koin
+        val koin = startKoin {
+            allowOverride(false)
+            modules(fabricServerModule, fabricClientModule)
+        }.koin
 
         koin.get<GameFlowCoordinator>()
         koin.get<ClientMahjongStateStore>()
@@ -598,5 +620,20 @@ class FabricApplicationModuleTest {
         assertIs<AiStrategyDisplayNameRegistryImpl>(presentation.aiStrategyDisplayNameRegistry)
         assertIs<RuleModuleDisplayNameRegistryImpl>(presentation.ruleModuleDisplayNameRegistry)
         assertIs<TileDisplayNameRegistryImpl>(presentation.tileDisplayNameRegistry)
+    }
+
+    /** 只以介面取用的服務，在 client 依賴圖（含 integrated server）中解析到預期的實作，且與實作型別取得的是同一個 single。 */
+    @Test
+    fun `graphs bind services that consumers resolve by interface`() {
+        val koin = startKoin {
+            allowOverride(false)
+            modules(fabricServerModule, fabricClientModule)
+        }.koin
+
+        assertSame(koin.get<BuiltInDefaultGameConfigProvider>(), koin.get<DefaultGameConfigProvider>())
+        assertSame(koin.get<MahjongStoolSeatProvider>(), koin.get<SeatProvider<*, *>>())
+        assertSame(koin.get<FabricHistoryGenerationRuntimeFactory>(), koin.get<HistoryGenerationRuntimeFactory>())
+        assertSame(koin.get<ClientCoroutineScope>(), koin.get<CoroutineScope>())
+        assertSame(koin.get<ClientThreadCoroutineDispatcher>(), koin.get<CoroutineDispatcher>())
     }
 }

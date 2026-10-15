@@ -7,14 +7,12 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRuleSetti
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistorySummaryRequestDto
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import kotlinx.serialization.json.Json
-import org.koin.core.annotation.Single
 
 /**
  * 使用 Fabric 歷史查詢頻道傳送要求的實作。
  *
  * @property json 歷史查詢 DTO 的線路編碼器。
  */
-@Single(binds = [HistoryQuerySender::class])
 class FabricHistoryQuerySender(
     private val json: Json,
 ) : HistoryQuerySender {

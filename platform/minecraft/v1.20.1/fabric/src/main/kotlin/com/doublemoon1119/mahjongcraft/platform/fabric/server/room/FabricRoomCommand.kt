@@ -20,7 +20,6 @@ import net.minecraft.server.command.CommandManager.literal
 import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.text.Text
-import org.koin.core.annotation.Single
 import java.util.concurrent.CompletableFuture
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
@@ -61,7 +60,6 @@ import kotlin.uuid.toKotlinUuid
  * @property feedbackPublisher 找不到指定桌子或候選目標時的回饋。
  * @property scope 橋接 suggestion provider 內部 suspend 查詢與 Brigadier 同步 API 的協程 scope。
  */
-@Single
 class FabricRoomCommand(
     private val tableResolver: ReachableMahjongTableResolver,
     private val memberCandidateResolver: RoomMemberCandidateResolver,

@@ -15,7 +15,6 @@ import com.mojang.brigadier.suggestion.SuggestionsBuilder
 import net.minecraft.server.command.CommandManager.argument
 import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.server.world.ServerWorld
-import org.koin.core.annotation.Single
 import java.util.concurrent.CompletableFuture
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
@@ -32,7 +31,6 @@ import kotlin.uuid.toJavaUuid
  *
  * @property tileAssetRegistry 解析與補全牌面 asset key 的來源，含第三方註冊的 asset key。
  */
-@Single
 class DebugTilePreviewSupport(private val tileAssetRegistry: MinecraftTileAssetRegistry) {
     /**
      * 幫一個子指令節點同時掛上「不帶 `tile` 引數」與「帶 `tile` 引數」兩種執行路徑——省略引數時

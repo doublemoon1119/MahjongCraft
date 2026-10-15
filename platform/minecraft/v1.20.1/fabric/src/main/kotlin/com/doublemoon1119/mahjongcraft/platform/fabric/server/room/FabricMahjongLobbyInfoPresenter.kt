@@ -17,8 +17,6 @@ import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.Identifier
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Box
-import org.koin.core.annotation.Provided
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -29,12 +27,11 @@ import kotlin.uuid.Uuid
  * @property spawnGateway 透過平台入口生成提示實體。
  * @property moduleRegistry 解析遊戲規則所屬模組。
  */
-@Single
 class FabricMahjongLobbyInfoPresenter(
     private val serverHolder: FabricServerHolder,
     private val locations: TableLocationRegistry,
     private val spawnGateway: FabricEntitySpawnGateway,
-    @Provided private val moduleRegistry: MahjongModuleRegistry,
+    private val moduleRegistry: MahjongModuleRegistry,
 ) {
     /**
      * 建立或更新指定桌子的提示實體，並清除該桌多餘的重複實體。

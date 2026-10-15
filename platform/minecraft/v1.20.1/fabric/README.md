@@ -43,11 +43,10 @@ these tasks are interactive development launches, not automated tests.
 
 ## Dependency injection
 
-The common graph scans metadata only; server and client adapters keep separate scans.
-Application includes used by Koin compiler validation are intentional, even when runtime module
-inclusion de-duplicates them. Formal graph tests reject duplicate bindings and verify registry
-identity and factory lifetimes. The Minecraft environment provider remains explicit because
-its existing implementation package belongs to the server scan, while both graphs need it.
+The common module holds runtime metadata and the services both graphs share; server and client
+adapters live in separate modules. The Koin compiler plugin checks each application entry point's
+complete graph at build time. Formal graph tests reject duplicate bindings and verify registry
+identity and factory lifetimes.
 
 ## Extension bootstrap
 

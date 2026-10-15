@@ -26,8 +26,6 @@ import com.doublemoon1119.mahjongcraft.logic.table.TileWallRevealable
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
-import org.koin.core.annotation.Factory
-import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
 
 /**
@@ -53,14 +51,13 @@ import kotlin.uuid.Uuid
  * @property presentationPublisher 對局 in-process 呈現觸發器。
  * @property beginRoundPreparationUseCase 新局發牌後啟動規則準備步驟的 use case；未注入時略過。
  */
-@Factory
 class AdvanceRoundUseCase(
     private val gameRepository: GameRepository,
     private val moduleRegistry: MahjongModuleRegistry,
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
     private val handSortPreferenceStore: HandSortPreferenceStore,
-    @Provided private val eventPublisher: GameEventPublisher,
-    @Provided private val presentationPublisher: GamePresentationPublisher,
+    private val eventPublisher: GameEventPublisher,
+    private val presentationPublisher: GamePresentationPublisher,
     private val beginRoundPreparationUseCase: BeginRoundPreparationUseCase? = null,
 ) {
     /**

@@ -5,8 +5,6 @@ import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.RevealedHandSettlement
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
-import org.koin.core.annotation.Factory
-import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
 
 /**
@@ -14,9 +12,8 @@ import kotlin.uuid.Uuid
  *
  * @property presentationPublisher 發布流局結算呈現請求。
  */
-@Factory
 class ExhaustiveDrawSettlementPresentationService(
-    @Provided private val presentationPublisher: GamePresentationPublisher,
+    private val presentationPublisher: GamePresentationPublisher,
 ) {
     /**
      * 建立並發布一次統一流局結算呈現；[aiPlayerIds] 為由 AI 操控的玩家。

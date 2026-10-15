@@ -3,11 +3,9 @@ package com.doublemoon1119.mahjongcraft.flow.common.room.repository
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomSnapshot
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /** 以記憶體快照依房間與觀察者分開保存，並以互斥鎖保護存取的 repository 實作。 */
-@Single(binds = [RoomSnapshotRepository::class])
 class RoomSnapshotRepositoryImpl : RoomSnapshotRepository {
     /** 依房間 ID、觀察者 ID 儲存各自最近發布的房間快照。 */
     private val snapshots = mutableMapOf<Uuid, MutableMap<Uuid, RoomSnapshot>>()

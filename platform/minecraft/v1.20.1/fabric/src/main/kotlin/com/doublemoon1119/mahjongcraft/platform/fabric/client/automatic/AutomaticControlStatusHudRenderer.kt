@@ -5,7 +5,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjon
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.screen.ChatScreen
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 
@@ -17,7 +16,6 @@ import kotlin.uuid.toKotlinUuid
  * @property coordinator 已確認自動操作快照的來源。
  * @property displays 控制項名稱與顯示順序的解析器。
  */
-@Single
 class AutomaticControlStatusHudRenderer(
     private val configStore: MahjongClientConfigStore,
     private val stateStore: ClientMahjongStateStore,

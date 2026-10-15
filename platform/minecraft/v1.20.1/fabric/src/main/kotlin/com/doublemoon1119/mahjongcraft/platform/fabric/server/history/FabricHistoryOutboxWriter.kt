@@ -48,8 +48,6 @@ import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import net.minecraft.server.MinecraftServer
-import org.koin.core.annotation.Provided
-import org.koin.core.annotation.Single
 import java.nio.file.Path
 import java.sql.SQLException
 import kotlin.time.Clock
@@ -73,7 +71,6 @@ import kotlin.uuid.Uuid
  * @property replayProjectionRegistry 已完成註冊與凍結的歷史讀取轉換表。
  * @property observer 接收背景工作各環節耗時與寫入事件數；null 時不量測。
  */
-@Single
 class FabricHistoryOutboxWriter(
     private val store: AuthoritativeStateStore,
     registries: PersistenceRegistries,
@@ -81,9 +78,9 @@ class FabricHistoryOutboxWriter(
     private val dispatchers: CoroutineDispatchers,
     moduleRegistry: MahjongModuleRegistry,
     locations: TableLocationRegistry,
-    @Provided private val configState: MinecraftServerConfigState,
+    private val configState: MinecraftServerConfigState,
     private val retentionCoordinator: HistoryRetentionCoordinator,
-    @Provided private val replayProjectionRegistry: HistoryReplayProjectionRegistry,
+    private val replayProjectionRegistry: HistoryReplayProjectionRegistry,
     private val observer: HistoryWriterObserver? = null,
 ) {
     /** 記錄歷史寫入與對帳錯誤的 logger。 */

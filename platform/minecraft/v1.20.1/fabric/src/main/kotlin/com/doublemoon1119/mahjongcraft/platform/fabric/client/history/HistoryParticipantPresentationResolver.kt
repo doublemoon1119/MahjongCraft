@@ -7,7 +7,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHisto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.aiPlayerDisplayName
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.text.Text
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -16,7 +15,6 @@ import kotlin.uuid.Uuid
  * @property profiles 已知玩家 profile 的客戶端快取與材質解析器。
  * @property portraits 既有 portrait source 的 GUI 繪製器。
  */
-@Single
 class HistoryParticipantPresentationResolver(
     private val profiles: ClientPlayerProfileResolver,
     private val portraits: PlayerPortraitRenderer,

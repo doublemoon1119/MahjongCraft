@@ -1,10 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.action
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftResourceIds
-import org.koin.core.annotation.Single
 
 /** [GameActionVocabularyRegistry] 的記憶體實作。 */
-@Single(binds = [GameActionVocabularyRegistry::class])
 class GameActionVocabularyRegistryImpl : GameActionVocabularyRegistry {
     /** 依動作 ID 索引的中立預設。 */
     private val defaults = mutableMapOf<String, GameActionVocabulary>()

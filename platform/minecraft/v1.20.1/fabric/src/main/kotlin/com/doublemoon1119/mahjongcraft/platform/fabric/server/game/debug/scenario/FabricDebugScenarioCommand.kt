@@ -15,7 +15,6 @@ import net.minecraft.server.command.CommandManager.argument
 import net.minecraft.server.command.CommandManager.literal
 import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.text.Text
-import org.koin.core.annotation.Single
 import java.util.concurrent.CompletableFuture
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
@@ -28,7 +27,6 @@ import kotlin.uuid.toKotlinUuid
  * @property scope 執行情境載入工作的協程作用域。
  * @property dispatchers 將指令結果切回伺服器主執行緒的分派器。
  */
-@Single
 class FabricDebugScenarioCommand(
     private val registry: DebugGameScenarioRegistry,
     private val loader: DebugGameScenarioLoader,

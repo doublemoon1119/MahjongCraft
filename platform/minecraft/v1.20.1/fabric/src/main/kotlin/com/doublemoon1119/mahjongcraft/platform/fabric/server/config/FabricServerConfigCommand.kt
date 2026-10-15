@@ -17,7 +17,6 @@ import net.minecraft.server.command.CommandManager.literal
 import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
-import org.koin.core.annotation.Single
 
 /**
  * 註冊限制管理員使用的 server config reload 與 show 指令。
@@ -27,7 +26,6 @@ import org.koin.core.annotation.Single
  * @property scope 執行設定 reload 的應用協程作用域。
  * @property dispatchers 提供伺服器主執行緒 dispatcher。
  */
-@Single
 class FabricServerConfigCommand(
     private val configManager: FabricServerConfigManager,
     private val mahjongTileCollisionService: MahjongTileCollisionService,

@@ -47,8 +47,6 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.util.math.BlockPos
-import org.koin.core.annotation.Provided
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 
@@ -88,7 +86,6 @@ import kotlin.uuid.toKotlinUuid
  * @property json 編碼網路訊息的 JSON 設定。
  * @property networkRegistries 轉換網路 DTO 所需的規則註冊表。
  */
-@Single
 class MahjongTableRoomService(
     private val scope: AppCoroutineScope,
     private val roomRepository: RoomRepository,
@@ -116,8 +113,8 @@ class MahjongTableRoomService(
     private val tableStateDelivery: FabricTableStateDelivery,
     private val authoritativeStateStore: AuthoritativeStateStore,
     private val dispatchers: CoroutineDispatchers,
-    @Provided private val json: Json,
-    @Provided private val networkRegistries: NetworkDtoRegistries,
+    private val json: Json,
+    private val networkRegistries: NetworkDtoRegistries,
 ) {
     /**
      * 將 RoomScreen 的強型別操作路由到既有權威 use case；封包中的玩家身分一律忽略。

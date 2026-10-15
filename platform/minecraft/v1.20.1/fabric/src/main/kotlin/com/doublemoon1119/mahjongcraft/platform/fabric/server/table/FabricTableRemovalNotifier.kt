@@ -7,8 +7,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogge
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.koin.core.annotation.Provided
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -20,13 +18,12 @@ import kotlin.uuid.Uuid
  * @property scope 目前 server session 的工作作用域。
  * @property dispatchers 伺服器主執行緒排程器。
  */
-@Single(binds = [TableRemovalNotifier::class])
 internal class FabricTableRemovalNotifier(
     private val delivery: FabricTableStateDelivery,
     private val environment: TableStateDeliveryEnvironment,
     private val broadcaster: ObserverSnapshotBroadcaster,
-    @Provided private val scope: AppCoroutineScope,
-    @Provided private val dispatchers: CoroutineDispatchers,
+    private val scope: AppCoroutineScope,
+    private val dispatchers: CoroutineDispatchers,
 ) : TableRemovalNotifier {
     /** 記錄已完成權威清理但未能交付的通知，不回復已提交狀態。 */
     private val logger = mahjongCraftLogger(FabricTableRemovalNotifier::class)

@@ -12,7 +12,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundResultPayloadDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundResultPlayerDto
 import kotlinx.serialization.json.Json
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -25,7 +24,6 @@ import kotlin.uuid.Uuid
  * @property moduleRegistry 由規則設定取得規則模組 ID。
  * @property json 線路序列化設定。
  */
-@Single
 class RoundResultSender(
     private val serverHolder: FabricServerHolder,
     private val stateStore: AuthoritativeStateStore,

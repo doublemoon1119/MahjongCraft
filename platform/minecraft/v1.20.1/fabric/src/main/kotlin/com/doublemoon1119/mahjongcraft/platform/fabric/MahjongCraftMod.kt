@@ -14,8 +14,8 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.HandSortPreferen
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.SetHandSortPreferenceUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateCleaner
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
-import com.doublemoon1119.mahjongcraft.platform.fabric.di.MahjongCraftClientApp
-import com.doublemoon1119.mahjongcraft.platform.fabric.di.MahjongCraftServerApp
+import com.doublemoon1119.mahjongcraft.platform.fabric.di.fabricClientModule
+import com.doublemoon1119.mahjongcraft.platform.fabric.di.fabricServerModule
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricExtensionRegistries
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongExtensions
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
@@ -82,7 +82,7 @@ import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
 import org.koin.core.Koin
-import org.koin.plugin.module.dsl.startKoin
+import org.koin.core.context.startKoin
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 
@@ -240,12 +240,16 @@ class MahjongCraftMod : ModInitializer {
     /**
      * 依目前 Fabric environment 啟動 dedicated-server 或 client/integrated-server graph。
      *
+     * Minecraft client 可啟動 integrated server，因此 client graph 同時包含 [fabricServerModule] 與 [fabricClientModule]；
+     * 連線到 dedicated server 時 server-side single 維持延遲建立，不會建立第二個 Koin container。Dedicated server 只載入
+     * [fabricServerModule]，不登記 client state。
+     *
      * @return 對應執行環境的 Koin 依賴容器。
      */
     private fun startDependencyInjection(): Koin = if (FabricLoader.getInstance().environmentType == EnvType.CLIENT) {
-        startKoin<MahjongCraftClientApp>().koin
+        startKoin { modules(fabricServerModule, fabricClientModule) }.koin
     } else {
-        startKoin<MahjongCraftServerApp>().koin
+        startKoin { modules(fabricServerModule) }.koin
     }
 
     /**

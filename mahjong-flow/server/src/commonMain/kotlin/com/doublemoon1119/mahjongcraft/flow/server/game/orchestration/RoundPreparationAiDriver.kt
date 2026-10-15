@@ -7,7 +7,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.accepts
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicy
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
-import org.koin.core.annotation.Factory
 import kotlin.uuid.Uuid
 
 /**
@@ -23,7 +22,6 @@ import kotlin.uuid.Uuid
  * @property visibilityPolicy 建立 AI 視角的快照。
  * @property decisionExecutor 在 AI 專用的調度器上呼叫策略。
  */
-@Factory
 class RoundPreparationAiDriver(
     private val gameRepository: GameRepository,
     private val moduleRegistry: MahjongModuleRegistry,

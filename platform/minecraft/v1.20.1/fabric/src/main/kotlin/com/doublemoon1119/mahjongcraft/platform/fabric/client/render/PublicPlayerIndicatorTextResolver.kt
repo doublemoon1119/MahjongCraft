@@ -5,13 +5,10 @@ import com.doublemoon1119.mahjongcraft.logic.module.PublicPlayerIndicatorValue
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistry
 import net.minecraft.text.Text
-import org.koin.core.annotation.Provided
-import org.koin.core.annotation.Single
 
 /** 將規則公開 indicator 統一解析成世界面板與 GUI 共用的本地化文字及顏色。 */
-@Single
 class PublicPlayerIndicatorTextResolver(
-    @Provided private val displays: PublicPlayerIndicatorDisplayRegistry,
+    private val displays: PublicPlayerIndicatorDisplayRegistry,
 ) {
     private val logger = mahjongCraftLogger(PublicPlayerIndicatorTextResolver::class)
 

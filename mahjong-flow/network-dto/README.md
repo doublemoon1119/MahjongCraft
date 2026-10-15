@@ -23,8 +23,8 @@ It depends on [mahjong-logic](../../mahjong-logic/README.md),
 
 ## Dependency injection
 
-NetworkDtoModule scans the runtime registry implementation and explicitly builds Json
-with its extension-aware serializers. DTO models remain plain serializable data;
+`networkDtoModule` registers the runtime registry implementation and builds Json with its
+extension-aware serializers. DTO models remain plain serializable data;
 bootstrap and codecs share the same registry instance.
 
 ## Testing

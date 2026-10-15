@@ -6,7 +6,6 @@ import com.mojang.authlib.minecraft.MinecraftProfileTexture
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.texture.PlayerSkinProvider
 import net.minecraft.util.Identifier
-import org.koin.core.annotation.Single
 import java.util.LinkedHashMap
 import java.util.LinkedHashSet
 import kotlin.time.Duration.Companion.seconds
@@ -19,7 +18,6 @@ import kotlin.uuid.toJavaUuid
  * 集中管理目前伺服器提供的玩家 profile，以及 Minecraft 原生 skin provider 的材質查詢。
  * 真人名稱不由客戶端主動猜測；正版玩家的 UUID 可交由原生服務解析，offline-mode UUID 則保留預設呈現。
  */
-@Single
 class ClientPlayerProfileResolver {
     /** 記錄皮膚載入失敗與逾時的 logger。 */
     private val logger = mahjongCraftLogger(ClientPlayerProfileResolver::class)

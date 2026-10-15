@@ -6,8 +6,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisio
 import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import net.minecraft.text.Text
-import org.koin.core.annotation.Provided
-import org.koin.core.annotation.Single
 
 /**
  * 依決策提示指定的規則模組，解析決策介面上的用語。
@@ -22,12 +20,11 @@ import org.koin.core.annotation.Single
  * @property exhaustiveDrawReasonDisplayNames 流局原因的顯示名稱。
  * @property roundPreparationDisplayNames 開局準備選項的顯示名稱。
  */
-@Single
 class DecisionTextResolver(
-    @Provided private val actionVocabulary: GameActionVocabularyRegistry,
-    @Provided private val decisionStatusDisplayNames: DecisionStatusDisplayNameRegistry,
-    @Provided private val exhaustiveDrawReasonDisplayNames: ExhaustiveDrawReasonDisplayNameRegistry,
-    @Provided private val roundPreparationDisplayNames: RoundPreparationDisplayNameRegistry,
+    private val actionVocabulary: GameActionVocabularyRegistry,
+    private val decisionStatusDisplayNames: DecisionStatusDisplayNameRegistry,
+    private val exhaustiveDrawReasonDisplayNames: ExhaustiveDrawReasonDisplayNameRegistry,
+    private val roundPreparationDisplayNames: RoundPreparationDisplayNameRegistry,
 ) {
     /**
      * 動作或開局準備選項顯示在操作卡上的名稱。

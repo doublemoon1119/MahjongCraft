@@ -8,7 +8,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerIdentityE
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerIdentityPayload
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -19,7 +18,6 @@ import kotlin.uuid.Uuid
  * @property dispatchers 伺服器主執行緒排程。
  * @property json 線路序列化設定。
  */
-@Single
 class PlayerIdentitySender(
     private val names: ServerPlayerIdentityStore,
     private val serverHolder: FabricServerHolder,

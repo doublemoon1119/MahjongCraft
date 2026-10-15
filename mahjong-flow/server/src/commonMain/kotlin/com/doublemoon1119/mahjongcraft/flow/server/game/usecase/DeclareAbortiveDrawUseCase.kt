@@ -17,8 +17,6 @@ import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
-import org.koin.core.annotation.Factory
-import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
 
 /**
@@ -36,12 +34,11 @@ import kotlin.uuid.Uuid
  * @property snapshotSynchronizer 對局快照同步服務。
  * @property eventPublisher 對局通知服務。
  */
-@Factory
 class DeclareAbortiveDrawUseCase(
     private val gameRepository: GameRepository,
     private val moduleRegistry: MahjongModuleRegistry,
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
-    @Provided private val eventPublisher: GameEventPublisher,
+    private val eventPublisher: GameEventPublisher,
 ) {
     /**
      * 執行指定原因的途中流局宣告邏輯。

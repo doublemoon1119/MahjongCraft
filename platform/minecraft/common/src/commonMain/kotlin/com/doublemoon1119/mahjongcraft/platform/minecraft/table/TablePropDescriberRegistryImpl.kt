@@ -1,9 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.table
 
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
-import org.koin.core.annotation.Single
 /** [TablePropDescriberRegistry] 的記憶體實作。 */
-@Single(binds = [TablePropDescriberRegistry::class])
 class TablePropDescriberRegistryImpl : TablePropDescriberRegistry {
     /** 依規則模組識別碼索引的描述。 */
     private val describers = mutableMapOf<String, TablePropDescriber>()

@@ -11,7 +11,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DrawTileUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToDiscardUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToRobbingUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.SubmitRoundPreparationUseCase
-import org.koin.core.annotation.Factory
 import kotlin.uuid.Uuid
 
 /**
@@ -35,7 +34,6 @@ import kotlin.uuid.Uuid
  * @property extensionCommandExecutor 規則擴充命令的執行者。
  * @property submitRoundPreparationUseCase 提交開局準備資料的用例；未提供時該命令回傳不可用錯誤。
  */
-@Factory
 class GameActionRouter(
     private val drawTileUseCase: DrawTileUseCase,
     private val discardTileUseCase: DiscardTileUseCase,

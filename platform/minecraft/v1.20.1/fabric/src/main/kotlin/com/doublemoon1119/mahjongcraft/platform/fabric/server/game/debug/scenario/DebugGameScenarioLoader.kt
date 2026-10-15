@@ -12,7 +12,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftE
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
-import org.koin.core.annotation.Single
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -34,7 +33,6 @@ import kotlin.uuid.Uuid
  * @property stateStore 停止情境場次的歷史記錄。
  * @property dispatchers 提供平台呈現使用的執行緒。
  */
-@Single
 class DebugGameScenarioLoader(
     private val minecraftEnvironment: MinecraftEnvironment,
     private val registry: DebugGameScenarioRegistry,

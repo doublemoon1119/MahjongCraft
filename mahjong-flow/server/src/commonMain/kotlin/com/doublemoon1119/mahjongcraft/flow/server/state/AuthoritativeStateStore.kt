@@ -20,7 +20,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import org.koin.core.annotation.Single
 import kotlin.time.Clock
 import kotlin.time.TimeSource
 import kotlin.uuid.Uuid
@@ -36,7 +35,6 @@ import kotlin.uuid.Uuid
  * @property maxPendingHistoryEvents 待寫佇列的容量上限；超出時只保留序號缺口，不阻塞對局。
  * @property historyRecordingObserver 接收每次交易記錄歷史事件的耗時與事件數；null 時不量測。
  */
-@Single
 class AuthoritativeStateStore(
     historyRecordingEnabled: Boolean = false,
     private val historyClock: Clock = Clock.System,

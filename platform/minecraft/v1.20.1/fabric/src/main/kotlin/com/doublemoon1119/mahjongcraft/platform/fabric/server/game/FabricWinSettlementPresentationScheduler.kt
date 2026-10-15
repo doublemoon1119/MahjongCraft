@@ -21,7 +21,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.winningHandFaceDownIndices
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.math.BlockPos
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -31,7 +30,6 @@ import kotlin.uuid.Uuid
  * @property overlays 管理桌面 overlay 的暫時隱藏。
  * @property spawnGateway 生成並追蹤舞台 entity。
  */
-@Single
 class FabricWinSettlementPresentationScheduler(
     private val templateRegistry: WinSettlementPresentationTemplateRegistry,
     private val overlays: PersistentTableOverlayCoordinator,

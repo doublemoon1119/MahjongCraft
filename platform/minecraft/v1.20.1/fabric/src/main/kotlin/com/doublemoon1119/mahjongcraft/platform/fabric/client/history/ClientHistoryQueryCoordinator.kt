@@ -14,7 +14,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogge
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import org.koin.core.annotation.Single
 import kotlin.time.Duration
 import kotlin.uuid.Uuid
 
@@ -24,7 +23,6 @@ import kotlin.uuid.Uuid
  * @property sender 實際傳送線路 DTO 的平台邊界。
  * @property settings 目前連線伺服器公布的查詢間隔。
  */
-@Single(binds = [HistoryQueryTransport::class])
 class ClientHistoryQueryCoordinator(
     private val sender: HistoryQuerySender,
     private val settings: ClientHistoryQuerySettings,

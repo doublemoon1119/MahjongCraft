@@ -4,7 +4,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundContinuati
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
-import org.koin.core.annotation.Single
 
 /**
  * 可於 bootstrap 登記、完成後凍結的 win round continuation resolver registry。
@@ -12,7 +11,6 @@ import org.koin.core.annotation.Single
  * 未替某規則模組登記任何 resolver 時，[resolve] 固定回傳 [WinRoundDirective.EndRound]：沒有登記
  * resolver 的規則，胡牌後一律立即結束本局。
  */
-@Single
 class WinRoundContinuationResolverRegistry {
     /** 尚未凍結的 resolver 集合。 */
     private val resolvers = mutableListOf<WinRoundContinuationResolver>()

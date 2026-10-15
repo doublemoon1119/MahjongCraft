@@ -16,8 +16,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAsse
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.screen.Screen
-import org.koin.core.annotation.Provided
-import org.koin.core.annotation.Single
 import kotlin.time.Duration.Companion.nanoseconds
 import kotlin.uuid.Uuid
 
@@ -41,21 +39,20 @@ import kotlin.uuid.Uuid
  * @property archiveStatus 保存狀態查詢。
  * @property dispatcher 客戶端主執行緒排程。
  */
-@Single
 class HistoryScreenController internal constructor(
     private val transport: HistoryQueryTransport,
     private val participants: HistoryParticipantPresentationResolver,
-    @Provided private val ruleNames: RuleModuleDisplayNameRegistry,
-    @Provided private val configResolver: GameConfigPresentationResolver,
-    @Provided private val networkRegistries: NetworkDtoRegistries,
-    @Provided private val moduleRegistry: MahjongModuleRegistry,
-    @Provided private val actionVocabulary: GameActionVocabularyRegistry,
-    @Provided private val exhaustiveDrawReasons: ExhaustiveDrawReasonDisplayNameRegistry,
-    @Provided private val roundOutcomes: RoundOutcomeDisplayNameRegistry,
-    @Provided private val discardMarkers: HistoryDiscardMarkerDisplayRegistry,
-    @Provided private val settlementTemplates: WinSettlementPresentationTemplateRegistry,
+    private val ruleNames: RuleModuleDisplayNameRegistry,
+    private val configResolver: GameConfigPresentationResolver,
+    private val networkRegistries: NetworkDtoRegistries,
+    private val moduleRegistry: MahjongModuleRegistry,
+    private val actionVocabulary: GameActionVocabularyRegistry,
+    private val exhaustiveDrawReasons: ExhaustiveDrawReasonDisplayNameRegistry,
+    private val roundOutcomes: RoundOutcomeDisplayNameRegistry,
+    private val discardMarkers: HistoryDiscardMarkerDisplayRegistry,
+    private val settlementTemplates: WinSettlementPresentationTemplateRegistry,
     private val tileFaces: MahjongTileFaceRenderer,
-    @Provided private val tileAssets: MinecraftTileAssetRegistry,
+    private val tileAssets: MinecraftTileAssetRegistry,
     private val ruleCatalogue: RuleCatalogueScreenController,
     private val archiveStatus: HistoryArchiveStatusTransport,
     private val dispatcher: ClientThreadCoroutineDispatcher,

@@ -33,8 +33,6 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import net.minecraft.server.network.ServerPlayerEntity
-import org.koin.core.annotation.Provided
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 
@@ -67,7 +65,6 @@ import kotlin.uuid.toKotlinUuid
  * @property json 決策提交回覆使用的序列化設定。
  * @property failurePolicy 判斷命令執行中丟出的失敗能否記錄後回覆拒絕；協程取消與無法隔離的失敗原樣往外傳。
  */
-@Single
 class MahjongTableGameActionService(
     private val scope: AppCoroutineScope,
     private val gameRepository: GameRepository,
@@ -82,7 +79,7 @@ class MahjongTableGameActionService(
     private val actionContextResolver: PlayerActionContextResolver,
     private val actionCommandMapper: GameActionCommandMapper,
     private val moduleRegistry: MahjongModuleRegistry,
-    @Provided private val json: Json,
+    private val json: Json,
     private val failurePolicy: ExtensionFailurePolicy,
 ) {
     /** 對局命令與自動銜接失敗時的專用 logger。 */

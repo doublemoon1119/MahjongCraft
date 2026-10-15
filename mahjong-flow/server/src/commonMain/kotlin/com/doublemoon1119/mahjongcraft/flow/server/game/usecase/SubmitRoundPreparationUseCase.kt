@@ -10,7 +10,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPrepa
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
-import org.koin.core.annotation.Factory
 import kotlin.uuid.Uuid
 
 /**
@@ -21,7 +20,6 @@ import kotlin.uuid.Uuid
  * @property resolverRegistry 開局準備步驟解析器註冊中心。
  * @property snapshotSynchronizer 對局快照同步服務。
  */
-@Factory
 class SubmitRoundPreparationUseCase(
     private val gameRepository: GameRepository,
     private val moduleRegistry: MahjongModuleRegistry,

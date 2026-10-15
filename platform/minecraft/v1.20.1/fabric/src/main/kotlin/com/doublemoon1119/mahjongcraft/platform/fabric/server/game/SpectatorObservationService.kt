@@ -7,7 +7,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublish
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.SyncGameSnapshotUseCase
 import kotlinx.coroutines.launch
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -30,7 +29,6 @@ import kotlin.uuid.Uuid
  * @property syncGame 產生並同步符合旁觀政策的快照。
  * @property gameSnapshotRepository 移除離開視野的旁觀者快照。
  */
-@Single
 class SpectatorObservationService(
     private val scope: AppCoroutineScope,
     private val gameRepository: GameRepository,

@@ -26,7 +26,6 @@ import net.minecraft.block.BlockState
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.math.BlockPos
 import net.minecraft.world.WorldAccess
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -54,7 +53,6 @@ import kotlin.uuid.Uuid
  * @property tileSelectionConfirmPresenter 清理選牌確認面板。
  * @property presentationCleaner 清理臨時呈現與演出。
  */
-@Single
 class FabricTableLifecycleService(
     private val store: AuthoritativeStateStore,
     private val locations: TableLocationRegistry,

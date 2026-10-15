@@ -110,11 +110,11 @@ coroutines, Koin, KToml, and Kotlin Serialization.
 
 ## Dependency injection
 
-MinecraftCommonModule scans class-owned presentation registries and assembles the bootstrap
-aggregate from those same instances. Display-name registries are bound directly in this common
-module; native text conversion remains in each platform adapter.
-MinecraftServerModule explicitly provides server-only state and codecs whose feature
-packages overlap the common scan; session cleanup remains the lifecycle services' responsibility.
+`minecraftCommonModule` registers the class-owned presentation registries and assembles the
+bootstrap aggregate from those same instances. Display-name registries are bound directly in this
+common module; native text conversion remains in each platform adapter.
+`minecraftServerModule` registers server-only state and codecs so that only the server graph
+creates them; session cleanup remains the lifecycle services' responsibility.
 
 ## Testing
 

@@ -3,7 +3,6 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.event
 import com.doublemoon1119.mahjongcraft.platform.minecraft.event.GameEventLocationSource
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -11,7 +10,6 @@ import kotlin.uuid.Uuid
  *
  * @property locations 支援背景讀取的記憶體位置索引。
  */
-@Single(binds = [GameEventLocationSource::class])
 internal class FabricGameEventLocationSource(
     private val locations: TableLocationRegistry,
 ) : GameEventLocationSource {

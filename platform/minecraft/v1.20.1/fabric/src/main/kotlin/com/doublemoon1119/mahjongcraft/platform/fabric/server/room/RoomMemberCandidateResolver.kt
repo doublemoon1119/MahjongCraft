@@ -4,7 +4,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepository
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -17,7 +16,6 @@ import kotlin.uuid.Uuid
  * @property roomRepository 權威房間數據倉庫。
  * @property serverHolder 用於將真人玩家 Uuid 解析成目前的 Minecraft 使用者名稱。
  */
-@Single
 class RoomMemberCandidateResolver(
     private val membershipRepository: PlayerMembershipRepository,
     private val roomRepository: RoomRepository,

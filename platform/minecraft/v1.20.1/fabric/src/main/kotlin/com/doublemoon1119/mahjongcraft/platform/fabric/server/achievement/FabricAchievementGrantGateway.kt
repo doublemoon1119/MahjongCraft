@@ -5,7 +5,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.AchievementStatisticIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.PlayerAchievements
 import net.minecraft.stat.Stats
-import org.koin.core.annotation.Single
 
 /**
  * [AchievementGrantGateway] 的 Minecraft 實作：先累加統計，再觸發進度條件，
@@ -13,7 +12,6 @@ import org.koin.core.annotation.Single
  *
  * @property serverHolder 取得目前伺服器與在線玩家。
  */
-@Single(binds = [AchievementGrantGateway::class])
 class FabricAchievementGrantGateway(
     private val serverHolder: FabricServerHolder,
 ) : AchievementGrantGateway {

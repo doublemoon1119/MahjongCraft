@@ -10,7 +10,6 @@ import net.minecraft.registry.RegistryKey
 import net.minecraft.registry.RegistryKeys
 import net.minecraft.util.Identifier
 import net.minecraft.util.math.BlockPos
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 
@@ -26,7 +25,6 @@ import kotlin.uuid.toKotlinUuid
  * @property serverHolder 取得目前伺服器與世界。
  * @property dispatchers 提供伺服器主執行緒。
  */
-@Single(binds = [ObserverAudienceSource::class])
 class FabricObserverAudienceSource(
     private val locations: TableLocationRegistry,
     private val serverHolder: FabricServerHolder,

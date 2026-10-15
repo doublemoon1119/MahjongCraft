@@ -3,7 +3,6 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.concurrency
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.ServerThreadCoroutineDispatcher
 import kotlinx.coroutines.CoroutineDispatcher
 import net.minecraft.client.MinecraftClient
-import org.koin.core.annotation.Single
 import kotlin.coroutines.CoroutineContext
 
 /**
@@ -11,7 +10,6 @@ import kotlin.coroutines.CoroutineContext
  *
  * 已在該執行緒時不另行排程；不同於 [ServerThreadCoroutineDispatcher]，此處不實作以伺服器 tick 計時的延遲。
  */
-@Single
 class ClientThreadCoroutineDispatcher : CoroutineDispatcher() {
     override fun isDispatchNeeded(context: CoroutineContext): Boolean = !MinecraftClient.getInstance().isOnThread
 

@@ -8,7 +8,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.DimensionChunkKe
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import kotlinx.coroutines.launch
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -23,7 +22,6 @@ import kotlin.uuid.Uuid
  * @property locations 麻將桌位置索引。
  * @property presenter 實際建立、更新與清除提示的呈現器。
  */
-@Single
 class FabricMahjongLobbyInfoLifecycleService(
     private val store: AuthoritativeStateStore,
     private val scope: FabricSessionBackgroundScope,

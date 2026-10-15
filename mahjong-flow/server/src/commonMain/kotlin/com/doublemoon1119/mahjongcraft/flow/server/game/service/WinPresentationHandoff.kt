@@ -1,7 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.service
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.SettledWinPresentation
-import org.koin.core.annotation.Single
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.uuid.Uuid
 
@@ -23,7 +22,6 @@ import kotlin.uuid.Uuid
  * **不會殘留舊資料**：[take] 一律移除該場地的暫存內容，即使贏家不符也一樣（此時回傳 null 並丟棄）。
  * 因此就算某次胡牌的收斂流程中途失敗，下一次胡牌也不可能拿到上一次的內容。
  */
-@Single
 class WinPresentationHandoff {
     /** 以對局識別碼索引、等待同一派發流程取走的胡牌呈現資料。 */
     private val presentationsByGameId = ConcurrentHashMap<Uuid, SettledWinPresentation>()

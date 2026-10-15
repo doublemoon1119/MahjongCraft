@@ -17,7 +17,6 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.minecraft.server.command.CommandManager.literal
 import net.minecraft.server.command.ServerCommandSource
-import org.koin.core.annotation.Single
 
 /**
  * 註冊 development-only、op 限定的 `/mahjongcraft debug ...` 指令根節點與各功能測試子指令。
@@ -55,7 +54,6 @@ import org.koin.core.annotation.Single
  * @property stressController 壓力測試的 tick 推進與伺服器關閉時的清理。
  * @property entityLifecycle 保管並驅動臨時 entity 的到期清除。
  */
-@Single
 class FabricDebugCommand(
     private val minecraftEnvironment: MinecraftEnvironment,
     private val scenarioCommand: FabricDebugScenarioCommand,

@@ -48,8 +48,6 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
-import org.koin.core.annotation.Provided
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 
@@ -68,15 +66,14 @@ import kotlin.uuid.toKotlinUuid
  * @property stressTestHistory 壓力測試範圍讀取的壓力測試資料庫。
  * @property minecraftEnvironment 只在開發環境開放壓力測試範圍。
  */
-@Single
 class FabricHistoryQueryService(
     private val writer: FabricHistoryOutboxWriter,
-    @Provided private val configState: MinecraftServerConfigState,
+    private val configState: MinecraftServerConfigState,
     private val store: AuthoritativeStateStore,
     scope: FabricSessionBackgroundScope,
     dispatchers: CoroutineDispatchers,
     private val json: Json,
-    @Provided private val networkRegistries: NetworkDtoRegistries,
+    private val networkRegistries: NetworkDtoRegistries,
     private val playerIdentities: PlayerIdentitySender,
     private val identityStore: ServerPlayerIdentityStore,
     private val stressTestHistory: StressTestHistorySource,

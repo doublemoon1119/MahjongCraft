@@ -2,10 +2,8 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue
 
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
-import org.koin.core.annotation.Single
 
 /** [RuleCatalogueRegistry] 的記憶體實作；registry 不捕捉來源程式錯誤以冒充空目錄。 */
-@Single(binds = [RuleCatalogueRegistry::class])
 class RuleCatalogueRegistryImpl : RuleCatalogueRegistry {
     /** 依註冊順序保存來源。 */
     private val providers = linkedMapOf<String, RuleCatalogueProvider>()

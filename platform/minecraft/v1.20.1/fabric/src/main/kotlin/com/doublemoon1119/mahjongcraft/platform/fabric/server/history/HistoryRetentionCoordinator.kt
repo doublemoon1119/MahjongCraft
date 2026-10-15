@@ -3,10 +3,8 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.history
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftHistoryConfig
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import org.koin.core.annotation.Single
 
 /** 排序保留政策發布與清理工作，避免較舊政策在 reload 成功後繼續刪除資料。 */
-@Single
 class HistoryRetentionCoordinator {
     /** 保護政策與清理工作；不與權威 store 共用鎖，也不在 store callback 內等待。 */
     private val mutex = Mutex()

@@ -96,7 +96,6 @@ import net.minecraft.server.world.ServerWorld
 import net.minecraft.state.property.Properties
 import net.minecraft.util.Identifier
 import net.minecraft.util.math.BlockPos
-import org.koin.core.annotation.Single
 import kotlin.random.Random
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
@@ -139,7 +138,6 @@ import kotlin.uuid.toJavaUuid
  * @property scope 承接世界／方塊狀態查詢需要切回伺服器主執行緒的呈現工作；呈現可以捨棄，關服時直接取消。
  * @property dispatchers 切回伺服器主執行緒用的 dispatcher。
  */
-@Single(binds = [GamePresentationPublisher::class])
 class FabricGamePresentationPublisher(
     private val seatingPresenter: MahjongSeatingPresenter,
     private val diceRollPresenter: MahjongDiceRollPresenter,

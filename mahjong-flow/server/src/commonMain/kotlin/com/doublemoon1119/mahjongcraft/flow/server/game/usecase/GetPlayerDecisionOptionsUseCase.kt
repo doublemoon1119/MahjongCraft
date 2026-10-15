@@ -5,7 +5,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.model.PlayerDecisionOptions
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.AutomaticDecisionEvaluator
-import org.koin.core.annotation.Factory
 import kotlin.uuid.Uuid
 
 /**
@@ -14,7 +13,6 @@ import kotlin.uuid.Uuid
  * @property gameRepository 權威對局資料倉庫。
  * @property automaticDecisionEvaluator 評估玩家目前自動決策選項的服務。
  */
-@Factory
 class GetPlayerDecisionOptionsUseCase(
     private val gameRepository: GameRepository,
     private val automaticDecisionEvaluator: AutomaticDecisionEvaluator,

@@ -22,8 +22,6 @@ import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallba
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.MinecraftClient
 import net.minecraft.text.Text
-import org.koin.core.annotation.Provided
-import org.koin.core.annotation.Single
 import kotlin.uuid.toKotlinUuid
 
 /**
@@ -60,19 +58,18 @@ import kotlin.uuid.toKotlinUuid
  * @property profileResolver 玩家名稱與外觀資料解析器。
  * @property ruleCatalogue 從房間設定開啟規則一覽的控制器。
  */
-@Single
 class FabricRoomConfigScreenCommand(
     private val stateStore: ClientMahjongStateStore,
-    @Provided private val configPresentations: GameConfigPresentationRegistry,
-    @Provided private val configResolver: GameConfigPresentationResolver,
-    @Provided private val ruleNames: RuleModuleDisplayNameRegistry,
+    private val configPresentations: GameConfigPresentationRegistry,
+    private val configResolver: GameConfigPresentationResolver,
+    private val ruleNames: RuleModuleDisplayNameRegistry,
     private val portraitRenderer: PlayerPortraitRenderer,
-    @Provided private val aiStrategies: MahjongAiStrategyRegistry,
-    @Provided private val aiStrategyNames: AiStrategyDisplayNameRegistry,
-    @Provided private val appearanceSources: RoomMemberAppearanceSourceRegistry,
+    private val aiStrategies: MahjongAiStrategyRegistry,
+    private val aiStrategyNames: AiStrategyDisplayNameRegistry,
+    private val appearanceSources: RoomMemberAppearanceSourceRegistry,
     private val indicatorTextResolver: PublicPlayerIndicatorTextResolver,
-    @Provided private val json: Json,
-    @Provided private val networkRegistries: NetworkDtoRegistries,
+    private val json: Json,
+    private val networkRegistries: NetworkDtoRegistries,
     private val profileResolver: ClientPlayerProfileResolver,
     private val ruleCatalogue: RuleCatalogueScreenController,
 ) {

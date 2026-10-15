@@ -6,7 +6,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPrepa
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
-import org.koin.core.annotation.Factory
 import kotlin.uuid.Uuid
 
 /**
@@ -17,7 +16,6 @@ import kotlin.uuid.Uuid
  * @property resolverRegistry 取得規則提供的準備流程解析器。
  * @property snapshotSynchronizer 更新準備流程變更後的觀看者快照。
  */
-@Factory
 class AdvanceAutomaticRoundPreparationUseCase(
     private val gameRepository: GameRepository,
     private val moduleRegistry: MahjongModuleRegistry,

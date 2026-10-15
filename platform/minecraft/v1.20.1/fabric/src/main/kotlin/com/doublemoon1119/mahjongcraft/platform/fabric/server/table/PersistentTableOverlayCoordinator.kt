@@ -5,11 +5,9 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongRoundInfoEn
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Box
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /** 同時管理 Round Info 與 Player Info 的常駐桌級 overlay lease 與清除。 */
-@Single
 class PersistentTableOverlayCoordinator {
     /**
      * 將桌上兩種 overlay 隱藏至指定遊戲時間。

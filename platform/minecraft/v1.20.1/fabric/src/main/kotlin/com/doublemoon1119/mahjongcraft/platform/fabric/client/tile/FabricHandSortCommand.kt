@@ -13,7 +13,6 @@ import net.minecraft.client.MinecraftClient
 import net.minecraft.text.MutableText
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
-import org.koin.core.annotation.Single
 
 /**
  * `/mahjongcraft_client hand_sort toggle`：切換自動整理手牌開關。跟純 client-only 的
@@ -23,7 +22,6 @@ import org.koin.core.annotation.Single
  *
  * 根節點用共用的 [CLIENT_COMMAND_ROOT]，理由見該常數 KDoc。
  */
-@Single
 class FabricHandSortCommand(
     private val preferenceService: ClientAutoSortHandPreferenceService,
 ) {

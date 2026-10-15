@@ -1,11 +1,9 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExtensionGameCommand
-import org.koin.core.annotation.Single
 import kotlin.reflect.KClass
 
 /** 管理擴充命令與其 handler 建立方式的可凍結註冊表。 */
-@Single
 class ExtensionGameCommandExecutorRegistry {
     /**
      * 保留具體命令型別的 handler 建立方式，避免放入註冊表時遺失泛型資訊。

@@ -20,8 +20,6 @@ import net.minecraft.client.render.VertexConsumerProvider
 import net.minecraft.client.util.DefaultSkinHelper
 import net.minecraft.client.util.math.MatrixStack
 import net.minecraft.util.Identifier
-import org.koin.core.annotation.Provided
-import org.koin.core.annotation.Single
 import kotlin.math.roundToInt
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
@@ -33,10 +31,9 @@ import kotlin.uuid.toJavaUuid
  * @property tileAssetRegistry 提供 AI 牌面頭像使用的完整 namespace 與路徑映射。
  * @property profiles 真人普通名稱與原生皮膚材質的共用解析器。
  */
-@Single
 class PlayerPortraitRenderer(
-    @Provided private val sources: PlayerPortraitSourceRegistry,
-    @Provided private val tileAssetRegistry: MinecraftTileAssetRegistry,
+    private val sources: PlayerPortraitSourceRegistry,
+    private val tileAssetRegistry: MinecraftTileAssetRegistry,
     private val profiles: ClientPlayerProfileResolver,
 ) {
     /** 記錄外觀來源或繪製失敗，並遵守相同來源只警告一次的策略。 */

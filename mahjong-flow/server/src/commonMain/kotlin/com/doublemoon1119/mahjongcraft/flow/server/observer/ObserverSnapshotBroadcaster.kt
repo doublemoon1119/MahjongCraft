@@ -11,8 +11,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import org.koin.core.annotation.Provided
-import org.koin.core.annotation.Single
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.uuid.Uuid
@@ -34,13 +32,12 @@ import kotlin.uuid.Uuid
  * @property sender 平台層提供的送出管道。
  */
 @OptIn(ExperimentalAtomicApi::class)
-@Single
 class ObserverSnapshotBroadcaster(
     private val store: AuthoritativeStateStore,
     private val visibilityPolicy: GameVisibilityPolicy,
     private val handReadinessVisibilityPolicy: HandReadinessVisibilityPolicy,
-    @Provided private val audienceSource: ObserverAudienceSource,
-    @Provided private val sender: ObserverSnapshotSender,
+    private val audienceSource: ObserverAudienceSource,
+    private val sender: ObserverSnapshotSender,
 ) {
     /**
      * 單一房間或對局的送出紀錄。

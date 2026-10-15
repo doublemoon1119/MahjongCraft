@@ -6,10 +6,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRe
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryTileReference
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import kotlinx.serialization.json.JsonElement
-import org.koin.core.annotation.Single
 
 /** 分類且強型別的歷史投影註冊表；由呼叫端註冊並明確凍結。 */
-@Single
 class HistoryReplayProjectionRegistry {
     /** 必要牌河轉換器。 */
     private val discardCodecs = linkedMapOf<String, HistoryReplayProjectionCodec<List<HistoryReplayDiscard>>>()

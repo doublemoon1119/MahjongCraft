@@ -3,17 +3,14 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistry
 import net.minecraft.text.Text
-import org.koin.core.annotation.Provided
-import org.koin.core.annotation.Single
 
 /**
  * 將自動操作 ID 解析為本地化顯示資料，並安全保留未登記的第三方 ID。
  *
  * @property registry 已登記的顯示資料來源。
  */
-@Single
 class AutomaticControlDisplayResolver(
-    @Provided private val registry: AutomaticControlDisplayRegistry,
+    private val registry: AutomaticControlDisplayRegistry,
 ) {
     /** 記錄本 session 已警告過的未知識別碼，避免重複輸出相同訊息。 */
     private val logger = mahjongCraftLogger(AutomaticControlDisplayResolver::class)

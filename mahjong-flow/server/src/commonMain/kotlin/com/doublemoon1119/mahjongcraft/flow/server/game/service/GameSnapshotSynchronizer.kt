@@ -3,7 +3,6 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.service
 import com.doublemoon1119.mahjongcraft.flow.common.game.repository.GameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicy
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -13,7 +12,6 @@ import kotlin.uuid.Uuid
  * @property snapshotRepository 寫入各觀看者的遊戲與準備流程快照。
  * @property visibilityPolicy 為觀看者裁切可公開的狀態。
  */
-@Single
 class GameSnapshotSynchronizer(
     private val gameRepository: GameRepository,
     private val snapshotRepository: GameSnapshotRepository,

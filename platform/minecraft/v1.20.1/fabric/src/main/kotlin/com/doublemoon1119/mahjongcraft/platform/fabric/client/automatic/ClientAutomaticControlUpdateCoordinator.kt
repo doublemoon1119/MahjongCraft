@@ -5,7 +5,6 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControl
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlUpdateResultDto
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientAutomaticControlStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -16,7 +15,6 @@ import kotlin.uuid.Uuid
  * @property stateStore 本局自動操作權威狀態儲存。
  * @property requestSender 本局更新請求傳送器。
  */
-@Single
 class ClientAutomaticControlUpdateCoordinator(
     private val stateStore: ClientAutomaticControlStateStore,
     private val requestSender: ClientAutomaticControlRequestSender,

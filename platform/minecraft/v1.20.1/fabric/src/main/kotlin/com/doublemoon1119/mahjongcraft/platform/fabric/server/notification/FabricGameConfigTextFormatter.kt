@@ -13,8 +13,6 @@ import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import net.minecraft.text.MutableText
 import net.minecraft.text.Text
-import org.koin.core.annotation.Provided
-import org.koin.core.annotation.Single
 
 /**
  * 將權威 GameConfig 依宣告式 schema 格式化成 GUI 與 hover 共用的本地化文字。
@@ -26,14 +24,13 @@ import org.koin.core.annotation.Single
  * @property json 解碼網路設定 DTO 的 JSON 格式器。
  * @property networkRegistries 將網路設定 DTO 轉換為領域設定所需的註冊表。
  */
-@Single
 class FabricGameConfigTextFormatter(
-    @Provided private val presentations: GameConfigPresentationRegistry,
-    @Provided private val ruleNames: RuleModuleDisplayNameRegistry,
-    @Provided private val modules: MahjongModuleRegistry,
-    @Provided private val resolver: GameConfigPresentationResolver,
-    @Provided private val json: Json,
-    @Provided private val networkRegistries: NetworkDtoRegistries,
+    private val presentations: GameConfigPresentationRegistry,
+    private val ruleNames: RuleModuleDisplayNameRegistry,
+    private val modules: MahjongModuleRegistry,
+    private val resolver: GameConfigPresentationResolver,
+    private val json: Json,
+    private val networkRegistries: NetworkDtoRegistries,
 ) {
     /**
      * 顯示完整設定；無法解碼時安全退回原始 JSON，無 schema 時列出規則 ID。

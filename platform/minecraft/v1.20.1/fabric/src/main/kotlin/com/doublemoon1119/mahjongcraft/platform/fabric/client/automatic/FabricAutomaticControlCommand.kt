@@ -18,7 +18,6 @@ import net.minecraft.text.MutableText
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 import net.minecraft.util.Identifier
-import org.koin.core.annotation.Single
 import java.util.concurrent.CompletableFuture
 
 /**
@@ -27,7 +26,6 @@ import java.util.concurrent.CompletableFuture
  * @property commandService 處理控制項變更與查詢完成結果的服務。
  * @property displayResolver 取得控制項本地化名稱的解析器。
  */
-@Single
 class FabricAutomaticControlCommand(
     private val commandService: ClientAutomaticControlCommandService,
     private val displayResolver: AutomaticControlDisplayResolver,

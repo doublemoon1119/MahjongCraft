@@ -29,7 +29,6 @@ import kotlinx.coroutines.runBlocking
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.minecraft.server.MinecraftServer
-import org.koin.core.annotation.Single
 import java.io.IOException
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -67,7 +66,6 @@ import kotlin.uuid.toJavaUuid
  * @param aiDecisionReporter 記錄 AI 決策逾時與舊策略呼叫仍未結束的情況。
  * @param failurePolicy 判斷 AI 策略丟出的失敗能否改用固定結果。
  */
-@Single
 class StressTestController(
     private val environments: StressTestEnvironmentFactory,
     private val runtimes: FabricHistoryGenerationRuntimeFactory,

@@ -5,8 +5,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjon
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearances
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileSetAppearanceDefinition
-import org.koin.core.annotation.Provided
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -19,11 +17,10 @@ import kotlin.uuid.Uuid
  * @property moduleRegistry 將公開規則設定解析為規則模組識別碼。
  * @property tileAssetRegistry 提供規則到牌組外觀的公開綁定。
  */
-@Single
 class ClientTileAppearanceResolver(
-    @Provided private val stateStore: ClientMahjongStateStore,
-    @Provided private val moduleRegistry: MahjongModuleRegistry,
-    @Provided private val tileAssetRegistry: MinecraftTileAssetRegistry,
+    private val stateStore: ClientMahjongStateStore,
+    private val moduleRegistry: MahjongModuleRegistry,
+    private val tileAssetRegistry: MinecraftTileAssetRegistry,
 ) {
     /** 暫存各桌最近一次由公開規則解析出的牌組外觀識別碼。 */
     private val appearanceIdsByTable = mutableMapOf<Uuid, String>()

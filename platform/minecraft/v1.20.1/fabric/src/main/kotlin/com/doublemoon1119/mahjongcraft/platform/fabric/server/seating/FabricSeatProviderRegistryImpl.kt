@@ -5,10 +5,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.Registered
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftResourceIds
 import net.minecraft.entity.Entity
 import net.minecraft.server.world.ServerWorld
-import org.koin.core.annotation.Single
 
 /** [FabricSeatProviderRegistry] 的記憶體實作。 */
-@Single(binds = [FabricSeatProviderRegistry::class])
 internal class FabricSeatProviderRegistryImpl : FabricSeatProviderRegistry {
     /** 依 provider 識別碼保存登記資料。 */
     private val providersById = linkedMapOf<String, RegisteredSeatProvider<ServerWorld, Entity>>()

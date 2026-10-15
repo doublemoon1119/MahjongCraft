@@ -27,8 +27,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import net.minecraft.server.MinecraftServer
-import org.koin.core.annotation.Provided
-import org.koin.core.annotation.Single
 import java.nio.file.Path
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.TimeSource
@@ -43,14 +41,13 @@ import kotlin.time.TimeSource
  * @property locations 封存 Replay 時解析場地用。
  * @property replayProjectionRegistry 封存 Replay 的投影 registry。
  */
-@Single
 class StressTestEnvironmentFactory(
-    @Provided private val registries: PersistenceRegistries,
+    private val registries: PersistenceRegistries,
     private val json: Json,
     private val dispatchers: CoroutineDispatchers,
-    @Provided private val moduleRegistry: MahjongModuleRegistry,
+    private val moduleRegistry: MahjongModuleRegistry,
     private val locations: TableLocationRegistry,
-    @Provided private val replayProjectionRegistry: HistoryReplayProjectionRegistry,
+    private val replayProjectionRegistry: HistoryReplayProjectionRegistry,
 ) {
     private val logger = mahjongCraftLogger(StressTestEnvironmentFactory::class)
 

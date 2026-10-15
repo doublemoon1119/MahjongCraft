@@ -1,10 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftResourceIds
-import org.koin.core.annotation.Single
 
 /** [FabricTablePropKindRegistry] 的記憶體實作。 */
-@Single(binds = [FabricTablePropKindRegistry::class])
 class FabricTablePropKindRegistryImpl : FabricTablePropKindRegistry {
     /** 依識別碼索引、保留登記順序的種類。 */
     private val kindsById = linkedMapOf<String, FabricTablePropKind>()

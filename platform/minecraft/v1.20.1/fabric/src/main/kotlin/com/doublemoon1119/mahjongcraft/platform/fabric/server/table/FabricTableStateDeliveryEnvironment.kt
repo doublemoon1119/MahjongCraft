@@ -9,7 +9,6 @@ import net.minecraft.registry.RegistryKey
 import net.minecraft.registry.RegistryKeys
 import net.minecraft.util.Identifier
 import net.minecraft.util.math.BlockPos
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 
@@ -20,7 +19,6 @@ import kotlin.uuid.toKotlinUuid
  * @property locations 已發布的桌子位置索引。
  * @property store 已發布的權威房間與對局快照。
  */
-@Single(binds = [TableStateDeliveryEnvironment::class])
 internal class FabricTableStateDeliveryEnvironment(
     private val serverHolder: FabricServerHolder,
     private val locations: TableLocationRegistry,

@@ -4,8 +4,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import org.koin.core.annotation.Provided
-import org.koin.core.annotation.Single
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.uuid.Uuid
@@ -20,9 +18,8 @@ import kotlin.uuid.Uuid
  * @property environment 目前有效的桌級來源。
  */
 @OptIn(ExperimentalAtomicApi::class)
-@Single
 class FabricTableStateDelivery(
-    @Provided private val dispatchers: CoroutineDispatchers,
+    private val dispatchers: CoroutineDispatchers,
     private val environment: TableStateDeliveryEnvironment,
 ) {
     /** 保護最後來源檢查及所有桌況封包交付，不與權威交易鎖共用。 */

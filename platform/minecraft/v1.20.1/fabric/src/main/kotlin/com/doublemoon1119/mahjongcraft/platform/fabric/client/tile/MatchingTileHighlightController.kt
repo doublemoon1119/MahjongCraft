@@ -7,12 +7,10 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.MinecraftClient
 import net.minecraft.util.hit.EntityHitResult
-import org.koin.core.annotation.Single
 import kotlin.math.sin
 import kotlin.uuid.toKotlinUuid
 
 /** 逐 client tick 更新同桌同種牌的本地原版 glowing 狀態。 */
-@Single
 class MatchingTileHighlightController(
     private val stateStore: ClientMahjongStateStore,
     private val moduleRegistry: MahjongModuleRegistry,

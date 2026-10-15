@@ -4,7 +4,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepository
-import org.koin.core.annotation.Factory
 import kotlin.uuid.Uuid
 
 /**
@@ -16,7 +15,6 @@ import kotlin.uuid.Uuid
  *
  * @property roomRepository 權威房間數據倉庫。
  */
-@Factory
 class ChangeAiStrategyUseCase(
     private val roomRepository: RoomRepository,
 ) {

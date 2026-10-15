@@ -7,7 +7,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdate
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlinx.coroutines.currentCoroutineContext
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -15,7 +14,6 @@ import kotlin.uuid.Uuid
  *
  * @property store 共用狀態、記錄資格與歷史提交的交易邊界。
  */
-@Single(binds = [GameRepository::class])
 class GameRepositoryImpl(
     private val store: AuthoritativeStateStore,
 ) : GameRepository {

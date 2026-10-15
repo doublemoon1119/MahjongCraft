@@ -3,14 +3,12 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlUpdateRequestDto
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import kotlinx.serialization.json.Json
-import org.koin.core.annotation.Single
 
 /**
  * 使用 Fabric 客戶端網路傳送本局自動操作更新請求。
  *
  * @property json 請求封包使用的序列化設定。
  */
-@Single(binds = [ClientAutomaticControlRequestSender::class])
 class FabricClientAutomaticControlRequestSender(
     private val json: Json,
 ) : ClientAutomaticControlRequestSender {

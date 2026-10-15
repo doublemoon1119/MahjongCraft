@@ -19,7 +19,6 @@ import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
-import org.koin.core.annotation.Factory
 import kotlin.uuid.Uuid
 
 /**
@@ -39,7 +38,6 @@ import kotlin.uuid.Uuid
  * @property resolverRegistry 供規則 extension 登記胡牌後續決策的 registry。
  * @property snapshotSynchronizer 對局快照同步服務。
  */
-@Factory
 class ResolveWinRoundContinuationUseCase(
     private val gameRepository: GameRepository,
     private val moduleRegistry: MahjongModuleRegistry,

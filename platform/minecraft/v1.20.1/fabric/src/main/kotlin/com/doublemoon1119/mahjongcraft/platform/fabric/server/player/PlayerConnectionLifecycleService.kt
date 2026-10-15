@@ -18,7 +18,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSE
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.koin.core.annotation.Single
 import kotlin.time.Duration.Companion.seconds
 import kotlin.uuid.Uuid
 
@@ -38,7 +37,6 @@ import kotlin.uuid.Uuid
  * @property automaticControlSnapshotSender 同步玩家自動操作設定。
  * @property playerIdentityStore 保存玩家最後已知普通名稱。
  */
-@Single
 class PlayerConnectionLifecycleService(
     private val scope: AppCoroutineScope,
     private val timeoutScope: FabricSessionBackgroundScope,

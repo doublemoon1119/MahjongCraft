@@ -31,8 +31,6 @@ import net.minecraft.text.Text
 import net.minecraft.util.ActionResult
 import net.minecraft.util.hit.EntityHitResult
 import net.minecraft.util.hit.HitResult
-import org.koin.core.annotation.Provided
-import org.koin.core.annotation.Single
 import kotlin.math.ceil
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
@@ -52,7 +50,6 @@ import kotlin.uuid.toKotlinUuid
  * @property decisionTexts 規則提供的動作文字解析器。
  * @property json 決策提交的封包序列化設定。
  */
-@Single
 class PlayerDecisionHudController(
     private val timerStore: ClientDecisionTimerStateStore,
     private val timerDisplay: DecisionTimerDisplay,
@@ -64,7 +61,7 @@ class PlayerDecisionHudController(
     private val automaticControlStatusHudRenderer: AutomaticControlStatusHudRenderer,
     private val playerNames: ClientPlayerDisplayNameResolver,
     val decisionTexts: DecisionTextResolver,
-    @Provided private val json: Json,
+    private val json: Json,
 ) {
     /**
      * 使用共用名稱來源解析決策的真人來源，不另行查詢外部服務。

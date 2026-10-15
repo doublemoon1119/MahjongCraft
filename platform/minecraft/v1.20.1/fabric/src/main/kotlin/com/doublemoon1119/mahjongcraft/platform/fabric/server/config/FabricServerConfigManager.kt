@@ -14,8 +14,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import net.minecraft.server.MinecraftServer
-import org.koin.core.annotation.Provided
-import org.koin.core.annotation.Single
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
@@ -30,10 +28,9 @@ import java.nio.file.Path
  * @property dispatchers 檔案 I/O 與設定發布的執行緒邊界。
  * @property retentionCoordinator 排序有效設定發布與正在執行的歷史清理。
  */
-@Single
 class FabricServerConfigManager(
-    @Provided private val state: MinecraftServerConfigState,
-    @Provided private val codec: MinecraftServerConfigTomlCodec,
+    private val state: MinecraftServerConfigState,
+    private val codec: MinecraftServerConfigTomlCodec,
     private val pathProvider: FabricServerConfigPathProvider,
     private val store: AuthoritativeStateStore,
     private val dispatchers: CoroutineDispatchers,

@@ -35,7 +35,6 @@ import net.minecraft.state.property.Properties
 import net.minecraft.util.Identifier
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Box
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 import kotlin.uuid.toKotlinUuid
@@ -46,7 +45,6 @@ import kotlin.uuid.toKotlinUuid
  * @property serverHolder 取得目前伺服器工作階段及已載入世界。
  * @property spawnGateway 將新牌 entity 加入指定伺服器世界。
  */
-@Single(binds = [MahjongTileWallPresenter::class])
 class FabricMahjongTileWallPresenter(
     private val serverHolder: FabricServerHolder,
     private val spawnGateway: FabricEntitySpawnGateway,

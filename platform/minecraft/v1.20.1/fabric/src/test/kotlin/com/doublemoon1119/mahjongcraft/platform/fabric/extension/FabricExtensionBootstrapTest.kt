@@ -8,7 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistrie
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.FabricSeatProviderRegistry
-import com.doublemoon1119.mahjongcraft.platform.fabric.di.MahjongCraftServerApp
+import com.doublemoon1119.mahjongcraft.platform.fabric.di.fabricServerModule
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationState
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.MahjongStoolSeatProvider
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistry
@@ -17,8 +17,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMah
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftPresentationRegistries
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import org.koin.core.Koin
+import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
-import org.koin.plugin.module.dsl.startKoin
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -36,7 +36,10 @@ class FabricExtensionBootstrapTest {
     /** 同一批 discovery 只讀一次；三層依序回呼，無新增登記的來源只合併為一筆空分類。 */
     @Test
     fun `bootstrap materializes discovery once and merges no op sources across layers`() {
-        val koin = startKoin<MahjongCraftServerApp> { allowOverride(false) }.koin
+        val koin = startKoin {
+            allowOverride(false)
+            modules(fabricServerModule)
+        }.koin
         val calls = mutableListOf<String>()
         val extension = RecordingExtension(calls)
         var iterations = 0
@@ -59,7 +62,10 @@ class FabricExtensionBootstrapTest {
     /** Fabric 回呼失敗會中止；先前層已凍結但 Fabric 不凍結，不承諾回滾或重新初始化。 */
     @Test
     fun `later layer failure aborts bootstrap without rolling back earlier layers`() {
-        val koin = startKoin<MahjongCraftServerApp> { allowOverride(false) }.koin
+        val koin = startKoin {
+            allowOverride(false)
+            modules(fabricServerModule)
+        }.koin
         val calls = mutableListOf<String>()
         val cause = IllegalStateException("Seat registration failed")
         val extension = RecordingExtension(calls, cause)

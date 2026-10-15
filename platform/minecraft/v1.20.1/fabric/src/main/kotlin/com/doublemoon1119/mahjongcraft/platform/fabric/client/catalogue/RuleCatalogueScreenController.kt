@@ -10,8 +10,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAsse
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.minecraft.client.MinecraftClient
 import net.minecraft.client.gui.screen.Screen
-import org.koin.core.annotation.Provided
-import org.koin.core.annotation.Single
 
 /**
  * 開啟規則一覽：一般說明延後到下一個客戶端 tick 開啟，避免指令執行後關閉聊天畫面時蓋掉新畫面；房間與歷史畫面立即切換。
@@ -22,12 +20,11 @@ import org.koin.core.annotation.Single
  * @property tileAssets 範例牌面素材映射。
  * @property tileFaces 現有牌面繪製器。
  */
-@Single
 class RuleCatalogueScreenController internal constructor(
-    @Provided private val catalogueRegistry: RuleCatalogueRegistry,
-    @Provided private val ruleNames: RuleModuleDisplayNameRegistry,
-    @Provided private val moduleRegistry: MahjongModuleRegistry,
-    @Provided private val tileAssets: MinecraftTileAssetRegistry,
+    private val catalogueRegistry: RuleCatalogueRegistry,
+    private val ruleNames: RuleModuleDisplayNameRegistry,
+    private val moduleRegistry: MahjongModuleRegistry,
+    private val tileAssets: MinecraftTileAssetRegistry,
     private val tileFaces: MahjongTileFaceRenderer,
 ) {
     /** 尚未執行的畫面開啟要求。 */

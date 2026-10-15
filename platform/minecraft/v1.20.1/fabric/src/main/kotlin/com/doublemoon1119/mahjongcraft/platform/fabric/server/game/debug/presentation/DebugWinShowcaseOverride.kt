@@ -2,7 +2,6 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presen
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationRequest
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
-import org.koin.core.annotation.Single
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.uuid.Uuid
 
@@ -16,7 +15,6 @@ import kotlin.uuid.Uuid
  *
  * @property minecraftEnvironment 開發環境判斷來源。
  */
-@Single
 class DebugWinShowcaseOverride(
     private val minecraftEnvironment: MinecraftEnvironment,
 ) {

@@ -16,8 +16,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableS
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateTicket
 import kotlinx.serialization.json.Json
 import net.minecraft.server.network.ServerPlayerEntity
-import org.koin.core.annotation.Provided
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -35,7 +33,6 @@ import kotlin.uuid.Uuid
  * @property json 封包序列化設定。
  * @property networkRegistries 規則擴充資料的線路轉換註冊表。
  */
-@Single(binds = [GameEventPublisher::class])
 class GameEventPublisherImpl(
     private val gameSnapshotRepository: GameSnapshotRepository,
     private val tableStateDelivery: FabricTableStateDelivery,
@@ -43,8 +40,8 @@ class GameEventPublisherImpl(
     private val serverHolder: FabricServerHolder,
     private val playerIdentities: PlayerIdentitySender,
     private val historyWriter: FabricHistoryOutboxWriter,
-    @Provided private val json: Json,
-    @Provided private val networkRegistries: NetworkDtoRegistries,
+    private val json: Json,
+    private val networkRegistries: NetworkDtoRegistries,
 ) : GameEventPublisher {
     override suspend fun publish(gameId: Uuid, targetPlayerId: Uuid, actorId: Uuid, action: GameAction) {
         rememberEndedMatch(gameId, action)

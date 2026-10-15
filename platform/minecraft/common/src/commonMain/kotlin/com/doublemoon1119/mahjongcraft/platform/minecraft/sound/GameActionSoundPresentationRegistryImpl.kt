@@ -1,10 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.sound
 
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
-import org.koin.core.annotation.Single
 
 /** [GameActionSoundPresentationRegistry] 的記憶體實作。 */
-@Single(binds = [GameActionSoundPresentationRegistry::class])
 class GameActionSoundPresentationRegistryImpl : GameActionSoundPresentationRegistry {
     /** 依規則模組與動作 ID 索引的呈現定義。 */
     private val definitions = mutableMapOf<Pair<String, String>, GameActionSoundPresentation>()

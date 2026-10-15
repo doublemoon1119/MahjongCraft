@@ -6,8 +6,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogge
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import org.koin.core.annotation.Provided
-import org.koin.core.annotation.Single
 
 /**
  * 依提交順序逐一執行桌子的權威清理，讓伺服器主執行緒的同步回呼不必等待清理完成。
@@ -20,10 +18,9 @@ import org.koin.core.annotation.Single
  * @property scope 目前 server session 的工作作用域；session 結束時尚未執行的工作隨之取消。
  * @property dispatchers 提供伺服器主執行緒排程器。
  */
-@Single
 class TableCleanupQueue(
-    @Provided private val scope: AppCoroutineScope,
-    @Provided private val dispatchers: CoroutineDispatchers,
+    private val scope: AppCoroutineScope,
+    private val dispatchers: CoroutineDispatchers,
 ) {
     /** 記錄單一清理工作的失敗。 */
     private val logger = mahjongCraftLogger(TableCleanupQueue::class)

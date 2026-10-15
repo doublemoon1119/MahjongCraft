@@ -14,7 +14,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableL
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPlacement
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.math.BlockPos
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 
@@ -24,7 +23,6 @@ import kotlin.uuid.toJavaUuid
  * @property overlays 管理桌面 overlay 的暫時隱藏。
  * @property spawnGateway 生成並追蹤舞台 entity。
  */
-@Single
 class FabricExhaustiveDrawSettlementPresentationScheduler(
     private val overlays: PersistentTableOverlayCoordinator,
     private val spawnGateway: FabricEntitySpawnGateway,

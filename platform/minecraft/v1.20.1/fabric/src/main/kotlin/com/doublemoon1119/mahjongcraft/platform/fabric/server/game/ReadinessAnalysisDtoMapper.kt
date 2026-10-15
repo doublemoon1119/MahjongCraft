@@ -7,10 +7,8 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDto
 import com.doublemoon1119.mahjongcraft.logic.judgment.DiscardReadinessAnalysis
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandReadinessAnalysis
 import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailability
-import org.koin.core.annotation.Single
 
 /** 將規則中立的手牌分析轉為私人同步資料。 */
-@Single
 class ReadinessAnalysisDtoMapper {
     /**
      * 轉換一份假想捨牌後的分析。

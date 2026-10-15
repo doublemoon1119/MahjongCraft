@@ -5,12 +5,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryQuerySe
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import org.koin.core.annotation.Single
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
 /** 保存目前伺服器公布的歷史查詢間隔；斷線後不沿用上一個伺服器的設定。 */
-@Single
 class ClientHistoryQuerySettings {
     /** 主執行緒更新的有效查詢間隔。 */
     private val mutableMinimumInterval = MutableStateFlow(MinecraftHistoryConfig.DEFAULT_QUERY_MINIMUM_INTERVAL_MILLISECONDS.milliseconds)

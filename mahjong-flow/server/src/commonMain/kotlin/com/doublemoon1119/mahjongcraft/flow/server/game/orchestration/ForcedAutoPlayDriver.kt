@@ -4,7 +4,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
-import org.koin.core.annotation.Factory
 import kotlin.uuid.Uuid
 
 /**
@@ -40,7 +39,6 @@ fun fixedAutoPlayCommand(state: TableState, playerId: Uuid): GameCommand? {
  *
  * @property gameRepository 讀取包含強制自動操作狀態的權威遊戲。
  */
-@Factory
 class ForcedAutoPlayDriver(
     private val gameRepository: GameRepository,
 ) {

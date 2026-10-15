@@ -15,7 +15,6 @@ import net.minecraft.client.MinecraftClient
 import net.minecraft.text.MutableText
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
-import org.koin.core.annotation.Single
 
 /**
  * 純 client-only 指令 `/mahjongcraft_client label toggle`：切換牌面角落輔助標籤（給非中文圈玩家看的
@@ -28,7 +27,6 @@ import org.koin.core.annotation.Single
  * 並立即寫回磁碟，還沒有渲染端消費這個開關去實際畫出標籤——那是下一步，等這個開關本身可以正常切換、
  * 持久化沒問題之後再接上去。
  */
-@Single
 class FabricTileLabelCommand(
     private val configStore: MahjongClientConfigStore,
 ) {

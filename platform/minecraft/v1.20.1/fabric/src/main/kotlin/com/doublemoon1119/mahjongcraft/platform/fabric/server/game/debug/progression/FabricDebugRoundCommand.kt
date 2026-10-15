@@ -13,7 +13,6 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import net.minecraft.server.command.CommandManager.argument
 import net.minecraft.server.command.CommandManager.literal
 import net.minecraft.server.command.ServerCommandSource
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -33,7 +32,6 @@ import kotlin.uuid.Uuid
  * @property presentationPublisher 重新發布積棒、供託與局況顯示。
  * @property playerTableScope 解析呼叫者目前入座的桌子。
  */
-@Single
 class FabricDebugRoundCommand(
     private val gameRepository: GameRepository,
     private val declareExhaustiveDrawUseCase: DeclareExhaustiveDrawUseCase,

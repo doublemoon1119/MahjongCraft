@@ -21,8 +21,6 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.applyRiichiDeclaration
 import com.doublemoon1119.mahjongcraft.logic.table.SidewaysMarkedDiscardPile
-import org.koin.core.annotation.Factory
-import org.koin.core.annotation.Provided
 import kotlin.uuid.Uuid
 
 /**
@@ -56,15 +54,14 @@ import kotlin.uuid.Uuid
  * @property eventPublisher 對局通知服務。
  * @property presentationPublisher 對局呈現層通知服務，用於立直成立後通知平台呈現層更新立直棒。
  */
-@Factory
 class DeclareRiichiUseCase(
     private val gameRepository: GameRepository,
     private val moduleRegistry: MahjongModuleRegistry,
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
     private val handSortPreferenceStore: HandSortPreferenceStore,
     private val postActionExhaustiveDrawResolverRegistry: PostActionExhaustiveDrawResolverRegistry,
-    @Provided private val eventPublisher: GameEventPublisher,
-    @Provided private val presentationPublisher: GamePresentationPublisher,
+    private val eventPublisher: GameEventPublisher,
+    private val presentationPublisher: GamePresentationPublisher,
 ) {
     /**
      * 執行立直宣告邏輯。

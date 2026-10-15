@@ -1,11 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.event
 
-import org.koin.core.annotation.Single
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.uuid.Uuid
 
 /** 共用成就判定與事件掛勾的 debug 場次排除名單；可由提交執行緒安全查詢。 */
-@Single
 class GameEventExclusions {
     /** 此次伺服器 session 中不再通知的場次。 */
     private val matchIds: MutableSet<Uuid> = ConcurrentHashMap.newKeySet()

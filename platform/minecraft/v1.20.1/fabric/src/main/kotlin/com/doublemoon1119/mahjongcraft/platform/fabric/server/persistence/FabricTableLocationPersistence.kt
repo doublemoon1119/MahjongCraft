@@ -3,14 +3,12 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import net.minecraft.server.MinecraftServer
-import org.koin.core.annotation.Single
 
 /**
  * 將單次 Minecraft server session 與桌子位置 [MahjongTableLocationsPersistentState] 接起來。
  *
  * @property registry 桌子位置的記憶體索引。
  */
-@Single
 class FabricTableLocationPersistence(
     private val registry: TableLocationRegistry,
 ) {

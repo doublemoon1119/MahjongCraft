@@ -4,10 +4,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.ResolvedRoundOutco
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
-import org.koin.core.annotation.Single
 
 /** 可於 bootstrap 登記、完成後凍結的 post-reaction outcome resolver registry。 */
-@Single
 class PostReactionRoundOutcomeResolverRegistry {
     /** 尚未凍結的 resolver 集合。 */
     private val resolvers = mutableListOf<PostReactionRoundOutcomeResolver>()

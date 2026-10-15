@@ -3,7 +3,6 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.state
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlSnapshotDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlUpdateRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlUpdateResultDto
-import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
 
 /**
@@ -12,7 +11,6 @@ import kotlin.uuid.Uuid
  * 這份資料只存在目前 client 執行期間，不會寫入設定檔；伺服器重新提供快照時，呼叫端應以
  * [applySnapshot] 套用。這裡不執行任何遊戲動作，也不判斷畫面或輸入狀態。
  */
-@Single
 class ClientAutomaticControlStateStore {
     /** 最後接受的權威快照；尚未同步或已清除時為 null。 */
     private var currentSnapshot: AutomaticControlSnapshotDto? = null

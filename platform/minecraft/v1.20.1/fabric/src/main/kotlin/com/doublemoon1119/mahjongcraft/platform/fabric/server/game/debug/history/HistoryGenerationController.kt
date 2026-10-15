@@ -31,8 +31,6 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
-import org.koin.core.annotation.Provided
-import org.koin.core.annotation.Single
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.milliseconds
@@ -51,12 +49,11 @@ import kotlin.uuid.Uuid
  * @property scope 隨伺服器 session 取消的應用作用域。
  * @property dispatchers 背景對局計算使用的調度器。
  */
-@Single
 class HistoryGenerationController(
     private val writer: FabricHistoryOutboxWriter,
     private val runtimeFactory: HistoryGenerationRuntimeFactory,
     private val store: AuthoritativeStateStore,
-    @Provided private val configState: MinecraftServerConfigState,
+    private val configState: MinecraftServerConfigState,
     private val scope: AppCoroutineScope,
     private val dispatchers: CoroutineDispatchers,
 ) {

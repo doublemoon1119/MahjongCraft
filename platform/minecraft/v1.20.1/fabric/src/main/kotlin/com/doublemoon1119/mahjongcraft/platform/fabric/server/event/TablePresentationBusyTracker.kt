@@ -13,7 +13,6 @@ import net.minecraft.server.world.ServerWorld
 import net.minecraft.util.Identifier
 import net.minecraft.util.math.BlockPos
 import net.minecraft.util.math.Box
-import org.koin.core.annotation.Single
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicLong
@@ -29,7 +28,6 @@ import kotlin.uuid.Uuid
  * @property serverHolder 目前伺服器與世界的查詢來源。
  * @property tableLocationRegistry 將桌子識別碼對應到最後已知位置。
  */
-@Single
 class TablePresentationBusyTracker(
     private val serverHolder: FabricServerHolder,
     private val tableLocationRegistry: TableLocationRegistry,

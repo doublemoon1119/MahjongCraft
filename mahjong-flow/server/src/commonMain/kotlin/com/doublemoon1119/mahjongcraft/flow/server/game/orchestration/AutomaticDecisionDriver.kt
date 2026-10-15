@@ -4,7 +4,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.AutomaticDecisionEvaluator
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerActionContextResolver
-import org.koin.core.annotation.Factory
 import kotlin.uuid.Uuid
 
 /**
@@ -15,7 +14,6 @@ import kotlin.uuid.Uuid
  * @property commandMapper 將動作與選牌轉換成命令。
  * @property actionContextResolver 解析玩家目前可操作的情境。
  */
-@Factory
 class AutomaticDecisionDriver(
     private val gameRepository: GameRepository,
     private val evaluator: AutomaticDecisionEvaluator,

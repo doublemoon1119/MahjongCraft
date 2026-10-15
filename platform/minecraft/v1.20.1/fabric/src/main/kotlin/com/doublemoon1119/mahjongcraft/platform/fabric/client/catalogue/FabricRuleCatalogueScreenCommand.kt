@@ -3,14 +3,12 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.catalogue
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.CLIENT_COMMAND_ROOT
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.literal
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
-import org.koin.core.annotation.Single
 
 /**
  * 不需要加入房間的客戶端規則一覽指令。
  *
  * @property screens 延後開啟畫面的入口。
  */
-@Single
 internal class FabricRuleCatalogueScreenCommand(private val screens: RuleCatalogueScreenController) {
     /** 註冊 `/mahjongcraft_client catalogue screen`。 */
     fun register() {

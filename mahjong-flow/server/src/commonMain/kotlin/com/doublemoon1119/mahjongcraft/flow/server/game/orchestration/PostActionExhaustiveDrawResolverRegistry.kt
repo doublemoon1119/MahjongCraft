@@ -5,10 +5,8 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
-import org.koin.core.annotation.Single
 
 /** 可於 bootstrap 登記、完成後凍結的主動觸發途中流局 resolver registry。 */
-@Single
 class PostActionExhaustiveDrawResolverRegistry {
     /** 尚未凍結的 resolver 集合。 */
     private val resolvers = mutableListOf<PostActionExhaustiveDrawResolver>()
