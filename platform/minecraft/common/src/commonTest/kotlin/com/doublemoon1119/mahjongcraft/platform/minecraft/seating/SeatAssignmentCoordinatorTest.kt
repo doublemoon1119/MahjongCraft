@@ -226,6 +226,33 @@ class SeatAssignmentCoordinatorTest {
         assertEquals(0, target.trySitCalls)
     }
 
+    /** 水平 0.25 格、高度 1.0 格與朝向 15 度都包含邊界值。 */
+    @Test
+    fun `geometry on every tolerance boundary is accepted`() {
+        val rider = FakeRider()
+        val target = FakeTarget("seat", x = 0.25, y = 65.0, yaw = 15.0f)
+
+        val result = coordinator(target, FakeEnvironment()).assign(world, rider, request())
+
+        assertEquals(SeatAssignmentResult.SEATED, result)
+    }
+
+    /** 任一項略為超出容許範圍時不嘗試入座，改站在標準座位上。 */
+    @Test
+    fun `geometry just beyond any tolerance falls back to standing`() {
+        listOf(
+            FakeTarget("horizontal", x = 0.2501),
+            FakeTarget("diagonal", x = 0.2, z = 0.2),
+            FakeTarget("height", y = 65.001),
+            FakeTarget("yaw", yaw = 15.01f),
+        ).forEach { target ->
+            val result = coordinator(target, FakeEnvironment(canStand = true)).assign(world, FakeRider(), request())
+
+            assertEquals(SeatAssignmentResult.STANDING, result, target.identity.key)
+            assertEquals(0, target.trySitCalls, target.identity.key)
+        }
+    }
+
     /** 朝向比較會正規化負數多圈角度，仍能辨識同一固定席位。 */
     @Test
     fun `negative multi turn yaw matches fixed placement`() {
@@ -309,11 +336,11 @@ class SeatAssignmentCoordinatorTest {
     }
 
     /** 建立通用的固定席位請求。 */
-    private fun request(): SeatRequest = SeatRequest(
+    private fun request(): SeatRequest = SeatRequest.create(
         tableId = Uuid.parse("00000000-0000-0000-0000-000000000001"),
         seatIndex = 0,
         dimensionId = "minecraft:overworld",
-        placement = MahjongSeatPlacement(0.0, 64.0, 0.0, 0.0f),
+        seat = SeatGeometry(0.0, 64.0, 0.0, 0.0f),
     )
 
     /** 建立帶有固定 provider ID 的測試 provider。 */
@@ -407,6 +434,8 @@ class SeatAssignmentCoordinatorTest {
      * @param state 初始座位狀態。
      * @param slot 多座位家具的子座位 key。
      * @property x 測試用乘坐位置 X 座標。
+     * @property y 測試用乘坐腳底高度。
+     * @property z 測試用乘坐位置 Z 座標。
      * @property yaw 測試用乘坐朝向。
      * @property occupyOnSecondInspection 第二次檢查時是否模擬被占用。
      * @property failedSitMovesRider 失敗時是否模擬違約移動乘坐者。
@@ -417,6 +446,8 @@ class SeatAssignmentCoordinatorTest {
         state: SeatState = SeatState.AVAILABLE,
         slot: String = "main",
         private val x: Double = 0.0,
+        private val y: Double = 64.0,
+        private val z: Double = 0.0,
         private val yaw: Float = 0.0f,
         private val occupyOnSecondInspection: Boolean = false,
         private val failedSitMovesRider: Boolean = false,
@@ -429,7 +460,7 @@ class SeatAssignmentCoordinatorTest {
         /** 呼叫嘗試入座的次數。 */
         var trySitCalls: Int = 0
 
-        override fun geometry(world: FakeWorld, rider: FakeRider): SeatGeometry = SeatGeometry(x, 64.0, 0.0, yaw)
+        override fun geometry(world: FakeWorld, rider: FakeRider): SeatGeometry = SeatGeometry(x, y, z, yaw)
 
         override fun inspect(world: FakeWorld, rider: FakeRider): SeatState {
             inspections++

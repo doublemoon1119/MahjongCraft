@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating
 
-import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatPlacement
 import java.lang.reflect.Modifier
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -43,8 +42,8 @@ class SeatApiContractTest {
     fun `seat identities distinguish source and seat slot`() {
         val block = SeatIdentity("minecraft:overworld", "minecraft:block", "10,64,-2")
         val entity = SeatIdentity("minecraft:overworld", "minecraft:entity", "00000000-0000-0000-0000-000000000001")
-        val firstEntitySlot = entity.copy(slot = "left")
-        val secondEntitySlot = entity.copy(slot = "right")
+        val firstEntitySlot = SeatIdentity(entity.dimensionId, entity.kind, entity.key, slot = "left")
+        val secondEntitySlot = SeatIdentity(entity.dimensionId, entity.kind, entity.key, slot = "right")
 
         assertNotEquals(block, entity)
         assertNotEquals(firstEntitySlot, secondEntitySlot)
@@ -76,15 +75,47 @@ class SeatApiContractTest {
         assertTrue(Modifier.isPublic(identityConstructor.modifiers))
     }
 
-    /** 固定席位請求可由第三方以穩定桌子與席位資訊建立。 */
+    /** 固定席位請求保留桌子、席位與標準座位。 */
     @Test
-    fun `seat request retains fixed placement`() {
+    fun `seat request retains its standard seat`() {
         val tableId = Uuid.parse("00000000-0000-0000-0000-000000000001")
-        val placement = MahjongSeatPlacement(1.5, 64.0, -2.5, 180.0f)
-        val request = SeatRequest(tableId, 2, "minecraft:overworld", placement)
+        val seat = SeatGeometry(1.5, 64.0, -2.5, 180.0f)
+        val request = SeatRequest.create(tableId, 2, "minecraft:overworld", seat)
 
         assertEquals(tableId, request.tableId)
         assertEquals(2, request.seatIndex)
-        assertEquals(placement, request.placement)
+        assertEquals(seat, request.seat)
+    }
+
+    /** 座位與身分依值比較，雜湊值隨之一致；子座位不同就是不同座位。 */
+    @Test
+    fun `seat values compare by content`() {
+        assertEquals(SeatGeometry(1.0, 64.0, 2.0, 90.0f), SeatGeometry(1.0, 64.0, 2.0, 90.0f))
+        assertEquals(SeatGeometry(1.0, 64.0, 2.0, 90.0f).hashCode(), SeatGeometry(1.0, 64.0, 2.0, 90.0f).hashCode())
+        assertNotEquals(SeatGeometry(1.0, 64.0, 2.0, 90.0f), SeatGeometry(1.0, 64.0, 2.0, 91.0f))
+        val identity = SeatIdentity("minecraft:overworld", "minecraft:block", "1,64,2")
+        assertEquals(identity, SeatIdentity("minecraft:overworld", "minecraft:block", "1,64,2", slot = "main"))
+        assertEquals(identity.hashCode(), SeatIdentity("minecraft:overworld", "minecraft:block", "1,64,2").hashCode())
+        assertNotEquals(identity, SeatIdentity("minecraft:overworld", "minecraft:block", "1,64,2", slot = "left"))
+    }
+
+    /** 公開座位資料不產生會隨欄位改變簽名的 copy 與 componentN，新增欄位時已編譯的第三方程式仍可運作。 */
+    @Test
+    fun `seat data exposes no generated copy or component functions`() {
+        listOf(SeatGeometry::class.java, SeatIdentity::class.java, SeatRequest::class.java, RegisteredSeatProvider::class.java).forEach { type ->
+            val generated = type.methods.map { it.name }.filter { it == "copy" || it.startsWith("component") }
+            assertTrue(generated.isEmpty(), "${type.simpleName} exposes $generated")
+        }
+    }
+
+    /**
+     * 固定席位請求只由 MahjongCraft 建立，第三方無法透過建構子建立。
+     *
+     * 內部建立入口呼叫私有建構子時，Kotlin 會產生帶 `DefaultConstructorMarker` 的合成建構子；合成成員無法從 Java
+     * 原始碼呼叫，因此只檢查非合成的建構子。
+     */
+    @Test
+    fun `seat request has no public constructor`() {
+        assertTrue(SeatRequest::class.java.constructors.none { !it.isSynthetic })
     }
 }

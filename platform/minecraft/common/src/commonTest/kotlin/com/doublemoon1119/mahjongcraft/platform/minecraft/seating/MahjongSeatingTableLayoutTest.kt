@@ -9,6 +9,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
 
 /** [MahjongSeatingTableLayout] 的座位座標與朝向測試。 */
 class MahjongSeatingTableLayoutTest {
@@ -79,5 +80,25 @@ class MahjongSeatingTableLayoutTest {
             positionsByFacing.getValue(MahjongTableFacing.NORTH),
             positionsByFacing.getValue(MahjongTableFacing.EAST),
         )
+    }
+
+    /** 固定席位請求依座位 index 排列，帶同一張桌子與維度，以及對應 index 的標準座位。 */
+    @Test
+    fun `seat requests carry the standard seat of each index`() {
+        val tableId = Uuid.parse("00000000-0000-0000-0000-000000000007")
+        val seats = MahjongSeatingTableLayout.seatPlacements(5, 70, -3, MahjongTableFacing.EAST)
+
+        val requests = MahjongSeatingTableLayout.seatRequests(
+            tableId = tableId,
+            dimensionId = "minecraft:the_nether",
+            controllerX = 5,
+            controllerY = 70,
+            controllerZ = -3,
+            tableFacing = MahjongTableFacing.EAST,
+        )
+
+        assertEquals(seats.indices.toList(), requests.map { it.seatIndex })
+        assertEquals(seats, requests.map { it.seat })
+        assertTrue(requests.all { it.tableId == tableId && it.dimensionId == "minecraft:the_nether" })
     }
 }

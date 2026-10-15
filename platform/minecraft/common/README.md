@@ -82,7 +82,14 @@ Each candidate exposes a stable `SeatIdentity`, `SeatGeometry`, an occupancy res
 revalidated `trySit` operation. Use a different `slot` in `SeatIdentity` for each seat on a
 multi-seat object. Block and entity targets should use stable, comparable keys; an entity
 runtime ID is not a persistent identity. `SeatGeometry` rejects non-finite values, and the
-coordinator rejects targets whose position or facing does not match the requested fixed seat.
+coordinator ignores targets whose position or facing does not match the requested standard seat;
+the `SeatRequest` KDoc states the accepted horizontal, height and facing differences. A provider
+reports where the rider actually sits, not an ideal position chosen to pass the check.
+
+`SeatGeometry`, `SeatIdentity`, and `RegisteredSeatProvider` are created by integrations and keep
+public constructors. `SeatRequest` is created only by MahjongCraft. None of these types is a data
+class, so a property can be added later while the existing constructor stays available as an
+overload, without generated `copy` or `componentN` functions changing for compiled integrations.
 
 Providers must report `OCCUPIED`, `BLOCKED`, or `FAILED` without moving the rider or removing an
 existing passenger. Only resources created by the provider may be cleaned up. A failed target

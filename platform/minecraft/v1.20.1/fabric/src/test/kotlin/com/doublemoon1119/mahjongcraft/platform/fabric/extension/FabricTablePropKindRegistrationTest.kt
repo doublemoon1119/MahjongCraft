@@ -42,7 +42,7 @@ class FabricTablePropKindRegistrationTest {
     private fun register(
         extensions: Iterable<FabricMahjongExtension>,
         tablePropKindRegistry: FabricTablePropKindRegistry = FabricTablePropKindRegistryImpl(),
-        seatProviderRegistry: FabricSeatProviderRegistry = FabricSeatProviderRegistryImpl(),
+        seatProviderRegistry: FabricSeatProviderRegistryImpl = FabricSeatProviderRegistryImpl(),
     ) = FabricMahjongExtensionRegistrar.registerAndFreeze(
         extensions = extensions,
         registries = FabricExtensionRegistries(tablePropKindRegistry, seatProviderRegistry),

@@ -1,11 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.seating
 
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.FabricSeatProviderRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
-import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatRequest
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.SeatAssignmentCoordinator
@@ -35,10 +33,10 @@ import kotlin.uuid.Uuid
  * @property seatProviders 已完成註冊的原生座位來源。
  * @property failurePolicy 判斷座位來源丟出的失敗能否隔離。
  */
-class FabricMahjongSeatingPresenter(
+internal class FabricMahjongSeatingPresenter(
     private val tableLocationRegistry: TableLocationRegistry,
     private val serverHolder: FabricServerHolder,
-    private val seatProviders: FabricSeatProviderRegistry,
+    private val seatProviders: FabricSeatProviderRegistryImpl,
     private val failurePolicy: ExtensionFailurePolicy,
 ) : MahjongSeatingPresenter {
     /** 提供者違約與執行失敗的診斷。 */
@@ -59,7 +57,14 @@ class FabricMahjongSeatingPresenter(
         val state = world.getBlockState(controllerPos)
         if (!state.contains(Properties.HORIZONTAL_FACING)) return
         val tableFacing = state.get(Properties.HORIZONTAL_FACING).toMahjongTableFacing()
-        val placements = MahjongSeatingTableLayout.seatPlacements(location.x, location.y, location.z, tableFacing)
+        val requests = MahjongSeatingTableLayout.seatRequests(
+            tableId = tableId,
+            dimensionId = location.dimensionId,
+            controllerX = location.x,
+            controllerY = location.y,
+            controllerZ = location.z,
+            tableFacing = tableFacing,
+        )
         val environment = FabricSeatEnvironment()
         var currentSeatIndex = -1
         var currentPlayerId: Uuid? = null
@@ -72,11 +77,10 @@ class FabricMahjongSeatingPresenter(
         }
 
         seatedPlayerIds.forEachIndexed { index, playerId ->
-            val placement = placements.getOrNull(index) ?: return@forEachIndexed
+            val request = requests.getOrNull(index) ?: return@forEachIndexed
             val player = serverHolder.findPlayer(playerId) ?: return@forEachIndexed
             currentSeatIndex = index
             currentPlayerId = playerId
-            val request = SeatRequest(tableId, index, location.dimensionId, placement)
             val result = coordinator.assign(world, player, request)
             val key = when (result) {
                 SeatAssignmentResult.SEATED, SeatAssignmentResult.STANDING -> null

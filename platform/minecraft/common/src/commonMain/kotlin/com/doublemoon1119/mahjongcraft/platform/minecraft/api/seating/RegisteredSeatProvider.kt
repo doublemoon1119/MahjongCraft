@@ -9,8 +9,10 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating
  * @property provider 解析能力。
  * @property priority 數值較大者先解析。
  */
-data class RegisteredSeatProvider<W, R>(
+class RegisteredSeatProvider<W, R>(
     val id: String,
     val provider: SeatProvider<W, R>,
     val priority: Int = 0,
-)
+) {
+    override fun toString(): String = "RegisteredSeatProvider(id=$id, priority=$priority)"
+}

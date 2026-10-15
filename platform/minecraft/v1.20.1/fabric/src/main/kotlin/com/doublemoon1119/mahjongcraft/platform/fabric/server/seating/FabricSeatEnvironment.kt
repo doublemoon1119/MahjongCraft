@@ -62,9 +62,9 @@ internal class FabricSeatEnvironment : SeatEnvironment<ServerWorld, Entity, Fabr
         rider: Entity,
         request: SeatRequest,
     ): Boolean {
-        val placement = request.placement
-        if (rider.hasVehicle() || !safeStanding(world, rider, placement.x, placement.y, placement.z)) return false
-        return move(world, rider, placement.x, placement.y, placement.z, placement.yaw, 0f)
+        val seat = request.seat
+        if (rider.hasVehicle() || !safeStanding(world, rider, seat.x, seat.y, seat.z)) return false
+        return move(world, rider, seat.x, seat.y, seat.z, seat.yaw, 0f)
     }
 
     /** 驗證提供者已立即完成腳底定位，不要求已入座本人重新轉向。 */

@@ -33,7 +33,7 @@ class MahjongStoolSeatProvider(
      */
     override fun resolve(world: ServerWorld, request: SeatRequest): List<SeatTarget<ServerWorld, Entity>> {
         if (request.dimensionId != world.registryKey.value.toString()) return emptyList()
-        val stoolPos = BlockPos.ofFloored(request.placement.x, request.placement.y, request.placement.z)
+        val stoolPos = BlockPos.ofFloored(request.seat.x, request.seat.y, request.seat.z)
         if (!world.chunkManager.isChunkLoaded(stoolPos.x shr 4, stoolPos.z shr 4)) return emptyList()
         if (world.getBlockState(stoolPos).block !is MahjongStoolBlock) return emptyList()
         return listOf(MahjongStoolSeatTarget(world, stoolPos, request, seatService))
@@ -72,21 +72,21 @@ private class MahjongStoolSeatTarget(
     override fun geometry(world: ServerWorld, rider: Entity): SeatGeometry {
         if (world !== this.world || !world.chunkManager.isChunkLoaded(stoolPos.x shr 4, stoolPos.z shr 4)) {
             return SeatGeometry(
-                x = request.placement.x,
-                y = request.placement.y,
-                z = request.placement.z,
-                yaw = request.placement.yaw,
+                x = request.seat.x,
+                y = request.seat.y,
+                z = request.seat.z,
+                yaw = request.seat.yaw,
             )
         }
         val stool = world.getBlockState(stoolPos).block as? MahjongStoolBlock
-            ?: return SeatGeometry(stoolPos.x + HALF_BLOCK, stoolPos.y.toDouble(), stoolPos.z + HALF_BLOCK, request.placement.yaw)
+            ?: return SeatGeometry(stoolPos.x + HALF_BLOCK, stoolPos.y.toDouble(), stoolPos.z + HALF_BLOCK, request.seat.yaw)
         val seatTopY = stoolPos.y + stool.design.seatHeight
         val seatY = MahjongStoolSeatGeometry.seatY(seatTopY)
         return SeatGeometry(
             x = stoolPos.x + HALF_BLOCK,
             y = MahjongStoolSeatGeometry.passengerFeetY(seatY),
             z = stoolPos.z + HALF_BLOCK,
-            yaw = request.placement.yaw,
+            yaw = request.seat.yaw,
         )
     }
 
@@ -119,7 +119,7 @@ private class MahjongStoolSeatTarget(
     override fun trySit(world: ServerWorld, rider: Entity): SeatState {
         val current = inspect(world, rider)
         if (current != SeatState.AVAILABLE) return current
-        return if (seatService.sit(world, stoolPos, rider, request.placement.yaw)) {
+        return if (seatService.sit(world, stoolPos, rider, request.seat.yaw)) {
             SeatState.SEATED
         } else {
             SeatState.FAILED

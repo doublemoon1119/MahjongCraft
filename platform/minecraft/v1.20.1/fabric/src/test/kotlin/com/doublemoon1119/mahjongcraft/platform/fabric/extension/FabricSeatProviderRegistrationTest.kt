@@ -33,7 +33,7 @@ class FabricSeatProviderRegistrationTest {
      */
     private fun register(
         extensions: Iterable<FabricMahjongExtension>,
-        seatProviderRegistry: FabricSeatProviderRegistry = FabricSeatProviderRegistryImpl(),
+        seatProviderRegistry: FabricSeatProviderRegistryImpl = FabricSeatProviderRegistryImpl(),
     ) = FabricMahjongExtensionRegistrar.registerAndFreeze(
         extensions = extensions,
         registries = FabricExtensionRegistries(FabricTablePropKindRegistryImpl(), seatProviderRegistry),
@@ -89,6 +89,15 @@ class FabricSeatProviderRegistrationTest {
         )
         assertTrue(registry.isFrozen)
         assertFailsWith<IllegalStateException> { registry.register(RegisteredSeatProvider("example:late", provider)) }
+    }
+
+    /** 擴充取得的 registry 只能登記與查看狀態，不能凍結或讀取其他擴充登記的 provider。 */
+    @Test
+    fun `public registry exposes registration only`() {
+        val methods = FabricSeatProviderRegistry::class.java.methods.map { it.name }
+
+        assertTrue("register" in methods)
+        assertTrue(methods.none { it == "freeze" || it == "entries" }, "Unexpected methods: $methods")
     }
 
     /** provider 識別碼沒有命名空間時拒絕登記。 */

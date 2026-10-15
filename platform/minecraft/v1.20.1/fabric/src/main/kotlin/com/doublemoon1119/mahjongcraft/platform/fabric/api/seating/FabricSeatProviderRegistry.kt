@@ -4,7 +4,11 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.Registered
 import net.minecraft.entity.Entity
 import net.minecraft.server.world.ServerWorld
 
-/** 登記 Fabric 原生座位 provider 的公開 registry。 */
+/**
+ * 擴充登記 Fabric 原生座位 provider 的公開 registry。
+ *
+ * 擴充只能登記與查看登記狀態；凍結與取得 provider 由 MahjongCraft 在擴充初始化完成後進行。
+ */
 interface FabricSeatProviderRegistry {
     /** 目前已登記的 provider 識別碼快照。 */
     val registrationKeys: Set<String>
@@ -20,10 +24,4 @@ interface FabricSeatProviderRegistry {
     fun register(
         definition: RegisteredSeatProvider<ServerWorld, Entity>,
     )
-
-    /** 凍結 registry，禁止後續登記。 */
-    fun freeze()
-
-    /** 取得凍結後供座位協調器使用的 provider 快照。 */
-    fun entries(): List<RegisteredSeatProvider<ServerWorld, Entity>>
 }

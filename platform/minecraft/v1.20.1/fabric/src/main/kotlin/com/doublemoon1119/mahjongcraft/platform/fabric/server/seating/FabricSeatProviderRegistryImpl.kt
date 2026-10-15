@@ -28,10 +28,16 @@ internal class FabricSeatProviderRegistryImpl : FabricSeatProviderRegistry {
         }
     }
 
-    override fun freeze() {
+    /** 擴充初始化完成後凍結 registry，禁止後續登記。 */
+    fun freeze() {
         isFrozen = true
     }
 
-    override fun entries(): List<RegisteredSeatProvider<ServerWorld, Entity>> = providersById.values
+    /**
+     * 取得凍結後供座位協調器使用的 provider 快照。
+     *
+     * @return 依優先序由高到低、同優先序依 ID 排列的 provider。
+     */
+    fun entries(): List<RegisteredSeatProvider<ServerWorld, Entity>> = providersById.values
         .sortedWith(compareByDescending<RegisteredSeatProvider<ServerWorld, Entity>> { it.priority }.thenBy { it.id })
 }

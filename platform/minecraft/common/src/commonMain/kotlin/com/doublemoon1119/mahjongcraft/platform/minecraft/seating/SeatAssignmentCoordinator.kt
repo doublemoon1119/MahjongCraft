@@ -114,13 +114,13 @@ class SeatAssignmentCoordinator<W, R, S>(
      * @return 水平偏差、朝向與高度均符合初版政策時為 true。
      */
     private fun matches(geometry: SeatGeometry, request: SeatRequest): Boolean {
-        val placement = request.placement
-        val dx = geometry.x - placement.x
-        val dz = geometry.z - placement.z
-        val delta = (geometry.yaw - placement.yaw) % FULL_TURN
+        val seat = request.seat
+        val dx = geometry.x - seat.x
+        val dz = geometry.z - seat.z
+        val delta = (geometry.yaw - seat.yaw) % FULL_TURN
         val angle = abs(((delta + FULL_TURN + HALF_TURN) % FULL_TURN) - HALF_TURN)
         return dx * dx + dz * dz <= HORIZONTAL_TOLERANCE * HORIZONTAL_TOLERANCE &&
-            abs(geometry.y - placement.y) <= HEIGHT_TOLERANCE &&
+            abs(geometry.y - seat.y) <= HEIGHT_TOLERANCE &&
             angle <= ANGLE_TOLERANCE
     }
 

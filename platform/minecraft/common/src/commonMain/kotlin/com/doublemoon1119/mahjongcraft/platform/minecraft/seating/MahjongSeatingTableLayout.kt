@@ -1,12 +1,15 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.seating
 
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatGeometry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatRequest
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableSide
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.seatIndexToTableSide
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingTableLayout.SEAT_DISTANCE
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import kotlin.math.atan2
+import kotlin.uuid.Uuid
 
 /**
  * 局部水平向量，沿用 [MahjongTableSide]／[MahjongTableFacing] 兩段式旋轉合成。
@@ -33,20 +36,42 @@ private data class SeatVector(val x: Double, val z: Double)
  */
 object MahjongSeatingTableLayout {
     /**
-     * 依 controller 世界座標與桌子世界朝向，算出四個座位的座標與面向桌子中心的朝向，依座位 index 排列。
+     * 依 controller 世界座標與桌子世界朝向，為四個座位各建立固定席位請求，依座位 index 排列。
+     *
+     * @param tableId 桌子識別碼。
+     * @param dimensionId 桌子所在維度。
+     * @param controllerX controller 的世界 X 座標。
+     * @param controllerY controller 的世界 Y 座標。
+     * @param controllerZ controller 的世界 Z 座標。
+     * @param tableFacing 麻將桌的世界朝向。
+     * @return 依座位 index 排列、帶標準座位的請求。
+     */
+    fun seatRequests(
+        tableId: Uuid,
+        dimensionId: String,
+        controllerX: Int,
+        controllerY: Int,
+        controllerZ: Int,
+        tableFacing: MahjongTableFacing,
+    ): List<SeatRequest> = seatPlacements(controllerX, controllerY, controllerZ, tableFacing).mapIndexed { seatIndex, seat ->
+        SeatRequest.create(tableId = tableId, seatIndex = seatIndex, dimensionId = dimensionId, seat = seat)
+    }
+
+    /**
+     * 依 controller 世界座標與桌子世界朝向，算出四個標準座位的腳底位置與面向桌子中心的朝向，依座位 index 排列。
      *
      * @param controllerX controller 的世界 X 座標。
      * @param controllerY controller 的世界 Y 座標。
      * @param controllerZ controller 的世界 Z 座標。
      * @param tableFacing 麻將桌的世界朝向。
-     * @return 依座位 index 排列的座位位置與朝向。
+     * @return 依座位 index 排列的標準座位；腳底與 controller 同高。
      */
     fun seatPlacements(
         controllerX: Int,
         controllerY: Int,
         controllerZ: Int,
         tableFacing: MahjongTableFacing,
-    ): List<MahjongSeatPlacement> {
+    ): List<SeatGeometry> {
         val centerX = controllerX + BLOCK_CENTER
         val centerZ = controllerZ + BLOCK_CENTER
         return (0 until SEAT_COUNT).map { seatIndex ->
@@ -54,7 +79,7 @@ object MahjongSeatingTableLayout {
             val worldOffset = rotateForFacing(rotateForSide(LOCAL_SOUTH_BASELINE, physicalSide), tableFacing)
             val x = centerX + worldOffset.x
             val z = centerZ + worldOffset.z
-            MahjongSeatPlacement(
+            SeatGeometry(
                 x = x,
                 y = controllerY.toDouble(),
                 z = z,

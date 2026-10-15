@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.extension
 
 import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationSnapshot
 import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationSnapshotCategory
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.FabricSeatProviderRegistry
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatProviderRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistry
 
 /**
@@ -13,7 +13,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricT
  */
 internal class FabricExtensionRegistries(
     val tablePropKindRegistry: FabricTablePropKindRegistry,
-    val seatProviderRegistry: FabricSeatProviderRegistry,
+    val seatProviderRegistry: FabricSeatProviderRegistryImpl,
 ) {
     /**
      * 取得兩個 Fabric 登記類別的不可變診斷快照。

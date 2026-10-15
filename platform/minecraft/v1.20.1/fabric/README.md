@@ -97,10 +97,10 @@ it does not guarantee compatibility with a different Minecraft version or loader
 
 Fabric integrations can register a fixed-seat provider through
 `FabricSeatProviderRegistry`. Register an ID in the integration's namespace during extension
-initialization, then let the registry freeze before gameplay starts:
+initialization; MahjongCraft freezes the registry once every extension has registered:
 
 ```kotlin
-registry.register("example:furniture", provider, priority = 0)
+registry.register(RegisteredSeatProvider("example:furniture", provider, priority = 0))
 ```
 
 The provider resolves only the requested table seat. It may recognize a block, an entity, or a

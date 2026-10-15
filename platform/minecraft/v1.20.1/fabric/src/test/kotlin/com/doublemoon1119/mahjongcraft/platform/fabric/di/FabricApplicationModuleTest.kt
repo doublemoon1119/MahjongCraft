@@ -49,7 +49,6 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
-import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.FabricSeatProviderRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.concurrency.ClientCoroutineScope
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.concurrency.ClientThreadCoroutineDispatcher
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
@@ -87,6 +86,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.Fabric
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.BuiltInDefaultGameConfigProvider
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.room.MahjongTableRoomService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.BuiltInFabricSeatProviderIds
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatProviderRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.MahjongStoolSeatProvider
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLocationValidationService
@@ -336,7 +336,7 @@ class FabricApplicationModuleTest {
             extensions = emptyList(),
         )
 
-        val seatProviders = koin.get<FabricSeatProviderRegistry>()
+        val seatProviders = koin.get<FabricSeatProviderRegistryImpl>()
         val fabricRegistries = koin.get<FabricExtensionRegistries>()
         assertSame(koin.get<FabricTablePropKindRegistry>(), fabricRegistries.tablePropKindRegistry)
         assertSame(seatProviders, fabricRegistries.seatProviderRegistry)
