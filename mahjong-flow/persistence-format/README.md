@@ -26,12 +26,13 @@ version.
 ## Dependencies
 
 It depends on [mahjong-logic](../../mahjong-logic/README.md),
-[mahjong-flow-common](../common/README.md), Kotlin Serialization, and Koin.
+[mahjong-flow-common](../common/README.md), and Kotlin Serialization.
 
 ## Dependency injection
 
-`persistenceFormatModule` registers the history replay projection registry and assembles the
-persistence registry aggregate and codec with their existing defaults.
+The module does not depend on a DI framework. Platform composition registers the history replay
+projection registry and assembles the persistence registry aggregate and codec with their
+existing defaults; see [Minecraft common](../../platform/minecraft/common/README.md).
 Persistence DTOs are not dependency-injected services.
 
 ## Testing

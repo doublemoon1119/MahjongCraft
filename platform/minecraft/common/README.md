@@ -116,6 +116,12 @@ common module; native text conversion remains in each platform adapter.
 `minecraftServerModule` registers server-only state and codecs so that only the server graph
 creates them; session cleanup remains the lifecycle services' responsibility.
 
+The Flow modules do not depend on a DI framework, so this module also assembles them:
+`flowCommonModule`, `flowClientModule`, `flowServerModule`, `networkDtoModule`, and
+`persistenceFormatModule` list each Flow module's services. Use cases remain factories; registries
+remain singles shared with extension bootstrap. Framework-neutral Logic/AI types and configured AI
+execution/advancement factories are built inside their definitions.
+
 ## Testing
 
 Common and JVM tests cover registries, layout, configuration codecs, animation calculations,

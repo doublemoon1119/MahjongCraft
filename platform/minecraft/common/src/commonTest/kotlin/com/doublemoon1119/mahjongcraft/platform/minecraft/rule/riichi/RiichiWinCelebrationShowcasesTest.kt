@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi
 
-import com.doublemoon1119.mahjongcraft.flow.common.di.RiichiWinCelebrationCueResolver
+import com.doublemoon1119.mahjongcraft.flow.common.game.riichi.RiichiWinCelebrationCueResolver
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPointResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuResult

@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.mahjongcraft.kotlin.multiplatform)
-    alias(libs.plugins.koin.compiler)
     alias(libs.plugins.mahjongcraft.event.api.abi)
 }
 
@@ -13,8 +12,6 @@ kotlin {
         commonMain.dependencies {
             implementation(libs.kotlinx.coroutines)
             implementation(project(":mahjong-logic"))
-            implementation(project.dependencies.platform(libs.koin.bom))
-            implementation(libs.koin.core)
         }
 
         commonTest.dependencies {

@@ -1,12 +1,12 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.di
 
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
-import com.doublemoon1119.mahjongcraft.flow.network.dto.di.networkDtoModule
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.di.persistenceFormatModule
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.platform.fabric.metadata.FabricRuntimeMetadata
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.environment.FabricMinecraftEnvironment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.di.minecraftCommonModule
+import com.doublemoon1119.mahjongcraft.platform.minecraft.di.networkDtoModule
+import com.doublemoon1119.mahjongcraft.platform.minecraft.di.persistenceFormatModule
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
 import org.koin.dsl.module
 import org.koin.plugin.module.dsl.single

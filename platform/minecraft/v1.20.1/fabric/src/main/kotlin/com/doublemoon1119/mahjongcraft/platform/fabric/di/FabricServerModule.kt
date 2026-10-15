@@ -12,7 +12,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.observer.service.ObserverAudi
 import com.doublemoon1119.mahjongcraft.flow.common.observer.service.ObserverSnapshotSender
 import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.time.MonotonicClock
-import com.doublemoon1119.mahjongcraft.flow.server.di.flowServerModule
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionReporter
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceFailureReporter
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceFollowUp
@@ -137,6 +136,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.FabricMahjong
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.FabricMahjongTileWallPresenter
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.time.FabricTickMonotonicClock
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatProvider
+import com.doublemoon1119.mahjongcraft.platform.minecraft.di.flowServerModule
 import com.doublemoon1119.mahjongcraft.platform.minecraft.di.minecraftServerModule
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.event.GameEventDeliveryReporter

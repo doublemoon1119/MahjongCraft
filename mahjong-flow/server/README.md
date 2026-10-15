@@ -24,13 +24,13 @@ parse Minecraft commands, or choose a concrete persistence backend.
 
 It depends on [mahjong-logic](../../mahjong-logic/README.md),
 [mahjong-ai](../../mahjong-ai/README.md), [mahjong-flow-common](../common/README.md),
-coroutines, and Koin.
+and coroutines.
 
 ## Dependency injection
 
-`flowServerModule` lists each class-owned service and registry. Use cases remain factories;
-registries remain singles shared with extension bootstrap. Framework-neutral Logic/AI types and
-configured AI execution/advancement factories are built inside their definitions.
+The module does not depend on a DI framework; platform composition registers its services, see
+[Minecraft common](../../platform/minecraft/common/README.md). Use cases remain factories; registries remain singles shared with
+extension bootstrap.
 
 ## Testing
 

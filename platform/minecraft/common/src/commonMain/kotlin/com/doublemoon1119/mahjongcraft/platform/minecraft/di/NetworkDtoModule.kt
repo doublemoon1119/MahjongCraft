@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.flow.network.dto.di
+package com.doublemoon1119.mahjongcraft.platform.minecraft.di
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
@@ -9,7 +9,7 @@ import org.koin.dsl.module
 import org.koin.plugin.module.dsl.single
 
 /**
- * `:mahjong-flow-network-dto` 模組所提供的註冊表與序列化相依項定義。
+ * 平台為 `:mahjong-flow-network-dto` 組裝的註冊表與序列化相依項定義。
  *
  * 網路訊息與狀態快照共用的 [Json] 與擴充功能初始化流程使用相同的 [NetworkDtoRegistries]；動態多型序列化器會在每次
  * 編解碼時查詢註冊表，因此即使其他相依項先取得 [Json]，稍後完成的 DTO 註冊仍會生效。

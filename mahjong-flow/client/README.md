@@ -17,7 +17,7 @@ transport, or contain Minecraft rendering code.
 ## Dependencies
 
 It depends on [mahjong-logic](../../mahjong-logic/README.md),
-[mahjong-flow-common](../common/README.md), coroutines, and Koin.
+[mahjong-flow-common](../common/README.md), and coroutines.
 
 ## Testing
 

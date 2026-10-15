@@ -21,12 +21,12 @@ This module does not execute authoritative commands, persist files, send packets
 
 ## Dependencies
 
-It depends on [mahjong-logic](../../mahjong-logic/README.md), coroutines, and Koin.
+It depends on [mahjong-logic](../../mahjong-logic/README.md) and coroutines.
 
 ## Testing
 
 Tests cover shared models, timers, snapshots, ranking calculations, preparation
-state, event projection, and DI registration. Shared fixtures come from
+state, event projection, and win celebration cue resolution. Shared fixtures come from
 [testing-mahjong-flow](../../testing/mahjong-flow/README.md).
 
 From the repository root, run

@@ -114,13 +114,16 @@
 - Preserve lifetime: `factory` creates a new instance per resolution; `single` shares one within the Koin
   container. A single is not automatically a runtime-session scope. Preserve explicit session reset, cancellation,
   resource release, qualifiers, parameters and eager/lazy initialization behavior.
-- Do not introduce Koin into Logic or AI, or register DTOs and value objects merely because their module uses Koin
-  elsewhere.
+- Do not introduce Koin into Logic, AI, or Flow, or register DTOs and value objects merely because their module uses
+  Koin elsewhere. Platform composition declares the definitions for Flow services.
 - Keep each module within its intended graph. A module `includes` the modules its own definitions depend on, and
   application entry points start Koin with their top-level modules. Do not move environment-specific services into
   a shared module, relocate public types, or widen visibility just to simplify registration.
 - The Koin compiler plugin validates the complete graph at each `startKoin` call, but only in a compilation that
   declares at least one definition of its own. Keep application entry points in such a module.
+- A module that declares definitions without starting Koin reports `compile-safety validation skipped`; its
+  definitions are validated at the entry points that load them. Do not disable `compileSafety` there to silence the
+  warning: that also hides its definitions from the entry-point check.
 
 ### Extension Bootstrap
 

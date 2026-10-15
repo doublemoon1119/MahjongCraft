@@ -1,4 +1,4 @@
-package com.doublemoon1119.mahjongcraft.flow.server.di
+package com.doublemoon1119.mahjongcraft.platform.minecraft.di
 
 import com.doublemoon1119.mahjongcraft.ai.BuiltInAiStrategyKeys
 import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
@@ -7,7 +7,6 @@ import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
-import com.doublemoon1119.mahjongcraft.flow.common.di.flowCommonModule
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionExecutor
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiTurnDriver
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceManager
@@ -88,7 +87,7 @@ import org.koin.plugin.module.dsl.factory
 import org.koin.plugin.module.dsl.single
 
 /**
- * `:mahjong-flow-server` 的 Koin 模組。
+ * 平台為 `:mahjong-flow-server` 組裝的 Koin 定義。
  *
  * 各 registry 的內容由 extension bootstrap 登記。`:mahjong-ai` 刻意不依賴 Koin（比照 `:mahjong-logic` 維持框架無關），其 registry
  * 在這裡明確建立：AI 策略 registry 在未知或未指定策略時退回初級，內建策略由 extension bootstrap 登記；對手模型 registry 在規則

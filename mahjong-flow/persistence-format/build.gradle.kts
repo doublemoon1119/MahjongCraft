@@ -1,7 +1,6 @@
 plugins {
     alias(libs.plugins.mahjongcraft.kotlin.multiplatform)
     alias(libs.plugins.kotlin.serialization)
-    alias(libs.plugins.koin.compiler)
 }
 
 version = libs.versions.flow.version.get()
@@ -15,8 +14,6 @@ kotlin {
             implementation(project(":mahjong-flow:mahjong-flow-common"))
             api(libs.kotlinx.serialization.json)
             implementation(libs.kotlinx.coroutines)
-            implementation(project.dependencies.platform(libs.koin.bom))
-            implementation(libs.koin.core)
         }
 
         commonTest.dependencies {
