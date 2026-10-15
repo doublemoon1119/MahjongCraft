@@ -259,7 +259,7 @@ class FabricTableStateDeliveryTest {
             )
         }
         runCurrent()
-        val result = service.cleanupMissing(tableId, entry.revision)
+        val result = service.cleanupMissing(entry)
         resumePreparation.complete(Unit)
         advanceUntilIdle()
         scope.cancel()

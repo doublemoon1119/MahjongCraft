@@ -62,7 +62,9 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
@@ -91,32 +93,51 @@ class FabricTableLifecycleServiceTest {
         holder.join()
     }
 
-    /** 方塊替換已完成清理時，後續 Fabric AFTER event 不得再次執行清理。 */
+    /** 方塊替換已完成清理時，玩家破壞清理針對的位置項目已不存在，不得再次執行清理。 */
     @Test
-    fun `player break event skips cleanup after block replacement removed location`() = runTest {
+    fun `player-broken cleanup is stale after block replacement removed location`() = runTest {
         val fixture = Fixture()
         fixture.initialize()
 
-        val replacementResult = fixture.cleanupService.cleanupMissing(fixture.tableId, fixture.entryRevision)
-        val afterEventResult = fixture.lifecycleService.cleanupPlayerBroken(fixture.tableId)
+        val replacementResult = fixture.cleanupService.cleanupMissing(fixture.entry)
+        val afterEventResult = fixture.lifecycleService.cleanupPlayerBroken(fixture.entry)
 
         assertEquals(OrphanedTableCleanupResult.REMOVED_ROOM, replacementResult)
-        assertNull(afterEventResult)
+        assertEquals(OrphanedTableCleanupResult.STALE_REQUEST, afterEventResult)
         assertNull(fixture.locations.get(fixture.tableId))
         assertNull(fixture.store.snapshot().rooms[fixture.tableId])
     }
 
-    /** 沒有先發生方塊替換時，Fabric AFTER event 應完成玩家破壞清理。 */
+    /** 沒有先發生方塊替換時，玩家破壞事件排入的清理應移除目前的桌子。 */
     @Test
     fun `player break event cleans current table location`() = runTest {
         val fixture = Fixture()
         fixture.initialize()
 
-        val result = fixture.lifecycleService.cleanupPlayerBroken(fixture.tableId)
+        fixture.lifecycleService.onPlayerBroken(fixture.tableId)
+        fixture.drainCleanupQueue()
 
-        assertEquals(OrphanedTableCleanupResult.REMOVED_ROOM, result)
         assertNull(fixture.locations.get(fixture.tableId))
         assertNull(fixture.store.snapshot().rooms[fixture.tableId])
+        assertNull(fixture.memberships.getVenueId(fixture.playerId))
+    }
+
+    /** 清理仍在排隊時同一 UUID 的桌子已在另一位置重新登記，排隊中的清理不得移除新來源。 */
+    @Test
+    fun `queued player-broken cleanup keeps a source re-registered while queued`() = runTest {
+        val fixture = Fixture()
+        fixture.initialize()
+        val gate = CompletableDeferred<Unit>()
+        fixture.cleanupQueue.submit(description = "test gate") { gate.await() }
+
+        fixture.lifecycleService.onPlayerBroken(fixture.tableId)
+        val newEntry = fixture.locations.put(fixture.tableId, TableLocation("minecraft:overworld", 32, 64, 0))
+        gate.complete(Unit)
+        fixture.drainCleanupQueue()
+
+        assertSame(newEntry, fixture.locations.get(fixture.tableId))
+        assertNotNull(fixture.store.snapshot().rooms[fixture.tableId])
+        assertEquals(fixture.tableId, fixture.memberships.getVenueId(fixture.playerId))
     }
 
     /** 建立玩家破壞測試使用的權威與衍生狀態。 */
@@ -125,13 +146,13 @@ class FabricTableLifecycleServiceTest {
         val tableId = Uuid.random()
 
         /** 測試玩家 UUID。 */
-        private val playerId = Uuid.random()
+        val playerId = Uuid.random()
 
         /** 權威狀態儲存。 */
         val store = AuthoritativeStateStore()
 
         /** 玩家 membership。 */
-        private val memberships = PlayerMembershipRepositoryImpl()
+        val memberships = PlayerMembershipRepositoryImpl()
 
         /** Room snapshot repository。 */
         private val roomSnapshots = RoomSnapshotRepositoryImpl()
@@ -142,11 +163,11 @@ class FabricTableLifecycleServiceTest {
         /** 桌子位置索引。 */
         val locations = TableLocationRegistry()
 
-        /** 初始位置 revision。 */
-        val entryRevision = locations.put(
+        /** 初始位置索引項目。 */
+        val entry = locations.put(
             tableId,
             TableLocation("minecraft:overworld", 0, 64, 0),
-        ).revision
+        )
 
         /** 測試設定 state。 */
         private val configState = MinecraftServerConfigState(
@@ -191,6 +212,9 @@ class FabricTableLifecycleServiceTest {
         /** 記錄清理呼叫的選牌確認面板 presenter fake。 */
         private val tileSelectionConfirmPresenter = RecordingTileSelectionConfirmPresenter()
 
+        /** 依序執行權威清理的佇列。 */
+        val cleanupQueue = TableCleanupQueue(scope = createTestAppCoroutineScope(), dispatchers = TestCoroutineDispatchers())
+
         /** 受測生命週期服務。 */
         val lifecycleService = FabricTableLifecycleService(
             store = store,
@@ -198,7 +222,7 @@ class FabricTableLifecycleServiceTest {
             debugWinRoundContinuationState = DebugWinRoundContinuationState(),
             debugWinShowcaseOverride = DebugWinShowcaseOverride(NonDevelopmentEnvironment),
             cleanupService = cleanupService,
-            cleanupQueue = TableCleanupQueue(scope = createTestAppCoroutineScope(), dispatchers = TestCoroutineDispatchers()),
+            cleanupQueue = cleanupQueue,
             configState = configState,
             diceRollPresenter = diceRollPresenter,
             tileWallPresenter = tileWallPresenter,
@@ -216,6 +240,11 @@ class FabricTableLifecycleServiceTest {
         /** 這個測試不驗證 debug 覆寫，一律回報非開發環境讓它保持 inert。 */
         object NonDevelopmentEnvironment : MinecraftEnvironment {
             override val isDevelopment: Boolean = false
+        }
+
+        /** 等待目前已排入的清理全部完成。 */
+        suspend fun drainCleanupQueue() {
+            cleanupQueue.submit(description = "test drain") {}.join()
         }
 
         /** 建立包含測試 Room 與 membership 的初始狀態。 */

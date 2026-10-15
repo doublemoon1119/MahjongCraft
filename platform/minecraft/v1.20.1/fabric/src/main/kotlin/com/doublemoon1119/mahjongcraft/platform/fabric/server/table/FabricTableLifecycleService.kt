@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInf
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfoPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTileSelectionConfirmPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableCornerWidthTracker
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationEntry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPresenter
@@ -84,9 +85,27 @@ class FabricTableLifecycleService(
         }
         PlayerBlockBreakEvents.AFTER.register { _, _, _, _, blockEntity ->
             val table = blockEntity as? MahjongTableBlockEntity ?: return@register
-            val tableId = table.tableId
-            cleanupQueue.submit(description = "player-broken table $tableId") { cleanupPlayerBroken(tableId) }
+            onPlayerBroken(table.tableId)
         }
+    }
+
+    /**
+     * 玩家成功破壞後，當場記下目前的位置索引項目，再排入不受 orphan policy 保留選項影響的權威清理。
+     *
+     * 清理只針對破壞當下的那個位置項目；排隊期間同一 UUID 的桌子重新登記時，清理會視為過期而不動新來源。
+     *
+     * @param tableId 玩家破壞的桌子 UUID。
+     */
+    internal fun onPlayerBroken(tableId: Uuid) {
+        val entry = locations.get(tableId)
+        if (entry == null) {
+            logger.debug(
+                "Skipped player-broken cleanup for Mahjong table {} because block replacement already removed its location",
+                tableId,
+            )
+            return
+        }
+        cleanupQueue.submit(description = "player-broken table $tableId") { cleanupPlayerBroken(entry) }
     }
 
     /**
@@ -111,7 +130,7 @@ class FabricTableLifecycleService(
         val removedTransientPresentationCount = presentationCleaner.clear(world, tableId, table.pos)
         val entry = locations.put(tableId, tableLocation)
         cleanupQueue.submit(description = "replaced table $tableId") {
-            val result = cleanupService.cleanupMissing(tableId, entry.revision)
+            val result = cleanupService.cleanupMissing(entry)
             logger.debug("Handled replaced Mahjong table {} with cleanup result {}", tableId, result)
         }
         logger.debug(
@@ -165,26 +184,19 @@ class FabricTableLifecycleService(
     }
 
     /**
-     * 玩家成功破壞後，不受 orphan policy 保留選項影響地清理已允許移除的桌子。
+     * 對玩家破壞當下的位置索引項目執行清理；清理未過期時一併清掉這桌的開發用 debug 設定。
      *
-     * @param tableId 玩家破壞的桌子 UUID。
-     * @return 清理結果；桌子位置已被替換流程移除時為 null。
+     * @param entry 玩家破壞當下觀察到的位置索引項目。
+     * @return 清理結果；位置索引已不再是同一個項目時為 [OrphanedTableCleanupResult.STALE_REQUEST]。
      */
-    internal suspend fun cleanupPlayerBroken(tableId: Uuid): OrphanedTableCleanupResult? {
-        val entry = locations.get(tableId)
-        if (entry == null) {
-            logger.debug(
-                "Skipped player-broken cleanup for Mahjong table {} because block replacement already removed its location",
-                tableId,
-            )
-            return null
+    internal suspend fun cleanupPlayerBroken(entry: TableLocationEntry): OrphanedTableCleanupResult {
+        val result = cleanupService.cleanupPlayerBroken(entry)
+        if (result != OrphanedTableCleanupResult.STALE_REQUEST) {
+            // 這兩個容器只在開發環境才會有內容，見 DebugWinShowcaseOverride／DebugWinRoundContinuationState KDoc。
+            debugWinRoundContinuationState.clear(entry.tableId)
+            debugWinShowcaseOverride.clear(entry.tableId)
         }
-        // 桌子已被移除：一併清掉這桌的開發用 debug 設定，不讓條目累積（這兩個容器只在開發環境
-        // 才會有內容，見 DebugWinShowcaseOverride／DebugWinRoundContinuationState KDoc）。
-        debugWinRoundContinuationState.clear(tableId)
-        debugWinShowcaseOverride.clear(tableId)
-        val result = cleanupService.cleanupPlayerBroken(tableId, entry.revision)
-        logger.debug("Handled player-broken Mahjong table {} with cleanup result {}", tableId, result)
+        logger.debug("Handled player-broken Mahjong table {} with cleanup result {}", entry.tableId, result)
         return result
     }
 }

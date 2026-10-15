@@ -57,7 +57,7 @@ internal class TableLocationValidationQueue<S : Any, W : Any> {
      * @param session 目前 tick 所屬的 server session。
      * @param isChunkUsable 判斷 chunk 是否仍在 session 中載入。
      * @param entriesForChunk 取得該 chunk 的預期位置索引。
-     * @param isEntryCurrent 確認索引項目的 revision 尚未改變。
+     * @param isEntryCurrent 確認索引仍是同一個項目，尚未被移除或重新登記。
      * @param matchesExpectedTable 驗證方塊位置仍有預期桌子。
      * @param cleanup 第二次確認仍缺失時執行的清理操作；在呼叫端執行緒同步呼叫，不得等待協程鎖。
      */

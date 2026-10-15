@@ -102,7 +102,7 @@ class FabricTableLocationValidationService(
             session = server,
             isChunkUsable = ::isUsable,
             entriesForChunk = ::entriesForChunk,
-            isEntryCurrent = { entry -> locations.get(entry.tableId) == entry },
+            isEntryCurrent = { entry -> locations.get(entry.tableId) === entry },
             matchesExpectedTable = ::matchesExpectedTable,
             cleanup = ::cleanupMissing,
         )
@@ -179,7 +179,7 @@ class FabricTableLocationValidationService(
             entry.tableId,
         )
         cleanupQueue.submit(description = "missing table ${entry.tableId}") {
-            cleanupService.cleanupMissing(entry.tableId, entry.revision)
+            cleanupService.cleanupMissing(entry)
         }
     }
 

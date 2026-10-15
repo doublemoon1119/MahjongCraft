@@ -23,6 +23,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.OrphanedTablePolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationEntry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
@@ -34,6 +35,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
@@ -58,7 +60,7 @@ class OrphanedTableCleanupServiceTest {
         val trackingObserverId = Uuid.random()
         fixture.removalNotifier.trackingObserverIds = setOf(trackingObserverId)
 
-        val result = fixture.service.cleanupMissing(fixture.tableId, fixture.entryRevision)
+        val result = fixture.service.cleanupMissing(fixture.entry)
 
         assertEquals(OrphanedTableCleanupResult.REMOVED_ROOM, result)
         assertNull(fixture.roomRepository.getRoom(fixture.tableId))
@@ -82,7 +84,7 @@ class OrphanedTableCleanupServiceTest {
         fixture.memberships.claim(player.id, fixture.tableId)
         fixture.gameSnapshots.setSnapshot(player.id, game.toSnapshot(setOf(player.id), setAsideTiles = { emptyList() }))
 
-        val result = fixture.service.cleanupMissing(fixture.tableId, fixture.entryRevision)
+        val result = fixture.service.cleanupMissing(fixture.entry)
 
         assertEquals(OrphanedTableCleanupResult.RETAINED, result)
         assertNotNull(fixture.gameRepository.getTableState(fixture.tableId))
@@ -98,7 +100,7 @@ class OrphanedTableCleanupServiceTest {
         val game = FakeTableStateFactory.create(id = fixture.tableId)
         fixture.gameRepository.setTableState(game)
 
-        val result = fixture.service.cleanupMissing(fixture.tableId, fixture.entryRevision)
+        val result = fixture.service.cleanupMissing(fixture.entry)
 
         assertEquals(OrphanedTableCleanupResult.RETAINED, result)
         assertNotNull(fixture.gameRepository.getTableState(fixture.tableId))
@@ -112,7 +114,7 @@ class OrphanedTableCleanupServiceTest {
         val room = Room(fixture.tableId, Uuid.random(), GameConfig(FakeMahjongRuleConfig()))
         fixture.roomRepository.setRoom(room)
 
-        val result = fixture.service.cleanupMissing(fixture.tableId, fixture.entryRevision)
+        val result = fixture.service.cleanupMissing(fixture.entry)
 
         assertEquals(OrphanedTableCleanupResult.REMOVED_ROOM, result)
         assertNull(fixture.roomRepository.getRoom(fixture.tableId))
@@ -126,7 +128,7 @@ class OrphanedTableCleanupServiceTest {
         fixture.gameRepository.setTableState(FakeTableStateFactory.create(id = fixture.tableId))
         fixture.captureCommittedFacts()
 
-        val result = fixture.service.cleanupPlayerBroken(fixture.tableId, fixture.entryRevision)
+        val result = fixture.service.cleanupPlayerBroken(fixture.entry)
 
         assertEquals(OrphanedTableCleanupResult.REMOVED_GAME, result)
         assertNull(fixture.gameRepository.getTableState(fixture.tableId))
@@ -155,7 +157,7 @@ class OrphanedTableCleanupServiceTest {
         ) { game to Unit }
         fixture.captureCommittedFacts()
 
-        val result = fixture.service.cleanupMissing(fixture.tableId, fixture.entryRevision)
+        val result = fixture.service.cleanupMissing(fixture.entry)
 
         assertEquals(OrphanedTableCleanupResult.REMOVED_GAME, result)
         assertEquals(1, fixture.committedFacts.size)
@@ -180,22 +182,22 @@ class OrphanedTableCleanupServiceTest {
         fixture.gameRepository.updateGame(fixture.tableId) { game -> checkNotNull(game).copy(isMatchOver = true) to Unit }
         fixture.captureCommittedFacts()
 
-        val result = fixture.service.cleanupMissing(fixture.tableId, fixture.entryRevision)
+        val result = fixture.service.cleanupMissing(fixture.entry)
 
         assertEquals(OrphanedTableCleanupResult.REMOVED_GAME, result)
         assertEquals(emptyList(), fixture.committedFacts)
     }
 
-    /** 過期 revision 不得清除已移動桌子的狀態。 */
+    /** 過期的位置項目不得清除已移動桌子的狀態。 */
     @Test
-    fun `test stale revision does not remove moved table`() = runTest {
+    fun `test stale entry does not remove moved table`() = runTest {
         val fixture = Fixture(OrphanedTablePolicy.REMOVE_ALL)
-        val oldRevision = fixture.entryRevision
+        val oldEntry = fixture.entry
         fixture.locations.put(fixture.tableId, TableLocation("minecraft:overworld", 32, 64, 0))
         val room = Room(fixture.tableId, Uuid.random(), GameConfig(FakeMahjongRuleConfig()))
         fixture.roomRepository.setRoom(room)
 
-        val result = fixture.service.cleanupMissing(fixture.tableId, oldRevision)
+        val result = fixture.service.cleanupMissing(oldEntry)
 
         assertEquals(OrphanedTableCleanupResult.STALE_REQUEST, result)
         assertNotNull(fixture.roomRepository.getRoom(fixture.tableId))
@@ -211,7 +213,7 @@ class OrphanedTableCleanupServiceTest {
         )
         fixture.configState.replace(MinecraftServerConfig(orphanedTablePolicy = OrphanedTablePolicy.REMOVE_ALL))
 
-        val result = fixture.service.cleanupMissing(fixture.tableId, fixture.entryRevision)
+        val result = fixture.service.cleanupMissing(fixture.entry)
 
         assertEquals(OrphanedTableCleanupResult.REMOVED_ROOM, result)
     }
@@ -237,7 +239,7 @@ class OrphanedTableCleanupServiceTest {
         )
         fixture.removalNotifier.trackingObserverIds = setOf(trackingObserver)
 
-        val result = fixture.service.cleanupPlayerBroken(fixture.tableId, fixture.entryRevision)
+        val result = fixture.service.cleanupPlayerBroken(fixture.entry)
 
         assertEquals(OrphanedTableCleanupResult.REMOVED_GAME, result)
         assertEquals(1, fixture.removalNotifier.completed.size)
@@ -254,7 +256,7 @@ class OrphanedTableCleanupServiceTest {
         val trackingObserver = Uuid.random()
         fixture.removalNotifier.trackingObserverIds = setOf(trackingObserver)
 
-        val result = fixture.service.cleanupMissing(fixture.tableId, fixture.entryRevision)
+        val result = fixture.service.cleanupMissing(fixture.entry)
 
         assertEquals(OrphanedTableCleanupResult.REMOVED_LOCATION, result)
         assertEquals(1, fixture.removalNotifier.completed.size)
@@ -267,7 +269,7 @@ class OrphanedTableCleanupServiceTest {
         val fixture = Fixture(OrphanedTablePolicy.KEEP_AND_WARN)
         fixture.gameRepository.setTableState(FakeTableStateFactory.create(id = fixture.tableId))
 
-        val result = fixture.service.cleanupMissing(fixture.tableId, fixture.entryRevision)
+        val result = fixture.service.cleanupMissing(fixture.entry)
 
         assertEquals(OrphanedTableCleanupResult.RETAINED, result)
         assertTrue(fixture.removalNotifier.begunTableIds.isEmpty())
@@ -281,11 +283,11 @@ class OrphanedTableCleanupServiceTest {
 
         assertEquals(
             expected = OrphanedTableCleanupResult.REMOVED_LOCATION,
-            actual = fixture.service.cleanupMissing(fixture.tableId, fixture.entryRevision),
+            actual = fixture.service.cleanupMissing(fixture.entry),
         )
         assertEquals(
             expected = OrphanedTableCleanupResult.STALE_REQUEST,
-            actual = fixture.service.cleanupMissing(fixture.tableId, fixture.entryRevision),
+            actual = fixture.service.cleanupMissing(fixture.entry),
         )
         assertEquals(1, fixture.removalNotifier.completed.size)
     }
@@ -295,18 +297,39 @@ class OrphanedTableCleanupServiceTest {
     fun `test location replaced after capture is stale`() = runTest {
         val fixture = Fixture(OrphanedTablePolicy.REMOVE_ALL)
         fixture.removalNotifier.onCaptured = {
-            fixture.locations.remove(fixture.tableId, fixture.entryRevision)
+            fixture.locations.remove(fixture.tableId, fixture.entry.revision)
             fixture.locations.put(fixture.tableId, TableLocation("minecraft:overworld", 8, 64, 8))
         }
 
-        val result = fixture.service.cleanupMissing(fixture.tableId, fixture.entryRevision)
+        val result = fixture.service.cleanupMissing(fixture.entry)
 
         assertEquals(OrphanedTableCleanupResult.STALE_REQUEST, result)
         assertTrue(fixture.removalNotifier.completed.isEmpty())
         assertNotNull(fixture.locations.get(fixture.tableId))
     }
 
-    /** 衍生快照清理失败時，不回復已提交狀態但應釋放移除標記。 */
+    /** 同一桌移除後在原位置重新登記時，revision 從頭計算而與舊項目相同，舊請求仍不得清理新來源。 */
+    @Test
+    fun `test re-registration with equal revision is stale`() = runTest {
+        val fixture = Fixture(OrphanedTablePolicy.REMOVE_ALL)
+        val oldEntry = fixture.entry
+        fixture.locations.remove(fixture.tableId, oldEntry.revision)
+        val newEntry = fixture.locations.put(fixture.tableId, fixture.location)
+        val player = FakeMahjongPlayerFactory.create()
+        fixture.roomRepository.setRoom(Room(fixture.tableId, player.id, GameConfig(FakeMahjongRuleConfig())))
+        fixture.memberships.claim(player.id, fixture.tableId)
+
+        val result = fixture.service.cleanupPlayerBroken(oldEntry)
+
+        assertEquals(oldEntry, newEntry)
+        assertEquals(OrphanedTableCleanupResult.STALE_REQUEST, result)
+        assertNotNull(fixture.roomRepository.getRoom(fixture.tableId))
+        assertEquals(fixture.tableId, fixture.memberships.getVenueId(player.id))
+        assertSame(newEntry, fixture.locations.get(fixture.tableId))
+        assertTrue(fixture.removalNotifier.completed.isEmpty())
+    }
+
+    /** 衍生快照清理失敗時，不回復已提交狀態但應釋放移除標記。 */
     @Test
     fun `test derived snapshot failure cancels pending notification`() = runTest {
         val fixture = Fixture(
@@ -321,7 +344,7 @@ class OrphanedTableCleanupServiceTest {
         fixture.roomSnapshots.setSnapshot(playerId, room.toSnapshot(playerId))
 
         assertFailsWith<IllegalStateException> {
-            fixture.service.cleanupMissing(fixture.tableId, fixture.entryRevision)
+            fixture.service.cleanupMissing(fixture.entry)
         }
 
         assertEquals(listOf(fixture.tableId), fixture.removalNotifier.cancelledTableIds)
@@ -338,14 +361,14 @@ class OrphanedTableCleanupServiceTest {
         fixture.roomRepository.setRoom(oldRoom)
         fixture.roomSnapshots.setSnapshot(oldPlayerId, oldRoom.toSnapshot(oldPlayerId))
         fixture.removalNotifier.onBeginRemoval = {
-            fixture.locations.remove(fixture.tableId, fixture.entryRevision)
+            fixture.locations.remove(fixture.tableId, fixture.entry.revision)
             fixture.locations.put(fixture.tableId, TableLocation("minecraft:overworld", 16, 64, 16))
             runBlocking {
                 fixture.roomSnapshots.setSnapshot(newObserverId, oldRoom.toSnapshot(newObserverId))
             }
         }
 
-        val result = fixture.service.cleanupMissing(fixture.tableId, fixture.entryRevision)
+        val result = fixture.service.cleanupMissing(fixture.entry)
 
         assertEquals(OrphanedTableCleanupResult.STALE_REQUEST, result)
         assertNotNull(fixture.locations.get(fixture.tableId))
@@ -364,14 +387,14 @@ class OrphanedTableCleanupServiceTest {
         fixture.roomRepository.setRoom(room)
         snapshots.setSnapshot(oldPlayerId, room.toSnapshot(oldPlayerId))
         snapshots.onRemoveSnapshotIf = {
-            fixture.locations.remove(fixture.tableId, fixture.entryRevision)
+            fixture.locations.remove(fixture.tableId, fixture.entry.revision)
             fixture.locations.put(fixture.tableId, TableLocation("minecraft:overworld", 24, 64, 24))
             runBlocking {
                 snapshots.setSnapshot(newObserverId, room.toSnapshot(newObserverId))
             }
         }
 
-        val result = fixture.service.cleanupMissing(fixture.tableId, fixture.entryRevision)
+        val result = fixture.service.cleanupMissing(fixture.entry)
 
         assertEquals(OrphanedTableCleanupResult.STALE_REQUEST, result)
         assertNotNull(fixture.locations.get(fixture.tableId))
@@ -420,11 +443,11 @@ class OrphanedTableCleanupServiceTest {
         /** 記錄桌子移除通知生命週期。 */
         val removalNotifier = RecordingTableRemovalNotifier(locations)
 
-        /** 初始位置 revision。 */
-        val entryRevision: Long = locations.put(
-            tableId,
-            TableLocation("minecraft:overworld", 0, 64, 0),
-        ).revision
+        /** 初始位置。 */
+        val location = TableLocation("minecraft:overworld", 0, 64, 0)
+
+        /** 初始位置索引項目。 */
+        val entry: TableLocationEntry = locations.put(tableId, location)
 
         /** 受測清理服務。 */
         val service = OrphanedTableCleanupService(

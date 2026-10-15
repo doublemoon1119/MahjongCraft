@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogge
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.MinecraftMatchAbortReasonIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.OrphanedTablePolicy
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationEntry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import org.koin.core.annotation.Single
 import kotlin.uuid.Uuid
@@ -42,13 +43,11 @@ class OrphanedTableCleanupService(
     /**
      * 依目前有效設定的 orphan policy 處理已確認缺失的桌子。
      *
-     * @param tableId 已確認缺失的桌子 UUID。
-     * @param expectedRevision 呼叫端觀察到的位置索引 revision。
+     * @param entry 確認缺失時觀察到的位置索引項目；索引已不再是同一個項目時視為過期請求。
      * @return 實際採取的清理結果。
      */
-    suspend fun cleanupMissing(tableId: Uuid, expectedRevision: Long): OrphanedTableCleanupResult = cleanup(
-        tableId = tableId,
-        expectedRevision = expectedRevision,
+    suspend fun cleanupMissing(entry: TableLocationEntry): OrphanedTableCleanupResult = cleanup(
+        entry = entry,
         policy = configState.current.orphanedTablePolicy,
         abortReasonId = MinecraftMatchAbortReasonIds.TABLE_MISSING,
     )
@@ -56,13 +55,11 @@ class OrphanedTableCleanupService(
     /**
      * 玩家政策已允許破壞時，移除該桌子的任何 Room／Game。
      *
-     * @param tableId 玩家破壞的桌子 UUID。
-     * @param expectedRevision 呼叫端觀察到的位置索引 revision。
+     * @param entry 玩家破壞時觀察到的位置索引項目；索引已不再是同一個項目時視為過期請求。
      * @return 實際採取的清理結果。
      */
-    suspend fun cleanupPlayerBroken(tableId: Uuid, expectedRevision: Long): OrphanedTableCleanupResult = cleanup(
-        tableId = tableId,
-        expectedRevision = expectedRevision,
+    suspend fun cleanupPlayerBroken(entry: TableLocationEntry): OrphanedTableCleanupResult = cleanup(
+        entry = entry,
         policy = OrphanedTablePolicy.REMOVE_ALL,
         abortReasonId = MinecraftMatchAbortReasonIds.TABLE_BROKEN_BY_PLAYER,
     )
@@ -70,20 +67,21 @@ class OrphanedTableCleanupService(
     /**
      * 依指定政策原子移除權威狀態，再清除所有衍生資料與位置。
      *
-     * @param tableId 要清理的桌子 UUID。
-     * @param expectedRevision 清理請求建立時的位置索引 revision。
+     * 每個步驟都以物件身分比對位置索引：同一桌在請求建立後重新登記時，revision 可能從頭計算而與舊值相同，
+     * 只有仍是同一個 [TableLocationEntry] 才代表請求針對的來源仍然存在。
+     *
+     * @param entry 清理請求建立時觀察到的位置索引項目。
      * @param policy 本次清理採用的 orphan table 政策。
      * @param abortReasonId 移除未完成對局時寫入的中途終止原因 ID。
      * @return 實際採取的清理結果。
      */
     private suspend fun cleanup(
-        tableId: Uuid,
-        expectedRevision: Long,
+        entry: TableLocationEntry,
         policy: OrphanedTablePolicy,
         abortReasonId: String,
     ): OrphanedTableCleanupResult {
-        val entry = locations.get(tableId)
-        if (entry == null || entry.revision != expectedRevision) return OrphanedTableCleanupResult.STALE_REQUEST
+        val tableId = entry.tableId
+        if (locations.get(tableId) !== entry) return OrphanedTableCleanupResult.STALE_REQUEST
 
         val notification = removalNotifier.capture(tableId)
         if (notification != null && notification.ticket.entry !== entry) return OrphanedTableCleanupResult.STALE_REQUEST
@@ -171,7 +169,7 @@ class OrphanedTableCleanupService(
                 if (!gameSnapshots.removeSnapshotIf(tableId, playerId, isStillValid)) return OrphanedTableCleanupResult.STALE_REQUEST
             }
             if (!isStillValid()) return OrphanedTableCleanupResult.STALE_REQUEST
-            if (locations.get(tableId) === entry) locations.remove(tableId, expectedRevision)
+            if (locations.get(tableId) === entry) locations.remove(tableId, entry.revision)
             notification?.let { removalNotifier.completeRemoval(it, additionalObserverIds) }
             notificationScheduled = true
             if (decision.result == OrphanedTableCleanupResult.REMOVED_LOCATION) {
