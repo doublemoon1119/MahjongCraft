@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.api.event.MatchEndedEvent
 import com.doublemoon1119.mahjongcraft.flow.api.event.MatchEvent
 import com.doublemoon1119.mahjongcraft.flow.api.event.MatchStartedEvent
 import com.doublemoon1119.mahjongcraft.flow.api.event.RoundSettledEvent
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventProjector
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.CommittedGameFacts
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.GameEventContext
@@ -15,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.RoundSettled
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.TableLocation
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.uuid.Uuid
 
 /**
@@ -32,6 +34,7 @@ import kotlin.uuid.Uuid
  * @property matchStarted 對局開始訂閱點。
  * @property roundSettled 一局結算訂閱點。
  * @property matchEnded 對局結束訂閱點。
+ * @property failurePolicy 判斷監聽者、排程器或回報器丟出的失敗能否隔離；無法隔離的失敗原樣往外傳。
  */
 @OptIn(ExperimentalAtomicApi::class)
 class GameEventDelivery(
@@ -42,6 +45,7 @@ class GameEventDelivery(
     private val matchStarted: MahjongCraftEvent<MatchStartedListener> = MahjongCraftEvents.MATCH_STARTED,
     private val roundSettled: MahjongCraftEvent<RoundSettledListener> = MahjongCraftEvents.ROUND_SETTLED,
     private val matchEnded: MahjongCraftEvent<MatchEndedListener> = MahjongCraftEvents.MATCH_ENDED,
+    private val failurePolicy: ExtensionFailurePolicy,
 ) {
     /** 以不可變快照原子更新的 session、佇列與交付水位。 */
     private val state = AtomicReference(DeliveryState(sessionId = null, releasedSequence = Long.MIN_VALUE))
@@ -163,6 +167,7 @@ class GameEventDelivery(
                 scheduler.enqueue { deliver(sessionId) }
             } catch (cause: Throwable) {
                 state.updateIfCurrent(sessionId) { it.copy(deliveryActive = false) }
+                if (!failurePolicy.isIsolatable(cause)) throw cause
                 report { reporter.schedulingFailed(cause) }
             }
             return
@@ -175,10 +180,16 @@ class GameEventDelivery(
      * @param sessionId 此工作所屬 session。
      */
     private fun deliver(sessionId: Uuid) {
-        while (true) {
-            val ready = takeReady(sessionId)
-            if (ready == null) return
-            ready.forEach(::deliverOne)
+        try {
+            while (true) {
+                val ready = takeReady(sessionId)
+                if (ready == null) return
+                ready.forEach(::deliverOne)
+            }
+        } catch (cause: Throwable) {
+            // 無法隔離的失敗中斷這次交付；解除排程旗標，避免之後的事件永遠不再排程。
+            state.updateIfCurrent(sessionId) { it.copy(deliveryActive = false) }
+            throw cause
         }
     }
 
@@ -221,31 +232,40 @@ class GameEventDelivery(
     /**
      * 逐一隔離監聽者失敗；生命週期切換後不再交付舊事件。
      *
+     * 交付不在協程中執行，監聽者丟出的取消例外不代表交付被取消，與可以隔離的失敗一樣只略過該監聽者。
+     *
      * @param L 監聽者型別。
      * @param pending 當次事件。
      * @param listeners 訂閱者快照。
      * @param invoke 單一監聽者呼叫。
      */
-    private fun <L> notify(
+    private fun <L : Any> notify(
         pending: PendingEvent,
         listeners: List<L>,
         invoke: (L) -> Unit,
     ) {
         for (listener in listeners) {
             if (state.load().sessionId != pending.context.sessionId) return
-            runCatching { invoke(listener) }.onFailure { cause ->
-                report { reporter.listenerFailed(pending.event, cause) }
+            try {
+                invoke(listener)
+            } catch (cause: Throwable) {
+                if (cause !is CancellationException && !failurePolicy.isIsolatable(cause)) throw cause
+                report { reporter.listenerFailed(pending.event, listener, cause) }
             }
         }
     }
 
     /**
-     * 隔離回報器本身的失敗。
+     * 隔離回報器本身可以隔離的失敗。
      *
      * @param block 欲執行的回報。
      */
     private inline fun report(block: () -> Unit) {
-        runCatching(block)
+        try {
+            block()
+        } catch (cause: Throwable) {
+            if (!failurePolicy.isIsolatable(cause)) throw cause
+        }
     }
 
     /**

@@ -51,6 +51,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.tile.TaiwanTileTypes
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.FabricSeatProviderRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
+import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricExtensionRegistries
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongExtensions
 import com.doublemoon1119.mahjongcraft.platform.fabric.metadata.FabricRuntimeMetadata
@@ -214,6 +215,7 @@ class FabricApplicationModuleTest {
                 /** 此案例只登記正式環境擴充。 */
                 override val isDevelopment: Boolean = false
             },
+            failurePolicy = FabricExtensionFailurePolicy(),
             extensions = listOf(extension),
         )
 
@@ -247,6 +249,7 @@ class FabricApplicationModuleTest {
                 /** 此案例以開發環境啟動擴充。 */
                 override val isDevelopment: Boolean = true
             },
+            failurePolicy = FabricExtensionFailurePolicy(),
             extensions = emptyList(),
         )
 
@@ -313,6 +316,7 @@ class FabricApplicationModuleTest {
                 /** 此案例驗證正式環境的完整組裝。 */
                 override val isDevelopment: Boolean = false
             },
+            failurePolicy = FabricExtensionFailurePolicy(),
             extensions = emptyList(),
         )
 

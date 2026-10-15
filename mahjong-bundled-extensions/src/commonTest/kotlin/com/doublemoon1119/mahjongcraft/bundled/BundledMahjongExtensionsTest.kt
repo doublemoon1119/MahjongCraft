@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.extension.CoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationSource
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtensionRegistrar
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistryImpl
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.HistoryReplayProjectionRegistry
@@ -41,7 +42,7 @@ class BundledMahjongExtensionsTest {
     fun `bundled extensions register each rule under its own source`() {
         val registries = registries()
 
-        val sources = MahjongExtensionRegistrar.registerAndFreeze(BundledMahjongExtensions.all, registries)
+        val sources = MahjongExtensionRegistrar.registerAndFreeze(BundledMahjongExtensions.all, registries, failurePolicy = ExtensionFailurePolicy.Default)
 
         assertEquals(listOf(null, BundledRiichiExtension.id, BundledTaiwanExtension.id), sources.map { it.extensionId })
         assertTrue(sources.first().categories.isEmpty(), "Empty registries must not carry any built-in rule")
@@ -57,7 +58,7 @@ class BundledMahjongExtensionsTest {
     /** 日麻的規則狀態、擴充動作、對手模型與結算整合都登記在日麻名下，台麻只登記自己的規則設定與牌河。 */
     @Test
     fun `riichi integrations stay with riichi and taiwan registers only its own formats`() {
-        val sources = MahjongExtensionRegistrar.registerAndFreeze(BundledMahjongExtensions.all, registries())
+        val sources = MahjongExtensionRegistrar.registerAndFreeze(BundledMahjongExtensions.all, registries(), failurePolicy = ExtensionFailurePolicy.Default)
         val riichi = sources[1]
         val taiwan = sources[2]
 

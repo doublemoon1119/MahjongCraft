@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.seating
 
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.FabricSeatProviderRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
@@ -33,12 +34,14 @@ import kotlin.uuid.Uuid
  * @property tableLocationRegistry 查詢桌子目前的位置。
  * @property serverHolder 取得目前伺服器世界與在線玩家。
  * @property seatProviders 已完成註冊的原生座位來源。
+ * @property failurePolicy 判斷座位來源丟出的失敗能否隔離。
  */
 @Single(binds = [MahjongSeatingPresenter::class])
 class FabricMahjongSeatingPresenter(
     private val tableLocationRegistry: TableLocationRegistry,
     private val serverHolder: FabricServerHolder,
     private val seatProviders: FabricSeatProviderRegistry,
+    private val failurePolicy: ExtensionFailurePolicy,
 ) : MahjongSeatingPresenter {
     /** 提供者違約與執行失敗的診斷。 */
     private val logger = mahjongCraftLogger(FabricMahjongSeatingPresenter::class)
@@ -62,7 +65,11 @@ class FabricMahjongSeatingPresenter(
         val environment = FabricSeatEnvironment()
         var currentSeatIndex = -1
         var currentPlayerId: Uuid? = null
-        val coordinator = SeatAssignmentCoordinator<ServerWorld, Entity, FabricSeatSnapshot>(seatProviders.entries(), environment) { providerId, cause ->
+        val coordinator = SeatAssignmentCoordinator<ServerWorld, Entity, FabricSeatSnapshot>(
+            providers = seatProviders.entries(),
+            environment = environment,
+            failurePolicy = failurePolicy,
+        ) { providerId, cause ->
             logger.warn("Seat provider {} failed for table {}, seat {}, rider {}", providerId, tableId, currentSeatIndex, currentPlayerId, cause)
         }
 

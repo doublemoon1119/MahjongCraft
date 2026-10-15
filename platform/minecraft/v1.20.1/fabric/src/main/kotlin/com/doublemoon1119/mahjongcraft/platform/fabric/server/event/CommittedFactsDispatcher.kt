@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.event
 
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventProjector
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.CommittedGameFacts
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
@@ -28,6 +29,7 @@ import kotlin.uuid.Uuid
  * @property locations 由記憶體位置索引提供事件產生當下的桌子位置。
  * @property reporter 回報事件交付失敗的診斷元件。
  * @property exclusions 由 debug 流程共用的場次排除名單。
+ * @property failurePolicy 判斷第三方事件監聽者丟出的失敗能否隔離。
  */
 @OptIn(ExperimentalAtomicApi::class)
 @Single
@@ -38,6 +40,7 @@ class CommittedFactsDispatcher(
     private val locations: GameEventLocationSource,
     private val reporter: GameEventDeliveryReporter,
     private val exclusions: GameEventExclusions,
+    private val failurePolicy: ExtensionFailurePolicy,
 ) {
     /** 記錄個別接收端失敗而不阻斷另一端的診斷 logger。 */
     private val logger = mahjongCraftLogger(CommittedFactsDispatcher::class)
@@ -78,6 +81,7 @@ class CommittedFactsDispatcher(
             matchStarted = subscriptions.matchStarted,
             roundSettled = subscriptions.roundSettled,
             matchEnded = subscriptions.matchEnded,
+            failurePolicy = failurePolicy,
         )
         val sessionId = delivery.startSession()
         lateinit var session: Session

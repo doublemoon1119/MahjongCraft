@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.stress
 
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionExecutor
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionObserver
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionOutcome
@@ -103,6 +104,7 @@ class StressAiDecisionsTest {
             capacity = capacity,
             timeout = TIMEOUT,
             observer = observer,
+            failurePolicy = ExtensionFailurePolicy.Default,
         )
     }
 

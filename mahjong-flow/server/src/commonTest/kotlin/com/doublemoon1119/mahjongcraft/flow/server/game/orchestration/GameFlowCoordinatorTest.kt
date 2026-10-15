@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.bundled.BundledRiichiExtension
 import com.doublemoon1119.mahjongcraft.flow.api.event.RoundSettledEvent
 import com.doublemoon1119.mahjongcraft.flow.api.event.RoundSettlementKind
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventProjector
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinSettlementDetail
@@ -251,7 +252,7 @@ class GameFlowCoordinatorTest {
                 register(MahjongAiStrategyDefinition(key) { strategy })
             }
         }
-        val aiTurnDriver = AiTurnDriver(gameRepo, getLegalActionsUseCase, aiStrategyRegistry, GameVisibilityPolicyImpl(moduleRegistry), moduleRegistry, AiDecisionExecutor.direct())
+        val aiTurnDriver = AiTurnDriver(gameRepo, getLegalActionsUseCase, aiStrategyRegistry, GameVisibilityPolicyImpl(moduleRegistry), moduleRegistry, AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default))
         val clock = MutableMonotonicClock()
         val decisionTimerManager = GameDecisionTimerManager(
             gameRepository = gameRepo,
@@ -307,7 +308,7 @@ class GameFlowCoordinatorTest {
             winPresentationHandoff = winPresentationHandoff,
             presentationPublisher = presentationPublisher,
             roundPreparationAiDriver = roundPreparationResolvers?.let {
-                RoundPreparationAiDriver(gameRepo, moduleRegistry, it, aiStrategyRegistry, GameVisibilityPolicyImpl(moduleRegistry), AiDecisionExecutor.direct())
+                RoundPreparationAiDriver(gameRepo, moduleRegistry, it, aiStrategyRegistry, GameVisibilityPolicyImpl(moduleRegistry), AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default))
             },
         )
     }

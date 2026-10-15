@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.history
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTransferResult
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryListRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryQueryAccess
@@ -12,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.Headl
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessHistoryProgress
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessHistoryRunLimits
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessHistoryScenario
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionExecutor
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
@@ -312,7 +314,7 @@ class HistoryGenerationIntegrationTest {
      *
      * @return 已建立且尚未推進的隔離歷史生成 runtime。
      */
-    private suspend fun runtime(): HeadlessFlowHistoryRuntime = HeadlessFlowHistoryRuntime.create(HeadlessHistoryScenario.RIICHI_EAST, bundledHeadlessHistoryRegistries())
+    private suspend fun runtime(): HeadlessFlowHistoryRuntime = HeadlessFlowHistoryRuntime.create(HeadlessHistoryScenario.RIICHI_EAST, bundledHeadlessHistoryRegistries(), decisionExecutor = AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default))
 
     /**
      * 建立使用正式 persistence registry 與 SQLite writer 的測試實例。

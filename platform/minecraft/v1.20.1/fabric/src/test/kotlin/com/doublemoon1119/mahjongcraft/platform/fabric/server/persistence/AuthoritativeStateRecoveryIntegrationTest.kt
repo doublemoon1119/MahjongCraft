@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.bundled.BundledRiichiExtension
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
@@ -446,7 +447,7 @@ class AuthoritativeStateRecoveryIntegrationTest {
             },
             GameVisibilityPolicyImpl(moduleRegistry),
             moduleRegistry,
-            AiDecisionExecutor.direct(),
+            AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
         )
 
         /**

@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.extension
 
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
@@ -25,21 +26,23 @@ object MinecraftMahjongExtensionRegistrar {
      *
      * @param extensions 依序登記的內建規則與第三方 Minecraft extension；內建規則 extension 應排在第三方之前。
      * @param registries runtime 實際使用並於成功後凍結的呈現 registries。
+     * @param failurePolicy 判斷登記回呼丟出的失敗能否包成帶擴充識別碼的註冊例外；無法隔離的失敗原樣往外傳。
      * @return 依來源分組的所有映射：內建映射在前，接著依 [extensions] 順序排列每個 extension，供呼叫端記錄診斷資訊。
      * @throws MinecraftMahjongExtensionRegistrationException 若任一 extension 註冊失敗。
      */
     fun registerAndFreeze(
         extensions: Iterable<MinecraftMahjongExtension>,
         registries: MinecraftPresentationRegistries,
+        failurePolicy: ExtensionFailurePolicy,
     ): MinecraftMahjongExtensionRegistrationResult {
         val registeredExtensionIds = mutableSetOf<String>()
-        register(BuiltInMinecraftMahjongExtension, registries, registeredExtensionIds)
+        register(BuiltInMinecraftMahjongExtension, registries, registeredExtensionIds, failurePolicy)
         var snapshot = registries.registrationSnapshot()
         val sources = mutableListOf(
             MinecraftPresentationRegistrationSource(extensionId = null, categories = snapshot.toCategories()),
         )
         extensions.forEach { extension ->
-            register(extension, registries, registeredExtensionIds)
+            register(extension, registries, registeredExtensionIds, failurePolicy)
             val after = registries.registrationSnapshot()
             sources += MinecraftPresentationRegistrationSource(
                 extensionId = extension.id,
@@ -58,11 +61,13 @@ object MinecraftMahjongExtensionRegistrar {
      * @param extension 本次要登記的內建或第三方擴充。
      * @param registries 執行回呼時使用的共用 registry 集合。
      * @param registeredExtensionIds 已通過檢查的來源識別碼。
+     * @param failurePolicy 判斷登記回呼丟出的失敗能否包成帶擴充識別碼的註冊例外；無法隔離的失敗原樣往外傳。
      */
     private fun register(
         extension: MinecraftMahjongExtension,
         registries: MinecraftPresentationRegistries,
         registeredExtensionIds: MutableSet<String>,
+        failurePolicy: ExtensionFailurePolicy,
     ) {
         try {
             NamespacedId.requireValid(extension.id) { "Invalid Minecraft Mahjong extension id: ${extension.id}" }
@@ -70,7 +75,8 @@ object MinecraftMahjongExtensionRegistrar {
                 "Duplicate Minecraft Mahjong extension id: ${extension.id}"
             }
             registerCallbacks(extension, registries)
-        } catch (cause: Exception) {
+        } catch (cause: Throwable) {
+            if (!failurePolicy.isIsolatable(cause)) throw cause
             throw MinecraftMahjongExtensionRegistrationException(extension.id, cause)
         }
     }

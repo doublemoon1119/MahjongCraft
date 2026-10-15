@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationBusyGate
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceManager
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
@@ -26,6 +27,7 @@ import org.koin.core.annotation.Single
  *
  * @property appScope 將工作綁定目前 server session。
  * @property dispatchers 確保計時工作在 server thread 執行。
+ * @property failurePolicy 判斷每 tick 處理中丟出的失敗能否記錄後等下個 tick 重試；無法隔離的失敗原樣往外傳。
  * @param availabilityService 在逾時判定前先暫停 busy 桌，並在閒置後恢復決策。
  * @param timeoutService 執行與平台無關的逾時政策。
  * @param gameRepository 用於列出所有進行中對局，供心跳巡邏使用。
@@ -37,6 +39,7 @@ import org.koin.core.annotation.Single
 class FabricDecisionTimerScheduler(
     private val appScope: AppCoroutineScope,
     private val dispatchers: CoroutineDispatchers,
+    private val failurePolicy: ExtensionFailurePolicy,
     availabilityService: GameDecisionAvailabilityService,
     timeoutService: GameDecisionTimeoutService,
     gameRepository: GameRepository,
@@ -76,8 +79,8 @@ class FabricDecisionTimerScheduler(
                     throw cancellation
                 } catch (throwable: Throwable) {
                     // 這裡是逾時與巡邏請求推進的入口：沒有真人送出封包時，就靠這個 tick 迴圈請求推進對局。
-                    // 任何未預期的例外若不攔截，會讓協程直接死掉且不留下任何 log，使全域處理停擺——
-                    // 攔下來記錄，之後至少下個 tick 還能重試。
+                    // 可以隔離的失敗記錄後讓下個 tick 重試，避免全域處理停擺；記憶體不足等嚴重錯誤照常往外傳。
+                    if (!failurePolicy.isIsolatable(throwable)) throw throwable
                     logger.error("Failed to process expired decisions or synchronize timers", throwable)
                 } finally {
                     isProcessing = false

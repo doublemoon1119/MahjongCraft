@@ -1,8 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.stress
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessFlowHistoryRuntime
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessHistoryScenario
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionExecutor
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryWriterStage
@@ -115,7 +117,7 @@ class StressTestEnvironmentTest {
     @Test
     fun `discarding a running table keeps its pending history`() = runBlocking {
         val store = AuthoritativeStateStore(historyRecordingEnabled = true)
-        val runtime = HeadlessFlowHistoryRuntime.create(HeadlessHistoryScenario.RIICHI_EAST, bundledHeadlessHistoryRegistries(), store)
+        val runtime = HeadlessFlowHistoryRuntime.create(HeadlessHistoryScenario.RIICHI_EAST, bundledHeadlessHistoryRegistries(), store, decisionExecutor = AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default))
         repeat(RUNNING_STEPS) { runtime.step() }
         val matchId = runtime.matchId()
         val pending = store.snapshot().historyRecordingState.pendingEvents.count { it.matchId == matchId }
@@ -132,7 +134,7 @@ class StressTestEnvironmentTest {
     @Test
     fun `discarding several running tables ends every match`() = runBlocking {
         val store = AuthoritativeStateStore(historyRecordingEnabled = true)
-        val runtimes = List(2) { HeadlessFlowHistoryRuntime.create(HeadlessHistoryScenario.RIICHI_EAST, bundledHeadlessHistoryRegistries(), store) }
+        val runtimes = List(2) { HeadlessFlowHistoryRuntime.create(HeadlessHistoryScenario.RIICHI_EAST, bundledHeadlessHistoryRegistries(), store, decisionExecutor = AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default)) }
         runtimes.forEach { runtime -> repeat(RUNNING_STEPS) { runtime.step() } }
 
         discardStressTables(store, runtimes.map { it.venueId })
@@ -156,6 +158,7 @@ class StressTestEnvironmentTest {
                 registries = bundledHeadlessHistoryRegistries(),
                 store = environment.store,
                 stepTimer = environment.historyTimer,
+                decisionExecutor = AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
             )
         }
         while (runtimes.any { it.currentGame() != null }) {

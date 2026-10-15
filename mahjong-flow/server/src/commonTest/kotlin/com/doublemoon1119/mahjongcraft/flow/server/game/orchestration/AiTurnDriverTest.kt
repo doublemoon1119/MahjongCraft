@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.ai.AiDecisionPhase
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategy
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyDefinition
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
@@ -98,7 +99,7 @@ class AiTurnDriverTest {
             strategyRegistry,
             GameVisibilityPolicyImpl(moduleRegistry),
             moduleRegistry,
-            AiDecisionExecutor.direct(),
+            AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
             actionContextResolver,
         )
     }

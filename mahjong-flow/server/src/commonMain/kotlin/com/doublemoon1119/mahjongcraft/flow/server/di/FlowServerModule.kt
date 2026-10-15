@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.flow.common.di.FlowCommonModule
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionExecutor
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionReporter
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceFailureReporter
@@ -65,13 +66,19 @@ class FlowServerModule {
      *
      * @param dispatchers 提供 AI 決策調度器及平行度。
      * @param reporter 策略逾時與未結束工作等情況的回報器。
+     * @param failurePolicy 平台提供的擴充失敗判斷，決定策略失敗能否改用固定結果。
      * @return 共用的 AI 決策執行器。
      */
     @Single
-    fun aiDecisionExecutor(dispatchers: CoroutineDispatchers, @Provided reporter: AiDecisionReporter): AiDecisionExecutor = AiDecisionExecutor(
+    fun aiDecisionExecutor(
+        dispatchers: CoroutineDispatchers,
+        @Provided reporter: AiDecisionReporter,
+        @Provided failurePolicy: ExtensionFailurePolicy,
+    ): AiDecisionExecutor = AiDecisionExecutor(
         dispatcher = dispatchers.aiDecision,
         capacity = dispatchers.aiDecisionParallelism * AiDecisionExecutor.CAPACITY_PER_THREAD,
         reporter = reporter,
+        failurePolicy = failurePolicy,
     )
 
     /**

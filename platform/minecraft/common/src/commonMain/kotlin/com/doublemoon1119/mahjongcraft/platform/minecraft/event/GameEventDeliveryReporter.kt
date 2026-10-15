@@ -17,9 +17,14 @@ interface GameEventDeliveryReporter {
      * 報告單一監聽者失敗；其他監聽者與後續事件仍會繼續。
      *
      * @param event 交付失敗時正在處理的事件。
+     * @param listener 失敗的監聽者，用來辨識它來自哪個擴充。
      * @param cause 監聽者丟出的例外。
      */
-    fun listenerFailed(event: MatchEvent, cause: Throwable)
+    fun listenerFailed(
+        event: MatchEvent,
+        listener: Any,
+        cause: Throwable,
+    )
 
     /**
      * 報告事件交付工作無法排入平台佇列。

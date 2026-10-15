@@ -1,8 +1,10 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.stress
 
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessFlowHistoryRuntime
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessHistoryScenario
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessStepTimer
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionExecutor
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryWriterStage
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledHeadlessHistoryRegistries
@@ -58,6 +60,7 @@ class StressTestChatFormattingTest {
             registries = bundledHeadlessHistoryRegistries(),
             store = AuthoritativeStateStore(historyRecordingEnabled = false),
             stepTimer = timer,
+            decisionExecutor = AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
         )
         while (timer.slowestAiDecision == null) check(runtime.step()) { "The match made no progress before an AI decision." }
 

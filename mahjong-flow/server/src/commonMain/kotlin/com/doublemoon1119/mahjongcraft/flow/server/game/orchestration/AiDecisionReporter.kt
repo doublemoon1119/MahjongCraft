@@ -23,18 +23,18 @@ interface AiDecisionReporter {
     fun onPreviousStillRunning(gameId: Uuid, playerId: Uuid, strategyKey: String?)
 
     /**
-     * 策略計算丟出一般例外，這次改用固定結果。
+     * 策略計算丟出可以隔離的失敗，這次改用固定結果。
      *
      * @param gameId 對局。
      * @param playerId 決策的 AI 玩家。
      * @param strategyKey 玩家的策略 key；未指定時為 null。
-     * @param failure 策略丟出的例外。
+     * @param failure 策略丟出的失敗。
      */
     fun onStrategyFailed(
         gameId: Uuid,
         playerId: Uuid,
         strategyKey: String?,
-        failure: Exception,
+        failure: Throwable,
     )
 
     /** [NONE] 所在的伴生物件。 */
@@ -49,7 +49,7 @@ interface AiDecisionReporter {
                 gameId: Uuid,
                 playerId: Uuid,
                 strategyKey: String?,
-                failure: Exception,
+                failure: Throwable,
             ) = Unit
         }
     }

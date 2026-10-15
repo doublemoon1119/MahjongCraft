@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
@@ -28,6 +29,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RoundPreparat
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.GameTurnStatus
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import net.minecraft.server.network.ServerPlayerEntity
@@ -63,6 +65,7 @@ import kotlin.uuid.toKotlinUuid
  * @property promptFactory 從權威狀態建立私人操作 prompt。
  * @property moduleRegistry 依對局設定解析規則模組。
  * @property json 決策提交回覆使用的序列化設定。
+ * @property failurePolicy 判斷命令執行中丟出的失敗能否記錄後回覆拒絕；協程取消與無法隔離的失敗原樣往外傳。
  */
 @Single
 class MahjongTableGameActionService(
@@ -80,6 +83,7 @@ class MahjongTableGameActionService(
     private val actionCommandMapper: GameActionCommandMapper,
     private val moduleRegistry: MahjongModuleRegistry,
     @Provided private val json: Json,
+    private val failurePolicy: ExtensionFailurePolicy,
 ) {
     /** 對局命令與自動銜接失敗時的專用 logger。 */
     private val logger = mahjongCraftLogger(MahjongTableGameActionService::class)
@@ -105,16 +109,20 @@ class MahjongTableGameActionService(
         val playerId = player.uuid.toKotlinUuid()
         scope.launch {
             if (selection.kind == PlayerDecisionSelectionKindDto.BEGIN_TILE_SELECTION) {
-                runCatching {
+                try {
                     resolveSelectionPrompt(playerId, selection)?.let { resolved ->
                         handleBeginTileSelection(resolved.gameId, playerId, resolved.prompt, selection)
                     }
-                }.onFailure { throwable ->
+                } catch (cancellation: CancellationException) {
+                    throw cancellation
+                } catch (throwable: Throwable) {
+                    if (!failurePolicy.isIsolatable(throwable)) throw throwable
                     logger.error("Failed to begin tile selection for player {}", playerId, throwable)
                 }
                 return@launch
             }
             val result = resolveFinalDecisionSubmission(
+                failurePolicy = failurePolicy,
                 onFailure = { throwable ->
                     logger.error("Failed to process decision submission for player {}", playerId, throwable)
                 },
@@ -408,7 +416,10 @@ class MahjongTableGameActionService(
             } else {
                 PlayerDecisionSubmissionResultKindDto.REJECTED
             }
+        } catch (cancellation: CancellationException) {
+            throw cancellation
         } catch (throwable: Throwable) {
+            if (!failurePolicy.isIsolatable(throwable)) throw throwable
             logger.error("Failed to execute game command {} for player {} in game {}", command, playerId, gameId, throwable)
             return PlayerDecisionSubmissionResultKindDto.REJECTED
         }

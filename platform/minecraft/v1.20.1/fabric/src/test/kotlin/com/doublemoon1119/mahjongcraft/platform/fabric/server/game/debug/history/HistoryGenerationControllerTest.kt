@@ -2,7 +2,9 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.histor
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessFlowHistoryRuntime
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionExecutor
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryOutboxWriter
@@ -80,7 +82,7 @@ class HistoryGenerationControllerTest {
                 creations++
                 entered.complete(Unit)
                 release.await()
-                HeadlessFlowHistoryRuntime.create(scenario, bundledHeadlessHistoryRegistries())
+                HeadlessFlowHistoryRuntime.create(scenario, bundledHeadlessHistoryRegistries(), decisionExecutor = AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default))
             },
             store = store,
             configState = config,

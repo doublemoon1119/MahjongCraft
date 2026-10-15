@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.extension
 
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.FabricSeatProviderRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.FabricSeatProviderRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKind
@@ -46,6 +47,7 @@ class FabricTablePropKindRegistrationTest {
         extensions = extensions,
         registries = FabricExtensionRegistries(tablePropKindRegistry, seatProviderRegistry),
         builtIn = BuiltInFabricMahjongExtension(FakeProvider()),
+        failurePolicy = ExtensionFailurePolicy.Default,
     )
 
     /**
@@ -147,6 +149,7 @@ class FabricTablePropKindRegistrationTest {
             ),
             registries = FabricExtensionRegistries(tablePropRegistry, seatProviderRegistry),
             builtIn = BuiltInFabricMahjongExtension(FakeProvider()),
+            failurePolicy = ExtensionFailurePolicy.Default,
         )
 
         assertEquals(

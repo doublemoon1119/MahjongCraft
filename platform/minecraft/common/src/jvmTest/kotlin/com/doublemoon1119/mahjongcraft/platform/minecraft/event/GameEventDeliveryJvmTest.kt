@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.event
 
 import com.doublemoon1119.mahjongcraft.flow.api.event.MatchEvent
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventProjector
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.CommittedGameFacts
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
@@ -54,6 +55,7 @@ class GameEventDeliveryJvmTest {
             matchStarted = endpoint,
             roundSettled = MahjongCraftEvent.create(),
             matchEnded = MahjongCraftEvent.create(),
+            failurePolicy = ExtensionFailurePolicy.Default,
         )
         val session = delivery.startSession()
         val firstFacts = startFacts(firstGame)
@@ -138,7 +140,11 @@ class GameEventDeliveryJvmTest {
 
         override fun missingLocation(matchId: Uuid, venueId: Uuid) = Unit
 
-        override fun listenerFailed(event: MatchEvent, cause: Throwable) = Unit
+        override fun listenerFailed(
+            event: MatchEvent,
+            listener: Any,
+            cause: Throwable,
+        ) = Unit
 
         override fun schedulingFailed(cause: Throwable) = Unit
     }

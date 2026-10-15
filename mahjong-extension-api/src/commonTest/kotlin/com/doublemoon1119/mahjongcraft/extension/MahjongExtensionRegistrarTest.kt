@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.ai.expectation.NeutralOpponentModel
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelDefinition
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExtensionGameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistryImpl
@@ -82,6 +83,7 @@ class MahjongExtensionRegistrarTest {
                 aiStrategyRegistry = aiStrategyRegistry,
                 opponentModelRegistry = opponentModelRegistry,
             ),
+            failurePolicy = ExtensionFailurePolicy.Default,
         )
 
         assertEquals(listOf("rule", "tile", "network", "persistence", "replay", "strategy", "opponent"), calls)
@@ -134,6 +136,7 @@ class MahjongExtensionRegistrarTest {
                 EmptyExtension("example:empty"),
             ),
             registries = testCoreRegistries(opponentModelRegistry = opponentModelRegistry),
+            failurePolicy = ExtensionFailurePolicy.Default,
         )
 
         assertEquals(listOf(null, "example:recording", "example:strategy_only", "example:empty"), sources.map { it.extensionId })
@@ -171,10 +174,42 @@ class MahjongExtensionRegistrarTest {
             MahjongExtensionRegistrar.registerAndFreeze(
                 extensions = listOf(extension),
                 registries = testCoreRegistries(),
+                failurePolicy = ExtensionFailurePolicy.Default,
             )
         }
 
         assertTrue(error.message.orEmpty().contains("example:broken"))
+    }
+
+    /** 判斷規則接受隔離的錯誤包成指出 extension ID 的註冊例外；不接受的錯誤原樣往外傳。 */
+    @Test
+    fun `registration errors follow the failure policy`() {
+        val policy = ExtensionFailurePolicy { it is IsolatableTestError || ExtensionFailurePolicy.Default.isIsolatable(it) }
+        fun failing(failure: Throwable) = object : MahjongExtension {
+            override val id: String = "example:error"
+
+            override fun registerRuleModules(registry: MahjongModuleRegistry): Unit = throw failure
+
+            override fun registerNetworkDtos(registries: NetworkDtoRegistries) = Unit
+
+            override fun registerPersistenceDtos(registries: PersistenceRegistries) = Unit
+        }
+
+        val wrapped = assertFailsWith<MahjongExtensionRegistrationException> {
+            MahjongExtensionRegistrar.registerAndFreeze(
+                extensions = listOf(failing(IsolatableTestError())),
+                registries = testCoreRegistries(),
+                failurePolicy = policy,
+            )
+        }
+        assertTrue(wrapped.message.orEmpty().contains("example:error"))
+        assertFailsWith<FatalTestError> {
+            MahjongExtensionRegistrar.registerAndFreeze(
+                extensions = listOf(failing(FatalTestError())),
+                registries = testCoreRegistries(),
+                failurePolicy = policy,
+            )
+        }
     }
 
     /** 驗證回呼失敗時已完成的登記保留，且 registrar 不會凍結任何 registry。 */
@@ -208,7 +243,7 @@ class MahjongExtensionRegistrarTest {
         }
 
         assertFailsWith<MahjongExtensionRegistrationException> {
-            MahjongExtensionRegistrar.registerAndFreeze(listOf(extension), registries)
+            MahjongExtensionRegistrar.registerAndFreeze(listOf(extension), registries, failurePolicy = ExtensionFailurePolicy.Default)
         }
 
         assertTrue(moduleRegistry.getModule(RiichiRuleConfig()) is RiichiRuleModule)
@@ -239,6 +274,7 @@ class MahjongExtensionRegistrarTest {
             MahjongExtensionRegistrar.registerAndFreeze(
                 extensions = listOf(extension, extension),
                 registries = testCoreRegistries(),
+                failurePolicy = ExtensionFailurePolicy.Default,
             )
         }
 
@@ -255,6 +291,7 @@ class MahjongExtensionRegistrarTest {
                 extensions = listOf(EmptyExtension(builtIn.id)),
                 builtIn = builtIn,
                 registries = testCoreRegistries(),
+                failurePolicy = ExtensionFailurePolicy.Default,
             )
         }
 
@@ -270,6 +307,7 @@ class MahjongExtensionRegistrarTest {
                 MahjongExtensionRegistrar.registerAndFreeze(
                     extensions = listOf(EmptyExtension(invalidId)),
                     registries = testCoreRegistries(),
+                    failurePolicy = ExtensionFailurePolicy.Default,
                 )
             }
             assertTrue(error.message.orEmpty().contains(invalidId))
@@ -281,6 +319,7 @@ class MahjongExtensionRegistrarTest {
                 extensions = emptyList(),
                 builtIn = EmptyExtension("builtin"),
                 registries = testCoreRegistries(),
+                failurePolicy = ExtensionFailurePolicy.Default,
             )
         }
         assertTrue(error.message.orEmpty().contains("builtin"))
@@ -295,6 +334,7 @@ class MahjongExtensionRegistrarTest {
             MahjongExtensionRegistrar.registerAndFreeze(
                 extensions = listOf(StrategyExtension("example:first"), StrategyExtension("example:second")),
                 registries = registries,
+                failurePolicy = ExtensionFailurePolicy.Default,
             )
         }
 
@@ -456,3 +496,9 @@ private class TestNetworkDtoRegistries : NetworkDtoRegistries {
         extensionGameCommand.freeze()
     }
 }
+
+/** 測試用、由判斷規則明確接受隔離的錯誤。 */
+private class IsolatableTestError : Error("isolatable test error")
+
+/** 測試用、判斷規則不接受隔離的錯誤。 */
+private class FatalTestError : Error("fatal test error")

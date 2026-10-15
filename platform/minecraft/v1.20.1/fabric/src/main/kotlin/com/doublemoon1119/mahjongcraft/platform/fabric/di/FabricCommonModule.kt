@@ -1,7 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.di
 
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.network.dto.di.NetworkDtoModule
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.di.PersistenceFormatModule
+import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.environment.FabricMinecraftEnvironment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.di.MinecraftCommonModule
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
@@ -28,4 +30,15 @@ class FabricCommonModule {
      */
     @Single
     fun provideMinecraftEnvironment(): MinecraftEnvironment = FabricMinecraftEnvironment()
+
+    /**
+     * 建立 client 與 server 共用的擴充失敗判斷，讓所有呼叫擴充的地方使用同一套隔離規則。
+     *
+     * 實作所在的 extension 套件含有 server 專用的元件，不在共用掃描範圍內；兩個 graph 都需要同一個實例，
+     * 因此保留此共用組裝入口。
+     *
+     * @return 額外隔離 JVM 類別連結錯誤的 Fabric 判斷。
+     */
+    @Single
+    fun provideExtensionFailurePolicy(): ExtensionFailurePolicy = FabricExtensionFailurePolicy()
 }

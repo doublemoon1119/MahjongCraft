@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.extension
 
 import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationSource
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 
 /** 將內建項目與第三方 Fabric extension 登記至 runtime registry，完成後統一凍結。 */
@@ -11,6 +12,7 @@ internal object FabricMahjongExtensionRegistrar {
      * @param extensions 依序執行登記回呼的 Fabric extension。
      * @param registries extension 使用並於成功後凍結的 Fabric registry 集合。
      * @param builtIn 不屬於任何規則的 Fabric 內建 extension。
+     * @param failurePolicy 判斷登記回呼丟出的失敗能否包成帶擴充識別碼的註冊例外；無法隔離的失敗原樣往外傳。
      * @return 依來源分組的登記資訊；內建登記的來源識別碼為 null。
      * @throws FabricMahjongExtensionRegistrationException 若任一 extension 登記失敗。
      */
@@ -18,13 +20,14 @@ internal object FabricMahjongExtensionRegistrar {
         extensions: Iterable<FabricMahjongExtension>,
         registries: FabricExtensionRegistries,
         builtIn: FabricMahjongExtension,
+        failurePolicy: ExtensionFailurePolicy,
     ): List<ExtensionRegistrationSource> {
         val registeredExtensionIds = mutableSetOf<String>()
-        registerCallbacks(builtIn, registries, registeredExtensionIds)
+        registerCallbacks(builtIn, registries, registeredExtensionIds, failurePolicy)
         var snapshot = registries.registrationSnapshot()
         val sources = mutableListOf(ExtensionRegistrationSource(extensionId = null, categories = snapshot.toCategories()))
         extensions.forEach { extension ->
-            registerCallbacks(extension, registries, registeredExtensionIds)
+            registerCallbacks(extension, registries, registeredExtensionIds, failurePolicy)
             val after = registries.registrationSnapshot()
             sources += ExtensionRegistrationSource(extensionId = extension.id, categories = snapshot.additionsSince(after))
             snapshot = after
@@ -39,11 +42,13 @@ internal object FabricMahjongExtensionRegistrar {
      * @param extension 要執行登記回呼的 extension。
      * @param registries 提供給 extension 回呼使用的 Fabric registry 集合。
      * @param registeredExtensionIds 已使用的 extension 識別碼集合。
+     * @param failurePolicy 判斷登記回呼丟出的失敗能否包成帶擴充識別碼的註冊例外；無法隔離的失敗原樣往外傳。
      */
     private fun registerCallbacks(
         extension: FabricMahjongExtension,
         registries: FabricExtensionRegistries,
         registeredExtensionIds: MutableSet<String>,
+        failurePolicy: ExtensionFailurePolicy,
     ) {
         try {
             NamespacedId.requireValid(extension.id) { "Fabric Mahjong extension ID must be namespaced: ${extension.id}" }
@@ -52,7 +57,8 @@ internal object FabricMahjongExtensionRegistrar {
             }
             extension.registerTablePropKinds(registries.tablePropKindRegistry)
             extension.registerSeatProviders(registries.seatProviderRegistry)
-        } catch (cause: Exception) {
+        } catch (cause: Throwable) {
+            if (!failurePolicy.isIsolatable(cause)) throw cause
             throw FabricMahjongExtensionRegistrationException(extension.id, cause)
         }
     }

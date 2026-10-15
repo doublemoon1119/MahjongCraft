@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.seating
 
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.RegisteredSeatProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatGeometry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatIdentity
@@ -17,11 +18,13 @@ import kotlin.math.abs
  * @param S 原位置快照型別。
  * @property providers 已依優先權排序的來源。
  * @property environment 平台安全操作。
+ * @property failurePolicy 判斷提供者丟出的失敗能否隔離；無法隔離的失敗原樣往外傳。
  * @property report 提供者失敗的診斷；傳入提供者 ID 與例外。
  */
 class SeatAssignmentCoordinator<W, R, S>(
     private val providers: List<RegisteredSeatProvider<W, R>>,
     private val environment: SeatEnvironment<W, R, S>,
+    private val failurePolicy: ExtensionFailurePolicy,
     private val report: (String, Throwable) -> Unit,
 ) {
     /** 已由本次開局成功認領的座位，跨不同提供者去重。 */
@@ -95,7 +98,8 @@ class SeatAssignmentCoordinator<W, R, S>(
             return if (environment.stand(world, rider, request)) SeatAssignmentResult.STANDING else SeatAssignmentResult.BLOCKED
         } catch (cause: CancellationException) {
             throw cause
-        } catch (cause: Exception) {
+        } catch (cause: Throwable) {
+            if (!failurePolicy.isIsolatable(cause)) throw cause
             report(providerId, cause)
             environment.recover(rider, original)
             return SeatAssignmentResult.FAILED

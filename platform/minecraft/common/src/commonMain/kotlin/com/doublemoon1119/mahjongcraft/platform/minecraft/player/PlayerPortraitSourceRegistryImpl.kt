@@ -1,12 +1,21 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.player
 
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
+import org.koin.core.annotation.Provided
 import org.koin.core.annotation.Single
 import kotlin.coroutines.cancellation.CancellationException
 
-/** [PlayerPortraitSourceRegistry] 的記憶體實作。priority 較高者先執行，同分依 ID 排序。 */
+/**
+ * [PlayerPortraitSourceRegistry] 的記憶體實作。priority 較高者先執行，同分依 ID 排序。
+ *
+ * @property failurePolicy 判斷 provider 丟出的失敗能否包成 [PlayerPortraitSourceProviderException] 交給呼叫端降級；
+ * 無法隔離的失敗原樣往外傳。
+ */
 @Single(binds = [PlayerPortraitSourceRegistry::class])
-class PlayerPortraitSourceRegistryImpl : PlayerPortraitSourceRegistry {
+class PlayerPortraitSourceRegistryImpl(
+    @Provided private val failurePolicy: ExtensionFailurePolicy,
+) : PlayerPortraitSourceRegistry {
     /**
      * provider 的排序資料。
      *
@@ -49,7 +58,8 @@ class PlayerPortraitSourceRegistryImpl : PlayerPortraitSourceRegistry {
                 entry.provider.resolve(context)
             } catch (cancelled: CancellationException) {
                 throw cancelled
-            } catch (cause: Exception) {
+            } catch (cause: Throwable) {
+                if (!failurePolicy.isIsolatable(cause)) throw cause
                 throw PlayerPortraitSourceProviderException(entry.providerId, cause)
             }
             source?.let {

@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.seating
 
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.RegisteredSeatProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatGeometry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatIdentity
@@ -125,7 +126,7 @@ class SeatAssignmentCoordinatorTest {
             provider("second") { _, _ -> listOf(available) },
         )
 
-        val result = SeatAssignmentCoordinator(providers, environment) { _, _ -> }
+        val result = SeatAssignmentCoordinator(providers, environment, failurePolicy = ExtensionFailurePolicy.Default) { _, _ -> }
             .assign(world, rider, request())
 
         assertEquals(SeatAssignmentResult.OCCUPIED, result)
@@ -143,6 +144,7 @@ class SeatAssignmentCoordinatorTest {
         val result = SeatAssignmentCoordinator(
             providers = listOf(provider("bench") { _, _ -> listOf(left, right) }),
             environment = FakeEnvironment(),
+            failurePolicy = ExtensionFailurePolicy.Default,
         ) { _, _ -> }.assign(world, rider, request())
 
         assertEquals(SeatAssignmentResult.SEATED, result)
@@ -161,6 +163,7 @@ class SeatAssignmentCoordinatorTest {
         val coordinator = SeatAssignmentCoordinator(
             providers = listOf(provider("shared") { _, _ -> listOf(firstTarget, secondTarget) }),
             environment = environment,
+            failurePolicy = ExtensionFailurePolicy.Default,
         ) { _, _ -> }
 
         assertEquals(SeatAssignmentResult.SEATED, coordinator.assign(world, firstRider, request()))
@@ -177,6 +180,7 @@ class SeatAssignmentCoordinatorTest {
         val coordinator = SeatAssignmentCoordinator(
             providers = listOf(provider("bench") { _, _ -> listOf(occupied, available) }),
             environment = FakeEnvironment(),
+            failurePolicy = ExtensionFailurePolicy.Default,
         ) { _, _ -> }
 
         val result = coordinator.assign(world, rider, request())
@@ -201,6 +205,7 @@ class SeatAssignmentCoordinatorTest {
                 },
             ),
             environment = environment,
+            failurePolicy = ExtensionFailurePolicy.Default,
         ) { _, _ -> }
 
         assertEquals(SeatAssignmentResult.FAILED, coordinator.assign(world, rider, request()))
@@ -243,6 +248,7 @@ class SeatAssignmentCoordinatorTest {
         val result = SeatAssignmentCoordinator(
             providers = listOf(provider("bad") { _, _ -> listOf(target) }),
             environment = environment,
+            failurePolicy = ExtensionFailurePolicy.Default,
         ) { id, _ -> reports += id }.assign(world, rider, request())
 
         assertEquals(SeatAssignmentResult.FAILED, result)
@@ -270,9 +276,36 @@ class SeatAssignmentCoordinatorTest {
         val provider = provider("cancel") { _, _ -> throw CancellationException("cancelled") }
 
         assertFailsWith<CancellationException> {
-            SeatAssignmentCoordinator(listOf(provider), FakeEnvironment()) { _, _ -> }
+            SeatAssignmentCoordinator(listOf(provider), FakeEnvironment(), failurePolicy = ExtensionFailurePolicy.Default) { _, _ -> }
                 .assign(world, rider, request())
         }
+    }
+
+    /** 判斷規則接受隔離的錯誤（例如 JVM 的類別連結錯誤）會被回報並改為入座失敗；不接受的錯誤原樣往外傳。 */
+    @Test
+    fun `provider errors follow the failure policy`() {
+        val rider = FakeRider()
+        val reports = mutableListOf<String>()
+        val policy = ExtensionFailurePolicy { it is IsolatableProviderError || ExtensionFailurePolicy.Default.isIsolatable(it) }
+        val isolated = provider("isolated") { _, _ -> throw IsolatableProviderError() }
+        val fatal = provider("fatal") { _, _ -> throw FatalProviderError() }
+
+        val result = SeatAssignmentCoordinator(
+            providers = listOf(isolated),
+            environment = FakeEnvironment(),
+            failurePolicy = policy,
+        ) { id, _ -> reports += id }.assign(world, rider, request())
+
+        assertEquals(SeatAssignmentResult.FAILED, result)
+        assertEquals(listOf("test:isolated"), reports)
+        assertFailsWith<FatalProviderError> {
+            SeatAssignmentCoordinator(
+                providers = listOf(fatal),
+                environment = FakeEnvironment(),
+                failurePolicy = policy,
+            ) { id, _ -> reports += id }.assign(world, rider, request())
+        }
+        assertEquals(listOf("test:isolated"), reports)
     }
 
     /** 建立通用的固定席位請求。 */
@@ -297,6 +330,7 @@ class SeatAssignmentCoordinatorTest {
     private fun coordinator(target: FakeTarget, environment: FakeEnvironment): SeatAssignmentCoordinator<FakeWorld, FakeRider, Snapshot> = SeatAssignmentCoordinator(
         providers = listOf(provider("test") { _, _ -> listOf(target) }),
         environment = environment,
+        failurePolicy = ExtensionFailurePolicy.Default,
     ) { _, _ -> }
 
     /** 測試用的世界型別。 */
@@ -415,4 +449,10 @@ class SeatAssignmentCoordinatorTest {
             return SeatState.SEATED
         }
     }
+
+    /** 測試用、由判斷規則明確接受隔離的 provider 錯誤。 */
+    private class IsolatableProviderError : Error("isolatable provider error")
+
+    /** 測試用、判斷規則不接受隔離的 provider 錯誤。 */
+    private class FatalProviderError : Error("fatal provider error")
 }

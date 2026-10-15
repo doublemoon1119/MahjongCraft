@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationSource
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtensionRegistrar
 import com.doublemoon1119.mahjongcraft.extension.mergeRegistrationSources
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.DebugMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationState
@@ -45,6 +46,7 @@ internal object FabricMahjongExtensions {
      * @param mahjongStoolSeatProvider 內建麻將凳座位 provider。
      * @param debugWinRoundContinuationState 開發用中途胡牌流程狀態。
      * @param minecraftEnvironment 判斷是否載入開發用 extension 的環境資訊。
+     * @param failurePolicy 判斷登記回呼丟出的失敗能否包成帶擴充識別碼的註冊例外。
      */
     fun initialize(
         coreRegistries: CoreExtensionRegistries,
@@ -53,6 +55,7 @@ internal object FabricMahjongExtensions {
         mahjongStoolSeatProvider: MahjongStoolSeatProvider,
         debugWinRoundContinuationState: DebugWinRoundContinuationState,
         minecraftEnvironment: MinecraftEnvironment,
+        failurePolicy: ExtensionFailurePolicy,
     ) {
         try {
             val extensions = FabricLoader.getInstance()
@@ -64,6 +67,7 @@ internal object FabricMahjongExtensions {
                 mahjongStoolSeatProvider = mahjongStoolSeatProvider,
                 debugWinRoundContinuationState = debugWinRoundContinuationState,
                 minecraftEnvironment = minecraftEnvironment,
+                failurePolicy = failurePolicy,
                 extensions = extensions,
             )
             val report = ExtensionRegistrationReport(result.sources)
@@ -90,6 +94,7 @@ internal object FabricMahjongExtensions {
      * @param mahjongStoolSeatProvider 內建麻將凳座位 provider。
      * @param debugWinRoundContinuationState 開發用中途胡牌流程狀態。
      * @param minecraftEnvironment 判斷是否載入開發用 extension 的環境資訊。
+     * @param failurePolicy 判斷登記回呼丟出的失敗能否包成帶擴充識別碼的註冊例外。
      * @param extensions 要額外登記的 extension。
      */
     internal fun initialize(
@@ -99,6 +104,7 @@ internal object FabricMahjongExtensions {
         mahjongStoolSeatProvider: MahjongStoolSeatProvider,
         debugWinRoundContinuationState: DebugWinRoundContinuationState,
         minecraftEnvironment: MinecraftEnvironment,
+        failurePolicy: ExtensionFailurePolicy,
         extensions: Iterable<MahjongExtension>,
     ): FabricExtensionRegistrationResult {
         val discoveredExtensions = extensions.toList()
@@ -116,6 +122,7 @@ internal object FabricMahjongExtensions {
                 extensionActionRegistry = coreRegistries.gameActionAiRegistry,
                 opponentModelRegistry = coreRegistries.opponentModelRegistry,
             ),
+            failurePolicy = failurePolicy,
         )
 
         // 同一個第三方類別可同時實作 MahjongExtension 與 MinecraftMahjongExtension，
@@ -123,6 +130,7 @@ internal object FabricMahjongExtensions {
         val minecraftResult = MinecraftMahjongExtensionRegistrar.registerAndFreeze(
             extensions = BundledMinecraftMahjongExtensions.all + discoveredExtensions.filterIsInstance<MinecraftMahjongExtension>(),
             registries = presentationRegistries,
+            failurePolicy = failurePolicy,
         )
         val minecraftSources = minecraftResult.sources.map { source ->
             ExtensionRegistrationSource(
@@ -136,6 +144,7 @@ internal object FabricMahjongExtensions {
             extensions = discoveredExtensions.filterIsInstance<FabricMahjongExtension>(),
             registries = fabricRegistries,
             builtIn = BuiltInFabricMahjongExtension(mahjongStoolSeatProvider),
+            failurePolicy = failurePolicy,
         )
         return FabricExtensionRegistrationResult(
             sources = mergeRegistrationSources(coreSources, minecraftSources, fabricSources),

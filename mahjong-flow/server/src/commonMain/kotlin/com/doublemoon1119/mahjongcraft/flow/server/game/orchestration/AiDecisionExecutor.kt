@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -33,6 +34,7 @@ import kotlin.uuid.Uuid
  *
  * @param dispatcher 執行策略的調度器。
  * @property capacity 同時存在、尚未結束的策略工作上限，必須大於零。
+ * @property failurePolicy 判斷策略丟出的失敗能否改用固定結果；無法隔離的失敗原樣往外傳。
  * @property timeout 等待一次決策結果的上限，必須為正值。
  * @property reporter 接收逾時與舊呼叫仍未結束的情況。
  * @property observer 接收每次有結果的決策；不需要量測時為 null。
@@ -42,6 +44,7 @@ import kotlin.uuid.Uuid
 class AiDecisionExecutor(
     dispatcher: CoroutineDispatcher,
     private val capacity: Int,
+    private val failurePolicy: ExtensionFailurePolicy,
     private val timeout: Duration = DEFAULT_TIMEOUT,
     private val reporter: AiDecisionReporter = AiDecisionReporter.NONE,
     private val observer: AiDecisionObserver? = null,
@@ -124,8 +127,9 @@ class AiDecisionExecutor(
         } catch (cancellation: CancellationException) {
             abandon(gameId, call, started)
             throw cancellation
-        } catch (failure: Exception) {
+        } catch (failure: Throwable) {
             finish(gameId, call)
+            if (!failurePolicy.isIsolatable(failure)) throw failure
             reporter.onStrategyFailed(gameId, playerId, strategyKey, failure)
             return fallback().also { observer?.onDecision(gameId, AiDecisionOutcome.STRATEGY_FAILED, start.elapsedNow()) }
         }
@@ -260,9 +264,18 @@ class AiDecisionExecutor(
          * 使用 [Dispatchers.Unconfined] 啟動策略：首次掛起前在呼叫端執行緒執行，恢復執行的執行緒由掛起操作決定。
          * 策略沒有掛起時同步完成，供不需要背景計算的環境（例如測試或依序推進的離線對局）使用。
          *
+         * @param failurePolicy 判斷策略丟出的失敗能否改用固定結果。
          * @param reporter 接收逾時與舊呼叫仍未結束的情況。
          * @return 不主動將策略排入背景調度器的執行器。
          */
-        fun direct(reporter: AiDecisionReporter = AiDecisionReporter.NONE): AiDecisionExecutor = AiDecisionExecutor(Dispatchers.Unconfined, capacity = Int.MAX_VALUE, reporter = reporter)
+        fun direct(
+            failurePolicy: ExtensionFailurePolicy,
+            reporter: AiDecisionReporter = AiDecisionReporter.NONE,
+        ): AiDecisionExecutor = AiDecisionExecutor(
+            dispatcher = Dispatchers.Unconfined,
+            capacity = Int.MAX_VALUE,
+            failurePolicy = failurePolicy,
+            reporter = reporter,
+        )
     }
 }

@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.extension
 
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistryImpl
@@ -54,9 +55,9 @@ class MinecraftPresentationRegistriesTest {
             matchSettlementTemplateRegistry = MatchSettlementPresentationTemplateRegistryImpl(),
             aiStrategyDisplayNameRegistry = AiStrategyDisplayNameRegistryImpl(),
             ruleModuleDisplayNameRegistry = RuleModuleDisplayNameRegistryImpl(),
-            playerPortraitSourceRegistry = PlayerPortraitSourceRegistryImpl(),
+            playerPortraitSourceRegistry = PlayerPortraitSourceRegistryImpl(failurePolicy = ExtensionFailurePolicy.Default),
             publicPlayerIndicatorDisplayRegistry = PublicPlayerIndicatorDisplayRegistryImpl(),
-            roomMemberAppearanceSourceRegistry = RoomMemberAppearanceSourceRegistryImpl(),
+            roomMemberAppearanceSourceRegistry = RoomMemberAppearanceSourceRegistryImpl(failurePolicy = ExtensionFailurePolicy.Default),
             gameConfigPresentationRegistry = GameConfigPresentationRegistryImpl(),
             gameAchievementResolverRegistry = GameAchievementResolverRegistryImpl(),
         )

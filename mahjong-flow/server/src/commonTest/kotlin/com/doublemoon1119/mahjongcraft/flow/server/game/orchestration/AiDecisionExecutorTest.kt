@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineStart
@@ -42,7 +43,7 @@ class AiDecisionExecutorTest {
     @Test
     fun `the strategy runs on the decision dispatcher`() = runTest {
         val dispatcher = RecordingDispatcher(StandardTestDispatcher(testScheduler))
-        val executor = AiDecisionExecutor(dispatcher, capacity = 1)
+        val executor = AiDecisionExecutor(dispatcher, capacity = 1, failurePolicy = ExtensionFailurePolicy.Default)
         var interceptor: ContinuationInterceptor? = null
 
         val result = executor.decide(gameId, playerId, STRATEGY_KEY, decide = {
@@ -88,6 +89,24 @@ class AiDecisionExecutorTest {
             )
         }
         assertEquals(emptyList(), fixture.reporter.events)
+    }
+
+    /** 平台判斷規則接受隔離的錯誤（例如 JVM 的類別連結錯誤）也改用固定結果並留下診斷。 */
+    @Test
+    fun `an error the failure policy isolates uses the fallback`() = runTest {
+        val fixture = Fixture(this, failurePolicy = ExtensionFailurePolicy { it is IsolatableStrategyError })
+
+        assertEquals(
+            expected = "fallback",
+            actual = fixture.executor.decide(
+                gameId = gameId,
+                playerId = playerId,
+                strategyKey = STRATEGY_KEY,
+                decide = { throw IsolatableStrategyError() },
+                fallback = { "fallback" },
+            ),
+        )
+        assertEquals(listOf("failed:$gameId:IsolatableStrategyError"), fixture.reporter.events)
     }
 
     /** 等待超過上限時改用固定結果並回報，不等待不理會取消的策略結束。 */
@@ -175,7 +194,7 @@ class AiDecisionExecutorTest {
     @Test
     fun `a decision cancelled before the strategy starts releases its permit`() = runTest {
         val held = HeldDispatcher()
-        val executor = AiDecisionExecutor(held, capacity = 1, timeout = TIMEOUT)
+        val executor = AiDecisionExecutor(held, capacity = 1, timeout = TIMEOUT, failurePolicy = ExtensionFailurePolicy.Default)
         var started = false
         val waiting = async(start = CoroutineStart.UNDISPATCHED) {
             executor.decide(gameId, playerId, STRATEGY_KEY, decide = {
@@ -240,6 +259,7 @@ class AiDecisionExecutorTest {
             timeout = TIMEOUT,
             observer = { _, outcome, latency -> observed += outcome to latency.inWholeMilliseconds },
             timeSource = testScheduler.timeSource,
+            failurePolicy = ExtensionFailurePolicy.Default,
         )
         val gate = CompletableDeferred<Unit>()
 
@@ -263,7 +283,7 @@ class AiDecisionExecutorTest {
     /** 兩次讀取峰值之間開始又全部結束的策略工作仍計入峰值；讀取後從當下的數量重新起算。 */
     @Test
     fun `a short burst between two peak reads is counted`() = runTest {
-        val executor = AiDecisionExecutor(StandardTestDispatcher(testScheduler), capacity = 4, timeout = TIMEOUT)
+        val executor = AiDecisionExecutor(StandardTestDispatcher(testScheduler), capacity = 4, timeout = TIMEOUT, failurePolicy = ExtensionFailurePolicy.Default)
         val gate = CompletableDeferred<String>()
         assertEquals(0, executor.takeUnfinishedStrategyPeak())
 
@@ -281,7 +301,7 @@ class AiDecisionExecutorTest {
     /** 讀取峰值時仍未結束的工作成為下一段的起算點，不會被歸零漏掉。 */
     @Test
     fun `the peak restarts from the calls still running`() = runTest {
-        val executor = AiDecisionExecutor(StandardTestDispatcher(testScheduler), capacity = 4, timeout = TIMEOUT)
+        val executor = AiDecisionExecutor(StandardTestDispatcher(testScheduler), capacity = 4, timeout = TIMEOUT, failurePolicy = ExtensionFailurePolicy.Default)
         val first = CompletableDeferred<String>()
         val second = CompletableDeferred<String>()
         val running = listOf(first, second).map { gate ->
@@ -305,7 +325,7 @@ class AiDecisionExecutorTest {
     @Test
     fun `a skipped request is not observed`() = runTest {
         var observed = 0
-        val executor = AiDecisionExecutor(StandardTestDispatcher(testScheduler), capacity = 4, timeout = TIMEOUT, observer = { _, _, _ -> observed++ })
+        val executor = AiDecisionExecutor(StandardTestDispatcher(testScheduler), capacity = 4, timeout = TIMEOUT, observer = { _, _, _ -> observed++ }, failurePolicy = ExtensionFailurePolicy.Default)
         val gate = CompletableDeferred<String>()
         val first = async { executor.decide(gameId, playerId, STRATEGY_KEY, decide = { gate.await() }, fallback = { "fallback" }) }
         testScheduler.runCurrent()
@@ -322,12 +342,23 @@ class AiDecisionExecutorTest {
      *
      * @param scope 測試的作用域，提供虛擬時間。
      * @param capacity 名額。
+     * @param failurePolicy 判斷策略失敗能否隔離的規則。
      * @property reporter 記錄決策逾時與舊工作未結束的回報。
      * @property executor 使用虛擬時間調度器的受測執行器。
      */
-    private class Fixture(scope: TestScope, capacity: Int = 4) {
+    private class Fixture(
+        scope: TestScope,
+        capacity: Int = 4,
+        failurePolicy: ExtensionFailurePolicy = ExtensionFailurePolicy.Default,
+    ) {
         val reporter = RecordingReporter()
-        val executor = AiDecisionExecutor(StandardTestDispatcher(scope.testScheduler), capacity = capacity, timeout = TIMEOUT, reporter = reporter)
+        val executor = AiDecisionExecutor(
+            dispatcher = StandardTestDispatcher(scope.testScheduler),
+            capacity = capacity,
+            timeout = TIMEOUT,
+            reporter = reporter,
+            failurePolicy = failurePolicy,
+        )
 
         /**
          * 不理會取消、直到閘門開啟才返回的策略。
@@ -361,7 +392,7 @@ class AiDecisionExecutorTest {
             gameId: Uuid,
             playerId: Uuid,
             strategyKey: String?,
-            failure: Exception,
+            failure: Throwable,
         ) {
             events += "failed:$gameId:${failure::class.simpleName}"
         }
@@ -409,4 +440,7 @@ class AiDecisionExecutorTest {
         /** 虛擬時間中的決策等待上限。 */
         val TIMEOUT = 5.seconds
     }
+
+    /** 測試用、由判斷規則明確接受隔離的策略錯誤。 */
+    private class IsolatableStrategyError : Error("isolatable strategy error")
 }

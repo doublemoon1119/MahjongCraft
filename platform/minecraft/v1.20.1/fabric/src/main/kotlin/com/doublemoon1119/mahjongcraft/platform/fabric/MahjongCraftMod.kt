@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric
 
 import com.doublemoon1119.mahjongcraft.extension.CoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.network.dto.command.toDomain
@@ -101,6 +102,7 @@ class MahjongCraftMod : ModInitializer {
             mahjongStoolSeatProvider = koin.get<MahjongStoolSeatProvider>(),
             debugWinRoundContinuationState = koin.get<DebugWinRoundContinuationState>(),
             minecraftEnvironment = koin.get<MinecraftEnvironment>(),
+            failurePolicy = koin.get<ExtensionFailurePolicy>(),
         )
         ModItems.register()
         ModSounds.register()

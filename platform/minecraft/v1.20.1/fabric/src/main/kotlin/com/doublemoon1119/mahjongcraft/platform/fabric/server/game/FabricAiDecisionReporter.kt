@@ -28,7 +28,7 @@ class FabricAiDecisionReporter : AiDecisionReporter {
         gameId: Uuid,
         playerId: Uuid,
         strategyKey: String?,
-        failure: Exception,
+        failure: Throwable,
     ) {
         logger.warn(
             "AI strategy for player {} in game {} with strategy {} failed; using the fixed command",

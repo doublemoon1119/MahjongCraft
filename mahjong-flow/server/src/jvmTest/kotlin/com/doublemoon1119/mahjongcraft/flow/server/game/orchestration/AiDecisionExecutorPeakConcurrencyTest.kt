@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.async
@@ -25,7 +26,7 @@ class AiDecisionExecutorPeakConcurrencyTest {
         val workers = Executors.newFixedThreadPool(WORKER_THREADS).asCoroutineDispatcher()
         val readers = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
         try {
-            val executor = AiDecisionExecutor(workers, capacity = CAPACITY)
+            val executor = AiDecisionExecutor(workers, capacity = CAPACITY, failurePolicy = ExtensionFailurePolicy.Default)
             val done = AtomicBoolean(false)
             val violations = mutableListOf<String>()
             var reads = 0

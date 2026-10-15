@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
+import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSubmissionResultKindDto
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.test.runTest
@@ -13,7 +15,7 @@ class DecisionSubmissionResultResolverTest {
     @Test
     fun `test every normal result is preserved`() = runTest {
         PlayerDecisionSubmissionResultKindDto.entries.forEach { expected ->
-            assertEquals(expected, resolveFinalDecisionSubmission { expected })
+            assertEquals(expected, resolveFinalDecisionSubmission(failurePolicy = ExtensionFailurePolicy.Default) { expected })
         }
     }
 
@@ -21,7 +23,7 @@ class DecisionSubmissionResultResolverTest {
     @Test
     fun `test processing failure becomes rejected`() = runTest {
         var reported: Throwable? = null
-        val result = resolveFinalDecisionSubmission(onFailure = { reported = it }) {
+        val result = resolveFinalDecisionSubmission(failurePolicy = ExtensionFailurePolicy.Default, onFailure = { reported = it }) {
             error("test failure")
         }
 
@@ -33,7 +35,20 @@ class DecisionSubmissionResultResolverTest {
     @Test
     fun `test cancellation is rethrown`() = runTest {
         assertFailsWith<CancellationException> {
-            resolveFinalDecisionSubmission { throw CancellationException("test cancellation") }
+            resolveFinalDecisionSubmission(failurePolicy = ExtensionFailurePolicy.Default) { throw CancellationException("test cancellation") }
+        }
+    }
+
+    /** 類別連結錯誤由 Fabric 判斷規則隔離成 REJECTED；記憶體不足等嚴重錯誤原樣往外傳。 */
+    @Test
+    fun `test linkage errors are rejected and fatal errors are rethrown`() = runTest {
+        val policy = FabricExtensionFailurePolicy()
+
+        val result = resolveFinalDecisionSubmission(failurePolicy = policy) { throw NoClassDefFoundError("com/example/Missing") }
+
+        assertEquals(PlayerDecisionSubmissionResultKindDto.REJECTED, result)
+        assertFailsWith<OutOfMemoryError> {
+            resolveFinalDecisionSubmission(failurePolicy = policy) { throw OutOfMemoryError("test fatal error") }
         }
     }
 }

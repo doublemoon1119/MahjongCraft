@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.event.FabricGameEventContexts
+import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.achievement.AchievementGrantGateway
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.achievement.FabricAchievementService
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistryImpl
@@ -86,6 +87,7 @@ class CommittedFactsDispatcherTest {
             locations = FabricGameEventLocationSource(locations),
             reporter = reporter,
             exclusions = exclusions,
+            failurePolicy = FabricExtensionFailurePolicy(),
         )
         val received = mutableListOf<String>()
         var observedGame: Game? = null
@@ -348,7 +350,11 @@ class CommittedFactsDispatcherTest {
          * @param event 發生失敗的事件。
          * @param cause 監聽者拋出的原因。
          */
-        override fun listenerFailed(event: MatchEvent, cause: Throwable) {
+        override fun listenerFailed(
+            event: MatchEvent,
+            listener: Any,
+            cause: Throwable,
+        ) {
             listenerFailures += cause
         }
 

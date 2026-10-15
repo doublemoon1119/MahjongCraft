@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.event
 
 import com.doublemoon1119.mahjongcraft.flow.api.event.MatchEvent
 import com.doublemoon1119.mahjongcraft.flow.api.event.MatchStartedEvent
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventProjector
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.CommittedGameFacts
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
@@ -21,6 +22,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.RoundSettled
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -53,6 +55,7 @@ class GameEventDeliveryTest {
             matchStarted = started,
             roundSettled = settled,
             matchEnded = ended,
+            failurePolicy = ExtensionFailurePolicy.Default,
         )
         started.register(MatchStartedListener { _, _ -> })
         settled.register(RoundSettledListener { _, _ -> })
@@ -145,6 +148,7 @@ class GameEventDeliveryTest {
             matchStarted = started,
             roundSettled = settled,
             matchEnded = ended,
+            failurePolicy = ExtensionFailurePolicy.Default,
         )
         val facts = startFacts().copy(
             previousGame = game,
@@ -185,6 +189,67 @@ class GameEventDeliveryTest {
 
         assertEquals(listOf(game.matchId), received)
         assertEquals(1, reporter.listenerFailures)
+    }
+
+    /** 監聽者丟出取消例外時與一般失敗一樣只略過該監聽者；交付不在協程中，不代表交付被取消。 */
+    @Test
+    fun `listener cancellation is isolated like an ordinary failure`() {
+        val scheduler = ManualScheduler()
+        val received = mutableListOf<Uuid>()
+        val endpoint = MahjongCraftEvent.create<MatchStartedListener>().also {
+            it.register(MatchStartedListener { _, _ -> throw CancellationException("test listener cancellation") })
+            it.register(MatchStartedListener { event, _ -> received += event.matchId })
+        }
+        val reporter = RecordingReporter()
+        val delivery = delivery(scheduler, endpoint, reporter = reporter)
+        val session = delivery.startSession()
+
+        delivery.onCommitted(session, 1, startFacts())
+        delivery.onReleased(session, 1)
+        scheduler.runNext()
+
+        assertEquals(listOf(game.matchId), received)
+        assertEquals(1, reporter.listenerFailures)
+    }
+
+    /** 判斷規則接受的錯誤被隔離；不接受的錯誤原樣往外傳，之後的事件仍會重新排程交付。 */
+    @Test
+    fun `listener errors follow the failure policy`() {
+        val scheduler = ManualScheduler()
+        val received = mutableListOf<Uuid>()
+        var failure: Throwable? = IsolatableTestError()
+        val endpoint = MahjongCraftEvent.create<MatchStartedListener>().also {
+            it.register(
+                MatchStartedListener { event, _ ->
+                    failure?.let { cause -> throw cause }
+                    received += event.matchId
+                },
+            )
+        }
+        val reporter = RecordingReporter()
+        val delivery = delivery(
+            scheduler,
+            endpoint,
+            reporter = reporter,
+            failurePolicy = ExtensionFailurePolicy { it is IsolatableTestError || ExtensionFailurePolicy.Default.isIsolatable(it) },
+        )
+        val session = delivery.startSession()
+
+        delivery.onCommitted(session, 1, startFacts())
+        delivery.onReleased(session, 1)
+        scheduler.runNext()
+        assertEquals(1, reporter.listenerFailures)
+
+        failure = FatalTestError()
+        delivery.onCommitted(session, 2, startFacts())
+        delivery.onReleased(session, 2)
+        assertFailsWith<FatalTestError> { scheduler.runNext() }
+
+        failure = null
+        delivery.onCommitted(session, 3, startFacts())
+        delivery.onReleased(session, 3)
+        scheduler.runNext()
+        assertEquals(listOf(game.matchId), received)
     }
 
     /** 舊 session 的排程工作會在執行時被捨棄。 */
@@ -400,6 +465,7 @@ class GameEventDeliveryTest {
      * @param endpoint 開始事件監聽端點。
      * @param locations 提供桌子位置的測試來源。
      * @param reporter 收集交付診斷的測試回報器。
+     * @param failurePolicy 判斷監聽者失敗能否隔離的規則。
      * @return 配置完成的事件交付器。
      */
     private fun delivery(
@@ -409,6 +475,7 @@ class GameEventDeliveryTest {
             TableLocation(dimensionId = "minecraft:overworld", x = 10, y = 64, z = 10)
         },
         reporter: RecordingReporter = RecordingReporter(),
+        failurePolicy: ExtensionFailurePolicy = ExtensionFailurePolicy.Default,
     ): GameEventDelivery = GameEventDelivery(
         projector = GameEventProjector(registry),
         scheduler = scheduler,
@@ -417,6 +484,7 @@ class GameEventDeliveryTest {
         matchStarted = endpoint,
         roundSettled = MahjongCraftEvent.create(),
         matchEnded = MahjongCraftEvent.create(),
+        failurePolicy = failurePolicy,
     )
 
     /**
@@ -503,7 +571,11 @@ class GameEventDeliveryTest {
          * @param event 觸發失敗的事件。
          * @param cause 監聽者拋出的原因。
          */
-        override fun listenerFailed(event: MatchEvent, cause: Throwable) {
+        override fun listenerFailed(
+            event: MatchEvent,
+            listener: Any,
+            cause: Throwable,
+        ) {
             listenerFailures++
         }
 
@@ -520,4 +592,10 @@ class GameEventDeliveryTest {
         /** 測試規則模組 ID。 */
         const val RULE_MODULE_ID = "mahjongcraft:riichi"
     }
+
+    /** 測試用、由判斷規則明確接受隔離的錯誤。 */
+    private class IsolatableTestError : Error("isolatable test error")
+
+    /** 測試用、判斷規則不接受隔離的錯誤。 */
+    private class FatalTestError : Error("fatal test error")
 }

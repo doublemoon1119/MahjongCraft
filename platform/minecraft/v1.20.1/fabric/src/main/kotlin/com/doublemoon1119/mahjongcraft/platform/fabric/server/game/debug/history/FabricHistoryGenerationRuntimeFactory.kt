@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.history
 
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessFlowHistoryRuntime
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessHistoryMatchRuntime
@@ -29,6 +30,7 @@ import org.koin.core.annotation.Single
  * @property winRoundContinuationResolvers 胡牌後本局是否繼續。
  * @property winSettlementDetailResolvers 胡牌詳情。
  * @property gameCommands 擴充命令 handler。
+ * @property failurePolicy 判斷 AI 策略丟出的失敗能否改用固定結果。
  */
 @Single
 class FabricHistoryGenerationRuntimeFactory(
@@ -40,6 +42,7 @@ class FabricHistoryGenerationRuntimeFactory(
     @Provided private val winRoundContinuationResolvers: WinRoundContinuationResolverRegistry,
     @Provided private val winSettlementDetailResolvers: WinSettlementDetailResolverRegistry,
     @Provided private val gameCommands: ExtensionGameCommandExecutorRegistry,
+    private val failurePolicy: ExtensionFailurePolicy,
 ) : HistoryGenerationRuntimeFactory {
 /**
      * 建立全部座位都是真 AI 的完整對局。
@@ -50,6 +53,7 @@ class FabricHistoryGenerationRuntimeFactory(
     override suspend fun create(scenario: HeadlessHistoryScenario): HeadlessHistoryMatchRuntime = HeadlessFlowHistoryRuntime.create(
         scenario = scenario,
         registries = registries(),
+        decisionExecutor = AiDecisionExecutor.direct(failurePolicy = failurePolicy),
     )
 
     /**

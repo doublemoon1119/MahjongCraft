@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.stress
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessHistoryMatchRuntime
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessHistoryScenario
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessStepTimer
@@ -64,6 +65,7 @@ import kotlin.uuid.toJavaUuid
  * @property dispatchers 切換到伺服器主執行緒。
  * @property historySource 讓對局歷史畫面的壓力測試範圍讀到目前的壓力測試資料庫。
  * @param aiDecisionReporter 記錄 AI 決策逾時與舊策略呼叫仍未結束的情況。
+ * @param failurePolicy 判斷 AI 策略丟出的失敗能否改用固定結果。
  */
 @Single
 class StressTestController(
@@ -73,6 +75,7 @@ class StressTestController(
     private val dispatchers: CoroutineDispatchers,
     private val historySource: StressTestHistorySource,
     aiDecisionReporter: AiDecisionReporter,
+    failurePolicy: ExtensionFailurePolicy,
 ) {
     /** 記錄壓力測試開始、停止與報告的 logger。 */
     private val logger = mahjongCraftLogger(StressTestController::class)
@@ -85,6 +88,7 @@ class StressTestController(
         AiDecisionExecutor(
             dispatcher = dispatchers.aiDecision,
             capacity = strategyCapacity,
+            failurePolicy = failurePolicy,
             reporter = aiDecisionReporter,
             observer = observer,
         )

@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.extension
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyDefinition
 import com.doublemoon1119.mahjongcraft.extension.CoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
@@ -96,6 +97,7 @@ class FabricExtensionBootstrapTest {
             /** 此案例固定驗證非開發環境的登記順序。 */
             override val isDevelopment: Boolean = false
         },
+        failurePolicy = koin.get<ExtensionFailurePolicy>(),
         extensions = extensions,
     )
 

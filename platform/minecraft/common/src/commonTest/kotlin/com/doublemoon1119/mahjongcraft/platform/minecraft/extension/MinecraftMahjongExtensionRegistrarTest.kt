@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.extension
 
 import com.doublemoon1119.mahjongcraft.ai.BuiltInAiStrategyKeys
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.CommittedGameFacts
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
@@ -119,12 +120,13 @@ class MinecraftMahjongExtensionRegistrarTest {
             matchSettlementTemplateRegistry = MatchSettlementPresentationTemplateRegistryImpl(),
             aiStrategyDisplayNameRegistry = aiStrategyDisplayNameRegistry,
             ruleModuleDisplayNameRegistry = ruleModuleDisplayNameRegistry,
-            playerPortraitSourceRegistry = PlayerPortraitSourceRegistryImpl(),
+            playerPortraitSourceRegistry = PlayerPortraitSourceRegistryImpl(failurePolicy = ExtensionFailurePolicy.Default),
             publicPlayerIndicatorDisplayRegistry = PublicPlayerIndicatorDisplayRegistryImpl(),
-            roomMemberAppearanceSourceRegistry = RoomMemberAppearanceSourceRegistryImpl(),
+            roomMemberAppearanceSourceRegistry = RoomMemberAppearanceSourceRegistryImpl(failurePolicy = ExtensionFailurePolicy.Default),
             gameConfigPresentationRegistry = GameConfigPresentationRegistryImpl(),
             gameAchievementResolverRegistry = gameAchievementResolverRegistry,
         ),
+        failurePolicy = ExtensionFailurePolicy.Default,
     )
 
     /** 驗證內建映射先完成註冊，第三方映射接續登記，完成後禁止新增映射。 */

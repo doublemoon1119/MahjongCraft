@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.extension
 
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceContext
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceProviderException
@@ -20,9 +21,9 @@ class AppearanceProviderFailureTest {
     @Test
     fun `ordinary provider failures retain their diagnostic cause`() {
         val failure = IllegalStateException("Provider failed")
-        val portrait = PlayerPortraitSourceRegistryImpl()
+        val portrait = PlayerPortraitSourceRegistryImpl(failurePolicy = ExtensionFailurePolicy.Default)
         portrait.register(PlayerPortraitSourceDefinition("example:portrait", provider = { throw failure }))
-        val appearance = RoomMemberAppearanceSourceRegistryImpl()
+        val appearance = RoomMemberAppearanceSourceRegistryImpl(failurePolicy = ExtensionFailurePolicy.Default)
         appearance.register(RoomMemberAppearanceSourceDefinition("example:appearance", provider = { throw failure }))
         val id = Uuid.random()
 
@@ -34,9 +35,9 @@ class AppearanceProviderFailureTest {
     @Test
     fun `provider cancellation and fatal errors propagate unchanged`() {
         for (failure in listOf(CancellationException("Cancelled provider"), AssertionError("Fatal provider"))) {
-            val portrait = PlayerPortraitSourceRegistryImpl()
+            val portrait = PlayerPortraitSourceRegistryImpl(failurePolicy = ExtensionFailurePolicy.Default)
             portrait.register(PlayerPortraitSourceDefinition("example:portrait", provider = { throw failure }))
-            val appearance = RoomMemberAppearanceSourceRegistryImpl()
+            val appearance = RoomMemberAppearanceSourceRegistryImpl(failurePolicy = ExtensionFailurePolicy.Default)
             appearance.register(RoomMemberAppearanceSourceDefinition("example:appearance", provider = { throw failure }))
             val id = Uuid.random()
             assertSame(failure, assertFailsWith<Throwable> { portrait.resolve(PlayerPortraitSourceContext(id, false)) })

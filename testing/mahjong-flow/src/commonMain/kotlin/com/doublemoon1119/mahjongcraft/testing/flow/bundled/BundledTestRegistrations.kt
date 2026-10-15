@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.bundled.BuiltInMahjongExtension
 import com.doublemoon1119.mahjongcraft.bundled.BundledMahjongExtensions
 import com.doublemoon1119.mahjongcraft.extension.CoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtensionRegistrar
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistryImpl
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRegistries
@@ -104,6 +105,7 @@ fun bundledCoreExtensionRegistries(): CoreExtensionRegistries {
             extensionActionRegistry = gameActionAiRegistry,
             opponentModelRegistry = opponentModelRegistry,
         ),
+        failurePolicy = ExtensionFailurePolicy.Default,
     )
     return registries
 }

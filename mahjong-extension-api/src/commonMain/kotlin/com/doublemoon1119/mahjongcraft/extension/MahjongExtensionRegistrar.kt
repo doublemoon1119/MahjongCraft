@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.extension
 
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 
 /**
@@ -14,6 +15,7 @@ object MahjongExtensionRegistrar {
      * @param extensions 依此順序執行登記回呼的 extension 集合。
      * @param registries extension 要使用並在成功後凍結的 core registry 集合。
      * @param builtIn 不屬於任何規則的內建整合；沒有時為 null。
+     * @param failurePolicy 判斷登記回呼丟出的失敗能否包成帶擴充識別碼的註冊例外；無法隔離的失敗原樣往外傳。
      * @return 依來源分組的所有登記：內建登記在前，接著依 [extensions] 順序排列每個 extension。
      * @throws MahjongExtensionRegistrationException 若任一 extension 註冊失敗。
      */
@@ -21,13 +23,14 @@ object MahjongExtensionRegistrar {
         extensions: Iterable<MahjongExtension>,
         registries: CoreExtensionRegistries,
         builtIn: MahjongExtension? = null,
+        failurePolicy: ExtensionFailurePolicy,
     ): List<ExtensionRegistrationSource> {
         val registeredExtensionIds = mutableSetOf<String>()
-        builtIn?.let { register(it, registries, registeredExtensionIds) }
+        builtIn?.let { register(it, registries, registeredExtensionIds, failurePolicy) }
         var snapshot = registries.registrationSnapshot()
         val sources = mutableListOf(ExtensionRegistrationSource(extensionId = null, categories = snapshot.toCategories()))
         extensions.forEach { extension ->
-            register(extension, registries, registeredExtensionIds)
+            register(extension, registries, registeredExtensionIds, failurePolicy)
             val after = registries.registrationSnapshot()
             sources += ExtensionRegistrationSource(extensionId = extension.id, categories = snapshot.additionsSince(after))
             snapshot = after
@@ -43,11 +46,13 @@ object MahjongExtensionRegistrar {
      * @param extension 要執行登記回呼的 extension。
      * @param registries 提供給 extension 回呼使用的 core registry 集合。
      * @param registeredExtensionIds 已使用的 extension ID 集合；目前 ID 通過檢查後會立即加入此集合。
+     * @param failurePolicy 判斷登記回呼丟出的失敗能否包成帶擴充識別碼的註冊例外；無法隔離的失敗原樣往外傳。
      */
     private fun register(
         extension: MahjongExtension,
         registries: CoreExtensionRegistries,
         registeredExtensionIds: MutableSet<String>,
+        failurePolicy: ExtensionFailurePolicy,
     ) {
         try {
             NamespacedId.requireValid(extension.id) {
@@ -72,7 +77,8 @@ object MahjongExtensionRegistrar {
             extension.registerRoundPreparationResolvers(registries.roundPreparationResolverRegistry)
             extension.registerWinRoundContinuationResolvers(registries.winRoundContinuationResolverRegistry)
             extension.registerWinSettlementDetailResolvers(registries.winSettlementDetailResolverRegistry)
-        } catch (cause: Exception) {
+        } catch (cause: Throwable) {
+            if (!failurePolicy.isIsolatable(cause)) throw cause
             throw MahjongExtensionRegistrationException(extension.id, cause)
         }
     }
