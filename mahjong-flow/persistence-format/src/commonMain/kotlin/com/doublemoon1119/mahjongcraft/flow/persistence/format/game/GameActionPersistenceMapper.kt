@@ -1,12 +1,10 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.game
 
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceDtoRegistry
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.persistenceJson
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
-import kotlinx.serialization.json.Json
 import kotlin.uuid.Uuid
 
 /**
@@ -14,15 +12,13 @@ import kotlin.uuid.Uuid
  *
  * @param exhaustiveDrawReasonRegistry 流局原因的持久化轉換註冊表。
  * @param extensionGameActionRegistry 擴充遊戲動作的持久化轉換註冊表。
- * @param json 供註冊的轉換器編解碼擴充資料使用的 JSON 編解碼器。
  * @return 包含原模型資料的持久化 DTO。
  */
 fun GameAction.toPersistenceDto(
     exhaustiveDrawReasonRegistry: PersistenceDtoRegistry<ExhaustiveDrawReason>,
     extensionGameActionRegistry: PersistenceDtoRegistry<ExtensionGameAction>,
-    json: Json = persistenceJson,
 ): GameActionPersistenceDto = when (this) {
-    is GameAction.Extension -> GameActionPersistenceDto.Extension(extensionGameActionRegistry.encode(value, json))
+    is GameAction.Extension -> GameActionPersistenceDto.Extension(extensionGameActionRegistry.encode(value))
     GameAction.GameStarted -> GameActionPersistenceDto.GameStarted
     GameAction.RoundStarted -> GameActionPersistenceDto.RoundStarted
     GameAction.MatchEnded -> GameActionPersistenceDto.MatchEnded
@@ -35,7 +31,7 @@ fun GameAction.toPersistenceDto(
     is GameAction.Ron -> GameActionPersistenceDto.Ron(tileId.toString())
     GameAction.Tsumo -> GameActionPersistenceDto.Tsumo
     GameAction.Pass -> GameActionPersistenceDto.Pass
-    is GameAction.ExhaustiveDraw -> GameActionPersistenceDto.ExhaustiveDraw(exhaustiveDrawReasonRegistry.encode(reason, json))
+    is GameAction.ExhaustiveDraw -> GameActionPersistenceDto.ExhaustiveDraw(exhaustiveDrawReasonRegistry.encode(reason))
 }
 
 /**
@@ -43,15 +39,13 @@ fun GameAction.toPersistenceDto(
  *
  * @param exhaustiveDrawReasonRegistry 流局原因的持久化轉換註冊表。
  * @param extensionGameActionRegistry 擴充遊戲動作的持久化轉換註冊表。
- * @param json 供註冊的轉換器編解碼擴充資料使用的 JSON 編解碼器。
  * @return 還原的領域模型。
  */
 fun GameActionPersistenceDto.toDomain(
     exhaustiveDrawReasonRegistry: PersistenceDtoRegistry<ExhaustiveDrawReason>,
     extensionGameActionRegistry: PersistenceDtoRegistry<ExtensionGameAction>,
-    json: Json = persistenceJson,
 ): GameAction = when (this) {
-    is GameActionPersistenceDto.Extension -> GameAction.Extension(extensionGameActionRegistry.decode(value, json))
+    is GameActionPersistenceDto.Extension -> GameAction.Extension(extensionGameActionRegistry.decode(value))
     GameActionPersistenceDto.GameStarted -> GameAction.GameStarted
     GameActionPersistenceDto.RoundStarted -> GameAction.RoundStarted
     GameActionPersistenceDto.MatchEnded -> GameAction.MatchEnded
@@ -64,7 +58,7 @@ fun GameActionPersistenceDto.toDomain(
     is GameActionPersistenceDto.Ron -> GameAction.Ron(Uuid.parse(tileId))
     GameActionPersistenceDto.Tsumo -> GameAction.Tsumo
     GameActionPersistenceDto.Pass -> GameAction.Pass
-    is GameActionPersistenceDto.ExhaustiveDraw -> GameAction.ExhaustiveDraw(exhaustiveDrawReasonRegistry.decode(reason, json))
+    is GameActionPersistenceDto.ExhaustiveDraw -> GameAction.ExhaustiveDraw(exhaustiveDrawReasonRegistry.decode(reason))
 }
 
 /**

@@ -124,8 +124,8 @@ class CompactReplayPrototypeTest {
                 measurement.gzipBytes <= 35_000,
                 "Compact Replay gzip exceeds 35 KB: ${measurement.gzipBytes} bytes",
             )
-            val first = CompactReplayCodec.encodeCompact(fixture.events, mapper, registries, json).toString()
-            val second = CompactReplayCodec.encodeCompact(fixture.events, mapper, registries, json).toString()
+            val first = CompactReplayCodec.encodeCompact(fixture.events, mapper, registries).toString()
+            val second = CompactReplayCodec.encodeCompact(fixture.events, mapper, registries).toString()
             assertEquals(first, second, "Repeated production encoding changed for ${fixture.gameLength}")
         }
     }
@@ -207,7 +207,7 @@ class CompactReplayPrototypeTest {
             },
         )
         assertFalse(UUID_PATTERN.containsMatchIn(roundText))
-        val production = CompactReplayCodec.encodeCompact(events, mapper, registries, json)
+        val production = CompactReplayCodec.encodeCompact(events, mapper, registries)
         val productionText = production.toString()
         val decoded = CompactReplayCodec.decodeCompact(production)
         assertEquals(result.expectedProjections, decoded.map { round -> round.map { it.projection } })
@@ -579,7 +579,6 @@ class CompactReplayPrototypeTest {
             registries.dynamicRuleStates,
             registries.exhaustiveDrawReasons,
             registries.extensionGameActions,
-            json,
         )
         val encoded = json.encodeToJsonElement(dto) as JsonObject
         val gameplay = encoded.filterKeys { it !in setOf("id", "config", "physicalWallLayout") }.toMutableMap()

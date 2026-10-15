@@ -235,7 +235,7 @@ internal class HistoryArchiveService(
                 check(events.first().sequence == 1L && events.zipWithNext().all { (a, b) -> a.sequence + 1 == b.sequence }) {
                     "History event sequence is incomplete"
                 }
-                val replay = CompactReplayCodec.encodeCompact(events, mapper, registries, persistenceJson)
+                val replay = CompactReplayCodec.encodeCompact(events, mapper, registries)
                 CompactReplayCodec.decodeCompact(replay)
                 val archive = buildArchive(events, replay)
                 if (database.archive(archive)) {

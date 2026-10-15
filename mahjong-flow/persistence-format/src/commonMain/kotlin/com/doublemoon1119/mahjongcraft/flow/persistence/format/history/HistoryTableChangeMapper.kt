@@ -11,18 +11,15 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
-import kotlinx.serialization.json.Json
 import kotlin.uuid.Uuid
 
 /**
  * 將桌況交易結果與可持久化的差異 DTO 相互轉換。
  *
  * @property registries 解碼玩家與規則專屬資料所需的已凍結 registry。
- * @property json 擴充規則 payload 使用的 JSON 設定。
  */
 internal class HistoryTableChangeMapper(
     private val registries: PersistenceRegistries,
-    private val json: Json,
 ) {
     /**
      * 將規則中立差異或完整檢查點轉為持久化 DTO。
@@ -41,7 +38,6 @@ internal class HistoryTableChangeMapper(
                 registries.dynamicRuleStates,
                 registries.exhaustiveDrawReasons,
                 registries.extensionGameActions,
-                json,
             ),
         )
     }
@@ -63,7 +59,6 @@ internal class HistoryTableChangeMapper(
                 registries.dynamicRuleStates,
                 registries.exhaustiveDrawReasons,
                 registries.extensionGameActions,
-                json,
             ),
         )
     }
@@ -82,27 +77,26 @@ internal class HistoryTableChangeMapper(
                     registries.playerRuleStates,
                     registries.exhaustiveDrawReasons,
                     registries.extensionGameActions,
-                    json,
                 ),
                 retainedActionCount = playerChange.retainedActionCount,
                 appendedActions = playerChange.appendedActions.map {
-                    it.toPersistenceDto(registries.exhaustiveDrawReasons, registries.extensionGameActions, json)
+                    it.toPersistenceDto(registries.exhaustiveDrawReasons, registries.extensionGameActions)
                 },
             )
         },
         wall = change.wall?.let { HistoryWallChangePersistenceDto(it.removedFront, it.removedBack) },
         currentPlayerIndex = change.currentPlayerIndex,
         dynamicRuleState = change.dynamicRuleState?.let { changeValue ->
-            HistoryChangedValuePersistenceDto(changeValue.value?.let { registries.dynamicRuleStates.encode(it, json) })
+            HistoryChangedValuePersistenceDto(changeValue.value?.let { registries.dynamicRuleStates.encode(it) })
         },
         pendingReaction = change.pendingReaction?.let { changeValue ->
             HistoryChangedValuePersistenceDto(
-                changeValue.value?.toPersistenceDto(registries.exhaustiveDrawReasons, registries.extensionGameActions, json),
+                changeValue.value?.toPersistenceDto(registries.exhaustiveDrawReasons, registries.extensionGameActions),
             )
         },
         pendingRobbingReaction = change.pendingRobbingReaction?.let { changeValue ->
             HistoryChangedValuePersistenceDto(
-                changeValue.value?.toPersistenceDto(registries.exhaustiveDrawReasons, registries.extensionGameActions, json),
+                changeValue.value?.toPersistenceDto(registries.exhaustiveDrawReasons, registries.extensionGameActions),
             )
         },
         reservedWallTiles = change.reservedWallTiles?.map { it.toPersistenceDto() },
@@ -130,27 +124,26 @@ internal class HistoryTableChangeMapper(
                     registries.playerRuleStates,
                     registries.exhaustiveDrawReasons,
                     registries.extensionGameActions,
-                    json,
                 ),
                 retainedActionCount = playerChange.retainedActionCount,
                 appendedActions = playerChange.appendedActions.map {
-                    it.toDomain(registries.exhaustiveDrawReasons, registries.extensionGameActions, json)
+                    it.toDomain(registries.exhaustiveDrawReasons, registries.extensionGameActions)
                 },
             )
         },
         wall = dto.wall?.let { HistoryWallChange(it.removedFront, it.removedBack) },
         currentPlayerIndex = dto.currentPlayerIndex,
         dynamicRuleState = dto.dynamicRuleState?.let { changeValue ->
-            HistoryChangedValue(changeValue.value?.let { registries.dynamicRuleStates.decode(it, json) })
+            HistoryChangedValue(changeValue.value?.let { registries.dynamicRuleStates.decode(it) })
         },
         pendingReaction = dto.pendingReaction?.let { changeValue ->
             HistoryChangedValue(
-                changeValue.value?.toDomain(registries.exhaustiveDrawReasons, registries.extensionGameActions, json),
+                changeValue.value?.toDomain(registries.exhaustiveDrawReasons, registries.extensionGameActions),
             )
         },
         pendingRobbingReaction = dto.pendingRobbingReaction?.let { changeValue ->
             HistoryChangedValue(
-                changeValue.value?.toDomain(registries.exhaustiveDrawReasons, registries.extensionGameActions, json),
+                changeValue.value?.toDomain(registries.exhaustiveDrawReasons, registries.extensionGameActions),
             )
         },
         reservedWallTiles = dto.reservedWallTiles?.map { it.toDomain() },

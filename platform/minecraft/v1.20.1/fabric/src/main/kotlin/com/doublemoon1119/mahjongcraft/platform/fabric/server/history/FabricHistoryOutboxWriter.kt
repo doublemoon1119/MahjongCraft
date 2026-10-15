@@ -85,7 +85,7 @@ class FabricHistoryOutboxWriter(
     private val logger = mahjongCraftLogger(FabricHistoryOutboxWriter::class)
 
     /** 將權威事件映射成歷史持久化 DTO。 */
-    private val mapper = HistoryRecordingPersistenceMapper(registries, persistenceJson)
+    private val mapper = HistoryRecordingPersistenceMapper(registries)
 
     /** 封存 Replay 的規則設定 persistence registry 快照。 */
     private val replayRegistries: PersistenceRegistries = registries
@@ -407,10 +407,10 @@ class FabricHistoryOutboxWriter(
             HistoryReplayPayloadRead.Missing -> throw IllegalStateException("History replay is not available")
             HistoryReplayPayloadRead.TooLarge -> throw IllegalStateException("History replay exceeds the query size limit")
             is HistoryReplayPayloadRead.Found -> {
-                val parsed = parseBoundedReplayJson(read.payload, ReplayJsonParseLimits(maximumUtf8Bytes = maximumBytes), persistenceJson)
+                val parsed = parseBoundedReplayJson(read.payload, ReplayJsonParseLimits(maximumUtf8Bytes = maximumBytes))
                 val document = (parsed as? ReplayReadResult.Success)?.value
                     ?: error("History replay cannot be parsed within query limits")
-                CompactReplayCodec.decodeRuleSettings(document, replayRegistries, matchId, persistenceJson)
+                CompactReplayCodec.decodeRuleSettings(document, replayRegistries, matchId)
             }
         }
     }
@@ -438,7 +438,7 @@ class FabricHistoryOutboxWriter(
     ): HistoryManagementResult<HistoryQueryResult<HistoryRoundEvents>> = manage(sessionId) { activeDatabase, _ ->
         readAuthorizedHistoryRound(
             activeDatabase, access, historyQueryPolicy(), matchId, queryScope, excludedHistoryMatches(),
-            { parseBoundedReplayJson(it, json = persistenceJson) },
+            { parseBoundedReplayJson(it) },
             { CompactReplayRoundReader(replayProjectionRegistry).readEvents(it, matchId, roundNumber, startIndex, limit) },
             { it.identity },
         )
@@ -465,7 +465,7 @@ class FabricHistoryOutboxWriter(
     ): HistoryManagementResult<HistoryQueryResult<HistoryRoundState>> = manage(sessionId) { activeDatabase, _ ->
         readAuthorizedHistoryRound(
             activeDatabase, access, historyQueryPolicy(), matchId, queryScope, excludedHistoryMatches(),
-            { parseBoundedReplayJson(it, json = persistenceJson) },
+            { parseBoundedReplayJson(it) },
             { CompactReplayRoundReader(replayProjectionRegistry).readState(it, matchId, roundNumber, position) },
             { it.identity },
         )

@@ -17,24 +17,20 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetai
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.config.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.config.toPersistenceDto
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.persistenceJson
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.TableStatePersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
-import kotlinx.serialization.json.Json
 import kotlin.uuid.Uuid
 
 /**
  * 使用已凍結 registry 在 domain 事件與持久化 DTO 間轉換完整 outbox。
  *
  * @property registries 解碼規則、動作與桌況所需的持久化 registry。
- * @property json 用於擴充動作內容序列化的 JSON 設定。
  */
 class HistoryRecordingPersistenceMapper(
     private val registries: PersistenceRegistries,
-    private val json: Json = persistenceJson,
 ) {
     /**
      * 將單筆待寫事件編碼；失敗時交由呼叫端保留並重試，絕不略過後確認。
@@ -183,11 +179,11 @@ class HistoryRecordingPersistenceMapper(
             fact.nextStepId,
         )
         is HistoryFact.ActionAccepted -> HistoryFactPersistenceDto.ActionAccepted(
-            fact.action.toPersistenceDto(registries.exhaustiveDrawReasons, registries.extensionGameActions, json),
+            fact.action.toPersistenceDto(registries.exhaustiveDrawReasons, registries.extensionGameActions),
             fact.result.toPersistenceDto(),
         )
         is HistoryFact.ReactionResolved -> HistoryFactPersistenceDto.ReactionResolved(
-            fact.resolvedAction?.toPersistenceDto(registries.exhaustiveDrawReasons, registries.extensionGameActions, json),
+            fact.resolvedAction?.toPersistenceDto(registries.exhaustiveDrawReasons, registries.extensionGameActions),
             fact.actorPlayerId?.toString(),
         )
         is HistoryFact.RoundCompleted -> HistoryFactPersistenceDto.RoundCompleted(
@@ -213,7 +209,7 @@ class HistoryRecordingPersistenceMapper(
         )
         HistoryFact.ReturnedToRoom -> HistoryFactPersistenceDto.ReturnedToRoom
         is HistoryFact.TableChanged -> HistoryFactPersistenceDto.TableChanged(
-            HistoryTableChangeMapper(registries, json).encode(fact.result),
+            HistoryTableChangeMapper(registries).encode(fact.result),
         )
     }
 
@@ -243,11 +239,11 @@ class HistoryRecordingPersistenceMapper(
             dto.nextStepId,
         )
         is HistoryFactPersistenceDto.ActionAccepted -> HistoryFact.ActionAccepted(
-            dto.action.toDomain(registries.exhaustiveDrawReasons, registries.extensionGameActions, json),
+            dto.action.toDomain(registries.exhaustiveDrawReasons, registries.extensionGameActions),
             dto.result.toDomain(),
         )
         is HistoryFactPersistenceDto.ReactionResolved -> HistoryFact.ReactionResolved(
-            dto.resolvedAction?.toDomain(registries.exhaustiveDrawReasons, registries.extensionGameActions, json),
+            dto.resolvedAction?.toDomain(registries.exhaustiveDrawReasons, registries.extensionGameActions),
             dto.actorPlayerId?.let(Uuid::parse),
         )
         is HistoryFactPersistenceDto.RoundCompleted -> HistoryFact.RoundCompleted(
@@ -273,7 +269,7 @@ class HistoryRecordingPersistenceMapper(
         )
         HistoryFactPersistenceDto.ReturnedToRoom -> HistoryFact.ReturnedToRoom
         is HistoryFactPersistenceDto.TableChanged -> HistoryFact.TableChanged(
-            HistoryTableChangeMapper(registries, json).decode(dto.result),
+            HistoryTableChangeMapper(registries).decode(dto.result),
         )
     }
 
@@ -290,7 +286,6 @@ class HistoryRecordingPersistenceMapper(
         registries.dynamicRuleStates,
         registries.exhaustiveDrawReasons,
         registries.extensionGameActions,
-        json,
     )
 
     /**
@@ -306,7 +301,6 @@ class HistoryRecordingPersistenceMapper(
         registries.dynamicRuleStates,
         registries.exhaustiveDrawReasons,
         registries.extensionGameActions,
-        json,
     )
 }
 

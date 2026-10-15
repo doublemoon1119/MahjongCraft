@@ -1,7 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.game
 
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceDtoRegistry
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.persistenceJson
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
@@ -10,7 +9,6 @@ import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
-import kotlinx.serialization.json.Json
 import kotlin.uuid.Uuid
 
 /**
@@ -22,7 +20,6 @@ import kotlin.uuid.Uuid
  * @param dynamicRuleStateRegistry 動態規則狀態的持久化轉換註冊表。
  * @param exhaustiveDrawReasonRegistry 流局原因的持久化轉換註冊表。
  * @param extensionGameActionRegistry 擴充遊戲動作的持久化轉換註冊表。
- * @param json 供註冊的轉換器編解碼擴充資料使用的 JSON 編解碼器。
  * @return 包含原模型資料的持久化 DTO。
  */
 fun TableState.toPersistenceDto(
@@ -32,13 +29,12 @@ fun TableState.toPersistenceDto(
     dynamicRuleStateRegistry: PersistenceDtoRegistry<DynamicRuleState>,
     exhaustiveDrawReasonRegistry: PersistenceDtoRegistry<ExhaustiveDrawReason>,
     extensionGameActionRegistry: PersistenceDtoRegistry<ExtensionGameAction>,
-    json: Json = persistenceJson,
 ): TableStatePersistenceDto = TableStatePersistenceDto(
     id = id.toString(),
     players = players.map {
-        it.toPersistenceDto(discardPileRegistry, playerRuleStateRegistry, exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json)
+        it.toPersistenceDto(discardPileRegistry, playerRuleStateRegistry, exhaustiveDrawReasonRegistry, extensionGameActionRegistry)
     },
-    config = ruleConfigRegistry.encode(config, json),
+    config = ruleConfigRegistry.encode(config),
     tileWall = tileWall.toPersistenceDto(),
     dealerPlayerId = dealerPlayerId.toString(),
     prevalentWind = WindPersistenceDto.valueOf(prevalentWind.name),
@@ -46,9 +42,9 @@ fun TableState.toPersistenceDto(
     roundPosition = roundPosition.toPersistenceDto(),
     comboCount = comboCount,
     currentPlayerIndex = currentPlayerIndex,
-    dynamicRuleState = dynamicRuleState?.let { dynamicRuleStateRegistry.encode(it, json) },
-    pendingReaction = pendingReaction?.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json),
-    pendingRobbingReaction = pendingRobbingReaction?.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json),
+    dynamicRuleState = dynamicRuleState?.let { dynamicRuleStateRegistry.encode(it) },
+    pendingReaction = pendingReaction?.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry),
+    pendingRobbingReaction = pendingRobbingReaction?.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry),
     wallOpening = wallOpening?.toPersistenceDto(),
     reservedWallTiles = reservedWallTiles.map { it.toPersistenceDto() },
     finishedPlayerIds = finishedPlayerIds.map(Uuid::toString).toSet(),
@@ -65,7 +61,6 @@ fun TableState.toPersistenceDto(
  * @param dynamicRuleStateRegistry 動態規則狀態的持久化轉換註冊表。
  * @param exhaustiveDrawReasonRegistry 流局原因的持久化轉換註冊表。
  * @param extensionGameActionRegistry 擴充遊戲動作的持久化轉換註冊表。
- * @param json 供註冊的轉換器編解碼擴充資料使用的 JSON 編解碼器。
  * @return 還原的領域模型。
  */
 fun TableStatePersistenceDto.toDomain(
@@ -75,11 +70,10 @@ fun TableStatePersistenceDto.toDomain(
     dynamicRuleStateRegistry: PersistenceDtoRegistry<DynamicRuleState>,
     exhaustiveDrawReasonRegistry: PersistenceDtoRegistry<ExhaustiveDrawReason>,
     extensionGameActionRegistry: PersistenceDtoRegistry<ExtensionGameAction>,
-    json: Json = persistenceJson,
 ): TableState = TableState(
     id = Uuid.parse(id),
-    players = players.map { it.toDomain(discardPileRegistry, playerRuleStateRegistry, exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json) },
-    config = ruleConfigRegistry.decode(config, json),
+    players = players.map { it.toDomain(discardPileRegistry, playerRuleStateRegistry, exhaustiveDrawReasonRegistry, extensionGameActionRegistry) },
+    config = ruleConfigRegistry.decode(config),
     tileWall = tileWall.toDomain(),
     dealerPlayerId = Uuid.parse(dealerPlayerId),
     prevalentWind = Wind.valueOf(prevalentWind.name),
@@ -87,9 +81,9 @@ fun TableStatePersistenceDto.toDomain(
     roundPosition = roundPosition.toDomain(),
     comboCount = comboCount,
     currentPlayerIndex = currentPlayerIndex,
-    dynamicRuleState = dynamicRuleState?.let { dynamicRuleStateRegistry.decode(it, json) },
-    pendingReaction = pendingReaction?.toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json),
-    pendingRobbingReaction = pendingRobbingReaction?.toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json),
+    dynamicRuleState = dynamicRuleState?.let { dynamicRuleStateRegistry.decode(it) },
+    pendingReaction = pendingReaction?.toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry),
+    pendingRobbingReaction = pendingRobbingReaction?.toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry),
     wallOpening = wallOpening?.toDomain(),
     reservedWallTiles = reservedWallTiles.map { it.toDomain() },
     finishedPlayerIds = finishedPlayerIds.map(Uuid::parse).toSet(),

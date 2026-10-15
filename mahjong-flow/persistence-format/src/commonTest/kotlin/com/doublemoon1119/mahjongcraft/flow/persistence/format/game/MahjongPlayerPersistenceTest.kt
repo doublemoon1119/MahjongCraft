@@ -118,7 +118,6 @@ class MahjongPlayerPersistenceTest {
                 playerRuleStateRegistry,
                 exhaustiveDrawReasonRegistry,
                 extensionGameActionRegistry,
-                json,
             ),
         )
         return json.decodeFromString(MahjongPlayerPersistenceDto.serializer(), encoded).toDomain(
@@ -126,7 +125,6 @@ class MahjongPlayerPersistenceTest {
             playerRuleStateRegistry,
             exhaustiveDrawReasonRegistry,
             extensionGameActionRegistry,
-            json,
         )
     }
 

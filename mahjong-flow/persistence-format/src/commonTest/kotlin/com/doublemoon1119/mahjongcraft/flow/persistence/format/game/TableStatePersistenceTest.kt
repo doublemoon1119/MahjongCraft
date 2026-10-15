@@ -1,4 +1,5 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.game
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.persistenceJson
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
@@ -24,7 +25,6 @@ import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacementOrien
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
-import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -32,8 +32,6 @@ import kotlin.uuid.Uuid
 
 /** 驗證完整權威桌況經存檔 JSON 編解碼後仍保持一致。 */
 class TableStatePersistenceTest {
-    /** persistence 測試使用的 JSON 編解碼器。 */
-    private val json = Json
 
     /** 內建規則配置的 persistence registry。 */
     private val ruleConfigRegistry = bundledPersistenceRegistries().ruleConfigs
@@ -218,8 +216,8 @@ class TableStatePersistenceTest {
      */
     private fun assertEncodedRoundTrip(state: TableState) {
         val expectedDto = state.toPersistenceDto()
-        val encoded = json.encodeToString(TableStatePersistenceDto.serializer(), expectedDto)
-        val decodedDto = json.decodeFromString(TableStatePersistenceDto.serializer(), encoded)
+        val encoded = persistenceJson.encodeToString(TableStatePersistenceDto.serializer(), expectedDto)
+        val decodedDto = persistenceJson.decodeFromString(TableStatePersistenceDto.serializer(), encoded)
         val restored = decodedDto.toDomain()
 
         assertEquals(expectedDto, restored.toPersistenceDto())
@@ -236,7 +234,6 @@ class TableStatePersistenceTest {
         dynamicRuleStateRegistry,
         exhaustiveDrawReasonRegistry,
         extensionGameActionRegistry,
-        json,
     )
 
     /** 使用所有內建 registry 將 persistence DTO 還原成 [TableState]。 */
@@ -247,7 +244,6 @@ class TableStatePersistenceTest {
         dynamicRuleStateRegistry,
         exhaustiveDrawReasonRegistry,
         extensionGameActionRegistry,
-        json,
     )
 
     /**

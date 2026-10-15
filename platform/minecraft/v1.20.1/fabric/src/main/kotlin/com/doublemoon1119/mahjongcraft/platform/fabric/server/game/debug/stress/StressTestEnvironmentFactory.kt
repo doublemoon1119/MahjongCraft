@@ -1,7 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.stress
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.persistenceJson
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.HistoryReplayProjectionRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
@@ -118,7 +117,7 @@ class StressTestEnvironmentFactory(
      * @return 執行中的編碼接收器。
      */
     private fun startEncoding(store: AuthoritativeStateStore, writerTimer: StressWriterTimer): StressHistorySink.EncodeOnly {
-        val mapper = HistoryRecordingPersistenceMapper(registries, persistenceJson)
+        val mapper = HistoryRecordingPersistenceMapper(registries)
         val failed = AtomicBoolean(false)
         val job = CoroutineScope(SupervisorJob() + dispatchers.io).launch {
             try {

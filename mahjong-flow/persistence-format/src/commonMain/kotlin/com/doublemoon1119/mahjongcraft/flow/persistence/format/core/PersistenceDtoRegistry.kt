@@ -2,7 +2,6 @@ package com.doublemoon1119.mahjongcraft.flow.persistence.format.core
 
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import kotlinx.serialization.KSerializer
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlin.reflect.KClass
 
@@ -30,21 +29,19 @@ class PersistenceDtoRegistry<Domain : Any> {
          * 將領域物件轉成 JSON 物件。
          *
          * @param domain 要保存的領域物件。
-         * @param json 使用的 JSON 編碼設定。
          * @return 編碼後的 DTO 內容。
          * @throws IllegalStateException DTO 編碼結果不是 JSON 物件時拋出。
          */
-        fun encode(domain: D, json: Json): JsonObject = json.encodeToJsonElement(serializer, toDto(domain)) as? JsonObject
+        fun encode(domain: D): JsonObject = persistenceJson.encodeToJsonElement(serializer, toDto(domain)) as? JsonObject
             ?: error("Persistence DTO must encode to a JSON object")
 
         /**
          * 將 JSON 物件還原成領域物件。
          *
          * @param payload 已保存的 DTO 內容。
-         * @param json 使用的 JSON 解碼設定。
          * @return 還原後的領域物件。
          */
-        fun decode(payload: JsonObject, json: Json): D = toDomain(json.decodeFromJsonElement(serializer, payload))
+        fun decode(payload: JsonObject): D = toDomain(persistenceJson.decodeFromJsonElement(serializer, payload))
     }
 
     /** 以領域具體類別索引的註冊項目。 */
@@ -95,30 +92,28 @@ class PersistenceDtoRegistry<Domain : Any> {
      * 將已註冊的領域物件轉成附有型別識別碼的存檔 DTO。
      *
      * @param domain 要保存的領域物件。
-     * @param json 使用的 JSON 編碼設定。
      * @return 型別識別碼與編碼後的內容。
      * @throws IllegalStateException 領域型別尚未註冊，或 DTO 編碼結果不是 JSON 物件時拋出。
      */
     @Suppress("UNCHECKED_CAST")
-    fun encode(domain: Domain, json: Json = persistenceJson): TypedPersistenceDto {
+    fun encode(domain: Domain): TypedPersistenceDto {
         val (typeKey, rawEntry) = byDomainClass[domain::class]
             ?: error("No persistence DTO registered for ${domain::class}")
         val entry = rawEntry as Entry<Domain, Any>
-        return TypedPersistenceDto(typeKey, entry.encode(domain, json))
+        return TypedPersistenceDto(typeKey, entry.encode(domain))
     }
 
     /**
      * 依型別識別碼將存檔 DTO 還原成領域物件。
      *
      * @param dto 型別識別碼與已保存的內容。
-     * @param json 使用的 JSON 解碼設定。
      * @return 還原後的領域物件。
      * @throws IllegalStateException 型別識別碼尚未註冊時拋出。
      */
     @Suppress("UNCHECKED_CAST")
-    fun decode(dto: TypedPersistenceDto, json: Json = persistenceJson): Domain {
+    fun decode(dto: TypedPersistenceDto): Domain {
         val entry = byTypeKey[dto.typeKey] as? Entry<Domain, Any>
             ?: error("No persistence DTO registered for type key ${dto.typeKey}")
-        return entry.decode(dto.payload, json)
+        return entry.decode(dto.payload)
     }
 }

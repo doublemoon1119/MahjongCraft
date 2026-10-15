@@ -8,7 +8,6 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.persistenceJ
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.migration.PersistenceMigrationRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.migration.buildBuiltInPersistenceMigrationRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
-import kotlinx.serialization.json.Json
 
 /**
  * 不依賴平台 API，負責權威狀態 JSON 編解碼、版本遷移與 DTO 對應。
@@ -17,12 +16,10 @@ import kotlinx.serialization.json.Json
  *
  * @property registries 可擴充領域型別的持久化註冊表集合。
  * @property migrationRegistry schema 版本遷移註冊表。
- * @property json 封套與 DTO 使用的 JSON 編解碼器。
  */
 class AuthoritativeStatePersistenceCodec(
     private val registries: PersistenceRegistries,
     private val migrationRegistry: PersistenceMigrationRegistry = buildBuiltInPersistenceMigrationRegistry(),
-    private val json: Json = persistenceJson,
 ) {
     /**
      * 將完整 Room／Game 狀態編碼成帶目前 schema version 的 JSON 字串。
@@ -47,9 +44,8 @@ class AuthoritativeStatePersistenceCodec(
             exhaustiveDrawReasonRegistry = registries.exhaustiveDrawReasons,
             extensionGameActionRegistry = registries.extensionGameActions,
             historyRecordingState = historyRecordingState,
-            json = json,
         )
-        return json.encodeToString(PersistenceEnvelopeDto.serializer(), state.toEnvelope(json))
+        return persistenceJson.encodeToString(PersistenceEnvelopeDto.serializer(), state.toEnvelope())
     }
 
     /**
@@ -59,11 +55,11 @@ class AuthoritativeStatePersistenceCodec(
      * @return 驗證並還原的 Room、Game 與歷史記錄狀態。
      */
     fun decode(encoded: String): DecodedAuthoritativeState {
-        val envelope = json.decodeFromString(PersistenceEnvelopeDto.serializer(), encoded)
+        val envelope = persistenceJson.decodeFromString(PersistenceEnvelopeDto.serializer(), encoded)
         val currentEnvelope = migrationRegistry.migrate(envelope)
-        val state = currentEnvelope.decodeCurrentAuthoritativeState(json)
+        val state = currentEnvelope.decodeCurrentAuthoritativeState()
         return DecodedAuthoritativeState(
-            rooms = state.toRooms(registries.ruleConfigs, json),
+            rooms = state.toRooms(registries.ruleConfigs),
             games = state.toGames(
                 ruleConfigRegistry = registries.ruleConfigs,
                 discardPileRegistry = registries.discardPiles,
@@ -71,9 +67,8 @@ class AuthoritativeStatePersistenceCodec(
                 dynamicRuleStateRegistry = registries.dynamicRuleStates,
                 exhaustiveDrawReasonRegistry = registries.exhaustiveDrawReasons,
                 extensionGameActionRegistry = registries.extensionGameActions,
-                json = json,
             ),
-            historyRecordingState = state.toHistoryRecordingState(registries, json),
+            historyRecordingState = state.toHistoryRecordingState(registries),
         )
     }
 }

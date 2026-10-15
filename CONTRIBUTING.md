@@ -107,10 +107,10 @@
   KDoc or beside the definition.
 - `single<T>()` registers only `T`. Add `bind` for every supertype consumers resolve. Runtime lookups such as
   `getOrNull<T>()` are not compile-checked, so a missing binding there fails without a build error.
-- An unregistered nullable parameter with a `null` default fails the compile check instead of resolving to `null`.
-  When the production graph intentionally leaves such a parameter at its default, construct the class in a definition
-  lambda that omits it. Inside a lambda, give `get<T>()` an explicit type whenever the parameter type is broader than
-  the intended binding.
+- An unregistered parameter with a default value, nullable or not, fails the compile check instead of falling back to
+  its default. When the production graph intentionally leaves such a parameter at its default, construct the class in
+  a definition lambda that omits it. Inside a lambda, give `get<T>()` an explicit type whenever the parameter type is
+  broader than the intended binding.
 - Preserve lifetime: `factory` creates a new instance per resolution; `single` shares one within the Koin
   container. A single is not automatically a runtime-session scope. Preserve explicit session reset, cancellation,
   resource release, qualifiers, parameters and eager/lazy initialization behavior.

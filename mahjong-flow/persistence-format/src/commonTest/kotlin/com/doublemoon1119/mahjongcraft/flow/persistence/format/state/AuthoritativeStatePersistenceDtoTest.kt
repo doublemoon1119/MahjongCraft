@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceEnvelopeDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.persistenceJson
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceDto
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
@@ -13,7 +14,6 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
-import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -22,8 +22,6 @@ import kotlin.uuid.Uuid
 
 /** 驗證 Room 與 Game 同批保存的伺服器權威狀態。 */
 class AuthoritativeStatePersistenceDtoTest {
-    /** persistence 測試使用的 JSON 編解碼器。 */
-    private val json = Json
 
     /** 內建規則配置的 persistence registry。 */
     private val ruleConfigRegistry = bundledPersistenceRegistries().ruleConfigs
@@ -50,16 +48,16 @@ class AuthoritativeStatePersistenceDtoTest {
         val games = listOf(createGame(), createGame())
         val expected = createState(rooms, games)
 
-        val envelope = expected.toEnvelope(json)
-        val encoded = json.encodeToString(PersistenceEnvelopeDto.serializer(), envelope)
-        val decodedEnvelope = json.decodeFromString(
+        val envelope = expected.toEnvelope()
+        val encoded = persistenceJson.encodeToString(PersistenceEnvelopeDto.serializer(), envelope)
+        val decodedEnvelope = persistenceJson.decodeFromString(
             PersistenceEnvelopeDto.serializer(),
             encoded,
         )
-        val restored = decodedEnvelope.decodeCurrentAuthoritativeState(json)
+        val restored = decodedEnvelope.decodeCurrentAuthoritativeState()
 
         assertEquals(expected, restored)
-        assertEquals(rooms.associateBy(Room::id), restored.toRooms(ruleConfigRegistry, json))
+        assertEquals(rooms.associateBy(Room::id), restored.toRooms(ruleConfigRegistry))
         assertEquals(games.map(TableState::id).toSet(), restored.toGames().keys)
     }
 
@@ -197,7 +195,6 @@ class AuthoritativeStatePersistenceDtoTest {
             dynamicRuleStateRegistry = dynamicRuleStateRegistry,
             exhaustiveDrawReasonRegistry = exhaustiveDrawReasonRegistry,
             extensionGameActionRegistry = extensionGameActionRegistry,
-            json = json,
         )
 
         val restored = state.toGames(
@@ -207,7 +204,6 @@ class AuthoritativeStatePersistenceDtoTest {
             dynamicRuleStateRegistry,
             exhaustiveDrawReasonRegistry,
             extensionGameActionRegistry,
-            json,
         ).getValue(game.id)
 
         assertEquals(setOf(playerId), restored.forcedAutoPlayPlayerIds)
@@ -232,7 +228,6 @@ class AuthoritativeStatePersistenceDtoTest {
             dynamicRuleStateRegistry = dynamicRuleStateRegistry,
             exhaustiveDrawReasonRegistry = exhaustiveDrawReasonRegistry,
             extensionGameActionRegistry = extensionGameActionRegistry,
-            json = json,
         )
 
         val restored = state.toGames(
@@ -242,7 +237,6 @@ class AuthoritativeStatePersistenceDtoTest {
             dynamicRuleStateRegistry,
             exhaustiveDrawReasonRegistry,
             extensionGameActionRegistry,
-            json,
         ).getValue(game.id)
 
         assertEquals(mapOf(playerId to "example:strategy"), restored.aiPlayerStrategyKeys)
@@ -268,7 +262,6 @@ class AuthoritativeStatePersistenceDtoTest {
             dynamicRuleStateRegistry = dynamicRuleStateRegistry,
             exhaustiveDrawReasonRegistry = exhaustiveDrawReasonRegistry,
             extensionGameActionRegistry = extensionGameActionRegistry,
-            json = json,
         )
 
         val restored = state.toGames(
@@ -278,7 +271,6 @@ class AuthoritativeStatePersistenceDtoTest {
             dynamicRuleStateRegistry,
             exhaustiveDrawReasonRegistry,
             extensionGameActionRegistry,
-            json,
         ).getValue(game.id)
 
         assertEquals(
@@ -307,7 +299,6 @@ class AuthoritativeStatePersistenceDtoTest {
             dynamicRuleStateRegistry = dynamicRuleStateRegistry,
             exhaustiveDrawReasonRegistry = exhaustiveDrawReasonRegistry,
             extensionGameActionRegistry = extensionGameActionRegistry,
-            json = json,
         )
 
         val restored = state.toGames(
@@ -317,7 +308,6 @@ class AuthoritativeStatePersistenceDtoTest {
             dynamicRuleStateRegistry,
             exhaustiveDrawReasonRegistry,
             extensionGameActionRegistry,
-            json,
         ).getValue(game.id)
 
         assertEquals(mapOf(playerId to 3_500L), restored.interruptedBaseMillisByPlayerId)
@@ -408,7 +398,6 @@ class AuthoritativeStatePersistenceDtoTest {
         dynamicRuleStateRegistry,
         exhaustiveDrawReasonRegistry,
         extensionGameActionRegistry,
-        json,
     )
 
     /** 使用所有內建註冊表還原遊戲，再取出以遊戲 ID 索引的桌況。 */
@@ -419,6 +408,5 @@ class AuthoritativeStatePersistenceDtoTest {
         dynamicRuleStateRegistry,
         exhaustiveDrawReasonRegistry,
         extensionGameActionRegistry,
-        json,
     ).mapValues { it.value.tableState }
 }

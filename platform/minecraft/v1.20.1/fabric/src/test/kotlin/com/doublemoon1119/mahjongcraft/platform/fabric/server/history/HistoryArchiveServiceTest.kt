@@ -137,7 +137,7 @@ class HistoryArchiveServiceTest {
             ),
         )
         val registries = bundledPersistenceRegistries()
-        val mapper = HistoryRecordingPersistenceMapper(registries, Json)
+        val mapper = HistoryRecordingPersistenceMapper(registries)
         val modules = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
         val service = HistoryArchiveService(mapper, registries, modules, TableLocationRegistry())
         val path = createTempDirectory("mahjongcraft-history-repeated-round-").resolve("history.sqlite")
@@ -194,7 +194,7 @@ class HistoryArchiveServiceTest {
             HistoryOutboxEvent(matchId, tableId, 1, 3, occurredAtEpochMillis = 300, actorPlayerId = null, fact = HistoryFact.ReturnedToRoom),
         )
         val registries = bundledPersistenceRegistries()
-        val mapper = HistoryRecordingPersistenceMapper(registries, Json)
+        val mapper = HistoryRecordingPersistenceMapper(registries)
         val modules = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
         val service = HistoryArchiveService(mapper, registries, modules, TableLocationRegistry())
         val path = createTempDirectory("mahjongcraft-history-archive-").resolve("history.sqlite")
@@ -312,7 +312,7 @@ class HistoryArchiveServiceTest {
         assertEquals(HistoryFact.ReturnedToRoom, events[3].fact)
 
         val registries = bundledPersistenceRegistries()
-        val mapper = HistoryRecordingPersistenceMapper(registries, Json)
+        val mapper = HistoryRecordingPersistenceMapper(registries)
         val modules = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
         val service = HistoryArchiveService(mapper, registries, modules, TableLocationRegistry())
         val path = createTempDirectory("mahjongcraft-history-generated-table-change-").resolve("history.sqlite")
@@ -528,7 +528,7 @@ class HistoryArchiveServiceTest {
         val path = createTempDirectory(prefix).resolve("history.sqlite")
         val database: SqliteHistoryDatabase = SqliteHistoryDatabase.open(path)
         private val registries = bundledPersistenceRegistries()
-        private val mapper = HistoryRecordingPersistenceMapper(registries, Json)
+        private val mapper = HistoryRecordingPersistenceMapper(registries)
         val service = HistoryArchiveService(
             mapper,
             registries,

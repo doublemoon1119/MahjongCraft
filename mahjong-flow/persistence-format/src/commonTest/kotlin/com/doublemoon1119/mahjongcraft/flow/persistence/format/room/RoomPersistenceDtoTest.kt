@@ -70,8 +70,8 @@ class RoomPersistenceDtoTest {
             )
         }
         val room = createRoom(ThirdPartyRuleConfig("custom"))
-        val encoded = json.encodeToString(RoomPersistenceDto.serializer(), room.toPersistenceDto(registry, json))
-        val restored = json.decodeFromString(RoomPersistenceDto.serializer(), encoded).toDomain(registry, json)
+        val encoded = json.encodeToString(RoomPersistenceDto.serializer(), room.toPersistenceDto(registry))
+        val restored = json.decodeFromString(RoomPersistenceDto.serializer(), encoded).toDomain(registry)
 
         assertEquals(room, restored)
     }
@@ -95,8 +95,8 @@ class RoomPersistenceDtoTest {
     private fun assertRoomRoundTrip(config: MahjongRuleConfig) {
         val registry = bundledPersistenceRegistries().ruleConfigs
         val room = createRoom(config)
-        val encoded = json.encodeToString(RoomPersistenceDto.serializer(), room.toPersistenceDto(registry, json))
-        val restored = json.decodeFromString(RoomPersistenceDto.serializer(), encoded).toDomain(registry, json)
+        val encoded = json.encodeToString(RoomPersistenceDto.serializer(), room.toPersistenceDto(registry))
+        val restored = json.decodeFromString(RoomPersistenceDto.serializer(), encoded).toDomain(registry)
 
         assertEquals(room, restored)
     }

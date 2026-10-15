@@ -48,10 +48,10 @@ class PendingReactionPersistenceTest {
 
         val encoded = json.encodeToString(
             serializer,
-            actions.map { it.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json) },
+            actions.map { it.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry) },
         )
         val restored = json.decodeFromString(serializer, encoded).map {
-            it.toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json)
+            it.toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry)
         }
 
         assertEquals(actions, restored)
@@ -73,10 +73,10 @@ class PendingReactionPersistenceTest {
 
         val encoded = json.encodeToString(
             PendingReactionPersistenceDto.serializer(),
-            reaction.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json),
+            reaction.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry),
         )
         val restored = json.decodeFromString(PendingReactionPersistenceDto.serializer(), encoded)
-            .toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json)
+            .toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry)
 
         assertEquals(reaction, restored)
     }
@@ -103,10 +103,10 @@ class PendingReactionPersistenceTest {
 
         val encoded = json.encodeToString(
             PendingRobbingReactionPersistenceDto.serializer(),
-            reaction.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json),
+            reaction.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry),
         )
         val restored = json.decodeFromString(PendingRobbingReactionPersistenceDto.serializer(), encoded)
-            .toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry, json)
+            .toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry)
 
         assertEquals(reaction, restored)
     }

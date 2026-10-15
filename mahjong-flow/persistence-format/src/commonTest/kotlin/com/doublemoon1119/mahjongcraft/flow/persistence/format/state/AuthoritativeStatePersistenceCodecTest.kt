@@ -73,7 +73,7 @@ class AuthoritativeStatePersistenceCodecTest {
     private val json = Json
 
     /** 使用所有內建 mapper 的待測 codec。 */
-    private val codec = AuthoritativeStatePersistenceCodec(bundledPersistenceRegistries(), json = json)
+    private val codec = AuthoritativeStatePersistenceCodec(bundledPersistenceRegistries())
 
     /** 驗證空狀態能以版本化 envelope 完整 round-trip。 */
     @Test

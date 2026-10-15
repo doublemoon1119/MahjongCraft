@@ -4,7 +4,6 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.persistenceJ
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 
@@ -17,10 +16,9 @@ const val DEFAULT_REPLAY_JSON_BYTES: Int = 8 * 1024 * 1024
  *
  * @param source 原始 JSON 文字。
  * @param limits 解析上限。
- * @param json 原生 JSON 設定。
  * @return 成功時為根物件，否則為穩定失敗。
  */
-suspend fun parseBoundedReplayJson(source: String, limits: ReplayJsonParseLimits = ReplayJsonParseLimits(), json: Json = persistenceJson): ReplayReadResult<JsonObject> {
+suspend fun parseBoundedReplayJson(source: String, limits: ReplayJsonParseLimits = ReplayJsonParseLimits()): ReplayReadResult<JsonObject> {
     currentCoroutineContext().ensureActive()
     if (source.length > limits.maximumUtf8Bytes) return ReplayReadResult.Failure(ReplayReadError.LIMIT_EXCEEDED)
     val rawBytes = source.encodeToByteArray()
@@ -62,7 +60,7 @@ suspend fun parseBoundedReplayJson(source: String, limits: ReplayJsonParseLimits
             if (tokens > limits.maximumTokens) throw ReplayReadException(ReplayReadError.LIMIT_EXCEEDED)
         }
         if (quoted || escaped || depth != 0) return ReplayReadResult.Failure(ReplayReadError.INVALID_DOCUMENT)
-        val parsed = json.parseToJsonElement(source)
+        val parsed = persistenceJson.parseToJsonElement(source)
         currentCoroutineContext().ensureActive()
         ReplayReadResult.Success(parsed.jsonObject, ReplayReadDiagnostics(0, 0, rawBytes.size.toLong(), 0))
     } catch (cancelled: CancellationException) {
