@@ -27,6 +27,19 @@ class RepositoryVerificationPlugin : Plugin<Project> {
             this.rootDirectory.set(rootDirectory)
             projectDirectories.set(project.provider { project.rootProject.allprojects.map { it.projectDir } })
         }
+        val verifyJsonFormatBoundary = project.tasks.register(
+            "verifyJsonFormatBoundary",
+            VerifyJsonFormatBoundaryTask::class.java,
+        ) {
+            group = "verification"
+            description = "Fails if modules outside the serialization boundary use kotlinx.serialization.json in production code."
+            this.rootDirectory.set(rootDirectory)
+            guardedProjectDirectories.set(
+                project.provider {
+                    project.rootProject.allprojects.filter { it.path in JSON_FREE_PROJECT_PATHS }.map { it.projectDir }
+                },
+            )
+        }
         val verifyProjectVersionPolicy = project.tasks.register(
             "verifyProjectVersionPolicy",
             VerifyProjectVersionPolicyTask::class.java,
@@ -62,6 +75,7 @@ class RepositoryVerificationPlugin : Plugin<Project> {
         project.tasks.named("check").configure {
             dependsOn(
                 verifyNoDocsTempReferences,
+                verifyJsonFormatBoundary,
                 verifyProjectVersionPolicy,
                 verifyModuleReadmes,
                 verifyMinecraftLangFileKeyOrder,
@@ -72,6 +86,17 @@ class RepositoryVerificationPlugin : Plugin<Project> {
 
 /** Minecraft 平台語系檔目錄，相對於 root project。 */
 private const val MINECRAFT_LANG_DIRECTORY: String = "platform/minecraft/common/src/jvmMain/resources/assets/mahjongcraft/lang"
+
+/** 正式程式碼不得使用 JSON 型別的 project；序列化格式只屬於存檔、網路 DTO 與平台轉接層。 */
+private val JSON_FREE_PROJECT_PATHS: Set<String> = setOf(
+    ":mahjong-logic",
+    ":mahjong-ai",
+    ":mahjong-flow:mahjong-flow-common",
+    ":mahjong-flow:mahjong-flow-server",
+    ":mahjong-flow:mahjong-flow-client",
+    ":mahjong-extension-api",
+    ":mahjong-bundled-extensions",
+)
 
 /** version policy 使用的 release train 版本名稱。 */
 private val RELEASE_TRAIN_VERSION_NAMES: List<String> = listOf(

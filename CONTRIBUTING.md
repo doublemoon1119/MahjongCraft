@@ -346,6 +346,7 @@ All modules must strictly follow the rules below to form a one-way dependency ch
   - `:mahjong-extension-api` intentionally exposes selected logic, AI, and Flow registration contracts as a typed public facade.
   - `:mahjong-bundled-extensions` depends only on `:mahjong-extension-api`; platform composition registers its extensions ahead of third-party ones.
   - Flow network DTO and persistence format modules depend inward on logic and Flow common, and are used only at their explicit serialization boundaries.
+  - JSON belongs to the persistence format, network DTO, and platform adapter code. Logic, AI, Flow common, server and client must not depend on `kotlinx.serialization.json`, and the extension API and bundled extensions must not use it; `verifyJsonFormatBoundary` checks their production sources.
   - `:testing:*` modules are test-only fixture providers and may only appear in test source-set dependencies.
 - **No reverse dependencies**: `:mahjong-logic` must not depend on any outer layer. `:mahjong-flow` must not depend on `platform`.
 - **Platform access to domain types**: `platform` modules may directly depend on `:mahjong-logic` for immutable domain models, value objects, rule-neutral contracts, and identifiers needed by adapters. This is still a one-way outer-to-inner dependency; it does not authorize the platform to own business rules.

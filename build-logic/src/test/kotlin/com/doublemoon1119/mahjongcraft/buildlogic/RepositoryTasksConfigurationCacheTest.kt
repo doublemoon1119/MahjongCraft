@@ -159,6 +159,7 @@ class RepositoryTasksConfigurationCacheTest {
         /** `check` 串接的所有驗證任務。 */
         val VERIFICATION_TASKS = listOf(
             ":verifyNoDocsTempReferences",
+            ":verifyJsonFormatBoundary",
             ":verifyProjectVersionPolicy",
             ":verifyModuleReadmes",
             ":verifyMinecraftLangFileKeyOrder",

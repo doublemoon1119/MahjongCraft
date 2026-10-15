@@ -23,6 +23,20 @@ Follow [Persistence Evolution](../../CONTRIBUTING.md#persistence-evolution)
 when changing a format rather than treating every persisted surface as one
 version.
 
+## Stored encoding
+
+Every format in this module is stored as JSON, and `persistenceJson` is the only definition of its settings.
+The JSON choice stays inside this module and the storage adapter: domain, Flow use cases,
+the extension API, and bundled extensions describe stored data only through DTOs and
+serializers. Code that works with JSON structure directly, and would change with the
+encoding, is limited to:
+
+- The typed payload wrapper for extension DTOs, which stores each payload as a JSON object
+  under a stable type key resolved by the persistence registries.
+- The compact replay format, its readers, and the bounded replay parser that limits input
+  size before parsing.
+- Persistence migrations, which rewrite older stored shapes as JSON.
+
 ## Dependencies
 
 It depends on [mahjong-logic](../../mahjong-logic/README.md),
