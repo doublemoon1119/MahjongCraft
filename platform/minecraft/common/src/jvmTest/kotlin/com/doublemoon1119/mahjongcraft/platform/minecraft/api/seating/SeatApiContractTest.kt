@@ -99,6 +99,25 @@ class SeatApiContractTest {
         assertNotEquals(identity, SeatIdentity("minecraft:overworld", "minecraft:block", "1,64,2", slot = "left"))
     }
 
+    /** 任一座標或朝向為 `0.0` 與 `-0.0` 的座位彼此相等、雜湊值相同，放進雜湊集合時只算一個。 */
+    @Test
+    fun `seat geometry treats positive and negative zero as the same seat`() {
+        val positive = SeatGeometry(0.0, 0.0, 0.0, 0.0f)
+        val negatives = listOf(
+            SeatGeometry(-0.0, 0.0, 0.0, 0.0f),
+            SeatGeometry(0.0, -0.0, 0.0, 0.0f),
+            SeatGeometry(0.0, 0.0, -0.0, 0.0f),
+            SeatGeometry(0.0, 0.0, 0.0, -0.0f),
+        )
+
+        negatives.forEach { negative ->
+            assertEquals(positive, negative)
+            assertEquals(positive.hashCode(), negative.hashCode(), "$negative")
+            assertEquals(1, hashSetOf(positive, negative).size, "$negative")
+            assertTrue(negative in hashSetOf(positive), "$negative")
+        }
+    }
+
     /** 公開座位資料不產生會隨欄位改變簽名的 copy 與 componentN，新增欄位時已編譯的第三方程式仍可運作。 */
     @Test
     fun `seat data exposes no generated copy or component functions`() {
