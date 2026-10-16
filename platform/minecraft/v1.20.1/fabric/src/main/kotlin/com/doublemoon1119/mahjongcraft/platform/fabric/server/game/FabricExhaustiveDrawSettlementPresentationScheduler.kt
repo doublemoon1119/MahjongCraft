@@ -112,9 +112,6 @@ class FabricExhaustiveDrawSettlementPresentationScheduler(
                     ExhaustiveDrawHandDisclosure.TENPAI,
                     ExhaustiveDrawHandDisclosure.PROOF,
                     -> {
-                        revealedTileAssetsById[tileId]?.let { asset ->
-                            tile.revealForPresentation(asset, endGameTime + PRESENTATION_REVEAL_GRACE_TICKS)
-                        }
                         TileAnimationSteps.scheduleLaydown(
                             tile,
                             startGameTime + HAND_LAYDOWN_START_TICK,
@@ -143,8 +140,5 @@ class FabricExhaustiveDrawSettlementPresentationScheduler(
         const val HAND_LAYDOWN_START_TICK = 30L
         const val HAND_REORDER_START_TICK = 5L
         const val STAGE_HEIGHT_OFFSET = 1.4
-
-        /** 讓牌面公開 lease 涵蓋面板到期與下一個 server tick 的清場交接。 */
-        const val PRESENTATION_REVEAL_GRACE_TICKS = 20L
     }
 }

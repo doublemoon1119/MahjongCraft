@@ -125,12 +125,6 @@ class MahjongTileEntity(
             ?.let { encoded -> runCatching { Uuid.parse(encoded) }.getOrNull() }
         private set(value) = dataTracker.set(MANAGED_TABLE_ID, value?.toString().orEmpty())
 
-    /** 結算展示期間對所有觀察者公開的暫時牌面；到期後 renderer 自動忽略。 */
-    val presentationAssetKey: String get() = dataTracker[PRESENTATION_ASSET_KEY]
-
-    /** [presentationAssetKey] 的絕對到期時間。 */
-    val presentationAssetEndGameTime: Long get() = dataTracker[PRESENTATION_ASSET_END_GAME_TIME]
-
     /** 最近一次捨牌或鳴牌落地後的短暫提示種類。 */
     val actionPopupKind: TileActionPopupKind get() = TileActionPopupKind.fromNameOrDefault(dataTracker[ACTION_POPUP_KIND])
 
@@ -180,19 +174,6 @@ class MahjongTileEntity(
                 "${tile.tileId},${if (tile.claimed) 1 else 0}"
             },
         )
-    }
-
-    /**
-     * 只在 server 端建立可持久化的公開牌面 lease；重複呼叫只允許延長。
-     *
-     * @param assetKey 要暫時公開的牌面資源 key；會正規化為支援值或 `unknown`。
-     * @param endGameTime 公開 lease 的絕對到期時間。
-     */
-    fun revealForPresentation(assetKey: String, endGameTime: Long) {
-        check(!world.isClient) { "Presentation reveal lease is server-only" }
-        if (endGameTime < presentationAssetEndGameTime) return
-        dataTracker.set(PRESENTATION_ASSET_KEY, assetKey.normalizedTileAssetKey(GlobalContext.get().get<MinecraftTileAssetRegistry>()))
-        dataTracker.set(PRESENTATION_ASSET_END_GAME_TIME, endGameTime)
     }
 
     /**
@@ -509,8 +490,6 @@ class MahjongTileEntity(
         dataTracker.startTracking(ANIMATION_END_POSE_ROTATION, 0.0f)
         dataTracker.startTracking(ANIMATION_EASE_ROTATION, false)
         dataTracker.startTracking(ANIMATION_START_YAW_OFFSET, 0.0f)
-        dataTracker.startTracking(PRESENTATION_ASSET_KEY, UNKNOWN_TILE_ASSET_KEY)
-        dataTracker.startTracking(PRESENTATION_ASSET_END_GAME_TIME, 0L)
         dataTracker.startTracking(ACTION_POPUP_KIND, TileActionPopupKind.NONE.name)
         dataTracker.startTracking(ACTION_POPUP_START_GAME_TIME, 0L)
         dataTracker.startTracking(ACTION_POPUP_END_GAME_TIME, 0L)
@@ -529,8 +508,6 @@ class MahjongTileEntity(
             ?.let { encoded -> runCatching { Uuid.parse(encoded) }.getOrNull() }
         tileAssetKey = nbt.getString(NBT_KEY_TILE)
         tilePose = MahjongTilePose.fromNameOrDefault(nbt.getString(NBT_KEY_POSE))
-        dataTracker.set(PRESENTATION_ASSET_KEY, nbt.getString(NBT_KEY_PRESENTATION_ASSET))
-        dataTracker.set(PRESENTATION_ASSET_END_GAME_TIME, nbt.getLong(NBT_KEY_PRESENTATION_ASSET_END_GAME_TIME))
         dataTracker.set(ACTION_POPUP_KIND, TileActionPopupKindNbt.read(nbt, NBT_KEY_ACTION_POPUP_KIND).name)
         dataTracker.set(ACTION_POPUP_START_GAME_TIME, nbt.getLong(NBT_KEY_ACTION_POPUP_START_GAME_TIME))
         dataTracker.set(ACTION_POPUP_END_GAME_TIME, nbt.getLong(NBT_KEY_ACTION_POPUP_END_GAME_TIME))
@@ -545,8 +522,6 @@ class MahjongTileEntity(
         nbt.putString(NBT_KEY_POSE, tilePose.name)
         nbt.putBoolean(NBT_KEY_MANAGED_BY_GAME, managedByGame)
         managedTableId?.let { tableId -> nbt.putString(NBT_KEY_MANAGED_TABLE_ID, tableId.toString()) }
-        nbt.putString(NBT_KEY_PRESENTATION_ASSET, presentationAssetKey)
-        nbt.putLong(NBT_KEY_PRESENTATION_ASSET_END_GAME_TIME, presentationAssetEndGameTime)
         TileActionPopupKindNbt.write(nbt, NBT_KEY_ACTION_POPUP_KIND, actionPopupKind)
         nbt.putLong(NBT_KEY_ACTION_POPUP_START_GAME_TIME, actionPopupStartGameTime)
         nbt.putLong(NBT_KEY_ACTION_POPUP_END_GAME_TIME, actionPopupEndGameTime)
@@ -577,12 +552,6 @@ class MahjongTileEntity(
         /** 正式牌局所屬桌子 UUID 的世界存檔 key。 */
         private const val NBT_KEY_MANAGED_TABLE_ID = "ManagedTableId"
 
-        /** 結算展示期間暫時公開牌面素材的世界存檔 key。 */
-        private const val NBT_KEY_PRESENTATION_ASSET = "PresentationAsset"
-
-        /** 暫時公開牌面的到期遊戲時間世界存檔 key。 */
-        private const val NBT_KEY_PRESENTATION_ASSET_END_GAME_TIME = "PresentationAssetEndGameTime"
-
         /** 捨牌或鳴牌提示種類的世界存檔 key。 */
         private const val NBT_KEY_ACTION_POPUP_KIND = "ActionPopupKind"
 
@@ -598,14 +567,6 @@ class MahjongTileEntity(
         /** 同步牌面素材 key。 */
         private val TILE_ASSET_KEY: TrackedData<String> =
             DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.STRING)
-
-        /** 同步結算展示期間暫時公開的牌面素材 key。 */
-        private val PRESENTATION_ASSET_KEY: TrackedData<String> =
-            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.STRING)
-
-        /** 同步暫時公開牌面的絕對到期遊戲時間。 */
-        private val PRESENTATION_ASSET_END_GAME_TIME: TrackedData<Long> =
-            DataTracker.registerData(MahjongTileEntity::class.java, TrackedDataHandlerRegistry.LONG)
 
         /** 同步最近一次捨牌或鳴牌的提示種類。 */
         private val ACTION_POPUP_KIND: TrackedData<String> =

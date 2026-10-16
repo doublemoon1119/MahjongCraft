@@ -9,7 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.acceptedActionHistoryDraft
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.CompletedGameActionContext
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.recordExhaustiveDrawForAllPlayers
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.recordAbortiveDraw
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
@@ -196,7 +196,7 @@ class DeclareRiichiUseCase(
                         }
                     val finalResult = if (suuchaReason != null) {
                         resolved.copy(
-                            tableState = resolved.tableState.recordExhaustiveDrawForAllPlayers(suuchaReason),
+                            tableState = resolved.tableState.recordAbortiveDraw(suuchaReason, declarerId = null, module = module),
                             abortiveDrawReason = suuchaReason,
                         )
                     } else {

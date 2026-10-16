@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.acceptedActionHistoryDraft
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.recordAbortiveDraw
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.DeclareRiichiUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
@@ -107,9 +108,7 @@ class DeclareAbortiveDrawUseCase(
                     // 途中流局：莊家固定連莊、不結算任何點數，供託延續到下一局。把 ExhaustiveDraw
                     // 記錄進全員（不只莊家）的 actionHistory，讓 AdvanceRoundUseCase 既有的判斷式
                     // 自動得出「連莊」的結果，不需要額外分支。
-                    val updatedPlayers =
-                        state.players.map { it.recordAction(GameAction.ExhaustiveDraw(exhaustiveDraw.reason)) }
-                    val newState = state.copy(players = updatedPlayers)
+                    val newState = state.recordAbortiveDraw(exhaustiveDraw.reason, declarerId = playerId, module = module)
 
                     game.copy(
                         tableState = newState,

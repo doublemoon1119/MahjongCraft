@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.acceptedActionHistoryDraft
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.recordAbortiveDraw
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.DeclareRiichiUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
@@ -189,9 +190,7 @@ class DeclareKanUseCase(
                         // 多響流局：這次加槓視為未成立（比照 RespondToRobbingUseCase 既有的「搶槓
                         // 成功時，暗槓/加槓視為未成立」原則），不套用 SelfDeclarationApplier、不補
                         // 嶺上牌，直接記錄流局。
-                        val newState = state.copy(
-                            players = state.players.map { it.recordAction(GameAction.ExhaustiveDraw(abortiveDrawReason)) },
-                        )
+                        val newState = state.recordAbortiveDraw(abortiveDrawReason, declarerId = null, module = module)
                         return@update newState to Outcome.Success(
                             KanResult(
                                 newState,

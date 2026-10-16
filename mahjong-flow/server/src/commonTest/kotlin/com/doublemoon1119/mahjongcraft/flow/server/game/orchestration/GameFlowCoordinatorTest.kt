@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventProjector
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinSettlementDetail
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawHandDisclosure
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExtensionGameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
@@ -870,7 +871,7 @@ class GameFlowCoordinatorTest {
     }
 
     /**
-     * 驗證九種九牌宣告成功一定結束本局，`AdvanceRoundUseCase` 會被銜接。
+     * 驗證九種九牌宣告成功一定結束本局，`AdvanceRoundUseCase` 會被銜接；流局呈現把宣告者的手牌當作攤牌證明。
      */
     @Test
     fun `test kyuushu kyuuhai command chains advance round`() = runTest {
@@ -907,6 +908,11 @@ class GameFlowCoordinatorTest {
         assertTrue(newState.players.first { it.id == playerId }.actionHistory.isEmpty())
         assertEquals(1, newState.comboCount, "Kyuushu kyuuhai is an abortive draw; the dealer always repeats.")
         fixtures.assertSingleSettlement(RoundSettlementKind.DRAW)
+        val presentation = assertNotNull(fixtures.presentationPublisher.getPublishedExhaustiveDrawSettlement(gameId))
+        assertEquals(
+            ExhaustiveDrawHandDisclosure.PROOF,
+            presentation.players.first { it.ranking.playerId == playerId }.handDisclosure,
+        )
     }
 
     // ---- 連莊/過莊：視分支結果的命令 ----

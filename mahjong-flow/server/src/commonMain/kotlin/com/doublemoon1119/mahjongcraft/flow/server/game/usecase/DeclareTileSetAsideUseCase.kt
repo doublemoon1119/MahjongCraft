@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.acceptedActionHistoryDraft
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.recordAbortiveDraw
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.isOwnTurnWindowOpenFor
@@ -189,7 +190,7 @@ class DeclareTileSetAsideUseCase(
         }
         val abortiveDrawReason = if (ronResolution == RonResolution.ABORTIVE_DRAW) module.resolveMultiRonAbortiveDraw() else null
         if (abortiveDrawReason != null) {
-            val newState = state.copy(players = state.players.map { it.recordAction(GameAction.ExhaustiveDraw(abortiveDrawReason)) })
+            val newState = state.recordAbortiveDraw(abortiveDrawReason, declarerId = null, module = module)
             return newState to Outcome.Success(SetAsideResult(newState, setAsideTile, abortiveDrawReason = abortiveDrawReason))
         }
         if (ronWinningPlayerIds.isNotEmpty()) {

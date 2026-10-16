@@ -132,6 +132,35 @@ class DeclareAbortiveDrawUseCaseTest {
         }
     }
 
+    /** 九種九牌成立後，宣告者包含摸牌在內的 14 張手牌對其他觀察者公開。 */
+    @Test
+    fun `test declare kyuushu kyuuhai reveals the declarer hand to other observers`() = runTest {
+        val fixtures = Fixtures()
+        val declarer = FakeMahjongPlayerFactory.create(
+            id = playerId,
+            initialSeat = Wind.EAST,
+            hand = handWithDrawnTile(ninthYaochuuTile),
+            discardPile = RiichiDiscardPile(),
+        )
+        val other = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH, discardPile = RiichiDiscardPile())
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(declarer, other),
+            config = RiichiRuleConfig(),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+        fixtures.snapshotRepo.setSnapshot(other.id, table.toSnapshot(setOf(other.id), setAsideTiles = { emptyList() }))
+
+        fixtures.gameRepo.runAsSingleWrite(gameId) { fixtures.useCase(gameId, playerId, RiichiExhaustiveDrawReason.KyuushuKyuuhai) }
+
+        val otherView = assertNotNull(fixtures.snapshotRepo.getSnapshot(gameId, other.id))
+        val revealedIds = otherView.revealedHandTiles.map { it.id }.toSet()
+        assertEquals(declarer.hand.standingTiles.map { it.id }.toSet(), revealedIds)
+        assertEquals(14, revealedIds.size)
+        assertTrue(ninthYaochuuTile.id in revealedIds, "The drawn ninth terminal is part of the proof.")
+    }
+
     /**
      * 驗證么九牌種類不足 9 種時，宣告不合法。
      */

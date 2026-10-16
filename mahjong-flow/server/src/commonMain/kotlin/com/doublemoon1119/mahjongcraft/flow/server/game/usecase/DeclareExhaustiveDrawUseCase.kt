@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.acceptedActionHistoryDraft
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.revealHandsOf
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
@@ -106,7 +107,7 @@ class DeclareExhaustiveDrawUseCase(
                     val newState = state.copy(
                         players = updatedPlayers,
                         dynamicRuleState = stickPot?.first ?: state.dynamicRuleState,
-                    )
+                    ).revealHandsOf(settlement.revealedHands.map { it.playerId })
 
                     val transitionDirective = if (state.dealerPlayerId in settlement.tenpaiPlayerIds) {
                         RoundTransitionDirective.REPEAT_DEALER

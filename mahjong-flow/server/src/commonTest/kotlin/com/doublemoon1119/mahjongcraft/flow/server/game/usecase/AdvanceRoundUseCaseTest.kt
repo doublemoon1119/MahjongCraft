@@ -237,7 +237,8 @@ class AdvanceRoundUseCaseTest {
     }
 
     /**
-     * 驗證莊家一般流局時聽牌（`actionHistory` 有 `ExhaustiveDraw`）：連莊、本場數 +1、莊家不變。
+     * 驗證莊家一般流局時聽牌（`actionHistory` 有 `ExhaustiveDraw`）：連莊、本場數 +1、莊家不變，
+     * 上一局流局時公開的手牌在新的一局不再公開。
      */
     @Test
     fun `test advance round repeats dealer when dealer was tenpai at exhaustive draw`() = runTest {
@@ -256,7 +257,7 @@ class AdvanceRoundUseCaseTest {
             roundNumber = 1,
             comboCount = 0,
             prevalentWind = Wind.EAST,
-        )
+        ).copy(revealedHandTileIds = setOf(Uuid.random()))
         fixtures.setCompletedState(table)
 
         val result = fixtures.useCase(gameId)
@@ -272,6 +273,7 @@ class AdvanceRoundUseCaseTest {
             newState.dealerPlayerId,
             "Dealer should stay the same when tenpai at exhaustive draw.",
         )
+        assertEquals(emptySet(), newState.revealedHandTileIds, "Hands revealed at the draw are concealed again in the new round.")
     }
 
     /**

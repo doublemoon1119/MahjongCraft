@@ -37,7 +37,8 @@ import kotlin.uuid.Uuid
  * 規則永遠是空集合、行為不變。座位、分數、快照仍保留這些玩家；見 [isPlayerActive]、[activePlayers]、
  * [nextActivePlayerAfter]。
  * @property revealedHandTileIds 本局已經公開、但可能仍留在手牌中的牌：宣告暗槓、加槓或移出手牌的動作而開啟搶和反應
- * 視窗時，宣告擺出的牌就此公開；被搶和時宣告不成立，這些牌留在宣告者手上但仍是公開的。每局重新開始時為空集合。
+ * 視窗時，宣告擺出的牌就此公開；被搶和時宣告不成立，這些牌留在宣告者手上但仍是公開的。流局時規則要求攤開的手牌
+ * （例如日麻流局時聽牌者的手牌）也記在這裡，直到本局結束。每局重新開始時為空集合。
  */
 data class TableState(
     val id: Uuid,

@@ -418,7 +418,12 @@ class GameFlowCoordinator(
         }
 
         if (result is Outcome.Success) {
-            handleHandConclusionIfPresent(gameId, playerId, previousState)
+            handleHandConclusionIfPresent(
+                gameId = gameId,
+                playerId = playerId,
+                abortiveDrawDeclarerId = playerId.takeIf { command is GameCommand.DeclareExhaustiveDraw },
+                previousState = previousState,
+            )
         }
 
         return result
@@ -488,9 +493,15 @@ class GameFlowCoordinator(
      *
      * @param gameId 對局識別碼。
      * @param playerId 本次命令的玩家識別碼。
+     * @param abortiveDrawDeclarerId 本次命令是主動宣告途中流局時為宣告者，否則為 null。
      * @param previousState 執行命令前的桌況。
      */
-    private suspend fun handleHandConclusionIfPresent(gameId: Uuid, playerId: Uuid, previousState: TableState) {
+    private suspend fun handleHandConclusionIfPresent(
+        gameId: Uuid,
+        playerId: Uuid,
+        abortiveDrawDeclarerId: Uuid?,
+        previousState: TableState,
+    ) {
         val currentState = gameRepository.getTableState(gameId) ?: return
         val newlyRecordedActionsByPlayerId = newlyRecordedActionsByPlayerId(previousState, currentState)
 
@@ -499,7 +510,7 @@ class GameFlowCoordinator(
         }
         if (hasNewExhaustiveDraw) {
             ensureRecordedDrawCompletion(gameId, currentState, newlyRecordedActionsByPlayerId)
-            publishNewAbortiveDrawIfPresent(gameId, playerId, previousState)
+            publishNewAbortiveDrawIfPresent(gameId, abortiveDrawDeclarerId, previousState)
             chainAdvanceRound(gameId)
             return
         }

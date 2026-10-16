@@ -9,7 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.acceptedActionHistoryDraft
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.CompletedGameActionContext
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.recordExhaustiveDrawForAllPlayers
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.recordAbortiveDraw
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
@@ -187,8 +187,10 @@ class DiscardTileUseCase(
                             }
                         val finalResult = if (postActionExhaustiveDrawReason != null) {
                             resolvedAfterReveal.copy(
-                                tableState = resolvedAfterReveal.tableState.recordExhaustiveDrawForAllPlayers(
-                                    postActionExhaustiveDrawReason,
+                                tableState = resolvedAfterReveal.tableState.recordAbortiveDraw(
+                                    reason = postActionExhaustiveDrawReason,
+                                    declarerId = null,
+                                    module = module,
                                 ),
                                 abortiveDrawReason = postActionExhaustiveDrawReason,
                             )

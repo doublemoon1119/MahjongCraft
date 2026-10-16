@@ -17,7 +17,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.history.acceptedActionHi
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.winSettlementHistoryDetails
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.CompletedGameActionContext
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.recordExhaustiveDrawForAllPlayers
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.recordAbortiveDraw
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
@@ -448,7 +448,7 @@ class RespondToDiscardUseCase(
         )
         if (abortiveDrawReason != null) {
             return RespondResult(
-                tableState = stateAfterResponses.recordExhaustiveDrawForAllPlayers(abortiveDrawReason),
+                tableState = stateAfterResponses.recordAbortiveDraw(abortiveDrawReason, declarerId = null, module = module),
                 abortiveDrawReason = abortiveDrawReason,
                 abortiveDrawActorId = pendingReaction.discarderId,
             )

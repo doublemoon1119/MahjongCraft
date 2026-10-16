@@ -1,10 +1,8 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
-import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
-import com.doublemoon1119.mahjongcraft.logic.table.TableState
 
 /** 可於 bootstrap 登記、完成後凍結的主動觸發途中流局 resolver registry。 */
 class PostActionExhaustiveDrawResolverRegistry {
@@ -63,8 +61,3 @@ class PostActionExhaustiveDrawResolverRegistry {
      */
     private fun registrationKey(ruleModuleId: String, id: String): String = "$ruleModuleId/$id"
 }
-
-/** 將同一途中流局動作記錄至所有玩家的權威動作歷史。 */
-internal fun TableState.recordExhaustiveDrawForAllPlayers(reason: ExhaustiveDrawReason): TableState = copy(
-    players = players.map { player -> player.recordAction(GameAction.ExhaustiveDraw(reason)) },
-)

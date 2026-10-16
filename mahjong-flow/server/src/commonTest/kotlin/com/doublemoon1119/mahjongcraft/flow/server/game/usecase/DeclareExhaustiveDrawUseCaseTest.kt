@@ -246,6 +246,28 @@ class DeclareExhaustiveDrawUseCaseTest {
         assertEquals(expectedAction, fixtures.eventPublisher.getNotifiedAction(gameId, southId, dealer.id))
     }
 
+    /** 一般流局後聽牌者的手牌對其他觀察者公開，不聽者的手牌仍然不公開。 */
+    @Test
+    fun `test declare exhaustive draw reveals tenpai hands but not noten hands`() = runTest {
+        val fixtures = Fixtures()
+        val dealer = FakeMahjongPlayerFactory.create(initialSeat = Wind.EAST, hand = tenpaiHand())
+        val south = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH, hand = notTenpaiHand())
+        val table = FakeTableStateFactory.create(id = gameId, players = listOf(dealer, south), config = RiichiRuleConfig())
+        fixtures.gameRepo.setTableState(table)
+        listOf(dealer, south).forEach { player ->
+            fixtures.snapshotRepo.setSnapshot(player.id, table.toSnapshot(setOf(player.id), setAsideTiles = { emptyList() }))
+        }
+
+        fixtures.useCase(gameId)
+
+        val dealerTileIds = dealer.hand.standingTiles.map { it.id }.toSet()
+        assertEquals(dealerTileIds, fixtures.gameRepo.getTableState(gameId)!!.revealedHandTileIds)
+        val southView = assertNotNull(fixtures.snapshotRepo.getSnapshot(gameId, south.id))
+        assertEquals(dealerTileIds, southView.revealedHandTiles.map { it.id }.toSet())
+        val dealerView = assertNotNull(fixtures.snapshotRepo.getSnapshot(gameId, dealer.id))
+        assertEquals(dealerTileIds, dealerView.revealedHandTiles.map { it.id }.toSet())
+    }
+
     /**
      * 驗證對局不存在時回傳 [GameError.GameNotFound]。
      */
