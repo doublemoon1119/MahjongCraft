@@ -440,6 +440,21 @@ object MinecraftMessageKeys {
     /** 自動操作資料已過期。 */
     const val AUTOMATIC_CONTROL_STALE = PREFIX + "automatic_control_stale"
 
+    /** 自動操作更新尚未收到確認，正在重新同步。 */
+    const val AUTOMATIC_CONTROL_RESYNCING = PREFIX + "automatic_control_resyncing"
+
+    /** 重新同步確認自動操作更新沒有生效。 */
+    const val AUTOMATIC_CONTROL_NOT_APPLIED = PREFIX + "automatic_control_not_applied"
+
+    /** 無法確認自動操作更新是否生效。 */
+    const val AUTOMATIC_CONTROL_UNCONFIRMED = PREFIX + "automatic_control_unconfirmed"
+
+    /** 決策提交尚未收到確認，正在重新同步。 */
+    const val DECISION_CONFIRMATION_RESYNCING = PREFIX + "decision_confirmation_resyncing"
+
+    /** 決策提交沒有收到確認，玩家可以重新選擇。 */
+    const val DECISION_CONFIRMATION_RETRY = PREFIX + "decision_confirmation_retry"
+
     /** 自動操作狀態文字「開啟」。 */
     const val AUTOMATIC_CONTROL_STATE_ON = PREFIX + "automatic_control_state_on"
 
@@ -640,6 +655,11 @@ object MinecraftMessageKeys {
         AUTOMATIC_CONTROL_PREFERENCE_SYNC_FAILED,
         AUTOMATIC_CONTROL_REJECTED,
         AUTOMATIC_CONTROL_STALE,
+        AUTOMATIC_CONTROL_RESYNCING,
+        AUTOMATIC_CONTROL_NOT_APPLIED,
+        AUTOMATIC_CONTROL_UNCONFIRMED,
+        DECISION_CONFIRMATION_RESYNCING,
+        DECISION_CONFIRMATION_RETRY,
         AUTOMATIC_CONTROL_STATE_ON,
         AUTOMATIC_CONTROL_STATE_OFF,
     )

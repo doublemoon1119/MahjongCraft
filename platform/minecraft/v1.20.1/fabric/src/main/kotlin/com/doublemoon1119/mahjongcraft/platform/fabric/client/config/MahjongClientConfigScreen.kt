@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.Automati
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAutoSortHandPreferenceService
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAutoSortHandPreferenceUpdateResult
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAutomaticControlDraftSession
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAutomaticControlResultKind
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAutomaticControlSubmitResult
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic.ClientAutomaticControlUpdateCoordinator
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.fitClientText
@@ -158,7 +159,7 @@ class MahjongClientConfigScreen(
         automaticDraft.state().pendingRequestId?.let { requestId ->
             automaticCoordinator.takeCompletion(requestId)?.let { completion ->
                 val result = automaticDraft.applyCompletion(completion)
-                automaticError = if (result?.accepted == true) null else completion.result.result.name
+                automaticError = if (result?.accepted == true) null else completion.result.name
                 if (result?.closeAfterAcceptance == true) {
                     client?.setScreen(parent)
                     return
@@ -485,7 +486,9 @@ class MahjongClientConfigScreen(
             draftStale -> Text.translatable(MinecraftClientConfigScreenKeys.DRAFT_STALE).formatted(Formatting.RED)
             saveFailed -> Text.translatable(MinecraftClientConfigScreenKeys.SAVE_FAILED).formatted(Formatting.RED)
             preferenceSyncFailed -> Text.translatable("mahjongcraft.message.automatic_control_preference_sync_failed").formatted(Formatting.RED)
-            automaticDraft.state().pending -> Text.translatable(MinecraftClientConfigScreenKeys.AUTOMATIC_PENDING)
+            automaticDraft.state().pending -> Text.translatable(pendingStatusKey(checkNotNull(automaticDraft.state().pendingRequestId)))
+            automaticError == ClientAutomaticControlResultKind.UNCONFIRMED.name ->
+                Text.translatable(MinecraftClientConfigScreenKeys.AUTOMATIC_UNCONFIRMED).formatted(Formatting.RED)
             automaticDraft.state().stale -> Text.translatable(MinecraftClientConfigScreenKeys.AUTOMATIC_STALE).formatted(Formatting.RED)
             automaticError != null -> Text.translatable(automaticErrorKey(checkNotNull(automaticError))).formatted(Formatting.RED)
             else -> return
@@ -500,6 +503,18 @@ class MahjongClientConfigScreen(
     }
 
     /**
+     * 等待確認時的狀態文字；等不到回覆而正在重新同步時改用重新同步文字。
+     *
+     * @param requestId 等待中的請求識別碼。
+     * @return 狀態文字的翻譯鍵。
+     */
+    private fun pendingStatusKey(requestId: String): String = if (automaticCoordinator.isResyncing(requestId)) {
+        MinecraftClientConfigScreenKeys.AUTOMATIC_RESYNCING
+    } else {
+        MinecraftClientConfigScreenKeys.AUTOMATIC_PENDING
+    }
+
+    /**
      * 將本地提交錯誤與 ACK 結果映射到既有玩家訊息。
      *
      * @param error 本地提交或伺服器確認的錯誤代碼。
@@ -511,6 +526,7 @@ class MahjongClientConfigScreen(
         "UNSUPPORTED" -> "mahjongcraft.message.automatic_control_rejected"
         "SEND_FAILED" -> "mahjongcraft.message.automatic_control_send_failed"
         "STALE" -> MinecraftClientConfigScreenKeys.AUTOMATIC_STALE
+        "NOT_APPLIED" -> MinecraftClientConfigScreenKeys.AUTOMATIC_NOT_APPLIED
         else -> "mahjongcraft.message.automatic_control_rejected"
     }
 

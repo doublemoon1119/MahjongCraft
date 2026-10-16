@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic
 
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlUpdateResultKindDto
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.CLIENT_COMMAND_ROOT
 import com.doublemoon1119.mahjongcraft.platform.fabric.text.configSaveFailureMessage
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
@@ -84,7 +83,13 @@ class FabricAutomaticControlCommand(
                 COMMAND_SUCCESS
             }
             is ClientAutomaticControlCommandResult.Submitted -> {
-                pendingFeedback = PendingFeedback(result.requestId, result.controlId, result.previousEnabled, result.enabled)
+                pendingFeedback = PendingFeedback(
+                    requestId = result.requestId,
+                    controlId = result.controlId,
+                    previousEnabled = result.previousEnabled,
+                    requestedEnabled = result.enabled,
+                    resyncReported = false,
+                )
                 context.source.sendFeedback(
                     Text.translatable(
                         MinecraftMessageKeys.AUTOMATIC_CONTROL_WAITING,
@@ -155,19 +160,26 @@ class FabricAutomaticControlCommand(
         val pending = pendingFeedback ?: return
         val completion = commandService.takeCompletion(pending.requestId, pending.controlId)
         if (completion == null) {
-            if (!commandService.isPending(pending.requestId)) pendingFeedback = null
+            if (!commandService.isPending(pending.requestId)) {
+                pendingFeedback = null
+            } else if (!pending.resyncReported && commandService.isResyncing(pending.requestId)) {
+                pendingFeedback = pending.copy(resyncReported = true)
+                client.player?.sendMessage(Text.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_RESYNCING), false)
+            }
             return
         }
         pendingFeedback = null
         val message = when (completion.result) {
-            AutomaticControlUpdateResultKindDto.ACCEPTED -> updatedMessage(
+            ClientAutomaticControlResultKind.ACCEPTED -> updatedMessage(
                 pending.controlId,
                 pending.previousEnabled,
                 completion.enabled ?: pending.requestedEnabled,
             )
-            AutomaticControlUpdateResultKindDto.REJECTED -> Text.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_REJECTED)
-            AutomaticControlUpdateResultKindDto.STALE -> Text.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_STALE)
-            AutomaticControlUpdateResultKindDto.UNAVAILABLE -> Text.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_UNAVAILABLE)
+            ClientAutomaticControlResultKind.REJECTED -> Text.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_REJECTED)
+            ClientAutomaticControlResultKind.STALE -> Text.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_STALE)
+            ClientAutomaticControlResultKind.UNAVAILABLE -> Text.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_UNAVAILABLE)
+            ClientAutomaticControlResultKind.NOT_APPLIED -> Text.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_NOT_APPLIED)
+            ClientAutomaticControlResultKind.UNCONFIRMED -> Text.translatable(MinecraftMessageKeys.AUTOMATIC_CONTROL_UNCONFIRMED)
         }
         client.player?.sendMessage(message, false)
     }
@@ -229,12 +241,14 @@ class FabricAutomaticControlCommand(
      * @property controlId 正在更新的控制項識別碼。
      * @property previousEnabled 送出時已確認的狀態。
      * @property requestedEnabled 請求要求的狀態。
+     * @property resyncReported 是否已提示正在重新同步。
      */
     private data class PendingFeedback(
         val requestId: String,
         val controlId: String,
         val previousEnabled: Boolean,
         val requestedEnabled: Boolean,
+        val resyncReported: Boolean,
     )
 
     private companion object {

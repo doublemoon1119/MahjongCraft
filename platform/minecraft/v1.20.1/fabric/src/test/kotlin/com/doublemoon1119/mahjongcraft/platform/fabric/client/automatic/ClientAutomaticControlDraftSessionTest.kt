@@ -2,8 +2,6 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlSnapshotDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlUpdateRequestDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlUpdateResultDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlUpdateResultKindDto
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -56,7 +54,7 @@ class ClientAutomaticControlDraftSessionTest {
         assertTrue(session.markSubmitted(request, closeAfterAcceptance = true))
         val accepted = initial.copy(revision = 2L, enabledControlIds = setOf("test:auto"))
 
-        val outcome = session.applyCompletion(completion(request, AutomaticControlUpdateResultKindDto.ACCEPTED, accepted))
+        val outcome = session.applyCompletion(completion(request, ClientAutomaticControlResultKind.ACCEPTED, accepted))
 
         assertNotNull(outcome)
         assertTrue(outcome.accepted)
@@ -75,14 +73,46 @@ class ClientAutomaticControlDraftSessionTest {
         val request = request(initial, setOf("test:auto"))
         assertTrue(session.markSubmitted(request, closeAfterAcceptance = true))
 
-        val outcome = session.applyCompletion(completion(request, AutomaticControlUpdateResultKindDto.REJECTED, initial))
+        val outcome = session.applyCompletion(completion(request, ClientAutomaticControlResultKind.REJECTED, initial))
 
         assertNotNull(outcome)
         assertFalse(outcome.accepted)
         assertFalse(outcome.closeAfterAcceptance)
         assertEquals(setOf("test:auto"), session.state().enabledControlIds)
-        assertEquals(AutomaticControlUpdateResultKindDto.REJECTED, session.state().failure)
+        assertEquals(ClientAutomaticControlResultKind.REJECTED, session.state().failure)
         assertFalse(session.state().pending)
+    }
+
+    /** 重新同步確認沒有生效時保留草稿，不標記過期，可以直接再送出一次。 */
+    @Test
+    fun `not applied completion keeps draft ready to resubmit`() {
+        val initial = snapshot(revision = 1L, enabled = emptySet())
+        val session = ClientAutomaticControlDraftSession(initial)
+        assertTrue(session.replaceDraft(setOf("test:auto")))
+        val request = request(initial, setOf("test:auto"))
+        assertTrue(session.markSubmitted(request, closeAfterAcceptance = false))
+
+        assertNotNull(session.applyCompletion(completion(request, ClientAutomaticControlResultKind.NOT_APPLIED, initial)))
+
+        assertEquals(ClientAutomaticControlResultKind.NOT_APPLIED, session.state().failure)
+        assertFalse(session.state().stale)
+        assertTrue(session.markSubmitted(request(initial, setOf("test:auto")), closeAfterAcceptance = false))
+    }
+
+    /** 無法確認是否生效時標記過期，需要復原載入最新狀態後才能再送出。 */
+    @Test
+    fun `unconfirmed completion marks draft stale`() {
+        val initial = snapshot(revision = 1L, enabled = emptySet())
+        val session = ClientAutomaticControlDraftSession(initial)
+        assertTrue(session.replaceDraft(setOf("test:auto")))
+        val request = request(initial, setOf("test:auto"))
+        assertTrue(session.markSubmitted(request, closeAfterAcceptance = true))
+
+        val outcome = assertNotNull(session.applyCompletion(completion(request, ClientAutomaticControlResultKind.UNCONFIRMED, initial)))
+
+        assertFalse(outcome.closeAfterAcceptance)
+        assertTrue(session.state().stale)
+        assertFalse(session.markSubmitted(request(initial, setOf("test:auto")), closeAfterAcceptance = false))
     }
 
     /** 無關的完成結果不能結束目前 pending 的請求。 */
@@ -94,7 +124,7 @@ class ClientAutomaticControlDraftSessionTest {
         assertTrue(session.markSubmitted(request, closeAfterAcceptance = false))
         val unrelated = request.copy(requestId = Uuid.random().toString())
 
-        assertNull(session.applyCompletion(completion(unrelated, AutomaticControlUpdateResultKindDto.ACCEPTED, initial)))
+        assertNull(session.applyCompletion(completion(unrelated, ClientAutomaticControlResultKind.ACCEPTED, initial)))
         assertTrue(session.state().pending)
     }
 
@@ -151,17 +181,19 @@ class ClientAutomaticControlDraftSessionTest {
      * 建立與請求配對的客戶端完成事件。
      *
      * @param request 被完成的更新請求。
-     * @param kind 伺服器回覆的結果種類。
-     * @param snapshot 結果攜帶的權威快照，若無則為 `null`。
+     * @param kind 請求最後的結果種類。
+     * @param snapshot 完成時的權威快照，若無則為 `null`。
      * @return 與請求 ID 和對局 ID 配對的完成事件。
      */
     private fun completion(
         request: AutomaticControlUpdateRequestDto,
-        kind: AutomaticControlUpdateResultKindDto,
+        kind: ClientAutomaticControlResultKind,
         snapshot: AutomaticControlSnapshotDto?,
     ): ClientAutomaticControlCompletion = ClientAutomaticControlCompletion(
         sequence = 1L,
-        result = AutomaticControlUpdateResultDto(request.requestId, request.gameId, kind, snapshot),
+        requestId = request.requestId,
+        gameId = request.gameId,
+        result = kind,
         authoritativeSnapshot = snapshot,
     )
 }

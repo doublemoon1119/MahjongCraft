@@ -47,6 +47,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjon
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricHandSortCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricTileLabelCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.MatchingTileHighlightController
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.time.PauseAwareClientMonotonicClock
 import com.doublemoon1119.mahjongcraft.platform.minecraft.di.flowClientModule
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -66,7 +67,13 @@ val fabricClientModule = module {
     single<AutomaticControlStatusHudRenderer>()
     single<ClientAutoSortHandPreferenceService>()
     single<ClientAutomaticControlCommandService>()
-    single<ClientAutomaticControlUpdateCoordinator>()
+    single {
+        ClientAutomaticControlUpdateCoordinator(
+            stateStore = get(),
+            requestSender = get(),
+            clock = get<PauseAwareClientMonotonicClock>(),
+        )
+    }
     single<FabricAutomaticControlCommand>()
     single<FabricClientAutoSortHandPreferenceSender>() bind ClientAutoSortHandPreferenceSender::class
     single<FabricClientAutomaticControlRequestSender>() bind ClientAutomaticControlRequestSender::class
@@ -108,6 +115,7 @@ val fabricClientModule = module {
     single<FabricRoomConfigScreenCommand>()
 
     single<ClientAutomaticControlStateStore>()
+    single<PauseAwareClientMonotonicClock>()
     single<ClientMahjongStateStore>()
 
     single<FabricHandSortCommand>()

@@ -101,6 +101,22 @@ class PlayerConnectionLifecycleService(
     }
 
     /**
+     * 重新送出玩家目前的自動操作狀態；玩家不在對局中時送出清除，讓等待回覆的客戶端都能收到結果。
+     *
+     * @param playerId 要求重新送出的玩家 UUID。
+     */
+    fun onAutomaticControlSnapshotRequested(playerId: Uuid) {
+        scope.launch {
+            val tableId = membershipRepository.getVenueId(playerId)
+            if (tableId != null && gameRepository.getTableState(tableId) != null) {
+                automaticControlSnapshotSender.send(tableId, playerId)
+            } else {
+                automaticControlSnapshotSender.clear(playerId)
+            }
+        }
+    }
+
+    /**
      * 依玩家目前的房間歸屬重建他的對局或房間快照——沒有歸屬時代表玩家不在任何桌子上，略過。
      *
      * 只寫入快照倉庫，讓重連後的事件仍帶得出正確內容；把資料送到客戶端是觀察者推送的職責。

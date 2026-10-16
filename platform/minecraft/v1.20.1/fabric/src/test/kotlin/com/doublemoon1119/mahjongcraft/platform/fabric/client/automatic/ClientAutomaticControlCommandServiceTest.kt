@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic
 
+import com.doublemoon1119.mahjongcraft.flow.common.time.MonotonicClock
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlSnapshotDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlUpdateRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlUpdateResultDto
@@ -133,7 +134,7 @@ class ClientAutomaticControlCommandServiceTest {
 
         assertNull(fixture.service.takeCompletion("another-request", "test:auto_win"))
         val completion = fixture.service.takeCompletion(submitted.requestId, "test:auto_win")!!
-        assertEquals(AutomaticControlUpdateResultKindDto.ACCEPTED, completion.result)
+        assertEquals(ClientAutomaticControlResultKind.ACCEPTED, completion.result)
         assertEquals(true, completion.enabled)
         assertNull(fixture.service.takeCompletion(submitted.requestId, "test:auto_win"))
     }
@@ -165,7 +166,13 @@ class ClientAutomaticControlCommandServiceTest {
             val preferenceSender = RecordingPreferenceSender()
             val preferenceService = ClientAutoSortHandPreferenceService(configStore, preferenceSender)
             val roundSender = RecordingRoundSender(roundFailure)
-            val coordinator = ClientAutomaticControlUpdateCoordinator(ClientAutomaticControlStateStore(), roundSender)
+            val coordinator = ClientAutomaticControlUpdateCoordinator(
+                stateStore = ClientAutomaticControlStateStore(),
+                requestSender = roundSender,
+                clock = object : MonotonicClock {
+                    override fun nowMillis(): Long = 0L
+                },
+            )
             block(
                 Fixture(
                     service = ClientAutomaticControlCommandService(preferenceService, coordinator),
@@ -240,5 +247,7 @@ class ClientAutomaticControlCommandServiceTest {
             failure?.let { throw it }
             requests += request
         }
+
+        override fun requestSnapshot() = Unit
     }
 }

@@ -2,7 +2,6 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlSnapshotDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlUpdateRequestDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlUpdateResultKindDto
 
 /**
  * 維護一個設定入口的本局自動操作草稿。
@@ -28,7 +27,7 @@ class ClientAutomaticControlDraftSession(initialSnapshot: AutomaticControlSnapsh
     private var currentStale = false
 
     /** 最近一次配對提交失敗的結果種類。 */
-    private var currentFailure: AutomaticControlUpdateResultKindDto? = null
+    private var currentFailure: ClientAutomaticControlResultKind? = null
 
     /** 提交成功後是否應關閉編輯入口。 */
     private var closeRequested = false
@@ -142,12 +141,12 @@ class ClientAutomaticControlDraftSession(initialSnapshot: AutomaticControlSnapsh
      */
     fun applyCompletion(completion: ClientAutomaticControlCompletion): ClientAutomaticControlDraftCompletion? {
         val pending = currentPendingRequest ?: return null
-        if (completion.result.requestId != pending.requestId || completion.result.gameId != pending.gameId) return null
+        if (completion.requestId != pending.requestId || completion.gameId != pending.gameId) return null
         completion.authoritativeSnapshot
             ?.takeIf { it.gameId == pending.gameId }
             ?.let { latestAuthority = it }
         currentPendingRequest = null
-        val accepted = completion.result.result == AutomaticControlUpdateResultKindDto.ACCEPTED
+        val accepted = completion.result == ClientAutomaticControlResultKind.ACCEPTED
         if (accepted && completion.authoritativeSnapshot?.gameId == pending.gameId) {
             val snapshot = checkNotNull(completion.authoritativeSnapshot)
             currentBaseline = snapshot
@@ -155,8 +154,9 @@ class ClientAutomaticControlDraftSession(initialSnapshot: AutomaticControlSnapsh
             currentStale = false
             currentFailure = null
         } else {
-            currentFailure = completion.result.result
-            currentStale = completion.result.result == AutomaticControlUpdateResultKindDto.STALE ||
+            currentFailure = completion.result
+            currentStale = completion.result == ClientAutomaticControlResultKind.STALE ||
+                completion.result == ClientAutomaticControlResultKind.UNCONFIRMED ||
                 latestAuthority?.revision != currentBaseline?.revision
         }
         val shouldClose = accepted && closeRequested

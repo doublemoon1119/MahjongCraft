@@ -13,6 +13,10 @@ class ClientDecisionPromptStore {
     var prompt: PlayerDecisionPromptDto? = null
         private set
 
+    /** 每收到一次權威 prompt 更新就遞增的序號，包含內容沒有改變的重送；清除時不歸零。 */
+    var updateSequence: Long = 0L
+        private set
+
     /** 已由玩家明確點擊某個帶有選牌需求的動作、正等待點擊實體牌的 decision key。 */
     private var tileSelectionDecisionKey: String? = null
 
@@ -24,6 +28,7 @@ class ClientDecisionPromptStore {
         if (this.prompt?.decisionKey != prompt?.decisionKey) endTileSelection()
         this.gameId = gameId
         this.prompt = prompt
+        updateSequence += 1L
     }
 
     /** 玩家明確點擊帶有選牌需求的動作卡片後，啟用該動作合法候選牌高亮。 */

@@ -1,17 +1,21 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerAutomaticControlSnapshot
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlUpdateRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlUpdateResultKindDto
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AutomaticControlUpdateRejection
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AutomaticControlUpdateUnavailableReason
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.UpdatePlayerAutomaticControlsResult
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import kotlin.uuid.Uuid
 
-/** [AutomaticControlUpdateService] 使用的 Flow result 至線路 DTO 映射測試。 */
+/** [AutomaticControlUpdateService] 使用的 Flow result 至線路 DTO 映射，與套用失敗時的處理測試。 */
 class AutomaticControlUpdateServiceTest {
     /** 請求與回覆共用的測試對局識別碼。 */
     private val gameId = Uuid.random()
@@ -72,5 +76,36 @@ class AutomaticControlUpdateServiceTest {
 
         assertEquals(AutomaticControlUpdateResultKindDto.UNAVAILABLE, dto.result)
         assertNull(dto.snapshot)
+    }
+
+    /** 套用時發生可以隔離的失敗時回報並回傳 null，讓呼叫端仍能回覆無法使用。 */
+    @Test
+    fun `test isolatable update failure is reported as missing result`() = runTest {
+        var reported: Throwable? = null
+
+        val result = updateIsolatingFailures(failurePolicy = ExtensionFailurePolicy.Default, onFailure = { reported = it }) {
+            error("test failure")
+        }
+
+        assertNull(result)
+        assertEquals("test failure", reported?.message)
+    }
+
+    /** 正常結果原樣回傳；協程取消與無法隔離的失敗原樣往外傳。 */
+    @Test
+    fun `test normal results pass through and fatal failures are rethrown`() = runTest {
+        val accepted = UpdatePlayerAutomaticControlsResult.Accepted(snapshot, changed = false)
+
+        assertEquals(accepted, updateIsolatingFailures(failurePolicy = ExtensionFailurePolicy.Default, onFailure = {}) { accepted })
+        assertFailsWith<CancellationException> {
+            updateIsolatingFailures(failurePolicy = ExtensionFailurePolicy.Default, onFailure = {}) {
+                throw CancellationException("test cancellation")
+            }
+        }
+        assertFailsWith<OutOfMemoryError> {
+            updateIsolatingFailures(failurePolicy = ExtensionFailurePolicy.Default, onFailure = {}) {
+                throw OutOfMemoryError("test fatal error")
+            }
+        }
     }
 }

@@ -165,6 +165,14 @@ object MahjongChannels {
         maxPayloadBytes = C2SRateLimits.DECISION_SELECTION_BYTES,
     )
 
+    /** 自動操作更新等不到回覆時，要求伺服器重新送出本人目前的自動操作狀態。 */
+    val requestAutomaticControlSnapshot = C2SChannel(
+        id = "request_automatic_control_snapshot",
+        serializer = Unit.serializer(),
+        rateLimit = C2SRateLimits.snapshotRequest,
+        maxPayloadBytes = C2SRateLimits.SIGNAL_BYTES,
+    )
+
     /** 同步目前決策階段的倒數與操作提示。 */
     val decisionTimerUpdate = S2CChannel("decision_timer_update", DecisionTimerUpdatePayloadDto.serializer())
 

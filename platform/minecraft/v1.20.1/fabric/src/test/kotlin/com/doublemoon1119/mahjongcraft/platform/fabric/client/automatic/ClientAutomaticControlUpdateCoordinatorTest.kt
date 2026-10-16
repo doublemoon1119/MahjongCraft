@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.automatic
 
+import com.doublemoon1119.mahjongcraft.flow.common.time.MonotonicClock
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlSnapshotDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlUpdateRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlUpdateResultDto
@@ -7,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControl
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientAutomaticControlStateStore
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
@@ -90,7 +92,7 @@ class ClientAutomaticControlUpdateCoordinatorTest {
             ),
         )
         val completion = assertNotNull(fixture.coordinator.takeCompletion(request.requestId))
-        assertEquals(AutomaticControlUpdateResultKindDto.ACCEPTED, completion.result.result)
+        assertEquals(ClientAutomaticControlResultKind.ACCEPTED, completion.result)
         assertEquals(acceptedSnapshot, completion.authoritativeSnapshot)
         assertNull(fixture.coordinator.takeCompletion(request.requestId))
         assertNull(fixture.coordinator.takeCompletion("another-request"))
@@ -167,6 +169,154 @@ class ClientAutomaticControlUpdateCoordinatorTest {
         assertNull(fixture.coordinator.takeCompletion(oldRequest.requestId))
     }
 
+    /** 在逾時前收到回覆時不重新同步。 */
+    @Test
+    fun `a reply before the timeout needs no resync`() {
+        val fixture = fixture()
+        fixture.coordinator.applySnapshot(snapshot(supported = setOf("test:auto_a")))
+        val request = submitted(fixture, setOf("test:auto_a"))
+
+        fixture.advance(ClientAutomaticControlUpdateCoordinator.CONFIRMATION_TIMEOUT.inWholeMilliseconds - 1)
+        fixture.coordinator.checkTimeout()
+        assertTrue(fixture.coordinator.applyResult(result(request, AutomaticControlUpdateResultKindDto.ACCEPTED)))
+        fixture.advance(TIMEOUT_AND_RESYNC_MILLIS)
+        fixture.coordinator.checkTimeout()
+
+        assertEquals(0, fixture.sender.snapshotRequests)
+        assertEquals(ClientAutomaticControlResultKind.ACCEPTED, fixture.coordinator.takeCompletion(request.requestId)?.result)
+    }
+
+    /** 請求被丟棄時：逾時後要求一次重新同步，快照版本沒有前進就判定沒有生效，之後可以重新送出。 */
+    @Test
+    fun `dropped update resyncs and reports not applied so it can be resubmitted`() {
+        val fixture = fixture()
+        val authority = snapshot(revision = 4L, supported = setOf("test:auto_a"))
+        fixture.coordinator.applySnapshot(authority)
+        val request = submitted(fixture, setOf("test:auto_a"))
+
+        fixture.advance(ClientAutomaticControlUpdateCoordinator.CONFIRMATION_TIMEOUT.inWholeMilliseconds)
+        fixture.coordinator.checkTimeout()
+
+        assertEquals(1, fixture.sender.snapshotRequests)
+        assertTrue(fixture.coordinator.isResyncing(request.requestId))
+        fixture.coordinator.applySnapshot(authority)
+        val completion = assertNotNull(fixture.coordinator.takeCompletion(request.requestId))
+        assertEquals(ClientAutomaticControlResultKind.NOT_APPLIED, completion.result)
+        assertNull(fixture.coordinator.pendingRequest())
+        val retry = submitted(fixture, setOf("test:auto_a"))
+        assertEquals(4L, retry.expectedRevision)
+    }
+
+    /** 請求其實已生效、只是回覆沒有送到時：重新同步看到請求的內容就判定接受，不重送，晚到的回覆也不會再建立完成事件。 */
+    @Test
+    fun `update applied without a reply is accepted after resync`() {
+        val fixture = fixture()
+        val authority = snapshot(revision = 4L, supported = setOf("test:auto_a"))
+        fixture.coordinator.applySnapshot(authority)
+        val request = submitted(fixture, setOf("test:auto_a"))
+        fixture.advance(ClientAutomaticControlUpdateCoordinator.CONFIRMATION_TIMEOUT.inWholeMilliseconds)
+        fixture.coordinator.checkTimeout()
+
+        val applied = authority.copy(revision = 5L, enabledControlIds = setOf("test:auto_a"))
+        fixture.coordinator.applySnapshot(applied)
+
+        val completion = assertNotNull(fixture.coordinator.takeCompletion(request.requestId))
+        assertEquals(ClientAutomaticControlResultKind.ACCEPTED, completion.result)
+        assertEquals(applied, completion.authoritativeSnapshot)
+        assertEquals(listOf(request), fixture.sender.requests)
+        assertFalse(fixture.coordinator.applyResult(result(request, AutomaticControlUpdateResultKindDto.ACCEPTED, applied)))
+        assertNull(fixture.coordinator.takeCompletion(request.requestId))
+    }
+
+    /** 重新同步發現狀態被其他變更取代時判定過期。 */
+    @Test
+    fun `resync that finds other changes reports stale`() {
+        val fixture = fixture()
+        val authority = snapshot(revision = 4L, supported = setOf("test:auto_a", "test:auto_b"))
+        fixture.coordinator.applySnapshot(authority)
+        val request = submitted(fixture, setOf("test:auto_a"))
+        fixture.advance(ClientAutomaticControlUpdateCoordinator.CONFIRMATION_TIMEOUT.inWholeMilliseconds)
+        fixture.coordinator.checkTimeout()
+
+        fixture.coordinator.applySnapshot(authority.copy(revision = 5L, enabledControlIds = setOf("test:auto_b")))
+
+        assertEquals(ClientAutomaticControlResultKind.STALE, fixture.coordinator.takeCompletion(request.requestId)?.result)
+    }
+
+    /** 重新同步期間晚到的較舊快照不結束等待；之後收到的回應以最新權威狀態判斷，完成結果附上同一份狀態。 */
+    @Test
+    fun `older snapshot during resync is ignored and the response is judged by the latest authority`() {
+        val fixture = fixture()
+        val authority = snapshot(revision = 4L, supported = setOf("test:auto_a"))
+        fixture.coordinator.applySnapshot(authority)
+        val request = submitted(fixture, setOf("test:auto_a"))
+        val applied = authority.copy(revision = 5L, enabledControlIds = setOf("test:auto_a"))
+        fixture.coordinator.applySnapshot(applied)
+        fixture.advance(ClientAutomaticControlUpdateCoordinator.CONFIRMATION_TIMEOUT.inWholeMilliseconds)
+        fixture.coordinator.checkTimeout()
+
+        fixture.coordinator.applySnapshot(authority)
+
+        assertEquals(request, fixture.coordinator.pendingRequest())
+        assertNull(fixture.coordinator.takeCompletion(request.requestId))
+        fixture.coordinator.applySnapshot(applied)
+        val completion = assertNotNull(fixture.coordinator.takeCompletion(request.requestId))
+        assertEquals(ClientAutomaticControlResultKind.ACCEPTED, completion.result)
+        assertEquals(applied, completion.authoritativeSnapshot)
+    }
+
+    /** 重新同步也沒有回應時，只要求一次並在期限後結束等待，回報無法確認。 */
+    @Test
+    fun `resync without any snapshot ends the wait as unconfirmed`() {
+        val fixture = fixture()
+        fixture.coordinator.applySnapshot(snapshot(supported = setOf("test:auto_a")))
+        val request = submitted(fixture, setOf("test:auto_a"))
+
+        fixture.advance(ClientAutomaticControlUpdateCoordinator.CONFIRMATION_TIMEOUT.inWholeMilliseconds)
+        fixture.coordinator.checkTimeout()
+        fixture.advance(ClientAutomaticControlUpdateCoordinator.RESYNC_LIMIT.inWholeMilliseconds - 1)
+        fixture.coordinator.checkTimeout()
+        assertNotNull(fixture.coordinator.pendingRequest())
+        fixture.advance(1)
+        fixture.coordinator.checkTimeout()
+        fixture.advance(TIMEOUT_AND_RESYNC_MILLIS)
+        fixture.coordinator.checkTimeout()
+
+        assertEquals(1, fixture.sender.snapshotRequests)
+        assertNull(fixture.coordinator.pendingRequest())
+        assertEquals(ClientAutomaticControlResultKind.UNCONFIRMED, fixture.coordinator.takeCompletion(request.requestId)?.result)
+    }
+
+    /** 舊請求的回覆比新請求晚到時不影響新請求，新請求的逾時從它自己送出時開始計算。 */
+    @Test
+    fun `late reply to an earlier request does not affect a newer request`() {
+        val fixture = fixture()
+        val authority = snapshot(revision = 4L, supported = setOf("test:auto_a"))
+        fixture.coordinator.applySnapshot(authority)
+        val first = submitted(fixture, setOf("test:auto_a"))
+        fixture.advance(ClientAutomaticControlUpdateCoordinator.CONFIRMATION_TIMEOUT.inWholeMilliseconds)
+        fixture.coordinator.checkTimeout()
+        fixture.coordinator.applySnapshot(authority)
+        val second = submitted(fixture, setOf("test:auto_a"))
+
+        assertFalse(fixture.coordinator.applyResult(result(first, AutomaticControlUpdateResultKindDto.REJECTED)))
+        fixture.advance(ClientAutomaticControlUpdateCoordinator.CONFIRMATION_TIMEOUT.inWholeMilliseconds - 1)
+        fixture.coordinator.checkTimeout()
+
+        assertEquals(second, fixture.coordinator.pendingRequest())
+        assertFalse(fixture.coordinator.isResyncing(second.requestId))
+        assertEquals(1, fixture.sender.snapshotRequests)
+    }
+
+    /**
+     * 送出並取回成功送出的請求。
+     *
+     * @param fixture 使用中的測試 fixture。
+     * @param enabled 要啟用的控制項。
+     * @return 已送出的請求。
+     */
+    private fun submitted(fixture: Fixture, enabled: Set<String>): AutomaticControlUpdateRequestDto = assertIs<ClientAutomaticControlSubmitResult.Submitted>(fixture.coordinator.submit(enabled)).request
+
     /**
      * 建立隔離的 coordinator 與記錄型 sender。
      *
@@ -175,9 +325,11 @@ class ClientAutomaticControlUpdateCoordinatorTest {
      */
     private fun fixture(sendFailure: RuntimeException? = null): Fixture {
         val sender = RecordingSender(sendFailure)
+        val clock = MutableClock()
         return Fixture(
-            coordinator = ClientAutomaticControlUpdateCoordinator(ClientAutomaticControlStateStore(), sender),
+            coordinator = ClientAutomaticControlUpdateCoordinator(ClientAutomaticControlStateStore(), sender, clock),
             sender = sender,
+            clock = clock,
         )
     }
 
@@ -221,11 +373,30 @@ class ClientAutomaticControlUpdateCoordinatorTest {
      *
      * @property coordinator 受測的本局更新協調器。
      * @property sender 記錄送出要求的替身。
+     * @property clock 測試控制的客戶端時間。
      */
     private data class Fixture(
         val coordinator: ClientAutomaticControlUpdateCoordinator,
         val sender: RecordingSender,
-    )
+        val clock: MutableClock,
+    ) {
+        /**
+         * 讓客戶端時間前進。
+         *
+         * @param millis 前進的毫秒數。
+         */
+        fun advance(millis: Long) {
+            clock.now += millis
+        }
+    }
+
+    /** 測試控制的客戶端時間。 */
+    private class MutableClock : MonotonicClock {
+        /** 目前時間，單位為毫秒。 */
+        var now = 0L
+
+        override fun nowMillis(): Long = now
+    }
 
     /**
      * 記錄請求並可模擬同步傳送失敗。
@@ -236,10 +407,24 @@ class ClientAutomaticControlUpdateCoordinatorTest {
         /** 已成功交給 sender 的請求。 */
         val requests = mutableListOf<AutomaticControlUpdateRequestDto>()
 
+        /** 要求重新同步的次數。 */
+        var snapshotRequests = 0
+
         /** 記錄 [request]，或拋出測試指定的錯誤。 */
         override fun send(request: AutomaticControlUpdateRequestDto) {
             failure?.let { throw it }
             requests += request
         }
+
+        override fun requestSnapshot() {
+            snapshotRequests += 1
+        }
+    }
+
+    private companion object {
+        /** 逾時與重新同步期限加總後再多一段的時間，用來確認之後不會再有任何動作。 */
+        val TIMEOUT_AND_RESYNC_MILLIS = (
+            ClientAutomaticControlUpdateCoordinator.CONFIRMATION_TIMEOUT + ClientAutomaticControlUpdateCoordinator.RESYNC_LIMIT
+            ).inWholeMilliseconds * 2
     }
 }

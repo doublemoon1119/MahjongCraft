@@ -65,7 +65,7 @@ class ClientAutomaticControlCommandService(
     fun takeCompletion(requestId: String, controlId: String): ClientAutomaticControlCommandCompletion? {
         val completion = updateCoordinator.takeCompletion(requestId) ?: return null
         return ClientAutomaticControlCommandCompletion(
-            result = completion.result.result,
+            result = completion.result,
             enabled = completion.authoritativeSnapshot?.enabledControlIds?.contains(controlId),
         )
     }
@@ -77,6 +77,14 @@ class ClientAutomaticControlCommandService(
      * @return 目前待處理請求與識別碼相符時為 true。
      */
     fun isPending(requestId: String): Boolean = updateCoordinator.pendingRequest()?.requestId == requestId
+
+    /**
+     * 檢查指定請求是否因為等不到回覆而正在重新同步。
+     *
+     * @param requestId 要查詢的請求識別碼。
+     * @return 該請求仍待處理且正在重新同步時為 true。
+     */
+    fun isResyncing(requestId: String): Boolean = updateCoordinator.isResyncing(requestId)
 
     /**
      * 更新永久自動理牌偏好，並轉換成指令處理結果。

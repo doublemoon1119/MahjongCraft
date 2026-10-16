@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTile
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.MahjongTileSelectionConfirmEntityRenderer
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.MatchingTileHighlightController
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.time.PauseAwareClientMonotonicClock
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileSelectionConfirmEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
@@ -21,6 +22,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisio
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSelectionDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSelectionKindDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSubmissionResultDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
@@ -49,6 +51,7 @@ import kotlin.uuid.toKotlinUuid
  * @property playerNames 共用真人普通名稱與 AI 名稱解析器。
  * @property decisionTexts 規則提供的動作文字解析器。
  * @property json 決策提交的封包序列化設定。
+ * @param clock 判斷提交等待確認多久的客戶端時間。
  */
 class PlayerDecisionHudController(
     private val timerStore: ClientDecisionTimerStateStore,
@@ -62,6 +65,7 @@ class PlayerDecisionHudController(
     private val playerNames: ClientPlayerDisplayNameResolver,
     val decisionTexts: DecisionTextResolver,
     private val json: NetworkJson,
+    clock: PauseAwareClientMonotonicClock,
 ) {
     /**
      * 使用共用名稱來源解析決策的真人來源，不另行查詢外部服務。
@@ -81,7 +85,7 @@ class PlayerDecisionHudController(
     private val tileSelection = DecisionTileSelectionState()
 
     /** 尚待伺服器 ACK 或後續權威 timer 更新確認的最終提交。 */
-    private val submissionTracker = DecisionSubmissionTracker()
+    private val submissionTracker = DecisionSubmissionTracker(clock)
 
     /** 註冊 client tick、實體互動及聊天層前方的 HUD renderer bridge。 */
     fun registerEvents() {
@@ -358,16 +362,16 @@ class PlayerDecisionHudController(
         val prompt = promptStore.prompt
         if (prompt == null) {
             if (client.currentScreen is PlayerDecisionScreen) client.setScreen(null)
-            submissionTracker.applyAuthoritativeDecision(null)
+            submissionTracker.applyAuthoritativeDecision(null, promptStore.updateSequence)
             dismissedDecisionKey = null
             openedDecisionKey = null
             clearLocalDecisionState()
             return
         }
-        if (submissionTracker.isPending() && !submissionTracker.isPending(prompt.decisionKey)) {
-            submissionTracker.applyAuthoritativeDecision(prompt.decisionKey)
-            clearLocalDecisionState()
-        }
+        val pendingForOtherDecision = submissionTracker.isPending() && !submissionTracker.isPending(prompt.decisionKey)
+        submissionTracker.applyAuthoritativeDecision(prompt.decisionKey, promptStore.updateSequence)
+        if (pendingForOtherDecision) clearLocalDecisionState()
+        applySubmissionTimeout(client)
         tileSelection.syncTo(prompt.decisionKey, promptStore.isTileSelectionActive())
         val openScreen = client.currentScreen as? PlayerDecisionScreen
         if (openScreen != null && openScreen.decisionKey != prompt.decisionKey) {
@@ -379,6 +383,21 @@ class PlayerDecisionHudController(
         openedDecisionKey = prompt.decisionKey
         dismissedDecisionKey = null
         client.setScreen(PlayerDecisionScreen(prompt, timerStore.state?.phase?.isReaction == true, this))
+    }
+
+    /**
+     * 提交一直沒有收到確認時提示玩家；解除鎖定後讓操作介面恢復可選。
+     *
+     * @param client 目前客戶端。
+     */
+    private fun applySubmissionTimeout(client: MinecraftClient) {
+        val messageKey = when (submissionTracker.checkTimeout()) {
+            TimeoutEffect.NONE -> return
+            TimeoutEffect.RESYNCING -> MinecraftMessageKeys.DECISION_CONFIRMATION_RESYNCING
+            TimeoutEffect.UNLOCKED -> MinecraftMessageKeys.DECISION_CONFIRMATION_RETRY
+        }
+        client.player?.sendMessage(Text.translatable(messageKey), true)
+        (client.currentScreen as? PlayerDecisionScreen)?.refreshSubmissionState()
     }
 
     /** 清除只屬於上一個 decision 的本機互動狀態。 */

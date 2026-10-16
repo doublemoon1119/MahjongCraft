@@ -60,6 +60,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjon
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricHandSortCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricTileLabelCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.MatchingTileHighlightController
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.time.PauseAwareClientMonotonicClock
 import com.doublemoon1119.mahjongcraft.platform.fabric.item.MahjongScoringStickItem
 import com.doublemoon1119.mahjongcraft.platform.fabric.item.toModelPredicateValue
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
@@ -86,6 +87,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRe
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
 import net.fabricmc.api.ClientModInitializer
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.model.loading.v1.PreparableModelLoadingPlugin
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
 import net.fabricmc.fabric.api.client.rendering.v1.BuiltinItemRendererRegistry
@@ -284,6 +286,8 @@ class MahjongCraftModClient : ClientModInitializer {
             json,
             automaticControlUpdateCoordinator::applyResult,
         )
+        koin.get<PauseAwareClientMonotonicClock>().registerEvents()
+        ClientTickEvents.END_CLIENT_TICK.register { automaticControlUpdateCoordinator.checkTimeout() }
         EntityRendererRegistry.register(ModEntities.mahjongDice, ::MahjongDiceEntityRenderer)
         EntityRendererRegistry.register(ModEntities.mahjongSoundTimeline, ::MahjongSoundTimelineEntityRenderer)
         EntityRendererRegistry.register(ModEntities.mahjongStoolSeat, ::MahjongStoolSeatEntityRenderer)

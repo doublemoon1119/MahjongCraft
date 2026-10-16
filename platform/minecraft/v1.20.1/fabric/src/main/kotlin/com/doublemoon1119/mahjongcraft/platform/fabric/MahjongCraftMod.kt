@@ -369,7 +369,7 @@ class MahjongCraftMod : ModInitializer {
     }
 
     /**
-     * 接收本局自動操作集合更新，只使用連線玩家身分並回覆可配對的權威結果。
+     * 接收本局自動操作集合更新，只使用連線玩家身分並回覆可配對的權威結果；也接收等不到回覆時的重新同步要求。
      *
      * @param koin 目前 Fabric runtime 的依賴容器。
      */
@@ -377,12 +377,18 @@ class MahjongCraftMod : ModInitializer {
         val json = koin.get<NetworkJson>()
         val service = koin.get<AutomaticControlUpdateService>()
         val scope = koin.get<AppCoroutineScope>()
+        val lifecycleService = koin.get<PlayerConnectionLifecycleService>()
+        val dataStatus = koin.get<FabricMahjongDataStatus>()
         MahjongChannels.automaticControlUpdate.registerServerReceiver(json) { _, player, request ->
             scope.launch {
                 service(player.uuid.toKotlinUuid(), request)?.let { result ->
                     MahjongChannels.automaticControlUpdateResult.sendTo(player, json, result)
                 }
             }
+        }
+        MahjongChannels.requestAutomaticControlSnapshot.registerServerReceiver(json) { _, player, _ ->
+            if (!dataStatus.isMahjongAvailable) return@registerServerReceiver
+            lifecycleService.onAutomaticControlSnapshotRequested(player.uuid.toKotlinUuid())
         }
     }
 }

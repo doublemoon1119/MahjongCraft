@@ -23,6 +23,15 @@ object MinecraftClientConfigScreenKeys {
     /** 本局控制草稿因權威狀態更新而過期。 */
     const val AUTOMATIC_STALE: String = "mahjongcraft.client_config.automatic.stale"
 
+    /** 等不到伺服器確認，正在重新同步。 */
+    const val AUTOMATIC_RESYNCING: String = "mahjongcraft.client_config.automatic.resyncing"
+
+    /** 重新同步確認更新沒有生效，可以再套用一次。 */
+    const val AUTOMATIC_NOT_APPLIED: String = "mahjongcraft.client_config.automatic.not_applied"
+
+    /** 無法確認更新是否生效，需要復原載入最新狀態。 */
+    const val AUTOMATIC_UNCONFIRMED: String = "mahjongcraft.client_config.automatic.unconfirmed"
+
     /** HUD 類別。 */
     const val CATEGORY_HUD: String = "mahjongcraft.client_config.category.hud"
 
