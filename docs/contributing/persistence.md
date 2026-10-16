@@ -12,7 +12,8 @@ Classify a format before changing it, and follow that class's compatibility stra
   migrations, one per version step. Data from an unknown newer version, or a gap in the migration chain, is
   rejected loudly: the world still loads, the features that depend on the data are disabled for that session,
   every write to the empty state is refused, the original file is left untouched, and administrators are told
-  which file failed, the likely cause and how to recover. Never treat state you cannot understand as empty state.
+  which file failed, the likely cause and how to recover. Never treat state you cannot understand as
+  empty state.
 - **Owned by the player and must survive**: keep field names stable and keep reading the previous shape until
   a migration exists. Add a version field at the first change that alters the meaning of an existing field
   rather than in advance.
@@ -23,15 +24,16 @@ Classify a format before changing it, and follow that class's compatibility stra
 
 Rules that apply to all of them:
 
-- **Stored JSON never uses the network format.** Formats owned by the persistence format module encode and decode
-  with its `persistenceJson`; platform-owned stored JSON, such as entity data, keeps its own fixed settings beside its
-  codec. Network messages use `NetworkJson`, the only JSON format in the dependency container, and its settings must
-  not shape stored data. Changing the settings of a stored format changes the data it writes.
+- **Stored JSON never uses the network format.** Formats owned by the persistence format module encode and
+  decode with its `persistenceJson`; platform-owned stored JSON, such as entity data, keeps its own fixed
+  settings beside its codec. Network messages use `NetworkJson`, the only JSON format in the dependency
+  container, and its settings must not shape stored data. Changing the settings of a stored format changes the
+  data it writes.
 - **Enums are persisted by name.** An ordinal silently changes meaning when the enum is reordered, which turns
-  stored data into wrong data instead of missing data. Add a legacy reader only when compatibility with a released
-  format is required.
-- **Raise a version only for a real incompatibility**: a renamed, split, retyped, or re-meaning field. Adding a
-  field that older defaults already cover is not a reason to raise it. Configuration files stay version free
+  stored data into wrong data instead of missing data. Add a legacy reader only when compatibility with a
+  released format is required.
+- **Raise a version only for a real incompatibility**: a renamed, split, retyped, or re-meaning field. Adding
+  a field that older defaults already cover is not a reason to raise it. Configuration files stay version free
   while field names and defaults keep them compatible.
 - **Migrations stay consecutive.** Each migration converts exactly one version to the next; do not collapse
   several steps into one function, and do not skip versions.

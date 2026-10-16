@@ -21,10 +21,10 @@ kind of change you are making; the rules in them apply even when this file does 
   `docs/temp/` references (see Temp File Management).
 - If it fails on ktlint violations, run `./gradlew ktlintFormat` to auto-fix them instead of fixing
   them by hand.
-- Run `./gradlew detektAll` before committing. It runs detekt with type resolution, limited to the rules enabled
-  in `config/detekt/detekt.yml` (KDoc layout, unnecessary fully qualified names and unused private declarations). `build` does not
-  run detekt, and detekt does not auto-fix; fix the reported code, or suppress an intentional exception at the
-  declaration with `@Suppress("RuleName")` and a comment stating the reason.
+- Run `./gradlew detektAll` before committing. It runs detekt with type resolution, limited to the rules
+  enabled in `config/detekt/detekt.yml` (KDoc layout, unnecessary fully qualified names and unused private
+  declarations). `build` does not run detekt, and detekt does not auto-fix; fix the reported code, or suppress
+  an intentional exception at the declaration with `@Suppress("RuleName")` and a comment stating the reason.
 - `./gradlew build` also verifies the Minecraft language files (`platform/minecraft/common/.../lang/`)
   are sorted by translation key. If it fails, run `./gradlew sortMinecraftLangFiles` to auto-fix instead
   of reordering entries by hand. This check reads that fixed directory directly and always runs
@@ -67,7 +67,8 @@ kind of change you are making; the rules in them apply even when this file does 
 
 ## Temp File Management
 
-- All temporary instructions, logic drafts, or one-shot prompt files generated during development must be placed under `docs/temp/`.
+- All temporary instructions, logic drafts, or one-shot prompt files generated during development must be
+  placed under `docs/temp/`.
 - Do not create non-code `.md` files directly in the project root or `src/` directory.
 - The `docs/temp/` directory is listed in `.gitignore` and will not be tracked by git.
 - Never cite a `docs/temp/` file from a source comment — it won't exist for anyone who clones the
