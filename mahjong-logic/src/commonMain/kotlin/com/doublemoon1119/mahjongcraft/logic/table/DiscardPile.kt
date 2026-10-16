@@ -60,6 +60,13 @@ interface DiscardPile<T : DiscardPile.DiscardEntry> {
         val isTaken: Boolean = false,
     ) {
         /**
+         * 這張捨牌帶有的公開標記 ID，例如日麻的立直宣告牌；沒有標記時為空集合。
+         *
+         * 標記為所有玩家可見的資訊，牌譜依此保存並在回放中顯示。ID 帶命名空間，顯示名稱由平台另行登記。
+         */
+        open val publicMarkerIds: Set<String> get() = emptySet()
+
+        /**
          * 回傳一份 [isTaken] 為 true 的複本。
          *
          * 子類別若擴充了額外欄位，應覆寫此方法以保留這些欄位。

@@ -10,7 +10,6 @@ import com.doublemoon1119.mahjongcraft.extension.MahjongExtensionRegistrar
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistryImpl
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRegistries
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.HistoryReplayProjectionRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.emptyPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
@@ -72,7 +71,6 @@ class BundledMahjongExtensionsTest {
         assertTrue(riichi.ids("mahjongcraft:persistence_dto").any { "riichi/player_state" in it })
         assertTrue(taiwan.ids("mahjongcraft:persistence_dto").all { "taiwan" in it })
         assertTrue(taiwan.ids("mahjongcraft:network_dto").all { "taiwan" in it })
-        assertEquals(listOf("mahjongcraft:taiwan/discard_pile"), taiwan.ids("mahjongcraft:history_replay_discard"))
     }
 
     /**
@@ -91,7 +89,6 @@ class BundledMahjongExtensionsTest {
             tileTypeRegistry = TileTypeRegistryImpl(),
             networkRegistries = DefaultNetworkDtoRegistries(),
             persistenceRegistries = emptyPersistenceRegistries(),
-            historyReplayProjectionRegistry = HistoryReplayProjectionRegistry(),
             winCelebrationCueResolverRegistry = WinCelebrationCueResolverRegistryImpl(),
             gameActionAiRegistry = ExtensionGameActionAiRegistry(moduleRegistry),
             aiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = RandomAiStrategy.KEY),

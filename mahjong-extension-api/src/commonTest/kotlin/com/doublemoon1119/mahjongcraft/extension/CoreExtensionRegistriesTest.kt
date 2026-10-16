@@ -8,11 +8,8 @@ import com.doublemoon1119.mahjongcraft.ai.expectation.NeutralOpponentModel
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelDefinition
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.bundled.BundledRiichiExtension
-import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistryImpl
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRegistries
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.HistoryReplayProjectionDefinition
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.HistoryReplayProjectionRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
@@ -45,13 +42,6 @@ class CoreExtensionRegistriesTest {
         }
         assertFailsWith<IllegalStateException> {
             registries.opponentModelRegistry.register(OpponentModelDefinition("example:late") { _, depth -> NeutralOpponentModel(depth) })
-        }
-        assertFailsWith<IllegalStateException> {
-            registries.historyReplayProjectionRegistry.register(
-                definition = HistoryReplayProjectionDefinition.Action("example:late") { _, _ ->
-                    HistoryReplayFact.Opaque("example:late")
-                },
-            )
         }
     }
 
@@ -87,36 +77,12 @@ class CoreExtensionRegistriesTest {
         )
     }
 
-    /** 驗證歷史投影 registry 的分類 key 會出現在診斷快照差異中。 */
-    @Test
-    fun `registration snapshot tracks history replay projections`() {
-        val registries = registries()
-        val before = registries.registrationSnapshot()
-        registries.historyReplayProjectionRegistry.register(
-            definition = HistoryReplayProjectionDefinition.Action("example:action") { _, _ ->
-                HistoryReplayFact.Opaque("example:action")
-            },
-        )
-
-        assertEquals(
-            listOf(
-                ExtensionRegistrationCategory(
-                    "mahjongcraft:history_replay_action",
-                    "History Replay Action",
-                    listOf("example:action"),
-                ),
-            ),
-            before.additionsSince(registries.registrationSnapshot()),
-        )
-    }
-
     /** 所有子 registry 皆為空的測試集合。 */
     private fun registries(): CoreExtensionRegistries = CoreExtensionRegistries(
         moduleRegistry = MahjongModuleRegistryImpl(),
         tileTypeRegistry = TileTypeRegistryImpl(),
         networkRegistries = DefaultNetworkDtoRegistries(),
         persistenceRegistries = bundledPersistenceRegistries(),
-        historyReplayProjectionRegistry = HistoryReplayProjectionRegistry(),
         winCelebrationCueResolverRegistry = WinCelebrationCueResolverRegistryImpl(),
         gameActionAiRegistry = ExtensionGameActionAiRegistry(MahjongModuleRegistryImpl()),
         aiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = RandomAiStrategy.KEY),

@@ -5,7 +5,6 @@ import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.HistoryReplayProjectionRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
@@ -74,13 +73,6 @@ interface MahjongExtension {
      * @param registries 提供各 persistence DTO 類型 mapper 登記入口的 registry 集合。
      */
     fun registerPersistenceDtos(registries: PersistenceRegistries)
-
-    /**
-     * 登記對局歷史公開投影的必要轉換器與可選規則資訊。
-     *
-     * @param registry 用於登記歷史投影轉換器與規則資訊解析器的 registry。
-     */
-    fun registerHistoryReplayProjections(registry: HistoryReplayProjectionRegistry) = Unit
 
     /**
      * 登記規則擴充動作供 AI 建立命令的 handler；handler 被呼叫時會拿到這一局的規則模組。

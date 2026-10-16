@@ -2,7 +2,6 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.stress
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.HistoryReplayProjectionRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.generation.HeadlessStepTimer
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
@@ -37,14 +36,12 @@ import kotlin.time.TimeSource
  * @property dispatchers 背景工作使用的 dispatcher。
  * @property moduleRegistry 封存 Replay 時解析規則用。
  * @property locations 封存 Replay 時解析場地用。
- * @property replayProjectionRegistry 封存 Replay 的投影 registry。
  */
 class StressTestEnvironmentFactory(
     private val registries: PersistenceRegistries,
     private val dispatchers: CoroutineDispatchers,
     private val moduleRegistry: MahjongModuleRegistry,
     private val locations: TableLocationRegistry,
-    private val replayProjectionRegistry: HistoryReplayProjectionRegistry,
 ) {
     private val logger = mahjongCraftLogger(StressTestEnvironmentFactory::class)
 
@@ -100,7 +97,6 @@ class StressTestEnvironmentFactory(
             locations = locations,
             configState = MinecraftServerConfigState(MinecraftServerConfig(history = STRESS_HISTORY_CONFIG)),
             retentionCoordinator = retention,
-            replayProjectionRegistry = replayProjectionRegistry,
             observer = writerTimer,
         )
         val sink = StressHistorySink.Database(writer, path)

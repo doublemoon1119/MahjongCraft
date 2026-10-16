@@ -9,7 +9,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryWriterStage
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.SqliteHistoryDatabase
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.buildTestHistoryReplayProjectionRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledHeadlessHistoryRegistries
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
@@ -176,7 +175,6 @@ class StressTestEnvironmentTest {
         dispatchers = TestDispatchers,
         moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() },
         locations = TableLocationRegistry(),
-        replayProjectionRegistry = buildTestHistoryReplayProjectionRegistry(),
     )
 
     /** 測試使用的 dispatcher 集合。 */

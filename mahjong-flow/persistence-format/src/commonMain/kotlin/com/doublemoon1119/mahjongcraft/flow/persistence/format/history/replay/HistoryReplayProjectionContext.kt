@@ -3,13 +3,13 @@ package com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryTileReference
 
 /**
- * 擴充解碼器的受限上下文；不能存取或修改權威遊戲。
+ * 回放讀取的受限上下文，驗證局內牌與座位索引並扣除工作預算。
  *
  * @property budget 本次讀取的共用工作預算。
  * @property tileCount 截至目前位置已宣告的實體牌數。
  * @property seatCount header 玩家數。
  */
-class HistoryReplayProjectionContext internal constructor(
+internal class HistoryReplayProjectionContext(
     private val budget: ReplayReadBudget,
     private val tileCount: Int,
     private val seatCount: Int,

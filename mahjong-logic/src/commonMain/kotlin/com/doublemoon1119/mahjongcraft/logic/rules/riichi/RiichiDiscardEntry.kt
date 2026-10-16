@@ -17,5 +17,8 @@ class RiichiDiscardEntry(
     val isRiichi: Boolean = false,
     isTaken: Boolean = false,
 ) : DiscardPile.DiscardEntry(tile, isTaken) {
+    override val publicMarkerIds: Set<String>
+        get() = if (isRiichi) setOf(RiichiHistoryDiscardMarkerIds.RIICHI_DECLARED) else emptySet()
+
     override fun withTaken(): RiichiDiscardEntry = RiichiDiscardEntry(tile, isRiichi, isTaken = true)
 }

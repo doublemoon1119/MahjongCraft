@@ -13,6 +13,10 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toPersistenc
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryOutboxEventPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
+import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -87,15 +91,20 @@ object CompactReplayCodec {
     /**
      * 將完整對局編碼為局內牌索引、玩家座位索引與逐交易投影差異。
      *
+     * 牌河與移出手牌的牌以不分規則的格式保存，讀取時不需要規則專屬的轉換。
+     *
      * @param events 同一場對局的完整權威事件。
      * @param mapper 將權威事件轉為持久化 DTO 的映射器。
      * @param registries 將桌況與牌種轉為持久化資料所需的註冊表。
+     * @param setAsideTiles 取得每位玩家移出手牌、公開擺在桌上的牌，通常是這場對局規則模組的
+     *   [MahjongRuleModule.setAsideTiles]。
      * @return 不包含逐張牌 UUID 的精簡 Replay 文件。
      */
     fun encodeCompact(
         events: List<HistoryOutboxEvent>,
         mapper: HistoryRecordingPersistenceMapper,
         registries: PersistenceRegistries,
+        setAsideTiles: (MahjongPlayer) -> List<IdentifiedTile>,
     ): JsonObject {
         require(events.isNotEmpty()) { "Replay requires at least one history event" }
         validateDomainEvents(events)
@@ -155,7 +164,12 @@ object CompactReplayCodec {
                         }
                         val openingIndex = createRoundIndex(openingState, typeDictionary, registries.replayCompactTypeKeys)
                         roundIndex = openingIndex
-                        rounds += MutableRound(rounds.size + 1, openingIndex.tileTypes.toList(), project(openingState, openingIndex, registries), mutableListOf())
+                        rounds += MutableRound(
+                            number = rounds.size + 1,
+                            tileTypes = openingIndex.tileTypes.toList(),
+                            initial = project(openingState, openingIndex, registries, setAsideTiles),
+                            transactions = mutableListOf(),
+                        )
                         parts[ReplayFormatKeys.ROUND_OPENING] = JsonPrimitive(true)
                         openedRound = true
                     }
@@ -187,7 +201,7 @@ object CompactReplayCodec {
             if (facts.isNotEmpty()) putFacts(parts, facts, index, factTypes, actionTypes)
             val round = rounds.last()
             if (tableChanged) {
-                val after = project(state, index, registries)
+                val after = project(state, index, registries, setAsideTiles)
                 val before = if (openedRound) round.initial else round.replayed
                 val delta = JsonDelta.diff(before, after)
                 val patch = delta?.let { FlatPatchCodec.encode(it, patchPaths) }
@@ -440,27 +454,51 @@ object CompactReplayCodec {
     }
 
     /**
-     * 將桌況只保留可查閱的遊戲內容，排除實體布局與動作歷史。
+     * 將桌況只保留可查閱的遊戲內容，排除實體布局、動作歷史與規則狀態。
+     *
+     * 規則自己格式的牌河改為不分規則的牌河清單，移出手牌的牌另列一份清單，讀取端不需要規則專屬的轉換。
      *
      * @param state 待投影的權威桌況。
      * @param index 本局牌與玩家的索引。
      * @param registries 桌況 DTO 編碼所需的擴充 registry。
+     * @param setAsideTiles 取得每位玩家移出手牌的牌。
      * @return 已將牌與玩家參照轉為索引的內容投影。
      */
-    private fun project(state: TableState, index: RoundIndex, registries: PersistenceRegistries): JsonElement {
+    private fun project(
+        state: TableState,
+        index: RoundIndex,
+        registries: PersistenceRegistries,
+        setAsideTiles: (MahjongPlayer) -> List<IdentifiedTile>,
+    ): JsonElement {
         val encoded = persistenceJson.encodeToJsonElement(state.toPersistenceDto(registries.ruleConfigs, registries.discardPiles, registries.playerRuleStates, registries.dynamicRuleStates, registries.exhaustiveDrawReasons, registries.extensionGameActions)).jsonObject
-        val gameplay = encoded.filterKeys { it !in setOf(ReplaySourceKeys.ID, ReplaySourceKeys.CONFIG, ReplaySourceKeys.PHYSICAL_WALL_LAYOUT) }.toMutableMap()
+        val gameplay = encoded.filterKeys { it !in PROJECTION_EXCLUDED_TABLE_KEYS }.toMutableMap()
+        val encodedPlayers = encoded[ReplayFormatKeys.PLAYERS] as JsonArray
+        require(encodedPlayers.size == state.players.size) { "Replay player projection does not match the table" }
         gameplay[ReplayFormatKeys.PLAYERS] = JsonArray(
-            (encoded[ReplayFormatKeys.PLAYERS] as JsonArray).map { player ->
-                JsonObject(
-                    (player as JsonObject).filterKeys {
-                        it !in setOf(ReplaySourceKeys.ID, ReplaySourceKeys.AI_STRATEGY_KEY, ReplaySourceKeys.ACTION_HISTORY)
-                    },
-                )
+            encodedPlayers.zip(state.players) { encodedPlayer, player ->
+                val projected = (encodedPlayer as JsonObject).filterKeys { it !in PROJECTION_EXCLUDED_PLAYER_KEYS }.toMutableMap()
+                projected[ReplayFormatKeys.DISCARDS] = JsonArray(player.discardPile.entries.map(::projectDiscard))
+                projected[ReplayFormatKeys.SET_ASIDE_TILES] = JsonArray(setAsideTiles(player).map { JsonPrimitive(it.id.toString()) })
+                JsonObject(projected)
             },
         )
         return translate(JsonObject(gameplay), index)
     }
+
+    /**
+     * 將一張捨牌轉成不分規則的牌河項目；未鳴走與沒有標記時省略對應欄位。
+     *
+     * @param entry 規則的捨牌紀錄。
+     * @return 以牌 UUID 參照牌的牌河項目，之後由 [translate] 轉成局內索引。
+     */
+    private fun projectDiscard(entry: DiscardPile.DiscardEntry): JsonObject = JsonObject(
+        buildMap {
+            put(ReplayFormatKeys.DISCARD_TILE, JsonPrimitive(entry.tile.id.toString()))
+            if (entry.isTaken) put(ReplayFormatKeys.DISCARD_TAKEN, JsonPrimitive(true))
+            val markers = entry.publicMarkerIds
+            if (markers.isNotEmpty()) put(ReplayFormatKeys.DISCARD_MARKERS, JsonArray(markers.sorted().map(::JsonPrimitive)))
+        },
+    )
 
     /**
      * 將事實中的牌與玩家 UUID 翻譯成局內整數索引。
@@ -641,6 +679,23 @@ object CompactReplayCodec {
             return JsonObject(mapOf(ReplayPatchKeys.VALUE to after))
         }
     }
+
+    /** 桌況投影不保存的桌級欄位：桌子身分、規則設定、實體布局與規則桌況。 */
+    private val PROJECTION_EXCLUDED_TABLE_KEYS = setOf(
+        ReplaySourceKeys.ID,
+        ReplaySourceKeys.CONFIG,
+        ReplaySourceKeys.PHYSICAL_WALL_LAYOUT,
+        ReplaySourceKeys.DYNAMIC_RULE_STATE,
+    )
+
+    /** 玩家投影不保存的欄位：玩家身分、AI 策略、動作歷史、規則格式的牌河與規則狀態。 */
+    private val PROJECTION_EXCLUDED_PLAYER_KEYS = setOf(
+        ReplaySourceKeys.ID,
+        ReplaySourceKeys.AI_STRATEGY_KEY,
+        ReplaySourceKeys.ACTION_HISTORY,
+        ReplaySourceKeys.DISCARD_PILE,
+        ReplaySourceKeys.PLAYER_RULE_STATE,
+    )
 
     /** 常用 UUID 文字格式。 */
     private val UUID_PATTERN = Regex("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")

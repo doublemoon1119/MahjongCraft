@@ -22,7 +22,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublish
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.HistoryReplayProjectionRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.state.AuthoritativeStatePersistenceCodec
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionExecutor
@@ -542,7 +541,6 @@ class FabricApplicationModuleTest {
         assertSame(koin.get<TileTypeRegistry>(), core.tileTypeRegistry)
         assertSame(koin.get<NetworkDtoRegistries>(), core.networkRegistries)
         assertSame(koin.get<PersistenceRegistries>(), core.persistenceRegistries)
-        assertSame(koin.get<HistoryReplayProjectionRegistry>(), core.historyReplayProjectionRegistry)
         assertSame(koin.get<WinCelebrationCueResolverRegistry>(), core.winCelebrationCueResolverRegistry)
         assertSame(koin.get<ExtensionGameActionAiRegistry>(), core.gameActionAiRegistry)
         assertSame(koin.get<MahjongAiStrategyRegistry>(), core.aiStrategyRegistry)

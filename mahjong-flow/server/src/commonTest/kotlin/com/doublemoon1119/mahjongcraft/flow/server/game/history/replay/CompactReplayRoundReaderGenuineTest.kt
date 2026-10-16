@@ -21,17 +21,19 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRe
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.CompactReplayCodec
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.CompactReplayDictionary
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.CompactReplayRoundReader
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.HistoryReplayProjectionRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayReadError
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayReadLimits
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayReadResult
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardEntry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHistoryDiscardMarkerIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.MatchRoundPosition
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
@@ -39,7 +41,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
-import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledHistoryReplayProjections
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledSetAsideTiles
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -106,7 +108,7 @@ class CompactReplayRoundReaderGenuineTest {
                 ),
                 FakeMahjongPlayerFactory.create(discardPile = RiichiDiscardPile(), playerRuleState = RiichiPlayerState()),
             ),
-            config = RiichiRuleConfig(),
+            config = ThreePlayerRiichiRuleConfig(),
         )
         val pulled = base.copy(
             players = base.players.mapIndexed { index, player ->
@@ -135,7 +137,7 @@ class CompactReplayRoundReaderGenuineTest {
             event(matchId, base.id, 4, 100L, HistoryFact.MatchCompleted("test:completed", pulled.players.associate { it.id to it.score })).copy(transactionFirstSequence = 3),
         )
         val registries = bundledPersistenceRegistries()
-        val document = CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries)
+        val document = CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries, bundledSetAsideTiles(events))
 
         val initial = assertIs<ReplayReadResult.Success<HistoryRoundState>>(reader().readState(document, matchId, 1, HistoryRoundPosition.Initial)).value
         val after = assertIs<ReplayReadResult.Success<HistoryRoundState>>(reader().readState(document, matchId, 1, HistoryRoundPosition.AfterTransaction(1))).value
@@ -147,17 +149,12 @@ class CompactReplayRoundReaderGenuineTest {
     }
 
     /**
-     * 建立內建投影已註冊並凍結的讀取器。
+     * 建立測試讀取器。
      *
      * @param limits 本次使用的資源上限。
      * @return 測試讀取器。
      */
-    private fun reader(limits: ReplayReadLimits = ReplayReadLimits()): CompactReplayRoundReader {
-        val registry = HistoryReplayProjectionRegistry()
-        registry.registerBundledHistoryReplayProjections()
-        registry.freeze()
-        return CompactReplayRoundReader(registry, limits)
-    }
+    private fun reader(limits: ReplayReadLimits = ReplayReadLimits()): CompactReplayRoundReader = CompactReplayRoundReader(limits)
 
     /** 驗證正式編碼器保存對局識別資料與初始座位。 */
     @Test
@@ -381,19 +378,55 @@ class CompactReplayRoundReaderGenuineTest {
         assertEquals(false, returned)
     }
 
-    /** 未知必要牌河使桌況不可取得，但不阻擋可獨立驗證的事件摘要。 */
+    /** 牌河以不分規則的格式保存，立直宣告牌的公開標記與鳴走狀態不經規則專屬轉換就能讀回。 */
     @Test
-    fun `unknown required discard mapper does not fabricate empty state`() = runTest {
-        val fixture = fixture()
-        val doc = changeInitial(fixture.document) { initial ->
-            val players = initial.getValue("players").jsonArray.toMutableList()
-            val player = players.first().jsonObject
-            val pile = player.getValue("discardPile").jsonObject
-            players[0] = JsonObject(player + ("discardPile" to JsonObject(pile + ("typeKey" to JsonPrimitive("test:unknown")))))
-            JsonObject(initial + ("players" to JsonArray(players)))
-        }
-        assertEquals(ReplayReadError.UNSUPPORTED_CONTENT, assertIs<ReplayReadResult.Failure>(reader().readState(doc, fixture.matchId, 1, HistoryRoundPosition.Initial)).error)
-        assertIs<ReplayReadResult.Success<HistoryRoundEvents>>(reader().readEvents(doc, fixture.matchId, 1, 0, 1))
+    fun `reader restores discards with public markers without rule specific codecs`() = runTest {
+        val declared = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 3))
+        val taken = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 4))
+        val base = FakeTableStateFactory.create(
+            players = listOf(
+                FakeMahjongPlayerFactory.create(
+                    discardPile = RiichiDiscardPile(
+                        listOf(
+                            RiichiDiscardEntry(declared, isRiichi = true),
+                            RiichiDiscardEntry(taken, isTaken = true),
+                        ),
+                    ),
+                ),
+                FakeMahjongPlayerFactory.create(discardPile = RiichiDiscardPile()),
+            ),
+            config = RiichiRuleConfig(),
+        )
+        val matchId = Uuid.random()
+        val scores = base.players.associate { it.id to it.score }
+        val events = listOf(
+            event(matchId, base.id, 1, 0L, HistoryFact.MatchStarted(base, GameFlowConfig(), emptyMap())),
+            event(
+                matchId,
+                base.id,
+                2,
+                100L,
+                HistoryFact.RoundCompleted(
+                    RoundCompletionSummary(
+                        "test:round_completed",
+                        RoundCompletionClassification.EXHAUSTIVE_DRAW,
+                        emptySet(),
+                        transitionDirective = RoundTransitionDirective.ADVANCE_DEALER,
+                        settledScoresByPlayerId = scores,
+                    ),
+                ),
+            ),
+            event(matchId, base.id, 3, 100L, HistoryFact.MatchCompleted("test:completed", scores)).copy(transactionFirstSequence = 2),
+        )
+        val registries = bundledPersistenceRegistries()
+        val document = CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries, bundledSetAsideTiles(events))
+
+        val state = assertIs<ReplayReadResult.Success<HistoryRoundState>>(reader().readState(document, matchId, 1, HistoryRoundPosition.Initial)).value
+        val discards = state.players.single { it.initialSeatIndex == 0 }.discards
+
+        assertEquals(listOf<Tile>(Tile.Numeric(Tile.Suit.Character, 3), Tile.Numeric(Tile.Suit.Character, 4)), discards.map { state.tileCatalog.tiles[it.tile.tileIndex] })
+        assertEquals(listOf(setOf(RiichiHistoryDiscardMarkerIds.RIICHI_DECLARED), emptySet()), discards.map { it.markers })
+        assertEquals(listOf(false, true), discards.map { it.isTaken })
     }
 
     /** 未宣告牌與重複玩家座位均拒絕，不以陣列位置補足身分。 */
@@ -462,7 +495,7 @@ class CompactReplayRoundReaderGenuineTest {
             event(matchId, first.id, 6, 500L, HistoryFact.MatchCompleted("test:completed", next.players.associate { it.id to it.score })),
         )
         val registries = bundledPersistenceRegistries()
-        val document = CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries)
+        val document = CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries, bundledSetAsideTiles(events))
 
         listOf(25_000, 26_000, 27_000).forEachIndexed { index, score ->
             val roundNumber = index + 1
@@ -498,7 +531,7 @@ class CompactReplayRoundReaderGenuineTest {
             event(matchId, table.id, 5, 250L, HistoryFact.TableChanged(HistoryTableResult.Checkpoint("test:settled", settled))).copy(transactionFirstSequence = 3),
         )
         val registries = bundledPersistenceRegistries()
-        return Fixture(CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries), matchId, table, changed, settled)
+        return Fixture(CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries, bundledSetAsideTiles(events)), matchId, table, changed, settled)
     }
 
     /**
@@ -569,7 +602,7 @@ class CompactReplayRoundReaderGenuineTest {
             add(event(matchId, table.id, if (intermediate == null) 5 else 6, 300L, HistoryFact.MatchCompleted("test:completed", settledScores)))
         }
         val registries = bundledPersistenceRegistries()
-        return Fixture(CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries), matchId, table, settled, settled)
+        return Fixture(CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries, bundledSetAsideTiles(events)), matchId, table, settled, settled)
     }
 
     /** 建立語意上對應反應完成後才成立途中流局的正式 Replay 文件。 */
@@ -622,7 +655,7 @@ class CompactReplayRoundReaderGenuineTest {
             event(matchId, table.id, 7, 200L, HistoryFact.MatchCompleted("test:completed", scores)).copy(transactionFirstSequence = 6),
         )
         val registries = bundledPersistenceRegistries()
-        return Fixture(CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries), matchId, table, abortiveState, abortiveState)
+        return Fixture(CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries, bundledSetAsideTiles(events)), matchId, table, abortiveState, abortiveState)
     }
 
     /**
@@ -682,7 +715,7 @@ class CompactReplayRoundReaderGenuineTest {
             event(matchId, table.id, 7, 400L, HistoryFact.MatchCompleted("test:completed", continued.players.associate { it.id to it.score })).copy(transactionFirstSequence = 6),
         )
         val registries = bundledPersistenceRegistries()
-        return Fixture(CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries), matchId, table, changed, continued)
+        return Fixture(CompactReplayCodec.encodeCompact(events, HistoryRecordingPersistenceMapper(registries), registries, bundledSetAsideTiles(events)), matchId, table, changed, continued)
     }
 
     /**

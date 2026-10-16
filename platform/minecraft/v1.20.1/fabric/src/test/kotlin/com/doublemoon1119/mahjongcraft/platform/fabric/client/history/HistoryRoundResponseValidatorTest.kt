@@ -449,7 +449,6 @@ class HistoryRoundResponseValidatorTest {
             listOf(HistoryReplayDiscardDto(0, true, emptySet())),
             25000,
             WindDto.EAST,
-            null,
             emptyList(),
         )
         val response = HistoryRoundStateResponseDto(
@@ -529,7 +528,7 @@ class HistoryRoundResponseValidatorTest {
         roundNumber = 1,
         position = HistoryRoundPositionDto.Initial,
         tileCatalog = listOf(TileDto.Numeric(SuitDto.CHARACTER, 1)),
-        players = listOf(HistoryReplayPlayerStateDto(0, emptyList(), emptyList(), null, emptyList(), 25000, WindDto.EAST, null, emptyList())),
+        players = listOf(HistoryReplayPlayerStateDto(0, emptyList(), emptyList(), null, emptyList(), 25000, WindDto.EAST, emptyList())),
         wallTiles = listOf(tileIndex),
         reservedTiles = emptyList(),
         currentPlayerSeat = 0,
@@ -538,7 +537,6 @@ class HistoryRoundResponseValidatorTest {
         roundPosition = MatchRoundPositionDto(0, WindDto.EAST, 1, MatchRoundPhaseDto.REGULAR),
         comboCount = 0,
         finishedPlayerSeats = emptySet(),
-        dynamicRuleState = null,
         hasPendingReaction = false,
         hasPendingRobbingReaction = false,
         outcome = null,

@@ -88,6 +88,21 @@ internal object ReplayFormatKeys {
 
     /** 差異路徑字典。 */
     const val PATCH_PATHS = "patchPaths"
+
+    /** 玩家投影中不分規則的牌河清單。 */
+    const val DISCARDS = "discards"
+
+    /** 牌河項目的牌。 */
+    const val DISCARD_TILE = "tile"
+
+    /** 牌河項目是否已被鳴走；未鳴走時省略。 */
+    const val DISCARD_TAKEN = "taken"
+
+    /** 牌河項目的公開標記；沒有標記時省略。 */
+    const val DISCARD_MARKERS = "markers"
+
+    /** 玩家投影中移出手牌的牌，依移出順序排列。 */
+    const val SET_ASIDE_TILES = "setAside"
 }
 
 /** 桌況差異樹使用的操作名稱。 */

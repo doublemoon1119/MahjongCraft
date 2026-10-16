@@ -78,6 +78,7 @@ class CompactReplayCodecTest {
                 events = listOf(event),
                 mapper = HistoryRecordingPersistenceMapper(registries),
                 registries = registries,
+                setAsideTiles = { emptyList() },
             )
         }
         assertEquals("Aborted matches cannot be archived as complete replays", error.message)

@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.Persiste
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.HistoryResultProjector
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnapshot
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import kotlinx.serialization.encodeToString
@@ -235,7 +236,12 @@ internal class HistoryArchiveService(
                 check(events.first().sequence == 1L && events.zipWithNext().all { (a, b) -> a.sequence + 1 == b.sequence }) {
                     "History event sequence is incomplete"
                 }
-                val replay = CompactReplayCodec.encodeCompact(events, mapper, registries)
+                val replay = CompactReplayCodec.encodeCompact(
+                    events = events,
+                    mapper = mapper,
+                    registries = registries,
+                    setAsideTiles = matchModule(events)::setAsideTiles,
+                )
                 CompactReplayCodec.decodeCompact(replay)
                 val archive = buildArchive(events, replay)
                 if (database.archive(archive)) {
@@ -267,6 +273,17 @@ internal class HistoryArchiveService(
                 dto.occurredAtEpochMillis == record.occurredAtEpochMillis,
         ) { "History event payload does not match its SQLite envelope" }
         return mapper.decodePendingEvent(dto)
+    }
+
+    /**
+     * 取得這場對局開局時使用的規則模組。
+     *
+     * @param events 以開局事實開頭的單場歷史事實。
+     * @return 開局規則設定對應的規則模組。
+     */
+    private fun matchModule(events: List<HistoryOutboxEvent>): MahjongRuleModule<*> {
+        val opening = checkNotNull(events.first().fact as? HistoryFact.MatchStarted) { "History must begin with match start" }
+        return moduleRegistry.getModule(opening.tableState.config)
     }
 
     /**

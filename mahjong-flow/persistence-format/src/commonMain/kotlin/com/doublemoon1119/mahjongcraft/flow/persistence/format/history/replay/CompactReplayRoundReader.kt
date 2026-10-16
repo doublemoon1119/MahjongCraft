@@ -30,13 +30,9 @@ import kotlin.uuid.Uuid
  * 輸入須已由外部解析；原始位元組及 JSON parser 的限制由呼叫端負責。
  * 取消例外直接傳播，破損文件不產生部分成功結果。
  *
- * @property registry 呼叫端明確提供的歷史投影轉換器。
  * @property limits 每次讀取獨立套用的資源上限。
  */
-class CompactReplayRoundReader(
-    private val registry: HistoryReplayProjectionRegistry,
-    private val limits: ReplayReadLimits = ReplayReadLimits(),
-) {
+class CompactReplayRoundReader(private val limits: ReplayReadLimits = ReplayReadLimits()) {
     /**
      * 讀取指定局的一段交易；僅保留要求的交易，不還原其他局的桌況。
      *
@@ -54,7 +50,6 @@ class CompactReplayRoundReader(
         if (startIndex !in 0..round.transactions.size) missing()
         val end = minOf(round.transactions.size.toLong(), startIndex.toLong() + limit).toInt()
         val cursor = cursor(source, round, budget)
-        val mapper = HistoryReplayProjectionMapper(registry)
         val events = mutableListOf<HistoryReplayTransaction>()
         for (index in 0 until end) {
             yield()
@@ -62,7 +57,7 @@ class CompactReplayRoundReader(
             val transaction = advance(source, round, cursor, index, budget)
             val afterScores = scoreSnapshot(cursor.projection, source.identity.players.size, budget)
             val exhaustiveDrawAction = transaction.facts.any(::isExhaustiveDrawAction)
-            val facts = mapper.mapFacts(transaction.facts, transaction.actors, source.identity, round.number, catalog(cursor, budget), budget)
+            val facts = HistoryReplayProjectionMapper.mapFacts(transaction.facts, transaction.actors, source.identity, round.number, catalog(cursor, budget), budget)
                 .map { fact ->
                     val enriched = fact.withScoreChanges(
                         beforeScores,
@@ -102,14 +97,13 @@ class CompactReplayRoundReader(
             is HistoryRoundPosition.AfterTransaction -> position.index.also { if (it !in round.transactions.indices) missing() }
         }
         val cursor = cursor(source, round, budget)
-        val mapper = HistoryReplayProjectionMapper(registry)
         for (index in 0..last) {
             yield()
             val beforeScores = scoreSnapshot(cursor.projection, source.identity.players.size, budget)
             val transaction = advance(source, round, cursor, index, budget)
             val afterScores = scoreSnapshot(cursor.projection, source.identity.players.size, budget)
             val exhaustiveDrawAction = transaction.facts.any(::isExhaustiveDrawAction)
-            val facts = mapper.mapFacts(transaction.facts, transaction.actors, source.identity, round.number, catalog(cursor, budget), budget)
+            val facts = HistoryReplayProjectionMapper.mapFacts(transaction.facts, transaction.actors, source.identity, round.number, catalog(cursor, budget), budget)
                 .map { fact ->
                     val enriched = fact.withScoreChanges(
                         beforeScores,
@@ -137,7 +131,7 @@ class CompactReplayRoundReader(
                 }
             }.lastOrNull()?.let { cursor.outcome = it }
         }
-        mapper.mapState(cursor.projection, source.identity, round.number, position, catalog(cursor, budget), budget).copy(outcome = cursor.outcome)
+        HistoryReplayProjectionMapper.mapState(cursor.projection, source.identity, round.number, position, catalog(cursor, budget), budget).copy(outcome = cursor.outcome)
     }
 
     /**

@@ -19,7 +19,6 @@ import com.doublemoon1119.mahjongcraft.logic.table.Wind
  * @property roundPosition 保存的賽程局位；連莊時不變。
  * @property comboCount 連莊次數。
  * @property finishedPlayerSeats 已完成玩家座位。
- * @property dynamicRuleState 規則公開資訊。
  * @property hasPendingReaction 是否仍有待處理的捨牌反應，不包含可執行命令。
  * @property hasPendingRobbingReaction 是否仍有待處理的搶和反應，不包含可執行命令。
  * @property outcome 結算結果。
@@ -38,7 +37,6 @@ data class HistoryRoundState(
     val roundPosition: MatchRoundPosition,
     val comboCount: Int,
     val finishedPlayerSeats: Set<Int>,
-    val dynamicRuleState: HistoryReplayRuleInformation?,
     val hasPendingReaction: Boolean,
     val hasPendingRobbingReaction: Boolean,
     val outcome: HistoryRoundOutcome?,

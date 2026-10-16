@@ -14,21 +14,6 @@ internal object CoreExtensionRegistrationCategoryIds {
     /** 持久化 DTO 分類。 */
     const val PERSISTENCE_DTO: String = "mahjongcraft:persistence_dto"
 
-    /** 歷史捨牌投影分類。 */
-    const val HISTORY_REPLAY_DISCARD: String = "mahjongcraft:history_replay_discard"
-
-    /** 歷史事實投影分類。 */
-    const val HISTORY_REPLAY_FACT: String = "mahjongcraft:history_replay_fact"
-
-    /** 歷史動作投影分類。 */
-    const val HISTORY_REPLAY_ACTION: String = "mahjongcraft:history_replay_action"
-
-    /** 歷史可選規則投影分類。 */
-    const val HISTORY_REPLAY_OPTIONAL_RULE: String = "mahjongcraft:history_replay_optional_rule"
-
-    /** 歷史保留牌投影分類。 */
-    const val HISTORY_REPLAY_SET_ASIDE_TILES: String = "mahjongcraft:history_replay_set_aside_tiles"
-
     /** 胡牌展示提示解析器分類。 */
     const val WIN_CELEBRATION_CUE_RESOLVER: String = "mahjongcraft:win_celebration_cue_resolver"
 

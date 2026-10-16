@@ -36,12 +36,8 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceDtoDefinition
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toPersistenceDto
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.HistoryReplayProjectionDefinition
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.HistoryReplayProjectionRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.BuiltInDiscardPilePersistenceKeys
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.BuiltinHistoryReplayDiscardCodecs
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.BuiltinHistoryReplaySetAsideTileCodecs
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.RiichiDiscardPilePersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.RiichiDynamicStatePersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.RiichiExhaustiveDrawReasonPersistenceDto
@@ -432,11 +428,6 @@ object BundledRiichiExtension : MahjongExtension {
                 toDomain = { RiichiGameAction.PullNorth },
             ),
         )
-    }
-
-    override fun registerHistoryReplayProjections(registry: HistoryReplayProjectionRegistry) {
-        registry.register(HistoryReplayProjectionDefinition.Discard(BuiltInDiscardPilePersistenceKeys.RIICHI, BuiltinHistoryReplayDiscardCodecs.riichi))
-        registry.register(HistoryReplayProjectionDefinition.SetAsideTiles(RIICHI_PLAYER_STATE_TYPE_KEY, BuiltinHistoryReplaySetAsideTileCodecs.riichi))
     }
 
     override fun registerGameActionAiHandlers(registry: ExtensionGameActionAiRegistry) {

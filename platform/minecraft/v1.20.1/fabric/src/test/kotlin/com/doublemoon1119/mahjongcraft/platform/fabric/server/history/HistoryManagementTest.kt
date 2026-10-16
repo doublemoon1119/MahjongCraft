@@ -164,7 +164,6 @@ class HistoryManagementTest {
     private fun writer(dispatcher: CoroutineDispatcher, coordinator: HistoryRetentionCoordinator): FabricHistoryOutboxWriter = FabricHistoryOutboxWriter(
         store = AuthoritativeStateStore(),
         registries = bundledPersistenceRegistries(),
-        replayProjectionRegistry = buildTestHistoryReplayProjectionRegistry(),
         moduleRegistry = MahjongModuleRegistryImpl(),
         locations = TableLocationRegistry(),
         configState = MinecraftServerConfigState(MinecraftServerConfig(history = MinecraftHistoryConfig(includeInterruptedMatches = true, retentionDays = 0))),

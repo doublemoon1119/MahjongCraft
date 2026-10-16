@@ -13,11 +13,8 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan.toTaiwanDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceDtoDefinition
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toPersistenceDto
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.HistoryReplayProjectionDefinition
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.HistoryReplayProjectionRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.BuiltInDiscardPilePersistenceKeys
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.BuiltinHistoryReplayDiscardCodecs
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.TaiwanDiscardPilePersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.TaiwanRuleConfigPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.rule.toDomain
@@ -138,9 +135,5 @@ object BundledTaiwanExtension : MahjongExtension {
                 compactInReplay = true,
             ),
         )
-    }
-
-    override fun registerHistoryReplayProjections(registry: HistoryReplayProjectionRegistry) {
-        registry.register(HistoryReplayProjectionDefinition.Discard(BuiltInDiscardPilePersistenceKeys.TAIWAN, BuiltinHistoryReplayDiscardCodecs.taiwan))
     }
 }

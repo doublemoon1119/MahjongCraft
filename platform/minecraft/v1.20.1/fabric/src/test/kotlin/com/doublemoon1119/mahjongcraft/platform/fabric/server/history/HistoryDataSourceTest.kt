@@ -58,7 +58,6 @@ class HistoryDataSourceTest {
             writer = FabricHistoryOutboxWriter(
                 store = store,
                 registries = bundledPersistenceRegistries(),
-                replayProjectionRegistry = buildTestHistoryReplayProjectionRegistry(),
                 dispatchers = TestDispatchers,
                 moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() },
                 locations = TableLocationRegistry(),

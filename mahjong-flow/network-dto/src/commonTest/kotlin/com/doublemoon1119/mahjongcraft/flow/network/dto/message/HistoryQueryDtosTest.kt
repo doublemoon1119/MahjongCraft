@@ -90,7 +90,6 @@ class HistoryQueryDtosTest {
                 roundPosition = MatchRoundPositionDto(0, WindDto.EAST, 1, MatchRoundPhaseDto.REGULAR),
                 comboCount = 0,
                 finishedPlayerSeats = emptySet(),
-                dynamicRuleState = null,
                 hasPendingReaction = false,
                 hasPendingRobbingReaction = false,
                 outcome = null,

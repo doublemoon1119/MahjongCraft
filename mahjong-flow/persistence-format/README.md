@@ -34,7 +34,8 @@ encoding, is limited to:
 - The typed payload wrapper for extension DTOs, which stores each payload as a JSON object
   under a stable type key resolved by the persistence registries.
 - The compact replay format, its readers, and the bounded replay parser that limits input
-  size before parsing.
+  size before parsing. Replays store discard piles and set-aside tiles in a rule-neutral
+  form, so rules register nothing for replay.
 - Persistence migrations, which rewrite older stored shapes as JSON.
 
 ## Dependencies
@@ -44,9 +45,8 @@ It depends on [mahjong-logic](../../mahjong-logic/README.md),
 
 ## Dependency injection
 
-The module does not depend on a DI framework. Platform composition registers the history replay
-projection registry and assembles the persistence registry aggregate and codec with their
-existing defaults; see [Minecraft common](../../platform/minecraft/common/README.md).
+The module does not depend on a DI framework. Platform composition assembles the persistence
+registry aggregate and codec with their existing defaults; see [Minecraft common](../../platform/minecraft/common/README.md).
 Persistence DTOs are not dependency-injected services.
 
 ## Testing

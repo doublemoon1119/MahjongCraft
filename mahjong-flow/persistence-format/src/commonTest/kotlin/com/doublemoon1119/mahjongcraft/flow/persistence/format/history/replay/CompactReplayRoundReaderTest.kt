@@ -6,14 +6,12 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRe
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayIdentity
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayPlayerIdentity
-import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayRuleInformation
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundPosition
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundTileCatalog
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryTileReference
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
-import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledHistoryReplayProjections
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
@@ -26,13 +24,12 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.uuid.Uuid
 
-/** 驗證局級讀取使用的強型別擴充 registry 與受限索引上下文。 */
+/** 驗證局級讀取把不分規則的投影轉為歷史讀模型，並以受限索引上下文驗證參照。 */
 class CompactReplayRoundReaderTest {
     /** 讀取摸牌後的投影時，最後摸入牌與立牌分開保留。 */
     @Test
     fun `state mapping preserves separately stored last drawn tile`() {
-        val mapper = HistoryReplayProjectionMapper(HistoryReplayProjectionRegistry().apply { registerBundledHistoryReplayProjections() })
-        val state = mapper.mapState(
+        val state = HistoryReplayProjectionMapper.mapState(
             projection = playerProjection(standingTiles = listOf(0), lastDrawn = 1, wallTiles = listOf(2)),
             identity = identity(),
             roundNumber = 1,
@@ -48,10 +45,8 @@ class CompactReplayRoundReaderTest {
     /** 不允許最後摸入牌同時出現在立牌中，避免同一實體牌被重複持有。 */
     @Test
     fun `state mapping rejects last drawn tile duplicated in standing hand`() {
-        val mapper = HistoryReplayProjectionMapper(HistoryReplayProjectionRegistry().apply { registerBundledHistoryReplayProjections() })
-
         assertFailsWith<IllegalArgumentException> {
-            mapper.mapState(
+            HistoryReplayProjectionMapper.mapState(
                 projection = playerProjection(standingTiles = listOf(0), lastDrawn = 0, wallTiles = listOf(1)),
                 identity = identity(),
                 roundNumber = 1,
@@ -65,10 +60,8 @@ class CompactReplayRoundReaderTest {
     /** 不允許最後摸入牌同時出現在活牌牆，避免牌張從牌牆與手牌重複持有。 */
     @Test
     fun `state mapping rejects last drawn tile duplicated in wall`() {
-        val mapper = HistoryReplayProjectionMapper(HistoryReplayProjectionRegistry().apply { registerBundledHistoryReplayProjections() })
-
         assertFailsWith<IllegalArgumentException> {
-            mapper.mapState(
+            HistoryReplayProjectionMapper.mapState(
                 projection = playerProjection(standingTiles = listOf(0), lastDrawn = 1, wallTiles = listOf(1)),
                 identity = identity(),
                 roundNumber = 1,
@@ -82,12 +75,11 @@ class CompactReplayRoundReaderTest {
     /** 讀取摸牌後再捨牌的相鄰桌況，確認摸入牌可併入立牌並從獨立欄位移除。 */
     @Test
     fun `state mapping follows draw and discard transition`() {
-        val mapper = HistoryReplayProjectionMapper(HistoryReplayProjectionRegistry().apply { registerBundledHistoryReplayProjections() })
         val identity = identity()
         val catalog = HistoryRoundTileCatalog(listOf(Tile.Honor.East, Tile.Honor.South, Tile.Honor.West))
         val budget = ReplayReadBudget(ReplayReadLimits()) {}
 
-        val afterDraw = mapper.mapState(
+        val afterDraw = HistoryReplayProjectionMapper.mapState(
             playerProjection(standingTiles = listOf(0), lastDrawn = 1, wallTiles = listOf(2)),
             identity,
             1,
@@ -95,7 +87,7 @@ class CompactReplayRoundReaderTest {
             catalog,
             budget,
         )
-        val afterDiscard = mapper.mapState(
+        val afterDiscard = HistoryReplayProjectionMapper.mapState(
             playerProjection(standingTiles = listOf(1), lastDrawn = null, wallTiles = listOf(2)),
             identity,
             1,
@@ -112,8 +104,7 @@ class CompactReplayRoundReaderTest {
     /** 替換摸牌使用同一個獨立摸入欄位，不會把牌張誤判為立牌的一部分。 */
     @Test
     fun `state mapping preserves replacement draw separately`() {
-        val mapper = HistoryReplayProjectionMapper(HistoryReplayProjectionRegistry().apply { registerBundledHistoryReplayProjections() })
-        val state = mapper.mapState(
+        val state = HistoryReplayProjectionMapper.mapState(
             playerProjection(standingTiles = listOf(0, 1), lastDrawn = 2, wallTiles = emptyList()),
             identity(),
             1,
@@ -129,10 +120,8 @@ class CompactReplayRoundReaderTest {
     /** 不允許最後摸入牌同時出現在保留牌區，避免牌張跨區重複持有。 */
     @Test
     fun `state mapping rejects last drawn tile duplicated in reserved wall`() {
-        val mapper = HistoryReplayProjectionMapper(HistoryReplayProjectionRegistry().apply { registerBundledHistoryReplayProjections() })
-
         assertFailsWith<IllegalArgumentException> {
-            mapper.mapState(
+            HistoryReplayProjectionMapper.mapState(
                 projection = playerProjection(standingTiles = listOf(0), lastDrawn = 1, wallTiles = emptyList(), reservedTiles = listOf(1)),
                 identity = identity(),
                 roundNumber = 1,
@@ -157,8 +146,7 @@ class CompactReplayRoundReaderTest {
                 ReplaySourceKeys.TRANSITION_DIRECTIVE to JsonPrimitive("ADVANCE_DEALER"),
             ),
         )
-        val mapper = HistoryReplayProjectionMapper(HistoryReplayProjectionRegistry())
-        val result = mapper.mapFacts(listOf(JsonObject(mapOf(ReplaySourceKeys.TYPE to JsonPrimitive(HistoryFactTypeKeys.ROUND_COMPLETED), ReplaySourceKeys.SUMMARY to summary)), JsonObject(mapOf(ReplaySourceKeys.TYPE to JsonPrimitive(HistoryFactTypeKeys.RULE_EFFECT_RESOLVED), ReplaySourceKeys.REASON_ID to JsonPrimitive("test:effect"), ReplaySourceKeys.ROUND_COMPLETION to summary))), listOf(null, null), identity, 1, HistoryRoundTileCatalog(emptyList()), ReplayReadBudget(ReplayReadLimits()) {})
+        val result = HistoryReplayProjectionMapper.mapFacts(listOf(JsonObject(mapOf(ReplaySourceKeys.TYPE to JsonPrimitive(HistoryFactTypeKeys.ROUND_COMPLETED), ReplaySourceKeys.SUMMARY to summary)), JsonObject(mapOf(ReplaySourceKeys.TYPE to JsonPrimitive(HistoryFactTypeKeys.RULE_EFFECT_RESOLVED), ReplaySourceKeys.REASON_ID to JsonPrimitive("test:effect"), ReplaySourceKeys.ROUND_COMPLETION to summary))), listOf(null, null), identity, 1, HistoryRoundTileCatalog(emptyList()), ReplayReadBudget(ReplayReadLimits()) {})
         val completed = assertIs<HistoryReplayFact.Completion>(result[0]).outcome
         assertEquals(RoundCompletionClassification.WIN, completed?.classification)
         assertEquals(listOf(1), completed?.responsibleSeats)
@@ -174,7 +162,6 @@ class CompactReplayRoundReaderTest {
             venueId = Uuid.random(),
             players = listOf(HistoryReplayPlayerIdentity(0, Uuid.random(), null)),
         )
-        val mapper = HistoryReplayProjectionMapper(HistoryReplayProjectionRegistry())
         val fact = JsonObject(
             mapOf(
                 ReplaySourceKeys.TYPE to JsonPrimitive(HistoryFactTypeKeys.MATCH_ABORTED),
@@ -182,7 +169,7 @@ class CompactReplayRoundReaderTest {
             ),
         )
 
-        val result = mapper.mapFacts(
+        val result = HistoryReplayProjectionMapper.mapFacts(
             facts = listOf(fact),
             actorSeats = listOf(null),
             identity = identity,
@@ -198,13 +185,11 @@ class CompactReplayRoundReaderTest {
         assertEquals(null, completion.outcome?.classification)
     }
 
-    /** 擴充動作經明確 codec 映射，未註冊時只保留種類，不暴露私有資料。 */
+    /** 擴充動作只保留種類，不暴露私有資料；缺少種類的 envelope 被拒絕。 */
     @Test
-    fun `extension action mapping preserves opaque fallback and rejects missing envelope`() {
-        val registry = HistoryReplayProjectionRegistry()
+    fun `extension action mapping keeps only its type and rejects missing envelope`() {
         val identity = HistoryReplayIdentity(Uuid.random(), Uuid.random(), listOf(HistoryReplayPlayerIdentity(0, Uuid.random(), null)))
         val budget = ReplayReadBudget(ReplayReadLimits()) {}
-        val mapper = HistoryReplayProjectionMapper(registry)
         val action = JsonObject(mapOf(ReplaySourceKeys.TYPE to JsonPrimitive(HistoryActionTypeKeys.EXTENSION), ReplaySourceKeys.VALUE to JsonObject(mapOf(ReplaySourceKeys.TYPE_KEY to JsonPrimitive("test:spell"), ReplayFormatKeys.PAYLOAD to JsonObject(mapOf("private" to JsonPrimitive("secret")))))))
 
         /**
@@ -213,70 +198,85 @@ class CompactReplayRoundReaderTest {
          * @param value 動作 envelope。
          * @return 公開歷史事實。
          */
-        fun facts(value: JsonObject) = mapper.mapFacts(listOf(JsonObject(mapOf(ReplaySourceKeys.TYPE to JsonPrimitive(HistoryFactTypeKeys.ACTION_ACCEPTED), ReplaySourceKeys.ACTION to value))), listOf(0), identity, 1, HistoryRoundTileCatalog(emptyList()), budget)
+        fun facts(value: JsonObject) = HistoryReplayProjectionMapper.mapFacts(listOf(JsonObject(mapOf(ReplaySourceKeys.TYPE to JsonPrimitive(HistoryFactTypeKeys.ACTION_ACCEPTED), ReplaySourceKeys.ACTION to value))), listOf(0), identity, 1, HistoryRoundTileCatalog(emptyList()), budget)
         assertEquals(HistoryReplayFact.KnownAction(HistoryFactTypeKeys.ACTION_ACCEPTED, 0, HistoryActionTypeKeys.EXTENSION, emptyList(), emptyList(), "test:spell"), facts(action).single())
-        registry.register(HistoryReplayProjectionDefinition.Action("test:spell") { _, scope -> HistoryReplayFact.Reaction("test:spell", "public", scope.seat(0)) })
-        registry.freeze()
-        assertEquals(HistoryReplayFact.Reaction("test:spell", "public", 0), facts(action).single())
         assertFailsWith<NoSuchElementException> { facts(JsonObject(mapOf(ReplaySourceKeys.TYPE to JsonPrimitive(HistoryActionTypeKeys.EXTENSION)))) }
     }
 
-    /** 重複註冊不會取代已登記的 codec，凍結後不能新增。 */
+    /** 牌河項目保留牌、鳴走與公開標記；省略的欄位代表未鳴走與沒有標記。 */
     @Test
-    fun `registry rejects duplicate and frozen registrations`() {
-        val registry = HistoryReplayProjectionRegistry()
-        val context = HistoryReplayProjectionContext(ReplayReadBudget(ReplayReadLimits()) {}, 2, 2)
-        registry.register(HistoryReplayProjectionDefinition.Fact("test:fact") { _, _ -> HistoryReplayFact.Opaque("test:original") })
-        assertFailsWith<IllegalArgumentException> { registry.register(HistoryReplayProjectionDefinition.Fact("test:fact") { _, _ -> HistoryReplayFact.Opaque("test:replacement") }) }
-        assertEquals(HistoryReplayFact.Opaque("test:original"), registry.decodeFact("test:fact", JsonNull, context))
-        registry.freeze()
-        assertFailsWith<IllegalStateException> { registry.register(HistoryReplayProjectionDefinition.Discard("test:discard") { _, _ -> emptyList() }) }
+    fun `state mapping reads rule neutral discards`() {
+        val state = HistoryReplayProjectionMapper.mapState(
+            projection = playerProjection(
+                standingTiles = listOf(0),
+                lastDrawn = null,
+                wallTiles = emptyList(),
+                discards = listOf(
+                    discard(tile = 1),
+                    discard(tile = 2, taken = true, markers = listOf("test:declared")),
+                ),
+            ),
+            identity = identity(),
+            roundNumber = 1,
+            position = HistoryRoundPosition.Initial,
+            tileCatalog = HistoryRoundTileCatalog(listOf(Tile.Honor.East, Tile.Honor.South, Tile.Honor.West)),
+            budget = ReplayReadBudget(ReplayReadLimits()) {},
+        )
+
+        assertEquals(
+            listOf(
+                HistoryReplayDiscard(HistoryTileReference(1), false, emptySet()),
+                HistoryReplayDiscard(HistoryTileReference(2), true, setOf("test:declared")),
+            ),
+            state.players.single().discards,
+        )
     }
 
-    /** 持久化種類需要命名空間，既有事實短名稱不因此改名；登記時不執行轉換器。 */
+    /** 移出手牌的牌依保存順序讀出。 */
     @Test
-    fun `registry validates typed keys without renaming fact tokens`() {
-        val registry = HistoryReplayProjectionRegistry()
-        var decoded = false
-        assertFailsWith<IllegalArgumentException> { registry.register(HistoryReplayProjectionDefinition.Discard("invalid") { _, _ -> emptyList() }) }
-        assertFailsWith<IllegalArgumentException> { registry.register(HistoryReplayProjectionDefinition.Action("invalid") { _, _ -> HistoryReplayFact.Opaque("invalid") }) }
-        assertFailsWith<IllegalArgumentException> { registry.register(HistoryReplayProjectionDefinition.OptionalRule("invalid") { _, _ -> HistoryReplayRuleInformation("invalid", "invalid") }) }
-        assertFailsWith<IllegalArgumentException> { registry.register(HistoryReplayProjectionDefinition.SetAsideTiles("invalid") { _, _ -> emptyList() }) }
-        registry.register(
-            definition = HistoryReplayProjectionDefinition.Fact(HistoryFactTypeKeys.ROUND_COMPLETED) { _, _ ->
-                decoded = true
-                HistoryReplayFact.Opaque(HistoryFactTypeKeys.ROUND_COMPLETED)
-            },
+    fun `state mapping reads set aside tiles in saved order`() {
+        val state = HistoryReplayProjectionMapper.mapState(
+            projection = playerProjection(standingTiles = listOf(0), lastDrawn = null, wallTiles = emptyList(), setAsideTiles = listOf(2, 1)),
+            identity = identity(),
+            roundNumber = 1,
+            position = HistoryRoundPosition.Initial,
+            tileCatalog = HistoryRoundTileCatalog(listOf(Tile.Honor.East, Tile.Honor.North, Tile.Honor.North)),
+            budget = ReplayReadBudget(ReplayReadLimits()) {},
         )
-        assertEquals(false, decoded)
-        assertEquals(setOf(HistoryFactTypeKeys.ROUND_COMPLETED), registry.registrationKeys.fact)
-        registry.freeze()
-        assertFailsWith<IllegalStateException> { registry.register(HistoryReplayProjectionDefinition.Discard("invalid") { _, _ -> emptyList() }) }
+
+        assertEquals(listOf(HistoryTileReference(2), HistoryTileReference(1)), state.players.single().setAsideTiles)
     }
 
-    /** 擴充可以獨立解碼必要牌河、語意事實與可選公開資訊。 */
+    /** 牌河項目出現未知欄位、明寫未鳴走或參照未宣告的牌時拒絕整份投影。 */
     @Test
-    fun `typed extension codecs receive bounded context`() {
-        val registry = HistoryReplayProjectionRegistry()
+    fun `state mapping rejects malformed discards`() {
+        val malformed = listOf(
+            JsonObject(mapOf(ReplayFormatKeys.DISCARD_TILE to JsonPrimitive(1), "isRiichi" to JsonPrimitive(true))),
+            JsonObject(mapOf(ReplayFormatKeys.DISCARD_TILE to JsonPrimitive(1), ReplayFormatKeys.DISCARD_TAKEN to JsonPrimitive(false))),
+            discard(tile = 5),
+        )
+
+        malformed.forEach { entry ->
+            assertFailsWith<Exception>("$entry") {
+                HistoryReplayProjectionMapper.mapState(
+                    projection = playerProjection(standingTiles = listOf(0), lastDrawn = null, wallTiles = emptyList(), discards = listOf(entry)),
+                    identity = identity(),
+                    roundNumber = 1,
+                    position = HistoryRoundPosition.Initial,
+                    tileCatalog = HistoryRoundTileCatalog(listOf(Tile.Honor.East, Tile.Honor.South)),
+                    budget = ReplayReadBudget(ReplayReadLimits()) {},
+                )
+            }
+        }
+    }
+
+    /** 受限上下文拒絕超出已宣告範圍的牌與座位索引。 */
+    @Test
+    fun `projection context rejects out of range references`() {
         val context = HistoryReplayProjectionContext(ReplayReadBudget(ReplayReadLimits()) {}, 2, 2)
-        registry.register(HistoryReplayProjectionDefinition.Discard("test:discard") { _, scope -> listOf(HistoryReplayDiscard(scope.tile(1), true, setOf("test:marker"))) })
-        registry.register(
-            definition = HistoryReplayProjectionDefinition.Fact("test:fact") { _, scope ->
-                scope.charge()
-                HistoryReplayFact.Reaction("test:fact", "test:action", scope.seat(1))
-            },
-        )
-        registry.register(
-            definition = HistoryReplayProjectionDefinition.OptionalRule("test:state") { _, scope ->
-                scope.charge()
-                HistoryReplayRuleInformation("test:state", "public")
-            },
-        )
-        registry.freeze()
-        assertEquals(listOf(HistoryReplayDiscard(HistoryTileReference(1), true, setOf("test:marker"))), registry.decodeDiscard("test:discard", JsonNull, context))
-        assertEquals(HistoryReplayFact.Reaction("test:fact", "test:action", 1), registry.decodeFact("test:fact", JsonNull, context))
-        assertEquals(HistoryReplayRuleInformation("test:state", "public"), registry.decodeOptionalRule("test:state", JsonNull, context))
-        assertEquals(null, registry.decodeDiscard("test:unknown", JsonNull, context))
+
+        assertEquals(HistoryTileReference(1), context.tile(1))
+        assertEquals(1, context.seat(1))
         assertFailsWith<ReplayReadException> { context.tile(2) }
         assertFailsWith<ReplayReadException> { context.seat(2) }
     }
@@ -299,6 +299,8 @@ class CompactReplayRoundReaderTest {
      * @param lastDrawn 最近摸入牌索引，沒有時為 null。
      * @param wallTiles 活牌牆索引。
      * @param reservedTiles 保留牌區索引。
+     * @param discards 牌河項目。
+     * @param setAsideTiles 移出手牌的牌索引。
      * @return 可供投影映射器讀取的 JSON 桌況。
      */
     private fun playerProjection(
@@ -306,6 +308,8 @@ class CompactReplayRoundReaderTest {
         lastDrawn: Int?,
         wallTiles: List<Int>,
         reservedTiles: List<Int> = emptyList(),
+        discards: List<JsonObject> = emptyList(),
+        setAsideTiles: List<Int> = emptyList(),
     ): JsonObject = buildJsonObject {
         put(
             ReplayFormatKeys.PLAYERS,
@@ -321,16 +325,10 @@ class CompactReplayRoundReaderTest {
                                 put(ReplaySourceKeys.LAST_DRAWN, lastDrawn?.let(::JsonPrimitive) ?: JsonNull)
                             },
                         )
-                        put(
-                            ReplaySourceKeys.DISCARD_PILE,
-                            buildJsonObject {
-                                put(ReplaySourceKeys.TYPE_KEY, "mahjongcraft:riichi/discard_pile")
-                                put(ReplayFormatKeys.PAYLOAD, buildJsonObject { put(ReplaySourceKeys.ENTRIES, JsonArray(emptyList())) })
-                            },
-                        )
+                        put(ReplayFormatKeys.DISCARDS, JsonArray(discards))
+                        put(ReplayFormatKeys.SET_ASIDE_TILES, JsonArray(setAsideTiles.map(::JsonPrimitive)))
                         put(ReplaySourceKeys.SCORE, 25000)
                         put(ReplaySourceKeys.SEAT_WIND, "EAST")
-                        put(ReplaySourceKeys.PLAYER_RULE_STATE, JsonNull)
                     },
                 ),
             ),
@@ -351,8 +349,25 @@ class CompactReplayRoundReaderTest {
         put(ReplaySourceKeys.PREVALENT_WIND, "EAST")
         put(ReplaySourceKeys.COMBO_COUNT, 0)
         put(ReplaySourceKeys.FINISHED_PLAYER_IDS, JsonArray(emptyList()))
-        put("dynamicRuleState", JsonNull)
         put(ReplaySourceKeys.PENDING_REACTION, JsonNull)
         put(ReplaySourceKeys.PENDING_ROBBING_REACTION, JsonNull)
+    }
+
+    /**
+     * 建立一筆不分規則的牌河項目。
+     *
+     * @param tile 牌索引。
+     * @param taken 是否已被鳴走；未鳴走時省略欄位。
+     * @param markers 公開標記；沒有標記時省略欄位。
+     * @return 牌河項目投影。
+     */
+    private fun discard(
+        tile: Int,
+        taken: Boolean = false,
+        markers: List<String> = emptyList(),
+    ): JsonObject = buildJsonObject {
+        put(ReplayFormatKeys.DISCARD_TILE, tile)
+        if (taken) put(ReplayFormatKeys.DISCARD_TAKEN, true)
+        if (markers.isNotEmpty()) put(ReplayFormatKeys.DISCARD_MARKERS, JsonArray(markers.map(::JsonPrimitive)))
     }
 }

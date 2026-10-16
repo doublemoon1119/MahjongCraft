@@ -9,7 +9,6 @@ import com.doublemoon1119.mahjongcraft.ai.expectation.NeutralOpponentModel
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelDefinition
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
-import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExtensionGameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistryImpl
 import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.DtoRegistry
@@ -23,8 +22,6 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.MahjongRuleConfigDt
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.PlayerRuleStateDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.ScoreConfigDto
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.HistoryReplayProjectionDefinition
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.HistoryReplayProjectionRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
@@ -86,14 +83,13 @@ class MahjongExtensionRegistrarTest {
             failurePolicy = ExtensionFailurePolicy.Default,
         )
 
-        assertEquals(listOf("rule", "tile", "network", "persistence", "replay", "strategy", "opponent"), calls)
+        assertEquals(listOf("rule", "tile", "network", "persistence", "strategy", "opponent"), calls)
         assertEquals(
             setOf(
                 "mahjongcraft:rule_module",
                 "mahjongcraft:tile_type",
                 "mahjongcraft:ai_strategy",
                 "mahjongcraft:opponent_model",
-                "mahjongcraft:history_replay_action",
             ),
             sources.single { it.extensionId == extension.id }.categories.mapTo(mutableSetOf(), ExtensionRegistrationCategory::id),
         )
@@ -351,7 +347,6 @@ class MahjongExtensionRegistrarTest {
  * @param tileTypeRegistry 牌種類型 registry，預設建立新的實作。
  * @param networkRegistries network DTO registry 集合，預設建立新的測試替身。
  * @param persistenceRegistries persistence DTO registry 集合，預設建立 bundled 測試集合。
- * @param historyReplayProjectionRegistry 對局歷史投影 registry，預設建立新的實例。
  * @param aiStrategyRegistry AI 策略 registry，預設包含預設策略。
  * @param opponentModelRegistry 對手模型 registry，預設建立新的實例。
  * @return 使用指定或預設 registry 組成的 core registry 集合。
@@ -361,7 +356,6 @@ private fun testCoreRegistries(
     tileTypeRegistry: TileTypeRegistry = TileTypeRegistryImpl(),
     networkRegistries: NetworkDtoRegistries = TestNetworkDtoRegistries(),
     persistenceRegistries: PersistenceRegistries = bundledPersistenceRegistries(),
-    historyReplayProjectionRegistry: HistoryReplayProjectionRegistry = HistoryReplayProjectionRegistry(),
     aiStrategyRegistry: MahjongAiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = RandomAiStrategy.KEY),
     opponentModelRegistry: OpponentModelRegistry = OpponentModelRegistry(),
 ): CoreExtensionRegistries = CoreExtensionRegistries(
@@ -369,7 +363,6 @@ private fun testCoreRegistries(
     tileTypeRegistry = tileTypeRegistry,
     networkRegistries = networkRegistries,
     persistenceRegistries = persistenceRegistries,
-    historyReplayProjectionRegistry = historyReplayProjectionRegistry,
     winCelebrationCueResolverRegistry = WinCelebrationCueResolverRegistryImpl(),
     gameActionAiRegistry = ExtensionGameActionAiRegistry(moduleRegistry),
     aiStrategyRegistry = aiStrategyRegistry,
@@ -409,11 +402,6 @@ private class RecordingExtension(
 
     override fun registerPersistenceDtos(registries: PersistenceRegistries) {
         calls += "persistence"
-    }
-
-    override fun registerHistoryReplayProjections(registry: HistoryReplayProjectionRegistry) {
-        calls += "replay"
-        registry.register(HistoryReplayProjectionDefinition.Action("example:recorded_action") { _, _ -> HistoryReplayFact.Opaque("example:recorded_action") })
     }
 
     override fun registerAiStrategies(registry: MahjongAiStrategyRegistry) {

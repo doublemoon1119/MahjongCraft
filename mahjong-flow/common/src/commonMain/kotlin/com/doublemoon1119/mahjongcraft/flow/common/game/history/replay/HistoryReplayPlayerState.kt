@@ -12,7 +12,6 @@ import com.doublemoon1119.mahjongcraft.logic.table.Wind
  * @property discards 捨牌。
  * @property score 分數。
  * @property seatWind 保存的座風。
- * @property playerRuleState 規則公開資訊。
  * @property setAsideTiles 移出手牌、公開擺在桌上的牌（例如三人日麻拔出的北），依移出順序排列；沒有時為空清單。
  */
 data class HistoryReplayPlayerState(
@@ -23,6 +22,5 @@ data class HistoryReplayPlayerState(
     val discards: List<HistoryReplayDiscard>,
     val score: Int,
     val seatWind: Wind,
-    val playerRuleState: HistoryReplayRuleInformation?,
     val setAsideTiles: List<HistoryTileReference>,
 )

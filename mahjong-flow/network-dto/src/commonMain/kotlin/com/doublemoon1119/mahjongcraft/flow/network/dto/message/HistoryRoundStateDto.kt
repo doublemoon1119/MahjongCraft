@@ -21,7 +21,6 @@ import kotlinx.serialization.Serializable
  * @property roundPosition 保存的局位。
  * @property comboCount 連莊次數。
  * @property finishedPlayerSeats 已完成玩家座位。
- * @property dynamicRuleState 規則公開資訊。
  * @property hasPendingReaction 是否有待處理反應。
  * @property hasPendingRobbingReaction 是否有待處理搶和反應。
  * @property outcome 結算結果。
@@ -41,7 +40,6 @@ data class HistoryRoundStateDto(
     val roundPosition: MatchRoundPositionDto,
     val comboCount: Int,
     val finishedPlayerSeats: Set<Int>,
-    val dynamicRuleState: HistoryReplayRuleInformationDto?,
     val hasPendingReaction: Boolean,
     val hasPendingRobbingReaction: Boolean,
     val outcome: HistoryRoundOutcomeDto?,

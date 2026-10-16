@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledSetAsideTiles
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
@@ -25,7 +26,7 @@ class CompactReplayCompletionTest {
     @Test
     fun `completed replay exposes original rule settings without replaying transactions`() {
         val registries = bundledPersistenceRegistries()
-        val document = CompactReplayCodec.encodeCompact(validEvents(), HistoryRecordingPersistenceMapper(registries), registries)
+        val document = CompactReplayCodec.encodeCompact(validEvents(), HistoryRecordingPersistenceMapper(registries), registries, bundledSetAsideTiles(validEvents()))
         val settings = CompactReplayCodec.decodeRuleSettings(document, registries, matchId)
         assertEquals(table.config, settings.ruleConfig)
         assertEquals(GameFlowConfig(), settings.flowConfig)
@@ -107,7 +108,7 @@ class CompactReplayCompletionTest {
     private fun encode(events: List<HistoryOutboxEvent>) {
         val registries = bundledPersistenceRegistries()
         val mapper = HistoryRecordingPersistenceMapper(registries)
-        CompactReplayCodec.encodeCompact(events, mapper, registries)
+        CompactReplayCodec.encodeCompact(events, mapper, registries, bundledSetAsideTiles(events))
     }
 
     /**

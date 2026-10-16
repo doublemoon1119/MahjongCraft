@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRe
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.CompactReplayCodec
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledSetAsideTiles
 import java.io.ByteArrayOutputStream
 import java.util.logging.Logger
 import java.util.zip.GZIPOutputStream
@@ -32,8 +33,8 @@ class HistoryWinDetailsCapacityTest {
         val mapper = HistoryRecordingPersistenceMapper(registries)
         for ((index, fixture) in ReplayCapacityFixtures.all.withIndex()) {
             val expanded = withDetails(fixture.events)
-            val original = CompactReplayCodec.encodeCompact(fixture.events, mapper, registries).toString().toByteArray(Charsets.UTF_8)
-            val bytes = CompactReplayCodec.encodeCompact(expanded, mapper, registries).toString().toByteArray(Charsets.UTF_8)
+            val original = CompactReplayCodec.encodeCompact(fixture.events, mapper, registries, bundledSetAsideTiles(fixture.events)).toString().toByteArray(Charsets.UTF_8)
+            val bytes = CompactReplayCodec.encodeCompact(expanded, mapper, registries, bundledSetAsideTiles(expanded)).toString().toByteArray(Charsets.UTF_8)
             val compressed = gzip(bytes)
             assertTrue(expanded.any { it.fact is HistoryFact.WinSettled }, "Capacity fixture must include winner details")
             assertTrue(bytes.size > original.size, "Winner detail capacity fixture must measure a nonzero additional payload")
@@ -42,7 +43,7 @@ class HistoryWinDetailsCapacityTest {
             Logger.getLogger(javaClass.name).info(
                 "Winner detail capacity fixture ${index + 1}: JSON=${bytes.size} bytes, gzip=${compressed.size} bytes, additional JSON=${bytes.size - original.size} bytes",
             )
-            val dense = CompactReplayCodec.encodeCompact(withDetails(fixture.events, Int.MAX_VALUE, 12), mapper, registries).toString().toByteArray(Charsets.UTF_8)
+            val dense = CompactReplayCodec.encodeCompact(withDetails(fixture.events, Int.MAX_VALUE, 12), mapper, registries, bundledSetAsideTiles(withDetails(fixture.events, Int.MAX_VALUE, 12))).toString().toByteArray(Charsets.UTF_8)
             val denseGzip = gzip(dense)
             assertTrue(dense.size - original.size <= 8_000, "Dense winner detail payload exceeded its additional JSON budget")
             assertTrue(denseGzip.size <= 35_000, "Dense winner detail payload exceeded the gzip limit")

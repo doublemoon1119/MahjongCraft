@@ -38,7 +38,7 @@ class HistoryWinningHandProjectionTest {
         )
         val encoded = CompactFactCodec.encode(fact, linkedMapOf(), linkedMapOf())
         val restored = CompactFactCodec.decode(encoded, listOf(HistoryFactTypeKeys.WIN_SETTLED), emptyList())
-        val projected = mapper().mapFacts(
+        val projected = HistoryReplayProjectionMapper.mapFacts(
             listOf(restored),
             listOf(null),
             identity(3),
@@ -68,7 +68,7 @@ class HistoryWinningHandProjectionTest {
         )
         val encoded = CompactFactCodec.encode(fact, linkedMapOf(), linkedMapOf())
         val restored = CompactFactCodec.decode(encoded, listOf(HistoryFactTypeKeys.WIN_SETTLED), emptyList())
-        val projected = mapper().mapFacts(listOf(restored), listOf(null), identity(1), 1, catalog(1), budget()).single()
+        val projected = HistoryReplayProjectionMapper.mapFacts(listOf(restored), listOf(null), identity(1), 1, catalog(1), budget()).single()
         val completion = assertIs<HistoryReplayFact.Completion>(projected)
 
         assertNull(completion.outcome?.winnerDetails?.single()?.hand)
@@ -88,13 +88,6 @@ class HistoryWinningHandProjectionTest {
      * @return 可供單筆測試事實使用的讀取預算。
      */
     private fun budget() = ReplayReadBudget(ReplayReadLimits()) {}
-
-    /**
-     * 建立投影 mapper。
-     *
-     * @return 未註冊擴充資料的標準 mapper。
-     */
-    private fun mapper() = HistoryReplayProjectionMapper(HistoryReplayProjectionRegistry())
 
     /**
      * 建立測試用 canonical 玩家身分。

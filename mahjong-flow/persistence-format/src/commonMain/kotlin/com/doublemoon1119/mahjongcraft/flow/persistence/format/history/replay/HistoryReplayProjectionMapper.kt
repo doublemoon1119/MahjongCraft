@@ -3,11 +3,11 @@ package com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFactTypeKeys
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryActionTypeKeys
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryDetailValueTypeKeys
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayDiscard
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayIdentity
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayMeld
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayPlayerState
-import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayRuleInformation
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayWinningHand
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundOutcome
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundPosition
@@ -35,13 +35,10 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
 
-/**
- * 將已驗證的索引投影轉為歷史讀模型，不還原權威規則命令。
- *
- * @property registry 規則專屬公開資料的明確解碼器。
- */
-internal class HistoryReplayProjectionMapper(private val registry: HistoryReplayProjectionRegistry) {
+/** 將已驗證的索引投影轉為歷史讀模型，不還原權威規則命令。 */
+internal object HistoryReplayProjectionMapper {
     /**
      * 映射選取位置的唯一桌況。
      *
@@ -75,7 +72,7 @@ internal class HistoryReplayProjectionMapper(private val registry: HistoryReplay
             identity, roundNumber, position, tileCatalog, players, wall, reserved,
             players.getOrNull(current)?.initialSeatIndex ?: invalid(), dealer, wind, roundPosition,
             integer(root.getValue(ReplaySourceKeys.COMBO_COUNT)), root[ReplaySourceKeys.FINISHED_PLAYER_IDS]?.let { array(it).map { value -> context.seat(integer(value)) }.toSet() } ?: emptySet(),
-            optionalRule(root[ReplaySourceKeys.DYNAMIC_RULE_STATE], context), root.getValue(ReplaySourceKeys.PENDING_REACTION) != JsonNull, root.getValue(ReplaySourceKeys.PENDING_ROBBING_REACTION) != JsonNull, null,
+            root.getValue(ReplaySourceKeys.PENDING_REACTION) != JsonNull, root.getValue(ReplaySourceKeys.PENDING_ROBBING_REACTION) != JsonNull, null,
         )
     }
 
@@ -105,10 +102,12 @@ internal class HistoryReplayProjectionMapper(private val registry: HistoryReplay
                     val actionType = string(action.getValue(ReplaySourceKeys.TYPE))
                     action[ReplaySourceKeys.TILE_ID]?.let { context.tile(integer(it)) }
                     action[ReplaySourceKeys.WITH_TILE_IDS]?.let { refs(it, context) }
-                    val extension = if (actionType == HistoryActionTypeKeys.EXTENSION) obj(action.getValue(ReplaySourceKeys.VALUE)) else null
-                    val extensionType = extension?.getValue(ReplaySourceKeys.TYPE_KEY)?.let(::string)
-                    extensionType?.let { registry.decodeAction(it, checkNotNull(extension).getValue(ReplayFormatKeys.PAYLOAD), context) }
-                        ?: HistoryReplayFact.KnownAction(type, actor, actionType, direct, revealed, extensionType)
+                    val extensionType = if (actionType == HistoryActionTypeKeys.EXTENSION) {
+                        string(obj(action.getValue(ReplaySourceKeys.VALUE)).getValue(ReplaySourceKeys.TYPE_KEY))
+                    } else {
+                        null
+                    }
+                    HistoryReplayFact.KnownAction(type, actor, actionType, direct, revealed, extensionType)
                 }
                 HistoryFactTypeKeys.REACTION_RESOLVED -> {
                     val action = fact.getValue(ReplaySourceKeys.RESOLVED_ACTION).takeUnless { it == JsonNull }?.let(::obj)
@@ -131,7 +130,7 @@ internal class HistoryReplayProjectionMapper(private val registry: HistoryReplay
                     type,
                     HistoryRoundOutcome(string(fact.getValue(ReplaySourceKeys.REASON_ID)), emptyList(), emptyMap()),
                 )
-                else -> registry.decodeFact(type, fact, context) ?: HistoryReplayFact.Opaque(type, actor, direct, revealed)
+                else -> HistoryReplayFact.Opaque(type, actor, direct, revealed)
             }
         }
     }
@@ -149,9 +148,8 @@ internal class HistoryReplayProjectionMapper(private val registry: HistoryReplay
         val tiles = refs(hand.getValue(ReplaySourceKeys.HAND_TILES), context)
         val lastDrawn = hand.getValue(ReplaySourceKeys.LAST_DRAWN).takeUnless { it == JsonNull }?.let { context.tile(integer(it)) }
         require(lastDrawn == null || lastDrawn !in tiles) { "Replay last drawn tile must be separate from standing hand tiles" }
-        val pile = obj(value.getValue(ReplaySourceKeys.DISCARD_PILE))
-        val typeKey = string(pile.getValue(ReplaySourceKeys.TYPE_KEY))
-        val discards = registry.decodeDiscard(typeKey, pile.getValue(ReplayFormatKeys.PAYLOAD), context) ?: throw ReplayReadException(ReplayReadError.UNSUPPORTED_CONTENT)
+        val discards = array(value.getValue(ReplayFormatKeys.DISCARDS)).map { discard(obj(it), context) }
+        val setAside = refs(value.getValue(ReplayFormatKeys.SET_ASIDE_TILES), context)
         return HistoryReplayPlayerState(
             context.seat(integer(value.getValue(ReplaySourceKeys.INITIAL_SEAT_INDEX))),
             tiles,
@@ -160,23 +158,29 @@ internal class HistoryReplayProjectionMapper(private val registry: HistoryReplay
             discards,
             integer(value.getValue(ReplaySourceKeys.SCORE)),
             Wind.valueOf(string(value.getValue(ReplaySourceKeys.SEAT_WIND))),
-            optionalRule(value[ReplaySourceKeys.PLAYER_RULE_STATE], context),
-            setAsideTiles(value[ReplaySourceKeys.PLAYER_RULE_STATE], context),
+            setAside,
         )
     }
 
     /**
-     * 經註冊 codec 從玩家規則狀態取出移出手牌的牌；沒有規則狀態或未註冊時為空清單。
+     * 讀取不分規則的牌河項目；省略的鳴走與標記欄位分別代表未鳴走與沒有標記。
      *
-     * @param value 可為 null 的 typed envelope。
-     * @param context 解碼預算與索引。
-     * @return 依移出順序排列的牌參照。
+     * @param value 牌河項目投影。
+     * @param context 索引驗證上下文。
+     * @return 回放捨牌。
      */
-    private fun setAsideTiles(value: JsonElement?, context: HistoryReplayProjectionContext): List<HistoryTileReference> {
-        if (value == null || value == JsonNull) return emptyList()
-        val typed = obj(value)
-        val type = string(typed.getValue(ReplaySourceKeys.TYPE_KEY))
-        return registry.decodeSetAsideTiles(type, typed.getValue(ReplayFormatKeys.PAYLOAD), context).orEmpty()
+    private fun discard(value: JsonObject, context: HistoryReplayProjectionContext): HistoryReplayDiscard {
+        context.charge()
+        require(value.keys.all { it in DISCARD_KEYS }) { "Replay discard contains unexpected fields" }
+        val tile = context.tile(integer(value.getValue(ReplayFormatKeys.DISCARD_TILE)))
+        val taken = value[ReplayFormatKeys.DISCARD_TAKEN]?.let { if (boolean(it)) true else invalid() } ?: false
+        val markers = value[ReplayFormatKeys.DISCARD_MARKERS]?.let { markers ->
+            array(markers).map {
+                context.charge()
+                string(it)
+            }.toSet()
+        } ?: emptySet()
+        return HistoryReplayDiscard(tile, taken, markers)
     }
 
     /**
@@ -206,20 +210,6 @@ internal class HistoryReplayProjectionMapper(private val registry: HistoryReplay
             RelativeDirectionPersistenceDto.SELF -> RelativeDirection.Self
         }
         return HistoryReplayMeld(type, tiles, source, direction)
-    }
-
-    /**
-     * 只經註冊的解碼器公開規則資料；未註冊型別只保留識別碼，不公開 payload。
-     *
-     * @param value 可為 null 的 typed envelope。
-     * @param context 解碼預算與索引。
-     * @return envelope 缺少時為 null；未註冊型別回傳只含 type key 的資訊；其餘回傳解碼器結果。
-     */
-    private fun optionalRule(value: JsonElement?, context: HistoryReplayProjectionContext): HistoryReplayRuleInformation? {
-        if (value == null || value == JsonNull) return null
-        val typed = obj(value)
-        val type = string(typed.getValue(ReplaySourceKeys.TYPE_KEY))
-        return registry.decodeOptionalRule(type, typed.getValue(ReplayFormatKeys.PAYLOAD), context) ?: HistoryReplayRuleInformation(type, null)
     }
 
     /**
@@ -378,6 +368,14 @@ internal class HistoryReplayProjectionMapper(private val registry: HistoryReplay
     private fun string(value: JsonElement): String = (value as? JsonPrimitive)?.takeIf { it.isString }?.content ?: invalid()
 
     /**
+     * 讀取嚴格布林值。
+     *
+     * @param value 待驗證值。
+     * @return 布林值。
+     */
+    private fun boolean(value: JsonElement): Boolean = (value as? JsonPrimitive)?.takeUnless { it.isString }?.booleanOrNull ?: invalid()
+
+    /**
      * 讀取嚴格整數。
      *
      * @param value 待驗證值。
@@ -387,4 +385,7 @@ internal class HistoryReplayProjectionMapper(private val registry: HistoryReplay
 
     /** 拒絕破損投影，不以預設資料替代。 */
     private fun invalid(): Nothing = throw ReplayReadException(ReplayReadError.INVALID_DOCUMENT)
+
+    /** 牌河項目允許的欄位。 */
+    private val DISCARD_KEYS = setOf(ReplayFormatKeys.DISCARD_TILE, ReplayFormatKeys.DISCARD_TAKEN, ReplayFormatKeys.DISCARD_MARKERS)
 }

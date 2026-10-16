@@ -13,8 +13,8 @@ integration.
   third-party extensions use. Registration does not imply that a rule is
   feature-complete; see the [logic module's current rule scope](../mahjong-logic/README.md).
 - Cover the platform-independent part of each rule, such as rule modules,
-  rule-specific tile types, network and persistence formats, replay projections,
-  AI and command handlers, and settlement resolvers.
+  rule-specific tile types, network and persistence formats, AI and command
+  handlers, and settlement resolvers.
 - Keep every registration of a rule inside that rule's extension, so one file
   lists everything the rule registers; other modules only provide the things
   being registered.

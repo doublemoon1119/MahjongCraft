@@ -253,7 +253,6 @@ val fabricServerModule = module {
             locations = get(),
             configState = get(),
             retentionCoordinator = get(),
-            replayProjectionRegistry = get(),
         )
     }
     single<FabricHistoryQueryService>()

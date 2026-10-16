@@ -9,7 +9,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryOutboxWriter
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryRetentionCoordinator
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.buildTestHistoryReplayProjectionRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftHistoryConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
@@ -124,7 +123,6 @@ class HistoryGenerationControllerTest {
     ): FabricHistoryOutboxWriter = FabricHistoryOutboxWriter(
         store = store,
         registries = bundledPersistenceRegistries(),
-        replayProjectionRegistry = buildTestHistoryReplayProjectionRegistry(),
         dispatchers = TestDispatchers,
         moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() },
         locations = TableLocationRegistry(),

@@ -7,12 +7,11 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRo
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.CompactReplayCodec
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.CompactReplayRoundReader
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.HistoryReplayProjectionRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayJsonParseLimits
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayReadResult
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.parseBoundedReplayJson
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
-import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledHistoryReplayProjections
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledSetAsideTiles
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.int
@@ -31,13 +30,9 @@ class CompactReplayRoundReaderCapacityTest {
     @Test
     fun `fixed full matches fit the bounded round read budget`() = runTest {
         val registries = bundledPersistenceRegistries()
-        val projections = HistoryReplayProjectionRegistry().apply {
-            this.registerBundledHistoryReplayProjections()
-            freeze()
-        }
-        val reader = CompactReplayRoundReader(projections)
+        val reader = CompactReplayRoundReader()
         for (fixture in ReplayCapacityFixtures.all) {
-            val document = CompactReplayCodec.encodeCompact(fixture.events, HistoryRecordingPersistenceMapper(registries), registries)
+            val document = CompactReplayCodec.encodeCompact(fixture.events, HistoryRecordingPersistenceMapper(registries), registries, bundledSetAsideTiles(fixture.events))
             val parsed = assertIs<ReplayReadResult.Success<JsonObject>>(
                 parseBoundedReplayJson(document.toString(), ReplayJsonParseLimits(maximumUtf8Bytes = 8 * 1024 * 1024)),
             ).value

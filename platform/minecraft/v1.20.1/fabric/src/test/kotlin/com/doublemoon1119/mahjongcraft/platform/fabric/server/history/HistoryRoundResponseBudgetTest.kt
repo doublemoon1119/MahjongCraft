@@ -74,7 +74,7 @@ class HistoryRoundResponseBudgetTest {
         val state = HistoryRoundState(
             identity, 1, HistoryRoundPosition.Initial, HistoryRoundTileCatalog(listOf(Tile.Honor.East)),
             emptyList(), emptyList(), emptyList(), 0, 0, Wind.EAST, MatchRoundPosition.initial(),
-            0, emptySet(), null, false, false, null,
+            0, emptySet(), false, false, null,
         )
         val request = HistoryRoundStateRequestDto("state", identity.matchId.toString(), roundNumber = 1, scope = HistoryQueryScopeDto.OWN, position = HistoryRoundPositionDto.Initial)
         assertNotNull(boundedHistoryRoundState(request, state, bundledNetworkJson()).state)

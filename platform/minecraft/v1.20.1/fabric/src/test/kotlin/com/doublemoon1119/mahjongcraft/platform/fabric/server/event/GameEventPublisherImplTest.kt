@@ -12,7 +12,6 @@ import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.FabricHistoryOutboxWriter
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.HistoryRetentionCoordinator
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.history.buildTestHistoryReplayProjectionRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.network.PlayerIdentitySender
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.player.ServerPlayerIdentityStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateDelivery
@@ -105,7 +104,6 @@ class GameEventPublisherImplTest {
     private fun historyWriter(store: AuthoritativeStateStore): FabricHistoryOutboxWriter = FabricHistoryOutboxWriter(
         store = store,
         registries = bundledPersistenceRegistries(),
-        replayProjectionRegistry = buildTestHistoryReplayProjectionRegistry(),
         moduleRegistry = MahjongModuleRegistryImpl(),
         locations = TableLocationRegistry(),
         configState = MinecraftServerConfigState(),

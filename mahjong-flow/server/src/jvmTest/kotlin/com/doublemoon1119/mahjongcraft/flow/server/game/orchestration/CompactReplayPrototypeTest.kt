@@ -11,8 +11,10 @@ import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
+import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledSetAsideTiles
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -124,8 +126,8 @@ class CompactReplayPrototypeTest {
                 measurement.gzipBytes <= 35_000,
                 "Compact Replay gzip exceeds 35 KB: ${measurement.gzipBytes} bytes",
             )
-            val first = CompactReplayCodec.encodeCompact(fixture.events, mapper, registries).toString()
-            val second = CompactReplayCodec.encodeCompact(fixture.events, mapper, registries).toString()
+            val first = CompactReplayCodec.encodeCompact(fixture.events, mapper, registries, bundledSetAsideTiles(fixture.events)).toString()
+            val second = CompactReplayCodec.encodeCompact(fixture.events, mapper, registries, bundledSetAsideTiles(fixture.events)).toString()
             assertEquals(first, second, "Repeated production encoding changed for ${fixture.gameLength}")
         }
     }
@@ -207,7 +209,7 @@ class CompactReplayPrototypeTest {
             },
         )
         assertFalse(UUID_PATTERN.containsMatchIn(roundText))
-        val production = CompactReplayCodec.encodeCompact(events, mapper, registries)
+        val production = CompactReplayCodec.encodeCompact(events, mapper, registries, bundledSetAsideTiles(events))
         val productionText = production.toString()
         val decoded = CompactReplayCodec.decodeCompact(production)
         assertEquals(result.expectedProjections, decoded.map { round -> round.map { it.projection } })
@@ -308,6 +310,7 @@ class CompactReplayPrototypeTest {
         val encodedEvents = priorPrototype.slimActionResults(json.parseToJsonElement(json.encodeToString(encoded)) as JsonArray)
         val pairs = events.zip(encodedEvents.map { it as JsonObject })
         val first = events.first()
+        val setAsideTiles = bundledSetAsideTiles(events)
         val typeDictionary = linkedMapOf<String, JsonElement>()
         val rounds = mutableListOf<MutableRound>()
         val players = mutableListOf<JsonElement>()
@@ -389,7 +392,7 @@ class CompactReplayPrototypeTest {
                         }
                         current = state
                         roundIndex = createRoundIndex(state, typeDictionary)
-                        val projection = project(state, checkNotNull(roundIndex))
+                        val projection = project(state, checkNotNull(roundIndex), setAsideTiles)
                         rounds += MutableRound(rounds.size + 1, checkNotNull(roundIndex).tileTypes.toList(), projection)
                         parts["h"] = JsonPrimitive(true)
                         openedRound = true
@@ -415,7 +418,7 @@ class CompactReplayPrototypeTest {
             }
             if (tableChanged) {
                 val index = checkNotNull(roundIndex)
-                val afterProjection = project(checkNotNull(current), index)
+                val afterProjection = project(checkNotNull(current), index, setAsideTiles)
                 val previousProjection = if (openedRound) rounds.last().initial else rounds.last().replayed
                 val delta = priorPrototype.jsonDelta(previousProjection, afterProjection)
                 val encodedPatch = when {
@@ -436,7 +439,7 @@ class CompactReplayPrototypeTest {
             } else if (openedRound) {
                 rounds.last().replayed = rounds.last().initial
             } else if (before != null) {
-                assertEquals(project(before, checkNotNull(roundIndex)), rounds.last().replayed)
+                assertEquals(project(before, checkNotNull(roundIndex), setAsideTiles), rounds.last().replayed)
             }
             rounds.last().transactions += JsonObject(parts)
             rounds.last().expected += rounds.last().replayed
@@ -567,11 +570,18 @@ class CompactReplayPrototypeTest {
     /**
      * 將權威桌況轉為歷史重播需要的遊戲內容投影。
      *
+     * 牌河與移出手牌的牌改為不分規則的清單，與正式編碼器保存的內容一致。
+     *
      * @param state 待投影的權威桌況。
      * @param index 本局牌與玩家的索引。
+     * @param setAsideTiles 取得每位玩家移出手牌的牌。
      * @return 使用局內索引的遊戲內容投影。
      */
-    private fun project(state: TableState, index: RoundIndex): JsonElement {
+    private fun project(
+        state: TableState,
+        index: RoundIndex,
+        setAsideTiles: (MahjongPlayer) -> List<IdentifiedTile>,
+    ): JsonElement {
         val dto = state.toPersistenceDto(
             registries.ruleConfigs,
             registries.discardPiles,
@@ -581,11 +591,23 @@ class CompactReplayPrototypeTest {
             registries.extensionGameActions,
         )
         val encoded = json.encodeToJsonElement(dto) as JsonObject
-        val gameplay = encoded.filterKeys { it !in setOf("id", "config", "physicalWallLayout") }.toMutableMap()
+        val gameplay = encoded.filterKeys { it !in setOf("id", "config", "physicalWallLayout", "dynamicRuleState") }.toMutableMap()
         gameplay["players"] = JsonArray(
-            (encoded.getValue("players") as JsonArray).map { playerElement ->
-                val player = playerElement as JsonObject
-                JsonObject(player.filterKeys { it !in setOf("id", "actionHistory") })
+            (encoded.getValue("players") as JsonArray).zip(state.players) { playerElement, player ->
+                val projected = (playerElement as JsonObject).filterKeys { it !in setOf("id", "actionHistory", "discardPile", "playerRuleState") }.toMutableMap()
+                projected["discards"] = JsonArray(
+                    player.discardPile.entries.map { entry ->
+                        JsonObject(
+                            buildMap {
+                                put("tile", JsonPrimitive(entry.tile.id.toString()))
+                                if (entry.isTaken) put("taken", JsonPrimitive(true))
+                                if (entry.publicMarkerIds.isNotEmpty()) put("markers", JsonArray(entry.publicMarkerIds.sorted().map(::JsonPrimitive)))
+                            },
+                        )
+                    },
+                )
+                projected["setAside"] = JsonArray(setAsideTiles(player).map { JsonPrimitive(it.id.toString()) })
+                JsonObject(projected)
             },
         )
         return translate(JsonObject(gameplay), index)

@@ -114,7 +114,6 @@ class HistoryGenerationRetentionStressTest {
         return FabricHistoryOutboxWriter(
             store = store,
             registries = bundledPersistenceRegistries(),
-            replayProjectionRegistry = buildTestHistoryReplayProjectionRegistry(),
             dispatchers = TestDispatchers,
             moduleRegistry = modules,
             locations = TableLocationRegistry(),

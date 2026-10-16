@@ -162,7 +162,7 @@ class HistoryRoundStatePresentationTest {
         handTiles: List<Int> = emptyList(),
         lastDrawn: Int? = null,
         melds: List<HistoryReplayMeldDto> = emptyList(),
-    ) = HistoryReplayPlayerStateDto(seat, handTiles, melds, lastDrawn, emptyList(), 25000, WindDto.EAST, null, emptyList())
+    ) = HistoryReplayPlayerStateDto(seat, handTiles, melds, lastDrawn, emptyList(), 25000, WindDto.EAST, emptyList())
 
     /**
      * 建立包含指定玩家的歷史桌況。
@@ -188,7 +188,6 @@ class HistoryRoundStatePresentationTest {
         roundPosition = MatchRoundPositionDto(0, WindDto.EAST, 1, MatchRoundPhaseDto.REGULAR),
         comboCount = 0,
         finishedPlayerSeats = emptySet(),
-        dynamicRuleState = null,
         hasPendingReaction = false,
         hasPendingRobbingReaction = false,
         outcome = null,

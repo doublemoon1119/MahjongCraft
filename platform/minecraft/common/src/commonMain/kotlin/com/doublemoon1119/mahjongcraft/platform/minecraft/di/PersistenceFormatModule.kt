@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.di
 
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.HistoryReplayProjectionRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.emptyPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.state.AuthoritativeStatePersistenceCodec
@@ -16,6 +15,4 @@ import org.koin.plugin.module.dsl.single
 val persistenceFormatModule = module {
     single<PersistenceRegistries> { emptyPersistenceRegistries() }
     single { AuthoritativeStatePersistenceCodec(registries = get()) }
-
-    single<HistoryReplayProjectionRegistry>()
 }

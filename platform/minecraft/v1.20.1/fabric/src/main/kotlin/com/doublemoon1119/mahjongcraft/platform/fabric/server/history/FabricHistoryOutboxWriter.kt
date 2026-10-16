@@ -23,7 +23,6 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryOu
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.CompactReplayCodec
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.CompactReplayRoundReader
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.HistoryReplayProjectionRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayJsonParseLimits
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.ReplayReadResult
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.parseBoundedReplayJson
@@ -67,7 +66,6 @@ import kotlin.uuid.Uuid
  * @param locations 取得牌桌位置摘要；只交給封存服務。
  * @property configState 目前有效的不可變設定，供 session 初始化使用。
  * @property retentionCoordinator 將清理與有效政策更新排序的協調邊界。
- * @property replayProjectionRegistry 已完成註冊與凍結的歷史讀取轉換表。
  * @property observer 接收背景工作各環節耗時與寫入事件數；null 時不量測。
  */
 class FabricHistoryOutboxWriter(
@@ -78,7 +76,6 @@ class FabricHistoryOutboxWriter(
     locations: TableLocationRegistry,
     private val configState: MinecraftServerConfigState,
     private val retentionCoordinator: HistoryRetentionCoordinator,
-    private val replayProjectionRegistry: HistoryReplayProjectionRegistry,
     private val observer: HistoryWriterObserver? = null,
 ) {
     /** 記錄歷史寫入與對帳錯誤的 logger。 */
@@ -441,7 +438,7 @@ class FabricHistoryOutboxWriter(
         readAuthorizedHistoryRound(
             activeDatabase, access, historyQueryPolicy(), matchId, queryScope, excludedHistoryMatches(),
             { parseBoundedReplayJson(it) },
-            { CompactReplayRoundReader(replayProjectionRegistry).readEvents(it, matchId, roundNumber, startIndex, limit) },
+            { CompactReplayRoundReader().readEvents(it, matchId, roundNumber, startIndex, limit) },
             { it.identity },
         )
     }
@@ -468,7 +465,7 @@ class FabricHistoryOutboxWriter(
         readAuthorizedHistoryRound(
             activeDatabase, access, historyQueryPolicy(), matchId, queryScope, excludedHistoryMatches(),
             { parseBoundedReplayJson(it) },
-            { CompactReplayRoundReader(replayProjectionRegistry).readState(it, matchId, roundNumber, position) },
+            { CompactReplayRoundReader().readState(it, matchId, roundNumber, position) },
             { it.identity },
         )
     }

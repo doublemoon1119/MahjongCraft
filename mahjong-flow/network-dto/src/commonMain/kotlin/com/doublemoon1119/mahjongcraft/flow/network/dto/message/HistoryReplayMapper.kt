@@ -6,7 +6,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRe
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayIdentity
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayMeld
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayPlayerState
-import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayRuleInformation
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayTransaction
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayWinningHand
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundEvents
@@ -201,7 +200,6 @@ fun HistoryRoundState.toDto(): HistoryRoundStateDto = HistoryRoundStateDto(
     roundPosition = roundPosition.toDto(),
     comboCount = comboCount,
     finishedPlayerSeats = finishedPlayerSeats,
-    dynamicRuleState = dynamicRuleState?.toDto(),
     hasPendingReaction = hasPendingReaction,
     hasPendingRobbingReaction = hasPendingRobbingReaction,
     outcome = outcome?.toDto(),
@@ -220,7 +218,6 @@ private fun HistoryReplayPlayerState.toDto(): HistoryReplayPlayerStateDto = Hist
     discards = discards.map { HistoryReplayDiscardDto(it.tile.tileIndex, it.isTaken, it.markers) },
     score = score,
     seatWind = seatWind.toDto(),
-    playerRuleState = playerRuleState?.toDto(),
     setAsideTiles = setAsideTiles.map { it.tileIndex },
 )
 
@@ -235,13 +232,6 @@ private fun HistoryReplayMeld.toDto(): HistoryReplayMeldDto = HistoryReplayMeldD
     sourceTile = sourceTile?.tileIndex,
     sourceDirection = sourceDirection?.toDto(),
 )
-
-/**
- * 將 Replay 規則公開資訊映射為網路 DTO。
- *
- * @return 可公開傳輸的規則資訊 DTO。
- */
-private fun HistoryReplayRuleInformation.toDto(): HistoryReplayRuleInformationDto = HistoryReplayRuleInformationDto(typeKey, summary)
 
 /**
  * 將事件查詢要求 DTO 編碼成傳輸字串。
