@@ -8,7 +8,8 @@ import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
  *
  * @property ruleModuleId 規則模組的 Namespaced ID。
  * @property descriptionTranslationKey 設定描述翻譯鍵。
- * @property selectable 是否可被選取。
+ * @property selectable 是否可在房間畫面選取；可選規則必須能在麻將桌上呈現（[RulePresentationRequirements]），
+ *   伺服器只接受可選規則的房間設定。
  * @property unavailableReasonTranslationKey 不可選取時顯示的原因翻譯鍵。
  * @property defaultRuleConfig 建立預設規則設定。
  * @property categories 規則提供的設定分類。

@@ -68,6 +68,9 @@ object MinecraftMessageKeys {
     /** 開始遊戲失敗。 */
     const val GAME_START_FAILED = PREFIX + "game_start_failed"
 
+    /** 房間設定的規則目前無法使用。 */
+    const val RULE_UNAVAILABLE = PREFIX + "rule_unavailable"
+
     /** 指定的麻將桌不存在，或已超出目前可互動的範圍。 */
     const val TABLE_NOT_REACHABLE = PREFIX + "table_not_reachable"
 
@@ -519,6 +522,7 @@ object MinecraftMessageKeys {
         INVALID_PLAYER_COUNT,
         NOT_ALL_PLAYERS_READY,
         GAME_START_FAILED,
+        RULE_UNAVAILABLE,
         TABLE_NOT_REACHABLE,
         START_BLOCKED_OFFLINE_PLAYERS,
         START_BLOCKED_DISTANT_PLAYERS,

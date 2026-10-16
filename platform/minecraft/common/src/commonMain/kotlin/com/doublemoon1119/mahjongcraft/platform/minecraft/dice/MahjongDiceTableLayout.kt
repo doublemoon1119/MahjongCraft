@@ -25,6 +25,9 @@ private const val SEAT_COUNT: Int = 4
 
 /** 兩款 3×3 麻將桌共用的兩顆／三顆正式骰子位置計算。 */
 object MahjongDiceTableLayout {
+    /** 桌面上有預先驗證擺放位置的骰子數量；規則一次擲出其他數量時無法呈現。 */
+    val supportedDiceCounts: Set<Int> = setOf(2, 3)
+
     /**
      * 依桌子 UUID、投擲序號、局部投入側與世界朝向取得安全呈現位置。
      *

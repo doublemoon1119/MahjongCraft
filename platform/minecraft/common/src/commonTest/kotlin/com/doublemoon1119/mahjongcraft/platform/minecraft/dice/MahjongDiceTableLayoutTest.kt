@@ -8,10 +8,11 @@ import kotlin.uuid.Uuid
 
 /** [MahjongDiceTableLayout] 的骰子數量、variant 輪替與雙重旋轉測試。 */
 class MahjongDiceTableLayoutTest {
-    /** 兩顆與三顆 layout 都應位於固定桌面高度且位置互不重疊。 */
+    /** 公開宣告支援的每個骰子數量都有擺放位置，位於固定桌面高度且互不重疊。 */
     @Test
     fun `layouts support two and three distinct dice on tabletop`() {
-        listOf(2, 3).forEach { diceCount ->
+        assertEquals(setOf(2, 3), MahjongDiceTableLayout.supportedDiceCounts)
+        MahjongDiceTableLayout.supportedDiceCounts.forEach { diceCount ->
             val placements = placements(diceCount = diceCount)
 
             assertEquals(diceCount, placements.size)

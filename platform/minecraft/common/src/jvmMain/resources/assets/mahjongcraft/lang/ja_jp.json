@@ -812,6 +812,7 @@
   "mahjongcraft.message.rule_module_riichi": "日本麻雀",
   "mahjongcraft.message.rule_module_riichi_three_player": "日本麻雀（三人）",
   "mahjongcraft.message.rule_module_taiwan": "台湾麻雀",
+  "mahjongcraft.message.rule_unavailable": "このルールは現在使用できません",
   "mahjongcraft.message.show_game_config": "この麻雀ゲームのルール：%s",
   "mahjongcraft.message.start_blocked_distant_players": "開始できません：%s がテーブルから離れすぎています",
   "mahjongcraft.message.start_blocked_offline_players": "開始できません：%s がオフラインです",

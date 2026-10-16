@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerInd
 import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSourceRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RulePresentationRequirements
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.MatchSettlementPresentationTemplateRegistry
@@ -225,6 +226,8 @@ interface MinecraftMahjongExtension {
 
     /**
      * 登記第三方規則的宣告式房間設定欄位。
+     *
+     * 標為可選的規則必須能在麻將桌上呈現（[RulePresentationRequirements]），啟動時檢查，不符合時啟動失敗。
      *
      * @param registry 遊戲設定呈現 registry。
      */

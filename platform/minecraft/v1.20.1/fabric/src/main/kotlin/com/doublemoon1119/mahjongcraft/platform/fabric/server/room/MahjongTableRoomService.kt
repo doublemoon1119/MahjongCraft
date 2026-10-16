@@ -32,12 +32,16 @@ import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.SyncRoomSnapshot
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.ToggleReadyUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.room.usecase.UpdateConfigUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
+import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricMahjongDataStatus
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateDelivery
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateTicket
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RulePresentationRequirements
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.TableOccupancyDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.TableOccupancyPayloadDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
@@ -87,6 +91,8 @@ import kotlin.uuid.toKotlinUuid
  * @property json 編碼網路訊息的 JSON 設定。
  * @property networkRegistries 轉換網路 DTO 所需的規則註冊表。
  * @property dataStatus 麻將資料無法讀取時拒絕操作並提示玩家。
+ * @property presentations 判斷房間設定的規則是否可選。
+ * @property moduleRegistry 建立房間設定使用的規則模組，檢查能否在麻將桌上呈現。
  */
 class MahjongTableRoomService(
     private val scope: AppCoroutineScope,
@@ -118,6 +124,8 @@ class MahjongTableRoomService(
     private val json: NetworkJson,
     private val networkRegistries: NetworkDtoRegistries,
     private val dataStatus: FabricMahjongDataStatus,
+    private val presentations: GameConfigPresentationRegistry,
+    private val moduleRegistry: MahjongModuleRegistry,
 ) {
     /**
      * 將 RoomScreen 的強型別操作路由到既有權威 use case；封包中的玩家身分一律忽略。
@@ -505,6 +513,10 @@ class MahjongTableRoomService(
             }
             val room = roomRepository.getRoom(tableId)
             if (room != null) {
+                if (!isPlayable(room.gameConfig.ruleConfig)) {
+                    feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.RuleUnavailable)
+                    return@launch
+                }
                 val offlinePlayerIds = mutableListOf<Uuid>()
                 val distantPlayerIds = mutableListOf<Uuid>()
                 withContext(dispatchers.main) {
@@ -547,6 +559,18 @@ class MahjongTableRoomService(
         val location = tableLocationRegistry.get(tableId)?.location ?: return false
         return reachableTableResolver.resolve(player, BlockPos(location.x, location.y, location.z)) != null
     }
+
+    /**
+     * 房間設定的規則能否用於房間與開局；客戶端畫面只列出可選規則，伺服器仍自行檢查，不信任客戶端送來的設定。
+     *
+     * @param ruleConfig 房間設定使用的規則設定。
+     * @return 規則有可選的設定呈現且能在麻將桌上呈現時為 true。
+     */
+    private fun isPlayable(ruleConfig: MahjongRuleConfig): Boolean = RulePresentationRequirements.isPlayable(
+        ruleConfig = ruleConfig,
+        presentations = presentations,
+        moduleRegistry = moduleRegistry,
+    )
 
     /**
      * 讓房主替房間新增一名 AI 玩家。同樣以玩家目前的房間歸屬解析目標房間。
@@ -675,6 +699,10 @@ class MahjongTableRoomService(
             val room = roomRepository.getRoom(tableId)
             if (room == null) {
                 feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.PlayerNotInGame)
+                return@launch
+            }
+            if (!isPlayable(newConfig.ruleConfig)) {
+                feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.RuleUnavailable)
                 return@launch
             }
             val oldConfig = room.gameConfig

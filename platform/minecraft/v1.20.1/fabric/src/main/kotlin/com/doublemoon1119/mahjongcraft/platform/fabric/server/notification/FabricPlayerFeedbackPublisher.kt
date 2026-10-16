@@ -119,6 +119,8 @@ class FabricPlayerFeedbackPublisher(
                     player.sendMessage(Text.translatable(MinecraftMessageKeys.NOT_ALL_PLAYERS_READY), true)
                 MinecraftPlayerFeedback.GameStartFailed ->
                     player.sendMessage(Text.translatable(MinecraftMessageKeys.GAME_START_FAILED), true)
+                MinecraftPlayerFeedback.RuleUnavailable ->
+                    player.sendMessage(Text.translatable(MinecraftMessageKeys.RULE_UNAVAILABLE), true)
                 MinecraftPlayerFeedback.TableNotReachable ->
                     player.sendMessage(Text.translatable(MinecraftMessageKeys.TABLE_NOT_REACHABLE), true)
                 is MinecraftPlayerFeedback.StartBlockedByPlayers ->

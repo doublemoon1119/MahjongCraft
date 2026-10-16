@@ -102,6 +102,9 @@ sealed interface MinecraftPlayerFeedback {
     /** 開始遊戲失敗。 */
     data object GameStartFailed : MinecraftPlayerFeedback
 
+    /** 房間設定的規則目前無法在麻將桌上使用，設定未套用或無法開始對局。 */
+    data object RuleUnavailable : MinecraftPlayerFeedback
+
     /** 指定的麻將桌不存在，或已超出目前可互動的範圍。 */
     data object TableNotReachable : MinecraftPlayerFeedback
 

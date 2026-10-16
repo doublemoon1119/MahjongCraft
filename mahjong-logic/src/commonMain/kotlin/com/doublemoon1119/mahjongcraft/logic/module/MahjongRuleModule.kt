@@ -104,6 +104,7 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * 建立適用於該規則的牌牆開門 policy。
      *
      * 尚未定義骰子開門規則的模組可使用預設的 null；通用初始化流程不得自行套用其他玩法的公式。
+     * 不提供時開局不擲骰、不產生牌山結構；依牌山結構呈現牌局的平台可能因此無法使用此規則。
      *
      * @return 此規則的 [WallOpeningPolicy]，若尚未支援權威開門流程則為 null。
      */
@@ -122,6 +123,7 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * 建立適用於該規則的牌牆布局能力，將洗牌後的完整牌組依開門結果排列成正式的摸牌順序與結構。
      *
      * 尚未定義牌牆布局的模組可使用預設的 null；通用初始化流程不得自行假設固定張數或固定每面墩數。
+     * 不提供時開局不產生牌山結構；依牌山結構呈現牌局的平台可能因此無法使用此規則。
      *
      * @return 此規則的 [TileWallLayout]，若尚未支援則為 null。
      */

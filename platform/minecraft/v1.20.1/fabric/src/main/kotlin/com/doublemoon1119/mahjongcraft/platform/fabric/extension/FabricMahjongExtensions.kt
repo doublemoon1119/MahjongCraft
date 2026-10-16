@@ -21,6 +21,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMah
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtensionRegistrar
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftPresentationRegistries
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RulePresentationRequirements
 import net.fabricmc.loader.api.FabricLoader
 
 /** Fabric Loader 用來發現 [MahjongExtension] 的 entrypoint key。 */
@@ -86,6 +87,7 @@ internal object FabricMahjongExtensions {
      *
      * 所有相依都必須由呼叫端明確提供，測試與正式啟動共用相同的註冊路徑。
      * 各層 registrar 成功後各自凍結；後續層失敗時中止啟動，不回滾先前層的登記或重試。
+     * Minecraft 呈現登記完成後，檢查每個可選規則都能在麻將桌上呈現（[RulePresentationRequirements]），不符合時中止啟動。
      *
      * @return Core、Minecraft presentation 與 Fabric 依來源合併後的所有登記。
      * @param coreRegistries 規則核心 registry 集合。
@@ -131,6 +133,10 @@ internal object FabricMahjongExtensions {
             extensions = BundledMinecraftMahjongExtensions.all + discoveredExtensions.filterIsInstance<MinecraftMahjongExtension>(),
             registries = presentationRegistries,
             failurePolicy = failurePolicy,
+        )
+        RulePresentationRequirements.verifySelectableRules(
+            presentations = presentationRegistries.gameConfigPresentationRegistry,
+            moduleRegistry = coreRegistries.moduleRegistry,
         )
         val minecraftSources = minecraftResult.sources.map { source ->
             ExtensionRegistrationSource(

@@ -812,6 +812,7 @@
   "mahjongcraft.message.rule_module_riichi": "日本麻將",
   "mahjongcraft.message.rule_module_riichi_three_player": "日本麻將（三人）",
   "mahjongcraft.message.rule_module_taiwan": "台灣麻將",
+  "mahjongcraft.message.rule_unavailable": "這個規則目前無法使用",
   "mahjongcraft.message.show_game_config": "所在麻將遊戲的 %s",
   "mahjongcraft.message.start_blocked_distant_players": "無法開始遊戲：%s 距離桌子太遠",
   "mahjongcraft.message.start_blocked_offline_players": "無法開始遊戲：%s 目前離線",

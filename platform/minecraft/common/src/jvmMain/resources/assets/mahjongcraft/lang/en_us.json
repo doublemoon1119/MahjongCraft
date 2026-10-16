@@ -812,6 +812,7 @@
   "mahjongcraft.message.rule_module_riichi": "Riichi Mahjong",
   "mahjongcraft.message.rule_module_riichi_three_player": "Riichi Mahjong (3-Player)",
   "mahjongcraft.message.rule_module_taiwan": "Taiwanese Mahjong",
+  "mahjongcraft.message.rule_unavailable": "This rule can't be used right now",
   "mahjongcraft.message.show_game_config": "Current mahjong game rules: %s",
   "mahjongcraft.message.start_blocked_distant_players": "Cannot start: too far from the table: %s",
   "mahjongcraft.message.start_blocked_offline_players": "Cannot start: offline: %s",

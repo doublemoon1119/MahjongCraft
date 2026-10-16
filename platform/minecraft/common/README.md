@@ -16,6 +16,16 @@ Its Gradle project path is `:minecraft_common`; the source directory remains `pl
 - Define shared history presentation, rule catalogues, achievement mappings,
   and game-event subscriptions and delivery contracts.
 
+## Selectable rules
+
+A rule appears in the room screen only when `MinecraftMahjongExtension.registerGameConfigPresentations`
+registers a `GameConfigPresentationDefinition` with `selectable = true`. Every tile on the table comes
+from the wall, so the rule module of a selectable rule must provide a wall layout and a wall opening
+policy, and each opening roll must use a dice count the table can place
+(`MahjongDiceTableLayout.supportedDiceCounts`, currently two or three). Startup fails when a selectable
+rule does not meet these requirements, and the server rejects room settings and game starts whose rule
+is not selectable or cannot be presented.
+
 ## Tile resource locations
 
 Register a tile through `MinecraftMahjongExtension.registerTileAssets` using a
