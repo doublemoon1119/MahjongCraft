@@ -101,4 +101,11 @@ sealed interface RoomError : ApplicationError {
      * @property roomId 房間 Uuid。
      */
     data class NotAiPlayer(val playerId: Uuid, val roomId: Uuid) : RoomError
+
+    /**
+     * 指定的 AI 策略沒有登記；不保留送來的 key，因為它可能是任意長度的輸入。
+     *
+     * @property roomId 房間 Uuid。
+     */
+    data class UnknownAiStrategy(val roomId: Uuid) : RoomError
 }

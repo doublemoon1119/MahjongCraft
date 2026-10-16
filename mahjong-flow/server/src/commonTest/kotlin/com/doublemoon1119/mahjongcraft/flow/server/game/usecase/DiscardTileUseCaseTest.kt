@@ -28,6 +28,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
+import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.SidewaysMarkedDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
@@ -92,6 +93,40 @@ class DiscardTileUseCaseTest {
 
     private val drawnTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
     private val handTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5))
+
+    /**
+     * 驗證宣告加槓後、其他玩家還能搶槓時，宣告者不能直接捨牌，桌況不變；用例自己檢查時機，不依賴呼叫端。
+     */
+    @Test
+    fun `test discard tile fails while other players may rob a declared kan`() = runTest {
+        val fixtures = Fixtures()
+        val currentPlayer = FakeMahjongPlayerFactory.create(
+            id = currentPlayerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(tiles = listOf(handTile), lastDrawn = drawnTile),
+        )
+        val otherPlayer = FakeMahjongPlayerFactory.create(id = otherPlayerId, initialSeat = Wind.SOUTH)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer, otherPlayer),
+            config = RiichiRuleConfig(),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0,
+        ).copy(
+            pendingRobbingReaction = PendingRobbingReaction(
+                declarerId = currentPlayerId,
+                declaredAction = GameAction.Kan(GameAction.KanType.ADDED_KAN, handTile.id, emptyList()),
+                robbedTile = handTile,
+                eligiblePlayerIds = setOf(otherPlayerId),
+            ),
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, currentPlayerId, drawnTile.id)
+
+        assertEquals(Outcome.Error(GameError.IllegalAction(currentPlayerId, gameId, GameAction.Discard(drawnTile.id))), result)
+        assertEquals(table, fixtures.gameRepo.getTableState(gameId))
+    }
 
     /**
      * 驗證捨棄剛摸到的牌（摸切）時，正確更新手牌、牌河並推進到下一位玩家。

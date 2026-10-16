@@ -146,7 +146,7 @@ internal class RoomSettingsDraft {
         raw: String,
     ): Boolean {
         val number = raw.toIntOrNull()
-        val valid = (editor.nullable && raw.isEmpty()) || number != null && number in editor.minimum..editor.maximum
+        val valid = (raw.isEmpty() || number != null) && editor.accepts(GameConfigPresentationValue.IntegerValue(number))
         markFieldValidity(field.id, valid)
         return valid
     }

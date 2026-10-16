@@ -121,6 +121,10 @@ class FabricPlayerFeedbackPublisher(
                     player.sendMessage(Text.translatable(MinecraftMessageKeys.GAME_START_FAILED), true)
                 MinecraftPlayerFeedback.RuleUnavailable ->
                     player.sendMessage(Text.translatable(MinecraftMessageKeys.RULE_UNAVAILABLE), true)
+                MinecraftPlayerFeedback.GameConfigInvalid ->
+                    player.sendMessage(Text.translatable(MinecraftMessageKeys.GAME_CONFIG_INVALID), true)
+                MinecraftPlayerFeedback.AiStrategyNotFound ->
+                    player.sendMessage(Text.translatable(MinecraftMessageKeys.AI_STRATEGY_NOT_FOUND), true)
                 MinecraftPlayerFeedback.TableNotReachable ->
                     player.sendMessage(Text.translatable(MinecraftMessageKeys.TABLE_NOT_REACHABLE), true)
                 is MinecraftPlayerFeedback.StartBlockedByPlayers ->

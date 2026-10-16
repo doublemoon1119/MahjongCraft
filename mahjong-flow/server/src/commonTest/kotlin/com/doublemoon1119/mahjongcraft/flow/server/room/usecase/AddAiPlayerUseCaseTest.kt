@@ -1,10 +1,14 @@
 package com.doublemoon1119.mahjongcraft.flow.server.room.usecase
 
 import com.doublemoon1119.mahjongcraft.ai.BuiltInAiStrategyKeys
+import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyDefinition
+import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
+import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.JoinReason
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
+import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.FakeRoomRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.repository.FakeRoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.room.service.FakeRoomEventPublisher
@@ -38,7 +42,7 @@ class AddAiPlayerUseCaseTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
         val service = FakeRoomEventPublisher()
-        val useCase = AddAiPlayerUseCase(roomRepo, snapshotRepo, service)
+        val useCase = AddAiPlayerUseCase(roomRepo, snapshotRepo, service, strategyRegistry())
 
         val room = Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config), playerIds = listOf(hostId))
         roomRepo.setRoom(room)
@@ -70,7 +74,7 @@ class AddAiPlayerUseCaseTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
         val service = FakeRoomEventPublisher()
-        val useCase = AddAiPlayerUseCase(roomRepo, snapshotRepo, service)
+        val useCase = AddAiPlayerUseCase(roomRepo, snapshotRepo, service, strategyRegistry())
 
         val room = Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config), playerIds = listOf(hostId))
         roomRepo.setRoom(room)
@@ -86,6 +90,24 @@ class AddAiPlayerUseCaseTest {
     }
 
     /**
+     * 驗證未登記或空白的 strategyKey 被拒絕，房間不新增 AI。
+     */
+    @Test
+    fun `test add ai rejects strategy keys that are not registered`() = runTest {
+        listOf("mymod:unknown", "", "x".repeat(100_000)).forEach { key ->
+            val roomRepo = FakeRoomRepository()
+            val useCase = AddAiPlayerUseCase(roomRepo, FakeRoomSnapshotRepository(), FakeRoomEventPublisher(), strategyRegistry())
+            val room = Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config), playerIds = listOf(hostId))
+            roomRepo.setRoom(room)
+
+            val result = useCase(roomId, hostId, strategyKey = key)
+
+            assertEquals(Outcome.Error(RoomError.UnknownAiStrategy(roomId)), result)
+            assertEquals(room, roomRepo.getRoom(roomId))
+        }
+    }
+
+    /**
      * 驗證明確傳入的 strategyKey 會原樣存入 aiPlayerStrategyKeys。
      */
     @Test
@@ -93,7 +115,7 @@ class AddAiPlayerUseCaseTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
         val service = FakeRoomEventPublisher()
-        val useCase = AddAiPlayerUseCase(roomRepo, snapshotRepo, service)
+        val useCase = AddAiPlayerUseCase(roomRepo, snapshotRepo, service, strategyRegistry())
 
         val room = Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config), playerIds = listOf(hostId))
         roomRepo.setRoom(room)
@@ -116,7 +138,7 @@ class AddAiPlayerUseCaseTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
         val service = FakeRoomEventPublisher()
-        val useCase = AddAiPlayerUseCase(roomRepo, snapshotRepo, service)
+        val useCase = AddAiPlayerUseCase(roomRepo, snapshotRepo, service, strategyRegistry())
 
         // 創建一個只有 1 人的房間配置，並填滿它
         val fullConfig = FakeMahjongRuleConfig(maxPlayers = 1)
@@ -135,7 +157,7 @@ class AddAiPlayerUseCaseTest {
         val roomRepo = FakeRoomRepository()
         val snapshotRepo = FakeRoomSnapshotRepository()
         val service = FakeRoomEventPublisher()
-        val useCase = AddAiPlayerUseCase(roomRepo, snapshotRepo, service)
+        val useCase = AddAiPlayerUseCase(roomRepo, snapshotRepo, service, strategyRegistry())
 
         val guestId = Uuid.random()
         val room = Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config), playerIds = listOf(hostId, guestId))
@@ -143,5 +165,17 @@ class AddAiPlayerUseCaseTest {
 
         val result = useCase(roomId, guestId)
         assertTrue(result is Outcome.Error, "Expected Error but got $result")
+    }
+
+    /**
+     * 建立登記了本測試用到的策略 key 的 registry；策略本身不會被建立。
+     *
+     * @return 已凍結的策略 registry。
+     */
+    private fun strategyRegistry(): MahjongAiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = BuiltInAiStrategyKeys.BEGINNER).apply {
+        setOf(BuiltInAiStrategyKeys.BEGINNER, "mahjongcraft:random", "mymod:hard").forEach { key ->
+            register(MahjongAiStrategyDefinition(key) { error("Strategies are not created in this test") })
+        }
+        freeze()
     }
 }

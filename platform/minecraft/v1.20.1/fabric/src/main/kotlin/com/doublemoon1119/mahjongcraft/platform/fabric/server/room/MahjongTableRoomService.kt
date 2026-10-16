@@ -41,6 +41,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.Fabric
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateDelivery
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableStateTicket
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomConfigSubmission
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RulePresentationRequirements
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.TableOccupancyDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.TableOccupancyPayloadDto
@@ -153,8 +154,17 @@ class MahjongTableRoomService(
                 val targetId = runCatching { Uuid.parse(action.targetPlayerId) }.getOrNull() ?: return@withMatchingMembership
                 kick(it, targetId)
             }
-            is RoomActionDto.UpdateConfig -> withMatchingMembership(player, tableId) {
-                updateConfig(it, action.config.toDomain(networkRegistries))
+            is RoomActionDto.UpdateConfig -> withMatchingMembership(player, tableId) { member ->
+                val config = try {
+                    action.config.toDomain(networkRegistries)
+                } catch (_: IllegalArgumentException) {
+                    null
+                }
+                if (config == null) {
+                    feedbackPublisher.publish(member.uuid.toKotlinUuid(), MinecraftPlayerFeedback.GameConfigInvalid)
+                } else {
+                    updateConfig(member, config)
+                }
             }
         }
     }
@@ -684,6 +694,8 @@ class MahjongTableRoomService(
     /**
      * 讓房主以強型別設定更新目前所在房間。同樣以玩家目前的房間歸屬解析目標房間。
      *
+     * 送來的設定先經 [RoomConfigSubmission] 以房間目前的設定為基礎重建審查，只有房間畫面能做到的修改才會套用。
+     *
      * @param player 發起更新操作的房主。
      * @param newConfig 要套用的新設定。
      */
@@ -701,12 +713,19 @@ class MahjongTableRoomService(
                 feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.PlayerNotInGame)
                 return@launch
             }
-            if (!isPlayable(newConfig.ruleConfig)) {
-                feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.RuleUnavailable)
-                return@launch
+            val reviewedConfig = when (val review = RoomConfigSubmission.review(newConfig, room.gameConfig, presentations, moduleRegistry)) {
+                is RoomConfigSubmission.Result.Accepted -> review.config
+                RoomConfigSubmission.Result.RuleUnavailable -> {
+                    feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.RuleUnavailable)
+                    return@launch
+                }
+                RoomConfigSubmission.Result.Invalid -> {
+                    feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.GameConfigInvalid)
+                    return@launch
+                }
             }
             val oldConfig = room.gameConfig
-            when (val result = updateConfig(tableId, playerId, newConfig)) {
+            when (val result = updateConfig(tableId, playerId, reviewedConfig)) {
                 is Outcome.Success -> {
                     val newConfigJson = json.encodeToString(result.value.toDto(networkRegistries))
                     if (oldConfig == result.value) {

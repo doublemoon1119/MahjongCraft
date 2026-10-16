@@ -1,5 +1,9 @@
 package com.doublemoon1119.mahjongcraft.flow.server.room.usecase
 
+import com.doublemoon1119.mahjongcraft.ai.BuiltInAiStrategyKeys
+import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyDefinition
+import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
+import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
@@ -29,12 +33,36 @@ class ChangeAiStrategyUseCaseTest {
     private val config: MahjongRuleConfig = FakeMahjongRuleConfig()
 
     /**
+     * 測試未登記的策略 key 被拒絕，AI 維持原本的策略。
+     */
+    @Test
+    fun `test change ai strategy rejects strategy keys that are not registered`() = runTest {
+        val roomRepo = FakeRoomRepository()
+        val useCase = ChangeAiStrategyUseCase(roomRepo, strategyRegistry())
+        val aiId = Uuid.random()
+        val room = Room(
+            id = roomId,
+            hostId = hostId,
+            gameConfig = GameConfig(config),
+            playerIds = listOf(hostId, aiId),
+            readyPlayerIds = listOf(aiId),
+            aiPlayerStrategyKeys = mapOf(aiId to "mahjongcraft:random"),
+        )
+        roomRepo.setRoom(room)
+
+        val result = useCase(roomId, hostId, aiId, "mymod:unknown")
+
+        assertEquals(Outcome.Error(RoomError.UnknownAiStrategy(roomId)), result)
+        assertEquals(room, roomRepo.getRoom(roomId))
+    }
+
+    /**
      * 測試房主成功替房間內的 AI 更換策略。
      */
     @Test
     fun `test host changes ai strategy successfully`() = runTest {
         val roomRepo = FakeRoomRepository()
-        val useCase = ChangeAiStrategyUseCase(roomRepo)
+        val useCase = ChangeAiStrategyUseCase(roomRepo, strategyRegistry())
 
         val aiId = Uuid.random()
         val room = Room(
@@ -62,7 +90,7 @@ class ChangeAiStrategyUseCaseTest {
     @Test
     fun `test change ai strategy fails when room does not exist`() = runTest {
         val roomRepo = FakeRoomRepository()
-        val useCase = ChangeAiStrategyUseCase(roomRepo)
+        val useCase = ChangeAiStrategyUseCase(roomRepo, strategyRegistry())
 
         val result = useCase(roomId, hostId, Uuid.random(), "mahjongcraft:random")
         assertTrue(result is Outcome.Error)
@@ -75,7 +103,7 @@ class ChangeAiStrategyUseCaseTest {
     @Test
     fun `test change ai strategy fails when operator is not host`() = runTest {
         val roomRepo = FakeRoomRepository()
-        val useCase = ChangeAiStrategyUseCase(roomRepo)
+        val useCase = ChangeAiStrategyUseCase(roomRepo, strategyRegistry())
 
         val guestId = Uuid.random()
         val aiId = Uuid.random()
@@ -99,7 +127,7 @@ class ChangeAiStrategyUseCaseTest {
     @Test
     fun `test change ai strategy fails when target not in room`() = runTest {
         val roomRepo = FakeRoomRepository()
-        val useCase = ChangeAiStrategyUseCase(roomRepo)
+        val useCase = ChangeAiStrategyUseCase(roomRepo, strategyRegistry())
 
         val room = Room(id = roomId, hostId = hostId, gameConfig = GameConfig(config), playerIds = listOf(hostId))
         roomRepo.setRoom(room)
@@ -116,7 +144,7 @@ class ChangeAiStrategyUseCaseTest {
     @Test
     fun `test change ai strategy fails when target is not ai`() = runTest {
         val roomRepo = FakeRoomRepository()
-        val useCase = ChangeAiStrategyUseCase(roomRepo)
+        val useCase = ChangeAiStrategyUseCase(roomRepo, strategyRegistry())
 
         val guestId = Uuid.random()
         val room = Room(
@@ -130,5 +158,17 @@ class ChangeAiStrategyUseCaseTest {
         val result = useCase(roomId, hostId, guestId, "mymod:hard")
         assertTrue(result is Outcome.Error)
         assertEquals(RoomError.NotAiPlayer(guestId, roomId), result.error)
+    }
+
+    /**
+     * 建立登記了本測試用到的策略 key 的 registry；策略本身不會被建立。
+     *
+     * @return 已凍結的策略 registry。
+     */
+    private fun strategyRegistry(): MahjongAiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = BuiltInAiStrategyKeys.BEGINNER).apply {
+        setOf(BuiltInAiStrategyKeys.BEGINNER, "mahjongcraft:random", "mymod:hard").forEach { key ->
+            register(MahjongAiStrategyDefinition(key) { error("Strategies are not created in this test") })
+        }
+        freeze()
     }
 }

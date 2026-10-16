@@ -39,7 +39,7 @@ fun TaiwanRuleConfigDto.toDomain(registries: NetworkDtoRegistries): TaiwanRuleCo
     useFlowerTiles = useFlowerTiles,
     minimumWinConstraint = minimumWinConstraint,
     scoreConfig = scoreConfig.toDomain(),
-    gameLength = gameLength.toRuleDomain(registries) as TaiwanGameLength,
+    gameLength = requireNotNull(gameLength.toRuleDomain(registries) as? TaiwanGameLength) { "Taiwan config requires a taiwan game length" },
     multiRonPolicy = multiRonPolicy.toRuleDomain(),
 )
 

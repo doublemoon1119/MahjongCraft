@@ -4,6 +4,22 @@ import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 
 /** 設定欄位可使用的受控編輯器種類。 */
 sealed interface GameConfigEditorSpec {
+    /**
+     * 判斷欄位值是否為此編輯器能產生的值；房間畫面驗證輸入與伺服器驗證送來的設定共用此判斷。
+     *
+     * 整數只檢查範圍與可否為空，不檢查步長，因為玩家可以直接輸入數字。
+     *
+     * @param value 要判斷的欄位值。
+     * @return 值的種類相符且落在編輯器限制內時為 true。
+     */
+    fun accepts(value: GameConfigPresentationValue): Boolean = when (this) {
+        BooleanToggle -> value is GameConfigPresentationValue.BooleanValue
+        is IntegerInput ->
+            value is GameConfigPresentationValue.IntegerValue &&
+                (value.number?.let { it in minimum..maximum } ?: nullable)
+        is SingleChoice -> value is GameConfigPresentationValue.ChoiceValue && value.optionId in optionIds
+    }
+
     /** 布林切換編輯器。 */
     data object BooleanToggle : GameConfigEditorSpec
 

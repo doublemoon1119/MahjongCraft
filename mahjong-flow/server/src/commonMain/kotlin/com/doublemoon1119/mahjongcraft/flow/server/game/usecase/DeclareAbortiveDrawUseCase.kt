@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.history.acceptedActionHi
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.DeclareRiichiUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.isOwnTurnWindowOpenFor
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
@@ -80,7 +81,7 @@ class DeclareAbortiveDrawUseCase(
                 state.currentPlayer.id != playerId ->
                     game to Outcome.Error(GameError.NotPlayersTurn(playerId, gameId))
 
-                state.currentPlayer.hand.lastDrawn == null ->
+                !state.isOwnTurnWindowOpenFor(playerId) || state.currentPlayer.hand.lastDrawn == null ->
                     game to Outcome.Error(GameError.UnsupportedAction(gameId, playerId))
 
                 else -> {

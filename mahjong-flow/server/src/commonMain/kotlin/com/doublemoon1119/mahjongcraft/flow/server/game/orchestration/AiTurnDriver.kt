@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPol
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerActionContext
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerActionContextResolver
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.isDrawWindowOpenFor
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetLegalActionsUseCase
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import kotlin.uuid.Uuid
@@ -69,12 +70,7 @@ class AiTurnDriver(
         }
 
         val current = state.currentPlayer
-        if (game.isAi(current.id) &&
-            current.hand.lastDrawn == null &&
-            !current.justClaimedMeld &&
-            state.pendingRobbingReaction == null &&
-            state.pendingReaction == null
-        ) {
+        if (game.isAi(current.id) && state.isDrawWindowOpenFor(current.id)) {
             return AiTurnDecision(current.id, GameCommand.Draw, basis = game)
         }
 

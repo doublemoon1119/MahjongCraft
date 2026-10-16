@@ -12,7 +12,10 @@ import net.minecraft.network.PacketByteBuf
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.util.Identifier
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.uuid.Uuid
+import kotlin.uuid.toKotlinUuid
 
 /** JSON 字串走 [net.minecraft.network.PacketByteBuf] 內建的 varint 長度前綴字串編碼，上限字元數。 */
 private const val MAX_PAYLOAD_LENGTH = 1 shl 20
@@ -177,17 +180,30 @@ class S2CChannel<T>(id: String, private val serializer: KSerializer<T>, private 
  * 可能被釋放，必須同步讀完；解碼後的資料交由伺服器主執行緒上的處理函式接收，玩家身分一律用回呼收到
  * 的 [ServerPlayerEntity] 自己的 UUID，不信任封包內容宣稱的身分。
  *
+ * 每個頻道都必須宣告 [rateLimit]；超過限制的要求在解碼前就被丟棄。
+ *
  * @param T 傳送的線路 DTO 型別。
  * @param id 模組命名空間內的頻道名稱。
  * @property serializer 線路資料的序列化契約。
+ * @param rateLimit 每位玩家要求的頻率限制。
  * @property maxPayloadBytes 解碼前的 JSON UTF-8 位元組上限；null 使用既有字串字元上限及其最多三倍 UTF-8 位元組相容限制。
  */
-class C2SChannel<T>(id: String, private val serializer: KSerializer<T>, private val maxPayloadBytes: Int? = null) {
+class C2SChannel<T>(
+    id: String,
+    private val serializer: KSerializer<T>,
+    rateLimit: C2SRateLimit,
+    private val maxPayloadBytes: Int? = null,
+) {
     /** 各頻道拒絕無法解碼的要求時使用的 debug 診斷，不在一般日誌中逐筆警告。 */
     private val logger = mahjongCraftLogger(C2SChannel::class)
 
     /** Fabric 網路使用的頻道識別碼。 */
     val channelId: Identifier = Identifier(MinecraftModMetadata.MOD_ID, id)
+
+    /** 依 [rateLimit] 判斷要求是否接受；由接收端自行准入時為 null。 */
+    private val limiter: PlayerRequestRateLimiter? = (rateLimit as? C2SRateLimit.PerPlayer)
+        ?.let(::PlayerRequestRateLimiter)
+        ?.also(limiters::add)
 
     /**
      * 從客戶端傳送一份符合頻道限制的要求。
@@ -212,12 +228,31 @@ class C2SChannel<T>(id: String, private val serializer: KSerializer<T>, private 
      */
     fun registerServerReceiver(json: NetworkJson, handler: (MinecraftServer, ServerPlayerEntity, T) -> Unit) {
         ServerPlayNetworking.registerGlobalReceiver(channelId) { server, player, _, buf, _ ->
+            val admission = limiter?.tryAcquire(player.uuid.toKotlinUuid())
+            if (admission is PlayerRequestRateLimiter.Result.Dropped) {
+                if (admission.shouldLog) logger.debug("Dropped requests over the rate limit on {} from {}", channelId, player.uuid)
+                return@registerGlobalReceiver
+            }
             val accepted = decodeAndDispatchC2S(buf, json, serializer, maxPayloadBytes) { decoded ->
                 server.execute { handler(server, player, decoded) }
             }
             if (!accepted) {
                 logger.debug("Rejected malformed request on {}", channelId)
             }
+        }
+    }
+
+    companion object {
+        /** 所有頻道的頻率限制器，玩家離線時一起清除。 */
+        private val limiters = CopyOnWriteArrayList<PlayerRequestRateLimiter>()
+
+        /**
+         * 清除玩家在所有頻道的頻率限制紀錄；玩家離線時呼叫。
+         *
+         * @param playerId 離線的玩家。
+         */
+        fun forgetPlayer(playerId: Uuid) {
+            limiters.forEach { it.forget(playerId) }
         }
     }
 }

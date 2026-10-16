@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.toDto
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceManager
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.UpdatePlayerAutomaticControlsResult
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.UpdatePlayerAutomaticControlsUseCase
+import com.doublemoon1119.mahjongcraft.platform.fabric.network.ClientRequestIds
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricMahjongDataStatus
 import kotlin.uuid.Uuid
 
@@ -26,14 +27,17 @@ class AutomaticControlUpdateService(
     /**
      * 處理 [request]；[playerId] 必須來自已驗證的網路連線，不能來自 payload。
      *
+     * 回覆會原樣帶回請求識別字串，因此識別字串不符合 [ClientRequestIds] 的要求直接丟棄，不回覆。
+     *
      * @param playerId 已驗證連線的玩家識別碼。
      * @param request 客戶端自動操作更新要求。
-     * @return 與要求配對的更新結果。
+     * @return 與要求配對的更新結果；請求識別字串無效時為 null。
      */
     suspend operator fun invoke(
         playerId: Uuid,
         request: AutomaticControlUpdateRequestDto,
-    ): AutomaticControlUpdateResultDto {
+    ): AutomaticControlUpdateResultDto? {
+        if (!ClientRequestIds.isValid(request.requestId)) return null
         if (!dataStatus.isMahjongAvailable) return request.result(AutomaticControlUpdateResultKindDto.UNAVAILABLE)
         val gameId = runCatching { Uuid.parse(request.gameId) }.getOrNull()
             ?: return request.result(AutomaticControlUpdateResultKindDto.UNAVAILABLE)

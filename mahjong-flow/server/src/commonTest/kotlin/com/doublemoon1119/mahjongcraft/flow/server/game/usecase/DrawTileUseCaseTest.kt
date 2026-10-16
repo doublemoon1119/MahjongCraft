@@ -12,6 +12,8 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
+import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
@@ -263,6 +265,45 @@ class DrawTileUseCaseTest {
             GameError.IllegalAction(currentPlayerId, gameId, GameAction.Draw),
             result.error,
         )
+    }
+
+    /**
+     * 驗證有人正在決定是否回應捨牌、搶槓，或目前玩家剛碰完牌時，摸牌被拒絕且桌況不變；
+     * 用例自己檢查時機，不依賴呼叫端。
+     */
+    @Test
+    fun `test draw tile fails while a reaction is pending or right after a call`() = runTest {
+        val currentPlayer = FakeMahjongPlayerFactory.create(id = currentPlayerId, initialSeat = Wind.EAST)
+        val otherPlayer = FakeMahjongPlayerFactory.create(id = otherPlayerId, initialSeat = Wind.SOUTH)
+        val base = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer, otherPlayer),
+            tileWall = TileWall(listOf(drawnTile)),
+            currentPlayerIndex = 0,
+        )
+        val discarded = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9))
+        val states = listOf(
+            base.copy(pendingReaction = PendingReaction(currentPlayerId, discarded.id, setOf(otherPlayerId))),
+            base.copy(
+                pendingRobbingReaction = PendingRobbingReaction(
+                    declarerId = otherPlayerId,
+                    declaredAction = GameAction.Kan(GameAction.KanType.ADDED_KAN, discarded.id, emptyList()),
+                    robbedTile = discarded,
+                    eligiblePlayerIds = setOf(currentPlayerId),
+                ),
+            ),
+            base.copy(players = listOf(currentPlayer.recordAction(GameAction.Pon(discarded.id, emptyList())), otherPlayer)),
+        )
+
+        states.forEach { state ->
+            val fixtures = Fixtures()
+            fixtures.gameRepo.setTableState(state)
+
+            val result = fixtures.useCase(gameId, currentPlayerId)
+
+            assertEquals(Outcome.Error(GameError.IllegalAction(currentPlayerId, gameId, GameAction.Draw)), result)
+            assertEquals(state, fixtures.gameRepo.getTableState(gameId))
+        }
     }
 
     /**

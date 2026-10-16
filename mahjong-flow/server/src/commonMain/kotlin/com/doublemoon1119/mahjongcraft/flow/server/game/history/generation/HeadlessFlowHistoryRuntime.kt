@@ -162,7 +162,7 @@ class HeadlessFlowHistoryRuntime private constructor(
             val synchronizer = GameSnapshotSynchronizer(gameRepository, gameSnapshots, snapshotPolicy)
             val handSort = HandSortPreferenceStore()
             val create = CreateRoomUseCase(store, membership, rooms, roomEvents)
-            val addAi = AddAiPlayerUseCase(roomRepository, rooms, roomEvents)
+            val addAi = AddAiPlayerUseCase(roomRepository, rooms, roomEvents, registries.aiStrategyRegistry)
             val createCue = registries.winCelebrationCueResolverRegistry
             val winHandoff = WinPresentationHandoff()
             val postAction = registries.postActionExhaustiveDrawResolverRegistry

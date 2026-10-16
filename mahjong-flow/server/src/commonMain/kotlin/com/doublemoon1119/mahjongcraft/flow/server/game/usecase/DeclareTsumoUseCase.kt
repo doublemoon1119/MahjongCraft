@@ -20,6 +20,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSync
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementPresentationRequestFactory
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.isOwnTurnWindowOpenFor
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
@@ -104,7 +105,7 @@ class DeclareTsumoUseCase(
                     state to Outcome.Error(GameError.PlayerNotInGame(playerId, gameId))
                 state.currentPlayer.id != playerId ->
                     state to Outcome.Error(GameError.NotPlayersTurn(playerId, gameId))
-                state.currentPlayer.hand.lastDrawn == null ->
+                !state.isOwnTurnWindowOpenFor(playerId) || state.currentPlayer.hand.lastDrawn == null ->
                     state to Outcome.Error(GameError.IllegalAction(playerId, gameId, GameAction.Tsumo))
                 else -> {
                     val winningTile = state.currentPlayer.hand.lastDrawn

@@ -14,9 +14,6 @@ internal object HistoryQueryLimits {
     /** 回應 JSON 的 UTF-8 位元組上限。 */
     const val RESPONSE_BYTES: Int = 128 * 1024
 
-    /** 配對識別字串的長度上限。 */
-    const val REQUEST_ID_LENGTH: Int = 64
-
     /** 游標 JSON 字串長度上限，仍受完整要求的位元組上限約束。 */
     const val CURSOR_LENGTH: Int = 1536
 }

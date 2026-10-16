@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.recordExha
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.isOwnTurnWindowOpenFor
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
@@ -88,7 +89,7 @@ class DiscardTileUseCase(
                 state.currentPlayer.id != playerId ->
                     state to Outcome.Error(GameError.NotPlayersTurn(playerId, gameId))
 
-                state.currentPlayer.hand.lastDrawn == null && !state.currentPlayer.justClaimedMeld ->
+                !state.isOwnTurnWindowOpenFor(playerId) ->
                     state to Outcome.Error(GameError.IllegalAction(playerId, gameId, GameAction.Discard(tileId)))
 
                 else -> {

@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.acceptedActionHistoryDraft
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.isOwnTurnWindowOpenFor
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
@@ -87,7 +88,7 @@ class DeclareTileSetAsideUseCase(
                 state == null -> state to Outcome.Error(GameError.GameNotFound(gameId))
                 state.players.none { it.id == playerId } -> state to Outcome.Error(GameError.PlayerNotInGame(playerId, gameId))
                 state.currentPlayer.id != playerId -> state to Outcome.Error(GameError.NotPlayersTurn(playerId, gameId))
-                state.pendingRobbingReaction != null -> state to Outcome.Error(GameError.IllegalAction(playerId, gameId, action))
+                !state.isOwnTurnWindowOpenFor(playerId) -> state to Outcome.Error(GameError.IllegalAction(playerId, gameId, action))
                 else -> declare(state, gameId, playerId, action)
             }
         }

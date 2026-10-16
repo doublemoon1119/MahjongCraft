@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.acceptedActionHistoryDraft
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.isDrawWindowOpenFor
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import kotlin.uuid.Uuid
@@ -64,7 +65,7 @@ class DrawTileUseCase(
                     state to Outcome.Error(GameError.PlayerNotInGame(playerId, gameId))
                 state.currentPlayer.id != playerId ->
                     state to Outcome.Error(GameError.NotPlayersTurn(playerId, gameId))
-                state.currentPlayer.hand.lastDrawn != null ->
+                !state.isDrawWindowOpenFor(playerId) ->
                     state to Outcome.Error(GameError.IllegalAction(playerId, gameId, GameAction.Draw))
                 else -> {
                     val (tile, newWall) = state.tileWall.draw()

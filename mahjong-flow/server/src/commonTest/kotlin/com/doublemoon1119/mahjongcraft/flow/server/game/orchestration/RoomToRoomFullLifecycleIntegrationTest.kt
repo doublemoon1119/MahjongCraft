@@ -123,7 +123,10 @@ class RoomToRoomFullLifecycleIntegrationTest {
         val handSortPreferenceStore = HandSortPreferenceStore()
 
         val createRoomUseCase = CreateRoomUseCase(store, membershipRepo, roomSnapshotRepo, roomEventPublisher)
-        val addAiPlayerUseCase = AddAiPlayerUseCase(roomRepo, roomSnapshotRepo, roomEventPublisher)
+        val aiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = FakeAiStrategy.KEY).apply {
+            register(MahjongAiStrategyDefinition(FakeAiStrategy.KEY) { FakeAiStrategy() })
+        }
+        val addAiPlayerUseCase = AddAiPlayerUseCase(roomRepo, roomSnapshotRepo, roomEventPublisher, aiStrategyRegistry)
         val startGameUseCase = StartGameUseCase(
             store,
             moduleRegistry,
@@ -205,9 +208,6 @@ class RoomToRoomFullLifecycleIntegrationTest {
             extensionCommandExecutor = extensionCommandExecutor,
         )
         val getLegalActionsUseCase = GetLegalActionsUseCase(gameRepo, moduleRegistry)
-        val aiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = FakeAiStrategy.KEY).apply {
-            register(MahjongAiStrategyDefinition(FakeAiStrategy.KEY) { FakeAiStrategy() })
-        }
         val aiTurnDriver = AiTurnDriver(gameRepo, getLegalActionsUseCase, aiStrategyRegistry, GameVisibilityPolicyImpl(moduleRegistry), moduleRegistry, AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default))
         val clock = MonotonicClockImpl()
         val decisionTimerManager = GameDecisionTimerManager(

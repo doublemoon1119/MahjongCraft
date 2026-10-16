@@ -51,7 +51,7 @@ fun RiichiRuleConfigDto.toDomain(registries: NetworkDtoRegistries): RiichiRuleCo
     useLocalYaku = useLocalYaku,
     minimumWinConstraint = minimumWinConstraint,
     scoreConfig = scoreConfig.toDomain(),
-    gameLength = gameLength.toRuleDomain(registries) as RiichiGameLength,
+    gameLength = requireNotNull(gameLength.toRuleDomain(registries) as? RiichiGameLength) { "Riichi config requires a riichi game length" },
     multiRonPolicy = multiRonPolicy.toRuleDomain(),
 )
 
@@ -88,7 +88,7 @@ fun ThreePlayerRiichiRuleConfigDto.toDomain(registries: NetworkDtoRegistries): T
     useLocalYaku = useLocalYaku,
     minimumWinConstraint = minimumWinConstraint,
     scoreConfig = scoreConfig.toDomain(),
-    gameLength = gameLength.toRuleDomain(registries) as RiichiGameLength,
+    gameLength = requireNotNull(gameLength.toRuleDomain(registries) as? RiichiGameLength) { "Riichi config requires a riichi game length" },
     multiRonPolicy = multiRonPolicy.toRuleDomain(),
 )
 

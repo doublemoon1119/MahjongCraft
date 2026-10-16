@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.server.room.usecase
 
 import com.doublemoon1119.mahjongcraft.ai.BuiltInAiStrategyKeys
+import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.JoinReason
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
@@ -19,20 +20,21 @@ import kotlin.uuid.Uuid
  * @property roomRepository 權威房間數據倉庫。
  * @property snapshotRepository 房間快照數據倉庫。
  * @property eventPublisher 房間通知服務。
+ * @property strategyRegistry 確認 AI 策略已登記；未登記的 key 不會寫入房間。
  */
 class AddAiPlayerUseCase(
     private val roomRepository: RoomRepository,
     private val snapshotRepository: RoomSnapshotRepository,
     private val eventPublisher: RoomEventPublisher,
+    private val strategyRegistry: MahjongAiStrategyRegistry,
 ) {
     /**
      * 執行新增 AI 玩家邏輯。
      *
      * @param roomId 房間 Uuid。
      * @param operatorId 發起請求的玩家 Uuid（必須為房主）。
-     * @param strategyKey 該 AI 玩家使用的策略登記 key；不傳時預設為初級（[BuiltInAiStrategyKeys.BEGINNER]）。是否
-     *        為有效 key 這裡不驗證——交給 `:mahjong-ai` 的 `MahjongAiStrategyRegistry` 在真正決策
-     *        時優雅退回預設策略，維持這個 use case 的單純。
+     * @param strategyKey 該 AI 玩家使用的策略登記 key；不傳時預設為初級（[BuiltInAiStrategyKeys.BEGINNER]）。
+     *   未登記的 key 以 [RoomError.UnknownAiStrategy] 拒絕。
      * @return 新增 AI 的結果，成功時包含 [AddAiPlayerResult]，失敗時為 [RoomError]。
      */
     suspend operator fun invoke(
@@ -47,6 +49,8 @@ class AddAiPlayerUseCase(
             when {
                 room == null -> room to Outcome.Error(RoomError.RoomNotFound(roomId))
                 operatorId != room.hostId -> room to Outcome.Error(RoomError.NotHost(operatorId))
+                resolvedStrategyKey !in strategyRegistry.getAllStrategyKeys() ->
+                    room to Outcome.Error(RoomError.UnknownAiStrategy(roomId))
                 room.isFull -> room to Outcome.Error(RoomError.RoomIsFull(roomId))
                 else -> {
                     // 產生 AI 的 Uuid 並更新領域模型

@@ -61,6 +61,7 @@ internal object MinecraftRoomFeedbackResolver {
     fun addAiError(error: RoomError): MinecraftPlayerFeedback = when (error) {
         is RoomError.NotHost -> MinecraftPlayerFeedback.NotGameHost
         is RoomError.RoomIsFull -> MinecraftPlayerFeedback.GameFull
+        is RoomError.UnknownAiStrategy -> MinecraftPlayerFeedback.AiStrategyNotFound
         else -> MinecraftPlayerFeedback.AddAiFailed
     }
 
@@ -87,6 +88,7 @@ internal object MinecraftRoomFeedbackResolver {
         is RoomError.NotHost -> MinecraftPlayerFeedback.NotGameHost
         is RoomError.PlayerNotInRoom -> MinecraftPlayerFeedback.PlayerNotInGame
         is RoomError.NotAiPlayer -> MinecraftPlayerFeedback.TargetNotAi
+        is RoomError.UnknownAiStrategy -> MinecraftPlayerFeedback.AiStrategyNotFound
         else -> MinecraftPlayerFeedback.ChangeAiStrategyFailed
     }
 

@@ -34,6 +34,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.history.GetHistorySummar
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.ListHistoryUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.fabric.network.ClientRequestIds
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.HistoryQueryLimits
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.concurrency.FabricSessionBackgroundScope
@@ -619,7 +620,7 @@ private fun canQueryAll(access: HistoryQueryAccess, policy: HistoryQueryPolicy):
  * @param id 原要求識別字串。
  * @return 是否可安全保留並回覆。
  */
-private fun validRequestId(id: String): Boolean = id.isNotBlank() && id.length <= HistoryQueryLimits.REQUEST_ID_LENGTH
+private fun validRequestId(id: String): Boolean = ClientRequestIds.isValid(id)
 
 /**
  * 將非排隊准入結果映射為線路錯誤。

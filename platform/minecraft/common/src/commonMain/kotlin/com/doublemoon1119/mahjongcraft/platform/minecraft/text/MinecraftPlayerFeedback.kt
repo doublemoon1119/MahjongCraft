@@ -105,6 +105,12 @@ sealed interface MinecraftPlayerFeedback {
     /** 房間設定的規則目前無法在麻將桌上使用，設定未套用或無法開始對局。 */
     data object RuleUnavailable : MinecraftPlayerFeedback
 
+    /** 送來的房間設定包含房間畫面無法產生的內容，未套用。 */
+    data object GameConfigInvalid : MinecraftPlayerFeedback
+
+    /** 指定的 AI 策略沒有登記。 */
+    data object AiStrategyNotFound : MinecraftPlayerFeedback
+
     /** 指定的麻將桌不存在，或已超出目前可互動的範圍。 */
     data object TableNotReachable : MinecraftPlayerFeedback
 

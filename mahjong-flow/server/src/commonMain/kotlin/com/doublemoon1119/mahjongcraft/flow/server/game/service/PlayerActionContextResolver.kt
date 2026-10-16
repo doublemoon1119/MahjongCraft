@@ -26,7 +26,7 @@ class PlayerActionContextResolver {
         }
 
         val currentPlayer = state.currentPlayer
-        return if (currentPlayer.hand.lastDrawn != null || currentPlayer.justClaimedMeld) {
+        return if (state.isOwnTurnWindowOpenFor(currentPlayer.id)) {
             mapOf(currentPlayer.id to PlayerActionContext.OwnTurn(currentPlayer.id))
         } else {
             emptyMap()

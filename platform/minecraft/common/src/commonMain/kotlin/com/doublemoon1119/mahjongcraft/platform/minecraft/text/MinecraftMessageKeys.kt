@@ -71,6 +71,12 @@ object MinecraftMessageKeys {
     /** 房間設定的規則目前無法使用。 */
     const val RULE_UNAVAILABLE = PREFIX + "rule_unavailable"
 
+    /** 送來的房間設定無效，未套用。 */
+    const val GAME_CONFIG_INVALID = PREFIX + "game_config_invalid"
+
+    /** 指定的 AI 策略沒有登記。 */
+    const val AI_STRATEGY_NOT_FOUND = PREFIX + "ai_strategy_not_found"
+
     /** 指定的麻將桌不存在，或已超出目前可互動的範圍。 */
     const val TABLE_NOT_REACHABLE = PREFIX + "table_not_reachable"
 
@@ -523,6 +529,8 @@ object MinecraftMessageKeys {
         NOT_ALL_PLAYERS_READY,
         GAME_START_FAILED,
         RULE_UNAVAILABLE,
+        GAME_CONFIG_INVALID,
+        AI_STRATEGY_NOT_FOUND,
         TABLE_NOT_REACHABLE,
         START_BLOCKED_OFFLINE_PLAYERS,
         START_BLOCKED_DISTANT_PLAYERS,

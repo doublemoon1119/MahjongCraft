@@ -3,7 +3,6 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.network
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlSnapshotDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlUpdateRequestDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.AutomaticControlUpdateResultDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameCommandEnvelopeDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameSnapshotSyncPayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameUpdatePayloadDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryArchiveStatusRequestDto
@@ -36,13 +35,23 @@ import kotlinx.serialization.builtins.serializer
 /** `mahjongcraft:` 命名空間下實際使用的命令、事件更新與主動快照同步頻道。 */
 object MahjongChannels {
     /** 已公開單局事件的有界查詢要求。 */
-    val historyRoundEventsRequest = C2SChannel("history_round_events_request", HistoryRoundEventsRequestDto.serializer(), HistoryQueryLimits.REQUEST_BYTES)
+    val historyRoundEventsRequest = C2SChannel(
+        id = "history_round_events_request",
+        serializer = HistoryRoundEventsRequestDto.serializer(),
+        rateLimit = C2SRateLimit.HandledByReceiver,
+        maxPayloadBytes = HistoryQueryLimits.REQUEST_BYTES,
+    )
 
     /** 只含已授權交易頁及截止牌目錄的回覆。 */
     val historyRoundEventsResponse = S2CChannel("history_round_events_response", HistoryRoundEventsResponseDto.serializer(), HistoryQueryLimits.RESPONSE_BYTES)
 
     /** 已公開單局初始或交易後桌況的有界要求。 */
-    val historyRoundStateRequest = C2SChannel("history_round_state_request", HistoryRoundStateRequestDto.serializer(), HistoryQueryLimits.REQUEST_BYTES)
+    val historyRoundStateRequest = C2SChannel(
+        id = "history_round_state_request",
+        serializer = HistoryRoundStateRequestDto.serializer(),
+        rateLimit = C2SRateLimit.HandledByReceiver,
+        maxPayloadBytes = HistoryQueryLimits.REQUEST_BYTES,
+    )
 
     /** 完整歷史狀態或安全錯誤，不傳送任意 persistence payload。 */
     val historyRoundStateResponse = S2CChannel("history_round_state_response", HistoryRoundStateResponseDto.serializer(), HistoryQueryLimits.RESPONSE_BYTES)
@@ -54,37 +63,64 @@ object MahjongChannels {
     val playerIdentity = S2CChannel("player_identity", PlayerIdentityPayload.serializer(), PlayerIdentityPayload.MAX_BYTES)
 
     /** 有界保存狀態要求，伺服器驗證場次與查閱身分。 */
-    val historyArchiveStatusRequest = C2SChannel("history_archive_status_request", HistoryArchiveStatusRequestDto.serializer(), HistoryQueryLimits.REQUEST_BYTES)
+    val historyArchiveStatusRequest = C2SChannel(
+        id = "history_archive_status_request",
+        serializer = HistoryArchiveStatusRequestDto.serializer(),
+        rateLimit = C2SRateLimit.HandledByReceiver,
+        maxPayloadBytes = HistoryQueryLimits.REQUEST_BYTES,
+    )
 
     /** 不包含牌面或內部診斷的保存狀態回應。 */
     val historyArchiveStatusResponse = S2CChannel("history_archive_status_response", HistoryArchiveStatusResponseDto.serializer(), HistoryQueryLimits.RESPONSE_BYTES)
 
     /** 有界歷史清單要求，不允許攜帶他人的查詢身分。 */
-    val historyListRequest = C2SChannel("history_list_request", HistoryListRequestDto.serializer(), HistoryQueryLimits.REQUEST_BYTES)
+    val historyListRequest = C2SChannel(
+        id = "history_list_request",
+        serializer = HistoryListRequestDto.serializer(),
+        rateLimit = C2SRateLimit.HandledByReceiver,
+        maxPayloadBytes = HistoryQueryLimits.REQUEST_BYTES,
+    )
 
     /** 有界歷史清單回應，不含手牌、牌山或原始事件。 */
     val historyListResponse = S2CChannel("history_list_response", HistoryListResponseDto.serializer(), HistoryQueryLimits.RESPONSE_BYTES)
 
     /** 有界單場摘要要求，伺服器仍須驗證公開條件。 */
-    val historySummaryRequest = C2SChannel("history_summary_request", HistorySummaryRequestDto.serializer(), HistoryQueryLimits.REQUEST_BYTES)
+    val historySummaryRequest = C2SChannel(
+        id = "history_summary_request",
+        serializer = HistorySummaryRequestDto.serializer(),
+        rateLimit = C2SRateLimit.HandledByReceiver,
+        maxPayloadBytes = HistoryQueryLimits.REQUEST_BYTES,
+    )
 
     /** 有界單場摘要與局級時間索引回應。 */
     val historySummaryResponse = S2CChannel("history_summary_response", HistorySummaryResponseDto.serializer(), HistoryQueryLimits.RESPONSE_BYTES)
 
     /** 延遲查閱指定歷史場次開局設定的有界要求。 */
-    val historyRuleSettingsRequest = C2SChannel("history_rule_settings_request", HistoryRuleSettingsRequestDto.serializer(), HistoryQueryLimits.REQUEST_BYTES)
+    val historyRuleSettingsRequest = C2SChannel(
+        id = "history_rule_settings_request",
+        serializer = HistoryRuleSettingsRequestDto.serializer(),
+        rateLimit = C2SRateLimit.HandledByReceiver,
+        maxPayloadBytes = HistoryQueryLimits.REQUEST_BYTES,
+    )
 
     /** 僅包含歷史開局設定或安全錯誤碼的有界回應。 */
     val historyRuleSettingsResponse = S2CChannel("history_rule_settings_response", HistoryRuleSettingsResponseDto.serializer(), HistoryQueryLimits.RESPONSE_BYTES)
 
-    /** 玩家送出的正式對局命令。 */
-    val gameCommand = C2SChannel("game_command", GameCommandEnvelopeDto.serializer())
-
     /** 操作面板中玩家選定的決策項目。 */
-    val decisionSelection = C2SChannel("decision_selection", PlayerDecisionSelectionDto.serializer())
+    val decisionSelection = C2SChannel(
+        id = "decision_selection",
+        serializer = PlayerDecisionSelectionDto.serializer(),
+        rateLimit = C2SRateLimits.decisionSelection,
+        maxPayloadBytes = C2SRateLimits.DECISION_SELECTION_BYTES,
+    )
 
     /** 等待室內玩家送出的房間操作。 */
-    val roomAction = C2SChannel("room_action", RoomActionDto.serializer())
+    val roomAction = C2SChannel(
+        id = "room_action",
+        serializer = RoomActionDto.serializer(),
+        rateLimit = C2SRateLimits.roomAction,
+        maxPayloadBytes = C2SRateLimits.ROOM_ACTION_BYTES,
+    )
 
     /**
      * 玩家（重新）加入世界後，主動要求伺服器重建一份目前歸屬的房間／對局快照，見
@@ -92,24 +128,41 @@ object MahjongChannels {
      * 快照」這件事並主動詢問，不依賴伺服器猜測何時該推送，理由見該方法 KDoc。沒有實際內容，用
      * `Unit` 表示純粹的請求信號。
      */
-    val requestSnapshot = C2SChannel("request_snapshot", Unit.serializer())
+    val requestSnapshot = C2SChannel(
+        id = "request_snapshot",
+        serializer = Unit.serializer(),
+        rateLimit = C2SRateLimits.snapshotRequest,
+        maxPayloadBytes = C2SRateLimits.SIGNAL_BYTES,
+    )
 
     /**
      * 玩家重新加入世界時恢復伺服器記憶體中的自動理牌偏好；這個同步不得移動或翻起任何手牌。
      */
-    val restoreAutoSortHand = C2SChannel("restore_auto_sort_hand", Boolean.serializer())
+    val restoreAutoSortHand = C2SChannel(
+        id = "restore_auto_sort_hand",
+        serializer = Boolean.serializer(),
+        rateLimit = C2SRateLimits.snapshotRequest,
+        maxPayloadBytes = C2SRateLimits.SIGNAL_BYTES,
+    )
 
     /**
      * 玩家實際切換「自動整理手牌」偏好時送出，見 `MahjongCraftMod.registerSetAutoSortHandReceiver`／
      * `SetHandSortPreferenceUseCase`——手牌 tile entity 是伺服器端共用的實體，這個偏好必須讓伺服器
      * 知道才能實際重新排列座標，不像牌角標籤那種純客戶端疊加。
      */
-    val setAutoSortHand = C2SChannel("set_auto_sort_hand", Boolean.serializer())
+    val setAutoSortHand = C2SChannel(
+        id = "set_auto_sort_hand",
+        serializer = Boolean.serializer(),
+        rateLimit = C2SRateLimits.preferenceUpdate,
+        maxPayloadBytes = C2SRateLimits.SIGNAL_BYTES,
+    )
 
     /** 更新本局由玩家指定的自動操作集合。 */
     val automaticControlUpdate = C2SChannel(
-        "automatic_control_update",
-        AutomaticControlUpdateRequestDto.serializer(),
+        id = "automatic_control_update",
+        serializer = AutomaticControlUpdateRequestDto.serializer(),
+        rateLimit = C2SRateLimits.preferenceUpdate,
+        maxPayloadBytes = C2SRateLimits.DECISION_SELECTION_BYTES,
     )
 
     /** 同步目前決策階段的倒數與操作提示。 */

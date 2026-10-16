@@ -18,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerActionCont
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
+import com.doublemoon1119.mahjongcraft.platform.fabric.network.ClientRequestIds
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.MahjongChannels
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TablePresentationBusyTracker
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.persistence.FabricMahjongDataStatus
@@ -40,9 +41,8 @@ import kotlin.uuid.toKotlinUuid
 /**
  * 把 Minecraft 玩家的對局階段操作（出牌／立直／吃碰槓胡過／九種九牌）路由到既有的
  * [GameFlowCoordinator]。
- * 比照 [MahjongTableRoomService] 的既有風格：直接呼叫 use case／coordinator，
- * 不透過 [MahjongChannels.gameCommand]——那個頻道
- * 是給以後真的有 client 端 GUI 時使用，指令執行緒本身就在伺服器上，不需要繞經它。
+ * 比照 [MahjongTableRoomService] 的既有風格：直接呼叫 use case／coordinator。客戶端只能送出伺服器目前 prompt
+ * 列出的候選，沒有直接送出對局命令的頻道。
  *
  * 摸牌（[GameCommand.Draw]）不在這裡開放——已經由 [MahjongAutoDrawService]／`AiTurnDriver` 全自動
  * 觸發，玩家不需要、也不能手動摸牌。
@@ -148,7 +148,7 @@ class MahjongTableGameActionService(
     ): PlayerDecisionSubmissionResultKindDto {
         val resolved = resolveSelectionPrompt(playerId, selection)
             ?: return PlayerDecisionSubmissionResultKindDto.STALE
-        if (selection.submissionId.isBlank()) return PlayerDecisionSubmissionResultKindDto.REJECTED
+        if (!ClientRequestIds.isValid(selection.submissionId)) return PlayerDecisionSubmissionResultKindDto.REJECTED
         return when (selection.kind) {
             PlayerDecisionSelectionKindDto.ACTION -> {
                 val candidate = candidateResolver.listActionCandidates(playerId)

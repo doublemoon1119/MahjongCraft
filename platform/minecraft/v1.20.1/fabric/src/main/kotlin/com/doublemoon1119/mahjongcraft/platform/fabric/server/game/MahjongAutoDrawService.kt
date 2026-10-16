@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.isDrawWindowOpenFor
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TablePresentationBusyTracker
 import kotlin.uuid.Uuid
 
@@ -45,11 +46,9 @@ class MahjongAutoDrawService(
         val game = gameRepository.getGame(gameId) ?: return false
         if (game.isMatchOver) return false
         val state = game.tableState
-        if (state.pendingReaction != null || state.pendingRobbingReaction != null) return false
-
         val current = state.currentPlayer
         if (game.isAi(current.id) || current.id in game.forcedAutoPlayPlayerIds) return false
-        if (current.hand.lastDrawn != null || current.justClaimedMeld) return false
+        if (!state.isDrawWindowOpenFor(current.id)) return false
 
         return gameFlowCoordinator.dispatch(gameId, current.id, GameCommand.Draw) is Outcome.Success
     }

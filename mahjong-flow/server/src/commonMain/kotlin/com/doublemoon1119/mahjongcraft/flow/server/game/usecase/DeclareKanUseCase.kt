@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.history.acceptedActionHi
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.DeclareRiichiUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.isOwnTurnWindowOpenFor
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
@@ -115,7 +116,7 @@ class DeclareKanUseCase(
                 state.currentPlayer.id != playerId ->
                     state to Outcome.Error(GameError.NotPlayersTurn(playerId, gameId))
 
-                state.pendingRobbingReaction != null ->
+                !state.isOwnTurnWindowOpenFor(playerId) ->
                     state to Outcome.Error(
                         GameError.IllegalAction(playerId, gameId, GameAction.Kan(kanType, tileId, emptyList())),
                     )

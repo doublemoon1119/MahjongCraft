@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.recordExha
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.isOwnTurnWindowOpenFor
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DiscardReactionResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DiscardTileUseCase
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
@@ -98,7 +99,7 @@ class DeclareRiichiUseCase(
                 state.currentPlayer.id != playerId ->
                     state to Outcome.Error(GameError.NotPlayersTurn(playerId, gameId))
 
-                state.currentPlayer.hand.lastDrawn == null ->
+                !state.isOwnTurnWindowOpenFor(playerId) || state.currentPlayer.hand.lastDrawn == null ->
                     state to Outcome.Error(GameError.IllegalAction(playerId, gameId, RIICHI_GAME_ACTION))
 
                 else -> {
