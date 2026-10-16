@@ -22,6 +22,11 @@ Classify a format before changing it, and follow that class's compatibility stra
 - **Transient presentation**: no long term migrations. Unknown or stale content is discarded safely and must
   never prevent the platform from starting up.
 
+Before the first release, every format keeps its initial version: a structural change neither raises it nor
+adds a migration. Development data that no longer matches the current format is still handled by its class's
+strategy above, whether that is rejecting it, skipping it or rebuilding it. The versioning and migration rules
+take effect from the first release onward.
+
 Rules that apply to all of them:
 
 - **Stored JSON never uses the network format.** Formats owned by the persistence format module encode and
