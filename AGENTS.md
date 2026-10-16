@@ -28,4 +28,7 @@ When agent delegation is available and materially useful:
 
 ## Project Conventions
 
-For Kotlin development conventions, Git commit guidelines, project architecture, and dependency rules, see [CONTRIBUTING.md](CONTRIBUTING.md).
+Start with [CONTRIBUTING.md](CONTRIBUTING.md). It covers verification before committing and Git commit
+guidelines, and lists which guide in [`docs/contributing/`](docs/contributing/) to read for each kind of
+change, such as Kotlin conventions, registries, project architecture, dependency rules, builds and
+persistence. Read every guide that applies before making the change.

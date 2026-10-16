@@ -62,7 +62,7 @@ class KDocTagSpacingRule(
 
     private companion object {
         /** 規則文件的專案位置。 */
-        const val URL = "https://github.com/doublemoon1119/MahjongCraft/blob/refactor/v2/CONTRIBUTING.md#code-comments"
+        const val URL = "https://github.com/doublemoon1119/MahjongCraft/blob/refactor/v2/docs/contributing/code-style.md#code-comments"
 
         /** 規則的用途說明。 */
         const val DESCRIPTION = "Checks that a KDoc description is separated from its first block tag."

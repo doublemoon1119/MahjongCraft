@@ -19,7 +19,7 @@ The module does not select a filesystem or database, schedule saves, or contain 
 Persistence DTOs describe stored data; they are not database access objects.
 Versioned codecs and registered migrations belong here, while backend schemas,
 SQL operations, storage paths, and retention jobs belong to the storage adapter.
-Follow [Persistence Evolution](../../CONTRIBUTING.md#persistence-evolution)
+Follow [Persistence Evolution](../../docs/contributing/persistence.md#persistence-evolution)
 when changing a format rather than treating every persisted surface as one
 version.
 

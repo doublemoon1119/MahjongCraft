@@ -22,7 +22,7 @@ event types live in [Flow common](../mahjong-flow/common/README.md), and
 platform modules provide their subscription/context APIs. The stable
 compatibility scope is limited to the designated `api.event` packages; this is
 not a compatibility guarantee for every public registry or extension type. See
-[Event API Compatibility](../CONTRIBUTING.md#event-api-compatibility) for
+[Event API Compatibility](../docs/contributing/extensions-and-registries.md#event-api-compatibility) for
 signature checks and their target and behavioral limits.
 
 ## Dependencies

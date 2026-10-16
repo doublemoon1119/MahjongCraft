@@ -38,6 +38,6 @@ core logic and Flow layers.
 Minecraft presentation extensions and game-event subscriptions are separate surfaces:
 extensions register platform mappings during initialization, while event listeners observe
 committed game results. The event API compatibility scope is defined in
-[CONTRIBUTING.md](../../CONTRIBUTING.md), not by every public class in the Minecraft modules.
+[Event API Compatibility](../../docs/contributing/extensions-and-registries.md#event-api-compatibility), not by every public class in the Minecraft modules.
 
-See [CONTRIBUTING.md](../../CONTRIBUTING.md) for selecting and building a target.
+See [Build](../../docs/contributing/build.md) for selecting and building a target.
