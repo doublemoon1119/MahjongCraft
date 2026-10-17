@@ -261,6 +261,35 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     fun createInitialPlayerRuleState(): PlayerRuleState?
 
     /**
+     * 建立指定讀取者可取得的玩家規則狀態投影。
+     *
+     * 預設只把本人的完整狀態放入快照；其他玩家的狀態一律隱藏。規則若有必須公開的狀態，
+     * 應回傳不含私有資訊的不可變副本。回傳值只會用於觀察者快照與 AI 情境，不得回寫權威桌況。
+     *
+     * @param tableState 權威桌況。
+     * @param player 狀態所屬玩家。
+     * @param observerId 讀取快照的玩家或觀察者識別碼。
+     * @return 該讀取者可取得的狀態；沒有可公開內容時為 null。
+     */
+    fun projectPlayerRuleState(
+        tableState: TableState,
+        player: MahjongPlayer,
+        observerId: Uuid,
+    ): PlayerRuleState? = player.playerRuleState.takeIf { player.id == observerId }
+
+    /**
+     * 建立指定讀取者可取得的動態桌況狀態投影。
+     *
+     * 預設不公開規則專屬動態狀態。規則若有必須同步的公開欄位，應回傳不含私有資訊的不可變副本；
+     * 原始狀態仍可用於建立牌山可見性，投影結果只會進入觀察者快照。
+     *
+     * @param tableState 權威桌況。
+     * @param observerId 讀取快照的玩家或觀察者識別碼。
+     * @return 該讀取者可取得的狀態；沒有可公開內容時為 null。
+     */
+    fun projectDynamicRuleState(tableState: TableState, observerId: Uuid): DynamicRuleState? = null
+
+    /**
      * 因應「玩家摸牌」事件，套用規則特有的狀態變化。
      *
      * 沒有對應狀態需求的規則應直接回傳 [player] 本身，不做任何事。

@@ -57,6 +57,8 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.RoomScreen
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.isShowingRoom
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.isShowingRoomForTable
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.ClientHandTileLayoutBridge
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.ClientHandTileLayoutController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricHandSortCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricTileLabelCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.MatchingTileHighlightController
@@ -143,6 +145,8 @@ class MahjongCraftModClient : ClientModInitializer {
         MahjongChannels.historyArchiveStatusResponse.registerClientReceiver(json, historyArchiveStatus::apply)
         val networkRegistries = koin.get<NetworkDtoRegistries>()
         val stateStore = koin.get<ClientMahjongStateStore>()
+        val handTileLayoutController = koin.get<ClientHandTileLayoutController>()
+        ClientHandTileLayoutBridge.activate(handTileLayoutController)
         val automaticControlUpdateCoordinator = koin.get<ClientAutomaticControlUpdateCoordinator>()
         val autoSortHandPreferenceService = koin.get<ClientAutoSortHandPreferenceService>()
         val decisionTimerStore = koin.get<ClientDecisionTimerStateStore>()
@@ -182,6 +186,7 @@ class MahjongCraftModClient : ClientModInitializer {
             clearDecisionPrompt = decisionPromptStore::clear,
             clearDecisionHud = decisionHudController::clear,
             clearTileAppearance = tileAppearanceResolver::clear,
+            clearHandTileLayout = ClientHandTileLayoutBridge::clear,
         )
         MahjongChannels.playerIdentity.registerClientReceiver(json) { payload ->
             if (payload.entries.size > PlayerIdentityPayload.MAX_ENTRIES) return@registerClientReceiver
@@ -326,6 +331,7 @@ class MahjongCraftModClient : ClientModInitializer {
                 moduleRegistry,
                 decisionPromptStore,
                 clientConfigStore,
+                handTileLayoutController,
             )
         }
         MahjongChannels.decisionTimerUpdate.registerClientReceiver(json) { payload ->

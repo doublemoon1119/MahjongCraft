@@ -15,6 +15,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepositoryImpl
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.module.RevealedHandSettlement
 import com.doublemoon1119.mahjongcraft.testing.logic.config.FakeMahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -77,6 +79,12 @@ class AuthoritativeStateStoreTest {
             },
             tileWall = before.tileWall.draw().wall,
             currentPlayerIndex = 1,
+            revealedHandSettlements = listOf(
+                RevealedHandSettlement(
+                    playerId = before.players.first().id,
+                    waitingTiles = setOf(Tile.Honor.North),
+                ),
+            ),
         )
         val game = store.openGame(before)
 
@@ -98,6 +106,7 @@ class AuthoritativeStateStoreTest {
         assertEquals(listOf(2L, 2L, 2L), events.map { it.transactionFirstSequence })
         val result = assertIs<HistoryTableResult.Change>(assertIs<HistoryFact.TableChanged>(events.last().fact).result)
         assertEquals(after, result.change.applyTo(before))
+        assertEquals(after.revealedHandSettlements, result.change.revealedHandSettlements)
         assertEquals(1, events.count { it.fact is HistoryFact.TableChanged })
     }
 

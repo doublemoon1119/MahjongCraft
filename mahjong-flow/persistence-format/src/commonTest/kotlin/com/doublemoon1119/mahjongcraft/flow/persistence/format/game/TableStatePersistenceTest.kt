@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.module.RevealedHandSettlement
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardEntry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
@@ -25,6 +26,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacementOrien
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
+import kotlinx.serialization.SerializationException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -146,6 +148,36 @@ class TableStatePersistenceTest {
         val handTileId = state.players.first().hand.standingTiles.first().id
 
         assertEncodedRoundTrip(state.copy(revealedHandTileIds = setOf(handTileId)))
+    }
+
+    /** 途中流局 resolver 的等待牌資料在存檔往返後保留。 */
+    @Test
+    fun `revealed hand settlements round-trip in complete game state`() {
+        val state = createTableState()
+        val playerId = state.players.first().id
+
+        assertEncodedRoundTrip(
+            state.copy(
+                revealedHandSettlements = listOf(
+                    RevealedHandSettlement(playerId, setOf(Tile.Honor.North)),
+                ),
+            ),
+        )
+    }
+
+    /** 移除公開手牌欄位時拒絕載入，避免把缺欄舊資料誤當成空集合。 */
+    @Test
+    fun `missing revealed hand settlements field fails decoding`() {
+        val encoded = persistenceJson.encodeToString(
+            TableStatePersistenceDto.serializer(),
+            createTableState().toPersistenceDto(),
+        )
+        val withoutField = encoded.replace(",\"revealedHandSettlements\":[]", "")
+
+        assertEquals(-1, withoutField.indexOf("revealedHandSettlements"))
+        assertFailsWith<SerializationException> {
+            persistenceJson.decodeFromString(TableStatePersistenceDto.serializer(), withoutField)
+        }
     }
 
     /** 存檔裡的 `finishedPlayerIds` 含不在座玩家時，還原成領域型別的當下就該被不變式擋下。 */

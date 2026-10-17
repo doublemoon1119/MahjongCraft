@@ -35,6 +35,16 @@ class GameVisibilityPolicyImpl(
             }
         }
         val module = moduleRegistry.getModule(game.tableState.config)
-        return game.tableState.toSnapshot(visibleHandPlayerIds, module::setAsideTiles)
+        val snapshot = game.tableState.toSnapshot(visibleHandPlayerIds, module::setAsideTiles)
+        val authoritativePlayers = game.tableState.players.associateBy { it.id }
+        return snapshot.copy(
+            players = snapshot.players.map { playerSnapshot ->
+                val player = checkNotNull(authoritativePlayers[playerSnapshot.id])
+                playerSnapshot.copy(
+                    playerRuleState = module.projectPlayerRuleState(game.tableState, player, observerId),
+                )
+            },
+            dynamicRuleState = module.projectDynamicRuleState(game.tableState, observerId),
+        )
     }
 }

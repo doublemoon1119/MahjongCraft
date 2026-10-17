@@ -47,10 +47,8 @@ class HandSnapshotTest {
         val snapshot = hand.toSnapshot(isVisible = false, revealsClosedKanTiles = true)
 
         assertEquals(3, snapshot.standingTiles.size)
-        assertEquals(tile1.id, snapshot.standingTiles[0].id)
-        assertNull(snapshot.standingTiles[0].tile)
-        assertEquals(tile2.id, snapshot.standingTiles[1].id)
-        assertNull(snapshot.standingTiles[1].tile)
+        assertEquals(PublicHandOrder.arrange(listOf(tile1.id, tile2.id)), snapshot.standingTiles.take(2).map { it.id })
+        snapshot.standingTiles.forEach { assertNull(it.tile) }
         assertEquals(lastDrawn.id, snapshot.standingTiles[2].id)
         assertNull(snapshot.standingTiles[2].tile)
         assertEquals(lastDrawn.id, snapshot.lastDrawn?.id)
@@ -69,6 +67,20 @@ class HandSnapshotTest {
 
         assertEquals(1, snapshot.standingTiles.size)
         assertNull(snapshot.lastDrawn)
+    }
+
+    /** 私人排序及牌面改變不影響他人看到的牌張順序，且摸牌仍保留在獨立位置。 */
+    @Test
+    fun `concealed hand order does not depend on faces or private sorting`() {
+        val first = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
+        val second = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9))
+        val drawn = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val before = Hand(listOf(first, second), lastDrawn = drawn)
+        val changed = Hand(listOf(second.copy(tile = first.tile), first.copy(tile = second.tile)), lastDrawn = drawn)
+
+        assertEquals(before.toSnapshot(false, true), changed.toSnapshot(false, true))
+        assertEquals(drawn.id, before.toSnapshot(false, true).lastDrawn?.id)
+        assertEquals(listOf(first.id, second.id, drawn.id), before.toSnapshot(true, true).standingTiles.map { it.id })
     }
 
     /**

@@ -235,17 +235,40 @@ class RespondToDiscardUseCase(
         snapshotSynchronizer.syncAll(gameId)
 
         val seatedPlayerIds = newState.players.map { it.id }
-        eventPublisher.publishToAllObservers(gameId, seatedPlayerIds, playerId, action)
-        result.abortiveDrawReason?.let { reason ->
-            eventPublisher.publishToAllObservers(
+        val abortiveDrawReason = result.abortiveDrawReason
+        val ronWinningTileId = result.ronWinningTileId
+        val resolvedAction = result.resolvedAction
+        when {
+            abortiveDrawReason != null -> eventPublisher.publishToAllObservers(
                 gameId,
                 seatedPlayerIds,
                 requireNotNull(result.abortiveDrawActorId),
-                GameAction.ExhaustiveDraw(reason),
+                GameAction.ExhaustiveDraw(abortiveDrawReason),
+            )
+
+            ronWinningTileId != null -> result.ronWinnerIds.forEach { winnerId ->
+                eventPublisher.publishToAllObservers(
+                    gameId,
+                    seatedPlayerIds,
+                    winnerId,
+                    GameAction.Ron(ronWinningTileId),
+                )
+            }
+
+            resolvedAction != null -> eventPublisher.publishToAllObservers(
+                gameId,
+                seatedPlayerIds,
+                requireNotNull(result.winnerId),
+                resolvedAction,
             )
         }
         if (result.supplementalDrawHappened) {
-            eventPublisher.publishToAllObservers(gameId, seatedPlayerIds, playerId, GameAction.Draw)
+            eventPublisher.publishToAllObservers(
+                gameId,
+                seatedPlayerIds,
+                requireNotNull(result.winnerId),
+                GameAction.Draw,
+            )
             val module = moduleRegistry.getModule(newState.config)
             presentationPublisher.publishRoundInfoUpdated(gameId, newState)
         }

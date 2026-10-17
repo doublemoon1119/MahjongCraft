@@ -25,7 +25,13 @@ data class HandSnapshot(
  * @return 依觀察者可見性建立的手牌快照。
  */
 fun Hand.toSnapshot(isVisible: Boolean, revealsClosedKanTiles: Boolean): HandSnapshot = HandSnapshot(
-    standingTiles = this.standingTiles.map { it.toSnapshot(isVisible) },
+    standingTiles = if (isVisible) {
+        standingTiles.map { it.toSnapshot(true) }
+    } else {
+        val tilesById = standingTiles.associateBy { it.id }
+        PublicHandOrder.arrange(tiles.map { it.id }).map { tilesById.getValue(it).toSnapshot(false) } +
+            listOfNotNull(lastDrawn?.toSnapshot(false))
+    },
     lastDrawn = this.lastDrawn?.toSnapshot(isVisible),
     melds = this.melds.map { it.toSnapshot(handIsVisible = isVisible, revealsClosedKanTiles = revealsClosedKanTiles) },
 )

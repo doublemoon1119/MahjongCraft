@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.TypedPersist
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.IdentifiedTilePersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.PendingReactionPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.PendingRobbingReactionPersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.RevealedHandSettlementPersistenceDto
 import kotlinx.serialization.Serializable
 
 /**
@@ -19,6 +20,7 @@ import kotlinx.serialization.Serializable
  * @property physicalWallLayout 實體牌牆格位的局部變化；未改變時為 null。
  * @property finishedPlayerIds 本局已完成玩家的 UUID 字串集合；未改變時為 null。
  * @property revealedHandTileIds 本局已公開手牌的 UUID 字串集合；未改變時為 null。
+ * @property revealedHandSettlements 流局公開手牌與等待牌的新資料；未改變時為 null，空集合代表清空。
  */
 @Serializable
 data class HistoryTableChangePersistenceDto(
@@ -32,4 +34,5 @@ data class HistoryTableChangePersistenceDto(
     val physicalWallLayout: HistoryWallLayoutChangePersistenceDto?,
     val finishedPlayerIds: Set<String>?,
     val revealedHandTileIds: Set<String>?,
+    val revealedHandSettlements: List<RevealedHandSettlementPersistenceDto>?,
 )

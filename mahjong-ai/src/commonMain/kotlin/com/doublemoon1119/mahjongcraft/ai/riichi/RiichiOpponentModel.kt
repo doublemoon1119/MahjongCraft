@@ -9,7 +9,9 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.PositionRules
 import com.doublemoon1119.mahjongcraft.logic.module.PositionView
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerStateSnapshot
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
+import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
 import kotlin.math.roundToInt
 import kotlin.uuid.Uuid
 
@@ -33,7 +35,7 @@ class RiichiOpponentModel(
 ) : OpponentModel {
     override fun baselineWinValue(view: PositionView, playerId: Uuid): Int {
         val player = view.player(playerId)
-        val isRiichi = (player.playerRuleState as? RiichiPlayerState)?.isRiichi == true
+        val isRiichi = player.playerRuleState.isRiichiForView()
         val isOpen = player.hand.melds.any { it.type != MeldType.CLOSED_KAN }
         val base = when {
             isRiichi -> RIICHI_BASELINE_VALUE
@@ -84,7 +86,7 @@ class RiichiOpponentModel(
 
     override fun threat(view: PositionView, opponentId: Uuid): ThreatEstimate {
         val opponent = view.player(opponentId)
-        val readyProbability = if ((opponent.playerRuleState as? RiichiPlayerState)?.isRiichi == true) {
+        val readyProbability = if (opponent.playerRuleState.isRiichiForView()) {
             1.0
         } else {
             val openMelds = opponent.hand.melds.count { it.type != MeldType.CLOSED_KAN }
@@ -95,6 +97,12 @@ class RiichiOpponentModel(
             readyProbability = readyProbability,
             expectedWinValue = baselineWinValue(view, opponentId),
         )
+    }
+
+    private fun PlayerRuleState?.isRiichiForView(): Boolean = when (this) {
+        is RiichiPlayerState -> isRiichi
+        is RiichiPlayerStateSnapshot -> isRiichi
+        else -> false
     }
 
     /**

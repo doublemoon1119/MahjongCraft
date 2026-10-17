@@ -6,10 +6,12 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableChan
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableResult
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWallChange
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWallLayoutChange
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.RevealedHandSettlementPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.TileWallPhysicalLayoutPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
+import com.doublemoon1119.mahjongcraft.logic.module.RevealedHandSettlement
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import kotlin.uuid.Uuid
 
@@ -108,6 +110,12 @@ internal class HistoryTableChangeMapper(
         },
         finishedPlayerIds = change.finishedPlayerIds?.map(Uuid::toString)?.toSet(),
         revealedHandTileIds = change.revealedHandTileIds?.map(Uuid::toString)?.toSet(),
+        revealedHandSettlements = change.revealedHandSettlements?.map { settlement ->
+            RevealedHandSettlementPersistenceDto(
+                playerId = settlement.playerId.toString(),
+                waitingTiles = settlement.waitingTiles.map { it.toPersistenceDto() },
+            )
+        },
     )
 
     /**
@@ -157,5 +165,11 @@ internal class HistoryTableChangeMapper(
         },
         finishedPlayerIds = dto.finishedPlayerIds?.map(Uuid::parse)?.toSet(),
         revealedHandTileIds = dto.revealedHandTileIds?.map(Uuid::parse)?.toSet(),
+        revealedHandSettlements = dto.revealedHandSettlements?.map { settlement ->
+            RevealedHandSettlement(
+                playerId = Uuid.parse(settlement.playerId),
+                waitingTiles = settlement.waitingTiles.map { it.toDomain() }.toSet(),
+            )
+        },
     )
 }

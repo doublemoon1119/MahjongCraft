@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileInterpr
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.dora.getNextDora
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayerSnapshot
+import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
 import kotlin.uuid.Uuid
 
 /**
@@ -49,7 +50,7 @@ class RiichiPositionRules(
         if (shantenCalculator.calculate(completed) != ShantenResult.Complete) return WinValue.NotWinnable
 
         val self = view.evaluator
-        val riichiState = self.playerRuleState as? RiichiPlayerState ?: RiichiPlayerState()
+        val riichiState = self.playerRuleState.toRiichiStateForSelf() ?: RiichiPlayerState()
         val declaresRiichi = !riichiState.isRiichi && declarations.any { it.value == RiichiGameAction.Riichi }
         if (!isTsumo && isFuriten(self, riichiState, hand)) return WinValue.NotWinnable
 
@@ -81,7 +82,7 @@ class RiichiPositionRules(
     /** 尚未立直、門清（暗槓不算副露）且點數足夠支付立直棒時，聽牌後可以立直。 */
     override fun prospectiveDeclarations(view: PositionView, hand: Hand): Set<GameAction.Extension> {
         val self = view.evaluator
-        val isRiichi = (self.playerRuleState as? RiichiPlayerState)?.isRiichi == true
+        val isRiichi = self.playerRuleState.isRiichiForView()
         val isClosed = hand.melds.all { it.type == MeldType.CLOSED_KAN }
         return if (!isRiichi && isClosed && self.score >= RIICHI_STICK_POINTS) setOf(RIICHI_GAME_ACTION) else emptySet()
     }
@@ -90,7 +91,7 @@ class RiichiPositionRules(
         val opponent = view.player(opponentId)
         val ownDiscards = opponent.discardPile.entries.mapTo(mutableSetOf()) { it.tile.tile.riichiCanonical }
         val declarationIndex = opponent.discardPile.entries.indexOfFirst { (it as? RiichiDiscardEntry)?.isRiichi == true }
-        val isRiichi = (opponent.playerRuleState as? RiichiPlayerState)?.isRiichi == true
+        val isRiichi = opponent.playerRuleState.isRiichiForView()
         if (!isRiichi || declarationIndex < 0) return RonExclusions(ownDiscards = ownDiscards)
         val callCount = view.snapshot.players.sumOf { player -> player.hand.melds.count { it.sourceTile != null } }
         val passed = view.snapshot.players
@@ -103,7 +104,7 @@ class RiichiPositionRules(
     /** 已經立直的對手宣告立直時打出的牌。 */
     override fun declarationTile(view: PositionView, opponentId: Uuid): Tile? {
         val opponent = view.player(opponentId)
-        if ((opponent.playerRuleState as? RiichiPlayerState)?.isRiichi != true) return null
+        if (!opponent.playerRuleState.isRiichiForView()) return null
         return opponent.discardPile.entries
             .firstOrNull { (it as? RiichiDiscardEntry)?.isRiichi == true }
             ?.tile
@@ -115,10 +116,12 @@ class RiichiPositionRules(
     override fun afterTileSetAside(view: PositionView, tileId: Uuid): PositionView {
         val moved = view.withTileSetAside(tileId)
         val self = moved.evaluator
-        val riichiState = self.playerRuleState as? RiichiPlayerState ?: RiichiPlayerState()
-        return moved.withEvaluator(
-            self.copy(playerRuleState = riichiState.copy(nukiDoraTiles = riichiState.nukiDoraTiles + self.setAsideTiles.last())),
-        )
+        val movedState = when (val state = self.playerRuleState) {
+            is RiichiPlayerState -> state.copy(nukiDoraTiles = state.nukiDoraTiles + self.setAsideTiles.last())
+            is RiichiPlayerStateSnapshot -> state.copy(nukiDoraTiles = state.nukiDoraTiles + self.setAsideTiles.last())
+            else -> RiichiPlayerState(nukiDoraTiles = listOf(self.setAsideTiles.last()))
+        }
+        return moved.withEvaluator(self.copy(playerRuleState = movedState))
     }
 
     override fun bonusTileCount(view: PositionView, tile: Tile): Int {
@@ -176,4 +179,25 @@ class RiichiPositionRules(
      * @return 立直棒數；缺少立直動態狀態時為零。
      */
     private fun riichiStickCount(view: PositionView): Int = (view.snapshot.dynamicRuleState as? RiichiDynamicState)?.riichiStickCount ?: 0
+
+    /** 從權威狀態或觀察者快照讀取已公開的立直狀態。 */
+    private fun PlayerRuleState?.isRiichiForView(): Boolean = when (this) {
+        is RiichiPlayerState -> isRiichi
+        is RiichiPlayerStateSnapshot -> isRiichi
+        else -> false
+    }
+
+    /** 將本人快照狀態轉成計算器使用的完整日麻狀態。 */
+    private fun PlayerRuleState?.toRiichiStateForSelf(): RiichiPlayerState? = when (this) {
+        is RiichiPlayerState -> this
+        is RiichiPlayerStateSnapshot -> RiichiPlayerState(
+            riichiTile = riichiTile,
+            doubleRiichiTile = doubleRiichiTile,
+            isIppatsu = isIppatsu == true,
+            paoLiability = paoLiability,
+            isPermanentlyFuriten = isPermanentlyFuriten == true,
+            nukiDoraTiles = nukiDoraTiles,
+        )
+        else -> null
+    }
 }

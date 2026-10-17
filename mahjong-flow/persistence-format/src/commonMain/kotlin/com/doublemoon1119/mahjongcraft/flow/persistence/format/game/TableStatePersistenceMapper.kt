@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.module.RevealedHandSettlement
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
@@ -50,6 +51,12 @@ fun TableState.toPersistenceDto(
     finishedPlayerIds = finishedPlayerIds.map(Uuid::toString).toSet(),
     physicalWallLayout = physicalWallLayout?.toPersistenceDto(),
     revealedHandTileIds = revealedHandTileIds.map(Uuid::toString).toSet(),
+    revealedHandSettlements = revealedHandSettlements.map { settlement ->
+        RevealedHandSettlementPersistenceDto(
+            playerId = settlement.playerId.toString(),
+            waitingTiles = settlement.waitingTiles.map { it.toPersistenceDto() },
+        )
+    },
 )
 
 /**
@@ -89,4 +96,10 @@ fun TableStatePersistenceDto.toDomain(
     finishedPlayerIds = finishedPlayerIds.map(Uuid::parse).toSet(),
     physicalWallLayout = physicalWallLayout?.toDomain(),
     revealedHandTileIds = revealedHandTileIds.map(Uuid::parse).toSet(),
+    revealedHandSettlements = revealedHandSettlements.map { settlement ->
+        RevealedHandSettlement(
+            playerId = Uuid.parse(settlement.playerId),
+            waitingTiles = settlement.waitingTiles.map { it.toDomain() }.toSet(),
+        )
+    },
 )

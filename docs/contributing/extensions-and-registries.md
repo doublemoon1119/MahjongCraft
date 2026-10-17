@@ -31,6 +31,19 @@
   successful decisions. Share lifecycle and execution mechanics without merging endpoint authorization or
   data-recovery policies.
 
+## Observer State Projection
+
+- Rule modules define what each observer may know through `projectPlayerRuleState` and
+  `projectDynamicRuleState`. The visibility policy applies these hooks to both network snapshots and AI
+  contexts. Do not send a raw `TableState.toSnapshot` result directly to either consumer.
+- The default player projection exposes state only to its owner; the default dynamic projection exposes
+  nothing. A spectator's permission to see tile faces does not grant access to private rule state.
+- Return immutable, explicitly public projections for other observers. Represent hidden fields as unknown,
+  not as false or another invented value. Register a network DTO for any new projection type; never write
+  projected state back into the authoritative game or its persistence format.
+- Projection hooks must not modify state or make game decisions. Authoritative validation and wall reveal
+  rules still read the original state. Test that changing hidden data leaves other observers' output unchanged.
+
 ## Koin Registration
 
 - Declare every Koin definition in the owning module's DSL `module { }` value. Do not annotate classes with

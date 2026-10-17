@@ -16,6 +16,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetai
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailValue
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.module.RevealedHandSettlement
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
@@ -60,7 +62,7 @@ class HistoryRecordingPersistenceDtoTest {
         assertFailsWith<IllegalArgumentException> { mapper.decode(dto) }
     }
 
-    /** 交易結果的局部差異在 JSON 與 DTO 往返後仍能重建玩家分數。 */
+    /** 交易差異經 JSON 與 DTO 往返後，保留分數及公開結果的新增、清空、未變更語意。 */
     @Test
     fun `table change round trips without full table snapshot`() {
         val player = MahjongPlayer(Uuid.random(), 0, discardPile = TaiwanDiscardPile(), seatWind = Wind.EAST)
@@ -68,6 +70,12 @@ class HistoryRecordingPersistenceDtoTest {
         val change = HistoryTableChange(
             changedPlayers = listOf(HistoryPlayerChange(player.copy(score = 100), 0, listOf(GameAction.Draw))),
             revealedHandTileIds = setOf(Uuid.random()),
+            revealedHandSettlements = listOf(
+                RevealedHandSettlement(
+                    playerId = player.id,
+                    waitingTiles = setOf(Tile.Honor.North),
+                ),
+            ),
         )
         val state = HistoryRecordingState(
             nextSequenceByMatchId = mapOf(matchId to 2L),
@@ -84,11 +92,22 @@ class HistoryRecordingPersistenceDtoTest {
             ),
         )
         val mapper = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries())
-        val dto = mapper.encode(state)
-        val encoded = Json.encodeToString(HistoryRecordingPersistenceDto.serializer(), dto)
+        listOf(
+            change,
+            change.copy(revealedHandSettlements = emptyList()),
+            change.copy(revealedHandSettlements = null),
+        ).forEach { variant ->
+            val variantState = state.copy(
+                pendingEvents = state.pendingEvents.map { event ->
+                    event.copy(fact = HistoryFact.TableChanged(HistoryTableResult.Change(variant)))
+                },
+            )
+            val dto = mapper.encode(variantState)
+            val encoded = Json.encodeToString(HistoryRecordingPersistenceDto.serializer(), dto)
 
-        assertTrue(!encoded.contains("resultingState"))
-        assertEquals(state, mapper.decode(Json.decodeFromString(HistoryRecordingPersistenceDto.serializer(), encoded)))
+            assertTrue(!encoded.contains("resultingState"))
+            assertEquals(variantState, mapper.decode(Json.decodeFromString(HistoryRecordingPersistenceDto.serializer(), encoded)))
+        }
     }
 
     /** 開局事實攜帶的 AI 策略 key 在 JSON 與 DTO 往返後保持不變。 */

@@ -62,6 +62,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPendingKanDoraReveal
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerStateSnapshot
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardPile
@@ -230,6 +231,30 @@ class DtoRoundTripTest {
         assertEquals(snapshot.dynamicRuleState, decodedDto.toDomain(registries).dynamicRuleState)
         assertEquals(snapshot.physicalWallLayout, decodedDto.toDomain(registries).physicalWallLayout)
         assertEquals(listOf(setAsideTile), decodedDto.toDomain(registries).players.single().setAsideTiles)
+    }
+
+    /** 觀察者快照中的未知私人欄位，在網路編解碼後仍保留為 null。 */
+    @Test
+    fun `test Riichi observer player state snapshot round-trips through network DTOs`() {
+        val snapshot = RiichiPlayerStateSnapshot(
+            riichiTile = IdentifiedTile(Uuid.random(), Tile.Honor.East),
+            isIppatsu = null,
+            isPermanentlyFuriten = null,
+            nukiDoraTiles = listOf(IdentifiedTile(Uuid.random(), Tile.Honor.North)),
+        )
+        val player = FakeMahjongPlayerFactory.create(
+            playerRuleState = snapshot,
+            discardPile = RiichiDiscardPile(emptyList()),
+        )
+        val tableSnapshot = FakeTableStateFactory.create(
+            players = listOf(player),
+            config = RiichiRuleConfig(),
+        ).toSnapshot(setOf(player.id), setAsideTiles = { emptyList() })
+        val tableSnapshotDto = tableSnapshot.toDto(registries)
+        val encoded = json.encodeToString(TableStateSnapshotDto.serializer(), tableSnapshotDto)
+        val decoded = json.decodeFromString(TableStateSnapshotDto.serializer(), encoded).toDomain(registries)
+
+        assertEquals(snapshot, decoded.players.single().playerRuleState)
     }
 
     @Test

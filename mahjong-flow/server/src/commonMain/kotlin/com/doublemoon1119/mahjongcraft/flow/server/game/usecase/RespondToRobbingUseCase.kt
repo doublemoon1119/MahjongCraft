@@ -291,9 +291,24 @@ class RespondToRobbingUseCase(
         snapshotSynchronizer.syncAll(gameId)
 
         val seatedPlayerIds = newState.players.map { it.id }
-        eventPublisher.publishToAllObservers(gameId, seatedPlayerIds, playerId, action)
+        val ronWinningTileId = result.ronWinningTileId
+        when {
+            ronWinningTileId != null -> result.ronWinnerIds.forEach { winnerId ->
+                eventPublisher.publishToAllObservers(
+                    gameId,
+                    seatedPlayerIds,
+                    winnerId,
+                    GameAction.Ron(ronWinningTileId),
+                )
+            }
+        }
         if (result.drawHappened) {
-            eventPublisher.publishToAllObservers(gameId, seatedPlayerIds, playerId, GameAction.Draw)
+            eventPublisher.publishToAllObservers(
+                gameId,
+                seatedPlayerIds,
+                requireNotNull(result.declarerId),
+                GameAction.Draw,
+            )
             val module = moduleRegistry.getModule(newState.config)
             presentationPublisher.publishRoundInfoUpdated(gameId, newState)
         }

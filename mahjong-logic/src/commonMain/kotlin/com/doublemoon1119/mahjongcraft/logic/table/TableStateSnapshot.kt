@@ -20,7 +20,7 @@ import kotlin.uuid.Uuid
  * @property roundPosition 當前權威局位。
  * @property comboCount 當前連莊次數
  * @property currentPlayerIndex 當前回合玩家的索引
- * @property dynamicRuleState 規則特定的動態桌況狀態
+ * @property dynamicRuleState 依觀察者投影的規則特定動態桌況狀態；未公開或規則不支援時為 `null`。
  * @property finishedPlayerIds 本局已完成、不再參與後續回合的玩家 Uuid 集合。
  * @property physicalWallLayout 目前仍在牌牆中的牌張實體位置；規則不支援時為 null。
  * @property revealedHandTiles 仍在某位玩家手牌中、但已經公開的牌（見 [TableState.revealedHandTileIds]），對所有玩家
@@ -45,6 +45,9 @@ data class TableStateSnapshot(
 
 /**
  * 產生一個相對於指定觀察者可見範圍的 [TableState] 不可變快照。
+ *
+ * 這個低階函式只處理手牌與牌山牌面的可見性，會保留規則狀態原值；對外同步或 AI 情境必須再經過
+ * flow 的 visibility policy 套用規則專屬投影，不能直接把這個結果當成觀察者快照。
  *
  * @param visibleHandPlayerIds 可以顯示完整手牌的玩家識別碼集合。
  * @param setAsideTiles 取得每位玩家移出手牌、公開擺在桌上的牌，通常是這一局規則模組的

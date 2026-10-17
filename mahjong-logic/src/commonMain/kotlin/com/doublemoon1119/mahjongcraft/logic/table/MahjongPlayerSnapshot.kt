@@ -17,7 +17,7 @@ import kotlin.uuid.Uuid
  * @property discardPile 牌河實體，始終對所有玩家可見
  * @property setAsideTiles 移出手牌、公開擺在桌上的牌（見 [MahjongRuleModule.setAsideTiles]），依移出順序排列，
  *   始終對所有玩家可見；沒有時為空清單
- * @property playerRuleState 規則特定的玩家狀態（如立直、振聽等）
+ * @property playerRuleState 依觀察者投影的規則特定玩家狀態（如立直、振聽等）；未公開時為 `null`。
  * @property score 當前分數
  */
 data class MahjongPlayerSnapshot(

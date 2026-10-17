@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.common.game.history
 
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
+import com.doublemoon1119.mahjongcraft.logic.module.RevealedHandSettlement
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
@@ -22,6 +23,7 @@ import kotlin.uuid.Uuid
  * @property physicalWallLayout 實體牌牆位置的局部變化；未改變時為 null。
  * @property finishedPlayerIds 本局已完成玩家的新集合；未改變時為 null。
  * @property revealedHandTileIds 本局已公開手牌的新集合；未改變時為 null。
+ * @property revealedHandSettlements 流局公開手牌與等待牌的新資料；未改變時為 null，空集合代表清空。
  */
 data class HistoryTableChange(
     val changedPlayers: List<HistoryPlayerChange> = emptyList(),
@@ -34,6 +36,7 @@ data class HistoryTableChange(
     val physicalWallLayout: HistoryWallLayoutChange? = null,
     val finishedPlayerIds: Set<Uuid>? = null,
     val revealedHandTileIds: Set<Uuid>? = null,
+    val revealedHandSettlements: List<RevealedHandSettlement>? = null,
 ) {
     /**
      * 將差異套用到前一個完整桌況。
@@ -58,6 +61,7 @@ data class HistoryTableChange(
                 ?: before.physicalWallLayout,
             finishedPlayerIds = finishedPlayerIds ?: before.finishedPlayerIds,
             revealedHandTileIds = revealedHandTileIds ?: before.revealedHandTileIds,
+            revealedHandSettlements = revealedHandSettlements ?: before.revealedHandSettlements,
         )
     }
 
@@ -118,6 +122,9 @@ data class HistoryTableChange(
                 },
                 finishedPlayerIds = after.finishedPlayerIds.takeIf { it != before.finishedPlayerIds },
                 revealedHandTileIds = after.revealedHandTileIds.takeIf { it != before.revealedHandTileIds },
+                revealedHandSettlements = after.revealedHandSettlements.takeIf {
+                    it != before.revealedHandSettlements
+                },
             )
             return result.takeIf { runCatching { it.applyTo(before) == after }.getOrDefault(false) }
         }

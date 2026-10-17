@@ -21,6 +21,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.dora.getNextDora
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.MatchProgressionPolicy
+import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.WallRevealPolicy
@@ -162,6 +163,22 @@ class RiichiRuleModule(
      * @return 全新的 [RiichiPlayerState]（尚未立直、無包牌責任）。
      */
     override fun createInitialPlayerRuleState(): RiichiPlayerState = RiichiPlayerState()
+
+    /** 建立日麻玩家規則狀態的 observer 投影；振聽與一發資格只向本人公開。 */
+    override fun projectPlayerRuleState(
+        tableState: TableState,
+        player: MahjongPlayer,
+        observerId: Uuid,
+    ): PlayerRuleState? {
+        val state = player.playerRuleState as? RiichiPlayerState ?: return null
+        return if (player.id == observerId) state.toSnapshot() else state.toPublicSnapshot()
+    }
+
+    /** 建立日麻動態桌況的 observer 投影；尚未公開的槓寶牌項目不送出。 */
+    override fun projectDynamicRuleState(tableState: TableState, observerId: Uuid): DynamicRuleState? {
+        val state = tableState.dynamicRuleState as? RiichiDynamicState ?: return null
+        return state.copy(pendingKanDoraReveals = emptyList())
+    }
 
     /**
      * 日本麻將沒有摸牌後需要變更的規則特有狀態；立直後的下一次摸牌仍在一發期限內，可以自摸一發。

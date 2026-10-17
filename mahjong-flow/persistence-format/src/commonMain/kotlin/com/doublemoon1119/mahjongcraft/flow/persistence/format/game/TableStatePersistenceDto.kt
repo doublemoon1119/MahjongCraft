@@ -25,6 +25,7 @@ import kotlinx.serialization.Serializable
  * @property finishedPlayerIds 本局已完成玩家的 UUID 集合。
  * @property physicalWallLayout 仍在牌牆中的牌張實體位置；沒有時為 null。
  * @property revealedHandTileIds 本局已公開的手牌 UUID 集合。
+ * @property revealedHandSettlements 本局流局 resolver 計算出的公開手牌與等待牌資料。
  */
 @Serializable
 data class TableStatePersistenceDto(
@@ -46,4 +47,5 @@ data class TableStatePersistenceDto(
     val finishedPlayerIds: Set<String>,
     val physicalWallLayout: TileWallPhysicalLayoutPersistenceDto?,
     val revealedHandTileIds: Set<String>,
+    val revealedHandSettlements: List<RevealedHandSettlementPersistenceDto>,
 )

@@ -396,22 +396,21 @@ class GameFlowCoordinator(
                 chainAdvanceRound(gameId)
                 return result
             }
-            if (declareExhaustiveDrawUseCase(gameId) is Outcome.Success) {
-                val currentState = gameRepository.getTableState(gameId)
+            val exhaustiveDraw = declareExhaustiveDrawUseCase(gameId)
+            if (exhaustiveDraw is Outcome.Success) {
+                val currentState = exhaustiveDraw.value.tableState
                 val module = moduleRegistry.getModule(previousState.config)
-                val settlement = module.declareExhaustiveDraw(previousState)
-                if (currentState != null && settlement != null) {
-                    exhaustiveDrawSettlementPresentationService.publish(
-                        gameId = gameId,
-                        previousState = previousState,
-                        currentState = currentState,
-                        module = module,
-                        aiPlayerIds = gameRepository.getGame(gameId)?.aiPlayerIds.orEmpty(),
-                        reason = settlement.reason,
-                        tenpaiPlayerIds = settlement.tenpaiPlayerIds.takeIf { settlement.stickPotCollectorPlayerIds.isEmpty() },
-                        revealedHands = settlement.revealedHands,
-                    )
-                }
+                val settlement = exhaustiveDraw.value.settlement
+                exhaustiveDrawSettlementPresentationService.publish(
+                    gameId = gameId,
+                    previousState = previousState,
+                    currentState = currentState,
+                    module = module,
+                    aiPlayerIds = gameRepository.getGame(gameId)?.aiPlayerIds.orEmpty(),
+                    reason = settlement.reason,
+                    tenpaiPlayerIds = settlement.tenpaiPlayerIds.takeIf { settlement.stickPotCollectorPlayerIds.isEmpty() },
+                    revealedHands = settlement.revealedHands,
+                )
                 chainAdvanceRound(gameId)
             }
             return result
@@ -421,7 +420,6 @@ class GameFlowCoordinator(
             handleHandConclusionIfPresent(
                 gameId = gameId,
                 playerId = playerId,
-                abortiveDrawDeclarerId = playerId.takeIf { command is GameCommand.DeclareExhaustiveDraw },
                 previousState = previousState,
             )
         }
@@ -446,12 +444,10 @@ class GameFlowCoordinator(
      * 若這次狀態變更新增途中流局記錄，建立統一回合結算呈現。
      *
      * @param gameId 對局識別碼。
-     * @param declarerId 觸發流局的玩家；系統觸發時為 null。
      * @param previousState 執行命令前的桌況，用於辨識新增加的流局記錄。
      */
     private suspend fun publishNewAbortiveDrawIfPresent(
         gameId: Uuid,
-        declarerId: Uuid?,
         previousState: TableState,
     ) {
         val currentState = gameRepository.getTableState(gameId) ?: return
@@ -473,7 +469,8 @@ class GameFlowCoordinator(
             aiPlayerIds = gameRepository.getGame(gameId)?.aiPlayerIds.orEmpty(),
             reason = reason,
             tenpaiPlayerIds = null,
-            revealedHands = module.resolveAbortiveDrawRevealedHands(currentState, declarerId, reason),
+            // 公開名單與等待牌都取自產生流局時保存的第一次 resolver 結果；呈現階段不能重算。
+            revealedHands = currentState.revealedHandSettlements,
         )
     }
 
@@ -493,13 +490,11 @@ class GameFlowCoordinator(
      *
      * @param gameId 對局識別碼。
      * @param playerId 本次命令的玩家識別碼。
-     * @param abortiveDrawDeclarerId 本次命令是主動宣告途中流局時為宣告者，否則為 null。
      * @param previousState 執行命令前的桌況。
      */
     private suspend fun handleHandConclusionIfPresent(
         gameId: Uuid,
         playerId: Uuid,
-        abortiveDrawDeclarerId: Uuid?,
         previousState: TableState,
     ) {
         val currentState = gameRepository.getTableState(gameId) ?: return
@@ -510,7 +505,7 @@ class GameFlowCoordinator(
         }
         if (hasNewExhaustiveDraw) {
             ensureRecordedDrawCompletion(gameId, currentState, newlyRecordedActionsByPlayerId)
-            publishNewAbortiveDrawIfPresent(gameId, abortiveDrawDeclarerId, previousState)
+            publishNewAbortiveDrawIfPresent(gameId, previousState)
             chainAdvanceRound(gameId)
             return
         }

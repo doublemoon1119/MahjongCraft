@@ -756,6 +756,14 @@ class RespondToDiscardUseCaseTest {
         val stateAfterChiResponse = fixtures.gameRepo.getTableState(gameId)!!
         assertNotNull(stateAfterChiResponse.pendingReaction, "Should still wait for the Pon-eligible player to respond.")
         assertEquals(0, stateAfterChiResponse.currentPlayerIndex, "Turn should not advance until resolution.")
+        assertTrue(
+            fixtures.eventPublisher.getNotifiedActions(gameId, bystander.id, chiPlayerId).isEmpty(),
+            "A provisional Chi response must not be broadcast to other players.",
+        )
+        assertTrue(
+            fixtures.eventPublisher.getNotifiedActions(gameId, chiPlayerId, chiPlayerId).isEmpty(),
+            "A provisional Chi response does not need a game action event for its actor.",
+        )
 
         // 碰的玩家回應：資格齊全，開始結算，碰優先於吃
         val secondResult = fixtures.useCase(gameId, ponPlayerId, GameAction.Pon(discardedTile.id, listOf(ponTile1.id, ponTile2.id)))
@@ -769,6 +777,11 @@ class RespondToDiscardUseCaseTest {
 
         val finalPonPlayer = finalState.players.first { it.id == ponPlayerId }
         assertEquals(MeldType.PON, finalPonPlayer.hand.melds.single().type)
+        assertEquals(
+            listOf(GameAction.Pon(discardedTile.id, listOf(ponTile1.id, ponTile2.id))),
+            fixtures.eventPublisher.getNotifiedActions(gameId, bystander.id, ponPlayerId),
+            "Only the realized Pon should be broadcast after the reaction window resolves.",
+        )
         assertEquals(
             finalState.players.indexOfFirst { it.id == ponPlayerId },
             finalState.currentPlayerIndex,

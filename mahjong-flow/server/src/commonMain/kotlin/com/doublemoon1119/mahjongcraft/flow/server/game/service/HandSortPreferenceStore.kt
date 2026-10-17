@@ -6,8 +6,8 @@ import kotlin.uuid.Uuid
 /**
  * 記錄每位玩家選擇的手牌排列方式：是否自動整理手牌。
  *
- * 其他玩家看得到牌的擺放順序，排列方式會影響可被讀出的資訊，因此由伺服器套用到權威手牌順序，而不是各用戶端各自
- * 排序；套用時機見 `SetHandSortPreferenceUseCase`。
+ * 偏好只影響本人快照的手牌順序；其他觀察者的蓋牌快照與共享布局使用不依牌面排列的公開順序。
+ * 套用時機見 `SetHandSortPreferenceUseCase`。
  *
  * 刻意純記憶體、不接進 `AuthoritativeStateStore`：伺服器重啟後回到預設值即可，玩家重新連線時用戶端會自動重送一次
  * 目前的選擇。

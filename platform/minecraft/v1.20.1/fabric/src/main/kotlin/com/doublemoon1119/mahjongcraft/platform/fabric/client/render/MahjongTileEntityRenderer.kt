@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.ClientDecisio
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.game.DecisionCardLayout
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.gui.ClaimedTileMarker
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.ClientHandTileLayoutController
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTilePose
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.TileActionPopupKind
@@ -17,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileMotionAnimati
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileMotionAnimationSpec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.UNKNOWN_TILE_ASSET_KEY
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
+import net.minecraft.client.render.Frustum
 import net.minecraft.client.render.OverlayTexture
 import net.minecraft.client.render.RenderLayer
 import net.minecraft.client.render.VertexConsumerProvider
@@ -27,6 +29,7 @@ import net.minecraft.client.render.model.json.ModelTransformationMode
 import net.minecraft.client.util.math.MatrixStack
 import net.minecraft.client.world.ClientWorld
 import net.minecraft.util.Identifier
+import net.minecraft.util.math.MathHelper
 import net.minecraft.util.math.RotationAxis
 import kotlin.uuid.toJavaUuid
 import kotlin.uuid.toKotlinUuid
@@ -51,6 +54,7 @@ import kotlin.uuid.toKotlinUuid
  * @param moduleRegistry 依對局規則判斷加值牌的 registry。
  * @param decisionPromptStore 提供目前選牌合法候選牌集合，以決定手牌是否降低亮度。
  * @param configStore 提供牌面提示等用戶端顯示設定。
+ * @param handTileLayoutController 提供本人牌張本幀的絕對位置與姿態。
  */
 class MahjongTileEntityRenderer(
     context: EntityRendererFactory.Context,
@@ -61,7 +65,21 @@ class MahjongTileEntityRenderer(
     private val moduleRegistry: MahjongModuleRegistry,
     private val decisionPromptStore: ClientDecisionPromptStore,
     private val configStore: MahjongClientConfigStore,
+    private val handTileLayoutController: ClientHandTileLayoutController,
 ) : EntityRenderer<MahjongTileEntity>(context) {
+    /** 本人牌張依顯示位置裁切，避免共享位置在畫面外時把私人格位中的牌一起隱藏。 */
+    override fun shouldRender(
+        entity: MahjongTileEntity,
+        frustum: Frustum,
+        x: Double,
+        y: Double,
+        z: Double,
+    ): Boolean = if (handTileLayoutController.display(entity) != null) {
+        entity.shouldRender(x, y, z) && frustum.isVisible(handTileLayoutController.adjustedBox(entity))
+    } else {
+        super.shouldRender(entity, frustum, x, y, z)
+    }
+
     /** 依 entity yaw 與姿態旋轉模型，並補償原點使牌底貼齊所在表面。 */
     override fun render(
         entity: MahjongTileEntity,
@@ -77,8 +95,9 @@ class MahjongTileEntityRenderer(
         // AnimatedMahjongEntity KDoc；EntityRenderDispatcher 本身只用這個旗標控制陰影／除錯 hitbox，
         // 不會自動幫自訂 renderer 跳過 render()，所以這裡要自己判斷。
         if (entity.isInvisible) return
+        val localDisplay = handTileLayoutController.display(entity)
         val elapsedAnimationTicks = entity.world.time.toDouble() + tickDelta - entity.animationStartGameTime
-        val animationFrame = if (entity.animating) {
+        val animationFrame = if (localDisplay == null && entity.animating) {
             TileMotionAnimation(
                 TileMotionAnimationSpec(
                     durationTicks = entity.animationDurationTicks,
@@ -96,14 +115,24 @@ class MahjongTileEntityRenderer(
             null
         }
         matrices.push()
+        if (localDisplay != null) {
+            // dispatcher 已移到原生插值位置；改成最終私人位置，不再疊加共享動畫。
+            matrices.translate(
+                localDisplay.position.x - MathHelper.lerp(tickDelta.toDouble(), entity.lastRenderX, entity.x),
+                localDisplay.position.y - MathHelper.lerp(tickDelta.toDouble(), entity.lastRenderY, entity.y),
+                localDisplay.position.z - MathHelper.lerp(tickDelta.toDouble(), entity.lastRenderZ, entity.z),
+            )
+        }
         if (animationFrame != null) matrices.translate(animationFrame.offset.x, animationFrame.offset.y, animationFrame.offset.z)
         matrices.multiply(
             RotationAxis.POSITIVE_Y.rotationDegrees(
-                -entity.yaw + 180.0f - (animationFrame?.yawOffsetDegrees ?: 0.0f),
+                -(localDisplay?.yawDegrees ?: entity.yaw) + 180.0f - (animationFrame?.yawOffsetDegrees ?: 0.0f),
             ),
         )
-        matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(animationFrame?.poseRotationDegrees ?: entity.tilePose.rotationDegrees))
-        val (poseOffsetX, poseOffsetY, poseOffsetZ) = if (animationFrame != null) {
+        matrices.multiply(RotationAxis.POSITIVE_X.rotationDegrees(localDisplay?.poseDegrees ?: animationFrame?.poseRotationDegrees ?: entity.tilePose.rotationDegrees))
+        val (poseOffsetX, poseOffsetY, poseOffsetZ) = if (localDisplay != null) {
+            displayPoseOriginOffset(localDisplay.poseDegrees)
+        } else if (animationFrame != null) {
             lerpPoseOriginOffset(entity.animationStartPoseRotationDegrees, entity.animationEndPoseRotationDegrees, animationFrame.progress)
         } else {
             poseOriginOffset(entity.tilePose.rotationDegrees)
@@ -406,6 +435,18 @@ class MahjongTileEntityRenderer(
         MahjongTilePose.STANDING.rotationDegrees -> Triple(0.0, MahjongTileEntity.TILE_HEIGHT / 2.0, 0.0)
         MahjongTilePose.FACE_UP.rotationDegrees -> Triple(0.0, 0.0, -MahjongTileEntity.TILE_DEPTH / 2.0)
         else -> Triple(0.0, 0.0, MahjongTileEntity.TILE_DEPTH / 2.0) // MahjongTilePose.FACE_DOWN
+    }
+
+    /**
+     * 本人過渡使用連續翻轉角補償牌底，模型組裝時只套用一次。
+     *
+     * @param rotationDegrees 本幀的絕對翻轉角。
+     * @return 模型原點相對牌底的位置差。
+     */
+    private fun displayPoseOriginOffset(rotationDegrees: Float): Triple<Double, Double, Double> = if (rotationDegrees >= 0.0f) {
+        lerpPoseOriginOffset(0.0f, 90.0f, (rotationDegrees / 90.0f).toDouble().coerceIn(0.0, 1.0))
+    } else {
+        lerpPoseOriginOffset(-90.0f, 0.0f, ((rotationDegrees + 90.0f) / 90.0f).toDouble().coerceIn(0.0, 1.0))
     }
 
     /**

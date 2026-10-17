@@ -24,6 +24,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiGameAc
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiGameCommandDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiGameLengthDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiPlayerStateDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiPlayerStateSnapshotDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiPullNorthActionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiPullNorthCommandDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiRuleConfigDto
@@ -31,6 +32,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.RiichiScoreC
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.ThreePlayerRiichiRuleConfigDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.toRiichiDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.toRiichiSnapshotDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.riichi.toThreePlayerRiichiDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.taiwan.toDomain
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceDtoDefinition
@@ -77,6 +79,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPendingKanDoraReveal
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerStateSnapshot
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiScoreConfig
@@ -186,6 +189,15 @@ object BundledRiichiExtension : MahjongExtension {
                 serializer = RiichiPlayerStateDto.serializer(),
                 toDto = RiichiPlayerState::toRiichiDto,
                 toDomain = RiichiPlayerStateDto::toDomain,
+            ),
+        )
+        registries.playerRuleState.register(
+            definition = DtoDefinition(
+                domainClass = RiichiPlayerStateSnapshot::class,
+                dtoClass = RiichiPlayerStateSnapshotDto::class,
+                serializer = RiichiPlayerStateSnapshotDto.serializer(),
+                toDto = RiichiPlayerStateSnapshot::toRiichiSnapshotDto,
+                toDomain = RiichiPlayerStateSnapshotDto::toDomain,
             ),
         )
         registries.discardPile.register(

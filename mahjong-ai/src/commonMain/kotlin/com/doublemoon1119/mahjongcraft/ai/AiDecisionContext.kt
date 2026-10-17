@@ -7,9 +7,9 @@ import kotlin.uuid.Uuid
 /**
  * 供 [MahjongAiStrategy] 做決策所需的完整情境。
  *
- * @property snapshot 以 [selfId] 為觀察者產生的桌況快照（即
- *           `TableState.toSnapshot(observerId = selfId)`）——只有這位 AI 自己的手牌可見，
- *           跟真人玩家看到的完全相同，AI 不會「偷看」其他玩家的手牌。
+ * @property snapshot 由呼叫端依 [selfId] 的可見範圍建立、並套用規則狀態投影的桌況快照。
+ *           包含自己的手牌與規則允許公開的資訊，不包含他人隱藏牌面或私人規則狀態；
+ *           呼叫端不可直接使用尚未套用規則狀態投影的低階快照。
  * @property selfId 這位 AI 玩家自己的 Uuid。不靠「[snapshot] 裡哪個玩家的手牌剛好可見」這種
  * 隱式推斷取得，避免依賴 [snapshot] 建構方式的巧合。
  * @property phase 目前所處的決策情境，見 [AiDecisionPhase]。

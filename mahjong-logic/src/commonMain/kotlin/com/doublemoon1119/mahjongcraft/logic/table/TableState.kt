@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.module.RevealedHandSettlement
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 import kotlin.uuid.Uuid
@@ -39,6 +40,8 @@ import kotlin.uuid.Uuid
  * @property revealedHandTileIds 本局已經公開、但可能仍留在手牌中的牌：宣告暗槓、加槓或移出手牌的動作而開啟搶和反應
  * 視窗時，宣告擺出的牌就此公開；被搶和時宣告不成立，這些牌留在宣告者手上但仍是公開的。流局時規則要求攤開的手牌
  * （例如日麻流局時聽牌者的手牌）也記在這裡，直到本局結束。每局重新開始時為空集合。
+ * @property revealedHandSettlements 本局流局 resolver 第一次計算出的公開手牌與等待牌資料；呈現流程只讀這份結果，
+ * 每局重新開始時為空集合。
  */
 data class TableState(
     val id: Uuid,
@@ -63,6 +66,7 @@ data class TableState(
     val physicalWallLayout: TileWallPhysicalLayout? = null,
     val finishedPlayerIds: Set<Uuid> = emptySet(),
     val revealedHandTileIds: Set<Uuid> = emptySet(),
+    val revealedHandSettlements: List<RevealedHandSettlement> = emptyList(),
 ) {
     init {
         require(players.map { it.id }.distinct().size == players.size) { "Table players must have unique IDs" }

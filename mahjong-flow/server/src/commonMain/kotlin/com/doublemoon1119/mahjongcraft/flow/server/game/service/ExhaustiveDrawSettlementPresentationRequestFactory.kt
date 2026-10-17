@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSett
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPlayer
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.roundRanksByPlayer
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.logic.base.PublicHandOrder
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.RevealedHandSettlement
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
@@ -46,12 +47,18 @@ object ExhaustiveDrawSettlementPresentationRequestFactory {
             players = currentState.players.mapIndexed { seatIndex, player ->
                 val previousPlayer = previousState.players.first { it.id == player.id }
                 val reveal = revealedByPlayer[player.id]
+                val revealedTileIds = player.hand.allTiles
+                    .map { it.id }
+                    .filter { it in currentState.revealedHandTileIds }
+                val standingTileIds = player.hand.standingTiles.map { it.id }
+                val fullyRevealedStandingHand = standingTileIds.all { it in currentState.revealedHandTileIds }
                 // 本局已經胡牌退場的玩家（見 TableState.finishedPlayerIds）只保留分數排行的那一列：
                 // 手牌在他胡牌時就已經收尾，這裡不能再要求公開一次，也不該被標成聽牌／不聽——
                 // 他根本沒有參與這次流局。
                 val isFinished = player.id in currentState.finishedPlayerIds
                 val handDisclosure = when {
-                    reveal == null -> ExhaustiveDrawHandDisclosure.CONCEALED
+                    isFinished -> ExhaustiveDrawHandDisclosure.CONCEALED
+                    reveal == null || revealedTileIds.isEmpty() -> ExhaustiveDrawHandDisclosure.CONCEALED
                     tenpaiPlayerIds != null && player.id in tenpaiPlayerIds -> ExhaustiveDrawHandDisclosure.TENPAI
                     else -> ExhaustiveDrawHandDisclosure.PROOF
                 }
@@ -70,14 +77,24 @@ object ExhaustiveDrawSettlementPresentationRequestFactory {
                     // 加槓疊牌版面（這個欄位的契約本來就寫明不含副露）。
                     handTileIds = if (isFinished) {
                         emptyList()
+                    } else if (!fullyRevealedStandingHand) {
+                        PublicHandOrder.arrange(standingTileIds)
                     } else {
                         player.hand.standingTiles
                             .sortedWith(compareBy(module.tileOrder) { it.tile })
                             .map { it.id }
                     },
                     handDisclosure = handDisclosure,
-                    revealedHandTileIds = if (handDisclosure == ExhaustiveDrawHandDisclosure.CONCEALED) emptyList() else player.hand.allTiles.map { it.id },
-                    waitingTiles = reveal?.waitingTiles.orEmpty().toList(),
+                    revealedHandTileIds = if (handDisclosure == ExhaustiveDrawHandDisclosure.CONCEALED) {
+                        emptyList()
+                    } else {
+                        revealedTileIds
+                    },
+                    waitingTiles = if (handDisclosure == ExhaustiveDrawHandDisclosure.CONCEALED) {
+                        emptyList()
+                    } else {
+                        reveal?.waitingTiles.orEmpty().sortedWith(module.tileOrder)
+                    },
                     statusId = when {
                         isFinished -> null
                         tenpaiPlayerIds != null && player.id in tenpaiPlayerIds && reveal != null ->

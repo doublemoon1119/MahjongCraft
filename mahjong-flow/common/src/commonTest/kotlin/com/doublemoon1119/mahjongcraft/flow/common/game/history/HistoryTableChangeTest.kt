@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.history
 
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.module.RevealedHandSettlement
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
@@ -29,5 +31,41 @@ class HistoryTableChangeTest {
         val after = before.copy(currentPlayerIndex = before.currentPlayerIndex)
 
         assertNull(assertNotNull(HistoryTableChange.between(before, after)).revealedHandTileIds)
+    }
+
+    /** 流局公開手牌與等待牌改變時，差異能記下並還原完整資料。 */
+    @Test
+    fun `change records and restores revealed hand settlements`() {
+        val settlement = RevealedHandSettlement(
+            playerId = before.players.first().id,
+            waitingTiles = setOf(Tile.Honor.North),
+        )
+        val revealedTileId = Uuid.random()
+        val after = before.copy(
+            revealedHandTileIds = setOf(revealedTileId),
+            revealedHandSettlements = listOf(settlement),
+        )
+
+        val change = assertNotNull(HistoryTableChange.between(before, after))
+
+        assertEquals(setOf(revealedTileId), change.revealedHandTileIds)
+        assertEquals(listOf(settlement), change.revealedHandSettlements)
+        assertEquals(after, change.applyTo(before))
+    }
+
+    /** 流局公開資料清空時，空集合不能被誤認為未改變。 */
+    @Test
+    fun `change records clearing revealed hand settlements`() {
+        val settlement = RevealedHandSettlement(
+            playerId = before.players.first().id,
+            waitingTiles = setOf(Tile.Honor.North),
+        )
+        val source = before.copy(revealedHandSettlements = listOf(settlement))
+        val after = source.copy(revealedHandSettlements = emptyList())
+
+        val change = assertNotNull(HistoryTableChange.between(source, after))
+
+        assertEquals(emptyList(), change.revealedHandSettlements)
+        assertEquals(after, change.applyTo(source))
     }
 }

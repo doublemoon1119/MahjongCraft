@@ -46,9 +46,12 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiSuukanNagare
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.riichiTsumoResolution
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileInterpretationPolicy
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.toPublicSnapshot
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.toSnapshot
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.dora.getNextDora
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.MatchProgressionPolicy
+import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.WallRevealPolicy
@@ -148,6 +151,22 @@ class ThreePlayerRiichiRuleModule(
 
     /** 全新的玩家規則狀態（尚未立直、沒有拔北）。 */
     override fun createInitialPlayerRuleState(): RiichiPlayerState = RiichiPlayerState()
+
+    /** 建立三人日麻玩家狀態的 observer 投影；本人可見完整狀態，其他玩家只收到公開欄位。 */
+    override fun projectPlayerRuleState(
+        tableState: TableState,
+        player: MahjongPlayer,
+        observerId: Uuid,
+    ): PlayerRuleState? {
+        val state = player.playerRuleState as? RiichiPlayerState ?: return null
+        return if (player.id == observerId) state.toSnapshot() else state.toPublicSnapshot()
+    }
+
+    /** 建立三人日麻動態桌況的 observer 投影；尚未公開的槓寶牌項目不送出。 */
+    override fun projectDynamicRuleState(tableState: TableState, observerId: Uuid): DynamicRuleState? {
+        val state = tableState.dynamicRuleState as? RiichiDynamicState ?: return null
+        return state.copy(pendingKanDoraReveals = emptyList())
+    }
 
     /** 摸牌不改變規則狀態。 */
     override fun onPlayerDrew(player: MahjongPlayer): MahjongPlayer = player

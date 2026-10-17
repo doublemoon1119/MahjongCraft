@@ -44,6 +44,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.render.PublicPlaye
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.room.FabricRoomConfigScreenCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientAutomaticControlStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
+import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.ClientHandTileLayoutController
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricHandSortCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.FabricTileLabelCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.tile.MatchingTileHighlightController
@@ -120,5 +121,6 @@ val fabricClientModule = module {
 
     single<FabricHandSortCommand>()
     single<FabricTileLabelCommand>()
+    single<ClientHandTileLayoutController>()
     single<MatchingTileHighlightController>()
 }

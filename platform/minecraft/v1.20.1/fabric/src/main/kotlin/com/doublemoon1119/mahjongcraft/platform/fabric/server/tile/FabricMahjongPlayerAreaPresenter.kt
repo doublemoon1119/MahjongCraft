@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.tile
 
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
+import com.doublemoon1119.mahjongcraft.logic.base.PublicHandOrder
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableBlock
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTablePart
@@ -55,10 +56,9 @@ class FabricMahjongPlayerAreaPresenter(
      *    這個平移量，逐張擺放立牌與摸牌位（[MahjongTilePose.STANDING]）——摸牌位在
      *    [MahjongPlayerAreaPresentation.animateDrawnTile] 為 `true` 時改排定
      *    [TileAnimationSteps.scheduleDrawnTile]，不直接定格。[MahjongPlayerAreaPresentation.standingTileIds] 的
-     *    順序是加入手牌的時間軸（先加入的在前，見 `Hand.discardById` KDoc），不是畫面左右順序，這裡
-     *    刻意把它反過來對應 [MahjongTileTableLayout.handPlacement] 的 `tileIndex`（`0` 是玩家自己右手
-     *    邊）——最後加入立牌的那張牌（例如非摸切捨牌時併入的 `lastDrawn`）因此會落在最右手邊，符合
-     *    真實麻將摸牌後插入手牌的直覺方向。
+     *    私人順序不會用於共享布局；先以 [PublicHandOrder] 轉成公開順序，再反向對應
+     *    [MahjongTileTableLayout.handPlacement] 的 `tileIndex`（`0` 是玩家自己右手邊）。本人的排列由
+     *    用戶端依本人快照顯示，不改變其他觀察者看到的座標。
      * 3. 用 [MahjongTileTableLayout.meldPlacement] 逐格擺放副露——邏輯照搬原本
      *    `FabricMahjongMeldPresenter.present()`，起始游標從 [MahjongTileTableLayout.meldStartOffset]
      *    開始（角落有物件時隔一段縫接在其外緣），其餘不變，含 [closedKanPose]／加槓 depth-offset。
@@ -105,7 +105,8 @@ class FabricMahjongPlayerAreaPresenter(
             hasDrawnTile = presentation.drawnTileId != null,
         )
 
-        presentation.standingTileIds.forEachIndexed { orderIndex, tileId ->
+        // 世界實體由所有觀察者共用，不得把本人的私人理牌順序寫進公開座標。
+        PublicHandOrder.arrange(presentation.standingTileIds).forEachIndexed { orderIndex, tileId ->
             val tile = claimTile(tileId) ?: return@forEachIndexed
             val placement = MahjongTileTableLayout.handPlacement(
                 controllerX = controllerPos.x,
@@ -479,11 +480,9 @@ class FabricMahjongPlayerAreaPresenter(
                 hasDrawnTile = false,
             )
         }
-        // 翻牌後最終該停在哪一格改看 postFlipHandTileIdsBySeatIndex（自動整理手牌啟用時是整理過的
-        // 順序），跟決定發牌動畫本身節奏的 handTileIdsBySeatIndex 分開算，見
-        // MahjongInitialDealPresentation KDoc。
+        // 發牌保留取牌時間順序；翻起後的共享布局只依牌張身分排列，本人的理牌另外在本機呈現。
         val postFlipOrderIndexBySeat = presentation.postFlipHandTileIdsBySeatIndex.mapValues { (_, tileIds) ->
-            tileIds.withIndex().associate { (index, tileId) -> tileId to index }
+            PublicHandOrder.arrange(tileIds).withIndex().associate { (index, tileId) -> tileId to index }
         }
 
         val totalTurnCount = presentation.dealBatchSizes.size * seatCount

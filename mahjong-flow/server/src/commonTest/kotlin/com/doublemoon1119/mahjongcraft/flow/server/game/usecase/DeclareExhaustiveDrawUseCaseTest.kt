@@ -24,6 +24,7 @@ import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
@@ -122,6 +123,7 @@ class DeclareExhaustiveDrawUseCaseTest {
         val result = fixtures.useCase(gameId)
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        assertEquals(RiichiExhaustiveDrawReason.Normal, assertIs<Outcome.Success<DeclaredExhaustiveDraw>>(result).value.settlement.reason)
         val newState = fixtures.gameRepo.getTableState(gameId)!!
         assertEquals(25000 + 3000, newState.players.first { it.id == tenpaiPlayer.id }.score)
         notenPlayers.forEach { player ->

@@ -230,10 +230,42 @@ class RespondToRobbingUseCaseTest {
         assertFalse(staged.celebration.isTsumo)
     }
 
+    /** 反應視窗尚未結束時，搶槓者的選擇不應透過對局事件通知其他玩家。 */
+    @Test
+    fun `provisional robbing response is not broadcast`() = runTest {
+        val fixtures = Fixtures()
+        val otherEligibleId = Uuid.random()
+        val base = setUpTable()
+        fixtures.gameRepo.setTableState(
+            base.copy(
+                players = base.players + FakeMahjongPlayerFactory.create(
+                    id = otherEligibleId,
+                    initialSeat = Wind.WEST,
+                    hand = robberHand(),
+                ),
+                pendingRobbingReaction = requireNotNull(base.pendingRobbingReaction).copy(
+                    eligiblePlayerIds = setOf(robberId, otherEligibleId),
+                ),
+            ),
+        )
+
+        val result = fixtures.useCase(gameId, robberId, GameAction.Pass)
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        assertTrue(
+            fixtures.eventPublisher.getNotifiedActions(gameId, otherEligibleId, robberId).isEmpty(),
+            "A provisional Pass must not be broadcast to another eligible player.",
+        )
+        assertTrue(
+            fixtures.eventPublisher.getNotifiedActions(gameId, robberId, robberId).isEmpty(),
+            "A provisional Pass does not need a game action event for its actor.",
+        )
+    }
+
     /**
      * 驗證全員放過時：原本被 `DeclareKanUseCase` 暫緩的副露套用與嶺上摸牌會在這裡補做——副露升級為
      * ADDED_KAN、`lastDrawn` 為補摸的嶺上牌、`actionHistory` 依序記錄 `Kan` → `Draw`、反應視窗清除、
-     * 依序發布 `Pass` → `Draw` 事件；本次呈現要求只標記補摸的牌，不重複標記鳴取牌。
+     * 只發布宣告者的補摸 `Draw`，不重複發布早已公開的槓宣告；本次呈現要求只標記補摸的牌，不重複標記鳴取牌。
      */
     @Test
     fun `test all pass resumes the kan declaration`() = runTest {
@@ -259,8 +291,8 @@ class RespondToRobbingUseCaseTest {
         )
 
         assertEquals(
-            listOf(GameAction.Pass, GameAction.Draw),
-            fixtures.eventPublisher.getNotifiedActions(gameId, robberId, robberId),
+            listOf(GameAction.Draw),
+            fixtures.eventPublisher.getNotifiedActions(gameId, robberId, declarerId),
         )
         assertEquals(
             rinshanTile.id,

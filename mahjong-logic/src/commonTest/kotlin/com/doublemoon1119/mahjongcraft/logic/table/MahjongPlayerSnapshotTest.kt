@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.logic.table
 
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
+import com.doublemoon1119.mahjongcraft.logic.base.PublicHandOrder
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
@@ -59,10 +60,13 @@ class MahjongPlayerSnapshotTest {
         assertEquals(player.id, snapshot.id)
         assertEquals(Wind.SOUTH.ordinal, snapshot.initialSeatIndex)
         assertEquals(2, snapshot.hand.standingTiles.size)
-        assertEquals(tile1.id, snapshot.hand.standingTiles[0].id)
-        assertNull(snapshot.hand.standingTiles[0].tile)
-        assertEquals(tile2.id, snapshot.hand.standingTiles[1].id)
-        assertNull(snapshot.hand.standingTiles[1].tile)
+        assertEquals(
+            PublicHandOrder.arrange(listOf(tile1.id, tile2.id)),
+            snapshot.hand.standingTiles.map { it.id },
+        )
+        snapshot.hand.standingTiles.forEach { tile ->
+            assertNull(tile.tile)
+        }
     }
 
     /**

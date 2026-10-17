@@ -8,8 +8,8 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.history.acceptedActionHi
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.revealHandsOf
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
-import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
@@ -52,9 +52,9 @@ class DeclareExhaustiveDrawUseCase(
      * 執行一般流局宣告邏輯。
      *
      * @param gameId 對局 Uuid。
-     * @return 執行結果，成功時為 [Unit]，失敗時為 [GameError]。
+     * @return 執行結果，成功時帶出第一次結算的權威桌況與規則結果，失敗時為 [GameError]。
      */
-    suspend operator fun invoke(gameId: Uuid): Outcome<Unit, GameError> {
+    suspend operator fun invoke(gameId: Uuid): Outcome<DeclaredExhaustiveDraw, GameError> {
         // 1. 以原子方式讀取桌況、計算流局結算並寫回
         val outcome = gameRepository.updateGame(
             gameId,
@@ -63,7 +63,7 @@ class DeclareExhaustiveDrawUseCase(
                     listOf(
                         acceptedActionHistoryDraft(
                             null,
-                            GameAction.ExhaustiveDraw(result.value.reason),
+                            GameAction.ExhaustiveDraw(result.value.settlement.reason),
                             before.tableState,
                             after.tableState,
                         ),
@@ -107,6 +107,7 @@ class DeclareExhaustiveDrawUseCase(
                     val newState = state.copy(
                         players = updatedPlayers,
                         dynamicRuleState = stickPot?.first ?: state.dynamicRuleState,
+                        revealedHandSettlements = settlement.revealedHands,
                     ).revealHandsOf(settlement.revealedHands.map { it.playerId })
 
                     val transitionDirective = if (state.dealerPlayerId in settlement.tenpaiPlayerIds) {
@@ -123,7 +124,7 @@ class DeclareExhaustiveDrawUseCase(
                             transitionDirective = transitionDirective,
                             settledScoresByPlayerId = newState.players.associate { it.id to it.score },
                         ),
-                    ) to Outcome.Success(ExhaustiveDrawResult(newState, settlement.reason))
+                    ) to Outcome.Success(ExhaustiveDrawResult(newState, settlement))
                 }
             }
         }
@@ -137,9 +138,19 @@ class DeclareExhaustiveDrawUseCase(
 
         // 3. 廣播流局事件；跟 GameAction.RoundStarted 一樣沒有實際執行者，比照既有慣例填入莊家 Uuid
         val dealerId = newState.dealerPlayerId
-        eventPublisher.publishToAllObservers(gameId, newState.players.map { it.id }, dealerId, GameAction.ExhaustiveDraw(result.reason))
+        eventPublisher.publishToAllObservers(
+            gameId,
+            newState.players.map { it.id },
+            dealerId,
+            GameAction.ExhaustiveDraw(result.settlement.reason),
+        )
 
-        return Outcome.Success(Unit)
+        return Outcome.Success(
+            DeclaredExhaustiveDraw(
+                tableState = result.tableState,
+                settlement = result.settlement,
+            ),
+        )
     }
 
     /**
@@ -164,12 +175,14 @@ class DeclareExhaustiveDrawUseCase(
     }
 
     /**
-     * `update` 區塊內部使用的中繼結果，讓 [reason] 能跟著 [tableState] 一起帶出
-     * `gameRepository.update` 的作用域，供廣播事件時使用（[reason] 不是 [TableState] 的欄位，
-     * 無法在作用域外從 [tableState] 反推）。
+     * `update` 區塊內部使用的中繼結果，讓第一次計算出的 [settlement] 能跟著 [tableState] 一起帶出
+     * `gameRepository.update` 的作用域，供後續同步與呈現使用；不能在外層重新呼叫規則模組計算。
      *
      * @property tableState 流局結算後的權威桌況。
-     * @property reason 實際成立的流局原因。
+     * @property settlement 實際成立的流局結算與公開手牌資訊。
      */
-    private data class ExhaustiveDrawResult(val tableState: TableState, val reason: ExhaustiveDrawReason)
+    private data class ExhaustiveDrawResult(
+        val tableState: TableState,
+        val settlement: ExhaustiveDrawSettlementResult,
+    )
 }

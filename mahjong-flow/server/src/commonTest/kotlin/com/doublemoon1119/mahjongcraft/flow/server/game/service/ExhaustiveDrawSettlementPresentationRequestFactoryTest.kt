@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawHand
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
+import com.doublemoon1119.mahjongcraft.logic.base.PublicHandOrder
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.RevealedHandSettlement
@@ -33,9 +34,10 @@ class ExhaustiveDrawSettlementPresentationRequestFactoryTest {
     fun `normal draw reveals tenpai hands and conceals noten hands`() {
         val state = tableState(4)
         val tenpaiPlayer = state.players.first()
+        val revealedState = state.copy(revealedHandTileIds = tenpaiPlayer.hand.allTiles.map { it.id }.toSet())
         val request = ExhaustiveDrawSettlementPresentationRequestFactory.create(
             previousState = state,
-            currentState = state,
+            currentState = revealedState,
             module = module,
             aiPlayerIds = emptySet(),
             reason = RiichiExhaustiveDrawReason.Normal,
@@ -72,9 +74,10 @@ class ExhaustiveDrawSettlementPresentationRequestFactoryTest {
     fun `abortive proof reveals declarer and conceals other hands`() {
         val state = tableState(4)
         val declarer = state.players[2]
+        val revealedState = state.copy(revealedHandTileIds = declarer.hand.allTiles.map { it.id }.toSet())
         val request = ExhaustiveDrawSettlementPresentationRequestFactory.create(
             previousState = state,
-            currentState = state,
+            currentState = revealedState,
             module = module,
             aiPlayerIds = emptySet(),
             reason = RiichiExhaustiveDrawReason.KyuushuKyuuhai,
@@ -137,13 +140,33 @@ class ExhaustiveDrawSettlementPresentationRequestFactoryTest {
             revealedHands = emptyList(),
         )
 
-        assertEquals(listOf(standing.id), request.players.first().handTileIds)
+        assertEquals(PublicHandOrder.arrange(listOf(standing.id)), request.players.first().handTileIds)
         meldTiles.forEach { meldTile ->
             assertTrue(
                 meldTile.id !in request.players.first().handTileIds,
                 "A meld tile must never be scheduled for the exhaustive-draw conceal animation.",
             )
         }
+    }
+
+    /** 公開手牌只使用權威 revealedHandTileIds，不因規則結果而整手外洩。 */
+    @Test
+    fun `revealed hand ids are intersected with authoritative disclosure`() {
+        val state = tableState(4)
+        val player = state.players.first()
+        val firstTileId = player.hand.standingTiles.first().id
+        val request = ExhaustiveDrawSettlementPresentationRequestFactory.create(
+            previousState = state,
+            currentState = state.copy(revealedHandTileIds = setOf(firstTileId)),
+            module = module,
+            aiPlayerIds = emptySet(),
+            reason = RiichiExhaustiveDrawReason.Normal,
+            tenpaiPlayerIds = setOf(player.id),
+            revealedHands = listOf(RevealedHandSettlement(player.id, emptySet())),
+        )
+
+        assertEquals(listOf(firstTileId), request.players.first().revealedHandTileIds)
+        assertEquals(ExhaustiveDrawHandDisclosure.TENPAI, request.players.first().handDisclosure)
     }
 
     /** 驗證流局要求中的立牌清單依規則牌序排列。 */
@@ -163,7 +186,7 @@ class ExhaustiveDrawSettlementPresentationRequestFactoryTest {
 
         val request = ExhaustiveDrawSettlementPresentationRequestFactory.create(
             previousState = state,
-            currentState = state,
+            currentState = state.copy(revealedHandTileIds = player.hand.allTiles.map { it.id }.toSet()),
             module = module,
             aiPlayerIds = emptySet(),
             reason = RiichiExhaustiveDrawReason.Normal,
@@ -174,6 +197,40 @@ class ExhaustiveDrawSettlementPresentationRequestFactoryTest {
         assertEquals(
             listOf(oneCharacters.id, nineCharacters.id, east.id),
             request.players.first().handTileIds,
+        )
+    }
+
+    /** 等待牌清單依規則牌序排列，不受 resolver 回傳 Set 的迭代順序影響。 */
+    @Test
+    fun `settlement waiting tiles follow the rule tile order`() {
+        val state = tableState(4)
+        val player = state.players.first()
+        val request = ExhaustiveDrawSettlementPresentationRequestFactory.create(
+            previousState = state,
+            currentState = state.copy(revealedHandTileIds = player.hand.standingTiles.map { it.id }.toSet()),
+            module = module,
+            aiPlayerIds = emptySet(),
+            reason = RiichiExhaustiveDrawReason.Normal,
+            tenpaiPlayerIds = setOf(player.id),
+            revealedHands = listOf(
+                RevealedHandSettlement(
+                    playerId = player.id,
+                    waitingTiles = setOf(
+                        Tile.Honor.East,
+                        Tile.Numeric(Tile.Suit.Character, 9),
+                        Tile.Numeric(Tile.Suit.Character, 1),
+                    ),
+                ),
+            ),
+        )
+
+        assertEquals(
+            listOf(
+                Tile.Numeric(Tile.Suit.Character, 1),
+                Tile.Numeric(Tile.Suit.Character, 9),
+                Tile.Honor.East,
+            ),
+            request.players.first().waitingTiles,
         )
     }
 
@@ -203,6 +260,38 @@ class ExhaustiveDrawSettlementPresentationRequestFactoryTest {
             request.players.first { it.ranking.playerId == base.players[1].id }.statusId,
             "Players still in the round are judged as usual.",
         )
+    }
+
+    /** 已完成玩家即使仍有公開牌資料，也不能被流局呈現標成聽牌或再次公開。 */
+    @Test
+    fun `a finished player is always concealed from draw presentation`() {
+        val base = tableState(4)
+        val finished = base.players.last()
+        val state = base.copy(
+            finishedPlayerIds = setOf(finished.id),
+            revealedHandTileIds = finished.hand.standingTiles.map { it.id }.toSet(),
+        )
+
+        val request = ExhaustiveDrawSettlementPresentationRequestFactory.create(
+            previousState = base,
+            currentState = state,
+            module = module,
+            aiPlayerIds = emptySet(),
+            reason = RiichiExhaustiveDrawReason.Normal,
+            tenpaiPlayerIds = setOf(finished.id),
+            revealedHands = listOf(
+                RevealedHandSettlement(
+                    playerId = finished.id,
+                    waitingTiles = setOf(Tile.Honor.East),
+                ),
+            ),
+        )
+
+        val finishedPresentation = request.players.first { it.ranking.playerId == finished.id }
+        assertEquals(ExhaustiveDrawHandDisclosure.CONCEALED, finishedPresentation.handDisclosure)
+        assertEquals(emptyList(), finishedPresentation.revealedHandTileIds)
+        assertEquals(emptyList(), finishedPresentation.waitingTiles)
+        assertEquals(null, finishedPresentation.statusId)
     }
 
     /**

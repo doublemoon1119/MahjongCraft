@@ -21,7 +21,10 @@ internal fun TableState.recordAbortiveDraw(
     module: MahjongRuleModule<*>,
 ): TableState {
     val recorded = copy(players = players.map { player -> player.recordAction(GameAction.ExhaustiveDraw(reason)) })
-    return recorded.revealHandsOf(module.resolveAbortiveDrawRevealedHands(recorded, declarerId, reason).map { it.playerId })
+    val revealedHands = module.resolveAbortiveDrawRevealedHands(recorded, declarerId, reason)
+    return recorded
+        .revealHandsOf(revealedHands.map { it.playerId })
+        .copy(revealedHandSettlements = revealedHands)
 }
 
 /**
