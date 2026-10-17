@@ -8,7 +8,13 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
+import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.test.runTest
@@ -18,17 +24,41 @@ import kotlin.uuid.Uuid
 
 /** [ForcedAutoPlayDriver] 的固定自動命令測試。 */
 class ForcedAutoPlayDriverTest {
+    /** 讓測試經過正式日麻的合法動作查詢。 */
+    private val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
+
+    /** 建立與正式代操作共用合法命令解析器的驅動器。 */
+    private fun driver(repository: FakeGameRepository): ForcedAutoPlayDriver = ForcedAutoPlayDriver(
+        repository,
+        AutomaticGameCommandResolver(moduleRegistry),
+    )
+
     /** 驗證捨牌反應視窗中的強制自動操作玩家固定選擇跳過。 */
     @Test
     fun `test forced discard reaction passes`() = runTest {
         val repository = FakeGameRepository()
         val playerId = Uuid.random()
+        val discarderId = Uuid.random()
+        val discardedTile = IdentifiedTile(Uuid.random(), Tile.Honor.Red)
         val game = Game(
             tableState = FakeTableStateFactory.create(
-                players = listOf(FakeMahjongPlayerFactory.create(id = playerId)),
+                config = RiichiRuleConfig(),
+                players = listOf(
+                    FakeMahjongPlayerFactory.create(
+                        id = discarderId,
+                        initialSeat = Wind.EAST,
+                        discardPile = FakeDiscardPile().discardTile(discardedTile),
+                    ),
+                    FakeMahjongPlayerFactory.create(
+                        id = playerId,
+                        initialSeat = Wind.SOUTH,
+                        hand = Hand(tiles = List(2) { IdentifiedTile(Uuid.random(), Tile.Honor.Red) }),
+                        playerRuleState = RiichiPlayerState(),
+                    ),
+                ),
                 pendingReaction = PendingReaction(
-                    discarderId = Uuid.random(),
-                    tileId = Uuid.random(),
+                    discarderId = discarderId,
+                    tileId = discardedTile.id,
                     eligiblePlayerIds = setOf(playerId),
                 ),
             ),
@@ -39,7 +69,7 @@ class ForcedAutoPlayDriverTest {
 
         assertEquals(
             playerId to GameCommand.RespondToDiscard(GameAction.Pass),
-            ForcedAutoPlayDriver(repository).resolveNextAction(game.id),
+            driver(repository).resolveNextAction(game.id),
         )
     }
 
@@ -51,10 +81,12 @@ class ForcedAutoPlayDriverTest {
         val lastDrawn = IdentifiedTile(Uuid.random(), Tile.Honor.Red)
         val game = Game(
             tableState = FakeTableStateFactory.create(
+                config = RiichiRuleConfig(),
                 players = listOf(
                     FakeMahjongPlayerFactory.create(
                         id = playerId,
                         hand = Hand(lastDrawn = lastDrawn),
+                        playerRuleState = RiichiPlayerState(),
                     ),
                 ),
             ),
@@ -65,11 +97,11 @@ class ForcedAutoPlayDriverTest {
 
         assertEquals(
             playerId to GameCommand.Discard(lastDrawn.id),
-            ForcedAutoPlayDriver(repository).resolveNextAction(game.id),
+            driver(repository).resolveNextAction(game.id),
         )
     }
 
-    /** 驗證 AI 代打使用的 [fixedAutoPlayCommand] 對每位玩家的結果，與強制自動操作驅動對同一位玩家的命令相同。 */
+    /** 驗證共用代操作解析器對自己回合、反應視窗與旁觀玩家的結果。 */
     @Test
     fun `test fixed command matches the forced driver for each player`() = runTest {
         val reactorId = Uuid.random()
@@ -77,13 +109,35 @@ class ForcedAutoPlayDriverTest {
         val bystanderId = Uuid.random()
         val lastDrawn = IdentifiedTile(Uuid.random(), Tile.Honor.Red)
         val players = listOf(
-            FakeMahjongPlayerFactory.create(id = currentId, hand = Hand(lastDrawn = lastDrawn)),
-            FakeMahjongPlayerFactory.create(id = reactorId),
-            FakeMahjongPlayerFactory.create(id = bystanderId),
+            FakeMahjongPlayerFactory.create(
+                id = currentId,
+                initialSeat = Wind.EAST,
+                hand = Hand(lastDrawn = lastDrawn),
+                discardPile = FakeDiscardPile().discardTile(
+                    IdentifiedTile(Uuid.random(), Tile.Honor.South),
+                ),
+                playerRuleState = RiichiPlayerState(),
+            ),
+            FakeMahjongPlayerFactory.create(
+                id = reactorId,
+                initialSeat = Wind.SOUTH,
+                hand = Hand(tiles = List(2) { IdentifiedTile(Uuid.random(), Tile.Honor.South) }),
+                playerRuleState = RiichiPlayerState(),
+            ),
+            FakeMahjongPlayerFactory.create(id = bystanderId, initialSeat = Wind.WEST),
         )
-        val ownTurn = FakeTableStateFactory.create(players = players, currentPlayerIndex = 0)
+        val ownTurn = FakeTableStateFactory.create(
+            config = RiichiRuleConfig(),
+            players = players,
+            currentPlayerIndex = 0,
+        )
+        val discardedTile = players.first().discardPile.entries.single().tile
         val reaction = ownTurn.copy(
-            pendingReaction = PendingReaction(discarderId = currentId, tileId = Uuid.random(), eligiblePlayerIds = setOf(reactorId)),
+            pendingReaction = PendingReaction(
+                discarderId = currentId,
+                tileId = discardedTile.id,
+                eligiblePlayerIds = setOf(reactorId),
+            ),
         )
         listOf(ownTurn, reaction).forEach { state ->
             players.forEach { player ->
@@ -91,13 +145,13 @@ class ForcedAutoPlayDriverTest {
                 val game = Game(tableState = state, flowConfig = GameFlowConfig(), forcedAutoPlayPlayerIds = setOf(player.id))
                 repository.setGame(game)
 
-                val forced = ForcedAutoPlayDriver(repository).resolveNextAction(game.id)
+                val forced = driver(repository).resolveNextAction(game.id)
 
-                assertEquals(forced?.second, fixedAutoPlayCommand(state, player.id))
+                assertEquals(forced?.second, AutomaticGameCommandResolver(moduleRegistry).resolve(state, player.id))
             }
         }
-        assertEquals(GameCommand.Discard(lastDrawn.id), fixedAutoPlayCommand(ownTurn, currentId))
-        assertEquals(GameCommand.RespondToDiscard(GameAction.Pass), fixedAutoPlayCommand(reaction, reactorId))
-        assertEquals(null, fixedAutoPlayCommand(reaction, bystanderId))
+        assertEquals(GameCommand.Discard(lastDrawn.id), AutomaticGameCommandResolver(moduleRegistry).resolve(ownTurn, currentId))
+        assertEquals(GameCommand.RespondToDiscard(GameAction.Pass), AutomaticGameCommandResolver(moduleRegistry).resolve(reaction, reactorId))
+        assertEquals(null, AutomaticGameCommandResolver(moduleRegistry).resolve(reaction, bystanderId))
     }
 }

@@ -349,6 +349,24 @@ object MinecraftMessageKeys {
     /** 桌面正在播放呈現動畫（例如擲骰），暫時無法送出操作。 */
     const val TABLE_ANIMATION_BUSY = PREFIX + "table_animation_busy"
 
+    /** 對局提前終止，帶一個本地化終止原因文字參數（`%s`）。 */
+    const val GAME_ABORTED = PREFIX + "game_aborted"
+
+    /** 規則缺少和牌或流局結算。 */
+    const val GAME_ABORT_REASON_SETTLEMENT = PREFIX + "game_abort_reason_settlement"
+
+    /** 規則無法決定後續局位。 */
+    const val GAME_ABORT_REASON_PROGRESSION = PREFIX + "game_abort_reason_progression"
+
+    /** 伺服器無法完成合法代打。 */
+    const val GAME_ABORT_REASON_AUTOMATIC = PREFIX + "game_abort_reason_automatic"
+
+    /** 規則執行失敗。 */
+    const val GAME_ABORT_REASON_RULE = PREFIX + "game_abort_reason_rule"
+
+    /** 沒有已知翻譯的終止原因。 */
+    const val GAME_ABORT_REASON_UNKNOWN = PREFIX + "game_abort_reason_unknown"
+
     // ── 手牌查詢指令（`/mahjongcraft game hand`） ──────────────────────────
 
     /** 手牌列表標題。 */
@@ -630,6 +648,12 @@ object MinecraftMessageKeys {
         WALL_EXHAUSTED,
         UNSUPPORTED_GAME_ACTION,
         TABLE_ANIMATION_BUSY,
+        GAME_ABORTED,
+        GAME_ABORT_REASON_SETTLEMENT,
+        GAME_ABORT_REASON_PROGRESSION,
+        GAME_ABORT_REASON_AUTOMATIC,
+        GAME_ABORT_REASON_RULE,
+        GAME_ABORT_REASON_UNKNOWN,
         HAND_TITLE,
         HAND_MELDS_TITLE,
         HAND_LEGAL_ACTIONS_TITLE,

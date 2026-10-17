@@ -3,18 +3,15 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.JoinReason
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
-import com.doublemoon1119.mahjongcraft.flow.common.room.model.toSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdate
-import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import kotlin.uuid.Uuid
 
 /**
@@ -55,16 +52,7 @@ class ReturnToRoomUseCase(
                 game == null -> AuthoritativeStateUpdate(state, Outcome.Error(GameError.GameNotFound(gameId)))
                 !game.isMatchOver -> AuthoritativeStateUpdate(state, Outcome.Error(GameError.MatchNotOver(gameId)))
                 else -> {
-                    val tableState = game.tableState
-                    val aiPlayerIds = game.aiPlayerIds.toList()
-                    val newRoom = Room(
-                        id = gameId,
-                        hostId = game.hostId,
-                        gameConfig = GameConfig(ruleConfig = tableState.config, flowConfig = game.flowConfig),
-                        playerIds = game.roomPlayerIds,
-                        readyPlayerIds = aiPlayerIds - game.hostId,
-                        aiPlayerStrategyKeys = game.aiPlayerStrategyKeys,
-                    )
+                    val newRoom = GameRoomRestoration.roomFor(game)
                     AuthoritativeStateUpdate(
                         state = state.copy(
                             games = state.games - gameId,
@@ -82,30 +70,13 @@ class ReturnToRoomUseCase(
         if (outcome is Outcome.Error) return outcome
         val newRoom = (outcome as Outcome.Success).value
 
-        // 2. 清除本局牌牆用牌、手牌/摸牌位/副露、積棒。空 layout 觸發呈現層既有的「建空集合後
-        //    丟棄全部舊牌」語意；莊家座位、王牌集合、擲骰數量在空集合下都不影響任何呈現的配置計算，直接傳
-        //    空／零值即可。手牌/摸牌位/副露/積棒沒有座位分組資料可傳，改呼叫專用的清除方法。
-        presentationPublisher.publishWallStructure(
-            gameId,
-            emptyMap(),
-            TileWallPhysicalLayout(emptyMap()),
-            dealerSeatIndex = 0,
-            deadWallTileIds = emptySet(),
-            diceCount = 0,
+        GameRoomRestoration.publish(
+            room = newRoom,
+            reason = JoinReason.MatchEnded,
+            snapshots = roomSnapshotRepository,
+            events = eventPublisher,
+            presentation = presentationPublisher,
         )
-        presentationPublisher.clearPlayerTiles(gameId)
-
-        // 3. 為每位玩家同步一份房間快照——這些玩家先前都是 Game 快照的觀察者，不是既有的房間快照
-        //    觀察者，不能沿用 CreateRoomUseCase 那種「查詢既有觀察者」的寫法。
-        newRoom.playerIds.forEach { playerId ->
-            roomSnapshotRepository.setSnapshot(playerId, newRoom.toSnapshot(playerId))
-        }
-
-        // 4. 廣播「已回到房間」事件；比照 CreateRoomUseCase 對房主的既有慣例，每位玩家收到一則描述
-        //    自己這次狀態變化的通知
-        newRoom.playerIds.forEach { playerId ->
-            eventPublisher.publishJoin(gameId, playerId, playerId, JoinReason.MatchEnded)
-        }
 
         return Outcome.Success(newRoom)
     }

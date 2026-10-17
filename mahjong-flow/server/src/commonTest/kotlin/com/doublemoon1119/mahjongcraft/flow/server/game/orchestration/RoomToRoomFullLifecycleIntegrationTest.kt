@@ -16,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPol
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.ExhaustiveDrawSettlementPresentationService
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameAbortEffects
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAuthorityResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAvailabilityService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
@@ -24,6 +25,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferen
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerDecisionTimerFactory
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AbortGameUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAbortiveDrawUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
@@ -208,13 +210,30 @@ class RoomToRoomFullLifecycleIntegrationTest {
             extensionCommandExecutor = extensionCommandExecutor,
         )
         val getLegalActionsUseCase = GetLegalActionsUseCase(gameRepo, moduleRegistry)
-        val aiTurnDriver = AiTurnDriver(gameRepo, getLegalActionsUseCase, aiStrategyRegistry, GameVisibilityPolicyImpl(moduleRegistry), moduleRegistry, AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default))
+        val aiTurnDriver = AiTurnDriver(
+            gameRepo,
+            getLegalActionsUseCase,
+            aiStrategyRegistry,
+            GameVisibilityPolicyImpl(moduleRegistry),
+            moduleRegistry,
+            AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
+            AutomaticGameCommandResolver(moduleRegistry),
+        )
         val clock = MonotonicClockImpl()
         val decisionTimerManager = GameDecisionTimerManager(
             gameRepository = gameRepo,
             authorityResolver = GameDecisionAuthorityResolver(),
             timerFactory = PlayerDecisionTimerFactory(clock),
             clock = clock,
+        )
+        val decisionAvailabilityService = GameDecisionAvailabilityService(
+            presentationBusyGate,
+            decisionTimerManager,
+            DecisionTimerSynchronizationService(
+                decisionTimerManager,
+                gameRepo,
+                FakeDecisionTimerUpdatePublisher(),
+            ),
         )
         val coordinator = GameFlowCoordinator(
             gameActionRouter = router,
@@ -243,22 +262,30 @@ class RoomToRoomFullLifecycleIntegrationTest {
                 gameEventPublisher,
                 presentationPublisher,
             ),
-            returnToRoomUseCase = ReturnToRoomUseCase(store, roomSnapshotRepo, roomEventPublisher, presentationPublisher),
-            aiTurnDriver = aiTurnDriver,
-            forcedAutoPlayDriver = ForcedAutoPlayDriver(gameRepo),
-            decisionAvailabilityService = GameDecisionAvailabilityService(
-                presentationBusyGate,
-                decisionTimerManager,
-                DecisionTimerSynchronizationService(
-                    decisionTimerManager,
-                    gameRepo,
-                    FakeDecisionTimerUpdatePublisher(),
-                ),
+            returnToRoomUseCase = ReturnToRoomUseCase(
+                store,
+                roomSnapshotRepo,
+                roomEventPublisher,
+                presentationPublisher,
             ),
+            aiTurnDriver = aiTurnDriver,
+            forcedAutoPlayDriver = ForcedAutoPlayDriver(gameRepo, AutomaticGameCommandResolver(moduleRegistry)),
+            decisionAvailabilityService = decisionAvailabilityService,
             presentationBusyGate = presentationBusyGate,
             exhaustiveDrawSettlementPresentationService = ExhaustiveDrawSettlementPresentationService(presentationPublisher),
             winPresentationHandoff = winPresentationHandoff,
             presentationPublisher = presentationPublisher,
+            abortGameUseCase = AbortGameUseCase(
+                store = store,
+                gameSnapshots = gameSnapshotRepo,
+                roomSnapshots = roomSnapshotRepo,
+                roomEvents = roomEventPublisher,
+                presentation = presentationPublisher,
+                availability = decisionAvailabilityService,
+                winHandoff = winPresentationHandoff,
+                effects = GameAbortEffects.NONE,
+            ),
+            automaticCommandResolver = AutomaticGameCommandResolver(moduleRegistry),
         )
     }
 

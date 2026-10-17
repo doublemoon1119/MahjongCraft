@@ -431,24 +431,19 @@ class RespondToDiscardUseCase(
                 winnerIds = ronWinnerIds,
             )
             val result = RespondResult(
-                tableState = resolved?.tableState?.copy(pendingReaction = null)
-                    ?: state.copy(players = respondedPlayers, pendingReaction = pendingReaction),
-                ronWinnerIds = if (resolved != null) ronWinnerIds else emptySet(),
-                ronWinningTileId = if (resolved != null) discardedTile.id else null,
-                ronResolutions = resolved?.resolutions.orEmpty(),
-                ruleModuleId = if (resolved != null) module.id else null,
-                previousTableState = if (resolved != null) state.copy(players = respondedPlayers) else null,
-                ronDiscarderId = if (resolved != null) pendingReaction.discarderId else null,
+                tableState = resolved.tableState.copy(pendingReaction = null),
+                ronWinnerIds = ronWinnerIds,
+                ronWinningTileId = discardedTile.id,
+                ronResolutions = resolved.resolutions,
+                ruleModuleId = module.id,
+                previousTableState = state.copy(players = respondedPlayers),
+                ronDiscarderId = pendingReaction.discarderId,
             )
-            return if (resolved != null) {
-                result.applyWallReveal(
-                    checkpoint = WallRevealCheckpoint.WIN_CONFIRMED,
-                    module = module,
-                    sourceAction = GameAction.Ron(discardedTile.id),
-                )
-            } else {
-                result
-            }
+            return result.applyWallReveal(
+                checkpoint = WallRevealCheckpoint.WIN_CONFIRMED,
+                module = module,
+                sourceAction = GameAction.Ron(discardedTile.id),
+            )
         }
 
         val players = PassedTileRecorder.record(

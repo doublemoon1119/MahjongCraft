@@ -100,6 +100,7 @@ class AiTurnDriverTest {
             GameVisibilityPolicyImpl(moduleRegistry),
             moduleRegistry,
             AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
+            AutomaticGameCommandResolver(moduleRegistry, actionContextResolver),
             actionContextResolver,
         )
     }

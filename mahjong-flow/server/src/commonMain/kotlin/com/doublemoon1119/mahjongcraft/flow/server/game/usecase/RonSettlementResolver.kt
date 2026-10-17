@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameAbortReasonIds
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleContractViolationException
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
@@ -44,8 +46,8 @@ internal object RonSettlementResolver {
      * @param winnerIds 本次榮和的贏家 Uuid 集合。
      * @param isRobbingKan 這次榮和是否為搶槓（搶加槓），透傳給 [MahjongRuleModule.declareRon]。
      * @return 套用榮和結算後的新 [TableState]（`pendingReaction`/`pendingRobbingReaction` 皆不動，由呼叫端
-     *         視回傳值清除）；理論上不會發生的防呆情況（`declareRon` 回傳 null）則回傳 null，
-     *         代表呼叫端應維持反應視窗不變、不清除。
+     *         視回傳值清除）。已驗證的和牌缺少結算時中斷交易，由協調器中止對局，不保留已完成的反應視窗。
+     * @throws RuleContractViolationException 規則提供和牌資格卻回傳 null 結算。
      */
     fun resolve(
         state: TableState,
@@ -55,21 +57,18 @@ internal object RonSettlementResolver {
         module: MahjongRuleModule<*>,
         winnerIds: Set<Uuid>,
         isRobbingKan: Boolean = false,
-    ): Result? {
+    ): Result {
         val settlements = winnerIds.associateWith { winnerId ->
             val winner = players.first { it.id == winnerId }
             module.declareRon(state, winner, winningTile, discarderId, isRobbingKan)
-        }
-
-        // 理論上不會發生：能走到這裡代表呼叫端已經用 getLegalActions 重新驗證過每筆 Ron 目前合法，
-        // 僅作防呆。
-        if (settlements.values.any { it == null }) {
-            return null
+                ?: throw RuleContractViolationException(
+                    GameAbortReasonIds.MISSING_WIN_SETTLEMENT,
+                    "Rule ${module.id} offered ron but returned no settlement for $winnerId",
+                )
         }
 
         val scoreDeltas = mutableMapOf<Uuid, Int>()
         settlements.forEach { (winnerId, settlement) ->
-            checkNotNull(settlement)
             scoreDeltas[winnerId] = (scoreDeltas[winnerId] ?: 0) + settlement.totalGained
             settlement.paymentsByPlayerId.forEach { (payerId, amount) ->
                 scoreDeltas[payerId] = (scoreDeltas[payerId] ?: 0) - amount
@@ -109,7 +108,7 @@ internal object RonSettlementResolver {
                 players = updatedPlayers,
                 dynamicRuleState = stickPot?.first ?: state.dynamicRuleState,
             ),
-            resolutions = settlements.mapValues { checkNotNull(it.value) },
+            resolutions = settlements,
         )
     }
 }

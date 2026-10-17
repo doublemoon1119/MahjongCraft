@@ -17,7 +17,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
-import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
+import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionContext
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlin.uuid.Uuid
 
@@ -26,10 +26,10 @@ import kotlin.uuid.Uuid
  *
  * 是否合法完全交給該規則模組自己的 `LegalActionValidator`：現在
  * [GameAction.ExhaustiveDraw] 是不是合法動作——這裡不重新實作么九牌計數或第一巡判斷，理由與
- * [DeclareRiichiUseCase] 相同。九種九牌屬於途中流局（比照子項 1 查證並落實的區分）：莊家固定
- * 連莊、不結算任何點數、供託延續到下一局（不呼叫 `collectStickPot`）——不需要新增任何 [MahjongRuleModule] 規則鉤子，
- * 直接把 `getLegalActions` 回傳的 [GameAction.ExhaustiveDraw] 實例本身（含其規則無關的 `reason` 屬性）
- * 記錄進**全員**的 `actionHistory`，讓 [AdvanceRoundUseCase] 既有的連莊判斷式自動得出正確結果。
+ * [DeclareRiichiUseCase] 相同。九種九牌屬於途中流局：不結算任何點數、供託延續到下一局（不呼叫
+ * `collectStickPot`），莊家是否連莊則交由 [MahjongRuleModule.resolveRoundTransition] 判定。
+ * 這裡直接把 `getLegalActions` 回傳的 [GameAction.ExhaustiveDraw] 實例本身（含其規則無關的 `reason` 屬性）
+ * 記錄進**全員**的 `actionHistory`，保留完整的流局事實。
  *
  * @property gameRepository 權威對局數據倉庫。
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的合法動作判定器。
@@ -105,10 +105,20 @@ class DeclareAbortiveDrawUseCase(
                         .firstOrNull { it.reason == reason }
                         ?: return@updateGame game to Outcome.Error(GameError.UnsupportedAction(gameId, playerId))
 
-                    // 途中流局：莊家固定連莊、不結算任何點數，供託延續到下一局。把 ExhaustiveDraw
-                    // 記錄進全員（不只莊家）的 actionHistory，讓 AdvanceRoundUseCase 既有的判斷式
-                    // 自動得出「連莊」的結果，不需要額外分支。
+                    // 途中流局不結算點數，並把 ExhaustiveDraw 記錄進全員的 actionHistory；莊家是否連莊
+                    // 由規則模組依完整結果情境決定。
                     val newState = state.recordAbortiveDraw(exhaustiveDraw.reason, declarerId = playerId, module = module)
+
+                    val transitionDirective = module.resolveRoundTransition(
+                        RoundTransitionContext(
+                            tableState = newState,
+                            outcomeId = exhaustiveDraw.reason.id,
+                            classification = RoundCompletionClassification.ABORTIVE_DRAW,
+                            beneficiaryPlayerIds = emptySet(),
+                            responsiblePlayerIds = emptySet(),
+                            exhaustiveDrawReason = exhaustiveDraw.reason,
+                        ),
+                    )
 
                     game.copy(
                         tableState = newState,
@@ -116,7 +126,7 @@ class DeclareAbortiveDrawUseCase(
                             outcomeId = exhaustiveDraw.reason.id,
                             classification = RoundCompletionClassification.ABORTIVE_DRAW,
                             beneficiaryPlayerIds = emptySet(),
-                            transitionDirective = RoundTransitionDirective.REPEAT_DEALER,
+                            transitionDirective = transitionDirective,
                             settledScoresByPlayerId = newState.players.associate { it.id to it.score },
                         ),
                     ) to Outcome.Success(AbortiveDrawResult(newState, exhaustiveDraw.reason))

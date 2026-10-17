@@ -77,6 +77,21 @@ class TablePresentationBusyTrackerTest {
         assertFalse(tracker.isBusy(secondTable))
     }
 
+    /** 清除單一桌子的 lease 不得影響其他桌子。 */
+    @Test
+    fun `clearing one table leaves another table busy`() {
+        val tracker = tracker()
+        val firstTable = Uuid.random()
+        val secondTable = Uuid.random()
+        tracker.beginPending(firstTable, "first")
+        tracker.beginPending(secondTable, "second")
+
+        tracker.clear(firstTable)
+
+        assertFalse(tracker.isBusy(firstTable))
+        assertTrue(tracker.isBusy(secondTable))
+    }
+
     /** operation 名稱必須保留在 lease 上供診斷使用。 */
     @Test
     fun `a lease retains its operation name`() {

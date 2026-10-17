@@ -52,6 +52,9 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.dora.getNextDora
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.MatchProgressionPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
+import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
+import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionContext
+import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.WallRevealPolicy
@@ -87,6 +90,18 @@ class ThreePlayerRiichiRuleModule(
 
     /** 每圈三局的日麻 progression policy。 */
     override fun createMatchProgressionPolicy(): MatchProgressionPolicy = RiichiMatchProgressionPolicy(config)
+
+    /**
+     * 莊家和牌、荒牌流局時莊家聽牌，或發生途中流局時，均由莊家連莊；其餘情況過莊。
+     *
+     * @param context 本局結算後的完整結果情境。
+     * @return 三人日本麻將本局後的莊家推進決策。
+     */
+    override fun resolveRoundTransition(context: RoundTransitionContext): RoundTransitionDirective = when {
+        context.classification == RoundCompletionClassification.ABORTIVE_DRAW -> RoundTransitionDirective.REPEAT_DEALER
+        context.tableState.dealerPlayerId in context.beneficiaryPlayerIds -> RoundTransitionDirective.REPEAT_DEALER
+        else -> RoundTransitionDirective.ADVANCE_DEALER
+    }
 
     /** 建立 108 張的三人麻將牌山。 */
     override fun createWallFactory(): ThreePlayerRiichiWallFactory = ThreePlayerRiichiWallFactory(config)

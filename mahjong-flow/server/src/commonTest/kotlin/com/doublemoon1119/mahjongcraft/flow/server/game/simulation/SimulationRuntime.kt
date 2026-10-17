@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.bundled.BundledRiichiExtension
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionExecutor
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiTurnDriver
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomaticGameCommandResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandContext
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutor
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
@@ -19,6 +20,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundCo
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.ExhaustiveDrawSettlementPresentationService
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameAbortHandler
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAuthorityResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAvailabilityService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
@@ -235,8 +237,12 @@ internal class SimulationRuntime(defaultStrategyKey: String) {
             GameVisibilityPolicyImpl(moduleRegistry),
             moduleRegistry,
             AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
+            AutomaticGameCommandResolver(moduleRegistry),
         ),
-        forcedAutoPlayDriver = ForcedAutoPlayDriver(gameRepository),
+        forcedAutoPlayDriver = ForcedAutoPlayDriver(
+            gameRepository,
+            AutomaticGameCommandResolver(moduleRegistry),
+        ),
         decisionAvailabilityService = GameDecisionAvailabilityService(
             presentationBusyGate,
             decisionTimerManager,
@@ -246,5 +252,14 @@ internal class SimulationRuntime(defaultStrategyKey: String) {
         exhaustiveDrawSettlementPresentationService = ExhaustiveDrawSettlementPresentationService(presentationPublisher),
         winPresentationHandoff = winPresentationHandoff,
         presentationPublisher = presentationPublisher,
+        abortGameUseCase = GameAbortHandler { expectedGame, _, _ ->
+            if (gameRepository.getGame(expectedGame.id) != expectedGame) {
+                false
+            } else {
+                gameRepository.removeTableState(expectedGame.id)
+                true
+            }
+        },
+        automaticCommandResolver = AutomaticGameCommandResolver(moduleRegistry),
     )
 }

@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.time.MonotonicClock
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionReporter
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceFailureReporter
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceFollowUp
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameAbortEffects
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.FabricSeatProviderRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricExtensionRegistries
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
@@ -48,6 +49,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricAutomat
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricAutomatedAdvanceFollowUp
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricDecisionTimerScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricExhaustiveDrawSettlementPresentationScheduler
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricGameAbortEffects
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricGameCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricMatchSettlementPresentationScheduler
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCelebrationEffectScheduler
@@ -203,6 +205,7 @@ val fabricServerModule = module {
     single<FabricAiDecisionReporter>() bind AiDecisionReporter::class
     single<FabricAutomatedAdvanceFailureReporter>() bind AutomatedAdvanceFailureReporter::class
     single<FabricAutomatedAdvanceFollowUp>() bind AutomatedAdvanceFollowUp::class
+    single<FabricGameAbortEffects>() bind GameAbortEffects::class
     single<FabricDecisionTimerScheduler>()
     single<FabricExhaustiveDrawSettlementPresentationScheduler>()
     single<FabricGameCommand>()

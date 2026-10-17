@@ -95,6 +95,13 @@ class TableOpeningPresentationOperationTracker {
         openRegistrationByTable.clear()
     }
 
+    /** 使指定桌子的開局呈現失效，保留世代計數，避免重新開局後舊工作再次有效。 */
+    @Synchronized
+    fun invalidate(tableId: Uuid) {
+        latestByTable[tableId]?.failed = true
+        openRegistrationByTable.remove(tableId)
+    }
+
     /**
      * 一次開局 presentation 批次的穩定身分。
      *

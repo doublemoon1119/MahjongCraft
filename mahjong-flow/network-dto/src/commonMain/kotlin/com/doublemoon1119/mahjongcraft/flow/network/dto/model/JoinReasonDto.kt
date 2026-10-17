@@ -14,4 +14,7 @@ sealed interface JoinReasonDto {
 
     /** 因對局結束而回到房間。 */
     @Serializable data object MatchEnded : JoinReasonDto
+
+    /** 本場提前中止後回到房間。 */
+    @Serializable data object MatchAborted : JoinReasonDto
 }

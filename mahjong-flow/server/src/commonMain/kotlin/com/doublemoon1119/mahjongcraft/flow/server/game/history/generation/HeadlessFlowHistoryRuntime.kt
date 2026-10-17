@@ -23,6 +23,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.service.RoomEventPublish
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionExecutor
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiTurnDriver
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceManager
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomaticGameCommandResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandContext
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutor
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ForcedAutoPlayDriver
@@ -34,6 +35,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositor
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.ExhaustiveDrawSettlementPresentationService
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameAbortEffects
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAuthorityResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAvailabilityService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
@@ -41,6 +43,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSync
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerDecisionTimerFactory
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AbortGameUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAbortiveDrawUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
@@ -190,7 +193,15 @@ class HeadlessFlowHistoryRuntime private constructor(
                 commands,
             )
             val getLegal = GetLegalActionsUseCase(gameRepository, moduleRegistry)
-            val ai = AiTurnDriver(gameRepository, getLegal, aiStrategies, aiPolicy, moduleRegistry, decisionExecutor)
+            val ai = AiTurnDriver(
+                gameRepository,
+                getLegal,
+                aiStrategies,
+                aiPolicy,
+                moduleRegistry,
+                decisionExecutor,
+                AutomaticGameCommandResolver(moduleRegistry),
+            )
             val clock = MonotonicClockImpl()
             val timers = GameDecisionTimerManager(gameRepository, GameDecisionAuthorityResolver(), PlayerDecisionTimerFactory(clock), clock)
             val timerSync = DecisionTimerSynchronizationService(timers, gameRepository, NoOpTimerUpdates())
@@ -218,13 +229,27 @@ class HeadlessFlowHistoryRuntime private constructor(
                 advanceRoundUseCase = AdvanceRoundUseCase(gameRepository, moduleRegistry, synchronizer, handSort, gameEvents, presentation),
                 returnToRoomUseCase = ReturnToRoomUseCase(store, rooms, roomEvents, presentation),
                 aiTurnDriver = ai,
-                forcedAutoPlayDriver = ForcedAutoPlayDriver(gameRepository),
+                forcedAutoPlayDriver = ForcedAutoPlayDriver(
+                    gameRepository,
+                    AutomaticGameCommandResolver(moduleRegistry),
+                ),
                 automaticDecisionDriver = null,
                 decisionAvailabilityService = GameDecisionAvailabilityService(busy, timers, timerSync),
                 exhaustiveDrawSettlementPresentationService = ExhaustiveDrawSettlementPresentationService(presentation),
                 winPresentationHandoff = winHandoff,
                 presentationPublisher = presentation,
                 presentationBusyGate = busy,
+                abortGameUseCase = AbortGameUseCase(
+                    store = store,
+                    gameSnapshots = gameSnapshots,
+                    roomSnapshots = rooms,
+                    roomEvents = roomEvents,
+                    presentation = presentation,
+                    availability = GameDecisionAvailabilityService(busy, timers, timerSync),
+                    winHandoff = winHandoff,
+                    effects = GameAbortEffects.NONE,
+                ),
+                automaticCommandResolver = AutomaticGameCommandResolver(moduleRegistry),
             )
             val start = StartGameUseCase(store, moduleRegistry, synchronizer, handSort, gameEvents, presentation)
             val venueId = Uuid.random()

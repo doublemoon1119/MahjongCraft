@@ -56,6 +56,11 @@ class TablePresentationBusyTracker(
         pendingLeasesByTable.clear()
     }
 
+    /** 清除指定桌子的待執行 lease；其他桌子的呈現工作不受影響。 */
+    fun clear(tableId: Uuid) {
+        pendingLeasesByTable.remove(tableId)
+    }
+
     /**
      * 一張只可完成一次的非同步呈現工作 lease。
      *

@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameAbortReasonIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.SettledWinPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationRequest
@@ -14,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCu
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.acceptedActionHistoryDraft
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.winSettlementHistoryDetails
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleContractViolationException
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.DeclareRiichiUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
@@ -145,10 +147,12 @@ class DeclareTsumoUseCase(
                     revealResult as WallRevealDecisionApplier.Result.Applied
                     val stateForSettlement = revealResult.tableState
 
-                    // 這個規則不支援自摸結算時 declareTsumo 回傳 null。理論上不會走到
-                    // 這裡，因為上面的 legalActions 檢查已經先擋下了；僅作防呆。
+                    // 已驗證的和牌卻缺少結算是規則矛盾，不能改當一般非法請求或零分和牌。
                     val tsumoResult = module.declareTsumo(stateForSettlement, stateForSettlement.currentPlayer)
-                        ?: return@update state to Outcome.Error(GameError.IllegalAction(playerId, gameId, GameAction.Tsumo))
+                        ?: throw RuleContractViolationException(
+                            GameAbortReasonIds.MISSING_WIN_SETTLEMENT,
+                            "Rule ${module.id} offered tsumo but returned no settlement for $playerId",
+                        )
 
                     // 贏家同時收下場上所有供託（如立直棒），不支援此機制的規則回傳 null
                     val stickPot = module.collectStickPot(stateForSettlement)

@@ -12,8 +12,9 @@ import com.doublemoon1119.mahjongcraft.flow.api.event.RoundSettlementKind
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.CommittedGameFacts
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RecordedDrawOutcome
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.newlyRecordedActionsByPlayerId
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.recordedDrawCompletion
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.recordedDrawOutcome
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.roundRanksByPlayer
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
@@ -124,7 +125,7 @@ class GameEventProjector(
                 responsiblePlayerIds = wins.flatMapTo(linkedSetOf()) { it.responsiblePlayerIds },
             )
             specialOutcome != null -> Settlement(specialOutcome, RoundSettlementKind.SPECIAL)
-            else -> drawCompletion(previous, game)?.let { Settlement(it, RoundSettlementKind.DRAW) }
+            else -> drawCompletion(previous, game)
         } ?: return null
         val previousRanks = roundRanksByPlayer(previous.tableState, module)
         val currentRanks = roundRanksByPlayer(game.tableState, module)
@@ -152,18 +153,23 @@ class GameEventProjector(
     }
 
     /**
-     * 這筆交易流局時的結算摘要；沒有流局時為 null。
+     * 建立這筆交易的流局事件資料；沒有流局時為 null。
      *
      * 規則的流局交易同時寫入摘要時使用它（荒牌流局沒有人聽牌時，玩家的動作記錄不會新增流局，只能由摘要得知）；否則依這筆
      * 交易新增的流局記錄建立，例如由反應或動作後判定直接產生、摘要之後才補上的途中流局。
      *
      * @param previous 交易前的對局。
      * @param game 交易後的對局。
-     * @return 本次交易產生的流局摘要；沒有時為 null。
+     * @return 本次交易產生的流局事件資料；沒有時為 null。
      */
-    private fun drawCompletion(previous: Game, game: Game): RoundCompletionSummary? {
-        val committed = game.roundCompletion?.takeIf { previous.roundCompletion == null && it.classification in DRAW_CLASSIFICATIONS }
-        return committed ?: recordedDrawCompletion(game.tableState, newlyRecordedActionsByPlayerId(previous.tableState, game.tableState))
+    private fun drawCompletion(previous: Game, game: Game): Settlement? {
+        val committed = game.roundCompletion
+            ?.takeIf { previous.roundCompletion == null && it.classification in DRAW_CLASSIFICATIONS }
+            ?.let { Settlement(it, RoundSettlementKind.DRAW) }
+        return committed ?: recordedDrawOutcome(
+            game.tableState,
+            newlyRecordedActionsByPlayerId(previous.tableState, game.tableState),
+        )?.let { Settlement(it, RoundSettlementKind.DRAW) }
     }
 
     /**
@@ -233,6 +239,19 @@ class GameEventProjector(
             kind = kind,
             beneficiaryPlayerIds = summary.beneficiaryPlayerIds,
             responsiblePlayerIds = summary.responsiblePlayerIds,
+        )
+
+        /**
+         * 由交易中新增的流局事實建立事件內容；不使用或重新計算莊家推進決策。
+         *
+         * @param outcome 流局的純結果資料。
+         * @param kind 此事件採用的結算分類。
+         */
+        constructor(outcome: RecordedDrawOutcome, kind: RoundSettlementKind) : this(
+            outcomeId = outcome.outcomeId,
+            kind = kind,
+            beneficiaryPlayerIds = outcome.beneficiaryPlayerIds,
+            responsiblePlayerIds = outcome.responsiblePlayerIds,
         )
     }
 }

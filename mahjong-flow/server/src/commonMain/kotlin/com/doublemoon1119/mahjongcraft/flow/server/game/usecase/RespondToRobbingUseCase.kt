@@ -178,18 +178,13 @@ class RespondToRobbingUseCase(
                             winnerIds = ronWinnerIds,
                             isRobbingKan = (pending.declaredAction as? GameAction.Kan)?.type == GameAction.KanType.ADDED_KAN,
                         )
-                        val settledState = resolved?.tableState?.copy(pendingRobbingReaction = null)
-                            ?: state.copy(pendingRobbingReaction = newPending)
-                        val revealResult = if (resolved != null) {
-                            WallRevealDecisionApplier.apply(
-                                tableState = settledState,
-                                checkpoint = WallRevealCheckpoint.WIN_CONFIRMED,
-                                module = module,
-                                sourceAction = GameAction.Ron(pending.robbedTile.id),
-                            )
-                        } else {
-                            WallRevealDecisionApplier.Result.Applied(settledState)
-                        }
+                        val settledState = resolved.tableState.copy(pendingRobbingReaction = null)
+                        val revealResult = WallRevealDecisionApplier.apply(
+                            tableState = settledState,
+                            checkpoint = WallRevealCheckpoint.WIN_CONFIRMED,
+                            module = module,
+                            sourceAction = GameAction.Ron(pending.robbedTile.id),
+                        )
                         if (revealResult is WallRevealDecisionApplier.Result.Rejected) {
                             return@update state to Outcome.Error(
                                 GameError.UnsupportedAction(gameId, playerId, revealResult.reasonId),
@@ -197,31 +192,27 @@ class RespondToRobbingUseCase(
                         }
                         revealResult as WallRevealDecisionApplier.Result.Applied
                         val newState = revealResult.tableState
-                        val settlement = if (resolved != null) {
-                            WinSettlementPresentationRequestFactory.create(
-                                previousState = state,
-                                currentState = newState,
-                                module = module,
-                                aiPlayerIds = aiPlayerIds,
-                                outcomeId = BuiltInRoundOutcomeIds.RON,
-                                isTsumo = false,
-                                winningTileId = pending.robbedTile.id,
-                                responsiblePlayerId = pending.declarerId,
-                                resolutions = resolved.resolutions,
-                                detailResolverRegistry = winSettlementDetailResolverRegistry,
-                            )
-                        } else {
-                            null
-                        }
+                        val settlement = WinSettlementPresentationRequestFactory.create(
+                            previousState = state,
+                            currentState = newState,
+                            module = module,
+                            aiPlayerIds = aiPlayerIds,
+                            outcomeId = BuiltInRoundOutcomeIds.RON,
+                            isTsumo = false,
+                            winningTileId = pending.robbedTile.id,
+                            responsiblePlayerId = pending.declarerId,
+                            resolutions = resolved.resolutions,
+                            detailResolverRegistry = winSettlementDetailResolverRegistry,
+                        )
                         newState to Outcome.Success(
                             RobbingResult(
                                 tableState = newState,
                                 drawHappened = false,
-                                ronWinnerIds = if (resolved != null) ronWinnerIds else emptySet(),
-                                ronWinningTileId = if (resolved != null) pending.robbedTile.id else null,
-                                ronResolutions = resolved?.resolutions.orEmpty(),
-                                ruleModuleId = if (resolved != null) module.id else null,
-                                ronDiscarderId = if (resolved != null) pending.declarerId else null,
+                                ronWinnerIds = ronWinnerIds,
+                                ronWinningTileId = pending.robbedTile.id,
+                                ronResolutions = resolved.resolutions,
+                                ruleModuleId = module.id,
+                                ronDiscarderId = pending.declarerId,
                                 settlement = settlement,
                                 wallRevealBatches = listOf(revealResult.newlyRevealedTileIds)
                                     .filterNot { it.isEmpty() },

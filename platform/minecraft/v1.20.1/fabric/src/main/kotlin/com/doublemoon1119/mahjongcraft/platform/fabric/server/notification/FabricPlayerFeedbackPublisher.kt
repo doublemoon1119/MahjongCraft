@@ -17,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.text.GameTurnStatus
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.minecraftAbortReasonTranslationKey
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
@@ -180,6 +181,8 @@ class FabricPlayerFeedbackPublisher(
                     player.sendMessage(Text.translatable(MinecraftMessageKeys.UNSUPPORTED_GAME_ACTION), true)
                 MinecraftPlayerFeedback.TableAnimationBusy ->
                     player.sendMessage(Text.translatable(MinecraftMessageKeys.TABLE_ANIMATION_BUSY), true)
+                is MinecraftPlayerFeedback.MatchAborted ->
+                    player.sendMessage(matchAbortedMessage(feedback.reasonId))
                 is MinecraftPlayerFeedback.ShowHand ->
                     player.sendMessage(showHandMessage(feedback))
             }
@@ -339,6 +342,12 @@ class FabricPlayerFeedbackPublisher(
      * @return 完整設定的本地化 hover 文字。
      */
     private fun gameConfigHoverText(configJson: String): MutableText = gameConfigFormatter.full(configJson)
+
+    /** 建立中止訊息，讓平台已知原因使用既有翻譯，未知原因則顯示通用結果文字。 */
+    private fun matchAbortedMessage(reasonId: String): MutableText = Text.translatable(
+        MinecraftMessageKeys.GAME_ABORTED,
+        Text.translatable(minecraftAbortReasonTranslationKey(reasonId)),
+    )
 
     /**
      * 建立 `/mahjongcraft game hand` 的手牌畫面：手牌列表、副露（有的話）、目前可執行的特殊動作

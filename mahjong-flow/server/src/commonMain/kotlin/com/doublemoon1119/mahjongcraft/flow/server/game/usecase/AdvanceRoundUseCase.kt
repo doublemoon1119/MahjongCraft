@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
@@ -50,6 +51,7 @@ import kotlin.uuid.Uuid
  * @property eventPublisher 對局通知服務。
  * @property presentationPublisher 對局 in-process 呈現觸發器。
  * @property beginRoundPreparationUseCase 新局發牌後啟動規則準備步驟的 use case；未注入時略過。
+ * @property failurePolicy 判斷規則失敗能否回報為無法推進；取消與致命錯誤不得轉成一般錯誤。
  */
 class AdvanceRoundUseCase(
     private val gameRepository: GameRepository,
@@ -59,6 +61,7 @@ class AdvanceRoundUseCase(
     private val eventPublisher: GameEventPublisher,
     private val presentationPublisher: GamePresentationPublisher,
     private val beginRoundPreparationUseCase: BeginRoundPreparationUseCase? = null,
+    private val failurePolicy: ExtensionFailurePolicy = ExtensionFailurePolicy.Default,
 ) {
     /**
      * 執行連莊/過莊、開下一局邏輯。
@@ -104,7 +107,7 @@ class AdvanceRoundUseCase(
                             GameError.InvalidMatchProgression(gameId, "Round completion scores do not match table state"),
                         )
                     }
-                    val decision = runCatching {
+                    val decision = try {
                         module.createMatchProgressionPolicy().decide(
                             MatchProgressionContext(
                                 tableState = state,
@@ -112,7 +115,8 @@ class AdvanceRoundUseCase(
                                 rankedPlayerIds = state.players.sortedWith(module.compareForMatchRanking()).map { it.id },
                             ),
                         )
-                    }.getOrElse { error ->
+                    } catch (error: Throwable) {
+                        if (!failurePolicy.isIsolatable(error)) throw error
                         return@updateGame game to Outcome.Error(
                             GameError.InvalidMatchProgression(gameId, error.message ?: error::class.simpleName.orEmpty()),
                         )
@@ -166,7 +170,10 @@ class AdvanceRoundUseCase(
                                 GameError.InvalidMatchProgression(gameId, "Progression decision conflicts with dealer directive"),
                             )
                         }
-                        val roundAdvancement = runCatching { state.advanceRound(transition) }.getOrElse { error ->
+                        val roundAdvancement = try {
+                            state.advanceRound(transition)
+                        } catch (error: Throwable) {
+                            if (!failurePolicy.isIsolatable(error)) throw error
                             return@updateGame game to Outcome.Error(
                                 GameError.InvalidMatchProgression(gameId, error.message ?: error::class.simpleName.orEmpty()),
                             )

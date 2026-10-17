@@ -69,6 +69,24 @@ class TableOpeningPresentationOperationTrackerTest {
         assertTrue(tracker.mayRun(healthy))
     }
 
+    /** 使單一桌子失效不得影響另一桌或之後建立的新世代。 */
+    @Test
+    fun `invalidate one table keeps other table and new generation isolated`() {
+        val tracker = TableOpeningPresentationOperationTracker()
+        val invalidatedTable = Uuid.random()
+        val otherTable = Uuid.random()
+        val oldTicket = tracker.begin(invalidatedTable)
+        val otherTicket = tracker.begin(otherTable)
+
+        tracker.invalidate(invalidatedTable)
+        val newTicket = tracker.begin(invalidatedTable)
+
+        assertFalse(tracker.mayRun(oldTicket))
+        assertTrue(tracker.mayRun(otherTicket))
+        assertTrue(tracker.mayRun(newTicket))
+        assertEquals(oldTicket.generation + 1L, newTicket.generation)
+    }
+
     /** Session 清理後所有舊 ticket 均應失效。 */
     @Test
     fun `test clear all invalidates existing tickets`() {

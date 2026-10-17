@@ -15,6 +15,14 @@ import kotlin.uuid.Uuid
 sealed interface GameError : ApplicationError {
 
     /**
+     * 本場因無法安全繼續而中止，不代表正常完成或流局。
+     *
+     * @property gameId 已中止的對局識別碼。
+     * @property reasonId 可公開的終止原因識別碼。
+     */
+    data class MatchAborted(val gameId: Uuid, val reasonId: String) : GameError
+
+    /**
      * 找不到指定的對局。
      *
      * @property gameId 欲操作的對局 Uuid。

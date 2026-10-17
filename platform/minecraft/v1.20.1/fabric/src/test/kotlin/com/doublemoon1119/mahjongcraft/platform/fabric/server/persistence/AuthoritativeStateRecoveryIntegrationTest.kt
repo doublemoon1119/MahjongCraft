@@ -21,6 +21,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.room.repository.RoomSnapshotR
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.state.AuthoritativeStatePersistenceCodec
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecisionExecutor
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiTurnDriver
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomaticGameCommandResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
@@ -448,6 +449,7 @@ class AuthoritativeStateRecoveryIntegrationTest {
             GameVisibilityPolicyImpl(moduleRegistry),
             moduleRegistry,
             AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
+            AutomaticGameCommandResolver(moduleRegistry),
         )
 
         /**

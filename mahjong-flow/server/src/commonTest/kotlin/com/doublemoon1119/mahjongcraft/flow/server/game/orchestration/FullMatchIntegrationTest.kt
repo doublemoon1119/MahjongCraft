@@ -24,7 +24,7 @@ import kotlin.uuid.Uuid
 
 /**
  * 整場對局的端對端整合測試：4 位 AI 玩家從開局一路打到整場對局結束（東風戰，4 局 + 可能的連莊），
- * 完全透過 [GameFlowCoordinator] 驅動，不經過任何 Minecraft 平台層。
+ * 完全透過 [GameFlowCoordinator] 驅動，不依賴遊戲平台。
  *
  * 目的是驗證編排層本身（[GameFlowCoordinator]/[AiTurnDriver]/連莊過莊自動銜接）撐得住一整場對局，
  * 不會卡住、分數守恆。對局環境使用與 AI 對局模擬共用的 [SimulationRuntime]。
@@ -37,9 +37,8 @@ class FullMatchIntegrationTest {
     /**
      * 驗證 4 位 AI 玩家能把整場東風戰（4 局，含可能的連莊）打完，不會卡住、分數守恆。
      *
-     * 只呼叫一次 [GameFlowCoordinator.driveAutomatedPlayers]——它內部會自動開好幾批次直到真的收斂
-     * 為止（見其 KDoc），不需要呼叫端自己重複呼叫湊迭代預算；若真的卡在某處跑不完，這裡會直接拋出
-     * `IllegalStateException`，測試會直接失敗並帶出清楚的錯誤訊息，不需要額外再比較前後桌況。
+     * 呼叫 [GameFlowCoordinator.driveAutomatedPlayers] 推進整場，再確認對局正常結束。
+     * 若流程超出安全迭代上限而中止，仍不能通過正常完賽與結算次數的斷言。
      */
     @Test
     fun `test four ai players play a full east-only match to completion`() = runTest {

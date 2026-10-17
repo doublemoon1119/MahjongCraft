@@ -25,6 +25,8 @@ import com.doublemoon1119.mahjongcraft.logic.table.MatchProgressionPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.NoOpWallRevealPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
 import com.doublemoon1119.mahjongcraft.logic.table.RankablePlayer
+import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionContext
+import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWallFactory
@@ -92,6 +94,17 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * @return 此規則的局位與終局 policy。
      */
     fun createMatchProgressionPolicy(): MatchProgressionPolicy = FixedLengthMatchProgressionPolicy(config.scheduledRoundCount)
+
+    /**
+     * 決定本局結束後莊家是否連莊。
+     *
+     * 這是只讀且無副作用的規則判定；相同的 [context] 必須得到相同結果。未覆寫的規則預設讓莊家
+     * 過莊；需要依結果、聽牌或其他規則條件決定的模組應覆寫此方法。
+     *
+     * @param context 本局結算後的完整結果情境。
+     * @return 本局後應採用的莊家推進決策。
+     */
+    fun resolveRoundTransition(context: RoundTransitionContext): RoundTransitionDirective = RoundTransitionDirective.ADVANCE_DEALER
 
     /**
      * 建立適用於該規則的牌山生成工廠。
@@ -357,11 +370,13 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * 同時存在於 `hand.lastDrawn`、又要餵給役種計算所需的胡牌張參數」這個潛在的重複計數問題，
      * 呼叫端不需要、也不應該自行處理這個細節。
      *
-     * 不支援自摸結算的規則應回傳 null。
+     * 不支援自摸結算的規則，或輸入尚未滿足自摸前置條件時，才應回傳 null。若合法動作判定器已提供
+     * 自摸，且呼叫端再次以權威桌況確認仍然成立，規則必須回傳結算結果；此時回傳 null 代表規則契約
+     * 失效，呼叫端應中止對局並留下診斷，不得把它當成放棄自摸或零分結果。
      *
      * @param tableState 目前的桌況（尚未套用本次自摸結算）。
      * @param player 宣告自摸的玩家（尚未套用本次自摸結算），其 `hand.lastDrawn` 即為胡牌張。
-     * @return 本次自摸的點數結算結果，若此規則不支援自摸結算、或 [player] 尚未摸牌則為 null。
+     * @return 本次自摸的點數結算結果；規則不支援或 [player] 尚未滿足自摸前置條件時為 null。
      */
     fun declareTsumo(tableState: TableState, player: MahjongPlayer): WinResolutionResult?
 
@@ -383,14 +398,16 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * 支援搶槓役種加成的規則應在此時額外計入（例如日麻的搶槓 1 翻）；預設 `false`，一般捨牌榮和
      * 不需要呼叫端額外傳入。
      *
-     * 不支援榮和結算的規則應回傳 null。
+     * 不支援榮和結算的規則，或輸入尚未滿足榮和前置條件時，才應回傳 null。若合法動作判定器已提供
+     * 榮和，且呼叫端再次以權威桌況確認仍然成立，規則必須回傳結算結果；此時回傳 null 代表規則契約
+     * 失效，呼叫端應中止對局並留下診斷，不得把它當成放棄榮和或零分結果。
      *
      * @param tableState 目前的桌況（尚未套用本次榮和結算）。
      * @param player 宣告榮和的玩家（尚未套用本次榮和結算）。
      * @param winningTile 被榮和的捨牌。
      * @param discarderId 打出 [winningTile] 的玩家 Uuid。
      * @param isRobbingKan 這次榮和是否為搶槓（搶加槓）。
-     * @return 本次榮和的點數結算結果，若此規則不支援榮和結算則為 null。
+     * @return 本次榮和的點數結算結果；規則不支援或輸入尚未滿足榮和前置條件時為 null。
      */
     fun declareRon(
         tableState: TableState,
@@ -443,10 +460,12 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * （例如日麻的聽牌／不聽罰符拆分），這裡不預設任何規則的具體公式。應優先於普通流局成立的
      * 特殊結果交由呼叫端另外判定，不應混入本 hook。
      *
-     * 不支援一般流局結算的規則應回傳 null。
+     * 不支援一般流局結算的規則，或牌山尚未摸盡時，才應回傳 null。當牌山已摸盡、沒有其他規則結果
+     * 可以接管，且一般流局已由權威流程確認成立時，規則必須回傳結算結果；此時回傳 null 代表規則
+     * 契約失效，呼叫端應中止對局並留下診斷，不得把它當成普通拒絕或無分流局。
      *
      * @param tableState 目前的桌況（尚未套用本次流局結算，牌山應已摸盡）。
-     * @return 本次一般流局的結算結果，若此規則不支援則為 null。
+     * @return 本次一般流局的結算結果；規則不支援或流局前置條件尚未成立時為 null。
      */
     fun declareExhaustiveDraw(tableState: TableState): ExhaustiveDrawSettlementResult?
 

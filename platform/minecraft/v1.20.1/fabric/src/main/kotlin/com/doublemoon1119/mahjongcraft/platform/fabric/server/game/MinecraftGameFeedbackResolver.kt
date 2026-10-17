@@ -12,6 +12,7 @@ internal object MinecraftGameFeedbackResolver {
      * @return 對應的玩家回饋，不包含具體呈現方式。
      */
     fun actionError(error: GameError): MinecraftPlayerFeedback = when (error) {
+        is GameError.MatchAborted -> MinecraftPlayerFeedback.MatchAborted(error.reasonId)
         is GameError.GameNotFound, is GameError.PlayerNotInGame -> MinecraftPlayerFeedback.PlayerNotInGame
         is GameError.ForcedAutoPlayActive -> MinecraftPlayerFeedback.ForcedAutoPlayActive
         is GameError.NotPlayersTurn -> MinecraftPlayerFeedback.NotYourTurn

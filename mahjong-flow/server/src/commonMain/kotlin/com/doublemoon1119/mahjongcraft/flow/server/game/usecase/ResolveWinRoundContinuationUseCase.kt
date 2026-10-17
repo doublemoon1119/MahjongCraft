@@ -17,7 +17,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
-import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
+import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionContext
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlin.uuid.Uuid
 
@@ -83,25 +83,33 @@ class ResolveWinRoundContinuationUseCase(
                 WinRoundDirective.EndRound -> {
                     val responsiblePlayerId = previousTableState.pendingReaction?.discarderId
                         ?: previousTableState.pendingRobbingReaction?.declarerId
-                    val dealerDirective = if (settledTableState.dealerPlayerId in winnerPlayerIds) {
-                        RoundTransitionDirective.REPEAT_DEALER
+                    val outcomeId = if (responsiblePlayerId == null) {
+                        BuiltInRoundOutcomeIds.TSUMO
                     } else {
-                        RoundTransitionDirective.ADVANCE_DEALER
+                        BuiltInRoundOutcomeIds.RON
                     }
-                    game.copy(
-                        roundCompletion = RoundCompletionSummary(
-                            outcomeId = if (responsiblePlayerId == null) {
-                                BuiltInRoundOutcomeIds.TSUMO
-                            } else {
-                                BuiltInRoundOutcomeIds.RON
-                            },
+                    val transitionDirective = module.resolveRoundTransition(
+                        RoundTransitionContext(
+                            tableState = settledTableState,
+                            outcomeId = outcomeId,
                             classification = RoundCompletionClassification.WIN,
                             beneficiaryPlayerIds = winnerPlayerIds,
                             responsiblePlayerIds = responsiblePlayerId
                                 ?.takeIf { id -> settledTableState.players.any { it.id == id } }
                                 ?.let(::setOf)
                                 ?: emptySet(),
-                            transitionDirective = dealerDirective,
+                        ),
+                    )
+                    game.copy(
+                        roundCompletion = RoundCompletionSummary(
+                            outcomeId = outcomeId,
+                            classification = RoundCompletionClassification.WIN,
+                            beneficiaryPlayerIds = winnerPlayerIds,
+                            responsiblePlayerIds = responsiblePlayerId
+                                ?.takeIf { id -> settledTableState.players.any { it.id == id } }
+                                ?.let(::setOf)
+                                ?: emptySet(),
+                            transitionDirective = transitionDirective,
                             settledScoresByPlayerId = settledTableState.players.associate { it.id to it.score },
                         ),
                     ) to Outcome.Success(directive)

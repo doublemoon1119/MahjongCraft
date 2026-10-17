@@ -18,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinSettl
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawHandDisclosure
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExtensionGameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameAbortReasonIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
@@ -31,10 +32,10 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.time.MonotonicClock
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
-import com.doublemoon1119.mahjongcraft.flow.server.game.repository.ExpectedGameWrittenTwiceException
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.ExhaustiveDrawSettlementPresentationService
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameAbortHandler
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAuthorityResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAvailabilityService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimerManager
@@ -66,6 +67,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
@@ -73,7 +75,9 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawRe
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
@@ -102,7 +106,6 @@ import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
@@ -128,6 +131,7 @@ class GameFlowCoordinatorTest {
      * @param extraStrategies 另外登記的 AI 策略，以策略 key 索引。
      * @param roundPreparationResolvers 開局準備的解析器；提供時才接上開局準備的提交與 AI。
      * @param extraCommandHandlers 另外登記擴充命令 handler 的方式。
+     * @param ruleModuleDecorator 覆寫測試日麻模組的行為；未提供時使用內建規則註冊。
      * @property gameRepo 保存測試對局與已提交事實的資料倉庫。
      * @property moduleRegistry 內建規則註冊中心。
      * @property snapshotRepo 記錄同步快照的倉庫。
@@ -153,6 +157,7 @@ class GameFlowCoordinatorTest {
         extraStrategies: Map<String, MahjongAiStrategy> = emptyMap(),
         roundPreparationResolvers: RoundPreparationResolverRegistry? = null,
         extraCommandHandlers: (ExtensionGameCommandExecutorRegistry) -> Unit = {},
+        ruleModuleDecorator: ((RiichiRuleModule) -> MahjongRuleModule<RiichiRuleConfig>)? = null,
     ) {
         /**
          * 驗證各交易產生的事件中只有一次指定種類的結算。
@@ -166,7 +171,17 @@ class GameFlowCoordinatorTest {
         }
 
         val gameRepo = FakeGameRepository()
-        val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
+        val moduleRegistry = MahjongModuleRegistryImpl().apply {
+            if (ruleModuleDecorator == null) {
+                registerBundledRuleModules()
+            } else {
+                register(
+                    MahjongModuleDefinition(RiichiRuleConfig::class, "test:coordinator-rule") { config, id ->
+                        ruleModuleDecorator(RiichiRuleModule(id, config))
+                    },
+                )
+            }
+        }
         val snapshotRepo = FakeGameSnapshotRepository()
         val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(moduleRegistry))
         val handSortPreferenceStore = HandSortPreferenceStore()
@@ -253,7 +268,15 @@ class GameFlowCoordinatorTest {
                 register(MahjongAiStrategyDefinition(key) { strategy })
             }
         }
-        val aiTurnDriver = AiTurnDriver(gameRepo, getLegalActionsUseCase, aiStrategyRegistry, GameVisibilityPolicyImpl(moduleRegistry), moduleRegistry, AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default))
+        val aiTurnDriver = AiTurnDriver(
+            gameRepo,
+            getLegalActionsUseCase,
+            aiStrategyRegistry,
+            GameVisibilityPolicyImpl(moduleRegistry),
+            moduleRegistry,
+            AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
+            AutomaticGameCommandResolver(moduleRegistry),
+        )
         val clock = MutableMonotonicClock()
         val decisionTimerManager = GameDecisionTimerManager(
             gameRepository = gameRepo,
@@ -261,6 +284,19 @@ class GameFlowCoordinatorTest {
             timerFactory = PlayerDecisionTimerFactory(clock),
             clock = clock,
         )
+        var abortReason: String? = null
+        var abortedGame: Game? = null
+        val abortGameHandler = GameAbortHandler { expectedGame, reasonId, _ ->
+            val current = gameRepo.getGame(expectedGame.id)
+            if (current != expectedGame) {
+                false
+            } else {
+                abortReason = reasonId
+                abortedGame = expectedGame
+                gameRepo.removeTableState(expectedGame.id)
+                true
+            }
+        }
         val coordinator = GameFlowCoordinator(
             gameActionRouter = router,
             gameRepository = gameRepo,
@@ -292,9 +328,14 @@ class GameFlowCoordinatorTest {
             // 因此接不到同一份對局資料，對本檔案的測試而言只是滿足建構子的無害 no-op；真的驗證
             // Game → Room 轉移的整合測試見 ReturnToRoomUseCaseTest／MahjongAutoDrawServiceTest 那種
             // 共用真正 AuthoritativeStateStore 的 Fixtures 寫法。
-            returnToRoomUseCase = ReturnToRoomUseCase(AuthoritativeStateStore(), FakeRoomSnapshotRepository(), FakeRoomEventPublisher(), presentationPublisher),
+            returnToRoomUseCase = ReturnToRoomUseCase(
+                AuthoritativeStateStore(),
+                FakeRoomSnapshotRepository(),
+                FakeRoomEventPublisher(),
+                presentationPublisher,
+            ),
             aiTurnDriver = aiTurnDriver,
-            forcedAutoPlayDriver = ForcedAutoPlayDriver(gameRepo),
+            forcedAutoPlayDriver = ForcedAutoPlayDriver(gameRepo, AutomaticGameCommandResolver(moduleRegistry)),
             decisionAvailabilityService = GameDecisionAvailabilityService(
                 presentationBusyGate,
                 decisionTimerManager,
@@ -308,10 +349,43 @@ class GameFlowCoordinatorTest {
             exhaustiveDrawSettlementPresentationService = ExhaustiveDrawSettlementPresentationService(presentationPublisher),
             winPresentationHandoff = winPresentationHandoff,
             presentationPublisher = presentationPublisher,
+            abortGameUseCase = abortGameHandler,
+            automaticCommandResolver = AutomaticGameCommandResolver(moduleRegistry),
             roundPreparationAiDriver = roundPreparationResolvers?.let {
-                RoundPreparationAiDriver(gameRepo, moduleRegistry, it, aiStrategyRegistry, GameVisibilityPolicyImpl(moduleRegistry), AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default))
+                RoundPreparationAiDriver(
+                    gameRepo,
+                    moduleRegistry,
+                    it,
+                    aiStrategyRegistry,
+                    GameVisibilityPolicyImpl(moduleRegistry),
+                    AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
+                )
             },
         )
+    }
+
+    /**
+     * 保留日麻合法動作判定，刻意讓和牌結算失敗。
+     *
+     * @property delegate 提供其餘正常日麻行為的規則模組。
+     */
+    private class MissingWinSettlementRuleModule(
+        private val delegate: RiichiRuleModule,
+    ) : MahjongRuleModule<RiichiRuleConfig> by delegate {
+        /** 模擬已合法自摸卻無法結算。 */
+        override fun declareTsumo(
+            tableState: TableState,
+            player: MahjongPlayer,
+        ) = null
+
+        /** 模擬已合法榮和卻無法結算。 */
+        override fun declareRon(
+            tableState: TableState,
+            player: MahjongPlayer,
+            winningTile: IdentifiedTile,
+            discarderId: Uuid,
+            isRobbingKan: Boolean,
+        ) = null
     }
 
     /** 驗證進入強制自動操作後不再接受玩家手動命令。 */
@@ -440,7 +514,17 @@ class GameFlowCoordinatorTest {
      */
     @Test
     fun `test wall exhausted chains exhaustive draw and advance round`() = runTest {
-        val fixtures = Fixtures()
+        var settlementCalls = 0
+        val fixtures = Fixtures(
+            ruleModuleDecorator = { delegate ->
+                object : MahjongRuleModule<RiichiRuleConfig> by delegate {
+                    /** 計算一次正式流局結算，記錄是否被呈現階段重算。 */
+                    override fun declareExhaustiveDraw(tableState: TableState) = delegate.declareExhaustiveDraw(tableState).also {
+                        settlementCalls++
+                    }
+                }
+            },
+        )
         val playerId = Uuid.random()
         val player = FakeMahjongPlayerFactory.create(id = playerId, initialSeat = Wind.EAST)
         val otherPlayer = FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH)
@@ -461,12 +545,10 @@ class GameFlowCoordinatorTest {
         assertTrue(newState.tileWall.remainingCount > 0, "The wall should have been rebuilt for the next hand.")
         assertTrue(newState.players.first { it.id == playerId }.actionHistory.isEmpty(), "A fresh hand's actionHistory should be empty.")
         fixtures.assertSingleSettlement(RoundSettlementKind.DRAW)
+        assertEquals(1, settlementCalls, "Settlement and presentation must share the same calculated result.")
     }
 
-    /**
-     * 驗證規則不支援一般流局結算時（`declareExhaustiveDraw` 回傳 null），不會誤觸發
-     * `AdvanceRoundUseCase`——桌況除了 `WallExhausted` 錯誤本身以外完全不變。
-     */
+    /** 驗證規則不支援一般流局結算時，會以明確原因中止對局，不偽造流局或換局結果。 */
     @Test
     fun `test wall exhausted does not chain advance round when exhaustive draw is unsupported`() = runTest {
         val fixtures = Fixtures()
@@ -483,9 +565,12 @@ class GameFlowCoordinatorTest {
 
         val result = fixtures.coordinator.dispatchThenDrive(gameId, playerId, GameCommand.Draw)
 
-        assertTrue(result is Outcome.Error)
-        assertEquals(GameError.WallExhausted(gameId), result.error)
-        assertEquals(table, fixtures.gameRepo.getTableState(gameId))
+        assertEquals(
+            Outcome.Error(GameError.MatchAborted(gameId, GameAbortReasonIds.MISSING_DRAW_SETTLEMENT)),
+            result,
+        )
+        assertEquals(GameAbortReasonIds.MISSING_DRAW_SETTLEMENT, fixtures.abortReason)
+        assertNull(fixtures.gameRepo.getGame(gameId))
     }
 
     // ---- 四槓散了：捨牌後收斂 ----
@@ -587,6 +672,101 @@ class GameFlowCoordinatorTest {
         Tile.Numeric(Tile.Suit.Dot, 5),
         Tile.Numeric(Tile.Suit.Dot, 5),
     )
+
+    /** 非法 AI 命令只後備一次，且後備仍遵守指定捨牌，不重新詢問策略。 */
+    @Test
+    fun `invalid ai command falls back once to the required discard`() = runTest {
+        val required = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val drawn = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val strategy = FixedCommandStrategy(GameCommand.Discard(Uuid.random()))
+        val fixtures = Fixtures(
+            extraStrategies = mapOf(FIXED_STRATEGY_KEY to strategy),
+            ruleModuleDecorator = { delegate ->
+                object : MahjongRuleModule<RiichiRuleConfig> by delegate {
+                    /** 強制捨出立牌，確保後備不會直接摸切。 */
+                    override fun forcedDiscardTileId(tableState: TableState, player: MahjongPlayer): Uuid = required.id
+                }
+            },
+        )
+        val player = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.EAST,
+            hand = Hand(tiles = listOf(required), lastDrawn = drawn),
+            playerRuleState = RiichiPlayerState(),
+        )
+        fixtures.gameRepo.setTableState(
+            FakeTableStateFactory.create(
+                id = gameId,
+                config = RiichiRuleConfig(),
+                players = listOf(player, FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH, playerRuleState = RiichiPlayerState())),
+                currentPlayerIndex = 0,
+            ),
+            mapOf(player.id to FIXED_STRATEGY_KEY),
+        )
+
+        assertTrue(fixtures.coordinator.advanceAutomatedPlayerStep(gameId))
+
+        val current = assertNotNull(fixtures.gameRepo.getGame(gameId))
+        assertEquals(required.id, current.tableState.players.first().discardPile.entries.single().tile.id)
+        assertEquals(1, strategy.calls)
+        assertNull(fixtures.abortReason)
+    }
+
+    /** 合法自摸卻缺少結算時，中止而不是回覆普通非法動作。 */
+    @Test
+    fun `legal tsumo without settlement aborts the match`() = runTest {
+        assertMissingWinSettlementAborts(isTsumo = true)
+    }
+
+    /** 合法榮和卻缺少結算時，不留下全員回應完畢的反應視窗。 */
+    @Test
+    fun `legal ron without settlement aborts the match`() = runTest {
+        assertMissingWinSettlementAborts(isTsumo = false)
+    }
+
+    /** 建立確實有大三元的手牌，驗證結算失敗會經正式命令入口收尾。 */
+    private suspend fun assertMissingWinSettlementAborts(isTsumo: Boolean) {
+        val fixtures = Fixtures(ruleModuleDecorator = ::MissingWinSettlementRuleModule)
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val winner = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.EAST,
+            hand = Hand(
+                tiles = daisangenTiles.map { FakeIdentifiedTileFactory.create(it) },
+                lastDrawn = winningTile.takeIf { isTsumo },
+            ),
+            playerRuleState = RiichiPlayerState(),
+        )
+        val other = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.SOUTH,
+            discardPile = if (isTsumo) FakeDiscardPile() else FakeDiscardPile().discardTile(winningTile),
+            playerRuleState = RiichiPlayerState(),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(winner, other),
+            config = RiichiRuleConfig(),
+            currentPlayerIndex = if (isTsumo) 0 else 1,
+            pendingReaction = if (isTsumo) {
+                null
+            } else {
+                PendingReaction(
+                    discarderId = other.id,
+                    tileId = winningTile.id,
+                    eligiblePlayerIds = setOf(winner.id),
+                )
+            },
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.coordinator.dispatch(
+            gameId = gameId,
+            playerId = winner.id,
+            command = if (isTsumo) GameCommand.Tsumo else GameCommand.RespondToDiscard(GameAction.Ron(winningTile.id)),
+        )
+
+        assertEquals(Outcome.Error(GameError.MatchAborted(gameId, GameAbortReasonIds.MISSING_WIN_SETTLEMENT)), result)
+        assertEquals(null, fixtures.gameRepo.getGame(gameId))
+        assertTrue(fixtures.presentationPublisher.getPublishedWinPresentations(gameId).isEmpty())
+    }
 
     /**
      * 驗證自摸成功一定結束本局，`AdvanceRoundUseCase` 會被銜接（新的一手牌已重新發好、
@@ -1585,10 +1765,7 @@ class GameFlowCoordinatorTest {
         assertNull(fixtures.gameRepo.getGame(gameId)?.pendingRoundPreparation)
     }
 
-    /**
-     * 驗證 AI 送出的擴充命令寫入同一局兩次、即使 handler 攔下例外並回報成功，這次推進仍以錯誤停止：第一次寫入維持
-     * 提交、不重試，也不接著做系統銜接。
-     */
+    /** 驗證 AI 擴充命令寫入同一局兩次時，中止對局並保留第一次寫入，但不偽造成功結果。 */
     @Test
     fun `test an ai command writing the game twice stops the advance`() = runTest {
         val strategy = FixedCommandStrategy(GameCommand.Extension(DoubleWriteCommand))
@@ -1627,13 +1804,14 @@ class GameFlowCoordinatorTest {
         )
         fixtures.gameRepo.setTableState(table, mapOf(aiId to FIXED_STRATEGY_KEY))
 
-        val error = assertFailsWith<IllegalStateException> { fixtures.coordinator.driveAutomatedPlayers(gameId) }
+        fixtures.coordinator.driveAutomatedPlayers(gameId)
 
-        assertIs<ExpectedGameWrittenTwiceException>(error.cause)
         assertEquals(1, strategy.calls, "A contract violation must not be decided again.")
-        val game = assertNotNull(fixtures.gameRepo.getGame(gameId))
-        assertEquals(1L, game.automaticControlRevision, "The first write stays committed.")
-        assertEquals(false, game.isMatchOver)
+        assertEquals(GameAbortReasonIds.AUTOMATIC_DECISION_FAILED, fixtures.abortReason)
+        val abortedGame = assertNotNull(fixtures.abortedGame)
+        assertEquals(1L, abortedGame.automaticControlRevision, "The first write stays committed.")
+        assertFalse(abortedGame.isMatchOver, "The swallowed second write must not mark the match over.")
+        assertNull(fixtures.gameRepo.getGame(gameId))
     }
 
     /**

@@ -11,6 +11,7 @@ fun JoinReason.toDto(): JoinReasonDto = when (this) {
     JoinReason.Created -> JoinReasonDto.Created
     JoinReason.Joined -> JoinReasonDto.Joined
     JoinReason.MatchEnded -> JoinReasonDto.MatchEnded
+    JoinReason.MatchAborted -> JoinReasonDto.MatchAborted
 }
 
 /**
@@ -22,6 +23,7 @@ fun JoinReasonDto.toDomain(): JoinReason = when (this) {
     JoinReasonDto.Created -> JoinReason.Created
     JoinReasonDto.Joined -> JoinReason.Joined
     JoinReasonDto.MatchEnded -> JoinReason.MatchEnded
+    JoinReasonDto.MatchAborted -> JoinReason.MatchAborted
 }
 
 /**

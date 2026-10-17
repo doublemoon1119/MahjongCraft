@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFactTypeKeys
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryActionTypeKeys
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameAbortReasonIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailEntry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayFactDto
@@ -23,6 +24,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.Presentatio
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcomeDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.detailTextFormatter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.text.minecraftAbortReasonTranslationKey
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.BuiltInGameActionIds as MinecraftBuiltInGameActionIds
@@ -327,6 +329,12 @@ internal class HistoryRoundEventPresenter(
         BuiltInMatchEndReasonIds.PLAYER_BUSTED -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_PLAYER_BUSTED)
         MinecraftMatchAbortReasonIds.TABLE_MISSING -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_ABORT_REASON_TABLE_MISSING)
         MinecraftMatchAbortReasonIds.TABLE_BROKEN_BY_PLAYER -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_ABORT_REASON_TABLE_BROKEN_BY_PLAYER)
+        GameAbortReasonIds.MISSING_WIN_SETTLEMENT,
+        GameAbortReasonIds.MISSING_DRAW_SETTLEMENT,
+        GameAbortReasonIds.INVALID_PROGRESSION,
+        GameAbortReasonIds.AUTOMATIC_DECISION_FAILED,
+        GameAbortReasonIds.RULE_EXECUTION_FAILED,
+        -> Text.translatable(minecraftAbortReasonTranslationKey(reasonId))
         else -> Text.translatable(roundOutcomes.find(reasonId) ?: exhaustiveDrawReasons.find(reasonId) ?: MinecraftHistoryScreenKeys.ROUND_OUTCOME_OTHER)
     }
 

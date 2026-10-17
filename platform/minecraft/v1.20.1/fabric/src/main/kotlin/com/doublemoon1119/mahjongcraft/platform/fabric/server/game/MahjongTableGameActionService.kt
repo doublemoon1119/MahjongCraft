@@ -409,11 +409,14 @@ class MahjongTableGameActionService(
             val result = gameFlowCoordinator.dispatch(gameId, playerId, command)
             when (result) {
                 is Outcome.Success -> Unit
-                is Outcome.Error -> feedbackPublisher.publish(playerId, MinecraftGameFeedbackResolver.actionError(result.error))
+                // 中止已通知全部參與者與觀察者，送出命令的人不再收到重複訊息。
+                is Outcome.Error -> if (result.error !is GameError.MatchAborted) {
+                    feedbackPublisher.publish(playerId, MinecraftGameFeedbackResolver.actionError(result.error))
+                }
             }
             // 強制自動操作中的玩家送出的命令被拒絕，視為完全沒發生過，不請求推進。其餘成功／失敗結果都要請求，
             // 即使這位玩家的命令失敗，其他 AI／強制自動操作玩家仍然可能有動作要做；推進的最後會補做真人自動摸牌。
-            if (result !is Outcome.Error || result.error !is GameError.ForcedAutoPlayActive) {
+            if (result !is Outcome.Error || (result.error !is GameError.ForcedAutoPlayActive && result.error !is GameError.MatchAborted)) {
                 advanceManager.request(gameId)
             }
             return if (result is Outcome.Success) {

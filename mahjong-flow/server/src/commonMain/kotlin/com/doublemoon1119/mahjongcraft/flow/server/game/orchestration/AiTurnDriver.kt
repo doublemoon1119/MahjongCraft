@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.ai.AiDecisionContext
 import com.doublemoon1119.mahjongcraft.ai.AiDecisionPhase
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameAbortReasonIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicy
@@ -28,7 +29,8 @@ import kotlin.uuid.Uuid
  *           解析出實際要問的策略——每局、每個 AI 玩家可以各自使用不同策略，不是全伺服器共用一個。
  * @property visibilityPolicy 依 AI 玩家視角建立決策用快照的觀看政策。
  * @property moduleRegistry 規則模組註冊中心，用於提供規則特有但規則中立的決策限制。
- * @property decisionExecutor 在 AI 專用的調度器上呼叫策略，並在等待上限內沒有結果時改用固定命令。
+ * @property decisionExecutor 在 AI 專用的調度器上呼叫策略，失敗或逾時時使用合法代操作。
+ * @property commandResolver 依目前階段與規則限制產生安全的後備命令。
  * @property actionContextResolver 玩家目前操作情境的權威解析器。
  */
 class AiTurnDriver(
@@ -38,6 +40,7 @@ class AiTurnDriver(
     private val visibilityPolicy: GameVisibilityPolicy,
     private val moduleRegistry: MahjongModuleRegistry,
     private val decisionExecutor: AiDecisionExecutor,
+    private val commandResolver: AutomaticGameCommandResolver,
     private val actionContextResolver: PlayerActionContextResolver = PlayerActionContextResolver(),
 ) {
     /**
@@ -50,6 +53,7 @@ class AiTurnDriver(
      * @param gameId 對局 Uuid。
      * @return 下一個該行動的 AI 玩家、其命令與決策依據的遊戲；沒有 AI 需要行動、對局已結束、對局不存在，或這一局已有
      *   策略呼叫正在計算時為 null。
+     * @throws RuleContractViolationException 必須決策時沒有安全的後備命令。
      */
     suspend fun resolveNextAction(gameId: Uuid): AiTurnDecision? {
         val game = gameRepository.getGame(gameId) ?: return null
@@ -79,7 +83,8 @@ class AiTurnDriver(
 
     /**
      * 依 [aiId] 在 [Game.aiPlayerStrategyKeys] 的策略 key 從 [aiStrategyRegistry] 解析出策略，組出 [AiDecisionContext]
-     * 並經 [decisionExecutor] 問它該怎麼行動；沒有在等待上限內得到結果時，使用與真人逾時相同的 [fixedAutoPlayCommand]。
+     * 並經 [decisionExecutor] 問它該怎麼行動；策略失敗、逾時或舊工作尚未結束而無法再次詢問時，
+     * 使用與真人逾時相同的安全代操作。
      *
      * @param game 決策所依據的權威遊戲。
      * @param aiId 要決策的 AI 玩家。
@@ -109,7 +114,13 @@ class AiTurnDriver(
             playerId = aiId,
             strategyKey = strategyKey,
             decide = { strategy.decideGameCommand(context) },
-            fallback = { checkNotNull(fixedAutoPlayCommand(state, aiId)) { "AI $aiId in game ${game.id} has no fixed command for $phase" } },
+            fallback = {
+                commandResolver.resolve(state, aiId)
+                    ?: throw RuleContractViolationException(
+                        reasonId = GameAbortReasonIds.AUTOMATIC_DECISION_FAILED,
+                        diagnostic = "AI $aiId in game ${game.id} has no safe fallback command for $phase",
+                    )
+            },
         )
     }
 }

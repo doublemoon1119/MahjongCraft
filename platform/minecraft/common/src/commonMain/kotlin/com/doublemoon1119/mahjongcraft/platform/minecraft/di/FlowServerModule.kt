@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiDecision
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AiTurnDriver
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomatedAdvanceManager
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomaticDecisionDriver
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.AutomaticGameCommandResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandContext
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutor
@@ -33,6 +34,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.DeclareRiichiUseC
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.AutomaticDecisionEvaluator
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.DecisionTimerSynchronizationService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.ExhaustiveDrawSettlementPresentationService
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameAbortHandler
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAuthorityResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAvailabilityService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionTimeoutService
@@ -43,6 +45,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerActionCont
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerDecisionTimerFactory
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AbortGameUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceAutomaticRoundPreparationUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.BeginRoundPreparationUseCase
@@ -122,6 +125,8 @@ val flowServerModule = module {
 
     factory<AiTurnDriver>()
     factory<AutomaticDecisionDriver>()
+    single<AutomaticGameCommandResolver>()
+    factory<AbortGameUseCase>() bind GameAbortHandler::class
     single<ExtensionGameActionCommandFactoryRegistry>()
     single<ExtensionGameCommandContext>()
     single<ExtensionGameCommandExecutor>()

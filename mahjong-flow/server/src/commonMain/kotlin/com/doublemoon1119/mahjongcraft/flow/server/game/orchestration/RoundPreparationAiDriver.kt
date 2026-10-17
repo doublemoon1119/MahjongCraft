@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.ai.RoundPreparationAiContext
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameAbortReasonIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.accepts
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicy
@@ -35,6 +36,7 @@ class RoundPreparationAiDriver(
      *
      * @param gameId 欲解析準備提交的對局。
      * @return 可提交的玩家與命令；目前無自動提交時為 null。
+     * @throws RuleContractViolationException 策略與預設提交都不符合目前準備步驟。
      */
     suspend fun resolveNextAction(gameId: Uuid): AutomatedRoundPreparation? {
         val game = gameRepository.getGame(gameId) ?: return null
@@ -69,6 +71,12 @@ class RoundPreparationAiDriver(
         val validated = submission.takeIf {
             input.accepts(it) && resolver.accepts(game.tableState, preparation, player.id, it, module)
         } ?: fallback
+        if (!input.accepts(validated) || !resolver.accepts(game.tableState, preparation, player.id, validated, module)) {
+            throw RuleContractViolationException(
+                GameAbortReasonIds.AUTOMATIC_DECISION_FAILED,
+                "Round preparation ${preparation.stepId} has no valid automatic submission for ${player.id}",
+            )
+        }
         return AutomatedRoundPreparation(
             playerId = player.id,
             command = GameCommand.SubmitRoundPreparation(validated),

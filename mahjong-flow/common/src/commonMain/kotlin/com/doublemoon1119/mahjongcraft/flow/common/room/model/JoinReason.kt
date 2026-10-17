@@ -12,4 +12,7 @@ sealed interface JoinReason {
 
     /** 對局結束，玩家回到房間。 */
     data object MatchEnded : JoinReason
+
+    /** 本場提前中止，玩家返回仍可操作的房間。 */
+    data object MatchAborted : JoinReason
 }

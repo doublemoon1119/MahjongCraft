@@ -236,11 +236,16 @@ class AutomatedAdvanceManager(
             scope = scope,
             dispatcher = dispatcher,
             advanceOnce = { gameId ->
+                val matchId = coordinator.currentMatchId(gameId)
                 if (coordinator.resumePendingGameTransition(gameId)) {
                     false
                 } else {
                     coordinator.driveAutomatedPlayers(gameId)
-                    followUp.afterAdvance(gameId)
+                    if (matchId != null && coordinator.currentMatchId(gameId) == matchId) {
+                        followUp.afterAdvance(gameId)
+                    } else {
+                        false
+                    }
                 }
             },
             failureReporter = failureReporter,

@@ -216,6 +216,13 @@ sealed interface MinecraftPlayerFeedback {
     data object TableAnimationBusy : MinecraftPlayerFeedback
 
     /**
+     * 對局因無法安全繼續而提前終止。
+     *
+     * @property reasonId 平台提供的終止原因識別碼；呈現端應將未知值降級為通用文字。
+     */
+    data class MatchAborted(val reasonId: String) : MinecraftPlayerFeedback
+
+    /**
      * 顯示玩家目前的手牌、副露與可執行的特殊動作，供 `/mahjongcraft game hand` 使用。
      *
      * @property ruleModuleId 這局採用的規則模組 ID，決定動作用語。

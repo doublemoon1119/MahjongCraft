@@ -1,14 +1,16 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 
+import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinSettlementDetail
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameAbortReasonIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransition
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundOutcomePresentationClassification
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.newlyRecordedActionsByPlayerId
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.recordedDrawCompletion
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.recordedDrawOutcome
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationBusyGate
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinPresentationRequest
@@ -17,6 +19,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.repository.ExpectedGameR
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.ExpectedGameWrittenTwiceException
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.ExhaustiveDrawSettlementPresentationService
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameAbortHandler
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAvailabilityService
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
@@ -29,6 +32,8 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ResolveWinRoundC
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ReturnToRoomUseCase
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
+import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionContext
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlinx.coroutines.sync.Mutex
 import kotlin.uuid.Uuid
@@ -49,8 +54,8 @@ import kotlin.uuid.Uuid
  *    任一命令成功後，統一從權威桌況的 `actionHistory` 判斷是否已留下胡牌或流局記錄，不依命令型別
  *    猜測規則結果，因此第三方 extension command 也能沿用相同收斂流程。
  *
- * 銜接呼叫皆為 best-effort：若銜接呼叫本身失敗，不會覆蓋原始命令的執行結果——玩家自己那次操作
- * 是否成功，跟後續系統銜接是否成功，是兩件事。
+ * 正常命令拒絕保留原本結果。規則提供的能力無法履行，或後續流程出現契約矛盾時，
+ * 中止該場並留下診斷，不以重試、跳過或虛構結算掩蓋失敗。
  *
  * 自動操作由 [driveAutomatedPlayers] 透過 [aiTurnDriver] 等驅動：讓所有輪到自己、或有資格回應且尚未回應的
  * AI 玩家依序自動行動，直到沒有任何 AI 需要行動為止——AI 背後沒有真人會主動送出命令，這一步
@@ -81,6 +86,9 @@ import kotlin.uuid.Uuid
  *   實作由平台層提供，理由見 [GamePresentationBusyGate] KDoc。
  * @property roundPreparationAiDriver 解析下一筆自動開局準備提交；未提供時不處理 AI 準備提交。
  * @property advanceAutomaticRoundPreparationUseCase 收斂無須玩家輸入的開局準備步驟；未提供時略過。
+ * @property abortGameUseCase 無法安全繼續時中止原場次並還原房間。
+ * @property automaticCommandResolver 從同一份權威桌況取得安全代打命令。
+ * @property failurePolicy 判斷流程中擴充失敗是否能隔離；取消與致命錯誤原樣外傳。
  */
 class GameFlowCoordinator(
     private val gameActionRouter: GameActionRouter,
@@ -100,6 +108,9 @@ class GameFlowCoordinator(
     private val winPresentationHandoff: WinPresentationHandoff,
     private val presentationPublisher: GamePresentationPublisher,
     private val presentationBusyGate: GamePresentationBusyGate,
+    private val abortGameUseCase: GameAbortHandler,
+    private val automaticCommandResolver: AutomaticGameCommandResolver,
+    private val failurePolicy: ExtensionFailurePolicy = ExtensionFailurePolicy.Default,
     private val roundPreparationAiDriver: RoundPreparationAiDriver? = null,
     private val advanceAutomaticRoundPreparationUseCase: AdvanceAutomaticRoundPreparationUseCase? = null,
 ) {
@@ -111,14 +122,13 @@ class GameFlowCoordinator(
      * [AutomatedAdvanceManager] 請求推進，AI／強制自動操作玩家才會接著行動。被拒絕的手動命令（例如強制自動操作中的玩家）
      * 視為完全沒發生過，呼叫端可自行決定是否仍要請求推進。
      *
-     * 已進入強制自動操作（[Game.forcedAutoPlayPlayerIds]）
-     * 的玩家一律拒絕；[driveAutomatedPlayers] 內部呼叫的是私有的
-     * `dispatchAndReconcile`，替 AI／強制自動操作玩家送出命令時不會經過這裡、不會撞到這條檢查。
+     * 已進入強制自動操作（[Game.forcedAutoPlayPlayerIds]）的玩家一律拒絕；自動操作透過
+     * [submitAutomatedDecision] 提交，不經過此真人請求入口。
      *
      * @param gameId 對局 Uuid。
      * @param playerId 發起操作的玩家 Uuid。
      * @param command 欲執行的操作。
-     * @return [GameActionRouter] 的執行結果。
+     * @return 命令結果；規則契約錯誤導致中止時，回傳 [GameError.MatchAborted]。
      */
     suspend fun dispatch(
         gameId: Uuid,
@@ -139,18 +149,12 @@ class GameFlowCoordinator(
     /**
      * 依序驅動強制自動操作、真人自動設定與 AI，直到目前沒有任何自動決策需要執行。
      *
-     * 每次迭代前後比較 `TableState`；若命令未造成進展便立即停止。理論上這個迴圈一定會自然收斂
-     * （沒有更多自動決策要做，或桌況沒有任何進展），但仍設 [MAX_ITERATIONS] 作為上限而非單純
-     * `while (true)`——純粹是防呆：萬一未來出現尚未發現的收斂性 bug，讓這裡真的陷入無限迴圈，
-     * `while (true)` 會讓呼叫這個函式的那次心跳永遠卡住、吃滿 CPU 卻不留下任何訊號，而心跳是
-     * 依序遍歷所有對局的，一局卡住會連帶讓同一次心跳裡其他對局的自動操作全部停擺。設上限後，
-     * 卡住會直接拋出例外，能被立即看見、定位。開局、逾時與每秒巡邏都經 [AutomatedAdvanceManager] 呼叫，確保沒有真人送出
-     * 指令時仍能推進自動操作。
+     * 每次迭代前後比較權威狀態，沒有可執行操作或進展時便停止。本次推進只屬於原場次，
+     * 同一場地已開新場時不繼續操作；超過 [MAX_ITERATIONS] 仍未收斂時中止原場次並記錄診斷。
+     * 開局、逾時與定期檢查都經 [AutomatedAdvanceManager] 呼叫，沒有真人送出命令時仍能推進。
      *
-     * 由 [forcedAutoPlayDriver] 解析出的動作在送出前會先把該玩家從[Game.forcedAutoPlayPlayerIds] 移除——
-     * 強制自動操作只鎖住逾時當下那一次決策，不是整場對局；提前移除也讓緊接著呼叫的
-     * [GameDecisionAvailabilityService.reconcile] 能立刻看到這位玩家重新是一般決策者，替他下一次決策
-     * （例如緊接著要捨牌）建立帶有完整 `baseSeconds` 的新計時器，而不是繼續被排除在外。
+     * 強制自動操作只鎖住逾時當下那一次決策。命令成功後才解除 [Game.forcedAutoPlayPlayerIds] 的標記，
+     * 並校正下一次決策計時；失敗時不提前把操作權交還給玩家。
      *
      * 每次迭代開始前都會用 [presentationBusyGate] 確認這場對局目前沒有需要等待的呈現——不是只在呼叫
      * 這個函式之前檢查一次：連莊/過莊本身就可能在迴圈中途觸發新一局的開局呈現（[advanceRoundUseCase]
@@ -159,19 +163,26 @@ class GameFlowCoordinator(
      * 自然停下，等下次心跳或玩家操作再重新呼叫。
      *
      * @param gameId 欲推進的遊戲。
-     * @throws IllegalStateException 跑滿 [MAX_ITERATIONS] 步仍未收斂，代表自動操作鏈路真的卡住了。
      */
     internal suspend fun driveAutomatedPlayers(gameId: Uuid) {
+        val matchId = currentMatchId(gameId) ?: return
         repeat(MAX_ITERATIONS) {
+            if (currentMatchId(gameId) != matchId) return
             if (!advanceAutomatedPlayerStep(gameId)) return
             // 已排入下一段轉移或呈現忙碌時維持原本的交接節奏，留待後續恢復入口。
             if (gameRepository.getGame(gameId)?.pendingTransition != null || presentationBusyGate.isBusy(gameId)) return
         }
-        error(
-            "driveAutomatedPlayers did not converge for game $gameId after $MAX_ITERATIONS iterations; " +
-                "automated player chain is likely stuck",
-        )
+        val game = gameRepository.getGame(gameId)?.takeIf { it.matchId == matchId } ?: return
+        abortGameUseCase.abort(game, GameAbortReasonIds.AUTOMATIC_DECISION_FAILED, "Automatic progression exceeded $MAX_ITERATIONS steps")
     }
+
+    /**
+     * 取得場地目前的場次身分，防止舊推進在返回房間後操作新場次。
+     *
+     * @param gameId 場地識別碼。
+     * @return 目前場次識別碼；沒有對局時為 null。
+     */
+    internal suspend fun currentMatchId(gameId: Uuid): Uuid? = gameRepository.getGame(gameId)?.matchId
 
     /**
      * 推進一次自動操作鏈中的單一步驟。
@@ -185,6 +196,23 @@ class GameFlowCoordinator(
      *   未造成狀態變更時為 `false`。
      */
     internal suspend fun advanceAutomatedPlayerStep(gameId: Uuid): Boolean {
+        val basis = gameRepository.getGame(gameId) ?: return false
+        return try {
+            advanceAutomatedPlayerStepUnchecked(gameId)
+        } catch (failure: Throwable) {
+            if (!failurePolicy.isIsolatable(failure)) throw failure
+            abortAfterFailure(basis, failure)
+            basis != gameRepository.getGame(gameId)
+        }
+    }
+
+    /**
+     * 執行一次已受失敗保護的推進；例外由外層依場次身分處理。
+     *
+     * @param gameId 要推進的場地。
+     * @return 權威狀態是否前進。
+     */
+    private suspend fun advanceAutomatedPlayerStepUnchecked(gameId: Uuid): Boolean {
         if (!decisionAvailabilityService.reconcile(gameId)) return false
         val stepBefore = gameRepository.getGame(gameId) ?: return false
 
@@ -197,11 +225,10 @@ class GameFlowCoordinator(
 
         val preparationAction = roundPreparationAiDriver?.resolveNextAction(gameId)
         if (preparationAction != null) {
-            if (preparationAction.clearsForcedAutoPlay) {
+            val result = submitAutomatedDecision(gameId, preparationAction.playerId, preparationAction.command, preparationAction.basis)
+            if (preparationAction.clearsForcedAutoPlay && result is Outcome.Success) {
                 clearForcedAutoPlay(gameId, preparationAction.playerId)
-                dispatchAndReconcile(gameId, preparationAction.playerId, preparationAction.command)
-            } else {
-                submitAutomatedDecision(gameId, preparationAction.playerId, preparationAction.command, preparationAction.basis)
+                decisionAvailabilityService.reconcile(gameId, preparationAction.playerId)
             }
             return stepBefore != gameRepository.getGame(gameId)
         }
@@ -211,8 +238,11 @@ class GameFlowCoordinator(
         val humanAction = forcedAction ?: automaticAction
         if (humanAction != null) {
             val (playerId, command) = humanAction
-            if (forcedAction != null) clearForcedAutoPlay(gameId, playerId)
-            dispatchAndReconcile(gameId, playerId, command)
+            val result = submitAutomatedDecision(gameId, playerId, command, stepBefore)
+            if (forcedAction != null && result is Outcome.Success) {
+                clearForcedAutoPlay(gameId, playerId)
+                decisionAvailabilityService.reconcile(gameId, playerId)
+            }
         } else {
             val decision = aiTurnDriver.resolveNextAction(gameId) ?: return false
             submitAutomatedDecision(gameId, decision.playerId, decision.command, decision.basis)
@@ -232,8 +262,8 @@ class GameFlowCoordinator(
      * [returnToRoomUseCase]，不從桌況或呈現實作反推權威意圖。
      *
      * 方法只在呈現已經閒置時收斂，不會自行掛起等待，適合每次心跳輪詢。回傳 `true`
-     * 代表偵測到待完成的流程（即使這次 best-effort use case 失敗），呼叫端這一輪不應再驅動
-     * 任何自動操作，留待下次心跳重試。
+     * 代表偵測到待完成的流程：已執行收斂，或因契約矛盾而中止該場。
+     * 呼叫端這一輪不再驅動自動操作，不對無法執行的同一步無限重試。
      *
      * @param gameId 欲收斂待完成流程的對局。
      * @return 是否偵測到待完成的遊戲流程。
@@ -245,15 +275,31 @@ class GameFlowCoordinator(
         if (presentationBusyGate.isPresentingContinuingWin(gameId)) return false
         pendingTransitionMutex.lock()
         try {
-            val transition = gameRepository.getGame(gameId)?.pendingTransition ?: return false
-            when (transition) {
-                PendingGameTransition.AdvanceRound -> {
-                    advanceRoundUseCase(gameId)
-                }
+            val basis = gameRepository.getGame(gameId) ?: return false
+            val transition = basis.pendingTransition ?: return false
+            guardProgress(basis) {
+                val result = when (transition) {
+                    PendingGameTransition.AdvanceRound -> {
+                        when (val result = advanceRoundUseCase(gameId)) {
+                            is Outcome.Success -> Outcome.Success(Unit)
+                            is Outcome.Error -> result
+                        }
+                    }
 
-                PendingGameTransition.ReturnToRoom -> {
-                    returnToRoomUseCase(gameId)
+                    PendingGameTransition.ReturnToRoom -> {
+                        when (val result = returnToRoomUseCase(gameId)) {
+                            is Outcome.Success -> Outcome.Success(Unit)
+                            is Outcome.Error -> result
+                        }
+                    }
                 }
+                if (result is Outcome.Error && result.error !is GameError.GameNotFound) {
+                    throw RuleContractViolationException(
+                        reasonId = GameAbortReasonIds.INVALID_PROGRESSION,
+                        diagnostic = "Pending transition $transition was rejected: ${result.error::class.simpleName}",
+                    )
+                }
+                result
             }
             return true
         } finally {
@@ -274,22 +320,24 @@ class GameFlowCoordinator(
         playerId: Uuid,
         command: GameCommand,
     ): Outcome<Unit, GameError> {
-        val result = dispatchAndChain(gameId, playerId, command) { gameActionRouter(gameId, playerId, command) }
+        val basis = gameRepository.getGame(gameId) ?: return Outcome.Error(GameError.GameNotFound(gameId))
+        val result = guardProgress(basis) {
+            dispatchAndChain(gameId, playerId, command) { gameActionRouter(gameId, playerId, command) }
+        }
         return reconcileAfter(gameId, playerId, requireNotNull(result) { "An unconditional dispatch is never stale" })
     }
 
     /**
-     * 送出依 [expectedGame] 決定的 AI 命令（遊戲中的決策或開局準備的提交），只在權威遊戲仍是 [expectedGame] 時套用。
+     * 送出依 [expectedGame] 決定的自動命令，只在權威遊戲仍是 [expectedGame] 時套用。
      *
      * 呈現忙碌時不送出。命令的那一次權威寫入在交易內比對 [expectedGame]（見 [GameRepository.withExpectedGame]）；
      * 不符時命令完全沒有執行，也不做系統銜接與計時調整，由下一輪推進重新判斷誰該行動。
      *
      * @param gameId 對局 Uuid。
-     * @param playerId 行動的 AI 玩家。
-     * @param command AI 決定的命令。
+     * @param playerId 由策略或伺服器代操作的玩家。
+     * @param command 自動決定的遊戲命令或開局準備提交。
      * @param expectedGame 決策所依據的權威遊戲。
-     * @return 命令的執行結果；過期或呈現忙碌而沒有送出時為 null。
-     * @throws IllegalStateException 命令對這一局寫入超過一次；第一次寫入可能已經提交，這一次推進就此停止。
+     * @return 命令或一次合法後備的結果；過期、呈現忙碌時為 null；契約矛盾時為中止錯誤。
      */
     private suspend fun submitAutomatedDecision(
         gameId: Uuid,
@@ -298,22 +346,99 @@ class GameFlowCoordinator(
         expectedGame: Game,
     ): Outcome<Unit, GameError>? {
         if (presentationBusyGate.isBusy(gameId)) return null
-        val result = dispatchAndChain(gameId, playerId, command) {
-            val conditional = try {
-                gameRepository.withExpectedGame(gameId, expectedGame) { gameActionRouter(gameId, playerId, command) }
-            } catch (violation: ExpectedGameWrittenTwiceException) {
-                throw IllegalStateException(
-                    "Automated command $command by player $playerId wrote game $gameId more than once; " +
-                        "the first write may already be committed",
-                    violation,
+        if (gameRepository.getGame(gameId) != expectedGame) return null
+        val result = guardProgress(expectedGame) {
+            val first = dispatchExpectedCommand(gameId, playerId, command, expectedGame)
+            if (first !is Outcome.Error || gameRepository.getGame(gameId) != expectedGame) return@guardProgress first
+            val fallback = automaticCommandResolver.resolve(expectedGame.tableState, playerId)
+            if (fallback == null || fallback == command || command is GameCommand.SubmitRoundPreparation) {
+                throw RuleContractViolationException(
+                    GameAbortReasonIds.AUTOMATIC_DECISION_FAILED,
+                    "Automatic command ${command::class.simpleName} was rejected: ${first.error::class.simpleName}; no safe distinct fallback",
                 )
             }
-            when (conditional) {
-                is ExpectedGameResult.Applied -> conditional.value
-                ExpectedGameResult.Stale -> null
+            val retried = dispatchExpectedCommand(gameId, playerId, fallback, expectedGame)
+            if (retried is Outcome.Error && gameRepository.getGame(gameId) == expectedGame) {
+                throw RuleContractViolationException(
+                    GameAbortReasonIds.AUTOMATIC_DECISION_FAILED,
+                    "Fallback ${fallback::class.simpleName} was rejected: ${retried.error::class.simpleName}",
+                )
             }
+            retried
         } ?: return null
         return reconcileAfter(gameId, playerId, result)
+    }
+
+    /**
+     * 只為主要命令建立一次條件式寫入範圍，後備與系統銜接不共用舊範圍。
+     *
+     * @param gameId 場地識別碼。
+     * @param playerId 行動者。
+     * @param command 要提交的命令。
+     * @param expectedGame 決策依據。
+     * @return 套用結果；過期時為 null。
+     */
+    private suspend fun dispatchExpectedCommand(
+        gameId: Uuid,
+        playerId: Uuid,
+        command: GameCommand,
+        expectedGame: Game,
+    ): Outcome<Unit, GameError>? = dispatchAndChain(gameId, playerId, command) {
+        val conditional = try {
+            gameRepository.withExpectedGame(gameId, expectedGame) { gameActionRouter(gameId, playerId, command) }
+        } catch (violation: ExpectedGameWrittenTwiceException) {
+            throw RuleContractViolationException(
+                GameAbortReasonIds.AUTOMATIC_DECISION_FAILED,
+                "Automated command ${command::class.simpleName} by $playerId attempted a second authoritative write; first write may be committed: ${violation.message}",
+            )
+        }
+        when (conditional) {
+            is ExpectedGameResult.Applied -> conditional.value
+            ExpectedGameResult.Stale -> null
+        }
+    }
+
+    /**
+     * 對同一場次的規則矛盾執行中止；正常拒絕與過期結果保持原語意。
+     *
+     * @param T 用例成功結果型別。
+     * @param basis 這次操作開始時的場次。
+     * @param block 要保護的命令或系統銜接。
+     * @return 原結果，或已中止錯誤；過期仍為 null。
+     */
+    private suspend fun <T> guardProgress(basis: Game, block: suspend () -> Outcome<T, GameError>?): Outcome<T, GameError>? = try {
+        val result = block()
+        val progressionError = (result as? Outcome.Error)?.error as? GameError.InvalidMatchProgression
+        if (progressionError != null) {
+            abortAfterFailure(
+                basis,
+                RuleContractViolationException(GameAbortReasonIds.INVALID_PROGRESSION, progressionError.reason),
+            )
+        } else {
+            result
+        }
+    } catch (failure: Throwable) {
+        if (!failurePolicy.isIsolatable(failure)) throw failure
+        abortAfterFailure(basis, failure)
+    }
+
+    /**
+     * 只中止仍屬於原場次的最新已提交狀態，不回滾前一個成功步驟。
+     *
+     * @param basis 失敗操作所屬的原場次。
+     * @param failure 原始診斷。
+     * @return 中止錯誤；原場次已不存在時為找不到對局。
+     */
+    private suspend fun abortAfterFailure(basis: Game, failure: Throwable): Outcome.Error<GameError> {
+        val current = gameRepository.getGame(basis.id)?.takeIf { it.matchId == basis.matchId }
+            ?: return Outcome.Error(GameError.GameNotFound(basis.id))
+        val reasonId = (failure as? RuleContractViolationException)?.reasonId ?: GameAbortReasonIds.RULE_EXECUTION_FAILED
+        val diagnostic = "${moduleRegistry.getModule(current.tableState.config).id}: ${failure::class.simpleName}: ${failure.message.orEmpty()}"
+        return if (abortGameUseCase.abort(current, reasonId, diagnostic)) {
+            Outcome.Error(GameError.MatchAborted(basis.id, reasonId))
+        } else {
+            Outcome.Error(GameError.GameNotFound(basis.id))
+        }
     }
 
     /**
@@ -379,6 +504,12 @@ class GameFlowCoordinator(
 
         if (result is Outcome.Error && result.error is GameError.WallExhausted) {
             val specialOutcome = resolvePostReactionRoundOutcomeUseCase(gameId)
+            if (specialOutcome is Outcome.Error) {
+                throw RuleContractViolationException(
+                    GameAbortReasonIds.MISSING_DRAW_SETTLEMENT,
+                    "Special outcome resolution failed after wall exhaustion: ${specialOutcome.error::class.simpleName}",
+                )
+            }
             if (specialOutcome is Outcome.Success && specialOutcome.value != null) {
                 val resolved = requireNotNull(specialOutcome.value)
                 if (resolved.presentationClassification == RoundOutcomePresentationClassification.WIN_EQUIVALENT) {
@@ -397,6 +528,12 @@ class GameFlowCoordinator(
                 return result
             }
             val exhaustiveDraw = declareExhaustiveDrawUseCase(gameId)
+            if (exhaustiveDraw is Outcome.Error) {
+                throw RuleContractViolationException(
+                    GameAbortReasonIds.MISSING_DRAW_SETTLEMENT,
+                    "Exhaustive draw settlement failed: ${exhaustiveDraw.error::class.simpleName}",
+                )
+            }
             if (exhaustiveDraw is Outcome.Success) {
                 val currentState = exhaustiveDraw.value.tableState
                 val module = moduleRegistry.getModule(previousState.config)
@@ -519,6 +656,12 @@ class GameFlowCoordinator(
         // WinPresentationHandoff.take 自行丟棄並回傳 null。
         val presentation = winPresentationHandoff.take(gameId, newWinnerPlayerIds)
         val result = resolveWinRoundContinuationUseCase(gameId, previousState, newWinnerPlayerIds)
+        if (result is Outcome.Error) {
+            throw RuleContractViolationException(
+                GameAbortReasonIds.INVALID_PROGRESSION,
+                "Win continuation failed: ${result.error::class.simpleName}",
+            )
+        }
         val directive = (result as? Outcome.Success)?.value
 
         if (presentation != null) {
@@ -560,7 +703,29 @@ class GameFlowCoordinator(
     ) {
         gameRepository.updateGame(gameId) { game ->
             if (game == null || game.roundCompletion != null) return@updateGame game to Unit
-            game.copy(roundCompletion = recordedDrawCompletion(state, newActionsByPlayerId)) to Unit
+            val outcome = recordedDrawOutcome(state, newActionsByPlayerId)
+                ?: throw RuleContractViolationException(GameAbortReasonIds.INVALID_PROGRESSION, "Draw actions have no recorded draw outcome")
+            val module = moduleRegistry.getModule(state.config)
+            val directive = module.resolveRoundTransition(
+                RoundTransitionContext(
+                    tableState = state,
+                    outcomeId = outcome.outcomeId,
+                    classification = outcome.classification,
+                    beneficiaryPlayerIds = outcome.beneficiaryPlayerIds,
+                    responsiblePlayerIds = outcome.responsiblePlayerIds,
+                    exhaustiveDrawReason = outcome.reason,
+                ),
+            )
+            game.copy(
+                roundCompletion = RoundCompletionSummary(
+                    outcomeId = outcome.outcomeId,
+                    classification = outcome.classification,
+                    beneficiaryPlayerIds = outcome.beneficiaryPlayerIds,
+                    responsiblePlayerIds = outcome.responsiblePlayerIds,
+                    transitionDirective = directive,
+                    settledScoresByPlayerId = state.players.associate { it.id to it.score },
+                ),
+            ) to Unit
         }
     }
 

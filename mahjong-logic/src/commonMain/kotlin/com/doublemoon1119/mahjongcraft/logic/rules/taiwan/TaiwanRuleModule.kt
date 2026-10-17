@@ -13,6 +13,9 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.layout.TaiwanWallLayou
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.opening.TaiwanWallOpeningPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
+import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
+import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionContext
+import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlin.uuid.Uuid
 
@@ -40,6 +43,18 @@ class TaiwanRuleModule(
 
     /** 建立台灣麻將的牌牆布局，依 [TaiwanRuleConfig.useFlowerTiles] 支援 136 或 144 張。 */
     override fun createWallLayout(): TaiwanWallLayout = TaiwanWallLayout(config)
+
+    /**
+     * 保留台灣麻將目前的流程行為：途中流局連莊，其他結算由莊家是否為得利者決定。
+     *
+     * @param context 本局結算後的完整結果情境。
+     * @return 台灣麻將本局後的莊家推進決策。
+     */
+    override fun resolveRoundTransition(context: RoundTransitionContext): RoundTransitionDirective = when {
+        context.classification == RoundCompletionClassification.ABORTIVE_DRAW -> RoundTransitionDirective.REPEAT_DEALER
+        context.tableState.dealerPlayerId in context.beneficiaryPlayerIds -> RoundTransitionDirective.REPEAT_DEALER
+        else -> RoundTransitionDirective.ADVANCE_DEALER
+    }
 
     /**
      * 建立台灣麻將專用的牌河。

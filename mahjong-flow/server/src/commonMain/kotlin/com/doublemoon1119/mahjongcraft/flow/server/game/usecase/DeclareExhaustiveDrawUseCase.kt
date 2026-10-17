@@ -1,10 +1,12 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameAbortReasonIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.acceptedActionHistoryDraft
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleContractViolationException
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.revealHandsOf
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
@@ -14,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
+import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionContext
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlin.uuid.Uuid
@@ -79,9 +82,12 @@ class DeclareExhaustiveDrawUseCase(
                 else -> {
                     val module = moduleRegistry.getModule(state.config)
 
-                    // 這個規則不支援流局結算時 declareExhaustiveDraw 回傳 null。
+                    // 規則已提供一般流局能力卻無法產生結算，代表規則契約失效，不能把它當成零分流局繼續。
                     val settlement = module.declareExhaustiveDraw(state)
-                        ?: return@updateGame game to Outcome.Error(GameError.UnsupportedAction(gameId))
+                        ?: throw RuleContractViolationException(
+                            reasonId = GameAbortReasonIds.MISSING_DRAW_SETTLEMENT,
+                            diagnostic = "Rule module ${module.id} did not provide an exhaustive draw settlement",
+                        )
 
                     // 這次流局若有玩家該收下場上所有供託（如立直棒，例如日麻的流局滿貫成立者），
                     // 不支援供託機制的規則回傳 null
@@ -110,11 +116,16 @@ class DeclareExhaustiveDrawUseCase(
                         revealedHandSettlements = settlement.revealedHands,
                     ).revealHandsOf(settlement.revealedHands.map { it.playerId })
 
-                    val transitionDirective = if (state.dealerPlayerId in settlement.tenpaiPlayerIds) {
-                        RoundTransitionDirective.REPEAT_DEALER
-                    } else {
-                        RoundTransitionDirective.ADVANCE_DEALER
-                    }
+                    val transitionDirective = module.resolveRoundTransition(
+                        RoundTransitionContext(
+                            tableState = newState,
+                            outcomeId = settlement.reason.id,
+                            classification = RoundCompletionClassification.EXHAUSTIVE_DRAW,
+                            beneficiaryPlayerIds = settlement.tenpaiPlayerIds,
+                            responsiblePlayerIds = emptySet(),
+                            exhaustiveDrawReason = settlement.reason,
+                        ),
+                    )
                     game.copy(
                         tableState = newState,
                         roundCompletion = RoundCompletionSummary(
