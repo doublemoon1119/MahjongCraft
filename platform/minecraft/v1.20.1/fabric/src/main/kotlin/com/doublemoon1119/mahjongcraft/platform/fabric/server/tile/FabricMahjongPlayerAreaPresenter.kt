@@ -283,17 +283,16 @@ class FabricMahjongPlayerAreaPresenter(
      * 依序完成三件事：
      * 1. 強制理牌重排——不論贏家原本是否啟用自動整理手牌，把
      *    [MahjongWinCelebrationPresentation.organizedStandingTileIds]（呼叫端已經算好的整理後目標順序）
-     *    裡每一張牌都排定一次「從目前位置飛到整理後格位」的動畫（[TileAnimationSteps.scheduleReorder]）；
+     *    裡每一張牌都排定在同一時刻瞬間到達整理後格位（[TileAnimationSteps.scheduleInstantReorder]）；
      *    自摸胡牌張保留在 [MahjongTileTableLayout.drawnTilePlacement] 的右側間隔位置，其餘牌使用
      *    [MahjongTileTableLayout.handPlacement]，
-     *    全部共用同一個絕對起訖時刻（[reorderStartGameTime]／`reorderEndGameTime`），沒有移動的牌也照樣
-     *    播放（起訖位置相同），維持這批牌步調一致的既有慣例。
+     *    全部共用同一個絕對定位時刻，定位後等待 [MahjongTileTableLayout.WIN_POST_REORDER_DELAY_TICKS] 再開始倒牌流程。
      * 2. 自摸（[MahjongWinCelebrationPresentation.isTsumo]）才有的中繼步驟：自摸牌
      *    （[MahjongWinCelebrationPresentation.winningTileId]，此時已經是 [MahjongWinCelebrationPresentation.organizedStandingTileIds] 之
      *    一）單獨倒下（[TileAnimationSteps.scheduleLaydown]），姿態從立牌轉平放牌面朝上，位置不變。
      * 3. 其餘立牌（自摸時排除自摸牌，榮和／搶槓時是全部）在共用的絕對時刻一起倒下——自摸要等自摸牌
      *    倒下播完、再等 [MahjongTileTableLayout.WIN_PRE_HAND_LAYDOWN_DELAY_TICKS]；榮和／搶槓省略自摸牌
-     *    那一步，直接從理牌重排播完後等待同一個常數。
+     *    那一步，直接在整理到位及短暫停頓後等待同一個常數。
      *
      * 找不到對應 UUID 的既有 entity 時該筆直接跳過並記警告 log，不中斷其餘牌的呈現，比照 [present]
      * 既有的 best-effort 慣例；[MahjongWinCelebrationPresentation.winningTileId] 找不到既有 entity 時，
@@ -348,7 +347,7 @@ class FabricMahjongPlayerAreaPresenter(
         // 整條慶祝動畫鏈都由這個起點推導；接在呼叫端指定的時間軸之後，讓同一條時間軸上的連續胡牌
         // 演出依序播放而不重疊（預設 0 等同 world.time，維持既有行為）。
         val reorderStartGameTime = maxOf(world.time, presentation.earliestStartGameTime)
-        val reorderEndGameTime = reorderStartGameTime + MahjongTileTableLayout.WIN_REORDER_FLIGHT_DURATION_TICKS
+        val reorderEndGameTime = reorderStartGameTime + MahjongTileTableLayout.WIN_POST_REORDER_DELAY_TICKS
 
         val claimedStandingTiles = linkedMapOf<Uuid, MahjongTileEntity>()
         standingHandTileIds.forEachIndexed { orderIndex, tileId ->
@@ -365,7 +364,7 @@ class FabricMahjongPlayerAreaPresenter(
                 cornerYieldShift = cornerYieldShift,
             )
             tile.assignToTable(presentation.tableId)
-            TileAnimationSteps.scheduleReorder(tile, placement, reorderStartGameTime)
+            TileAnimationSteps.scheduleInstantReorder(tile, placement, reorderStartGameTime)
         }
 
         val winningTile = if (presentation.isTsumo) {
@@ -381,7 +380,7 @@ class FabricMahjongPlayerAreaPresenter(
                     cornerYieldShift = cornerYieldShift,
                 )
                 tile.assignToTable(presentation.tableId)
-                TileAnimationSteps.scheduleReorder(
+                TileAnimationSteps.scheduleInstantReorder(
                     tile,
                     placement,
                     reorderStartGameTime,

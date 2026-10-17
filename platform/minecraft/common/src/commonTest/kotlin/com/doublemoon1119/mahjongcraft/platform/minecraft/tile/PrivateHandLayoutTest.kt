@@ -248,7 +248,7 @@ class PrivateHandLayoutTest {
         assertEquals(setOf(firstId, secondId), frame.keys)
     }
 
-    /** 和牌或完整攤牌時釋放私人布局，牌張交回共享位置並最終移除接管狀態。 */
+    /** 和牌或完整攤牌時立即釋放私人布局，不從私人牌位滑到共享位置。 */
     @Test
     fun `release hand hands tiles back to shared layout`() {
         val layout = PrivateHandLayout()
@@ -284,15 +284,14 @@ class PrivateHandLayoutTest {
             releaseHand = true,
         )
 
-        assertTrue(duringHandoff.containsKey(firstId))
-        assertTrue(finished.getValue(firstId).position.x > 0.0)
-        assertTrue(finished.getValue(firstId).position.x < 10.0)
+        assertTrue(duringHandoff.isEmpty())
+        assertTrue(finished.isEmpty())
         assertTrue(released.isEmpty())
     }
 
-    /** 共享牌張仍有原生動畫時，釋放私人布局會銜接該動畫並在完成後移除。 */
+    /** 完整攤牌時不覆寫共享動畫，倒牌可直接沿用原生的位置與姿態。 */
     @Test
-    fun `release hand follows an active shared animation`() {
+    fun `release hand does not override an active shared animation`() {
         val layout = PrivateHandLayout()
         layout.update(
             time = 0.0,
@@ -330,9 +329,8 @@ class PrivateHandLayoutTest {
             releaseHand = true,
         )
 
-        assertEquals(transform(0.0), duringHandoff.getValue(firstId))
-        assertTrue(moving.getValue(firstId).position.x > transform(0.0).position.x)
-        assertTrue(moving.getValue(firstId).position.x < transform(10.0).position.x)
+        assertTrue(duringHandoff.isEmpty())
+        assertTrue(moving.isEmpty())
         assertTrue(released.isEmpty())
     }
 

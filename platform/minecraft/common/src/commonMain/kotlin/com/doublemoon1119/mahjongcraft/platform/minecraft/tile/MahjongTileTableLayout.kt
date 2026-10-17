@@ -1060,13 +1060,9 @@ object MahjongTileTableLayout {
     const val DISCARD_FLIGHT_DURATION_TICKS: Int = 5
 
     /**
-     * 胡牌慶祝演出中，強制理牌重排時每張牌從目前位置飛到整理後格位的動畫時長——手法比照鳴牌動畫
-     * （[DISCARD_FLIGHT_DURATION_TICKS]），是一次連續可見的短程飛行，不是瞬間傳送；沒有移動的牌
-     * （已經在整理後該在的格位）也會照樣播放這段動畫（起訖位置相同，視覺上等同無位移），維持所有牌
-     * 共用同一個絕對收斂時刻的既有慣例，理由見 `FabricMahjongPlayerAreaPresenter.scheduleDealBatchAnimation`
-     * KDoc。起始估算值，預期進遊戲後調整。
+     * 胡牌展示中，手牌瞬間整理到位後、開始倒牌流程前的短暫等待。
      */
-    const val WIN_REORDER_FLIGHT_DURATION_TICKS: Int = 5
+    const val WIN_POST_REORDER_DELAY_TICKS: Int = 5
 
     /**
      * 胡牌慶祝演出中，牌姿態從立牌轉平放（牌面朝上）「倒下」的動畫時長，供自摸牌單獨倒下與其餘手牌
@@ -1076,9 +1072,8 @@ object MahjongTileTableLayout {
     const val WIN_LAYDOWN_DURATION_TICKS: Int = 4
 
     /**
-     * 胡牌慶祝演出（自摸）中，自摸牌單獨倒下播完，到其餘手牌一起倒下開始之間的等待，約 0.8 秒，估算值，
-     * 實作成具名常數方便進遊戲測試後微調；榮和／搶槓情境省略自摸牌倒下這一步，這個常數改成「強制理牌
-     * 重排播完到手牌一起倒下之間」的等待。
+     * 自摸牌單獨倒下後，到其餘手牌一起倒下前的等待，約 0.8 秒。
+     * 榮和或搶槓時，從整理到位後的短暫停頓結束時起算。
      */
     const val WIN_PRE_HAND_LAYDOWN_DELAY_TICKS: Int = 16
 

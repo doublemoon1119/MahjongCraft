@@ -39,7 +39,7 @@ class PrivateHandLayout {
      * @param standingOrder 本人完整立牌順序；缺少原生資料的 ID 仍須保留。
      * @param drawnId 獨立摸牌位的牌；沒有時為 null。
      * @param inputs 目前已追蹤的共享牌張資料，以真實牌張 ID 索引。
-     * @param releaseHand 和牌或完整攤牌時，將本人布局平滑交回共享呈現。
+     * @param releaseHand 和牌或完整攤牌時，立即交回共享呈現，不另外補間私人牌位；倒牌動畫由共享呈現播放。
      * @return 本幀由私人布局接管的最終絕對位置與姿態。
      */
     fun update(
@@ -49,13 +49,17 @@ class PrivateHandLayout {
         inputs: Map<Uuid, TileDisplayInput>,
         releaseHand: Boolean,
     ): Map<Uuid, TileDisplayTransform> {
+        if (releaseHand) {
+            clear()
+            return emptyMap()
+        }
         val now = max(time, lastTime)
         lastTime = now
         if (standingOrder.size != standingOrder.toSet().size || drawnId in standingOrder) {
             clear()
             return emptyMap()
         }
-        val privateIds = if (releaseHand) emptySet() else (standingOrder + listOfNotNull(drawnId)).toSet()
+        val privateIds = (standingOrder + listOfNotNull(drawnId)).toSet()
         val publicOrder = PublicHandOrder.arrange(standingOrder)
         updateRow(
             publicOrder = publicOrder,

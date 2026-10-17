@@ -107,7 +107,7 @@ class FabricExhaustiveDrawSettlementPresentationScheduler(
                     tileIndex = handTileIds.size - 1 - orderIndex,
                     cornerYieldShift = cornerYieldShift,
                 )
-                TileAnimationSteps.scheduleReorder(tile, sortedPlacement, startGameTime + HAND_REORDER_START_TICK)
+                TileAnimationSteps.scheduleInstantReorder(tile, sortedPlacement, startGameTime + HAND_REORDER_START_TICK)
                 when (player.handDisclosure) {
                     ExhaustiveDrawHandDisclosure.TENPAI,
                     ExhaustiveDrawHandDisclosure.PROOF,

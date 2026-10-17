@@ -1023,9 +1023,9 @@ class FabricDebugPresentationCommand(
         }
 
         val reorderStartGameTime = world.time
-        val reorderEndGameTime = reorderStartGameTime + MahjongTileTableLayout.WIN_REORDER_FLIGHT_DURATION_TICKS
+        val reorderEndGameTime = reorderStartGameTime + MahjongTileTableLayout.WIN_POST_REORDER_DELAY_TICKS
         handTiles.forEachIndexed { index, tile ->
-            TileAnimationSteps.scheduleReorder(
+            TileAnimationSteps.scheduleInstantReorder(
                 tile,
                 sortedPlacements[index],
                 reorderStartGameTime,

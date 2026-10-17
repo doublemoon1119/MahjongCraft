@@ -259,51 +259,42 @@ internal object TileAnimationSteps {
     const val ACTION_POPUP_DURATION_TICKS = 24L
 
     /**
-     * 強制理牌重排的單張牌動畫（胡牌慶祝演出）：跟 [scheduleMeldClaim] 同一套「立即傳送到最終位置、
-     * `PlayMotion` 只負責讓 render 端從舊位置補間過去」手法，差別是這裡全程姿態固定立牌
-     * （[MahjongTilePose.STANDING]），只有位置變動，沒有姿態轉換；[startGameTime] 是呼叫端算好、這批
-     * 牌共用同一份的絕對起飛時刻，不是相對等待。沒有實際移動的牌（已經在整理後該在的格位）也會照樣
-     * 走一次這個 step（起訖位置相同，視覺上等同無位移），讓全部牌的動畫佇列時長一致，方便呼叫端用
-     * 同一個絕對「重排播完」時刻接續排定後續步驟。
+     * 在攤牌展示的指定時刻，將牌瞬間放到整理後格位，不播放滑動。
+     *
+     * 只改位置與朝向，不改牌姿態；後續倒牌或蓋牌仍由各自的動畫步驟處理。
      *
      * @param tile 要重排的牌 entity。
      * @param finalPlacement 整理後的座標與朝向。
      * @param startGameTime 這批牌共用的絕對開始 tick。
      */
-    fun scheduleReorder(
+    fun scheduleInstantReorder(
         tile: MahjongTileEntity,
         finalPlacement: MahjongTileWallPlacement,
         startGameTime: Long,
     ) {
-        val startX = tile.x
-        val startY = tile.y
-        val startZ = tile.z
-        tile.enqueueAll(
-            buildList {
-                addAll(
-                    listOf(
-                        AnimationStep.WaitUntil(startGameTime),
-                        AnimationStep.Teleport(finalPlacement.x, finalPlacement.y, finalPlacement.z, finalPlacement.yaw),
-                        AnimationStep.PlayMotion(
-                            durationTicks = MahjongTileTableLayout.WIN_REORDER_FLIGHT_DURATION_TICKS,
-                            arcHeight = 0.0,
-                            startOffsetX = startX - finalPlacement.x,
-                            startOffsetY = startY - finalPlacement.y,
-                            startOffsetZ = startZ - finalPlacement.z,
-                            startPoseRotationDegrees = MahjongTilePose.STANDING.rotationDegrees,
-                            endPoseRotationDegrees = MahjongTilePose.STANDING.rotationDegrees,
-                        ),
-                    ),
-                )
-            },
-        )
+        tile.enqueueAll(instantReorderSteps(finalPlacement, startGameTime))
     }
+
+    /**
+     * 建立可持久化的攤牌排序步驟，只等待指定時刻並瞬間定位。
+     *
+     * @param finalPlacement 整理後的座標與朝向。
+     * @param startGameTime 同組牌共用的絕對開始 tick。
+     * @return 不含位移或姿態補間的排序步驟。
+     */
+    fun instantReorderSteps(
+        finalPlacement: MahjongTileWallPlacement,
+        startGameTime: Long,
+    ): List<AnimationStep<MahjongTilePose>> = listOf(
+        AnimationStep.WaitUntil(startGameTime),
+        AnimationStep.Teleport(finalPlacement.x, finalPlacement.y, finalPlacement.z, finalPlacement.yaw),
+    )
 
     /**
      * 「倒牌」的單張牌動畫（胡牌慶祝演出）：姿態從立牌轉平放牌面朝上，位置完全不動，只有姿態旋轉角
      * 隨動畫進度內插——硬性限制要求所有姿態轉換都要走 [AnimationStep.Custom] + [AnimationStep.PlayMotion]，
      * 不直接賦值 [MahjongTileEntity.tilePose]。[startGameTime] 是呼叫端算好、同一批牌共用同一份的絕對
-     * 起飛時刻，理由同 [scheduleReorder]。
+     * 開始時刻，與 [scheduleInstantReorder] 使用同一條時間軸。
      *
      * @param tile 要翻倒的牌 entity。
      * @param startGameTime 同組牌共用的絕對開始 tick。
