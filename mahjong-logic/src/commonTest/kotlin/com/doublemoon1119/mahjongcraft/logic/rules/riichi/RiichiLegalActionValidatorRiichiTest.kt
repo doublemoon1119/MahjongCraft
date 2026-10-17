@@ -363,7 +363,7 @@ class RiichiLegalActionValidatorRiichiTest {
      * 立直後暗槓，必須暗槓前後的牌型相同才能暗槓。
      */
     @Test
-    fun `test closed kan not allowed after riichi when tenpai changes`() {
+    fun `test closed kan not allowed after riichi when meld interpretations change`() {
         // 手牌： 111 餅 + 23 餅 + 444 餅 + 222 條 + 56 萬 (聽牌中)
         // 聽牌： 兩面聽 4 萬、7 萬
         // 摸到： 1 餅
@@ -397,7 +397,7 @@ class RiichiLegalActionValidatorRiichiTest {
             tileWall = nonEmptyWall,
         )
 
-        // 摸到 1 餅（暗槓後改變聽牌）
+        // 摸到 1 餅；等待仍為四、七萬，但一餅也可作為雀頭及一二三餅順子的一部分。
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
 
         // 執行
@@ -409,7 +409,7 @@ class RiichiLegalActionValidatorRiichiTest {
             incomingTile = incomingTile,
         )
 
-        // 驗證：暗槓 1 餅會改變牌型，不可暗槓
+        // 驗證：暗槓會排除有效的雀頭及順子拆法，因此不可暗槓。
         val closedKanActions = actions.filterIsInstance<GameAction.Kan>()
         val hasClosedKan = closedKanActions.any { it.type == GameAction.KanType.CLOSED_KAN }
         assertFalse(hasClosedKan)

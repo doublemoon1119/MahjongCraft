@@ -14,10 +14,8 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.riichiCanonical
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.util.isHonor
-import com.doublemoon1119.mahjongcraft.logic.util.isNumeric
 import com.doublemoon1119.mahjongcraft.logic.util.isTerminal
 import com.doublemoon1119.mahjongcraft.logic.util.preferPlainTiles
-import kotlin.math.abs
 
 /**
  * 日本麻將規則的合法動作判定器。
@@ -174,8 +172,8 @@ class RiichiLegalActionValidator(
 
             // 3. 檢查是否可以暗槓 (Closed Kan)
             // 立直後暗槓限制：
-            // - 暗槓前跟暗槓後聽的牌必須一模一樣才能暗槓
-            // - 需要計算暗槓後的聽牌列表，與暗槓前的聽牌列表比對
+            // - 暗槓前後的等待牌必須相同。
+            // - 每種等待的所有和牌拆法中，槓牌都只能作為刻子。
             if (canDeclareAnotherKan && wallAllowsKan) {
                 val closedKanCandidates = (player.hand.standingTiles + incomingTile)
                     .groupBy { it.tile.riichiCanonical }
@@ -457,11 +455,6 @@ class RiichiLegalActionValidator(
     private fun checkClosedKanAfterRiichi(player: MahjongPlayer, incomingTile: IdentifiedTile): Boolean {
         val incomingBaseTile = incomingTile.tile.riichiCanonical
 
-        // 如果這 4 張牌暗槓與其他順子有連結，直接回傳 false
-        if (isMeldStructureChanged(player.hand.standingTiles, incomingTile)) {
-            return false
-        }
-
         // 取得暗槓前的聽牌列表
         val currentHand = Hand(
             player.hand.standingTiles.toMutableList(),
@@ -475,6 +468,15 @@ class RiichiLegalActionValidator(
         }
 
         val winningTilesBefore = beforeKanResult.winningTiles.map { it.riichiCanonical }.toSet()
+        if (!RiichiClosedKanStructure.preservesTriplet(
+                standingTiles = player.hand.standingTiles.map { it.tile },
+                winningTiles = winningTilesBefore,
+                kanTile = incomingBaseTile,
+                existingMelds = player.hand.exposedMelds.size,
+            )
+        ) {
+            return false
+        }
 
         // 暗槓模擬：將手牌中 3 張相同的牌移至副露區，再加上摸到的牌湊成 4 張牌
         val tilesToKan = player.hand.standingTiles.filter { it.tile.riichiCanonical == incomingBaseTile }.toMutableList()
@@ -505,35 +507,6 @@ class RiichiLegalActionValidator(
 
         // 比較兩者的聽牌列表是否完全相同
         return winningTilesBefore == winningTilesAfter
-    }
-
-    /**
-     * 檢查暗槓是否會改變面子結構 (日麻立直專用規則)。
-     *
-     * 規則：被槓掉的四張牌，在原本的手牌解釋中，必須「只能」是刻子。
-     * 如果這四張牌與手牌中其他牌存在數字連結（1, 2 格內），則視為結構改變。
-     * 此處採用同花色鄰近牌檢查，不列舉所有面子拆法。
-     *
-     * @param standingTiles 暗槓前、不含新摸入牌的立牌。
-     * @param kanTile 本次摸入並要組成暗槓的牌。
-     * @return 其他立牌存在同花色且數字距離不超過二的牌時為 true；字牌為 false。
-     */
-    private fun isMeldStructureChanged(standingTiles: List<IdentifiedTile>, kanTile: IdentifiedTile): Boolean {
-        // 轉換換成數牌，非數牌(字牌)沒有順子問題，只要聽牌不變，字牌暗槓永遠合法
-        val kanBase = kanTile.tile.riichiCanonical as? Tile.Numeric? ?: return false
-
-        // 取得除去這組刻子後，剩下的立牌
-        val otherTiles = standingTiles.filter { it.tile.riichiCanonical != kanBase }
-
-        // 檢查剩下的牌中，有沒有與槓牌同花色且數字距離在 2 以內的牌
-        // 例如：槓 2 萬，手牌有 1, 3, 4 萬，則代表 2 萬具有組成順子的「血緣關係」
-        return otherTiles.any {
-            val otherBase = it.tile.riichiCanonical as? Tile.Numeric? ?: return@any false
-
-            otherBase.isNumeric &&
-                otherBase.suit == kanBase.suit &&
-                abs(otherBase.value - kanBase.value) <= 2
-        }
     }
 
     /** 槓牌次數與活牌餘量限制。 */
