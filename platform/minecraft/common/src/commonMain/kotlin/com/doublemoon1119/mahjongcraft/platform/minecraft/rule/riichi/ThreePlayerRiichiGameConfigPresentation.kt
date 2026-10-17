@@ -11,7 +11,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.boolField
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.categories
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.choiceField
-import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.flowFields
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.intField
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.translationKey
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationDefinition
@@ -106,7 +105,7 @@ internal fun threePlayerRiichiGameConfigPresentation(): GameConfigPresentationDe
                 config.withThreePlayerRiichi { copy(multiRonPolicy = multiRonPolicy.copy(doubleRonResolution = RonResolution.valueOf(option.uppercase()))) }
             },
         ),
-    ) + flowFields(),
+    ),
 )
 
 /** 將 [transform] 套用到三人日麻規則配置並回傳新的遊戲配置。 */

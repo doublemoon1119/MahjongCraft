@@ -4,7 +4,9 @@ import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 
 /**
- * 一個規則模組的完整設定呈現定義；規則名稱仍由 RuleModuleDisplayNameRegistry 提供。
+ * 一個規則模組提供的設定呈現定義；registry 登記時會自動附加共用流程分類與欄位。
+ * 規則只需要提供自己的分類與欄位；共用流程分類與欄位的保留 ID 見 [GameConfigPresentationRegistry]，
+ * 不可由規則重複宣告。規則名稱由 RuleModuleDisplayNameRegistry 提供。
  *
  * @property ruleModuleId 規則模組的 Namespaced ID。
  * @property descriptionTranslationKey 設定描述翻譯鍵。

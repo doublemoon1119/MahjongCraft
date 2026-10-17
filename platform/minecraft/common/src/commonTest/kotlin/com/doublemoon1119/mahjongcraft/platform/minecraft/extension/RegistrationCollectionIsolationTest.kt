@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.extension
 
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolverRegistry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigCategoryDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigEditorSpec
@@ -37,7 +38,9 @@ class RegistrationCollectionIsolationTest {
             GameConfigCategoryDefinition("example:category", "test.category"),
             GameConfigCategoryDefinition("example:other", "test.other"),
         )
-        val registry = GameConfigPresentationRegistryImpl()
+        val registry = GameConfigPresentationRegistryImpl(
+            RoundPreparationResolverRegistry(),
+        )
         registry.register(
             definition = GameConfigPresentationDefinition(
                 ruleModuleId = "example:rule",
@@ -54,14 +57,15 @@ class RegistrationCollectionIsolationTest {
         fields.clear()
         categories.clear()
         val first = assertNotNull(registry.find("example:rule"))
-        assertEquals(2, first.categories.size)
-        assertEquals(1, first.fields.size)
-        assertEquals(listOf("example:first", "example:second"), (first.fields.single().editor as GameConfigEditorSpec.SingleChoice).optionIds)
+        assertEquals(3, first.categories.size)
+        assertEquals(5, first.fields.size)
+        val firstChoice = first.fields.single { it.id == "example:field" }.editor as GameConfigEditorSpec.SingleChoice
+        assertEquals(listOf("example:first", "example:second"), firstChoice.optionIds)
         (first.categories as MutableList<*>).clear()
-        ((first.fields.single().editor as GameConfigEditorSpec.SingleChoice).optionIds as MutableList<*>).clear()
+        (firstChoice.optionIds as MutableList<*>).clear()
         val second = assertNotNull(registry.find("example:rule"))
-        assertEquals(2, second.categories.size)
-        assertEquals(2, (second.fields.single().editor as GameConfigEditorSpec.SingleChoice).optionIds.size)
+        assertEquals(3, second.categories.size)
+        assertEquals(2, (second.fields.single { it.id == "example:field" }.editor as GameConfigEditorSpec.SingleChoice).optionIds.size)
         assertEquals(setOf("example:rule"), keys)
     }
 

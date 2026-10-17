@@ -2,6 +2,8 @@ package com.doublemoon1119.mahjongcraft.flow.network.dto.integration
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryRuleSettings
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiGameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.JoinReason
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.LeaveReason
@@ -421,6 +423,28 @@ class DtoRoundTripTest {
         val encoded = thirdPartyJson.encodeToString<MahjongRuleConfigDto>(configDto)
         val decodedDto = thirdPartyJson.decodeFromString<MahjongRuleConfigDto>(encoded)
         assertEquals(configDto, decodedDto)
+    }
+
+    /** 準備設定為 null 或明確秒數時，都可經網路 JSON 完整往返。 */
+    @Test
+    fun `game flow round preparation is optional in network round trip`() {
+        val configs = listOf(
+            GameConfig(
+                ruleConfig = RiichiRuleConfig(),
+                flowConfig = GameFlowConfig(),
+            ),
+            GameConfig(
+                ruleConfig = RiichiRuleConfig(),
+                flowConfig = GameFlowConfig(roundPreparation = RoundPreparationConfig(47)),
+            ),
+        )
+
+        configs.forEach { config ->
+            val dto = config.toDto(registries)
+            val encoded = json.encodeToString(GameConfigDto.serializer(), dto)
+            val decoded = json.decodeFromString(GameConfigDto.serializer(), encoded)
+            assertEquals(config.flowConfig, decoded.toDomain(registries).flowConfig)
+        }
     }
 }
 

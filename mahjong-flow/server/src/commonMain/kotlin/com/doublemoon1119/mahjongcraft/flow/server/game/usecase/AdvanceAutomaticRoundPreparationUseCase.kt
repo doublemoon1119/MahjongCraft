@@ -2,8 +2,10 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameAbortReasonIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleContractViolationException
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.RoundPreparationPresentationUpdate
@@ -54,6 +56,14 @@ class AdvanceAutomaticRoundPreparationUseCase(
                         ?: return@repeat
                     if (currentPreparation.participantPlayerIds.isNotEmpty()) return@repeat
                     val resolution = resolver.resolve(updated.tableState, currentPreparation, module)
+                    if (resolution.nextStep?.participantPlayerIds?.isEmpty() == false &&
+                        updated.flowConfig.roundPreparation == null
+                    ) {
+                        throw RuleContractViolationException(
+                            GameAbortReasonIds.RULE_EXECUTION_FAILED,
+                            "Round preparation requires a time configuration for player input",
+                        )
+                    }
                     updated = updated.copy(
                         tableState = resolution.tableState,
                         pendingRoundPreparation = resolution.nextStep,

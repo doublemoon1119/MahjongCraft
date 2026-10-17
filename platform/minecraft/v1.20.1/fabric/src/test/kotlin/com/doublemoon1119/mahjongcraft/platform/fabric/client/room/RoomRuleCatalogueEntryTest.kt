@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.room
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueConfigSource
 import kotlin.test.Test
@@ -37,7 +38,7 @@ class RoomRuleCatalogueEntryTest {
     @Test
     fun `flow only changes still count as a draft`() {
         val authoritative = GameConfig(RiichiRuleConfig())
-        val draft = authoritative.copy(flowConfig = GameFlowConfig(preparationBaseSeconds = 60))
+        val draft = authoritative.copy(flowConfig = GameFlowConfig(roundPreparation = RoundPreparationConfig(60)))
 
         val context = roomRuleCatalogueContext(ruleModuleId = RULE_ID, displayed = draft, authoritative = authoritative)
 

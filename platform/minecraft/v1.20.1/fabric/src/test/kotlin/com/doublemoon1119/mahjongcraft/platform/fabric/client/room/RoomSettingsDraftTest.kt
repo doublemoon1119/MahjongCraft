@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.room
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.SpectatingPolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.SpectatorHandVisibility
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
@@ -68,22 +69,23 @@ class RoomSettingsDraftTest {
 
         draft.beginIfAbsent(AUTHORITATIVE)
 
-        assertEquals(45, draft.config?.flowConfig?.preparationBaseSeconds)
+        assertEquals(45, draft.config?.flowConfig?.roundPreparation?.baseSeconds)
     }
 
     /** 編輯欄位後 Apply 與 Undo 開啟，改回與權威相同時再次關閉。 */
     @Test
     fun `enables apply and undo only while the draft differs`() {
         val draft = RoomSettingsDraft()
-        draft.beginIfAbsent(AUTHORITATIVE)
+        val authoritative = withPreparationSeconds(30)
+        draft.beginIfAbsent(authoritative)
 
         draft.updateField(preparationSecondsField(), GameConfigPresentationValue.IntegerValue(45))
-        assertTrue(draft.canApply(AUTHORITATIVE, FULL_ROOM))
-        assertTrue(draft.canUndo(AUTHORITATIVE))
+        assertTrue(draft.canApply(authoritative, FULL_ROOM))
+        assertTrue(draft.canUndo(authoritative))
 
         draft.updateField(preparationSecondsField(), GameConfigPresentationValue.IntegerValue(30))
-        assertFalse(draft.canApply(AUTHORITATIVE, FULL_ROOM))
-        assertFalse(draft.canUndo(AUTHORITATIVE))
+        assertFalse(draft.canApply(authoritative, FULL_ROOM))
+        assertFalse(draft.canUndo(authoritative))
     }
 
     /** updater 拋例外時欄位標記為無效、草稿不變，Apply 與 Done 停用。 */
@@ -130,7 +132,7 @@ class RoomSettingsDraftTest {
         assertTrue(draft.isFieldInvalid(REJECTING_FIELD_ID))
         assertTrue(draft.hasInvalidFields)
         assertFalse(draft.canDone(FULL_ROOM), "Expected done to be blocked while a field is invalid.")
-        assertEquals(45, draft.config?.flowConfig?.preparationBaseSeconds, "Expected an edit to a valid field to still reach the draft.")
+        assertEquals(45, draft.config?.flowConfig?.roundPreparation?.baseSeconds, "Expected an edit to a valid field to still reach the draft.")
     }
 
     /** 第一段驗證擋下超出範圍的輸入，且不改動草稿。 */
@@ -159,7 +161,7 @@ class RoomSettingsDraftTest {
         draft.applyNumericInput(field, "45")
 
         assertFalse(draft.isFieldInvalid(field.id))
-        assertEquals(45, draft.config?.flowConfig?.preparationBaseSeconds)
+        assertEquals(45, draft.config?.flowConfig?.roundPreparation?.baseSeconds)
         assertTrue(draft.canApply(AUTHORITATIVE, FULL_ROOM))
     }
 
@@ -261,7 +263,7 @@ class RoomSettingsDraftTest {
         assertIs<RoomSettingsDraft.Outcome.BecameStale>(outcome)
         assertTrue(draft.isStale)
         assertFalse(draft.isReturningToRoomAfterApply)
-        assertEquals(45, draft.config?.flowConfig?.preparationBaseSeconds, "Expected the draft contents to survive becoming stale.")
+        assertEquals(45, draft.config?.flowConfig?.roundPreparation?.baseSeconds, "Expected the draft contents to survive becoming stale.")
     }
 
     /** 過期後只剩 Undo 可用。 */
@@ -347,7 +349,9 @@ class RoomSettingsDraftTest {
          * @param seconds 開局準備秒數。
          * @return 僅更新準備秒數的權威設定。
          */
-        fun withPreparationSeconds(seconds: Int): GameConfig = AUTHORITATIVE.copy(flowConfig = AUTHORITATIVE.flowConfig.copy(preparationBaseSeconds = seconds))
+        fun withPreparationSeconds(seconds: Int): GameConfig = AUTHORITATIVE.copy(
+            flowConfig = AUTHORITATIVE.flowConfig.copy(roundPreparation = RoundPreparationConfig(seconds)),
+        )
 
         /**
          * 建立可更新開局準備秒數的測試欄位。
@@ -361,10 +365,12 @@ class RoomSettingsDraftTest {
             descriptionTranslationKey = "test.description",
             editor = GameConfigEditorSpec.IntegerInput(minimum = 10, maximum = 60),
             isEditable = true,
-            read = { GameConfigPresentationValue.IntegerValue(it.flowConfig.preparationBaseSeconds) },
+            read = { GameConfigPresentationValue.IntegerValue(it.flowConfig.roundPreparation?.baseSeconds) },
             update = { config, value ->
                 val seconds = (value as GameConfigPresentationValue.IntegerValue).number ?: error("missing number")
-                config.copy(flowConfig = config.flowConfig.copy(preparationBaseSeconds = seconds))
+                config.copy(
+                    flowConfig = config.flowConfig.copy(roundPreparation = RoundPreparationConfig(seconds)),
+                )
             },
         )
 

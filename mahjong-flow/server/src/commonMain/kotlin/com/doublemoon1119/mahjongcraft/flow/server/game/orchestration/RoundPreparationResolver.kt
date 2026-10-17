@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRoundPreparation
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSubmission
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.defaultSubmission
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
@@ -11,6 +12,13 @@ import kotlin.uuid.Uuid
 interface RoundPreparationResolver {
     /** 此解析器所屬的規則模組 ID。 */
     val ruleModuleId: String
+
+    /**
+     * 此規則的預設局前準備設定；沒有玩家準備操作或只有自動步驟時可為 null。
+     * 註冊表在登記時讀取一次，之後不隨對局或步驟變動。
+     */
+    val defaultRoundPreparationConfig: RoundPreparationConfig?
+        get() = null
 
     /**
      * 發牌後建立第一個步驟；不需要準備時回傳 null。

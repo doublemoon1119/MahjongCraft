@@ -11,12 +11,11 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.boolField
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.categories
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.choiceField
-import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.flowFields
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.intField
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.translationKey
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationDefinition
 
-/** 日麻設定畫面的 schema：規則與分數欄位可編輯，最後接上共用的流程欄位。 */
+/** 日麻設定畫面的 schema：規則與分數欄位可編輯；共用流程欄位由 registry 登記時附加。 */
 internal fun riichiGameConfigPresentation(): GameConfigPresentationDefinition = GameConfigPresentationDefinition(
     ruleModuleId = BuiltInRuleModuleIds.RIICHI,
     descriptionTranslationKey = translationKey("rule.riichi.description"),
@@ -108,7 +107,7 @@ internal fun riichiGameConfigPresentation(): GameConfigPresentationDefinition = 
             read = { (it.ruleConfig as RiichiRuleConfig).multiRonPolicy.tripleRonResolution.toOption() },
             update = { config, option -> config.withRiichi { copy(multiRonPolicy = multiRonPolicy.copy(tripleRonResolution = option.toRonResolution())) } },
         ),
-    ) + flowFields(),
+    ),
 )
 
 /** 將 [transform] 套用到日麻規則配置並回傳新的遊戲配置。 */

@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRoundPreparation
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationInputSpec
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSubmission
@@ -247,7 +248,14 @@ class AuthoritativeStateRecoveryIntegrationTest {
             ),
         )
 
-        runtime.restore(runtime.snapshotWith(state, pendingRoundPreparation = preparation))
+        runtime.restore(
+            runtime.snapshotWith(
+                state = state,
+                pendingRoundPreparation = preparation,
+                flowConfig = GameFlowConfig(roundPreparation = RoundPreparationConfig(47)),
+            ),
+        )
+        assertEquals(47, runtime.gameRepository.getGame(state.id)?.flowConfig?.roundPreparation?.baseSeconds)
 
         val confirmingSnapshot = assertNotNull(
             runtime.gameSnapshots.getRoundPreparationSnapshot(state.id, confirming.id),
@@ -485,17 +493,19 @@ class AuthoritativeStateRecoveryIntegrationTest {
          * @param state 要保存的牌桌狀態。
          * @param pendingRoundPreparation 尚未完成的開局準備資料；預設沒有準備步驟。
          * @param aiPlayerStrategyKeys 由玩家 UUID 對應至 AI 策略 key 的映射；預設沒有 AI 玩家。
+         * @param flowConfig 此對局的流程設定；玩家準備步驟須明確提供局前準備設定。
          * @return 僅包含此牌局的權威 snapshot。
          */
         fun snapshotWith(
             state: TableState,
             pendingRoundPreparation: PendingRoundPreparation? = null,
             aiPlayerStrategyKeys: Map<Uuid, String> = emptyMap(),
+            flowConfig: GameFlowConfig = GameFlowConfig(),
         ): AuthoritativeStateSnapshot = AuthoritativeStateSnapshot(
             games = mapOf(
                 state.id to Game(
                     tableState = state,
-                    flowConfig = GameFlowConfig(),
+                    flowConfig = flowConfig,
                     pendingRoundPreparation = pendingRoundPreparation,
                     aiPlayerStrategyKeys = aiPlayerStrategyKeys,
                 ),

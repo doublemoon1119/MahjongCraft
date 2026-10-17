@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRoundPreparation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationInputSpec
 import com.doublemoon1119.mahjongcraft.flow.common.time.MonotonicClock
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
@@ -241,7 +242,7 @@ class GameDecisionTimerManagerTest {
 
     /**
      * 驗證 [PlayerDecisionPhase.ROUND_PREPARATION] 逾時進入強制自動操作時，不會清空玩家的共用保留
-     * 思考時間池——這個階段從未動用過那個池子，逾時只代表 `preparationBaseSeconds` 用完，跟其他階段
+     * 思考時間池——這個階段從未動用過那個池子，逾時只代表局前準備時間用完，跟其他階段
      * 逾時會把保留思考時間歸零的行為不同。
      */
     @Test
@@ -251,7 +252,7 @@ class GameDecisionTimerManagerTest {
         val game = fixtures.preparationGame(playerId)
         fixtures.repository.setGame(game)
         fixtures.manager.reconcile(game.id)
-        fixtures.clock.nowMillis = GameFlowConfig().preparationBaseSeconds * 1_000L + 1_000L
+        fixtures.clock.nowMillis = game.flowConfig.roundPreparation!!.baseSeconds * 1_000L + 1_000L
 
         val claimed = fixtures.manager.claimTimedOutDecisions()
 
@@ -344,7 +345,7 @@ class GameDecisionTimerManagerTest {
         val pausedGame = fixtures.repository.getGame(game.id)!!
         assertEquals(20_000L, pausedGame.remainingReserveMillisByPlayerId.getValue(playerId))
         assertEquals(
-            GameFlowConfig().preparationBaseSeconds * 1_000L - 5_000L,
+            game.flowConfig.roundPreparation!!.baseSeconds * 1_000L - 5_000L,
             pausedGame.interruptedBaseMillisByPlayerId.getValue(playerId),
         )
     }
@@ -413,7 +414,7 @@ class GameDecisionTimerManagerTest {
             val player = FakeMahjongPlayerFactory.create(id = playerId)
             return Game(
                 tableState = FakeTableStateFactory.create(players = listOf(player)),
-                flowConfig = GameFlowConfig(),
+                flowConfig = GameFlowConfig(roundPreparation = RoundPreparationConfig(30)),
                 pendingRoundPreparation = PendingRoundPreparation(
                     stepId = "test:step",
                     stepIndex = 0,

@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.ai.BuiltInAiStrategyKeys
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.CommittedGameFacts
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolverRegistry
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
@@ -123,7 +124,9 @@ class MinecraftMahjongExtensionRegistrarTest {
             playerPortraitSourceRegistry = PlayerPortraitSourceRegistryImpl(failurePolicy = ExtensionFailurePolicy.Default),
             publicPlayerIndicatorDisplayRegistry = PublicPlayerIndicatorDisplayRegistryImpl(),
             roomMemberAppearanceSourceRegistry = RoomMemberAppearanceSourceRegistryImpl(failurePolicy = ExtensionFailurePolicy.Default),
-            gameConfigPresentationRegistry = GameConfigPresentationRegistryImpl(),
+            gameConfigPresentationRegistry = GameConfigPresentationRegistryImpl(
+                RoundPreparationResolverRegistry(),
+            ),
             gameAchievementResolverRegistry = gameAchievementResolverRegistry,
         ),
         failurePolicy = ExtensionFailurePolicy.Default,

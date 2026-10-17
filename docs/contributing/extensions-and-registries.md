@@ -31,6 +31,26 @@
   successful decisions. Share lifecycle and execution mechanics without merging endpoint authorization or
   data-recovery policies.
 
+## Shared Room Settings
+
+- Rule authors add settings for their own game, such as the red-tile count in Riichi. MahjongCraft adds
+  the shared turn-time and spectating settings when the rule is registered. Do not add another copy.
+- Only add settings the rule can use. A rule without tile selection or exchange before a round has no
+  round-preparation time setting.
+- Preparation settings are absent by default. A preparation resolver that asks players to choose before
+  a round supplies its default `RoundPreparationConfig`. The room settings use that registration to add
+  the preparation-time field; do not declare a second capability flag in the presentation definition.
+- Creating defaults or changing rules adds that rule's preparation configuration, or removes it when the
+  new rule has none. Other shared flow settings are preserved. Preparation time does not consume the
+  ordinary turn's reserve time. A player-choice preparation step without its configuration is an error,
+  not an instruction to silently supply a timer or wait forever.
+- MahjongCraft owns the shared fields' IDs, allowed values, update functions and translations. A rule that
+  reuses one of those IDs is rejected with an error; neither definition silently replaces the other.
+- Screens, summaries, history and server checks use the same registered fields. Test that a third-party
+  rule can actually submit and save a change, not just that a bundled rule shows a control.
+- For an optional setting, test both sides: rules that need it can change and save it; rules that do not
+  need it have no field and the server rejects changes to that value.
+
 ## Observer State Projection
 
 - Rule modules define what each observer may know through `projectPlayerRuleState` and

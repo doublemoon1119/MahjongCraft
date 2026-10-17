@@ -54,10 +54,8 @@ data class PlayerDecisionTimer(
 /**
  * 以指定的基本思考秒數及玩家目前剩餘保留思考時間建立一次決策計時器。
  *
- * 保留思考時間永遠是玩家整場遊戲共用的單一資源池（見 [Game.remainingReserveMillisByPlayerId]），
- * 不分決策階段，所以這裡只接受 [baseSeconds]，不接受完整 [ActionTimeControl]——某個決策階段想採用
- * 不同的基本思考時間時（例如 [GameFlowConfig.preparationBaseSeconds]），沒有對應「這個階段專屬保留
- * 思考時間」的概念可以搭配。
+ * 呼叫端會依決策階段提供基本時間和保留時間。一般回合與反應階段可使用玩家共用的保留時間池；
+ * 局前準備階段固定以零保留時間計時。
  *
  * @param baseSeconds 此次決策重新取得的基本思考秒數。
  * @param playerId 目前具有決策權的玩家。

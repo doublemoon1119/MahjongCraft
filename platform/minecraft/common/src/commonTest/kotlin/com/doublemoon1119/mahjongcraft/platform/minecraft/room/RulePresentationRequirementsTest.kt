@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.room
 
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolverRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
@@ -112,7 +113,9 @@ class RulePresentationRequirementsTest {
      *
      * @return 內建設定呈現 registry。
      */
-    private fun bundledPresentations(): GameConfigPresentationRegistry = GameConfigPresentationRegistryImpl().apply {
+    private fun bundledPresentations(): GameConfigPresentationRegistry = GameConfigPresentationRegistryImpl(
+        RoundPreparationResolverRegistry(),
+    ).apply {
         BundledMinecraftMahjongExtensions.all.forEach { it.registerGameConfigPresentations(this) }
     }
 
@@ -133,7 +136,9 @@ class RulePresentationRequirementsTest {
      * @param definitions 要登記的設定呈現。
      * @return 設定呈現 registry。
      */
-    private fun presentations(vararg definitions: GameConfigPresentationDefinition): GameConfigPresentationRegistry = GameConfigPresentationRegistryImpl().apply { definitions.forEach(::register) }
+    private fun presentations(vararg definitions: GameConfigPresentationDefinition): GameConfigPresentationRegistry = GameConfigPresentationRegistryImpl(
+        RoundPreparationResolverRegistry(),
+    ).apply { definitions.forEach(::register) }
 
     /**
      * 建立使用日麻預設設定、沒有欄位的設定呈現。

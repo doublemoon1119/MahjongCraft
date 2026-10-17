@@ -4,12 +4,14 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRoundPreparation
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationInputSpec
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSubmission
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolution
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleContractViolationException
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.runAsSingleWrite
@@ -30,6 +32,7 @@ import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -65,7 +68,7 @@ class SubmitRoundPreparationUseCaseTest {
         repository.setGame(
             Game(
                 tableState = table,
-                flowConfig = GameFlowConfig(),
+                flowConfig = GameFlowConfig(roundPreparation = RoundPreparationConfig(30)),
                 pendingRoundPreparation = PendingRoundPreparation(
                     stepId = "test:confirm",
                     stepIndex = 0,
@@ -107,7 +110,7 @@ class SubmitRoundPreparationUseCaseTest {
         )
         val game = Game(
             tableState = table,
-            flowConfig = GameFlowConfig(),
+            flowConfig = GameFlowConfig(roundPreparation = RoundPreparationConfig(30)),
             pendingRoundPreparation = PendingRoundPreparation(
                 stepId = "test:exchange",
                 stepIndex = 0,
@@ -250,7 +253,7 @@ class SubmitRoundPreparationUseCaseTest {
         )
         val game = Game(
             tableState = table,
-            flowConfig = GameFlowConfig(),
+            flowConfig = GameFlowConfig(roundPreparation = RoundPreparationConfig(30)),
             pendingRoundPreparation = PendingRoundPreparation(
                 stepId = "test:exchange",
                 stepIndex = 0,
@@ -289,6 +292,43 @@ class SubmitRoundPreparationUseCaseTest {
         assertNull(presentationPublisher.getPublishedInitialDeal(table.id))
     }
 
+    @Test
+    fun `completed preparation step without timing configuration aborts before writing`() = runTest {
+        val repository = FakeGameRepository()
+        val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
+        val table = FakeTableStateFactory.create(
+            players = listOf(FakeMahjongPlayerFactory.create(id = playerId)),
+            config = RiichiRuleConfig(),
+        )
+        val game = Game(
+            tableState = table,
+            flowConfig = GameFlowConfig(),
+            pendingRoundPreparation = PendingRoundPreparation(
+                stepId = "test:confirm",
+                stepIndex = 0,
+                inputSpecsByPlayerId = mapOf(playerId to RoundPreparationInputSpec.Confirmation),
+            ),
+        )
+        repository.setGame(game)
+        val resolverRegistry = RoundPreparationResolverRegistry().apply { register(PlayerNextResolver) }
+        val useCase = SubmitRoundPreparationUseCase(
+            gameRepository = repository,
+            moduleRegistry = moduleRegistry,
+            resolverRegistry = resolverRegistry,
+            snapshotSynchronizer = GameSnapshotSynchronizer(
+                repository,
+                FakeGameSnapshotRepository(),
+                GameVisibilityPolicyImpl(moduleRegistry),
+            ),
+            presentationPublisher = FakeGamePresentationPublisher(),
+        )
+
+        assertFailsWith<RuleContractViolationException> {
+            useCase(table.id, playerId, RoundPreparationSubmission.Confirmed)
+        }
+        assertEquals(game, repository.getGame(table.id))
+    }
+
     /** 測試用解析器：不建立步驟，並在確認完成後結束準備流程。 */
     private object ConfirmationResolver : RoundPreparationResolver {
         override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI
@@ -300,6 +340,26 @@ class SubmitRoundPreparationUseCaseTest {
             preparation: PendingRoundPreparation,
             ruleModule: MahjongRuleModule<*>,
         ): RoundPreparationResolution = RoundPreparationResolution(tableState, nextStep = null)
+    }
+
+    /** 測試用解析器：確認完成後要求下一個玩家步驟。 */
+    private object PlayerNextResolver : RoundPreparationResolver {
+        override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI
+
+        override fun begin(tableState: TableState, ruleModule: MahjongRuleModule<*>): PendingRoundPreparation? = null
+
+        override fun resolve(
+            tableState: TableState,
+            preparation: PendingRoundPreparation,
+            ruleModule: MahjongRuleModule<*>,
+        ): RoundPreparationResolution = RoundPreparationResolution(
+            tableState,
+            PendingRoundPreparation(
+                stepId = "test:next",
+                stepIndex = preparation.stepIndex + 1,
+                inputSpecsByPlayerId = mapOf(tableState.players.first().id to RoundPreparationInputSpec.Confirmation),
+            ),
+        )
     }
 
     /** 測試用換牌解析器，完成後交換兩位玩家各提交的一張牌。 */

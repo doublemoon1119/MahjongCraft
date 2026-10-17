@@ -6,7 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 /**
  * 以伺服器的房間設定為基礎，重建客戶端送來的新設定，只接受房間畫面本來就能做到的修改。
  *
- * 基礎是房間目前的設定；換了規則時，基礎改為保留目前流程設定、規則換成新規則預設值的設定，與房間畫面切換規則時相同。
+ * 基礎是房間目前的設定；換了規則時，流程設定會依核心註冊的準備設定重建，規則則換成新規則預設值，與房間畫面切換規則時相同。
  * 接著依新規則設定呈現的可編輯欄位，逐一讀出送來的值，確認符合欄位編輯器的限制（[GameConfigEditorSpec.accepts]）後，
  * 以欄位自己的更新函式套進基礎。重建結果與送來的設定不同，代表客戶端改了畫面上不能改的內容，整份拒絕。
  */
@@ -50,12 +50,15 @@ object RoomConfigSubmission {
         val base = if (moduleRegistry.getModule(current.ruleConfig).id == ruleModuleId) {
             current
         } else {
-            current.copy(ruleConfig = definition.defaultRuleConfig())
+            current.copy(
+                ruleConfig = definition.defaultRuleConfig(),
+                flowConfig = presentations.defaultFlowConfig(ruleModuleId, current.flowConfig),
+            )
         }
         val rebuilt = definition.fields.filter { it.isEditable }.fold(base) { config, field ->
-            val value = field.read(submitted)
-            if (!field.editor.accepts(value)) return Result.Invalid
             try {
+                val value = field.read(submitted)
+                if (!field.editor.accepts(value)) return Result.Invalid
                 checkNotNull(field.update)(config, value)
             } catch (_: IllegalArgumentException) {
                 return Result.Invalid

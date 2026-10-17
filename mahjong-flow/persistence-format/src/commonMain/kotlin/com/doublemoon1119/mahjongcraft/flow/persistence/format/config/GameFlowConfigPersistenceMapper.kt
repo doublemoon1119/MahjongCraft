@@ -11,7 +11,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 fun GameFlowConfig.toPersistenceDto(): GameFlowConfigPersistenceDto = GameFlowConfigPersistenceDto(
     baseSeconds = timeControl.baseSeconds,
     reserveSeconds = timeControl.reserveSeconds,
-    preparationBaseSeconds = preparationBaseSeconds,
+    roundPreparation = roundPreparation?.toPersistenceDto(),
     decisionTimeoutPolicy = decisionTimeoutPolicy,
     spectatingPolicy = spectatingPolicy,
     spectatorHandVisibility = spectatorHandVisibility,
@@ -24,7 +24,7 @@ fun GameFlowConfig.toPersistenceDto(): GameFlowConfigPersistenceDto = GameFlowCo
  */
 fun GameFlowConfigPersistenceDto.toDomain(): GameFlowConfig = GameFlowConfig(
     timeControl = ActionTimeControl.from(baseSeconds, reserveSeconds),
-    preparationBaseSeconds = preparationBaseSeconds,
+    roundPreparation = roundPreparation?.toDomain(),
     decisionTimeoutPolicy = decisionTimeoutPolicy,
     spectatingPolicy = spectatingPolicy,
     spectatorHandVisibility = spectatorHandVisibility,

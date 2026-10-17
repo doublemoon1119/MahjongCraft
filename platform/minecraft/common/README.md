@@ -26,6 +26,34 @@ policy, and each opening roll must use a dice count the table can place
 rule does not meet these requirements, and the server rejects room settings and game starts whose rule
 is not selectable or cannot be presented.
 
+## Shared room settings
+
+Register only your rule's own categories and fields in `GameConfigPresentationDefinition`.
+The registry automatically adds the shared flow category with decision time, reserve time,
+spectating policy, and spectator hand visibility.
+Room controls, summaries, history, and server-side validation use that same registered definition.
+
+The category `mahjongcraft:flow` and field IDs `mahjongcraft:base_seconds`,
+`mahjongcraft:reserve_seconds`, `mahjongcraft:spectating_policy`, and
+`mahjongcraft:spectator_hand_visibility` are reserved.
+`mahjongcraft:preparation_base_seconds` is also reserved, but is only added for rules that use
+round preparation.
+Do not register them yourself; conflicts reject registration and identify the rule and conflicting ID.
+You do not need to copy the built-in fields or access MahjongCraft's dependency injection setup.
+
+Do not add settings for operations the rule does not have. Ordinary Riichi does not ask players
+to select or exchange tiles before a round, so it has no round-preparation time field.
+Preparation settings default to absent in `GameFlowConfig`. A rule that asks players to make
+preparation choices supplies a default `RoundPreparationConfig` on its registered preparation
+resolver. The presentation registry uses that same registration to add the standard preparation-time
+field (1–3600 seconds); do not copy its editor or maintain another capability flag.
+Automatic preparation steps alone do not need this player timer. A player-choice step without
+its configuration is a configuration error; no implicit 30-second timer is supplied.
+Preparation time does not consume the ordinary decision reserve pool.
+Changing the selected rule preserves ordinary timing and spectating settings, but replaces or removes
+the preparation configuration according to the new rule. The timeout policy keeps its existing
+forced-auto-play behavior; there is no editable policy selector.
+
 ## Tile resource locations
 
 Register a tile through `MinecraftMahjongExtension.registerTileAssets` using a

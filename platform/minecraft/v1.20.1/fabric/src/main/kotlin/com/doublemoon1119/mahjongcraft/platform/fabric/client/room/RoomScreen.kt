@@ -342,7 +342,12 @@ class RoomScreen(
             addFieldControls(field, config, controlY, editable && field.isEditable && field.isEnabled(config))
         }
         if (editable) {
-            val defaultConfig = draft.normalized(GameConfig(definition.defaultRuleConfig()))
+            val defaultConfig = draft.normalized(
+                GameConfig(
+                    ruleConfig = definition.defaultRuleConfig(),
+                    flowConfig = configPresentations.defaultFlowConfig(definition.ruleModuleId),
+                ),
+            )
             val footer = settingsFooterLayout()
             val reset = RestartableMarqueeButtonWidget.builder(Text.translatable(MinecraftRoomScreenKeys.RESET_DEFAULTS_BUTTON)) {
                 draft.resetTo(defaultConfig)
@@ -597,7 +602,12 @@ class RoomScreen(
                 if (selectable.isEmpty()) return@builder
                 val nextId = selectable[CycleButtonInput.nextIndex(currentIndex = selectable.indexOf(moduleId), size = selectable.size, step = CycleButtonInput.step())]
                 val next = configPresentations.find(nextId) ?: return@builder
-                draft.resetTo(config.copy(ruleConfig = next.defaultRuleConfig()))
+                draft.resetTo(
+                    config.copy(
+                        ruleConfig = next.defaultRuleConfig(),
+                        flowConfig = configPresentations.defaultFlowConfig(next.ruleModuleId, config.flowConfig),
+                    ),
+                )
                 selectedCategoryId = null
                 fieldScroll.reset()
                 rebuild()
@@ -778,7 +788,12 @@ class RoomScreen(
         current: GameConfig? = draft.config,
         authoritative: GameConfig? = currentConfig(),
         defaults: GameConfig? = current?.let { config ->
-            configResolver.resolve(config).definition?.let { GameConfig(it.defaultRuleConfig()) }
+            configResolver.resolve(config).definition?.let {
+                GameConfig(
+                    ruleConfig = it.defaultRuleConfig(),
+                    flowConfig = configPresentations.defaultFlowConfig(it.ruleModuleId),
+                )
+            }
         },
     ) {
         val roomPlayerCount = roomPlayerCount()

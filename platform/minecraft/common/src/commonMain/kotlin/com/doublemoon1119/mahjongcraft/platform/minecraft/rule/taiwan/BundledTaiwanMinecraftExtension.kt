@@ -8,7 +8,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMah
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.RULE
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.SCORE
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.categories
-import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.flowFields
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.readOnlyBoolean
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.readOnlyInt
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.translationKey
@@ -107,7 +106,7 @@ private fun taiwanGameConfigPresentation(): GameConfigPresentationDefinition = G
         readOnlyBoolean("use_flower_tiles", RULE) { (it.ruleConfig as TaiwanRuleConfig).useFlowerTiles },
         readOnlyInt("minimum_win_constraint", RULE) { it.ruleConfig.minimumWinConstraint },
         readOnlyInt("initial_score", SCORE) { it.ruleConfig.scoreConfig.initialScore },
-    ) + flowFields(),
+    ),
 )
 
 /**

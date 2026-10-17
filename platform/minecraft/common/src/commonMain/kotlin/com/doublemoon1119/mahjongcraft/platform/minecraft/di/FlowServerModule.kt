@@ -23,7 +23,6 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCo
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationAiDriver
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicy
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
@@ -138,7 +137,6 @@ val flowServerModule = module {
     single<PostActionExhaustiveDrawResolverRegistry>()
     single<PostReactionRoundOutcomeResolverRegistry>()
     factory<RoundPreparationAiDriver>()
-    single<RoundPreparationResolverRegistry>()
     single<WinRoundContinuationResolverRegistry>()
     single<GameVisibilityPolicyImpl>() bind GameVisibilityPolicy::class
     single<HandReadinessVisibilityPolicy>()
