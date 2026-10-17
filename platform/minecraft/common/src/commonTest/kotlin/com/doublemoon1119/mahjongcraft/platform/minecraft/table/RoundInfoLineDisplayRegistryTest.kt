@@ -103,4 +103,32 @@ class RoundInfoLineDisplayRegistryTest {
 
         assertEquals(setOf("line:example:same", "provider:example:same"), registry.registrationKeys)
     }
+
+    /** 顯示行 key 與規則模組 ID 都必須是完整 namespaced ID。 */
+    @Test
+    fun `registration rejects ids without namespace`() {
+        val registry = RoundInfoLineDisplayRegistryImpl()
+
+        assertFailsWith<IllegalArgumentException> {
+            registry.register(RoundInfoLineDisplayDefinition("missing_namespace", RoundInfoLineDisplay("example.message")))
+        }
+        assertFailsWith<IllegalArgumentException> {
+            registry.register(RoundInfoLineProviderDefinition("missing_namespace", RoundInfoLineProvider { emptyList() }))
+        }
+    }
+
+    /** 不同 namespace 可以使用相同 path，彼此不會覆蓋。 */
+    @Test
+    fun `different namespaces can reuse the same path`() {
+        val registry = RoundInfoLineDisplayRegistryImpl().apply {
+            register(RoundInfoLineDisplayDefinition("first:round", RoundInfoLineDisplay("first.message")))
+            register(RoundInfoLineDisplayDefinition("second:round", RoundInfoLineDisplay("second.message")))
+            register(RoundInfoLineProviderDefinition("first:rule", RoundInfoLineProvider { emptyList() }))
+            register(RoundInfoLineProviderDefinition("second:rule", RoundInfoLineProvider { emptyList() }))
+        }
+
+        assertEquals("first.message", registry.find("first:round")?.translationKey)
+        assertEquals("second.message", registry.find("second:round")?.translationKey)
+        assertEquals(setOf("line:first:round", "line:second:round", "provider:first:rule", "provider:second:rule"), registry.registrationKeys)
+    }
 }

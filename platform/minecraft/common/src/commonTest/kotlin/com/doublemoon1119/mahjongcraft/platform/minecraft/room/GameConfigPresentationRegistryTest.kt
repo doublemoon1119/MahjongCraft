@@ -27,6 +27,11 @@ class GameConfigPresentationRegistryTest {
             listOf("mahjongcraft:red_dora_0", "mahjongcraft:red_dora_3", "mahjongcraft:red_dora_4"),
             (riichi.fields.single { it.id == "mahjongcraft:red_dora_count" }.editor as GameConfigEditorSpec.SingleChoice).optionIds,
         )
+        assertEquals(
+            "mahjongcraft.room.config.option.red_dora_0",
+            (riichi.fields.single { it.id == "mahjongcraft:red_dora_count" }.editor as GameConfigEditorSpec.SingleChoice)
+                .translationKeyFor("mahjongcraft:red_dora_0"),
+        )
         assertTrue(riichi.categories.none { it.id == "mahjongcraft:technical" })
         val handVisibility = riichi.fields.single { it.id == "mahjongcraft:spectator_hand_visibility" }
         assertEquals(false, handVisibility.isEnabled(GameConfig(RiichiRuleConfig()).copy(flowConfig = GameConfig(RiichiRuleConfig()).flowConfig.copy(spectatingPolicy = SpectatingPolicy.DISABLED))))
@@ -80,6 +85,35 @@ class GameConfigPresentationRegistryTest {
         registry.freeze()
 
         assertFailsWith<IllegalStateException> { registry.register(minimalDefinition()) }
+    }
+
+    /** 登記與查詢都不會暴露外部可變的選項 ID 或翻譯鍵集合。 */
+    @Test
+    fun `registry detaches single choice translation mappings`() {
+        val optionIds = mutableListOf("test:option")
+        val translationKeys = mutableMapOf("test:option" to "test.option")
+        val definition = minimalDefinition().copy(
+            fields = listOf(
+                GameConfigFieldDefinition(
+                    id = "test:choice",
+                    categoryId = "test:category",
+                    nameTranslationKey = "test.choice",
+                    descriptionTranslationKey = "test.choice.description",
+                    editor = GameConfigEditorSpec.SingleChoice(optionIds, translationKeys),
+                    isEditable = false,
+                    read = { GameConfigPresentationValue.ChoiceValue("test:option") },
+                ),
+            ),
+        )
+        val registry = GameConfigPresentationRegistryImpl()
+        registry.register(definition)
+        optionIds += "test:other"
+        translationKeys["test:option"] = "test.changed"
+
+        val registered = assertNotNull(registry.find("test:rule"))
+        val editor = registered.fields.single().editor as GameConfigEditorSpec.SingleChoice
+        assertEquals(listOf("test:option"), editor.optionIds)
+        assertEquals("test.option", editor.translationKeyFor("test:option"))
     }
 
     /**

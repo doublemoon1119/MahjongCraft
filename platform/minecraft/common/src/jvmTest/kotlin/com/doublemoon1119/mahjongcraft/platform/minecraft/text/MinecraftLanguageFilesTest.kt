@@ -227,8 +227,14 @@ class MinecraftLanguageFilesTest {
                     when (val editor = field.editor) {
                         GameConfigEditorSpec.BooleanToggle -> Unit
                         is GameConfigEditorSpec.IntegerInput -> editor.unitTranslationKey?.let(::add)
-                        is GameConfigEditorSpec.SingleChoice ->
-                            editor.optionIds.forEach { add(MinecraftRoomScreenKeys.configOption(it)) }
+                        is GameConfigEditorSpec.SingleChoice -> {
+                            assertEquals(
+                                editor.optionIds.toSet(),
+                                editor.optionTranslationKeys.keys,
+                                "Every built-in choice must explicitly provide a translation: ${field.id}",
+                            )
+                            editor.optionTranslationKeys.values.forEach(::add)
+                        }
                     }
                 }
             }

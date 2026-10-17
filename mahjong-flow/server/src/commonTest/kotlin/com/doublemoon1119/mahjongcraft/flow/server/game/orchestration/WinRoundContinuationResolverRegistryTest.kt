@@ -38,7 +38,7 @@ class WinRoundContinuationResolverRegistryTest {
         assertEquals(WinRoundDirective.EndRound, registry.resolve(context, module))
     }
 
-    /** 驗證 resolver 依 priority、ID 穩定排序，且只執行目前規則的項目，第一個非 null 結果勝出。 */
+    /** 驗證 resolver 依 priority、完整登記身分穩定排序，且只執行目前規則的項目。 */
     @Test
     fun `resolvers use stable order and matching rule module`() {
         val calls = mutableListOf<String>()
@@ -57,7 +57,7 @@ class WinRoundContinuationResolverRegistryTest {
 
         val directive = registry.resolve(context, module)
 
-        // test:z 優先序 20，先執行；相同優先序 10 再依 ID 交由 test:a、test:b 判定。
+        // test:z 優先序 20，先執行；相同優先序 10 再依完整登記身分交由 test:a、test:b 判定。
         // 前兩者回傳 null，因此由 test:b 提供結果；其他規則的 test:foreign 不會被呼叫。
         assertEquals(listOf("test:z", "test:a", "test:b"), calls)
         assertEquals(expectedDirective, directive)
@@ -72,26 +72,30 @@ class WinRoundContinuationResolverRegistryTest {
         }
     }
 
-    /** 驗證同一規則模組內的重複 ID 登記會被拒絕。 */
+    /** 驗證同一規則模組內的重複 resolver ID 登記會被拒絕。 */
     @Test
     fun `duplicate id registration is rejected`() {
         val registry = WinRoundContinuationResolverRegistry()
         registry.register(recordingResolver("test:dup", module.id, 0, mutableListOf(), null))
 
-        assertFailsWith<IllegalArgumentException> {
+        val error = assertFailsWith<IllegalArgumentException> {
             registry.register(recordingResolver("test:dup", module.id, 0, mutableListOf(), null))
         }
+
+        assertEquals(
+            "Win round continuation resolver already registered: ${module.id}/test:dup",
+            error.message,
+        )
     }
 
-    /** 驗證 resolver ID 跨規則模組仍是全域唯一識別碼。 */
+    /** 驗證不同規則模組可以各自登記相同 resolver ID，且快照保留完整身分。 */
     @Test
-    fun `duplicate id across rule modules is rejected`() {
+    fun `same id across rule modules is allowed and scoped`() {
         val registry = WinRoundContinuationResolverRegistry()
         registry.register(recordingResolver("test:dup", module.id, 0, mutableListOf(), null))
+        registry.register(recordingResolver("test:dup", "test:other_rule", 0, mutableListOf(), null))
 
-        assertFailsWith<IllegalArgumentException> {
-            registry.register(recordingResolver("test:dup", "test:other_rule", 0, mutableListOf(), null))
-        }
+        assertEquals(setOf("${module.id}/test:dup", "test:other_rule/test:dup"), registry.registrationKeys)
     }
 
     /** 驗證 priority 的整數邊界仍依數值由高到低執行。 */

@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.table
 
+import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 
 /** [RoundInfoLineDisplayRegistry] 的記憶體實作。 */
@@ -20,7 +21,7 @@ class RoundInfoLineDisplayRegistryImpl : RoundInfoLineDisplayRegistry {
         val key = definition.key
         val display = definition.display
         check(!isFrozen) { "Round info line display registry is frozen" }
-        require(key.isNotBlank()) { "Round info line key must not be blank" }
+        NamespacedId.requireValid(key) { "Round info line key must be namespaced: $key" }
         require(displays.putIfAbsent(key, display) == null) { "Duplicate round info line display: $key" }
     }
 
@@ -28,7 +29,7 @@ class RoundInfoLineDisplayRegistryImpl : RoundInfoLineDisplayRegistry {
         val ruleModuleId = definition.ruleModuleId
         val provider = definition.provider
         check(!isFrozen) { "Round info line display registry is frozen" }
-        require(ruleModuleId.isNotBlank()) { "Round info provider rule module ID must not be blank" }
+        NamespacedId.requireValid(ruleModuleId) { "Round info provider rule module ID must be namespaced: $ruleModuleId" }
         require(providers.putIfAbsent(ruleModuleId, provider) == null) {
             "Duplicate round info provider: $ruleModuleId"
         }

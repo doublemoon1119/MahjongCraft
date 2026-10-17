@@ -38,6 +38,9 @@ internal object MinecraftExtensionRegistrationCategoryIds {
     /** 流局原因名稱分類。 */
     const val EXHAUSTIVE_DRAW_REASON_DISPLAY_NAME = "mahjongcraft:exhaustive_draw_reason_display_name"
 
+    /** 流局玩家結算身分用語分類。 */
+    const val EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_LABEL = "mahjongcraft:exhaustive_draw_settlement_status_label"
+
     /** 本局結果名稱分類。 */
     const val ROUND_OUTCOME_DISPLAY_NAME = "mahjongcraft:round_outcome_display_name"
 

@@ -64,8 +64,8 @@ class FabricGameConfigTextFormatter(
             changed.forEachIndexed { index, field ->
                 if (index > 0) result.append("\n")
                 result.append(Text.translatable(field.nameTranslationKey)).append(Text.literal(": "))
-                    .append(gameConfigPresentationText(field.read(old))).append(Text.literal(" → "))
-                    .append(gameConfigPresentationText(field.read(new)))
+                    .append(gameConfigPresentationText(field.read(old), field.editor)).append(Text.literal(" → "))
+                    .append(gameConfigPresentationText(field.read(new), field.editor))
             }
         }
     }.getOrElse { Text.literal(newConfigJson) }
@@ -85,7 +85,12 @@ class FabricGameConfigTextFormatter(
             result.append("\n\n").append(Text.translatable(category.nameTranslationKey))
             definition.fields.filter { it.categoryId == category.id }.forEach { field ->
                 result.append("\n").append(Text.translatable(field.nameTranslationKey))
-                    .append(Text.literal(": ")).append(gameConfigPresentationText(requireNotNull(resolved.valuesByFieldId[field.id])))
+                    .append(Text.literal(": ")).append(
+                        gameConfigPresentationText(
+                            requireNotNull(resolved.valuesByFieldId[field.id]),
+                            field.editor,
+                        ),
+                    )
             }
         }
         return result

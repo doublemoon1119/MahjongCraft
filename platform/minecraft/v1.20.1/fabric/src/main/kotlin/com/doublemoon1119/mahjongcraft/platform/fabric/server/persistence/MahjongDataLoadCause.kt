@@ -6,12 +6,12 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.migration.Unsuppo
 /** 讀取失敗的原因分類；只有能從例外確定的情況才給出明確原因，其餘列為無法判斷。 */
 sealed interface MahjongDataLoadCause {
     /**
-     * 存檔中的型別沒有已登記的轉換器，例如提供它的擴充已被移除。
+     * 存檔中的型別沒有已登記的轉換器，可能缺少提供它的擴充或使用了不相符的版本。
      *
      * @property typeKey 存檔中找不到轉換器的型別識別碼。
      */
     data class MissingExtension(val typeKey: String) : MahjongDataLoadCause {
-        /** 型別識別碼的命名空間，通常是提供該型別的擴充 ID；沒有命名空間時為整個識別碼。 */
+        /** 型別識別碼的命名空間，不代表可確定的模組或擴充 ID；沒有命名空間時為整個識別碼。 */
         val namespace: String get() = typeKey.substringBefore(':')
     }
 

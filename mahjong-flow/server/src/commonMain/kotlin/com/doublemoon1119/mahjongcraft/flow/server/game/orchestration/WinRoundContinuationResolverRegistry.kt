@@ -18,11 +18,12 @@ class WinRoundContinuationResolverRegistry {
     /** 是否已禁止後續註冊。 */
     private var frozen = false
 
-    /** 目前已登記 resolver ID 的快照；ID 為跨規則模組全域唯一。 */
-    val registrationKeys: Set<String> get() = resolvers.mapTo(mutableSetOf()) { it.id }
+    /** 目前已登記 resolver 的完整身分快照，格式為 `ruleModuleId/resolverId`。 */
+    val registrationKeys: Set<String> get() = resolvers.mapTo(mutableSetOf()) { registrationKey(it.ruleModuleId, it.id) }
 
     /**
-     * 登記 resolver；ID 為跨所有規則模組的全域唯一識別碼，不得重複，註冊表凍結後不可登記。
+     * 登記 resolver；同一規則模組內的 resolver ID 不得重複，不同規則模組可使用相同 ID。
+     * 註冊表凍結後不可登記。
      *
      * @param resolver 要登記的胡牌後續判定器。
      */
@@ -30,14 +31,19 @@ class WinRoundContinuationResolverRegistry {
         check(!frozen) { "Win round continuation resolver registry is frozen" }
         NamespacedId.requireValid(resolver.ruleModuleId) { "Rule module ID must be namespaced: ${resolver.ruleModuleId}" }
         NamespacedId.requireValid(resolver.id) { "Resolver ID must be namespaced: ${resolver.id}" }
-        require(resolvers.none { it.id == resolver.id }) { "Win round continuation resolver already registered: ${resolver.id}" }
+        require(resolvers.none { it.id == resolver.id && it.ruleModuleId == resolver.ruleModuleId }) {
+            "Win round continuation resolver already registered: ${resolver.ruleModuleId}/${resolver.id}"
+        }
         resolvers += resolver
     }
 
     /** 凍結註冊表並依優先序、ID 固定判定順序；重複呼叫不改變結果。 */
     fun freeze() {
         if (frozen) return
-        resolvers.sortWith(compareByDescending<WinRoundContinuationResolver> { it.priority }.thenBy { it.id })
+        resolvers.sortWith(
+            compareByDescending<WinRoundContinuationResolver> { it.priority }
+                .thenBy { registrationKey(it.ruleModuleId, it.id) },
+        )
         frozen = true
     }
 
@@ -55,4 +61,13 @@ class WinRoundContinuationResolverRegistry {
             .mapNotNull { it.resolve(context, ruleModule) }
             .firstOrNull() ?: WinRoundDirective.EndRound
     }
+
+    /**
+     * 建立跨規則模組穩定識別碼，供快照、診斷與同優先序排序使用。
+     *
+     * @param ruleModuleId resolver 所屬規則模組的 namespaced ID。
+     * @param id resolver 的 namespaced ID。
+     * @return 將規則模組與 resolver ID 組合後的穩定註冊鍵。
+     */
+    private fun registrationKey(ruleModuleId: String, id: String): String = "$ruleModuleId/$id"
 }

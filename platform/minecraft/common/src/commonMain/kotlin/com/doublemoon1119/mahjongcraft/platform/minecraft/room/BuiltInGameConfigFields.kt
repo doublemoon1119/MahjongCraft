@@ -97,7 +97,7 @@ internal object BuiltInGameConfigFields {
     )
 
     /**
-     * 建立可編輯的單選欄位；選項 ID 為 `mahjongcraft:<option>`。
+     * 建立可編輯的單選欄位；內建選項 ID 為 `mahjongcraft:<option>`，並明確指定各自的翻譯鍵。
      *
      * @param name 欄位 ID 的路徑片段。
      * @param category 欄位所屬分類 ID。
@@ -117,7 +117,10 @@ internal object BuiltInGameConfigFields {
         category,
         translationKey("field.$name"),
         translationKey("field.$name.description"),
-        GameConfigEditorSpec.SingleChoice(options.map(::option)),
+        GameConfigEditorSpec.SingleChoice(
+            optionIds = options.map(::option),
+            optionTranslationKeys = options.associate { option(it) to translationKey("option.$it") },
+        ),
         true,
         read = { GameConfigPresentationValue.ChoiceValue(option(read(it))) },
         update = { config, value -> update(config, (value as GameConfigPresentationValue.ChoiceValue).optionId.substringAfter(':')) },

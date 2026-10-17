@@ -16,8 +16,9 @@ import kotlin.uuid.Uuid
 /** 建立胡牌詳情與共用分數排行的權威快照。 */
 object WinSettlementPresentationRequestFactory {
     /**
-     * 建立不偽造翻符或胡牌張的 win-equivalent 特殊 outcome request；規則專屬欄位交由 [detailResolverRegistry] 解析，
-     * [aiPlayerIds] 為由 AI 操控的玩家。
+     * 建立不偽造翻符或胡牌張的 win-equivalent 特殊 outcome request。
+     * 規則專屬欄位交由 [detailResolverRegistry] 解析；沒有解析器或不支援該結果時，詳情欄位為空，
+     * 但贏家、分數與名次仍照常保留。[aiPlayerIds] 為由 AI 操控的玩家。
      *
      * @param previousState 特殊結算前的權威桌況。
      * @param outcome 已完成結算的特殊回合結果。
@@ -72,7 +73,8 @@ object WinSettlementPresentationRequestFactory {
     }
 
     /**
-     * 建立一般自摸／榮和 request；規則專屬欄位交由 [detailResolverRegistry] 解析，[aiPlayerIds] 為由 AI 操控的玩家。
+     * 建立一般自摸／榮和 request。規則專屬欄位交由 [detailResolverRegistry] 解析；沒有解析器時，
+     * 詳情欄位為空，但共用的贏家、分數、名次與付款資料仍照常建立。[aiPlayerIds] 為由 AI 操控的玩家。
      *
      * @param previousState 胡牌結算前的權威桌況。
      * @param currentState 胡牌結算後的權威桌況。

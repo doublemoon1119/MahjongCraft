@@ -6,7 +6,6 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.text.gameConfigPresentati
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueBrowseContext
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigEditorSpec
-import com.doublemoon1119.mahjongcraft.platform.minecraft.room.MinecraftRoomScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.ResolvedGameConfigPresentation
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.screen.Screen
@@ -308,7 +307,9 @@ internal class HistoryRuleSettingsScreen(
             add(Text.translatable(category.nameTranslationKey), 0x8ed5df, indent = 0)
             y += 4
             definition.fields.filter { it.categoryId == category.id }.forEach { field ->
-                val valueText = presentation.valuesByFieldId[field.id]?.let(::gameConfigPresentationText)
+                val valueText = presentation.valuesByFieldId[field.id]?.let { value ->
+                    gameConfigPresentationText(value, field.editor)
+                }
                     ?: Text.translatable(MinecraftHistoryScreenKeys.RULE_SETTINGS_UNAVAILABLE)
                 add(
                     Text.translatable(field.nameTranslationKey).append(": ").append(valueText.copy().formatted(Formatting.GRAY)),
@@ -332,7 +333,11 @@ internal class HistoryRuleSettingsScreen(
         if (editor is GameConfigEditorSpec.SingleChoice) {
             add(Text.translatable(MinecraftHistoryScreenKeys.TOOLTIP_OPTIONS).formatted(Formatting.GOLD))
             editor.optionIds.forEach { optionId ->
-                add(Text.literal("• ").formatted(Formatting.DARK_GRAY).append(Text.translatable(MinecraftRoomScreenKeys.configOption(optionId))))
+                add(
+                    Text.literal("• ").formatted(Formatting.DARK_GRAY).append(
+                        editor.translationKeyFor(optionId)?.let(Text::translatable) ?: Text.literal(optionId),
+                    ),
+                )
             }
         }
     }

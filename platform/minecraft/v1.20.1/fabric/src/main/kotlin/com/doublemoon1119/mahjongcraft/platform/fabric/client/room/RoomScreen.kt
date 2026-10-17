@@ -405,7 +405,7 @@ class RoomScreen(
                 val option = (value as GameConfigPresentationValue.ChoiceValue).optionId
                 val (left, controlWidth) = if (compact) compactControlBounds() else (width - 212) to 184
                 addDrawableChild(
-                    RestartableMarqueeButtonWidget.builder(optionText(option)) {
+                    RestartableMarqueeButtonWidget.builder(optionText(option, editor)) {
                         val index = CycleButtonInput.nextIndex(
                             currentIndex = editor.optionIds.indexOf(option),
                             size = editor.optionIds.size,
@@ -629,7 +629,7 @@ class RoomScreen(
         val result = Text.empty().append(Text.translatable(field.descriptionTranslationKey).formatted(Formatting.GRAY))
         val current = field.read(config)
         result.append("\n• ").append(
-            Text.translatable(MinecraftRoomScreenKeys.CURRENT_VALUE, presentationText(current)).formatted(Formatting.GREEN),
+            Text.translatable(MinecraftRoomScreenKeys.CURRENT_VALUE, presentationText(current, field.editor)).formatted(Formatting.GREEN),
         )
         when (val editor = field.editor) {
             GameConfigEditorSpec.BooleanToggle -> {
@@ -640,7 +640,7 @@ class RoomScreen(
             is GameConfigEditorSpec.SingleChoice -> {
                 result.append("\n• ").append(Text.translatable(MinecraftRoomScreenKeys.AVAILABLE_OPTIONS).formatted(Formatting.GOLD))
                 editor.optionIds.forEach { option ->
-                    result.append("\n  • ").append(optionText(option).copy().formatted(if ((current as GameConfigPresentationValue.ChoiceValue).optionId == option) Formatting.GREEN else Formatting.WHITE))
+                    result.append("\n  • ").append(optionText(option, editor).copy().formatted(if ((current as GameConfigPresentationValue.ChoiceValue).optionId == option) Formatting.GREEN else Formatting.WHITE))
                 }
             }
             is GameConfigEditorSpec.IntegerInput -> {
@@ -670,9 +670,10 @@ class RoomScreen(
      * 將欄位值轉成顯示文字。
      *
      * @param value 要呈現的欄位值。
+     * @param editor 欄位編輯器描述。
      * @return 值對應的文字。
      */
-    private fun presentationText(value: GameConfigPresentationValue): Text = gameConfigPresentationText(value)
+    private fun presentationText(value: GameConfigPresentationValue, editor: GameConfigEditorSpec): Text = gameConfigPresentationText(value, editor)
 
     /**
      * 取得規則名稱，未登記時顯示原始識別碼。
@@ -1496,9 +1497,10 @@ class RoomScreen(
      * 取得設定選項的本地化文字。
      *
      * @param optionId 選項識別碼。
+     * @param editor 單選欄位編輯器描述。
      * @return 對應翻譯鍵的文字。
      */
-    private fun optionText(optionId: String): Text = Text.translatable(MinecraftRoomScreenKeys.configOption(optionId))
+    private fun optionText(optionId: String, editor: GameConfigEditorSpec.SingleChoice): Text = editor.translationKeyFor(optionId)?.let(Text::translatable) ?: Text.literal(optionId)
 
     /**
      * Esc 在設定頁沒有可套用草稿時直接返回玩家頁；有尚未套用的合法草稿時改顯示「套用並返回／放棄

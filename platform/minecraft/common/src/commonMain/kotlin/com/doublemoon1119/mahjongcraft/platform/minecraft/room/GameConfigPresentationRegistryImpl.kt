@@ -27,7 +27,16 @@ class GameConfigPresentationRegistryImpl : GameConfigPresentationRegistry {
         categories = categories.toList(),
         fields = fields.map { field ->
             val editor = field.editor
-            field.copy(editor = if (editor is GameConfigEditorSpec.SingleChoice) editor.copy(optionIds = editor.optionIds.toList()) else editor)
+            field.copy(
+                editor = if (editor is GameConfigEditorSpec.SingleChoice) {
+                    editor.copy(
+                        optionIds = editor.optionIds.toList(),
+                        optionTranslationKeys = editor.optionTranslationKeys.toMap(),
+                    )
+                } else {
+                    editor
+                },
+            )
         },
     )
 }

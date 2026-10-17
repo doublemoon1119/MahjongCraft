@@ -44,8 +44,8 @@ fun gameConfigDifferenceText(
         if (fromValue != toValue) {
             result.appendValueChange(
                 field.nameTranslationKey,
-                gameConfigPresentationText(fromValue),
-                gameConfigPresentationText(toValue),
+                gameConfigPresentationText(fromValue, field.editor),
+                gameConfigPresentationText(toValue, field.editor),
             )
         }
     }

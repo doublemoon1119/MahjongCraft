@@ -3,7 +3,12 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 
-/** 特定 [CompletedGameActionContext] 下，以純邏輯判定是否構成某種主動觸發的途中流局。 */
+/**
+ * 在正式流程入口提供的 [CompletedGameActionContext] 下，以純邏輯判定是否構成主動觸發的途中流局。
+ *
+ * 呼叫端目前只在捨牌、立直所含的捨牌，以及捨牌反應收斂後呼叫 registry；resolver 不應自行推進流程，
+ * 也不應把未完成的反應視為已完成。
+ */
 interface PostActionExhaustiveDrawResolver {
     /** Resolver 的識別碼，依註冊 ID 慣例使用 `namespace:path` 格式；同優先序時作為穩定排序的最後決勝鍵。 */
     val id: String

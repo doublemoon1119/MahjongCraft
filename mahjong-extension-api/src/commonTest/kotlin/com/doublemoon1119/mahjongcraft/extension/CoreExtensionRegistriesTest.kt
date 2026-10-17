@@ -8,6 +8,8 @@ import com.doublemoon1119.mahjongcraft.ai.expectation.NeutralOpponentModel
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelDefinition
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.bundled.BundledRiichiExtension
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundContinuationContext
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistryImpl
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
@@ -15,10 +17,12 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionG
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistryImpl
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
 import kotlin.test.Test
@@ -75,6 +79,36 @@ class CoreExtensionRegistriesTest {
             listOf(ExtensionRegistrationCategory("mahjongcraft:ai_strategy", "AI Strategy", listOf(RandomAiStrategy.KEY))),
             before.additionsSince(registries.registrationSnapshot()),
         )
+    }
+
+    /** 驗證胡牌後續 resolver 的診斷快照保留規則模組與 resolver 的完整登記身分。 */
+    @Test
+    fun `registration snapshot keeps scoped continuation resolver keys`() {
+        val registries = registries()
+        registries.winRoundContinuationResolverRegistry.register(
+            scopedResolver(id = "example:shared", ruleModuleId = "example:first"),
+        )
+        registries.winRoundContinuationResolverRegistry.register(
+            scopedResolver(id = "example:shared", ruleModuleId = "example:second"),
+        )
+
+        val category = registries.registrationSnapshot().toCategories().single {
+            it.id == CoreExtensionRegistrationCategoryIds.WIN_ROUND_CONTINUATION_RESOLVER
+        }
+
+        assertEquals(
+            listOf("example:first/example:shared", "example:second/example:shared"),
+            category.registrationIds,
+        )
+    }
+
+    /** 建立只用於診斷快照測試的胡牌後續 resolver。 */
+    private fun scopedResolver(id: String, ruleModuleId: String): WinRoundContinuationResolver = object : WinRoundContinuationResolver {
+        override val id: String = id
+        override val ruleModuleId: String = ruleModuleId
+        override val priority: Int = 0
+
+        override fun resolve(context: WinRoundContinuationContext, ruleModule: MahjongRuleModule<*>): WinRoundDirective? = null
     }
 
     /** 所有子 registry 皆為空的測試集合。 */

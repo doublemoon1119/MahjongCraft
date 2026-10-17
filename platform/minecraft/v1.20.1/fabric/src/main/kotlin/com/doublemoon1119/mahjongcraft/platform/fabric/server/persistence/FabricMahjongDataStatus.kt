@@ -137,7 +137,7 @@ private fun fileLine(file: String, unchanged: Boolean): MutableText {
  * @return 原因訊息。
  */
 private fun causeLine(cause: MahjongDataLoadCause): MutableText = when (cause) {
-    is MahjongDataLoadCause.MissingExtension -> Text.translatable(MinecraftMessageKeys.DATA_CAUSE_MISSING_EXTENSION, cause.namespace)
+    is MahjongDataLoadCause.MissingExtension -> Text.translatable(MinecraftMessageKeys.DATA_CAUSE_MISSING_EXTENSION, cause.typeKey)
         .formatted(Formatting.GRAY)
         .append(Text.literal(" "))
         .append(detailLabel(Text.translatable(MinecraftMessageKeys.DATA_CAUSE_MISSING_EXTENSION_DETAIL, cause.typeKey)))

@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.bundled.BundledRiichiExtension
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ResolvedRoundOutcome
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundOutcomePresentationClassification
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailField
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementWinnerPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
@@ -71,12 +72,55 @@ class WinSettlementPresentationRequestFactoryTest {
 
         val winnerPresentation = request.winners.first()
         assertEquals(listOf(standing.id), winnerPresentation.standingTileIds)
+        assertTrue(winnerPresentation.detailFields.isEmpty(), "An unknown special outcome may omit optional detail fields")
         meldTiles.forEach { meldTile ->
             assertTrue(
                 meldTile.id !in winnerPresentation.standingTileIds,
                 "A meld tile must never be duplicated into the hand tile group.",
             )
         }
+    }
+
+    /** 詳情解析器不支援特殊結果時，factory 仍保留共用結算資料並交付空詳情欄位。 */
+    @Test
+    fun `special outcome with resolver returning null keeps settlement data`() {
+        val state = fourPlayerState()
+        val winner = state.players.first()
+        val outcome = ResolvedRoundOutcome(
+            id = "test:unsupported_special_outcome",
+            settledTableState = state,
+            beneficiaryPlayerIds = setOf(winner.id),
+            scoreDeltas = state.players.associate { it.id to 0 },
+            transitionDirective = RoundTransitionDirective.ADVANCE_DEALER,
+            presentationClassification = RoundOutcomePresentationClassification.WIN_EQUIVALENT,
+        )
+        val registry = WinSettlementDetailResolverRegistry().apply {
+            register(
+                WinSettlementDetailResolverDefinition(
+                    ruleModuleId = module.id,
+                    resolver = object : WinSettlementDetailResolver {
+                        override fun resolve(state: TableState, handValue: HandValueResult): List<WinSettlementDetailField> = emptyList()
+
+                        override fun resolveSpecialOutcome(
+                            state: TableState,
+                            outcome: ResolvedRoundOutcome,
+                        ): List<WinSettlementDetailField>? = null
+                    },
+                ),
+            )
+        }
+
+        val request = WinSettlementPresentationRequestFactory.createSpecialOutcome(
+            previousState = state,
+            outcome = outcome,
+            module = module,
+            aiPlayerIds = emptySet(),
+            detailResolverRegistry = registry,
+        )
+
+        assertEquals(winner.id, request.winners.single().playerId)
+        assertEquals(emptyList(), request.winners.single().detailFields)
+        assertEquals(state.players.size, request.ranking.players.size)
     }
 
     /** 驗證一般和牌要求中的立牌依規則牌序排列，且不包含獨立的和牌張。 */
@@ -195,6 +239,23 @@ class WinSettlementPresentationRequestFactoryTest {
         )
 
         assertEquals(emptyMap(), request.paymentReasonIdsByPlayerId)
+    }
+
+    /** 未註冊規則詳情時仍保留贏家、分數排行與結算流程，只省略規則專屬欄位。 */
+    @Test
+    fun `ordinary win remains complete without a detail resolver`() {
+        val state = fourPlayerState()
+        val (winner, _, discarder, _) = state.players
+
+        val request = createRequest(
+            state = state,
+            responsiblePlayerId = discarder.id,
+            resolutions = mapOf(winner.id to resolution(payments = listOf(discarder.id))),
+        )
+
+        assertEquals(winner.id, request.winners.single().playerId)
+        assertEquals(emptyList(), request.winners.single().detailFields)
+        assertEquals(state.players.size, request.ranking.players.size)
     }
 
     /** 同一位玩家被兩位贏家標上不同原因時，取頭跳順位較前的贏家給出的原因。 */

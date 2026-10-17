@@ -14,6 +14,8 @@ class ExhaustiveDrawReasonDisplayNameRegistryImpl : ExhaustiveDrawReasonDisplayN
 
     override val reasonIds: Set<String> get() = translations.keys.toSet()
 
+    override val settlementStatusReasonIds: Set<String> get() = statusLabels.keys.toSet()
+
     override val registrationKeys: Set<String> get() = (translations.keys + statusLabels.keys).toSet()
 
     override fun register(definition: ExhaustiveDrawReasonDisplayNameDefinition) {

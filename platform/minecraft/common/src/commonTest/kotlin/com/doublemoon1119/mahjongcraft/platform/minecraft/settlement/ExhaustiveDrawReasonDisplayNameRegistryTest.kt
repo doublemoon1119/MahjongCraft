@@ -49,7 +49,25 @@ class ExhaustiveDrawReasonDisplayNameRegistryTest {
 
         assertEquals(labels, registry.findSettlementStatusLabels("example:draw"))
         assertNull(registry.findSettlementStatusLabels("example:other"))
+        assertEquals(setOf("example:draw"), registry.settlementStatusReasonIds)
         assertEquals(setOf("example:draw"), registry.registrationKeys)
         assertFailsWith<IllegalArgumentException> { registry.register(ExhaustiveDrawSettlementStatusLabelsDefinition("example:draw", labels)) }
+    }
+
+    /** 用語 ID 快照不隨後續登記而改變，也不混入只有名稱的原因。 */
+    @Test
+    fun `settlement status reason ids are detached from later registrations`() {
+        val registry = ExhaustiveDrawReasonDisplayNameRegistryImpl()
+        val snapshot = registry.settlementStatusReasonIds
+        registry.register(ExhaustiveDrawReasonDisplayNameDefinition("example:name", "example.name"))
+        registry.register(
+            ExhaustiveDrawSettlementStatusLabelsDefinition(
+                reasonId = "example:status",
+                labels = ExhaustiveDrawSettlementStatusLabels("example.yes", "example.no"),
+            ),
+        )
+
+        assertEquals(emptySet(), snapshot)
+        assertEquals(setOf("example:status"), registry.settlementStatusReasonIds)
     }
 }

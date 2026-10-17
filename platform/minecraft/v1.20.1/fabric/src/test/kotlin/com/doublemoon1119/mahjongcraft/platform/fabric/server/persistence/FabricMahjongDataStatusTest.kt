@@ -68,7 +68,7 @@ class FabricMahjongDataStatusTest {
             ),
             actual = messages.map { translatable(it).key },
         )
-        assertEquals(listOf("example"), translatable(messages[3]).args.toList())
+        assertEquals(listOf("example:custom_rule"), translatable(messages[3]).args.toList())
         assertEquals(listOf(4, 2), translatable(messages[7]).args.toList())
         assertEquals(Formatting.RED.colorValue, mainText(messages[4]).style.color?.rgb)
     }
@@ -82,6 +82,27 @@ class FabricMahjongDataStatusTest {
         val click = assertNotNull(path.style.clickEvent)
         assertEquals(ClickEvent.Action.COPY_TO_CLIPBOARD, click.action)
         assertEquals("data/test.dat", click.value)
+    }
+
+    /** 相同命名空間中的不同型別在主訊息中也能區分，不需要先展開詳情。 */
+    @Test
+    fun `missing types from the same namespace have distinct visible notices`() {
+        val typeKeys = listOf("example:first_rule", "example:second_rule")
+
+        val causes = typeKeys.map { typeKey ->
+            dataProblemMessages(
+                listOf(
+                    MahjongDataProblem(
+                        source = MahjongDataSource.HISTORY_DATABASE,
+                        file = "history.sqlite",
+                        cause = MahjongDataLoadCause.MissingExtension(typeKey),
+                    ),
+                ),
+            ).last()
+        }
+
+        assertEquals(typeKeys, causes.map { translatable(it).args.single() })
+        assertTrue(causes.all { translatable(it).key == MinecraftMessageKeys.DATA_CAUSE_MISSING_EXTENSION })
     }
 
     /** 無法判斷原因時，錯誤摘要放在指向 `[詳情]` 時顯示的內容中，不佔用訊息本身。 */

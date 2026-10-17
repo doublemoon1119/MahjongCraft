@@ -9,6 +9,8 @@ import kotlin.uuid.Uuid
  *
  * [action] 是實際完成的動作，不以規則專用 trigger 類型代替；各 resolver 應自行辨認是否關心該動作。
  * 呼叫端必須等候相關反應與必要的後續胡牌機會結束後才建立 context，避免提早終止合法流程。
+ * 目前正式入口會在捨牌、立直所含的捨牌，以及捨牌反應收斂後建立 context；其他動作不會因為建立
+ * 此型別而自動觸發途中流局判定。
  *
  * @property actorPlayerId 完成動作的玩家 ID。
  * @property action 實際完成的權威動作。

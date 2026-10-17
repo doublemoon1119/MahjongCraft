@@ -49,14 +49,25 @@ sealed interface GameConfigEditorSpec {
      * 單一選項編輯器。
      *
      * @property optionIds 可選的完整 Namespaced ID。
+     * @property optionTranslationKeys 各選項 ID 對應的翻譯鍵；未提供時由呈現層顯示完整 ID。
      */
     data class SingleChoice(
         val optionIds: List<String>,
+        val optionTranslationKeys: Map<String, String> = emptyMap(),
     ) : GameConfigEditorSpec {
         init {
             require(optionIds.isNotEmpty()) { "Config choice must contain at least one option" }
             require(optionIds.distinct().size == optionIds.size) { "Config choice options must be unique" }
             require(optionIds.all(NamespacedId::isValid)) { "Config choice option IDs must be namespaced" }
+            require(optionTranslationKeys.keys.all { it in optionIds }) {
+                "Config choice translation keys must reference known option IDs"
+            }
+            require(optionTranslationKeys.values.all(String::isNotBlank)) {
+                "Config choice translation keys must not be blank"
+            }
         }
+
+        /** 取得選項的翻譯鍵；未登記時回傳 null。 */
+        fun translationKeyFor(optionId: String): String? = optionTranslationKeys[optionId]
     }
 }

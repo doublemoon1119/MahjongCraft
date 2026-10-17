@@ -64,6 +64,8 @@ build check for it.
 - Use namespaced IDs whole. Do not build translation keys, asset paths, cache keys or `when` branches from the
   path alone, because two namespaces may use the same path.
 - Registries validate namespaces and reject duplicates at registration.
+- Keep registration IDs separate from translation keys. Presentation definitions explicitly map the complete
+  ID to a translation key; do not infer third-party wording by stripping a namespace or replacing its separator.
 
 ## Extension points
 

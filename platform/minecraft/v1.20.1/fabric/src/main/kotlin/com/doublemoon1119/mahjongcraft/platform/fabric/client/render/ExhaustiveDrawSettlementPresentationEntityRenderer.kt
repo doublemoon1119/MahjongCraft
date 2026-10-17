@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.ExhaustiveDrawSett
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ScoreRankingAnimation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.exhaustiveDrawSettlementStatusTranslationKey
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileSetAppearanceDefinition
 import net.minecraft.client.font.TextRenderer
@@ -77,7 +78,7 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         if (panelAlpha <= 0f) return
         val scoreAnimationStart = if (hasInformationPhase) 130.0 else 70.0
         val scoreProgress = ((elapsed - scoreAnimationStart) / 40.0).coerceIn(0.0, 1.0)
-        val rankingLayout = measureLayout(entity.players)
+        val rankingLayout = measureLayout(entity.reasonId, entity.players)
         val informationPlayers = informationPlayers(entity.players)
         val informationLayout = measureInformationLayout(informationPlayers)
         val sharedPanelHalfWidth = maxOf(rankingLayout.panelHalfWidth, informationLayout.panelHalfWidth)
@@ -95,6 +96,7 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
             if (rowAlpha > 0f) {
                 drawInformationRow(
                     player = player,
+                    reasonId = entity.reasonId,
                     layout = informationLayout,
                     y = FIRST_ROW_Y + index * INFORMATION_ROW_HEIGHT - (1f - rowProgress) * INFORMATION_ROW_REVEAL_OFFSET,
                     alpha = rowAlpha,
@@ -129,6 +131,7 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
             )
             drawRow(
                 player,
+                entity.reasonId,
                 liveRanks.getValue(KotlinUuid.parse(player.playerId)),
                 rankingLayout,
                 row.score,
@@ -188,6 +191,7 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
      * 繪製單一排名列及結算動態效果。
      *
      * @param player 保存的玩家結算資料。
+     * @param reasonId 流局原因的完整識別碼。
      * @param displayedRank 動畫期間顯示的即時名次。
      * @param layout 排名欄位幾何。
      * @param score 動畫期間顯示的分數。
@@ -200,6 +204,7 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
      */
     private fun drawRow(
         player: ExhaustiveDrawSettlementPlayerSnapshot,
+        reasonId: String,
         displayedRank: Int,
         layout: TableLayout,
         score: Int,
@@ -236,7 +241,7 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
         matrices.pop()
         renderPortrait(player, layout.faceLeftX, -FACE_TEXT_CENTER_OFFSET, alpha, matrices, vertexConsumers)
         drawText(Text.literal(fitPlayerName(resolvePlayerName(player))), layout.nameLeftX, 0f, Alignment.LEFT, withAlpha(0xFFFFFF, alpha), matrices, vertexConsumers)
-        settlementStatusText(player)?.let { statusText ->
+        settlementStatusText(reasonId, player)?.let { statusText ->
             drawText(statusText, layout.statusCenterX, 0f, Alignment.CENTER, withAlpha(0xFFE08A, alpha), matrices, vertexConsumers)
         }
         drawText(Text.literal(score.toString()), layout.scoreRightX, 0f, Alignment.RIGHT, withAlpha(0xFFF3C4, alpha), matrices, vertexConsumers)
@@ -333,6 +338,7 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
      * 繪製第一階段公開資訊列：玩家身分、狀態與全部等待牌使用固定欄位對齊。
      *
      * @param player 玩家結算資料。
+     * @param reasonId 流局原因的完整識別碼。
      * @param layout 公開資訊列欄位幾何。
      * @param y 此列垂直位置。
      * @param alpha 此列透明度。
@@ -341,6 +347,7 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
      */
     private fun drawInformationRow(
         player: ExhaustiveDrawSettlementPlayerSnapshot,
+        reasonId: String,
         layout: InformationLayout,
         y: Float,
         alpha: Float,
@@ -358,7 +365,7 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
             matrices,
             vertexConsumers,
         )
-        settlementStatusText(player)?.let { status ->
+        settlementStatusText(reasonId, player)?.let { status ->
             drawText(status, layout.statusLeftX, y, Alignment.LEFT, withAlpha(0xFFE08A, alpha), matrices, vertexConsumers)
         }
         var tileCenterX = layout.waitingTilesLeftX + WAIT_TILE_WIDTH / 2f
@@ -491,25 +498,14 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
     }
 
     /**
-     * 將已知流局狀態 ID 尾段映射至翻譯鍵。
-     *
-     * @param statusId 可為 null 的狀態 ID。
-     * @return 已知狀態的翻譯鍵；未知或空值時為 null。
-     */
-    private fun statusTranslationKey(statusId: String?): String? = when (statusId?.substringAfter(':')) {
-        "tenpai" -> MinecraftMessageKeys.EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_TENPAI
-        "noten" -> MinecraftMessageKeys.EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_NOTEN
-        "draw_declaration" -> MinecraftMessageKeys.EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_DRAW_DECLARATION
-        else -> null
-    }
-
-    /**
      * 中央排行榜只顯示語意狀態；等待牌由手牌上方的獨立牌面面板承擔。
      *
+     * @param reasonId 流局原因的完整識別碼。
      * @param player 玩家結算資料。
      * @return 已知狀態的翻譯文字；沒有對應狀態時為 null。
      */
-    private fun settlementStatusText(player: ExhaustiveDrawSettlementPlayerSnapshot): Text? = statusTranslationKey(player.statusId)?.let(Text::translatable)
+    private fun settlementStatusText(reasonId: String, player: ExhaustiveDrawSettlementPlayerSnapshot): Text? = exhaustiveDrawSettlementStatusTranslationKey(reasonId, player.statusId, reasonDisplayNames)
+        ?.let(Text::translatable)
 
     /**
      * 計算排行榜單列的揭示進度。
@@ -574,10 +570,11 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
     /**
      * 依所有起訖數值及本地化狀態的實際像素寬度建立穩定欄位；動畫中途不會改變面板尺寸。
      *
+     * @param reasonId 流局原因的完整識別碼。
      * @param players 本局所有玩家的保存結算資料。
      * @return 排名面板欄位及尺寸。
      */
-    private fun measureLayout(players: List<ExhaustiveDrawSettlementPlayerSnapshot>): TableLayout {
+    private fun measureLayout(reasonId: String, players: List<ExhaustiveDrawSettlementPlayerSnapshot>): TableLayout {
         val scoreWidth = SettlementRankingLayout.contentColumnWidth(
             contentWidths = players.flatMap { listOf(it.previousScore, it.currentScore) }.map { textRenderer.getWidth(it.toString()).toFloat() },
             padding = SettlementRankingLayout.NUMERIC_COLUMN_PADDING,
@@ -589,7 +586,7 @@ class ExhaustiveDrawSettlementPresentationEntityRenderer(
             minWidth = SettlementRankingLayout.MIN_DELTA_COLUMN_WIDTH,
         )
         val statusWidth = SettlementRankingLayout.contentColumnWidth(
-            contentWidths = players.map { player -> settlementStatusText(player)?.let(textRenderer::getWidth)?.toFloat() ?: 0f },
+            contentWidths = players.map { player -> settlementStatusText(reasonId, player)?.let(textRenderer::getWidth)?.toFloat() ?: 0f },
             padding = STATUS_COLUMN_PADDING,
             minWidth = MIN_STATUS_COLUMN_WIDTH,
         )
