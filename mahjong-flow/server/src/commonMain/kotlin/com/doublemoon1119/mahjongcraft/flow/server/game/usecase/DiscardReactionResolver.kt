@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.recordAbortiveDraw
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.DeclareRiichiUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.DiscardReactionActionSupport
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
@@ -52,12 +53,14 @@ internal object DiscardReactionResolver {
         val legalActionsByOtherPlayer = stateAfterDiscard.players
             .filter { it.id != discarderId && stateAfterDiscard.isPlayerActive(it.id) }
             .associate { otherPlayer ->
-                otherPlayer.id to validator.getLegalActions(
-                    tableState = stateAfterDiscard,
-                    player = otherPlayer,
-                    sourceAction = GameAction.Discard(discardedTile.id),
-                    sourceDirection = stateAfterDiscard.relativeDirectionOf(otherPlayer.id, discarderId),
-                    incomingTile = discardedTile,
+                otherPlayer.id to DiscardReactionActionSupport.filter(
+                    validator.getLegalActions(
+                        tableState = stateAfterDiscard,
+                        player = otherPlayer,
+                        sourceAction = GameAction.Discard(discardedTile.id),
+                        sourceDirection = stateAfterDiscard.relativeDirectionOf(otherPlayer.id, discarderId),
+                        incomingTile = discardedTile,
+                    ),
                 )
             }
 
@@ -91,8 +94,7 @@ internal object DiscardReactionResolver {
 
         val newState = if (abortiveDrawReason != null) {
             // 途中流局：這張捨牌已經讓本局結束，吃/碰/槓資格一併作廢（不開反應視窗）、不結算任何
-            // 點數，供託延續到下一局。把 ExhaustiveDraw 記錄進全員的 actionHistory，讓
-            // AdvanceRoundUseCase 既有的判斷式自動得出「連莊」的結果，不需要額外分支。
+            // 點數。流局動作記錄與規則決定的莊家去留，供後續流程與歷史使用。
             stateAfterDiscard.recordAbortiveDraw(abortiveDrawReason, declarerId = null, module = module)
         } else {
             val eligiblePlayerIds = meldEligiblePlayerIds + ronWinningPlayerIds

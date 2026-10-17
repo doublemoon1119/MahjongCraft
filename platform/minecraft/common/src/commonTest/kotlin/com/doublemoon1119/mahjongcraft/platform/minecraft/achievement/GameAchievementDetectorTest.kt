@@ -1,12 +1,14 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.achievement
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.CommittedGameFacts
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryActionResult
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinDetails
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
@@ -59,6 +61,208 @@ class GameAchievementDetectorTest {
             ),
             result.associate { it.playerId to it.achievementIds },
         )
+    }
+
+    /** 自訂和牌結果也會取得通用胡牌成果，但沒有明確語意時不猜測自摸或放銃。 */
+    @Test
+    fun `custom win outcome credits only the generic win achievement`() {
+        val game = fourPlayerGame()
+        val (winner, responsible) = game.tableState.players
+
+        val result = detector().detect(
+            facts(
+                game,
+                HistoryFact.WinSettled(
+                    outcomeId = "example:custom_win",
+                    winDetails = listOf(winDetails(winner.id)),
+                    responsiblePlayerIds = listOf(responsible.id),
+                ),
+            ),
+        )
+
+        assertEquals(setOf(BuiltInAchievementIds.WIN), result.single { it.playerId == winner.id }.achievementIds)
+        assertTrue(result.none { it.playerId == responsible.id })
+    }
+
+    /** 自訂結果搭配明確自摸動作時，會細分為自摸成果。 */
+    @Test
+    fun `custom win with accepted tsumo credits self draw`() {
+        val game = fourPlayerGame()
+        val (winner) = game.tableState.players
+        val result = detector().detect(
+            CommittedGameFacts(
+                venueId = game.id,
+                previousGame = game,
+                game = game,
+                facts = listOf(
+                    HistoryEventDraft(
+                        winner.id,
+                        HistoryFact.ActionAccepted(
+                            GameAction.Tsumo,
+                            HistoryActionResult(emptyList(), emptyList(), 0, emptyList(), emptyMap(), winner.id),
+                        ),
+                    ),
+                    HistoryEventDraft(null, HistoryFact.WinSettled("example:custom_tsumo", listOf(winDetails(winner.id)))),
+                ),
+            ),
+        )
+
+        assertEquals(setOf(BuiltInAchievementIds.WIN, BuiltInAchievementIds.SELF_DRAW_WIN), result.single().achievementIds)
+    }
+
+    /** 自訂結果搭配明確榮和裁定時，會細分贏家與放銃者成果。 */
+    @Test
+    fun `custom win with resolved ron credits discard win`() {
+        val game = fourPlayerGame()
+        val (dealer, winner) = game.tableState.players
+        val result = detector().detect(
+            CommittedGameFacts(
+                venueId = game.id,
+                previousGame = game,
+                game = game,
+                facts = listOf(
+                    HistoryEventDraft(winner.id, HistoryFact.ReactionResolved(GameAction.Ron(Uuid.random()), winner.id)),
+                    HistoryEventDraft(
+                        dealer.id,
+                        HistoryFact.WinSettled("example:custom_ron", listOf(winDetails(winner.id)), listOf(dealer.id)),
+                    ),
+                ),
+            ),
+        ).associate { it.playerId to it.achievementIds }
+
+        assertEquals(setOf(BuiltInAchievementIds.WIN, BuiltInAchievementIds.DISCARD_WIN), result.getValue(winner.id))
+        assertEquals(setOf(BuiltInAchievementIds.DEAL_IN), result.getValue(dealer.id))
+    }
+
+    /** 同筆交易拆成多筆和牌事實時，仍依合併後的贏家數判定一炮多響。 */
+    @Test
+    fun `multiple win settlements are merged for double deal in`() {
+        val game = fourPlayerGame()
+        val (dealer, first, second) = game.tableState.players
+
+        val result = detector().detect(
+            CommittedGameFacts(
+                venueId = game.id,
+                previousGame = game,
+                game = game,
+                facts = listOf(
+                    HistoryEventDraft(first.id, HistoryFact.ReactionResolved(GameAction.Ron(Uuid.random()), first.id)),
+                    HistoryEventDraft(
+                        dealer.id,
+                        HistoryFact.WinSettled("example:ron", listOf(winDetails(first.id)), listOf(dealer.id)),
+                    ),
+                    HistoryEventDraft(
+                        dealer.id,
+                        HistoryFact.WinSettled("example:ron", listOf(winDetails(second.id)), listOf(dealer.id)),
+                    ),
+                ),
+            ),
+        ).associate { it.playerId to it.achievementIds }
+
+        assertEquals(setOf(BuiltInAchievementIds.DOUBLE_DEAL_IN, BuiltInAchievementIds.DEAL_IN), result.getValue(dealer.id))
+    }
+
+    /** 不同責任玩家的和牌結算各自計算，不會誤合併成雙響。 */
+    @Test
+    fun `win settlements with different responsible players are not merged`() {
+        val game = fourPlayerGame()
+        val (firstDealer, secondDealer, firstWinner, secondWinner) = game.tableState.players
+
+        val result = detector().detect(
+            CommittedGameFacts(
+                venueId = game.id,
+                previousGame = game,
+                game = game,
+                facts = listOf(
+                    HistoryEventDraft(firstWinner.id, HistoryFact.ReactionResolved(GameAction.Ron(Uuid.random()), firstWinner.id)),
+                    HistoryEventDraft(
+                        firstDealer.id,
+                        HistoryFact.WinSettled("example:ron", listOf(winDetails(firstWinner.id)), listOf(firstDealer.id)),
+                    ),
+                    HistoryEventDraft(
+                        secondDealer.id,
+                        HistoryFact.WinSettled("example:ron", listOf(winDetails(secondWinner.id)), listOf(secondDealer.id)),
+                    ),
+                ),
+            ),
+        ).associate { it.playerId to it.achievementIds }
+
+        assertTrue(BuiltInAchievementIds.DOUBLE_DEAL_IN !in result.getValue(firstDealer.id))
+        assertTrue(BuiltInAchievementIds.DOUBLE_DEAL_IN !in result.getValue(secondDealer.id))
+        assertEquals(setOf(BuiltInAchievementIds.DEAL_IN), result.getValue(firstDealer.id))
+        assertEquals(setOf(BuiltInAchievementIds.DEAL_IN), result.getValue(secondDealer.id))
+    }
+
+    /** 帶有 WIN 回合摘要的規則效果會把受益者計入通用胡牌成果。 */
+    @Test
+    fun `win rule effect credits beneficiaries`() {
+        val game = fourPlayerGame()
+        val (winner, responsible) = game.tableState.players
+        val summary = roundSummary(game, RoundCompletionClassification.WIN).copy(
+            beneficiaryPlayerIds = setOf(winner.id),
+            responsiblePlayerIds = setOf(responsible.id),
+        )
+
+        val result = detector().detect(
+            facts(
+                game,
+                HistoryFact.RuleEffectResolved(
+                    reasonId = "example:custom_win",
+                    roundCompletion = summary,
+                    winDetails = emptyList(),
+                ),
+            ),
+        )
+
+        assertEquals(setOf(BuiltInAchievementIds.WIN), result.single { it.playerId == winner.id }.achievementIds)
+        assertTrue(result.none { it.playerId == responsible.id })
+    }
+
+    /** WIN 以外的規則效果分類不會產生通用胡牌成果。 */
+    @Test
+    fun `non-win rule effects do not credit win`() {
+        val game = fourPlayerGame()
+        val (winner) = game.tableState.players
+        val summary = roundSummary(game, RoundCompletionClassification.EXTENSION).copy(
+            beneficiaryPlayerIds = setOf(winner.id),
+        )
+
+        val result = detector().detect(
+            facts(
+                game,
+                HistoryFact.RuleEffectResolved("example:extension", summary, listOf(winDetails(winner.id))),
+            ),
+        )
+
+        assertTrue(result.isEmpty())
+    }
+
+    /** 重複的和牌詳情不會增加放銃者的多響成果。 */
+    @Test
+    fun `duplicate win settlements do not become double deal in`() {
+        val game = fourPlayerGame()
+        val (dealer, winner) = game.tableState.players
+        val result = detector().detect(
+            CommittedGameFacts(
+                venueId = game.id,
+                previousGame = game,
+                game = game,
+                facts = listOf(
+                    HistoryEventDraft(winner.id, HistoryFact.ReactionResolved(GameAction.Ron(Uuid.random()), winner.id)),
+                    HistoryEventDraft(
+                        dealer.id,
+                        HistoryFact.WinSettled("example:ron", listOf(winDetails(winner.id)), listOf(dealer.id)),
+                    ),
+                    HistoryEventDraft(
+                        dealer.id,
+                        HistoryFact.WinSettled("example:ron", listOf(winDetails(winner.id)), listOf(dealer.id)),
+                    ),
+                ),
+            ),
+        ).associate { it.playerId to it.achievementIds }
+
+        assertEquals(setOf(BuiltInAchievementIds.DEAL_IN), result.getValue(dealer.id))
+        assertEquals(setOf(BuiltInAchievementIds.WIN, BuiltInAchievementIds.DISCARD_WIN), result.getValue(winner.id))
     }
 
     /** 一張牌被兩家或三家同時胡時，放槍的人另外取得對應的成果。 */

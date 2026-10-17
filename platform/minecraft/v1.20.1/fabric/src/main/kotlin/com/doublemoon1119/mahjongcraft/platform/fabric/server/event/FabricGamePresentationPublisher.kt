@@ -82,6 +82,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallOp
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallProjectionContext
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallTransitionPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallTransitionResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongWinCelebrationPresentation
@@ -422,6 +423,46 @@ class FabricGamePresentationPublisher(
                 logger.warn("publishWallLayoutTransition gameId={} failed: result={}", gameId, result)
             }
             null
+        }
+    }
+
+    /** 更新既有牌牆位置與公開姿態，不建立新牌或重播開局。 */
+    override fun publishWallLayoutUpdated(
+        gameId: Uuid,
+        layout: TileWallPhysicalLayout,
+        dealerSeatIndex: Int,
+        revealedTileIds: Set<Uuid>,
+    ) {
+        if (serverHolder.current() == null) {
+            logger.warn("publishWallLayoutUpdated gameId={} skipped: no active server", gameId)
+            return
+        }
+        launchPendingPresentation(gameId, "publishWallLayoutUpdated") {
+            val resolved = resolveTableContext(gameId, "publishWallLayoutUpdated") ?: return@launchPendingPresentation
+            val stacksPerSide = openingState.wallStacksPerSide(gameId)
+            val sideCount = openingState.wallSideCount(gameId)
+            if (stacksPerSide == null || sideCount == null) {
+                logger.warn("publishWallLayoutUpdated gameId={} skipped: wall dimensions are unavailable", gameId)
+                return@launchPendingPresentation
+            }
+            val result = tileWallPresenter.synchronizeLayout(
+                tableId = gameId,
+                tableLocation = resolved.location,
+                context = MahjongTileWallProjectionContext(
+                    controllerX = resolved.location.x,
+                    controllerY = resolved.location.y,
+                    controllerZ = resolved.location.z,
+                    tableFacing = resolved.facing,
+                    dealerSeatIndex = dealerSeatIndex,
+                    stacksPerSide = stacksPerSide,
+                    sideCount = sideCount,
+                ),
+                layout = layout,
+                revealedTileIds = revealedTileIds,
+            )
+            if (result != MahjongTileWallPresentationResult.PRESENTED) {
+                logger.warn("publishWallLayoutUpdated gameId={} failed: result={}", gameId, result)
+            }
         }
     }
 

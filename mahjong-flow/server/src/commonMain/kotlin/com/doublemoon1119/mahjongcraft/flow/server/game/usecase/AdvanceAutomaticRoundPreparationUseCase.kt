@@ -2,9 +2,11 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.RoundPreparationPresentationUpdate
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import kotlin.uuid.Uuid
 
@@ -15,12 +17,14 @@ import kotlin.uuid.Uuid
  * @property moduleRegistry 依桌況設定取得規則模組。
  * @property resolverRegistry 取得規則提供的準備流程解析器。
  * @property snapshotSynchronizer 更新準備流程變更後的觀看者快照。
+ * @property presentationPublisher 更新準備結果改變的牌區與局況。
  */
 class AdvanceAutomaticRoundPreparationUseCase(
     private val gameRepository: GameRepository,
     private val moduleRegistry: MahjongModuleRegistry,
     private val resolverRegistry: RoundPreparationResolverRegistry,
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
+    private val presentationPublisher: GamePresentationPublisher,
 ) {
     /**
      * 收斂目前連續的自動步驟。
@@ -69,9 +73,17 @@ class AdvanceAutomaticRoundPreparationUseCase(
             if (updated.pendingRoundPreparation?.participantPlayerIds?.isEmpty() == true) {
                 error("Round preparation did not converge after $MAX_AUTOMATIC_PREPARATION_STEPS automatic steps")
             }
-            updated to AutomaticPreparationUpdate(drafts)
+            updated to AutomaticPreparationUpdate(
+                historyDrafts = drafts,
+                presentationUpdate = RoundPreparationPresentationUpdate(currentGame.tableState, updated.tableState),
+            )
         }
-        if (update.changed) snapshotSynchronizer.syncAll(gameId)
+        if (update.changed) {
+            update.presentationUpdate?.let { presentation ->
+                presentation.publish(presentationPublisher, moduleRegistry.getModule(presentation.current.config))
+            }
+            snapshotSynchronizer.syncAll(gameId)
+        }
         return update.changed
     }
 
@@ -79,9 +91,11 @@ class AdvanceAutomaticRoundPreparationUseCase(
      * 一次自動準備收斂所產生的歷史事實。
      *
      * @property historyDrafts 此次收斂需要記錄的自動步驟事實。
+     * @property presentationUpdate 此次收斂的桌況差異；沒有待處理步驟時為 null。
      */
     private data class AutomaticPreparationUpdate(
         val historyDrafts: List<HistoryEventDraft>,
+        val presentationUpdate: RoundPreparationPresentationUpdate? = null,
     ) {
         /** 是否至少完成一個準備步驟。 */
         val changed: Boolean get() = historyDrafts.isNotEmpty()

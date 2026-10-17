@@ -19,6 +19,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.CompletedG
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.recordAbortiveDraw
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.DiscardReactionActionSupport
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
@@ -167,12 +168,14 @@ class RespondToDiscardUseCase(
                         discarder.discardPile.entries.first { it.tile.id == pendingReaction.tileId }.tile
 
                     val module = moduleRegistry.getModule(state.config)
-                    val legalActions = module.createLegalActionValidator().getLegalActions(
-                        tableState = state,
-                        player = responder,
-                        sourceAction = GameAction.Discard(pendingReaction.tileId),
-                        sourceDirection = state.relativeDirectionOf(playerId, pendingReaction.discarderId),
-                        incomingTile = discardedTile,
+                    val legalActions = DiscardReactionActionSupport.filter(
+                        module.createLegalActionValidator().getLegalActions(
+                            tableState = state,
+                            player = responder,
+                            sourceAction = GameAction.Discard(pendingReaction.tileId),
+                            sourceDirection = state.relativeDirectionOf(playerId, pendingReaction.discarderId),
+                            incomingTile = discardedTile,
+                        ),
                     )
                     if (action !in legalActions) {
                         return@update state to Outcome.Error(GameError.IllegalAction(playerId, gameId, action))

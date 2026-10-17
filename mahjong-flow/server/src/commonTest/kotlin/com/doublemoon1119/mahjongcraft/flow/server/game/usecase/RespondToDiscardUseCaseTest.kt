@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferen
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Meld
@@ -1845,5 +1846,40 @@ class RespondToDiscardUseCaseTest {
         val analysis = analyzer.analyze(tableState = newState, player = claimer, visibleTiles = visibleTiles).single { it.discardTileId == nineCharacter.id }
         assertEquals(listOf(Tile.Honor.North), analysis.waitingTiles.map { it.tile })
         assertNull(analysis.statusIndicatorId, "Passes before the claim should not show as temporary furiten after it.")
+    }
+
+    /** 驗證捨牌反應直接送入目前不支援的擴充動作時，會拒絕且不改變桌況或歷史。 */
+    @Test
+    fun `unsupported extension reaction is rejected without side effects`() = runTest {
+        val fixtures = Fixtures()
+        val discardedTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(
+                FakeMahjongPlayerFactory.create(
+                    id = discarderId,
+                    initialSeat = Wind.EAST,
+                    discardPile = FakeDiscardPile().discardTile(discardedTile),
+                ),
+                FakeMahjongPlayerFactory.create(id = responderId, initialSeat = Wind.SOUTH),
+            ),
+            config = RiichiRuleConfig(),
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.useCase(gameId, responderId, GameAction.Extension(TestReactionAction))
+
+        assertEquals(
+            Outcome.Error(GameError.IllegalAction(responderId, gameId, GameAction.Extension(TestReactionAction))),
+            result,
+        )
+        assertEquals(table, fixtures.gameRepo.getTableState(gameId))
+        assertTrue(fixtures.gameRepo.historyDrafts.isEmpty())
+    }
+
+    /** 反應測試用的擴充動作。 */
+    private data object TestReactionAction : ExtensionGameAction {
+        override val id: String = "test:reaction"
     }
 }

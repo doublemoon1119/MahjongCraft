@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateSnaps
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdate
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntitySpawnGateway
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.FabricWinCelebrationEffectScheduler
@@ -50,6 +51,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallOp
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallProjectionContext
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallTransitionPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallTransitionResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongWinCelebrationPresentation
@@ -286,6 +288,15 @@ class FabricTableLifecycleServiceTest {
         override fun presentTransition(
             presentation: MahjongTileWallTransitionPresentation,
         ): MahjongTileWallTransitionResult = MahjongTileWallTransitionResult.PRESENTED
+
+        /** 此測試不使用既有牌牆布局同步呈現。 */
+        override fun synchronizeLayout(
+            tableId: Uuid,
+            tableLocation: TableLocation,
+            context: MahjongTileWallProjectionContext,
+            layout: TileWallPhysicalLayout,
+            revealedTileIds: Set<Uuid>,
+        ): MahjongTileWallPresentationResult = MahjongTileWallPresentationResult.PRESENTED
 
         /** 此測試不使用正式王牌追加翻面呈現。 */
         override fun revealDeadWallTiles(tableId: Uuid, tableLocation: TableLocation, revealedTileIds: Set<Uuid>): MahjongTileWallPresentationResult = MahjongTileWallPresentationResult.PRESENTED

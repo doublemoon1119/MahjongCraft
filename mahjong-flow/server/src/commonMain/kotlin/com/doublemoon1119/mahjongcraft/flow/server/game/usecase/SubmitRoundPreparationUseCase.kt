@@ -5,10 +5,12 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSubmission
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.accepts
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.RoundPreparationPresentationUpdate
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import kotlin.uuid.Uuid
 
@@ -19,12 +21,14 @@ import kotlin.uuid.Uuid
  * @property moduleRegistry 麻將規則模組註冊中心。
  * @property resolverRegistry 開局準備步驟解析器註冊中心。
  * @property snapshotSynchronizer 對局快照同步服務。
+ * @property presentationPublisher 更新準備結果改變的牌區與局況。
  */
 class SubmitRoundPreparationUseCase(
     private val gameRepository: GameRepository,
     private val moduleRegistry: MahjongModuleRegistry,
     private val resolverRegistry: RoundPreparationResolverRegistry,
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
+    private val presentationPublisher: GamePresentationPublisher,
 ) {
     /**
      * 對指定對局提交一次準備選擇。
@@ -96,10 +100,20 @@ class SubmitRoundPreparationUseCase(
                         nextStepId = updated.pendingRoundPreparation?.stepId,
                     ),
                 ),
+                presentationUpdate = if (submitted.isComplete) {
+                    RoundPreparationPresentationUpdate(game.tableState, updated.tableState)
+                } else {
+                    null
+                },
             )
         }
         val outcome = result.outcome
-        if (outcome is Outcome.Success) snapshotSynchronizer.syncAll(gameId)
+        if (outcome is Outcome.Success) {
+            result.presentationUpdate?.let { update ->
+                update.publish(presentationPublisher, moduleRegistry.getModule(update.current.config))
+            }
+            snapshotSynchronizer.syncAll(gameId)
+        }
         return outcome
     }
 
@@ -108,9 +122,11 @@ class SubmitRoundPreparationUseCase(
      *
      * @property outcome 對外回傳的提交結果。
      * @property historyDraft 本次成功提交的歷史事件；失敗時為 null。
+     * @property presentationUpdate 已完成步驟的桌況差異；尚未收齊或提交失敗時為 null。
      */
     private data class PreparationSubmissionUpdate(
         val outcome: Outcome<Unit, GameError>,
         val historyDraft: HistoryEventDraft?,
+        val presentationUpdate: RoundPreparationPresentationUpdate? = null,
     )
 }

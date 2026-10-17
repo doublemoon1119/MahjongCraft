@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import kotlin.uuid.Uuid
@@ -34,6 +35,25 @@ interface MahjongTileWallPresenter {
      * @return transition 呈現結果。
      */
     fun presentTransition(presentation: MahjongTileWallTransitionPresentation): MahjongTileWallTransitionResult
+
+    /**
+     * 將既有牌牆 entity 同步到目前的權威牌牆布局，不建立或移除任何 entity。
+     *
+     * @param tableId 麻將桌 UUID。
+     * @param tableLocation 麻將桌目前位置。
+     * @param context 將抽象牌牆格位投影到此桌世界座標的資料。
+     * @param layout 目前權威牌牆中每張牌的格位。
+     * @param revealedTileIds 目前應翻面的牌張 UUID；其他牌維持蓋牌。
+     * @return 所有布局牌張都存在並完成同步時為 [MahjongTileWallPresentationResult.PRESENTED]；桌子無效或牌張缺失時
+     *   回傳對應錯誤，且不做部分同步。
+     */
+    fun synchronizeLayout(
+        tableId: Uuid,
+        tableLocation: TableLocation,
+        context: MahjongTileWallProjectionContext,
+        layout: TileWallPhysicalLayout,
+        revealedTileIds: Set<Uuid>,
+    ): MahjongTileWallPresentationResult
 
     /**
      * 將 [revealedTileIds] 對應的既有王牌 entity 翻至正面，不影響其他管理中的王牌。重複呼叫相同 ID

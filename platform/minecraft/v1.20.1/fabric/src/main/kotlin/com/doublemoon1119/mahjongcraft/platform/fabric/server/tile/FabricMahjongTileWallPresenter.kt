@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.tile
 
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableBlock
@@ -231,6 +232,48 @@ class FabricMahjongTileWallPresenter(
         )
         stepsByTile.forEach { (tileId, steps) -> tilesById.getValue(tileId).enqueueAll(steps) }
         return MahjongTileWallTransitionResult.PRESENTED
+    }
+
+    /**
+     * 將同桌既有牌牆 entity 同步至新的權威布局；此方法不建立、移除或清除任何 entity。
+     *
+     * @param tableId 麻將桌 UUID。
+     * @param tableLocation 麻將桌目前位置。
+     * @param context 牌牆格位投影資料。
+     * @param layout 權威牌牆布局。
+     * @param revealedTileIds 目前應翻面的牌張 UUID。
+     * @return 同步結果。
+     */
+    override fun synchronizeLayout(
+        tableId: Uuid,
+        tableLocation: TableLocation,
+        context: MahjongTileWallProjectionContext,
+        layout: TileWallPhysicalLayout,
+        revealedTileIds: Set<Uuid>,
+    ): MahjongTileWallPresentationResult {
+        val world = resolveWorld(tableLocation) ?: return MahjongTileWallPresentationResult.TABLE_NOT_FOUND
+        val controllerPos = tableLocation.toBlockPos()
+        val state = world.getBlockState(controllerPos)
+        resolveTable(world, controllerPos, state, tableId)
+            ?: return MahjongTileWallPresentationResult.TABLE_NOT_FOUND
+        if (state.get(Properties.HORIZONTAL_FACING).toMahjongTableFacing() != context.tableFacing) {
+            return MahjongTileWallPresentationResult.TABLE_NOT_FOUND
+        }
+
+        val tilesById = findManagedTiles(world, tableId, controllerPos)
+            .associateBy { tile -> tile.uuid.toKotlinUuid() }
+        if (!tilesById.keys.containsAll(layout.placements.keys)) {
+            return MahjongTileWallPresentationResult.TILE_NOT_FOUND
+        }
+
+        val worldPlacements = layout.placements.mapValues { (_, placement) -> context.project(placement) }
+        worldPlacements.forEach { (tileId, worldPlacement) ->
+            val tile = tilesById.getValue(tileId)
+            tile.assignToTable(tableId)
+            tile.tilePose = if (tileId in revealedTileIds) MahjongTilePose.FACE_UP else MahjongTilePose.FACE_DOWN
+            tile.teleportExistingManagedTile(worldPlacement)
+        }
+        return MahjongTileWallPresentationResult.PRESENTED
     }
 
     /**

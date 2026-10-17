@@ -107,12 +107,14 @@ internal object PlayerDecisionOptionsResolver {
                 .discardPile.entries
                 .first { it.tile.id == pending.tileId }
                 .tile
-            validator.getLegalActions(
-                tableState = state,
-                player = player,
-                sourceAction = GameAction.Discard(pending.tileId),
-                sourceDirection = state.relativeDirectionOf(player.id, pending.discarderId),
-                incomingTile = discardedTile,
+            DiscardReactionActionSupport.filter(
+                validator.getLegalActions(
+                    tableState = state,
+                    player = player,
+                    sourceAction = GameAction.Discard(pending.tileId),
+                    sourceDirection = state.relativeDirectionOf(player.id, pending.discarderId),
+                    incomingTile = discardedTile,
+                ),
             )
         }
 

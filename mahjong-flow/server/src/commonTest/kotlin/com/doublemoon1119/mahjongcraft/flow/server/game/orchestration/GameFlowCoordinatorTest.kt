@@ -259,7 +259,15 @@ class GameFlowCoordinatorTest {
             ),
             declareAbortiveDrawUseCase = DeclareAbortiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher),
             extensionCommandExecutor = extensionCommandExecutor,
-            submitRoundPreparationUseCase = roundPreparationResolvers?.let { SubmitRoundPreparationUseCase(gameRepo, moduleRegistry, it, snapshotSynchronizer) },
+            submitRoundPreparationUseCase = roundPreparationResolvers?.let {
+                SubmitRoundPreparationUseCase(
+                    gameRepository = gameRepo,
+                    moduleRegistry = moduleRegistry,
+                    resolverRegistry = it,
+                    snapshotSynchronizer = snapshotSynchronizer,
+                    presentationPublisher = presentationPublisher,
+                )
+            },
         )
         val getLegalActionsUseCase = GetLegalActionsUseCase(gameRepo, moduleRegistry)
         val aiStrategyRegistry = MahjongAiStrategyRegistryImpl(defaultKey = RandomAiStrategy.KEY).apply {

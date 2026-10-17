@@ -62,6 +62,12 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
     /** 依對局 Uuid 紀錄最後一次收到的桌角區域（手牌/摸牌位/副露）呈現資料。 */
     private val playerTiles = mutableMapOf<Uuid, PlayerTilesContext>()
 
+    /** 依對局保留各座位牌區更新的完整呼叫順序。 */
+    private val playerTilesUpdates = mutableMapOf<Uuid, MutableList<PlayerTilesContext>>()
+
+    /** 依對局保留不重建牌牆的布局更新。 */
+    private val wallLayoutUpdates = mutableMapOf<Uuid, MutableList<TileWallPhysicalLayout>>()
+
     /** 依對局 Uuid 紀錄最後一次收到的開局發牌動畫資料。 */
     private val initialDeals = mutableMapOf<Uuid, InitialDealContext>()
 
@@ -127,6 +133,15 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
         wallLayoutTransitions.getOrPut(gameId, ::mutableListOf).add(phases)
     }
 
+    override fun publishWallLayoutUpdated(
+        gameId: Uuid,
+        layout: TileWallPhysicalLayout,
+        dealerSeatIndex: Int,
+        revealedTileIds: Set<Uuid>,
+    ) {
+        wallLayoutUpdates.getOrPut(gameId, ::mutableListOf).add(layout)
+    }
+
     override fun publishWallTilesRevealed(gameId: Uuid, revealedTileIds: Set<Uuid>) {
         deadWallReveals[gameId] = revealedTileIds
     }
@@ -160,6 +175,7 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
             newlyClaimedMeldTileIds = newlyClaimedMeldTileIds,
             newlySetAsideTileIds = newlySetAsideTileIds,
         )
+        playerTilesUpdates.getOrPut(gameId, ::mutableListOf).add(playerTiles.getValue(gameId))
     }
 
     override fun publishInitialDeal(
@@ -243,6 +259,15 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
 
     /** 取得指定對局最後一次收到的桌角區域（手牌/摸牌位/副露）呈現資料；若無紀錄則回傳 null。 */
     fun getPublishedPlayerTiles(gameId: Uuid): PlayerTilesContext? = playerTiles[gameId]
+
+    /** 取得指定對局與座位最後一次收到的牌區更新；未更新時為 null。 */
+    fun getPublishedPlayerTiles(gameId: Uuid, seatIndex: Int): PlayerTilesContext? = playerTilesUpdates[gameId]?.lastOrNull { it.seatIndex == seatIndex }
+
+    /** 取得指定對局的牌區更新呼叫順序，不提供內部可變列表。 */
+    fun getPublishedPlayerTilesUpdates(gameId: Uuid): List<PlayerTilesContext> = playerTilesUpdates[gameId].orEmpty().toList()
+
+    /** 取得指定對局的增量牌牆更新，不提供內部可變列表。 */
+    fun getPublishedWallLayoutUpdates(gameId: Uuid): List<TileWallPhysicalLayout> = wallLayoutUpdates[gameId].orEmpty().toList()
 
     /** 取得指定對局最後一次收到的開局發牌動畫資料；若無紀錄則回傳 null。 */
     fun getPublishedInitialDeal(gameId: Uuid): InitialDealContext? = initialDeals[gameId]
