@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
+import com.doublemoon1119.mahjongcraft.logic.table.opening.OpeningDiceRoll
 import kotlin.uuid.Uuid
 
 /**
@@ -24,6 +25,7 @@ import kotlin.uuid.Uuid
  * @property finishedPlayerIds 本局已完成玩家的新集合；未改變時為 null。
  * @property revealedHandTileIds 本局已公開手牌的新集合；未改變時為 null。
  * @property revealedHandSettlements 流局公開手牌與等待牌的新資料；未改變時為 null，空集合代表清空。
+ * @property openingDiceRolls 本局逐輪擲骰結果；未改變時為 null。
  */
 data class HistoryTableChange(
     val changedPlayers: List<HistoryPlayerChange> = emptyList(),
@@ -37,6 +39,7 @@ data class HistoryTableChange(
     val finishedPlayerIds: Set<Uuid>? = null,
     val revealedHandTileIds: Set<Uuid>? = null,
     val revealedHandSettlements: List<RevealedHandSettlement>? = null,
+    val openingDiceRolls: List<OpeningDiceRoll>? = null,
 ) {
     /**
      * 將差異套用到前一個完整桌況。
@@ -62,6 +65,7 @@ data class HistoryTableChange(
             finishedPlayerIds = finishedPlayerIds ?: before.finishedPlayerIds,
             revealedHandTileIds = revealedHandTileIds ?: before.revealedHandTileIds,
             revealedHandSettlements = revealedHandSettlements ?: before.revealedHandSettlements,
+            openingDiceRolls = openingDiceRolls ?: before.openingDiceRolls,
         )
     }
 
@@ -125,6 +129,7 @@ data class HistoryTableChange(
                 revealedHandSettlements = after.revealedHandSettlements.takeIf {
                     it != before.revealedHandSettlements
                 },
+                openingDiceRolls = after.openingDiceRolls.takeIf { it != before.openingDiceRolls },
             )
             return result.takeIf { runCatching { it.applyTo(before) == after }.getOrDefault(false) }
         }

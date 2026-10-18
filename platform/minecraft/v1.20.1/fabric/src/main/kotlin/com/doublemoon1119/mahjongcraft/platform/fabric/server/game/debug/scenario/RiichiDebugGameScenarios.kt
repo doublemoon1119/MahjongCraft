@@ -322,7 +322,9 @@ private object RiichiWallOpeningScenario : DebugGameScenario {
         val postFlipHandTileIdsBySeatIndex = organizedState.players.withIndex().associate { (seatIndex, player) ->
             seatIndex to player.hand.tiles.map { tile -> tile.id }
         }
-        val diceRoll = requireNotNull(initialization.diceRoll) { "Riichi initialization did not produce dice" }
+        val diceRoll = requireNotNull(dealtState.openingDiceRolls.singleOrNull()) {
+            "Riichi initialization did not produce exactly one dice roll"
+        }.dice
         val wallStructure = requireNotNull(initialization.wallStructure) {
             "Riichi initialization did not produce wall structure"
         }

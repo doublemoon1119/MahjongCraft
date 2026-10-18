@@ -116,6 +116,24 @@ internal object HistoryReplayProjectionMapper {
                 }
                 HistoryFactTypeKeys.ROUND_PREPARATION_STARTED, HistoryFactTypeKeys.ROUND_PREPARATION_SUBMITTED, HistoryFactTypeKeys.ROUND_PREPARATION_AUTOMATIC_RESOLVED ->
                     HistoryReplayFact.Preparation(type, string(fact.getValue(ReplaySourceKeys.STEP_ID)), integer(fact.getValue(ReplaySourceKeys.STEP_INDEX)).also { require(it >= 0) { "Replay preparation index must not be negative" } }, fact[ReplaySourceKeys.NEXT_STEP_ID]?.takeUnless { it == JsonNull }?.let(::string))
+                HistoryFactTypeKeys.DICE_ROLLED -> {
+                    val roll = obj(fact.getValue(ReplaySourceKeys.ROLL))
+                    val values = array(roll.getValue(ReplaySourceKeys.DICE)).map(::integer)
+                    require(values.isNotEmpty() && values.all { it in 1..6 }) {
+                        "Replay dice roll must contain one or more dice in the range 1..6"
+                    }
+                    val actorSeat = actor ?: invalid()
+                    val recordedActorSeat = context.seat(integer(roll.getValue(ReplaySourceKeys.PLAYER_ID)))
+                    require(recordedActorSeat == actorSeat) {
+                        "Replay dice roll actor does not match its recorded player"
+                    }
+                    HistoryReplayFact.DiceRolled(
+                        type,
+                        integer(roll.getValue(ReplaySourceKeys.ROLL_INDEX)).also { require(it >= 0) { "Replay dice roll index must not be negative" } },
+                        actorSeat,
+                        values,
+                    )
+                }
                 HistoryFactTypeKeys.ROUND_COMPLETED -> HistoryReplayFact.Completion(type, outcome(obj(fact.getValue(ReplaySourceKeys.SUMMARY)), context))
                 HistoryFactTypeKeys.WIN_SETTLED -> HistoryReplayFact.Completion(type, winSettledOutcome(fact, context))
                 HistoryFactTypeKeys.RULE_EFFECT_RESOLVED -> HistoryReplayFact.RuleEffect(

@@ -508,6 +508,7 @@
   "mahjongcraft.history_screen.round.completion": "本局結束：%s（%s）",
   "mahjongcraft.history_screen.round.direct_tiles": "直接涉及的牌",
   "mahjongcraft.history_screen.round.empty_facts": "沒有記錄詳細資料",
+  "mahjongcraft.history_screen.round.event.dice_rolled": "第 %s 輪擲骰：%s",
   "mahjongcraft.history_screen.round.event.match_started": "對局開始",
   "mahjongcraft.history_screen.round.event.returned_to_room": "返回房間",
   "mahjongcraft.history_screen.round.event.round_started": "本局開始",

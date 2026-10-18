@@ -392,6 +392,9 @@ object MinecraftHistoryScreenKeys {
     /** 擲骰操作。 */
     const val ROUND_ACTION_DICE_ROLLED = "mahjongcraft.history_screen.round.action.dice_rolled"
 
+    /** 歷史事件中的一輪擲骰，帶輪次與骰子點數。 */
+    const val ROUND_EVENT_DICE_ROLLED = "mahjongcraft.history_screen.round.event.dice_rolled"
+
     /** 回應處理完成。 */
     const val ROUND_REACTION_NONE = "mahjongcraft.history_screen.round.reaction.none"
 

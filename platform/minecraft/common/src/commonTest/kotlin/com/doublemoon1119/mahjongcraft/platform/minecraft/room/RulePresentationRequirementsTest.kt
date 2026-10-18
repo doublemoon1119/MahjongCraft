@@ -10,9 +10,9 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallLayout
-import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
-import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
-import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpeningPolicy
+import com.doublemoon1119.mahjongcraft.logic.table.opening.RoundOpeningContext
+import com.doublemoon1119.mahjongcraft.logic.table.opening.RoundOpeningProcedure
+import com.doublemoon1119.mahjongcraft.logic.table.opening.RoundOpeningStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.BundledMinecraftMahjongExtensions
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import kotlin.test.Test
@@ -35,14 +35,14 @@ class RulePresentationRequirementsTest {
         RulePresentationRequirements.verifySelectableRules(bundledPresentations(), modules)
     }
 
-    /** 缺少牌山布局或開門規則的規則無法呈現，原因帶出規則 ID。 */
+    /** 缺少牌山布局或開局程序的規則無法呈現，原因帶出規則 ID。 */
     @Test
     fun `rules without a wall cannot be presented`() {
         val noLayout = RulePresentationRequirements.unmetRequirement(adjustedModule(providesLayout = false))
         val noOpening = RulePresentationRequirements.unmetRequirement(adjustedModule(diceCount = null))
 
         assertTrue(assertNotNull(noLayout).contains("wall layout") && noLayout.contains(TEST_RULE_ID))
-        assertTrue(assertNotNull(noOpening).contains("wall opening policy") && noOpening.contains(TEST_RULE_ID))
+        assertTrue(assertNotNull(noOpening).contains("round opening procedure") && noOpening.contains(TEST_RULE_ID))
     }
 
     /** 開門一次擲出的骰子必須是桌上能擺放的數量。 */
@@ -54,6 +54,12 @@ class RulePresentationRequirementsTest {
         listOf(2, 3).forEach { count ->
             assertNull(RulePresentationRequirements.unmetRequirement(adjustedModule(diceCount = count)), "$count dice")
         }
+    }
+
+    /** 不擲骰的開局程序可以用空的能力集合表示，仍可使用固定牌山布局。 */
+    @Test
+    fun `empty opening procedure capabilities are supported`() {
+        assertNull(RulePresentationRequirements.unmetRequirement(adjustedModule(emptyOpeningProcedure = true)))
     }
 
     /** 啟動檢查只拒絕無法呈現的可選規則；不可選的規則不檢查。 */
@@ -161,13 +167,19 @@ class RulePresentationRequirementsTest {
      * 建立牌山布局與開門骰子數量可調整、其餘行為沿用日麻的測試規則。
      *
      * @param providesLayout 是否提供牌山布局。
-     * @param diceCount 開門擲出的骰子數量；null 表示不提供開門規則。
+     * @param diceCount 每輪開門擲出的骰子數量；null 表示不提供擲骰程序。
+     * @param emptyOpeningProcedure 是否提供不需要擲骰的開局程序。
      * @return 測試規則模組。
      */
-    private fun adjustedModule(providesLayout: Boolean = true, diceCount: Int? = 2): MahjongRuleModule<RiichiRuleConfig> = AdjustedWallModule(
+    private fun adjustedModule(
+        providesLayout: Boolean = true,
+        diceCount: Int? = 2,
+        emptyOpeningProcedure: Boolean = false,
+    ): MahjongRuleModule<RiichiRuleConfig> = AdjustedWallModule(
         delegate = RiichiRuleModule(TEST_RULE_ID, RiichiRuleConfig()),
         providesLayout = providesLayout,
         diceCount = diceCount,
+        emptyOpeningProcedure = emptyOpeningProcedure,
     )
 
     /**
@@ -175,25 +187,42 @@ class RulePresentationRequirementsTest {
      *
      * @property delegate 提供其餘規則行為的日麻模組。
      * @property providesLayout 是否提供牌山布局。
-     * @property diceCount 開門擲出的骰子數量；null 表示不提供開門規則。
+     * @property diceCount 每輪開門擲出的骰子數量；null 表示不提供擲骰程序。
+     * @property emptyOpeningProcedure 是否提供不需要擲骰的開局程序。
      */
     private class AdjustedWallModule(
         private val delegate: RiichiRuleModule,
         private val providesLayout: Boolean,
         private val diceCount: Int?,
+        private val emptyOpeningProcedure: Boolean,
     ) : MahjongRuleModule<RiichiRuleConfig> by delegate {
         override fun createWallLayout(): TileWallLayout? = if (providesLayout) delegate.createWallLayout() else null
 
-        override fun createWallOpeningPolicy(): WallOpeningPolicy? = diceCount?.let(::FixedDiceOpeningPolicy)
+        override fun createRoundOpeningProcedure(): RoundOpeningProcedure? = when {
+            emptyOpeningProcedure -> EmptyOpeningProcedure
+            diceCount != null -> FixedDiceOpeningProcedure(diceCount)
+            else -> null
+        }
     }
 
     /**
-     * 只宣告骰子數量、不會被擲出的開門規則。
+     * 只宣告骰子數量、不會被執行的開門程序。
      *
-     * @property diceCount 開門擲出的骰子數量。
+     * @param diceCount 每輪開門擲出的骰子數量。
      */
-    private class FixedDiceOpeningPolicy(override val diceCount: Int) : WallOpeningPolicy {
-        override fun resolve(diceRoll: DiceRollResult): WallOpening = error("Requirement checks never roll the dice")
+    private class FixedDiceOpeningProcedure(
+        diceCount: Int,
+    ) : RoundOpeningProcedure {
+        override val supportedDiceCounts: Set<Int> = setOf(diceCount)
+
+        override fun next(context: RoundOpeningContext): RoundOpeningStep = error("Requirement checks never run the opening procedure")
+    }
+
+    /** 不需要擲骰、直接完成的開局程序替身。 */
+    private object EmptyOpeningProcedure : RoundOpeningProcedure {
+        override val supportedDiceCounts: Set<Int> = emptySet()
+
+        override fun next(context: RoundOpeningContext): RoundOpeningStep = error("Requirement checks never run the opening procedure")
     }
 
     private companion object {

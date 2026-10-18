@@ -12,7 +12,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionPhase
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
-import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
+import com.doublemoon1119.mahjongcraft.logic.table.opening.OpeningDiceRoll
 import kotlin.uuid.Uuid
 
 /**
@@ -36,10 +36,7 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
     private val exhaustiveDrawSettlements = mutableMapOf<Uuid, ExhaustiveDrawSettlementPresentationRequest>()
 
     /** 依對局 Uuid 紀錄最後一次收到的擲骰結果。 */
-    private val diceRolls = mutableMapOf<Uuid, DiceRollResult>()
-
-    /** 依對局 Uuid 紀錄最後一次收到的擲骰隨附桌況資料。 */
-    private val diceRollContexts = mutableMapOf<Uuid, DiceRollContext>()
+    private val diceRolls = mutableMapOf<Uuid, List<OpeningDiceRoll>>()
 
     /** 依對局 Uuid 紀錄最後一次收到的牌牆結構座標。 */
     private val wallStructures = mutableMapOf<Uuid, TileWallPhysicalLayout>()
@@ -103,9 +100,8 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
         matchSettlements[gameId] = request
     }
 
-    override fun publishDiceRoll(gameId: Uuid, dice: DiceRollResult, dealerSeatIndex: Int, roundNumber: Int, comboCount: Int) {
-        diceRolls[gameId] = dice
-        diceRollContexts[gameId] = DiceRollContext(dealerSeatIndex, roundNumber, comboCount)
+    override fun publishOpeningRolls(gameId: Uuid, rolls: List<OpeningDiceRoll>) {
+        diceRolls[gameId] = rolls.toList()
     }
 
     override fun publishWallStructure(
@@ -114,7 +110,7 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
         layout: TileWallPhysicalLayout,
         dealerSeatIndex: Int,
         deadWallTileIds: Set<Uuid>,
-        diceCount: Int,
+        openingDiceCounts: List<Int>,
         isNewOpening: Boolean,
         revealedTileIds: Set<Uuid>,
     ) {
@@ -123,7 +119,7 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
         wallStructureContexts[gameId] = WallStructureContext(
             dealerSeatIndex,
             deadWallTileIds,
-            diceCount,
+            openingDiceCounts,
             isNewOpening,
             revealedTileIds,
         )
@@ -184,14 +180,14 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
         postFlipHandTileIdsBySeatIndex: Map<Int, List<Uuid>>,
         dealerSeatIndex: Int,
         dealBatchSizes: List<Int>,
-        diceCount: Int,
+        openingDiceCounts: List<Int>,
     ) {
         initialDeals[gameId] = InitialDealContext(
             handTileIdsBySeatIndex,
             postFlipHandTileIdsBySeatIndex,
             dealerSeatIndex,
             dealBatchSizes,
-            diceCount,
+            openingDiceCounts,
         )
     }
 
@@ -230,14 +226,11 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
         publishOrder.getOrPut(gameId) { mutableListOf() }.add(segments)
     }
 
-    /** 取得指定對局最後一次收到的擲骰結果；若無紀錄則回傳 null。 */
-    fun getPublishedDiceRoll(gameId: Uuid): DiceRollResult? = diceRolls[gameId]
+    /** 讀取本局全部擲骰呈現記錄。 */
+    fun getPublishedOpeningRolls(gameId: Uuid): List<OpeningDiceRoll> = diceRolls[gameId].orEmpty()
 
     /** 取得指定對局依序收到的已成立動作語音請求。 */
     fun getDeclaredGameActions(gameId: Uuid): List<DeclaredGameActionContext> = declaredGameActions[gameId].orEmpty()
-
-    /** 取得指定對局最後一次收到的擲骰隨附桌況資料；若無紀錄則回傳 null。 */
-    fun getPublishedDiceRollContext(gameId: Uuid): DiceRollContext? = diceRollContexts[gameId]
 
     /** 取得指定對局最後一次收到的牌牆結構座標；若無紀錄則回傳 null。 */
     fun getPublishedWallStructure(gameId: Uuid): TileWallPhysicalLayout? = wallStructures[gameId]

@@ -16,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugVirtualTableLayoutFactory
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.TileAnimationSteps
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceRollAnimationSpec
+import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollTimeline
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableSide
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
@@ -55,6 +56,7 @@ class FabricDebugAnimationCommand(
         .executes { ctx -> previewDice(ctx.source, DEFAULT_DEBUG_DICE_COUNT) }
         .then(literal(TWO_DICE_ARGUMENT).executes { ctx -> previewDice(ctx.source, 2) })
         .then(literal(THREE_DICE_ARGUMENT).executes { ctx -> previewDice(ctx.source, 3) })
+        .then(literal(MULTI_ROUND_ARGUMENT).executes { ctx -> previewMultiRoundDice(ctx.source) })
 
     /** 建立 `deal [tile]` 子指令。 */
     fun buildDealCommand(): LiteralArgumentBuilder<ServerCommandSource> = tilePreviewSupport.withOptionalTileArgument(literal(DEAL_SUBCOMMAND), ::previewDeal)
@@ -77,9 +79,18 @@ class FabricDebugAnimationCommand(
      *
      * @param source 執行指令的玩家來源。
      * @param diceCount 要預覽的骰子數量。
+     * @param startOffsetTicks 相對於本次預覽開始時間的延後 tick 數。
+     * @param throwSide 這一輪擲骰使用的桌邊。
+     * @param rollSequence 這一輪擲骰的呈現序號。
      * @return Brigadier 指令結果碼。
      */
-    private fun previewDice(source: ServerCommandSource, diceCount: Int): Int {
+    private fun previewDice(
+        source: ServerCommandSource,
+        diceCount: Int,
+        startOffsetTicks: Int = 0,
+        throwSide: MahjongTableSide = MahjongTableSide.SOUTH,
+        rollSequence: Long = 0,
+    ): Int {
         val player = source.player ?: return COMMAND_FAILURE
         val world = player.serverWorld
         val layout = layoutFactory.create(
@@ -96,12 +107,12 @@ class FabricDebugAnimationCommand(
             controllerZ = layout.controllerZ,
             tableId = tableId,
             tableFacing = layout.tableFacing,
-            throwSide = MahjongTableSide.SOUTH,
-            rollSequence = 0,
+            throwSide = throwSide,
+            rollSequence = rollSequence,
             diceCount = diceCount,
         )
         val points = List(diceCount) { index -> MahjongDicePoint.entries[(index + DEBUG_DICE_POINT_OFFSET) % MahjongDicePoint.entries.size] }
-        val revealGameTime = world.time + MahjongDiceTableLayout.maxStartDelayTicks(diceCount) + DiceRollAnimationSpec.DEFAULT_DURATION_TICKS
+        val revealGameTime = world.time + startOffsetTicks + MahjongDiceTableLayout.maxStartDelayTicks(diceCount) + DiceRollAnimationSpec.DEFAULT_DURATION_TICKS
         val endGameTime = revealGameTime + DiceRollAnimationSpec.EXTRA_VIEWING_TICKS
         val dice = placements.map { placement ->
             MahjongDiceEntity(world = world).apply {
@@ -119,7 +130,7 @@ class FabricDebugAnimationCommand(
             entity.startRoll(
                 finalPoint = point,
                 seed = Random.nextLong(),
-                startDelayTicks = placement.startDelayTicks,
+                startDelayTicks = placement.startDelayTicks + startOffsetTicks,
                 startOffset = placement.startOffset,
                 sharedViewingEndGameTime = endGameTime,
             )
@@ -137,6 +148,20 @@ class FabricDebugAnimationCommand(
         world.spawnEntity(stage)
         entityLifecycle.schedule(world, endGameTime, dice + stage)
         return COMMAND_SUCCESS
+    }
+
+    /** `dice multi`：依共用時間線連續預覽兩輪不同骰數與擲骰方向。 */
+    private fun previewMultiRoundDice(source: ServerCommandSource): Int {
+        val first = previewDice(source, diceCount = 2, throwSide = MahjongTableSide.SOUTH, rollSequence = 0)
+        if (first != COMMAND_SUCCESS) return first
+        val offset = MahjongDiceRollTimeline.totalTicks(listOf(2))
+        return previewDice(
+            source,
+            diceCount = 3,
+            startOffsetTicks = offset,
+            throwSide = MahjongTableSide.NORTH,
+            rollSequence = 1,
+        )
     }
 
     /**
@@ -365,6 +390,9 @@ class FabricDebugAnimationCommand(
 
         /** `dice` 的三顆骰子 literal。 */
         const val THREE_DICE_ARGUMENT: String = "3"
+
+        /** `dice` 的多輪預覽 literal。 */
+        const val MULTI_ROUND_ARGUMENT: String = "multi"
 
         /** `deal` 子指令 literal。 */
         const val DEAL_SUBCOMMAND: String = "deal"

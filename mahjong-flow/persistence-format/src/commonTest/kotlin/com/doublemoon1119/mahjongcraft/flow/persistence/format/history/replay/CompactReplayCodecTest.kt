@@ -1,7 +1,12 @@
 package com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFactTypeKeys
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayFact
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayIdentity
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayPlayerIdentity
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundTileCatalog
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ActionTimeControl
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationConfig
@@ -11,12 +16,19 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.config.toPersiste
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.TypedPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
+import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
+import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
+import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollSource
+import com.doublemoon1119.mahjongcraft.logic.table.opening.OpeningDiceRoll
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledSetAsideTiles
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.encodeToJsonElement
+import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -24,6 +36,65 @@ import kotlin.uuid.Uuid
 
 /** 驗證精簡 Replay 文件的 envelope 與損壞輸入防護。 */
 class CompactReplayCodecTest {
+    /** 精簡 Replay 以初始座位索引保存多輪擲骰，且不依賴玩家清單排列順序。 */
+    @Test
+    fun `compact replay round trips dice rolls with multiple actors`() {
+        val playerIds = List(4) { Uuid.random() }
+        val base = GameInitializer.initialize(
+            id = Uuid.random(),
+            playerIds = playerIds,
+            module = RiichiRuleModule("test:riichi", RiichiRuleConfig()),
+            diceRollSource = DiceRollSource {
+                DiceRollResult.of(List(it) { 1 })
+            },
+        ).tableState
+        val table = base.copy(players = base.players.reversed())
+        val first = OpeningDiceRoll(0, table.players[0].id, DiceRollResult.of(listOf(2, 6)))
+        val second = OpeningDiceRoll(1, table.players[2].id, DiceRollResult.of(listOf(3, 4, 1)))
+        val state = table.copy(openingDiceRolls = listOf(first, second))
+        val matchId = Uuid.random()
+        val events = listOf(
+            HistoryOutboxEvent(matchId, state.id, 1, 1, 1, 100, null, HistoryFact.MatchStarted(state, GameFlowConfig(), emptyMap())),
+            HistoryOutboxEvent(matchId, state.id, 1, 2, 2, 200, first.playerId, HistoryFact.DiceRolled(first)),
+            HistoryOutboxEvent(matchId, state.id, 1, 3, 2, 200, second.playerId, HistoryFact.DiceRolled(second)),
+            HistoryOutboxEvent(matchId, state.id, 1, 4, 4, 400, null, HistoryFact.MatchCompleted("test:complete", state.players.associate { it.id to it.score })),
+            HistoryOutboxEvent(matchId, state.id, 1, 5, 5, 500, null, HistoryFact.ReturnedToRoom),
+        )
+        val registries = bundledPersistenceRegistries()
+        val document = CompactReplayCodec.encodeCompact(
+            events,
+            HistoryRecordingPersistenceMapper(registries),
+            registries,
+            bundledSetAsideTiles(events),
+        )
+
+        val transactions = CompactReplayCodec.decodeCompact(document).flatten()
+        val diceTransaction = transactions.single { transaction ->
+            transaction.facts.count { it[ReplaySourceKeys.TYPE]?.jsonPrimitive?.content == HistoryFactTypeKeys.DICE_ROLLED } == 2
+        }
+        val identity = HistoryReplayIdentity(
+            matchId,
+            state.id,
+            state.players.map { player -> HistoryReplayPlayerIdentity(player.initialSeatIndex, player.id, null) },
+        )
+        val projected = HistoryReplayProjectionMapper.mapFacts(
+            diceTransaction.facts,
+            diceTransaction.actorSeats,
+            identity,
+            1,
+            HistoryRoundTileCatalog(emptyList()),
+            ReplayReadBudget(ReplayReadLimits()) {},
+        )
+
+        assertEquals(
+            listOf(
+                HistoryReplayFact.DiceRolled(HistoryFactTypeKeys.DICE_ROLLED, 0, table.players[0].initialSeatIndex, listOf(2, 6)),
+                HistoryReplayFact.DiceRolled(HistoryFactTypeKeys.DICE_ROLLED, 1, table.players[2].initialSeatIndex, listOf(3, 4, 1)),
+            ),
+            projected,
+        )
+    }
+
     /** 未知 envelope 欄位不得被靜默忽略。 */
     @Test
     fun `unknown top-level field is rejected`() {

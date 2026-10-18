@@ -8,14 +8,14 @@ import kotlin.uuid.Uuid
  *
  * @property dealerSeatIndex 莊家座位索引。
  * @property deadWallTileIds 王牌區牌的 UUID 集合。
- * @property diceCount 開門擲骰使用的骰子數量。
+ * @property openingDiceCounts 各輪擲骰使用的骰子數量。
  * @property isNewOpening 是否為新的開局。
  * @property revealedTileIds 已公開的牌 UUID 集合。
  */
 data class WallStructureContext(
     val dealerSeatIndex: Int,
     val deadWallTileIds: Set<Uuid>,
-    val diceCount: Int,
+    val openingDiceCounts: List<Int>,
     val isNewOpening: Boolean,
     val revealedTileIds: Set<Uuid>,
 )

@@ -67,6 +67,7 @@ class GameEventProjector(
                 is HistoryFact.MatchCompleted -> ended = matchCompleted(game, module, fact.reasonId)
                 is HistoryFact.MatchAborted -> Unit
                 is HistoryFact.RoundStarted,
+                is HistoryFact.DiceRolled,
                 is HistoryFact.RoundPreparationStarted,
                 is HistoryFact.RoundPreparationSubmitted,
                 is HistoryFact.RoundPreparationAutomaticallyResolved,

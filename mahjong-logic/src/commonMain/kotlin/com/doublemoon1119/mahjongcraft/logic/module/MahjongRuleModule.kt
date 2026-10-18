@@ -35,6 +35,8 @@ import com.doublemoon1119.mahjongcraft.logic.table.WallRevealPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.layout.ContinuousPhysicalWallLayoutPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallLayout
+import com.doublemoon1119.mahjongcraft.logic.table.opening.RoundOpeningProcedure
+import com.doublemoon1119.mahjongcraft.logic.table.opening.SingleRollOpeningProcedure
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpeningPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.seat.DealerAnchoredSeatWindAssignmentPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.seat.SeatWindAssignmentPolicy
@@ -114,14 +116,28 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     fun createWallFactory(): TileWallFactory
 
     /**
-     * 建立適用於該規則的牌牆開門 policy。
+     * 建立適用於預設單輪開門流程的牌牆開門 policy。
      *
-     * 尚未定義骰子開門規則的模組可使用預設的 null；通用初始化流程不得自行套用其他玩法的公式。
-     * 不提供時開局不擲骰、不產生牌山結構；依牌山結構呈現牌局的平台可能因此無法使用此規則。
+     * 尚未定義預設單輪開門規則的模組可使用預設的 null；通用初始化流程不得自行套用其他玩法的公式。
+     * 直接覆寫 [createRoundOpeningProcedure] 的規則可以不使用此舊式 policy，改由自己的程序決定是否擲骰。
      *
-     * @return 此規則的 [WallOpeningPolicy]，若尚未支援權威開門流程則為 null。
+     * @return 此規則的 [WallOpeningPolicy]；未使用預設單輪流程時為 null。
      */
     fun createWallOpeningPolicy(): WallOpeningPolicy? = null
+
+    /**
+     * 建立本局選定起家與開門位置的程序。
+     *
+     * 預設實作會在同時提供 [createWallOpeningPolicy] 與 [createWallLayout] 時建立單輪程序；規則可
+     * 覆寫此方法提供多輪、固定起家或其他純計算程序。回傳 `null` 時本局沿用固定起家且不擲骰。
+     *
+     * @return 規則的開局程序，未提供開局選定流程時為 null。
+     */
+    fun createRoundOpeningProcedure(): RoundOpeningProcedure? = createWallOpeningPolicy()
+        ?.takeIf { createWallLayout() != null }
+        ?.let { policy ->
+            SingleRollOpeningProcedure(openingPolicy = policy)
+        }
 
     /**
      * 建立本規則每局用來指派自風／門風的 policy。

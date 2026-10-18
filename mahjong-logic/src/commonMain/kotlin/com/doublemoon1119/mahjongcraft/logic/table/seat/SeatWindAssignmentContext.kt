@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.logic.table.seat
 
-import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
+import com.doublemoon1119.mahjongcraft.logic.table.opening.OpeningDiceRoll
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 import kotlin.uuid.Uuid
 
@@ -9,13 +9,13 @@ import kotlin.uuid.Uuid
  *
  * @property playerIdsInTurnOrder 整場固定、依回合方向排列的玩家 Uuid。
  * @property dealerPlayerId 本局權威莊家 Uuid。
- * @property diceRoll 本局擲骰結果；規則未使用骰子時為 `null`。
+ * @property diceRolls 本局完整擲骰記錄；規則未使用骰子時為空清單。
  * @property wallOpening 本局牌牆開門結果；規則未建立實體牌牆開門時為 `null`。
  */
 data class SeatWindAssignmentContext(
     val playerIdsInTurnOrder: List<Uuid>,
     val dealerPlayerId: Uuid,
-    val diceRoll: DiceRollResult?,
+    val diceRolls: List<OpeningDiceRoll>,
     val wallOpening: WallOpening?,
 ) {
     init {

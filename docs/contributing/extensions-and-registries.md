@@ -64,6 +64,19 @@
 - Test two-player games with four walls, adjacent and opposite two-wall arrangements, both dealer seats,
   and every table facing. Keep three-player and four-player geometry covered by regression tests.
 
+## Round Opening Procedures
+
+- A rule's opening procedure decides who rolls, how many dice they roll, and when the recorded results
+  determine the first dealer and wall opening. It reads completed rolls and returns the next request;
+  it does not generate dice, keep mutable progress, or wait for presentation.
+- Use the shared executor as the only source of dice results. The current round's saved transcript,
+  live events, history and presentation all use those same results. Reconnection and loading never reroll.
+- Selecting the initial dealer does not move players to different physical seats. Keep the roster order
+  fixed; establish the initial ranking order once, relative to that dealer. Later rounds use the dealer
+  chosen by match progression, even when another player rolls.
+- Keep the bundled single-roll behaviour through the default procedure. Test custom multi-roll procedures
+  through actual start and next-round use cases, including invalid requests and interrupted presentation.
+
 ## Observer State Projection
 
 - Rule modules define what each observer may know through `projectPlayerRuleState` and

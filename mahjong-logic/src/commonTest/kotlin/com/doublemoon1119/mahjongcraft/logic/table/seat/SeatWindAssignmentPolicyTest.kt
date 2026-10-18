@@ -104,7 +104,7 @@ class SeatWindAssignmentPolicyTest {
     ): SeatWindAssignmentContext = SeatWindAssignmentContext(
         playerIdsInTurnOrder = players,
         dealerPlayerId = dealerPlayerId,
-        diceRoll = null,
+        diceRolls = emptyList(),
         wallOpening = wallOpening,
     )
 }

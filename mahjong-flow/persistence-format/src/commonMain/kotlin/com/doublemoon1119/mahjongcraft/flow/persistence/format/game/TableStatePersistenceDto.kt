@@ -21,6 +21,7 @@ import kotlinx.serialization.Serializable
  * @property pendingReaction 尚未完成的捨牌反應視窗。
  * @property pendingRobbingReaction 尚未完成的搶和反應視窗。
  * @property wallOpening 本局權威擲骰決定的牌牆開門位置；沒有時為 null。
+ * @property openingDiceRolls 本局開局程序已完成的逐輪擲骰結果。
  * @property reservedWallTiles 目前規則保留的牌張。
  * @property finishedPlayerIds 本局已完成玩家的 UUID 集合。
  * @property physicalWallLayout 仍在牌牆中的牌張實體位置；沒有時為 null。
@@ -43,6 +44,7 @@ data class TableStatePersistenceDto(
     val pendingReaction: PendingReactionPersistenceDto?,
     val pendingRobbingReaction: PendingRobbingReactionPersistenceDto?,
     val wallOpening: WallOpeningPersistenceDto?,
+    val openingDiceRolls: List<OpeningDiceRollPersistenceDto>,
     val reservedWallTiles: List<IdentifiedTilePersistenceDto>,
     val finishedPlayerIds: Set<String>,
     val physicalWallLayout: TileWallPhysicalLayoutPersistenceDto?,

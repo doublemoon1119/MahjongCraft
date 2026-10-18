@@ -27,7 +27,7 @@ data class TileMotionAnimationSpec(
         /**
          * 預設動畫總長度，約為正常 TPS 下的 0.25 秒；牌牆生成掉落動畫經過遊戲內多次比對後持續調快，
          * 從原本 15（0.75 秒）先調到 8（0.4 秒）、再調到現在的值——擲骰子動畫改成等牌牆完全
-         * 落地後才開始播放（見 `FabricGamePresentationPublisher.publishDiceRoll`），牌牆這段時間會
+         * 落地後才開始播放（見開局擲骰呈現），牌牆這段時間會
          * 直接疊加進開局的總等待時間，比過去兩者平行播放時更值得壓縮。
          */
         const val DEFAULT_DURATION_TICKS = 5

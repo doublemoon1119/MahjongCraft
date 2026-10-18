@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ActionTimeControl
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
@@ -13,8 +14,17 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferen
 import com.doublemoon1119.mahjongcraft.flow.server.room.repository.RoomRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.opening.RiichiWallOpeningPolicy
+import com.doublemoon1119.mahjongcraft.logic.table.opening.OpeningDiceRollRequest
+import com.doublemoon1119.mahjongcraft.logic.table.opening.RoundOpeningCompletion
+import com.doublemoon1119.mahjongcraft.logic.table.opening.RoundOpeningContext
+import com.doublemoon1119.mahjongcraft.logic.table.opening.RoundOpeningProcedure
+import com.doublemoon1119.mahjongcraft.logic.table.opening.RoundOpeningStep
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
@@ -22,6 +32,7 @@ import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGame
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -58,19 +69,24 @@ class StartGameUseCaseTest {
         readyPlayerIds = guestIds,
     )
 
-    /** 使用權威狀態儲存與記憶體替身組成的開局測試環境。 */
-    private class Fixtures {
+    /**
+     * 使用權威狀態儲存與記憶體替身組成的開局測試環境。
+     *
+     * @property moduleRegistry 測試所使用的規則登記。
+     * @param historyRecordingEnabled 是否記錄本次開局的歷史事實。
+     */
+    private class Fixtures(
+        val moduleRegistry: MahjongModuleRegistryImpl = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() },
+        historyRecordingEnabled: Boolean = false,
+    ) {
         /** 同時保存測試房間與對局的權威狀態。 */
-        val store = AuthoritativeStateStore()
+        val store = AuthoritativeStateStore(historyRecordingEnabled = historyRecordingEnabled)
 
         /** 測試用房間資料倉庫。 */
         val roomRepo = RoomRepositoryImpl(store)
 
         /** 測試用對局資料倉庫。 */
         val gameRepo = GameRepositoryImpl(store)
-
-        /** 已註冊內建規則的模組註冊中心。 */
-        val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
 
         /** 記錄同步快照的倉庫。 */
         val snapshotRepo = FakeGameSnapshotRepository()
@@ -96,6 +112,95 @@ class StartGameUseCaseTest {
             eventPublisher,
             presentationPublisher,
         )
+    }
+
+    /** 驗證第三方多輪程序的結果只計算一次，並由同一份記錄同步、呈現及保存牌譜。 */
+    @Test
+    fun `multi roll opening records actors and results in one authoritative transaction`() = runTest {
+        val registry = MahjongModuleRegistryImpl().apply {
+            register(
+                MahjongModuleDefinition(
+                    configClass = RiichiRuleConfig::class,
+                    id = "example:multi_roll",
+                    factory = { config, id ->
+                        object : MahjongRuleModule<RiichiRuleConfig> by RiichiRuleModule(id, config) {
+                            override fun createRoundOpeningProcedure(): RoundOpeningProcedure = object : RoundOpeningProcedure {
+                                override val supportedDiceCounts = setOf(2, 3)
+
+                                override fun next(context: RoundOpeningContext): RoundOpeningStep = when (context.rolls.size) {
+                                    0 -> RoundOpeningStep.Roll(OpeningDiceRollRequest(context.playerIdsInTurnOrder[0], 2))
+                                    1 -> RoundOpeningStep.Roll(OpeningDiceRollRequest(context.playerIdsInTurnOrder[1], 3))
+                                    else -> RoundOpeningStep.Complete(
+                                        RoundOpeningCompletion(
+                                            dealerPlayerId = context.playerIdsInTurnOrder[1],
+                                            wallOpening = RiichiWallOpeningPolicy.resolve(context.rolls[0].dice),
+                                        ),
+                                    )
+                                }
+                            }
+                        }
+                    },
+                ),
+            )
+        }
+        val fixtures = Fixtures(registry, historyRecordingEnabled = true)
+        fixtures.roomRepo.setRoom(readyRoom())
+
+        assertTrue(fixtures.useCase(roomId, hostId) is Outcome.Success)
+
+        val table = assertNotNull(fixtures.gameRepo.getTableState(roomId))
+        val rolls = table.openingDiceRolls
+        assertEquals(listOf(0, 1), rolls.map { it.rollIndex })
+        assertEquals(listOf(2, 3), rolls.map { it.dice.values.size })
+        assertEquals(table.players.take(2).map { it.id }, rolls.map { it.playerId })
+        assertEquals(table.players[1].id, table.dealerPlayerId)
+        assertEquals(0, table.players[1].initialSeatIndex)
+        assertEquals(rolls, fixtures.presentationPublisher.getPublishedOpeningRolls(roomId))
+        assertEquals(listOf(2, 3), fixtures.presentationPublisher.getPublishedInitialDeal(roomId)?.openingDiceCounts)
+        table.players.forEach { observer ->
+            assertEquals(rolls, fixtures.snapshotRepo.getSnapshot(roomId, observer.id)?.openingDiceRolls)
+            rolls.forEach { roll ->
+                assertTrue(GameAction.DiceRolled(roll) in fixtures.eventPublisher.getNotifiedActions(roomId, observer.id, roll.playerId))
+            }
+        }
+        val events = fixtures.store.snapshot().historyRecordingState.pendingEvents
+        assertTrue(events.first().fact is HistoryFact.MatchStarted)
+        assertEquals(rolls, events.mapNotNull { (it.fact as? HistoryFact.DiceRolled)?.roll })
+        assertEquals(rolls.map { it.playerId }, events.filter { it.fact is HistoryFact.DiceRolled }.map { it.actorPlayerId })
+        assertEquals(1, events.map { it.transactionFirstSequence }.distinct().size)
+    }
+
+    /** 規則要求不存在的玩家擲骰時，開局交易不留下半成品或通知。 */
+    @Test
+    fun `invalid opening leaves the room intact without partial history or notifications`() = runTest {
+        val registry = MahjongModuleRegistryImpl().apply {
+            register(
+                MahjongModuleDefinition(
+                    configClass = RiichiRuleConfig::class,
+                    id = "example:invalid_opening",
+                    factory = { config, id ->
+                        object : MahjongRuleModule<RiichiRuleConfig> by RiichiRuleModule(id, config) {
+                            override fun createRoundOpeningProcedure(): RoundOpeningProcedure = object : RoundOpeningProcedure {
+                                override val supportedDiceCounts = setOf(2)
+
+                                override fun next(context: RoundOpeningContext): RoundOpeningStep = RoundOpeningStep.Roll(OpeningDiceRollRequest(Uuid.random(), 2))
+                            }
+                        }
+                    },
+                ),
+            )
+        }
+        val fixtures = Fixtures(registry, historyRecordingEnabled = true)
+        val room = readyRoom()
+        fixtures.roomRepo.setRoom(room)
+
+        assertFailsWith<IllegalArgumentException> { fixtures.useCase(roomId, hostId) }
+
+        assertEquals(room, fixtures.roomRepo.getRoom(roomId))
+        assertNull(fixtures.gameRepo.getGame(roomId))
+        assertTrue(fixtures.store.snapshot().historyRecordingState.pendingEvents.isEmpty())
+        assertTrue(fixtures.presentationPublisher.getPublishedOpeningRolls(roomId).isEmpty())
+        assertTrue(fixtures.eventPublisher.getNotifiedActions(roomId, hostId, hostId).isEmpty())
     }
 
     /**

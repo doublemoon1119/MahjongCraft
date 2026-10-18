@@ -14,6 +14,20 @@
   scoring, and round-result contracts where implemented. Taiwanese hand-value
   and settlement calculation is not implemented yet.
 
+## Round Openings
+
+A rule can override `MahjongRuleModule.createRoundOpeningProcedure()` to request
+several dice rolls, choose the initial dealer, and determine where the wall opens.
+Each request names the player and dice count. The initializer generates the
+results and passes the completed rolls back to the procedure; the rule does not
+roll dice or keep progress in mutable fields.
+
+`TableState.openingDiceRolls` records the current round's results. Selecting the
+initial dealer leaves the player list in its fixed seat order. On later rounds,
+the opening procedure must retain the dealer chosen by match progression.
+Bundled rules use the default single-roll procedure around their existing wall
+opening formula.
+
 ## Boundaries
 
 This module does not depend on Minecraft, networking, persistence storage, UI,

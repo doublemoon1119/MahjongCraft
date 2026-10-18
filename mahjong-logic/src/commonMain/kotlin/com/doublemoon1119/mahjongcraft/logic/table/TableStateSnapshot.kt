@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
+import com.doublemoon1119.mahjongcraft.logic.table.opening.OpeningDiceRoll
 import kotlin.uuid.Uuid
 
 /**
@@ -23,6 +24,7 @@ import kotlin.uuid.Uuid
  * @property dynamicRuleState 依觀察者投影的規則特定動態桌況狀態；未公開或規則不支援時為 `null`。
  * @property finishedPlayerIds 本局已完成、不再參與後續回合的玩家 Uuid 集合。
  * @property physicalWallLayout 目前仍在牌牆中的牌張實體位置；規則不支援時為 null。
+ * @property openingDiceRolls 本局完整擲骰記錄；規則不使用擲骰時為空清單。
  * @property revealedHandTiles 仍在某位玩家手牌中、但已經公開的牌（見 [TableState.revealedHandTileIds]），對所有玩家
  * 可見；沒有時為空清單。
  */
@@ -40,6 +42,7 @@ data class TableStateSnapshot(
     val dynamicRuleState: DynamicRuleState?,
     val finishedPlayerIds: Set<Uuid>,
     val physicalWallLayout: TileWallPhysicalLayout?,
+    val openingDiceRolls: List<OpeningDiceRoll>,
     val revealedHandTiles: List<IdentifiedTile>,
 )
 
@@ -83,6 +86,7 @@ fun TableState.toSnapshot(
         dynamicRuleState = this.dynamicRuleState,
         finishedPlayerIds = this.finishedPlayerIds,
         physicalWallLayout = this.physicalWallLayout,
+        openingDiceRolls = this.openingDiceRolls,
         revealedHandTiles = revealedHandTiles(),
     )
 }

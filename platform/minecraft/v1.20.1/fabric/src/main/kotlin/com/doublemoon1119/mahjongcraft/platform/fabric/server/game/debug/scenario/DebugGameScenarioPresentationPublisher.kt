@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.config.dealBatchSizes
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.SidewaysMarkedDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.TileWallRevealable
+import com.doublemoon1119.mahjongcraft.logic.table.opening.OpeningDiceRoll
 import kotlin.uuid.Uuid
 
 /**
@@ -37,16 +38,13 @@ class DebugGameScenarioPresentationPublisher(
                     layout = result.wallLayout,
                     dealerSeatIndex = state.dealerIndex,
                     deadWallTileIds = state.reservedWallTiles.mapTo(mutableSetOf()) { tile -> tile.id },
-                    diceCount = presentation.diceRoll.values.size,
+                    openingDiceCounts = listOf(presentation.diceRoll.values.size),
                     isNewOpening = true,
                     revealedTileIds = revealedTileIds,
                 )
-                publisher.publishDiceRoll(
+                publisher.publishOpeningRolls(
                     gameId = game.id,
-                    dice = presentation.diceRoll,
-                    dealerSeatIndex = state.dealerIndex,
-                    roundNumber = state.roundNumber,
-                    comboCount = state.comboCount,
+                    rolls = listOf(OpeningDiceRoll(0, state.players[state.dealerIndex].id, presentation.diceRoll)),
                 )
             }
         }
@@ -58,7 +56,7 @@ class DebugGameScenarioPresentationPublisher(
                 postFlipHandTileIdsBySeatIndex = presentation.postFlipHandTileIdsBySeatIndex,
                 dealerSeatIndex = state.dealerIndex,
                 dealBatchSizes = state.config.dealBatchSizes(),
-                diceCount = presentation.diceRoll.values.size,
+                openingDiceCounts = listOf(presentation.diceRoll.values.size),
             )
         }
     }
@@ -78,7 +76,7 @@ class DebugGameScenarioPresentationPublisher(
             layout = result.wallLayout,
             dealerSeatIndex = state.dealerIndex,
             deadWallTileIds = state.reservedWallTiles.mapTo(mutableSetOf()) { tile -> tile.id },
-            diceCount = 0,
+            openingDiceCounts = emptyList(),
             isNewOpening = false,
             revealedTileIds = revealedTileIds,
         )

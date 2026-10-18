@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.persistence.format.history
 
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.TypedPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.IdentifiedTilePersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.OpeningDiceRollPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.PendingReactionPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.PendingRobbingReactionPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.RevealedHandSettlementPersistenceDto
@@ -21,6 +22,7 @@ import kotlinx.serialization.Serializable
  * @property finishedPlayerIds 本局已完成玩家的 UUID 字串集合；未改變時為 null。
  * @property revealedHandTileIds 本局已公開手牌的 UUID 字串集合；未改變時為 null。
  * @property revealedHandSettlements 流局公開手牌與等待牌的新資料；未改變時為 null，空集合代表清空。
+ * @property openingDiceRolls 本局逐輪擲骰結果；未改變時為 null。
  */
 @Serializable
 data class HistoryTableChangePersistenceDto(
@@ -35,4 +37,5 @@ data class HistoryTableChangePersistenceDto(
     val finishedPlayerIds: Set<String>?,
     val revealedHandTileIds: Set<String>?,
     val revealedHandSettlements: List<RevealedHandSettlementPersistenceDto>?,
+    val openingDiceRolls: List<OpeningDiceRollPersistenceDto>?,
 )

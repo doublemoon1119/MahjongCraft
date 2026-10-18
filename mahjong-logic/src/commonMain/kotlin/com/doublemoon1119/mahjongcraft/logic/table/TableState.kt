@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.RevealedHandSettlement
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
+import com.doublemoon1119.mahjongcraft.logic.table.opening.OpeningDiceRoll
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 import kotlin.uuid.Uuid
 
@@ -30,6 +31,7 @@ import kotlin.uuid.Uuid
  * @property pendingReaction 目前尚待其他玩家回應（吃/碰/槓/過）的捨牌反應視窗，若無則為 null。
  * @property pendingRobbingReaction 目前尚待其他玩家回應（搶和/過）的暗槓/加槓或移出手牌動作反應視窗，若無則為 null。
  * @property wallOpening 本局權威擲骰決定的牌牆開門位置；規則尚未支援開門流程時為 null。
+ * @property openingDiceRolls 本局完整擲骰記錄；規則不使用擲骰時為空清單。
  * @property reservedWallTiles 目前不由一般 [tileWall] 摸牌流程取得、改由規則解讀用途與順序的保留牌。日麻將它
  * 解讀為王牌；其他規則可以維持連續牌牆、採用不同補牌語意或完全不使用保留牌。
  * @property physicalWallLayout 目前仍位於活牌區與規則保留區的權威抽象實體位置；不支援實體布局的規則為 null。
@@ -62,6 +64,7 @@ data class TableState(
     val pendingReaction: PendingReaction? = null,
     val pendingRobbingReaction: PendingRobbingReaction? = null,
     val wallOpening: WallOpening? = null,
+    val openingDiceRolls: List<OpeningDiceRoll> = emptyList(),
     val reservedWallTiles: List<IdentifiedTile> = emptyList(),
     val physicalWallLayout: TileWallPhysicalLayout? = null,
     val finishedPlayerIds: Set<Uuid> = emptySet(),

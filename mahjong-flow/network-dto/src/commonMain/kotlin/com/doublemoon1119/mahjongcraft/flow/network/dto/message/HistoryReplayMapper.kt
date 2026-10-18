@@ -111,6 +111,7 @@ private fun HistoryReplayFact.toDto(): HistoryReplayFactDto = when (this) {
     is HistoryReplayFact.KnownAction -> HistoryReplayFactDto.KnownAction(typeKey, actorSeat, actionType, directTiles.map { it.tileIndex }, revealedTiles.map { it.tileIndex }, extensionTypeId)
     is HistoryReplayFact.Reaction -> HistoryReplayFactDto.Reaction(typeKey, actionType, resolvedActorSeat)
     is HistoryReplayFact.Preparation -> HistoryReplayFactDto.Preparation(typeKey, stepId, stepIndex, nextStepId)
+    is HistoryReplayFact.DiceRolled -> HistoryReplayFactDto.DiceRolled(typeKey, rollIndex, actorSeat, dice)
     is HistoryReplayFact.Completion -> HistoryReplayFactDto.Completion(typeKey, outcome?.toDto())
     is HistoryReplayFact.RuleEffect -> HistoryReplayFactDto.RuleEffect(typeKey, reasonId, outcome?.toDto())
     is HistoryReplayFact.Opaque -> HistoryReplayFactDto.Opaque(typeKey, actorSeat, directTiles.map { it.tileIndex }, revealedTiles.map { it.tileIndex })

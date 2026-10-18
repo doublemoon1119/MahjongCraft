@@ -138,6 +138,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.FabricMahjong
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.FabricMahjongPlayerAreaPresenter
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.FabricMahjongTileWallPresenter
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.time.FabricTickMonotonicClock
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.time.FabricWorldTickWaiter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.di.flowServerModule
 import com.doublemoon1119.mahjongcraft.platform.minecraft.di.minecraftServerModule
@@ -313,4 +314,5 @@ val fabricServerModule = module {
     single<FabricMahjongTileWallPresenter>() bind MahjongTileWallPresenter::class
 
     single<FabricTickMonotonicClock>() bind MonotonicClock::class
+    single<FabricWorldTickWaiter>()
 }

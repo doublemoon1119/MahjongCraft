@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.logic.base
 
-import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
+import com.doublemoon1119.mahjongcraft.logic.table.opening.OpeningDiceRoll
 import kotlin.uuid.Uuid
 
 /**
@@ -36,13 +36,11 @@ sealed class GameAction {
     data object MatchEnded : GameAction()
 
     /**
-     * 本局開門擲骰已完成。
-     * 用於對外廣播「這次擲骰的點數是多少」事件，不代表任何玩家的主動操作；規則不支援開門流程時
-     * 不會廣播這個事件。
+     * 本局開局程序中的一輪擲骰已完成，不代表玩家送出命令。
      *
-     * @property dice 本次擲骰的個別點數。
+     * @property roll 本輪索引、實際擲骰者與個別點數。
      */
-    data class DiceRolled(val dice: DiceRollResult) : GameAction()
+    data class DiceRolled(val roll: OpeningDiceRoll) : GameAction()
 
     /**
      * 摸牌動作。

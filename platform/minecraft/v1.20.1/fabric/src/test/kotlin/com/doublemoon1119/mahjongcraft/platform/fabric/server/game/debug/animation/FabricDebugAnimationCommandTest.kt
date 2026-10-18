@@ -28,7 +28,7 @@ class FabricDebugAnimationCommandTest {
 
         assertEquals(FabricDebugAnimationCommand.DICE_SUBCOMMAND, dice.name)
         assertNotNull(dice.command, "runs without an explicit dice count")
-        assertEquals(setOf("2", "3"), dice.children.map(CommandNode<ServerCommandSource>::getName).toSet())
+        assertEquals(setOf("2", "3", "multi"), dice.children.map(CommandNode<ServerCommandSource>::getName).toSet())
     }
 
     /** 單張牌動畫子指令都同時提供「不帶 tile」與「帶 tile」兩種路徑。 */

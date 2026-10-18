@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.opening.OpeningDiceRoll
 import kotlin.uuid.Uuid
 
 /** 一場對局中已提交的權威事實；不包含被拒絕的命令、通知或呈現事件。 */
@@ -29,6 +30,13 @@ sealed interface HistoryFact {
      * @property tableState 新局開始時的完整伺服器桌況。
      */
     data class RoundStarted(val tableState: TableState) : HistoryFact
+
+    /**
+     * 開局程序完成的一輪擲骰結果。
+     *
+     * @property roll 本輪的順序、實際擲骰者與逐顆點數。
+     */
+    data class DiceRolled(val roll: OpeningDiceRoll) : HistoryFact
 
     /**
      * 建立一個規則提供的開局準備步驟。

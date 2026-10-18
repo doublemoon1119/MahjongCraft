@@ -11,6 +11,37 @@ import kotlin.uuid.Uuid
 
 /** [TableOpeningPresentationOperationTracker] 的世代隔離與 fail-stop 測試。 */
 class TableOpeningPresentationOperationTrackerTest {
+    /** 舊工作失敗時不得清除新一批開局資料，重複失敗也不重複清理。 */
+    @Test
+    fun `failure cleanup runs once and only for the current generation`() {
+        val tracker = TableOpeningPresentationOperationTracker()
+        val tableId = Uuid.random()
+        val old = tracker.begin(tableId)
+        val current = tracker.begin(tableId)
+        var cleanupCount = 0
+
+        tracker.fail(old, "dice", IllegalStateException()) { cleanupCount++ }
+        assertEquals(0, cleanupCount)
+        assertTrue(tracker.mayRun(current))
+        tracker.fail(current, "dice", IllegalStateException()) { cleanupCount++ }
+        tracker.fail(current, "deal", IllegalStateException()) { cleanupCount++ }
+
+        assertEquals(1, cleanupCount)
+    }
+
+    /** 重開相同桌子不會讓上一個 session 的工作重新有效。 */
+    @Test
+    fun `session reset never reuses an old operation identity`() {
+        val tracker = TableOpeningPresentationOperationTracker()
+        val tableId = Uuid.random()
+        val old = tracker.begin(tableId)
+        tracker.clearAll()
+        val current = tracker.begin(tableId)
+
+        assertFalse(tracker.mayRun(old))
+        assertTrue(tracker.mayRun(current))
+    }
+
     /** 同一捕捉窗口應讓後續開局 presentation 共用相同 ticket。 */
     @Test
     fun `test registering ticket remains available until registration finishes`() {
@@ -84,7 +115,7 @@ class TableOpeningPresentationOperationTrackerTest {
         assertFalse(tracker.mayRun(oldTicket))
         assertTrue(tracker.mayRun(otherTicket))
         assertTrue(tracker.mayRun(newTicket))
-        assertEquals(oldTicket.generation + 1L, newTicket.generation)
+        assertTrue(newTicket.generation > oldTicket.generation)
     }
 
     /** Session 清理後所有舊 ticket 均應失效。 */

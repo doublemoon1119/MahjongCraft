@@ -24,6 +24,8 @@ import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
+import com.doublemoon1119.mahjongcraft.logic.table.opening.OpeningDiceRoll
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
 import kotlinx.serialization.json.Json
 import kotlin.test.Test
@@ -144,6 +146,31 @@ class HistoryRecordingPersistenceDtoTest {
         val encoded = Json.encodeToString(HistoryRecordingPersistenceDto.serializer(), mapper.encode(state))
 
         assertEquals(state, mapper.decode(Json.decodeFromString(HistoryRecordingPersistenceDto.serializer(), encoded)))
+    }
+
+    /** 開局擲骰事實在歷史 outbox 的 JSON 往返後保留完整逐輪資料。 */
+    @Test
+    fun `dice rolled fact round trips`() {
+        val playerId = Uuid.random()
+        val matchId = Uuid.random()
+        val roll = OpeningDiceRoll(1, playerId, DiceRollResult.of(listOf(2, 6)))
+        val state = HistoryRecordingState(
+            nextSequenceByMatchId = mapOf(matchId to 2L),
+            pendingEvents = listOf(
+                HistoryOutboxEvent(
+                    matchId = matchId,
+                    venueId = Uuid.random(),
+                    roundNumber = 1,
+                    sequence = 1L,
+                    occurredAtEpochMillis = 1L,
+                    actorPlayerId = playerId,
+                    fact = HistoryFact.DiceRolled(roll),
+                ),
+            ),
+        )
+        val mapper = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries())
+
+        assertEquals(state, mapper.decode(mapper.encode(state)))
     }
 
     /** 中止事實的原因識別碼在 JSON 與 DTO 往返後保持不變。 */

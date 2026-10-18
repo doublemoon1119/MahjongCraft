@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDomain
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.toDto
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
+import com.doublemoon1119.mahjongcraft.logic.table.opening.OpeningDiceRoll
 import kotlin.uuid.Uuid
 
 /**
@@ -16,7 +17,7 @@ fun GameAction.toDto(registries: NetworkDtoRegistries): GameActionDto = when (th
     GameAction.GameStarted -> GameActionDto.GameStarted
     GameAction.RoundStarted -> GameActionDto.RoundStarted
     GameAction.MatchEnded -> GameActionDto.MatchEnded
-    is GameAction.DiceRolled -> GameActionDto.DiceRolled(dice.values)
+    is GameAction.DiceRolled -> GameActionDto.DiceRolled(roll.rollIndex, roll.playerId.toString(), roll.dice.values)
     GameAction.Draw -> GameActionDto.Draw
     is GameAction.Discard -> GameActionDto.Discard(tileId.toString())
     is GameAction.Chi -> GameActionDto.Chi(tileId.toString(), withTiles.map { it.toString() })
@@ -39,7 +40,9 @@ fun GameActionDto.toDomain(registries: NetworkDtoRegistries): GameAction = when 
     GameActionDto.GameStarted -> GameAction.GameStarted
     GameActionDto.RoundStarted -> GameAction.RoundStarted
     GameActionDto.MatchEnded -> GameAction.MatchEnded
-    is GameActionDto.DiceRolled -> GameAction.DiceRolled(DiceRollResult.of(dice))
+    is GameActionDto.DiceRolled -> GameAction.DiceRolled(
+        OpeningDiceRoll(rollIndex, Uuid.parse(playerId), DiceRollResult.of(dice)),
+    )
     GameActionDto.Draw -> GameAction.Draw
     is GameActionDto.Discard -> GameAction.Discard(Uuid.parse(tileId))
     is GameActionDto.Chi -> GameAction.Chi(Uuid.parse(tileId), withTiles.map { Uuid.parse(it) })

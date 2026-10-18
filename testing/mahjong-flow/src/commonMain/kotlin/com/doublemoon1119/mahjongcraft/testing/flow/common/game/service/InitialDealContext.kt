@@ -10,12 +10,12 @@ import kotlin.uuid.Uuid
  * @property postFlipHandTileIdsBySeatIndex 各座位翻牌後手牌的牌 UUID。
  * @property dealerSeatIndex 莊家座位索引。
  * @property dealBatchSizes 各次發牌的張數。
- * @property diceCount 開局擲骰使用的骰子數量。
+ * @property openingDiceCounts 各輪擲骰使用的骰子數量。
  */
 data class InitialDealContext(
     val handTileIdsBySeatIndex: Map<Int, List<Uuid>>,
     val postFlipHandTileIdsBySeatIndex: Map<Int, List<Uuid>>,
     val dealerSeatIndex: Int,
     val dealBatchSizes: List<Int>,
-    val diceCount: Int,
+    val openingDiceCounts: List<Int>,
 )

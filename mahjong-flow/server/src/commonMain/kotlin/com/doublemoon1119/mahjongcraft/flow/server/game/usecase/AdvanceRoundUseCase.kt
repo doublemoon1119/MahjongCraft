@@ -26,7 +26,6 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWallRevealable
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
-import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import kotlin.uuid.Uuid
 
 /**
@@ -87,7 +86,11 @@ class AdvanceRoundUseCase(
                     } else {
                         HistoryEventDraft(null, HistoryFact.RoundStarted(after.tableState))
                     }
-                    listOf(completed, next)
+                    listOf(completed, next) + if (after.isMatchOver) {
+                        emptyList()
+                    } else {
+                        after.tableState.openingDiceRolls.map { roll -> HistoryEventDraft(roll.playerId, HistoryFact.DiceRolled(roll)) }
+                    }
                 } else {
                     emptyList<HistoryEventDraft>()
                 }
@@ -143,7 +146,6 @@ class AdvanceRoundUseCase(
                         }
                         val advanceOutcome = AdvanceRoundOutcome(
                             result = AdvanceRoundResult(finalState, isMatchOver = true),
-                            diceRoll = null,
                             wallStructure = null,
                             initialPhysicalWallLayout = null,
                             dealOrderHandTileIdsBySeatIndex = emptyMap(),
@@ -200,7 +202,6 @@ class AdvanceRoundUseCase(
                         val newState = dealtState.copy(players = organizedPlayers)
                         val advanceOutcome = AdvanceRoundOutcome(
                             result = AdvanceRoundResult(newState, isMatchOver = false),
-                            diceRoll = initializationResult.diceRoll,
                             wallStructure = initializationResult.wallStructure,
                             initialPhysicalWallLayout = initializationResult.initialPhysicalWallLayout,
                             dealOrderHandTileIdsBySeatIndex = dealOrderHandTileIdsBySeatIndex,
@@ -267,7 +268,7 @@ class AdvanceRoundUseCase(
         val dealerSeatIndex = newState.players.indexOfFirst { player -> player.id == newDealerId }
         advanceOutcome.initialPhysicalWallLayout?.let { layout ->
             val deadWallTileIds = newState.reservedWallTiles.map { tile -> tile.id }.toSet()
-            val diceCount = advanceOutcome.diceRoll?.values?.size ?: 0
+            val openingDiceCounts = newState.openingDiceRolls.map { it.dice.values.size }
             val revealedTileIds = (newState.dynamicRuleState as? TileWallRevealable)?.getVisibleTileIds(newState) ?: emptySet()
             presentationPublisher.publishWallStructure(
                 gameId,
@@ -275,20 +276,18 @@ class AdvanceRoundUseCase(
                 layout,
                 dealerSeatIndex,
                 deadWallTileIds,
-                diceCount,
+                openingDiceCounts,
                 revealedTileIds = revealedTileIds,
             )
         }
-        advanceOutcome.diceRoll?.let { diceRoll ->
-            presentationPublisher.publishDiceRoll(
+        if (newState.openingDiceRolls.isNotEmpty()) {
+            presentationPublisher.publishOpeningRolls(
                 gameId,
-                diceRoll,
-                dealerSeatIndex,
-                newState.roundNumber,
-                newState.comboCount,
+                newState.openingDiceRolls,
             )
-            // 廣播擲骰點數本身；跟第 3 步的 RoundStarted 是兩則獨立事件，理由同 StartGameUseCase。
-            eventPublisher.publishToAllObservers(gameId, seatedPlayerIds, newDealerId, GameAction.DiceRolled(diceRoll))
+            newState.openingDiceRolls.forEach { roll ->
+                eventPublisher.publishToAllObservers(gameId, seatedPlayerIds, roll.playerId, GameAction.DiceRolled(roll))
+            }
         }
         // 規則狀態的呈現跟牌牆同時更新，緊接在 publishWallStructure 之後呼叫。
         presentationPublisher.publishRuleStateUpdated(gameId)
@@ -305,7 +304,7 @@ class AdvanceRoundUseCase(
             postFlipHandTileIdsBySeatIndex,
             dealerSeatIndex,
             dealBatchSizes = newState.config.dealBatchSizes(),
-            diceCount = advanceOutcome.diceRoll?.values?.size ?: 0,
+            openingDiceCounts = newState.openingDiceRolls.map { it.dice.values.size },
         )
         beginRoundPreparationUseCase?.invoke(gameId)
 
@@ -322,21 +321,19 @@ class AdvanceRoundUseCase(
     data class AdvanceRoundResult(val tableState: TableState, val isMatchOver: Boolean)
 
     /**
-     * [invoke] 內部使用的中介結果，把只有平台呈現層需要的一次性擲骰／牌牆結構資料，跟對外公開的
+     * [invoke] 內部使用的中介結果，把呈現層需要的牌牆結構資料，跟對外公開的
      * [AdvanceRoundResult] 分開夾帶，避免污染既有呼叫端（例如 `GameFlowCoordinator`）只關心的
      * 對外回傳形狀。[dealOrderHandTileIdsBySeatIndex] 是發牌順序，在
      * [result] 的手牌已經被整理過之後就無法再從它反推出來，理由同 `StartGameUseCase` KDoc；整場對局
      * 已結束（沒有開新的一局）時固定為空 map，不會被用到。
      *
      * @property result 對呼叫端回傳的回合推進結果。
-     * @property diceRoll 新局發牌時使用的擲骰結果；沒有開新局時為 null。
      * @property wallStructure 新局的牌牆位置；沒有開新局時為 null。
      * @property initialPhysicalWallLayout 新局開始時的實體牌牆排列；沒有開新局時為 null。
      * @property dealOrderHandTileIdsBySeatIndex 按座位索引的發牌順序牌識別碼；沒有開新局時為空 map。
      */
     private data class AdvanceRoundOutcome(
         val result: AdvanceRoundResult,
-        val diceRoll: DiceRollResult?,
         val wallStructure: Map<Uuid, TileWallPosition>?,
         val initialPhysicalWallLayout: TileWallPhysicalLayout?,
         val dealOrderHandTileIdsBySeatIndex: Map<Int, List<Uuid>>,

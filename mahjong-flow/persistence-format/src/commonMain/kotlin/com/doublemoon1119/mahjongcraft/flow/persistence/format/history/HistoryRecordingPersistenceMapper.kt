@@ -166,6 +166,7 @@ class HistoryRecordingPersistenceMapper(
             fact.aiPlayerStrategyKeys.mapKeys { (playerId, _) -> playerId.toString() },
         )
         is HistoryFact.RoundStarted -> HistoryFactPersistenceDto.RoundStarted(encodeTable(fact.tableState))
+        is HistoryFact.DiceRolled -> HistoryFactPersistenceDto.DiceRolled(fact.roll.toPersistenceDto())
         is HistoryFact.RoundPreparationStarted -> HistoryFactPersistenceDto.RoundPreparationStarted(fact.stepId, fact.stepIndex)
         is HistoryFact.RoundPreparationSubmitted -> HistoryFactPersistenceDto.RoundPreparationSubmitted(
             fact.stepId,
@@ -226,6 +227,7 @@ class HistoryRecordingPersistenceMapper(
             dto.aiPlayerStrategyKeys.mapKeys { (playerId, _) -> Uuid.parse(playerId) },
         )
         is HistoryFactPersistenceDto.RoundStarted -> HistoryFact.RoundStarted(decodeTable(dto.state))
+        is HistoryFactPersistenceDto.DiceRolled -> HistoryFact.DiceRolled(dto.roll.toDomain())
         is HistoryFactPersistenceDto.RoundPreparationStarted -> HistoryFact.RoundPreparationStarted(dto.stepId, dto.stepIndex)
         is HistoryFactPersistenceDto.RoundPreparationSubmitted -> HistoryFact.RoundPreparationSubmitted(
             dto.stepId,

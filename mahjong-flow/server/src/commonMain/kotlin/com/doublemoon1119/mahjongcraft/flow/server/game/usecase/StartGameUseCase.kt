@@ -104,7 +104,9 @@ class StartGameUseCase(
                                     actorPlayerId = null,
                                     fact = HistoryFact.MatchStarted(organizedState, room.gameConfig.flowConfig, room.aiPlayerStrategyKeys),
                                 ),
-                            ),
+                            ) + organizedState.openingDiceRolls.map { roll ->
+                                HistoryEventDraft(roll.playerId, HistoryFact.DiceRolled(roll))
+                            },
                         ),
                     )
                 }
@@ -130,7 +132,7 @@ class StartGameUseCase(
         val dealerSeatIndex = tableState.dealerIndex
         initializationResult.initialPhysicalWallLayout?.let { layout ->
             val deadWallTileIds = tableState.reservedWallTiles.map { tile -> tile.id }.toSet()
-            val diceCount = initializationResult.diceRoll?.values?.size ?: 0
+            val openingDiceCounts = tableState.openingDiceRolls.map { it.dice.values.size }
             val revealedTileIds = (tableState.dynamicRuleState as? TileWallRevealable)?.getVisibleTileIds(tableState) ?: emptySet()
             presentationPublisher.publishWallStructure(
                 roomId,
@@ -138,15 +140,18 @@ class StartGameUseCase(
                 layout,
                 dealerSeatIndex,
                 deadWallTileIds,
-                diceCount,
+                openingDiceCounts,
                 revealedTileIds = revealedTileIds,
             )
         }
-        initializationResult.diceRoll?.let { diceRoll ->
-            presentationPublisher.publishDiceRoll(roomId, diceRoll, dealerSeatIndex, tableState.roundNumber, tableState.comboCount)
-            // 廣播擲骰點數本身；跟第 3 步的 GameStarted 是兩則獨立事件，讓客戶端不用從 GameStarted
-            // 的快照反推點數（快照本來就不帶開門用的擲骰資料）。
-            eventPublisher.publishToAllObservers(roomId, seatedPlayerIds, operatorId, GameAction.DiceRolled(diceRoll))
+        if (tableState.openingDiceRolls.isNotEmpty()) {
+            presentationPublisher.publishOpeningRolls(
+                roomId,
+                tableState.openingDiceRolls,
+            )
+            tableState.openingDiceRolls.forEach { roll ->
+                eventPublisher.publishToAllObservers(roomId, seatedPlayerIds, roll.playerId, GameAction.DiceRolled(roll))
+            }
         }
         // 規則狀態的呈現跟牌牆同時更新，緊接在 publishWallStructure 之後呼叫；開局時也要呼叫，
         // 確保上一場殘留的物件被清乾淨。
@@ -164,7 +169,7 @@ class StartGameUseCase(
             postFlipHandTileIdsBySeatIndex,
             dealerSeatIndex,
             dealBatchSizes = tableState.config.dealBatchSizes(),
-            diceCount = initializationResult.diceRoll?.values?.size ?: 0,
+            openingDiceCounts = tableState.openingDiceRolls.map { it.dice.values.size },
         )
         presentationPublisher.publishGameStarted(roomId, tableState.players.map { it.id })
         beginRoundPreparationUseCase?.invoke(roomId)

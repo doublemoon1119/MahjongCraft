@@ -35,6 +35,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.FabricServe
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.config.historyRecordingPolicy
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.MahjongTileCollisionService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.CommittedFactsDispatcher
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.FabricGamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TableOpeningPresentationOperationTracker
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TablePresentationBusyTracker
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.AutomaticControlUpdateService
@@ -66,6 +67,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.MahjongSto
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLifecycleService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.FabricTableLocationValidationService
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.time.FabricTickMonotonicClock
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.time.FabricWorldTickWaiter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigUpdateResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
@@ -120,6 +122,7 @@ class MahjongCraftMod : ModInitializer {
         lobbyInfoLifecycle.registerEvents()
         koin.get<FabricDecisionTimerScheduler>().registerEvents()
         koin.get<FabricTickMonotonicClock>().registerEvents()
+        koin.get<FabricWorldTickWaiter>().registerEvents()
         koin.get<FabricWinCelebrationEffectScheduler>().registerEvents()
         registerDecisionSelectionReceiver(koin)
 
@@ -139,6 +142,7 @@ class MahjongCraftMod : ModInitializer {
         val configManager = koin.get<FabricServerConfigManager>()
         val mahjongTileCollisionService = koin.get<MahjongTileCollisionService>()
         val openingPresentationOperations = koin.get<TableOpeningPresentationOperationTracker>()
+        val gamePresentationPublisher = koin.get<FabricGamePresentationPublisher>()
         val presentationBusyTracker = koin.get<TablePresentationBusyTracker>()
         val observerBroadcast = koin.get<FabricObserverSnapshotBroadcastService>()
         val committedFactsDispatcher = koin.get<CommittedFactsDispatcher>()
@@ -210,6 +214,7 @@ class MahjongCraftMod : ModInitializer {
                     StopStep("stop lobby info") { lobbyInfoLifecycle.stopSession() },
                     StopStep("clear presentation busy state") { presentationBusyTracker.clearAll() },
                     StopStep("clear opening presentation operations") { openingPresentationOperations.clearAll() },
+                    StopStep("clear opening presentation state") { gamePresentationPublisher.clearOpeningSession() },
                     StopStep("settle decision timers") { decisionTimerManager.settleAll() },
                     StopStep("detach history writer") { historyWriter.detach() },
                     StopStep("detach authoritative state") { statePersistence.detach() },

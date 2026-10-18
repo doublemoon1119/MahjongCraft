@@ -107,6 +107,18 @@ internal class HistoryRoundEventPresenter(
                 outcome = null,
             )
 
+            is HistoryReplayFactDto.DiceRolled -> HistoryFactPresentation(
+                text = Text.translatable(
+                    MinecraftHistoryScreenKeys.ROUND_EVENT_DICE_ROLLED,
+                    rollIndex + 1,
+                    dice.joinToString(" + "),
+                ),
+                actorSeat = actorSeat,
+                directTiles = emptyList(),
+                revealedTiles = emptyList(),
+                outcome = null,
+            )
+
             is HistoryReplayFactDto.Completion -> HistoryFactPresentation(
                 text = when (typeKey) {
                     HistoryFactTypeKeys.MATCH_COMPLETED -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_MATCH_COMPLETION, outcome?.let { outcomeText(it.reasonId, ruleId) } ?: Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_OTHER))
@@ -148,6 +160,7 @@ internal class HistoryRoundEventPresenter(
             is HistoryReplayFactDto.KnownAction -> listOfNotNull(actionType, extensionTypeId)
             is HistoryReplayFactDto.Reaction -> listOfNotNull(actionType)
             is HistoryReplayFactDto.Preparation -> listOfNotNull(stepId, nextStepId)
+            is HistoryReplayFactDto.DiceRolled -> emptyList()
             is HistoryReplayFactDto.Completion -> listOfNotNull(outcome?.reasonId, outcome?.classification)
             is HistoryReplayFactDto.RuleEffect -> listOfNotNull(reasonId, outcome?.reasonId, outcome?.classification)
             is HistoryReplayFactDto.Opaque -> emptyList()

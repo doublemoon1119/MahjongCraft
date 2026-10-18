@@ -50,6 +50,7 @@ class HistoryRoundEventPresentationTest {
             MinecraftHistoryScreenKeys.ROUND_MATCH_COMPLETION to 1,
             MinecraftHistoryScreenKeys.ROUND_MATCH_ABORTED to 1,
             MinecraftHistoryScreenKeys.ROUND_WIN_SETTLEMENT to 1,
+            MinecraftHistoryScreenKeys.ROUND_EVENT_DICE_ROLLED to 2,
             MinecraftHistoryScreenKeys.ROUND_UNKNOWN_FACT to 0,
             MinecraftHistoryScreenKeys.ROUND_PREPARATION_NEXT to 0,
             MinecraftHistoryScreenKeys.ROUND_PREPARATION_STEP to 1,
@@ -124,6 +125,27 @@ class HistoryRoundEventPresentationTest {
             assertTrue(id in result[index].identifiers, "Raw identifier must remain available in tooltip")
             assertTrue(!result[index].text.string.contains(id), "Raw identifier must not leak into player wording")
         }
+    }
+
+    /** 擲骰事實使用一般動作文字，並保留實際擲骰者座位。 */
+    @Test
+    fun `dice roll facts use player wording and actor seat`() {
+        val fact = presenter().present(
+            events(
+                HistoryReplayFactDto.DiceRolled(
+                    typeKey = HistoryFactTypeKeys.DICE_ROLLED,
+                    rollIndex = 1,
+                    actorSeat = 2,
+                    dice = listOf(2, 5),
+                ),
+            ),
+            null,
+        ).transactions.single().facts.single()
+
+        assertEquals("2", (fact.text.content as TranslatableTextContent).args[0].toString())
+        assertEquals("2 + 5", (fact.text.content as TranslatableTextContent).args[1].toString())
+        assertEquals(2, fact.actorSeat)
+        assertEquals(listOf(HistoryFactTypeKeys.DICE_ROLLED), fact.identifiers)
     }
 
     /** 內建流程事件即使經由 opaque DTO 傳送，也不能誤標為未知事件。 */

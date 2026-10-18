@@ -27,11 +27,13 @@ sealed interface GameActionPersistenceDto {
     /**
      * [GameAction.DiceRolled] 的 persistence DTO。
      *
-     * @property dice 擲出的骰子結果。
+     * @property rollIndex 本局中的零基底擲骰索引。
+     * @property playerId 實際擲骰玩家 UUID 字串。
+     * @property dice 逐顆骰子結果。
      */
     @Serializable
     @SerialName(HistoryActionTypeKeys.DICE_ROLLED)
-    data class DiceRolled(val dice: List<Int>) : GameActionPersistenceDto
+    data class DiceRolled(val rollIndex: Int, val playerId: String, val dice: List<Int>) : GameActionPersistenceDto
 
     /** [GameAction.Draw] 的 persistence DTO。 */
     @Serializable

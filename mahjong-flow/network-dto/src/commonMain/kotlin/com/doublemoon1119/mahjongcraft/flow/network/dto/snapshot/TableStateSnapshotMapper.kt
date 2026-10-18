@@ -27,6 +27,7 @@ fun TableStateSnapshot.toDto(registries: NetworkDtoRegistries): TableStateSnapsh
     dynamicRuleState = dynamicRuleState?.toDto(registries),
     finishedPlayerIds = finishedPlayerIds.map(Uuid::toString).toSet(),
     physicalWallLayout = physicalWallLayout?.toDto(),
+    openingDiceRolls = openingDiceRolls.map { it.toDto() },
     revealedHandTiles = revealedHandTiles.map { it.toDto() },
 )
 
@@ -50,5 +51,6 @@ fun TableStateSnapshotDto.toDomain(registries: NetworkDtoRegistries): TableState
     dynamicRuleState = dynamicRuleState?.toDomain(registries),
     finishedPlayerIds = finishedPlayerIds.map(Uuid::parse).toSet(),
     physicalWallLayout = physicalWallLayout?.toDomain(),
+    openingDiceRolls = openingDiceRolls.map { it.toDomain() },
     revealedHandTiles = revealedHandTiles.map { it.toDomain() },
 )

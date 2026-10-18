@@ -12,6 +12,9 @@ object HistoryFactTypeKeys {
     /** 新局建立事實的種類識別碼。 */
     const val ROUND_STARTED: String = "round_started"
 
+    /** 開局程序單輪擲骰事實的種類識別碼。 */
+    const val DICE_ROLLED: String = "dice_rolled"
+
     /** 開局準備步驟開始事實的種類識別碼。 */
     const val ROUND_PREPARATION_STARTED: String = "round_preparation_started"
 

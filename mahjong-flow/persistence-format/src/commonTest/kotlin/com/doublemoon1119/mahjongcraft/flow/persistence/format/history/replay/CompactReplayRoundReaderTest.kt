@@ -185,6 +185,69 @@ class CompactReplayRoundReaderTest {
         assertEquals(null, completion.outcome?.classification)
     }
 
+    /** 擲骰事實保留輪次、行為者與每顆骰子的點數。 */
+    @Test
+    fun `dice roll mapping preserves transcript fields`() {
+        val identity = identity()
+        val fact = buildJsonObject {
+            put(ReplaySourceKeys.TYPE, HistoryFactTypeKeys.DICE_ROLLED)
+            put(
+                ReplaySourceKeys.ROLL,
+                buildJsonObject {
+                    put(ReplaySourceKeys.ROLL_INDEX, 2)
+                    put(ReplaySourceKeys.PLAYER_ID, 0)
+                    put(ReplaySourceKeys.DICE, JsonArray(listOf(JsonPrimitive(2), JsonPrimitive(6))))
+                },
+            )
+        }
+
+        val result = HistoryReplayProjectionMapper.mapFacts(
+            facts = listOf(fact),
+            actorSeats = listOf(0),
+            identity = identity,
+            roundNumber = 1,
+            tileCatalog = HistoryRoundTileCatalog(emptyList()),
+            budget = ReplayReadBudget(ReplayReadLimits()) {},
+        ).single()
+
+        assertEquals(HistoryReplayFact.DiceRolled(HistoryFactTypeKeys.DICE_ROLLED, 2, 0, listOf(2, 6)), result)
+    }
+
+    /** 擲骰事實的記錄玩家與交易行為者不一致時拒絕回放。 */
+    @Test
+    fun `dice roll mapping rejects actor mismatch`() {
+        val identity = HistoryReplayIdentity(
+            matchId = Uuid.random(),
+            venueId = Uuid.random(),
+            players = listOf(
+                HistoryReplayPlayerIdentity(0, Uuid.random(), null),
+                HistoryReplayPlayerIdentity(1, Uuid.random(), null),
+            ),
+        )
+        val fact = buildJsonObject {
+            put(ReplaySourceKeys.TYPE, HistoryFactTypeKeys.DICE_ROLLED)
+            put(
+                ReplaySourceKeys.ROLL,
+                buildJsonObject {
+                    put(ReplaySourceKeys.ROLL_INDEX, 0)
+                    put(ReplaySourceKeys.PLAYER_ID, 1)
+                    put(ReplaySourceKeys.DICE, JsonArray(listOf(JsonPrimitive(1), JsonPrimitive(1))))
+                },
+            )
+        }
+
+        assertFailsWith<IllegalArgumentException> {
+            HistoryReplayProjectionMapper.mapFacts(
+                facts = listOf(fact),
+                actorSeats = listOf(0),
+                identity = identity,
+                roundNumber = 1,
+                tileCatalog = HistoryRoundTileCatalog(emptyList()),
+                budget = ReplayReadBudget(ReplayReadLimits()) {},
+            )
+        }
+    }
+
     /** 擴充動作只保留種類，不暴露私有資料；缺少種類的 envelope 被拒絕。 */
     @Test
     fun `extension action mapping keeps only its type and rejects missing envelope`() {

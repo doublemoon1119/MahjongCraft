@@ -2,6 +2,8 @@ package com.doublemoon1119.mahjongcraft.flow.common.game.history
 
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.RevealedHandSettlement
+import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
+import com.doublemoon1119.mahjongcraft.logic.table.opening.OpeningDiceRoll
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
@@ -66,6 +68,21 @@ class HistoryTableChangeTest {
         val change = assertNotNull(HistoryTableChange.between(source, after))
 
         assertEquals(emptyList(), change.revealedHandSettlements)
+        assertEquals(after, change.applyTo(source))
+    }
+
+    /** 逐輪擲骰結果改變時，差異能保留非空的前後序列。 */
+    @Test
+    fun `change records and restores opening dice rolls`() {
+        val playerId = before.players.first().id
+        val first = OpeningDiceRoll(0, playerId, DiceRollResult.of(listOf(1, 6)))
+        val second = OpeningDiceRoll(1, playerId, DiceRollResult.of(listOf(3, 4)))
+        val source = before.copy(openingDiceRolls = listOf(first))
+        val after = source.copy(openingDiceRolls = listOf(first, second))
+
+        val change = assertNotNull(HistoryTableChange.between(source, after))
+
+        assertEquals(listOf(first, second), change.openingDiceRolls)
         assertEquals(after, change.applyTo(source))
     }
 }

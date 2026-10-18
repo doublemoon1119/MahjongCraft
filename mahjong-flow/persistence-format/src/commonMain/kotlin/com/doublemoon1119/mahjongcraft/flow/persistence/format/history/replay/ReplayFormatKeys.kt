@@ -242,6 +242,15 @@ internal object ReplaySourceKeys {
     /** 反應裁定的行為者座位。 */
     const val ACTOR_PLAYER_ID = "actorPlayerId"
 
+    /** 開局程序的擲骰資料封套。 */
+    const val ROLL = "roll"
+
+    /** 開局程序中的零基底擲骰索引。 */
+    const val ROLL_INDEX = "rollIndex"
+
+    /** 單輪擲骰的逐顆點數。 */
+    const val DICE = "dice"
+
     /** 開局準備步驟識別碼。 */
     const val STEP_ID = "stepId"
 

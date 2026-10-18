@@ -99,6 +99,26 @@ class HistoryRoundResponseValidatorTest {
         assertEquals(HistoryRoundValidationError.TILE_INDEX_INVALID, assertIs<HistoryRoundValidationResult.Invalid>(result).reason)
     }
 
+    /** 擲骰事實引用不存在的擲骰者座位時拒絕事件頁。 */
+    @Test
+    fun `invalid dice roll actor seat is rejected`() {
+        val invalid = events(
+            fact = HistoryReplayFactDto.DiceRolled(
+                typeKey = HistoryFactTypeKeys.DICE_ROLLED,
+                rollIndex = 0,
+                actorSeat = 1,
+                dice = listOf(3, 4),
+            ),
+        )
+        val request = HistoryRoundEventsRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
+        val result = HistoryRoundResponseValidator.validateEvents(
+            request,
+            HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, invalid, errorCode = null),
+        )
+
+        assertEquals(HistoryRoundValidationError.SEAT_INDEX_INVALID, assertIs<HistoryRoundValidationResult.Invalid>(result).reason)
+    }
+
     /** 交易索引不連續時拒絕事件頁。 */
     @Test
     fun `test gapped transaction index is rejected`() {
@@ -499,9 +519,13 @@ class HistoryRoundResponseValidatorTest {
      * 建立含一張實體牌及未知安全事實的事件頁。
      *
      * @param tileIndex 事實直接涉及的牌索引。
+     * @param fact 要驗證的事實；預設為未知安全事實。
      * @return 待驗證的事件資料。
      */
-    private fun events(tileIndex: Int = 0): HistoryRoundEventsDto = HistoryRoundEventsDto(
+    private fun events(
+        tileIndex: Int = 0,
+        fact: HistoryReplayFactDto = HistoryReplayFactDto.Opaque("test:fact", 0, listOf(tileIndex), emptyList()),
+    ): HistoryRoundEventsDto = HistoryRoundEventsDto(
         identity = identity(),
         roundNumber = 1,
         transactions = listOf(
@@ -510,7 +534,7 @@ class HistoryRoundResponseValidatorTest {
                 occurredAtEpochMillis = 1,
                 isOpening = true,
                 declaredTileCountAfter = 1,
-                facts = listOf(HistoryReplayFactDto.Opaque("test:fact", 0, listOf(tileIndex), emptyList())),
+                facts = listOf(fact),
             ),
         ),
         nextTransactionIndex = 1,

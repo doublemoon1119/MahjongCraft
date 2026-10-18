@@ -12,7 +12,11 @@ import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallLayoutResult
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.layout.createInitialLayoutValidated
-import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
+import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollSource
+import com.doublemoon1119.mahjongcraft.logic.table.opening.OpeningDiceRoll
+import com.doublemoon1119.mahjongcraft.logic.table.opening.RandomDiceRollSource
+import com.doublemoon1119.mahjongcraft.logic.table.opening.RoundOpeningContext
+import com.doublemoon1119.mahjongcraft.logic.table.opening.RoundOpeningStep
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 import com.doublemoon1119.mahjongcraft.logic.table.seat.SeatWindAssignmentContext
 import com.doublemoon1119.mahjongcraft.logic.table.seat.assignValidated
@@ -31,14 +35,17 @@ object GameInitializer {
      * @param id 對局的唯一識別碼。
      * @param playerIds 參與對局的玩家 Uuid 列表（尚未分配座位，內部會隨機排序）。
      * @param module 該對局採用的規則模組，提供牌山工廠、牌河實作與規則配置。
+     * @param diceRollSource 權威擲骰來源；正式流程使用隨機六面骰，測試可注入固定來源。
      * @return 已完成洗牌、（若規則支援）擲骰開門、發牌、分數初始化的新結果，含權威 [TableState] 與
-     * 供呼叫端處理的一次性擲骰結果與牌牆結構資料。
+     * 供呼叫端處理的牌牆結構資料；完整擲骰記錄保存在回傳桌況的
+     * [TableState.openingDiceRolls]。
      * @throws IllegalArgumentException 當玩家人數不在該規則允許的範圍內時拋出。
      */
     fun initialize(
         id: Uuid,
         playerIds: List<Uuid>,
         module: MahjongRuleModule<*>,
+        diceRollSource: DiceRollSource = RandomDiceRollSource,
     ): GameInitializationResult {
         require(playerIds.size in module.config.minPlayers..module.config.maxPlayers) {
             "Player count ${playerIds.size} out of range for this rule config " +
@@ -46,19 +53,28 @@ object GameInitializer {
         }
 
         val shuffledPlayerIds = playerIds.shuffled()
-        val dealerPlayerId = shuffledPlayerIds.first()
-
-        val openedWall = module.buildOpenedWall()
-        val seatWinds = module.assignSeatWinds(shuffledPlayerIds, dealerPlayerId, openedWall)
-        // 洗座位當下 shuffledPlayerIds[0] 就是莊家，順序本來就是正確的發牌輪轉順序。
-        val (hands, remainingWall) = module.dealInitialHands(openedWall.wall, shuffledPlayerIds)
+        val opening = module.resolveRoundOpening(
+            playerIdsInTurnOrder = shuffledPlayerIds,
+            firstRound = true,
+            provisionalPlayerId = shuffledPlayerIds.first(),
+            fixedDealerPlayerId = null,
+            diceRollSource = diceRollSource,
+        )
+        val dealerIndex = shuffledPlayerIds.indexOf(opening.dealerPlayerId)
+        val dealOrderPlayerIds = List(shuffledPlayerIds.size) { offset ->
+            shuffledPlayerIds[(dealerIndex + offset) % shuffledPlayerIds.size]
+        }
+        val openedWall = module.buildOpenedWall(opening.wallOpening)
+        val seatWinds = module.assignSeatWinds(shuffledPlayerIds, opening.dealerPlayerId, openedWall, opening.diceRolls)
+        val (hands, remainingWall) = module.dealInitialHands(openedWall.wall, dealOrderPlayerIds)
+        val handsByPlayerId = dealOrderPlayerIds.zip(hands).toMap()
         val physicalLayouts = openedWall.createPhysicalLayouts(module, remainingWall)
         val players = shuffledPlayerIds.mapIndexed { index, playerId ->
             MahjongPlayer(
                 id = playerId,
-                initialSeatIndex = index,
+                initialSeatIndex = (index - dealerIndex).mod(shuffledPlayerIds.size),
                 seatWind = seatWinds.getValue(playerId),
-                hand = Hand(tiles = hands[index]),
+                hand = Hand(tiles = handsByPlayerId.getValue(playerId)),
                 discardPile = module.createDiscardPile(),
                 playerRuleState = module.createInitialPlayerRuleState(),
             )
@@ -69,17 +85,18 @@ object GameInitializer {
             players = players,
             config = module.config,
             tileWall = remainingWall,
-            dealerPlayerId = dealerPlayerId,
+            dealerPlayerId = opening.dealerPlayerId,
             roundPosition = module.createMatchProgressionPolicy().initialPosition(players.size),
+            currentPlayerIndex = dealerIndex,
             dynamicRuleState = module.createInitialDynamicState(),
             wallOpening = openedWall.wallOpening,
             reservedWallTiles = openedWall.reservedWallTiles,
             physicalWallLayout = physicalLayouts?.current,
+            openingDiceRolls = opening.diceRolls,
         ).init()
 
         return GameInitializationResult(
             tableState = tableState,
-            diceRoll = openedWall.diceRoll,
             wallStructure = openedWall.structure,
             initialPhysicalWallLayout = physicalLayouts?.complete,
         )
@@ -104,16 +121,27 @@ object GameInitializer {
      *        玩家列表與局位資料；玩家自風會依規則 policy 重新指派。
      * @param previousDynamicRuleState 上一局結束時的動態桌況狀態（例如供託／立直棒數量）。
      * @param module 該對局採用的規則模組。
+     * @param diceRollSource 權威擲骰來源；正式流程使用隨機六面骰，測試可注入固定來源。
      * @return 已完成重新擲骰開門、重新建牌山、發牌，並套用連莊/過莊結果的新結果，代表下一局的起始
-     * 狀態，含權威 [TableState] 與供呼叫端處理的一次性擲骰結果／牌牆結構資料。
+     * 狀態，含權威 [TableState] 與供呼叫端處理的牌牆結構資料；完整擲骰記錄保存在
+     * 回傳桌況的 [TableState.openingDiceRolls]。
      */
     fun startNextRound(
         gameId: Uuid,
         roundAdvancement: RoundAdvancementResult,
         previousDynamicRuleState: DynamicRuleState?,
         module: MahjongRuleModule<*>,
+        diceRollSource: DiceRollSource = RandomDiceRollSource,
     ): GameInitializationResult {
-        val openedWall = module.buildOpenedWall()
+        val playerIdsInTurnOrder = roundAdvancement.players.map { it.id }
+        val opening = module.resolveRoundOpening(
+            playerIdsInTurnOrder = playerIdsInTurnOrder,
+            firstRound = false,
+            provisionalPlayerId = roundAdvancement.dealerPlayerId,
+            fixedDealerPlayerId = roundAdvancement.dealerPlayerId,
+            diceRollSource = diceRollSource,
+        )
+        val openedWall = module.buildOpenedWall(opening.wallOpening)
         // TableState.players 順序整場對局固定不變、不是從莊家開始排的，發牌輪轉順序需要另外把玩家
         // 列表依莊家旋轉過（見 dealInitialHands KDoc 對 playerIds 順序的要求），發完牌後再依原本固定
         // 順序組回 players 列表，不能直接沿用旋轉過的順序。
@@ -124,8 +152,12 @@ object GameInitializer {
         val (hands, remainingWall) = module.dealInitialHands(openedWall.wall, dealOrderPlayerIds)
         val physicalLayouts = openedWall.createPhysicalLayouts(module, remainingWall)
         val handsByPlayerId = dealOrderPlayerIds.zip(hands).toMap()
-        val playerIdsInTurnOrder = roundAdvancement.players.map { it.id }
-        val seatWinds = module.assignSeatWinds(playerIdsInTurnOrder, roundAdvancement.dealerPlayerId, openedWall)
+        val seatWinds = module.assignSeatWinds(
+            playerIdsInTurnOrder,
+            roundAdvancement.dealerPlayerId,
+            openedWall,
+            opening.diceRolls,
+        )
         val players = roundAdvancement.players.map { player ->
             player.copy(
                 seatWind = seatWinds.getValue(player.id),
@@ -152,15 +184,96 @@ object GameInitializer {
             wallOpening = openedWall.wallOpening,
             reservedWallTiles = openedWall.reservedWallTiles,
             physicalWallLayout = physicalLayouts?.current,
+            openingDiceRolls = opening.diceRolls,
         )
 
         return GameInitializationResult(
             tableState = tableState,
-            diceRoll = openedWall.diceRoll,
             wallStructure = openedWall.structure,
             initialPhysicalWallLayout = physicalLayouts?.complete,
         )
     }
+
+    /**
+     * 執行規則提供的開局程序，驗證每次要求並收集權威點數。
+     *
+     * @param playerIdsInTurnOrder 整場固定的玩家回合順序。
+     * @param firstRound 是否正在選定整場的起家。
+     * @param provisionalPlayerId 程序開始時的暫定擲骰玩家。
+     * @param fixedDealerPlayerId 換局時已由賽程決定的莊家；選起家時為 null。
+     * @param diceRollSource 產生每次指定顆數的六面骰點數。
+     * @return 最終莊家、開門位置與本局完整擲骰記錄。
+     */
+    private fun MahjongRuleModule<*>.resolveRoundOpening(
+        playerIdsInTurnOrder: List<Uuid>,
+        firstRound: Boolean,
+        provisionalPlayerId: Uuid,
+        fixedDealerPlayerId: Uuid?,
+        diceRollSource: DiceRollSource,
+    ): RoundOpeningResolution {
+        val procedure = createRoundOpeningProcedure()
+            ?: return RoundOpeningResolution(fixedDealerPlayerId ?: provisionalPlayerId, null, emptyList())
+        require(procedure.supportedDiceCounts.all { it > 0 }) {
+            "Opening procedure must declare positive supported dice counts"
+        }
+        val rolls = mutableListOf<OpeningDiceRoll>()
+        for (stepIndex in 0..MAX_OPENING_ROLLS) {
+            when (
+                val step = procedure.next(
+                    RoundOpeningContext(
+                        playerIdsInTurnOrder = playerIdsInTurnOrder.toList(),
+                        firstRound = firstRound,
+                        provisionalPlayerId = provisionalPlayerId,
+                        fixedDealerPlayerId = fixedDealerPlayerId,
+                        rolls = rolls.toList(),
+                    ),
+                )
+            ) {
+                is RoundOpeningStep.Complete -> {
+                    require(step.result.dealerPlayerId in playerIdsInTurnOrder) {
+                        "Opening procedure selected a player outside the table"
+                    }
+                    if (!firstRound) {
+                        require(step.result.dealerPlayerId == fixedDealerPlayerId) {
+                            "A later-round opening procedure must keep the progression dealer"
+                        }
+                    }
+                    return RoundOpeningResolution(step.result.dealerPlayerId, step.result.wallOpening, rolls.toList())
+                }
+
+                is RoundOpeningStep.Roll -> {
+                    require(stepIndex < MAX_OPENING_ROLLS) {
+                        "Opening procedure exceeded the maximum number of rolls: $MAX_OPENING_ROLLS"
+                    }
+                    require(step.request.playerId in playerIdsInTurnOrder) {
+                        "Opening procedure requested a player outside the table"
+                    }
+                    require(step.request.diceCount in procedure.supportedDiceCounts) {
+                        "Opening procedure requested unsupported dice count: ${step.request.diceCount}"
+                    }
+                    val dice = diceRollSource.roll(step.request.diceCount)
+                    require(dice.values.size == step.request.diceCount) {
+                        "Dice source returned ${dice.values.size} dice, expected ${step.request.diceCount}"
+                    }
+                    rolls += OpeningDiceRoll(rolls.size, step.request.playerId, dice)
+                }
+            }
+        }
+        error("Opening procedure did not complete")
+    }
+
+    /**
+     * 執行完本局開局程序後的結果。
+     *
+     * @property dealerPlayerId 本局莊家。
+     * @property wallOpening 開門位置；未使用開門時為 null。
+     * @property diceRolls 依執行順序排列的完整骰子結果。
+     */
+    private data class RoundOpeningResolution(
+        val dealerPlayerId: Uuid,
+        val wallOpening: WallOpening?,
+        val diceRolls: List<OpeningDiceRoll>,
+    )
 
     /**
      * 依規則 policy 指派並驗證本局所有玩家的自風。
@@ -168,54 +281,54 @@ object GameInitializer {
      * @param playerIdsInTurnOrder 依回合順序排列的玩家 ID。
      * @param dealerPlayerId 本局莊家 ID。
      * @param openedWall 已建立的牌牆及其開門資料。
+     * @param diceRolls 本局開局程序的完整擲骰記錄。
      * @return 每位玩家對應的自風。
      */
     private fun MahjongRuleModule<*>.assignSeatWinds(
         playerIdsInTurnOrder: List<Uuid>,
         dealerPlayerId: Uuid,
         openedWall: OpenedWall,
+        diceRolls: List<OpeningDiceRoll>,
     ): Map<Uuid, Wind> = createSeatWindAssignmentPolicy().assignValidated(
         SeatWindAssignmentContext(
             playerIdsInTurnOrder = playerIdsInTurnOrder,
             dealerPlayerId = dealerPlayerId,
-            diceRoll = openedWall.diceRoll,
+            diceRolls = diceRolls,
             wallOpening = openedWall.wallOpening,
         ),
     )
 
     /**
-     * 建立一副已套用開門結果的牌山：洗牌、（若規則同時提供 [MahjongRuleModule.createWallOpeningPolicy]
-     * 與 [MahjongRuleModule.createWallLayout]）擲骰、解析開門位置、依牌牆布局重排成正式摸牌順序並
-     * 切出規則保留牌。[TileWallLayoutResult.drawOrder] 與 [TileWallLayoutResult.reservedWallTiles] 已彼此
-     * 分離，回傳的 [OpenedWall.wall] 因此只包含一般摸牌序列，後續會直接成為 [TableState.tileWall]。
-     * 任一能力尚未支援時，直接沿用原始洗牌結果、不擲骰、沒有保留牌——通用初始化流程不得自行套用
-     * 其他玩法的公式、固定張數或實體布局。
+     * 建立洗牌後的牌山，依開局程序已決定的開門位置排列摸牌順序，並切出規則保留牌。
      *
+     * 此處不擲骰，也不重新決定開門位置。未指定開門位置時直接使用原始洗牌結果，沒有保留牌或布局；
+     * 指定開門位置時規則必須提供牌牆布局，不能默默忽略已決定的結果。
+     * [TileWallLayoutResult.drawOrder] 與 [TileWallLayoutResult.reservedWallTiles] 分開保存，
+     * 回傳的 [OpenedWall.wall] 只包含一般摸牌序列，後續成為 [TableState.tileWall]。
+     *
+     * @param wallOpening 開局程序已決定的最終開門位置；未使用開門時為 null。
      * @return 已整理的摸牌牌山，以及可用時的開門、保留牌和牌牆布局資料。
      */
-    private fun MahjongRuleModule<*>.buildOpenedWall(): OpenedWall {
+    private fun MahjongRuleModule<*>.buildOpenedWall(wallOpening: WallOpening?): OpenedWall {
         val shuffledWall = createWallFactory().create()
-        val openingPolicy = createWallOpeningPolicy()
         val layout = createWallLayout()
-        if (openingPolicy == null || layout == null) {
+        if (wallOpening == null) {
             return OpenedWall(
                 wall = shuffledWall,
                 wallOpening = null,
                 reservedWallTiles = emptyList(),
-                diceRoll = null,
                 structure = null,
                 layoutResult = null,
             )
         }
 
-        val diceRoll = DiceRollResult.of(List(openingPolicy.diceCount) { (1..DICE_FACES).random() })
-        val wallOpening = openingPolicy.resolve(diceRoll)
-        val layoutResult = layout.resolve(shuffledWall.getAllTiles(), wallOpening)
+        val layoutResult = requireNotNull(layout) {
+            "A round opening requires a wall layout"
+        }.resolve(shuffledWall.getAllTiles(), wallOpening)
         return OpenedWall(
             wall = TileWall(layoutResult.drawOrder),
             wallOpening = wallOpening,
             reservedWallTiles = layoutResult.reservedWallTiles,
-            diceRoll = diceRoll,
             structure = layoutResult.structure,
             layoutResult = layoutResult,
         )
@@ -223,12 +336,11 @@ object GameInitializer {
 
     /**
      * [buildOpenedWall] 的結果：已套用（或未套用）開門結果的一般摸牌序列、保留牌與開門位置，以及
-     * 本次擲骰結果與牌牆結構座標。
+     * 牌牆結構座標。
      *
      * @property wall 已套用開門結果的一般摸牌序列。
      * @property wallOpening 開門位置；規則未提供開門能力時為 null。
      * @property reservedWallTiles 不屬於一般摸牌序列的規則保留牌。
-     * @property diceRoll 本次開門擲骰結果；沒有執行開門時為 null。
      * @property structure 依開門結果排列的牌牆結構座標；未建立布局時為 null。
      * @property layoutResult 開門布局結果；規則未提供所需布局能力時為 null。
      */
@@ -236,7 +348,6 @@ object GameInitializer {
         val wall: TileWall,
         val wallOpening: WallOpening?,
         val reservedWallTiles: List<IdentifiedTile>,
-        val diceRoll: DiceRollResult?,
         val structure: Map<Uuid, TileWallPosition>?,
         val layoutResult: TileWallLayoutResult?,
     ) {
@@ -277,9 +388,6 @@ object GameInitializer {
         val current: TileWallPhysicalLayout,
     )
 
-    /** 六面骰的點數上限。 */
-    private const val DICE_FACES: Int = 6
-
     /**
      * 連續從牌山最前方摸取 [count] 張牌。
      *
@@ -304,8 +412,8 @@ object GameInitializer {
      * 初始手牌——每一輪 [playerIds] 依序各摸一批，模擬真實麻將「莊家先抓兩墩、換下一家抓兩墩、輪完
      * 一圈才回到莊家抓下一輪」的發牌方式，直到每位玩家都湊滿整手牌。
      *
-     * [playerIds] 的順序即發牌輪轉順序，必須固定從莊家開始依序輪替——呼叫端負責提供正確順序（開局時
-     * 洗座位當下第一位就是莊家；連莊/過莊開新局時需要另外把 `TableState.players` 依莊家旋轉過）。
+     * [playerIds] 的順序即發牌輪轉順序，必須由呼叫端排成從莊家開始的固定順序；發牌完成後，呼叫端
+     * 可以再依原本的固定座位順序組回玩家列表。
      *
      * `internal` 而非 `private`：讓同模組的 [GameInitializerTest] 能直接用可控制的 [TileWall] 測試
      * 輪轉順序本身，不需要透過完整 [initialize] 流程（牌山來自
@@ -330,4 +438,7 @@ object GameInitializer {
         }
         return hands to remainingWall
     }
+
+    /** 防止規則程序無限要求下一輪擲骰的上限。 */
+    private const val MAX_OPENING_ROLLS: Int = 16
 }

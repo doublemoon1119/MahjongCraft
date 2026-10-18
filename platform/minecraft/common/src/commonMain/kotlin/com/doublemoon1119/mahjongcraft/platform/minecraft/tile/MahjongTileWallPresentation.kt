@@ -18,7 +18,7 @@ import kotlin.uuid.Uuid
  *                             空 map 代表這局結束，只需清除舊牌。
  * @property finalLayout 規則決定的開門後最終抽象實體布局；牌張集合必須與 [assemblyStructure] 相同。
  * @property deadWallTileIds [finalLayout] 之中屬於王牌區的牌 Uuid 子集合；空布局時可傳空集合。
- * @property diceCount 本次開門擲骰的骰子數量，只用來換算開門前的擲骰動畫總長度。
+ * @property openingDiceCounts 各輪開門擲骰的骰子數量，只用來換算開門前的擲骰動畫總長度。
  * @property animateOpening 是否從 [assemblyStructure] 播放至 [finalLayout]；恢復既有桌況時傳 `false`。
  * @property revealedTileIds [deadWallTileIds] 之中，牌牆建立當下就該立即公開翻面的牌 Uuid 子集合
  * （例如日麻開局就翻開的第一張寶牌指示牌，見 `TileWallRevealable`）——實作會在
@@ -33,7 +33,7 @@ data class MahjongTileWallPresentation(
     val assemblyStructure: Map<Uuid, TileWallPosition>,
     val finalLayout: TileWallPhysicalLayout,
     val deadWallTileIds: Set<Uuid>,
-    val diceCount: Int,
-    val animateOpening: Boolean = diceCount > 0,
+    val openingDiceCounts: List<Int>,
+    val animateOpening: Boolean = true,
     val revealedTileIds: Set<Uuid> = emptySet(),
 )

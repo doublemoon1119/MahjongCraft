@@ -71,7 +71,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableStateSnapshot
 import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionPhase
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
-import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
+import com.doublemoon1119.mahjongcraft.logic.table.opening.OpeningDiceRoll
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -380,10 +380,10 @@ private class NoOpPresentation : GamePresentationPublisher {
     override fun publishMatchSettlement(gameId: Uuid, request: MatchSettlementPresentationRequest) = Unit
 
     /** 丟棄骰子呈現。 */
-    override fun publishDiceRoll(gameId: Uuid, dice: DiceRollResult, dealerSeatIndex: Int, roundNumber: Int, comboCount: Int) = Unit
+    override fun publishOpeningRolls(gameId: Uuid, rolls: List<OpeningDiceRoll>) = Unit
 
     /** 丟棄牌牆呈現。 */
-    override fun publishWallStructure(gameId: Uuid, assemblyStructure: Map<Uuid, TileWallPosition>, layout: TileWallPhysicalLayout, dealerSeatIndex: Int, deadWallTileIds: Set<Uuid>, diceCount: Int, isNewOpening: Boolean, revealedTileIds: Set<Uuid>) = Unit
+    override fun publishWallStructure(gameId: Uuid, assemblyStructure: Map<Uuid, TileWallPosition>, layout: TileWallPhysicalLayout, dealerSeatIndex: Int, deadWallTileIds: Set<Uuid>, openingDiceCounts: List<Int>, isNewOpening: Boolean, revealedTileIds: Set<Uuid>) = Unit
 
     /** 丟棄牌牆轉場。 */
     override fun publishWallLayoutTransition(gameId: Uuid, phases: List<PhysicalWallLayoutTransitionPhase>) = Unit
@@ -401,7 +401,7 @@ private class NoOpPresentation : GamePresentationPublisher {
     override fun publishPlayerTilesUpdated(gameId: Uuid, seatIndex: Int, standingTileIds: List<Uuid>, drawnTileId: Uuid?, melds: List<MeldPresentation>, setAsideTileIds: List<Uuid>, isNewlyDrawn: Boolean, newlyClaimedMeldTileIds: Set<Uuid>, newlySetAsideTileIds: Set<Uuid>) = Unit
 
     /** 丟棄初始發牌通知。 */
-    override fun publishInitialDeal(gameId: Uuid, handTileIdsBySeatIndex: Map<Int, List<Uuid>>, postFlipHandTileIdsBySeatIndex: Map<Int, List<Uuid>>, dealerSeatIndex: Int, dealBatchSizes: List<Int>, diceCount: Int) = Unit
+    override fun publishInitialDeal(gameId: Uuid, handTileIdsBySeatIndex: Map<Int, List<Uuid>>, postFlipHandTileIdsBySeatIndex: Map<Int, List<Uuid>>, dealerSeatIndex: Int, dealBatchSizes: List<Int>, openingDiceCounts: List<Int>) = Unit
 
     /** 丟棄清除玩家區域呈現的要求。 */
     override fun clearPlayerTiles(gameId: Uuid) = Unit

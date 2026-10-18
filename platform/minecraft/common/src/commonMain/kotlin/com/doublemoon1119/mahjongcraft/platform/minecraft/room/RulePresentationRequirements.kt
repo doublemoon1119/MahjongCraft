@@ -8,8 +8,9 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceTableL
 /**
  * 規則要在 Minecraft 麻將桌上進行對局必須滿足的條件。
  *
- * 桌上的牌只從牌山產生，因此規則必須提供牌山布局與開門規則，開門一次擲出的骰子數量也必須是桌上能擺放的數量
- * （[MahjongDiceTableLayout.supportedDiceCounts]）。只有設定呈現標為可選、且滿足這些條件的規則，才能用於房間設定與開局。
+ * 桌上的牌只從牌山產生，因此規則必須提供牌山布局與開局程序；若程序使用擲骰，每一輪的骰子數量也必須是
+ * 桌上能擺放的數量（[MahjongDiceTableLayout.supportedDiceCounts]）。只有設定呈現標為可選、且滿足這些條件的規則，
+ * 才能用於房間設定與開局。
  */
 object RulePresentationRequirements {
     /**
@@ -20,12 +21,13 @@ object RulePresentationRequirements {
      */
     fun unmetRequirement(module: MahjongRuleModule<*>): String? {
         if (module.createWallLayout() == null) return "rule ${module.id} provides no wall layout"
-        val openingPolicy = module.createWallOpeningPolicy() ?: return "rule ${module.id} provides no wall opening policy"
-        val diceCount = openingPolicy.diceCount
-        return if (diceCount in MahjongDiceTableLayout.supportedDiceCounts) {
+        val openingProcedure = module.createRoundOpeningProcedure()
+            ?: return "rule ${module.id} provides no round opening procedure"
+        val unsupportedDiceCounts = openingProcedure.supportedDiceCounts - MahjongDiceTableLayout.supportedDiceCounts
+        return if (unsupportedDiceCounts.isEmpty()) {
             null
         } else {
-            "rule ${module.id} rolls $diceCount dice, but the table can only place " +
+            "rule ${module.id} rolls ${unsupportedDiceCounts.sorted().joinToString(" and ")} dice, but the table can only place " +
                 MahjongDiceTableLayout.supportedDiceCounts.sorted().joinToString(" or ")
         }
     }

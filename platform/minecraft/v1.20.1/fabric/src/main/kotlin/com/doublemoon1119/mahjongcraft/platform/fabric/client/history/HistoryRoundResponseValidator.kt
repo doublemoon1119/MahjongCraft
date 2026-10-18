@@ -185,6 +185,7 @@ internal object HistoryRoundResponseValidator {
                 val actor = when (fact) {
                     is HistoryReplayFactDto.KnownAction -> fact.actorSeat
                     is HistoryReplayFactDto.Reaction -> fact.resolvedActorSeat
+                    is HistoryReplayFactDto.DiceRolled -> fact.actorSeat
                     is HistoryReplayFactDto.Opaque -> fact.actorSeat
                     else -> null
                 }

@@ -116,6 +116,7 @@ internal class HistoryTableChangeMapper(
                 waitingTiles = settlement.waitingTiles.map { it.toPersistenceDto() },
             )
         },
+        openingDiceRolls = change.openingDiceRolls?.map { it.toPersistenceDto() },
     )
 
     /**
@@ -171,5 +172,6 @@ internal class HistoryTableChangeMapper(
                 waitingTiles = settlement.waitingTiles.map { it.toDomain() }.toSet(),
             )
         },
+        openingDiceRolls = dto.openingDiceRolls?.map { it.toDomain() },
     )
 }

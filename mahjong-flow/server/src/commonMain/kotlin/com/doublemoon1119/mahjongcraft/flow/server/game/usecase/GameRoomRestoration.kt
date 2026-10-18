@@ -49,7 +49,8 @@ internal object GameRoomRestoration {
             layout = TileWallPhysicalLayout(emptyMap()),
             dealerSeatIndex = 0,
             deadWallTileIds = emptySet(),
-            diceCount = 0,
+            openingDiceCounts = emptyList(),
+            isNewOpening = false,
         )
         presentation.clearPlayerTiles(room.id)
         room.playerIds.forEach { playerId -> snapshots.setSnapshot(playerId, room.toSnapshot(playerId)) }

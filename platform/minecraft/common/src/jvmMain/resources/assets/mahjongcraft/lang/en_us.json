@@ -508,6 +508,7 @@
   "mahjongcraft.history_screen.round.completion": "Round completed: %s (%s)",
   "mahjongcraft.history_screen.round.direct_tiles": "Direct tiles",
   "mahjongcraft.history_screen.round.empty_facts": "No details recorded",
+  "mahjongcraft.history_screen.round.event.dice_rolled": "Dice roll %s: %s",
   "mahjongcraft.history_screen.round.event.match_started": "Match started",
   "mahjongcraft.history_screen.round.event.returned_to_room": "Returned to room",
   "mahjongcraft.history_screen.round.event.round_started": "Round started",

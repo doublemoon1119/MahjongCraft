@@ -31,7 +31,7 @@ class StablePolymorphicSerialNameTest {
             GameActionPersistenceDto.GameStarted to "game_started",
             GameActionPersistenceDto.RoundStarted to "round_started",
             GameActionPersistenceDto.MatchEnded to "match_ended",
-            GameActionPersistenceDto.DiceRolled(listOf(1, 6)) to "dice_rolled",
+            GameActionPersistenceDto.DiceRolled(0, "00000000-0000-0000-0000-000000000001", listOf(1, 6)) to "dice_rolled",
             GameActionPersistenceDto.Draw to "draw",
             GameActionPersistenceDto.Discard("tile-id") to "discard",
             GameActionPersistenceDto.Chi("tile-id", listOf("with-id")) to "chi",

@@ -23,6 +23,7 @@ import kotlinx.serialization.Serializable
  * @property dynamicRuleState 規則專屬動態狀態；沒有時為 `null`。
  * @property finishedPlayerIds 已完成本局玩家 UUID 字串。
  * @property physicalWallLayout 實體牌牆布局；沒有時為 `null`。
+ * @property openingDiceRolls 本局開局程序已完成的逐輪擲骰結果。
  * @property revealedHandTiles 對 observer 公開的額外手牌牌張。
  */
 @Serializable
@@ -40,5 +41,6 @@ data class TableStateSnapshotDto(
     val dynamicRuleState: DynamicRuleStateDto?,
     val finishedPlayerIds: Set<String>,
     val physicalWallLayout: TileWallPhysicalLayoutDto?,
+    val openingDiceRolls: List<OpeningDiceRollDto>,
     val revealedHandTiles: List<IdentifiedTileDto>,
 )

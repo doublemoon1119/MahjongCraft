@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.persistence.format.history
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFactTypeKeys
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.config.GameFlowConfigPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.GameActionPersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.OpeningDiceRollPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.RoundCompletionSummaryPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.RoundPreparationSubmissionPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.TableStatePersistenceDto
@@ -36,6 +37,17 @@ sealed interface HistoryFactPersistenceDto {
     @SerialName(HistoryFactTypeKeys.ROUND_STARTED)
     data class RoundStarted(
         val state: TableStatePersistenceDto,
+    ) : HistoryFactPersistenceDto
+
+    /**
+     * 開局程序一輪擲骰的保存資料。
+     *
+     * @property roll 本輪的順序、實際擲骰者與逐顆點數。
+     */
+    @Serializable
+    @SerialName(HistoryFactTypeKeys.DICE_ROLLED)
+    data class DiceRolled(
+        val roll: OpeningDiceRollPersistenceDto,
     ) : HistoryFactPersistenceDto
 
     /**

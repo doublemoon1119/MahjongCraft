@@ -508,6 +508,7 @@
   "mahjongcraft.history_screen.round.completion": "局終了：%s（%s）",
   "mahjongcraft.history_screen.round.direct_tiles": "直接関係する牌",
   "mahjongcraft.history_screen.round.empty_facts": "詳細は記録されていません",
+  "mahjongcraft.history_screen.round.event.dice_rolled": "%s回目のサイコロ：%s",
   "mahjongcraft.history_screen.round.event.match_started": "対局開始",
   "mahjongcraft.history_screen.round.event.returned_to_room": "ルームに戻りました",
   "mahjongcraft.history_screen.round.event.round_started": "局開始",

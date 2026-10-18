@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
@@ -168,6 +169,15 @@ class AdvanceRoundUseCaseTest {
         assertEquals(false, advanceResult.isMatchOver)
         val newState = advanceResult.tableState
         assertEquals(1, newState.comboCount)
+        val roll = newState.openingDiceRolls.single()
+        assertEquals(dealerId, roll.playerId)
+        assertEquals(0, roll.rollIndex)
+        assertEquals(listOf(roll), fixtures.presentationPublisher.getPublishedOpeningRolls(gameId))
+        val recorded = fixtures.gameRepo.historyDrafts.filter { it.fact is HistoryFact.DiceRolled }
+        assertEquals(listOf(roll), recorded.map { (it.fact as HistoryFact.DiceRolled).roll })
+        assertEquals(listOf(dealerId), recorded.map { it.actorPlayerId })
+        assertTrue(fixtures.gameRepo.historyDrafts[1].fact is HistoryFact.RoundStarted)
+        assertTrue(fixtures.gameRepo.historyDrafts[2].fact is HistoryFact.DiceRolled)
         assertEquals(1, newState.roundNumber)
         assertEquals(Wind.EAST, newState.prevalentWind)
         assertEquals(

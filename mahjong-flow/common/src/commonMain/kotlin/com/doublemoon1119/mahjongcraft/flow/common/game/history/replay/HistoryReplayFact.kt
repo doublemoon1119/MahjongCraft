@@ -53,6 +53,21 @@ sealed interface HistoryReplayFact {
     ) : HistoryReplayFact
 
     /**
+     * 開局程序的一輪擲骰結果。
+     *
+     * @property typeKey 事實種類。
+     * @property rollIndex 本局中的零基底擲骰索引。
+     * @property actorSeat 實際擲骰玩家的座位。
+     * @property dice 逐顆骰子結果。
+     */
+    data class DiceRolled(
+        override val typeKey: String,
+        val rollIndex: Int,
+        val actorSeat: Int,
+        val dice: List<Int>,
+    ) : HistoryReplayFact
+
+    /**
      * 完成事實。
      *
      * @property typeKey 事實種類。

@@ -19,6 +19,9 @@ class TableOpeningPresentationOperationTracker {
     /** 仍可捕捉後續同步發布工作的開局批次。 */
     private val openRegistrationByTable = mutableMapOf<Uuid, Ticket>()
 
+    /** 程序生命週期內持續遞增，清理 session 後也不重用舊工作身分。 */
+    private var nextGeneration: Long = 1L
+
     /**
      * 建立新世代並開啟後續 presentation 的捕捉窗口。
      *
@@ -27,7 +30,8 @@ class TableOpeningPresentationOperationTracker {
      */
     @Synchronized
     fun begin(tableId: Uuid): Ticket {
-        val generation = (latestByTable[tableId]?.ticket?.generation ?: 0L) + 1L
+        check(nextGeneration < Long.MAX_VALUE) { "Opening presentation generation exhausted" }
+        val generation = nextGeneration++
         val ticket = Ticket(tableId, generation)
         latestByTable[tableId] = State(ticket)
         openRegistrationByTable[tableId] = ticket
@@ -74,15 +78,22 @@ class TableOpeningPresentationOperationTracker {
      * @param ticket 失敗工作捕捉到的批次；一般 presentation 可為 null。
      * @param stage 失敗的呈現階段名稱。
      * @param cause 原始失敗原因。
+     * @param clearCurrentState 僅在目前世代第一次失敗時清除該世代的暫存資料；必須是立即完成的記憶體操作。
      * @return 包含批次與階段資訊的例外。
      */
     @Synchronized
-    fun fail(ticket: Ticket?, stage: String, cause: Throwable): OpeningPresentationOperationException {
+    fun fail(
+        ticket: Ticket?,
+        stage: String,
+        cause: Throwable,
+        clearCurrentState: () -> Unit = {},
+    ): OpeningPresentationOperationException {
         if (ticket != null) {
             val state = latestByTable[ticket.tableId]
             if (state?.ticket == ticket && !state.failed) {
                 state.failed = true
                 state.failedStage = stage
+                clearCurrentState()
             }
         }
         return OpeningPresentationOperationException(ticket, stage, cause)

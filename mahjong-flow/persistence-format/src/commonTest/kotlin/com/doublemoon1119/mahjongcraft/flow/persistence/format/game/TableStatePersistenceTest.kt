@@ -24,6 +24,8 @@ import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacementOffset
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacementOrientation
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
+import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
+import com.doublemoon1119.mahjongcraft.logic.table.opening.OpeningDiceRoll
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
 import kotlinx.serialization.SerializationException
@@ -130,6 +132,16 @@ class TableStatePersistenceTest {
                 reservedWallTiles = listOf(identified(Tile.Honor.White), identified(Tile.Honor.Green)),
             ),
         )
+    }
+
+    /** 多輪擲骰紀錄在完整桌況存檔往返後保留順序與每顆骰子的點數。 */
+    @Test
+    fun `opening dice rolls round-trip in complete game state`() {
+        val state = createTableState()
+        val first = OpeningDiceRoll(0, state.players.first().id, DiceRollResult.of(listOf(2, 6)))
+        val second = OpeningDiceRoll(1, state.players.last().id, DiceRollResult.of(listOf(3, 4)))
+
+        assertEncodedRoundTrip(state.copy(openingDiceRolls = listOf(first, second)))
     }
 
     /** 驗證本局已完成玩家集合保持不變，且不改變目前行動玩家。 */

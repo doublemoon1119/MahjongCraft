@@ -16,6 +16,7 @@ class HistoryContractKeysTest {
             listOf(
                 "match_started",
                 "round_started",
+                "dice_rolled",
                 "round_preparation_started",
                 "round_preparation_submitted",
                 "round_preparation_automatic_resolved",
@@ -33,6 +34,7 @@ class HistoryContractKeysTest {
             listOf(
                 HistoryFactPersistenceDto.MatchStarted.serializer(),
                 HistoryFactPersistenceDto.RoundStarted.serializer(),
+                HistoryFactPersistenceDto.DiceRolled.serializer(),
                 HistoryFactPersistenceDto.RoundPreparationStarted.serializer(),
                 HistoryFactPersistenceDto.RoundPreparationSubmitted.serializer(),
                 HistoryFactPersistenceDto.RoundPreparationAutomaticallyResolved.serializer(),

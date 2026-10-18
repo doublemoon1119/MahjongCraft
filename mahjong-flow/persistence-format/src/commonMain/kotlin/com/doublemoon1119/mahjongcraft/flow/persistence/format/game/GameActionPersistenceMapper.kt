@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
+import com.doublemoon1119.mahjongcraft.logic.table.opening.OpeningDiceRoll
 import kotlin.uuid.Uuid
 
 /**
@@ -22,7 +23,7 @@ fun GameAction.toPersistenceDto(
     GameAction.GameStarted -> GameActionPersistenceDto.GameStarted
     GameAction.RoundStarted -> GameActionPersistenceDto.RoundStarted
     GameAction.MatchEnded -> GameActionPersistenceDto.MatchEnded
-    is GameAction.DiceRolled -> GameActionPersistenceDto.DiceRolled(dice.values)
+    is GameAction.DiceRolled -> GameActionPersistenceDto.DiceRolled(roll.rollIndex, roll.playerId.toString(), roll.dice.values)
     GameAction.Draw -> GameActionPersistenceDto.Draw
     is GameAction.Discard -> GameActionPersistenceDto.Discard(tileId.toString())
     is GameAction.Chi -> GameActionPersistenceDto.Chi(tileId.toString(), withTiles.map(Uuid::toString))
@@ -49,7 +50,9 @@ fun GameActionPersistenceDto.toDomain(
     GameActionPersistenceDto.GameStarted -> GameAction.GameStarted
     GameActionPersistenceDto.RoundStarted -> GameAction.RoundStarted
     GameActionPersistenceDto.MatchEnded -> GameAction.MatchEnded
-    is GameActionPersistenceDto.DiceRolled -> GameAction.DiceRolled(DiceRollResult.of(dice))
+    is GameActionPersistenceDto.DiceRolled -> GameAction.DiceRolled(
+        OpeningDiceRoll(rollIndex, Uuid.parse(playerId), DiceRollResult.of(dice)),
+    )
     GameActionPersistenceDto.Draw -> GameAction.Draw
     is GameActionPersistenceDto.Discard -> GameAction.Discard(Uuid.parse(tileId))
     is GameActionPersistenceDto.Chi -> GameAction.Chi(Uuid.parse(tileId), withTileIds.map(Uuid::parse))
