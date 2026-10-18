@@ -5,6 +5,8 @@ import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.opening.TaiwanWallOpeningPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallLayout
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallLayoutResult
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallSideArrangement
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallSideReference
 import com.doublemoon1119.mahjongcraft.logic.table.layout.WallRingLayoutSupport
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 
@@ -22,6 +24,12 @@ import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
  * @property config 決定王牌墩數的台灣麻將規則配置。
  */
 class TaiwanWallLayout(private val config: TaiwanRuleConfig) : TileWallLayout {
+    /** 依序取得莊家面前、左側、對側與右側的四面牌牆位置。 */
+    override fun sideArrangement(dealerSeatIndex: Int): TileWallSideArrangement = TileWallSideArrangement(
+        reference = TileWallSideReference.DEALER,
+        quarterTurns = listOf(0, 3, 2, 1),
+    )
+
     override fun resolve(shuffledTiles: List<IdentifiedTile>, opening: WallOpening): TileWallLayoutResult {
         require(shuffledTiles.size == TILE_COUNT_WITHOUT_FLOWERS || shuffledTiles.size == TILE_COUNT_WITH_FLOWERS) {
             "Taiwan wall layout requires $TILE_COUNT_WITHOUT_FLOWERS or $TILE_COUNT_WITH_FLOWERS tiles, " +

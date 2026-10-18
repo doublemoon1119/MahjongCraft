@@ -2,9 +2,10 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.history
 
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayMeldDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.MeldTypeDto
-import com.doublemoon1119.mahjongcraft.flow.network.dto.model.RelativeDirectionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDomain
+import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionTileOrientationDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.meldDisplayDirection
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 
 /**
@@ -138,6 +139,7 @@ internal object HistoryTileGroupLayoutCalculator {
      * 計算單一副露配置，保留來源牌的橫置位置與加槓疊牌。
      *
      * @param meld 歷史資料中的副露。
+     * @param playerCount 完整歷史桌況中的玩家人數。
      * @param maxWidth 單組副露允許的最大寬度；超出時等比例縮小。
      * @param tileWidth 直立牌的寬度。
      * @param tileHeight 直立牌的高度。
@@ -146,15 +148,18 @@ internal object HistoryTileGroupLayoutCalculator {
      */
     fun meld(
         meld: HistoryReplayMeldDto,
+        playerCount: Int,
         maxWidth: Float,
         tileWidth: Float = DEFAULT_TILE_WIDTH,
         tileHeight: Float = DEFAULT_TILE_HEIGHT,
         gap: Float = DEFAULT_GAP,
     ): HistoryTileGroupLayout {
+        require(playerCount in 2..4) { "playerCount must be between 2 and 4" }
         val isAddedKan = meld.type == MeldTypeDto.AddedKan && meld.tiles.size == ADDED_KAN_TILE_COUNT
         val baseTiles = if (isAddedKan) meld.tiles.take(ADDED_KAN_BASE_TILE_COUNT) else meld.tiles
+        val displayDirection = meld.sourceDirection?.toDomain()?.let { meldDisplayDirection(it, playerCount) }
         val sidewaysSlot = meld.sourceTile?.takeIf { it in baseTiles }?.let {
-            meld.sourceDirection?.toDomain()
+            displayDirection
         }?.let {
             MahjongTileTableLayout.sidewaysSlotIndex(it, baseTiles.size)
         }
@@ -169,7 +174,7 @@ internal object HistoryTileGroupLayoutCalculator {
             val sideways = index == sidewaysSlot
             val orientation = if (!sideways) {
                 DecisionTileOrientationDto.UPRIGHT
-            } else if (meld.sourceDirection == RelativeDirectionDto.Left) {
+            } else if (displayDirection == RelativeDirection.Left) {
                 DecisionTileOrientationDto.ROTATED_LEFT
             } else {
                 DecisionTileOrientationDto.ROTATED_RIGHT

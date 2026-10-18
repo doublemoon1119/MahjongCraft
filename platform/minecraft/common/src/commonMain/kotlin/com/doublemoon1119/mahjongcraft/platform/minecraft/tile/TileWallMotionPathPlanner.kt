@@ -46,6 +46,17 @@ object TileWallMotionPathPlanner {
         if (traversedCornerCells.size != 1) {
             return TileWallMotionPathDecision.Rejected(TileWallMotionPathRejection.NON_ADJACENT_SIDES)
         }
+        if (start.orientation == end.orientation &&
+            abs(shortestYawDeltaDegrees(startWorld.yaw, endWorld.yaw)) in (HALF_TURN - YAW_EPSILON)..(HALF_TURN + YAW_EPSILON)
+        ) {
+            val perimeterPath = TileWallPerimeterPath.oppositeSidePath(
+                start = startWorld,
+                end = endWorld,
+                centerX = context.controllerX + BLOCK_CENTER,
+                centerZ = context.controllerZ + BLOCK_CENTER,
+            )
+            return TileWallMotionPathDecision.Completed(perimeterPath.zipWithNext(::segment))
+        }
         return TileWallMotionPathDecision.Completed(roundedCornerSegments(context, startWorld, endWorld))
     }
 
@@ -227,6 +238,12 @@ object TileWallMotionPathPlanner {
 
     /** 一整圈的角度。 */
     private const val FULL_TURN_DEGREES = 360.0f
+
+    /** yaw 相反時的理論角度差。 */
+    private const val HALF_TURN = 180.0f
+
+    /** 判斷起訖 yaw 是否足以視為相差 180 度的容許誤差。 */
+    private const val YAW_EPSILON = 0.001f
 }
 
 /** 路徑規劃內部使用的水平座標。 */

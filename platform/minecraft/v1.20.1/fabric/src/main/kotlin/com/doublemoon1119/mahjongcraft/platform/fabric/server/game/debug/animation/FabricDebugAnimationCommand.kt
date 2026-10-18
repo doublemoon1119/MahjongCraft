@@ -18,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.TileAnimation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceRollAnimationSpec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableSide
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import net.minecraft.server.command.CommandManager.literal
@@ -81,7 +82,13 @@ class FabricDebugAnimationCommand(
     private fun previewDice(source: ServerCommandSource, diceCount: Int): Int {
         val player = source.player ?: return COMMAND_FAILURE
         val world = player.serverWorld
-        val layout = layoutFactory.create(player.blockPos.x, player.blockPos.y, player.blockPos.z, player.horizontalFacing.toMahjongTableFacing())
+        val layout = layoutFactory.create(
+            player.blockPos.x,
+            player.blockPos.y,
+            player.blockPos.z,
+            player.horizontalFacing.toMahjongTableFacing(),
+            MahjongTableSeatLayout.FOUR_PLAYER,
+        )
         val tableId = Uuid.random()
         val placements = MahjongDiceTableLayout.placements(
             controllerX = layout.controllerX,
@@ -146,7 +153,13 @@ class FabricDebugAnimationCommand(
         val player = source.player ?: return COMMAND_FAILURE
         val world = player.serverWorld
         val assetKey = tilePreviewSupport.resolveAssetKey(tileArg)
-        val layout = layoutFactory.create(player.blockPos.x, player.blockPos.y, player.blockPos.z, player.horizontalFacing.toMahjongTableFacing())
+        val layout = layoutFactory.create(
+            player.blockPos.x,
+            player.blockPos.y,
+            player.blockPos.z,
+            player.horizontalFacing.toMahjongTableFacing(),
+            MahjongTableSeatLayout.FOUR_PLAYER,
+        )
         val handSize = DebugPreviewDefaults.RULE_CONFIG.initialHandSize
 
         val finalPlacements = (0 until handSize).map { slot ->
@@ -191,7 +204,13 @@ class FabricDebugAnimationCommand(
         val player = source.player ?: return COMMAND_FAILURE
         val world = player.serverWorld
         val assetKey = tilePreviewSupport.resolveAssetKey(tileArg)
-        val layout = layoutFactory.create(player.blockPos.x, player.blockPos.y, player.blockPos.z, player.horizontalFacing.toMahjongTableFacing())
+        val layout = layoutFactory.create(
+            player.blockPos.x,
+            player.blockPos.y,
+            player.blockPos.z,
+            player.horizontalFacing.toMahjongTableFacing(),
+            MahjongTableSeatLayout.FOUR_PLAYER,
+        )
 
         val sourcePlacement = layout.wallPlacement(tileIndex = 0)
         val finalPlacement = layout.drawnTilePlacement(standingTileCount = DebugPreviewDefaults.RULE_CONFIG.initialHandSize)
@@ -217,7 +236,13 @@ class FabricDebugAnimationCommand(
         val player = source.player ?: return COMMAND_FAILURE
         val world = player.serverWorld
         val assetKey = tilePreviewSupport.resolveAssetKey(tileArg)
-        val layout = layoutFactory.create(player.blockPos.x, player.blockPos.y, player.blockPos.z, player.horizontalFacing.toMahjongTableFacing())
+        val layout = layoutFactory.create(
+            player.blockPos.x,
+            player.blockPos.y,
+            player.blockPos.z,
+            player.horizontalFacing.toMahjongTableFacing(),
+            MahjongTableSeatLayout.FOUR_PLAYER,
+        )
 
         val sourcePlacement = layout.handPlacement(handSize = DebugPreviewDefaults.RULE_CONFIG.initialHandSize, tileIndex = 0)
         val finalPlacement = layout.discardPlacement(discardIndex = 0)
@@ -242,7 +267,13 @@ class FabricDebugAnimationCommand(
         val world = player.serverWorld
         val assetKey = tilePreviewSupport.resolveAssetKey(tileArg)
         val tileCount = if (type == MeldType.OPEN_KAN) MELD_KAN_TILE_COUNT else DebugPreviewDefaults.MELD_TILE_COUNT
-        val layout = layoutFactory.create(player.blockPos.x, player.blockPos.y, player.blockPos.z, player.horizontalFacing.toMahjongTableFacing())
+        val layout = layoutFactory.create(
+            player.blockPos.x,
+            player.blockPos.y,
+            player.blockPos.z,
+            player.horizontalFacing.toMahjongTableFacing(),
+            MahjongTableSeatLayout.FOUR_PLAYER,
+        )
         val sourceDirection = if (type == MeldType.CHI) RelativeDirection.Left else RelativeDirection.Across
         val sidewaysSlot = MahjongTileTableLayout.sidewaysSlotIndex(sourceDirection, tileCount)
         val claimedOrientation = sourceDirection.claimedTileOrientation()
@@ -287,7 +318,13 @@ class FabricDebugAnimationCommand(
         val player = source.player ?: return COMMAND_FAILURE
         val world = player.serverWorld
         val assetKey = tilePreviewSupport.resolveAssetKey(tileArg)
-        val layout = layoutFactory.create(player.blockPos.x, player.blockPos.y, player.blockPos.z, player.horizontalFacing.toMahjongTableFacing())
+        val layout = layoutFactory.create(
+            player.blockPos.x,
+            player.blockPos.y,
+            player.blockPos.z,
+            player.horizontalFacing.toMahjongTableFacing(),
+            MahjongTableSeatLayout.FOUR_PLAYER,
+        )
         val sourceDirection = RelativeDirection.Across
         val claimedOrientation = sourceDirection.claimedTileOrientation()
         val sidewaysSlot = MahjongTileTableLayout.sidewaysSlotIndex(sourceDirection, DebugPreviewDefaults.MELD_TILE_COUNT)

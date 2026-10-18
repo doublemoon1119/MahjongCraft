@@ -416,7 +416,18 @@ internal class HistoryRoundStateScreen(
         group(HistoryTileGroupLayoutCalculator.hand(orderedTiles, player.lastDrawn, maxWidth))
         if (player.melds.isNotEmpty()) {
             line(Text.translatable(MinecraftHistoryScreenKeys.STATE_MELDS), MUTED_COLOR)
-            group(HistoryRoundStatePresenter.combine(player.melds.map { HistoryTileGroupLayoutCalculator.meld(it, maxWidth) }, maxWidth))
+            group(
+                HistoryRoundStatePresenter.combine(
+                    player.melds.map {
+                        HistoryTileGroupLayoutCalculator.meld(
+                            meld = it,
+                            playerCount = state.players.size,
+                            maxWidth = maxWidth,
+                        )
+                    },
+                    maxWidth,
+                ),
+            )
         }
         if (player.setAsideTiles.isNotEmpty()) {
             line(Text.translatable(MinecraftHistoryScreenKeys.STATE_SET_ASIDE), MUTED_COLOR)

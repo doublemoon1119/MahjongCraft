@@ -23,7 +23,13 @@ internal object HistoryRoundStatePresenter {
         val expectedStanding = available.toSet() - setOfNotNull(hand.winningTile)
         if (expectedStanding != hand.standingTiles.toSet()) return null
         val groups = listOf(HistoryTileGroupLayoutCalculator.hand(hand.standingTiles, hand.winningTile, maxWidth)) +
-            player.melds.map { HistoryTileGroupLayoutCalculator.meld(it, maxWidth) }
+            player.melds.map {
+                HistoryTileGroupLayoutCalculator.meld(
+                    meld = it,
+                    playerCount = state.players.size,
+                    maxWidth = maxWidth,
+                )
+            }
         return combine(groups, maxWidth)
     }
 

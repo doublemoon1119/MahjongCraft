@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.seating
 
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatGeometry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import kotlin.math.cos
 import kotlin.math.sin
@@ -17,6 +19,7 @@ class MahjongSeatingTableLayoutTest {
     @Test
     fun `seats are placed at the four side midpoints two blocks from controller`() {
         val placements = MahjongSeatingTableLayout.seatPlacements(
+            layout = MahjongTableSeatLayout.FOUR_PLAYER,
             controllerX = 0,
             controllerY = 64,
             controllerZ = 0,
@@ -39,7 +42,13 @@ class MahjongSeatingTableLayoutTest {
 
         MahjongTableFacing.entries.forEach { tableFacing ->
             val placements =
-                MahjongSeatingTableLayout.seatPlacements(controllerX, controllerY, controllerZ, tableFacing)
+                MahjongSeatingTableLayout.seatPlacements(
+                    layout = MahjongTableSeatLayout.FOUR_PLAYER,
+                    controllerX = controllerX,
+                    controllerY = controllerY,
+                    controllerZ = controllerZ,
+                    tableFacing = tableFacing,
+                )
 
             placements.forEach { placement ->
                 val yawRadians = Math.toRadians(placement.yaw.toDouble())
@@ -62,8 +71,20 @@ class MahjongSeatingTableLayoutTest {
     /** 同樣的輸入必須產生同樣的座位順序，讓呼叫端能依固定 index 對應玩家座位。 */
     @Test
     fun `seat placements are stable across calls for the same controller position`() {
-        val first = MahjongSeatingTableLayout.seatPlacements(3, 70, 3, MahjongTableFacing.NORTH)
-        val second = MahjongSeatingTableLayout.seatPlacements(3, 70, 3, MahjongTableFacing.NORTH)
+        val first = MahjongSeatingTableLayout.seatPlacements(
+            layout = MahjongTableSeatLayout.FOUR_PLAYER,
+            controllerX = 3,
+            controllerY = 70,
+            controllerZ = 3,
+            tableFacing = MahjongTableFacing.NORTH,
+        )
+        val second = MahjongSeatingTableLayout.seatPlacements(
+            layout = MahjongTableSeatLayout.FOUR_PLAYER,
+            controllerX = 3,
+            controllerY = 70,
+            controllerZ = 3,
+            tableFacing = MahjongTableFacing.NORTH,
+        )
 
         assertEquals(first, second)
     }
@@ -72,7 +93,13 @@ class MahjongSeatingTableLayoutTest {
     @Test
     fun `seat position rotates with table facing`() {
         val positionsByFacing = MahjongTableFacing.entries.associateWith { tableFacing ->
-            MahjongSeatingTableLayout.seatPlacements(0, 64, 0, tableFacing).first().let { it.x to it.z }
+            MahjongSeatingTableLayout.seatPlacements(
+                layout = MahjongTableSeatLayout.FOUR_PLAYER,
+                controllerX = 0,
+                controllerY = 64,
+                controllerZ = 0,
+                tableFacing = tableFacing,
+            ).first().let { it.x to it.z }
         }
 
         assertEquals(4, positionsByFacing.values.toSet().size)
@@ -86,9 +113,16 @@ class MahjongSeatingTableLayoutTest {
     @Test
     fun `seat requests carry the standard seat of each index`() {
         val tableId = Uuid.parse("00000000-0000-0000-0000-000000000007")
-        val seats = MahjongSeatingTableLayout.seatPlacements(5, 70, -3, MahjongTableFacing.EAST)
+        val seats = MahjongSeatingTableLayout.seatPlacements(
+            layout = MahjongTableSeatLayout.FOUR_PLAYER,
+            controllerX = 5,
+            controllerY = 70,
+            controllerZ = -3,
+            tableFacing = MahjongTableFacing.EAST,
+        )
 
         val requests = MahjongSeatingTableLayout.seatRequests(
+            layout = MahjongTableSeatLayout.FOUR_PLAYER,
             tableId = tableId,
             dimensionId = "minecraft:the_nether",
             controllerX = 5,
@@ -100,5 +134,52 @@ class MahjongSeatingTableLayoutTest {
         assertEquals(seats.indices.toList(), requests.map { it.seatIndex })
         assertEquals(seats, requests.map { it.seat })
         assertTrue(requests.all { it.tableId == tableId && it.dimensionId == "minecraft:the_nether" })
+    }
+
+    /** 驗證兩位玩家只使用相對的南北兩側，且所有桌子朝向都維持相同拓撲。 */
+    @Test
+    fun `two player layout uses opposite sides for every table facing`() {
+        MahjongTableFacing.entries.forEach { tableFacing ->
+            val placements = MahjongSeatingTableLayout.seatPlacements(
+                layout = MahjongTableSeatLayout.TWO_PLAYER,
+                controllerX = 0,
+                controllerY = 64,
+                controllerZ = 0,
+                tableFacing = tableFacing,
+            )
+
+            assertEquals(2, placements.size)
+            assertEquals(4.0, distanceBetween(placements[0], placements[1]), absoluteTolerance = 0.0001)
+        }
+    }
+
+    /** 驗證三位玩家維持南、東、北三側，且所有桌子朝向都產生三個座位。 */
+    @Test
+    fun `three player layout leaves one side empty for every table facing`() {
+        MahjongTableFacing.entries.forEach { tableFacing ->
+            val placements = MahjongSeatingTableLayout.seatPlacements(
+                layout = MahjongTableSeatLayout.THREE_PLAYER,
+                controllerX = 0,
+                controllerY = 64,
+                controllerZ = 0,
+                tableFacing = tableFacing,
+            )
+
+            assertEquals(3, placements.size)
+            val distances = listOf(
+                distanceBetween(placements[0], placements[1]),
+                distanceBetween(placements[1], placements[2]),
+                distanceBetween(placements[0], placements[2]),
+            )
+            assertEquals(sqrt(8.0), requireNotNull(distances.minOrNull()), absoluteTolerance = 0.0001)
+            assertEquals(4.0, requireNotNull(distances.maxOrNull()), absoluteTolerance = 0.0001)
+        }
+    }
+
+    /** 計算兩個標準座位腳底位置的水平距離。 */
+    private fun distanceBetween(first: SeatGeometry, second: SeatGeometry): Double {
+        val dx = first.x - second.x
+        val dz = first.z - second.z
+        return sqrt(dx * dx + dz * dz)
     }
 }

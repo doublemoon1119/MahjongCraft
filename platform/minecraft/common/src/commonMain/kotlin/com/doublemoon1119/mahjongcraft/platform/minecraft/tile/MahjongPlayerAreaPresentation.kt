@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPresenter
 import kotlin.uuid.Uuid
@@ -13,6 +14,7 @@ import kotlin.uuid.Uuid
  * @property tableId 所屬麻將桌的穩定 UUID。
  * @property tableLocation 麻將桌 controller 的位置。
  * @property tableFacing 麻將桌 controller 的世界水平朝向。
+ * @property seatLayout 這桌玩家席位對應的固定桌面布局。
  * @property seatIndex 這位玩家在 `TableState.players` 的固定座位 index。
  * @property standingTileIds 這位玩家目前立牌張數，依加入手牌的時間軸排列（`Hand.tiles`，不含
  * [drawnTileId]；先加入的在前，例如非摸切捨牌時併入立牌的 `Hand.lastDrawn` 排在最後面），鍵為
@@ -47,6 +49,7 @@ data class MahjongPlayerAreaPresentation(
     val tableId: Uuid,
     val tableLocation: TableLocation,
     val tableFacing: MahjongTableFacing,
+    val seatLayout: MahjongTableSeatLayout,
     val seatIndex: Int,
     val standingTileIds: List<Uuid>,
     val drawnTileId: Uuid?,

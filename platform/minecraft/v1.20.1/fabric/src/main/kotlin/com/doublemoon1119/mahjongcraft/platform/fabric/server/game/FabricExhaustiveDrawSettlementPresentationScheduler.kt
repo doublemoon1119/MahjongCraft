@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.entity.FabricEntit
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.PersistentTableOverlayCoordinator
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.TileAnimationSteps
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPlacement
 import net.minecraft.server.world.ServerWorld
@@ -102,6 +103,7 @@ class FabricExhaustiveDrawSettlementPresentationScheduler(
                     controllerY = controllerPos.y,
                     controllerZ = controllerPos.z,
                     tableFacing = tableFacing,
+                    seatLayout = MahjongTableSeatLayout.forPlayerCount(request.players.size),
                     seatIndex = player.ranking.seatIndex,
                     handSize = handTileIds.size,
                     tileIndex = handTileIds.size - 1 - orderIndex,

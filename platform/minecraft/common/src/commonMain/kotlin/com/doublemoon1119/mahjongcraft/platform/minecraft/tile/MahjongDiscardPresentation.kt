@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import kotlin.uuid.Uuid
 
@@ -10,6 +11,7 @@ import kotlin.uuid.Uuid
  * @property tableId 所屬麻將桌的穩定 UUID。
  * @property tableLocation 麻將桌 controller 的位置。
  * @property tableFacing 麻將桌 controller 的世界水平朝向。
+ * @property seatLayout 這桌玩家席位對應的固定桌面布局。
  * @property seatIndex 牌河所屬玩家在 `TableState.players` 的固定座位 index。
  * @property discardTileIds 這位玩家目前牌河所有紀錄的牌 Uuid，依捨牌順序排列——順序本身決定牌河
  * 排列位置，不需要另外傳遞位置索引；空清單代表這局結束，只需要清除舊牌。
@@ -25,6 +27,7 @@ data class MahjongDiscardPresentation(
     val tableId: Uuid,
     val tableLocation: TableLocation,
     val tableFacing: MahjongTableFacing,
+    val seatLayout: MahjongTableSeatLayout,
     val seatIndex: Int,
     val discardTileIds: List<Uuid>,
     val sidewaysMarkedTileId: Uuid?,

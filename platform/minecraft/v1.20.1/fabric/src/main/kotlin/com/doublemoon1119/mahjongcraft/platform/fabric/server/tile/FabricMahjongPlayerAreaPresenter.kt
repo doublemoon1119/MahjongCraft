@@ -14,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.meldDisplayDirection
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongInitialDealPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongMeldTileGroup
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresentation
@@ -113,6 +114,7 @@ class FabricMahjongPlayerAreaPresenter(
                 controllerY = controllerPos.y,
                 controllerZ = controllerPos.z,
                 tableFacing = presentation.tableFacing,
+                seatLayout = presentation.seatLayout,
                 seatIndex = presentation.seatIndex,
                 handSize = presentation.standingTileIds.size,
                 tileIndex = presentation.standingTileIds.size - 1 - orderIndex,
@@ -131,6 +133,7 @@ class FabricMahjongPlayerAreaPresenter(
                     controllerY = controllerPos.y,
                     controllerZ = controllerPos.z,
                     tableFacing = presentation.tableFacing,
+                    seatLayout = presentation.seatLayout,
                     seatIndex = presentation.seatIndex,
                     standingTileCount = presentation.standingTileIds.size,
                     cornerYieldShift = cornerYieldShift,
@@ -169,6 +172,7 @@ class FabricMahjongPlayerAreaPresenter(
                 controllerY = controllerPos.y,
                 controllerZ = controllerPos.z,
                 tableFacing = presentation.tableFacing,
+                seatLayout = presentation.seatLayout,
                 seatIndex = presentation.seatIndex,
                 alongOffsetFromCorner = alongOffsetFromCorner,
                 isSidewaysTile = isSidewaysTile,
@@ -196,7 +200,12 @@ class FabricMahjongPlayerAreaPresenter(
             val addedTileId = if (meld.type == MeldType.ADDED_KAN) meld.tileIds.last() else null
             val baseTileIds = if (addedTileId != null) meld.tileIds.dropLast(1) else meld.tileIds
             val slotCount = baseTileIds.size
-            val sidewaysSlot = meld.calledTileId?.let { MahjongTileTableLayout.sidewaysSlotIndex(meld.sourceDirection, slotCount) }
+            val sidewaysSlot = meld.calledTileId?.let {
+                MahjongTileTableLayout.sidewaysSlotIndex(
+                    meldDisplayDirection(meld.sourceDirection, presentation.seatLayout.playerCount),
+                    slotCount,
+                )
+            }
             val remainingTileIds = ArrayDeque(baseTileIds.filterNot { it == meld.calledTileId })
             val tileAtSlot = (0 until slotCount).map { slot ->
                 if (slot == sidewaysSlot) meld.calledTileId!! else remainingTileIds.removeFirst()
@@ -358,6 +367,7 @@ class FabricMahjongPlayerAreaPresenter(
                 controllerY = controllerPos.y,
                 controllerZ = controllerPos.z,
                 tableFacing = presentation.tableFacing,
+                seatLayout = presentation.seatLayout,
                 seatIndex = presentation.seatIndex,
                 handSize = standingHandTileIds.size,
                 tileIndex = standingHandTileIds.size - 1 - orderIndex,
@@ -375,6 +385,7 @@ class FabricMahjongPlayerAreaPresenter(
                     controllerY = controllerPos.y,
                     controllerZ = controllerPos.z,
                     tableFacing = presentation.tableFacing,
+                    seatLayout = presentation.seatLayout,
                     seatIndex = presentation.seatIndex,
                     standingTileCount = standingHandTileIds.size,
                     cornerYieldShift = cornerYieldShift,
@@ -470,7 +481,7 @@ class FabricMahjongPlayerAreaPresenter(
             return tile
         }
 
-        val seatCount = presentation.handTileIdsBySeatIndex.size
+        val seatCount = presentation.seatLayout.playerCount
         val dealOrderSeatIndices = List(seatCount) { offset -> (presentation.dealerSeatIndex + offset) % seatCount }
         val cornerYieldShiftBySeat = presentation.handTileIdsBySeatIndex.mapValues { (seatIndex, tileIds) ->
             MahjongTileTableLayout.handCornerYieldShift(
@@ -509,6 +520,7 @@ class FabricMahjongPlayerAreaPresenter(
                         controllerY = controllerPos.y,
                         controllerZ = controllerPos.z,
                         tableFacing = presentation.tableFacing,
+                        seatLayout = presentation.seatLayout,
                         seatIndex = seatIndex,
                         handSize = tileIds.size,
                         tileIndex = tileIds.size - 1 - orderIndex,
@@ -520,6 +532,7 @@ class FabricMahjongPlayerAreaPresenter(
                         controllerY = controllerPos.y,
                         controllerZ = controllerPos.z,
                         tableFacing = presentation.tableFacing,
+                        seatLayout = presentation.seatLayout,
                         seatIndex = seatIndex,
                         handSize = tileIds.size,
                         tileIndex = tileIds.size - 1 - postFlipOrderIndex,
@@ -644,7 +657,6 @@ class FabricMahjongPlayerAreaPresenter(
     /**
      * 將版本無關 table location 轉回 Fabric 方塊座標。
      *
-     * @param location 版本無關的桌子位置。
      * @return 對應的 Fabric 方塊座標。
      */
     private fun TableLocation.toBlockPos(): BlockPos = BlockPos(x, y, z)

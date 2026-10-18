@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.tile
 
-import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTableBlock
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.MahjongTablePart
 import com.doublemoon1119.mahjongcraft.platform.fabric.block.entity.MahjongTableBlockEntity
@@ -10,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogge
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPresentationResult
@@ -70,6 +70,7 @@ class FabricMahjongDiscardPresenter(
             presentation.tableId,
             controllerPos,
             presentation.tableFacing,
+            presentation.seatLayout,
             presentation.seatIndex,
         )
 
@@ -94,6 +95,7 @@ class FabricMahjongDiscardPresenter(
                 controllerY = controllerPos.y,
                 controllerZ = controllerPos.z,
                 tableFacing = presentation.tableFacing,
+                seatLayout = presentation.seatLayout,
                 seatIndex = presentation.seatIndex,
                 discardIndex = discardIndex,
                 isSidewaysMarked = tileId == presentation.sidewaysMarkedTileId,
@@ -188,8 +190,7 @@ class FabricMahjongDiscardPresenter(
      *    排除手牌、副露、牌河，不需要另外比對 UUID 是否還在牌牆結構裡。
      * 3. 再篩選 yaw 跟 [seatIndex] 自己那面牆的 yaw 一致——四面牆都是 `FACE_DOWN`，需要 yaw 才能
      *    分辨是哪一面；`seatIndex` 自己那面牆的 yaw 直接用
-     *    `wallPlacement(dealerSeatIndex = seatIndex, position.side = 0, ...)` 算；`advance` 步數為 0 時
-     *    直接等於 `seatIndexToTableSide(seatIndex)`，不需要另外知道莊家是誰。
+     *    [MahjongTileTableLayout.seatYaw] 依桌面朝向與座位布局計算，不需要另外知道莊家是誰。
      *
      * 王牌區的牌被移出開門位置（[FabricMahjongTileWallPresenter.moveDeadWallToOpenPosition]）時只改
      * 位置，姿態與 yaw 都不變，因此天然滿足「王牌區視同牌牆」——不需要額外標記或排除。
@@ -206,17 +207,14 @@ class FabricMahjongDiscardPresenter(
         tableId: Uuid,
         controllerPos: BlockPos,
         tableFacing: MahjongTableFacing,
+        seatLayout: MahjongTableSeatLayout,
         seatIndex: Int,
     ): Boolean {
-        val expectedYaw = MahjongTileTableLayout.wallPlacement(
-            controllerX = controllerPos.x,
-            controllerY = controllerPos.y,
-            controllerZ = controllerPos.z,
+        val expectedYaw = MahjongTileTableLayout.seatYaw(
             tableFacing = tableFacing,
-            dealerSeatIndex = seatIndex,
-            stacksPerSide = ASSUMED_STACKS_PER_SIDE,
-            position = TileWallPosition(side = 0, stack = 0, layer = 0),
-        ).yaw
+            seatLayout = seatLayout,
+            seatIndex = seatIndex,
+        )
         return findManagedTiles(world, tableId, controllerPos).any { tile ->
             tile.tilePose == MahjongTilePose.FACE_DOWN && yawMatches(tile.yaw, expectedYaw)
         }
@@ -255,7 +253,6 @@ class FabricMahjongDiscardPresenter(
     /**
      * 將版本無關 table location 轉回 Fabric 方塊座標。
      *
-     * @param location 版本無關桌子位置。
      * @return 對應的 Minecraft 方塊位置。
      */
     private fun TableLocation.toBlockPos(): BlockPos = BlockPos(x, y, z)
@@ -267,9 +264,6 @@ class FabricMahjongDiscardPresenter(
 
         /** controller 周圍查詢正式牌河的垂直半徑。 */
         const val TILE_SEARCH_VERTICAL: Double = 2.0
-
-        /** [sideStillHasWall] 假設的標準日麻每面墩數，理由同 [MahjongTileTableLayout] 內部同名假設。 */
-        const val ASSUMED_STACKS_PER_SIDE: Int = 17
 
         /** [yawMatches] 比較兩個 yaw 時容許的浮點誤差（度）。 */
         const val YAW_TOLERANCE_DEGREES: Float = 0.01f

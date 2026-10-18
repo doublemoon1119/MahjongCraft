@@ -93,7 +93,14 @@ class HistoryRoundStatePresentationTest {
             sourceTile = 4,
             sourceDirection = RelativeDirectionDto.Left,
         )
-        val state = state(players = listOf(player(handTiles = listOf(0, 1), melds = listOf(addedKan))))
+        val state = state(
+            players = listOf(
+                player(handTiles = listOf(0, 1), melds = listOf(addedKan)),
+                player(1, emptyList()),
+                player(2, emptyList()),
+                player(3, emptyList()),
+            ),
+        )
         val layout = HistoryRoundStatePresenter.winningHand(
             state,
             winner(0, HistoryReplayWinningHandDto(listOf(0, 1), null)),

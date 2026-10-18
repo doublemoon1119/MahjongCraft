@@ -1,27 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.dice
 
-import com.doublemoon1119.mahjongcraft.logic.table.TableState
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import kotlin.uuid.Uuid
-
-/**
- * 將座位索引換算成桌子的局部側面，供玩家站位、牌面方向與骰子投入側共用。
- *
- * 索引 0、1、2、3 依序對應南、東、北、西，使 [TableState.getNextPlayer] 的下家位於目前玩家右側。
- * 這是玩家的座位順序，不是 [MahjongTileTableLayout] 組裝牌牆時使用的環狀順序；兩者不可互相替代。
- *
- * @param seatIndex 回合順序中的座位索引；會依四席循環取餘數。
- * @return 對應的桌子局部側面。
- */
-fun seatIndexToTableSide(seatIndex: Int): MahjongTableSide = when (seatIndex.mod(SEAT_COUNT)) {
-    0 -> MahjongTableSide.SOUTH
-    1 -> MahjongTableSide.EAST
-    2 -> MahjongTableSide.NORTH
-    else -> MahjongTableSide.WEST
-}
-
-/** 麻將桌固定座位數。 */
-private const val SEAT_COUNT: Int = 4
 
 /** 兩款 3×3 麻將桌共用的兩顆／三顆正式骰子位置計算。 */
 object MahjongDiceTableLayout {

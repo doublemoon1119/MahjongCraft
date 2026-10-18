@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.support.DebugVirtualTableLayoutFactory.Companion.VIRTUAL_CONTROLLER_FORWARD_BLOCKS
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongMeldTileGroup
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import kotlin.test.Test
@@ -32,6 +33,7 @@ class DebugVirtualTableLayoutFactoryTest {
                 playerBlockY = 64,
                 playerBlockZ = -40,
                 tableFacing = facing,
+                seatLayout = MahjongTableSeatLayout.FOUR_PLAYER,
             )
 
             assertEquals(100 + offsetX, layout.controllerX, "controller x for facing $facing")
@@ -44,7 +46,13 @@ class DebugVirtualTableLayoutFactoryTest {
     /** 省略座位的手牌格位等同明確指定近側座位。 */
     @Test
     fun `defaults hand placement to the near seat`() {
-        val layout = factory.create(0, 64, 0, MahjongTableFacing.NORTH)
+        val layout = factory.create(
+            playerBlockX = 0,
+            playerBlockY = 64,
+            playerBlockZ = 0,
+            tableFacing = MahjongTableFacing.NORTH,
+            seatLayout = MahjongTableSeatLayout.FOUR_PLAYER,
+        )
 
         assertEquals(
             layout.handPlacement(
@@ -59,7 +67,13 @@ class DebugVirtualTableLayoutFactoryTest {
     /** 加槓格位是碰的三張加上疊在橫置鳴取牌上的第四張。 */
     @Test
     fun `stacks the added kan tile onto the claimed tile`() {
-        val layout = factory.create(0, 64, 0, MahjongTableFacing.NORTH)
+        val layout = factory.create(
+            playerBlockX = 0,
+            playerBlockY = 64,
+            playerBlockZ = 0,
+            tableFacing = MahjongTableFacing.NORTH,
+            seatLayout = MahjongTableSeatLayout.FOUR_PLAYER,
+        )
         val ponPlacements = layout.meldPlacements(type = MeldType.PON, tileCount = 3)
 
         val addedKanPlacements = layout.addedKanMeldPlacements(tileCount = 3)
@@ -76,7 +90,13 @@ class DebugVirtualTableLayoutFactoryTest {
     /** 多組副露中的加槓：前三張照碰排，補上的第四張疊在橫置鳴取牌靠桌子中心的一側。 */
     @Test
     fun `places the added kan tile within a list of melds`() {
-        val layout = factory.create(0, 64, 0, MahjongTableFacing.NORTH)
+        val layout = factory.create(
+            playerBlockX = 0,
+            playerBlockY = 64,
+            playerBlockZ = 0,
+            tableFacing = MahjongTableFacing.NORTH,
+            seatLayout = MahjongTableSeatLayout.FOUR_PLAYER,
+        )
         val ponIds = List(3) { Uuid.random() }
         val addedId = Uuid.random()
         val pon = MahjongMeldTileGroup(MeldType.PON, ponIds, ponIds.first(), RelativeDirection.Across, allTilesFaceDown = false)
@@ -96,7 +116,13 @@ class DebugVirtualTableLayoutFactoryTest {
     /** 多組副露的格位依指定座位轉向，與該座位的正面朝向一致。 */
     @Test
     fun `places melds for the requested seat`() {
-        val layout = factory.create(0, 64, 0, MahjongTableFacing.NORTH)
+        val layout = factory.create(
+            playerBlockX = 0,
+            playerBlockY = 64,
+            playerBlockZ = 0,
+            tableFacing = MahjongTableFacing.NORTH,
+            seatLayout = MahjongTableSeatLayout.FOUR_PLAYER,
+        )
         val tileIds = List(3) { Uuid.random() }
         val chi = MahjongMeldTileGroup(MeldType.CHI, tileIds, null, RelativeDirection.Self, allTilesFaceDown = false)
 
@@ -105,13 +131,24 @@ class DebugVirtualTableLayoutFactoryTest {
 
         assertEquals(nearSeat, layout.meldPlacements(listOf(chi), seatIndex = DebugVirtualTableLayout.DEBUG_SEAT_INDEX))
         assertNotEquals(nearSeat, otherSeat)
-        otherSeat.values.forEach { assertEquals(MahjongTileTableLayout.seatYaw(MahjongTableFacing.NORTH, 2), it.yaw) }
+        otherSeat.values.forEach {
+            assertEquals(
+                MahjongTileTableLayout.seatYaw(MahjongTableFacing.NORTH, MahjongTableSeatLayout.FOUR_PLAYER, 2),
+                it.yaw,
+            )
+        }
     }
 
     /** 手牌格位沿牌列前進，相鄰格位不會重疊。 */
     @Test
     fun `spaces adjacent hand tiles apart`() {
-        val layout = factory.create(0, 64, 0, MahjongTableFacing.NORTH)
+        val layout = factory.create(
+            playerBlockX = 0,
+            playerBlockY = 64,
+            playerBlockZ = 0,
+            tableFacing = MahjongTableFacing.NORTH,
+            seatLayout = MahjongTableSeatLayout.FOUR_PLAYER,
+        )
 
         assertNotEquals(
             layout.handPlacement(handSize = 13, tileIndex = 0),
@@ -122,7 +159,13 @@ class DebugVirtualTableLayoutFactoryTest {
     /** 單組副露的格位數量等於該副露的牌數，且彼此不重疊。 */
     @Test
     fun `builds one placement per meld tile`() {
-        val layout = factory.create(0, 64, 0, MahjongTableFacing.SOUTH)
+        val layout = factory.create(
+            playerBlockX = 0,
+            playerBlockY = 64,
+            playerBlockZ = 0,
+            tableFacing = MahjongTableFacing.SOUTH,
+            seatLayout = MahjongTableSeatLayout.FOUR_PLAYER,
+        )
 
         val placements = layout.meldPlacements(type = MeldType.OPEN_KAN, tileCount = 4)
 

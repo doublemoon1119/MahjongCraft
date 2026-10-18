@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeating
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.SeatAssignmentCoordinator
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.SeatAssignmentResult
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftSeatingKeys
@@ -58,6 +59,7 @@ internal class FabricMahjongSeatingPresenter(
         if (!state.contains(Properties.HORIZONTAL_FACING)) return
         val tableFacing = state.get(Properties.HORIZONTAL_FACING).toMahjongTableFacing()
         val requests = MahjongSeatingTableLayout.seatRequests(
+            layout = MahjongTableSeatLayout.forPlayerCount(seatedPlayerIds.size),
             tableId = tableId,
             dimensionId = location.dimensionId,
             controllerX = location.x,

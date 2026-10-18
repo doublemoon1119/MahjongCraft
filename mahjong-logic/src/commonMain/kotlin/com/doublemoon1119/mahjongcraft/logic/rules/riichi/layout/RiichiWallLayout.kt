@@ -4,6 +4,8 @@ import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallLayout
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallLayoutResult
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallSideArrangement
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallSideReference
 import com.doublemoon1119.mahjongcraft.logic.table.layout.WallRingLayoutSupport
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 
@@ -20,6 +22,12 @@ import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
  * @property config 決定王牌墩數的日本麻將規則配置。
  */
 class RiichiWallLayout(private val config: RiichiRuleConfig) : TileWallLayout {
+    /** 依序取得莊家面前、左側、對側與右側的四面牌牆位置。 */
+    override fun sideArrangement(dealerSeatIndex: Int): TileWallSideArrangement = TileWallSideArrangement(
+        reference = TileWallSideReference.DEALER,
+        quarterTurns = listOf(0, 3, 2, 1),
+    )
+
     override fun resolve(shuffledTiles: List<IdentifiedTile>, opening: WallOpening): TileWallLayoutResult = WallRingLayoutSupport.resolve(
         shuffledTiles = shuffledTiles,
         opening = opening,

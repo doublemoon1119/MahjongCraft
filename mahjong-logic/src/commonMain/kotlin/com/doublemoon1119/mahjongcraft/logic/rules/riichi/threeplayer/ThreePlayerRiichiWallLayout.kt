@@ -3,6 +3,8 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallLayout
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallLayoutResult
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallSideArrangement
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallSideReference
 import com.doublemoon1119.mahjongcraft.logic.table.layout.WallRingLayoutSupport
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 
@@ -14,6 +16,15 @@ import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
  * @property config 決定王牌墩數的三人日本麻將規則配置。
  */
 class ThreePlayerRiichiWallLayout(private val config: ThreePlayerRiichiRuleConfig) : TileWallLayout {
+    /** 將第零面牌牆對應到莊家面前，其餘兩面依序擺在另外兩位玩家面前，空座位側不擺牌牆。 */
+    override fun sideArrangement(dealerSeatIndex: Int): TileWallSideArrangement {
+        require(dealerSeatIndex in 0 until SIDE_COUNT) { "Invalid three-player dealer seat: $dealerSeatIndex" }
+        return TileWallSideArrangement(
+            reference = TileWallSideReference.TABLE,
+            quarterTurns = List(SIDE_COUNT) { side -> (dealerSeatIndex - side).mod(SIDE_COUNT) },
+        )
+    }
+
     override fun resolve(shuffledTiles: List<IdentifiedTile>, opening: WallOpening): TileWallLayoutResult = WallRingLayoutSupport.resolve(
         shuffledTiles = shuffledTiles,
         opening = opening,

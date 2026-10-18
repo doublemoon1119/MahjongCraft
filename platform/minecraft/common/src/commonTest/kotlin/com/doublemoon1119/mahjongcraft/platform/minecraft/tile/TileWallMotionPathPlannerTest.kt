@@ -3,7 +3,10 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacementOffset
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallSideArrangement
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallSideReference
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableSide
 import kotlin.math.hypot
 import kotlin.math.sqrt
 import kotlin.test.Test
@@ -143,7 +146,17 @@ class TileWallMotionPathPlannerTest {
     /** 測試共用桌面投影。 */
     private companion object {
         /** 測試共用的桌面投影情境。 */
-        val CONTEXT = MahjongTileWallProjectionContext(0, 64, 0, MahjongTableFacing.NORTH, 0, 17, 4)
+        val CONTEXT = MahjongTileWallProjectionContext(
+            controllerX = 0,
+            controllerY = 64,
+            controllerZ = 0,
+            tableFacing = MahjongTableFacing.NORTH,
+            sideLayout = MahjongTileWallSideLayout.resolve(
+                arrangement = TileWallSideArrangement(TileWallSideReference.TABLE, listOf(0, 1, 2, 3)),
+                dealerSide = MahjongTableSide.SOUTH,
+            ),
+            stacksPerSide = 17,
+        )
 
         /** 三維長度比較使用的誤差容許值。 */
         const val TOLERANCE = 1e-9

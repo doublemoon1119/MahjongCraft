@@ -26,6 +26,24 @@ policy, and each opening roll must use a dice count the table can place
 rule does not meet these requirements, and the server rejects room settings and game starts whose rule
 is not selectable or cannot be presented.
 
+## Player seats and wall placement
+
+Players sit on standard table sides: two players face each other; three players use south, east,
+and north; four players use all sides. These are local directions that rotate with the table.
+Always use the complete match roster when selecting a seat layout.
+
+Wall faces are independent of player count. A rule implements `TileWallLayout.sideArrangement` to
+map its logical faces to standard sides. For example, two walls may occupy adjacent or opposite sides.
+The rule also chooses whether placement stays fixed or rotates with the dealer at the next round.
+Players cannot change this through room settings. The logical opening and draw order do not change.
+
+For the `TABLE` reference, quarter-turn values `0`, `1`, `2`, and `3` mean local south, east, north,
+and west. For `DEALER`, `0` starts at the dealer's actual side and the other values rotate from there.
+The list order matches logical wall-face indices; it does not have to match player-seat order.
+
+The adapter rebuilds the arrangement from the rule configuration and dealer seat during restoration,
+so the function must be deterministic. It does not allow custom coordinates, table sizes, or tile sizes.
+
 ## Shared room settings
 
 Register only your rule's own categories and fields in `GameConfigPresentationDefinition`.

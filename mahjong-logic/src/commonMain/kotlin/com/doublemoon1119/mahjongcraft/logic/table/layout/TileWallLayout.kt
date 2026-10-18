@@ -11,6 +11,18 @@ import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
  */
 interface TileWallLayout {
     /**
+     * 取得本局各面牌牆的擺放位置，以及使用固定方向或莊家方向作為基準。
+     *
+     * 擺法由規則決定，不是玩家可調整的選項。本函式只描述位置；開門與摸牌順序由 [resolve] 處理。
+     * 相同規則配置與莊家索引必須得到相同結果，讓恢復對局時能重建位置；
+     * 不得使用亂數、修改狀態，或依賴可能改變的外部資料。
+     *
+     * @param dealerSeatIndex 莊家在完整玩家名單中的零基底座位索引。
+     * @return 每面牌牆擺在哪一側，以及是否隨莊家方向旋轉。
+     */
+    fun sideArrangement(dealerSeatIndex: Int): TileWallSideArrangement
+
+    /**
      * 依 [shuffledTiles] 與 [opening] 排列牌牆。
      *
      * @param shuffledTiles 已洗牌完成的完整牌組。

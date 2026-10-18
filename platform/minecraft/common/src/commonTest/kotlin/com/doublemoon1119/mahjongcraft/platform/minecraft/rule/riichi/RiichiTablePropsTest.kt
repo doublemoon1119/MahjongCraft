@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickDimensions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.BuiltInTablePropKinds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPlacement
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableSeatAnchor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileDimensions
@@ -65,6 +66,7 @@ class RiichiTablePropsTest {
         controllerY = CONTROLLER_Y,
         controllerZ = CONTROLLER_Z,
         tableFacing = facing,
+        seatLayout = MahjongTableSeatLayout.FOUR_PLAYER,
         seatIndex = seatIndex,
         anchor = anchor,
         offset = offset,

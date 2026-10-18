@@ -47,7 +47,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPr
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
-import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.seatIndexToTableSide
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.aiPlayerDisplayName
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseDefinition
@@ -56,6 +55,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInf
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfoPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfoPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTileSelectionConfirmPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTileSelectionConfirmPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistry
@@ -83,6 +83,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPr
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallProjectionContext
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallSideLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallTransitionPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallTransitionResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongWinCelebrationPresentation
@@ -197,6 +198,7 @@ class FabricGamePresentationPublisher(
                 controllerY = resolved.location.y,
                 controllerZ = resolved.location.z,
                 tableFacing = resolved.facing,
+                seatLayout = MahjongTableSeatLayout.forPlayerCount(state.players.size),
                 seatIndex = actorSeatIndex,
                 handSize = 1,
                 tileIndex = 0,
@@ -324,12 +326,13 @@ class FabricGamePresentationPublisher(
         val openingOperation = openingOperations.getRegisteringTicket(gameId)
         launchOpeningStage(gameId, "dice-roll", openingOperation, pendingOperation = "publishDiceRoll") {
             val resolved = resolveTableContext(gameId, "publishDiceRoll") ?: return@launchOpeningStage
+            val state = gameRepository.getTableState(gameId) ?: return@launchOpeningStage
 
             val presentation = MahjongDiceRollPresentation(
                 tableId = gameId,
                 tableLocation = resolved.location,
                 tableFacing = resolved.facing,
-                throwSide = seatIndexToTableSide(dealerSeatIndex),
+                throwSide = MahjongTableSeatLayout.forPlayerCount(state.players.size).sideOf(dealerSeatIndex),
                 rollSequence = roundNumber.toLong() * ROLL_SEQUENCE_ROUND_MULTIPLIER + comboCount,
                 dice = dice.values.map { point ->
                     MahjongDicePresentation(
@@ -364,6 +367,15 @@ class FabricGamePresentationPublisher(
             logger.warn("publishWallStructure gameId={} skipped: no active server", gameId)
             return
         }
+        if (assemblyStructure.isEmpty() && layout.placements.isEmpty()) {
+            openingState.clear(gameId)
+            openingOperations.invalidate(gameId)
+            launchPendingPresentation(gameId, "clearWallStructure") {
+                val resolved = resolveTableContext(gameId, "clearWallStructure") ?: return@launchPendingPresentation
+                tileWallPresenter.clear(gameId, resolved.location)
+            }
+            return
+        }
         val stacksPerSide = assemblyStructure.values
             .filter { position -> position.side == 0 }
             .maxOfOrNull { position -> position.stack + 1 } ?: 0
@@ -372,12 +384,13 @@ class FabricGamePresentationPublisher(
         openingState.beginWall(gameId, wallDropTicks, stacksPerSide, MahjongTileTableLayout.wallSideCount(assemblyStructure.values))
         launchOpeningStage(gameId, "wall-structure", openingOperation, pendingOperation = "publishWallStructure") {
             val resolved = resolveTableContext(gameId, "publishWallStructure") ?: return@launchOpeningStage
+            val state = gameRepository.getTableState(gameId) ?: return@launchOpeningStage
 
             val presentation = MahjongTileWallPresentation(
                 tableId = gameId,
                 tableLocation = resolved.location,
                 tableFacing = resolved.facing,
-                dealerSeatIndex = dealerSeatIndex,
+                sideLayout = wallSideLayout(state, dealerSeatIndex),
                 assemblyStructure = assemblyStructure,
                 finalLayout = layout,
                 deadWallTileIds = deadWallTileIds,
@@ -412,9 +425,8 @@ class FabricGamePresentationPublisher(
                     tableId = gameId,
                     tableLocation = resolved.location,
                     tableFacing = resolved.facing,
-                    dealerSeatIndex = state.dealerIndex,
+                    sideLayout = wallSideLayout(state, state.dealerIndex),
                     stacksPerSide = stacksPerSide,
-                    sideCount = sideCount,
                     phases = phases,
                     startGameTime = startAt,
                 ),
@@ -439,6 +451,7 @@ class FabricGamePresentationPublisher(
         }
         launchPendingPresentation(gameId, "publishWallLayoutUpdated") {
             val resolved = resolveTableContext(gameId, "publishWallLayoutUpdated") ?: return@launchPendingPresentation
+            val state = gameRepository.getTableState(gameId) ?: return@launchPendingPresentation
             val stacksPerSide = openingState.wallStacksPerSide(gameId)
             val sideCount = openingState.wallSideCount(gameId)
             if (stacksPerSide == null || sideCount == null) {
@@ -453,9 +466,8 @@ class FabricGamePresentationPublisher(
                     controllerY = resolved.location.y,
                     controllerZ = resolved.location.z,
                     tableFacing = resolved.facing,
-                    dealerSeatIndex = dealerSeatIndex,
+                    sideLayout = wallSideLayout(state, dealerSeatIndex),
                     stacksPerSide = stacksPerSide,
-                    sideCount = sideCount,
                 ),
                 layout = layout,
                 revealedTileIds = revealedTileIds,
@@ -507,6 +519,7 @@ class FabricGamePresentationPublisher(
                     tableId = gameId,
                     tableLocation = resolved.location,
                     tableFacing = resolved.facing,
+                    seatLayout = MahjongTableSeatLayout.forPlayerCount(tableState.players.size),
                     placements = placements,
                 ),
             )
@@ -525,7 +538,8 @@ class FabricGamePresentationPublisher(
         }
         scope.launch(dispatchers.main) {
             val resolved = resolveTableContext(gameId, "publishTileSelectionStarted") ?: return@launch
-            val seatIndex = gameRepository.getGame(gameId)?.tableState?.players?.indexOfFirst { it.id == playerId } ?: -1
+            val tableState = gameRepository.getTableState(gameId) ?: return@launch
+            val seatIndex = tableState.players.indexOfFirst { it.id == playerId }
             if (seatIndex < 0) return@launch
 
             tileSelectionConfirmPresenter.present(
@@ -533,6 +547,7 @@ class FabricGamePresentationPublisher(
                     tableId = gameId,
                     tableLocation = resolved.location,
                     tableFacing = resolved.facing,
+                    seatLayout = MahjongTableSeatLayout.forPlayerCount(tableState.players.size),
                     seatIndex = seatIndex,
                     holderId = playerId,
                 ),
@@ -636,6 +651,7 @@ class FabricGamePresentationPublisher(
         val openingOperation = openingOperations.getRegisteringTicket(gameId)
         launchOpeningStage(gameId, "initial-deal", openingOperation, pendingOperation = "publishInitialDeal") {
             val resolved = resolveTableContext(gameId, "publishInitialDeal") ?: return@launchOpeningStage
+            val state = gameRepository.getTableState(gameId) ?: return@launchOpeningStage
             // 開局發牌與這一局的桌上物件更新讀的是同一份新局桌況；直接由它算出寬度並記錄，不依賴兩個呈現
             // 工作在主執行緒上的先後順序。
             val cornerWidthBySeatIndex = gameRepository.getTableState(gameId)
@@ -647,6 +663,7 @@ class FabricGamePresentationPublisher(
                 tableId = gameId,
                 tableLocation = resolved.location,
                 tableFacing = resolved.facing,
+                seatLayout = MahjongTableSeatLayout.forPlayerCount(state.players.size),
                 handTileIdsBySeatIndex = handTileIdsBySeatIndex,
                 postFlipHandTileIdsBySeatIndex = postFlipHandTileIdsBySeatIndex,
                 dealerSeatIndex = dealerSeatIndex,
@@ -657,7 +674,7 @@ class FabricGamePresentationPublisher(
             val result = playerAreaPresenter.presentInitialDeal(presentation)
             val opening = openingState.consumeOpening(gameId)
             if (opening != null && result != MahjongPlayerAreaPresentationResult.TABLE_NOT_FOUND) {
-                val totalTurnCount = dealBatchSizes.size * handTileIdsBySeatIndex.size
+                val totalTurnCount = dealBatchSizes.size * state.players.size
                 val handFlipEndGameTime = resolved.world.time + presentation.extraLeadDelayTicks +
                     MahjongTileTableLayout.dealAnimationTicks(totalTurnCount)
                 val openingResult = tileWallPresenter.presentOpening(
@@ -702,12 +719,13 @@ class FabricGamePresentationPublisher(
     ) {
         launchPendingPresentation(gameId, "publishPlayerTilesUpdated") {
             val resolved = resolveTableContext(gameId, "publishPlayerTilesUpdated") ?: return@launchPendingPresentation
-            val tableState = gameRepository.getTableState(gameId)
+            val tableState = gameRepository.getTableState(gameId) ?: return@launchPendingPresentation
             val cornerWidthsBySeat = tableCornerWidths.find(gameId) ?: cornerWidthsBySeat(gameId, tableState)
             val presentation = MahjongPlayerAreaPresentation(
                 tableId = gameId,
                 tableLocation = resolved.location,
                 tableFacing = resolved.facing,
+                seatLayout = MahjongTableSeatLayout.forPlayerCount(tableState.players.size),
                 seatIndex = seatIndex,
                 standingTileIds = standingTileIds,
                 drawnTileId = drawnTileId,
@@ -775,11 +793,13 @@ class FabricGamePresentationPublisher(
         }
         launchPendingPresentation(gameId, "publishDiscardPileUpdated") {
             val resolved = resolveTableContext(gameId, "publishDiscardPileUpdated") ?: return@launchPendingPresentation
+            val state = gameRepository.getTableState(gameId) ?: return@launchPendingPresentation
 
             val presentation = MahjongDiscardPresentation(
                 tableId = gameId,
                 tableLocation = resolved.location,
                 tableFacing = resolved.facing,
+                seatLayout = MahjongTableSeatLayout.forPlayerCount(state.players.size),
                 seatIndex = seatIndex,
                 discardTileIds = discardTileIds,
                 sidewaysMarkedTileId = sidewaysMarkedTileId,
@@ -1045,6 +1065,7 @@ class FabricGamePresentationPublisher(
                 tableId = gameId,
                 tableLocation = resolved.location,
                 tableFacing = resolved.facing,
+                seatLayout = MahjongTableSeatLayout.forPlayerCount(state.players.size),
                 seatIndex = requestedWinner.seatIndex,
                 organizedStandingTileIds = organizedHand.tiles.map { it.id },
                 melds = melds,
@@ -1079,7 +1100,7 @@ class FabricGamePresentationPublisher(
                         melds = melds,
                         assetKeyOf = { id -> state.findTile(id)?.tile?.toAssetKey(tileAssetRegistry) },
                     ),
-                    standYaw = MahjongTileTableLayout.seatYaw(resolved.facing, requestedWinner.seatIndex),
+                    standYaw = MahjongTileTableLayout.seatYaw(resolved.facing, MahjongTableSeatLayout.forPlayerCount(state.players.size), requestedWinner.seatIndex),
                 )
             }
             val winningTile = state.findTile(request.winningTileId)
@@ -1239,6 +1260,23 @@ class FabricGamePresentationPublisher(
      * @return 以座位為鍵的寬度；沒有紀錄且沒有桌況時為空集合。
      */
     private fun cornerWidthsBySeat(gameId: Uuid, tableState: TableState?): Map<Int, Double> = tableCornerWidths.find(gameId) ?: tableState?.let { state -> describerFor(state).cornerWidthsBySeat(state) }.orEmpty()
+
+    /**
+     * 從同一份規則配置與完整玩家名單重建牌牆的桌邊對應。
+     *
+     * @param state 此局完整權威桌況，只讀取規則配置與座位資料。
+     * @param dealerSeatIndex 此次牌牆呈現使用的莊家座位。
+     * @return 與砌牆、開門及後續更新共用的桌邊對應。
+     */
+    private fun wallSideLayout(state: TableState, dealerSeatIndex: Int): MahjongTileWallSideLayout {
+        val arrangement = checkNotNull(moduleRegistry.getModule(state.config).createWallLayout()) {
+            "Rule provides no wall layout"
+        }.sideArrangement(dealerSeatIndex)
+        return MahjongTileWallSideLayout.resolve(
+            arrangement = arrangement,
+            dealerSide = MahjongTableSeatLayout.forPlayerCount(state.players.size).sideOf(dealerSeatIndex),
+        )
+    }
 
     /**
      * 在伺服器主執行緒解析位置、世界、水平朝向及對應的麻將桌方塊實體。

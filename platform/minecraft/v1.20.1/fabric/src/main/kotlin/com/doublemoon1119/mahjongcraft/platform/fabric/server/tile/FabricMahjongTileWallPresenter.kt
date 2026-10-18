@@ -89,7 +89,9 @@ class FabricMahjongTileWallPresenter(
         val stacksPerSide = presentation.assemblyStructure.values
             .filter { position -> position.side == 0 }
             .maxOfOrNull { position -> position.stack + 1 } ?: 0
-        val sideCount = MahjongTileTableLayout.wallSideCount(presentation.assemblyStructure.values)
+        require(presentation.assemblyStructure.isEmpty() || MahjongTileTableLayout.wallSideCount(presentation.assemblyStructure.values) == presentation.sideLayout.sideCount) {
+            "Wall structure and side arrangement must contain the same sides"
+        }
         val oldTiles = findManagedTiles(world, presentation.tableId, controllerPos)
         val restoresFinalStateImmediately = !presentation.animateOpening
         require(presentation.assemblyStructure.keys == presentation.finalLayout.placements.keys) {
@@ -102,9 +104,8 @@ class FabricMahjongTileWallPresenter(
                 controllerY = controllerPos.y,
                 controllerZ = controllerPos.z,
                 tableFacing = presentation.tableFacing,
-                dealerSeatIndex = presentation.dealerSeatIndex,
+                sideLayout = presentation.sideLayout,
                 stacksPerSide = stacksPerSide,
-                sideCount = sideCount,
                 placement = if (restoresFinalStateImmediately) finalPlacement else TileWallPlacement(assemblyPosition),
             )
             assemblyPosition to MahjongTileEntity(world = world).apply {
@@ -179,9 +180,8 @@ class FabricMahjongTileWallPresenter(
                 controllerY = controllerPos.y,
                 controllerZ = controllerPos.z,
                 tableFacing = request.tableFacing,
-                dealerSeatIndex = request.dealerSeatIndex,
+                sideLayout = request.sideLayout,
                 stacksPerSide = request.projectionContext(controllerPos).stacksPerSide,
-                sideCount = request.projectionContext(controllerPos).sideCount,
                 placement = placement,
             )
             val steps = stepsByTile.getOrPut(tileId) { mutableListOf() }
@@ -332,11 +332,10 @@ class FabricMahjongTileWallPresenter(
         controllerY = controllerPos.y,
         controllerZ = controllerPos.z,
         tableFacing = tableFacing,
-        dealerSeatIndex = dealerSeatIndex,
+        sideLayout = sideLayout,
         stacksPerSide = assemblyStructure.values
             .filter { position -> position.side == 0 }
             .maxOf { position -> position.stack + 1 },
-        sideCount = MahjongTileTableLayout.wallSideCount(assemblyStructure.values),
     )
 
     /**
@@ -352,9 +351,8 @@ class FabricMahjongTileWallPresenter(
         controllerY = controllerPos.y,
         controllerZ = controllerPos.z,
         tableFacing = tableFacing,
-        dealerSeatIndex = dealerSeatIndex,
+        sideLayout = sideLayout,
         stacksPerSide = stacksPerSide,
-        sideCount = sideCount,
     )
 
     /**

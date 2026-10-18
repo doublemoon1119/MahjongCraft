@@ -57,6 +57,7 @@ class HistoryTileGroupLayoutTest {
     fun `meld uses left source slot and orientation`() {
         val layout = HistoryTileGroupLayoutCalculator.meld(
             HistoryReplayMeldDto(MeldTypeDto.Pon, listOf(1, 2, 3), 3, RelativeDirectionDto.Left),
+            playerCount = 4,
             maxWidth = 100f,
         )
 
@@ -67,11 +68,26 @@ class HistoryTileGroupLayoutTest {
         assertEquals(DecisionTileOrientationDto.UPRIGHT, layout.placements[1].orientation)
     }
 
+    /** 兩人對局的非自身來源都呈現為對家位置。 */
+    @Test
+    fun `two player meld maps non self source to across slot`() {
+        val layout = HistoryTileGroupLayoutCalculator.meld(
+            HistoryReplayMeldDto(MeldTypeDto.Pon, listOf(1, 2, 3), 3, RelativeDirectionDto.Right),
+            playerCount = 2,
+            maxWidth = 100f,
+        )
+
+        assertEquals(1, layout.placements.first().tile)
+        assertEquals(3, layout.placements[1].tile)
+        assertEquals(DecisionTileOrientationDto.ROTATED_RIGHT, layout.placements[1].orientation)
+    }
+
     /** 加槓第四張不增加橫向格位，而是疊在原來源牌上方。 */
     @Test
     fun `added kan stacks fourth tile above source tile`() {
         val layout = HistoryTileGroupLayoutCalculator.meld(
             HistoryReplayMeldDto(MeldTypeDto.AddedKan, listOf(1, 2, 3, 4), 2, RelativeDirectionDto.Across),
+            playerCount = 4,
             maxWidth = 100f,
         )
 
@@ -88,6 +104,7 @@ class HistoryTileGroupLayoutTest {
     fun `malformed added kan keeps every saved tile`() {
         val layout = HistoryTileGroupLayoutCalculator.meld(
             HistoryReplayMeldDto(MeldTypeDto.AddedKan, listOf(1, 2, 3, 4, 5), 1, RelativeDirectionDto.Across),
+            playerCount = 4,
             maxWidth = 200f,
         )
 
@@ -100,6 +117,7 @@ class HistoryTileGroupLayoutTest {
     fun `closed kan hides only edge tiles`() {
         val layout = HistoryTileGroupLayoutCalculator.meld(
             HistoryReplayMeldDto(MeldTypeDto.ClosedKan, listOf(1, 2, 3, 4), null, RelativeDirectionDto.Self),
+            playerCount = 4,
             maxWidth = 100f,
         )
 
@@ -112,6 +130,7 @@ class HistoryTileGroupLayoutTest {
     fun `meld scales as one group when width is limited`() {
         val layout = HistoryTileGroupLayoutCalculator.meld(
             HistoryReplayMeldDto(MeldTypeDto.OpenKan, listOf(1, 2, 3, 4), 1, RelativeDirectionDto.Right),
+            playerCount = 4,
             maxWidth = 30f,
         )
 

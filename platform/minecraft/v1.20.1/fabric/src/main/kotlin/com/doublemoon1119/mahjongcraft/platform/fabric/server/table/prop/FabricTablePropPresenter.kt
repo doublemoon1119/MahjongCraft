@@ -156,7 +156,6 @@ class FabricTablePropPresenter(
     /**
      * 將版本無關 table location 轉回 Fabric 方塊座標。
      *
-     * @param location 版本無關桌子位置。
      * @return 對應的 Minecraft 方塊位置。
      */
     private fun TableLocation.toBlockPos(): BlockPos = BlockPos(x, y, z)

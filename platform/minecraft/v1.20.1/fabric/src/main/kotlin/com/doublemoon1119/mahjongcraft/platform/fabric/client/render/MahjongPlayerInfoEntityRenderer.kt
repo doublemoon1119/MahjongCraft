@@ -5,8 +5,8 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClie
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.player.resolvedPlayerNameText
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongPlayerInfoEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableSide
-import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.seatIndexToTableSide
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoEntry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import net.minecraft.client.render.VertexConsumerProvider
 import net.minecraft.client.render.entity.EntityRenderer
@@ -47,9 +47,10 @@ class MahjongPlayerInfoEntityRenderer(
         super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light)
         val players = entity.players.sortedBy { it.seatIndex }
         if (players.isEmpty()) return
+        val seatLayout = MahjongTableSeatLayout.forPlayerCount(players.size)
         val width = measureSharedWidth(players, entity.dealerPlayerId)
         players.forEach { player ->
-            val side = rotateSide(seatIndexToTableSide(player.seatIndex), entity.tableFacing.ordinal)
+            val side = rotateSide(seatLayout.sideOf(player.seatIndex), entity.tableFacing.ordinal)
             matrices.push()
             val offset = sideOffset(side)
             matrices.translate(offset.first, PANEL_HEIGHT, offset.second)

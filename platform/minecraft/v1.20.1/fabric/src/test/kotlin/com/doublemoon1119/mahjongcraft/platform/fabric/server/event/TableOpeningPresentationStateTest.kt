@@ -1,9 +1,13 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.event
 
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallSideArrangement
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallSideReference
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableSide
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPresentation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallSideLayout
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -144,7 +148,10 @@ class TableOpeningPresentationStateTest {
         tableId = TABLE,
         tableLocation = TableLocation(dimensionId = "minecraft:overworld", x = 0, y = 64, z = 0),
         tableFacing = MahjongTableFacing.NORTH,
-        dealerSeatIndex = 0,
+        sideLayout = MahjongTileWallSideLayout.resolve(
+            arrangement = TileWallSideArrangement(TileWallSideReference.TABLE, listOf(0, 1, 2, 3)),
+            dealerSide = MahjongTableSide.SOUTH,
+        ),
         assemblyStructure = emptyMap(),
         finalLayout = TileWallPhysicalLayout(emptyMap()),
         deadWallTileIds = emptySet(),

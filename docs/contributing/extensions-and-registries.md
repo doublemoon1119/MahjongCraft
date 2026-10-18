@@ -51,6 +51,19 @@
 - For an optional setting, test both sides: rules that need it can change and save it; rules that do not
   need it have no field and the server rejects changes to that value.
 
+## Standard Table Layouts
+
+- Player seats and wall sides are separate. Use the complete match roster to place players; do not use
+  online players, winners, a partial tile update, or the wall's side count as the player count.
+- A rule's `TileWallLayout.sideArrangement` specifies which standard sides hold its logical wall faces
+  and whether those sides stay fixed or rotate with the dealer. This is a rule design, not a room option.
+  It must return the same arrangement for the same rule configuration and dealer seat, including after
+  a restart. Do not use randomness or mutable external state in this function.
+- Keep draw order and opening indices separate from physical placement. The platform adapter maps the
+  arrangement to its fixed table geometry; rules do not choose arbitrary coordinates or tile dimensions.
+- Test two-player games with four walls, adjacent and opposite two-wall arrangements, both dealer seats,
+  and every table facing. Keep three-player and four-player geometry covered by regression tests.
+
 ## Observer State Projection
 
 - Rule modules define what each observer may know through `projectPlayerRuleState` and

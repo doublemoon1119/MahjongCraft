@@ -115,6 +115,7 @@ class TablePropSyncTest {
             tableId = Uuid.random(),
             tableLocation = TableLocation(dimensionId = "minecraft:overworld", x = 12, y = 64, z = -7),
             tableFacing = MahjongTableFacing.EAST,
+            seatLayout = MahjongTableSeatLayout.FOUR_PLAYER,
             placements = listOf(placement),
         )
 
@@ -123,6 +124,7 @@ class TablePropSyncTest {
             controllerY = 64,
             controllerZ = -7,
             tableFacing = MahjongTableFacing.EAST,
+            seatLayout = MahjongTableSeatLayout.FOUR_PLAYER,
             seatIndex = 2,
             anchor = TableSeatAnchor.MELD_CORNER,
             offset = placement.offset,

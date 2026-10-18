@@ -45,6 +45,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.showcaseWingC
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.tile.TileAnimationSteps
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongMeldTileGroup
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.STANDARD_TILE_ASSET_KEYS
@@ -517,9 +518,16 @@ class FabricDebugPresentationCommand(
         if (cues.any { showcaseRegistry.find(it) == null }) return COMMAND_FAILURE
         val player = source.player ?: return COMMAND_FAILURE
         val world = player.serverWorld
-        val layout = layoutFactory.create(player.blockPos.x, player.blockPos.y, player.blockPos.z, player.horizontalFacing.toMahjongTableFacing())
+        val layout = layoutFactory.create(
+            player.blockPos.x,
+            player.blockPos.y,
+            player.blockPos.z,
+            player.horizontalFacing.toMahjongTableFacing(),
+            MahjongTableSeatLayout.FOUR_PLAYER,
+        )
         val controllerPos = BlockPos(layout.controllerX, layout.controllerY, layout.controllerZ)
         val tableId = Uuid.random()
+        // 展示理由清單代表贏家，不是完整對局名單；此預覽使用標準四人桌。
         val wingTiles = cues.mapIndexed { seat, cue ->
             val tiles = List(DebugPreviewDefaults.RULE_CONFIG.initialHandSize) { index ->
                 val asset = previewAssets[(index + seat * 5) % previewAssets.size]
@@ -544,7 +552,7 @@ class FabricDebugPresentationCommand(
                     seatIndex = seat,
                     cueIds = listOf(cue),
                     cards = tiles.map { (tile, asset) -> FabricWinCelebrationShowcaseScheduler.Card(tileId = tile.uuid.toKotlinUuid(), assetKey = asset) },
-                    standYaw = MahjongTileTableLayout.seatYaw(layout.tableFacing, seat),
+                    standYaw = MahjongTileTableLayout.seatYaw(layout.tableFacing, layout.seatLayout, seat),
                 )
             },
         ) ?: return COMMAND_FAILURE
@@ -567,7 +575,14 @@ class FabricDebugPresentationCommand(
         if (cues.any { showcaseRegistry.find(it) == null }) return COMMAND_FAILURE
         val player = source.player ?: return COMMAND_FAILURE
         val world = player.serverWorld
-        val layout = layoutFactory.create(player.blockPos.x, player.blockPos.y, player.blockPos.z, player.horizontalFacing.toMahjongTableFacing())
+        val layout = layoutFactory.create(
+            player.blockPos.x,
+            player.blockPos.y,
+            player.blockPos.z,
+            player.horizontalFacing.toMahjongTableFacing(),
+            MahjongTableSeatLayout.FOUR_PLAYER,
+        )
+        // 單一贏家也使用四人桌預覽，不把贏家數當作對局人數。
         val isTsumo = cues.size == 1
         val standingAssets = listOf(MELD_SHOWCASE_WAIT_ASSET)
         val spawned = mutableListOf<MahjongTileEntity>()
@@ -609,7 +624,7 @@ class FabricDebugPresentationCommand(
                 cueIds = listOf(cue),
                 cards = showcaseWingCards(standingTileIds = standing, melds = melds, assetKeyOf = assets::get)
                     .map { it.copy(tileId = entityIds.getValue(it.tileId)) },
-                standYaw = MahjongTileTableLayout.seatYaw(layout.tableFacing, seat),
+                standYaw = MahjongTileTableLayout.seatYaw(layout.tableFacing, layout.seatLayout, seat),
             )
         }
         val winningPlacement = if (isTsumo) layout.drawnTilePlacement(standingAssets.size) else layout.discardPlacement(0)
@@ -675,7 +690,13 @@ class FabricDebugPresentationCommand(
         if (playerCount !in 2..4 || tenpaiCount !in 0..playerCount) return COMMAND_FAILURE
         if (meldCount !in 0..MAX_DEBUG_MELD_COUNT) return COMMAND_FAILURE
         val player = source.player ?: return COMMAND_FAILURE
-        val layout = layoutFactory.create(player.blockPos.x, player.blockPos.y, player.blockPos.z, player.horizontalFacing.toMahjongTableFacing())
+        val layout = layoutFactory.create(
+            player.blockPos.x,
+            player.blockPos.y,
+            player.blockPos.z,
+            player.horizontalFacing.toMahjongTableFacing(),
+            MahjongTableSeatLayout.forPlayerCount(playerCount),
+        )
         val previousScores = if (scoreDelta == 0) List(playerCount) { 25_000 } else List(playerCount) { index -> 28_000 - index * 2_000 }
         val currentScores = previousScores.toMutableList()
         if (scoreDelta != 0) {
@@ -812,7 +833,13 @@ class FabricDebugPresentationCommand(
     private fun previewMatchSettlement(source: ServerCommandSource, playerCount: Int): Int {
         val player = source.player ?: return COMMAND_FAILURE
         val world = player.serverWorld
-        val layout = layoutFactory.create(player.blockX, player.blockY, player.blockZ, player.horizontalFacing.toMahjongTableFacing())
+        val layout = layoutFactory.create(
+            player.blockX,
+            player.blockY,
+            player.blockZ,
+            player.horizontalFacing.toMahjongTableFacing(),
+            MahjongTableSeatLayout.forPlayerCount(playerCount),
+        )
         val scores = listOf(120_000, 45_000, 25_000, -12_000).take(playerCount)
         val playerIds = List(playerCount) { index -> if (index == 0) player.uuid.toKotlinUuid() else Uuid.random() }
         val request = MatchSettlementPresentationRequest(
@@ -855,7 +882,13 @@ class FabricDebugPresentationCommand(
     ): Int {
         val player = source.player ?: return COMMAND_FAILURE
         val world = player.serverWorld
-        val layout = layoutFactory.create(player.blockX, player.blockY, player.blockZ, player.horizontalFacing.toMahjongTableFacing())
+        val layout = layoutFactory.create(
+            player.blockX,
+            player.blockY,
+            player.blockZ,
+            player.horizontalFacing.toMahjongTableFacing(),
+            MahjongTableSeatLayout.FOUR_PLAYER,
+        )
         val playerIds = List(4) { index -> if (index == 0) player.uuid.toKotlinUuid() else Uuid.random() }
         val tileAssetsById = mutableMapOf<Uuid, String>()
         val winners = List(winnerCount) { winnerIndex ->
@@ -1010,7 +1043,13 @@ class FabricDebugPresentationCommand(
         val player = source.player ?: return COMMAND_FAILURE
         val world = player.serverWorld
         val assetKey = tilePreviewSupport.resolveAssetKey(tileArg)
-        val layout = layoutFactory.create(player.blockPos.x, player.blockPos.y, player.blockPos.z, player.horizontalFacing.toMahjongTableFacing())
+        val layout = layoutFactory.create(
+            player.blockPos.x,
+            player.blockPos.y,
+            player.blockPos.z,
+            player.horizontalFacing.toMahjongTableFacing(),
+            MahjongTableSeatLayout.FOUR_PLAYER,
+        )
         val handSize = DebugPreviewDefaults.RULE_CONFIG.initialHandSize
         val handPlacements = (0 until handSize).map { slot -> layout.handPlacement(handSize = handSize, tileIndex = slot) }
         val sortedPlacements = if (isTsumo) {

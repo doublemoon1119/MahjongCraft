@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import kotlin.uuid.Uuid
 
@@ -11,6 +12,7 @@ import kotlin.uuid.Uuid
  * @property tableId 所屬麻將桌的穩定 UUID。
  * @property tableLocation 麻將桌 controller 的位置。
  * @property tableFacing 麻將桌 controller 的世界水平朝向。
+ * @property seatLayout 這桌玩家席位對應的固定桌面布局。
  * @property handTileIdsBySeatIndex 每個座位最終手牌的完整牌 Uuid 列表（依 [MahjongPlayerAreaPresentation.standingTileIds]
  * 同一套「加入時間軸、不是畫面左右順序」的慣例），鍵為座位 index——這份順序只決定發牌動畫本身
  * （哪張牌在哪一批抵達、抵達當下落在哪一格），翻牌後最終要停在哪一格改看 [postFlipHandTileIdsBySeatIndex]。
@@ -32,6 +34,7 @@ data class MahjongInitialDealPresentation(
     val tableId: Uuid,
     val tableLocation: TableLocation,
     val tableFacing: MahjongTableFacing,
+    val seatLayout: MahjongTableSeatLayout,
     val handTileIdsBySeatIndex: Map<Int, List<Uuid>>,
     val postFlipHandTileIdsBySeatIndex: Map<Int, List<Uuid>>,
     val dealerSeatIndex: Int,

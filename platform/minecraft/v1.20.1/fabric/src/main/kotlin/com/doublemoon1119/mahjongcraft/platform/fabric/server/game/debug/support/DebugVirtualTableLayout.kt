@@ -4,10 +4,13 @@ import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.meldDisplayDirection
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongMeldTileGroup
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileDimensions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPlacement
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallSideLayout
 import kotlin.uuid.Uuid
 
 /**
@@ -20,12 +23,16 @@ import kotlin.uuid.Uuid
  * @property controllerY 虛擬 controller 的方塊 Y 座標。
  * @property controllerZ 虛擬 controller 的方塊 Z 座標。
  * @property tableFacing 虛擬桌的朝向。
+ * @property seatLayout 此次預覽使用的玩家座位布局。
+ * @property wallSideLayout 此次預覽使用的牌牆側面布局。
  */
 data class DebugVirtualTableLayout(
     val controllerX: Int,
     val controllerY: Int,
     val controllerZ: Int,
     val tableFacing: MahjongTableFacing,
+    val seatLayout: MahjongTableSeatLayout,
+    val wallSideLayout: MahjongTileWallSideLayout,
 ) {
     /**
      * 取得座位 0 的正式手牌格位。
@@ -55,6 +62,7 @@ data class DebugVirtualTableLayout(
         controllerY = controllerY,
         controllerZ = controllerZ,
         tableFacing = tableFacing,
+        seatLayout = seatLayout,
         seatIndex = seatIndex,
         handSize = handSize,
         tileIndex = tileIndex,
@@ -79,6 +87,7 @@ data class DebugVirtualTableLayout(
         controllerY = controllerY,
         controllerZ = controllerZ,
         tableFacing = tableFacing,
+        seatLayout = seatLayout,
         seatIndex = DEBUG_SEAT_INDEX,
         standingTileCount = standingTileCount,
     )
@@ -94,7 +103,7 @@ data class DebugVirtualTableLayout(
         controllerY = controllerY,
         controllerZ = controllerZ,
         tableFacing = tableFacing,
-        dealerSeatIndex = DEBUG_SEAT_INDEX,
+        sideLayout = wallSideLayout,
         stacksPerSide = STANDARD_WALL_STACKS_PER_SIDE,
         position = TileWallPosition(
             side = 0,
@@ -114,6 +123,7 @@ data class DebugVirtualTableLayout(
         controllerY = controllerY,
         controllerZ = controllerZ,
         tableFacing = tableFacing,
+        seatLayout = seatLayout,
         seatIndex = DEBUG_SEAT_INDEX,
         discardIndex = discardIndex,
         isSidewaysMarked = false,
@@ -149,6 +159,7 @@ data class DebugVirtualTableLayout(
             controllerY = controllerY,
             controllerZ = controllerZ,
             tableFacing = tableFacing,
+            seatLayout = seatLayout,
             seatIndex = DEBUG_SEAT_INDEX,
             alongOffsetFromCorner = meld.sidewaysAlongOffset,
             isSidewaysTile = true,
@@ -165,7 +176,10 @@ data class DebugVirtualTableLayout(
      * @return 每張牌的格位與橫置牌沿排列方向的位移。
      */
     private fun singleMeld(sourceDirection: RelativeDirection, tileCount: Int): SingleMeldPlacements {
-        val sidewaysSlot = MahjongTileTableLayout.sidewaysSlotIndex(sourceDirection, tileCount)
+        val sidewaysSlot = MahjongTileTableLayout.sidewaysSlotIndex(
+            meldDisplayDirection(sourceDirection, seatLayout.playerCount),
+            tileCount,
+        )
         var cursorAlong = 0.0
         var sidewaysAlongOffset = 0.0
         val placements = (tileCount - 1 downTo 0).map { slot ->
@@ -178,6 +192,7 @@ data class DebugVirtualTableLayout(
                 controllerY = controllerY,
                 controllerZ = controllerZ,
                 tableFacing = tableFacing,
+                seatLayout = seatLayout,
                 seatIndex = DEBUG_SEAT_INDEX,
                 alongOffsetFromCorner = cursorAlong,
                 isSidewaysTile = isSideways,
@@ -218,8 +233,9 @@ data class DebugVirtualTableLayout(
             if (meldIndex > 0) cursorAlong += MahjongTileTableLayout.MELD_GROUP_GAP
             val isAddedKan = meld.type == MeldType.ADDED_KAN
             val baseTileIds = if (isAddedKan) meld.tileIds.dropLast(1) else meld.tileIds
+            val displayDirection = meldDisplayDirection(meld.sourceDirection, seatLayout.playerCount)
             val sidewaysSlot = meld.calledTileId?.let {
-                MahjongTileTableLayout.sidewaysSlotIndex(meld.sourceDirection, baseTileIds.size)
+                MahjongTileTableLayout.sidewaysSlotIndex(displayDirection, baseTileIds.size)
             }
             val remainingTileIds = ArrayDeque(baseTileIds.filterNot { it == meld.calledTileId })
             val tileAtSlot = baseTileIds.indices.map { slot ->
@@ -237,6 +253,7 @@ data class DebugVirtualTableLayout(
                     controllerY = controllerY,
                     controllerZ = controllerZ,
                     tableFacing = tableFacing,
+                    seatLayout = seatLayout,
                     seatIndex = seatIndex,
                     alongOffsetFromCorner = cursorAlong,
                     isSidewaysTile = isSideways,
@@ -249,6 +266,7 @@ data class DebugVirtualTableLayout(
                     controllerY = controllerY,
                     controllerZ = controllerZ,
                     tableFacing = tableFacing,
+                    seatLayout = seatLayout,
                     seatIndex = seatIndex,
                     alongOffsetFromCorner = sidewaysAlongOffset,
                     isSidewaysTile = true,

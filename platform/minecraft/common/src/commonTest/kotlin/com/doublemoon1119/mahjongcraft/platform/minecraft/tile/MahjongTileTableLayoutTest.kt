@@ -6,7 +6,11 @@ import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacementOffset
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacementOrientation
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallSideArrangement
+import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallSideReference
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableSide
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
 import kotlin.math.hypot
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -304,9 +308,9 @@ class MahjongTileTableLayoutTest {
     /** 手牌應等距排列、對稱置中，`tileIndex` 0 在最大 X、遞增時往負向移動，跟牌牆 `stack` 排列方向一致。 */
     @Test
     fun `hand tiles are evenly spaced and centered`() {
-        val first = handPlacement(tileIndex = 0)
-        val last = handPlacement(tileIndex = HAND_SIZE - 1)
-        val middle = handPlacement(tileIndex = (HAND_SIZE - 1) / 2)
+        val first = handPlacement(MahjongTableSeatLayout.FOUR_PLAYER, tileIndex = 0)
+        val last = handPlacement(MahjongTableSeatLayout.FOUR_PLAYER, tileIndex = HAND_SIZE - 1)
+        val middle = handPlacement(MahjongTableSeatLayout.FOUR_PLAYER, tileIndex = (HAND_SIZE - 1) / 2)
         val stackStep = MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING
 
         assertEquals((HAND_SIZE - 1) * stackStep, first.x - last.x, ABSOLUTE_TOLERANCE)
@@ -317,7 +321,7 @@ class MahjongTileTableLayoutTest {
     /** 手牌垂直於側面的距離應比牌牆更靠桌緣（比 `halfSpan` 更遠離桌子中心）。 */
     @Test
     fun `hand tiles sit closer to the table edge than the wall`() {
-        val hand = handPlacement(tileIndex = 0)
+        val hand = handPlacement(MahjongTableSeatLayout.FOUR_PLAYER, tileIndex = 0)
         val wall = wallPlacement(position = TileWallPosition(side = 0, stack = 0, layer = 0))
         val centerZ = CONTROLLER_CENTER_Z
 
@@ -331,8 +335,8 @@ class MahjongTileTableLayoutTest {
      */
     @Test
     fun `hand seat index selects physical side directly`() {
-        val seatZero = handPlacement(seatIndex = 0)
-        val seatOne = handPlacement(seatIndex = 1)
+        val seatZero = handPlacement(MahjongTableSeatLayout.FOUR_PLAYER, seatIndex = 0)
+        val seatOne = handPlacement(MahjongTableSeatLayout.FOUR_PLAYER, seatIndex = 1)
 
         assertEquals(seatZero.z - CONTROLLER_CENTER_Z, seatOne.x - CONTROLLER_CENTER_X, ABSOLUTE_TOLERANCE)
         assertEquals(-(seatZero.x - CONTROLLER_CENTER_X), seatOne.z - CONTROLLER_CENTER_Z, ABSOLUTE_TOLERANCE)
@@ -341,15 +345,15 @@ class MahjongTileTableLayoutTest {
     /** 超出手牌張數範圍應直接拒絕。 */
     @Test
     fun `hand layout rejects out of range tile index`() {
-        assertFailsWith<IllegalArgumentException> { handPlacement(tileIndex = HAND_SIZE) }
-        assertFailsWith<IllegalArgumentException> { handPlacement(tileIndex = -1) }
+        assertFailsWith<IllegalArgumentException> { handPlacement(MahjongTableSeatLayout.FOUR_PLAYER, tileIndex = HAND_SIZE) }
+        assertFailsWith<IllegalArgumentException> { handPlacement(MahjongTableSeatLayout.FOUR_PLAYER, tileIndex = -1) }
     }
 
     /** 摸牌位應落在立牌列尾端（`tileIndex = 0`，玩家右手邊）外一段看得出來的縫隙，不是緊貼。 */
     @Test
     fun `drawn tile sits beyond the hand row edge with a visible gap`() {
-        val firstStanding = handPlacement(handSize = HAND_SIZE, tileIndex = 0)
-        val drawn = drawnTilePlacement(standingTileCount = HAND_SIZE)
+        val firstStanding = handPlacement(MahjongTableSeatLayout.FOUR_PLAYER, handSize = HAND_SIZE, tileIndex = 0)
+        val drawn = drawnTilePlacement(MahjongTableSeatLayout.FOUR_PLAYER, standingTileCount = HAND_SIZE)
         val stackStep = MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING
         val gap = MahjongTileDimensions.TILE_WIDTH * MahjongTileTableLayout.DRAWN_TILE_GAP_RATIO
 
@@ -360,8 +364,8 @@ class MahjongTileTableLayoutTest {
     /** 摸牌位垂直於側面的距離應跟手牌共用同一個 `HAND_EDGE_OFFSET`。 */
     @Test
     fun `drawn tile shares the hand row's distance from center`() {
-        val hand = handPlacement(tileIndex = 0)
-        val drawn = drawnTilePlacement(standingTileCount = HAND_SIZE)
+        val hand = handPlacement(MahjongTableSeatLayout.FOUR_PLAYER, tileIndex = 0)
+        val drawn = drawnTilePlacement(MahjongTableSeatLayout.FOUR_PLAYER, standingTileCount = HAND_SIZE)
 
         assertEquals(hand.z, drawn.z, ABSOLUTE_TOLERANCE)
     }
@@ -369,9 +373,9 @@ class MahjongTileTableLayoutTest {
     /** 牌河第 7 張（index 6）應換到下一排，跟前 6 張的垂直距離不同、第 0 欄的 X 相同。 */
     @Test
     fun `discard pile wraps to a new row after the row size`() {
-        val firstOfRowOne = discardPlacement(discardIndex = 0)
-        val lastOfRowOne = discardPlacement(discardIndex = MahjongTileTableLayout.DISCARD_TILES_PER_ROW - 1)
-        val firstOfRowTwo = discardPlacement(discardIndex = MahjongTileTableLayout.DISCARD_TILES_PER_ROW)
+        val firstOfRowOne = discardPlacement(MahjongTableSeatLayout.FOUR_PLAYER, discardIndex = 0)
+        val lastOfRowOne = discardPlacement(MahjongTableSeatLayout.FOUR_PLAYER, discardIndex = MahjongTileTableLayout.DISCARD_TILES_PER_ROW - 1)
+        val firstOfRowTwo = discardPlacement(MahjongTableSeatLayout.FOUR_PLAYER, discardIndex = MahjongTileTableLayout.DISCARD_TILES_PER_ROW)
 
         assertEquals(firstOfRowOne.z, lastOfRowOne.z, ABSOLUTE_TOLERANCE)
         assertEquals(firstOfRowOne.x, firstOfRowTwo.x, ABSOLUTE_TOLERANCE)
@@ -381,8 +385,8 @@ class MahjongTileTableLayoutTest {
     /** 側身標記只改變 yaw（多轉 90 度），不改變座標。 */
     @Test
     fun `sideways marked discard tile only rotates yaw`() {
-        val upright = discardPlacement(discardIndex = 0, isSidewaysMarked = false)
-        val sideways = discardPlacement(discardIndex = 0, isSidewaysMarked = true)
+        val upright = discardPlacement(MahjongTableSeatLayout.FOUR_PLAYER, discardIndex = 0, isSidewaysMarked = false)
+        val sideways = discardPlacement(MahjongTableSeatLayout.FOUR_PLAYER, discardIndex = 0, isSidewaysMarked = true)
 
         assertEquals(upright.x, sideways.x, ABSOLUTE_TOLERANCE)
         assertEquals(upright.y, sideways.y, ABSOLUTE_TOLERANCE)
@@ -393,7 +397,7 @@ class MahjongTileTableLayoutTest {
     /** 牌河整體應比牌牆更靠近桌子中心。 */
     @Test
     fun `discard pile sits closer to the table center than the wall`() {
-        val discard = discardPlacement(discardIndex = 0)
+        val discard = discardPlacement(MahjongTableSeatLayout.FOUR_PLAYER, discardIndex = 0)
         val wall = wallPlacement(position = TileWallPosition(side = 0, stack = 0, layer = 0))
         val centerZ = CONTROLLER_CENTER_Z
 
@@ -403,7 +407,7 @@ class MahjongTileTableLayoutTest {
     /** 負數 discardIndex 應直接拒絕。 */
     @Test
     fun `discard layout rejects negative index`() {
-        assertFailsWith<IllegalArgumentException> { discardPlacement(discardIndex = -1) }
+        assertFailsWith<IllegalArgumentException> { discardPlacement(MahjongTableSeatLayout.FOUR_PLAYER, discardIndex = -1) }
     }
 
     /**
@@ -413,8 +417,8 @@ class MahjongTileTableLayoutTest {
     @Test
     fun `discard pile extends the last safe row instead of adding a fourth row while wall remains`() {
         val lastSafeRowStart = (MahjongTileTableLayout.DISCARD_SAFE_ROWS - 1) * MahjongTileTableLayout.DISCARD_TILES_PER_ROW
-        val lastTileOfSafeRows = discardPlacement(discardIndex = lastSafeRowStart, wallRemaining = true)
-        val overflow = discardPlacement(discardIndex = lastSafeRowStart + MahjongTileTableLayout.DISCARD_TILES_PER_ROW, wallRemaining = true)
+        val lastTileOfSafeRows = discardPlacement(MahjongTableSeatLayout.FOUR_PLAYER, discardIndex = lastSafeRowStart, wallRemaining = true)
+        val overflow = discardPlacement(MahjongTableSeatLayout.FOUR_PLAYER, discardIndex = lastSafeRowStart + MahjongTileTableLayout.DISCARD_TILES_PER_ROW, wallRemaining = true)
 
         assertEquals(lastTileOfSafeRows.z, overflow.z, ABSOLUTE_TOLERANCE)
         assertNotEquals(lastTileOfSafeRows.x, overflow.x)
@@ -424,8 +428,8 @@ class MahjongTileTableLayoutTest {
     @Test
     fun `discard pile adds a fourth row once the wall is exhausted`() {
         val lastSafeRowStart = (MahjongTileTableLayout.DISCARD_SAFE_ROWS - 1) * MahjongTileTableLayout.DISCARD_TILES_PER_ROW
-        val lastTileOfSafeRows = discardPlacement(discardIndex = lastSafeRowStart, wallRemaining = false)
-        val fourthRowFirstTile = discardPlacement(discardIndex = lastSafeRowStart + MahjongTileTableLayout.DISCARD_TILES_PER_ROW, wallRemaining = false)
+        val lastTileOfSafeRows = discardPlacement(MahjongTableSeatLayout.FOUR_PLAYER, discardIndex = lastSafeRowStart, wallRemaining = false)
+        val fourthRowFirstTile = discardPlacement(MahjongTableSeatLayout.FOUR_PLAYER, discardIndex = lastSafeRowStart + MahjongTileTableLayout.DISCARD_TILES_PER_ROW, wallRemaining = false)
 
         assertNotEquals(lastTileOfSafeRows.z, fourthRowFirstTile.z)
     }
@@ -534,7 +538,7 @@ class MahjongTileTableLayoutTest {
 
         assertEquals(true, shiftWithDrawnTile > shiftWithoutDrawnTile, "Expected $shiftWithDrawnTile to exceed $shiftWithoutDrawnTile")
 
-        val drawn = drawnTilePlacement(standingTileCount = HAND_SIZE, cornerYieldShift = shiftWithDrawnTile)
+        val drawn = drawnTilePlacement(MahjongTableSeatLayout.FOUR_PLAYER, standingTileCount = HAND_SIZE, cornerYieldShift = shiftWithDrawnTile)
         val drawnAlongSide = drawn.x - CONTROLLER_CENTER_X
         val drawnOuterEdge = drawnAlongSide + MahjongTileDimensions.TILE_WIDTH / 2.0
         val availableCornerBoundary = MahjongTileTableLayout.MELD_AREA_CORNER_OFFSET - reservedCornerWidth - MahjongTileTableLayout.HAND_CORNER_GAP
@@ -546,9 +550,9 @@ class MahjongTileTableLayoutTest {
     @Test
     fun `hand placement shifts the whole row without compressing spacing`() {
         val shift = 0.4
-        val unshifted = handPlacement(tileIndex = 0)
-        val shiftedFirst = handPlacement(tileIndex = 0, cornerYieldShift = shift)
-        val shiftedLast = handPlacement(tileIndex = HAND_SIZE - 1, cornerYieldShift = shift)
+        val unshifted = handPlacement(MahjongTableSeatLayout.FOUR_PLAYER, tileIndex = 0)
+        val shiftedFirst = handPlacement(MahjongTableSeatLayout.FOUR_PLAYER, tileIndex = 0, cornerYieldShift = shift)
+        val shiftedLast = handPlacement(MahjongTableSeatLayout.FOUR_PLAYER, tileIndex = HAND_SIZE - 1, cornerYieldShift = shift)
         val stackStep = MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING
 
         assertEquals(shift, unshifted.x - shiftedFirst.x, ABSOLUTE_TOLERANCE)
@@ -643,14 +647,20 @@ class MahjongTileTableLayoutTest {
         controllerY = 64,
         controllerZ = -4,
         tableFacing = tableFacing,
-        dealerSeatIndex = dealerSeatIndex,
+        sideLayout = MahjongTileWallSideLayout.resolve(
+            arrangement = TileWallSideArrangement(
+                reference = TileWallSideReference.TABLE,
+                quarterTurns = List(sideCount) { (dealerSeatIndex - it).mod(sideCount) },
+            ),
+            dealerSide = MahjongTableSide.SOUTH,
+        ),
         stacksPerSide = stacksPerSide,
-        sideCount = sideCount,
         placement = placement,
     )
 
     /** 建立固定 controller 與可覆寫輸入的測試手牌 placement。 */
     private fun handPlacement(
+        seatLayout: MahjongTableSeatLayout,
         tableFacing: MahjongTableFacing = MahjongTableFacing.NORTH,
         seatIndex: Int = 0,
         handSize: Int = HAND_SIZE,
@@ -661,6 +671,7 @@ class MahjongTileTableLayoutTest {
         controllerY = 64,
         controllerZ = -4,
         tableFacing = tableFacing,
+        seatLayout = seatLayout,
         seatIndex = seatIndex,
         handSize = handSize,
         tileIndex = tileIndex,
@@ -669,6 +680,7 @@ class MahjongTileTableLayoutTest {
 
     /** 建立固定 controller 與可覆寫輸入的測試摸牌位 placement。 */
     private fun drawnTilePlacement(
+        seatLayout: MahjongTableSeatLayout,
         tableFacing: MahjongTableFacing = MahjongTableFacing.NORTH,
         seatIndex: Int = 0,
         standingTileCount: Int = HAND_SIZE,
@@ -678,6 +690,7 @@ class MahjongTileTableLayoutTest {
         controllerY = 64,
         controllerZ = -4,
         tableFacing = tableFacing,
+        seatLayout = seatLayout,
         seatIndex = seatIndex,
         standingTileCount = standingTileCount,
         cornerYieldShift = cornerYieldShift,
@@ -685,6 +698,7 @@ class MahjongTileTableLayoutTest {
 
     /** 建立固定 controller 與可覆寫輸入的測試牌河 placement。 */
     private fun discardPlacement(
+        seatLayout: MahjongTableSeatLayout,
         tableFacing: MahjongTableFacing = MahjongTableFacing.NORTH,
         seatIndex: Int = 0,
         discardIndex: Int = 0,
@@ -696,6 +710,7 @@ class MahjongTileTableLayoutTest {
         controllerY = 64,
         controllerZ = -4,
         tableFacing = tableFacing,
+        seatLayout = seatLayout,
         seatIndex = seatIndex,
         discardIndex = discardIndex,
         isSidewaysMarked = isSidewaysMarked,
@@ -742,10 +757,28 @@ class MahjongTileTableLayoutTest {
     fun `seat yaw matches hand and upright meld tiles`() {
         MahjongTableFacing.entries.forEach { facing ->
             (0..3).forEach { seat ->
-                val hand = MahjongTileTableLayout.handPlacement(0, 64, 0, facing, seat, handSize = 13, tileIndex = 0)
-                val meld = MahjongTileTableLayout.meldPlacement(0, 64, 0, facing, seat, alongOffsetFromCorner = 0.1, isSidewaysTile = false)
-                assertEquals(hand.yaw, MahjongTileTableLayout.seatYaw(facing, seat), "$facing seat $seat")
-                assertEquals(meld.yaw, MahjongTileTableLayout.seatYaw(facing, seat), "$facing seat $seat")
+                val hand = MahjongTileTableLayout.handPlacement(
+                    0,
+                    64,
+                    0,
+                    facing,
+                    MahjongTableSeatLayout.FOUR_PLAYER,
+                    seat,
+                    handSize = 13,
+                    tileIndex = 0,
+                )
+                val meld = MahjongTileTableLayout.meldPlacement(
+                    0,
+                    64,
+                    0,
+                    facing,
+                    MahjongTableSeatLayout.FOUR_PLAYER,
+                    seat,
+                    alongOffsetFromCorner = 0.1,
+                    isSidewaysTile = false,
+                )
+                assertEquals(hand.yaw, MahjongTileTableLayout.seatYaw(facing, MahjongTableSeatLayout.FOUR_PLAYER, seat), "$facing seat $seat")
+                assertEquals(meld.yaw, MahjongTileTableLayout.seatYaw(facing, MahjongTableSeatLayout.FOUR_PLAYER, seat), "$facing seat $seat")
             }
         }
     }

@@ -10,12 +10,14 @@ import kotlin.uuid.Uuid
  * @property tableId 所屬麻將桌的穩定 UUID。
  * @property tableLocation 麻將桌 controller 的位置。
  * @property tableFacing 麻將桌 controller 的世界水平朝向。
+ * @property seatLayout 這桌玩家席位對應的固定桌面布局。
  * @property placements 規則描述的完整物件清單；空清單代表桌上不應有任何規則桌面物件。
  */
 data class TablePropPresentation(
     val tableId: Uuid,
     val tableLocation: TableLocation,
     val tableFacing: MahjongTableFacing,
+    val seatLayout: MahjongTableSeatLayout,
     val placements: List<TablePropPlacement>,
 ) {
     /**
@@ -29,6 +31,7 @@ data class TablePropPresentation(
             controllerY = tableLocation.y,
             controllerZ = tableLocation.z,
             tableFacing = tableFacing,
+            seatLayout = seatLayout,
             seatIndex = placement.seatIndex,
             anchor = placement.anchor,
             offset = placement.offset,
