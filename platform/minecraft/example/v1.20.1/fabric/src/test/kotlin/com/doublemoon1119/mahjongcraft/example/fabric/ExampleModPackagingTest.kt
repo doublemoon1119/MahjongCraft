@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.example.fabric
 
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -51,6 +52,7 @@ class ExampleModPackagingTest {
             val metadata = Json.parseToJsonElement(jar.getInputStream(jar.getEntry("fabric.mod.json")).reader().readText()).jsonObject
             assertEquals("mahjongcraft_example", metadata.getValue("id").jsonPrimitive.content)
             assertTrue("mahjongcraft" in metadata.getValue("depends").jsonObject)
+            assertFabricDependencyRequirements(metadata)
             assertEquals(
                 "com.doublemoon1119.mahjongcraft.example.fabric.ExampleModClient",
                 metadata.getValue("entrypoints").jsonObject.getValue("client").jsonArray.single().jsonPrimitive.content,
@@ -68,7 +70,25 @@ class ExampleModPackagingTest {
             assertFalse(paths.any { it.contains("example", ignoreCase = true) && it.endsWith(".jar") })
             val metadata = Json.parseToJsonElement(jar.getInputStream(jar.getEntry("fabric.mod.json")).reader().readText()).jsonObject
             assertEquals("mahjongcraft", metadata.getValue("id").jsonPrimitive.content)
+            assertFabricDependencyRequirements(metadata)
             assertFalse("mahjongcraft_example" in metadata.getValue("depends").jsonObject)
         }
+    }
+
+    /** 確認 Fabric metadata 的執行依賴已注入實際需求，而不是留下模板 placeholder。 */
+    private fun assertFabricDependencyRequirements(metadata: JsonObject) {
+        val dependencies = metadata.getValue("depends").jsonObject
+        mapOf(
+            "fabricloader" to ">=0.19.0",
+            "fabric" to "*",
+            "minecraft" to "1.20.1",
+            "fabric-language-kotlin" to ">=1.13.14",
+        ).forEach { (id, requirement) ->
+            assertEquals(requirement, dependencies.getValue(id).jsonPrimitive.content, id)
+        }
+        assertFalse(
+            dependencies.values.any { it.jsonPrimitive.content.contains("\${") },
+            dependencies.toString(),
+        )
     }
 }

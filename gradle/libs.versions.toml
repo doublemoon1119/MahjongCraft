@@ -40,6 +40,11 @@ fabric-loader = "0.19.3"
 fabricApi1201 = "0.92.11+1.20.1"
 fabric-language-kotlin = "1.13.14+kotlin.2.4.20"
 
+# Fabric 1.20.1 的執行相容範圍，與上方編譯依賴版本分開維護。
+fabricLoaderRequirement1201 = ">=0.19.0"
+fabricApiRequirement1201 = "*"
+fabricLanguageKotlinRequirement1201 = ">=1.13.14"
+
 [libraries]
 
 # Build-logic implementation dependencies

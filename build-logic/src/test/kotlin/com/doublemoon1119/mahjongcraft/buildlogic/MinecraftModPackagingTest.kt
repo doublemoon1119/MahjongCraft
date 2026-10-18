@@ -47,6 +47,45 @@ class MinecraftModPackagingTest {
         assertTrue(!root.resolve("platform/v1.20.1/fabric/build/resources/main/assets/mahjongcraft_example/icon.png").exists())
     }
 
+    /** 依賴需求會依照 packaging extension 的欄位注入 metadata，而不是留在模板裡。 */
+    @Test
+    fun `packaging injects dependency requirements`() = withFixture { root ->
+        prepareFixture(root)
+
+        runner(root, ":example:processResources").build()
+
+        val metadata = root.resolve("example/v1.20.1/fabric/build/resources/main/fabric.mod.json").readText()
+        mapOf(
+            "fabricloader" to ">=0.19.0",
+            "fabric" to "*",
+            "minecraft" to "1.20.1",
+            "fabric-language-kotlin" to ">=1.13.14",
+        ).forEach { (id, requirement) ->
+            assertTrue(metadata.contains("\"$id\": \"$requirement\""), metadata)
+        }
+        assertTrue(!metadata.contains("\${dependencyRequirements"), metadata)
+    }
+
+    /** 依賴需求變更會讓 processResources 重新產生 metadata，且 configuration cache 不會保留舊值。 */
+    @Test
+    fun `changing dependency requirement invalidates generated metadata`() = withFixture { root ->
+        prepareFixture(root)
+
+        val arguments = arrayOf(":example:processResources", "--configuration-cache")
+        runner(root, *arguments).build()
+        val initialMetadata = root.resolve("example/v1.20.1/fabric/build/resources/main/fabric.mod.json").readText()
+        assertTrue(initialMetadata.contains("\"fabricloader\": \">=0.19.0\""), initialMetadata)
+
+        val buildScript = root.resolve("example/v1.20.1/fabric/build.gradle")
+        buildScript.writeText(buildScript.readText().replace("fabricLoader: \">=0.19.0\"", "fabricLoader: \">=0.20.0\""))
+
+        val changed = runner(root, *arguments).build()
+        assertEquals(TaskOutcome.SUCCESS, changed.task(":example:processResources")?.outcome)
+        val changedMetadata = root.resolve("example/v1.20.1/fabric/build/resources/main/fabric.mod.json").readText()
+        assertTrue(changedMetadata.contains("\"fabricloader\": \">=0.20.0\""), changedMetadata)
+        assertTrue(!changedMetadata.contains("\"fabricloader\": \">=0.19.0\""), changedMetadata)
+    }
+
     /** processResources 可在 configuration cache 中重用，避免範例建置破壞快取。 */
     @Test
     fun `packaging reuses configuration cache`() = withFixture { root ->
@@ -139,7 +178,13 @@ class MinecraftModPackagingTest {
           "version": "${'$'}{version}",
           "name": "${'$'}{name}",
           "description": "${'$'}{description}",
-          "icon": "assets/${'$'}{id}/icon.png"
+          "icon": "assets/${'$'}{id}/icon.png",
+          "depends": {
+            "fabricloader": "${'$'}{dependencyRequirements.fabricLoader}",
+            "fabric": "${'$'}{dependencyRequirements.fabricApi}",
+            "minecraft": "${'$'}{dependencyRequirements.minecraft}",
+            "fabric-language-kotlin": "${'$'}{dependencyRequirements.fabricLanguageKotlin}"
+          }
         }
         """.trimIndent() + "\n"
 
@@ -148,6 +193,15 @@ class MinecraftModPackagingTest {
         """
         plugins {
             id("mahjongcraft.minecraft-loader")
+        }
+
+        minecraftModPackaging {
+            dependencyRequirements = [
+                minecraft: "1.20.1",
+                fabricLoader: ">=0.19.0",
+                fabricApi: "*",
+                fabricLanguageKotlin: ">=1.13.14",
+            ]
         }
         """.trimIndent() + "\n"
 

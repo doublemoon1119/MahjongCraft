@@ -1,3 +1,5 @@
+import com.doublemoon1119.mahjongcraft.buildlogic.MinecraftModPackagingExtension
+
 plugins {
     alias(libs.plugins.mahjongcraft.minecraft.loader)
     alias(libs.plugins.kotlin.serialization)
@@ -7,6 +9,13 @@ plugins {
 }
 
 version = libs.versions.minecraft.mod.version.get()
+
+configure<MinecraftModPackagingExtension> {
+    dependencyRequirements.put("minecraft", libs.versions.minecraft1201)
+    dependencyRequirements.put("fabricLoader", libs.versions.fabricLoaderRequirement1201)
+    dependencyRequirements.put("fabricApi", libs.versions.fabricApiRequirement1201)
+    dependencyRequirements.put("fabricLanguageKotlin", libs.versions.fabricLanguageKotlinRequirement1201)
+}
 
 // 提供未重新映射的本體與完整執行依賴，供同版本的其他開發用 mod 啟動。
 configurations.create("namedRuntimeElements") {

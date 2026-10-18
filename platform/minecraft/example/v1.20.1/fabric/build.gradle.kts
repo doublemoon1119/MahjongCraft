@@ -15,6 +15,10 @@ configure<MinecraftModPackagingExtension> {
     displayName.set("MahjongCraft Extension Example")
     description.set("An isolated example of extending MahjongCraft.")
     archiveBaseName.set("mahjongcraft-example-fabric-1.20.1")
+    dependencyRequirements.put("minecraft", libs.versions.minecraft1201)
+    dependencyRequirements.put("fabricLoader", libs.versions.fabricLoaderRequirement1201)
+    dependencyRequirements.put("fabricApi", libs.versions.fabricApiRequirement1201)
+    dependencyRequirements.put("fabricLanguageKotlin", libs.versions.fabricLanguageKotlinRequirement1201)
 }
 
 // 只收集兩份範例程式庫，不將它們依賴的本體與 Kotlin 套件再打包一次。

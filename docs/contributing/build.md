@@ -30,6 +30,19 @@
   API each read their own version from `gradle/libs.versions.toml`. The root and testing projects remain
   `0.0.0-dev` because they are not published.
 
+## Mod Dependency Requirements
+
+- Keep dependency versions and runtime requirements in `gradle/libs.versions.toml`. A version used to
+  compile the mod is not automatically its minimum supported version. Keep a separate requirement when
+  metadata accepts older versions or a version range; do not derive it by trimming the build version.
+- Each version/loader module selects the requirements its metadata needs through
+  `MinecraftModPackagingExtension.dependencyRequirements`. Resource processing expands these values and
+  tracks them as task inputs. Keep loader-specific keys and compatibility decisions in those modules,
+  not in the shared packaging plugin.
+- Reuse the exact target Minecraft version where appropriate. Keep intentional ranges, including `*`,
+  unchanged unless support policy is explicitly being changed. Product and example metadata for the
+  same target read the same catalog entries.
+
 ## Example Builds
 
 - A target may declare `example-modules` in the existing platform catalog. They are loaded only when

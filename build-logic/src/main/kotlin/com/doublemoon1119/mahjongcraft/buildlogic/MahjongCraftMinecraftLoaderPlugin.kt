@@ -14,6 +14,7 @@ class MahjongCraftMinecraftLoaderPlugin : Plugin<Project> {
         pluginManager.apply("mahjongcraft.kotlin-jvm")
         configureKotlinJvm(targetJavaToolchain(), targetJavaRelease(), overrideDefaults = true)
         val packaging = extensions.create("minecraftModPackaging", MinecraftModPackagingExtension::class.java)
+        packaging.dependencyRequirements.convention(emptyMap())
         val rootProjectId = rootProject.extensions.extraProperties["projectId"].toString()
         packaging.modId.convention(rootProjectId)
         packaging.displayName.convention(rootProject.extensions.extraProperties["projectDisplayName"].toString())
@@ -35,6 +36,7 @@ class MahjongCraftMinecraftLoaderPlugin : Plugin<Project> {
                     "homepage" to "https://github.com/doublemoon1119/MahjongCraft",
                     "sources" to "https://github.com/doublemoon1119/MahjongCraft",
                     "issues" to "https://github.com/doublemoon1119/MahjongCraft/issues",
+                    "dependencyRequirements" to packaging.dependencyRequirements.get(),
                 )
             }
             inputs.file(packaging.icon).withPropertyName("projectLogo")

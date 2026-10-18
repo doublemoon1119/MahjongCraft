@@ -1,9 +1,10 @@
 package com.doublemoon1119.mahjongcraft.buildlogic
 
 import org.gradle.api.file.RegularFileProperty
+import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
 
-/** Minecraft mod 的身分、圖示與產物名稱；未指定時沿用正式 mod 的設定。 */
+/** Minecraft mod 的身分、圖示、產物名稱與執行依賴需求。 */
 abstract class MinecraftModPackagingExtension {
     /** metadata 與圖示資源路徑使用的 mod ID。 */
     abstract val modId: Property<String>
@@ -19,4 +20,7 @@ abstract class MinecraftModPackagingExtension {
 
     /** JAR 名稱中版本號之前的部分。 */
     abstract val archiveBaseName: Property<String>
+
+    /** 由版本與 loader 模組指定的執行依賴範圍；metadata 以 dependencyRequirements 取得。 */
+    abstract val dependencyRequirements: MapProperty<String, String>
 }

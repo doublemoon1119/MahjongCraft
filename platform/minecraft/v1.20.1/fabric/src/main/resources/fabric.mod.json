@@ -34,9 +34,9 @@
     ]
   },
   "depends": {
-    "fabricloader": ">=0.19.0",
-    "fabric": "*",
-    "minecraft": "1.20.1",
-    "fabric-language-kotlin": ">=1.13.14"
+    "fabricloader": "${dependencyRequirements.fabricLoader}",
+    "fabric": "${dependencyRequirements.fabricApi}",
+    "minecraft": "${dependencyRequirements.minecraft}",
+    "fabric-language-kotlin": "${dependencyRequirements.fabricLanguageKotlin}"
   }
 }
