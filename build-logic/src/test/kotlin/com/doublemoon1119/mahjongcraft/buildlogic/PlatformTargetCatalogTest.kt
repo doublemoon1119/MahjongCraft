@@ -12,6 +12,24 @@ import kotlin.test.assertTrue
 
 /** 驗證 target catalog、輸入優先序與本機設定更新。 */
 class PlatformTargetCatalogTest {
+    /** 路徑驗證與 Settings 必須使用同一份已去除首尾空白的目錄名稱。 */
+    @Test
+    fun `returns the normalized paths used during validation`() = withFixture { root ->
+        createModule(root, "platform/test")
+        createModule(root, "example/mahjong-extension")
+        val catalog = writeCatalog(
+            root,
+            target("minecraft-test", " platform/test ").replace(
+                "[targets.attributes]",
+                "example-modules = [\" example/mahjong-extension/ \"]\n\n[targets.attributes]",
+            ),
+        )
+
+        val result = PlatformTargetCatalog.load(catalog, root).single()
+        assertEquals(listOf("platform/test"), result.modules)
+        assertEquals(listOf("example/mahjong-extension"), result.exampleModules)
+    }
+
     /** 合法 catalog 應完整解析 target 與 Java policy。 */
     @Test
     fun `loads valid catalog`() = withFixture { root ->
@@ -26,6 +44,61 @@ class PlatformTargetCatalogTest {
         assertEquals(17, targets.single().javaToolchain)
         assertEquals(17, targets.single().javaRelease)
         assertEquals("v1.20.1", targets.single().attributes["minecraft-version"])
+    }
+
+    /** target 可以宣告另外載入的範例模組。 */
+    @Test
+    fun `loads example modules`() = withFixture { root ->
+        createModule(root, "platform/example")
+        createModule(root, "example/mahjong-extension")
+        val targets = writeCatalog(
+            root,
+            target("minecraft-example", "platform/example").replace(
+                "[targets.attributes]",
+                "example-modules = [\"example/mahjong-extension\"]\n\n[targets.attributes]",
+            ),
+        ).let { PlatformTargetCatalog.load(it, root) }
+
+        assertEquals(listOf("example/mahjong-extension"), targets.single().exampleModules)
+    }
+
+    /** 正式模組與範例模組不能重複宣告同一個目錄。 */
+    @Test
+    fun `rejects formal and example module overlap`() = withFixture { root ->
+        createModule(root, "example/mahjong-extension")
+        val catalog = writeCatalog(
+            root,
+            target("minecraft-example", "example/mahjong-extension").replace(
+                "[targets.attributes]",
+                "example-modules = [\"example/mahjong-extension\"]\n\n[targets.attributes]",
+            ),
+        )
+
+        assertFailsWith<GradleException> { PlatformTargetCatalog.load(catalog, root) }
+    }
+
+    /** 範例清單不能把一般平台模組誤標成範例。 */
+    @Test
+    fun `rejects non example path in example modules`() = withFixture { root ->
+        createModule(root, "platform/example")
+        val catalog = writeCatalog(
+            root,
+            target("minecraft-example", "platform/example").replace(
+                "[targets.attributes]",
+                "example-modules = [\"platform/example\"]\n\n[targets.attributes]",
+            ),
+        )
+
+        assertFailsWith<GradleException> { PlatformTargetCatalog.load(catalog, root) }
+    }
+
+    /** 正式 module 清單不能誤用範例目錄。 */
+    @Test
+    fun `rejects example path in formal modules`() = withFixture { root ->
+        createModule(root, "example/mahjong-extension")
+        val catalog = writeCatalog(root, target("minecraft-example", "example/mahjong-extension"))
+
+        assertFailsWith<GradleException> { PlatformTargetCatalog.load(catalog, root) }
     }
 
     /** 非 Minecraft 平台不需要提供 Minecraft 專屬欄位。 */
@@ -82,6 +155,14 @@ class PlatformTargetCatalogTest {
     @Test
     fun `rejects missing module`() = withFixture { root ->
         val catalog = writeCatalog(root, target("minecraft-example", "platform/missing"))
+
+        assertFailsWith<GradleException> { PlatformTargetCatalog.load(catalog, root) }
+    }
+
+    /** module 路徑不能透過 parent segment 離開 repository。 */
+    @Test
+    fun `rejects module path escape`() = withFixture { root ->
+        val catalog = writeCatalog(root, target("minecraft-example", "../outside"))
 
         assertFailsWith<GradleException> { PlatformTargetCatalog.load(catalog, root) }
     }

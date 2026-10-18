@@ -35,6 +35,8 @@ class ModuleReadmeVerificationTest {
         assertTrue(result.output.contains("build-logic/README.md"))
         assertTrue(result.output.contains("platform/README.md"))
         assertTrue(result.output.contains("platform/minecraft/README.md"))
+        assertTrue(result.output.contains("example/README.md"))
+        assertTrue(result.output.contains("platform/minecraft/example/README.md"))
     }
 
     /** 大小寫不敏感的檔案系統也不能讓錯誤檔名通過。 */
@@ -67,6 +69,7 @@ class ModuleReadmeVerificationTest {
             java-toolchain = 17
             java-release = 17
             modules = ["platform/catalog-only"]
+            example-modules = ["example/declared"]
             """.trimIndent() + "\n",
         )
         root.resolve("settings.gradle.kts").writeText(
@@ -92,6 +95,9 @@ class ModuleReadmeVerificationTest {
         root.resolve("build-logic"),
         root.resolve("platform"),
         root.resolve("platform/minecraft"),
+        root.resolve("example"),
+        root.resolve("platform/minecraft/example"),
+        root.resolve("example/declared"),
         root.resolve("gradle"),
     )
 

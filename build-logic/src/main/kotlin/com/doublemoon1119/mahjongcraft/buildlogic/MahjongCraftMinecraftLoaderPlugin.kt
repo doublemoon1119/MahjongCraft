@@ -13,22 +13,23 @@ class MahjongCraftMinecraftLoaderPlugin : Plugin<Project> {
     override fun apply(project: Project) = with(project) {
         pluginManager.apply("mahjongcraft.kotlin-jvm")
         configureKotlinJvm(targetJavaToolchain(), targetJavaRelease(), overrideDefaults = true)
-        plugins.withId("fabric-loom") {
-            val loader = projectDir.name
-            val minecraftVersion = projectDir.parentFile.name.removePrefix("v")
-            extensions.configure<BasePluginExtension> {
-                archivesName.set("${rootProject.extensions.extraProperties["projectId"]}-$loader-$minecraftVersion")
-            }
+        val packaging = extensions.create("minecraftModPackaging", MinecraftModPackagingExtension::class.java)
+        val rootProjectId = rootProject.extensions.extraProperties["projectId"].toString()
+        packaging.modId.convention(rootProjectId)
+        packaging.displayName.convention(rootProject.extensions.extraProperties["projectDisplayName"].toString())
+        packaging.description.convention("Bring Mahjong to Minecraft and play with your friends.")
+        packaging.icon.convention(rootProject.layout.projectDirectory.file("docs/assets/branding/logo.png"))
+        packaging.archiveBaseName.convention("$rootProjectId-${projectDir.name}-${projectDir.parentFile.name.removePrefix("v")}")
+        extensions.configure<BasePluginExtension> {
+            archivesName.set(packaging.archiveBaseName)
         }
         tasks.withType<ProcessResources>().configureEach {
-            val projectId = rootProject.extensions.extraProperties["projectId"].toString()
-            val projectLogo = rootProject.layout.projectDirectory.file("docs/assets/branding/logo.png")
             val metadata = provider {
                 mapOf(
                     "version" to version.toString(),
-                    "id" to projectId,
-                    "name" to rootProject.extensions.extraProperties["projectDisplayName"].toString(),
-                    "description" to "Bring Mahjong to Minecraft and play with your friends.",
+                    "id" to packaging.modId.get(),
+                    "name" to packaging.displayName.get(),
+                    "description" to packaging.description.get(),
                     "license" to "MIT",
                     "author" to "doublemoon1119",
                     "homepage" to "https://github.com/doublemoon1119/MahjongCraft",
@@ -36,9 +37,9 @@ class MahjongCraftMinecraftLoaderPlugin : Plugin<Project> {
                     "issues" to "https://github.com/doublemoon1119/MahjongCraft/issues",
                 )
             }
-            inputs.file(projectLogo).withPropertyName("projectLogo")
-            from(projectLogo) {
-                into("assets/$projectId")
+            inputs.file(packaging.icon).withPropertyName("projectLogo")
+            from(packaging.icon) {
+                into(packaging.modId.map { "assets/$it" })
                 rename { "icon.png" }
             }
             inputs.property("modMetadata", metadata)

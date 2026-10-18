@@ -8,6 +8,7 @@ package com.doublemoon1119.mahjongcraft.buildlogic
  * @property javaToolchain 編譯此 target 使用的 JDK toolchain。
  * @property javaRelease 此 target 產出的最低 JVM bytecode 版本。
  * @property modules Settings 階段必須載入的模組目錄。
+ * @property exampleModules 啟用範例建置時額外載入的模組目錄。
  * @property attributes 由各平台自行定義並解讀的額外屬性。
  */
 data class PlatformTarget(
@@ -16,5 +17,6 @@ data class PlatformTarget(
     val javaToolchain: Int,
     val javaRelease: Int,
     val modules: List<String>,
+    val exampleModules: List<String> = emptyList(),
     val attributes: Map<String, String>,
 )

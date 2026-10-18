@@ -8,6 +8,14 @@ plugins {
 
 version = libs.versions.minecraft.mod.version.get()
 
+// 提供未重新映射的本體與完整執行依賴，供同版本的其他開發用 mod 啟動。
+configurations.create("namedRuntimeElements") {
+    isCanBeResolved = false
+    isCanBeConsumed = true
+    extendsFrom(configurations.implementation.get(), configurations.runtimeOnly.get())
+    outgoing.artifact(tasks.named("jar"))
+}
+
 loom {
     accessWidenerPath = file("src/main/resources/mahjongcraft.accesswidener")
 

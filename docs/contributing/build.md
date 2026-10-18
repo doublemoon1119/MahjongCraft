@@ -29,3 +29,19 @@
 - MahjongCraft release trains are independent: Minecraft modules, logic, flow, AI, and extension
   API each read their own version from `gradle/libs.versions.toml`. The root and testing projects remain
   `0.0.0-dev` because they are not published.
+
+## Example Builds
+
+- A target may declare `example-modules` in the existing platform catalog. They are loaded only when
+  `-PmahjongcraftExample=true` is passed. Missing or `false` keeps them out of the project graph;
+  other values are rejected. The switch is not saved in `local.dev.properties`.
+- Example modules use the existing conventions and read their versions from the version catalog.
+  The `:example` parent and its platform-independent children follow the extension API version.
+  Minecraft example modules follow the Minecraft mod version.
+- Product modules never depend on examples. Example resources and classes belong only to the example
+  mod. Its development runs use separate worlds and do not modify the product's run classpath.
+- Keep metadata defaults unchanged for product modules. Examples set their own identity through
+  `MinecraftModPackagingExtension` instead of changing root metadata or copying compiler settings.
+- Verify both example-enabled and default builds. Test the actual remapped JAR contents, not just
+  compilation, and keep configuration cache enabled. See the
+  [Minecraft example guide](../../platform/minecraft/example/README.md) for run commands.

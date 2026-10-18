@@ -12,6 +12,20 @@ import kotlin.test.assertTrue
 
 /** 以 TestKit 驗證 repository 驗證與 target 管理任務可在 configuration cache 下執行與重用。 */
 class RepositoryTasksConfigurationCacheTest {
+    /** 範例父模組與子模組同樣沿用 catalog 的 extension API 版本，不接受額外寫死的版本。 */
+    @Test
+    fun `example parent follows extension api catalog version`() = withFixture { root ->
+        prepareBuild(root)
+        root.resolve("settings.gradle.kts").appendText("include(\":example\")\n")
+        val buildFile = root.resolve("example/build.gradle.kts")
+        buildFile.writeText("version = libs.versions.extension.api.version.get()\n")
+
+        runner(root, "verifyProjectVersionPolicy", "--configuration-cache").build()
+        buildFile.writeText("version = \"0.0.0-dev\"\n")
+        val failure = runner(root, "verifyProjectVersionPolicy", "--configuration-cache").buildAndFail()
+        assertTrue(failure.output.contains(":example: expected 1.0.0, found 0.0.0-dev"), failure.output)
+    }
+
     /** `check` 串接的驗證任務在第一次執行時存入 configuration cache，第二次直接重用且結果相同。 */
     @Test
     fun `verification tasks reuse configuration cache`() = withFixture { root ->
@@ -75,7 +89,16 @@ class RepositoryTasksConfigurationCacheTest {
      * @param root 測試專案根目錄。
      */
     private fun prepareBuild(root: File) {
-        listOf("gradle", "mahjong-logic", "build-logic", "platform/minecraft", "platform/catalog-only", LANG_DIRECTORY)
+        listOf(
+            "gradle",
+            "mahjong-logic",
+            "build-logic",
+            "platform/minecraft",
+            "platform/minecraft/example",
+            "example",
+            "platform/catalog-only",
+            LANG_DIRECTORY,
+        )
             .forEach { root.resolve(it).toPath().createDirectories() }
         root.resolve("gradle/platform-targets.toml").writeText(
             """
@@ -116,7 +139,16 @@ class RepositoryTasksConfigurationCacheTest {
             """.trimIndent() + "\n",
         )
         root.resolve("mahjong-logic/build.gradle.kts").writeText("version = \"1.0.0\"\n")
-        listOf(".", "mahjong-logic", "build-logic", "platform", "platform/minecraft", "platform/catalog-only")
+        listOf(
+            ".",
+            "mahjong-logic",
+            "build-logic",
+            "platform",
+            "platform/minecraft",
+            "platform/minecraft/example",
+            "example",
+            "platform/catalog-only",
+        )
             .forEach { root.resolve(it).resolve("README.md").writeText("# Test\n") }
         root.resolve(LANG_DIRECTORY).resolve("en_us.json").writeText("{\n  \"a.key\": \"A\",\n  \"b.key\": \"B\"\n}\n")
     }

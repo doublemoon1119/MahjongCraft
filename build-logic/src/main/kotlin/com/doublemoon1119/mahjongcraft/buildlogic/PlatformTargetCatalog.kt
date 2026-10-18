@@ -27,6 +27,7 @@ private data class PlatformTargetCatalogDocument(
  * @property javaToolchain JDK toolchain。
  * @property javaRelease JVM bytecode release。
  * @property modules 應載入的 module paths。
+ * @property exampleModules 啟用範例建置時額外載入的 module paths。
  * @property attributes 平台自行定義的附加欄位。
  */
 @Serializable
@@ -38,6 +39,8 @@ private data class PlatformTargetDefinition(
     @SerialName("java-release")
     val javaRelease: Int,
     val modules: List<String>,
+    @SerialName("example-modules")
+    val exampleModules: List<String> = emptyList(),
     val attributes: Map<String, String> = emptyMap(),
 )
 
@@ -72,7 +75,8 @@ object PlatformTargetCatalog {
                 platform = definition.platform.trim(),
                 javaToolchain = definition.javaToolchain,
                 javaRelease = definition.javaRelease,
-                modules = definition.modules,
+                modules = definition.modules.map(::normalizeModulePath),
+                exampleModules = definition.exampleModules.map(::normalizeModulePath),
                 attributes = definition.attributes,
             )
         }
@@ -138,16 +142,67 @@ object PlatformTargetCatalog {
                 )
             }
             if (target.modules.isEmpty()) throw GradleException("Platform target ${target.id} has no modules")
-            val duplicates = target.modules.groupingBy(String::lowercase).eachCount().filterValues { it > 1 }.keys
-            if (duplicates.isNotEmpty()) throw GradleException("Platform target ${target.id} repeats modules: $duplicates")
-            target.modules.forEach { module ->
-                val directory = rootDirectory.resolve(module).canonicalFile
-                if (!directory.toPath().startsWith(rootDirectory.canonicalFile.toPath()) || !directory.isDirectory) {
-                    throw GradleException("Platform target ${target.id} references missing module: $module")
-                }
+            validateModulePaths(target, rootDirectory)
+        }
+    }
+
+    /** 驗證正式與範例模組的路徑、存在性及分類。 */
+    private fun validateModulePaths(target: PlatformTarget, rootDirectory: File) {
+        val formal = target.modules.map(::normalizeModulePath)
+        val examples = target.exampleModules.map(::normalizeModulePath)
+        val duplicateFormal = formal.groupingBy(String::lowercase).eachCount().filterValues { it > 1 }.keys
+        if (duplicateFormal.isNotEmpty()) {
+            throw GradleException("Platform target ${target.id} repeats modules: $duplicateFormal")
+        }
+        val duplicateExamples = examples.groupingBy(String::lowercase).eachCount().filterValues { it > 1 }.keys
+        if (duplicateExamples.isNotEmpty()) {
+            throw GradleException("Platform target ${target.id} repeats example modules: $duplicateExamples")
+        }
+        val overlap = formal.map(String::lowercase).toSet().intersect(examples.map(String::lowercase).toSet())
+        if (overlap.isNotEmpty()) {
+            throw GradleException("Platform target ${target.id} declares modules as both formal and example: $overlap")
+        }
+        formal.forEach { module ->
+            if (isExampleModulePath(module)) {
+                throw GradleException("Platform target ${target.id} has an example path in formal modules: $module")
+            }
+        }
+        examples.forEach { module ->
+            if (!isExampleModulePath(module)) {
+                throw GradleException("Platform target ${target.id} has non-example path in example-modules: $module")
+            }
+            if (module.startsWith("example/") && module.removePrefix("example/").contains('/')) {
+                throw GradleException("Root example module must be an immediate child of example/: $module")
+            }
+        }
+        val canonicalPaths = mutableMapOf<String, String>()
+        (formal + examples).forEach { module ->
+            val directory = rootDirectory.resolve(module).canonicalFile
+            if (!directory.toPath().startsWith(rootDirectory.canonicalFile.toPath()) || !directory.isDirectory) {
+                throw GradleException("Platform target ${target.id} references missing module: $module")
+            }
+            val canonicalKey = directory.path.lowercase()
+            val previous = canonicalPaths.putIfAbsent(canonicalKey, module)
+            if (previous != null && previous != module) {
+                throw GradleException(
+                    "Platform target ${target.id} maps modules to the same directory: $previous and $module",
+                )
             }
         }
     }
+
+    /** 正規化並拒絕會離開 repository 的 module 路徑。 */
+    private fun normalizeModulePath(path: String): String {
+        val normalized = path.trim().replace('\\', '/')
+        if (normalized.isEmpty() || normalized.startsWith('/') || normalized.split('/').any { it == ".." }) {
+            throw GradleException("Invalid platform module path: $path")
+        }
+        return normalized.removeSuffix("/")
+    }
+
+    /** 判斷路徑是否屬於根目錄或平台下的範例區域。 */
+    private fun isExampleModulePath(path: String): Boolean =
+        path.startsWith("example/") || path.contains("/example/")
 
     /** Core-only 的保留 target ID。 */
     const val CORE_TARGET_ID: String = "core"
@@ -157,6 +212,9 @@ object PlatformTargetCatalog {
 
     /** 簡短 target 環境變數名稱。 */
     const val TARGET_ENVIRONMENT_NAME: String = "MAHJONGCRAFT_TARGET"
+
+    /** 啟用範例模組的 Gradle property 名稱。 */
+    const val EXAMPLE_PROPERTY_NAME: String = "mahjongcraftExample"
 
     /** 支援的 Java toolchain 與 release 數值範圍。 */
     private val JAVA_VERSION_RANGE = 8..99

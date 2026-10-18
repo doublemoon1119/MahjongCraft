@@ -10,6 +10,11 @@ modules = [
     "platform/minecraft/v1.20.1/common",
     "platform/minecraft/v1.20.1/fabric",
 ]
+example-modules = [
+    "example/mahjong-extension",
+    "platform/minecraft/example/common",
+    "platform/minecraft/example/v1.20.1/fabric",
+]
 
 [targets.attributes]
 minecraft-version = "v1.20.1"

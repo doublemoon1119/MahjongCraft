@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.buildlogic
 
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.add
 import kotlinx.serialization.json.put
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
@@ -70,7 +71,12 @@ abstract class ListPlatformTargetsTask : DefaultTask() {
         when (outputFormat.lowercase()) {
             "text" -> {
                 logger.lifecycle(PlatformTargetCatalog.CORE_TARGET_ID)
-                targets.forEach { logger.lifecycle(it.id) }
+                targets.forEach { target ->
+                    logger.lifecycle(target.id)
+                    if (target.exampleModules.isNotEmpty()) {
+                        logger.lifecycle("  examples: ${target.exampleModules.joinToString()}")
+                    }
+                }
             }
             "json" -> logger.lifecycle(
                 buildJsonArray {
@@ -87,6 +93,10 @@ abstract class ListPlatformTargetsTask : DefaultTask() {
                                 put("platform", target.platform)
                                 put("javaToolchain", target.javaToolchain)
                                 put("javaRelease", target.javaRelease)
+                                put(
+                                    "exampleModules",
+                                    buildJsonArray { target.exampleModules.forEach { add(it) } },
+                                )
                                 put(
                                     "attributes",
                                     buildJsonObject {

@@ -28,12 +28,30 @@ class PlatformTargetsSettingsPlugin : Plugin<Settings> {
                         (listOf(PlatformTargetCatalog.CORE_TARGET_ID) + targets.map(PlatformTarget::id)).joinToString(),
                 )
         }
+        val examplesEnabled = parseExamplesProperty(
+            settings.providers.gradleProperty(PlatformTargetCatalog.EXAMPLE_PROPERTY_NAME).orNull,
+        )
+        if (examplesEnabled && selectedTarget == null) {
+            throw GradleException("MahjongCraft examples require a platform target; core has no example modules")
+        }
+        if (examplesEnabled && selectedTarget?.exampleModules.isNullOrEmpty()) {
+            throw GradleException("Target '$selectedId' does not declare any example modules")
+        }
         val extras = (settings.gradle as ExtensionAware).extensions.extraProperties
         extras[SELECTED_TARGET_ID_EXTRA] = selectedId
         extras[TARGET_JAVA_TOOLCHAIN_EXTRA] = selectedTarget?.javaToolchain ?: 0
         extras[TARGET_JAVA_RELEASE_EXTRA] = selectedTarget?.javaRelease ?: 0
-        selectedTarget?.modules?.forEach { path ->
-            val projectPath = ":" + path.removePrefix("platform/").replace('/', '_')
+        val modules = selectedTarget?.let { target ->
+            target.modules + if (examplesEnabled) target.exampleModules else emptyList()
+        }.orEmpty()
+        val projectPaths = modules.map { modulePathToProjectPath(it) }
+        val duplicateProjectPaths = projectPaths.groupingBy(String::lowercase).eachCount().filterValues { it > 1 }.keys
+        if (duplicateProjectPaths.isNotEmpty()) {
+            throw GradleException(
+                "Target '$selectedId' maps multiple modules to the same Gradle project: $duplicateProjectPaths",
+            )
+        }
+        modules.zip(projectPaths).forEach { (path, projectPath) ->
             settings.include(projectPath)
             settings.project(projectPath).projectDir = settings.rootDir.resolve(path)
         }
@@ -42,6 +60,27 @@ class PlatformTargetsSettingsPlugin : Plugin<Settings> {
         } else {
             settings.gradle.rootProject { logger.lifecycle("BUILD LOG: Environment active -> Target: ${selectedTarget.id}") }
         }
+    }
+
+    /** 只接受明確的 true／false，避免範例意外因環境值啟用。 */
+    private fun parseExamplesProperty(value: String?): Boolean = when (value) {
+        null, "false" -> false
+        "true" -> true
+        else -> throw GradleException(
+            "Invalid -P${PlatformTargetCatalog.EXAMPLE_PROPERTY_NAME}='$value'; expected true or false",
+        )
+    }
+
+    /** 將 repository-relative module path 映射為穩定 Gradle project path。 */
+    private fun modulePathToProjectPath(path: String): String = when {
+        path.startsWith("example/") -> {
+            val name = path.removePrefix("example/")
+            if (name.isEmpty() || name.contains('/')) {
+                throw GradleException("Root example module must be an immediate child of example/: $path")
+            }
+            ":example:example-$name"
+        }
+        else -> ":" + path.removePrefix("platform/").replace('/', '_')
     }
 
     companion object {

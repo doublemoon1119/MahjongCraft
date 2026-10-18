@@ -27,6 +27,8 @@ conventions that depend on `detekt-rules` itself.
 - Provide the opt-in `mahjongcraft.event-api-abi` convention for Kotlin's built-in event API signature checks.
 - Parse and validate the platform target catalog.
 - Select core-only or platform-specific project graphs.
+- Load declared example modules only with the explicit `mahjongcraftExample=true` switch.
+- Keep loader metadata configurable without changing the default product identity or archive name.
 - Provide target-management and repository-verification plugins with separate responsibilities.
 
 Repository checks include README presence, release-train version policy, sorted Minecraft language keys,
@@ -47,7 +49,8 @@ and Kotlin Serialization. Its serialization compiler follows Gradle's embedded K
 
 ## Testing
 
-Gradle TestKit covers catalog validation, target selection and precedence, local target management,
+Gradle TestKit covers catalog validation, target selection and precedence, optional example modules,
+loader metadata isolation, local target management,
 repository verification,
 and event API ABI filtering and failure detection for JVM and KMP modules. Run the included build's tests with
 `./gradlew -p build-logic test`, in addition to the project-wide checks documented in

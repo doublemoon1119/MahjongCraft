@@ -41,6 +41,7 @@ abstract class VerifyProjectVersionPolicyTask : DefaultTask() {
                 path == ":mahjong-bundled-extensions" -> versions.getValue("bundled-extensions-version")
                 path == ":mahjong-flow" || path.startsWith(":mahjong-flow:") -> versions.getValue("flow-version")
                 path == ":testing" || path.startsWith(":testing:") -> "0.0.0-dev"
+                path == ":example" || path.startsWith(":example:") -> versions.getValue("extension-api-version")
                 directories.getValue(path).toPath().startsWith(minecraftDirectory) -> versions.getValue("minecraft-mod-version")
                 else -> return@mapNotNull "$path has no version policy"
             }

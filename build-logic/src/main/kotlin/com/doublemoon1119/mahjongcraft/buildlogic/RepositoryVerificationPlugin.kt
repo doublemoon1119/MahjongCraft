@@ -96,6 +96,7 @@ private val JSON_FREE_PROJECT_PATHS: Set<String> = setOf(
     ":mahjong-flow:mahjong-flow-client",
     ":mahjong-extension-api",
     ":mahjong-bundled-extensions",
+    ":example:example-mahjong-extension",
 )
 
 /** version policy 使用的 release train 版本名稱。 */
@@ -186,9 +187,16 @@ internal fun expectedModuleReadmes(project: Project): Set<File> {
         add(root)
         project.rootProject.allprojects.mapTo(this) { it.projectDir }
         catalogModules.mapTo(this) { root.resolve(it) }
+        if (catalog.isFile) {
+            PlatformTargetCatalog.load(catalog, root)
+                .flatMap(PlatformTarget::exampleModules)
+                .mapTo(this) { root.resolve(it) }
+        }
         add(root.resolve("build-logic"))
         add(root.resolve("platform"))
         add(root.resolve("platform/minecraft"))
+        add(root.resolve("example"))
+        add(root.resolve("platform/minecraft/example"))
     }
     return directories.mapTo(linkedSetOf()) { it.resolve("README.md") }
 }
