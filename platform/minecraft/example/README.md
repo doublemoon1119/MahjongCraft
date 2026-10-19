@@ -9,7 +9,9 @@ It uses the same compiler, Java and Minecraft version policies as the main proje
 - [Minecraft common](common/README.md): shared presentation and resources.
 - [Fabric 1.20.1](v1.20.1/fabric/README.md): the example mod and native entrypoints.
 
-The current skeleton verifies packaging and discovery only. It adds no rules, tiles or furniture yet.
+The common extension registers the pairing rule, custom tile and Tsumogiri strategy.
+Platform names, controls and assets are not connected yet, so this is not a playable
+in-game example at this stage. Furniture and event chat output are also pending.
 
 ## Build and Run
 

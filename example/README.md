@@ -7,5 +7,6 @@ It is not part of the default build or the published MahjongCraft mod.
 - [Minecraft integration](../platform/minecraft/example/README.md): platform presentation,
   loader entrypoints and development runs.
 
-The current skeleton verifies build isolation and extension discovery.
-It does not register an additional game rule yet.
+The common library includes a small pairing rule, custom tile, declaration,
+optional tile exchange and Tsumogiri strategy.
+Their platform presentation and native example content are separate integration work.
