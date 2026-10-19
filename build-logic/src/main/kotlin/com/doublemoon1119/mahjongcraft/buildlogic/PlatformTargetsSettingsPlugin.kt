@@ -73,6 +73,9 @@ class PlatformTargetsSettingsPlugin : Plugin<Settings> {
 
     /** 將 repository-relative module path 映射為穩定 Gradle project path。 */
     private fun modulePathToProjectPath(path: String): String = when {
+        // 與正式 loader 保持同層，讓 Loom 共用外掛類別；實體目錄仍集中於 example/platform。
+        path.startsWith("example/platform/") ->
+            ":example-" + path.removePrefix("example/platform/").replace('/', '_')
         path.startsWith("example/") -> {
             val name = path.removePrefix("example/")
             if (name.isEmpty() || name.contains('/')) {

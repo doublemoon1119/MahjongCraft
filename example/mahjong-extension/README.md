@@ -67,5 +67,5 @@ Usable extension points do not imply a binary-compatibility promise.
 This library does not establish new ABI guarantees for rules or strategies.
 Automated checks are intentionally small and do not certify every extension path.
 
-See the [Minecraft example guide](../../platform/minecraft/example/README.md)
+See the [Minecraft example guide](../platform/minecraft/README.md)
 for build and run commands.

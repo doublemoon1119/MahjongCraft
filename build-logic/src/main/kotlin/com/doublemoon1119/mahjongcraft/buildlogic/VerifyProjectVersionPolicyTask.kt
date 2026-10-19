@@ -31,6 +31,7 @@ abstract class VerifyProjectVersionPolicyTask : DefaultTask() {
     fun verifyVersions() {
         val versions = releaseTrainVersions.get()
         val minecraftDirectory = rootDirectory.get().asFile.resolve("platform/minecraft").toPath()
+        val minecraftExampleDirectory = rootDirectory.get().asFile.resolve("example/platform/minecraft").toPath()
         val directories = projectDirectories.get()
         val violations = projectVersions.get().mapNotNull { (path, actual) ->
             val expected = when {
@@ -41,8 +42,9 @@ abstract class VerifyProjectVersionPolicyTask : DefaultTask() {
                 path == ":mahjong-bundled-extensions" -> versions.getValue("bundled-extensions-version")
                 path == ":mahjong-flow" || path.startsWith(":mahjong-flow:") -> versions.getValue("flow-version")
                 path == ":testing" || path.startsWith(":testing:") -> "0.0.0-dev"
+                directories.getValue(path).toPath().let { it.startsWith(minecraftDirectory) || it.startsWith(minecraftExampleDirectory) } ->
+                    versions.getValue("minecraft-mod-version")
                 path == ":example" || path.startsWith(":example:") -> versions.getValue("extension-api-version")
-                directories.getValue(path).toPath().startsWith(minecraftDirectory) -> versions.getValue("minecraft-mod-version")
                 else -> return@mapNotNull "$path has no version policy"
             }
             if (actual == expected) null else "$path: expected $expected, found $actual"

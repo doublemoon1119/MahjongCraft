@@ -36,14 +36,14 @@ class MinecraftModPackagingTest {
         runner(root, ":formal:processResources", ":example:processResources", ":example:jar").build()
 
         val formalMetadata = root.resolve("platform/v1.20.1/fabric/build/resources/main/fabric.mod.json").readText()
-        val exampleMetadata = root.resolve("example/v1.20.1/fabric/build/resources/main/fabric.mod.json").readText()
+        val exampleMetadata = root.resolve("example/platform/minecraft/v1.20.1/fabric/build/resources/main/fabric.mod.json").readText()
         assertTrue(formalMetadata.contains("\"id\": \"mahjongcraft\""), formalMetadata)
         assertTrue(exampleMetadata.contains("\"id\": \"mahjongcraft_example\""), exampleMetadata)
         assertTrue(exampleMetadata.contains("\"name\": \"MahjongCraft Example\""), exampleMetadata)
         assertTrue(exampleMetadata.contains("\"description\": \"Example extension mod.\""), exampleMetadata)
         assertTrue(exampleMetadata.contains("\"icon\": \"assets/mahjongcraft_example/icon.png\""), exampleMetadata)
-        assertTrue(root.resolve("example/v1.20.1/fabric/build/resources/main/assets/mahjongcraft_example/icon.png").isFile)
-        assertTrue(root.resolve("example/v1.20.1/fabric/build/libs/mahjongcraft-example-0.0.0-dev.jar").isFile)
+        assertTrue(root.resolve("example/platform/minecraft/v1.20.1/fabric/build/resources/main/assets/mahjongcraft_example/icon.png").isFile)
+        assertTrue(root.resolve("example/platform/minecraft/v1.20.1/fabric/build/libs/mahjongcraft-example-0.0.0-dev.jar").isFile)
         assertTrue(!root.resolve("platform/v1.20.1/fabric/build/resources/main/assets/mahjongcraft_example/icon.png").exists())
     }
 
@@ -54,7 +54,7 @@ class MinecraftModPackagingTest {
 
         runner(root, ":example:processResources").build()
 
-        val metadata = root.resolve("example/v1.20.1/fabric/build/resources/main/fabric.mod.json").readText()
+        val metadata = root.resolve("example/platform/minecraft/v1.20.1/fabric/build/resources/main/fabric.mod.json").readText()
         mapOf(
             "fabricloader" to ">=0.19.0",
             "fabric" to "*",
@@ -73,15 +73,15 @@ class MinecraftModPackagingTest {
 
         val arguments = arrayOf(":example:processResources", "--configuration-cache")
         runner(root, *arguments).build()
-        val initialMetadata = root.resolve("example/v1.20.1/fabric/build/resources/main/fabric.mod.json").readText()
+        val initialMetadata = root.resolve("example/platform/minecraft/v1.20.1/fabric/build/resources/main/fabric.mod.json").readText()
         assertTrue(initialMetadata.contains("\"fabricloader\": \">=0.19.0\""), initialMetadata)
 
-        val buildScript = root.resolve("example/v1.20.1/fabric/build.gradle")
+        val buildScript = root.resolve("example/platform/minecraft/v1.20.1/fabric/build.gradle")
         buildScript.writeText(buildScript.readText().replace("fabricLoader: \">=0.19.0\"", "fabricLoader: \">=0.20.0\""))
 
         val changed = runner(root, *arguments).build()
         assertEquals(TaskOutcome.SUCCESS, changed.task(":example:processResources")?.outcome)
-        val changedMetadata = root.resolve("example/v1.20.1/fabric/build/resources/main/fabric.mod.json").readText()
+        val changedMetadata = root.resolve("example/platform/minecraft/v1.20.1/fabric/build/resources/main/fabric.mod.json").readText()
         assertTrue(changedMetadata.contains("\"fabricloader\": \">=0.20.0\""), changedMetadata)
         assertTrue(!changedMetadata.contains("\"fabricloader\": \">=0.19.0\""), changedMetadata)
     }
@@ -132,7 +132,7 @@ class MinecraftModPackagingTest {
             rootProject.name = "packaging-fixture"
             include(":formal", ":example")
             project(":formal").projectDir = file("platform/v1.20.1/fabric")
-            project(":example").projectDir = file("example/v1.20.1/fabric")
+            project(":example").projectDir = file("example/platform/minecraft/v1.20.1/fabric")
             gradle.ext.set("mahjongcraft.targetJavaToolchain", 17)
             gradle.ext.set("mahjongcraft.targetJavaRelease", 17)
             """.trimIndent() + "\n",
@@ -151,12 +151,12 @@ class MinecraftModPackagingTest {
             parentFile.mkdirs()
             writeText(metadataTemplate())
         }
-        root.resolve("example/v1.20.1/fabric/src/main/resources/fabric.mod.json").apply {
+        root.resolve("example/platform/minecraft/v1.20.1/fabric/src/main/resources/fabric.mod.json").apply {
             parentFile.mkdirs()
             writeText(metadataTemplate())
         }
         root.resolve("platform/v1.20.1/fabric/build.gradle").writeText(loaderBuildScript())
-        root.resolve("example/v1.20.1/fabric/build.gradle").writeText(
+        root.resolve("example/platform/minecraft/v1.20.1/fabric/build.gradle").writeText(
             loaderBuildScript() +
                 """
 

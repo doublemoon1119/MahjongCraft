@@ -67,9 +67,9 @@ dependencies {
     implementation(project(":mahjong-extension-api"))
     implementation(project(":minecraft_common"))
     implementation(project(":example:example-mahjong-extension"))
-    implementation(project(":minecraft_example_common"))
+    implementation(project(":example-minecraft_common"))
     exampleLibraries(project(":example:example-mahjong-extension"))
-    exampleLibraries(project(":minecraft_example_common"))
+    exampleLibraries(project(":example-minecraft_common"))
     mainModArtifact(project(path = ":minecraft_v1.20.1_fabric", configuration = "runtimeElements"))
 
     testImplementation(kotlin("test"))

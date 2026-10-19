@@ -51,10 +51,17 @@
 - Example modules use the existing conventions and read their versions from the version catalog.
   The `:example` parent and its platform-independent children follow the extension API version.
   Minecraft example modules follow the Minecraft mod version.
+- All example code lives under `example/`. Platform-independent libraries are immediate children;
+  platform adapters live under `example/platform/<platform>/`. Their Gradle paths are
+  `:example:example-<library>` and `:example-<platform>_<module-path>`, respectively.
+  For example, `example/platform/minecraft/v1.20.1/fabric` maps to
+  `:example-minecraft_v1.20.1_fabric`. Loader projects stay at the same Gradle level as product
+  loaders so Loom shares its plugin classes. The prefix keeps example artifact names distinct
+  from product artifacts. Product project paths remain unchanged.
 - Product modules never depend on examples. Example resources and classes belong only to the example
   mod. Its development runs use separate worlds and do not modify the product's run classpath.
 - Keep metadata defaults unchanged for product modules. Examples set their own identity through
   `MinecraftModPackagingExtension` instead of changing root metadata or copying compiler settings.
 - Verify both example-enabled and default builds. Test the actual remapped JAR contents, not just
   compilation, and keep configuration cache enabled. See the
-  [Minecraft example guide](../../platform/minecraft/example/README.md) for run commands.
+  [Minecraft example guide](../../example/platform/minecraft/README.md) for run commands.

@@ -52,6 +52,30 @@ class RepositoryTasksConfigurationCacheTest {
         assertTrue(result.output.contains(":mahjong-logic: expected 1.0.0, found 9.9.9"))
     }
 
+    /** 範例平台模組應使用 Minecraft 版本，而不是被誤判成 extension API 版本。 */
+    @Test
+    fun `example platform modules follow minecraft version policy`() = withFixture { root ->
+        prepareBuild(root)
+        root.resolve("gradle/libs.versions.toml").writeText(
+            root.resolve("gradle/libs.versions.toml").readText()
+                .replace("minecraft-mod-version = \"1.0.0\"", "minecraft-mod-version = \"2.0.0\""),
+        )
+        root.resolve("example/platform/minecraft/common").toPath().createDirectories()
+        root.resolve("example/platform/minecraft/common/build.gradle.kts").writeText("version = \"2.0.0\"\n")
+        root.resolve("example/build.gradle.kts").writeText("version = libs.versions.extension.api.version.get()\n")
+        root.resolve("settings.gradle.kts").appendText(
+            """
+            include(":example", ":example-minecraft_common")
+            project(":example").projectDir = file("example")
+            project(":example-minecraft_common").projectDir = file("example/platform/minecraft/common")
+            """.trimIndent() + "\n",
+        )
+
+        val result = runner(root, "verifyProjectVersionPolicy", "--configuration-cache").build()
+
+        assertEquals(TaskOutcome.SUCCESS, result.task(":verifyProjectVersionPolicy")?.outcome)
+    }
+
     /** target 管理任務可在 configuration cache 下執行與重用。 */
     @Test
     fun `target tasks reuse configuration cache`() = withFixture { root ->
@@ -94,7 +118,7 @@ class RepositoryTasksConfigurationCacheTest {
             "mahjong-logic",
             "build-logic",
             "platform/minecraft",
-            "platform/minecraft/example",
+            "example/platform/minecraft",
             "example",
             "platform/catalog-only",
             LANG_DIRECTORY,
@@ -145,7 +169,8 @@ class RepositoryTasksConfigurationCacheTest {
             "build-logic",
             "platform",
             "platform/minecraft",
-            "platform/minecraft/example",
+            "example/platform",
+            "example/platform/minecraft",
             "example",
             "platform/catalog-only",
         )

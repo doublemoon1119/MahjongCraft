@@ -171,7 +171,12 @@ object PlatformTargetCatalog {
             if (!isExampleModulePath(module)) {
                 throw GradleException("Platform target ${target.id} has non-example path in example-modules: $module")
             }
-            if (module.startsWith("example/") && module.removePrefix("example/").contains('/')) {
+            if (module.startsWith("example/platform/")) {
+                val platformParts = module.removePrefix("example/platform/").split('/')
+                if (platformParts.size < 2 || platformParts.any(String::isEmpty)) {
+                    throw GradleException("Platform example module must specify a platform and module: $module")
+                }
+            } else if (module.startsWith("example/") && module.removePrefix("example/").contains('/')) {
                 throw GradleException("Root example module must be an immediate child of example/: $module")
             }
         }
@@ -200,7 +205,7 @@ object PlatformTargetCatalog {
         return normalized.removeSuffix("/")
     }
 
-    /** 判斷路徑是否屬於根目錄或平台下的範例區域。 */
+    /** 判斷路徑是否屬於範例區域，避免正式模組誤載入範例。 */
     private fun isExampleModulePath(path: String): Boolean =
         path.startsWith("example/") || path.contains("/example/")
 

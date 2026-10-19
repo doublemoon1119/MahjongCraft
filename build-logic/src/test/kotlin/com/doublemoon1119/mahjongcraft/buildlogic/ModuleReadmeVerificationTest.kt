@@ -36,7 +36,8 @@ class ModuleReadmeVerificationTest {
         assertTrue(result.output.contains("platform/README.md"))
         assertTrue(result.output.contains("platform/minecraft/README.md"))
         assertTrue(result.output.contains("example/README.md"))
-        assertTrue(result.output.contains("platform/minecraft/example/README.md"))
+        assertTrue(result.output.contains("example/platform/README.md"))
+        assertTrue(result.output.contains("example/platform/minecraft/README.md"))
     }
 
     /** 大小寫不敏感的檔案系統也不能讓錯誤檔名通過。 */
@@ -96,7 +97,8 @@ class ModuleReadmeVerificationTest {
         root.resolve("platform"),
         root.resolve("platform/minecraft"),
         root.resolve("example"),
-        root.resolve("platform/minecraft/example"),
+        root.resolve("example/platform"),
+        root.resolve("example/platform/minecraft"),
         root.resolve("example/declared"),
         root.resolve("gradle"),
     )

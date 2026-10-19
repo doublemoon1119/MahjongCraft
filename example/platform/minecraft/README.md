@@ -5,7 +5,7 @@ It uses the same compiler, Java and Minecraft version policies as the main proje
 
 ## Structure
 
-- [Platform-independent extension](../../../example/mahjong-extension/README.md): common Kotlin code.
+- [Platform-independent extension](../../mahjong-extension/README.md): common Kotlin code.
 - [Minecraft common](common/README.md): shared presentation and resources.
 - [Fabric 1.20.1](v1.20.1/fabric/README.md): the example mod and native entrypoints.
 
@@ -20,8 +20,8 @@ Omitting it is equivalent to `false`; it is not saved by `switchTarget`.
 
 ```shell
 ./gradlew build -PmahjongcraftTarget=minecraft-v1.20.1-fabric -PmahjongcraftExample=true
-./gradlew :minecraft_example_v1.20.1_fabric:runClient -PmahjongcraftTarget=minecraft-v1.20.1-fabric -PmahjongcraftExample=true
-./gradlew :minecraft_example_v1.20.1_fabric:runServer -PmahjongcraftTarget=minecraft-v1.20.1-fabric -PmahjongcraftExample=true
+./gradlew :example-minecraft_v1.20.1_fabric:runClient -PmahjongcraftTarget=minecraft-v1.20.1-fabric -PmahjongcraftExample=true
+./gradlew :example-minecraft_v1.20.1_fabric:runServer -PmahjongcraftTarget=minecraft-v1.20.1-fabric -PmahjongcraftExample=true
 ```
 
 Both example runs load MahjongCraft and the example as separate mods.

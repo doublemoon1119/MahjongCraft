@@ -51,15 +51,32 @@ class PlatformTargetCatalogTest {
     fun `loads example modules`() = withFixture { root ->
         createModule(root, "platform/example")
         createModule(root, "example/mahjong-extension")
+        createModule(root, "example/platform/minecraft/common")
+        createModule(root, "example/platform/minecraft/v1.20.1/fabric")
         val targets = writeCatalog(
             root,
             target("minecraft-example", "platform/example").replace(
                 "[targets.attributes]",
-                "example-modules = [\"example/mahjong-extension\"]\n\n[targets.attributes]",
+                """
+                example-modules = [
+                    "example/mahjong-extension",
+                    "example/platform/minecraft/common",
+                    "example/platform/minecraft/v1.20.1/fabric",
+                ]
+
+                [targets.attributes]
+                """.trimIndent(),
             ),
         ).let { PlatformTargetCatalog.load(it, root) }
 
-        assertEquals(listOf("example/mahjong-extension"), targets.single().exampleModules)
+        assertEquals(
+            listOf(
+                "example/mahjong-extension",
+                "example/platform/minecraft/common",
+                "example/platform/minecraft/v1.20.1/fabric",
+            ),
+            targets.single().exampleModules,
+        )
     }
 
     /** 正式模組與範例模組不能重複宣告同一個目錄。 */
@@ -88,6 +105,21 @@ class PlatformTargetCatalogTest {
                 "example-modules = [\"platform/example\"]\n\n[targets.attributes]",
             ),
         )
+
+        assertFailsWith<GradleException> { PlatformTargetCatalog.load(catalog, root) }
+    }
+
+    /** Minecraft 範例路徑必須同時指定平台與實際 module。 */
+    @Test
+    fun `rejects example platform prefix without module`() = withFixture { root ->
+        val catalog = writeCatalog(
+            root,
+            target("minecraft-example", "platform/example").replace(
+                "[targets.attributes]",
+                "example-modules = [\"example/platform/minecraft\"]\n\n[targets.attributes]",
+            ),
+        )
+        createModule(root, "platform/example")
 
         assertFailsWith<GradleException> { PlatformTargetCatalog.load(catalog, root) }
     }

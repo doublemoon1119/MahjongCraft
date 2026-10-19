@@ -57,8 +57,8 @@ class PlatformTargetsSettingsPluginTest {
         ).build()
 
         assertTrue(result.output.contains(":example:example-mahjong-extension"), result.output)
-        assertTrue(result.output.contains(":minecraft_example_common"), result.output)
-        assertTrue(result.output.contains(":minecraft_example_v1.20.1_fabric"), result.output)
+        assertTrue(result.output.contains(":example-minecraft_common"), result.output)
+        assertTrue(result.output.contains(":example-minecraft_v1.20.1_fabric"), result.output)
     }
 
     /** 未指定或明確關閉範例時，不應載入範例 project。 */
@@ -69,8 +69,8 @@ class PlatformTargetsSettingsPluginTest {
         listOf(emptyList(), listOf("-PmahjongcraftExample=false")).forEach { flag ->
             val result = runner(root).withArguments(listOf("projects", "-PmahjongcraftTarget=minecraft-test") + flag).build()
             assertTrue(!result.output.contains(":example:example-mahjong-extension"), result.output)
-            assertTrue(!result.output.contains(":minecraft_example_common"), result.output)
-            assertTrue(!result.output.contains(":minecraft_example_v1.20.1_fabric"), result.output)
+            assertTrue(!result.output.contains(":example-minecraft_common"), result.output)
+            assertTrue(!result.output.contains(":example-minecraft_v1.20.1_fabric"), result.output)
         }
     }
 
@@ -135,9 +135,30 @@ class PlatformTargetsSettingsPluginTest {
         val first = runner(root).withArguments(*arguments).build()
         val second = runner(root).withArguments(*arguments).build()
 
-        assertTrue(first.output.contains(":minecraft_example_common"), first.output)
-        assertTrue(second.output.contains(":minecraft_example_common"), second.output)
+        assertTrue(first.output.contains(":example-minecraft_common"), first.output)
+        assertTrue(second.output.contains(":example-minecraft_common"), second.output)
         assertTrue(second.output.contains("Configuration cache entry reused"), second.output)
+    }
+
+    /** 正式與範例的同名 Minecraft module 必須映射到不同的 Gradle project path。 */
+    @Test
+    fun `keeps formal and example minecraft project names distinct`() = withFixture { root ->
+        prepareBuild(root)
+        root.toPath().resolve("platform/minecraft/common").createDirectories()
+        root.resolve("platform/minecraft/common/build.gradle.kts").writeText("")
+        root.resolve("gradle/platform-targets.toml").writeText(
+            root.resolve("gradle/platform-targets.toml").readText()
+                .replace("modules = [\"platform/test\"]", "modules = [\"platform/test\", \"platform/minecraft/common\"]"),
+        )
+
+        val result = runner(root).withArguments(
+            "projects",
+            "-PmahjongcraftTarget=minecraft-test",
+            "-PmahjongcraftExample=true",
+        ).build()
+
+        assertTrue(result.output.contains(":minecraft_common"), result.output)
+        assertTrue(result.output.contains(":example-minecraft_common"), result.output)
     }
 
     /**
@@ -149,8 +170,8 @@ class PlatformTargetsSettingsPluginTest {
         root.resolve("gradle").mkdirs()
         root.toPath().resolve("platform/test").createDirectories()
         root.toPath().resolve("example/mahjong-extension").createDirectories()
-        root.toPath().resolve("platform/minecraft/example/common").createDirectories()
-        root.toPath().resolve("platform/minecraft/example/v1.20.1/fabric").createDirectories()
+        root.toPath().resolve("example/platform/minecraft/common").createDirectories()
+        root.toPath().resolve("example/platform/minecraft/v1.20.1/fabric").createDirectories()
         root.resolve("gradle/platform-targets.toml").writeText(
             """
             schema-version = 1
@@ -163,8 +184,8 @@ class PlatformTargetsSettingsPluginTest {
             modules = ["platform/test"]
             example-modules = [
                 "example/mahjong-extension",
-                "platform/minecraft/example/common",
-                "platform/minecraft/example/v1.20.1/fabric",
+                "example/platform/minecraft/common",
+                "example/platform/minecraft/v1.20.1/fabric",
             ]
 
             [targets.attributes]
@@ -192,8 +213,8 @@ class PlatformTargetsSettingsPluginTest {
         )
         root.resolve("platform/test/build.gradle.kts").writeText("")
         root.resolve("example/mahjong-extension/build.gradle.kts").writeText("")
-        root.resolve("platform/minecraft/example/common/build.gradle.kts").writeText("")
-        root.resolve("platform/minecraft/example/v1.20.1/fabric/build.gradle.kts").writeText("")
+        root.resolve("example/platform/minecraft/common/build.gradle.kts").writeText("")
+        root.resolve("example/platform/minecraft/v1.20.1/fabric/build.gradle.kts").writeText("")
     }
 
     /**

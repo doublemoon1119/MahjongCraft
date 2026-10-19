@@ -196,7 +196,8 @@ internal fun expectedModuleReadmes(project: Project): Set<File> {
         add(root.resolve("platform"))
         add(root.resolve("platform/minecraft"))
         add(root.resolve("example"))
-        add(root.resolve("platform/minecraft/example"))
+        add(root.resolve("example/platform"))
+        add(root.resolve("example/platform/minecraft"))
     }
     return directories.mapTo(linkedSetOf()) { it.resolve("README.md") }
 }

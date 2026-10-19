@@ -24,6 +24,7 @@ does not promise future rules, platforms, interfaces, or release schedules.
 | [Extension API](mahjong-extension-api/README.md) | Public registration surface for third-party MahjongCraft extensions. |
 | [Bundled extensions](mahjong-bundled-extensions/README.md) | Built-in rule integrations registered through the extension API. |
 | [Platforms](platform/README.md) | Runtime adapters, currently including Minecraft. |
+| [Examples](example/README.md) | Opt-in extension examples and their platform adapters. |
 | [Testing](testing/README.md) | Shared test fixtures for logic and flow modules. |
 | [Build logic](build-logic/README.md) | Gradle conventions and platform-target selection. |
 
