@@ -104,13 +104,13 @@ class ThreePlayerRiichiRuleModule(
     }
 
     /** 建立 108 張的三人麻將牌山。 */
-    override fun createWallFactory(): ThreePlayerRiichiWallFactory = ThreePlayerRiichiWallFactory(config)
+    override fun createWallFactory(playerCount: Int): ThreePlayerRiichiWallFactory = ThreePlayerRiichiWallFactory(config)
 
     /** 建立在三面牌牆之間數骰子的開門 policy。 */
     override fun createWallOpeningPolicy(): ThreePlayerRiichiWallOpeningPolicy = ThreePlayerRiichiWallOpeningPolicy
 
     /** 建立三面、每面 18 墩的牌牆布局。 */
-    override fun createWallLayout(): ThreePlayerRiichiWallLayout = ThreePlayerRiichiWallLayout(config)
+    override fun createWallLayout(playerCount: Int): ThreePlayerRiichiWallLayout = ThreePlayerRiichiWallLayout(config)
 
     /** 與四人日麻共用的王牌區布局；嶺上牌為 8 張。 */
     override fun createPhysicalWallLayoutPolicy(): PhysicalWallLayoutPolicy = RiichiPhysicalWallLayoutPolicy(rinshanTileCount = config.rinshanTileCount)

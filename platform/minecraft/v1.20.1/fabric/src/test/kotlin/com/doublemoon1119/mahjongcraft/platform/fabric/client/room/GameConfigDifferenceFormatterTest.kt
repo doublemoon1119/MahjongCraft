@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationCo
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolution
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolverRegistry
+import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
@@ -140,7 +141,7 @@ class GameConfigDifferenceFormatterTest {
 
     private object TestPreparationResolver : RoundPreparationResolver {
         override val ruleModuleId: String = "example:rule"
-        override val defaultRoundPreparationConfig: RoundPreparationConfig = RoundPreparationConfig(30)
+        override fun roundPreparationConfig(ruleConfig: MahjongRuleConfig): RoundPreparationConfig = RoundPreparationConfig(30)
 
         override fun begin(tableState: TableState, ruleModule: MahjongRuleModule<*>) = error("not used")
 

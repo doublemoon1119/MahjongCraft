@@ -64,7 +64,7 @@ class GameInitializerTest {
     @Test
     fun `test initialize leaves correct remaining wall count`() {
         val playerIds = List(4) { Uuid.random() }
-        val totalTileCount = module.createWallFactory().create().remainingCount
+        val totalTileCount = module.createWallFactory(module.config.maxPlayers).create().remainingCount
         val table = GameInitializer.initialize(Uuid.random(), playerIds, module).tableState
 
         val expectedRemaining = totalTileCount - module.config.deadTileCount - playerIds.size * module.config.initialHandSize
@@ -97,7 +97,7 @@ class GameInitializerTest {
     @Test
     fun `test initialize accounts for every tile across hands, remaining wall, and dead wall`() {
         val playerIds = List(4) { Uuid.random() }
-        val totalTileCount = module.createWallFactory().create().remainingCount
+        val totalTileCount = module.createWallFactory(module.config.maxPlayers).create().remainingCount
         val table = GameInitializer.initialize(Uuid.random(), playerIds, module).tableState
 
         val dealtTileIds = table.players.flatMap { it.hand.tiles }.map { it.id }
@@ -463,7 +463,7 @@ class GameInitializerTest {
             comboCount = 0,
             prevalentWind = Wind.EAST,
         )
-        val totalTileCount = module.createWallFactory().create().remainingCount
+        val totalTileCount = module.createWallFactory(module.config.maxPlayers).create().remainingCount
 
         val table = GameInitializer.startNextRound(Uuid.random(), roundAdvancement, previousDynamicRuleState = null, module).tableState
 

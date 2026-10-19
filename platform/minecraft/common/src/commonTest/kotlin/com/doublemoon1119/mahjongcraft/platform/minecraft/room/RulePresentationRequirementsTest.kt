@@ -97,6 +97,20 @@ class RulePresentationRequirementsTest {
         assertFalse(RulePresentationRequirements.isPlayable(RiichiRuleConfig(), presentations(definition(TEST_RULE_ID, selectable = true)), withoutWall))
     }
 
+    /** 實際開局人數必須符合規則與標準桌限制；合法人數仍須有對應的牌牆布局。 */
+    @Test
+    fun `actual player count respects rule and standard table limits`() {
+        val module = adjustedModule(layoutPlayerCounts = setOf(4))
+
+        assertNull(RulePresentationRequirements.unmetRequirement(module, playerCount = 4))
+        assertNotNull(RulePresentationRequirements.unmetRequirement(module, playerCount = 3))
+        assertTrue(
+            assertNotNull(RulePresentationRequirements.unmetRequirement(module, playerCount = 5))
+                .contains("standard table"),
+        )
+        assertNotNull(RulePresentationRequirements.unmetRequirement(adjustedModule(providesLayout = false), playerCount = 4))
+    }
+
     /** 內建台麻的設定呈現不可選，因此不能用於房間設定與開局。 */
     @Test
     fun `unselectable built in rule is not playable`() {
@@ -169,17 +183,20 @@ class RulePresentationRequirementsTest {
      * @param providesLayout 是否提供牌山布局。
      * @param diceCount 每輪開門擲出的骰子數量；null 表示不提供擲骰程序。
      * @param emptyOpeningProcedure 是否提供不需要擲骰的開局程序。
+     * @param layoutPlayerCounts 提供牌牆布局的玩家人數；null 表示所有設定支援的人數都提供。
      * @return 測試規則模組。
      */
     private fun adjustedModule(
         providesLayout: Boolean = true,
         diceCount: Int? = 2,
         emptyOpeningProcedure: Boolean = false,
+        layoutPlayerCounts: Set<Int>? = null,
     ): MahjongRuleModule<RiichiRuleConfig> = AdjustedWallModule(
         delegate = RiichiRuleModule(TEST_RULE_ID, RiichiRuleConfig()),
         providesLayout = providesLayout,
         diceCount = diceCount,
         emptyOpeningProcedure = emptyOpeningProcedure,
+        layoutPlayerCounts = layoutPlayerCounts,
     )
 
     /**
@@ -189,16 +206,22 @@ class RulePresentationRequirementsTest {
      * @property providesLayout 是否提供牌山布局。
      * @property diceCount 每輪開門擲出的骰子數量；null 表示不提供擲骰程序。
      * @property emptyOpeningProcedure 是否提供不需要擲骰的開局程序。
+     * @property layoutPlayerCounts 提供牌牆布局的玩家人數；null 表示所有人數都提供。
      */
     private class AdjustedWallModule(
         private val delegate: RiichiRuleModule,
         private val providesLayout: Boolean,
         private val diceCount: Int?,
         private val emptyOpeningProcedure: Boolean,
+        private val layoutPlayerCounts: Set<Int>?,
     ) : MahjongRuleModule<RiichiRuleConfig> by delegate {
-        override fun createWallLayout(): TileWallLayout? = if (providesLayout) delegate.createWallLayout() else null
+        override fun createWallLayout(playerCount: Int): TileWallLayout? = if (providesLayout && (layoutPlayerCounts == null || playerCount in layoutPlayerCounts)) {
+            delegate.createWallLayout(playerCount)
+        } else {
+            null
+        }
 
-        override fun createRoundOpeningProcedure(): RoundOpeningProcedure? = when {
+        override fun createRoundOpeningProcedure(playerCount: Int): RoundOpeningProcedure? = when {
             emptyOpeningProcedure -> EmptyOpeningProcedure
             diceCount != null -> FixedDiceOpeningProcedure(diceCount)
             else -> null

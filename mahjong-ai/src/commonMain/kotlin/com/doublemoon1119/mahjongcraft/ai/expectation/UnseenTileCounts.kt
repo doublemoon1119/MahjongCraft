@@ -79,7 +79,7 @@ internal class UnseenTileCounts private constructor(
             countsVisibleTiles: Boolean,
         ): UnseenTileCounts {
             val interpretation = module.createTileInterpretationPolicy()
-            val composition = module.createWallFactory().create().getAllTiles().groupingBy { it.tile }.eachCount()
+            val composition = module.createWallFactory(snapshot.players.size).create().getAllTiles().groupingBy { it.tile }.eachCount()
             val seenTiles = if (countsVisibleTiles) snapshot.visibleTiles() else snapshot.players.first { it.id == selfId }.heldTiles()
             val seen = seenTiles.map { it.tile }
                 .groupingBy { face -> if (face in composition) face else interpretation.canonicalize(face) }

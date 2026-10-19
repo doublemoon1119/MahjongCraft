@@ -96,7 +96,7 @@ internal class SeatSetupScenario(
         val module = riichiFamilyScenarioModule(currentGame, multiRonPolicy)
         val config = module.config
         val opening = DEFAULT_WALL_OPENING
-        val inventory = module.createWallFactory().create().getAllTiles().sortedBy { it.tile.stableSortKey() }
+        val inventory = module.createWallFactory(module.config.maxPlayers).create().getAllTiles().sortedBy { it.tile.stableSortKey() }
         val availableTiles = inventory.toMutableList()
 
         val explicitSeats = seatSpecs.map { spec -> spec.takeExplicitTiles(availableTiles) }
@@ -108,7 +108,7 @@ internal class SeatSetupScenario(
         val liveTiles = wallFront + availableTiles
         val consumedTiles = seats.flatMap { it.allTiles }
         val initialLiveTiles = consumedTiles + liveTiles
-        val templateLayout = requireNotNull(module.createWallLayout()).resolve(inventory, opening)
+        val templateLayout = requireNotNull(module.createWallLayout(module.config.maxPlayers)).resolve(inventory, opening)
         val structure = remapStructure(templateLayout, initialLiveTiles, initialReservedTiles)
         val layoutResult = TileWallLayoutResult(initialLiveTiles, initialReservedTiles, structure)
         val visibleWallTileIds = (liveTiles + initialReservedTiles).mapTo(mutableSetOf()) { tile -> tile.id }

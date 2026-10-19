@@ -84,7 +84,7 @@ class ThreePlayerRiichiRuleModuleTest {
     /** 驗證牌山共 108 張，萬子只有一萬與九萬，赤牌為五筒與五條各一張。 */
     @Test
     fun `test wall has 108 tiles without middle characters`() {
-        val tiles = module.createWallFactory().create().getAllTiles()
+        val tiles = module.createWallFactory(module.config.maxPlayers).create().getAllTiles()
 
         assertEquals(108, tiles.size)
         val characters = tiles.map { it.tile.riichiCanonical }.filterIsInstance<Tile.Numeric>().filter { it.suit == Tile.Suit.Character }
@@ -108,7 +108,7 @@ class ThreePlayerRiichiRuleModuleTest {
     @Test
     fun `test wall layout uses three sides of eighteen stacks`() {
         val tiles = List(108) { FakeIdentifiedTileFactory.create(Tile.Honor.East) }
-        val result = module.createWallLayout().resolve(tiles, WallOpening(wallSideOffsetFromDealer = 2, stacksFromRight = 7))
+        val result = module.createWallLayout(module.config.maxPlayers).resolve(tiles, WallOpening(wallSideOffsetFromDealer = 2, stacksFromRight = 7))
 
         assertEquals(94, result.drawOrder.size)
         assertEquals(55, result.drawOrder.size - 3 * config.initialHandSize)

@@ -18,6 +18,9 @@ internal object SharedGameFlowConfigPresentation {
     /** 共用流程設定分類。 */
     const val FLOW = "mahjongcraft:flow"
 
+    /** 玩家局前準備時間的可設定秒數範圍，供欄位與既有設定檢查共用。 */
+    val preparationTimeRange: IntRange = 1..3600
+
     /**
      * 將保留的流程分類與欄位附加到規則呈現定義。
      *
@@ -29,7 +32,7 @@ internal object SharedGameFlowConfigPresentation {
         definition: GameConfigPresentationDefinition,
         roundPreparationConfig: RoundPreparationConfig?,
     ): GameConfigPresentationDefinition {
-        require(roundPreparationConfig == null || roundPreparationConfig.baseSeconds in 1..3600) {
+        require(roundPreparationConfig == null || roundPreparationConfig.baseSeconds in preparationTimeRange) {
             "Round preparation base time for ${definition.ruleModuleId} must be between 1 and 3600 seconds"
         }
         require(definition.categories.none { it.id == FLOW }) {
@@ -85,8 +88,8 @@ internal object SharedGameFlowConfigPresentation {
     private fun preparationBaseSecondsField(config: RoundPreparationConfig): GameConfigFieldDefinition = intField(
         "preparation_base_seconds",
         FLOW,
-        1,
-        3600,
+        preparationTimeRange.first,
+        preparationTimeRange.last,
         read = { it.flowConfig.roundPreparation?.baseSeconds ?: config.baseSeconds },
         update = { gameConfig, number ->
             gameConfig.copy(

@@ -298,6 +298,20 @@ class RoomSettingsDraftTest {
         assertFalse(draft.isReturningToRoomAfterApply)
     }
 
+    /** 規則設定讓欄位消失時，該欄位留下的無效標記不應繼續阻擋送出。 */
+    @Test
+    fun `removes invalid flags for fields no longer presented`() {
+        val draft = RoomSettingsDraft()
+        draft.beginIfAbsent(AUTHORITATIVE)
+        draft.updateField(rejectingField(), GameConfigPresentationValue.IntegerValue(1))
+
+        assertTrue(draft.hasInvalidFields)
+
+        draft.replaceConfig(AUTHORITATIVE, availableFieldIds = emptySet())
+
+        assertFalse(draft.hasInvalidFields)
+    }
+
     /** 房間清空時丟棄草稿。 */
     @Test
     fun `drops the draft when the room is cleared`() {

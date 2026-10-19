@@ -37,13 +37,18 @@
   the shared turn-time and spectating settings when the rule is registered. Do not add another copy.
 - Only add settings the rule can use. A rule without tile selection or exchange before a round has no
   round-preparation time setting.
-- Preparation settings are absent by default. A preparation resolver that asks players to choose before
-  a round supplies its default `RoundPreparationConfig`. The room settings use that registration to add
-  the preparation-time field; do not declare a second capability flag in the presentation definition.
+- Preparation settings are absent by default. A preparation resolver decides from the current rule
+  configuration whether players need to choose before a round, and supplies a default
+  `RoundPreparationConfig` only when needed. Do not cache that answer solely by rule ID: an option can
+  enable or disable preparation within the same rule. The room settings use that decision to add the
+  preparation-time field; do not declare a second capability flag in the presentation definition.
 - Creating defaults or changing rules adds that rule's preparation configuration, or removes it when the
   new rule has none. Other shared flow settings are preserved. Preparation time does not consume the
   ordinary turn's reserve time. A player-choice preparation step without its configuration is an error,
   not an instruction to silently supply a timer or wait forever.
+- Changing a rule option uses the same decision. Enabling preparation supplies its default time when
+  none exists; keeping it enabled preserves the chosen time; disabling it removes both the setting and
+  its field. Rebuild submitted rule options before deciding which shared fields the server may accept.
 - MahjongCraft owns the shared fields' IDs, allowed values, update functions and translations. A rule that
   reuses one of those IDs is rejected with an error; neither definition silently replaces the other.
 - Screens, summaries, history and server checks use the same registered fields. Test that a third-party
@@ -55,6 +60,10 @@
 
 - Player seats and wall sides are separate. Use the complete match roster to place players; do not use
   online players, winners, a partial tile update, or the wall's side count as the player count.
+- Wall creation and layout also receive the actual complete roster's player count. Use that same count
+  when opening a round, starting the next one and reconstructing presentation. A rule's minimum or
+  maximum allowed players is a constraint, not the number playing this match; do not add another room
+  setting or mutable module state merely to pass that number around.
 - A rule's `TileWallLayout.sideArrangement` specifies which standard sides hold its logical wall faces
   and whether those sides stay fixed or rotate with the dealer. This is a rule design, not a room option.
   It must return the same arrangement for the same rule configuration and dealer seat, including after

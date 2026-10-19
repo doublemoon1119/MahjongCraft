@@ -57,14 +57,23 @@ class FabricGameConfigTextFormatter(
             return@runCatching Text.empty()
                 .append(ruleName(oldModuleId)).append(Text.literal(" → ")).append(ruleName(newModuleId))
         }
-        val definition = presentations.find(newModuleId) ?: return@runCatching full(new)
-        val changed = definition.fields.filter { field -> field.read(old) != field.read(new) }
+        val definition = presentations.find(newModuleId, new.ruleConfig) ?: return@runCatching full(new)
+        val oldDefinition = presentations.find(oldModuleId, old.ruleConfig) ?: return@runCatching full(new)
+        val oldFieldsById = oldDefinition.fields.associateBy { it.id }
+        if (definition.fields.any { it.id !in oldFieldsById } || oldDefinition.fields.any { it.id !in definition.fields.map { field -> field.id } }) {
+            return@runCatching full(new)
+        }
+        val changed = definition.fields.filter { field ->
+            val oldField = oldFieldsById.getValue(field.id)
+            oldField.read(old) != field.read(new)
+        }
         if (changed.isEmpty()) return@runCatching full(new)
         Text.empty().also { result ->
             changed.forEachIndexed { index, field ->
                 if (index > 0) result.append("\n")
+                val oldField = oldFieldsById.getValue(field.id)
                 result.append(Text.translatable(field.nameTranslationKey)).append(Text.literal(": "))
-                    .append(gameConfigPresentationText(field.read(old), field.editor)).append(Text.literal(" → "))
+                    .append(gameConfigPresentationText(oldField.read(old), oldField.editor)).append(Text.literal(" → "))
                     .append(gameConfigPresentationText(field.read(new), field.editor))
             }
         }

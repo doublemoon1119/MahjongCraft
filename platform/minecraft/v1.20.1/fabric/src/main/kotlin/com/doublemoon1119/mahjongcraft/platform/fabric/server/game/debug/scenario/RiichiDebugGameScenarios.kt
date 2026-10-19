@@ -93,7 +93,7 @@ private object RiichiBeforeSuuchaRiichiScenario : DebugGameScenario {
         val config = scenarioConfig(currentGame)
         val module = RiichiRuleModule(BuiltInRuleModuleIds.RIICHI, config)
         val opening = DEFAULT_WALL_OPENING
-        val inventory = module.createWallFactory().create().getAllTiles().sortedBy { it.tile.stableSortKey() }
+        val inventory = module.createWallFactory(module.config.maxPlayers).create().getAllTiles().sortedBy { it.tile.stableSortKey() }
         val availableTiles = inventory.toMutableList()
         val invokingStandingTiles = takeTiles(
             availableTiles,
@@ -106,7 +106,7 @@ private object RiichiBeforeSuuchaRiichiScenario : DebugGameScenario {
         val consumedTiles = invokingStandingTiles + opponentHands.flatten() + opponentRiichiTiles + invokingDrawnTile
         val initialReservedTiles = takeFirst(availableTiles, config.deadTileCount)
         val initialLiveTiles = consumedTiles + availableTiles
-        val templateLayout = requireNotNull(module.createWallLayout()).resolve(inventory, opening)
+        val templateLayout = requireNotNull(module.createWallLayout(module.config.maxPlayers)).resolve(inventory, opening)
         val structure = remapStructure(templateLayout, initialLiveTiles, initialReservedTiles)
         val layoutResult = TileWallLayoutResult(initialLiveTiles, initialReservedTiles, structure)
         val visibleWallTileIds = (availableTiles + initialReservedTiles).mapTo(mutableSetOf()) { tile -> tile.id }
@@ -199,7 +199,7 @@ private object RiichiBeforePaoPonScenario : DebugGameScenario {
         val config = scenarioConfig(currentGame)
         val module = RiichiRuleModule(BuiltInRuleModuleIds.RIICHI, config)
         val opening = DEFAULT_WALL_OPENING
-        val inventory = module.createWallFactory().create().getAllTiles().sortedBy { it.tile.stableSortKey() }
+        val inventory = module.createWallFactory(module.config.maxPlayers).create().getAllTiles().sortedBy { it.tile.stableSortKey() }
         val availableTiles = inventory.toMutableList()
         val invokingMelds = PAO_INVOKING_MELD_TILES.map { tile ->
             Meld(
@@ -221,7 +221,7 @@ private object RiichiBeforePaoPonScenario : DebugGameScenario {
         val initialReservedTiles = takeFirst(availableTiles, config.deadTileCount)
         val liveTiles = winningDraws + availableTiles
         val initialLiveTiles = consumedTiles + liveTiles
-        val templateLayout = requireNotNull(module.createWallLayout()).resolve(inventory, opening)
+        val templateLayout = requireNotNull(module.createWallLayout(module.config.maxPlayers)).resolve(inventory, opening)
         val structure = remapStructure(templateLayout, initialLiveTiles, initialReservedTiles)
         val layoutResult = TileWallLayoutResult(initialLiveTiles, initialReservedTiles, structure)
         val visibleWallTileIds = (liveTiles + initialReservedTiles).mapTo(mutableSetOf()) { tile -> tile.id }
@@ -373,7 +373,7 @@ private class RiichiBeforeAnkanScenario(
 
         val config = scenarioConfig(currentGame)
         val module = RiichiRuleModule(BuiltInRuleModuleIds.RIICHI, config)
-        val inventory = module.createWallFactory().create().getAllTiles().sortedBy { it.tile.stableSortKey() }
+        val inventory = module.createWallFactory(module.config.maxPlayers).create().getAllTiles().sortedBy { it.tile.stableSortKey() }
         val availableTiles = inventory.toMutableList()
         val requestedKanCount = completedKanCount + 1
         val kanGroups = selectCompleteGroups(availableTiles, requestedKanCount)
@@ -387,7 +387,7 @@ private class RiichiBeforeAnkanScenario(
         val consumedFromFront = initialDealOrder + priorNormalDraws + dealerDraw
         val initialReservedTiles = takeFirst(availableTiles, config.deadTileCount)
         val initialLiveTiles = consumedFromFront + availableTiles
-        val templateLayout = requireNotNull(module.createWallLayout()).resolve(inventory, opening)
+        val templateLayout = requireNotNull(module.createWallLayout(module.config.maxPlayers)).resolve(inventory, opening)
         val structure = remapStructure(templateLayout, initialLiveTiles, initialReservedTiles).toMutableMap()
         val initialLayoutResult = TileWallLayoutResult(initialLiveTiles, initialReservedTiles, structure)
         val initialPhysicalLayout = when (

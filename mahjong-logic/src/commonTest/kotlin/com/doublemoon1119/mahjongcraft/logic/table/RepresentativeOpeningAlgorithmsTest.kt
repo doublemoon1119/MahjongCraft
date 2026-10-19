@@ -240,10 +240,10 @@ class RepresentativeOpeningAlgorithmsTest {
     ): MahjongRuleModule<RiichiRuleConfig> {
         val delegate = RiichiRuleModule(id = "test:riichi", config = RiichiRuleConfig())
         return object : MahjongRuleModule<RiichiRuleConfig> by delegate {
-            override fun createRoundOpeningProcedure(): RoundOpeningProcedure = procedure
+            override fun createRoundOpeningProcedure(playerCount: Int): RoundOpeningProcedure = procedure
 
-            override fun createWallLayout(): TileWallLayout {
-                val layout = requireNotNull(delegate.createWallLayout())
+            override fun createWallLayout(playerCount: Int): TileWallLayout {
+                val layout = requireNotNull(delegate.createWallLayout(playerCount))
                 return object : TileWallLayout by layout {
                     override fun resolve(
                         shuffledTiles: List<IdentifiedTile>,

@@ -1,12 +1,14 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.room
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRoundPreparation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.SpectatingPolicy
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolution
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolverRegistry
+import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
@@ -58,6 +60,36 @@ class GameConfigPresentationRegistryTest {
         assertEquals(
             47,
             (preparation.read(configWithPreparation) as GameConfigPresentationValue.IntegerValue).number,
+        )
+    }
+
+    /** 同一規則的準備開關改變時，只在啟用的設定中加入準備時間欄位。 */
+    @Test
+    fun `config aware preparation presentation follows the rule config`() {
+        val registry = GameConfigPresentationRegistryImpl(
+            RoundPreparationResolverRegistry().apply { register(ConfigAwarePreparationResolver) },
+        )
+        registry.register(minimalDefinition())
+
+        val enabled = assertNotNull(registry.find("test:rule", RiichiRuleConfig(redDoraCount = 3)))
+        val disabled = assertNotNull(registry.find("test:rule", RiichiRuleConfig(redDoraCount = 0)))
+
+        assertTrue(enabled.fields.any { it.id == "mahjongcraft:preparation_base_seconds" })
+        assertTrue(disabled.fields.none { it.id == "mahjongcraft:preparation_base_seconds" })
+
+        val retained = registry.normalizeFlowConfig(
+            ruleModuleId = "test:rule",
+            ruleConfig = RiichiRuleConfig(redDoraCount = 3),
+            current = GameFlowConfig(roundPreparation = RoundPreparationConfig(47)),
+        )
+        assertEquals(47, retained.roundPreparation?.baseSeconds)
+        assertEquals(
+            null,
+            registry.normalizeFlowConfig(
+                ruleModuleId = "test:rule",
+                ruleConfig = RiichiRuleConfig(redDoraCount = 0),
+                current = retained,
+            ).roundPreparation,
         )
     }
 
@@ -275,13 +307,30 @@ class GameConfigPresentationRegistryTest {
     /**
      * 僅提供預設時間的測試解析器，不執行開局流程。
      *
-     * @param defaultSeconds 登記時提供的預設準備秒數。
+     * @property defaultSeconds 登記時提供的預設準備秒數。
      */
     private class TestPreparationResolver(
-        defaultSeconds: Int,
+        private val defaultSeconds: Int,
     ) : RoundPreparationResolver {
         override val ruleModuleId: String = "test:rule"
-        override val defaultRoundPreparationConfig: RoundPreparationConfig = RoundPreparationConfig(defaultSeconds)
+        override fun roundPreparationConfig(ruleConfig: MahjongRuleConfig): RoundPreparationConfig = RoundPreparationConfig(defaultSeconds)
+
+        override fun begin(
+            tableState: TableState,
+            ruleModule: MahjongRuleModule<*>,
+        ): Nothing = error("not used")
+
+        override fun resolve(
+            tableState: TableState,
+            preparation: PendingRoundPreparation,
+            ruleModule: MahjongRuleModule<*>,
+        ): RoundPreparationResolution = error("not used")
+    }
+
+    private object ConfigAwarePreparationResolver : RoundPreparationResolver {
+        override val ruleModuleId: String = "test:rule"
+
+        override fun roundPreparationConfig(ruleConfig: MahjongRuleConfig): RoundPreparationConfig? = if ((ruleConfig as? RiichiRuleConfig)?.redDoraCount == 3) RoundPreparationConfig(30) else null
 
         override fun begin(
             tableState: TableState,

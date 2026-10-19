@@ -166,7 +166,7 @@ class GameInitializerOpeningTest {
     private fun module(procedure: RoundOpeningProcedure): MahjongRuleModule<RiichiRuleConfig> {
         val delegate = RiichiRuleModule(id = "test:riichi", config = RiichiRuleConfig())
         return object : MahjongRuleModule<RiichiRuleConfig> by delegate {
-            override fun createRoundOpeningProcedure(): RoundOpeningProcedure = procedure
+            override fun createRoundOpeningProcedure(playerCount: Int): RoundOpeningProcedure = procedure
         }
     }
 

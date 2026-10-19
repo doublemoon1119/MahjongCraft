@@ -2,11 +2,12 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.room
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolverRegistry
+import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 
 /**
  * [GameConfigPresentationRegistry] 的記憶體實作。
  *
- * @property roundPreparationResolvers 核心註冊的局前準備解析器；用來決定哪些規則有準備時間欄位。
+ * @property roundPreparationResolvers 核心註冊的局前準備解析器；依當前規則設定決定是否需要準備時間欄位。
  */
 class GameConfigPresentationRegistryImpl(
     private val roundPreparationResolvers: RoundPreparationResolverRegistry,
@@ -22,18 +23,56 @@ class GameConfigPresentationRegistryImpl(
         check(!isFrozen) { "Game config presentation registry is frozen" }
         val normalized = SharedGameFlowConfigPresentation.normalize(
             definition = definition,
-            roundPreparationConfig = roundPreparationResolvers.findDefaultConfig(definition.ruleModuleId),
+            roundPreparationConfig = roundPreparationResolvers.findDefaultConfig(
+                definition.ruleModuleId,
+                definition.defaultRuleConfig(),
+            ),
         )
-        require(definitions.putIfAbsent(normalized.ruleModuleId, normalized.snapshot()) == null) {
+        require(definitions.putIfAbsent(normalized.ruleModuleId, definition.snapshot()) == null) {
             "Duplicate game config presentation: ${definition.ruleModuleId}"
         }
     }
 
-    override fun find(ruleModuleId: String): GameConfigPresentationDefinition? = definitions[ruleModuleId]?.snapshot()
+    override fun find(ruleModuleId: String): GameConfigPresentationDefinition? = definitions[ruleModuleId]?.let { definition ->
+        find(ruleModuleId, definition.defaultRuleConfig())
+    }
 
-    override fun defaultFlowConfig(ruleModuleId: String, current: GameFlowConfig): GameFlowConfig = current.copy(
-        roundPreparation = roundPreparationResolvers.findDefaultConfig(ruleModuleId),
+    override fun find(ruleModuleId: String, ruleConfig: MahjongRuleConfig): GameConfigPresentationDefinition? = definitions[ruleModuleId]?.let { definition ->
+        SharedGameFlowConfigPresentation.normalize(
+            definition = definition,
+            roundPreparationConfig = roundPreparationResolvers.findDefaultConfig(ruleModuleId, ruleConfig),
+        ).snapshot()
+    }
+
+    override fun defaultFlowConfig(ruleModuleId: String, current: GameFlowConfig): GameFlowConfig = definitions[ruleModuleId]?.let { definition ->
+        defaultFlowConfig(
+            ruleModuleId = ruleModuleId,
+            ruleConfig = definition.defaultRuleConfig(),
+            current = current,
+        )
+    } ?: current.copy(roundPreparation = null)
+
+    override fun defaultFlowConfig(
+        ruleModuleId: String,
+        ruleConfig: MahjongRuleConfig,
+        current: GameFlowConfig,
+    ): GameFlowConfig = current.copy(
+        roundPreparation = roundPreparationResolvers.findDefaultConfig(ruleModuleId, ruleConfig),
     )
+
+    override fun normalizeFlowConfig(
+        ruleModuleId: String,
+        ruleConfig: MahjongRuleConfig,
+        current: GameFlowConfig,
+    ): GameFlowConfig {
+        val defaultPreparation = roundPreparationResolvers.findDefaultConfig(ruleModuleId, ruleConfig)
+        val preparation = when {
+            defaultPreparation == null -> null
+            current.roundPreparation?.baseSeconds in SharedGameFlowConfigPresentation.preparationTimeRange -> current.roundPreparation
+            else -> defaultPreparation
+        }
+        return current.copy(roundPreparation = preparation)
+    }
 
     override fun freeze() {
         isFrozen = true

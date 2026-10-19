@@ -56,8 +56,9 @@ class AdvanceAutomaticRoundPreparationUseCase(
                         ?: return@repeat
                     if (currentPreparation.participantPlayerIds.isNotEmpty()) return@repeat
                     val resolution = resolver.resolve(updated.tableState, currentPreparation, module)
+                    val defaultPreparation = resolverRegistry.findDefaultConfig(module.id, updated.tableState.config)
                     if (resolution.nextStep?.participantPlayerIds?.isEmpty() == false &&
-                        updated.flowConfig.roundPreparation == null
+                        (defaultPreparation == null || updated.flowConfig.roundPreparation == null)
                     ) {
                         throw RuleContractViolationException(
                             GameAbortReasonIds.RULE_EXECUTION_FAILED,

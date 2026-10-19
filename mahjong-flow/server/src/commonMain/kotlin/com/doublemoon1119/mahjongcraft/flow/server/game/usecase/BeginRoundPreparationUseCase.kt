@@ -60,7 +60,10 @@ class BeginRoundPreparationUseCase(
                 val resolver = resolverRegistry.find(module.id)
                     ?: return@updateGame game to PreparationBeginUpdate(Outcome.Success(Unit), null)
                 val firstStep = resolver.begin(game.tableState, module)
-                if (firstStep?.participantPlayerIds?.isNotEmpty() == true && game.flowConfig.roundPreparation == null) {
+                val defaultPreparation = resolverRegistry.findDefaultConfig(module.id, game.tableState.config)
+                if (firstStep?.participantPlayerIds?.isNotEmpty() == true &&
+                    (defaultPreparation == null || game.flowConfig.roundPreparation == null)
+                ) {
                     contractBasis = game
                     throw RuleContractViolationException(
                         GameAbortReasonIds.RULE_EXECUTION_FAILED,

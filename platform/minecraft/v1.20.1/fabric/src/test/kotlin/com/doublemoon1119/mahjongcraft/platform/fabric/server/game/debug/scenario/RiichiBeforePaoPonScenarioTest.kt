@@ -111,7 +111,7 @@ class RiichiBeforePaoPonScenarioTest {
             state.tileWall.getAllTiles() + state.reservedWallTiles
 
         assertEquals(placed.size, placed.map { it.id }.toSet().size)
-        assertEquals(module.createWallFactory().create().getAllTiles().size, placed.size)
+        assertEquals(module.createWallFactory(module.config.maxPlayers).create().getAllTiles().size, placed.size)
     }
 
     /**

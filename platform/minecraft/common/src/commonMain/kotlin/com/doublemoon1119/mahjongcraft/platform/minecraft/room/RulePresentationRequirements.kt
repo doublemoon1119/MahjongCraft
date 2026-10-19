@@ -17,13 +17,37 @@ object RulePresentationRequirements {
      * 找出規則模組無法在麻將桌上呈現的原因。
      *
      * @param module 要檢查的規則模組。
+     * @param playerCount 本局完整玩家名單的人數；為 null 時檢查規則宣告的所有支援人數。
      * @return 不符合的原因；符合所有條件時為 null。
      */
-    fun unmetRequirement(module: MahjongRuleModule<*>): String? {
-        if (module.createWallLayout() == null) return "rule ${module.id} provides no wall layout"
-        val openingProcedure = module.createRoundOpeningProcedure()
-            ?: return "rule ${module.id} provides no round opening procedure"
-        val unsupportedDiceCounts = openingProcedure.supportedDiceCounts - MahjongDiceTableLayout.supportedDiceCounts
+    fun unmetRequirement(module: MahjongRuleModule<*>, playerCount: Int? = null): String? {
+        if (playerCount != null && playerCount !in 2..4) {
+            return "rule ${module.id} does not support the standard table player count $playerCount"
+        }
+        if (playerCount != null && playerCount !in module.config.minPlayers..module.config.maxPlayers) {
+            return "rule ${module.id} does not support player count $playerCount"
+        }
+        if (playerCount == null &&
+            (module.config.minPlayers !in 2..4 || module.config.maxPlayers !in module.config.minPlayers..4)
+        ) {
+            return "rule ${module.id} declares player counts outside the standard table range 2..4"
+        }
+        val supportedPlayerCounts = if (playerCount == null) {
+            module.config.minPlayers..module.config.maxPlayers
+        } else {
+            playerCount..playerCount
+        }
+        val missingWallLayouts = supportedPlayerCounts.filter { module.createWallLayout(it) == null }
+        if (missingWallLayouts.isNotEmpty()) {
+            return "rule ${module.id} provides no wall layout for player counts ${missingWallLayouts.joinToString()}"
+        }
+        val openingProcedures = supportedPlayerCounts.mapNotNull { module.createRoundOpeningProcedure(it) }
+        if (openingProcedures.size != supportedPlayerCounts.count()) {
+            return "rule ${module.id} provides no round opening procedure for every supported player count"
+        }
+        val unsupportedDiceCounts = openingProcedures
+            .flatMap { it.supportedDiceCounts }
+            .toSet() - MahjongDiceTableLayout.supportedDiceCounts
         return if (unsupportedDiceCounts.isEmpty()) {
             null
         } else {
@@ -38,15 +62,17 @@ object RulePresentationRequirements {
      * @param ruleConfig 房間設定使用的規則設定。
      * @param presentations 已凍結的設定呈現 registry。
      * @param moduleRegistry 已凍結的規則模組 registry。
+     * @param playerCount 本局完整玩家名單的人數；為 null 時檢查規則宣告的所有支援人數。
      * @return 可以使用時為 true。
      */
     fun isPlayable(
         ruleConfig: MahjongRuleConfig,
         presentations: GameConfigPresentationRegistry,
         moduleRegistry: MahjongModuleRegistry,
+        playerCount: Int? = null,
     ): Boolean {
         val module = moduleRegistry.getModule(ruleConfig)
-        return presentations.find(module.id)?.selectable == true && unmetRequirement(module) == null
+        return presentations.find(module.id, ruleConfig)?.selectable == true && unmetRequirement(module, playerCount) == null
     }
 
     /**

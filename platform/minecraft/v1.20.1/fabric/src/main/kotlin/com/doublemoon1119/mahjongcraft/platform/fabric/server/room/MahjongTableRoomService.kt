@@ -523,7 +523,7 @@ class MahjongTableRoomService(
             }
             val room = roomRepository.getRoom(tableId)
             if (room != null) {
-                if (!isPlayable(room.gameConfig.ruleConfig)) {
+                if (!isPlayable(room.gameConfig.ruleConfig, room.playerIds.size)) {
                     feedbackPublisher.publish(playerId, MinecraftPlayerFeedback.RuleUnavailable)
                     return@launch
                 }
@@ -574,12 +574,14 @@ class MahjongTableRoomService(
      * 房間設定的規則能否用於房間與開局；客戶端畫面只列出可選規則，伺服器仍自行檢查，不信任客戶端送來的設定。
      *
      * @param ruleConfig 房間設定使用的規則設定。
+     * @param playerCount 房間完整玩家名單的人數，包含由 AI 操控的玩家。
      * @return 規則有可選的設定呈現且能在麻將桌上呈現時為 true。
      */
-    private fun isPlayable(ruleConfig: MahjongRuleConfig): Boolean = RulePresentationRequirements.isPlayable(
+    private fun isPlayable(ruleConfig: MahjongRuleConfig, playerCount: Int): Boolean = RulePresentationRequirements.isPlayable(
         ruleConfig = ruleConfig,
         presentations = presentations,
         moduleRegistry = moduleRegistry,
+        playerCount = playerCount,
     )
 
     /**

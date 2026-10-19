@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPol
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameAbortHandler
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
+import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
@@ -89,6 +90,23 @@ class BeginRoundPreparationUseCaseTest {
         assertEquals("test:player", repository.getGame(game.tableState.id)?.pendingRoundPreparation?.stepId)
     }
 
+    /** 規則設定停用玩家準備時，即使殘留舊時間也會拒絕玩家步驟。 */
+    @Test
+    fun `disabled preparation rejects stale timing configuration`() = runTest {
+        val repository = FakeGameRepository()
+        val game = Game(
+            tableState = FakeTableStateFactory.create(
+                id = testGameId,
+                config = RiichiRuleConfig(redDoraCount = 0),
+            ),
+            flowConfig = GameFlowConfig(roundPreparation = RoundPreparationConfig(30)),
+        )
+        repository.setGame(game)
+        val resolvers = RoundPreparationResolverRegistry().apply { register(PlayerResolver) }
+
+        assertFailsWith<RuleContractViolationException> { invoke(repository, resolvers) }
+    }
+
     /**
      * 以指定 resolver 和中止處理器執行局前準備開始流程。
      *
@@ -142,6 +160,8 @@ class BeginRoundPreparationUseCaseTest {
         /** 建立需要玩家輸入的測試解析器。 */
         object PlayerResolver : RoundPreparationResolver {
             override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI
+
+            override fun roundPreparationConfig(ruleConfig: MahjongRuleConfig): RoundPreparationConfig? = if ((ruleConfig as? RiichiRuleConfig)?.redDoraCount == 3) RoundPreparationConfig(30) else null
 
             override fun begin(tableState: TableState, ruleModule: MahjongRuleModule<*>) = PendingRoundPreparation(
                 "test:player",

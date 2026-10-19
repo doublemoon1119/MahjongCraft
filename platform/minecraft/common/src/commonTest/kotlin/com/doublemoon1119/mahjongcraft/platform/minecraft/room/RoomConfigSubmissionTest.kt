@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.state.Authoritati
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolution
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolverRegistry
+import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
@@ -91,6 +92,15 @@ class RoomConfigSubmissionTest {
     @Test
     fun `unselectable rules are unavailable`() {
         assertEquals(RoomConfigSubmission.Result.RuleUnavailable, review(current.copy(ruleConfig = TaiwanRuleConfig())))
+    }
+
+    /** 已登記規則但沒有設定呈現時，不會因查不到 schema 而拋例外。 */
+    @Test
+    fun `missing presentation is unavailable`() {
+        assertEquals(
+            RoomConfigSubmission.Result.RuleUnavailable,
+            review(current, current, customPresentations, modules),
+        )
     }
 
     /** 第三方規則只提供自己的欄位時，共用流程欄位仍可實際修改並通過伺服器審查。 */
@@ -204,6 +214,33 @@ class RoomConfigSubmissionTest {
         )
     }
 
+    /** 規則設定開啟局前準備時接受自訂時間，關閉後清除舊時間並拒絕偷帶的時間。 */
+    @Test
+    fun `config aware preparation is rebuilt from the effective rule config`() {
+        val off = GameConfig(RiichiRuleConfig())
+        val on = off.copy(
+            ruleConfig = RiichiRuleConfig(scoreConfig = RiichiScoreConfig(initialScore = 30_000)),
+            flowConfig = off.flowConfig.copy(roundPreparation = RoundPreparationConfig(47)),
+        )
+        val enabled = assertIs<RoomConfigSubmission.Result.Accepted>(
+            review(on, off, configAwarePreparationPresentations, customModules),
+        )
+        assertEquals(47, enabled.config.flowConfig.roundPreparation?.baseSeconds)
+        assertEquals(
+            RoomConfigSubmission.Result.Accepted(off),
+            review(off, enabled.config, configAwarePreparationPresentations, customModules),
+        )
+        assertEquals(
+            RoomConfigSubmission.Result.Invalid,
+            review(
+                off.copy(flowConfig = off.flowConfig.copy(roundPreparation = RoundPreparationConfig(47))),
+                enabled.config,
+                configAwarePreparationPresentations,
+                customModules,
+            ),
+        )
+    }
+
     /** 草稿先選擇手牌可見度再關閉觀戰，仍可提交；停用控制項不會清除先前選好的偏好。 */
     @Test
     fun `visibility selected before disabling spectating remains a valid draft`() {
@@ -296,6 +333,12 @@ class RoomConfigSubmissionTest {
             register(customDefinition())
         }
 
+        /** 規則設定達到門檻時才提供局前準備的設定呈現。 */
+        val configAwarePreparationPresentations: GameConfigPresentationRegistry =
+            GameConfigPresentationRegistryImpl(preparationResolverRegistry(configAware = true)).apply {
+                register(customDefinition())
+            }
+
         /** 只包含第三方測試規則的模組 registry。 */
         val customModules: MahjongModuleRegistry = MahjongModuleRegistryImpl().apply {
             register(
@@ -358,10 +401,14 @@ class RoomConfigSubmissionTest {
             ),
         )
 
-        private fun preparationResolverRegistry() = RoundPreparationResolverRegistry().apply {
+        private fun preparationResolverRegistry(configAware: Boolean = false) = RoundPreparationResolverRegistry().apply {
             register(object : RoundPreparationResolver {
                 override val ruleModuleId: String = "example:pairing"
-                override val defaultRoundPreparationConfig: RoundPreparationConfig = RoundPreparationConfig(30)
+                override fun roundPreparationConfig(ruleConfig: MahjongRuleConfig): RoundPreparationConfig? = if (!configAware || (ruleConfig as? RiichiRuleConfig)?.scoreConfig?.initialScore == 30_000) {
+                    RoundPreparationConfig(30)
+                } else {
+                    null
+                }
 
                 override fun begin(tableState: TableState, ruleModule: MahjongRuleModule<*>) = error("not used")
 

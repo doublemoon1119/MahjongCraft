@@ -21,7 +21,7 @@ class GameConfigPresentationResolver(
      */
     fun resolve(config: GameConfig): ResolvedGameConfigPresentation {
         val moduleId = modules.getModule(config.ruleConfig).id
-        val definition = presentations.find(moduleId)
+        val definition = presentations.find(moduleId, config.ruleConfig)
         return ResolvedGameConfigPresentation(
             ruleModuleId = moduleId,
             definition = definition,

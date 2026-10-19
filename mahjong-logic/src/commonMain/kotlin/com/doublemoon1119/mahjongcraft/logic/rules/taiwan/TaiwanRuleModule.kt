@@ -36,13 +36,13 @@ class TaiwanRuleModule(
      *
      * @return [TaiwanWallFactory] 實體。
      */
-    override fun createWallFactory(): TaiwanWallFactory = TaiwanWallFactory(config)
+    override fun createWallFactory(playerCount: Int): TaiwanWallFactory = TaiwanWallFactory(config)
 
     /** 建立四人台灣麻將的三骰牌牆開門 policy。 */
     override fun createWallOpeningPolicy(): TaiwanWallOpeningPolicy = TaiwanWallOpeningPolicy
 
     /** 建立台灣麻將的牌牆布局，依 [TaiwanRuleConfig.useFlowerTiles] 支援 136 或 144 張。 */
-    override fun createWallLayout(): TaiwanWallLayout = TaiwanWallLayout(config)
+    override fun createWallLayout(playerCount: Int): TaiwanWallLayout = TaiwanWallLayout(config)
 
     /**
      * 保留台灣麻將目前的流程行為：途中流局連莊，其他結算由莊家是否為得利者決定。

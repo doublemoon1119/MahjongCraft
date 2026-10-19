@@ -124,7 +124,7 @@ class StartGameUseCaseTest {
                     id = "example:multi_roll",
                     factory = { config, id ->
                         object : MahjongRuleModule<RiichiRuleConfig> by RiichiRuleModule(id, config) {
-                            override fun createRoundOpeningProcedure(): RoundOpeningProcedure = object : RoundOpeningProcedure {
+                            override fun createRoundOpeningProcedure(playerCount: Int): RoundOpeningProcedure = object : RoundOpeningProcedure {
                                 override val supportedDiceCounts = setOf(2, 3)
 
                                 override fun next(context: RoundOpeningContext): RoundOpeningStep = when (context.rolls.size) {
@@ -180,7 +180,7 @@ class StartGameUseCaseTest {
                     id = "example:invalid_opening",
                     factory = { config, id ->
                         object : MahjongRuleModule<RiichiRuleConfig> by RiichiRuleModule(id, config) {
-                            override fun createRoundOpeningProcedure(): RoundOpeningProcedure = object : RoundOpeningProcedure {
+                            override fun createRoundOpeningProcedure(playerCount: Int): RoundOpeningProcedure = object : RoundOpeningProcedure {
                                 override val supportedDiceCounts = setOf(2)
 
                                 override fun next(context: RoundOpeningContext): RoundOpeningStep = RoundOpeningStep.Roll(OpeningDiceRollRequest(Uuid.random(), 2))

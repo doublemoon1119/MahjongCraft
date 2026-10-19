@@ -6,9 +6,10 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 /**
  * 以伺服器的房間設定為基礎，重建客戶端送來的新設定，只接受房間畫面本來就能做到的修改。
  *
- * 基礎是房間目前的設定；換了規則時，流程設定會依核心註冊的準備設定重建，規則則換成新規則預設值，與房間畫面切換規則時相同。
- * 接著依新規則設定呈現的可編輯欄位，逐一讀出送來的值，確認符合欄位編輯器的限制（[GameConfigEditorSpec.accepts]）後，
- * 以欄位自己的更新函式套進基礎。重建結果與送來的設定不同，代表客戶端改了畫面上不能改的內容，整份拒絕。
+ * 同一規則以房間目前設定為基礎，切換規則則先換成目標規則的預設值。先驗證並套用規則專屬欄位，
+ * 再依重建後的規則設定決定哪些共用欄位可以修改，最後驗證並套用流程欄位。
+ * 每個值都須符合欄位編輯器的限制（[GameConfigEditorSpec.accepts]）；重建結果與送來的設定不同時，
+ * 代表客戶端改了不可編輯的內容，整份拒絕。
  */
 object RoomConfigSubmission {
     /** 審查送來的房間設定的結果。 */
@@ -42,28 +43,62 @@ object RoomConfigSubmission {
         presentations: GameConfigPresentationRegistry,
         moduleRegistry: MahjongModuleRegistry,
     ): Result {
-        if (!RulePresentationRequirements.isPlayable(submitted.ruleConfig, presentations, moduleRegistry)) {
+        val ruleModuleId = moduleRegistry.getModule(submitted.ruleConfig).id
+        val defaultDefinition = presentations.find(ruleModuleId) ?: return Result.RuleUnavailable
+        if (!defaultDefinition.selectable) return Result.RuleUnavailable
+        val sameRule = moduleRegistry.getModule(current.ruleConfig).id == ruleModuleId
+        val baseRuleConfig = if (sameRule) current.ruleConfig else defaultDefinition.defaultRuleConfig()
+        val base = current.copy(
+            ruleConfig = baseRuleConfig,
+            flowConfig = if (sameRule) {
+                presentations.normalizeFlowConfig(
+                    ruleModuleId = ruleModuleId,
+                    ruleConfig = baseRuleConfig,
+                    current = current.flowConfig,
+                )
+            } else {
+                presentations.defaultFlowConfig(
+                    ruleModuleId = ruleModuleId,
+                    ruleConfig = baseRuleConfig,
+                    current = current.flowConfig,
+                )
+            },
+        )
+        val rebuiltRule = defaultDefinition.fields
+            .filter { it.categoryId != SharedGameFlowConfigPresentation.FLOW && it.isEditable }
+            .fold(base) { config, field ->
+                try {
+                    val value = field.read(submitted)
+                    if (!field.editor.accepts(value)) return Result.Invalid
+                    checkNotNull(field.update)(config, value)
+                } catch (_: IllegalArgumentException) {
+                    return Result.Invalid
+                }
+            }
+        if (!RulePresentationRequirements.isPlayable(rebuiltRule.ruleConfig, presentations, moduleRegistry)) {
             return Result.RuleUnavailable
         }
-        val ruleModuleId = moduleRegistry.getModule(submitted.ruleConfig).id
-        val definition = checkNotNull(presentations.find(ruleModuleId))
-        val base = if (moduleRegistry.getModule(current.ruleConfig).id == ruleModuleId) {
-            current
-        } else {
-            current.copy(
-                ruleConfig = definition.defaultRuleConfig(),
-                flowConfig = presentations.defaultFlowConfig(ruleModuleId, current.flowConfig),
-            )
-        }
-        val rebuilt = definition.fields.filter { it.isEditable }.fold(base) { config, field ->
-            try {
-                val value = field.read(submitted)
-                if (!field.editor.accepts(value)) return Result.Invalid
-                checkNotNull(field.update)(config, value)
-            } catch (_: IllegalArgumentException) {
-                return Result.Invalid
+        val effectiveDefinition = presentations.find(ruleModuleId, rebuiltRule.ruleConfig)
+            ?: return Result.RuleUnavailable
+        val rebuilt = effectiveDefinition.fields
+            .filter { it.categoryId == SharedGameFlowConfigPresentation.FLOW && it.isEditable }
+            .fold(
+                rebuiltRule.copy(
+                    flowConfig = presentations.normalizeFlowConfig(
+                        ruleModuleId = ruleModuleId,
+                        ruleConfig = rebuiltRule.ruleConfig,
+                        current = rebuiltRule.flowConfig,
+                    ),
+                ),
+            ) { config, field ->
+                try {
+                    val value = field.read(submitted)
+                    if (!field.editor.accepts(value)) return Result.Invalid
+                    checkNotNull(field.update)(config, value)
+                } catch (_: IllegalArgumentException) {
+                    return Result.Invalid
+                }
             }
-        }
         return if (rebuilt == submitted) Result.Accepted(rebuilt) else Result.Invalid
     }
 }

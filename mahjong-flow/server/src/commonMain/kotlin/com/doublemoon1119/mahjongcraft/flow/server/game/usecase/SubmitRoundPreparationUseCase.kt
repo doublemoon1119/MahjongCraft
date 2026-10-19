@@ -77,6 +77,13 @@ class SubmitRoundPreparationUseCase(
                     Outcome.Error(GameError.InvalidRoundPreparationSubmission(gameId, playerId)),
                     null,
                 )
+            val defaultPreparation = resolverRegistry.findDefaultConfig(module.id, game.tableState.config)
+            if (defaultPreparation == null || game.flowConfig.roundPreparation == null) {
+                throw RuleContractViolationException(
+                    GameAbortReasonIds.RULE_EXECUTION_FAILED,
+                    "Round preparation requires a time configuration for player input",
+                )
+            }
             if (!resolver.accepts(game.tableState, preparation, playerId, submission, module)) {
                 return@updateGame game to PreparationSubmissionUpdate(
                     Outcome.Error(GameError.InvalidRoundPreparationSubmission(gameId, playerId)),
@@ -89,7 +96,9 @@ class SubmitRoundPreparationUseCase(
             var updated = game.copy(pendingRoundPreparation = submitted)
             if (submitted.isComplete) {
                 val resolution = resolver.resolve(game.tableState, submitted, module)
-                if (resolution.nextStep?.participantPlayerIds?.isNotEmpty() == true && game.flowConfig.roundPreparation == null) {
+                if (resolution.nextStep?.participantPlayerIds?.isNotEmpty() == true &&
+                    (defaultPreparation == null || game.flowConfig.roundPreparation == null)
+                ) {
                     throw RuleContractViolationException(
                         GameAbortReasonIds.RULE_EXECUTION_FAILED,
                         "Round preparation requires a time configuration for player input",

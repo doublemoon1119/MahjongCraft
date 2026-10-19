@@ -186,7 +186,7 @@ class RiichiCatalogueProviderTest {
         )
         val config = ThreePlayerRiichiRuleConfig()
         val wallTiles = ThreePlayerRiichiRuleModule(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, config)
-            .createWallFactory()
+            .createWallFactory(3)
             .create()
             .getAllTiles()
             .mapTo(mutableSetOf()) { it.tile }

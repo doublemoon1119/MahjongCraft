@@ -63,7 +63,7 @@ class RiichiRuleModuleTest {
      */
     @Test
     fun `test create wall factory returns riichi implementation`() {
-        val factory = module.createWallFactory()
+        val factory = module.createWallFactory(module.config.maxPlayers)
         assertEquals(RiichiWallFactory::class, factory::class)
     }
 
@@ -76,7 +76,7 @@ class RiichiRuleModuleTest {
     /** 驗證規則模組提供四人日本麻將固定 136 張的牌牆布局。 */
     @Test
     fun `test create wall layout returns riichi implementation`() {
-        assertEquals(RiichiWallLayout::class, module.createWallLayout()::class)
+        assertEquals(RiichiWallLayout::class, module.createWallLayout(module.config.maxPlayers)::class)
     }
 
     /** 驗證規則模組提供日麻獨立王牌區與槓後補位 policy。 */

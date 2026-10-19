@@ -130,6 +130,22 @@ internal class RoomSettingsDraft {
     }
 
     /**
+     * 以外部整理過的完整設定取代草稿內容。
+     *
+     * 只用於設定欄位變更後重新整理依規則而定的共用流程欄位，不會重設權威基準或驗證狀態；若欄位因規則設定
+     * 改變而消失，也會移除該欄位留下的無效標記，避免不可見的欄位阻擋送出。
+     *
+     * @param updated 整理後的草稿設定。
+     * @param availableFieldIds 目前呈現中的欄位識別碼；省略時保留所有驗證標記。
+     */
+    fun replaceConfig(updated: GameConfig, availableFieldIds: Set<String>? = null) {
+        if (config != null) {
+            config = updated
+            availableFieldIds?.let { invalidFieldIds.retainAll(it) }
+        }
+    }
+
+    /**
      * 直接輸入整數時的第一段驗證：判定輸入字串本身是否落在編輯器允許的範圍。
      *
      * 與 [applyNumericInput] 分成兩段，是因為超出範圍的輸入必須標記欄位無效但不得改動草稿——直接交給

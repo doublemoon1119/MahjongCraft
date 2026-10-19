@@ -59,7 +59,7 @@ class DebugGameScenarioValidator(
             validateInitialRoundPresentation(candidate.tableState, presentation)
         }
 
-        val expectedCounts = module.createWallFactory().create().getAllTiles().groupingBy { it.tile }.eachCount()
+        val expectedCounts = module.createWallFactory(module.config.maxPlayers).create().getAllTiles().groupingBy { it.tile }.eachCount()
         val actualCounts = allTiles.groupingBy { it.tile }.eachCount()
         require(actualCounts == expectedCounts) { "Debug scenario tile multiset does not match its rule config" }
 

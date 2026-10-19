@@ -240,8 +240,8 @@ class DebugGameScenarioTest {
         val fixture = createFixture()
         val registry = DebugGameScenarioRegistry()
         val templateModule = RiichiRuleModule("mahjongcraft:riichi", RiichiRuleConfig())
-        val templateTiles = templateModule.createWallFactory().create().getAllTiles()
-        val template = templateModule.createWallLayout().resolve(templateTiles, WallOpening(0, 8))
+        val templateTiles = templateModule.createWallFactory(templateModule.config.maxPlayers).create().getAllTiles()
+        val template = templateModule.createWallLayout(templateModule.config.maxPlayers).resolve(templateTiles, WallOpening(0, 8))
         val templateLivePositions = template.drawOrder.map { template.structure.getValue(it.id) }
         val templateReservedPositions = template.reservedWallTiles.map { template.structure.getValue(it.id) }
 

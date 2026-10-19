@@ -345,7 +345,10 @@ class RoomScreen(
             val defaultConfig = draft.normalized(
                 GameConfig(
                     ruleConfig = definition.defaultRuleConfig(),
-                    flowConfig = configPresentations.defaultFlowConfig(definition.ruleModuleId),
+                    flowConfig = configPresentations.defaultFlowConfig(
+                        ruleModuleId = definition.ruleModuleId,
+                        ruleConfig = definition.defaultRuleConfig(),
+                    ),
                 ),
             )
             val footer = settingsFooterLayout()
@@ -532,8 +535,31 @@ class RoomScreen(
      */
     private fun updateDraft(field: GameConfigFieldDefinition, value: GameConfigPresentationValue) {
         draft.updateField(field, value)
+        normalizeDraftFlowConfig()
         rebuild()
     }
+
+    /** 規則欄位變更後，讓依規則設定決定的共用流程欄位保持一致。 */
+    private fun normalizeDraftFlowConfig() {
+        val before = draft.config ?: return
+        val updated = before.let { config ->
+            val moduleId = configResolver.resolve(config).ruleModuleId
+            config.copy(
+                flowConfig = configPresentations.normalizeFlowConfig(
+                    ruleModuleId = moduleId,
+                    ruleConfig = config.ruleConfig,
+                    current = config.flowConfig,
+                ),
+            )
+        }
+        val afterFieldIds = effectiveFieldIds(updated)
+        draft.replaceConfig(updated, afterFieldIds)
+    }
+
+    /** 取得目前設定實際呈現的欄位，供規則切換時同步清理草稿驗證狀態。 */
+    private fun effectiveFieldIds(config: GameConfig): Set<String> = configResolver.resolve(config).definition
+        ?.let { definition -> definition.fields.mapTo(mutableSetOf()) { it.id } }
+        .orEmpty()
 
     /**
      * 直接輸入整數時保留焦點，只更新草稿、驗證狀態與底部按鈕。
@@ -551,8 +577,14 @@ class RoomScreen(
             refreshDraftButtons()
             return
         }
+        val beforeFieldIds = draft.config?.let(::effectiveFieldIds).orEmpty()
         draft.applyNumericInput(field, raw)
-        refreshDraftButtons()
+        normalizeDraftFlowConfig()
+        if (beforeFieldIds != draft.config?.let(::effectiveFieldIds).orEmpty()) {
+            rebuild()
+        } else {
+            refreshDraftButtons()
+        }
     }
 
     /**
@@ -605,7 +637,11 @@ class RoomScreen(
                 draft.resetTo(
                     config.copy(
                         ruleConfig = next.defaultRuleConfig(),
-                        flowConfig = configPresentations.defaultFlowConfig(next.ruleModuleId, config.flowConfig),
+                        flowConfig = configPresentations.defaultFlowConfig(
+                            ruleModuleId = next.ruleModuleId,
+                            ruleConfig = next.defaultRuleConfig(),
+                            current = config.flowConfig,
+                        ),
                     ),
                 )
                 selectedCategoryId = null
@@ -791,7 +827,10 @@ class RoomScreen(
             configResolver.resolve(config).definition?.let {
                 GameConfig(
                     ruleConfig = it.defaultRuleConfig(),
-                    flowConfig = configPresentations.defaultFlowConfig(it.ruleModuleId),
+                    flowConfig = configPresentations.defaultFlowConfig(
+                        ruleModuleId = it.ruleModuleId,
+                        ruleConfig = it.defaultRuleConfig(),
+                    ),
                 )
             }
         },

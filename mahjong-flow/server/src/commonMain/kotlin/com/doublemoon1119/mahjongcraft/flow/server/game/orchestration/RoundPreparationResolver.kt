@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRoundPrepar
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSubmission
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.defaultSubmission
+import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlin.uuid.Uuid
@@ -14,11 +15,15 @@ interface RoundPreparationResolver {
     val ruleModuleId: String
 
     /**
-     * 此規則的預設局前準備設定；沒有玩家準備操作或只有自動步驟時可為 null。
-     * 註冊表在登記時讀取一次，之後不隨對局或步驟變動。
+     * 依實際規則設定決定是否需要玩家局前準備時間。
+     *
+     * 相同設定必須回傳相同結果，不得修改狀態或依賴外部可變資料。房間設定與準備流程會各自查詢，
+     * 不保證每局只呼叫一次；只需要自動處理的準備步驟不需要玩家時間設定。
+     *
+     * @param ruleConfig 目前對局使用的完整規則設定。
+     * @return 需要玩家準備時的預設時間；不需要準備或只會自動完成時為 null。
      */
-    val defaultRoundPreparationConfig: RoundPreparationConfig?
-        get() = null
+    fun roundPreparationConfig(ruleConfig: MahjongRuleConfig): RoundPreparationConfig? = null
 
     /**
      * 發牌後建立第一個步驟；不需要準備時回傳 null。

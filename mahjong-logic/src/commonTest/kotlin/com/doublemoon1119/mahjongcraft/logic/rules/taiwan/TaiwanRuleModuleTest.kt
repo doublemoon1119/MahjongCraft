@@ -41,7 +41,7 @@ class TaiwanRuleModuleTest {
      */
     @Test
     fun `test create wall factory returns taiwan implementation`() {
-        val factory = module.createWallFactory()
+        val factory = module.createWallFactory(module.config.maxPlayers)
         assertTrue(factory is TaiwanWallFactory)
     }
 
@@ -54,7 +54,7 @@ class TaiwanRuleModuleTest {
     /** 驗證規則模組提供台灣麻將的牌牆布局。 */
     @Test
     fun `test create wall layout returns taiwan implementation`() {
-        assertTrue(module.createWallLayout() is TaiwanWallLayout)
+        assertTrue(module.createWallLayout(module.config.maxPlayers) is TaiwanWallLayout)
     }
 
     /**

@@ -111,9 +111,10 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     /**
      * 建立適用於該規則的牌山生成工廠。
      *
+     * @param playerCount 本局完整玩家名單的人數；不是目前在線或已連線玩家數。
      * @return 實作了 [TileWallFactory] 的工廠物件。
      */
-    fun createWallFactory(): TileWallFactory
+    fun createWallFactory(playerCount: Int): TileWallFactory
 
     /**
      * 建立適用於預設單輪開門流程的牌牆開門 policy。
@@ -131,10 +132,11 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * 預設實作會在同時提供 [createWallOpeningPolicy] 與 [createWallLayout] 時建立單輪程序；規則可
      * 覆寫此方法提供多輪、固定起家或其他純計算程序。回傳 `null` 時本局沿用固定起家且不擲骰。
      *
+     * @param playerCount 本局完整玩家名單的人數；規則可用它選擇對應的開局程序。
      * @return 規則的開局程序，未提供開局選定流程時為 null。
      */
-    fun createRoundOpeningProcedure(): RoundOpeningProcedure? = createWallOpeningPolicy()
-        ?.takeIf { createWallLayout() != null }
+    fun createRoundOpeningProcedure(playerCount: Int): RoundOpeningProcedure? = createWallOpeningPolicy()
+        ?.takeIf { createWallLayout(playerCount) != null }
         ?.let { policy ->
             SingleRollOpeningProcedure(openingPolicy = policy)
         }
@@ -154,9 +156,10 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * 尚未定義牌牆布局的模組可使用預設的 null；通用初始化流程不得自行假設固定張數或固定每面墩數。
      * 不提供時開局不產生牌山結構；依牌山結構呈現牌局的平台可能因此無法使用此規則。
      *
+     * @param playerCount 本局完整玩家名單的人數；規則可用它選擇牌牆面數與牌山大小。
      * @return 此規則的 [TileWallLayout]，若尚未支援則為 null。
      */
-    fun createWallLayout(): TileWallLayout? = null
+    fun createWallLayout(playerCount: Int): TileWallLayout? = null
 
     /**
      * 建立本規則的抽象實體牌牆布局 policy。

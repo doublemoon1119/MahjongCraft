@@ -18,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.repository.runAsSingleWr
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
@@ -206,7 +207,7 @@ class SubmitRoundPreparationUseCaseTest {
         repository.setGame(
             Game(
                 tableState = table,
-                flowConfig = GameFlowConfig(),
+                flowConfig = GameFlowConfig(roundPreparation = RoundPreparationConfig(30)),
                 pendingRoundPreparation = PendingRoundPreparation(
                     stepId = "test:exchange",
                     stepIndex = 0,
@@ -329,9 +330,48 @@ class SubmitRoundPreparationUseCaseTest {
         assertEquals(game, repository.getGame(table.id))
     }
 
+    @Test
+    fun `pending player preparation with disabled policy aborts despite stale timing`() = runTest {
+        val repository = FakeGameRepository()
+        val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
+        val table = FakeTableStateFactory.create(
+            players = listOf(FakeMahjongPlayerFactory.create(id = playerId)),
+            config = RiichiRuleConfig(redDoraCount = 0),
+        )
+        val game = Game(
+            tableState = table,
+            flowConfig = GameFlowConfig(roundPreparation = RoundPreparationConfig(30)),
+            pendingRoundPreparation = PendingRoundPreparation(
+                stepId = "test:confirm",
+                stepIndex = 0,
+                inputSpecsByPlayerId = mapOf(playerId to RoundPreparationInputSpec.Confirmation),
+            ),
+        )
+        repository.setGame(game)
+        val resolverRegistry = RoundPreparationResolverRegistry().apply { register(PlayerNextResolver) }
+        val useCase = SubmitRoundPreparationUseCase(
+            gameRepository = repository,
+            moduleRegistry = moduleRegistry,
+            resolverRegistry = resolverRegistry,
+            snapshotSynchronizer = GameSnapshotSynchronizer(
+                repository,
+                FakeGameSnapshotRepository(),
+                GameVisibilityPolicyImpl(moduleRegistry),
+            ),
+            presentationPublisher = FakeGamePresentationPublisher(),
+        )
+
+        assertFailsWith<RuleContractViolationException> {
+            useCase(table.id, playerId, RoundPreparationSubmission.Confirmed)
+        }
+        assertEquals(game, repository.getGame(table.id))
+    }
+
     /** 測試用解析器：不建立步驟，並在確認完成後結束準備流程。 */
     private object ConfirmationResolver : RoundPreparationResolver {
         override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI
+
+        override fun roundPreparationConfig(ruleConfig: MahjongRuleConfig): RoundPreparationConfig = RoundPreparationConfig(30)
 
         override fun begin(tableState: TableState, ruleModule: MahjongRuleModule<*>): PendingRoundPreparation? = null
 
@@ -345,6 +385,8 @@ class SubmitRoundPreparationUseCaseTest {
     /** 測試用解析器：確認完成後要求下一個玩家步驟。 */
     private object PlayerNextResolver : RoundPreparationResolver {
         override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI
+
+        override fun roundPreparationConfig(ruleConfig: MahjongRuleConfig): RoundPreparationConfig? = if ((ruleConfig as? RiichiRuleConfig)?.redDoraCount == 3) RoundPreparationConfig(30) else null
 
         override fun begin(tableState: TableState, ruleModule: MahjongRuleModule<*>): PendingRoundPreparation? = null
 
@@ -365,6 +407,8 @@ class SubmitRoundPreparationUseCaseTest {
     /** 測試用換牌解析器，完成後交換兩位玩家各提交的一張牌。 */
     private object TileExchangeResolver : RoundPreparationResolver {
         override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI
+
+        override fun roundPreparationConfig(ruleConfig: MahjongRuleConfig): RoundPreparationConfig = RoundPreparationConfig(30)
 
         override fun begin(tableState: TableState, ruleModule: MahjongRuleModule<*>): PendingRoundPreparation? = null
 

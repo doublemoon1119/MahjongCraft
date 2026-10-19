@@ -1310,7 +1310,7 @@ class FabricGamePresentationPublisher(
      * @return 與砌牆、開門及後續更新共用的桌邊對應。
      */
     private fun wallSideLayout(state: TableState, dealerSeatIndex: Int): MahjongTileWallSideLayout {
-        val arrangement = checkNotNull(moduleRegistry.getModule(state.config).createWallLayout()) {
+        val arrangement = checkNotNull(moduleRegistry.getModule(state.config).createWallLayout(state.players.size)) {
             "Rule provides no wall layout"
         }.sideArrangement(dealerSeatIndex)
         return MahjongTileWallSideLayout.resolve(

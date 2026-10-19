@@ -64,7 +64,7 @@ object GameInitializer {
         val dealOrderPlayerIds = List(shuffledPlayerIds.size) { offset ->
             shuffledPlayerIds[(dealerIndex + offset) % shuffledPlayerIds.size]
         }
-        val openedWall = module.buildOpenedWall(opening.wallOpening)
+        val openedWall = module.buildOpenedWall(shuffledPlayerIds.size, opening.wallOpening)
         val seatWinds = module.assignSeatWinds(shuffledPlayerIds, opening.dealerPlayerId, openedWall, opening.diceRolls)
         val (hands, remainingWall) = module.dealInitialHands(openedWall.wall, dealOrderPlayerIds)
         val handsByPlayerId = dealOrderPlayerIds.zip(hands).toMap()
@@ -141,7 +141,7 @@ object GameInitializer {
             fixedDealerPlayerId = roundAdvancement.dealerPlayerId,
             diceRollSource = diceRollSource,
         )
-        val openedWall = module.buildOpenedWall(opening.wallOpening)
+        val openedWall = module.buildOpenedWall(roundAdvancement.players.size, opening.wallOpening)
         // TableState.players 順序整場對局固定不變、不是從莊家開始排的，發牌輪轉順序需要另外把玩家
         // 列表依莊家旋轉過（見 dealInitialHands KDoc 對 playerIds 順序的要求），發完牌後再依原本固定
         // 順序組回 players 列表，不能直接沿用旋轉過的順序。
@@ -211,7 +211,7 @@ object GameInitializer {
         fixedDealerPlayerId: Uuid?,
         diceRollSource: DiceRollSource,
     ): RoundOpeningResolution {
-        val procedure = createRoundOpeningProcedure()
+        val procedure = createRoundOpeningProcedure(playerIdsInTurnOrder.size)
             ?: return RoundOpeningResolution(fixedDealerPlayerId ?: provisionalPlayerId, null, emptyList())
         require(procedure.supportedDiceCounts.all { it > 0 }) {
             "Opening procedure must declare positive supported dice counts"
@@ -306,12 +306,16 @@ object GameInitializer {
      * [TileWallLayoutResult.drawOrder] 與 [TileWallLayoutResult.reservedWallTiles] 分開保存，
      * 回傳的 [OpenedWall.wall] 只包含一般摸牌序列，後續成為 [TableState.tileWall]。
      *
+     * @param playerCount 本局完整玩家名單的人數。
      * @param wallOpening 開局程序已決定的最終開門位置；未使用開門時為 null。
      * @return 已整理的摸牌牌山，以及可用時的開門、保留牌和牌牆布局資料。
      */
-    private fun MahjongRuleModule<*>.buildOpenedWall(wallOpening: WallOpening?): OpenedWall {
-        val shuffledWall = createWallFactory().create()
-        val layout = createWallLayout()
+    private fun MahjongRuleModule<*>.buildOpenedWall(
+        playerCount: Int,
+        wallOpening: WallOpening?,
+    ): OpenedWall {
+        val shuffledWall = createWallFactory(playerCount).create()
+        val layout = createWallLayout(playerCount)
         if (wallOpening == null) {
             return OpenedWall(
                 wall = shuffledWall,

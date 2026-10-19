@@ -81,13 +81,13 @@ class RiichiRuleModule(
      *
      * @return [RiichiWallFactory] 實體。
      */
-    override fun createWallFactory(): RiichiWallFactory = RiichiWallFactory(config)
+    override fun createWallFactory(playerCount: Int): RiichiWallFactory = RiichiWallFactory(config)
 
     /** 建立四人日本麻將的雙骰牌牆開門 policy。 */
     override fun createWallOpeningPolicy(): RiichiWallOpeningPolicy = RiichiWallOpeningPolicy
 
     /** 建立四人日本麻將固定 136 張的牌牆布局。 */
-    override fun createWallLayout(): RiichiWallLayout = RiichiWallLayout(config)
+    override fun createWallLayout(playerCount: Int): RiichiWallLayout = RiichiWallLayout(config)
 
     /** 建立日本麻將獨立王牌區與槓後補位所使用的抽象實體布局 policy。 */
     override fun createPhysicalWallLayoutPolicy(): PhysicalWallLayoutPolicy = RiichiPhysicalWallLayoutPolicy(rinshanTileCount = config.rinshanTileCount)
