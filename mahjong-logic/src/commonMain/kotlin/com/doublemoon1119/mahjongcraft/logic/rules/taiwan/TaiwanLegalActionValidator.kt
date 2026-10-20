@@ -1,11 +1,9 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.taiwan
 
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
-import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
-import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionValidator
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
-import com.doublemoon1119.mahjongcraft.logic.table.TableState
 
 /**
  * TODO: 實作台灣麻將的合法動作判定器。
@@ -74,20 +72,10 @@ class TaiwanLegalActionValidator : LegalActionValidator {
     /**
      * 判斷在當前遊戲狀態下，指定玩家可以執行的合法動作列表。
      *
-     * @param tableState 當前的遊戲桌況。
-     * @param player 欲判斷合法動作的玩家。
-     * @param sourceAction 觸發此判斷的動作。
-     * @param sourceDirection 動作的來源方位。
-     * @param incomingTile 可選參數，表示剛摸到或他家打出的牌。
+     * @param context 從同一份桌況建立的判定情境。
      * @return 該玩家可以執行的合法動作列表。
      */
-    override fun getLegalActions(
-        tableState: TableState,
-        player: MahjongPlayer,
-        sourceAction: GameAction,
-        sourceDirection: RelativeDirection,
-        incomingTile: IdentifiedTile?,
-    ): List<GameAction> {
+    override fun getLegalActions(context: LegalActionContext): List<GameAction> {
         // TODO: 實作台灣麻將的合法動作判定邏輯
         return emptyList()
     }

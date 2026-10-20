@@ -184,18 +184,18 @@ class RiichiClosedKanAfterRiichiTest {
             players = listOf(player),
             tileWall = TileWall(List(30) { FakeIdentifiedTileFactory.create(Tile.Honor.White) }),
         )
-        return module.createLegalActionValidator().getLegalActions(
-            tableState = table,
-            player = player,
-            sourceAction = GameAction.Draw,
-            sourceDirection = RelativeDirection.Self,
-            incomingTile = drawn.takeUnless { incomingStoredInHand },
-        ).filterIsInstance<GameAction.Kan>().filter { it.type == GameAction.KanType.CLOSED_KAN }.also { actions ->
-            actions.forEach { action ->
-                assertEquals(drawn.id, action.tileId)
-                assertEquals(3, action.withTiles.distinct().size)
-            }
+        val context = if (incomingStoredInHand) {
+            LegalActionTestContexts.ownTurn(table, player)
+        } else {
+            LegalActionTestContexts.ownTurnWithDraw(table, player, drawn)
         }
+        return module.createLegalActionValidator().getLegalActions(context)
+            .filterIsInstance<GameAction.Kan>().filter { it.type == GameAction.KanType.CLOSED_KAN }.also { actions ->
+                actions.forEach { action ->
+                    assertEquals(drawn.id, action.tileId)
+                    assertEquals(3, action.withTiles.distinct().size)
+                }
+            }
     }
 
     /** 取得完整等待集合，不以是否具有役種或剩餘牌數裁切。 */

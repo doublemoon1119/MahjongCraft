@@ -21,6 +21,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationH
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementPresentationRequestFactory
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawReasonIds
@@ -143,11 +144,13 @@ class RespondToRobbingUseCase(
                     val module = moduleRegistry.getModule(state.config)
                     val responder = state.players.first { it.id == playerId }
                     val legalActions = module.createLegalActionValidator().getLegalActions(
-                        tableState = state,
-                        player = responder,
-                        sourceAction = pending.declaredAction,
-                        sourceDirection = state.relativeDirectionOf(playerId, pending.declarerId),
-                        incomingTile = pending.robbedTile,
+                        LegalActionContext.declarationReaction(
+                            tableState = state,
+                            playerId = playerId,
+                            declarerId = pending.declarerId,
+                            declaredAction = pending.declaredAction,
+                            declaredTile = pending.robbedTile,
+                        ),
                     ).filter { it is GameAction.Ron || it == GameAction.Pass }
                     if (action !in legalActions) {
                         return@update state to Outcome.Error(GameError.IllegalAction(playerId, gameId, action))

@@ -1,9 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario
 
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
-import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
+import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
@@ -82,12 +82,13 @@ class RiichiFuritenDebugGameScenariosTest {
         assertFalse(state.canRon(offset = 0, discarderOffset = 1, tile = FOUR_CHARACTER))
         val invoker = state.seat(0)
         val drawnFour = state.liveWallTile(3)
-        val ownTurnActions = state.scenarioValidator().getLegalActions(
-            tableState = state,
-            player = invoker.copy(hand = invoker.hand.copy(lastDrawn = null)),
-            sourceAction = GameAction.Draw,
-            sourceDirection = RelativeDirection.Self,
-            incomingTile = drawnFour,
+        val contextState = state.copy(
+            players = state.players.map {
+                if (it.id == invoker.id) it.copy(hand = invoker.hand.copy(lastDrawn = drawnFour)) else it
+            },
+        )
+        val ownTurnActions = contextState.scenarioValidator().getLegalActions(
+            LegalActionContext.ownTurn(contextState, invoker.id),
         )
         assertTrue(GameAction.Tsumo in ownTurnActions)
     }

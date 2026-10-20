@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoLiability
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoYaku
@@ -48,12 +49,13 @@ class RiichiBeforePaoPonScenarioTest {
         val discarder = state.players[1]
         val calledTile = discarder.discardPile.entries.single().tile
 
+        val contextState = state.copy(
+            players = state.players.map {
+                if (it.id == invoking.id) it.copy(hand = invoking.hand.copy(lastDrawn = null)) else it
+            },
+        )
         val actions = module.createLegalActionValidator().getLegalActions(
-            tableState = state,
-            player = invoking,
-            sourceAction = GameAction.Discard(calledTile.id),
-            sourceDirection = state.relativeDirectionOf(invoking.id, discarder.id),
-            incomingTile = calledTile,
+            LegalActionContext.discardReaction(contextState, invoking.id, discarder.id, calledTile),
         )
 
         assertTrue(actions.any { it is GameAction.Pon }, "Expected a pon among $actions.")

@@ -77,13 +77,7 @@ class RiichiLegalActionValidatorFuritenTest {
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5))
 
         // 執行
-        val actions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Discard(incomingTile.id),
-            sourceDirection = RelativeDirection.Across,
-            incomingTile = incomingTile,
-        )
+        val actions = validator.getLegalActions(LegalActionTestContexts.discard(tableState, player, RelativeDirection.Across, incomingTile))
 
         // 驗證 - 因為打過赤5萬（視為同張牌），所以不可榮和
         assertFalse(actions.any { it is GameAction.Ron })
@@ -135,13 +129,7 @@ class RiichiLegalActionValidatorFuritenTest {
         val incomingTile = FakeIdentifiedTileFactory.create(RiichiTileTypes.redFive(Tile.Suit.Character))
 
         // 執行
-        val actions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Discard(incomingTile.id),
-            sourceDirection = RelativeDirection.Across,
-            incomingTile = incomingTile,
-        )
+        val actions = validator.getLegalActions(LegalActionTestContexts.discard(tableState, player, RelativeDirection.Across, incomingTile))
 
         // 驗證 - 因為打過普通5萬（視為同張牌），所以不可榮和
         assertFalse(actions.any { it is GameAction.Ron })
@@ -189,13 +177,7 @@ class RiichiLegalActionValidatorFuritenTest {
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5))
 
         // 執行
-        val actions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Discard(incomingTile.id),
-            sourceDirection = RelativeDirection.Across,
-            incomingTile = incomingTile,
-        )
+        val actions = validator.getLegalActions(LegalActionTestContexts.discard(tableState, player, RelativeDirection.Across, incomingTile))
 
         // 驗證 - 碰不受放過清單限制
         assertTrue(actions.any { it is GameAction.Pon })
@@ -245,13 +227,7 @@ class RiichiLegalActionValidatorFuritenTest {
         val incomingTile = FakeIdentifiedTileFactory.create(RiichiTileTypes.redFive(Tile.Suit.Character))
 
         // 執行
-        val actions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Discard(incomingTile.id),
-            sourceDirection = RelativeDirection.Across,
-            incomingTile = incomingTile,
-        )
+        val actions = validator.getLegalActions(LegalActionTestContexts.discard(tableState, player, RelativeDirection.Across, incomingTile))
 
         // 驗證 - 碰不受放過清單限制
         assertTrue(actions.any { it is GameAction.Pon })
@@ -293,13 +269,7 @@ class RiichiLegalActionValidatorFuritenTest {
         val tableState = FakeTableStateFactory.create(players = listOf(player))
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5))
 
-        val actions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Discard(incomingTile.id),
-            sourceDirection = RelativeDirection.Across,
-            incomingTile = incomingTile,
-        )
+        val actions = validator.getLegalActions(LegalActionTestContexts.discard(tableState, player, RelativeDirection.Across, incomingTile))
 
         assertFalse(actions.any { it is GameAction.Ron })
     }
@@ -345,13 +315,7 @@ class RiichiLegalActionValidatorFuritenTest {
         val player = twoSidedWaitPlayer(discardPile = discardPileOf(Tile.Numeric(Tile.Suit.Character, 1)))
         val drawnTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 4))
 
-        val actions = validator.getLegalActions(
-            tableState = FakeTableStateFactory.create(players = listOf(player)),
-            player = player,
-            sourceAction = GameAction.Draw,
-            sourceDirection = RelativeDirection.Self,
-            incomingTile = drawnTile,
-        )
+        val actions = validator.getLegalActions(LegalActionTestContexts.ownTurnWithDraw(FakeTableStateFactory.create(players = listOf(player)), player, drawnTile))
 
         assertTrue(actions.any { it is GameAction.Tsumo }, "Tsumo should stay legal while in discard furiten")
     }
@@ -402,11 +366,12 @@ class RiichiLegalActionValidatorFuritenTest {
     private fun canRon(player: MahjongPlayer, tile: Tile): Boolean {
         val incomingTile = FakeIdentifiedTileFactory.create(tile)
         return validator.getLegalActions(
-            tableState = FakeTableStateFactory.create(players = listOf(player)),
-            player = player,
-            sourceAction = GameAction.Discard(incomingTile.id),
-            sourceDirection = RelativeDirection.Across,
-            incomingTile = incomingTile,
+            LegalActionTestContexts.discard(
+                FakeTableStateFactory.create(players = listOf(player)),
+                player,
+                RelativeDirection.Across,
+                incomingTile,
+            ),
         ).any { it is GameAction.Ron }
     }
 }

@@ -4,7 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
-import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
@@ -184,12 +184,8 @@ class DebugGameScenarioTest {
             fixture.validator.validate(fixture.context, result)
             val state = result.game.tableState
             val module = fixture.moduleRegistry.getModule(state.config)
-            val legalActions = module.createLegalActionValidator().getLegalActions(
-                tableState = state,
-                player = state.currentPlayer,
-                sourceAction = GameAction.Draw,
-                sourceDirection = RelativeDirection.Self,
-            )
+            val legalActions = module.createLegalActionValidator()
+                .getLegalActions(LegalActionContext.ownTurn(state, state.currentPlayer.id))
 
             val closedKans = legalActions.filterIsInstance<GameAction.Kan>().filter {
                 it.type == GameAction.KanType.CLOSED_KAN
@@ -218,12 +214,13 @@ class DebugGameScenarioTest {
 
             state.players.filterNot { it.id == actor.id }.forEach { opponent ->
                 discardCandidates.forEach { discardedTile ->
+                    val contextState = state.copy(
+                        players = state.players.map {
+                            if (it.id == opponent.id) it.copy(hand = opponent.hand.copy(lastDrawn = null)) else it
+                        },
+                    )
                     val reactions = validator.getLegalActions(
-                        tableState = state,
-                        player = opponent,
-                        sourceAction = GameAction.Discard(discardedTile.id),
-                        sourceDirection = state.relativeDirectionOf(opponent.id, actor.id),
-                        incomingTile = discardedTile,
+                        LegalActionContext.discardReaction(contextState, opponent.id, actor.id, discardedTile),
                     )
                     assertFalse(
                         reactions.any { it is GameAction.Kan && it.type == GameAction.KanType.OPEN_KAN },
@@ -276,7 +273,7 @@ class DebugGameScenarioTest {
             val state = result.game.tableState
             val kanAction = fixture.moduleRegistry.getModule(state.config)
                 .createLegalActionValidator()
-                .getLegalActions(state, state.currentPlayer, GameAction.Draw, RelativeDirection.Self)
+                .getLegalActions(LegalActionContext.ownTurn(state, state.currentPlayer.id))
                 .filterIsInstance<GameAction.Kan>()
                 .single { it.type == GameAction.KanType.CLOSED_KAN }
             val decision = RiichiSupplementalDrawPolicy.resolve(
@@ -327,12 +324,13 @@ class DebugGameScenarioTest {
         val claimant = state.players.single { it.id == fixture.context.invokingPlayerId }
         val discarder = state.players.single { it.id == pending.discarderId }
         val discardedTile = discarder.discardPile.entries.single { it.tile.id == pending.tileId }.tile
+        val contextState = state.copy(
+            players = state.players.map {
+                if (it.id == claimant.id) it.copy(hand = it.hand.copy(lastDrawn = null)) else it
+            },
+        )
         val legalActions = fixture.moduleRegistry.getModule(state.config).createLegalActionValidator().getLegalActions(
-            tableState = state,
-            player = claimant,
-            sourceAction = GameAction.Discard(discardedTile.id),
-            sourceDirection = state.relativeDirectionOf(claimant.id, discarder.id),
-            incomingTile = discardedTile,
+            LegalActionContext.discardReaction(contextState, claimant.id, discarder.id, discardedTile),
         )
         val openKans = legalActions.filterIsInstance<GameAction.Kan>().filter {
             it.type == GameAction.KanType.OPEN_KAN
@@ -358,12 +356,7 @@ class DebugGameScenarioTest {
         val actor = state.currentPlayer
         val module = fixture.moduleRegistry.getModule(state.config)
         val validator = module.createLegalActionValidator()
-        val legalActions = validator.getLegalActions(
-            tableState = state,
-            player = actor,
-            sourceAction = GameAction.Draw,
-            sourceDirection = RelativeDirection.Self,
-        )
+        val legalActions = validator.getLegalActions(LegalActionContext.ownTurn(state, actor.id))
 
         assertEquals(fixture.context.invokingPlayerId, actor.id)
         assertTrue(RIICHI_GAME_ACTION in legalActions)
@@ -376,12 +369,13 @@ class DebugGameScenarioTest {
         val declarationTile = assertNotNull(actor.hand.lastDrawn)
         assertTrue(declarationTile.id in assertNotNull(validator.tileSelectionRequirement(state, actor, RIICHI_GAME_ACTION)).eligibleTileIds)
         state.players.filterNot { player -> player.id == actor.id }.forEach { opponent ->
+            val contextState = state.copy(
+                players = state.players.map {
+                    if (it.id == opponent.id) it.copy(hand = it.hand.copy(lastDrawn = null)) else it
+                },
+            )
             val reactions = validator.getLegalActions(
-                tableState = state,
-                player = opponent,
-                sourceAction = GameAction.Discard(declarationTile.id),
-                sourceDirection = state.relativeDirectionOf(opponent.id, actor.id),
-                incomingTile = declarationTile,
+                LegalActionContext.discardReaction(contextState, opponent.id, actor.id, declarationTile),
             )
             assertFalse(
                 reactions.any { action -> action is GameAction.Ron },

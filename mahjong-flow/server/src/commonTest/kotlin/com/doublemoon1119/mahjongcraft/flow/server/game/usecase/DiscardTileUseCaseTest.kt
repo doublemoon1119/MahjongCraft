@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
 import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
+import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
@@ -1493,11 +1494,12 @@ class DiscardTileUseCaseTest {
         val fourCharacter = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 4))
         val validator = fixtures.moduleRegistry.getModule(table.config).createLegalActionValidator()
         fun canRonFourCharacter(state: TableState) = validator.getLegalActions(
-            tableState = state,
-            player = state.players.first { it.id == waitingPlayerId },
-            sourceAction = GameAction.Discard(fourCharacter.id),
-            sourceDirection = state.relativeDirectionOf(waitingPlayerId, otherPlayerId),
-            incomingTile = fourCharacter,
+            LegalActionContext.discardReaction(
+                tableState = state,
+                playerId = waitingPlayerId,
+                discarderId = otherPlayerId,
+                discardedTile = fourCharacter,
+            ),
         ).any { it is GameAction.Ron }
         assertTrue(canRonFourCharacter(table), "4m should be a legal ron before 1m passes by")
 

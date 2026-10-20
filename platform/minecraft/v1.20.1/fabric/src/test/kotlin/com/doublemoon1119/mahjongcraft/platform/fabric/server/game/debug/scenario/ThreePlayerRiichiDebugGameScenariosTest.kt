@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenar
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PULL_NORTH_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
@@ -182,13 +183,24 @@ class ThreePlayerRiichiDebugGameScenariosTest {
      * @param north 被拔出的北牌。
      * @return 合法反應包含榮和時為 true。
      */
-    private fun TableState.canRobPulledNorth(offset: Int, north: IdentifiedTile): Boolean = scenarioValidator().getLegalActions(
-        tableState = this,
-        player = waitingSeat(offset),
-        sourceAction = PULL_NORTH_GAME_ACTION,
-        sourceDirection = relativeDirectionOf(seat(offset).id, seat(1).id),
-        incomingTile = north,
-    ).any { it is GameAction.Ron }
+    private fun TableState.canRobPulledNorth(offset: Int, north: IdentifiedTile): Boolean {
+        val player = seat(offset)
+        val declarer = seat(1)
+        val contextState = copy(
+            players = players.map {
+                if (it.id == player.id) it.copy(hand = it.hand.copy(lastDrawn = null)) else it
+            },
+        )
+        return contextState.scenarioValidator().getLegalActions(
+            LegalActionContext.declarationReaction(
+                contextState,
+                player.id,
+                declarer.id,
+                PULL_NORTH_GAME_ACTION,
+                north,
+            ),
+        ).any { it is GameAction.Ron }
+    }
 
     /** 三人日麻情境共用的規則數值與牌面。 */
     private companion object {

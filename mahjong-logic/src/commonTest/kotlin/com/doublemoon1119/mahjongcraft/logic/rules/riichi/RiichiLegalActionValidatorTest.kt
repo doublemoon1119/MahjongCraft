@@ -62,13 +62,7 @@ class RiichiLegalActionValidatorTest {
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
 
         // 執行
-        val actions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Discard(incomingTile.id),
-            sourceDirection = RelativeDirection.Across,
-            incomingTile = incomingTile,
-        )
+        val actions = validator.getLegalActions(LegalActionTestContexts.discard(tableState, player, RelativeDirection.Across, incomingTile))
 
         // 驗證：withTiles 記錄實際要消耗的兩張手牌實例，供 UI 預覽與實際執行共用同一份決定。
         val ponAction = actions.filterIsInstance<GameAction.Pon>().single()
@@ -100,13 +94,7 @@ class RiichiLegalActionValidatorTest {
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
 
         // 執行
-        val actions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Discard(incomingTile.id),
-            sourceDirection = RelativeDirection.Left,
-            incomingTile = incomingTile,
-        )
+        val actions = validator.getLegalActions(LegalActionTestContexts.discard(tableState, player, RelativeDirection.Left, incomingTile))
 
         // 驗證
         assertTrue(actions.any { it is GameAction.Chi && it.tileId == incomingTile.id })
@@ -137,13 +125,7 @@ class RiichiLegalActionValidatorTest {
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
 
         // 執行
-        val actions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Discard(incomingTile.id),
-            sourceDirection = RelativeDirection.Across,
-            incomingTile = incomingTile,
-        )
+        val actions = validator.getLegalActions(LegalActionTestContexts.discard(tableState, player, RelativeDirection.Across, incomingTile))
 
         // 驗證
         assertTrue(actions.any { it is GameAction.Kan && it.type == GameAction.KanType.OPEN_KAN })
@@ -177,13 +159,7 @@ class RiichiLegalActionValidatorTest {
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
 
         // 執行
-        val actions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Discard(incomingTile.id),
-            sourceDirection = RelativeDirection.Self,
-            incomingTile = incomingTile,
-        )
+        val actions = validator.getLegalActions(LegalActionTestContexts.ownTurnWithDraw(tableState, player, incomingTile))
 
         // 驗證
         assertTrue(actions.any { it is GameAction.Kan && it.type == GameAction.KanType.ADDED_KAN })
@@ -214,13 +190,7 @@ class RiichiLegalActionValidatorTest {
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
 
         // 執行
-        val actions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Discard(incomingTile.id),
-            sourceDirection = RelativeDirection.Self,
-            incomingTile = incomingTile,
-        )
+        val actions = validator.getLegalActions(LegalActionTestContexts.ownTurnWithDraw(tableState, player, incomingTile))
 
         // 驗證
         assertTrue(actions.any { it is GameAction.Kan && it.type == GameAction.KanType.CLOSED_KAN })
@@ -245,22 +215,10 @@ class RiichiLegalActionValidatorTest {
 
         val ownTurnActions = listOf(Tile.Numeric(Tile.Suit.Character, 1), Tile.Numeric(Tile.Suit.Character, 9)).flatMap { drawn ->
             val incomingTile = FakeIdentifiedTileFactory.create(drawn)
-            validator.getLegalActions(
-                tableState = tableState,
-                player = player,
-                sourceAction = GameAction.Draw,
-                sourceDirection = RelativeDirection.Self,
-                incomingTile = incomingTile,
-            )
+            validator.getLegalActions(LegalActionTestContexts.ownTurnWithDraw(tableState, player, incomingTile))
         }
         val discard = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
-        val responseActions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Discard(discard.id),
-            sourceDirection = RelativeDirection.Across,
-            incomingTile = discard,
-        )
+        val responseActions = validator.getLegalActions(LegalActionTestContexts.discard(tableState, player, RelativeDirection.Across, discard))
 
         assertTrue(ownTurnActions.none { it is GameAction.Kan }, "own turn actions: $ownTurnActions")
         assertTrue(responseActions.none { it is GameAction.Kan }, "response actions: $responseActions")
@@ -291,13 +249,7 @@ class RiichiLegalActionValidatorTest {
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
 
         // 執行
-        val actions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Discard(incomingTile.id),
-            sourceDirection = RelativeDirection.Left,
-            incomingTile = incomingTile,
-        )
+        val actions = validator.getLegalActions(LegalActionTestContexts.discard(tableState, player, RelativeDirection.Left, incomingTile))
 
         // 驗證：吃／碰／大明槓皆不可，只留下 Pass
         assertFalse(actions.any { it is GameAction.Chi })
@@ -336,25 +288,13 @@ class RiichiLegalActionValidatorTest {
         val incomingCharacterOne = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
 
         // 執行：摸到手牌已有 3 張的 1 萬（可暗槓的條件）
-        val closedKanActions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Draw,
-            sourceDirection = RelativeDirection.Self,
-            incomingTile = incomingCharacterOne,
-        )
+        val closedKanActions = validator.getLegalActions(LegalActionTestContexts.ownTurnWithDraw(tableState, player, incomingCharacterOne))
         // 驗證：牌山已摸盡，不可暗槓
         assertFalse(closedKanActions.any { it is GameAction.Kan && it.type == GameAction.KanType.CLOSED_KAN })
 
         // 執行：摸到跟既有碰牌相同的 5 條（可加槓的條件）
         val incomingBambooFive = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5))
-        val addedKanActions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Draw,
-            sourceDirection = RelativeDirection.Self,
-            incomingTile = incomingBambooFive,
-        )
+        val addedKanActions = validator.getLegalActions(LegalActionTestContexts.ownTurnWithDraw(tableState, player, incomingBambooFive))
         // 驗證：牌山已摸盡，不可加槓
         assertFalse(addedKanActions.any { it is GameAction.Kan && it.type == GameAction.KanType.ADDED_KAN })
     }
@@ -387,13 +327,7 @@ class RiichiLegalActionValidatorTest {
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
 
         // 執行
-        val actions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Discard(incomingTile.id),
-            sourceDirection = RelativeDirection.Self,
-            incomingTile = incomingTile,
-        )
+        val actions = validator.getLegalActions(LegalActionTestContexts.ownTurnWithDraw(tableState, player, incomingTile))
 
         // 驗證：即使 3 張同種牌 + 摸到第 4 張的條件成立，全場槓子數已達上限，不應提供暗槓選項
         assertFalse(actions.any { it is GameAction.Kan && it.type == GameAction.KanType.CLOSED_KAN })
@@ -426,13 +360,7 @@ class RiichiLegalActionValidatorTest {
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
 
         // 執行
-        val actions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Discard(incomingTile.id),
-            sourceDirection = RelativeDirection.Across,
-            incomingTile = incomingTile,
-        )
+        val actions = validator.getLegalActions(LegalActionTestContexts.discard(tableState, player, RelativeDirection.Across, incomingTile))
 
         // 驗證：即使這位玩家自己手牌條件符合明槓，全場槓子數已達上限，不應提供明槓選項
         assertFalse(actions.any { it is GameAction.Kan && it.type == GameAction.KanType.OPEN_KAN })
@@ -476,13 +404,7 @@ class RiichiLegalActionValidatorTest {
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9))
 
         // 執行
-        val actions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Discard(incomingTile.id),
-            sourceDirection = RelativeDirection.Across,
-            incomingTile = incomingTile,
-        )
+        val actions = validator.getLegalActions(LegalActionTestContexts.discard(tableState, player, RelativeDirection.Across, incomingTile))
 
         // 驗證
         assertTrue(actions.any { it is GameAction.Ron && it.tileId == incomingTile.id })
@@ -522,13 +444,7 @@ class RiichiLegalActionValidatorTest {
         )
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
 
-        val actions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Discard(incomingTile.id),
-            sourceDirection = RelativeDirection.Across,
-            incomingTile = incomingTile,
-        )
+        val actions = validator.getLegalActions(LegalActionTestContexts.discard(tableState, player, RelativeDirection.Across, incomingTile))
 
         assertTrue(actions.any { it is GameAction.Ron && it.tileId == incomingTile.id })
     }
@@ -571,13 +487,7 @@ class RiichiLegalActionValidatorTest {
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9))
 
         // 執行
-        val actions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Draw,
-            sourceDirection = RelativeDirection.Self,
-            incomingTile = incomingTile,
-        )
+        val actions = validator.getLegalActions(LegalActionTestContexts.ownTurnWithDraw(tableState, player, incomingTile))
 
         // 驗證
         assertTrue(actions.any { it is GameAction.Tsumo })
@@ -620,13 +530,7 @@ class RiichiLegalActionValidatorTest {
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 7))
 
         // 執行
-        val actions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Discard(incomingTile.id),
-            sourceDirection = RelativeDirection.Across,
-            incomingTile = incomingTile,
-        )
+        val actions = validator.getLegalActions(LegalActionTestContexts.discard(tableState, player, RelativeDirection.Across, incomingTile))
 
         // 驗證
         assertTrue(actions.any { it is GameAction.Ron && it.tileId == incomingTile.id })
@@ -674,13 +578,7 @@ class RiichiLegalActionValidatorTest {
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 7))
 
         // 執行
-        val actions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Discard(incomingTile.id),
-            sourceDirection = RelativeDirection.Across,
-            incomingTile = incomingTile,
-        )
+        val actions = validator.getLegalActions(LegalActionTestContexts.discard(tableState, player, RelativeDirection.Across, incomingTile))
 
         // 驗證
         assertFalse(actions.any { it is GameAction.Ron })
@@ -730,13 +628,7 @@ class RiichiLegalActionValidatorTest {
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Honor.West)
 
         // 執行
-        val actions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Draw,
-            sourceDirection = RelativeDirection.Self,
-            incomingTile = incomingTile,
-        )
+        val actions = validator.getLegalActions(LegalActionTestContexts.ownTurnWithDraw(tableState, player, incomingTile))
 
         // 驗證：不可自摸（番數不足）
         assertFalse(actions.any { it is GameAction.Tsumo })
@@ -785,13 +677,7 @@ class RiichiLegalActionValidatorTest {
 
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Honor.West)
 
-        val actions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Draw,
-            sourceDirection = RelativeDirection.Self,
-            incomingTile = incomingTile,
-        )
+        val actions = validator.getLegalActions(LegalActionTestContexts.ownTurnWithDraw(tableState, player, incomingTile))
 
         assertFalse(actions.any { it is GameAction.Tsumo })
     }
@@ -834,13 +720,7 @@ class RiichiLegalActionValidatorTest {
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
 
         // 執行
-        val actions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Draw,
-            sourceDirection = RelativeDirection.Self,
-            incomingTile = incomingTile,
-        )
+        val actions = validator.getLegalActions(LegalActionTestContexts.ownTurnWithDraw(tableState, player, incomingTile))
 
         // 驗證：可以自摸（役滿）
         assertTrue(actions.any { it is GameAction.Tsumo })
@@ -884,13 +764,7 @@ class RiichiLegalActionValidatorTest {
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
 
         // 執行
-        val actions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Draw,
-            sourceDirection = RelativeDirection.Self,
-            incomingTile = incomingTile,
-        )
+        val actions = validator.getLegalActions(LegalActionTestContexts.ownTurnWithDraw(tableState, player, incomingTile))
 
         // 驗證：可以自摸（役滿不受最低番數限制）
         assertTrue(actions.any { it is GameAction.Tsumo })
@@ -965,13 +839,7 @@ class RiichiLegalActionValidatorTest {
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9))
 
         // 執行
-        val actions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Draw,
-            sourceDirection = RelativeDirection.Self,
-            incomingTile = incomingTile,
-        )
+        val actions = validator.getLegalActions(LegalActionTestContexts.ownTurnWithDraw(tableState, player, incomingTile))
 
         // 驗證：可執行九種九牌
         assertTrue(actions.any { it is GameAction.ExhaustiveDraw })
@@ -1022,13 +890,7 @@ class RiichiLegalActionValidatorTest {
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5))
 
         // 執行
-        val actions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Draw,
-            sourceDirection = RelativeDirection.Self,
-            incomingTile = incomingTile,
-        )
+        val actions = validator.getLegalActions(LegalActionTestContexts.ownTurnWithDraw(tableState, player, incomingTile))
 
         // 驗證：不可執行九種九牌
         assertFalse(actions.any { it is GameAction.ExhaustiveDraw })
@@ -1088,11 +950,7 @@ class RiichiLegalActionValidatorTest {
             validator.analyzeWinAvailability(liveWallState, player, incomingTile),
         )
         val prematureActions = validator.getLegalActions(
-            liveWallState,
-            player,
-            GameAction.Discard(incomingTile.id),
-            RelativeDirection.Across,
-            incomingTile,
+            LegalActionTestContexts.discard(liveWallState, player, RelativeDirection.Across, incomingTile),
         )
         assertFalse(prematureActions.any { it is GameAction.Ron })
 
@@ -1102,11 +960,7 @@ class RiichiLegalActionValidatorTest {
             validator.analyzeWinAvailability(exhaustedState, player, incomingTile),
         )
         val houteiActions = validator.getLegalActions(
-            exhaustedState,
-            player,
-            GameAction.Discard(incomingTile.id),
-            RelativeDirection.Across,
-            incomingTile,
+            LegalActionTestContexts.discard(exhaustedState, player, RelativeDirection.Across, incomingTile),
         )
         assertTrue(houteiActions.any { it is GameAction.Ron })
     }
@@ -1174,13 +1028,7 @@ class RiichiLegalActionValidatorTest {
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5))
 
         // 執行：模擬其他玩家加槓 5s，觸發搶槓判定
-        val actions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Kan(GameAction.KanType.ADDED_KAN, incomingTile.id, emptyList()),
-            sourceDirection = RelativeDirection.Across,
-            incomingTile = incomingTile,
-        )
+        val actions = validator.getLegalActions(LegalActionTestContexts.declaration(tableState, player, RelativeDirection.Across, GameAction.Kan(GameAction.KanType.ADDED_KAN, incomingTile.id, emptyList()), incomingTile))
 
         // 驗證：搶槓可榮和
         assertTrue(actions.any { it is GameAction.Ron })
@@ -1226,13 +1074,7 @@ class RiichiLegalActionValidatorTest {
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
 
         // 執行：模擬其他玩家暗槓東風，觸發搶暗槓判定
-        val actions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Kan(GameAction.KanType.CLOSED_KAN, incomingTile.id, emptyList()),
-            sourceDirection = RelativeDirection.Across,
-            incomingTile = incomingTile,
-        )
+        val actions = validator.getLegalActions(LegalActionTestContexts.declaration(tableState, player, RelativeDirection.Across, GameAction.Kan(GameAction.KanType.CLOSED_KAN, incomingTile.id, emptyList()), incomingTile))
 
         // 驗證：國士無雙可搶暗槓榮和
         assertTrue(actions.any { it is GameAction.Ron })
@@ -1277,13 +1119,7 @@ class RiichiLegalActionValidatorTest {
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 2))
 
         // 執行：模擬其他玩家暗槓 2m，觸發搶暗槓判定
-        val actions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Kan(GameAction.KanType.CLOSED_KAN, incomingTile.id, emptyList()),
-            sourceDirection = RelativeDirection.Across,
-            incomingTile = incomingTile,
-        )
+        val actions = validator.getLegalActions(LegalActionTestContexts.declaration(tableState, player, RelativeDirection.Across, GameAction.Kan(GameAction.KanType.CLOSED_KAN, incomingTile.id, emptyList()), incomingTile))
 
         // 驗證：非國士無雙手牌不可搶暗槓榮和
         assertFalse(actions.any { it is GameAction.Ron })

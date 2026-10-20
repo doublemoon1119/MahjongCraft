@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.WinSettlementResult
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.LegalActionTestContexts
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PULL_NORTH_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
@@ -143,13 +144,7 @@ class ThreePlayerRiichiRuleModuleTest {
         val table = threePlayerTable(listOf(player, other(Wind.SOUTH), other(Wind.WEST)))
         val incoming = FakeIdentifiedTileFactory.create(dot(1))
 
-        val actions = module.createLegalActionValidator().getLegalActions(
-            tableState = table,
-            player = player,
-            sourceAction = GameAction.Discard(incoming.id),
-            sourceDirection = RelativeDirection.Left,
-            incomingTile = incoming,
-        )
+        val actions = module.createLegalActionValidator().getLegalActions(LegalActionTestContexts.discard(table, player, RelativeDirection.Left, incoming))
 
         assertTrue(actions.none { it is GameAction.Chi })
     }
@@ -580,13 +575,7 @@ class ThreePlayerRiichiRuleModuleTest {
         dynamicRuleState: RiichiDynamicState = RiichiDynamicState(),
     ): List<GameAction> {
         val table = threePlayerTable(listOf(player, other(Wind.SOUTH), other(Wind.WEST)), dynamicRuleState = dynamicRuleState)
-        return module.createLegalActionValidator().getLegalActions(
-            tableState = table,
-            player = table.players.first(),
-            sourceAction = GameAction.Draw,
-            sourceDirection = RelativeDirection.Self,
-            incomingTile = null,
-        )
+        return module.createLegalActionValidator().getLegalActions(LegalActionTestContexts.ownTurn(table, table.players.first()))
     }
 
     /**

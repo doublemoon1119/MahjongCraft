@@ -99,6 +99,29 @@
 - Projection hooks must not modify state or make game decisions. Authoritative validation and wall reveal
   rules still read the original state. Test that changing hidden data leaves other observers' output unchanged.
 
+## Legal Action Input
+
+- Build a `LegalActionContext` from the current table and the assessed player's ID. Use `ownTurn`
+  for their own turn, `discardReaction` for another player's discard, or `declarationReaction`
+  for a kan or extension declaration. The latter two also work before a reaction window is opened.
+- Do not copy a player and remove their drawn tile before calling the validator. The context reads the
+  player from the same table and provides both `handBeforeIncoming` and `handWithIncoming`.
+  The first excludes this query's source tile; the second includes it exactly once.
+- Use those named hands for tile calculations. `context.player` and `context.tableState` remain
+  the original state, for scores, rule state, wall state and action history. Do not write a calculated
+  hand back to the repository or add `incomingTile` to `handWithIncoming` again.
+- Preserve the source kind, action, player and physical tile ID. Do not infer a discarded tile or a
+  robbing declaration from whether a nullable tile is present. Equal tile faces are not equal tile IDs.
+- Offering actions and checking a submitted command use the same context factories. At submission,
+  rebuild the context inside the authoritative transaction; an earlier offer is not permission to act.
+  Keep turn, membership and reaction-window checks in Flow.
+- A single own-turn query returns all applicable actions, including riichi alongside self-draw or kan.
+  Do not recursively call the validator with a different representation of the same drawn tile.
+- `tileSelectionRequirement` still receives the original player with the complete hand. It describes
+  which tiles must be selected after choosing an action, not where that action's source tile is stored.
+- Test both the offer and the real command. A test that only sees a self-draw option or calls the rule's
+  settlement method directly does not show that the player can successfully submit self-draw.
+
 ## Koin Registration
 
 - Declare every Koin definition in the owning module's DSL `module { }` value. Do not annotate classes with

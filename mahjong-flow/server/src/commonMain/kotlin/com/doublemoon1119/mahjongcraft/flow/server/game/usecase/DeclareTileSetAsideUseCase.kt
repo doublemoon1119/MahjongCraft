@@ -14,8 +14,8 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.isOwnTurnWindowO
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
-import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
+import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
@@ -159,14 +159,10 @@ class DeclareTileSetAsideUseCase(
     ): Pair<TableState, Outcome<SetAsideResult, GameError>> {
         val illegal = state to Outcome.Error(GameError.IllegalAction(playerId, gameId, action))
         val declarer = state.currentPlayer
-        val incomingTile = declarer.hand.lastDrawn ?: return illegal
+        if (declarer.hand.lastDrawn == null) return illegal
         val module = moduleRegistry.getModule(state.config)
         val legalActions = module.createLegalActionValidator().getLegalActions(
-            tableState = state,
-            player = declarer.copy(hand = declarer.hand.copy(lastDrawn = null)),
-            sourceAction = GameAction.Draw,
-            sourceDirection = RelativeDirection.Self,
-            incomingTile = incomingTile,
+            LegalActionContext.ownTurn(state, playerId),
         )
         if (action !in legalActions) return illegal
         val setAsideTile = module.tileSetAsideBy(declarer, action) ?: return illegal

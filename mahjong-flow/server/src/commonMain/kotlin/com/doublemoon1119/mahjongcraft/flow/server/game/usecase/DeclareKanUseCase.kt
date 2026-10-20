@@ -14,9 +14,9 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSync
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.isOwnTurnWindowOpenFor
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
-import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
+import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
@@ -117,30 +117,16 @@ class DeclareKanUseCase(
                 state.currentPlayer.id != playerId ->
                     state to Outcome.Error(GameError.NotPlayersTurn(playerId, gameId))
 
-                !state.isOwnTurnWindowOpenFor(playerId) ->
+                !state.isOwnTurnWindowOpenFor(playerId) || state.currentPlayer.hand.lastDrawn == null ->
                     state to Outcome.Error(
                         GameError.IllegalAction(playerId, gameId, GameAction.Kan(kanType, tileId, emptyList())),
                     )
 
                 else -> {
-                    val incomingTile = state.currentPlayer.hand.lastDrawn
-                        ?: return@update state to Outcome.Error(
-                            GameError.IllegalAction(playerId, gameId, GameAction.Kan(kanType, tileId, emptyList())),
-                        )
                     val module = moduleRegistry.getModule(state.config)
 
-                    // LegalActionValidator 的既有慣例是傳入的手牌「不含胡牌張」，胡牌張只透過
-                    // incomingTile 參數單獨傳入；剝離手法與 DeclareTsumoUseCase/
-                    // DeclareAbortiveDrawUseCase 相同（見規劃紀錄：暗槓判定 closedKanCount 若不
-                    // 剝離 lastDrawn 會多算一張）。
-                    val playerForCheck =
-                        state.currentPlayer.copy(hand = state.currentPlayer.hand.copy(lastDrawn = null))
                     val legalActions = module.createLegalActionValidator().getLegalActions(
-                        tableState = state,
-                        player = playerForCheck,
-                        sourceAction = GameAction.Draw,
-                        sourceDirection = RelativeDirection.Self,
-                        incomingTile = incomingTile,
+                        LegalActionContext.ownTurn(state, playerId),
                     )
                     val kanAction = legalActions.filterIsInstance<GameAction.Kan>().firstOrNull {
                         it.type == kanType && it.tileId == tileId

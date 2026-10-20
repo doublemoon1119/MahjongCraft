@@ -4,8 +4,8 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.model.PlayerDecisionActi
 import com.doublemoon1119.mahjongcraft.flow.server.game.model.PlayerDecisionOptions
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
-import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionValidator
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
@@ -93,11 +93,13 @@ internal object PlayerDecisionOptionsResolver {
     ): List<GameAction> = when (context) {
         is PlayerActionContext.RobbingReaction ->
             validator.getLegalActions(
-                tableState = state,
-                player = player,
-                sourceAction = context.pending.declaredAction,
-                sourceDirection = state.relativeDirectionOf(player.id, context.pending.declarerId),
-                incomingTile = context.pending.robbedTile,
+                LegalActionContext.declarationReaction(
+                    tableState = state,
+                    playerId = player.id,
+                    declarerId = context.pending.declarerId,
+                    declaredAction = context.pending.declaredAction,
+                    declaredTile = context.pending.robbedTile,
+                ),
             ).filter { it is GameAction.Ron || it == GameAction.Pass }
 
         is PlayerActionContext.DiscardReaction -> {
@@ -109,18 +111,19 @@ internal object PlayerDecisionOptionsResolver {
                 .tile
             DiscardReactionActionSupport.filter(
                 validator.getLegalActions(
-                    tableState = state,
-                    player = player,
-                    sourceAction = GameAction.Discard(pending.tileId),
-                    sourceDirection = state.relativeDirectionOf(player.id, pending.discarderId),
-                    incomingTile = discardedTile,
+                    LegalActionContext.discardReaction(
+                        tableState = state,
+                        playerId = player.id,
+                        discarderId = pending.discarderId,
+                        discardedTile = discardedTile,
+                    ),
                 ),
             )
         }
 
         is PlayerActionContext.OwnTurn ->
             if (player.hand.lastDrawn != null) {
-                validator.getLegalActions(state, player, GameAction.Draw, RelativeDirection.Self, null)
+                validator.getLegalActions(LegalActionContext.ownTurn(state, player.id))
             } else {
                 emptyList()
             }

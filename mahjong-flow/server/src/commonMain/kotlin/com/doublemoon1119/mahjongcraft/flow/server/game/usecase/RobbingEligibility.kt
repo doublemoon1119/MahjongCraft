@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlin.uuid.Uuid
@@ -33,11 +34,13 @@ internal object RobbingEligibility {
             .filter { it.id != declarerId && tableState.isPlayerActive(it.id) }
             .filter { candidate ->
                 validator.getLegalActions(
-                    tableState = tableState,
-                    player = candidate,
-                    sourceAction = declaredAction,
-                    sourceDirection = tableState.relativeDirectionOf(candidate.id, declarerId),
-                    incomingTile = robbedTile,
+                    LegalActionContext.declarationReaction(
+                        tableState = tableState,
+                        playerId = candidate.id,
+                        declarerId = declarerId,
+                        declaredAction = declaredAction,
+                        declaredTile = robbedTile,
+                    ),
                 ).any { it is GameAction.Ron }
             }
             .mapTo(mutableSetOf()) { it.id }

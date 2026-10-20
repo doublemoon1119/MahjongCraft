@@ -59,13 +59,7 @@ class RiichiLegalActionValidatorRedDoraTest {
         val incomingTile = FakeIdentifiedTileFactory.create(RiichiTileTypes.redFive(Tile.Suit.Character)) // 赤5萬
 
         // 執行
-        val actions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Discard(incomingTile.id),
-            sourceDirection = RelativeDirection.Across,
-            incomingTile = incomingTile,
-        )
+        val actions = validator.getLegalActions(LegalActionTestContexts.discard(tableState, player, RelativeDirection.Across, incomingTile))
 
         // 驗證
         assertTrue(actions.any { it is GameAction.Pon && it.tileId == incomingTile.id })
@@ -96,13 +90,7 @@ class RiichiLegalActionValidatorRedDoraTest {
             FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5)) // 普通5萬
 
         // 執行
-        val actions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Discard(incomingTile.id),
-            sourceDirection = RelativeDirection.Across,
-            incomingTile = incomingTile,
-        )
+        val actions = validator.getLegalActions(LegalActionTestContexts.discard(tableState, player, RelativeDirection.Across, incomingTile))
 
         // 驗證
         assertTrue(actions.any { it is GameAction.Pon && it.tileId == incomingTile.id })
@@ -129,13 +117,7 @@ class RiichiLegalActionValidatorRedDoraTest {
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5))
 
         // 執行
-        val actions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Discard(incomingTile.id),
-            sourceDirection = RelativeDirection.Across,
-            incomingTile = incomingTile,
-        )
+        val actions = validator.getLegalActions(LegalActionTestContexts.discard(tableState, player, RelativeDirection.Across, incomingTile))
 
         // 驗證
         val ponAction = actions.filterIsInstance<GameAction.Pon>().single()
@@ -167,13 +149,7 @@ class RiichiLegalActionValidatorRedDoraTest {
         val incomingTile = FakeIdentifiedTileFactory.create(RiichiTileTypes.redFive(Tile.Suit.Character))
 
         // 執行
-        val actions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Discard(incomingTile.id),
-            sourceDirection = RelativeDirection.Across,
-            incomingTile = incomingTile,
-        )
+        val actions = validator.getLegalActions(LegalActionTestContexts.discard(tableState, player, RelativeDirection.Across, incomingTile))
 
         // 驗證
         assertTrue(actions.any { it is GameAction.Kan && it.type == GameAction.KanType.OPEN_KAN })
@@ -204,13 +180,7 @@ class RiichiLegalActionValidatorRedDoraTest {
         val incomingTile = FakeIdentifiedTileFactory.create(RiichiTileTypes.redFive(Tile.Suit.Character))
 
         // 執行
-        val actions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Draw,
-            sourceDirection = RelativeDirection.Self,
-            incomingTile = incomingTile,
-        )
+        val actions = validator.getLegalActions(LegalActionTestContexts.ownTurnWithDraw(tableState, player, incomingTile))
 
         // 驗證
         assertTrue(actions.any { it is GameAction.Kan && it.type == GameAction.KanType.CLOSED_KAN })
@@ -244,13 +214,7 @@ class RiichiLegalActionValidatorRedDoraTest {
         val incomingTile = FakeIdentifiedTileFactory.create(RiichiTileTypes.redFive(Tile.Suit.Character))
 
         // 執行
-        val actions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Draw,
-            sourceDirection = RelativeDirection.Self,
-            incomingTile = incomingTile,
-        )
+        val actions = validator.getLegalActions(LegalActionTestContexts.ownTurnWithDraw(tableState, player, incomingTile))
 
         // 驗證
         assertTrue(actions.any { it is GameAction.Kan && it.type == GameAction.KanType.ADDED_KAN })
@@ -280,13 +244,7 @@ class RiichiLegalActionValidatorRedDoraTest {
         val incomingTile = FakeIdentifiedTileFactory.create(RiichiTileTypes.redFive(Tile.Suit.Character))
 
         // 執行
-        val actions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Discard(incomingTile.id),
-            sourceDirection = RelativeDirection.Left,
-            incomingTile = incomingTile,
-        )
+        val actions = validator.getLegalActions(LegalActionTestContexts.discard(tableState, player, RelativeDirection.Left, incomingTile))
 
         // 驗證
         assertTrue(actions.any { it is GameAction.Chi && it.tileId == incomingTile.id })

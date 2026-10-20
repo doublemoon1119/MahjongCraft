@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionValidator
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
 import com.doublemoon1119.mahjongcraft.logic.judgment.TileSelectionRequirement
@@ -66,20 +67,16 @@ class RiichiLegalActionValidator(
     /**
      * 判斷在當前遊戲狀態下，指定玩家可以執行的合法動作列表。
      *
-     * @param tableState 當前的遊戲桌況。
-     * @param player 欲判斷合法動作的玩家。
-     * @param sourceAction 觸發此判斷的動作。
-     * @param sourceDirection 動作的來源方位。
-     * @param incomingTile 可選參數，表示剛摸到或他家打出的牌。
+     * @param context 從同一份桌況建立的判定情境；來源牌已經只加入判定手牌一次。
      * @return 該玩家可以執行的合法動作列表。
      */
-    override fun getLegalActions(
-        tableState: TableState,
-        player: MahjongPlayer,
-        sourceAction: GameAction,
-        sourceDirection: RelativeDirection,
-        incomingTile: IdentifiedTile?,
-    ): List<GameAction> {
+    override fun getLegalActions(context: LegalActionContext): List<GameAction> {
+        val tableState = context.tableState
+        val sourceAction = context.sourceAction
+        val sourceDirection = context.sourceDirection
+        val incomingTile = context.incomingTile
+        val player = context.player.copy(hand = context.handBeforeIncoming)
+        val handWithIncoming = context.handWithIncoming
         val legalActions = mutableListOf<GameAction>()
         val hand = player.hand
         val isMenzen = hand.exposedMelds.isEmpty() || hand.exposedMelds.all { it.type == MeldType.CLOSED_KAN }
@@ -106,34 +103,26 @@ class RiichiLegalActionValidator(
         // 王牌區，牌山剩 1 張時補完就沒有海底牌可摸；剩 0 張時則是正在處理海底牌或河底牌。
         val wallAllowsKan = tableState.tileWall.remainingCount >= MIN_LIVE_TILES_FOR_KAN
 
-        // incomingTile == null 表示玩家正在打牌（準備捨牌）
-        // 捨牌候選由呼叫端依手牌建立，此處不列舉一般捨牌
-        // 此 Validator 只處理「額外動作」（鳴牌、胡牌、立直）
+        // 自己回合的立直資格使用包含本次摸牌的完整判定手牌；即使同一次查詢也有摸牌，立直與自摸仍可同時成立。
+        if (sourceDirection == RelativeDirection.Self &&
+            !isRiichi &&
+            isMenzen &&
+            player.score >= RIICHI_STICK_POINTS &&
+            tableState.tileWall.remainingCount >= tableState.playerCount
+        ) {
+            val result = shantenCalculator.calculate(
+                handWithIncoming,
+            )
+            if (result is ShantenResult.Tenpai || result is ShantenResult.Complete) {
+                legalActions.add(RIICHI_GAME_ACTION)
+            }
+        }
+
+        // incomingTile == null 表示目前沒有要納入額外動作判定的進牌，可能是尚未摸牌，
+        // 也可能是吃/碰/槓後進入等待捨牌的階段。
+        // 一般捨牌候選由呼叫端依手牌建立，此處不列舉一般捨牌。
+        // 此 Validator 只處理「額外動作」（鳴牌、胡牌、立直）。
         if (incomingTile == null) {
-            // 檢查是否可以立直 (Riichi)
-            // 條件：向聽數為 0 且門前清（無副露）且未曾立直且點數足夠支付一支立直棒，且牌山剩餘張數至少還夠
-            // 自己再摸一次（>= 玩家人數，確保輪到自己之前不會被其他人摸盡）
-            if (!isRiichi && isMenzen && player.score >= RIICHI_STICK_POINTS && tableState.tileWall.remainingCount >= tableState.playerCount) {
-                val result = shantenCalculator.calculate(
-                    Hand(
-                        player.hand.standingTiles.toMutableList(),
-                        player.hand.exposedMelds.toMutableList(),
-                    ),
-                )
-                if (result is ShantenResult.Tenpai) {
-                    legalActions.add(RIICHI_GAME_ACTION)
-                }
-            }
-
-            // 自己回合已摸牌時，一併合併「有摸到牌」情境的完整判定（自摸／暗槓／加槓／九種九牌）：
-            // 遞迴呼叫自己、把 lastDrawn 從立牌剝離後當成 incomingTile 傳入，重用下方 incomingTile
-            // 非 null 分支既有的邏輯，讓呼叫端只需呼叫一次就能拿到自己回合的完整合法動作清單。
-            val lastDrawn = player.hand.lastDrawn
-            if (sourceDirection == RelativeDirection.Self && lastDrawn != null) {
-                val playerWithoutLastDrawn = player.copy(hand = player.hand.copy(lastDrawn = null))
-                legalActions += getLegalActions(tableState, playerWithoutLastDrawn, sourceAction, sourceDirection, lastDrawn)
-            }
-
             return legalActions
         }
 
@@ -144,11 +133,7 @@ class RiichiLegalActionValidator(
         if (sourceDirection == RelativeDirection.Self) {
             // 自己摸牌
             // 1. 檢查是否可以自摸 (Tsumo)
-            val tempHandTsumo = Hand(
-                (player.hand.standingTiles + incomingTile).toMutableList(),
-                player.hand.exposedMelds.toMutableList(),
-            )
-            val tsumoResult = shantenCalculator.calculate(tempHandTsumo)
+            val tsumoResult = shantenCalculator.calculate(handWithIncoming)
             if (tsumoResult is ShantenResult.Complete) {
                 if (checkMinimumHan(
                         tableState = tableState,
@@ -175,7 +160,7 @@ class RiichiLegalActionValidator(
             // - 暗槓前後的等待牌必須相同。
             // - 每種等待的所有和牌拆法中，槓牌都只能作為刻子。
             if (canDeclareAnotherKan && wallAllowsKan) {
-                val closedKanCandidates = (player.hand.standingTiles + incomingTile)
+                val closedKanCandidates = handWithIncoming.standingTiles
                     .groupBy { it.tile.riichiCanonical }
                     .values
                     .filter { it.size == 4 }
@@ -202,14 +187,14 @@ class RiichiLegalActionValidator(
                 val canPull = if (isRiichi) {
                     incomingBaseTile == Tile.Honor.North
                 } else {
-                    (player.hand.standingTiles + incomingTile).any { it.tile.riichiCanonical == Tile.Honor.North }
+                    handWithIncoming.standingTiles.any { it.tile.riichiCanonical == Tile.Honor.North }
                 }
                 if (canPull) legalActions.add(PULL_NORTH_GAME_ACTION)
             }
 
             // 5. 檢查是否可以宣告和局 (九種九牌)
             if (tableState.isFirstGoAround(player)) {
-                val isKyuushuKyuuhai = (player.hand.standingTiles + incomingTile)
+                val isKyuushuKyuuhai = handWithIncoming.standingTiles
                     .filter { it.tile.isTerminal || it.tile.isHonor } // 過濾么九牌
                     .map { it.tile.riichiCanonical }
                     .toSet().size >= 9
@@ -220,11 +205,7 @@ class RiichiLegalActionValidator(
         } else {
             // 他家打牌
             // 1. 檢查是否可以榮和 (Ron)
-            val tempHandRon = Hand(
-                (player.hand.standingTiles + incomingTile).toMutableList(),
-                player.hand.exposedMelds.toMutableList(),
-            )
-            val ronResult = shantenCalculator.calculate(tempHandRon)
+            val ronResult = shantenCalculator.calculate(handWithIncoming)
 
             if (ronResult is ShantenResult.Complete) {
                 // 振聽檢查：收到這張牌前的聽牌中，只要任何一種和牌張在自己的牌河或本巡放過的牌裡，

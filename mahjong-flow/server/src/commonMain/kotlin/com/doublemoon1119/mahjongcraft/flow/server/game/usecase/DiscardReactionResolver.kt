@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
 import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
+import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
@@ -55,11 +56,12 @@ internal object DiscardReactionResolver {
             .associate { otherPlayer ->
                 otherPlayer.id to DiscardReactionActionSupport.filter(
                     validator.getLegalActions(
-                        tableState = stateAfterDiscard,
-                        player = otherPlayer,
-                        sourceAction = GameAction.Discard(discardedTile.id),
-                        sourceDirection = stateAfterDiscard.relativeDirectionOf(otherPlayer.id, discarderId),
-                        incomingTile = discardedTile,
+                        LegalActionContext.discardReaction(
+                            tableState = stateAfterDiscard,
+                            playerId = otherPlayer.id,
+                            discarderId = discarderId,
+                            discardedTile = discardedTile,
+                        ),
                     ),
                 )
             }

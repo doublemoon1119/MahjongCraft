@@ -17,7 +17,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.isOwnTurnWindowO
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DiscardReactionResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DiscardTileUseCase
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
-import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.applyRiichiDeclaration
@@ -106,11 +106,7 @@ class DeclareRiichiUseCase(
                     val module = moduleRegistry.getModule(state.config)
                     val legalActionValidator = module.createLegalActionValidator()
                     val legalActions = legalActionValidator.getLegalActions(
-                        tableState = state,
-                        player = state.currentPlayer,
-                        sourceAction = GameAction.Draw,
-                        sourceDirection = RelativeDirection.Self,
-                        incomingTile = null,
+                        LegalActionContext.ownTurn(state, playerId),
                     )
                     if (RIICHI_GAME_ACTION !in legalActions) {
                         return@update state to Outcome.Error(

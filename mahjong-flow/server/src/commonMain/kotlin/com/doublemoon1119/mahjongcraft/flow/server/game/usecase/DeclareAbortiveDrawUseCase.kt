@@ -12,7 +12,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSync
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.isOwnTurnWindowOpenFor
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
-import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
@@ -86,20 +86,10 @@ class DeclareAbortiveDrawUseCase(
                     game to Outcome.Error(GameError.UnsupportedAction(gameId, playerId))
 
                 else -> {
-                    val incomingTile = state.currentPlayer.hand.lastDrawn
-                        ?: return@updateGame game to Outcome.Error(GameError.UnsupportedAction(gameId, playerId))
                     val module = moduleRegistry.getModule(state.config)
 
-                    // LegalActionValidator 的既有慣例是傳入的手牌「不含胡牌張」，胡牌張只透過
-                    // incomingTile 參數單獨傳入；剝離手法與 DeclareTsumoUseCase 相同。
-                    val playerForCheck =
-                        state.currentPlayer.copy(hand = state.currentPlayer.hand.copy(lastDrawn = null))
                     val legalActions = module.createLegalActionValidator().getLegalActions(
-                        tableState = state,
-                        player = playerForCheck,
-                        sourceAction = GameAction.Draw,
-                        sourceDirection = RelativeDirection.Self,
-                        incomingTile = incomingTile,
+                        LegalActionContext.ownTurn(state, playerId),
                     )
                     val exhaustiveDraw = legalActions.filterIsInstance<GameAction.ExhaustiveDraw>()
                         .firstOrNull { it.reason == reason }

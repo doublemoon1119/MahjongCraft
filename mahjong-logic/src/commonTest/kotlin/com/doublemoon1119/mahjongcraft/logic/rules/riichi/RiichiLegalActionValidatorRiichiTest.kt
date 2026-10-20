@@ -1,8 +1,9 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
-import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
+import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
@@ -67,13 +68,7 @@ class RiichiLegalActionValidatorRiichiTest {
         )
 
         // 執行
-        val actions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Draw,
-            sourceDirection = RelativeDirection.Self,
-            incomingTile = null,
-        )
+        val actions = validator.getLegalActions(LegalActionTestContexts.ownTurn(tableState, player))
 
         // 驗證
         assertTrue(actions.any { it == RIICHI_GAME_ACTION })
@@ -113,13 +108,7 @@ class RiichiLegalActionValidatorRiichiTest {
         )
 
         // 執行
-        val actions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Draw,
-            sourceDirection = RelativeDirection.Self,
-            incomingTile = null,
-        )
+        val actions = validator.getLegalActions(LegalActionTestContexts.ownTurn(tableState, player))
 
         // 驗證
         assertTrue(actions.any { it == RIICHI_GAME_ACTION })
@@ -159,13 +148,7 @@ class RiichiLegalActionValidatorRiichiTest {
         )
 
         // 執行
-        val actions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Draw,
-            sourceDirection = RelativeDirection.Self,
-            incomingTile = null,
-        )
+        val actions = validator.getLegalActions(LegalActionTestContexts.ownTurn(tableState, player))
 
         // 驗證
         assertFalse(actions.any { it == RIICHI_GAME_ACTION })
@@ -202,13 +185,7 @@ class RiichiLegalActionValidatorRiichiTest {
         )
 
         // 執行
-        val actions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Draw,
-            sourceDirection = RelativeDirection.Self,
-            incomingTile = null,
-        )
+        val actions = validator.getLegalActions(LegalActionTestContexts.ownTurn(tableState, player))
 
         // 驗證
         assertTrue(actions.any { it == RIICHI_GAME_ACTION })
@@ -248,13 +225,7 @@ class RiichiLegalActionValidatorRiichiTest {
         )
 
         // 執行
-        val actions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Draw,
-            sourceDirection = RelativeDirection.Self,
-            incomingTile = null,
-        )
+        val actions = validator.getLegalActions(LegalActionTestContexts.ownTurn(tableState, player))
 
         // 驗證
         assertFalse(actions.any { it == RIICHI_GAME_ACTION })
@@ -294,30 +265,21 @@ class RiichiLegalActionValidatorRiichiTest {
         )
 
         // 執行
-        val actions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Draw,
-            sourceDirection = RelativeDirection.Self,
-            incomingTile = null,
-        )
+        val actions = validator.getLegalActions(LegalActionTestContexts.ownTurn(tableState, player))
 
         // 驗證
         assertFalse(actions.any { it == RIICHI_GAME_ACTION })
     }
 
     /**
-     * 測試自己回合已摸牌時，單次呼叫（`incomingTile = null`，讓 [player] 的 `hand.lastDrawn` 帶著
-     * 摸到的牌，而非額外用參數傳入）就能拿到跟摸到的牌相關的資格（此處為自摸），呼叫端不需要自行
-     * 剝離 `lastDrawn` 再額外呼叫一次才問得到——這是本次修正要解決的行為：修正前 `incomingTile == null`
-     * 分支只檢查立直資格就直接回傳，`hand.lastDrawn` 帶的自摸資格會被整段跳過。
+     * 測試自己回合已摸牌時，單次建立 [LegalActionContext.ownTurn] 情境就能取得自摸與立直資格。
+     * 呼叫端不需要自行剝離 `lastDrawn`，也不需要為同一個回合再呼叫一次驗證器。
      *
      * 沿用 [RiichiLegalActionValidatorTest] `test can tsumo` 的手牌（1112345678999m + 摸到 9m 完成
-     * 清一色），差別只在於這裡讓摸到的牌直接放進 `hand.lastDrawn`，而不是另外用 `incomingTile` 參數
-     * 傳入。
+     * 清一色）；完整手牌同時應提供自摸、立直，以及立直所需的合法捨牌候選。
      */
     @Test
-    fun `test single call with incomingTile null still surfaces lastDrawn eligibility`() {
+    fun `test single own turn context surfaces lastDrawn eligibility`() {
         // 準備
         val standingTiles = listOf(
             Tile.Numeric(Tile.Suit.Character, 1),
@@ -338,23 +300,62 @@ class RiichiLegalActionValidatorRiichiTest {
         val player = FakeMahjongPlayerFactory.create(
             hand = playerHand,
             playerRuleState = RiichiPlayerState(),
-        )
+        ).copy(score = 1000)
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
             config = RiichiRuleConfig(),
+            tileWall = nonEmptyWall,
         )
 
-        // 執行——只呼叫一次，incomingTile 給 null。
-        val actions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Draw,
-            sourceDirection = RelativeDirection.Self,
-            incomingTile = null,
-        )
+        // 執行——只建立一次自己回合情境並呼叫驗證器。
+        val actions = validator.getLegalActions(LegalActionTestContexts.ownTurn(tableState, player))
 
         // 驗證
         assertTrue(actions.any { it is GameAction.Tsumo })
+        assertTrue(actions.any { it == RIICHI_GAME_ACTION })
+
+        val tileSelection = validator.tileSelectionRequirement(tableState, player, RIICHI_GAME_ACTION)
+        assertTrue(tileSelection != null && tileSelection.eligibleTileIds.isNotEmpty())
+    }
+
+    /** 摸牌前一向聽、摸牌後進入聽牌時，仍應在同一次自己回合判定中提供立直與合法捨牌候選。 */
+    @Test
+    fun `test one shanten hand becomes tenpai after draw and can riichi`() {
+        val standingTiles = listOf(
+            Tile.Numeric(Tile.Suit.Character, 1),
+            Tile.Numeric(Tile.Suit.Character, 2),
+            Tile.Numeric(Tile.Suit.Character, 3),
+            Tile.Numeric(Tile.Suit.Dot, 4),
+            Tile.Numeric(Tile.Suit.Dot, 5),
+            Tile.Numeric(Tile.Suit.Dot, 6),
+            Tile.Numeric(Tile.Suit.Bamboo, 7),
+            Tile.Numeric(Tile.Suit.Bamboo, 8),
+            Tile.Numeric(Tile.Suit.Bamboo, 9),
+            Tile.Honor.East,
+            Tile.Numeric(Tile.Suit.Character, 2),
+            Tile.Numeric(Tile.Suit.Character, 4),
+            Tile.Numeric(Tile.Suit.Character, 6),
+        )
+        val drawnTile = Tile.Honor.East
+        val player = FakeMahjongPlayerFactory.create(
+            hand = FakeHandFactory.create(standingTiles, lastDrawn = drawnTile),
+        ).copy(score = 1000)
+        val tableState = FakeTableStateFactory.create(
+            players = listOf(player),
+            tileWall = nonEmptyWall,
+        )
+
+        val shantenCalculator = RiichiShantenCalculator()
+        val beforeDraw = shantenCalculator.calculate(player.hand.copy(lastDrawn = null))
+        val afterDraw = shantenCalculator.calculate(player.hand)
+        assertEquals(1, (beforeDraw as ShantenResult.NotTenpai).shanten)
+        assertTrue(afterDraw is ShantenResult.Tenpai)
+
+        val actions = validator.getLegalActions(LegalActionTestContexts.ownTurn(tableState, player))
+
+        assertTrue(actions.any { it == RIICHI_GAME_ACTION })
+        val tileSelection = validator.tileSelectionRequirement(tableState, player, RIICHI_GAME_ACTION)
+        assertTrue(tileSelection != null && tileSelection.eligibleTileIds.isNotEmpty())
     }
 
     /**
@@ -401,13 +402,7 @@ class RiichiLegalActionValidatorRiichiTest {
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
 
         // 執行
-        val actions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Draw,
-            sourceDirection = RelativeDirection.Self,
-            incomingTile = incomingTile,
-        )
+        val actions = validator.getLegalActions(LegalActionTestContexts.ownTurnWithDraw(tableState, player, incomingTile))
 
         // 驗證：暗槓會排除有效的雀頭及順子拆法，因此不可暗槓。
         val closedKanActions = actions.filterIsInstance<GameAction.Kan>()
@@ -459,13 +454,7 @@ class RiichiLegalActionValidatorRiichiTest {
         val incomingTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
 
         // 執行
-        val actions = validator.getLegalActions(
-            tableState = tableState,
-            player = player,
-            sourceAction = GameAction.Draw,
-            sourceDirection = RelativeDirection.Self,
-            incomingTile = incomingTile,
-        )
+        val actions = validator.getLegalActions(LegalActionTestContexts.ownTurnWithDraw(tableState, player, incomingTile))
 
         // 驗證：暗槓 1 萬不影響聽牌（仍只聽 7 萬），可暗槓
         val closedKanActions = actions.filterIsInstance<GameAction.Kan>()

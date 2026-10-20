@@ -15,9 +15,9 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSync
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.isOwnTurnWindowOpenFor
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
-import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
 import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
+import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.SidewaysMarkedDiscardPile
@@ -113,16 +113,10 @@ class DiscardTileUseCase(
                             discardResult.hand
                         }
 
-                        // 摸牌後原本可以自摸卻選擇捨牌，視為放棄和牌，後果交給規則決定。lastDrawn 先從手牌
-                        // 移除、再當 incomingTile 傳入，避免在 standingTiles 裡重複計算這張牌。
+                        // 摸牌後原本可以自摸卻選擇捨牌，視為放棄和牌，後果交給規則決定。
                         val playerAfterDeclineCheck = if (lastDrawn != null) {
-                            val playerForCheck = state.currentPlayer.copy(hand = state.currentPlayer.hand.copy(lastDrawn = null))
                             val ownTurnActions = module.createLegalActionValidator().getLegalActions(
-                                tableState = state,
-                                player = playerForCheck,
-                                sourceAction = GameAction.Draw,
-                                sourceDirection = RelativeDirection.Self,
-                                incomingTile = lastDrawn,
+                                LegalActionContext.ownTurn(state, playerId),
                             )
                             if (ownTurnActions.any { it is GameAction.Tsumo }) {
                                 module.onPlayerDeclinedWin(state.currentPlayer)

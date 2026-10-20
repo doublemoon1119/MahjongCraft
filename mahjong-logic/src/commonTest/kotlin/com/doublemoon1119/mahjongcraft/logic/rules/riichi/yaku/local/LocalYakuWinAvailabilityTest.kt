@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.local
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.LegalActionTestContexts
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardEntry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
@@ -51,11 +52,7 @@ class LocalYakuWinAvailabilityTest {
                 contextCalculator = RiichiHandValueContextCalculator(config),
             )
             return validator.getLegalActions(
-                tableState = tableState,
-                player = winner,
-                sourceAction = GameAction.Discard(declared.id),
-                sourceDirection = RelativeDirection.Right,
-                incomingTile = declared,
+                LegalActionTestContexts.discard(tableState, winner, RelativeDirection.Right, declared),
             ).any { it is GameAction.Ron && it.tileId == declared.id }
         }
 

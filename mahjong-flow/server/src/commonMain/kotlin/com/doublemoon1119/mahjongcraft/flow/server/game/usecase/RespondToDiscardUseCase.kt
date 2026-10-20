@@ -29,6 +29,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
+import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult
@@ -170,11 +171,12 @@ class RespondToDiscardUseCase(
                     val module = moduleRegistry.getModule(state.config)
                     val legalActions = DiscardReactionActionSupport.filter(
                         module.createLegalActionValidator().getLegalActions(
-                            tableState = state,
-                            player = responder,
-                            sourceAction = GameAction.Discard(pendingReaction.tileId),
-                            sourceDirection = state.relativeDirectionOf(playerId, pendingReaction.discarderId),
-                            incomingTile = discardedTile,
+                            LegalActionContext.discardReaction(
+                                tableState = state,
+                                playerId = playerId,
+                                discarderId = pendingReaction.discarderId,
+                                discardedTile = discardedTile,
+                            ),
                         ),
                     )
                     if (action !in legalActions) {

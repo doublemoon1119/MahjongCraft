@@ -3,9 +3,8 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
-import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
-import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionValidator
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
@@ -148,19 +147,7 @@ class AutomaticGameCommandResolverTest {
             val validator = delegate.createLegalActionValidator()
             return object : LegalActionValidator by validator {
                 /** 產生當下合法動作，再套用本測試的跳過限制。 */
-                override fun getLegalActions(
-                    tableState: TableState,
-                    player: MahjongPlayer,
-                    sourceAction: GameAction,
-                    sourceDirection: RelativeDirection,
-                    incomingTile: IdentifiedTile?,
-                ): List<GameAction> = validator.getLegalActions(
-                    tableState,
-                    player,
-                    sourceAction,
-                    sourceDirection,
-                    incomingTile,
-                ).filterNot { rejectPass && it == GameAction.Pass }
+                override fun getLegalActions(context: LegalActionContext): List<GameAction> = validator.getLegalActions(context).filterNot { rejectPass && it == GameAction.Pass }
             }
         }
     }

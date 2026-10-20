@@ -17,14 +17,13 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.history.acceptedActionHi
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.winSettlementHistoryDetails
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleContractViolationException
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
-import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.DeclareRiichiUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementPresentationRequestFactory
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.isOwnTurnWindowOpenFor
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
-import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult
@@ -33,17 +32,13 @@ import com.doublemoon1119.mahjongcraft.logic.table.WallRevealCheckpoint
 import kotlin.uuid.Uuid
 
 /**
- * 宣告自摸（Tsumo）胡牌的實例化用例。
+ * 驗證並結算玩家宣告的自摸，同步結果及啟動胡牌呈現。
  *
- * 這是「胡牌結算」系列 use case 中最先實作的一片：只處理自摸造成的點數異動、供託（如立直棒）歸屬
- * 與事件廣播，刻意不處理榮和（含一炮多響），也不處理一局結束後的連莊/過莊/開新局等後續流程——
- * 那些留給未來各自獨立的 use case 處理。因此本 use case 執行完成後，`TableState` 被改變的部分只有
- * 玩家分數（與贏家的 `actionHistory`）以及供託相關的動態規則狀態；`currentPlayerIndex`、
- * `pendingReaction` 則刻意維持原樣不動。
+ * 先依目前權威桌況檢查操作時機與自摸資格，再由規則提供結算、供託歸屬及連莊加分。
+ * 寫入成功後發布自摸結果及呈現要求；本局結束後是否連莊、換莊或開新局，由後續流程處理。
  *
- * 自摸是否合法（含最低番數限制）、贏家實際獲得多少點數、其他玩家各自要付多少點數，這些規則相關
- * 的判斷完全交給 [MahjongRuleModule.declareTsumo]
- * 處理——這裡刻意不轉型成任何規則專屬的具體型別，理由與 [DeclareRiichiUseCase] 相同。
+ * 自摸資格由規則的合法動作判定器決定，付款由 [MahjongRuleModule.declareTsumo] 提供。
+ * 已允許自摸卻無法取得結算時，回報規則契約錯誤，不把這次和牌當成零分結果。
  *
  * @property gameRepository 權威對局數據倉庫。
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的合法動作判定器與點數結算邏輯。
@@ -115,18 +110,8 @@ class DeclareTsumoUseCase(
 
                     val module = moduleRegistry.getModule(state.config)
 
-                    // LegalActionValidator 的既有慣例是傳入的手牌「不含胡牌張」，胡牌張只透過
-                    // incomingTile 參數單獨傳入；currentPlayer.hand 此時 lastDrawn 已經是胡牌張，
-                    // 這裡剝離避免重複計數（否則手牌張數會對不上，導致自摸永遠被判定為不合法）。
-                    val playerForLegalCheck = state.currentPlayer.copy(
-                        hand = state.currentPlayer.hand.copy(lastDrawn = null),
-                    )
                     val legalActions = module.createLegalActionValidator().getLegalActions(
-                        tableState = state,
-                        player = playerForLegalCheck,
-                        sourceAction = GameAction.Draw,
-                        sourceDirection = RelativeDirection.Self,
-                        incomingTile = winningTile,
+                        LegalActionContext.ownTurn(state, playerId),
                     )
                     if (legalActions.none { it is GameAction.Tsumo }) {
                         return@update state to Outcome.Error(GameError.IllegalAction(playerId, gameId, GameAction.Tsumo))

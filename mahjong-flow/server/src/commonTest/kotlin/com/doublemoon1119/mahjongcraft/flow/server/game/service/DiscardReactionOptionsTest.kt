@@ -11,8 +11,9 @@ import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
-import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
+import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionSource
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionValidator
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
@@ -215,30 +216,20 @@ class DiscardReactionOptionsTest {
         private val includePon: Boolean = true,
     ) : MahjongRuleModule<RiichiRuleConfig> by delegate {
         override fun createLegalActionValidator(): LegalActionValidator = object : LegalActionValidator {
-            override fun getLegalActions(
-                tableState: TableState,
-                player: MahjongPlayer,
-                sourceAction: GameAction,
-                sourceDirection: RelativeDirection,
-                incomingTile: IdentifiedTile?,
-            ): List<GameAction> = if (sourceAction is GameAction.Discard && incomingTile != null) {
-                buildList {
-                    add(GameAction.Extension(TestReactionAction))
-                    if (includePon) {
-                        add(GameAction.Pon(incomingTile.id, player.hand.tiles.take(2).map { it.id }))
+            override fun getLegalActions(context: LegalActionContext): List<GameAction> {
+                if (context.source is LegalActionSource.Discard) {
+                    val incomingTile = context.incomingTile ?: return emptyList()
+                    return buildList {
+                        add(GameAction.Extension(TestReactionAction))
+                        if (includePon) {
+                            add(GameAction.Pon(incomingTile.id, context.player.hand.tiles.take(2).map { it.id }))
+                        }
+                        add(GameAction.Pass)
+                        add(GameAction.Kan(GameAction.KanType.CLOSED_KAN, incomingTile.id, emptyList()))
+                        add(GameAction.Kan(GameAction.KanType.ADDED_KAN, incomingTile.id, emptyList()))
                     }
-                    add(GameAction.Pass)
-                    add(GameAction.Kan(GameAction.KanType.CLOSED_KAN, incomingTile.id, emptyList()))
-                    add(GameAction.Kan(GameAction.KanType.ADDED_KAN, incomingTile.id, emptyList()))
                 }
-            } else {
-                delegate.createLegalActionValidator().getLegalActions(
-                    tableState = tableState,
-                    player = player,
-                    sourceAction = sourceAction,
-                    sourceDirection = sourceDirection,
-                    incomingTile = incomingTile,
-                )
+                return delegate.createLegalActionValidator().getLegalActions(context)
             }
         }
     }

@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositor
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerActionContextResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerDecisionOptionsResolver
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlin.uuid.Uuid
@@ -18,15 +19,14 @@ import kotlin.uuid.Uuid
  * 不需要直接依賴 `:mahjong-logic` 的規則型別自行判斷。
  *
  * 呼叫端只給 [gameId]/[playerId]，這裡會依 [TableState]
- * 現況自動判斷屬於以下哪一種情境，並組出正確的 `sourceAction`/`sourceDirection`/`incomingTile` 參數：
+ * 現況自動判斷屬於以下哪一種情境，並建立對應的 [LegalActionContext]：
  *
  * 1. 有資格搶槓、且尚未回應（`pendingRobbingReaction` 非 null）：比照 [RespondToRobbingUseCase] 的既有慣例，
  *    過濾只留 [GameAction.Ron]/[GameAction.Pass]（`getLegalActions` 的「反應」分支不分辨
  *    `sourceAction` 種類，會一併算出吃/碰/明槓資格，這裡都不合法）。
  * 2. 有資格回應捨牌、且尚未回應（`pendingReaction` 非 null）：不過濾，Chi/Pon/Kan/Ron/Pass 皆可能合法。
- * 3. 輪到自己回合、且已經摸牌：`sourceAction = Draw`、`incomingTile = null`——規則實作自行決定「自己
- *    回合已摸牌」這個情境下需要哪些額外資訊（例如是否要另外剝離 `lastDrawn` 才能檢查完整資格），
- *    這裡只需呼叫一次即可拿到完整清單，不需要知道特定規則模組的內部實作細節。
+ * 3. 輪到自己回合、且已經摸牌：由 [LegalActionContext.ownTurn] 從原始手牌建立包含摸牌的判定資料，
+ *    規則不需要自行剝離或重新加入摸牌。
  * 4. 以上皆非：回傳空清單（不是錯誤——單純這個玩家現在沒有除了被動等待以外的事可做）。
  *
  * 回傳清單只包含「除了預設回合動作以外」的額外合法動作——例如自己回合已摸牌時，「捨牌」本身

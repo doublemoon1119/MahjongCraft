@@ -3,9 +3,10 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenar
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
-import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionValidator
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
@@ -97,14 +98,20 @@ private fun createScenarioContext(
 internal fun TableState.seat(offset: Int): MahjongPlayer = players[(currentPlayerIndex + offset) % players.size]
 
 /**
- * 取得指定座位不含摸牌位的玩家快照，供他家行動時的反應查詢使用。
+ * 將指定玩家的手牌替換為測試用版本，讓合法動作情境仍由同一份桌況建立。
  *
- * @param offset 從目前玩家起算的座位偏移。
- * @return 清除摸牌位狀態的玩家快照。
+ * @param playerId 要替換手牌的玩家身分。
+ * @param hand 要放入該玩家的測試手牌。
+ * @return 只替換指定玩家手牌後的桌況。
  */
-internal fun TableState.waitingSeat(offset: Int): MahjongPlayer = seat(offset).let { player ->
-    player.copy(hand = player.hand.copy(lastDrawn = null))
-}
+private fun TableState.withHandFor(
+    playerId: Uuid,
+    hand: Hand,
+): TableState = copy(
+    players = players.map { player ->
+        if (player.id == playerId) player.copy(hand = hand) else player
+    },
+)
 
 /** @return 目前桌況規則模組建立的合法動作驗證器。 */
 internal fun TableState.scenarioValidator(): LegalActionValidator = scenarioModuleRegistry.getModule(config).createLegalActionValidator()
@@ -137,13 +144,14 @@ internal fun TableState.reactionsOf(
     offset: Int,
     discarderOffset: Int,
     tile: IdentifiedTile,
-): List<GameAction> = scenarioValidator().getLegalActions(
-    tableState = this,
-    player = waitingSeat(offset),
-    sourceAction = GameAction.Discard(tile.id),
-    sourceDirection = relativeDirectionOf(seat(offset).id, seat(discarderOffset).id),
-    incomingTile = tile,
-)
+): List<GameAction> {
+    val player = seat(offset)
+    val discarder = seat(discarderOffset)
+    val contextState = withHandFor(player.id, player.hand.copy(lastDrawn = null))
+    return contextState.scenarioValidator().getLegalActions(
+        LegalActionContext.discardReaction(contextState, player.id, discarder.id, tile),
+    )
+}
 
 /**
  * 判斷指定座位能否對另一座位打出的牌榮和。
@@ -169,25 +177,18 @@ internal fun TableState.canRon(
 internal fun TableState.ownTurnActions(
     offset: Int,
     drawnTile: IdentifiedTile,
-): List<GameAction> = scenarioValidator().getLegalActions(
-    tableState = this,
-    player = waitingSeat(offset),
-    sourceAction = GameAction.Draw,
-    sourceDirection = RelativeDirection.Self,
-    incomingTile = drawnTile,
-)
+): List<GameAction> {
+    val player = seat(offset)
+    val contextState = withHandFor(player.id, player.hand.copy(lastDrawn = drawnTile))
+    return contextState.scenarioValidator().getLegalActions(LegalActionContext.ownTurn(contextState, player.id))
+}
 
 /**
  * 情境載入當下，呼叫者以手上剛摸到的牌可宣告的特殊動作。
  *
  * @return 當前玩家可用的特殊動作。
  */
-internal fun TableState.currentOwnTurnActions(): List<GameAction> = scenarioValidator().getLegalActions(
-    tableState = this,
-    player = currentPlayer,
-    sourceAction = GameAction.Draw,
-    sourceDirection = RelativeDirection.Self,
-)
+internal fun TableState.currentOwnTurnActions(): List<GameAction> = scenarioValidator().getLegalActions(LegalActionContext.ownTurn(this, currentPlayer.id))
 
 /**
  * [offset] 座位摸到活牌第一張後，自己回合可宣告的槓。
@@ -196,13 +197,11 @@ internal fun TableState.currentOwnTurnActions(): List<GameAction> = scenarioVali
  * @return 該摸牌情境下可用的槓動作。
  */
 internal fun TableState.ownTurnKans(offset: Int): List<GameAction.Kan> {
-    val player = seat(offset).let { it.copy(hand = it.hand.copy(lastDrawn = liveWallTile(0))) }
-    return scenarioValidator().getLegalActions(
-        tableState = this,
-        player = player,
-        sourceAction = GameAction.Draw,
-        sourceDirection = RelativeDirection.Self,
-    ).filterIsInstance<GameAction.Kan>()
+    val player = seat(offset)
+    val contextState = withHandFor(player.id, player.hand.copy(lastDrawn = liveWallTile(0)))
+    return contextState.scenarioValidator()
+        .getLegalActions(LegalActionContext.ownTurn(contextState, player.id))
+        .filterIsInstance<GameAction.Kan>()
 }
 
 /**
@@ -214,11 +213,16 @@ internal fun TableState.ownTurnKans(offset: Int): List<GameAction.Kan> {
  */
 internal fun TableState.canRobKan(offset: Int, type: GameAction.KanType): Boolean {
     val kanTile = liveWallTile(0)
-    return scenarioValidator().getLegalActions(
-        tableState = this,
-        player = waitingSeat(offset),
-        sourceAction = GameAction.Kan(type, kanTile.id, emptyList()),
-        sourceDirection = relativeDirectionOf(seat(offset).id, seat(1).id),
-        incomingTile = kanTile,
+    val player = seat(offset)
+    val declarer = seat(1)
+    val contextState = withHandFor(player.id, player.hand.copy(lastDrawn = null))
+    return contextState.scenarioValidator().getLegalActions(
+        LegalActionContext.declarationReaction(
+            contextState,
+            player.id,
+            declarer.id,
+            GameAction.Kan(type, kanTile.id, emptyList()),
+            kanTile,
+        ),
     ).any { it is GameAction.Ron }
 }

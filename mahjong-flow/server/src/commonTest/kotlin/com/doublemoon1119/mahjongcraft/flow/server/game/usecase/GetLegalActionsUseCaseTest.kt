@@ -31,8 +31,8 @@ import kotlin.uuid.Uuid
 /**
  * [GetLegalActionsUseCase] 的單元測試類別。
  *
- * 驗證四種情境的判斷與參數組裝：搶槓反應（過濾只留 Ron/Pass）、捨牌反應（不過濾）、
- * 自己回合已摸牌（需合併立直資格與 Tsumo/Kan/KyuushuKyuuhai 資格兩次查詢），以及其餘情況回傳空清單。
+ * 驗證四種情境的判斷與判定資料建立：搶槓反應（過濾只留 Ron/Pass）、捨牌反應（不過濾）、
+ * 自己回合已摸牌（同一份情境同時判定立直與槓資格），以及其餘情況回傳空清單。
  */
 class GetLegalActionsUseCaseTest {
 
@@ -45,9 +45,7 @@ class GetLegalActionsUseCaseTest {
     }
 
     /**
-     * 驗證自己回合已摸牌時，立直資格（`incomingTile = null` 查詢）與暗槓資格
-     * （`incomingTile = 剝離後的 lastDrawn` 查詢）皆會出現在合併後的清單，證明兩次查詢確實合併，
-     * 不是只取其中一次。
+     * 驗證自己回合已摸牌時，同一份判定情境會同時產生立直與暗槓資格，不會因為摸牌的表示方式不同而漏掉其中一項。
      *
      * 手牌設計：東東東（暗槓候選，摸到第 4 張東）+ 234萬 + 567萬 + 789筒 + 北（單騎聽）。
      * 捨棄新摸到的東可回到原本的聽牌形（單騎聽北），故立直合法；同時原手牌中已有 3 張東，
@@ -85,10 +83,10 @@ class GetLegalActionsUseCaseTest {
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val actions = result.value
-        assertTrue(actions.any { it == RIICHI_GAME_ACTION }, "Riichi should be legal from the incomingTile=null query.")
+        assertTrue(actions.any { it == RIICHI_GAME_ACTION }, "Riichi should be legal from the own-turn context.")
         assertTrue(
             actions.any { it is GameAction.Kan && it.type == GameAction.KanType.CLOSED_KAN },
-            "Closed kan should be legal from the incomingTile=lastDrawn query.",
+            "Closed kan should be legal from the own-turn context.",
         )
     }
 

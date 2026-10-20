@@ -1,63 +1,59 @@
 package com.doublemoon1119.mahjongcraft.example.pairing
 
+import com.doublemoon1119.mahjongcraft.example.action.ExamplePairingDeclarationAction
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
-import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
-/** 驗證摸牌放在手牌或單獨傳入時，範例規則提供相同的自摸資格。 */
+/** 驗證範例規則使用統一的合法動作判定資料。 */
 class ExamplePairingLegalActionValidatorTest {
-    /** 兩對與倒置一萬都能以兩種傳入方式取得相同的合法動作。 */
+    /** 完成牌型且來源為自己的摸牌時，提供自摸與宣告。 */
     @Test
-    fun `separate incoming tile and stored draw offer the same self draw`() {
+    fun `complete own turn offers tsumo and declaration`() {
         for (firstTile in listOf(Tile.Numeric(Tile.Suit.Character, 1), ExamplePairingTileType.invertedOneMan())) {
             val hand = Hand(
                 tiles = listOf(identified(firstTile), numeric(1), numeric(2)),
                 lastDrawn = numeric(2),
             )
-            val expected = actions(hand, null)
-            assertTrue(GameAction.Tsumo in expected)
-            assertEquals(expected, actions(hand.copy(lastDrawn = null), hand.lastDrawn))
-            assertEquals(expected, actions(hand, hand.lastDrawn))
+            val actions = actions(hand)
+            assertTrue(GameAction.Tsumo in actions)
+            assertTrue(GameAction.Extension(ExamplePairingDeclarationAction) in actions)
         }
     }
 
-    /** 非完成牌型不會因為摸牌改成單獨傳入而取得自摸資格。 */
+    /** 尚未完成牌型時，不提供自摸。 */
     @Test
-    fun `separate incoming tile does not complete an unpaired hand`() {
+    fun `incomplete own turn does not offer tsumo`() {
         val hand = Hand(
             tiles = listOf(numeric(1), numeric(1), numeric(2)),
             lastDrawn = numeric(3),
         )
-        val expected = actions(hand, null)
-        assertFalse(GameAction.Tsumo in expected)
-        assertEquals(expected, actions(hand.copy(lastDrawn = null), hand.lastDrawn))
+        assertTrue(GameAction.Tsumo !in actions(hand))
     }
 
     /** 沒有摸牌時不提供自摸或摸牌後宣告。 */
     @Test
     fun `no draw offers no post draw actions`() {
-        assertEquals(emptyList(), actions(Hand(tiles = listOf(numeric(1), numeric(1), numeric(2))), null))
+        assertEquals(emptyList(), actions(Hand(tiles = listOf(numeric(1), numeric(1), numeric(2)))))
     }
 
     /**
-     * 使用指定手牌與單獨傳入的摸牌查詢合法動作。
+     * 使用指定手牌查詢合法動作。
      *
      * @param hand 判定時的手牌。
-     * @param incomingTile 單獨提供的摸牌；null 時由手牌讀取。
      * @return 當前玩家的合法動作。
      */
-    private fun actions(hand: Hand, incomingTile: IdentifiedTile?): List<GameAction> {
+    private fun actions(hand: Hand): List<GameAction> {
         val player = MahjongPlayer(
             id = Uuid.random(),
             initialSeatIndex = 0,
@@ -74,11 +70,7 @@ class ExamplePairingLegalActionValidatorTest {
             dealerPlayerId = player.id,
         )
         return ExamplePairingLegalActionValidator().getLegalActions(
-            tableState = table,
-            player = player,
-            sourceAction = GameAction.Draw,
-            sourceDirection = RelativeDirection.Self,
-            incomingTile = incomingTile,
+            LegalActionContext.ownTurn(table, player.id),
         )
     }
 
