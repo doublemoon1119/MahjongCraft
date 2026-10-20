@@ -8,7 +8,7 @@ import kotlin.reflect.KClass
  *
  * @param Domain 領域具體型別。
  * @param T persistence DTO 具體型別。
- * @property typeKey 穩定且 namespaced 的 type key。
+ * @property typeKey 穩定且 namespaced 的 type key；擴充遊戲動作必須使用動作本身的 ID。
  * @property domainClass 領域具體型別。
  * @property serializer 此存檔 DTO 型別的序列化器。
  * @property toDto 將領域物件轉成存檔 DTO 的函式。

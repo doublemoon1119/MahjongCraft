@@ -31,6 +31,19 @@
   successful decisions. Share lifecycle and execution mechanics without merging endpoint authorization or
   data-recovery policies.
 
+## Extension Action Identity
+
+- Give each extension action one stable namespaced ID. Use that same constant for the action's `id`,
+  its persistence registration's `typeKey`, and its player-facing vocabulary registration. Different
+  selected tiles or action parameters do not create a new action ID.
+- The action persistence mapper rejects a saved or restored action when its ID differs from the registered
+  persistence key. Registration alone cannot check the ID of an instance that does not exist yet; do not
+  call conversion functions or construct sample actions during registration to guess it.
+- Test both saving and reading a mismatched ID, and test the saved action through replay and the vocabulary
+  lookup. Changing only an example's string leaves the same mistake possible in another extension.
+- This rule applies to extension actions, not to every persistence type or network discriminator. Keep
+  command IDs and unrelated format IDs separate. It does not require a DTO serializer's own name to match.
+
 ## Shared Room Settings
 
 - Rule authors add settings for their own game, such as the red-tile count in Riichi. MahjongCraft adds

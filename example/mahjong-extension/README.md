@@ -67,5 +67,11 @@ Usable extension points do not imply a binary-compatibility promise.
 This library does not establish new ABI guarantees for rules or strategies.
 Automated checks are intentionally small and do not certify every extension path.
 
+The declaration action uses one ID everywhere it is identified: the game action,
+the network DTO and the persistence type key all use the same `pairing/declare`
+ID. The declaration command has its own separate ID because it is a different
+serialized type. The example is not released yet, so changing these IDs does
+not include aliases or migrations for old development data.
+
 See the [Minecraft example guide](../platform/minecraft/README.md)
 for build and run commands.

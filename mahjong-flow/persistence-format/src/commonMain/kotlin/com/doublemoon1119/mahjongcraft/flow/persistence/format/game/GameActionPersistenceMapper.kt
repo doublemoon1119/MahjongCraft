@@ -14,12 +14,19 @@ import kotlin.uuid.Uuid
  * @param exhaustiveDrawReasonRegistry 流局原因的持久化轉換註冊表。
  * @param extensionGameActionRegistry 擴充遊戲動作的持久化轉換註冊表。
  * @return 包含原模型資料的持久化 DTO。
+ * @throws IllegalArgumentException 擴充動作的保存識別碼與動作 ID 不一致。
  */
 fun GameAction.toPersistenceDto(
     exhaustiveDrawReasonRegistry: PersistenceDtoRegistry<ExhaustiveDrawReason>,
     extensionGameActionRegistry: PersistenceDtoRegistry<ExtensionGameAction>,
 ): GameActionPersistenceDto = when (this) {
-    is GameAction.Extension -> GameActionPersistenceDto.Extension(extensionGameActionRegistry.encode(value))
+    is GameAction.Extension -> {
+        val encoded = extensionGameActionRegistry.encode(value)
+        require(encoded.typeKey == value.id) {
+            "Extension action persistence type key '${encoded.typeKey}' must match action ID '${value.id}'"
+        }
+        GameActionPersistenceDto.Extension(encoded)
+    }
     GameAction.GameStarted -> GameActionPersistenceDto.GameStarted
     GameAction.RoundStarted -> GameActionPersistenceDto.RoundStarted
     GameAction.MatchEnded -> GameActionPersistenceDto.MatchEnded
@@ -41,12 +48,19 @@ fun GameAction.toPersistenceDto(
  * @param exhaustiveDrawReasonRegistry 流局原因的持久化轉換註冊表。
  * @param extensionGameActionRegistry 擴充遊戲動作的持久化轉換註冊表。
  * @return 還原的領域模型。
+ * @throws IllegalArgumentException 還原後的擴充動作 ID 與保存識別碼不一致。
  */
 fun GameActionPersistenceDto.toDomain(
     exhaustiveDrawReasonRegistry: PersistenceDtoRegistry<ExhaustiveDrawReason>,
     extensionGameActionRegistry: PersistenceDtoRegistry<ExtensionGameAction>,
 ): GameAction = when (this) {
-    is GameActionPersistenceDto.Extension -> GameAction.Extension(extensionGameActionRegistry.decode(value))
+    is GameActionPersistenceDto.Extension -> {
+        val decoded = extensionGameActionRegistry.decode(value)
+        require(decoded.id == value.typeKey) {
+            "Decoded extension action ID '${decoded.id}' must match persistence type key '${value.typeKey}'"
+        }
+        GameAction.Extension(decoded)
+    }
     GameActionPersistenceDto.GameStarted -> GameAction.GameStarted
     GameActionPersistenceDto.RoundStarted -> GameAction.RoundStarted
     GameActionPersistenceDto.MatchEnded -> GameAction.MatchEnded

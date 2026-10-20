@@ -20,9 +20,6 @@ object ExampleFormatIds {
     /** 依打出順序保存的牌河。 */
     const val DISCARD_PILE = "mahjongcraft_example:pairing/discard_pile"
 
-    /** 已成立的示範宣告。 */
-    const val DECLARATION_ACTION = "mahjongcraft_example:pairing/declaration_action"
-
     /** 玩家送出的示範宣告命令。 */
     const val DECLARATION_COMMAND = "mahjongcraft_example:pairing/declaration_command"
 }

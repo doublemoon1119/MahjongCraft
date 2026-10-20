@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.example.format.persistence.ExamplePairing
 import com.doublemoon1119.mahjongcraft.example.format.persistence.ExamplePairingRuleConfigPersistenceDto
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingDiscardPile
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingExhaustiveDrawReason
+import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingIds
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingPlayerState
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingRuleConfig
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceDtoDefinition
@@ -61,7 +62,7 @@ fun registerExamplePersistenceDtos(registries: PersistenceRegistries) {
     )
     registries.extensionGameActions.register(
         definition = PersistenceDtoDefinition(
-            typeKey = ExampleFormatIds.DECLARATION_ACTION,
+            typeKey = ExamplePairingIds.DECLARE_ACTION,
             domainClass = ExamplePairingDeclarationAction::class,
             serializer = ExamplePairingDeclarationActionPersistenceDto.serializer(),
             toDto = { ExamplePairingDeclarationActionPersistenceDto },
