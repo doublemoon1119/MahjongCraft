@@ -33,7 +33,7 @@ class ExamplePairingRoundPreparationResolver : RoundPreparationResolver {
                 maxCount = EXCHANGE_TILE_COUNT,
             )
         }
-        return PendingRoundPreparation(STEP_ID, 0, inputSpecs)
+        return PendingRoundPreparation(ExamplePairingIds.EXCHANGE_STEP, 0, inputSpecs)
     }
 
     override fun accepts(
@@ -93,9 +93,6 @@ class ExamplePairingRoundPreparationResolver : RoundPreparationResolver {
 
         /** 每位玩家本步驟必須選出的牌張數。 */
         const val EXCHANGE_TILE_COUNT = 2
-
-        /** 局前換牌步驟的完整識別碼。 */
-        const val STEP_ID = "${ExamplePairingIds.RULE_MODULE}/exchange"
 
         /**
          * 判斷設定是否屬於簡易配對規則且啟用換牌。

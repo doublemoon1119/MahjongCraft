@@ -19,4 +19,7 @@ object ExamplePairingIds {
 
     /** 一般牌山耗盡流局的原因。 */
     const val EXHAUSTIVE_DRAW = "${ExampleExtensionIds.MOD_ID}:pairing/exhaustive_draw"
+
+    /** 局前選兩張牌交給下一位玩家的準備步驟。 */
+    const val EXCHANGE_STEP = "${ExampleExtensionIds.MOD_ID}:pairing/exchange"
 }

@@ -26,6 +26,18 @@ object MinecraftMessageKeys {
     /** 玩家目前不屬於任何麻將遊戲。 */
     const val PLAYER_NOT_IN_ANY_GAME = PREFIX + "player_not_in_any_game"
 
+    /** Debug 決策畫面文字卡片的標題。 */
+    const val DEBUG_DECISION_TEXT_CARD_LABEL = PREFIX + "debug.decision.text_card.label"
+
+    /** Debug 決策畫面文字卡片的內文。 */
+    const val DEBUG_DECISION_TEXT_CARD_BODY = PREFIX + "debug.decision.text_card.body"
+
+    /** Debug 決策畫面文字卡片的提示文字。 */
+    const val DEBUG_DECISION_TEXT_CARD_HINT = PREFIX + "debug.decision.text_card.hint"
+
+    /** Debug 決策畫面文字卡片的說明文字。 */
+    const val DEBUG_DECISION_TEXT_CARD_DESCRIPTION = PREFIX + "debug.decision.text_card.description"
+
     /** 對局進行中禁止主動離開。 */
     const val GAME_LEAVE_DENIED_WHILE_PLAYING = PREFIX + "game_leave_denied_while_playing"
 
@@ -547,6 +559,10 @@ object MinecraftMessageKeys {
         GAME_JOINED,
         PLAYER_NOT_IN_GAME,
         PLAYER_NOT_IN_ANY_GAME,
+        DEBUG_DECISION_TEXT_CARD_LABEL,
+        DEBUG_DECISION_TEXT_CARD_BODY,
+        DEBUG_DECISION_TEXT_CARD_HINT,
+        DEBUG_DECISION_TEXT_CARD_DESCRIPTION,
         GAME_LEAVE_DENIED_WHILE_PLAYING,
         GAME_DISSOLVED,
         GAME_LEFT,

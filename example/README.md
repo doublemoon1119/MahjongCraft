@@ -9,4 +9,5 @@ It is not part of the default build or the published MahjongCraft mod.
 
 The common library includes a small pairing rule, custom tile, declaration,
 optional tile exchange and Tsumogiri strategy.
-Their platform presentation and native example content are separate integration work.
+The Minecraft adapter supplies settings, text and tile resources.
+Native example furniture and event chat output are separate integration work.

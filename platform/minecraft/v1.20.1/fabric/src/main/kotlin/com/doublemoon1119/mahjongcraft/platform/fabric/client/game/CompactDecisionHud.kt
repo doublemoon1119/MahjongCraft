@@ -8,6 +8,14 @@ import net.minecraft.text.Text
 internal val PlayerDecisionPromptDto.isInteractive: Boolean
     get() = actions.isNotEmpty() || preparation != null
 
+/**
+ * 取得補充說明可使用的整行寬度，不以 HUD 的標準寬度提早切行。
+ *
+ * @param screenWidth GUI 縮放後的畫面寬度。
+ * @return 扣除左右邊距後的寬度，至少為一像素。
+ */
+internal fun compactDescriptionMaximumWidth(screenWidth: Int): Int = (screenWidth - CompactDecisionHudLayout.TEXT_MARGIN * 2).coerceAtLeast(1)
+
 /** 精簡 HUD 在倒數上方要顯示的內容。 */
 internal sealed interface CompactDecisionHudContent {
     /** 只有倒數。 */
@@ -89,6 +97,7 @@ internal fun tileSelectionDetailText(progress: DecisionTileSelectionState.Progre
  * @property ratioY 玩家設定的垂直位置比例。
  * @property expanded 是否要為倒數上方的提示文字保留空間。
  * @property descriptionLineCount 標題與細節文字之間的說明行數；只在 [expanded] 時保留空間。
+ * @property contentWidth 文字量測後所需的群組寬度；預設使用標準寬度。
  */
 internal data class CompactDecisionHudLayout(
     val screenWidth: Int,
@@ -97,10 +106,11 @@ internal data class CompactDecisionHudLayout(
     val ratioY: Double,
     val expanded: Boolean,
     val descriptionLineCount: Int = 0,
+    val contentWidth: Int = GROUP_WIDTH,
 ) {
-    /** 群組寬度；畫面比固定寬度還窄時讓給畫面。 */
+    /** 群組依文字所需寬度擴張，但不超出畫面。 */
     val groupWidth: Int
-        get() = GROUP_WIDTH.coerceAtMost(screenWidth)
+        get() = maxOf(GROUP_WIDTH, contentWidth).coerceAtMost(screenWidth)
 
     /** 群組高度。 */
     val groupHeight: Int
@@ -137,6 +147,9 @@ internal data class CompactDecisionHudLayout(
     internal companion object {
         /** 精簡 HUD 群組的標準寬度。 */
         const val GROUP_WIDTH = 220
+
+        /** 文字左右各自保留的畫面邊距。 */
+        const val TEXT_MARGIN = 8
 
         /** 倒數文字保留的高度。 */
         const val TIMER_HEIGHT = 14

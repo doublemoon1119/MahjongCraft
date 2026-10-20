@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingIds
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingRuleConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistryImpl
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.emptyPersistenceRegistries
@@ -19,10 +20,14 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPol
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareTsumoUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DiscardTileUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DrawTileUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetLegalActionsUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ReturnToRoomUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.StartGameUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
@@ -115,6 +120,69 @@ class ExamplePairingPublicApiIntegrationTest {
         )
     }
 
+    /** 確認合法動作查詢與真正的自摸用例都能接受範例規則的摸牌張。 */
+    @Test
+    fun `example pairing tsumo returned by legal actions succeeds through flow use case`() = runTest {
+        val fixtures = Fixtures()
+        val hostId = Uuid.random()
+        val otherPlayerId = Uuid.random()
+        val roomId = Uuid.random()
+        fixtures.store.update { state ->
+            AuthoritativeStateUpdate(
+                state.copy(
+                    rooms = state.rooms + (
+                        roomId to Room(
+                            id = roomId,
+                            hostId = hostId,
+                            gameConfig = GameConfig(ExamplePairingRuleConfig(roundCount = 1)),
+                            playerIds = listOf(hostId, otherPlayerId),
+                            readyPlayerIds = listOf(otherPlayerId),
+                            aiPlayerStrategyKeys = emptyMap(),
+                        )
+                        ),
+                ),
+                Unit,
+            )
+        }
+
+        assertIs<Outcome.Success<*>>(fixtures.startGameUseCase(roomId, hostId))
+        val actor = fixtures.gameRepository.getGame(roomId)!!.tableState.currentPlayer.id
+        assertIs<Outcome.Success<*>>(fixtures.drawTileUseCase(roomId, actor))
+
+        fixtures.gameRepository.updateGame(roomId) { game ->
+            val tableState = checkNotNull(game).tableState
+            val currentPlayer = tableState.currentPlayer
+            val standingTiles = currentPlayer.hand.tiles
+            check(standingTiles.size == 3)
+            val oneMan = Tile.Numeric(Tile.Suit.Character, 1)
+            val twoMan = Tile.Numeric(Tile.Suit.Character, 2)
+            val preparedHand = currentPlayer.hand.copy(
+                tiles = standingTiles.mapIndexed { index, tile ->
+                    tile.copy(tile = if (index < 2) oneMan else twoMan)
+                },
+                lastDrawn = currentPlayer.hand.lastDrawn?.copy(tile = twoMan),
+            )
+            game.copy(
+                tableState = tableState.copy(
+                    players = tableState.players.map { player ->
+                        if (player.id == actor) player.copy(hand = preparedHand) else player
+                    },
+                ),
+            ) to Unit
+        }
+
+        val legalActions = fixtures.getLegalActionsUseCase(roomId, actor)
+        assertIs<Outcome.Success<List<GameAction>>>(legalActions)
+        assertTrue(GameAction.Tsumo in legalActions.value)
+
+        assertIs<Outcome.Success<Unit>>(fixtures.declareTsumoUseCase(roomId, actor))
+        val settledPlayers = fixtures.gameRepository.getGame(roomId)!!.tableState.players
+        val settledPlayer = settledPlayers.first { it.id == actor }
+        assertTrue(GameAction.Tsumo in settledPlayer.actionHistory)
+        assertEquals(110, settledPlayer.score)
+        assertEquals(90, settledPlayers.first { it.id != actor }.score)
+    }
+
     /**
      * 收集開局桌況中的全部牌張，包含牌山、王牌與玩家手上的牌。
      *
@@ -189,6 +257,12 @@ class ExamplePairingPublicApiIntegrationTest {
         /** 執行摸牌的 use case。 */
         val drawTileUseCase: DrawTileUseCase
 
+        /** 查詢目前玩家可執行的額外合法動作。 */
+        val getLegalActionsUseCase: GetLegalActionsUseCase
+
+        /** 執行自摸結算的 use case。 */
+        val declareTsumoUseCase: DeclareTsumoUseCase
+
         /** 執行捨牌的 use case。 */
         val discardTileUseCase: DiscardTileUseCase
 
@@ -209,6 +283,17 @@ class ExamplePairingPublicApiIntegrationTest {
             moduleRegistry.freeze()
             startGameUseCase = StartGameUseCase(store, moduleRegistry, snapshotSynchronizer, handSort, gameEvents, presentations)
             drawTileUseCase = DrawTileUseCase(gameRepository, moduleRegistry, snapshotSynchronizer, gameEvents, presentations)
+            getLegalActionsUseCase = GetLegalActionsUseCase(gameRepository, moduleRegistry)
+            declareTsumoUseCase = DeclareTsumoUseCase(
+                gameRepository = gameRepository,
+                moduleRegistry = moduleRegistry,
+                snapshotSynchronizer = snapshotSynchronizer,
+                eventPublisher = gameEvents,
+                presentationPublisher = presentations,
+                winPresentationHandoff = WinPresentationHandoff(),
+                winCelebrationCueResolverRegistry = WinCelebrationCueResolverRegistryImpl().apply { freeze() },
+                winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry().apply { freeze() },
+            )
             discardTileUseCase = DiscardTileUseCase(
                 gameRepository,
                 moduleRegistry,

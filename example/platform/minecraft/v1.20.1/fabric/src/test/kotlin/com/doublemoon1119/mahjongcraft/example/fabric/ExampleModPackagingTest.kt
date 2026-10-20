@@ -39,6 +39,16 @@ class ExampleModPackagingTest {
                 "com/doublemoon1119/mahjongcraft/example/fabric/ExampleModClient.class",
                 "fabric.mod.json",
                 "assets/mahjongcraft_example/icon.png",
+                "assets/mahjongcraft_example/lang/en_us.json",
+                "assets/mahjongcraft_example/lang/zh_tw.json",
+                "assets/mahjongcraft_example/lang/zh_cn.json",
+                "assets/mahjongcraft_example/lang/ja_jp.json",
+                "assets/mahjongcraft_example/models/item/mahjong_tile/mahjong_tile_inverted_one_man.json",
+                "assets/mahjongcraft_example/textures/item/mahjong_tile/mahjong_tile_inverted_one_man.png",
+                "assets/mahjongcraft_example/textures/item/mahjong_tile/mahjong_tile_cover.png",
+                "assets/mahjongcraft_example/textures/item/mahjong_tile/mahjong_tile_unknown.png",
+                "assets/mahjongcraft_example/textures/font/tile_emoji.png",
+                "assets/minecraft/font/default.json",
             ).forEach { path -> assertEquals(1, paths.count { it == path }, path) }
             listOf(
                 "com/doublemoon1119/mahjongcraft/logic/",

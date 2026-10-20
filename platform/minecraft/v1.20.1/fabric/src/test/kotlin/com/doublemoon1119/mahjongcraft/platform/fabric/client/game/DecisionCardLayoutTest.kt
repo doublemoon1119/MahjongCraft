@@ -9,6 +9,31 @@ import kotlin.test.assertTrue
 
 /** 驗證操作介面的版面幾何。 */
 class DecisionCardLayoutTest {
+    /** 多行說明與淡色提示均保留在按鈕上方，不覆蓋其他內容。 */
+    @Test
+    fun `keeps wrapped card text above its button`() {
+        val card = DecisionCard(0, false, bodyLineCount = 6, hintLineCount = 2)
+        val layout = layout(cardCount = 0).copy(cards = listOf(card))
+        val placement = layout.cardPlacements(0.0).single()
+        val bodyBottom = layout.bodyTextTop(placement, card) + card.bodyLineCount * DecisionCardLayout.TEXT_LINE_HEIGHT
+        val hintTop = layout.hintTextTop(placement, card)
+        assertTrue(layout.bodyTextTop(placement, card) >= placement.y + DecisionCardLayout.CARD_PADDING)
+        assertTrue(bodyBottom + DecisionCardLayout.TEXT_SECTION_GAP <= hintTop)
+        assertTrue(hintTop + card.hintLineCount * DecisionCardLayout.TEXT_LINE_HEIGHT < layout.cardButtonBounds(placement).y)
+        assertEquals(DecisionCardLayout.TEXT_CARD_WIDTH, placement.width)
+    }
+
+    /** 同時提供預覽與文字的卡片不讓兩者互相覆蓋。 */
+    @Test
+    fun `keeps preview tiles above card body text`() {
+        val card = DecisionCard(3, false, bodyLineCount = 3, hintLineCount = 1)
+        val layout = layout(cardCount = 0).copy(cards = listOf(card))
+        val placement = layout.cardPlacements(0.0).single()
+        val tiles = layout.previewTilePlacements(placement, card.previewTileCount, card)
+        assertTrue(tiles.all { it.y + it.height < layout.bodyTextTop(placement, card) })
+        assertTrue(tiles.all { it.y >= placement.y + DecisionCardLayout.CARD_PADDING })
+    }
+
     /** 預覽牌不多的卡片維持緊湊固定寬度。 */
     @Test
     fun `keeps a compact card at the fixed width`() {

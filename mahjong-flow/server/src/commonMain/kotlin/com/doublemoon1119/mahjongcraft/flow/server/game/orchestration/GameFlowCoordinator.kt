@@ -233,6 +233,9 @@ class GameFlowCoordinator(
             return stepBefore != gameRepository.getGame(gameId)
         }
 
+        // 開局準備仍在等待參與者提交時，暫停一般自動決策，直到準備步驟完成。
+        if (gameRepository.getGame(gameId)?.pendingRoundPreparation != null) return false
+
         val forcedAction = forcedAutoPlayDriver.resolveNextAction(gameId)
         val automaticAction = if (forcedAction == null) automaticDecisionDriver?.resolveNextAction(gameId) else null
         val humanAction = forcedAction ?: automaticAction

@@ -292,7 +292,8 @@ object MahjongTileTableLayout {
      * 於側面方向（局部 Z 軸）的外觀寬度是 [MahjongTileDimensions.TILE_HEIGHT]（原本直立時的高度，
      * 躺平後變成水平方向的寬度）。
      *
-     * 垂直於側面的偏移（`halfSpan`）與沿側面方向的半跨距相同，使四面牌牆的直線在桌角相接。
+     * 垂直於側面的偏移（`halfSpan`）至少維持標準 17 墩牌牆的外側邊界；較長的牌牆依自身長度
+     * 向外延伸。這讓短牌牆仍避開桌心的中央擲骰區，同時讓標準四面牌牆的直線在桌角相接。
      *
      * 角落端點依牌張實際寬度錯開：沿局部 X 軸移動半個 [MahjongTileDimensions.TILE_HEIGHT]，形成端邊與側邊相接的布局。
      * 再加上 [MahjongTileDimensions.TILE_WIDTH] 的 [CORNER_GAP_RATIO] 倍，保留角落間距。
@@ -307,7 +308,7 @@ object MahjongTileTableLayout {
      */
     private fun localWallVector(stacksPerSide: Int, stack: Int, layer: Int): TileTableVector {
         val stackStep = MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING
-        val halfSpan = stacksPerSide / 2.0 * stackStep
+        val halfSpan = maxOf(stacksPerSide / 2.0 * stackStep, STANDARD_WALL_HALF_SPAN)
         val cornerInterlockShift = MahjongTileDimensions.TILE_HEIGHT / 2.0 +
             MahjongTileDimensions.TILE_WIDTH * CORNER_GAP_RATIO
         val alongSide = ((stacksPerSide - 1) / 2.0 - stack) * stackStep + cornerInterlockShift
@@ -1176,11 +1177,12 @@ object MahjongTileTableLayout {
     /** 牌河固定每排張數，超過往下一排堆疊。 */
     internal const val DISCARD_TILES_PER_ROW: Int = 6
 
-    /**
-     * `discardPlacement` 沒有像 [wallPlacement] 一樣收到 `stacksPerSide`，這裡假設標準日麻 17
-     * 墩／面來估算牌牆 `halfSpan`，換算 [DISCARD_ROW_BASE_OFFSET]／[DISCARD_WALL_NEAR_EDGE] 用。
-     */
-    private const val ASSUMED_WALL_STACKS_PER_SIDE: Int = 17
+    /** 標準桌面以每面 17 墩的牌牆，決定短牌牆離桌心的最小距離及牌河的預留空間。 */
+    private const val STANDARD_WALL_STACKS_PER_SIDE: Int = 17
+
+    /** 標準牌牆的外側半跨距；短牌牆也維持在這條安全邊界之外。 */
+    private const val STANDARD_WALL_HALF_SPAN: Double =
+        STANDARD_WALL_STACKS_PER_SIDE / 2.0 * (MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING)
 
     /**
      * 牌河實際會換行的排數——第三排（`row` 從 0 起算為 2）用完後，[localDiscardVector] 不再往桌緣
@@ -1196,7 +1198,7 @@ object MahjongTileTableLayout {
      * [DISCARD_ROW_BASE_OFFSET] 換算用。
      */
     internal const val DISCARD_WALL_NEAR_EDGE: Double =
-        ASSUMED_WALL_STACKS_PER_SIDE / 2.0 * (MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING) -
+        STANDARD_WALL_HALF_SPAN -
             DISCARD_WALL_CLEARANCE_MARGIN
 
     /**

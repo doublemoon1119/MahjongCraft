@@ -13,17 +13,23 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModM
  * @property order 操作卡由左至右的順序；`null` 代表排在所有已登記的動作之後，並維持原始相對順序。
  * @property descriptionKey 說明這個動作做什麼的 translation key，顯示在操作卡的提示框與選牌提示；`null` 代表不需要說明，
  * 例如吃、碰等基本動作。
+ * @property cardBodyKey 操作卡中央說明的 translation key；`null` 代表不顯示中央說明。
+ * @property cardHintKey 操作卡按鈕附近提示的 translation key；`null` 代表不顯示額外提示。
  */
 data class GameActionVocabulary(
     val labelKey: String,
     val messageKey: String = labelKey,
     val order: Int? = null,
     val descriptionKey: String? = null,
+    val cardBodyKey: String? = null,
+    val cardHintKey: String? = null,
 ) {
     init {
         require(labelKey.isNotBlank()) { "Game action label key must not be blank" }
         require(messageKey.isNotBlank()) { "Game action message key must not be blank" }
         require(descriptionKey == null || descriptionKey.isNotBlank()) { "Game action description key must not be blank" }
+        require(cardBodyKey == null || cardBodyKey.isNotBlank()) { "Game action card body key must not be blank" }
+        require(cardHintKey == null || cardHintKey.isNotBlank()) { "Game action card hint key must not be blank" }
     }
 }
 

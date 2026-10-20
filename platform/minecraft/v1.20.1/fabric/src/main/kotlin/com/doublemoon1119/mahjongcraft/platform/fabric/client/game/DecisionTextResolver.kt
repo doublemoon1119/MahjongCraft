@@ -54,6 +54,28 @@ class DecisionTextResolver(
         ?.let(Text::translatable)
 
     /**
+     * 取得操作卡中央的簡短說明。
+     *
+     * @param ruleModuleId 決策所屬規則；null 時使用中立用語。
+     * @param actionId 動作識別碼。
+     * @return 本地化說明；未登記時為 null。
+     */
+    fun actionCardBody(ruleModuleId: String?, actionId: String): Text? = actionVocabulary.find(ruleModuleId, actionId)
+        ?.cardBodyKey
+        ?.let(Text::translatable)
+
+    /**
+     * 取得操作卡按鈕附近的補充提示。
+     *
+     * @param ruleModuleId 決策所屬規則；null 時使用中立用語。
+     * @param actionId 動作識別碼。
+     * @return 本地化提示；未登記時為 null。
+     */
+    fun actionCardHint(ruleModuleId: String?, actionId: String): Text? = actionVocabulary.find(ruleModuleId, actionId)
+        ?.cardHintKey
+        ?.let(Text::translatable)
+
+    /**
      * 取得動作在操作卡中的顯示順序。
      *
      * @param ruleModuleId 決策所屬規則；null 時使用中立用語。

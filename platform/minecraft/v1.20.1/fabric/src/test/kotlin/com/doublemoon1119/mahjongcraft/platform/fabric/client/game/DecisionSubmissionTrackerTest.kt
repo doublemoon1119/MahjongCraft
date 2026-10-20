@@ -114,6 +114,26 @@ class DecisionSubmissionTrackerTest {
         assertFalse(tracker.isPending())
     }
 
+    /** 接受後若合法動作集合改變，新的權威決策鍵仍能解除舊提交；晚到的舊確認不影響新提交。 */
+    @Test
+    fun `test accepted submission unlocks when authoritative candidate set changes`() {
+        tracker.begin("game", "old-candidates", "submission")
+        assertEquals(
+            AcknowledgementEffect.KEPT_LOCKED,
+            tracker.acknowledge(ack(PlayerDecisionSubmissionResultKindDto.ACCEPTED, "old-candidates", "submission")),
+        )
+
+        tracker.applyAuthoritativeDecision("new-candidates", updateSequence)
+        assertFalse(tracker.isPending())
+
+        assertTrue(tracker.begin("game", "new-candidates", "new-submission"))
+        assertEquals(
+            AcknowledgementEffect.IGNORED,
+            tracker.acknowledge(ack(PlayerDecisionSubmissionResultKindDto.REJECTED, "old-candidates", "submission")),
+        )
+        assertTrue(tracker.isPending("new-candidates"))
+    }
+
     /** 送出後完全收不到權威更新時，先回報一次正在重新同步，再等重新同步期限後解除鎖定。 */
     @Test
     fun `test silent server reports resyncing once and then unlocks within the limit`() {
@@ -196,12 +216,18 @@ class DecisionSubmissionTrackerTest {
      * 建立目前提交的 ACK。
      *
      * @param result 權威回覆結果。
+     * @param decisionKey 回覆所屬的決策識別碼。
+     * @param submissionId 回覆所屬的提交識別碼。
      * @return 使用測試對局、決策與提交識別的 ACK。
      */
-    private fun ack(result: PlayerDecisionSubmissionResultKindDto) = PlayerDecisionSubmissionResultDto(
+    private fun ack(
+        result: PlayerDecisionSubmissionResultKindDto,
+        decisionKey: String = "decision",
+        submissionId: String = "submission",
+    ) = PlayerDecisionSubmissionResultDto(
         gameId = "game",
-        decisionKey = "decision",
-        submissionId = "submission",
+        decisionKey = decisionKey,
+        submissionId = submissionId,
         result = result,
     )
 

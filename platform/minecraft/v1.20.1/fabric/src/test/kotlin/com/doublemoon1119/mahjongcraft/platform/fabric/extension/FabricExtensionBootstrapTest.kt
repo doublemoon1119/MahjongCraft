@@ -10,9 +10,11 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.FabricSeatProviderRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.di.fabricServerModule
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decision.DebugDecisionActionIds
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationState
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.seating.MahjongStoolSeatProvider
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.table.prop.FabricTablePropKindRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftPresentationRegistries
@@ -27,11 +29,23 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 /** 驗證 loader 組裝的跨層順序、單次 discovery 與失敗後停止契約。 */
 class FabricExtensionBootstrapTest {
+    /** 正式環境不登記文字卡的 debug 用語。 */
+    @Test
+    fun `production bootstrap does not register debug text card vocabulary`() {
+        val koin = startKoin {
+            allowOverride(false)
+            modules(fabricServerModule)
+        }.koin
+        initialize(koin, emptyList())
+        assertNull(koin.get<GameActionVocabularyRegistry>().find(null, DebugDecisionActionIds.TEXT_CARD))
+    }
+
     /** 每個測試結束後釋放正式 Koin graph。 */
     @AfterTest
     fun tearDown() = stopKoin()

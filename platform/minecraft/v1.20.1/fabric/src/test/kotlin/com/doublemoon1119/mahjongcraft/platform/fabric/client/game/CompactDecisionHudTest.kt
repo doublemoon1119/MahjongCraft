@@ -12,6 +12,23 @@ import kotlin.test.assertTrue
 
 /** 驗證精簡 HUD 的顯示決策與版位。 */
 class CompactDecisionHudTest {
+    /** 說明可用畫面整行寬度，極窄畫面仍提供有效的換行寬度。 */
+    @Test
+    fun `uses screen space rather than the standard group width for descriptions`() {
+        assertEquals(838, compactDescriptionMaximumWidth(854))
+        assertEquals(1, compactDescriptionMaximumWidth(8))
+    }
+
+    /** 完整說明比標準群組寬時，依實際文字寬度擴張且不超出畫面。 */
+    @Test
+    fun `expands the compact group for text while staying within the screen`() {
+        val wide = layout(expanded = true).copy(contentWidth = 400)
+        assertEquals(400, wide.groupWidth)
+        assertEquals((wide.screenWidth - 400) / 2, wide.groupLeft)
+        assertEquals(wide.screenWidth, wide.copy(contentWidth = 2000).groupWidth)
+        assertEquals(CompactDecisionHudLayout.GROUP_WIDTH, wide.copy(contentWidth = 10).groupWidth)
+    }
+
     /** 沒有 prompt 時只顯示倒數。 */
     @Test
     fun `shows only the timer without a prompt`() {

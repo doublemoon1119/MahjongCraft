@@ -25,10 +25,14 @@ internal data class DecisionBounds(
  *
  * @property previewTileCount 卡片內的預覽牌張數。
  * @property hasClaimedTileMarker 是否需要在某張預覽牌上方保留鳴牌指標的高度。
+ * @property bodyLineCount 卡片中央說明換行後的行數。
+ * @property hintLineCount 按鈕附近提示換行後的行數。
  */
 internal data class DecisionCard(
     val previewTileCount: Int,
     val hasClaimedTileMarker: Boolean,
+    val bodyLineCount: Int = 0,
+    val hintLineCount: Int = 0,
 )
 
 /**
@@ -70,6 +74,12 @@ internal data class DecisionCardLayout(
      * @return 卡片寬度。
      */
     fun cardWidth(card: DecisionCard): Int {
+        if (card.bodyLineCount > 0 || card.hintLineCount > 0) {
+            val available = (screenWidth - SCREEN_MARGIN * 2 - PANEL_PADDING * 2).coerceAtLeast(CARD_WIDTH)
+            val previewWidth = CARD_PADDING * 2 +
+                card.previewTileCount * (PREVIEW_TILE_WIDTH + PREVIEW_TILE_GAP) - PREVIEW_TILE_GAP
+            return maxOf(TEXT_CARD_WIDTH, previewWidth).coerceAtMost(available)
+        }
         if (card.previewTileCount <= COMPACT_PREVIEW_TILE_COUNT) return CARD_WIDTH
         val desired = CARD_PADDING * 2 +
             card.previewTileCount * PREVIEW_TILE_WIDTH +
@@ -85,13 +95,57 @@ internal data class DecisionCardLayout(
      */
     fun cardHeight(card: DecisionCard): Int {
         val columns = previewColumns(cardWidth(card))
-        val tileRows = ((card.previewTileCount + columns - 1) / columns).coerceAtLeast(1)
+        val tileRows = (card.previewTileCount + columns - 1) / columns
+        val previewHeight = tileRows * PREVIEW_TILE_HEIGHT + (tileRows - 1).coerceAtLeast(0) * PREVIEW_TILE_GAP
         val markerHeight = if (card.hasClaimedTileMarker) ClaimedTileMarker.height + ClaimedTileMarker.GAP else 0
+        val textHeight = textHeight(card)
+        val textGap = if (textHeight > 0) {
+            TEXT_BUTTON_GAP + if (tileRows > 0) PREVIEW_TEXT_GAP else 0
+        } else {
+            0
+        }
         return maxOf(
             MIN_CARD_HEIGHT,
-            CARD_PADDING * 2 + markerHeight + tileRows * PREVIEW_TILE_HEIGHT + (tileRows - 1) * PREVIEW_TILE_GAP + BUTTON_HEIGHT,
+            CARD_PADDING * 2 + markerHeight + previewHeight + textGap + textHeight + BUTTON_HEIGHT,
         )
     }
+
+    /**
+     * 計算卡片文字所需高度。
+     *
+     * @param card 已量測換行行數的卡片。
+     * @return 中央說明、補充提示與兩者間距的總高度。
+     */
+    fun textHeight(card: DecisionCard): Int = card.bodyLineCount * TEXT_LINE_HEIGHT +
+        card.hintLineCount * TEXT_LINE_HEIGHT +
+        if (card.bodyLineCount > 0 && card.hintLineCount > 0) TEXT_SECTION_GAP else 0
+
+    /**
+     * 計算中央說明的上界。
+     *
+     * @param placement 卡片範圍。
+     * @param card 已量測換行行數的卡片。
+     * @return 文字區上界。
+     */
+    fun bodyTextTop(placement: DecisionBounds, card: DecisionCard): Int {
+        val button = cardButtonBounds(placement)
+        val bottom = button.y - TEXT_BUTTON_GAP
+        val top = placement.y + CARD_PADDING
+        return if (card.previewTileCount == 0) {
+            top + ((bottom - top - textHeight(card)) / 2).coerceAtLeast(0)
+        } else {
+            bottom - textHeight(card)
+        }
+    }
+
+    /**
+     * 計算補充提示的上界。
+     *
+     * @param placement 卡片範圍。
+     * @param card 已量測換行行數的卡片。
+     * @return 按鈕上方的提示上界。
+     */
+    fun hintTextTop(placement: DecisionBounds, card: DecisionCard): Int = cardButtonBounds(placement).y - TEXT_BUTTON_GAP - card.hintLineCount * TEXT_LINE_HEIGHT
 
     /**
      * 指定寬度的卡片一列可容納的預覽牌數。
@@ -247,14 +301,17 @@ internal data class DecisionCardLayout(
      *
      * @param placement 卡片範圍。
      * @param tileCount 預覽牌數量；小於等於零時回傳空清單。
+     * @param card 已量測文字行數的卡片；null 時只保留預覽牌與按鈕的間距。
      * @return 各張預覽牌的畫面範圍。
      */
-    fun previewTilePlacements(placement: DecisionBounds, tileCount: Int): List<DecisionBounds> {
+    fun previewTilePlacements(placement: DecisionBounds, tileCount: Int, card: DecisionCard? = null): List<DecisionBounds> {
         if (tileCount <= 0) return emptyList()
         val columns = previewColumns(placement.width)
         val rows = (tileCount + columns - 1) / columns
         val previewHeight = rows * PREVIEW_TILE_HEIGHT + (rows - 1) * PREVIEW_TILE_GAP
-        val previewTop = cardButtonBounds(placement).y - TILE_BUTTON_GAP - previewHeight
+        val textHeight = card?.let(::textHeight) ?: 0
+        val textGap = if (textHeight > 0) PREVIEW_TEXT_GAP + TEXT_BUTTON_GAP else TILE_BUTTON_GAP
+        val previewTop = cardButtonBounds(placement).y - textHeight - textGap - previewHeight
         return List(tileCount) { index ->
             val row = index / columns
             val rowStart = row * columns
@@ -375,6 +432,9 @@ internal data class DecisionCardLayout(
         /** 每張操作卡的固定寬度（像素）。 */
         const val CARD_WIDTH = 92
 
+        /** 含說明文字的卡片優先使用的寬度。 */
+        const val TEXT_CARD_WIDTH = 156
+
         /** 維持緊湊卡片寬度的預覽牌張數上限。 */
         const val COMPACT_PREVIEW_TILE_COUNT = 4
 
@@ -413,6 +473,15 @@ internal data class DecisionCardLayout(
 
         /** 預覽牌與按鈕標籤之間的間距（像素）。 */
         const val TILE_BUTTON_GAP = 3
+
+        /** 預覽牌與中央說明之間的間距。 */
+        const val PREVIEW_TEXT_GAP = 3
+
+        /** 中央說明與按鈕提示之間的間距。 */
+        const val TEXT_SECTION_GAP = 2
+
+        /** 文字區與卡片按鈕之間的間距。 */
+        const val TEXT_BUTTON_GAP = 3
 
         /** 觸發牌面板內容與邊緣的留白（像素）。 */
         const val TRIGGER_PADDING = 6

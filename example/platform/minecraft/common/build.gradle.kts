@@ -13,5 +13,13 @@ kotlin {
             implementation(project(":mahjong-extension-api"))
             implementation(project(":minecraft_common"))
         }
+
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+        }
+
+        jvmTest.dependencies {
+            implementation(libs.kotlinx.serialization.json)
+        }
     }
 }

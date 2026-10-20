@@ -82,6 +82,12 @@ val packagingTestArguments = objects.newInstance<ModPackagingTestArguments>().ap
     exampleJar.from(exampleModJar.flatMap { it.archiveFile })
 }
 tasks.test {
+    // 模型測試會啟用 Minecraft logging，相對輸出與正式模組一樣限制在 build 目錄。
+    val testRunDirectory = layout.buildDirectory.dir("test-runs/$name")
+    workingDir(testRunDirectory)
+    doFirst {
+        testRunDirectory.get().asFile.mkdirs()
+    }
     // 對實際 remap 後的產物驗證，不以普通 JVM fixture 代替真正的 mod 打包。
     dependsOn(exampleModJar, mainModArtifact)
     jvmArgumentProviders.add(packagingTestArguments)

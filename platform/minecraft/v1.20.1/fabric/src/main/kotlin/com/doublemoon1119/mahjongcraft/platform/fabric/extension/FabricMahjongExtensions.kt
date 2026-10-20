@@ -130,7 +130,8 @@ internal object FabricMahjongExtensions {
         // 同一個第三方類別可同時實作 MahjongExtension 與 MinecraftMahjongExtension，
         // 不需要在 fabric.mod.json 額外宣告第二個 entrypoint。
         val minecraftResult = MinecraftMahjongExtensionRegistrar.registerAndFreeze(
-            extensions = BundledMinecraftMahjongExtensions.all + discoveredExtensions.filterIsInstance<MinecraftMahjongExtension>(),
+            extensions = BundledMinecraftMahjongExtensions.all + debugExtensions +
+                discoveredExtensions.filterIsInstance<MinecraftMahjongExtension>(),
             registries = presentationRegistries,
             failurePolicy = failurePolicy,
         )

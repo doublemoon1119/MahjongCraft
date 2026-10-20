@@ -108,6 +108,56 @@ class MahjongTileTableLayoutTest {
         }
     }
 
+    /** 兩面短牌牆不論相鄰或相對、桌子朝向與牌張層數，都要避開中央擲骰區。 */
+    @Test
+    fun `short two-sided walls keep the dice area clear`() {
+        val centerX = CONTROLLER_CENTER_X
+        val centerZ = CONTROLLER_CENTER_Z
+        val minimumClearDistance = 0.3 + MahjongTileDimensions.TILE_HEIGHT / 2.0
+        val arrangements = listOf(listOf(0, 1), listOf(0, 2))
+
+        MahjongTableFacing.entries.forEach { facing ->
+            arrangements.forEach { quarterTurns ->
+                (0..1).forEach { layer ->
+                    (0 until 2).forEach { side ->
+                        (0 until 4).forEach { stack ->
+                            val placement = wallPlacement(
+                                tableFacing = facing,
+                                position = TileWallPosition(side = side, stack = stack, layer = layer),
+                                stacksPerSide = 4,
+                                sideCount = 2,
+                                quarterTurns = quarterTurns,
+                            )
+                            val distance = hypot(placement.x - centerX, placement.z - centerZ)
+                            assertEquals(
+                                true,
+                                distance > minimumClearDistance,
+                                "Short wall placement $placement must clear the central dice area",
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /** 標準 17 墩與 18 墩牌牆仍使用各自原本的外側距離。 */
+    @Test
+    fun `standard wall spans remain unchanged`() {
+        val stackStep = MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING
+        val seventeen = wallPlacement(
+            position = TileWallPosition(side = 0, stack = 8, layer = 0),
+            stacksPerSide = 17,
+        )
+        val eighteen = wallPlacement(
+            position = TileWallPosition(side = 0, stack = 9, layer = 0),
+            stacksPerSide = 18,
+        )
+
+        assertEquals(17 / 2.0 * stackStep, seventeen.z - CONTROLLER_CENTER_Z, ABSOLUTE_TOLERANCE)
+        assertEquals(18 / 2.0 * stackStep, eighteen.z - CONTROLLER_CENTER_Z, ABSOLUTE_TOLERANCE)
+    }
+
     /** 移出手牌的牌接在副露之後，寬度與副露同一套算法；有副露時多隔一個組間縫隙。 */
     @Test
     fun `set aside tiles extend the corner area`() {
@@ -642,6 +692,7 @@ class MahjongTileTableLayoutTest {
         placement: TileWallPlacement = TileWallPlacement(position),
         stacksPerSide: Int = STACKS_PER_SIDE,
         sideCount: Int = SIDE_COUNT,
+        quarterTurns: List<Int> = List(sideCount) { (dealerSeatIndex - it).mod(sideCount) },
     ): MahjongTileWallPlacement = MahjongTileTableLayout.wallPlacement(
         controllerX = 10,
         controllerY = 64,
@@ -650,7 +701,7 @@ class MahjongTileTableLayoutTest {
         sideLayout = MahjongTileWallSideLayout.resolve(
             arrangement = TileWallSideArrangement(
                 reference = TileWallSideReference.TABLE,
-                quarterTurns = List(sideCount) { (dealerSeatIndex - it).mod(sideCount) },
+                quarterTurns = quarterTurns,
             ),
             dealerSide = MahjongTableSide.SOUTH,
         ),

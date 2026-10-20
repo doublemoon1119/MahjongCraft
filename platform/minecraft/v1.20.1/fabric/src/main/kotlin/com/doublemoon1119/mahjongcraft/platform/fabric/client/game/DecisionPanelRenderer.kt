@@ -93,17 +93,32 @@ internal fun decisionPanelLayout(
     screenHeight: Int,
     panelRatioY: Double,
     timerWidth: Int,
-): DecisionCardLayout = DecisionCardLayout(
-    screenWidth = screenWidth,
-    screenHeight = screenHeight,
-    cards = content.entries.map(DecisionEntry::layoutCard),
-    headerTextWidth = renderer.getWidth(content.title),
-    triggerLineCount = content.triggerLines.size,
-    triggerTextWidth = content.triggerLines.maxOfOrNull(renderer::getWidth) ?: 0,
-    hasTriggerTile = content.triggerTileAssetKey != null,
-    panelRatioY = panelRatioY,
-    timerWidth = timerWidth,
-)
+): DecisionCardLayout {
+    val base = DecisionCardLayout(
+        screenWidth = screenWidth,
+        screenHeight = screenHeight,
+        cards = content.entries.map(DecisionEntry::layoutCard),
+        headerTextWidth = renderer.getWidth(content.title),
+        triggerLineCount = content.triggerLines.size,
+        triggerTextWidth = content.triggerLines.maxOfOrNull(renderer::getWidth) ?: 0,
+        hasTriggerTile = content.triggerTileAssetKey != null,
+        panelRatioY = panelRatioY,
+        timerWidth = timerWidth,
+    )
+    return base.copy(
+        cards = content.entries.map { entry ->
+            val draft = entry.layoutCard().copy(
+                bodyLineCount = if (entry.cardBody != null) 1 else 0,
+                hintLineCount = if (entry.cardHint != null) 1 else 0,
+            )
+            val textWidth = (base.cardWidth(draft) - DecisionCardLayout.CARD_PADDING * 2).coerceAtLeast(1)
+            draft.copy(
+                bodyLineCount = entry.cardBody?.let { renderer.wrapLines(it, textWidth).size } ?: 0,
+                hintLineCount = entry.cardHint?.let { renderer.wrapLines(it, textWidth).size } ?: 0,
+            )
+        },
+    )
+}
 
 /**
  * 畫出操作面板的背景、標題、觸發牌、卡片與 scrollbar。
@@ -144,7 +159,7 @@ internal fun DrawContext.drawDecisionPanel(
     }
     enableScissor(layout.viewportLeft, layout.cardTop, layout.viewportRight, layout.cardBottom)
     content.entries.forEachIndexed { index, entry ->
-        drawDecisionCard(layout, entry, placements[index], mouseX, mouseY, drawTile)
+        drawDecisionCard(renderer, layout, layout.cards[index], entry, placements[index], mouseX, mouseY, drawTile)
     }
     renderCardButtons()
     disableScissor()
@@ -158,9 +173,11 @@ internal fun DrawContext.drawDecisionPanel(
 }
 
 /**
- * 繪製單一卡片的背景、預覽牌與鳴牌指標。
+ * 繪製單一卡片的背景、預覽牌、說明與補充提示。
  *
+ * @param renderer 文字繪製器。
  * @param layout 操作面板版面幾何。
+ * @param card 已量測文字行數的卡片特徵。
  * @param entry 卡片內容。
  * @param placement 卡片目前的畫面範圍。
  * @param mouseX 游標水平座標。
@@ -168,7 +185,9 @@ internal fun DrawContext.drawDecisionPanel(
  * @param drawTile 在指定左上角繪製預覽牌面的回呼。
  */
 private fun DrawContext.drawDecisionCard(
+    renderer: TextRenderer,
     layout: DecisionCardLayout,
+    card: DecisionCard,
     entry: DecisionEntry,
     placement: DecisionBounds,
     mouseX: Int,
@@ -185,10 +204,33 @@ private fun DrawContext.drawDecisionCard(
         if (hovered) CARD_HOVER_BACKGROUND else CARD_BACKGROUND,
     )
     val tiles = entry.previewTileAssetKeys
-    layout.previewTilePlacements(placement, tiles.size).forEachIndexed { index, tile ->
+    layout.previewTilePlacements(placement, tiles.size, card).forEachIndexed { index, tile ->
         drawTile(tiles[index], tile.x, tile.y)
         if (index == entry.claimedTileIndex) {
             drawClaimedTileMarker(tile.x + tile.width / 2, layout.claimedTileMarkerTop(tile))
+        }
+    }
+    val textWidth = (placement.width - DecisionCardLayout.CARD_PADDING * 2).coerceAtLeast(1)
+    entry.cardBody?.let { body ->
+        renderer.wrapLines(body, textWidth).forEachIndexed { index, line ->
+            drawCenteredTextWithShadow(
+                renderer,
+                line,
+                placement.x + placement.width / 2,
+                layout.bodyTextTop(placement, card) + index * DecisionCardLayout.TEXT_LINE_HEIGHT,
+                CARD_BODY_COLOR,
+            )
+        }
+    }
+    entry.cardHint?.let { hint ->
+        renderer.wrapLines(hint, textWidth).forEachIndexed { index, line ->
+            drawCenteredTextWithShadow(
+                renderer,
+                line,
+                placement.x + placement.width / 2,
+                layout.hintTextTop(placement, card) + index * DecisionCardLayout.TEXT_LINE_HEIGHT,
+                CARD_HINT_COLOR,
+            )
         }
     }
 }
@@ -224,6 +266,12 @@ private const val CARD_BACKGROUND = 0xCC2A3844.toInt()
 
 /** 游標懸停卡片時的底色 ARGB。 */
 private const val CARD_HOVER_BACKGROUND = 0xDD3A4B59.toInt()
+
+/** 卡片中央說明顏色。 */
+private const val CARD_BODY_COLOR = 0xDDDDDD
+
+/** 按鈕旁補充提示的淡色文字。 */
+private const val CARD_HINT_COLOR = 0x999999
 
 /** 水平捲軸軌道顏色。 */
 private const val SCROLLBAR_TRACK_COLOR = 0xFF26333D.toInt()

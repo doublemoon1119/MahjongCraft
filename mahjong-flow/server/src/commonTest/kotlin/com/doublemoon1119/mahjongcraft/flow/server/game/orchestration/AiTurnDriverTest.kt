@@ -6,7 +6,11 @@ import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategy
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyDefinition
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistryImpl
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRoundPreparation
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationInputSpec
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerActionContextResolver
@@ -293,6 +297,35 @@ class AiTurnDriverTest {
 
         assertEquals(aiId to GameCommand.Draw, result?.let { it.playerId to it.command })
         assertEquals(0, fixtures.strategy.callCount, "Drawing is not a strategic decision; the strategy should not be consulted.")
+    }
+
+    /** 驗證開局準備尚未完成時，不會把 AI 誤判成已進入摸打回合。 */
+    @Test
+    fun `test pending round preparation suppresses ordinary ai action`() = runTest {
+        val fixtures = Fixtures()
+        val aiId = Uuid.random()
+        val ai = FakeMahjongPlayerFactory.create(id = aiId, initialSeat = Wind.EAST)
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(ai),
+            config = RiichiRuleConfig(),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setGame(
+            Game(
+                tableState = table,
+                flowConfig = GameFlowConfig(),
+                aiPlayerStrategyKeys = mapOf(aiId to strategyKey),
+                pendingRoundPreparation = PendingRoundPreparation(
+                    stepId = "test:confirmation",
+                    stepIndex = 0,
+                    inputSpecsByPlayerId = mapOf(aiId to RoundPreparationInputSpec.Confirmation),
+                ),
+            ),
+        )
+
+        assertNull(fixtures.driver.resolveNextAction(gameId))
+        assertEquals(0, fixtures.strategy.callCount)
     }
 
     /**

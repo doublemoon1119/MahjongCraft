@@ -531,24 +531,43 @@ class PlayerDecisionHudController(
         content: CompactDecisionHudContent,
         ratioX: Double,
         ratioY: Double,
-    ): CompactDecisionHudLayout = CompactDecisionHudLayout(
-        screenWidth = screenWidth,
-        screenHeight = screenHeight,
-        ratioX = ratioX,
-        ratioY = ratioY,
-        expanded = content != CompactDecisionHudContent.TimerOnly,
-        descriptionLineCount = compactDescriptionLines(content, screenWidth).size,
-    )
+    ): CompactDecisionHudLayout {
+        val renderer = MinecraftClient.getInstance().textRenderer
+        val descriptionLines = compactDescriptionLines(content, screenWidth)
+        val headingWidths = when (content) {
+            CompactDecisionHudContent.TimerOnly -> emptyList()
+            CompactDecisionHudContent.ReopenReminder -> listOf(
+                renderer.getWidth(Text.translatable("mahjongcraft.hud.waiting_for_action")),
+                renderer.getWidth(Text.translatable("mahjongcraft.hud.reopen_action")),
+            )
+            is CompactDecisionHudContent.TileSelection -> listOf(
+                renderer.getWidth(Text.translatable("mahjongcraft.hud.tile_selection_in_progress")),
+                renderer.getWidth(tileSelectionDetailText(content.progress)),
+            )
+        }
+        val textWidth = maxOf(descriptionLines.maxOfOrNull(renderer::getWidth) ?: 0, headingWidths.maxOrNull() ?: 0)
+        return CompactDecisionHudLayout(
+            screenWidth = screenWidth,
+            screenHeight = screenHeight,
+            ratioX = ratioX,
+            ratioY = ratioY,
+            expanded = content != CompactDecisionHudContent.TimerOnly,
+            descriptionLineCount = descriptionLines.size,
+            contentWidth = textWidth + CompactDecisionHudLayout.TEXT_MARGIN * 2,
+        )
+    }
 
     /**
-     * 將選牌進度的動作說明依精簡 HUD 寬度換行。
+     * 保留動作說明自行指定的分段，只有文字超過畫面可用寬度時才自動換行。
      *
      * @param content 精簡提示內容。
      * @param screenWidth 畫面寬度，用於限制換行寬度。
      * @return 說明文字行；非選牌進度或沒有說明時為空清單。
      */
     private fun compactDescriptionLines(content: CompactDecisionHudContent, screenWidth: Int) = (content as? CompactDecisionHudContent.TileSelection)?.description
-        ?.let { MinecraftClient.getInstance().textRenderer.wrapLines(it, CompactDecisionHudLayout.GROUP_WIDTH.coerceAtMost(screenWidth)) }
+        ?.let {
+            MinecraftClient.getInstance().textRenderer.wrapLines(it, compactDescriptionMaximumWidth(screenWidth))
+        }
         .orEmpty()
 
     /**

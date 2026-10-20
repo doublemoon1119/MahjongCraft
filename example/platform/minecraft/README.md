@@ -10,8 +10,9 @@ It uses the same compiler, Java and Minecraft version policies as the main proje
 - [Fabric 1.20.1](v1.20.1/fabric/README.md): the example mod and native entrypoints.
 
 The common extension registers the pairing rule, custom tile and Tsumogiri strategy.
-Platform names, controls and assets are not connected yet, so this is not a playable
-in-game example at this stage. Furniture and event chat output are also pending.
+Minecraft presentation adds room settings, declaration and exchange prompts, settlement text,
+and the inverted one-character tile's resources in four languages.
+Furniture and event chat output remain separate integration work.
 
 ## Build and Run
 

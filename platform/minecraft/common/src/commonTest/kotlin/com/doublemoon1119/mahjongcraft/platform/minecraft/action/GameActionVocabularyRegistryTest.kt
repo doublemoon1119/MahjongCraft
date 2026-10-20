@@ -13,6 +13,15 @@ import kotlin.test.assertTrue
 
 /** 驗證動作用語的登記與「規則優先、退回中立預設」的查詢順序。 */
 class GameActionVocabularyRegistryTest {
+    /** 操作卡的選填翻譯鍵不能是空白。 */
+    @Test
+    fun `rejects blank optional card text keys`() {
+        assertFailsWith<IllegalArgumentException> { GameActionVocabulary("sample.action", cardBodyKey = " ") }
+        assertFailsWith<IllegalArgumentException> { GameActionVocabulary("sample.action", cardHintKey = "") }
+        assertNull(GameActionVocabulary("sample.action").cardBodyKey)
+        assertNull(GameActionVocabulary("sample.action").cardHintKey)
+    }
+
     /** 沒有登記自己用語的規則，取得中立預設。 */
     @Test
     fun `a rule without its own wording falls back to the default`() {

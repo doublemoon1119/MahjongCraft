@@ -394,7 +394,7 @@ class FabricDebugDecisionCommand(
     }
 
     /**
-     * `/debug decision_hud` 的固定、可補全測試情境；動作 ID 與正式對局送出的相同。
+     * `/debug decision_hud` 的固定、可補全測試情境，使用內建或開發環境登記的動作用語。
      *
      * @property commandName 子指令名稱。
      * @property phase 預覽所處的決策階段。
@@ -419,6 +419,7 @@ class FabricDebugDecisionCommand(
         ANKAN("ankan", selfDrawTileAssetKey = "m9"),
         KYUUSHU("kyuushu", selfDrawTileAssetKey = "east"),
         PULL_NORTH("pull_north", selfDrawTileAssetKey = "north", ruleModuleId = BuiltInRuleModuleIds.RIICHI_THREE_PLAYER),
+        TEXT_CARD("text_card"),
         MIXED("mixed", PlayerDecisionPhaseDto.DISCARD_REACTION),
         DISCARD_ANALYSIS("discard_analysis", isDiscardAnalysis = true),
         DISCARD_FURITEN("discard_furiten", isDiscardAnalysis = true),
@@ -481,6 +482,14 @@ class FabricDebugDecisionCommand(
                 referenceTileAssetKey = null,
                 claimedTileIndex = null,
             )
+            fun textCardAction() = PlayerDecisionActionDto(
+                token = "$commandName:text_card",
+                actionId = DebugDecisionActionIds.TEXT_CARD,
+                previewTileAssetKeys = emptyList(),
+                claimedTileIndex = null,
+                referenceTileAssetKey = null,
+                tileSelection = null,
+            )
             // 只有吃會標出鳴來的那張牌（三張牌花色/數值不同才有辨識意義）；碰／槓牌面彼此完全相同，不標記。
             return when (this) {
                 CHI -> listOf(action("chi", listOf("s4", "s5", "s6"), claimedIndex = 1))
@@ -490,6 +499,7 @@ class FabricDebugDecisionCommand(
                 RON -> listOf(action("ron", listOf("s5")))
                 TSUMO -> listOf(action("tsumo", listOf("red_dragon")))
                 RIICHI -> listOf(riichiAction())
+                TEXT_CARD -> listOf(textCardAction())
                 KYUUSHU -> listOf(
                     PlayerDecisionActionDto(
                         token = "$commandName:kyuushu_kyuuhai",
@@ -516,6 +526,7 @@ class FabricDebugDecisionCommand(
                     action(MinecraftKanActionTokenKeys.OPEN, listOf("s5", "s5", "s5", "s5")),
                     action("ron", listOf("s5")),
                     riichiAction(),
+                    textCardAction(),
                     action("pass", emptyList()),
                 )
                 else -> emptyList()

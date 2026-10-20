@@ -1,0 +1,10 @@
+{
+	"providers": [
+		{
+			"type": "bitmap",
+			"file": "mahjongcraft_example:font/tile_emoji.png",
+			"ascent": 8,
+			"chars": ["󰨀"]
+		}
+	]
+}

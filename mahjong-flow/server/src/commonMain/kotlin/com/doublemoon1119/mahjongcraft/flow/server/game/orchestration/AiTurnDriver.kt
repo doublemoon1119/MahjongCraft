@@ -58,6 +58,7 @@ class AiTurnDriver(
     suspend fun resolveNextAction(gameId: Uuid): AiTurnDecision? {
         val game = gameRepository.getGame(gameId) ?: return null
         if (game.isMatchOver) return null
+        if (game.pendingRoundPreparation != null) return null
         val state = game.tableState
 
         val context = actionContextResolver.resolve(state).values.firstOrNull { context ->

@@ -3,6 +3,8 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRoundPreparation
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationInputSpec
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
@@ -99,6 +101,31 @@ class ForcedAutoPlayDriverTest {
             playerId to GameCommand.Discard(lastDrawn.id),
             driver(repository).resolveNextAction(game.id),
         )
+    }
+
+    /** 驗證開局準備尚未完成時，不會把逾時玩家誤判成一般摸打代操作。 */
+    @Test
+    fun `test pending round preparation suppresses forced action`() = runTest {
+        val repository = FakeGameRepository()
+        val playerId = Uuid.random()
+        val game = Game(
+            tableState = FakeTableStateFactory.create(
+                config = RiichiRuleConfig(),
+                players = listOf(
+                    FakeMahjongPlayerFactory.create(id = playerId, initialSeat = Wind.EAST),
+                ),
+            ),
+            flowConfig = GameFlowConfig(),
+            forcedAutoPlayPlayerIds = setOf(playerId),
+            pendingRoundPreparation = PendingRoundPreparation(
+                stepId = "test:confirmation",
+                stepIndex = 0,
+                inputSpecsByPlayerId = mapOf(playerId to RoundPreparationInputSpec.Confirmation),
+            ),
+        )
+        repository.setGame(game)
+
+        assertEquals(null, driver(repository).resolveNextAction(game.id))
     }
 
     /** 驗證共用代操作解析器對自己回合、反應視窗與旁觀玩家的結果。 */

@@ -25,6 +25,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransition
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRoundPreparation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationInputSpec
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSubmission
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundContinuationContext
@@ -66,6 +67,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
@@ -1757,8 +1759,8 @@ class GameFlowCoordinatorTest {
         fixtures.gameRepo.setGame(
             Game(
                 tableState = table,
-                flowConfig = GameFlowConfig(),
                 aiPlayerStrategyKeys = mapOf(aiId to CHANGING_STRATEGY_KEY),
+                flowConfig = GameFlowConfig(roundPreparation = RoundPreparationConfig(30)),
                 pendingRoundPreparation = PendingRoundPreparation(
                     stepId = "test:confirm",
                     stepIndex = 0,
@@ -1770,7 +1772,64 @@ class GameFlowCoordinatorTest {
         fixtures.coordinator.driveAutomatedPlayers(gameId)
 
         assertEquals(2, strategy.preparationCalls, "The stale submission should be decided again on the changed game.")
+        assertNull(assertNotNull(fixtures.gameRepo.getGame(gameId)).pendingRoundPreparation)
+        assertNull(fixtures.abortedGame)
+    }
+
+    /** 驗證 AI 先完成準備、真人尚未提交時，協調器會等待而不會誤送摸牌並中止對局。 */
+    @Test
+    fun `test an ai round preparation waits for a human submission`() = runTest {
+        val resolvers = RoundPreparationResolverRegistry().apply { register(ConfirmationResolver) }
+        val aiId = Uuid.random()
+        val humanId = Uuid.random()
+        val fixtures = Fixtures(
+            extraStrategies = mapOf(FIXED_PREPARATION_STRATEGY_KEY to FixedPreparationStrategy),
+            roundPreparationResolvers = resolvers,
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(
+                FakeMahjongPlayerFactory.create(id = humanId, initialSeat = Wind.EAST),
+                FakeMahjongPlayerFactory.create(id = aiId, initialSeat = Wind.SOUTH),
+            ),
+            config = RiichiRuleConfig(),
+            currentPlayerIndex = 1,
+        )
+        fixtures.gameRepo.setGame(
+            Game(
+                tableState = table,
+                aiPlayerStrategyKeys = mapOf(aiId to FIXED_PREPARATION_STRATEGY_KEY),
+                flowConfig = GameFlowConfig(roundPreparation = RoundPreparationConfig(30)),
+                pendingRoundPreparation = PendingRoundPreparation(
+                    stepId = "test:confirm",
+                    stepIndex = 0,
+                    inputSpecsByPlayerId = mapOf(
+                        humanId to RoundPreparationInputSpec.Confirmation,
+                        aiId to RoundPreparationInputSpec.Confirmation,
+                    ),
+                ),
+            ),
+        )
+
+        fixtures.coordinator.driveAutomatedPlayers(gameId)
+
+        assertNull(fixtures.abortedGame)
+        val waitingGame = assertNotNull(fixtures.gameRepo.getGame(gameId))
+        assertTrue(waitingGame.pendingRoundPreparation?.completedPlayerIds?.contains(aiId) == true)
+        assertNull(waitingGame.tableState.players.first { it.id == aiId }.hand.lastDrawn)
+        val humanResult = fixtures.coordinator.dispatch(
+            gameId,
+            humanId,
+            GameCommand.SubmitRoundPreparation(RoundPreparationSubmission.Confirmed),
+        )
+        assertTrue(humanResult is Outcome.Success)
+        fixtures.coordinator.driveAutomatedPlayers(gameId)
+
+        assertNull(fixtures.abortedGame)
         assertNull(fixtures.gameRepo.getGame(gameId)?.pendingRoundPreparation)
+        assertTrue(
+            fixtures.gameRepo.getTableState(gameId)!!.players.first { it.id == aiId }.discardPile.entries.isNotEmpty(),
+        )
     }
 
     /** 驗證 AI 擴充命令寫入同一局兩次時，中止對局並保留第一次寫入，但不偽造成功結果。 */
@@ -1844,8 +1903,8 @@ class GameFlowCoordinatorTest {
         fixtures.gameRepo.setGame(
             Game(
                 tableState = table,
-                flowConfig = GameFlowConfig(),
                 aiPlayerStrategyKeys = mapOf(aiId to HANGING_STRATEGY_KEY),
+                flowConfig = GameFlowConfig(roundPreparation = RoundPreparationConfig(30)),
                 pendingRoundPreparation = PendingRoundPreparation(
                     stepId = "test:confirm",
                     stepIndex = 0,
@@ -1856,7 +1915,8 @@ class GameFlowCoordinatorTest {
 
         fixtures.coordinator.driveAutomatedPlayers(gameId)
 
-        assertNull(fixtures.gameRepo.getGame(gameId)?.pendingRoundPreparation)
+        assertNull(assertNotNull(fixtures.gameRepo.getGame(gameId)).pendingRoundPreparation)
+        assertNull(fixtures.abortedGame)
         assertEquals(AiDecisionExecutor.DEFAULT_TIMEOUT.inWholeMilliseconds, testScheduler.currentTime)
     }
 
@@ -1865,6 +1925,16 @@ class GameFlowCoordinatorTest {
         override suspend fun decideGameCommand(context: AiDecisionContext): GameCommand = awaitCancellation()
 
         override suspend fun decideRoundPreparation(context: RoundPreparationAiContext): RoundPreparationSubmission = awaitCancellation()
+    }
+
+    /** 只完成開局準備、不改變桌況的測試策略。 */
+    private object FixedPreparationStrategy : MahjongAiStrategy {
+        override suspend fun decideGameCommand(context: AiDecisionContext): GameCommand {
+            val lastDrawn = context.snapshot.players.first { it.id == context.selfId }.hand.lastDrawn
+            return lastDrawn?.let { GameCommand.Discard(it.id) } ?: GameCommand.Draw
+        }
+
+        override suspend fun decideRoundPreparation(context: RoundPreparationAiContext): RoundPreparationSubmission = RoundPreparationSubmission.Confirmed
     }
 
     /**
@@ -1931,6 +2001,8 @@ class GameFlowCoordinatorTest {
     private object ConfirmationResolver : RoundPreparationResolver {
         override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI
 
+        override fun roundPreparationConfig(ruleConfig: MahjongRuleConfig): RoundPreparationConfig = RoundPreparationConfig(30)
+
         override fun begin(tableState: TableState, ruleModule: MahjongRuleModule<*>): PendingRoundPreparation? = null
 
         override fun resolve(
@@ -1950,6 +2022,9 @@ class GameFlowCoordinatorTest {
 
         /** [HangingStrategy] 的策略 key。 */
         const val HANGING_STRATEGY_KEY = "test:hanging"
+
+        /** [FixedPreparationStrategy] 的策略 key。 */
+        const val FIXED_PREPARATION_STRATEGY_KEY = "test:fixed_preparation"
     }
 }
 

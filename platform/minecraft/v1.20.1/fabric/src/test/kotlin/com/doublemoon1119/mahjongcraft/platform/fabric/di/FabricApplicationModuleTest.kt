@@ -65,6 +65,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.GameActionCan
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.PlayerDecisionPromptFactory
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.FabricDebugCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.animation.FabricDebugAnimationCommand
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decision.DebugDecisionActionIds
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decision.FabricDebugDecisionCommand
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.history.FabricHistoryGenerationRuntimeFactory
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.history.HistoryGenerationRuntimeFactory
@@ -144,6 +145,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
@@ -266,6 +268,7 @@ class FabricApplicationModuleTest {
         )
 
         assertTrue(DebugScriptedAiStrategy.TSUMOGIRI_KEY in koin.get<MahjongAiStrategyRegistry>().getAllStrategyKeys())
+        assertNotNull(koin.get<GameActionVocabularyRegistry>().find(null, DebugDecisionActionIds.TEXT_CARD))
         val debugSource = result.sources.single { it.extensionId == "mahjongcraft:debug" }
         assertTrue(debugSource.categories.any { it.id == "mahjongcraft:ai_strategy" && DebugScriptedAiStrategy.TSUMOGIRI_KEY in it.registrationIds })
         assertTrue(result.sources.first().categories.none { category -> DebugScriptedAiStrategy.TSUMOGIRI_KEY in category.registrationIds })
@@ -502,7 +505,7 @@ class FabricApplicationModuleTest {
         val decisionHudChildren = decisionCommand.buildDecisionHudCommand().build()
             .children.map { it.name }.toSet()
         assertTrue(
-            decisionHudChildren.containsAll(listOf("timer", "chi", "pon", "kan", "ron", "clear")),
+            decisionHudChildren.containsAll(listOf("timer", "chi", "pon", "kan", "ron", "text_card", "mixed", "clear")),
             "decision_hud keeps its preview literals and clear",
         )
         assertEquals(
