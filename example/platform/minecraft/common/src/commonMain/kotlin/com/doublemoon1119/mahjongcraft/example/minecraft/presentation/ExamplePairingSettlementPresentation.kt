@@ -30,7 +30,6 @@ fun registerExamplePairingSettlementTemplates(registry: WinSettlementPresentatio
                 children = listOf(
                     PresentationLayout.Text(BuiltInWinSettlementFieldIds.OUTCOME_TITLE),
                     PresentationLayout.PlayerIdentity(BuiltInWinSettlementFieldIds.WINNER_IDENTITY),
-                    PresentationLayout.Text(BuiltInWinSettlementFieldIds.WINNER_SUMMARY),
                     PresentationLayout.Row(
                         children = listOf(
                             PresentationLayout.TileGroups(BuiltInWinSettlementFieldIds.COMPLETE_HAND_GROUPS),
