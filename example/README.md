@@ -10,4 +10,5 @@ It is not part of the default build or the published MahjongCraft mod.
 The common library includes a small pairing rule, custom tile, declaration,
 optional tile exchange and Tsumogiri strategy.
 The Minecraft adapter supplies settings, text and tile resources.
-Native example furniture and event chat output are separate integration work.
+The Minecraft adapter also provides a block chair, a placeable cushion and administrator-only
+event chat output. Its creative tab groups both furniture items together.

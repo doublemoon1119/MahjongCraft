@@ -49,6 +49,11 @@ class ExampleModPackagingTest {
                 "assets/mahjongcraft_example/textures/item/mahjong_tile/mahjong_tile_unknown.png",
                 "assets/mahjongcraft_example/textures/font/tile_emoji.png",
                 "assets/minecraft/font/default.json",
+                "assets/mahjongcraft_example/blockstates/chair.json",
+                "assets/mahjongcraft_example/models/block/chair.json",
+                "assets/mahjongcraft_example/models/item/chair.json",
+                "assets/mahjongcraft_example/models/item/cushion.json",
+                "data/mahjongcraft_example/loot_tables/blocks/chair.json",
             ).forEach { path -> assertEquals(1, paths.count { it == path }, path) }
             listOf(
                 "com/doublemoon1119/mahjongcraft/logic/",
@@ -77,6 +82,7 @@ class ExampleModPackagingTest {
             val paths = jar.entries().asSequence().map { it.name }.toList()
             assertFalse(paths.any { it.startsWith("com/doublemoon1119/mahjongcraft/example/") })
             assertFalse(paths.any { it.startsWith("assets/mahjongcraft_example/") })
+            assertFalse(paths.any { it.startsWith("data/mahjongcraft_example/") })
             assertFalse(paths.any { it.contains("example", ignoreCase = true) && it.endsWith(".jar") })
             val metadata = Json.parseToJsonElement(jar.getInputStream(jar.getEntry("fabric.mod.json")).reader().readText()).jsonObject
             assertEquals("mahjongcraft", metadata.getValue("id").jsonPrimitive.content)

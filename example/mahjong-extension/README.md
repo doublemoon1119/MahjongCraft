@@ -61,7 +61,7 @@ public default submission. It is an API example, not a competitive strategy.
 | Network and persistence registries | Example-owned DTOs and two-way mappings |
 | Match flow and history | Small automated integration checks |
 | Names, controls, assets and world presentation | Supplied by the platform example; not verified here |
-| Furniture and event chat output | Subsequent platform integration |
+| Furniture and event chat output | Provided by the Minecraft adapter, outside this library |
 
 Usable extension points do not imply a binary-compatibility promise.
 This library does not establish new ABI guarantees for rules or strategies.

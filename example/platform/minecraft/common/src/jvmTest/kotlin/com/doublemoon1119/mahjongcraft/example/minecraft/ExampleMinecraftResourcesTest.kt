@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.example.minecraft
 
+import com.doublemoon1119.mahjongcraft.example.minecraft.text.ExampleEventMessageKeys
+import com.doublemoon1119.mahjongcraft.example.minecraft.text.ExampleFurnitureMessageKeys
 import com.doublemoon1119.mahjongcraft.example.minecraft.text.ExampleMinecraftMessageKeys
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
@@ -17,6 +19,33 @@ class ExampleMinecraftResourcesTest {
 
     /** 所有由範例 Minecraft 共用層使用的翻譯 key。 */
     private val messageKeys = listOf(
+        ExampleEventMessageKeys.TITLE,
+        ExampleEventMessageKeys.MATCH_STARTED,
+        ExampleEventMessageKeys.MATCH_STARTED_SUMMARY,
+        ExampleEventMessageKeys.ROUND_SETTLED,
+        ExampleEventMessageKeys.ROUND_SETTLED_SUMMARY,
+        ExampleEventMessageKeys.MATCH_ENDED,
+        ExampleEventMessageKeys.MATCH_ENDED_SUMMARY,
+        ExampleEventMessageKeys.EVENT_ID,
+        ExampleEventMessageKeys.MATCH_ID,
+        ExampleEventMessageKeys.VENUE_ID,
+        ExampleEventMessageKeys.RULE_MODULE_ID,
+        ExampleEventMessageKeys.TABLE_LOCATION,
+        ExampleEventMessageKeys.UNKNOWN_LOCATION,
+        ExampleEventMessageKeys.PLAYER,
+        ExampleEventMessageKeys.ROUND_NUMBER,
+        ExampleEventMessageKeys.OUTCOME_ID,
+        ExampleEventMessageKeys.SETTLEMENT_KIND,
+        ExampleEventMessageKeys.BENEFICIARIES,
+        ExampleEventMessageKeys.RESPONSIBLE_PLAYERS,
+        ExampleEventMessageKeys.SCORE_CHANGE,
+        ExampleEventMessageKeys.COMPLETION,
+        ExampleEventMessageKeys.REASON_ID,
+        ExampleEventMessageKeys.STANDING,
+        ExampleFurnitureMessageKeys.CHAIR,
+        ExampleFurnitureMessageKeys.CUSHION,
+        ExampleFurnitureMessageKeys.CUSHION_ENTITY,
+        ExampleFurnitureMessageKeys.ITEM_GROUP,
         ExampleMinecraftMessageKeys.RULE_NAME,
         ExampleMinecraftMessageKeys.RULE_DESCRIPTION,
         ExampleMinecraftMessageKeys.AI_NAME,
@@ -90,7 +119,13 @@ class ExampleMinecraftResourcesTest {
         }.bufferedReader().use { it.readText() }
         val translations = Json.parseToJsonElement(text).jsonObject.mapValues { (_, value) -> value.jsonPrimitive.content }
         translations.keys.forEach { key ->
-            assertTrue(key.startsWith("mahjongcraft_example."), "Unexpected translation namespace: $key")
+            assertTrue(
+                key.startsWith("mahjongcraft_example.") ||
+                    key.startsWith("block.mahjongcraft_example.") ||
+                    key.startsWith("item.mahjongcraft_example.") ||
+                    key.startsWith("entity.mahjongcraft_example."),
+                "Unexpected translation namespace: $key",
+            )
         }
         return translations
     }
