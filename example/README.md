@@ -1,14 +1,55 @@
-# Extension Examples
+# MahjongCraft examples
 
-This directory contains MahjongCraft extension examples and their platform adapters.
-It is not part of the default build or the published MahjongCraft mod.
+This directory contains small extensions that show how to use MahjongCraft's
+public extension points. Examples are optional: normal builds and the main mod
+do not load them.
 
-- [Mahjong extension](mahjong-extension/README.md): common extension implementation.
-- [Minecraft integration](platform/minecraft/README.md): platform presentation,
-  loader entrypoints and development runs.
+Start with the [platform-independent extension](mahjong-extension/README.md),
+then read the [Minecraft adapter guide](platform/minecraft/README.md) when you
+want to run the example in a game.
 
-The common library includes a small pairing rule, custom tile, declaration,
-optional tile exchange and Tsumogiri strategy.
-The Minecraft adapter supplies settings, text and tile resources.
-The Minecraft adapter also provides a block chair, a placeable cushion and administrator-only
-event chat output. Its creative tab groups both furniture items together.
+## What the examples cover
+
+| Capability | Example | Evidence | Status |
+| --- | --- | --- | --- |
+| Rule, tile wall and tile interpretation | Pairing Mahjong and inverted 1-man | [pairing tests](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/pairing) | Automated |
+| Multi-roll opening | Temporary dealer, final dealer and wall opening | [opening tests](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/pairing/ExamplePairingRoundOpeningProcedureTest.kt) | Automated |
+| Optional round preparation | Two-tile exchange | [preparation tests](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/preparation) | Automated; game check pending |
+| Extension action and command | Once-per-round public declaration | [action tests](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/action) | Automated |
+| AI strategy | Tsumogiri strategy | [AI test](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/ai/ExampleTsumogiriAiStrategyTest.kt) | Automated |
+| Network and persistence registration | Example-owned DTOs and mappings | [round-trip test](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/ExampleFormatRoundTripTest.kt) | Automated |
+| Minecraft presentation | Names, settings, history text and tile assets | [common adapter](platform/minecraft/common/README.md) | Automated and game-tested; combinations pending |
+| Native seating | Block chair and persistent cushion | [Fabric adapter](platform/minecraft/v1.20.1/fabric/README.md) | Game-tested; ABI baseline pending |
+| Public game events | Administrator chat observer | [Fabric adapter](platform/minecraft/v1.20.1/fabric/README.md) | Game-tested |
+| Missing-extension recovery | Keep authoritative data and restore it after reinstall | [recovery procedure](platform/minecraft/README.md#safe-recovery-check) | Manual check pending |
+
+Minecraft game checks in this table currently refer to the Fabric 1.20.1
+adapter. They do not establish coverage for another version or loader.
+The table is deliberately limited to capabilities this example actually uses.
+A successful compile is not evidence that every extension point works.
+
+## Compatibility boundaries
+
+The event API has the existing binary-compatibility baseline. The seating API
+is usable, but its baseline has not been established. Rule, strategy, appearance
+and other example APIs currently have no new binary-compatibility promise.
+
+The examples do not claim to implement the following future work:
+
+- third-party table implementations or AI world characters;
+- extra claim, flower and other flow capabilities not needed by this example;
+- new progress, sound, opponent-model or special-continuation integrations.
+
+These limits describe the example, not a restriction on the public API.
+
+## Build commands
+
+Build from the repository root with the example switch and the desired target.
+For example, the currently available Fabric 1.20.1 target uses:
+
+```shell
+./gradlew build "-PmahjongcraftTarget=minecraft-v1.20.1-fabric" -PmahjongcraftExample=true
+```
+
+The [Minecraft guide](platform/minecraft/README.md) contains isolated client
+and server run commands, packaging checks and the safe missing-mod procedure.

@@ -19,7 +19,7 @@
   `ORG_GRADLE_PROJECT_mahjongcraftTarget`, `MAHJONGCRAFT_TARGET`, `local.dev.properties`, then
   `core`. On PowerShell, quote target properties containing dots, for example:
 
-  ```powershell
+  ```shell
   .\gradlew.bat build "-PmahjongcraftTarget=minecraft-v1.20.1-fabric"
   ```
 
@@ -56,8 +56,8 @@
   `:example:example-<library>` and `:example-<platform>_<module-path>`, respectively.
   For example, `example/platform/minecraft/v1.20.1/fabric` maps to
   `:example-minecraft_v1.20.1_fabric`. Loader projects stay at the same Gradle level as product
-  loaders so Loom shares its plugin classes. The prefix keeps example artifact names distinct
-  from product artifacts. Product project paths remain unchanged.
+  loaders; for Loom-based targets, this lets them share plugin classes. The prefix keeps example
+  artifact names distinct from product artifacts. Product project paths remain unchanged.
 - Product modules never depend on examples. Example resources and classes belong only to the example
   mod. Its development runs use separate worlds and do not modify the product's run classpath.
 - Keep metadata defaults unchanged for product modules. Examples set their own identity through
@@ -65,3 +65,9 @@
 - Verify both example-enabled and default builds. Test the actual remapped JAR contents, not just
   compilation, and keep configuration cache enabled. See the
   [Minecraft example guide](../../example/platform/minecraft/README.md) for run commands.
+- Keep example documentation actionable: link to the public registration entry point and the focused
+  tests, state which checks are automated or manual, and do not describe a missing-mod world test as
+  complete until the packaged-instance recovery steps have actually been run.
+- In shared guides, present version/loader-specific commands and paths as examples, and name the
+  adapter actually verified. Do not imply that checking one adapter verifies other versions or loaders.
+  An adapter's own guide can describe its implementation directly.

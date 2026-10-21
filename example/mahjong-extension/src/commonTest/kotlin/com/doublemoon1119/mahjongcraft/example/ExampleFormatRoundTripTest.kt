@@ -16,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.ExtensionGameComman
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.MahjongRuleConfigDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.PlayerRuleStateDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.UnregisteredPersistenceTypeException
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.emptyPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
@@ -23,12 +24,39 @@ import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.serialization.PolymorphicSerializer
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
 /** 用少量代表資料確認擴充自己的型別可經正式網路與保存註冊表往返。 */
 class ExampleFormatRoundTripTest {
+    /** 缺少範例登記時拒讀原資料，補回相同登記後可直接還原，不需重建資料。 */
+    @Test
+    fun `missing extension registrations reject saved data and restored registrations read it`() {
+        val original = emptyPersistenceRegistries()
+        ExampleMahjongExtension().registerPersistenceDtos(original)
+        original.freeze()
+        val config = ExamplePairingRuleConfig(exchangeEnabled = true, paymentPerPlayer = 20, roundCount = 2)
+        val state = ExamplePairingPlayerState(declared = true)
+        val savedConfig = original.ruleConfigs.encode(config)
+        val savedState = original.playerRuleStates.encode(state)
+        val savedAction = original.extensionGameActions.encode(ExamplePairingDeclarationAction)
+
+        val missing = emptyPersistenceRegistries()
+        missing.freeze()
+        assertEquals(savedConfig.typeKey, assertFailsWith<UnregisteredPersistenceTypeException> { missing.ruleConfigs.decode(savedConfig) }.typeKey)
+        assertEquals(savedState.typeKey, assertFailsWith<UnregisteredPersistenceTypeException> { missing.playerRuleStates.decode(savedState) }.typeKey)
+        assertEquals(savedAction.typeKey, assertFailsWith<UnregisteredPersistenceTypeException> { missing.extensionGameActions.decode(savedAction) }.typeKey)
+
+        val restored = emptyPersistenceRegistries()
+        ExampleMahjongExtension().registerPersistenceDtos(restored)
+        restored.freeze()
+        assertEquals(config, restored.ruleConfigs.decode(savedConfig))
+        assertEquals(state, restored.playerRuleStates.decode(savedState))
+        assertEquals(ExamplePairingDeclarationAction, restored.extensionGameActions.decode(savedAction))
+    }
+
     /** 結算詳情只記實際每人付款數值，不產生其他規則的役種或翻符。 */
     @Test
     fun `settlement detail records the configured payment`() {

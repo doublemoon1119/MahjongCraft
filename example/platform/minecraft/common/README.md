@@ -32,3 +32,15 @@ example namespace; the `minecraft` font path is required to merge that glyph int
 
 Its classes and resources are packaged into the example mod, not the main mod.
 See the [example guide](../README.md) for commands and isolation rules.
+
+The main registration entry point is
+[`ExampleMinecraftMahjongExtension.kt`](src/commonMain/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/ExampleMinecraftMahjongExtension.kt).
+Resource and presentation tests include
+[`ExampleMinecraftRegistrationTest.kt`](src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/ExampleMinecraftRegistrationTest.kt),
+[`ExampleMinecraftResourcesTest.kt`](src/jvmTest/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/ExampleMinecraftResourcesTest.kt),
+and [`ExampleTileResourcesTest.kt`](src/jvmTest/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/ExampleTileResourcesTest.kt).
+
+The tile model inherits the standard parent at
+[`mahjong_tile_base.json`](../../../../platform/minecraft/common/src/jvmMain/resources/assets/mahjongcraft/models/item/mahjong_tile_base.json).
+Furniture model JSON belongs to the example namespace and reuses vanilla oak-plank and blue-wool
+textures; the loader module supplies their native behavior.
