@@ -1,6 +1,10 @@
 plugins {
     alias(libs.plugins.mahjongcraft.kotlin.multiplatform)
-    alias(libs.plugins.mahjongcraft.event.api.abi)
+    alias(libs.plugins.mahjongcraft.public.api.abi)
+}
+
+publicApiAbi {
+    includedNames.add("com.doublemoon1119.mahjongcraft.flow.api.event.**")
 }
 
 version = libs.versions.flow.version.get()

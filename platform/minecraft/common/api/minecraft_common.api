@@ -38,3 +38,67 @@ public final class com/doublemoon1119/mahjongcraft/platform/minecraft/api/event/
 	public final fun getZ ()I
 }
 
+public final class com/doublemoon1119/mahjongcraft/platform/minecraft/api/seating/RegisteredSeatProvider {
+	public fun <init> (Ljava/lang/String;Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/seating/SeatProvider;I)V
+	public synthetic fun <init> (Ljava/lang/String;Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/seating/SeatProvider;IILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getId ()Ljava/lang/String;
+	public final fun getPriority ()I
+	public final fun getProvider ()Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/seating/SeatProvider;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/doublemoon1119/mahjongcraft/platform/minecraft/api/seating/SeatGeometry {
+	public fun <init> (DDDF)V
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getX ()D
+	public final fun getY ()D
+	public final fun getYaw ()F
+	public final fun getZ ()D
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/doublemoon1119/mahjongcraft/platform/minecraft/api/seating/SeatIdentity {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDimensionId ()Ljava/lang/String;
+	public final fun getKey ()Ljava/lang/String;
+	public final fun getKind ()Ljava/lang/String;
+	public final fun getSlot ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/seating/SeatProvider {
+	public abstract fun resolve (Ljava/lang/Object;Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/seating/SeatRequest;)Ljava/util/List;
+}
+
+public final class com/doublemoon1119/mahjongcraft/platform/minecraft/api/seating/SeatRequest {
+	public final fun getDimensionId ()Ljava/lang/String;
+	public final fun getSeat ()Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/seating/SeatGeometry;
+	public final fun getSeatIndex ()I
+	public final fun getTableId ()Lkotlin/uuid/Uuid;
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/doublemoon1119/mahjongcraft/platform/minecraft/api/seating/SeatState : java/lang/Enum {
+	public static final field AVAILABLE Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/seating/SeatState;
+	public static final field BLOCKED Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/seating/SeatState;
+	public static final field FAILED Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/seating/SeatState;
+	public static final field INVALID Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/seating/SeatState;
+	public static final field OCCUPIED Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/seating/SeatState;
+	public static final field SEATED Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/seating/SeatState;
+	public static final field UNSUPPORTED Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/seating/SeatState;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/seating/SeatState;
+	public static fun values ()[Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/seating/SeatState;
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/seating/SeatTarget {
+	public abstract fun geometry (Ljava/lang/Object;Ljava/lang/Object;)Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/seating/SeatGeometry;
+	public abstract fun getIdentity ()Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/seating/SeatIdentity;
+	public abstract fun inspect (Ljava/lang/Object;Ljava/lang/Object;)Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/seating/SeatState;
+	public abstract fun trySit (Ljava/lang/Object;Ljava/lang/Object;)Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/seating/SeatState;
+}
+

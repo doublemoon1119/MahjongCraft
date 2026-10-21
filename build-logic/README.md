@@ -24,7 +24,9 @@ conventions that depend on `detekt-rules` itself.
   [`config/detekt/detekt.yml`](../config/detekt/detekt.yml) and a manual `detektAll` task that runs
   its type-resolved analysis outside `check`.
 - Configure Minecraft version-common and loader projects.
-- Provide the opt-in `mahjongcraft.event-api-abi` convention for Kotlin's built-in event API signature checks.
+- Provide the opt-in `mahjongcraft.public-api-abi` convention for Kotlin's built-in public API signature checks.
+  Each module lists the exact packages or types it promises to keep stable; the convention does not make every
+  public class in the repository a compatibility guarantee.
 - Parse and validate the platform target catalog.
 - Select core-only or platform-specific project graphs.
 - Load declared example modules only with the explicit `mahjongcraftExample=true` switch.
@@ -52,7 +54,7 @@ and Kotlin Serialization. Its serialization compiler follows Gradle's embedded K
 Gradle TestKit covers catalog validation, target selection and precedence, optional example modules,
 loader metadata isolation, local target management,
 repository verification,
-and event API ABI filtering and failure detection for JVM and KMP modules. Run the included build's tests with
+and public API ABI filtering and failure detection for JVM and KMP modules. Run the included build's tests with
 `./gradlew -p build-logic test`, in addition to the project-wide checks documented in
 [CONTRIBUTING.md](../CONTRIBUTING.md).
 

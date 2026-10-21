@@ -51,9 +51,10 @@
   collecting their implementations. Keep dedicated private helpers with their owning mapper; do not widen
   visibility merely to split them. Keep serializer-module construction separate from model conversion.
   Review and explicitly approve JVM facade changes when reorganizing existing conversion functions.
-- Compare the public declarations before and after each split, including source-set placement. Event API ABI
-  checks cover only the event surface, not every public type in the repository. Move existing KDoc with its
-  declaration; do not expand a file-organization change into an unrelated documentation rewrite.
+- Compare the public declarations before and after each split, including source-set placement. Public API ABI
+  checks cover only the explicitly listed event and seating surfaces, not every public type in the repository.
+  Move existing KDoc with its declaration; do not expand a file-organization change into an unrelated
+  documentation rewrite.
 
 ### Import Conventions
 

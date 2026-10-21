@@ -9,11 +9,11 @@ import kotlin.test.Test
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
-/** 以 Gradle TestKit 驗證事件 API ABI convention 的基準、過濾範圍與設定快取行為。 */
-class EventApiAbiPluginTest {
-    /** JVM 模組只將 `api.event` 套件的公開型別納入基準，並在 `check` 中執行 ABI 檢查。 */
+/** 以 Gradle TestKit 驗證公開 API ABI convention 的基準、過濾範圍與設定快取行為。 */
+class PublicApiAbiPluginTest {
+    /** JVM 模組可用指定範圍建立基準，並在 `check` 中執行 ABI 檢查。 */
     @Test
-    fun `jvm event api baseline is checked and reused`() = withFixture { root ->
+    fun `jvm public api baseline is checked and reused`() = withFixture { root ->
         writeJvmFixture(root)
 
         runner(root, "updateKotlinAbi").build()
@@ -22,7 +22,10 @@ class EventApiAbiPluginTest {
         assertTrue(baseline.isFile, "The JVM ABI baseline should be generated")
         val baselineText = baseline.readText()
         assertTrue(baselineText.contains("fixture/api/event/PublicEvent"))
+        assertTrue(baselineText.contains("fixture/api/seating/PublicSeat"))
+        assertTrue(baselineText.contains("fixture/extension/PublicExtension"))
         assertTrue(!baselineText.contains("fixture/internal/InternalPublicType"))
+        assertTrue(!baselineText.contains("fixture/api/other/PublicOther"))
 
         val first = runner(root, "check", "--configuration-cache").build()
         val second = runner(root, "check", "--configuration-cache").build()
@@ -33,7 +36,7 @@ class EventApiAbiPluginTest {
         assertTrue(second.output.contains("Configuration cache entry reused"), second.output)
     }
 
-    /** 非 API 套件的公開函式簽名變更不應改變事件 API ABI 檢查結果。 */
+    /** 範圍外套件的公開函式簽名變更不應改變 ABI 檢查結果。 */
     @Test
     fun `jvm non api public change passes abi check`() = withFixture { root ->
         writeJvmFixture(root)
@@ -43,7 +46,7 @@ class EventApiAbiPluginTest {
         assertTaskRan(runner(root, "checkKotlinAbi").build(), ":checkKotlinAbi")
     }
 
-    /** API 套件的公開函式簽名變更應使 ABI 檢查失敗。 */
+    /** 範圍內套件的公開函式簽名變更應使 ABI 檢查失敗。 */
     @Test
     fun `jvm api signature change fails abi check`() = withFixture { root ->
         writeJvmFixture(root)
@@ -56,9 +59,35 @@ class EventApiAbiPluginTest {
         assertTrue(result.output.contains("stable"), result.output)
     }
 
-    /** Kotlin Multiplatform 的 JVM target 也應建立事件 API ABI 檢查任務與基準。 */
+    /** 座位 API 與精確指定的公開入口簽名變更都應使 ABI 檢查失敗。 */
     @Test
-    fun `multiplatform jvm target generates event api baseline`() = withFixture { root ->
+    fun `jvm seating and exact entry signature changes fail abi check`() = withFixture { root ->
+        writeJvmFixture(root)
+        runner(root, "updateKotlinAbi").build()
+
+        root.resolve(SEATING_SOURCE).writeText(seatingSource("fun stable(value: Int): String = value.toString()"))
+        assertTrue(runner(root, "checkKotlinAbi").buildAndFail().output.contains("PublicSeat"))
+
+        runner(root, "updateKotlinAbi").build()
+        root.resolve(ENTRY_SOURCE).writeText(entrySource("fun stable(value: Int): String = value.toString()"))
+        assertTrue(runner(root, "checkKotlinAbi").buildAndFail().output.contains("PublicExtension"))
+    }
+
+    /** 未設定或明確設定空範圍時，ABI 任務應明確報錯而不是跳過檢查。 */
+    @Test
+    fun `missing and empty public api ranges fail clearly`() = withFixture { root ->
+        writeJvmFixture(root, publicApiConfiguration = "")
+        val missing = runner(root, "updateKotlinAbi").buildAndFail()
+        assertTrue(missing.output.contains("publicApiAbi.includedNames"), missing.output)
+
+        writeJvmFixture(root, publicApiConfiguration = "publicApiAbi { includedNames.set(emptyList()) }\n")
+        val empty = runner(root, "updateKotlinAbi").buildAndFail()
+        assertTrue(empty.output.contains("publicApiAbi.includedNames"), empty.output)
+    }
+
+    /** Kotlin Multiplatform 的 JVM target 也應建立相同的公開 API ABI 基準。 */
+    @Test
+    fun `multiplatform jvm target generates configured public api baseline`() = withFixture { root ->
         writeMultiplatformFixture(root)
 
         runner(root, "updateKotlinAbi").build()
@@ -66,21 +95,32 @@ class EventApiAbiPluginTest {
         val baseline = root.resolve("api/fixture.api")
         assertTrue(baseline.isFile, "The KMP ABI baseline should be generated")
         assertTrue(baseline.readText().contains("fixture/api/event/PublicEvent"))
+        assertTrue(baseline.readText().contains("fixture/api/seating/PublicSeat"))
+        assertTrue(baseline.readText().contains("fixture/extension/PublicExtension"))
+        assertTrue(!baseline.readText().contains("fixture/internal/InternalPublicType"))
+        assertTrue(!baseline.readText().contains("fixture/api/other/PublicOther"))
         assertTaskRan(runner(root, "checkKotlinAbi").build(), ":checkKotlinAbi")
     }
 
-    /** 建立帶有 JVM Kotlin 外掛與事件 API convention 的 TestKit fixture。
+    /**
+     * 建立帶有 JVM Kotlin 外掛與公開 API convention 的 TestKit fixture。
      *
      * @param root fixture 根目錄。
+     * @param publicApiConfiguration 明確指定範圍的 Gradle 設定；空字串代表未設定。
      */
-    private fun writeJvmFixture(root: File) {
+    private fun writeJvmFixture(
+        root: File,
+        publicApiConfiguration: String = defaultPublicApiConfiguration(),
+    ) {
         writeCommonFixture(root)
         root.resolve("build.gradle.kts").writeText(
             """
             plugins {
                 id("org.jetbrains.kotlin.jvm")
-                id("mahjongcraft.event-api-abi")
+                id("mahjongcraft.public-api-abi")
             }
+
+            $publicApiConfiguration
 
             repositories {
                 mavenCentral()
@@ -94,7 +134,8 @@ class EventApiAbiPluginTest {
         writeSources(root, "src/main/kotlin")
     }
 
-    /** 建立帶有 JVM target 的 Kotlin Multiplatform TestKit fixture。
+    /**
+     * 建立帶有 JVM target 的 Kotlin Multiplatform TestKit fixture。
      *
      * @param root fixture 根目錄。
      */
@@ -104,8 +145,10 @@ class EventApiAbiPluginTest {
             """
             plugins {
                 id("org.jetbrains.kotlin.multiplatform")
-                id("mahjongcraft.event-api-abi")
+                id("mahjongcraft.public-api-abi")
             }
+
+            ${defaultPublicApiConfiguration()}
 
             repositories {
                 mavenCentral()
@@ -120,7 +163,8 @@ class EventApiAbiPluginTest {
         writeSources(root, "src/commonMain/kotlin")
     }
 
-    /** 建立 fixture 的 Gradle 設定與 plugin resolution repository。
+    /**
+     * 建立 fixture 的 Gradle 設定與 plugin resolution repository。
      *
      * @param root fixture 根目錄。
      */
@@ -144,7 +188,8 @@ class EventApiAbiPluginTest {
         )
     }
 
-    /** 寫入 API 與非 API 套件的最小 Kotlin 原始碼。
+    /**
+     * 寫入 API 與非 API 套件的最小 Kotlin 原始碼。
      *
      * @param root fixture 根目錄。
      * @param sourceDirectory Kotlin source set 的相對目錄。
@@ -161,9 +206,22 @@ class EventApiAbiPluginTest {
             it.parentFile.mkdirs()
             it.writeText(internalSource("val value: String = \"initial\""))
         }
+        root.resolve(sourceDirectory).resolve("fixture/api/seating/PublicSeat.kt").also {
+            it.parentFile.mkdirs()
+            it.writeText(seatingSource("fun stable(): String = \"stable\""))
+        }
+        root.resolve(sourceDirectory).resolve("fixture/extension/PublicExtension.kt").also {
+            it.parentFile.mkdirs()
+            it.writeText(entrySource("fun stable(): String = \"stable\""))
+        }
+        root.resolve(sourceDirectory).resolve("fixture/api/other/PublicOther.kt").also {
+            it.parentFile.mkdirs()
+            it.writeText(otherSource("fun stable(): String = \"stable\""))
+        }
     }
 
-    /** 產生事件 API fixture 原始碼。
+    /**
+     * 產生事件 API fixture 原始碼。
      *
      * @param functionDeclaration 公開成員函式宣告。
      * @return 可編譯的 Kotlin 原始碼。
@@ -171,7 +229,8 @@ class EventApiAbiPluginTest {
     private fun apiSource(functionDeclaration: String): String =
         "package fixture.api.event\n\nclass PublicEvent {\n    $functionDeclaration\n}\n"
 
-    /** 產生非事件 API fixture 原始碼。
+    /**
+     * 產生非事件 API fixture 原始碼。
      *
      * @param declaration 非 API 類別內的公開成員宣告。
      * @return 可編譯的 Kotlin 原始碼。
@@ -179,7 +238,49 @@ class EventApiAbiPluginTest {
     private fun internalSource(declaration: String): String =
         "package fixture.internal\n\nclass InternalPublicType {\n    $declaration\n}\n"
 
-    /** 建立執行 fixture Gradle 任務的 TestKit runner。
+    /**
+     * 產生座位 API fixture 原始碼。
+     *
+     * @param functionDeclaration 公開成員函式宣告。
+     * @return 可編譯的 Kotlin 原始碼。
+     */
+    private fun seatingSource(functionDeclaration: String): String =
+        "package fixture.api.seating\n\nclass PublicSeat {\n    $functionDeclaration\n}\n"
+
+    /**
+     * 產生精確納入的公開入口 fixture 原始碼。
+     *
+     * @param functionDeclaration 公開成員函式宣告。
+     * @return 可編譯的 Kotlin 原始碼。
+     */
+    private fun entrySource(functionDeclaration: String): String =
+        "package fixture.extension\n\nclass PublicExtension {\n    $functionDeclaration\n}\n"
+
+    /**
+     * 產生未納入檢查的 API 套件 fixture 原始碼。
+     *
+     * @param functionDeclaration 公開成員函式宣告。
+     * @return 可編譯的 Kotlin 原始碼。
+     */
+    private fun otherSource(functionDeclaration: String): String =
+        "package fixture.api.other\n\nclass PublicOther {\n    $functionDeclaration\n}\n"
+
+    /**
+     * 產生 fixture 的預設 ABI 範圍設定。
+     *
+     * @return 同時納入事件、座位與精確入口的 Gradle 設定。
+     */
+    private fun defaultPublicApiConfiguration(): String =
+        """
+        publicApiAbi {
+            includedNames.add("**.api.event.**")
+            includedNames.add("**.api.seating.**")
+            includedNames.add("fixture.extension.PublicExtension")
+        }
+        """.trimIndent()
+
+    /**
+     * 建立執行 fixture Gradle 任務的 TestKit runner。
      *
      * @param root fixture 根目錄。
      * @param arguments 要傳給 Gradle 的任務與選項。
@@ -194,7 +295,8 @@ class EventApiAbiPluginTest {
         .withArguments(*arguments)
         .forwardOutput()
 
-    /** 確認指定 Gradle 任務存在並成功完成。
+    /**
+     * 確認指定 Gradle 任務存在並成功完成。
      *
      * @param result TestKit 執行結果。
      * @param taskPath 要檢查的 Gradle 任務路徑。
@@ -210,12 +312,13 @@ class EventApiAbiPluginTest {
         )
     }
 
-    /** 建立並在測試結束後清理臨時 fixture。
+    /**
+     * 建立並在測試結束後清理臨時 fixture。
      *
      * @param block 使用 fixture 根目錄的測試動作。
      */
     private fun withFixture(block: (File) -> Unit) {
-        createTempDirectory("mahjongcraft-event-api-abi-test").toFile().apply {
+        createTempDirectory("mahjongcraft-public-api-abi-test").toFile().apply {
             try {
                 block(this)
             } finally {
@@ -231,5 +334,11 @@ class EventApiAbiPluginTest {
 
         /** JVM fixture 的非事件 API Kotlin 原始碼相對路徑。 */
         const val INTERNAL_SOURCE = "src/main/kotlin/fixture/internal/InternalPublicType.kt"
+
+        /** JVM fixture 的座位 API Kotlin 原始碼相對路徑。 */
+        const val SEATING_SOURCE = "src/main/kotlin/fixture/api/seating/PublicSeat.kt"
+
+        /** JVM fixture 的精確公開入口 Kotlin 原始碼相對路徑。 */
+        const val ENTRY_SOURCE = "src/main/kotlin/fixture/extension/PublicExtension.kt"
     }
 }

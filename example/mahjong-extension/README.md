@@ -85,9 +85,9 @@ presented: `mahjongcraft_example:pairing/declare`. The declaration command is
 a separate ID because it is a different serialized type.
 
 The example is not a released compatibility surface. Changing its development
-IDs does not add aliases or migrations for old development data. The existing
-event API baseline remains the only baseline used by this example; the seating
-API baseline has not been established yet.
+IDs does not add aliases or migrations for old development data. The event and
+seating APIs have explicit public baselines; this rule and its AI remain outside
+that guarantee.
 
 See the [Minecraft example guide](../platform/minecraft/README.md) for build,
 run and isolation instructions.

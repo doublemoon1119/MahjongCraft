@@ -3,3 +3,15 @@ public final class com/doublemoon1119/mahjongcraft/platform/fabric/api/event/Fab
 	public static final fun server (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/event/GameEventContext;)Lnet/minecraft/server/MinecraftServer;
 }
 
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/fabric/api/seating/FabricSeatProviderRegistry {
+	public abstract fun getRegistrationKeys ()Ljava/util/Set;
+	public abstract fun isFrozen ()Z
+	public abstract fun register (Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/seating/RegisteredSeatProvider;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/fabric/extension/FabricMahjongExtension {
+	public abstract fun getId ()Ljava/lang/String;
+	public fun registerSeatProviders (Lcom/doublemoon1119/mahjongcraft/platform/fabric/api/seating/FabricSeatProviderRegistry;)V
+	public fun registerTablePropKinds (Lcom/doublemoon1119/mahjongcraft/platform/fabric/server/table/prop/FabricTablePropKindRegistry;)V
+}
+

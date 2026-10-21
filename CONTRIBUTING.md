@@ -10,7 +10,7 @@ kind of change you are making; the rules in them apply even when this file does 
 - [Correctness principles](docs/contributing/correctness.md): every change. They cover client input,
   visibility, match progress and failure, contracts, identifiers, extension points and testability.
 - [Extensions and registries](docs/contributing/extensions-and-registries.md): registration IDs,
-  registries, Koin definitions, extension bootstrap and the event API.
+  registries, Koin definitions, extension bootstrap and public API compatibility.
 - [Architecture](docs/contributing/architecture.md): module responsibilities, dependencies, and where
   code belongs.
 - [Build](docs/contributing/build.md): Gradle configuration, platform targets and release versions.

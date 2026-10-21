@@ -90,7 +90,8 @@ For a focused test run from the repository root:
 ```
 
 Use the [complete Minecraft target checks](../../README.md) before committing.
-The event API signature check covers this module's `api.event` surface;
+The public API signature check covers this module's `api.event` and `api.seating` surfaces,
+plus the exact `FabricMahjongExtension` registration interface;
 it does not guarantee compatibility with a different Minecraft version or loader.
 
 ## Seat providers

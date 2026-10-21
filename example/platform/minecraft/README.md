@@ -79,16 +79,19 @@ The Fabric 1.20.1 packaged dedicated-server startup smoke test has already passe
 It does not establish support for other adapters or replace the manual
 checks above or prove every world interaction.
 
-## Remaining Manual Checks
+## Accepted Game Checks
 
-The following short integration checks are still pending:
+The following integration scenarios have been accepted in game on the current Fabric 1.20.1 adapter.
+They do not need repeating solely for documentation or ABI baseline changes:
 
 - Enable the two-tile exchange, select multiple tiles, submit from every player, and confirm the
   simultaneous exchange leaves no duplicate, stale or replayed tile before normal draw and discard.
-- Run a short two-player facing game and one multi-roll opening check if those exact combinations have
-  not already been recorded as accepted.
+- Check two-player facing seats and the multi-roll opening.
 - Run one short combination for each of these pairings: example rule with bundled AI, bundled rule with
   example AI, and example rule with example AI. A complete match or stress run is not required.
+
+The separate missing-extension recovery procedure above has not been verified at world level.
+It is not a reason to repeat these accepted gameplay checks.
 
 ## Furniture and Event Checks
 
@@ -120,5 +123,6 @@ matches stop notifying, events are not replayed after registration, and old-sess
 discarded. A start is not guaranteed to have a matching end. An aborted match is shown separately
 from a normally completed match. Do not use debug commands for the ordinary event-delivery check.
 
-The example demonstrates usable seat APIs; it does not establish binary compatibility for them.
-The seating ABI baseline follows the full example acceptance step.
+The example demonstrates usable seat APIs. The public API ABI check records the seating
+contracts for the adapter being verified; it does not promise compatibility with another version
+or loader, and it does not cover unrelated rule, AI or appearance types.

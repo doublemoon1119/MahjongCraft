@@ -14,12 +14,12 @@ want to run the example in a game.
 | --- | --- | --- | --- |
 | Rule, tile wall and tile interpretation | Pairing Mahjong and inverted 1-man | [pairing tests](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/pairing) | Automated |
 | Multi-roll opening | Temporary dealer, final dealer and wall opening | [opening tests](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/pairing/ExamplePairingRoundOpeningProcedureTest.kt) | Automated |
-| Optional round preparation | Two-tile exchange | [preparation tests](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/preparation) | Automated; game check pending |
+| Optional round preparation | Two-tile exchange | [preparation tests](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/preparation) | Automated and game-tested |
 | Extension action and command | Once-per-round public declaration | [action tests](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/action) | Automated |
 | AI strategy | Tsumogiri strategy | [AI test](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/ai/ExampleTsumogiriAiStrategyTest.kt) | Automated |
 | Network and persistence registration | Example-owned DTOs and mappings | [round-trip test](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/ExampleFormatRoundTripTest.kt) | Automated |
-| Minecraft presentation | Names, settings, history text and tile assets | [common adapter](platform/minecraft/common/README.md) | Automated and game-tested; combinations pending |
-| Native seating | Block chair and persistent cushion | [Fabric adapter](platform/minecraft/v1.20.1/fabric/README.md) | Game-tested; ABI baseline pending |
+| Minecraft presentation | Names, settings, history text and tile assets | [common adapter](platform/minecraft/common/README.md) | Automated and game-tested |
+| Native seating | Block chair and persistent cushion | [Fabric adapter](platform/minecraft/v1.20.1/fabric/README.md) | Game-tested; ABI baseline established |
 | Public game events | Administrator chat observer | [Fabric adapter](platform/minecraft/v1.20.1/fabric/README.md) | Game-tested |
 | Missing-extension recovery | Keep authoritative data and restore it after reinstall | [recovery procedure](platform/minecraft/README.md#safe-recovery-check) | Manual check pending |
 
@@ -30,8 +30,7 @@ A successful compile is not evidence that every extension point works.
 
 ## Compatibility boundaries
 
-The event API has the existing binary-compatibility baseline. The seating API
-is usable, but its baseline has not been established. Rule, strategy, appearance
+The event and seating APIs have explicit binary-compatibility baselines. Rule, strategy, appearance
 and other example APIs currently have no new binary-compatibility promise.
 
 The examples do not claim to implement the following future work:

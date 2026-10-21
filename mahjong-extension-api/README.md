@@ -20,9 +20,9 @@ relevant platform API.
 Extension registration is separate from game-event subscriptions. Read-only
 event types live in [Flow common](../mahjong-flow/common/README.md), and
 platform modules provide their subscription/context APIs. The stable
-compatibility scope is limited to the designated `api.event` packages; this is
-not a compatibility guarantee for every public registry or extension type. See
-[Event API Compatibility](../docs/contributing/extensions-and-registries.md#event-api-compatibility) for
+compatibility scope covers the designated event and platform seating surfaces;
+this is not a compatibility guarantee for every public registry or extension type. See
+[Public API Compatibility](../docs/contributing/extensions-and-registries.md#public-api-compatibility) for
 signature checks and their target and behavioral limits.
 
 ## Dependencies

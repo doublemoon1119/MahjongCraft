@@ -2,7 +2,14 @@ plugins {
     alias(libs.plugins.mahjongcraft.kotlin.multiplatform)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.koin.compiler)
-    alias(libs.plugins.mahjongcraft.event.api.abi)
+    alias(libs.plugins.mahjongcraft.public.api.abi)
+}
+
+publicApiAbi {
+    includedNames.addAll(
+        "com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.**",
+        "com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.**",
+    )
 }
 
 version = libs.versions.minecraft.mod.version.get()

@@ -5,7 +5,15 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.fabric.loom)
     alias(libs.plugins.koin.compiler)
-    alias(libs.plugins.mahjongcraft.event.api.abi)
+    alias(libs.plugins.mahjongcraft.public.api.abi)
+}
+
+publicApiAbi {
+    includedNames.addAll(
+        "com.doublemoon1119.mahjongcraft.platform.fabric.api.event.**",
+        "com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.**",
+        "com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongExtension",
+    )
 }
 
 version = libs.versions.minecraft.mod.version.get()

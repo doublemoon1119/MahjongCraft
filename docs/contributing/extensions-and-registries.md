@@ -183,17 +183,25 @@
   IDs, callback order, no-op sources, snapshot differences, shared instances, and successful or failed
   freeze paths.
 
-## Event API Compatibility
+## Public API Compatibility
 
-- The stable event surface is limited to the `api.event` packages in Flow common, Minecraft common, and each
-  loader adapter. Public implementation types outside those packages are not covered by this event
-  API contract.
-- Modules exposing this surface apply `mahjongcraft.event-api-abi`, which uses Kotlin's built-in ABI
-  validation. Reference signatures live in each module's `api/` directory and must be committed. `check` (and
-  therefore `build`) checks them automatically; do not regenerate the references as part of normal builds.
+- ABI protection is opt-in and exact. Modules list the packages or individual entrypoint types they promise to
+  keep stable; public classes outside those lists are not covered automatically.
+- Modules use `mahjongcraft.public-api-abi`, which uses Kotlin's built-in ABI validation. Reference signatures
+  live in each module's `api/` directory and must be committed. `check` (and therefore `build`) checks them
+  automatically; do not regenerate the references as part of normal builds.
+- The current stable surfaces are `api.event` in Flow common, Minecraft common and each loader adapter, plus
+  `api.seating` in Minecraft common and its loader adapters. The current Fabric adapter also protects the exact
+  `FabricMahjongExtension` entrypoint because third-party mods use it to register seats. This does not make every
+  table-prop type referenced by that interface stable as a separate API surface. In particular,
+  `registerTablePropKinds` is recorded as a method signature, but the methods of its
+  `FabricTablePropKindRegistry` parameter are not covered by this compatibility promise.
+- Seat constructors and internal request factories keep their existing visibility. A third-party provider creates
+  the public identity and geometry definitions; MahjongCraft creates its own internal request objects. This change
+  records the existing shape and does not redesign the seating API.
 - Run `./gradlew checkKotlinAbi` with the intended platform target to inspect signature changes. The core
-  target only checks Flow; a Minecraft target also checks its common and loader surfaces. Verify every
-  supported target when changing shared APIs. New loader adapters exposing event APIs must apply the
+  target checks Flow; a Minecraft target also checks its common and loader public surfaces. Verify every
+  supported target when changing shared APIs. New loader adapters exposing protected public APIs must apply the
   convention and add their own reference signatures. KMP validation follows the module's declared targets;
   checking JVM does not validate a Native binary, and unsupported-target inference is not a substitute for
   validation on a suitable host.
@@ -202,6 +210,7 @@
   change; it does not prove compatibility. Preserve existing names, types and listener methods; prefer
   additive read-only properties, and retain deprecated declarations when removing a released API would
   break consumers.
-- Signature checks do not guarantee event delivery semantics, constant values, nullability, or generic type
+- Signature checks do not guarantee event or seating behavior, constant values, nullability, or generic type
   contracts erased by the JVM. Keep behavior, visibility and contract tests alongside the ABI baselines. They
-  also do not guarantee compatibility across Minecraft or loader versions whose own APIs differ.
+  also do not guarantee compatibility across Minecraft versions or loader adapters whose own APIs differ. For
+  example, a Fabric 1.20.1 baseline does not promise that another loader can use Fabric-native types.
