@@ -202,10 +202,13 @@ private object RiichiBeforePaoPonScenario : DebugGameScenario {
         val inventory = module.createWallFactory(module.config.maxPlayers).create().getAllTiles().sortedBy { it.tile.stableSortKey() }
         val availableTiles = inventory.toMutableList()
         val invokingMelds = PAO_INVOKING_MELD_TILES.map { tile ->
+            val tiles = takeTiles(availableTiles, List(3) { tile })
             Meld(
                 type = MeldType.PON,
-                tiles = takeTiles(availableTiles, List(3) { tile }),
+                tiles = tiles,
                 sourceDirection = RelativeDirection.Across,
+                publiclyRevealedTileIds = tiles.map { it.id }.toSet(),
+                faceDownTileIds = emptySet(),
             )
         }
         val invokingStandingTiles = takeTiles(availableTiles, PAO_INVOKING_TILES)
@@ -277,6 +280,8 @@ private object RiichiBeforePaoPonScenario : DebugGameScenario {
                 discarderId = players[discarderIndex].id,
                 tileId = calledTile.id,
                 eligiblePlayerIds = setOf(context.invokingPlayerId),
+                ronPlayerIds = setOf(context.invokingPlayerId),
+                id = Uuid.random(),
             ),
             wallOpening = opening,
             reservedWallTiles = initialReservedTiles,
@@ -420,7 +425,15 @@ private class RiichiBeforeAnkanScenario(
             val establishedKanIndex = opponentOrder(index, dealerIndex)
             val establishedKan = establishedKans.getOrNull(establishedKanIndex)
             val melds = establishedKan?.let { tiles ->
-                listOf(Meld(MeldType.CLOSED_KAN, tiles, sourceDirection = RelativeDirection.Self))
+                listOf(
+                    Meld(
+                        type = MeldType.CLOSED_KAN,
+                        tiles = tiles,
+                        sourceDirection = RelativeDirection.Self,
+                        publiclyRevealedTileIds = tiles.map { it.id }.toSet(),
+                        faceDownTileIds = setOf(tiles.first().id, tiles.last().id),
+                    ),
+                )
             }.orEmpty()
             val tiles = initialHands[index].filterNot { tile -> establishedKan?.contains(tile) == true }
             val discardPile = module.createDiscardPile().let { pile ->
@@ -668,6 +681,8 @@ private class RiichiBeforeMinkanScenario(
                 discarderId = players[discarderIndex].id,
                 tileId = discardedTile.id,
                 eligiblePlayerIds = setOf(context.invokingPlayerId),
+                ronPlayerIds = setOf(context.invokingPlayerId),
+                id = Uuid.random(),
             ),
         )
         return base.copy(game = base.game.copy(tableState = tableState))

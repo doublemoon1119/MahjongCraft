@@ -36,6 +36,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
 /**
@@ -225,29 +226,47 @@ class AiTurnDriverTest {
      */
     @Test
     fun `test pending reaction with eligible ai returns respond to discard`() = runTest {
-        val fixtures = Fixtures(strategyCommand = GameCommand.RespondToDiscard(GameAction.Pass))
         val discarderId = Uuid.random()
         val aiId = Uuid.random()
         val discardedTile = FakeIdentifiedTileFactory.create(Tile.Honor.South)
+        val matchingTileA = FakeIdentifiedTileFactory.create(Tile.Honor.South)
+        val matchingTileB = FakeIdentifiedTileFactory.create(Tile.Honor.South)
         val discarder = FakeMahjongPlayerFactory.create(
             id = discarderId,
             initialSeat = Wind.EAST,
             discardPile = FakeDiscardPile().discardTile(discardedTile),
         )
-        val ai = FakeMahjongPlayerFactory.create(id = aiId, initialSeat = Wind.SOUTH, playerRuleState = RiichiPlayerState())
+        val ai = FakeMahjongPlayerFactory.create(
+            id = aiId,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(tiles = listOf(matchingTileA, matchingTileB)),
+            playerRuleState = RiichiPlayerState(),
+        )
         val table = FakeTableStateFactory.create(
             id = gameId,
             players = listOf(discarder, ai),
             config = RiichiRuleConfig(),
             currentPlayerIndex = 0,
-            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(aiId)),
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(aiId), ronPlayerIds = setOf(aiId), id = Uuid.random()),
         )
+        val fixtures = Fixtures(strategyCommand = GameCommand.RespondToDiscard(GameAction.Pass, checkNotNull(table.pendingReaction).id))
         fixtures.gameRepo.setTableState(table, mapOf(aiId to strategyKey))
 
         val result = fixtures.driver.resolveNextAction(gameId)
 
-        assertEquals(aiId to GameCommand.RespondToDiscard(GameAction.Pass), result?.let { it.playerId to it.command })
+        assertEquals(
+            aiId to GameCommand.RespondToDiscard(GameAction.Pass, checkNotNull(table.pendingReaction).id),
+            result?.let { it.playerId to it.command },
+        )
         assertEquals(AiDecisionPhase.RespondingToDiscard, fixtures.strategy.lastContext?.phase)
+        val reactionCommands = fixtures.strategy.lastContext?.discardReactionCommands.orEmpty()
+        assertTrue(
+            reactionCommands.any { command ->
+                command.action == GameAction.Pon(discardedTile.id, listOf(matchingTileA.id, matchingTileB.id)) &&
+                    command.reactionId == table.pendingReaction?.id &&
+                    command.selectedTileIds == listOf(matchingTileA.id, matchingTileB.id)
+            },
+        )
     }
 
     /**
@@ -270,7 +289,7 @@ class AiTurnDriverTest {
             players = listOf(discarder, human),
             config = RiichiRuleConfig(),
             currentPlayerIndex = 0,
-            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(humanId)),
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(humanId), ronPlayerIds = setOf(humanId), id = Uuid.random()),
         )
         fixtures.gameRepo.setTableState(table)
 

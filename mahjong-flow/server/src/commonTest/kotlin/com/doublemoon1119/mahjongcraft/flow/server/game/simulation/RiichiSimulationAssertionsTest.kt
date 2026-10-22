@@ -69,7 +69,7 @@ class RiichiSimulationAssertionsTest {
                 dealerPlayerId = eastId,
                 config = config,
                 currentPlayerIndex = 0,
-                pendingReaction = PendingReaction(eastId, discardedTile.id, setOf(southId)),
+                pendingReaction = PendingReaction(eastId, discardedTile.id, setOf(southId), ronPlayerIds = setOf(southId), id = Uuid.random()),
             ),
             players.associate { it.id to RON_STRATEGY_KEY },
         )
@@ -197,6 +197,7 @@ class RiichiSimulationAssertionsTest {
         override suspend fun decideGameCommand(context: AiDecisionContext): GameCommand = when (context.phase) {
             AiDecisionPhase.RespondingToDiscard -> GameCommand.RespondToDiscard(
                 context.legalActions.filterIsInstance<GameAction.Ron>().single(),
+                checkNotNull(context.discardReactionId),
             )
             AiDecisionPhase.RespondingToRobbing -> GameCommand.RespondToRobbing(GameAction.Pass)
             AiDecisionPhase.OwnTurn -> error("The fixed ron scenario should end before an own turn")

@@ -211,6 +211,8 @@ internal object ShantenTestFixtures {
             type = type,
             tiles = List(size) { FakeIdentifiedTileFactory.create(Tile.Honor.White) },
             sourceDirection = RelativeDirection.Left,
+            publiclyRevealedTileIds = emptySet(),
+            faceDownTileIds = emptySet(),
         )
     }
 }

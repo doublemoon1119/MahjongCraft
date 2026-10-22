@@ -141,7 +141,7 @@ class GetLegalActionsUseCaseTest {
         val whiteTile2 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val whiteTile3 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val robbedWhiteTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
-        val existingPon = Meld(MeldType.PON, listOf(whiteTile1, whiteTile2, whiteTile3), sourceTile = whiteTile3, sourceDirection = RelativeDirection.Left)
+        val existingPon = Meld(MeldType.PON, listOf(whiteTile1, whiteTile2, whiteTile3), sourceTile = whiteTile3, sourceDirection = RelativeDirection.Left, publiclyRevealedTileIds = listOf(whiteTile1, whiteTile2, whiteTile3).map { it.id }.toSet(), faceDownTileIds = emptySet())
         val kanAction = GameAction.Kan(GameAction.KanType.ADDED_KAN, robbedWhiteTile.id, emptyList())
         val declarer = FakeMahjongPlayerFactory.create(
             id = declarerId,
@@ -237,7 +237,7 @@ class GetLegalActionsUseCaseTest {
             players = listOf(discarder, respondent),
             config = RiichiRuleConfig(),
             currentPlayerIndex = 0,
-            pendingReaction = PendingReaction(discarderId, discardedSouthTile.id, setOf(respondentId)),
+            pendingReaction = PendingReaction(discarderId, discardedSouthTile.id, setOf(respondentId), ronPlayerIds = setOf(respondentId), id = Uuid.random()),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -275,6 +275,8 @@ class GetLegalActionsUseCaseTest {
                 discardedSouthTile.id,
                 setOf(respondentId),
                 responses = mapOf(respondentId to GameAction.Pass),
+                ronPlayerIds = setOf(respondentId),
+                id = Uuid.random(),
             ),
         )
         fixtures.gameRepo.setTableState(table)

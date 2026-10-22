@@ -592,6 +592,10 @@ class CompactReplayPrototypeTest {
         )
         val encoded = json.encodeToJsonElement(dto) as JsonObject
         val gameplay = encoded.filterKeys { it !in setOf("id", "config", "physicalWallLayout", "dynamicRuleState") }.toMutableMap()
+        // 即時提交的視窗身分不參與歷史內容投影。
+        (gameplay["pendingReaction"] as? JsonObject)?.let { reaction ->
+            gameplay["pendingReaction"] = JsonObject(reaction.filterKeys { it != "id" })
+        }
         gameplay["players"] = JsonArray(
             (encoded.getValue("players") as JsonArray).zip(state.players) { playerElement, player ->
                 val projected = (playerElement as JsonObject).filterKeys { it !in setOf("id", "actionHistory", "discardPile", "playerRuleState") }.toMutableMap()

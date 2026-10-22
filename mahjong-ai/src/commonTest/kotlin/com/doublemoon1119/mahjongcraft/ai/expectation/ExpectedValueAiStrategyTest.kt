@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.ai.expectation
 import com.doublemoon1119.mahjongcraft.ai.AiDecisionContext
 import com.doublemoon1119.mahjongcraft.ai.AiDecisionPhase
 import com.doublemoon1119.mahjongcraft.ai.expectation.ExpectationFixtures.context
+import com.doublemoon1119.mahjongcraft.ai.expectation.ExpectationFixtures.discardReactionId
 import com.doublemoon1119.mahjongcraft.ai.expectation.ExpectationFixtures.hand
 import com.doublemoon1119.mahjongcraft.ai.expectation.ExpectationFixtures.m
 import com.doublemoon1119.mahjongcraft.ai.expectation.ExpectationFixtures.p
@@ -143,7 +144,7 @@ class ExpectedValueAiStrategyTest {
             context(table, self, phase = AiDecisionPhase.RespondingToDiscard, legalActions = listOf(pon, GameAction.Pass)),
         )
 
-        assertEquals(GameCommand.RespondToDiscard(pon), command)
+        assertEquals(GameCommand.RespondToDiscard(pon, discardReactionId, pon.withTiles), command)
     }
 
     /** 碰牌後沒有任何役可以和牌時，所有等級都不碰。 */
@@ -155,7 +156,7 @@ class ExpectedValueAiStrategyTest {
             val command = strategy(level).decideGameCommand(
                 context(table, self, phase = AiDecisionPhase.RespondingToDiscard, legalActions = listOf(pon, GameAction.Pass)),
             )
-            assertEquals(GameCommand.RespondToDiscard(GameAction.Pass), command, "$level")
+            assertEquals(GameCommand.RespondToDiscard(GameAction.Pass, discardReactionId), command, "$level")
         }
     }
 
@@ -175,7 +176,7 @@ class ExpectedValueAiStrategyTest {
                 strategy(level).decideGameCommand(context(table, self, legalActions = listOf(GameAction.Tsumo))),
             )
             assertEquals(
-                GameCommand.RespondToDiscard(ron),
+                GameCommand.RespondToDiscard(ron, discardReactionId),
                 strategy(level).decideGameCommand(
                     context(table, self, phase = AiDecisionPhase.RespondingToDiscard, legalActions = listOf(GameAction.Pass, ron)),
                 ),

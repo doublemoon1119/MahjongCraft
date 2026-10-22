@@ -120,6 +120,8 @@ class WinPresentationCleanupPlanTest {
             tiles = tiles,
             sourceTile = tiles.first().takeIf { sourceDirection != RelativeDirection.Self },
             sourceDirection = sourceDirection,
+            publiclyRevealedTileIds = tiles.map { it.id }.toSet(),
+            faceDownTileIds = if (type == MeldType.CLOSED_KAN) setOf(tiles.first().id, tiles.last().id) else emptySet(),
         )
     }
 }

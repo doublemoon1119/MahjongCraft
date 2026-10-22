@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicy
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.DiscardReactionOptionsResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerActionContext
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerActionContextResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.isDrawWindowOpenFor
@@ -108,6 +109,35 @@ class AiTurnDriver(
             phase = phase,
             legalActions = legalActions,
             forcedDiscardTileId = moduleRegistry.getModule(state.config).forcedDiscardTileId(state, player),
+            discardReactionId = state.pendingReaction?.id.takeIf { phase == AiDecisionPhase.RespondingToDiscard },
+            discardReactionCommands = if (phase == AiDecisionPhase.RespondingToDiscard) {
+                val pending = state.pendingReaction
+                if (pending == null) {
+                    emptyList()
+                } else {
+                    val discarder = state.players.firstOrNull { it.id == pending.discarderId }
+                    val discardedEntry = discarder?.discardPile?.entries?.lastOrNull()
+                    if (discarder == null || discardedEntry == null || discardedEntry.isTaken || discardedEntry.tile.id != pending.tileId) {
+                        emptyList()
+                    } else {
+                        DiscardReactionOptionsResolver.resolveCandidates(
+                            state = state,
+                            module = moduleRegistry.getModule(state.config),
+                            playerId = aiId,
+                            discarderId = pending.discarderId,
+                            discardedTile = discardedEntry.tile,
+                        ).map { candidate ->
+                            GameCommand.RespondToDiscard(
+                                action = candidate.action,
+                                reactionId = pending.id,
+                                selectedTileIds = candidate.selectedTileIds,
+                            )
+                        }
+                    }
+                }
+            } else {
+                emptyList()
+            },
         )
         val strategy = aiStrategyRegistry.resolve(strategyKey)
         return decisionExecutor.decide(

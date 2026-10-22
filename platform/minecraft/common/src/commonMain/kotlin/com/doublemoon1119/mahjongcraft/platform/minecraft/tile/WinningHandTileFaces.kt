@@ -1,14 +1,14 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
-import com.doublemoon1119.mahjongcraft.logic.base.MeldType
+import kotlin.uuid.Uuid
 
 /**
- * 和牌後展示手牌（結算面板、役滿 showcase）時，一組副露中蓋住的牌位。
+ * 和牌後展示手牌（結算面板、役滿 showcase）時，依副露資料計算需要蓋住的牌位。
  *
- * 暗槓一律蓋住兩端、翻開中間兩張，與明槓、加槓區分；和牌後手牌已經攤開，因此不論規則平時是否公開暗槓都相同。
+ * 蓋牌位置由規則提供的牌張識別碼決定，不從副露種類猜測；因此自訂副露也能保留自己的展示方式。
  *
- * @param type 副露種類。
- * @param tileCount 這組副露的張數。
+ * @param tileIds 副露中依展示順序排列的牌張識別碼。
+ * @param faceDownTileIds 規則指定要蓋住的牌張識別碼。
  * @return 蓋住的牌在組內的位置；不蓋牌時為空集合。
  */
-fun winningHandFaceDownIndices(type: MeldType, tileCount: Int): Set<Int> = if (type == MeldType.CLOSED_KAN && tileCount >= 2) setOf(0, tileCount - 1) else emptySet()
+fun winningHandFaceDownIndices(tileIds: List<Uuid>, faceDownTileIds: Set<Uuid>): Set<Int> = tileIds.mapIndexedNotNull { index, tileId -> index.takeIf { tileId in faceDownTileIds } }.toSet()

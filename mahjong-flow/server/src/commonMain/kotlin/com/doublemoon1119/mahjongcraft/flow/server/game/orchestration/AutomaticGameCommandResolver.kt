@@ -39,7 +39,7 @@ class AutomaticGameCommandResolver(
                     resolvePass(state, playerId, GameCommand::RespondToRobbing)
 
                 is PlayerActionContext.DiscardReaction ->
-                    resolvePass(state, playerId, GameCommand::RespondToDiscard)
+                    resolvePass(state, playerId) { action -> GameCommand.RespondToDiscard(action, context.pending.id) }
 
                 is PlayerActionContext.OwnTurn -> resolveDiscard(state, playerId)
             }

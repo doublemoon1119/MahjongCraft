@@ -54,8 +54,14 @@ sealed interface GameCommandDto {
      * RespondToDiscard 網路 DTO。
      *
      * @property action 玩家選擇的遊戲動作。
+     * @property reactionId 要回應的視窗 UUID 字串。
+     * @property selectedTileIds 本次使用的本人手牌 UUID 字串。
      */
-    @Serializable data class RespondToDiscard(val action: GameActionDto) : GameCommandDto
+    @Serializable data class RespondToDiscard(
+        val action: GameActionDto,
+        val reactionId: String,
+        val selectedTileIds: List<String>,
+    ) : GameCommandDto
 
     /**
      * RespondToRobbing 網路 DTO。

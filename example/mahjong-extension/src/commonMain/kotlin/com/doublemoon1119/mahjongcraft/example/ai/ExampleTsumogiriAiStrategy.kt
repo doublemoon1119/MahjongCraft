@@ -18,7 +18,7 @@ class ExampleTsumogiriAiStrategy : MahjongAiStrategy {
     override suspend fun decideGameCommand(context: AiDecisionContext): GameCommand = when (context.phase) {
         AiDecisionPhase.OwnTurn -> decideOwnTurn(context)
         AiDecisionPhase.RespondingToDiscard ->
-            GameCommand.RespondToDiscard(context.legalActions.chooseReaction())
+            GameCommand.RespondToDiscard(context.legalActions.chooseReaction(), checkNotNull(context.discardReactionId))
         AiDecisionPhase.RespondingToRobbing ->
             GameCommand.RespondToRobbing(context.legalActions.chooseReaction())
     }

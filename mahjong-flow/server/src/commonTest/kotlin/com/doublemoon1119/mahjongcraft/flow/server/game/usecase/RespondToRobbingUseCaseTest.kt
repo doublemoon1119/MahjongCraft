@@ -130,6 +130,8 @@ class RespondToRobbingUseCaseTest {
         listOf(whiteTile1, whiteTile2, whiteTile3),
         sourceTile = whiteTile3,
         sourceDirection = RelativeDirection.Left,
+        publiclyRevealedTileIds = listOf(whiteTile1, whiteTile2, whiteTile3).map { it.id }.toSet(),
+        faceDownTileIds = emptySet(),
     )
 
     /**

@@ -62,7 +62,7 @@ class FabricMahjongPlayerAreaPresenter(
      *    用戶端依本人快照顯示，不改變其他觀察者看到的座標。
      * 3. 用 [MahjongTileTableLayout.meldPlacement] 逐格擺放副露——邏輯照搬原本
      *    `FabricMahjongMeldPresenter.present()`，起始游標從 [MahjongTileTableLayout.meldStartOffset]
-     *    開始（角落有物件時隔一段縫接在其外緣），其餘不變，含 [closedKanPose]／加槓 depth-offset。
+     *    開始（角落有物件時隔一段縫接在其外緣），姿態由 [meldPose] 決定；加槓牌疊在來源橫放牌上。
      *
      * 找不到對應 UUID 的既有 entity 時該筆直接跳過並記警告 log，不中斷其餘牌的呈現，比照本介面
      * best-effort 的既有慣例。
@@ -221,7 +221,7 @@ class FabricMahjongPlayerAreaPresenter(
                     tileAtSlot[slot],
                     cursorAlong,
                     isSidewaysTile = isSideways,
-                    pose = closedKanPose(meld, slot, slotCount),
+                    pose = meldPose(meld, tileAtSlot[slot]),
                 )?.let { tile ->
                     placedTilesById[tileAtSlot[slot]] = tile
                 }
@@ -234,6 +234,7 @@ class FabricMahjongPlayerAreaPresenter(
                     sidewaysAlongOffset!!,
                     isSidewaysTile = true,
                     depthOffsetFromEdge = MahjongTileTableLayout.ADDED_KAN_DEPTH_OFFSET,
+                    pose = meldPose(meld, addedTileId),
                 )?.let { tile ->
                     placedTilesById[addedTileId] = tile
                 }
@@ -568,21 +569,13 @@ class FabricMahjongPlayerAreaPresenter(
     }
 
     /**
-     * 換算暗槓（[MeldType.CLOSED_KAN]）組內第 [slot] 格該用的姿態；非暗槓固定
-     * [MahjongTilePose.FACE_UP]。[MahjongMeldTileGroup.allTilesFaceDown] 為 `true`（該規則暗槓完全不
-     * 公開）時四張全部蓋牌；為 `false`（該規則暗槓身份公開）時只蓋組內第一、最後一格（兩端），中間
-     * 攤牌，比照真實麻將暗槓的傳統擺法。
+     * 依副露的逐牌描述選擇姿態，不以副露種類推測蓋牌位置。
      *
      * @param meld 要判定姿態的副露。
-     * @param slot 副露組內的索引。
-     * @param slotCount 該副露組的牌數。
-     * @return 該格應使用的牌姿態。
+     * @param tileId 實際放入此位置的牌張識別碼，包含移至來源方位的橫放牌。
+     * @return 該牌應使用的姿態。
      */
-    private fun closedKanPose(meld: MahjongMeldTileGroup, slot: Int, slotCount: Int): MahjongTilePose {
-        if (meld.type != MeldType.CLOSED_KAN) return MahjongTilePose.FACE_UP
-        if (meld.allTilesFaceDown) return MahjongTilePose.FACE_DOWN
-        return if (slot == 0 || slot == slotCount - 1) MahjongTilePose.FACE_DOWN else MahjongTilePose.FACE_UP
-    }
+    private fun meldPose(meld: MahjongMeldTileGroup, tileId: Uuid): MahjongTilePose = if (meld.allTilesFaceDown || tileId in meld.faceDownTileIds) MahjongTilePose.FACE_DOWN else MahjongTilePose.FACE_UP
 
     /**
      * 清除指定 controller 周圍且 table UUID 相符的所有正式管理中麻將牌——跟

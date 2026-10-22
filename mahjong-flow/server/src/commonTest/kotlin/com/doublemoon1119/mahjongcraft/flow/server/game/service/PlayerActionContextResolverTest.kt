@@ -37,7 +37,7 @@ class PlayerActionContextResolverTest {
                 robbedTile = robbedTile,
                 eligiblePlayerIds = setOf(playerId),
             ),
-            pendingReaction = PendingReaction(Uuid.random(), Uuid.random(), setOf(playerId)),
+            pendingReaction = PendingReaction(Uuid.random(), Uuid.random(), setOf(playerId), ronPlayerIds = setOf(playerId), id = Uuid.random()),
         )
 
         assertIs<PlayerActionContext.RobbingReaction>(resolver.resolveFor(state, playerId))
@@ -54,6 +54,8 @@ class PlayerActionContextResolverTest {
             tileId = Uuid.random(),
             eligiblePlayerIds = linkedSetOf(answeredId, waitingId),
             responses = mapOf(answeredId to GameAction.Pass),
+            ronPlayerIds = linkedSetOf(answeredId, waitingId),
+            id = Uuid.random(),
         )
         val state = FakeTableStateFactory.create(
             players = listOf(answeredId, waitingId, bystanderId).map { FakeMahjongPlayerFactory.create(id = it) },

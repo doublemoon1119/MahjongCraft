@@ -152,6 +152,8 @@ class AuthoritativeStateRecoveryIntegrationTest {
                 discarderId = discarder.id,
                 tileId = discardedTile.id,
                 eligiblePlayerIds = setOf(firstResponder.id, secondResponder.id),
+                ronPlayerIds = setOf(firstResponder.id, secondResponder.id),
+                id = Uuid.random(),
             ),
         )
         runtime.restore(runtime.snapshotWith(pendingState))
@@ -548,7 +550,12 @@ class AuthoritativeStateRecoveryIntegrationTest {
                 freeze()
             },
             postActionExhaustiveDrawResolverRegistry = PostActionExhaustiveDrawResolverRegistry().apply { freeze() },
-        )(gameId, playerId, GameAction.Pass)
+        )(
+            gameId = gameId,
+            playerId = playerId,
+            action = GameAction.Pass,
+            reactionId = checkNotNull(gameRepository.getTableState(gameId)?.pendingReaction).id,
+        )
 
         /**
          * 使用恢復後 repository 提交搶槓反應 Pass。

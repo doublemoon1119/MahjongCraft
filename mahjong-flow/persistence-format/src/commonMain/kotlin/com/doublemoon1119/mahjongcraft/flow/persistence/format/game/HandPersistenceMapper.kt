@@ -32,6 +32,8 @@ fun Meld.toPersistenceDto(): MeldPersistenceDto = MeldPersistenceDto(
     tiles = tiles.map(IdentifiedTile::toPersistenceDto),
     sourceTile = sourceTile?.toPersistenceDto(),
     sourceDirection = sourceDirection.toPersistenceDto(),
+    publiclyRevealedTileIds = publiclyRevealedTileIds.map(Uuid::toString).toSet(),
+    faceDownTileIds = faceDownTileIds.map(Uuid::toString).toSet(),
 )
 
 /**
@@ -44,6 +46,8 @@ fun MeldPersistenceDto.toDomain(): Meld = Meld(
     tiles = tiles.map(IdentifiedTilePersistenceDto::toDomain),
     sourceTile = sourceTile?.toDomain(),
     sourceDirection = sourceDirection.toDomain(),
+    publiclyRevealedTileIds = publiclyRevealedTileIds.map(Uuid::parse).toSet(),
+    faceDownTileIds = faceDownTileIds.map(Uuid::parse).toSet(),
 )
 
 /** 將副露種類轉成存檔 DTO。 */

@@ -31,6 +31,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationH
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAbortiveDrawUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAndDiscardUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareKanUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareTsumoUseCase
@@ -133,6 +134,15 @@ internal class SimulationRuntime(defaultStrategyKey: String) {
             postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
             eventPublisher = eventPublisher,
             presentationPublisher = presentationPublisher,
+            declareAndDiscardUseCase = DeclareAndDiscardUseCase(
+                gameRepository = gameRepository,
+                moduleRegistry = moduleRegistry,
+                snapshotSynchronizer = snapshotSynchronizer,
+                handSortPreferenceStore = handSortPreferenceStore,
+                postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
+                eventPublisher = eventPublisher,
+                presentationPublisher = presentationPublisher,
+            ),
         ),
     )
 

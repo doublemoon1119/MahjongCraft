@@ -27,6 +27,8 @@ private fun MeldSnapshot.toVisibleMeld(): Meld = Meld(
     tiles = tiles.map { it.toVisibleTile() },
     sourceTile = sourceTile?.toVisibleTile(),
     sourceDirection = sourceDirection,
+    publiclyRevealedTileIds = tiles.map { it.id }.toSet(),
+    faceDownTileIds = emptySet(),
 )
 
 /**

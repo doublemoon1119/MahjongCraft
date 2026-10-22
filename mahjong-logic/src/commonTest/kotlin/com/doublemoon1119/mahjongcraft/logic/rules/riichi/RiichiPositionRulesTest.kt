@@ -22,6 +22,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TileWallSnapshot
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeMeldFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
@@ -187,10 +188,9 @@ class RiichiPositionRulesTest {
     @Test
     fun `a closed hand that has not declared riichi can riichi once ready`() {
         val riichi = setOf(RIICHI_GAME_ACTION)
-        val closedKan = Meld(
+        val closedKan = FakeMeldFactory.create(
             type = MeldType.CLOSED_KAN,
             tiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Honor.White) },
-            sourceDirection = RelativeDirection.Self,
         )
         val closed = seat(Wind.SOUTH, hand = noYakuTankiOnFiveBamboo()).copy(score = RIICHI_STICK_POINTS)
         val withClosedKan = seat(Wind.SOUTH, hand = handOf(listOf(character(2), character(3)), melds = listOf(closedKan))).copy(score = RIICHI_STICK_POINTS)
@@ -233,9 +233,10 @@ class RiichiPositionRulesTest {
     /** 每一次鳴牌都讓宣告之後的位置往後退兩張，只保留一定在宣告之後打出的牌。 */
     @Test
     fun `each call pushes the passed boundary back by two`() {
+        val calledMeld = pon(dot(7))
         val caller = seat(
             Wind.WEST,
-            melds = listOf(pon(dot(7)).copy(sourceTile = FakeIdentifiedTileFactory.create(dot(7)))),
+            melds = listOf(calledMeld.copy(sourceTile = calledMeld.tiles.first())),
         )
         val self = seat(Wind.SOUTH, discards = (1..5).map(::character))
         val declarer = riichiDeclarer(discardsBefore = listOf(Tile.Honor.North))
@@ -429,7 +430,7 @@ class RiichiPositionRulesTest {
      * @param tile 碰牌的牌面。
      * @return 測試用碰牌副露。
      */
-    private fun pon(tile: Tile): Meld = Meld(
+    private fun pon(tile: Tile): Meld = FakeMeldFactory.create(
         type = MeldType.PON,
         tiles = List(3) { FakeIdentifiedTileFactory.create(tile) },
         sourceDirection = RelativeDirection.Across,

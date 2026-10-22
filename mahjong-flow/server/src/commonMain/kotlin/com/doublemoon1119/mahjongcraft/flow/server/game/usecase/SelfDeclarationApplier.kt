@@ -4,6 +4,8 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.logic.base.closedKanFaceDownTileIds
+import com.doublemoon1119.mahjongcraft.logic.base.closedKanPubliclyRevealedTileIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawContext
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawDecision
@@ -109,10 +111,24 @@ internal object SelfDeclarationApplier {
         val declarer = state.players.first { it.id == declarerId }
         val handAfterMeld = when (kanAction.type) {
             GameAction.KanType.CLOSED_KAN -> {
-                val kanTiles = kanAction.withTiles.mapNotNull { id ->
+                val heldKanTiles = kanAction.withTiles.mapNotNull { id ->
                     declarer.hand.standingTiles.find { it.id == id }
                 } + incomingTile
-                declarer.hand.call(MeldType.CLOSED_KAN, kanTiles, source = null, direction = RelativeDirection.Self)
+                val revealsClosedKanTiles = state.config.revealsClosedKanTiles
+                // 公開的暗槓照規則牌序排列；不公開時改用與牌面無關的順序，排列不透露牌面。
+                val kanTiles = if (revealsClosedKanTiles) {
+                    heldKanTiles.sortedWith(compareBy(module.tileOrder) { it.tile })
+                } else {
+                    heldKanTiles.sortedBy { it.id.toString() }
+                }
+                declarer.hand.call(
+                    type = MeldType.CLOSED_KAN,
+                    tiles = kanTiles,
+                    source = null,
+                    direction = RelativeDirection.Self,
+                    publiclyRevealedTileIds = closedKanPubliclyRevealedTileIds(kanTiles, revealsClosedKanTiles),
+                    faceDownTileIds = closedKanFaceDownTileIds(kanTiles),
+                )
             }
 
             GameAction.KanType.ADDED_KAN -> {

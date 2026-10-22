@@ -7,7 +7,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.ScoreRankingPlayer
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
@@ -90,7 +89,7 @@ class SettlementStageInputsTest {
             playerPresentation(seatIndex = 1, waitingTiles = listOf(Tile.Numeric(Tile.Suit.Bamboo, 2))),
         )
 
-        val inputs = exhaustiveDrawSettlementStageInputs(request, stateWith(), emptyMap(), FakeTileOrder, FakeTileAssetRegistry)
+        val inputs = exhaustiveDrawSettlementStageInputs(request, stateWith(), emptyMap(), FakeTileAssetRegistry)
 
         assertEquals(
             mapOf(0 to listOf("east", "p9"), 1 to listOf("s2")),
@@ -105,7 +104,7 @@ class SettlementStageInputsTest {
         val state = stateWith(handTiles = listOf(revealed))
         val request = requestOf(playerPresentation(seatIndex = 0, revealedHandTileIds = listOf(revealed.id)))
 
-        val inputs = exhaustiveDrawSettlementStageInputs(request, state, emptyMap(), FakeTileOrder, FakeTileAssetRegistry)
+        val inputs = exhaustiveDrawSettlementStageInputs(request, state, emptyMap(), FakeTileAssetRegistry)
 
         assertEquals(mapOf(revealed.id to "m5"), inputs.revealedTileAssetsById)
     }
@@ -121,7 +120,6 @@ class SettlementStageInputsTest {
             request = request,
             tableState = null,
             cornerWidthsBySeat = emptyMap(),
-            tileOrder = FakeTileOrder,
             tileAssetRegistry = FakeTileAssetRegistry,
         )
 
@@ -137,7 +135,6 @@ class SettlementStageInputsTest {
             request = requestOf(playerPresentation(seatIndex = 0)),
             tableState = stateWith(),
             cornerWidthsBySeat = emptyMap(),
-            tileOrder = FakeTileOrder,
             tileAssetRegistry = FakeTileAssetRegistry,
         )
 
@@ -165,7 +162,6 @@ class SettlementStageInputsTest {
         request = requestOf(playerPresentation(seatIndex = 0)),
         tableState = stateWith(),
         cornerWidthsBySeat = cornerWidthsBySeat,
-        tileOrder = FakeTileOrder,
         tileAssetRegistry = FakeTileAssetRegistry,
     ).reservedCornerWidthsBySeat
 
@@ -237,11 +233,6 @@ class SettlementStageInputsTest {
         waitingTiles = waitingTiles,
         statusId = null,
     )
-
-    /** 副露寬度與牌序無關，測試只需要一個穩定的比較器。 */
-    private object FakeTileOrder : TileOrder {
-        override fun compare(first: Tile, second: Tile): Int = 0
-    }
 
     /** 只接受 lookup 的測試替身；任何註冊或凍結呼叫都表示測試走錯路徑。 */
     private object FakeTileAssetRegistry : MinecraftTileAssetRegistry {

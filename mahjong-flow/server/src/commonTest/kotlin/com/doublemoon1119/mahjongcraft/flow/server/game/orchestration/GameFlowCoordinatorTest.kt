@@ -47,6 +47,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationH
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAbortiveDrawUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAndDiscardUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareKanUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareTsumoUseCase
@@ -213,6 +214,15 @@ class GameFlowCoordinatorTest {
                 postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
                 eventPublisher = eventPublisher,
                 presentationPublisher = presentationPublisher,
+                declareAndDiscardUseCase = DeclareAndDiscardUseCase(
+                    gameRepository = gameRepo,
+                    moduleRegistry = moduleRegistry,
+                    snapshotSynchronizer = snapshotSynchronizer,
+                    handSortPreferenceStore = handSortPreferenceStore,
+                    postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
+                    eventPublisher = eventPublisher,
+                    presentationPublisher = presentationPublisher,
+                ),
             ),
         )
         val router = GameActionRouter(
@@ -593,7 +603,7 @@ class GameFlowCoordinatorTest {
      */
     private fun kanMeldsOf(vararg tileValues: Tile): List<Meld> = tileValues.map { tile ->
         val tiles = List(4) { FakeIdentifiedTileFactory.create(tile) }
-        Meld(MeldType.CLOSED_KAN, tiles, sourceTile = null, sourceDirection = RelativeDirection.Self)
+        Meld(MeldType.CLOSED_KAN, tiles, sourceTile = null, sourceDirection = RelativeDirection.Self, publiclyRevealedTileIds = tiles.map { it.id }.toSet(), faceDownTileIds = setOf(tiles.first().id, tiles.last().id))
     }
 
     /**
@@ -762,6 +772,8 @@ class GameFlowCoordinatorTest {
                     discarderId = other.id,
                     tileId = winningTile.id,
                     eligiblePlayerIds = setOf(winner.id),
+                    ronPlayerIds = setOf(winner.id),
+                    id = Uuid.random(),
                 )
             },
         )
@@ -770,7 +782,11 @@ class GameFlowCoordinatorTest {
         val result = fixtures.coordinator.dispatch(
             gameId = gameId,
             playerId = winner.id,
-            command = if (isTsumo) GameCommand.Tsumo else GameCommand.RespondToDiscard(GameAction.Ron(winningTile.id)),
+            command = if (isTsumo) {
+                GameCommand.Tsumo
+            } else {
+                GameCommand.RespondToDiscard(GameAction.Ron(winningTile.id), checkNotNull(table.pendingReaction).id)
+            },
         )
 
         assertEquals(Outcome.Error(GameError.MatchAborted(gameId, GameAbortReasonIds.MISSING_WIN_SETTLEMENT)), result)
@@ -1186,7 +1202,7 @@ class GameFlowCoordinatorTest {
             players = listOf(discarder, respondent),
             config = RiichiRuleConfig(gameLength = RiichiGameLength.East),
             currentPlayerIndex = 0,
-            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(respondentId)),
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(respondentId), ronPlayerIds = setOf(respondentId), id = Uuid.random()),
         )
         return table
     }
@@ -1213,7 +1229,11 @@ class GameFlowCoordinatorTest {
         fixtures.gameRepo.setTableState(table)
         val whiteTileId = table.pendingReaction!!.tileId
 
-        val result = fixtures.coordinator.dispatchThenDrive(gameId, respondentId, GameCommand.RespondToDiscard(GameAction.Ron(whiteTileId)))
+        val result = fixtures.coordinator.dispatchThenDrive(
+            gameId,
+            respondentId,
+            GameCommand.RespondToDiscard(GameAction.Ron(whiteTileId), checkNotNull(table.pendingReaction).id),
+        )
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!
@@ -1242,13 +1262,21 @@ class GameFlowCoordinatorTest {
             players = listOf(discarder) + winners,
             config = RiichiRuleConfig(gameLength = RiichiGameLength.East),
             currentPlayerIndex = 0,
-            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(firstWinnerId, secondWinnerId)),
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(firstWinnerId, secondWinnerId), ronPlayerIds = setOf(firstWinnerId, secondWinnerId), id = Uuid.random()),
         )
         fixtures.gameRepo.setTableState(table)
 
-        fixtures.coordinator.dispatchThenDrive(gameId, firstWinnerId, GameCommand.RespondToDiscard(GameAction.Ron(discardedTile.id)))
+        fixtures.coordinator.dispatchThenDrive(
+            gameId,
+            firstWinnerId,
+            GameCommand.RespondToDiscard(GameAction.Ron(discardedTile.id), checkNotNull(table.pendingReaction).id),
+        )
         assertTrue(fixtures.presentationPublisher.getPublishedWinPresentations(gameId).isEmpty(), "The window waits for the other winner.")
-        val result = fixtures.coordinator.dispatchThenDrive(gameId, secondWinnerId, GameCommand.RespondToDiscard(GameAction.Ron(discardedTile.id)))
+        val result = fixtures.coordinator.dispatchThenDrive(
+            gameId,
+            secondWinnerId,
+            GameCommand.RespondToDiscard(GameAction.Ron(discardedTile.id), checkNotNull(table.pendingReaction).id),
+        )
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val published = fixtures.presentationPublisher.getPublishedWinPresentations(gameId).single()
@@ -1272,7 +1300,11 @@ class GameFlowCoordinatorTest {
         fixtures.presentationBusyGate.setBusy(gameId, true)
         val whiteTileId = table.pendingReaction!!.tileId
 
-        val result = fixtures.coordinator.dispatchThenDrive(gameId, respondentId, GameCommand.RespondToDiscard(GameAction.Ron(whiteTileId)))
+        val result = fixtures.coordinator.dispatchThenDrive(
+            gameId,
+            respondentId,
+            GameCommand.RespondToDiscard(GameAction.Ron(whiteTileId), checkNotNull(table.pendingReaction).id),
+        )
 
         val error = assertIs<Outcome.Error<GameError>>(result).error
         assertEquals(GameError.UnsupportedAction(gameId, respondentId, "mahjongcraft:presentation_busy"), error)
@@ -1292,7 +1324,7 @@ class GameFlowCoordinatorTest {
         val settlement = fixtures.router(
             gameId,
             respondentId,
-            GameCommand.RespondToDiscard(GameAction.Ron(whiteTileId)),
+            GameCommand.RespondToDiscard(GameAction.Ron(whiteTileId), checkNotNull(table.pendingReaction).id),
         )
         assertTrue(settlement is Outcome.Success)
         assertTrue(
@@ -1343,7 +1375,11 @@ class GameFlowCoordinatorTest {
         val whiteTileId = table.pendingReaction!!.tileId
 
         val ponAction = GameAction.Pon(whiteTileId, listOf(whiteTile1.id, whiteTile2.id))
-        val result = fixtures.coordinator.dispatchThenDrive(gameId, respondentId, GameCommand.RespondToDiscard(ponAction))
+        val result = fixtures.coordinator.dispatchThenDrive(
+            gameId,
+            respondentId,
+            GameCommand.RespondToDiscard(ponAction, checkNotNull(table.pendingReaction).id),
+        )
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         val newState = fixtures.gameRepo.getTableState(gameId)!!
@@ -1365,7 +1401,7 @@ class GameFlowCoordinatorTest {
         val whiteTile2 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val whiteTile3 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val robbedWhiteTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
-        val existingPon = Meld(MeldType.PON, listOf(whiteTile1, whiteTile2, whiteTile3), sourceTile = whiteTile3, sourceDirection = RelativeDirection.Left)
+        val existingPon = Meld(MeldType.PON, listOf(whiteTile1, whiteTile2, whiteTile3), sourceTile = whiteTile3, sourceDirection = RelativeDirection.Left, publiclyRevealedTileIds = listOf(whiteTile1, whiteTile2, whiteTile3).map { it.id }.toSet(), faceDownTileIds = emptySet())
         val kanAction = GameAction.Kan(GameAction.KanType.ADDED_KAN, robbedWhiteTile.id, emptyList())
         // score 理由同 discardReactionTable：避免放槍付款後分數跌破 0 誤觸擊飛。
         val declarer = FakeMahjongPlayerFactory.create(

@@ -114,7 +114,7 @@ class DrawTileUseCase(
             seatIndex,
             drawnPlayer.hand.tiles.map { it.id },
             drawnPlayer.hand.lastDrawn?.id,
-            drawnPlayer.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles, module.tileOrder) },
+            drawnPlayer.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
             setAsideTileIds = module.setAsideTiles(drawnPlayer).map { it.id },
             isNewlyDrawn = true,
         )

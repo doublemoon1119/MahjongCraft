@@ -33,6 +33,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import com.doublemoon1119.mahjongcraft.logic.tile.IdentityTileInterpretationPolicy
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeMeldFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -142,10 +143,9 @@ class OpponentReadingTest {
     @Test
     fun `mixed melds suit discards few discards or only closed kans give no signal`() {
         val offSuitDiscards = listOf(m(1), s(9), m(8), Tile.Honor.North, s(2), m(5), s(4))
-        val closedKan = Meld(
+        val closedKan = FakeMeldFactory.create(
             type = MeldType.CLOSED_KAN,
             tiles = List(4) { FakeIdentifiedTileFactory.create(p(3)) },
-            sourceDirection = RelativeDirection.Self,
         )
 
         assertNull(reading.flushSignal(snapshotOf(player(discards = offSuitDiscards, melds = listOf(pon(p(3)), pon(m(7)))))))
@@ -296,7 +296,7 @@ class OpponentReadingTest {
      * @param tile 碰牌的牌面。
      * @return 使用三張相同牌面的碰副露。
      */
-    private fun pon(tile: Tile): Meld = Meld(
+    private fun pon(tile: Tile): Meld = FakeMeldFactory.create(
         type = MeldType.PON,
         tiles = List(3) { FakeIdentifiedTileFactory.create(tile) },
         sourceDirection = RelativeDirection.Across,
@@ -308,11 +308,16 @@ class OpponentReadingTest {
      * @param tiles 依順序組成順子的三張牌面。
      * @return 使用輸入牌面的吃副露。
      */
-    private fun chi(vararg tiles: Tile): Meld = Meld(
-        type = MeldType.CHI,
-        tiles = tiles.map(FakeIdentifiedTileFactory::create),
-        sourceDirection = RelativeDirection.Left,
-    )
+    private fun chi(vararg tiles: Tile): Meld {
+        val meldTiles = tiles.map(FakeIdentifiedTileFactory::create)
+        return Meld(
+            type = MeldType.CHI,
+            tiles = meldTiles,
+            sourceDirection = RelativeDirection.Left,
+            publiclyRevealedTileIds = meldTiles.map { it.id }.toSet(),
+            faceDownTileIds = emptySet(),
+        )
+    }
 
     /**
      * 建立萬子。

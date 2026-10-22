@@ -192,7 +192,7 @@ class FabricWinCelebrationShowcaseScheduler(
 }
 
 /**
- * 依結算面板的手牌排法排出一翼的牌：手牌在前，之後依鳴牌順序接上各組副露，暗槓兩端露出牌背。
+ * 依結算面板的手牌排法排出一翼的牌：手牌在前，之後依鳴牌順序接上各組副露；副露依呈現資料的朝下牌張露出牌背。
  *
  * @param standingTileIds 已排好序的手牌，不含和牌張。
  * @param melds 依鳴牌順序的副露，每組的牌已依面板順序排列。
@@ -206,8 +206,9 @@ internal fun showcaseWingCards(
 ): List<FabricWinCelebrationShowcaseScheduler.Card> {
     val hand = standingTileIds.mapNotNull { id -> assetKeyOf(id)?.let { FabricWinCelebrationShowcaseScheduler.Card(tileId = id, assetKey = it) } }
     val meldCards = melds.flatMapIndexed { meldIndex, meld ->
-        val faceDown = winningHandFaceDownIndices(meld.type, meld.tileIds.size)
-        meld.tileIds.mapIndexedNotNull { index, id ->
+        val visibleTiles = meld.tileIds.filter { assetKeyOf(it) != null }
+        val faceDown = winningHandFaceDownIndices(visibleTiles, meld.faceDownTileIds)
+        visibleTiles.mapIndexedNotNull { index, id ->
             assetKeyOf(id)?.let { asset ->
                 FabricWinCelebrationShowcaseScheduler.Card(
                     tileId = id,

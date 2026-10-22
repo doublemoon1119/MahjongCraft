@@ -98,6 +98,7 @@ class FullMatchIntegrationTest {
                 GameCommand.RespondToDiscard(
                     context.legalActions.firstOrNull { it is GameAction.Ron }
                         ?: GameAction.Pass,
+                    checkNotNull(context.discardReactionId),
                 )
 
             AiDecisionPhase.RespondingToRobbing ->

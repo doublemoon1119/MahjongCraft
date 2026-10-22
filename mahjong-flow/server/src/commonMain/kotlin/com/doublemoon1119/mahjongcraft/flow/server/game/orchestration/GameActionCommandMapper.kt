@@ -22,17 +22,28 @@ class GameActionCommandMapper(
         action: GameAction,
         selectedTileIds: List<Uuid> = emptyList(),
     ): GameCommand? {
+        when (context) {
+            is PlayerActionContext.DiscardReaction -> return GameCommand.RespondToDiscard(
+                action = action,
+                reactionId = context.pending.id,
+                selectedTileIds = selectedTileIds,
+            )
+            is PlayerActionContext.RobbingReaction -> return if (
+                selectedTileIds.isEmpty() && (action is GameAction.Ron || action == GameAction.Pass)
+            ) {
+                GameCommand.RespondToRobbing(action)
+            } else {
+                null
+            }
+            is PlayerActionContext.OwnTurn -> Unit
+        }
         if (action is GameAction.Extension) {
             extensionRegistry.createCommand(action.value, selectedTileIds)?.let { return GameCommand.Extension(it) }
             if (selectedTileIds.isNotEmpty()) return null
         } else if (selectedTileIds.isNotEmpty()) {
             return null
         }
-        return when (context) {
-            is PlayerActionContext.RobbingReaction -> GameCommand.RespondToRobbing(action)
-            is PlayerActionContext.DiscardReaction -> GameCommand.RespondToDiscard(action)
-            is PlayerActionContext.OwnTurn -> action.toOwnTurnCommand()
-        }
+        return action.toOwnTurnCommand()
     }
 
     /** 將自己回合的內建動作轉換成命令；不支援的動作回傳 null。 */

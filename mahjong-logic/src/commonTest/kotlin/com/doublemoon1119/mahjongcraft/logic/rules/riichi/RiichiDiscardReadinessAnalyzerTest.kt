@@ -2,7 +2,6 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
-import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
@@ -20,6 +19,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import com.doublemoon1119.mahjongcraft.logic.table.visibleTiles
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeMeldFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -139,7 +139,7 @@ class RiichiDiscardReadinessAnalyzerTest {
         val hand = FakeHandFactory.create(tenpaiTiles + floatingTile)
         val player = FakeMahjongPlayerFactory.create(hand = hand)
         val calledTile = FakeIdentifiedTileFactory.create(threeSou)
-        val meld = Meld(
+        val meld = FakeMeldFactory.create(
             type = MeldType.PON,
             tiles = listOf(
                 calledTile,
@@ -321,10 +321,9 @@ class RiichiDiscardReadinessAnalyzerTest {
     @Test
     fun `test riichi action analysis projects declaration yaku`() {
         val completedMelds = listOf(
-            Meld(
-                MeldType.CLOSED_KAN,
-                List(4) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)) },
-                sourceDirection = RelativeDirection.Self,
+            FakeMeldFactory.create(
+                type = MeldType.CLOSED_KAN,
+                tiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)) },
             ),
         )
         val hand = Hand(
@@ -397,14 +396,14 @@ class RiichiDiscardReadinessAnalyzerTest {
         extraStandingTile: Tile? = null,
     ): MahjongPlayer {
         val melds = listOf(
-            Meld(
+            FakeMeldFactory.create(
                 type = MeldType.PON,
                 tiles = List(3) {
                     FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 7))
                 },
                 sourceDirection = RelativeDirection.Left,
             ),
-            Meld(
+            FakeMeldFactory.create(
                 type = MeldType.CHI,
                 tiles = listOf(6, 7, 8).map { value ->
                     FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, value))

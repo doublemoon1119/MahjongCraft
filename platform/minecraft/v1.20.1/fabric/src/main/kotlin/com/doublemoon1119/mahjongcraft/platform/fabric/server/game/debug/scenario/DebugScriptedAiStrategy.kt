@@ -26,7 +26,7 @@ class DebugScriptedAiStrategy(
     private val pullsNorthFirst: Boolean = false,
 ) : MahjongAiStrategy {
     override suspend fun decideGameCommand(context: AiDecisionContext): GameCommand = when (context.phase) {
-        AiDecisionPhase.RespondingToDiscard -> GameCommand.RespondToDiscard(GameAction.Pass)
+        AiDecisionPhase.RespondingToDiscard -> GameCommand.RespondToDiscard(GameAction.Pass, checkNotNull(context.discardReactionId))
         AiDecisionPhase.RespondingToRobbing -> GameCommand.RespondToRobbing(GameAction.Pass)
         AiDecisionPhase.OwnTurn -> decideOwnTurn(context)
     }

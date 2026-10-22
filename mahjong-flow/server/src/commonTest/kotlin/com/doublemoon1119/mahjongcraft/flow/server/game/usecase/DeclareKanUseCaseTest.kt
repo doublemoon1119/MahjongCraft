@@ -20,6 +20,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
@@ -150,6 +151,38 @@ class DeclareKanUseCaseTest {
      * 驗證暗槓補牌後會將牌牆公開 policy 回傳的新公開王牌（例如槓寶牌）通知平台呈現層；
      * 已經公開的牌不會混入這次的動畫批次。
      */
+    /** 公開的暗槓依規則牌序排列（赤五排在同數值普通牌之後），整組牌面公開，兩端朝下。 */
+    @Test
+    fun `test closed kan follows the rule tile order and keeps both ends face down`() = runTest {
+        val fixtures = Fixtures()
+        val redFive = FakeIdentifiedTileFactory.create(RiichiTileTypes.redFive(Tile.Suit.Dot))
+        val five1 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5))
+        val five2 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5))
+        val five3 = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5))
+        val declarer = FakeMahjongPlayerFactory.create(
+            id = playerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(tiles = listOf(redFive, five1, five2), lastDrawn = five3),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(declarer),
+            config = RiichiRuleConfig(),
+            reservedWallTiles = completeDeadWall(rinshanTile),
+            currentPlayerIndex = 0,
+            dynamicRuleState = RiichiDynamicState(),
+        ).withFirstKanPhysicalWallLayout()
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.gameRepo.runAsSingleWrite(gameId) { fixtures.useCase(gameId, playerId, GameAction.KanType.CLOSED_KAN, five3.id) }
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val meld = fixtures.gameRepo.getTableState(gameId)!!.players.first { it.id == playerId }.hand.melds.single()
+        assertEquals(listOf(five1, five2, five3, redFive), meld.tiles)
+        assertEquals(meld.tiles.map { it.id }.toSet(), meld.publiclyRevealedTileIds)
+        assertEquals(setOf(five1.id, redFive.id), meld.faceDownTileIds)
+    }
+
     @Test
     fun `test closed kan success publishes newly revealed dead wall tiles`() = runTest {
         val fixtures = Fixtures()
@@ -205,6 +238,8 @@ class DeclareKanUseCaseTest {
                         MeldType.CLOSED_KAN,
                         previousKanTiles,
                         sourceDirection = RelativeDirection.Self,
+                        publiclyRevealedTileIds = previousKanTiles.map { it.id }.toSet(),
+                        faceDownTileIds = setOf(previousKanTiles.first().id, previousKanTiles.last().id),
                     ),
                 ),
                 lastDrawn = eastTiles.last(),
@@ -245,7 +280,7 @@ class DeclareKanUseCaseTest {
         val south2 = FakeIdentifiedTileFactory.create(Tile.Honor.South)
         val south3 = FakeIdentifiedTileFactory.create(Tile.Honor.South)
         val south4 = FakeIdentifiedTileFactory.create(Tile.Honor.South)
-        val existingPon = Meld(MeldType.PON, listOf(south1, south2, south3), sourceTile = south3, sourceDirection = RelativeDirection.Left)
+        val existingPon = Meld(MeldType.PON, listOf(south1, south2, south3), sourceTile = south3, sourceDirection = RelativeDirection.Left, publiclyRevealedTileIds = listOf(south1, south2, south3).map { it.id }.toSet(), faceDownTileIds = emptySet())
         val declarer = FakeMahjongPlayerFactory.create(
             id = playerId,
             initialSeat = Wind.EAST,
@@ -533,7 +568,7 @@ class DeclareKanUseCaseTest {
         val white2 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val white3 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val white4 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
-        val existingPon = Meld(MeldType.PON, listOf(white1, white2, white3), sourceTile = white3, sourceDirection = RelativeDirection.Left)
+        val existingPon = Meld(MeldType.PON, listOf(white1, white2, white3), sourceTile = white3, sourceDirection = RelativeDirection.Left, publiclyRevealedTileIds = listOf(white1, white2, white3).map { it.id }.toSet(), faceDownTileIds = emptySet())
         val declarer = FakeMahjongPlayerFactory.create(
             id = playerId,
             initialSeat = Wind.EAST,
@@ -606,7 +641,7 @@ class DeclareKanUseCaseTest {
         val white2 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val white3 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val white4 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
-        val existingPon = Meld(MeldType.PON, listOf(white1, white2, white3), sourceTile = white3, sourceDirection = RelativeDirection.Left)
+        val existingPon = Meld(MeldType.PON, listOf(white1, white2, white3), sourceTile = white3, sourceDirection = RelativeDirection.Left, publiclyRevealedTileIds = listOf(white1, white2, white3).map { it.id }.toSet(), faceDownTileIds = emptySet())
         val declarer = FakeMahjongPlayerFactory.create(
             id = playerId,
             initialSeat = Wind.EAST,
@@ -668,7 +703,7 @@ class DeclareKanUseCaseTest {
         val white2 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val white3 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val white4 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
-        val existingPon = Meld(MeldType.PON, listOf(white1, white2, white3), sourceTile = white3, sourceDirection = RelativeDirection.Left)
+        val existingPon = Meld(MeldType.PON, listOf(white1, white2, white3), sourceTile = white3, sourceDirection = RelativeDirection.Left, publiclyRevealedTileIds = listOf(white1, white2, white3).map { it.id }.toSet(), faceDownTileIds = emptySet())
         val declarer = FakeMahjongPlayerFactory.create(
             id = playerId,
             initialSeat = Wind.EAST,
@@ -705,7 +740,7 @@ class DeclareKanUseCaseTest {
         val white2 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val white3 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val white4 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
-        val existingPon = Meld(MeldType.PON, listOf(white1, white2, white3), sourceTile = white3, sourceDirection = RelativeDirection.Left)
+        val existingPon = Meld(MeldType.PON, listOf(white1, white2, white3), sourceTile = white3, sourceDirection = RelativeDirection.Left, publiclyRevealedTileIds = listOf(white1, white2, white3).map { it.id }.toSet(), faceDownTileIds = emptySet())
         val declarer = FakeMahjongPlayerFactory.create(
             id = playerId,
             initialSeat = Wind.EAST,
@@ -750,7 +785,7 @@ class DeclareKanUseCaseTest {
         val white2 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val white3 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val white4 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
-        val existingPon = Meld(MeldType.PON, listOf(white1, white2, white3), sourceTile = white3, sourceDirection = RelativeDirection.Left)
+        val existingPon = Meld(MeldType.PON, listOf(white1, white2, white3), sourceTile = white3, sourceDirection = RelativeDirection.Left, publiclyRevealedTileIds = listOf(white1, white2, white3).map { it.id }.toSet(), faceDownTileIds = emptySet())
         val declarer = FakeMahjongPlayerFactory.create(
             id = playerId,
             initialSeat = Wind.EAST,

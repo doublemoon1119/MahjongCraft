@@ -125,7 +125,7 @@ class GetPlayerDecisionOptionsUseCaseTest {
                 id = gameId,
                 players = listOf(discarder, respondent),
                 config = RiichiRuleConfig(),
-                pendingReaction = PendingReaction(discarderId, discarded.id, setOf(respondentId)),
+                pendingReaction = PendingReaction(discarderId, discarded.id, setOf(respondentId), ronPlayerIds = setOf(respondentId), id = Uuid.random()),
             ),
         )
 
@@ -160,7 +160,7 @@ class GetPlayerDecisionOptionsUseCaseTest {
             id = gameId,
             players = listOf(discarder, respondent),
             config = RiichiRuleConfig(),
-            pendingReaction = PendingReaction(discarder.id, discarded.id, setOf(respondent.id)),
+            pendingReaction = PendingReaction(discarder.id, discarded.id, setOf(respondent.id), ronPlayerIds = setOf(respondent.id), id = Uuid.random()),
         )
         fixtures.gameRepository.setGame(
             Game(

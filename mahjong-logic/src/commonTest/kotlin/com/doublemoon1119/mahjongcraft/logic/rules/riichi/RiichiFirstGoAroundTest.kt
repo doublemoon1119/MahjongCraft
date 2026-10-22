@@ -81,13 +81,16 @@ class RiichiFirstGoAroundTest {
     @Test
     fun `test is not first go around when someone has an exposed meld`() {
         val player = FakeMahjongPlayerFactory.create()
-        val meldTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)
+        val meldTiles = List(3) { FakeIdentifiedTileFactory.create(Tile.Honor.East) }
+        val source = meldTiles.last()
         val otherPlayer = FakeMahjongPlayerFactory.create(
-            hand = Hand().call(
+            hand = Hand(tiles = meldTiles.dropLast(1)).call(
                 type = MeldType.PON,
-                tiles = List(3) { meldTile },
-                source = meldTile,
+                tiles = meldTiles,
+                source = source,
                 direction = RelativeDirection.Left,
+                publiclyRevealedTileIds = meldTiles.map { it.id }.toSet(),
+                faceDownTileIds = emptySet(),
             ),
         )
         val table = FakeTableStateFactory.create(players = listOf(player, otherPlayer))

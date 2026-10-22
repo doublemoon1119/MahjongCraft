@@ -21,6 +21,7 @@ class AuthoritativeTileStatePersistenceTest {
     @Test
     fun `hand round-trips with complete authoritative tile state`() {
         val source = tile(Tile.Honor.East)
+        val ponTiles = listOf(tile(Tile.Honor.East), tile(Tile.Honor.East), source)
         val hand = Hand(
             tiles = listOf(
                 tile(RiichiTileTypes.redFive(Tile.Suit.Character)),
@@ -29,9 +30,11 @@ class AuthoritativeTileStatePersistenceTest {
             melds = listOf(
                 Meld(
                     type = MeldType.PON,
-                    tiles = listOf(tile(Tile.Honor.East), tile(Tile.Honor.East), source),
+                    tiles = ponTiles,
                     sourceTile = source,
                     sourceDirection = RelativeDirection.Left,
+                    publiclyRevealedTileIds = ponTiles.map { it.id }.toSet(),
+                    faceDownTileIds = emptySet(),
                 ),
             ),
             lastDrawn = tile(Tile.Numeric(Tile.Suit.Dot, 9)),

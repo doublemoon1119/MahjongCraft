@@ -470,13 +470,7 @@ object BundledRiichiExtension : MahjongExtension {
         registry.register(
             definition = ExtensionGameCommandHandlerDefinition(RiichiGameCommand::class) { context ->
                 val declareRiichiUseCase = DeclareRiichiUseCase(
-                    gameRepository = context.gameRepository,
-                    moduleRegistry = context.moduleRegistry,
-                    snapshotSynchronizer = context.snapshotSynchronizer,
-                    handSortPreferenceStore = context.handSortPreferenceStore,
-                    postActionExhaustiveDrawResolverRegistry = context.postActionExhaustiveDrawResolverRegistry,
-                    eventPublisher = context.eventPublisher,
-                    presentationPublisher = context.presentationPublisher,
+                    declareAndDiscardUseCase = context.declareAndDiscardUseCase,
                 )
                 object : ExtensionGameCommandHandler<RiichiGameCommand> {
                     override suspend fun execute(

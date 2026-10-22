@@ -16,6 +16,7 @@ import kotlinx.serialization.Serializable
  * @property seatWind 玩家目前的座位風。
  * @property passedTilesInRound 本局已被跳過的牌。
  * @property actionHistory 玩家已接受動作的歷史。
+ * @property mustDiscardAfterMeld 鳴牌後是否必須直接捨牌。
  */
 @Serializable
 data class MahjongPlayerPersistenceDto(
@@ -28,4 +29,5 @@ data class MahjongPlayerPersistenceDto(
     val seatWind: WindPersistenceDto,
     val passedTilesInRound: List<TilePersistenceDto>,
     val actionHistory: List<GameActionPersistenceDto>,
+    val mustDiscardAfterMeld: Boolean,
 )

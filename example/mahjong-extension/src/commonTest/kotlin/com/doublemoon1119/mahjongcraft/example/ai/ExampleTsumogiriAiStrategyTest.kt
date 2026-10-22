@@ -38,6 +38,7 @@ class ExampleTsumogiriAiStrategyTest {
         phase: AiDecisionPhase = AiDecisionPhase.OwnTurn,
         legalActions: List<GameAction> = emptyList(),
         forcedDiscardTileId: Uuid? = null,
+        discardReactionId: Uuid? = null,
     ): AiDecisionContext {
         val player = FakeMahjongPlayerFactory.create(id = selfId, hand = hand)
         val table = FakeTableStateFactory.create(players = listOf(player))
@@ -47,6 +48,7 @@ class ExampleTsumogiriAiStrategyTest {
             phase = phase,
             legalActions = legalActions,
             forcedDiscardTileId = forcedDiscardTileId,
+            discardReactionId = discardReactionId,
         )
     }
 
@@ -99,15 +101,17 @@ class ExampleTsumogiriAiStrategyTest {
     /** 驗證反應階段優先選擇合法過牌。 */
     @Test
     fun `reactions prefer legal pass`() = runTest {
+        val reactionId = Uuid.random()
         val command = strategy.decideGameCommand(
             context(
                 hand = Hand(),
                 phase = AiDecisionPhase.RespondingToDiscard,
                 legalActions = listOf(GameAction.Ron(Uuid.random()), GameAction.Pass),
+                discardReactionId = reactionId,
             ),
         )
 
-        assertEquals(GameCommand.RespondToDiscard(GameAction.Pass), command)
+        assertEquals(GameCommand.RespondToDiscard(GameAction.Pass, reactionId), command)
     }
 
     /** 驗證沒有過牌時會選擇清單中的第一個合法反應。 */
@@ -125,7 +129,7 @@ class ExampleTsumogiriAiStrategyTest {
     @Test
     fun `reactions reject an empty legal action list`() = runTest {
         assertFailsWith<IllegalStateException> {
-            strategy.decideGameCommand(context(hand = Hand(), phase = AiDecisionPhase.RespondingToDiscard))
+            strategy.decideGameCommand(context(hand = Hand(), phase = AiDecisionPhase.RespondingToDiscard, discardReactionId = Uuid.random()))
         }
     }
 }

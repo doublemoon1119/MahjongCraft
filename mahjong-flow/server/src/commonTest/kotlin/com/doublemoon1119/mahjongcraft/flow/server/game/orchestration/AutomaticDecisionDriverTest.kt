@@ -72,7 +72,7 @@ class AutomaticDecisionDriverTest {
         val state = FakeTableStateFactory.create(
             players = listOf(discarder, respondent),
             config = RiichiRuleConfig(),
-            pendingReaction = PendingReaction(discarder.id, discarded.id, setOf(respondent.id)),
+            pendingReaction = PendingReaction(discarder.id, discarded.id, setOf(respondent.id), ronPlayerIds = setOf(respondent.id), id = Uuid.random()),
         )
         repository.setGame(
             Game(
@@ -86,7 +86,7 @@ class AutomaticDecisionDriverTest {
 
         val result = driver.resolveNextAction(state.id)
 
-        assertEquals(respondent.id to GameCommand.RespondToDiscard(GameAction.Pass), result)
+        assertEquals(respondent.id to GameCommand.RespondToDiscard(GameAction.Pass, checkNotNull(state.pendingReaction).id), result)
     }
 
     /** 啟用自動和牌且他家打出和牌張時，立即提交榮和。 */
@@ -106,7 +106,7 @@ class AutomaticDecisionDriverTest {
         val state = FakeTableStateFactory.create(
             players = listOf(discarder, winner),
             config = RiichiRuleConfig(),
-            pendingReaction = PendingReaction(discarder.id, winningTile.id, setOf(winner.id)),
+            pendingReaction = PendingReaction(discarder.id, winningTile.id, setOf(winner.id), ronPlayerIds = setOf(winner.id), id = Uuid.random()),
         )
         val driver = createDriver(
             state = state,
@@ -114,7 +114,7 @@ class AutomaticDecisionDriverTest {
         )
 
         assertEquals(
-            winner.id to GameCommand.RespondToDiscard(GameAction.Ron(winningTile.id)),
+            winner.id to GameCommand.RespondToDiscard(GameAction.Ron(winningTile.id), checkNotNull(state.pendingReaction).id),
             driver.resolveNextAction(state.id),
         )
     }
@@ -198,7 +198,7 @@ class AutomaticDecisionDriverTest {
         val state = FakeTableStateFactory.create(
             players = listOf(discarder, winner),
             config = RiichiRuleConfig(),
-            pendingReaction = PendingReaction(discarder.id, winningTile.id, setOf(winner.id)),
+            pendingReaction = PendingReaction(discarder.id, winningTile.id, setOf(winner.id), ronPlayerIds = setOf(winner.id), id = Uuid.random()),
         )
         val driver = createDriver(
             state = state,

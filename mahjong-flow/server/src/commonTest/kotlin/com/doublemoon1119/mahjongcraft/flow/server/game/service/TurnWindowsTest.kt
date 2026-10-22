@@ -44,7 +44,7 @@ class TurnWindowsTest {
     /** 有人正在決定是否回應捨牌或搶和時，任何人都不能摸牌，也不處於自己回合的決策。 */
     @Test
     fun `pending reactions close both windows`() {
-        val pendingDiscard = PendingReaction(discarderId = currentId, tileId = drawn.id, eligiblePlayerIds = setOf(otherId))
+        val pendingDiscard = PendingReaction(discarderId = currentId, tileId = drawn.id, eligiblePlayerIds = setOf(otherId), ronPlayerIds = setOf(otherId), id = Uuid.random())
         val pendingRobbing = PendingRobbingReaction(
             declarerId = currentId,
             declaredAction = GameAction.Kan(GameAction.KanType.ADDED_KAN, drawn.id, emptyList()),

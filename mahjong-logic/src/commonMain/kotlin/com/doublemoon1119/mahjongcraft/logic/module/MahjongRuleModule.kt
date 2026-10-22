@@ -70,6 +70,20 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     val tileOrder: TileOrder
 
     /**
+     * 建立捨牌反應的可執行效果與優先序判定。
+     *
+     * @return 純計算的反應 policy；預設提供內建吃、碰、明槓、榮和與跳過。
+     */
+    fun createDiscardReactionPolicy(): DiscardReactionPolicy = DefaultDiscardReactionPolicy
+
+    /**
+     * 取得宣告並捨牌的規則效果判定。
+     *
+     * @return 支援此類宣告時的純計算 policy；未支援時為 null。
+     */
+    fun declarationDiscardPolicy(): DeclarationDiscardPolicy? = null
+
+    /**
      * 回傳此規則支援的本局自動操作控制 ID。
      *
      * 控制 ID 只宣告能力；如何依合法動作解析並提交自動決策由呼叫端負責。沒有本局自動操作能力的
@@ -509,7 +523,8 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * 多家和依 [MahjongRuleConfig.multiRonPolicy] 判定為流局（[RonResolution.ABORTIVE_DRAW]）時，
      * 該規則對應的具體流局原因。
      *
-     * 不支援此流局類型的規則應回傳 null。
+     * 不支援此流局類型的規則可回傳 null，但其多家和政策不得選擇 [RonResolution.ABORTIVE_DRAW]。
+     * 已選擇流局卻未提供原因時，Flow 會視為規則契約錯誤，不把和牌改成過牌或繼續打。
      *
      * @return 該規則對應的流局原因，若此規則不支援則為 null。
      */

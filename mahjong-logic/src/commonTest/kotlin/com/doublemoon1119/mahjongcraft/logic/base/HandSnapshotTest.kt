@@ -108,7 +108,7 @@ class HandSnapshotTest {
             FakeIdentifiedTileFactory.create(Tile.Honor.White),
             FakeIdentifiedTileFactory.create(Tile.Honor.White),
         )
-        val hand = Hand(melds = listOf(Meld(MeldType.PON, meldTiles, calledTile, RelativeDirection.Left)))
+        val hand = Hand(melds = listOf(Meld(MeldType.PON, meldTiles, calledTile, RelativeDirection.Left, meldTiles.map { it.id }.toSet(), emptySet())))
 
         val snapshot = hand.toSnapshot(isVisible = false, revealsClosedKanTiles = false)
 
@@ -117,13 +117,45 @@ class HandSnapshotTest {
         snapshot.melds[0].tiles.forEach { assertEquals(Tile.Honor.White, it.tile) }
     }
 
+    /** 自訂副露可以只公開其中一部分牌面，其他牌只保留穩定識別碼。 */
+    @Test
+    fun `custom meld exposes only its declared public tiles`() {
+        val visible = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
+        val hidden = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 2))
+        val meld = Meld(
+            type = MeldType.Extension(MeldTypeId.parse("example:partial_meld")),
+            tiles = listOf(visible, hidden),
+            sourceTile = visible,
+            sourceDirection = RelativeDirection.Left,
+            publiclyRevealedTileIds = setOf(visible.id),
+            faceDownTileIds = setOf(hidden.id),
+        )
+
+        val snapshot = Hand(melds = listOf(meld)).toSnapshot(isVisible = false, revealsClosedKanTiles = false)
+
+        assertEquals(visible.tile, snapshot.melds.single().tiles[0].tile)
+        assertNull(snapshot.melds.single().tiles[1].tile)
+        val changedHiddenFace = meld.copy(tiles = listOf(visible, hidden.copy(tile = Tile.Honor.Red)))
+        for (revealsClosedKanTiles in listOf(false, true)) {
+            assertEquals(
+                meld.toSnapshot(handIsVisible = false, revealsClosedKanTiles = revealsClosedKanTiles),
+                changedHiddenFace.toSnapshot(handIsVisible = false, revealsClosedKanTiles = revealsClosedKanTiles),
+                "Changing a concealed custom meld face must not change another observer's snapshot",
+            )
+        }
+        assertEquals(
+            Tile.Honor.Red,
+            changedHiddenFace.toSnapshot(handIsVisible = true, revealsClosedKanTiles = false).tiles[1].tile,
+        )
+    }
+
     /**
      * 驗證暗槓在規則公開暗槓身份（如日本麻將）時，即使不是手牌本人視角也完整可見。
      */
     @Test
     fun `test toSnapshot with closed kan meld visible when rule reveals it`() {
         val meldTiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 9)) }
-        val hand = Hand(melds = listOf(Meld(MeldType.CLOSED_KAN, meldTiles, sourceDirection = RelativeDirection.Self)))
+        val hand = Hand(melds = listOf(Meld(MeldType.CLOSED_KAN, meldTiles, sourceDirection = RelativeDirection.Self, publiclyRevealedTileIds = meldTiles.map { it.id }.toSet(), faceDownTileIds = setOf(meldTiles.first().id, meldTiles.last().id))))
 
         val snapshot = hand.toSnapshot(isVisible = false, revealsClosedKanTiles = true)
 
@@ -137,7 +169,7 @@ class HandSnapshotTest {
     @Test
     fun `test toSnapshot with closed kan meld hidden when rule does not reveal it and not owner`() {
         val meldTiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 9)) }
-        val hand = Hand(melds = listOf(Meld(MeldType.CLOSED_KAN, meldTiles, sourceDirection = RelativeDirection.Self)))
+        val hand = Hand(melds = listOf(Meld(MeldType.CLOSED_KAN, meldTiles, sourceDirection = RelativeDirection.Self, publiclyRevealedTileIds = meldTiles.map { it.id }.toSet(), faceDownTileIds = setOf(meldTiles.first().id, meldTiles.last().id))))
 
         val snapshot = hand.toSnapshot(isVisible = false, revealsClosedKanTiles = false)
 
@@ -151,7 +183,7 @@ class HandSnapshotTest {
     @Test
     fun `test toSnapshot with closed kan meld visible to owner regardless of rule`() {
         val meldTiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 9)) }
-        val hand = Hand(melds = listOf(Meld(MeldType.CLOSED_KAN, meldTiles, sourceDirection = RelativeDirection.Self)))
+        val hand = Hand(melds = listOf(Meld(MeldType.CLOSED_KAN, meldTiles, sourceDirection = RelativeDirection.Self, publiclyRevealedTileIds = meldTiles.map { it.id }.toSet(), faceDownTileIds = setOf(meldTiles.first().id, meldTiles.last().id))))
 
         val snapshot = hand.toSnapshot(isVisible = true, revealsClosedKanTiles = false)
 

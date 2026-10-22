@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPol
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAndDiscardUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateUpdate
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
@@ -139,16 +140,29 @@ class ExamplePairingDeclarationHandlerTest {
                 extension.registerGameCommandHandlers(it)
                 it.freeze()
             }
+            val handSort = HandSortPreferenceStore()
+            val postActionResolvers = PostActionExhaustiveDrawResolverRegistry().apply { freeze() }
+            val events = FakeGameEventPublisher()
+            val presentations = FakeGamePresentationPublisher()
             executor = ExtensionGameCommandExecutor(
                 handlers,
                 ExtensionGameCommandContext(
                     repository,
                     moduleRegistry,
                     snapshotSynchronizer,
-                    HandSortPreferenceStore(),
-                    PostActionExhaustiveDrawResolverRegistry().apply { freeze() },
-                    FakeGameEventPublisher(),
-                    FakeGamePresentationPublisher(),
+                    handSort,
+                    postActionResolvers,
+                    events,
+                    presentations,
+                    DeclareAndDiscardUseCase(
+                        repository,
+                        moduleRegistry,
+                        snapshotSynchronizer,
+                        handSort,
+                        postActionResolvers,
+                        events,
+                        presentations,
+                    ),
                 ),
             )
         }

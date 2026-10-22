@@ -11,6 +11,8 @@ import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.logic.base.closedKanFaceDownTileIds
+import com.doublemoon1119.mahjongcraft.logic.base.closedKanPubliclyRevealedTileIds
 import com.doublemoon1119.mahjongcraft.logic.base.toSnapshot
 import com.doublemoon1119.mahjongcraft.logic.module.DeclarationEffect
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
@@ -250,8 +252,10 @@ internal class ExpectedValueEvaluator(
 
     /** 回應他家捨牌：能榮和就榮和，否則比較過與各種鳴牌。 */
     private fun decideDiscardResponse(): GameCommand {
-        context.legalActions.firstOrNull { it is GameAction.Ron }?.let { return GameCommand.RespondToDiscard(it) }
-        val pass = DecisionCandidate.Pass(GameCommand.RespondToDiscard(GameAction.Pass))
+        context.legalActions.firstOrNull { it is GameAction.Ron }?.let {
+            return GameCommand.RespondToDiscard(it, checkNotNull(context.discardReactionId))
+        }
+        val pass = DecisionCandidate.Pass(GameCommand.RespondToDiscard(GameAction.Pass, checkNotNull(context.discardReactionId)))
         return choose(listOf(pass) + claimCandidates()).candidate.command
     }
 
@@ -331,7 +335,7 @@ internal class ExpectedValueEvaluator(
             meldType = meldType,
             claimedTile = claimedTile,
             handTileIds = withTiles,
-            command = GameCommand.RespondToDiscard(action),
+            command = GameCommand.RespondToDiscard(action, checkNotNull(context.discardReactionId), withTiles),
         )
     }
 
@@ -390,6 +394,8 @@ internal class ExpectedValueEvaluator(
                 tiles = meldTiles,
                 sourceTile = candidate.claimedTile,
                 sourceDirection = RelativeDirection.Left,
+                publiclyRevealedTileIds = meldTiles.map { it.id }.toSet(),
+                faceDownTileIds = emptySet(),
             ),
         )
         if (candidate.meldType == MeldType.OPEN_KAN) {
@@ -489,6 +495,8 @@ internal class ExpectedValueEvaluator(
                     tiles = kanTiles,
                     sourceTile = null,
                     sourceDirection = RelativeDirection.Self,
+                    publiclyRevealedTileIds = closedKanPubliclyRevealedTileIds(kanTiles, snapshot.config.revealsClosedKanTiles),
+                    faceDownTileIds = closedKanFaceDownTileIds(kanTiles),
                 ),
             )
 

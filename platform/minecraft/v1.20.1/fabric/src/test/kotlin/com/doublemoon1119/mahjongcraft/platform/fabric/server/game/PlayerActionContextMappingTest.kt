@@ -36,12 +36,12 @@ class PlayerActionContextMappingTest {
         )
         val discardContext = PlayerActionContext.DiscardReaction(
             playerId,
-            PendingReaction(Uuid.random(), tile.id, setOf(playerId)),
+            PendingReaction(Uuid.random(), tile.id, setOf(playerId), ronPlayerIds = setOf(playerId), id = Uuid.random()),
         )
 
         assertEquals(GameCommand.RespondToRobbing(GameAction.Pass), commandMapper.toCommand(kanContext, GameAction.Pass))
         assertEquals(
-            GameCommand.RespondToDiscard(GameAction.Pass),
+            GameCommand.RespondToDiscard(GameAction.Pass, discardContext.pending.id),
             commandMapper.toCommand(discardContext, GameAction.Pass),
         )
     }
@@ -71,7 +71,7 @@ class PlayerActionContextMappingTest {
         )
         val discardContext = PlayerActionContext.DiscardReaction(
             playerId,
-            PendingReaction(Uuid.random(), tile.id, setOf(playerId)),
+            PendingReaction(Uuid.random(), tile.id, setOf(playerId), ronPlayerIds = setOf(playerId), id = Uuid.random()),
         )
 
         assertEquals(GameTurnStatus.AWAITING_RESPONSE, kanContext.toTurnStatus())

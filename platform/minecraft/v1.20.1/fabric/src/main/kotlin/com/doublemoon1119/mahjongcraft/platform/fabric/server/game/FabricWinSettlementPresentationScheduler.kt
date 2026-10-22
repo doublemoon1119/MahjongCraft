@@ -69,8 +69,9 @@ class FabricWinSettlementPresentationScheduler(
                 totalScore = winner.totalScore,
                 handAssetKeys = winner.standingTileIds.mapNotNull(tileAssetsById::get),
                 melds = winner.melds.map { meld ->
-                    val assets = meld.tileIds.mapNotNull(tileAssetsById::get)
-                    WinSettlementMeldSnapshot(assets, winningHandFaceDownIndices(meld.type, assets.size))
+                    val tileIds = meld.tileIds.filter(tileAssetsById::containsKey)
+                    val assets = tileIds.mapNotNull(tileAssetsById::get)
+                    WinSettlementMeldSnapshot(assets, winningHandFaceDownIndices(tileIds, meld.faceDownTileIds))
                 },
                 winningTileAssetKey = winner.winningTileId?.let(tileAssetsById::get).orEmpty(),
                 details = winner.detailFields.map { field ->

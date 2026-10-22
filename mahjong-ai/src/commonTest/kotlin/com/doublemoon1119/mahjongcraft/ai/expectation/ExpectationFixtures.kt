@@ -24,9 +24,13 @@ import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleM
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import kotlin.uuid.Uuid
 
 /** 期望值計算測試共用的日麻桌況。 */
 internal object ExpectationFixtures {
+    /** 反應視窗測試共用的穩定識別碼。 */
+    val discardReactionId: Uuid = Uuid.random()
+
     /** 內建日麻規則模組。 */
     val module: RiichiRuleModule = RiichiRuleModule(BuiltInRuleModuleIds.RIICHI, RiichiRuleConfig())
 
@@ -153,6 +157,7 @@ internal object ExpectationFixtures {
         phase = phase,
         legalActions = legalActions,
         forcedDiscardTileId = module.forcedDiscardTileId(table, table.players.first { it.id == self.id }),
+        discardReactionId = discardReactionId.takeIf { phase == AiDecisionPhase.RespondingToDiscard },
     )
 
     /**

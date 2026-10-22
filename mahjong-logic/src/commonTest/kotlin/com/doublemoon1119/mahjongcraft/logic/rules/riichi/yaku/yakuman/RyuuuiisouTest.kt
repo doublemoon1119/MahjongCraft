@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.yakuman
 
-import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
@@ -9,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiHandValueCa
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeMeldFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.FakeRiichiHandValueContextFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -96,7 +96,7 @@ class RyuuuiisouTest : RiichiHandValueCalculatorTestBase() {
             ),
             melds = listOf(
                 // 副露：2s 2s 2s（碰）
-                Meld(
+                FakeMeldFactory.create(
                     type = MeldType.PON,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 2)),
@@ -257,7 +257,7 @@ class RyuuuiisouTest : RiichiHandValueCalculatorTestBase() {
             ),
             melds = listOf(
                 // 副露：2s 2s 2s（碰）
-                Meld(
+                FakeMeldFactory.create(
                     type = MeldType.PON,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 2)),

@@ -69,6 +69,9 @@ class PendingReactionPersistenceTest {
             tileId = tileId,
             eligiblePlayerIds = setOf(responderA, responderB),
             responses = mapOf(responderA to GameAction.Pon(tileId, emptyList())),
+            selectedTileIds = mapOf(responderA to listOf(Uuid.random(), Uuid.random())),
+            ronPlayerIds = setOf(responderA, responderB),
+            id = Uuid.random(),
         )
 
         val encoded = json.encodeToString(
@@ -79,6 +82,8 @@ class PendingReactionPersistenceTest {
             .toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry)
 
         assertEquals(reaction, restored)
+        assertEquals(reaction.id, restored.id)
+        assertEquals(reaction.selectedTileIds, restored.selectedTileIds)
     }
 
     /** 驗證搶槓反應視窗保留槓動作、被搶牌與既有回應。 */

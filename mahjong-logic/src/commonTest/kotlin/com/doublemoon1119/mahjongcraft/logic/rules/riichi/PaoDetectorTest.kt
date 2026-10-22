@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeMeldFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -159,7 +160,7 @@ class PaoDetectorTest {
     private fun meld(
         type: MeldType,
         tile: Tile,
-    ): Meld = Meld(
+    ): Meld = FakeMeldFactory.create(
         type = type,
         tiles = List(if (type == MeldType.OPEN_KAN || type == MeldType.CLOSED_KAN) 4 else 3) { FakeIdentifiedTileFactory.create(tile) },
         sourceDirection = if (type == MeldType.CLOSED_KAN) RelativeDirection.Self else RelativeDirection.Across,

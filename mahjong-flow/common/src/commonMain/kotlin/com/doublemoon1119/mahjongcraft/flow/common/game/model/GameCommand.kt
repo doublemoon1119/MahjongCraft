@@ -54,8 +54,14 @@ sealed interface GameCommand {
      * 回應捨牌反應窗口的命令。
      *
      * @property action 對目前捨牌反應窗口採取的動作。
+     * @property reactionId 此命令回應的反應視窗識別碼。
+     * @property selectedTileIds 本次反應使用的本人手牌識別碼。
      */
-    data class RespondToDiscard(val action: GameAction) : GameCommand
+    data class RespondToDiscard(
+        val action: GameAction,
+        val reactionId: Uuid,
+        val selectedTileIds: List<Uuid> = emptyList(),
+    ) : GameCommand
 
     /**
      * 回應搶和反應視窗的規則中立命令。

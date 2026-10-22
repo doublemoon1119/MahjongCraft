@@ -65,7 +65,13 @@ class GameActionRouter(
         is GameCommand.Discard -> discardTileUseCase(gameId, playerId, command.tileId)
         GameCommand.Tsumo -> declareTsumoUseCase(gameId, playerId)
         is GameCommand.Kan -> declareKanUseCase(gameId, playerId, command.type, command.tileId)
-        is GameCommand.RespondToDiscard -> respondToDiscardUseCase(gameId, playerId, command.action)
+        is GameCommand.RespondToDiscard -> respondToDiscardUseCase(
+            gameId = gameId,
+            playerId = playerId,
+            action = command.action,
+            reactionId = command.reactionId,
+            selectedTileIds = command.selectedTileIds,
+        )
         is GameCommand.RespondToRobbing -> respondToRobbingUseCase(gameId, playerId, command.action)
         is GameCommand.DeclareExhaustiveDraw ->
             declareAbortiveDrawUseCase(gameId, playerId, command.reason)

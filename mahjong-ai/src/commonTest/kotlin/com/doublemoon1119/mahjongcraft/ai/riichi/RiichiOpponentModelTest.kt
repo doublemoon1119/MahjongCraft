@@ -19,6 +19,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeMeldFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
@@ -123,7 +124,7 @@ class RiichiOpponentModelTest {
         val withRed = seat(
             Wind.WEST,
             melds = listOf(
-                Meld(
+                FakeMeldFactory.create(
                     type = MeldType.PON,
                     tiles = listOf(dot(5), dot(5), RED_FIVE_DOT).map(FakeIdentifiedTileFactory::create),
                     sourceDirection = RelativeDirection.Across,
@@ -179,7 +180,7 @@ class RiichiOpponentModelTest {
      * @param tile 碰牌的牌面。
      * @return 由三張相同牌面組成的碰副露。
      */
-    private fun pon(tile: Tile): Meld = Meld(
+    private fun pon(tile: Tile): Meld = FakeMeldFactory.create(
         type = MeldType.PON,
         tiles = List(3) { FakeIdentifiedTileFactory.create(tile) },
         sourceDirection = RelativeDirection.Across,

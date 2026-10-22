@@ -34,6 +34,8 @@ class MeldTest {
             tiles = listOf(t1, t2, source),
             source = source,
             direction = RelativeDirection.Left,
+            publiclyRevealedTileIds = listOf(t1, t2, source).map { it.id }.toSet(),
+            faceDownTileIds = emptySet(),
         )
 
         // 驗證：立牌應該變空
@@ -66,6 +68,8 @@ class MeldTest {
             tiles = listOf(t1, t2, t3, t4),
             source = null,
             direction = RelativeDirection.Self,
+            publiclyRevealedTileIds = closedKanPubliclyRevealedTileIds(listOf(t1, t2, t3, t4), revealsClosedKanTiles = true),
+            faceDownTileIds = closedKanFaceDownTileIds(listOf(t1, t2, t3, t4)),
         )
 
         // 驗證：立牌與摸牌區都應清空
@@ -88,7 +92,14 @@ class MeldTest {
         val t4 = FakeIdentifiedTileFactory.create(tileType) // 剛摸到的加槓牌
 
         // 先建立一個碰 (PON)
-        var hand = Hand().call(MeldType.PON, listOf(t1, t2, t3), t3, RelativeDirection.Across)
+        var hand = Hand(tiles = listOf(t1, t2)).call(
+            type = MeldType.PON,
+            tiles = listOf(t1, t2, t3),
+            source = t3,
+            direction = RelativeDirection.Across,
+            publiclyRevealedTileIds = setOf(t1.id, t2.id, t3.id),
+            faceDownTileIds = emptySet(),
+        )
 
         // 摸到第四張
         hand = hand.copy(lastDrawn = t4)
@@ -103,5 +114,15 @@ class MeldTest {
         assertEquals(MeldType.ADDED_KAN, updatedMeld.type)
         assertEquals(4, updatedMeld.tiles.size)
         assertTrue(updatedMeld.tiles.contains(t4))
+    }
+
+    /** 暗槓兩端朝下；規則公開暗槓時整組牌面公開，不公開時整組牌面都不公開。 */
+    @Test
+    fun `closed kan visibility follows the rule setting`() {
+        val tiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Honor.Green) }
+
+        assertEquals(tiles.map { it.id }.toSet(), closedKanPubliclyRevealedTileIds(tiles, revealsClosedKanTiles = true))
+        assertEquals(emptySet(), closedKanPubliclyRevealedTileIds(tiles, revealsClosedKanTiles = false))
+        assertEquals(setOf(tiles.first().id, tiles.last().id), closedKanFaceDownTileIds(tiles))
     }
 }

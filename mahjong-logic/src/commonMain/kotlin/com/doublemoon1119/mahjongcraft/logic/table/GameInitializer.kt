@@ -166,6 +166,7 @@ object GameInitializer {
                 playerRuleState = module.createInitialPlayerRuleState(),
                 passedTilesInRound = emptySet(),
                 actionHistory = emptyList(),
+                mustDiscardAfterMeld = false,
             )
         }
 

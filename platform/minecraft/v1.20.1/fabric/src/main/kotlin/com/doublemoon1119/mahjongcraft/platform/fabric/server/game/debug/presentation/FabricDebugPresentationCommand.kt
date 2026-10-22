@@ -603,12 +603,21 @@ class FabricDebugPresentationCommand(
             val closedKan = ids("east", "east", "east", "east")
             val openKan = ids("m9", "m9", "m9", "m9")
             val melds = listOf(
-                MahjongMeldTileGroup(MeldType.CHI, chi, chi.first(), RelativeDirection.Left, allTilesFaceDown = false),
-                MahjongMeldTileGroup(MeldType.ADDED_KAN, addedKan, pon.first(), RelativeDirection.Across, allTilesFaceDown = false),
-                MahjongMeldTileGroup(MeldType.CLOSED_KAN, closedKan, null, RelativeDirection.Self, allTilesFaceDown = false),
-                MahjongMeldTileGroup(MeldType.OPEN_KAN, openKan, openKan.first(), RelativeDirection.Right, allTilesFaceDown = false),
+                MahjongMeldTileGroup(MeldType.CHI, chi, chi.first(), RelativeDirection.Left, allTilesFaceDown = false, faceDownTileIds = emptySet()),
+                MahjongMeldTileGroup(MeldType.ADDED_KAN, addedKan, pon.first(), RelativeDirection.Across, allTilesFaceDown = false, faceDownTileIds = emptySet()),
+                MahjongMeldTileGroup(
+                    type = MeldType.CLOSED_KAN,
+                    tileIds = closedKan,
+                    calledTileId = null,
+                    sourceDirection = RelativeDirection.Self,
+                    allTilesFaceDown = false,
+                    faceDownTileIds = setOf(closedKan.first(), closedKan.last()),
+                ),
+                MahjongMeldTileGroup(MeldType.OPEN_KAN, openKan, openKan.first(), RelativeDirection.Right, allTilesFaceDown = false, faceDownTileIds = emptySet()),
             )
-            val closedKanFaceDown = winningHandFaceDownIndices(MeldType.CLOSED_KAN, closedKan.size).map(closedKan::get).toSet()
+            val closedKanFaceDown = winningHandFaceDownIndices(closedKan, setOf(closedKan.first(), closedKan.last()))
+                .map(closedKan::get)
+                .toSet()
             val placements = layout.meldPlacements(melds, seat) +
                 standing.mapIndexed { index, id -> id to layout.handPlacement(seat, standing.size, index) }
             val entityIds = placements.mapValues { (id, placement) ->
@@ -731,6 +740,7 @@ class FabricDebugPresentationCommand(
                 calledTileId = tiles[1].uuid.toKotlinUuid(),
                 sourceDirection = RelativeDirection.Across,
                 allTilesFaceDown = false,
+                faceDownTileIds = emptySet(),
             )
         }
         layout.meldPlacements(previewMelds).forEach { (tileId, tilePlacement) ->
@@ -936,8 +946,8 @@ class FabricDebugPresentationCommand(
                 },
                 standingTileIds = handIds,
                 melds = listOf(
-                    MeldPresentation(MeldType.PON, ponIds, ponIds.first(), RelativeDirection.Left, false),
-                    MeldPresentation(MeldType.CLOSED_KAN, kanIds, null, RelativeDirection.Self, false),
+                    MeldPresentation(MeldType.PON, ponIds, ponIds.first(), RelativeDirection.Left, false, emptySet()),
+                    MeldPresentation(MeldType.CLOSED_KAN, kanIds, null, RelativeDirection.Self, false, setOf(kanIds.first(), kanIds.last())),
                 ),
                 winningTileId = winningTileId,
                 detailFields = buildList {

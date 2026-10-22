@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionValidator
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 
@@ -30,9 +31,10 @@ internal object PlayerDecisionOptionsResolver {
         moduleRegistry: MahjongModuleRegistry,
         actionContextResolver: PlayerActionContextResolver,
     ): List<GameAction> {
-        val validator = moduleRegistry.getModule(state.config).createLegalActionValidator()
+        val module = moduleRegistry.getModule(state.config)
+        val validator = module.createLegalActionValidator()
         val context = actionContextResolver.resolveFor(state, player.id)
-        return resolveActions(state, player, validator, context)
+        return resolveActions(state, player, validator, context, module)
     }
 
     /**
@@ -56,7 +58,7 @@ internal object PlayerDecisionOptionsResolver {
         val validator = module.createLegalActionValidator()
         val analyzer = module.createDiscardReadinessAnalyzer()
         val context = actionContextResolver.resolveFor(state, player.id)
-        val actions = resolveActions(state, player, validator, context)
+        val actions = resolveActions(state, player, validator, context, module)
         val ownTurn = context is PlayerActionContext.OwnTurn
         val actionOptions = actions.map { action ->
             val requirement = validator.tileSelectionRequirement(state, player, action)
@@ -83,6 +85,7 @@ internal object PlayerDecisionOptionsResolver {
      * @param player 欲查詢的玩家。
      * @param validator 本局規則模組提供的合法動作判定器。
      * @param context 已解析的操作情境；玩家目前沒有操作權時為 null。
+     * @param module 本局規則模組。
      * @return 目前可執行的合法動作。
      */
     private fun resolveActions(
@@ -90,6 +93,7 @@ internal object PlayerDecisionOptionsResolver {
         player: MahjongPlayer,
         validator: LegalActionValidator,
         context: PlayerActionContext?,
+        module: MahjongRuleModule<*>,
     ): List<GameAction> = when (context) {
         is PlayerActionContext.RobbingReaction ->
             validator.getLegalActions(
@@ -109,24 +113,17 @@ internal object PlayerDecisionOptionsResolver {
                 .discardPile.entries
                 .first { it.tile.id == pending.tileId }
                 .tile
-            DiscardReactionActionSupport.filter(
-                validator.getLegalActions(
-                    LegalActionContext.discardReaction(
-                        tableState = state,
-                        playerId = player.id,
-                        discarderId = pending.discarderId,
-                        discardedTile = discardedTile,
-                    ),
-                ),
-            )
+            DiscardReactionOptionsResolver.resolveCandidates(
+                state = state,
+                module = module,
+                playerId = player.id,
+                discarderId = pending.discarderId,
+                discardedTile = discardedTile,
+            ).map { it.action }.distinct()
         }
 
         is PlayerActionContext.OwnTurn ->
-            if (player.hand.lastDrawn != null) {
-                validator.getLegalActions(LegalActionContext.ownTurn(state, player.id))
-            } else {
-                emptyList()
-            }
+            validator.getLegalActions(LegalActionContext.ownTurn(state, player.id))
 
         null -> emptyList()
     }

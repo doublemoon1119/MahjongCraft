@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.ai
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.table.TableStateSnapshot
 import kotlin.uuid.Uuid
@@ -16,6 +17,9 @@ import kotlin.uuid.Uuid
  * @property legalActions 目前情境下的合法動作清單，由呼叫端依規則算好後提供，AI 不重新實作規則判斷。捨牌本身不在
  *           清單裡：依 `LegalActionValidator` 的約定，捨牌是自己回合永遠可用的預設動作。
  * @property forcedDiscardTileId 規則要求本次一般捨牌必須打出的牌；`null` 表示規則未限制。
+ * @property discardReactionId 捨牌反應視窗的識別碼；[AiDecisionPhase.RespondingToDiscard] 階段必須提供，其他階段為 null。
+ * @property discardReactionCommands 由呼叫端依同一份權威桌況與規則 policy 建立的完整、可執行捨牌反應命令。
+ *           命令只包含公開決策所需的動作、視窗識別碼與實體牌 ID，不暴露效果物件或私人規則狀態；空清單表示呼叫端未提供具體候選。
  */
 data class AiDecisionContext(
     val snapshot: TableStateSnapshot,
@@ -23,4 +27,12 @@ data class AiDecisionContext(
     val phase: AiDecisionPhase,
     val legalActions: List<GameAction>,
     val forcedDiscardTileId: Uuid? = null,
-)
+    val discardReactionId: Uuid? = null,
+    val discardReactionCommands: List<GameCommand.RespondToDiscard> = emptyList(),
+) {
+    init {
+        require(phase != AiDecisionPhase.RespondingToDiscard || discardReactionId != null) {
+            "A discard reaction decision needs the reaction window ID"
+        }
+    }
+}

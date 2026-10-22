@@ -91,7 +91,7 @@ class RiichiLocalYakuFlowTest {
             table,
             discarderId to GameCommand.Kan(GameAction.KanType.CLOSED_KAN, kanTiles.last().id),
             discarderId to GameCommand.Discard(red.id),
-            winnerId to GameCommand.RespondToDiscard(GameAction.Ron(red.id)),
+            winnerId to GameCommand.RespondToDiscard(GameAction.Ron(red.id), Uuid.random()),
         )
     }
 
@@ -116,7 +116,7 @@ class RiichiLocalYakuFlowTest {
         return play(
             table,
             discarderId to GameCommand.Extension(RiichiGameCommand(red.id)),
-            winnerId to GameCommand.RespondToDiscard(GameAction.Ron(red.id)),
+            winnerId to GameCommand.RespondToDiscard(GameAction.Ron(red.id), Uuid.random()),
         )
     }
 
@@ -131,7 +131,12 @@ class RiichiLocalYakuFlowTest {
         val runtime = SimulationRuntime(defaultStrategyKey = "unused")
         runtime.gameRepository.setTableState(table)
         commands.forEach { (playerId, command) ->
-            val result = runtime.coordinator.dispatchThenDrive(gameId, playerId, command)
+            val commandWithReactionId = if (command is GameCommand.RespondToDiscard) {
+                command.copy(reactionId = checkNotNull(runtime.gameRepository.getTableState(gameId)?.pendingReaction).id)
+            } else {
+                command
+            }
+            val result = runtime.coordinator.dispatchThenDrive(gameId, playerId, commandWithReactionId)
             assertTrue(result is Outcome.Success, "$command failed: $result")
         }
         val settled = runtime.gameRepository.historyDrafts.map { it.fact }.filterIsInstance<HistoryFact.WinSettled>().single()

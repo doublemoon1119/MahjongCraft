@@ -283,7 +283,7 @@ class DrawTileUseCaseTest {
         )
         val discarded = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9))
         val states = listOf(
-            base.copy(pendingReaction = PendingReaction(currentPlayerId, discarded.id, setOf(otherPlayerId))),
+            base.copy(pendingReaction = PendingReaction(currentPlayerId, discarded.id, setOf(otherPlayerId), ronPlayerIds = setOf(otherPlayerId), id = Uuid.random())),
             base.copy(
                 pendingRobbingReaction = PendingRobbingReaction(
                     declarerId = otherPlayerId,

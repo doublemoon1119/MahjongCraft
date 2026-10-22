@@ -114,4 +114,16 @@ class MahjongPlayerTest {
         // 驗證已清除
         assertTrue(player.actionHistory.isEmpty(), "Action history should be empty after clearing.")
     }
+
+    /** 鳴牌後的待捨牌狀態在捨牌、摸牌、和牌或流局時清除，其他動作保留；清除動作紀錄時一併清除。 */
+    @Test
+    fun `must discard after meld clears on the actions that end the claim turn`() {
+        val claimed = FakeMahjongPlayerFactory.create().copy(mustDiscardAfterMeld = true)
+
+        listOf(GameAction.Discard(Uuid.random()), GameAction.Draw, GameAction.Tsumo, GameAction.Ron(Uuid.random())).forEach { action ->
+            assertEquals(false, claimed.recordAction(action).mustDiscardAfterMeld, "$action should clear the pending discard.")
+        }
+        assertEquals(true, claimed.recordAction(GameAction.Pass).mustDiscardAfterMeld)
+        assertEquals(false, claimed.clearActionHistory().mustDiscardAfterMeld)
+    }
 }

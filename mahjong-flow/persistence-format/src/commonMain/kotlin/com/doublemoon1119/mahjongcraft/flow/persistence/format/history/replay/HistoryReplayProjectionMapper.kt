@@ -202,7 +202,7 @@ internal object HistoryReplayProjectionMapper {
     }
 
     /**
-     * 保留副露牌順序、來源牌與來源方向。
+     * 保留副露牌順序、來源牌、來源方向、公開牌面的牌與朝下擺放的牌。
      *
      * @param value 副露投影。
      * @param context 索引驗證上下文。
@@ -220,6 +220,10 @@ internal object HistoryReplayProjectionMapper {
         }
         val tiles = refs(value.getValue(ReplaySourceKeys.MELD_TILES), context)
         val source = value.getValue(ReplaySourceKeys.SOURCE_TILE).takeUnless { it == JsonNull }?.let { context.tile(integer(it)) }
+        val faceDown = refs(value.getValue(ReplaySourceKeys.FACE_DOWN_TILE_IDS), context).toSet()
+        require(faceDown.all { it in tiles }) { "Replay meld face-down tile must belong to the meld" }
+        val publiclyRevealed = refs(value.getValue(ReplaySourceKeys.PUBLICLY_REVEALED_TILE_IDS), context).toSet()
+        require(publiclyRevealed.all { it in tiles }) { "Replay meld publicly revealed tile must belong to the meld" }
         require(source == null || source in tiles) { "Replay meld source must belong to the meld" }
         val direction = when (RelativeDirectionPersistenceDto.valueOf(string(value.getValue(ReplaySourceKeys.SOURCE_DIRECTION)))) {
             RelativeDirectionPersistenceDto.LEFT -> RelativeDirection.Left
@@ -227,7 +231,7 @@ internal object HistoryReplayProjectionMapper {
             RelativeDirectionPersistenceDto.RIGHT -> RelativeDirection.Right
             RelativeDirectionPersistenceDto.SELF -> RelativeDirection.Self
         }
-        return HistoryReplayMeld(type, tiles, source, direction)
+        return HistoryReplayMeld(type, tiles, source, direction, faceDown, publiclyRevealed)
     }
 
     /**

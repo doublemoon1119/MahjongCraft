@@ -13,6 +13,7 @@ fun MeldSnapshot.toDto(): MeldSnapshotDto = MeldSnapshotDto(
     tiles = tiles.map { it.toDto() },
     sourceTile = sourceTile?.toDto(),
     sourceDirection = sourceDirection.toDto(),
+    faceDownTileIds = faceDownTileIds.map { it.toString() }.toSet(),
 )
 
 /**
@@ -25,4 +26,5 @@ fun MeldSnapshotDto.toDomain(): MeldSnapshot = MeldSnapshot(
     tiles = tiles.map { it.toDomain() },
     sourceTile = sourceTile?.toDomain(),
     sourceDirection = sourceDirection.toDomain(),
+    faceDownTileIds = faceDownTileIds.map(kotlin.uuid.Uuid::parse).toSet(),
 )

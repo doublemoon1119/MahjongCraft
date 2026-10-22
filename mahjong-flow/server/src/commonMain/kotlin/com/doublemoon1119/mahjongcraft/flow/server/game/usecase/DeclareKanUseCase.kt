@@ -261,7 +261,7 @@ class DeclareKanUseCase(
                 seatIndex = declarerSeatIndex,
                 standingTileIds = declarer.hand.tiles.map { it.id },
                 drawnTileId = declarer.hand.lastDrawn?.id,
-                melds = declarer.hand.melds.map { it.toPresentation(declared.config.revealsClosedKanTiles, module.tileOrder) },
+                melds = declarer.hand.melds.map { it.toPresentation(declared.config.revealsClosedKanTiles) },
                 setAsideTileIds = module.setAsideTiles(declarer).map { it.id },
                 newlyClaimedMeldTileIds = result.kanAction.newlyClaimedMeldTileIds(),
             )
@@ -287,7 +287,7 @@ class DeclareKanUseCase(
                 declarerSeatIndex,
                 declarer.hand.tiles.map { it.id },
                 declarer.hand.lastDrawn?.id,
-                declarer.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles, module.tileOrder) },
+                declarer.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
                 setAsideTileIds = module.setAsideTiles(declarer).map { it.id },
                 isNewlyDrawn = true,
                 newlyClaimedMeldTileIds = claimedTileIds,

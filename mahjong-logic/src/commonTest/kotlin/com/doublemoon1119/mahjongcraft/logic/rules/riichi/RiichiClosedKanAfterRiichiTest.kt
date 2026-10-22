@@ -3,7 +3,6 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
-import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
@@ -12,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeMeldFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.random.Random
@@ -66,10 +66,9 @@ class RiichiClosedKanAfterRiichiTest {
     /** 已有暗槓時，立牌只需組成剩餘面子，不能當作缺牌拒絕。 */
     @Test
     fun `existing closed kan counts as a completed meld`() {
-        val existing = Meld(
+        val existing = FakeMeldFactory.create(
             type = MeldType.CLOSED_KAN,
             tiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Honor.East) },
-            sourceDirection = RelativeDirection.Self,
         )
         val hand = tiles(dots = "33555", bamboos = "34678")
         assertEquals(tiles(bamboos = "25").toSet(), waits(hand, listOf(existing)))
@@ -206,10 +205,9 @@ class RiichiClosedKanAfterRiichiTest {
 
     /** 移出三張立牌並加入本次摸牌，建立暗槓後的等待集合。 */
     private fun waitsAfterKan(standing: List<Tile>, kanTile: Tile): Set<Tile> {
-        val kan = Meld(
+        val kan = FakeMeldFactory.create(
             type = MeldType.CLOSED_KAN,
             tiles = List(4) { FakeIdentifiedTileFactory.create(kanTile) },
-            sourceDirection = RelativeDirection.Self,
         )
         return waits(standing.filterNot { it == kanTile }, listOf(kan))
     }

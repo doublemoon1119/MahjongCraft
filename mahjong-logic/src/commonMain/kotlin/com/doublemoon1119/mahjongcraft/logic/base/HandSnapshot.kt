@@ -5,7 +5,7 @@ package com.doublemoon1119.mahjongcraft.logic.base
  *
  * @property standingTiles 立牌快照，可見性由建立快照時傳入的 `isVisible` 決定。
  * @property lastDrawn 剛摸到但尚未整理的牌快照，可見性同 [standingTiles]。
- * @property melds 副露快照；除暗槓外恆為完整可見，不受 `isVisible` 影響，見 [MeldSnapshot] KDoc。
+ * @property melds 副露快照；看不到手牌的觀察者只看得到副露公開的牌面，其餘為未知，見 [MeldSnapshot] KDoc。
  */
 data class HandSnapshot(
     val standingTiles: List<IdentifiedTileSnapshot>,

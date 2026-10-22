@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.yakuman
 
-import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
@@ -8,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueCalcula
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiHandValueCalculatorTestBase
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeMeldFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.FakeRiichiHandValueContextFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -140,7 +140,7 @@ class YakumanTest : RiichiHandValueCalculatorTestBase() {
                 Tile.Honor.Green,
             ),
             melds = listOf(
-                Meld(
+                FakeMeldFactory.create(
                     type = MeldType.PON,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Honor.North),

@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPol
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAndDiscardUseCase
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
@@ -107,14 +108,29 @@ class ExtensionGameCommandExecutorTest {
     /** 建立一個獨立執行環境的流程服務。 */
     private fun context(): ExtensionGameCommandContext {
         val gameRepository = FakeGameRepository()
+        val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
+        val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepository, FakeGameSnapshotRepository(), GameVisibilityPolicyImpl(moduleRegistry))
+        val handSortPreferenceStore = HandSortPreferenceStore()
+        val resolverRegistry = PostActionExhaustiveDrawResolverRegistry()
+        val eventPublisher = FakeGameEventPublisher()
+        val presentationPublisher = FakeGamePresentationPublisher()
         return ExtensionGameCommandContext(
             gameRepository = gameRepository,
-            moduleRegistry = MahjongModuleRegistryImpl(),
-            snapshotSynchronizer = GameSnapshotSynchronizer(gameRepository, FakeGameSnapshotRepository(), GameVisibilityPolicyImpl(MahjongModuleRegistryImpl().apply { registerBundledRuleModules() })),
-            handSortPreferenceStore = HandSortPreferenceStore(),
-            postActionExhaustiveDrawResolverRegistry = PostActionExhaustiveDrawResolverRegistry(),
-            eventPublisher = FakeGameEventPublisher(),
-            presentationPublisher = FakeGamePresentationPublisher(),
+            moduleRegistry = moduleRegistry,
+            snapshotSynchronizer = snapshotSynchronizer,
+            handSortPreferenceStore = handSortPreferenceStore,
+            postActionExhaustiveDrawResolverRegistry = resolverRegistry,
+            eventPublisher = eventPublisher,
+            presentationPublisher = presentationPublisher,
+            declareAndDiscardUseCase = DeclareAndDiscardUseCase(
+                gameRepository,
+                moduleRegistry,
+                snapshotSynchronizer,
+                handSortPreferenceStore,
+                resolverRegistry,
+                eventPublisher,
+                presentationPublisher,
+            ),
         )
     }
 

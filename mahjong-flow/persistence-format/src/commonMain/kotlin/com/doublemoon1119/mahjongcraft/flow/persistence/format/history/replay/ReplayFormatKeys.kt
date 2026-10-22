@@ -323,6 +323,12 @@ internal object ReplaySourceKeys {
     /** 副露來源方向。 */
     const val SOURCE_DIRECTION = "sourceDirection"
 
+    /** 副露中需要以牌背呈現的牌。 */
+    const val FACE_DOWN_TILE_IDS = "faceDownTileIds"
+
+    /** 副露中明確公開的牌。 */
+    const val PUBLICLY_REVEALED_TILE_IDS = "publiclyRevealedTileIds"
+
     /** 結算明細清單。 */
     const val DETAIL_FIELDS = "detailFields"
 

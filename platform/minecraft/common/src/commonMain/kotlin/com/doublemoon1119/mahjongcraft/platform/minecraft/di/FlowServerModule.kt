@@ -49,6 +49,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceAutomatic
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.BeginRoundPreparationUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAbortiveDrawUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAndDiscardUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareKanUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareTsumoUseCase
@@ -142,6 +143,7 @@ val flowServerModule = module {
     single<HandReadinessVisibilityPolicy>()
     single<GameRepositoryImpl>() bind GameRepository::class
     factory<DeclareRiichiUseCase>()
+    factory<DeclareAndDiscardUseCase>()
     single<AutomaticDecisionEvaluator>()
     single<DecisionTimerSynchronizationService>()
     factory<ExhaustiveDrawSettlementPresentationService>()

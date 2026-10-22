@@ -13,6 +13,7 @@ import kotlinx.serialization.Serializable
  * @property tiles 副露包含的牌張。
  * @property sourceTile 被鳴入的牌；沒有時為 `null`。
  * @property sourceDirection 牌張來源方向。
+ * @property faceDownTileIds 需要在桌面上朝下呈現的牌張 ID。
  */
 @Serializable
 data class MeldSnapshotDto(
@@ -20,4 +21,5 @@ data class MeldSnapshotDto(
     val tiles: List<IdentifiedTileSnapshotDto>,
     val sourceTile: IdentifiedTileSnapshotDto?,
     val sourceDirection: RelativeDirectionDto,
+    val faceDownTileIds: Set<String>,
 )

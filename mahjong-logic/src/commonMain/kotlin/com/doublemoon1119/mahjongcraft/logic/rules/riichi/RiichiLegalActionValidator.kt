@@ -7,6 +7,8 @@ import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.closedKanFaceDownTileIds
+import com.doublemoon1119.mahjongcraft.logic.base.closedKanPubliclyRevealedTileIds
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionValidator
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
@@ -167,7 +169,10 @@ class RiichiLegalActionValidator(
                 closedKanCandidates.forEach { candidate ->
                     val includesIncomingTile = candidate.any { it.id == incomingTile.id }
                     // 立直後手牌固定，只能以本次摸入牌組成暗槓，並且暗槓前後聽牌必須相同。
-                    if (isRiichi && (!includesIncomingTile || !checkClosedKanAfterRiichi(player, incomingTile))) {
+                    if (
+                        isRiichi &&
+                        (!includesIncomingTile || !checkClosedKanAfterRiichi(player, incomingTile, tableState.config.revealsClosedKanTiles))
+                    ) {
                         return@forEach
                     }
                     val triggerTile = candidate.firstOrNull { it.id == incomingTile.id } ?: candidate.first()
@@ -431,9 +436,14 @@ class RiichiLegalActionValidator(
      *
      * @param player 玩家。
      * @param incomingTile 即將暗槓的牌。
+     * @param revealsClosedKanTiles 規則是否公開暗槓的牌。
      * @return 是否允許暗槓。
      */
-    private fun checkClosedKanAfterRiichi(player: MahjongPlayer, incomingTile: IdentifiedTile): Boolean {
+    private fun checkClosedKanAfterRiichi(
+        player: MahjongPlayer,
+        incomingTile: IdentifiedTile,
+        revealsClosedKanTiles: Boolean,
+    ): Boolean {
         val incomingBaseTile = incomingTile.tile.riichiCanonical
 
         // 取得暗槓前的聽牌列表
@@ -470,6 +480,8 @@ class RiichiLegalActionValidator(
             tiles = tilesToKan,
             sourceTile = null,
             sourceDirection = RelativeDirection.Self,
+            publiclyRevealedTileIds = closedKanPubliclyRevealedTileIds(tilesToKan, revealsClosedKanTiles),
+            faceDownTileIds = closedKanFaceDownTileIds(tilesToKan),
         )
 
         // 建立新的 Hand，包含剩餘立牌和新增的暗槓

@@ -232,6 +232,8 @@ private fun HistoryReplayMeld.toDto(): HistoryReplayMeldDto = HistoryReplayMeldD
     tiles = tiles.map { it.tileIndex },
     sourceTile = sourceTile?.tileIndex,
     sourceDirection = sourceDirection?.toDto(),
+    faceDownTileIds = faceDownTileIds.map { it.tileIndex }.toSet(),
+    publiclyRevealedTileIds = publiclyRevealedTileIds.map { it.tileIndex }.toSet(),
 )
 
 /**

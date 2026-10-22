@@ -92,6 +92,8 @@ class HistoryRoundStatePresentationTest {
             listOf(3, 4, 5, 6),
             sourceTile = 4,
             sourceDirection = RelativeDirectionDto.Left,
+            faceDownTileIds = emptySet(),
+            publiclyRevealedTileIds = emptySet(),
         )
         val state = state(
             players = listOf(

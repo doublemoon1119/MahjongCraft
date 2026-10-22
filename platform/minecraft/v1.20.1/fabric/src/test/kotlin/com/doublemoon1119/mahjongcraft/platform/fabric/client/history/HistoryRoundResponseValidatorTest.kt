@@ -464,7 +464,7 @@ class HistoryRoundResponseValidatorTest {
         val player = HistoryReplayPlayerStateDto(
             0,
             emptyList(),
-            listOf(HistoryReplayMeldDto(MeldTypeDto.Pon, listOf(0, 1, 2), 0, RelativeDirectionDto.Left)),
+            listOf(HistoryReplayMeldDto(MeldTypeDto.Pon, listOf(0, 1, 2), 0, RelativeDirectionDto.Left, emptySet(), emptySet())),
             null,
             listOf(HistoryReplayDiscardDto(0, true, emptySet())),
             25000,
@@ -483,14 +483,16 @@ class HistoryRoundResponseValidatorTest {
         assertIs<HistoryRoundValidationResult.Success<*>>(HistoryRoundResponseValidator.validateState(request, response))
     }
 
-    /** 副露不允許重複實體索引，且來源牌必須屬於該副露。 */
+    /** 副露不允許重複實體索引；來源牌、朝下的牌與公開牌面的牌都必須屬於該副露。 */
     @Test
     fun `test malformed meld membership is rejected`() {
         val request = HistoryRoundStateRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, position = HistoryRoundPositionDto.Initial)
         val base = state().copy(tileCatalog = List(4) { TileDto.Numeric(SuitDto.CHARACTER, 1) }, wallTiles = emptyList())
         val invalidMelds = listOf(
-            HistoryReplayMeldDto(MeldTypeDto.Pon, listOf(0, 0, 1), 0, RelativeDirectionDto.Left),
-            HistoryReplayMeldDto(MeldTypeDto.Pon, listOf(0, 1, 2), 3, RelativeDirectionDto.Left),
+            HistoryReplayMeldDto(MeldTypeDto.Pon, listOf(0, 0, 1), 0, RelativeDirectionDto.Left, emptySet(), emptySet()),
+            HistoryReplayMeldDto(MeldTypeDto.Pon, listOf(0, 1, 2), 3, RelativeDirectionDto.Left, emptySet(), emptySet()),
+            HistoryReplayMeldDto(MeldTypeDto.Pon, listOf(0, 1, 2), 0, RelativeDirectionDto.Left, setOf(3), setOf(0)),
+            HistoryReplayMeldDto(MeldTypeDto.Pon, listOf(0, 1, 2), 0, RelativeDirectionDto.Left, emptySet(), setOf(0, 3)),
         )
         invalidMelds.forEach { meld ->
             val response = HistoryRoundStateResponseDto(

@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentation
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAndDiscardUseCase
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 
 /**
@@ -19,6 +20,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
  * @property postActionExhaustiveDrawResolverRegistry 動作完成後主動觸發途中流局的判定 registry。
  * @property eventPublisher 對局通知服務。
  * @property presentationPublisher 對局呈現通知服務。
+ * @property declareAndDiscardUseCase 第三方宣告與附帶捨牌的共用權威流程。
  */
 class ExtensionGameCommandContext(
     val gameRepository: GameRepository,
@@ -28,4 +30,5 @@ class ExtensionGameCommandContext(
     val postActionExhaustiveDrawResolverRegistry: PostActionExhaustiveDrawResolverRegistry,
     val eventPublisher: GameEventPublisher,
     val presentationPublisher: GamePresentationPublisher,
+    val declareAndDiscardUseCase: DeclareAndDiscardUseCase,
 )

@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeMeldFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.FakeRiichiHandValueContextFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -299,10 +300,9 @@ class LocalYakuTest {
      * @param tile 暗槓的牌面。
      * @return 測試用暗槓副露。
      */
-    private fun closedKan(tile: Tile): Meld = Meld(
+    private fun closedKan(tile: Tile): Meld = FakeMeldFactory.create(
         type = MeldType.CLOSED_KAN,
         tiles = List(4) { FakeIdentifiedTileFactory.create(tile) },
-        sourceDirection = RelativeDirection.Self,
     )
 
     /**
@@ -314,7 +314,7 @@ class LocalYakuTest {
      */
     private fun meld(type: MeldType, tiles: List<Tile>): Meld {
         val identified = tiles.map { FakeIdentifiedTileFactory.create(it) }
-        return Meld(type = type, tiles = identified, sourceTile = identified.last(), sourceDirection = RelativeDirection.Left)
+        return Meld(type = type, tiles = identified, sourceTile = identified.last(), sourceDirection = RelativeDirection.Left, publiclyRevealedTileIds = identified.map { it.id }.toSet(), faceDownTileIds = emptySet())
     }
 
     /**

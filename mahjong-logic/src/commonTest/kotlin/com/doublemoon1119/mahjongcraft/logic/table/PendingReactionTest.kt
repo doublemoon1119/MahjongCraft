@@ -27,6 +27,8 @@ class PendingReactionTest {
             discarderId = discarderId,
             tileId = tileId,
             eligiblePlayerIds = setOf(playerAId, playerBId),
+            ronPlayerIds = setOf(playerAId, playerBId),
+            id = Uuid.random(),
         )
 
         assertFalse(pendingReaction.isComplete)
@@ -42,6 +44,8 @@ class PendingReactionTest {
             tileId = tileId,
             eligiblePlayerIds = setOf(playerAId, playerBId),
             responses = mapOf(playerAId to GameAction.Pass),
+            ronPlayerIds = setOf(playerAId, playerBId),
+            id = Uuid.random(),
         )
 
         assertFalse(pendingReaction.isComplete)
@@ -57,6 +61,8 @@ class PendingReactionTest {
             tileId = tileId,
             eligiblePlayerIds = setOf(playerAId, playerBId),
             responses = mapOf(playerAId to GameAction.Pass, playerBId to GameAction.Pon(tileId, emptyList())),
+            ronPlayerIds = setOf(playerAId, playerBId),
+            id = Uuid.random(),
         )
 
         assertTrue(pendingReaction.isComplete)
@@ -71,6 +77,8 @@ class PendingReactionTest {
             discarderId = discarderId,
             tileId = tileId,
             eligiblePlayerIds = emptySet(),
+            ronPlayerIds = emptySet(),
+            id = Uuid.random(),
         )
 
         assertTrue(pendingReaction.isComplete)

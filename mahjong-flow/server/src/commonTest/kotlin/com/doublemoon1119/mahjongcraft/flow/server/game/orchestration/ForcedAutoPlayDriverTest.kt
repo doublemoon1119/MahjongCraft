@@ -62,6 +62,8 @@ class ForcedAutoPlayDriverTest {
                     discarderId = discarderId,
                     tileId = discardedTile.id,
                     eligiblePlayerIds = setOf(playerId),
+                    ronPlayerIds = setOf(playerId),
+                    id = Uuid.random(),
                 ),
             ),
             flowConfig = GameFlowConfig(),
@@ -70,7 +72,7 @@ class ForcedAutoPlayDriverTest {
         repository.setGame(game)
 
         assertEquals(
-            playerId to GameCommand.RespondToDiscard(GameAction.Pass),
+            playerId to GameCommand.RespondToDiscard(GameAction.Pass, checkNotNull(game.tableState.pendingReaction).id),
             driver(repository).resolveNextAction(game.id),
         )
     }
@@ -164,6 +166,8 @@ class ForcedAutoPlayDriverTest {
                 discarderId = currentId,
                 tileId = discardedTile.id,
                 eligiblePlayerIds = setOf(reactorId),
+                ronPlayerIds = setOf(reactorId),
+                id = Uuid.random(),
             ),
         )
         listOf(ownTurn, reaction).forEach { state ->
@@ -178,7 +182,10 @@ class ForcedAutoPlayDriverTest {
             }
         }
         assertEquals(GameCommand.Discard(lastDrawn.id), AutomaticGameCommandResolver(moduleRegistry).resolve(ownTurn, currentId))
-        assertEquals(GameCommand.RespondToDiscard(GameAction.Pass), AutomaticGameCommandResolver(moduleRegistry).resolve(reaction, reactorId))
+        assertEquals(
+            GameCommand.RespondToDiscard(GameAction.Pass, checkNotNull(reaction.pendingReaction).id),
+            AutomaticGameCommandResolver(moduleRegistry).resolve(reaction, reactorId),
+        )
         assertEquals(null, AutomaticGameCommandResolver(moduleRegistry).resolve(reaction, bystanderId))
     }
 }

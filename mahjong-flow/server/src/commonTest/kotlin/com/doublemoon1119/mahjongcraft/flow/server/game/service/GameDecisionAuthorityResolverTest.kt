@@ -40,6 +40,8 @@ class GameDecisionAuthorityResolverTest {
                 tileId = Uuid.random(),
                 eligiblePlayerIds = setOf(firstId, secondId),
                 responses = mapOf(firstId to GameAction.Pass),
+                ronPlayerIds = setOf(firstId, secondId),
+                id = Uuid.random(),
             ),
         )
 
@@ -174,7 +176,7 @@ class GameDecisionAuthorityResolverTest {
             tableState = FakeTableStateFactory.create(
                 players = listOf(discarder, respondent),
                 config = RiichiRuleConfig(),
-                pendingReaction = PendingReaction(discarder.id, discarded.id, setOf(respondent.id)),
+                pendingReaction = PendingReaction(discarder.id, discarded.id, setOf(respondent.id), ronPlayerIds = setOf(respondent.id), id = Uuid.random()),
             ),
             flowConfig = GameFlowConfig(),
             enabledAutomaticControlIdsByPlayerId = mapOf(
@@ -218,6 +220,8 @@ class GameDecisionAuthorityResolverTest {
                     tileId = Uuid.random(),
                     eligiblePlayerIds = setOf(aiId, humanId),
                     responses = emptyMap(),
+                    ronPlayerIds = setOf(aiId, humanId),
+                    id = Uuid.random(),
                 ),
             ),
             flowConfig = GameFlowConfig(),

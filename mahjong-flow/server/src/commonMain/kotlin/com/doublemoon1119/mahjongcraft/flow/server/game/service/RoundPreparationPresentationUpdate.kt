@@ -46,7 +46,7 @@ internal data class RoundPreparationPresentationUpdate(
                     seatIndex = seatIndex,
                     standingTileIds = player.hand.tiles.map { it.id },
                     drawnTileId = player.hand.lastDrawn?.id,
-                    melds = player.hand.melds.map { it.toPresentation(current.config.revealsClosedKanTiles, module.tileOrder) },
+                    melds = player.hand.melds.map { it.toPresentation(current.config.revealsClosedKanTiles) },
                     setAsideTileIds = setAsideTiles.map { it.id },
                 )
             }

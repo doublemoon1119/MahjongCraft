@@ -349,10 +349,13 @@ class RiichiRuleModuleTest {
     private fun twoDragonMeldsHand(whiteCount: Int) = FakeHandFactory.create(
         tiles = List(whiteCount) { Tile.Honor.White },
         melds = listOf(Tile.Honor.Red, Tile.Honor.Green).map { tile ->
+            val meldTiles = List(3) { FakeIdentifiedTileFactory.create(tile) }
             Meld(
                 type = MeldType.PON,
-                tiles = List(3) { FakeIdentifiedTileFactory.create(tile) },
+                tiles = meldTiles,
                 sourceDirection = RelativeDirection.Across,
+                publiclyRevealedTileIds = meldTiles.map { it.id }.toSet(),
+                faceDownTileIds = emptySet(),
             )
         },
     )
@@ -1216,7 +1219,14 @@ class RiichiRuleModuleTest {
     @Test
     fun `test resolveSuufonRenda returns null when someone has already melded`() {
         val meldTiles = List(3) { FakeIdentifiedTileFactory.create(Tile.Honor.White) }
-        val meldedHand = Hand().call(type = MeldType.PON, tiles = meldTiles, source = meldTiles[0], direction = RelativeDirection.Left)
+        val meldedHand = Hand(tiles = meldTiles.drop(1)).call(
+            type = MeldType.PON,
+            tiles = meldTiles,
+            source = meldTiles[0],
+            direction = RelativeDirection.Left,
+            publiclyRevealedTileIds = meldTiles.map { it.id }.toSet(),
+            faceDownTileIds = emptySet(),
+        )
         val players = listOf(
             FakeMahjongPlayerFactory.create(
                 initialSeat = Wind.EAST,
@@ -1270,8 +1280,8 @@ class RiichiRuleModuleTest {
      * @return 測試用槓子副露。
      */
     private fun kanMeld(type: MeldType): Meld {
-        val tile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
-        return Meld(type, listOf(tile, tile, tile, tile), sourceDirection = RelativeDirection.Self)
+        val tiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)) }
+        return Meld(type, tiles, sourceDirection = RelativeDirection.Self, publiclyRevealedTileIds = tiles.map { it.id }.toSet(), faceDownTileIds = emptySet())
     }
 
     /**

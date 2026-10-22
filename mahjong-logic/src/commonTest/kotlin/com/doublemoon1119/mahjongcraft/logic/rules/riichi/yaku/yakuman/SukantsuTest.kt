@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.yakuman
 
-import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
@@ -9,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.RiichiHandValueCa
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeMeldFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.rules.riichi.FakeRiichiHandValueContextFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -46,7 +46,7 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
             ),
             melds = listOf(
                 // 暗槓 1：1m 1m 1m 1m
-                Meld(
+                FakeMeldFactory.create(
                     type = MeldType.CLOSED_KAN,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
@@ -54,10 +54,9 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                     ),
-                    sourceDirection = RelativeDirection.Self,
                 ),
                 // 暗槓 2：9m 9m 9m 9m
-                Meld(
+                FakeMeldFactory.create(
                     type = MeldType.CLOSED_KAN,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
@@ -65,10 +64,9 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
                     ),
-                    sourceDirection = RelativeDirection.Self,
                 ),
                 // 暗槓 3：5s 5s 5s 5s
-                Meld(
+                FakeMeldFactory.create(
                     type = MeldType.CLOSED_KAN,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
@@ -76,10 +74,9 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
                     ),
-                    sourceDirection = RelativeDirection.Self,
                 ),
                 // 明槓 4：發 發 發 發
-                Meld(
+                FakeMeldFactory.create(
                     type = MeldType.OPEN_KAN,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Honor.Green),
@@ -118,7 +115,7 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
             ),
             melds = listOf(
                 // 暗槓 1：1m 1m 1m 1m
-                Meld(
+                FakeMeldFactory.create(
                     type = MeldType.CLOSED_KAN,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
@@ -126,10 +123,9 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                     ),
-                    sourceDirection = RelativeDirection.Self,
                 ),
                 // 暗槓 2：9m 9m 9m 9m
-                Meld(
+                FakeMeldFactory.create(
                     type = MeldType.CLOSED_KAN,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
@@ -137,10 +133,9 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
                     ),
-                    sourceDirection = RelativeDirection.Self,
                 ),
                 // 暗槓 3：5s 5s 5s 5s
-                Meld(
+                FakeMeldFactory.create(
                     type = MeldType.CLOSED_KAN,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
@@ -148,10 +143,9 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
                     ),
-                    sourceDirection = RelativeDirection.Self,
                 ),
                 // 暗槓 4：發 發 發 發
-                Meld(
+                FakeMeldFactory.create(
                     type = MeldType.CLOSED_KAN,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Honor.Green),
@@ -159,7 +153,6 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
                         FakeIdentifiedTileFactory.create(Tile.Honor.Green),
                         FakeIdentifiedTileFactory.create(Tile.Honor.Green),
                     ),
-                    sourceDirection = RelativeDirection.Self,
                 ),
             ),
         )
@@ -190,7 +183,7 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
             ),
             melds = listOf(
                 // 暗槓 1：1m 1m 1m 1m
-                Meld(
+                FakeMeldFactory.create(
                     type = MeldType.CLOSED_KAN,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
@@ -198,10 +191,9 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                     ),
-                    sourceDirection = RelativeDirection.Self,
                 ),
                 // 暗槓 2：9m 9m 9m 9m
-                Meld(
+                FakeMeldFactory.create(
                     type = MeldType.CLOSED_KAN,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
@@ -209,10 +201,9 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
                     ),
-                    sourceDirection = RelativeDirection.Self,
                 ),
                 // 暗槓 3：5s 5s 5s 5s
-                Meld(
+                FakeMeldFactory.create(
                     type = MeldType.CLOSED_KAN,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
@@ -220,7 +211,6 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
                     ),
-                    sourceDirection = RelativeDirection.Self,
                 ),
             ),
         )
@@ -254,7 +244,7 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
             ),
             melds = listOf(
                 // 暗槓 1：1m 1m 1m 1m
-                Meld(
+                FakeMeldFactory.create(
                     type = MeldType.CLOSED_KAN,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
@@ -262,10 +252,9 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                     ),
-                    sourceDirection = RelativeDirection.Self,
                 ),
                 // 暗槓 2：9m 9m 9m 9m
-                Meld(
+                FakeMeldFactory.create(
                     type = MeldType.CLOSED_KAN,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
@@ -273,10 +262,9 @@ class SukantsuTest : RiichiHandValueCalculatorTestBase() {
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
                         FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)),
                     ),
-                    sourceDirection = RelativeDirection.Self,
                 ),
                 // 明槓 3：發 發 發 發
-                Meld(
+                FakeMeldFactory.create(
                     type = MeldType.OPEN_KAN,
                     tiles = listOf(
                         FakeIdentifiedTileFactory.create(Tile.Honor.Green),

@@ -231,10 +231,13 @@ internal data class SeatTiles(
 internal fun SeatSpec.takeExplicitTiles(availableTiles: MutableList<IdentifiedTile>): SeatTiles = SeatTiles(
     standingTiles = takeTiles(availableTiles, standingTiles),
     melds = ponTiles.map { tile ->
+        val tiles = takeTiles(availableTiles, List(MELD_TILE_COUNT) { tile })
         Meld(
             type = MeldType.PON,
-            tiles = takeTiles(availableTiles, List(MELD_TILE_COUNT) { tile }),
+            tiles = tiles,
             sourceDirection = RelativeDirection.Across,
+            publiclyRevealedTileIds = tiles.map { it.id }.toSet(),
+            faceDownTileIds = emptySet(),
         )
     },
     drawnTile = drawnTile?.let { tile -> takeTiles(availableTiles, listOf(tile)).single() },

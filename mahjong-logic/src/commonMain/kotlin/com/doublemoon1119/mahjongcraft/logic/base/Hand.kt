@@ -87,14 +87,24 @@ data class Hand(
      * @param tiles 構成該副露的所有牌（包含來自他人的牌與自己手牌中的牌）。
      * @param source 鳴取來源的牌（別家打出的牌）。若為暗槓 [MeldType.CLOSED_KAN]則傳入 null。
      * @param direction 鳴取來源的方位。對於暗槓 [MeldType.CLOSED_KAN]，必須傳入 [RelativeDirection.Self]。
+     * @param publiclyRevealedTileIds 可讓一般觀察者看到牌面的牌張 ID；必須包含來源牌。
+     * @param faceDownTileIds 需要朝下呈現的牌張 ID。
      * @return 完成鳴牌後的新 [Hand] 實例。
+     * @throws IllegalArgumentException 牌張重複、來源牌錯誤或使用了非本人持有的牌時拋出。
      */
     fun call(
         type: MeldType,
         tiles: List<IdentifiedTile>,
         source: IdentifiedTile? = null,
         direction: RelativeDirection,
+        publiclyRevealedTileIds: Set<Uuid>,
+        faceDownTileIds: Set<Uuid>,
     ): Hand {
+        val tileIds = tiles.map { it.id }
+        val ownedTiles = standingTiles.associateBy { it.id }
+        require(tileIds.size == tileIds.toSet().size) { "Meld tiles must have unique IDs" }
+        require(source == null || (source in tiles && source.id !in ownedTiles)) { "Claim source must be a distinct tile outside the hand" }
+        require(tiles.filterNot { it.id == source?.id }.all { ownedTiles[it.id] == it }) { "Meld tiles must be held by the claiming player" }
         // 遍歷組成副露的這些牌，將「不是從別家鳴取來的」（即原本就在自己手牌裡的）逐一移除
         var hand = this
         tiles.forEach { mTile ->
@@ -103,7 +113,16 @@ data class Hand(
             }
         }
         // 將完整的副露組合（包含拿別人的那張）加入副露清單
-        return hand.copy(melds = hand.melds + Meld(type, tiles, source, direction))
+        return hand.copy(
+            melds = hand.melds + Meld(
+                type = type,
+                tiles = tiles,
+                sourceTile = source,
+                sourceDirection = direction,
+                publiclyRevealedTileIds = publiclyRevealedTileIds,
+                faceDownTileIds = faceDownTileIds,
+            ),
+        )
     }
 
     /**
@@ -120,9 +139,17 @@ data class Hand(
     fun upgradeToAddedKan(tile: IdentifiedTile, targetMeldIndex: Int): Hand {
         val oldMeld = melds[targetMeldIndex]
         require(oldMeld.type == MeldType.PON) { "Only PON can be upgraded to ADDED_KAN" }
+        require(standingTiles.any { it == tile } && melds.none { meld -> meld.tiles.any { it.id == tile.id } }) {
+            "Added kan tile must be held by the player and outside existing melds"
+        }
 
         val handAfterRemoval = removeFromHand(tile.id)
-        val newMeld = oldMeld.copy(type = MeldType.ADDED_KAN, tiles = oldMeld.tiles + tile)
+        val newMeld = oldMeld.copy(
+            type = MeldType.ADDED_KAN,
+            tiles = oldMeld.tiles + tile,
+            publiclyRevealedTileIds = oldMeld.publiclyRevealedTileIds + tile.id,
+            faceDownTileIds = oldMeld.faceDownTileIds,
+        )
         val newMelds = handAfterRemoval.melds.toMutableList().apply { this[targetMeldIndex] = newMeld }
 
         return handAfterRemoval.copy(melds = newMelds)

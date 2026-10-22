@@ -78,7 +78,7 @@ class ExtensionAutomaticControlTest {
         )
 
         assertEquals(
-            playerId to GameCommand.RespondToDiscard(GameAction.Pass),
+            playerId to GameCommand.RespondToDiscard(GameAction.Pass, checkNotNull(game.tableState.pendingReaction).id),
             driver.resolveNextAction(game.id),
         )
     }
@@ -99,7 +99,7 @@ class ExtensionAutomaticControlTest {
         val state: TableState = FakeTableStateFactory.create(
             players = listOf(discarder, respondent),
             config = RiichiRuleConfig(),
-            pendingReaction = PendingReaction(discarder.id, discarded.id, setOf(respondent.id)),
+            pendingReaction = PendingReaction(discarder.id, discarded.id, setOf(respondent.id), ronPlayerIds = setOf(respondent.id), id = Uuid.random()),
         )
         val game = Game(
             tableState = state,

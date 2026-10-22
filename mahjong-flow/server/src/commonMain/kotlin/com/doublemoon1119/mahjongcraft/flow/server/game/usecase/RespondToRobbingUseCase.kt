@@ -319,7 +319,7 @@ class RespondToRobbingUseCase(
                 declarerSeatIndex,
                 declarer.hand.tiles.map { it.id },
                 declarer.hand.lastDrawn?.id,
-                declarer.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles, module.tileOrder) },
+                declarer.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
                 setAsideTileIds = module.setAsideTiles(declarer).map { it.id },
                 isNewlyDrawn = result.drawHappened,
             )

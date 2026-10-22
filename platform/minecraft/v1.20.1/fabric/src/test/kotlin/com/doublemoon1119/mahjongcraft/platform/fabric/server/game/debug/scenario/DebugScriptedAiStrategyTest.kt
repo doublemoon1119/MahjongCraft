@@ -23,6 +23,9 @@ import kotlin.uuid.Uuid
 
 /** 驗證 debug 情境腳本 AI 的固定行為。 */
 class DebugScriptedAiStrategyTest {
+    /** 捨牌反應測試共用的視窗識別碼。 */
+    private val discardReactionId = Uuid.random()
+
     /** 策略所操控的玩家識別碼。 */
     private val selfId = Uuid.random()
 
@@ -39,7 +42,7 @@ class DebugScriptedAiStrategyTest {
         val ron = GameAction.Ron(Uuid.random())
 
         assertEquals(
-            GameCommand.RespondToDiscard(GameAction.Pass),
+            GameCommand.RespondToDiscard(GameAction.Pass, discardReactionId),
             strategy.decideGameCommand(context(AiDecisionPhase.RespondingToDiscard, listOf(ron, GameAction.Pass))),
         )
         assertEquals(
@@ -137,6 +140,7 @@ class DebugScriptedAiStrategyTest {
             selfId = selfId,
             phase = phase,
             legalActions = legalActions,
+            discardReactionId = discardReactionId.takeIf { phase == AiDecisionPhase.RespondingToDiscard },
         )
     }
 }

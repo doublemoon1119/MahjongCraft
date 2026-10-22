@@ -14,9 +14,8 @@ import kotlin.uuid.Uuid
  * `null`。
  * @property sourceDirection 鳴取來源的相對方位，決定 [calledTileId] 在組內橫放的位置（左／中／右）；
  * 暗槓沒有鳴牌來源時為 [RelativeDirection.Self]。
- * @property allTilesFaceDown 只在 [type] 為 [MeldType.CLOSED_KAN] 時有意義：該規則是否連暗槓身份都
- * 不公開，此時四張牌全部蓋牌呈現；身份公開的規則此欄位為 `false`，維持兩端蓋牌、中間兩張攤牌的
- * 傳統呈現方式。其餘副露種類固定為 `false`。
+ * @property allTilesFaceDown 整組牌是否都朝下擺放；牌面資訊能否查看由可見性快照決定。
+ * @property faceDownTileIds 需要朝下呈現的牌張 ID；與牌面資訊是否公開分開處理。
  */
 data class MahjongMeldTileGroup(
     val type: MeldType,
@@ -24,4 +23,5 @@ data class MahjongMeldTileGroup(
     val calledTileId: Uuid?,
     val sourceDirection: RelativeDirection,
     val allTilesFaceDown: Boolean,
+    val faceDownTileIds: Set<Uuid>,
 )

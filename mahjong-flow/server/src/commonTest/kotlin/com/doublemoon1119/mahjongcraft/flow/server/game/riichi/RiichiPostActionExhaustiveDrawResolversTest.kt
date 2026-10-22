@@ -69,13 +69,13 @@ class RiichiPostActionExhaustiveDrawResolversTest {
     }
 
     /**
-     * 建立四張牌共用同一識別碼的簡化暗槓，僅供槓數判定。
+     * 建立由四張獨立實體牌組成的暗槓，供槓數判定。
      *
      * @return 一萬暗槓。
      */
     private fun kanMeld(): Meld {
-        val tile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
-        return Meld(MeldType.CLOSED_KAN, listOf(tile, tile, tile, tile), sourceDirection = RelativeDirection.Self)
+        val tiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)) }
+        return Meld(MeldType.CLOSED_KAN, tiles, sourceDirection = RelativeDirection.Self, publiclyRevealedTileIds = tiles.map { it.id }.toSet(), faceDownTileIds = setOf(tiles.first().id, tiles.last().id))
     }
 
     /**

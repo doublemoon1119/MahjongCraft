@@ -57,8 +57,7 @@ private data class ClientTableState(
          * 所有玩家可見（`MahjongPlayerSnapshot.discardPile`／`setAsideTiles` 的 KDoc），因此固定以
          * `isVisible = true` 轉換——兩者都是 domain 型別，不像手牌／牌牆
          * 已經是依觀察者可見範圍轉換過的 snapshot 型別，需要在這裡自行呼叫 `toSnapshot`。副露
-         * （`hand.melds`）本身就恆為完整可見（見 `HandSnapshot.melds` KDoc），直接取用即可，不需要另外
-         * 轉換可見性。
+         * （`hand.melds`）在建立快照時已依觀察者裁切，看不到的牌面為未知，直接取用即可。
          *
          * @param snapshot 對局快照；`null` 時回傳空索引。
          * @return 依牌 entity UUID 索引的管理中牌快照。

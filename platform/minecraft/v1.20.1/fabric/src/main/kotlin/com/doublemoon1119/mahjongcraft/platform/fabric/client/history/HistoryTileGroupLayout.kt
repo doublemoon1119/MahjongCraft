@@ -181,7 +181,7 @@ internal object HistoryTileGroupLayoutCalculator {
             }
             val width = if (sideways) tileHeight else tileWidth
             val height = if (sideways) tileWidth else tileHeight
-            val faceDown = meld.type == MeldTypeDto.ClosedKan && (index == 0 || index == baseTiles.lastIndex)
+            val faceDown = tile in meld.faceDownTileIds
             basePlacements += HistoryTilePlacement(tile, x, baseHeight - height, width, height, orientation, faceDown)
             x += width + gap
         }
@@ -192,7 +192,11 @@ internal object HistoryTileGroupLayoutCalculator {
             val base = basePlacements.getOrNull(stackIndex)
             val addedTile = meld.tiles.last()
             if (base != null) {
-                placements += base.copy(tile = addedTile, y = -base.height * ADDED_KAN_STACK_RATIO, faceDown = false)
+                placements += base.copy(
+                    tile = addedTile,
+                    y = -base.height * ADDED_KAN_STACK_RATIO,
+                    faceDown = addedTile in meld.faceDownTileIds,
+                )
             }
         }
 

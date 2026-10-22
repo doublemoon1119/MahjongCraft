@@ -135,6 +135,31 @@
 - Test both the offer and the real command. A test that only sees a self-draw option or calls the rule's
   settlement method directly does not show that the player can successfully submit self-draw.
 
+## Claims and Declaration Discards
+
+- A rule's `createDiscardReactionPolicy` supplies executable reactions from the validator's legal actions.
+  Each offered candidate includes a valid selection and, for a claim, its `MeldClaimEffect`. A rule may
+  override `resolveSelection` to validate other selections for that same action. Neither method changes
+  state or publishes anything; the same input must produce the same result.
+- Use the shared discard-reaction command for reactions, even when that extension action also has an
+  own-turn command factory. Keep the reaction window ID and selected physical tile IDs with the command.
+  The server checks them again inside the transaction; an old window is not permission to act.
+- Higher reaction priority wins. Higher tie-break priority wins within that priority, followed by the
+  nearest seat after the discarder. Do not compare priorities by subtraction. Winning reactions still use
+  the shared multi-winner settlement path; a discard can belong to only one claimed meld.
+- A declaration that also discards a tile uses `ExtensionGameCommandContext.declareAndDiscardUseCase`.
+  Its handler supplies the action and discard ID, not a second repository write or its own publications.
+  `declarationDiscardPolicy` returns the complete permitted player and dynamic rule state. Preserve the
+  current dynamic state explicitly when unchanged; null means to clear it, not to skip its update.
+- Flow owns the discard, score validation, action history, reaction window and post-commit notifications.
+  A rule effect may change its own player rule state, dynamic rule state, declared cost and new discard's
+  public markers, but cannot replace hands, seats, identities or existing discard entries. Invalid rule
+  effects stop the match through the contract-failure path instead of becoming a pass or a normal discard.
+- Keep a meld's information visibility separate from its physical pose. `publiclyRevealedTileIds` says
+  which faces other observers may know; `faceDownTileIds` says which tiles lie face down. The called discard
+  is already public. Save both sets and the stable display order; do not sort hidden tiles by their faces
+  while building presentation. Test owner, opponent, spectator, AI and replay views.
+
 ## Koin Registration
 
 - Declare every Koin definition in the owning module's DSL `module { }` value. Do not annotate classes with

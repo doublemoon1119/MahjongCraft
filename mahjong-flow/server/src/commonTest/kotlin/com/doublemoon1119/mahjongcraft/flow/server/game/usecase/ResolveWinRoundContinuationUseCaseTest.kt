@@ -95,7 +95,7 @@ class ResolveWinRoundContinuationUseCaseTest {
             id = gameId,
             players = listOf(winner),
             config = RiichiRuleConfig(),
-            pendingReaction = PendingReaction(discarderId, winningTile.id, setOf(winner.id)),
+            pendingReaction = PendingReaction(discarderId, winningTile.id, setOf(winner.id), ronPlayerIds = setOf(winner.id), id = Uuid.random()),
         )
         val settledState = FakeTableStateFactory.create(
             id = gameId,

@@ -18,10 +18,11 @@ import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
-import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
+import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
@@ -44,6 +45,7 @@ import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeG
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeMeldFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -113,7 +115,7 @@ class RespondToDiscardUseCaseTest {
         }
 
         /** 受測捨牌反應用例。 */
-        val useCase = RespondToDiscardUseCase(
+        private val useCaseDelegate = RespondToDiscardUseCase(
             gameRepo,
             moduleRegistry,
             snapshotSynchronizer,
@@ -124,6 +126,35 @@ class RespondToDiscardUseCaseTest {
             winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
             winSettlementDetailResolverRegistry = winSettlementDetailResolverRegistry,
             postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
+        )
+
+        /** 以目前權威反應視窗的識別碼提交測試反應。 */
+        val useCase = CurrentReactionSubmission(gameRepo, useCaseDelegate)
+    }
+
+    /**
+     * 讓既有用例案例提交目前視窗；測試過期視窗時則直接使用正式用例。
+     *
+     * @property repository 提供測試當下的反應視窗。
+     * @property delegate 實際執行權威驗證的用例。
+     */
+    private class CurrentReactionSubmission(
+        private val repository: FakeGameRepository,
+        private val delegate: RespondToDiscardUseCase,
+    ) {
+        /**
+         * 由目前視窗建立反應；不存在視窗的拒絕案例仍交由用例檢查。
+         *
+         * @param gameId 測試對局。
+         * @param playerId 提交玩家。
+         * @param action 提交的反應。
+         * @return 正式用例的執行結果。
+         */
+        suspend operator fun invoke(gameId: Uuid, playerId: Uuid, action: GameAction): Outcome<Unit, GameError> = delegate(
+            gameId = gameId,
+            playerId = playerId,
+            action = action,
+            reactionId = repository.getTableState(gameId)?.pendingReaction?.id ?: Uuid.random(),
         )
     }
 
@@ -175,7 +206,7 @@ class RespondToDiscardUseCaseTest {
             players = listOf(discarder, responder),
             config = RiichiRuleConfig(),
             currentPlayerIndex = 0,
-            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId), ronPlayerIds = setOf(responderId), id = Uuid.random()),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -218,7 +249,7 @@ class RespondToDiscardUseCaseTest {
                 players = listOf(discarder, responder),
                 config = RiichiRuleConfig(),
                 currentPlayerIndex = 0,
-                pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+                pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId), ronPlayerIds = setOf(responderId), id = Uuid.random()),
             ),
         )
 
@@ -284,7 +315,7 @@ class RespondToDiscardUseCaseTest {
                 players = players,
                 config = RiichiRuleConfig(),
                 currentPlayerIndex = 0,
-                pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+                pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId), ronPlayerIds = setOf(responderId), id = Uuid.random()),
             ),
         )
 
@@ -324,7 +355,7 @@ class RespondToDiscardUseCaseTest {
             players = listOf(discarder, finishedPlayer, responder),
             config = RiichiRuleConfig(),
             currentPlayerIndex = 0,
-            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId), ronPlayerIds = setOf(responderId), id = Uuid.random()),
             finishedPlayerIds = setOf(finishedPlayerId),
         )
         fixtures.gameRepo.setTableState(table)
@@ -361,7 +392,7 @@ class RespondToDiscardUseCaseTest {
             players = listOf(discarder, responder),
             config = RiichiRuleConfig(),
             currentPlayerIndex = 0,
-            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId), ronPlayerIds = setOf(responderId), id = Uuid.random()),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -406,7 +437,7 @@ class RespondToDiscardUseCaseTest {
             players = listOf(discarder, responder),
             config = RiichiRuleConfig(),
             currentPlayerIndex = 0,
-            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId), ronPlayerIds = setOf(responderId), id = Uuid.random()),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -447,7 +478,7 @@ class RespondToDiscardUseCaseTest {
             players = listOf(discarder, responder),
             config = RiichiRuleConfig(),
             currentPlayerIndex = 0,
-            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId), ronPlayerIds = setOf(responderId), id = Uuid.random()),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -494,7 +525,7 @@ class RespondToDiscardUseCaseTest {
             players = listOf(discarder, responder),
             config = RiichiRuleConfig(),
             currentPlayerIndex = 0,
-            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId), ronPlayerIds = setOf(responderId), id = Uuid.random()),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -531,7 +562,7 @@ class RespondToDiscardUseCaseTest {
             players = listOf(discarder, responder),
             config = RiichiRuleConfig(),
             currentPlayerIndex = 0,
-            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId), ronPlayerIds = setOf(responderId), id = Uuid.random()),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -575,7 +606,7 @@ class RespondToDiscardUseCaseTest {
             config = RiichiRuleConfig(),
             reservedWallTiles = completeRiichiReservedWall(rinshanTile),
             currentPlayerIndex = 0,
-            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId), ronPlayerIds = setOf(responderId), id = Uuid.random()),
             dynamicRuleState = RiichiDynamicState(),
         ).withFirstKanPhysicalWallLayout()
         fixtures.gameRepo.setTableState(table)
@@ -648,7 +679,7 @@ class RespondToDiscardUseCaseTest {
             config = RiichiRuleConfig(),
             reservedWallTiles = listOf(rinshanTile),
             currentPlayerIndex = 0,
-            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId), ronPlayerIds = setOf(responderId), id = Uuid.random()),
             dynamicRuleState = RiichiDynamicState(),
         )
         fixtures.gameRepo.setTableState(table)
@@ -690,7 +721,7 @@ class RespondToDiscardUseCaseTest {
             // （reservedWallTiles，預設空清單）摸盡」是兩回事，tileWall 空的話這次明槓在走到補摸嶺上牌
             // 之前就會先被 RiichiLegalActionValidator 擋下，這個測試就測不到真正想驗證的情境。
             currentPlayerIndex = 0,
-            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId), ronPlayerIds = setOf(responderId), id = Uuid.random()),
             dynamicRuleState = RiichiDynamicState(),
         )
         fixtures.gameRepo.setTableState(table)
@@ -747,7 +778,7 @@ class RespondToDiscardUseCaseTest {
             players = listOf(discarder, chiPlayer, ponPlayer, bystander),
             config = RiichiRuleConfig(),
             currentPlayerIndex = 0,
-            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(chiPlayerId, ponPlayerId)),
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(chiPlayerId, ponPlayerId), ronPlayerIds = setOf(chiPlayerId, ponPlayerId), id = Uuid.random()),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -804,7 +835,7 @@ class RespondToDiscardUseCaseTest {
         )
         val handTiles = listOf(Tile.Honor.White, Tile.Honor.White).map { FakeIdentifiedTileFactory.create(it) }
         val dragonMelds = listOf(Tile.Honor.Red, Tile.Honor.Green).map { tile ->
-            Meld(
+            FakeMeldFactory.create(
                 type = MeldType.PON,
                 tiles = List(3) { FakeIdentifiedTileFactory.create(tile) },
                 sourceDirection = RelativeDirection.Across,
@@ -821,7 +852,7 @@ class RespondToDiscardUseCaseTest {
             players = listOf(discarder, responder),
             config = RiichiRuleConfig(),
             currentPlayerIndex = 0,
-            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId), ronPlayerIds = setOf(responderId), id = Uuid.random()),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -874,7 +905,7 @@ class RespondToDiscardUseCaseTest {
             players = listOf(discarder, responder, bystander),
             config = RiichiRuleConfig(),
             currentPlayerIndex = 0,
-            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId), ronPlayerIds = setOf(responderId), id = Uuid.random()),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -930,7 +961,7 @@ class RespondToDiscardUseCaseTest {
             players = listOf(discarder, winner),
             config = RiichiRuleConfig(),
             currentPlayerIndex = 0,
-            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId), ronPlayerIds = setOf(responderId), id = Uuid.random()),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -1029,7 +1060,7 @@ class RespondToDiscardUseCaseTest {
             players = listOf(discarder, chiPlayer, ponPlayer, ronPlayer),
             config = RiichiRuleConfig(),
             currentPlayerIndex = 0,
-            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(chiPlayerId, ponPlayerId, ronPlayerId)),
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(chiPlayerId, ponPlayerId, ronPlayerId), ronPlayerIds = setOf(chiPlayerId, ponPlayerId, ronPlayerId), id = Uuid.random()),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -1089,7 +1120,7 @@ class RespondToDiscardUseCaseTest {
             players = listOf(paoPlayer, winner, discarder, other),
             config = RiichiRuleConfig(),
             currentPlayerIndex = 0,
-            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId), ronPlayerIds = setOf(responderId), id = Uuid.random()),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -1138,7 +1169,7 @@ class RespondToDiscardUseCaseTest {
             dealerPlayerId = dealerWinnerId,
             config = RiichiRuleConfig(),
             currentPlayerIndex = 0,
-            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(dealerWinnerId, responderId)),
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(dealerWinnerId, responderId), ronPlayerIds = setOf(dealerWinnerId, responderId), id = Uuid.random()),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -1228,6 +1259,8 @@ class RespondToDiscardUseCaseTest {
                 discarderId,
                 discardedTile.id,
                 setOf(dealerWinnerId, responderId, nonDealerWinner2Id),
+                ronPlayerIds = setOf(dealerWinnerId, responderId, nonDealerWinner2Id),
+                id = Uuid.random(),
             ),
         )
         fixtures.gameRepo.setTableState(table)
@@ -1278,7 +1311,7 @@ class RespondToDiscardUseCaseTest {
             config = RiichiRuleConfig(),
             dynamicRuleState = RiichiDynamicState(riichiStickCount = 3),
             currentPlayerIndex = 0,
-            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId), ronPlayerIds = setOf(responderId), id = Uuid.random()),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -1330,7 +1363,7 @@ class RespondToDiscardUseCaseTest {
             config = RiichiRuleConfig(),
             dynamicRuleState = RiichiDynamicState(riichiStickCount = 2),
             currentPlayerIndex = 0,
-            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(dealerWinnerId, responderId)),
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(dealerWinnerId, responderId), ronPlayerIds = setOf(dealerWinnerId, responderId), id = Uuid.random()),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -1379,7 +1412,7 @@ class RespondToDiscardUseCaseTest {
             comboCount = 2,
             dynamicRuleState = RiichiDynamicState(),
             currentPlayerIndex = 0,
-            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId), ronPlayerIds = setOf(responderId), id = Uuid.random()),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -1429,7 +1462,7 @@ class RespondToDiscardUseCaseTest {
             comboCount = 2,
             dynamicRuleState = RiichiDynamicState(),
             currentPlayerIndex = 0,
-            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(dealerWinnerId, responderId)),
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(dealerWinnerId, responderId), ronPlayerIds = setOf(dealerWinnerId, responderId), id = Uuid.random()),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -1475,7 +1508,7 @@ class RespondToDiscardUseCaseTest {
             players = listOf(discarder, responder),
             config = RiichiRuleConfig(),
             currentPlayerIndex = 0,
-            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId), ronPlayerIds = setOf(responderId), id = Uuid.random()),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -1525,7 +1558,7 @@ class RespondToDiscardUseCaseTest {
             players = listOf(discarder, responder),
             config = RiichiRuleConfig(),
             currentPlayerIndex = 0,
-            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId), ronPlayerIds = setOf(responderId), id = Uuid.random()),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -1538,6 +1571,62 @@ class RespondToDiscardUseCaseTest {
             riichiState.isPermanentlyFuriten,
             "Passing on an available Ron while riichi-locked should mark permanent furiten.",
         )
+    }
+
+    /**
+     * 立直者先放過榮和而永久振聽、之後已沒有任何合法動作；其他玩家再碰牌時，視窗照常裁定成碰牌，
+     * 不因重新檢查那筆過牌而中止對局。
+     */
+    @Test
+    fun `test riichi player passing ron before another player pons still resolves the pon`() = runTest {
+        val fixtures = Fixtures()
+        val ponPlayerId = Uuid.random()
+        val discardedTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val discarder = FakeMahjongPlayerFactory.create(
+            id = discarderId,
+            initialSeat = Wind.EAST,
+            discardPile = FakeDiscardPile().discardTile(discardedTile),
+        )
+        val riichiPlayer = FakeMahjongPlayerFactory.create(
+            id = responderId,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(
+                tiles = listOf(
+                    Tile.Honor.White, Tile.Honor.White, Tile.Honor.White,
+                    Tile.Honor.Green, Tile.Honor.Green, Tile.Honor.Green,
+                    Tile.Numeric(Tile.Suit.Dot, 2), Tile.Numeric(Tile.Suit.Dot, 3), Tile.Numeric(Tile.Suit.Dot, 4),
+                    Tile.Numeric(Tile.Suit.Bamboo, 5), Tile.Numeric(Tile.Suit.Bamboo, 6), Tile.Numeric(Tile.Suit.Bamboo, 7),
+                    Tile.Honor.Red,
+                ).map { FakeIdentifiedTileFactory.create(it) },
+            ),
+            playerRuleState = RiichiPlayerState(riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)),
+        )
+        val ponTile1 = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val ponTile2 = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val ponPlayer = FakeMahjongPlayerFactory.create(
+            id = ponPlayerId,
+            initialSeat = Wind.WEST,
+            hand = Hand(tiles = listOf(ponTile1, ponTile2)),
+        )
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(discarder, riichiPlayer, ponPlayer),
+            config = RiichiRuleConfig(),
+            currentPlayerIndex = 0,
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId, ponPlayerId), ronPlayerIds = setOf(responderId, ponPlayerId), id = Uuid.random()),
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val passResult = fixtures.useCase(gameId, responderId, GameAction.Pass)
+        val ponResult = fixtures.useCase(gameId, ponPlayerId, GameAction.Pon(discardedTile.id, listOf(ponTile1.id, ponTile2.id)))
+
+        assertTrue(passResult is Outcome.Success, "Expected Success but got $passResult")
+        assertTrue(ponResult is Outcome.Success, "Expected Success but got $ponResult")
+        val newState = fixtures.gameRepo.getTableState(gameId)!!
+        assertNull(newState.pendingReaction)
+        assertEquals(MeldType.PON, newState.players.first { it.id == ponPlayerId }.hand.melds.single().type)
+        val riichiState = newState.players.first { it.id == responderId }.playerRuleState as RiichiPlayerState
+        assertTrue(riichiState.isPermanentlyFuriten, "The riichi player who passed on Ron stays permanently furiten.")
     }
 
     /**
@@ -1573,7 +1662,7 @@ class RespondToDiscardUseCaseTest {
             players = listOf(discarder, furitenPlayer),
             config = RiichiRuleConfig(),
             currentPlayerIndex = 0,
-            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId), ronPlayerIds = setOf(responderId), id = Uuid.random()),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -1649,7 +1738,7 @@ class RespondToDiscardUseCaseTest {
             id = gameId,
             players = listOf(discarder, ineligiblePlayer, eligiblePlayer),
             config = RiichiRuleConfig(),
-            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId), ronPlayerIds = setOf(responderId), id = Uuid.random()),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -1683,6 +1772,8 @@ class RespondToDiscardUseCaseTest {
                 discardedTile.id,
                 setOf(responderId, otherEligibleId),
                 responses = mapOf(responderId to GameAction.Pass),
+                ronPlayerIds = setOf(responderId, otherEligibleId),
+                id = Uuid.random(),
             ),
         )
         fixtures.gameRepo.setTableState(table)
@@ -1711,7 +1802,7 @@ class RespondToDiscardUseCaseTest {
             id = gameId,
             players = listOf(discarder, responder),
             config = RiichiRuleConfig(),
-            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId), ronPlayerIds = setOf(responderId), id = Uuid.random()),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -1719,6 +1810,78 @@ class RespondToDiscardUseCaseTest {
 
         assertTrue(result is Outcome.Error)
         assertEquals(GameError.IllegalAction(responderId, gameId, GameAction.Pon(discardedTile.id, emptyList())), result.error)
+    }
+
+    /**
+     * 「只有最近的人能榮和」：兩家都能和時，開窗只讓最近的南家榮和；西家因為能碰才留在視窗裡，
+     * 提交榮和會被拒絕，仍可以碰。
+     */
+    @Test
+    fun `test nearest winner policy keeps a meld-only respondent from winning by ron`() = runTest {
+        val fixtures = Fixtures()
+        val westId = Uuid.random()
+        val discardedTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val discarder = FakeMahjongPlayerFactory.create(
+            id = discarderId,
+            initialSeat = Wind.EAST,
+            discardPile = FakeDiscardPile().discardTile(discardedTile),
+        )
+        val south = FakeMahjongPlayerFactory.create(
+            id = responderId,
+            initialSeat = Wind.SOUTH,
+            hand = Hand(
+                tiles = listOf(
+                    Tile.Honor.White, Tile.Honor.White, Tile.Honor.White,
+                    Tile.Honor.Green, Tile.Honor.Green, Tile.Honor.Green,
+                    Tile.Numeric(Tile.Suit.Dot, 2), Tile.Numeric(Tile.Suit.Dot, 3), Tile.Numeric(Tile.Suit.Dot, 4),
+                    Tile.Numeric(Tile.Suit.Bamboo, 5), Tile.Numeric(Tile.Suit.Bamboo, 6), Tile.Numeric(Tile.Suit.Bamboo, 7),
+                    Tile.Honor.Red,
+                ).map { FakeIdentifiedTileFactory.create(it) },
+            ),
+        )
+        val westRed1 = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val westRed2 = FakeIdentifiedTileFactory.create(Tile.Honor.Red)
+        val west = FakeMahjongPlayerFactory.create(
+            id = westId,
+            initialSeat = Wind.WEST,
+            hand = Hand(
+                tiles = listOf(
+                    Tile.Honor.White, Tile.Honor.White, Tile.Honor.White,
+                    Tile.Numeric(Tile.Suit.Dot, 2), Tile.Numeric(Tile.Suit.Dot, 3), Tile.Numeric(Tile.Suit.Dot, 4),
+                    Tile.Numeric(Tile.Suit.Bamboo, 5), Tile.Numeric(Tile.Suit.Bamboo, 6), Tile.Numeric(Tile.Suit.Bamboo, 7),
+                    Tile.Honor.East, Tile.Honor.East,
+                ).map { FakeIdentifiedTileFactory.create(it) } + listOf(westRed1, westRed2),
+            ),
+        )
+        val config = RiichiRuleConfig(
+            multiRonPolicy = MultiRonPolicy(
+                doubleRonResolution = RonResolution.NEAREST_WINNER,
+                tripleRonResolution = RonResolution.NEAREST_WINNER,
+            ),
+        )
+        val beforeDiscard = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(discarder, south, west),
+            config = config,
+            currentPlayerIndex = 0,
+        )
+        val opened = DiscardReactionResolver.resolve(
+            stateBeforeDiscard = beforeDiscard,
+            stateAfterDiscard = beforeDiscard,
+            module = fixtures.moduleRegistry.getModule(config),
+            discarderId = discarderId,
+            discardedTile = discardedTile,
+        ).tableState
+        val window = assertNotNull(opened.pendingReaction)
+        assertEquals(setOf(responderId, westId), window.eligiblePlayerIds)
+        assertEquals(setOf(responderId), window.ronPlayerIds)
+        fixtures.gameRepo.setTableState(opened)
+
+        val ronResult = fixtures.useCase(gameId, westId, GameAction.Ron(discardedTile.id))
+        val ponResult = fixtures.useCase(gameId, westId, GameAction.Pon(discardedTile.id, listOf(westRed1.id, westRed2.id)))
+
+        assertEquals(GameError.IllegalAction(westId, gameId, GameAction.Ron(discardedTile.id)), (ronResult as Outcome.Error).error)
+        assertTrue(ponResult is Outcome.Success, "Expected Success but got $ponResult")
     }
 
     /** 反應視窗結束且沒有人榮和時，捨牌記入打牌者以外每位玩家的放過清單，包含沒被詢問的玩家。 */
@@ -1744,7 +1907,7 @@ class RespondToDiscardUseCaseTest {
             ),
             config = RiichiRuleConfig(),
             currentPlayerIndex = 0,
-            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId), ronPlayerIds = setOf(responderId), id = Uuid.random()),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -1781,7 +1944,7 @@ class RespondToDiscardUseCaseTest {
             ),
             config = RiichiRuleConfig(),
             currentPlayerIndex = 0,
-            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId), ronPlayerIds = setOf(responderId), id = Uuid.random()),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -1832,7 +1995,7 @@ class RespondToDiscardUseCaseTest {
             ),
             config = RiichiRuleConfig(),
             currentPlayerIndex = 0,
-            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId), ronPlayerIds = setOf(responderId), id = Uuid.random()),
         )
         fixtures.gameRepo.setTableState(table)
 
@@ -1864,7 +2027,7 @@ class RespondToDiscardUseCaseTest {
                 FakeMahjongPlayerFactory.create(id = responderId, initialSeat = Wind.SOUTH),
             ),
             config = RiichiRuleConfig(),
-            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId)),
+            pendingReaction = PendingReaction(discarderId, discardedTile.id, setOf(responderId), ronPlayerIds = setOf(responderId), id = Uuid.random()),
         )
         fixtures.gameRepo.setTableState(table)
 

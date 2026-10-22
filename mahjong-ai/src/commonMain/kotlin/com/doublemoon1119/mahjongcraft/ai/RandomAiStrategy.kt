@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.ai
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import kotlin.random.Random
+import kotlin.uuid.Uuid
 
 /**
  * 純粹隨機選擇的 [MahjongAiStrategy]：不評估手牌好壞、不追求胡牌效率。
@@ -24,7 +25,11 @@ class RandomAiStrategy(
 
     override suspend fun decideGameCommand(context: AiDecisionContext): GameCommand = when (context.phase) {
         AiDecisionPhase.RespondingToDiscard ->
-            GameCommand.RespondToDiscard(context.legalActions.randomOrNull(random) ?: GameAction.Pass)
+            context.discardReactionCommands.randomOrNull(random)
+                ?: context.legalActions.mapNotNull { action ->
+                    action.toBuiltinDiscardReactionCommand(checkNotNull(context.discardReactionId))
+                }.randomOrNull(random)
+                ?: GameCommand.RespondToDiscard(GameAction.Pass, checkNotNull(context.discardReactionId))
         AiDecisionPhase.RespondingToRobbing ->
             GameCommand.RespondToRobbing(context.legalActions.randomOrNull(random) ?: GameAction.Pass)
         AiDecisionPhase.OwnTurn -> decideOwnTurn(context)
@@ -60,6 +65,20 @@ class RandomAiStrategy(
         is GameAction.ExhaustiveDraw -> listOf(GameCommand.DeclareExhaustiveDraw(reason))
         is GameAction.Extension -> extensionActionRegistry.createCandidates(value, context).map { it.command }
         else -> emptyList()
+    }
+
+    /**
+     * 將內建捨牌反應動作轉成完整命令；擴充動作必須由呼叫端提供具體候選。
+     *
+     * @param reactionId 本次反應視窗的識別碼。
+     * @return 內建反應命令；非內建反應時為 null。
+     */
+    private fun GameAction.toBuiltinDiscardReactionCommand(reactionId: Uuid): GameCommand.RespondToDiscard? = when (this) {
+        is GameAction.Chi -> GameCommand.RespondToDiscard(this, reactionId, withTiles)
+        is GameAction.Pon -> GameCommand.RespondToDiscard(this, reactionId, withTiles)
+        is GameAction.Kan -> takeIf { type == GameAction.KanType.OPEN_KAN }?.let { GameCommand.RespondToDiscard(it, reactionId, withTiles) }
+        GameAction.Pass, is GameAction.Ron -> GameCommand.RespondToDiscard(this, reactionId)
+        else -> null
     }
 
     /**

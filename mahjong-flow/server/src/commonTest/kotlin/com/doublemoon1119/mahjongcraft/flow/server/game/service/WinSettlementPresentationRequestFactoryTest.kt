@@ -13,11 +13,14 @@ import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.closedKanFaceDownTileIds
+import com.doublemoon1119.mahjongcraft.logic.base.closedKanPubliclyRevealedTileIds
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueResult
 import com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult
 import com.doublemoon1119.mahjongcraft.logic.module.WinSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
+import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
@@ -52,7 +55,7 @@ class WinSettlementPresentationRequestFactoryTest {
             initialSeat = Wind.EAST,
             hand = Hand(
                 tiles = listOf(standing),
-                melds = listOf(Meld(MeldType.PON, meldTiles, meldTiles.first(), RelativeDirection.Left)),
+                melds = listOf(Meld(MeldType.PON, meldTiles, meldTiles.first(), RelativeDirection.Left, publiclyRevealedTileIds = meldTiles.map { it.id }.toSet(), faceDownTileIds = emptySet())),
             ),
         )
         val state = FakeTableStateFactory.create(
@@ -157,6 +160,51 @@ class WinSettlementPresentationRequestFactoryTest {
             listOf(oneCharacters.id, nineCharacters.id, twoDots.id, east.id),
             request.winners.single().standingTileIds,
         )
+    }
+
+    /** 不公開暗槓的規則和牌時，整手公開，暗槓照公開形式呈現：只有兩端朝下。 */
+    @Test
+    fun `win settlement shows hidden closed kans with only the ends face down`() {
+        val kanTiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Honor.Green) }
+        val winningTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5))
+        val winner = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.EAST,
+            hand = Hand(
+                tiles = emptyList(),
+                lastDrawn = winningTile,
+                melds = listOf(
+                    Meld(
+                        type = MeldType.CLOSED_KAN,
+                        tiles = kanTiles,
+                        sourceTile = null,
+                        sourceDirection = RelativeDirection.Self,
+                        publiclyRevealedTileIds = closedKanPubliclyRevealedTileIds(kanTiles, revealsClosedKanTiles = false),
+                        faceDownTileIds = closedKanFaceDownTileIds(kanTiles),
+                    ),
+                ),
+            ),
+        )
+        val state = FakeTableStateFactory.create(
+            players = listOf(winner) + listOf(Wind.SOUTH, Wind.WEST, Wind.NORTH).map { FakeMahjongPlayerFactory.create(initialSeat = it) },
+            config = TaiwanRuleConfig(),
+        )
+
+        val request = WinSettlementPresentationRequestFactory.create(
+            previousState = state,
+            currentState = state,
+            module = module,
+            aiPlayerIds = emptySet(),
+            outcomeId = BuiltInRoundOutcomeIds.TSUMO,
+            isTsumo = true,
+            winningTileId = winningTile.id,
+            responsiblePlayerId = null,
+            resolutions = mapOf(winner.id to resolution(payments = state.players.drop(1).map { it.id })),
+            detailResolverRegistry = detailResolverRegistry,
+        )
+
+        val meld = request.winners.single().melds.single()
+        assertEquals(setOf(kanTiles.first().id, kanTiles.last().id), meld.faceDownTileIds)
+        assertEquals(false, meld.allTilesFaceDown)
     }
 
     /** 特殊和局結果的立牌同樣依規則牌序排好。 */

@@ -20,7 +20,11 @@ fun GameCommand.toDto(registries: NetworkDtoRegistries): GameCommandDto = when (
     is GameCommand.Discard -> GameCommandDto.Discard(tileId.toString())
     GameCommand.Tsumo -> GameCommandDto.Tsumo
     is GameCommand.Kan -> GameCommandDto.Kan(type.toDto(), tileId.toString())
-    is GameCommand.RespondToDiscard -> GameCommandDto.RespondToDiscard(action.toDto(registries))
+    is GameCommand.RespondToDiscard -> GameCommandDto.RespondToDiscard(
+        action = action.toDto(registries),
+        reactionId = reactionId.toString(),
+        selectedTileIds = selectedTileIds.map(Uuid::toString),
+    )
     is GameCommand.RespondToRobbing -> GameCommandDto.RespondToRobbing(action.toDto(registries))
     is GameCommand.DeclareExhaustiveDraw -> GameCommandDto.DeclareExhaustiveDraw(reason.toDto(registries))
 }
@@ -38,7 +42,11 @@ fun GameCommandDto.toDomain(registries: NetworkDtoRegistries): GameCommand = whe
     is GameCommandDto.Discard -> GameCommand.Discard(Uuid.parse(tileId))
     GameCommandDto.Tsumo -> GameCommand.Tsumo
     is GameCommandDto.Kan -> GameCommand.Kan(kanType.toDomain(), Uuid.parse(tileId))
-    is GameCommandDto.RespondToDiscard -> GameCommand.RespondToDiscard(action.toDomain(registries))
+    is GameCommandDto.RespondToDiscard -> GameCommand.RespondToDiscard(
+        action = action.toDomain(registries),
+        reactionId = Uuid.parse(reactionId),
+        selectedTileIds = selectedTileIds.map(Uuid::parse),
+    )
     is GameCommandDto.RespondToRobbing -> GameCommand.RespondToRobbing(action.toDomain(registries))
     is GameCommandDto.DeclareExhaustiveDraw -> GameCommand.DeclareExhaustiveDraw(reason.toDomain(registries))
 }

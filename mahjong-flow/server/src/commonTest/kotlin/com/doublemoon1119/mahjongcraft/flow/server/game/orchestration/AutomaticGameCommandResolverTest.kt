@@ -78,6 +78,8 @@ class AutomaticGameCommandResolverTest {
                 discarderId = discarder.id,
                 tileId = discardedTile.id,
                 eligiblePlayerIds = setOf(eligible),
+                ronPlayerIds = setOf(eligible),
+                id = Uuid.random(),
             ),
         )
 
@@ -99,6 +101,8 @@ class AutomaticGameCommandResolverTest {
                 discarderId = discarder.id,
                 tileId = discardedTile.id,
                 eligiblePlayerIds = setOf(eligible),
+                ronPlayerIds = setOf(eligible),
+                id = Uuid.random(),
             ),
         )
 

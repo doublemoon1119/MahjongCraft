@@ -2,16 +2,20 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.service
 
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleContractViolationException
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DiscardReactionResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.GetLegalActionsUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToDiscardUseCase
+import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.ExtensionGameAction
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
+import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionSource
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionValidator
@@ -23,6 +27,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledWinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
@@ -34,8 +39,10 @@ import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
 
 /** 驗證捨牌反應選項會經過玩家與 AI 共用的合法動作查詢與反應解析鏈。 */
 class DiscardReactionOptionsTest {
@@ -69,14 +76,53 @@ class DiscardReactionOptionsTest {
         )
 
         assertTrue(result.abortiveDrawReason == null)
+        val pendingReaction = assertIs<PendingReaction>(result.tableState.pendingReaction)
         assertEquals(
             PendingReaction(
                 discarderId = fixture.discarder.id,
                 tileId = fixture.discarded.id,
                 eligiblePlayerIds = setOf(fixture.respondent.id),
+                ronPlayerIds = emptySet(),
+                id = pendingReaction.id,
             ),
-            result.tableState.pendingReaction,
+            pendingReaction,
         )
+    }
+
+    /** ABORTIVE_DRAW 必須由規則模組提供具體流局原因，不能靜默退回一般反應視窗。 */
+    @Test
+    fun `discard reaction resolver rejects abortive multi ron without a reason`() {
+        val fixture = createFixture(includePon = false, includeRon = true, abortiveDrawReason = null)
+        val secondRespondent = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.WEST,
+            hand = Hand(
+                tiles = listOf(
+                    FakeIdentifiedTileFactory.create(Tile.Honor.South),
+                    FakeIdentifiedTileFactory.create(Tile.Honor.South),
+                ),
+            ),
+        )
+        val state = fixture.table.copy(
+            players = fixture.table.players + secondRespondent,
+            config = RiichiRuleConfig(
+                multiRonPolicy = MultiRonPolicy(
+                    doubleRonResolution = RonResolution.ABORTIVE_DRAW,
+                    tripleRonResolution = RonResolution.ABORTIVE_DRAW,
+                ),
+            ),
+            pendingReaction = null,
+        )
+
+        assertFailsWith<RuleContractViolationException> {
+            DiscardReactionResolver.resolve(
+                stateBeforeDiscard = state,
+                stateAfterDiscard = state,
+                module = fixture.module,
+                discarderId = fixture.discarder.id,
+                discardedTile = fixture.discarded,
+            )
+        }
+        assertEquals(null, state.pendingReaction)
     }
 
     /** 沒有任何受支援的鳴牌資格時，不應因規則回傳的擴充或錯誤槓選項開啟等待視窗。 */
@@ -132,6 +178,7 @@ class DiscardReactionOptionsTest {
             gameId = fixture.table.id,
             playerId = fixture.respondent.id,
             action = GameAction.Extension(TestReactionAction),
+            reactionId = checkNotNull(fixture.table.pendingReaction).id,
         )
 
         assertTrue(result is Outcome.Error)
@@ -144,7 +191,11 @@ class DiscardReactionOptionsTest {
      *
      * @param includePon 是否讓測試規則提供合法碰資格。
      */
-    private fun createFixture(includePon: Boolean = true): Fixture {
+    private fun createFixture(
+        includePon: Boolean = true,
+        includeRon: Boolean = false,
+        abortiveDrawReason: ExhaustiveDrawReason? = null,
+    ): Fixture {
         val discarded = FakeIdentifiedTileFactory.create(Tile.Honor.South)
         val handTileA = FakeIdentifiedTileFactory.create(Tile.Honor.South)
         val handTileB = FakeIdentifiedTileFactory.create(Tile.Honor.South)
@@ -157,9 +208,9 @@ class DiscardReactionOptionsTest {
         val table = FakeTableStateFactory.create(
             players = listOf(discarder, respondent),
             config = RiichiRuleConfig(),
-            pendingReaction = PendingReaction(discarder.id, discarded.id, setOf(respondent.id)),
+            pendingReaction = PendingReaction(discarder.id, discarded.id, setOf(respondent.id), ronPlayerIds = setOf(respondent.id), id = Uuid.random()),
         )
-        val module = TestRuleModule(RiichiRuleModule(TEST_RULE_ID, RiichiRuleConfig()), includePon)
+        val module = TestRuleModule(RiichiRuleModule(TEST_RULE_ID, RiichiRuleConfig()), includePon, includeRon, abortiveDrawReason)
         return Fixture(
             table = table,
             discarder = discarder,
@@ -173,7 +224,7 @@ class DiscardReactionOptionsTest {
                 moduleRegistry = MahjongModuleRegistryImpl().apply {
                     register(
                         MahjongModuleDefinition(RiichiRuleConfig::class, TEST_RULE_ID) { config, _ ->
-                            TestRuleModule(RiichiRuleModule(TEST_RULE_ID, config), includePon)
+                            TestRuleModule(RiichiRuleModule(TEST_RULE_ID, config), includePon, includeRon, abortiveDrawReason)
                         },
                     )
                     freeze()
@@ -214,7 +265,11 @@ class DiscardReactionOptionsTest {
     private class TestRuleModule(
         private val delegate: MahjongRuleModule<RiichiRuleConfig>,
         private val includePon: Boolean = true,
+        private val includeRon: Boolean = false,
+        private val abortiveDrawReason: ExhaustiveDrawReason? = null,
     ) : MahjongRuleModule<RiichiRuleConfig> by delegate {
+        override fun resolveMultiRonAbortiveDraw(): ExhaustiveDrawReason? = abortiveDrawReason
+
         override fun createLegalActionValidator(): LegalActionValidator = object : LegalActionValidator {
             override fun getLegalActions(context: LegalActionContext): List<GameAction> {
                 if (context.source is LegalActionSource.Discard) {
@@ -224,6 +279,7 @@ class DiscardReactionOptionsTest {
                         if (includePon) {
                             add(GameAction.Pon(incomingTile.id, context.player.hand.tiles.take(2).map { it.id }))
                         }
+                        if (includeRon) add(GameAction.Ron(incomingTile.id))
                         add(GameAction.Pass)
                         add(GameAction.Kan(GameAction.KanType.CLOSED_KAN, incomingTile.id, emptyList()))
                         add(GameAction.Kan(GameAction.KanType.ADDED_KAN, incomingTile.id, emptyList()))

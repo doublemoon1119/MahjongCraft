@@ -99,7 +99,7 @@ class DebugVirtualTableLayoutFactoryTest {
         )
         val ponIds = List(3) { Uuid.random() }
         val addedId = Uuid.random()
-        val pon = MahjongMeldTileGroup(MeldType.PON, ponIds, ponIds.first(), RelativeDirection.Across, allTilesFaceDown = false)
+        val pon = MahjongMeldTileGroup(MeldType.PON, ponIds, ponIds.first(), RelativeDirection.Across, allTilesFaceDown = false, faceDownTileIds = emptySet())
         val addedKan = pon.copy(type = MeldType.ADDED_KAN, tileIds = ponIds + addedId)
 
         val ponPlacements = layout.meldPlacements(listOf(pon))
@@ -124,7 +124,7 @@ class DebugVirtualTableLayoutFactoryTest {
             seatLayout = MahjongTableSeatLayout.FOUR_PLAYER,
         )
         val tileIds = List(3) { Uuid.random() }
-        val chi = MahjongMeldTileGroup(MeldType.CHI, tileIds, null, RelativeDirection.Self, allTilesFaceDown = false)
+        val chi = MahjongMeldTileGroup(MeldType.CHI, tileIds, null, RelativeDirection.Self, allTilesFaceDown = false, faceDownTileIds = emptySet())
 
         val nearSeat = layout.meldPlacements(listOf(chi))
         val otherSeat = layout.meldPlacements(listOf(chi), seatIndex = 2)

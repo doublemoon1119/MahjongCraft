@@ -43,7 +43,7 @@ class GameDecisionTimeoutServiceTest {
         val game = Game(
             tableState = FakeTableStateFactory.create(
                 players = listOf(FakeMahjongPlayerFactory.create(id = playerId)),
-                pendingReaction = PendingReaction(discarderId = Uuid.random(), tileId = Uuid.random(), eligiblePlayerIds = setOf(playerId)),
+                pendingReaction = PendingReaction(discarderId = Uuid.random(), tileId = Uuid.random(), eligiblePlayerIds = setOf(playerId), ronPlayerIds = setOf(playerId), id = Uuid.random()),
             ),
             flowConfig = GameFlowConfig(),
         )

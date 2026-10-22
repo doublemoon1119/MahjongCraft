@@ -1,253 +1,33 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.riichi
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
-import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
-import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
-import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
-import com.doublemoon1119.mahjongcraft.flow.server.game.history.acceptedActionHistoryDraft
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.CompletedGameActionContext
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.recordAbortiveDraw
-import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
-import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
-import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
-import com.doublemoon1119.mahjongcraft.flow.server.game.service.isOwnTurnWindowOpenFor
-import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DiscardReactionResolver
-import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DiscardTileUseCase
-import com.doublemoon1119.mahjongcraft.logic.base.GameAction
-import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
-import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAndDiscardUseCase
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.applyRiichiDeclaration
-import com.doublemoon1119.mahjongcraft.logic.table.SidewaysMarkedDiscardPile
 import kotlin.uuid.Uuid
 
 /**
- * 宣告立直的實例化用例。
+ * 日麻立直宣告的薄適配器。
  *
- * 立直宣告本質上是「打出一張牌，同時把這張牌標記成立直宣告牌」，前置驗證（回合、是否已摸牌）
- * 與 [DiscardTileUseCase] 相同。額外驗證的部分刻意不在這裡重新實作聽牌/門前清/點數等規則，
- * 而是直接問該規則模組自己的 `LegalActionValidator`：現在 [RIICHI_GAME_ACTION] 是不是合法動作。
- * 這樣一來，若某個規則根本沒有立直這個概念，[RIICHI_GAME_ACTION] 本來就
- * 不會出現在合法動作清單中，這裡自然會回傳 [GameError.IllegalAction]，不需要額外判斷「這個
- * 規則支不支援立直」。
+ * 日麻規則模組提供立直效果，驗證、宣告捨牌、反應判定、歷史與呈現由共用用例處理。
  *
- * `LegalActionValidator.getLegalActions()` 只確認「存在某一張牌，打出後可以聽牌」，並不知道玩家實際
- * 選了哪張牌，所以這裡還要另外呼叫 `LegalActionValidator.tileSelectionRequirement()` 取得候選牌集合，
- * 驗證 [tileId] 是否在其中。
- *
- * 立直宣告實際造成的日麻狀態變化交給 [applyRiichiDeclaration]；這個 use case 與對應 command handler
- * 明確屬於 bundled Riichi extension。其他規則若提供相似宣告，應註冊自己的 action、command 與
- * handler，不共用或偽裝成日麻立直。
- *
- * 立直宣告牌打出後，其他玩家是否有資格吃/碰/槓/榮和這張牌（含一炮多響判定為流局的情況）交給
- * [DiscardReactionResolver] 處理，與 [DiscardTileUseCase] 共用同一套邏輯。沒有人可以反應時，
- * 還會額外透過 [postActionExhaustiveDrawResolverRegistry] 檢查是否構成主動觸發的途中流局
- * （例如日麻的四家立直）。
- *
- * @property gameRepository 權威對局數據倉庫。
- * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的合法動作判定器與向聽數計算器。
- * @property snapshotSynchronizer 對局快照同步服務。
- * @property handSortPreferenceStore 查詢玩家是否啟用自動整理手牌，見該類別 KDoc。
- * @property postActionExhaustiveDrawResolverRegistry 立直宣告完成後主動觸發途中流局的判定 registry。
- * @property eventPublisher 對局通知服務。
- * @property presentationPublisher 對局呈現層通知服務，用於立直成立後通知平台呈現層更新立直棒。
+ * @property declareAndDiscardUseCase 宣告與捨牌的共用權威流程。
  */
 class DeclareRiichiUseCase(
-    private val gameRepository: GameRepository,
-    private val moduleRegistry: MahjongModuleRegistry,
-    private val snapshotSynchronizer: GameSnapshotSynchronizer,
-    private val handSortPreferenceStore: HandSortPreferenceStore,
-    private val postActionExhaustiveDrawResolverRegistry: PostActionExhaustiveDrawResolverRegistry,
-    private val eventPublisher: GameEventPublisher,
-    private val presentationPublisher: GamePresentationPublisher,
+    private val declareAndDiscardUseCase: DeclareAndDiscardUseCase,
 ) {
     /**
-     * 執行立直宣告邏輯。
+     * 執行日麻立直宣告及宣告牌捨出。
      *
-     * @param gameId 對局 Uuid。
-     * @param playerId 發起立直宣告的玩家 Uuid。
-     * @param tileId 欲作為立直宣告牌捨棄的唯一識別碼。
-     * @return 宣告結果，成功時為 [Unit]，失敗時為 [GameError]。
+     * @param gameId 對局識別碼。
+     * @param playerId 宣告玩家識別碼。
+     * @param tileId 宣告牌的實體識別碼。
+     * @return 成功時為 Unit，失敗時回傳流程錯誤。
      */
-    suspend operator fun invoke(gameId: Uuid, playerId: Uuid, tileId: Uuid): Outcome<Unit, GameError> {
-        // 1. 以原子方式讀取桌況、驗證業務規則並寫回
-        val outcome = gameRepository.update(
-            gameId,
-            history = { before, after, result ->
-                if (result is Outcome.Success && before != null && after != null) {
-                    val drafts = mutableListOf(
-                        acceptedActionHistoryDraft(playerId, RIICHI_GAME_ACTION, before, after),
-                        acceptedActionHistoryDraft(playerId, GameAction.Discard(tileId), before, after, listOf(tileId)),
-                    )
-                    result.value.abortiveDrawReason?.let { reason ->
-                        drafts += acceptedActionHistoryDraft(playerId, GameAction.ExhaustiveDraw(reason), before, after)
-                    }
-                    drafts
-                } else {
-                    emptyList<HistoryEventDraft>()
-                }
-            },
-        ) { state ->
-            when {
-                state == null -> state to Outcome.Error(GameError.GameNotFound(gameId))
-                state.players.none { it.id == playerId } ->
-                    state to Outcome.Error(GameError.PlayerNotInGame(playerId, gameId))
-
-                state.currentPlayer.id != playerId ->
-                    state to Outcome.Error(GameError.NotPlayersTurn(playerId, gameId))
-
-                !state.isOwnTurnWindowOpenFor(playerId) || state.currentPlayer.hand.lastDrawn == null ->
-                    state to Outcome.Error(GameError.IllegalAction(playerId, gameId, RIICHI_GAME_ACTION))
-
-                else -> {
-                    val module = moduleRegistry.getModule(state.config)
-                    val legalActionValidator = module.createLegalActionValidator()
-                    val legalActions = legalActionValidator.getLegalActions(
-                        LegalActionContext.ownTurn(state, playerId),
-                    )
-                    if (RIICHI_GAME_ACTION !in legalActions) {
-                        return@update state to Outcome.Error(
-                            GameError.IllegalAction(
-                                playerId,
-                                gameId,
-                                RIICHI_GAME_ACTION,
-                            ),
-                        )
-                    }
-
-                    val eligibleTileIds = legalActionValidator
-                        .tileSelectionRequirement(state, state.currentPlayer, RIICHI_GAME_ACTION)
-                        ?.eligibleTileIds
-                        ?: emptySet()
-                    if (tileId !in eligibleTileIds) {
-                        return@update state to Outcome.Error(
-                            GameError.IllegalAction(
-                                playerId,
-                                gameId,
-                                RIICHI_GAME_ACTION,
-                            ),
-                        )
-                    }
-
-                    val discardResult = state.currentPlayer.hand.discardById(tileId)
-                        ?: return@update state to Outcome.Error(
-                            GameError.IllegalAction(
-                                playerId,
-                                gameId,
-                                GameAction.Discard(tileId),
-                            ),
-                        )
-
-                    // 立直宣告本質上也是一次捨牌，理應跟 DiscardTileUseCase 同樣尊重自動整理手牌偏好——
-                    // 立直宣告牌若不是摸切（打的是手牌、剛摸到的牌因此併入手牌），併入的牌也要照
-                    // tileOrder 排序，不能維持原始加入順序。
-                    val organizedDiscardResult = if (handSortPreferenceStore.isEnabled(playerId)) {
-                        discardResult.copy(hand = discardResult.hand.organize(module.tileOrder))
-                    } else {
-                        discardResult
-                    }
-
-                    val declaration = applyRiichiDeclaration(state, state.currentPlayer, organizedDiscardResult)
-                        ?: return@update state to Outcome.Error(
-                            GameError.IllegalAction(
-                                playerId,
-                                gameId,
-                                RIICHI_GAME_ACTION,
-                            ),
-                        )
-
-                    val updatedPlayer = declaration.player
-                        .recordAction(RIICHI_GAME_ACTION)
-                        .recordAction(GameAction.Discard(discardResult.tile.id))
-                    val updatedPlayers = state.players.map { if (it.id == playerId) updatedPlayer else it }
-                    val stateAfterDeclaration = state.copy(
-                        players = updatedPlayers,
-                        dynamicRuleState = declaration.dynamicRuleState,
-                    )
-
-                    val resolved = DiscardReactionResolver.resolve(
-                        state,
-                        stateAfterDeclaration,
-                        module,
-                        playerId,
-                        discardResult.tile,
-                    )
-
-                    // 沒有觸發一炮多響流局、也沒有人可反應時，額外檢查是否構成主動觸發的途中流局。
-                    val suuchaReason =
-                        if (resolved.abortiveDrawReason == null && resolved.tableState.pendingReaction == null) {
-                            postActionExhaustiveDrawResolverRegistry.resolve(
-                                CompletedGameActionContext(
-                                    actorPlayerId = playerId,
-                                    action = GameAction.Discard(tileId),
-                                    tableState = resolved.tableState,
-                                ),
-                                module,
-                            )
-                        } else {
-                            null
-                        }
-                    val finalResult = if (suuchaReason != null) {
-                        resolved.copy(
-                            tableState = resolved.tableState.recordAbortiveDraw(suuchaReason, declarerId = null, module = module),
-                            abortiveDrawReason = suuchaReason,
-                        )
-                    } else {
-                        resolved
-                    }
-
-                    finalResult.tableState to Outcome.Success(finalResult)
-                }
-            }
-        }
-
-        if (outcome is Outcome.Error) return outcome
-        val result = (outcome as Outcome.Success).value
-        val newState = result.tableState
-
-        // 2. 同步快照給所有正在觀察的玩家
-        snapshotSynchronizer.syncAll(gameId)
-
-        // 3. 通知在場玩家與旁觀者：先廣播立直宣告，再廣播這張牌的捨牌事件，流局有觸發時接著廣播流局事件
-        val seatedPlayerIds = newState.players.map { it.id }
-        eventPublisher.publishToAllObservers(gameId, seatedPlayerIds, playerId, RIICHI_GAME_ACTION)
-        eventPublisher.publishToAllObservers(gameId, seatedPlayerIds, playerId, GameAction.Discard(tileId))
-        result.abortiveDrawReason?.let { reason ->
-            eventPublisher.publishToAllObservers(gameId, seatedPlayerIds, playerId, GameAction.ExhaustiveDraw(reason))
-        }
-
-        // 4. 觸發平台呈現層：重新排列立牌列、並把立直宣告牌移到牌河（橫放標記）——立直宣告本質上也是
-        // 一次捨牌，跟 [DiscardTileUseCase] 步驟 4 完全同一套呼叫。
-        val module = moduleRegistry.getModule(newState.config)
-        val seatIndex = newState.players.indexOfFirst { it.id == playerId }
-        val discarder = newState.players[seatIndex]
-        presentationPublisher.publishPlayerTilesUpdated(
-            gameId,
-            seatIndex,
-            discarder.hand.tiles.map { it.id },
-            null,
-            discarder.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles, module.tileOrder) },
-            setAsideTileIds = module.setAsideTiles(discarder).map { it.id },
-        )
-        presentationPublisher.publishDiscardPileUpdated(
-            gameId,
-            seatIndex,
-            discarder.discardPile.entries.filterNot { it.isTaken }.map { it.tile.id },
-            (discarder.discardPile as? SidewaysMarkedDiscardPile)?.sidewaysMarkedTileId(),
-            newlyDiscardedTileId = tileId,
-        )
-
-        // 5. 宣告成立後立直棒要出現在桌上，通知平台依目前桌況更新桌上物件。
-        presentationPublisher.publishRuleStateUpdated(gameId)
-
-        // 6. 通知平台呈現層更新局況資訊——立直宣告當下供託支數馬上 +1，若不在這裡也更新一次，
-        // 顯示要等到下一次摸牌才會跟著變，體驗不一致。
-        presentationPublisher.publishRoundInfoUpdated(gameId, newState)
-        presentationPublisher.publishGameActionDeclared(gameId, playerId, RIICHI_GAME_ACTION)
-
-        return Outcome.Success(Unit)
-    }
+    suspend operator fun invoke(gameId: Uuid, playerId: Uuid, tileId: Uuid): Outcome<Unit, GameError> = declareAndDiscardUseCase(
+        gameId = gameId,
+        playerId = playerId,
+        action = RIICHI_GAME_ACTION,
+        tileId = tileId,
+    )
 }

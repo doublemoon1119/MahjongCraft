@@ -11,14 +11,13 @@ import com.doublemoon1119.mahjongcraft.ai.expectation.ExpectationFixtures.s
 import com.doublemoon1119.mahjongcraft.ai.expectation.ExpectationFixtures.table
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiGameCommand
-import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
-import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeMeldFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -52,10 +51,9 @@ class RiichiDeclarationAiHandlerTest {
     /** 有暗槓的手牌仍以暗槓作為一組面子判斷聽牌。 */
     @Test
     fun `a closed kan counts as a set when checking tenpai`() {
-        val kan = Meld(
+        val kan = FakeMeldFactory.create(
             type = MeldType.CLOSED_KAN,
             tiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Honor.White) },
-            sourceDirection = RelativeDirection.Self,
         )
         val self = player(
             Wind.SOUTH,

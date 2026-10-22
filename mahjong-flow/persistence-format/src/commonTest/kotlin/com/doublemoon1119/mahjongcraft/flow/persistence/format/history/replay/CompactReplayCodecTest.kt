@@ -15,9 +15,11 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.config.GameFlowCo
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.config.toPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.TypedPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.HistoryRecordingPersistenceMapper
+import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
+import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollResult
 import com.doublemoon1119.mahjongcraft.logic.table.opening.DiceRollSource
 import com.doublemoon1119.mahjongcraft.logic.table.opening.OpeningDiceRoll
@@ -25,6 +27,7 @@ import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRe
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledSetAsideTiles
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.encodeToJsonElement
@@ -32,6 +35,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
 /** 驗證精簡 Replay 文件的 envelope 與損壞輸入防護。 */
@@ -93,6 +97,68 @@ class CompactReplayCodecTest {
             ),
             projected,
         )
+    }
+
+    /** 精簡 Replay 去掉只用於即時提交驗證的反應視窗識別碼，保留榮和名單與各玩家的選牌。 */
+    @Test
+    fun `compact replay drops the reaction window id but keeps its contents`() {
+        val base = GameInitializer.initialize(
+            id = Uuid.random(),
+            playerIds = List(4) { Uuid.random() },
+            module = RiichiRuleModule("test:riichi", RiichiRuleConfig()),
+            diceRollSource = DiceRollSource { DiceRollResult.of(List(it) { 1 }) },
+        ).tableState
+        val discarder = base.players[0]
+        val responder = base.players[1]
+        val state = base.copy(
+            pendingReaction = PendingReaction(
+                discarderId = discarder.id,
+                tileId = discarder.hand.tiles.first().id,
+                eligiblePlayerIds = setOf(responder.id),
+                ronPlayerIds = setOf(responder.id),
+                id = Uuid.random(),
+                responses = mapOf(responder.id to GameAction.Pass),
+                selectedTileIds = mapOf(responder.id to emptyList()),
+            ),
+        )
+        val matchId = Uuid.random()
+        val events = listOf(
+            HistoryOutboxEvent(matchId, state.id, 1, 1, 1, 100, null, HistoryFact.MatchStarted(state, GameFlowConfig(), emptyMap())),
+            HistoryOutboxEvent(matchId, state.id, 1, 2, 2, 200, null, HistoryFact.MatchCompleted("test:complete", state.players.associate { it.id to it.score })),
+            HistoryOutboxEvent(matchId, state.id, 1, 3, 3, 300, null, HistoryFact.ReturnedToRoom),
+        )
+        val registries = bundledPersistenceRegistries()
+        val document = CompactReplayCodec.encodeCompact(
+            events,
+            HistoryRecordingPersistenceMapper(registries),
+            registries,
+            bundledSetAsideTiles(events),
+        )
+
+        val content = CompactReplayDictionary.decode(document.getValue(ReplayFormatKeys.PAYLOAD) as JsonObject)
+        val reaction = findObjectWithKey(content, "ronPlayerIds")
+        assertTrue("selectedTileIds" in reaction.keys)
+        assertTrue("responses" in reaction.keys)
+        assertTrue(ReplaySourceKeys.ID !in reaction.keys)
+    }
+
+    /**
+     * 找出第一個帶有指定欄位的 JSON 物件。
+     *
+     * @param element 要搜尋的 JSON。
+     * @param key 物件必須帶有的欄位名稱。
+     * @return 第一個符合的物件。
+     */
+    private fun findObjectWithKey(element: JsonElement, key: String): JsonObject {
+        val queue = ArrayDeque(listOf(element))
+        while (queue.isNotEmpty()) {
+            when (val current = queue.removeFirst()) {
+                is JsonObject -> if (key in current.keys) return current else queue.addAll(current.values)
+                is JsonArray -> queue.addAll(current)
+                else -> Unit
+            }
+        }
+        error("No object with $key")
     }
 
     /** 未知 envelope 欄位不得被靜默忽略。 */

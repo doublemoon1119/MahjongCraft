@@ -146,7 +146,9 @@ internal object HistoryRoundResponseValidator {
                     !validTileIndexes(state.tileCatalog.size, it.tiles) ||
                         !validTileIndexOrNull(state.tileCatalog.size, it.sourceTile) ||
                         it.tiles.distinct().size != it.tiles.size ||
-                        it.sourceTile?.let { source -> source !in it.tiles } == true
+                        it.sourceTile?.let { source -> source !in it.tiles } == true ||
+                        !it.tiles.containsAll(it.faceDownTileIds) ||
+                        !it.tiles.containsAll(it.publiclyRevealedTileIds)
                 }
             ) {
                 return HistoryRoundValidationResult.Invalid(HistoryRoundValidationError.TILE_INDEX_INVALID)

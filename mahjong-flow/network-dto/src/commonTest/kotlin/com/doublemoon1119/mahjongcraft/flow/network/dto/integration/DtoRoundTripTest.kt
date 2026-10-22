@@ -47,6 +47,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDto
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.config.GameLength
@@ -77,6 +78,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPlacement
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.toSnapshot
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledNetworkDtos
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeMeldFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.serialization.Serializable
@@ -141,13 +143,16 @@ class DtoRoundTripTest {
     @Test
     fun `test GameCommand round-trips through every variant`() {
         val tileId = Uuid.random()
+        val selectedTileIds = listOf(Uuid.random(), Uuid.random())
         val commands = listOf(
             GameCommand.Draw,
             GameCommand.Discard(tileId),
             GameCommand.Extension(RiichiGameCommand(tileId)),
             GameCommand.Tsumo,
             GameCommand.Kan(GameAction.KanType.CLOSED_KAN, tileId),
-            GameCommand.RespondToDiscard(GameAction.Ron(tileId)),
+            GameCommand.RespondToDiscard(GameAction.Ron(tileId), tileId),
+            GameCommand.RespondToDiscard(GameAction.Pon(tileId, selectedTileIds), Uuid.random(), selectedTileIds),
+            GameCommand.RespondToDiscard(RIICHI_GAME_ACTION, Uuid.random(), selectedTileIds),
             GameCommand.RespondToRobbing(GameAction.Pass),
             GameCommand.DeclareExhaustiveDraw(RiichiExhaustiveDrawReason.KyuushuKyuuhai),
         )
@@ -233,6 +238,22 @@ class DtoRoundTripTest {
         assertEquals(snapshot.dynamicRuleState, decodedDto.toDomain(registries).dynamicRuleState)
         assertEquals(snapshot.physicalWallLayout, decodedDto.toDomain(registries).physicalWallLayout)
         assertEquals(listOf(setAsideTile), decodedDto.toDomain(registries).players.single().setAsideTiles)
+    }
+
+    /** 副露的朝下牌張在網路編解碼後保留，暗槓仍是兩端朝下。 */
+    @Test
+    fun `test meld face down tiles round-trip through network DTOs`() {
+        val kanTiles = List(4) { IdentifiedTile(Uuid.random(), Tile.Honor.Green) }
+        val player = FakeMahjongPlayerFactory.create(
+            hand = Hand(melds = listOf(FakeMeldFactory.create(type = MeldType.CLOSED_KAN, tiles = kanTiles))),
+            discardPile = RiichiDiscardPile(emptyList()),
+        )
+        val snapshot = FakeTableStateFactory.create(players = listOf(player), config = RiichiRuleConfig())
+            .toSnapshot(setOf(player.id), setAsideTiles = { emptyList() })
+        val encoded = json.encodeToString(TableStateSnapshotDto.serializer(), snapshot.toDto(registries))
+        val decoded = json.decodeFromString(TableStateSnapshotDto.serializer(), encoded).toDomain(registries)
+
+        assertEquals(setOf(kanTiles.first().id, kanTiles.last().id), decoded.players.single().hand.melds.single().faceDownTileIds)
     }
 
     /** 觀察者快照中的未知私人欄位，在網路編解碼後仍保留為 null。 */

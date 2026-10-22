@@ -18,9 +18,12 @@ fun PendingReaction.toPersistenceDto(
     exhaustiveDrawReasonRegistry: PersistenceDtoRegistry<ExhaustiveDrawReason>,
     extensionGameActionRegistry: PersistenceDtoRegistry<ExtensionGameAction>,
 ): PendingReactionPersistenceDto = PendingReactionPersistenceDto(
+    id = id.toString(),
+    selectedTileIds = selectedTileIds.mapKeys { it.key.toString() }.mapValues { (_, ids) -> ids.map(Uuid::toString) },
     discarderId = discarderId.toString(),
     tileId = tileId.toString(),
     eligiblePlayerIds = eligiblePlayerIds.map(Uuid::toString).toSet(),
+    ronPlayerIds = ronPlayerIds.map(Uuid::toString).toSet(),
     responses = responses.mapKeys { it.key.toString() }.mapValues {
         it.value.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry)
     },
@@ -37,9 +40,12 @@ fun PendingReactionPersistenceDto.toDomain(
     exhaustiveDrawReasonRegistry: PersistenceDtoRegistry<ExhaustiveDrawReason>,
     extensionGameActionRegistry: PersistenceDtoRegistry<ExtensionGameAction>,
 ): PendingReaction = PendingReaction(
+    id = Uuid.parse(id),
+    selectedTileIds = selectedTileIds.mapKeys { Uuid.parse(it.key) }.mapValues { (_, ids) -> ids.map(Uuid::parse) },
     discarderId = Uuid.parse(discarderId),
     tileId = Uuid.parse(tileId),
     eligiblePlayerIds = eligiblePlayerIds.map(Uuid::parse).toSet(),
+    ronPlayerIds = ronPlayerIds.map(Uuid::parse).toSet(),
     responses = responses.mapKeys { Uuid.parse(it.key) }.mapValues {
         it.value.toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry)
     },

@@ -381,6 +381,8 @@ class GameDecisionTimerManagerTest {
                         discarderId = Uuid.random(),
                         tileId = Uuid.random(),
                         eligiblePlayerIds = eligiblePlayerIds.toSet(),
+                        ronPlayerIds = eligiblePlayerIds.toSet(),
+                        id = Uuid.random(),
                     ),
                 ),
                 flowConfig = GameFlowConfig(),

@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameAbortReasonIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.SettledWinPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationRequest
@@ -17,9 +18,10 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.history.acceptedActionHi
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.winSettlementHistoryDetails
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.CompletedGameActionContext
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleContractViolationException
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.recordAbortiveDraw
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
-import com.doublemoon1119.mahjongcraft.flow.server.game.service.DiscardReactionActionSupport
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.DiscardReactionOptionsResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
@@ -28,8 +30,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementPre
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
-import com.doublemoon1119.mahjongcraft.logic.base.MeldType
-import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
+import com.doublemoon1119.mahjongcraft.logic.module.DiscardReactionCandidate
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult
@@ -43,18 +44,16 @@ import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTran
 import kotlin.uuid.Uuid
 
 /**
- * 回應捨牌反應視窗（吃/碰/明槓/過）的實例化用例。
+ * 接收捨牌反應，並在所有有資格的玩家回應後裁定結果。
  *
  * 對應 [DiscardTileUseCase] 捨牌後開啟的 `TableState.pendingReaction`：每位有資格的玩家各自呼叫
- * 一次本用例記錄自己的回應，直到所有有資格的玩家都回應完畢，才會實際結算。結算時的優先權規則：
- * 榮和 > 碰/明槓 > 吃（碰/明槓則是同一張牌結構上不可能被兩人同時碰/槓，故不需要更細緻的同類型排序；
- * 榮和則可能同時有多位贏家——見 [DiscardTileUseCase] 依 `MultiRonPolicy` 決定的一炮多響資格判斷，
- * 本用例只單純結算「這次收到幾筆榮和回應」，不重複判斷資格與人數限制）；若所有人都選擇過牌，
- * 則單純推進到下一位玩家，行為與捨牌時「無人可反應」的情況相同。
+ * 一次本用例記錄自己的回應。優先順序由規則提供，同級時再比較規則的次順位與距離捨牌者的座次。
+ * 吃、碰、明槓與擴充副露使用同一條裁定流程；榮和沿用開啟視窗時決定的多家和牌資格。
+ * 所有人都選擇過牌時，回合交給下一位玩家。
  *
  * 榮和結算後手牌即結束：本用例刻意只改動分數、贏家的 `actionHistory`，以及供託相關的動態規則狀態，
  * `currentPlayerIndex` 維持原樣不動（不像碰/吃/槓那樣把回合交給得標玩家），連莊/過莊/開下一局等
- * 後續流程留給未來獨立的單位。
+ * 後續流程由對局協調器銜接。
  *
  * @property gameRepository 權威對局數據倉庫。
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的合法動作判定器與規則特有邏輯。
@@ -84,11 +83,18 @@ class RespondToDiscardUseCase(
      *
      * @param gameId 對局 Uuid。
      * @param playerId 發起回應的玩家 Uuid。
-     * @param action 欲執行的回應動作（[GameAction.Ron]、[GameAction.Pass]、[GameAction.Chi]、[GameAction.Pon]，
-     * 或 [GameAction.KanType.OPEN_KAN] 型態的 [GameAction.Kan]）。
+     * @param action 規則在目前視窗提供的回應動作，包含內建反應或擴充副露。
+     * @param reactionId 提交時所回應的視窗識別碼。
+     * @param selectedTileIds 本次動作選取的本人手牌。
      * @return 回應結果，成功時為 [Unit]，失敗時為 [GameError]。
      */
-    suspend operator fun invoke(gameId: Uuid, playerId: Uuid, action: GameAction): Outcome<Unit, GameError> {
+    suspend operator fun invoke(
+        gameId: Uuid,
+        playerId: Uuid,
+        action: GameAction,
+        reactionId: Uuid,
+        selectedTileIds: List<Uuid> = emptyList(),
+    ): Outcome<Unit, GameError> {
         // AI 名單整場對局不變，先取出供結算呈現使用。
         val aiPlayerIds = gameRepository.getGame(gameId)?.aiPlayerIds.orEmpty()
         val outcome = gameRepository.update(
@@ -101,7 +107,7 @@ class RespondToDiscardUseCase(
                             action = action,
                             before = before,
                             after = after,
-                            affectedTileIds = action.affectedTileIds(),
+                            affectedTileIds = (action.affectedTileIds() + selectedTileIds + listOfNotNull(before.pendingReaction?.tileId)).distinct(),
                         ),
                     ) + if (before.pendingReaction != null && after.pendingReaction == null) {
                         val resolution = result.value
@@ -156,6 +162,9 @@ class RespondToDiscardUseCase(
                 pendingReaction == null ->
                     state to Outcome.Error(GameError.IllegalAction(playerId, gameId, action))
 
+                pendingReaction.id != reactionId ->
+                    state to Outcome.Error(GameError.IllegalAction(playerId, gameId, action))
+
                 playerId !in pendingReaction.eligiblePlayerIds ->
                     state to Outcome.Error(GameError.IllegalAction(playerId, gameId, action))
 
@@ -165,34 +174,45 @@ class RespondToDiscardUseCase(
                 else -> {
                     val discarder = state.players.first { it.id == pendingReaction.discarderId }
                     val responder = state.players.first { it.id == playerId }
-                    val discardedTile =
-                        discarder.discardPile.entries.first { it.tile.id == pendingReaction.tileId }.tile
+                    val discardedTile = discarder.discardPile.entries.lastOrNull()
+                        ?.takeIf { it.tile.id == pendingReaction.tileId && !it.isTaken }
+                        ?.tile
+                        ?: return@update state to Outcome.Error(GameError.IllegalAction(playerId, gameId, action))
 
                     val module = moduleRegistry.getModule(state.config)
-                    val legalActions = DiscardReactionActionSupport.filter(
-                        module.createLegalActionValidator().getLegalActions(
-                            LegalActionContext.discardReaction(
-                                tableState = state,
-                                playerId = playerId,
-                                discarderId = pendingReaction.discarderId,
-                                discardedTile = discardedTile,
-                            ),
-                        ),
+                    val candidates = DiscardReactionOptionsResolver.resolveCandidates(
+                        state = state,
+                        module = module,
+                        playerId = playerId,
+                        discarderId = pendingReaction.discarderId,
+                        discardedTile = discardedTile,
                     )
-                    if (action !in legalActions) {
+                    val accepted = DiscardReactionOptionsResolver.resolveSubmission(
+                        state = state,
+                        module = module,
+                        playerId = playerId,
+                        discarderId = pendingReaction.discarderId,
+                        discardedTile = discardedTile,
+                        action = action,
+                        selectedTileIds = selectedTileIds,
+                    )
+                    if (accepted == null) {
                         return@update state to Outcome.Error(GameError.IllegalAction(playerId, gameId, action))
                     }
 
                     // 放過原本合法的榮和：後果交給規則決定，見 MahjongRuleModule.onPlayerDeclinedWin。
                     // 這張牌記入放過清單的時機是反應視窗結束且沒有人榮和時，見 resolvePendingReaction。
-                    val updatedResponder = if (action == GameAction.Pass && legalActions.any { it is GameAction.Ron }) {
+                    val updatedResponder = if (action == GameAction.Pass && candidates.any { it.action is GameAction.Ron }) {
                         module.onPlayerDeclinedWin(responder)
                     } else {
                         responder
                     }
                     val playersAfterResponse = state.players.map { if (it.id == playerId) updatedResponder else it }
                     val newPendingReaction =
-                        pendingReaction.copy(responses = pendingReaction.responses + (playerId to action))
+                        pendingReaction.copy(
+                            responses = pendingReaction.responses + (playerId to action),
+                            selectedTileIds = pendingReaction.selectedTileIds + (playerId to accepted.selectedTileIds.toList()),
+                        )
 
                     val result = if (!newPendingReaction.isComplete) {
                         RespondResult(state.copy(players = playersAfterResponse, pendingReaction = newPendingReaction))
@@ -307,7 +327,7 @@ class RespondToDiscardUseCase(
                 winnerSeatIndex,
                 winner.hand.tiles.map { it.id },
                 winner.hand.lastDrawn?.id,
-                winner.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles, module.tileOrder) },
+                winner.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
                 setAsideTileIds = module.setAsideTiles(winner).map { it.id },
                 // 吃/碰/明槓永遠整組一次成立新副露（附加到 exposedMelds 尾端，不是原地修改既有組），
                 // 最後一組必定就是這次剛成立的那組，組內全部牌都是新移入副露的牌。
@@ -425,7 +445,36 @@ class RespondToDiscardUseCase(
         discardedTile: IdentifiedTile,
         module: MahjongRuleModule<*>,
     ): RespondResult {
-        val ronWinnerIds = pendingReaction.responses.filterValues { it is GameAction.Ron }.keys
+        // 過牌不參與裁定，也不重新驗證：放過和牌的規則後果（例如立直後放過榮和而永久振聽）在提交時已經套用，
+        // 套用後該玩家可能不再有任何合法動作。
+        val responses = pendingReaction.responses.filterValues { it != GameAction.Pass }.mapValues { (playerId, action) ->
+            DiscardReactionOptionsResolver.resolveSubmission(
+                state = state,
+                module = module,
+                playerId = playerId,
+                discarderId = pendingReaction.discarderId,
+                discardedTile = discardedTile,
+                action = action,
+                selectedTileIds = pendingReaction.selectedTileIds[playerId].orEmpty(),
+            ) ?: throw RuleContractViolationException(
+                GameAbortReasonIds.RULE_EXECUTION_FAILED,
+                "Accepted discard reaction cannot be resolved for $playerId: $action",
+            )
+        }
+        val discarderIndex = state.players.indexOfFirst { it.id == pendingReaction.discarderId }
+        val rankedResponses = responses.entries.sortedWith(
+            compareByDescending<Map.Entry<Uuid, DiscardReactionCandidate>> { it.value.priority }
+                .thenByDescending { it.value.tieBreakPriority }
+                .thenBy { entry ->
+                    (state.players.indexOfFirst { it.id == entry.key } - discarderIndex + state.players.size) % state.players.size
+                },
+        )
+        val winningResponse = rankedResponses.firstOrNull()
+        val ronWinnerIds = if (winningResponse?.value?.action is GameAction.Ron) {
+            responses.filterValues { it.action is GameAction.Ron }.keys
+        } else {
+            emptySet()
+        }
         if (ronWinnerIds.isNotEmpty()) {
             val resolved = RonSettlementResolver.resolve(
                 state = state,
@@ -477,9 +526,7 @@ class RespondToDiscardUseCase(
             )
         }
 
-        val winningEntry =
-            pendingReaction.responses.entries.firstOrNull { it.value is GameAction.Pon || it.value is GameAction.Kan }
-                ?: pendingReaction.responses.entries.firstOrNull { it.value is GameAction.Chi }
+        val winningEntry = winningResponse
 
         if (winningEntry == null) {
             // 所有人皆過牌：行為與捨牌時「無人可反應」相同，直接推進到下一位仍在本局中的玩家
@@ -499,33 +546,43 @@ class RespondToDiscardUseCase(
         }
 
         val winnerId = winningEntry.key
-        val winnerAction = winningEntry.value
+        val winnerAction = winningEntry.value.action
         val winner = players.first { it.id == winnerId }
         val winnerDirection = state.relativeDirectionOf(winnerId, pendingReaction.discarderId)
 
-        val meldType = when (winnerAction) {
-            is GameAction.Chi -> MeldType.CHI
-            is GameAction.Pon -> MeldType.PON
-            is GameAction.Kan -> MeldType.OPEN_KAN
-            else -> error("Unreachable: only Chi/Pon/Kan can win a discard reaction")
-        }
-        val handTilesUsed: List<IdentifiedTile> = when (winnerAction) {
-            is GameAction.Chi -> winnerAction.withTiles.mapNotNull { id -> winner.hand.standingTiles.find { it.id == id } }
-            is GameAction.Kan -> winnerAction.withTiles.mapNotNull { id -> winner.hand.standingTiles.find { it.id == id } }
-            is GameAction.Pon -> winnerAction.withTiles.mapNotNull { id -> winner.hand.standingTiles.find { it.id == id } }
-        }
+        val effect = winningEntry.value.claimEffect ?: throw RuleContractViolationException(
+            GameAbortReasonIds.RULE_EXECUTION_FAILED,
+            "Winning discard claim has no meld effect: $winnerAction",
+        )
+        val meldType = effect.meldType
+        val handTilesUsed = effect.handTileIds.map { id -> winner.hand.standingTiles.first { it.id == id } }
 
         val claimingWinner = module.beforeDiscardClaimed(winner, meldType, discardedTile, winnerDirection)
-        val calledHand =
-            claimingWinner.hand.call(meldType, handTilesUsed + discardedTile, discardedTile, winnerDirection)
+        val meldTiles = handTilesUsed + discardedTile
+        val displayTiles = if (effect.publiclyRevealedTileIds.containsAll(meldTiles.map { it.id })) {
+            meldTiles.sortedWith(compareBy(module.tileOrder) { it.tile })
+        } else {
+            meldTiles.sortedBy { it.id.toString() }
+        }
+        val calledHand = claimingWinner.hand.call(
+            type = meldType,
+            tiles = displayTiles,
+            source = discardedTile,
+            direction = winnerDirection,
+            publiclyRevealedTileIds = effect.publiclyRevealedTileIds,
+            faceDownTileIds = effect.faceDownTileIds,
+        )
         // 明槓得標後緊接著補摸嶺上牌（見下方 lastDrawn 賦值），這裡先不整理——理由同 DeclareKanUseCase
         // 沒有整理手牌時機點的說明：整理只在 lastDrawn == null（沒有還沒決定的摸牌）時才適用。
-        val organizedHand = if (meldType != MeldType.OPEN_KAN && handSortPreferenceStore.isEnabled(winnerId)) {
+        val organizedHand = if (!effect.requiresSupplementalDraw && handSortPreferenceStore.isEnabled(winnerId)) {
             calledHand.organize(module.tileOrder)
         } else {
             calledHand
         }
-        val winnerAfterMeld = claimingWinner.copy(hand = organizedHand).clearPassedTiles().recordAction(winnerAction)
+        val winnerAfterMeld = claimingWinner.copy(
+            hand = organizedHand,
+            mustDiscardAfterMeld = !effect.requiresSupplementalDraw,
+        ).clearPassedTiles().recordAction(winnerAction)
 
         val playersAfterMeld = players.map { player ->
             when (player.id) {
@@ -537,7 +594,7 @@ class RespondToDiscardUseCase(
         val playersAfterMeldClaimed = module.onMeldClaimed(playersAfterMeld)
         val winnerIndex = playersAfterMeldClaimed.indexOfFirst { it.id == winnerId }
 
-        if (meldType != MeldType.OPEN_KAN) {
+        if (!effect.requiresSupplementalDraw) {
             return RespondResult(
                 tableState = state.copy(
                     players = playersAfterMeldClaimed,
@@ -578,20 +635,33 @@ class RespondToDiscardUseCase(
                 module,
             )
         ) {
-            is SelfDeclarationApplier.Result.Rejected -> RespondResult(
-                tableState = state,
-                rejectionReasonId = applied.reasonId,
-            )
+            is SelfDeclarationApplier.Result.Rejected -> {
+                if (applied.reasonId == SupplementalDrawReasonIds.INVALID_RESULT) {
+                    throw RuleContractViolationException(
+                        GameAbortReasonIds.RULE_EXECUTION_FAILED,
+                        "Claim supplemental draw failed validation: $winnerAction",
+                    )
+                }
+                RespondResult(tableState = state, rejectionReasonId = applied.reasonId)
+            }
 
-            is SelfDeclarationApplier.Result.Applied -> RespondResult(
-                tableState = applied.tableState,
-                supplementalDrawHappened = applied.drawnTiles.isNotEmpty(),
-                discarderId = pendingReaction.discarderId,
-                winnerId = winnerId,
-                resolvedAction = winnerAction,
-                wallRevealBatches = reactionReveal.wallRevealBatches + applied.wallRevealBatches,
-                physicalWallTransitionPhases = applied.physicalWallTransitionPhases,
-            )
+            is SelfDeclarationApplier.Result.Applied -> {
+                if (applied.drawnTiles.isEmpty()) {
+                    throw RuleContractViolationException(
+                        GameAbortReasonIds.RULE_EXECUTION_FAILED,
+                        "Claim requires a supplemental draw but the rule did not provide one: $winnerAction",
+                    )
+                }
+                RespondResult(
+                    tableState = applied.tableState,
+                    supplementalDrawHappened = true,
+                    discarderId = pendingReaction.discarderId,
+                    winnerId = winnerId,
+                    resolvedAction = winnerAction,
+                    wallRevealBatches = reactionReveal.wallRevealBatches + applied.wallRevealBatches,
+                    physicalWallTransitionPhases = applied.physicalWallTransitionPhases,
+                )
+            }
         }
     }
 

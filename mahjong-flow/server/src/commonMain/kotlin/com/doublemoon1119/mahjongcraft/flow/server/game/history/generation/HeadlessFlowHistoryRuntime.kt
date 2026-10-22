@@ -46,6 +46,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationH
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AbortGameUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAbortiveDrawUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAndDiscardUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareKanUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareTsumoUseCase
@@ -180,6 +181,15 @@ class HeadlessFlowHistoryRuntime private constructor(
                     postActionExhaustiveDrawResolverRegistry = postAction,
                     eventPublisher = gameEvents,
                     presentationPublisher = presentation,
+                    declareAndDiscardUseCase = DeclareAndDiscardUseCase(
+                        gameRepository,
+                        moduleRegistry,
+                        synchronizer,
+                        handSort,
+                        postAction,
+                        gameEvents,
+                        presentation,
+                    ),
                 ),
             )
             val router = GameActionRouter(

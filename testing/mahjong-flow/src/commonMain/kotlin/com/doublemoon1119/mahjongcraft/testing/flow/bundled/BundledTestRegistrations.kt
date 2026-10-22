@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.bundled.BuiltInMahjongExtension
 import com.doublemoon1119.mahjongcraft.bundled.BundledMahjongExtensions
 import com.doublemoon1119.mahjongcraft.extension.CoreExtensionRegistries
+import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtensionRegistrar
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
@@ -90,8 +91,12 @@ fun MahjongAiStrategyRegistry.registerBuiltInAiStrategies(
     ).registerAiStrategies(this)
 }
 
-/** 測試用：以 [BuiltInMahjongExtension] 與所有隨 MahjongCraft 發布之規則 extension 完成登記並凍結的完整 registry。 */
-fun bundledCoreExtensionRegistries(): CoreExtensionRegistries {
+/**
+ * 測試用：以 [BuiltInMahjongExtension] 與所有隨 MahjongCraft 發布之規則 extension 完成登記並凍結的完整 registry。
+ *
+ * @param additionalExtensions 額外參與同一次公開 bootstrap 的測試或第三方 extension。
+ */
+fun bundledCoreExtensionRegistries(additionalExtensions: List<MahjongExtension> = emptyList()): CoreExtensionRegistries {
     val moduleRegistry = MahjongModuleRegistryImpl()
     val gameActionAiRegistry = ExtensionGameActionAiRegistry(moduleRegistry)
     val opponentModelRegistry = OpponentModelRegistry()
@@ -113,7 +118,7 @@ fun bundledCoreExtensionRegistries(): CoreExtensionRegistries {
         winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry(),
     )
     MahjongExtensionRegistrar.registerAndFreeze(
-        extensions = BundledMahjongExtensions.all,
+        extensions = BundledMahjongExtensions.all + additionalExtensions,
         registries = registries,
         builtIn = BuiltInMahjongExtension(
             moduleRegistry = moduleRegistry,

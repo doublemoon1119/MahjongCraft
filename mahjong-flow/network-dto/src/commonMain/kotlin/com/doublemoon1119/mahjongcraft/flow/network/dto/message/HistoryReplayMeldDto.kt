@@ -11,6 +11,8 @@ import kotlinx.serialization.Serializable
  * @property tiles 副露牌索引。
  * @property sourceTile 來源牌索引。
  * @property sourceDirection 來源方向。
+ * @property faceDownTileIds 需要以牌背呈現的副露牌索引。
+ * @property publiclyRevealedTileIds 這次副露明確公開給其他玩家的牌索引。
  */
 @Serializable
 data class HistoryReplayMeldDto(
@@ -18,4 +20,6 @@ data class HistoryReplayMeldDto(
     val tiles: List<Int>,
     val sourceTile: Int?,
     val sourceDirection: RelativeDirectionDto?,
+    val faceDownTileIds: Set<Int>,
+    val publiclyRevealedTileIds: Set<Int>,
 )

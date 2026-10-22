@@ -2,7 +2,6 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
-import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
@@ -11,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeMeldFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeDiscardPile
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -139,9 +139,9 @@ class RiichiLegalActionValidatorTest {
     @Test
     fun `test can added kan`() {
         // 準備
-        val ponMeld = Meld(
-            MeldType.PON,
-            listOf(
+        val ponMeld = FakeMeldFactory.create(
+            type = MeldType.PON,
+            tiles = listOf(
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
@@ -203,9 +203,9 @@ class RiichiLegalActionValidatorTest {
     @Test
     fun `test no kan of any type when only one live tile remains`() {
         val oneTileWall = TileWall(listOf(FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 5))))
-        val ponMeld = Meld(
-            MeldType.PON,
-            List(3) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)) },
+        val ponMeld = FakeMeldFactory.create(
+            type = MeldType.PON,
+            tiles = List(3) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9)) },
             sourceDirection = RelativeDirection.Left,
         )
         val player = FakeMahjongPlayerFactory.create(
@@ -263,9 +263,9 @@ class RiichiLegalActionValidatorTest {
     @Test
     fun `test cannot closed or added kan on the haitei tile`() {
         // 準備：手牌另外湊了一組可以暗槓的三張，且有一組可加槓的副露
-        val ponMeld = Meld(
-            MeldType.PON,
-            listOf(
+        val ponMeld = FakeMeldFactory.create(
+            type = MeldType.PON,
+            tiles = listOf(
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 5)),
@@ -308,10 +308,9 @@ class RiichiLegalActionValidatorTest {
     fun `test cannot closed kan when the table already has 4 kans by a single player`() {
         // 準備：這位玩家已經有 4 組暗槓副露（湊到全場上限），手牌另外湊了一組可以暗槓的第 5 組
         val existingKans = (1..4).map { value ->
-            Meld(
-                MeldType.CLOSED_KAN,
-                List(4) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, value)) },
-                sourceDirection = RelativeDirection.Self,
+            FakeMeldFactory.create(
+                type = MeldType.CLOSED_KAN,
+                tiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, value)) },
             )
         }
         val playerHand = Hand(
@@ -341,10 +340,9 @@ class RiichiLegalActionValidatorTest {
     fun `test cannot open kan for a different player when someone else already has 4 kans`() {
         // 準備：另一位玩家已經獨得全場 4 組暗槓副露
         val otherPlayerKans = (1..4).map { value ->
-            Meld(
-                MeldType.CLOSED_KAN,
-                List(4) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, value)) },
-                sourceDirection = RelativeDirection.Self,
+            FakeMeldFactory.create(
+                type = MeldType.CLOSED_KAN,
+                tiles = List(4) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, value)) },
             )
         }
         val otherPlayer = FakeMahjongPlayerFactory.create(hand = Hand(melds = otherPlayerKans))
@@ -558,18 +556,17 @@ class RiichiLegalActionValidatorTest {
                 Tile.Numeric(Tile.Suit.Character, 5),
             ),
         )
-        val ponMeld = Meld(
-            MeldType.PON,
-            listOf(
+        val ponMeld = FakeMeldFactory.create(
+            type = MeldType.PON,
+            tiles = listOf(
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 6)),
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 6)),
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 6)),
             ),
             sourceDirection = RelativeDirection.Left,
         )
-        playerHand.call(ponMeld.type, ponMeld.tiles, ponMeld.sourceTile, ponMeld.sourceDirection)
         val player = FakeMahjongPlayerFactory.create(
-            hand = playerHand,
+            hand = playerHand.copy(melds = listOf(ponMeld)),
         )
         val tableState = FakeTableStateFactory.create(
             players = listOf(player),
@@ -901,21 +898,21 @@ class RiichiLegalActionValidatorTest {
      */
     @Test
     fun `test houtei only grants ron after live wall is exhausted`() {
-        val chiMeld = Meld(
-            MeldType.CHI,
-            listOf(1, 2, 3).map { value ->
+        val chiMeld = FakeMeldFactory.create(
+            type = MeldType.CHI,
+            tiles = listOf(1, 2, 3).map { value ->
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, value))
             },
             sourceDirection = RelativeDirection.Left,
         )
-        val terminalPon = Meld(
-            MeldType.PON,
-            List(3) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)) },
+        val terminalPon = FakeMeldFactory.create(
+            type = MeldType.PON,
+            tiles = List(3) { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)) },
             sourceDirection = RelativeDirection.Across,
         )
-        val nonValueHonorPon = Meld(
-            MeldType.PON,
-            List(3) { FakeIdentifiedTileFactory.create(Tile.Honor.West) },
+        val nonValueHonorPon = FakeMeldFactory.create(
+            type = MeldType.PON,
+            tiles = List(3) { FakeIdentifiedTileFactory.create(Tile.Honor.West) },
             sourceDirection = RelativeDirection.Right,
         )
         val player = FakeMahjongPlayerFactory.create(
@@ -981,27 +978,27 @@ class RiichiLegalActionValidatorTest {
     @Test
     fun `test can robbing kan`() {
         // 準備
-        val chiMeld = Meld(
-            MeldType.CHI,
-            listOf(
+        val chiMeld = FakeMeldFactory.create(
+            type = MeldType.CHI,
+            tiles = listOf(
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)),
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 2)),
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 3)),
             ),
             sourceDirection = RelativeDirection.Left,
         )
-        val ponMeld1 = Meld(
-            MeldType.PON,
-            listOf(
+        val ponMeld1 = FakeMeldFactory.create(
+            type = MeldType.PON,
+            tiles = listOf(
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)),
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)),
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)),
             ),
             sourceDirection = RelativeDirection.Across,
         )
-        val ponMeld2 = Meld(
-            MeldType.PON,
-            listOf(
+        val ponMeld2 = FakeMeldFactory.create(
+            type = MeldType.PON,
+            tiles = listOf(
                 FakeIdentifiedTileFactory.create(Tile.Honor.West),
                 FakeIdentifiedTileFactory.create(Tile.Honor.West),
                 FakeIdentifiedTileFactory.create(Tile.Honor.West),

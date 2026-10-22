@@ -49,7 +49,7 @@ class TestPlayerDeltaTest {
             hand = Hand(tiles = listOf(first, second, third)),
             discardPile = RiichiDiscardPile(listOf(RiichiDiscardEntry(claimed, isRiichi = true))),
         )
-        val meld = Meld(MeldType.PON, listOf(first, second, claimed), claimed, RelativeDirection.Left)
+        val meld = Meld(MeldType.PON, listOf(first, second, claimed), claimed, RelativeDirection.Left, publiclyRevealedTileIds = listOf(first, second, claimed).map { it.id }.toSet(), faceDownTileIds = emptySet())
         val after = before.copy(
             hand = Hand(tiles = listOf(third), melds = listOf(meld)),
             discardPile = before.discardPile.takeLast(),

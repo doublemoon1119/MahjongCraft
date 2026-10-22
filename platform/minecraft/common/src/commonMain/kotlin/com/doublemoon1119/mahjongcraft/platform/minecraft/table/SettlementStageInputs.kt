@@ -3,7 +3,6 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.table
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
-import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongMeldTileGroup
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
@@ -48,7 +47,6 @@ fun TableState.tileAssetKeysById(
  * 桌況，因此為空。
  *
  * @param cornerWidthsBySeat 各座位副露角落被規則桌面物件佔用的寬度；沒有列出的座位視為 `0.0`。
- * @param tileOrder 該規則的牌序，取得副露呈現資料時使用。
  * @param request 權威結算請求。
  * @param tableState 目前權威桌況；已不存在時傳 `null`。
  * @param tileAssetRegistry 牌種與素材 key 對照 registry。
@@ -58,7 +56,6 @@ fun exhaustiveDrawSettlementStageInputs(
     request: ExhaustiveDrawSettlementPresentationRequest,
     tableState: TableState?,
     cornerWidthsBySeat: Map<Int, Double>,
-    tileOrder: TileOrder,
     tileAssetRegistry: MinecraftTileAssetRegistry,
 ): ExhaustiveDrawSettlementStageInputs = ExhaustiveDrawSettlementStageInputs(
     waitingTileAssetsBySeat = request.players.associate { player ->
@@ -67,7 +64,7 @@ fun exhaustiveDrawSettlementStageInputs(
     revealedTileAssetsById = tableState
         ?.tileAssetKeysById(request.players.flatMap { it.revealedHandTileIds }, tileAssetRegistry)
         .orEmpty(),
-    reservedCornerWidthsBySeat = tableState?.reservedCornerWidthsBySeat(cornerWidthsBySeat, tileOrder).orEmpty(),
+    reservedCornerWidthsBySeat = tableState?.reservedCornerWidthsBySeat(cornerWidthsBySeat).orEmpty(),
 )
 
 /**
@@ -75,21 +72,19 @@ fun exhaustiveDrawSettlementStageInputs(
  *
  * 角落物件寬度由呼叫端提供；副露寬度依該座位目前的副露內容計算，暗槓是否翻開由規則設定決定。
  *
- * 副露寬度只看張數與橫置與否，[tileOrder] 不影響結果，僅為取得呈現資料所需。
- *
  * @param cornerWidthsBySeat 各座位桌面物件佔用的角落寬度。
- * @param tileOrder 規則牌序，用於產生副露呈現資料。
  * @return 各座位桌面物件與副露所佔用的總寬度。
  */
-private fun TableState.reservedCornerWidthsBySeat(cornerWidthsBySeat: Map<Int, Double>, tileOrder: TileOrder): Map<Int, Double> = players.mapIndexed { seatIndex, player ->
+private fun TableState.reservedCornerWidthsBySeat(cornerWidthsBySeat: Map<Int, Double>): Map<Int, Double> = players.mapIndexed { seatIndex, player ->
     val melds = player.hand.melds.map { meld ->
-        val presentation = meld.toPresentation(config.revealsClosedKanTiles, tileOrder)
+        val presentation = meld.toPresentation(config.revealsClosedKanTiles)
         MahjongMeldTileGroup(
             presentation.type,
             presentation.tileIds,
             presentation.calledTileId,
             presentation.sourceDirection,
             presentation.allTilesFaceDown,
+            presentation.faceDownTileIds,
         )
     }
     seatIndex to MahjongTileTableLayout.cornerAreaWidth(cornerWidthsBySeat[seatIndex] ?: 0.0, melds)

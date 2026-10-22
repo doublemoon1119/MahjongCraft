@@ -278,5 +278,12 @@ private fun exampleMeld(group: RuleCatalogueTileGroup): Meld {
         else -> if (group.tiles.distinct().size == 1) MeldType.PON else MeldType.CHI
     }
     val tiles = group.tiles.map { FakeIdentifiedTileFactory.create(it) }
-    return Meld(type, tiles, if (type == MeldType.CLOSED_KAN) null else tiles.last(), if (type == MeldType.CLOSED_KAN) RelativeDirection.Self else RelativeDirection.Left)
+    return Meld(
+        type = type,
+        tiles = tiles,
+        sourceTile = if (type == MeldType.CLOSED_KAN) null else tiles.last(),
+        sourceDirection = if (type == MeldType.CLOSED_KAN) RelativeDirection.Self else RelativeDirection.Left,
+        publiclyRevealedTileIds = tiles.map { it.id }.toSet(),
+        faceDownTileIds = if (type == MeldType.CLOSED_KAN) setOf(tiles.first().id, tiles.last().id) else emptySet(),
+    )
 }

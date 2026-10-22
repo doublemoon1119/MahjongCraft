@@ -8,7 +8,6 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
-import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionPhase
@@ -20,24 +19,28 @@ import kotlin.uuid.Uuid
 /**
  * 剝除 [Meld] 的牌面，只保留 [MeldPresentation] 需要的資訊。
  *
- * 牌 ID 依 [tileOrder] 排列，讓玩家讀得懂；[MeldType.ADDED_KAN] 補上的第四張（[Meld.tiles] 的最後一張）維持在最後。
+ * 牌 ID 保留副露成立時的穩定順序；[MeldType.ADDED_KAN] 補上的第四張（[Meld.tiles] 的最後一張）維持在最後。
  * 鳴取的牌由 [MeldPresentation.calledTileId] 指出，不靠位置辨識。
  *
  * @param revealsClosedKanTiles 該規則是否公開暗槓的牌（[MahjongRuleConfig.revealsClosedKanTiles]），
- * 只影響 [MeldPresentation.allTilesFaceDown]，非暗槓時傳入的值不影響結果。
- * @param tileOrder 該規則的牌序。
+ * 只影響暗槓的逐牌朝向，非暗槓時傳入的值不影響結果。
+ * @return 保留已保存牌序及逐牌朝向、不包含牌面的呈現描述。
  */
-fun Meld.toPresentation(revealsClosedKanTiles: Boolean, tileOrder: TileOrder): MeldPresentation = MeldPresentation(
-    type = type,
-    tileIds = if (type == MeldType.ADDED_KAN) {
-        tiles.dropLast(1).sortedWith(compareBy(tileOrder) { it.tile }).map { it.id } + tiles.last().id
-    } else {
-        tiles.sortedWith(compareBy(tileOrder) { it.tile }).map { it.id }
-    },
-    calledTileId = sourceTile?.id,
-    sourceDirection = sourceDirection,
-    allTilesFaceDown = type == MeldType.CLOSED_KAN && !revealsClosedKanTiles,
-)
+fun Meld.toPresentation(revealsClosedKanTiles: Boolean): MeldPresentation {
+    val orderedIds = tiles.map { it.id }
+    val faceDownTileIds = when {
+        type == MeldType.CLOSED_KAN && !revealsClosedKanTiles -> orderedIds.toSet()
+        else -> faceDownTileIds.intersect(orderedIds.toSet())
+    }
+    return MeldPresentation(
+        type = type,
+        tileIds = orderedIds,
+        calledTileId = sourceTile?.id,
+        sourceDirection = sourceDirection,
+        allTilesFaceDown = faceDownTileIds.size == orderedIds.size,
+        faceDownTileIds = faceDownTileIds,
+    )
+}
 
 /**
  * 把對局中發生的事通知平台呈現層的出口：flow 決定通知的時機與語意內容，平台決定如何呈現。

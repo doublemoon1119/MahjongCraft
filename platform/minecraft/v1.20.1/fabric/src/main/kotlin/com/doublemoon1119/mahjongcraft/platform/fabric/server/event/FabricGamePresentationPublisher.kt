@@ -248,7 +248,6 @@ class FabricGamePresentationPublisher(
                 request = request,
                 tableState = tableState,
                 cornerWidthsBySeat = cornerWidthsBySeat(gameId, tableState),
-                tileOrder = moduleRegistry.getModule(checkNotNull(tableState).config).tileOrder,
                 tileAssetRegistry = tileAssetRegistry,
             )
             val endGameTime = exhaustiveDrawSettlementScheduler.schedule(
@@ -772,7 +771,14 @@ class FabricGamePresentationPublisher(
                 standingTileIds = standingTileIds,
                 drawnTileId = drawnTileId,
                 melds = melds.map {
-                    MahjongMeldTileGroup(it.type, it.tileIds, it.calledTileId, it.sourceDirection, it.allTilesFaceDown)
+                    MahjongMeldTileGroup(
+                        it.type,
+                        it.tileIds,
+                        it.calledTileId,
+                        it.sourceDirection,
+                        it.allTilesFaceDown,
+                        it.faceDownTileIds,
+                    )
                 },
                 cornerWidth = cornerWidthsBySeat[seatIndex] ?: 0.0,
                 animateDrawnTile = isNewlyDrawn,
@@ -1093,13 +1099,14 @@ class FabricGamePresentationPublisher(
         val organizedBySeat = request.winners.associate { requestedWinner ->
             val winner = state.players[requestedWinner.seatIndex]
             val organizedHand = winner.hand.organize(module.tileOrder)
-            val melds = winner.hand.melds.map { it.toPresentation(state.config.revealsClosedKanTiles, module.tileOrder) }.map { p ->
+            val melds = winner.hand.melds.map { it.toPresentation(state.config.revealsClosedKanTiles) }.map { p ->
                 MahjongMeldTileGroup(
                     type = p.type,
                     tileIds = p.tileIds,
                     calledTileId = p.calledTileId,
                     sourceDirection = p.sourceDirection,
                     allTilesFaceDown = p.allTilesFaceDown,
+                    faceDownTileIds = p.faceDownTileIds,
                 )
             }
             val presentation = MahjongWinCelebrationPresentation(

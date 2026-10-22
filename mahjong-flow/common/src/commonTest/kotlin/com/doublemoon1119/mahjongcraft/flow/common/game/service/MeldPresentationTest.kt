@@ -4,7 +4,6 @@ import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiTileOrder
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -16,19 +15,21 @@ class MeldPresentationTest {
     private val two = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 2))
     private val three = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 3))
 
-    /** 鳴牌當下鳴取的那張排在最後，呈現資料依牌序重排，鳴取牌改由 ID 指出。 */
+    /** 鳴牌成立時的牌序保持穩定，鳴取牌改由 ID 指出。 */
     @Test
-    fun `sorts the tiles by the rule order`() {
+    fun `preserves meld tile order`() {
         val meld = Meld(
             type = MeldType.CHI,
             tiles = listOf(two, four, three),
             sourceTile = three,
             sourceDirection = RelativeDirection.Left,
+            publiclyRevealedTileIds = setOf(two.id, three.id, four.id),
+            faceDownTileIds = emptySet(),
         )
 
-        val presentation = meld.toPresentation(revealsClosedKanTiles = true, tileOrder = RiichiTileOrder)
+        val presentation = meld.toPresentation(revealsClosedKanTiles = true)
 
-        assertEquals(listOf(two.id, three.id, four.id), presentation.tileIds)
+        assertEquals(listOf(two.id, four.id, three.id), presentation.tileIds)
         assertEquals(three.id, presentation.calledTileId)
     }
 
@@ -42,9 +43,11 @@ class MeldPresentationTest {
             tiles = pon + added,
             sourceTile = pon.first(),
             sourceDirection = RelativeDirection.Across,
+            publiclyRevealedTileIds = (pon + added).map { it.id }.toSet(),
+            faceDownTileIds = emptySet(),
         )
 
-        val presentation = meld.toPresentation(revealsClosedKanTiles = true, tileOrder = RiichiTileOrder)
+        val presentation = meld.toPresentation(revealsClosedKanTiles = true)
 
         assertEquals(added.id, presentation.tileIds.last())
         assertTrue(presentation.tileIds.dropLast(1).containsAll(pon.map { it.id }))

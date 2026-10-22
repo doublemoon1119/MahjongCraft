@@ -57,6 +57,8 @@ class RandomAiStrategyTest {
         phase: AiDecisionPhase,
         legalActions: List<GameAction>,
         forcedDiscardTileId: Uuid? = null,
+        discardReactionId: Uuid? = null,
+        discardReactionCommands: List<GameCommand.RespondToDiscard> = emptyList(),
     ): AiDecisionContext {
         val self = FakeMahjongPlayerFactory.create(id = selfId, hand = hand)
         val table = FakeTableStateFactory.create(players = listOf(self))
@@ -66,6 +68,8 @@ class RandomAiStrategyTest {
             phase = phase,
             legalActions = legalActions,
             forcedDiscardTileId = forcedDiscardTileId,
+            discardReactionId = discardReactionId,
+            discardReactionCommands = discardReactionCommands,
         )
     }
 
@@ -77,7 +81,12 @@ class RandomAiStrategyTest {
     fun `test responding to discard picks one of the legal actions`() = runTest {
         val strategy = RandomAiStrategy(extensionActionRegistry, Random(1))
         val ronAction = GameAction.Ron(Uuid.random())
-        val context = contextWithHand(Hand(), AiDecisionPhase.RespondingToDiscard, listOf(ronAction, GameAction.Pass))
+        val context = contextWithHand(
+            Hand(),
+            AiDecisionPhase.RespondingToDiscard,
+            listOf(ronAction, GameAction.Pass),
+            discardReactionId = Uuid.random(),
+        )
 
         val result = strategy.decideGameCommand(context)
 
@@ -91,11 +100,41 @@ class RandomAiStrategyTest {
     @Test
     fun `test responding to discard defaults to pass when legal actions is empty`() = runTest {
         val strategy = RandomAiStrategy(extensionActionRegistry, Random(1))
-        val context = contextWithHand(Hand(), AiDecisionPhase.RespondingToDiscard, emptyList())
+        val reactionId = Uuid.random()
+        val context = contextWithHand(
+            Hand(),
+            AiDecisionPhase.RespondingToDiscard,
+            emptyList(),
+            discardReactionId = reactionId,
+        )
 
         val result = strategy.decideGameCommand(context)
 
-        assertEquals(GameCommand.RespondToDiscard(GameAction.Pass), result)
+        assertEquals(GameCommand.RespondToDiscard(GameAction.Pass, reactionId), result)
+    }
+
+    /** 擴充反應必須從呼叫端提供的完整命令中選取，不能自行拼出沒有選牌的命令。 */
+    @Test
+    fun `test responding to discard uses concrete custom reaction command`() = runTest {
+        val strategy = RandomAiStrategy(extensionActionRegistry, Random(1))
+        val reactionId = Uuid.random()
+        val selectedTileIds = listOf(Uuid.random(), Uuid.random())
+        val command = GameCommand.RespondToDiscard(
+            action = GameAction.Extension(TestExtensionAction),
+            reactionId = reactionId,
+            selectedTileIds = selectedTileIds,
+        )
+        val result = strategy.decideGameCommand(
+            contextWithHand(
+                hand = Hand(),
+                phase = AiDecisionPhase.RespondingToDiscard,
+                legalActions = listOf(GameAction.Extension(TestExtensionAction)),
+                discardReactionId = reactionId,
+                discardReactionCommands = listOf(command),
+            ),
+        )
+
+        assertEquals(command, result)
     }
 
     /**

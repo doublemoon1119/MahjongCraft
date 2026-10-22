@@ -1,14 +1,15 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameAbortReasonIds
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleContractViolationException
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.recordAbortiveDraw
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.DeclareRiichiUseCase
-import com.doublemoon1119.mahjongcraft.flow.server.game.service.DiscardReactionActionSupport
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.DiscardReactionOptionsResolver
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
 import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
-import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
@@ -47,30 +48,25 @@ internal object DiscardReactionResolver {
         discarderId: Uuid,
         discardedTile: IdentifiedTile,
     ): Result {
-        val validator = module.createLegalActionValidator()
-
         // 先為每位其他玩家各算一次合法動作清單，因為榮和資格需要「先看過全部人」才能
         // 判斷是否為一炮多響，不能像吃/碰/槓一樣邊算邊篩。
         val legalActionsByOtherPlayer = stateAfterDiscard.players
             .filter { it.id != discarderId && stateAfterDiscard.isPlayerActive(it.id) }
             .associate { otherPlayer ->
-                otherPlayer.id to DiscardReactionActionSupport.filter(
-                    validator.getLegalActions(
-                        LegalActionContext.discardReaction(
-                            tableState = stateAfterDiscard,
-                            playerId = otherPlayer.id,
-                            discarderId = discarderId,
-                            discardedTile = discardedTile,
-                        ),
-                    ),
+                otherPlayer.id to DiscardReactionOptionsResolver.resolveCandidates(
+                    state = stateAfterDiscard,
+                    module = module,
+                    playerId = otherPlayer.id,
+                    discarderId = discarderId,
+                    discardedTile = discardedTile,
                 )
             }
 
         val ronEligiblePlayerIds = legalActionsByOtherPlayer
-            .filterValues { actions -> actions.any { it is GameAction.Ron } }
+            .filterValues { candidates -> candidates.any { it.action is GameAction.Ron } }
             .keys
         val meldEligiblePlayerIds = legalActionsByOtherPlayer
-            .filterValues { actions -> actions.any { it is GameAction.Chi || it is GameAction.Pon || it is GameAction.Kan } }
+            .filterValues { candidates -> candidates.any { it.claimEffect != null } }
             .keys
 
         // 一炮多響：依規則設定決定實際開放榮和資格給誰（4 人對局扣除放銃者後最多
@@ -89,7 +85,10 @@ internal object DiscardReactionResolver {
         }
 
         val abortiveDrawReason = if (ronResolution == RonResolution.ABORTIVE_DRAW) {
-            module.resolveMultiRonAbortiveDraw()
+            module.resolveMultiRonAbortiveDraw() ?: throw RuleContractViolationException(
+                GameAbortReasonIds.RULE_EXECUTION_FAILED,
+                "Rule ${module.id} configured multi-Ron abortive draw without an abortive draw reason",
+            )
         } else {
             null
         }
@@ -115,6 +114,8 @@ internal object DiscardReactionResolver {
                         discarderId = discarderId,
                         tileId = discardedTile.id,
                         eligiblePlayerIds = eligiblePlayerIds,
+                        ronPlayerIds = ronWinningPlayerIds,
+                        id = Uuid.random(),
                     ),
                 )
             }

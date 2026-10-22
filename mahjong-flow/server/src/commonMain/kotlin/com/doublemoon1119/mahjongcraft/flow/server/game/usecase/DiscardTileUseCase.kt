@@ -224,7 +224,7 @@ class DiscardTileUseCase(
             seatIndex,
             discarder.hand.tiles.map { it.id },
             null,
-            discarder.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles, module.tileOrder) },
+            discarder.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
             setAsideTileIds = module.setAsideTiles(discarder).map { it.id },
         )
         presentationPublisher.publishDiscardPileUpdated(

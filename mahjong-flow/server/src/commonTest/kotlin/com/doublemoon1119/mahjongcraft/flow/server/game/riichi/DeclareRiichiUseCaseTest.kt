@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepos
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.runAsSingleWrite
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferenceStore
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAndDiscardUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToDiscardUseCase
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
@@ -23,6 +24,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
@@ -84,14 +86,17 @@ class DeclareRiichiUseCaseTest {
         }
         val eventPublisher = FakeGameEventPublisher()
         val presentationPublisher = FakeGamePresentationPublisher()
+        val sharedDeclarationUseCase = DeclareAndDiscardUseCase(
+            gameRepository = gameRepo,
+            moduleRegistry = moduleRegistry,
+            snapshotSynchronizer = snapshotSynchronizer,
+            handSortPreferenceStore = handSortPreferenceStore,
+            postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
+            eventPublisher = eventPublisher,
+            presentationPublisher = presentationPublisher,
+        )
         val useCase = DeclareRiichiUseCase(
-            gameRepo,
-            moduleRegistry,
-            snapshotSynchronizer,
-            handSortPreferenceStore,
-            postActionExhaustiveDrawResolverRegistry,
-            eventPublisher,
-            presentationPublisher,
+            sharedDeclarationUseCase,
         )
     }
 
@@ -187,6 +192,46 @@ class DeclareRiichiUseCaseTest {
         assertEquals(1, newState.currentPlayerIndex, "Turn should advance to the next player.")
         assertEquals(RIICHI_GAME_ACTION, updatedPlayer.actionHistory[updatedPlayer.actionHistory.size - 2])
         assertEquals(GameAction.Discard(drawnTile.id), updatedPlayer.actionHistory.last())
+    }
+
+    /** 三人日麻同樣能宣告立直：扣一根立直棒、記錄立直牌與一發資格，輪到下一家。 */
+    @Test
+    fun `test declare riichi works in three player riichi`() = runTest {
+        val fixtures = Fixtures()
+        val pinTiles = listOf(1, 1, 1, 2, 3, 4, 5, 6, 7, 8, 9, 9, 9)
+            .map { FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, it)) }
+        val declarationTile = FakeIdentifiedTileFactory.create(Tile.Honor.West)
+        val currentPlayer = createRiichiPlayer(
+            hand = Hand(tiles = pinTiles, lastDrawn = declarationTile),
+            discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.South)),
+        )
+        val others = listOf(Wind.SOUTH, Wind.WEST).map { seat ->
+            FakeMahjongPlayerFactory.create(
+                initialSeat = seat,
+                discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.East)),
+                playerRuleState = RiichiPlayerState(),
+            )
+        }
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(currentPlayer) + others,
+            config = ThreePlayerRiichiRuleConfig(),
+            dynamicRuleState = RiichiDynamicState(),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setTableState(table)
+
+        val result = fixtures.gameRepo.runAsSingleWrite(gameId) { fixtures.useCase(gameId, currentPlayerId, declarationTile.id) }
+
+        assertTrue(result is Outcome.Success, "Expected Success but got $result")
+        val newState = assertNotNull(fixtures.gameRepo.getTableState(gameId))
+        val updatedPlayer = newState.players.first { it.id == currentPlayerId }
+        val riichiState = updatedPlayer.playerRuleState as RiichiPlayerState
+        assertEquals(declarationTile, riichiState.riichiTile)
+        assertTrue(riichiState.isIppatsu)
+        assertEquals(25000 - 1000, updatedPlayer.score)
+        assertEquals(1, (newState.dynamicRuleState as RiichiDynamicState).riichiStickCount)
+        assertEquals(1, newState.currentPlayerIndex, "Turn should advance to the next player.")
     }
 
     /** 驗證宣告立直不會影響其他玩家仍有的一發資格。 */
@@ -333,7 +378,7 @@ class DeclareRiichiUseCaseTest {
     }
 
     /**
-     * 驗證玩家尚未摸牌就嘗試宣告立直時回傳 [GameError.IllegalAction]。
+     * 驗證尚未進入可捨牌的自己回合時，立直宣告會被回合檢查拒絕。
      */
     @Test
     fun `test declare riichi fails when player has not drawn yet`() = runTest {
@@ -351,7 +396,7 @@ class DeclareRiichiUseCaseTest {
 
         assertTrue(result is Outcome.Error)
         assertEquals(
-            GameError.IllegalAction(currentPlayerId, gameId, RIICHI_GAME_ACTION),
+            GameError.NotPlayersTurn(currentPlayerId, gameId),
             result.error,
         )
     }
@@ -389,11 +434,13 @@ class DeclareRiichiUseCaseTest {
     fun `test declare riichi fails when hand is not menzen`() = runTest {
         val fixtures = Fixtures()
         val meldTiles = List(3) { FakeIdentifiedTileFactory.create(Tile.Honor.East) }
-        val notMenzenHand = tenpaiHand().call(
+        val notMenzenHand = tenpaiHand().copy(tiles = manTiles + meldTiles.drop(1)).call(
             type = MeldType.PON,
             tiles = meldTiles,
             source = meldTiles[0],
             direction = RelativeDirection.Left,
+            publiclyRevealedTileIds = meldTiles.map { it.id }.toSet(),
+            faceDownTileIds = emptySet(),
         )
         val currentPlayer = createRiichiPlayer(hand = notMenzenHand)
         val table = FakeTableStateFactory.create(

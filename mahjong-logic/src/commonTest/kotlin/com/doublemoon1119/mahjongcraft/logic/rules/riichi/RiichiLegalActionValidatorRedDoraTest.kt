@@ -1,7 +1,6 @@
 package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
-import com.doublemoon1119.mahjongcraft.logic.base.Meld
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
@@ -9,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeHandFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeMeldFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
@@ -194,9 +194,9 @@ class RiichiLegalActionValidatorRedDoraTest {
     @Test
     fun `test can added kan with red dora`() {
         // 準備
-        val ponMeld = Meld(
-            MeldType.PON,
-            listOf(
+        val ponMeld = FakeMeldFactory.create(
+            type = MeldType.PON,
+            tiles = listOf(
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5)),
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5)),
                 FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 5)),

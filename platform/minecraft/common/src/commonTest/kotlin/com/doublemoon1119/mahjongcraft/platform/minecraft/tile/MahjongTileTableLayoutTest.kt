@@ -162,7 +162,7 @@ class MahjongTileTableLayoutTest {
     @Test
     fun `set aside tiles extend the corner area`() {
         val tileStep = MahjongTileDimensions.TILE_WIDTH + MahjongTileDimensions.TILE_SMALL_PADDING
-        val meld = MahjongMeldTileGroup(MeldType.PON, List(3) { Uuid.random() }, null, RelativeDirection.Self, false)
+        val meld = MahjongMeldTileGroup(MeldType.PON, List(3) { Uuid.random() }, null, RelativeDirection.Self, false, emptySet())
 
         assertEquals(2 * tileStep, MahjongTileTableLayout.cornerAreaWidth(0.0, emptyList(), setAsideTileCount = 2), ABSOLUTE_TOLERANCE)
         assertEquals(
@@ -682,6 +682,7 @@ class MahjongTileTableLayoutTest {
         calledTileId = calledTileId,
         sourceDirection = sourceDirection,
         allTilesFaceDown = false,
+        faceDownTileIds = emptySet(),
     )
 
     /** 建立固定 controller 與可覆寫輸入的測試 placement。 */

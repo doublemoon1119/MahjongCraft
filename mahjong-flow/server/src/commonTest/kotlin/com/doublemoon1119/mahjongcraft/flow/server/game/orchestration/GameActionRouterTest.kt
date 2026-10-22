@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferen
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAbortiveDrawUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAndDiscardUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareKanUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareTsumoUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DiscardTileUseCase
@@ -113,6 +114,15 @@ class GameActionRouterTest {
                 postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
                 eventPublisher = eventPublisher,
                 presentationPublisher = presentationPublisher,
+                declareAndDiscardUseCase = DeclareAndDiscardUseCase(
+                    gameRepository = gameRepo,
+                    moduleRegistry = moduleRegistry,
+                    snapshotSynchronizer = snapshotSynchronizer,
+                    handSortPreferenceStore = handSortPreferenceStore,
+                    postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
+                    eventPublisher = eventPublisher,
+                    presentationPublisher = presentationPublisher,
+                ),
             ),
         )
         val router = GameActionRouter(
@@ -245,7 +255,7 @@ class GameActionRouterTest {
         )
 
         assertTrue(result is Outcome.Error)
-        assertEquals(GameError.IllegalAction(playerId, gameId, RIICHI_GAME_ACTION), result.error)
+        assertEquals(GameError.NotPlayersTurn(playerId, gameId), result.error)
     }
 
     /**
@@ -331,7 +341,7 @@ class GameActionRouterTest {
             players = listOf(discarder, respondent),
             config = RiichiRuleConfig(),
             currentPlayerIndex = 0,
-            pendingReaction = PendingReaction(discarderId, discardedSouthTile.id, setOf(respondentId)),
+            pendingReaction = PendingReaction(discarderId, discardedSouthTile.id, setOf(respondentId), ronPlayerIds = setOf(respondentId), id = Uuid.random()),
         )
     }
 
@@ -348,7 +358,7 @@ class GameActionRouterTest {
         val whiteTile2 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val whiteTile3 = FakeIdentifiedTileFactory.create(Tile.Honor.White)
         val robbedWhiteTile = FakeIdentifiedTileFactory.create(Tile.Honor.White)
-        val existingPon = Meld(MeldType.PON, listOf(whiteTile1, whiteTile2, whiteTile3), sourceTile = whiteTile3, sourceDirection = RelativeDirection.Left)
+        val existingPon = Meld(MeldType.PON, listOf(whiteTile1, whiteTile2, whiteTile3), sourceTile = whiteTile3, sourceDirection = RelativeDirection.Left, publiclyRevealedTileIds = listOf(whiteTile1, whiteTile2, whiteTile3).map { it.id }.toSet(), faceDownTileIds = emptySet())
         val kanAction = GameAction.Kan(GameAction.KanType.ADDED_KAN, robbedWhiteTile.id, emptyList())
         val declarer = FakeMahjongPlayerFactory.create(
             id = declarerId,
@@ -387,7 +397,11 @@ class GameActionRouterTest {
         val respondentId = Uuid.random()
         fixtures.gameRepo.setTableState(discardReactionTable(discarderId, respondentId))
 
-        val result = fixtures.router(gameId, respondentId, GameCommand.RespondToDiscard(GameAction.Pass))
+        val result = fixtures.router(
+            gameId,
+            respondentId,
+            GameCommand.RespondToDiscard(GameAction.Pass, checkNotNull(fixtures.gameRepo.getTableState(gameId)?.pendingReaction).id),
+        )
 
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
         assertNull(fixtures.gameRepo.getTableState(gameId)!!.pendingReaction)
@@ -442,7 +456,7 @@ class GameActionRouterTest {
         val rinshanTile = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 1))
         fixtures.gameRepo.setTableState(chankanTable(declarerId, robberId, listOf(rinshanTile)))
 
-        val result = fixtures.router(gameId, robberId, GameCommand.RespondToDiscard(GameAction.Pass))
+        val result = fixtures.router(gameId, robberId, GameCommand.RespondToDiscard(GameAction.Pass, Uuid.random()))
 
         assertTrue(result is Outcome.Error)
         assertEquals(GameError.IllegalAction(robberId, gameId, GameAction.Pass), result.error)

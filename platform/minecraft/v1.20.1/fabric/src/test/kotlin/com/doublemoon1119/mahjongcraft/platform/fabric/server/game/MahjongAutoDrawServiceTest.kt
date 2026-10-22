@@ -37,6 +37,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDet
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AbortGameUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAbortiveDrawUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAndDiscardUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareKanUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareTsumoUseCase
@@ -119,6 +120,15 @@ class MahjongAutoDrawServiceTest {
                 postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
                 eventPublisher = eventPublisher,
                 presentationPublisher = presentationPublisher,
+                declareAndDiscardUseCase = DeclareAndDiscardUseCase(
+                    gameRepository = gameRepo,
+                    moduleRegistry = moduleRegistry,
+                    snapshotSynchronizer = snapshotSynchronizer,
+                    handSortPreferenceStore = handSortPreferenceStore,
+                    postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
+                    eventPublisher = eventPublisher,
+                    presentationPublisher = presentationPublisher,
+                ),
             ),
         )
         val router = GameActionRouter(

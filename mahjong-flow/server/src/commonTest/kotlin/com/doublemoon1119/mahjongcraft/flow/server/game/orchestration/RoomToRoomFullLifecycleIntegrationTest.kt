@@ -28,6 +28,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDet
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AbortGameUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAbortiveDrawUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAndDiscardUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareKanUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareTsumoUseCase
@@ -159,6 +160,15 @@ class RoomToRoomFullLifecycleIntegrationTest {
                 postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
                 eventPublisher = gameEventPublisher,
                 presentationPublisher = presentationPublisher,
+                declareAndDiscardUseCase = DeclareAndDiscardUseCase(
+                    gameRepository = gameRepo,
+                    moduleRegistry = moduleRegistry,
+                    snapshotSynchronizer = snapshotSynchronizer,
+                    handSortPreferenceStore = handSortPreferenceStore,
+                    postActionExhaustiveDrawResolverRegistry = postActionExhaustiveDrawResolverRegistry,
+                    eventPublisher = gameEventPublisher,
+                    presentationPublisher = presentationPublisher,
+                ),
             ),
         )
 
@@ -483,6 +493,7 @@ class RoomToRoomFullLifecycleIntegrationTest {
             selfId = playerId,
             phase = phase,
             legalActions = legalActions,
+            discardReactionId = game.tableState.pendingReaction?.id,
         )
         return strategy.decideGameCommand(context)
     }
@@ -507,7 +518,10 @@ class RoomToRoomFullLifecycleIntegrationTest {
 
         override suspend fun decideGameCommand(context: AiDecisionContext): GameCommand = when (context.phase) {
             AiDecisionPhase.RespondingToDiscard ->
-                GameCommand.RespondToDiscard(context.legalActions.firstOrNull { it is GameAction.Ron } ?: GameAction.Pass)
+                GameCommand.RespondToDiscard(
+                    context.legalActions.firstOrNull { it is GameAction.Ron } ?: GameAction.Pass,
+                    checkNotNull(context.discardReactionId),
+                )
 
             AiDecisionPhase.RespondingToRobbing ->
                 GameCommand.RespondToRobbing(context.legalActions.firstOrNull { it is GameAction.Ron } ?: GameAction.Pass)

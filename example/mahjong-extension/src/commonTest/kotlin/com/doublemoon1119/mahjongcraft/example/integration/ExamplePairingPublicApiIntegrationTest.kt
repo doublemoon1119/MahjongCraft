@@ -23,6 +23,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferen
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAndDiscardUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareTsumoUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DiscardTileUseCase
@@ -248,6 +249,15 @@ class ExamplePairingPublicApiIntegrationTest {
                 postActionResolvers,
                 gameEvents,
                 presentations,
+                DeclareAndDiscardUseCase(
+                    gameRepository,
+                    moduleRegistry,
+                    snapshotSynchronizer,
+                    handSort,
+                    postActionResolvers,
+                    gameEvents,
+                    presentations,
+                ),
             ),
         )
 

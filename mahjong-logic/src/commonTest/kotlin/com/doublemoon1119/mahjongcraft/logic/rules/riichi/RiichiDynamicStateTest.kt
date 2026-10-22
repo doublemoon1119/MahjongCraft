@@ -5,6 +5,8 @@ import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.closedKanFaceDownTileIds
+import com.doublemoon1119.mahjongcraft.logic.base.closedKanPubliclyRevealedTileIds
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
@@ -115,11 +117,13 @@ class RiichiDynamicStateTest {
         }
         val playerWithKan = FakeMahjongPlayerFactory.create(
             initialSeat = Wind.EAST,
-            hand = Hand().call(
+            hand = Hand(tiles = kanTiles.drop(1)).call(
                 type = MeldType.OPEN_KAN,
                 tiles = kanTiles,
                 source = kanTiles[0],
                 direction = RelativeDirection.Left,
+                publiclyRevealedTileIds = kanTiles.map { it.id }.toSet(),
+                faceDownTileIds = emptySet(),
             ),
         )
 
@@ -156,10 +160,12 @@ class RiichiDynamicStateTest {
             }
             return FakeMahjongPlayerFactory.create(
                 initialSeat = seat,
-                hand = Hand().call(
+                hand = Hand(tiles = kanTiles).call(
                     type = MeldType.CLOSED_KAN,
                     tiles = kanTiles,
                     direction = RelativeDirection.Self,
+                    publiclyRevealedTileIds = closedKanPubliclyRevealedTileIds(kanTiles, revealsClosedKanTiles = true),
+                    faceDownTileIds = closedKanFaceDownTileIds(kanTiles),
                 ),
             )
         }
