@@ -1,12 +1,13 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenario
 
+import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 
 /**
  * 三人日麻驗收用的 debug 情境，只能在三人日麻的桌子載入。
  *
  * 全部沿用 [SeatSetupScenario]：呼叫者是莊家、剛摸到牌，座位順序為呼叫者 → 下家 → 上家，兩家對手依排定的牌摸切。
- * 呼叫者預先有兩張捨牌，牌局不在第一巡。情境都停在還沒有人拔北的時候，拔北、補牌、搶北與槓都在載入後走正式流程。
+ * 呼叫者預先有捨牌，牌局不在第一巡。情境都停在還沒有人拔北的時候，拔北、補牌、搶北與槓都在載入後走正式流程。
  *
  * 牌牆開局的位置與三面牌牆的樣子另外用正式開局情境 `mahjongcraft:riichi_wall_opening` 驗收，它在三人日麻的桌子
  * 會依三人規則擲骰開門。
@@ -69,6 +70,33 @@ object ThreePlayerRiichiDebugGameScenarios {
             deadWallFront = listOf(NINE_BAMBOO, Tile.Honor.North, NINE_BAMBOO, NINE_BAMBOO),
             playerCount = THREE_PLAYER_COUNT,
         ),
+        // 白從上家碰、發從下家碰，手上兩張北、剛摸到第三張北，手牌一開始就快碰到副露。依序拔三次北，補到七筒、八筒、
+        // 四筒，每拔一次桌角就多一張北、手牌要再讓開一些；第三次補到的四筒可以自摸。活牌只剩四張，其餘的牌已在三家
+        // 牌河；每次拔北都從活牌尾端補一張進王牌，不自摸而打出後，下家摸走最後一張活牌打出就流局，呼叫者聽一、四筒。
+        SeatSetupScenario(
+            id = "mahjongcraft:riichi_three_player_pull_north_with_melds",
+            invoker = SeatSpec(
+                standingTiles = listOf(
+                    Tile.Honor.North,
+                    Tile.Honor.North,
+                    NINE_CHARACTER,
+                    NINE_CHARACTER,
+                    TWO_DOT,
+                    THREE_DOT,
+                    SIX_DOT,
+                ),
+                pons = listOf(
+                    ScenarioPon(tile = Tile.Honor.White, from = RelativeDirection.Left),
+                    ScenarioPon(tile = Tile.Honor.Green, from = RelativeDirection.Right),
+                ),
+                drawnTile = Tile.Honor.North,
+            ),
+            liveWallFront = listOf(Tile.Honor.West, Tile.Honor.East, Tile.Honor.West, Tile.Honor.East),
+            waitingTiles = DOT_TWO_SIDED_WAITS,
+            deadWallFront = listOf(SEVEN_DOT, EIGHT_DOT, FOUR_DOT),
+            playerCount = THREE_PLAYER_COUNT,
+            liveWallIsFrontOnly = true,
+        ),
     )
 }
 
@@ -80,6 +108,27 @@ private val ONE_DOT: Tile = Tile.Numeric(Tile.Suit.Dot, 1)
 
 /** 九筒。 */
 private val NINE_DOT: Tile = Tile.Numeric(Tile.Suit.Dot, 9)
+
+/** 二筒。 */
+private val TWO_DOT: Tile = Tile.Numeric(Tile.Suit.Dot, 2)
+
+/** 三筒。 */
+private val THREE_DOT: Tile = Tile.Numeric(Tile.Suit.Dot, 3)
+
+/** 四筒。 */
+private val FOUR_DOT: Tile = Tile.Numeric(Tile.Suit.Dot, 4)
+
+/** 六筒。 */
+private val SIX_DOT: Tile = Tile.Numeric(Tile.Suit.Dot, 6)
+
+/** 七筒。 */
+private val SEVEN_DOT: Tile = Tile.Numeric(Tile.Suit.Dot, 7)
+
+/** 八筒。 */
+private val EIGHT_DOT: Tile = Tile.Numeric(Tile.Suit.Dot, 8)
+
+/** 二三筒聽的一筒與四筒。 */
+private val DOT_TWO_SIDED_WAITS: Set<Tile> = setOf(ONE_DOT, FOUR_DOT)
 
 /** 一條。 */
 private val ONE_BAMBOO: Tile = Tile.Numeric(Tile.Suit.Bamboo, 1)

@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.scenar
 
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
@@ -137,6 +138,41 @@ class ThreePlayerRiichiDebugGameScenariosTest {
         assertEquals(1, state.currentPlayer.hand.standingTiles.count { it.tile == NINE_BAMBOO })
     }
 
+    /**
+     * 白從上家、發從下家碰出；連拔三次北依序補到七筒、八筒、四筒，第三次補牌可以自摸。活牌只剩排定的四張，
+     * 其餘的牌依序分進三家牌河。
+     */
+    @Test
+    fun `pull north with melds scenario chains three pulls into a tsumo`() {
+        val state = build("riichi_three_player_pull_north_with_melds")
+
+        assertEquals(
+            listOf(Tile.Honor.White to RelativeDirection.Left, Tile.Honor.Green to RelativeDirection.Right),
+            state.currentPlayer.hand.melds.map { meld -> meld.tiles.first().tile to meld.sourceDirection },
+        )
+        assertEquals(
+            listOf(Tile.Honor.West, Tile.Honor.East, Tile.Honor.West, Tile.Honor.East),
+            state.tileWall.getAllTiles().map { it.tile },
+        )
+        val riverSizes = (0..2).map { offset -> state.seat(offset).discardPile.entries.size }
+        assertTrue(riverSizes.max() - riverSizes.min() <= 1, "rivers must be filled evenly: $riverSizes")
+        (0..2).forEach { offset ->
+            assertEquals(riverSizes[offset] * 2, state.seat(offset).actionHistory.size)
+        }
+
+        val (seven, eight, four) = state.reservedWallTiles.take(3)
+        assertEquals(listOf(SEVEN_DOT, EIGHT_DOT, FOUR_DOT), listOf(seven.tile, eight.tile, four.tile))
+        assertTrue(PULL_NORTH_GAME_ACTION in state.currentOwnTurnActions())
+        val afterFirstPull = state.pullNorthThenDraw(seven)
+        assertTrue(PULL_NORTH_GAME_ACTION in afterFirstPull.currentOwnTurnActions())
+        val afterSecondPull = afterFirstPull.pullNorthThenDraw(eight)
+        assertTrue(PULL_NORTH_GAME_ACTION in afterSecondPull.currentOwnTurnActions())
+        val afterThirdPull = afterSecondPull.pullNorthThenDraw(four)
+
+        assertEquals(3, assertIs<RiichiPlayerState>(afterThirdPull.currentPlayer.playerRuleState).nukiDoraTiles.size)
+        assertTrue(GameAction.Tsumo in afterThirdPull.currentOwnTurnActions())
+    }
+
     /** 驗證器清點牌數時把拔出的北算進去，拔過北的桌況照樣通過驗證。 */
     @Test
     fun `validator counts pulled norths`() {
@@ -224,5 +260,14 @@ class ThreePlayerRiichiDebugGameScenariosTest {
 
         /** 四索，拔北補牌後的和牌張。 */
         val FOUR_BAMBOO: Tile = Tile.Numeric(Tile.Suit.Bamboo, 4)
+
+        /** 四筒，有副露的拔北情境第三次補牌的和牌張。 */
+        val FOUR_DOT: Tile = Tile.Numeric(Tile.Suit.Dot, 4)
+
+        /** 七筒，有副露的拔北情境第一次補牌。 */
+        val SEVEN_DOT: Tile = Tile.Numeric(Tile.Suit.Dot, 7)
+
+        /** 八筒，有副露的拔北情境第二次補牌。 */
+        val EIGHT_DOT: Tile = Tile.Numeric(Tile.Suit.Dot, 8)
     }
 }

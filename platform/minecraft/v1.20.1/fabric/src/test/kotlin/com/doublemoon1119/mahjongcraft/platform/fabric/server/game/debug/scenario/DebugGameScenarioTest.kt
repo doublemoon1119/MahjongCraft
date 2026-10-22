@@ -511,9 +511,11 @@ class DebugGameScenarioTest {
             "mahjongcraft:riichi_furiten_unoffered_wait",
             "mahjongcraft:riichi_ippatsu_ron",
             "mahjongcraft:riichi_ippatsu_tsumo",
+            "mahjongcraft:riichi_meld_showcase",
             "mahjongcraft:riichi_three_player_kan_and_pull_north",
             "mahjongcraft:riichi_three_player_pull_north",
             "mahjongcraft:riichi_three_player_pull_north_in_riichi",
+            "mahjongcraft:riichi_three_player_pull_north_with_melds",
             "mahjongcraft:riichi_three_player_rob_north",
             "mahjongcraft:riichi_wall_opening",
         )

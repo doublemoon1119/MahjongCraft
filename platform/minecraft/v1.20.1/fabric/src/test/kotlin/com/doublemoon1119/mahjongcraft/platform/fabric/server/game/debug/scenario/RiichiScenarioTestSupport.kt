@@ -104,7 +104,7 @@ internal fun TableState.seat(offset: Int): MahjongPlayer = players[(currentPlaye
  * @param hand 要放入該玩家的測試手牌。
  * @return 只替換指定玩家手牌後的桌況。
  */
-private fun TableState.withHandFor(
+internal fun TableState.withHandFor(
     playerId: Uuid,
     hand: Hand,
 ): TableState = copy(

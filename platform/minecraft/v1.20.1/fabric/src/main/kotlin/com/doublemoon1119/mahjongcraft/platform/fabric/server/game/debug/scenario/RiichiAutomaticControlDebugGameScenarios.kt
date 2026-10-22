@@ -36,7 +36,7 @@ object RiichiAutomaticControlDebugGameScenarios {
             id = "mahjongcraft:automatic_decline_calls_keeps_win",
             invoker = SeatSpec(
                 standingTiles = YAKUHAI_SHANPON_WAIT,
-                ponTiles = listOf(NINE_CHARACTER),
+                pons = listOf(ScenarioPon(NINE_CHARACTER)),
                 drawnTile = Tile.Honor.West,
                 discards = listOf(Tile.Honor.South, Tile.Honor.North),
             ),

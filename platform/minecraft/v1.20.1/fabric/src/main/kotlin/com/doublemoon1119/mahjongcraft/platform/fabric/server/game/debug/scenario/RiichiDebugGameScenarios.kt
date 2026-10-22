@@ -60,6 +60,7 @@ object RiichiDebugGameScenarios {
     ) + RiichiFuritenDebugGameScenarios.all +
         RiichiIppatsuDebugGameScenarios.all +
         RiichiAutomaticControlDebugGameScenarios.all +
+        RiichiMeldDebugGameScenarios.all +
         ThreePlayerRiichiDebugGameScenarios.all
 }
 

@@ -29,7 +29,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.layout.createInitialLayoutVal
  * 一個座位的情境設定。
  *
  * @property standingTiles 指定的立牌；不足的張數以牌種互異的填充牌補齊。
- * @property ponTiles 每個牌種各一組已碰出的副露。
+ * @property pons 已碰出的副露，每組三張同種牌，最後一張是從指定方向鳴取的牌。
  * @property drawnTile 剛摸到、尚未打出的牌；只有呼叫者使用。
  * @property discards 預先打出的牌。
  * @property riichiTile 不為 null 時，這張牌作為立直宣告牌打出，玩家處於立直狀態。
@@ -37,11 +37,22 @@ import com.doublemoon1119.mahjongcraft.logic.table.layout.createInitialLayoutVal
  */
 internal data class SeatSpec(
     val standingTiles: List<Tile> = emptyList(),
-    val ponTiles: List<Tile> = emptyList(),
+    val pons: List<ScenarioPon> = emptyList(),
     val drawnTile: Tile? = null,
     val discards: List<Tile> = emptyList(),
     val riichiTile: Tile? = null,
     val strategyKey: String = DebugScriptedAiStrategy.TSUMOGIRI_KEY,
+)
+
+/**
+ * 情境中一組已碰出的副露。
+ *
+ * @property tile 碰出的牌種。
+ * @property from 鳴取來源相對於這個座位的方向。
+ */
+internal data class ScenarioPon(
+    val tile: Tile,
+    val from: RelativeDirection = RelativeDirection.Across,
 )
 
 /**
@@ -62,6 +73,8 @@ internal data class SeatSpec(
  * @property multiRonPolicy 不為 null 時覆寫這一桌的一炮多響設定，其餘設定一律沿用。
  * @property deadWallFront 王牌最前端的排定牌種順序，也就是之後槓或拔北時依序補到的牌；其餘王牌照常補齊。
  * @property playerCount 情境適用的人數；只能在這個人數的桌子載入。
+ * @property liveWallIsFrontOnly 為 true 時活牌只剩 [liveWallFront]，其餘的牌當作先前各家打出的牌，從呼叫者開始輪流
+ *   接在各家預先捨牌之後，讓牌局在幾次摸牌後流局。
  */
 internal class SeatSetupScenario(
     override val id: String,
@@ -74,6 +87,7 @@ internal class SeatSetupScenario(
     private val multiRonPolicy: MultiRonPolicy? = null,
     private val deadWallFront: List<Tile> = emptyList(),
     private val playerCount: Int = PLAYER_COUNT,
+    private val liveWallIsFrontOnly: Boolean = false,
 ) : DebugGameScenario {
     override fun build(context: DebugGameScenarioContext): DebugGameScenarioResult {
         val currentGame = context.currentGame
@@ -102,9 +116,17 @@ internal class SeatSetupScenario(
         val explicitSeats = seatSpecs.map { spec -> spec.takeExplicitTiles(availableTiles) }
         val wallFront = takeTiles(availableTiles, liveWallFront)
         val reservedFront = takeTiles(availableTiles, deadWallFront)
-        val seats = seatSpecs.zip(explicitSeats) { spec, explicit -> explicit.withFillers(spec, availableTiles) }
+        val filledSeats = seatSpecs.zip(explicitSeats) { spec, explicit -> explicit.withFillers(spec, availableTiles) }
         val initialReservedTiles = reservedFront +
             takeAvoiding(availableTiles, config.deadTileCount - reservedFront.size, waitingTiles)
+        val seats = if (liveWallIsFrontOnly) {
+            val earlierDiscards = availableTiles.toList().also { availableTiles.clear() }
+            filledSeats.mapIndexed { offset, seat ->
+                seat.copy(discards = seat.discards + earlierDiscards.filterIndexed { index, _ -> index % playerCount == offset })
+            }
+        } else {
+            filledSeats
+        }
         val liveTiles = wallFront + availableTiles
         val consumedTiles = seats.flatMap { it.allTiles }
         val initialLiveTiles = consumedTiles + liveTiles
@@ -217,7 +239,7 @@ internal data class SeatTiles(
      * @return 補齊立牌後的座位牌組。
      */
     fun withFillers(spec: SeatSpec, availableTiles: MutableList<IdentifiedTile>): SeatTiles {
-        val fillerCount = INITIAL_HAND_SIZE - spec.ponTiles.size * MELD_TILE_COUNT - standingTiles.size
+        val fillerCount = INITIAL_HAND_SIZE - spec.pons.size * MELD_TILE_COUNT - standingTiles.size
         return copy(standingTiles = standingTiles + takeDistinctFillers(availableTiles, fillerCount))
     }
 }
@@ -230,12 +252,13 @@ internal data class SeatTiles(
  */
 internal fun SeatSpec.takeExplicitTiles(availableTiles: MutableList<IdentifiedTile>): SeatTiles = SeatTiles(
     standingTiles = takeTiles(availableTiles, standingTiles),
-    melds = ponTiles.map { tile ->
-        val tiles = takeTiles(availableTiles, List(MELD_TILE_COUNT) { tile })
+    melds = pons.map { pon ->
+        val tiles = takeTiles(availableTiles, List(MELD_TILE_COUNT) { pon.tile })
         Meld(
             type = MeldType.PON,
             tiles = tiles,
-            sourceDirection = RelativeDirection.Across,
+            sourceTile = tiles.last(),
+            sourceDirection = pon.from,
             publiclyRevealedTileIds = tiles.map { it.id }.toSet(),
             faceDownTileIds = emptySet(),
         )
