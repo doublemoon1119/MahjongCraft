@@ -727,15 +727,15 @@ object MahjongTileTableLayout {
      * 角落區沿排列方向總共佔用的寬度，供手牌讓開（[handCornerYieldShift]）與結算舞台避開：沒有副露與移出的牌時只有
      * 角落物件本身；否則為 [meldStartOffset] 加上 [meldAreaWidth] 與 [setAsideAreaWidth]。
      *
-     * @param setAsideTileCount 接在副露之後、移出手牌的牌張數（例如三人日麻拔出的北）。
      * @param cornerPropWidth 角落規則物件佔用的寬度。
      * @param melds 依宣告順序排列的副露。
+     * @param setAsideTileCount 接在副露之後、移出手牌的牌張數（例如三人日麻拔出的北）。
      * @return 角落區沿排列方向佔用的總寬度。
      */
     fun cornerAreaWidth(
         cornerPropWidth: Double,
         melds: List<MahjongMeldTileGroup>,
-        setAsideTileCount: Int = 0,
+        setAsideTileCount: Int,
     ): Double = if (melds.isEmpty() && setAsideTileCount == 0) {
         cornerPropWidth
     } else {

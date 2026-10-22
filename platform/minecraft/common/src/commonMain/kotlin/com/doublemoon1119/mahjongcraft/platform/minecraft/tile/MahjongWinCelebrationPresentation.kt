@@ -23,6 +23,7 @@ import kotlin.uuid.Uuid
  * @property melds 贏家目前所有副露，排列規則同 [MahjongPlayerAreaPresentation.melds]，只用來正確計算
  * 立牌讓開副露的偏移，這個方法不重新呈現副露本身（副露的位置/姿態不受胡牌影響）。
  * @property cornerWidth 贏家副露角落被佔用的寬度，只用來換算讓開偏移，理由同 [MahjongPlayerAreaPresentation.cornerWidth]。
+ * @property setAsideTileCount 贏家移出手牌、接在副露之後擺放的牌張數（例如三人日麻拔出的北），只用來換算讓開偏移。
  * @property winningTileId 胡的那張牌 Uuid——自摸時是原本的摸牌位那張，此時已併入 [organizedStandingTileIds]；
  * 榮和／搶槓時是放銃者打出的那張捨牌，或搶槓來源的那張加槓/暗槓牌，仍在放銃者／宣告者的區域。
  * @property isTsumo `true` 代表自摸（[winningTileId] 需要先單獨倒下、再等其餘立牌一起倒下）；`false`
@@ -41,6 +42,7 @@ data class MahjongWinCelebrationPresentation(
     val organizedStandingTileIds: List<Uuid>,
     val melds: List<MahjongMeldTileGroup>,
     val cornerWidth: Double,
+    val setAsideTileCount: Int,
     val winningTileId: Uuid,
     val isTsumo: Boolean,
     val earliestStartGameTime: Long = 0L,

@@ -166,7 +166,7 @@ class MahjongTileTableLayoutTest {
 
         assertEquals(2 * tileStep, MahjongTileTableLayout.cornerAreaWidth(0.0, emptyList(), setAsideTileCount = 2), ABSOLUTE_TOLERANCE)
         assertEquals(
-            MahjongTileTableLayout.cornerAreaWidth(0.0, listOf(meld)) + MahjongTileTableLayout.MELD_GROUP_GAP + tileStep,
+            MahjongTileTableLayout.cornerAreaWidth(0.0, listOf(meld), setAsideTileCount = 0) + MahjongTileTableLayout.MELD_GROUP_GAP + tileStep,
             MahjongTileTableLayout.cornerAreaWidth(0.0, listOf(meld), setAsideTileCount = 1),
             ABSOLUTE_TOLERANCE,
         )
@@ -536,11 +536,11 @@ class MahjongTileTableLayoutTest {
         val meld = fakeMeld(type = MeldType.CLOSED_KAN, tileCount = 4, calledTileId = null)
         val meldWidth = MahjongTileTableLayout.meldAreaWidth(listOf(meld))
 
-        assertEquals(0.3, MahjongTileTableLayout.cornerAreaWidth(0.3, emptyList()), ABSOLUTE_TOLERANCE)
-        assertEquals(meldWidth, MahjongTileTableLayout.cornerAreaWidth(0.0, listOf(meld)), ABSOLUTE_TOLERANCE)
+        assertEquals(0.3, MahjongTileTableLayout.cornerAreaWidth(0.3, emptyList(), setAsideTileCount = 0), ABSOLUTE_TOLERANCE)
+        assertEquals(meldWidth, MahjongTileTableLayout.cornerAreaWidth(0.0, listOf(meld), setAsideTileCount = 0), ABSOLUTE_TOLERANCE)
         assertEquals(
             0.3 + MahjongTileTableLayout.MELD_GROUP_GAP + meldWidth,
-            MahjongTileTableLayout.cornerAreaWidth(0.3, listOf(meld)),
+            MahjongTileTableLayout.cornerAreaWidth(0.3, listOf(meld), setAsideTileCount = 0),
             ABSOLUTE_TOLERANCE,
         )
     }

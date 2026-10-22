@@ -248,6 +248,7 @@ class FabricGamePresentationPublisher(
                 request = request,
                 tableState = tableState,
                 cornerWidthsBySeat = cornerWidthsBySeat(gameId, tableState),
+                setAsideTiles = tableState?.let { moduleRegistry.getModule(it.config)::setAsideTiles } ?: { emptyList() },
                 tileAssetRegistry = tileAssetRegistry,
             )
             val endGameTime = exhaustiveDrawSettlementScheduler.schedule(
@@ -1118,6 +1119,7 @@ class FabricGamePresentationPublisher(
                 organizedStandingTileIds = organizedHand.tiles.map { it.id },
                 melds = melds,
                 cornerWidth = cornerWidthsBySeat[requestedWinner.seatIndex] ?: 0.0,
+                setAsideTileCount = module.setAsideTiles(winner).size,
                 winningTileId = request.winningTileId,
                 isTsumo = request.isTsumo,
                 earliestStartGameTime = earliestStartGameTime,

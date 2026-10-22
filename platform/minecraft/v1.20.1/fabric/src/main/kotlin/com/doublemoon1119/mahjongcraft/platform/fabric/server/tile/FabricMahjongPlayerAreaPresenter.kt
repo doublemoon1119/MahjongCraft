@@ -342,7 +342,11 @@ class FabricMahjongPlayerAreaPresenter(
             return tile
         }
 
-        val reservedCornerWidth = MahjongTileTableLayout.cornerAreaWidth(presentation.cornerWidth, presentation.melds)
+        val reservedCornerWidth = MahjongTileTableLayout.cornerAreaWidth(
+            cornerPropWidth = presentation.cornerWidth,
+            melds = presentation.melds,
+            setAsideTileCount = presentation.setAsideTileCount,
+        )
         val standingHandTileIds = if (presentation.isTsumo) {
             presentation.organizedStandingTileIds.filterNot { tileId -> tileId == presentation.winningTileId }
         } else {

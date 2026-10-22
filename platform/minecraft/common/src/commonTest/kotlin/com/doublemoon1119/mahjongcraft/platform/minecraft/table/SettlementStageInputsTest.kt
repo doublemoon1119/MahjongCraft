@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileSetAppearanceDefinition
@@ -89,7 +90,7 @@ class SettlementStageInputsTest {
             playerPresentation(seatIndex = 1, waitingTiles = listOf(Tile.Numeric(Tile.Suit.Bamboo, 2))),
         )
 
-        val inputs = exhaustiveDrawSettlementStageInputs(request, stateWith(), emptyMap(), FakeTileAssetRegistry)
+        val inputs = exhaustiveDrawSettlementStageInputs(request, stateWith(), emptyMap(), { emptyList() }, FakeTileAssetRegistry)
 
         assertEquals(
             mapOf(0 to listOf("east", "p9"), 1 to listOf("s2")),
@@ -104,7 +105,7 @@ class SettlementStageInputsTest {
         val state = stateWith(handTiles = listOf(revealed))
         val request = requestOf(playerPresentation(seatIndex = 0, revealedHandTileIds = listOf(revealed.id)))
 
-        val inputs = exhaustiveDrawSettlementStageInputs(request, state, emptyMap(), FakeTileAssetRegistry)
+        val inputs = exhaustiveDrawSettlementStageInputs(request, state, emptyMap(), { emptyList() }, FakeTileAssetRegistry)
 
         assertEquals(mapOf(revealed.id to "m5"), inputs.revealedTileAssetsById)
     }
@@ -120,12 +121,35 @@ class SettlementStageInputsTest {
             request = request,
             tableState = null,
             cornerWidthsBySeat = emptyMap(),
+            setAsideTiles = { emptyList() },
             tileAssetRegistry = FakeTileAssetRegistry,
         )
 
         assertEquals(mapOf(0 to listOf("south")), inputs.waitingTileAssetsBySeat)
         assertEquals(emptyMap(), inputs.revealedTileAssetsById)
         assertEquals(emptyMap(), inputs.reservedCornerWidthsBySeat)
+    }
+
+    /** 移出手牌的牌（例如拔出的北）接在副露之後，計入桌角預留寬度。 */
+    @Test
+    fun `reserves corner width for set aside tiles`() {
+        val north = tileOf(Tile.Honor.North)
+        val state = stateWith()
+        val dealerId = state.players.first().id
+
+        val inputs = exhaustiveDrawSettlementStageInputs(
+            request = requestOf(playerPresentation(seatIndex = 0)),
+            tableState = state,
+            cornerWidthsBySeat = emptyMap(),
+            setAsideTiles = { player -> if (player.id == dealerId) listOf(north) else emptyList() },
+            tileAssetRegistry = FakeTileAssetRegistry,
+        )
+
+        assertEquals(
+            MahjongTileTableLayout.cornerAreaWidth(0.0, emptyList(), setAsideTileCount = 1),
+            inputs.reservedCornerWidthsBySeat.getValue(0),
+        )
+        assertEquals(0.0, inputs.reservedCornerWidthsBySeat.getValue(1))
     }
 
     /** 每個座位都有一份桌角預留寬度。 */
@@ -135,6 +159,7 @@ class SettlementStageInputsTest {
             request = requestOf(playerPresentation(seatIndex = 0)),
             tableState = stateWith(),
             cornerWidthsBySeat = emptyMap(),
+            setAsideTiles = { emptyList() },
             tileAssetRegistry = FakeTileAssetRegistry,
         )
 
@@ -162,6 +187,7 @@ class SettlementStageInputsTest {
         request = requestOf(playerPresentation(seatIndex = 0)),
         tableState = stateWith(),
         cornerWidthsBySeat = cornerWidthsBySeat,
+        setAsideTiles = { emptyList() },
         tileAssetRegistry = FakeTileAssetRegistry,
     ).reservedCornerWidthsBySeat
 
