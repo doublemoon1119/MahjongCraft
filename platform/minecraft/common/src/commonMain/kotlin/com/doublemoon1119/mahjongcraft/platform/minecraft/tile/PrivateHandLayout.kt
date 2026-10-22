@@ -173,6 +173,8 @@ class PrivateHandLayout {
     /**
      * 從已同步的立牌終點核對牌排中心；不以移動中的距離猜牌寬。
      *
+     * 牌排中心改變時，至少要有一張牌的原生位置跟上次確認時不同，或整手都是沒有上次位置的新牌，才採用新中心。
+     *
      * @param publicOrder 完整公開立牌順序。
      * @param drawnId 獨立摸牌位的牌，用於排除已合併但快照尚未更新的中間狀態。
      * @param inputs 本幀原生資料。
@@ -201,7 +203,9 @@ class PrivateHandLayout {
         if (row?.matches(candidate) == false) {
             // 換格數的快照可能比位置先到；不能因為等了幾幀就把舊座標當成新中心。
             val moved = publicOrder.any { id -> previousTargets[id]?.let { it != inputs[id]?.target } == true }
-            if (candidates.size != publicOrder.size || !moved) return
+            // 整手換成全新的牌（例如載入 debug 情境）時沒有舊座標可比，全部立起且一致的位置就是新牌排。
+            val replaced = publicOrder.none { id -> id in previousTargets }
+            if (candidates.size != publicOrder.size || !(moved || replaced)) return
             if (drawnId != null) {
                 val drawn = inputs[drawnId]?.target ?: return
                 val edge = candidate.placement(publicOrder.lastIndex, publicOrder.size)

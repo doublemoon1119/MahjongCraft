@@ -1,6 +1,11 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
+import com.doublemoon1119.mahjongcraft.logic.base.MeldType
+import com.doublemoon1119.mahjongcraft.logic.base.PublicHandOrder
+import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.DiceAnimationVector
+import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -667,6 +672,246 @@ class PrivateHandLayoutTest {
             releaseHand = false,
         )
         assertTrue(frame.isEmpty())
+    }
+
+    /** 整手換成全新的牌時沒有舊位置可比，新牌全部立起且位置一致後，改用新的牌排中心。 */
+    @Test
+    fun `replaced hand adopts the new native row center`() {
+        val layout = PrivateHandLayout()
+        val fourthId = Uuid.parse("00000000-0000-0000-0000-000000000004")
+        layout.update(
+            time = 0.0,
+            standingOrder = listOf(firstId, secondId),
+            drawnId = null,
+            inputs = transforms(firstId to transform(-0.5), secondId to transform(0.5)),
+            releaseHand = false,
+        )
+        layout.update(
+            time = 1.0,
+            standingOrder = listOf(thirdId, fourthId),
+            drawnId = null,
+            inputs = transforms(
+                thirdId to transform(5.0).copy(poseDegrees = -90.0f),
+                fourthId to transform(6.0).copy(poseDegrees = -90.0f),
+            ),
+            releaseHand = false,
+        )
+        val dealt = transforms(thirdId to transform(1.5), fourthId to transform(2.5))
+        layout.update(time = 2.0, standingOrder = listOf(thirdId, fourthId), drawnId = null, inputs = dealt, releaseHand = false)
+        val settled = layout.update(time = 20.0, standingOrder = listOf(thirdId, fourthId), drawnId = null, inputs = dealt, releaseHand = false)
+
+        assertEquals(transform(1.5).position.x, settled.getValue(thirdId).position.x, 0.000001)
+        assertEquals(transform(2.5).position.x, settled.getValue(fourthId).position.x, 0.000001)
+    }
+
+    /** 暗槓後立牌只剩一張、嶺上牌晚到時，快照先到的順序下，每個座位與桌子朝向的留下立牌與嶺上牌最後都在伺服器讓位後的位置。 */
+    @Test
+    fun `closed kan keeps the yielded positions when the snapshot arrives first`() {
+        ClosedKanFixture.all().forEach { kan ->
+            val layout = kan.settledBeforeKan()
+
+            layout.update(time = 10.0, standingOrder = kan.after, drawnId = kan.replacement, inputs = kan.beforeInputs, releaseHand = false)
+            layout.update(time = 11.0, standingOrder = kan.after, drawnId = kan.replacement, inputs = kan.movedInputs, releaseHand = false)
+            layout.update(time = 20.0, standingOrder = kan.after, drawnId = kan.replacement, inputs = kan.landedInputs, releaseHand = false)
+            val settled = layout.update(time = 40.0, standingOrder = kan.after, drawnId = kan.replacement, inputs = kan.landedInputs, releaseHand = false)
+
+            kan.assertYielded(settled)
+        }
+    }
+
+    /** 暗槓後立牌只剩一張、嶺上牌晚到時，位置先到的順序下，每個座位與桌子朝向的留下立牌與嶺上牌最後都在伺服器讓位後的位置。 */
+    @Test
+    fun `closed kan keeps the yielded positions when positions arrive first`() {
+        ClosedKanFixture.all().forEach { kan ->
+            val layout = kan.settledBeforeKan()
+
+            layout.update(time = 10.0, standingOrder = kan.before, drawnId = kan.beforeDrawn, inputs = kan.movedInputs, releaseHand = false)
+            layout.update(time = 11.0, standingOrder = kan.after, drawnId = kan.replacement, inputs = kan.movedInputs, releaseHand = false)
+            layout.update(time = 20.0, standingOrder = kan.after, drawnId = kan.replacement, inputs = kan.landedInputs, releaseHand = false)
+            val settled = layout.update(time = 40.0, standingOrder = kan.after, drawnId = kan.replacement, inputs = kan.landedInputs, releaseHand = false)
+
+            kan.assertYielded(settled)
+        }
+    }
+
+    /**
+     * 以實際桌面座標重現三組碰（其中一組已加槓）之後的暗槓：三張立牌與剛摸到的牌一起槓掉，立牌只剩一張，
+     * 嶺上牌先蓋在王牌區、稍後才落到摸牌位。
+     *
+     * @property seatIndex 暗槓玩家的座位。
+     * @property tableFacing 桌子的世界朝向。
+     */
+    private class ClosedKanFixture(
+        private val seatIndex: Int,
+        private val tableFacing: MahjongTableFacing,
+    ) {
+        /** 暗槓前的立牌：三張要槓的牌與一張留下的牌。 */
+        val before: List<Uuid> = List(4) { Uuid.random() }
+
+        /** 暗槓前剛摸到、會一起槓掉的牌。 */
+        val beforeDrawn: Uuid = Uuid.random()
+
+        /** 暗槓後留下的立牌。 */
+        val after: List<Uuid> = listOf(before.last())
+
+        /** 嶺上牌。 */
+        val replacement: Uuid = Uuid.random()
+
+        /** 暗槓前已有的三組碰，第一組已加槓。 */
+        private val existingMelds: List<MahjongMeldTileGroup> = listOf(
+            pon(type = MeldType.ADDED_KAN, direction = RelativeDirection.Left, tileCount = 4),
+            pon(type = MeldType.PON, direction = RelativeDirection.Across, tileCount = 3),
+            pon(type = MeldType.PON, direction = RelativeDirection.Right, tileCount = 3),
+        )
+
+        /** 新的暗槓。 */
+        private val closedKan: MahjongMeldTileGroup = (before.dropLast(1) + beforeDrawn).let { tiles ->
+            MahjongMeldTileGroup(
+                type = MeldType.CLOSED_KAN,
+                tileIds = tiles,
+                calledTileId = null,
+                sourceDirection = RelativeDirection.Self,
+                allTilesFaceDown = false,
+                faceDownTileIds = setOf(tiles.first(), tiles.last()),
+            )
+        }
+
+        /** 嶺上牌還在王牌區時的位置。 */
+        private val replacementInWall = TileDisplayTransform(
+            position = DiceAnimationVector(0.5, 1.1, 0.5),
+            yawDegrees = 0.0f,
+            poseDegrees = FACE_DOWN_DEGREES,
+        )
+
+        /** 暗槓前伺服器擺好的立牌與摸牌位，嶺上牌還在王牌區。 */
+        val beforeInputs: Map<Uuid, TileDisplayInput> = handInputs(standing = before, drawnId = beforeDrawn, melds = existingMelds) +
+            (replacement to TileDisplayInput(target = replacementInWall, motion = null, visible = true))
+
+        /** 暗槓後伺服器已移好立牌與副露，嶺上牌還在王牌區。 */
+        val movedInputs: Map<Uuid, TileDisplayInput> = closedKan.tileIds.associateWith {
+            TileDisplayInput(target = replacementInWall.copy(poseDegrees = FACE_UP_DEGREES), motion = null, visible = true)
+        } + handInputs(standing = after, drawnId = null, melds = existingMelds + closedKan) +
+            (replacement to TileDisplayInput(target = replacementInWall, motion = null, visible = true))
+
+        /** 嶺上牌落到摸牌位後。 */
+        val landedInputs: Map<Uuid, TileDisplayInput> = movedInputs + expectedInputs()
+
+        /** @return 暗槓前已穩定的私人布局。 */
+        fun settledBeforeKan(): PrivateHandLayout = PrivateHandLayout().apply {
+            update(time = 0.0, standingOrder = before, drawnId = beforeDrawn, inputs = beforeInputs, releaseHand = false)
+            update(time = 5.0, standingOrder = before, drawnId = beforeDrawn, inputs = beforeInputs, releaseHand = false)
+        }
+
+        /**
+         * 確認留下的立牌與嶺上牌最後顯示在伺服器讓位後的位置；沒有被私人布局接管的牌以共享位置顯示。
+         *
+         * @param frame 私人布局最後一幀。
+         */
+        fun assertYielded(frame: Map<Uuid, TileDisplayTransform>) {
+            val expected = expectedInputs()
+            listOf(after.single(), replacement).forEach { id ->
+                val target = expected.getValue(id).target.position
+                val actual = frame[id]?.position ?: target
+                assertEquals(target.x, actual.x, POSITION_TOLERANCE, "x of $id at seat $seatIndex facing $tableFacing")
+                assertEquals(target.z, actual.z, POSITION_TOLERANCE, "z of $id at seat $seatIndex facing $tableFacing")
+            }
+        }
+
+        /** @return 暗槓後伺服器擺好的立牌與嶺上牌。 */
+        private fun expectedInputs(): Map<Uuid, TileDisplayInput> = handInputs(standing = after, drawnId = replacement, melds = existingMelds + closedKan)
+
+        /**
+         * 依伺服器的擺法算出立牌與摸牌位的共享終點。
+         *
+         * @param standing 立牌。
+         * @param drawnId 摸牌位的牌；沒有時為 null。
+         * @param melds 用來算讓位的副露。
+         * @return 各牌的原生輸入。
+         */
+        private fun handInputs(
+            standing: List<Uuid>,
+            drawnId: Uuid?,
+            melds: List<MahjongMeldTileGroup>,
+        ): Map<Uuid, TileDisplayInput> {
+            val shift = MahjongTileTableLayout.handCornerYieldShift(
+                handSize = standing.size,
+                reservedCornerWidth = MahjongTileTableLayout.cornerAreaWidth(cornerPropWidth = 0.0, melds = melds, setAsideTileCount = 0),
+                hasDrawnTile = drawnId != null,
+            )
+            val standingInputs = PublicHandOrder.arrange(standing).mapIndexed { orderIndex, id ->
+                id to MahjongTileTableLayout.handPlacement(
+                    controllerX = 0,
+                    controllerY = 0,
+                    controllerZ = 0,
+                    tableFacing = tableFacing,
+                    seatLayout = SEAT_LAYOUT,
+                    seatIndex = seatIndex,
+                    handSize = standing.size,
+                    tileIndex = standing.size - 1 - orderIndex,
+                    cornerYieldShift = shift,
+                ).toStandingInput()
+            }
+            val drawnInput = drawnId?.let { id ->
+                id to MahjongTileTableLayout.drawnTilePlacement(
+                    controllerX = 0,
+                    controllerY = 0,
+                    controllerZ = 0,
+                    tableFacing = tableFacing,
+                    seatLayout = SEAT_LAYOUT,
+                    seatIndex = seatIndex,
+                    standingTileCount = standing.size,
+                    cornerYieldShift = shift,
+                ).toStandingInput()
+            }
+            return (standingInputs + listOfNotNull(drawnInput)).toMap()
+        }
+
+        /**
+         * 建立一組測試副露，第三張是鳴取的牌。
+         *
+         * @param type 副露種類。
+         * @param direction 鳴取來源方向。
+         * @param tileCount 牌張數。
+         * @return 測試副露。
+         */
+        private fun pon(type: MeldType, direction: RelativeDirection, tileCount: Int): MahjongMeldTileGroup {
+            val tiles = List(tileCount) { Uuid.random() }
+            return MahjongMeldTileGroup(
+                type = type,
+                tileIds = tiles,
+                calledTileId = tiles[2],
+                sourceDirection = direction,
+                allTilesFaceDown = false,
+                faceDownTileIds = emptySet(),
+            )
+        }
+
+        /** @return 直立牌的原生輸入。 */
+        private fun MahjongTileWallPlacement.toStandingInput(): TileDisplayInput = TileDisplayInput(
+            target = TileDisplayTransform(position = DiceAnimationVector(x, y, z), yawDegrees = yaw, poseDegrees = 0.0f),
+            motion = null,
+            visible = true,
+        )
+
+        /** 暗槓重現用的桌面設定。 */
+        companion object {
+            /** @return 四人桌每個座位與每個桌子朝向的暗槓重現。 */
+            fun all(): List<ClosedKanFixture> = MahjongTableFacing.entries.flatMap { facing ->
+                (0 until SEAT_LAYOUT.playerCount).map { seat -> ClosedKanFixture(seatIndex = seat, tableFacing = facing) }
+            }
+
+            /** 四人日麻的座位布局。 */
+            val SEAT_LAYOUT: MahjongTableSeatLayout = MahjongTableSeatLayout.forPlayerCount(4)
+
+            /** 牌面朝上平放的翻轉角。 */
+            const val FACE_UP_DEGREES: Float = 90.0f
+
+            /** 牌面朝下平放的翻轉角。 */
+            const val FACE_DOWN_DEGREES: Float = -90.0f
+
+            /** 座標比較容許誤差。 */
+            const val POSITION_TOLERANCE: Double = 0.000001
+        }
     }
 
     /** 將牌張終點快速組成原生輸入資料。 */
