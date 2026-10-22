@@ -72,6 +72,7 @@ class GameEventProjector(
                 is HistoryFact.RoundPreparationSubmitted,
                 is HistoryFact.RoundPreparationAutomaticallyResolved,
                 is HistoryFact.ActionAccepted,
+                is HistoryFact.ActionScored,
                 is HistoryFact.ReactionResolved,
                 is HistoryFact.RoundCompleted,
                 is HistoryFact.WinContinuationResolved,

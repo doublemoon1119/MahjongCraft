@@ -255,6 +255,44 @@ internal object TileAnimationSteps {
         tile.enqueueAll(steps)
     }
 
+    /**
+     * 摸牌後自動移出的動畫：等到 [startGameTime]，這張牌從摸牌位以可見的拋物線飛到移出區最終格位。
+     *
+     * 呼叫時這張牌通常還在牌牆上，摸牌動畫已先排入同一個動畫佇列，因此起點直接使用摸牌位 [from]，
+     * 不讀 entity 目前的位置。
+     *
+     * @param tile 要移出的牌 entity。
+     * @param from 摸牌位的座標與朝向。
+     * @param finalPlacement 移出區的最終座標與朝向。
+     * @param endPose 落地後使用的牌姿態。
+     * @param startGameTime 開始飛行的遊戲時間。
+     */
+    fun scheduleSetAsideFromDrawnSlot(
+        tile: MahjongTileEntity,
+        from: MahjongTileWallPlacement,
+        finalPlacement: MahjongTileWallPlacement,
+        endPose: MahjongTilePose,
+        startGameTime: Long,
+    ) {
+        tile.enqueueAll(
+            listOf(
+                AnimationStep.WaitUntil(startGameTime),
+                AnimationStep.Teleport(finalPlacement.x, finalPlacement.y, finalPlacement.z, finalPlacement.yaw),
+                AnimationStep.Custom(endPose),
+                AnimationStep.PlayMotion(
+                    durationTicks = MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS,
+                    arcHeight = MahjongTileTableLayout.DISCARD_ARC_HEIGHT,
+                    startOffsetX = from.x - finalPlacement.x,
+                    startOffsetY = from.y - finalPlacement.y,
+                    startOffsetZ = from.z - finalPlacement.z,
+                    startPoseRotationDegrees = MahjongTilePose.STANDING.rotationDegrees,
+                    endPoseRotationDegrees = endPose.rotationDegrees,
+                ),
+                meldLandingSound(startGameTime + MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS),
+            ),
+        )
+    }
+
     /** 捨牌與鳴牌落地牌面提示的總顯示時間。 */
     const val ACTION_POPUP_DURATION_TICKS = 24L
 

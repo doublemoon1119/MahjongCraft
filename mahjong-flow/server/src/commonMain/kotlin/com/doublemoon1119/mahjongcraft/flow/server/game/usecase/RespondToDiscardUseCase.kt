@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.AppliedActionScoring
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameAbortReasonIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
@@ -15,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCu
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.acceptedActionHistoryDraft
+import com.doublemoon1119.mahjongcraft.flow.server.game.history.actionScoredHistoryDraft
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.winSettlementHistoryDetails
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.CompletedGameActionContext
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
@@ -34,6 +36,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.DiscardReactionCandidate
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult
+import com.doublemoon1119.mahjongcraft.logic.table.DrawSource
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.SidewaysMarkedDiscardPile
@@ -122,6 +125,21 @@ class RespondToDiscardUseCase(
                                     ),
                                 ),
                             )
+                            resolution.winnerId?.let { winnerId ->
+                                resolution.scoring?.let { add(actionScoredHistoryDraft(it)) }
+                                if (resolution.drawnTiles.isNotEmpty()) {
+                                    add(
+                                        acceptedActionHistoryDraft(
+                                            actorPlayerId = winnerId,
+                                            action = GameAction.Draw,
+                                            before = before,
+                                            after = after,
+                                            affectedTileIds = resolution.drawnTiles.map { it.id },
+                                        ),
+                                    )
+                                }
+                                resolution.followUp?.let { addAll(it.historyDrafts(winnerId, before, after)) }
+                            }
                             resolution.abortiveDrawReason?.let { reason ->
                                 add(
                                     acceptedActionHistoryDraft(
@@ -203,7 +221,11 @@ class RespondToDiscardUseCase(
                     // 放過原本合法的榮和：後果交給規則決定，見 MahjongRuleModule.onPlayerDeclinedWin。
                     // 這張牌記入放過清單的時機是反應視窗結束且沒有人榮和時，見 resolvePendingReaction。
                     val updatedResponder = if (action == GameAction.Pass && candidates.any { it.action is GameAction.Ron }) {
-                        module.onPlayerDeclinedWin(responder)
+                        RuleHookResultValidator.requireRuleStateOnly(
+                            before = responder,
+                            after = module.onPlayerDeclinedWin(responder),
+                            hookName = "onPlayerDeclinedWin",
+                        )
                     } else {
                         responder
                     }
@@ -287,14 +309,12 @@ class RespondToDiscardUseCase(
                 resolvedAction,
             )
         }
-        if (result.supplementalDrawHappened) {
-            eventPublisher.publishToAllObservers(
-                gameId,
-                seatedPlayerIds,
-                requireNotNull(result.winnerId),
-                GameAction.Draw,
-            )
-            val module = moduleRegistry.getModule(newState.config)
+        result.followUp?.let { followUp ->
+            val winnerId = requireNotNull(result.winnerId)
+            eventPublisher.publishToAllObservers(gameId, seatedPlayerIds, winnerId, GameAction.Draw)
+            followUp.publishedActions.forEach { followUpAction ->
+                eventPublisher.publishToAllObservers(gameId, seatedPlayerIds, winnerId, followUpAction)
+            }
             presentationPublisher.publishRoundInfoUpdated(gameId, newState)
         }
 
@@ -312,27 +332,44 @@ class RespondToDiscardUseCase(
         }
 
         // 碰/吃/明槓得標時，得標玩家的副露多了一組、手牌也少了對應張數，重新呈現整份手牌/摸牌位/
-        // 副露；規則另外補牌時（[RespondResult.supplementalDrawHappened]）摸牌位自然帶著呈現，不需要
+        // 副露；規則另外補牌時（[RespondResult.followUp]）摸牌位自然帶著呈現，不需要
         // 額外判斷——合併呼叫後也順便補上先前缺漏的手牌重新呈現（吃/碰/明槓後手牌張數變少，先前完全
         // 沒有重新呈現手牌列）。
         result.winnerId?.let { winnerId ->
             result.resolvedAction?.let { resolvedAction ->
                 presentationPublisher.publishGameActionDeclared(gameId, winnerId, resolvedAction)
             }
+            result.scoring?.let { scoring ->
+                presentationPublisher.publishActionScored(gameId, scoring)
+                // 沒有補牌時不會更新局況；收付改變了分數，玩家資訊要跟著更新。
+                if (result.followUp == null) presentationPublisher.publishRoundInfoUpdated(gameId, newState)
+            }
             val winnerSeatIndex = newState.players.indexOfFirst { it.id == winnerId }
             val winner = newState.players[winnerSeatIndex]
             val module = moduleRegistry.getModule(newState.config)
-            presentationPublisher.publishPlayerTilesUpdated(
-                gameId,
-                winnerSeatIndex,
-                winner.hand.tiles.map { it.id },
-                winner.hand.lastDrawn?.id,
-                winner.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
-                setAsideTileIds = module.setAsideTiles(winner).map { it.id },
-                // 吃/碰/明槓永遠整組一次成立新副露（附加到 exposedMelds 尾端，不是原地修改既有組），
-                // 最後一組必定就是這次剛成立的那組，組內全部牌都是新移入副露的牌。
-                newlyClaimedMeldTileIds = winner.hand.melds.last().tiles.map { it.id }.toSet(),
-            )
+            // 吃/碰/明槓永遠整組一次成立新副露（附加到 exposedMelds 尾端，不是原地修改既有組），
+            // 最後一組必定就是這次剛成立的那組，組內全部牌都是新移入副露的牌。
+            val claimedTileIds = winner.hand.melds.last().tiles.map { it.id }.toSet()
+            val followUp = result.followUp
+            if (followUp != null) {
+                presentationPublisher.publishPlayerAreaAfterDraw(
+                    gameId = gameId,
+                    playerId = winnerId,
+                    followUp = followUp,
+                    module = module,
+                    newlyClaimedMeldTileIds = claimedTileIds,
+                )
+            } else {
+                presentationPublisher.publishPlayerTilesUpdated(
+                    gameId = gameId,
+                    seatIndex = winnerSeatIndex,
+                    standingTileIds = winner.hand.tiles.map { it.id },
+                    drawnTileId = winner.hand.lastDrawn?.id,
+                    melds = winner.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
+                    setAsideTileIds = module.setAsideTiles(winner).map { it.id },
+                    newlyClaimedMeldTileIds = claimedTileIds,
+                )
+            }
         }
 
         // 依 checkpoint 順序發布新公開的牌牆資訊；除了本次明槓，先前延後的公開也可能在全員跳過、
@@ -385,9 +422,9 @@ class RespondToDiscardUseCase(
     }
 
     /**
-     * `update` 區塊內部使用的中繼結果，讓 [supplementalDrawHappened]／[discarderId]／[winnerId] 能跟著
+     * `update` 區塊內部使用的中繼結果，讓 [followUp]／[discarderId]／[winnerId] 能跟著
      * [tableState] 一起帶出 `gameRepository.update` 的作用域，供廣播事件／觸發呈現時使用。
-     * [supplementalDrawHappened] 為 true 代表明槓得標後規則成功補牌，需要額外廣播 [GameAction.Draw]。
+     * [followUp] 不為 null 代表明槓得標後規則成功補牌，需要額外廣播 [GameAction.Draw] 與後續的自動處理。
      * [discarderId] 只在碰/吃/明槓得標、實際對丟牌者的 `discardPile` 呼叫過 `takeLast()` 時才有值
      * （全員過牌與榮和都不會呼叫 `takeLast()`），供呼叫端重新呈現該玩家的牌河。[winnerId] 跟
      * [discarderId] 同一個有效視窗（碰/吃/明槓得標時才有值），供呼叫端重新呈現得標玩家的副露。
@@ -396,7 +433,9 @@ class RespondToDiscardUseCase(
      * 只會有其中一種非空。
      *
      * @property tableState 本次交易提交的權威桌況。
-     * @property supplementalDrawHappened 明槓成立後是否成功補牌。
+     * @property drawnTiles 鳴牌成立後補到的牌；沒有補牌時為空清單。
+     * @property scoring 鳴牌成立當下的點數收付；不收付時為 null。
+     * @property followUp 補牌之後的自動處理；沒有補牌時為 null。
      * @property discarderId 鳴牌成立時原捨牌者的識別碼；其他結果為 null。
      * @property winnerId 鳴牌成立時取得副露的玩家識別碼；其他結果為 null。
      * @property resolvedAction 最後成立的非過牌動作；沒有成立的動作時為 null。
@@ -415,7 +454,9 @@ class RespondToDiscardUseCase(
      */
     private data class RespondResult(
         val tableState: TableState,
-        val supplementalDrawHappened: Boolean = false,
+        val drawnTiles: List<IdentifiedTile> = emptyList(),
+        val scoring: AppliedActionScoring? = null,
+        val followUp: DrawFollowUpApplier.Result? = null,
         val discarderId: Uuid? = null,
         val winnerId: Uuid? = null,
         val resolvedAction: GameAction? = null,
@@ -591,19 +632,33 @@ class RespondToDiscardUseCase(
                 else -> player
             }
         }
-        val playersAfterMeldClaimed = module.onMeldClaimed(playersAfterMeld)
+        val playersAfterMeldClaimed = RuleHookResultValidator.requireRuleStateOnly(
+            before = playersAfterMeld,
+            after = module.onMeldClaimed(playersAfterMeld),
+            hookName = "onMeldClaimed",
+        )
         val winnerIndex = playersAfterMeldClaimed.indexOfFirst { it.id == winnerId }
+        val originalState = state.copy(players = players)
+        val scored = ActionScoringApplier.apply(
+            before = originalState,
+            after = state.copy(
+                players = playersAfterMeldClaimed,
+                currentPlayerIndex = winnerIndex,
+                pendingReaction = null,
+            ),
+            actorPlayerId = winnerId,
+            action = winnerAction,
+            sourcePlayerId = pendingReaction.discarderId,
+            module = module,
+        )
 
         if (!effect.requiresSupplementalDraw) {
             return RespondResult(
-                tableState = state.copy(
-                    players = playersAfterMeldClaimed,
-                    currentPlayerIndex = winnerIndex,
-                    pendingReaction = null,
-                ),
+                tableState = scored.tableState,
                 discarderId = pendingReaction.discarderId,
                 winnerId = winnerId,
                 resolvedAction = winnerAction,
+                scoring = scored.scoring,
             ).applyWallReveal(
                 checkpoint = WallRevealCheckpoint.AFTER_DISCARD_REACTIONS,
                 module = module,
@@ -612,13 +667,7 @@ class RespondToDiscardUseCase(
             )
         }
 
-        val originalState = state.copy(players = players)
-        val candidateState = state.copy(
-            players = playersAfterMeldClaimed,
-            currentPlayerIndex = winnerIndex,
-            pendingReaction = null,
-        )
-        val reactionReveal = RespondResult(candidateState).applyWallReveal(
+        val reactionReveal = RespondResult(scored.tableState).applyWallReveal(
             checkpoint = WallRevealCheckpoint.AFTER_DISCARD_REACTIONS,
             module = module,
             actorPlayerId = pendingReaction.discarderId,
@@ -652,9 +701,17 @@ class RespondToDiscardUseCase(
                         "Claim requires a supplemental draw but the rule did not provide one: $winnerAction",
                     )
                 }
+                val followUp = DrawFollowUpApplier.run(
+                    state = applied.tableState,
+                    playerId = winnerId,
+                    source = DrawSource.Supplemental(winnerAction),
+                    module = module,
+                )
                 RespondResult(
-                    tableState = applied.tableState,
-                    supplementalDrawHappened = true,
+                    tableState = followUp.tableState,
+                    drawnTiles = applied.drawnTiles,
+                    scoring = scored.scoring,
+                    followUp = followUp,
                     discarderId = pendingReaction.discarderId,
                     winnerId = winnerId,
                     resolvedAction = winnerAction,

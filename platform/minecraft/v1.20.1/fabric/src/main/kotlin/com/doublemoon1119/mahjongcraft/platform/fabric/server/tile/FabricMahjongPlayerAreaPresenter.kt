@@ -15,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTabl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.meldDisplayDirection
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.DrawFollowUpTimeline
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongInitialDealPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongMeldTileGroup
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresentation
@@ -60,6 +61,8 @@ class FabricMahjongPlayerAreaPresenter(
      *    私人順序不會用於共享布局；先以 [PublicHandOrder] 轉成公開順序，再反向對應
      *    [MahjongTileTableLayout.handPlacement] 的 `tileIndex`（`0` 是玩家自己右手邊）。本人的排列由
      *    用戶端依本人快照顯示，不改變其他觀察者看到的座標。
+     *    有 [MahjongPlayerAreaPresentation.followUpSteps] 時，摸牌位改依 [DrawFollowUpTimeline] 逐步排定：先摸到第一步要移出的牌，
+     *    每一步的牌從摸牌位飛到移出區後才摸下一張，最後一張留在摸牌位。
      * 3. 用 [MahjongTileTableLayout.meldPlacement] 逐格擺放副露——邏輯照搬原本
      *    `FabricMahjongMeldPresenter.present()`，起始游標從 [MahjongTileTableLayout.meldStartOffset]
      *    開始（角落有物件時隔一段縫接在其外緣），姿態由 [meldPose] 決定；加槓牌疊在來源橫放牌上。
@@ -125,34 +128,53 @@ class FabricMahjongPlayerAreaPresenter(
             tile.teleportExistingManagedTile(placement)
         }
 
-        presentation.drawnTileId?.let { drawnTileId ->
-            val tile = claimTile(drawnTileId)
-            if (tile != null) {
-                val placement = MahjongTileTableLayout.drawnTilePlacement(
-                    controllerX = controllerPos.x,
-                    controllerY = controllerPos.y,
-                    controllerZ = controllerPos.z,
-                    tableFacing = presentation.tableFacing,
-                    seatLayout = presentation.seatLayout,
-                    seatIndex = presentation.seatIndex,
-                    standingTileCount = presentation.standingTileIds.size,
-                    cornerYieldShift = cornerYieldShift,
-                )
+        val drawnSlotPlacement = MahjongTileTableLayout.drawnTilePlacement(
+            controllerX = controllerPos.x,
+            controllerY = controllerPos.y,
+            controllerZ = controllerPos.z,
+            tableFacing = presentation.tableFacing,
+            seatLayout = presentation.seatLayout,
+            seatIndex = presentation.seatIndex,
+            standingTileCount = presentation.standingTileIds.size,
+            cornerYieldShift = cornerYieldShift,
+        )
+        // 同一次呈現有牌移入副露或擺到桌上時（槓、移出手牌後的補牌），等那些牌落地後才摸牌。
+        val claimsTiles = presentation.animatedMeldClaimTileIds.isNotEmpty() || presentation.animatedSetAsideTileIds.isNotEmpty()
+        val followUpStepStarts = DrawFollowUpTimeline.stepStartTicks(presentation.followUpSteps.size, claimsTiles)
+        val followUpStartBySetAsideTileId = presentation.followUpSteps.zip(followUpStepStarts).associate { (step, startTicks) ->
+            step.setAsideTileId to world.time + startTicks
+        }
+
+        if (presentation.followUpSteps.isNotEmpty()) {
+            // 摸牌後的自動處理：先摸到第一步要移出的牌，之後每一步的補牌等移出的牌落地才開始，最後一張留在摸牌位。
+            val scheduledDraws = listOf(
+                presentation.followUpSteps.first().setAsideTileId to DrawFollowUpTimeline.initialDrawDelayTicks(claimsTiles),
+            ) + presentation.followUpSteps.zip(followUpStepStarts).mapNotNull { (step, startTicks) ->
+                step.drawnTileId?.let { it to DrawFollowUpTimeline.replacementDrawStartTicks(startTicks) }
+            }
+            scheduledDraws.forEach { (tileId, startDelayTicks) ->
+                val tile = claimTile(tileId) ?: return@forEach
                 tile.assignToTable(presentation.tableId)
-                if (presentation.animateDrawnTile) {
-                    // 起飛前維持牌現在的既有姿態（牌牆生成以來一直是 MahjongTilePose.FACE_DOWN，還沒被
-                    // 動過），不要在這裡先改成 STANDING——姿態要等 TileAnimationSteps.scheduleDrawnTile 隱形傳送
-                    // 那一刻才切換，見該方法 KDoc。
-                    // 同一次呈現有牌移入副露或擺到桌上時（槓、移出手牌後的補牌），等那些牌落地後才摸牌。
-                    val claimsTiles = presentation.animatedMeldClaimTileIds.isNotEmpty() || presentation.animatedSetAsideTileIds.isNotEmpty()
-                    TileAnimationSteps.scheduleDrawnTile(
-                        tile = tile,
-                        finalPlacement = placement,
-                        startDelayTicks = if (claimsTiles) MahjongTileTableLayout.DISCARD_FLIGHT_DURATION_TICKS.toLong() else 0L,
-                    )
-                } else {
-                    tile.tilePose = MahjongTilePose.STANDING
-                    tile.teleportExistingManagedTile(placement)
+                TileAnimationSteps.scheduleDrawnTile(tile, drawnSlotPlacement, startDelayTicks)
+            }
+        } else {
+            presentation.drawnTileId?.let { drawnTileId ->
+                val tile = claimTile(drawnTileId)
+                if (tile != null) {
+                    tile.assignToTable(presentation.tableId)
+                    if (presentation.animateDrawnTile) {
+                        // 起飛前維持牌現在的既有姿態（牌牆生成以來一直是 MahjongTilePose.FACE_DOWN，還沒被
+                        // 動過），不要在這裡先改成 STANDING——姿態要等 TileAnimationSteps.scheduleDrawnTile 隱形傳送
+                        // 那一刻才切換，見該方法 KDoc。
+                        TileAnimationSteps.scheduleDrawnTile(
+                            tile = tile,
+                            finalPlacement = drawnSlotPlacement,
+                            startDelayTicks = DrawFollowUpTimeline.initialDrawDelayTicks(claimsTiles),
+                        )
+                    } else {
+                        tile.tilePose = MahjongTilePose.STANDING
+                        tile.teleportExistingManagedTile(drawnSlotPlacement)
+                    }
                 }
             }
         }
@@ -261,7 +283,31 @@ class FabricMahjongPlayerAreaPresenter(
         var setAsidePopupAnchor: MahjongTileEntity? = null
         presentation.setAsideTileIds.forEach { tileId ->
             cursorAlong += MahjongTileDimensions.TILE_WIDTH / 2.0
-            val tile = placeMeldTile(tileId, cursorAlong, isSidewaysTile = false)
+            val followUpStartGameTime = followUpStartBySetAsideTileId[tileId]
+            val tile = if (followUpStartGameTime != null) {
+                claimTile(tileId)?.also { followUpTile ->
+                    val placement = MahjongTileTableLayout.meldPlacement(
+                        controllerX = controllerPos.x,
+                        controllerY = controllerPos.y,
+                        controllerZ = controllerPos.z,
+                        tableFacing = presentation.tableFacing,
+                        seatLayout = presentation.seatLayout,
+                        seatIndex = presentation.seatIndex,
+                        alongOffsetFromCorner = cursorAlong,
+                        isSidewaysTile = false,
+                    )
+                    followUpTile.assignToTable(presentation.tableId)
+                    TileAnimationSteps.scheduleSetAsideFromDrawnSlot(
+                        tile = followUpTile,
+                        from = drawnSlotPlacement,
+                        finalPlacement = placement,
+                        endPose = MahjongTilePose.FACE_UP,
+                        startGameTime = followUpStartGameTime,
+                    )
+                }
+            } else {
+                placeMeldTile(tileId, cursorAlong, isSidewaysTile = false)
+            }
             if (tileId in presentation.animatedSetAsideTileIds && setAsidePopupAnchor == null) setAsidePopupAnchor = tile
             cursorAlong += MahjongTileDimensions.TILE_WIDTH / 2.0 + MahjongTileDimensions.TILE_SMALL_PADDING
         }

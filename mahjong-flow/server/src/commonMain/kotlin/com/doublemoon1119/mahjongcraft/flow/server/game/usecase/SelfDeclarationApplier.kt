@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.AppliedActionScoring
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleContractViolationException
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
@@ -35,12 +37,14 @@ internal object SelfDeclarationApplier {
          * @property wallRevealBatches 依 checkpoint 順序排列的新公開牌批次。
          * @property physicalWallTransitionPhases 已通過規則驗證的實體牌牆移動階段；本切片只隨結果保留，
          * 尚不負責發布 presentation。
+         * @property scoring 動作成立當下的點數收付；不收付時為 null。
          */
         data class Applied(
             val tableState: TableState,
             val drawnTiles: List<IdentifiedTile>,
             val wallRevealBatches: List<Set<Uuid>> = emptyList(),
             val physicalWallTransitionPhases: List<PhysicalWallLayoutTransitionPhase> = emptyList(),
+            val scoring: AppliedActionScoring? = null,
         ) : Result
 
         /**
@@ -52,7 +56,7 @@ internal object SelfDeclarationApplier {
     }
 
     /**
-     * 套用本次暗槓或加槓，並將候選桌況交給規則補牌 policy。
+     * 套用本次暗槓或加槓與其點數收付，並將候選桌況交給規則補牌 policy。
      *
      * @param state 尚未套用本次槓牌的權威桌況。
      * @param declarerId 宣告槓牌的玩家 ID。
@@ -67,13 +71,23 @@ internal object SelfDeclarationApplier {
         kanAction: GameAction.Kan,
         incomingTile: IdentifiedTile,
         module: MahjongRuleModule<*>,
-    ): Result = applySupplementalDraw(
-        originalState = state,
-        candidateState = kanCandidateState(state, declarerId, kanAction, incomingTile, module),
-        actorPlayerId = declarerId,
-        action = kanAction,
-        module = module,
-    )
+    ): Result {
+        val scored = ActionScoringApplier.apply(
+            before = state,
+            after = kanCandidateState(state, declarerId, kanAction, incomingTile, module),
+            actorPlayerId = declarerId,
+            action = kanAction,
+            sourcePlayerId = null,
+            module = module,
+        )
+        return applySupplementalDraw(
+            originalState = state,
+            candidateState = scored.tableState,
+            actorPlayerId = declarerId,
+            action = kanAction,
+            module = module,
+        ).withScoring(scored.scoring)
+    }
 
     /**
      * 只把宣告的槓或移出手牌的動作套用到宣告者手上、尚未補牌的候選桌況。
@@ -96,8 +110,30 @@ internal object SelfDeclarationApplier {
         module: MahjongRuleModule<*>,
     ): TableState? = when (action) {
         is GameAction.Kan -> kanCandidateState(state, declarerId, action, incomingTile, module)
-        is GameAction.Extension -> module.applyTileSetAsideAction(state, declarerId, action)
+        is GameAction.Extension -> setAsideCandidateState(state, declarerId, action, module)
         else -> null
+    }
+
+    /**
+     * 套用移出手牌的動作並驗證結果，尚未收付與補牌。
+     *
+     * @param state 尚未套用本次動作的權威桌況。
+     * @param declarerId 執行動作的玩家 ID。
+     * @param action 本次移出手牌的擴充動作。
+     * @param module 對局採用的規則模組。
+     * @return 通過驗證的候選桌況；規則不支援這個動作時為 null。
+     * @throws RuleContractViolationException 規則回傳的結果改動了不允許改動的資料時。
+     */
+    private fun setAsideCandidateState(
+        state: TableState,
+        declarerId: Uuid,
+        action: GameAction.Extension,
+        module: MahjongRuleModule<*>,
+    ): TableState? {
+        val declarer = state.players.first { it.id == declarerId }
+        val setAsideTile = module.tileSetAsideBy(declarer, action) ?: return null
+        val candidate = module.applyTileSetAsideAction(state, declarerId, action) ?: return null
+        return RuleHookResultValidator.requireValidTileSetAside(state, candidate, declarerId, action, setAsideTile, module)
     }
 
     /** 套用暗槓或加槓的副露與宣告紀錄，尚未補牌。 */
@@ -151,11 +187,16 @@ internal object SelfDeclarationApplier {
         val playersAfterMeld = state.players.map { player ->
             if (player.id == declarerId) declarerAfterMeld else player
         }
-        return state.copy(players = module.onMeldClaimed(playersAfterMeld))
+        val playersAfterHook = RuleHookResultValidator.requireRuleStateOnly(
+            before = playersAfterMeld,
+            after = module.onMeldClaimed(playersAfterMeld),
+            hookName = "onMeldClaimed",
+        )
+        return state.copy(players = playersAfterHook)
     }
 
     /**
-     * 套用移出手牌的擴充動作（見 [MahjongRuleModule.applyTileSetAsideAction]），並將候選桌況交給規則補牌 policy。
+     * 套用移出手牌的擴充動作（見 [MahjongRuleModule.applyTileSetAsideAction]）與其點數收付，並將候選桌況交給規則補牌 policy。
      *
      * @param state 尚未套用本次動作的權威桌況。
      * @param declarerId 宣告動作的玩家 ID。
@@ -168,9 +209,23 @@ internal object SelfDeclarationApplier {
         action: GameAction.Extension,
         module: MahjongRuleModule<*>,
     ): Result {
-        val candidateState = module.applyTileSetAsideAction(state, declarerId, action)
+        val candidateState = setAsideCandidateState(state, declarerId, action, module)
             ?: return Result.Rejected(SupplementalDrawReasonIds.INVALID_RESULT)
-        return applySupplementalDraw(state, candidateState, declarerId, action, module)
+        val scored = ActionScoringApplier.apply(
+            before = state,
+            after = candidateState,
+            actorPlayerId = declarerId,
+            action = action,
+            sourcePlayerId = null,
+            module = module,
+        )
+        return applySupplementalDraw(state, scored.tableState, declarerId, action, module).withScoring(scored.scoring)
+    }
+
+    /** 成功套用時附上動作的點數收付；拒絕結果維持原樣。 */
+    private fun Result.withScoring(scoring: AppliedActionScoring?): Result = when (this) {
+        is Result.Applied -> copy(scoring = scoring)
+        is Result.Rejected -> this
     }
 
     /**
@@ -189,8 +244,9 @@ internal object SelfDeclarationApplier {
         action: GameAction,
         module: MahjongRuleModule<*>,
     ): Result {
+        // 動作本身與它的收付可能已更新規則動態狀態；補牌前的公開檢查接在這份狀態之後，不退回動作前的狀態。
         val beforeReveal = WallRevealDecisionApplier.apply(
-            originalState,
+            originalState.copy(dynamicRuleState = candidateState.dynamicRuleState),
             WallRevealCheckpoint.BEFORE_SUPPLEMENTAL_DRAW,
             module,
             actorPlayerId,

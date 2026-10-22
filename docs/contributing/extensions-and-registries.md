@@ -160,6 +160,27 @@
   is already public. Save both sets and the stable display order; do not sort hidden tiles by their faces
   while building presentation. Test owner, opponent, spectator, AI and replay views.
 
+## Draw Follow-ups and Action Scoring
+
+- A rule that sets tiles aside automatically after a draw, such as replacing flower tiles, returns a
+  decision from `createDrawFollowUpPolicy`. Flow asks after every live-wall draw and every replacement
+  draw, and asks again after each replacement until the policy returns `None` or `EndRound`.
+- An automatic set-aside reuses the rule's own `tileSetAsideBy`, `applyTileSetAsideAction` and
+  supplemental draw policy, and the same robbing check as a declared set-aside: when the legal action
+  validator offers a win on the tile, Flow opens the robbing window and pauses the chain. Do not add a
+  second replacement source for automatic steps.
+- Return `EndRound` when nothing is left to draw. Asking for a set-aside that cannot draw a replacement,
+  or one that does not consume a wall or reserved tile, stops the match through the contract-failure
+  path. A set-aside result may only move the named tile from the actor's standing tiles to the end of
+  `setAsideTiles`, record the action and change rule state.
+- Points that change hands when an action stands come from `createActionScoringPolicy`. Flow asks once
+  for each claim, kan and set-aside that stands, before the replacement draw, and not for actions that
+  are robbed or cancelled. Player changes plus the pot deposit must add up to zero; keep the pot balance
+  in the rule's dynamic state and pay it out from the rule's settlement.
+- `onPlayerDrew`, `onPlayerDiscarded`, `onPlayerDeclinedWin` and `onMeldClaimed` may only change player
+  rule state. Changing scores, hands or discards in a hook stops the match; use the scoring policy or a
+  declaration cost instead.
+
 ## Koin Registration
 
 - Declare every Koin definition in the owning module's DSL `module { }` value. Do not annotate classes with

@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.AppliedActionScoring
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.SettledWinPresentation
@@ -14,6 +15,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCu
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.acceptedActionHistoryDraft
+import com.doublemoon1119.mahjongcraft.flow.server.game.history.actionScoredHistoryDraft
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.winSettlementHistoryDetails
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
@@ -21,9 +23,11 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationH
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementPresentationRequestFactory
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult
+import com.doublemoon1119.mahjongcraft.logic.table.DrawSource
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.WallRevealCheckpoint
@@ -42,8 +46,9 @@ import kotlin.uuid.Uuid
  *
  * 每位有資格搶和的玩家各自呼叫一次本用例記錄自己的回應，等全部人都回應完才結算，結算只有兩種結果：
  * - **有人搶和成功**：這次宣告的動作視為沒發生，改用 [RonSettlementResolver] 結算榮和；只有搶加槓計搶槓。
- * - **全員放過**：動作真的成立，這時才呼叫 [SelfDeclarationApplier] 補做原本暫緩的套用，並讓
- *   宣告者摸嶺上牌——只有這個分支會摸牌，搶和成功那個分支不會。
+ * - **全員放過**：動作真的成立，這時才呼叫 [SelfDeclarationApplier] 補做原本暫緩的套用與收付，並讓
+ *   宣告者摸嶺上牌——只有這個分支會摸牌，搶和成功那個分支不會。補到的牌再交給 [DrawFollowUpApplier] 依規則自動處理，
+ *   自動處理可能再開一次搶和視窗。
  *
  * 只信任 [GameAction.Ron]/[GameAction.Pass]：`LegalActionValidator.getLegalActions` 的「反應」
  * 分支不分辨 `sourceAction` 是不是捨牌，會一併算出吃/碰/明槓資格，但搶和情境下這些都不合法
@@ -91,7 +96,7 @@ class RespondToRobbingUseCase(
                             after = after,
                             affectedTileIds = action.affectedTileIds(),
                         ),
-                    ) + if (before.pendingRobbingReaction != null && after.pendingRobbingReaction == null) {
+                    ) + if (result.value.windowResolved) {
                         val resolution = result.value
                         val resolvedActor = resolution.declarerId ?: resolution.ronWinnerIds.singleOrNull()
                         buildList {
@@ -99,7 +104,7 @@ class RespondToRobbingUseCase(
                                 HistoryEventDraft(
                                     actorPlayerId = resolvedActor,
                                     fact = HistoryFact.ReactionResolved(
-                                        resolvedAction = if (resolution.drawHappened) {
+                                        resolvedAction = if (resolution.declarerId != null) {
                                             before.pendingRobbingReaction?.declaredAction
                                         } else {
                                             resolution.ronWinningTileId?.let(GameAction::Ron)
@@ -108,6 +113,21 @@ class RespondToRobbingUseCase(
                                     ),
                                 ),
                             )
+                            resolution.declarerId?.let { declarerId ->
+                                resolution.scoring?.let { add(actionScoredHistoryDraft(it)) }
+                                if (resolution.drawnTiles.isNotEmpty()) {
+                                    add(
+                                        acceptedActionHistoryDraft(
+                                            declarerId,
+                                            GameAction.Draw,
+                                            before,
+                                            after,
+                                            resolution.drawnTiles.map { it.id },
+                                        ),
+                                    )
+                                }
+                                resolution.followUp?.let { addAll(it.historyDrafts(declarerId, before, after)) }
+                            }
                             resolution.settlement?.let { settlement ->
                                 add(
                                     HistoryEventDraft(
@@ -158,7 +178,11 @@ class RespondToRobbingUseCase(
 
                     // 放過原本合法的搶槓：後果交給規則決定，見 MahjongRuleModule.onPlayerDeclinedWin。
                     val stateAfterResponse = if (action == GameAction.Pass && legalActions.any { it is GameAction.Ron }) {
-                        val declinedResponder = module.onPlayerDeclinedWin(responder)
+                        val declinedResponder = RuleHookResultValidator.requireRuleStateOnly(
+                            before = responder,
+                            after = module.onPlayerDeclinedWin(responder),
+                            hookName = "onPlayerDeclinedWin",
+                        )
                         state.copy(players = state.players.map { if (it.id == playerId) declinedResponder else it })
                     } else {
                         state
@@ -166,7 +190,7 @@ class RespondToRobbingUseCase(
                     val newPending = pending.copy(responses = pending.responses + (playerId to action))
                     if (!newPending.isComplete) {
                         val newState = stateAfterResponse.copy(pendingRobbingReaction = newPending)
-                        return@update newState to Outcome.Success(RobbingResult(newState, drawHappened = false))
+                        return@update newState to Outcome.Success(RobbingResult(newState))
                     }
 
                     val ronWinnerIds = newPending.responses.filterValues { it is GameAction.Ron }.keys
@@ -210,7 +234,6 @@ class RespondToRobbingUseCase(
                         newState to Outcome.Success(
                             RobbingResult(
                                 tableState = newState,
-                                drawHappened = false,
                                 ronWinnerIds = ronWinnerIds,
                                 ronWinningTileId = pending.robbedTile.id,
                                 ronResolutions = resolved.resolutions,
@@ -262,11 +285,24 @@ class RespondToRobbingUseCase(
                             return@update state to Outcome.Error(error)
                         }
                         applied as SelfDeclarationApplier.Result.Applied
-                        val newState = applied.tableState.copy(pendingRobbingReaction = null)
+                        val appliedState = applied.tableState.copy(pendingRobbingReaction = null)
+                        val followUp = if (applied.drawnTiles.isNotEmpty()) {
+                            DrawFollowUpApplier.run(
+                                state = appliedState,
+                                playerId = pending.declarerId,
+                                source = DrawSource.Supplemental(pending.declaredAction),
+                                module = module,
+                            )
+                        } else {
+                            null
+                        }
+                        val newState = followUp?.tableState ?: appliedState
                         newState to Outcome.Success(
                             RobbingResult(
                                 newState,
-                                drawHappened = applied.drawnTiles.isNotEmpty(),
+                                drawnTiles = applied.drawnTiles,
+                                scoring = applied.scoring,
+                                followUp = followUp,
                                 declarerId = pending.declarerId,
                                 ruleStateChanged = pending.declaredAction is GameAction.Extension,
                                 wallRevealBatches = applied.wallRevealBatches,
@@ -296,14 +332,13 @@ class RespondToRobbingUseCase(
                 )
             }
         }
-        if (result.drawHappened) {
-            eventPublisher.publishToAllObservers(
-                gameId,
-                seatedPlayerIds,
-                requireNotNull(result.declarerId),
-                GameAction.Draw,
-            )
-            val module = moduleRegistry.getModule(newState.config)
+        result.declarerId?.let { declarerId ->
+            result.followUp?.let { followUp ->
+                eventPublisher.publishToAllObservers(gameId, seatedPlayerIds, declarerId, GameAction.Draw)
+                followUp.publishedActions.forEach { followUpAction ->
+                    eventPublisher.publishToAllObservers(gameId, seatedPlayerIds, declarerId, followUpAction)
+                }
+            }
             presentationPublisher.publishRoundInfoUpdated(gameId, newState)
         }
 
@@ -311,18 +346,23 @@ class RespondToRobbingUseCase(
         // 這裡重新呈現宣告者的手牌/摸牌位/副露，把摸到的嶺上牌移到摸牌位（跟一般摸牌同一套呈現方式，
         // 見 DrawTileUseCase）。搶槓成功那個分支不會走到這裡。
         result.declarerId?.let { declarerId ->
-            val declarerSeatIndex = newState.players.indexOfFirst { it.id == declarerId }
-            val declarer = newState.players[declarerSeatIndex]
             val module = moduleRegistry.getModule(newState.config)
-            presentationPublisher.publishPlayerTilesUpdated(
-                gameId,
-                declarerSeatIndex,
-                declarer.hand.tiles.map { it.id },
-                declarer.hand.lastDrawn?.id,
-                declarer.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
-                setAsideTileIds = module.setAsideTiles(declarer).map { it.id },
-                isNewlyDrawn = result.drawHappened,
-            )
+            result.scoring?.let { presentationPublisher.publishActionScored(gameId, it) }
+            val followUp = result.followUp
+            if (followUp != null) {
+                presentationPublisher.publishPlayerAreaAfterDraw(gameId, declarerId, followUp, module)
+            } else {
+                val declarerSeatIndex = newState.players.indexOfFirst { it.id == declarerId }
+                val declarer = newState.players[declarerSeatIndex]
+                presentationPublisher.publishPlayerTilesUpdated(
+                    gameId = gameId,
+                    seatIndex = declarerSeatIndex,
+                    standingTileIds = declarer.hand.tiles.map { it.id },
+                    drawnTileId = declarer.hand.lastDrawn?.id,
+                    melds = declarer.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
+                    setAsideTileIds = module.setAsideTiles(declarer).map { it.id },
+                )
+            }
             if (result.ruleStateChanged) presentationPublisher.publishRuleStateUpdated(gameId)
         }
 
@@ -369,13 +409,15 @@ class RespondToRobbingUseCase(
     }
 
     /**
-     * `update` 區塊內部用的中繼結果。[drawHappened] 為 true 代表「全員放過、槓真的成立」，這時才有
-     * 嶺上摸牌，需要廣播 [GameAction.Draw]；[declarerId]（槓的宣告者）也只在這種情況才有值。[ronWinnerIds]／
+     * `update` 區塊內部用的中繼結果。[declarerId]（槓的宣告者）只在「全員放過、槓真的成立」時才有值，這時才有
+     * 嶺上摸牌與收付。[ronWinnerIds]／
      * [ronWinningTileId] 只在搶槓成功時非空，供呼叫端逐一觸發胡牌慶祝演出——跟 [declarerId] 是互斥的
      * 兩個視窗，同一次結算只會有其中一種非空。[ruleStateChanged] 代表成立的是移出手牌的擴充動作，規則狀態（例如移出的牌）已改變。
      *
      * @property tableState 本次交易提交的權威桌況。
-     * @property drawHappened 全員放過且槓成功後是否已完成補牌。
+     * @property drawnTiles 全員放過且動作成立後補到的牌；沒有補牌時為空清單。
+     * @property scoring 全員放過且動作成立當下的點數收付；不收付時為 null。
+     * @property followUp 補牌之後的自動處理；沒有補牌時為 null。
      * @property declarerId 全員放過且槓成功時的宣告者識別碼。
      * @property ruleStateChanged 成立的擴充動作是否改變規則狀態。
      * @property ronWinnerIds 搶槓榮和成立的贏家識別碼集合。
@@ -389,7 +431,9 @@ class RespondToRobbingUseCase(
      */
     private data class RobbingResult(
         val tableState: TableState,
-        val drawHappened: Boolean,
+        val drawnTiles: List<IdentifiedTile> = emptyList(),
+        val scoring: AppliedActionScoring? = null,
+        val followUp: DrawFollowUpApplier.Result? = null,
         val declarerId: Uuid? = null,
         val ruleStateChanged: Boolean = false,
         val ronWinnerIds: Set<Uuid> = emptySet(),
@@ -400,5 +444,9 @@ class RespondToRobbingUseCase(
         val settlement: WinSettlementPresentationRequest? = null,
         val wallRevealBatches: List<Set<Uuid>> = emptyList(),
         val physicalWallTransitionPhases: List<PhysicalWallLayoutTransitionPhase> = emptyList(),
-    )
+    ) {
+        /** 這次回應是否結束了搶和視窗：全員放過而動作成立，或有人搶和成功。 */
+        val windowResolved: Boolean
+            get() = declarerId != null || ronWinningTileId != null
+    }
 }

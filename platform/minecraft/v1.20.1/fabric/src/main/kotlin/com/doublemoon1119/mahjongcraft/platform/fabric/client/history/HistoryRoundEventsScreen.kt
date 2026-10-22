@@ -246,6 +246,10 @@ internal class HistoryRoundEventsScreen(
                 addText(label, TEXT_COLOR, 16, participant, fact.identifiers)
                 addTiles(fact.directTiles, MinecraftHistoryScreenKeys.ROUND_DIRECT_TILES)
                 addTiles(fact.revealedTiles, MinecraftHistoryScreenKeys.ROUND_REVEALED_TILES)
+                fact.scoreChanges.forEach { (seat, change) ->
+                    val line = Text.translatable(MinecraftHistoryScreenKeys.ROUND_SCORE, actorText(events.identity, seat), eventPresenter.scoreChangeText(change))
+                    addText(line, TEXT_COLOR, 24, participant(events.identity, seat))
+                }
                 fact.outcome?.let { outcome ->
                     addText(Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_REASON, outcome.reasonText), ACCENT_COLOR, 24, identifiers = listOf(outcome.reasonId))
                     outcome.classification?.let { addText(Text.translatable(MinecraftHistoryScreenKeys.ROUND_OUTCOME_CLASSIFICATION, eventPresenter.classificationText(it)), MUTED_COLOR, 24, identifiers = listOf(it)) }

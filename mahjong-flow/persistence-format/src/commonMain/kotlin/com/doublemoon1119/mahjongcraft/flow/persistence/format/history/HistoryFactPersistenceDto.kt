@@ -109,6 +109,21 @@ sealed interface HistoryFactPersistenceDto {
     ) : HistoryFactPersistenceDto
 
     /**
+     * 動作成立當下的點數收付。
+     *
+     * @property action 觸發收付的動作。
+     * @property scoreDeltasByPlayerId 各玩家的點數增減，鍵為玩家 UUID 字串。
+     * @property potDeposit 放進規則點數池的點數，正數為放入、負數為取出。
+     */
+    @Serializable
+    @SerialName(HistoryFactTypeKeys.ACTION_SCORED)
+    data class ActionScored(
+        val action: GameActionPersistenceDto,
+        val scoreDeltasByPlayerId: Map<String, Int>,
+        val potDeposit: Int,
+    ) : HistoryFactPersistenceDto
+
+    /**
      * 多方反應結束後的實際結算結果。
      *
      * @property resolvedAction 反應結算後實際成立的動作；沒有動作成立時為 null。

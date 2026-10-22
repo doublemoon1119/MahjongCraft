@@ -29,6 +29,15 @@ interface MahjongPlayerInfoPresenter {
     fun hideUntil(tableId: Uuid, tableLocation: TableLocation, gameTime: Long)
 
     /**
+     * 在玩家資訊上短暫顯示分數增減；已結束顯示的舊紀錄一併移除。找不到 entity 時安全忽略。
+     *
+     * @param tableId 麻將桌 UUID。
+     * @param tableLocation 麻將桌目前位置。
+     * @param changes 要加入顯示的增減。
+     */
+    fun showScoreChanges(tableId: Uuid, tableLocation: TableLocation, changes: List<MahjongPlayerScoreChange>)
+
+    /**
      * 清除指定桌子的玩家公開資訊。
      *
      * @param tableId 麻將桌 UUID。

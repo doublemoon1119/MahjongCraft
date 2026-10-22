@@ -27,6 +27,9 @@ object HistoryFactTypeKeys {
     /** 玩家動作接受事實的種類識別碼。 */
     const val ACTION_ACCEPTED: String = "action_accepted"
 
+    /** 動作即時收付事實的種類識別碼。 */
+    const val ACTION_SCORED: String = "action_scored"
+
     /** 多方反應裁定事實的種類識別碼。 */
     const val REACTION_RESOLVED: String = "reaction_resolved"
 

@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.testing.flow.common.game.service
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.AppliedActionScoring
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.DrawFollowUpPresentationStep
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.MatchSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationRequest
@@ -27,6 +29,13 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
 
     override fun publishGameActionDeclared(gameId: Uuid, actorId: Uuid, action: GameAction) {
         declaredGameActions.getOrPut(gameId, ::mutableListOf).add(DeclaredGameActionContext(actorId, action))
+    }
+
+    /** 依對局 Uuid 紀錄所有已套用的動作即時收付。 */
+    private val actionScorings = mutableMapOf<Uuid, MutableList<AppliedActionScoring>>()
+
+    override fun publishActionScored(gameId: Uuid, scoring: AppliedActionScoring) {
+        actionScorings.getOrPut(gameId, ::mutableListOf).add(scoring)
     }
 
     /** 依對局 Uuid 紀錄最後一次終局結算呈現。 */
@@ -160,6 +169,7 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
         isNewlyDrawn: Boolean,
         newlyClaimedMeldTileIds: Set<Uuid>,
         newlySetAsideTileIds: Set<Uuid>,
+        followUpSteps: List<DrawFollowUpPresentationStep>,
     ) {
         playerTiles[gameId] = PlayerTilesContext(
             seatIndex = seatIndex,
@@ -170,6 +180,7 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
             isNewlyDrawn = isNewlyDrawn,
             newlyClaimedMeldTileIds = newlyClaimedMeldTileIds,
             newlySetAsideTileIds = newlySetAsideTileIds,
+            followUpSteps = followUpSteps,
         )
         playerTilesUpdates.getOrPut(gameId, ::mutableListOf).add(playerTiles.getValue(gameId))
     }
@@ -228,6 +239,9 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
 
     /** 讀取本局全部擲骰呈現記錄。 */
     fun getPublishedOpeningRolls(gameId: Uuid): List<OpeningDiceRoll> = diceRolls[gameId].orEmpty()
+
+    /** 取得指定對局依序收到的動作即時收付。 */
+    fun getPublishedActionScorings(gameId: Uuid): List<AppliedActionScoring> = actionScorings[gameId].orEmpty().toList()
 
     /** 取得指定對局依序收到的已成立動作語音請求。 */
     fun getDeclaredGameActions(gameId: Uuid): List<DeclaredGameActionContext> = declaredGameActions[gameId].orEmpty()

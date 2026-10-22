@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModEntities
 import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoEntry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerScoreChange
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -51,6 +52,13 @@ class MahjongPlayerInfoEntity(
             return entries.mapNotNull(PlayerEntryDto::toDomain)
         }
         set(value) = dataTracker.set(PLAYERS, JSON.encodeToString(value.map(PlayerEntryDto::fromDomain)))
+
+    /** 短暫顯示中的分數增減；只供呈現，不寫入存檔，資料解不出來時視為沒有。 */
+    var scoreChanges: List<MahjongPlayerScoreChange>
+        get() = runCatching { JSON.decodeFromString<List<ScoreChangeDto>>(dataTracker[SCORE_CHANGES]) }
+            .getOrDefault(emptyList())
+            .mapNotNull(ScoreChangeDto::toDomain)
+        set(value) = dataTracker.set(SCORE_CHANGES, JSON.encodeToString(value.map(ScoreChangeDto::fromDomain)))
 
     /** 莊家玩家 UUID；資料未設定或損壞時為 `null`。 */
     var dealerPlayerId: Uuid?
@@ -139,6 +147,7 @@ class MahjongPlayerInfoEntity(
         dataTracker.startTracking(DEALER_PLAYER_ID, "")
         dataTracker.startTracking(TABLE_FACING, MahjongTableFacing.NORTH.name)
         dataTracker.startTracking(MANAGED_TABLE_ID, "")
+        dataTracker.startTracking(SCORE_CHANGES, "[]")
     }
 
     override fun readCustomDataFromNbt(nbt: NbtCompound) {
@@ -185,6 +194,40 @@ class MahjongPlayerInfoEntity(
         private val DEALER_PLAYER_ID: TrackedData<String> = DataTracker.registerData(MahjongPlayerInfoEntity::class.java, TrackedDataHandlerRegistry.STRING)
         private val TABLE_FACING: TrackedData<String> = DataTracker.registerData(MahjongPlayerInfoEntity::class.java, TrackedDataHandlerRegistry.STRING)
         private val MANAGED_TABLE_ID: TrackedData<String> = DataTracker.registerData(MahjongPlayerInfoEntity::class.java, TrackedDataHandlerRegistry.STRING)
+        private val SCORE_CHANGES: TrackedData<String> = DataTracker.registerData(MahjongPlayerInfoEntity::class.java, TrackedDataHandlerRegistry.STRING)
+    }
+}
+
+/**
+ * 供 tracked data 序列化短暫分數增減的內部 DTO。
+ *
+ * @property seatIndex 增減的玩家座位。
+ * @property delta 點數增減。
+ * @property startGameTime 開始顯示的遊戲時間。
+ * @property endGameTime 停止顯示的遊戲時間。
+ */
+@Serializable
+internal data class ScoreChangeDto(
+    val seatIndex: Int,
+    val delta: Int,
+    val startGameTime: Long,
+    val endGameTime: Long,
+) {
+    /**
+     * 還原領域資料；數值不合法時略過該筆。
+     *
+     * @return 有效的分數增減；資料無效時為 `null`。
+     */
+    fun toDomain(): MahjongPlayerScoreChange? = runCatching { MahjongPlayerScoreChange(seatIndex, delta, startGameTime, endGameTime) }.getOrNull()
+
+    companion object {
+        /**
+         * 將領域資料轉換為可同步的 DTO。
+         *
+         * @param value 要轉換的分數增減。
+         * @return 可序列化的分數增減。
+         */
+        fun fromDomain(value: MahjongPlayerScoreChange) = ScoreChangeDto(value.seatIndex, value.delta, value.startGameTime, value.endGameTime)
     }
 }
 

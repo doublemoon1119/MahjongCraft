@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongPlayerInfoE
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableSide
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoEntry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.shownDeltaFor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
 import net.minecraft.client.render.VertexConsumerProvider
 import net.minecraft.client.render.entity.EntityRenderer
@@ -49,18 +50,21 @@ class MahjongPlayerInfoEntityRenderer(
         if (players.isEmpty()) return
         val seatLayout = MahjongTableSeatLayout.forPlayerCount(players.size)
         val width = measureSharedWidth(players, entity.dealerPlayerId)
+        val scoreChanges = entity.scoreChanges
+        val gameTime = entity.world.time
         players.forEach { player ->
+            val shownDelta = scoreChanges.shownDeltaFor(player.seatIndex, gameTime)
             val side = rotateSide(seatLayout.sideOf(player.seatIndex), entity.tableFacing.ordinal)
             matrices.push()
             val offset = sideOffset(side)
             matrices.translate(offset.first, PANEL_HEIGHT, offset.second)
             matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(sideYaw(side)))
             matrices.scale(-TEXT_SCALE, -TEXT_SCALE, TEXT_SCALE)
-            renderFace(player, entity.dealerPlayerId == player.playerId, width, light, matrices, vertexConsumers)
+            renderFace(player, entity.dealerPlayerId == player.playerId, shownDelta, width, light, matrices, vertexConsumers)
             matrices.push()
             matrices.translate(0.0, 0.0, BACK_FACE_OFFSET.toDouble())
             matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(180f))
-            renderFace(player, entity.dealerPlayerId == player.playerId, width, light, matrices, vertexConsumers)
+            renderFace(player, entity.dealerPlayerId == player.playerId, shownDelta, width, light, matrices, vertexConsumers)
             matrices.pop()
             matrices.pop()
         }
@@ -71,6 +75,7 @@ class MahjongPlayerInfoEntityRenderer(
      *
      * @param player 要顯示的座位資訊。
      * @param isDealer 該玩家是否為莊家。
+     * @param shownDelta 正在顯示的分數增減；沒有時為 null。
      * @param width 所有玩家共用的面板寬度。
      * @param light 世界光照值。
      * @param matrices 目前的模型矩陣。
@@ -79,6 +84,7 @@ class MahjongPlayerInfoEntityRenderer(
     private fun renderFace(
         player: MahjongPlayerInfoEntry,
         isDealer: Boolean,
+        shownDelta: Int?,
         width: Float,
         light: Int,
         matrices: MatrixStack,
@@ -105,7 +111,18 @@ class MahjongPlayerInfoEntityRenderer(
         WorldPanelRenderer.drawText(textRenderer, wind, right - textRenderer.getWidth(wind), top + 1f, WIND_COLOR, TEXT_Z, light, matrices, consumers)
         val scoreY = top + FIRST_ROW_HEIGHT
         val score = Text.literal(player.score.toString())
-        WorldPanelRenderer.drawText(textRenderer, score, left + (width - textRenderer.getWidth(score)) / 2f, scoreY, SCORE_COLOR, TEXT_Z, light, matrices, consumers)
+        val delta = shownDelta?.let { change ->
+            Text.literal(if (change > 0) "+$change" else "−${-change.toLong()}") to if (change > 0) SCORE_GAIN_COLOR else SCORE_LOSS_COLOR
+        }
+        val deltaWidth = delta?.let { (text, _) -> textRenderer.getWidth(text) + COLUMN_GAP } ?: 0f
+        val scoreX = left + (width - textRenderer.getWidth(score) - deltaWidth) / 2f
+        WorldPanelRenderer.drawText(textRenderer, score, scoreX, scoreY, SCORE_COLOR, TEXT_Z, light, matrices, consumers)
+        delta?.let { (text, color) ->
+            WorldPanelRenderer.drawText(
+                textRenderer, text, scoreX + textRenderer.getWidth(score) + COLUMN_GAP,
+                scoreY, color, TEXT_Z, light, matrices, consumers,
+            )
+        }
         indicators.forEachIndexed { index, (text, color) ->
             WorldPanelRenderer.drawText(
                 textRenderer, text, left + (width - textRenderer.getWidth(text)) / 2f,
@@ -216,6 +233,8 @@ class MahjongPlayerInfoEntityRenderer(
         const val WIND_COLOR = 0xFFFFD45A.toInt()
         const val DEALER_COLOR = 0xFFFF9D45.toInt()
         const val SCORE_COLOR = 0xFFF3F3F3.toInt()
+        const val SCORE_GAIN_COLOR = 0xFF7DDA8B.toInt()
+        const val SCORE_LOSS_COLOR = 0xFFF07A7A.toInt()
         const val DEALER_MARK = "●"
     }
 }

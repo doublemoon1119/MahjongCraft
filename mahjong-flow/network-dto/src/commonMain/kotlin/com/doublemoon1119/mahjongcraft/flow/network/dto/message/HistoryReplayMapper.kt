@@ -109,6 +109,14 @@ private fun HistoryReplayTransaction.toDto(): HistoryReplayTransactionDto = Hist
  */
 private fun HistoryReplayFact.toDto(): HistoryReplayFactDto = when (this) {
     is HistoryReplayFact.KnownAction -> HistoryReplayFactDto.KnownAction(typeKey, actorSeat, actionType, directTiles.map { it.tileIndex }, revealedTiles.map { it.tileIndex }, extensionTypeId)
+    is HistoryReplayFact.ActionScored -> HistoryReplayFactDto.ActionScored(
+        typeKey,
+        actorSeat,
+        actionType,
+        extensionTypeId,
+        scoreDeltasBySeat,
+        potDeposit,
+    )
     is HistoryReplayFact.Reaction -> HistoryReplayFactDto.Reaction(typeKey, actionType, resolvedActorSeat)
     is HistoryReplayFact.Preparation -> HistoryReplayFactDto.Preparation(typeKey, stepId, stepIndex, nextStepId)
     is HistoryReplayFact.DiceRolled -> HistoryReplayFactDto.DiceRolled(typeKey, rollIndex, actorSeat, dice)

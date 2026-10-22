@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacin
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerScoreChange
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import net.minecraft.registry.RegistryKey
 import net.minecraft.registry.RegistryKeys
@@ -58,6 +59,13 @@ class FabricMahjongPlayerInfoPresenter(private val serverHolder: FabricServerHol
     override fun hideUntil(tableId: Uuid, tableLocation: TableLocation, gameTime: Long) {
         val world = resolveWorld(tableLocation) ?: return
         find(world, tableId, tableLocation.toBlockPos())?.hideUntil(gameTime)
+    }
+
+    override fun showScoreChanges(tableId: Uuid, tableLocation: TableLocation, changes: List<MahjongPlayerScoreChange>) {
+        if (changes.isEmpty()) return
+        val world = resolveWorld(tableLocation) ?: return
+        val entity = find(world, tableId, tableLocation.toBlockPos()) ?: return
+        entity.scoreChanges = entity.scoreChanges.filter { it.endGameTime > world.time } + changes
     }
 
     override fun clear(tableId: Uuid, tableLocation: TableLocation): Int {

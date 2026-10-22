@@ -98,16 +98,19 @@ internal object HistoryReplayProjectionMapper {
             val revealed = fact[ReplaySourceKeys.REVEALED_TILES]?.let { refs(it, context) } ?: emptyList()
             when (type) {
                 HistoryFactTypeKeys.ACTION_ACCEPTED -> {
-                    val action = obj(fact.getValue(ReplaySourceKeys.ACTION))
-                    val actionType = string(action.getValue(ReplaySourceKeys.TYPE))
-                    action[ReplaySourceKeys.TILE_ID]?.let { context.tile(integer(it)) }
-                    action[ReplaySourceKeys.WITH_TILE_IDS]?.let { refs(it, context) }
-                    val extensionType = if (actionType == HistoryActionTypeKeys.EXTENSION) {
-                        string(obj(action.getValue(ReplaySourceKeys.VALUE)).getValue(ReplaySourceKeys.TYPE_KEY))
-                    } else {
-                        null
-                    }
+                    val (actionType, extensionType) = actionTypes(obj(fact.getValue(ReplaySourceKeys.ACTION)), context)
                     HistoryReplayFact.KnownAction(type, actor, actionType, direct, revealed, extensionType)
+                }
+                HistoryFactTypeKeys.ACTION_SCORED -> {
+                    val (actionType, extensionType) = actionTypes(obj(fact.getValue(ReplaySourceKeys.ACTION)), context)
+                    HistoryReplayFact.ActionScored(
+                        typeKey = type,
+                        actorSeat = actor,
+                        actionType = actionType,
+                        extensionTypeId = extensionType,
+                        scoreDeltasBySeat = scores(fact.getValue(ReplaySourceKeys.SCORE_DELTAS_BY_PLAYER_ID), context),
+                        potDeposit = integer(fact.getValue(ReplaySourceKeys.POT_DEPOSIT)),
+                    )
                 }
                 HistoryFactTypeKeys.REACTION_RESOLVED -> {
                     val action = fact.getValue(ReplaySourceKeys.RESOLVED_ACTION).takeUnless { it == JsonNull }?.let(::obj)
@@ -151,6 +154,25 @@ internal object HistoryReplayProjectionMapper {
                 else -> HistoryReplayFact.Opaque(type, actor, direct, revealed)
             }
         }
+    }
+
+    /**
+     * 讀取保存的動作種類，並驗證動作引用的牌都屬於本局。
+     *
+     * @param action 保存的動作物件。
+     * @param context 索引驗證上下文。
+     * @return 動作種類與擴充動作種類；內建動作的擴充種類為 null。
+     */
+    private fun actionTypes(action: JsonObject, context: HistoryReplayProjectionContext): Pair<String, String?> {
+        val actionType = string(action.getValue(ReplaySourceKeys.TYPE))
+        action[ReplaySourceKeys.TILE_ID]?.let { context.tile(integer(it)) }
+        action[ReplaySourceKeys.WITH_TILE_IDS]?.let { refs(it, context) }
+        val extensionType = if (actionType == HistoryActionTypeKeys.EXTENSION) {
+            string(obj(action.getValue(ReplaySourceKeys.VALUE)).getValue(ReplaySourceKeys.TYPE_KEY))
+        } else {
+            null
+        }
+        return actionType to extensionType
     }
 
     /**

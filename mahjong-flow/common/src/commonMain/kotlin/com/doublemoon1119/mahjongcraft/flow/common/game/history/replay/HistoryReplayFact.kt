@@ -25,6 +25,25 @@ sealed interface HistoryReplayFact {
     ) : HistoryReplayFact
 
     /**
+     * 動作成立當下的點數收付。
+     *
+     * @property typeKey 事實種類。
+     * @property actorSeat 執行動作的玩家座位。
+     * @property actionType 觸發收付的動作種類。
+     * @property extensionTypeId 擴充動作種類；內建動作為 null。
+     * @property scoreDeltasBySeat 各座位的點數增減。
+     * @property potDeposit 放進規則點數池的點數，正數為放入、負數為取出。
+     */
+    data class ActionScored(
+        override val typeKey: String,
+        val actorSeat: Int?,
+        val actionType: String,
+        val extensionTypeId: String?,
+        val scoreDeltasBySeat: Map<Int, Int>,
+        val potDeposit: Int,
+    ) : HistoryReplayFact
+
+    /**
      * 反應事實。
      *
      * @property typeKey 事實種類。

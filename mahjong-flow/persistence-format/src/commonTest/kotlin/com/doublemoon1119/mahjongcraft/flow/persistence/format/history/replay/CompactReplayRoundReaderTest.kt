@@ -185,6 +185,51 @@ class CompactReplayRoundReaderTest {
         assertEquals(null, completion.outcome?.classification)
     }
 
+    /** 動作即時收付保留動作種類、各座位增減與點數池數量；增減指向不存在的座位時拒絕。 */
+    @Test
+    fun `action scored mapping preserves seats and pot`() {
+        val identity = HistoryReplayIdentity(
+            Uuid.random(),
+            Uuid.random(),
+            listOf(HistoryReplayPlayerIdentity(0, Uuid.random(), null), HistoryReplayPlayerIdentity(1, Uuid.random(), null)),
+        )
+
+        /**
+         * 映射一筆收付事實。
+         *
+         * @param deltas 以座位字串為鍵的增減。
+         * @return 公開歷史事實。
+         */
+        fun facts(deltas: Map<String, Int>) = HistoryReplayProjectionMapper.mapFacts(
+            facts = listOf(
+                buildJsonObject {
+                    put(ReplaySourceKeys.TYPE, HistoryFactTypeKeys.ACTION_SCORED)
+                    put(ReplaySourceKeys.ACTION, buildJsonObject { put(ReplaySourceKeys.TYPE, HistoryActionTypeKeys.KAN) })
+                    put(ReplaySourceKeys.SCORE_DELTAS_BY_PLAYER_ID, JsonObject(deltas.mapValues { JsonPrimitive(it.value) }))
+                    put(ReplaySourceKeys.POT_DEPOSIT, 1000)
+                },
+            ),
+            actorSeats = listOf(0),
+            identity = identity,
+            roundNumber = 1,
+            tileCatalog = HistoryRoundTileCatalog(emptyList()),
+            budget = ReplayReadBudget(ReplayReadLimits()) {},
+        )
+
+        assertEquals(
+            HistoryReplayFact.ActionScored(
+                typeKey = HistoryFactTypeKeys.ACTION_SCORED,
+                actorSeat = 0,
+                actionType = HistoryActionTypeKeys.KAN,
+                extensionTypeId = null,
+                scoreDeltasBySeat = mapOf(0 to 2000, 1 to -3000),
+                potDeposit = 1000,
+            ),
+            facts(mapOf("0" to 2000, "1" to -3000)).single(),
+        )
+        assertFailsWith<ReplayReadException> { facts(mapOf("5" to 1000)) }
+    }
+
     /** 擲骰事實保留輪次、行為者與每顆骰子的點數。 */
     @Test
     fun `dice roll mapping preserves transcript fields`() {

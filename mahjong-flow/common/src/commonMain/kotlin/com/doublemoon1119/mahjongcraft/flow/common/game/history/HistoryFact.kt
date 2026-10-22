@@ -83,6 +83,19 @@ sealed interface HistoryFact {
     data class ActionAccepted(val action: GameAction, val result: HistoryActionResult) : HistoryFact
 
     /**
+     * 動作成立當下的點數收付；執行動作的玩家記在事件的 actor。
+     *
+     * @property action 觸發收付的動作。
+     * @property scoreDeltas 各玩家的點數增減。
+     * @property potDeposit 放進規則點數池的點數，正數為放入、負數為取出。
+     */
+    data class ActionScored(
+        val action: GameAction,
+        val scoreDeltas: Map<Uuid, Int>,
+        val potDeposit: Int,
+    ) : HistoryFact
+
+    /**
      * 多人反應收斂後實際套用的結果；不等同於單一玩家提交的反應。
      *
      * @property resolvedAction 得標或胡牌的動作；全員過牌時為 null。

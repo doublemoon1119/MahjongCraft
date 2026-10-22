@@ -368,6 +368,15 @@ object MinecraftHistoryScreenKeys {
     /** 單局回應事件格式。 */
     const val ROUND_REACTION = "mahjongcraft.history_screen.round.reaction"
 
+    /** 動作即時收付事件格式。 */
+    const val ROUND_ACTION_SCORED = "mahjongcraft.history_screen.round.action_scored"
+
+    /** 動作即時收付並放入點數池的事件格式。 */
+    const val ROUND_ACTION_SCORED_POT_DEPOSIT = "mahjongcraft.history_screen.round.action_scored_pot_deposit"
+
+    /** 動作即時收付並從點數池取出的事件格式。 */
+    const val ROUND_ACTION_SCORED_POT_WITHDRAWAL = "mahjongcraft.history_screen.round.action_scored_pot_withdrawal"
+
     /** 和牌後續流程已處理事件。 */
     const val ROUND_EVENT_WIN_CONTINUATION = "mahjongcraft.history_screen.round.event.win_continuation"
 

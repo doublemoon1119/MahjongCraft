@@ -84,6 +84,27 @@ internal class HistoryRoundEventPresenter(
                 outcome = null,
             )
 
+            is HistoryReplayFactDto.ActionScored -> HistoryFactPresentation(
+                text = when {
+                    potDeposit > 0 -> Text.translatable(
+                        MinecraftHistoryScreenKeys.ROUND_ACTION_SCORED_POT_DEPOSIT,
+                        actionText(ruleId, actionType, extensionTypeId),
+                        potDeposit,
+                    )
+                    potDeposit < 0 -> Text.translatable(
+                        MinecraftHistoryScreenKeys.ROUND_ACTION_SCORED_POT_WITHDRAWAL,
+                        actionText(ruleId, actionType, extensionTypeId),
+                        -potDeposit.toLong(),
+                    )
+                    else -> Text.translatable(MinecraftHistoryScreenKeys.ROUND_ACTION_SCORED, actionText(ruleId, actionType, extensionTypeId))
+                },
+                actorSeat = actorSeat,
+                directTiles = emptyList(),
+                revealedTiles = emptyList(),
+                outcome = null,
+                scoreChanges = scoreDeltasBySeat.toSortedMap(),
+            )
+
             is HistoryReplayFactDto.Reaction -> HistoryFactPresentation(
                 text = Text.translatable(
                     MinecraftHistoryScreenKeys.ROUND_REACTION,
@@ -158,6 +179,7 @@ internal class HistoryRoundEventPresenter(
     private fun HistoryReplayFactDto.identifiers(): List<String> = (
         listOf(typeKey) + when (this) {
             is HistoryReplayFactDto.KnownAction -> listOfNotNull(actionType, extensionTypeId)
+            is HistoryReplayFactDto.ActionScored -> listOfNotNull(actionType, extensionTypeId)
             is HistoryReplayFactDto.Reaction -> listOfNotNull(actionType)
             is HistoryReplayFactDto.Preparation -> listOfNotNull(stepId, nextStepId)
             is HistoryReplayFactDto.DiceRolled -> emptyList()
@@ -421,6 +443,7 @@ internal data class HistoryTransactionPresentation(
  * @property revealedTiles 新公開的牌種，保留重複項目與原始順序。
  * @property outcome 結算資料；沒有結算事實或保存結果為 null 時為 null。
  * @property identifiers 僅供 tooltip 顯示的原始識別碼。
+ * @property scoreChanges 動作即時收付的各座位點數增減，依座位排序；不是收付事實時為空。
  */
 internal data class HistoryFactPresentation(
     val text: Text,
@@ -429,6 +452,7 @@ internal data class HistoryFactPresentation(
     val revealedTiles: List<TileDto>,
     val outcome: HistoryOutcomePresentation?,
     val identifiers: List<String> = emptyList(),
+    val scoreChanges: Map<Int, Int> = emptyMap(),
 )
 
 /**

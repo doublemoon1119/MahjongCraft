@@ -29,6 +29,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
+import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWallRevealable
 import com.doublemoon1119.mahjongcraft.logic.table.WallRevealCheckpoint
@@ -67,7 +68,7 @@ class DeclareAndDiscardUseCaseTest {
      * @param mustDiscardAfterMeld 是否模擬剛完成自訂鳴牌、等待捨牌的玩家。
      * @param revealWallTile 是否讓宣告後的牌牆公開檢查公開一張牌山牌。
      * @param tsumoAvailable 宣告者是否同時可以自摸。
-     * @param hookPenalties 規則在放棄自摸與打牌後各扣的點數；null 時不覆寫這兩個掛勾。
+     * @param hookMode 放棄自摸與打牌後掛勾的測試行為；null 時不覆寫這兩個掛勾。
      */
     private class Fixture(
         malicious: Boolean = false,
@@ -76,7 +77,7 @@ class DeclareAndDiscardUseCaseTest {
         mustDiscardAfterMeld: Boolean = false,
         revealWallTile: Boolean = false,
         tsumoAvailable: Boolean = false,
-        hookPenalties: HookPenalties? = null,
+        hookMode: HookMode? = null,
     ) {
         /** 宣告者身分。 */
         val playerId = Uuid.random()
@@ -121,7 +122,7 @@ class DeclareAndDiscardUseCaseTest {
                         rejectWallReveal = rejectWallReveal,
                         revealWallTile = revealWallTile,
                         tsumoAvailable = tsumoAvailable,
-                        hookPenalties = hookPenalties,
+                        hookMode = hookMode,
                     )
                 },
             )
@@ -253,7 +254,7 @@ class DeclareAndDiscardUseCaseTest {
     /** 宣告附帶的捨牌與一般捨牌相同：先套用放棄自摸與打牌後的規則掛勾，再套用宣告效果。 */
     @Test
     fun `declaration discard runs the discard hooks before the declaration effect`() = runTest {
-        val fixture = Fixture(cost = 15, tsumoAvailable = true, hookPenalties = HookPenalties(declinedWin = 1, discarded = 10))
+        val fixture = Fixture(cost = 15, tsumoAvailable = true, hookMode = HookMode.RECORD_ORDER)
         fixture.repository.setTableState(fixture.table)
 
         val result = fixture.useCase(
@@ -264,7 +265,27 @@ class DeclareAndDiscardUseCaseTest {
         )
 
         assertIs<Outcome.Success<Unit>>(result)
-        assertEquals(100 - 1 - 10 - 15, fixture.repository.getTableState(fixture.gameId)!!.players.single().score)
+        val player = fixture.repository.getTableState(fixture.gameId)!!.players.single()
+        assertEquals(HookTrail(listOf(DECLINED_WIN_MARK, DISCARDED_MARK, DECLARED_MARK)), player.playerRuleState)
+        assertEquals(100 - 15, player.score)
+    }
+
+    /** 放棄自摸或打牌後的掛勾只能修改規則狀態；改動分數時中止，桌況保持不變。 */
+    @Test
+    fun `discard hook that changes the score is rejected atomically`() = runTest {
+        val fixture = Fixture(tsumoAvailable = true, hookMode = HookMode.CHANGE_SCORE)
+        fixture.repository.setTableState(fixture.table)
+
+        assertFailsWith<RuleContractViolationException> {
+            fixture.useCase(
+                gameId = fixture.gameId,
+                playerId = fixture.playerId,
+                action = Extension(DeclarationAction),
+                tileId = fixture.tile.id,
+            )
+        }
+        assertEquals(fixture.table, fixture.repository.getTableState(fixture.gameId))
+        assertTrue(fixture.repository.historyDrafts.isEmpty())
     }
 
     /** 第三方 policy 不能藉宣告效果修改未授權的玩家欄位，拒絕時桌況保持不變。 */
@@ -299,13 +320,41 @@ class DeclareAndDiscardUseCaseTest {
         override fun getVisibleTileIds(state: TableState): Set<Uuid> = revealedTileIds
     }
 
+    /** 放棄自摸與打牌後掛勾的測試行為。 */
+    private enum class HookMode {
+        /** 在規則狀態依序記下執行過的掛勾。 */
+        RECORD_ORDER,
+
+        /** 違反契約，直接修改分數。 */
+        CHANGE_SCORE,
+    }
+
     /**
-     * 測試規則在放棄自摸與打牌後掛勾各扣的點數。
+     * 依序記錄規則掛勾與宣告效果執行順序的測試規則狀態。
      *
-     * @property declinedWin 放棄自摸時扣的點數。
-     * @property discarded 打牌後扣的點數。
+     * @property marks 依執行順序排列的記號。
      */
-    private data class HookPenalties(val declinedWin: Int, val discarded: Int)
+    private data class HookTrail(val marks: List<String>) : PlayerRuleState
+
+    /** [HookTrail] 使用的記號。 */
+    private companion object {
+        /** 放棄自摸掛勾的記號。 */
+        const val DECLINED_WIN_MARK = "declined_win"
+
+        /** 打牌後掛勾的記號。 */
+        const val DISCARDED_MARK = "discarded"
+
+        /** 宣告效果的記號。 */
+        const val DECLARED_MARK = "declared"
+
+        /**
+         * 在玩家的 [HookTrail] 後面加上一個記號。
+         *
+         * @param mark 要加上的記號。
+         * @return 規則狀態加上記號後的玩家。
+         */
+        fun MahjongPlayer.withMark(mark: String): MahjongPlayer = copy(playerRuleState = HookTrail((playerRuleState as? HookTrail)?.marks.orEmpty() + mark))
+    }
 
     /**
      * 只覆寫第三方宣告接點，其餘規則行為委派給日麻模組。
@@ -317,7 +366,7 @@ class DeclareAndDiscardUseCaseTest {
      * @property rejectWallReveal 是否由規則拒絕本次牌牆公開檢查。
      * @property revealWallTile 是否在牌牆公開檢查公開牌山第一張牌。
      * @property tsumoAvailable 合法動作是否包含自摸。
-     * @property hookPenalties 放棄自摸與打牌後掛勾各扣的點數；null 時沿用日麻掛勾。
+     * @property hookMode 放棄自摸與打牌後掛勾的測試行為；null 時沿用日麻掛勾。
      */
     private class DeclarationRule(
         private val delegate: MahjongRuleModule<RiichiRuleConfig>,
@@ -327,7 +376,7 @@ class DeclareAndDiscardUseCaseTest {
         private val rejectWallReveal: Boolean,
         private val revealWallTile: Boolean,
         private val tsumoAvailable: Boolean,
-        private val hookPenalties: HookPenalties?,
+        private val hookMode: HookMode?,
     ) : MahjongRuleModule<RiichiRuleConfig> by delegate {
         override fun createWallRevealPolicy(): WallRevealPolicy = WallRevealPolicy { context ->
             wallRevealCheckpoints += context.checkpoint
@@ -343,9 +392,17 @@ class DeclareAndDiscardUseCaseTest {
             }
         }
 
-        override fun onPlayerDeclinedWin(player: MahjongPlayer): MahjongPlayer = hookPenalties?.let { player.copy(score = player.score - it.declinedWin) } ?: delegate.onPlayerDeclinedWin(player)
+        override fun onPlayerDeclinedWin(player: MahjongPlayer): MahjongPlayer = when (hookMode) {
+            HookMode.RECORD_ORDER -> player.withMark(DECLINED_WIN_MARK)
+            HookMode.CHANGE_SCORE -> player.copy(score = player.score - 1)
+            null -> delegate.onPlayerDeclinedWin(player)
+        }
 
-        override fun onPlayerDiscarded(player: MahjongPlayer): MahjongPlayer = hookPenalties?.let { player.copy(score = player.score - it.discarded) } ?: delegate.onPlayerDiscarded(player)
+        override fun onPlayerDiscarded(player: MahjongPlayer): MahjongPlayer = when (hookMode) {
+            HookMode.RECORD_ORDER -> player.withMark(DISCARDED_MARK)
+            HookMode.CHANGE_SCORE -> player
+            null -> delegate.onPlayerDiscarded(player)
+        }
 
         override fun createLegalActionValidator(): LegalActionValidator = object : LegalActionValidator {
             override fun getLegalActions(context: LegalActionContext): List<GameAction> = listOfNotNull(Extension(DeclarationAction), GameAction.Tsumo.takeIf { tsumoAvailable })
@@ -370,7 +427,7 @@ class DeclareAndDiscardUseCaseTest {
                     hand = discard.hand,
                     discardPile = discardPile,
                     score = if (malicious) player.score + 1 else player.score - cost,
-                ),
+                ).let { updated -> if (updated.playerRuleState is HookTrail) updated.withMark(DECLARED_MARK) else updated },
             )
         }
     }

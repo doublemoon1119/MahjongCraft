@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.testing.flow.common.game.service
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.DrawFollowUpPresentationStep
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
 import kotlin.uuid.Uuid
@@ -15,6 +16,7 @@ import kotlin.uuid.Uuid
  * @property isNewlyDrawn 是否為新摸入的牌。
  * @property newlyClaimedMeldTileIds 本次新取得副露中的牌 UUID。
  * @property newlySetAsideTileIds 本次新保留在一旁的牌 UUID。
+ * @property followUpSteps 摸牌後依序完成的自動移出與補牌。
  */
 data class PlayerTilesContext(
     val seatIndex: Int,
@@ -25,4 +27,5 @@ data class PlayerTilesContext(
     val isNewlyDrawn: Boolean,
     val newlyClaimedMeldTileIds: Set<Uuid>,
     val newlySetAsideTileIds: Set<Uuid>,
+    val followUpSteps: List<DrawFollowUpPresentationStep>,
 )

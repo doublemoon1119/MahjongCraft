@@ -275,6 +275,12 @@ internal object ReplaySourceKeys {
     /** 最終玩家分數。 */
     const val FINAL_SCORES_BY_PLAYER_ID = "finalScoresByPlayerId"
 
+    /** 動作即時收付的各玩家點數增減。 */
+    const val SCORE_DELTAS_BY_PLAYER_ID = "scoreDeltasByPlayerId"
+
+    /** 動作即時收付放進規則點數池的點數。 */
+    const val POT_DEPOSIT = "potDeposit"
+
     /** 結算後玩家分數。 */
     const val SETTLED_SCORES_BY_PLAYER_ID = "settledScoresByPlayerId"
 

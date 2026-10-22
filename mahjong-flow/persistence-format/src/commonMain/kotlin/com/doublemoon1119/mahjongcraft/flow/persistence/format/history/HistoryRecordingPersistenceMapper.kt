@@ -183,6 +183,11 @@ class HistoryRecordingPersistenceMapper(
             fact.action.toPersistenceDto(registries.exhaustiveDrawReasons, registries.extensionGameActions),
             fact.result.toPersistenceDto(),
         )
+        is HistoryFact.ActionScored -> HistoryFactPersistenceDto.ActionScored(
+            fact.action.toPersistenceDto(registries.exhaustiveDrawReasons, registries.extensionGameActions),
+            fact.scoreDeltas.mapKeys { it.key.toString() },
+            fact.potDeposit,
+        )
         is HistoryFact.ReactionResolved -> HistoryFactPersistenceDto.ReactionResolved(
             fact.resolvedAction?.toPersistenceDto(registries.exhaustiveDrawReasons, registries.extensionGameActions),
             fact.actorPlayerId?.toString(),
@@ -243,6 +248,11 @@ class HistoryRecordingPersistenceMapper(
         is HistoryFactPersistenceDto.ActionAccepted -> HistoryFact.ActionAccepted(
             dto.action.toDomain(registries.exhaustiveDrawReasons, registries.extensionGameActions),
             dto.result.toDomain(),
+        )
+        is HistoryFactPersistenceDto.ActionScored -> HistoryFact.ActionScored(
+            dto.action.toDomain(registries.exhaustiveDrawReasons, registries.extensionGameActions),
+            dto.scoreDeltasByPlayerId.mapKeys { Uuid.parse(it.key) },
+            dto.potDeposit,
         )
         is HistoryFactPersistenceDto.ReactionResolved -> HistoryFact.ReactionResolved(
             dto.resolvedAction?.toDomain(registries.exhaustiveDrawReasons, registries.extensionGameActions),

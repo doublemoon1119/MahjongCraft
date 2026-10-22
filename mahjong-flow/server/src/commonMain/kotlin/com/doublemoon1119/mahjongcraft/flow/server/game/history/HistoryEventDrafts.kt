@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraf
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinDetails
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinningHand
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.AppliedActionScoring
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
@@ -45,6 +46,21 @@ fun acceptedActionHistoryDraft(
         ),
     )
 }
+
+/**
+ * 由已套用的動作即時收付產生事件。
+ *
+ * @param scoring 已寫入權威狀態的收付。
+ * @return 尚未指派場次內序號與時間戳的事件草稿。
+ */
+fun actionScoredHistoryDraft(scoring: AppliedActionScoring): HistoryEventDraft = HistoryEventDraft(
+    actorPlayerId = scoring.actorPlayerId,
+    fact = HistoryFact.ActionScored(
+        action = scoring.action,
+        scoreDeltas = scoring.scoreDeltas,
+        potDeposit = scoring.potDeposit,
+    ),
+)
 
 /**
  * 將已建立的胡牌 request 轉成歷史詳情。

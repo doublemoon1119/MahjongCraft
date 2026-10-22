@@ -4,20 +4,22 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraf
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
-import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.acceptedActionHistoryDraft
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.isDrawWindowOpenFor
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.table.DrawSource
 import kotlin.uuid.Uuid
 
 /**
  * 摸牌的實例化用例。
  *
- * 負責處理玩家的摸牌請求，包含回合驗證、牌山狀態更新以及快照與事件的同步。
+ * 負責處理玩家的摸牌請求，包含回合驗證、牌山狀態更新以及快照與事件的同步。摸牌後在同一筆寫入內交給
+ * [DrawFollowUpApplier] 依規則自動處理，例如摸到花牌時自動移出並補牌。
  *
  * @property gameRepository 權威對局數據倉庫。
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的規則模組。
@@ -45,15 +47,8 @@ class DrawTileUseCase(
             gameId,
             history = { before, after, result ->
                 if (result is Outcome.Success && before != null && after != null) {
-                    listOf(
-                        acceptedActionHistoryDraft(
-                            playerId,
-                            GameAction.Draw,
-                            before,
-                            after,
-                            listOfNotNull(after.players.first { it.id == playerId }.hand.lastDrawn?.id),
-                        ),
-                    )
+                    listOf(acceptedActionHistoryDraft(playerId, GameAction.Draw, before, after, listOf(result.value.drawnTile.id))) +
+                        result.value.followUp.historyDrafts(playerId, before, after)
                 } else {
                     emptyList<HistoryEventDraft>()
                 }
@@ -73,55 +68,64 @@ class DrawTileUseCase(
                         state to Outcome.Error(GameError.WallExhausted(gameId))
                     } else {
                         val module = moduleRegistry.getModule(state.config)
-                        val updatedPlayer = module.onPlayerDrew(
-                            state.currentPlayer
-                                .copy(hand = state.currentPlayer.hand.copy(lastDrawn = tile))
-                                .clearPassedTiles()
-                                .recordAction(GameAction.Draw),
+                        val drawnPlayer = state.currentPlayer
+                            .copy(hand = state.currentPlayer.hand.copy(lastDrawn = tile))
+                            .clearPassedTiles()
+                            .recordAction(GameAction.Draw)
+                        val updatedPlayer = RuleHookResultValidator.requireRuleStateOnly(
+                            before = drawnPlayer,
+                            after = module.onPlayerDrew(drawnPlayer),
+                            hookName = "onPlayerDrew",
                         )
                         val updatedPlayers = state.players.map { if (it.id == playerId) updatedPlayer else it }
                         val remainingWallTileIds = (newWall.getAllTiles() + state.reservedWallTiles)
                             .mapTo(mutableSetOf()) { it.id }
-                        val newState = state.copy(
+                        val drawnState = state.copy(
                             tileWall = newWall,
                             players = updatedPlayers,
                             physicalWallLayout = state.physicalWallLayout?.retainOnly(remainingWallTileIds),
                         )
+                        val followUp = DrawFollowUpApplier.run(drawnState, playerId, DrawSource.LiveWall, module)
 
-                        newState to Outcome.Success(newState)
+                        followUp.tableState to Outcome.Success(DrawResult(tile, followUp))
                     }
                 }
             }
         }
 
         if (outcome is Outcome.Error) return outcome
-        val newState = (outcome as Outcome.Success).value
+        val result = (outcome as Outcome.Success).value
+        val newState = result.followUp.tableState
 
         // 2. 同步快照給所有正在觀察的玩家
         snapshotSynchronizer.syncAll(gameId)
 
         // 3. 通知在場玩家與旁觀者
-        eventPublisher.publishToAllObservers(gameId, newState.players.map { it.id }, playerId, GameAction.Draw)
+        val seatedPlayerIds = newState.players.map { it.id }
+        (listOf(GameAction.Draw) + result.followUp.publishedActions).forEach { action ->
+            eventPublisher.publishToAllObservers(gameId, seatedPlayerIds, playerId, action)
+        }
 
         // 4. 觸發平台呈現層：把摸到的牌從牌牆移到摸牌位（副露/積棒不受摸牌影響，仍要一併帶上讓手牌
         // 讓開偏移量算得準）；這是真正的摸牌，isNewlyDrawn 傳 true，見
         // GamePresentationPublisher.publishPlayerTilesUpdated 的同名參數 KDoc。
-        val seatIndex = newState.players.indexOfFirst { it.id == playerId }
-        val drawnPlayer = newState.players[seatIndex]
         val module = moduleRegistry.getModule(newState.config)
-        presentationPublisher.publishPlayerTilesUpdated(
-            gameId,
-            seatIndex,
-            drawnPlayer.hand.tiles.map { it.id },
-            drawnPlayer.hand.lastDrawn?.id,
-            drawnPlayer.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
-            setAsideTileIds = module.setAsideTiles(drawnPlayer).map { it.id },
-            isNewlyDrawn = true,
-        )
+        presentationPublisher.publishPlayerAreaAfterDraw(gameId, playerId, result.followUp, module)
         // 牌山剩餘張數每次摸牌都會變，局況資訊要跟著更新——這份呈現是「找到既有的就地更新」
         // 模式，沒帶上完整內容就會把之前顯示的內容覆蓋回空清單。
         presentationPublisher.publishRoundInfoUpdated(gameId, newState)
 
         return Outcome.Success(Unit)
     }
+
+    /**
+     * `update` 區塊內部使用的中繼結果。
+     *
+     * @property drawnTile 這次從活牌摸到的牌。
+     * @property followUp 摸牌之後的自動處理；它的桌況是這次交易提交的權威桌況。
+     */
+    private data class DrawResult(
+        val drawnTile: IdentifiedTile,
+        val followUp: DrawFollowUpApplier.Result,
+    )
 }

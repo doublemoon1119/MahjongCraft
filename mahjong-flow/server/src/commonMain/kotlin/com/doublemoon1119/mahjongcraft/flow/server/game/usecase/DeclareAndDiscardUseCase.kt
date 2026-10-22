@@ -111,14 +111,21 @@ class DeclareAndDiscardUseCase(
             }
             // 宣告附帶的捨牌與一般捨牌相同：先讓規則處理放棄自摸與打牌後的狀態，再套用宣告效果。
             val declinedChecked = if (player.hand.lastDrawn != null && ownTurnActions.any { it is GameAction.Tsumo }) {
-                module.onPlayerDeclinedWin(player)
+                RuleHookResultValidator.requireRuleStateOnly(
+                    before = player,
+                    after = module.onPlayerDeclinedWin(player),
+                    hookName = "onPlayerDeclinedWin",
+                )
             } else {
                 player
             }
-            val afterDiscardHooks = module.onPlayerDiscarded(
-                declinedChecked
-                    .copy(hand = discard.hand, discardPile = declinedChecked.discardPile.discardTile(discard.tile))
-                    .recordAction(GameAction.Discard(tileId)),
+            val discardedPlayer = declinedChecked
+                .copy(hand = discard.hand, discardPile = declinedChecked.discardPile.discardTile(discard.tile))
+                .recordAction(GameAction.Discard(tileId))
+            val afterDiscardHooks = RuleHookResultValidator.requireRuleStateOnly(
+                before = discardedPlayer,
+                after = module.onPlayerDiscarded(discardedPlayer),
+                hookName = "onPlayerDiscarded",
             )
             val declaringPlayer = afterDiscardHooks.copy(
                 hand = player.hand,

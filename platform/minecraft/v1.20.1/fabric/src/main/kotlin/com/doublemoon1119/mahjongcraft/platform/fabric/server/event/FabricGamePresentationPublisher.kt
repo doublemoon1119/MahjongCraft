@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.event
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.AppliedActionScoring
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.DrawFollowUpPresentationStep
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.MatchSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationRequest
@@ -54,6 +56,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebratio
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresentationFactory
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerScoreChange
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfoPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfoPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
@@ -71,6 +74,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.cornerWidthsBySe
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.exhaustiveDrawSettlementStageInputs
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.findTile
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.tileAssetKeysById
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.DrawFollowUpAnimationStep
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.DrawFollowUpTimeline
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongInitialDealPresentation
@@ -196,29 +201,85 @@ class FabricGamePresentationPublisher(
 
     override fun publishGameActionDeclared(gameId: Uuid, actorId: Uuid, action: GameAction) {
         publish(gameId, "publishGameActionDeclared", blocksTable = false) { resolved, state, _ ->
-            val actorSeatIndex = state.players.indexOfFirst { player -> player.id == actorId }
-            if (actorSeatIndex < 0) return@publish null
-            val ruleModuleId = moduleRegistry.getModule(state.config).id
-            val sound = gameActionSoundPresentationRegistry.find(ruleModuleId, action) ?: return@publish null
-            val placement = MahjongTileTableLayout.handPlacement(
-                controllerX = resolved.location.x,
-                controllerY = resolved.location.y,
-                controllerZ = resolved.location.z,
-                tableFacing = resolved.facing,
-                seatLayout = MahjongTableSeatLayout.forPlayerCount(state.players.size),
-                seatIndex = actorSeatIndex,
-                handSize = 1,
-                tileIndex = 0,
-            )
-            val entity = MahjongSoundTimelineEntity(world = resolved.world).apply {
-                refreshPositionAndAngles(placement.x, placement.y, placement.z, placement.yaw, 0.0f)
-                configure(gameId, sound.soundId, sound.volume, sound.pitch, resolved.world.time)
-            }
-            if (!spawnGateway.spawn(resolved.world, entity, "game-action-sound", gameId)) {
-                logger.warn("publishGameActionDeclared gameId={} actorId={} failed to spawn sound timeline", gameId, actorId)
-            }
+            spawnActionSound(gameId, resolved, state, actorId, action, resolved.world.time)
             null
         }
+    }
+
+    override fun publishActionScored(gameId: Uuid, scoring: AppliedActionScoring) {
+        publish(gameId, "publishActionScored", blocksTable = false) { resolved, state, _ ->
+            showScoreChanges(gameId, resolved, state, scoring, resolved.world.time)
+            null
+        }
+    }
+
+    /**
+     * 在動作者座位旁排定一次規則登記的動作音效；沒有登記音效的動作不播放。
+     *
+     * @param gameId 對局識別碼。
+     * @param resolved 已解析的桌子位置與世界。
+     * @param state 目前的權威桌況。
+     * @param actorId 執行動作的玩家。
+     * @param action 已成立的動作。
+     * @param playAtGameTime 播放的遊戲時間。
+     */
+    private fun spawnActionSound(
+        gameId: Uuid,
+        resolved: ResolvedTableContext,
+        state: TableState,
+        actorId: Uuid,
+        action: GameAction,
+        playAtGameTime: Long,
+    ) {
+        val actorSeatIndex = state.players.indexOfFirst { player -> player.id == actorId }
+        if (actorSeatIndex < 0) return
+        val ruleModuleId = moduleRegistry.getModule(state.config).id
+        val sound = gameActionSoundPresentationRegistry.find(ruleModuleId, action) ?: return
+        val placement = MahjongTileTableLayout.handPlacement(
+            controllerX = resolved.location.x,
+            controllerY = resolved.location.y,
+            controllerZ = resolved.location.z,
+            tableFacing = resolved.facing,
+            seatLayout = MahjongTableSeatLayout.forPlayerCount(state.players.size),
+            seatIndex = actorSeatIndex,
+            handSize = 1,
+            tileIndex = 0,
+        )
+        val entity = MahjongSoundTimelineEntity(world = resolved.world).apply {
+            refreshPositionAndAngles(placement.x, placement.y, placement.z, placement.yaw, 0.0f)
+            configure(gameId, sound.soundId, sound.volume, sound.pitch, playAtGameTime)
+        }
+        if (!spawnGateway.spawn(resolved.world, entity, "game-action-sound", gameId)) {
+            logger.warn("Action sound gameId={} actorId={} failed to spawn sound timeline", gameId, actorId)
+        }
+    }
+
+    /**
+     * 在玩家資訊上排定一次收付的分數增減提示。
+     *
+     * @param gameId 對局識別碼。
+     * @param resolved 已解析的桌子位置與世界。
+     * @param state 目前的權威桌況，用來把玩家換成座位。
+     * @param scoring 已套用的收付。
+     * @param startGameTime 開始顯示的遊戲時間。
+     */
+    private fun showScoreChanges(
+        gameId: Uuid,
+        resolved: ResolvedTableContext,
+        state: TableState,
+        scoring: AppliedActionScoring,
+        startGameTime: Long,
+    ) {
+        val changes = scoring.scoreDeltas.mapNotNull { (playerId, delta) ->
+            val seatIndex = state.players.indexOfFirst { it.id == playerId }.takeIf { it >= 0 } ?: return@mapNotNull null
+            MahjongPlayerScoreChange(
+                seatIndex = seatIndex,
+                delta = delta,
+                startGameTime = startGameTime,
+                endGameTime = startGameTime + MahjongPlayerScoreChange.DISPLAY_DURATION_TICKS,
+            )
+        }
+        playerInfoPresenter.showScoreChanges(gameId, resolved.location, changes)
     }
 
     override fun publishExhaustiveDrawSettlement(gameId: Uuid, request: ExhaustiveDrawSettlementPresentationRequest) {
@@ -439,27 +500,46 @@ class FabricGamePresentationPublisher(
     override fun publishWallLayoutTransition(gameId: Uuid, phases: List<PhysicalWallLayoutTransitionPhase>) {
         if (phases.isEmpty()) return
         publish(gameId, "publishWallLayoutTransition", blocksTable = true) { resolved, state, startAt ->
-            val stacksPerSide = openingState.wallStacksPerSide(gameId)
-            val sideCount = openingState.wallSideCount(gameId)
-            if (stacksPerSide == null || sideCount == null) {
-                logger.warn("publishWallLayoutTransition gameId={} skipped: wall stack count is unavailable", gameId)
-                return@publish null
-            }
-            val result = tileWallPresenter.presentTransition(
-                MahjongTileWallTransitionPresentation(
-                    tableId = gameId,
-                    tableLocation = resolved.location,
-                    tableFacing = resolved.facing,
-                    sideLayout = wallSideLayout(state, state.dealerIndex),
-                    stacksPerSide = stacksPerSide,
-                    phases = phases,
-                    startGameTime = startAt,
-                ),
-            )
-            if (result != MahjongTileWallTransitionResult.PRESENTED) {
-                logger.warn("publishWallLayoutTransition gameId={} failed: result={}", gameId, result)
-            }
+            presentWallTransition(gameId, resolved, state, phases, startAt)
             null
+        }
+    }
+
+    /**
+     * 排定一次實體牌牆移動。
+     *
+     * @param gameId 對局識別碼。
+     * @param resolved 已解析的桌子位置與世界。
+     * @param state 目前的權威桌況。
+     * @param phases 已驗證的牌牆移動階段。
+     * @param startGameTime 開始移動的遊戲時間。
+     */
+    private fun presentWallTransition(
+        gameId: Uuid,
+        resolved: ResolvedTableContext,
+        state: TableState,
+        phases: List<PhysicalWallLayoutTransitionPhase>,
+        startGameTime: Long,
+    ) {
+        val stacksPerSide = openingState.wallStacksPerSide(gameId)
+        val sideCount = openingState.wallSideCount(gameId)
+        if (stacksPerSide == null || sideCount == null) {
+            logger.warn("publishWallLayoutTransition gameId={} skipped: wall stack count is unavailable", gameId)
+            return
+        }
+        val result = tileWallPresenter.presentTransition(
+            MahjongTileWallTransitionPresentation(
+                tableId = gameId,
+                tableLocation = resolved.location,
+                tableFacing = resolved.facing,
+                sideLayout = wallSideLayout(state, state.dealerIndex),
+                stacksPerSide = stacksPerSide,
+                phases = phases,
+                startGameTime = startGameTime,
+            ),
+        )
+        if (result != MahjongTileWallTransitionResult.PRESENTED) {
+            logger.warn("publishWallLayoutTransition gameId={} failed: result={}", gameId, result)
         }
     }
 
@@ -645,6 +725,7 @@ class FabricGamePresentationPublisher(
         isNewlyDrawn: Boolean,
         newlyClaimedMeldTileIds: Set<Uuid>,
         newlySetAsideTileIds: Set<Uuid>,
+        followUpSteps: List<DrawFollowUpPresentationStep>,
     ) {
         if (serverHolder.current() == null) {
             logger.warn("publishPlayerTilesUpdated gameId={} skipped: no active server", gameId)
@@ -660,6 +741,7 @@ class FabricGamePresentationPublisher(
             isNewlyDrawn = isNewlyDrawn,
             newlyClaimedMeldTileIds = newlyClaimedMeldTileIds,
             newlySetAsideTileIds = newlySetAsideTileIds,
+            followUpSteps = followUpSteps,
         )
     }
 
@@ -747,6 +829,7 @@ class FabricGamePresentationPublisher(
      * @param isNewlyDrawn 是否播放這次摸牌的動畫。
      * @param newlyClaimedMeldTileIds 這次新取得、需要播放副露移動動畫的牌。
      * @param newlySetAsideTileIds 這次新另置、需要播放移動動畫的牌。
+     * @param followUpSteps 摸牌後依序自動移出與補牌的步驟；各步的牌牆移動、動作音效與分數提示依同一份時間軸排定。
      */
     private fun presentPlayerArea(
         gameId: Uuid,
@@ -758,6 +841,7 @@ class FabricGamePresentationPublisher(
         isNewlyDrawn: Boolean,
         newlyClaimedMeldTileIds: Set<Uuid>,
         newlySetAsideTileIds: Set<Uuid>,
+        followUpSteps: List<DrawFollowUpPresentationStep> = emptyList(),
     ) {
         launchPendingPresentation(gameId, "publishPlayerTilesUpdated") {
             val resolved = resolveTableContext(gameId, "publishPlayerTilesUpdated") ?: return@launchPendingPresentation
@@ -786,8 +870,25 @@ class FabricGamePresentationPublisher(
                 animatedMeldClaimTileIds = newlyClaimedMeldTileIds,
                 setAsideTileIds = setAsideTileIds,
                 animatedSetAsideTileIds = newlySetAsideTileIds,
+                followUpSteps = followUpSteps.map { DrawFollowUpAnimationStep(it.setAsideTileId, it.drawnTileId) },
             )
             playerAreaPresenter.present(presentation)
+            if (followUpSteps.isNotEmpty()) {
+                val actorId = tableState.players.getOrNull(seatIndex)?.id ?: return@launchPendingPresentation
+                val presentationStart = resolved.world.time
+                val stepStarts = DrawFollowUpTimeline.stepStartTicks(
+                    stepCount = followUpSteps.size,
+                    hasClaimAnimation = newlyClaimedMeldTileIds.isNotEmpty() || newlySetAsideTileIds.isNotEmpty(),
+                )
+                followUpSteps.zip(stepStarts).forEach { (step, startTicks) ->
+                    val stepTime = presentationStart + startTicks
+                    spawnActionSound(gameId, resolved, tableState, actorId, step.action, stepTime)
+                    step.scoring?.let { showScoreChanges(gameId, resolved, tableState, it, stepTime) }
+                    if (step.physicalWallTransitionPhases.isNotEmpty()) {
+                        presentWallTransition(gameId, resolved, tableState, step.physicalWallTransitionPhases, stepTime)
+                    }
+                }
+            }
         }
     }
 

@@ -44,6 +44,9 @@ class HistoryRoundEventPresentationTest {
             MinecraftHistoryScreenKeys.ROUND_TIMING to 3,
             MinecraftHistoryScreenKeys.ROUND_PAGE_RANGE to 3,
             MinecraftHistoryScreenKeys.ROUND_REACTION to 1,
+            MinecraftHistoryScreenKeys.ROUND_ACTION_SCORED to 1,
+            MinecraftHistoryScreenKeys.ROUND_ACTION_SCORED_POT_DEPOSIT to 2,
+            MinecraftHistoryScreenKeys.ROUND_ACTION_SCORED_POT_WITHDRAWAL to 2,
             MinecraftHistoryScreenKeys.ROUND_SCORE to 2,
             MinecraftHistoryScreenKeys.ROUND_COMPLETION to 2,
             MinecraftHistoryScreenKeys.ROUND_PREPARATION to 2,
@@ -124,6 +127,37 @@ class HistoryRoundEventPresentationTest {
         listOf("custom:reaction", "custom:step", "custom:effect", "custom:opaque").forEachIndexed { index, id ->
             assertTrue(id in result[index].identifiers, "Raw identifier must remain available in tooltip")
             assertTrue(!result[index].text.string.contains(id), "Raw identifier must not leak into player wording")
+        }
+    }
+
+    /** 動作即時收付依點數池方向選擇文字，並保留行為者與各座位的增減。 */
+    @Test
+    fun `action scored facts keep seats and describe the pot`() {
+        val expectations = mapOf(
+            0 to MinecraftHistoryScreenKeys.ROUND_ACTION_SCORED,
+            1000 to MinecraftHistoryScreenKeys.ROUND_ACTION_SCORED_POT_DEPOSIT,
+            -1000 to MinecraftHistoryScreenKeys.ROUND_ACTION_SCORED_POT_WITHDRAWAL,
+        )
+        expectations.forEach { (potDeposit, key) ->
+            val fact = presenter().present(
+                events(
+                    HistoryReplayFactDto.ActionScored(
+                        typeKey = HistoryFactTypeKeys.ACTION_SCORED,
+                        actorSeat = 1,
+                        actionType = "kan",
+                        extensionTypeId = null,
+                        scoreDeltasBySeat = mapOf(2 to -1000, 1 to 2000 - potDeposit, 0 to -1000),
+                        potDeposit = potDeposit,
+                    ),
+                ),
+                null,
+            ).transactions.single().facts.single()
+
+            assertEquals(key, (fact.text.content as TranslatableTextContent).key)
+            assertEquals(1, fact.actorSeat)
+            assertEquals(listOf(0, 1, 2), fact.scoreChanges.keys.toList())
+            assertEquals(2000 - potDeposit, fact.scoreChanges.getValue(1))
+            assertTrue("kan" in fact.identifiers)
         }
     }
 

@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.service
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.AppliedActionScoring
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.DrawFollowUpPresentationStep
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.MatchSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationRequest
@@ -61,6 +63,16 @@ interface GamePresentationPublisher {
      * @param action 已成立的權威遊戲動作。
      */
     fun publishGameActionDeclared(gameId: Uuid, actorId: Uuid, action: GameAction) = Unit
+
+    /**
+     * 動作成立當下的點數收付寫入權威狀態後通知平台；平台可據此呈現各玩家的增減。分數本身照常隨快照更新。
+     *
+     * 摸牌後自動處理每一步的收付不經這個方法，改隨 [publishPlayerTilesUpdated] 的 `followUpSteps` 交付，讓平台在該步呈現。
+     *
+     * @param gameId 對局識別碼。
+     * @param scoring 已套用的收付。
+     */
+    fun publishActionScored(gameId: Uuid, scoring: AppliedActionScoring) = Unit
 
     /**
      * 通知平台呈現一次流局結算。預設 no-op。
@@ -224,7 +236,10 @@ interface GamePresentationPublisher {
      * @param newlyClaimedMeldTileIds 這次新成立副露、從原本位置移入副露的牌 Uuid：吃／碰／明槓／暗槓為整組，加槓只有
      * 新加入的那一張。空集合（預設值）代表沒有。
      * @param newlySetAsideTileIds 這次剛移出手牌、公開擺到桌上的牌 Uuid（見 `MahjongRuleModule.setAsideTiles`），例如
-     * 三人日麻拔出的北。空集合（預設值）代表沒有。
+     * 三人日麻拔出的北。空集合（預設值）代表沒有。不包含 [followUpSteps] 移出的牌。
+     * @param followUpSteps 這次摸牌或補牌之後依序完成的自動移出與補牌；空清單（預設值）代表沒有。不為空時，第一步移出的牌是
+     * 這次剛摸到的牌，[drawnTileId] 是最後一步補到的牌（最後一步因搶和視窗暫停時為 null），各步移出的牌也包含在
+     * [setAsideTileIds]。平台應等前一步的牌落地後再呈現下一步，並在該步呈現它的實體牌牆移動與點數收付。
      */
     fun publishPlayerTilesUpdated(
         gameId: Uuid,
@@ -236,6 +251,7 @@ interface GamePresentationPublisher {
         isNewlyDrawn: Boolean = false,
         newlyClaimedMeldTileIds: Set<Uuid> = emptySet(),
         newlySetAsideTileIds: Set<Uuid> = emptySet(),
+        followUpSteps: List<DrawFollowUpPresentationStep> = emptyList(),
     )
 
     /**

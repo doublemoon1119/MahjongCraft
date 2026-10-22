@@ -186,12 +186,16 @@ internal object HistoryRoundResponseValidator {
             for (fact in transaction.facts) {
                 val actor = when (fact) {
                     is HistoryReplayFactDto.KnownAction -> fact.actorSeat
+                    is HistoryReplayFactDto.ActionScored -> fact.actorSeat
                     is HistoryReplayFactDto.Reaction -> fact.resolvedActorSeat
                     is HistoryReplayFactDto.DiceRolled -> fact.actorSeat
                     is HistoryReplayFactDto.Opaque -> fact.actorSeat
                     else -> null
                 }
                 if (actor != null && !seats.contains(actor)) return HistoryRoundValidationResult.Invalid(HistoryRoundValidationError.SEAT_INDEX_INVALID)
+                if (fact is HistoryReplayFactDto.ActionScored && !seats.containsAll(fact.scoreDeltasBySeat.keys)) {
+                    return HistoryRoundValidationResult.Invalid(HistoryRoundValidationError.SEAT_INDEX_INVALID)
+                }
                 val tiles = when (fact) {
                     is HistoryReplayFactDto.KnownAction -> fact.directTiles + fact.revealedTiles
                     is HistoryReplayFactDto.Opaque -> fact.directTiles + fact.revealedTiles

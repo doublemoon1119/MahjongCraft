@@ -17,11 +17,13 @@ import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueContextCalculator
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionValidator
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenCalculator
 import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
+import com.doublemoon1119.mahjongcraft.logic.table.DrawFollowUpPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.FixedLengthMatchProgressionPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayerSnapshot
 import com.doublemoon1119.mahjongcraft.logic.table.MatchProgressionPolicy
+import com.doublemoon1119.mahjongcraft.logic.table.NoOpDrawFollowUpPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.NoOpWallRevealPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.PlayerRuleState
 import com.doublemoon1119.mahjongcraft.logic.table.RankablePlayer
@@ -213,6 +215,25 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     fun createWallRevealPolicy(): WallRevealPolicy = NoOpWallRevealPolicy
 
     /**
+     * 建立摸牌後自動處理的 policy，例如摸到花牌時自動移出並補牌。
+     *
+     * 一般摸牌與動作後的補牌都會詢問。自動移出沿用 [tileSetAsideBy]、[applyTileSetAsideAction] 與
+     * [createSupplementalDrawPolicy]，不另外定義補牌來源。預設不做任何處理。
+     *
+     * @return 此規則的摸牌後自動處理 policy。
+     */
+    fun createDrawFollowUpPolicy(): DrawFollowUpPolicy = NoOpDrawFollowUpPolicy
+
+    /**
+     * 建立動作成立當下收付點數的 policy，例如槓牌時由放槓者付點數。
+     *
+     * 局中的點數收付只能經由這個 policy 或宣告效果的成本；其他狀態掛勾只能修改規則狀態。預設不收付。
+     *
+     * @return 此規則的動作即時計分 policy。
+     */
+    fun createActionScoringPolicy(): ActionScoringPolicy = NoOpActionScoringPolicy
+
+    /**
      * 建立適用於該規則的捨牌堆（牌河）實作。
      *
      * @return 實作了 [DiscardPile] 的物件。
@@ -338,6 +359,8 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     /**
      * 因應「玩家摸牌」事件，套用規則特有的狀態變化。
      *
+     * 只能修改 [MahjongPlayer.playerRuleState]；改動其他欄位時本局以規則錯誤中止。要收付點數請使用
+     * [createActionScoringPolicy]，要自動移出手牌請使用 [createDrawFollowUpPolicy]。
      * 沒有對應狀態需求的規則應直接回傳 [player] 本身，不做任何事。
      *
      * @param player 剛完成摸牌的玩家（已套用摸牌本身造成的變化）。
@@ -350,6 +373,7 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      *
      * 只在一般捨牌時呼叫；宣告動作附帶打出的牌（例如日麻的立直宣告牌）由該宣告自行處理，不會呼叫。
      * 例如日麻：立直者宣告後再打出下一張牌，代表一發的期限已經結束，需清除玩家的一發資格。
+     * 只能修改 [MahjongPlayer.playerRuleState]；改動其他欄位時本局以規則錯誤中止。
      * 沒有對應狀態需求的規則應直接回傳 [player] 本身，不做任何事。
      *
      * @param player 剛完成捨牌的玩家（已套用捨牌本身造成的變化）。
@@ -361,6 +385,8 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      * 因應「有玩家完成一次鳴牌（吃/碰/槓）」事件，套用規則特有的狀態清除。
      *
      * 例如日麻：任何一次鳴牌都會讓場上所有玩家的一發資格失效（不只鳴牌的當事人）。
+     * 只能修改各玩家的 [MahjongPlayer.playerRuleState]，玩家數量與順序不變；改動其他欄位時本局以規則錯誤中止。
+     * 鳴牌當下要收付點數請使用 [createActionScoringPolicy]。
      * 沒有對應狀態需求的規則應直接回傳 [players] 本身，不做任何事。
      *
      * @param players 鳴牌動作套用之後的完整玩家列表。
@@ -597,6 +623,7 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
      *
      * 呼叫端在玩家放過合法榮和、或摸牌後可以自摸卻選擇捨牌時呼叫，不預先篩選玩家狀態；是否產生後果完全
      * 由規則決定。例如日麻只對立直中的玩家設定本局永久振聽，未立直的玩家維持不變。
+     * 只能修改 [MahjongPlayer.playerRuleState]；改動其他欄位時本局以規則錯誤中止。
      *
      * 沒有對應規則需求的規則直接回傳 [player] 本身。
      *
@@ -621,6 +648,9 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     /**
      * 套用移出手牌的動作（見 [tileSetAsideBy]）：把那張牌移出 [actorPlayerId] 的手牌、記錄動作，並套用規則狀態變化。
      * 不含補牌；補牌由呼叫端交給 [createSupplementalDrawPolicy]。
+     *
+     * 結果只能從執行者的立牌（含摸牌位）移出 [tileSetAsideBy] 指定的那一張牌，並把它接在 [setAsideTiles] 最後；
+     * 執行者另外只能多一筆 [action] 的動作紀錄與規則狀態變化，其他玩家與桌況不變。不符合時本局以規則錯誤中止。
      *
      * @param tableState 尚未套用這次動作的權威桌況。
      * @param actorPlayerId 宣告動作的玩家。

@@ -1,12 +1,14 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.AppliedActionScoring
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.acceptedActionHistoryDraft
+import com.doublemoon1119.mahjongcraft.flow.server.game.history.actionScoredHistoryDraft
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.recordAbortiveDraw
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.DeclareRiichiUseCase
@@ -14,11 +16,13 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSync
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.isOwnTurnWindowOpenFor
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.table.DrawSource
 import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.SupplementalDrawReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
@@ -38,9 +42,9 @@ import kotlin.uuid.Uuid
  * 給誰，與一般捨牌榮和共用同一套判定（見 [DiscardReactionResolver]）；判定為途中流局時，這次
  * 加槓視為未成立，不開反應視窗、不套用副露。
  *
- * 套用副露後依序記錄 [GameAction.Kan]，再由 [MahjongRuleModule.createSupplementalDrawPolicy]
+ * 套用副露後依序記錄 [GameAction.Kan] 與規則的即時收付，再由 [MahjongRuleModule.createSupplementalDrawPolicy]
  * 決定是否補牌、補牌來源及牌牆變化，公開牌則由規則的牌牆公開 policy 決定。若規則補牌成功，
- * Flow 會記錄 [GameAction.Draw]；
+ * Flow 會記錄 [GameAction.Draw]，補到的牌再交給 [DrawFollowUpApplier] 依規則自動處理；
  * 規則層可依動作歷史判斷其專屬役種或狀態。
  *
  * 暗槓與加槓都不是鳴取他家捨牌，不呼叫 [MahjongRuleModule.beforeDiscardClaimed]；加槓沿用
@@ -91,15 +95,17 @@ class DeclareKanUseCase(
                             kan.withTiles + kan.tileId,
                         ),
                     )
-                    if (result.value.drawHappened) {
+                    result.value.scoring?.let { drafts += actionScoredHistoryDraft(it) }
+                    if (result.value.drawnTiles.isNotEmpty()) {
                         drafts += acceptedActionHistoryDraft(
                             playerId,
                             GameAction.Draw,
                             before,
                             after,
-                            listOfNotNull(after.players.first { it.id == playerId }.hand.lastDrawn?.id),
+                            result.value.drawnTiles.map { it.id },
                         )
                     }
+                    result.value.followUp?.let { drafts += it.historyDrafts(playerId, before, after) }
                     result.value.abortiveDrawReason?.let { reason ->
                         drafts += acceptedActionHistoryDraft(playerId, GameAction.ExhaustiveDraw(reason), before, after)
                     }
@@ -181,7 +187,6 @@ class DeclareKanUseCase(
                             KanResult(
                                 newState,
                                 kanAction,
-                                drawHappened = false,
                                 abortiveDrawReason = abortiveDrawReason,
                             ),
                         )
@@ -201,7 +206,6 @@ class DeclareKanUseCase(
                             KanResult(
                                 tableState = newState,
                                 kanAction = kanAction,
-                                drawHappened = false,
                                 declaredState = SelfDeclarationApplier.declaredState(state, playerId, kanAction, declaredTile, module),
                             ),
                         )
@@ -217,11 +221,20 @@ class DeclareKanUseCase(
                         return@update state to Outcome.Error(error)
                     }
                     applied as SelfDeclarationApplier.Result.Applied
-                    applied.tableState to Outcome.Success(
+                    val followUp = if (applied.drawnTiles.isNotEmpty()) {
+                        DrawFollowUpApplier.run(applied.tableState, playerId, DrawSource.Supplemental(kanAction), module)
+                    } else {
+                        null
+                    }
+                    val committed = followUp?.tableState ?: applied.tableState
+                    committed to Outcome.Success(
                         KanResult(
-                            applied.tableState,
+                            committed,
                             kanAction,
-                            drawHappened = applied.drawnTiles.isNotEmpty(),
+                            applied = true,
+                            drawnTiles = applied.drawnTiles,
+                            scoring = applied.scoring,
+                            followUp = followUp,
                             wallRevealBatches = applied.wallRevealBatches,
                             physicalWallTransitionPhases = applied.physicalWallTransitionPhases,
                         ),
@@ -241,11 +254,13 @@ class DeclareKanUseCase(
         //    依規則設定判定為流局，則改廣播流局事件（此時副露未套用，不會有補摸嶺上牌事件）
         val seatedPlayerIds = newState.players.map { it.id }
         eventPublisher.publishToAllObservers(gameId, seatedPlayerIds, playerId, result.kanAction)
-        if (result.drawHappened) {
+        result.followUp?.let { followUp ->
             eventPublisher.publishToAllObservers(gameId, seatedPlayerIds, playerId, GameAction.Draw)
-            val module = moduleRegistry.getModule(newState.config)
-            presentationPublisher.publishRoundInfoUpdated(gameId, newState)
+            followUp.publishedActions.forEach { followUpAction ->
+                eventPublisher.publishToAllObservers(gameId, seatedPlayerIds, playerId, followUpAction)
+            }
         }
+        if (result.applied) presentationPublisher.publishRoundInfoUpdated(gameId, newState)
         result.abortiveDrawReason?.let { reason ->
             eventPublisher.publishToAllObservers(gameId, seatedPlayerIds, playerId, GameAction.ExhaustiveDraw(reason))
         }
@@ -270,28 +285,39 @@ class DeclareKanUseCase(
         // 副露成立時（無人搶槓、也未判定為途中流局），重新呈現宣告者的整份手牌/摸牌位/副露——把補到
         // 的嶺上牌移到摸牌位，跟一般摸牌同一套呈現慣例（見 DrawTileUseCase），先前遺漏這一步會讓
         // 補到的嶺上牌在玩家端看起來像是憑空消失，只看到副露成立、看不到補牌動作。
-        if (result.drawHappened) {
+        if (result.applied) {
             if (result.physicalWallTransitionPhases.isNotEmpty()) {
                 presentationPublisher.publishWallLayoutTransition(gameId, result.physicalWallTransitionPhases)
             }
-            val declarerSeatIndex = newState.players.indexOfFirst { it.id == playerId }
-            val declarer = newState.players[declarerSeatIndex]
+            result.scoring?.let { presentationPublisher.publishActionScored(gameId, it) }
             val module = moduleRegistry.getModule(newState.config)
             // 暗槓是整組一次成立的新副露（附加到 exposedMelds 尾端），組內全部牌都是新移入副露的牌；
             // 加槓是把新牌插進一組既有副露（Hand.upgradeToAddedKan 原地修改，不是加到尾端），只有新
             // 插入的那一張是新移入的，既有三張碰的牌本來就在副露裡——見
             // GamePresentationPublisher.publishPlayerTilesUpdated 的 newlyClaimedMeldTileIds KDoc。
             val claimedTileIds = result.kanAction.newlyClaimedMeldTileIds()
-            presentationPublisher.publishPlayerTilesUpdated(
-                gameId,
-                declarerSeatIndex,
-                declarer.hand.tiles.map { it.id },
-                declarer.hand.lastDrawn?.id,
-                declarer.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
-                setAsideTileIds = module.setAsideTiles(declarer).map { it.id },
-                isNewlyDrawn = true,
-                newlyClaimedMeldTileIds = claimedTileIds,
-            )
+            val followUp = result.followUp
+            if (followUp != null) {
+                presentationPublisher.publishPlayerAreaAfterDraw(
+                    gameId = gameId,
+                    playerId = playerId,
+                    followUp = followUp,
+                    module = module,
+                    newlyClaimedMeldTileIds = claimedTileIds,
+                )
+            } else {
+                val declarerSeatIndex = newState.players.indexOfFirst { it.id == playerId }
+                val declarer = newState.players[declarerSeatIndex]
+                presentationPublisher.publishPlayerTilesUpdated(
+                    gameId = gameId,
+                    seatIndex = declarerSeatIndex,
+                    standingTileIds = declarer.hand.tiles.map { it.id },
+                    drawnTileId = declarer.hand.lastDrawn?.id,
+                    melds = declarer.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
+                    setAsideTileIds = module.setAsideTiles(declarer).map { it.id },
+                    newlyClaimedMeldTileIds = claimedTileIds,
+                )
+            }
             // 依規則 checkpoint 順序發布這次新公開的牌牆資訊（例如日麻暗槓後立即翻槓寶牌）。
             result.wallRevealBatches.forEach { revealedTileIds ->
                 presentationPublisher.publishWallTilesRevealed(gameId, revealedTileIds)
@@ -303,15 +329,18 @@ class DeclareKanUseCase(
     }
 
     /**
-     * `update` 區塊內部使用的中繼結果，讓 [kanAction]/[drawHappened]/[abortiveDrawReason] 能跟著
-     * [tableState] 一起帶出 `gameRepository.update` 的作用域，供廣播事件時使用。[drawHappened] 為
+     * `update` 區塊內部使用的中繼結果，讓 [kanAction]/[applied]/[abortiveDrawReason] 能跟著
+     * [tableState] 一起帶出 `gameRepository.update` 的作用域，供廣播事件時使用。[applied] 為
      * false 代表這次宣告開啟了搶槓反應視窗、或搶槓多響判定為流局，副露與嶺上摸牌皆尚未套用，不應
      * 廣播 [GameAction.Draw]。[abortiveDrawReason] 非 null 代表搶槓多響依規則設定判定為流局，這次
      * 加槓視為未成立。[declaredState] 只在開啟搶槓反應視窗時有值，是槓已移入副露、尚未補牌的候選桌況，供呈現使用。
      *
      * @property tableState 此次原子更新後的權威桌況。
      * @property kanAction 規則判定成立的槓動作。
-     * @property drawHappened 是否已套用補摸。
+     * @property applied 槓是否已成立並套用。
+     * @property drawnTiles 槓成立後補到的牌；沒有補牌時為空清單。
+     * @property scoring 槓成立當下的點數收付；沒有成立或不收付時為 null。
+     * @property followUp 補牌之後的自動處理；沒有補牌時為 null。
      * @property abortiveDrawReason 搶槓多響成立的途中流局原因；未發生時為 null。
      * @property declaredState 搶槓反應視窗使用的候選桌況；沒有開啟視窗時為 null。
      * @property wallRevealBatches 補摸過程中依序公開的牌牆牌組。
@@ -320,7 +349,10 @@ class DeclareKanUseCase(
     private data class KanResult(
         val tableState: TableState,
         val kanAction: GameAction.Kan,
-        val drawHappened: Boolean,
+        val applied: Boolean = false,
+        val drawnTiles: List<IdentifiedTile> = emptyList(),
+        val scoring: AppliedActionScoring? = null,
+        val followUp: DrawFollowUpApplier.Result? = null,
         val abortiveDrawReason: ExhaustiveDrawReason? = null,
         val declaredState: TableState? = null,
         val wallRevealBatches: List<Set<Uuid>> = emptyList(),

@@ -119,6 +119,29 @@ class HistoryRoundResponseValidatorTest {
         assertEquals(HistoryRoundValidationError.SEAT_INDEX_INVALID, assertIs<HistoryRoundValidationResult.Invalid>(result).reason)
     }
 
+    /** 動作即時收付的行為者或增減座位不存在時拒絕事件頁。 */
+    @Test
+    fun `action scored facts must reference existing seats`() {
+        val request = HistoryRoundEventsRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
+        val facts = mapOf(
+            HistoryReplayFactDto.ActionScored(HistoryFactTypeKeys.ACTION_SCORED, 0, "kan", null, mapOf(0 to 1000), -1000) to true,
+            HistoryReplayFactDto.ActionScored(HistoryFactTypeKeys.ACTION_SCORED, 3, "kan", null, mapOf(0 to 1000), -1000) to false,
+            HistoryReplayFactDto.ActionScored(HistoryFactTypeKeys.ACTION_SCORED, 0, "kan", null, mapOf(3 to 1000), -1000) to false,
+        )
+        facts.forEach { (fact, valid) ->
+            val result = HistoryRoundResponseValidator.validateEvents(
+                request,
+                HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, events(fact = fact), errorCode = null),
+            )
+
+            if (valid) {
+                assertIs<HistoryRoundValidationResult.Success<*>>(result)
+            } else {
+                assertEquals(HistoryRoundValidationError.SEAT_INDEX_INVALID, assertIs<HistoryRoundValidationResult.Invalid>(result).reason)
+            }
+        }
+    }
+
     /** 交易索引不連續時拒絕事件頁。 */
     @Test
     fun `test gapped transaction index is rejected`() {

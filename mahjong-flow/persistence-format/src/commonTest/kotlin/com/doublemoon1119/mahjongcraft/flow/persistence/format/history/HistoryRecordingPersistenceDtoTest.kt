@@ -173,6 +173,35 @@ class HistoryRecordingPersistenceDtoTest {
         assertEquals(state, mapper.decode(mapper.encode(state)))
     }
 
+    /** 動作即時收付事實在 JSON 與 DTO 往返後保留動作、各玩家增減與點數池數量。 */
+    @Test
+    fun `action scored fact round trips`() {
+        val matchId = Uuid.random()
+        val actorId = Uuid.random()
+        val payerId = Uuid.random()
+        val state = HistoryRecordingState(
+            pendingEvents = listOf(
+                HistoryOutboxEvent(
+                    matchId = matchId,
+                    venueId = Uuid.random(),
+                    roundNumber = 1,
+                    sequence = 1L,
+                    occurredAtEpochMillis = 1L,
+                    actorPlayerId = actorId,
+                    fact = HistoryFact.ActionScored(
+                        action = GameAction.Kan(GameAction.KanType.CLOSED_KAN, Uuid.random(), List(3) { Uuid.random() }),
+                        scoreDeltas = mapOf(actorId to 2000, payerId to -3000),
+                        potDeposit = 1000,
+                    ),
+                ),
+            ),
+        )
+        val mapper = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries())
+        val encoded = Json.encodeToString(HistoryRecordingPersistenceDto.serializer(), mapper.encode(state))
+
+        assertEquals(state, mapper.decode(Json.decodeFromString(HistoryRecordingPersistenceDto.serializer(), encoded)))
+    }
+
     /** 中止事實的原因識別碼在 JSON 與 DTO 往返後保持不變。 */
     @Test
     fun `match aborted reason round trips`() {

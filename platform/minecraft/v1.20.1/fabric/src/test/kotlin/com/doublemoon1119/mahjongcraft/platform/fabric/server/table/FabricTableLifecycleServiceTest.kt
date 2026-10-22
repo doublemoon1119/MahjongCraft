@@ -28,6 +28,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftE
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoPresenter
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerScoreChange
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfoPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfoPresentationResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongRoundInfoPresenter
@@ -358,6 +359,9 @@ class FabricTableLifecycleServiceTest {
 
         /** 此測試不使用正式玩家資訊延後顯示。 */
         override fun hideUntil(tableId: Uuid, tableLocation: TableLocation, gameTime: Long) = Unit
+
+        /** 此測試不使用分數增減提示。 */
+        override fun showScoreChanges(tableId: Uuid, tableLocation: TableLocation, changes: List<MahjongPlayerScoreChange>) = Unit
 
         /** 記錄清理請求並回報沒有已載入玩家資訊。 */
         override fun clear(tableId: Uuid, tableLocation: TableLocation): Int = 0

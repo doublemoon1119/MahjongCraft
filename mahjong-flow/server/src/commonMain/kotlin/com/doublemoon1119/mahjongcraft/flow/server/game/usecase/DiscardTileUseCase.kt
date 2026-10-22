@@ -119,7 +119,11 @@ class DiscardTileUseCase(
                                 LegalActionContext.ownTurn(state, playerId),
                             )
                             if (ownTurnActions.any { it is GameAction.Tsumo }) {
-                                module.onPlayerDeclinedWin(state.currentPlayer)
+                                RuleHookResultValidator.requireRuleStateOnly(
+                                    before = state.currentPlayer,
+                                    after = module.onPlayerDeclinedWin(state.currentPlayer),
+                                    hookName = "onPlayerDeclinedWin",
+                                )
                             } else {
                                 state.currentPlayer
                             }
@@ -127,13 +131,16 @@ class DiscardTileUseCase(
                             state.currentPlayer
                         }
 
-                        val updatedPlayer = module.onPlayerDiscarded(
-                            playerAfterDeclineCheck
-                                .copy(
-                                    hand = organizedHand,
-                                    discardPile = playerAfterDeclineCheck.discardPile.discardTile(discardedTile),
-                                )
-                                .recordAction(GameAction.Discard(tileId)),
+                        val discardedPlayer = playerAfterDeclineCheck
+                            .copy(
+                                hand = organizedHand,
+                                discardPile = playerAfterDeclineCheck.discardPile.discardTile(discardedTile),
+                            )
+                            .recordAction(GameAction.Discard(tileId))
+                        val updatedPlayer = RuleHookResultValidator.requireRuleStateOnly(
+                            before = discardedPlayer,
+                            after = module.onPlayerDiscarded(discardedPlayer),
+                            hookName = "onPlayerDiscarded",
                         )
                         val updatedPlayers = state.players.map { if (it.id == playerId) updatedPlayer else it }
                         val stateAfterDiscard = state.copy(players = updatedPlayers)

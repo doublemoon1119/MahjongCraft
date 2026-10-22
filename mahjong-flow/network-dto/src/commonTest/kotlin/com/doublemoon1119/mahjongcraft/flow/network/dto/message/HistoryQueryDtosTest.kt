@@ -58,6 +58,7 @@ class HistoryQueryDtosTest {
             HistoryReplayFactDto.Preparation("p", "deal", 0, "draw"),
             HistoryReplayFactDto.Completion("c", null),
             HistoryReplayFactDto.RuleEffect("e", "mahjongcraft:effect", null),
+            HistoryReplayFactDto.ActionScored("f", 0, "kan", null, mapOf(0 to 2000, 1 to -2000), 0),
             HistoryReplayFactDto.Opaque("x", null, emptyList(), listOf(3)),
         )
         val encoded = Json.encodeToString(ListSerializerHolder.serializer(), ListSerializerHolder(facts))
