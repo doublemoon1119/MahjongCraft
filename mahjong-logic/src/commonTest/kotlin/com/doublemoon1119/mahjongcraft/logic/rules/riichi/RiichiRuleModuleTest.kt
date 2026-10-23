@@ -24,6 +24,7 @@ import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFact
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
@@ -1041,6 +1042,38 @@ class RiichiRuleModuleTest {
 
         val expectedDeltas = tenpaiPlayers.associate { it.id to 1000 } + mapOf(notenPlayer.id to -3000)
         assertEquals(expectedDeltas, result.scoreDeltas)
+    }
+
+    /**
+     * 宣告不聽的聽牌玩家不公開手牌、不算聽牌，照不聽支付罰符。
+     */
+    @Test
+    fun `test declareExhaustiveDraw treats noten declared tenpai players as noten`() {
+        val tenpaiPlayer = FakeMahjongPlayerFactory.create(hand = tenpaiHand())
+        val declaredPlayer = FakeMahjongPlayerFactory.create(hand = tenpaiHand())
+        val notenPlayers = List(2) { FakeMahjongPlayerFactory.create(hand = notTenpaiHand()) }
+        val table = FakeTableStateFactory.create(players = listOf(tenpaiPlayer, declaredPlayer) + notenPlayers, config = module.config)
+
+        val result = module.declareExhaustiveDraw(table, setOf(declaredPlayer.id))
+
+        assertEquals(setOf(tenpaiPlayer.id), result.tenpaiPlayerIds)
+        assertEquals(listOf(tenpaiPlayer.id), result.revealedHands.map { it.playerId })
+        val expectedDeltas = mapOf(tenpaiPlayer.id to 3000, declaredPlayer.id to -1000) + notenPlayers.associate { it.id to -1000 }
+        assertEquals(expectedDeltas, result.scoreDeltas)
+    }
+
+    /**
+     * 已立直的玩家不能宣告不聽。
+     */
+    @Test
+    fun `test declareExhaustiveDraw rejects noten declaration from a riichi player`() {
+        val riichiPlayer = FakeMahjongPlayerFactory.create(hand = tenpaiHand()).copy(
+            playerRuleState = RiichiPlayerState(riichiTile = FakeIdentifiedTileFactory.create(Tile.Honor.East)),
+        )
+        val others = List(3) { FakeMahjongPlayerFactory.create(hand = notTenpaiHand()) }
+        val table = FakeTableStateFactory.create(players = listOf(riichiPlayer) + others, config = module.config)
+
+        assertFailsWith<IllegalArgumentException> { module.declareExhaustiveDraw(table, setOf(riichiPlayer.id)) }
     }
 
     /**

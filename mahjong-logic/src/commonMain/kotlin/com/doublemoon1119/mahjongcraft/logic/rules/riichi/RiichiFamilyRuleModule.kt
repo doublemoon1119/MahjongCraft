@@ -3,8 +3,10 @@ package com.doublemoon1119.mahjongcraft.logic.rules.riichi
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.module.DeclarationDiscardEffect
 import com.doublemoon1119.mahjongcraft.logic.module.DeclarationDiscardPolicy
+import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import kotlin.uuid.Uuid
 
 /**
  * 日本麻將系列（四人與三人）規則模組共有、但不屬於 [MahjongRuleModule] 通用介面的判定。
@@ -29,6 +31,22 @@ interface RiichiFamilyRuleModule<T : RiichiFamilyRuleConfig> : MahjongRuleModule
      * @return 四槓散了流局原因；條件不成立時為 null。
      */
     fun resolveSuukanNagare(tableState: TableState): ExhaustiveDrawReason?
+
+    /**
+     * 一般流局（牌山摸盡）結算，並讓 [notenDeclaredPlayerIds] 宣告不聽。
+     *
+     * 宣告不聽的玩家即使手牌聽牌，也不公開手牌、不算聽牌，照不聽支付罰符；其餘玩家與
+     * [MahjongRuleModule.declareExhaustiveDraw] 的判定相同。已立直的玩家不能宣告不聽。
+     *
+     * @param tableState 待結算的權威牌桌狀態。
+     * @param notenDeclaredPlayerIds 宣告不聽的玩家；必須都仍在局中且沒有立直。
+     * @return 一般流局結算。
+     * @throws IllegalArgumentException 宣告不聽的玩家不在局中或已立直時。
+     */
+    fun declareExhaustiveDraw(
+        tableState: TableState,
+        notenDeclaredPlayerIds: Set<Uuid>,
+    ): ExhaustiveDrawSettlementResult
 
     /** 立直宣告與附帶捨牌的規則效果：扣一根立直棒，並記錄立直牌與一發資格。 */
     override fun declarationDiscardPolicy(): DeclarationDiscardPolicy = DeclarationDiscardPolicy { tableState, player, action, discardResult ->

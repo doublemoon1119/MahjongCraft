@@ -139,17 +139,27 @@ private fun mergePayments(base: Map<Uuid, Int>, extra: Map<Uuid, Int>): Map<Uuid
  * 一般流局（牌山摸盡）的點數結算：聽牌判定（非 [ShantenResult.NotTenpai] 皆視為聽牌），並依
  * [riichiNotenPenaltyDeltas] 計算不聽罰符。只計入 [TableState.activePlayers]。
  *
+ * [notenDeclaredPlayerIds] 是宣告不聽的玩家：即使手牌聽牌也不公開手牌、不算聽牌，照不聽支付罰符。
+ *
  * @param tableState 要結算的桌況。
  * @param shantenCalculator 判定各家手牌型態的計算器。
  * @param notenPenaltyUnit 依仍在局中人數換算罰符總額的基數。
+ * @param notenDeclaredPlayerIds 宣告不聽的玩家；必須都仍在局中且沒有立直。
  * @return 一般流局原因、聽牌玩家、公開手牌與分數差額。
+ * @throws IllegalArgumentException 宣告不聽的玩家不在局中或已立直時。
  */
 internal fun riichiExhaustiveDrawSettlement(
     tableState: TableState,
     shantenCalculator: RiichiShantenCalculator,
     notenPenaltyUnit: Int,
+    notenDeclaredPlayerIds: Set<Uuid>,
 ): ExhaustiveDrawSettlementResult {
-    val shantenByPlayer = tableState.activePlayers.associateWith { shantenCalculator.calculate(it.hand) }
+    val activePlayers = tableState.activePlayers
+    require(notenDeclaredPlayerIds.all { id -> activePlayers.any { it.id == id } }) { "Only players still in the round may declare noten" }
+    require(activePlayers.none { it.id in notenDeclaredPlayerIds && (it.playerRuleState as? RiichiPlayerState)?.isRiichi == true }) {
+        "A player who declared riichi cannot declare noten"
+    }
+    val shantenByPlayer = activePlayers.filterNot { it.id in notenDeclaredPlayerIds }.associateWith { shantenCalculator.calculate(it.hand) }
     val tenpaiIds = shantenByPlayer.filterValues { it !is ShantenResult.NotTenpai }.keys.map { it.id }.toSet()
     return ExhaustiveDrawSettlementResult(
         reason = RiichiExhaustiveDrawReason.Normal,

@@ -266,7 +266,17 @@ class ThreePlayerRiichiRuleModule(
     }
 
     /** 一般流局；不聽罰符總額 2000 點。 */
-    override fun declareExhaustiveDraw(tableState: TableState): ExhaustiveDrawSettlementResult = riichiExhaustiveDrawSettlement(tableState, createShantenCalculator(), config.scoreConfig.notenPenaltyUnit)
+    override fun declareExhaustiveDraw(tableState: TableState): ExhaustiveDrawSettlementResult = declareExhaustiveDraw(tableState, emptySet())
+
+    override fun declareExhaustiveDraw(
+        tableState: TableState,
+        notenDeclaredPlayerIds: Set<Uuid>,
+    ): ExhaustiveDrawSettlementResult = riichiExhaustiveDrawSettlement(
+        tableState = tableState,
+        shantenCalculator = createShantenCalculator(),
+        notenPenaltyUnit = config.scoreConfig.notenPenaltyUnit,
+        notenDeclaredPlayerIds = notenDeclaredPlayerIds,
+    )
 
     /** 流局滿貫；付款方式與自摸相同，少一家支付。 */
     override fun resolveNagashiMangan(tableState: TableState): NagashiManganResolution? = riichiNagashiMangan(tableState)

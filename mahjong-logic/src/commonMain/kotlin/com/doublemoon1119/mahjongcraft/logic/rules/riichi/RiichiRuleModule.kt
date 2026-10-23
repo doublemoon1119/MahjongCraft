@@ -333,7 +333,17 @@ class RiichiRuleModule(
      * 手牌早已收起、也不再摸打，既不該被判聽牌／不聽，也不該收付不聽罰符。沒有玩家中途退場時，
      * [TableState.activePlayers] 就是全體玩家。
      */
-    override fun declareExhaustiveDraw(tableState: TableState): ExhaustiveDrawSettlementResult = riichiExhaustiveDrawSettlement(tableState, createShantenCalculator(), config.scoreConfig.notenPenaltyUnit)
+    override fun declareExhaustiveDraw(tableState: TableState): ExhaustiveDrawSettlementResult = declareExhaustiveDraw(tableState, emptySet())
+
+    override fun declareExhaustiveDraw(
+        tableState: TableState,
+        notenDeclaredPlayerIds: Set<Uuid>,
+    ): ExhaustiveDrawSettlementResult = riichiExhaustiveDrawSettlement(
+        tableState = tableState,
+        shantenCalculator = createShantenCalculator(),
+        notenPenaltyUnit = config.scoreConfig.notenPenaltyUnit,
+        notenDeclaredPlayerIds = notenDeclaredPlayerIds,
+    )
 
     /**
      * 判定流局滿貫並計算自摸滿貫式收支；沒有任何人成立時回傳 `null`。
