@@ -8,7 +8,7 @@
 
 - Define and register `MahjongAiStrategy` implementations.
 - Choose gameplay commands from an AI-visible decision context.
-- Choose round-preparation submissions with deterministic fallbacks.
+- Choose rule decision submissions with deterministic fallbacks.
 - Provide the random strategy and an expected-value strategy configured for
   beginner, intermediate, and advanced information levels by the bundled
   extensions.
@@ -28,7 +28,7 @@ The module depends on [mahjong-logic](../mahjong-logic/README.md) and
 ## Testing
 
 Tests cover registry behavior, legal decision selection, opponent-model
-behavior, and deterministic preparation behavior. Shared logic fixtures are
+behavior, and deterministic rule decision behavior. Shared logic fixtures are
 supplied by [testing-mahjong-logic](../testing/mahjong-logic/README.md).
 
 From the repository root, run

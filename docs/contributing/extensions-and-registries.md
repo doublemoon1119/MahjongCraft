@@ -48,18 +48,19 @@
 
 - Rule authors add settings for their own game, such as the red-tile count in Riichi. MahjongCraft adds
   the shared turn-time and spectating settings when the rule is registered. Do not add another copy.
-- Only add settings the rule can use. A rule without tile selection or exchange before a round has no
-  round-preparation time setting.
-- Preparation settings are absent by default. A preparation resolver decides from the current rule
-  configuration whether players need to choose before a round, and supplies a default
-  `RuleDecisionConfig` only when needed. Do not cache that answer solely by rule ID: an option can
-  enable or disable preparation within the same rule. The room settings use that decision to add the
-  preparation-time field; do not declare a second capability flag in the presentation definition.
-- Creating defaults or changing rules adds that rule's preparation configuration, or removes it when the
-  new rule has none. Other shared flow settings are preserved. Preparation time does not consume the
-  ordinary turn's reserve time. A player-choice preparation step without its configuration is an error,
-  not an instruction to silently supply a timer or wait forever.
-- Changing a rule option uses the same decision. Enabling preparation supplies its default time when
+- Only add settings the rule can use. A rule that never asks players to choose, such as for a tile
+  exchange before a round, has no rule-decision time setting.
+- Rule-decision settings are absent by default. A rule decision resolver decides from the current rule
+  configuration whether players may need to choose at any timing, and supplies a default
+  `RuleDecisionConfig` only when needed. One setting covers every timing. Do not cache that answer
+  solely by rule ID: an option can enable or disable the choice within the same rule. The room settings
+  use that decision to add the rule-decision time field; do not declare a second capability flag in the
+  presentation definition.
+- Creating defaults or changing rules adds that rule's rule-decision configuration, or removes it when
+  the new rule has none. Other shared flow settings are preserved. Rule-decision time does not consume
+  the ordinary turn's reserve time. A step that asks players to choose without its configuration is an
+  error, not an instruction to silently supply a timer or wait forever.
+- Changing a rule option uses the same decision. Enabling the choice supplies its default time when
   none exists; keeping it enabled preserves the chosen time; disabling it removes both the setting and
   its field. Rebuild submitted rule options before deciding which shared fields the server may accept.
 - MahjongCraft owns the shared fields' IDs, allowed values, update functions and translations. A rule that
@@ -68,6 +69,29 @@
   rule can actually submit and save a change, not just that a bundled rule shows a control.
 - For an optional setting, test both sides: rules that need it can change and save it; rules that do not
   need it have no field and the server rejects changes to that value.
+
+## Rule Decision Windows
+
+- A rule decision resolver is asked at four timings, and returns a step only when players should choose:
+  - `ROUND_START`: after the deal; play starts once the window closes.
+  - `BEFORE_EXHAUSTIVE_DRAW`: the wall has run out and before the ordinary draw is settled; the draw is
+    settled once the window closes.
+  - `WIN_CONTINUES`: after a win that does not end the round; the remaining players continue once the
+    window closes.
+  - `ROUND_END`: after the round is settled; the next round, or the end of the match, follows once the
+    window closes.
+- Return `null` for every timing the rule does not use. A resolver that only checks its own options and
+  ignores the timing opens the same choice at all four.
+- A window holds every step from opening until the last step resolves. Each step gets its own window ID;
+  a submission naming another window is rejected, even when the step ID repeats. Do not rely on step IDs
+  to tell one round's choice from the next.
+- Write the result into table state in `resolve`, for example by recording an extension action in the
+  player's action history, and let the rule read it at the timing that needs it. The draw settlement,
+  for example, reads the recorded choice; nothing else carries a choice from the window to later code.
+- Opening a window and scheduling what follows are one authoritative write, and so are closing a window
+  and scheduling what follows. Do not add a second write that a crash could separate from the first.
+- Choices that need player input require the rule-decision setting above. Timeout and AI fallbacks use
+  the input's default submission unless the resolver supplies its own.
 
 ## Standard Table Layouts
 

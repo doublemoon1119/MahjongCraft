@@ -5,7 +5,7 @@ public callbacks without importing Minecraft, a loader, or dependency injection.
 The example currently verifies its JVM target; other runtimes are not claimed.
 
 `ExampleMahjongExtension` is the entry point used by the platform adapter. It
-registers the rule, data codecs, action, AI strategy and round-preparation
+registers the rule, data codecs, action, AI strategy and rule decision
 resolver. It does not copy or delegate to the bundled Riichi rule.
 
 ## Pairing Mahjong
@@ -36,9 +36,10 @@ validation with client controls.
 
 ## Optional two-tile exchange
 
-Exchange is disabled by default. Enabling it adds a separate round-preparation
-step and its own preparation-time setting. When exchange is disabled, that
-setting is not part of the rule's configuration.
+Exchange is disabled by default. Enabling it adds a rule decision step at the
+start of each round and its own rule-decision time setting. The resolver opens
+no step at any other timing. When exchange is disabled, that setting is not
+part of the rule's configuration.
 
 Each player chooses two of the three starting tiles. After every player submits,
 the choices pass together to the next player in the fixed roster order. Two
@@ -52,7 +53,7 @@ Tsumogiri means discarding the tile just drawn. The sample strategy is
 intentionally simple. It chooses a legal self-draw
 first, then a required discard, and otherwise discards the drawn tile. If there
 is no drawn tile, it chooses the first standing tile. Reaction decisions use
-the legal actions supplied by the decision context, and preparation uses the
+the legal actions supplied by the decision context, and rule decisions use the
 public default submission. It is an integration example, not a competitive AI.
 
 ## Public capability map

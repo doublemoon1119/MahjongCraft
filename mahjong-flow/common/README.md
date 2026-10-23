@@ -25,7 +25,7 @@ It depends on [mahjong-logic](../../mahjong-logic/README.md) and coroutines.
 
 ## Testing
 
-Tests cover shared models, timers, snapshots, ranking calculations, preparation
+Tests cover shared models, timers, snapshots, ranking calculations, rule decision
 state, event projection, and win celebration cue resolution. Shared fixtures come from
 [testing-mahjong-flow](../../testing/mahjong-flow/README.md).
 

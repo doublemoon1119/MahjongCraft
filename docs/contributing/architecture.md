@@ -19,7 +19,7 @@ Core business logic layer.
 
 Reusable computer-player strategy layer.
 
-- **Purpose**: Defines pluggable AI strategies that choose commands and round-preparation submissions from
+- **Purpose**: Defines pluggable AI strategies that choose commands and rule decision submissions from
   controlled decision contexts.
 - **Package**: `com.doublemoon1119.mahjongcraft.ai.*`
 - **Dependencies**: Depends on `:mahjong-logic` and `:mahjong-flow:mahjong-flow-common` for domain data and

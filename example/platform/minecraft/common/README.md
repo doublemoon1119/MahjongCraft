@@ -9,7 +9,7 @@ Translations are provided in Traditional Chinese, Simplified Chinese, English an
 Shared resources also provide the furniture models, names, creative-tab title and event-chat labels.
 The furniture models reuse vanilla oak and blue-wool textures; native behavior belongs to the loader.
 The rule contributes only its own settings; MahjongCraft adds shared turn and spectating settings.
-The round-preparation setting is present only while the optional two-tile exchange is enabled.
+The rule-decision time setting is present only while the optional two-tile exchange is enabled.
 
 ## Tile Resources
 

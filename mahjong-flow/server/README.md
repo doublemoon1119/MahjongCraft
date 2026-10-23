@@ -6,14 +6,14 @@
 
 ## Responsibilities
 
-- Validate and execute gameplay, reaction, preparation, and room commands.
+- Validate and execute gameplay, reaction, rule decision, and room commands.
 - Coordinate timers, AI turns, pending transitions, settlement presentations, and round advancement.
 - Manage background strategy execution, stale-decision checks, and single-game
   automated advancement without delegating authoritative writes to strategies.
 - Apply visibility policy, publish snapshots to players and observers, and manage server-session lifecycle.
 - Track which venue each player belongs to.
 - Record history events, answer history queries, and run headless history generation.
-- Host extensible outcome, continuation, and preparation registries.
+- Host extensible outcome, continuation, and rule decision registries.
 
 ## Boundaries
 
