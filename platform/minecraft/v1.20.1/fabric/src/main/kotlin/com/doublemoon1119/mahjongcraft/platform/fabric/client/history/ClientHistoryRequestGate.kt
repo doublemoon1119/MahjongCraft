@@ -8,6 +8,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 
 /** 歷史查詢的前景與背景送出優先級。 */
 internal enum class ClientHistoryRequestPriority {
@@ -83,7 +84,7 @@ internal class ClientHistoryRequestGate(
                 } else if (wait == null || wait <= Duration.ZERO) {
                     return
                 } else {
-                    withTimeoutOrNull(wait.inWholeMilliseconds.coerceAtLeast(1)) {
+                    withTimeoutOrNull(wait.coerceAtLeast(1.milliseconds)) {
                         signal.first { it != observedSignal }
                     }
                 }
