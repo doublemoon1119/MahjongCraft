@@ -486,6 +486,10 @@ class DebugGameScenarioTest {
 
         /** 所有內建情境應採用的固定排序。 */
         val EXPECTED_IDS: List<String> = listOf(
+            "mahjongcraft:auto_north_riichi_chain",
+            "mahjongcraft:auto_north_riichi_kan_payments",
+            "mahjongcraft:auto_north_riichi_last_tile",
+            "mahjongcraft:auto_north_riichi_rob",
             "mahjongcraft:automatic_auto_win_ron",
             "mahjongcraft:automatic_auto_win_tsumo",
             "mahjongcraft:automatic_decline_calls_keeps_win",

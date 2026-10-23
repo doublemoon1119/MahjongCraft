@@ -744,6 +744,7 @@
   "mahjongcraft.message.debug.decision.text_card.description": "Checks text and button layout; does not affect the match.",
   "mahjongcraft.message.debug.decision.text_card.hint": "Preview only",
   "mahjongcraft.message.debug.decision.text_card.label": "Text card",
+  "mahjongcraft.message.debug.rule_module.auto_north_riichi": "Riichi Mahjong (3-Player, auto North pull, debug)",
   "mahjongcraft.message.decision_confirmation_resyncing": "No confirmation received for your choice yet; resynchronizing",
   "mahjongcraft.message.decision_confirmation_retry": "No confirmation received for your choice; please choose again",
   "mahjongcraft.message.dice_roll.total": "Total: %s",

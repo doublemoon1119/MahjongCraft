@@ -19,14 +19,17 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlaye
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.DebugMahjongExtension
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationState
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import kotlin.uuid.Uuid
 
 /**
- * 情境測試共用的內建規則模組登錄表；建立後即凍結，供合法動作查詢使用。
+ * 情境測試共用的規則模組登錄表，包含內建規則與開發用的自動拔北三人日麻；建立後即凍結，供合法動作查詢使用。
  */
 internal val scenarioModuleRegistry: MahjongModuleRegistry = MahjongModuleRegistryImpl().apply {
     registerBundledRuleModules()
+    DebugMahjongExtension(winRoundContinuationState = DebugWinRoundContinuationState()).registerRuleModules(this)
     freeze()
 }
 

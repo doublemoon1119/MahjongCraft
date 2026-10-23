@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.rule.DebugAutoNorthRiichiRuleConfig
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -171,6 +172,69 @@ class ThreePlayerRiichiDebugGameScenariosTest {
 
         assertEquals(3, assertIs<RiichiPlayerState>(afterThirdPull.currentPlayer.playerRuleState).nukiDoraTiles.size)
         assertTrue(GameAction.Tsumo in afterThirdPull.currentOwnTurnActions())
+    }
+
+    /** 自動拔北情境改用開發用規則，設定沿用這一桌；之後在同一桌載入其他三人情境時恢復一般三人日麻。 */
+    @Test
+    fun `auto north scenarios switch the rule and other scenarios switch back`() {
+        val config = ThreePlayerRiichiRuleConfig(redDoraCount = 0)
+        val context = createThreePlayerRiichiScenarioContext(config)
+
+        val autoNorth = registry.get("mahjongcraft:auto_north_riichi_chain")!!.build(context)
+        assertEquals(DebugAutoNorthRiichiRuleConfig(config), autoNorth.game.tableState.config)
+
+        val plain = registry.get("mahjongcraft:riichi_three_player_pull_north")!!.build(context.copy(currentGame = autoNorth.game))
+        assertEquals(config, plain.game.tableState.config)
+    }
+
+    /** 連續自動拔北：兩家對手先摸東，呼叫者摸到北後，王牌前端依序補到北、北、四條；呼叫者聽一、四條。 */
+    @Test
+    fun `auto north chain scenario arranges three consecutive pulls`() {
+        val state = build("auto_north_riichi_chain")
+
+        assertEquals(listOf(Tile.Honor.East, Tile.Honor.East, Tile.Honor.North), state.liveWallFront(3))
+        assertEquals(listOf(Tile.Honor.North, Tile.Honor.North, FOUR_BAMBOO), state.reservedWallTiles.take(3).map { it.tile })
+        assertTrue(state.canRon(offset = 0, discarderOffset = 1, tile = FOUR_BAMBOO))
+    }
+
+    /** 自動拔北被搶：下家照常摸切，摸到的北由規則自動拔出；單騎聽北的呼叫者可以搶，上家不能。 */
+    @Test
+    fun `auto north rob scenario lets the invoker ron the pulled north`() {
+        val result = registry.get("mahjongcraft:auto_north_riichi_rob")!!.build(createThreePlayerRiichiScenarioContext())
+        val state = result.game.tableState
+        val north = state.liveWallTile(0)
+
+        assertEquals(Tile.Honor.North, north.tile)
+        assertEquals(DebugScriptedAiStrategy.TSUMOGIRI_KEY, result.game.aiPlayerStrategyKeys[state.seat(1).id])
+        assertTrue(state.canRobPulledNorth(offset = 0, north = north))
+        assertFalse(state.canRobPulledNorth(offset = 2, north = north))
+    }
+
+    /** 沒有牌可補：活牌只剩東、東、北三張，呼叫者摸到的最後一張是北。 */
+    @Test
+    fun `auto north last tile scenario leaves a north as the last live tile`() {
+        val state = build("auto_north_riichi_last_tile")
+
+        assertEquals(listOf(Tile.Honor.East, Tile.Honor.East, Tile.Honor.North), state.tileWall.getAllTiles().map { it.tile })
+    }
+
+    /** 槓牌收付：現在可以暗槓一筒，九筒從上家碰出、嶺上補到九筒可以加槓；下家會摸切一條，王牌前端依序是九筒、南、東。 */
+    @Test
+    fun `auto north kan payments scenario arranges every kan`() {
+        val state = build("auto_north_riichi_kan_payments")
+        val handTiles = state.currentPlayer.hand.allTiles.associateBy { it.id }
+
+        assertEquals(
+            setOf(ONE_DOT),
+            state.currentOwnTurnActions().filterIsInstance<GameAction.Kan>().mapTo(mutableSetOf()) { kan -> handTiles.getValue(kan.tileId).tile },
+        )
+        assertEquals(
+            listOf(NINE_DOT to RelativeDirection.Left),
+            state.currentPlayer.hand.melds.map { meld -> meld.tiles.first().tile to meld.sourceDirection },
+        )
+        assertEquals(listOf(NINE_DOT, Tile.Honor.South, Tile.Honor.East), state.reservedWallTiles.take(3).map { it.tile })
+        assertEquals(ONE_BAMBOO, state.liveWallTile(0).tile)
+        assertEquals(3, state.currentPlayer.hand.standingTiles.count { it.tile == ONE_BAMBOO })
     }
 
     /** 驗證器清點牌數時把拔出的北算進去，拔過北的桌況照樣通過驗證。 */

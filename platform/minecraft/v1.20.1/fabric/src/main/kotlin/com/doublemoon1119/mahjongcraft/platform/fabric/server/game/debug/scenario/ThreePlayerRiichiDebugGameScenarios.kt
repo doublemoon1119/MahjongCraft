@@ -9,6 +9,9 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
  * 全部沿用 [SeatSetupScenario]：呼叫者是莊家、剛摸到牌，座位順序為呼叫者 → 下家 → 上家，兩家對手依排定的牌摸切。
  * 呼叫者預先有捨牌，牌局不在第一巡。情境都停在還沒有人拔北的時候，拔北、補牌、搶北與槓都在載入後走正式流程。
  *
+ * `auto_north_riichi` 開頭的情境改用開發用的自動拔北三人日麻：任何人摸到北都會自動拔北並補牌，拔北的人付
+ * 1000 點進供託；暗槓與加槓由另外兩家各付 500 點給開槓者，明槓由放槓者付 1000 點。其餘情境載入後恢復一般的三人日麻。
+ *
  * 牌牆開局的位置與三面牌牆的樣子另外用正式開局情境 `mahjongcraft:riichi_wall_opening` 驗收，它在三人日麻的桌子
  * 會依三人規則擲骰開門。
  */
@@ -96,6 +99,67 @@ object ThreePlayerRiichiDebugGameScenarios {
             deadWallFront = listOf(SEVEN_DOT, EIGHT_DOT, FOUR_DOT),
             playerCount = THREE_PLAYER_COUNT,
             liveWallIsFrontOnly = true,
+        ),
+        // 自動拔北：打出剛摸到的西後，兩家對手各摸切一張東，呼叫者摸到北。北自動拔出並補到北、再拔再補到北、
+        // 再拔再補到四條，連續三步，每一步都付 1000 點進供託；最後的四條可以嶺上開花自摸。
+        SeatSetupScenario(
+            id = "mahjongcraft:auto_north_riichi_chain",
+            invoker = SeatSpec(
+                standingTiles = PINZU_STRAIGHT + listOf(TWO_BAMBOO, THREE_BAMBOO, NINE_CHARACTER, NINE_CHARACTER),
+                drawnTile = Tile.Honor.West,
+                discards = listOf(Tile.Honor.South),
+            ),
+            liveWallFront = listOf(Tile.Honor.East, Tile.Honor.East, Tile.Honor.North),
+            waitingTiles = BAMBOO_TWO_SIDED_WAITS,
+            deadWallFront = listOf(Tile.Honor.North, Tile.Honor.North, FOUR_BAMBOO),
+            playerCount = THREE_PLAYER_COUNT,
+            usesAutoNorthRule = true,
+        ),
+        // 自動拔北被搶：呼叫者單騎聽北、有役牌中。打出剛摸到的九萬後，下家摸到北自動拔出，呼叫者可以榮和這張北；
+        // 被搶的拔北不收付。選擇不和時，下家付 1000 點進供託、補牌後摸切。
+        SeatSetupScenario(
+            id = "mahjongcraft:auto_north_riichi_rob",
+            invoker = SeatSpec(
+                standingTiles = PINZU_STRAIGHT + listOf(Tile.Honor.Red, Tile.Honor.Red, Tile.Honor.Red, Tile.Honor.North),
+                drawnTile = NINE_CHARACTER,
+                discards = listOf(Tile.Honor.South, Tile.Honor.West),
+            ),
+            liveWallFront = listOf(Tile.Honor.North),
+            waitingTiles = setOf(Tile.Honor.North),
+            playerCount = THREE_PLAYER_COUNT,
+            usesAutoNorthRule = true,
+        ),
+        // 沒有牌可補：活牌只剩三張，其餘的牌已在三家牌河。打出剛摸到的西後，兩家對手各摸切一張東，呼叫者摸到最後
+        // 一張活牌是北；活牌已經摸完，不能拔北補牌，本局直接流局。呼叫者聽一、四條，流局時聽牌。一般三人日麻摸到最後一張
+        // 仍要打一張才流局，這裡立即流局是測試規則為了驗證「沒牌可補就結束本局」的設計。
+        SeatSetupScenario(
+            id = "mahjongcraft:auto_north_riichi_last_tile",
+            invoker = SeatSpec(
+                standingTiles = PINZU_STRAIGHT + listOf(TWO_BAMBOO, THREE_BAMBOO, NINE_CHARACTER, NINE_CHARACTER),
+                drawnTile = Tile.Honor.West,
+                discards = listOf(Tile.Honor.South),
+            ),
+            liveWallFront = listOf(Tile.Honor.East, Tile.Honor.East, Tile.Honor.North),
+            waitingTiles = BAMBOO_TWO_SIDED_WAITS,
+            playerCount = THREE_PLAYER_COUNT,
+            liveWallIsFrontOnly = true,
+            usesAutoNorthRule = true,
+        ),
+        // 槓牌收付：手上有四張一筒、三張一條，九筒已從上家碰出。先暗槓一筒（另外兩家各付 500 點），嶺上補到九筒後
+        // 加槓（再各付 500 點），嶺上補到南後打牌；下家摸切一條時可以明槓（下家付 1000 點），嶺上補到東。
+        SeatSetupScenario(
+            id = "mahjongcraft:auto_north_riichi_kan_payments",
+            invoker = SeatSpec(
+                standingTiles = List(KAN_SIZE) { ONE_DOT } + List(KAN_SIZE - 1) { ONE_BAMBOO } + listOf(NINE_CHARACTER, NINE_CHARACTER, Tile.Honor.Red),
+                pons = listOf(ScenarioPon(tile = NINE_DOT, from = RelativeDirection.Left)),
+                drawnTile = Tile.Honor.West,
+                discards = listOf(Tile.Honor.South),
+            ),
+            liveWallFront = listOf(ONE_BAMBOO),
+            waitingTiles = emptySet(),
+            deadWallFront = listOf(NINE_DOT, Tile.Honor.South, Tile.Honor.East),
+            playerCount = THREE_PLAYER_COUNT,
+            usesAutoNorthRule = true,
         ),
     )
 }

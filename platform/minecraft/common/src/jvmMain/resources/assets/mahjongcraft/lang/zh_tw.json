@@ -744,6 +744,7 @@
   "mahjongcraft.message.debug.decision.text_card.description": "檢查文字與按鈕的排版，不會影響對局。",
   "mahjongcraft.message.debug.decision.text_card.hint": "僅供預覽",
   "mahjongcraft.message.debug.decision.text_card.label": "文字卡片",
+  "mahjongcraft.message.debug.rule_module.auto_north_riichi": "日本麻將（三人・自動拔北・除錯）",
   "mahjongcraft.message.decision_confirmation_resyncing": "尚未收到操作確認，正在重新同步",
   "mahjongcraft.message.decision_confirmation_retry": "沒有收到操作確認，請重新選擇",
   "mahjongcraft.message.dice_roll.total": "合計：%s",

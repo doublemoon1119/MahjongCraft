@@ -38,6 +38,8 @@ import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPosition
 import com.doublemoon1119.mahjongcraft.logic.table.layout.createInitialLayoutValidated
 import com.doublemoon1119.mahjongcraft.logic.table.layout.resolveTransitionValidated
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.rule.DebugAutoNorthRiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.rule.DebugAutoNorthRiichiRuleModule
 import kotlin.uuid.Uuid
 
 /** 內建的日麻權威情境；除了開局與三人日麻情境以外都只適用四人日麻。 */
@@ -706,26 +708,41 @@ internal fun scenarioConfig(currentGame: Game): RiichiRuleConfig = currentGame.t
 /**
  * 依目前這一桌的日麻設定建立情境使用的規則模組，四人與三人日麻都適用。
  *
- * 設定整份沿用，理由同 [scenarioConfig]；[multiRonPolicy] 不為 null 時只覆寫一炮多響設定。
+ * 設定整份沿用，理由同 [scenarioConfig]；[multiRonPolicy] 不為 null 時只覆寫一炮多響設定。這一桌正在用
+ * [DebugAutoNorthRiichiRuleModule] 時沿用它包著的三人日麻設定，規則模組則依 [usesAutoNorthRule] 決定，
+ * 因此每個情境載入後使用的規則只取決於情境本身。
  *
  * @param currentGame 提供四人或三人日麻設定的對局。
  * @param multiRonPolicy 要覆寫的一炮多響政策；null 時沿用原值。
+ * @param usesAutoNorthRule 是否改用開發用的自動拔北三人日麻；只適用三人日麻的桌子。
  * @return 採用該設定的日麻規則模組。
  * @throws IllegalStateException 對局不屬於支援的日麻規則時拋出。
+ * @throws IllegalArgumentException 四人日麻的桌子要求自動拔北規則時拋出。
  */
 internal fun riichiFamilyScenarioModule(
     currentGame: Game,
     multiRonPolicy: MultiRonPolicy? = null,
-): RiichiFamilyRuleModule<*> = when (val config = currentGame.tableState.config) {
-    is RiichiRuleConfig -> RiichiRuleModule(
-        id = BuiltInRuleModuleIds.RIICHI,
-        config = multiRonPolicy?.let { config.copy(multiRonPolicy = it) } ?: config,
-    )
-    is ThreePlayerRiichiRuleConfig -> ThreePlayerRiichiRuleModule(
-        id = BuiltInRuleModuleIds.RIICHI_THREE_PLAYER,
-        config = multiRonPolicy?.let { config.copy(multiRonPolicy = it) } ?: config,
-    )
-    else -> error("Riichi debug scenarios require a Riichi game")
+    usesAutoNorthRule: Boolean = false,
+): RiichiFamilyRuleModule<*> {
+    val currentConfig = currentGame.tableState.config
+    return when (val config = (currentConfig as? DebugAutoNorthRiichiRuleConfig)?.base ?: currentConfig) {
+        is RiichiRuleConfig -> {
+            require(!usesAutoNorthRule) { "The auto North pull rule requires a three-player Riichi game" }
+            RiichiRuleModule(
+                id = BuiltInRuleModuleIds.RIICHI,
+                config = multiRonPolicy?.let { config.copy(multiRonPolicy = it) } ?: config,
+            )
+        }
+        is ThreePlayerRiichiRuleConfig -> {
+            val threePlayerConfig = multiRonPolicy?.let { config.copy(multiRonPolicy = it) } ?: config
+            if (usesAutoNorthRule) {
+                DebugAutoNorthRiichiRuleModule(id = DebugAutoNorthRiichiRuleModule.ID, config = DebugAutoNorthRiichiRuleConfig(threePlayerConfig))
+            } else {
+                ThreePlayerRiichiRuleModule(id = BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, config = threePlayerConfig)
+            }
+        }
+        else -> error("Riichi debug scenarios require a Riichi game")
+    }
 }
 
 /**

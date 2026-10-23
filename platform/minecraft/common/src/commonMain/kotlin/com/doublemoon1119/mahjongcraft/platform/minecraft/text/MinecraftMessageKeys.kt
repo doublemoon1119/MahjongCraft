@@ -38,6 +38,9 @@ object MinecraftMessageKeys {
     /** Debug 決策畫面文字卡片的說明文字。 */
     const val DEBUG_DECISION_TEXT_CARD_DESCRIPTION = PREFIX + "debug.decision.text_card.description"
 
+    /** 開發用自動拔北三人日麻的規則名稱。 */
+    const val DEBUG_RULE_MODULE_AUTO_NORTH_RIICHI = PREFIX + "debug.rule_module.auto_north_riichi"
+
     /** 對局進行中禁止主動離開。 */
     const val GAME_LEAVE_DENIED_WHILE_PLAYING = PREFIX + "game_leave_denied_while_playing"
 
@@ -563,6 +566,7 @@ object MinecraftMessageKeys {
         DEBUG_DECISION_TEXT_CARD_BODY,
         DEBUG_DECISION_TEXT_CARD_HINT,
         DEBUG_DECISION_TEXT_CARD_DESCRIPTION,
+        DEBUG_RULE_MODULE_AUTO_NORTH_RIICHI,
         GAME_LEAVE_DENIED_WHILE_PLAYING,
         GAME_DISSOLVED,
         GAME_LEFT,
