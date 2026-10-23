@@ -5,6 +5,8 @@ import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
+import com.doublemoon1119.mahjongcraft.logic.table.DrawSource
+import com.doublemoon1119.mahjongcraft.logic.table.PendingFollowUpDraw
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledPersistenceRegistries
@@ -104,7 +106,10 @@ class PendingReactionPersistenceTest {
             robbedTile = robbedTile,
             eligiblePlayerIds = setOf(responderA, responderB),
             responses = mapOf(responderA to GameAction.Pass),
-            pendingFollowUpTileIds = listOf(Uuid.random(), Uuid.random()),
+            pendingFollowUpDraws = listOf(
+                PendingFollowUpDraw(Uuid.random(), DrawSource.LiveWall),
+                PendingFollowUpDraw(Uuid.random(), DrawSource.Supplemental(kanAction)),
+            ),
         )
 
         val encoded = json.encodeToString(

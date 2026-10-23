@@ -14,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.DrawFollowUpContext
 import com.doublemoon1119.mahjongcraft.logic.table.DrawFollowUpDecision
 import com.doublemoon1119.mahjongcraft.logic.table.DrawSource
+import com.doublemoon1119.mahjongcraft.logic.table.PendingFollowUpDraw
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlin.uuid.Uuid
 
@@ -154,6 +155,7 @@ internal object DrawFollowUpApplier {
      * @param source 這次摸牌的來源。
      * @param drawnTiles 這次依摸取順序摸到的牌。
      * @param module 對局採用的規則模組。
+     * @param resumedDraws 搶和視窗暫停前還沒詢問過的牌與它們各自的來源；排在 [drawnTiles] 之前詢問。
      * @return 整串自動處理的結果；規則不處理時沒有任何步驟。
      * @throws RuleContractViolationException 規則要求的處理無法完成時。
      */
@@ -163,10 +165,11 @@ internal object DrawFollowUpApplier {
         source: DrawSource,
         drawnTiles: List<IdentifiedTile>,
         module: MahjongRuleModule<*>,
+        resumedDraws: List<Pair<IdentifiedTile, DrawSource>> = emptyList(),
     ): Result {
         val policy = module.createDrawFollowUpPolicy()
         val steps = mutableListOf<CompletedStep>()
-        val unchecked = ArrayDeque(drawnTiles.map { it to source })
+        val unchecked = ArrayDeque(resumedDraws + drawnTiles.map { it to source })
         var current = state
         while (true) {
             val (drawnTile, drawSource) = unchecked.removeFirstOrNull() ?: return Result(current, steps, Ending.PlayerTurn)
@@ -203,7 +206,7 @@ internal object DrawFollowUpApplier {
                         action = action,
                         setAsideTile = setAsideTile,
                         module = module,
-                        pendingFollowUpTiles = unchecked.map { (tile, _) -> tile },
+                        pendingFollowUpDraws = unchecked.map { (tile, tileSource) -> PendingFollowUpDraw(tile.id, tileSource) },
                     )
                     when (resolution) {
                         is TileSetAsideResolver.Resolution.RobbingWindowOpened -> return Result(

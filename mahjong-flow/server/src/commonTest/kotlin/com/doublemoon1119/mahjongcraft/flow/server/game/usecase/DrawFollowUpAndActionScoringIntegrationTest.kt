@@ -38,6 +38,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.DrawFollowUpDecision
 import com.doublemoon1119.mahjongcraft.logic.table.DrawFollowUpPolicy
+import com.doublemoon1119.mahjongcraft.logic.table.DrawSource
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.NoOpWallRevealPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.PendingReaction
@@ -369,7 +370,7 @@ class DrawFollowUpAndActionScoringIntegrationTest {
 
         val pending = assertNotNull(fixture.repository.getTableState(fixture.gameId)!!.pendingRobbingReaction)
         assertEquals(second, pending.robbedTile)
-        assertEquals(listOf(third.id), pending.pendingFollowUpTileIds)
+        assertEquals(listOf(third.id), pending.pendingFollowUpDraws.map { it.tileId })
         assertEquals(second, fixture.drawer().hand.lastDrawn)
 
         assertIs<Outcome.Success<Unit>>(fixture.respondToRobbing(fixture.gameId, fixture.southId, GameAction.Pass))
@@ -378,6 +379,27 @@ class DrawFollowUpAndActionScoringIntegrationTest {
         assertEquals(listOf(first, second, third), (drawer.playerRuleState as FlowerState).flowers)
         assertEquals(ordinary.first(), drawer.hand.lastDrawn)
         assertTrue(drawer.hand.standingTiles.none { it.tile == FLOWER })
+    }
+
+    /** 搶和視窗暫停後繼續時，還沒詢問過的牌照原本的來源交給規則，不改成後來那次移出的補牌。 */
+    @Test
+    fun `a robbing pause keeps the source of the tiles not asked about yet`() = runTest {
+        val behavior = TestBehavior(replacementCount = 2)
+        val fixture = Fixture(behavior)
+        val flower = tile(FLOWER)
+        val (kept, later) = tile(ORDINARY) to List(2) { tile(ORDINARY) }
+        behavior.robbingPlayerIds += fixture.southId
+        behavior.robbableTileIds += flower.id
+        val hand = Hand(tiles = List(3) { tile(KAN_TILE) } + fillers(9), lastDrawn = tile(KAN_TILE))
+        fixture.repository.setTableState(fixture.table(drawerHand = hand, wall = List(2) { tile(ORDINARY) } + later + listOf(kept, flower)))
+        val kan = fixture.legalClosedKan()
+
+        assertIs<Outcome.Success<Unit>>(fixture.kan(fixture.gameId, fixture.drawerId, kan.type, kan.tileId))
+        assertEquals(flower, assertNotNull(fixture.repository.getTableState(fixture.gameId)!!.pendingRobbingReaction).robbedTile)
+        assertIs<Outcome.Success<Unit>>(fixture.respondToRobbing(fixture.gameId, fixture.southId, GameAction.Pass))
+
+        val keptSource = behavior.askedSources.single { (tileId, _) -> tileId == kept.id }.second
+        assertIs<GameAction.Kan>(assertIs<DrawSource.Supplemental>(keptSource).action)
     }
 
     /** 規則要移出的不是這次詢問的牌時視為規則錯誤，桌況不改變。 */
@@ -450,6 +472,7 @@ class DrawFollowUpAndActionScoringIntegrationTest {
      * @property omitsMultiRonAbortiveDrawReason 一炮多響判定流局時是否違規不提供流局原因。
      * @property setsAsideOldestFlower 是否違規移出手上最早的花，而不是摸牌位上的花。
      * @property changesSetAsideFace 是否違規把要移出的牌換成另一種牌面。
+     * @property askedSources 依詢問順序記錄的牌與來源。
      */
     private class TestBehavior(
         val scoring: ((ActionScoringContext) -> ActionScoring?)? = null,
@@ -464,6 +487,7 @@ class DrawFollowUpAndActionScoringIntegrationTest {
         val omitsMultiRonAbortiveDrawReason: Boolean = false,
         val setsAsideOldestFlower: Boolean = false,
         val changesSetAsideFace: Boolean = false,
+        val askedSources: MutableList<Pair<Uuid, DrawSource>> = mutableListOf(),
     )
 
     /**
@@ -651,6 +675,7 @@ class DrawFollowUpAndActionScoringIntegrationTest {
         override fun createWallRevealPolicy(): WallRevealPolicy = NoOpWallRevealPolicy
 
         override fun createDrawFollowUpPolicy(): DrawFollowUpPolicy = DrawFollowUpPolicy { context ->
+            behavior.askedSources += context.drawnTile.id to context.source
             when {
                 context.drawnTile.tile != FLOWER -> DrawFollowUpDecision.None
                 context.tableState.tileWall.remainingCount == 0 && !behavior.ignoresEmptyWall -> DrawFollowUpDecision.EndRound(NoReplacementReason)

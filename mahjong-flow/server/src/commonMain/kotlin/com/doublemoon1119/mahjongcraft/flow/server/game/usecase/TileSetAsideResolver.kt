@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.table.PendingFollowUpDraw
 import com.doublemoon1119.mahjongcraft.logic.table.PendingRobbingReaction
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlin.uuid.Uuid
@@ -78,7 +79,7 @@ internal object TileSetAsideResolver {
      * @param action 移出手牌的擴充動作。
      * @param setAsideTile 規則指定要移出的牌。
      * @param module 對局採用的規則模組。
-     * @param pendingFollowUpTiles 摸牌後自動處理還沒詢問過規則的補牌；開啟搶和視窗時保存在視窗中，放過後繼續詢問。
+     * @param pendingFollowUpDraws 摸牌後自動處理還沒詢問過規則的牌與來源；開啟搶和視窗時保存在視窗中，放過後繼續詢問。
      * @return 這次動作的去向。
      */
     fun resolve(
@@ -87,7 +88,7 @@ internal object TileSetAsideResolver {
         action: GameAction.Extension,
         setAsideTile: IdentifiedTile,
         module: MahjongRuleModule<*>,
-        pendingFollowUpTiles: List<IdentifiedTile> = emptyList(),
+        pendingFollowUpDraws: List<PendingFollowUpDraw> = emptyList(),
     ): Resolution {
         RuleHookResultValidator.requireHeldSetAsideTile(state, playerId, action, setAsideTile)
         val ronEligiblePlayerIds = RobbingEligibility.ronEligiblePlayerIds(
@@ -123,7 +124,7 @@ internal object TileSetAsideResolver {
                         declaredAction = action,
                         robbedTile = setAsideTile,
                         eligiblePlayerIds = ronWinningPlayerIds,
-                        pendingFollowUpTileIds = pendingFollowUpTiles.map { it.id },
+                        pendingFollowUpDraws = pendingFollowUpDraws,
                     ),
                     revealedHandTileIds = state.revealedHandTileIds + setAsideTile.id,
                 ),
