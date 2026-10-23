@@ -115,12 +115,17 @@ object ThreePlayerRiichiDebugGameScenarios {
             playerCount = THREE_PLAYER_COUNT,
             usesAutoNorthRule = true,
         ),
-        // 自動拔北被搶：呼叫者單騎聽北、有役牌中。打出剛摸到的九萬後，下家摸到北自動拔出，呼叫者可以榮和這張北；
-        // 被搶的拔北不收付。選擇不和時，下家付 1000 點進供託、補牌後摸切。
+        // 自動拔北被搶：呼叫者碰出中與白、單騎聽北。打出剛摸到的九萬後，下家摸到北自動拔出，呼叫者可以榮和這張北；
+        // 被搶的拔北不收付。選擇不和時，下家付 1000 點進供託、補牌後摸切；供託變多讓莊家角落變寬，呼叫者的兩組副露
+        // 一起平移讓出位置。
         SeatSetupScenario(
             id = "mahjongcraft:auto_north_riichi_rob",
             invoker = SeatSpec(
-                standingTiles = PINZU_STRAIGHT + listOf(Tile.Honor.Red, Tile.Honor.Red, Tile.Honor.Red, Tile.Honor.North),
+                standingTiles = PINZU_TWO_SEQUENCES + Tile.Honor.North,
+                pons = listOf(
+                    ScenarioPon(tile = Tile.Honor.Red, from = RelativeDirection.Left),
+                    ScenarioPon(tile = Tile.Honor.White, from = RelativeDirection.Right),
+                ),
                 drawnTile = NINE_CHARACTER,
                 discards = listOf(Tile.Honor.South, Tile.Honor.West),
             ),
@@ -205,6 +210,9 @@ private val THREE_BAMBOO: Tile = Tile.Numeric(Tile.Suit.Bamboo, 3)
 
 /** 四條。 */
 private val FOUR_BAMBOO: Tile = Tile.Numeric(Tile.Suit.Bamboo, 4)
+
+/** 一二三筒與四五六筒兩組順子。 */
+private val PINZU_TWO_SEQUENCES: List<Tile> = (1..6).map { value -> Tile.Numeric(Tile.Suit.Dot, value) }
 
 /** 一二三四五六七八九筒：湊成一氣通貫，讓和牌不依賴其他役。 */
 private val PINZU_STRAIGHT: List<Tile> = (1..9).map { value -> Tile.Numeric(Tile.Suit.Dot, value) }

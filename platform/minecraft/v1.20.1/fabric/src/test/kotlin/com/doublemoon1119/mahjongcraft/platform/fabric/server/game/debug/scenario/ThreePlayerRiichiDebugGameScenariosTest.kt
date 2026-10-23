@@ -197,7 +197,7 @@ class ThreePlayerRiichiDebugGameScenariosTest {
         assertTrue(state.canRon(offset = 0, discarderOffset = 1, tile = FOUR_BAMBOO))
     }
 
-    /** 自動拔北被搶：下家照常摸切，摸到的北由規則自動拔出；單騎聽北的呼叫者可以搶，上家不能。 */
+    /** 自動拔北被搶：呼叫者碰出中與白，下家照常摸切，摸到的北由規則自動拔出；單騎聽北的呼叫者可以搶，上家不能。 */
     @Test
     fun `auto north rob scenario lets the invoker ron the pulled north`() {
         val result = registry.get("mahjongcraft:auto_north_riichi_rob")!!.build(createThreePlayerRiichiScenarioContext())
@@ -206,6 +206,10 @@ class ThreePlayerRiichiDebugGameScenariosTest {
 
         assertEquals(Tile.Honor.North, north.tile)
         assertEquals(DebugScriptedAiStrategy.TSUMOGIRI_KEY, result.game.aiPlayerStrategyKeys[state.seat(1).id])
+        assertEquals(
+            listOf(Tile.Honor.Red to RelativeDirection.Left, Tile.Honor.White to RelativeDirection.Right),
+            state.seat(0).hand.melds.map { meld -> meld.tiles.first().tile to meld.sourceDirection },
+        )
         assertTrue(state.canRobPulledNorth(offset = 0, north = north))
         assertFalse(state.canRobPulledNorth(offset = 2, north = north))
     }
