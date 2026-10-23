@@ -88,6 +88,9 @@
 - Write the result into table state in `resolve`, for example by recording an extension action in the
   player's action history, and let the rule read it at the timing that needs it. The draw settlement,
   for example, reads the recorded choice; nothing else carries a choice from the window to later code.
+- At `ROUND_END` the round is already settled, and `resolve` must not change any player's score;
+  doing so stops the match. A rule whose choice changes payments opens it before the settlement, such
+  as at `BEFORE_EXHAUSTIVE_DRAW`.
 - Each viewer sees only their own part of a window: whether they are asked, their input and their
   submission. Who else is asked or has answered is not sent to anyone, as with reaction windows.
 - Opening a window and scheduling what follows are one authoritative write, and so are closing a window

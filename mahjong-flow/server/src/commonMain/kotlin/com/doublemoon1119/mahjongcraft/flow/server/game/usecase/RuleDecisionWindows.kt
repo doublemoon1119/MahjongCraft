@@ -12,6 +12,8 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleContra
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolution
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import kotlin.uuid.Uuid
 
 /**
  * 在權威交易內開啟、推進與關閉規則選擇視窗的共用步驟。
@@ -57,7 +59,7 @@ internal object RuleDecisionWindows {
      * 套用規則對收齊視窗的處理：寫入效果，再以新的視窗身分開啟下一步；沒有下一步時關閉視窗並排定接續。
      *
      * [RuleDecisionTiming.BEFORE_EXHAUSTIVE_DRAW] 的視窗關閉時排定一般流局結算；其他時間點的接續已由開窗前的流程排定，
-     * 或直接回到一般摸打。
+     * 或直接回到一般摸打。[RuleDecisionTiming.ROUND_END] 時本局已結算，規則的處理結果不能改變任何玩家的分數。
      *
      * @param game 開著 [decision] 的對局。
      * @param decision 剛收齊或沒有參與者的視窗。
@@ -65,7 +67,7 @@ internal object RuleDecisionWindows {
      * @param module 對局採用的規則模組。
      * @param resolverRegistry 規則提供的選擇流程。
      * @return 推進或關閉視窗後的對局。
-     * @throws RuleContractViolationException 下一步需要玩家選擇卻沒有時間設定時。
+     * @throws RuleContractViolationException 下一步需要玩家選擇卻沒有時間設定時，或本局結算後的選擇改變了分數時。
      */
     fun advance(
         game: Game,
@@ -74,6 +76,12 @@ internal object RuleDecisionWindows {
         module: MahjongRuleModule<*>,
         resolverRegistry: RuleDecisionResolverRegistry,
     ): Game {
+        if (decision.timing == RuleDecisionTiming.ROUND_END && scoresOf(resolution.tableState) != scoresOf(game.tableState)) {
+            throw RuleContractViolationException(
+                GameAbortReasonIds.RULE_EXECUTION_FAILED,
+                "Rule decisions after the round is settled cannot change scores",
+            )
+        }
         val next = resolution.nextStep?.let { step ->
             requireTimeConfiguration(game, step, module, resolverRegistry)
             PendingRuleDecision.open(step, decision.timing)
@@ -85,6 +93,14 @@ internal object RuleDecisionWindows {
             pendingTransition = if (settlesDraw) PendingGameTransition.SettleExhaustiveDraw else game.pendingTransition,
         )
     }
+
+    /**
+     * 取得每位玩家目前的分數。
+     *
+     * @param tableState 要讀取的桌況。
+     * @return 以玩家識別碼索引的分數。
+     */
+    private fun scoresOf(tableState: TableState): Map<Uuid, Int> = tableState.players.associate { it.id to it.score }
 
     /**
      * 需要玩家輸入的步驟必須有時間設定，否則玩家沒有逾時的出路。

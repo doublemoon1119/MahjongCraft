@@ -429,6 +429,88 @@ class SubmitRuleDecisionUseCaseTest {
         assertEquals(game, repository.getGame(table.id))
     }
 
+    /** 本局結算後的選擇改變分數時，當場以契約錯誤中止，不改變對局。 */
+    @Test
+    fun `a round end decision that changes scores is rejected`() = runTest {
+        val (repository, useCase, game) = scoreChangingFixture(RuleDecisionTiming.ROUND_END)
+
+        assertFailsWith<RuleContractViolationException> {
+            useCase(game.id, playerId, assertNotNull(game.pendingRuleDecision).id, RuleDecisionSubmission.Confirmed)
+        }
+        assertEquals(game, repository.getGame(game.id))
+    }
+
+    /** 結算前的選擇可以改變分數。 */
+    @Test
+    fun `a decision before the settlement may change scores`() = runTest {
+        val (repository, useCase, game) = scoreChangingFixture(RuleDecisionTiming.BEFORE_EXHAUSTIVE_DRAW)
+
+        assertIs<Outcome.Success<Unit>>(useCase(game.id, playerId, assertNotNull(game.pendingRuleDecision).id, RuleDecisionSubmission.Confirmed))
+
+        val player = assertNotNull(repository.getGame(game.id)).tableState.players.single()
+        assertEquals(game.tableState.players.single().score + SCORE_CHANGE, player.score)
+    }
+
+    /**
+     * 建立在 [timing] 開著確認視窗、確認後會改變分數的對局。
+     *
+     * @param timing 視窗開啟的時間點。
+     * @return 保存對局的 repository、受測用例與開窗後的對局。
+     */
+    private suspend fun scoreChangingFixture(timing: RuleDecisionTiming): Triple<FakeGameRepository, SubmitRuleDecisionUseCase, Game> {
+        val repository = FakeGameRepository()
+        val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
+        val table = FakeTableStateFactory.create(
+            players = listOf(FakeMahjongPlayerFactory.create(id = playerId)),
+            config = RiichiRuleConfig(),
+        )
+        val game = Game(
+            tableState = table,
+            flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30)),
+            pendingRuleDecision = PendingRuleDecision.open(
+                step = RuleDecisionStep(
+                    stepId = "test:confirm",
+                    stepIndex = 0,
+                    inputSpecsByPlayerId = mapOf(playerId to RuleDecisionInputSpec.Confirmation),
+                ),
+                timing = timing,
+            ),
+        )
+        repository.setGame(game)
+        val useCase = SubmitRuleDecisionUseCase(
+            gameRepository = repository,
+            moduleRegistry = moduleRegistry,
+            resolverRegistry = RuleDecisionResolverRegistry().apply { register(ScoreChangingResolver) },
+            snapshotSynchronizer = GameSnapshotSynchronizer(repository, FakeGameSnapshotRepository(), GameVisibilityPolicyImpl(moduleRegistry)),
+            presentationPublisher = FakeGamePresentationPublisher(),
+        )
+        return Triple(repository, useCase, game)
+    }
+
+    /** 測試用解析器：確認完成後替每位玩家加上 [SCORE_CHANGE] 分。 */
+    private object ScoreChangingResolver : RuleDecisionResolver {
+        override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI
+
+        override fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig = RuleDecisionConfig(30)
+
+        override fun begin(timing: RuleDecisionTiming, tableState: TableState, ruleModule: MahjongRuleModule<*>): RuleDecisionStep? = null
+
+        override fun resolve(
+            tableState: TableState,
+            decision: PendingRuleDecision,
+            ruleModule: MahjongRuleModule<*>,
+        ): RuleDecisionResolution = RuleDecisionResolution(
+            tableState.copy(players = tableState.players.map { it.copy(score = it.score + SCORE_CHANGE) }),
+            nextStep = null,
+        )
+    }
+
+    /** 測試常數。 */
+    private companion object {
+        /** [ScoreChangingResolver] 替每位玩家加上的分數。 */
+        const val SCORE_CHANGE = 1000
+    }
+
     /** 測試用解析器：不建立步驟，並在確認完成後結束選擇流程。 */
     private object ConfirmationResolver : RuleDecisionResolver {
         override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI

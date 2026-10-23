@@ -83,6 +83,9 @@ interface RuleDecisionResolver {
     /**
      * 收齊提交或遇到無參與者的自動步驟後，套用此步驟並解析下一步。
      *
+     * [RuleDecisionTiming.ROUND_END] 時本局已結算，回傳的桌況不能改變任何玩家的分數；要依選擇改變收付的規則，
+     * 應在結算前的時間點開啟選擇，例如 [RuleDecisionTiming.BEFORE_EXHAUSTIVE_DRAW]。
+     *
      * @param tableState 套用選擇結果前的桌況。
      * @param decision 已收齊提交、或沒有參與者的選擇視窗。
      * @param ruleModule 目前對局使用的規則模組。
