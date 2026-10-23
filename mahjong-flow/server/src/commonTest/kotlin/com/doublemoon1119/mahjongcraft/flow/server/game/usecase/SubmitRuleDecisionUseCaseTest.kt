@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
@@ -449,6 +450,8 @@ class SubmitRuleDecisionUseCaseTest {
 
         val player = assertNotNull(repository.getGame(game.id)).tableState.players.single()
         assertEquals(game.tableState.players.single().score + SCORE_CHANGE, player.score)
+        val submitted = assertIs<HistoryFact.RuleDecisionSubmitted>(repository.historyDrafts.single().fact)
+        assertEquals(RuleDecisionTiming.BEFORE_EXHAUSTIVE_DRAW, submitted.timing)
     }
 
     /**

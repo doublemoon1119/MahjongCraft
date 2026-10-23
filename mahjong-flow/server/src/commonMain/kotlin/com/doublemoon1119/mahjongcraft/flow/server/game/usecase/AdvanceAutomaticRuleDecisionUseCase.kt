@@ -59,6 +59,7 @@ class AdvanceAutomaticRuleDecisionUseCase(
                         HistoryEventDraft(
                             actorPlayerId = null,
                             fact = HistoryFact.RuleDecisionAutomaticallyResolved(
+                                timing = currentRuleDecision.timing,
                                 stepId = currentRuleDecision.stepId,
                                 stepIndex = currentRuleDecision.stepIndex,
                                 nextStepId = resolution.nextStep?.stepId,

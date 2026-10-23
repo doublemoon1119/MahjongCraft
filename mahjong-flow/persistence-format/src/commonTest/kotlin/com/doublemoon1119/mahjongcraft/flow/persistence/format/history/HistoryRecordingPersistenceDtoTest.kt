@@ -11,6 +11,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryTableResu
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinDetails
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinningHand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSubmission
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailEntry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailField
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailValue
@@ -167,6 +169,41 @@ class HistoryRecordingPersistenceDtoTest {
                     fact = HistoryFact.DiceRolled(roll),
                 ),
             ),
+        )
+        val mapper = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries())
+
+        assertEquals(state, mapper.decode(mapper.encode(state)))
+    }
+
+    /** 規則選擇的開始、提交與自動完成事實在 JSON 往返後保留開啟視窗的時間點。 */
+    @Test
+    fun `rule decision facts round trip with their timing`() {
+        val playerId = Uuid.random()
+        val matchId = Uuid.random()
+        val facts = listOf(
+            HistoryFact.RuleDecisionStarted(RuleDecisionTiming.BEFORE_EXHAUSTIVE_DRAW, "mahjongcraft:test_step", 0),
+            HistoryFact.RuleDecisionSubmitted(
+                timing = RuleDecisionTiming.WIN_CONTINUES,
+                stepId = "mahjongcraft:test_step",
+                stepIndex = 0,
+                submission = RuleDecisionSubmission.Choice("mahjongcraft:option"),
+                nextStepId = null,
+            ),
+            HistoryFact.RuleDecisionAutomaticallyResolved(RuleDecisionTiming.ROUND_END, "mahjongcraft:test_step", 1, "mahjongcraft:next_step"),
+        )
+        val state = HistoryRecordingState(
+            nextSequenceByMatchId = mapOf(matchId to facts.size + 1L),
+            pendingEvents = facts.mapIndexed { index, fact ->
+                HistoryOutboxEvent(
+                    matchId = matchId,
+                    venueId = Uuid.random(),
+                    roundNumber = 1,
+                    sequence = index + 1L,
+                    occurredAtEpochMillis = 1L,
+                    actorPlayerId = playerId,
+                    fact = fact,
+                )
+            },
         )
         val mapper = HistoryRecordingPersistenceMapper(bundledPersistenceRegistries())
 

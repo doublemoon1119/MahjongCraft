@@ -6,6 +6,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.GameActionPe
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.OpeningDiceRollPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.RoundCompletionSummaryPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.RuleDecisionSubmissionPersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.RuleDecisionTimingPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.TableStatePersistenceDto
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -53,12 +54,14 @@ sealed interface HistoryFactPersistenceDto {
     /**
      * 規則選擇流程開始執行一個步驟。
      *
+     * @property timing 選擇視窗開啟的時間點。
      * @property stepId 選擇步驟的穩定識別碼。
      * @property stepIndex 選擇步驟在流程中的索引。
      */
     @Serializable
     @SerialName(HistoryFactTypeKeys.RULE_DECISION_STARTED)
     data class RuleDecisionStarted(
+        val timing: RuleDecisionTimingPersistenceDto,
         val stepId: String,
         val stepIndex: Int,
     ) : HistoryFactPersistenceDto
@@ -66,6 +69,7 @@ sealed interface HistoryFactPersistenceDto {
     /**
      * 玩家提交規則選擇內容後的結果。
      *
+     * @property timing 選擇視窗開啟的時間點。
      * @property stepId 被提交的選擇步驟識別碼。
      * @property stepIndex 被提交的選擇步驟索引。
      * @property submission 玩家提交的選擇內容。
@@ -74,6 +78,7 @@ sealed interface HistoryFactPersistenceDto {
     @Serializable
     @SerialName(HistoryFactTypeKeys.RULE_DECISION_SUBMITTED)
     data class RuleDecisionSubmitted(
+        val timing: RuleDecisionTimingPersistenceDto,
         val stepId: String,
         val stepIndex: Int,
         val submission: RuleDecisionSubmissionPersistenceDto,
@@ -83,6 +88,7 @@ sealed interface HistoryFactPersistenceDto {
     /**
      * 系統自動完成規則選擇步驟後的結果。
      *
+     * @property timing 選擇視窗開啟的時間點。
      * @property stepId 被自動完成的選擇步驟識別碼。
      * @property stepIndex 被自動完成的選擇步驟索引。
      * @property nextStepId 下一個選擇步驟識別碼；沒有下一步時為 null。
@@ -90,6 +96,7 @@ sealed interface HistoryFactPersistenceDto {
     @Serializable
     @SerialName(HistoryFactTypeKeys.RULE_DECISION_AUTOMATIC_RESOLVED)
     data class RuleDecisionAutomaticallyResolved(
+        val timing: RuleDecisionTimingPersistenceDto,
         val stepId: String,
         val stepIndex: Int,
         val nextStepId: String?,

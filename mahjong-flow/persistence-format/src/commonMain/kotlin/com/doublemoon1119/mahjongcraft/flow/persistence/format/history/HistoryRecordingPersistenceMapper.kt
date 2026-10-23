@@ -167,14 +167,16 @@ class HistoryRecordingPersistenceMapper(
         )
         is HistoryFact.RoundStarted -> HistoryFactPersistenceDto.RoundStarted(encodeTable(fact.tableState))
         is HistoryFact.DiceRolled -> HistoryFactPersistenceDto.DiceRolled(fact.roll.toPersistenceDto())
-        is HistoryFact.RuleDecisionStarted -> HistoryFactPersistenceDto.RuleDecisionStarted(fact.stepId, fact.stepIndex)
+        is HistoryFact.RuleDecisionStarted -> HistoryFactPersistenceDto.RuleDecisionStarted(fact.timing.toPersistenceDto(), fact.stepId, fact.stepIndex)
         is HistoryFact.RuleDecisionSubmitted -> HistoryFactPersistenceDto.RuleDecisionSubmitted(
+            fact.timing.toPersistenceDto(),
             fact.stepId,
             fact.stepIndex,
             fact.submission.toPersistenceDto(),
             fact.nextStepId,
         )
         is HistoryFact.RuleDecisionAutomaticallyResolved -> HistoryFactPersistenceDto.RuleDecisionAutomaticallyResolved(
+            fact.timing.toPersistenceDto(),
             fact.stepId,
             fact.stepIndex,
             fact.nextStepId,
@@ -233,14 +235,16 @@ class HistoryRecordingPersistenceMapper(
         )
         is HistoryFactPersistenceDto.RoundStarted -> HistoryFact.RoundStarted(decodeTable(dto.state))
         is HistoryFactPersistenceDto.DiceRolled -> HistoryFact.DiceRolled(dto.roll.toDomain())
-        is HistoryFactPersistenceDto.RuleDecisionStarted -> HistoryFact.RuleDecisionStarted(dto.stepId, dto.stepIndex)
+        is HistoryFactPersistenceDto.RuleDecisionStarted -> HistoryFact.RuleDecisionStarted(dto.timing.toDomain(), dto.stepId, dto.stepIndex)
         is HistoryFactPersistenceDto.RuleDecisionSubmitted -> HistoryFact.RuleDecisionSubmitted(
+            dto.timing.toDomain(),
             dto.stepId,
             dto.stepIndex,
             dto.submission.toDomain(),
             dto.nextStepId,
         )
         is HistoryFactPersistenceDto.RuleDecisionAutomaticallyResolved -> HistoryFact.RuleDecisionAutomaticallyResolved(
+            dto.timing.toDomain(),
             dto.stepId,
             dto.stepIndex,
             dto.nextStepId,

@@ -81,7 +81,7 @@ class ResolveWinRoundContinuationUseCase(
                     val started = next.pendingRuleDecision?.takeIf { previous.pendingRuleDecision == null }?.let { decision ->
                         HistoryEventDraft(
                             actorPlayerId = null,
-                            fact = HistoryFact.RuleDecisionStarted(decision.stepId, decision.stepIndex),
+                            fact = HistoryFact.RuleDecisionStarted(decision.timing, decision.stepId, decision.stepIndex),
                         )
                     }
                     listOfNotNull(resolved, started)

@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRo
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundTileCatalog
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryTileReference
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryTransitionDirective
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import kotlinx.serialization.json.JsonArray
@@ -261,6 +262,31 @@ class CompactReplayRoundReaderTest {
         ).single()
 
         assertEquals(HistoryReplayFact.DiceRolled(HistoryFactTypeKeys.DICE_ROLLED, 2, 0, listOf(2, 6)), result)
+    }
+
+    /** 規則選擇事實的回放保留開啟視窗的時間點。 */
+    @Test
+    fun `rule decision mapping preserves the timing`() {
+        val fact = buildJsonObject {
+            put(ReplaySourceKeys.TYPE, HistoryFactTypeKeys.RULE_DECISION_STARTED)
+            put(ReplaySourceKeys.TIMING, RuleDecisionTiming.BEFORE_EXHAUSTIVE_DRAW.name)
+            put(ReplaySourceKeys.STEP_ID, "test:step")
+            put(ReplaySourceKeys.STEP_INDEX, 0)
+        }
+
+        val result = HistoryReplayProjectionMapper.mapFacts(
+            facts = listOf(fact),
+            actorSeats = listOf(0),
+            identity = identity(),
+            roundNumber = 1,
+            tileCatalog = HistoryRoundTileCatalog(emptyList()),
+            budget = ReplayReadBudget(ReplayReadLimits()) {},
+        ).single()
+
+        assertEquals(
+            HistoryReplayFact.RuleDecision(HistoryFactTypeKeys.RULE_DECISION_STARTED, RuleDecisionTiming.BEFORE_EXHAUSTIVE_DRAW, "test:step", 0, null),
+            result,
+        )
     }
 
     /** 擲骰事實的記錄玩家與交易行為者不一致時拒絕回放。 */

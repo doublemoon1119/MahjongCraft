@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecision
@@ -28,6 +29,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.uuid.Uuid
 
@@ -56,6 +58,21 @@ class BeginRuleDecisionUseCaseTest {
         invoke(repository, resolvers)
 
         assertEquals("test:auto", repository.getGame(game.tableState.id)?.pendingRuleDecision?.stepId)
+    }
+
+    /** 開啟的視窗與牌譜事實都記錄開啟時的時間點。 */
+    @Test
+    fun `the opened window and its history fact keep the timing`() = runTest {
+        val repository = FakeGameRepository()
+        val game = game()
+        repository.setGame(game)
+        val resolvers = RuleDecisionResolverRegistry().apply { register(AutoResolver) }
+
+        invoke(repository, resolvers, timing = RuleDecisionTiming.ROUND_END)
+
+        assertEquals(RuleDecisionTiming.ROUND_END, repository.getGame(game.tableState.id)?.pendingRuleDecision?.timing)
+        val started = assertIs<HistoryFact.RuleDecisionStarted>(repository.historyDrafts.single().fact)
+        assertEquals(RuleDecisionTiming.ROUND_END, started.timing)
     }
 
     /** 缺少規則選擇時間時，以發現問題的對局快照中止，不保留可繼續遊玩的對局。 */
@@ -115,11 +132,13 @@ class BeginRuleDecisionUseCaseTest {
      * @param repository 保存測試對局的 repository。
      * @param resolvers 提供測試規則選擇流程的 registry。
      * @param abortHandler 契約違反時接收中止請求的處理器。
+     * @param timing 開啟選擇的時間點。
      */
     private suspend fun invoke(
         repository: FakeGameRepository,
         resolvers: RuleDecisionResolverRegistry,
         abortHandler: GameAbortHandler = GameAbortHandler { _, _, _ -> true },
+        timing: RuleDecisionTiming = RuleDecisionTiming.ROUND_START,
     ) {
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
         BeginRuleDecisionUseCase(
@@ -132,7 +151,7 @@ class BeginRuleDecisionUseCaseTest {
                 GameVisibilityPolicyImpl(moduleRegistry),
             ),
             abortGameHandler = abortHandler,
-        )(repository.getGame(testGameId)!!.tableState.id, RuleDecisionTiming.ROUND_START)
+        )(repository.getGame(testGameId)!!.tableState.id, timing)
     }
 
     /**

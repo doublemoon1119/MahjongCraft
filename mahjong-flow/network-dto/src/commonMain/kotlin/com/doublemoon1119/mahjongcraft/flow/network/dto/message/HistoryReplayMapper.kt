@@ -17,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryWi
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryWinDetailValue
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryWinnerDetails
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.RuleDecisionTimingDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.toDto
@@ -119,7 +120,7 @@ private fun HistoryReplayFact.toDto(): HistoryReplayFactDto = when (this) {
         potDeposit,
     )
     is HistoryReplayFact.Reaction -> HistoryReplayFactDto.Reaction(typeKey, actionType, resolvedActorSeat)
-    is HistoryReplayFact.RuleDecision -> HistoryReplayFactDto.RuleDecision(typeKey, stepId, stepIndex, nextStepId)
+    is HistoryReplayFact.RuleDecision -> HistoryReplayFactDto.RuleDecision(typeKey, RuleDecisionTimingDto.valueOf(timing.name), stepId, stepIndex, nextStepId)
     is HistoryReplayFact.DiceRolled -> HistoryReplayFactDto.DiceRolled(typeKey, rollIndex, actorSeat, dice)
     is HistoryReplayFact.Completion -> HistoryReplayFactDto.Completion(typeKey, outcome?.toDto())
     is HistoryReplayFact.RuleEffect -> HistoryReplayFactDto.RuleEffect(typeKey, reasonId, outcome?.toDto())

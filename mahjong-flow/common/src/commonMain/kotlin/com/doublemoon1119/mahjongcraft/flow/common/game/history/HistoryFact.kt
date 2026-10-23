@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.common.game.history
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSubmission
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
@@ -41,20 +42,27 @@ sealed interface HistoryFact {
     /**
      * 建立一個規則提供的規則選擇步驟。
      *
+     * @property timing 這個選擇視窗開啟的時間點。
      * @property stepId 規則提供的穩定步驟 ID。
      * @property stepIndex 此局內的步驟順序。
      */
-    data class RuleDecisionStarted(val stepId: String, val stepIndex: Int) : HistoryFact
+    data class RuleDecisionStarted(
+        val timing: RuleDecisionTiming,
+        val stepId: String,
+        val stepIndex: Int,
+    ) : HistoryFact
 
     /**
      * 玩家提交規則選擇資料；桌況變化由同筆交易的結果事實保存。
      *
+     * @property timing 這個選擇視窗開啟的時間點。
      * @property stepId 被提交的步驟 ID。
      * @property stepIndex 此局內的步驟順序。
      * @property submission 已接受的玩家選擇。
      * @property nextStepId 步驟完成後接續的步驟 ID；沒有後續步驟時為 null。
      */
     data class RuleDecisionSubmitted(
+        val timing: RuleDecisionTiming,
         val stepId: String,
         val stepIndex: Int,
         val submission: RuleDecisionSubmission,
@@ -64,11 +72,13 @@ sealed interface HistoryFact {
     /**
      * 規則自動完成一個不需玩家輸入的規則選擇步驟。
      *
+     * @property timing 這個選擇視窗開啟的時間點。
      * @property stepId 已完成的步驟 ID。
      * @property stepIndex 此局內的步驟順序。
      * @property nextStepId 接續的步驟 ID；選擇流程結束時為 null。
      */
     data class RuleDecisionAutomaticallyResolved(
+        val timing: RuleDecisionTiming,
         val stepId: String,
         val stepIndex: Int,
         val nextStepId: String?,

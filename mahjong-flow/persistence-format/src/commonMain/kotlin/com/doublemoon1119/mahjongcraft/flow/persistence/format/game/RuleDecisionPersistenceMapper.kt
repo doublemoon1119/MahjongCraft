@@ -14,7 +14,7 @@ import kotlin.uuid.Uuid
  */
 fun PendingRuleDecision.toPersistenceDto(): PendingRuleDecisionPersistenceDto = PendingRuleDecisionPersistenceDto(
     id = id.toString(),
-    timing = RuleDecisionTimingPersistenceDto.valueOf(timing.name),
+    timing = timing.toPersistenceDto(),
     stepId = stepId,
     stepIndex = stepIndex,
     inputSpecsByPlayerId = inputSpecsByPlayerId.mapKeys { it.key.toString() }.mapValues { it.value.toPersistenceDto() },
@@ -28,7 +28,7 @@ fun PendingRuleDecision.toPersistenceDto(): PendingRuleDecisionPersistenceDto = 
  */
 fun PendingRuleDecisionPersistenceDto.toDomain(): PendingRuleDecision = PendingRuleDecision(
     id = Uuid.parse(id),
-    timing = RuleDecisionTiming.valueOf(timing.name),
+    timing = timing.toDomain(),
     step = RuleDecisionStep(
         stepId = stepId,
         stepIndex = stepIndex,
@@ -36,6 +36,20 @@ fun PendingRuleDecisionPersistenceDto.toDomain(): PendingRuleDecision = PendingR
     ),
     submissionsByPlayerId = submissionsByPlayerId.mapKeys { Uuid.parse(it.key) }.mapValues { it.value.toDomain() },
 )
+
+/**
+ * 將規則選擇視窗的時間點轉為持久化資料。
+ *
+ * @return 同名的持久化時間點。
+ */
+fun RuleDecisionTiming.toPersistenceDto(): RuleDecisionTimingPersistenceDto = RuleDecisionTimingPersistenceDto.valueOf(name)
+
+/**
+ * 將持久化的時間點還原為規則選擇視窗的時間點。
+ *
+ * @return 同名的時間點。
+ */
+fun RuleDecisionTimingPersistenceDto.toDomain(): RuleDecisionTiming = RuleDecisionTiming.valueOf(name)
 
 /** 將規則選擇輸入規格轉成存檔 DTO。 */
 private fun RuleDecisionInputSpec.toPersistenceDto(): RuleDecisionInputSpecPersistenceDto = when (this) {

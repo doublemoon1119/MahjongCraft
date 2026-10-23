@@ -18,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryTr
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryWinDetailField
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryWinDetailValue
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryWinnerDetails
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailEntry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.persistenceJson
@@ -118,7 +119,7 @@ internal object HistoryReplayProjectionMapper {
                     HistoryReplayFact.Reaction(type, action?.getValue(ReplaySourceKeys.TYPE)?.let(::string), resolved)
                 }
                 HistoryFactTypeKeys.RULE_DECISION_STARTED, HistoryFactTypeKeys.RULE_DECISION_SUBMITTED, HistoryFactTypeKeys.RULE_DECISION_AUTOMATIC_RESOLVED ->
-                    HistoryReplayFact.RuleDecision(type, string(fact.getValue(ReplaySourceKeys.STEP_ID)), integer(fact.getValue(ReplaySourceKeys.STEP_INDEX)).also { require(it >= 0) { "Replay rule decision index must not be negative" } }, fact[ReplaySourceKeys.NEXT_STEP_ID]?.takeUnless { it == JsonNull }?.let(::string))
+                    HistoryReplayFact.RuleDecision(type, RuleDecisionTiming.valueOf(string(fact.getValue(ReplaySourceKeys.TIMING))), string(fact.getValue(ReplaySourceKeys.STEP_ID)), integer(fact.getValue(ReplaySourceKeys.STEP_INDEX)).also { require(it >= 0) { "Replay rule decision index must not be negative" } }, fact[ReplaySourceKeys.NEXT_STEP_ID]?.takeUnless { it == JsonNull }?.let(::string))
                 HistoryFactTypeKeys.DICE_ROLLED -> {
                     val roll = obj(fact.getValue(ReplaySourceKeys.ROLL))
                     val values = array(roll.getValue(ReplaySourceKeys.DICE)).map(::integer)

@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.flow.api.event.RoundSettledEvent
 import com.doublemoon1119.mahjongcraft.flow.api.event.RoundSettlementKind
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventProjector
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ContinuingWinSettlementDetail
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawHandDisclosure
@@ -1090,6 +1091,10 @@ class GameFlowCoordinatorTest {
         val game = assertNotNull(fixtures.gameRepo.getGame(gameId))
         val window = assertNotNull(game.pendingRuleDecision)
         assertEquals(RuleDecisionTiming.WIN_CONTINUES, window.timing)
+        assertEquals(
+            RuleDecisionTiming.WIN_CONTINUES,
+            fixtures.gameRepo.historyDrafts.map { it.fact }.filterIsInstance<HistoryFact.RuleDecisionStarted>().single().timing,
+        )
         assertEquals(setOf(winnerId), game.tableState.finishedPlayerIds)
         assertNull(game.pendingTransition)
         assertEquals(

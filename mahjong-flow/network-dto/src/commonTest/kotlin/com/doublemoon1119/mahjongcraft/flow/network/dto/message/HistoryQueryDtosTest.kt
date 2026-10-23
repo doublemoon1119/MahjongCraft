@@ -1,5 +1,13 @@
 package com.doublemoon1119.mahjongcraft.flow.network.dto.message
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFactTypeKeys
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayFact
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayIdentity
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayTransaction
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundEvents
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundTileCatalog
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.RuleDecisionTimingDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.WindDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.MatchRoundPhaseDto
@@ -17,6 +25,23 @@ import kotlin.uuid.Uuid
 
 /** 歷史查詢 DTO 的穩定 JSON 編碼測試。 */
 class HistoryQueryDtosTest {
+    /** 規則選擇事實轉成網路格式後保留開啟視窗的時間點。 */
+    @Test
+    fun `rule decision fact keeps its timing in the network format`() {
+        val fact = HistoryReplayFact.RuleDecision(HistoryFactTypeKeys.RULE_DECISION_STARTED, RuleDecisionTiming.BEFORE_EXHAUSTIVE_DRAW, "test:step", 0, null)
+        val events = HistoryRoundEvents(
+            identity = HistoryReplayIdentity(Uuid.random(), Uuid.random(), emptyList()),
+            roundNumber = 1,
+            transactions = listOf(HistoryReplayTransaction(0, 0L, false, listOf(fact), 0)),
+            nextTransactionIndex = null,
+            tileCatalog = HistoryRoundTileCatalog(emptyList()),
+        )
+
+        val dto = events.toDto().transactions.single().facts.single()
+
+        assertEquals(RuleDecisionTimingDto.BEFORE_EXHAUSTIVE_DRAW, (dto as HistoryReplayFactDto.RuleDecision).timing)
+    }
+
     /** 單局事件請求保留範圍、局序號與有界頁參數。 */
     @Test
     fun `history round events request round trips bounded selector`() {
@@ -55,7 +80,7 @@ class HistoryQueryDtosTest {
         val facts = listOf<HistoryReplayFactDto>(
             HistoryReplayFactDto.KnownAction("a", 0, "discard", listOf(1), listOf(2), null),
             HistoryReplayFactDto.Reaction("r", "pon", 1),
-            HistoryReplayFactDto.RuleDecision("p", "deal", 0, "draw"),
+            HistoryReplayFactDto.RuleDecision("p", RuleDecisionTimingDto.BEFORE_EXHAUSTIVE_DRAW, "deal", 0, "draw"),
             HistoryReplayFactDto.Completion("c", null),
             HistoryReplayFactDto.RuleEffect("e", "mahjongcraft:effect", null),
             HistoryReplayFactDto.ActionScored("f", 0, "kan", null, mapOf(0 to 2000, 1 to -2000), 0),

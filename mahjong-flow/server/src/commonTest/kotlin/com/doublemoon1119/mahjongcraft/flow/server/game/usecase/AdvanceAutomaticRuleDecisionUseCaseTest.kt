@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecision
@@ -67,7 +68,7 @@ class AdvanceAutomaticRuleDecisionUseCaseTest {
                         stepIndex = 0,
                         inputSpecsByPlayerId = emptyMap(),
                     ),
-                    timing = RuleDecisionTiming.ROUND_START,
+                    timing = RuleDecisionTiming.WIN_CONTINUES,
                 ),
             ),
         )
@@ -92,7 +93,10 @@ class AdvanceAutomaticRuleDecisionUseCaseTest {
         assertEquals(listOf(secondTile.id), presentationPublisher.getPublishedPlayerTiles(table.id, 0)?.standingTileIds)
         assertEquals(listOf(replacementTile.id), presentationPublisher.getPublishedPlayerTiles(table.id, 1)?.standingTileIds)
         assertTrue(presentationPublisher.getPublishedInitialDeal(table.id) == null)
-        assertEquals(2, repository.historyDrafts.size)
+        assertEquals(
+            listOf(RuleDecisionTiming.WIN_CONTINUES, RuleDecisionTiming.WIN_CONTINUES),
+            repository.historyDrafts.map { (it.fact as HistoryFact.RuleDecisionAutomaticallyResolved).timing },
+        )
     }
 
     /** 驗證沒有自動步驟時不會回報變更或發布牌張更新。 */

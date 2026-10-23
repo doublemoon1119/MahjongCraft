@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayPla
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayTransactionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundEventsDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundOutcomeDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.RuleDecisionTimingDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.SuitDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
@@ -111,7 +112,7 @@ class HistoryRoundEventPresentationTest {
         val presenter = presenter()
         val facts = listOf(
             HistoryReplayFactDto.Reaction(HistoryFactTypeKeys.REACTION_RESOLVED, "custom:reaction", 0),
-            HistoryReplayFactDto.RuleDecision(HistoryFactTypeKeys.RULE_DECISION_STARTED, "custom:step", 1, null),
+            HistoryReplayFactDto.RuleDecision(HistoryFactTypeKeys.RULE_DECISION_STARTED, RuleDecisionTimingDto.ROUND_START, "custom:step", 1, null),
             HistoryReplayFactDto.RuleEffect(HistoryFactTypeKeys.RULE_EFFECT_RESOLVED, "custom:effect", null),
             HistoryReplayFactDto.Opaque("custom:opaque", 0, emptyList(), emptyList()),
         )
@@ -307,12 +308,12 @@ class HistoryRoundEventPresentationTest {
     fun `rule decision wording respects the recorded stage`() {
         val stages = mapOf(HistoryFactTypeKeys.RULE_DECISION_STARTED to MinecraftHistoryScreenKeys.RULE_DECISION_STARTED, HistoryFactTypeKeys.RULE_DECISION_SUBMITTED to MinecraftHistoryScreenKeys.RULE_DECISION_SUBMITTED, HistoryFactTypeKeys.RULE_DECISION_AUTOMATIC_RESOLVED to MinecraftHistoryScreenKeys.RULE_DECISION_NONE)
         stages.forEach { (type, key) ->
-            val fact = presenter().present(events(HistoryReplayFactDto.RuleDecision(type, "custom:step", 0, null)), null).transactions.single().facts.single()
+            val fact = presenter().present(events(HistoryReplayFactDto.RuleDecision(type, RuleDecisionTimingDto.ROUND_START, "custom:step", 0, null)), null).transactions.single().facts.single()
             val stage = (fact.text.content as TranslatableTextContent).args[1] as Text
             assertEquals(key, stage.string)
             assertTrue("custom:step" in fact.identifiers)
         }
-        val fact = presenter().present(events(HistoryReplayFactDto.RuleDecision(HistoryFactTypeKeys.RULE_DECISION_AUTOMATIC_RESOLVED, "custom:step", 0, "custom:next")), null).transactions.single().facts.single()
+        val fact = presenter().present(events(HistoryReplayFactDto.RuleDecision(HistoryFactTypeKeys.RULE_DECISION_AUTOMATIC_RESOLVED, RuleDecisionTimingDto.ROUND_START, "custom:step", 0, "custom:next")), null).transactions.single().facts.single()
         assertEquals(MinecraftHistoryScreenKeys.RULE_DECISION_NEXT, ((fact.text.content as TranslatableTextContent).args[1] as Text).string)
         assertTrue("custom:next" in fact.identifiers)
     }

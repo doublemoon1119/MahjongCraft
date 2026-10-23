@@ -51,7 +51,7 @@ internal object RuleDecisionWindows {
         requireTimeConfiguration(game, step, module, resolverRegistry)
         return Update(
             game = game.copy(pendingRuleDecision = PendingRuleDecision.open(step, timing)),
-            historyDrafts = listOf(HistoryEventDraft(actorPlayerId = null, fact = HistoryFact.RuleDecisionStarted(step.stepId, step.stepIndex))),
+            historyDrafts = listOf(HistoryEventDraft(actorPlayerId = null, fact = HistoryFact.RuleDecisionStarted(timing, step.stepId, step.stepIndex))),
         )
     }
 

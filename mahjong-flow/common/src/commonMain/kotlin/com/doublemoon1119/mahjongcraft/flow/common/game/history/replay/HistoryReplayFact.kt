@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.history.replay
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
+
 /** 歷史語意事實。 */
 sealed interface HistoryReplayFact {
     /** 事實種類識別碼。 */
@@ -60,12 +62,14 @@ sealed interface HistoryReplayFact {
      * 規則選擇事實。
      *
      * @property typeKey 事實種類。
+     * @property timing 選擇視窗開啟的時間點。
      * @property stepId 步驟識別碼。
      * @property stepIndex 步驟索引。
      * @property nextStepId 下一步識別碼。
      */
     data class RuleDecision(
         override val typeKey: String,
+        val timing: RuleDecisionTiming,
         val stepId: String,
         val stepIndex: Int,
         val nextStepId: String?,

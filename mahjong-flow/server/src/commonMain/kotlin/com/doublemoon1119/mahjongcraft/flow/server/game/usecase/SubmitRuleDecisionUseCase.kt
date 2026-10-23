@@ -105,6 +105,7 @@ class SubmitRuleDecisionUseCase(
                 HistoryEventDraft(
                     actorPlayerId = playerId,
                     fact = HistoryFact.RuleDecisionSubmitted(
+                        timing = ruleDecision.timing,
                         stepId = ruleDecision.stepId,
                         stepIndex = ruleDecision.stepIndex,
                         submission = submission,

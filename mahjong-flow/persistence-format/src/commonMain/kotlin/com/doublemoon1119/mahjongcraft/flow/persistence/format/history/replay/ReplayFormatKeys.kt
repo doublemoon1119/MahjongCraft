@@ -251,6 +251,9 @@ internal object ReplaySourceKeys {
     /** 單輪擲骰的逐顆點數。 */
     const val DICE = "dice"
 
+    /** 規則選擇視窗開啟的時間點。 */
+    const val TIMING = "timing"
+
     /** 規則選擇步驟識別碼。 */
     const val STEP_ID = "stepId"
 
