@@ -17,7 +17,7 @@ interface GameVisibilityPolicy {
     fun snapshotFor(game: Game, observerId: Uuid): TableStateSnapshot
 
     /**
-     * 產生只向本人公開輸入與提交內容的規則選擇快照。
+     * 產生只向本人公開輸入與提交內容的規則選擇快照；不透露其他玩家是否被詢問或已提交。
      *
      * @param game 含有目前待處理選擇步驟的權威遊戲。
      * @param observerId 欲取得快照的讀取者識別碼。
@@ -28,8 +28,6 @@ interface GameVisibilityPolicy {
         return RuleDecisionSnapshot(
             stepId = ruleDecision.stepId,
             stepIndex = ruleDecision.stepIndex,
-            participantPlayerIds = ruleDecision.participantPlayerIds,
-            completedPlayerIds = ruleDecision.completedPlayerIds,
             ownInputSpec = ruleDecision.inputSpecsByPlayerId[observerId],
             ownSubmission = ruleDecision.submissionsByPlayerId[observerId],
         )

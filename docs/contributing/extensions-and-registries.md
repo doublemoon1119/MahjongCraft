@@ -88,6 +88,8 @@
 - Write the result into table state in `resolve`, for example by recording an extension action in the
   player's action history, and let the rule read it at the timing that needs it. The draw settlement,
   for example, reads the recorded choice; nothing else carries a choice from the window to later code.
+- Each viewer sees only their own part of a window: whether they are asked, their input and their
+  submission. Who else is asked or has answered is not sent to anyone, as with reaction windows.
 - Opening a window and scheduling what follows are one authoritative write, and so are closing a window
   and scheduling what follows. Do not add a second write that a crash could separate from the first.
 - Choices that need player input require the rule-decision setting above. Timeout and AI fallbacks use

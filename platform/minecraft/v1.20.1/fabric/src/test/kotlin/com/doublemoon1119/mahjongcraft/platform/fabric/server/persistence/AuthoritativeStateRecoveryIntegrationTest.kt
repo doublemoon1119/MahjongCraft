@@ -231,10 +231,10 @@ class AuthoritativeStateRecoveryIntegrationTest {
     }
 
     /**
-     * 規則選擇進行中經 NBT 恢復後，每位參與者都應重新取得只屬於自己的準備快照。
+     * 規則選擇進行中經 NBT 恢復後，每位參與者都應重新取得只屬於自己的規則選擇快照。
      *
      * 選擇步驟未完成時流程會拒絕其他指令，因此如果恢復後沒有重建這份快照，玩家會既收不到提示、也無法
-     * 操作；參與者與已完成名單是公開資訊，輸入內容與提交結果則只對本人公開。
+     * 操作；快照只包含本人的輸入與提交，不包含其他玩家是否被詢問或已提交。
      */
     @Test
     fun `rule decision restores through NBT and stays private to each participant`() = runTest {
@@ -273,15 +273,11 @@ class AuthoritativeStateRecoveryIntegrationTest {
             "choosing participant lost its rule decision snapshot across the restart",
         )
 
-        assertEquals(ruleDecision.stepId, confirmingSnapshot.stepId)
-        assertEquals(setOf(confirming.id, choosing.id), confirmingSnapshot.participantPlayerIds)
-        assertEquals(emptySet(), confirmingSnapshot.completedPlayerIds)
-        assertEquals(RuleDecisionInputSpec.Confirmation, confirmingSnapshot.ownInputSpec)
-        assertEquals(RuleDecisionInputSpec.SingleChoice(choices), choosingSnapshot.ownInputSpec)
-        assertNull(confirmingSnapshot.ownSubmission)
+        assertEquals(RuleDecisionSnapshot(ruleDecision.stepId, 0, RuleDecisionInputSpec.Confirmation, null), confirmingSnapshot)
+        assertEquals(RuleDecisionSnapshot(ruleDecision.stepId, 0, RuleDecisionInputSpec.SingleChoice(choices), null), choosingSnapshot)
     }
 
-    /** 沒有參與選擇步驟的玩家不應取得任何一位參與者的輸入內容。 */
+    /** 沒有參與選擇步驟的玩家看不出誰被詢問、誰已提交，也取得不到任何參與者的輸入內容。 */
     @Test
     fun `restored rule decision hides participant input from non participants`() = runTest {
         val runtime = RuntimeFixture()
@@ -301,10 +297,11 @@ class AuthoritativeStateRecoveryIntegrationTest {
 
         val bystanderSnapshot = assertNotNull(runtime.gameSnapshots.getRuleDecisionSnapshot(state.id, bystander.id))
 
-        assertEquals(setOf(participant.id), bystanderSnapshot.participantPlayerIds)
-        assertEquals(setOf(participant.id), bystanderSnapshot.completedPlayerIds)
-        assertNull(bystanderSnapshot.ownInputSpec, "a non participant must not receive an input spec")
-        assertNull(bystanderSnapshot.ownSubmission, "a non participant must not receive another player's submission")
+        assertEquals(
+            RuleDecisionSnapshot(ruleDecision.stepId, 0, ownInputSpec = null, ownSubmission = null),
+            bystanderSnapshot,
+            "a non participant must learn nothing about who is asked or who has answered",
+        )
     }
 
     /** 沒有進行中的選擇步驟時，恢復後不得留下上一個步驟的過期快照。 */
@@ -319,8 +316,6 @@ class AuthoritativeStateRecoveryIntegrationTest {
             snapshot = RuleDecisionSnapshot(
                 stepId = "mahjongcraft:stale_step",
                 stepIndex = 0,
-                participantPlayerIds = setOf(player.id),
-                completedPlayerIds = emptySet(),
                 ownInputSpec = RuleDecisionInputSpec.Confirmation,
                 ownSubmission = null,
             ),
