@@ -25,6 +25,18 @@ object ExampleMinecraftPresentationIds {
     /** 局況資訊行：目前局數。 */
     const val ROUND_COUNT_INFO = "${ExampleExtensionIds.MOD_ID}:pairing/round_count"
 
+    /** 局況資訊行：最近打出的牌。 */
+    const val LATEST_DISCARD_INFO = "${ExampleExtensionIds.MOD_ID}:pairing/latest_discard"
+
+    /** 局況資訊行：換牌功能狀態。 */
+    const val EXCHANGE_STATUS_INFO = "${ExampleExtensionIds.MOD_ID}:pairing/exchange_status"
+
+    /** 換牌功能已開啟時顯示的規則訊息 ID。 */
+    const val EXCHANGE_ENABLED_MESSAGE = "${ExampleExtensionIds.MOD_ID}:pairing/exchange_enabled"
+
+    /** 換牌功能已關閉時顯示的規則訊息 ID。 */
+    const val EXCHANGE_DISABLED_MESSAGE = "${ExampleExtensionIds.MOD_ID}:pairing/exchange_disabled"
+
     /** 結算模板。 */
     const val SETTLEMENT_TEMPLATE = "${ExampleExtensionIds.MOD_ID}:pairing/settlement"
 }

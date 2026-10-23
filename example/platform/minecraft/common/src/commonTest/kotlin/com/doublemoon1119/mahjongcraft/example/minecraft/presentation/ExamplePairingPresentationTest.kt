@@ -7,7 +7,10 @@ import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingDiscardPile
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingIds
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingRuleConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.table.DiscardPile
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
@@ -58,7 +61,7 @@ class ExamplePairingPresentationTest {
         assertEquals(null, provider.catalogue(RiichiRuleConfig()))
     }
 
-    /** 局況 registry 同時收到兩個顯示定義與範例規則 provider。 */
+    /** 局況 registry 註冊牌參數、規則文字與範例規則 provider。 */
     @Test
     fun `round info registers displays and provider`() {
         val registry = RoundInfoLineDisplayRegistryImpl()
@@ -67,8 +70,61 @@ class ExamplePairingPresentationTest {
 
         assertNotNull(registry.find(ExampleMinecraftPresentationIds.WALL_REMAINING_INFO))
         assertNotNull(registry.find(ExampleMinecraftPresentationIds.ROUND_COUNT_INFO))
+        assertNotNull(registry.find(ExampleMinecraftPresentationIds.LATEST_DISCARD_INFO))
+        assertNotNull(registry.find(ExampleMinecraftPresentationIds.EXCHANGE_STATUS_INFO))
+        assertNotNull(registry.findMessage(ExampleMinecraftPresentationIds.EXCHANGE_ENABLED_MESSAGE))
+        assertNotNull(registry.findMessage(ExampleMinecraftPresentationIds.EXCHANGE_DISABLED_MESSAGE))
         assertTrue("provider:${ExamplePairingIds.RULE_MODULE}" in registry.registrationKeys)
-        assertEquals(2, registry.registrationKeys.count { it.startsWith("line:") })
+        assertEquals(4, registry.registrationKeys.count { it.startsWith("line:") })
+        val players = listOf(Wind.EAST, Wind.WEST).mapIndexed { index, wind ->
+            MahjongPlayer(
+                id = Uuid.random(),
+                initialSeatIndex = index,
+                discardPile = ExamplePairingDiscardPile(),
+                seatWind = wind,
+            )
+        }
+        val latestDiscardTile = Tile.Numeric(Tile.Suit.Dot, 5)
+        val discarder = players.last().copy(
+            discardPile = ExamplePairingDiscardPile().discard(
+                DiscardPile.DiscardEntry(IdentifiedTile(Uuid.random(), latestDiscardTile)),
+            ),
+        )
+        val playersWithDiscard = players.dropLast(1) + discarder
+        val table = TableState(
+            id = Uuid.random(),
+            players = playersWithDiscard,
+            config = ExamplePairingRuleConfig(exchangeEnabled = true, roundCount = 8),
+            tileWall = TileWall(),
+            dealerPlayerId = players.first().id,
+            roundNumber = 3,
+        )
+        val lines = registry.buildLines(ExamplePairingIds.RULE_MODULE, table)
+        assertEquals(listOf(RoundInfoArgument.Number(0)), lines.single { it.key == ExampleMinecraftPresentationIds.WALL_REMAINING_INFO }.args)
+        assertEquals(
+            listOf(RoundInfoArgument.Number(3), RoundInfoArgument.Number(8)),
+            lines.single { it.key == ExampleMinecraftPresentationIds.ROUND_COUNT_INFO }.args,
+        )
+        assertEquals(
+            listOf(RoundInfoArgument.TileValue(latestDiscardTile)),
+            lines.single { it.key == ExampleMinecraftPresentationIds.LATEST_DISCARD_INFO }.args,
+        )
+        assertEquals(
+            listOf(RoundInfoArgument.Message(ExampleMinecraftPresentationIds.EXCHANGE_ENABLED_MESSAGE)),
+            lines.single { it.key == ExampleMinecraftPresentationIds.EXCHANGE_STATUS_INFO }.args,
+        )
+        val disabledTable = table.copy(config = ExamplePairingRuleConfig(exchangeEnabled = false, roundCount = 8))
+        assertEquals(
+            listOf(RoundInfoArgument.Message(ExampleMinecraftPresentationIds.EXCHANGE_DISABLED_MESSAGE)),
+            registry.buildLines(ExamplePairingIds.RULE_MODULE, disabledTable)
+                .single { it.key == ExampleMinecraftPresentationIds.EXCHANGE_STATUS_INFO }.args,
+        )
+    }
+
+    /** 尚未有人捨牌時不顯示最近捨牌行，其他局況行仍照順序輸出。 */
+    @Test
+    fun `round info omits the latest discard before anyone discards`() {
+        val registry = RoundInfoLineDisplayRegistryImpl().apply { registerExamplePairingRoundInfo(this) }
         val players = listOf(Wind.EAST, Wind.WEST).mapIndexed { index, wind ->
             MahjongPlayer(
                 id = Uuid.random(),
@@ -80,16 +136,18 @@ class ExamplePairingPresentationTest {
         val table = TableState(
             id = Uuid.random(),
             players = players,
-            config = ExamplePairingRuleConfig(roundCount = 8),
+            config = ExamplePairingRuleConfig(),
             tileWall = TileWall(),
             dealerPlayerId = players.first().id,
-            roundNumber = 3,
         )
-        val lines = registry.buildLines(ExamplePairingIds.RULE_MODULE, table)
-        assertEquals(listOf(RoundInfoArgument.Number(0)), lines.single { it.key == ExampleMinecraftPresentationIds.WALL_REMAINING_INFO }.args)
+
         assertEquals(
-            listOf(RoundInfoArgument.Number(3), RoundInfoArgument.Number(8)),
-            lines.single { it.key == ExampleMinecraftPresentationIds.ROUND_COUNT_INFO }.args,
+            listOf(
+                ExampleMinecraftPresentationIds.WALL_REMAINING_INFO,
+                ExampleMinecraftPresentationIds.ROUND_COUNT_INFO,
+                ExampleMinecraftPresentationIds.EXCHANGE_STATUS_INFO,
+            ),
+            registry.buildLines(ExamplePairingIds.RULE_MODULE, table).map { it.key },
         )
     }
 

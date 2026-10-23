@@ -31,6 +31,23 @@
   successful decisions. Share lifecycle and execution mechanics without merging endpoint authorization or
   data-recovery policies.
 
+## Round Info Parameters
+
+- A Minecraft rule's `RoundInfoLineProvider` may use `Number` and `WindValue` for values, `TileValue` for a
+  tile face, and `Message` for a rule-owned word or status. `TileValue` uses the registered tile name and
+  includes the tile emoji when one is available; an extension tile without a name falls back to its full tile
+  type ID.
+- Give every `Message` a complete namespaced ID and register its translation separately with
+  `RoundInfoMessageDefinition(id, translationKey)` in the same `RoundInfoLineDisplayRegistry`. Registration
+  rejects malformed or duplicate IDs and rejects all new entries after the registry freezes. Keep the message
+  ID distinct from its translation key; never derive wording from the ID path.
+- If a client receives a message ID that is not registered, it displays the full ID and logs one warning for
+  that ID. An argument it cannot understand is preserved in its position as `?`, with one warning. A malformed
+  JSON document still decodes to an empty list.
+- See the [pairing example registration](../../example/platform/minecraft/common/src/commonMain/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/presentation/ExamplePairingRoundInfo.kt),
+  the [parameter builder test](../../platform/minecraft/v1.20.1/fabric/src/test/kotlin/com/doublemoon1119/mahjongcraft/platform/fabric/client/render/RoundInfoLineTextBuilderTest.kt)
+  and the [example provider test](../../example/platform/minecraft/common/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/presentation/ExamplePairingPresentationTest.kt).
+
 ## Extension Action Identity
 
 - Give each extension action one stable namespaced ID. Use that same constant for the action's `id`,

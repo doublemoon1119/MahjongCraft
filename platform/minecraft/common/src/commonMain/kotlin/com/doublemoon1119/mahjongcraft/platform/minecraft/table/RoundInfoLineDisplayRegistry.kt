@@ -21,6 +21,13 @@ interface RoundInfoLineDisplayRegistry {
     fun register(definition: RoundInfoLineDisplayDefinition)
 
     /**
+     * 登記可供局況參數引用的規則文字。
+     *
+     * @param definition 訊息 ID 與翻譯 key 的對應描述。
+     */
+    fun register(definition: RoundInfoMessageDefinition)
+
+    /**
      * 登記指定規則模組的局況資料 provider。
      *
      * @param definition provider 的完整登記描述。
@@ -29,6 +36,9 @@ interface RoundInfoLineDisplayRegistry {
 
     /** 查詢指定 key 的翻譯資訊；未登記時回傳 null。 */
     fun find(key: String): RoundInfoLineDisplay?
+
+    /** 依 namespaced 訊息 ID 查詢翻譯定義；未登記時回傳 null。 */
+    fun findMessage(id: String): RoundInfoMessageDefinition?
 
     /** 依規則模組建立完整局況行；未註冊時回傳空清單。 */
     fun buildLines(ruleModuleId: String, tableState: TableState): List<RoundInfoLine>

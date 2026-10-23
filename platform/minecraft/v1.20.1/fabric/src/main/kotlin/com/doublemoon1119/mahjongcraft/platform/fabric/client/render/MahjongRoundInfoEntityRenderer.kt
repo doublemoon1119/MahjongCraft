@@ -1,49 +1,57 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.render
 
-import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.config.MahjongClientConfigStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongRoundInfoEntity
-import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoArgument
-import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLine
+import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileEmojiRegistry
 import net.minecraft.client.font.TextRenderer
 import net.minecraft.client.render.VertexConsumerProvider
 import net.minecraft.client.render.entity.EntityRenderer
 import net.minecraft.client.render.entity.EntityRendererFactory
 import net.minecraft.client.util.math.MatrixStack
-import net.minecraft.text.Text
 import net.minecraft.util.Identifier
 
 /**
- * 桌面中央局況顯示的 client renderer——手動用 [TextRenderer] 逐行畫字，不是 vanilla
- * `TextDisplayEntity` 那一整套設定（billboard mode／背景色板等欄位在 1.20.1 有一部分是
- * protected/NBT-only，直接沿用 `EntityRenderer.renderLabelIfPresent`（vanilla 生物名牌）的 billboard
- * 手法風險更低）。
+ * 將桌面中央的局況資訊畫成面向攝影機的文字面板。
  *
- * 已用 `javap -c` 對照 Yarn 1.20.1 mapping 反組譯 `EntityRenderer.renderLabelIfPresent` 位元碼確認
- * vanilla 的確切做法：[dispatcher] 的攝影機旋轉（`getRotation()`）套用到矩陣、縮放用
- * `(-scale, -scale, scale)`（X 軸刻意是負的，不是正的——名牌文字本身是左右鏡射過的座標系）、
- * `TextRenderer.draw` 用 [TextRenderer.TextLayerType.NORMAL]（不是 `POLYGON_OFFSET`，那是給貼在其他
- * 已渲染表面上的疊字用的，跟這裡懸浮在半空中的文字情境不同）。
+ * [MahjongRoundInfoEntity.lines] 只提供局況行 ID 與帶型別的參數。每行交給 [RoundInfoLineTextBuilder] 組成文字，
+ * 再由用戶端依自己的語系顯示；牌名、牌面 emoji 與規則訊息都透過各自的 registry 查詢。
+ * 未登記的行 ID 直接顯示原始 ID，不會讓整行消失。
  *
- * 每一行文字都在這裡（client 端、每一幀）才用 [Text.translatable] 組出來，不是拿 server 端已經翻譯好的
- * 固定字串——[MahjongRoundInfoEntity] 只同步 [MahjongRoundInfoEntity.lines] 這些規則自訂的原始數值，
- * 讓每個玩家依自己的語系看到對應翻譯，見該 entity KDoc。實際翻譯資訊透過 [roundInfoLineDisplayRegistry]
- * 查詢，不認得特定規則模組；查不到 key 時安全退回顯示原始 key 字面文字，不會整行消失，比照
- * `GameActionDisplayText.extensionDisplayText()` 對未知規則擴充動作的既有 fallback 慣例。
+ * 繪製方式沿用原版實體名牌的座標方向：套用攝影機旋轉、以 `(-scale, -scale, scale)` 縮放，並使用
+ * [TextRenderer.TextLayerType.NORMAL] 畫在半空中。
  *
  * @param context Minecraft renderer factory 提供的 client context。
- * @param configStore 提供局況面板可見性設定。
+ * @property configStore 提供局況面板可見性設定。
  * @param roundInfoLineDisplayRegistry 將同步的 line key 解析為本地化顯示定義。
+ * @param tileDisplayNameRegistry 將擴充牌種轉成名稱翻譯。
+ * @param tileAssetRegistry 將牌種轉成素材 key。
+ * @param tileEmojiRegistry 將素材 key 轉成牌面 emoji。
  */
 class MahjongRoundInfoEntityRenderer(
     context: EntityRendererFactory.Context,
     private val configStore: MahjongClientConfigStore,
-    private val roundInfoLineDisplayRegistry: RoundInfoLineDisplayRegistry,
+    roundInfoLineDisplayRegistry: RoundInfoLineDisplayRegistry,
+    tileDisplayNameRegistry: TileDisplayNameRegistry,
+    tileAssetRegistry: MinecraftTileAssetRegistry,
+    tileEmojiRegistry: TileEmojiRegistry,
 ) : EntityRenderer<MahjongRoundInfoEntity>(context) {
     /** 共用 Vanilla text renderer，畫法比照 [MahjongTileEntityRenderer]。 */
     private val textRenderer = context.textRenderer
+
+    /** 局況文字參數診斷記錄器。 */
+    private val logger = mahjongCraftLogger(MahjongRoundInfoEntityRenderer::class)
+
+    /** 局況資料列文字組合器。 */
+    private val lineTextBuilder = RoundInfoLineTextBuilder(
+        roundInfoLineDisplayRegistry,
+        tileDisplayNameRegistry,
+        tileAssetRegistry,
+        tileEmojiRegistry,
+    ) { message -> logger.warn(message) }
 
     override fun render(
         entity: MahjongRoundInfoEntity,
@@ -56,7 +64,7 @@ class MahjongRoundInfoEntityRenderer(
         if (!configStore.current.presentationVisibility.roundInfoEnabled) return
         if (entity.isInvisible) return
         super.render(entity, yaw, tickDelta, matrices, vertexConsumers, light)
-        val lines = entity.lines.map(::buildLineText)
+        val lines = entity.lines.map(lineTextBuilder::buildLineText)
 
         matrices.push()
         matrices.multiply(dispatcher.rotation)
@@ -91,35 +99,6 @@ class MahjongRoundInfoEntityRenderer(
             )
         }
         matrices.pop()
-    }
-
-    /**
-     * 依 [roundInfoLineDisplayRegistry] 查到的翻譯資訊組出 [line] 對應文字；查不到 key 時退回顯示原始 key。
-     *
-     * @param line 同步的規則局況列及其格式化參數。
-     * @return 依本機語系組成的文字，或未知 key 的字面文字。
-     */
-    private fun buildLineText(line: RoundInfoLine): Text {
-        val display = roundInfoLineDisplayRegistry.find(line.key) ?: return Text.literal(line.key)
-        val arguments = line.args.map { argument ->
-            when (argument) {
-                is RoundInfoArgument.WindValue -> Text.translatable(argument.value.toMessageKey())
-                is RoundInfoArgument.Number -> argument.value
-            }
-        }
-        return Text.translatable(display.translationKey, *arguments.toTypedArray())
-    }
-
-    /**
-     * 場風對應的牌面顯示文字 key，跟手牌裡的風牌共用同一組翻譯（同一個詞，不需要另外一套 key）。
-     *
-     * @return 對應風牌的翻譯 key。
-     */
-    private fun Wind.toMessageKey(): String = when (this) {
-        Wind.EAST -> MinecraftMessageKeys.TILE_HONOR_EAST
-        Wind.SOUTH -> MinecraftMessageKeys.TILE_HONOR_SOUTH
-        Wind.WEST -> MinecraftMessageKeys.TILE_HONOR_WEST
-        Wind.NORTH -> MinecraftMessageKeys.TILE_HONOR_NORTH
     }
 
     /** 純文字顯示，不提供單一 texture。 */

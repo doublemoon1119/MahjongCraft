@@ -62,6 +62,18 @@ object ExampleMinecraftMessageKeys {
     /** 局況中顯示目前局數的文字。 */
     const val ROUND_INFO_ROUND_COUNT = "mahjongcraft_example.round_info.round_count"
 
+    /** 局況中顯示最近打出的牌。 */
+    const val ROUND_INFO_LATEST_DISCARD = "mahjongcraft_example.round_info.latest_discard"
+
+    /** 局況中顯示換牌功能狀態。 */
+    const val ROUND_INFO_EXCHANGE = "mahjongcraft_example.round_info.exchange"
+
+    /** 局況中顯示換牌功能已開啟。 */
+    const val ROUND_INFO_EXCHANGE_ENABLED = "mahjongcraft_example.round_info.exchange_enabled"
+
+    /** 局況中顯示換牌功能已關閉。 */
+    const val ROUND_INFO_EXCHANGE_DISABLED = "mahjongcraft_example.round_info.exchange_disabled"
+
     /** 規則目錄分類名稱。 */
     const val CATALOGUE_CATEGORY = "mahjongcraft_example.catalogue.category.pairing"
 

@@ -300,7 +300,14 @@ class MahjongCraftModClient : ClientModInitializer {
         EntityRendererRegistry.register(ModEntities.mahjongScoringStick, ::MahjongScoringStickEntityRenderer)
         EntityRendererRegistry.register(ModEntities.mahjongTileSelectionConfirm, ::MahjongTileSelectionConfirmEntityRenderer)
         EntityRendererRegistry.register(ModEntities.mahjongRoundInfo) { context ->
-            MahjongRoundInfoEntityRenderer(context, clientConfigStore, roundInfoLineDisplayRegistry)
+            MahjongRoundInfoEntityRenderer(
+                context,
+                clientConfigStore,
+                roundInfoLineDisplayRegistry,
+                tileDisplayNames,
+                tileAssetRegistry,
+                tileEmojiRegistry,
+            )
         }
         EntityRendererRegistry.register(ModEntities.mahjongPlayerInfo) { context ->
             MahjongPlayerInfoEntityRenderer(context, portraitRenderer, indicatorTextResolver, clientConfigStore)
