@@ -113,7 +113,7 @@ object ThreePlayerRiichiDebugGameScenarios {
             waitingTiles = BAMBOO_TWO_SIDED_WAITS,
             deadWallFront = listOf(Tile.Honor.North, Tile.Honor.North, FOUR_BAMBOO),
             playerCount = THREE_PLAYER_COUNT,
-            usesAutoNorthRule = true,
+            rule = DebugScenarioRule.AUTO_NORTH,
         ),
         // 自動拔北被搶：呼叫者碰出中與白、單騎聽北。打出剛摸到的九萬後，下家摸到北自動拔出，呼叫者可以榮和這張北；
         // 被搶的拔北不收付。選擇不和時，下家付 1000 點進供託、補牌後摸切；供託變多讓莊家角落變寬，呼叫者的兩組副露
@@ -132,7 +132,7 @@ object ThreePlayerRiichiDebugGameScenarios {
             liveWallFront = listOf(Tile.Honor.North),
             waitingTiles = setOf(Tile.Honor.North),
             playerCount = THREE_PLAYER_COUNT,
-            usesAutoNorthRule = true,
+            rule = DebugScenarioRule.AUTO_NORTH,
         ),
         // 沒有牌可補：活牌只剩三張，其餘的牌已在三家牌河。打出剛摸到的西後，兩家對手各摸切一張東，呼叫者摸到最後
         // 一張活牌是北；活牌已經摸完，不能拔北補牌，本局直接流局。呼叫者聽一、四條，流局時聽牌。一般三人日麻摸到最後一張
@@ -148,7 +148,7 @@ object ThreePlayerRiichiDebugGameScenarios {
             waitingTiles = BAMBOO_TWO_SIDED_WAITS,
             playerCount = THREE_PLAYER_COUNT,
             liveWallIsFrontOnly = true,
-            usesAutoNorthRule = true,
+            rule = DebugScenarioRule.AUTO_NORTH,
         ),
         // 槓牌收付：手上有四張一筒、三張一條，九筒已從上家碰出。先暗槓一筒（另外兩家各付 500 點），嶺上補到九筒後
         // 加槓（再各付 500 點），嶺上補到南後打牌；下家摸切一條時可以明槓（下家付 1000 點），嶺上補到東。
@@ -164,7 +164,7 @@ object ThreePlayerRiichiDebugGameScenarios {
             waitingTiles = emptySet(),
             deadWallFront = listOf(NINE_DOT, Tile.Honor.South, Tile.Honor.East),
             playerCount = THREE_PLAYER_COUNT,
-            usesAutoNorthRule = true,
+            rule = DebugScenarioRule.AUTO_NORTH,
         ),
     )
 }

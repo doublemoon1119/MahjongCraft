@@ -75,7 +75,7 @@ internal data class ScenarioPon(
  * @property playerCount 情境適用的人數；只能在這個人數的桌子載入。
  * @property liveWallIsFrontOnly 為 true 時活牌只剩 [liveWallFront]，其餘的牌當作先前各家打出的牌，從呼叫者開始輪流
  *   接在各家預先捨牌之後，讓牌局在幾次摸牌後流局。
- * @property usesAutoNorthRule 為 true 時改用開發用的自動拔北三人日麻，只能用於三人日麻的情境。
+ * @property rule 情境載入後使用的規則模組。
  */
 internal class SeatSetupScenario(
     override val id: String,
@@ -89,7 +89,7 @@ internal class SeatSetupScenario(
     private val deadWallFront: List<Tile> = emptyList(),
     private val playerCount: Int = PLAYER_COUNT,
     private val liveWallIsFrontOnly: Boolean = false,
-    private val usesAutoNorthRule: Boolean = false,
+    private val rule: DebugScenarioRule = DebugScenarioRule.STANDARD,
 ) : DebugGameScenario {
     override fun build(context: DebugGameScenarioContext): DebugGameScenarioResult {
         val currentGame = context.currentGame
@@ -109,7 +109,7 @@ internal class SeatSetupScenario(
             "Seat setup debug scenarios require the other players to be AI"
         }
 
-        val module = riichiFamilyScenarioModule(currentGame, multiRonPolicy, usesAutoNorthRule)
+        val module = riichiFamilyScenarioModule(currentGame, multiRonPolicy, rule)
         val config = module.config
         val opening = DEFAULT_WALL_OPENING
         val inventory = module.createWallFactory(module.config.maxPlayers).create().getAllTiles().sortedBy { it.tile.stableSortKey() }

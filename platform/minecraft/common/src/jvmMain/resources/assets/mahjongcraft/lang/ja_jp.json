@@ -745,6 +745,7 @@
   "mahjongcraft.message.debug.decision.text_card.hint": "プレビュー専用",
   "mahjongcraft.message.debug.decision.text_card.label": "テキストカード",
   "mahjongcraft.message.debug.rule_module.auto_north_riichi": "日本麻雀（三人・北自動抜き・デバッグ）",
+  "mahjongcraft.message.debug.rule_module.winner_dealer_riichi": "日本麻雀（和了者親・席替え・デバッグ）",
   "mahjongcraft.message.decision_confirmation_resyncing": "操作の確認がまだ届いていません。再同期しています",
   "mahjongcraft.message.decision_confirmation_retry": "操作の確認が届きませんでした。もう一度選択してください",
   "mahjongcraft.message.dice_roll.total": "合計：%s",

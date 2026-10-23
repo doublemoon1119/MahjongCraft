@@ -522,6 +522,7 @@ class DebugGameScenarioTest {
             "mahjongcraft:riichi_three_player_pull_north_with_melds",
             "mahjongcraft:riichi_three_player_rob_north",
             "mahjongcraft:riichi_wall_opening",
+            "mahjongcraft:winner_dealer_seat_rotation",
         )
 
         /** 只能在三人日麻的桌子載入的情境。 */

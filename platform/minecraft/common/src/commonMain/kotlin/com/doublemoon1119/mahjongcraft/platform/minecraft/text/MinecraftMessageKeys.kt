@@ -41,6 +41,9 @@ object MinecraftMessageKeys {
     /** 開發用自動拔北三人日麻的規則名稱。 */
     const val DEBUG_RULE_MODULE_AUTO_NORTH_RIICHI = PREFIX + "debug.rule_module.auto_north_riichi"
 
+    /** 開發用和牌者坐莊、每局換位四人日麻的規則名稱。 */
+    const val DEBUG_RULE_MODULE_WINNER_DEALER_RIICHI = PREFIX + "debug.rule_module.winner_dealer_riichi"
+
     /** 對局進行中禁止主動離開。 */
     const val GAME_LEAVE_DENIED_WHILE_PLAYING = PREFIX + "game_leave_denied_while_playing"
 
@@ -567,6 +570,7 @@ object MinecraftMessageKeys {
         DEBUG_DECISION_TEXT_CARD_HINT,
         DEBUG_DECISION_TEXT_CARD_DESCRIPTION,
         DEBUG_RULE_MODULE_AUTO_NORTH_RIICHI,
+        DEBUG_RULE_MODULE_WINNER_DEALER_RIICHI,
         GAME_LEAVE_DENIED_WHILE_PLAYING,
         GAME_DISSOLVED,
         GAME_LEFT,

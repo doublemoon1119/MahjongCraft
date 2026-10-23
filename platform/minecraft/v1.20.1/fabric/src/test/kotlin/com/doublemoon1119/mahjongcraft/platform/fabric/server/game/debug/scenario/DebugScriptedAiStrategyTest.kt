@@ -103,6 +103,23 @@ class DebugScriptedAiStrategyTest {
         )
     }
 
+    /** 和牌優先的腳本 AI 可以榮和時送出規則提供的榮和命令，可以自摸時自摸。 */
+    @Test
+    fun `win first strategy takes an offered ron or tsumo`() = runTest {
+        val strategy = DebugScriptedAiStrategy(declaresKanFirst = false, winsFirst = true)
+        val ronCommand = GameCommand.RespondToDiscard(GameAction.Ron(Uuid.random()), discardReactionId)
+        val passCommand = GameCommand.RespondToDiscard(GameAction.Pass, discardReactionId)
+
+        assertEquals(
+            ronCommand,
+            strategy.decideGameCommand(
+                context(AiDecisionPhase.RespondingToDiscard, listOf(ronCommand.action, GameAction.Pass), reactionCommands = listOf(passCommand, ronCommand)),
+            ),
+        )
+        assertEquals(GameCommand.Tsumo, strategy.decideGameCommand(context(AiDecisionPhase.OwnTurn, listOf(GameAction.Tsumo))))
+        assertEquals(GameCommand.Discard(drawnTile.id), strategy.decideGameCommand(context(AiDecisionPhase.OwnTurn, emptyList())))
+    }
+
     /** 所有腳本 AI 皆可由 registry 解析。 */
     @Test
     fun `registration exposes every scripted strategy`() {
@@ -114,6 +131,7 @@ class DebugScriptedAiStrategyTest {
                 DebugScriptedAiStrategy.TSUMOGIRI_KEY,
                 DebugScriptedAiStrategy.KAN_FIRST_KEY,
                 DebugScriptedAiStrategy.PULL_NORTH_FIRST_KEY,
+                DebugScriptedAiStrategy.WIN_FIRST_KEY,
             ),
             registry.getAllStrategyKeys(),
         )
@@ -127,12 +145,14 @@ class DebugScriptedAiStrategyTest {
      * @param phase 要模擬的決策階段。
      * @param legalActions 該階段提供給策略的合法動作。
      * @param hand 策略玩家的手牌。
+     * @param reactionCommands 規則提供的完整捨牌反應命令。
      * @return 包含完整自身手牌的決策情境。
      */
     private fun context(
         phase: AiDecisionPhase,
         legalActions: List<GameAction>,
         hand: Hand = Hand(tiles = listOf(standingTile), lastDrawn = drawnTile),
+        reactionCommands: List<GameCommand.RespondToDiscard> = emptyList(),
     ): AiDecisionContext {
         val table = FakeTableStateFactory.create(players = listOf(FakeMahjongPlayerFactory.create(id = selfId, hand = hand)))
         return AiDecisionContext(
@@ -141,6 +161,7 @@ class DebugScriptedAiStrategyTest {
             phase = phase,
             legalActions = legalActions,
             discardReactionId = discardReactionId.takeIf { phase == AiDecisionPhase.RespondingToDiscard },
+            discardReactionCommands = reactionCommands,
         )
     }
 }
