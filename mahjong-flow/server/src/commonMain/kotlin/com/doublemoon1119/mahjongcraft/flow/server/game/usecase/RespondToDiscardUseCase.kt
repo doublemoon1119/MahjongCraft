@@ -705,6 +705,7 @@ class RespondToDiscardUseCase(
                     state = applied.tableState,
                     playerId = winnerId,
                     source = DrawSource.Supplemental(winnerAction),
+                    drawnTiles = applied.drawnTiles,
                     module = module,
                 )
                 RespondResult(

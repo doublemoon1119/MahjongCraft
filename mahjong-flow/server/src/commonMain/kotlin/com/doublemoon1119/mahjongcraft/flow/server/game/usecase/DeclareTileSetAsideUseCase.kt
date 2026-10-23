@@ -206,7 +206,7 @@ class DeclareTileSetAsideUseCase(
             is TileSetAsideResolver.Resolution.Applied -> {
                 val applied = resolution.applied
                 val followUp = if (applied.drawnTiles.isNotEmpty()) {
-                    DrawFollowUpApplier.run(applied.tableState, playerId, DrawSource.Supplemental(action), module)
+                    DrawFollowUpApplier.run(applied.tableState, playerId, DrawSource.Supplemental(action), applied.drawnTiles, module)
                 } else {
                     null
                 }

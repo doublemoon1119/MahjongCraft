@@ -85,7 +85,7 @@ class DrawTileUseCase(
                             players = updatedPlayers,
                             physicalWallLayout = state.physicalWallLayout?.retainOnly(remainingWallTileIds),
                         )
-                        val followUp = DrawFollowUpApplier.run(drawnState, playerId, DrawSource.LiveWall, module)
+                        val followUp = DrawFollowUpApplier.run(drawnState, playerId, DrawSource.LiveWall, listOf(tile), module)
 
                         followUp.tableState to Outcome.Success(DrawResult(tile, followUp))
                     }

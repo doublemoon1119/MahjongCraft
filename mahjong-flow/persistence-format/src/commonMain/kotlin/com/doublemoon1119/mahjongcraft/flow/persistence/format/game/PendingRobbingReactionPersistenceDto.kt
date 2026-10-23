@@ -11,6 +11,7 @@ import kotlinx.serialization.Serializable
  * @property robbedTile 其他玩家可搶和的實體牌，尚未套用宣告動作。
  * @property eligiblePlayerIds 可提交搶和反應的玩家 UUID 字串集合。
  * @property responses 各玩家已提交的反應動作。
+ * @property pendingFollowUpTileIds 摸牌後自動處理尚未詢問過規則的補牌 UUID 字串，依摸取順序排列。
  */
 @Serializable
 data class PendingRobbingReactionPersistenceDto(
@@ -19,4 +20,5 @@ data class PendingRobbingReactionPersistenceDto(
     val robbedTile: IdentifiedTilePersistenceDto,
     val eligiblePlayerIds: Set<String>,
     val responses: Map<String, GameActionPersistenceDto>,
+    val pendingFollowUpTileIds: List<String>,
 )

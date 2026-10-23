@@ -126,7 +126,7 @@ internal object DrawFollowUpApplier {
                 DrawFollowUpPresentationStep(
                     action = step.action,
                     setAsideTileId = step.setAsideTile.id,
-                    drawnTileId = step.applied.drawnTiles.last().id,
+                    drawnTileIds = step.applied.drawnTiles.map { it.id },
                     physicalWallTransitionPhases = step.applied.physicalWallTransitionPhases,
                     scoring = step.applied.scoring,
                 )
@@ -135,7 +135,7 @@ internal object DrawFollowUpApplier {
                     DrawFollowUpPresentationStep(
                         action = pending.action,
                         setAsideTileId = pending.setAsideTile.id,
-                        drawnTileId = null,
+                        drawnTileIds = emptyList(),
                         physicalWallTransitionPhases = emptyList(),
                         scoring = null,
                     )
@@ -144,11 +144,15 @@ internal object DrawFollowUpApplier {
     }
 
     /**
-     * 從 [playerId] 剛摸到的牌開始執行自動處理。
+     * 從 [playerId] 這次摸到的牌開始執行自動處理。
      *
-     * @param state 已套用這次摸牌的權威桌況；摸到的牌位於玩家的摸牌位。
+     * 依摸取順序逐張詢問規則；每一步補到的牌接在尚未詢問的牌之後。詢問前先把那張牌換到摸牌位，原本摸牌位上的牌放回它在
+     * 立牌中的位置，因此規則看到的牌一定在摸牌位，要移出的也必須是這張牌。全部詢問完時，摸牌位上是最後摸到、仍留在手上的牌。
+     *
+     * @param state 已套用這次摸牌的權威桌況；最後摸到的牌位於玩家的摸牌位，其餘併入立牌。
      * @param playerId 摸牌的玩家。
      * @param source 這次摸牌的來源。
+     * @param drawnTiles 這次依摸取順序摸到的牌。
      * @param module 對局採用的規則模組。
      * @return 整串自動處理的結果；規則不處理時沒有任何步驟。
      * @throws RuleContractViolationException 規則要求的處理無法完成時。
@@ -157,26 +161,29 @@ internal object DrawFollowUpApplier {
         state: TableState,
         playerId: Uuid,
         source: DrawSource,
+        drawnTiles: List<IdentifiedTile>,
         module: MahjongRuleModule<*>,
     ): Result {
         val policy = module.createDrawFollowUpPolicy()
         val steps = mutableListOf<CompletedStep>()
+        val unchecked = ArrayDeque(drawnTiles.map { it to source })
         var current = state
-        var currentSource = source
         while (true) {
+            val (drawnTile, drawSource) = unchecked.removeFirstOrNull() ?: return Result(current, steps, Ending.PlayerTurn)
+            if (drawnTile !in current.players.first { it.id == playerId }.hand.standingTiles) continue
+            current = current.withDrawnSlot(playerId, drawnTile)
             val player = current.players.first { it.id == playerId }
-            val drawnTile = player.hand.lastDrawn ?: return Result(current, steps, Ending.PlayerTurn)
             val decision = policy.resolve(
                 DrawFollowUpContext(
                     tableState = current,
                     playerId = playerId,
                     drawnTile = drawnTile,
-                    source = currentSource,
+                    source = drawSource,
                     completedStepCount = steps.size,
                 ),
             )
             when (decision) {
-                DrawFollowUpDecision.None -> return Result(current, steps, Ending.PlayerTurn)
+                DrawFollowUpDecision.None -> continue
                 is DrawFollowUpDecision.EndRound -> return Result(
                     tableState = current.recordAbortiveDraw(decision.reason, declarerId = playerId, module = module),
                     steps = steps,
@@ -187,7 +194,18 @@ internal object DrawFollowUpApplier {
                     val action = decision.action
                     val setAsideTile = module.tileSetAsideBy(player, action)
                         ?: violation("set-aside action ${action.value.id} has no tile to remove")
-                    when (val resolution = TileSetAsideResolver.resolve(current, playerId, action, setAsideTile, module)) {
+                    if (setAsideTile.id != drawnTile.id) {
+                        violation("set-aside action ${action.value.id} must remove the drawn tile ${drawnTile.id}, not ${setAsideTile.id}")
+                    }
+                    val resolution = TileSetAsideResolver.resolve(
+                        state = current,
+                        playerId = playerId,
+                        action = action,
+                        setAsideTile = setAsideTile,
+                        module = module,
+                        pendingFollowUpTiles = unchecked.map { (tile, _) -> tile },
+                    )
+                    when (resolution) {
                         is TileSetAsideResolver.Resolution.RobbingWindowOpened -> return Result(
                             tableState = resolution.tableState,
                             steps = steps,
@@ -212,12 +230,29 @@ internal object DrawFollowUpApplier {
                             }
                             steps += CompletedStep(action, setAsideTile, applied)
                             current = applied.tableState
-                            currentSource = DrawSource.Supplemental(action)
+                            applied.drawnTiles.forEach { tile -> unchecked.addLast(tile to DrawSource.Supplemental(action)) }
                         }
                     }
                 }
             }
         }
+    }
+
+    /**
+     * 把 [playerId] 立牌中的 [tile] 換到摸牌位，原本摸牌位上的牌放回 [tile] 原本在立牌中的位置。
+     *
+     * @param playerId 摸牌的玩家。
+     * @param tile 要換到摸牌位的牌，必須在玩家的立牌中。
+     * @return 換位後的桌況；[tile] 已在摸牌位時原樣回傳。
+     */
+    private fun TableState.withDrawnSlot(playerId: Uuid, tile: IdentifiedTile): TableState {
+        val player = players.first { it.id == playerId }
+        val hand = player.hand
+        if (hand.lastDrawn == tile) return this
+        val previous = hand.lastDrawn
+        val tiles = if (previous == null) hand.tiles - tile else hand.tiles.map { if (it == tile) previous else it }
+        val updated = player.copy(hand = hand.copy(tiles = tiles, lastDrawn = tile))
+        return copy(players = players.map { if (it.id == playerId) updated else it })
     }
 
     /** 活牌與保留區合計剩下的牌數。 */

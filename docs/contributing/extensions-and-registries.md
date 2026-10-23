@@ -164,7 +164,9 @@
 
 - A rule that sets tiles aside automatically after a draw, such as replacing flower tiles, returns a
   decision from `createDrawFollowUpPolicy`. Flow asks after every live-wall draw and every replacement
-  draw, and asks again after each replacement until the policy returns `None` or `EndRound`.
+  draw, and asks again after each replacement until the policy returns `None` or `EndRound`. When a
+  draw brings in several tiles, Flow asks about each one in draw order and first moves the tile it asks
+  about to the drawn slot; `tileSetAsideBy` must then pick that tile.
 - An automatic set-aside reuses the rule's own `tileSetAsideBy`, `applyTileSetAsideAction` and
   supplemental draw policy, and the same robbing check as a declared set-aside: when the legal action
   validator offers a win on the tile, Flow opens the robbing window and pauses the chain. Do not add a

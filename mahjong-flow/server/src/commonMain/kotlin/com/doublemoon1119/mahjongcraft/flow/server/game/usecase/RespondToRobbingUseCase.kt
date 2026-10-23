@@ -287,10 +287,13 @@ class RespondToRobbingUseCase(
                         applied as SelfDeclarationApplier.Result.Applied
                         val appliedState = applied.tableState.copy(pendingRobbingReaction = null)
                         val followUp = if (applied.drawnTiles.isNotEmpty()) {
+                            // 暫停前還沒詢問過的補牌排在這次補到的牌之前，一併以這次補牌作為來源詢問。
+                            val heldTiles = appliedState.players.first { it.id == pending.declarerId }.hand.standingTiles.associateBy { it.id }
                             DrawFollowUpApplier.run(
                                 state = appliedState,
                                 playerId = pending.declarerId,
                                 source = DrawSource.Supplemental(pending.declaredAction),
+                                drawnTiles = pending.pendingFollowUpTileIds.mapNotNull(heldTiles::get) + applied.drawnTiles,
                                 module = module,
                             )
                         } else {

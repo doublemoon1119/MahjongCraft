@@ -23,6 +23,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerArea
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongPlayerAreaPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileDimensions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileTableLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPlacement
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongWinCelebrationPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongWinCelebrationResult
 import net.minecraft.block.BlockState
@@ -109,6 +110,10 @@ class FabricMahjongPlayerAreaPresenter(
             hasDrawnTile = presentation.drawnTileId != null,
         )
 
+        // 摸牌後自動處理補到、最後留在立牌的牌由下方依時間軸摸進立牌，不在這裡直接擺好。
+        val followUpDrawnTileIds = presentation.followUpSteps.flatMapTo(mutableSetOf()) { step -> step.drawnTileIds }
+        val standingPlacements = mutableMapOf<Uuid, MahjongTileWallPlacement>()
+
         // 世界實體由所有觀察者共用，不得把本人的私人理牌順序寫進公開座標。
         PublicHandOrder.arrange(presentation.standingTileIds).forEachIndexed { orderIndex, tileId ->
             val tile = claimTile(tileId) ?: return@forEachIndexed
@@ -123,6 +128,8 @@ class FabricMahjongPlayerAreaPresenter(
                 tileIndex = presentation.standingTileIds.size - 1 - orderIndex,
                 cornerYieldShift = cornerYieldShift,
             )
+            standingPlacements[tileId] = placement
+            if (tileId in followUpDrawnTileIds) return@forEachIndexed
             tile.assignToTable(presentation.tableId)
             tile.tilePose = MahjongTilePose.STANDING
             tile.teleportExistingManagedTile(placement)
@@ -146,16 +153,17 @@ class FabricMahjongPlayerAreaPresenter(
         }
 
         if (presentation.followUpSteps.isNotEmpty()) {
-            // 摸牌後的自動處理：先摸到第一步要移出的牌，之後每一步的補牌等移出的牌落地才開始，最後一張留在摸牌位。
+            // 摸牌後的自動處理：先摸到第一步要移出的牌，之後每一步的補牌等移出的牌落地才開始。之後還要移出的牌與最後留在
+            // 摸牌位的牌摸到摸牌位，留在立牌的牌摸到它在立牌中的位置。
             val scheduledDraws = listOf(
                 presentation.followUpSteps.first().setAsideTileId to DrawFollowUpTimeline.initialDrawDelayTicks(claimsTiles),
-            ) + presentation.followUpSteps.zip(followUpStepStarts).mapNotNull { (step, startTicks) ->
-                step.drawnTileId?.let { it to DrawFollowUpTimeline.replacementDrawStartTicks(startTicks) }
+            ) + presentation.followUpSteps.zip(followUpStepStarts).flatMap { (step, startTicks) ->
+                step.drawnTileIds.map { tileId -> tileId to DrawFollowUpTimeline.replacementDrawStartTicks(startTicks) }
             }
             scheduledDraws.forEach { (tileId, startDelayTicks) ->
                 val tile = claimTile(tileId) ?: return@forEach
                 tile.assignToTable(presentation.tableId)
-                TileAnimationSteps.scheduleDrawnTile(tile, drawnSlotPlacement, startDelayTicks)
+                TileAnimationSteps.scheduleDrawnTile(tile, standingPlacements[tileId] ?: drawnSlotPlacement, startDelayTicks)
             }
         } else {
             presentation.drawnTileId?.let { drawnTileId ->

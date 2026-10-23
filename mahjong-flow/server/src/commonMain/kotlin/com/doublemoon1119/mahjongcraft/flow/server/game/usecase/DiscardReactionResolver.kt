@@ -1,7 +1,5 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameAbortReasonIds
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleContractViolationException
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.recordAbortiveDraw
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.DeclareRiichiUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.DiscardReactionOptionsResolver
@@ -85,10 +83,7 @@ internal object DiscardReactionResolver {
         }
 
         val abortiveDrawReason = if (ronResolution == RonResolution.ABORTIVE_DRAW) {
-            module.resolveMultiRonAbortiveDraw() ?: throw RuleContractViolationException(
-                GameAbortReasonIds.RULE_EXECUTION_FAILED,
-                "Rule ${module.id} configured multi-Ron abortive draw without an abortive draw reason",
-            )
+            RuleHookResultValidator.requireMultiRonAbortiveDrawReason(module)
         } else {
             null
         }

@@ -45,7 +45,8 @@ import kotlin.uuid.Uuid
  * @property animatedSetAsideTileIds [setAsideTileIds] 中這次剛移出手牌的牌，比照 [animatedMeldClaimTileIds]
  * 播放飛到桌上最終格位的動畫、放置音效與落地牌面提示；空集合（預設值）代表沒有，維持瞬間顯示。
  * @property followUpSteps 這次摸牌之後依序自動移出與補牌的步驟，依 [DrawFollowUpTimeline] 逐步播放；各步移出的牌也包含在
- * [setAsideTileIds]，第一步移出的是這次剛摸到的牌，[drawnTileId] 是最後一步補到的牌。空清單（預設值）代表沒有。
+ * [setAsideTileIds]，第一步移出的是這次摸到的牌之一，每一步移出的牌在那一步開始時位於摸牌位，[drawnTileId] 是處理結束後
+ * 留在摸牌位的牌。空清單（預設值）代表沒有。
  */
 data class MahjongPlayerAreaPresentation(
     val tableId: Uuid,

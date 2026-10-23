@@ -238,8 +238,9 @@ interface GamePresentationPublisher {
      * @param newlySetAsideTileIds 這次剛移出手牌、公開擺到桌上的牌 Uuid（見 `MahjongRuleModule.setAsideTiles`），例如
      * 三人日麻拔出的北。空集合（預設值）代表沒有。不包含 [followUpSteps] 移出的牌。
      * @param followUpSteps 這次摸牌或補牌之後依序完成的自動移出與補牌；空清單（預設值）代表沒有。不為空時，第一步移出的牌是
-     * 這次剛摸到的牌，[drawnTileId] 是最後一步補到的牌（最後一步因搶和視窗暫停時為 null），各步移出的牌也包含在
-     * [setAsideTileIds]。平台應等前一步的牌落地後再呈現下一步，並在該步呈現它的實體牌牆移動與點數收付。
+     * 這次摸到的牌之一，每一步移出的牌在那一步開始時位於摸牌位；[drawnTileId] 是處理結束後留在摸牌位的牌，最後一步因搶和
+     * 視窗暫停時則是暫停時摸牌位上的牌。各步移出的牌也包含在 [setAsideTileIds]。平台應等前一步的牌落地後再呈現下一步，
+     * 並在該步呈現它的實體牌牆移動與點數收付。
      */
     fun publishPlayerTilesUpdated(
         gameId: Uuid,

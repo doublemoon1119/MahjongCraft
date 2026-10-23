@@ -78,6 +78,7 @@ internal object TileSetAsideResolver {
      * @param action 移出手牌的擴充動作。
      * @param setAsideTile 規則指定要移出的牌。
      * @param module 對局採用的規則模組。
+     * @param pendingFollowUpTiles 摸牌後自動處理還沒詢問過規則的補牌；開啟搶和視窗時保存在視窗中，放過後繼續詢問。
      * @return 這次動作的去向。
      */
     fun resolve(
@@ -86,7 +87,9 @@ internal object TileSetAsideResolver {
         action: GameAction.Extension,
         setAsideTile: IdentifiedTile,
         module: MahjongRuleModule<*>,
+        pendingFollowUpTiles: List<IdentifiedTile> = emptyList(),
     ): Resolution {
+        RuleHookResultValidator.requireHeldSetAsideTile(state, playerId, action, setAsideTile)
         val ronEligiblePlayerIds = RobbingEligibility.ronEligiblePlayerIds(
             tableState = state,
             declarerId = playerId,
@@ -104,7 +107,7 @@ internal object TileSetAsideResolver {
             RonResolution.NEAREST_WINNER -> setOf(state.nearestPlayerInTurnOrder(playerId, ronEligiblePlayerIds))
             RonResolution.ABORTIVE_DRAW -> emptySet()
         }
-        val abortiveDrawReason = if (ronResolution == RonResolution.ABORTIVE_DRAW) module.resolveMultiRonAbortiveDraw() else null
+        val abortiveDrawReason = if (ronResolution == RonResolution.ABORTIVE_DRAW) RuleHookResultValidator.requireMultiRonAbortiveDrawReason(module) else null
         if (abortiveDrawReason != null) {
             return Resolution.AbortiveDraw(
                 tableState = state.recordAbortiveDraw(abortiveDrawReason, declarerId = null, module = module),
@@ -120,6 +123,7 @@ internal object TileSetAsideResolver {
                         declaredAction = action,
                         robbedTile = setAsideTile,
                         eligiblePlayerIds = ronWinningPlayerIds,
+                        pendingFollowUpTileIds = pendingFollowUpTiles.map { it.id },
                     ),
                     revealedHandTileIds = state.revealedHandTileIds + setAsideTile.id,
                 ),

@@ -173,7 +173,7 @@ class DeclareKanUseCase(
                         RonResolution.ABORTIVE_DRAW -> emptySet()
                     }
                     val abortiveDrawReason = if (ronResolution == RonResolution.ABORTIVE_DRAW) {
-                        module.resolveMultiRonAbortiveDraw()
+                        RuleHookResultValidator.requireMultiRonAbortiveDrawReason(module)
                     } else {
                         null
                     }
@@ -222,7 +222,7 @@ class DeclareKanUseCase(
                     }
                     applied as SelfDeclarationApplier.Result.Applied
                     val followUp = if (applied.drawnTiles.isNotEmpty()) {
-                        DrawFollowUpApplier.run(applied.tableState, playerId, DrawSource.Supplemental(kanAction), module)
+                        DrawFollowUpApplier.run(applied.tableState, playerId, DrawSource.Supplemental(kanAction), applied.drawnTiles, module)
                     } else {
                         null
                     }

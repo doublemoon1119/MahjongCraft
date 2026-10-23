@@ -23,6 +23,8 @@ import kotlin.uuid.Uuid
  * @property robbedTile 被搶的那張牌（暗槓/加槓觸發牌或要移出的牌），尚未套用。
  * @property eligiblePlayerIds 有資格搶和的玩家 Uuid 集合。
  * @property responses 目前已收到的回應（只會是 [GameAction.Ron] 或 [GameAction.Pass]），鍵為玩家 Uuid。
+ * @property pendingFollowUpTileIds 摸牌後自動處理在這次移出時還沒詢問過規則的補牌，依摸取順序排列；全員放過、補牌後
+ *           連同新補到的牌繼續詢問。不是摸牌後自動處理造成的視窗，或沒有剩下的牌時為空清單。
  */
 data class PendingRobbingReaction(
     val declarerId: Uuid,
@@ -30,6 +32,7 @@ data class PendingRobbingReaction(
     val robbedTile: IdentifiedTile,
     val eligiblePlayerIds: Set<Uuid>,
     val responses: Map<Uuid, GameAction> = emptyMap(),
+    val pendingFollowUpTileIds: List<Uuid> = emptyList(),
 ) {
     /** 是否所有有資格的玩家都已經回應。 */
     val isComplete: Boolean get() = responses.keys.containsAll(eligiblePlayerIds)

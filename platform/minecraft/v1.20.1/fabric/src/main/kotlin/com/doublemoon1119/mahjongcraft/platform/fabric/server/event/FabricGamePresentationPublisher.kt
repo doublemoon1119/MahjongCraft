@@ -870,7 +870,7 @@ class FabricGamePresentationPublisher(
                 animatedMeldClaimTileIds = newlyClaimedMeldTileIds,
                 setAsideTileIds = setAsideTileIds,
                 animatedSetAsideTileIds = newlySetAsideTileIds,
-                followUpSteps = followUpSteps.map { DrawFollowUpAnimationStep(it.setAsideTileId, it.drawnTileId) },
+                followUpSteps = followUpSteps.map { DrawFollowUpAnimationStep(it.setAsideTileId, it.drawnTileIds) },
             )
             playerAreaPresenter.present(presentation)
             if (followUpSteps.isNotEmpty()) {

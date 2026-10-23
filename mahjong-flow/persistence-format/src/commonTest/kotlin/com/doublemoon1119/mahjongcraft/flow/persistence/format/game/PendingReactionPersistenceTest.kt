@@ -86,7 +86,7 @@ class PendingReactionPersistenceTest {
         assertEquals(reaction.selectedTileIds, restored.selectedTileIds)
     }
 
-    /** 驗證搶槓反應視窗保留槓動作、被搶牌與既有回應。 */
+    /** 驗證搶槓反應視窗保留槓動作、被搶牌、既有回應與尚未詢問的補牌。 */
     @Test
     fun `pending chankan reaction round-trips with robbed tile`() {
         val declarerId = Uuid.random()
@@ -104,6 +104,7 @@ class PendingReactionPersistenceTest {
             robbedTile = robbedTile,
             eligiblePlayerIds = setOf(responderA, responderB),
             responses = mapOf(responderA to GameAction.Pass),
+            pendingFollowUpTileIds = listOf(Uuid.random(), Uuid.random()),
         )
 
         val encoded = json.encodeToString(

@@ -69,6 +69,7 @@ fun PendingRobbingReaction.toPersistenceDto(
     responses = responses.mapKeys { it.key.toString() }.mapValues {
         it.value.toPersistenceDto(exhaustiveDrawReasonRegistry, extensionGameActionRegistry)
     },
+    pendingFollowUpTileIds = pendingFollowUpTileIds.map(Uuid::toString),
 )
 
 /**
@@ -89,4 +90,5 @@ fun PendingRobbingReactionPersistenceDto.toDomain(
     responses = responses.mapKeys { Uuid.parse(it.key) }.mapValues {
         it.value.toDomain(exhaustiveDrawReasonRegistry, extensionGameActionRegistry)
     },
+    pendingFollowUpTileIds = pendingFollowUpTileIds.map(Uuid::parse),
 )

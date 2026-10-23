@@ -21,6 +21,8 @@ import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
+import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
+import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionSource
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionValidator
@@ -105,7 +107,10 @@ class DrawFollowUpAndActionScoringIntegrationTest {
         )
         val published = assertNotNull(fixture.presentation.getPublishedPlayerTiles(fixture.gameId))
         assertEquals(ordinary.id, published.drawnTileId)
-        assertEquals(listOf(firstFlower.id to secondFlower.id, secondFlower.id to ordinary.id), published.followUpSteps.map { it.setAsideTileId to it.drawnTileId })
+        assertEquals(
+            listOf(firstFlower.id to listOf(secondFlower.id), secondFlower.id to listOf(ordinary.id)),
+            published.followUpSteps.map { it.setAsideTileId to it.drawnTileIds },
+        )
         assertEquals(listOf(firstFlower.id, secondFlower.id), published.setAsideTileIds)
         assertTrue(published.isNewlyDrawn)
     }
@@ -179,7 +184,7 @@ class DrawFollowUpAndActionScoringIntegrationTest {
         assertEquals(listOf(GameAction.Draw, FLOWER_ACTION), fixture.recordedActions())
         val pausedStep = fixture.presentation.getPublishedPlayerTiles(fixture.gameId)!!.followUpSteps.single()
         assertEquals(flower.id, pausedStep.setAsideTileId)
-        assertNull(pausedStep.drawnTileId)
+        assertTrue(pausedStep.drawnTileIds.isEmpty())
 
         assertIs<Outcome.Success<Unit>>(fixture.respondToRobbing(fixture.gameId, fixture.southId, GameAction.Pass))
 
@@ -328,6 +333,108 @@ class DrawFollowUpAndActionScoringIntegrationTest {
         assertEquals(table, fixture.repository.getTableState(fixture.gameId))
     }
 
+    /** 一次補到多張時依摸取順序逐張詢問；前面的花也會移出，最後摸到、留在手上的牌回到摸牌位。 */
+    @Test
+    fun `several replacement tiles are asked about in draw order`() = runTest {
+        val fixture = Fixture(TestBehavior(replacementCount = 2))
+        val (first, second) = tile(FLOWER) to tile(FLOWER)
+        val (a, b, c) = Triple(tile(ORDINARY), tile(ORDINARY), tile(ORDINARY))
+        fixture.repository.setTableState(fixture.table(wall = listOf(first, a, b, c, second)))
+
+        assertIs<Outcome.Success<Unit>>(fixture.draw(fixture.gameId, fixture.drawerId))
+
+        val drawer = fixture.drawer()
+        assertEquals(listOf(first, second), (drawer.playerRuleState as FlowerState).flowers)
+        assertEquals(a, drawer.hand.lastDrawn)
+        assertTrue(drawer.hand.tiles.containsAll(listOf(b, c)))
+        assertTrue(drawer.hand.standingTiles.none { it.tile == FLOWER })
+        assertEquals(
+            listOf(first.id to listOf(second.id, c.id), second.id to listOf(b.id, a.id)),
+            fixture.presentation.getPublishedPlayerTiles(fixture.gameId)!!.followUpSteps.map { it.setAsideTileId to it.drawnTileIds },
+        )
+    }
+
+    /** 搶和視窗暫停時保留還沒詢問過的補牌，全員放過後連同新補到的牌繼續詢問。 */
+    @Test
+    fun `a robbing pause keeps the replacement tiles not asked about yet`() = runTest {
+        val behavior = TestBehavior(replacementCount = 2)
+        val fixture = Fixture(behavior)
+        val (first, second, third) = Triple(tile(FLOWER), tile(FLOWER), tile(FLOWER))
+        val ordinary = List(4) { tile(ORDINARY) }
+        behavior.robbingPlayerIds += fixture.southId
+        behavior.robbableTileIds += second.id
+        fixture.repository.setTableState(fixture.table(wall = listOf(first) + ordinary + listOf(third, second)))
+
+        assertIs<Outcome.Success<Unit>>(fixture.draw(fixture.gameId, fixture.drawerId))
+
+        val pending = assertNotNull(fixture.repository.getTableState(fixture.gameId)!!.pendingRobbingReaction)
+        assertEquals(second, pending.robbedTile)
+        assertEquals(listOf(third.id), pending.pendingFollowUpTileIds)
+        assertEquals(second, fixture.drawer().hand.lastDrawn)
+
+        assertIs<Outcome.Success<Unit>>(fixture.respondToRobbing(fixture.gameId, fixture.southId, GameAction.Pass))
+
+        val drawer = fixture.drawer()
+        assertEquals(listOf(first, second, third), (drawer.playerRuleState as FlowerState).flowers)
+        assertEquals(ordinary.first(), drawer.hand.lastDrawn)
+        assertTrue(drawer.hand.standingTiles.none { it.tile == FLOWER })
+    }
+
+    /** 規則要移出的不是這次詢問的牌時視為規則錯誤，桌況不改變。 */
+    @Test
+    fun `a follow up must set aside the tile it asked about`() = runTest {
+        val fixture = Fixture(TestBehavior(setsAsideOldestFlower = true))
+        val table = fixture.table(drawerHand = Hand(tiles = listOf(tile(FLOWER)) + fillers(12)), wall = listOf(tile(FLOWER), tile(ORDINARY)))
+        fixture.repository.setTableState(table)
+
+        val failure = assertFailsWith<RuleContractViolationException> { fixture.draw(fixture.gameId, fixture.drawerId) }
+
+        assertTrue("must remove the drawn tile" in failure.message.orEmpty(), failure.message)
+        assertEquals(table, fixture.repository.getTableState(fixture.gameId))
+    }
+
+    /** 規則指定移出的牌與手上同一張牌的牌面不同時視為規則錯誤，桌況不改變。 */
+    @Test
+    fun `a set aside tile with a different face is rejected`() = runTest {
+        val fixture = Fixture(TestBehavior(changesSetAsideFace = true))
+        val table = fixture.table(wall = listOf(tile(FLOWER), tile(ORDINARY)))
+        fixture.repository.setTableState(table)
+
+        assertFailsWith<RuleContractViolationException> { fixture.draw(fixture.gameId, fixture.drawerId) }
+
+        assertEquals(table, fixture.repository.getTableState(fixture.gameId))
+    }
+
+    /** 搶花依一炮多響設定判定流局、規則卻沒有提供流局原因時視為規則錯誤，不會照常移出並補牌。 */
+    @Test
+    fun `a multi ron abortive draw without a reason stops a set aside`() = runTest {
+        val behavior = TestBehavior(omitsMultiRonAbortiveDrawReason = true)
+        val fixture = Fixture(behavior)
+        behavior.robbingPlayerIds += setOf(fixture.southId, fixture.westId)
+        val table = fixture.table(wall = listOf(tile(FLOWER), tile(ORDINARY)), config = ABORTIVE_DRAW_CONFIG)
+        fixture.repository.setTableState(table)
+
+        assertFailsWith<RuleContractViolationException> { fixture.draw(fixture.gameId, fixture.drawerId) }
+
+        assertEquals(table, fixture.repository.getTableState(fixture.gameId))
+    }
+
+    /** 搶槓依一炮多響設定判定流局、規則卻沒有提供流局原因時視為規則錯誤，不會照常開槓並補牌。 */
+    @Test
+    fun `a multi ron abortive draw without a reason stops a kan`() = runTest {
+        val behavior = TestBehavior(omitsMultiRonAbortiveDrawReason = true, robsKans = true)
+        val fixture = Fixture(behavior)
+        behavior.robbingPlayerIds += setOf(fixture.southId, fixture.westId)
+        val hand = Hand(tiles = List(3) { tile(KAN_TILE) } + fillers(9), lastDrawn = tile(KAN_TILE))
+        val table = fixture.table(drawerHand = hand, wall = listOf(tile(ORDINARY), tile(ORDINARY)), config = ABORTIVE_DRAW_CONFIG)
+        fixture.repository.setTableState(table)
+        val kan = fixture.legalClosedKan()
+
+        assertFailsWith<RuleContractViolationException> { fixture.kan(fixture.gameId, fixture.drawerId, kan.type, kan.tileId) }
+
+        assertEquals(table, fixture.repository.getTableState(fixture.gameId))
+    }
+
     /**
      * 測試規則的可調整行為。
      *
@@ -337,6 +444,12 @@ class DrawFollowUpAndActionScoringIntegrationTest {
      * @property setAsideChangesOthers 移出手牌的結果是否違規改動其他玩家。
      * @property hooksChangeScore 摸牌與鳴牌後的掛勾是否違規改動分數。
      * @property countsFlowersInDynamicState 移出花牌時是否把已移出的張數寫進規則動態狀態。
+     * @property replacementCount 每次補牌從牌山尾端補的張數。
+     * @property robbableTileIds 可以被搶的花；空集合代表每張花都可以搶。
+     * @property robsKans [robbingPlayerIds] 是否也可以搶槓。
+     * @property omitsMultiRonAbortiveDrawReason 一炮多響判定流局時是否違規不提供流局原因。
+     * @property setsAsideOldestFlower 是否違規移出手上最早的花，而不是摸牌位上的花。
+     * @property changesSetAsideFace 是否違規把要移出的牌換成另一種牌面。
      */
     private class TestBehavior(
         val scoring: ((ActionScoringContext) -> ActionScoring?)? = null,
@@ -345,6 +458,12 @@ class DrawFollowUpAndActionScoringIntegrationTest {
         val setAsideChangesOthers: Boolean = false,
         val hooksChangeScore: Boolean = false,
         val countsFlowersInDynamicState: Boolean = false,
+        val replacementCount: Int = 1,
+        val robbableTileIds: MutableSet<Uuid> = mutableSetOf(),
+        val robsKans: Boolean = false,
+        val omitsMultiRonAbortiveDrawReason: Boolean = false,
+        val setsAsideOldestFlower: Boolean = false,
+        val changesSetAsideFace: Boolean = false,
     )
 
     /**
@@ -417,11 +536,13 @@ class DrawFollowUpAndActionScoringIntegrationTest {
          *
          * @param drawerHand 摸牌玩家的手牌。
          * @param wall 活牌，依摸牌順序排列；補牌從尾端取。
+         * @param config 測試規則的配置。
          * @return 測試桌況。
          */
         fun table(
             drawerHand: Hand = Hand(tiles = fillers(13)),
             wall: List<IdentifiedTile> = listOf(tile(ORDINARY)),
+            config: FlowerRuleConfig = FlowerRuleConfig(),
         ): TableState = FakeTableStateFactory.create(
             id = gameId,
             players = listOf(
@@ -429,7 +550,7 @@ class DrawFollowUpAndActionScoringIntegrationTest {
                 player(southId, Wind.SOUTH, Hand(tiles = fillers(13))),
                 player(westId, Wind.WEST, Hand(tiles = fillers(13))),
             ),
-            config = FlowerRuleConfig(),
+            config = config,
             tileWall = TileWall(wall),
             currentPlayerIndex = 0,
         )
@@ -539,17 +660,28 @@ class DrawFollowUpAndActionScoringIntegrationTest {
 
         override fun createSupplementalDrawPolicy(): SupplementalDrawPolicy = SupplementalDrawPolicy { context ->
             val candidate = context.tableStateAfterAction
-            val (replacement, wall) = candidate.tileWall.drawLast()
-            if (replacement == null) {
-                SupplementalDrawDecision.Rejected(SupplementalDrawReasonIds.WALL_EXHAUSTED)
-            } else {
-                SupplementalDrawDecision.Completed(listOf(replacement), wall, candidate.reservedWallTiles, candidate.dynamicRuleState)
+            var wall = candidate.tileWall
+            val replacements = List(behavior.replacementCount) {
+                val (replacement, remaining) = wall.drawLast()
+                wall = remaining
+                replacement ?: return@SupplementalDrawPolicy SupplementalDrawDecision.Rejected(SupplementalDrawReasonIds.WALL_EXHAUSTED)
             }
+            SupplementalDrawDecision.Completed(replacements, wall, candidate.reservedWallTiles, candidate.dynamicRuleState)
         }
+
+        override fun resolveMultiRonAbortiveDraw(): ExhaustiveDrawReason? = if (behavior.omitsMultiRonAbortiveDrawReason) null else delegate.resolveMultiRonAbortiveDraw()
 
         override fun createActionScoringPolicy(): ActionScoringPolicy = behavior.scoring?.let { scoring -> ActionScoringPolicy(scoring) } ?: NoOpActionScoringPolicy
 
-        override fun tileSetAsideBy(player: MahjongPlayer, action: GameAction.Extension): IdentifiedTile? = player.hand.lastDrawn?.takeIf { action == FLOWER_ACTION && it.tile == FLOWER }
+        override fun tileSetAsideBy(player: MahjongPlayer, action: GameAction.Extension): IdentifiedTile? {
+            if (action != FLOWER_ACTION) return null
+            val drawnFlower = player.hand.lastDrawn?.takeIf { it.tile == FLOWER }
+            return when {
+                behavior.setsAsideOldestFlower -> player.hand.standingTiles.firstOrNull { it.tile == FLOWER }
+                behavior.changesSetAsideFace -> drawnFlower?.copy(tile = ORDINARY)
+                else -> drawnFlower
+            }
+        }
 
         override fun applyTileSetAsideAction(
             tableState: TableState,
@@ -559,8 +691,10 @@ class DrawFollowUpAndActionScoringIntegrationTest {
             val actor = tableState.players.first { it.id == actorPlayerId }
             val flower = tileSetAsideBy(actor, action) ?: return null
             val flowers = (actor.playerRuleState as? FlowerState)?.flowers.orEmpty() + flower
+            // 移出規則選出的那張牌，其餘立牌（含摸牌位）都併入立牌。
+            val remaining = actor.hand.standingTiles.filterNot { it.id == flower.id }
             val updated = actor.copy(
-                hand = actor.hand.copy(lastDrawn = null),
+                hand = actor.hand.copy(tiles = remaining, lastDrawn = null),
                 playerRuleState = FlowerState(flowers),
             ).recordAction(action)
             return tableState.copy(
@@ -586,8 +720,9 @@ class DrawFollowUpAndActionScoringIntegrationTest {
             return object : LegalActionValidator by base {
                 override fun getLegalActions(context: LegalActionContext): List<GameAction> {
                     val source = context.source
-                    if (source is LegalActionSource.Declaration && source.action == FLOWER_ACTION) {
-                        return if (context.player.id in behavior.robbingPlayerIds) {
+                    if (source is LegalActionSource.Declaration && (source.action == FLOWER_ACTION || behavior.robsKans && source.action is GameAction.Kan)) {
+                        val robbable = behavior.robbableTileIds.isEmpty() || source.tile.id in behavior.robbableTileIds
+                        return if (context.player.id in behavior.robbingPlayerIds && robbable) {
                             listOf(GameAction.Ron(source.tile.id), GameAction.Pass)
                         } else {
                             listOf(GameAction.Pass)
@@ -625,6 +760,11 @@ class DrawFollowUpAndActionScoringIntegrationTest {
 
         /** 玩家的初始分數。 */
         const val INITIAL_SCORE: Int = 25000
+
+        /** 兩家同時可以搶和時判定流局的配置。 */
+        val ABORTIVE_DRAW_CONFIG = FlowerRuleConfig(
+            RiichiRuleConfig(multiRonPolicy = MultiRonPolicy(doubleRonResolution = RonResolution.ABORTIVE_DRAW, tripleRonResolution = RonResolution.ABORTIVE_DRAW)),
+        )
 
         /**
          * 建立一張實體牌。

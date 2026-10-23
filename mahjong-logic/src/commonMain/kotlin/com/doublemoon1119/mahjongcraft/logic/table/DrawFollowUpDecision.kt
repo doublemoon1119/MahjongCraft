@@ -9,10 +9,10 @@ sealed interface DrawFollowUpDecision {
     data object None : DrawFollowUpDecision
 
     /**
-     * 自動執行規則的移出手牌動作，之後依規則補牌；補到的牌會再詢問一次。
+     * 自動執行規則的移出手牌動作，移出這次詢問的牌，之後依規則補牌；補到的牌會再詢問一次。
      *
-     * 移出哪張牌由規則的 `tileSetAsideBy` 決定，補牌來源由規則的補牌 policy 決定。其他玩家能否搶這張牌，
-     * 與玩家自行宣告這個動作時相同，由規則的合法動作判定器決定。
+     * 規則的 `tileSetAsideBy` 必須選出這次詢問、位於摸牌位的牌，否則視為規則錯誤；補牌來源由規則的補牌 policy 決定。
+     * 其他玩家能否搶這張牌，與玩家自行宣告這個動作時相同，由規則的合法動作判定器決定。
      *
      * @property action 要自動執行的移出手牌動作。
      */
