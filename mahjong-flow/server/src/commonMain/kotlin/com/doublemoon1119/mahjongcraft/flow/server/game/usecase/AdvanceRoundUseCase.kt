@@ -17,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.HandSortPreferen
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.config.dealBatchSizes
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.module.SettlementExtrasOccasion
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.logic.table.MatchProgressionContext
 import com.doublemoon1119.mahjongcraft.logic.table.MatchProgressionDecision
@@ -35,8 +36,8 @@ import kotlin.uuid.Uuid
  *
  * 終局時，本用例把事實與完整 reason ID 寫回 [Game]，
  * 並同步最終桌況快照、廣播 [GameAction.MatchEnded]（帶著最終分數的快照，供呼叫端／客戶端組出排名
- * 呈現）——但不會開新的一局；`TableState` 除了「桌上未被收下的供託歸給最終第一名」這個結算之外
- * 維持呼叫前的樣子不變（見 `MahjongRuleModule.collectStickPot` 的呼叫）。房間清理（把場地從 Game
+ * 呈現）——但不會開新的一局；`TableState` 除了「桌上未被收下的供託依規則分配」這個結算之外
+ * 維持呼叫前的樣子不變（見 `MahjongRuleModule.allocateSettlementExtras`）。房間清理（把場地從 Game
  * 轉回 Room）留給呼叫端接著呼叫 `ReturnToRoomUseCase`，不在這裡處理。務必記下 `isMatchOver` 這個事實：
  * `AiTurnDriver`／`ForcedAutoPlayDriver` 都靠它提前跳過已結束的對局，否則牌山已空的桌況會被反覆
  * 嘗試摸牌、反覆觸發流局結算。
@@ -124,24 +125,20 @@ class AdvanceRoundUseCase(
                     }
 
                     if (decision is MatchProgressionDecision.EndMatch) {
-                        // 整場對局結束時，桌上未被任何人收下的供託（如立直棒）歸給最終第一名——排名
-                        // 判準交給 module.compareForMatchRanking()，與平台呈現終局排名時使用同一支規則
-                        // hook。沿用既有的 collectStickPot
-                        // （贏家收供託也是同一支函式），不支援供託機制的規則回傳 null，維持 state 不變。
-                        val stickPot = module.collectStickPot(state)
-                        val finalState = if (stickPot != null && stickPot.second > 0) {
-                            val topPlayerId = state.players
-                                .sortedWith(module.compareForMatchRanking())
-                                .first().id
-                            state.copy(
-                                players = state.players.map {
-                                    if (it.id == topPlayerId) it.copy(score = it.score + stickPot.second) else it
-                                },
-                                dynamicRuleState = stickPot.first ?: state.dynamicRuleState,
-                            )
-                        } else {
-                            state
-                        }
+                        // 整場對局結束時，桌上還沒被收下的供託交給規則決定歸屬；候選者依最終排名排列，排名判準與
+                        // 平台呈現終局排名時使用同一支 module.compareForMatchRanking()。
+                        val extras = SettlementExtrasResolver.resolve(
+                            state = state,
+                            module = module,
+                            occasion = SettlementExtrasOccasion.MATCH_END,
+                            candidatePlayerIds = state.players.sortedWith(module.compareForMatchRanking()).map { it.id },
+                        )
+                        val finalState = state.copy(
+                            players = state.players.map { player ->
+                                extras.scoreDeltas[player.id]?.let { delta -> player.copy(score = player.score + delta) } ?: player
+                            },
+                            dynamicRuleState = extras.dynamicRuleState,
+                        )
                         val advanceOutcome = AdvanceRoundOutcome(
                             result = AdvanceRoundResult(finalState, isMatchOver = true),
                             wallStructure = null,
@@ -305,7 +302,7 @@ class AdvanceRoundUseCase(
     /**
      * [AdvanceRoundUseCase] 的執行結果。
      *
-     * @property tableState 套用後的桌況——整場對局已結束時，除了「桌上未被收下的供託歸給最終第一名」
+     * @property tableState 套用後的桌況——整場對局已結束時，除了「桌上未被收下的供託依規則分配」
      *           這個結算之外維持呼叫前的桌況不變（不會開新的一局）；否則為已經開始下一局的新桌況。
      * @property isMatchOver 整場對局是否已依規則的 progression policy 結束。
      */

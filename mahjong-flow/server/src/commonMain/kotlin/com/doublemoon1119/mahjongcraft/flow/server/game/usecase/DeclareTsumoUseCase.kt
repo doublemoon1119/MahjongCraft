@@ -26,6 +26,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.module.SettlementExtrasOccasion
 import com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.WallRevealCheckpoint
@@ -139,36 +140,23 @@ class DeclareTsumoUseCase(
                             "Rule ${module.id} offered tsumo but returned no settlement for $playerId",
                         )
 
-                    // 贏家同時收下場上所有供託（如立直棒），不支援此機制的規則回傳 null
-                    val stickPot = module.collectStickPot(stateForSettlement)
-                    // 贏家另外依本場數收取連莊點數，沒有此機制的規則回傳空 map
-                    val comboBonusPayments = module.resolveComboBonusPayments(
-                        tableState = stateForSettlement,
-                        winnerId = playerId,
-                        discarderId = null,
-                        resolution = tsumoResult,
+                    // 場上供託與連莊點數的歸屬交給規則決定；自摸時唯一的候選者是和牌者。
+                    val extras = SettlementExtrasResolver.resolve(
+                        state = stateForSettlement,
+                        module = module,
+                        occasion = SettlementExtrasOccasion.WIN,
+                        candidatePlayerIds = listOf(playerId),
+                        resolutions = mapOf(playerId to tsumoResult),
                     )
-
-                    val updatedWinner = stateForSettlement.currentPlayer
-                        .copy(
-                            score = stateForSettlement.currentPlayer.score +
-                                tsumoResult.totalGained +
-                                (stickPot?.second ?: 0) +
-                                comboBonusPayments.values.sum(),
-                        )
-                        .recordAction(GameAction.Tsumo)
                     val updatedPlayers = stateForSettlement.players.map { p ->
-                        when {
-                            p.id == playerId -> updatedWinner
-                            else -> {
-                                val payment = (tsumoResult.paymentsByPlayerId[p.id] ?: 0) + (comboBonusPayments[p.id] ?: 0)
-                                if (payment == 0) p else p.copy(score = p.score - payment)
-                            }
-                        }
+                        val handDelta = if (p.id == playerId) tsumoResult.totalGained else -(tsumoResult.paymentsByPlayerId[p.id] ?: 0)
+                        val delta = handDelta + (extras.scoreDeltas[p.id] ?: 0)
+                        val scored = if (delta == 0) p else p.copy(score = p.score + delta)
+                        if (p.id == playerId) scored.recordAction(GameAction.Tsumo) else scored
                     }
                     val newState = stateForSettlement.copy(
                         players = updatedPlayers,
-                        dynamicRuleState = stickPot?.first ?: stateForSettlement.dynamicRuleState,
+                        dynamicRuleState = extras.dynamicRuleState,
                     )
 
                     val settlement = WinSettlementPresentationRequestFactory.create(

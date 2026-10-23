@@ -13,6 +13,10 @@ import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResu
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.module.SettlementExtrasAllocation
+import com.doublemoon1119.mahjongcraft.logic.module.SettlementExtrasContext
+import com.doublemoon1119.mahjongcraft.logic.module.SettlementExtrasOccasion
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
@@ -51,10 +55,14 @@ class RoundTransitionFlowTest {
      *
      * @param transitionDirective 依本局結果決定規則回傳的下一任莊家。
      * @param seatOrder 依本局結算後的桌況決定下一局的座位順序；null 表示規則不換位。
+     * @param stickPotCollectorCount 一般流局時收下供託的玩家數，從第二個座位起算。
+     * @param allocate 規則的供託與連莊點數分配；null 表示沿用預設分配。
      */
     private class Fixtures(
         transitionDirective: (RoundTransitionContext) -> RoundTransitionDirective,
         seatOrder: ((TableState) -> List<Uuid>)? = null,
+        stickPotCollectorCount: Int = 0,
+        allocate: ((SettlementExtrasContext) -> SettlementExtrasAllocation)? = null,
     ) {
         val gameId = Uuid.random()
         val gameRepo = FakeGameRepository()
@@ -65,6 +73,8 @@ class RoundTransitionFlowTest {
                         delegate = RiichiRuleModule(id, config),
                         transitionDirective = transitionDirective,
                         seatOrder = seatOrder,
+                        stickPotCollectorCount = stickPotCollectorCount,
+                        allocate = allocate,
                     )
                 },
             )
@@ -106,7 +116,11 @@ class RoundTransitionFlowTest {
         private val delegate: RiichiRuleModule,
         private val transitionDirective: (RoundTransitionContext) -> RoundTransitionDirective,
         private val seatOrder: ((TableState) -> List<Uuid>)?,
+        private val stickPotCollectorCount: Int,
+        private val allocate: ((SettlementExtrasContext) -> SettlementExtrasAllocation)?,
     ) : MahjongRuleModule<RiichiRuleConfig> by delegate {
+        override fun allocateSettlementExtras(context: SettlementExtrasContext): SettlementExtrasAllocation = allocate?.invoke(context) ?: delegate.allocateSettlementExtras(context)
+
         override fun resolveRoundTransition(
             context: RoundTransitionContext,
         ): RoundTransitionDirective = transitionDirective(context)
@@ -125,7 +139,7 @@ class RoundTransitionFlowTest {
         override fun declareExhaustiveDraw(tableState: TableState): ExhaustiveDrawSettlementResult = ExhaustiveDrawSettlementResult(
             reason = RiichiExhaustiveDrawReason.Normal,
             tenpaiPlayerIds = tableState.players.drop(1).take(1).mapTo(mutableSetOf()) { it.id },
-            stickPotCollectorPlayerIds = emptySet(),
+            stickPotCollectorPlayerIds = tableState.players.drop(1).take(stickPotCollectorCount).mapTo(mutableSetOf()) { it.id },
             scoreDeltas = emptyMap(),
         )
     }
@@ -294,13 +308,72 @@ class RoundTransitionFlowTest {
         assertEquals(emptyList(), fixtures.presentationPublisher.getPublishedSeatOrderChanges(fixtures.gameId))
     }
 
-    /** 建立可供一般流局用例使用的固定局位桌況。 */
-    private fun startedTable(gameId: Uuid, currentPlayerIndex: Int): TableState = FakeTableStateFactory.create(
+    /** 一般流局時兩位玩家收下供託，規則可以讓兩人平分。 */
+    @Test
+    fun `an exhaustive draw can split the pot between collectors`() = runTest {
+        val fixtures = Fixtures(
+            transitionDirective = { RoundTransitionDirective.PassToNextSeat },
+            stickPotCollectorCount = 2,
+            allocate = { context ->
+                SettlementExtrasAllocation(context.candidatePlayerIds.associateWith { context.stickPotAmount / 2 }, emptySet())
+            },
+        )
+        val table = startedTable(fixtures.gameId, currentPlayerIndex = 0, riichiStickCount = 2)
+        fixtures.gameRepo.setTableState(table)
+
+        assertIs<Outcome.Success<*>>(fixtures.exhaustiveDrawUseCase(fixtures.gameId))
+
+        val settled = assertNotNull(fixtures.gameRepo.getTableState(fixtures.gameId))
+        assertEquals(table.players.map { it.score }.let { listOf(it[0], it[1] + 1000, it[2] + 1000, it[3]) }, settled.players.map { it.score })
+        assertEquals(0, (settled.dynamicRuleState as RiichiDynamicState).riichiStickCount)
+    }
+
+    /** 整場結束時規則可以不分剩下的供託：沒有人加分，供託仍從桌上收走。 */
+    @Test
+    fun `a rule can drop the leftover pot at the end of the match`() = runTest {
+        val fixtures = Fixtures(
+            transitionDirective = { RoundTransitionDirective.PassToNextSeat },
+            allocate = { context ->
+                if (context.occasion == SettlementExtrasOccasion.MATCH_END) {
+                    SettlementExtrasAllocation(emptyMap(), emptySet())
+                } else {
+                    SettlementExtrasAllocation(mapOf(context.candidatePlayerIds.first() to context.stickPotAmount), emptySet())
+                }
+            },
+        )
+        val table = startedTable(fixtures.gameId, currentPlayerIndex = 0, riichiStickCount = 2, gameLength = RiichiGameLength.OneGame)
+        fixtures.gameRepo.setTableState(table)
+        assertIs<Outcome.Success<*>>(fixtures.exhaustiveDrawUseCase(fixtures.gameId))
+        val beforeEnd = assertNotNull(fixtures.gameRepo.getTableState(fixtures.gameId))
+
+        val result = assertIs<Outcome.Success<AdvanceRoundUseCase.AdvanceRoundResult>>(fixtures.advanceRoundUseCase(fixtures.gameId))
+
+        assertEquals(true, result.value.isMatchOver)
+        assertEquals(beforeEnd.players.map { it.score }, result.value.tableState.players.map { it.score })
+        assertEquals(0, (result.value.tableState.dynamicRuleState as RiichiDynamicState).riichiStickCount)
+    }
+
+    /**
+     * 建立可供一般流局用例使用的固定局位桌況。
+     *
+     * @param gameId 對局識別碼。
+     * @param currentPlayerIndex 目前行動的玩家。
+     * @param riichiStickCount 桌上的立直棒數。
+     * @param gameLength 賽程長度。
+     * @return 測試桌況。
+     */
+    private fun startedTable(
+        gameId: Uuid,
+        currentPlayerIndex: Int,
+        riichiStickCount: Int = 0,
+        gameLength: RiichiGameLength = RiichiGameLength.East,
+    ): TableState = FakeTableStateFactory.create(
         id = gameId,
         players = listOf(Wind.EAST, Wind.SOUTH, Wind.WEST, Wind.NORTH).map { seat ->
             FakeMahjongPlayerFactory.create(initialSeat = seat)
         },
-        config = RiichiRuleConfig(gameLength = RiichiGameLength.East),
+        config = RiichiRuleConfig(gameLength = gameLength),
         currentPlayerIndex = currentPlayerIndex,
+        dynamicRuleState = RiichiDynamicState(riichiStickCount = riichiStickCount),
     )
 }

@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleContra
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.module.SettlementExtrasOccasion
 import com.doublemoon1119.mahjongcraft.logic.module.WinResolutionResult
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
@@ -23,10 +24,8 @@ import kotlin.uuid.Uuid
  * [MahjongRuleModule.declareRon] 獨立結算，再把所有結算金額加總到同一份分數異動——同一位玩家
  * 有可能同時是某人的贏家、又是另一人的包牌責任者，需要正確疊加而非互相覆蓋。
  *
- * 場上供託（如立直棒）與連莊點數（如本場，見 [MahjongRuleModule.resolveComboBonusPayments]）由其中
- * 一位贏家收取：只有單一贏家時就是那位贏家；多家和時依頭跳順位
- * （[TableState.nearestPlayerInTurnOrder]，以 [discarderId] 為起點）由離放銃者最近的贏家收取，
- * 不是所有贏家均分。
+ * 場上供託（如立直棒）與連莊點數（如本場）的歸屬交給規則的 [MahjongRuleModule.allocateSettlementExtras]：
+ * 候選贏家依頭跳順位（從放銃者的下家起算）排列，規則可以只給最近的贏家、給每位贏家或自行分配。
  */
 internal object RonSettlementResolver {
     /**
@@ -75,28 +74,15 @@ internal object RonSettlementResolver {
             }
         }
 
-        // 場上供託與連莊點數由同一位贏家收取：單一贏家時就是那位贏家，多家和時依頭跳順位由離放銃者
-        // 最近的贏家收取
-        val collectorId = if (winnerIds.size == 1) {
-            winnerIds.first()
-        } else {
-            state.nearestPlayerInTurnOrder(discarderId, winnerIds)
-        }
-        // 不支援供託機制的規則回傳 null
-        val stickPot = module.collectStickPot(state)
-        if (stickPot != null) {
-            scoreDeltas[collectorId] = (scoreDeltas[collectorId] ?: 0) + stickPot.second
-        }
-        // 沒有連莊點數機制的規則回傳空 map
-        module.resolveComboBonusPayments(
-            tableState = state,
-            winnerId = collectorId,
+        val extras = SettlementExtrasResolver.resolve(
+            state = state,
+            module = module,
+            occasion = SettlementExtrasOccasion.WIN,
+            candidatePlayerIds = state.playersInTurnOrderFrom(discarderId, winnerIds),
             discarderId = discarderId,
-            resolution = settlements[collectorId],
-        ).forEach { (payerId, amount) ->
-            scoreDeltas[collectorId] = (scoreDeltas[collectorId] ?: 0) + amount
-            scoreDeltas[payerId] = (scoreDeltas[payerId] ?: 0) - amount
-        }
+            resolutions = settlements,
+        )
+        extras.scoreDeltas.forEach { (playerId, delta) -> scoreDeltas[playerId] = (scoreDeltas[playerId] ?: 0) + delta }
 
         val updatedPlayers = players.map { p ->
             val updated = p.copy(score = p.score + (scoreDeltas[p.id] ?: 0))
@@ -106,7 +92,7 @@ internal object RonSettlementResolver {
         return Result(
             tableState = state.copy(
                 players = updatedPlayers,
-                dynamicRuleState = stickPot?.first ?: state.dynamicRuleState,
+                dynamicRuleState = extras.dynamicRuleState,
             ),
             resolutions = settlements,
         )

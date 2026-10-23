@@ -164,7 +164,7 @@ data class TableState(
      *
      * 與 [getNextPlayer] 的差異：[getNextPlayer] 回傳座位表上物理相鄰的下一位，不論其是否已完成
      * 本局；此函式跳過 finished 玩家，用於決定「回合真正輪到誰」。座位相對方向（[relativeDirectionOf]）
-     * 與供託歸屬（[nearestPlayerInTurnOrder]）仍應使用 [getNextPlayer] 那套完整座位順序，不應改用
+     * 與頭跳、供託候選順位（[playersInTurnOrderFrom]）仍應使用 [getNextPlayer] 那套完整座位順序，不應改用
      * 這個函式。
      *
      * @param afterPlayerId 作為起算基準的玩家 Uuid（本身不必是 active）。
@@ -228,11 +228,23 @@ data class TableState(
      * @throws IllegalArgumentException 當 [fromPlayerId] 不在桌上、[candidateIds] 為空、
      *         或其中有玩家不在桌上時拋出。
      */
-    fun nearestPlayerInTurnOrder(fromPlayerId: Uuid, candidateIds: Set<Uuid>): Uuid {
+    fun nearestPlayerInTurnOrder(fromPlayerId: Uuid, candidateIds: Set<Uuid>): Uuid = playersInTurnOrderFrom(fromPlayerId, candidateIds).first()
+
+    /**
+     * 依 [players] 的回合順序，從 [fromPlayerId] 起算排列 [candidateIds]：[fromPlayerId] 本人若在候選中排最前，
+     * 接著依 [getNextPlayer] 方向排列。第一位就是 [nearestPlayerInTurnOrder] 的結果。
+     *
+     * @param fromPlayerId 作為起算基準的玩家 Uuid（例如放銃者或莊家）。
+     * @param candidateIds 候選玩家 Uuid 集合。
+     * @return 依上述順序排列的 [candidateIds]。
+     * @throws IllegalArgumentException 當 [fromPlayerId] 不在桌上、[candidateIds] 為空、
+     *         或其中有玩家不在桌上時拋出。
+     */
+    fun playersInTurnOrderFrom(fromPlayerId: Uuid, candidateIds: Set<Uuid>): List<Uuid> {
         require(candidateIds.isNotEmpty()) { "candidateIds must not be empty" }
         val fromIndex = players.indexOfFirst { it.id == fromPlayerId }
         require(fromIndex != -1) { "Player not found in this table" }
-        return candidateIds.minBy { candidateId ->
+        return candidateIds.sortedBy { candidateId ->
             val candidateIndex = players.indexOfFirst { it.id == candidateId }
             require(candidateIndex != -1) { "Player not found in this table" }
             (candidateIndex - fromIndex).mod(playerCount)

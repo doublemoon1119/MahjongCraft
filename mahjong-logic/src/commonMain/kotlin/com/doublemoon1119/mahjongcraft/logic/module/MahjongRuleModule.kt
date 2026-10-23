@@ -478,32 +478,48 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     ): WinResolutionResult?
 
     /**
-     * 胡牌時，贏家收下場上供託（如立直棒）所增加的點數，以及收下後應套用的新動態桌況狀態。
+     * 收下場上供託（如立直棒）的總額，以及收下後應套用的新動態桌況狀態。
      *
-     * 不區分自摸／榮和／多家和——呼叫端決定「這次由誰收下」（自摸與單一贏家榮和是唯一贏家；
-     * 多家和則依頭跳順位由離放銃者最近的贏家收下，見 [TableState.nearestPlayerInTurnOrder]），
-     * 這裡只負責算出「收下後供託剩多少、贏家因此多拿了多少點數」。
+     * 不區分自摸、榮和、多家和、流局或整場結束；這裡只負責算出「這次收下多少、收下後狀態如何」，
+     * 由誰收、各收多少由 [allocateSettlementExtras] 決定。
      *
      * 不支援供託機制的規則應回傳 null；即使場上目前沒有供託可收（例如立直棒數量為 0），
      * 只要規則本身有這個機制就應回傳非 null（金額為 0、狀態不變）——null 專門用來表示
      * 「這個規則根本沒有供託機制」，不跟「目前沒有供託」混用。
      *
      * @param tableState 目前的桌況（尚未套用本次收供託的變化）。
-     * @return 收下供託後應套用的動態桌況狀態，以及贏家因此獲得的點數；若此規則沒有供託機制則為 null。
+     * @return 收下供託後應套用的動態桌況狀態，以及收下的總額；若此規則沒有供託機制則為 null。
      */
     fun collectStickPot(tableState: TableState): Pair<DynamicRuleState?, Int>?
+
+    /**
+     * 決定這次結算時場上供託分給誰、各分多少，以及哪些玩家收取連莊點數。
+     *
+     * 只讀且無副作用；相同的 [context] 必須得到相同結果。Flow 以回傳結果合併手牌結算後一次寫入，並驗證收款者都是候選玩家、
+     * 金額不為負、供託總額與收下的總額相符（整場結束時可以全部不分）；違反時以規則錯誤中止。
+     * 預設由候選順序中的第一位拿走全部供託；和牌時同一位也收取連莊點數，其他時機不收。
+     *
+     * @param context 這次結算的時機、候選玩家與供託總額。
+     * @return 供託與連莊點數的歸屬。
+     */
+    fun allocateSettlementExtras(context: SettlementExtrasContext): SettlementExtrasAllocation {
+        val first = context.candidatePlayerIds.first()
+        return SettlementExtrasAllocation(
+            stickPotShares = if (context.stickPotAmount > 0) mapOf(first to context.stickPotAmount) else emptyMap(),
+            comboBonusRecipientIds = if (context.occasion == SettlementExtrasOccasion.WIN) setOf(first) else emptySet(),
+        )
+    }
 
     /**
      * 胡牌時，贏家依 [TableState.comboCount] 額外收取的連莊點數（如日麻的本場），以每位付款者支付的
      * 金額表示。
      *
-     * 與 [collectStickPot] 相同，由呼叫端決定「這次由誰收取」：自摸與單一贏家榮和是唯一贏家，多家和
-     * 則只有收下供託的那位贏家收取。這裡只負責依規則決定付款者與金額。
+     * 由誰收取由 [allocateSettlementExtras] 決定，對每一位收取者各呼叫一次；這裡只負責依規則決定付款者與金額。
      *
      * 預設沒有連莊點數，回傳空 map。
      *
      * @param tableState 目前的桌況（尚未套用本次胡牌結算）。
-     * @param winnerId 收取連莊點數的贏家 Uuid。
+     * @param winnerId 收取連莊點數的玩家 Uuid。
      * @param discarderId 放銃者 Uuid；自摸或與自摸等價的結果為 null。
      * @param resolution 此贏家本次胡牌的結算結果；與胡牌等價但沒有手牌結算的結果為 null。
      * @return 每位付款者應支付的連莊點數；金額皆為正數，不含 [winnerId]。

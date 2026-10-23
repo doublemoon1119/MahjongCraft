@@ -14,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResult
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.module.SettlementExtrasOccasion
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionContext
@@ -89,17 +90,19 @@ class DeclareExhaustiveDrawUseCase(
                             diagnostic = "Rule module ${module.id} did not provide an exhaustive draw settlement",
                         )
 
-                    // 這次流局若有玩家該收下場上所有供託（如立直棒，例如日麻的流局滿貫成立者），
-                    // 不支援供託機制的規則回傳 null
-                    val stickPot = if (settlement.stickPotCollectorPlayerIds.isNotEmpty()) {
-                        module.collectStickPot(state)
-                    } else {
-                        null
+                    // 這次流局有玩家該收下場上供託時，候選者從莊家起算排列，歸屬交給規則決定。
+                    val extras = settlement.stickPotCollectorPlayerIds.takeIf { it.isNotEmpty() }?.let { collectorIds ->
+                        SettlementExtrasResolver.resolve(
+                            state = state,
+                            module = module,
+                            occasion = SettlementExtrasOccasion.EXHAUSTIVE_DRAW,
+                            candidatePlayerIds = state.playersInTurnOrderFrom(state.dealerPlayerId, collectorIds),
+                        )
                     }
-                    val stickPotDeltas = distributeStickPot(state, settlement.stickPotCollectorPlayerIds, stickPot?.second ?: 0)
+                    val extraDeltas = extras?.scoreDeltas.orEmpty()
 
-                    val finalDeltas = (settlement.scoreDeltas.keys + stickPotDeltas.keys).associateWith { id ->
-                        (settlement.scoreDeltas[id] ?: 0) + (stickPotDeltas[id] ?: 0)
+                    val finalDeltas = (settlement.scoreDeltas.keys + extraDeltas.keys).associateWith { id ->
+                        (settlement.scoreDeltas[id] ?: 0) + (extraDeltas[id] ?: 0)
                     }
 
                     val updatedPlayers = state.players.map { player ->
@@ -112,7 +115,7 @@ class DeclareExhaustiveDrawUseCase(
                     }
                     val newState = state.copy(
                         players = updatedPlayers,
-                        dynamicRuleState = stickPot?.first ?: state.dynamicRuleState,
+                        dynamicRuleState = extras?.dynamicRuleState ?: state.dynamicRuleState,
                         revealedHandSettlements = settlement.revealedHands,
                     ).revealHandsOf(settlement.revealedHands.map { it.playerId })
 
@@ -162,27 +165,6 @@ class DeclareExhaustiveDrawUseCase(
                 settlement = result.settlement,
             ),
         )
-    }
-
-    /**
-     * 決定供託由誰收下：多位玩家同時該收下供託時（例如日麻的流局滿貫同時多位成立，機率極低），
-     * 頭跳——供託全數由座位順序最接近莊家的一人取得，其餘成立者不收供託。與這個專案在一般榮和
-     * 多家和時處理供託分配的既有做法一致（見 [RonSettlementResolver.resolve]：多位贏家時供託由
-     * [TableState.nearestPlayerInTurnOrder] 判定的那位收下，不是均分），榮和沒有「放銃者」可用
-     * 來判斷順位，改以莊家為基準。
-     *
-     * @param state 流局結算後的權威桌況。
-     * @param stickPotCollectorPlayerIds 規則判定可收下供託的玩家。
-     * @param stickPotAmount 本次可分配的供託總額。
-     * @return 收下者應得的供託金額（單一 entry 的 map）；無人該收下（或供託金額為 0）時回傳空 map。
-     */
-    private fun distributeStickPot(state: TableState, stickPotCollectorPlayerIds: Set<Uuid>, stickPotAmount: Int): Map<Uuid, Int> {
-        if (stickPotCollectorPlayerIds.isEmpty() || stickPotAmount == 0) return emptyMap()
-        if (stickPotCollectorPlayerIds.size == 1) return mapOf(stickPotCollectorPlayerIds.first() to stickPotAmount)
-
-        val dealerId = state.dealerPlayerId
-        val collectorId = state.nearestPlayerInTurnOrder(dealerId, stickPotCollectorPlayerIds)
-        return mapOf(collectorId to stickPotAmount)
     }
 
     /**
