@@ -107,6 +107,8 @@ import net.minecraft.state.property.Properties
 import net.minecraft.util.Identifier
 import net.minecraft.util.math.BlockPos
 import kotlin.random.Random
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 import kotlin.uuid.Uuid
 import kotlin.uuid.toJavaUuid
 
@@ -610,8 +612,8 @@ class FabricGamePresentationPublisher(
      * 世界／entity 存取丟回伺服器主執行緒執行。
      *
      * 同一局內某些座位的角落寬度改變時（例如供託在局中增加），那些座位的手牌、摸牌位、副露與移出的牌一起平移到新位置。
-     * 角落變寬時等平移結束才擺上新的物件，變窄時先收走物件再平移，移動途中不會壓到角落物件。剛由
-     * [publishPlayerTilesUpdated] 依新寬度擺好的座位不會再移動一次。
+     * 角落變寬時等桌上的牌全部停下才擺上新的物件，變窄時先收走物件再平移，移動途中不會壓到角落物件；平移途中再來的更新
+     * 也等平移結束。剛由 [publishPlayerTilesUpdated] 依新寬度擺好的座位不會再移動一次。
      */
     override fun publishRuleStateUpdated(gameId: Uuid) {
         if (serverHolder.current() == null) {
@@ -633,9 +635,40 @@ class FabricGamePresentationPublisher(
             )
             if (!plan.presentsPropsAfterSlide) tablePropPresenter.present(propsPresentation)
             plan.slidingSeatWidths.forEach { (seatIndex, width) -> slidePlayerArea(gameId, resolved, tableState, seatIndex, width) }
-            if (plan.presentsPropsAfterSlide) {
-                delay(CORNER_SLIDE_TICKS * MILLIS_PER_TICK)
-                tablePropPresenter.present(propsPresentation)
+            val slideId = plan.slideId ?: return@launchOpeningStage
+            val ownsSlide = cornerLayout.awaitSlideEnd(
+                tableId = gameId,
+                slideId = slideId,
+                areTilesMoving = { arePlayerAreasMoving(gameId, resolved) },
+                waitOneTick = { delay(TICK_DURATION) },
+                onSlowSlide = {
+                    logger.warn(
+                        "Player areas still moving after {} ticks, still waiting before presenting corner props: gameId={}",
+                        TableCornerLayoutPlanner.SLOW_SLIDE_WARNING_TICKS,
+                        gameId,
+                    )
+                },
+            )
+            if (ownsSlide && plan.presentsPropsAfterSlide) tablePropPresenter.present(propsPresentation)
+        }
+    }
+
+    /**
+     * 各座位牌區（手牌、摸牌位、副露與移出的牌）是否還有牌在動。
+     *
+     * 平移排在牌原本還沒播完的動畫之後，例如補牌落下後才開始平移，所以看牌實際停下的時間，不只看平移的時長。不阻塞全桌的
+     * 動畫（例如中途胡牌在已完成玩家牌上的演出）不算在內。
+     *
+     * @param gameId 桌子識別碼。
+     * @param resolved 已解析的桌子與世界。
+     * @return 還有牌在動時為 true；對局已不存在時為 null。
+     */
+    private suspend fun arePlayerAreasMoving(gameId: Uuid, resolved: ResolvedTableContext): Boolean? {
+        val tableState = gameRepository.getTableState(gameId) ?: return null
+        val module = moduleRegistry.getModule(tableState.config)
+        return tableState.players.any { player ->
+            (player.hand.allTiles + module.setAsideTiles(player)).any { tile ->
+                resolved.findTile(tile.id)?.blocksTableBusy(resolved.world.time) == true
             }
         }
     }
@@ -1522,8 +1555,8 @@ class FabricGamePresentationPublisher(
         /** 桌角寬度改變時整區平移的時長；與本人視角手牌補位的時長相同，兩者一起開始、一起結束。 */
         const val CORNER_SLIDE_TICKS: Int = TileMotionAnimationSpec.DEFAULT_DURATION_TICKS
 
-        /** 一個 server tick 的毫秒數。 */
-        const val MILLIS_PER_TICK: Long = 50L
+        /** 一個 server tick 的時長。 */
+        val TICK_DURATION: Duration = 50.milliseconds
     }
 }
 
