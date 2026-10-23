@@ -57,14 +57,14 @@ sealed interface HistoryReplayFact {
     ) : HistoryReplayFact
 
     /**
-     * 開局準備事實。
+     * 規則選擇事實。
      *
      * @property typeKey 事實種類。
      * @property stepId 步驟識別碼。
      * @property stepIndex 步驟索引。
      * @property nextStepId 下一步識別碼。
      */
-    data class Preparation(
+    data class RuleDecision(
         override val typeKey: String,
         val stepId: String,
         val stepIndex: Int,

@@ -24,7 +24,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAvai
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementPresentationRequestFactory
-import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceAutomaticRoundPreparationUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceAutomaticRuleDecisionUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ResolvePostReactionRoundOutcomeUseCase
@@ -84,8 +84,8 @@ import kotlin.uuid.Uuid
  * @property presentationBusyGate 查詢平台是否仍在呈現需要等待的內容；[driveAutomatedPlayers] 與
  *   [resumePendingGameTransition] 都會在推進權威流程前檢查，忙碌時直接返回並留待後續心跳重試；
  *   實作由平台層提供，理由見 [GamePresentationBusyGate] KDoc。
- * @property roundPreparationAiDriver 解析下一筆自動開局準備提交；未提供時不處理 AI 準備提交。
- * @property advanceAutomaticRoundPreparationUseCase 收斂無須玩家輸入的開局準備步驟；未提供時略過。
+ * @property ruleDecisionAiDriver 解析下一筆自動規則選擇提交；未提供時不處理 AI 準備提交。
+ * @property advanceAutomaticRuleDecisionUseCase 收斂無須玩家輸入的規則選擇步驟；未提供時略過。
  * @property abortGameUseCase 無法安全繼續時中止原場次並還原房間。
  * @property automaticCommandResolver 從同一份權威桌況取得安全代打命令。
  * @property failurePolicy 判斷流程中擴充失敗是否能隔離；取消與致命錯誤原樣外傳。
@@ -111,8 +111,8 @@ class GameFlowCoordinator(
     private val abortGameUseCase: GameAbortHandler,
     private val automaticCommandResolver: AutomaticGameCommandResolver,
     private val failurePolicy: ExtensionFailurePolicy = ExtensionFailurePolicy.Default,
-    private val roundPreparationAiDriver: RoundPreparationAiDriver? = null,
-    private val advanceAutomaticRoundPreparationUseCase: AdvanceAutomaticRoundPreparationUseCase? = null,
+    private val ruleDecisionAiDriver: RuleDecisionAiDriver? = null,
+    private val advanceAutomaticRuleDecisionUseCase: AdvanceAutomaticRuleDecisionUseCase? = null,
 ) {
     /** 避免玩家命令與恢復心跳同時重複執行同一個待完成流程。 */
     private val pendingTransitionMutex = Mutex()
@@ -187,7 +187,7 @@ class GameFlowCoordinator(
     /**
      * 推進一次自動操作鏈中的單一步驟。
      *
-     * 單步會依序處理待完成流程、回合準備、強制自動操作、真人自動設定與 AI 決策；呈現忙碌、沒有
+     * 單步會依序處理待完成流程、規則選擇、強制自動操作、真人自動設定與 AI 決策；呈現忙碌、沒有
      * 可執行決策，或命令沒有改變權威 [Game] 時，會立即停止。此方法不會等待下一步，適合由外部
      * 逐次收集自動操作事件並以背壓控制推進速度；只經 [AutomatedAdvanceManager.runExclusive] 呼叫。
      *
@@ -219,22 +219,22 @@ class GameFlowCoordinator(
         if (resumePendingGameTransition(gameId)) {
             return stepBefore != gameRepository.getGame(gameId)
         }
-        if (advanceAutomaticRoundPreparationUseCase?.invoke(gameId) == true) {
+        if (advanceAutomaticRuleDecisionUseCase?.invoke(gameId) == true) {
             return stepBefore != gameRepository.getGame(gameId)
         }
 
-        val preparationAction = roundPreparationAiDriver?.resolveNextAction(gameId)
-        if (preparationAction != null) {
-            val result = submitAutomatedDecision(gameId, preparationAction.playerId, preparationAction.command, preparationAction.basis)
-            if (preparationAction.clearsForcedAutoPlay && result is Outcome.Success) {
-                clearForcedAutoPlay(gameId, preparationAction.playerId)
-                decisionAvailabilityService.reconcile(gameId, preparationAction.playerId)
+        val ruleDecisionAction = ruleDecisionAiDriver?.resolveNextAction(gameId)
+        if (ruleDecisionAction != null) {
+            val result = submitAutomatedDecision(gameId, ruleDecisionAction.playerId, ruleDecisionAction.command, ruleDecisionAction.basis)
+            if (ruleDecisionAction.clearsForcedAutoPlay && result is Outcome.Success) {
+                clearForcedAutoPlay(gameId, ruleDecisionAction.playerId)
+                decisionAvailabilityService.reconcile(gameId, ruleDecisionAction.playerId)
             }
             return stepBefore != gameRepository.getGame(gameId)
         }
 
-        // 開局準備仍在等待參與者提交時，暫停一般自動決策，直到準備步驟完成。
-        if (gameRepository.getGame(gameId)?.pendingRoundPreparation != null) return false
+        // 規則選擇仍在等待參與者提交時，暫停一般自動決策，直到選擇步驟完成。
+        if (gameRepository.getGame(gameId)?.pendingRuleDecision != null) return false
 
         val forcedAction = forcedAutoPlayDriver.resolveNextAction(gameId)
         val automaticAction = if (forcedAction == null) automaticDecisionDriver?.resolveNextAction(gameId) else null
@@ -338,7 +338,7 @@ class GameFlowCoordinator(
      *
      * @param gameId 對局 Uuid。
      * @param playerId 由策略或伺服器代操作的玩家。
-     * @param command 自動決定的遊戲命令或開局準備提交。
+     * @param command 自動決定的遊戲命令或規則選擇提交。
      * @param expectedGame 決策所依據的權威遊戲。
      * @return 命令或一次合法後備的結果；過期、呈現忙碌時為 null；契約矛盾時為中止錯誤。
      */
@@ -354,7 +354,7 @@ class GameFlowCoordinator(
             val first = dispatchExpectedCommand(gameId, playerId, command, expectedGame)
             if (first !is Outcome.Error || gameRepository.getGame(gameId) != expectedGame) return@guardProgress first
             val fallback = automaticCommandResolver.resolve(expectedGame.tableState, playerId)
-            if (fallback == null || fallback == command || command is GameCommand.SubmitRoundPreparation) {
+            if (fallback == null || fallback == command || command is GameCommand.SubmitRuleDecision) {
                 throw RuleContractViolationException(
                     GameAbortReasonIds.AUTOMATIC_DECISION_FAILED,
                     "Automatic command ${command::class.simpleName} was rejected: ${first.error::class.simpleName}; no safe distinct fallback",
@@ -498,7 +498,7 @@ class GameFlowCoordinator(
     ): Outcome<Unit, GameError>? {
         val game = gameRepository.getGame(gameId)
             ?: return Outcome.Error(GameError.GameNotFound(gameId))
-        if (game.pendingRoundPreparation != null && command !is GameCommand.SubmitRoundPreparation) {
+        if (game.pendingRuleDecision != null && command !is GameCommand.SubmitRuleDecision) {
             return Outcome.Error(GameError.UnsupportedAction(gameId, playerId))
         }
         val previousState = gameRepository.getTableState(gameId)

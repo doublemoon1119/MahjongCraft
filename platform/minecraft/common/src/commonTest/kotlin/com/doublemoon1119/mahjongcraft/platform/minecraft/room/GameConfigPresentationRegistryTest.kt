@@ -2,12 +2,12 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.room
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRoundPreparation
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecision
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.SpectatingPolicy
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolution
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolver
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolution
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolver
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
@@ -24,7 +24,7 @@ class GameConfigPresentationRegistryTest {
     /** 第三方規則未宣告流程欄位時，registry 仍會補上完整且不重複的共用欄位。 */
     @Test
     fun `third party definitions receive shared flow fields exactly once`() {
-        val registry = GameConfigPresentationRegistryImpl(RoundPreparationResolverRegistry())
+        val registry = GameConfigPresentationRegistryImpl(RuleDecisionResolverRegistry())
 
         registry.register(minimalDefinition())
 
@@ -41,55 +41,55 @@ class GameConfigPresentationRegistryTest {
         )
     }
 
-    /** 宣告有開局準備的第三方規則，才會取得可編輯的準備時間欄位。 */
+    /** 宣告有規則選擇的第三方規則，才會取得可編輯的規則選擇時間欄位。 */
     @Test
-    fun `third party preparation rules receive editable preparation time`() {
-        val registry = GameConfigPresentationRegistryImpl(preparationRegistry())
+    fun `third party rule decision rules receive editable rule decision time`() {
+        val registry = GameConfigPresentationRegistryImpl(ruleDecisionRegistry())
 
         registry.register(minimalDefinition())
 
         val definition = assertNotNull(registry.find("test:rule"))
-        val preparation = definition.fields.single { it.id == "mahjongcraft:preparation_base_seconds" }
-        val editor = preparation.editor as GameConfigEditorSpec.IntegerInput
+        val ruleDecision = definition.fields.single { it.id == "mahjongcraft:rule_decision_base_seconds" }
+        val editor = ruleDecision.editor as GameConfigEditorSpec.IntegerInput
         assertEquals(1, editor.minimum)
         assertEquals(3600, editor.maximum)
         val config = GameConfig(RiichiRuleConfig())
-        val configWithPreparation = config.copy(
-            flowConfig = config.flowConfig.copy(roundPreparation = RoundPreparationConfig(47)),
+        val configWithRuleDecision = config.copy(
+            flowConfig = config.flowConfig.copy(ruleDecision = RuleDecisionConfig(47)),
         )
         assertEquals(
             47,
-            (preparation.read(configWithPreparation) as GameConfigPresentationValue.IntegerValue).number,
+            (ruleDecision.read(configWithRuleDecision) as GameConfigPresentationValue.IntegerValue).number,
         )
     }
 
-    /** 同一規則的準備開關改變時，只在啟用的設定中加入準備時間欄位。 */
+    /** 同一規則的規則選擇開關改變時，只在啟用的設定中加入規則選擇時間欄位。 */
     @Test
-    fun `config aware preparation presentation follows the rule config`() {
+    fun `config aware rule decision presentation follows the rule config`() {
         val registry = GameConfigPresentationRegistryImpl(
-            RoundPreparationResolverRegistry().apply { register(ConfigAwarePreparationResolver) },
+            RuleDecisionResolverRegistry().apply { register(ConfigAwareRuleDecisionResolver) },
         )
         registry.register(minimalDefinition())
 
         val enabled = assertNotNull(registry.find("test:rule", RiichiRuleConfig(redDoraCount = 3)))
         val disabled = assertNotNull(registry.find("test:rule", RiichiRuleConfig(redDoraCount = 0)))
 
-        assertTrue(enabled.fields.any { it.id == "mahjongcraft:preparation_base_seconds" })
-        assertTrue(disabled.fields.none { it.id == "mahjongcraft:preparation_base_seconds" })
+        assertTrue(enabled.fields.any { it.id == "mahjongcraft:rule_decision_base_seconds" })
+        assertTrue(disabled.fields.none { it.id == "mahjongcraft:rule_decision_base_seconds" })
 
         val retained = registry.normalizeFlowConfig(
             ruleModuleId = "test:rule",
             ruleConfig = RiichiRuleConfig(redDoraCount = 3),
-            current = GameFlowConfig(roundPreparation = RoundPreparationConfig(47)),
+            current = GameFlowConfig(ruleDecision = RuleDecisionConfig(47)),
         )
-        assertEquals(47, retained.roundPreparation?.baseSeconds)
+        assertEquals(47, retained.ruleDecision?.baseSeconds)
         assertEquals(
             null,
             registry.normalizeFlowConfig(
                 ruleModuleId = "test:rule",
                 ruleConfig = RiichiRuleConfig(redDoraCount = 0),
                 current = retained,
-            ).roundPreparation,
+            ).ruleDecision,
         )
     }
 
@@ -117,10 +117,10 @@ class GameConfigPresentationRegistryTest {
         )
 
         val categoryFailure = assertFailsWith<IllegalArgumentException> {
-            GameConfigPresentationRegistryImpl(RoundPreparationResolverRegistry()).register(categoryConflict)
+            GameConfigPresentationRegistryImpl(RuleDecisionResolverRegistry()).register(categoryConflict)
         }
         val fieldFailure = assertFailsWith<IllegalArgumentException> {
-            GameConfigPresentationRegistryImpl(RoundPreparationResolverRegistry()).register(fieldConflict)
+            GameConfigPresentationRegistryImpl(RuleDecisionResolverRegistry()).register(fieldConflict)
         }
 
         assertTrue(categoryFailure.message.orEmpty().contains("test:rule"))
@@ -129,16 +129,16 @@ class GameConfigPresentationRegistryTest {
         assertTrue(fieldFailure.message.orEmpty().contains("mahjongcraft:base_seconds"))
     }
 
-    /** 準備時間欄位是保留欄位，規則不可自行重複登記。 */
+    /** 規則選擇時間欄位是保留欄位，規則不可自行重複登記。 */
     @Test
-    fun `reserved preparation field is rejected with and without preparation support`() {
+    fun `reserved rule decision field is rejected with and without rule decision support`() {
         val conflict = minimalDefinition().copy(
             fields = listOf(
                 GameConfigFieldDefinition(
-                    id = "mahjongcraft:preparation_base_seconds",
+                    id = "mahjongcraft:rule_decision_base_seconds",
                     categoryId = "test:category",
-                    nameTranslationKey = "test.preparation",
-                    descriptionTranslationKey = "test.preparation.description",
+                    nameTranslationKey = "test.rule_decision",
+                    descriptionTranslationKey = "test.rule_decision.description",
                     editor = GameConfigEditorSpec.IntegerInput(1, 3600),
                     isEditable = false,
                     read = { GameConfigPresentationValue.IntegerValue(30) },
@@ -146,17 +146,17 @@ class GameConfigPresentationRegistryTest {
             ),
         )
 
-        listOf(RoundPreparationResolverRegistry(), preparationRegistry()).forEach { resolvers ->
+        listOf(RuleDecisionResolverRegistry(), ruleDecisionRegistry()).forEach { resolvers ->
             assertFailsWith<IllegalArgumentException> {
                 GameConfigPresentationRegistryImpl(resolvers).register(conflict)
             }
         }
     }
 
-    /** 開局準備的預設秒數必須落在畫面可編輯的範圍內。 */
+    /** 規則選擇的預設秒數必須落在畫面可編輯的範圍內。 */
     @Test
-    fun `invalid preparation default is rejected`() {
-        val registry = GameConfigPresentationRegistryImpl(preparationRegistry(defaultSeconds = 3601))
+    fun `invalid rule decision default is rejected`() {
+        val registry = GameConfigPresentationRegistryImpl(ruleDecisionRegistry(defaultSeconds = 3601))
 
         assertFailsWith<IllegalArgumentException> {
             registry.register(minimalDefinition())
@@ -166,7 +166,7 @@ class GameConfigPresentationRegistryTest {
     /** 內建規則提供相應選項，台麻目前明確標示為不可選。 */
     @Test
     fun `built-in schemas expose editable Riichi and unavailable Taiwan rules`() {
-        val registry = GameConfigPresentationRegistryImpl(RoundPreparationResolverRegistry())
+        val registry = GameConfigPresentationRegistryImpl(RuleDecisionResolverRegistry())
 
         BundledMinecraftMahjongExtensions.all.forEach { it.registerGameConfigPresentations(registry) }
 
@@ -175,7 +175,7 @@ class GameConfigPresentationRegistryTest {
         assertTrue(riichi.selectable)
         assertEquals(1, riichi.categories.count { it.id == "mahjongcraft:flow" })
         assertEquals(4, riichi.fields.count { it.categoryId == "mahjongcraft:flow" })
-        assertTrue(riichi.fields.none { it.id == "mahjongcraft:preparation_base_seconds" })
+        assertTrue(riichi.fields.none { it.id == "mahjongcraft:rule_decision_base_seconds" })
         assertTrue(riichi.fields.any { it.id == "mahjongcraft:initial_score" && it.isEditable })
         assertEquals(
             listOf("mahjongcraft:red_dora_0", "mahjongcraft:red_dora_3", "mahjongcraft:red_dora_4"),
@@ -207,7 +207,7 @@ class GameConfigPresentationRegistryTest {
                 read = { GameConfigPresentationValue.BooleanValue(true) },
             )
         }
-        val registry = GameConfigPresentationRegistryImpl(RoundPreparationResolverRegistry())
+        val registry = GameConfigPresentationRegistryImpl(RuleDecisionResolverRegistry())
         val definition = minimalDefinition()
         registry.register(definition)
         assertFailsWith<IllegalArgumentException> { registry.register(definition) }
@@ -235,7 +235,7 @@ class GameConfigPresentationRegistryTest {
     /** 已凍結的 registry 拒絕後續登記。 */
     @Test
     fun `frozen registry rejects later registration`() {
-        val registry = GameConfigPresentationRegistryImpl(RoundPreparationResolverRegistry())
+        val registry = GameConfigPresentationRegistryImpl(RuleDecisionResolverRegistry())
         registry.freeze()
 
         assertFailsWith<IllegalStateException> { registry.register(minimalDefinition()) }
@@ -259,7 +259,7 @@ class GameConfigPresentationRegistryTest {
                 ),
             ),
         )
-        val registry = GameConfigPresentationRegistryImpl(RoundPreparationResolverRegistry())
+        val registry = GameConfigPresentationRegistryImpl(RuleDecisionResolverRegistry())
         registry.register(definition)
         optionIds += "test:other"
         translationKeys["test:option"] = "test.changed"
@@ -295,25 +295,25 @@ class GameConfigPresentationRegistryTest {
     )
 
     /**
-     * 建立測試用的局前準備解析器 registry。
+     * 建立測試用的規則選擇解析器 registry。
      *
-     * @param defaultSeconds 測試規則提供的預設準備秒數。
+     * @param defaultSeconds 測試規則提供的預設規則選擇秒數。
      * @return 含測試規則解析器的 registry。
      */
-    private fun preparationRegistry(defaultSeconds: Int = 30) = RoundPreparationResolverRegistry().apply {
-        register(TestPreparationResolver(defaultSeconds))
+    private fun ruleDecisionRegistry(defaultSeconds: Int = 30) = RuleDecisionResolverRegistry().apply {
+        register(TestRuleDecisionResolver(defaultSeconds))
     }
 
     /**
      * 僅提供預設時間的測試解析器，不執行開局流程。
      *
-     * @property defaultSeconds 登記時提供的預設準備秒數。
+     * @property defaultSeconds 登記時提供的預設規則選擇秒數。
      */
-    private class TestPreparationResolver(
+    private class TestRuleDecisionResolver(
         private val defaultSeconds: Int,
-    ) : RoundPreparationResolver {
+    ) : RuleDecisionResolver {
         override val ruleModuleId: String = "test:rule"
-        override fun roundPreparationConfig(ruleConfig: MahjongRuleConfig): RoundPreparationConfig = RoundPreparationConfig(defaultSeconds)
+        override fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig = RuleDecisionConfig(defaultSeconds)
 
         override fun begin(
             tableState: TableState,
@@ -322,15 +322,15 @@ class GameConfigPresentationRegistryTest {
 
         override fun resolve(
             tableState: TableState,
-            preparation: PendingRoundPreparation,
+            ruleDecision: PendingRuleDecision,
             ruleModule: MahjongRuleModule<*>,
-        ): RoundPreparationResolution = error("not used")
+        ): RuleDecisionResolution = error("not used")
     }
 
-    private object ConfigAwarePreparationResolver : RoundPreparationResolver {
+    private object ConfigAwareRuleDecisionResolver : RuleDecisionResolver {
         override val ruleModuleId: String = "test:rule"
 
-        override fun roundPreparationConfig(ruleConfig: MahjongRuleConfig): RoundPreparationConfig? = if ((ruleConfig as? RiichiRuleConfig)?.redDoraCount == 3) RoundPreparationConfig(30) else null
+        override fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig? = if ((ruleConfig as? RiichiRuleConfig)?.redDoraCount == 3) RuleDecisionConfig(30) else null
 
         override fun begin(
             tableState: TableState,
@@ -339,8 +339,8 @@ class GameConfigPresentationRegistryTest {
 
         override fun resolve(
             tableState: TableState,
-            preparation: PendingRoundPreparation,
+            ruleDecision: PendingRuleDecision,
             ruleModule: MahjongRuleModule<*>,
-        ): RoundPreparationResolution = error("not used")
+        ): RuleDecisionResolution = error("not used")
     }
 }

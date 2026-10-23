@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.example.ai
 import com.doublemoon1119.mahjongcraft.ai.AiDecisionContext
 import com.doublemoon1119.mahjongcraft.ai.AiDecisionPhase
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategy
-import com.doublemoon1119.mahjongcraft.ai.RoundPreparationAiContext
+import com.doublemoon1119.mahjongcraft.ai.RuleDecisionAiContext
 import com.doublemoon1119.mahjongcraft.ai.defaultSubmission
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
@@ -52,10 +52,10 @@ class ExampleTsumogiriAiStrategy : MahjongAiStrategy {
         ?: error("AI has no legal reaction")
 
     /**
-     * 採用公開情境提供的預設局前準備提交。
+     * 採用公開情境提供的預設規則選擇提交。
      *
-     * @param context 本次開局準備的可見情境與輸入規格。
+     * @param context 本次規則選擇的可見情境與輸入規格。
      * @return 公開輸入規格產生的預設提交。
      */
-    override suspend fun decideRoundPreparation(context: RoundPreparationAiContext) = context.defaultSubmission()
+    override suspend fun decideRuleDecision(context: RuleDecisionAiContext) = context.defaultSubmission()
 }

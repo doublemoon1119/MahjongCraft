@@ -407,23 +407,23 @@ object MinecraftHistoryScreenKeys {
     /** 回應處理完成。 */
     const val ROUND_REACTION_NONE = "mahjongcraft.history_screen.round.reaction.none"
 
-    /** 單局準備步驟格式。 */
-    const val ROUND_PREPARATION = "mahjongcraft.history_screen.round.preparation"
+    /** 單局選擇步驟格式。 */
+    const val RULE_DECISION = "mahjongcraft.history_screen.round.rule_decision"
 
-    /** 準備步驟格式。 */
-    const val ROUND_PREPARATION_STEP = "mahjongcraft.history_screen.round.preparation.step"
+    /** 選擇步驟格式。 */
+    const val RULE_DECISION_STEP = "mahjongcraft.history_screen.round.rule_decision.step"
 
-    /** 準備完成。 */
-    const val ROUND_PREPARATION_NONE = "mahjongcraft.history_screen.round.preparation.none"
+    /** 規則選擇完成。 */
+    const val RULE_DECISION_NONE = "mahjongcraft.history_screen.round.rule_decision.none"
 
-    /** 接續準備步驟。 */
-    const val ROUND_PREPARATION_NEXT = "mahjongcraft.history_screen.round.preparation.next"
+    /** 接續選擇步驟。 */
+    const val RULE_DECISION_NEXT = "mahjongcraft.history_screen.round.rule_decision.next"
 
-    /** 準備步驟開始。 */
-    const val ROUND_PREPARATION_STARTED = "mahjongcraft.history_screen.round.preparation.started"
+    /** 選擇步驟開始。 */
+    const val RULE_DECISION_STARTED = "mahjongcraft.history_screen.round.rule_decision.started"
 
-    /** 玩家已提交準備操作。 */
-    const val ROUND_PREPARATION_SUBMITTED = "mahjongcraft.history_screen.round.preparation.submitted"
+    /** 玩家已提交規則選擇。 */
+    const val RULE_DECISION_SUBMITTED = "mahjongcraft.history_screen.round.rule_decision.submitted"
 
     /** 單局完成事件格式。 */
     const val ROUND_COMPLETION = "mahjongcraft.history_screen.round.completion"

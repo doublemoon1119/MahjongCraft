@@ -48,7 +48,7 @@ import kotlin.uuid.Uuid
  * @property handSortPreferenceStore 查詢玩家是否啟用自動整理手牌，見該類別 KDoc。
  * @property eventPublisher 對局通知服務。
  * @property presentationPublisher 對局 in-process 呈現觸發器。
- * @property beginRoundPreparationUseCase 新局發牌後啟動規則準備步驟的 use case；未注入時略過。
+ * @property beginRuleDecisionUseCase 新局發牌後啟動規則選擇步驟的 use case；未注入時略過。
  * @property failurePolicy 判斷規則失敗能否回報為無法推進；取消與致命錯誤不得轉成一般錯誤。
  */
 class AdvanceRoundUseCase(
@@ -58,7 +58,7 @@ class AdvanceRoundUseCase(
     private val handSortPreferenceStore: HandSortPreferenceStore,
     private val eventPublisher: GameEventPublisher,
     private val presentationPublisher: GamePresentationPublisher,
-    private val beginRoundPreparationUseCase: BeginRoundPreparationUseCase? = null,
+    private val beginRuleDecisionUseCase: BeginRuleDecisionUseCase? = null,
     private val failurePolicy: ExtensionFailurePolicy = ExtensionFailurePolicy.Default,
 ) {
     /**
@@ -294,7 +294,7 @@ class AdvanceRoundUseCase(
             dealBatchSizes = newState.config.dealBatchSizes(),
             openingDiceCounts = newState.openingDiceRolls.map { it.dice.values.size },
         )
-        beginRoundPreparationUseCase?.invoke(gameId)
+        beginRuleDecisionUseCase?.invoke(gameId)
 
         return Outcome.Success(result)
     }

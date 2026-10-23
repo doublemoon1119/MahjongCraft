@@ -3,7 +3,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
-import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import net.minecraft.text.Text
 
@@ -18,27 +18,27 @@ import net.minecraft.text.Text
  * @property actionVocabulary 規則專屬動作用語。
  * @property decisionStatusDisplayNames 決策狀態的顯示名稱。
  * @property exhaustiveDrawReasonDisplayNames 流局原因的顯示名稱。
- * @property roundPreparationDisplayNames 開局準備選項的顯示名稱。
+ * @property ruleDecisionDisplayNames 規則選擇選項的顯示名稱。
  */
 class DecisionTextResolver(
     private val actionVocabulary: GameActionVocabularyRegistry,
     private val decisionStatusDisplayNames: DecisionStatusDisplayNameRegistry,
     private val exhaustiveDrawReasonDisplayNames: ExhaustiveDrawReasonDisplayNameRegistry,
-    private val roundPreparationDisplayNames: RoundPreparationDisplayNameRegistry,
+    private val ruleDecisionDisplayNames: RuleDecisionDisplayNameRegistry,
 ) {
     /**
-     * 動作或開局準備選項顯示在操作卡上的名稱。
+     * 動作或規則選擇選項顯示在操作卡上的名稱。
      *
-     * 依序查動作用語、流局原因與開局準備選項——後兩者的 ID 本身就屬於規則，各自已有登記處。
+     * 依序查動作用語、流局原因與規則選擇選項——後兩者的 ID 本身就屬於規則，各自已有登記處。
      *
      * @param ruleModuleId 決策所屬規則；null 時使用中立用語。
-     * @param actionId 動作或準備選項識別碼。
+     * @param actionId 動作或規則選擇選項識別碼。
      * @return 已登記的本地化名稱；未登記時顯示原始識別碼。
      */
     fun actionLabel(ruleModuleId: String?, actionId: String): Text {
         val translationKey = actionVocabulary.find(ruleModuleId, actionId)?.labelKey
             ?: exhaustiveDrawReasonDisplayNames.find(actionId)
-            ?: roundPreparationDisplayNames.find(actionId)
+            ?: ruleDecisionDisplayNames.find(actionId)
         return translationKey?.let(Text::translatable) ?: Text.literal(actionId)
     }
 

@@ -16,7 +16,7 @@ import kotlinx.serialization.Serializable
  * @property triggerPlayerName 觸發反應的玩家名稱。
  * @property triggerPlayerRelation 觸發玩家相對於目前玩家的位置。
  * @property triggerActionId 觸發反應的動作 ID。
- * @property preparation 開局準備提示。
+ * @property ruleDecision 規則選擇提示。
  * @property discardAnalyses 目前狀態下的捨牌分析。
  */
 @Serializable
@@ -29,6 +29,6 @@ data class PlayerDecisionPromptDto(
     val triggerPlayerName: String?,
     val triggerPlayerRelation: DecisionPlayerRelationDto?,
     val triggerActionId: String?,
-    val preparation: RoundPreparationPromptDto?,
+    val ruleDecision: RuleDecisionPromptDto?,
     val discardAnalyses: List<DiscardReadinessAnalysisDto>,
 )

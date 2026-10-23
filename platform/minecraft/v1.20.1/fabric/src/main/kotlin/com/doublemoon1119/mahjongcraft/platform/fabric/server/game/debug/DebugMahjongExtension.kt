@@ -13,7 +13,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistrie
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiNagashiManganOutcomeResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiSuukanNagareResolver
@@ -25,7 +25,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decision.DebugDecisionActionIds
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decision.DebugRoundPreparationResolver
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decision.DebugRuleDecisionResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationResolver
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.presentation.DebugWinRoundContinuationState
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.rule.DebugAutoNorthRiichiRuleConfig
@@ -55,7 +55,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAsse
 /**
  * 只在開發環境登記的 debug 整合，讓 debug 指令與情境需要的流程能在遊戲內驗證。
  *
- * 內建規則沒有自己的開局準備流程時，補上 debug 用的開局準備；另外登記可切換的胡牌後本局繼續流程、
+ * 內建規則沒有自己的規則選擇流程時，補上 debug 用的規則選擇；另外登記可切換的胡牌後本局繼續流程、
  * debug 情境對手使用的腳本 AI 與決策文字卡的預覽用語。開發用的 [DebugAutoNorthRiichiRuleModule] 與
  * [DebugWinnerDealerRiichiRuleModule] 也在這裡登記，分別沿用三人與四人日麻的途中流局、結算與 Minecraft 呈現；
  * 它們沒有房間設定畫面，只能透過 debug 情境載入。
@@ -178,9 +178,9 @@ internal class DebugMahjongExtension(
         registry.register(MahjongAiStrategyDefinition(DebugScriptedAiStrategy.WIN_FIRST_KEY) { DebugScriptedAiStrategy(declaresKanFirst = false, winsFirst = true) })
     }
 
-    override fun registerRoundPreparationResolvers(registry: RoundPreparationResolverRegistry) {
+    override fun registerRuleDecisionResolvers(registry: RuleDecisionResolverRegistry) {
         DEBUG_RULE_MODULE_IDS.forEach { ruleModuleId ->
-            if (registry.find(ruleModuleId) == null) registry.register(DebugRoundPreparationResolver(ruleModuleId))
+            if (registry.find(ruleModuleId) == null) registry.register(DebugRuleDecisionResolver(ruleModuleId))
         }
     }
 
@@ -191,7 +191,7 @@ internal class DebugMahjongExtension(
     }
 
     private companion object {
-        /** 補上 debug 開局準備與胡牌後本局繼續流程的規則模組。 */
+        /** 補上 debug 規則選擇與胡牌後本局繼續流程的規則模組。 */
         val DEBUG_RULE_MODULE_IDS: List<String> = listOf(
             BuiltInRuleModuleIds.RIICHI,
             BuiltInRuleModuleIds.RIICHI_THREE_PLAYER,

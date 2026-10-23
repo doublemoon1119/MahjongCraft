@@ -9,8 +9,8 @@ import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
  * 查詢時依規則設定附加共用流程分類與欄位；規則不得重複宣告分類 `mahjongcraft:flow`，或欄位
  * `mahjongcraft:base_seconds`、`mahjongcraft:reserve_seconds`、
  * `mahjongcraft:spectating_policy`、`mahjongcraft:spectator_hand_visibility`。
- * `mahjongcraft:preparation_base_seconds` 也為保留欄位；只有核心準備解析器依目前設定提供預設時間時才會取得。
- * 目前設定不需要玩家準備時，不會有這個欄位，也不能透過它修改設定。
+ * `mahjongcraft:rule_decision_base_seconds` 也為保留欄位；只有規則選擇流程依目前設定提供預設時間時才會取得。
+ * 目前設定不需要玩家選擇時，不會有這個欄位，也不能透過它修改設定。
  * 查詢得到的定義包含這些共用欄位，房間操作、設定摘要、牌譜與伺服器驗證共用同一份內容。
  */
 interface GameConfigPresentationRegistry {
@@ -49,11 +49,11 @@ interface GameConfigPresentationRegistry {
     fun find(ruleModuleId: String, ruleConfig: MahjongRuleConfig): GameConfigPresentationDefinition?
 
     /**
-     * 依規則建立流程設定的預設值；會保留一般流程設定，只替換核心註冊的局前準備設定。
+     * 依規則建立流程設定的預設值；會保留一般流程設定，只替換核心註冊的規則選擇設定。
      *
      * @param ruleModuleId 規則模組識別碼。
      * @param current 目前可沿用的一般流程設定。
-     * @return 該規則應使用的流程設定；沒有準備設定的規則會清除局前準備設定。
+     * @return 該規則應使用的流程設定；沒有規則選擇的規則會清除規則選擇設定。
      */
     fun defaultFlowConfig(
         ruleModuleId: String,
@@ -75,10 +75,10 @@ interface GameConfigPresentationRegistry {
     ): GameFlowConfig
 
     /**
-     * 依規則目前是否需要局前準備，整理既有流程設定。
+     * 依規則目前是否需要規則選擇，整理既有流程設定。
      *
-     * 規則仍需要準備時保留先前設定的有效秒數；尚未設定或數值失效時才使用預設值。
-     * 規則不需要準備時會清除舊設定。
+     * 規則仍需要玩家選擇時保留先前設定的有效秒數；尚未設定或數值失效時才使用預設值。
+     * 規則不需要玩家選擇時會清除舊設定。
      *
      * @param ruleModuleId 規則模組識別碼。
      * @param ruleConfig 目前完整的規則設定。

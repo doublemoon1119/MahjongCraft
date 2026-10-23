@@ -76,7 +76,7 @@ class PlayerDecisionPromptFactoryTest {
         gameId = gameId,
         playerId = playerId,
         phase = PlayerDecisionPhase.OWN_TURN,
-        preparation = null,
+        ruleDecision = null,
         reference = drawnTileId,
         actionIdentity = actionIdentity,
     )

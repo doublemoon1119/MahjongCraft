@@ -17,12 +17,12 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocab
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionDisplayNameDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
@@ -105,8 +105,8 @@ open class ExampleMinecraftMahjongExtension :
         )
     }
 
-    override fun registerRoundPreparationDisplayNames(registry: RoundPreparationDisplayNameRegistry) {
-        registry.register(RoundPreparationDisplayNameDefinition(ExamplePairingIds.EXCHANGE_STEP, ExampleMinecraftMessageKeys.EXCHANGE))
+    override fun registerRuleDecisionDisplayNames(registry: RuleDecisionDisplayNameRegistry) {
+        registry.register(RuleDecisionDisplayNameDefinition(ExamplePairingIds.EXCHANGE_STEP, ExampleMinecraftMessageKeys.EXCHANGE))
     }
 
     override fun registerExhaustiveDrawReasonDisplayNames(registry: ExhaustiveDrawReasonDisplayNameRegistry) {

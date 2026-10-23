@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionActionDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
-import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RoundPreparationPromptDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionPromptDto
 import net.minecraft.text.Text
 import net.minecraft.text.TranslatableTextContent
 import kotlin.test.Test
@@ -58,14 +58,14 @@ class CompactDecisionHudTest {
     fun `shows no reminder for a prompt with nothing to choose`() {
         assertEquals(
             CompactDecisionHudContent.TimerOnly,
-            content(prompt = PlayerDecisionPromptDto(decisionKey = DECISION_KEY, ruleModuleId = null, actions = emptyList(), triggerTileAssetKey = null, triggerPlayerId = null, triggerPlayerName = null, triggerPlayerRelation = null, triggerActionId = null, preparation = null, discardAnalyses = emptyList()), dismissedDecisionKey = DECISION_KEY),
+            content(prompt = PlayerDecisionPromptDto(decisionKey = DECISION_KEY, ruleModuleId = null, actions = emptyList(), triggerTileAssetKey = null, triggerPlayerId = null, triggerPlayerName = null, triggerPlayerRelation = null, triggerActionId = null, ruleDecision = null, discardAnalyses = emptyList()), dismissedDecisionKey = DECISION_KEY),
         )
     }
 
-    /** 只有開局準備的 prompt 仍算需要玩家選擇。 */
+    /** 只有規則選擇的 prompt 仍算需要玩家選擇。 */
     @Test
-    fun `treats a preparation only prompt as interactive`() {
-        val prompt = PlayerDecisionPromptDto(decisionKey = DECISION_KEY, preparation = RoundPreparationPromptDto.Confirmation, ruleModuleId = null, actions = emptyList(), triggerTileAssetKey = null, triggerPlayerId = null, triggerPlayerName = null, triggerPlayerRelation = null, triggerActionId = null, discardAnalyses = emptyList())
+    fun `treats a rule decision only prompt as interactive`() {
+        val prompt = PlayerDecisionPromptDto(decisionKey = DECISION_KEY, ruleDecision = RuleDecisionPromptDto.Confirmation, ruleModuleId = null, actions = emptyList(), triggerTileAssetKey = null, triggerPlayerId = null, triggerPlayerName = null, triggerPlayerRelation = null, triggerActionId = null, discardAnalyses = emptyList())
 
         assertTrue(prompt.isInteractive)
     }
@@ -227,7 +227,7 @@ class CompactDecisionHudTest {
         triggerPlayerName = null,
         triggerPlayerRelation = null,
         triggerActionId = null,
-        preparation = null,
+        ruleDecision = null,
         discardAnalyses = emptyList(),
     )
 

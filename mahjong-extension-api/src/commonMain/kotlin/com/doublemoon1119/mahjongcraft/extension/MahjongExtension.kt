@@ -10,7 +10,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionG
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
@@ -124,11 +124,11 @@ interface MahjongExtension {
     fun registerPostActionExhaustiveDrawResolvers(registry: PostActionExhaustiveDrawResolverRegistry) = Unit
 
     /**
-     * 登記發牌後、正常摸打前的規則準備流程。
+     * 登記發牌後、正常摸打前的規則選擇流程。
      *
-     * @param registry 用於登記開局準備 resolver 的 registry。
+     * @param registry 用於登記規則選擇 resolver 的 registry。
      */
-    fun registerRoundPreparationResolvers(registry: RoundPreparationResolverRegistry) = Unit
+    fun registerRuleDecisionResolvers(registry: RuleDecisionResolverRegistry) = Unit
 
     /**
      * 登記胡牌即時結算完成後、判斷本局是否結束的 resolver。

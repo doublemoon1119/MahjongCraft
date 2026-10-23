@@ -28,7 +28,7 @@ import net.minecraft.server.command.ServerCommandSource
  * - `win`、`showcase`、三種 settlement、`continuing_win`、`win_showcase_override`：
  *   [FabricDebugPresentationCommand]
  * - `hovered_text`：[FabricDebugTextCommand]
- * - `decision_hud`、`preparation`：[FabricDebugDecisionCommand]
+ * - `decision_hud`、`rule decision`：[FabricDebugDecisionCommand]
  * - `match_progression`：[FabricDebugProgressionCommand]
  * - `round`：[FabricDebugRoundCommand]
  * - `history`：[FabricDebugHistoryCommand]
@@ -98,7 +98,7 @@ class FabricDebugCommand(
             .then(animationCommand.buildMeldCommand())
             .then(presentationCommand.buildContinuingWinCommand())
             .then(presentationCommand.buildWinShowcaseOverrideCommand())
-            .then(decisionCommand.buildPreparationCommand())
+            .then(decisionCommand.buildRuleDecisionCommand())
             .then(roundCommand.buildRoundCommand())
             .then(historyCommand.build())
             .then(stressCommand.build()),

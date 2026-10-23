@@ -1,17 +1,17 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.extension
 
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistryImpl
-import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSourceRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistryImpl
@@ -52,7 +52,7 @@ class MinecraftPresentationRegistriesTest {
         assertTrue(registries.automaticControlDisplayRegistry.isFrozen)
         assertTrue(registries.gameActionSoundPresentationRegistry.isFrozen)
         assertTrue(registries.exhaustiveDrawReasonDisplayNameRegistry.isFrozen)
-        assertTrue(registries.roundPreparationDisplayNameRegistry.isFrozen)
+        assertTrue(registries.ruleDecisionDisplayNameRegistry.isFrozen)
         assertTrue(registries.roundInfoLineDisplayRegistry.isFrozen)
         assertTrue(registries.winCelebrationShowcaseRegistry.isFrozen)
         assertTrue(registries.winSettlementTemplateRegistry.isFrozen)
@@ -120,7 +120,7 @@ class MinecraftPresentationRegistriesTest {
         exhaustiveDrawReasonDisplayNameRegistry = exhaustiveDrawReasonDisplayNameRegistry,
         roundOutcomeDisplayNameRegistry = RoundOutcomeDisplayNameRegistryImpl(),
         historyDiscardMarkerDisplayRegistry = HistoryDiscardMarkerDisplayRegistryImpl(),
-        roundPreparationDisplayNameRegistry = RoundPreparationDisplayNameRegistryImpl(),
+        ruleDecisionDisplayNameRegistry = RuleDecisionDisplayNameRegistryImpl(),
         roundInfoLineDisplayRegistry = RoundInfoLineDisplayRegistryImpl(),
         tablePropDescriberRegistry = TablePropDescriberRegistryImpl(),
         winCelebrationShowcaseRegistry = WinCelebrationShowcaseRegistryImpl(),
@@ -132,7 +132,7 @@ class MinecraftPresentationRegistriesTest {
         publicPlayerIndicatorDisplayRegistry = PublicPlayerIndicatorDisplayRegistryImpl(),
         roomMemberAppearanceSourceRegistry = RoomMemberAppearanceSourceRegistryImpl(failurePolicy = ExtensionFailurePolicy.Default),
         gameConfigPresentationRegistry = GameConfigPresentationRegistryImpl(
-            RoundPreparationResolverRegistry(),
+            RuleDecisionResolverRegistry(),
         ),
         gameAchievementResolverRegistry = GameAchievementResolverRegistryImpl(),
     )

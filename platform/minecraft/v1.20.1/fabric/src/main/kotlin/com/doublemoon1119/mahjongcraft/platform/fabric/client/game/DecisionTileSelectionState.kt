@@ -3,12 +3,12 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.game
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionActionDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSelectionKindDto
-import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RoundPreparationPromptDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionPromptDto
 
 /**
  * 以實體手牌進行選牌時的本機狀態機。
  *
- * 同一時間只會有一種進行中的選牌情境：開局準備（preparation）或帶選牌需求的動作（例如立直宣告後選捨牌），
+ * 同一時間只會有一種進行中的選牌情境：規則選擇（rule decision）或帶選牌需求的動作（例如立直宣告後選捨牌），
  * 兩者互斥。另外還有「玩家已明確跳過特殊動作、接下來右鍵手牌就是普通出牌」這個模式。
  *
  * 本類別只操作 DTO 與牌張 ID 字串，不送封包、不碰畫面；轉換方法以 [Outcome] 與 [BeginRequest] 告訴呼叫端
@@ -16,11 +16,11 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RoundPreparat
  * `isActionSelectionActive` 傳入。
  */
 internal class DecisionTileSelectionState {
-    /** 進行中 preparation 選牌的 decision key。 */
-    private var preparationDecisionKey: String? = null
+    /** 進行中 rule decision 選牌的 decision key。 */
+    private var ruleDecisionDecisionKey: String? = null
 
-    /** 進行中 preparation 選牌已選取的牌張 ID。 */
-    private val selectedPreparationTileIds = linkedSetOf<String>()
+    /** 進行中 rule decision 選牌已選取的牌張 ID。 */
+    private val selectedRuleDecisionTileIds = linkedSetOf<String>()
 
     /** 進行中動作選牌的動作 token。 */
     private var actionToken: String? = null
@@ -35,21 +35,21 @@ internal class DecisionTileSelectionState {
     val activeActionToken: String? get() = actionToken
 
     /**
-     * 進入 preparation 選牌模式。
+     * 進入 rule decision 選牌模式。
      *
      * 只有 `maxCount > 1` 需要伺服器生成確認面板；`maxCount == 1` 維持右鍵合法牌直接送出。
      *
      * @param prompt 最新的權威決策提示。
      * @return 需要建立多選確認面板時的請求；單選或沒有選牌限制時為 null。
      */
-    fun beginPreparation(prompt: PlayerDecisionPromptDto): BeginRequest? {
-        selectedPreparationTileIds.clear()
-        preparationDecisionKey = prompt.decisionKey
-        return BeginRequest(token = null).takeIf { (prompt.preparationConstraint()?.maxCount ?: 1) > 1 }
+    fun beginRuleDecision(prompt: PlayerDecisionPromptDto): BeginRequest? {
+        selectedRuleDecisionTileIds.clear()
+        ruleDecisionDecisionKey = prompt.decisionKey
+        return BeginRequest(token = null).takeIf { (prompt.ruleDecisionConstraint()?.maxCount ?: 1) > 1 }
     }
 
     /**
-     * 進入動作選牌模式；確認面板的判斷同 [beginPreparation]。
+     * 進入動作選牌模式；確認面板的判斷同 [beginRuleDecision]。
      *
      * @param action 欲執行且需要選牌的動作。
      * @return 需要建立多選確認面板時的請求；單選時為 null。
@@ -82,13 +82,13 @@ internal class DecisionTileSelectionState {
      * @return 是否消化互動，以及單選完成時應送出的選擇。
      */
     fun toggle(prompt: PlayerDecisionPromptDto, tileId: String, isActionSelectionActive: Boolean): Outcome {
-        if (preparationDecisionKey == prompt.decisionKey) {
-            prompt.preparationConstraint()?.let { constraint ->
+        if (ruleDecisionDecisionKey == prompt.decisionKey) {
+            prompt.ruleDecisionConstraint()?.let { constraint ->
                 return toggleIn(
-                    selected = selectedPreparationTileIds,
+                    selected = selectedRuleDecisionTileIds,
                     constraint = constraint,
                     tileId = tileId,
-                    kind = PlayerDecisionSelectionKindDto.PREPARATION_TILES,
+                    kind = PlayerDecisionSelectionKindDto.DECISION_TILES,
                     token = null,
                 )
             }
@@ -119,13 +119,13 @@ internal class DecisionTileSelectionState {
      */
     fun confirm(prompt: PlayerDecisionPromptDto, isActionSelectionActive: Boolean): Outcome {
         if (progress(prompt, isActionSelectionActive) == null) return Outcome.Ignored
-        if (preparationDecisionKey == prompt.decisionKey) {
-            val constraint = prompt.preparationConstraint() ?: return Outcome.Consumed(null)
+        if (ruleDecisionDecisionKey == prompt.decisionKey) {
+            val constraint = prompt.ruleDecisionConstraint() ?: return Outcome.Consumed(null)
             return Outcome.Consumed(
                 finalSelectionIfComplete(
-                    selected = selectedPreparationTileIds,
+                    selected = selectedRuleDecisionTileIds,
                     constraint = constraint,
-                    kind = PlayerDecisionSelectionKindDto.PREPARATION_TILES,
+                    kind = PlayerDecisionSelectionKindDto.DECISION_TILES,
                     token = null,
                 ),
             )
@@ -153,9 +153,9 @@ internal class DecisionTileSelectionState {
      * @return 有效選牌的進度；沒有有效情境時為 null。
      */
     fun progress(prompt: PlayerDecisionPromptDto, isActionSelectionActive: Boolean): Progress? {
-        if (preparationDecisionKey == prompt.decisionKey) {
-            val constraint = prompt.preparationConstraint() ?: return null
-            return Progress(selectedPreparationTileIds.size, constraint.range)
+        if (ruleDecisionDecisionKey == prompt.decisionKey) {
+            val constraint = prompt.ruleDecisionConstraint() ?: return null
+            return Progress(selectedRuleDecisionTileIds.size, constraint.range)
         }
         val token = actionToken
         if (token != null && isActionSelectionActive) {
@@ -167,7 +167,7 @@ internal class DecisionTileSelectionState {
 
     /** 目前應套用本地選取發光的牌張 ID。 */
     fun highlightedTileIds(): Set<String> = when {
-        preparationDecisionKey != null -> selectedPreparationTileIds
+        ruleDecisionDecisionKey != null -> selectedRuleDecisionTileIds
         actionToken != null -> selectedActionTileIds
         else -> emptySet()
     }
@@ -185,10 +185,10 @@ internal class DecisionTileSelectionState {
      *
      * @param decisionKey 目前權威決策鍵。
      * @param isActionSelectionActive 動作選牌是否仍有效。
-     * @return 動作選牌、開局準備或直接出牌模式生效時為 true。
+     * @return 動作選牌、規則選擇或直接出牌模式生效時為 true。
      */
     fun isPhysicalSelectionActive(decisionKey: String, isActionSelectionActive: Boolean): Boolean = isActionSelectionActive ||
-        preparationDecisionKey == decisionKey ||
+        ruleDecisionDecisionKey == decisionKey ||
         directDiscardDecisionKey == decisionKey
 
     /**
@@ -198,9 +198,9 @@ internal class DecisionTileSelectionState {
      * @param isActionSelectionActive 動作選牌是否仍有效。
      */
     fun syncTo(decisionKey: String, isActionSelectionActive: Boolean) {
-        if (preparationDecisionKey != null && preparationDecisionKey != decisionKey) {
-            selectedPreparationTileIds.clear()
-            preparationDecisionKey = null
+        if (ruleDecisionDecisionKey != null && ruleDecisionDecisionKey != decisionKey) {
+            selectedRuleDecisionTileIds.clear()
+            ruleDecisionDecisionKey = null
         }
         if (actionToken != null && !isActionSelectionActive) {
             selectedActionTileIds.clear()
@@ -210,8 +210,8 @@ internal class DecisionTileSelectionState {
 
     /** 丟棄兩種選牌情境，保留直接出牌模式。 */
     fun clearSelections() {
-        selectedPreparationTileIds.clear()
-        preparationDecisionKey = null
+        selectedRuleDecisionTileIds.clear()
+        ruleDecisionDecisionKey = null
         selectedActionTileIds.clear()
         actionToken = null
     }
@@ -229,7 +229,7 @@ internal class DecisionTileSelectionState {
      * @param constraint 合法牌張與可選張數。
      * @param tileId 本次互動的牌張識別碼。
      * @param kind 提交的選擇種類。
-     * @param token 動作令牌；開局準備時為 null。
+     * @param token 動作令牌；規則選擇時為 null。
      * @return 已消化互動的結果；合法單選完成時攜帶最終選擇。
      */
     private fun toggleIn(
@@ -253,7 +253,7 @@ internal class DecisionTileSelectionState {
      * @param selected 目前已選牌張。
      * @param constraint 合法牌張與可選張數。
      * @param kind 提交的選擇種類。
-     * @param token 動作令牌；開局準備時為 null。
+     * @param token 動作令牌；規則選擇時為 null。
      * @return 已選數量合法時的最終選擇，否則為 null。
      */
     private fun finalSelectionIfComplete(
@@ -263,8 +263,8 @@ internal class DecisionTileSelectionState {
         token: String?,
     ): FinalSelection? = FinalSelection(kind, token, selected.toList()).takeIf { selected.size in constraint.range }
 
-    /** 目前 prompt 的 preparation 選牌需求；不是選牌型態的 preparation 為 `null`。 */
-    private fun PlayerDecisionPromptDto.preparationConstraint(): Constraint? = (preparation as? RoundPreparationPromptDto.TileSelection)
+    /** 目前 prompt 的 rule decision 選牌需求；不是選牌型態的 rule decision 為 `null`。 */
+    private fun PlayerDecisionPromptDto.ruleDecisionConstraint(): Constraint? = (ruleDecision as? RuleDecisionPromptDto.TileSelection)
         ?.let { Constraint(it.eligibleTileIds, it.minCount, it.maxCount) }
 
     /**
@@ -278,7 +278,7 @@ internal class DecisionTileSelectionState {
         ?.let { Constraint(it.eligibleTileIds, it.minCount, it.maxCount) }
 
     /**
-     * 開局準備與動作共用的選牌限制。
+     * 規則選擇與動作共用的選牌限制。
      *
      * @property eligibleTileIds 可選牌張識別碼。
      * @property minCount 至少須選取的張數。
@@ -296,7 +296,7 @@ internal class DecisionTileSelectionState {
     /**
      * 需要通知伺服器生成確認面板的開始選牌請求。
      *
-     * @property token 動作令牌；開局準備時為 null。
+     * @property token 動作令牌；規則選擇時為 null。
      */
     data class BeginRequest(val token: String?)
 
@@ -304,7 +304,7 @@ internal class DecisionTileSelectionState {
      * 送出後必須等待伺服器確認的最終選擇。
      *
      * @property kind 本次提交的選擇種類。
-     * @property token 動作令牌；開局準備時為 null。
+     * @property token 動作令牌；規則選擇時為 null。
      * @property tileIds 依選取順序排列的牌張識別碼。
      */
     data class FinalSelection(

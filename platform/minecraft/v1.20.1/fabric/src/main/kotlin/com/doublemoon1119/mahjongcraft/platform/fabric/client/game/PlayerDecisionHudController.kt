@@ -162,7 +162,7 @@ class PlayerDecisionHudController(
      *
      * @param prompt 選擇所屬的權威決策提示。
      * @param kind 選擇種類。
-     * @param token 動作或開局準備選項的識別；不需要時為 null。
+     * @param token 動作或規則選擇選項的識別；不需要時為 null。
      */
     fun submit(prompt: PlayerDecisionPromptDto, kind: PlayerDecisionSelectionKindDto, token: String? = null) {
         sendFinalSelection(prompt, kind, token, emptyList())
@@ -202,13 +202,13 @@ class PlayerDecisionHudController(
     }
 
     /**
-     * 進入實體手牌 preparation 選取模式；只有 `maxCount > 1` 才通知伺服器生成確認面板，理由同
+     * 進入實體手牌 rule decision 選取模式；只有 `maxCount > 1` 才通知伺服器生成確認面板，理由同
      * [beginActionTileSelection]。
      *
-     * @param prompt 帶有開局準備選牌需求的決策提示。
+     * @param prompt 帶有規則選擇選牌需求的決策提示。
      */
-    fun beginPreparationTileSelection(prompt: PlayerDecisionPromptDto) {
-        val request = tileSelection.beginPreparation(prompt)
+    fun beginRuleDecisionTileSelection(prompt: PlayerDecisionPromptDto) {
+        val request = tileSelection.beginRuleDecision(prompt)
         dismissedDecisionKey = prompt.decisionKey
         MinecraftClient.getInstance().setScreen(null)
         if (request != null) sendBeginTileSelection(prompt, request)
@@ -307,7 +307,7 @@ class PlayerDecisionHudController(
      *
      * @param prompt 選擇所屬的決策提示。
      * @param kind 選擇種類。
-     * @param token 動作或準備選項識別；不需要時為 null。
+     * @param token 動作或規則選擇選項識別；不需要時為 null。
      * @param tileIds 選取的牌實體 UUID 字串。
      */
     private fun sendFinalSelection(

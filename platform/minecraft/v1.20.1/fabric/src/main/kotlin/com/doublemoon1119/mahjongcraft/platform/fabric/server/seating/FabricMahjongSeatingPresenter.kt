@@ -65,7 +65,7 @@ internal class FabricMahjongSeatingPresenter(
      *
      * @param tableId 對局桌子 UUID。
      * @param seatedPlayerIds 依座位順序排列的玩家 UUID。
-     * @return 這次入座的準備資料；桌子不存在、區塊未載入或不是麻將桌時為 null。
+     * @return 這次入座的選擇資料；桌子不存在、區塊未載入或不是麻將桌時為 null。
      */
     private fun prepare(tableId: Uuid, seatedPlayerIds: List<Uuid>): PreparedSeating? {
         val location = tableLocationRegistry.get(tableId)?.location ?: return null

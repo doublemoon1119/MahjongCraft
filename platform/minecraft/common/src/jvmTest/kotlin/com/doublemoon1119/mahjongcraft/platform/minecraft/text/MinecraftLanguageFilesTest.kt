@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.text
 
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftClientConfigScreenKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftConfigCommandKeys
@@ -26,16 +26,16 @@ import kotlin.test.assertTrue
 
 /** 驗證 MahjongCraft Minecraft 語系資源的結構與 key 一致性。 */
 class MinecraftLanguageFilesTest {
-    /** 選用的局前準備欄位若被規則啟用，也必須有完整語系文字。 */
+    /** 選用的規則選擇欄位若被規則啟用，也必須有完整語系文字。 */
     @Test
-    fun `optional preparation time field has translations in every locale`() {
+    fun `optional rule decision time field has translations in every locale`() {
         locales.forEach { locale ->
             val translations = loadTranslations(locale)
             listOf(
-                "mahjongcraft.room.config.field.preparation_base_seconds",
-                "mahjongcraft.room.config.field.preparation_base_seconds.description",
+                "mahjongcraft.room.config.field.rule_decision_base_seconds",
+                "mahjongcraft.room.config.field.rule_decision_base_seconds.description",
             ).forEach { key ->
-                assertTrue(key in translations, "$locale is missing optional preparation field translation: $key")
+                assertTrue(key in translations, "$locale is missing optional rule decision field translation: $key")
             }
         }
     }
@@ -225,7 +225,7 @@ class MinecraftLanguageFilesTest {
      * @return 所有內建設定所需翻譯鍵的集合。
      */
     private fun builtInGameConfigTranslationKeys(): Set<String> {
-        val registry = GameConfigPresentationRegistryImpl(RoundPreparationResolverRegistry()).apply {
+        val registry = GameConfigPresentationRegistryImpl(RuleDecisionResolverRegistry()).apply {
             BundledMinecraftMahjongExtensions.all.forEach { it.registerGameConfigPresentations(this) }
             freeze()
         }

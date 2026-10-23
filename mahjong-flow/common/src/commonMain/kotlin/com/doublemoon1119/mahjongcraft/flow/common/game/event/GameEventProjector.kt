@@ -68,9 +68,9 @@ class GameEventProjector(
                 is HistoryFact.MatchAborted -> Unit
                 is HistoryFact.RoundStarted,
                 is HistoryFact.DiceRolled,
-                is HistoryFact.RoundPreparationStarted,
-                is HistoryFact.RoundPreparationSubmitted,
-                is HistoryFact.RoundPreparationAutomaticallyResolved,
+                is HistoryFact.RuleDecisionStarted,
+                is HistoryFact.RuleDecisionSubmitted,
+                is HistoryFact.RuleDecisionAutomaticallyResolved,
                 is HistoryFact.ActionAccepted,
                 is HistoryFact.ActionScored,
                 is HistoryFact.ReactionResolved,

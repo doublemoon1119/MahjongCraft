@@ -276,7 +276,7 @@ class MahjongCraftModClient : ClientModInitializer {
                 gameId = Uuid.parse(payload.gameId),
                 snapshot = payload.snapshot.toDomain(networkRegistries),
                 aiPlayerIds = payload.aiPlayerIds.mapTo(mutableSetOf(), Uuid::parse),
-                roundPreparation = payload.roundPreparation?.toDomain(),
+                ruleDecision = payload.ruleDecision?.toDomain(),
                 handReadinessAnalysis = payload.handReadinessAnalysis,
             )
         }

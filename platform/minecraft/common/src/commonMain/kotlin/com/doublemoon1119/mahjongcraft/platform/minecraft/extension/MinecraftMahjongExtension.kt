@@ -6,10 +6,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNa
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSourceRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RulePresentationRequirements
@@ -144,11 +144,11 @@ interface MinecraftMahjongExtension {
     fun registerHistoryDiscardMarkerDisplays(registry: HistoryDiscardMarkerDisplayRegistry) = Unit
 
     /**
-     * 登記第三方開局準備 step／option 的本地化顯示名稱。
+     * 登記第三方規則選擇 step／option 的本地化顯示名稱。
      *
-     * @param registry 開局準備顯示名稱 registry。
+     * @param registry 規則選擇顯示名稱 registry。
      */
-    fun registerRoundPreparationDisplayNames(registry: RoundPreparationDisplayNameRegistry) = Unit
+    fun registerRuleDecisionDisplayNames(registry: RuleDecisionDisplayNameRegistry) = Unit
 
     /**
      * 登記第三方牌種對應的顯示名稱。

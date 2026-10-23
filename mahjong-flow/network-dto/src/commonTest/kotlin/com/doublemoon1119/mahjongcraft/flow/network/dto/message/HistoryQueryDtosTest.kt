@@ -55,7 +55,7 @@ class HistoryQueryDtosTest {
         val facts = listOf<HistoryReplayFactDto>(
             HistoryReplayFactDto.KnownAction("a", 0, "discard", listOf(1), listOf(2), null),
             HistoryReplayFactDto.Reaction("r", "pon", 1),
-            HistoryReplayFactDto.Preparation("p", "deal", 0, "draw"),
+            HistoryReplayFactDto.RuleDecision("p", "deal", 0, "draw"),
             HistoryReplayFactDto.Completion("c", null),
             HistoryReplayFactDto.RuleEffect("e", "mahjongcraft:effect", null),
             HistoryReplayFactDto.ActionScored("f", 0, "kan", null, mapOf(0 to 2000, 1 to -2000), 0),

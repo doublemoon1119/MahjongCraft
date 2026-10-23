@@ -60,7 +60,7 @@ public default submission. It is an integration example, not a competitive AI.
 | Capability | Example use |
 | --- | --- |
 | Rule and wall layout | Pairing rule and fixed two/four-wall layouts |
-| Round preparation | Optional simultaneous two-tile exchange |
+| Rule decision | Optional simultaneous two-tile exchange |
 | Extension action and command | Once-per-round declaration |
 | AI strategy | Tsumogiri decision context |
 | Network and persistence codecs | Example configuration, state, action and tile data |

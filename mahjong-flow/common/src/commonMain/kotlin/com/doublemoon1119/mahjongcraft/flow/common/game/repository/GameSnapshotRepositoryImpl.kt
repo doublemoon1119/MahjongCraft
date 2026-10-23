@@ -1,18 +1,18 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.repository
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSnapshot
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSnapshot
 import com.doublemoon1119.mahjongcraft.logic.table.TableStateSnapshot
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlin.uuid.Uuid
 
-/** 以互斥鎖保護記憶體內桌況與開局準備快照的 repository 實作。 */
+/** 以互斥鎖保護記憶體內桌況與規則選擇快照的 repository 實作。 */
 class GameSnapshotRepositoryImpl : GameSnapshotRepository {
     /** 依遊戲及觀看者識別碼保存的桌況快照。 */
     private val snapshots = mutableMapOf<Uuid, MutableMap<Uuid, TableStateSnapshot>>()
 
-    /** 依遊戲及觀看者識別碼保存的開局準備快照。 */
-    private val preparationSnapshots = mutableMapOf<Uuid, MutableMap<Uuid, RoundPreparationSnapshot>>()
+    /** 依遊戲及觀看者識別碼保存的規則選擇快照。 */
+    private val ruleDecisionSnapshots = mutableMapOf<Uuid, MutableMap<Uuid, RuleDecisionSnapshot>>()
 
     /** 保護兩種快照對應表的互斥鎖。 */
     private val mutex = Mutex()
@@ -23,24 +23,24 @@ class GameSnapshotRepositoryImpl : GameSnapshotRepository {
         snapshots.getOrPut(snapshot.id) { mutableMapOf() }[observerId] = snapshot
     }
 
-    override suspend fun getRoundPreparationSnapshot(gameId: Uuid, observerId: Uuid): RoundPreparationSnapshot? = mutex.withLock { preparationSnapshots[gameId]?.get(observerId) }
+    override suspend fun getRuleDecisionSnapshot(gameId: Uuid, observerId: Uuid): RuleDecisionSnapshot? = mutex.withLock { ruleDecisionSnapshots[gameId]?.get(observerId) }
 
-    override suspend fun setRoundPreparationSnapshot(
+    override suspend fun setRuleDecisionSnapshot(
         gameId: Uuid,
         observerId: Uuid,
-        snapshot: RoundPreparationSnapshot?,
+        snapshot: RuleDecisionSnapshot?,
     ) = mutex.withLock {
         if (snapshot == null) {
-            preparationSnapshots[gameId]?.remove(observerId)
+            ruleDecisionSnapshots[gameId]?.remove(observerId)
         } else {
-            preparationSnapshots.getOrPut(gameId) { mutableMapOf() }[observerId] = snapshot
+            ruleDecisionSnapshots.getOrPut(gameId) { mutableMapOf() }[observerId] = snapshot
         }
         Unit
     }
 
     override suspend fun removeSnapshot(gameId: Uuid, observerId: Uuid) = mutex.withLock {
         snapshots[gameId]?.remove(observerId)
-        preparationSnapshots[gameId]?.remove(observerId)
+        ruleDecisionSnapshots[gameId]?.remove(observerId)
         Unit
     }
 
@@ -51,7 +51,7 @@ class GameSnapshotRepositoryImpl : GameSnapshotRepository {
     ): Boolean = mutex.withLock {
         if (!isStillValid()) return@withLock false
         snapshots[gameId]?.remove(observerId)
-        preparationSnapshots[gameId]?.remove(observerId)
+        ruleDecisionSnapshots[gameId]?.remove(observerId)
         true
     }
 
@@ -59,6 +59,6 @@ class GameSnapshotRepositoryImpl : GameSnapshotRepository {
 
     override suspend fun clearAll() = mutex.withLock {
         snapshots.clear()
-        preparationSnapshots.clear()
+        ruleDecisionSnapshots.clear()
     }
 }

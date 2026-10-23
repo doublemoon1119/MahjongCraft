@@ -41,7 +41,7 @@ class DecisionHudDiscardAnalysisScopeTest {
             triggerPlayerName = null,
             triggerPlayerRelation = null,
             triggerActionId = null,
-            preparation = null,
+            ruleDecision = null,
         )
 
         assertEquals(listOf(riichi), prompt.discardAnalysesForAction("riichi"))
@@ -76,7 +76,7 @@ class DecisionHudDiscardAnalysisScopeTest {
             triggerPlayerName = null,
             triggerPlayerRelation = null,
             triggerActionId = null,
-            preparation = null,
+            ruleDecision = null,
         )
 
         assertEquals(listOf(ordinary), prompt.discardAnalysesForAction("action"))
@@ -98,7 +98,7 @@ class DecisionHudDiscardAnalysisScopeTest {
             triggerPlayerName = null,
             triggerPlayerRelation = null,
             triggerActionId = null,
-            preparation = null,
+            ruleDecision = null,
         )
 
         val selected = assertIs<HandAnalysisSelection.AfterDiscard>(

@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.repository
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSnapshot
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSnapshot
 import com.doublemoon1119.mahjongcraft.logic.table.TableStateSnapshot
 import kotlin.uuid.Uuid
 
@@ -28,22 +28,22 @@ interface GameSnapshotRepository {
     suspend fun setSnapshot(observerId: Uuid, snapshot: TableStateSnapshot)
 
     /**
-     * 取得指定觀看者可見的開局準備快照；預設實作回傳 null，表示沒有提供此類快照。
+     * 取得指定觀看者可見的規則選擇快照；預設實作回傳 null，表示沒有提供此類快照。
      *
      * @param gameId 快照所屬遊戲的識別碼。
      * @param observerId 要取得快照的觀看者識別碼。
-     * @return 觀看者可見的開局準備快照；沒有快照或使用預設實作時為 null。
+     * @return 觀看者可見的規則選擇快照；沒有快照或使用預設實作時為 null。
      */
-    suspend fun getRoundPreparationSnapshot(gameId: Uuid, observerId: Uuid): RoundPreparationSnapshot? = null
+    suspend fun getRuleDecisionSnapshot(gameId: Uuid, observerId: Uuid): RuleDecisionSnapshot? = null
 
     /**
-     * 設定或清除指定觀看者的開局準備快照；預設實作不保存資料。
+     * 設定或清除指定觀看者的規則選擇快照；預設實作不保存資料。
      *
      * @param gameId 快照所屬遊戲的識別碼。
      * @param observerId 接收或移除快照的觀看者識別碼。
      * @param snapshot 要保存的快照；null 表示清除快照。
      */
-    suspend fun setRoundPreparationSnapshot(gameId: Uuid, observerId: Uuid, snapshot: RoundPreparationSnapshot?) = Unit
+    suspend fun setRuleDecisionSnapshot(gameId: Uuid, observerId: Uuid, snapshot: RuleDecisionSnapshot?) = Unit
 
     /**
      * 移除特定觀察者的遊戲快照。
@@ -54,7 +54,7 @@ interface GameSnapshotRepository {
     suspend fun removeSnapshot(gameId: Uuid, observerId: Uuid)
 
     /**
-     * 在 repository 互斥鎖內確認來源仍有效後移除桌況與準備快照。
+     * 在 repository 互斥鎖內確認來源仍有效後移除桌況與規則選擇快照。
      *
      * 條件只能讀取已發布資料，不得阻塞、重新呼叫此 repository 或修改來源。
      *

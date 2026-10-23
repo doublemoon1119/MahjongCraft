@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.observer
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSnapshot
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.observer.model.ObserverSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.observer.service.ObserverAudienceSource
 import com.doublemoon1119.mahjongcraft.flow.common.observer.service.ObserverSnapshotSender
@@ -71,7 +71,7 @@ class ObserverSnapshotBroadcasterSourceReplacementTest {
             return delegate.snapshotFor(game, observerId)
         }
 
-        override fun roundPreparationSnapshotFor(game: Game, observerId: Uuid): RoundPreparationSnapshot? = delegate.roundPreparationSnapshotFor(game, observerId)
+        override fun ruleDecisionSnapshotFor(game: Game, observerId: Uuid): RuleDecisionSnapshot? = delegate.ruleDecisionSnapshotFor(game, observerId)
     }
 
     /** 來源在記錄前被替換時不記錄該次內容；下一輪即使內容相同也會送出。 */

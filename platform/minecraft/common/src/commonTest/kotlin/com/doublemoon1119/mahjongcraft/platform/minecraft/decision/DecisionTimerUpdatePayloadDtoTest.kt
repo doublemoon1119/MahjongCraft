@@ -78,7 +78,7 @@ class DecisionTimerUpdatePayloadDtoTest {
                             ),
                         ),
                         ruleModuleId = null,
-                        preparation = null,
+                        ruleDecision = null,
                     ),
                 ),
             ),
@@ -109,7 +109,7 @@ class DecisionTimerUpdatePayloadDtoTest {
                     triggerPlayerId = null,
                     triggerPlayerName = null,
                     triggerActionId = null,
-                    preparation = null,
+                    ruleDecision = null,
                     discardAnalyses = emptyList(),
                 ),
             ),
@@ -121,7 +121,7 @@ class DecisionTimerUpdatePayloadDtoTest {
                 """"actions":[{"token":"pass","actionId":"mahjongcraft:pass","referenceTileAssetKey":null,"previewTileAssetKeys":[],""" +
                 """"claimedTileIndex":null,"tileSelection":null}],""" +
                 """"triggerTileAssetKey":null,"triggerPlayerId":null,"triggerPlayerName":null,"triggerPlayerRelation":"ACROSS",""" +
-                """"triggerActionId":null,"preparation":null,"discardAnalyses":[]}}}""",
+                """"triggerActionId":null,"ruleDecision":null,"discardAnalyses":[]}}}""",
             Json.encodeToString(DecisionTimerUpdatePayloadDto.serializer(), payload),
         )
     }

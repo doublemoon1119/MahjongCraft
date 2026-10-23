@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.game
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationInputSpec
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionInputSpec
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
@@ -17,7 +17,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionPlaye
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionActionDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionActionTileSelectionDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
-import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RoundPreparationPromptDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.aiPlayerDisplayName
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
@@ -56,7 +56,7 @@ class PlayerDecisionPromptFactory(
         val tileOrder = module.tileOrder
         val resolvedCandidates = candidateResolver.resolveActionCandidates(gameId, playerId) ?: return null
         val actions = resolvedCandidates.actions
-        val preparation = game.pendingRoundPreparation
+        val ruleDecision = game.pendingRuleDecision
             ?.takeIf { playerId !in it.completedPlayerIds }
             ?.inputSpecsByPlayerId
             ?.get(playerId)
@@ -77,12 +77,12 @@ class PlayerDecisionPromptFactory(
                 gameId,
                 playerId,
                 phase,
-                preparation,
+                ruleDecision,
                 when (phase) {
                     PlayerDecisionPhase.OWN_TURN -> player.hand.lastDrawn?.id ?: player.actionHistory.lastOrNull()?.hashCode()
                     PlayerDecisionPhase.DISCARD_REACTION -> state.pendingReaction?.tileId
                     PlayerDecisionPhase.ROBBING_REACTION -> state.pendingRobbingReaction?.robbedTile?.id
-                    PlayerDecisionPhase.ROUND_PREPARATION -> game.pendingRoundPreparation?.stepIndex
+                    PlayerDecisionPhase.RULE_DECISION -> game.pendingRuleDecision?.stepIndex
                 },
                 if (phase == PlayerDecisionPhase.OWN_TURN) actions.decisionIdentity() else null,
             ),
@@ -134,7 +134,7 @@ class PlayerDecisionPromptFactory(
             },
             triggerPlayerRelation = trigger?.relation,
             triggerActionId = trigger?.actionId,
-            preparation = preparation,
+            ruleDecision = ruleDecision,
             discardAnalyses = analyses,
         )
     }
@@ -146,7 +146,7 @@ class PlayerDecisionPromptFactory(
  * @param gameId 對局識別碼。
  * @param playerId prompt 接收玩家識別碼。
  * @param phase 決策階段。
- * @param preparation 目前受控的準備輸入 prompt。
+ * @param ruleDecision 目前受控的規則選擇輸入 prompt。
  * @param reference 用來區分目前決策的參考狀態。
  * @param actionIdentity 目前合法動作候選的穩定識別片段；非自己回合時為 null。
  * @return 由上述狀態組成的穩定識別字串。
@@ -155,11 +155,11 @@ internal fun buildPlayerDecisionKey(
     gameId: Uuid,
     playerId: Uuid,
     phase: PlayerDecisionPhase,
-    preparation: RoundPreparationPromptDto?,
+    ruleDecision: RuleDecisionPromptDto?,
     reference: Any?,
     actionIdentity: String?,
 ): String {
-    val base = listOf(gameId, playerId, phase, reference, preparation?.hashCode())
+    val base = listOf(gameId, playerId, phase, reference, ruleDecision?.hashCode())
     return (base + listOfNotNull(actionIdentity?.let(::decisionIdentityFingerprint))).joinToString(":")
 }
 
@@ -221,17 +221,17 @@ private fun GameAction.decisionIdentity(): String = when (this) {
 }
 
 /**
- * 將受控 preparation input 轉成不暴露其他玩家提交的私人 prompt。
+ * 將受控 rule decision input 轉成不暴露其他玩家提交的私人 prompt。
  *
  * @param resolveAssetKey 以牌張識別碼取得可顯示素材 key 的函式。
- * @return 對應的私人準備階段 prompt。
+ * @return 對應的私人規則選擇 prompt。
  */
-private fun RoundPreparationInputSpec.toPrompt(resolveAssetKey: (Uuid) -> String?): RoundPreparationPromptDto = when (this) {
-    RoundPreparationInputSpec.Confirmation -> RoundPreparationPromptDto.Confirmation
-    is RoundPreparationInputSpec.SingleChoice -> RoundPreparationPromptDto.SingleChoice(optionIds)
-    is RoundPreparationInputSpec.TileSelection -> {
+private fun RuleDecisionInputSpec.toPrompt(resolveAssetKey: (Uuid) -> String?): RuleDecisionPromptDto = when (this) {
+    RuleDecisionInputSpec.Confirmation -> RuleDecisionPromptDto.Confirmation
+    is RuleDecisionInputSpec.SingleChoice -> RuleDecisionPromptDto.SingleChoice(optionIds)
+    is RuleDecisionInputSpec.TileSelection -> {
         val sortedTileIds = eligibleTileIds.sortedBy(Uuid::toString)
-        RoundPreparationPromptDto.TileSelection(
+        RuleDecisionPromptDto.TileSelection(
             eligibleTileIds = sortedTileIds.map(Uuid::toString),
             eligibleTileAssetKeys = sortedTileIds.mapNotNull(resolveAssetKey),
             minCount = minCount,

@@ -34,12 +34,12 @@ class GameDecisionAuthorityResolver(
         if (game.isMatchOver || game.pendingTransition != null) return emptyMap()
         val state = game.tableState
         val humanPlayerIds = state.players.filterNot { game.isAi(it.id) }.mapTo(mutableSetOf()) { it.id }
-        game.pendingRoundPreparation?.let { preparation ->
-            return preparation.participantPlayerIds
+        game.pendingRuleDecision?.let { ruleDecision ->
+            return ruleDecision.participantPlayerIds
                 .filter { it in humanPlayerIds }
-                .filterNot { it in preparation.completedPlayerIds }
+                .filterNot { it in ruleDecision.completedPlayerIds }
                 .filterNot { it in game.forcedAutoPlayPlayerIds }
-                .associateWith { PlayerDecisionPhase.ROUND_PREPARATION }
+                .associateWith { PlayerDecisionPhase.RULE_DECISION }
         }
         return actionContextResolver.resolve(state)
             .filterKeys { it in humanPlayerIds && it !in game.forcedAutoPlayPlayerIds }

@@ -54,15 +54,15 @@ Room controls, summaries, history, and server-side validation use that same regi
 The category `mahjongcraft:flow` and field IDs `mahjongcraft:base_seconds`,
 `mahjongcraft:reserve_seconds`, `mahjongcraft:spectating_policy`, and
 `mahjongcraft:spectator_hand_visibility` are reserved.
-`mahjongcraft:preparation_base_seconds` is also reserved, but is only added for rules that use
-round preparation.
+`mahjongcraft:rule_decision_base_seconds` is also reserved, but is only added for rules that use
+rule decision.
 Do not register them yourself; conflicts reject registration and identify the rule and conflicting ID.
 You do not need to copy the built-in fields or access MahjongCraft's dependency injection setup.
 
 Do not add settings for operations the rule does not have. Ordinary Riichi does not ask players
 to select or exchange tiles before a round, so it has no round-preparation time field.
 Preparation settings default to absent in `GameFlowConfig`. A rule that asks players to make
-preparation choices supplies a default `RoundPreparationConfig` on its registered preparation
+preparation choices supplies a default `RuleDecisionConfig` on its registered preparation
 resolver. The presentation registry uses that same registration to add the standard preparation-time
 field (1–3600 seconds); do not copy its editor or maintain another capability flag.
 Automatic preparation steps alone do not need this player timer. A player-choice step without

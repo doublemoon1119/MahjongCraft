@@ -12,7 +12,7 @@ import net.minecraft.world.World
 import kotlin.uuid.Uuid
 
 /**
- * 多選 preparation／動作選牌（`maxCount > 1`）期間，決策玩家手牌上方的可互動確認面板——右鍵即送出
+ * 多選 rule decision／動作選牌（`maxCount > 1`）期間，決策玩家手牌上方的可互動確認面板——右鍵即送出
  * 目前已選取的牌。純粹的互動目標，本身不攜帶選取內容（選取狀態只存在決策玩家自己 client 本機），
  * 伺服器端互動不需要任何邏輯，實際送出仍走既有的 `decisionSelection` channel，見
  * `PlayerDecisionHudController` 對這個 entity 類型的 client 端攔截處理。

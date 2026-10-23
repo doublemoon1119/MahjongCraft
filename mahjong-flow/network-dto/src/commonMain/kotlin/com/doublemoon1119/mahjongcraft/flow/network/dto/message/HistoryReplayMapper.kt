@@ -119,7 +119,7 @@ private fun HistoryReplayFact.toDto(): HistoryReplayFactDto = when (this) {
         potDeposit,
     )
     is HistoryReplayFact.Reaction -> HistoryReplayFactDto.Reaction(typeKey, actionType, resolvedActorSeat)
-    is HistoryReplayFact.Preparation -> HistoryReplayFactDto.Preparation(typeKey, stepId, stepIndex, nextStepId)
+    is HistoryReplayFact.RuleDecision -> HistoryReplayFactDto.RuleDecision(typeKey, stepId, stepIndex, nextStepId)
     is HistoryReplayFact.DiceRolled -> HistoryReplayFactDto.DiceRolled(typeKey, rollIndex, actorSeat, dice)
     is HistoryReplayFact.Completion -> HistoryReplayFactDto.Completion(typeKey, outcome?.toDto())
     is HistoryReplayFact.RuleEffect -> HistoryReplayFactDto.RuleEffect(typeKey, reasonId, outcome?.toDto())

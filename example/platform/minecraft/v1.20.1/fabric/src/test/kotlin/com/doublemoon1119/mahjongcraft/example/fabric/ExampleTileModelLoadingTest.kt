@@ -19,7 +19,7 @@ import kotlin.test.assertNotNull
 class ExampleTileModelLoadingTest {
     /** 自訂正面與共用牌體在模型準備後仍有效，不回退成內建外觀或未知牌面。 */
     @Test
-    fun `resource preparation keeps the example face and shared cover`() {
+    fun `resource rule decision keeps the example face and shared cover`() {
         val registry = MinecraftTileAssetRegistryImpl().apply {
             ExampleMinecraftMahjongExtension().registerTileAssets(this)
             freeze()

@@ -1,0 +1,175 @@
+package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
+
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecision
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionInputSpec
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleContractViolationException
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolution
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolver
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
+import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameAbortHandler
+import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
+import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.table.TableState
+import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
+import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
+import kotlinx.coroutines.test.runTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertNull
+import kotlin.uuid.Uuid
+
+/** [BeginRuleDecisionUseCase] 的規則選擇設定與契約測試。 */
+class BeginRuleDecisionUseCaseTest {
+    /** 規則沒有登記選擇流程時，不修改對局。 */
+    @Test
+    fun `no resolver leaves game unchanged`() = runTest {
+        val repository = FakeGameRepository()
+        val game = game()
+        repository.setGame(game)
+
+        invoke(repository, RuleDecisionResolverRegistry())
+
+        assertEquals(game, repository.getGame(game.tableState.id))
+    }
+
+    /** 純自動選擇步驟不需要玩家思考時間設定。 */
+    @Test
+    fun `automatic rule decision may start without timing configuration`() = runTest {
+        val repository = FakeGameRepository()
+        val game = game()
+        repository.setGame(game)
+        val resolvers = RuleDecisionResolverRegistry().apply { register(AutoResolver) }
+
+        invoke(repository, resolvers)
+
+        assertEquals("test:auto", repository.getGame(game.tableState.id)?.pendingRuleDecision?.stepId)
+    }
+
+    /** 缺少規則選擇時間時，以發現問題的對局快照中止，不保留可繼續遊玩的對局。 */
+    @Test
+    fun `player rule decision without timing configuration aborts using the transaction basis`() = runTest {
+        val repository = FakeGameRepository()
+        val game = game()
+        repository.setGame(game)
+        val resolvers = RuleDecisionResolverRegistry().apply { register(PlayerResolver) }
+        var abortedBasis: Game? = null
+        val abortHandler = GameAbortHandler { expected, _, _ ->
+            abortedBasis = expected
+            repository.removeTableState(expected.id)
+            true
+        }
+
+        assertFailsWith<RuleContractViolationException> {
+            invoke(repository, resolvers, abortHandler)
+        }
+        assertEquals(game, abortedBasis)
+        assertNull(repository.getGame(game.tableState.id))
+    }
+
+    /** 有明確規則選擇時間時，可建立需要玩家輸入的步驟。 */
+    @Test
+    fun `player rule decision with timing configuration starts successfully`() = runTest {
+        val repository = FakeGameRepository()
+        val game = game(flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30)))
+        repository.setGame(game)
+        val resolvers = RuleDecisionResolverRegistry().apply { register(PlayerResolver) }
+
+        invoke(repository, resolvers)
+
+        assertEquals("test:player", repository.getGame(game.tableState.id)?.pendingRuleDecision?.stepId)
+    }
+
+    /** 規則設定停用玩家選擇時，即使殘留舊時間也會拒絕玩家步驟。 */
+    @Test
+    fun `disabled rule decision rejects stale timing configuration`() = runTest {
+        val repository = FakeGameRepository()
+        val game = Game(
+            tableState = FakeTableStateFactory.create(
+                id = testGameId,
+                config = RiichiRuleConfig(redDoraCount = 0),
+            ),
+            flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30)),
+        )
+        repository.setGame(game)
+        val resolvers = RuleDecisionResolverRegistry().apply { register(PlayerResolver) }
+
+        assertFailsWith<RuleContractViolationException> { invoke(repository, resolvers) }
+    }
+
+    /**
+     * 以指定 resolver 和中止處理器執行規則選擇開始流程。
+     *
+     * @param repository 保存測試對局的 repository。
+     * @param resolvers 提供測試規則選擇流程的 registry。
+     * @param abortHandler 契約違反時接收中止請求的處理器。
+     */
+    private suspend fun invoke(
+        repository: FakeGameRepository,
+        resolvers: RuleDecisionResolverRegistry,
+        abortHandler: GameAbortHandler = GameAbortHandler { _, _, _ -> true },
+    ) {
+        val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
+        BeginRuleDecisionUseCase(
+            gameRepository = repository,
+            moduleRegistry = moduleRegistry,
+            resolverRegistry = resolvers,
+            snapshotSynchronizer = GameSnapshotSynchronizer(
+                repository,
+                FakeGameSnapshotRepository(),
+                GameVisibilityPolicyImpl(moduleRegistry),
+            ),
+            abortGameHandler = abortHandler,
+        )(repository.getGame(testGameId)!!.tableState.id)
+    }
+
+    /**
+     * 建立使用內建日麻規則的測試對局。
+     *
+     * @param flowConfig 測試對局採用的流程設定。
+     * @return 測試用對局。
+     */
+    private fun game(flowConfig: GameFlowConfig = GameFlowConfig()): Game = Game(
+        tableState = FakeTableStateFactory.create(id = testGameId, config = RiichiRuleConfig()),
+        flowConfig = flowConfig,
+    )
+
+    private companion object {
+        /** 測試對局共用的桌面識別碼。 */
+        val testGameId: Uuid = Uuid.random()
+
+        /** 只建立自動步驟的測試解析器。 */
+        object AutoResolver : RuleDecisionResolver {
+            override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI
+
+            override fun begin(tableState: TableState, ruleModule: MahjongRuleModule<*>) = PendingRuleDecision("test:auto", 0, emptyMap())
+
+            override fun resolve(tableState: TableState, ruleDecision: PendingRuleDecision, ruleModule: MahjongRuleModule<*>) = RuleDecisionResolution(tableState, null)
+        }
+
+        /** 建立需要玩家輸入的測試解析器。 */
+        object PlayerResolver : RuleDecisionResolver {
+            override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI
+
+            override fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig? = if ((ruleConfig as? RiichiRuleConfig)?.redDoraCount == 3) RuleDecisionConfig(30) else null
+
+            override fun begin(tableState: TableState, ruleModule: MahjongRuleModule<*>) = PendingRuleDecision(
+                "test:player",
+                0,
+                mapOf(tableState.players.first().id to RuleDecisionInputSpec.Confirmation),
+            )
+
+            override fun resolve(tableState: TableState, ruleDecision: PendingRuleDecision, ruleModule: MahjongRuleModule<*>) = RuleDecisionResolution(tableState, null)
+        }
+    }
+}

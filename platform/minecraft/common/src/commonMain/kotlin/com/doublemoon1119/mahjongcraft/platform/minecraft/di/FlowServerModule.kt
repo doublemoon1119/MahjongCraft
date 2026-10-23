@@ -22,7 +22,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameAction
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationAiDriver
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionAiDriver
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicy
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
@@ -45,9 +45,9 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerDecisionTi
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AbortGameUseCase
-import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceAutomaticRoundPreparationUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceAutomaticRuleDecisionUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
-import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.BeginRoundPreparationUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.BeginRuleDecisionUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAbortiveDrawUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAndDiscardUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
@@ -64,7 +64,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToRobbing
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ReturnToRoomUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.SetHandSortPreferenceUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.StartGameUseCase
-import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.SubmitRoundPreparationUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.SubmitRuleDecisionUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.SyncGameSnapshotUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.UpdatePlayerAutomaticControlsUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.lifecycle.ServerSessionStateCleaner
@@ -137,7 +137,7 @@ val flowServerModule = module {
     factory<GameFlowCoordinator>()
     single<PostActionExhaustiveDrawResolverRegistry>()
     single<PostReactionRoundOutcomeResolverRegistry>()
-    factory<RoundPreparationAiDriver>()
+    factory<RuleDecisionAiDriver>()
     single<WinRoundContinuationResolverRegistry>()
     single<GameVisibilityPolicyImpl>() bind GameVisibilityPolicy::class
     single<HandReadinessVisibilityPolicy>()
@@ -157,9 +157,9 @@ val flowServerModule = module {
     factory<PlayerDecisionTimerFactory>()
     single<WinPresentationHandoff>()
     single<WinSettlementDetailResolverRegistry>()
-    factory<AdvanceAutomaticRoundPreparationUseCase>()
+    factory<AdvanceAutomaticRuleDecisionUseCase>()
     factory<AdvanceRoundUseCase>()
-    factory<BeginRoundPreparationUseCase>()
+    factory<BeginRuleDecisionUseCase>()
     factory<DeclareAbortiveDrawUseCase>()
     factory<DeclareExhaustiveDrawUseCase>()
     factory<DeclareKanUseCase>()
@@ -175,7 +175,7 @@ val flowServerModule = module {
     factory<ReturnToRoomUseCase>()
     factory<SetHandSortPreferenceUseCase>()
     factory<StartGameUseCase>()
-    factory<SubmitRoundPreparationUseCase>()
+    factory<SubmitRuleDecisionUseCase>()
     factory<SyncGameSnapshotUseCase>()
     factory<UpdatePlayerAutomaticControlsUseCase>()
 

@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.room
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueConfigSource
 import kotlin.test.Test
@@ -34,11 +34,11 @@ class RoomRuleCatalogueEntryTest {
         assertEquals(draft.ruleConfig, context.config)
     }
 
-    /** 只改了流程設定（例如準備時間）也算尚未套用的草稿，但規則設定仍取自草稿。 */
+    /** 只改了流程設定（例如規則選擇時間）也算尚未套用的草稿，但規則設定仍取自草稿。 */
     @Test
     fun `flow only changes still count as a draft`() {
         val authoritative = GameConfig(RiichiRuleConfig())
-        val draft = authoritative.copy(flowConfig = GameFlowConfig(roundPreparation = RoundPreparationConfig(60)))
+        val draft = authoritative.copy(flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(60)))
 
         val context = roomRuleCatalogueContext(ruleModuleId = RULE_ID, displayed = draft, authoritative = authoritative)
 

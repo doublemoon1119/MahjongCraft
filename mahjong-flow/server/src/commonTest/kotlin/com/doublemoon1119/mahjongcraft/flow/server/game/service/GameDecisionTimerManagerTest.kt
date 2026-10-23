@@ -2,10 +2,10 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.service
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRoundPreparation
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecision
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationConfig
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationInputSpec
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionInputSpec
 import com.doublemoon1119.mahjongcraft.flow.common.time.MonotonicClock
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
@@ -241,23 +241,23 @@ class GameDecisionTimerManagerTest {
     }
 
     /**
-     * 驗證 [PlayerDecisionPhase.ROUND_PREPARATION] 逾時進入強制自動操作時，不會清空玩家的共用保留
-     * 思考時間池——這個階段從未動用過那個池子，逾時只代表局前準備時間用完，跟其他階段
+     * 驗證 [PlayerDecisionPhase.RULE_DECISION] 逾時進入強制自動操作時，不會清空玩家的共用保留
+     * 思考時間池——這個階段從未動用過那個池子，逾時只代表規則選擇時間用完，跟其他階段
      * 逾時會把保留思考時間歸零的行為不同。
      */
     @Test
-    fun `test round preparation timeout does not clear reserve pool`() = runTest {
+    fun `test rule decision timeout does not clear reserve pool`() = runTest {
         val fixtures = Fixtures()
         val playerId = Uuid.random()
-        val game = fixtures.preparationGame(playerId)
+        val game = fixtures.ruleDecisionGame(playerId)
         fixtures.repository.setGame(game)
         fixtures.manager.reconcile(game.id)
-        fixtures.clock.nowMillis = game.flowConfig.roundPreparation!!.baseSeconds * 1_000L + 1_000L
+        fixtures.clock.nowMillis = game.flowConfig.ruleDecision!!.baseSeconds * 1_000L + 1_000L
 
         val claimed = fixtures.manager.claimTimedOutDecisions()
 
         assertEquals(
-            listOf(TimedOutPlayerDecision(game.id, playerId, PlayerDecisionPhase.ROUND_PREPARATION)),
+            listOf(TimedOutPlayerDecision(game.id, playerId, PlayerDecisionPhase.RULE_DECISION)),
             claimed,
         )
         val updatedGame = fixtures.repository.getGame(game.id)!!
@@ -265,17 +265,17 @@ class GameDecisionTimerManagerTest {
         assertEquals(setOf(playerId), updatedGame.forcedAutoPlayPlayerIds)
     }
 
-    /** 驗證離開開局準備階段時，不把此階段未使用的保留時間零值寫回玩家共用時間池。 */
+    /** 驗證離開規則選擇階段時，不把此階段未使用的保留時間零值寫回玩家共用時間池。 */
     @Test
-    fun `test leaving round preparation does not overwrite reserve pool`() = runTest {
+    fun `test leaving rule decision does not overwrite reserve pool`() = runTest {
         val fixtures = Fixtures()
         val playerId = Uuid.random()
-        val game = fixtures.preparationGame(playerId)
+        val game = fixtures.ruleDecisionGame(playerId)
         fixtures.repository.setGame(game)
         fixtures.manager.reconcile(game.id)
         fixtures.clock.nowMillis = 5_000L
         fixtures.repository.updateGame(game.id) { current ->
-            current!!.copy(pendingRoundPreparation = null) to Unit
+            current!!.copy(pendingRuleDecision = null) to Unit
         }
 
         val statuses = fixtures.manager.reconcile(game.id)
@@ -330,12 +330,12 @@ class GameDecisionTimerManagerTest {
         assertEquals(5_000L, resumed.time.baseRemainingMillis)
     }
 
-    /** 驗證準備階段暫停只保存基本時間，不會覆寫玩家共用的保留思考時間池。 */
+    /** 驗證規則選擇暫停只保存基本時間，不會覆寫玩家共用的保留思考時間池。 */
     @Test
-    fun `test pausing round preparation preserves reserve pool`() = runTest {
+    fun `test pausing rule decision preserves reserve pool`() = runTest {
         val fixtures = Fixtures()
         val playerId = Uuid.random()
-        val game = fixtures.preparationGame(playerId)
+        val game = fixtures.ruleDecisionGame(playerId)
         fixtures.repository.setGame(game)
         fixtures.manager.reconcile(game.id)
         fixtures.clock.nowMillis = 5_000L
@@ -345,7 +345,7 @@ class GameDecisionTimerManagerTest {
         val pausedGame = fixtures.repository.getGame(game.id)!!
         assertEquals(20_000L, pausedGame.remainingReserveMillisByPlayerId.getValue(playerId))
         assertEquals(
-            game.flowConfig.roundPreparation!!.baseSeconds * 1_000L - 5_000L,
+            game.flowConfig.ruleDecision!!.baseSeconds * 1_000L - 5_000L,
             pausedGame.interruptedBaseMillisByPlayerId.getValue(playerId),
         )
     }
@@ -407,20 +407,20 @@ class GameDecisionTimerManagerTest {
         }
 
         /**
-         * 建立單一玩家正在 [PlayerDecisionPhase.ROUND_PREPARATION] 的遊戲。
+         * 建立單一玩家正在 [PlayerDecisionPhase.RULE_DECISION] 的遊戲。
          *
          * @param playerId 玩家識別碼。
          * @return 該玩家等待局前確認的測試遊戲。
          */
-        fun preparationGame(playerId: Uuid): Game {
+        fun ruleDecisionGame(playerId: Uuid): Game {
             val player = FakeMahjongPlayerFactory.create(id = playerId)
             return Game(
                 tableState = FakeTableStateFactory.create(players = listOf(player)),
-                flowConfig = GameFlowConfig(roundPreparation = RoundPreparationConfig(30)),
-                pendingRoundPreparation = PendingRoundPreparation(
+                flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30)),
+                pendingRuleDecision = PendingRuleDecision(
                     stepId = "test:step",
                     stepIndex = 0,
-                    inputSpecsByPlayerId = mapOf(playerId to RoundPreparationInputSpec.Confirmation),
+                    inputSpecsByPlayerId = mapOf(playerId to RuleDecisionInputSpec.Confirmation),
                 ),
             )
         }

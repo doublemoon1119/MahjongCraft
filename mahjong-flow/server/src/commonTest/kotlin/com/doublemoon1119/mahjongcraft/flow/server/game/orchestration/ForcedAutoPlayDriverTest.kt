@@ -3,8 +3,8 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRoundPreparation
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationInputSpec
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecision
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionInputSpec
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
@@ -105,9 +105,9 @@ class ForcedAutoPlayDriverTest {
         )
     }
 
-    /** 驗證開局準備尚未完成時，不會把逾時玩家誤判成一般摸打代操作。 */
+    /** 驗證規則選擇尚未完成時，不會把逾時玩家誤判成一般摸打代操作。 */
     @Test
-    fun `test pending round preparation suppresses forced action`() = runTest {
+    fun `test pending rule decision suppresses forced action`() = runTest {
         val repository = FakeGameRepository()
         val playerId = Uuid.random()
         val game = Game(
@@ -119,10 +119,10 @@ class ForcedAutoPlayDriverTest {
             ),
             flowConfig = GameFlowConfig(),
             forcedAutoPlayPlayerIds = setOf(playerId),
-            pendingRoundPreparation = PendingRoundPreparation(
+            pendingRuleDecision = PendingRuleDecision(
                 stepId = "test:confirmation",
                 stepIndex = 0,
-                inputSpecsByPlayerId = mapOf(playerId to RoundPreparationInputSpec.Confirmation),
+                inputSpecsByPlayerId = mapOf(playerId to RuleDecisionInputSpec.Confirmation),
             ),
         )
         repository.setGame(game)

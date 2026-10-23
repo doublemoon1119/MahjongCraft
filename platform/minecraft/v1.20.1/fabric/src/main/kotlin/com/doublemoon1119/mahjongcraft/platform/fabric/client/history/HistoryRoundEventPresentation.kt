@@ -116,11 +116,11 @@ internal class HistoryRoundEventPresenter(
                 outcome = null,
             )
 
-            is HistoryReplayFactDto.Preparation -> HistoryFactPresentation(
+            is HistoryReplayFactDto.RuleDecision -> HistoryFactPresentation(
                 text = Text.translatable(
-                    MinecraftHistoryScreenKeys.ROUND_PREPARATION,
-                    Text.translatable(MinecraftHistoryScreenKeys.ROUND_PREPARATION_STEP, stepIndex + 1),
-                    preparationText(typeKey, nextStepId),
+                    MinecraftHistoryScreenKeys.RULE_DECISION,
+                    Text.translatable(MinecraftHistoryScreenKeys.RULE_DECISION_STEP, stepIndex + 1),
+                    ruleDecisionText(typeKey, nextStepId),
                 ),
                 actorSeat = null,
                 directTiles = emptyList(),
@@ -181,7 +181,7 @@ internal class HistoryRoundEventPresenter(
             is HistoryReplayFactDto.KnownAction -> listOfNotNull(actionType, extensionTypeId)
             is HistoryReplayFactDto.ActionScored -> listOfNotNull(actionType, extensionTypeId)
             is HistoryReplayFactDto.Reaction -> listOfNotNull(actionType)
-            is HistoryReplayFactDto.Preparation -> listOfNotNull(stepId, nextStepId)
+            is HistoryReplayFactDto.RuleDecision -> listOfNotNull(stepId, nextStepId)
             is HistoryReplayFactDto.DiceRolled -> emptyList()
             is HistoryReplayFactDto.Completion -> listOfNotNull(outcome?.reasonId, outcome?.classification)
             is HistoryReplayFactDto.RuleEffect -> listOfNotNull(reasonId, outcome?.reasonId, outcome?.classification)
@@ -206,17 +206,17 @@ internal class HistoryRoundEventPresenter(
     )
 
     /**
-     * 依記錄種類描述準備狀態，不將尚未開始推進的事件誤判為準備完成。
+     * 依記錄種類描述規則選擇狀態，不將尚未開始推進的事件誤判為準備完成。
      *
-     * @param typeKey 保存的準備事實種類。
+     * @param typeKey 保存的規則選擇事實種類。
      * @param nextStepId 自動處理後的下一步識別碼；開始／提交事實不以此欄位推斷完成。
-     * @return 本地化準備狀態。
+     * @return 本地化規則選擇狀態。
      */
-    private fun preparationText(typeKey: String, nextStepId: String?): Text = Text.translatable(
+    private fun ruleDecisionText(typeKey: String, nextStepId: String?): Text = Text.translatable(
         when (typeKey) {
-            HistoryFactTypeKeys.ROUND_PREPARATION_STARTED -> MinecraftHistoryScreenKeys.ROUND_PREPARATION_STARTED
-            HistoryFactTypeKeys.ROUND_PREPARATION_SUBMITTED -> MinecraftHistoryScreenKeys.ROUND_PREPARATION_SUBMITTED
-            HistoryFactTypeKeys.ROUND_PREPARATION_AUTOMATIC_RESOLVED -> if (nextStepId == null) MinecraftHistoryScreenKeys.ROUND_PREPARATION_NONE else MinecraftHistoryScreenKeys.ROUND_PREPARATION_NEXT
+            HistoryFactTypeKeys.RULE_DECISION_STARTED -> MinecraftHistoryScreenKeys.RULE_DECISION_STARTED
+            HistoryFactTypeKeys.RULE_DECISION_SUBMITTED -> MinecraftHistoryScreenKeys.RULE_DECISION_SUBMITTED
+            HistoryFactTypeKeys.RULE_DECISION_AUTOMATIC_RESOLVED -> if (nextStepId == null) MinecraftHistoryScreenKeys.RULE_DECISION_NONE else MinecraftHistoryScreenKeys.RULE_DECISION_NEXT
             else -> MinecraftHistoryScreenKeys.ROUND_UNKNOWN_FACT
         },
     )

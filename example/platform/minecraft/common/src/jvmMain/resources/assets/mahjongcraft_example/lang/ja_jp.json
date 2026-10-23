@@ -36,7 +36,7 @@
   "mahjongcraft_example.catalogue.entry.pairing.description": "2～4人用のゲームです。全員が100点と3枚の手牌で始め、毎回1枚引いて1枚捨て、4枚で2つの対子を作るとツモ和了です。鳴きとロンはありません。各プレイヤーの支払い点と局数はルーム設定で決まります。局の前には、各プレイヤーが選んだ2枚を次の席へ渡し、前の席から2枚受け取れます。各局1回、牌を引いた後に宣言すると、他のプレイヤーにも「宣言済み」の印が表示されます。点数は変わらず、手牌も公開されません。",
   "mahjongcraft_example.draw.wall_exhausted": "山切れ流局",
   "mahjongcraft_example.indicator.declared": "宣言済み",
-  "mahjongcraft_example.preparation.exchange": "牌交換",
+  "mahjongcraft_example.rule_decision.exchange": "牌交換",
   "mahjongcraft_example.room.config.category.rule": "ペア麻雀",
   "mahjongcraft_example.room.config.field.exchange_enabled": "局前の牌交換",
   "mahjongcraft_example.room.config.field.exchange_enabled.description": "局の開始前に、各プレイヤーが選んだ2枚を次の席へ渡し、前の席から2枚受け取ります。",

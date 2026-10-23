@@ -2,15 +2,15 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.room
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ActionTimeControl
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRoundPreparation
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecision
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.SpectatingPolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.SpectatorHandVisibility
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.state.AuthoritativeStatePersistenceCodec
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolution
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolver
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolution
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolver
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
@@ -59,11 +59,11 @@ class RoomConfigSubmissionTest {
     @Test
     fun `changes to fields without an editor are rejected`() {
         listOf(45, Int.MAX_VALUE).forEach { seconds ->
-            val preparation = current.copy(flowConfig = current.flowConfig.copy(roundPreparation = RoundPreparationConfig(seconds)))
-            assertEquals(RoomConfigSubmission.Result.Invalid, review(preparation))
+            val ruleDecision = current.copy(flowConfig = current.flowConfig.copy(ruleDecision = RuleDecisionConfig(seconds)))
+            assertEquals(RoomConfigSubmission.Result.Invalid, review(ruleDecision))
             assertEquals(
                 RoomConfigSubmission.Result.Invalid,
-                review(preparation, current, customPresentations, customModules),
+                review(ruleDecision, current, customPresentations, customModules),
             )
         }
     }
@@ -79,7 +79,7 @@ class RoomConfigSubmissionTest {
         )
         val switched = currentWithFlow.copy(
             ruleConfig = ThreePlayerRiichiRuleConfig(),
-            flowConfig = currentWithFlow.flowConfig.copy(roundPreparation = null),
+            flowConfig = currentWithFlow.flowConfig.copy(ruleDecision = null),
         )
 
         assertEquals(
@@ -121,33 +121,33 @@ class RoomConfigSubmissionTest {
         )
     }
 
-    /** 第三方規則宣告準備流程後，準備時間的上下界可提交，超過上限則被伺服器拒絕。 */
+    /** 第三方規則宣告選擇流程後，規則選擇時間的上下界可提交，超過上限則被伺服器拒絕。 */
     @Test
-    fun `third party preparation time accepts its supported bounds`() {
+    fun `third party rule decision time accepts its supported bounds`() {
         val customCurrent = GameConfig(RiichiRuleConfig())
         listOf(1, 3600).forEach { seconds ->
             val submitted = customCurrent.copy(
-                flowConfig = customCurrent.flowConfig.copy(roundPreparation = RoundPreparationConfig(seconds)),
+                flowConfig = customCurrent.flowConfig.copy(ruleDecision = RuleDecisionConfig(seconds)),
             )
             assertEquals(
                 RoomConfigSubmission.Result.Accepted(submitted),
-                review(submitted, customCurrent, customPreparationPresentations, customModules),
+                review(submitted, customCurrent, customRuleDecisionPresentations, customModules),
             )
         }
 
         val overflow = customCurrent.copy(
-            flowConfig = customCurrent.flowConfig.copy(roundPreparation = RoundPreparationConfig(3601)),
+            flowConfig = customCurrent.flowConfig.copy(ruleDecision = RuleDecisionConfig(3601)),
         )
         assertEquals(
             RoomConfigSubmission.Result.Invalid,
-            review(overflow, customCurrent, customPreparationPresentations, customModules),
+            review(overflow, customCurrent, customRuleDecisionPresentations, customModules),
         )
 
         val accepted = assertIs<RoomConfigSubmission.Result.Accepted>(
             review(
-                customCurrent.copy(flowConfig = customCurrent.flowConfig.copy(roundPreparation = RoundPreparationConfig(47))),
+                customCurrent.copy(flowConfig = customCurrent.flowConfig.copy(ruleDecision = RuleDecisionConfig(47))),
                 customCurrent,
-                customPreparationPresentations,
+                customRuleDecisionPresentations,
                 customModules,
             ),
         )
@@ -157,33 +157,33 @@ class RoomConfigSubmissionTest {
         assertEquals(accepted.config, decodedRoom.gameConfig)
     }
 
-    /** 從有準備設定的規則切換到日麻時會清除準備設定。 */
+    /** 從有規則選擇設定的規則切換到日麻時會清除該設定。 */
     @Test
-    fun `switching to a rule without preparation clears preparation time`() {
-        val currentWithPreparation = GameConfig(RiichiRuleConfig()).copy(
-            flowConfig = current.flowConfig.copy(roundPreparation = RoundPreparationConfig(45)),
+    fun `switching to a rule without rule decision clears rule decision time`() {
+        val currentWithRuleDecision = GameConfig(RiichiRuleConfig()).copy(
+            flowConfig = current.flowConfig.copy(ruleDecision = RuleDecisionConfig(45)),
         )
-        val switched = currentWithPreparation.copy(
+        val switched = currentWithRuleDecision.copy(
             ruleConfig = ThreePlayerRiichiRuleConfig(),
-            flowConfig = currentWithPreparation.flowConfig.copy(roundPreparation = null),
+            flowConfig = currentWithRuleDecision.flowConfig.copy(ruleDecision = null),
         )
         assertEquals(
             RoomConfigSubmission.Result.Accepted(switched),
-            review(switched, currentWithPreparation, mixedPresentations, mixedModules),
+            review(switched, currentWithRuleDecision, mixedPresentations, mixedModules),
         )
 
         val changedAfterSwitch = switched.copy(
-            flowConfig = switched.flowConfig.copy(roundPreparation = RoundPreparationConfig(46)),
+            flowConfig = switched.flowConfig.copy(ruleDecision = RuleDecisionConfig(46)),
         )
         assertEquals(
             RoomConfigSubmission.Result.Invalid,
-            review(changedAfterSwitch, currentWithPreparation, mixedPresentations, mixedModules),
+            review(changedAfterSwitch, currentWithRuleDecision, mixedPresentations, mixedModules),
         )
     }
 
-    /** 從沒有準備設定的規則切換到支援規則時，會建立核心註冊的預設準備設定。 */
+    /** 從沒有規則選擇設定的規則切換到支援規則時，會建立核心註冊的預設規則選擇設定。 */
     @Test
-    fun `switching to a preparation rule creates its default preparation time`() {
+    fun `switching to a rule decision rule creates its default rule decision time`() {
         val source = GameConfig(
             ruleConfig = ThreePlayerRiichiRuleConfig(),
             flowConfig = current.flowConfig.copy(
@@ -193,7 +193,7 @@ class RoomConfigSubmissionTest {
         )
         val submitted = GameConfig(
             ruleConfig = RiichiRuleConfig(),
-            flowConfig = source.flowConfig.copy(roundPreparation = RoundPreparationConfig(30)),
+            flowConfig = source.flowConfig.copy(ruleDecision = RuleDecisionConfig(30)),
         )
 
         assertEquals(
@@ -202,9 +202,9 @@ class RoomConfigSubmissionTest {
         )
     }
 
-    /** 支援準備的規則若缺少準備設定，伺服器拒絕不完整的提交。 */
+    /** 有規則選擇的規則若缺少規則選擇設定，伺服器拒絕不完整的提交。 */
     @Test
-    fun `preparation rule without preparation config is rejected`() {
+    fun `rule decision rule without rule decision config is rejected`() {
         val source = GameConfig(ThreePlayerRiichiRuleConfig())
         val submitted = GameConfig(RiichiRuleConfig())
 
@@ -214,28 +214,28 @@ class RoomConfigSubmissionTest {
         )
     }
 
-    /** 規則設定開啟局前準備時接受自訂時間，關閉後清除舊時間並拒絕偷帶的時間。 */
+    /** 規則設定開啟規則選擇時接受自訂時間，關閉後清除舊時間並拒絕偷帶的時間。 */
     @Test
-    fun `config aware preparation is rebuilt from the effective rule config`() {
+    fun `config aware rule decision is rebuilt from the effective rule config`() {
         val off = GameConfig(RiichiRuleConfig())
         val on = off.copy(
             ruleConfig = RiichiRuleConfig(scoreConfig = RiichiScoreConfig(initialScore = 30_000)),
-            flowConfig = off.flowConfig.copy(roundPreparation = RoundPreparationConfig(47)),
+            flowConfig = off.flowConfig.copy(ruleDecision = RuleDecisionConfig(47)),
         )
         val enabled = assertIs<RoomConfigSubmission.Result.Accepted>(
-            review(on, off, configAwarePreparationPresentations, customModules),
+            review(on, off, configAwareRuleDecisionPresentations, customModules),
         )
-        assertEquals(47, enabled.config.flowConfig.roundPreparation?.baseSeconds)
+        assertEquals(47, enabled.config.flowConfig.ruleDecision?.baseSeconds)
         assertEquals(
             RoomConfigSubmission.Result.Accepted(off),
-            review(off, enabled.config, configAwarePreparationPresentations, customModules),
+            review(off, enabled.config, configAwareRuleDecisionPresentations, customModules),
         )
         assertEquals(
             RoomConfigSubmission.Result.Invalid,
             review(
-                off.copy(flowConfig = off.flowConfig.copy(roundPreparation = RoundPreparationConfig(47))),
+                off.copy(flowConfig = off.flowConfig.copy(ruleDecision = RuleDecisionConfig(47))),
                 enabled.config,
-                configAwarePreparationPresentations,
+                configAwareRuleDecisionPresentations,
                 customModules,
             ),
         )
@@ -310,7 +310,7 @@ class RoomConfigSubmissionTest {
     private companion object {
         /** 內建設定呈現。 */
         val presentations: GameConfigPresentationRegistry = GameConfigPresentationRegistryImpl(
-            RoundPreparationResolverRegistry(),
+            RuleDecisionResolverRegistry(),
         ).apply {
             BundledMinecraftMahjongExtensions.all.forEach { it.registerGameConfigPresentations(this) }
         }
@@ -323,19 +323,19 @@ class RoomConfigSubmissionTest {
 
         /** 只包含第三方測試規則的設定呈現。 */
         val customPresentations: GameConfigPresentationRegistry = GameConfigPresentationRegistryImpl(
-            RoundPreparationResolverRegistry(),
+            RuleDecisionResolverRegistry(),
         ).apply {
             register(customDefinition())
         }
 
-        /** 宣告需要開局準備流程的第三方測試規則設定呈現。 */
-        val customPreparationPresentations: GameConfigPresentationRegistry = GameConfigPresentationRegistryImpl(preparationResolverRegistry()).apply {
+        /** 宣告需要規則選擇流程的第三方測試規則設定呈現。 */
+        val customRuleDecisionPresentations: GameConfigPresentationRegistry = GameConfigPresentationRegistryImpl(ruleDecisionResolverRegistry()).apply {
             register(customDefinition())
         }
 
-        /** 規則設定達到門檻時才提供局前準備的設定呈現。 */
-        val configAwarePreparationPresentations: GameConfigPresentationRegistry =
-            GameConfigPresentationRegistryImpl(preparationResolverRegistry(configAware = true)).apply {
+        /** 規則設定達到門檻時才提供規則選擇的設定呈現。 */
+        val configAwareRuleDecisionPresentations: GameConfigPresentationRegistry =
+            GameConfigPresentationRegistryImpl(ruleDecisionResolverRegistry(configAware = true)).apply {
                 register(customDefinition())
             }
 
@@ -349,13 +349,13 @@ class RoomConfigSubmissionTest {
             freeze()
         }
 
-        /** 同時包含第三方準備規則與內建無準備規則的設定呈現。 */
-        val mixedPresentations: GameConfigPresentationRegistry = GameConfigPresentationRegistryImpl(preparationResolverRegistry()).apply {
+        /** 同時包含有規則選擇的第三方規則與沒有規則選擇的內建規則的設定呈現。 */
+        val mixedPresentations: GameConfigPresentationRegistry = GameConfigPresentationRegistryImpl(ruleDecisionResolverRegistry()).apply {
             BundledMinecraftMahjongExtensions.all.forEach { it.registerGameConfigPresentations(this) }
             register(customDefinition())
         }
 
-        /** 同時包含第三方準備規則與內建無準備規則的模組 registry。 */
+        /** 同時包含有規則選擇的第三方規則與沒有規則選擇的內建規則的模組 registry。 */
         val mixedModules: MahjongModuleRegistry = MahjongModuleRegistryImpl().apply {
             register(
                 MahjongModuleDefinition(RiichiRuleConfig::class, "example:pairing") { config, id ->
@@ -401,11 +401,11 @@ class RoomConfigSubmissionTest {
             ),
         )
 
-        private fun preparationResolverRegistry(configAware: Boolean = false) = RoundPreparationResolverRegistry().apply {
-            register(object : RoundPreparationResolver {
+        private fun ruleDecisionResolverRegistry(configAware: Boolean = false) = RuleDecisionResolverRegistry().apply {
+            register(object : RuleDecisionResolver {
                 override val ruleModuleId: String = "example:pairing"
-                override fun roundPreparationConfig(ruleConfig: MahjongRuleConfig): RoundPreparationConfig? = if (!configAware || (ruleConfig as? RiichiRuleConfig)?.scoreConfig?.initialScore == 30_000) {
-                    RoundPreparationConfig(30)
+                override fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig? = if (!configAware || (ruleConfig as? RiichiRuleConfig)?.scoreConfig?.initialScore == 30_000) {
+                    RuleDecisionConfig(30)
                 } else {
                     null
                 }
@@ -414,9 +414,9 @@ class RoomConfigSubmissionTest {
 
                 override fun resolve(
                     tableState: TableState,
-                    preparation: PendingRoundPreparation,
+                    ruleDecision: PendingRuleDecision,
                     ruleModule: MahjongRuleModule<*>,
-                ): RoundPreparationResolution = error("not used")
+                ): RuleDecisionResolution = error("not used")
             })
         }
     }

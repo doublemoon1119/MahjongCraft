@@ -70,16 +70,16 @@ sealed interface HistoryReplayFactDto {
     ) : HistoryReplayFactDto
 
     /**
-     * 局準備步驟的安全事實。
+     * 局選擇步驟的安全事實。
      *
      * @property typeKey 事實種類識別碼。
      * @property stepId 步驟識別碼。
      * @property stepIndex 步驟索引。
      * @property nextStepId 下一步識別碼。
      */
-    @SerialName("preparation")
+    @SerialName("rule_decision")
     @Serializable
-    data class Preparation(
+    data class RuleDecision(
         override val typeKey: String,
         val stepId: String,
         val stepIndex: Int,

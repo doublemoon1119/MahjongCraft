@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.room
 
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
@@ -134,7 +134,7 @@ class RulePresentationRequirementsTest {
      * @return 內建設定呈現 registry。
      */
     private fun bundledPresentations(): GameConfigPresentationRegistry = GameConfigPresentationRegistryImpl(
-        RoundPreparationResolverRegistry(),
+        RuleDecisionResolverRegistry(),
     ).apply {
         BundledMinecraftMahjongExtensions.all.forEach { it.registerGameConfigPresentations(this) }
     }
@@ -157,7 +157,7 @@ class RulePresentationRequirementsTest {
      * @return 設定呈現 registry。
      */
     private fun presentations(vararg definitions: GameConfigPresentationDefinition): GameConfigPresentationRegistry = GameConfigPresentationRegistryImpl(
-        RoundPreparationResolverRegistry(),
+        RuleDecisionResolverRegistry(),
     ).apply { definitions.forEach(::register) }
 
     /**

@@ -27,7 +27,7 @@ class ForcedAutoPlayDriver(
     suspend fun resolveNextAction(gameId: Uuid): Pair<Uuid, GameCommand>? {
         val game = gameRepository.getGame(gameId) ?: return null
         if (game.isMatchOver) return null
-        if (game.pendingRoundPreparation != null) return null
+        if (game.pendingRuleDecision != null) return null
         val state = game.tableState
         val forcedPlayerIds = game.forcedAutoPlayPlayerIds
         val robbing = state.pendingRobbingReaction

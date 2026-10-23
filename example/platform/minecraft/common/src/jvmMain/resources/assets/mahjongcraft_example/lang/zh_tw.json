@@ -36,7 +36,7 @@
   "mahjongcraft_example.catalogue.entry.pairing.description": "支援 2～4 人，每人以 100 分和三張手牌開始。每回合摸一張、打出一張，湊成四張牌的兩個對子即可自摸；不能鳴牌或榮和。每位玩家的付款點數與總局數由房間設定決定。開局前可選擇讓每位玩家選兩張牌交給下一個座位的玩家，同時收取前一個座位的兩張牌。摸牌後可宣告一次，讓其他玩家看到「已宣告」標記；不影響分數，也不會公開手牌。",
   "mahjongcraft_example.draw.wall_exhausted": "牌山耗盡",
   "mahjongcraft_example.indicator.declared": "已宣告",
-  "mahjongcraft_example.preparation.exchange": "交換牌",
+  "mahjongcraft_example.rule_decision.exchange": "交換牌",
   "mahjongcraft_example.room.config.category.rule": "配對麻將",
   "mahjongcraft_example.room.config.field.exchange_enabled": "開局前交換牌",
   "mahjongcraft_example.room.config.field.exchange_enabled.description": "開局前讓每位玩家選兩張牌交給下一個座位的玩家，同時收取前一個座位的兩張牌。",

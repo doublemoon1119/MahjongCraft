@@ -3,11 +3,11 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.history.generation
 import com.doublemoon1119.mahjongcraft.ai.AiDecisionContext
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategy
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
-import com.doublemoon1119.mahjongcraft.ai.RoundPreparationAiContext
+import com.doublemoon1119.mahjongcraft.ai.RuleDecisionAiContext
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSnapshot
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSubmission
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSnapshot
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSubmission
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicy
 import com.doublemoon1119.mahjongcraft.flow.server.state.HistoryRecordingObserver
 import com.doublemoon1119.mahjongcraft.logic.table.TableStateSnapshot
@@ -156,7 +156,7 @@ internal class TimedVisibilityPolicy(
 ) : GameVisibilityPolicy {
     override fun snapshotFor(game: Game, observerId: Uuid): TableStateSnapshot = measured { delegate.snapshotFor(game, observerId) }
 
-    override fun roundPreparationSnapshotFor(game: Game, observerId: Uuid): RoundPreparationSnapshot? = measured { delegate.roundPreparationSnapshotFor(game, observerId) }
+    override fun ruleDecisionSnapshotFor(game: Game, observerId: Uuid): RuleDecisionSnapshot? = measured { delegate.ruleDecisionSnapshotFor(game, observerId) }
 
     /**
      * 執行 [block]，成功返回後回報耗時；拋出例外時不回報。
@@ -206,8 +206,8 @@ private class TimedAiStrategy(
         }
     }
 
-    override suspend fun decideRoundPreparation(context: RoundPreparationAiContext): RoundPreparationSubmission {
+    override suspend fun decideRuleDecision(context: RuleDecisionAiContext): RuleDecisionSubmission {
         val mark = TimeSource.Monotonic.markNow()
-        return delegate.decideRoundPreparation(context).also { timer.addAiDecision(mark.elapsedNow()) }
+        return delegate.decideRuleDecision(context).also { timer.addAiDecision(mark.elapsedNow()) }
     }
 }

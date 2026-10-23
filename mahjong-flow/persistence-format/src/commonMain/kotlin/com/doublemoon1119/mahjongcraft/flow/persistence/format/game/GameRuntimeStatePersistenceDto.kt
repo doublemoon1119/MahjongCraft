@@ -20,7 +20,7 @@ import kotlinx.serialization.Serializable
  *   基本思考時間毫秒數，以玩家 UUID 字串索引。
  * @property matchId 整場對局的穩定 UUID 字串。
  * @property aiPlayerStrategyKeys 以玩家 UUID 字串索引的 AI 策略 key，見 [Game.aiPlayerStrategyKeys]。
- * @property pendingRoundPreparation 尚未完成的開局準備流程；沒有時為 null。
+ * @property pendingRuleDecision 尚未完成的規則選擇流程；沒有時為 null。
  */
 @Serializable
 data class GameRuntimeStatePersistenceDto(
@@ -32,7 +32,7 @@ data class GameRuntimeStatePersistenceDto(
     val pendingTransition: PendingGameTransitionPersistenceDto?,
     val roundCompletion: RoundCompletionSummaryPersistenceDto?,
     val matchEndReasonId: String?,
-    val pendingRoundPreparation: PendingRoundPreparationPersistenceDto?,
+    val pendingRuleDecision: PendingRuleDecisionPersistenceDto?,
     val hostId: String,
     val roomPlayerIds: List<String>,
     val interruptedBaseMillisByPlayerId: Map<String, Long>,

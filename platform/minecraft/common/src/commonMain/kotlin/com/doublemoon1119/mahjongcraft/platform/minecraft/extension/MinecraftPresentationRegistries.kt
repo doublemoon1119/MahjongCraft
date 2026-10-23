@@ -6,10 +6,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.ai.AiStrategyDisplayNa
 import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticControlDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSourceRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameRegistry
@@ -44,7 +44,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
  * @property exhaustiveDrawReasonDisplayNameRegistry 流局原因顯示名稱 registry。
  * @property roundOutcomeDisplayNameRegistry 規則特殊本局結果顯示名稱 registry。
  * @property historyDiscardMarkerDisplayRegistry 歷史牌河公開標記呈現 registry。
- * @property roundPreparationDisplayNameRegistry 開局準備顯示名稱 registry。
+ * @property ruleDecisionDisplayNameRegistry 規則選擇顯示名稱 registry。
  * @property roundInfoLineDisplayRegistry 局況資訊行顯示 registry。
  * @property tablePropDescriberRegistry 規則桌面物件描述 registry。
  * @property winCelebrationShowcaseRegistry 胡牌 showcase registry。
@@ -73,7 +73,7 @@ class MinecraftPresentationRegistries(
     val exhaustiveDrawReasonDisplayNameRegistry: ExhaustiveDrawReasonDisplayNameRegistry,
     val roundOutcomeDisplayNameRegistry: RoundOutcomeDisplayNameRegistry,
     val historyDiscardMarkerDisplayRegistry: HistoryDiscardMarkerDisplayRegistry,
-    val roundPreparationDisplayNameRegistry: RoundPreparationDisplayNameRegistry,
+    val ruleDecisionDisplayNameRegistry: RuleDecisionDisplayNameRegistry,
     val roundInfoLineDisplayRegistry: RoundInfoLineDisplayRegistry,
     val tablePropDescriberRegistry: TablePropDescriberRegistry,
     // 胡牌與結算呈現
@@ -112,7 +112,7 @@ class MinecraftPresentationRegistries(
             snapshotCategory(MinecraftExtensionRegistrationCategoryIds.EXHAUSTIVE_DRAW_SETTLEMENT_STATUS_LABEL, "Exhaustive Draw Settlement Status Label", exhaustiveDrawReasonDisplayNameRegistry.settlementStatusReasonIds),
             snapshotCategory(MinecraftExtensionRegistrationCategoryIds.ROUND_OUTCOME_DISPLAY_NAME, "Round Outcome Display Name", roundOutcomeDisplayNameRegistry.registrationKeys),
             snapshotCategory(MinecraftExtensionRegistrationCategoryIds.HISTORY_DISCARD_MARKER_DISPLAY, "History Discard Marker Display", historyDiscardMarkerDisplayRegistry.registrationKeys),
-            snapshotCategory(MinecraftExtensionRegistrationCategoryIds.ROUND_PREPARATION_DISPLAY_NAME, "Round Preparation Display Name", roundPreparationDisplayNameRegistry.registrationKeys),
+            snapshotCategory(MinecraftExtensionRegistrationCategoryIds.RULE_DECISION_DISPLAY_NAME, "Round RuleDecision Display Name", ruleDecisionDisplayNameRegistry.registrationKeys),
             snapshotCategory(MinecraftExtensionRegistrationCategoryIds.ROUND_INFO_LINE_DISPLAY, "Round Info Line Display", roundInfoLineDisplayRegistry.registrationKeys),
             snapshotCategory(MinecraftExtensionRegistrationCategoryIds.TABLE_PROP_DESCRIBER, "Table Prop Describer", tablePropDescriberRegistry.registrationKeys),
             snapshotCategory(MinecraftExtensionRegistrationCategoryIds.WIN_CELEBRATION_SHOWCASE, "Win Celebration Showcase", winCelebrationShowcaseRegistry.registrationKeys),
@@ -142,7 +142,7 @@ class MinecraftPresentationRegistries(
         exhaustiveDrawReasonDisplayNameRegistry.freeze()
         roundOutcomeDisplayNameRegistry.freeze()
         historyDiscardMarkerDisplayRegistry.freeze()
-        roundPreparationDisplayNameRegistry.freeze()
+        ruleDecisionDisplayNameRegistry.freeze()
         roundInfoLineDisplayRegistry.freeze()
         tablePropDescriberRegistry.freeze()
         winCelebrationShowcaseRegistry.freeze()

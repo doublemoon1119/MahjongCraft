@@ -2,10 +2,10 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.decisi
 
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRoundPreparation
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecision
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationInputSpec
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSubmission
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionInputSpec
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSubmission
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DiscardReadinessAnalysisDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileAvailabilityDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.SuitDto
@@ -35,7 +35,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisio
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionActionTileSelectionDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPhaseDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
-import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RoundPreparationPromptDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.arguments.StringArgumentType
@@ -56,21 +56,21 @@ import kotlin.uuid.toJavaUuid
 import kotlin.uuid.toKotlinUuid
 
 /**
- * 建立 `/mahjongcraft debug` 底下的玩家決策互動預覽子指令：`decision_hud` 與 `preparation`。
+ * 建立 `/mahjongcraft debug` 底下的玩家決策互動預覽子指令：`decision_hud` 與 `rule decision`。
  *
  * `decision_hud` 只把固定的 prompt DTO 與計時器狀態直接送給呼叫者的 client，不建立任何對局、也不經過
  * coordinator；需要分析面板的情境會在玩家眼前生成一張臨時牌當作分析目標，由
  * [DebugPreviewEntityLifecycle] 在預覽時間結束後清除。每位測試者最後一次預覽使用的虛擬 game ID 保存在
  * [debugDecisionGameIds]，讓 `clear` 只停止同一位測試者自己那份 client state。
  *
- * `preparation` 相反：它直接寫入真實牌桌的 pending preparation 狀態，再呼叫
+ * `rule decision` 相反：它直接寫入真實牌桌的 pending rule decision 狀態，再呼叫
  * [GameDecisionAvailabilityService.reconcile] 並同步結果，讓計時器、逾時與強制 fallback 都走正式路徑，
  * 因此要求呼叫者已入座。這是開發專用的權威狀態注入，只在 development build 註冊。
  *
- * @property gameRepository 讀寫 preparation 測試情境所需的牌桌狀態。
- * @property gameFlowCoordinator 送出 preparation 的正式指令。
+ * @property gameRepository 讀寫 rule decision 測試情境所需的牌桌狀態。
+ * @property gameFlowCoordinator 送出 rule decision 的正式指令。
  * @property advanceManager 送出後請求推進，讓 AI 與逾時代打接著行動。
- * @property decisionAvailabilityService 重新計算 preparation 的決策可用性與計時器。
+ * @property decisionAvailabilityService 重新計算 rule decision 的決策可用性與計時器。
  * @property snapshotSynchronizer 同步 reconcile 之後的快照。
  * @property membershipRepository 供 tab 補全解析呼叫者目前入座的桌子。
  * @property scope 執行 tab 補全所需的非同步查詢。
@@ -93,7 +93,7 @@ class FabricDebugDecisionCommand(
     /** 每位測試者最後一次 HUD 預覽的虛擬 game ID，供 clear 精確停止同一份 client state。 */
     private val debugDecisionGameIds = mutableMapOf<UUID, String>()
 
-    /** 建立涵蓋操作、立直、分析及 preparation 的 HUD 預覽指令；literal 節點同時提供完整 tab 補全。 */
+    /** 建立涵蓋操作、立直、分析及 rule decision 的 HUD 預覽指令；literal 節點同時提供完整 tab 補全。 */
     fun buildDecisionHudCommand(): LiteralArgumentBuilder<ServerCommandSource> = DecisionHudPreview.entries.fold(
         literal(DECISION_HUD_SUBCOMMAND).then(literal(CLEAR_ARGUMENT).executes { clearDecisionHud(it.source) }),
     ) { node, preview ->
@@ -164,20 +164,20 @@ class FabricDebugDecisionCommand(
         return COMMAND_SUCCESS
     }
 
-    /** 建立 development-only round preparation 測試指令樹。 */
-    fun buildPreparationCommand(): LiteralArgumentBuilder<ServerCommandSource> = literal(PREPARATION_SUBCOMMAND)
+    /** 建立 development-only rule decision 測試指令樹。 */
+    fun buildRuleDecisionCommand(): LiteralArgumentBuilder<ServerCommandSource> = literal(RULE_DECISION_SUBCOMMAND)
         .then(
             literal(START_ARGUMENT)
-                .then(literal(CONFIRM_ARGUMENT).executes { startPreparation(it.source, PreparationPreview.CONFIRM) })
-                .then(literal(CHOICE_ARGUMENT).executes { startPreparation(it.source, PreparationPreview.CHOICE) })
+                .then(literal(CONFIRM_ARGUMENT).executes { startRuleDecision(it.source, RuleDecisionPreview.CONFIRM) })
+                .then(literal(CHOICE_ARGUMENT).executes { startRuleDecision(it.source, RuleDecisionPreview.CHOICE) })
                 .then(
-                    literal(TILES_ARGUMENT).executes { startPreparation(it.source, PreparationPreview.TILES) }
+                    literal(TILES_ARGUMENT).executes { startRuleDecision(it.source, RuleDecisionPreview.TILES) }
                         .then(
                             argument(MIN_COUNT_ARGUMENT, IntegerArgumentType.integer(1)).then(
                                 argument(MAX_COUNT_ARGUMENT, IntegerArgumentType.integer(1)).executes { context ->
-                                    startPreparation(
+                                    startRuleDecision(
                                         context.source,
-                                        PreparationPreview.TILES,
+                                        RuleDecisionPreview.TILES,
                                         minCount = IntegerArgumentType.getInteger(context, MIN_COUNT_ARGUMENT),
                                         maxCount = IntegerArgumentType.getInteger(context, MAX_COUNT_ARGUMENT),
                                     )
@@ -188,15 +188,15 @@ class FabricDebugDecisionCommand(
         )
         .then(
             literal(SUBMIT_ARGUMENT)
-                .then(literal(CONFIRM_ARGUMENT).executes { submitPreparation(it.source, RoundPreparationSubmission.Confirmed) })
+                .then(literal(CONFIRM_ARGUMENT).executes { submitRuleDecision(it.source, RuleDecisionSubmission.Confirmed) })
                 .then(
                     literal(CHOICE_ARGUMENT).then(
                         argument(OPTION_ID_ARGUMENT, IdentifierArgumentType.identifier())
-                            .suggests(::suggestPreparationOptions)
+                            .suggests(::suggestRuleDecisionOptions)
                             .executes { context ->
-                                submitPreparation(
+                                submitRuleDecision(
                                     context.source,
-                                    RoundPreparationSubmission.Choice(
+                                    RuleDecisionSubmission.Choice(
                                         IdentifierArgumentType.getIdentifier(context, OPTION_ID_ARGUMENT).toString(),
                                     ),
                                 )
@@ -206,33 +206,33 @@ class FabricDebugDecisionCommand(
                 .then(
                     literal(TILES_ARGUMENT).then(
                         argument(TILE_IDS_ARGUMENT, StringArgumentType.greedyString())
-                            .suggests(::suggestPreparationTileIds)
+                            .suggests(::suggestRuleDecisionTileIds)
                             .executes { context ->
                                 val tileIds = StringArgumentType.getString(context, TILE_IDS_ARGUMENT)
                                     .split(' ')
                                     .filter(String::isNotBlank)
                                     .map { Uuid.parse(it) }
                                     .toSet()
-                                submitPreparation(context.source, RoundPreparationSubmission.Tiles(tileIds))
+                                submitRuleDecision(context.source, RuleDecisionSubmission.Tiles(tileIds))
                             },
                     ),
                 ),
         )
-        .then(literal(TIMEOUT_ARGUMENT).executes(::timeoutPreparation))
-        .then(literal(CANCEL_ARGUMENT).executes(::cancelPreparation))
+        .then(literal(TIMEOUT_ARGUMENT).executes(::timeoutRuleDecision))
+        .then(literal(CANCEL_ARGUMENT).executes(::cancelRuleDecision))
 
     /**
-     * 只補全執行者目前 preparation 步驟允許選擇的完整 option ID。
+     * 只補全執行者目前 rule decision 步驟允許選擇的完整 option ID。
      *
      * @param context Brigadier 指令內容。
      * @param builder 補全結果建構器。
      * @return 非同步補全結果。
      */
-    private fun suggestPreparationOptions(
+    private fun suggestRuleDecisionOptions(
         context: CommandContext<ServerCommandSource>,
         builder: SuggestionsBuilder,
-    ): CompletableFuture<Suggestions> = suggestFromPlayerPreparation(context.source, builder) { input, _, suggestions ->
-        val options = (input as? RoundPreparationInputSpec.SingleChoice)?.optionIds.orEmpty()
+    ): CompletableFuture<Suggestions> = suggestFromPlayerRuleDecision(context.source, builder) { input, _, suggestions ->
+        val options = (input as? RuleDecisionInputSpec.SingleChoice)?.optionIds.orEmpty()
         options
             .filter { it.startsWith(suggestions.remaining, ignoreCase = true) }
             .forEach(suggestions::suggest)
@@ -245,16 +245,16 @@ class FabricDebugDecisionCommand(
      * @param builder 補全結果建構器。
      * @return 非同步補全結果。
      */
-    private fun suggestPreparationTileIds(
+    private fun suggestRuleDecisionTileIds(
         context: CommandContext<ServerCommandSource>,
         builder: SuggestionsBuilder,
-    ): CompletableFuture<Suggestions> = suggestFromPlayerPreparation(context.source, builder) { input, _, suggestions ->
-        val tileSelection = input as? RoundPreparationInputSpec.TileSelection ?: return@suggestFromPlayerPreparation
+    ): CompletableFuture<Suggestions> = suggestFromPlayerRuleDecision(context.source, builder) { input, _, suggestions ->
+        val tileSelection = input as? RuleDecisionInputSpec.TileSelection ?: return@suggestFromPlayerRuleDecision
         val rawInput = suggestions.remaining
         val endsWithSpace = rawInput.lastOrNull()?.isWhitespace() == true
         val tokens = rawInput.trim().split(Regex("\\s+")).filter(String::isNotBlank)
         val completedTokens = if (endsWithSpace) tokens else tokens.dropLast(1)
-        if (completedTokens.size >= tileSelection.maxCount) return@suggestFromPlayerPreparation
+        if (completedTokens.size >= tileSelection.maxCount) return@suggestFromPlayerRuleDecision
 
         val currentToken = if (endsWithSpace) "" else tokens.lastOrNull().orEmpty()
         tileSelection.eligibleTileIds
@@ -268,19 +268,19 @@ class FabricDebugDecisionCommand(
     }
 
     /**
-     * 非同步解析執行者所在牌桌的私有 preparation input，讓 Brigadier suggestions 不阻塞伺服器執行緒。
+     * 非同步解析執行者所在牌桌的私有 rule decision input，讓 Brigadier suggestions 不阻塞伺服器執行緒。
      *
      * @param source 提供目前玩家資訊的指令來源。
      * @param builder 補全結果建構器。
      * @param appendSuggestions 依目前 input spec 加入允許選項的函式。
      * @return 非同步補全結果。
      */
-    private fun suggestFromPlayerPreparation(
+    private fun suggestFromPlayerRuleDecision(
         source: ServerCommandSource,
         builder: SuggestionsBuilder,
         appendSuggestions: (
-            input: RoundPreparationInputSpec,
-            pending: PendingRoundPreparation,
+            input: RuleDecisionInputSpec,
+            pending: PendingRuleDecision,
             builder: SuggestionsBuilder,
         ) -> Unit,
     ): CompletableFuture<Suggestions> {
@@ -293,7 +293,7 @@ class FabricDebugDecisionCommand(
         scope.launch {
             val playerId = player.uuid.toKotlinUuid()
             val tableId = membershipRepository.getVenueId(playerId)
-            val pending = tableId?.let { gameRepository.getGame(it)?.pendingRoundPreparation }
+            val pending = tableId?.let { gameRepository.getGame(it)?.pendingRuleDecision }
             val input = pending?.inputSpecsByPlayerId?.get(playerId)
             if (input != null && playerId !in pending.submissionsByPlayerId) {
                 appendSuggestions(input, pending, builder)
@@ -304,30 +304,30 @@ class FabricDebugDecisionCommand(
     }
 
     /**
-     * 建立指定形狀的測試 preparation state；[minCount]／[maxCount] 只用在 [PreparationPreview.TILES]，
+     * 建立指定形狀的測試 rule decision state；[minCount]／[maxCount] 只用在 [RuleDecisionPreview.TILES]，
      * 預設維持既有的 3/3（省略引數時的既有行為不變），可調高 `maxCount` 端對端測試多選確認面板
-     * （選中發光→確認面板→送出）走真正的 `SubmitRoundPreparation` 流程與呼叫者真實手牌，不需要真正的
+     * （選中發光→確認面板→送出）走真正的 `SubmitRuleDecision` 流程與呼叫者真實手牌，不需要真正的
      * 地區麻將規則就先湊出一個 `maxCount > 1` 的情境。
      *
      * 寫入狀態後額外呼叫 [GameDecisionAvailabilityService.reconcile] 並同步結果，比照
      * [GameFlowCoordinator] 內部 `dispatchAndReconcile` 的作法，讓這位玩家真的取得
-     * [PlayerDecisionPhase.ROUND_PREPARATION]
+     * [PlayerDecisionPhase.RULE_DECISION]
      * 計時器——直接寫入 repository 不會經過 coordinator 的指令派送流程，計時器不會自動產生，逾時、
      * 強制 fallback 等行為在 debug 情境下就永遠測不到。
      *
      * @param source 執行指令的玩家來源。
-     * @param preview 要建立的 preparation 輸入種類。
+     * @param preview 要建立的 rule decision 輸入種類。
      * @param minCount 選牌情境允許的最少張數；其他情境忽略。
      * @param maxCount 選牌情境允許的最多張數；其他情境忽略。
      * @return Brigadier 指令結果碼。
      */
-    private fun startPreparation(source: ServerCommandSource, preview: PreparationPreview, minCount: Int = 3, maxCount: Int = 3): Int = playerTableScope.runSuspending(source) { tableId, playerId ->
+    private fun startRuleDecision(source: ServerCommandSource, preview: RuleDecisionPreview, minCount: Int = 3, maxCount: Int = 3): Int = playerTableScope.runSuspending(source) { tableId, playerId ->
         val changed = gameRepository.updateGame(tableId) { game ->
             if (game == null) return@updateGame null to false
             val input = when (preview) {
-                PreparationPreview.CONFIRM -> RoundPreparationInputSpec.Confirmation
-                PreparationPreview.CHOICE -> RoundPreparationInputSpec.SingleChoice(DEBUG_OPTION_IDS)
-                PreparationPreview.TILES -> RoundPreparationInputSpec.TileSelection(
+                RuleDecisionPreview.CONFIRM -> RuleDecisionInputSpec.Confirmation
+                RuleDecisionPreview.CHOICE -> RuleDecisionInputSpec.SingleChoice(DEBUG_OPTION_IDS)
+                RuleDecisionPreview.TILES -> RuleDecisionInputSpec.TileSelection(
                     eligibleTileIds = game.tableState.players.first { it.id == playerId }.hand.allTiles
                         .mapTo(linkedSetOf()) { it.id },
                     minCount = minCount,
@@ -335,7 +335,7 @@ class FabricDebugDecisionCommand(
                 )
             }
             game.copy(
-                pendingRoundPreparation = PendingRoundPreparation(
+                pendingRuleDecision = PendingRuleDecision(
                     stepId = "${MinecraftModMetadata.MOD_ID}:debug_${preview.name.lowercase()}",
                     stepIndex = 0,
                     inputSpecsByPlayerId = mapOf(playerId to input),
@@ -346,20 +346,20 @@ class FabricDebugDecisionCommand(
             snapshotSynchronizer.syncAll(tableId)
             decisionAvailabilityService.reconcile(tableId)
         }
-        "Round preparation ${preview.name.lowercase()} preview ${if (changed) "started" else "failed"}"
+        "Rule decision ${preview.name.lowercase()} preview ${if (changed) "started" else "failed"}"
     }
 
     /**
-     * 透過正式 coordinator 提交測試 preparation 選擇。
+     * 透過正式 coordinator 提交測試 rule decision 選擇。
      *
      * @param source 執行指令的玩家來源。
      * @param submission 要送出的測試選擇。
      * @return Brigadier 指令結果碼。
      */
-    private fun submitPreparation(source: ServerCommandSource, submission: RoundPreparationSubmission): Int = playerTableScope.runSuspending(source) { tableId, playerId ->
-        gameFlowCoordinator.dispatch(tableId, playerId, GameCommand.SubmitRoundPreparation(submission))
+    private fun submitRuleDecision(source: ServerCommandSource, submission: RuleDecisionSubmission): Int = playerTableScope.runSuspending(source) { tableId, playerId ->
+        gameFlowCoordinator.dispatch(tableId, playerId, GameCommand.SubmitRuleDecision(submission))
         advanceManager.request(tableId)
-        "Round preparation submission sent"
+        "Rule decision submission sent"
     }
 
     /**
@@ -368,29 +368,29 @@ class FabricDebugDecisionCommand(
      * @param context Brigadier 指令內容。
      * @return Brigadier 指令結果碼。
      */
-    private fun timeoutPreparation(context: CommandContext<ServerCommandSource>): Int = playerTableScope.runSuspending(context.source) { tableId, playerId ->
+    private fun timeoutRuleDecision(context: CommandContext<ServerCommandSource>): Int = playerTableScope.runSuspending(context.source) { tableId, playerId ->
         gameRepository.updateGame(tableId) { game ->
             game?.copy(forcedAutoPlayPlayerIds = game.forcedAutoPlayPlayerIds + playerId) to Unit
         }
         advanceManager.request(tableId)
-        "Round preparation timeout fallback requested"
+        "Rule decision timeout fallback requested"
     }
 
     /**
-     * 清除 development-only 測試 preparation state。連同呼叫 [GameDecisionAvailabilityService.reconcile]
-     * 立即結算 [startPreparation] 建立的計時器，理由同該函式 KDoc——不清掉的話，計時器要等到下一次
+     * 清除 development-only 測試 rule decision state。連同呼叫 [GameDecisionAvailabilityService.reconcile]
+     * 立即結算 [startRuleDecision] 建立的計時器，理由同該函式 KDoc——不清掉的話，計時器要等到下一次
      * 剛好觸發 reconcile 的操作才會被結算掉。
      *
      * @param context Brigadier 指令內容。
      * @return Brigadier 指令結果碼。
      */
-    private fun cancelPreparation(context: CommandContext<ServerCommandSource>): Int = playerTableScope.runSuspending(context.source) { tableId, _ ->
+    private fun cancelRuleDecision(context: CommandContext<ServerCommandSource>): Int = playerTableScope.runSuspending(context.source) { tableId, _ ->
         gameRepository.updateGame(tableId) { game ->
-            game?.copy(pendingRoundPreparation = null) to Unit
+            game?.copy(pendingRuleDecision = null) to Unit
         }
         snapshotSynchronizer.syncAll(tableId)
         decisionAvailabilityService.reconcile(tableId)
-        "Round preparation preview cancelled"
+        "Rule decision preview cancelled"
     }
 
     /**
@@ -430,9 +430,9 @@ class FabricDebugDecisionCommand(
         DISCARD_TSUMO_ONLY("discard_tsumo_only", isDiscardAnalysis = true),
         DISCARD_MIXED_AVAILABILITY("discard_mixed_availability", isDiscardAnalysis = true),
         DISCARD_FURITEN_UNAVAILABLE("discard_furiten_unavailable", isDiscardAnalysis = true),
-        PREPARATION_CONFIRM("preparation_confirm", PlayerDecisionPhaseDto.ROUND_PREPARATION),
-        PREPARATION_CHOICE("preparation_choice", PlayerDecisionPhaseDto.ROUND_PREPARATION),
-        PREPARATION_TILES("preparation_tiles", PlayerDecisionPhaseDto.ROUND_PREPARATION),
+        DECISION_CONFIRM("decision_confirm", PlayerDecisionPhaseDto.RULE_DECISION),
+        DECISION_CHOICE("decision_choice", PlayerDecisionPhaseDto.RULE_DECISION),
+        DECISION_TILES("decision_tiles", PlayerDecisionPhaseDto.RULE_DECISION),
         ;
 
         /**
@@ -440,7 +440,7 @@ class FabricDebugDecisionCommand(
          *
          * @param decisionKey 此次預覽的識別鍵。
          * @param analysisTileId 分析情境使用的臨時牌 UUID；不需要分析時為 null。
-         * @return 包含動作或 preparation 選項的提示。
+         * @return 包含動作或 rule decision 選項的提示。
          */
         fun prompt(decisionKey: String, analysisTileId: String?): PlayerDecisionPromptDto = PlayerDecisionPromptDto(
             decisionKey = decisionKey,
@@ -451,7 +451,7 @@ class FabricDebugDecisionCommand(
             triggerPlayerName = if (phase == PlayerDecisionPhaseDto.DISCARD_REACTION) "AI 1" else null,
             triggerPlayerRelation = if (phase == PlayerDecisionPhaseDto.DISCARD_REACTION) DecisionPlayerRelationDto.LEFT else null,
             triggerActionId = if (phase == PlayerDecisionPhaseDto.DISCARD_REACTION) "mahjongcraft:discard" else null,
-            preparation = preparation(),
+            ruleDecision = ruleDecision(),
             discardAnalyses = analysisTileId?.let { listOf(analysis(it)) }.orEmpty(),
         )
 
@@ -534,14 +534,14 @@ class FabricDebugDecisionCommand(
         }
 
         /**
-         * 取得此情境使用的 preparation prompt。
+         * 取得此情境使用的 rule decision prompt。
          *
-         * @return 確認、選項或選牌 prompt；非 preparation 情境時為 null。
+         * @return 確認、選項或選牌 prompt；非 rule decision 情境時為 null。
          */
-        private fun preparation(): RoundPreparationPromptDto? = when (this) {
-            PREPARATION_CONFIRM -> RoundPreparationPromptDto.Confirmation
-            PREPARATION_CHOICE -> RoundPreparationPromptDto.SingleChoice(listOf("mahjongcraft:alpha", "mahjongcraft:beta", "mahjongcraft:gamma"))
-            PREPARATION_TILES -> RoundPreparationPromptDto.TileSelection(
+        private fun ruleDecision(): RuleDecisionPromptDto? = when (this) {
+            DECISION_CONFIRM -> RuleDecisionPromptDto.Confirmation
+            DECISION_CHOICE -> RuleDecisionPromptDto.SingleChoice(listOf("mahjongcraft:alpha", "mahjongcraft:beta", "mahjongcraft:gamma"))
+            DECISION_TILES -> RuleDecisionPromptDto.TileSelection(
                 eligibleTileIds = List(14) { Uuid.random().toString() },
                 eligibleTileAssetKeys = listOf(
                     "m1", "m2", "m3", "m4", "m5", "m6", "m7", "m8", "m9", "p1", "p2", "p3", "p4", "p5",
@@ -605,13 +605,13 @@ class FabricDebugDecisionCommand(
     }
 
     private companion object {
-        /** `preparation` 子指令 literal。 */
-        const val PREPARATION_SUBCOMMAND: String = "preparation"
+        /** `rule decision` 子指令 literal。 */
+        const val RULE_DECISION_SUBCOMMAND: String = "rule_decision"
 
-        /** 建立測試 preparation 的 literal。 */
+        /** 建立測試 rule decision 的 literal。 */
         const val START_ARGUMENT: String = "start"
 
-        /** 送出 preparation 的 literal。 */
+        /** 送出 rule decision 的 literal。 */
         const val SUBMIT_ARGUMENT: String = "submit"
 
         /** 單純確認步驟的 literal。 */
@@ -626,7 +626,7 @@ class FabricDebugDecisionCommand(
         /** 逾時 fallback 的 literal。 */
         const val TIMEOUT_ARGUMENT: String = "timeout"
 
-        /** 取消 preparation 的 literal。 */
+        /** 取消 rule decision 的 literal。 */
         const val CANCEL_ARGUMENT: String = "cancel"
 
         /** 單選 option ID 引數名稱。 */
@@ -653,8 +653,8 @@ class FabricDebugDecisionCommand(
         /** 單選步驟使用的固定 option ID。 */
         val DEBUG_OPTION_IDS: List<String> = listOf("mahjongcraft:alpha", "mahjongcraft:beta", "mahjongcraft:gamma")
 
-        /** Development preparation 測試步驟種類。 */
-        enum class PreparationPreview {
+        /** Development rule decision 測試步驟種類。 */
+        enum class RuleDecisionPreview {
             CONFIRM,
             CHOICE,
             TILES,

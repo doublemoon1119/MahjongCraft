@@ -10,7 +10,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionG
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
@@ -32,7 +32,7 @@ import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
  * @property gameCommandRegistry 擴充遊戲命令 executor registry。
  * @property postReactionRoundOutcomeResolverRegistry 反應階段結束後的局結果 resolver registry。
  * @property postActionExhaustiveDrawResolverRegistry 動作完成後的途中流局 resolver registry。
- * @property roundPreparationResolverRegistry 開局準備 resolver registry。
+ * @property ruleDecisionResolverRegistry 規則選擇 resolver registry。
  * @property winRoundContinuationResolverRegistry 胡牌後續流程 resolver registry。
  * @property winSettlementDetailResolverRegistry 胡牌結算詳情 resolver registry。
  * @property winCelebrationCueResolverRegistry 胡牌呈現提示 resolver registry。
@@ -55,7 +55,7 @@ class CoreExtensionRegistries(
     // 對局流程判定
     val postReactionRoundOutcomeResolverRegistry: PostReactionRoundOutcomeResolverRegistry,
     val postActionExhaustiveDrawResolverRegistry: PostActionExhaustiveDrawResolverRegistry,
-    val roundPreparationResolverRegistry: RoundPreparationResolverRegistry,
+    val ruleDecisionResolverRegistry: RuleDecisionResolverRegistry,
     val winRoundContinuationResolverRegistry: WinRoundContinuationResolverRegistry,
     val winSettlementDetailResolverRegistry: WinSettlementDetailResolverRegistry,
 ) {
@@ -91,9 +91,9 @@ class CoreExtensionRegistries(
                 postActionExhaustiveDrawResolverRegistry.registrationKeys,
             ),
             snapshotCategory(
-                CoreExtensionRegistrationCategoryIds.ROUND_PREPARATION_RESOLVER,
-                "Round Preparation Resolver",
-                roundPreparationResolverRegistry.registrationKeys,
+                CoreExtensionRegistrationCategoryIds.RULE_DECISION_RESOLVER,
+                "Rule Decision Resolver",
+                ruleDecisionResolverRegistry.registrationKeys,
             ),
             snapshotCategory(
                 CoreExtensionRegistrationCategoryIds.WIN_ROUND_CONTINUATION_RESOLVER,
@@ -122,7 +122,7 @@ class CoreExtensionRegistries(
         gameCommandRegistry.freeze()
         postReactionRoundOutcomeResolverRegistry.freeze()
         postActionExhaustiveDrawResolverRegistry.freeze()
-        roundPreparationResolverRegistry.freeze()
+        ruleDecisionResolverRegistry.freeze()
         winRoundContinuationResolverRegistry.freeze()
         winSettlementDetailResolverRegistry.freeze()
     }

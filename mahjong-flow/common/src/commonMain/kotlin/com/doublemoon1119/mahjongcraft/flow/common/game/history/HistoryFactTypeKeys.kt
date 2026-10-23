@@ -15,14 +15,14 @@ object HistoryFactTypeKeys {
     /** 開局程序單輪擲骰事實的種類識別碼。 */
     const val DICE_ROLLED: String = "dice_rolled"
 
-    /** 開局準備步驟開始事實的種類識別碼。 */
-    const val ROUND_PREPARATION_STARTED: String = "round_preparation_started"
+    /** 規則選擇步驟開始事實的種類識別碼。 */
+    const val RULE_DECISION_STARTED: String = "rule_decision_started"
 
-    /** 玩家提交開局準備事實的種類識別碼。 */
-    const val ROUND_PREPARATION_SUBMITTED: String = "round_preparation_submitted"
+    /** 玩家提交規則選擇事實的種類識別碼。 */
+    const val RULE_DECISION_SUBMITTED: String = "rule_decision_submitted"
 
-    /** 自動完成開局準備事實的種類識別碼。 */
-    const val ROUND_PREPARATION_AUTOMATIC_RESOLVED: String = "round_preparation_automatic_resolved"
+    /** 自動完成規則選擇事實的種類識別碼。 */
+    const val RULE_DECISION_AUTOMATIC_RESOLVED: String = "rule_decision_automatic_resolved"
 
     /** 玩家動作接受事實的種類識別碼。 */
     const val ACTION_ACCEPTED: String = "action_accepted"

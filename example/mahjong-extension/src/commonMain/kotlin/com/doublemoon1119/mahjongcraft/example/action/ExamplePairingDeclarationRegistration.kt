@@ -104,7 +104,7 @@ private class ExamplePairingDeclarationHandler(
             if (
                 game.isMatchOver ||
                 game.pendingTransition != null ||
-                game.pendingRoundPreparation != null ||
+                game.pendingRuleDecision != null ||
                 !state.isOwnTurnWindowOpenFor(playerId) ||
                 state.currentPlayer.hand.lastDrawn == null
             ) {

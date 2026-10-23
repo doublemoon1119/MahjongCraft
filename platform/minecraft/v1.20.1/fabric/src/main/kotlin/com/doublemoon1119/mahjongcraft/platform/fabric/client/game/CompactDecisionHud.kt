@@ -6,7 +6,7 @@ import net.minecraft.text.Text
 
 /** Prompt 是否包含需要玩家明確選擇的內容。 */
 internal val PlayerDecisionPromptDto.isInteractive: Boolean
-    get() = actions.isNotEmpty() || preparation != null
+    get() = actions.isNotEmpty() || ruleDecision != null
 
 /**
  * 取得補充說明可使用的整行寬度，不以 HUD 的標準寬度提早切行。
@@ -25,7 +25,7 @@ internal sealed interface CompactDecisionHudContent {
      * 進行中選牌的進度提示。
      *
      * @property progress 已選張數與可選範圍。
-     * @property description 選牌所屬動作的說明；開局準備或沒有說明的動作為 `null`。
+     * @property description 選牌所屬動作的說明；規則選擇或沒有說明的動作為 `null`。
      */
     data class TileSelection(
         val progress: DecisionTileSelectionState.Progress,

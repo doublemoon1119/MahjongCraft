@@ -5,8 +5,8 @@ import kotlinx.serialization.Serializable
 /** 玩家目前取得決策權的網路階段。 */
 @Serializable
 enum class PlayerDecisionPhaseDto {
-    /** 玩家正在進行開局準備。 */
-    ROUND_PREPARATION,
+    /** 玩家正在進行規則選擇。 */
+    RULE_DECISION,
 
     /** 玩家自己的回合。 */
     OWN_TURN,

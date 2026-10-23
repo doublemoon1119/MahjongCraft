@@ -36,7 +36,7 @@ fun GameConfigDto.toDomain(registries: NetworkDtoRegistries): GameConfig = GameC
  */
 private fun GameFlowConfig.toDto(): GameFlowConfigDto = GameFlowConfigDto(
     timeControl = ActionTimeControlDto(timeControl.baseSeconds, timeControl.reserveSeconds),
-    roundPreparation = roundPreparation?.toDto(),
+    ruleDecision = ruleDecision?.toDto(),
     decisionTimeoutPolicy = decisionTimeoutPolicy,
     spectatingPolicy = spectatingPolicy,
     spectatorHandVisibility = spectatorHandVisibility,
@@ -49,7 +49,7 @@ private fun GameFlowConfig.toDto(): GameFlowConfigDto = GameFlowConfigDto(
  */
 private fun GameFlowConfigDto.toDomain(): GameFlowConfig = GameFlowConfig(
     timeControl = ActionTimeControl.from(timeControl.baseSeconds, timeControl.reserveSeconds),
-    roundPreparation = roundPreparation?.toDomain(),
+    ruleDecision = ruleDecision?.toDomain(),
     decisionTimeoutPolicy = decisionTimeoutPolicy,
     spectatingPolicy = spectatingPolicy,
     spectatorHandVisibility = spectatorHandVisibility,

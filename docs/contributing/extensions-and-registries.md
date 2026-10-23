@@ -52,7 +52,7 @@
   round-preparation time setting.
 - Preparation settings are absent by default. A preparation resolver decides from the current rule
   configuration whether players need to choose before a round, and supplies a default
-  `RoundPreparationConfig` only when needed. Do not cache that answer solely by rule ID: an option can
+  `RuleDecisionConfig` only when needed. Do not cache that answer solely by rule ID: an option can
   enable or disable preparation within the same rule. The room settings use that decision to add the
   preparation-time field; do not declare a second capability flag in the presentation definition.
 - Creating defaults or changing rules adds that rule's preparation configuration, or removes it when the

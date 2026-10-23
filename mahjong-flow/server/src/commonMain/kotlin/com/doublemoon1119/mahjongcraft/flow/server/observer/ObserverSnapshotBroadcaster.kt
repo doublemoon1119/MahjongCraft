@@ -202,7 +202,7 @@ class ObserverSnapshotBroadcaster(
         if (game != null) {
             return ObserverSnapshot.OfGame(
                 game = visibilityPolicy.snapshotFor(game, observerId),
-                roundPreparation = visibilityPolicy.roundPreparationSnapshotFor(game, observerId),
+                ruleDecision = visibilityPolicy.ruleDecisionSnapshotFor(game, observerId),
                 handReadinessAnalysis = handReadinessVisibilityPolicy.snapshotFor(game, observerId),
                 aiPlayerIds = game.aiPlayerIds,
             )

@@ -3,7 +3,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.query.HistoryRul
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiGameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.JoinReason
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.LeaveReason
@@ -399,7 +399,7 @@ class DtoRoundTripTest {
                 ),
                 statusIndicatorId = "mahjongcraft:riichi/discard_furiten",
             ),
-            roundPreparation = null,
+            ruleDecision = null,
         )
         val encodedGame = json.encodeToString(GameSnapshotSyncPayloadDto.serializer(), gamePayload)
         assertEquals(gamePayload, json.decodeFromString(GameSnapshotSyncPayloadDto.serializer(), encodedGame))
@@ -446,9 +446,9 @@ class DtoRoundTripTest {
         assertEquals(configDto, decodedDto)
     }
 
-    /** 準備設定為 null 或明確秒數時，都可經網路 JSON 完整往返。 */
+    /** 規則選擇設定為 null 或明確秒數時，都可經網路 JSON 完整往返。 */
     @Test
-    fun `game flow round preparation is optional in network round trip`() {
+    fun `game flow rule decision is optional in network round trip`() {
         val configs = listOf(
             GameConfig(
                 ruleConfig = RiichiRuleConfig(),
@@ -456,7 +456,7 @@ class DtoRoundTripTest {
             ),
             GameConfig(
                 ruleConfig = RiichiRuleConfig(),
-                flowConfig = GameFlowConfig(roundPreparation = RoundPreparationConfig(47)),
+                flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(47)),
             ),
         )
 

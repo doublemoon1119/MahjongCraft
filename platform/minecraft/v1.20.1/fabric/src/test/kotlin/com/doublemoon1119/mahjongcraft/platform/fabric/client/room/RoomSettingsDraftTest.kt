@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.room
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.SpectatingPolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.SpectatorHandVisibility
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
@@ -65,25 +65,25 @@ class RoomSettingsDraftTest {
     fun `keeps an existing draft when re-entering the page`() {
         val draft = RoomSettingsDraft()
         draft.beginIfAbsent(AUTHORITATIVE)
-        draft.updateField(preparationSecondsField(), GameConfigPresentationValue.IntegerValue(45))
+        draft.updateField(ruleDecisionSecondsField(), GameConfigPresentationValue.IntegerValue(45))
 
         draft.beginIfAbsent(AUTHORITATIVE)
 
-        assertEquals(45, draft.config?.flowConfig?.roundPreparation?.baseSeconds)
+        assertEquals(45, draft.config?.flowConfig?.ruleDecision?.baseSeconds)
     }
 
     /** 編輯欄位後 Apply 與 Undo 開啟，改回與權威相同時再次關閉。 */
     @Test
     fun `enables apply and undo only while the draft differs`() {
         val draft = RoomSettingsDraft()
-        val authoritative = withPreparationSeconds(30)
+        val authoritative = withRuleDecisionSeconds(30)
         draft.beginIfAbsent(authoritative)
 
-        draft.updateField(preparationSecondsField(), GameConfigPresentationValue.IntegerValue(45))
+        draft.updateField(ruleDecisionSecondsField(), GameConfigPresentationValue.IntegerValue(45))
         assertTrue(draft.canApply(authoritative, FULL_ROOM))
         assertTrue(draft.canUndo(authoritative))
 
-        draft.updateField(preparationSecondsField(), GameConfigPresentationValue.IntegerValue(30))
+        draft.updateField(ruleDecisionSecondsField(), GameConfigPresentationValue.IntegerValue(30))
         assertFalse(draft.canApply(authoritative, FULL_ROOM))
         assertFalse(draft.canUndo(authoritative))
     }
@@ -108,7 +108,7 @@ class RoomSettingsDraftTest {
     @Test
     fun `clears the invalid mark once the same field becomes valid`() {
         val draft = RoomSettingsDraft()
-        val field = preparationSecondsField()
+        val field = ruleDecisionSecondsField()
         draft.beginIfAbsent(AUTHORITATIVE)
         draft.markNumericInput(field, GameConfigEditorSpec.IntegerInput(minimum = 10, maximum = 60), "999")
         assertTrue(draft.isFieldInvalid(field.id))
@@ -127,12 +127,12 @@ class RoomSettingsDraftTest {
         draft.beginIfAbsent(AUTHORITATIVE)
         draft.updateField(rejectingField(), GameConfigPresentationValue.IntegerValue(1))
 
-        draft.updateField(preparationSecondsField(), GameConfigPresentationValue.IntegerValue(45))
+        draft.updateField(ruleDecisionSecondsField(), GameConfigPresentationValue.IntegerValue(45))
 
         assertTrue(draft.isFieldInvalid(REJECTING_FIELD_ID))
         assertTrue(draft.hasInvalidFields)
         assertFalse(draft.canDone(FULL_ROOM), "Expected done to be blocked while a field is invalid.")
-        assertEquals(45, draft.config?.flowConfig?.roundPreparation?.baseSeconds, "Expected an edit to a valid field to still reach the draft.")
+        assertEquals(45, draft.config?.flowConfig?.ruleDecision?.baseSeconds, "Expected an edit to a valid field to still reach the draft.")
     }
 
     /** 第一段驗證擋下超出範圍的輸入，且不改動草稿。 */
@@ -140,7 +140,7 @@ class RoomSettingsDraftTest {
     fun `rejects an out of range numeric input without touching the draft`() {
         val draft = RoomSettingsDraft()
         draft.beginIfAbsent(AUTHORITATIVE)
-        val field = preparationSecondsField()
+        val field = ruleDecisionSecondsField()
         val editor = GameConfigEditorSpec.IntegerInput(minimum = 10, maximum = 60)
 
         assertFalse(draft.markNumericInput(field, editor, "999"))
@@ -154,14 +154,14 @@ class RoomSettingsDraftTest {
     fun `applies the numeric input once it is in range`() {
         val draft = RoomSettingsDraft()
         draft.beginIfAbsent(AUTHORITATIVE)
-        val field = preparationSecondsField()
+        val field = ruleDecisionSecondsField()
         val editor = GameConfigEditorSpec.IntegerInput(minimum = 10, maximum = 60)
 
         assertTrue(draft.markNumericInput(field, editor, "45"))
         draft.applyNumericInput(field, "45")
 
         assertFalse(draft.isFieldInvalid(field.id))
-        assertEquals(45, draft.config?.flowConfig?.roundPreparation?.baseSeconds)
+        assertEquals(45, draft.config?.flowConfig?.ruleDecision?.baseSeconds)
         assertTrue(draft.canApply(AUTHORITATIVE, FULL_ROOM))
     }
 
@@ -172,7 +172,7 @@ class RoomSettingsDraftTest {
         draft.beginIfAbsent(AUTHORITATIVE)
         val editor = GameConfigEditorSpec.IntegerInput(minimum = 10, maximum = 60, nullable = true)
 
-        assertTrue(draft.markNumericInput(preparationSecondsField(), editor, ""))
+        assertTrue(draft.markNumericInput(ruleDecisionSecondsField(), editor, ""))
     }
 
     /** 關閉旁觀時一併關閉旁觀者手牌公開。 */
@@ -226,7 +226,7 @@ class RoomSettingsDraftTest {
     fun `adopts the new authoritative config when the draft was untouched`() {
         val draft = RoomSettingsDraft()
         draft.beginIfAbsent(AUTHORITATIVE)
-        val updated = withPreparationSeconds(45)
+        val updated = withRuleDecisionSeconds(45)
 
         val outcome = draft.onAuthoritativeChanged(updated)
 
@@ -240,10 +240,10 @@ class RoomSettingsDraftTest {
     fun `reports the pending return once the applied config comes back`() {
         val draft = RoomSettingsDraft()
         draft.beginIfAbsent(AUTHORITATIVE)
-        draft.updateField(preparationSecondsField(), GameConfigPresentationValue.IntegerValue(45))
+        draft.updateField(ruleDecisionSecondsField(), GameConfigPresentationValue.IntegerValue(45))
         draft.markReturnToRoomAfterApply()
 
-        val outcome = draft.onAuthoritativeChanged(withPreparationSeconds(45))
+        val outcome = draft.onAuthoritativeChanged(withRuleDecisionSeconds(45))
 
         assertEquals(RoomSettingsDraft.Outcome.Adopted(returnToRoom = true), outcome)
         assertFalse(draft.isReturningToRoomAfterApply)
@@ -255,15 +255,15 @@ class RoomSettingsDraftTest {
     fun `marks the draft stale when both sides changed`() {
         val draft = RoomSettingsDraft()
         draft.beginIfAbsent(AUTHORITATIVE)
-        draft.updateField(preparationSecondsField(), GameConfigPresentationValue.IntegerValue(45))
+        draft.updateField(ruleDecisionSecondsField(), GameConfigPresentationValue.IntegerValue(45))
         draft.markReturnToRoomAfterApply()
 
-        val outcome = draft.onAuthoritativeChanged(withPreparationSeconds(20))
+        val outcome = draft.onAuthoritativeChanged(withRuleDecisionSeconds(20))
 
         assertIs<RoomSettingsDraft.Outcome.BecameStale>(outcome)
         assertTrue(draft.isStale)
         assertFalse(draft.isReturningToRoomAfterApply)
-        assertEquals(45, draft.config?.flowConfig?.roundPreparation?.baseSeconds, "Expected the draft contents to survive becoming stale.")
+        assertEquals(45, draft.config?.flowConfig?.ruleDecision?.baseSeconds, "Expected the draft contents to survive becoming stale.")
     }
 
     /** 過期後只剩 Undo 可用。 */
@@ -271,9 +271,9 @@ class RoomSettingsDraftTest {
     fun `leaves only undo available once stale`() {
         val draft = RoomSettingsDraft()
         draft.beginIfAbsent(AUTHORITATIVE)
-        draft.updateField(preparationSecondsField(), GameConfigPresentationValue.IntegerValue(45))
-        draft.onAuthoritativeChanged(withPreparationSeconds(20))
-        val authoritative = withPreparationSeconds(20)
+        draft.updateField(ruleDecisionSecondsField(), GameConfigPresentationValue.IntegerValue(45))
+        draft.onAuthoritativeChanged(withRuleDecisionSeconds(20))
+        val authoritative = withRuleDecisionSeconds(20)
 
         assertFalse(draft.canApply(authoritative, FULL_ROOM))
         assertFalse(draft.canDone(FULL_ROOM))
@@ -286,9 +286,9 @@ class RoomSettingsDraftTest {
         val draft = RoomSettingsDraft()
         draft.beginIfAbsent(AUTHORITATIVE)
         draft.updateField(rejectingField(), GameConfigPresentationValue.IntegerValue(1))
-        draft.updateField(preparationSecondsField(), GameConfigPresentationValue.IntegerValue(45))
+        draft.updateField(ruleDecisionSecondsField(), GameConfigPresentationValue.IntegerValue(45))
         draft.markReturnToRoomAfterApply()
-        draft.onAuthoritativeChanged(withPreparationSeconds(20))
+        draft.onAuthoritativeChanged(withRuleDecisionSeconds(20))
 
         draft.restoreAuthoritative(AUTHORITATIVE)
 
@@ -323,7 +323,7 @@ class RoomSettingsDraftTest {
 
         assertNull(draft.config)
         assertFalse(draft.hasInvalidFields)
-        assertIs<RoomSettingsDraft.Outcome.Unchanged>(draft.onAuthoritativeChanged(withPreparationSeconds(45)))
+        assertIs<RoomSettingsDraft.Outcome.Unchanged>(draft.onAuthoritativeChanged(withRuleDecisionSeconds(45)))
     }
 
     /** Reset 只在草稿與預設值不同時可用。 */
@@ -334,7 +334,7 @@ class RoomSettingsDraftTest {
 
         assertFalse(draft.canReset(AUTHORITATIVE))
         assertFalse(draft.canReset(null))
-        assertTrue(draft.canReset(withPreparationSeconds(45)))
+        assertTrue(draft.canReset(withRuleDecisionSeconds(45)))
     }
 
     /** 測試共用的設定與欄位資料。 */
@@ -358,32 +358,32 @@ class RoomSettingsDraftTest {
         const val REJECTING_FIELD_ID = "mahjongcraft:rejecting"
 
         /**
-         * 依開局準備秒數建立權威設定。
+         * 依規則選擇秒數建立權威設定。
          *
-         * @param seconds 開局準備秒數。
-         * @return 僅更新準備秒數的權威設定。
+         * @param seconds 規則選擇秒數。
+         * @return 僅更新規則選擇秒數的權威設定。
          */
-        fun withPreparationSeconds(seconds: Int): GameConfig = AUTHORITATIVE.copy(
-            flowConfig = AUTHORITATIVE.flowConfig.copy(roundPreparation = RoundPreparationConfig(seconds)),
+        fun withRuleDecisionSeconds(seconds: Int): GameConfig = AUTHORITATIVE.copy(
+            flowConfig = AUTHORITATIVE.flowConfig.copy(ruleDecision = RuleDecisionConfig(seconds)),
         )
 
         /**
-         * 建立可更新開局準備秒數的測試欄位。
+         * 建立可更新規則選擇秒數的測試欄位。
          *
-         * @return 讀寫準備秒數的整數欄位定義。
+         * @return 讀寫規則選擇秒數的整數欄位定義。
          */
-        fun preparationSecondsField(): GameConfigFieldDefinition = GameConfigFieldDefinition(
-            id = "mahjongcraft:preparation_seconds",
+        fun ruleDecisionSecondsField(): GameConfigFieldDefinition = GameConfigFieldDefinition(
+            id = "mahjongcraft:rule_decision_seconds",
             categoryId = "mahjongcraft:flow",
             nameTranslationKey = "test.name",
             descriptionTranslationKey = "test.description",
             editor = GameConfigEditorSpec.IntegerInput(minimum = 10, maximum = 60),
             isEditable = true,
-            read = { GameConfigPresentationValue.IntegerValue(it.flowConfig.roundPreparation?.baseSeconds) },
+            read = { GameConfigPresentationValue.IntegerValue(it.flowConfig.ruleDecision?.baseSeconds) },
             update = { config, value ->
                 val seconds = (value as GameConfigPresentationValue.IntegerValue).number ?: error("missing number")
                 config.copy(
-                    flowConfig = config.flowConfig.copy(roundPreparation = RoundPreparationConfig(seconds)),
+                    flowConfig = config.flowConfig.copy(ruleDecision = RuleDecisionConfig(seconds)),
                 )
             },
         )

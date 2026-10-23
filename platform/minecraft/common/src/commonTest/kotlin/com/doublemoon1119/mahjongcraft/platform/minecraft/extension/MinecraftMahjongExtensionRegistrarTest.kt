@@ -4,7 +4,7 @@ import com.doublemoon1119.mahjongcraft.ai.BuiltInAiStrategyKeys
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.CommittedGameFacts
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
@@ -27,10 +27,10 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogu
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistryImpl
-import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSourceRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.RuleModuleDisplayNameDefinition
@@ -113,7 +113,7 @@ class MinecraftMahjongExtensionRegistrarTest {
             exhaustiveDrawReasonDisplayNameRegistry = ExhaustiveDrawReasonDisplayNameRegistryImpl(),
             roundOutcomeDisplayNameRegistry = RoundOutcomeDisplayNameRegistryImpl(),
             historyDiscardMarkerDisplayRegistry = HistoryDiscardMarkerDisplayRegistryImpl(),
-            roundPreparationDisplayNameRegistry = RoundPreparationDisplayNameRegistryImpl(),
+            ruleDecisionDisplayNameRegistry = RuleDecisionDisplayNameRegistryImpl(),
             roundInfoLineDisplayRegistry = RoundInfoLineDisplayRegistryImpl(),
             tablePropDescriberRegistry = TablePropDescriberRegistryImpl(),
             winCelebrationShowcaseRegistry = WinCelebrationShowcaseRegistryImpl(),
@@ -125,7 +125,7 @@ class MinecraftMahjongExtensionRegistrarTest {
             publicPlayerIndicatorDisplayRegistry = PublicPlayerIndicatorDisplayRegistryImpl(),
             roomMemberAppearanceSourceRegistry = RoomMemberAppearanceSourceRegistryImpl(failurePolicy = ExtensionFailurePolicy.Default),
             gameConfigPresentationRegistry = GameConfigPresentationRegistryImpl(
-                RoundPreparationResolverRegistry(),
+                RuleDecisionResolverRegistry(),
             ),
             gameAchievementResolverRegistry = gameAchievementResolverRegistry,
         ),

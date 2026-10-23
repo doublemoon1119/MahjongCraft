@@ -38,8 +38,8 @@ internal object CoreExtensionRegistrationCategoryIds {
     /** 動作完成後途中流局解析器分類。 */
     const val POST_ACTION_EXHAUSTIVE_DRAW_RESOLVER: String = "mahjongcraft:post_action_exhaustive_draw_resolver"
 
-    /** 開局準備解析器分類。 */
-    const val ROUND_PREPARATION_RESOLVER: String = "mahjongcraft:round_preparation_resolver"
+    /** 規則選擇解析器分類。 */
+    const val RULE_DECISION_RESOLVER: String = "mahjongcraft:rule_decision_resolver"
 
     /** 胡牌後續流程解析器分類。 */
     const val WIN_ROUND_CONTINUATION_RESOLVER: String = "mahjongcraft:win_round_continuation_resolver"

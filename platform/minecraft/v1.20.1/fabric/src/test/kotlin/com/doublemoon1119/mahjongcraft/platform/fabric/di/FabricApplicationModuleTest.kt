@@ -31,7 +31,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionG
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
@@ -103,6 +103,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.automatic.AutomaticCon
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.config.MinecraftServerConfigState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongDiceRollPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtension
@@ -110,7 +111,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftPre
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.RoomMemberAppearanceSourceRegistry
@@ -463,7 +463,7 @@ class FabricApplicationModuleTest {
                 "meld",
                 "continuing_win",
                 "win_showcase_override",
-                "preparation",
+                "rule_decision",
                 "round",
             ),
             debugNode.children.map { it.name }.toSet(),
@@ -510,7 +510,7 @@ class FabricApplicationModuleTest {
         )
         assertEquals(
             setOf("start", "submit", "timeout", "cancel"),
-            decisionCommand.buildPreparationCommand().build().children.map { it.name }.toSet(),
+            decisionCommand.buildRuleDecisionCommand().build().children.map { it.name }.toSet(),
         )
         koin.get<FabricDebugProgressionCommand>()
         koin.get<FabricDebugAnimationCommand>()
@@ -552,7 +552,7 @@ class FabricApplicationModuleTest {
         assertSame(koin.get<ExtensionGameCommandExecutorRegistry>(), core.gameCommandRegistry)
         assertSame(koin.get<PostReactionRoundOutcomeResolverRegistry>(), core.postReactionRoundOutcomeResolverRegistry)
         assertSame(koin.get<PostActionExhaustiveDrawResolverRegistry>(), core.postActionExhaustiveDrawResolverRegistry)
-        assertSame(koin.get<RoundPreparationResolverRegistry>(), core.roundPreparationResolverRegistry)
+        assertSame(koin.get<RuleDecisionResolverRegistry>(), core.ruleDecisionResolverRegistry)
         assertSame(koin.get<WinRoundContinuationResolverRegistry>(), core.winRoundContinuationResolverRegistry)
         assertSame(koin.get<WinSettlementDetailResolverRegistry>(), core.winSettlementDetailResolverRegistry)
 
@@ -568,7 +568,7 @@ class FabricApplicationModuleTest {
         assertSame(koin.get<ExhaustiveDrawReasonDisplayNameRegistry>(), presentation.exhaustiveDrawReasonDisplayNameRegistry)
         assertSame(koin.get<RoundOutcomeDisplayNameRegistry>(), presentation.roundOutcomeDisplayNameRegistry)
         assertSame(koin.get<HistoryDiscardMarkerDisplayRegistry>(), presentation.historyDiscardMarkerDisplayRegistry)
-        assertSame(koin.get<RoundPreparationDisplayNameRegistry>(), presentation.roundPreparationDisplayNameRegistry)
+        assertSame(koin.get<RuleDecisionDisplayNameRegistry>(), presentation.ruleDecisionDisplayNameRegistry)
         assertSame(koin.get<RoundInfoLineDisplayRegistry>(), presentation.roundInfoLineDisplayRegistry)
         assertSame(koin.get<TablePropDescriberRegistry>(), presentation.tablePropDescriberRegistry)
         assertSame(koin.get<WinCelebrationShowcaseRegistry>(), presentation.winCelebrationShowcaseRegistry)

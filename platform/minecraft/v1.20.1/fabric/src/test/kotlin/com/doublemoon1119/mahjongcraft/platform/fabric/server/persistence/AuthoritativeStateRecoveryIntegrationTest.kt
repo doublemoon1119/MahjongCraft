@@ -10,11 +10,11 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRoundPreparation
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationConfig
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationInputSpec
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSnapshot
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSubmission
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecision
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionInputSpec
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSnapshot
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSubmission
 import com.doublemoon1119.mahjongcraft.flow.common.game.repository.GameSnapshotRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
@@ -229,70 +229,70 @@ class AuthoritativeStateRecoveryIntegrationTest {
     }
 
     /**
-     * 開局準備進行中經 NBT 恢復後，每位參與者都應重新取得只屬於自己的準備快照。
+     * 規則選擇進行中經 NBT 恢復後，每位參與者都應重新取得只屬於自己的準備快照。
      *
-     * 準備步驟未完成時流程會拒絕其他指令，因此如果恢復後沒有重建這份快照，玩家會既收不到提示、也無法
+     * 選擇步驟未完成時流程會拒絕其他指令，因此如果恢復後沒有重建這份快照，玩家會既收不到提示、也無法
      * 操作；參與者與已完成名單是公開資訊，輸入內容與提交結果則只對本人公開。
      */
     @Test
-    fun `round preparation restores through NBT and stays private to each participant`() = runTest {
+    fun `rule decision restores through NBT and stays private to each participant`() = runTest {
         val runtime = RuntimeFixture()
         val state = runtime.createGame()
         val confirming = state.players[0]
         val choosing = state.players[1]
         val choices = listOf("mahjongcraft:first", "mahjongcraft:second")
-        val preparation = PendingRoundPreparation(
+        val ruleDecision = PendingRuleDecision(
             stepId = "mahjongcraft:test_step",
             stepIndex = 0,
             inputSpecsByPlayerId = mapOf(
-                confirming.id to RoundPreparationInputSpec.Confirmation,
-                choosing.id to RoundPreparationInputSpec.SingleChoice(choices),
+                confirming.id to RuleDecisionInputSpec.Confirmation,
+                choosing.id to RuleDecisionInputSpec.SingleChoice(choices),
             ),
         )
 
         runtime.restore(
             runtime.snapshotWith(
                 state = state,
-                pendingRoundPreparation = preparation,
-                flowConfig = GameFlowConfig(roundPreparation = RoundPreparationConfig(47)),
+                pendingRuleDecision = ruleDecision,
+                flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(47)),
             ),
         )
-        assertEquals(47, runtime.gameRepository.getGame(state.id)?.flowConfig?.roundPreparation?.baseSeconds)
+        assertEquals(47, runtime.gameRepository.getGame(state.id)?.flowConfig?.ruleDecision?.baseSeconds)
 
         val confirmingSnapshot = assertNotNull(
-            runtime.gameSnapshots.getRoundPreparationSnapshot(state.id, confirming.id),
-            "confirming participant lost its round preparation snapshot across the restart",
+            runtime.gameSnapshots.getRuleDecisionSnapshot(state.id, confirming.id),
+            "confirming participant lost its rule decision snapshot across the restart",
         )
         val choosingSnapshot = assertNotNull(
-            runtime.gameSnapshots.getRoundPreparationSnapshot(state.id, choosing.id),
-            "choosing participant lost its round preparation snapshot across the restart",
+            runtime.gameSnapshots.getRuleDecisionSnapshot(state.id, choosing.id),
+            "choosing participant lost its rule decision snapshot across the restart",
         )
 
-        assertEquals(preparation.stepId, confirmingSnapshot.stepId)
+        assertEquals(ruleDecision.stepId, confirmingSnapshot.stepId)
         assertEquals(setOf(confirming.id, choosing.id), confirmingSnapshot.participantPlayerIds)
         assertEquals(emptySet(), confirmingSnapshot.completedPlayerIds)
-        assertEquals(RoundPreparationInputSpec.Confirmation, confirmingSnapshot.ownInputSpec)
-        assertEquals(RoundPreparationInputSpec.SingleChoice(choices), choosingSnapshot.ownInputSpec)
+        assertEquals(RuleDecisionInputSpec.Confirmation, confirmingSnapshot.ownInputSpec)
+        assertEquals(RuleDecisionInputSpec.SingleChoice(choices), choosingSnapshot.ownInputSpec)
         assertNull(confirmingSnapshot.ownSubmission)
     }
 
-    /** 沒有參與準備步驟的玩家不應取得任何一位參與者的輸入內容。 */
+    /** 沒有參與選擇步驟的玩家不應取得任何一位參與者的輸入內容。 */
     @Test
-    fun `restored round preparation hides participant input from non participants`() = runTest {
+    fun `restored rule decision hides participant input from non participants`() = runTest {
         val runtime = RuntimeFixture()
         val state = runtime.createGame()
         val participant = state.players[0]
         val bystander = state.players[1]
-        val preparation = PendingRoundPreparation(
+        val ruleDecision = PendingRuleDecision(
             stepId = "mahjongcraft:test_step",
             stepIndex = 0,
-            inputSpecsByPlayerId = mapOf(participant.id to RoundPreparationInputSpec.Confirmation),
-            submissionsByPlayerId = mapOf(participant.id to RoundPreparationSubmission.Confirmed),
+            inputSpecsByPlayerId = mapOf(participant.id to RuleDecisionInputSpec.Confirmation),
+            submissionsByPlayerId = mapOf(participant.id to RuleDecisionSubmission.Confirmed),
         )
 
-        runtime.restore(runtime.snapshotWith(state, pendingRoundPreparation = preparation))
+        runtime.restore(runtime.snapshotWith(state, pendingRuleDecision = ruleDecision))
 
-        val bystanderSnapshot = assertNotNull(runtime.gameSnapshots.getRoundPreparationSnapshot(state.id, bystander.id))
+        val bystanderSnapshot = assertNotNull(runtime.gameSnapshots.getRuleDecisionSnapshot(state.id, bystander.id))
 
         assertEquals(setOf(participant.id), bystanderSnapshot.participantPlayerIds)
         assertEquals(setOf(participant.id), bystanderSnapshot.completedPlayerIds)
@@ -300,28 +300,28 @@ class AuthoritativeStateRecoveryIntegrationTest {
         assertNull(bystanderSnapshot.ownSubmission, "a non participant must not receive another player's submission")
     }
 
-    /** 沒有進行中的準備步驟時，恢復後不得留下上一個步驟的過期快照。 */
+    /** 沒有進行中的選擇步驟時，恢復後不得留下上一個步驟的過期快照。 */
     @Test
-    fun `restore clears round preparation snapshots when no step is pending`() = runTest {
+    fun `restore clears rule decision snapshots when no step is pending`() = runTest {
         val runtime = RuntimeFixture()
         val state = runtime.createGame()
         val player = state.players[0]
-        runtime.gameSnapshots.setRoundPreparationSnapshot(
+        runtime.gameSnapshots.setRuleDecisionSnapshot(
             gameId = state.id,
             observerId = player.id,
-            snapshot = RoundPreparationSnapshot(
+            snapshot = RuleDecisionSnapshot(
                 stepId = "mahjongcraft:stale_step",
                 stepIndex = 0,
                 participantPlayerIds = setOf(player.id),
                 completedPlayerIds = emptySet(),
-                ownInputSpec = RoundPreparationInputSpec.Confirmation,
+                ownInputSpec = RuleDecisionInputSpec.Confirmation,
                 ownSubmission = null,
             ),
         )
 
         runtime.restore(runtime.snapshotWith(state))
 
-        assertNull(runtime.gameSnapshots.getRoundPreparationSnapshot(state.id, player.id))
+        assertNull(runtime.gameSnapshots.getRuleDecisionSnapshot(state.id, player.id))
     }
 
     /**
@@ -490,17 +490,17 @@ class AuthoritativeStateRecoveryIntegrationTest {
         ).tableState
 
         /**
-         * 將單一牌桌狀態包裝成權威 snapshot，可選帶上進行中的開局準備步驟與 AI 玩家。
+         * 將單一牌桌狀態包裝成權威 snapshot，可選帶上進行中的規則選擇步驟與 AI 玩家。
          *
          * @param state 要保存的牌桌狀態。
-         * @param pendingRoundPreparation 尚未完成的開局準備資料；預設沒有準備步驟。
+         * @param pendingRuleDecision 尚未完成的規則選擇資料；預設沒有選擇步驟。
          * @param aiPlayerStrategyKeys 由玩家 UUID 對應至 AI 策略 key 的映射；預設沒有 AI 玩家。
-         * @param flowConfig 此對局的流程設定；玩家準備步驟須明確提供局前準備設定。
+         * @param flowConfig 此對局的流程設定；玩家選擇步驟須明確提供規則選擇設定。
          * @return 僅包含此牌局的權威 snapshot。
          */
         fun snapshotWith(
             state: TableState,
-            pendingRoundPreparation: PendingRoundPreparation? = null,
+            pendingRuleDecision: PendingRuleDecision? = null,
             aiPlayerStrategyKeys: Map<Uuid, String> = emptyMap(),
             flowConfig: GameFlowConfig = GameFlowConfig(),
         ): AuthoritativeStateSnapshot = AuthoritativeStateSnapshot(
@@ -508,7 +508,7 @@ class AuthoritativeStateRecoveryIntegrationTest {
                 state.id to Game(
                     tableState = state,
                     flowConfig = flowConfig,
-                    pendingRoundPreparation = pendingRoundPreparation,
+                    pendingRuleDecision = pendingRuleDecision,
                     aiPlayerStrategyKeys = aiPlayerStrategyKeys,
                 ),
             ),

@@ -22,9 +22,9 @@ class PlayerDecisionTimerFactory(
      * @param game 包含流程設定與玩家剩餘保留思考時間的權威遊戲狀態。
      * @param playerId 目前取得決策權的玩家。
      * @param phase 這次決策所屬的階段，決定基本思考秒數採用 [GameFlowConfig.timeControl]
-     *   或規則提供的 [GameFlowConfig.roundPreparation]。
-     *   [PlayerDecisionPhase.ROUND_PREPARATION] 完全不動用共用保留思考時間池——固定以 0 保留思考時間
-     *   起算，局前準備時間用完就直接逾時；[GameDecisionTimerManager] 結算這個階段的計時器
+     *   或規則提供的 [GameFlowConfig.ruleDecision]。
+     *   [PlayerDecisionPhase.RULE_DECISION] 完全不動用共用保留思考時間池——固定以 0 保留思考時間
+     *   起算，規則選擇時間用完就直接逾時；[GameDecisionTimerManager] 結算這個階段的計時器
      *   時，同樣不會把結算結果寫回共用池，玩家在其他階段已經存下的保留思考時間不會被這個階段消耗，
      *   也不會被清空。
      * @param resumedBaseMillis 接續上一個 session 被中斷的同一次決策時，其尚未使用的基本思考
@@ -39,9 +39,9 @@ class PlayerDecisionTimerFactory(
     ): PlayerDecisionTimer {
         val baseSeconds: Int
         val remainingReserveMillis: Long
-        if (phase == PlayerDecisionPhase.ROUND_PREPARATION) {
-            baseSeconds = requireNotNull(game.flowConfig.roundPreparation) {
-                "Round preparation requires a roundPreparation time configuration"
+        if (phase == PlayerDecisionPhase.RULE_DECISION) {
+            baseSeconds = requireNotNull(game.flowConfig.ruleDecision) {
+                "Rule decision requires a ruleDecision time configuration"
             }.baseSeconds
             remainingReserveMillis = 0L
         } else {

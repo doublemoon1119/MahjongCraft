@@ -31,7 +31,7 @@ import kotlin.uuid.Uuid
  * @property handSortPreferenceStore 查詢玩家是否啟用自動整理手牌，見該類別 KDoc。
  * @property eventPublisher 對局通知服務。
  * @property presentationPublisher 對局 in-process 呈現觸發器。
- * @property beginRoundPreparationUseCase 開局後啟動第一個回合準備步驟的用例；未提供時不啟動準備流程。
+ * @property beginRuleDecisionUseCase 開局後啟動第一個回合選擇步驟的用例；未提供時不啟動選擇流程。
  */
 class StartGameUseCase(
     private val authoritativeStateStore: AuthoritativeStateStore,
@@ -40,7 +40,7 @@ class StartGameUseCase(
     private val handSortPreferenceStore: HandSortPreferenceStore,
     private val eventPublisher: GameEventPublisher,
     private val presentationPublisher: GamePresentationPublisher,
-    private val beginRoundPreparationUseCase: BeginRoundPreparationUseCase? = null,
+    private val beginRuleDecisionUseCase: BeginRuleDecisionUseCase? = null,
 ) {
     /**
      * 執行開始遊戲邏輯。
@@ -172,7 +172,7 @@ class StartGameUseCase(
             openingDiceCounts = tableState.openingDiceRolls.map { it.dice.values.size },
         )
         presentationPublisher.publishGameStarted(roomId, tableState.players.map { it.id })
-        beginRoundPreparationUseCase?.invoke(roomId)
+        beginRuleDecisionUseCase?.invoke(roomId)
 
         return Outcome.Success(roomId)
     }

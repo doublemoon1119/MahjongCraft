@@ -28,7 +28,7 @@ class AutomaticDecisionDriver(
      */
     suspend fun resolveNextAction(gameId: Uuid): Pair<Uuid, GameCommand>? {
         val game = gameRepository.getGame(gameId) ?: return null
-        if (game.isMatchOver || game.pendingTransition != null || game.pendingRoundPreparation != null) return null
+        if (game.isMatchOver || game.pendingTransition != null || game.pendingRuleDecision != null) return null
         val state = game.tableState
         val contexts = actionContextResolver.resolve(state)
         for ((playerId, context) in contexts) {

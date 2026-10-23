@@ -73,7 +73,7 @@ object MahjongExtensionRegistrar {
             extension.registerGameCommandHandlers(registries.gameCommandRegistry)
             extension.registerPostReactionRoundOutcomeResolvers(registries.postReactionRoundOutcomeResolverRegistry)
             extension.registerPostActionExhaustiveDrawResolvers(registries.postActionExhaustiveDrawResolverRegistry)
-            extension.registerRoundPreparationResolvers(registries.roundPreparationResolverRegistry)
+            extension.registerRuleDecisionResolvers(registries.ruleDecisionResolverRegistry)
             extension.registerWinRoundContinuationResolvers(registries.winRoundContinuationResolverRegistry)
             extension.registerWinSettlementDetailResolvers(registries.winSettlementDetailResolverRegistry)
         } catch (cause: Throwable) {

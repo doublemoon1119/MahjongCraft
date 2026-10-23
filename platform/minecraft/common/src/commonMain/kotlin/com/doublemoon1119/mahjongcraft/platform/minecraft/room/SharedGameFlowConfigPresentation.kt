@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.room
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ActionTimeControl
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.SpectatingPolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.SpectatorHandVisibility
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.choiceField
@@ -9,45 +9,45 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.BuiltInGameConfigFields.translationKey
 
 /**
- * 各規則共用的出牌時間、觀戰設定，以及由核心準備解析器提供的選用準備時間。
+ * 各規則共用的出牌時間、觀戰設定，以及由規則選擇流程提供的選用規則選擇時間。
  *
- * 登記規則時統一加入出牌時間與觀戰欄位；只有核心解析器提供預設準備時間的規則，才加入準備時間欄位。
+ * 登記規則時統一加入出牌時間與觀戰欄位；只有規則選擇流程提供預設時間的規則，才加入規則選擇時間欄位。
  * 規則作者不需要另寫共用欄位，也不會因為設定欄位而自動產生遊戲操作。
  */
 internal object SharedGameFlowConfigPresentation {
     /** 共用流程設定分類。 */
     const val FLOW = "mahjongcraft:flow"
 
-    /** 玩家局前準備時間的可設定秒數範圍，供欄位與既有設定檢查共用。 */
-    val preparationTimeRange: IntRange = 1..3600
+    /** 玩家規則選擇時間的可設定秒數範圍，供欄位與既有設定檢查共用。 */
+    val ruleDecisionTimeRange: IntRange = 1..3600
 
     /**
      * 將保留的流程分類與欄位附加到規則呈現定義。
      *
      * @param definition 規則提供的原始設定呈現定義。
-     * @param roundPreparationConfig 核心解析器提供的準備預設設定；沒有時不加入準備時間欄位。
+     * @param ruleDecisionConfig 規則選擇流程提供的預設設定；沒有時不加入規則選擇時間欄位。
      * @return 包含共用流程分類與欄位的標準化定義。
      */
     fun normalize(
         definition: GameConfigPresentationDefinition,
-        roundPreparationConfig: RoundPreparationConfig?,
+        ruleDecisionConfig: RuleDecisionConfig?,
     ): GameConfigPresentationDefinition {
-        require(roundPreparationConfig == null || roundPreparationConfig.baseSeconds in preparationTimeRange) {
-            "Round preparation base time for ${definition.ruleModuleId} must be between 1 and 3600 seconds"
+        require(ruleDecisionConfig == null || ruleDecisionConfig.baseSeconds in ruleDecisionTimeRange) {
+            "Rule decision base time for ${definition.ruleModuleId} must be between 1 and 3600 seconds"
         }
         require(definition.categories.none { it.id == FLOW }) {
             "Config presentation ${definition.ruleModuleId} must not declare reserved category $FLOW"
         }
         val fields = flowFields()
-        val preparationTime = roundPreparationConfig?.let(::preparationBaseSecondsField)
-        val flowFieldIds = (fields.map { it.id } + PREPARATION_BASE_SECONDS_ID).toSet()
+        val ruleDecisionTime = ruleDecisionConfig?.let(::ruleDecisionBaseSecondsField)
+        val flowFieldIds = (fields.map { it.id } + RULE_DECISION_BASE_SECONDS_ID).toSet()
         val conflictingFieldId = definition.fields.firstOrNull { it.id in flowFieldIds }?.id
         require(conflictingFieldId == null) {
             "Config presentation ${definition.ruleModuleId} must not declare reserved flow field $conflictingFieldId"
         }
         return definition.copy(
             categories = definition.categories + GameConfigCategoryDefinition(FLOW, translationKey("category.flow")),
-            fields = definition.fields + fields + listOfNotNull(preparationTime),
+            fields = definition.fields + fields + listOfNotNull(ruleDecisionTime),
         )
     }
 
@@ -80,28 +80,28 @@ internal object SharedGameFlowConfigPresentation {
     )
 
     /**
-     * 建立玩家準備操作的基本思考秒數欄位。
+     * 建立玩家規則選擇的基本思考秒數欄位。
      *
-     * @param config 規則登記的預設準備設定。
-     * @return 玩家準備時間的編輯欄位。
+     * @param config 規則登記的預設規則選擇設定。
+     * @return 玩家規則選擇時間的編輯欄位。
      */
-    private fun preparationBaseSecondsField(config: RoundPreparationConfig): GameConfigFieldDefinition = intField(
-        "preparation_base_seconds",
+    private fun ruleDecisionBaseSecondsField(config: RuleDecisionConfig): GameConfigFieldDefinition = intField(
+        "rule_decision_base_seconds",
         FLOW,
-        preparationTimeRange.first,
-        preparationTimeRange.last,
-        read = { it.flowConfig.roundPreparation?.baseSeconds ?: config.baseSeconds },
+        ruleDecisionTimeRange.first,
+        ruleDecisionTimeRange.last,
+        read = { it.flowConfig.ruleDecision?.baseSeconds ?: config.baseSeconds },
         update = { gameConfig, number ->
             gameConfig.copy(
                 flowConfig = gameConfig.flowConfig.copy(
-                    roundPreparation = RoundPreparationConfig(number),
+                    ruleDecision = RuleDecisionConfig(number),
                 ),
             )
         },
     )
 
-    /** 即使規則沒有準備流程，也不可由規則自行宣告的準備欄位 ID。 */
-    private const val PREPARATION_BASE_SECONDS_ID = "mahjongcraft:preparation_base_seconds"
+    /** 即使規則沒有選擇流程，也不可由規則自行宣告的規則選擇時間欄位 ID。 */
+    private const val RULE_DECISION_BASE_SECONDS_ID = "mahjongcraft:rule_decision_base_seconds"
 
     /** @return 觀戰政策單選欄位定義。 */
     private fun spectatingField(): GameConfigFieldDefinition = choiceField(

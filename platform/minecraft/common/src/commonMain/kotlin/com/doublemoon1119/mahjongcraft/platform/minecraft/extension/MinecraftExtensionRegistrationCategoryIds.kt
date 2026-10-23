@@ -47,8 +47,8 @@ internal object MinecraftExtensionRegistrationCategoryIds {
     /** 牌河標記分類。 */
     const val HISTORY_DISCARD_MARKER_DISPLAY = "mahjongcraft:history_discard_marker_display"
 
-    /** 開局準備名稱分類。 */
-    const val ROUND_PREPARATION_DISPLAY_NAME = "mahjongcraft:round_preparation_display_name"
+    /** 規則選擇名稱分類。 */
+    const val RULE_DECISION_DISPLAY_NAME = "mahjongcraft:rule_decision_display_name"
 
     /** 局況資訊行分類。 */
     const val ROUND_INFO_LINE_DISPLAY = "mahjongcraft:round_info_line_display"

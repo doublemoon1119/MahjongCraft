@@ -12,6 +12,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogu
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionDisplayNameRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftPresentationRegistries
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayRegistryImpl
@@ -19,8 +21,6 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitS
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PlayerPortraitSourceRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistryImpl
-import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationResolver
@@ -83,7 +83,7 @@ val minecraftCommonModule = module {
     single<PlayerPortraitSourceRegistryImpl>() bind PlayerPortraitSourceRegistry::class
     single<PublicPlayerIndicatorDisplayRegistryImpl>() bind PublicPlayerIndicatorDisplayRegistry::class
 
-    single<RoundPreparationDisplayNameRegistryImpl>() bind RoundPreparationDisplayNameRegistry::class
+    single<RuleDecisionDisplayNameRegistryImpl>() bind RuleDecisionDisplayNameRegistry::class
 
     single<GameConfigPresentationRegistryImpl>() bind GameConfigPresentationRegistry::class
     single<GameConfigPresentationResolver>()

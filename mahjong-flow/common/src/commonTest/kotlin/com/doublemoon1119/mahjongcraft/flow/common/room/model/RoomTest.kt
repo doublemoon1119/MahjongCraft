@@ -8,7 +8,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
-/** 驗證房間容量、開局準備狀態與玩家分類。 */
+/** 驗證房間容量、規則選擇狀態與玩家分類。 */
 class RoomTest {
 
     /** 玩家人數達到上限時房間已滿。 */

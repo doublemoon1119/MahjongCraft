@@ -16,11 +16,11 @@ import kotlin.uuid.Uuid
  */
 sealed interface GameCommand {
     /**
-     * 提交目前的開局準備選擇。
+     * 提交目前的規則選擇。
      *
-     * @property submission 包含本次開局準備選擇的提交內容。
+     * @property submission 包含本次規則選擇的提交內容。
      */
-    data class SubmitRoundPreparation(val submission: RoundPreparationSubmission) : GameCommand
+    data class SubmitRuleDecision(val submission: RuleDecisionSubmission) : GameCommand
 
     /**
      * 規則 extension 提供的強型別命令。

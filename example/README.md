@@ -14,7 +14,7 @@ want to run the example in a game.
 | --- | --- | --- | --- |
 | Rule, tile wall and tile interpretation | Pairing Mahjong and inverted 1-man | [pairing tests](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/pairing) | Automated |
 | Multi-roll opening | Temporary dealer, final dealer and wall opening | [opening tests](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/pairing/ExamplePairingRoundOpeningProcedureTest.kt) | Automated |
-| Optional round preparation | Two-tile exchange | [preparation tests](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/preparation) | Automated and game-tested |
+| Optional rule decision | Two-tile exchange | [preparation tests](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/preparation) | Automated and game-tested |
 | Extension action and command | Once-per-round public declaration | [action tests](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/action) | Automated |
 | AI strategy | Tsumogiri strategy | [AI test](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/ai/ExampleTsumogiriAiStrategyTest.kt) | Automated |
 | Network and persistence registration | Example-owned DTOs and mappings | [round-trip test](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/ExampleFormatRoundTripTest.kt) | Automated |

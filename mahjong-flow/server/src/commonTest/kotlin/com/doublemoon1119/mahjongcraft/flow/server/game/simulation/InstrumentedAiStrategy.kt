@@ -6,9 +6,9 @@ import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategy
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyDefinition
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
-import com.doublemoon1119.mahjongcraft.ai.RoundPreparationAiContext
+import com.doublemoon1119.mahjongcraft.ai.RuleDecisionAiContext
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSubmission
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSubmission
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import kotlin.time.Duration
 import kotlin.time.TimeSource
@@ -163,7 +163,7 @@ internal class InstrumentedAiStrategy(
         return command
     }
 
-    override suspend fun decideRoundPreparation(context: RoundPreparationAiContext): RoundPreparationSubmission = delegate.decideRoundPreparation(context)
+    override suspend fun decideRuleDecision(context: RuleDecisionAiContext): RuleDecisionSubmission = delegate.decideRuleDecision(context)
 
     /**
      * [command] 不合法的原因；合法時為 null。

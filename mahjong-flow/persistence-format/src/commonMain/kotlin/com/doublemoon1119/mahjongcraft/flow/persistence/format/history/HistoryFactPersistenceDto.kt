@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.config.GameFlowCo
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.GameActionPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.OpeningDiceRollPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.RoundCompletionSummaryPersistenceDto
-import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.RoundPreparationSubmissionPersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.RuleDecisionSubmissionPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.TableStatePersistenceDto
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -51,45 +51,45 @@ sealed interface HistoryFactPersistenceDto {
     ) : HistoryFactPersistenceDto
 
     /**
-     * 開局準備流程開始執行一個步驟。
+     * 規則選擇流程開始執行一個步驟。
      *
-     * @property stepId 準備步驟的穩定識別碼。
-     * @property stepIndex 準備步驟在流程中的索引。
+     * @property stepId 選擇步驟的穩定識別碼。
+     * @property stepIndex 選擇步驟在流程中的索引。
      */
     @Serializable
-    @SerialName(HistoryFactTypeKeys.ROUND_PREPARATION_STARTED)
-    data class RoundPreparationStarted(
+    @SerialName(HistoryFactTypeKeys.RULE_DECISION_STARTED)
+    data class RuleDecisionStarted(
         val stepId: String,
         val stepIndex: Int,
     ) : HistoryFactPersistenceDto
 
     /**
-     * 玩家提交開局準備內容後的結果。
+     * 玩家提交規則選擇內容後的結果。
      *
-     * @property stepId 被提交的準備步驟識別碼。
-     * @property stepIndex 被提交的準備步驟索引。
-     * @property submission 玩家提交的準備內容。
-     * @property nextStepId 下一個準備步驟識別碼；沒有下一步時為 null。
+     * @property stepId 被提交的選擇步驟識別碼。
+     * @property stepIndex 被提交的選擇步驟索引。
+     * @property submission 玩家提交的選擇內容。
+     * @property nextStepId 下一個選擇步驟識別碼；沒有下一步時為 null。
      */
     @Serializable
-    @SerialName(HistoryFactTypeKeys.ROUND_PREPARATION_SUBMITTED)
-    data class RoundPreparationSubmitted(
+    @SerialName(HistoryFactTypeKeys.RULE_DECISION_SUBMITTED)
+    data class RuleDecisionSubmitted(
         val stepId: String,
         val stepIndex: Int,
-        val submission: RoundPreparationSubmissionPersistenceDto,
+        val submission: RuleDecisionSubmissionPersistenceDto,
         val nextStepId: String?,
     ) : HistoryFactPersistenceDto
 
     /**
-     * 系統自動完成開局準備步驟後的結果。
+     * 系統自動完成規則選擇步驟後的結果。
      *
-     * @property stepId 被自動完成的準備步驟識別碼。
-     * @property stepIndex 被自動完成的準備步驟索引。
-     * @property nextStepId 下一個準備步驟識別碼；沒有下一步時為 null。
+     * @property stepId 被自動完成的選擇步驟識別碼。
+     * @property stepIndex 被自動完成的選擇步驟索引。
+     * @property nextStepId 下一個選擇步驟識別碼；沒有下一步時為 null。
      */
     @Serializable
-    @SerialName(HistoryFactTypeKeys.ROUND_PREPARATION_AUTOMATIC_RESOLVED)
-    data class RoundPreparationAutomaticallyResolved(
+    @SerialName(HistoryFactTypeKeys.RULE_DECISION_AUTOMATIC_RESOLVED)
+    data class RuleDecisionAutomaticallyResolved(
         val stepId: String,
         val stepIndex: Int,
         val nextStepId: String?,

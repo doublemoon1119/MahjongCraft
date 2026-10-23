@@ -117,8 +117,8 @@ internal object HistoryReplayProjectionMapper {
                     val resolved = fact.getValue(ReplaySourceKeys.ACTOR_PLAYER_ID).takeUnless { it == JsonNull }?.let { context.seat(integer(it)) }
                     HistoryReplayFact.Reaction(type, action?.getValue(ReplaySourceKeys.TYPE)?.let(::string), resolved)
                 }
-                HistoryFactTypeKeys.ROUND_PREPARATION_STARTED, HistoryFactTypeKeys.ROUND_PREPARATION_SUBMITTED, HistoryFactTypeKeys.ROUND_PREPARATION_AUTOMATIC_RESOLVED ->
-                    HistoryReplayFact.Preparation(type, string(fact.getValue(ReplaySourceKeys.STEP_ID)), integer(fact.getValue(ReplaySourceKeys.STEP_INDEX)).also { require(it >= 0) { "Replay preparation index must not be negative" } }, fact[ReplaySourceKeys.NEXT_STEP_ID]?.takeUnless { it == JsonNull }?.let(::string))
+                HistoryFactTypeKeys.RULE_DECISION_STARTED, HistoryFactTypeKeys.RULE_DECISION_SUBMITTED, HistoryFactTypeKeys.RULE_DECISION_AUTOMATIC_RESOLVED ->
+                    HistoryReplayFact.RuleDecision(type, string(fact.getValue(ReplaySourceKeys.STEP_ID)), integer(fact.getValue(ReplaySourceKeys.STEP_INDEX)).also { require(it >= 0) { "Replay rule decision index must not be negative" } }, fact[ReplaySourceKeys.NEXT_STEP_ID]?.takeUnless { it == JsonNull }?.let(::string))
                 HistoryFactTypeKeys.DICE_ROLLED -> {
                     val roll = obj(fact.getValue(ReplaySourceKeys.ROLL))
                     val values = array(roll.getValue(ReplaySourceKeys.DICE)).map(::integer)

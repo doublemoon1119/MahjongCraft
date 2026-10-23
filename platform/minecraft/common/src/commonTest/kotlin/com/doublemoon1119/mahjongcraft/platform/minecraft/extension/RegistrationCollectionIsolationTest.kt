@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.extension
 
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigCategoryDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigEditorSpec
@@ -39,7 +39,7 @@ class RegistrationCollectionIsolationTest {
             GameConfigCategoryDefinition("example:other", "test.other"),
         )
         val registry = GameConfigPresentationRegistryImpl(
-            RoundPreparationResolverRegistry(),
+            RuleDecisionResolverRegistry(),
         )
         registry.register(
             definition = GameConfigPresentationDefinition(

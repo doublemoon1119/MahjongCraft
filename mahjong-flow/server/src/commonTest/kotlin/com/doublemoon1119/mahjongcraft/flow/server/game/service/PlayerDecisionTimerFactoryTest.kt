@@ -4,7 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.ActionTimeControl
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionConfig
 import com.doublemoon1119.mahjongcraft.flow.common.time.MonotonicClock
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
@@ -48,13 +48,13 @@ class PlayerDecisionTimerFactoryTest {
     }
 
     /**
-     * 驗證 [PlayerDecisionPhase.ROUND_PREPARATION] 的基本思考秒數採用局前準備設定
+     * 驗證 [PlayerDecisionPhase.RULE_DECISION] 的基本思考秒數採用規則選擇設定
      * 而非一般 [GameFlowConfig.timeControl]，且完全不動用共用保留思考時間池——即使玩家池子裡還有剩，
      * 這個階段建立的計時器 [PlayerDecisionTimer.reserveAtStartMillis] 也固定是 0，用完基本思考時間就
      * 直接逾時。
      */
     @Test
-    fun `test factory uses preparation base seconds and zero reserve for round preparation phase`() {
+    fun `test factory uses rule decision base seconds and zero reserve for rule decision phase`() {
         val playerId = Uuid.random()
         val players = Wind.entries.map { wind ->
             FakeMahjongPlayerFactory.create(
@@ -68,20 +68,20 @@ class PlayerDecisionTimerFactoryTest {
             ),
             flowConfig = GameFlowConfig(
                 timeControl = ActionTimeControl.Custom(baseSeconds = 7, reserveSeconds = 30),
-                roundPreparation = RoundPreparationConfig(45),
+                ruleDecision = RuleDecisionConfig(45),
             ),
             remainingReserveMillisByPlayerId = players.associate { player -> player.id to 12_000L },
         )
         val factory = PlayerDecisionTimerFactory(FakeMonotonicClock(nowMillis = 98_765L))
 
-        val timer = factory.create(game, playerId, phase = PlayerDecisionPhase.ROUND_PREPARATION)
+        val timer = factory.create(game, playerId, phase = PlayerDecisionPhase.RULE_DECISION)
 
         assertEquals(45_000L, timer.baseDurationMillis)
         assertEquals(0L, timer.reserveAtStartMillis)
     }
 
     @Test
-    fun `test factory rejects player preparation without timing configuration`() {
+    fun `test factory rejects player rule decision without timing configuration`() {
         val playerId = Uuid.random()
         val player = FakeMahjongPlayerFactory.create(id = playerId)
         val game = Game(
@@ -94,7 +94,7 @@ class PlayerDecisionTimerFactoryTest {
             PlayerDecisionTimerFactory(FakeMonotonicClock(nowMillis = 0L)).create(
                 game,
                 playerId,
-                phase = PlayerDecisionPhase.ROUND_PREPARATION,
+                phase = PlayerDecisionPhase.RULE_DECISION,
             )
         }
     }

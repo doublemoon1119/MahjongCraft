@@ -70,7 +70,7 @@ class FabricObserverSnapshotSender(
                                 gameId = id.toString(),
                                 snapshot = snapshot.game.toDto(networkRegistries),
                                 aiPlayerIds = snapshot.aiPlayerIds.map { it.toString() },
-                                roundPreparation = snapshot.roundPreparation?.toDto(),
+                                ruleDecision = snapshot.ruleDecision?.toDto(),
                                 handReadinessAnalysis = snapshot.handReadinessAnalysis?.let { readiness ->
                                     analysisDtoMapper.toDto(readiness.ruleModuleId, readiness.analysis)
                                 },

@@ -3,11 +3,11 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.client.room
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ActionTimeControl
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRoundPreparation
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationConfig
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolution
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolver
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecision
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionConfig
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolution
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolver
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
@@ -28,12 +28,12 @@ import kotlin.test.assertTrue
 
 /** 驗證房間變更摘要會使用 registry 自動加入的共用流程欄位。 */
 class GameConfigDifferenceFormatterTest {
-    /** 不使用準備操作的規則，摘要也不會列出準備時間。 */
+    /** 沒有規則選擇的規則，摘要也不會列出規則選擇時間。 */
     @Test
-    fun `preparation time is absent from summaries when the rule does not opt in`() {
+    fun `rule decision time is absent from summaries when the rule does not opt in`() {
         val before = GameConfig(RiichiRuleConfig())
         val after = before.copy(
-            flowConfig = before.flowConfig.copy(roundPreparation = RoundPreparationConfig(45)),
+            flowConfig = before.flowConfig.copy(ruleDecision = RuleDecisionConfig(45)),
         )
 
         val text = gameConfigDifferenceText(
@@ -43,7 +43,7 @@ class GameConfigDifferenceFormatterTest {
             to = after,
         )
 
-        assertTrue(text.siblings.isEmpty(), "A rule without preparation must not produce a preparation-time change row")
+        assertTrue(text.siblings.isEmpty(), "A rule without rule decision must not produce a rule decision-time change row")
     }
 
     /** 第三方不宣告任何流程欄位，修改基本思考時間仍能產生本地化的差異摘要。 */
@@ -75,23 +75,23 @@ class GameConfigDifferenceFormatterTest {
         assertEquals(afterBaseSeconds.toString(), (change.args[2] as Text).string)
     }
 
-    /** 第三方規則宣告開局準備後，準備時間的實際差異會出現在摘要中。 */
+    /** 第三方規則宣告規則選擇後，規則選擇時間的實際差異會出現在摘要中。 */
     @Test
-    fun `third party preparation time changes appear when the rule opts in`() {
+    fun `third party rule decision time changes appear when the rule opts in`() {
         val before = GameConfig(
             ruleConfig = RiichiRuleConfig(),
             flowConfig = GameFlowConfig(
-                roundPreparation = RoundPreparationConfig(30),
+                ruleDecision = RuleDecisionConfig(30),
             ),
         )
-        val beforePreparationSeconds = before.flowConfig.roundPreparation?.baseSeconds ?: error("missing preparation config")
-        val afterPreparationSeconds = beforePreparationSeconds + 15
+        val beforeRuleDecisionSeconds = before.flowConfig.ruleDecision?.baseSeconds ?: error("missing rule decision config")
+        val afterRuleDecisionSeconds = beforeRuleDecisionSeconds + 15
         val after = before.copy(
-            flowConfig = before.flowConfig.copy(roundPreparation = RoundPreparationConfig(afterPreparationSeconds)),
+            flowConfig = before.flowConfig.copy(ruleDecision = RuleDecisionConfig(afterRuleDecisionSeconds)),
         )
 
         val text = gameConfigDifferenceText(
-            resolver = resolver(withPreparation = true),
+            resolver = resolver(withRuleDecision = true),
             ruleNames = RuleModuleDisplayNameRegistryImpl(),
             from = before,
             to = after,
@@ -101,15 +101,15 @@ class GameConfigDifferenceFormatterTest {
             content.key == MinecraftRoomScreenKeys.CONFIG_VALUE_CHANGE &&
                 (content.args[0] as Text).content is TranslatableTextContent &&
                 ((content.args[0] as Text).content as TranslatableTextContent).key ==
-                "mahjongcraft.room.config.field.preparation_base_seconds"
+                "mahjongcraft.room.config.field.rule_decision_base_seconds"
         }.content as TranslatableTextContent
 
-        assertEquals(beforePreparationSeconds.toString(), (change.args[1] as Text).string)
-        assertEquals(afterPreparationSeconds.toString(), (change.args[2] as Text).string)
+        assertEquals(beforeRuleDecisionSeconds.toString(), (change.args[1] as Text).string)
+        assertEquals(afterRuleDecisionSeconds.toString(), (change.args[2] as Text).string)
     }
 
-    /** 建立指定是否提供局前準備時間的第三方設定解析器。 */
-    private fun resolver(withPreparation: Boolean = false): GameConfigPresentationResolver {
+    /** 建立指定是否提供規則選擇時間的第三方設定解析器。 */
+    private fun resolver(withRuleDecision: Boolean = false): GameConfigPresentationResolver {
         val modules = MahjongModuleRegistryImpl().apply {
             register(
                 MahjongModuleDefinition(
@@ -120,10 +120,10 @@ class GameConfigDifferenceFormatterTest {
             )
             freeze()
         }
-        val preparationResolvers = RoundPreparationResolverRegistry().apply {
-            if (withPreparation) register(TestPreparationResolver)
+        val ruleDecisionResolvers = RuleDecisionResolverRegistry().apply {
+            if (withRuleDecision) register(TestRuleDecisionResolver)
         }
-        val presentations = GameConfigPresentationRegistryImpl(preparationResolvers).apply {
+        val presentations = GameConfigPresentationRegistryImpl(ruleDecisionResolvers).apply {
             register(
                 GameConfigPresentationDefinition(
                     ruleModuleId = "example:rule",
@@ -139,16 +139,16 @@ class GameConfigDifferenceFormatterTest {
         return GameConfigPresentationResolver(presentations, modules)
     }
 
-    private object TestPreparationResolver : RoundPreparationResolver {
+    private object TestRuleDecisionResolver : RuleDecisionResolver {
         override val ruleModuleId: String = "example:rule"
-        override fun roundPreparationConfig(ruleConfig: MahjongRuleConfig): RoundPreparationConfig = RoundPreparationConfig(30)
+        override fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig = RuleDecisionConfig(30)
 
         override fun begin(tableState: TableState, ruleModule: MahjongRuleModule<*>) = error("not used")
 
         override fun resolve(
             tableState: TableState,
-            preparation: PendingRoundPreparation,
+            ruleDecision: PendingRuleDecision,
             ruleModule: MahjongRuleModule<*>,
-        ): RoundPreparationResolution = error("not used")
+        ): RuleDecisionResolution = error("not used")
     }
 }

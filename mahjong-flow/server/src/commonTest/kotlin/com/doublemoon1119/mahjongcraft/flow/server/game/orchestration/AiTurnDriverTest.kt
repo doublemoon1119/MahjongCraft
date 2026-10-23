@@ -9,8 +9,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRoundPreparation
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationInputSpec
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecision
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionInputSpec
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerActionContextResolver
@@ -318,9 +318,9 @@ class AiTurnDriverTest {
         assertEquals(0, fixtures.strategy.callCount, "Drawing is not a strategic decision; the strategy should not be consulted.")
     }
 
-    /** 驗證開局準備尚未完成時，不會把 AI 誤判成已進入摸打回合。 */
+    /** 驗證規則選擇尚未完成時，不會把 AI 誤判成已進入摸打回合。 */
     @Test
-    fun `test pending round preparation suppresses ordinary ai action`() = runTest {
+    fun `test pending rule decision suppresses ordinary ai action`() = runTest {
         val fixtures = Fixtures()
         val aiId = Uuid.random()
         val ai = FakeMahjongPlayerFactory.create(id = aiId, initialSeat = Wind.EAST)
@@ -335,10 +335,10 @@ class AiTurnDriverTest {
                 tableState = table,
                 flowConfig = GameFlowConfig(),
                 aiPlayerStrategyKeys = mapOf(aiId to strategyKey),
-                pendingRoundPreparation = PendingRoundPreparation(
+                pendingRuleDecision = PendingRuleDecision(
                     stepId = "test:confirmation",
                     stepIndex = 0,
-                    inputSpecsByPlayerId = mapOf(aiId to RoundPreparationInputSpec.Confirmation),
+                    inputSpecsByPlayerId = mapOf(aiId to RuleDecisionInputSpec.Confirmation),
                 ),
             ),
         )

@@ -27,7 +27,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionG
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
@@ -371,7 +371,7 @@ private fun testCoreRegistries(
     gameCommandRegistry = ExtensionGameCommandExecutorRegistry(),
     postReactionRoundOutcomeResolverRegistry = PostReactionRoundOutcomeResolverRegistry(),
     postActionExhaustiveDrawResolverRegistry = PostActionExhaustiveDrawResolverRegistry(),
-    roundPreparationResolverRegistry = RoundPreparationResolverRegistry(),
+    ruleDecisionResolverRegistry = RuleDecisionResolverRegistry(),
     winRoundContinuationResolverRegistry = WinRoundContinuationResolverRegistry(),
     winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry(),
 )

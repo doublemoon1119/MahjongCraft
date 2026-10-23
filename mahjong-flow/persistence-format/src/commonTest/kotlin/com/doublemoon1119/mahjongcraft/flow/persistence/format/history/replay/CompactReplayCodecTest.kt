@@ -9,7 +9,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRe
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundTileCatalog
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ActionTimeControl
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.SpectatingPolicy
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.config.GameFlowConfigPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.config.toPersistenceDto
@@ -243,7 +243,7 @@ class CompactReplayCodecTest {
         val rule = RiichiRuleConfig(redDoraCount = 0, allowOpenTanyao = false, useLocalYaku = true, minimumWinConstraint = 2)
         val flow = GameFlowConfig(
             timeControl = ActionTimeControl.from(17, 41),
-            roundPreparation = RoundPreparationConfig(43),
+            ruleDecision = RuleDecisionConfig(43),
             spectatingPolicy = SpectatingPolicy.DISABLED,
         )
         val document = settingsDocument(matchId, registries.ruleConfigs.encode(rule), flowConfig = flow)

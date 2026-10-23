@@ -169,7 +169,7 @@ private fun previewPrompt(
     triggerPlayerName = if (fromLeftPlayer) PREVIEW_TRIGGER_PLAYER_NAME else null,
     triggerPlayerRelation = if (fromLeftPlayer) DecisionPlayerRelationDto.LEFT else null,
     triggerActionId = if (fromLeftPlayer) BuiltInGameActionIds.DISCARD else null,
-    preparation = null,
+    ruleDecision = null,
     discardAnalyses = emptyList(),
 )
 

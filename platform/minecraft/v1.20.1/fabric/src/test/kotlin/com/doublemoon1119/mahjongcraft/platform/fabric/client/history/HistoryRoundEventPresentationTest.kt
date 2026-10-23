@@ -49,14 +49,14 @@ class HistoryRoundEventPresentationTest {
             MinecraftHistoryScreenKeys.ROUND_ACTION_SCORED_POT_WITHDRAWAL to 2,
             MinecraftHistoryScreenKeys.ROUND_SCORE to 2,
             MinecraftHistoryScreenKeys.ROUND_COMPLETION to 2,
-            MinecraftHistoryScreenKeys.ROUND_PREPARATION to 2,
+            MinecraftHistoryScreenKeys.RULE_DECISION to 2,
             MinecraftHistoryScreenKeys.ROUND_MATCH_COMPLETION to 1,
             MinecraftHistoryScreenKeys.ROUND_MATCH_ABORTED to 1,
             MinecraftHistoryScreenKeys.ROUND_WIN_SETTLEMENT to 1,
             MinecraftHistoryScreenKeys.ROUND_EVENT_DICE_ROLLED to 2,
             MinecraftHistoryScreenKeys.ROUND_UNKNOWN_FACT to 0,
-            MinecraftHistoryScreenKeys.ROUND_PREPARATION_NEXT to 0,
-            MinecraftHistoryScreenKeys.ROUND_PREPARATION_STEP to 1,
+            MinecraftHistoryScreenKeys.RULE_DECISION_NEXT to 0,
+            MinecraftHistoryScreenKeys.RULE_DECISION_STEP to 1,
         )
         listOf("en_us", "zh_tw", "zh_cn", "ja_jp").forEach { language ->
             val resource = checkNotNull(javaClass.getResourceAsStream("/assets/mahjongcraft/lang/$language.json"))
@@ -111,7 +111,7 @@ class HistoryRoundEventPresentationTest {
         val presenter = presenter()
         val facts = listOf(
             HistoryReplayFactDto.Reaction(HistoryFactTypeKeys.REACTION_RESOLVED, "custom:reaction", 0),
-            HistoryReplayFactDto.Preparation(HistoryFactTypeKeys.ROUND_PREPARATION_STARTED, "custom:step", 1, null),
+            HistoryReplayFactDto.RuleDecision(HistoryFactTypeKeys.RULE_DECISION_STARTED, "custom:step", 1, null),
             HistoryReplayFactDto.RuleEffect(HistoryFactTypeKeys.RULE_EFFECT_RESOLVED, "custom:effect", null),
             HistoryReplayFactDto.Opaque("custom:opaque", 0, emptyList(), emptyList()),
         )
@@ -123,7 +123,7 @@ class HistoryRoundEventPresentationTest {
         assertEquals(4, presentation.transactions.single().facts.size)
         assertTrue(presentation.transactions.single().facts.all { it.outcome == null })
         val result = presentation.transactions.single().facts
-        assertEquals(listOf(MinecraftHistoryScreenKeys.ROUND_REACTION, MinecraftHistoryScreenKeys.ROUND_PREPARATION, MinecraftHistoryScreenKeys.ROUND_RULE_EFFECT, MinecraftHistoryScreenKeys.ROUND_UNKNOWN_FACT), result.map { (it.text.content as TranslatableTextContent).key })
+        assertEquals(listOf(MinecraftHistoryScreenKeys.ROUND_REACTION, MinecraftHistoryScreenKeys.RULE_DECISION, MinecraftHistoryScreenKeys.ROUND_RULE_EFFECT, MinecraftHistoryScreenKeys.ROUND_UNKNOWN_FACT), result.map { (it.text.content as TranslatableTextContent).key })
         listOf("custom:reaction", "custom:step", "custom:effect", "custom:opaque").forEachIndexed { index, id ->
             assertTrue(id in result[index].identifiers, "Raw identifier must remain available in tooltip")
             assertTrue(!result[index].text.string.contains(id), "Raw identifier must not leak into player wording")
@@ -302,18 +302,18 @@ class HistoryRoundEventPresentationTest {
         assertTrue("custom:abort" in fact.identifiers)
     }
 
-    /** 開始或提交準備時，沒有下一步 ID 不代表準備已完成。 */
+    /** 開始或提交規則選擇時，沒有下一步 ID 不代表規則選擇已完成。 */
     @Test
-    fun `preparation wording respects the recorded stage`() {
-        val stages = mapOf(HistoryFactTypeKeys.ROUND_PREPARATION_STARTED to MinecraftHistoryScreenKeys.ROUND_PREPARATION_STARTED, HistoryFactTypeKeys.ROUND_PREPARATION_SUBMITTED to MinecraftHistoryScreenKeys.ROUND_PREPARATION_SUBMITTED, HistoryFactTypeKeys.ROUND_PREPARATION_AUTOMATIC_RESOLVED to MinecraftHistoryScreenKeys.ROUND_PREPARATION_NONE)
+    fun `rule decision wording respects the recorded stage`() {
+        val stages = mapOf(HistoryFactTypeKeys.RULE_DECISION_STARTED to MinecraftHistoryScreenKeys.RULE_DECISION_STARTED, HistoryFactTypeKeys.RULE_DECISION_SUBMITTED to MinecraftHistoryScreenKeys.RULE_DECISION_SUBMITTED, HistoryFactTypeKeys.RULE_DECISION_AUTOMATIC_RESOLVED to MinecraftHistoryScreenKeys.RULE_DECISION_NONE)
         stages.forEach { (type, key) ->
-            val fact = presenter().present(events(HistoryReplayFactDto.Preparation(type, "custom:step", 0, null)), null).transactions.single().facts.single()
+            val fact = presenter().present(events(HistoryReplayFactDto.RuleDecision(type, "custom:step", 0, null)), null).transactions.single().facts.single()
             val stage = (fact.text.content as TranslatableTextContent).args[1] as Text
             assertEquals(key, stage.string)
             assertTrue("custom:step" in fact.identifiers)
         }
-        val fact = presenter().present(events(HistoryReplayFactDto.Preparation(HistoryFactTypeKeys.ROUND_PREPARATION_AUTOMATIC_RESOLVED, "custom:step", 0, "custom:next")), null).transactions.single().facts.single()
-        assertEquals(MinecraftHistoryScreenKeys.ROUND_PREPARATION_NEXT, ((fact.text.content as TranslatableTextContent).args[1] as Text).string)
+        val fact = presenter().present(events(HistoryReplayFactDto.RuleDecision(HistoryFactTypeKeys.RULE_DECISION_AUTOMATIC_RESOLVED, "custom:step", 0, "custom:next")), null).transactions.single().facts.single()
+        assertEquals(MinecraftHistoryScreenKeys.RULE_DECISION_NEXT, ((fact.text.content as TranslatableTextContent).args[1] as Text).string)
         assertTrue("custom:next" in fact.identifiers)
     }
 

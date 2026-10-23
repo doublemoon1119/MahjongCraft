@@ -76,7 +76,7 @@ internal class PlayerDecisionScreen(
                 .dimensions(bounds.x, bounds.y, bounds.width, bounds.height)
                 .build()
         }
-        skipButton = if (prompt.preparation == null) {
+        skipButton = if (prompt.ruleDecision == null) {
             val bounds = layout.skipButtonBounds
             ButtonWidget.builder(Text.translatable("mahjongcraft.hud.action.skip")) { onSkipClicked() }
                 .dimensions(bounds.x, bounds.y, bounds.width, bounds.height)
@@ -98,12 +98,12 @@ internal class PlayerDecisionScreen(
                 controller.submit(prompt, PlayerDecisionSelectionKindDto.ACTION, intent.token)
             is DecisionEntryIntent.BeginActionTileSelection ->
                 controller.beginActionTileSelection(prompt, intent.action)
-            DecisionEntryIntent.ConfirmPreparation ->
-                controller.submit(prompt, PlayerDecisionSelectionKindDto.PREPARATION_CONFIRM)
-            is DecisionEntryIntent.ChoosePreparationOption ->
-                controller.submit(prompt, PlayerDecisionSelectionKindDto.PREPARATION_CHOICE, intent.optionId)
-            DecisionEntryIntent.BeginPreparationTileSelection ->
-                controller.beginPreparationTileSelection(prompt)
+            DecisionEntryIntent.ConfirmRuleDecision ->
+                controller.submit(prompt, PlayerDecisionSelectionKindDto.DECISION_CONFIRM)
+            is DecisionEntryIntent.ChooseRuleDecisionOption ->
+                controller.submit(prompt, PlayerDecisionSelectionKindDto.DECISION_CHOICE, intent.optionId)
+            DecisionEntryIntent.BeginRuleDecisionTileSelection ->
+                controller.beginRuleDecisionTileSelection(prompt)
         }
     }
 

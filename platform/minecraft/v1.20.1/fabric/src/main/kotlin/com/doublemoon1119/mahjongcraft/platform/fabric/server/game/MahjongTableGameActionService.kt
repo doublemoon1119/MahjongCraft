@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSubmission
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSubmission
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkJson
@@ -28,7 +28,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisio
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSelectionKindDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSubmissionResultDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSubmissionResultKindDto
-import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RoundPreparationPromptDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.GameTurnStatus
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedback
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftPlayerFeedbackPublisher
@@ -167,21 +167,21 @@ class MahjongTableGameActionService(
                 }
             }
 
-            PlayerDecisionSelectionKindDto.PREPARATION_CONFIRM -> execute(
+            PlayerDecisionSelectionKindDto.DECISION_CONFIRM -> execute(
                 resolved.gameId,
                 playerId,
-                GameCommand.SubmitRoundPreparation(RoundPreparationSubmission.Confirmed),
+                GameCommand.SubmitRuleDecision(RuleDecisionSubmission.Confirmed),
             )
 
-            PlayerDecisionSelectionKindDto.PREPARATION_CHOICE -> selection.token?.let { option ->
+            PlayerDecisionSelectionKindDto.DECISION_CHOICE -> selection.token?.let { option ->
                 execute(
                     resolved.gameId,
                     playerId,
-                    GameCommand.SubmitRoundPreparation(RoundPreparationSubmission.Choice(option)),
+                    GameCommand.SubmitRuleDecision(RuleDecisionSubmission.Choice(option)),
                 )
             } ?: PlayerDecisionSubmissionResultKindDto.REJECTED
 
-            PlayerDecisionSelectionKindDto.PREPARATION_TILES -> {
+            PlayerDecisionSelectionKindDto.DECISION_TILES -> {
                 val parsedIds = selection.tileIds.map { runCatching { Uuid.parse(it) }.getOrNull() }
                 if (parsedIds.any { it == null }) {
                     PlayerDecisionSubmissionResultKindDto.REJECTED
@@ -189,7 +189,7 @@ class MahjongTableGameActionService(
                     val commandResult = execute(
                         resolved.gameId,
                         playerId,
-                        GameCommand.SubmitRoundPreparation(RoundPreparationSubmission.Tiles(parsedIds.filterNotNull().toSet())),
+                        GameCommand.SubmitRuleDecision(RuleDecisionSubmission.Tiles(parsedIds.filterNotNull().toSet())),
                     )
                     if (commandResult == PlayerDecisionSubmissionResultKindDto.ACCEPTED) {
                         presentationPublisher.publishTileSelectionEnded(resolved.gameId, playerId)
@@ -216,13 +216,13 @@ class MahjongTableGameActionService(
         val gameId = runCatching { Uuid.parse(selection.gameId) }.getOrNull() ?: return null
         val game = gameRepository.getGame(gameId) ?: return null
         val state = game.tableState
-        val preparation = game.pendingRoundPreparation
+        val ruleDecision = game.pendingRuleDecision
         val phase = if (
-            preparation != null &&
-            playerId in preparation.participantPlayerIds &&
-            playerId !in preparation.completedPlayerIds
+            ruleDecision != null &&
+            playerId in ruleDecision.participantPlayerIds &&
+            playerId !in ruleDecision.completedPlayerIds
         ) {
-            PlayerDecisionPhase.ROUND_PREPARATION
+            PlayerDecisionPhase.RULE_DECISION
         } else {
             actionContextResolver.resolveFor(state, playerId)?.phase
         } ?: return null
@@ -253,7 +253,7 @@ class MahjongTableGameActionService(
         selection: PlayerDecisionSelectionDto,
     ) {
         val maxCount = if (selection.token == null) {
-            (prompt.preparation as? RoundPreparationPromptDto.TileSelection)?.maxCount
+            (prompt.ruleDecision as? RuleDecisionPromptDto.TileSelection)?.maxCount
         } else {
             prompt.actions.firstOrNull { it.token == selection.token }?.tileSelection?.maxCount
         }

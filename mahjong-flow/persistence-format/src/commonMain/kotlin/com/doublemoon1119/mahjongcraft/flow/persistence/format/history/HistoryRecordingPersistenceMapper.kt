@@ -167,14 +167,14 @@ class HistoryRecordingPersistenceMapper(
         )
         is HistoryFact.RoundStarted -> HistoryFactPersistenceDto.RoundStarted(encodeTable(fact.tableState))
         is HistoryFact.DiceRolled -> HistoryFactPersistenceDto.DiceRolled(fact.roll.toPersistenceDto())
-        is HistoryFact.RoundPreparationStarted -> HistoryFactPersistenceDto.RoundPreparationStarted(fact.stepId, fact.stepIndex)
-        is HistoryFact.RoundPreparationSubmitted -> HistoryFactPersistenceDto.RoundPreparationSubmitted(
+        is HistoryFact.RuleDecisionStarted -> HistoryFactPersistenceDto.RuleDecisionStarted(fact.stepId, fact.stepIndex)
+        is HistoryFact.RuleDecisionSubmitted -> HistoryFactPersistenceDto.RuleDecisionSubmitted(
             fact.stepId,
             fact.stepIndex,
             fact.submission.toPersistenceDto(),
             fact.nextStepId,
         )
-        is HistoryFact.RoundPreparationAutomaticallyResolved -> HistoryFactPersistenceDto.RoundPreparationAutomaticallyResolved(
+        is HistoryFact.RuleDecisionAutomaticallyResolved -> HistoryFactPersistenceDto.RuleDecisionAutomaticallyResolved(
             fact.stepId,
             fact.stepIndex,
             fact.nextStepId,
@@ -233,14 +233,14 @@ class HistoryRecordingPersistenceMapper(
         )
         is HistoryFactPersistenceDto.RoundStarted -> HistoryFact.RoundStarted(decodeTable(dto.state))
         is HistoryFactPersistenceDto.DiceRolled -> HistoryFact.DiceRolled(dto.roll.toDomain())
-        is HistoryFactPersistenceDto.RoundPreparationStarted -> HistoryFact.RoundPreparationStarted(dto.stepId, dto.stepIndex)
-        is HistoryFactPersistenceDto.RoundPreparationSubmitted -> HistoryFact.RoundPreparationSubmitted(
+        is HistoryFactPersistenceDto.RuleDecisionStarted -> HistoryFact.RuleDecisionStarted(dto.stepId, dto.stepIndex)
+        is HistoryFactPersistenceDto.RuleDecisionSubmitted -> HistoryFact.RuleDecisionSubmitted(
             dto.stepId,
             dto.stepIndex,
             dto.submission.toDomain(),
             dto.nextStepId,
         )
-        is HistoryFactPersistenceDto.RoundPreparationAutomaticallyResolved -> HistoryFact.RoundPreparationAutomaticallyResolved(
+        is HistoryFactPersistenceDto.RuleDecisionAutomaticallyResolved -> HistoryFact.RuleDecisionAutomaticallyResolved(
             dto.stepId,
             dto.stepIndex,
             dto.nextStepId,

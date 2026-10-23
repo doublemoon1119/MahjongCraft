@@ -9,7 +9,7 @@ import kotlin.uuid.Uuid
  * 統一套用觀看政策並更新各觀看者的遊戲快照。
  *
  * @property gameRepository 讀取權威遊戲狀態。
- * @property snapshotRepository 寫入各觀看者的遊戲與準備流程快照。
+ * @property snapshotRepository 寫入各觀看者的遊戲與選擇流程快照。
  * @property visibilityPolicy 為觀看者裁切可公開的狀態。
  */
 class GameSnapshotSynchronizer(
@@ -27,10 +27,10 @@ class GameSnapshotSynchronizer(
     suspend fun sync(gameId: Uuid, observerId: Uuid): Boolean {
         val game = gameRepository.getGame(gameId) ?: return false
         snapshotRepository.setSnapshot(observerId, visibilityPolicy.snapshotFor(game, observerId))
-        snapshotRepository.setRoundPreparationSnapshot(
+        snapshotRepository.setRuleDecisionSnapshot(
             gameId,
             observerId,
-            visibilityPolicy.roundPreparationSnapshotFor(game, observerId),
+            visibilityPolicy.ruleDecisionSnapshotFor(game, observerId),
         )
         return true
     }

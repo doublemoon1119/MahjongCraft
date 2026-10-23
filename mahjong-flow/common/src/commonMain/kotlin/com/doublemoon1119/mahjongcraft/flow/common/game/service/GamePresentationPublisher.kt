@@ -91,7 +91,7 @@ interface GamePresentationPublisher {
     fun publishMatchSettlement(gameId: Uuid, request: MatchSettlementPresentationRequest) = Unit
 
     /**
-     * 通知平台 [playerId] 開始從立牌中選擇多張牌（`tileSelection`／`preparation` 的 `maxCount > 1`）；平台可據此
+     * 通知平台 [playerId] 開始從立牌中選擇多張牌（`tileSelection`／`rule decision` 的 `maxCount > 1`）；平台可據此
      * 提供確認選擇的操作。只需要選一張時不呼叫。
      *
      * 預設 no-op。
@@ -166,7 +166,7 @@ interface GamePresentationPublisher {
     /**
      * 以已提交的布局更新既有牌張，不重建牌牆或重播開門。
      *
-     * 用於準備步驟將牌移回牌牆或重新分配牌牆位置；移出牌牆的牌由其目的牌區接手呈現。
+     * 用於選擇步驟將牌移回牌牆或重新分配牌牆位置；移出牌牆的牌由其目的牌區接手呈現。
      * 不支援呈現的平台可維持預設 no-op。
      *
      * @param gameId 對局識別碼。
@@ -220,7 +220,7 @@ interface GamePresentationPublisher {
      * 通知平台某玩家目前的立牌、摸牌位與副露。
      *
      * 三者一起提供，讓平台能一併決定擺放（例如立牌要為副露讓出空間）。開局／換局的初次發牌改用
-     * [publishInitialDeal]；這個方法用於一般回合動作與開局準備步驟完成後的牌區更新。
+     * [publishInitialDeal]；這個方法用於一般回合動作與規則選擇步驟完成後的牌區更新。
      *
      * @param gameId 對局 Uuid。
      * @param seatIndex 這位玩家在 `TableState.players` 的固定座位 index。

@@ -7,7 +7,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocab
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionActionDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
-import com.doublemoon1119.mahjongcraft.platform.minecraft.preparation.RoundPreparationDisplayNameRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionDisplayNameRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistryImpl
 import net.minecraft.text.TranslatableTextContent
 import kotlin.test.Test
@@ -36,7 +36,7 @@ class DecisionCardTextTest {
             },
             decisionStatusDisplayNames = DecisionStatusDisplayNameRegistryImpl(),
             exhaustiveDrawReasonDisplayNames = ExhaustiveDrawReasonDisplayNameRegistryImpl(),
-            roundPreparationDisplayNames = RoundPreparationDisplayNameRegistryImpl(),
+            ruleDecisionDisplayNames = RuleDecisionDisplayNameRegistryImpl(),
         )
         val entries = decisionEntriesFrom(resolver, promptOf("sample:declare", "mahjongcraft:ron"))
         val custom = entries.single { (it.label.content as? TranslatableTextContent)?.key == "sample.declare" }
@@ -72,7 +72,7 @@ class DecisionCardTextTest {
         triggerPlayerName = null,
         triggerPlayerRelation = null,
         triggerActionId = null,
-        preparation = null,
+        ruleDecision = null,
         discardAnalyses = emptyList(),
     )
 }

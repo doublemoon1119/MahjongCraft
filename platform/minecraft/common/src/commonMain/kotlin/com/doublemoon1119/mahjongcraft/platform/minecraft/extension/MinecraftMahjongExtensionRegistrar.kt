@@ -107,7 +107,7 @@ object MinecraftMahjongExtensionRegistrar {
         extension.registerExhaustiveDrawReasonDisplayNames(registries.exhaustiveDrawReasonDisplayNameRegistry)
         extension.registerRoundOutcomeDisplayNames(registries.roundOutcomeDisplayNameRegistry)
         extension.registerHistoryDiscardMarkerDisplays(registries.historyDiscardMarkerDisplayRegistry)
-        extension.registerRoundPreparationDisplayNames(registries.roundPreparationDisplayNameRegistry)
+        extension.registerRuleDecisionDisplayNames(registries.ruleDecisionDisplayNameRegistry)
         extension.registerWinSettlementPresentationTemplates(registries.winSettlementTemplateRegistry)
         extension.registerMatchSettlementPresentationTemplates(registries.matchSettlementTemplateRegistry)
         extension.registerPlayerPortraitSources(registries.playerPortraitSourceRegistry)

@@ -56,7 +56,7 @@ class MahjongTileEntity(
     /** 僅供本地 client 同種牌提示使用的原版 outline RGB；不追蹤也不持久化。 */
     private var matchingHighlightColor: Int? = null
 
-    /** 僅供本地 client 動作選牌（例如多選 preparation）使用的原版 outline RGB；不追蹤也不持久化。 */
+    /** 僅供本地 client 動作選牌（例如多選 rule decision）使用的原版 outline RGB；不追蹤也不持久化。 */
     private var selectionHighlightColor: Int? = null
 
     /** 原版或其他來源未啟用 glowing 時，加入本地同種牌提示或選牌提示狀態。 */
@@ -79,7 +79,7 @@ class MahjongTileEntity(
         matchingHighlightColor = null
     }
 
-    /** 設定僅供目前 client 使用的動作選牌描邊色彩（例如多選 preparation 中已選取的牌）。 */
+    /** 設定僅供目前 client 使用的動作選牌描邊色彩（例如多選 rule decision 中已選取的牌）。 */
     fun setSelectionHighlight(rgb: Int) {
         selectionHighlightColor = rgb and 0xFFFFFF
     }

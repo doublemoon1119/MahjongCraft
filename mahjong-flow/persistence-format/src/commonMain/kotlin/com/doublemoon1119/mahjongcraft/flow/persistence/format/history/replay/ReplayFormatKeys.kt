@@ -251,13 +251,13 @@ internal object ReplaySourceKeys {
     /** 單輪擲骰的逐顆點數。 */
     const val DICE = "dice"
 
-    /** 開局準備步驟識別碼。 */
+    /** 規則選擇步驟識別碼。 */
     const val STEP_ID = "stepId"
 
-    /** 開局準備步驟索引。 */
+    /** 規則選擇步驟索引。 */
     const val STEP_INDEX = "stepIndex"
 
-    /** 下一個開局準備步驟識別碼。 */
+    /** 下一個規則選擇步驟識別碼。 */
     const val NEXT_STEP_ID = "nextStepId"
 
     /** 局完成摘要。 */

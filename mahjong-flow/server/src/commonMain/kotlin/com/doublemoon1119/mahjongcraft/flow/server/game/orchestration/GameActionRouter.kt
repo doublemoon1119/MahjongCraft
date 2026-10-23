@@ -10,7 +10,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DiscardTileUseCa
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DrawTileUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToDiscardUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.RespondToRobbingUseCase
-import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.SubmitRoundPreparationUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.SubmitRuleDecisionUseCase
 import kotlin.uuid.Uuid
 
 /**
@@ -32,7 +32,7 @@ import kotlin.uuid.Uuid
  * @property respondToRobbingUseCase 回應搶和反應視窗用例。
  * @property declareAbortiveDrawUseCase 通用途中流局宣告用例。
  * @property extensionCommandExecutor 規則擴充命令的執行者。
- * @property submitRoundPreparationUseCase 提交開局準備資料的用例；未提供時該命令回傳不可用錯誤。
+ * @property submitRuleDecisionUseCase 提交規則選擇資料的用例；未提供時該命令回傳不可用錯誤。
  */
 class GameActionRouter(
     private val drawTileUseCase: DrawTileUseCase,
@@ -43,7 +43,7 @@ class GameActionRouter(
     private val respondToRobbingUseCase: RespondToRobbingUseCase,
     private val declareAbortiveDrawUseCase: DeclareAbortiveDrawUseCase,
     private val extensionCommandExecutor: ExtensionGameCommandExecutor,
-    private val submitRoundPreparationUseCase: SubmitRoundPreparationUseCase? = null,
+    private val submitRuleDecisionUseCase: SubmitRuleDecisionUseCase? = null,
 ) {
     /**
      * 分派 [command] 到對應的 use case 執行。
@@ -58,8 +58,8 @@ class GameActionRouter(
         playerId: Uuid,
         command: GameCommand,
     ): Outcome<Unit, GameError> = when (command) {
-        is GameCommand.SubmitRoundPreparation -> submitRoundPreparationUseCase?.invoke(gameId, playerId, command.submission)
-            ?: Outcome.Error(GameError.RoundPreparationUnavailable(gameId, playerId))
+        is GameCommand.SubmitRuleDecision -> submitRuleDecisionUseCase?.invoke(gameId, playerId, command.submission)
+            ?: Outcome.Error(GameError.RuleDecisionUnavailable(gameId, playerId))
         is GameCommand.Extension -> extensionCommandExecutor.execute(gameId, playerId, command.value)
         GameCommand.Draw -> drawTileUseCase(gameId, playerId)
         is GameCommand.Discard -> discardTileUseCase(gameId, playerId, command.tileId)

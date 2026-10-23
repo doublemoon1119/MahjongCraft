@@ -20,7 +20,7 @@ does not promise future rules, platforms, interfaces, or release schedules.
 | --- | --- |
 | [Mahjong logic](mahjong-logic/README.md) | Platform-independent tiles, table state, scoring, and rule modules. |
 | [Mahjong flow](mahjong-flow/README.md) | Application state, client/server orchestration, networking, and persistence boundaries. |
-| [Mahjong AI](mahjong-ai/README.md) | Pluggable AI strategies for gameplay and round preparation. |
+| [Mahjong AI](mahjong-ai/README.md) | Pluggable AI strategies for gameplay and rule decision. |
 | [Extension API](mahjong-extension-api/README.md) | Public registration surface for third-party MahjongCraft extensions. |
 | [Bundled extensions](mahjong-bundled-extensions/README.md) | Built-in rule integrations registered through the extension API. |
 | [Platforms](platform/README.md) | Runtime adapters, currently including Minecraft. |

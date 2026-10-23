@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionActionDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionActionTileSelectionDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
-import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RoundPreparationPromptDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionPromptDto
 import net.minecraft.text.TranslatableTextContent
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -70,7 +70,7 @@ class DecisionEntryTest {
             triggerPlayerName = null,
             triggerPlayerRelation = null,
             triggerActionId = null,
-            preparation = null,
+            ruleDecision = null,
             discardAnalyses = emptyList(),
         )
 
@@ -93,7 +93,7 @@ class DecisionEntryTest {
             triggerPlayerName = null,
             triggerPlayerRelation = null,
             triggerActionId = null,
-            preparation = null,
+            ruleDecision = null,
             discardAnalyses = emptyList(),
         )
 
@@ -124,7 +124,7 @@ class DecisionEntryTest {
             triggerPlayerName = null,
             triggerPlayerRelation = null,
             triggerActionId = null,
-            preparation = null,
+            ruleDecision = null,
             discardAnalyses = emptyList(),
         )
 
@@ -143,36 +143,36 @@ class DecisionEntryTest {
         assertEquals(DecisionCard(previewTileCount = 0, hasClaimedTileMarker = false), entry.layoutCard())
     }
 
-    /** 只需確認的開局準備展開成一張確認卡。 */
+    /** 只需確認的規則選擇展開成一張確認卡。 */
     @Test
-    fun `builds one card for a preparation confirmation`() {
-        val entries = decisionEntriesFrom(texts, preparationPrompt(RoundPreparationPromptDto.Confirmation))
+    fun `builds one card for a rule decision confirmation`() {
+        val entries = decisionEntriesFrom(texts, ruleDecisionPrompt(RuleDecisionPromptDto.Confirmation))
 
-        assertEquals(DecisionEntryIntent.ConfirmPreparation, entries.single().intent)
+        assertEquals(DecisionEntryIntent.ConfirmRuleDecision, entries.single().intent)
         assertEquals("mahjongcraft.hud.action.confirm", translationKeyOf(entries.single()))
     }
 
-    /** 單選的開局準備每個選項各一張卡，並保留原順序。 */
+    /** 單選的規則選擇每個選項各一張卡，並保留原順序。 */
     @Test
-    fun `builds one card per preparation option`() {
+    fun `builds one card per rule decision option`() {
         val entries = decisionEntriesFrom(
             texts,
-            preparationPrompt(RoundPreparationPromptDto.SingleChoice(listOf("mahjongcraft:accept", "mahjongcraft:decline"))),
+            ruleDecisionPrompt(RuleDecisionPromptDto.SingleChoice(listOf("mahjongcraft:accept", "mahjongcraft:decline"))),
         )
 
         assertEquals(
             listOf("mahjongcraft:accept", "mahjongcraft:decline"),
-            entries.map { assertIs<DecisionEntryIntent.ChoosePreparationOption>(it.intent).optionId },
+            entries.map { assertIs<DecisionEntryIntent.ChooseRuleDecisionOption>(it.intent).optionId },
         )
     }
 
-    /** 選牌的開局準備展開成一張帶候選牌預覽的卡。 */
+    /** 選牌的規則選擇展開成一張帶候選牌預覽的卡。 */
     @Test
-    fun `builds one card carrying the eligible tiles of a preparation selection`() {
+    fun `builds one card carrying the eligible tiles of a rule decision selection`() {
         val entries = decisionEntriesFrom(
             texts,
-            preparationPrompt(
-                RoundPreparationPromptDto.TileSelection(
+            ruleDecisionPrompt(
+                RuleDecisionPromptDto.TileSelection(
                     eligibleTileIds = listOf("tile-a", "tile-b"),
                     eligibleTileAssetKeys = listOf("asset-a", "asset-b"),
                     minCount = 1,
@@ -182,25 +182,25 @@ class DecisionEntryTest {
         )
 
         val entry = entries.single()
-        assertEquals(DecisionEntryIntent.BeginPreparationTileSelection, entry.intent)
+        assertEquals(DecisionEntryIntent.BeginRuleDecisionTileSelection, entry.intent)
         assertEquals(listOf("asset-a", "asset-b"), entry.previewTileAssetKeys)
     }
 
-    /** 動作卡排在開局準備卡之前。 */
+    /** 動作卡排在規則選擇卡之前。 */
     @Test
-    fun `puts the action cards before the preparation card`() {
-        val prompt = promptOf("mahjongcraft:ron").copy(preparation = RoundPreparationPromptDto.Confirmation)
+    fun `puts the action cards before the rule decision card`() {
+        val prompt = promptOf("mahjongcraft:ron").copy(ruleDecision = RuleDecisionPromptDto.Confirmation)
 
         val entries = decisionEntriesFrom(texts, prompt)
 
         assertIs<DecisionEntryIntent.SubmitAction>(entries.first().intent)
-        assertEquals(DecisionEntryIntent.ConfirmPreparation, entries.last().intent)
+        assertEquals(DecisionEntryIntent.ConfirmRuleDecision, entries.last().intent)
     }
 
-    /** 沒有動作也沒有開局準備時沒有任何卡片。 */
+    /** 沒有動作也沒有規則選擇時沒有任何卡片。 */
     @Test
     fun `builds no card for an empty prompt`() {
-        assertEquals(emptyList(), decisionEntriesFrom(texts, PlayerDecisionPromptDto(decisionKey = DECISION_KEY, ruleModuleId = null, actions = emptyList(), triggerTileAssetKey = null, triggerPlayerId = null, triggerPlayerName = null, triggerPlayerRelation = null, triggerActionId = null, preparation = null, discardAnalyses = emptyList())))
+        assertEquals(emptyList(), decisionEntriesFrom(texts, PlayerDecisionPromptDto(decisionKey = DECISION_KEY, ruleModuleId = null, actions = emptyList(), triggerTileAssetKey = null, triggerPlayerId = null, triggerPlayerName = null, triggerPlayerRelation = null, triggerActionId = null, ruleDecision = null, discardAnalyses = emptyList())))
     }
 
     /** 未知的動作 ID 排在內建動作之後並維持原始相對順序。 */
@@ -237,20 +237,20 @@ class DecisionEntryTest {
         triggerPlayerName = null,
         triggerPlayerRelation = null,
         triggerActionId = null,
-        preparation = null,
+        ruleDecision = null,
         discardAnalyses = emptyList(),
     )
 
     /**
-     * 建立只含開局準備的 prompt。
+     * 建立只含規則選擇的 prompt。
      *
-     * @param preparation 開局準備提示。
+     * @param ruleDecision 規則選擇提示。
      * @return 使用測試決策鍵的 prompt。
      */
-    private fun preparationPrompt(preparation: RoundPreparationPromptDto) = PlayerDecisionPromptDto(
+    private fun ruleDecisionPrompt(ruleDecision: RuleDecisionPromptDto) = PlayerDecisionPromptDto(
         decisionKey = DECISION_KEY,
         ruleModuleId = BuiltInRuleModuleIds.RIICHI,
-        preparation = preparation,
+        ruleDecision = ruleDecision,
         actions = emptyList(),
         triggerTileAssetKey = null,
         triggerPlayerId = null,

@@ -36,7 +36,7 @@
   "mahjongcraft_example.catalogue.entry.pairing.description": "A 2–4 player game. Everyone starts with 100 points and three tiles. Draw one and discard one until four tiles form two pairs to win by self-draw; calls and ron are unavailable. The room settings choose each player's payment and the number of rounds. Before a round, each player may give two chosen tiles to the next seat and receive two from the previous seat. Once per round after drawing, you can declare to show other players a Declared marker. This does not change your score or reveal your hand.",
   "mahjongcraft_example.draw.wall_exhausted": "Wall exhausted",
   "mahjongcraft_example.indicator.declared": "Declared",
-  "mahjongcraft_example.preparation.exchange": "Tile exchange",
+  "mahjongcraft_example.rule_decision.exchange": "Tile exchange",
   "mahjongcraft_example.room.config.category.rule": "Pairing Mahjong",
   "mahjongcraft_example.room.config.field.exchange_enabled": "Exchange tiles before the round",
   "mahjongcraft_example.room.config.field.exchange_enabled.description": "Before the round, each player gives two chosen tiles to the next seat and receives two tiles from the previous seat.",

@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.ai
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSubmission
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSubmission
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 
 /**
@@ -33,10 +33,10 @@ interface MahjongAiStrategy {
     suspend fun decideGameCommand(context: AiDecisionContext): GameCommand
 
     /**
-     * 依 [context] 決定開局準備步驟的提交內容；未覆寫時使用情境提供的預設提交。
+     * 依 [context] 決定規則選擇步驟的提交內容；未覆寫時使用情境提供的預設提交。
      *
-     * @param context 本次準備步驟的可見資訊與可提交選項。
-     * @return 要求呼叫端驗證並套用的準備提交。
+     * @param context 本次選擇步驟的可見資訊與可提交選項。
+     * @return 要求呼叫端驗證並套用的規則選擇提交。
      */
-    suspend fun decideRoundPreparation(context: RoundPreparationAiContext): RoundPreparationSubmission = context.defaultSubmission()
+    suspend fun decideRuleDecision(context: RuleDecisionAiContext): RuleDecisionSubmission = context.defaultSubmission()
 }

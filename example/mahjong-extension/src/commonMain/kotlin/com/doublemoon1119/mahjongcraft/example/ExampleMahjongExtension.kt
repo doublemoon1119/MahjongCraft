@@ -6,18 +6,18 @@ import com.doublemoon1119.mahjongcraft.example.action.registerExamplePairingDecl
 import com.doublemoon1119.mahjongcraft.example.action.registerExamplePairingDeclarationHandler
 import com.doublemoon1119.mahjongcraft.example.ai.ExampleAiStrategyIds
 import com.doublemoon1119.mahjongcraft.example.ai.ExampleTsumogiriAiStrategy
+import com.doublemoon1119.mahjongcraft.example.decision.ExamplePairingRuleDecisionResolver
 import com.doublemoon1119.mahjongcraft.example.format.registerExampleNetworkDtos
 import com.doublemoon1119.mahjongcraft.example.format.registerExamplePersistenceDtos
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingIds
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingRuleConfig
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingRuleModule
-import com.doublemoon1119.mahjongcraft.example.preparation.ExamplePairingRoundPreparationResolver
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameActionCommandFactoryRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandExecutorRegistry
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RoundPreparationResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverDefinition
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
@@ -62,9 +62,9 @@ open class ExampleMahjongExtension : MahjongExtension {
     /** 登記示範宣告的權威處理器。 */
     override fun registerGameCommandHandlers(registry: ExtensionGameCommandExecutorRegistry) = registerExamplePairingDeclarationHandler(registry)
 
-    /** 登記依換牌選項決定是否啟用的局前準備。 */
-    override fun registerRoundPreparationResolvers(registry: RoundPreparationResolverRegistry) {
-        registry.register(ExamplePairingRoundPreparationResolver())
+    /** 登記依換牌選項決定是否啟用的規則選擇。 */
+    override fun registerRuleDecisionResolvers(registry: RuleDecisionResolverRegistry) {
+        registry.register(ExamplePairingRuleDecisionResolver())
     }
 
     /** 登記只描述實際付款點數的結算詳情。 */

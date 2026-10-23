@@ -96,26 +96,26 @@ sealed interface GameError : ApplicationError {
     ) : GameError
 
     /**
-     * 對局目前沒有可由指定玩家提交的開局準備步驟。
+     * 對局目前沒有可由指定玩家提交的規則選擇步驟。
      *
-     * 這通常表示該規則沒有準備階段、準備階段尚未開始、已經完成，或目前正在等待其他玩家。它描述的
+     * 這通常表示該規則在這個時間點不需要選擇、選擇尚未開始、已經完成，或目前正在等待其他玩家。它描述的
      * 是權威對局狀態，不代表提交內容本身格式錯誤。
      *
      * @property gameId 對局 Uuid。
-     * @property playerId 嘗試提交準備操作的玩家 Uuid。
+     * @property playerId 嘗試提交規則選擇的玩家 Uuid。
      */
-    data class RoundPreparationUnavailable(val gameId: Uuid, val playerId: Uuid) : GameError
+    data class RuleDecisionUnavailable(val gameId: Uuid, val playerId: Uuid) : GameError
 
     /**
-     * 開局準備提交不符合目前步驟要求的輸入結構或規則語意。
+     * 規則選擇提交不符合目前步驟要求的輸入結構或規則語意。
      *
-     * 與 [RoundPreparationUnavailable] 不同，此錯誤表示玩家確實有可提交的準備步驟，但所選牌張、數量
+     * 與 [RuleDecisionUnavailable] 不同，此錯誤表示玩家確實有可提交的選擇步驟，但所選牌張、數量
      * 或確認資料沒有通過權威規則驗證。
      *
      * @property gameId 對局 Uuid。
-     * @property playerId 送出無效準備資料的玩家 Uuid。
+     * @property playerId 送出無效選擇資料的玩家 Uuid。
      */
-    data class InvalidRoundPreparationSubmission(val gameId: Uuid, val playerId: Uuid) : GameError
+    data class InvalidRuleDecisionSubmission(val gameId: Uuid, val playerId: Uuid) : GameError
 
     /**
      * 本局缺少權威完成摘要，或規則回傳互相矛盾的 progression decision。

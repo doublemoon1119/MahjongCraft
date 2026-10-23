@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisio
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionActionTileSelectionDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionPromptDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.PlayerDecisionSelectionKindDto
-import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RoundPreparationPromptDto
+import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.RuleDecisionPromptDto
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -20,14 +20,14 @@ class DecisionTileSelectionStateTest {
 
     /** 只需選一張時不請求確認面板。 */
     @Test
-    fun `requests no confirm panel for a single tile preparation`() {
-        assertNull(state.beginPreparation(preparationPrompt(minCount = 1, maxCount = 1)))
+    fun `requests no confirm panel for a single tile rule decision`() {
+        assertNull(state.beginRuleDecision(ruleDecisionPrompt(minCount = 1, maxCount = 1)))
     }
 
-    /** 需要選多張時請求確認面板，且 preparation 不帶動作 token。 */
+    /** 需要選多張時請求確認面板，且 rule decision 不帶動作 token。 */
     @Test
-    fun `requests a confirm panel without a token for a multi tile preparation`() {
-        val request = state.beginPreparation(preparationPrompt(minCount = 2, maxCount = 3))
+    fun `requests a confirm panel without a token for a multi tile rule decision`() {
+        val request = state.beginRuleDecision(ruleDecisionPrompt(minCount = 2, maxCount = 3))
 
         assertNull(assertNotNullRequest(request).token)
     }
@@ -53,19 +53,19 @@ class DecisionTileSelectionStateTest {
     fun `ignores a tile outside any selection`() {
         assertEquals(
             DecisionTileSelectionState.Outcome.Ignored,
-            state.toggle(preparationPrompt(), TILE_A, isActionSelectionActive = false),
+            state.toggle(ruleDecisionPrompt(), TILE_A, isActionSelectionActive = false),
         )
     }
 
     /** 只需選一張時，選中合法牌立即送出。 */
     @Test
     fun `submits immediately when only one tile is needed`() {
-        val prompt = preparationPrompt(minCount = 1, maxCount = 1)
-        state.beginPreparation(prompt)
+        val prompt = ruleDecisionPrompt(minCount = 1, maxCount = 1)
+        state.beginRuleDecision(prompt)
 
         val selection = consumedSelection(state.toggle(prompt, TILE_A, isActionSelectionActive = false))
 
-        assertEquals(PlayerDecisionSelectionKindDto.PREPARATION_TILES, selection?.kind)
+        assertEquals(PlayerDecisionSelectionKindDto.DECISION_TILES, selection?.kind)
         assertNull(selection?.token)
         assertEquals(listOf(TILE_A), selection?.tileIds)
     }
@@ -73,8 +73,8 @@ class DecisionTileSelectionStateTest {
     /** 需要選多張時，即使剛好選滿也要等確認面板。 */
     @Test
     fun `waits for the confirm panel even after reaching the maximum`() {
-        val prompt = preparationPrompt(minCount = 2, maxCount = 2)
-        state.beginPreparation(prompt)
+        val prompt = ruleDecisionPrompt(minCount = 2, maxCount = 2)
+        state.beginRuleDecision(prompt)
 
         assertNull(consumedSelection(state.toggle(prompt, TILE_A, isActionSelectionActive = false)))
         assertNull(consumedSelection(state.toggle(prompt, TILE_B, isActionSelectionActive = false)))
@@ -84,8 +84,8 @@ class DecisionTileSelectionStateTest {
     /** 選滿後右鍵另一張尚未選取的牌沒有反應，但仍消化互動。 */
     @Test
     fun `keeps the selection unchanged when the maximum is already reached`() {
-        val prompt = preparationPrompt(minCount = 1, maxCount = 2)
-        state.beginPreparation(prompt)
+        val prompt = ruleDecisionPrompt(minCount = 1, maxCount = 2)
+        state.beginRuleDecision(prompt)
         state.toggle(prompt, TILE_A, isActionSelectionActive = false)
         state.toggle(prompt, TILE_B, isActionSelectionActive = false)
 
@@ -98,8 +98,8 @@ class DecisionTileSelectionStateTest {
     /** 取消一張後才能再選別的。 */
     @Test
     fun `allows another tile after deselecting one`() {
-        val prompt = preparationPrompt(minCount = 1, maxCount = 2)
-        state.beginPreparation(prompt)
+        val prompt = ruleDecisionPrompt(minCount = 1, maxCount = 2)
+        state.beginRuleDecision(prompt)
         state.toggle(prompt, TILE_A, isActionSelectionActive = false)
         state.toggle(prompt, TILE_B, isActionSelectionActive = false)
 
@@ -112,8 +112,8 @@ class DecisionTileSelectionStateTest {
     /** 非候選牌不改變選取，但仍消化互動，避免右鍵穿透成普通出牌。 */
     @Test
     fun `consumes an ineligible tile without selecting it`() {
-        val prompt = preparationPrompt(minCount = 1, maxCount = 2)
-        state.beginPreparation(prompt)
+        val prompt = ruleDecisionPrompt(minCount = 1, maxCount = 2)
+        state.beginRuleDecision(prompt)
 
         val outcome = state.toggle(prompt, "tile-outside", isActionSelectionActive = false)
 
@@ -149,8 +149,8 @@ class DecisionTileSelectionStateTest {
     /** 確認面板在已選數量落在合法範圍內時送出。 */
     @Test
     fun `submits on confirm once the count is within range`() {
-        val prompt = preparationPrompt(minCount = 2, maxCount = 3)
-        state.beginPreparation(prompt)
+        val prompt = ruleDecisionPrompt(minCount = 2, maxCount = 3)
+        state.beginRuleDecision(prompt)
         state.toggle(prompt, TILE_A, isActionSelectionActive = false)
         state.toggle(prompt, TILE_B, isActionSelectionActive = false)
 
@@ -162,8 +162,8 @@ class DecisionTileSelectionStateTest {
     /** 未達最低張數時確認面板不送出，且保留選取讓玩家繼續選。 */
     @Test
     fun `holds the selection when confirm happens below the minimum`() {
-        val prompt = preparationPrompt(minCount = 2, maxCount = 3)
-        state.beginPreparation(prompt)
+        val prompt = ruleDecisionPrompt(minCount = 2, maxCount = 3)
+        state.beginRuleDecision(prompt)
         state.toggle(prompt, TILE_A, isActionSelectionActive = false)
 
         assertNull(consumedSelection(state.confirm(prompt, isActionSelectionActive = false)))
@@ -175,15 +175,15 @@ class DecisionTileSelectionStateTest {
     fun `ignores confirm outside any selection`() {
         assertEquals(
             DecisionTileSelectionState.Outcome.Ignored,
-            state.confirm(preparationPrompt(), isActionSelectionActive = false),
+            state.confirm(ruleDecisionPrompt(), isActionSelectionActive = false),
         )
     }
 
     /** 選取順序決定送出的牌張順序。 */
     @Test
     fun `submits the tiles in selection order`() {
-        val prompt = preparationPrompt(minCount = 2, maxCount = 3)
-        state.beginPreparation(prompt)
+        val prompt = ruleDecisionPrompt(minCount = 2, maxCount = 3)
+        state.beginRuleDecision(prompt)
         state.toggle(prompt, TILE_C, isActionSelectionActive = false)
         state.toggle(prompt, TILE_A, isActionSelectionActive = false)
 
@@ -193,8 +193,8 @@ class DecisionTileSelectionStateTest {
     /** 進度回報已選數量與合法範圍。 */
     @Test
     fun `reports the progress of the active selection`() {
-        val prompt = preparationPrompt(minCount = 2, maxCount = 3)
-        state.beginPreparation(prompt)
+        val prompt = ruleDecisionPrompt(minCount = 2, maxCount = 3)
+        state.beginRuleDecision(prompt)
         state.toggle(prompt, TILE_A, isActionSelectionActive = false)
 
         assertEquals(DecisionTileSelectionState.Progress(1, 2..3), state.progress(prompt, isActionSelectionActive = false))
@@ -203,14 +203,14 @@ class DecisionTileSelectionStateTest {
     /** 沒有進行中的選牌時沒有進度。 */
     @Test
     fun `reports no progress outside any selection`() {
-        assertNull(state.progress(preparationPrompt(), isActionSelectionActive = false))
+        assertNull(state.progress(ruleDecisionPrompt(), isActionSelectionActive = false))
     }
 
-    /** 權威 prompt 換成另一個決策時丟棄 preparation 選取。 */
+    /** 權威 prompt 換成另一個決策時丟棄 rule decision 選取。 */
     @Test
-    fun `drops the preparation selection when the decision changes`() {
-        val prompt = preparationPrompt(minCount = 1, maxCount = 2)
-        state.beginPreparation(prompt)
+    fun `drops the rule decision selection when the decision changes`() {
+        val prompt = ruleDecisionPrompt(minCount = 1, maxCount = 2)
+        state.beginRuleDecision(prompt)
         state.toggle(prompt, TILE_A, isActionSelectionActive = false)
 
         state.syncTo("other-decision", isActionSelectionActive = false)
@@ -222,8 +222,8 @@ class DecisionTileSelectionStateTest {
     /** 同一個決策的週期更新不影響進行中的選取。 */
     @Test
     fun `keeps the selection across updates of the same decision`() {
-        val prompt = preparationPrompt(minCount = 1, maxCount = 2)
-        state.beginPreparation(prompt)
+        val prompt = ruleDecisionPrompt(minCount = 1, maxCount = 2)
+        state.beginRuleDecision(prompt)
         state.toggle(prompt, TILE_A, isActionSelectionActive = false)
 
         state.syncTo(DECISION_KEY, isActionSelectionActive = false)
@@ -256,8 +256,8 @@ class DecisionTileSelectionStateTest {
     /** 丟棄選牌情境時保留直接出牌模式。 */
     @Test
     fun `keeps the direct discard mode when only selections are dropped`() {
-        val prompt = preparationPrompt(minCount = 1, maxCount = 2)
-        state.beginPreparation(prompt)
+        val prompt = ruleDecisionPrompt(minCount = 1, maxCount = 2)
+        state.beginRuleDecision(prompt)
         state.toggle(prompt, TILE_A, isActionSelectionActive = false)
         state.beginDirectDiscard(DECISION_KEY)
 
@@ -270,8 +270,8 @@ class DecisionTileSelectionStateTest {
     /** 完整清除同時丟棄選牌情境與直接出牌模式。 */
     @Test
     fun `drops every mode on a full clear`() {
-        val prompt = preparationPrompt(minCount = 1, maxCount = 2)
-        state.beginPreparation(prompt)
+        val prompt = ruleDecisionPrompt(minCount = 1, maxCount = 2)
+        state.beginRuleDecision(prompt)
         state.toggle(prompt, TILE_A, isActionSelectionActive = false)
         state.beginDirectDiscard(DECISION_KEY)
 
@@ -287,7 +287,7 @@ class DecisionTileSelectionStateTest {
         assertFalse(state.isPhysicalSelectionActive(DECISION_KEY, isActionSelectionActive = false))
         assertTrue(state.isPhysicalSelectionActive(DECISION_KEY, isActionSelectionActive = true))
 
-        state.beginPreparation(preparationPrompt())
+        state.beginRuleDecision(ruleDecisionPrompt())
         assertTrue(state.isPhysicalSelectionActive(DECISION_KEY, isActionSelectionActive = false))
 
         state.clearSelections()
@@ -298,11 +298,11 @@ class DecisionTileSelectionStateTest {
     /** 進入新的選牌情境時丟棄上一輪殘留的選取。 */
     @Test
     fun `starts a new selection empty`() {
-        val prompt = preparationPrompt(minCount = 1, maxCount = 2)
-        state.beginPreparation(prompt)
+        val prompt = ruleDecisionPrompt(minCount = 1, maxCount = 2)
+        state.beginRuleDecision(prompt)
         state.toggle(prompt, TILE_A, isActionSelectionActive = false)
 
-        state.beginPreparation(prompt)
+        state.beginRuleDecision(prompt)
 
         assertEquals(emptySet(), state.highlightedTileIds())
     }
@@ -324,15 +324,15 @@ class DecisionTileSelectionStateTest {
     private fun consumedSelection(outcome: DecisionTileSelectionState.Outcome) = assertIs<DecisionTileSelectionState.Outcome.Consumed>(outcome).selection
 
     /**
-     * 建立需要選取實體手牌的 preparation prompt。
+     * 建立需要選取實體手牌的 rule decision prompt。
      *
      * @param minCount 最少選取張數。
      * @param maxCount 最多選取張數。
      * @return 使用固定候選牌與測試決策鍵的 prompt。
      */
-    private fun preparationPrompt(minCount: Int = 1, maxCount: Int = 1) = PlayerDecisionPromptDto(
+    private fun ruleDecisionPrompt(minCount: Int = 1, maxCount: Int = 1) = PlayerDecisionPromptDto(
         decisionKey = DECISION_KEY,
-        preparation = RoundPreparationPromptDto.TileSelection(
+        ruleDecision = RuleDecisionPromptDto.TileSelection(
             eligibleTileIds = listOf(TILE_A, TILE_B, TILE_C),
             minCount = minCount,
             maxCount = maxCount,
@@ -378,7 +378,7 @@ class DecisionTileSelectionStateTest {
         triggerPlayerName = null,
         triggerPlayerRelation = null,
         triggerActionId = null,
-        preparation = null,
+        ruleDecision = null,
         discardAnalyses = emptyList(),
     )
 

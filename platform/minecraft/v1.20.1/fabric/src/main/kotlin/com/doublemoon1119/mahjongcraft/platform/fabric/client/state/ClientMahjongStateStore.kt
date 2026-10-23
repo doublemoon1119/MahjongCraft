@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.state
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundPreparationSnapshot
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSnapshot
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomSnapshot
 import com.doublemoon1119.mahjongcraft.flow.network.dto.config.toDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.GameUpdatePayloadDto
@@ -24,7 +24,7 @@ import kotlin.uuid.Uuid
  * @property roomSnapshot 等待室快照。
  * @property gameSnapshot 對局快照。
  * @property gameAiPlayerIds 由 AI 操控的玩家 UUID。
- * @property roundPreparationSnapshot 開局準備快照。
+ * @property ruleDecisionSnapshot 規則選擇快照。
  * @property handReadinessAnalysis 只提供給該桌參與者的手牌分析。
  * @property managedTileSnapshotsByTileId 依牌 entity UUID 索引的管理中牌快照。
  */
@@ -33,7 +33,7 @@ private data class ClientTableState(
     val roomSnapshot: RoomSnapshot? = null,
     val gameSnapshot: TableStateSnapshot? = null,
     val gameAiPlayerIds: Set<Uuid> = emptySet(),
-    val roundPreparationSnapshot: RoundPreparationSnapshot? = null,
+    val ruleDecisionSnapshot: RuleDecisionSnapshot? = null,
     val handReadinessAnalysis: HandReadinessAnalysisDto? = null,
     val managedTileSnapshotsByTileId: Map<Uuid, IdentifiedTileSnapshot> = emptyMap(),
 ) {
@@ -127,11 +127,11 @@ class ClientMahjongStateStore(
     fun gameAiPlayerIds(tableId: Uuid): Set<Uuid> = tables[tableId]?.gameAiPlayerIds.orEmpty()
 
     /**
-     * 查詢指定桌子的開局準備快照。
+     * 查詢指定桌子的規則選擇快照。
      *
      * @param tableId 桌子 UUID。
      */
-    fun roundPreparationSnapshot(tableId: Uuid): RoundPreparationSnapshot? = tables[tableId]?.roundPreparationSnapshot
+    fun ruleDecisionSnapshot(tableId: Uuid): RuleDecisionSnapshot? = tables[tableId]?.ruleDecisionSnapshot
 
     /**
      * 取得只向該桌參與者本人同步的目前手牌分析。
@@ -177,7 +177,7 @@ class ClientMahjongStateStore(
             current.withGameSnapshot(null).copy(
                 roomSnapshot = payload.snapshot.toDomain(networkRegistries),
                 tableOccupancy = current.tableOccupancy?.copy(occupancy = TableOccupancyDto.ROOM),
-                roundPreparationSnapshot = null,
+                ruleDecisionSnapshot = null,
                 handReadinessAnalysis = null,
             )
         }
@@ -246,7 +246,7 @@ class ClientMahjongStateStore(
         updateTable(tableId) { current ->
             current.withGameSnapshot(null).copy(
                 roomSnapshot = null,
-                roundPreparationSnapshot = null,
+                ruleDecisionSnapshot = null,
                 handReadinessAnalysis = null,
                 tableOccupancy = current.tableOccupancy?.copy(
                     occupancy = TableOccupancyDto.VACANT,
@@ -277,14 +277,14 @@ class ClientMahjongStateStore(
      * @param gameId 對局／桌子 UUID。
      * @param snapshot 對局狀態快照，識別碼須與 [gameId] 相同。
      * @param aiPlayerIds 由 AI 操控的玩家 UUID。
-     * @param roundPreparation 開局準備快照；沒有時為 `null`。
+     * @param ruleDecision 規則選擇快照；沒有時為 `null`。
      * @param handReadinessAnalysis 目前手牌分析；沒有時為 `null`。
      */
     fun applyGameSnapshot(
         gameId: Uuid,
         snapshot: TableStateSnapshot,
         aiPlayerIds: Set<Uuid>,
-        roundPreparation: RoundPreparationSnapshot? = null,
+        ruleDecision: RuleDecisionSnapshot? = null,
         handReadinessAnalysis: HandReadinessAnalysisDto? = null,
     ) {
         require(snapshot.id == gameId) { "Game snapshot ID does not match its payload ID." }
@@ -295,7 +295,7 @@ class ClientMahjongStateStore(
                     occupancy = TableOccupancyDto.GAME,
                     playingGameConfig = current.tableOccupancy.playingGameConfig ?: waitingConfig,
                 ),
-                roundPreparationSnapshot = roundPreparation,
+                ruleDecisionSnapshot = ruleDecision,
                 handReadinessAnalysis = handReadinessAnalysis,
                 roomSnapshot = null,
             )

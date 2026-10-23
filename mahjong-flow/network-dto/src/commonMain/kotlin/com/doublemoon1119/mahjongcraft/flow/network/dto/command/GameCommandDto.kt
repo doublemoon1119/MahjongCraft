@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.network.dto.command
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
-import com.doublemoon1119.mahjongcraft.flow.network.dto.model.RoundPreparationSubmissionDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.RuleDecisionSubmissionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.ExhaustiveDrawReasonDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.ExtensionGameCommandDto
 import kotlinx.serialization.Polymorphic
@@ -16,11 +16,11 @@ import kotlinx.serialization.Serializable
 @Serializable
 sealed interface GameCommandDto {
     /**
-     * SubmitRoundPreparation 網路 DTO。
+     * SubmitRuleDecision 網路 DTO。
      *
-     * @property submission 玩家提交的開局準備資料。
+     * @property submission 玩家提交的規則選擇資料。
      */
-    @Serializable data class SubmitRoundPreparation(val submission: RoundPreparationSubmissionDto) : GameCommandDto
+    @Serializable data class SubmitRuleDecision(val submission: RuleDecisionSubmissionDto) : GameCommandDto
 
     /**
      * Extension 網路 DTO。
