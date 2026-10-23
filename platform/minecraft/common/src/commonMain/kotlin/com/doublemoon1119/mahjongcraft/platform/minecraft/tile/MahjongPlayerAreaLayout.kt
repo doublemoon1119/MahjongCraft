@@ -2,8 +2,6 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.PublicHandOrder
-import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
-import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.meldDisplayDirection
 import kotlin.uuid.Uuid
 
@@ -140,79 +138,4 @@ object MahjongPlayerAreaLayout {
 
     /** 這張副露牌是否蓋著擺放，依副露的逐牌描述判定，不以副露種類推測。 */
     private fun MahjongMeldTileGroup.isFaceDown(tileId: Uuid): Boolean = allTilesFaceDown || tileId in faceDownTileIds
-}
-
-/**
- * 計算一位玩家牌區需要的資料。
- *
- * @property controllerX 麻將桌 controller 的世界 X 座標。
- * @property controllerY 麻將桌 controller 的世界 Y 座標。
- * @property controllerZ 麻將桌 controller 的世界 Z 座標。
- * @property tableFacing 麻將桌的世界朝向。
- * @property seatLayout 本局玩家座位 index 對應的標準桌面布局。
- * @property seatIndex 玩家在固定座位順序中的 index。
- * @property standingTileIds 立牌，不含摸牌位的牌。
- * @property hasDrawnTile 摸牌位上是否有牌。
- * @property melds 依宣告順序排列的副露。
- * @property setAsideTileIds 依移出順序排列、接在副露之後的移出牌。
- * @property cornerWidth 桌角物件佔用的寬度。
- */
-data class MahjongPlayerAreaLayoutInput(
-    val controllerX: Int,
-    val controllerY: Int,
-    val controllerZ: Int,
-    val tableFacing: MahjongTableFacing,
-    val seatLayout: MahjongTableSeatLayout,
-    val seatIndex: Int,
-    val standingTileIds: List<Uuid>,
-    val hasDrawnTile: Boolean,
-    val melds: List<MahjongMeldTileGroup>,
-    val setAsideTileIds: List<Uuid>,
-    val cornerWidth: Double,
-)
-
-/**
- * 一位玩家牌區每張牌的最終位置。
- *
- * @property cornerYieldShift 立牌與摸牌位為了避開桌角區一起往玩家方向平移的距離。
- * @property standing 依公開順序排列的立牌。
- * @property drawnSlot 摸牌位。
- * @property melds 依宣告順序排列的副露，每組依擺放順序列出每張牌；加槓補上的牌排在該組最後。
- * @property setAside 依移出順序排列的移出牌。
- */
-data class MahjongPlayerAreaLayoutResult(
-    val cornerYieldShift: Double,
-    val standing: List<MahjongAreaTilePlacement>,
-    val drawnSlot: MahjongTileWallPlacement,
-    val melds: List<List<MahjongAreaTilePlacement>>,
-    val setAside: List<MahjongAreaTilePlacement>,
-)
-
-/**
- * 牌區中一張牌的最終位置。
- *
- * @property tileId 牌的識別碼。
- * @property placement 世界座標與朝向。
- * @property footprint 這張牌在桌面上佔用的形狀。
- * @property alongOffsetFromCorner 副露與移出的牌中心沿排列方向距離桌角錨點的距離；立牌為 null。
- * @property isFaceDown 是否蓋著擺放。
- */
-data class MahjongAreaTilePlacement(
-    val tileId: Uuid,
-    val placement: MahjongTileWallPlacement,
-    val footprint: MahjongTileFootprint,
-    val alongOffsetFromCorner: Double?,
-    val isFaceDown: Boolean = false,
-)
-
-/** 一張牌在桌面上佔用的形狀。 */
-enum class MahjongTileFootprint {
-    /** 直立：沿排列方向為牌寬，垂直方向為牌厚。 */
-    STANDING,
-
-    /** 平放：沿排列方向為牌寬，垂直方向為牌高。 */
-    LYING,
-
-    /** 橫放：沿排列方向為牌高，垂直方向為牌寬。 */
-    LYING_SIDEWAYS,
 }
