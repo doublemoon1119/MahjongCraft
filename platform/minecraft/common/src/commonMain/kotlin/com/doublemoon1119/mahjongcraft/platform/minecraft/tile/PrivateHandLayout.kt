@@ -211,8 +211,9 @@ class PrivateHandLayout {
                 val edge = candidate.placement(publicOrder.lastIndex, publicOrder.size)
                 val angle = candidate.yaw * PI / 180.0
                 val gap = (drawn.position.x - edge.position.x) * cos(angle) + (drawn.position.z - edge.position.z) * sin(angle)
-                // 原生位置先合併摸牌時，快照仍稱它是摸牌；此時不能用舊張數推算中心。
-                if (drawn.poseDegrees != 0.0f || gap <= TILE_STEP + GEOMETRY_EPSILON) return
+                // 原生位置先合併摸牌時，快照仍稱它是摸牌；此時不能用舊張數推算中心。還沒立起的摸牌（仍在牌牆上或正要飛來）
+                // 不可能已經併入立牌，不擋牌排更新，否則手牌要等它落地才讓位。
+                if (drawn.poseDegrees == 0.0f && gap <= TILE_STEP + GEOMETRY_EPSILON) return
             }
         }
         row = candidate

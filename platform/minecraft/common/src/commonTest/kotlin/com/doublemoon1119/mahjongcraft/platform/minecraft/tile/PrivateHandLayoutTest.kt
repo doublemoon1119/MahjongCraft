@@ -704,6 +704,20 @@ class PrivateHandLayoutTest {
         assertEquals(transform(2.5).position.x, settled.getValue(fourthId).position.x, 0.000001)
     }
 
+    /** 暗槓後嶺上牌還在王牌區時，留下的立牌不等嶺上牌落地，就依伺服器讓位後的位置移動。 */
+    @Test
+    fun `closed kan yields the standing tiles before the replacement lands`() {
+        ClosedKanFixture.all().forEach { kan ->
+            val layout = kan.settledBeforeKan()
+
+            layout.update(time = 10.0, standingOrder = kan.after, drawnId = kan.replacement, inputs = kan.beforeInputs, releaseHand = false)
+            layout.update(time = 11.0, standingOrder = kan.after, drawnId = kan.replacement, inputs = kan.yieldedBeforeLandingInputs, releaseHand = false)
+            val settled = layout.update(time = 20.0, standingOrder = kan.after, drawnId = kan.replacement, inputs = kan.yieldedBeforeLandingInputs, releaseHand = false)
+
+            kan.assertStandingYielded(settled)
+        }
+    }
+
     /** 暗槓後立牌只剩一張、嶺上牌晚到時，快照先到的順序下，每個座位與桌子朝向的留下立牌與嶺上牌最後都在伺服器讓位後的位置。 */
     @Test
     fun `closed kan keeps the yielded positions when the snapshot arrives first`() {
@@ -796,6 +810,9 @@ class PrivateHandLayoutTest {
         /** 嶺上牌落到摸牌位後。 */
         val landedInputs: Map<Uuid, TileDisplayInput> = movedInputs + expectedInputs()
 
+        /** 伺服器已把留下的立牌移到嶺上牌落地後的位置，嶺上牌還在王牌區。 */
+        val yieldedBeforeLandingInputs: Map<Uuid, TileDisplayInput> = movedInputs + expectedInputs().filterKeys { it != replacement }
+
         /** @return 暗槓前已穩定的私人布局。 */
         fun settledBeforeKan(): PrivateHandLayout = PrivateHandLayout().apply {
             update(time = 0.0, standingOrder = before, drawnId = beforeDrawn, inputs = beforeInputs, releaseHand = false)
@@ -815,6 +832,19 @@ class PrivateHandLayoutTest {
                 assertEquals(target.x, actual.x, POSITION_TOLERANCE, "x of $id at seat $seatIndex facing $tableFacing")
                 assertEquals(target.z, actual.z, POSITION_TOLERANCE, "z of $id at seat $seatIndex facing $tableFacing")
             }
+        }
+
+        /**
+         * 確認留下的立牌顯示在伺服器讓位後的位置；沒有被私人布局接管時以共享位置顯示。
+         *
+         * @param frame 私人布局最後一幀。
+         */
+        fun assertStandingYielded(frame: Map<Uuid, TileDisplayTransform>) {
+            val id = after.single()
+            val target = expectedInputs().getValue(id).target.position
+            val actual = frame[id]?.position ?: target
+            assertEquals(target.x, actual.x, POSITION_TOLERANCE, "x at seat $seatIndex facing $tableFacing")
+            assertEquals(target.z, actual.z, POSITION_TOLERANCE, "z at seat $seatIndex facing $tableFacing")
         }
 
         /** @return 暗槓後伺服器擺好的立牌與嶺上牌。 */
