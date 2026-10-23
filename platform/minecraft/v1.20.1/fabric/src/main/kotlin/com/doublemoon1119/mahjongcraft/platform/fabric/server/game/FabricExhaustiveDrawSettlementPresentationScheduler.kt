@@ -88,46 +88,47 @@ class FabricExhaustiveDrawSettlementPresentationScheduler(
         val missingBySeat = mutableMapOf<Int, MutableList<Uuid>>()
         request.players.forEach { player ->
             val handTileIds = player.handTileIds.distinct()
+            val drawnTileId = player.drawnTileId
+            val revealsHand = player.handDisclosure != ExhaustiveDrawHandDisclosure.CONCEALED
             val cornerYieldShift = MahjongTileTableLayout.handCornerYieldShift(
                 handSize = handTileIds.size,
                 reservedCornerWidth = reservedCornerWidthsBySeat[player.ranking.seatIndex] ?: 0.0,
+                hasDrawnTile = drawnTileId != null,
             )
-            handTileIds.forEachIndexed { orderIndex, tileId ->
+            val tileIds = handTileIds + listOfNotNull(drawnTileId)
+            tileIds.forEachIndexed { orderIndex, tileId ->
                 val tile = world.getEntity(tileId.toJavaUuid()) as? MahjongTileEntity
                 if (tile == null) {
                     missingBySeat.getOrPut(player.ranking.seatIndex, ::mutableListOf) += tileId
                     return@forEachIndexed
                 }
-                val sortedPlacement = MahjongTileTableLayout.handPlacement(
-                    controllerX = controllerPos.x,
-                    controllerY = controllerPos.y,
-                    controllerZ = controllerPos.z,
-                    tableFacing = tableFacing,
-                    seatLayout = MahjongTableSeatLayout.forPlayerCount(request.players.size),
-                    seatIndex = player.ranking.seatIndex,
-                    handSize = handTileIds.size,
-                    tileIndex = handTileIds.size - 1 - orderIndex,
-                    cornerYieldShift = cornerYieldShift,
-                )
-                TileAnimationSteps.scheduleInstantReorder(tile, sortedPlacement, startGameTime + HAND_REORDER_START_TICK)
-                when (player.handDisclosure) {
-                    ExhaustiveDrawHandDisclosure.TENPAI,
-                    ExhaustiveDrawHandDisclosure.PROOF,
-                    -> {
-                        TileAnimationSteps.scheduleLaydown(
-                            tile,
-                            startGameTime + HAND_LAYDOWN_START_TICK,
-                            playGroupSound = orderIndex == handTileIds.size / 2,
-                        )
-                    }
-
-                    ExhaustiveDrawHandDisclosure.CONCEALED -> {
-                        TileAnimationSteps.scheduleConceal(
-                            tile,
-                            startGameTime + HAND_LAYDOWN_START_TICK,
-                            playGroupSound = orderIndex == handTileIds.size / 2,
-                        )
-                    }
+                // 只有要公開的立牌依規則牌序重排；蓋起來的手牌與摸牌位上的牌都在原地倒下或蓋下。
+                if (revealsHand && tileId != drawnTileId) {
+                    val sortedPlacement = MahjongTileTableLayout.handPlacement(
+                        controllerX = controllerPos.x,
+                        controllerY = controllerPos.y,
+                        controllerZ = controllerPos.z,
+                        tableFacing = tableFacing,
+                        seatLayout = MahjongTableSeatLayout.forPlayerCount(request.players.size),
+                        seatIndex = player.ranking.seatIndex,
+                        handSize = handTileIds.size,
+                        tileIndex = handTileIds.size - 1 - orderIndex,
+                        cornerYieldShift = cornerYieldShift,
+                    )
+                    TileAnimationSteps.scheduleInstantReorder(tile, sortedPlacement, startGameTime + HAND_REORDER_START_TICK)
+                }
+                if (revealsHand) {
+                    TileAnimationSteps.scheduleLaydown(
+                        tile,
+                        startGameTime + HAND_LAYDOWN_START_TICK,
+                        playGroupSound = orderIndex == tileIds.size / 2,
+                    )
+                } else {
+                    TileAnimationSteps.scheduleConceal(
+                        tile,
+                        startGameTime + HAND_LAYDOWN_START_TICK,
+                        playGroupSound = orderIndex == tileIds.size / 2,
+                    )
                 }
             }
         }

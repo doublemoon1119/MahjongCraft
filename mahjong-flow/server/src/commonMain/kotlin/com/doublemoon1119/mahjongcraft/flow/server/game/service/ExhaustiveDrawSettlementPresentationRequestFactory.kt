@@ -78,12 +78,13 @@ object ExhaustiveDrawSettlementPresentationRequestFactory {
                     handTileIds = if (isFinished) {
                         emptyList()
                     } else if (!fullyRevealedStandingHand) {
-                        PublicHandOrder.arrange(standingTileIds)
+                        PublicHandOrder.arrange(player.hand.tiles.map { it.id })
                     } else {
-                        player.hand.standingTiles
+                        player.hand.tiles
                             .sortedWith(compareBy(module.tileOrder) { it.tile })
                             .map { it.id }
                     },
+                    drawnTileId = player.hand.lastDrawn?.id?.takeUnless { isFinished },
                     handDisclosure = handDisclosure,
                     revealedHandTileIds = if (handDisclosure == ExhaustiveDrawHandDisclosure.CONCEALED) {
                         emptyList()

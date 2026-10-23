@@ -169,6 +169,36 @@ class ExhaustiveDrawSettlementPresentationRequestFactoryTest {
         assertEquals(ExhaustiveDrawHandDisclosure.TENPAI, request.players.first().handDisclosure)
     }
 
+    /** 流局時仍在摸牌位的牌另外列出，不併入公開排序的立牌。 */
+    @Test
+    fun `a drawn tile stays out of the sorted hand`() {
+        val nineCharacters = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 9))
+        val oneCharacters = FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1))
+        val drawn = FakeIdentifiedTileFactory.create(Tile.Honor.North)
+        val player = FakeMahjongPlayerFactory.create(
+            initialSeat = Wind.EAST,
+            hand = Hand(tiles = listOf(nineCharacters, oneCharacters), lastDrawn = drawn),
+        )
+        val state = FakeTableStateFactory.create(
+            players = listOf(player) + List(3) { FakeMahjongPlayerFactory.create() },
+            config = config,
+        )
+
+        val request = ExhaustiveDrawSettlementPresentationRequestFactory.create(
+            previousState = state,
+            currentState = state.copy(revealedHandTileIds = player.hand.allTiles.map { it.id }.toSet()),
+            module = module,
+            aiPlayerIds = emptySet(),
+            reason = RiichiExhaustiveDrawReason.Normal,
+            tenpaiPlayerIds = setOf(player.id),
+            revealedHands = listOf(RevealedHandSettlement(player.id, emptySet())),
+        )
+
+        assertEquals(listOf(oneCharacters.id, nineCharacters.id), request.players.first().handTileIds)
+        assertEquals(drawn.id, request.players.first().drawnTileId)
+        assertTrue(drawn.id in request.players.first().revealedHandTileIds)
+    }
+
     /** 驗證流局要求中的立牌清單依規則牌序排列。 */
     @Test
     fun `settlement hand tiles follow the rule tile order`() {

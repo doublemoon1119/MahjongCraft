@@ -801,6 +801,7 @@ class FabricDebugPresentationCommand(
                 ),
                 seatWind = Wind.entries[seat],
                 handTileIds = handTiles.map { it.first.uuid.toKotlinUuid() },
+                drawnTileId = null,
                 handDisclosure = handDisclosure,
                 revealedHandTileIds = if (handDisclosure == ExhaustiveDrawHandDisclosure.CONCEALED) emptyList() else handTiles.map { it.first.uuid.toKotlinUuid() },
                 waitingTiles = emptyList(),

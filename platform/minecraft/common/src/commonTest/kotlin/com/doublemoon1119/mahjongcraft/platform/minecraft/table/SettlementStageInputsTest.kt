@@ -254,6 +254,7 @@ class SettlementStageInputsTest {
         ),
         seatWind = Wind.entries[seatIndex],
         handTileIds = emptyList(),
+        drawnTileId = null,
         handDisclosure = ExhaustiveDrawHandDisclosure.TENPAI,
         revealedHandTileIds = revealedHandTileIds,
         waitingTiles = waitingTiles,
