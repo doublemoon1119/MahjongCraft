@@ -54,6 +54,13 @@ build check for it.
   a consumer needs more than the KDoc promises, change the contract or the consumer; do not leave
   them disagreeing.
 - Document purity, call counts, ordering and threading whenever a consumer depends on them.
+- When a change makes something possible that other code relied on never happening, such as a value that now
+  changes in the middle of a round or a second item where there was always exactly one, find and update every
+  consumer that relied on it. Where code relies on such an assumption, state it in the KDoc or check it, so the
+  next change that breaks it fails visibly.
+- A cached copy of derived state names who updates it and when. Consumers must not depend on two updates
+  happening to run in a particular order; either make the order part of the contract or compute from the
+  current state.
 - Offering an option and accepting it use the same capability check, so a player is never offered something
   the rules cannot accept. Acceptance still validates against the authoritative state at submission, because
   an offered option can expire through a timeout, another player's action or a change in the game. An expired

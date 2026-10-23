@@ -80,6 +80,10 @@ Examples of failures:
   was offered, through a timeout, another player's action or a change in the game, rejected safely without
   leaving the flow waiting?
 - Do layers describe the same contract the same way?
+- Does the change make possible something other code relied on never happening, such as a value changing in
+  the middle of a round or more than one item where there was always one? Which consumers relied on it?
+- Does a consumer read a cached copy of derived state? Who updates the copy, and is the consumer correct no
+  matter which of the two runs first?
 
 Examples of failures:
 
@@ -87,6 +91,9 @@ Examples of failures:
 - A settlement computed twice, once for scoring and once for presentation, without the contract requiring
   both results to be the same.
 - A reaction that a rule can offer but the flow then treats as a pass.
+- An automatic follow-up that asks only about the last tile of a replacement draw, after replacement draws
+  were allowed to bring in several tiles.
+- A hand laid out with a corner width cached before the rule state that widened the corner was presented.
 
 ## Identifiers
 
