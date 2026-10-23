@@ -63,7 +63,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeat
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTileSelectionConfirmPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTileSelectionConfirmPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableCornerWidthTracker
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableCornerLayoutPlanner
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocationRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropDescriber
@@ -94,9 +94,11 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallTr
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallTransitionResult
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongWinCelebrationPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileMotionAnimationSpec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.toAssetKey
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import net.minecraft.registry.RegistryKey
 import net.minecraft.registry.RegistryKeys
@@ -118,7 +120,7 @@ import kotlin.uuid.toJavaUuid
  * @property discardPresenter 正式牌河的實際呈現邏輯。
  * @property tablePropPresenter 規則桌面物件（例如點棒）的差量同步邏輯。
  * @property tablePropDescriberRegistry 依規則模組查詢桌上應擺哪些物件的描述。
- * @property tableCornerWidths 桌上物件目前佔用的副露角落寬度紀錄，手牌、胡牌演出與結算舞台依此讓開角落。
+ * @property cornerLayout 依桌上物件佔用的角落寬度，決定手牌、胡牌演出與結算舞台怎麼讓開角落。
  * @property roundInfoPresenter 桌面中央局況顯示的實際呈現邏輯。
  * @property roundInfoLineDisplayRegistry 依規則模組建立局況行並查詢其翻譯資訊。
  * @property playerInfoPresenter 座位玩家資訊的呈現邏輯。
@@ -154,7 +156,7 @@ class FabricGamePresentationPublisher(
     private val discardPresenter: MahjongDiscardPresenter,
     private val tablePropPresenter: TablePropPresenter,
     private val tablePropDescriberRegistry: TablePropDescriberRegistry,
-    private val tableCornerWidths: TableCornerWidthTracker,
+    private val cornerLayout: TableCornerLayoutPlanner,
     private val roundInfoPresenter: MahjongRoundInfoPresenter,
     private val roundInfoLineDisplayRegistry: RoundInfoLineDisplayRegistry,
     private val playerInfoPresenter: MahjongPlayerInfoPresenter,
@@ -604,8 +606,12 @@ class FabricGamePresentationPublisher(
     /**
      * 呼叫端在開局／換局緊接 [publishWallStructure] 之後、以及規則狀態改變桌上物件之後呼叫；依對局規則在
      * [tablePropDescriberRegistry] 登記的描述算出桌上應有的物件，交給 [tablePropPresenter] 差量同步，並把
-     * 同一份桌況算出的角落寬度記進 [tableCornerWidths]。規則沒有登記描述時，同步為空清單、寬度皆為 `0.0`。
-     * 不需要 [busyTracker] 或延遲，世界／entity 存取丟回伺服器主執行緒執行。
+     * 同一份桌況算出的角落寬度交給 [cornerLayout]。規則沒有登記描述時，同步為空清單、寬度皆為 `0.0`。
+     * 世界／entity 存取丟回伺服器主執行緒執行。
+     *
+     * 同一局內某些座位的角落寬度改變時（例如供託在局中增加），那些座位的手牌、摸牌位、副露與移出的牌一起平移到新位置。
+     * 角落變寬時等平移結束才擺上新的物件，變窄時先收走物件再平移，移動途中不會壓到角落物件。剛由
+     * [publishPlayerTilesUpdated] 依新寬度擺好的座位不會再移動一次。
      */
     override fun publishRuleStateUpdated(gameId: Uuid) {
         if (serverHolder.current() == null) {
@@ -617,18 +623,56 @@ class FabricGamePresentationPublisher(
             val resolved = resolveTableContext(gameId, "publishRuleStateUpdated") ?: return@launchOpeningStage
             val tableState = gameRepository.getTableState(gameId) ?: return@launchOpeningStage
             val describer = describerFor(tableState)
-            tableCornerWidths.record(gameId, describer.cornerWidthsBySeat(tableState))
-            val placements = describer?.describe(tableState).orEmpty()
-            tablePropPresenter.present(
-                TablePropPresentation(
-                    tableId = gameId,
-                    tableLocation = resolved.location,
-                    tableFacing = resolved.facing,
-                    seatLayout = MahjongTableSeatLayout.forPlayerCount(tableState.players.size),
-                    placements = placements,
-                ),
+            val plan = cornerLayout.planRuleStateUpdate(gameId, tableState, describer.cornerWidthsBySeat(tableState))
+            val propsPresentation = TablePropPresentation(
+                tableId = gameId,
+                tableLocation = resolved.location,
+                tableFacing = resolved.facing,
+                seatLayout = MahjongTableSeatLayout.forPlayerCount(tableState.players.size),
+                placements = describer?.describe(tableState).orEmpty(),
             )
+            if (!plan.presentsPropsAfterSlide) tablePropPresenter.present(propsPresentation)
+            plan.slidingSeatWidths.forEach { (seatIndex, width) -> slidePlayerArea(gameId, resolved, tableState, seatIndex, width) }
+            if (plan.presentsPropsAfterSlide) {
+                delay(CORNER_SLIDE_TICKS * MILLIS_PER_TICK)
+                tablePropPresenter.present(propsPresentation)
+            }
         }
+    }
+
+    /**
+     * 依權威桌況把一個座位的手牌、摸牌位、副露與移出的牌一起平移到 [cornerWidth] 對應的新位置。
+     *
+     * @param gameId 桌子識別碼。
+     * @param resolved 已解析的桌子與世界。
+     * @param tableState 權威桌況。
+     * @param seatIndex 要重新擺放的座位。
+     * @param cornerWidth 這個座位新的角落寬度。
+     */
+    private fun slidePlayerArea(
+        gameId: Uuid,
+        resolved: ResolvedTableContext,
+        tableState: TableState,
+        seatIndex: Int,
+        cornerWidth: Double,
+    ) {
+        val player = tableState.players.getOrNull(seatIndex) ?: return
+        val module = moduleRegistry.getModule(tableState.config)
+        playerAreaPresenter.present(
+            MahjongPlayerAreaPresentation(
+                tableId = gameId,
+                tableLocation = resolved.location,
+                tableFacing = resolved.facing,
+                seatLayout = MahjongTableSeatLayout.forPlayerCount(tableState.players.size),
+                seatIndex = seatIndex,
+                standingTileIds = player.hand.tiles.map { it.id },
+                drawnTileId = player.hand.lastDrawn?.id,
+                melds = player.hand.melds.map { it.toPresentation(tableState.config.revealsClosedKanTiles).toTileGroup() },
+                cornerWidth = cornerWidth,
+                setAsideTileIds = module.setAsideTiles(player).map { it.id },
+                slideTicks = CORNER_SLIDE_TICKS,
+            ),
+        )
     }
 
     /**
@@ -774,7 +818,7 @@ class FabricGamePresentationPublisher(
             // 工作在主執行緒上的先後順序。
             val cornerWidthBySeatIndex = gameRepository.getTableState(gameId)
                 ?.let { tableState -> describerFor(tableState).cornerWidthsBySeat(tableState) }
-                ?.also { widths -> tableCornerWidths.record(gameId, widths) }
+                ?.also { widths -> cornerLayout.recordRound(gameId, state, widths) }
                 .orEmpty()
 
             val presentation = MahjongInitialDealPresentation(
@@ -846,7 +890,7 @@ class FabricGamePresentationPublisher(
         launchPendingPresentation(gameId, "publishPlayerTilesUpdated") {
             val resolved = resolveTableContext(gameId, "publishPlayerTilesUpdated") ?: return@launchPendingPresentation
             val tableState = gameRepository.getTableState(gameId) ?: return@launchPendingPresentation
-            val cornerWidthsBySeat = tableCornerWidths.find(gameId) ?: cornerWidthsBySeat(gameId, tableState)
+            val cornerWidth = cornerLayout.widthForPlayerArea(gameId, tableState, seatIndex, describerFor(tableState).cornerWidthsBySeat(tableState))
             val presentation = MahjongPlayerAreaPresentation(
                 tableId = gameId,
                 tableLocation = resolved.location,
@@ -855,17 +899,8 @@ class FabricGamePresentationPublisher(
                 seatIndex = seatIndex,
                 standingTileIds = standingTileIds,
                 drawnTileId = drawnTileId,
-                melds = melds.map {
-                    MahjongMeldTileGroup(
-                        it.type,
-                        it.tileIds,
-                        it.calledTileId,
-                        it.sourceDirection,
-                        it.allTilesFaceDown,
-                        it.faceDownTileIds,
-                    )
-                },
-                cornerWidth = cornerWidthsBySeat[seatIndex] ?: 0.0,
+                melds = melds.map { it.toTileGroup() },
+                cornerWidth = cornerWidth,
                 animateDrawnTile = isNewlyDrawn,
                 animatedMeldClaimTileIds = newlyClaimedMeldTileIds,
                 setAsideTileIds = setAsideTileIds,
@@ -911,7 +946,7 @@ class FabricGamePresentationPublisher(
             }
             playerAreaPresenter.clear(gameId, location)
             tablePropPresenter.clear(gameId, location)
-            tableCornerWidths.clear(gameId)
+            cornerLayout.clear(gameId)
             roundInfoPresenter.clear(gameId, location)
             playerInfoPresenter.clear(gameId, location)
         }
@@ -1410,7 +1445,7 @@ class FabricGamePresentationPublisher(
      * @param tableState 沒有寬度紀錄時，用來查詢規則描述的桌況。
      * @return 以座位為鍵的寬度；沒有紀錄且沒有桌況時為空集合。
      */
-    private fun cornerWidthsBySeat(gameId: Uuid, tableState: TableState?): Map<Int, Double> = tableCornerWidths.find(gameId) ?: tableState?.let { state -> describerFor(state).cornerWidthsBySeat(state) }.orEmpty()
+    private fun cornerWidthsBySeat(gameId: Uuid, tableState: TableState?): Map<Int, Double> = cornerLayout.widthsOnTable(gameId) ?: tableState?.let { state -> describerFor(state).cornerWidthsBySeat(state) }.orEmpty()
 
     /**
      * 從同一份規則配置與完整玩家名單重建牌牆的桌邊對應。
@@ -1482,6 +1517,22 @@ class FabricGamePresentationPublisher(
         val table: MahjongTableBlockEntity,
     )
 
-    /** 正式擲骰／開局呈現使用的固定參數。 */
-    private companion object
+    /** 桌角寬度改變時整區平移的固定參數。 */
+    private companion object {
+        /** 桌角寬度改變時整區平移的時長；與本人視角手牌補位的時長相同，兩者一起開始、一起結束。 */
+        const val CORNER_SLIDE_TICKS: Int = TileMotionAnimationSpec.DEFAULT_DURATION_TICKS
+
+        /** 一個 server tick 的毫秒數。 */
+        const val MILLIS_PER_TICK: Long = 50L
+    }
 }
+
+/** 把 Flow 的副露呈現資料轉成牌區擺放使用的副露牌組。 */
+private fun MeldPresentation.toTileGroup(): MahjongMeldTileGroup = MahjongMeldTileGroup(
+    type,
+    tileIds,
+    calledTileId,
+    sourceDirection,
+    allTilesFaceDown,
+    faceDownTileIds,
+)

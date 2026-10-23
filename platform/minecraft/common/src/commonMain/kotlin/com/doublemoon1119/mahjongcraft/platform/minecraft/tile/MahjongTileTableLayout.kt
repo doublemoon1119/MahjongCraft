@@ -669,7 +669,7 @@ object MahjongTileTableLayout {
      * 固定格位 `1`，三張的碰跟四張的槓皆同（四張時是「偏左第二張」，不是幾何正中央）；下家
      * （[RelativeDirection.Right]）固定最右；暗槓（[RelativeDirection.Self]，沒有鳴牌來源）回傳
      * `null`，呼叫端據此判斷不重排、四張全部直立呈現。公開成員：[meldAreaWidth]（算總寬度）與
-     * `FabricMahjongMeldPresenter`（逐格擺放）需要共用同一套判斷，避免兩處各自實作後互相漂移。
+     * [MahjongPlayerAreaLayout]（逐格擺放）需要共用同一套判斷，避免兩處各自實作後互相漂移。
      *
      * @param direction 鳴取來源方向。
      * @param tileCount 副露組內牌張數。
@@ -686,7 +686,7 @@ object MahjongTileTableLayout {
      * 副露區沿排列方向（局部 X 軸）總共消耗的世界寬度（不含桌角本身的偏移，純粹是「這些副露疊起來
      * 有多寬」），供手牌／摸牌位（[handCornerYieldShift]）判斷是否需要讓開。
      *
-     * 逐格累加的公式跟 `FabricMahjongMeldPresenter.present()` 實際逐格擺放時的游標算法完全一致
+     * 逐格累加的公式跟 [MahjongPlayerAreaLayout.compute] 實際逐格擺放時的游標算法完全一致
      * （側身牌用 [MahjongTileDimensions.TILE_HEIGHT]、直立牌用 [MahjongTileDimensions.TILE_WIDTH]，
      * 每張牌後面都跟一層 [MahjongTileDimensions.TILE_SMALL_PADDING] 縫隙，組間再額外跳過
      * [MELD_GROUP_GAP]）——兩處算的是同一件事的兩種用途（一個要算出每張牌的實際座標、一個只要算出
@@ -1225,7 +1225,7 @@ object MahjongTileTableLayout {
      *
      * 邊界固定在桌子實際邊界的角落，不是相對目前手牌張數／副露組數算出來的浮動起點——手牌張數會隨
      * 副露成立而縮小，若邊界跟著目前手牌張數或副露組數計算，邊界會不斷往外退，超過兩組副露就可能
-     * 撐出桌面邊界，甚至遠到超出 `FabricMahjongMeldPresenter` 清除既有管理中麻將牌用的搜尋半徑，
+     * 撐出桌面邊界，甚至遠到超出牌區呈現清除既有管理中麻將牌用的搜尋半徑，
      * 遊戲結束後留下沒被回收的孤兒 entity——這是實際遊戲內驗證過的問題，不是假設。改用跟
      * [HAND_EDGE_OFFSET] 同一組「46×46 模型單位可用內框半寬」換算固定角落位置，扣除 [MELD_AREA_CORNER_MARGIN]
      * 留白；後續每組副露都往這條線的左側（玩家自己手牌方向）排開，只會往桌子內側延伸，不會再超出邊界。

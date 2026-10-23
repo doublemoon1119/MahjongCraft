@@ -42,11 +42,33 @@ class TableCornerWidthTest {
         val tableId = Uuid.random()
 
         assertNull(tracker.find(tableId))
-        tracker.record(tableId, mapOf(0 to 0.5))
-        tracker.record(tableId, mapOf(0 to 0.25))
+        tracker.record(tableId, ROUND, mapOf(0 to 0.5))
+        tracker.record(tableId, ROUND, mapOf(0 to 0.25))
         assertEquals(mapOf(0 to 0.25), tracker.find(tableId))
 
         tracker.clear(tableId)
         assertNull(tracker.find(tableId))
+    }
+
+    /** 只更新單一座位時保留同一局其他座位的寬度；換局後舊紀錄不再當成這一局的寬度。 */
+    @Test
+    fun `seat records merge within a round and reset across rounds`() {
+        val tracker = TableCornerWidthTracker()
+        val tableId = Uuid.random()
+        val nextRound = ROUND.copy(comboCount = ROUND.comboCount + 1)
+
+        tracker.record(tableId, ROUND, mapOf(0 to 0.5, 1 to 0.0))
+        tracker.recordSeat(tableId, ROUND, seatIndex = 1, width = 0.25)
+        assertEquals(mapOf(0 to 0.5, 1 to 0.25), tracker.find(tableId, ROUND))
+        assertNull(tracker.find(tableId, nextRound))
+
+        tracker.recordSeat(tableId, nextRound, seatIndex = 0, width = 0.0)
+        assertEquals(mapOf(0 to 0.0), tracker.find(tableId, nextRound))
+        assertNull(tracker.find(tableId, ROUND))
+    }
+
+    private companion object {
+        /** 測試用的那一局。 */
+        val ROUND = TableRound(roundNumber = 1, comboCount = 0)
     }
 }

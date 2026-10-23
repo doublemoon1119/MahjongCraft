@@ -256,6 +256,39 @@ internal object TileAnimationSteps {
     }
 
     /**
+     * 已擺在桌上的牌從目前位置平移到 [finalPlacement]，沒有拋物線，姿態改為 [pose]。
+     *
+     * 同一次重新擺放的牌使用相同的 [durationTicks] 一起開始、一起結束，彼此的間隔只會平順地變化，移動途中不會互相穿過。
+     *
+     * @param tile 要平移的牌 entity。
+     * @param finalPlacement 新的座標與朝向。
+     * @param pose 平移後的牌姿態。
+     * @param durationTicks 平移時長。
+     */
+    fun scheduleSlide(
+        tile: MahjongTileEntity,
+        finalPlacement: MahjongTileWallPlacement,
+        pose: MahjongTilePose,
+        durationTicks: Int,
+    ) {
+        val startPose = tile.tilePose
+        val steps = mutableListOf<AnimationStep<MahjongTilePose>>(
+            AnimationStep.Teleport(finalPlacement.x, finalPlacement.y, finalPlacement.z, finalPlacement.yaw),
+        )
+        if (startPose != pose) steps += AnimationStep.Custom(pose)
+        steps += AnimationStep.PlayMotion(
+            durationTicks = durationTicks,
+            arcHeight = 0.0,
+            startOffsetX = tile.x - finalPlacement.x,
+            startOffsetY = tile.y - finalPlacement.y,
+            startOffsetZ = tile.z - finalPlacement.z,
+            startPoseRotationDegrees = startPose.rotationDegrees,
+            endPoseRotationDegrees = pose.rotationDegrees,
+        )
+        tile.enqueueAll(steps)
+    }
+
+    /**
      * 摸牌後自動移出的動畫：等到 [startGameTime]，這張牌從摸牌位以可見的拋物線飛到移出區最終格位。
      *
      * 呼叫時這張牌通常還在牌牆上，摸牌動畫已先排入同一個動畫佇列，因此起點直接使用摸牌位 [from]，

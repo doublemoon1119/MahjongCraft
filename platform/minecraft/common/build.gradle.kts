@@ -37,6 +37,7 @@ kotlin {
 
         commonTest.dependencies {
             implementation(kotlin("test"))
+            implementation(libs.kotlinx.coroutines.test)
             implementation(project(":testing:testing-mahjong-logic"))
             implementation(project(":testing:testing-mahjong-flow"))
         }
