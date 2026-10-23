@@ -3,29 +3,21 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardReadinessAnalyzer
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
-import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameAction
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHistoryDiscardMarkerIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.tile.RiichiTileTypes
-import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabulary
-import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.action.GameActionVocabularyRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.catalogue.RuleCatalogueRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.decision.DecisionStatusDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.extension.MinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.HistoryDiscardMarkerDisplayRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
-import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.player.PublicPlayerIndicatorDisplayRegistry
@@ -44,26 +36,14 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.RoundOutcom
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementDetailTextFormatterDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationFieldProviderDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementRuleTemplateBindingDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementTextKeys
 import com.doublemoon1119.mahjongcraft.platform.minecraft.showcase.WinCelebrationShowcaseRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.BuiltInGameActionSoundIds
-import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.BuiltInGameActionVoiceSoundIds
-import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.sound.GameActionSoundPresentationRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoArgument
-import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLine
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplay
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistry
-import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineProvider
-import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineProviderDefinition
-import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropDescriberDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropDescriberRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftMessageKeys
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.BuiltInMinecraftTileAppearanceIds
-import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftRuleTileAppearanceDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameDefinition
@@ -75,17 +55,17 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileLabelRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.blackTextOnRedTile
 
 /**
- * 日麻（四人與三人）的 Minecraft 呈現整合，與平台無關的日麻 extension 使用同一個 extension ID；日麻在 Minecraft 端的所有登記都寫在這裡。
+ * 日麻（四人與三人）的 Minecraft 呈現整合，與平台無關的日麻 extension 使用同一個 extension ID。
  *
  * 包含赤五的貼圖、名稱、表情與標籤、規則名稱與設定畫面、規則說明、成就、役滿演出、流局原因名稱、
  * 胡牌結算版面、動作用語、決策狀態、音效、資訊列、桌面物件說明、立直標示，以及歷史畫面的流局滿貫名稱與立直宣告牌。
+ * 綁定到規則模組 ID 的項目透過 [RiichiFamilyMinecraftPresentation] 登記，四人與三人日麻各登記一次。
  */
 object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
     override val id: String = MahjongCraftMetadata.id("riichi")
 
     override fun registerTileAssets(registry: MinecraftTileAssetRegistry) {
-        registry.register(MinecraftRuleTileAppearanceDefinition(BuiltInRuleModuleIds.RIICHI, BuiltInMinecraftTileAppearanceIds.DEFAULT))
-        registry.register(MinecraftRuleTileAppearanceDefinition(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, BuiltInMinecraftTileAppearanceIds.DEFAULT))
+        RIICHI_FAMILY_RULE_MODULE_IDS.forEach { ruleModuleId -> RiichiFamilyMinecraftPresentation.registerTileAppearance(registry, ruleModuleId) }
         registry.register(MinecraftTileAssetDefinition(RiichiTileTypes.RED_FIVE_CHARACTER, "m5_red"))
         registry.register(MinecraftTileAssetDefinition(RiichiTileTypes.RED_FIVE_DOT, "p5_red"))
         registry.register(MinecraftTileAssetDefinition(RiichiTileTypes.RED_FIVE_BAMBOO, "s5_red"))
@@ -169,7 +149,7 @@ object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
     /** 日麻完整模板綁定日麻規則；標題與胡牌者摘要涵蓋流局滿貫，役種、翻符與役滿倍數直接顯示規則提供的內容，寶牌與裏寶牌指示牌固定顯示五個位置。 */
     override fun registerWinSettlementPresentationTemplates(registry: WinSettlementPresentationTemplateRegistry) {
         registry.register(RiichiWinSettlementTemplates.RIICHI)
-        RIICHI_FAMILY_RULE_MODULE_IDS.forEach { ruleModuleId -> registry.register(WinSettlementRuleTemplateBindingDefinition(ruleModuleId, RiichiWinSettlementTemplates.RIICHI_KEY)) }
+        RIICHI_FAMILY_RULE_MODULE_IDS.forEach { ruleModuleId -> RiichiFamilyMinecraftPresentation.registerWinSettlementTemplate(registry, ruleModuleId) }
         registry.register(
             definition = WinSettlementPresentationFieldProviderDefinition(RiichiWinSettlementTemplates.OUTCOME_TITLE) { snapshot ->
                 PresentationValue.TextValue(
@@ -215,165 +195,30 @@ object BundledRiichiMinecraftExtension : MinecraftMahjongExtension {
 
     /** 六種暫用宣告語音，依動作 ID 對應；三人日麻沿用同一組。 */
     override fun registerGameActionSounds(registry: GameActionSoundPresentationRegistry) {
-        RIICHI_FAMILY_RULE_MODULE_IDS.forEach { ruleModuleId -> registerGameActionSounds(registry, ruleModuleId) }
-    }
-
-    /** 為 [ruleModuleId] 登記日麻宣告語音。 */
-    private fun registerGameActionSounds(registry: GameActionSoundPresentationRegistry, ruleModuleId: String) {
-        listOf(
-            BuiltInGameActionSoundIds.CHII to BuiltInGameActionVoiceSoundIds.CHII,
-            BuiltInGameActionSoundIds.PON to BuiltInGameActionVoiceSoundIds.PON,
-            BuiltInGameActionSoundIds.KAN to BuiltInGameActionVoiceSoundIds.KAN,
-            RiichiGameAction.Riichi.id to BuiltInGameActionVoiceSoundIds.RIICHI,
-            BuiltInGameActionSoundIds.RON to BuiltInGameActionVoiceSoundIds.RON,
-            BuiltInGameActionSoundIds.TSUMO to BuiltInGameActionVoiceSoundIds.TSUMO,
-        ).forEach { (actionId, soundId) ->
-            registry.register(
-                definition = GameActionSoundDefinition(
-                    ruleModuleId = ruleModuleId,
-                    actionId = actionId,
-                    presentation = GameActionSoundPresentation(soundId),
-                ),
-            )
-        }
+        RIICHI_FAMILY_RULE_MODULE_IDS.forEach { ruleModuleId -> RiichiFamilyMinecraftPresentation.registerGameActionSounds(registry, ruleModuleId) }
     }
 
     override fun registerRoundInfoPresentations(registry: RoundInfoLineDisplayRegistry) {
         registry.register(RoundInfoLineDisplayDefinition(RIICHI_TITLE_KEY, RoundInfoLineDisplay(MinecraftMessageKeys.ROUND_INFO_TITLE)))
         registry.register(RoundInfoLineDisplayDefinition(RIICHI_WALL_REMAINING_KEY, RoundInfoLineDisplay(MinecraftMessageKeys.ROUND_INFO_WALL_REMAINING)))
         registry.register(RoundInfoLineDisplayDefinition(RIICHI_STICK_POT_KEY, RoundInfoLineDisplay(MinecraftMessageKeys.ROUND_INFO_STICK_POT)))
-        RIICHI_FAMILY_RULE_MODULE_IDS.forEach { ruleModuleId -> registry.register(RoundInfoLineProviderDefinition(ruleModuleId, RoundInfoLineProvider(::buildRiichiRoundInfoLines))) }
+        RIICHI_FAMILY_RULE_MODULE_IDS.forEach { ruleModuleId -> RiichiFamilyMinecraftPresentation.registerRoundInfo(registry, ruleModuleId) }
     }
 
     /** 立直與九種九牌接在核心動作（自摸為 4）之後；三人日麻另有拔北。 */
     override fun registerGameActionVocabulary(registry: GameActionVocabularyRegistry) {
-        RIICHI_FAMILY_RULE_MODULE_IDS.forEach { ruleModuleId -> registerGameActionVocabulary(registry, ruleModuleId) }
-        registry.register(
-            definition = GameActionVocabularyDefinition(
-                ruleModuleId = BuiltInRuleModuleIds.RIICHI_THREE_PLAYER,
-                actionId = RiichiGameAction.PullNorth.id,
-                vocabulary = GameActionVocabulary(
-                    labelKey = MinecraftMessageKeys.GAME_ACTION_PULL_NORTH,
-                    order = PULL_NORTH_ACTION_ORDER,
-                    descriptionKey = HUD_ACTION_PULL_NORTH_DESCRIPTION,
-                ),
-            ),
-        )
-    }
-
-    /** 為 [ruleModuleId] 登記立直與九種九牌的動作用語。 */
-    private fun registerGameActionVocabulary(registry: GameActionVocabularyRegistry, ruleModuleId: String) {
-        registry.register(
-            definition = GameActionVocabularyDefinition(
-                ruleModuleId = ruleModuleId,
-                actionId = RiichiGameAction.Riichi.id,
-                vocabulary = GameActionVocabulary(
-                    labelKey = MinecraftMessageKeys.GAME_ACTION_RIICHI,
-                    order = RIICHI_ACTION_ORDER,
-                    descriptionKey = HUD_ACTION_RIICHI_DESCRIPTION,
-                ),
-            ),
-        )
-        registry.register(
-            definition = GameActionVocabularyDefinition(
-                ruleModuleId = ruleModuleId,
-                actionId = RiichiExhaustiveDrawReason.KyuushuKyuuhai.id,
-                vocabulary = GameActionVocabulary(
-                    labelKey = MinecraftMessageKeys.GAME_ACTION_KYUUSHU_KYUUHAI,
-                    order = KYUUSHU_KYUUHAI_ACTION_ORDER,
-                    descriptionKey = HUD_ACTION_KYUUSHU_KYUUHAI_DESCRIPTION,
-                ),
-            ),
-        )
+        RiichiFamilyMinecraftPresentation.registerGameActionVocabulary(registry, BuiltInRuleModuleIds.RIICHI, includesPullNorth = false)
+        RiichiFamilyMinecraftPresentation.registerGameActionVocabulary(registry, BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, includesPullNorth = true)
     }
 
     override fun registerDecisionStatusDisplayNames(registry: DecisionStatusDisplayNameRegistry) {
-        RIICHI_FAMILY_RULE_MODULE_IDS.forEach { ruleModuleId ->
-            registry.register(DecisionStatusDisplayNameDefinition(ruleModuleId, RiichiDiscardReadinessAnalyzer.StatusIds.DISCARD_FURITEN, HUD_FURITEN_DISCARD))
-            registry.register(DecisionStatusDisplayNameDefinition(ruleModuleId, RiichiDiscardReadinessAnalyzer.StatusIds.TEMPORARY_FURITEN, HUD_FURITEN_TEMPORARY))
-            registry.register(DecisionStatusDisplayNameDefinition(ruleModuleId, RiichiDiscardReadinessAnalyzer.StatusIds.PERMANENT_FURITEN, HUD_FURITEN_PERMANENT))
-            registry.register(DecisionStatusDisplayNameDefinition(ruleModuleId, RiichiDiscardReadinessAnalyzer.StatusIds.WIN_TSUMO_ONLY, HUD_WIN_TSUMO_ONLY))
-            registry.register(DecisionStatusDisplayNameDefinition(ruleModuleId, RiichiDiscardReadinessAnalyzer.StatusIds.WIN_NO_YAKU, HUD_WIN_NO_YAKU))
-            registry.register(DecisionStatusDisplayNameDefinition(ruleModuleId, RiichiDiscardReadinessAnalyzer.StatusIds.WIN_BELOW_MINIMUM, HUD_WIN_BELOW_MINIMUM))
-        }
+        RIICHI_FAMILY_RULE_MODULE_IDS.forEach { ruleModuleId -> RiichiFamilyMinecraftPresentation.registerDecisionStatusDisplayNames(registry, ruleModuleId) }
     }
 
     override fun registerTablePropDescribers(registry: TablePropDescriberRegistry) {
-        RIICHI_FAMILY_RULE_MODULE_IDS.forEach { ruleModuleId -> registry.register(TablePropDescriberDefinition(ruleModuleId, RiichiTableProps)) }
+        RIICHI_FAMILY_RULE_MODULE_IDS.forEach { ruleModuleId -> RiichiFamilyMinecraftPresentation.registerTableProps(registry, ruleModuleId) }
     }
-}
-
-/** 依目前桌況建立日麻局況行；供託為零時省略供託行。 */
-private fun buildRiichiRoundInfoLines(tableState: TableState): List<RoundInfoLine> {
-    val stickPotCount = (tableState.dynamicRuleState as? RiichiDynamicState)?.riichiStickCount ?: 0
-    return listOfNotNull(
-        RoundInfoLine(
-            RIICHI_TITLE_KEY,
-            listOf(
-                RoundInfoArgument.WindValue(tableState.prevalentWind),
-                RoundInfoArgument.Number(tableState.localRoundNumber),
-                RoundInfoArgument.Number(tableState.comboCount),
-            ),
-        ),
-        if (stickPotCount > 0) {
-            RoundInfoLine(RIICHI_STICK_POT_KEY, listOf(RoundInfoArgument.Number(stickPotCount)))
-        } else {
-            null
-        },
-        RoundInfoLine(
-            RIICHI_WALL_REMAINING_KEY,
-            listOf(RoundInfoArgument.Number(tableState.tileWall.remainingCount)),
-        ),
-    )
 }
 
 /** 共用日麻呈現登記的規則模組：四人與三人日麻。 */
 private val RIICHI_FAMILY_RULE_MODULE_IDS: List<String> = listOf(BuiltInRuleModuleIds.RIICHI, BuiltInRuleModuleIds.RIICHI_THREE_PLAYER)
-
-/** 場風、局數與本場數組成的標題行 key。 */
-private const val RIICHI_TITLE_KEY: String = "mahjongcraft:riichi/round_title"
-
-/** 活牌區剩餘張數行的 key。 */
-private const val RIICHI_WALL_REMAINING_KEY: String = "mahjongcraft:riichi/wall_remaining"
-
-/** 累積供託立直棒數量行的 key。 */
-private const val RIICHI_STICK_POT_KEY: String = "mahjongcraft:riichi/stick_pot"
-
-/** 日麻捨牌分析狀態使用的 translation key 前綴。 */
-private const val RIICHI_HUD_PREFIX: String = MinecraftModMetadata.MOD_ID + ".hud."
-
-/** 捨牌振聽。 */
-private const val HUD_FURITEN_DISCARD: String = RIICHI_HUD_PREFIX + "furiten.discard"
-
-/** 立直操作卡的說明。 */
-private const val HUD_ACTION_RIICHI_DESCRIPTION: String = RIICHI_HUD_PREFIX + "action.riichi.description"
-
-/** 拔北操作卡的說明。 */
-private const val HUD_ACTION_PULL_NORTH_DESCRIPTION: String = RIICHI_HUD_PREFIX + "action.pull_north.description"
-
-/** 九種九牌操作卡的說明。 */
-private const val HUD_ACTION_KYUUSHU_KYUUHAI_DESCRIPTION: String = RIICHI_HUD_PREFIX + "action.kyuushu_kyuuhai.description"
-
-/** 同巡振聽。 */
-private const val HUD_FURITEN_TEMPORARY: String = RIICHI_HUD_PREFIX + "furiten.temporary"
-
-/** 立直後振聽。 */
-private const val HUD_FURITEN_PERMANENT: String = RIICHI_HUD_PREFIX + "furiten.permanent"
-
-/** 只能自摸和牌。 */
-private const val HUD_WIN_TSUMO_ONLY: String = RIICHI_HUD_PREFIX + "win_availability.tsumo_only"
-
-/** 無役，不能和牌。 */
-private const val HUD_WIN_NO_YAKU: String = RIICHI_HUD_PREFIX + "win_availability.no_yaku"
-
-/** 未達最低翻符要求。 */
-private const val HUD_WIN_BELOW_MINIMUM: String = RIICHI_HUD_PREFIX + "win_availability.below_minimum"
-
-/** 立直在操作卡中的順序。 */
-private const val RIICHI_ACTION_ORDER: Int = 5
-
-/** 九種九牌在操作卡中的順序。 */
-private const val KYUUSHU_KYUUHAI_ACTION_ORDER: Int = 6
-
-/** 拔北在操作卡中的順序。 */
-private const val PULL_NORTH_ACTION_ORDER: Int = 7
