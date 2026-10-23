@@ -294,7 +294,7 @@ class SubmitRoundPreparationUseCaseTest {
     }
 
     @Test
-    fun `completed preparation step without timing configuration aborts before writing`() = runTest {
+    fun `a submission without timing configuration aborts before writing`() = runTest {
         val repository = FakeGameRepository()
         val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
         val table = FakeTableStateFactory.create(

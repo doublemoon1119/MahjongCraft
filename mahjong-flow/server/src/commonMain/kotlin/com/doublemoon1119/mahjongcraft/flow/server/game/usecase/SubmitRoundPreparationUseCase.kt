@@ -96,14 +96,6 @@ class SubmitRoundPreparationUseCase(
             var updated = game.copy(pendingRoundPreparation = submitted)
             if (submitted.isComplete) {
                 val resolution = resolver.resolve(game.tableState, submitted, module)
-                if (resolution.nextStep?.participantPlayerIds?.isNotEmpty() == true &&
-                    (defaultPreparation == null || game.flowConfig.roundPreparation == null)
-                ) {
-                    throw RuleContractViolationException(
-                        GameAbortReasonIds.RULE_EXECUTION_FAILED,
-                        "Round preparation requires a time configuration for player input",
-                    )
-                }
                 updated = game.copy(tableState = resolution.tableState, pendingRoundPreparation = resolution.nextStep)
             }
             updated to PreparationSubmissionUpdate(
