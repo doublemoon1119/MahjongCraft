@@ -107,7 +107,7 @@ class FabricDebugProgressionCommand(
             "east_overtime",
             RiichiGameLength.East,
             MatchRoundPosition(3, Wind.EAST, 4),
-            RoundTransitionDirective.ADVANCE_DEALER,
+            RoundTransitionDirective.PassToNextSeat,
         ),
 
         /** 東四已達返點，預期終局。 */
@@ -115,7 +115,7 @@ class FabricDebugProgressionCommand(
             "east_end",
             RiichiGameLength.East,
             MatchRoundPosition(3, Wind.EAST, 4),
-            RoundTransitionDirective.ADVANCE_DEALER,
+            RoundTransitionDirective.PassToNextSeat,
         ),
 
         /** 南四未達返點，預期西入。 */
@@ -123,7 +123,7 @@ class FabricDebugProgressionCommand(
             "west_overtime",
             RiichiGameLength.TwoWinds,
             MatchRoundPosition(7, Wind.SOUTH, 4),
-            RoundTransitionDirective.ADVANCE_DEALER,
+            RoundTransitionDirective.PassToNextSeat,
         ),
 
         /** 延長局達返點，預期驟死終局。 */
@@ -131,7 +131,7 @@ class FabricDebugProgressionCommand(
             "extra_sudden_death",
             RiichiGameLength.East,
             MatchRoundPosition(4, Wind.SOUTH, 1, MatchRoundPhase.EXTRA),
-            RoundTransitionDirective.ADVANCE_DEALER,
+            RoundTransitionDirective.PassToNextSeat,
         ),
 
         /** 延長最後局未達返點，預期強制終局。 */
@@ -139,7 +139,7 @@ class FabricDebugProgressionCommand(
             "extra_limit",
             RiichiGameLength.East,
             MatchRoundPosition(7, Wind.SOUTH, 4, MatchRoundPhase.EXTRA),
-            RoundTransitionDirective.ADVANCE_DEALER,
+            RoundTransitionDirective.PassToNextSeat,
         ),
 
         /** 最後莊家胡牌且達成第一名返點，預期和了止め。 */
@@ -147,7 +147,7 @@ class FabricDebugProgressionCommand(
             "dealer_agari_yame",
             RiichiGameLength.East,
             MatchRoundPosition(3, Wind.EAST, 4),
-            RoundTransitionDirective.REPEAT_DEALER,
+            RoundTransitionDirective.RepeatDealer,
             dealerIsBeneficiary = true,
         ),
 
@@ -156,7 +156,7 @@ class FabricDebugProgressionCommand(
             "dealer_tenpai_yame",
             RiichiGameLength.East,
             MatchRoundPosition(3, Wind.EAST, 4),
-            RoundTransitionDirective.REPEAT_DEALER,
+            RoundTransitionDirective.RepeatDealer,
             RoundCompletionClassification.EXHAUSTIVE_DRAW,
             dealerIsBeneficiary = true,
         ),
@@ -166,7 +166,7 @@ class FabricDebugProgressionCommand(
             "bust",
             RiichiGameLength.East,
             MatchRoundPosition(1, Wind.EAST, 2),
-            RoundTransitionDirective.ADVANCE_DEALER,
+            RoundTransitionDirective.PassToNextSeat,
         ),
         ;
 

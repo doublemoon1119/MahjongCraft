@@ -1336,9 +1336,9 @@ class GameFlowCoordinatorTest {
         fixtures.gameRepo.updateGame(gameId) { game ->
             val state = game!!.tableState
             val directive = if (state.dealerPlayerId == respondentId) {
-                RoundTransitionDirective.REPEAT_DEALER
+                RoundTransitionDirective.RepeatDealer
             } else {
-                RoundTransitionDirective.ADVANCE_DEALER
+                RoundTransitionDirective.PassToNextSeat
             }
             game.copy(
                 pendingTransition = PendingGameTransition.AdvanceRound,

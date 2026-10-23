@@ -129,7 +129,7 @@ class CompactReplayRoundReaderGenuineTest {
                         "test:round_completed",
                         RoundCompletionClassification.EXHAUSTIVE_DRAW,
                         emptySet(),
-                        transitionDirective = RoundTransitionDirective.ADVANCE_DEALER,
+                        transitionDirective = RoundTransitionDirective.PassToNextSeat,
                         settledScoresByPlayerId = pulled.players.associate { it.id to it.score },
                     ),
                 ),
@@ -411,7 +411,7 @@ class CompactReplayRoundReaderGenuineTest {
                         "test:round_completed",
                         RoundCompletionClassification.EXHAUSTIVE_DRAW,
                         emptySet(),
-                        transitionDirective = RoundTransitionDirective.ADVANCE_DEALER,
+                        transitionDirective = RoundTransitionDirective.PassToNextSeat,
                         settledScoresByPlayerId = scores,
                     ),
                 ),
@@ -483,7 +483,7 @@ class CompactReplayRoundReaderGenuineTest {
             "test:round_completed",
             RoundCompletionClassification.EXHAUSTIVE_DRAW,
             emptySet(),
-            transitionDirective = RoundTransitionDirective.REPEAT_DEALER,
+            transitionDirective = RoundTransitionDirective.RepeatDealer,
             settledScoresByPlayerId = settled.players.associate { it.id to it.score },
         )
         val events = listOf(
@@ -526,7 +526,7 @@ class CompactReplayRoundReaderGenuineTest {
         val events = listOf(
             event(matchId, table.id, 1, 0L, HistoryFact.MatchStarted(table, GameFlowConfig(), emptyMap())),
             event(matchId, table.id, 2, 125L, HistoryFact.TableChanged(HistoryTableResult.Checkpoint("test:checkpoint", changed))),
-            event(matchId, table.id, 3, 250L, HistoryFact.RoundCompleted(RoundCompletionSummary("test:round_completed", RoundCompletionClassification.EXHAUSTIVE_DRAW, emptySet(), transitionDirective = RoundTransitionDirective.ADVANCE_DEALER, settledScoresByPlayerId = settled.players.associate { it.id to it.score }))),
+            event(matchId, table.id, 3, 250L, HistoryFact.RoundCompleted(RoundCompletionSummary("test:round_completed", RoundCompletionClassification.EXHAUSTIVE_DRAW, emptySet(), transitionDirective = RoundTransitionDirective.PassToNextSeat, settledScoresByPlayerId = settled.players.associate { it.id to it.score }))),
             event(matchId, table.id, 4, 250L, HistoryFact.MatchCompleted("test:completed", settled.players.associate { it.id to it.score })).copy(transactionFirstSequence = 3),
             event(matchId, table.id, 5, 250L, HistoryFact.TableChanged(HistoryTableResult.Checkpoint("test:settled", settled))).copy(transactionFirstSequence = 3),
         )
@@ -593,7 +593,7 @@ class CompactReplayRoundReaderGenuineTest {
                             "test:exhaustive_draw",
                             RoundCompletionClassification.EXHAUSTIVE_DRAW,
                             emptySet(),
-                            transitionDirective = RoundTransitionDirective.ADVANCE_DEALER,
+                            transitionDirective = RoundTransitionDirective.PassToNextSeat,
                             settledScoresByPlayerId = settledScores,
                         ),
                     ),
@@ -647,7 +647,7 @@ class CompactReplayRoundReaderGenuineTest {
                         RiichiExhaustiveDrawReason.SuuchaRiichi.id,
                         RoundCompletionClassification.ABORTIVE_DRAW,
                         emptySet(),
-                        transitionDirective = RoundTransitionDirective.REPEAT_DEALER,
+                        transitionDirective = RoundTransitionDirective.RepeatDealer,
                         settledScoresByPlayerId = scores,
                     ),
                 ),
@@ -701,7 +701,7 @@ class CompactReplayRoundReaderGenuineTest {
                             "test:ron",
                             RoundCompletionClassification.WIN,
                             setOf(winner.id),
-                            transitionDirective = RoundTransitionDirective.ADVANCE_DEALER,
+                            transitionDirective = RoundTransitionDirective.PassToNextSeat,
                             settledScoresByPlayerId = changed.players.associate { it.id to it.score },
                         ),
                         listOf(details),
@@ -711,7 +711,7 @@ class CompactReplayRoundReaderGenuineTest {
                 },
             ).copy(transactionFirstSequence = 3),
             event(matchId, table.id, 5, 300L, HistoryFact.TableChanged(HistoryTableResult.Checkpoint("test:continuation", continued))),
-            event(matchId, table.id, 6, 400L, HistoryFact.RoundCompleted(RoundCompletionSummary("test:win", RoundCompletionClassification.WIN, setOf(winner.id), transitionDirective = RoundTransitionDirective.ADVANCE_DEALER, settledScoresByPlayerId = continued.players.associate { it.id to it.score }))),
+            event(matchId, table.id, 6, 400L, HistoryFact.RoundCompleted(RoundCompletionSummary("test:win", RoundCompletionClassification.WIN, setOf(winner.id), transitionDirective = RoundTransitionDirective.PassToNextSeat, settledScoresByPlayerId = continued.players.associate { it.id to it.score }))),
             event(matchId, table.id, 7, 400L, HistoryFact.MatchCompleted("test:completed", continued.players.associate { it.id to it.score })).copy(transactionFirstSequence = 6),
         )
         val registries = bundledPersistenceRegistries()

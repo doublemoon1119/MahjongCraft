@@ -23,8 +23,8 @@ private data class SeatVector(val x: Double, val z: Double)
  * 麻將桌標準座位的座標計算。
  *
  * 整張桌子的實體結構固定是寬 3、深 3、高 2 的方塊範圍，controller 位於正中央下方；標準座位位於
- * 桌子側邊中點，離中心固定 [SEAT_DISTANCE] 格。座位 index 對應 [TableState.players] 固定不變的座位順序——
- * `TableState.advanceRound()` 只移交權威莊家、不重排 index；下一局自風由規則 policy 重新指派，因此這裡的座位 index
+ * 桌子側邊中點，離中心固定 [SEAT_DISTANCE] 格。座位 index 對應 [TableState.players] 的座位順序；這個順序只在
+ * 規則要求局間換位時改變，換位後平台依新順序重新入座。自風由規則 policy 每局重新指派，因此這裡的座位 index
  * 必須跟規則層的玩家座位 index 一一對應，順序不能任意調整。
  *
  * 旋轉合成與 [MahjongTileTableLayout.handPlacement] 使用同一套桌子世界朝向慣例，確保玩家座位與同一

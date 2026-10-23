@@ -296,6 +296,9 @@ internal object ReplaySourceKeys {
     /** 局流程轉移指示。 */
     const val TRANSITION_DIRECTIVE = "transitionDirective"
 
+    /** 規則指定的下一任莊家。 */
+    const val NEXT_DEALER_PLAYER_ID = "nextDealerPlayerId"
+
     /** 玩家手牌封套。 */
     const val HAND = "hand"
 

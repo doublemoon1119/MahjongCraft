@@ -71,9 +71,9 @@ class RiichiRuleModule(
      * @return 日本麻將本局後的莊家推進決策。
      */
     override fun resolveRoundTransition(context: RoundTransitionContext): RoundTransitionDirective = when {
-        context.classification == RoundCompletionClassification.ABORTIVE_DRAW -> RoundTransitionDirective.REPEAT_DEALER
-        context.tableState.dealerPlayerId in context.beneficiaryPlayerIds -> RoundTransitionDirective.REPEAT_DEALER
-        else -> RoundTransitionDirective.ADVANCE_DEALER
+        context.classification == RoundCompletionClassification.ABORTIVE_DRAW -> RoundTransitionDirective.RepeatDealer
+        context.tableState.dealerPlayerId in context.beneficiaryPlayerIds -> RoundTransitionDirective.RepeatDealer
+        else -> RoundTransitionDirective.PassToNextSeat
     }
 
     /**

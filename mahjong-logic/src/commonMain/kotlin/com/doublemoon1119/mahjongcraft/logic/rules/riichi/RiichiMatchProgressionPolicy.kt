@@ -52,7 +52,7 @@ class RiichiMatchProgressionPolicy(
         }
 
         // 原定最後局與延長局使用同一套判斷：莊家連莊優先，只有莊家本人以和牌或聽牌連莊、居首且達返點時才終局。
-        if (directive == RoundTransitionDirective.REPEAT_DEALER) {
+        if (directive == RoundTransitionDirective.RepeatDealer) {
             val dealerQualifiedForTopFinish = when (context.completion.classification) {
                 RoundCompletionClassification.WIN,
                 RoundCompletionClassification.EXHAUSTIVE_DRAW,
@@ -97,8 +97,8 @@ class RiichiMatchProgressionPolicy(
         roundsPerWind: Int,
         continuesCombo: Boolean,
     ): MatchProgressionDecision = when (directive) {
-        RoundTransitionDirective.REPEAT_DEALER -> MatchProgressionDecision.ContinueMatch(MatchRoundTransition.RepeatCurrentRound)
-        RoundTransitionDirective.ADVANCE_DEALER -> MatchProgressionDecision.ContinueMatch(
+        RoundTransitionDirective.RepeatDealer -> MatchProgressionDecision.ContinueMatch(MatchRoundTransition.RepeatCurrentRound)
+        RoundTransitionDirective.PassToNextSeat, is RoundTransitionDirective.PassTo -> MatchProgressionDecision.ContinueMatch(
             MatchRoundTransition.AdvanceTo(
                 nextPosition = position(current.sequenceIndex + 1, regularLastIndex, roundsPerWind),
                 continuesCombo = continuesCombo,

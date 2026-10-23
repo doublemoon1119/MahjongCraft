@@ -57,9 +57,9 @@ class RiichiNagashiManganOutcomeResolver(
             scoreDeltas = finalDeltas,
             stickPotCollectorPlayerIds = setOfNotNull(collectorId).takeIf { (stickPot?.second ?: 0) > 0 }.orEmpty(),
             transitionDirective = if (dealerId in resolution.achieverPlayerIds) {
-                RoundTransitionDirective.REPEAT_DEALER
+                RoundTransitionDirective.RepeatDealer
             } else {
-                RoundTransitionDirective.ADVANCE_DEALER
+                RoundTransitionDirective.PassToNextSeat
             },
             presentationClassification = RoundOutcomePresentationClassification.WIN_EQUIVALENT,
         )

@@ -445,7 +445,7 @@ class GameAchievementDetectorTest {
         outcomeId = "mahjongcraft:test_draw",
         classification = classification,
         beneficiaryPlayerIds = emptySet(),
-        transitionDirective = RoundTransitionDirective.ADVANCE_DEALER,
+        transitionDirective = RoundTransitionDirective.PassToNextSeat,
         settledScoresByPlayerId = game.tableState.players.associate { it.id to it.score },
     )
 }

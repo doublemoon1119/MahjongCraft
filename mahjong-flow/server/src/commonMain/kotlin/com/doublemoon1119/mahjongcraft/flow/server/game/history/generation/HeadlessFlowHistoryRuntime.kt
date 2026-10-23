@@ -420,6 +420,9 @@ private class NoOpPresentation : GamePresentationPublisher {
     /** 丟棄開局通知。 */
     override fun publishGameStarted(gameId: Uuid, seatedPlayerIds: List<Uuid>) = Unit
 
+    /** 丟棄局間換位通知。 */
+    override fun publishSeatOrderChanged(gameId: Uuid, seatedPlayerIds: List<Uuid>) = Unit
+
     /** 丟棄牌河通知。 */
     override fun publishDiscardPileUpdated(gameId: Uuid, seatIndex: Int, discardTileIds: List<Uuid>, sidewaysMarkedTileId: Uuid?, newlyDiscardedTileId: Uuid?) = Unit
 

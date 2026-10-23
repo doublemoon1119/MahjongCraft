@@ -19,8 +19,8 @@ class FixedLengthMatchProgressionPolicy(
             return MatchProgressionDecision.EndMatch(BuiltInMatchEndReasonIds.SCHEDULE_COMPLETED)
         }
         return when (directive) {
-            RoundTransitionDirective.REPEAT_DEALER -> MatchProgressionDecision.ContinueMatch(MatchRoundTransition.RepeatCurrentRound)
-            RoundTransitionDirective.ADVANCE_DEALER -> MatchProgressionDecision.ContinueMatch(
+            RoundTransitionDirective.RepeatDealer -> MatchProgressionDecision.ContinueMatch(MatchRoundTransition.RepeatCurrentRound)
+            RoundTransitionDirective.PassToNextSeat, is RoundTransitionDirective.PassTo -> MatchProgressionDecision.ContinueMatch(
                 MatchRoundTransition.AdvanceTo(nextPosition(state.roundPosition, state.playerCount)),
             )
         }

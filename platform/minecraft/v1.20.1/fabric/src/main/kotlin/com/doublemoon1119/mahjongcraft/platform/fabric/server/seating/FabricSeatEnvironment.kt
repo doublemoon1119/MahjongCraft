@@ -31,7 +31,7 @@ internal data class FabricSeatSnapshot(
     val vehicle: Entity?,
 )
 
-/** 原生站立檢查與違約回復；不強制載入區塊，不卸除第三方載具。 */
+/** 原生站立檢查與違約回復；不強制載入區塊，只在局間換位時讓玩家離開本桌的座位，不卸除其他載具。 */
 internal class FabricSeatEnvironment : SeatEnvironment<ServerWorld, Entity, FabricSeatSnapshot> {
     /** 複製乘坐者目前的世界、位置與載具，不保留可變的位置物件。 */
     override fun snapshot(rider: Entity): FabricSeatSnapshot = FabricSeatSnapshot(
@@ -73,6 +73,11 @@ internal class FabricSeatEnvironment : SeatEnvironment<ServerWorld, Entity, Fabr
         rider: Entity,
         geometry: SeatGeometry,
     ): Boolean = rider.world === world && rider.squaredDistanceTo(geometry.x, geometry.y, geometry.z) <= POSITION_EPSILON
+
+    /** 從本桌的座位上起身；乘坐者已確認坐在本桌某個座位上。 */
+    override fun leaveSeat(rider: Entity) {
+        rider.stopRiding()
+    }
 
     /** 不干預載具；僅在目前位置不安全且原位置仍安全時嘗試回復。 */
     override fun recover(rider: Entity, snapshot: FabricSeatSnapshot) {

@@ -20,8 +20,6 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.logic.table.MatchProgressionContext
 import com.doublemoon1119.mahjongcraft.logic.table.MatchProgressionDecision
-import com.doublemoon1119.mahjongcraft.logic.table.MatchRoundTransition
-import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWallRevealable
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
@@ -149,6 +147,7 @@ class AdvanceRoundUseCase(
                             wallStructure = null,
                             initialPhysicalWallLayout = null,
                             dealOrderHandTileIdsBySeatIndex = emptyMap(),
+                            seatOrderChanged = false,
                         )
                         // 對局已經結束：記下這個事實，讓 AiTurnDriver／ForcedAutoPlayDriver 之後都
                         // 跳過這場對局，不會對已經沒有牌可摸的桌況繼續重複嘗試、重複觸發流局結算。
@@ -160,20 +159,9 @@ class AdvanceRoundUseCase(
                             matchEndReasonId = decision.reasonId,
                         ) to Outcome.Success(advanceOutcome)
                     } else {
-                        val transition = (decision as MatchProgressionDecision.ContinueMatch).transition
-                        val directiveMatches = when (transition) {
-                            MatchRoundTransition.RepeatCurrentRound ->
-                                completion.transitionDirective == RoundTransitionDirective.REPEAT_DEALER
-                            is MatchRoundTransition.AdvanceTo ->
-                                completion.transitionDirective == RoundTransitionDirective.ADVANCE_DEALER
-                        }
-                        if (!directiveMatches) {
-                            return@updateGame game to Outcome.Error(
-                                GameError.InvalidMatchProgression(gameId, "Progression decision conflicts with dealer directive"),
-                            )
-                        }
+                        val continuation = decision as MatchProgressionDecision.ContinueMatch
                         val roundAdvancement = try {
-                            state.advanceRound(transition)
+                            state.advanceRound(continuation.transition, completion.transitionDirective, continuation.seatOrder)
                         } catch (error: Throwable) {
                             if (!failurePolicy.isIsolatable(error)) throw error
                             return@updateGame game to Outcome.Error(
@@ -205,6 +193,7 @@ class AdvanceRoundUseCase(
                             wallStructure = initializationResult.wallStructure,
                             initialPhysicalWallLayout = initializationResult.initialPhysicalWallLayout,
                             dealOrderHandTileIdsBySeatIndex = dealOrderHandTileIdsBySeatIndex,
+                            seatOrderChanged = newState.players.map { it.id } != state.players.map { it.id },
                         )
                         game.copy(
                             tableState = newState,
@@ -262,6 +251,8 @@ class AdvanceRoundUseCase(
         val newDealerId = newState.dealerPlayerId
         val seatedPlayerIds = newState.players.map { it.id }
         eventPublisher.publishToAllObservers(gameId, seatedPlayerIds, newDealerId, GameAction.RoundStarted)
+        // 局間換位時先讓玩家移到新座位，再擺下一局的牌與桌上物件。
+        if (advanceOutcome.seatOrderChanged) presentationPublisher.publishSeatOrderChanged(gameId, seatedPlayerIds)
 
         // 4. 觸發平台呈現層：規則不支援開門流程時皆為 null，直接跳過。牌牆先建、骰子後擲，理由同
         // StartGameUseCase，這裡不能對調呼叫順序。
@@ -331,11 +322,13 @@ class AdvanceRoundUseCase(
      * @property wallStructure 新局的牌牆位置；沒有開新局時為 null。
      * @property initialPhysicalWallLayout 新局開始時的實體牌牆排列；沒有開新局時為 null。
      * @property dealOrderHandTileIdsBySeatIndex 按座位索引的發牌順序牌識別碼；沒有開新局時為空 map。
+     * @property seatOrderChanged 新局是否因局間換位而改變座位順序；沒有開新局時為 false。
      */
     private data class AdvanceRoundOutcome(
         val result: AdvanceRoundResult,
         val wallStructure: Map<Uuid, TileWallPosition>?,
         val initialPhysicalWallLayout: TileWallPhysicalLayout?,
         val dealOrderHandTileIdsBySeatIndex: Map<Int, List<Uuid>>,
+        val seatOrderChanged: Boolean,
     )
 }

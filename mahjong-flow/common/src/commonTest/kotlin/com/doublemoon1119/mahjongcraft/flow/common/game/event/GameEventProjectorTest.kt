@@ -369,7 +369,7 @@ class GameEventProjectorTest {
         outcomeId = outcomeId,
         classification = classification,
         beneficiaryPlayerIds = beneficiaries,
-        transitionDirective = RoundTransitionDirective.ADVANCE_DEALER,
+        transitionDirective = RoundTransitionDirective.PassToNextSeat,
         settledScoresByPlayerId = game.tableState.players.associate { it.id to it.score },
     )
 

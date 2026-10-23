@@ -67,7 +67,7 @@ class WinSettlementPresentationRequestFactoryTest {
             settledTableState = state,
             beneficiaryPlayerIds = setOf(winner.id),
             scoreDeltas = state.players.associate { it.id to 0 },
-            transitionDirective = RoundTransitionDirective.ADVANCE_DEALER,
+            transitionDirective = RoundTransitionDirective.PassToNextSeat,
             presentationClassification = RoundOutcomePresentationClassification.WIN_EQUIVALENT,
         )
 
@@ -94,7 +94,7 @@ class WinSettlementPresentationRequestFactoryTest {
             settledTableState = state,
             beneficiaryPlayerIds = setOf(winner.id),
             scoreDeltas = state.players.associate { it.id to 0 },
-            transitionDirective = RoundTransitionDirective.ADVANCE_DEALER,
+            transitionDirective = RoundTransitionDirective.PassToNextSeat,
             presentationClassification = RoundOutcomePresentationClassification.WIN_EQUIVALENT,
         )
         val registry = WinSettlementDetailResolverRegistry().apply {
@@ -226,7 +226,7 @@ class WinSettlementPresentationRequestFactoryTest {
             settledTableState = state,
             beneficiaryPlayerIds = setOf(winner.id),
             scoreDeltas = state.players.associate { it.id to 0 },
-            transitionDirective = RoundTransitionDirective.ADVANCE_DEALER,
+            transitionDirective = RoundTransitionDirective.PassToNextSeat,
             presentationClassification = RoundOutcomePresentationClassification.WIN_EQUIVALENT,
         )
 
@@ -249,7 +249,7 @@ class WinSettlementPresentationRequestFactoryTest {
             settledTableState = state,
             beneficiaryPlayerIds = setOf(winner.id),
             scoreDeltas = state.players.associate { it.id to 0 },
-            transitionDirective = RoundTransitionDirective.ADVANCE_DEALER,
+            transitionDirective = RoundTransitionDirective.PassToNextSeat,
             presentationClassification = RoundOutcomePresentationClassification.WIN_EQUIVALENT,
         )
 

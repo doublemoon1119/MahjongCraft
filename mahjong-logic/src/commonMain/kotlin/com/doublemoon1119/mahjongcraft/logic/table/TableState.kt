@@ -240,34 +240,62 @@ data class TableState(
     }
 
     /**
-     * 套用已由 [MatchProgressionPolicy] 決定的連莊或明確下一局位，不在此重新判斷終局。
+     * 套用已由 [MatchProgressionPolicy] 決定的局位變化與局間換位，以及本局保存的下一任莊家，不在此重新判斷終局。
      *
-     * @param transition 已驗證的局位變化。
+     * 過莊給下一位（[RoundTransitionDirective.PassToNextSeat]）依本局、也就是換位前的座位順序計算。換位只改變
+     * 下一局 `players` 的順序；玩家身分、分數與 [MahjongPlayer.initialSeatIndex] 都不變。
+     *
+     * @param transition 局位變化。
+     * @param directive 本局結束時保存的下一任莊家；連莊必須搭配 [RoundTransitionDirective.RepeatDealer]，前進局位必須搭配過莊。
+     * @param seatOrder 下一局完整的座位順序；null 表示不換位。
      * @return 下一局初始化所需的權威資料。
+     * @throws IllegalArgumentException 局位變化與下一任莊家矛盾、指定的莊家不在本桌或就是現任莊家，或座位順序不是本桌玩家的完整排列。
      */
-    fun advanceRound(transition: MatchRoundTransition): RoundAdvancementResult = when (transition) {
-        MatchRoundTransition.RepeatCurrentRound -> RoundAdvancementResult(
-            players = players,
-            dealerPlayerId = dealerPlayerId,
-            roundNumber = roundNumber,
-            comboCount = comboCount + 1,
-            prevalentWind = prevalentWind,
-            roundPosition = roundPosition,
-        )
-
-        is MatchRoundTransition.AdvanceTo -> {
-            require(transition.nextPosition.sequenceIndex > roundPosition.sequenceIndex) {
-                "Advanced match round position must move forward"
+    fun advanceRound(
+        transition: MatchRoundTransition,
+        directive: RoundTransitionDirective,
+        seatOrder: List<Uuid>? = null,
+    ): RoundAdvancementResult {
+        val nextPlayers = seatOrder?.let { order ->
+            require(order.size == playerCount && order.toSet() == players.mapTo(mutableSetOf()) { it.id }) {
+                "Seat order must list every table player exactly once"
             }
-            val newDealerIndex = (dealerIndex + 1) % playerCount
-            RoundAdvancementResult(
-                players = players,
-                dealerPlayerId = players[newDealerIndex].id,
-                roundNumber = transition.nextPosition.roundNumber,
-                comboCount = if (transition.continuesCombo) comboCount + 1 else 0,
-                prevalentWind = transition.nextPosition.prevalentWind,
-                roundPosition = transition.nextPosition,
-            )
+            order.map { playerId -> players.first { it.id == playerId } }
+        } ?: players
+        return when (transition) {
+            MatchRoundTransition.RepeatCurrentRound -> {
+                require(directive == RoundTransitionDirective.RepeatDealer) { "Progression decision conflicts with dealer directive" }
+                RoundAdvancementResult(
+                    players = nextPlayers,
+                    dealerPlayerId = dealerPlayerId,
+                    roundNumber = roundNumber,
+                    comboCount = comboCount + 1,
+                    prevalentWind = prevalentWind,
+                    roundPosition = roundPosition,
+                )
+            }
+
+            is MatchRoundTransition.AdvanceTo -> {
+                require(transition.nextPosition.sequenceIndex > roundPosition.sequenceIndex) {
+                    "Advanced match round position must move forward"
+                }
+                val nextDealerPlayerId = when (directive) {
+                    RoundTransitionDirective.RepeatDealer -> throw IllegalArgumentException("Progression decision conflicts with dealer directive")
+                    RoundTransitionDirective.PassToNextSeat -> getNextPlayer(dealer).id
+                    is RoundTransitionDirective.PassTo -> directive.nextDealerPlayerId.also { playerId ->
+                        require(players.any { it.id == playerId }) { "Next dealer must belong to this table" }
+                        require(playerId != dealerPlayerId) { "Passing the deal must choose another player" }
+                    }
+                }
+                RoundAdvancementResult(
+                    players = nextPlayers,
+                    dealerPlayerId = nextDealerPlayerId,
+                    roundNumber = transition.nextPosition.roundNumber,
+                    comboCount = if (transition.continuesCombo) comboCount + 1 else 0,
+                    prevalentWind = transition.nextPosition.prevalentWind,
+                    roundPosition = transition.nextPosition,
+                )
+            }
         }
     }
 }

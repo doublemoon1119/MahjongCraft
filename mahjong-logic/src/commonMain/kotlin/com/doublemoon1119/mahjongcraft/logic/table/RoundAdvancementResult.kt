@@ -5,7 +5,7 @@ import kotlin.uuid.Uuid
 /**
  * 一局結束後，連莊/過莊判定與局數/場風推進的計算結果。
  *
- * @property players 延續至下一局的固定座位玩家列表。
+ * @property players 下一局的玩家，依座位順序排列；局間換位時已是新順序。
  * @property dealerPlayerId 下一局的權威莊家 Uuid。
  * @property roundNumber 套用後的局數。
  * @property comboCount 套用後的本場數。

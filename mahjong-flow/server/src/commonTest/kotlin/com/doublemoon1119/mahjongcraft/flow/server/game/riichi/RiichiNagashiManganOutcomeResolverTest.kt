@@ -41,7 +41,7 @@ class RiichiNagashiManganOutcomeResolverTest {
 
         assertEquals(RiichiRoundOutcomeIds.NAGASHI_MANGAN, outcome.id)
         assertEquals(RoundOutcomePresentationClassification.WIN_EQUIVALENT, outcome.presentationClassification)
-        assertEquals(RoundTransitionDirective.REPEAT_DEALER, outcome.transitionDirective)
+        assertEquals(RoundTransitionDirective.RepeatDealer, outcome.transitionDirective)
         assertEquals(setOf(dealer.id), outcome.stickPotCollectorPlayerIds)
         assertEquals(14000, outcome.scoreDeltas.getValue(dealer.id))
         others.forEach { assertEquals(-4000, outcome.scoreDeltas.getValue(it.id)) }
@@ -68,7 +68,7 @@ class RiichiNagashiManganOutcomeResolverTest {
 
         val outcome = RiichiNagashiManganOutcomeResolver().resolve(table, module)!!
 
-        assertEquals(RoundTransitionDirective.ADVANCE_DEALER, outcome.transitionDirective)
+        assertEquals(RoundTransitionDirective.PassToNextSeat, outcome.transitionDirective)
         assertEquals(8000 + 900, outcome.scoreDeltas.getValue(achiever.id))
         assertEquals(-4000 - 300, outcome.scoreDeltas.getValue(dealer.id))
         others.forEach { assertEquals(-2000 - 300, outcome.scoreDeltas.getValue(it.id)) }

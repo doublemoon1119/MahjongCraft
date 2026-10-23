@@ -1,7 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.history.replay
 
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
-import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 
 /**
  * 歷史局結算結果。
@@ -14,7 +13,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
  * @property hasEarlierWinSettlement 是否已有較早的胡牌結算事實。
  * @property classification 保存的局結算分類；整場完成事實不含此資料。
  * @property responsibleSeats 保存的責任玩家座位；整場完成事實不含此資料。
- * @property transitionDirective 保存的莊家推進決策；整場完成事實不含此資料。
+ * @property transitionDirective 保存的下一任莊家；整場完成事實不含此資料。
  */
 data class HistoryRoundOutcome(
     val reasonId: String,
@@ -22,7 +21,7 @@ data class HistoryRoundOutcome(
     val scoresBySeat: Map<Int, Int>,
     val classification: RoundCompletionClassification? = null,
     val responsibleSeats: List<Int> = emptyList(),
-    val transitionDirective: RoundTransitionDirective? = null,
+    val transitionDirective: HistoryTransitionDirective? = null,
     val scoreChangesBySeat: Map<Int, Int> = emptyMap(),
     val winnerDetails: List<HistoryWinnerDetails> = emptyList(),
     val hasEarlierWinSettlement: Boolean = false,

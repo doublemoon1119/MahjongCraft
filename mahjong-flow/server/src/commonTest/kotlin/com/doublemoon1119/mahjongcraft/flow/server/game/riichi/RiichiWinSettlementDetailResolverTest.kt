@@ -138,7 +138,7 @@ class RiichiWinSettlementDetailResolverTest {
             settledTableState = state,
             beneficiaryPlayerIds = setOf(winner.id),
             scoreDeltas = mapOf(winner.id to 0),
-            transitionDirective = RoundTransitionDirective.ADVANCE_DEALER,
+            transitionDirective = RoundTransitionDirective.PassToNextSeat,
             presentationClassification = RoundOutcomePresentationClassification.WIN_EQUIVALENT,
         )
 
@@ -165,7 +165,7 @@ class RiichiWinSettlementDetailResolverTest {
             settledTableState = state,
             beneficiaryPlayerIds = setOf(winner.id),
             scoreDeltas = mapOf(winner.id to 0),
-            transitionDirective = RoundTransitionDirective.ADVANCE_DEALER,
+            transitionDirective = RoundTransitionDirective.PassToNextSeat,
             presentationClassification = RoundOutcomePresentationClassification.WIN_EQUIVALENT,
         )
 

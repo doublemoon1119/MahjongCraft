@@ -481,7 +481,7 @@ object MahjongTileTableLayout {
      * 超過時往桌緣方向堆疊下一排；牌躺平、牌面朝上（真實麻將：牌河攤開顯示花色，跟 [wallPlacement]
      * 牌面朝下相反），整體比牌牆更靠近桌子中心（真實麻將：牌河位於四面牌牆圍成的桌面中央區域）。
      * 跟 [handPlacement] 同樣直接用座位 index 算局部側面，不經過莊家相對旋轉——牌河屬於捨牌者自己，
-     * 跟座位一樣整場對局固定不變。
+     * 一局之中跟著座位不變。
      *
      * @param isSidewaysMarked 這張牌是否要側身呈現（例如立直宣告牌）——為 `true` 時額外把 yaw 轉
      * [SIDEWAYS_YAW_OFFSET] 度。側身牌沿排列方向（局部 X 軸）實際佔用的寬度是
@@ -596,7 +596,7 @@ object MahjongTileTableLayout {
      * 牌外緣突出或內縮。
      *
      * 跟 [handPlacement]／[discardPlacement] 同樣直接用座位 index 算局部側面，不經過莊家相對旋轉——
-     * 副露屬於宣告玩家自己，跟座位一樣整場對局固定不變。
+     * 副露屬於宣告玩家自己，一局之中跟著座位不變。
      *
      * @param alongOffsetFromCorner 這張牌中心點沿排列方向距離桌角錨點（[MELD_AREA_CORNER_OFFSET]，
      * 往玩家自己手牌方向為正）的實際世界距離；呼叫端需自行沿排列方向累加每張已放置牌的半寬，確保這個

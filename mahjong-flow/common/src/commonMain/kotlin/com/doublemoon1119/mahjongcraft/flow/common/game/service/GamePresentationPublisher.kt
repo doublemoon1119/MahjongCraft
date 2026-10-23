@@ -288,13 +288,23 @@ interface GamePresentationPublisher {
     fun clearPlayerTiles(gameId: Uuid)
 
     /**
-     * 通知平台本局開局的座位安排。只在開局時呼叫一次，之後連莊／過莊開新局不會再次呼叫——風位輪轉是規則概念，玩家的
-     * 座位整場對局固定不變。
+     * 通知平台本場對局開局的座位安排。只在開局時呼叫一次；之後連莊、過莊開新局不會再次呼叫，風位輪轉是規則概念。
+     * 規則要求局間換位時改由 [publishSeatOrderChanged] 通知。
      *
      * @param gameId 對局 Uuid。
-     * @param seatedPlayerIds 依 `TableState.players` 固定座位順序排列的玩家 Uuid 清單。
+     * @param seatedPlayerIds 依 `TableState.players` 座位順序排列的玩家 Uuid 清單。
      */
     fun publishGameStarted(gameId: Uuid, seatedPlayerIds: List<Uuid>)
+
+    /**
+     * 通知平台規則在局與局之間讓玩家換了座位。在下一局開始、擺牌與桌上物件之前呼叫，每次換位一次；座位沒變時不呼叫。
+     *
+     * 平台應讓座位改變的玩家移到新座位，即使他們正坐在這張桌子的舊座位上。
+     *
+     * @param gameId 對局 Uuid。
+     * @param seatedPlayerIds 依新的 `TableState.players` 座位順序排列的玩家 Uuid 清單。
+     */
+    fun publishSeatOrderChanged(gameId: Uuid, seatedPlayerIds: List<Uuid>)
 
     /**
      * 通知平台某玩家的牌河需要更新為目前狀態。

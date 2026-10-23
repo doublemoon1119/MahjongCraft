@@ -95,9 +95,9 @@ class AdvanceRoundUseCaseTest {
                 player.actionHistory.any { it is GameAction.ExhaustiveDraw }
             }.mapTo(mutableSetOf()) { it.id }
             val directive = if (tableState.dealerPlayerId in winners || tableState.dealerPlayerId in drawPlayers) {
-                RoundTransitionDirective.REPEAT_DEALER
+                RoundTransitionDirective.RepeatDealer
             } else {
-                RoundTransitionDirective.ADVANCE_DEALER
+                RoundTransitionDirective.PassToNextSeat
             }
             val drawReason = tableState.players.asSequence()
                 .flatMap { it.actionHistory.asSequence() }

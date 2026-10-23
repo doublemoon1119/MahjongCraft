@@ -73,6 +73,7 @@ class HistoryWinDetailPresentationTest {
             RoundCompletionClassification.WIN.name,
             listOf(0),
             null,
+            nextDealerSeat = null,
             scoreChangesBySeat = mapOf(0 to -5000, 1 to 3000, 2 to 2000),
             winnerDetails = listOf(HistoryWinnerDetailsDto(2, listOf(second), hand = null), HistoryWinnerDetailsDto(1, listOf(first), hand = null)),
             hasEarlierWinSettlement = false,
@@ -87,7 +88,7 @@ class HistoryWinDetailPresentationTest {
     /** 缺少分差或和牌明細的歷史不從初始分數猜測，也不補出役種。 */
     @Test
     fun `missing saved information remains absent`() {
-        val result = present(HistoryRoundOutcomeDto("mahjongcraft:tsumo", listOf(0), mapOf(0 to 26100), RoundCompletionClassification.WIN.name, emptyList(), null, scoreChangesBySeat = emptyMap(), winnerDetails = emptyList(), hasEarlierWinSettlement = false))
+        val result = present(HistoryRoundOutcomeDto("mahjongcraft:tsumo", listOf(0), mapOf(0 to 26100), RoundCompletionClassification.WIN.name, emptyList(), null, nextDealerSeat = null, scoreChangesBySeat = emptyMap(), winnerDetails = emptyList(), hasEarlierWinSettlement = false))
         assertNull(result.rows[0].scoreChange)
         assertTrue(result.rows.all { it.detailFields.isEmpty() })
     }

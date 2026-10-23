@@ -126,7 +126,7 @@ class SeatAssignmentCoordinatorTest {
             provider("second") { _, _ -> listOf(available) },
         )
 
-        val result = SeatAssignmentCoordinator(providers, environment, failurePolicy = ExtensionFailurePolicy.Default) { _, _ -> }
+        val result = SeatAssignmentCoordinator(providers, environment, failurePolicy = ExtensionFailurePolicy.Default) { _, _, _ -> }
             .assign(world, rider, request())
 
         assertEquals(SeatAssignmentResult.OCCUPIED, result)
@@ -145,7 +145,7 @@ class SeatAssignmentCoordinatorTest {
             providers = listOf(provider("bench") { _, _ -> listOf(left, right) }),
             environment = FakeEnvironment(),
             failurePolicy = ExtensionFailurePolicy.Default,
-        ) { _, _ -> }.assign(world, rider, request())
+        ) { _, _, _ -> }.assign(world, rider, request())
 
         assertEquals(SeatAssignmentResult.SEATED, result)
         assertEquals(1, left.trySitCalls)
@@ -164,7 +164,7 @@ class SeatAssignmentCoordinatorTest {
             providers = listOf(provider("shared") { _, _ -> listOf(firstTarget, secondTarget) }),
             environment = environment,
             failurePolicy = ExtensionFailurePolicy.Default,
-        ) { _, _ -> }
+        ) { _, _, _ -> }
 
         assertEquals(SeatAssignmentResult.SEATED, coordinator.assign(world, firstRider, request()))
         assertEquals(SeatAssignmentResult.OCCUPIED, coordinator.assign(world, secondRider, request()))
@@ -181,7 +181,7 @@ class SeatAssignmentCoordinatorTest {
             providers = listOf(provider("bench") { _, _ -> listOf(occupied, available) }),
             environment = FakeEnvironment(),
             failurePolicy = ExtensionFailurePolicy.Default,
-        ) { _, _ -> }
+        ) { _, _, _ -> }
 
         val result = coordinator.assign(world, rider, request())
 
@@ -206,7 +206,7 @@ class SeatAssignmentCoordinatorTest {
             ),
             environment = environment,
             failurePolicy = ExtensionFailurePolicy.Default,
-        ) { _, _ -> }
+        ) { _, _, _ -> }
 
         assertEquals(SeatAssignmentResult.FAILED, coordinator.assign(world, rider, request()))
         assertEquals(0, environment.standCalls)
@@ -276,7 +276,7 @@ class SeatAssignmentCoordinatorTest {
             providers = listOf(provider("bad") { _, _ -> listOf(target) }),
             environment = environment,
             failurePolicy = ExtensionFailurePolicy.Default,
-        ) { id, _ -> reports += id }.assign(world, rider, request())
+        ) { id, _, _ -> reports += id }.assign(world, rider, request())
 
         assertEquals(SeatAssignmentResult.FAILED, result)
         assertEquals(1, environment.recoverCalls)
@@ -303,7 +303,7 @@ class SeatAssignmentCoordinatorTest {
         val provider = provider("cancel") { _, _ -> throw CancellationException("cancelled") }
 
         assertFailsWith<CancellationException> {
-            SeatAssignmentCoordinator(listOf(provider), FakeEnvironment(), failurePolicy = ExtensionFailurePolicy.Default) { _, _ -> }
+            SeatAssignmentCoordinator(listOf(provider), FakeEnvironment(), failurePolicy = ExtensionFailurePolicy.Default) { _, _, _ -> }
                 .assign(world, rider, request())
         }
     }
@@ -321,7 +321,7 @@ class SeatAssignmentCoordinatorTest {
             providers = listOf(isolated),
             environment = FakeEnvironment(),
             failurePolicy = policy,
-        ) { id, _ -> reports += id }.assign(world, rider, request())
+        ) { id, _, _ -> reports += id }.assign(world, rider, request())
 
         assertEquals(SeatAssignmentResult.FAILED, result)
         assertEquals(listOf("test:isolated"), reports)
@@ -330,7 +330,7 @@ class SeatAssignmentCoordinatorTest {
                 providers = listOf(fatal),
                 environment = FakeEnvironment(),
                 failurePolicy = policy,
-            ) { id, _ -> reports += id }.assign(world, rider, request())
+            ) { id, _, _ -> reports += id }.assign(world, rider, request())
         }
         assertEquals(listOf("test:isolated"), reports)
     }
@@ -358,7 +358,7 @@ class SeatAssignmentCoordinatorTest {
         providers = listOf(provider("test") { _, _ -> listOf(target) }),
         environment = environment,
         failurePolicy = ExtensionFailurePolicy.Default,
-    ) { _, _ -> }
+    ) { _, _, _ -> }
 
     /** 測試用的世界型別。 */
     private class FakeWorld
@@ -419,6 +419,10 @@ class SeatAssignmentCoordinatorTest {
             rider: FakeRider,
             geometry: SeatGeometry,
         ): Boolean = rider.seated
+
+        override fun leaveSeat(rider: FakeRider) {
+            rider.seated = false
+        }
 
         override fun recover(rider: FakeRider, snapshot: Snapshot) {
             recoverCalls++

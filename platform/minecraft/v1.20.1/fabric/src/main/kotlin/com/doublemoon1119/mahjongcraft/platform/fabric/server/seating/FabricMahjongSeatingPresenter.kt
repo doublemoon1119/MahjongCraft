@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.dice.toMahjongTableFacing
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatRequest
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.MahjongSeatingTableLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.seating.SeatAssignmentCoordinator
@@ -15,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.text.MinecraftSeatingK
 import net.minecraft.entity.Entity
 import net.minecraft.registry.RegistryKey
 import net.minecraft.registry.RegistryKeys
+import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.server.world.ServerWorld
 import net.minecraft.state.property.Properties
 import net.minecraft.text.Text
@@ -27,7 +29,7 @@ import kotlin.uuid.Uuid
  * 使用原生座位能力實作 [MahjongSeatingPresenter]。
  *
  * 優先在固定席位入座；沒有座位時只傳送到通過安全檢查的站立點。
- * 已入座本人不移動，占用或堵塞時保留原位置。此入口目前只解析在線玩家。
+ * 正坐在本桌其他座位上的玩家先站起來再入座；已坐在自己座位上的玩家不動，占用或堵塞時保留原位置。此入口目前只解析在線玩家。
  *
  * @property tableLocationRegistry 查詢桌子目前的位置。
  * @property serverHolder 取得目前伺服器世界與在線玩家。
@@ -44,19 +46,35 @@ internal class FabricMahjongSeatingPresenter(
     private val logger = mahjongCraftLogger(FabricMahjongSeatingPresenter::class)
 
     /**
-     * 依固定席位安排在線玩家入座或安全站立。
+     * 依固定席位安排在線玩家入座或安全站立；正坐在本桌其他座位上的玩家先站起來。
      *
      * @param tableId 對局桌子 UUID。
      * @param seatedPlayerIds 依座位順序排列的玩家 UUID。
      */
     override fun present(tableId: Uuid, seatedPlayerIds: List<Uuid>) {
-        val location = tableLocationRegistry.get(tableId)?.location ?: return
-        val world = resolveWorld(location) ?: return
+        val seating = prepare(tableId, seatedPlayerIds) ?: return
+        val players = seating.requests.indices.map { index -> seatedPlayerIds.getOrNull(index)?.let(serverHolder::findPlayer) }
+        seating.coordinator.seatAll(seating.world, players, seating.requests).forEachIndexed { index, result ->
+            val player = players[index] ?: return@forEachIndexed
+            if (result != null) seating.notify(player, result)
+        }
+    }
+
+    /**
+     * 解析桌子位置並建立這次入座使用的席位與協調器。
+     *
+     * @param tableId 對局桌子 UUID。
+     * @param seatedPlayerIds 依座位順序排列的玩家 UUID。
+     * @return 這次入座的準備資料；桌子不存在、區塊未載入或不是麻將桌時為 null。
+     */
+    private fun prepare(tableId: Uuid, seatedPlayerIds: List<Uuid>): PreparedSeating? {
+        val location = tableLocationRegistry.get(tableId)?.location ?: return null
+        val world = resolveWorld(location) ?: return null
         check(world.server.isOnThread) { "Automatic seating must run on the server thread" }
         val controllerPos = BlockPos(location.x, location.y, location.z)
-        if (!world.chunkManager.isChunkLoaded(controllerPos.x shr 4, controllerPos.z shr 4)) return
+        if (!world.chunkManager.isChunkLoaded(controllerPos.x shr 4, controllerPos.z shr 4)) return null
         val state = world.getBlockState(controllerPos)
-        if (!state.contains(Properties.HORIZONTAL_FACING)) return
+        if (!state.contains(Properties.HORIZONTAL_FACING)) return null
         val tableFacing = state.get(Properties.HORIZONTAL_FACING).toMahjongTableFacing()
         val requests = MahjongSeatingTableLayout.seatRequests(
             layout = MahjongTableSeatLayout.forPlayerCount(seatedPlayerIds.size),
@@ -67,23 +85,35 @@ internal class FabricMahjongSeatingPresenter(
             controllerZ = location.z,
             tableFacing = tableFacing,
         )
-        val environment = FabricSeatEnvironment()
-        var currentSeatIndex = -1
-        var currentPlayerId: Uuid? = null
         val coordinator = SeatAssignmentCoordinator<ServerWorld, Entity, FabricSeatSnapshot>(
             providers = seatProviders.entries(),
-            environment = environment,
+            environment = FabricSeatEnvironment(),
             failurePolicy = failurePolicy,
-        ) { providerId, cause ->
-            logger.warn("Seat provider {} failed for table {}, seat {}, rider {}", providerId, tableId, currentSeatIndex, currentPlayerId, cause)
+        ) { providerId, rider, cause ->
+            logger.warn("Seat provider {} failed for table {}, rider {}", providerId, tableId, rider.uuid, cause)
         }
+        return PreparedSeating(world, requests, coordinator)
+    }
 
-        seatedPlayerIds.forEachIndexed { index, playerId ->
-            val request = requests.getOrNull(index) ?: return@forEachIndexed
-            val player = serverHolder.findPlayer(playerId) ?: return@forEachIndexed
-            currentSeatIndex = index
-            currentPlayerId = playerId
-            val result = coordinator.assign(world, player, request)
+    /**
+     * 一次入座使用的世界、席位與協調器。
+     *
+     * @property world 桌子所在世界。
+     * @property requests 依座位 index 排列的固定席位。
+     * @property coordinator 本次入座共用的協調器，跨玩家去重已認領的座位。
+     */
+    private class PreparedSeating(
+        val world: ServerWorld,
+        val requests: List<SeatRequest>,
+        val coordinator: SeatAssignmentCoordinator<ServerWorld, Entity, FabricSeatSnapshot>,
+    ) {
+        /**
+         * 入座不成功時提示玩家原因；成功入座或安全站立時不提示。
+         *
+         * @param player 入座的玩家。
+         * @param result 入座結果。
+         */
+        fun notify(player: ServerPlayerEntity, result: SeatAssignmentResult) {
             val key = when (result) {
                 SeatAssignmentResult.SEATED, SeatAssignmentResult.STANDING -> null
                 SeatAssignmentResult.OCCUPIED -> MinecraftSeatingKeys.OCCUPIED

@@ -112,9 +112,9 @@ object GameInitializer {
      * （例如本局已完成的槓次），哪些延續只有規則自己知道。供託本身是否歸零仍由胡牌結算階段的
      * [MahjongRuleModule.collectStickPot] 決定，這裡單純延續、不重新判斷。
      *
-     * 座位順序（[roundAdvancement] 的 `players` 列表順序）不會重新洗牌，只有發牌本身、每局狀態
-     * 會全部重來——跟 [initialize] 開新對局時「連座位順序都重新洗牌、分數歸零」不同。連莊仍是新的
-     * 一局，也會重新擲骰開門。
+     * 座位順序直接採用 [roundAdvancement] 的 `players` 列表順序（規則要求局間換位時已是新順序），不會重新洗牌，
+     * 只有發牌本身、每局狀態會全部重來——跟 [initialize] 開新對局時「連座位順序都重新洗牌、分數歸零」不同。
+     * 連莊仍是新的一局，也會重新擲骰開門。
      *
      * @param gameId 對局 Uuid（延續同一場對局，不是新對局）。
      * @param roundAdvancement 連莊/過莊判定後的結果（見 [TableState.advanceRound]），提供下一局的
@@ -142,8 +142,8 @@ object GameInitializer {
             diceRollSource = diceRollSource,
         )
         val openedWall = module.buildOpenedWall(roundAdvancement.players.size, opening.wallOpening)
-        // TableState.players 順序整場對局固定不變、不是從莊家開始排的，發牌輪轉順序需要另外把玩家
-        // 列表依莊家旋轉過（見 dealInitialHands KDoc 對 playerIds 順序的要求），發完牌後再依原本固定
+        // TableState.players 依座位順序排列、不是從莊家開始排的，發牌輪轉順序需要另外把玩家
+        // 列表依莊家旋轉過（見 dealInitialHands KDoc 對 playerIds 順序的要求），發完牌後再依原本的座位
         // 順序組回 players 列表，不能直接沿用旋轉過的順序。
         val dealerIndex = roundAdvancement.players.indexOfFirst { it.id == roundAdvancement.dealerPlayerId }
         val dealOrderPlayerIds = List(roundAdvancement.players.size) { offset ->
@@ -198,7 +198,7 @@ object GameInitializer {
     /**
      * 執行規則提供的開局程序，驗證每次要求並收集權威點數。
      *
-     * @param playerIdsInTurnOrder 整場固定的玩家回合順序。
+     * @param playerIdsInTurnOrder 本局的玩家回合順序。
      * @param firstRound 是否正在選定整場的起家。
      * @param provisionalPlayerId 程序開始時的暫定擲骰玩家。
      * @param fixedDealerPlayerId 換局時已由賽程決定的莊家；選起家時為 null。

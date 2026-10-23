@@ -65,6 +65,13 @@ interface SeatEnvironment<W, R, S> {
     ): Boolean
 
     /**
+     * 讓乘坐者離開本桌的席位，供局間換位讓出位置；只在已確認乘坐者坐在本桌某個席位上時呼叫。
+     *
+     * @param rider 乘坐者。
+     */
+    fun leaveSeat(rider: R)
+
+    /**
      * 提供者違約時嘗試安全回復，不強制解除未知載具或載入區塊。
      *
      * @param rider 乘坐者。

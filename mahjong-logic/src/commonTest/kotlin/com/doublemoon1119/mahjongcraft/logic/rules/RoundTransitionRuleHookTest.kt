@@ -32,11 +32,11 @@ class RoundTransitionRuleHookTest {
         val module = RiichiRuleModule("mahjongcraft:riichi", RiichiRuleConfig())
 
         assertEquals(
-            RoundTransitionDirective.REPEAT_DEALER,
+            RoundTransitionDirective.RepeatDealer,
             module.resolveRoundTransition(context(state, RoundCompletionClassification.WIN, setOf(players.first().id))),
         )
         assertEquals(
-            RoundTransitionDirective.ADVANCE_DEALER,
+            RoundTransitionDirective.PassToNextSeat,
             module.resolveRoundTransition(context(state, RoundCompletionClassification.WIN, setOf(players.last().id))),
         )
     }
@@ -52,7 +52,7 @@ class RoundTransitionRuleHookTest {
         val module = RiichiRuleModule("mahjongcraft:riichi", RiichiRuleConfig())
 
         assertEquals(
-            RoundTransitionDirective.REPEAT_DEALER,
+            RoundTransitionDirective.RepeatDealer,
             module.resolveRoundTransition(
                 context(
                     state,
@@ -63,7 +63,7 @@ class RoundTransitionRuleHookTest {
             ),
         )
         assertEquals(
-            RoundTransitionDirective.ADVANCE_DEALER,
+            RoundTransitionDirective.PassToNextSeat,
             module.resolveRoundTransition(
                 context(
                     state,
@@ -86,7 +86,7 @@ class RoundTransitionRuleHookTest {
         val module = TaiwanRuleModule("mahjongcraft:taiwan", TaiwanRuleConfig())
 
         assertEquals(
-            RoundTransitionDirective.REPEAT_DEALER,
+            RoundTransitionDirective.RepeatDealer,
             module.resolveRoundTransition(
                 context(
                     state,
@@ -111,11 +111,11 @@ class RoundTransitionRuleHookTest {
         )
 
         assertEquals(
-            RoundTransitionDirective.REPEAT_DEALER,
+            RoundTransitionDirective.RepeatDealer,
             module.resolveRoundTransition(context(state, RoundCompletionClassification.WIN, setOf(players.last().id))),
         )
         assertEquals(
-            RoundTransitionDirective.ADVANCE_DEALER,
+            RoundTransitionDirective.PassToNextSeat,
             module.resolveRoundTransition(
                 context(
                     state,
@@ -149,8 +149,8 @@ class RoundTransitionRuleHookTest {
         override val id: String = "example:custom-transition"
 
         override fun resolveRoundTransition(context: RoundTransitionContext): RoundTransitionDirective = when {
-            context.classification == RoundCompletionClassification.ABORTIVE_DRAW -> RoundTransitionDirective.ADVANCE_DEALER
-            else -> RoundTransitionDirective.REPEAT_DEALER
+            context.classification == RoundCompletionClassification.ABORTIVE_DRAW -> RoundTransitionDirective.PassToNextSeat
+            else -> RoundTransitionDirective.RepeatDealer
         }
     }
 }

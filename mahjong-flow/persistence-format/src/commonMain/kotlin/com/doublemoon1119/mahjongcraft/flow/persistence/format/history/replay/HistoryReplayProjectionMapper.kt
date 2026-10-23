@@ -14,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRo
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundState
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundTileCatalog
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryTileReference
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryTransitionDirective
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryWinDetailField
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryWinDetailValue
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryWinnerDetails
@@ -28,7 +29,6 @@ import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.MeldTypeId
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
-import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -274,9 +274,32 @@ internal object HistoryReplayProjectionMapper {
         scores(value.getValue(ReplaySourceKeys.SETTLED_SCORES_BY_PLAYER_ID), context),
         RoundCompletionClassification.valueOf(string(value.getValue(ReplaySourceKeys.CLASSIFICATION))),
         array(value.getValue(ReplaySourceKeys.RESPONSIBLE_PLAYER_IDS)).map { context.seat(integer(it)) },
-        RoundTransitionDirective.valueOf(string(value.getValue(ReplaySourceKeys.TRANSITION_DIRECTIVE))),
+        transitionDirective(obj(value.getValue(ReplaySourceKeys.TRANSITION_DIRECTIVE)), context),
         winnerDetails = savedWinnerDetails ?: emptyList(),
     )
+
+    /**
+     * 讀取保存的下一任莊家；指定的玩家已轉成牌譜座位索引。
+     *
+     * @param value 保存的下一任莊家。
+     * @param context 座位驗證上下文。
+     * @return 牌譜形式的下一任莊家。
+     */
+    private fun transitionDirective(value: JsonObject, context: HistoryReplayProjectionContext): HistoryTransitionDirective {
+        val type = string(value.getValue(ReplaySourceKeys.TYPE))
+        val expectedKeys = if (type == HistoryTransitionDirective.PASS_TO_TYPE_ID) {
+            setOf(ReplaySourceKeys.TYPE, ReplaySourceKeys.NEXT_DEALER_PLAYER_ID)
+        } else {
+            setOf(ReplaySourceKeys.TYPE)
+        }
+        require(value.keys == expectedKeys) { "Replay transition directive contains missing or unexpected fields" }
+        return when (type) {
+            HistoryTransitionDirective.REPEAT_DEALER_TYPE_ID -> HistoryTransitionDirective.RepeatDealer
+            HistoryTransitionDirective.PASS_TO_NEXT_SEAT_TYPE_ID -> HistoryTransitionDirective.PassToNextSeat
+            HistoryTransitionDirective.PASS_TO_TYPE_ID -> HistoryTransitionDirective.PassTo(context.seat(integer(value.getValue(ReplaySourceKeys.NEXT_DEALER_PLAYER_ID))))
+            else -> invalid()
+        }
+    }
 
     /**
      * 將保存的和牌欄位轉成局內座位與牌參照；缺少欄位時回傳空清單。

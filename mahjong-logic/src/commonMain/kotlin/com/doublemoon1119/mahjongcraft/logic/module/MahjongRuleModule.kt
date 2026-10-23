@@ -114,15 +114,16 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     fun createMatchProgressionPolicy(): MatchProgressionPolicy = FixedLengthMatchProgressionPolicy(config.scheduledRoundCount)
 
     /**
-     * 決定本局結束後莊家是否連莊。
+     * 決定本局結束後由誰坐莊：連莊、交給座位順序中的下一位，或交給指定的玩家（例如由和牌的玩家坐莊）。
      *
-     * 這是只讀且無副作用的規則判定；相同的 [context] 必須得到相同結果。未覆寫的規則預設讓莊家
-     * 過莊；需要依結果、聽牌或其他規則條件決定的模組應覆寫此方法。
+     * 這是只讀且無副作用的規則判定；相同的 [context] 必須得到相同結果。結果在本局結束時計算一次並隨本局摘要
+     * 保存，讀檔後不再重新呼叫。未覆寫的規則預設交給下一位；需要依結果、聽牌或其他規則條件決定的模組應覆寫此方法。
+     * 指定的玩家不在本桌，或指定現任莊家卻不是連莊時，對局以規則錯誤中止。
      *
      * @param context 本局結算後的完整結果情境。
-     * @return 本局後應採用的莊家推進決策。
+     * @return 下一任莊家。
      */
-    fun resolveRoundTransition(context: RoundTransitionContext): RoundTransitionDirective = RoundTransitionDirective.ADVANCE_DEALER
+    fun resolveRoundTransition(context: RoundTransitionContext): RoundTransitionDirective = RoundTransitionDirective.PassToNextSeat
 
     /**
      * 建立適用於該規則的牌山生成工廠。

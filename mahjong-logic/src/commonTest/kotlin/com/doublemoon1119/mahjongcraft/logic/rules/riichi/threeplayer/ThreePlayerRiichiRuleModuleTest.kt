@@ -534,7 +534,7 @@ class ThreePlayerRiichiRuleModuleTest {
                 outcomeId = "test:round_completed",
                 classification = RoundCompletionClassification.WIN,
                 beneficiaryPlayerIds = emptySet(),
-                transitionDirective = RoundTransitionDirective.ADVANCE_DEALER,
+                transitionDirective = RoundTransitionDirective.PassToNextSeat,
                 settledScoresByPlayerId = state.players.associate { it.id to it.score },
             ),
             rankedPlayerIds = players.sortedByDescending { it.score }.map { it.id },

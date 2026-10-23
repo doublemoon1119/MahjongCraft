@@ -176,7 +176,7 @@ class HistoryRoundResponseValidatorTest {
     @Test
     fun `test outcome score changes must be covered by scores`() {
         val request = HistoryRoundEventsRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
-        val outcome = HistoryRoundOutcomeDto("test:win", listOf(0), mapOf(0 to 25000), "WIN", emptyList(), null, scoreChangesBySeat = mapOf(1 to 1000), winnerDetails = emptyList(), hasEarlierWinSettlement = false)
+        val outcome = HistoryRoundOutcomeDto("test:win", listOf(0), mapOf(0 to 25000), "WIN", emptyList(), null, nextDealerSeat = null, scoreChangesBySeat = mapOf(1 to 1000), winnerDetails = emptyList(), hasEarlierWinSettlement = false)
         val base = events()
         val invalid = base.copy(transactions = listOf(base.transactions.single().copy(facts = listOf(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.ROUND_COMPLETED, outcome)))))
 
@@ -189,7 +189,7 @@ class HistoryRoundResponseValidatorTest {
     fun `test winner details require valid beneficiary and identifiers`() {
         val request = HistoryRoundEventsRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
         val details = listOf(HistoryWinnerDetailsDto(0, listOf(HistoryWinDetailFieldDto("invalid", HistoryWinDetailValueDto.Quantities(listOf(HistoryWinDetailQuantityDto("test:unit", 1))))), hand = null))
-        val outcome = HistoryRoundOutcomeDto("test:win", listOf(0), mapOf(0 to 25000), "WIN", emptyList(), null, winnerDetails = details, scoreChangesBySeat = emptyMap(), hasEarlierWinSettlement = false)
+        val outcome = HistoryRoundOutcomeDto("test:win", listOf(0), mapOf(0 to 25000), "WIN", emptyList(), null, nextDealerSeat = null, winnerDetails = details, scoreChangesBySeat = emptyMap(), hasEarlierWinSettlement = false)
         val base = events()
         val invalid = base.copy(transactions = listOf(base.transactions.single().copy(facts = listOf(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.ROUND_COMPLETED, outcome)))))
 
@@ -208,7 +208,7 @@ class HistoryRoundResponseValidatorTest {
             HistoryWinDetailValueDto.Quantities(emptyList()),
         ).forEach { value ->
             val details = listOf(HistoryWinnerDetailsDto(0, listOf(HistoryWinDetailFieldDto("test:field", value)), hand = null))
-            val outcome = HistoryRoundOutcomeDto("test:win", listOf(0), mapOf(0 to 25000), "WIN", emptyList(), null, winnerDetails = details, scoreChangesBySeat = emptyMap(), hasEarlierWinSettlement = false)
+            val outcome = HistoryRoundOutcomeDto("test:win", listOf(0), mapOf(0 to 25000), "WIN", emptyList(), null, nextDealerSeat = null, winnerDetails = details, scoreChangesBySeat = emptyMap(), hasEarlierWinSettlement = false)
             val base = events()
             val invalid = base.copy(transactions = listOf(base.transactions.single().copy(facts = listOf(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.ROUND_COMPLETED, outcome)))))
 
@@ -222,7 +222,7 @@ class HistoryRoundResponseValidatorTest {
     fun `test winner detail tiles respect declared tile count`() {
         val request = HistoryRoundEventsRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
         val details = listOf(HistoryWinnerDetailsDto(0, listOf(HistoryWinDetailFieldDto("test:tiles", HistoryWinDetailValueDto.Tiles(listOf(1)))), hand = null))
-        val outcome = HistoryRoundOutcomeDto("test:win", listOf(0), mapOf(0 to 25000), "WIN", emptyList(), null, winnerDetails = details, scoreChangesBySeat = emptyMap(), hasEarlierWinSettlement = false)
+        val outcome = HistoryRoundOutcomeDto("test:win", listOf(0), mapOf(0 to 25000), "WIN", emptyList(), null, nextDealerSeat = null, winnerDetails = details, scoreChangesBySeat = emptyMap(), hasEarlierWinSettlement = false)
         val base = events().copy(tileCatalog = listOf(TileDto.Numeric(SuitDto.CHARACTER, 1), TileDto.Numeric(SuitDto.CHARACTER, 2)))
         val invalid = base.copy(transactions = listOf(base.transactions.single().copy(facts = listOf(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.ROUND_COMPLETED, outcome)))))
 
@@ -267,7 +267,7 @@ class HistoryRoundResponseValidatorTest {
                 hand = null,
             ),
         )
-        val outcome = HistoryRoundOutcomeDto("test:win", listOf(0, 1), mapOf(0 to 25000, 1 to 25000), "WIN", emptyList(), null, winnerDetails = details, scoreChangesBySeat = emptyMap(), hasEarlierWinSettlement = false)
+        val outcome = HistoryRoundOutcomeDto("test:win", listOf(0, 1), mapOf(0 to 25000, 1 to 25000), "WIN", emptyList(), null, nextDealerSeat = null, winnerDetails = details, scoreChangesBySeat = emptyMap(), hasEarlierWinSettlement = false)
         val base = events().copy(
             identity = identity,
             tileCatalog = listOf(TileDto.Numeric(SuitDto.CHARACTER, 1), TileDto.Numeric(SuitDto.CHARACTER, 2)),
@@ -290,7 +290,7 @@ class HistoryRoundResponseValidatorTest {
                 HistoryReplayWinningHandDto(standingTiles = listOf(1), winningTile = 0),
             ),
         )
-        val outcome = HistoryRoundOutcomeDto("test:win", listOf(0), mapOf(0 to 25000), "WIN", emptyList(), null, winnerDetails = details, scoreChangesBySeat = emptyMap(), hasEarlierWinSettlement = false)
+        val outcome = HistoryRoundOutcomeDto("test:win", listOf(0), mapOf(0 to 25000), "WIN", emptyList(), null, nextDealerSeat = null, winnerDetails = details, scoreChangesBySeat = emptyMap(), hasEarlierWinSettlement = false)
         val base = events().copy(transactions = listOf(events().transactions.single().copy(facts = listOf(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.ROUND_COMPLETED, outcome)))))
         val catalogInvalid = base.copy(tileCatalog = listOf(TileDto.Numeric(SuitDto.CHARACTER, 1)))
         assertEquals(
@@ -319,7 +319,7 @@ class HistoryRoundResponseValidatorTest {
                 HistoryReplayWinningHandDto(standingTiles = listOf(0, 0), winningTile = 0),
             ),
         )
-        val outcome = HistoryRoundOutcomeDto("test:win", listOf(0), mapOf(0 to 25000), "WIN", emptyList(), null, winnerDetails = details, scoreChangesBySeat = emptyMap(), hasEarlierWinSettlement = false)
+        val outcome = HistoryRoundOutcomeDto("test:win", listOf(0), mapOf(0 to 25000), "WIN", emptyList(), null, nextDealerSeat = null, winnerDetails = details, scoreChangesBySeat = emptyMap(), hasEarlierWinSettlement = false)
         val base = events().copy(transactions = listOf(events().transactions.single().copy(facts = listOf(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.ROUND_COMPLETED, outcome)))))
 
         assertEquals(
@@ -343,7 +343,7 @@ class HistoryRoundResponseValidatorTest {
             HistoryWinnerDetailsDto(0, emptyList(), HistoryReplayWinningHandDto(listOf(0), sharedWinningTile)),
             HistoryWinnerDetailsDto(1, emptyList(), HistoryReplayWinningHandDto(listOf(0), sharedWinningTile)),
         )
-        val outcome = HistoryRoundOutcomeDto("test:win", listOf(0, 1), mapOf(0 to 25000, 1 to 25000), "WIN", emptyList(), null, winnerDetails = details, scoreChangesBySeat = emptyMap(), hasEarlierWinSettlement = false)
+        val outcome = HistoryRoundOutcomeDto("test:win", listOf(0, 1), mapOf(0 to 25000, 1 to 25000), "WIN", emptyList(), null, nextDealerSeat = null, winnerDetails = details, scoreChangesBySeat = emptyMap(), hasEarlierWinSettlement = false)
         val base = events().copy(
             identity = identity,
             tileCatalog = listOf(TileDto.Numeric(SuitDto.CHARACTER, 1), TileDto.Numeric(SuitDto.CHARACTER, 2)),
@@ -366,6 +366,7 @@ class HistoryRoundResponseValidatorTest {
             "WIN",
             emptyList(),
             null,
+            nextDealerSeat = null,
             winnerDetails = listOf(HistoryWinnerDetailsDto(0, emptyList(), hand = null)),
             scoreChangesBySeat = emptyMap(),
             hasEarlierWinSettlement = false,
@@ -419,7 +420,7 @@ class HistoryRoundResponseValidatorTest {
     @Test
     fun `test invalid outcome seat is rejected`() {
         val request = HistoryRoundStateRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, position = HistoryRoundPositionDto.Initial)
-        val outcome = HistoryRoundOutcomeDto("test:complete", listOf(3), emptyMap(), null, emptyList(), null, scoreChangesBySeat = emptyMap(), winnerDetails = emptyList(), hasEarlierWinSettlement = false)
+        val outcome = HistoryRoundOutcomeDto("test:complete", listOf(3), emptyMap(), null, emptyList(), null, nextDealerSeat = null, scoreChangesBySeat = emptyMap(), winnerDetails = emptyList(), hasEarlierWinSettlement = false)
         val response = HistoryRoundStateResponseDto("request", TEST_MATCH_ID, 1, HistoryRoundPositionDto.Initial, state = state().copy(outcome = outcome), errorCode = null)
 
         assertEquals(HistoryRoundValidationError.SEAT_INDEX_INVALID, assertIs<HistoryRoundValidationResult.Invalid>(HistoryRoundResponseValidator.validateState(request, response)).reason)
@@ -436,6 +437,7 @@ class HistoryRoundResponseValidatorTest {
             "WIN",
             emptyList(),
             null,
+            nextDealerSeat = null,
             winnerDetails = listOf(HistoryWinnerDetailsDto(0, emptyList(), HistoryReplayWinningHandDto(listOf(1), null))),
             scoreChangesBySeat = emptyMap(),
             hasEarlierWinSettlement = false,
@@ -459,6 +461,7 @@ class HistoryRoundResponseValidatorTest {
             "WIN",
             emptyList(),
             null,
+            nextDealerSeat = null,
             winnerDetails = listOf(HistoryWinnerDetailsDto(0, emptyList(), HistoryReplayWinningHandDto(listOf(0), 0))),
             scoreChangesBySeat = emptyMap(),
             hasEarlierWinSettlement = false,

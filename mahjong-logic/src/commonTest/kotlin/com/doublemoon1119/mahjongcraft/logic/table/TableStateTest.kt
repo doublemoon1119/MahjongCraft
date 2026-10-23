@@ -176,9 +176,10 @@ class TableStateTest {
         val players = listOf(Wind.EAST, Wind.SOUTH, Wind.WEST).map { FakeMahjongPlayerFactory.create(it) }
         val state = FakeTableStateFactory.create(players = players, dealerPlayerId = players[0].id)
 
-        val repeated = state.advanceRound(MatchRoundTransition.RepeatCurrentRound)
+        val repeated = state.advanceRound(MatchRoundTransition.RepeatCurrentRound, RoundTransitionDirective.RepeatDealer)
         val advanced = state.advanceRound(
             MatchRoundTransition.AdvanceTo(MatchRoundPosition(1, Wind.EAST, 2)),
+            RoundTransitionDirective.PassToNextSeat,
         )
 
         assertEquals(players[0].id, repeated.dealerPlayerId)
@@ -192,13 +193,74 @@ class TableStateTest {
         val state = FakeTableStateFactory.create(players = fourPlayers, comboCount = 2)
         val nextPosition = MatchRoundPosition(1, Wind.EAST, 2)
 
-        val repeated = state.advanceRound(MatchRoundTransition.RepeatCurrentRound)
-        val continued = state.advanceRound(MatchRoundTransition.AdvanceTo(nextPosition = nextPosition, continuesCombo = true))
-        val reset = state.advanceRound(MatchRoundTransition.AdvanceTo(nextPosition = nextPosition, continuesCombo = false))
+        val repeated = state.advanceRound(MatchRoundTransition.RepeatCurrentRound, RoundTransitionDirective.RepeatDealer)
+        val continued = state.advanceRound(
+            MatchRoundTransition.AdvanceTo(nextPosition = nextPosition, continuesCombo = true),
+            RoundTransitionDirective.PassToNextSeat,
+        )
+        val reset = state.advanceRound(
+            MatchRoundTransition.AdvanceTo(nextPosition = nextPosition, continuesCombo = false),
+            RoundTransitionDirective.PassToNextSeat,
+        )
 
         assertEquals(3, repeated.comboCount)
         assertEquals(3, continued.comboCount)
         assertEquals(0, reset.comboCount)
+    }
+
+    /** 規則指定的玩家成為下一任莊家；指定外人、指定現任莊家或與局位變化矛盾時拒絕。 */
+    @Test
+    fun `test round advancement passes the deal to the chosen player`() {
+        val state = FakeTableStateFactory.create(players = fourPlayers, dealerPlayerId = fourPlayers[0].id)
+        val advance = MatchRoundTransition.AdvanceTo(MatchRoundPosition(1, Wind.EAST, 2))
+
+        val passed = state.advanceRound(advance, RoundTransitionDirective.PassTo(fourPlayers[2].id))
+
+        assertEquals(fourPlayers[2].id, passed.dealerPlayerId)
+        assertFailsWith<IllegalArgumentException> { state.advanceRound(advance, RoundTransitionDirective.PassTo(Uuid.random())) }
+        assertFailsWith<IllegalArgumentException> { state.advanceRound(advance, RoundTransitionDirective.PassTo(fourPlayers[0].id)) }
+        assertFailsWith<IllegalArgumentException> { state.advanceRound(advance, RoundTransitionDirective.RepeatDealer) }
+        assertFailsWith<IllegalArgumentException> {
+            state.advanceRound(MatchRoundTransition.RepeatCurrentRound, RoundTransitionDirective.PassToNextSeat)
+        }
+    }
+
+    /** 換位依完整的新順序排列下一局的玩家，下一位莊家仍依換位前的座位計算；身分、分數與初始座位不變。 */
+    @Test
+    fun `test round advancement applies a complete seat order`() {
+        val state = FakeTableStateFactory.create(players = fourPlayers, dealerPlayerId = fourPlayers[0].id)
+        val newOrder = listOf(fourPlayers[2], fourPlayers[0], fourPlayers[3], fourPlayers[1]).map { it.id }
+
+        val advanced = state.advanceRound(
+            MatchRoundTransition.AdvanceTo(MatchRoundPosition(1, Wind.EAST, 2)),
+            RoundTransitionDirective.PassToNextSeat,
+            seatOrder = newOrder,
+        )
+
+        assertEquals(newOrder, advanced.players.map { it.id })
+        assertEquals(fourPlayers[1].id, advanced.dealerPlayerId)
+        assertEquals(
+            fourPlayers.associate { it.id to (it.initialSeatIndex to it.score) },
+            advanced.players.associate { it.id to (it.initialSeatIndex to it.score) },
+        )
+    }
+
+    /** 換位的座位順序缺人、重複或混入外人時拒絕。 */
+    @Test
+    fun `test round advancement rejects an incomplete seat order`() {
+        val state = FakeTableStateFactory.create(players = fourPlayers)
+        val ids = fourPlayers.map { it.id }
+        val invalidOrders = listOf(
+            ids.dropLast(1),
+            ids.dropLast(1) + ids.first(),
+            ids.dropLast(1) + Uuid.random(),
+        )
+
+        invalidOrders.forEach { order ->
+            assertFailsWith<IllegalArgumentException> {
+                state.advanceRound(MatchRoundTransition.RepeatCurrentRound, RoundTransitionDirective.RepeatDealer, seatOrder = order)
+            }
+        }
     }
 
     /** 起算玩家不在桌上時應拋出例外。 */

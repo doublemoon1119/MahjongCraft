@@ -10,7 +10,7 @@ import kotlin.uuid.Uuid
  * @property classification 規則中立結果分類。
  * @property beneficiaryPlayerIds 此結果的得利者。
  * @property responsiblePlayerIds 此結果的責任玩家。
- * @property transitionDirective 莊家應連莊或過莊的明確決策。
+ * @property transitionDirective 下一任莊家；指定的玩家必須在本桌。
  * @property settledScoresByPlayerId 本局結算後每位玩家的權威分數。
  */
 data class RoundCompletionSummary(
@@ -25,5 +25,8 @@ data class RoundCompletionSummary(
         NamespacedId.requireValid(outcomeId) { "Round completion outcomeId must be a full namespaced id: $outcomeId" }
         require(beneficiaryPlayerIds.all { it in settledScoresByPlayerId }) { "Round completion beneficiaries must belong to the table" }
         require(responsiblePlayerIds.all { it in settledScoresByPlayerId }) { "Round completion responsible players must belong to the table" }
+        (transitionDirective as? RoundTransitionDirective.PassTo)?.let { directive ->
+            require(directive.nextDealerPlayerId in settledScoresByPlayerId) { "Round completion next dealer must belong to the table" }
+        }
     }
 }

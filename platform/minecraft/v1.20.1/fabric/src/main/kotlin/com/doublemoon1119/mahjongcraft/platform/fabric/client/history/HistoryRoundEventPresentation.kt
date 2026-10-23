@@ -461,7 +461,8 @@ internal data class HistoryFactPresentation(
  * @property reasonId 原始結算原因 ID。
  * @property reasonText 結算原因顯示文字。
  * @property classification 保存的結算分類；缺少時為 null。
- * @property transitionDirective 保存的莊家推進指令；缺少時為 null。
+ * @property transitionDirective 保存的下一任莊家類型 ID；缺少時為 null。
+ * @property nextDealerSeat 規則指定的下一任莊家座位；其他類型或缺少時為 null。
  * @property rows 身分與結算涉及的玩家列；缺少分數時仍保留玩家及角色資訊。
  * @property hasEarlierWinSettlement 同局先前已有獨立和牌結算記錄，不將後續摘要誤標為缺少明細。
  */
@@ -470,6 +471,7 @@ internal data class HistoryOutcomePresentation(
     val reasonText: Text,
     val classification: String?,
     val transitionDirective: String?,
+    val nextDealerSeat: Int?,
     val rows: List<HistoryOutcomeRowPresentation>,
     val hasEarlierWinSettlement: Boolean = false,
 )
@@ -505,6 +507,7 @@ private fun HistoryRoundOutcomeDto.toPresentation(identitySeats: List<Int>, reas
     reasonText = reasonText,
     classification = classification,
     transitionDirective = transitionDirective,
+    nextDealerSeat = nextDealerSeat,
     rows = (identitySeats + beneficiarySeats + responsibleSeats + scoresBySeat.keys).distinct().sorted().map { seat ->
         HistoryOutcomeRowPresentation(
             seat,

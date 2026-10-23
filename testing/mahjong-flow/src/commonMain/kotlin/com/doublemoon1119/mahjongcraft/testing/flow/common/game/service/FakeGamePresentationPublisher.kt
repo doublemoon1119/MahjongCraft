@@ -83,6 +83,9 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
     /** 依對局 Uuid 紀錄最後一次收到的開局座位安排。 */
     private val gameStartedSeatings = mutableMapOf<Uuid, List<Uuid>>()
 
+    /** 依對局 Uuid 依序紀錄收到的局間換位座位順序。 */
+    private val seatOrderChanges = mutableMapOf<Uuid, MutableList<List<Uuid>>>()
+
     /** 依對局 Uuid 紀錄最後一次收到的牌河更新資料。 */
     private val discardPiles = mutableMapOf<Uuid, DiscardPileContext>()
 
@@ -210,6 +213,10 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
         gameStartedSeatings[gameId] = seatedPlayerIds
     }
 
+    override fun publishSeatOrderChanged(gameId: Uuid, seatedPlayerIds: List<Uuid>) {
+        seatOrderChanges.getOrPut(gameId) { mutableListOf() } += seatedPlayerIds
+    }
+
     override fun publishDiscardPileUpdated(
         gameId: Uuid,
         seatIndex: Int,
@@ -284,6 +291,9 @@ class FakeGamePresentationPublisher : GamePresentationPublisher {
 
     /** 取得指定對局最後一次收到的開局座位安排；若無紀錄則回傳 null。 */
     fun getPublishedGameStartedSeating(gameId: Uuid): List<Uuid>? = gameStartedSeatings[gameId]
+
+    /** 取得指定對局依序收到的局間換位座位順序；沒有換位時為空清單。 */
+    fun getPublishedSeatOrderChanges(gameId: Uuid): List<List<Uuid>> = seatOrderChanges[gameId].orEmpty().toList()
 
     /** 取得指定對局最後一次收到的牌河更新資料；若無紀錄則回傳 null。 */
     fun getPublishedDiscardPile(gameId: Uuid): DiscardPileContext? = discardPiles[gameId]

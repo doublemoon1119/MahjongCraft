@@ -9,9 +9,9 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRe
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundPosition
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundTileCatalog
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryTileReference
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
-import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
@@ -143,14 +143,19 @@ class CompactReplayRoundReaderTest {
                 ReplaySourceKeys.BENEFICIARY_PLAYER_IDS to JsonArray(listOf(JsonPrimitive(0))),
                 ReplaySourceKeys.RESPONSIBLE_PLAYER_IDS to JsonArray(listOf(JsonPrimitive(1))),
                 ReplaySourceKeys.SETTLED_SCORES_BY_PLAYER_ID to JsonObject(mapOf("0" to JsonPrimitive(26000), "1" to JsonPrimitive(24000))),
-                ReplaySourceKeys.TRANSITION_DIRECTIVE to JsonPrimitive("ADVANCE_DEALER"),
+                ReplaySourceKeys.TRANSITION_DIRECTIVE to JsonObject(
+                    mapOf(
+                        ReplaySourceKeys.TYPE to JsonPrimitive(HistoryTransitionDirective.PASS_TO_TYPE_ID),
+                        ReplaySourceKeys.NEXT_DEALER_PLAYER_ID to JsonPrimitive(0),
+                    ),
+                ),
             ),
         )
         val result = HistoryReplayProjectionMapper.mapFacts(listOf(JsonObject(mapOf(ReplaySourceKeys.TYPE to JsonPrimitive(HistoryFactTypeKeys.ROUND_COMPLETED), ReplaySourceKeys.SUMMARY to summary)), JsonObject(mapOf(ReplaySourceKeys.TYPE to JsonPrimitive(HistoryFactTypeKeys.RULE_EFFECT_RESOLVED), ReplaySourceKeys.REASON_ID to JsonPrimitive("test:effect"), ReplaySourceKeys.ROUND_COMPLETION to summary))), listOf(null, null), identity, 1, HistoryRoundTileCatalog(emptyList()), ReplayReadBudget(ReplayReadLimits()) {})
         val completed = assertIs<HistoryReplayFact.Completion>(result[0]).outcome
         assertEquals(RoundCompletionClassification.WIN, completed?.classification)
         assertEquals(listOf(1), completed?.responsibleSeats)
-        assertEquals(RoundTransitionDirective.ADVANCE_DEALER, completed?.transitionDirective)
+        assertEquals(HistoryTransitionDirective.PassTo(nextDealerSeat = 0), completed?.transitionDirective)
         assertEquals(completed, assertIs<HistoryReplayFact.RuleEffect>(result[1]).outcome)
     }
 

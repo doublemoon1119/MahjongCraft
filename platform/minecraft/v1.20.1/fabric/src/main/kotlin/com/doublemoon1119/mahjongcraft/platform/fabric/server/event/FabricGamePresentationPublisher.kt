@@ -991,6 +991,12 @@ class FabricGamePresentationPublisher(
         scope.launch(dispatchers.main) { seatingPresenter.present(gameId, seatedPlayerIds) }
     }
 
+    /** 局間換位同樣要移動玩家實體，丟回伺服器主執行緒執行。 */
+    override fun publishSeatOrderChanged(gameId: Uuid, seatedPlayerIds: List<Uuid>) {
+        if (serverHolder.current() == null) return
+        scope.launch(dispatchers.main) { seatingPresenter.present(gameId, seatedPlayerIds) }
+    }
+
     /**
      * 一般回合動作，即使 [newlyDiscardedTileId] 非 `null` 觸發捨牌動畫，那段動畫本身的排程完全交給
      * `FabricMahjongDiscardPresenter` 內部處理，理由同 [publishPlayerTilesUpdated] 的 `isNewlyDrawn`

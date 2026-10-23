@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
@@ -16,6 +17,9 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawRe
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiGameLength
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleModule
+import com.doublemoon1119.mahjongcraft.logic.table.MatchProgressionContext
+import com.doublemoon1119.mahjongcraft.logic.table.MatchProgressionDecision
+import com.doublemoon1119.mahjongcraft.logic.table.MatchProgressionPolicy
 import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionContext
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
@@ -43,12 +47,14 @@ import kotlin.uuid.Uuid
 class RoundTransitionFlowTest {
 
     /**
-     * 建立指定莊家推進決策的完整流局用例測試環境。
+     * 建立指定下一任莊家與換位的完整流局用例測試環境。
      *
-     * @param transitionDirective 本測試要求規則回傳的莊家去留。
+     * @param transitionDirective 依本局結果決定規則回傳的下一任莊家。
+     * @param seatOrder 依本局結算後的桌況決定下一局的座位順序；null 表示規則不換位。
      */
     private class Fixtures(
-        transitionDirective: RoundTransitionDirective,
+        transitionDirective: (RoundTransitionContext) -> RoundTransitionDirective,
+        seatOrder: ((TableState) -> List<Uuid>)? = null,
     ) {
         val gameId = Uuid.random()
         val gameRepo = FakeGameRepository()
@@ -58,6 +64,7 @@ class RoundTransitionFlowTest {
                     TransitionOverrideRuleModule(
                         delegate = RiichiRuleModule(id, config),
                         transitionDirective = transitionDirective,
+                        seatOrder = seatOrder,
                     )
                 },
             )
@@ -69,7 +76,7 @@ class RoundTransitionFlowTest {
             GameVisibilityPolicyImpl(moduleRegistry),
         )
         private val eventPublisher = FakeGameEventPublisher()
-        private val presentationPublisher = FakeGamePresentationPublisher()
+        val presentationPublisher = FakeGamePresentationPublisher()
         private val handSortPreferenceStore = HandSortPreferenceStore()
 
         val exhaustiveDrawUseCase = DeclareExhaustiveDrawUseCase(
@@ -94,14 +101,26 @@ class RoundTransitionFlowTest {
         )
     }
 
-    /** 以委派保留日麻規則，只替測試指定本局結束後的莊家推進結果。 */
+    /** 以委派保留日麻規則，只替測試指定本局結束後的下一任莊家與換位。 */
     private class TransitionOverrideRuleModule(
         private val delegate: RiichiRuleModule,
-        private val transitionDirective: RoundTransitionDirective,
+        private val transitionDirective: (RoundTransitionContext) -> RoundTransitionDirective,
+        private val seatOrder: ((TableState) -> List<Uuid>)?,
     ) : MahjongRuleModule<RiichiRuleConfig> by delegate {
         override fun resolveRoundTransition(
             context: RoundTransitionContext,
-        ): RoundTransitionDirective = transitionDirective
+        ): RoundTransitionDirective = transitionDirective(context)
+
+        override fun createMatchProgressionPolicy(): MatchProgressionPolicy {
+            val base = delegate.createMatchProgressionPolicy()
+            val order = seatOrder ?: return base
+            return object : MatchProgressionPolicy {
+                override fun decide(context: MatchProgressionContext): MatchProgressionDecision = when (val decision = base.decide(context)) {
+                    is MatchProgressionDecision.ContinueMatch -> decision.copy(seatOrder = order(context.tableState))
+                    is MatchProgressionDecision.EndMatch -> decision
+                }
+            }
+        }
 
         override fun declareExhaustiveDraw(tableState: TableState): ExhaustiveDrawSettlementResult = ExhaustiveDrawSettlementResult(
             reason = RiichiExhaustiveDrawReason.Normal,
@@ -114,7 +133,7 @@ class RoundTransitionFlowTest {
     /** 驗證一般流局有非莊家聽牌時，摘要仍採用規則指定的連莊決策，並能實際進入下一局。 */
     @Test
     fun `exhaustive draw preserves rule transition and advances through use case`() = runTest {
-        val fixtures = Fixtures(RoundTransitionDirective.REPEAT_DEALER)
+        val fixtures = Fixtures({ RoundTransitionDirective.RepeatDealer })
         val table = startedTable(fixtures.gameId, currentPlayerIndex = 0)
         fixtures.gameRepo.setTableState(table)
 
@@ -122,7 +141,7 @@ class RoundTransitionFlowTest {
 
         assertIs<Outcome.Success<*>>(result)
         val completed = assertNotNull(fixtures.gameRepo.getGame(fixtures.gameId))
-        assertEquals(RoundTransitionDirective.REPEAT_DEALER, completed.roundCompletion?.transitionDirective)
+        assertEquals(RoundTransitionDirective.RepeatDealer, completed.roundCompletion?.transitionDirective)
         assertEquals(table.players[1].id, completed.roundCompletion?.beneficiaryPlayerIds?.single())
 
         val advanceResult = fixtures.advanceRoundUseCase(fixtures.gameId)
@@ -136,7 +155,7 @@ class RoundTransitionFlowTest {
     /** 驗證九種九牌會採用規則指定的過莊決策，並能由實際換局用例開出下一局。 */
     @Test
     fun `abortive draw preserves rule transition and advances through use case`() = runTest {
-        val fixtures = Fixtures(RoundTransitionDirective.ADVANCE_DEALER)
+        val fixtures = Fixtures({ RoundTransitionDirective.PassToNextSeat })
         val playerId = Uuid.random()
         val declarer = FakeMahjongPlayerFactory.create(
             id = playerId,
@@ -180,7 +199,7 @@ class RoundTransitionFlowTest {
 
         assertIs<Outcome.Success<*>>(result)
         val completed = assertNotNull(fixtures.gameRepo.getGame(fixtures.gameId))
-        assertEquals(RoundTransitionDirective.ADVANCE_DEALER, completed.roundCompletion?.transitionDirective)
+        assertEquals(RoundTransitionDirective.PassToNextSeat, completed.roundCompletion?.transitionDirective)
         assertEquals(RoundCompletionClassification.ABORTIVE_DRAW, completed.roundCompletion?.classification)
 
         val advanceResult = fixtures.advanceRoundUseCase(fixtures.gameId)
@@ -190,6 +209,89 @@ class RoundTransitionFlowTest {
         assertEquals(table.roundNumber + 1, next.roundNumber)
         // 日麻的流局本場累加不因過莊改變，這裡只覆寫莊家去留。
         assertEquals(table.comboCount + 1, next.comboCount)
+    }
+
+    /** 規則指定的玩家成為下一局的莊家，不是莊家的下家。 */
+    @Test
+    fun `a rule can pass the deal to a chosen player`() = runTest {
+        val fixtures = Fixtures({ context -> RoundTransitionDirective.PassTo(context.tableState.players[2].id) })
+        val table = startedTable(fixtures.gameId, currentPlayerIndex = 0)
+        fixtures.gameRepo.setTableState(table)
+        assertIs<Outcome.Success<*>>(fixtures.exhaustiveDrawUseCase(fixtures.gameId))
+
+        assertIs<Outcome.Success<*>>(fixtures.advanceRoundUseCase(fixtures.gameId))
+
+        val next = assertNotNull(fixtures.gameRepo.getTableState(fixtures.gameId))
+        assertEquals(table.players[2].id, next.dealerPlayerId)
+        assertEquals(table.roundNumber + 1, next.roundNumber)
+    }
+
+    /** 規則把莊家交給現任莊家自己時視為賽程錯誤，不開下一局。 */
+    @Test
+    fun `passing the deal to the current dealer is rejected`() = runTest {
+        val fixtures = Fixtures({ context -> RoundTransitionDirective.PassTo(context.tableState.dealerPlayerId) })
+        val table = startedTable(fixtures.gameId, currentPlayerIndex = 0)
+        fixtures.gameRepo.setTableState(table)
+        assertIs<Outcome.Success<*>>(fixtures.exhaustiveDrawUseCase(fixtures.gameId))
+
+        val result = fixtures.advanceRoundUseCase(fixtures.gameId)
+
+        assertIs<GameError.InvalidMatchProgression>(assertIs<Outcome.Error<GameError>>(result).error)
+        assertEquals(table.roundNumber, fixtures.gameRepo.getTableState(fixtures.gameId)?.roundNumber)
+    }
+
+    /** 換位後下一局依新座位排列玩家，並在開局呈現前通知平台一次。 */
+    @Test
+    fun `a seat change reorders the players and tells the platform`() = runTest {
+        val fixtures = Fixtures(
+            transitionDirective = { RoundTransitionDirective.PassToNextSeat },
+            seatOrder = { state -> state.players.reversed().map { it.id } },
+        )
+        val table = startedTable(fixtures.gameId, currentPlayerIndex = 0)
+        fixtures.gameRepo.setTableState(table)
+        assertIs<Outcome.Success<*>>(fixtures.exhaustiveDrawUseCase(fixtures.gameId))
+
+        assertIs<Outcome.Success<*>>(fixtures.advanceRoundUseCase(fixtures.gameId))
+
+        val reversed = table.players.reversed().map { it.id }
+        val next = assertNotNull(fixtures.gameRepo.getTableState(fixtures.gameId))
+        assertEquals(reversed, next.players.map { it.id })
+        assertEquals(table.players[1].id, next.dealerPlayerId)
+        assertEquals(listOf(reversed), fixtures.presentationPublisher.getPublishedSeatOrderChanges(fixtures.gameId))
+    }
+
+    /** 換位順序缺人時視為賽程錯誤，不開下一局，也不通知平台換位。 */
+    @Test
+    fun `an incomplete seat change is rejected`() = runTest {
+        val fixtures = Fixtures(
+            transitionDirective = { RoundTransitionDirective.PassToNextSeat },
+            seatOrder = { state -> state.players.drop(1).map { it.id } },
+        )
+        val table = startedTable(fixtures.gameId, currentPlayerIndex = 0)
+        fixtures.gameRepo.setTableState(table)
+        assertIs<Outcome.Success<*>>(fixtures.exhaustiveDrawUseCase(fixtures.gameId))
+
+        val result = fixtures.advanceRoundUseCase(fixtures.gameId)
+
+        assertIs<GameError.InvalidMatchProgression>(assertIs<Outcome.Error<GameError>>(result).error)
+        assertEquals(table.players.map { it.id }, fixtures.gameRepo.getTableState(fixtures.gameId)?.players?.map { it.id })
+        assertEquals(emptyList(), fixtures.presentationPublisher.getPublishedSeatOrderChanges(fixtures.gameId))
+    }
+
+    /** 座位沒變時不通知平台換位。 */
+    @Test
+    fun `an unchanged seat order does not tell the platform`() = runTest {
+        val fixtures = Fixtures(
+            transitionDirective = { RoundTransitionDirective.PassToNextSeat },
+            seatOrder = { state -> state.players.map { it.id } },
+        )
+        val table = startedTable(fixtures.gameId, currentPlayerIndex = 0)
+        fixtures.gameRepo.setTableState(table)
+        assertIs<Outcome.Success<*>>(fixtures.exhaustiveDrawUseCase(fixtures.gameId))
+
+        assertIs<Outcome.Success<*>>(fixtures.advanceRoundUseCase(fixtures.gameId))
+
+        assertEquals(emptyList(), fixtures.presentationPublisher.getPublishedSeatOrderChanges(fixtures.gameId))
     }
 
     /** 建立可供一般流局用例使用的固定局位桌況。 */

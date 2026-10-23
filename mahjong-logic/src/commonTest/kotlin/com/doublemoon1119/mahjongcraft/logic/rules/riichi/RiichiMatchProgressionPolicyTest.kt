@@ -86,7 +86,7 @@ class RiichiMatchProgressionPolicyTest {
             Wind.EAST,
             MatchRoundPhase.REGULAR,
             listOf(25_000, 24_000, 21_000, 30_000),
-            directive = RoundTransitionDirective.REPEAT_DEALER,
+            directive = RoundTransitionDirective.RepeatDealer,
             dealerIndex = 3,
             rankedIndices = listOf(3, 0, 1, 2),
         )
@@ -106,7 +106,7 @@ class RiichiMatchProgressionPolicyTest {
             Wind.SOUTH,
             MatchRoundPhase.EXTRA,
             listOf(24_000, 26_000, 32_000, 18_000),
-            directive = RoundTransitionDirective.REPEAT_DEALER,
+            directive = RoundTransitionDirective.RepeatDealer,
             dealerIndex = 1,
             beneficiaryIndices = listOf(1, 2),
         )
@@ -126,7 +126,7 @@ class RiichiMatchProgressionPolicyTest {
             Wind.SOUTH,
             MatchRoundPhase.EXTRA,
             listOf(23_500, 26_500, 30_500, 19_500),
-            directive = RoundTransitionDirective.REPEAT_DEALER,
+            directive = RoundTransitionDirective.RepeatDealer,
             dealerIndex = 1,
             classification = RoundCompletionClassification.EXHAUSTIVE_DRAW,
             beneficiaryIndices = listOf(1, 2),
@@ -147,7 +147,7 @@ class RiichiMatchProgressionPolicyTest {
             Wind.SOUTH,
             MatchRoundPhase.EXTRA,
             listOf(29_000, 25_000, 24_000, 22_000),
-            directive = RoundTransitionDirective.REPEAT_DEALER,
+            directive = RoundTransitionDirective.RepeatDealer,
             dealerIndex = 3,
         )
 
@@ -166,7 +166,7 @@ class RiichiMatchProgressionPolicyTest {
             Wind.SOUTH,
             MatchRoundPhase.EXTRA,
             listOf(22_000, 31_000, 27_000, 20_000),
-            directive = RoundTransitionDirective.REPEAT_DEALER,
+            directive = RoundTransitionDirective.RepeatDealer,
             dealerIndex = 1,
         )
 
@@ -185,7 +185,7 @@ class RiichiMatchProgressionPolicyTest {
             Wind.EAST,
             MatchRoundPhase.REGULAR,
             listOf(31_000, 24_000, 20_000, 25_000),
-            directive = RoundTransitionDirective.REPEAT_DEALER,
+            directive = RoundTransitionDirective.RepeatDealer,
             dealerIndex = 3,
             beneficiaryIndices = listOf(3, 0),
         )
@@ -205,7 +205,7 @@ class RiichiMatchProgressionPolicyTest {
             Wind.EAST,
             MatchRoundPhase.REGULAR,
             listOf(25_000, 24_000, 21_000, 30_000),
-            directive = RoundTransitionDirective.REPEAT_DEALER,
+            directive = RoundTransitionDirective.RepeatDealer,
             dealerIndex = 3,
             rankedIndices = listOf(3, 0, 1, 2),
             classification = RoundCompletionClassification.ABORTIVE_DRAW,
@@ -337,11 +337,11 @@ class RiichiMatchProgressionPolicyTest {
         prevalentWind: Wind,
         phase: MatchRoundPhase,
         scores: List<Int>,
-        directive: RoundTransitionDirective = RoundTransitionDirective.ADVANCE_DEALER,
+        directive: RoundTransitionDirective = RoundTransitionDirective.PassToNextSeat,
         dealerIndex: Int = 0,
         rankedIndices: List<Int> = scores.indices.sortedWith(compareByDescending<Int> { scores[it] }.thenBy { it }),
         classification: RoundCompletionClassification = RoundCompletionClassification.WIN,
-        beneficiaryIndices: List<Int> = if (directive == RoundTransitionDirective.REPEAT_DEALER) listOf(dealerIndex) else emptyList(),
+        beneficiaryIndices: List<Int> = if (directive == RoundTransitionDirective.RepeatDealer) listOf(dealerIndex) else emptyList(),
     ): MatchProgressionContext {
         val players = scores.mapIndexed { index, score ->
             FakeMahjongPlayerFactory.create(initialSeat = Wind.entries[index]).copy(score = score)

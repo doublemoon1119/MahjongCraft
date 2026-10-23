@@ -12,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRo
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundOutcome
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundPosition
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundState
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryTransitionDirective
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryWinDetailField
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryWinDetailValue
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryWinnerDetails
@@ -136,7 +137,8 @@ private fun HistoryRoundOutcome.toDto(): HistoryRoundOutcomeDto = HistoryRoundOu
     scoresBySeat = scoresBySeat,
     classification = classification?.name,
     responsibleSeats = responsibleSeats,
-    transitionDirective = transitionDirective?.name,
+    transitionDirective = transitionDirective?.typeId,
+    nextDealerSeat = (transitionDirective as? HistoryTransitionDirective.PassTo)?.nextDealerSeat,
     scoreChangesBySeat = scoreChangesBySeat,
     winnerDetails = winnerDetails.map { it.toDto() },
     hasEarlierWinSettlement = hasEarlierWinSettlement,

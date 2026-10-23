@@ -19,13 +19,13 @@ import kotlin.math.abs
  * @property providers 已依優先權排序的來源。
  * @property environment 平台安全操作。
  * @property failurePolicy 判斷提供者丟出的失敗能否隔離；無法隔離的失敗原樣往外傳。
- * @property report 提供者失敗的診斷；傳入提供者 ID 與例外。
+ * @property report 提供者失敗的診斷；傳入提供者 ID、乘坐者與例外。
  */
 class SeatAssignmentCoordinator<W, R, S>(
     private val providers: List<RegisteredSeatProvider<W, R>>,
     private val environment: SeatEnvironment<W, R, S>,
     private val failurePolicy: ExtensionFailurePolicy,
-    private val report: (String, Throwable) -> Unit,
+    private val report: (String, R, Throwable) -> Unit,
 ) {
     /** 已由本次開局成功認領的座位，跨不同提供者去重。 */
     private val claimed = mutableSetOf<SeatIdentity>()
@@ -100,9 +100,69 @@ class SeatAssignmentCoordinator<W, R, S>(
             throw cause
         } catch (cause: Throwable) {
             if (!failurePolicy.isIsolatable(cause)) throw cause
-            report(providerId, cause)
+            report(providerId, rider, cause)
             environment.recover(rider, original)
             return SeatAssignmentResult.FAILED
+        }
+    }
+
+    /**
+     * 開局或局間換位時讓整桌入座：先讓正坐在本桌其他席位上的乘坐者站起來，全部站起後再依座位順序入座。
+     *
+     * 已坐在自己席位上的乘坐者不動；坐在本桌席位以外載具上的乘坐者不強制拉下來，入座結果照常回報
+     * [SeatAssignmentResult.RIDING]。本元件需由平台在主執行緒呼叫。
+     *
+     * @param world 目標世界。
+     * @param riders 依座位 index 排列的乘坐者；沒有可移動的實體（例如 AI 或離線玩家）時為 null。
+     * @param requests 本桌所有固定席位，依座位 index 排列，數量與 [riders] 相同。
+     * @return 依座位 index 排列的入座結果；沒有乘坐者的座位為 null。
+     */
+    fun seatAll(
+        world: W,
+        riders: List<R?>,
+        requests: List<SeatRequest>,
+    ): List<SeatAssignmentResult?> {
+        require(riders.size == requests.size) { "Every seat needs exactly one rider entry" }
+        riders.forEachIndexed { seatIndex, rider -> rider?.let { leaveOtherTableSeat(world, it, requests, seatIndex) } }
+        return riders.mapIndexed { seatIndex, rider -> rider?.let { assign(world, it, requests[seatIndex]) } }
+    }
+
+    /**
+     * 乘坐者正坐在本桌 [keepSeatIndex] 以外的席位上時讓他站起來；查不到或坐在其他東西上時不動。
+     *
+     * @param world 目標世界。
+     * @param rider 乘坐者。
+     * @param requests 本桌所有固定席位，依座位 index 排列。
+     * @param keepSeatIndex 乘坐者這次要坐的座位。
+     */
+    private fun leaveOtherTableSeat(
+        world: W,
+        rider: R,
+        requests: List<SeatRequest>,
+        keepSeatIndex: Int,
+    ) {
+        val original = environment.snapshot(rider)
+        var providerId = "unresolved"
+        try {
+            val seatedElsewhere = requests.withIndex().any { (seatIndex, request) ->
+                seatIndex != keepSeatIndex &&
+                    providers.any { registered ->
+                        providerId = registered.id
+                        registered.provider.resolve(world, request).any { target ->
+                            target.identity.dimensionId == request.dimensionId &&
+                                matches(target.geometry(world, rider), request) &&
+                                target.inspect(world, rider) == SeatState.SEATED
+                        }
+                    }
+            }
+            if (!environment.unchanged(rider, original)) error("Seat provider changed rider while looking up the current seat")
+            if (seatedElsewhere) environment.leaveSeat(rider)
+        } catch (cause: CancellationException) {
+            throw cause
+        } catch (cause: Throwable) {
+            if (!failurePolicy.isIsolatable(cause)) throw cause
+            report(providerId, rider, cause)
+            environment.recover(rider, original)
         }
     }
 

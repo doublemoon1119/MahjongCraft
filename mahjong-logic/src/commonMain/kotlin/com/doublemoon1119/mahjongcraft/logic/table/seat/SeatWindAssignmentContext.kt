@@ -7,7 +7,7 @@ import kotlin.uuid.Uuid
 /**
  * 指派一局自風時可使用的權威上下文。
  *
- * @property playerIdsInTurnOrder 整場固定、依回合方向排列的玩家 Uuid。
+ * @property playerIdsInTurnOrder 本局依回合方向排列的玩家 Uuid。
  * @property dealerPlayerId 本局權威莊家 Uuid。
  * @property diceRolls 本局完整擲骰記錄；規則未使用骰子時為空清單。
  * @property wallOpening 本局牌牆開門結果；規則未建立實體牌牆開門時為 `null`。
