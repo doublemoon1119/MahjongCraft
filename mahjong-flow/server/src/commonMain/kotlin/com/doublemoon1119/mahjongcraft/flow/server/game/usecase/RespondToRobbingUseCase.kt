@@ -354,7 +354,7 @@ class RespondToRobbingUseCase(
             result.scoring?.let { presentationPublisher.publishActionScored(gameId, it) }
             val followUp = result.followUp
             if (followUp != null) {
-                presentationPublisher.publishPlayerAreaAfterDraw(gameId, declarerId, followUp, module)
+                presentationPublisher.publishPlayerAreaAfterDraw(gameId, declarerId, followUp, module, ruleStateChanged = result.ruleStateChanged)
             } else {
                 val declarerSeatIndex = newState.players.indexOfFirst { it.id == declarerId }
                 val declarer = newState.players[declarerSeatIndex]
@@ -366,8 +366,8 @@ class RespondToRobbingUseCase(
                     melds = declarer.hand.melds.map { it.toPresentation(newState.config.revealsClosedKanTiles) },
                     setAsideTileIds = module.setAsideTiles(declarer).map { it.id },
                 )
+                if (result.ruleStateChanged) presentationPublisher.publishRuleStateUpdated(gameId)
             }
-            if (result.ruleStateChanged) presentationPublisher.publishRuleStateUpdated(gameId)
         }
 
         // 正常成立的槓依規則 checkpoint 發布新公開的牌；搶槓胡牌取消等待時不會產生批次。

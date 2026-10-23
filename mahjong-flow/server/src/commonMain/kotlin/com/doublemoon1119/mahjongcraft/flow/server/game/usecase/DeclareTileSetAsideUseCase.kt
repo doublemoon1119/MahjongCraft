@@ -117,6 +117,7 @@ class DeclareTileSetAsideUseCase(
                     followUp = followUp,
                     module = module,
                     newlySetAsideTileIds = setOf(result.setAsideTile.id),
+                    ruleStateChanged = true,
                 )
             } else {
                 val declarerSeatIndex = newState.players.indexOfFirst { it.id == playerId }
@@ -130,8 +131,8 @@ class DeclareTileSetAsideUseCase(
                     setAsideTileIds = module.setAsideTiles(declarer).map { it.id },
                     newlySetAsideTileIds = setOf(result.setAsideTile.id),
                 )
+                presentationPublisher.publishRuleStateUpdated(gameId)
             }
-            presentationPublisher.publishRuleStateUpdated(gameId)
             result.wallRevealBatches.forEach { revealedTileIds ->
                 presentationPublisher.publishWallTilesRevealed(gameId, revealedTileIds)
             }

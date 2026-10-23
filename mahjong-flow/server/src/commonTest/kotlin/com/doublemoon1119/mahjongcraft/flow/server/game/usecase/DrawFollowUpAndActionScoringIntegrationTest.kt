@@ -402,6 +402,41 @@ class DrawFollowUpAndActionScoringIntegrationTest {
         assertIs<GameAction.Kan>(assertIs<DrawSource.Supplemental>(keptSource).action)
     }
 
+    /** 宣告移出後自動處理又移出補到的牌時，規則狀態的變化只通知平台一次。 */
+    @Test
+    fun `a declared set aside followed by automatic ones updates the rule state once`() = runTest {
+        val fixture = Fixture(TestBehavior(declaresFlowers = true))
+        val declared = tile(FLOWER)
+        val replacement = tile(FLOWER)
+        val ordinary = tile(ORDINARY)
+        val hand = Hand(tiles = fillers(13), lastDrawn = declared)
+        fixture.repository.setTableState(fixture.table(drawerHand = hand, wall = listOf(ordinary, replacement)))
+
+        assertIs<Outcome.Success<Unit>>(fixture.declareSetAside(fixture.gameId, fixture.drawerId, FLOWER_ACTION))
+
+        assertEquals(listOf(declared, replacement), (fixture.drawer().playerRuleState as FlowerState).flowers)
+        assertEquals(1, fixture.presentation.getPublishedPlayerTiles(fixture.gameId)!!.followUpSteps.size)
+        assertEquals(1, fixture.presentation.getRuleStateUpdateCount(fixture.gameId))
+    }
+
+    /** 全員放過後繼續的自動處理又移出牌時，這次回應的規則狀態變化只通知平台一次。 */
+    @Test
+    fun `resuming automatic set asides after a robbing pause updates the rule state once`() = runTest {
+        val behavior = TestBehavior(replacementCount = 2)
+        val fixture = Fixture(behavior)
+        val (first, second, third) = Triple(tile(FLOWER), tile(FLOWER), tile(FLOWER))
+        behavior.robbingPlayerIds += fixture.southId
+        behavior.robbableTileIds += second.id
+        fixture.repository.setTableState(fixture.table(wall = listOf(first) + List(4) { tile(ORDINARY) } + listOf(third, second)))
+        assertIs<Outcome.Success<Unit>>(fixture.draw(fixture.gameId, fixture.drawerId))
+        val pausedCount = fixture.presentation.getRuleStateUpdateCount(fixture.gameId)
+
+        assertIs<Outcome.Success<Unit>>(fixture.respondToRobbing(fixture.gameId, fixture.southId, GameAction.Pass))
+
+        assertEquals(1, fixture.presentation.getPublishedPlayerTiles(fixture.gameId)!!.followUpSteps.size)
+        assertEquals(pausedCount + 1, fixture.presentation.getRuleStateUpdateCount(fixture.gameId))
+    }
+
     /** 規則要移出的不是這次詢問的牌時視為規則錯誤，桌況不改變。 */
     @Test
     fun `a follow up must set aside the tile it asked about`() = runTest {
@@ -473,6 +508,7 @@ class DrawFollowUpAndActionScoringIntegrationTest {
      * @property setsAsideOldestFlower 是否違規移出手上最早的花，而不是摸牌位上的花。
      * @property changesSetAsideFace 是否違規把要移出的牌換成另一種牌面。
      * @property askedSources 依詢問順序記錄的牌與來源。
+     * @property declaresFlowers 摸牌位上是花時，玩家是否可以自己宣告移出。
      */
     private class TestBehavior(
         val scoring: ((ActionScoringContext) -> ActionScoring?)? = null,
@@ -488,6 +524,7 @@ class DrawFollowUpAndActionScoringIntegrationTest {
         val setsAsideOldestFlower: Boolean = false,
         val changesSetAsideFace: Boolean = false,
         val askedSources: MutableList<Pair<Uuid, DrawSource>> = mutableListOf(),
+        val declaresFlowers: Boolean = false,
     )
 
     /**
@@ -528,6 +565,9 @@ class DrawFollowUpAndActionScoringIntegrationTest {
 
         /** 正式暗槓與加槓用例。 */
         val kan = DeclareKanUseCase(repository, modules, snapshots, events, presentation)
+
+        /** 正式宣告移出用例。 */
+        val declareSetAside = DeclareTileSetAsideUseCase(repository, modules, snapshots, events, presentation)
 
         /** 正式搶和回應用例。 */
         val respondToRobbing = RespondToRobbingUseCase(
@@ -752,6 +792,10 @@ class DrawFollowUpAndActionScoringIntegrationTest {
                         } else {
                             listOf(GameAction.Pass)
                         }
+                    }
+                    val drawnFlower = context.player.hand.lastDrawn?.tile == FLOWER
+                    if (source == LegalActionSource.OwnTurn && behavior.declaresFlowers && drawnFlower) {
+                        return base.getLegalActions(context) + FLOWER_ACTION
                     }
                     return base.getLegalActions(context)
                 }

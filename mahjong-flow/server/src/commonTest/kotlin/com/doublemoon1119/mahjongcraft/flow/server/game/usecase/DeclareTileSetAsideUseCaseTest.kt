@@ -116,7 +116,7 @@ class DeclareTileSetAsideUseCaseTest {
         assertEquals(rinshan.id, fixtures.presentationPublisher.getPublishedPlayerTiles(gameId)?.drawnTileId)
         assertEquals(setOf(north.id), fixtures.presentationPublisher.getPublishedPlayerTiles(gameId)?.newlySetAsideTileIds)
         assertTrue(fixtures.presentationPublisher.getPublishedPlayerTiles(gameId)?.isNewlyDrawn == true)
-        assertTrue(fixtures.presentationPublisher.getRuleStateUpdateCount(gameId) > 0)
+        assertEquals(1, fixtures.presentationPublisher.getRuleStateUpdateCount(gameId))
     }
 
     /** 驗證手中沒有北時拒絕拔北。 */
