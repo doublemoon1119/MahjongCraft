@@ -94,10 +94,33 @@
 - Use the shared executor as the only source of dice results. The current round's saved transcript,
   live events, history and presentation all use those same results. Reconnection and loading never reroll.
 - Selecting the initial dealer does not move players to different physical seats. Keep the roster order
-  fixed; establish the initial ranking order once, relative to that dealer. Later rounds use the dealer
-  chosen by match progression, even when another player rolls.
+  as it is; establish the initial ranking order once, relative to that dealer. Later rounds use the dealer
+  chosen when the previous round ended, even when another player rolls. Players change seats only through
+  the seat order described in Dealer, Seats and Pot Payouts.
 - Keep the bundled single-roll behaviour through the default procedure. Test custom multi-roll procedures
   through actual start and next-round use cases, including invalid requests and interrupted presentation.
+
+## Dealer, Seats and Pot Payouts
+
+- `resolveRoundTransition` decides the next dealer once, when a round ends: `RepeatDealer`, `PassToNextSeat`
+  or `PassTo` a named player, for example the winner. The result is saved with the round summary and reused
+  after loading; nothing recomputes it. `PassTo` must name another player at the table. The next seat is
+  counted in the seating of the round that just ended.
+- A match progression policy that changes seats between rounds returns `ContinueMatch.seatOrder`, the
+  complete turn order for the next round. It must list every player exactly once. Flow reorders the players
+  and keeps their IDs, scores and `initialSeatIndex`; relative directions and seat winds follow the new order.
+  Do not reorder `players` anywhere else.
+- When seats change, Flow calls `publishSeatOrderChanged` before the next round is shown. The platform seats
+  players the same way as at the start of a match: anyone sitting on another seat of the same table stands up
+  first, so two players can swap and a player who sat down early reaches their own seat. Players riding
+  something that is not one of the table's seats are not pulled off.
+- `collectStickPot` only says how much the pot holds. Who receives it, and who collects combo bonus points,
+  comes from `allocateSettlementExtras`. Candidates arrive in priority order: from the discarder's next seat
+  for a win by discard, the winner alone for a self-draw, from the dealer for draws, and by final ranking at
+  the end of the match. Shares must go to candidates, must not be negative and must add up to the collected
+  pot; only at the end of the match may the rule return no shares, which removes the leftover pot. No combo
+  bonus is paid at the end of the match. An invalid allocation stops the match through the contract-failure
+  path.
 
 ## Observer State Projection
 
