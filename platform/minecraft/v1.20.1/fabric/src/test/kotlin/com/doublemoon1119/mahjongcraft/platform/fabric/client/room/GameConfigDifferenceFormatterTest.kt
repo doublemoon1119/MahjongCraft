@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecision
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolution
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
@@ -143,11 +144,11 @@ class GameConfigDifferenceFormatterTest {
         override val ruleModuleId: String = "example:rule"
         override fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig = RuleDecisionConfig(30)
 
-        override fun begin(tableState: TableState, ruleModule: MahjongRuleModule<*>) = error("not used")
+        override fun begin(timing: RuleDecisionTiming, tableState: TableState, ruleModule: MahjongRuleModule<*>) = error("not used")
 
         override fun resolve(
             tableState: TableState,
-            ruleDecision: PendingRuleDecision,
+            decision: PendingRuleDecision,
             ruleModule: MahjongRuleModule<*>,
         ): RuleDecisionResolution = error("not used")
     }

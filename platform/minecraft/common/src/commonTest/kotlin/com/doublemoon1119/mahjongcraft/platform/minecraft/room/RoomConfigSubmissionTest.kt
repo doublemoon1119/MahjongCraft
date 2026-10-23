@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.ActionTimeControl
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecision
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.SpectatingPolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.SpectatorHandVisibility
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
@@ -410,11 +411,11 @@ class RoomConfigSubmissionTest {
                     null
                 }
 
-                override fun begin(tableState: TableState, ruleModule: MahjongRuleModule<*>) = error("not used")
+                override fun begin(timing: RuleDecisionTiming, tableState: TableState, ruleModule: MahjongRuleModule<*>) = error("not used")
 
                 override fun resolve(
                     tableState: TableState,
-                    ruleDecision: PendingRuleDecision,
+                    decision: PendingRuleDecision,
                     ruleModule: MahjongRuleModule<*>,
                 ): RuleDecisionResolution = error("not used")
             })

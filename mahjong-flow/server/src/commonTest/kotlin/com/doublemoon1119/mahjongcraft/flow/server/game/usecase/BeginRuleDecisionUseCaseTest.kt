@@ -5,6 +5,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecision
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionInputSpec
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionStep
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleContractViolationException
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolution
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolver
@@ -130,7 +132,7 @@ class BeginRuleDecisionUseCaseTest {
                 GameVisibilityPolicyImpl(moduleRegistry),
             ),
             abortGameHandler = abortHandler,
-        )(repository.getGame(testGameId)!!.tableState.id)
+        )(repository.getGame(testGameId)!!.tableState.id, RuleDecisionTiming.ROUND_START)
     }
 
     /**
@@ -152,9 +154,13 @@ class BeginRuleDecisionUseCaseTest {
         object AutoResolver : RuleDecisionResolver {
             override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI
 
-            override fun begin(tableState: TableState, ruleModule: MahjongRuleModule<*>) = PendingRuleDecision("test:auto", 0, emptyMap())
+            override fun begin(timing: RuleDecisionTiming, tableState: TableState, ruleModule: MahjongRuleModule<*>) = RuleDecisionStep(
+                stepId = "test:auto",
+                stepIndex = 0,
+                inputSpecsByPlayerId = emptyMap(),
+            )
 
-            override fun resolve(tableState: TableState, ruleDecision: PendingRuleDecision, ruleModule: MahjongRuleModule<*>) = RuleDecisionResolution(tableState, null)
+            override fun resolve(tableState: TableState, decision: PendingRuleDecision, ruleModule: MahjongRuleModule<*>) = RuleDecisionResolution(tableState, null)
         }
 
         /** 建立需要玩家輸入的測試解析器。 */
@@ -163,13 +169,13 @@ class BeginRuleDecisionUseCaseTest {
 
             override fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig? = if ((ruleConfig as? RiichiRuleConfig)?.redDoraCount == 3) RuleDecisionConfig(30) else null
 
-            override fun begin(tableState: TableState, ruleModule: MahjongRuleModule<*>) = PendingRuleDecision(
-                "test:player",
-                0,
-                mapOf(tableState.players.first().id to RuleDecisionInputSpec.Confirmation),
+            override fun begin(timing: RuleDecisionTiming, tableState: TableState, ruleModule: MahjongRuleModule<*>) = RuleDecisionStep(
+                stepId = "test:player",
+                stepIndex = 0,
+                inputSpecsByPlayerId = mapOf(tableState.players.first().id to RuleDecisionInputSpec.Confirmation),
             )
 
-            override fun resolve(tableState: TableState, ruleDecision: PendingRuleDecision, ruleModule: MahjongRuleModule<*>) = RuleDecisionResolution(tableState, null)
+            override fun resolve(tableState: TableState, decision: PendingRuleDecision, ruleModule: MahjongRuleModule<*>) = RuleDecisionResolution(tableState, null)
         }
     }
 }

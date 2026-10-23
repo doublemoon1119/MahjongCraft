@@ -27,7 +27,9 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecisio
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionInputSpec
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionStep
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSubmission
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundContinuationContext
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
@@ -46,6 +48,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerDecisionTi
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.BeginRuleDecisionUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAbortiveDrawUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareAndDiscardUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
@@ -111,6 +114,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -331,10 +335,11 @@ class GameFlowCoordinatorTest {
                 winSettlementDetailResolverRegistry,
             ),
             resolveWinRoundContinuationUseCase = ResolveWinRoundContinuationUseCase(
-                gameRepo,
-                moduleRegistry,
-                winRoundContinuationResolverRegistry,
-                snapshotSynchronizer,
+                gameRepository = gameRepo,
+                moduleRegistry = moduleRegistry,
+                resolverRegistry = winRoundContinuationResolverRegistry,
+                snapshotSynchronizer = snapshotSynchronizer,
+                ruleDecisionResolverRegistry = ruleDecisionResolvers,
             ),
             advanceRoundUseCase = AdvanceRoundUseCase(
                 gameRepo,
@@ -379,6 +384,15 @@ class GameFlowCoordinatorTest {
                     aiStrategyRegistry,
                     GameVisibilityPolicyImpl(moduleRegistry),
                     AiDecisionExecutor.direct(failurePolicy = ExtensionFailurePolicy.Default),
+                )
+            },
+            beginRuleDecisionUseCase = ruleDecisionResolvers?.let {
+                BeginRuleDecisionUseCase(
+                    gameRepository = gameRepo,
+                    moduleRegistry = moduleRegistry,
+                    resolverRegistry = it,
+                    snapshotSynchronizer = snapshotSynchronizer,
+                    abortGameHandler = abortGameHandler,
                 )
             },
         )
@@ -566,6 +580,173 @@ class GameFlowCoordinatorTest {
         assertTrue(newState.players.first { it.id == playerId }.actionHistory.isEmpty(), "A fresh hand's actionHistory should be empty.")
         fixtures.assertSingleSettlement(RoundSettlementKind.DRAW)
         assertEquals(1, settlementCalls, "Settlement and presentation must share the same calculated result.")
+    }
+
+    /**
+     * 驗證規則在一般流局結算前開啟選擇時，流局要等視窗關閉才結算；結算只做一次，接著開啟本局結算後的視窗，
+     * 換局要等那個視窗也關閉。
+     */
+    @Test
+    fun `test rule decision windows pause the exhaustive draw settlement and the next round`() = runTest {
+        var settlementCalls = 0
+        val fixtures = Fixtures(
+            ruleDecisionResolvers = RuleDecisionResolverRegistry().apply { register(TimedConfirmationResolver(setOf(RuleDecisionTiming.BEFORE_EXHAUSTIVE_DRAW, RuleDecisionTiming.ROUND_END), "test:coordinator-rule")) },
+            ruleModuleDecorator = { delegate ->
+                object : MahjongRuleModule<RiichiRuleConfig> by delegate {
+                    /** 計算一次正式流局結算，記錄被呼叫的次數。 */
+                    override fun declareExhaustiveDraw(tableState: TableState) = delegate.declareExhaustiveDraw(tableState).also {
+                        settlementCalls++
+                    }
+                }
+            },
+        )
+        val playerId = Uuid.random()
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(
+                FakeMahjongPlayerFactory.create(id = playerId, initialSeat = Wind.EAST),
+                FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH),
+            ),
+            config = RiichiRuleConfig(gameLength = RiichiGameLength.East),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setGame(Game(tableState = table, flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30))))
+
+        val result = fixtures.coordinator.dispatchThenDrive(gameId, playerId, GameCommand.Draw)
+
+        assertEquals(Outcome.Error(GameError.WallExhausted(gameId)), result)
+        val beforeDraw = assertNotNull(fixtures.gameRepo.getGame(gameId))
+        val drawWindow = assertNotNull(beforeDraw.pendingRuleDecision)
+        assertEquals(RuleDecisionTiming.BEFORE_EXHAUSTIVE_DRAW, drawWindow.timing)
+        assertNull(beforeDraw.roundCompletion)
+        assertNull(beforeDraw.pendingTransition)
+        assertEquals(0, settlementCalls, "The draw must not be settled while the window is open.")
+
+        assertIs<Outcome.Success<Unit>>(
+            fixtures.coordinator.dispatch(gameId, playerId, GameCommand.SubmitRuleDecision(drawWindow.id, RuleDecisionSubmission.Confirmed)),
+        )
+        assertEquals(PendingGameTransition.SettleExhaustiveDraw, fixtures.gameRepo.getGame(gameId)?.pendingTransition)
+        assertTrue(fixtures.coordinator.resumePendingGameTransition(gameId))
+
+        val afterDraw = assertNotNull(fixtures.gameRepo.getGame(gameId))
+        val roundEndWindow = assertNotNull(afterDraw.pendingRuleDecision)
+        assertEquals(RuleDecisionTiming.ROUND_END, roundEndWindow.timing)
+        assertNotEquals(drawWindow.id, roundEndWindow.id)
+        assertNotNull(afterDraw.roundCompletion)
+        assertEquals(PendingGameTransition.AdvanceRound, afterDraw.pendingTransition)
+        assertEquals(1, settlementCalls)
+        assertTrue(!fixtures.coordinator.resumePendingGameTransition(gameId), "The round must not advance while the window is open.")
+        assertEquals(0, fixtures.gameRepo.getTableState(gameId)!!.tileWall.remainingCount)
+
+        assertIs<Outcome.Success<Unit>>(
+            fixtures.coordinator.dispatch(gameId, playerId, GameCommand.SubmitRuleDecision(roundEndWindow.id, RuleDecisionSubmission.Confirmed)),
+        )
+        assertTrue(fixtures.coordinator.resumePendingGameTransition(gameId))
+
+        val nextRound = assertNotNull(fixtures.gameRepo.getGame(gameId))
+        assertTrue(nextRound.tableState.tileWall.remainingCount > 0, "The wall should have been rebuilt for the next hand.")
+        assertNull(nextRound.pendingTransition)
+        assertEquals(1, settlementCalls)
+        fixtures.assertSingleSettlement(RoundSettlementKind.DRAW)
+    }
+
+    /** 驗證本局結算後的視窗關閉、尚未換局時，摸牌會被拒絕，不會重新開啟流局前的選擇或再結算一次。 */
+    @Test
+    fun `test a draw after the round end window closes is rejected until the next round`() = runTest {
+        val fixtures = Fixtures(
+            ruleDecisionResolvers = RuleDecisionResolverRegistry().apply { register(TimedConfirmationResolver(setOf(RuleDecisionTiming.BEFORE_EXHAUSTIVE_DRAW, RuleDecisionTiming.ROUND_END))) },
+        )
+        val playerId = Uuid.random()
+        fixtures.gameRepo.setGame(Game(tableState = exhaustedWallTable(playerId), flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30))))
+        fixtures.coordinator.dispatch(gameId, playerId, GameCommand.Draw)
+        val drawWindow = assertNotNull(fixtures.gameRepo.getGame(gameId)?.pendingRuleDecision)
+        fixtures.coordinator.dispatch(gameId, playerId, GameCommand.SubmitRuleDecision(drawWindow.id, RuleDecisionSubmission.Confirmed))
+        fixtures.coordinator.resumePendingGameTransition(gameId)
+        val roundEndWindow = assertNotNull(fixtures.gameRepo.getGame(gameId)?.pendingRuleDecision)
+        fixtures.coordinator.dispatch(gameId, playerId, GameCommand.SubmitRuleDecision(roundEndWindow.id, RuleDecisionSubmission.Confirmed))
+
+        val draw = fixtures.coordinator.dispatch(gameId, playerId, GameCommand.Draw)
+
+        assertEquals(Outcome.Error(GameError.UnsupportedAction(gameId, playerId)), draw)
+        val waiting = assertNotNull(fixtures.gameRepo.getGame(gameId))
+        assertNull(waiting.pendingRuleDecision)
+        assertEquals(PendingGameTransition.AdvanceRound, waiting.pendingTransition)
+        assertTrue(fixtures.coordinator.resumePendingGameTransition(gameId))
+        assertTrue(fixtures.gameRepo.getTableState(gameId)!!.tileWall.remainingCount > 0, "The next round should have started.")
+        fixtures.assertSingleSettlement(RoundSettlementKind.DRAW)
+    }
+
+    /** 驗證逾時自動送出流局前的選擇後，排定的結算完成前摸牌會被拒絕，不會再問一次。 */
+    @Test
+    fun `test a draw after a timed out choice is rejected until the draw is settled`() = runTest {
+        val fixtures = Fixtures(
+            ruleDecisionResolvers = RuleDecisionResolverRegistry().apply { register(TimedConfirmationResolver(setOf(RuleDecisionTiming.BEFORE_EXHAUSTIVE_DRAW))) },
+        )
+        val playerId = Uuid.random()
+        fixtures.gameRepo.setGame(Game(tableState = exhaustedWallTable(playerId), flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30))))
+        fixtures.coordinator.dispatch(gameId, playerId, GameCommand.Draw)
+        assertNotNull(fixtures.gameRepo.getGame(gameId)?.pendingRuleDecision)
+        fixtures.coordinator.driveAutomatedPlayers(gameId)
+        fixtures.clock.nowMillis += 31_000L
+        assertEquals(listOf(playerId), fixtures.decisionTimerManager.claimTimedOutDecisions().map { it.playerId })
+        fixtures.coordinator.driveAutomatedPlayers(gameId)
+        val submitted = assertNotNull(fixtures.gameRepo.getGame(gameId))
+        assertNull(submitted.pendingRuleDecision)
+        assertEquals(PendingGameTransition.SettleExhaustiveDraw, submitted.pendingTransition)
+        assertTrue(playerId !in submitted.forcedAutoPlayPlayerIds)
+
+        val draw = fixtures.coordinator.dispatch(gameId, playerId, GameCommand.Draw)
+
+        assertEquals(Outcome.Error(GameError.UnsupportedAction(gameId, playerId)), draw)
+        assertNull(fixtures.gameRepo.getGame(gameId)?.pendingRuleDecision)
+        assertTrue(fixtures.coordinator.resumePendingGameTransition(gameId))
+        assertNotNull(fixtures.gameRepo.getGame(gameId)?.roundCompletion)
+        fixtures.assertSingleSettlement(RoundSettlementKind.DRAW)
+    }
+
+    /**
+     * 建立牌山已摸完、輪到 [playerId] 摸牌的兩人桌。
+     *
+     * @param playerId 莊家，也是下一個摸牌的玩家。
+     * @return 下一次摸牌就會流局的桌況。
+     */
+    private fun exhaustedWallTable(playerId: Uuid): TableState = FakeTableStateFactory.create(
+        id = gameId,
+        players = listOf(
+            FakeMahjongPlayerFactory.create(id = playerId, initialSeat = Wind.EAST),
+            FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH),
+        ),
+        config = RiichiRuleConfig(gameLength = RiichiGameLength.East),
+        tileWall = TileWall(emptyList()),
+        currentPlayerIndex = 0,
+    )
+
+    /** 驗證規則不在一般流局結算前開啟選擇時，流局立即結算，只在本局結算後等待確認。 */
+    @Test
+    fun `test exhaustive draw settles immediately when the rule opens no window before it`() = runTest {
+        val fixtures = Fixtures(
+            ruleDecisionResolvers = RuleDecisionResolverRegistry().apply { register(TimedConfirmationResolver(setOf(RuleDecisionTiming.ROUND_END))) },
+        )
+        val playerId = Uuid.random()
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(
+                FakeMahjongPlayerFactory.create(id = playerId, initialSeat = Wind.EAST),
+                FakeMahjongPlayerFactory.create(initialSeat = Wind.SOUTH),
+            ),
+            config = RiichiRuleConfig(gameLength = RiichiGameLength.East),
+            tileWall = TileWall(emptyList()),
+            currentPlayerIndex = 0,
+        )
+        fixtures.gameRepo.setGame(Game(tableState = table, flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30))))
+
+        fixtures.coordinator.dispatchThenDrive(gameId, playerId, GameCommand.Draw)
+
+        val game = assertNotNull(fixtures.gameRepo.getGame(gameId))
+        assertNotNull(game.roundCompletion)
+        assertEquals(RuleDecisionTiming.ROUND_END, game.pendingRuleDecision?.timing)
+        assertEquals(PendingGameTransition.AdvanceRound, game.pendingTransition)
     }
 
     /** 驗證規則不支援一般流局結算時，會以明確原因中止對局，不偽造流局或換局結果。 */
@@ -893,6 +1074,31 @@ class GameFlowCoordinatorTest {
         )
     }
 
+    /** 驗證胡牌後本局繼續時，規則可以開啟選擇視窗，剩下的玩家要等視窗關閉才繼續摸打。 */
+    @Test
+    fun `test continuing win opens the win continues rule decision window`() = runTest {
+        val winnerId = Uuid.random()
+        val otherId = Uuid.random()
+        val fixtures = runContinuingWinTsumo(
+            winnerId = winnerId,
+            otherId = otherId,
+            winningTile = FakeIdentifiedTileFactory.create(Tile.Honor.Red),
+            settlementDetail = ContinuingWinSettlementDetail.WINNER_DETAILS,
+            ruleDecisionResolvers = RuleDecisionResolverRegistry().apply { register(TimedConfirmationResolver(setOf(RuleDecisionTiming.WIN_CONTINUES))) },
+        )
+
+        val game = assertNotNull(fixtures.gameRepo.getGame(gameId))
+        val window = assertNotNull(game.pendingRuleDecision)
+        assertEquals(RuleDecisionTiming.WIN_CONTINUES, window.timing)
+        assertEquals(setOf(winnerId), game.tableState.finishedPlayerIds)
+        assertNull(game.pendingTransition)
+        assertEquals(
+            Outcome.Error(GameError.UnsupportedAction(gameId, otherId)),
+            fixtures.coordinator.dispatch(gameId, otherId, GameCommand.Draw),
+            "Play must wait for the window to close.",
+        )
+    }
+
     /** 驗證只顯示分數變動時，要求仍包含和牌呈現及展示理由，但省略贏家明細。 */
     @Test
     fun `test continuing win in brief mode only shrinks the settlement panel`() = runTest {
@@ -1025,6 +1231,7 @@ class GameFlowCoordinatorTest {
         winningTile: IdentifiedTile,
         settlementDetail: ContinuingWinSettlementDetail,
         handTiles: List<Tile> = daisangenTiles,
+        ruleDecisionResolvers: RuleDecisionResolverRegistry? = null,
     ): Fixtures {
         val ruleModuleId = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }.getModule(RiichiRuleConfig()).id
         val continuationRegistry = WinRoundContinuationResolverRegistry().apply {
@@ -1052,7 +1259,7 @@ class GameFlowCoordinatorTest {
             )
             freeze()
         }
-        val fixtures = Fixtures(winRoundContinuationResolverRegistry = continuationRegistry)
+        val fixtures = Fixtures(winRoundContinuationResolverRegistry = continuationRegistry, ruleDecisionResolvers = ruleDecisionResolvers)
         val winner = FakeMahjongPlayerFactory.create(
             id = winnerId,
             initialSeat = Wind.EAST,
@@ -1069,7 +1276,7 @@ class GameFlowCoordinatorTest {
             config = RiichiRuleConfig(gameLength = RiichiGameLength.East),
             currentPlayerIndex = 0,
         )
-        fixtures.gameRepo.setTableState(table)
+        fixtures.gameRepo.setGame(Game(tableState = table, flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30))))
 
         val result = fixtures.coordinator.dispatchThenDrive(gameId, winnerId, GameCommand.Tsumo)
         assertTrue(result is Outcome.Success, "Expected Success but got $result")
@@ -1797,10 +2004,13 @@ class GameFlowCoordinatorTest {
                 tableState = table,
                 aiPlayerStrategyKeys = mapOf(aiId to CHANGING_STRATEGY_KEY),
                 flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30)),
-                pendingRuleDecision = PendingRuleDecision(
-                    stepId = "test:confirm",
-                    stepIndex = 0,
-                    inputSpecsByPlayerId = mapOf(aiId to RuleDecisionInputSpec.Confirmation),
+                pendingRuleDecision = PendingRuleDecision.open(
+                    step = RuleDecisionStep(
+                        stepId = "test:confirm",
+                        stepIndex = 0,
+                        inputSpecsByPlayerId = mapOf(aiId to RuleDecisionInputSpec.Confirmation),
+                    ),
+                    timing = RuleDecisionTiming.ROUND_START,
                 ),
             ),
         )
@@ -1836,13 +2046,16 @@ class GameFlowCoordinatorTest {
                 tableState = table,
                 aiPlayerStrategyKeys = mapOf(aiId to FIXED_RULE_DECISION_STRATEGY_KEY),
                 flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30)),
-                pendingRuleDecision = PendingRuleDecision(
-                    stepId = "test:confirm",
-                    stepIndex = 0,
-                    inputSpecsByPlayerId = mapOf(
-                        humanId to RuleDecisionInputSpec.Confirmation,
-                        aiId to RuleDecisionInputSpec.Confirmation,
+                pendingRuleDecision = PendingRuleDecision.open(
+                    step = RuleDecisionStep(
+                        stepId = "test:confirm",
+                        stepIndex = 0,
+                        inputSpecsByPlayerId = mapOf(
+                            humanId to RuleDecisionInputSpec.Confirmation,
+                            aiId to RuleDecisionInputSpec.Confirmation,
+                        ),
                     ),
+                    timing = RuleDecisionTiming.ROUND_START,
                 ),
             ),
         )
@@ -1856,7 +2069,7 @@ class GameFlowCoordinatorTest {
         val humanResult = fixtures.coordinator.dispatch(
             gameId,
             humanId,
-            GameCommand.SubmitRuleDecision(RuleDecisionSubmission.Confirmed),
+            GameCommand.SubmitRuleDecision(assertNotNull(waitingGame.pendingRuleDecision).id, RuleDecisionSubmission.Confirmed),
         )
         assertTrue(humanResult is Outcome.Success)
         fixtures.coordinator.driveAutomatedPlayers(gameId)
@@ -1941,10 +2154,13 @@ class GameFlowCoordinatorTest {
                 tableState = table,
                 aiPlayerStrategyKeys = mapOf(aiId to HANGING_STRATEGY_KEY),
                 flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30)),
-                pendingRuleDecision = PendingRuleDecision(
-                    stepId = "test:confirm",
-                    stepIndex = 0,
-                    inputSpecsByPlayerId = mapOf(aiId to RuleDecisionInputSpec.Confirmation),
+                pendingRuleDecision = PendingRuleDecision.open(
+                    step = RuleDecisionStep(
+                        stepId = "test:confirm",
+                        stepIndex = 0,
+                        inputSpecsByPlayerId = mapOf(aiId to RuleDecisionInputSpec.Confirmation),
+                    ),
+                    timing = RuleDecisionTiming.ROUND_START,
                 ),
             ),
         )
@@ -2039,11 +2255,37 @@ class GameFlowCoordinatorTest {
 
         override fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig = RuleDecisionConfig(30)
 
-        override fun begin(tableState: TableState, ruleModule: MahjongRuleModule<*>): PendingRuleDecision? = null
+        override fun begin(timing: RuleDecisionTiming, tableState: TableState, ruleModule: MahjongRuleModule<*>): RuleDecisionStep? = null
 
         override fun resolve(
             tableState: TableState,
-            ruleDecision: PendingRuleDecision,
+            decision: PendingRuleDecision,
+            ruleModule: MahjongRuleModule<*>,
+        ): RuleDecisionResolution = RuleDecisionResolution(tableState, nextStep = null)
+    }
+
+    /**
+     * 在指定時間點請第一位玩家確認的規則選擇解析器；收齊後不改桌況。
+     *
+     * @property timings 要開啟確認的時間點。
+     * @property ruleModuleId 對應的規則模組 ID。
+     */
+    private class TimedConfirmationResolver(
+        private val timings: Set<RuleDecisionTiming>,
+        override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI,
+    ) : RuleDecisionResolver {
+
+        override fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig = RuleDecisionConfig(30)
+
+        override fun begin(timing: RuleDecisionTiming, tableState: TableState, ruleModule: MahjongRuleModule<*>): RuleDecisionStep? = RuleDecisionStep(
+            stepId = "test:confirm_${timing.name.lowercase()}",
+            stepIndex = 0,
+            inputSpecsByPlayerId = mapOf(tableState.players.first().id to RuleDecisionInputSpec.Confirmation),
+        ).takeIf { timing in timings }
+
+        override fun resolve(
+            tableState: TableState,
+            decision: PendingRuleDecision,
             ruleModule: MahjongRuleModule<*>,
         ): RuleDecisionResolution = RuleDecisionResolution(tableState, nextStep = null)
     }

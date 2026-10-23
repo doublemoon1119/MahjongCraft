@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecision
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionStep
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 
 /**
@@ -12,5 +12,5 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
  */
 data class RuleDecisionResolution(
     val tableState: TableState,
-    val nextStep: PendingRuleDecision?,
+    val nextStep: RuleDecisionStep?,
 )

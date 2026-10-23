@@ -2,9 +2,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameAbortReasonIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
-import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleContractViolationException
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
@@ -56,19 +54,7 @@ class AdvanceAutomaticRuleDecisionUseCase(
                         ?: return@repeat
                     if (currentRuleDecision.participantPlayerIds.isNotEmpty()) return@repeat
                     val resolution = resolver.resolve(updated.tableState, currentRuleDecision, module)
-                    val defaultRuleDecision = resolverRegistry.findDefaultConfig(module.id, updated.tableState.config)
-                    if (resolution.nextStep?.participantPlayerIds?.isEmpty() == false &&
-                        (defaultRuleDecision == null || updated.flowConfig.ruleDecision == null)
-                    ) {
-                        throw RuleContractViolationException(
-                            GameAbortReasonIds.RULE_EXECUTION_FAILED,
-                            "Rule decision requires a time configuration for player input",
-                        )
-                    }
-                    updated = updated.copy(
-                        tableState = resolution.tableState,
-                        pendingRuleDecision = resolution.nextStep,
-                    )
+                    updated = RuleDecisionWindows.advance(updated, currentRuleDecision, resolution, module, resolverRegistry)
                     add(
                         HistoryEventDraft(
                             actorPlayerId = null,

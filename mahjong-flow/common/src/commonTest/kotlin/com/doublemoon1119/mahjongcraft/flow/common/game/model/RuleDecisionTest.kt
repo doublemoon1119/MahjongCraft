@@ -1,5 +1,7 @@
 package com.doublemoon1119.mahjongcraft.flow.common.game.model
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionStep
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -24,7 +26,14 @@ class RuleDecisionTest {
             RuleDecisionInputSpec.SingleChoice(listOf("example:first", "Example:Second"))
         }
         assertFailsWith<IllegalArgumentException> {
-            PendingRuleDecision(stepId = "example:bad step", stepIndex = 0, inputSpecsByPlayerId = emptyMap())
+            PendingRuleDecision.open(
+                step = RuleDecisionStep(
+                    stepId = "example:bad step",
+                    stepIndex = 0,
+                    inputSpecsByPlayerId = emptyMap(),
+                ),
+                timing = RuleDecisionTiming.ROUND_START,
+            )
         }
     }
 
@@ -57,10 +66,13 @@ class RuleDecisionTest {
         val first = Uuid.random()
         val second = Uuid.random()
         val spec = RuleDecisionInputSpec.Confirmation
-        val pending = PendingRuleDecision(
-            stepId = "example:confirm",
-            stepIndex = 0,
-            inputSpecsByPlayerId = mapOf(first to spec, second to spec),
+        val pending = PendingRuleDecision.open(
+            step = RuleDecisionStep(
+                stepId = "example:confirm",
+                stepIndex = 0,
+                inputSpecsByPlayerId = mapOf(first to spec, second to spec),
+            ),
+            timing = RuleDecisionTiming.ROUND_START,
         )
 
         assertFalse(pending.isComplete)

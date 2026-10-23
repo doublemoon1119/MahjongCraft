@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSubmission
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
@@ -86,7 +87,7 @@ class ExamplePairingRuleDecisionUseCaseTest {
         val gameId = initialTable.id
         val orderedPlayerIds = initialTable.players.map { it.id }
 
-        assertIs<Outcome.Success<Unit>>(begin(gameId))
+        assertIs<Outcome.Success<Boolean>>(begin(gameId, RuleDecisionTiming.ROUND_START))
         val ruleDecision = repository.getGame(gameId)!!.pendingRuleDecision!!
         orderedPlayerIds.forEach { snapshotSynchronizer.sync(gameId, it) }
         val selected = initialTable.players.associate { player ->
@@ -97,6 +98,7 @@ class ExamplePairingRuleDecisionUseCaseTest {
             submit(
                 gameId,
                 orderedPlayerIds[0],
+                ruleDecision.id,
                 RuleDecisionSubmission.Tiles(selected.getValue(orderedPlayerIds[0]).take(1).toSet()),
             ),
         )
@@ -104,6 +106,7 @@ class ExamplePairingRuleDecisionUseCaseTest {
             submit(
                 gameId,
                 orderedPlayerIds[0],
+                ruleDecision.id,
                 RuleDecisionSubmission.Tiles(
                     selected.getValue(orderedPlayerIds[0]) + initialTable.players[0].hand.standingTiles[2].id,
                 ),
@@ -113,11 +116,12 @@ class ExamplePairingRuleDecisionUseCaseTest {
             submit(
                 gameId,
                 orderedPlayerIds[0],
+                ruleDecision.id,
                 RuleDecisionSubmission.Tiles(setOf(Uuid.random(), Uuid.random())),
             ),
         )
 
-        assertIs<Outcome.Success<Unit>>(submit(gameId, orderedPlayerIds[0], RuleDecisionSubmission.Tiles(selected.getValue(orderedPlayerIds[0]))))
+        assertIs<Outcome.Success<Unit>>(submit(gameId, orderedPlayerIds[0], ruleDecision.id, RuleDecisionSubmission.Tiles(selected.getValue(orderedPlayerIds[0]))))
         val afterFirst = repository.getGame(gameId)!!
         assertEquals(initialTable.players.map { it.hand }, afterFirst.tableState.players.map { it.hand })
         snapshotSynchronizer.sync(gameId, orderedPlayerIds[0])
@@ -128,10 +132,10 @@ class ExamplePairingRuleDecisionUseCaseTest {
         )
         assertNull(visibilityPolicy.ruleDecisionSnapshotFor(repository.getGame(gameId)!!, orderedPlayerIds[1])!!.ownSubmission)
 
-        assertIs<Outcome.Success<Unit>>(submit(gameId, orderedPlayerIds[1], RuleDecisionSubmission.Tiles(selected.getValue(orderedPlayerIds[1]))))
+        assertIs<Outcome.Success<Unit>>(submit(gameId, orderedPlayerIds[1], ruleDecision.id, RuleDecisionSubmission.Tiles(selected.getValue(orderedPlayerIds[1]))))
         assertEquals(initialTable.players.map { it.hand }, repository.getGame(gameId)!!.tableState.players.map { it.hand })
 
-        assertIs<Outcome.Success<Unit>>(submit(gameId, orderedPlayerIds[2], RuleDecisionSubmission.Tiles(selected.getValue(orderedPlayerIds[2]))))
+        assertIs<Outcome.Success<Unit>>(submit(gameId, orderedPlayerIds[2], ruleDecision.id, RuleDecisionSubmission.Tiles(selected.getValue(orderedPlayerIds[2]))))
         val resolved = repository.getGame(gameId)!!.tableState
         assertNull(repository.getGame(gameId)!!.pendingRuleDecision)
         orderedPlayerIds.forEachIndexed { index, playerId ->

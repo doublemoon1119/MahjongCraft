@@ -7,6 +7,12 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransition
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecision
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionInputSpec
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionStep
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSubmission
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceDtoRegistry
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.PersistenceEnvelopeDto
@@ -105,6 +111,31 @@ class AuthoritativeStatePersistenceCodecTest {
         val decoded = codec.decode(codec.encode(rooms, games))
 
         assertEquals(rooms.associateBy(Room::id), decoded.rooms)
+        assertEquals(games.associateBy(Game::id), decoded.games)
+    }
+
+    /** 驗證規則選擇視窗的身分、時間點、提交與排定的一般流局結算都能 round-trip。 */
+    @Test
+    fun `rule decision window and scheduled exhaustive draw round-trip through codec`() {
+        val base = Game(createGame(), GameFlowConfig(ruleDecision = RuleDecisionConfig(15)))
+        val participantId = base.tableState.players.first().id
+        val window = PendingRuleDecision.open(
+            step = RuleDecisionStep(
+                stepId = "mahjongcraft:test_step",
+                stepIndex = 1,
+                inputSpecsByPlayerId = mapOf(
+                    participantId to RuleDecisionInputSpec.SingleChoice(listOf("mahjongcraft:a", "mahjongcraft:b")),
+                ),
+            ),
+            timing = RuleDecisionTiming.BEFORE_EXHAUSTIVE_DRAW,
+        ).copy(submissionsByPlayerId = mapOf(participantId to RuleDecisionSubmission.Choice("mahjongcraft:b")))
+        val games = listOf(
+            base.copy(pendingRuleDecision = window),
+            Game(createGame(), GameFlowConfig()).copy(pendingTransition = PendingGameTransition.SettleExhaustiveDraw),
+        )
+
+        val decoded = codec.decode(codec.encode(emptyList(), games))
+
         assertEquals(games.associateBy(Game::id), decoded.games)
     }
 

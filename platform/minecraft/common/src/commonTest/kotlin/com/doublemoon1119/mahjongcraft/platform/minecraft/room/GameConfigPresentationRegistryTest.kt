@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecision
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.SpectatingPolicy
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolution
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolver
@@ -316,13 +317,14 @@ class GameConfigPresentationRegistryTest {
         override fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig = RuleDecisionConfig(defaultSeconds)
 
         override fun begin(
+            timing: RuleDecisionTiming,
             tableState: TableState,
             ruleModule: MahjongRuleModule<*>,
         ): Nothing = error("not used")
 
         override fun resolve(
             tableState: TableState,
-            ruleDecision: PendingRuleDecision,
+            decision: PendingRuleDecision,
             ruleModule: MahjongRuleModule<*>,
         ): RuleDecisionResolution = error("not used")
     }
@@ -333,13 +335,14 @@ class GameConfigPresentationRegistryTest {
         override fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig? = if ((ruleConfig as? RiichiRuleConfig)?.redDoraCount == 3) RuleDecisionConfig(30) else null
 
         override fun begin(
+            timing: RuleDecisionTiming,
             tableState: TableState,
             ruleModule: MahjongRuleModule<*>,
         ): Nothing = error("not used")
 
         override fun resolve(
             tableState: TableState,
-            ruleDecision: PendingRuleDecision,
+            decision: PendingRuleDecision,
             ruleModule: MahjongRuleModule<*>,
         ): RuleDecisionResolution = error("not used")
     }

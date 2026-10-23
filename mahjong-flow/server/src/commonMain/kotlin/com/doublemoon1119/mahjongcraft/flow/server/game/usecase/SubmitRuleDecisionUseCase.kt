@@ -37,12 +37,14 @@ class SubmitRuleDecisionUseCase(
      *
      * @param gameId 對局識別碼。
      * @param playerId 提交選擇的玩家識別碼。
+     * @param windowId 提交對象的選擇視窗；不是目前開著的視窗時視為過期。
      * @param submission 玩家提交的規則選擇。
-     * @return 提交結果；對局不存在、選擇步驟不可用或內容無效時回傳 [GameError]。
+     * @return 提交結果；對局不存在、視窗已過期、選擇步驟不可用或內容無效時回傳 [GameError]。
      */
     suspend operator fun invoke(
         gameId: Uuid,
         playerId: Uuid,
+        windowId: Uuid,
         submission: RuleDecisionSubmission,
     ): Outcome<Unit, GameError> {
         val result = gameRepository.updateGame(
@@ -55,7 +57,7 @@ class SubmitRuleDecisionUseCase(
                     null,
                 )
             }
-            val ruleDecision = game.pendingRuleDecision
+            val ruleDecision = game.pendingRuleDecision?.takeIf { it.id == windowId }
                 ?: return@updateGame game to RuleDecisionSubmissionUpdate(
                     Outcome.Error(GameError.RuleDecisionUnavailable(gameId, playerId)),
                     null,
@@ -96,7 +98,7 @@ class SubmitRuleDecisionUseCase(
             var updated = game.copy(pendingRuleDecision = submitted)
             if (submitted.isComplete) {
                 val resolution = resolver.resolve(game.tableState, submitted, module)
-                updated = game.copy(tableState = resolution.tableState, pendingRuleDecision = resolution.nextStep)
+                updated = RuleDecisionWindows.advance(game, submitted, resolution, module, resolverRegistry)
             }
             updated to RuleDecisionSubmissionUpdate(
                 Outcome.Success(Unit),

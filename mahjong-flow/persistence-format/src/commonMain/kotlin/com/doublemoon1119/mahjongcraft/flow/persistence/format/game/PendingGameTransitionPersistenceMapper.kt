@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransit
 fun PendingGameTransition.toPersistenceDto(): PendingGameTransitionPersistenceDto = PendingGameTransitionPersistenceDto(
     type = when (this) {
         PendingGameTransition.AdvanceRound -> PendingGameTransitionPersistenceDto.Type.ADVANCE_ROUND
+        PendingGameTransition.SettleExhaustiveDraw -> PendingGameTransitionPersistenceDto.Type.SETTLE_EXHAUSTIVE_DRAW
         PendingGameTransition.ReturnToRoom -> PendingGameTransitionPersistenceDto.Type.RETURN_TO_ROOM
     },
 )
@@ -21,5 +22,6 @@ fun PendingGameTransition.toPersistenceDto(): PendingGameTransitionPersistenceDt
  */
 fun PendingGameTransitionPersistenceDto.toDomain(): PendingGameTransition = when (type) {
     PendingGameTransitionPersistenceDto.Type.ADVANCE_ROUND -> PendingGameTransition.AdvanceRound
+    PendingGameTransitionPersistenceDto.Type.SETTLE_EXHAUSTIVE_DRAW -> PendingGameTransition.SettleExhaustiveDraw
     PendingGameTransitionPersistenceDto.Type.RETURN_TO_ROOM -> PendingGameTransition.ReturnToRoom
 }

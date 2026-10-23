@@ -58,7 +58,7 @@ class GameActionRouter(
         playerId: Uuid,
         command: GameCommand,
     ): Outcome<Unit, GameError> = when (command) {
-        is GameCommand.SubmitRuleDecision -> submitRuleDecisionUseCase?.invoke(gameId, playerId, command.submission)
+        is GameCommand.SubmitRuleDecision -> submitRuleDecisionUseCase?.invoke(gameId, playerId, command.windowId, command.submission)
             ?: Outcome.Error(GameError.RuleDecisionUnavailable(gameId, playerId))
         is GameCommand.Extension -> extensionCommandExecutor.execute(gameId, playerId, command.value)
         GameCommand.Draw -> drawTileUseCase(gameId, playerId)

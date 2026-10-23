@@ -2,15 +2,19 @@ package com.doublemoon1119.mahjongcraft.flow.persistence.format.game
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecision
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionInputSpec
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionStep
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSubmission
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import kotlin.uuid.Uuid
 
 /**
- * 將規則選擇步驟轉為持久化資料。
+ * 將規則選擇視窗轉為持久化資料。
  *
  * @return 轉換後的結果。
  */
 fun PendingRuleDecision.toPersistenceDto(): PendingRuleDecisionPersistenceDto = PendingRuleDecisionPersistenceDto(
+    id = id.toString(),
+    timing = RuleDecisionTimingPersistenceDto.valueOf(timing.name),
     stepId = stepId,
     stepIndex = stepIndex,
     inputSpecsByPlayerId = inputSpecsByPlayerId.mapKeys { it.key.toString() }.mapValues { it.value.toPersistenceDto() },
@@ -18,14 +22,18 @@ fun PendingRuleDecision.toPersistenceDto(): PendingRuleDecisionPersistenceDto = 
 )
 
 /**
- * 將持久化資料還原為規則選擇步驟。
+ * 將持久化資料還原為規則選擇視窗。
  *
  * @return 轉換後的結果。
  */
 fun PendingRuleDecisionPersistenceDto.toDomain(): PendingRuleDecision = PendingRuleDecision(
-    stepId = stepId,
-    stepIndex = stepIndex,
-    inputSpecsByPlayerId = inputSpecsByPlayerId.mapKeys { Uuid.parse(it.key) }.mapValues { it.value.toDomain() },
+    id = Uuid.parse(id),
+    timing = RuleDecisionTiming.valueOf(timing.name),
+    step = RuleDecisionStep(
+        stepId = stepId,
+        stepIndex = stepIndex,
+        inputSpecsByPlayerId = inputSpecsByPlayerId.mapKeys { Uuid.parse(it.key) }.mapValues { it.value.toDomain() },
+    ),
     submissionsByPlayerId = submissionsByPlayerId.mapKeys { Uuid.parse(it.key) }.mapValues { it.value.toDomain() },
 )
 

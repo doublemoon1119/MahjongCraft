@@ -14,7 +14,9 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecisio
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionInputSpec
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSnapshot
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionStep
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSubmission
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.common.game.repository.GameSnapshotRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
@@ -241,13 +243,16 @@ class AuthoritativeStateRecoveryIntegrationTest {
         val confirming = state.players[0]
         val choosing = state.players[1]
         val choices = listOf("mahjongcraft:first", "mahjongcraft:second")
-        val ruleDecision = PendingRuleDecision(
-            stepId = "mahjongcraft:test_step",
-            stepIndex = 0,
-            inputSpecsByPlayerId = mapOf(
-                confirming.id to RuleDecisionInputSpec.Confirmation,
-                choosing.id to RuleDecisionInputSpec.SingleChoice(choices),
+        val ruleDecision = PendingRuleDecision.open(
+            step = RuleDecisionStep(
+                stepId = "mahjongcraft:test_step",
+                stepIndex = 0,
+                inputSpecsByPlayerId = mapOf(
+                    confirming.id to RuleDecisionInputSpec.Confirmation,
+                    choosing.id to RuleDecisionInputSpec.SingleChoice(choices),
+                ),
             ),
+            timing = RuleDecisionTiming.ROUND_START,
         )
 
         runtime.restore(
@@ -283,12 +288,14 @@ class AuthoritativeStateRecoveryIntegrationTest {
         val state = runtime.createGame()
         val participant = state.players[0]
         val bystander = state.players[1]
-        val ruleDecision = PendingRuleDecision(
-            stepId = "mahjongcraft:test_step",
-            stepIndex = 0,
-            inputSpecsByPlayerId = mapOf(participant.id to RuleDecisionInputSpec.Confirmation),
-            submissionsByPlayerId = mapOf(participant.id to RuleDecisionSubmission.Confirmed),
-        )
+        val ruleDecision = PendingRuleDecision.open(
+            step = RuleDecisionStep(
+                stepId = "mahjongcraft:test_step",
+                stepIndex = 0,
+                inputSpecsByPlayerId = mapOf(participant.id to RuleDecisionInputSpec.Confirmation),
+            ),
+            timing = RuleDecisionTiming.ROUND_START,
+        ).copy(submissionsByPlayerId = mapOf(participant.id to RuleDecisionSubmission.Confirmed))
 
         runtime.restore(runtime.snapshotWith(state, pendingRuleDecision = ruleDecision))
 

@@ -3,7 +3,9 @@ package com.doublemoon1119.mahjongcraft.example.decision
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingIds
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingRuleConfig
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingRuleModule
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecision
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSubmission
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
@@ -29,7 +31,19 @@ class ExamplePairingRuleDecisionResolverTest {
         val module = ExamplePairingRuleModule(ExamplePairingIds.RULE_MODULE, config)
 
         assertNull(resolver.ruleDecisionConfig(config))
-        assertNull(resolver.begin(tableState, module))
+        assertNull(resolver.begin(RuleDecisionTiming.ROUND_START, tableState, module))
+    }
+
+    /** 換牌只在開局進行，其他時間點不開啟選擇。 */
+    @Test
+    fun `exchange opens only at round start`() {
+        val config = ExamplePairingRuleConfig(exchangeEnabled = true)
+        val tableState = tableState(config)
+        val module = ExamplePairingRuleModule(ExamplePairingIds.RULE_MODULE, config)
+
+        RuleDecisionTiming.entries.filterNot { it == RuleDecisionTiming.ROUND_START }.forEach { timing ->
+            assertNull(resolver.begin(timing, tableState, module), "$timing")
+        }
     }
 
     /** 啟用換牌時，每位玩家選出的兩張牌應交給下一位玩家。 */
@@ -38,7 +52,10 @@ class ExamplePairingRuleDecisionResolverTest {
         val config = ExamplePairingRuleConfig(exchangeEnabled = true)
         val tableState = tableState(config)
         val module = ExamplePairingRuleModule(ExamplePairingIds.RULE_MODULE, config)
-        val ruleDecision = assertNotNull(resolver.begin(tableState, module))
+        val ruleDecision = PendingRuleDecision.open(
+            step = assertNotNull(resolver.begin(RuleDecisionTiming.ROUND_START, tableState, module)),
+            timing = RuleDecisionTiming.ROUND_START,
+        )
         val first = tableState.players[0].hand.standingTiles.take(2).map { it.id }.toSet()
         val second = tableState.players[1].hand.standingTiles.take(2).map { it.id }.toSet()
         val complete = ruleDecision.copy(

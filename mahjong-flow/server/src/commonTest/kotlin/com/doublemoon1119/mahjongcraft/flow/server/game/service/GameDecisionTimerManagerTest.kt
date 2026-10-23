@@ -6,6 +6,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecisio
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionInputSpec
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionStep
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.common.time.MonotonicClock
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
@@ -417,10 +419,13 @@ class GameDecisionTimerManagerTest {
             return Game(
                 tableState = FakeTableStateFactory.create(players = listOf(player)),
                 flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30)),
-                pendingRuleDecision = PendingRuleDecision(
-                    stepId = "test:step",
-                    stepIndex = 0,
-                    inputSpecsByPlayerId = mapOf(playerId to RuleDecisionInputSpec.Confirmation),
+                pendingRuleDecision = PendingRuleDecision.open(
+                    step = RuleDecisionStep(
+                        stepId = "test:step",
+                        stepIndex = 0,
+                        inputSpecsByPlayerId = mapOf(playerId to RuleDecisionInputSpec.Confirmation),
+                    ),
+                    timing = RuleDecisionTiming.ROUND_START,
                 ),
             )
         }

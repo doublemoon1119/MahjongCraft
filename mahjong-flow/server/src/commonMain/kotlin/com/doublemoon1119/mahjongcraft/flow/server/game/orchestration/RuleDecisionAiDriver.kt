@@ -55,6 +55,7 @@ class RuleDecisionAiDriver(
             val context = RuleDecisionAiContext(
                 snapshot = visibilityPolicy.snapshotFor(game, player.id),
                 selfId = player.id,
+                timing = ruleDecision.timing,
                 stepId = ruleDecision.stepId,
                 inputSpec = input,
             )
@@ -79,7 +80,7 @@ class RuleDecisionAiDriver(
         }
         return AutomatedRuleDecision(
             playerId = player.id,
-            command = GameCommand.SubmitRuleDecision(validated),
+            command = GameCommand.SubmitRuleDecision(ruleDecision.id, validated),
             clearsForcedAutoPlay = player.id in game.forcedAutoPlayPlayerIds,
             basis = game,
         )

@@ -4,11 +4,14 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraf
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundContinuationContext
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.applyTo
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.GameFlowCoordinator
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleContractViolationException
+import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
@@ -33,16 +36,21 @@ import kotlin.uuid.Uuid
  * [WinRoundDirective.ContinueRound] 原子套用 `finishedPlayerIds`／`currentPlayerIndex` 的變化並同步
  * 快照。呼叫端據此決定是否銜接 `AdvanceRoundUseCase`，以及這次胡牌要用什麼方式呈現。
  *
+ * [WinRoundDirective.ContinueRound] 時也在同一筆寫入中詢問規則要不要在
+ * [RuleDecisionTiming.WIN_CONTINUES] 請玩家選擇；開了視窗時，剩下的玩家要等視窗關閉才繼續摸打。
+ *
  * @property gameRepository 權威對局數據倉庫。
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的規則模組。
  * @property resolverRegistry 供規則 extension 登記胡牌後續決策的 registry。
  * @property snapshotSynchronizer 對局快照同步服務。
+ * @property ruleDecisionResolverRegistry 取得規則提供的選擇流程；未提供時胡牌後不開規則選擇視窗。
  */
 class ResolveWinRoundContinuationUseCase(
     private val gameRepository: GameRepository,
     private val moduleRegistry: MahjongModuleRegistry,
     private val resolverRegistry: WinRoundContinuationResolverRegistry,
     private val snapshotSynchronizer: GameSnapshotSynchronizer,
+    private val ruleDecisionResolverRegistry: RuleDecisionResolverRegistry? = null,
 ) {
     /**
      * 原子判定並（若 [WinRoundDirective.ContinueRound]）套用本局後續決策。
@@ -51,6 +59,7 @@ class ResolveWinRoundContinuationUseCase(
      * @param previousTableState 這次胡牌指令送出前的桌況，用於還原放銃者／搶槓宣告者身分。
      * @param winnerPlayerIds 這次一起成立的所有贏家 Uuid。
      * @return 這次判定出的權威決策，找不到對局時為 [GameError]。
+     * @throws RuleContractViolationException 規則在胡牌後需要玩家選擇但沒有時間設定時。
      */
     suspend operator fun invoke(
         gameId: Uuid,
@@ -63,14 +72,19 @@ class ResolveWinRoundContinuationUseCase(
                 if (previous == null || next == null || outcome !is Outcome.Success) {
                     emptyList()
                 } else {
-                    listOf(
-                        HistoryEventDraft(
-                            actorPlayerId = null,
-                            fact = HistoryFact.WinContinuationResolved(
-                                directive = outcome.value,
-                            ),
+                    val resolved = HistoryEventDraft(
+                        actorPlayerId = null,
+                        fact = HistoryFact.WinContinuationResolved(
+                            directive = outcome.value,
                         ),
                     )
+                    val started = next.pendingRuleDecision?.takeIf { previous.pendingRuleDecision == null }?.let { decision ->
+                        HistoryEventDraft(
+                            actorPlayerId = null,
+                            fact = HistoryFact.RuleDecisionStarted(decision.stepId, decision.stepIndex),
+                        )
+                    }
+                    listOfNotNull(resolved, started)
                 }
             },
         ) { game ->
@@ -115,8 +129,14 @@ class ResolveWinRoundContinuationUseCase(
                     ) to Outcome.Success(directive)
                 }
 
-                is WinRoundDirective.ContinueRound ->
-                    game.copy(tableState = directive.applyTo(settledTableState)) to Outcome.Success(directive)
+                is WinRoundDirective.ContinueRound -> {
+                    val continued = game.copy(tableState = directive.applyTo(settledTableState))
+                    val withDecision = ruleDecisionResolverRegistry
+                        ?.takeIf { continued.pendingRuleDecision == null }
+                        ?.let { registry -> RuleDecisionWindows.open(continued, RuleDecisionTiming.WIN_CONTINUES, module, registry).game }
+                        ?: continued
+                    withDecision to Outcome.Success(directive)
+                }
             }
         }
         if (result is Outcome.Success && result.value is WinRoundDirective.ContinueRound) {

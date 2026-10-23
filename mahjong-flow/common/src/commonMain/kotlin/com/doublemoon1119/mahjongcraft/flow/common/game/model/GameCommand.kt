@@ -16,11 +16,15 @@ import kotlin.uuid.Uuid
  */
 sealed interface GameCommand {
     /**
-     * 提交目前的規則選擇。
+     * 提交目前開著的規則選擇視窗。
      *
+     * @property windowId 提交對象的視窗；不是目前開著的視窗時視為過期而拒絕。
      * @property submission 包含本次規則選擇的提交內容。
      */
-    data class SubmitRuleDecision(val submission: RuleDecisionSubmission) : GameCommand
+    data class SubmitRuleDecision(
+        val windowId: Uuid,
+        val submission: RuleDecisionSubmission,
+    ) : GameCommand
 
     /**
      * 規則 extension 提供的強型別命令。

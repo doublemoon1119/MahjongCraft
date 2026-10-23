@@ -2,14 +2,21 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.orchestration
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecision
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionStep
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSubmission
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.defaultSubmission
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlin.uuid.Uuid
 
-/** 一種規則模組的規則選擇流程解析器。 */
+/**
+ * 一種規則模組的規則選擇流程：在各個時間點決定要不要請玩家做選擇、驗證提交，並在收齊後套用效果。
+ *
+ * 所有方法都只讀桌況、不保存可變狀態；相同輸入必須得到相同結果。選擇的效果寫進回傳的桌況，例如玩家規則狀態或動作紀錄，
+ * 之後的結算直接讀桌況。
+ */
 interface RuleDecisionResolver {
     /** 此解析器所屬的規則模組 ID。 */
     val ruleModuleId: String
@@ -21,24 +28,29 @@ interface RuleDecisionResolver {
      * 不保證每局只呼叫一次；只需要自動處理的選擇步驟不需要玩家時間設定。
      *
      * @param ruleConfig 目前對局使用的完整規則設定。
-     * @return 需要玩家準備時的預設時間；不需要準備或只會自動完成時為 null。
+     * @return 任何時間點需要玩家選擇時的預設時間；不需要玩家選擇或只會自動完成時為 null。
      */
     fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig? = null
 
     /**
-     * 發牌後建立第一個步驟；不需要準備時回傳 null。
+     * 在 [timing] 決定要不要開啟選擇；不需要時回傳 null，牌局直接接續。
      *
-     * @param tableState 已完成發牌的桌況。
+     * @param timing 目前的時間點。
+     * @param tableState 這個時間點的桌況，例如開局時已完成發牌、流局前牌山已摸完。
      * @param ruleModule 目前對局使用的規則模組。
-     * @return 待完成的選擇步驟；不需要準備時為 null。
+     * @return 第一個選擇步驟；不需要選擇時為 null。
      */
-    fun begin(tableState: TableState, ruleModule: MahjongRuleModule<*>): PendingRuleDecision?
+    fun begin(
+        timing: RuleDecisionTiming,
+        tableState: TableState,
+        ruleModule: MahjongRuleModule<*>,
+    ): RuleDecisionStep?
 
     /**
      * 驗證通過核心結構檢查的玩家提交。
      *
      * @param tableState 目前桌況。
-     * @param ruleDecision 目前待完成的選擇步驟。
+     * @param decision 目前等待完成的選擇視窗。
      * @param playerId 提交資料的玩家識別碼。
      * @param submission 玩家提交的選擇資料。
      * @param ruleModule 目前對局使用的規則模組。
@@ -46,7 +58,7 @@ interface RuleDecisionResolver {
      */
     fun accepts(
         tableState: TableState,
-        ruleDecision: PendingRuleDecision,
+        decision: PendingRuleDecision,
         playerId: Uuid,
         submission: RuleDecisionSubmission,
         ruleModule: MahjongRuleModule<*>,
@@ -56,29 +68,29 @@ interface RuleDecisionResolver {
      * 為真人逾時或無法完成決策的 AI 產生可重現提交。
      *
      * @param tableState 目前桌況。
-     * @param ruleDecision 目前待完成的選擇步驟。
+     * @param decision 目前等待完成的選擇視窗。
      * @param playerId 需要產生預設提交的玩家識別碼。
      * @param ruleModule 目前對局使用的規則模組。
-     * @return 可套用的預設準備提交。
+     * @return 可套用的預設提交。
      */
     fun fallbackSubmission(
         tableState: TableState,
-        ruleDecision: PendingRuleDecision,
+        decision: PendingRuleDecision,
         playerId: Uuid,
         ruleModule: MahjongRuleModule<*>,
-    ): RuleDecisionSubmission = ruleDecision.inputSpecsByPlayerId.getValue(playerId).defaultSubmission()
+    ): RuleDecisionSubmission = decision.inputSpecsByPlayerId.getValue(playerId).defaultSubmission()
 
     /**
      * 收齊提交或遇到無參與者的自動步驟後，套用此步驟並解析下一步。
      *
-     * @param tableState 套用準備結果前的桌況。
-     * @param ruleDecision 已收集目前步驟提交的準備狀態。
+     * @param tableState 套用選擇結果前的桌況。
+     * @param decision 已收齊提交、或沒有參與者的選擇視窗。
      * @param ruleModule 目前對局使用的規則模組。
      * @return 套用結果與後續選擇流程決策。
      */
     fun resolve(
         tableState: TableState,
-        ruleDecision: PendingRuleDecision,
+        decision: PendingRuleDecision,
         ruleModule: MahjongRuleModule<*>,
     ): RuleDecisionResolution
 }

@@ -30,7 +30,7 @@ import kotlin.uuid.Uuid
  * @property pendingTransition 呈現結束後尚待完成的權威流程；`null` 代表沒有待收斂的流程。
  * @property roundCompletion 最近一次本局結算的權威摘要；進入下一局後清除。
  * @property matchEndReasonId 整場終局的完整 namespaced 原因；尚未終局時為 null。
- * @property pendingRuleDecision 發牌後、正常摸打前尚待完成的規則選擇步驟；沒有步驟時為 null。
+ * @property pendingRuleDecision 尚待完成的規則選擇視窗；開著時一般摸打、自動操作與換局都暫停。沒有視窗時為 null。
  * @property hostId 開局時的房主 Uuid，取自原本 `Room.hostId`——`com.doublemoon1119.mahjongcraft.flow.server.game.usecase.StartGameUseCase`
  *   把 Room 轉換成 Game 後，房主身分不再能從 `Room` 讀出，保留在這裡讓對局結束轉回 Room
  *   （見 `ReturnToRoomUseCase`）時能還原同一位房主，預設值取第一位玩家僅供未指定房主的測試情境使用；

@@ -6,7 +6,9 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecision
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionInputSpec
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionStep
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSubmission
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleContractViolationException
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolution
@@ -35,6 +37,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
@@ -70,15 +73,19 @@ class SubmitRuleDecisionUseCaseTest {
             Game(
                 tableState = table,
                 flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30)),
-                pendingRuleDecision = PendingRuleDecision(
-                    stepId = "test:confirm",
-                    stepIndex = 0,
-                    inputSpecsByPlayerId = mapOf(playerId to RuleDecisionInputSpec.Confirmation),
+                pendingRuleDecision = PendingRuleDecision.open(
+                    step = RuleDecisionStep(
+                        stepId = "test:confirm",
+                        stepIndex = 0,
+                        inputSpecsByPlayerId = mapOf(playerId to RuleDecisionInputSpec.Confirmation),
+                    ),
+                    timing = RuleDecisionTiming.ROUND_START,
                 ),
             ),
         )
 
-        val result = repository.runAsSingleWrite(table.id) { useCase(table.id, playerId, RuleDecisionSubmission.Confirmed) }
+        val windowId = repository.openWindowId(table.id)
+        val result = repository.runAsSingleWrite(table.id) { useCase(table.id, playerId, windowId, RuleDecisionSubmission.Confirmed) }
 
         assertIs<Outcome.Success<Unit>>(result)
         assertNull(repository.getGame(table.id)?.pendingRuleDecision)
@@ -112,13 +119,16 @@ class SubmitRuleDecisionUseCaseTest {
         val game = Game(
             tableState = table,
             flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30)),
-            pendingRuleDecision = PendingRuleDecision(
-                stepId = "test:exchange",
-                stepIndex = 0,
-                inputSpecsByPlayerId = mapOf(
-                    firstPlayerId to RuleDecisionInputSpec.TileSelection(setOf(firstTile.id), 1, 1),
-                    secondPlayerId to RuleDecisionInputSpec.TileSelection(setOf(secondTile.id), 1, 1),
+            pendingRuleDecision = PendingRuleDecision.open(
+                step = RuleDecisionStep(
+                    stepId = "test:exchange",
+                    stepIndex = 0,
+                    inputSpecsByPlayerId = mapOf(
+                        firstPlayerId to RuleDecisionInputSpec.TileSelection(setOf(firstTile.id), 1, 1),
+                        secondPlayerId to RuleDecisionInputSpec.TileSelection(setOf(secondTile.id), 1, 1),
+                    ),
                 ),
+                timing = RuleDecisionTiming.ROUND_START,
             ),
         )
         repository.setGame(game)
@@ -137,13 +147,13 @@ class SubmitRuleDecisionUseCaseTest {
             presentationPublisher = presentationPublisher,
         )
 
-        val firstResult = useCase(table.id, firstPlayerId, RuleDecisionSubmission.Tiles(setOf(firstTile.id)))
+        val firstResult = useCase(table.id, firstPlayerId, repository.openWindowId(table.id), RuleDecisionSubmission.Tiles(setOf(firstTile.id)))
 
         assertIs<Outcome.Success<Unit>>(firstResult)
         assertTrue(presentationPublisher.getPublishedPlayerTilesUpdates(table.id).isEmpty())
         assertEquals(1, repository.historyDrafts.size)
 
-        val secondResult = useCase(table.id, secondPlayerId, RuleDecisionSubmission.Tiles(setOf(secondTile.id)))
+        val secondResult = useCase(table.id, secondPlayerId, repository.openWindowId(table.id), RuleDecisionSubmission.Tiles(setOf(secondTile.id)))
 
         assertIs<Outcome.Success<Unit>>(secondResult)
         assertEquals(2, repository.historyDrafts.size)
@@ -208,13 +218,16 @@ class SubmitRuleDecisionUseCaseTest {
             Game(
                 tableState = table,
                 flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30)),
-                pendingRuleDecision = PendingRuleDecision(
-                    stepId = "test:exchange",
-                    stepIndex = 0,
-                    inputSpecsByPlayerId = mapOf(
-                        firstPlayerId to RuleDecisionInputSpec.TileSelection(setOf(firstTile.id), 1, 1),
-                        secondPlayerId to RuleDecisionInputSpec.TileSelection(setOf(secondTile.id), 1, 1),
+                pendingRuleDecision = PendingRuleDecision.open(
+                    step = RuleDecisionStep(
+                        stepId = "test:exchange",
+                        stepIndex = 0,
+                        inputSpecsByPlayerId = mapOf(
+                            firstPlayerId to RuleDecisionInputSpec.TileSelection(setOf(firstTile.id), 1, 1),
+                            secondPlayerId to RuleDecisionInputSpec.TileSelection(setOf(secondTile.id), 1, 1),
+                        ),
                     ),
+                    timing = RuleDecisionTiming.ROUND_START,
                 ),
             ),
         )
@@ -230,7 +243,7 @@ class SubmitRuleDecisionUseCaseTest {
             presentationPublisher = presentationPublisher,
         )
 
-        val result = useCase(table.id, firstPlayerId, RuleDecisionSubmission.Tiles(setOf(firstTile.id)))
+        val result = useCase(table.id, firstPlayerId, repository.openWindowId(table.id), RuleDecisionSubmission.Tiles(setOf(firstTile.id)))
 
         assertIs<Outcome.Success<Unit>>(result)
         assertTrue(presentationPublisher.getPublishedPlayerTilesUpdates(table.id).isEmpty())
@@ -255,12 +268,15 @@ class SubmitRuleDecisionUseCaseTest {
         val game = Game(
             tableState = table,
             flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30)),
-            pendingRuleDecision = PendingRuleDecision(
-                stepId = "test:exchange",
-                stepIndex = 0,
-                inputSpecsByPlayerId = mapOf(
-                    firstPlayerId to RuleDecisionInputSpec.TileSelection(setOf(firstTile.id), 1, 1),
+            pendingRuleDecision = PendingRuleDecision.open(
+                step = RuleDecisionStep(
+                    stepId = "test:exchange",
+                    stepIndex = 0,
+                    inputSpecsByPlayerId = mapOf(
+                        firstPlayerId to RuleDecisionInputSpec.TileSelection(setOf(firstTile.id), 1, 1),
+                    ),
                 ),
+                timing = RuleDecisionTiming.ROUND_START,
             ),
         )
         repository.setGame(game)
@@ -280,6 +296,7 @@ class SubmitRuleDecisionUseCaseTest {
         val result = useCase(
             table.id,
             firstPlayerId,
+            repository.openWindowId(table.id),
             RuleDecisionSubmission.Tiles(setOf(invalidTileId)),
         )
 
@@ -304,10 +321,13 @@ class SubmitRuleDecisionUseCaseTest {
         val game = Game(
             tableState = table,
             flowConfig = GameFlowConfig(),
-            pendingRuleDecision = PendingRuleDecision(
-                stepId = "test:confirm",
-                stepIndex = 0,
-                inputSpecsByPlayerId = mapOf(playerId to RuleDecisionInputSpec.Confirmation),
+            pendingRuleDecision = PendingRuleDecision.open(
+                step = RuleDecisionStep(
+                    stepId = "test:confirm",
+                    stepIndex = 0,
+                    inputSpecsByPlayerId = mapOf(playerId to RuleDecisionInputSpec.Confirmation),
+                ),
+                timing = RuleDecisionTiming.ROUND_START,
             ),
         )
         repository.setGame(game)
@@ -325,7 +345,7 @@ class SubmitRuleDecisionUseCaseTest {
         )
 
         assertFailsWith<RuleContractViolationException> {
-            useCase(table.id, playerId, RuleDecisionSubmission.Confirmed)
+            useCase(table.id, playerId, repository.openWindowId(table.id), RuleDecisionSubmission.Confirmed)
         }
         assertEquals(game, repository.getGame(table.id))
     }
@@ -341,10 +361,13 @@ class SubmitRuleDecisionUseCaseTest {
         val game = Game(
             tableState = table,
             flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30)),
-            pendingRuleDecision = PendingRuleDecision(
-                stepId = "test:confirm",
-                stepIndex = 0,
-                inputSpecsByPlayerId = mapOf(playerId to RuleDecisionInputSpec.Confirmation),
+            pendingRuleDecision = PendingRuleDecision.open(
+                step = RuleDecisionStep(
+                    stepId = "test:confirm",
+                    stepIndex = 0,
+                    inputSpecsByPlayerId = mapOf(playerId to RuleDecisionInputSpec.Confirmation),
+                ),
+                timing = RuleDecisionTiming.ROUND_START,
             ),
         )
         repository.setGame(game)
@@ -362,8 +385,47 @@ class SubmitRuleDecisionUseCaseTest {
         )
 
         assertFailsWith<RuleContractViolationException> {
-            useCase(table.id, playerId, RuleDecisionSubmission.Confirmed)
+            useCase(table.id, playerId, repository.openWindowId(table.id), RuleDecisionSubmission.Confirmed)
         }
+        assertEquals(game, repository.getGame(table.id))
+    }
+
+    /** 驗證提交指名的視窗不是目前開著的那一個時，即使步驟相同也視為過期而拒絕，不改變對局。 */
+    @Test
+    fun `submission for an earlier window with the same step is rejected`() = runTest {
+        val repository = FakeGameRepository()
+        val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
+        val table = FakeTableStateFactory.create(
+            players = listOf(FakeMahjongPlayerFactory.create(id = playerId)),
+            config = RiichiRuleConfig(),
+        )
+        val step = RuleDecisionStep(
+            stepId = "test:confirm",
+            stepIndex = 0,
+            inputSpecsByPlayerId = mapOf(playerId to RuleDecisionInputSpec.Confirmation),
+        )
+        val earlierWindow = PendingRuleDecision.open(step = step, timing = RuleDecisionTiming.ROUND_END)
+        val game = Game(
+            tableState = table,
+            flowConfig = GameFlowConfig(ruleDecision = RuleDecisionConfig(30)),
+            pendingRuleDecision = PendingRuleDecision.open(step = step, timing = RuleDecisionTiming.ROUND_END),
+        )
+        repository.setGame(game)
+        val useCase = SubmitRuleDecisionUseCase(
+            gameRepository = repository,
+            moduleRegistry = moduleRegistry,
+            resolverRegistry = RuleDecisionResolverRegistry().apply { register(ConfirmationResolver) },
+            snapshotSynchronizer = GameSnapshotSynchronizer(
+                repository,
+                FakeGameSnapshotRepository(),
+                GameVisibilityPolicyImpl(moduleRegistry),
+            ),
+            presentationPublisher = FakeGamePresentationPublisher(),
+        )
+
+        val result = useCase(table.id, playerId, earlierWindow.id, RuleDecisionSubmission.Confirmed)
+
+        assertEquals(Outcome.Error(GameError.RuleDecisionUnavailable(table.id, playerId)), result)
         assertEquals(game, repository.getGame(table.id))
     }
 
@@ -373,11 +435,11 @@ class SubmitRuleDecisionUseCaseTest {
 
         override fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig = RuleDecisionConfig(30)
 
-        override fun begin(tableState: TableState, ruleModule: MahjongRuleModule<*>): PendingRuleDecision? = null
+        override fun begin(timing: RuleDecisionTiming, tableState: TableState, ruleModule: MahjongRuleModule<*>): RuleDecisionStep? = null
 
         override fun resolve(
             tableState: TableState,
-            ruleDecision: PendingRuleDecision,
+            decision: PendingRuleDecision,
             ruleModule: MahjongRuleModule<*>,
         ): RuleDecisionResolution = RuleDecisionResolution(tableState, nextStep = null)
     }
@@ -388,17 +450,17 @@ class SubmitRuleDecisionUseCaseTest {
 
         override fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig? = if ((ruleConfig as? RiichiRuleConfig)?.redDoraCount == 3) RuleDecisionConfig(30) else null
 
-        override fun begin(tableState: TableState, ruleModule: MahjongRuleModule<*>): PendingRuleDecision? = null
+        override fun begin(timing: RuleDecisionTiming, tableState: TableState, ruleModule: MahjongRuleModule<*>): RuleDecisionStep? = null
 
         override fun resolve(
             tableState: TableState,
-            ruleDecision: PendingRuleDecision,
+            decision: PendingRuleDecision,
             ruleModule: MahjongRuleModule<*>,
         ): RuleDecisionResolution = RuleDecisionResolution(
             tableState,
-            PendingRuleDecision(
+            RuleDecisionStep(
                 stepId = "test:next",
-                stepIndex = ruleDecision.stepIndex + 1,
+                stepIndex = decision.stepIndex + 1,
                 inputSpecsByPlayerId = mapOf(tableState.players.first().id to RuleDecisionInputSpec.Confirmation),
             ),
         )
@@ -410,22 +472,22 @@ class SubmitRuleDecisionUseCaseTest {
 
         override fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig = RuleDecisionConfig(30)
 
-        override fun begin(tableState: TableState, ruleModule: MahjongRuleModule<*>): PendingRuleDecision? = null
+        override fun begin(timing: RuleDecisionTiming, tableState: TableState, ruleModule: MahjongRuleModule<*>): RuleDecisionStep? = null
 
         override fun resolve(
             tableState: TableState,
-            ruleDecision: PendingRuleDecision,
+            decision: PendingRuleDecision,
             ruleModule: MahjongRuleModule<*>,
         ): RuleDecisionResolution {
             val players = tableState.players.map { player ->
-                val submittedId = ruleDecision.submissionsByPlayerId.getValue(player.id)
+                val submittedId = decision.submissionsByPlayerId.getValue(player.id)
                     .let { it as RuleDecisionSubmission.Tiles }
                     .tileIds
                     .single()
                 player.copy(hand = player.hand.copy(tiles = player.hand.tiles.filterNot { it.id == submittedId }))
             }
             val submittedTiles = tableState.players
-                .map { player -> ruleDecision.submissionsByPlayerId.getValue(player.id) }
+                .map { player -> decision.submissionsByPlayerId.getValue(player.id) }
                 .map { (it as RuleDecisionSubmission.Tiles).tileIds.single() }
                 .map { id -> tableState.players.flatMap { it.hand.standingTiles }.first { it.id == id } }
             val exchangedPlayers = players.mapIndexed { index, player ->
@@ -434,4 +496,12 @@ class SubmitRuleDecisionUseCaseTest {
             return RuleDecisionResolution(tableState.copy(players = exchangedPlayers), nextStep = null)
         }
     }
+
+    /**
+     * 讀出目前開著的規則選擇視窗身分。
+     *
+     * @param gameId 對局識別碼。
+     * @return 開著的視窗身分。
+     */
+    private suspend fun FakeGameRepository.openWindowId(gameId: Uuid): Uuid = assertNotNull(getGame(gameId)?.pendingRuleDecision).id
 }

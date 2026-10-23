@@ -73,6 +73,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -367,6 +368,20 @@ class MahjongAutoDrawServiceTest {
         val state = fixtures.gameRepo.getTableState(gameId)
         assertNotNull(state)
         assertNull(state.currentPlayer.hand.lastDrawn, "Forced auto-play player should not be auto-drawn by MahjongAutoDrawService.")
+    }
+
+    /** 本局已排定結算或換局時，即使輪到真人且還沒摸牌，自動摸牌也摸不到牌。 */
+    @Test
+    fun `test checkAndAutoDraw skips while a transition is pending`() = runTest {
+        val fixtures = Fixtures()
+        val gameId = fixtures.createStartedGame()
+        fixtures.gameRepo.updateGame(gameId) { game ->
+            game!!.copy(pendingTransition = PendingGameTransition.AdvanceRound) to Unit
+        }
+
+        assertFalse(fixtures.autoDrawService.checkAndAutoDraw(gameId))
+
+        assertNull(fixtures.gameRepo.getTableState(gameId)!!.currentPlayer.hand.lastDrawn)
     }
 
     /**

@@ -3,7 +3,12 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.service
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransition
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecision
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionInputSpec
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionStep
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSubmission
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
@@ -138,6 +143,30 @@ class GameDecisionAuthorityResolverTest {
         )
 
         assertEquals(emptyMap(), resolver.resolve(game))
+    }
+
+    /** 驗證本局結算後開啟的規則選擇視窗，即使已排定換局，尚未提交的參與者仍需要思考時間。 */
+    @Test
+    fun `test rule decision window keeps authority while a round transition is pending`() {
+        val waitingId = Uuid.random()
+        val submittedId = Uuid.random()
+        val players = listOf(waitingId, submittedId).map { FakeMahjongPlayerFactory.create(id = it) }
+        val window = PendingRuleDecision.open(
+            step = RuleDecisionStep(
+                stepId = "test:round_end",
+                stepIndex = 0,
+                inputSpecsByPlayerId = players.associate { it.id to RuleDecisionInputSpec.Confirmation },
+            ),
+            timing = RuleDecisionTiming.ROUND_END,
+        ).copy(submissionsByPlayerId = mapOf(submittedId to RuleDecisionSubmission.Confirmed))
+        val game = Game(
+            tableState = FakeTableStateFactory.create(players = players),
+            flowConfig = GameFlowConfig(),
+            pendingTransition = PendingGameTransition.AdvanceRound,
+            pendingRuleDecision = window,
+        )
+
+        assertEquals(mapOf(waitingId to PlayerDecisionPhase.RULE_DECISION), resolver.resolve(game))
     }
 
     /** 驗證強制自動操作玩家不再建立新的思考計時器。 */

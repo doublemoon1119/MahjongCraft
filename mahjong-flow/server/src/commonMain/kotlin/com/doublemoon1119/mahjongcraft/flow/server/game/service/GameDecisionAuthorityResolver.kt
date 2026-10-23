@@ -27,20 +27,21 @@ class GameDecisionAuthorityResolver(
      * `ForcedAutoPlayDriver` 的固定邏輯接管，而不是它自己的 AI 策略。
      *
      * @param game 目前的權威遊戲狀態。
-     * @return 以玩家識別碼索引的決策階段，只包含真人玩家；對局已結束或本局已進入結算交接時一律
-     *   回傳空 map，不再需要任何決策計時器。
+     * @return 以玩家識別碼索引的決策階段，只包含真人玩家；對局已結束時一律回傳空 map。規則選擇視窗
+     *   開著時只回傳尚未提交的參與者，即使本局已排定結算交接也一樣；沒有視窗而已進入結算交接時回傳空 map。
      */
     fun resolve(game: Game): Map<Uuid, PlayerDecisionPhase> {
-        if (game.isMatchOver || game.pendingTransition != null) return emptyMap()
+        if (game.isMatchOver) return emptyMap()
         val state = game.tableState
         val humanPlayerIds = state.players.filterNot { game.isAi(it.id) }.mapTo(mutableSetOf()) { it.id }
-        game.pendingRuleDecision?.let { ruleDecision ->
-            return ruleDecision.participantPlayerIds
+        game.pendingRuleDecision?.let { decision ->
+            return decision.participantPlayerIds
                 .filter { it in humanPlayerIds }
-                .filterNot { it in ruleDecision.completedPlayerIds }
+                .filterNot { it in decision.completedPlayerIds }
                 .filterNot { it in game.forcedAutoPlayPlayerIds }
                 .associateWith { PlayerDecisionPhase.RULE_DECISION }
         }
+        if (game.pendingTransition != null) return emptyMap()
         return actionContextResolver.resolve(state)
             .filterKeys { it in humanPlayerIds && it !in game.forcedAutoPlayPlayerIds }
             .filterKeys { playerId ->

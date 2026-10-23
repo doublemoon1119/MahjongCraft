@@ -1,6 +1,9 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransition
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
@@ -26,6 +29,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
@@ -57,6 +61,24 @@ class DeclareExhaustiveDrawUseCaseTest {
         val snapshotSynchronizer = GameSnapshotSynchronizer(gameRepo, snapshotRepo, GameVisibilityPolicyImpl(moduleRegistry))
         val eventPublisher = FakeGameEventPublisher()
         val useCase = DeclareExhaustiveDrawUseCase(gameRepo, moduleRegistry, snapshotSynchronizer, eventPublisher)
+    }
+
+    /** 驗證排定的一般流局結算在同一筆寫入中被消耗，重複接續也不會再結算一次。 */
+    @Test
+    fun `test scheduled exhaustive draw is cleared by the settlement`() = runTest {
+        val fixtures = Fixtures()
+        val table = FakeTableStateFactory.create(
+            id = gameId,
+            players = listOf(FakeMahjongPlayerFactory.create(hand = tenpaiHand())) + List(3) { FakeMahjongPlayerFactory.create(hand = notTenpaiHand()) },
+            config = RiichiRuleConfig(),
+        )
+        fixtures.gameRepo.setGame(Game(tableState = table, flowConfig = GameFlowConfig(), pendingTransition = PendingGameTransition.SettleExhaustiveDraw))
+
+        assertIs<Outcome.Success<*>>(fixtures.useCase(gameId))
+
+        val game = assertNotNull(fixtures.gameRepo.getGame(gameId))
+        assertNull(game.pendingTransition)
+        assertNotNull(game.roundCompletion)
     }
 
     // 十三張萬子立牌 1112345678999m；加入任一種萬子都能和牌。

@@ -5,6 +5,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecision
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionInputSpec
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionStep
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
@@ -119,10 +121,13 @@ class ForcedAutoPlayDriverTest {
             ),
             flowConfig = GameFlowConfig(),
             forcedAutoPlayPlayerIds = setOf(playerId),
-            pendingRuleDecision = PendingRuleDecision(
-                stepId = "test:confirmation",
-                stepIndex = 0,
-                inputSpecsByPlayerId = mapOf(playerId to RuleDecisionInputSpec.Confirmation),
+            pendingRuleDecision = PendingRuleDecision.open(
+                step = RuleDecisionStep(
+                    stepId = "test:confirmation",
+                    stepIndex = 0,
+                    inputSpecsByPlayerId = mapOf(playerId to RuleDecisionInputSpec.Confirmation),
+                ),
+                timing = RuleDecisionTiming.ROUND_START,
             ),
         )
         repository.setGame(game)

@@ -5,7 +5,9 @@ import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingRuleConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecision
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionInputSpec
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionStep
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSubmission
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolution
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolver
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
@@ -17,15 +19,15 @@ import kotlin.uuid.Uuid
  * 簡易配對麻將的局前換牌流程。
  *
  * 每位玩家從起手牌中選兩張，所有人提交後才一次把牌交給固定座位順序的下一位玩家。
- * 簡易配對規則設定未啟用換牌時，不建立任何準備步驟。
+ * 只在 [RuleDecisionTiming.ROUND_START] 開啟；簡易配對規則設定未啟用換牌時，不建立任何選擇步驟。
  */
 class ExamplePairingRuleDecisionResolver : RuleDecisionResolver {
     override val ruleModuleId: String = ExamplePairingIds.RULE_MODULE
 
     override fun ruleDecisionConfig(ruleConfig: MahjongRuleConfig): RuleDecisionConfig? = RuleDecisionConfig(EXCHANGE_SECONDS).takeIf { isExchangeEnabled(ruleConfig) }
 
-    override fun begin(tableState: TableState, ruleModule: MahjongRuleModule<*>): PendingRuleDecision? {
-        if (!isExchangeEnabled(ruleModule.config)) return null
+    override fun begin(timing: RuleDecisionTiming, tableState: TableState, ruleModule: MahjongRuleModule<*>): RuleDecisionStep? {
+        if (timing != RuleDecisionTiming.ROUND_START || !isExchangeEnabled(ruleModule.config)) return null
         val inputSpecs = tableState.players.associate { player ->
             player.id to RuleDecisionInputSpec.TileSelection(
                 eligibleTileIds = player.hand.standingTiles.mapTo(linkedSetOf()) { it.id },
@@ -33,42 +35,46 @@ class ExamplePairingRuleDecisionResolver : RuleDecisionResolver {
                 maxCount = EXCHANGE_TILE_COUNT,
             )
         }
-        return PendingRuleDecision(ExamplePairingIds.EXCHANGE_STEP, 0, inputSpecs)
+        return RuleDecisionStep(
+            stepId = ExamplePairingIds.EXCHANGE_STEP,
+            stepIndex = 0,
+            inputSpecsByPlayerId = inputSpecs,
+        )
     }
 
     override fun accepts(
         tableState: TableState,
-        ruleDecision: PendingRuleDecision,
+        decision: PendingRuleDecision,
         playerId: Uuid,
         submission: RuleDecisionSubmission,
         ruleModule: MahjongRuleModule<*>,
     ): Boolean {
         if (!isExchangeEnabled(ruleModule.config)) return false
         val selection = submission as? RuleDecisionSubmission.Tiles ?: return false
-        val input = ruleDecision.inputSpecsByPlayerId[playerId] as? RuleDecisionInputSpec.TileSelection
+        val input = decision.inputSpecsByPlayerId[playerId] as? RuleDecisionInputSpec.TileSelection
             ?: return false
         return selection.tileIds.size == EXCHANGE_TILE_COUNT && selection.tileIds.all { it in input.eligibleTileIds }
     }
 
     override fun fallbackSubmission(
         tableState: TableState,
-        ruleDecision: PendingRuleDecision,
+        decision: PendingRuleDecision,
         playerId: Uuid,
         ruleModule: MahjongRuleModule<*>,
     ): RuleDecisionSubmission {
-        val input = ruleDecision.inputSpecsByPlayerId.getValue(playerId) as RuleDecisionInputSpec.TileSelection
+        val input = decision.inputSpecsByPlayerId.getValue(playerId) as RuleDecisionInputSpec.TileSelection
         return RuleDecisionSubmission.Tiles(input.eligibleTileIds.sortedBy(Uuid::toString).take(EXCHANGE_TILE_COUNT).toSet())
     }
 
     override fun resolve(
         tableState: TableState,
-        ruleDecision: PendingRuleDecision,
+        decision: PendingRuleDecision,
         ruleModule: MahjongRuleModule<*>,
     ): RuleDecisionResolution {
         require(isExchangeEnabled(ruleModule.config)) { "Pairing exchange is disabled" }
-        require(ruleDecision.isComplete) { "Pairing exchange requires every player to submit" }
+        require(decision.isComplete) { "Pairing exchange requires every player to submit" }
         val players = tableState.players
-        val selectedByPlayer = ruleDecision.submissionsByPlayerId.mapValues { (_, submission) ->
+        val selectedByPlayer = decision.submissionsByPlayerId.mapValues { (_, submission) ->
             (submission as? RuleDecisionSubmission.Tiles)?.tileIds
                 ?: error("Pairing exchange requires tile selections")
         }

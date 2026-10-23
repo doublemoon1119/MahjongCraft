@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransition
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RoundOutcomePresentationClassification
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.newlyRecordedActionsByPlayerId
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.recordedDrawOutcome
@@ -26,6 +27,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDet
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementPresentationRequestFactory
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceAutomaticRuleDecisionUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.AdvanceRoundUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.BeginRuleDecisionUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.DeclareExhaustiveDrawUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ResolvePostReactionRoundOutcomeUseCase
 import com.doublemoon1119.mahjongcraft.flow.server.game.usecase.ResolveWinRoundContinuationUseCase
@@ -86,6 +88,7 @@ import kotlin.uuid.Uuid
  *   實作由平台層提供，理由見 [GamePresentationBusyGate] KDoc。
  * @property ruleDecisionAiDriver 解析下一筆自動規則選擇提交；未提供時不處理 AI 準備提交。
  * @property advanceAutomaticRuleDecisionUseCase 收斂無須玩家輸入的規則選擇步驟；未提供時略過。
+ * @property beginRuleDecisionUseCase 在一般流局結算前與本局結算後開啟規則選擇視窗；未提供時這兩個時間點不暫停。
  * @property abortGameUseCase 無法安全繼續時中止原場次並還原房間。
  * @property automaticCommandResolver 從同一份權威桌況取得安全代打命令。
  * @property failurePolicy 判斷流程中擴充失敗是否能隔離；取消與致命錯誤原樣外傳。
@@ -113,6 +116,7 @@ class GameFlowCoordinator(
     private val failurePolicy: ExtensionFailurePolicy = ExtensionFailurePolicy.Default,
     private val ruleDecisionAiDriver: RuleDecisionAiDriver? = null,
     private val advanceAutomaticRuleDecisionUseCase: AdvanceAutomaticRuleDecisionUseCase? = null,
+    private val beginRuleDecisionUseCase: BeginRuleDecisionUseCase? = null,
 ) {
     /** 避免玩家命令與恢復心跳同時重複執行同一個待完成流程。 */
     private val pendingTransitionMutex = Mutex()
@@ -280,8 +284,12 @@ class GameFlowCoordinator(
         try {
             val basis = gameRepository.getGame(gameId) ?: return false
             val transition = basis.pendingTransition ?: return false
+            // 排定的流程要等規則選擇視窗關閉後才接續。
+            if (basis.pendingRuleDecision != null) return false
             guardProgress(basis) {
                 val result = when (transition) {
+                    PendingGameTransition.SettleExhaustiveDraw -> settleExhaustiveDraw(gameId, basis.tableState)
+
                     PendingGameTransition.AdvanceRound -> {
                         when (val result = advanceRoundUseCase(gameId)) {
                             is Outcome.Success -> Outcome.Success(Unit)
@@ -484,6 +492,8 @@ class GameFlowCoordinator(
      * 分派 [command] 並自動銜接對應的系統觸發 use case。抽出成獨立方法讓 [driveAutomatedPlayers] 能
      * 直接呼叫——AI 送出的命令也必須經過同一套系統銜接邏輯，不能繞過去。
      *
+     * 規則選擇視窗開著，或已排定 [Game.pendingTransition] 時，除了 [GameCommand.SubmitRuleDecision] 以外一律拒絕。
+     *
      * @param gameId 對局識別碼。
      * @param playerId 發出命令的玩家識別碼。
      * @param command 欲分派的命令。
@@ -498,7 +508,8 @@ class GameFlowCoordinator(
     ): Outcome<Unit, GameError>? {
         val game = gameRepository.getGame(gameId)
             ?: return Outcome.Error(GameError.GameNotFound(gameId))
-        if (game.pendingRuleDecision != null && command !is GameCommand.SubmitRuleDecision) {
+        // 規則選擇視窗開著，或本局已排定結算、換局或回到房間時，只接受規則選擇的提交，不再接受摸打。
+        if ((game.pendingRuleDecision != null || game.pendingTransition != null) && command !is GameCommand.SubmitRuleDecision) {
             return Outcome.Error(GameError.UnsupportedAction(gameId, playerId))
         }
         val previousState = gameRepository.getTableState(gameId)
@@ -530,29 +541,9 @@ class GameFlowCoordinator(
                 chainAdvanceRound(gameId)
                 return result
             }
-            val exhaustiveDraw = declareExhaustiveDrawUseCase(gameId)
-            if (exhaustiveDraw is Outcome.Error) {
-                throw RuleContractViolationException(
-                    GameAbortReasonIds.MISSING_DRAW_SETTLEMENT,
-                    "Exhaustive draw settlement failed: ${exhaustiveDraw.error::class.simpleName}",
-                )
-            }
-            if (exhaustiveDraw is Outcome.Success) {
-                val currentState = exhaustiveDraw.value.tableState
-                val module = moduleRegistry.getModule(previousState.config)
-                val settlement = exhaustiveDraw.value.settlement
-                exhaustiveDrawSettlementPresentationService.publish(
-                    gameId = gameId,
-                    previousState = previousState,
-                    currentState = currentState,
-                    module = module,
-                    aiPlayerIds = gameRepository.getGame(gameId)?.aiPlayerIds.orEmpty(),
-                    reason = settlement.reason,
-                    tenpaiPlayerIds = settlement.tenpaiPlayerIds.takeIf { settlement.stickPotCollectorPlayerIds.isEmpty() },
-                    revealedHands = settlement.revealedHands,
-                )
-                chainAdvanceRound(gameId)
-            }
+            // 規則要在一般流局結算前請玩家選擇時先暫停；視窗關閉後由排定的流程結算。
+            val opened = beginRuleDecisionUseCase?.invoke(gameId, RuleDecisionTiming.BEFORE_EXHAUSTIVE_DRAW)
+            if ((opened as? Outcome.Success)?.value != true) settleExhaustiveDraw(gameId, previousState)
             return result
         }
 
@@ -575,9 +566,49 @@ class GameFlowCoordinator(
      * @param gameId 欲排定下一局的對局識別碼。
      */
     private suspend fun chainAdvanceRound(gameId: Uuid) {
-        gameRepository.updateGame(gameId) { game ->
-            game?.copy(pendingTransition = PendingGameTransition.AdvanceRound) to Unit
+        val useCase = beginRuleDecisionUseCase
+        if (useCase == null) {
+            gameRepository.updateGame(gameId) { game ->
+                game?.copy(pendingTransition = PendingGameTransition.AdvanceRound) to Unit
+            }
+            return
         }
+        // 排定換局與開啟本局結算後的規則選擇在同一筆寫入，視窗關閉後才換局。
+        useCase(gameId, RuleDecisionTiming.ROUND_END, PendingGameTransition.AdvanceRound)
+    }
+
+    /**
+     * 進行一般流局結算、發布結算呈現，再排定換局。
+     *
+     * @param gameId 對局識別碼。
+     * @param previousState 結算前的桌況，用於呈現差異。
+     * @return 結算成功時為成功；規則無法結算時中止對局。
+     * @throws RuleContractViolationException 一般流局結算失敗時。
+     */
+    private suspend fun settleExhaustiveDraw(gameId: Uuid, previousState: TableState): Outcome<Unit, GameError> {
+        val exhaustiveDraw = declareExhaustiveDrawUseCase(gameId)
+        if (exhaustiveDraw is Outcome.Error) {
+            throw RuleContractViolationException(
+                GameAbortReasonIds.MISSING_DRAW_SETTLEMENT,
+                "Exhaustive draw settlement failed: ${exhaustiveDraw.error::class.simpleName}",
+            )
+        }
+        exhaustiveDraw as Outcome.Success
+        val currentState = exhaustiveDraw.value.tableState
+        val module = moduleRegistry.getModule(previousState.config)
+        val settlement = exhaustiveDraw.value.settlement
+        exhaustiveDrawSettlementPresentationService.publish(
+            gameId = gameId,
+            previousState = previousState,
+            currentState = currentState,
+            module = module,
+            aiPlayerIds = gameRepository.getGame(gameId)?.aiPlayerIds.orEmpty(),
+            reason = settlement.reason,
+            tenpaiPlayerIds = settlement.tenpaiPlayerIds.takeIf { settlement.stickPotCollectorPlayerIds.isEmpty() },
+            revealedHands = settlement.revealedHands,
+        )
+        chainAdvanceRound(gameId)
+        return Outcome.Success(Unit)
     }
 
     /**

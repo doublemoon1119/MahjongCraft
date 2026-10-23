@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.MatchSettlementPlayerPresentation
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.MatchSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransition
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
@@ -294,7 +295,7 @@ class AdvanceRoundUseCase(
             dealBatchSizes = newState.config.dealBatchSizes(),
             openingDiceCounts = newState.openingDiceRolls.map { it.dice.values.size },
         )
-        beginRuleDecisionUseCase?.invoke(gameId)
+        beginRuleDecisionUseCase?.invoke(gameId, RuleDecisionTiming.ROUND_START)
 
         return Outcome.Success(result)
     }

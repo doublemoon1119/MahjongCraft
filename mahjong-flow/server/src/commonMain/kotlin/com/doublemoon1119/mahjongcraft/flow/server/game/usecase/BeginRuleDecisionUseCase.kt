@@ -1,10 +1,10 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
-import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameAbortReasonIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransition
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleContractViolationException
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
@@ -15,7 +15,7 @@ import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import kotlin.uuid.Uuid
 
 /**
- * 發牌後依規則建立第一個規則選擇步驟。
+ * 在指定時間點詢問規則要不要請玩家做選擇，需要時開啟規則選擇視窗。
  *
  * @property gameRepository 讀取與更新權威遊戲。
  * @property moduleRegistry 依桌況設定取得規則模組。
@@ -31,54 +31,37 @@ class BeginRuleDecisionUseCase(
     private val abortGameHandler: GameAbortHandler,
 ) {
     /**
-     * 建立指定對局的第一個選擇步驟；規則沒有步驟時維持 null。
+     * 在 [timing] 開啟規則選擇視窗；規則不需要選擇時不改變對局。
      *
-     * @param gameId 欲開始選擇流程的對局。
-     * @return 建立結果；對局不存在時回傳錯誤。
-     * @throws RuleContractViolationException 規則需要玩家準備但沒有時間設定時；對局會先嘗試中止。
+     * 已經有視窗開著時不再開新的，只寫入 [transition]。[transition] 與開窗在同一筆寫入中保存，視窗關閉後才接續它。
+     *
+     * @param gameId 對局識別碼。
+     * @param timing 目前的時間點。
+     * @param transition 同時排定、等視窗關閉後才執行的流程；沒有時為 null。
+     * @return 是否開啟了視窗；對局不存在時回傳錯誤。
+     * @throws RuleContractViolationException 規則需要玩家選擇但沒有時間設定時；對局會先嘗試中止。
      */
-    suspend operator fun invoke(gameId: Uuid): Outcome<Unit, GameError> {
+    suspend operator fun invoke(
+        gameId: Uuid,
+        timing: RuleDecisionTiming,
+        transition: PendingGameTransition? = null,
+    ): Outcome<Boolean, GameError> {
         var contractBasis: Game? = null
         val result = try {
             gameRepository.updateGame(
                 gameId,
-                history = { _, _, update -> update.historyDraft?.let(::listOf).orEmpty() },
+                history = { _, _, update -> update.historyDrafts },
             ) { game ->
                 if (game == null) {
-                    return@updateGame null to RuleDecisionBeginUpdate(
-                        Outcome.Error(GameError.GameNotFound(gameId)),
-                        null,
-                    )
+                    return@updateGame null to BeginUpdate(Outcome.Error(GameError.GameNotFound(gameId)), emptyList())
                 }
-                if (game.pendingRuleDecision != null) {
-                    return@updateGame game to RuleDecisionBeginUpdate(
-                        Outcome.Success(Unit),
-                        null,
-                    )
+                val scheduled = transition?.let { game.copy(pendingTransition = it) } ?: game
+                if (scheduled.pendingRuleDecision != null) {
+                    return@updateGame scheduled to BeginUpdate(Outcome.Success(false), emptyList())
                 }
-                val module = moduleRegistry.getModule(game.tableState.config)
-                val resolver = resolverRegistry.find(module.id)
-                    ?: return@updateGame game to RuleDecisionBeginUpdate(Outcome.Success(Unit), null)
-                val firstStep = resolver.begin(game.tableState, module)
-                val defaultRuleDecision = resolverRegistry.findDefaultConfig(module.id, game.tableState.config)
-                if (firstStep?.participantPlayerIds?.isNotEmpty() == true &&
-                    (defaultRuleDecision == null || game.flowConfig.ruleDecision == null)
-                ) {
-                    contractBasis = game
-                    throw RuleContractViolationException(
-                        GameAbortReasonIds.RULE_EXECUTION_FAILED,
-                        "Rule decision requires a time configuration for player input",
-                    )
-                }
-                game.copy(pendingRuleDecision = firstStep) to RuleDecisionBeginUpdate(
-                    Outcome.Success(Unit),
-                    firstStep?.let {
-                        HistoryEventDraft(
-                            actorPlayerId = null,
-                            fact = HistoryFact.RuleDecisionStarted(it.stepId, it.stepIndex),
-                        )
-                    },
-                )
+                contractBasis = game
+                val opened = RuleDecisionWindows.open(scheduled, timing, moduleRegistry.getModule(game.tableState.config), resolverRegistry)
+                opened.game to BeginUpdate(Outcome.Success(opened.game.pendingRuleDecision != null), opened.historyDrafts)
             }
         } catch (failure: RuleContractViolationException) {
             contractBasis?.let { basis ->
@@ -86,18 +69,18 @@ class BeginRuleDecisionUseCase(
             }
             throw failure
         }
-        if (result.outcome is Outcome.Success) snapshotSynchronizer.syncAll(gameId)
+        if ((result.outcome as? Outcome.Success)?.value == true) snapshotSynchronizer.syncAll(gameId)
         return result.outcome
     }
 
     /**
-     * 原子更新後的選擇流程結果與可選歷史事實。
+     * 原子更新後的開窗結果與歷史事實。
      *
      * @property outcome use case 對呼叫端回傳的結果。
-     * @property historyDraft 開始新選擇步驟時要記錄的事實；沒有新步驟時為 null。
+     * @property historyDrafts 開啟視窗時要記錄的事實；沒有開窗時為空。
      */
-    private data class RuleDecisionBeginUpdate(
-        val outcome: Outcome<Unit, GameError>,
-        val historyDraft: HistoryEventDraft?,
+    private data class BeginUpdate(
+        val outcome: Outcome<Boolean, GameError>,
+        val historyDrafts: List<HistoryEventDraft>,
     )
 }

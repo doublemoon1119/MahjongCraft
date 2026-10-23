@@ -4,6 +4,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecision
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionInputSpec
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionStep
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleContractViolationException
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolution
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolver
@@ -59,7 +61,14 @@ class AdvanceAutomaticRuleDecisionUseCaseTest {
             Game(
                 tableState = table,
                 flowConfig = GameFlowConfig(),
-                pendingRuleDecision = PendingRuleDecision("test:auto-0", 0, emptyMap()),
+                pendingRuleDecision = PendingRuleDecision.open(
+                    step = RuleDecisionStep(
+                        stepId = "test:auto-0",
+                        stepIndex = 0,
+                        inputSpecsByPlayerId = emptyMap(),
+                    ),
+                    timing = RuleDecisionTiming.ROUND_START,
+                ),
             ),
         )
         val useCase = AdvanceAutomaticRuleDecisionUseCase(
@@ -125,7 +134,14 @@ class AdvanceAutomaticRuleDecisionUseCaseTest {
         val game = Game(
             tableState = table,
             flowConfig = GameFlowConfig(),
-            pendingRuleDecision = PendingRuleDecision("test:auto", 0, emptyMap()),
+            pendingRuleDecision = PendingRuleDecision.open(
+                step = RuleDecisionStep(
+                    stepId = "test:auto",
+                    stepIndex = 0,
+                    inputSpecsByPlayerId = emptyMap(),
+                ),
+                timing = RuleDecisionTiming.ROUND_START,
+            ),
         )
         repository.setGame(game)
         val resolverRegistry = RuleDecisionResolverRegistry().apply { register(AutoThenPlayerResolver) }
@@ -153,20 +169,24 @@ class AdvanceAutomaticRuleDecisionUseCaseTest {
     private class MultiStepResolver(private val replacementTile: IdentifiedTile) : RuleDecisionResolver {
         override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI
 
-        override fun begin(tableState: TableState, ruleModule: MahjongRuleModule<*>): PendingRuleDecision? = null
+        override fun begin(timing: RuleDecisionTiming, tableState: TableState, ruleModule: MahjongRuleModule<*>): RuleDecisionStep? = null
 
         override fun resolve(
             tableState: TableState,
-            ruleDecision: PendingRuleDecision,
+            decision: PendingRuleDecision,
             ruleModule: MahjongRuleModule<*>,
-        ): RuleDecisionResolution = if (ruleDecision.stepIndex == 0) {
+        ): RuleDecisionResolution = if (decision.stepIndex == 0) {
             RuleDecisionResolution(
                 tableState.copy(
                     players = tableState.players.mapIndexed { index, player ->
                         if (index == 0) player.copy(hand = Hand(tiles = listOf(replacementTile))) else player
                     },
                 ),
-                PendingRuleDecision("test:auto-1", 1, emptyMap()),
+                RuleDecisionStep(
+                    stepId = "test:auto-1",
+                    stepIndex = 1,
+                    inputSpecsByPlayerId = emptyMap(),
+                ),
             )
         } else {
             val first = tableState.players[0].hand.tiles.single()
@@ -187,13 +207,14 @@ class AdvanceAutomaticRuleDecisionUseCaseTest {
         override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI
 
         override fun begin(
+            timing: RuleDecisionTiming,
             tableState: TableState,
             ruleModule: MahjongRuleModule<*>,
-        ): PendingRuleDecision? = null
+        ): RuleDecisionStep? = null
 
         override fun resolve(
             tableState: TableState,
-            ruleDecision: PendingRuleDecision,
+            decision: PendingRuleDecision,
             ruleModule: MahjongRuleModule<*>,
         ) = RuleDecisionResolution(tableState, null)
     }
@@ -202,17 +223,17 @@ class AdvanceAutomaticRuleDecisionUseCaseTest {
     private object AutoThenPlayerResolver : RuleDecisionResolver {
         override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI
 
-        override fun begin(tableState: TableState, ruleModule: MahjongRuleModule<*>) = null
+        override fun begin(timing: RuleDecisionTiming, tableState: TableState, ruleModule: MahjongRuleModule<*>) = null
 
         override fun resolve(
             tableState: TableState,
-            ruleDecision: PendingRuleDecision,
+            decision: PendingRuleDecision,
             ruleModule: MahjongRuleModule<*>,
         ) = RuleDecisionResolution(
             tableState,
-            PendingRuleDecision(
+            RuleDecisionStep(
                 stepId = "test:player",
-                stepIndex = ruleDecision.stepIndex + 1,
+                stepIndex = decision.stepIndex + 1,
                 inputSpecsByPlayerId = mapOf(tableState.players.first().id to RuleDecisionInputSpec.Confirmation),
             ),
         )

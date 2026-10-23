@@ -14,7 +14,7 @@ import kotlin.uuid.Uuid
  * @return 轉換後的資料。
  */
 fun GameCommand.toDto(registries: NetworkDtoRegistries): GameCommandDto = when (this) {
-    is GameCommand.SubmitRuleDecision -> GameCommandDto.SubmitRuleDecision(submission.toDto())
+    is GameCommand.SubmitRuleDecision -> GameCommandDto.SubmitRuleDecision(windowId.toString(), submission.toDto())
     is GameCommand.Extension -> GameCommandDto.Extension(value.toDto(registries))
     GameCommand.Draw -> GameCommandDto.Draw
     is GameCommand.Discard -> GameCommandDto.Discard(tileId.toString())
@@ -36,7 +36,7 @@ fun GameCommand.toDto(registries: NetworkDtoRegistries): GameCommandDto = when (
  * @return 轉換後的資料。
  */
 fun GameCommandDto.toDomain(registries: NetworkDtoRegistries): GameCommand = when (this) {
-    is GameCommandDto.SubmitRuleDecision -> GameCommand.SubmitRuleDecision(submission.toDomain())
+    is GameCommandDto.SubmitRuleDecision -> GameCommand.SubmitRuleDecision(Uuid.parse(windowId), submission.toDomain())
     is GameCommandDto.Extension -> GameCommand.Extension(value.toDomain(registries))
     GameCommandDto.Draw -> GameCommand.Draw
     is GameCommandDto.Discard -> GameCommand.Discard(Uuid.parse(tileId))

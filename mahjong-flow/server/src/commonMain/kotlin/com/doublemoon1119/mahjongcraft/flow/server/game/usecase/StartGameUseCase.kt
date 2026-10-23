@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
@@ -172,7 +173,7 @@ class StartGameUseCase(
             openingDiceCounts = tableState.openingDiceRolls.map { it.dice.values.size },
         )
         presentationPublisher.publishGameStarted(roomId, tableState.players.map { it.id })
-        beginRuleDecisionUseCase?.invoke(roomId)
+        beginRuleDecisionUseCase?.invoke(roomId, RuleDecisionTiming.ROUND_START)
 
         return Outcome.Success(roomId)
     }

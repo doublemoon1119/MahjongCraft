@@ -20,7 +20,7 @@ sealed interface GameCommandDto {
      *
      * @property submission 玩家提交的規則選擇資料。
      */
-    @Serializable data class SubmitRuleDecision(val submission: RuleDecisionSubmissionDto) : GameCommandDto
+    @Serializable data class SubmitRuleDecision(val windowId: String, val submission: RuleDecisionSubmissionDto) : GameCommandDto
 
     /**
      * Extension 網路 DTO。

@@ -10,6 +10,9 @@ sealed interface PendingGameTransition {
     /** 本局已結算，待呈現結束後進入下一局或判定終局。 */
     data object AdvanceRound : PendingGameTransition
 
+    /** 牌山已摸完、一般流局結算前的規則選擇已完成，待進行一般流局結算。 */
+    data object SettleExhaustiveDraw : PendingGameTransition
+
     /** 整場對局已結束，待呈現結束後返回房間的持久化意圖。 */
     data object ReturnToRoom : PendingGameTransition
 }

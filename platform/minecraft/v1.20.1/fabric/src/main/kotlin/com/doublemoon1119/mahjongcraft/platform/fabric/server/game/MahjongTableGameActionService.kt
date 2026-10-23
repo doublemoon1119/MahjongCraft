@@ -149,6 +149,11 @@ class MahjongTableGameActionService(
         val resolved = resolveSelectionPrompt(playerId, selection)
             ?: return PlayerDecisionSubmissionResultKindDto.STALE
         if (!ClientRequestIds.isValid(selection.submissionId)) return PlayerDecisionSubmissionResultKindDto.REJECTED
+        // 規則選擇只提交到這份提示所屬的視窗；視窗已換掉時回報過期。
+        suspend fun submitRuleDecision(submission: RuleDecisionSubmission): PlayerDecisionSubmissionResultKindDto {
+            val windowId = resolved.ruleDecisionWindowId ?: return PlayerDecisionSubmissionResultKindDto.STALE
+            return execute(resolved.gameId, playerId, GameCommand.SubmitRuleDecision(windowId, submission))
+        }
         return when (selection.kind) {
             PlayerDecisionSelectionKindDto.ACTION -> {
                 val candidate = candidateResolver.listActionCandidates(playerId)
@@ -167,18 +172,10 @@ class MahjongTableGameActionService(
                 }
             }
 
-            PlayerDecisionSelectionKindDto.DECISION_CONFIRM -> execute(
-                resolved.gameId,
-                playerId,
-                GameCommand.SubmitRuleDecision(RuleDecisionSubmission.Confirmed),
-            )
+            PlayerDecisionSelectionKindDto.DECISION_CONFIRM -> submitRuleDecision(RuleDecisionSubmission.Confirmed)
 
             PlayerDecisionSelectionKindDto.DECISION_CHOICE -> selection.token?.let { option ->
-                execute(
-                    resolved.gameId,
-                    playerId,
-                    GameCommand.SubmitRuleDecision(RuleDecisionSubmission.Choice(option)),
-                )
+                submitRuleDecision(RuleDecisionSubmission.Choice(option))
             } ?: PlayerDecisionSubmissionResultKindDto.REJECTED
 
             PlayerDecisionSelectionKindDto.DECISION_TILES -> {
@@ -186,11 +183,7 @@ class MahjongTableGameActionService(
                 if (parsedIds.any { it == null }) {
                     PlayerDecisionSubmissionResultKindDto.REJECTED
                 } else {
-                    val commandResult = execute(
-                        resolved.gameId,
-                        playerId,
-                        GameCommand.SubmitRuleDecision(RuleDecisionSubmission.Tiles(parsedIds.filterNotNull().toSet())),
-                    )
+                    val commandResult = submitRuleDecision(RuleDecisionSubmission.Tiles(parsedIds.filterNotNull().toSet()))
                     if (commandResult == PlayerDecisionSubmissionResultKindDto.ACCEPTED) {
                         presentationPublisher.publishTileSelectionEnded(resolved.gameId, playerId)
                     }
@@ -227,7 +220,11 @@ class MahjongTableGameActionService(
             actionContextResolver.resolveFor(state, playerId)?.phase
         } ?: return null
         val prompt = promptFactory.create(gameId, playerId, phase) ?: return null
-        return if (prompt.decisionKey == selection.decisionKey) ResolvedSelectionPrompt(gameId, prompt) else null
+        return if (prompt.decisionKey == selection.decisionKey) {
+            ResolvedSelectionPrompt(gameId, prompt, ruleDecision?.id.takeIf { phase == PlayerDecisionPhase.RULE_DECISION })
+        } else {
+            null
+        }
     }
 
     /**
@@ -235,8 +232,13 @@ class MahjongTableGameActionService(
      *
      * @property gameId prompt 所屬對局識別碼。
      * @property prompt 目前權威 prompt。
+     * @property ruleDecisionWindowId prompt 屬於規則選擇時，它對應的視窗；其他決策為 null。
      */
-    private data class ResolvedSelectionPrompt(val gameId: Uuid, val prompt: PlayerDecisionPromptDto)
+    private data class ResolvedSelectionPrompt(
+        val gameId: Uuid,
+        val prompt: PlayerDecisionPromptDto,
+        val ruleDecisionWindowId: Uuid?,
+    )
 
     /**
      * 驗證開始多選的呈現意圖；此訊號不屬於最終提交，因此不回傳 submission ACK。

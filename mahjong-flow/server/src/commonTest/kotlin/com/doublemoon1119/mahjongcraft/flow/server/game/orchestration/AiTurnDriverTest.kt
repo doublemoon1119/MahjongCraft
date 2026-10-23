@@ -11,6 +11,8 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecision
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionInputSpec
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionStep
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.FakeGameRepository
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.PlayerActionContextResolver
@@ -335,10 +337,13 @@ class AiTurnDriverTest {
                 tableState = table,
                 flowConfig = GameFlowConfig(),
                 aiPlayerStrategyKeys = mapOf(aiId to strategyKey),
-                pendingRuleDecision = PendingRuleDecision(
-                    stepId = "test:confirmation",
-                    stepIndex = 0,
-                    inputSpecsByPlayerId = mapOf(aiId to RuleDecisionInputSpec.Confirmation),
+                pendingRuleDecision = PendingRuleDecision.open(
+                    step = RuleDecisionStep(
+                        stepId = "test:confirmation",
+                        stepIndex = 0,
+                        inputSpecsByPlayerId = mapOf(aiId to RuleDecisionInputSpec.Confirmation),
+                    ),
+                    timing = RuleDecisionTiming.ROUND_START,
                 ),
             ),
         )

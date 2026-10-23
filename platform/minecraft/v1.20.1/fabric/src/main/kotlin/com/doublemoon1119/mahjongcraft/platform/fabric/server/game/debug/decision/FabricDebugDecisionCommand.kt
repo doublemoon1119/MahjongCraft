@@ -5,7 +5,9 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingRuleDecision
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.PlayerDecisionPhase
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionInputSpec
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionStep
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionSubmission
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.DiscardReadinessAnalysisDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.WaitingTileAvailabilityDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.SuitDto
@@ -335,10 +337,13 @@ class FabricDebugDecisionCommand(
                 )
             }
             game.copy(
-                pendingRuleDecision = PendingRuleDecision(
-                    stepId = "${MinecraftModMetadata.MOD_ID}:debug_${preview.name.lowercase()}",
-                    stepIndex = 0,
-                    inputSpecsByPlayerId = mapOf(playerId to input),
+                pendingRuleDecision = PendingRuleDecision.open(
+                    step = RuleDecisionStep(
+                        stepId = "${MinecraftModMetadata.MOD_ID}:debug_${preview.name.lowercase()}",
+                        stepIndex = 0,
+                        inputSpecsByPlayerId = mapOf(playerId to input),
+                    ),
+                    timing = RuleDecisionTiming.ROUND_START,
                 ),
             ) to true
         }
@@ -357,7 +362,8 @@ class FabricDebugDecisionCommand(
      * @return Brigadier 指令結果碼。
      */
     private fun submitRuleDecision(source: ServerCommandSource, submission: RuleDecisionSubmission): Int = playerTableScope.runSuspending(source) { tableId, playerId ->
-        gameFlowCoordinator.dispatch(tableId, playerId, GameCommand.SubmitRuleDecision(submission))
+        val windowId = gameRepository.getGame(tableId)?.pendingRuleDecision?.id ?: return@runSuspending "No rule decision window is open"
+        gameFlowCoordinator.dispatch(tableId, playerId, GameCommand.SubmitRuleDecision(windowId, submission))
         advanceManager.request(tableId)
         "Rule decision submission sent"
     }

@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameAbortReasonIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.PendingGameTransition
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GameEventPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.history.acceptedActionHistoryDraft
@@ -40,6 +41,8 @@ import kotlin.uuid.Uuid
  * 只把 [GameAction.ExhaustiveDraw] 記錄進聽牌玩家的 `actionHistory`，不聽的玩家不記錄，
  * 供後續事件與呈現流程保留這次流局的玩家狀態。連莊與否則會明確寫入局結束摘要的
  * [RoundTransitionDirective]，不從動作紀錄反向推定。
+ *
+ * 對局排定了 [PendingGameTransition.SettleExhaustiveDraw] 時，結算與清除這項排定在同一筆寫入完成。
  *
  * @property gameRepository 權威對局數據倉庫。
  * @property moduleRegistry 麻將規則模組註冊中心，用於解析當前對局的規則模組。
@@ -131,6 +134,8 @@ class DeclareExhaustiveDrawUseCase(
                     )
                     game.copy(
                         tableState = newState,
+                        // 排定的結算在同一筆寫入中消耗，重複接續也不會再結算一次。
+                        pendingTransition = game.pendingTransition.takeUnless { it == PendingGameTransition.SettleExhaustiveDraw },
                         roundCompletion = RoundCompletionSummary(
                             outcomeId = settlement.reason.id,
                             classification = RoundCompletionClassification.EXHAUSTIVE_DRAW,

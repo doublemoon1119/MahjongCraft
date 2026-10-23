@@ -19,6 +19,9 @@ data class PendingGameTransitionPersistenceDto(
         /** 推進到下一局。 */
         ADVANCE_ROUND,
 
+        /** 進行一般流局結算。 */
+        SETTLE_EXHAUSTIVE_DRAW,
+
         /** 返回房間。 */
         RETURN_TO_ROOM,
     }
