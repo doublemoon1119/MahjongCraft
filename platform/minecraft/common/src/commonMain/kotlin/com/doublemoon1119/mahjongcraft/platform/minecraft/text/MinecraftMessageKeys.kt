@@ -44,6 +44,21 @@ object MinecraftMessageKeys {
     /** 開發用和牌者坐莊、每局換位四人日麻的規則名稱。 */
     const val DEBUG_RULE_MODULE_WINNER_DEALER_RIICHI = PREFIX + "debug.rule_module.winner_dealer_riichi"
 
+    /** 開發用可宣告不聽四人日麻的規則名稱。 */
+    const val DEBUG_RULE_MODULE_NOTEN_DECLARATION_RIICHI = PREFIX + "debug.rule_module.noten_declaration_riichi"
+
+    /** 開發用可宣告不聽規則中，流局時公開聽牌的選項名稱。 */
+    const val DEBUG_DECISION_REVEAL_TENPAI_LABEL = PREFIX + "debug.decision.reveal_tenpai.label"
+
+    /** 開發用可宣告不聽規則中，流局時公開聽牌的選項說明。 */
+    const val DEBUG_DECISION_REVEAL_TENPAI_DESCRIPTION = PREFIX + "debug.decision.reveal_tenpai.description"
+
+    /** 開發用可宣告不聽規則中，流局時宣告不聽的選項與動作名稱。 */
+    const val DEBUG_DECISION_DECLARE_NOTEN_LABEL = PREFIX + "debug.decision.declare_noten.label"
+
+    /** 開發用可宣告不聽規則中，流局時宣告不聽的選項說明。 */
+    const val DEBUG_DECISION_DECLARE_NOTEN_DESCRIPTION = PREFIX + "debug.decision.declare_noten.description"
+
     /** 對局進行中禁止主動離開。 */
     const val GAME_LEAVE_DENIED_WHILE_PLAYING = PREFIX + "game_leave_denied_while_playing"
 
@@ -571,6 +586,11 @@ object MinecraftMessageKeys {
         DEBUG_DECISION_TEXT_CARD_DESCRIPTION,
         DEBUG_RULE_MODULE_AUTO_NORTH_RIICHI,
         DEBUG_RULE_MODULE_WINNER_DEALER_RIICHI,
+        DEBUG_RULE_MODULE_NOTEN_DECLARATION_RIICHI,
+        DEBUG_DECISION_REVEAL_TENPAI_LABEL,
+        DEBUG_DECISION_REVEAL_TENPAI_DESCRIPTION,
+        DEBUG_DECISION_DECLARE_NOTEN_LABEL,
+        DEBUG_DECISION_DECLARE_NOTEN_DESCRIPTION,
         GAME_LEAVE_DENIED_WHILE_PLAYING,
         GAME_DISSOLVED,
         GAME_LEFT,

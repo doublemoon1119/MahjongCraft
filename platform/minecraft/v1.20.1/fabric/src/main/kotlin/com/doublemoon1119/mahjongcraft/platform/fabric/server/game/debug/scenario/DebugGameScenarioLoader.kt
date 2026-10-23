@@ -6,9 +6,11 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameDecisionAvai
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.membership.repository.PlayerMembershipRepository
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.GameEventExclusions
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.TablePresentationBusyTracker
 import com.doublemoon1119.mahjongcraft.platform.minecraft.environment.MinecraftEnvironment
+import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigPresentationRegistry
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
@@ -32,6 +34,8 @@ import kotlin.uuid.Uuid
  * @property exclusions 成就與事件掛勾共用的 debug 場次排除名單。
  * @property stateStore 停止情境場次的歷史記錄。
  * @property dispatchers 提供平台呈現使用的執行緒。
+ * @property moduleRegistry 取得情境載入後使用的規則模組。
+ * @property gameConfigPresentationRegistry 依情境載入後的規則整理流程設定，例如規則選擇時間。
  */
 class DebugGameScenarioLoader(
     private val minecraftEnvironment: MinecraftEnvironment,
@@ -46,6 +50,8 @@ class DebugGameScenarioLoader(
     private val exclusions: GameEventExclusions,
     private val stateStore: AuthoritativeStateStore,
     private val dispatchers: CoroutineDispatchers,
+    private val moduleRegistry: MahjongModuleRegistry,
+    private val gameConfigPresentationRegistry: GameConfigPresentationRegistry,
 ) {
     /**
      * 將情境套用到玩家目前所在的進行中遊戲。
@@ -96,7 +102,7 @@ class DebugGameScenarioLoader(
                 require(currentGame.pendingTransition == null) { "The game has a pending transition" }
                 exclusions.exclude(currentGame.matchId)
                 val context = DebugGameScenarioContext(currentGame, playerId)
-                val result = scenario.build(context).continueAutomaticControls(currentGame)
+                val result = scenario.build(context).continueAutomaticControls(currentGame).withRuleFlowConfig()
                 validator.validate(context, result)
                 result.game to result
             }
@@ -115,6 +121,22 @@ class DebugGameScenarioLoader(
         decisionAvailabilityService.reconcile(tableId, completedPlayerId = playerId)
         snapshotSynchronizer.syncAll(tableId)
         return DebugGameScenarioLoadResult.Success(scenarioId, presentationCount)
+    }
+
+    /**
+     * 讓流程設定符合情境載入後的規則；例如規則需要玩家選擇時補上規則選擇時間，不需要時清除。
+     *
+     * @receiver 情境建立的結果。
+     * @return 流程設定已整理的結果。
+     */
+    private fun DebugGameScenarioResult.withRuleFlowConfig(): DebugGameScenarioResult {
+        val ruleConfig = game.tableState.config
+        val flowConfig = gameConfigPresentationRegistry.normalizeFlowConfig(
+            ruleModuleId = moduleRegistry.getModule(ruleConfig).id,
+            ruleConfig = ruleConfig,
+            current = game.flowConfig,
+        )
+        return copy(game = game.copy(flowConfig = flowConfig))
     }
 
     /**

@@ -41,6 +41,8 @@ import com.doublemoon1119.mahjongcraft.logic.table.layout.resolveTransitionValid
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.rule.DebugAutoNorthRiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.rule.DebugAutoNorthRiichiRuleModule
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.rule.DebugNotenDeclarationRiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.rule.DebugNotenDeclarationRiichiRuleModule
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.rule.DebugWinnerDealerRiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.game.debug.rule.DebugWinnerDealerRiichiRuleModule
 import kotlin.uuid.Uuid
@@ -67,6 +69,7 @@ object RiichiDebugGameScenarios {
         RiichiAutomaticControlDebugGameScenarios.all +
         RiichiMeldDebugGameScenarios.all +
         RiichiSeatChangeDebugGameScenarios.all +
+        RiichiRuleDecisionDebugGameScenarios.all +
         ThreePlayerRiichiDebugGameScenarios.all
 }
 
@@ -718,6 +721,7 @@ internal fun scenarioConfig(currentGame: Game): RiichiRuleConfig = baseRiichiCon
 internal fun baseRiichiConfig(currentGame: Game): MahjongRuleConfig = when (val config = currentGame.tableState.config) {
     is DebugAutoNorthRiichiRuleConfig -> config.base
     is DebugWinnerDealerRiichiRuleConfig -> config.base
+    is DebugNotenDeclarationRiichiRuleConfig -> config.base
     else -> config
 }
 
@@ -743,14 +747,21 @@ internal fun riichiFamilyScenarioModule(
     is RiichiRuleConfig -> {
         require(rule != DebugScenarioRule.AUTO_NORTH) { "The auto North pull rule requires a three-player Riichi game" }
         val fourPlayerConfig = multiRonPolicy?.let { config.copy(multiRonPolicy = it) } ?: config
-        if (rule == DebugScenarioRule.WINNER_DEALER) {
-            DebugWinnerDealerRiichiRuleModule(id = DebugWinnerDealerRiichiRuleModule.ID, config = DebugWinnerDealerRiichiRuleConfig(fourPlayerConfig))
-        } else {
-            RiichiRuleModule(id = BuiltInRuleModuleIds.RIICHI, config = fourPlayerConfig)
+        when (rule) {
+            DebugScenarioRule.WINNER_DEALER -> DebugWinnerDealerRiichiRuleModule(
+                id = DebugWinnerDealerRiichiRuleModule.ID,
+                config = DebugWinnerDealerRiichiRuleConfig(fourPlayerConfig),
+            )
+            DebugScenarioRule.NOTEN_DECLARATION -> DebugNotenDeclarationRiichiRuleModule(
+                id = DebugNotenDeclarationRiichiRuleModule.ID,
+                config = DebugNotenDeclarationRiichiRuleConfig(fourPlayerConfig),
+            )
+            DebugScenarioRule.STANDARD, DebugScenarioRule.AUTO_NORTH -> RiichiRuleModule(id = BuiltInRuleModuleIds.RIICHI, config = fourPlayerConfig)
         }
     }
     is ThreePlayerRiichiRuleConfig -> {
         require(rule != DebugScenarioRule.WINNER_DEALER) { "The winner dealer rule requires a four-player Riichi game" }
+        require(rule != DebugScenarioRule.NOTEN_DECLARATION) { "The noten declaration rule requires a four-player Riichi game" }
         val threePlayerConfig = multiRonPolicy?.let { config.copy(multiRonPolicy = it) } ?: config
         if (rule == DebugScenarioRule.AUTO_NORTH) {
             DebugAutoNorthRiichiRuleModule(id = DebugAutoNorthRiichiRuleModule.ID, config = DebugAutoNorthRiichiRuleConfig(threePlayerConfig))

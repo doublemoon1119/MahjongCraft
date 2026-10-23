@@ -10,4 +10,7 @@ internal enum class DebugScenarioRule {
 
     /** 開發用的和牌者坐莊、每局換位四人日麻；只適用四人日麻的桌子。 */
     WINNER_DEALER,
+
+    /** 開發用的可宣告不聽四人日麻；只適用四人日麻的桌子。 */
+    NOTEN_DECLARATION,
 }
