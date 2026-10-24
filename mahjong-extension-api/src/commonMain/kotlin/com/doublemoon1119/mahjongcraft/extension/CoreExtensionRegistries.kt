@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.extension
 import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
@@ -35,6 +36,7 @@ import com.doublemoon1119.mahjongcraft.logic.tile.TileTypeRegistry
  * @property ruleDecisionResolverRegistry 規則選擇 resolver registry。
  * @property winRoundContinuationResolverRegistry 胡牌後續流程 resolver registry。
  * @property winSettlementDetailResolverRegistry 胡牌結算詳情 resolver registry。
+ * @property gameEventPublicMarkerResolverRegistry 公開遊戲事件標記 resolver registry。
  * @property winCelebrationCueResolverRegistry 胡牌呈現提示 resolver registry。
  */
 class CoreExtensionRegistries(
@@ -58,6 +60,7 @@ class CoreExtensionRegistries(
     val ruleDecisionResolverRegistry: RuleDecisionResolverRegistry,
     val winRoundContinuationResolverRegistry: WinRoundContinuationResolverRegistry,
     val winSettlementDetailResolverRegistry: WinSettlementDetailResolverRegistry,
+    val gameEventPublicMarkerResolverRegistry: GameEventPublicMarkerResolverRegistry,
 ) {
     /** 取得目前所有 core extension registry 的不可變診斷快照。 */
     fun registrationSnapshot(): ExtensionRegistrationSnapshot = ExtensionRegistrationSnapshot(
@@ -105,6 +108,11 @@ class CoreExtensionRegistries(
                 "Win Settlement Detail Resolver",
                 winSettlementDetailResolverRegistry.registrationKeys,
             ),
+            snapshotCategory(
+                CoreExtensionRegistrationCategoryIds.GAME_EVENT_PUBLIC_MARKER_RESOLVER,
+                "Game Event Public Marker Resolver",
+                gameEventPublicMarkerResolverRegistry.registrationKeys,
+            ),
         ),
     )
 
@@ -125,6 +133,7 @@ class CoreExtensionRegistries(
         ruleDecisionResolverRegistry.freeze()
         winRoundContinuationResolverRegistry.freeze()
         winSettlementDetailResolverRegistry.freeze()
+        gameEventPublicMarkerResolverRegistry.freeze()
     }
 
     /** 彙整所有 network DTO 子 registry 的穩定 key。 */

@@ -1,3 +1,31 @@
+public final class com/doublemoon1119/mahjongcraft/flow/api/event/ActionsPerformedEvent : com/doublemoon1119/mahjongcraft/flow/api/event/MatchEvent {
+	public final fun getActions ()Ljava/util/List;
+	public fun getEventId ()Lkotlin/uuid/Uuid;
+	public fun getMatchId ()Lkotlin/uuid/Uuid;
+	public final fun getRoundNumber ()I
+	public fun getRuleModuleId ()Ljava/lang/String;
+	public fun getVenueId ()Lkotlin/uuid/Uuid;
+}
+
+public final class com/doublemoon1119/mahjongcraft/flow/api/event/CommittedMatchEventBatch {
+	public final fun getBatchId ()Lkotlin/uuid/Uuid;
+	public final fun getEvents ()Ljava/util/List;
+	public final fun getMatchId ()Lkotlin/uuid/Uuid;
+	public final fun getPlayers ()Ljava/util/List;
+	public final fun getRuleModuleId ()Ljava/lang/String;
+	public final fun getVenueId ()Lkotlin/uuid/Uuid;
+}
+
+public final class com/doublemoon1119/mahjongcraft/flow/api/event/EventQuantity {
+	public final fun getAmount ()I
+	public final fun getUnitId ()Ljava/lang/String;
+}
+
+public final class com/doublemoon1119/mahjongcraft/flow/api/event/EventRoundContext {
+	public final fun getPrevalentWindId ()Ljava/lang/String;
+	public final fun getRoundNumber ()I
+}
+
 public final class com/doublemoon1119/mahjongcraft/flow/api/event/MatchCompletion : java/lang/Enum {
 	public static final field ABORTED Lcom/doublemoon1119/mahjongcraft/flow/api/event/MatchCompletion;
 	public static final field COMPLETED Lcom/doublemoon1119/mahjongcraft/flow/api/event/MatchCompletion;
@@ -7,10 +35,13 @@ public final class com/doublemoon1119/mahjongcraft/flow/api/event/MatchCompletio
 }
 
 public final class com/doublemoon1119/mahjongcraft/flow/api/event/MatchEndedEvent : com/doublemoon1119/mahjongcraft/flow/api/event/MatchEvent {
+	public final fun getCompletedPlayerIds ()Ljava/util/Set;
 	public final fun getCompletion ()Lcom/doublemoon1119/mahjongcraft/flow/api/event/MatchCompletion;
 	public fun getEventId ()Lkotlin/uuid/Uuid;
 	public fun getMatchId ()Lkotlin/uuid/Uuid;
+	public final fun getPublicMarkers ()Ljava/util/List;
 	public final fun getReasonId ()Ljava/lang/String;
+	public final fun getRoundContext ()Lcom/doublemoon1119/mahjongcraft/flow/api/event/EventRoundContext;
 	public fun getRuleModuleId ()Ljava/lang/String;
 	public final fun getStandings ()Ljava/util/List;
 	public fun getVenueId ()Lkotlin/uuid/Uuid;
@@ -44,6 +75,58 @@ public final class com/doublemoon1119/mahjongcraft/flow/api/event/MatchStartedEv
 	public fun getVenueId ()Lkotlin/uuid/Uuid;
 }
 
+public final class com/doublemoon1119/mahjongcraft/flow/api/event/PerformedAction {
+	public final fun getActionId ()Ljava/lang/String;
+	public final fun getActorPlayerId ()Lkotlin/uuid/Uuid;
+	public final fun getKind ()Lcom/doublemoon1119/mahjongcraft/flow/api/event/PerformedActionKind;
+	public final fun getSupplementalSourceId ()Ljava/lang/String;
+	public final fun getSupplementalTileCount ()Ljava/lang/Integer;
+	public final fun getTiles ()Ljava/util/List;
+}
+
+public final class com/doublemoon1119/mahjongcraft/flow/api/event/PerformedActionKind : java/lang/Enum {
+	public static final field DECLARATION Lcom/doublemoon1119/mahjongcraft/flow/api/event/PerformedActionKind;
+	public static final field DISCARD Lcom/doublemoon1119/mahjongcraft/flow/api/event/PerformedActionKind;
+	public static final field MELD Lcom/doublemoon1119/mahjongcraft/flow/api/event/PerformedActionKind;
+	public static final field OTHER Lcom/doublemoon1119/mahjongcraft/flow/api/event/PerformedActionKind;
+	public static final field SUPPLEMENTAL_DRAW Lcom/doublemoon1119/mahjongcraft/flow/api/event/PerformedActionKind;
+	public static final field WIN Lcom/doublemoon1119/mahjongcraft/flow/api/event/PerformedActionKind;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/doublemoon1119/mahjongcraft/flow/api/event/PerformedActionKind;
+	public static fun values ()[Lcom/doublemoon1119/mahjongcraft/flow/api/event/PerformedActionKind;
+}
+
+public final class com/doublemoon1119/mahjongcraft/flow/api/event/PublicEventMarker {
+	public final fun getId ()Ljava/lang/String;
+	public final fun getPlayerId ()Lkotlin/uuid/Uuid;
+	public final fun getQuantity ()Lcom/doublemoon1119/mahjongcraft/flow/api/event/EventQuantity;
+}
+
+public final class com/doublemoon1119/mahjongcraft/flow/api/event/PublicTileFace {
+	public final fun getTypeId ()Ljava/lang/String;
+}
+
+public final class com/doublemoon1119/mahjongcraft/flow/api/event/RoundCompletedEvent : com/doublemoon1119/mahjongcraft/flow/api/event/MatchEvent {
+	public final fun getClassification ()Lcom/doublemoon1119/mahjongcraft/flow/api/event/RoundCompletionKind;
+	public fun getEventId ()Lkotlin/uuid/Uuid;
+	public fun getMatchId ()Lkotlin/uuid/Uuid;
+	public final fun getOutcomeId ()Ljava/lang/String;
+	public final fun getPlayers ()Ljava/util/List;
+	public final fun getRoundContext ()Lcom/doublemoon1119/mahjongcraft/flow/api/event/EventRoundContext;
+	public fun getRuleModuleId ()Ljava/lang/String;
+	public fun getVenueId ()Lkotlin/uuid/Uuid;
+}
+
+public final class com/doublemoon1119/mahjongcraft/flow/api/event/RoundCompletionKind : java/lang/Enum {
+	public static final field ABORTIVE_DRAW Lcom/doublemoon1119/mahjongcraft/flow/api/event/RoundCompletionKind;
+	public static final field EXHAUSTIVE_DRAW Lcom/doublemoon1119/mahjongcraft/flow/api/event/RoundCompletionKind;
+	public static final field SPECIAL Lcom/doublemoon1119/mahjongcraft/flow/api/event/RoundCompletionKind;
+	public static final field WIN Lcom/doublemoon1119/mahjongcraft/flow/api/event/RoundCompletionKind;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/doublemoon1119/mahjongcraft/flow/api/event/RoundCompletionKind;
+	public static fun values ()[Lcom/doublemoon1119/mahjongcraft/flow/api/event/RoundCompletionKind;
+}
+
 public final class com/doublemoon1119/mahjongcraft/flow/api/event/RoundScoreChange {
 	public final fun getCurrentRank ()I
 	public final fun getCurrentScore ()I
@@ -63,6 +146,7 @@ public final class com/doublemoon1119/mahjongcraft/flow/api/event/RoundSettledEv
 	public final fun getRoundNumber ()I
 	public fun getRuleModuleId ()Ljava/lang/String;
 	public fun getVenueId ()Lkotlin/uuid/Uuid;
+	public final fun getWinGroups ()Ljava/util/List;
 }
 
 public final class com/doublemoon1119/mahjongcraft/flow/api/event/RoundSettlementKind : java/lang/Enum {
@@ -72,5 +156,34 @@ public final class com/doublemoon1119/mahjongcraft/flow/api/event/RoundSettlemen
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/doublemoon1119/mahjongcraft/flow/api/event/RoundSettlementKind;
 	public static fun values ()[Lcom/doublemoon1119/mahjongcraft/flow/api/event/RoundSettlementKind;
+}
+
+public final class com/doublemoon1119/mahjongcraft/flow/api/event/RoundWinDetail {
+	public final fun getDetailFields ()Ljava/util/List;
+	public final fun getMethod ()Lcom/doublemoon1119/mahjongcraft/flow/api/event/WinMethod;
+	public final fun getPlayerId ()Lkotlin/uuid/Uuid;
+	public final fun getPublicMarkers ()Ljava/util/List;
+}
+
+public final class com/doublemoon1119/mahjongcraft/flow/api/event/RoundWinGroup {
+	public final fun getDiscarderPlayerIds ()Ljava/util/Set;
+	public final fun getOutcomeId ()Ljava/lang/String;
+	public final fun getResponsiblePlayerIds ()Ljava/util/Set;
+	public final fun getWinners ()Ljava/util/List;
+}
+
+public final class com/doublemoon1119/mahjongcraft/flow/api/event/WinDetailField {
+	public final fun getEntries ()Ljava/util/List;
+	public final fun getId ()Ljava/lang/String;
+	public final fun getQuantities ()Ljava/util/List;
+}
+
+public final class com/doublemoon1119/mahjongcraft/flow/api/event/WinMethod : java/lang/Enum {
+	public static final field DISCARD Lcom/doublemoon1119/mahjongcraft/flow/api/event/WinMethod;
+	public static final field SELF_DRAW Lcom/doublemoon1119/mahjongcraft/flow/api/event/WinMethod;
+	public static final field UNKNOWN Lcom/doublemoon1119/mahjongcraft/flow/api/event/WinMethod;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/doublemoon1119/mahjongcraft/flow/api/event/WinMethod;
+	public static fun values ()[Lcom/doublemoon1119/mahjongcraft/flow/api/event/WinMethod;
 }
 

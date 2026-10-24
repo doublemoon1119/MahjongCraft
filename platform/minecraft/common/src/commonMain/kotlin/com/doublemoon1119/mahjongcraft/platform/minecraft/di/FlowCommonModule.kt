@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.di
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.repository.GameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.flow.common.game.repository.GameSnapshotRepositoryImpl
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
@@ -31,4 +32,5 @@ val flowCommonModule = module {
 
     single<RoomSnapshotRepositoryImpl>() bind RoomSnapshotRepository::class
     single<RuleDecisionResolverRegistry>()
+    single<GameEventPublicMarkerResolverRegistry>()
 }

@@ -1,7 +1,9 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.event
 
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventProjectionReporter
 import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventProjector
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.CommittedGameFacts
 import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.state.CommittedFactsListener
@@ -29,6 +31,7 @@ import kotlin.uuid.Uuid
  * @property reporter 回報事件交付失敗的診斷元件。
  * @property exclusions 由 debug 流程共用的場次排除名單。
  * @property failurePolicy 判斷第三方事件監聽者丟出的失敗能否隔離。
+ * @property markerResolvers 與 extension bootstrap 共用的規則公開標記 registry。
  */
 @OptIn(ExperimentalAtomicApi::class)
 class CommittedFactsDispatcher(
@@ -39,6 +42,7 @@ class CommittedFactsDispatcher(
     private val reporter: GameEventDeliveryReporter,
     private val exclusions: GameEventExclusions,
     private val failurePolicy: ExtensionFailurePolicy,
+    private val markerResolvers: GameEventPublicMarkerResolverRegistry,
 ) {
     /** 記錄個別接收端失敗而不阻斷另一端的診斷 logger。 */
     private val logger = mahjongCraftLogger(CommittedFactsDispatcher::class)
@@ -72,7 +76,23 @@ class CommittedFactsDispatcher(
     ) {
         stopSession()
         val delivery = GameEventDelivery(
-            projector = GameEventProjector(moduleRegistry),
+            projector = GameEventProjector(
+                moduleRegistry = moduleRegistry,
+                markerResolvers = markerResolvers,
+                failurePolicy = failurePolicy,
+                projectionReporter = object : GameEventProjectionReporter {
+                    override fun markerFailed(ruleModuleId: String, matchId: Uuid, eventKind: String, winnerId: Uuid?, cause: Throwable) {
+                        logger.warn(
+                            "Public event markers failed rule={} matchId={} kind={} winnerId={}",
+                            ruleModuleId,
+                            matchId,
+                            eventKind,
+                            winnerId,
+                            cause,
+                        )
+                    }
+                },
+            ),
             scheduler = scheduler,
             locations = locations,
             reporter = reporter,
@@ -80,6 +100,9 @@ class CommittedFactsDispatcher(
             roundSettled = subscriptions.roundSettled,
             matchEnded = subscriptions.matchEnded,
             failurePolicy = failurePolicy,
+            actionsPerformed = subscriptions.actionsPerformed,
+            roundCompleted = subscriptions.roundCompleted,
+            eventBatchCommitted = subscriptions.eventBatchCommitted,
         )
         val sessionId = delivery.startSession()
         lateinit var session: Session

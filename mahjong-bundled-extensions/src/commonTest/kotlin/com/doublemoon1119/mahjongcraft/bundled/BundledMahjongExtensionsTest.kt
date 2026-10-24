@@ -8,6 +8,7 @@ import com.doublemoon1119.mahjongcraft.extension.CoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.extension.ExtensionRegistrationSource
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtensionRegistrar
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistryImpl
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.emptyPersistenceRegistries
@@ -66,8 +67,13 @@ class BundledMahjongExtensionsTest {
             "mahjongcraft:game_command",
             "mahjongcraft:post_action_exhaustive_draw_resolver",
             "mahjongcraft:win_settlement_detail_resolver",
+            "mahjongcraft:game_event_public_marker_resolver",
             "mahjongcraft:win_celebration_cue_resolver",
         ).forEach { categoryId -> assertTrue(riichi.ids(categoryId).isNotEmpty(), "Riichi should register $categoryId") }
+        assertEquals(
+            listOf(BuiltInRuleModuleIds.RIICHI, BuiltInRuleModuleIds.RIICHI_THREE_PLAYER),
+            riichi.ids("mahjongcraft:game_event_public_marker_resolver"),
+        )
         assertTrue(riichi.ids("mahjongcraft:persistence_dto").any { "riichi/player_state" in it })
         assertTrue(taiwan.ids("mahjongcraft:persistence_dto").all { "taiwan" in it })
         assertTrue(taiwan.ids("mahjongcraft:network_dto").all { "taiwan" in it })
@@ -100,6 +106,7 @@ class BundledMahjongExtensionsTest {
             ruleDecisionResolverRegistry = RuleDecisionResolverRegistry(),
             winRoundContinuationResolverRegistry = WinRoundContinuationResolverRegistry(),
             winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry(),
+            gameEventPublicMarkerResolverRegistry = GameEventPublicMarkerResolverRegistry(),
         )
     }
 }

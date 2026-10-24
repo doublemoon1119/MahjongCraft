@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.extension.CoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtensionRegistrar
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryOutboxEvent
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
@@ -116,6 +117,7 @@ fun bundledCoreExtensionRegistries(additionalExtensions: List<MahjongExtension> 
         ruleDecisionResolverRegistry = RuleDecisionResolverRegistry(),
         winRoundContinuationResolverRegistry = WinRoundContinuationResolverRegistry(),
         winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry(),
+        gameEventPublicMarkerResolverRegistry = GameEventPublicMarkerResolverRegistry(),
     )
     MahjongExtensionRegistrar.registerAndFreeze(
         extensions = BundledMahjongExtensions.all + additionalExtensions,

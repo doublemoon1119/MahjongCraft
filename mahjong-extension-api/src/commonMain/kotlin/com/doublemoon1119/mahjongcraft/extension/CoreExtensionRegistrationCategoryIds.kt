@@ -46,4 +46,7 @@ internal object CoreExtensionRegistrationCategoryIds {
 
     /** 胡牌結算詳情解析器分類。 */
     const val WIN_SETTLEMENT_DETAIL_RESOLVER: String = "mahjongcraft:win_settlement_detail_resolver"
+
+    /** 公開遊戲事件標記解析器分類。 */
+    const val GAME_EVENT_PUBLIC_MARKER_RESOLVER: String = "mahjongcraft:game_event_public_marker_resolver"
 }

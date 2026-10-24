@@ -17,6 +17,17 @@ class MatchEventsJavaVisibilityTest {
         MatchPlayer::class.java,
         RoundScoreChange::class.java,
         MatchStanding::class.java,
+        EventQuantity::class.java,
+        PublicEventMarker::class.java,
+        EventRoundContext::class.java,
+        PublicTileFace::class.java,
+        PerformedAction::class.java,
+        ActionsPerformedEvent::class.java,
+        RoundCompletedEvent::class.java,
+        WinDetailField::class.java,
+        RoundWinDetail::class.java,
+        RoundWinGroup::class.java,
+        CommittedMatchEventBatch::class.java,
     )
 
     /** 每個型別都沒有 Java 看得到的建構子；編譯器產生的存取用建構子是 synthetic，Java 原始碼無法呼叫。 */
@@ -65,6 +76,56 @@ class MatchEventsJavaVisibilityTest {
             javaCall(iterator, "remove")
         }
         assertEquals(setOf(playerId), event.beneficiaryPlayerIds)
+    }
+
+    /** 新增事件資料的集合也拒絕 Java 直接修改。 */
+    @Test
+    fun `new event collections reject Java mutators`() {
+        val playerId = Uuid.random()
+        val face = PublicTileFace.create("test:one")
+        val action = PerformedAction.create("test:discard", playerId, PerformedActionKind.DISCARD, listOf(face))
+        val actionEvent = ActionsPerformedEvent.create(
+            Uuid.random(),
+            Uuid.random(),
+            Uuid.random(),
+            "test:rule",
+            1,
+            listOf(action),
+        )
+        val quantity = EventQuantity.create("test:points", 1)
+        val marker = PublicEventMarker.create("test:marker", playerId, quantity)
+        val field = WinDetailField.create("test:field", listOf(marker), listOf(quantity))
+        val detail = RoundWinDetail.create(playerId, WinMethod.DISCARD, listOf(field), listOf(marker))
+        val group = RoundWinGroup.create("test:win", listOf(detail), setOf(playerId), setOf(playerId))
+        val roundCompleted = RoundCompletedEvent.create(
+            Uuid.random(),
+            Uuid.random(),
+            Uuid.random(),
+            "test:rule",
+            EventRoundContext.create(1, "test:east"),
+            RoundCompletionKind.WIN,
+            "test:win",
+            listOf(RoundScoreChange.create(playerId, 25_000, 26_000, 1, 1)),
+        )
+        val batch = CommittedMatchEventBatch.create(
+            Uuid.random(),
+            Uuid.random(),
+            Uuid.random(),
+            "test:rule",
+            listOf(MatchPlayer.create(playerId, false, 0)),
+            listOf(actionEvent, roundCompleted),
+        )
+
+        assertRejected { javaCall(action.tiles, "clear") }
+        assertRejected { javaCall(actionEvent.actions, "clear") }
+        assertRejected { javaCall(field.entries, "clear") }
+        assertRejected { javaCall(field.quantities, "clear") }
+        assertRejected { javaCall(detail.detailFields, "clear") }
+        assertRejected { javaCall(group.winners, "clear") }
+        assertRejected { javaCall(group.responsiblePlayerIds, "clear") }
+        assertRejected { javaCall(roundCompleted.players, "clear") }
+        assertRejected { javaCall(batch.players, "clear") }
+        assertRejected { javaCall(batch.events, "clear") }
     }
 
     /** 以 Java 介面的方法反射呼叫，模擬 Java 原始碼的呼叫方式。 */

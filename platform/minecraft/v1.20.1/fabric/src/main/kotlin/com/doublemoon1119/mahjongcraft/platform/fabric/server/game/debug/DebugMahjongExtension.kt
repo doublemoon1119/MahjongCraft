@@ -6,6 +6,8 @@ import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelDefinition
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.ai.riichi.RiichiOpponentModel
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverDefinition
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.riichi.RiichiWinCelebrationCueResolver
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverDefinition
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
@@ -15,6 +17,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostAction
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.WinRoundContinuationResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiGameEventPublicMarkerResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiNagashiManganOutcomeResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiSuukanNagareResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiWinSettlementDetailResolver
@@ -133,6 +136,12 @@ internal class DebugMahjongExtension(
     override fun registerWinSettlementDetailResolvers(registry: WinSettlementDetailResolverRegistry) {
         DEBUG_VARIANT_RULE_MODULE_IDS.forEach { ruleModuleId ->
             registry.register(WinSettlementDetailResolverDefinition(ruleModuleId, RiichiWinSettlementDetailResolver))
+        }
+    }
+
+    override fun registerGameEventPublicMarkerResolvers(registry: GameEventPublicMarkerResolverRegistry) {
+        DEBUG_VARIANT_RULE_MODULE_IDS.forEach { ruleModuleId ->
+            registry.register(GameEventPublicMarkerResolverDefinition(ruleModuleId, RiichiGameEventPublicMarkerResolver))
         }
     }
 

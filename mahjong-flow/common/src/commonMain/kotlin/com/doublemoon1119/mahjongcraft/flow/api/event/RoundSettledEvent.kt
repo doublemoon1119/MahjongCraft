@@ -15,6 +15,7 @@ import kotlin.uuid.Uuid
  * @property beneficiaryPlayerIds 得利的玩家，例如贏家或流局時聽牌的玩家；途中流局沒有得利的玩家。
  * @property responsiblePlayerIds 負責的玩家，例如放銃者；沒有時為空集合。
  * @property players 依座位順序排列的每位玩家結算前後的分數與名次。
+ * @property winGroups 這次結算中各組贏家的公開和牌詳情；不是和牌時為空集合。
  */
 class RoundSettledEvent private constructor(
     override val eventId: Uuid,
@@ -27,6 +28,7 @@ class RoundSettledEvent private constructor(
     val beneficiaryPlayerIds: Set<Uuid>,
     val responsiblePlayerIds: Set<Uuid>,
     val players: List<RoundScoreChange>,
+    val winGroups: List<RoundWinGroup>,
 ) : MatchEvent {
     /** 事件系統內部建立事件的入口。 */
     internal companion object {
@@ -43,6 +45,7 @@ class RoundSettledEvent private constructor(
          * @param beneficiaryPlayerIds 得利的玩家 UUID。
          * @param responsiblePlayerIds 負責的玩家 UUID。
          * @param players 依座位順序排列的玩家結算前後資料。
+         * @param winGroups 各組贏家的公開和牌詳情；不是和牌時為空集合。
          * @return 建立的一局結算事件。
          */
         @Suppress("LongParameterList")
@@ -58,6 +61,7 @@ class RoundSettledEvent private constructor(
             beneficiaryPlayerIds: Set<Uuid>,
             responsiblePlayerIds: Set<Uuid>,
             players: List<RoundScoreChange>,
+            winGroups: List<RoundWinGroup> = emptyList(),
         ): RoundSettledEvent = RoundSettledEvent(
             eventId = eventId,
             matchId = matchId,
@@ -69,6 +73,7 @@ class RoundSettledEvent private constructor(
             beneficiaryPlayerIds = ReadOnlySetSnapshot(beneficiaryPlayerIds),
             responsiblePlayerIds = ReadOnlySetSnapshot(responsiblePlayerIds),
             players = ReadOnlyListSnapshot(players),
+            winGroups = ReadOnlyListSnapshot(winGroups),
         )
     }
 }

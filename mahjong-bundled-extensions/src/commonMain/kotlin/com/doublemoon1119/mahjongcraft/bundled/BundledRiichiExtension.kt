@@ -8,6 +8,8 @@ import com.doublemoon1119.mahjongcraft.ai.riichi.RiichiDeclarationAiHandler
 import com.doublemoon1119.mahjongcraft.ai.riichi.RiichiOpponentModel
 import com.doublemoon1119.mahjongcraft.ai.riichi.RiichiPullNorthAiHandler
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverDefinition
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameError
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiGameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiPullNorthCommand
@@ -60,6 +62,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionG
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostActionExhaustiveDrawResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.PostReactionRoundOutcomeResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.DeclareRiichiUseCase
+import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiGameEventPublicMarkerResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiNagashiManganOutcomeResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiSuuchaRiichiResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiSuufonRendaResolver
@@ -517,6 +520,11 @@ object BundledRiichiExtension : MahjongExtension {
     override fun registerWinSettlementDetailResolvers(registry: WinSettlementDetailResolverRegistry) {
         registry.register(WinSettlementDetailResolverDefinition(BuiltInRuleModuleIds.RIICHI, RiichiWinSettlementDetailResolver))
         registry.register(WinSettlementDetailResolverDefinition(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, RiichiWinSettlementDetailResolver))
+    }
+
+    override fun registerGameEventPublicMarkerResolvers(registry: GameEventPublicMarkerResolverRegistry) {
+        registry.register(GameEventPublicMarkerResolverDefinition(BuiltInRuleModuleIds.RIICHI, RiichiGameEventPublicMarkerResolver))
+        registry.register(GameEventPublicMarkerResolverDefinition(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, RiichiGameEventPublicMarkerResolver))
     }
 }
 

@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.flow.common.game.event
 import com.doublemoon1119.mahjongcraft.flow.api.event.MatchCompletion
 import com.doublemoon1119.mahjongcraft.flow.api.event.MatchEndedEvent
 import com.doublemoon1119.mahjongcraft.flow.api.event.MatchStartedEvent
+import com.doublemoon1119.mahjongcraft.flow.api.event.RoundCompletedEvent
 import com.doublemoon1119.mahjongcraft.flow.api.event.RoundSettledEvent
 import com.doublemoon1119.mahjongcraft.flow.api.event.RoundSettlementKind
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.CommittedGameFacts
@@ -44,7 +45,7 @@ class GameEventProjectorTest {
         register(MahjongModuleDefinition(RiichiRuleConfig::class, RULE_MODULE_ID) { config, id -> RiichiRuleModule(id, config) })
     }
     private var eventCount = 0
-    private val projector = GameEventProjector(registry) { Uuid.random().also { eventCount++ } }
+    private val projector = GameEventProjector(registry, newEventId = { Uuid.random().also { eventCount++ } })
 
     /** 對局開始時依座位列出玩家、是否由 AI 操控與起家座位。 */
     @Test
@@ -140,7 +141,7 @@ class GameEventProjectorTest {
         assertEquals(emptySet(), event.beneficiaryPlayerIds)
     }
 
-    /** 換局交易的本局完成事實、和牌後判定本局去留的交易都不產生事件。 */
+    /** 換局只產生完成通知，不重發結算；和牌後的去留決策也不重發。 */
     @Test
     fun `round transitions and win continuations do not settle again`() {
         val reason = RiichiExhaustiveDrawReason.Normal
@@ -148,14 +149,12 @@ class GameEventProjectorTest {
         val completed = drawn.copy(roundCompletion = summary(reason.id, RoundCompletionClassification.EXHAUSTIVE_DRAW, drawn, beneficiaries = setOf(east)))
         val nextRound = completed.copy(tableState = table(scores(25_000, 25_000, 25_000, 25_000), roundNumber = 2), roundCompletion = null)
 
-        assertEquals(
-            emptyList(),
-            project(completed, nextRound, HistoryFact.RoundCompleted(checkNotNull(completed.roundCompletion)), HistoryFact.RoundStarted(nextRound.tableState)),
-        )
+        val events = project(completed, nextRound, HistoryFact.RoundCompleted(checkNotNull(completed.roundCompletion)), HistoryFact.RoundStarted(nextRound.tableState))
+        assertIs<RoundCompletedEvent>(events.single())
         val won = game(scores(33_000, 25_000, 25_000, 17_000))
         val decided = won.copy(roundCompletion = summary(BuiltInRoundOutcomeIds.TSUMO, RoundCompletionClassification.WIN, won, beneficiaries = setOf(east)))
         assertEquals(emptyList(), project(won, decided, HistoryFact.WinContinuationResolved(WinRoundDirective.EndRound)))
-        assertEquals(0, eventCount)
+        assertEquals(1, eventCount)
     }
 
     /** 正常打完時依規則的終局排名列出名次，同分時起家座位較前者名次較前。 */

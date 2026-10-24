@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.extension
 import com.doublemoon1119.mahjongcraft.ai.ExtensionGameActionAiRegistry
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.PersistenceRegistries
@@ -143,4 +144,11 @@ interface MahjongExtension {
      * @param registry 用於登記胡牌結算詳情解析器的 registry。
      */
     fun registerWinSettlementDetailResolvers(registry: WinSettlementDetailResolverRegistry) = Unit
+
+    /**
+     * 登記規則在公開遊戲事件中提供的中立標記解析器。
+     *
+     * @param registry 用於登記公開事件標記解析器的 registry。
+     */
+    fun registerGameEventPublicMarkerResolvers(registry: GameEventPublicMarkerResolverRegistry) = Unit
 }

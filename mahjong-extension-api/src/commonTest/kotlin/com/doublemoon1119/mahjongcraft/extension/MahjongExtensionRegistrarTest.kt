@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.ai.expectation.NeutralOpponentModel
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelDefinition
 import com.doublemoon1119.mahjongcraft.ai.expectation.OpponentModelRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExtensionGameCommand
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistryImpl
 import com.doublemoon1119.mahjongcraft.flow.network.dto.registry.DtoRegistry
@@ -83,7 +84,7 @@ class MahjongExtensionRegistrarTest {
             failurePolicy = ExtensionFailurePolicy.Default,
         )
 
-        assertEquals(listOf("rule", "tile", "network", "persistence", "strategy", "opponent"), calls)
+        assertEquals(listOf("rule", "tile", "network", "persistence", "strategy", "opponent", "public_marker"), calls)
         assertEquals(
             setOf(
                 "mahjongcraft:rule_module",
@@ -374,6 +375,7 @@ private fun testCoreRegistries(
     ruleDecisionResolverRegistry = RuleDecisionResolverRegistry(),
     winRoundContinuationResolverRegistry = WinRoundContinuationResolverRegistry(),
     winSettlementDetailResolverRegistry = WinSettlementDetailResolverRegistry(),
+    gameEventPublicMarkerResolverRegistry = GameEventPublicMarkerResolverRegistry(),
 )
 
 /**
@@ -412,6 +414,10 @@ private class RecordingExtension(
     override fun registerOpponentModels(registry: OpponentModelRegistry) {
         calls += "opponent"
         registry.register(OpponentModelDefinition(RULE_MODULE_ID) { _, depth -> NeutralOpponentModel(depth) })
+    }
+
+    override fun registerGameEventPublicMarkerResolvers(registry: GameEventPublicMarkerResolverRegistry) {
+        calls += "public_marker"
     }
 
     /** 此測試 extension 的常數。 */

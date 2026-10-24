@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.ai.riichi.RiichiOpponentModel
 import com.doublemoon1119.mahjongcraft.extension.CoreExtensionRegistries
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
 import com.doublemoon1119.mahjongcraft.flow.client.game.ClientDecisionTimerStateStore
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundContinuationContext
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinRoundDirective
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiGameCommand
@@ -555,6 +556,7 @@ class FabricApplicationModuleTest {
         assertSame(koin.get<RuleDecisionResolverRegistry>(), core.ruleDecisionResolverRegistry)
         assertSame(koin.get<WinRoundContinuationResolverRegistry>(), core.winRoundContinuationResolverRegistry)
         assertSame(koin.get<WinSettlementDetailResolverRegistry>(), core.winSettlementDetailResolverRegistry)
+        assertSame(koin.get<GameEventPublicMarkerResolverRegistry>(), core.gameEventPublicMarkerResolverRegistry)
 
         assertSame(koin.get<MinecraftTileAssetRegistry>(), presentation.tileAssetRegistry)
         assertSame(koin.get<RuleCatalogueRegistry>(), presentation.ruleCatalogueRegistry)

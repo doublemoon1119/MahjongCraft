@@ -1,6 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.event
 
+import com.doublemoon1119.mahjongcraft.flow.api.event.CommittedMatchEventBatch
 import com.doublemoon1119.mahjongcraft.flow.api.event.MatchEvent
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinDetails
@@ -88,6 +90,7 @@ class CommittedFactsDispatcherTest {
             reporter = reporter,
             exclusions = exclusions,
             failurePolicy = FabricExtensionFailurePolicy(),
+            markerResolvers = GameEventPublicMarkerResolverRegistry(),
         )
         val received = mutableListOf<String>()
         var observedGame: Game? = null
@@ -249,6 +252,7 @@ class CommittedFactsDispatcherTest {
             assertFailsWith<IllegalStateException> { FabricGameEventContexts.server(capturedContext) }
             dispatcher.stopSession()
             assertTrue(reporter.listenerFailures.isEmpty())
+            assertTrue(reporter.batchListenerFailures.isEmpty())
             assertTrue(reporter.schedulingFailures.isEmpty())
         } finally {
             dispatcher.stopSession()
@@ -331,6 +335,9 @@ class CommittedFactsDispatcherTest {
         /** 監聽者失敗診斷。 */
         val listenerFailures = mutableListOf<Throwable>()
 
+        /** 批次監聽者失敗診斷。 */
+        val batchListenerFailures = mutableListOf<Throwable>()
+
         /** 排程失敗診斷。 */
         val schedulingFailures = mutableListOf<Throwable>()
 
@@ -356,6 +363,14 @@ class CommittedFactsDispatcherTest {
             cause: Throwable,
         ) {
             listenerFailures += cause
+        }
+
+        override fun batchListenerFailed(
+            batch: CommittedMatchEventBatch,
+            listener: Any,
+            cause: Throwable,
+        ) {
+            batchListenerFailures += cause
         }
 
         /**

@@ -1,6 +1,9 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.usecase
 
 import com.doublemoon1119.mahjongcraft.extension.MahjongExtension
+import com.doublemoon1119.mahjongcraft.flow.api.event.ActionsPerformedEvent
+import com.doublemoon1119.mahjongcraft.flow.api.event.PerformedActionKind
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventProjector
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.NetworkDtoRegistries
@@ -114,6 +117,15 @@ class DrawFollowUpAndActionScoringIntegrationTest {
         )
         assertEquals(listOf(firstFlower.id, secondFlower.id), published.setAsideTileIds)
         assertTrue(published.isNewlyDrawn)
+        val publicActions = fixture.actionEvents().single().actions
+        assertEquals(
+            listOf(PerformedActionKind.DECLARATION, PerformedActionKind.SUPPLEMENTAL_DRAW, PerformedActionKind.DECLARATION, PerformedActionKind.SUPPLEMENTAL_DRAW),
+            publicActions.map { it.kind },
+        )
+        val replacements = publicActions.filter { it.kind == PerformedActionKind.SUPPLEMENTAL_DRAW }
+        assertEquals(listOf(1, 1), replacements.map { it.supplementalTileCount })
+        assertEquals(listOf(FLOWER_ACTION.value.id, FLOWER_ACTION.value.id), replacements.map { it.supplementalSourceId })
+        assertTrue(replacements.all { it.tiles.isEmpty() })
     }
 
     /** 移出手牌時規則更新的動態狀態在補牌後仍然保留。 */
@@ -186,6 +198,7 @@ class DrawFollowUpAndActionScoringIntegrationTest {
         val pausedStep = fixture.presentation.getPublishedPlayerTiles(fixture.gameId)!!.followUpSteps.single()
         assertEquals(flower.id, pausedStep.setAsideTileId)
         assertTrue(pausedStep.drawnTileIds.isEmpty())
+        assertTrue(fixture.actionEvents().isEmpty())
 
         assertIs<Outcome.Success<Unit>>(fixture.respondToRobbing(fixture.gameId, fixture.southId, GameAction.Pass))
 
@@ -193,6 +206,10 @@ class DrawFollowUpAndActionScoringIntegrationTest {
         assertNull(fixture.repository.getTableState(fixture.gameId)!!.pendingRobbingReaction)
         assertEquals(ordinary, resumed.hand.lastDrawn)
         assertEquals(listOf(flower), (resumed.playerRuleState as FlowerState).flowers)
+        assertEquals(
+            listOf(PerformedActionKind.DECLARATION, PerformedActionKind.SUPPLEMENTAL_DRAW),
+            fixture.actionEvents().single().actions.map { it.kind },
+        )
     }
 
     /** 槓後補到花時也會自動移出並再補牌；槓的收付可以把點數放進規則的點數池。 */
@@ -644,6 +661,10 @@ class DrawFollowUpAndActionScoringIntegrationTest {
 
         /** @return 牌譜依序記錄的已接受動作。 */
         fun recordedActions(): List<GameAction> = repository.historyDrafts.mapNotNull { (it.fact as? HistoryFact.ActionAccepted)?.action }
+
+        /** @return 真正提交的交易所產生的公開動作事件。 */
+        fun actionEvents(): List<ActionsPerformedEvent> = repository.committedFacts
+            .flatMap(GameEventProjector(modules)::project).filterIsInstance<ActionsPerformedEvent>()
 
         /** @return 摸牌玩家目前可以宣告的暗槓。 */
         suspend fun legalClosedKan(): GameAction.Kan {

@@ -1,3 +1,11 @@
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/event/ActionsPerformedListener {
+	public abstract fun onActionsPerformed (Lcom/doublemoon1119/mahjongcraft/flow/api/event/ActionsPerformedEvent;Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/event/GameEventContext;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/event/EventBatchCommittedListener {
+	public abstract fun onEventBatchCommitted (Lcom/doublemoon1119/mahjongcraft/flow/api/event/CommittedMatchEventBatch;Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/event/GameEventContext;)V
+}
+
 public final class com/doublemoon1119/mahjongcraft/platform/minecraft/api/event/GameEventContext {
 	public final fun getTableLocation ()Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/event/TableLocation;
 }
@@ -7,9 +15,12 @@ public final class com/doublemoon1119/mahjongcraft/platform/minecraft/api/event/
 }
 
 public final class com/doublemoon1119/mahjongcraft/platform/minecraft/api/event/MahjongCraftEvents {
+	public static final field ACTIONS_PERFORMED Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/event/MahjongCraftEvent;
+	public static final field EVENT_BATCH_COMMITTED Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/event/MahjongCraftEvent;
 	public static final field INSTANCE Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/event/MahjongCraftEvents;
 	public static final field MATCH_ENDED Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/event/MahjongCraftEvent;
 	public static final field MATCH_STARTED Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/event/MahjongCraftEvent;
+	public static final field ROUND_COMPLETED Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/event/MahjongCraftEvent;
 	public static final field ROUND_SETTLED Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/event/MahjongCraftEvent;
 }
 
@@ -25,6 +36,10 @@ public final class com/doublemoon1119/mahjongcraft/platform/minecraft/api/event/
 	public static final field INSTANCE Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/event/MinecraftMatchAbortReasonIds;
 	public static final field TABLE_BROKEN_BY_PLAYER Ljava/lang/String;
 	public static final field TABLE_MISSING Ljava/lang/String;
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/event/RoundCompletedListener {
+	public abstract fun onRoundCompleted (Lcom/doublemoon1119/mahjongcraft/flow/api/event/RoundCompletedEvent;Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/event/GameEventContext;)V
 }
 
 public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/event/RoundSettledListener {

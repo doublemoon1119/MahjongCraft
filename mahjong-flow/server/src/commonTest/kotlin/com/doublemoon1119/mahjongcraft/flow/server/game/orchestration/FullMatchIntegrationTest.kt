@@ -5,8 +5,10 @@ import com.doublemoon1119.mahjongcraft.ai.AiDecisionPhase
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategy
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyDefinition
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
+import com.doublemoon1119.mahjongcraft.flow.api.event.ActionsPerformedEvent
 import com.doublemoon1119.mahjongcraft.flow.api.event.MatchCompletion
 import com.doublemoon1119.mahjongcraft.flow.api.event.MatchEndedEvent
+import com.doublemoon1119.mahjongcraft.flow.api.event.RoundCompletedEvent
 import com.doublemoon1119.mahjongcraft.flow.api.event.RoundSettledEvent
 import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventProjector
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
@@ -76,7 +78,10 @@ class FullMatchIntegrationTest {
         // 每局各通知一次結算，最後通知一次正常打完的對局結束。
         val events = runtime.gameRepository.committedFacts.flatMap(GameEventProjector(runtime.moduleRegistry)::project)
         val completedRounds = runtime.gameRepository.historyDrafts.count { it.fact is HistoryFact.RoundCompleted }
-        assertEquals(List(completedRounds) { RoundSettledEvent::class } + MatchEndedEvent::class, events.map { it::class })
+        val originalEvents = events.filter { it is RoundSettledEvent || it is MatchEndedEvent }
+        assertEquals(List(completedRounds) { RoundSettledEvent::class } + MatchEndedEvent::class, originalEvents.map { it::class })
+        assertEquals(completedRounds, events.filterIsInstance<RoundCompletedEvent>().size)
+        assertTrue(events.filterIsInstance<ActionsPerformedEvent>().all { it.actions.isNotEmpty() })
         assertEquals(MatchCompletion.COMPLETED, (events.last() as MatchEndedEvent).completion)
     }
 
