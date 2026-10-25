@@ -94,18 +94,28 @@ class GameEventDelivery(
      * @param sessionId 接收者建立時擷取的 session。
      * @param sequence store 在交易內配置的遞增提交序號。
      * @param facts 同一交易中單一場地的事實。
+     * @param onBatchDelivered 解鎖後接收同一公開批次的內建處理；只可捕捉已複製成果，不保留對局或事實。
+     * @param deliverWithoutPublicEvents 是否仍須交付沒有公開事件的既有規則成果；不對外發送空批次。
      */
     fun onCommitted(
         sessionId: Uuid,
         sequence: Long,
         facts: CommittedGameFacts,
+        onBatchDelivered: ((CommittedMatchEventBatch?) -> Unit)? = null,
+        deliverWithoutPublicEvents: Boolean = false,
     ) {
         val current = state.load()
         if (current.sessionId != sessionId) return
-        val batch = projector.projectBatch(facts) ?: return
-        if (batch.events.isEmpty()) return
-        val context = contextFor(batch.events.first(), sessionId)
-        val pending = PendingBatch(sequence = sequence, batch = batch, context = context)
+        val batch = projector.projectBatch(facts)
+        if (batch == null && !(deliverWithoutPublicEvents && onBatchDelivered != null)) return
+        val context = batch?.let { contextFor(it.events.first(), sessionId) }
+        val pending = PendingBatch(
+            sequence = sequence,
+            batch = batch,
+            context = context,
+            sessionId = sessionId,
+            onBatchDelivered = onBatchDelivered,
+        )
         while (true) {
             val loaded = state.load()
             if (loaded.sessionId != sessionId) return
@@ -231,44 +241,50 @@ class GameEventDelivery(
      * @param pending 當次待交付事件。
      */
     private fun deliverBatch(pending: PendingBatch) {
-        pending.batch.events.forEach { event -> deliverOne(pending, event) }
+        val batch = pending.batch
+        batch?.events?.forEach { event -> deliverOne(pending, event) }
+        if (state.load().sessionId != pending.sessionId) return
+        pending.onBatchDelivered?.invoke(batch)
+        if (batch == null) return
+        val context = checkNotNull(pending.context)
         notify(
             pending = pending,
             listeners = eventBatchCommitted.listenersSnapshot(),
             event = null,
         ) {
-            it.onEventBatchCommitted(pending.batch, pending.context)
+            it.onEventBatchCommitted(batch, context)
         }
     }
 
     /** 交付批次內的單一事件，各類型仍使用各自的訂閱點。 */
     private fun deliverOne(pending: PendingBatch, event: MatchEvent) {
+        val context = checkNotNull(pending.context)
         when (event) {
             is MatchStartedEvent -> notify(
                 pending = pending,
                 listeners = matchStarted.listenersSnapshot(),
                 event = event,
-            ) { it.onMatchStarted(event, pending.context) }
+            ) { it.onMatchStarted(event, context) }
             is RoundSettledEvent -> notify(
                 pending = pending,
                 listeners = roundSettled.listenersSnapshot(),
                 event = event,
-            ) { it.onRoundSettled(event, pending.context) }
+            ) { it.onRoundSettled(event, context) }
             is MatchEndedEvent -> notify(
                 pending = pending,
                 listeners = matchEnded.listenersSnapshot(),
                 event = event,
-            ) { it.onMatchEnded(event, pending.context) }
+            ) { it.onMatchEnded(event, context) }
             is ActionsPerformedEvent -> notify(
                 pending = pending,
                 listeners = actionsPerformed.listenersSnapshot(),
                 event = event,
-            ) { it.onActionsPerformed(event, pending.context) }
+            ) { it.onActionsPerformed(event, context) }
             is RoundCompletedEvent -> notify(
                 pending = pending,
                 listeners = roundCompleted.listenersSnapshot(),
                 event = event,
-            ) { it.onRoundCompleted(event, pending.context) }
+            ) { it.onRoundCompleted(event, context) }
         }
     }
 
@@ -290,14 +306,14 @@ class GameEventDelivery(
         invoke: (L) -> Unit,
     ) {
         for (listener in listeners) {
-            if (state.load().sessionId != pending.context.sessionId) return
+            if (state.load().sessionId != pending.sessionId) return
             try {
                 invoke(listener)
             } catch (cause: Throwable) {
                 if (cause !is CancellationException && !failurePolicy.isIsolatable(cause)) throw cause
                 report {
                     if (event == null) {
-                        reporter.batchListenerFailed(pending.batch, listener, cause)
+                        reporter.batchListenerFailed(checkNotNull(pending.batch), listener, cause)
                     } else {
                         reporter.listenerFailed(event, listener, cause)
                     }
@@ -323,13 +339,17 @@ class GameEventDelivery(
      * 提交時擷取的事件批次。
      *
      * @property sequence 來源交易序號。
-     * @property batch 同一筆提交產生的公開事件批次。
-     * @property context 提交當下的位置與 session。
+     * @property batch 同一筆提交產生的公開事件批次；只有既有規則成果時為 null。
+     * @property context 公開事件提交當下的位置與 session；沒有公開事件時為 null。
+     * @property sessionId 此筆提交所屬 session，亦保護沒有公開事件的內建交付。
+     * @property onBatchDelivered 與此筆提交一起交付的內建批次接收端，只持有複製後成果。
      */
     private data class PendingBatch(
         val sequence: Long,
-        val batch: CommittedMatchEventBatch,
-        val context: GameEventContext,
+        val batch: CommittedMatchEventBatch?,
+        val context: GameEventContext?,
+        val sessionId: Uuid,
+        val onBatchDelivered: ((CommittedMatchEventBatch?) -> Unit)?,
     )
 
     /**

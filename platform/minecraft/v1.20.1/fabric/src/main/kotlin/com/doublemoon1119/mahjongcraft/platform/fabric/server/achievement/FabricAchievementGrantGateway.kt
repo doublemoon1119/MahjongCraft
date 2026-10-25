@@ -2,7 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.fabric.server.achievement
 
 import com.doublemoon1119.mahjongcraft.platform.fabric.registry.ModAchievements
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.FabricServerHolder
-import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.AchievementStatisticIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.AchievementGrantExecutor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.PlayerAchievements
 import net.minecraft.stat.Stats
 
@@ -17,12 +17,15 @@ class FabricAchievementGrantGateway(
 ) : AchievementGrantGateway {
     override fun grant(achievements: PlayerAchievements): Boolean {
         val player = serverHolder.findPlayer(achievements.playerId) ?: return false
-        AchievementStatisticIds.statisticsFor(achievements.achievementIds).forEach { statisticId ->
-            player.incrementStat(ModAchievements.statistic(statisticId))
-        }
-        ModAchievements.mahjongAchievementCriterion.trigger(player, achievements) { statisticId ->
-            player.statHandler.getStat(Stats.CUSTOM.getOrCreateStat(ModAchievements.statistic(statisticId)))
-        }
+        AchievementGrantExecutor.grant(
+            achievements = achievements,
+            incrementStatistic = { statisticId -> player.incrementStat(ModAchievements.statistic(statisticId)) },
+            triggerCriterion = {
+                ModAchievements.mahjongAchievementCriterion.trigger(player, achievements) { statisticId ->
+                    player.statHandler.getStat(Stats.CUSTOM.getOrCreateStat(ModAchievements.statistic(statisticId)))
+                }
+            },
+        )
         return true
     }
 }

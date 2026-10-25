@@ -100,6 +100,24 @@ promise durable or exactly-once side effects across crashes.
 Listener failure diagnostics identify the actual event ID for individual notifications and the batch
 ID for transaction batch notifications, together with the listener, match and venue.
 
+## Built-in Achievements and Statistics
+
+Generic achievements consume the same committed event batch delivered to extensions. Outcomes from
+the transaction are combined per human player before one grant updates the seven built-in statistics
+and evaluates advancement conditions. Statistics are incremented before conditions read their values.
+Use `ROUND_COMPLETED`, rather than draw settlement, to count a completed exhaustive draw.
+
+Rule-specific achievement resolvers still read committed facts during submission. Only their copied
+achievement results travel with the pending delivery; raw facts and games are not added to public
+batches. A resolver failure suppresses all achievements for that transaction while public event
+delivery continues. Transactions with only legacy rule achievements use private post-release work;
+they do not publish empty event batches.
+
+AI status comes from the batch's player snapshot, including after loading a match without a new start
+event. Grants check the source session and look up online players when executed. Offline players are
+skipped without retaining work for login. Debug exclusions apply at submission; they do not revoke
+work already accepted before the exclusion.
+
 ## Compatibility
 
 MahjongCraft creates event data; consumers do not construct or implement it. Collections are detached,

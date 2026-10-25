@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraf
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
+import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
@@ -238,6 +239,106 @@ class GameEventDeliveryTest {
 
         assertEquals(listOf("started", "settled", "ended", "batch"), received)
         assertSame(deliveredStarted, deliveredBatch?.events?.first())
+    }
+
+    /** 內建成果與公開訂閱者收到同一批次，且內建接收端也等交易解鎖後才執行。 */
+    @Test
+    fun `built in consumer receives the exact public batch after release`() {
+        val scheduler = ManualScheduler()
+        var internalBatch: CommittedMatchEventBatch? = null
+        var publicBatch: CommittedMatchEventBatch? = null
+        val batchEndpoint = MahjongCraftEvent.create<EventBatchCommittedListener>().also {
+            it.register(EventBatchCommittedListener { batch, _ -> publicBatch = batch })
+        }
+        val delivery = delivery(scheduler, endpoint { _, _ -> }, eventBatchCommitted = batchEndpoint)
+        val session = delivery.startSession()
+
+        delivery.onCommitted(session, 1, startFacts(), onBatchDelivered = { internalBatch = it })
+        assertNull(internalBatch)
+        assertNull(publicBatch)
+        delivery.onReleased(session, 1)
+        scheduler.runNext()
+
+        assertSame(assertNotNull(publicBatch), internalBatch)
+    }
+
+    /** 可隔離的第三方監聽失敗，不會阻擋同筆交易的內建成果接收端。 */
+    @Test
+    fun `listener failure does not block the built in consumer`() {
+        val scheduler = ManualScheduler()
+        val reporter = RecordingReporter()
+        var calls = 0
+        val delivery = delivery(
+            scheduler = scheduler,
+            endpoint = endpoint { _, _ -> error("extension listener failed") },
+            reporter = reporter,
+        )
+        val session = delivery.startSession()
+        delivery.onCommitted(session, 1, startFacts(), onBatchDelivered = {
+            assertNotNull(it)
+            calls++
+        })
+        delivery.onReleased(session, 1)
+        scheduler.runNext()
+        assertEquals(1, reporter.listenerFailures)
+        assertEquals(1, calls)
+    }
+
+    /** 沒有公開事件的規則成果沿用釋放水位，但不發布空的公開批次。 */
+    @Test
+    fun `rule only delivery waits for release without publishing an empty batch`() {
+        val scheduler = ManualScheduler()
+        var calls = 0
+        var publicCalls = 0
+        val batches = MahjongCraftEvent.create<EventBatchCommittedListener>().also {
+            it.register(EventBatchCommittedListener { _, _ -> publicCalls++ })
+        }
+        val reporter = RecordingReporter()
+        val delivery = delivery(scheduler, endpoint { _, _ -> }, reporter = reporter, eventBatchCommitted = batches)
+        val session = delivery.startSession()
+        delivery.onCommitted(
+            sessionId = session,
+            sequence = 1,
+            facts = startFacts().copy(
+                previousGame = game,
+                facts = listOf(HistoryEventDraft(null, HistoryFact.RuleDecisionAutomaticallyResolved(RuleDecisionTiming.ROUND_START, "test:step", 0, null))),
+            ),
+            onBatchDelivered = { batch ->
+                assertNull(batch)
+                calls++
+            },
+            deliverWithoutPublicEvents = true,
+        )
+        assertEquals(0, calls)
+        delivery.onReleased(session, 1)
+        scheduler.runNext()
+        assertEquals(1, calls)
+        assertEquals(0, publicCalls)
+        assertTrue(reporter.missingLocations.isEmpty())
+    }
+
+    /** session 結束也會丟棄只有規則成果的佇列工作。 */
+    @Test
+    fun `session end discards rule only work`() {
+        val scheduler = ManualScheduler()
+        var called = false
+        val delivery = delivery(scheduler, endpoint { _, _ -> })
+        val session = delivery.startSession()
+        delivery.onCommitted(
+            sessionId = session,
+            sequence = 1,
+            facts = startFacts().copy(
+                previousGame = game,
+                facts = listOf(HistoryEventDraft(null, HistoryFact.RuleDecisionAutomaticallyResolved(RuleDecisionTiming.ROUND_START, "test:step", 0, null))),
+            ),
+            onBatchDelivered = { called = true },
+            deliverWithoutPublicEvents = true,
+        )
+        delivery.onReleased(session, 1)
+        delivery.stopSession(session)
+        delivery.startSession()
+        scheduler.runNext()
+        assertFalse(called)
     }
 
     /** 單一監聽者失敗不會阻止同一事件的其他監聽者。 */

@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.server.achievement
 
+import com.doublemoon1119.mahjongcraft.flow.api.event.CommittedMatchEventBatch
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.AppCoroutineScope
 import com.doublemoon1119.mahjongcraft.flow.common.concurrency.CoroutineDispatchers
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.CommittedGameFacts
@@ -8,26 +9,27 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogge
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.GameEventExclusions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementDetector
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.PlayerAchievements
 import kotlinx.coroutines.launch
 
 /**
- * server session 期間把已提交的對局事實轉成原版統計與進度。
+ * 將公開事件批次與暫留的規則專屬成果合併，交給原版統計與進度。
  *
- * 交易提交時在提交的執行緒上立即判定成果，不保留對局狀態；判定出成果時才把授予排到 [CoroutineDispatchers.main]
- * （伺服器 tick 佇列），原版統計與進度只能在該執行緒操作。單筆事實判定或授予失敗時只記錄警告，不影響後續事實；
- * 成果發生時不在線的玩家不補發。
+ * 提交時只解析規則專屬成果並複製結果；解鎖後收到同筆公開批次，才判定通用成果。
+ * 同一玩家、同筆交易只排程一次合併後的授予。原生玩家資料只在主執行緒授予時讀取，離線略過且不補發。
+ * 規則專屬判定失敗時整批不授予，其他交易仍可繼續。
  *
  * @property scope 執行授予的協程 scope；隨 server session 結束取消。
  * @property dispatchers 取得伺服器主執行緒 dispatcher。
  * @property exclusions debug 場次的共用排除名單。
  * @property gateway 把成果交給原版統計與進度系統。
- * @param moduleRegistry 提供通用成果判定所需的規則模組。
+ * @property moduleRegistry 依提交設定識別規則。
  * @param resolverRegistry 提供規則專屬成果判定器。
  */
 class FabricAchievementService(
     private val scope: AppCoroutineScope,
     private val dispatchers: CoroutineDispatchers,
-    moduleRegistry: MahjongModuleRegistry,
+    private val moduleRegistry: MahjongModuleRegistry,
     resolverRegistry: GameAchievementResolverRegistry,
     private val gateway: AchievementGrantGateway,
     private val exclusions: GameEventExclusions,
@@ -35,29 +37,69 @@ class FabricAchievementService(
     /** 記錄成果判定與授予的個別失敗。 */
     private val logger = mahjongCraftLogger(FabricAchievementService::class)
 
-    /** 通用與規則專屬成果判定。 */
+    /** 批次通用成果與暫留規則專屬成果的合併判定。 */
     private val detector = GameAchievementDetector(moduleRegistry, resolverRegistry)
 
     /**
-     * 判定一筆已提交事實的成果，有成果時排到伺服器主執行緒授予；排除的場次不判定。
+     * 解析規則專屬成果，建立可隨事件佇列交付的接收端，不保留原始對局或事實。
      *
-     * @param facts 本次交易對單一桌子提交的事實。
-     * @param isSessionActive 驗證來源 session 仍有效；排程後再次確認，避免舊成果授予下一個世界。
+     * @param facts 已提交交易，僅在本次同步呼叫中使用。
+     * @param isSessionActive 在準備及授予時確認來源 session。
+     * @return 本筆交易的接收端；已排除、session 失效或規則判定失敗時為 null。
      */
-    internal fun handle(facts: CommittedGameFacts, isSessionActive: () -> Boolean = { true }) {
-        if (!isSessionActive() || exclusions.contains(facts.matchId)) return
-        val batches = runCatching { detector.detect(facts) }.getOrElse { cause ->
-            logger.warn("Achievement detection failed for match {} at table {}", facts.matchId, facts.venueId, cause)
-            return
+    internal fun prepare(facts: CommittedGameFacts, isSessionActive: () -> Boolean = { true }): PreparedBatch? {
+        if (!isSessionActive() || exclusions.contains(facts.matchId)) return null
+        val game = facts.game ?: checkNotNull(facts.previousGame)
+        val ruleId = moduleRegistry.getModule(game.tableState.config).id
+        val matchId = facts.matchId
+        val venueId = facts.venueId
+        val rule = runCatching { detector.resolveRule(facts) }.getOrElse { cause ->
+            logger.warn("Achievement detection failed for match {} at table {}", matchId, venueId, cause)
+            return null
         }
-        if (batches.isEmpty()) return
+        val ruleOnly = runCatching {
+            game.tableState.players.filterNot { game.isAi(it.id) }.mapNotNull { player ->
+                rule[player.id]?.takeIf { it.isNotEmpty() }?.let { PlayerAchievements(player.id, matchId, ruleId, it) }
+            }
+        }.getOrElse { cause ->
+            logger.warn("Achievement snapshot failed for match {} at table {}", matchId, venueId, cause)
+            return null
+        }
+        return PreparedBatch(ruleOnly.isNotEmpty()) { batch ->
+            val achievements = runCatching {
+                if (batch == null) ruleOnly else detector.detect(batch, rule)
+            }.getOrElse { cause ->
+                logger.warn("Achievement batch detection failed for match {} at table {}", matchId, venueId, cause)
+                return@PreparedBatch
+            }
+            grant(achievements, isSessionActive)
+        }
+    }
+
+    /** 將同筆交易合併後的成果排到主執行緒，逐人隔離授予失敗。 */
+    private fun grant(achievements: List<PlayerAchievements>, isSessionActive: () -> Boolean) {
+        if (achievements.isEmpty()) return
         scope.launch(dispatchers.main) {
-            batches.forEach { achievements ->
+            achievements.forEach { player ->
                 if (!isSessionActive()) return@launch
-                runCatching { gateway.grant(achievements) }.onFailure { cause ->
-                    logger.warn("Granting achievements {} to player {} failed", achievements.achievementIds, achievements.playerId, cause)
+                runCatching { gateway.grant(player) }.onFailure { cause ->
+                    logger.warn("Granting achievements {} to player {} failed", player.achievementIds, player.playerId, cause)
                 }
             }
         }
+    }
+
+    /**
+     * 只攜帶複製後成果與批次處理方法的內建接收端。
+     *
+     * @property hasRuleAchievements 沒有公開事件時，是否仍須交付既有規則專屬成果。
+     * @property consume 合併公開批次與本筆規則專屬成果的方法；不捕捉原始事實或對局。
+     */
+    internal class PreparedBatch(
+        val hasRuleAchievements: Boolean,
+        private val consume: (CommittedMatchEventBatch?) -> Unit,
+    ) {
+        /** 接收同筆交易的公開批次；只有規則專屬成果時不建立空的公開批次。 */
+        fun deliver(batch: CommittedMatchEventBatch?) = consume(batch)
     }
 }

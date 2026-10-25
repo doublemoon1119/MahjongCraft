@@ -18,6 +18,7 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.api.event.FabricGameEvent
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.achievement.AchievementGrantGateway
 import com.doublemoon1119.mahjongcraft.platform.fabric.server.achievement.FabricAchievementService
+import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.BuiltInAchievementIds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.PlayerAchievements
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.GameEventContext
@@ -143,10 +144,28 @@ class CommittedFactsDispatcherTest {
                     },
                 ) { oldGame to Unit }
             }.get(5, TimeUnit.SECONDS)
+            submit(executor) {
+                repository.updateGame(
+                    gameId = oldGame.id,
+                    history = { _, _, _ ->
+                        listOf(
+                            HistoryEventDraft(
+                                null,
+                                HistoryFact.WinSettled(
+                                    BuiltInRoundOutcomeIds.TSUMO,
+                                    listOf(HistoryWinDetails(oldGame.tableState.players.first().id, emptyList())),
+                                ),
+                            ),
+                        )
+                    },
+                ) { oldGame.copy(tableState = oldGame.tableState.copy(comboCount = 1)) to Unit }
+            }.get(5, TimeUnit.SECONDS)
+            assertTrue(gateway.granted.isEmpty())
             dispatcher.stopSession()
             dispatcher.startSession(scheduler = scheduler, serverProvider = serverProvider, subscriptions = subscriptions)
             scheduler.runAll()
             assertTrue(received.isEmpty())
+            assertTrue(gateway.granted.isEmpty())
 
             runBlocking {
                 repository.updateGame(
@@ -184,14 +203,28 @@ class CommittedFactsDispatcherTest {
 
             assertEquals(1, scheduler.size())
             assertTrue(received.isEmpty())
+            assertTrue(gateway.granted.isEmpty())
+            exclusions.exclude(activeGame.matchId)
             scheduler.runAll()
+            exclusions.clear()
 
             assertEquals(listOf("started", "settled", "ended"), received)
             assertEquals(changedGame, observedGame)
             assertEquals(ownerThread, callbackThread)
             val capturedContext = assertNotNull(observedContext)
-            assertEquals(1, reporter.missingLocations.size)
+            assertEquals(listOf(oldGame.matchId, oldGame.matchId), reporter.missingLocations.map { it.first })
             assertTrue(gateway.granted.isNotEmpty())
+            val winnerGrants = gateway.granted.filter { it.playerId == activeGame.tableState.players.first().id }
+            assertEquals(1, winnerGrants.size)
+            assertTrue(
+                winnerGrants.single().achievementIds.containsAll(
+                    setOf(
+                        BuiltInAchievementIds.WIN,
+                        BuiltInAchievementIds.SELF_DRAW_WIN,
+                        BuiltInAchievementIds.FIRST_PLACE,
+                    ),
+                ),
+            )
             assertFailsWith<UnsupportedOperationException> { FabricGameEventContexts.server(capturedContext) }
 
             val abortedGame = changedGame.copy(matchId = Uuid.random())
@@ -221,10 +254,18 @@ class CommittedFactsDispatcherTest {
             assertEquals(activeLocation.x, endedLocation.x)
             assertEquals(activeLocation.y, endedLocation.y)
             assertEquals(activeLocation.z, endedLocation.z)
+            val resumedGame = changedGame.copy(matchId = Uuid.random())
+            repository.updateGame(
+                gameId = resumedGame.id,
+                history = { _, _, _ ->
+                    listOf(HistoryEventDraft(null, HistoryFact.MatchStarted(resumedGame.tableState, resumedGame.flowConfig, emptyMap())))
+                },
+            ) { resumedGame to Unit }
+            scheduler.runAll()
             val receivedBeforeExclusion = received.toList()
             val grantsBeforeExclusion = gateway.granted.size
-            exclusions.exclude(activeGame.matchId)
-            val excludedGame = changedGame.copy(tableState = changedGame.tableState.copy(comboCount = 1))
+            exclusions.exclude(resumedGame.matchId)
+            val excludedGame = resumedGame.copy(tableState = resumedGame.tableState.copy(comboCount = 1))
             submit(executor) {
                 repository.updateGame(
                     gameId = activeGame.id,
@@ -246,7 +287,7 @@ class CommittedFactsDispatcherTest {
             assertEquals(receivedBeforeExclusion, received)
             assertEquals(grantsBeforeExclusion, gateway.granted.size)
             dispatcher.stopSession()
-            assertFalse(exclusions.contains(activeGame.matchId))
+            assertFalse(exclusions.contains(resumedGame.matchId))
             assertFailsWith<IllegalStateException> { FabricGameEventContexts.server(capturedContext) }
             dispatcher.startSession(scheduler = scheduler, serverProvider = serverProvider, subscriptions = subscriptions)
             assertFailsWith<IllegalStateException> { FabricGameEventContexts.server(capturedContext) }
