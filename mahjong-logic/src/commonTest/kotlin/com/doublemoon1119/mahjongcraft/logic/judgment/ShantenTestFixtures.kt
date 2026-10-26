@@ -11,7 +11,7 @@ import kotlin.random.Random
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-/** 向聽計算器測試共用的牌型產生，以及新舊實作的結果比對。 */
+/** 向聽計算器測試共用的牌型產生與性質檢查。 */
 internal object ShantenTestFixtures {
     /** 34 格計數陣列中各位置的牌：萬、筒、條的 1～9，接著東南西北白發中。 */
     val TILE_KINDS: List<Tile> = Tile.Suit.entries.flatMap { suit -> (1..9).map { Tile.Numeric(suit, it) } } +
@@ -19,45 +19,6 @@ internal object ShantenTestFixtures {
 
     /** 副露的種類輪替使用，讓槓與碰、吃都出現；向聽計算只看副露的組數。 */
     private val MELD_TYPES = listOf(MeldType.PON, MeldType.CHI, MeldType.CLOSED_KAN, MeldType.OPEN_KAN, MeldType.ADDED_KAN)
-
-    /**
-     * 依每格張數列舉 [positions] 格、總張數為 [total] 的所有牌型。
-     *
-     * @param positions 格數。
-     * @param total 總張數。
-     * @param maxPerKind 每格最多張數。
-     * @param block 接收每個牌型；陣列在呼叫之間重複使用。
-     */
-    fun forEachPattern(positions: Int, total: Int, maxPerKind: Int = 4, block: (IntArray) -> Unit) {
-        val counts = IntArray(positions)
-        fun fill(position: Int, remaining: Int) {
-            if (position == positions - 1) {
-                if (remaining <= maxPerKind) {
-                    counts[position] = remaining
-                    block(counts)
-                }
-                return
-            }
-            for (count in 0..minOf(maxPerKind, remaining)) {
-                counts[position] = count
-                fill(position + 1, remaining - count)
-            }
-        }
-        fill(0, total)
-    }
-
-    /**
-     * 由 34 格中的一段計數建立手牌。
-     *
-     * @param counts 該段每格的張數。
-     * @param offset 該段第一格在 34 格中的位置。
-     * @param meldCount 副露組數。
-     * @return 由指定牌張與副露組成的測試手牌。
-     */
-    fun handOf(counts: IntArray, offset: Int, meldCount: Int): Hand {
-        val tiles = counts.withIndex().flatMap { (index, count) -> List(count) { TILE_KINDS[offset + index] } }
-        return FakeHandFactory.create(tiles = tiles, melds = melds(meldCount))
-    }
 
     /**
      * 由立牌與 [meldCount] 組副露建立手牌。
@@ -101,7 +62,7 @@ internal object ShantenTestFixtures {
     }
 
     /**
-     * 聽牌前張數（例如立直的 13 張）的手牌摸進一張牌時，不依賴舊實作的性質：
+     * 尚未摸牌（例如立直麻將的 13 張）的手牌摸進一張牌時，應符合以下性質：
      *
      * - 向聽數（和牌記為 -1）不會增加，最多減少 1。
      * - 手牌聽牌時，聽牌列表中的牌摸進後和牌，其他牌摸進後不和牌。
@@ -156,39 +117,12 @@ internal object ShantenTestFixtures {
     fun randomHand(random: Random, wall: List<Tile>, standing: Int, meldCount: Int): Hand = FakeHandFactory.create(tiles = wall.shuffled(random).take(standing), melds = melds(meldCount))
 
     /**
-     * 從同一花色的 36 張牌（可另加 [extra]）隨機抽出 [standing] 張立牌，用來產生清一色等集中在一個花色的手牌。
-     *
-     * @param random 固定 seed 的亂數來源。
-     * @param suit 花色。
-     * @param standing 立牌張數。
-     * @param meldCount 副露組數。
-     * @param extra 另外加進牌山的牌，例如該花色的赤牌。
-     * @return 由單一花色牌山抽出的測試手牌。
-     */
-    fun randomSingleSuitHand(random: Random, suit: Tile.Suit, standing: Int, meldCount: Int, extra: List<Tile> = emptyList()): Hand {
-        val wall = (1..9).flatMap { value -> List(4) { Tile.Numeric(suit, value) } } + extra
-        return randomHand(random, wall, standing, meldCount)
-    }
-
-    /**
      * 每種牌各四張的牌山。
      *
      * @param replace 接收每張牌與它是第幾張（0～3），回傳替換後的牌；回傳 null 表示移除，例如換成赤牌或拿掉三人麻將不用的牌。
      * @return 依替換函式產生的牌山列表。
      */
     fun fullWall(replace: (Tile, Int) -> Tile? = { tile, _ -> tile }): List<Tile> = TILE_KINDS.flatMap { tile -> (0 until 4).mapNotNull { copy -> replace(tile, copy) } }
-
-    /**
-     * 比對新舊實作的完整結果；不同時印出可重現的手牌。
-     *
-     * @param legacy 舊實作（對照組）。
-     * @param current 新實作。
-     * @param hand 要計算的手牌。
-     * @param label 失敗訊息中標示情境的文字。
-     */
-    fun assertSameResult(legacy: ShantenCalculator, current: ShantenCalculator, hand: Hand, label: String) {
-        assertEquals(legacy.calculate(hand), current.calculate(hand), "$label: ${describe(hand)}")
-    }
 
     /**
      * 建立失敗訊息中的手牌摘要。

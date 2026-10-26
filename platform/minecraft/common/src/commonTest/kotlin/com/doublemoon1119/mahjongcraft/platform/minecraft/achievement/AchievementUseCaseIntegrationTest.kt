@@ -26,9 +26,9 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.BundledRiichiMinecraftExtension
-import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.achievement.LegacyRiichiGameAchievementResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.achievement.RiichiAchievementIds
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledWinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
@@ -45,20 +45,21 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
-/** 驗證真實自摸用例提交的事實，經事件投影後仍與原本成果判定相同。 */
+/** 驗證真實自摸用例經事件投影後，取得完整且不重複的成就與統計。 */
 class AchievementUseCaseIntegrationTest {
     /** 以大三元役滿測試實際自摸結算，同時涵蓋通用與日麻專屬成果。 */
     @Test
-    fun `four player declaring tsumo retains achievement results after event projection`() = runTest {
+    fun `four player tsumo awards daisangen riichi and ippatsu with win statistics`() = runTest {
         assertRealTsumoAchievements(RiichiRuleConfig())
     }
 
     /** 三人日麻的真實自摸提交也應保留相同的通用與日麻成果。 */
     @Test
-    fun `three player declaring tsumo retains achievement results after event projection`() = runTest {
+    fun `three player tsumo awards daisangen riichi and ippatsu with win statistics`() = runTest {
         assertRealTsumoAchievements(ThreePlayerRiichiRuleConfig())
     }
 
+    /** 執行真正的自摸結算，再斷言贏家是唯一獲獎者且只累加和牌與自摸統計。 */
     private suspend fun assertRealTsumoAchievements(config: MahjongRuleConfig) {
         val gameId = Uuid.random()
         val winnerId = Uuid.random()
@@ -99,25 +100,26 @@ class AchievementUseCaseIntegrationTest {
             BundledRiichiMinecraftExtension.registerGameAchievementResolvers(this)
         }
         val detector = GameAchievementDetector(registry)
-        val module = modules.getModule(config)
         val markerResolvers = GameEventPublicMarkerResolverRegistry().apply {
             register(GameEventPublicMarkerResolverDefinition(BuiltInRuleModuleIds.RIICHI, RiichiGameEventPublicMarkerResolver))
             register(GameEventPublicMarkerResolverDefinition(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, RiichiGameEventPublicMarkerResolver))
         }
         val batch = assertNotNull(GameEventProjector(modules, markerResolvers = markerResolvers).projectBatch(facts))
-        val oldMap = merge(
-            LegacyGenericAchievementDetector.detect(facts, module),
-            LegacyRiichiGameAchievementResolver().resolve(facts),
+        val awards = detector.detect(batch)
+        assertEquals(listOf(winnerId), awards.map { it.playerId })
+        val actual = awards.single().achievementIds
+        assertEquals(
+            setOf(
+                BuiltInAchievementIds.WIN,
+                BuiltInAchievementIds.SELF_DRAW_WIN,
+                RiichiAchievementIds.YAKUMAN,
+                checkNotNull(RiichiAchievementIds.yakuman(YakuType.Daisangen)),
+                RiichiAchievementIds.RIICHI_WIN,
+                RiichiAchievementIds.IPPATSU,
+            ),
+            actual,
         )
-        val old = oldMap[winnerId].orEmpty()
-        val actual = detector.detect(batch).single { it.playerId == winnerId }.achievementIds
-
-        assertEquals(old, actual)
-        assertTrue(BuiltInAchievementIds.WIN in actual)
-        assertTrue(BuiltInAchievementIds.SELF_DRAW_WIN in actual)
-        assertTrue(RiichiAchievementIds.YAKUMAN in actual)
-        assertTrue(RiichiAchievementIds.RIICHI_WIN in actual)
-        assertTrue(RiichiAchievementIds.IPPATSU in actual)
+        assertEquals(setOf(AchievementStatisticIds.WINS, AchievementStatisticIds.SELF_DRAW_WINS), AchievementStatisticIds.statisticsFor(actual))
     }
 
     /** 建立莊家持有大三元役滿、自摸且已立直一發的測試對局。 */
@@ -166,13 +168,5 @@ class AchievementUseCaseIntegrationTest {
             ),
             flowConfig = GameFlowConfig(),
         )
-    }
-
-    /** 合併搬移前的通用成果與規則專屬成果。 */
-    private fun merge(
-        generic: Map<Uuid, Set<String>>,
-        rule: Map<Uuid, Set<String>>,
-    ): Map<Uuid, Set<String>> = (generic.keys + rule.keys).associateWith { playerId ->
-        generic[playerId].orEmpty() + rule[playerId].orEmpty()
     }
 }

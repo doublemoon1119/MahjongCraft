@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.achievement
 
-import com.doublemoon1119.mahjongcraft.flow.api.event.CommittedMatchEventBatch
 import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventProjector
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.CommittedGameFacts
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
@@ -21,9 +20,9 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.uuid.Uuid
 
-/** 驗證事件批次的終局排名與凍結事實判定在真人篩選後保持一致。 */
+/** 驗證事件批次的終局排名與真人成果篩選。 */
 class AchievementBatchRankingTest {
-    /** 內建規則 registry，供事件投影與舊判定共用。 */
+    /** 內建規則 registry，供事件投影使用。 */
     private val modules = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
 
     /** AI 排名第一、最後或同時存在時，AI 仍參與排名但不取得成果。 */
@@ -38,13 +37,46 @@ class AchievementBatchRankingTest {
 
         variants.forEach { (aiWinds, label) ->
             val game = game(aiWinds)
-            assertEquivalent(label, committed(game))
+            val playersByWind = game.tableState.players.associateBy { it.seatWind }
+            val expected = when (aiWinds) {
+                setOf(Wind.EAST) -> mapOf(
+                    playersByWind.getValue(Wind.SOUTH).id to setOf(BuiltInAchievementIds.MATCH_COMPLETED),
+                    playersByWind.getValue(Wind.WEST).id to setOf(BuiltInAchievementIds.MATCH_COMPLETED),
+                    playersByWind.getValue(Wind.NORTH).id to setOf(BuiltInAchievementIds.MATCH_COMPLETED, BuiltInAchievementIds.LAST_PLACE),
+                )
+                setOf(Wind.NORTH) -> mapOf(
+                    playersByWind.getValue(Wind.EAST).id to setOf(BuiltInAchievementIds.MATCH_COMPLETED, BuiltInAchievementIds.FIRST_PLACE),
+                    playersByWind.getValue(Wind.SOUTH).id to setOf(BuiltInAchievementIds.MATCH_COMPLETED),
+                    playersByWind.getValue(Wind.WEST).id to setOf(BuiltInAchievementIds.MATCH_COMPLETED),
+                )
+                else -> mapOf(
+                    playersByWind.getValue(Wind.SOUTH).id to setOf(BuiltInAchievementIds.MATCH_COMPLETED),
+                    playersByWind.getValue(Wind.WEST).id to setOf(BuiltInAchievementIds.MATCH_COMPLETED),
+                )
+            }
+            val expectedStatistics = when (aiWinds) {
+                setOf(Wind.EAST) -> mapOf(
+                    playersByWind.getValue(Wind.SOUTH).id to setOf(AchievementStatisticIds.MATCHES_COMPLETED),
+                    playersByWind.getValue(Wind.WEST).id to setOf(AchievementStatisticIds.MATCHES_COMPLETED),
+                    playersByWind.getValue(Wind.NORTH).id to setOf(AchievementStatisticIds.MATCHES_COMPLETED),
+                )
+                setOf(Wind.NORTH) -> mapOf(
+                    playersByWind.getValue(Wind.EAST).id to setOf(AchievementStatisticIds.MATCHES_COMPLETED, AchievementStatisticIds.FIRST_PLACES),
+                    playersByWind.getValue(Wind.SOUTH).id to setOf(AchievementStatisticIds.MATCHES_COMPLETED),
+                    playersByWind.getValue(Wind.WEST).id to setOf(AchievementStatisticIds.MATCHES_COMPLETED),
+                )
+                else -> mapOf(
+                    playersByWind.getValue(Wind.SOUTH).id to setOf(AchievementStatisticIds.MATCHES_COMPLETED),
+                    playersByWind.getValue(Wind.WEST).id to setOf(AchievementStatisticIds.MATCHES_COMPLETED),
+                )
+            }
+            assertExpected(label, committed(game), expected, expectedStatistics)
         }
     }
 
-    /** 自訂規則排名、同分穩定排序與凍結舊判定使用相同規則比較器。 */
+    /** 自訂規則排名與同分穩定排序使用規則提供的比較器。 */
     @Test
-    fun `custom ranking comparator is used by event and legacy achievement paths`() {
+    fun `custom ranking comparator is used by event achievement projection`() {
         val registry = MahjongModuleRegistryImpl().apply {
             register(
                 MahjongModuleDefinition<RiichiRuleConfig>(
@@ -60,26 +92,43 @@ class AchievementBatchRankingTest {
             )
         }
         val game = game(emptySet(), tied = true)
-        assertEquivalent("custom low score ranking", committed(game), registry)
+        val humanIds = game.tableState.players.map { it.id }
+        val expected = mapOf(
+            humanIds[0] to setOf(BuiltInAchievementIds.MATCH_COMPLETED),
+            humanIds[1] to setOf(BuiltInAchievementIds.MATCH_COMPLETED, BuiltInAchievementIds.LAST_PLACE),
+            humanIds[2] to setOf(BuiltInAchievementIds.MATCH_COMPLETED, BuiltInAchievementIds.FIRST_PLACE),
+            humanIds[3] to setOf(BuiltInAchievementIds.MATCH_COMPLETED),
+        )
+        val expectedStatistics = mapOf(
+            humanIds[0] to setOf(AchievementStatisticIds.MATCHES_COMPLETED),
+            humanIds[1] to setOf(AchievementStatisticIds.MATCHES_COMPLETED),
+            humanIds[2] to setOf(AchievementStatisticIds.MATCHES_COMPLETED, AchievementStatisticIds.FIRST_PLACES),
+            humanIds[3] to setOf(AchievementStatisticIds.MATCHES_COMPLETED),
+        )
+        assertExpected("custom low score ranking", committed(game), expected, expectedStatistics, registry)
     }
 
-    /** 比較真正事件投影與凍結的事實判定，並確認七種統計一致。 */
-    private fun assertEquivalent(
+    /** 依固定的成果與統計預期驗證事件投影。 */
+    private fun assertExpected(
         label: String,
         facts: CommittedGameFacts,
+        expected: Map<Uuid, Set<String>>,
+        expectedStatistics: Map<Uuid, Set<String>>,
         registry: MahjongModuleRegistryImpl = modules,
     ) {
-        val game = facts.game ?: checkNotNull(facts.previousGame)
-        val module = registry.getModule(game.tableState.config)
         val batch = checkNotNull(GameEventProjector(registry).projectBatch(facts))
-        val oldMap = LegacyGenericAchievementDetector.detect(facts, module)
-        val expected = ordered(batch, oldMap)
         val actual = GameAchievementDetector(GameAchievementResolverRegistryImpl()).detect(batch)
 
-        assertEquals(expected, actual, label)
+        assertEquals(
+            expected.map { (playerId, achievementIds) ->
+                PlayerAchievements(playerId, batch.matchId, batch.ruleModuleId, achievementIds)
+            },
+            actual,
+            label,
+        )
         batch.players.filterNot { it.isAi }.forEach { player ->
             assertEquals(
-                AchievementStatisticIds.statisticsFor(oldMap[player.playerId].orEmpty()),
+                expectedStatistics[player.playerId].orEmpty(),
                 AchievementStatisticIds.statisticsFor(actual.firstOrNull { it.playerId == player.playerId }?.achievementIds.orEmpty()),
                 "$label statistics for ${player.playerId}",
             )
@@ -123,13 +172,4 @@ class AchievementBatchRankingTest {
             ),
         ),
     )
-
-    /** 依事件批次的玩家順序建立真人成果結果。 */
-    private fun ordered(batch: CommittedMatchEventBatch, achievements: Map<Uuid, Set<String>>): List<PlayerAchievements> = batch.players
-        .filterNot { it.isAi }
-        .mapNotNull { player ->
-            achievements[player.playerId]?.takeIf { it.isNotEmpty() }?.let {
-                PlayerAchievements(player.playerId, batch.matchId, batch.ruleModuleId, it)
-            }
-        }
 }

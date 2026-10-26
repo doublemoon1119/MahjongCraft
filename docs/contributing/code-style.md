@@ -29,6 +29,10 @@
 - **Test Language**: Test method names and assertion failure messages must be written in **English**, so a
   failing build reads consistently with the framework's own output. Comments and KDoc inside test files still
   follow the Traditional Chinese rule above.
+- **Test expectations**: Use explicit expected outcomes and valid behavior properties. Do not retain copied
+  historical implementations as permanent test oracles or hide them behind a reference helper. Temporary
+  comparisons used during a refactor must leave focused behavior tests rather than a second implementation
+  to maintain.
 
 ### File Organization
 

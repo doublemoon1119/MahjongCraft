@@ -27,7 +27,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.BundledRiichiMinecraftExtension
-import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.achievement.LegacyRiichiGameAchievementResolver
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.achievement.RiichiAchievementIds
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
@@ -36,8 +36,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.uuid.Uuid
 
-/** 驗證日麻成果改用事件判定後，結果仍與原本的事實判定相同。 */
-class RetainedRuleAchievementEquivalenceTest {
+/** 驗證日麻公開批次在四人、三人與終局案例中授予完整成果與統計。 */
+class RiichiAchievementBatchTest {
     private val modules = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
     private val resolvers = GameAchievementResolverRegistryImpl().apply {
         BundledRiichiMinecraftExtension.registerGameAchievementResolvers(this)
@@ -47,40 +47,79 @@ class RetainedRuleAchievementEquivalenceTest {
         register(GameEventPublicMarkerResolverDefinition(BuiltInRuleModuleIds.RIICHI, RiichiGameEventPublicMarkerResolver))
         register(GameEventPublicMarkerResolverDefinition(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, RiichiGameEventPublicMarkerResolver))
     }
-    private val legacyResolver = LegacyRiichiGameAchievementResolver()
 
-    /** 四人與三人日麻都應保留原本的成果與統計增量。 */
+    /** 四人與三人日麻都應產生預期的成果與統計增量。 */
     @Test
-    fun `retained riichi achievements remain equivalent for four and three players`() {
+    fun `riichi achievements retain expected outcomes for four and three players`() {
         val fourPlayerGame = game(RiichiRuleConfig())
         val fourPlayerWinner = fourPlayerGame.tableState.players.first()
         val threePlayerGame = game(ThreePlayerRiichiRuleConfig())
         val threePlayerWinner = threePlayerGame.tableState.players.first()
-        val cases = listOf(
-            facts(
-                fourPlayerGame,
-                HistoryFact.WinSettled(
-                    outcomeId = BuiltInRoundOutcomeIds.TSUMO,
-                    winDetails = listOf(HistoryWinDetails(fourPlayerWinner.id, nonYakumanFields(YakuType.Riichi))),
-                ),
+        val fourPlayerWin = facts(
+            fourPlayerGame,
+            HistoryFact.WinSettled(
+                outcomeId = BuiltInRoundOutcomeIds.TSUMO,
+                winDetails = listOf(HistoryWinDetails(fourPlayerWinner.id, nonYakumanFields(YakuType.Riichi))),
             ),
-            facts(
-                threePlayerGame,
-                HistoryFact.WinSettled(
-                    outcomeId = BuiltInRoundOutcomeIds.TSUMO,
-                    winDetails = listOf(HistoryWinDetails(threePlayerWinner.id, yakumanFields(YakuType.Suuankou))),
-                ),
+        )
+        val threePlayerWin = facts(
+            threePlayerGame,
+            HistoryFact.WinSettled(
+                outcomeId = BuiltInRoundOutcomeIds.TSUMO,
+                winDetails = listOf(HistoryWinDetails(threePlayerWinner.id, yakumanFields(YakuType.Suuankou))),
             ),
-            facts(
-                fourPlayerGame,
-                HistoryFact.MatchCompleted(
-                    reasonId = "mahjongcraft:completed",
-                    finalScoresByPlayerId = fourPlayerGame.tableState.players.associateWith { it.score }.mapKeys { it.key.id },
-                ),
+        )
+        val completedMatch = facts(
+            fourPlayerGame,
+            HistoryFact.MatchCompleted(
+                reasonId = "mahjongcraft:completed",
+                finalScoresByPlayerId = fourPlayerGame.tableState.players.associateWith { it.score }.mapKeys { it.key.id },
             ),
         )
 
-        cases.forEachIndexed { index, facts -> assertEquivalent(index, facts) }
+        assertExpected(
+            caseIndex = 0,
+            facts = fourPlayerWin,
+            expectedAchievements = mapOf(
+                fourPlayerWinner.id to setOf(
+                    BuiltInAchievementIds.WIN,
+                    BuiltInAchievementIds.SELF_DRAW_WIN,
+                    RiichiAchievementIds.RIICHI_WIN,
+                ),
+            ),
+            expectedStatistics = mapOf(fourPlayerWinner.id to setOf(AchievementStatisticIds.WINS, AchievementStatisticIds.SELF_DRAW_WINS)),
+        )
+        assertExpected(
+            caseIndex = 1,
+            facts = threePlayerWin,
+            expectedAchievements = mapOf(
+                threePlayerWinner.id to setOf(
+                    BuiltInAchievementIds.WIN,
+                    BuiltInAchievementIds.SELF_DRAW_WIN,
+                    RiichiAchievementIds.YAKUMAN,
+                    checkNotNull(RiichiAchievementIds.yakuman(YakuType.Suuankou)),
+                ),
+            ),
+            expectedStatistics = mapOf(threePlayerWinner.id to setOf(AchievementStatisticIds.WINS, AchievementStatisticIds.SELF_DRAW_WINS)),
+        )
+        val completedPlayers = fourPlayerGame.tableState.players
+        val completed = setOf(BuiltInAchievementIds.MATCH_COMPLETED, RiichiAchievementIds.MATCH_COMPLETED)
+        assertExpected(
+            caseIndex = 2,
+            facts = completedMatch,
+            expectedAchievements = mapOf(
+                completedPlayers[0].id to completed + BuiltInAchievementIds.FIRST_PLACE,
+                completedPlayers[1].id to completed,
+                completedPlayers[2].id to completed,
+                completedPlayers[3].id to completed + BuiltInAchievementIds.LAST_PLACE,
+            ),
+            expectedStatistics = mapOf(
+                completedPlayers[0].id to setOf(AchievementStatisticIds.MATCHES_COMPLETED, AchievementStatisticIds.FIRST_PLACES),
+                completedPlayers[1].id to setOf(AchievementStatisticIds.MATCHES_COMPLETED),
+                completedPlayers[2].id to setOf(AchievementStatisticIds.MATCHES_COMPLETED),
+                completedPlayers[3].id to setOf(AchievementStatisticIds.MATCHES_COMPLETED),
+            ),
+        )
     }
 
     /** 自然役滿仍應依和牌前的玩家狀態取得立直與一發成果。 */
@@ -102,34 +141,38 @@ class RetainedRuleAchievementEquivalenceTest {
             ),
         )
 
-        assertEquivalent(0, facts)
+        assertExpected(
+            caseIndex = 3,
+            facts = facts,
+            expectedAchievements = mapOf(
+                winner.id to setOf(
+                    BuiltInAchievementIds.WIN,
+                    BuiltInAchievementIds.SELF_DRAW_WIN,
+                    RiichiAchievementIds.RIICHI_WIN,
+                    RiichiAchievementIds.IPPATSU,
+                    RiichiAchievementIds.YAKUMAN,
+                    checkNotNull(RiichiAchievementIds.yakuman(YakuType.Suuankou)),
+                ),
+            ),
+            expectedStatistics = mapOf(winner.id to setOf(AchievementStatisticIds.WINS, AchievementStatisticIds.SELF_DRAW_WINS)),
+        )
     }
 
-    /** 比較真人玩家成果的順序，以及七種通用統計是否一致。 */
-    private fun assertEquivalent(caseIndex: Int, facts: CommittedGameFacts) {
-        val module = modules.getModule((facts.game ?: checkNotNull(facts.previousGame)).tableState.config)
+    /** 比較真人玩家成果與明確列出的統計結果。 */
+    private fun assertExpected(
+        caseIndex: Int,
+        facts: CommittedGameFacts,
+        expectedAchievements: Map<Uuid, Set<String>>,
+        expectedStatistics: Map<Uuid, Set<String>>,
+    ) {
         val batch = checkNotNull(GameEventProjector(modules, markerResolvers = markerResolvers).projectBatch(facts))
-        val oldMap = merge(LegacyGenericAchievementDetector.detect(facts, module), legacyResolver.resolve(facts))
-        val old = ordered(batch, oldMap)
         val actual = detector.detect(batch)
 
-        assertEquals(old, actual, "achievement result case $caseIndex")
+        assertEquals(ordered(batch, expectedAchievements), actual, "achievement result case $caseIndex")
         batch.players.filterNot { it.isAi }.forEach { player ->
-            val oldStats = AchievementStatisticIds.statisticsFor(oldMap[player.playerId].orEmpty())
-            val newStats = AchievementStatisticIds.statisticsFor(actual.firstOrNull { it.playerId == player.playerId }?.achievementIds.orEmpty())
-            assertEquals(oldStats, newStats, "statistics case $caseIndex for ${player.playerId}")
-            AchievementStatisticIds.ALL.forEach { statisticId ->
-                assertEquals(statisticId in oldStats, statisticId in newStats, "statistic $statisticId case $caseIndex")
-            }
+            val actualStats = AchievementStatisticIds.statisticsFor(actual.firstOrNull { it.playerId == player.playerId }?.achievementIds.orEmpty())
+            assertEquals(expectedStatistics[player.playerId].orEmpty(), actualStats, "statistics case $caseIndex for ${player.playerId}")
         }
-    }
-
-    /** 合併搬移前的通用成果與規則專屬成果，不改變成果集合的語意。 */
-    private fun merge(
-        generic: Map<Uuid, Set<String>>,
-        rule: Map<Uuid, Set<String>>,
-    ): Map<Uuid, Set<String>> = (generic.keys + rule.keys).associateWith { playerId ->
-        generic[playerId].orEmpty() + rule[playerId].orEmpty()
     }
 
     /** 依事件判定器使用的玩家順序，只保留真人玩家的成果。 */

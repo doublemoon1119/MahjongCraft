@@ -192,12 +192,19 @@ class RiichiGameAchievementResolverTest {
 
         yakumanTypes.forEach { yaku ->
             val result = resolve(game, win(winner.id, yakumanFields(yaku))).getValue(winner.id)
-            assertTrue(RiichiAchievementIds.YAKUMAN in result, "missing general yakuman for $yaku")
-            assertTrue(RiichiAchievementIds.yakuman(yaku) in result, "missing individual yakuman for $yaku")
+            assertEquals(
+                buildSet {
+                    add(RiichiAchievementIds.YAKUMAN)
+                    add(checkNotNull(RiichiAchievementIds.yakuman(yaku)))
+                    if (yaku in RiichiAchievementIds.doubleYakumanTypes) add(RiichiAchievementIds.DOUBLE_YAKUMAN)
+                },
+                result,
+                "unexpected achievements for $yaku",
+            )
         }
     }
 
-    /** 已提交詳情不允許重複欄位，不能以無效來源製造事件等價案例。 */
+    /** 已提交詳情不允許重複欄位，建立時就拒絕相同欄位 ID。 */
     @Test
     fun `duplicate yaku fields are rejected by the source contract`() {
         val game = riichiGame()
@@ -319,7 +326,7 @@ class RiichiGameAchievementResolverTest {
         )
 
         val result = resolveFacts(game, *facts.toTypedArray())
-        assertTrue(RiichiAchievementIds.NAGASHI_MANGAN !in result.getValue(winner.id))
+        assertEquals(mapOf(winner.id to setOf(RiichiAchievementIds.RIICHI_WIN)), result)
     }
 
     /** 自然役滿只有公開的立直與一發標記都存在時才取得一發，不能只看役種名稱。 */
@@ -338,8 +345,10 @@ class RiichiGameAchievementResolverTest {
         ) + yakumanFields(YakuType.Suuankou).filter { it.id != RiichiWinSettlementIds.YAKU_FIELD }
         val result = resolve(game, win(winner.id, fields))
 
-        assertTrue(RiichiAchievementIds.YAKUMAN in result.getValue(winner.id))
-        assertTrue(RiichiAchievementIds.IPPATSU !in result.getValue(winner.id))
+        assertEquals(
+            setOf(RiichiAchievementIds.YAKUMAN, checkNotNull(RiichiAchievementIds.yakuman(YakuType.Suuankou)), RiichiAchievementIds.RIICHI_WIN),
+            result.getValue(winner.id),
+        )
     }
 
     /** 重複役種以最後一筆倍數為準，避免重複欄位造成錯誤的役滿倍數。 */
@@ -360,7 +369,14 @@ class RiichiGameAchievementResolverTest {
         )
 
         val result = resolve(game, win(winner.id, fields)).getValue(winner.id)
-        assertTrue(RiichiAchievementIds.DOUBLE_YAKUMAN in result)
+        assertEquals(
+            setOf(
+                RiichiAchievementIds.YAKUMAN,
+                checkNotNull(RiichiAchievementIds.yakuman(YakuType.Daisangen)),
+                RiichiAchievementIds.DOUBLE_YAKUMAN,
+            ),
+            result,
+        )
     }
 
     /** 擊飛門檻的邊界依嚴格小於判定；終局資料與目前桌況不一致時不憑空增加擊飛。 */
@@ -461,7 +477,7 @@ class RiichiGameAchievementResolverTest {
      */
     private fun resolve(game: Game, fact: HistoryFact): Map<Uuid, Set<String>> = resolveFacts(game, fact)
 
-    /** 以同一交易的多筆事實建立事件批次並和舊版判定逐筆比對。 */
+    /** 以同一交易的多筆事實建立事件批次並交給日麻成果判定。 */
     private fun resolveFacts(game: Game, vararg fact: HistoryFact): Map<Uuid, Set<String>> {
         val modules = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
         val markerResolvers = GameEventPublicMarkerResolverRegistry().apply {
@@ -475,9 +491,7 @@ class RiichiGameAchievementResolverTest {
             facts = fact.map { HistoryEventDraft(null, it) },
         )
         val batch = GameEventProjector(modules, markerResolvers = markerResolvers).projectBatch(committedFacts) ?: return emptyMap()
-        val actual = RiichiGameAchievementResolver().resolve(batch)
-        assertEquals(LegacyRiichiGameAchievementResolver().resolve(committedFacts), actual)
-        return actual
+        return RiichiGameAchievementResolver().resolve(batch)
     }
 
     /**

@@ -33,7 +33,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
 import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.BundledRiichiMinecraftExtension
-import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.achievement.LegacyRiichiGameAchievementResolver
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.achievement.RiichiAchievementIds
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.repository.FakeGameSnapshotRepository
 import com.doublemoon1119.mahjongcraft.testing.flow.common.game.service.FakeGameEventPublisher
@@ -48,11 +48,11 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
-/** 驗證真實規則結果與終局提交經事件投影後，仍得到與舊判定相同的成果。 */
+/** 驗證真實流局滿貫與擊飛終局經公開事件產生完整成果與統計。 */
 class RuleOutcomeAchievementIntegrationTest {
-    /** 真實流局滿貫用例產生的規則結果，應與舊牌譜判定完全一致。 */
+    /** 只有未捨中張的東家取得流局滿貫與一般和牌成果，不計為自摸或榮和。 */
     @Test
-    fun `real nagashi mangan outcome retains achievement results after event projection`() = runTest {
+    fun `real nagashi mangan awards only its achiever and increments wins once`() = runTest {
         val modules = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
         val store = AuthoritativeStateStore(historyRecordingEnabled = true)
         val repository = GameRepositoryImpl(store)
@@ -83,12 +83,18 @@ class RuleOutcomeAchievementIntegrationTest {
         val result = useCase(game.id)
         assertTrue(result is Outcome.Success && result.value?.id == RiichiRoundOutcomeIds.NAGASHI_MANGAN)
         val facts = assertNotNull(submitted.lastOrNull())
-        assertAchievementEquivalence(modules, facts)
+        val winnerId = game.tableState.players.first().id
+        assertAchievements(
+            modules = modules,
+            facts = facts,
+            expectedAchievements = mapOf(winnerId to setOf(BuiltInAchievementIds.WIN, RiichiAchievementIds.NAGASHI_MANGAN)),
+            expectedStatistics = mapOf(winnerId to setOf(AchievementStatisticIds.WINS)),
+        )
     }
 
-    /** 真正的局末推進因負分結束對局，事件判定與舊判定都保留東一局及大差距擊飛。 */
+    /** 真正的局末推進因負分結束對局，授予完成、排名及東一局的大差距擊飛成果。 */
     @Test
-    fun `completed match submission retains achievement results after event projection`() = runTest {
+    fun `busted match completion awards exact completion ranking and bust outcomes`() = runTest {
         val modules = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
         val initial = nagashiGame()
         val state = initial.tableState.copy(
@@ -120,11 +126,38 @@ class RuleOutcomeAchievementIntegrationTest {
 
         val facts = assertNotNull(submitted.lastOrNull())
         assertTrue(facts.facts.any { (it.fact as? HistoryFact.MatchCompleted)?.reasonId == BuiltInMatchEndReasonIds.PLAYER_BUSTED })
-        assertAchievementEquivalence(modules, facts)
+        val ids = state.players.map { it.id }
+        val completed = setOf(BuiltInAchievementIds.MATCH_COMPLETED, RiichiAchievementIds.MATCH_COMPLETED)
+        assertAchievements(
+            modules = modules,
+            facts = facts,
+            expectedAchievements = mapOf(
+                ids[0] to completed + setOf(
+                    BuiltInAchievementIds.LAST_PLACE,
+                    RiichiAchievementIds.BUSTED,
+                    RiichiAchievementIds.BUSTED_FAR,
+                    RiichiAchievementIds.BUSTED_IN_EAST_ONE,
+                ),
+                ids[1] to completed + BuiltInAchievementIds.FIRST_PLACE,
+                ids[2] to completed,
+                ids[3] to completed,
+            ),
+            expectedStatistics = mapOf(
+                ids[0] to setOf(AchievementStatisticIds.MATCHES_COMPLETED),
+                ids[1] to setOf(AchievementStatisticIds.MATCHES_COMPLETED, AchievementStatisticIds.FIRST_PLACES),
+                ids[2] to setOf(AchievementStatisticIds.MATCHES_COMPLETED),
+                ids[3] to setOf(AchievementStatisticIds.MATCHES_COMPLETED),
+            ),
+        )
     }
 
-    /** 將真實提交投影為公開批次，比較搬移前後完整成果。 */
-    private fun assertAchievementEquivalence(modules: MahjongModuleRegistryImpl, facts: CommittedGameFacts) {
+    /** 將真實提交投影為公開批次，驗證每位玩家的完整成果、順序與統計。 */
+    private fun assertAchievements(
+        modules: MahjongModuleRegistryImpl,
+        facts: CommittedGameFacts,
+        expectedAchievements: Map<Uuid, Set<String>>,
+        expectedStatistics: Map<Uuid, Set<String>>,
+    ) {
         val resolverRegistry = GameAchievementResolverRegistryImpl().apply {
             BundledRiichiMinecraftExtension.registerGameAchievementResolvers(this)
         }
@@ -132,13 +165,10 @@ class RuleOutcomeAchievementIntegrationTest {
             register(GameEventPublicMarkerResolverDefinition(BuiltInRuleModuleIds.RIICHI, RiichiGameEventPublicMarkerResolver))
         }
         val batch = assertNotNull(GameEventProjector(modules, markerResolvers = markerResolvers).projectBatch(facts))
-        val module = modules.getModule(RiichiRuleConfig())
-        val expected = merge(
-            LegacyGenericAchievementDetector.detect(facts, module),
-            LegacyRiichiGameAchievementResolver().resolve(facts),
-        )
-        val actual = GameAchievementDetector(resolverRegistry).detect(batch).associate { it.playerId to it.achievementIds }
-        assertEquals(expected, actual)
+        val awards = GameAchievementDetector(resolverRegistry).detect(batch)
+        assertEquals(expectedAchievements.keys.toList(), awards.map { it.playerId })
+        assertEquals(expectedAchievements, awards.associate { it.playerId to it.achievementIds })
+        assertEquals(expectedStatistics, awards.associate { it.playerId to AchievementStatisticIds.statisticsFor(it.achievementIds) })
     }
 
     /** 擷取 store 真正提交的事實，略過未產生事實的準備寫入。 */
@@ -160,7 +190,12 @@ class RuleOutcomeAchievementIntegrationTest {
             initialSeat = Wind.EAST,
             discardPile = allYaochuuDiscardPile(),
         )
-        val players = listOf(achiever) + listOf(Wind.SOUTH, Wind.WEST, Wind.NORTH).map { FakeMahjongPlayerFactory.create(initialSeat = it) }
+        val players = listOf(achiever) + listOf(Wind.SOUTH, Wind.WEST, Wind.NORTH).map {
+            FakeMahjongPlayerFactory.create(
+                initialSeat = it,
+                discardPile = RiichiDiscardPile().discardTile(FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Bamboo, 2))),
+            )
+        }
         return Game(
             tableState = FakeTableStateFactory.create(players = players, config = RiichiRuleConfig()),
             flowConfig = GameFlowConfig(),
@@ -172,12 +207,4 @@ class RuleOutcomeAchievementIntegrationTest {
         .discardTile(FakeIdentifiedTileFactory.create(Tile.Honor.East))
         .discardTile(FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Character, 1)))
         .discardTile(FakeIdentifiedTileFactory.create(Tile.Numeric(Tile.Suit.Dot, 9)))
-
-    /** 合併舊通用及日麻成果，保留同一玩家的一份集合。 */
-    private fun merge(
-        generic: Map<Uuid, Set<String>>,
-        rule: Map<Uuid, Set<String>>,
-    ): Map<Uuid, Set<String>> = (generic.keys + rule.keys).associateWith { playerId ->
-        generic[playerId].orEmpty() + rule[playerId].orEmpty()
-    }
 }
