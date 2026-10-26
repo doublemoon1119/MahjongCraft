@@ -1,7 +1,11 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.achievement
 
 import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventProjector
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverDefinition
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.CommittedGameFacts
+import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiGameEventPublicMarkerResolver
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 
@@ -12,6 +16,10 @@ import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleM
  */
 internal fun GameAchievementDetector.detect(facts: CommittedGameFacts): List<PlayerAchievements> {
     val modules = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
-    val batch = GameEventProjector(modules).projectBatch(facts) ?: return emptyList()
-    return detect(batch, resolveRule(facts))
+    val markers = GameEventPublicMarkerResolverRegistry().apply {
+        register(GameEventPublicMarkerResolverDefinition(BuiltInRuleModuleIds.RIICHI, RiichiGameEventPublicMarkerResolver))
+        register(GameEventPublicMarkerResolverDefinition(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, RiichiGameEventPublicMarkerResolver))
+    }
+    val batch = GameEventProjector(modules, markerResolvers = markers).projectBatch(facts) ?: return emptyList()
+    return detect(batch)
 }

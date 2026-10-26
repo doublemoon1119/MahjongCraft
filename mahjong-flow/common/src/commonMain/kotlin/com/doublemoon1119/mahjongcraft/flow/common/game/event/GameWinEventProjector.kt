@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.api.event.PublicEventMarker
 import com.doublemoon1119.mahjongcraft.flow.api.event.RoundWinDetail
 import com.doublemoon1119.mahjongcraft.flow.api.event.RoundWinGroup
 import com.doublemoon1119.mahjongcraft.flow.api.event.WinDetailField
+import com.doublemoon1119.mahjongcraft.flow.api.event.WinGroupSource
 import com.doublemoon1119.mahjongcraft.flow.api.event.WinMethod
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.CommittedGameFacts
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
@@ -75,6 +76,7 @@ internal object GameWinEventProjector {
                         },
                         responsiblePlayerIds = summary.responsiblePlayerIds,
                         discarderPlayerIds = emptySet(),
+                        source = WinGroupSource.RULE_RESULT,
                     )
                 }
                 else -> null
@@ -83,7 +85,7 @@ internal object GameWinEventProjector {
     }
 
     /** 只複製 Entries／Quantities，不轉交完整手牌或牌張 UUID。 */
-    private fun detail(details: HistoryWinDetails, method: WinMethod, markers: List<PublicEventMarker>): RoundWinDetail = RoundWinDetail.create(
+    internal fun detail(details: HistoryWinDetails, method: WinMethod, markers: List<PublicEventMarker>): RoundWinDetail = RoundWinDetail.create(
         playerId = details.playerId,
         method = method,
         detailFields = details.detailFields.mapNotNull { field ->

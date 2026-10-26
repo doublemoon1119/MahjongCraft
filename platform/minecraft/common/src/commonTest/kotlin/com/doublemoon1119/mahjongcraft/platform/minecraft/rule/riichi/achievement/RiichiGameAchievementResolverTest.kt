@@ -1,5 +1,8 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.achievement
 
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventProjector
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverDefinition
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.CommittedGameFacts
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
@@ -12,16 +15,22 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetai
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
+import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiGameEventPublicMarkerResolver
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiScoreConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.BuiltInMatchEndReasonIds
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
+import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionClassification
+import com.doublemoon1119.mahjongcraft.logic.table.RoundCompletionSummary
+import com.doublemoon1119.mahjongcraft.logic.table.RoundTransitionDirective
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementDetector
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolverRegistryImpl
@@ -33,6 +42,7 @@ import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFact
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
@@ -157,6 +167,47 @@ class RiichiGameAchievementResolverTest {
         )
     }
 
+    /** 每一種標準役滿都會取得通用役滿成果及對應的個別成果。 */
+    @Test
+    fun `all standard yakuman types are retained`() {
+        val game = riichiGame()
+        val winner = game.tableState.players.first()
+        val yakumanTypes = listOf(
+            YakuType.KokushiMusou,
+            YakuType.ChurenPoto,
+            YakuType.Tsuuiisou,
+            YakuType.Ryuuuiisou,
+            YakuType.Suuankou,
+            YakuType.Sukantsu,
+            YakuType.Shousuushi,
+            YakuType.Daisangen,
+            YakuType.Chinroutou,
+            YakuType.Tenhou,
+            YakuType.Chiihou,
+            YakuType.KokushiMusou13,
+            YakuType.ChurenPoto9,
+            YakuType.SuuankouTanki,
+            YakuType.Daisuushii,
+        )
+
+        yakumanTypes.forEach { yaku ->
+            val result = resolve(game, win(winner.id, yakumanFields(yaku))).getValue(winner.id)
+            assertTrue(RiichiAchievementIds.YAKUMAN in result, "missing general yakuman for $yaku")
+            assertTrue(RiichiAchievementIds.yakuman(yaku) in result, "missing individual yakuman for $yaku")
+        }
+    }
+
+    /** 已提交詳情不允許重複欄位，不能以無效來源製造事件等價案例。 */
+    @Test
+    fun `duplicate yaku fields are rejected by the source contract`() {
+        val game = riichiGame()
+        val winner = game.tableState.players.first()
+        val fields = yakumanFields(YakuType.Daisangen) + yakumanFields(YakuType.Tsuuiisou)
+            .filter { it.id == RiichiWinSettlementIds.YAKU_FIELD }
+
+        assertFailsWith<IllegalArgumentException> { win(winner.id, fields) }
+    }
+
     /** 流局滿貫的成立者取得流局滿貫。 */
     @Test
     fun `nagashi mangan achievers get the nagashi mangan achievement`() {
@@ -218,15 +269,171 @@ class RiichiGameAchievementResolverTest {
         assertTrue(result.isEmpty())
     }
 
+    /** 流局滿貫只接受規則結果事件；詳情、受益者摘要和多個結果都能合併。 */
+    @Test
+    fun `nagashi mangan uses rule results details and beneficiaries`() {
+        val game = riichiGame()
+        val (first, second) = game.tableState.players
+        val details = HistoryFact.RuleEffectResolved(
+            reasonId = RiichiRoundOutcomeIds.NAGASHI_MANGAN,
+            roundCompletion = null,
+            winDetails = listOf(HistoryWinDetails(first.id, emptyList())),
+        )
+        val summary = HistoryFact.RuleEffectResolved(
+            reasonId = RiichiRoundOutcomeIds.NAGASHI_MANGAN,
+            roundCompletion = RoundCompletionSummary(
+                outcomeId = RiichiRoundOutcomeIds.NAGASHI_MANGAN,
+                classification = RoundCompletionClassification.EXTENSION,
+                beneficiaryPlayerIds = setOf(second.id),
+                responsiblePlayerIds = emptySet(),
+                transitionDirective = RoundTransitionDirective.PassToNextSeat,
+                settledScoresByPlayerId = game.tableState.players.associate { it.id to it.score },
+            ),
+            winDetails = emptyList(),
+        )
+
+        assertEquals(setOf(RiichiAchievementIds.NAGASHI_MANGAN), resolveFacts(game, details, summary).getValue(first.id))
+        assertEquals(setOf(RiichiAchievementIds.NAGASHI_MANGAN), resolveFacts(game, details, summary).getValue(second.id))
+    }
+
+    /** 相同交易中的普通和牌結果與規則 WIN 結果不應被誤算成流局滿貫。 */
+    @Test
+    fun `nagashi achievement ignores ordinary win and other rule results`() {
+        val game = riichiGame()
+        val winner = game.tableState.players.first()
+
+        val facts = listOf(
+            win(winner.id, nonYakumanFields(han = 1, YakuType.Riichi)),
+            HistoryFact.RuleEffectResolved(
+                reasonId = "example:win",
+                roundCompletion = RoundCompletionSummary(
+                    outcomeId = "example:win",
+                    classification = RoundCompletionClassification.WIN,
+                    beneficiaryPlayerIds = setOf(winner.id),
+                    responsiblePlayerIds = emptySet(),
+                    transitionDirective = RoundTransitionDirective.PassToNextSeat,
+                    settledScoresByPlayerId = game.tableState.players.associate { it.id to it.score },
+                ),
+                winDetails = listOf(HistoryWinDetails(winner.id, yakumanFields(YakuType.Daisangen))),
+            ),
+        )
+
+        val result = resolveFacts(game, *facts.toTypedArray())
+        assertTrue(RiichiAchievementIds.NAGASHI_MANGAN !in result.getValue(winner.id))
+    }
+
+    /** 自然役滿只有公開的立直與一發標記都存在時才取得一發，不能只看役種名稱。 */
+    @Test
+    fun `natural yakuman does not infer ippatsu from riichi yaku alone`() {
+        val game = riichiGame(firstPlayerRuleState = RiichiPlayerState(isIppatsu = true))
+        val winner = game.tableState.players.first()
+
+        val fields = listOf(
+            WinSettlementDetailField(
+                RiichiWinSettlementIds.YAKU_FIELD,
+                WinSettlementDetailValue.Entries(
+                    listOf(RiichiWinSettlementIds.yakumanEntry(YakuType.Suuankou, 1), RiichiWinSettlementIds.yakuEntry(YakuType.Riichi, 1)),
+                ),
+            ),
+        ) + yakumanFields(YakuType.Suuankou).filter { it.id != RiichiWinSettlementIds.YAKU_FIELD }
+        val result = resolve(game, win(winner.id, fields))
+
+        assertTrue(RiichiAchievementIds.YAKUMAN in result.getValue(winner.id))
+        assertTrue(RiichiAchievementIds.IPPATSU !in result.getValue(winner.id))
+    }
+
+    /** 重複役種以最後一筆倍數為準，避免重複欄位造成錯誤的役滿倍數。 */
+    @Test
+    fun `duplicate yakuman entries use the last multiplier`() {
+        val game = riichiGame()
+        val winner = game.tableState.players.first()
+        val entries = listOf(
+            RiichiWinSettlementIds.yakumanEntry(YakuType.Daisangen, 1),
+            RiichiWinSettlementIds.yakumanEntry(YakuType.Daisangen, 2),
+        )
+        val fields = listOf(
+            WinSettlementDetailField(RiichiWinSettlementIds.YAKU_FIELD, WinSettlementDetailValue.Entries(entries)),
+            WinSettlementDetailField(
+                RiichiWinSettlementIds.YAKUMAN_TOTAL_FIELD,
+                WinSettlementDetailValue.Quantities(listOf(WinSettlementQuantity(RiichiWinSettlementIds.YAKUMAN, 1))),
+            ),
+        )
+
+        val result = resolve(game, win(winner.id, fields)).getValue(winner.id)
+        assertTrue(RiichiAchievementIds.DOUBLE_YAKUMAN in result)
+    }
+
+    /** 擊飛門檻的邊界依嚴格小於判定；終局資料與目前桌況不一致時不憑空增加擊飛。 */
+    @Test
+    fun `bust threshold boundaries use final public markers`() {
+        val game = riichiGame()
+        val (player, second, third, fourth) = game.tableState.players
+        fun result(score: Int) = resolve(
+            game,
+            HistoryFact.MatchCompleted(
+                BuiltInMatchEndReasonIds.PLAYER_BUSTED,
+                mapOf(player.id to score, second.id to 10_000, third.id to 20_000, fourth.id to 30_000),
+            ),
+        ).getValue(player.id)
+
+        assertTrue(RiichiAchievementIds.BUSTED !in result(0))
+        assertTrue(RiichiAchievementIds.BUSTED in result(-1))
+        assertTrue(RiichiAchievementIds.BUSTED in result(-30_001))
+    }
+
+    /** 同一個規則結果的詳情優先於摘要名單，不能把摘要受益者一併算入。 */
+    @Test
+    fun `nagashi details take precedence over different summary beneficiaries`() {
+        val game = riichiGame()
+        val (winner, other) = game.tableState.players
+        val summary = RoundCompletionSummary(
+            outcomeId = RiichiRoundOutcomeIds.NAGASHI_MANGAN,
+            classification = RoundCompletionClassification.WIN,
+            beneficiaryPlayerIds = setOf(other.id),
+            transitionDirective = RoundTransitionDirective.PassToNextSeat,
+            settledScoresByPlayerId = game.tableState.players.associate { it.id to it.score },
+        )
+        val result = resolve(
+            game,
+            HistoryFact.RuleEffectResolved(RiichiRoundOutcomeIds.NAGASHI_MANGAN, summary, listOf(HistoryWinDetails(winner.id, emptyList()))),
+        )
+        assertEquals(mapOf(winner.id to setOf(RiichiAchievementIds.NAGASHI_MANGAN)), result)
+    }
+
+    /** 完成名單不由全體玩家補齊；擊飛使用提交分數並保留大差距門檻的含等號判定。 */
+    @Test
+    fun `partial completion and far bust boundaries retain exact committed scores`() {
+        val game = riichiGame()
+        val player = game.tableState.players.first()
+        assertTrue(resolve(game, HistoryFact.MatchCompleted(BuiltInMatchEndReasonIds.PLAYER_BUSTED, emptyMap())).isEmpty())
+        listOf(-29_999, -30_000, -30_001).forEach { score ->
+            val result = resolve(game, HistoryFact.MatchCompleted(BuiltInMatchEndReasonIds.PLAYER_BUSTED, mapOf(player.id to score)))
+            assertEquals(setOf(player.id), result.keys)
+            assertEquals(score <= -30_000, RiichiAchievementIds.BUSTED_FAR in result.getValue(player.id))
+        }
+    }
+
+    /** 沒有擊飛設定時不授予擊飛；負數門檻仍只接受嚴格低於門檻的分數。 */
+    @Test
+    fun `disabled and negative bust thresholds preserve the old rule`() {
+        listOf<Int?>(null, -100).forEach { threshold ->
+            val game = gameOf(RiichiRuleConfig(scoreConfig = RiichiScoreConfig(bustThreshold = threshold)))
+            val player = game.tableState.players.first()
+            listOf(-101, -100).forEach { score ->
+                val result = resolve(game, HistoryFact.MatchCompleted(BuiltInMatchEndReasonIds.PLAYER_BUSTED, mapOf(player.id to score)))
+                assertEquals(threshold != null && score < threshold, RiichiAchievementIds.BUSTED in result.getValue(player.id))
+            }
+        }
+    }
+
     /** 三人日麻對局與四人日麻共用同一批日麻成果。 */
     @Test
     fun `three player riichi games credit the same riichi achievements`() {
-        val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
         val registry = GameAchievementResolverRegistryImpl().apply { BundledRiichiMinecraftExtension.registerGameAchievementResolvers(this) }
         val game = gameOf(ThreePlayerRiichiRuleConfig())
         val winner = game.tableState.players.first()
 
-        val result = GameAchievementDetector(moduleRegistry, registry)
+        val result = GameAchievementDetector(registry)
             .detect(facts(game, win(winner.id, nonYakumanFields(han = 2, YakuType.Riichi))))
 
         assertTrue(result.single { it.playerId == winner.id }.achievementIds.contains(RiichiAchievementIds.RIICHI_WIN))
@@ -235,12 +442,11 @@ class RiichiGameAchievementResolverTest {
     /** 非日麻對局不會交給日麻判定。 */
     @Test
     fun `non-riichi games produce no riichi achievements`() {
-        val moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
         val registry = GameAchievementResolverRegistryImpl().apply { BundledRiichiMinecraftExtension.registerGameAchievementResolvers(this) }
         val game = gameOf(TaiwanRuleConfig())
         val winner = game.tableState.players.first()
 
-        val result = GameAchievementDetector(moduleRegistry, registry)
+        val result = GameAchievementDetector(registry)
             .detect(facts(game, win(winner.id, nonYakumanFields(han = 2, YakuType.Riichi))))
 
         assertTrue(result.flatMap { it.achievementIds }.none { it.startsWith("mahjongcraft:riichi/") })
@@ -253,7 +459,26 @@ class RiichiGameAchievementResolverTest {
      * @param fact 要加入歷史資料的事實。
      * @return 玩家 UUID 對應的成果 ID 集合。
      */
-    private fun resolve(game: Game, fact: HistoryFact): Map<Uuid, Set<String>> = RiichiGameAchievementResolver().resolve(facts(game, fact))
+    private fun resolve(game: Game, fact: HistoryFact): Map<Uuid, Set<String>> = resolveFacts(game, fact)
+
+    /** 以同一交易的多筆事實建立事件批次並和舊版判定逐筆比對。 */
+    private fun resolveFacts(game: Game, vararg fact: HistoryFact): Map<Uuid, Set<String>> {
+        val modules = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
+        val markerResolvers = GameEventPublicMarkerResolverRegistry().apply {
+            register(GameEventPublicMarkerResolverDefinition(BuiltInRuleModuleIds.RIICHI, RiichiGameEventPublicMarkerResolver))
+            register(GameEventPublicMarkerResolverDefinition(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, RiichiGameEventPublicMarkerResolver))
+        }
+        val committedFacts = CommittedGameFacts(
+            venueId = game.id,
+            previousGame = game,
+            game = game,
+            facts = fact.map { HistoryEventDraft(null, it) },
+        )
+        val batch = GameEventProjector(modules, markerResolvers = markerResolvers).projectBatch(committedFacts) ?: return emptyMap()
+        val actual = RiichiGameAchievementResolver().resolve(batch)
+        assertEquals(LegacyRiichiGameAchievementResolver().resolve(committedFacts), actual)
+        return actual
+    }
 
     /**
      * 建立可覆寫牌局進度與莊家狀態的四人日麻測試對局。

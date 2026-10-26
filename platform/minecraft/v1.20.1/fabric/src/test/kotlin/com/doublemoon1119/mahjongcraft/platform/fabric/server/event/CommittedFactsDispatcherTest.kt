@@ -85,7 +85,7 @@ class CommittedFactsDispatcherTest {
         val gateway = RecordingGateway()
         val dispatcher = CommittedFactsDispatcher(
             store = store,
-            achievementService = achievementService(moduleRegistry, exclusions, gateway),
+            achievementService = achievementService(gateway),
             moduleRegistry = moduleRegistry,
             locations = FabricGameEventLocationSource(locations),
             reporter = reporter,
@@ -304,24 +304,19 @@ class CommittedFactsDispatcherTest {
     /**
      * 建立測試用成果服務；事件橋接測試只驗證事件交付，不驗證成果內容。
      *
-     * @param moduleRegistry 測試用規則模組 registry。
-     * @param exclusions 與事件分派器共用的排除名單。
      * @param gateway 接收成果授予的測試 gateway。
-     * @return 與事件橋接共用排除名單的成果服務。
+     * @return 測試用成果服務。
      */
     private fun achievementService(
-        moduleRegistry: MahjongModuleRegistryImpl,
-        exclusions: GameEventExclusions,
         gateway: AchievementGrantGateway,
     ): FabricAchievementService {
         val dispatchers = TestCoroutineDispatchers()
         return FabricAchievementService(
             scope = createTestAppCoroutineScope(dispatchers),
             dispatchers = dispatchers,
-            moduleRegistry = moduleRegistry,
             resolverRegistry = GameAchievementResolverRegistryImpl(),
             gateway = gateway,
-            exclusions = exclusions,
+            failurePolicy = FabricExtensionFailurePolicy(),
         )
     }
 

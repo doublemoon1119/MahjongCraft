@@ -74,7 +74,7 @@ class AchievementBatchRankingTest {
         val batch = checkNotNull(GameEventProjector(registry).projectBatch(facts))
         val oldMap = LegacyGenericAchievementDetector.detect(facts, module)
         val expected = ordered(batch, oldMap)
-        val actual = GameAchievementDetector(registry, GameAchievementResolverRegistryImpl()).detect(batch)
+        val actual = GameAchievementDetector(GameAchievementResolverRegistryImpl()).detect(batch)
 
         assertEquals(expected, actual, label)
         batch.players.filterNot { it.isAi }.forEach { player ->

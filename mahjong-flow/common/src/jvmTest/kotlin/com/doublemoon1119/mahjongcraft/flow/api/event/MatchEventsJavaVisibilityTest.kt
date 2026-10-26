@@ -28,6 +28,9 @@ class MatchEventsJavaVisibilityTest {
         RoundWinDetail::class.java,
         RoundWinGroup::class.java,
         CommittedMatchEventBatch::class.java,
+        RuleResultCompletion::class.java,
+        RuleResultDetail::class.java,
+        RuleResultsResolvedEvent::class.java,
     )
 
     /** 每個型別都沒有 Java 看得到的建構子；編譯器產生的存取用建構子是 synthetic，Java 原始碼無法呼叫。 */
@@ -97,6 +100,25 @@ class MatchEventsJavaVisibilityTest {
         val field = WinDetailField.create("test:field", listOf(marker), listOf(quantity))
         val detail = RoundWinDetail.create(playerId, WinMethod.DISCARD, listOf(field), listOf(marker))
         val group = RoundWinGroup.create("test:win", listOf(detail), setOf(playerId), setOf(playerId))
+        val completion = RuleResultCompletion.create("test:outcome", RoundCompletionKind.WIN, setOf(playerId))
+        val ruleResult = RuleResultDetail.create("test:result", listOf(detail), completion)
+        val ruleResults = RuleResultsResolvedEvent.create(
+            Uuid.random(),
+            Uuid.random(),
+            Uuid.random(),
+            "test:rule",
+            listOf(ruleResult),
+        )
+        val ended = MatchEndedEvent.create(
+            eventId = Uuid.random(),
+            matchId = Uuid.random(),
+            venueId = Uuid.random(),
+            ruleModuleId = "test:rule",
+            completion = MatchCompletion.COMPLETED,
+            reasonId = "test:completed",
+            standings = listOf(MatchStanding.create(playerId, false, 25_000, 1)),
+            completedScores = mutableMapOf(playerId to 25_000),
+        )
         val roundCompleted = RoundCompletedEvent.create(
             Uuid.random(),
             Uuid.random(),
@@ -123,6 +145,14 @@ class MatchEventsJavaVisibilityTest {
         assertRejected { javaCall(detail.detailFields, "clear") }
         assertRejected { javaCall(group.winners, "clear") }
         assertRejected { javaCall(group.responsiblePlayerIds, "clear") }
+        assertRejected { javaCall(ruleResults.results, "clear") }
+        assertRejected { javaCall(ruleResult.winDetails, "clear") }
+        assertRejected { javaCall(ended.completedScores, "clear") }
+        assertRejected {
+            val entries = checkNotNull(javaCall(ended.completedScores, "entrySet")) as Set<*>
+            val entry = entries.single()
+            javaCall(checkNotNull(entry), "setValue", Any::class.java, 50_000)
+        }
         assertRejected { javaCall(roundCompleted.players, "clear") }
         assertRejected { javaCall(batch.players, "clear") }
         assertRejected { javaCall(batch.events, "clear") }
@@ -130,7 +160,12 @@ class MatchEventsJavaVisibilityTest {
 
     /** 以 Java 介面的方法反射呼叫，模擬 Java 原始碼的呼叫方式。 */
     private fun javaCall(target: Any, name: String, parameterType: Class<*>? = null, argument: Any? = null): Any? {
-        val owner = if (target is Iterator<*>) Iterator::class.java else Collection::class.java
+        val owner = when (target) {
+            is Iterator<*> -> Iterator::class.java
+            is Map.Entry<*, *> -> Map.Entry::class.java
+            is Map<*, *> -> Map::class.java
+            else -> Collection::class.java
+        }
         val method = if (parameterType == null) owner.getMethod(name) else owner.getMethod(name, parameterType)
         return try {
             if (parameterType == null) method.invoke(target) else method.invoke(target, argument)

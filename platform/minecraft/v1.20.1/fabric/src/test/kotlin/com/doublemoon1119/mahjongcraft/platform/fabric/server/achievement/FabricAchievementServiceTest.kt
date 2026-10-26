@@ -9,12 +9,11 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryWinDetail
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.BuiltInRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
-import com.doublemoon1119.mahjongcraft.platform.fabric.server.event.GameEventExclusions
+import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.AchievementCondition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.AchievementGrantExecutor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.AchievementStatisticIds
@@ -34,7 +33,6 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
@@ -80,33 +78,6 @@ class FabricAchievementServiceTest {
         assertTrue(BuiltInAchievementIds.SELF_DRAW_WIN in gateway.granted.single().achievementIds)
     }
 
-    /** 被排除的場次不授予任何成果。 */
-    @Test
-    fun `excluded matches are not granted`() {
-        val gateway = RecordingGateway()
-        val exclusions = GameEventExclusions().also { it.exclude(game.matchId) }
-        val service = service(gateway, exclusions = exclusions)
-
-        service.handleForTest(tsumo(winner.id))
-
-        assertTrue(gateway.granted.isEmpty())
-    }
-
-    /** 準備完成後才排除的場次仍沿用既有授予結果，不追溯撤回。 */
-    @Test
-    fun `debug exclusion after preparation does not revoke accepted work`() {
-        val exclusions = GameEventExclusions()
-        val gateway = RecordingGateway()
-        val service = service(gateway, exclusions = exclusions)
-        val facts = tsumo(winner.id)
-        val prepared = assertNotNull(service.prepare(facts))
-
-        exclusions.exclude(game.matchId)
-        prepared.deliver(project(facts))
-
-        assertEquals(1, gateway.granted.size)
-    }
-
     /** 規則成果與通用成果會等到同一公開批次後合併成一次授予。 */
     @Test
     fun `rule and generic achievements are merged after batch delivery`() {
@@ -125,17 +96,15 @@ class FabricAchievementServiceTest {
                 override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI
 
                 /** 提供一項規則成果，與通用自摸成果合併。 */
-                override fun resolve(facts: CommittedGameFacts): Map<Uuid, Set<String>> = mapOf(
+                override fun resolve(batch: CommittedMatchEventBatch): Map<Uuid, Set<String>> = mapOf(
                     winner.id to setOf(BuiltInAchievementIds.FIRST_PLACE),
                 )
             })
         }
         val service = service(gateway, registry)
         val facts = tsumo(winner.id)
-        val prepared = assertNotNull(service.prepare(facts))
-
         assertTrue(gateway.granted.isEmpty())
-        prepared.deliver(project(facts))
+        service.consume(checkNotNull(project(facts)))
 
         assertEquals(1, gateway.granted.size)
         assertEquals(1, gateway.statistics[AchievementStatisticIds.WINS])
@@ -146,9 +115,10 @@ class FabricAchievementServiceTest {
         )
     }
 
-    /** 準備後複製的規則成果不受呼叫端修改影響。 */
+    /** 排程授予時保存成果快照，resolver 修改原集合也不會改變等待授予的內容。 */
+    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun `prepared rule achievements keep their snapshot`() {
+    fun `queued rule achievements keep their snapshot`() = runTest {
         val ruleAchievements = linkedSetOf(BuiltInAchievementIds.FIRST_PLACE)
         val registry = GameAchievementResolverRegistryImpl().apply {
             register(object : GameAchievementResolver {
@@ -156,42 +126,18 @@ class FabricAchievementServiceTest {
                 override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI
 
                 /** 回傳可變的測試成果集合。 */
-                override fun resolve(facts: CommittedGameFacts): Map<Uuid, Set<String>> = mapOf(winner.id to ruleAchievements)
+                override fun resolve(batch: CommittedMatchEventBatch): Map<Uuid, Set<String>> = mapOf(winner.id to ruleAchievements)
             })
         }
         val gateway = RecordingGateway()
-        val service = service(gateway, registry)
+        val service = service(gateway, registry, TestCoroutineDispatchers(main = StandardTestDispatcher(testScheduler)))
         val facts = tsumo(winner.id)
-        val prepared = assertNotNull(service.prepare(facts))
+        service.consume(checkNotNull(project(facts)))
+        assertTrue(gateway.granted.isEmpty())
         ruleAchievements.clear()
-        prepared.deliver(project(facts))
+        runCurrent()
 
         assertTrue(BuiltInAchievementIds.FIRST_PLACE in gateway.granted.single().achievementIds)
-    }
-
-    /** 只有規則成果而沒有公開事件時，仍可用空批次完成授予。 */
-    @Test
-    fun `rule only achievement is granted without public event`() {
-        val gateway = RecordingGateway()
-        val registry = GameAchievementResolverRegistryImpl().apply {
-            register(object : GameAchievementResolver {
-                /** 測試使用的日麻規則模組識別碼。 */
-                override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI
-
-                /** 回傳規則成果。 */
-                override fun resolve(facts: CommittedGameFacts): Map<Uuid, Set<String>> = mapOf(
-                    winner.id to setOf(BuiltInAchievementIds.FIRST_PLACE),
-                )
-            })
-        }
-        val service = service(gateway, registry)
-        val facts = facts(HistoryFact.RuleDecisionAutomaticallyResolved(RuleDecisionTiming.ROUND_START, "test:step", 0, null))
-        val prepared = assertNotNull(service.prepare(facts))
-
-        assertEquals(null, project(facts))
-        prepared.deliver(null)
-
-        assertEquals(listOf(BuiltInAchievementIds.FIRST_PLACE), gateway.granted.single().achievementIds.toList())
     }
 
     /** 即使沒有開局事件，批次玩家快照仍會排除 AI。 */
@@ -248,7 +194,7 @@ class FabricAchievementServiceTest {
         assertEquals(listOf(dealer.id), gateway.granted.map { it.playerId })
     }
 
-    /** 排除的場次在判定前就略過，不呼叫任何判定。 */
+    /** 事件批次會交給規則成果判定器。 */
     @Test
     fun `excluded matches are not detected`() {
         var resolverCalls = 0
@@ -257,24 +203,16 @@ class FabricAchievementServiceTest {
                 /** 此測試使用的立直規則模組識別碼。 */
                 override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI
 
-                /**
-                 * 計算呼叫次數並回傳空的成果集合。
-                 *
-                 * @param facts 已提交的對局事實。
-                 * @return 不含授予成果的空集合。
-                 */
-                override fun resolve(facts: CommittedGameFacts): Map<Uuid, Set<String>> = emptyMap<Uuid, Set<String>>().also { resolverCalls++ }
+                /** 計算呼叫次數並回傳空的成果集合。 */
+                override fun resolve(batch: CommittedMatchEventBatch): Map<Uuid, Set<String>> = emptyMap<Uuid, Set<String>>().also { resolverCalls++ }
             })
         }
-        val exclusions = GameEventExclusions().also { it.exclude(game.matchId) }
-        val service = service(RecordingGateway(), registry, exclusions)
-
+        val service = service(RecordingGateway(), registry)
         service.handleForTest(tsumo(winner.id))
-
-        assertEquals(0, resolverCalls)
+        assertEquals(1, resolverCalls)
     }
 
-    /** 判定失敗的事實不授予成果，之後的事實照常處理。 */
+    /** 批次判定失敗不授予成果，之後的批次照常處理。 */
     @Test
     fun `a failed detection does not stop later facts`() {
         val gateway = RecordingGateway()
@@ -284,13 +222,8 @@ class FabricAchievementServiceTest {
                 /** 此測試使用的立直規則模組識別碼。 */
                 override val ruleModuleId: String = BuiltInRuleModuleIds.RIICHI
 
-                /**
-                 * 依測試狀態模擬判定失敗或回傳空的成果集合。
-                 *
-                 * @param facts 已提交的對局事實。
-                 * @return 不含授予成果的空集合；失敗狀態下拋出測試例外。
-                 */
-                override fun resolve(facts: CommittedGameFacts): Map<Uuid, Set<String>> = if (failing) error("resolver failed") else emptyMap()
+                /** 依測試狀態模擬判定失敗或回傳空的成果集合。 */
+                override fun resolve(batch: CommittedMatchEventBatch): Map<Uuid, Set<String>> = if (failing) error("resolver failed") else emptyMap()
             })
         }
         val service = service(gateway, registry)
@@ -307,22 +240,19 @@ class FabricAchievementServiceTest {
      *
      * @param gateway 接收成果授予的測試端。
      * @param registry 規則成果判定器登記表。
-     * @param exclusions 不授予成果的場次集合。
      * @param dispatchers 控制授予工作的測試排程器。
      * @return 使用內建規則模組的成果服務。
      */
     private fun service(
         gateway: AchievementGrantGateway,
         registry: GameAchievementResolverRegistryImpl = GameAchievementResolverRegistryImpl(),
-        exclusions: GameEventExclusions = GameEventExclusions(),
         dispatchers: TestCoroutineDispatchers = TestCoroutineDispatchers(),
     ): FabricAchievementService = FabricAchievementService(
         scope = createTestAppCoroutineScope(dispatchers),
         dispatchers = dispatchers,
-        moduleRegistry = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() },
         resolverRegistry = registry,
         gateway = gateway,
-        exclusions = exclusions,
+        failurePolicy = FabricExtensionFailurePolicy(),
     )
 
     /**
@@ -356,7 +286,7 @@ class FabricAchievementServiceTest {
         facts: CommittedGameFacts,
         isSessionActive: () -> Boolean = { true },
     ) {
-        prepare(facts, isSessionActive)?.deliver(project(facts))
+        project(facts)?.let { consume(it, isSessionActive) }
     }
 
     /** 將測試交易投影成成果服務使用的公開事件批次。 */

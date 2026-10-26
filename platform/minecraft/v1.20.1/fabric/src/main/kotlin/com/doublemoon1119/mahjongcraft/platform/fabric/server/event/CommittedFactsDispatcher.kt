@@ -24,7 +24,7 @@ import kotlin.uuid.Uuid
 /**
  * 將權威提交交給事件佇列，解鎖後以同一公開批次判定內建通用成果並通知第三方。
  *
- * 提交時只另外解析暫留的規則專屬成果。佇列攜帶複製後成果，不保留原始事實或對局。
+ * 事件佇列只攜帶投影後的公開批次，不保留原始事實或對局。
  *
  * @property store 提供權威交易提交與釋放通知的 store。
  * @property achievementService 處理原版成果判定的服務。
@@ -105,28 +105,21 @@ class CommittedFactsDispatcher(
             actionsPerformed = subscriptions.actionsPerformed,
             roundCompleted = subscriptions.roundCompleted,
             eventBatchCommitted = subscriptions.eventBatchCommitted,
+            ruleResultsResolved = subscriptions.ruleResultsResolved,
         )
         val sessionId = delivery.startSession()
         lateinit var session: Session
         val listener = object : CommittedFactsListener {
             override fun onCommitted(sequence: Long, facts: CommittedGameFacts) {
                 if (activeSession.load() !== session || exclusions.contains(facts.matchId)) return
-                val achievements = runCatching { achievementService.prepare(facts) { activeSession.load() === session } }.getOrElse { cause ->
-                    logger.warn(
-                        "Dispatching achievements failed for match {} at venue {}",
-                        facts.matchId,
-                        facts.venueId,
-                        cause,
-                    )
-                    null
-                }
                 runCatching {
                     delivery.onCommitted(
                         sessionId = sessionId,
                         sequence = sequence,
                         facts = facts,
-                        onBatchDelivered = achievements?.let { it::deliver },
-                        deliverWithoutPublicEvents = achievements?.hasRuleAchievements == true,
+                        onBatchDelivered = { batch ->
+                            achievementService.consume(batch) { activeSession.load() === session }
+                        },
                     )
                 }.onFailure { cause ->
                     logger.warn(

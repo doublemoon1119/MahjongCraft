@@ -12,6 +12,7 @@ import kotlin.uuid.Uuid
  * @property roundContext 終局前最後一局的局數與場風；沒有可提供的局況時為 `null`。
  * @property publicMarkers 規則提供的公開終局標記。
  * @property completedPlayerIds 在正常完成的終局中完成對局的玩家 UUID；沒有時為空集合。
+ * @property completedScores 正常完成提交所記錄的最終分數；不以名次清單補齊缺少的玩家，中止時為空。
  */
 class MatchEndedEvent private constructor(
     override val eventId: Uuid,
@@ -24,6 +25,7 @@ class MatchEndedEvent private constructor(
     val roundContext: EventRoundContext?,
     val publicMarkers: List<PublicEventMarker>,
     val completedPlayerIds: Set<Uuid>,
+    val completedScores: Map<Uuid, Int>,
 ) : MatchEvent {
     /** 事件系統內部建立事件的入口。 */
     internal companion object {
@@ -40,6 +42,7 @@ class MatchEndedEvent private constructor(
          * @param roundContext 終局前最後一局的局數與場風；沒有時為 `null`。
          * @param publicMarkers 規則提供的公開終局標記。
          * @param completedPlayerIds 完成對局的玩家 UUID。
+         * @param completedScores 正常終局明確提交的最終分數。
          * @return 建立的對局結束事件。
          */
         @JvmSynthetic
@@ -54,6 +57,7 @@ class MatchEndedEvent private constructor(
             roundContext: EventRoundContext? = null,
             publicMarkers: List<PublicEventMarker> = emptyList(),
             completedPlayerIds: Set<Uuid> = emptySet(),
+            completedScores: Map<Uuid, Int> = emptyMap(),
         ): MatchEndedEvent = MatchEndedEvent(
             eventId = eventId,
             matchId = matchId,
@@ -65,6 +69,7 @@ class MatchEndedEvent private constructor(
             roundContext = roundContext,
             publicMarkers = ReadOnlyListSnapshot(publicMarkers),
             completedPlayerIds = ReadOnlySetSnapshot(completedPlayerIds),
+            completedScores = ReadOnlyMapSnapshot(completedScores),
         )
     }
 }

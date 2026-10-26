@@ -7,6 +7,7 @@ import com.doublemoon1119.mahjongcraft.flow.api.event.MatchEvent
 import com.doublemoon1119.mahjongcraft.flow.api.event.MatchStartedEvent
 import com.doublemoon1119.mahjongcraft.flow.api.event.RoundCompletedEvent
 import com.doublemoon1119.mahjongcraft.flow.api.event.RoundSettledEvent
+import com.doublemoon1119.mahjongcraft.flow.api.event.RuleResultsResolvedEvent
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventProjector
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.CommittedGameFacts
@@ -19,6 +20,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.MatchEndedLi
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.MatchStartedListener
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.RoundCompletedListener
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.RoundSettledListener
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.RuleResultsResolvedListener
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.TableLocation
 import kotlin.concurrent.atomics.AtomicReference
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
@@ -44,6 +46,7 @@ import kotlin.uuid.Uuid
  * @property actionsPerformed 已成立動作訂閱點。
  * @property roundCompleted 本局完成訂閱點。
  * @property eventBatchCommitted 交易事件批次訂閱點。
+ * @property ruleResultsResolved 已成立規則結果訂閱點。
  */
 @OptIn(ExperimentalAtomicApi::class)
 class GameEventDelivery(
@@ -58,6 +61,7 @@ class GameEventDelivery(
     private val actionsPerformed: MahjongCraftEvent<ActionsPerformedListener> = MahjongCraftEvents.ACTIONS_PERFORMED,
     private val roundCompleted: MahjongCraftEvent<RoundCompletedListener> = MahjongCraftEvents.ROUND_COMPLETED,
     private val eventBatchCommitted: MahjongCraftEvent<EventBatchCommittedListener> = MahjongCraftEvents.EVENT_BATCH_COMMITTED,
+    private val ruleResultsResolved: MahjongCraftEvent<RuleResultsResolvedListener> = MahjongCraftEvents.RULE_RESULTS_RESOLVED,
 ) {
     /** 以不可變快照原子更新的 session、佇列與交付水位。 */
     private val state = AtomicReference(DeliveryState(sessionId = null, releasedSequence = Long.MIN_VALUE))
@@ -74,6 +78,7 @@ class GameEventDelivery(
         actionsPerformed.lockRegistration()
         roundCompleted.lockRegistration()
         eventBatchCommitted.lockRegistration()
+        ruleResultsResolved.lockRegistration()
         val sessionId = Uuid.random()
         state.store(DeliveryState(sessionId = sessionId, releasedSequence = Long.MIN_VALUE))
         return sessionId
@@ -94,27 +99,25 @@ class GameEventDelivery(
      * @param sessionId 接收者建立時擷取的 session。
      * @param sequence store 在交易內配置的遞增提交序號。
      * @param facts 同一交易中單一場地的事實。
-     * @param onBatchDelivered 解鎖後接收同一公開批次的內建處理；只可捕捉已複製成果，不保留對局或事實。
-     * @param deliverWithoutPublicEvents 是否仍須交付沒有公開事件的既有規則成果；不對外發送空批次。
+     * @param onBatchDelivered 解鎖後接收同一公開批次的內建處理；可持有服務與 session 檢查，不保留對局或事實。
      */
     fun onCommitted(
         sessionId: Uuid,
         sequence: Long,
         facts: CommittedGameFacts,
-        onBatchDelivered: ((CommittedMatchEventBatch?) -> Unit)? = null,
-        deliverWithoutPublicEvents: Boolean = false,
+        onBatchDelivered: ((CommittedMatchEventBatch) -> Unit)? = null,
     ) {
         val current = state.load()
         if (current.sessionId != sessionId) return
-        val batch = projector.projectBatch(facts)
-        if (batch == null && !(deliverWithoutPublicEvents && onBatchDelivered != null)) return
-        val context = batch?.let { contextFor(it.events.first(), sessionId) }
+        val projection = projector.projectBatchResult(facts)
+        val batch = projection.batch ?: return
+        val context = contextFor(batch.events.first(), sessionId)
         val pending = PendingBatch(
             sequence = sequence,
             batch = batch,
             context = context,
             sessionId = sessionId,
-            onBatchDelivered = onBatchDelivered,
+            onBatchDelivered = onBatchDelivered.takeIf { !projection.markersFailed },
         )
         while (true) {
             val loaded = state.load()
@@ -242,10 +245,9 @@ class GameEventDelivery(
      */
     private fun deliverBatch(pending: PendingBatch) {
         val batch = pending.batch
-        batch?.events?.forEach { event -> deliverOne(pending, event) }
+        batch.events.forEach { event -> deliverOne(pending, event) }
         if (state.load().sessionId != pending.sessionId) return
         pending.onBatchDelivered?.invoke(batch)
-        if (batch == null) return
         val context = checkNotNull(pending.context)
         notify(
             pending = pending,
@@ -285,6 +287,11 @@ class GameEventDelivery(
                 listeners = roundCompleted.listenersSnapshot(),
                 event = event,
             ) { it.onRoundCompleted(event, context) }
+            is RuleResultsResolvedEvent -> notify(
+                pending = pending,
+                listeners = ruleResultsResolved.listenersSnapshot(),
+                event = event,
+            ) { it.onRuleResultsResolved(event, context) }
         }
     }
 
@@ -339,17 +346,17 @@ class GameEventDelivery(
      * 提交時擷取的事件批次。
      *
      * @property sequence 來源交易序號。
-     * @property batch 同一筆提交產生的公開事件批次；只有既有規則成果時為 null。
-     * @property context 公開事件提交當下的位置與 session；沒有公開事件時為 null。
-     * @property sessionId 此筆提交所屬 session，亦保護沒有公開事件的內建交付。
-     * @property onBatchDelivered 與此筆提交一起交付的內建批次接收端，只持有複製後成果。
+     * @property batch 同一筆提交產生的公開事件批次。
+     * @property context 公開事件提交當下的位置與 session。
+     * @property sessionId 此筆提交所屬 session。
+     * @property onBatchDelivered 與此筆提交一起交付的內建批次接收端，不持有原始對局或事實。
      */
     private data class PendingBatch(
         val sequence: Long,
-        val batch: CommittedMatchEventBatch?,
-        val context: GameEventContext?,
+        val batch: CommittedMatchEventBatch,
+        val context: GameEventContext,
         val sessionId: Uuid,
-        val onBatchDelivered: ((CommittedMatchEventBatch?) -> Unit)?,
+        val onBatchDelivered: ((CommittedMatchEventBatch) -> Unit)?,
     )
 
     /**

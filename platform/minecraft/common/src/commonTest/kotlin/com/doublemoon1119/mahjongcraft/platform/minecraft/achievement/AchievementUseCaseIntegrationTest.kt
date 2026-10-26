@@ -2,12 +2,15 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.achievement
 
 import com.doublemoon1119.mahjongcraft.bundled.BundledRiichiExtension
 import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventProjector
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverDefinition
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.CommittedGameFacts
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.server.game.policy.GameVisibilityPolicyImpl
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepositoryImpl
+import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiGameEventPublicMarkerResolver
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.GameSnapshotSynchronizer
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinPresentationHandoff
 import com.doublemoon1119.mahjongcraft.flow.server.game.service.WinSettlementDetailResolverRegistry
@@ -16,12 +19,16 @@ import com.doublemoon1119.mahjongcraft.flow.server.state.AuthoritativeStateStore
 import com.doublemoon1119.mahjongcraft.flow.server.state.CommittedFactsListener
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.threeplayer.ThreePlayerRiichiRuleConfig
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.BundledRiichiMinecraftExtension
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.achievement.LegacyRiichiGameAchievementResolver
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.achievement.RiichiAchievementIds
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledWinCelebrationCueResolverRegistry
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
@@ -42,7 +49,17 @@ import kotlin.uuid.Uuid
 class AchievementUseCaseIntegrationTest {
     /** 以大三元役滿測試實際自摸結算，同時涵蓋通用與日麻專屬成果。 */
     @Test
-    fun `declaring tsumo retains achievement results after event projection`() = runTest {
+    fun `four player declaring tsumo retains achievement results after event projection`() = runTest {
+        assertRealTsumoAchievements(RiichiRuleConfig())
+    }
+
+    /** 三人日麻的真實自摸提交也應保留相同的通用與日麻成果。 */
+    @Test
+    fun `three player declaring tsumo retains achievement results after event projection`() = runTest {
+        assertRealTsumoAchievements(ThreePlayerRiichiRuleConfig())
+    }
+
+    private suspend fun assertRealTsumoAchievements(config: MahjongRuleConfig) {
         val gameId = Uuid.random()
         val winnerId = Uuid.random()
         val modules = MahjongModuleRegistryImpl().apply { registerBundledRuleModules() }
@@ -64,7 +81,7 @@ class AchievementUseCaseIntegrationTest {
             winCelebrationCueResolverRegistry = bundledWinCelebrationCueResolverRegistry(),
             winSettlementDetailResolverRegistry = detailResolvers,
         )
-        val game = game(gameId, winnerId)
+        val game = game(gameId, winnerId, config)
         val submitted = mutableListOf<CommittedGameFacts>()
         store.setCommittedFactsListener(object : CommittedFactsListener {
             override fun onCommitted(sequence: Long, facts: CommittedGameFacts) {
@@ -81,12 +98,19 @@ class AchievementUseCaseIntegrationTest {
         val registry = GameAchievementResolverRegistryImpl().apply {
             BundledRiichiMinecraftExtension.registerGameAchievementResolvers(this)
         }
-        val detector = GameAchievementDetector(modules, registry)
-        val module = modules.getModule(RiichiRuleConfig())
-        val batch = assertNotNull(GameEventProjector(modules).projectBatch(facts))
-        val oldMap = merge(LegacyGenericAchievementDetector.detect(facts, module), registry.resolve(module.id, facts))
+        val detector = GameAchievementDetector(registry)
+        val module = modules.getModule(config)
+        val markerResolvers = GameEventPublicMarkerResolverRegistry().apply {
+            register(GameEventPublicMarkerResolverDefinition(BuiltInRuleModuleIds.RIICHI, RiichiGameEventPublicMarkerResolver))
+            register(GameEventPublicMarkerResolverDefinition(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, RiichiGameEventPublicMarkerResolver))
+        }
+        val batch = assertNotNull(GameEventProjector(modules, markerResolvers = markerResolvers).projectBatch(facts))
+        val oldMap = merge(
+            LegacyGenericAchievementDetector.detect(facts, module),
+            LegacyRiichiGameAchievementResolver().resolve(facts),
+        )
         val old = oldMap[winnerId].orEmpty()
-        val actual = detector.detect(batch, detector.resolveRule(facts)).single { it.playerId == winnerId }.achievementIds
+        val actual = detector.detect(batch).single { it.playerId == winnerId }.achievementIds
 
         assertEquals(old, actual)
         assertTrue(BuiltInAchievementIds.WIN in actual)
@@ -97,7 +121,7 @@ class AchievementUseCaseIntegrationTest {
     }
 
     /** 建立莊家持有大三元役滿、自摸且已立直一發的測試對局。 */
-    private fun game(gameId: Uuid, winnerId: Uuid): Game {
+    private fun game(gameId: Uuid, winnerId: Uuid, config: MahjongRuleConfig): Game {
         val winner = FakeMahjongPlayerFactory.create(
             id = winnerId,
             initialSeat = Wind.EAST,
@@ -111,9 +135,9 @@ class AchievementUseCaseIntegrationTest {
                     Tile.Honor.White,
                     Tile.Honor.White,
                     Tile.Honor.White,
-                    Tile.Numeric(Tile.Suit.Character, 1),
-                    Tile.Numeric(Tile.Suit.Character, 2),
-                    Tile.Numeric(Tile.Suit.Character, 3),
+                    Tile.Numeric(Tile.Suit.Bamboo, 1),
+                    Tile.Numeric(Tile.Suit.Bamboo, 2),
+                    Tile.Numeric(Tile.Suit.Bamboo, 3),
                     Tile.Numeric(Tile.Suit.Dot, 5),
                     Tile.Numeric(Tile.Suit.Dot, 5),
                 ).map(FakeIdentifiedTileFactory::create),
@@ -125,14 +149,19 @@ class AchievementUseCaseIntegrationTest {
                 isIppatsu = true,
             ),
         )
-        val players = listOf(Wind.EAST, Wind.SOUTH, Wind.WEST, Wind.NORTH).map { seat ->
+        val winds = if (config is ThreePlayerRiichiRuleConfig) {
+            listOf(Wind.EAST, Wind.SOUTH, Wind.WEST)
+        } else {
+            listOf(Wind.EAST, Wind.SOUTH, Wind.WEST, Wind.NORTH)
+        }
+        val players = winds.map { seat ->
             if (seat == Wind.EAST) winner else FakeMahjongPlayerFactory.create(initialSeat = seat)
         }
         return Game(
             tableState = FakeTableStateFactory.create(
                 id = gameId,
                 players = players,
-                config = RiichiRuleConfig(),
+                config = config,
                 currentPlayerIndex = 0,
             ),
             flowConfig = GameFlowConfig(),

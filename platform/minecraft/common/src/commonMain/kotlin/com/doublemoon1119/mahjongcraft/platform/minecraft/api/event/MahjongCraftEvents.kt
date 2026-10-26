@@ -8,6 +8,10 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.api.event
  * 只通知有效伺服器事件 session 內提交的事實；啟動前已完成的清理不補發。
  */
 object MahjongCraftEvents {
+    /** 一筆交易中成立的規則結果訂閱點；不是額外的和牌計數通知。 */
+    @JvmField
+    val RULE_RESULTS_RESOLVED: MahjongCraftEvent<RuleResultsResolvedListener> = MahjongCraftEvent.create()
+
     /** 一筆交易中成立的動作事件訂閱點。 */
     @JvmField
     val ACTIONS_PERFORMED: MahjongCraftEvent<ActionsPerformedListener> = MahjongCraftEvent.create()

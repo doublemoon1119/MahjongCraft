@@ -5,12 +5,16 @@ import com.doublemoon1119.mahjongcraft.flow.api.event.MatchEvent
 import com.doublemoon1119.mahjongcraft.flow.api.event.MatchStartedEvent
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventProjector
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolver
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverDefinition
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverRegistry
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.MatchEndPublicMarkerContext
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.RulePublicEventMarker
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.CommittedGameFacts
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.Game
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameFlowConfig
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
@@ -24,6 +28,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.MatchEndedLi
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.MatchStartedListener
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.RoundCompletedListener
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.RoundSettledListener
+import com.doublemoon1119.mahjongcraft.platform.minecraft.api.event.RuleResultsResolvedListener
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
@@ -57,6 +62,7 @@ class GameEventDeliveryTest {
         val actions = MahjongCraftEvent.create<ActionsPerformedListener>()
         val completed = MahjongCraftEvent.create<RoundCompletedListener>()
         val batches = MahjongCraftEvent.create<EventBatchCommittedListener>()
+        val ruleResults = MahjongCraftEvent.create<RuleResultsResolvedListener>()
         val delivery = GameEventDelivery(
             projector = GameEventProjector(registry),
             scheduler = ManualScheduler(),
@@ -69,6 +75,7 @@ class GameEventDeliveryTest {
             actionsPerformed = actions,
             roundCompleted = completed,
             eventBatchCommitted = batches,
+            ruleResultsResolved = ruleResults,
         )
         started.register(MatchStartedListener { _, _ -> })
         settled.register(RoundSettledListener { _, _ -> })
@@ -76,6 +83,7 @@ class GameEventDeliveryTest {
         actions.register(ActionsPerformedListener { _, _ -> })
         completed.register(RoundCompletedListener { _, _ -> })
         batches.register(EventBatchCommittedListener { _, _ -> })
+        ruleResults.register(RuleResultsResolvedListener { _, _ -> })
         val session = delivery.startSession()
 
         assertFailsWith<IllegalStateException> { started.register(MatchStartedListener { _, _ -> }) }
@@ -84,6 +92,7 @@ class GameEventDeliveryTest {
         assertFailsWith<IllegalStateException> { actions.register(ActionsPerformedListener { _, _ -> }) }
         assertFailsWith<IllegalStateException> { completed.register(RoundCompletedListener { _, _ -> }) }
         assertFailsWith<IllegalStateException> { batches.register(EventBatchCommittedListener { _, _ -> }) }
+        assertFailsWith<IllegalStateException> { ruleResults.register(RuleResultsResolvedListener { _, _ -> }) }
         delivery.stopSession(session)
         assertFailsWith<IllegalStateException> { started.register(MatchStartedListener { _, _ -> }) }
         delivery.startSession()
@@ -94,6 +103,7 @@ class GameEventDeliveryTest {
         assertEquals(1, actions.listenersSnapshot().size)
         assertEquals(1, completed.listenersSnapshot().size)
         assertEquals(1, batches.listenersSnapshot().size)
+        assertEquals(1, ruleResults.listenersSnapshot().size)
     }
 
     /** 交易尚未釋放時不會交付事件。 */
@@ -116,6 +126,79 @@ class GameEventDeliveryTest {
 
         scheduler.runNext()
         assertEquals(listOf(game.matchId), received)
+    }
+
+    /** 已成立的規則結果會交付給規則結果訂閱者。 */
+    @Test
+    fun `resolved rule results are delivered`() {
+        val scheduler = ManualScheduler()
+        var received = 0
+        val ruleResults = MahjongCraftEvent.create<RuleResultsResolvedListener>().also {
+            it.register(
+                RuleResultsResolvedListener { event, _ ->
+                    received += event.results.size
+                },
+            )
+        }
+        val delivery = delivery(scheduler, endpoint { _, _ -> }, ruleResultsResolved = ruleResults)
+        val session = delivery.startSession()
+
+        delivery.onCommitted(session, 1, ruleResultsFacts())
+        delivery.onReleased(session, 1)
+        scheduler.runNext()
+
+        assertEquals(1, received)
+    }
+
+    /** 標記解析失敗保留公開事件，但略過整筆內建成果；後續正常交易恢復授予。 */
+    @Test
+    fun `marker failure suppresses only built in processing for that batch`() {
+        var fail = true
+        var projectionCalls = 0
+        val markers = GameEventPublicMarkerResolverRegistry().apply {
+            register(
+                GameEventPublicMarkerResolverDefinition(
+                    RULE_MODULE_ID,
+                    object : GameEventPublicMarkerResolver {
+                        override fun resolveMatchEndMarkers(context: MatchEndPublicMarkerContext): List<RulePublicEventMarker> {
+                            projectionCalls++
+                            if (fail) error("test marker failure")
+                            return emptyList()
+                        }
+                    },
+                ),
+            )
+        }
+        val scheduler = ManualScheduler()
+        var publicCalls = 0
+        var internalCalls = 0
+        val batches = MahjongCraftEvent.create<EventBatchCommittedListener>().apply {
+            register(EventBatchCommittedListener { _, _ -> publicCalls++ })
+        }
+        val delivery = delivery(
+            scheduler = scheduler,
+            endpoint = endpoint { _, _ -> },
+            eventBatchCommitted = batches,
+            projector = GameEventProjector(registry, markerResolvers = markers),
+        )
+        val session = delivery.startSession()
+        val facts = startFacts().copy(
+            previousGame = game,
+            facts = listOf(HistoryEventDraft(null, HistoryFact.MatchCompleted("test:completed", game.tableState.players.associate { it.id to it.score }))),
+        )
+        delivery.onCommitted(session, 1, facts) { internalCalls++ }
+        assertEquals(0, internalCalls)
+        delivery.onReleased(session, 1)
+        scheduler.runNext()
+        assertEquals(1, publicCalls)
+        assertEquals(0, internalCalls)
+        fail = false
+        delivery.onCommitted(session, 2, facts) { internalCalls++ }
+        delivery.onReleased(session, 2)
+        scheduler.runNext()
+        assertEquals(2, publicCalls)
+        assertEquals(1, internalCalls)
+        assertEquals(2, projectionCalls, "Each transaction must project its markers exactly once")
     }
 
     /** 缺少桌位仍交付事件並回報診斷。 */
@@ -282,63 +365,6 @@ class GameEventDeliveryTest {
         scheduler.runNext()
         assertEquals(1, reporter.listenerFailures)
         assertEquals(1, calls)
-    }
-
-    /** 沒有公開事件的規則成果沿用釋放水位，但不發布空的公開批次。 */
-    @Test
-    fun `rule only delivery waits for release without publishing an empty batch`() {
-        val scheduler = ManualScheduler()
-        var calls = 0
-        var publicCalls = 0
-        val batches = MahjongCraftEvent.create<EventBatchCommittedListener>().also {
-            it.register(EventBatchCommittedListener { _, _ -> publicCalls++ })
-        }
-        val reporter = RecordingReporter()
-        val delivery = delivery(scheduler, endpoint { _, _ -> }, reporter = reporter, eventBatchCommitted = batches)
-        val session = delivery.startSession()
-        delivery.onCommitted(
-            sessionId = session,
-            sequence = 1,
-            facts = startFacts().copy(
-                previousGame = game,
-                facts = listOf(HistoryEventDraft(null, HistoryFact.RuleDecisionAutomaticallyResolved(RuleDecisionTiming.ROUND_START, "test:step", 0, null))),
-            ),
-            onBatchDelivered = { batch ->
-                assertNull(batch)
-                calls++
-            },
-            deliverWithoutPublicEvents = true,
-        )
-        assertEquals(0, calls)
-        delivery.onReleased(session, 1)
-        scheduler.runNext()
-        assertEquals(1, calls)
-        assertEquals(0, publicCalls)
-        assertTrue(reporter.missingLocations.isEmpty())
-    }
-
-    /** session 結束也會丟棄只有規則成果的佇列工作。 */
-    @Test
-    fun `session end discards rule only work`() {
-        val scheduler = ManualScheduler()
-        var called = false
-        val delivery = delivery(scheduler, endpoint { _, _ -> })
-        val session = delivery.startSession()
-        delivery.onCommitted(
-            sessionId = session,
-            sequence = 1,
-            facts = startFacts().copy(
-                previousGame = game,
-                facts = listOf(HistoryEventDraft(null, HistoryFact.RuleDecisionAutomaticallyResolved(RuleDecisionTiming.ROUND_START, "test:step", 0, null))),
-            ),
-            onBatchDelivered = { called = true },
-            deliverWithoutPublicEvents = true,
-        )
-        delivery.onReleased(session, 1)
-        delivery.stopSession(session)
-        delivery.startSession()
-        scheduler.runNext()
-        assertFalse(called)
     }
 
     /** 單一監聽者失敗不會阻止同一事件的其他監聽者。 */
@@ -722,6 +748,7 @@ class GameEventDeliveryTest {
      * @param locations 提供桌子位置的測試來源。
      * @param reporter 收集交付診斷的測試回報器。
      * @param failurePolicy 判斷監聽者失敗能否隔離的規則。
+     * @param ruleResultsResolved 規則結果監聽端點。
      * @return 配置完成的事件交付器。
      */
     private fun delivery(
@@ -735,8 +762,10 @@ class GameEventDeliveryTest {
         roundSettled: MahjongCraftEvent<RoundSettledListener> = MahjongCraftEvent.create(),
         matchEnded: MahjongCraftEvent<MatchEndedListener> = MahjongCraftEvent.create(),
         eventBatchCommitted: MahjongCraftEvent<EventBatchCommittedListener> = MahjongCraftEvent.create(),
+        ruleResultsResolved: MahjongCraftEvent<RuleResultsResolvedListener> = MahjongCraftEvent.create(),
+        projector: GameEventProjector = GameEventProjector(registry),
     ): GameEventDelivery = GameEventDelivery(
-        projector = GameEventProjector(registry),
+        projector = projector,
         scheduler = scheduler,
         locations = locations,
         reporter = reporter,
@@ -747,6 +776,7 @@ class GameEventDeliveryTest {
         actionsPerformed = MahjongCraftEvent.create(),
         roundCompleted = MahjongCraftEvent.create(),
         eventBatchCommitted = eventBatchCommitted,
+        ruleResultsResolved = ruleResultsResolved,
     )
 
     /**
@@ -759,6 +789,23 @@ class GameEventDeliveryTest {
         previousGame = null,
         game = game,
         facts = listOf(HistoryEventDraft(null, HistoryFact.MatchStarted(game.tableState, GameFlowConfig(), emptyMap()))),
+    )
+
+    /** 建立一筆只包含規則結果的測試交易。 */
+    private fun ruleResultsFacts(): CommittedGameFacts = CommittedGameFacts(
+        venueId = game.id,
+        previousGame = game,
+        game = game,
+        facts = listOf(
+            HistoryEventDraft(
+                null,
+                HistoryFact.RuleEffectResolved(
+                    reasonId = "test:rule_result",
+                    roundCompletion = null,
+                    winDetails = emptyList(),
+                ),
+            ),
+        ),
     )
 
     /**

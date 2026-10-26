@@ -22,6 +22,7 @@ public final class com/doublemoon1119/mahjongcraft/platform/minecraft/api/event/
 	public static final field MATCH_STARTED Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/event/MahjongCraftEvent;
 	public static final field ROUND_COMPLETED Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/event/MahjongCraftEvent;
 	public static final field ROUND_SETTLED Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/event/MahjongCraftEvent;
+	public static final field RULE_RESULTS_RESOLVED Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/event/MahjongCraftEvent;
 }
 
 public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/event/MatchEndedListener {
@@ -44,6 +45,10 @@ public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecra
 
 public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/event/RoundSettledListener {
 	public abstract fun onRoundSettled (Lcom/doublemoon1119/mahjongcraft/flow/api/event/RoundSettledEvent;Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/event/GameEventContext;)V
+}
+
+public abstract interface class com/doublemoon1119/mahjongcraft/platform/minecraft/api/event/RuleResultsResolvedListener {
+	public abstract fun onRuleResultsResolved (Lcom/doublemoon1119/mahjongcraft/flow/api/event/RuleResultsResolvedEvent;Lcom/doublemoon1119/mahjongcraft/platform/minecraft/api/event/GameEventContext;)V
 }
 
 public final class com/doublemoon1119/mahjongcraft/platform/minecraft/api/event/TableLocation {

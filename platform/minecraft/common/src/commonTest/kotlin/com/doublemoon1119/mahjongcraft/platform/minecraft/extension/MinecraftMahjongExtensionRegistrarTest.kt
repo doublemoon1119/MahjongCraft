@@ -2,8 +2,8 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.extension
 
 import com.doublemoon1119.mahjongcraft.ai.BuiltInAiStrategyKeys
 import com.doublemoon1119.mahjongcraft.ai.RandomAiStrategy
+import com.doublemoon1119.mahjongcraft.flow.api.event.CommittedMatchEventBatch
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
-import com.doublemoon1119.mahjongcraft.flow.common.game.history.CommittedGameFacts
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.RuleDecisionResolverRegistry
 import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
@@ -397,7 +397,7 @@ class MinecraftMahjongExtensionRegistrarTest {
                     override val ruleModuleId: String = "example:my_rule"
 
                     /** 測試用判定不產生成果。 */
-                    override fun resolve(facts: CommittedGameFacts): Map<Uuid, Set<String>> = emptyMap()
+                    override fun resolve(batch: CommittedMatchEventBatch): Map<Uuid, Set<String>> = emptyMap()
                 })
             }
         }

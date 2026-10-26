@@ -25,6 +25,7 @@ Do not count both an individual notification and its copy in the batch: they ref
 | `MATCH_STARTED` | A new match has started. Loading a saved match does not send it again. |
 | `ACTIONS_PERFORMED` | Public actions that actually took effect in one transaction. |
 | `ROUND_SETTLED` | A win, draw or special result has been settled. The round may still continue. |
+| `RULE_RESULTS_RESOLVED` | Rule effects that took effect in this transaction, with their public details and optional settlement summaries. |
 | `ROUND_COMPLETED` | The round has finished, including round-end decisions. Its context describes the completed round, not the next one. |
 | `MATCH_ENDED` | The match completed normally or was aborted. Check `completion` before counting a completed match. |
 | `EVENT_BATCH_COMMITTED` | The transaction's events have been delivered to their individual listeners. |
@@ -59,6 +60,19 @@ not platform model or texture paths.
 are `SELF_DRAW`, `DISCARD` or `UNKNOWN`. Unknown means the committed source did not establish the method;
 do not guess from an extension's outcome ID. A responsible player is not necessarily a discarder.
 Use `discarderPlayerIds` only when the source establishes a discard win.
+
+`RoundWinGroup.source` distinguishes an ordinary win settlement from a rule result. Do not infer
+that distinction from the outcome ID. A rule result may also appear in `RuleResultsResolvedEvent`;
+these are two views of the same committed activity, not two wins to count.
+
+Each rule result keeps its reason ID, detail winners and optional summary beneficiaries separate.
+Some results have details without a summary. Others have only a summary. Decide which list your
+feature needs rather than combining them automatically. Rule-result events retain submission order
+and include only public entries and quantities, not tile lists or physical tile IDs.
+
+For a completed match, `completedScores` preserves the scores explicitly recorded at completion.
+Its keys correspond to `completedPlayerIds`; neither is filled from the complete standings. An
+aborted match has no completed scores. Standings continue to describe the final ranking snapshot.
 
 Win detail fields retain their namespaced IDs and grouping. Scoring entries and quantities are separate
 from public state markers, such as a declared status still relevant on a winning hand. Match-end events
@@ -107,11 +121,19 @@ the transaction are combined per human player before one grant updates the seven
 and evaluates advancement conditions. Statistics are incremented before conditions read their values.
 Use `ROUND_COMPLETED`, rather than draw settlement, to count a completed exhaustive draw.
 
-Rule-specific achievement resolvers still read committed facts during submission. Only their copied
-achievement results travel with the pending delivery; raw facts and games are not added to public
-batches. A resolver failure suppresses all achievements for that transaction while public event
-delivery continues. Transactions with only legacy rule achievements use private post-release work;
-they do not publish empty event batches.
+Rule-specific achievement resolvers receive that same batch through
+`GameAchievementResolver.resolve(batch)`. Register them through
+`MinecraftMahjongExtension.registerGameAchievementResolvers`; the registry selects the batch's rule.
+Resolvers return achievement IDs and must not query a game repository, recalculate payments, send
+messages or grant outcomes themselves. Riichi uses public scoring fields and rule-provided state
+markers, including riichi and ippatsu on natural yakuman wins.
+
+Generic and rule-specific outcomes are combined before granting. A rule-specific resolver failure
+suppresses all built-in achievements for that transaction while public delivery continues. A marker
+or public round-context projection failure also suppresses the transaction's built-in achievements,
+so missing data cannot silently produce partial awards. Core events still reach external listeners.
+An absent optional marker resolver is not a projection failure. There is no facts-based achievement
+bridge or separate private delivery for transactions without public events.
 
 AI status comes from the batch's player snapshot, including after loading a match without a new start
 event. Grants check the source session and look up online players when executed. Offline players are

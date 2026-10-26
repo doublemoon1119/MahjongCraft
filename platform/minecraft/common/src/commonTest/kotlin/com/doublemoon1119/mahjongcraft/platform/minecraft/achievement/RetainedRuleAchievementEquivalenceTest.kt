@@ -2,6 +2,8 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.achievement
 
 import com.doublemoon1119.mahjongcraft.flow.api.event.CommittedMatchEventBatch
 import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventProjector
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverDefinition
+import com.doublemoon1119.mahjongcraft.flow.common.game.event.GameEventPublicMarkerResolverRegistry
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.CommittedGameFacts
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryEventDraft
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
@@ -13,8 +15,10 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetai
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailValue
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
+import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiGameEventPublicMarkerResolver
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.config.MahjongRuleConfig
+import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
@@ -23,6 +27,7 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.BundledRiichiMinecraftExtension
+import com.doublemoon1119.mahjongcraft.platform.minecraft.rule.riichi.achievement.LegacyRiichiGameAchievementResolver
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.registerBundledRuleModules
 import com.doublemoon1119.mahjongcraft.testing.logic.base.FakeIdentifiedTileFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
@@ -37,7 +42,12 @@ class RetainedRuleAchievementEquivalenceTest {
     private val resolvers = GameAchievementResolverRegistryImpl().apply {
         BundledRiichiMinecraftExtension.registerGameAchievementResolvers(this)
     }
-    private val detector = GameAchievementDetector(modules, resolvers)
+    private val detector = GameAchievementDetector(resolvers)
+    private val markerResolvers = GameEventPublicMarkerResolverRegistry().apply {
+        register(GameEventPublicMarkerResolverDefinition(BuiltInRuleModuleIds.RIICHI, RiichiGameEventPublicMarkerResolver))
+        register(GameEventPublicMarkerResolverDefinition(BuiltInRuleModuleIds.RIICHI_THREE_PLAYER, RiichiGameEventPublicMarkerResolver))
+    }
+    private val legacyResolver = LegacyRiichiGameAchievementResolver()
 
     /** 四人與三人日麻都應保留原本的成果與統計增量。 */
     @Test
@@ -98,10 +108,10 @@ class RetainedRuleAchievementEquivalenceTest {
     /** 比較真人玩家成果的順序，以及七種通用統計是否一致。 */
     private fun assertEquivalent(caseIndex: Int, facts: CommittedGameFacts) {
         val module = modules.getModule((facts.game ?: checkNotNull(facts.previousGame)).tableState.config)
-        val batch = checkNotNull(GameEventProjector(modules).projectBatch(facts))
-        val oldMap = merge(LegacyGenericAchievementDetector.detect(facts, module), resolvers.resolve(module.id, facts))
+        val batch = checkNotNull(GameEventProjector(modules, markerResolvers = markerResolvers).projectBatch(facts))
+        val oldMap = merge(LegacyGenericAchievementDetector.detect(facts, module), legacyResolver.resolve(facts))
         val old = ordered(batch, oldMap)
-        val actual = detector.detect(batch, detector.resolveRule(facts))
+        val actual = detector.detect(batch)
 
         assertEquals(old, actual, "achievement result case $caseIndex")
         batch.players.filterNot { it.isAi }.forEach { player ->

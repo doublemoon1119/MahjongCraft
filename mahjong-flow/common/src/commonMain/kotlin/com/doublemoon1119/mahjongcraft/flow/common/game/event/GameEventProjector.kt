@@ -11,11 +11,16 @@ import com.doublemoon1119.mahjongcraft.flow.api.event.MatchPlayer
 import com.doublemoon1119.mahjongcraft.flow.api.event.MatchStanding
 import com.doublemoon1119.mahjongcraft.flow.api.event.MatchStartedEvent
 import com.doublemoon1119.mahjongcraft.flow.api.event.PublicEventMarker
+import com.doublemoon1119.mahjongcraft.flow.api.event.ReadOnlyMapSnapshot
 import com.doublemoon1119.mahjongcraft.flow.api.event.RoundCompletedEvent
 import com.doublemoon1119.mahjongcraft.flow.api.event.RoundCompletionKind
 import com.doublemoon1119.mahjongcraft.flow.api.event.RoundScoreChange
 import com.doublemoon1119.mahjongcraft.flow.api.event.RoundSettledEvent
 import com.doublemoon1119.mahjongcraft.flow.api.event.RoundSettlementKind
+import com.doublemoon1119.mahjongcraft.flow.api.event.RuleResultCompletion
+import com.doublemoon1119.mahjongcraft.flow.api.event.RuleResultDetail
+import com.doublemoon1119.mahjongcraft.flow.api.event.RuleResultsResolvedEvent
+import com.doublemoon1119.mahjongcraft.flow.api.event.WinMethod
 import com.doublemoon1119.mahjongcraft.flow.common.error.ExtensionFailurePolicy
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.CommittedGameFacts
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
@@ -56,6 +61,30 @@ class GameEventProjector(
     private val projectionReporter: GameEventProjectionReporter = GameEventProjectionReporter.NONE,
     private val failurePolicy: ExtensionFailurePolicy = ExtensionFailurePolicy.Default,
 ) {
+    /**
+     * 同一次投影取得公開批次及標記失敗狀態，彼此不共享可變狀態。
+     *
+     * @param facts 已提交交易。
+     * @return 公開批次與本次標記解析狀態。
+     */
+    fun projectBatchResult(facts: CommittedGameFacts): GameEventProjectionResult {
+        var markersFailed = false
+        val trackingReporter = object : GameEventProjectionReporter {
+            override fun markerFailed(ruleModuleId: String, matchId: Uuid, eventKind: String, winnerId: Uuid?, cause: Throwable) {
+                markersFailed = true
+                projectionReporter.markerFailed(ruleModuleId, matchId, eventKind, winnerId, cause)
+            }
+        }
+        val batch = GameEventProjector(
+            moduleRegistry = moduleRegistry,
+            newEventId = newEventId,
+            markerResolvers = markerResolvers,
+            projectionReporter = trackingReporter,
+            failurePolicy = failurePolicy,
+        ).projectBatch(facts)
+        return GameEventProjectionResult(batch, markersFailed)
+    }
+
     /**
      * 投影一次交易，保留玩家名單與同筆通知的邊界；沒有公開通知時不建立空批次。
      *
@@ -101,7 +130,15 @@ class GameEventProjector(
                 is HistoryFact.MatchStarted -> started = matchStarted(game, module)
                 is HistoryFact.WinSettled -> wins += fact
                 is HistoryFact.RuleEffectResolved -> fact.roundCompletion?.let { specialOutcome = specialOutcome ?: it }
-                is HistoryFact.MatchCompleted -> ended = matchEnded(game, module, fact.reasonId, MatchCompletion.COMPLETED, facts, fact.finalScoresByPlayerId.keys)
+                is HistoryFact.MatchCompleted -> ended = matchEnded(
+                    game,
+                    module,
+                    fact.reasonId,
+                    MatchCompletion.COMPLETED,
+                    facts,
+                    fact.finalScoresByPlayerId.keys,
+                    fact.finalScoresByPlayerId,
+                )
                 is HistoryFact.RoundCompleted -> completed += roundCompleted(facts, module, fact.summary)
                 is HistoryFact.MatchAborted -> Unit
                 is HistoryFact.RoundStarted,
@@ -122,7 +159,30 @@ class GameEventProjector(
         val actions = GameActionEventProjector.project(facts, module).takeIf { it.isNotEmpty() }?.let {
             ActionsPerformedEvent.create(newEventId(), game.matchId, game.id, module.id, game.tableState.roundNumber, it)
         }
-        return listOfNotNull(started, actions, settled) + completed + listOfNotNull(ended)
+        val ruleResults = facts.facts.mapNotNull { draft ->
+            (draft.fact as? HistoryFact.RuleEffectResolved)?.let { result ->
+                RuleResultDetail.create(
+                    reasonId = result.reasonId,
+                    winDetails = result.winDetails.map { details -> GameWinEventProjector.detail(details, WinMethod.UNKNOWN, emptyList()) },
+                    completion = result.roundCompletion?.let { summary ->
+                        RuleResultCompletion.create(
+                            outcomeId = summary.outcomeId,
+                            kind = completionKind(summary.classification),
+                            beneficiaryPlayerIds = summary.beneficiaryPlayerIds,
+                        )
+                    },
+                )
+            }
+        }.takeIf { it.isNotEmpty() }?.let { results ->
+            RuleResultsResolvedEvent.create(
+                eventId = newEventId(),
+                matchId = game.matchId,
+                venueId = game.id,
+                ruleModuleId = module.id,
+                results = results,
+            )
+        }
+        return listOfNotNull(started, actions, settled, ruleResults) + completed + listOfNotNull(ended)
     }
 
     /**
@@ -230,6 +290,7 @@ class GameEventProjector(
      * @param completion 正常完成或中途終止的分類。
      * @param facts 產生終局標記的前後來源。
      * @param completedPlayerIds 正常完成名單；中止時為空。
+     * @param completedScores 正常終局提交的明確分數；中止時為空。
      * @return 依規則排名的對局結束事件。
      */
     private fun matchEnded(
@@ -239,6 +300,7 @@ class GameEventProjector(
         completion: MatchCompletion,
         facts: CommittedGameFacts,
         completedPlayerIds: Set<Uuid> = emptySet(),
+        completedScores: Map<Uuid, Int> = emptyMap(),
     ): MatchEndedEvent = MatchEndedEvent.create(
         eventId = newEventId(),
         matchId = game.matchId,
@@ -259,11 +321,14 @@ class GameEventProjector(
                     reasonId,
                     (facts.previousGame ?: game).tableState,
                     facts.game?.tableState,
-                    game.tableState.players.associate { it.id to it.score },
+                    ReadOnlyMapSnapshot(
+                        if (completion == MatchCompletion.COMPLETED) completedScores else game.tableState.players.associate { it.id to it.score },
+                    ),
                 ),
             )
         },
         completedPlayerIds = completedPlayerIds,
+        completedScores = completedScores,
     )
 
     /** 建立完成前局況與結算分數，不以換局後新桌況代替。 */
@@ -288,6 +353,14 @@ class GameEventProjector(
                 RoundScoreChange.create(it.id, score, score, ranks.getValue(it.id), ranks.getValue(it.id))
             },
         )
+    }
+
+    /** 將已提交的結算分類轉成公開事件分類。 */
+    private fun completionKind(classification: RoundCompletionClassification): RoundCompletionKind = when (classification) {
+        RoundCompletionClassification.WIN -> RoundCompletionKind.WIN
+        RoundCompletionClassification.EXHAUSTIVE_DRAW -> RoundCompletionKind.EXHAUSTIVE_DRAW
+        RoundCompletionClassification.ABORTIVE_DRAW -> RoundCompletionKind.ABORTIVE_DRAW
+        RoundCompletionClassification.EXTENSION -> RoundCompletionKind.SPECIAL
     }
 
     /** 保留完成前局數，場風只使用規則明確公開的值，不能把預設東風當作規則能力。 */
