@@ -42,6 +42,34 @@ local.
 - A tile still in the drawn slot when a round ends stays in its slot. Sort only the standing tiles that are
   revealed.
 
+## Round Info Parameters
+
+- A rule's `RoundInfoLineProvider` may use `Number` and `WindValue` for values, `TileValue` for a
+  tile face, and `Message` for a rule-owned word or status. `TileValue` uses the registered tile name and
+  includes the tile emoji when one is available; an extension tile without a name falls back to its full tile
+  type ID.
+- Give every `Message` a complete namespaced ID and register its translation separately with
+  `RoundInfoMessageDefinition(id, translationKey)` in the same `RoundInfoLineDisplayRegistry`. Registration
+  rejects malformed or duplicate IDs and rejects all new entries after the registry freezes. Keep the message
+  ID distinct from its translation key; never derive wording from the ID path.
+- If a client receives a message ID that is not registered, it displays the full ID and logs one warning for
+  that ID. An argument it cannot understand is preserved in its position as `?`, with one warning. A malformed
+  JSON document still decodes to an empty list.
+- See the [pairing example registration](../../example/platform/minecraft/common/src/commonMain/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/presentation/ExamplePairingRoundInfo.kt),
+  the [Fabric 1.20.1 parameter builder test](../../platform/minecraft/v1.20.1/fabric/src/test/kotlin/com/doublemoon1119/mahjongcraft/platform/fabric/client/render/RoundInfoLineTextBuilderTest.kt)
+  and the [example provider test](../../example/platform/minecraft/common/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/presentation/ExamplePairingPresentationTest.kt).
+
+## Tile Corner Labels
+
+- Resolve corner labels by the visible tile's asset key. Keep label lookup separate from translated
+  names, emoji and texture resource locations; a missing label adds no corner text.
+- Respect the player's local label setting unless the definition has `forced = true`. Forced labels
+  still obey tile visibility and must not reveal a hidden face.
+- Keep corner anchors aligned with the standard tile model in world, item and flat previews.
+  Rendering code must not add a second set of built-in label mappings.
+- The [shared extension example](../../example/platform/minecraft/common/README.md#tile-corner-labels)
+  explains registration and links to the implementation and resource checks.
+
 ## Debug scenarios
 
 - A new capability that changes what appears on the table comes with debug scenarios that show it in game,

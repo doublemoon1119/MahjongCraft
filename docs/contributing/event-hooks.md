@@ -122,8 +122,9 @@ and evaluates advancement conditions. Statistics are incremented before conditio
 Use `ROUND_COMPLETED`, rather than draw settlement, to count a completed exhaustive draw.
 
 Rule-specific achievement resolvers receive that same batch through
-`GameAchievementResolver.resolve(batch)`. Register them through
-`MinecraftMahjongExtension.registerGameAchievementResolvers`; the registry selects the batch's rule.
+`GameAchievementResolver.resolve(batch)`. Register them through the platform adapter's extension
+entrypoint; for example, the Minecraft adapter provides
+`MinecraftMahjongExtension.registerGameAchievementResolvers`. The registry selects the batch's rule.
 Resolvers return achievement IDs and must not query a game repository, recalculate payments, send
 messages or grant outcomes themselves. Riichi uses public scoring fields and rule-provided state
 markers, including riichi and ippatsu on natural yakuman wins.

@@ -6,7 +6,8 @@ It uses the same compiler, Java and Minecraft version policies as the main proje
 ## Structure
 
 - [Platform-independent extension](../../mahjong-extension/README.md): common Kotlin code.
-- [Minecraft common](common/README.md): shared presentation and resources.
+- [Minecraft common](common/README.md): shared presentation and resources, with a
+  [registration map](common/README.md#registration-map) for extension authors.
 - Version/loader adapters: for example, the currently available
   [Fabric 1.20.1 adapter](v1.20.1/fabric/README.md) supplies native entrypoints and furniture.
 
