@@ -22,4 +22,18 @@ object ExamplePairingIds {
 
     /** 局前選兩張牌交給下一位玩家的選擇步驟。 */
     const val EXCHANGE_STEP = "${ExampleExtensionIds.MOD_ID}:pairing/exchange"
+
+    /** 可選加入牌山的八種牌面點數。 */
+    val WALL_TILE_VALUE_OPTIONS: List<Pair<Int, String>> = (1..8).map { it to tileValue(it) }
+
+    /**
+     * 取得可加入簡易配對牌山的牌面點數識別碼。
+     *
+     * @param value 一萬至八萬的點數。
+     * @return 範例規則持有的完整選項 ID。
+     */
+    fun tileValue(value: Int): String {
+        require(value in 1..8) { "Pairing tile option value must be between 1 and 8" }
+        return "${ExampleExtensionIds.MOD_ID}:pairing/tile_$value"
+    }
 }

@@ -16,6 +16,9 @@ object ExampleMinecraftPresentationIds {
     /** 對局局數設定欄位。 */
     const val ROUND_COUNT_FIELD = "${ExampleExtensionIds.MOD_ID}:pairing/round_count"
 
+    /** 加入牌山的點數設定欄位。 */
+    const val WALL_TILE_VALUES_FIELD = "${ExampleExtensionIds.MOD_ID}:pairing/wall_tile_values"
+
     /** 規則目錄中的簡易配對條目。 */
     const val CATALOGUE_ENTRY = "${ExampleExtensionIds.MOD_ID}:pairing/overview"
 

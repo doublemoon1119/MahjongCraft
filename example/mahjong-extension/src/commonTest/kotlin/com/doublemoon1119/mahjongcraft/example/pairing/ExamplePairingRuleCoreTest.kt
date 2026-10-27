@@ -31,13 +31,15 @@ class ExamplePairingRuleCoreTest {
         assertIs<ShantenResult.Tenpai>(calculator.calculate(Hand(tiles = List(3) { identified(one) })))
     }
 
-    /** 不接受會超出範例設定範圍的付款或場長。 */
+    /** 不接受超出範圍的付款、場長或不足以開局的牌山點數。 */
     @Test
     fun `configuration rejects unsupported payment and round limits`() {
         assertFailsWith<IllegalArgumentException> { ExamplePairingRuleConfig(paymentPerPlayer = 0) }
         assertFailsWith<IllegalArgumentException> { ExamplePairingRuleConfig(paymentPerPlayer = Int.MAX_VALUE) }
         assertFailsWith<IllegalArgumentException> { ExamplePairingRuleConfig(roundCount = 0) }
         assertFailsWith<IllegalArgumentException> { ExamplePairingRuleConfig(roundCount = Int.MAX_VALUE) }
+        assertFailsWith<IllegalArgumentException> { ExamplePairingRuleConfig(wallTileValues = setOf(1)) }
+        assertFailsWith<IllegalArgumentException> { ExamplePairingRuleConfig(wallTileValues = setOf(1, 9)) }
     }
 
     /** 倒置一萬應與普通一萬使用相同的配對語意。 */
@@ -55,14 +57,11 @@ class ExamplePairingRuleCoreTest {
         )
     }
 
-    /** 不同玩家人數應產生對應牌數與牌牆面數。 */
+    /** 預設八種牌面會產生完整牌山，玩家人數只影響牌牆面數。 */
     @Test
-    fun `wall sizes and two wall layout follow player count`() {
-        for ((playerCount, expectedTileCount, expectedSides) in listOf(
-            Triple(2, 16, 2),
-            Triple(3, 24, 4),
-            Triple(4, 32, 4),
-        )) {
+    fun `default wall size and wall side count follow player count`() {
+        for ((playerCount, expectedSides) in listOf(2 to 2, 3 to 4, 4 to 4)) {
+            val expectedTileCount = 32
             val tiles = ExamplePairingWallFactory(playerCount).create().getAllTiles()
             assertEquals(expectedTileCount, tiles.size)
             val layout = ExamplePairingWallLayout(playerCount)
@@ -75,6 +74,51 @@ class ExamplePairingRuleCoreTest {
             assertEquals(expectedTileCount, result.drawOrder.size)
             assertEquals(expectedTileCount, result.structure.size)
         }
+    }
+
+    /** 選取的牌面才會加入牌山，且倒置一萬只在選取一萬時出現。 */
+    @Test
+    fun `selected wall values control tile contents`() {
+        val tiles = ExamplePairingWallFactory(2, setOf(3, 4)).create().getAllTiles()
+        assertEquals(8, tiles.size)
+        assertEquals(4, tiles.count { it.tile == Tile.Numeric(Tile.Suit.Character, 3) })
+        assertEquals(4, tiles.count { it.tile == Tile.Numeric(Tile.Suit.Character, 4) })
+        assertEquals(0, tiles.count { it.tile == ExamplePairingTileType.invertedOneMan() })
+    }
+
+    /** 四面牌牆可用奇數種類分配成相對兩面較長的牌牆。 */
+    @Test
+    fun `odd selected wall values distribute across four sides`() {
+        val tiles = ExamplePairingWallFactory(4, (1..5).toSet()).create().getAllTiles()
+        val layout = ExamplePairingWallLayout(4, 5)
+        val result = layout.resolve(tiles, WallOpening(0, 1))
+        assertEquals(20, result.structure.size)
+        assertEquals(setOf(0, 1, 2, 3), result.structure.values.map { it.side }.toSet())
+        assertEquals(20, result.drawOrder.map { it.id }.toSet().size)
+    }
+
+    /** 所有可用牌面數與玩家人數都能讓擲骰開門位置套用到牌牆。 */
+    @Test
+    fun `all valid selected counts resolve every wall side`() {
+        for (playerCount in 2..4) {
+            for (valueCount in playerCount..8) {
+                val tiles = ExamplePairingWallFactory(playerCount, (1..valueCount).toSet()).create().getAllTiles()
+                val layout = ExamplePairingWallLayout(playerCount, valueCount)
+                for (side in 0 until layout.sideArrangement(0).sideCount) {
+                    val result = layout.resolve(tiles, WallOpening(side, 1))
+                    assertEquals(tiles.size, result.drawOrder.size)
+                    assertEquals(tiles.size, result.structure.size)
+                }
+            }
+        }
+    }
+
+    /** 選取牌面數量會限制可開始的玩家人數，避免牌山不足以完成起手。 */
+    @Test
+    fun `selected wall values limit player count`() {
+        assertEquals(2, ExamplePairingRuleConfig(wallTileValues = setOf(1, 2)).maxPlayers)
+        assertEquals(3, ExamplePairingRuleConfig(wallTileValues = setOf(1, 2, 3)).maxPlayers)
+        assertEquals(4, ExamplePairingRuleConfig(wallTileValues = setOf(1, 2, 3, 4)).maxPlayers)
     }
 
     /** 自摸時應向每一位其他玩家收取固定點數。 */

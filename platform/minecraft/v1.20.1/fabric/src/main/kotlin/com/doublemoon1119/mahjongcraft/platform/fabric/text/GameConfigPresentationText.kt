@@ -25,4 +25,20 @@ fun gameConfigPresentationText(
         val translationKey = (editor as? GameConfigEditorSpec.SingleChoice)?.translationKeyFor(value.optionId)
         translationKey?.let(Text::translatable) ?: Text.literal(value.optionId)
     }
+    is GameConfigPresentationValue.MultiChoiceValue -> {
+        val multiChoice = editor as? GameConfigEditorSpec.MultiChoice
+        val orderedIds = if (multiChoice == null) {
+            value.optionIds.sorted()
+        } else {
+            multiChoice.optionIds.filter { it in value.optionIds } +
+                (value.optionIds - multiChoice.optionIds.toSet()).sorted()
+        }
+        if (orderedIds.isEmpty()) {
+            Text.translatable(MinecraftRoomScreenKeys.NONE)
+        } else {
+            orderedIds.map { optionId ->
+                multiChoice?.translationKeyFor(optionId)?.let(Text::translatable) ?: Text.literal(optionId)
+            }.reduce { text, optionText -> text.append(", ").append(optionText) }
+        }
+    }
 }

@@ -13,9 +13,14 @@ resolver. It does not copy or delegate to the bundled Riichi rule.
 This is a deliberately small demonstration rule, not a regional Mahjong rule.
 
 - Two to four players start with 100 points and three tiles.
-- Two players use four copies of Characters 1–4; three use 1–6; four use 1–8.
-  One Character 1 is replaced by the inverted Character 1. It has a distinct
-  identity, but pairing and sorting treat it as Character 1.
+- The room chooses which ranks of Characters 1–8 go into the wall, four copies
+  of each selected rank. All eight ranks are selected by default. Selecting
+  Character 1 replaces one copy with the inverted Character 1; pairing and
+  sorting still treat it as Character 1.
+- Choose at least two ranks for two players, three for three players, or four
+  for four players. There must be enough tiles to deal three to each player
+  and leave at least one draw. Reducing the selection also reduces the room's
+  player limit; the server rejects a change below its current player count.
 - Each turn draws one tile and either declares a two-pair self-draw or discards.
   Four identical tiles count as two pairs. Calls, Ron and Kans are not used.
 - The two-player wall uses two opposite faces. Three- and four-player games use
@@ -29,8 +34,9 @@ This is a deliberately small demonstration rule, not a regional Mahjong rule.
 - A player may make one public declaration after drawing. It changes a public
   marker and does not change scoring or concealed information.
 
-The rule's settings can change payment, round count and the optional exchange,
-with payment from 1–100 points and match length from 1–16 rounds.
+The rule's settings can change the wall's ranks, payment, round count and the
+optional exchange, with payment from 1–100 points and match length from 1–16 rounds.
+The selected ranks change wall contents, not which otherwise complete hands may win.
 The example does not replace server
 validation with client controls.
 

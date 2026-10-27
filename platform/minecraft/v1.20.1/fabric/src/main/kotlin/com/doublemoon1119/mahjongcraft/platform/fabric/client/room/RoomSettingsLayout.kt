@@ -83,6 +83,7 @@ internal data class RoomSettingsLayout(
     fun fieldControlLeft(editor: GameConfigEditorSpec): Int = when (editor) {
         GameConfigEditorSpec.BooleanToggle -> windowWidth - BOOLEAN_CONTROL_LEFT_INSET
         is GameConfigEditorSpec.SingleChoice,
+        is GameConfigEditorSpec.MultiChoice,
         is GameConfigEditorSpec.IntegerInput,
         -> windowWidth - WIDE_CONTROL_LEFT_INSET
     }

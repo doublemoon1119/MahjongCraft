@@ -13,6 +13,7 @@ want to run the example in a game.
 | Capability | Example | Evidence | Status |
 | --- | --- | --- | --- |
 | Rule, tile wall and tile interpretation | Pairing Mahjong and inverted 1-man | [pairing tests](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/pairing) | Automated |
+| Multi-choice room setting | Selected ranks build the actual wall | [submission and save test](platform/minecraft/common/src/jvmTest/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/ExamplePairingMultiChoiceSubmissionTest.kt) | Automated checks; game check pending |
 | Multi-roll opening | Temporary dealer, final dealer and wall opening | [opening tests](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/pairing/ExamplePairingRoundOpeningProcedureTest.kt) | Automated |
 | Optional rule decision | Two-tile exchange | [rule decision tests](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/decision) | Automated and game-tested |
 | Extension action and command | Once-per-round public declaration | [action tests](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/action) | Automated |

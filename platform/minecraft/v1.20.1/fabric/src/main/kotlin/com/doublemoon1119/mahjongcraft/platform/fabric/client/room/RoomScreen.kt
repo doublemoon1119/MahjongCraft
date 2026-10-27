@@ -423,6 +423,48 @@ class RoomScreen(
                     }.dimensions(left, controlY, controlWidth, 20).build().withFieldTooltip(field, config, editable, editor.optionIds.size),
                 )
             }
+            is GameConfigEditorSpec.MultiChoice -> {
+                val selected = (value as GameConfigPresentationValue.MultiChoiceValue).optionIds
+                val (left, controlWidth) = if (compact) compactControlBounds() else (width - 212) to 184
+                addDrawableChild(
+                    RestartableMarqueeButtonWidget.builder(
+                        Text.translatable(
+                            MinecraftRoomScreenKeys.SELECTED_COUNT,
+                            selected.size,
+                        ),
+                    ) {
+                        val basisConfig = currentConfig() ?: return@builder
+                        val basisSnapshot = stateStore.roomSnapshot(tableId)
+                        client?.setScreen(
+                            MultiChoiceScreen(
+                                parent = this,
+                                fieldName = field.nameTranslationKey,
+                                fieldDescriptionKey = field.descriptionTranslationKey,
+                                editor = editor,
+                                initialSelection = selected,
+                            ) { next ->
+                                val latest = currentConfig()
+                                if (
+                                    latest == null ||
+                                    latest != basisConfig ||
+                                    stateStore.roomSnapshot(tableId)?.isHost != true ||
+                                    basisSnapshot?.isHost != true ||
+                                    stateStore.tableOccupancy(tableId)?.occupancy != TableOccupancyDto.ROOM ||
+                                    draft.config != config ||
+                                    !field.isEditable ||
+                                    !field.isEnabled(config) ||
+                                    !editor.accepts(GameConfigPresentationValue.MultiChoiceValue(next))
+                                ) {
+                                    client?.setScreen(this)
+                                } else {
+                                    updateDraft(field, GameConfigPresentationValue.MultiChoiceValue(next))
+                                    client?.setScreen(this)
+                                }
+                            },
+                        )
+                    }.dimensions(left, controlY, controlWidth, 20).build().withFieldTooltip(field, config, editable),
+                )
+            }
             is GameConfigEditorSpec.IntegerInput -> {
                 val number = (value as GameConfigPresentationValue.IntegerValue).number
                 val bounds = if (compact) {
@@ -687,6 +729,21 @@ class RoomScreen(
                 result.append("\n• ").append(Text.translatable(MinecraftRoomScreenKeys.AVAILABLE_OPTIONS).formatted(Formatting.GOLD))
                 editor.optionIds.forEach { option ->
                     result.append("\n  • ").append(optionText(option, editor).copy().formatted(if ((current as GameConfigPresentationValue.ChoiceValue).optionId == option) Formatting.GREEN else Formatting.WHITE))
+                }
+            }
+            is GameConfigEditorSpec.MultiChoice -> {
+                result.append("\n• ").append(
+                    Text.translatable(
+                        MinecraftRoomScreenKeys.SELECTION_LIMITS,
+                        (current as GameConfigPresentationValue.MultiChoiceValue).optionIds.size,
+                        editor.minimumCount,
+                        editor.maximumCount,
+                    ).formatted(Formatting.GREEN),
+                )
+                result.append("\n• ").append(Text.translatable(MinecraftRoomScreenKeys.AVAILABLE_OPTIONS).formatted(Formatting.GOLD))
+                editor.optionIds.forEach { option ->
+                    val selected = option in current.optionIds
+                    result.append("\n  • ").append(optionText(option, editor).copy().formatted(if (selected) Formatting.GREEN else Formatting.WHITE))
                 }
             }
             is GameConfigEditorSpec.IntegerInput -> {
@@ -1552,9 +1609,18 @@ class RoomScreen(
      *
      * @param optionId 選項識別碼。
      * @param editor 單選欄位編輯器描述。
-     * @return 對應翻譯鍵的文字。
+     * @return 已登記的本地化文字；未登記翻譯鍵時顯示完整選項 ID。
      */
     private fun optionText(optionId: String, editor: GameConfigEditorSpec.SingleChoice): Text = editor.translationKeyFor(optionId)?.let(Text::translatable) ?: Text.literal(optionId)
+
+    /**
+     * 取得設定選項的本地化文字。
+     *
+     * @param optionId 選項識別碼。
+     * @param editor 多選欄位編輯器描述。
+     * @return 已登記的本地化文字；未登記翻譯鍵時顯示完整選項 ID。
+     */
+    private fun optionText(optionId: String, editor: GameConfigEditorSpec.MultiChoice): Text = editor.translationKeyFor(optionId)?.let(Text::translatable) ?: Text.literal(optionId)
 
     /**
      * Esc 在設定頁沒有可套用草稿時直接返回玩家頁；有尚未套用的合法草稿時改顯示「套用並返回／放棄

@@ -38,11 +38,11 @@ class ExamplePairingRuleModule(
 ) : MahjongRuleModule<ExamplePairingRuleConfig> {
     override val tileOrder: TileOrder = ExamplePairingTileOrder
 
-    override fun createWallFactory(playerCount: Int): ExamplePairingWallFactory = ExamplePairingWallFactory(playerCount)
+    override fun createWallFactory(playerCount: Int): ExamplePairingWallFactory = ExamplePairingWallFactory(playerCount, config.wallTileValues)
 
-    override fun createRoundOpeningProcedure(playerCount: Int): RoundOpeningProcedure? = ExamplePairingRoundOpeningProcedure()
+    override fun createRoundOpeningProcedure(playerCount: Int): RoundOpeningProcedure? = ExamplePairingRoundOpeningProcedure(config.wallTileValues.size)
 
-    override fun createWallLayout(playerCount: Int): TileWallLayout? = ExamplePairingWallLayout(playerCount)
+    override fun createWallLayout(playerCount: Int): TileWallLayout? = ExamplePairingWallLayout(playerCount, config.wallTileValues.size)
 
     override fun createTileInterpretationPolicy(): TileInterpretationPolicy = ExamplePairingTileInterpretationPolicy
 

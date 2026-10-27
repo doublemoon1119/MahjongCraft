@@ -87,6 +87,30 @@
 - For an optional setting, test both sides: rules that need it can change and save it; rules that do not
   need it have no field and the server rejects changes to that value.
 
+## Multi-choice Room Settings
+
+- Use `GameConfigEditorSpec.MultiChoice` when a rule setting selects a set of options.
+  Register the full option IDs, their display order, explicit translation keys and
+  minimum/maximum selection counts. Use `optionDescriptionTranslationKeys` for
+  optional hover explanations; its keys must also be registered option IDs.
+  `MultiChoiceValue.optionIds` is a set: changing
+  its iteration order does not change the setting. An empty set is allowed only
+  when the minimum is zero.
+- The rule owns the actual setting and its network and persistence mappings.
+  The editor is a way to read and update that setting, not another wire format.
+  The server uses the editor's validation and rebuilds the submitted configuration;
+  screen controls never replace server checks.
+- Keep option collections and translations stable after registration. Display names
+  follow the registered option order, with the complete ID as the missing-name
+  fallback. Never infer a translation key from an option ID.
+- A selection screen edits a local selection first. Applying updates the room draft
+  once; cancelling leaves it alone. Temporary selections may be below the minimum
+  while replacing one option with another, but cannot be applied until valid.
+- A valid selection may still be unsuitable for the current match roster. Express
+  that restriction through the rule's player-count contract and test the real room
+  update and start paths. The pairing example uses this to keep enough tiles for
+  its initial hands and at least one draw.
+
 ## Rule Decision Windows
 
 - A rule decision resolver is asked at four timings, and returns a step only when players should choose:

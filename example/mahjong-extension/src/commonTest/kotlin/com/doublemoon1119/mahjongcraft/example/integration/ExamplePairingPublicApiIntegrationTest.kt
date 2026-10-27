@@ -10,6 +10,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.GameConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinCelebrationCueResolverRegistryImpl
 import com.doublemoon1119.mahjongcraft.flow.common.result.Outcome
 import com.doublemoon1119.mahjongcraft.flow.common.room.model.Room
+import com.doublemoon1119.mahjongcraft.flow.common.room.model.RoomError
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.emptyPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.state.AuthoritativeStatePersistenceCodec
 import com.doublemoon1119.mahjongcraft.flow.server.game.orchestration.ExtensionGameCommandContext
@@ -55,6 +56,37 @@ import kotlin.uuid.Uuid
  * 測試不載入任何內建規則，也不建立完整伺服器模擬器；只使用正式的權威 store 與公開 use case。
  */
 class ExamplePairingPublicApiIntegrationTest {
+
+    /** 真實開局用例會依牌山設定限制可加入的完整玩家人數。 */
+    @Test
+    fun `start game rejects a room larger than selected wall capacity`() = runTest {
+        val fixtures = Fixtures()
+        val cases = listOf(
+            Triple(2, setOf(1, 2), true),
+            Triple(3, setOf(1, 2, 3), true),
+            Triple(4, setOf(1, 2, 3, 4), true),
+            Triple(3, setOf(1, 2), false),
+            Triple(4, setOf(1, 2, 3), false),
+        )
+        cases.forEach { (playerCount, selectedValues, mayStart) ->
+            val roomId = fixtures.installRoom(
+                ExamplePairingRuleConfig(wallTileValues = selectedValues),
+                playerCount,
+            )
+            val before = fixtures.store.snapshot()
+            val outcome = fixtures.startGameUseCase(roomId, fixtures.hostId(roomId))
+            if (mayStart) {
+                assertIs<Outcome.Success<*>>(outcome)
+                val table = checkNotNull(fixtures.gameRepository.getGame(roomId)).tableState
+                assertEquals(playerCount, table.players.size)
+                assertEquals(selectedValues.size * 4 - playerCount * 3, table.tileWall.remainingCount)
+                assertTrue(table.players.all { player -> player.hand.standingTiles.size == 3 })
+            } else {
+                assertEquals(Outcome.Error(RoomError.RoomPlayerCountInvalid(roomId)), outcome)
+                assertEquals(before, fixtures.store.snapshot())
+            }
+        }
+    }
 
     /** 驗證範例擴充能從開局走到終局，且宣告動作會進入保存資料。 */
     @Test
@@ -287,6 +319,44 @@ class ExamplePairingPublicApiIntegrationTest {
 
         /** 編碼與解碼權威狀態保存資料的 codec。 */
         val persistenceCodec: AuthoritativeStatePersistenceCodec
+
+        /** 測試房間與各自房主的對照。 */
+        private val roomHosts = mutableMapOf<Uuid, Uuid>()
+
+        /**
+         * 建立完整準備狀態的測試房間，讓正式開局用例驗證玩家人數限制。
+         *
+         * @param config 本局規則設定。
+         * @param playerCount 實際在房間中的玩家人數。
+         * @return 新建的測試房間 ID。
+         */
+        suspend fun installRoom(config: ExamplePairingRuleConfig, playerCount: Int): Uuid {
+            val roomId = Uuid.random()
+            val playerIds = List(playerCount) { Uuid.random() }
+            val hostId = playerIds.first()
+            roomHosts[roomId] = hostId
+            store.update { state ->
+                AuthoritativeStateUpdate(
+                    state.copy(
+                        rooms = state.rooms + (
+                            roomId to Room(
+                                id = roomId,
+                                hostId = hostId,
+                                gameConfig = GameConfig(config),
+                                playerIds = playerIds,
+                                readyPlayerIds = playerIds.drop(1),
+                                aiPlayerStrategyKeys = emptyMap(),
+                            )
+                            ),
+                    ),
+                    Unit,
+                )
+            }
+            return roomId
+        }
+
+        /** 取得測試房間的房主。 */
+        fun hostId(roomId: Uuid): Uuid = checkNotNull(roomHosts[roomId])
 
         init {
             extension.registerRuleModules(moduleRegistry)

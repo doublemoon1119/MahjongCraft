@@ -18,6 +18,10 @@ sealed interface GameConfigEditorSpec {
             value is GameConfigPresentationValue.IntegerValue &&
                 (value.number?.let { it in minimum..maximum } ?: nullable)
         is SingleChoice -> value is GameConfigPresentationValue.ChoiceValue && value.optionId in optionIds
+        is MultiChoice ->
+            value is GameConfigPresentationValue.MultiChoiceValue &&
+                value.optionIds.all { it in optionIds } &&
+                value.optionIds.size in minimumCount..maximumCount
     }
 
     /** 布林切換編輯器。 */
@@ -69,5 +73,49 @@ sealed interface GameConfigEditorSpec {
 
         /** 取得選項的翻譯鍵；未登記時回傳 null。 */
         fun translationKeyFor(optionId: String): String? = optionTranslationKeys[optionId]
+    }
+
+    /**
+     * 多個選項的受控編輯器。
+     *
+     * @property optionIds 可選的完整 Namespaced ID，順序也是顯示順序。
+     * @property minimumCount 至少要選取的項目數量。
+     * @property maximumCount 最多可選取的項目數量。
+     * @property optionTranslationKeys 各選項 ID 對應的翻譯鍵；未提供時由呈現層顯示完整 ID。
+     * @property optionDescriptionTranslationKeys 各選項 ID 對應的補充說明翻譯鍵；未提供時不顯示說明。
+     */
+    data class MultiChoice(
+        val optionIds: List<String>,
+        val minimumCount: Int = 0,
+        val maximumCount: Int = optionIds.size,
+        val optionTranslationKeys: Map<String, String> = emptyMap(),
+        val optionDescriptionTranslationKeys: Map<String, String> = emptyMap(),
+    ) : GameConfigEditorSpec {
+        init {
+            require(optionIds.isNotEmpty()) { "Config multi-choice must contain at least one option" }
+            require(optionIds.distinct().size == optionIds.size) { "Config multi-choice options must be unique" }
+            require(optionIds.all(NamespacedId::isValid)) { "Config multi-choice option IDs must be namespaced" }
+            require(minimumCount >= 0) { "Config multi-choice minimum count must not be negative" }
+            require(minimumCount <= maximumCount) { "Config multi-choice minimum count must not exceed maximum" }
+            require(maximumCount <= optionIds.size) { "Config multi-choice maximum count must not exceed options" }
+            require(optionTranslationKeys.keys.all { it in optionIds }) {
+                "Config multi-choice translation keys must reference known option IDs"
+            }
+            require(optionTranslationKeys.values.all(String::isNotBlank)) {
+                "Config multi-choice translation keys must not be blank"
+            }
+            require(optionDescriptionTranslationKeys.keys.all { it in optionIds }) {
+                "Config multi-choice description keys must reference known option IDs"
+            }
+            require(optionDescriptionTranslationKeys.values.all(String::isNotBlank)) {
+                "Config multi-choice description keys must not be blank"
+            }
+        }
+
+        /** 取得選項的翻譯鍵；未登記時回傳 null。 */
+        fun translationKeyFor(optionId: String): String? = optionTranslationKeys[optionId]
+
+        /** 取得選項的補充說明翻譯鍵；未登記時回傳 null。 */
+        fun descriptionTranslationKeyFor(optionId: String): String? = optionDescriptionTranslationKeys[optionId]
     }
 }

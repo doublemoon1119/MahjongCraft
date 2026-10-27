@@ -954,6 +954,8 @@
   "mahjongcraft.room.screen.reset_defaults": "恢復預設值",
   "mahjongcraft.room.screen.rule_catalogue": "開啟規則一覽",
   "mahjongcraft.room.screen.rule_catalogue.description": "依設定頁目前顯示的規則與設定查看說明，尚未套用的修改也會一併反映。",
+  "mahjongcraft.room.screen.selected_count": "已選 %s 項",
+  "mahjongcraft.room.screen.selection_limits": "已選 %s 項（最少 %s，最多 %s）",
   "mahjongcraft.room.screen.start": "開始",
   "mahjongcraft.room.screen.title": "麻將遊戲",
   "mahjongcraft.room.screen.tooltip.changes": "尚未套用的變更：",

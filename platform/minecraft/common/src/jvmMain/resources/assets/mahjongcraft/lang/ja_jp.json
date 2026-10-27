@@ -954,6 +954,8 @@
   "mahjongcraft.room.screen.reset_defaults": "デフォルトに戻す",
   "mahjongcraft.room.screen.rule_catalogue": "ルール一覧を開く",
   "mahjongcraft.room.screen.rule_catalogue.description": "設定ページに表示中のルールと設定で説明を表示します。未適用の変更も反映されます。",
+  "mahjongcraft.room.screen.selected_count": "%s 個選択中",
+  "mahjongcraft.room.screen.selection_limits": "%s 個選択中（最少 %s、最多 %s）",
   "mahjongcraft.room.screen.start": "開始",
   "mahjongcraft.room.screen.title": "麻雀ゲーム",
   "mahjongcraft.room.screen.tooltip.changes": "未適用の変更：",

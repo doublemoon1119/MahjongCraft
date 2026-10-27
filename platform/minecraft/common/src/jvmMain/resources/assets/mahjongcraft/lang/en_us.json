@@ -954,6 +954,8 @@
   "mahjongcraft.room.screen.reset_defaults": "Reset to Defaults",
   "mahjongcraft.room.screen.rule_catalogue": "Open Rule Catalogue",
   "mahjongcraft.room.screen.rule_catalogue.description": "View the rule explanation with the rules and settings shown on this page, including changes not applied yet.",
+  "mahjongcraft.room.screen.selected_count": "%s selected",
+  "mahjongcraft.room.screen.selection_limits": "%s selected (minimum %s, maximum %s)",
   "mahjongcraft.room.screen.start": "Start",
   "mahjongcraft.room.screen.title": "Mahjong Game",
   "mahjongcraft.room.screen.tooltip.changes": "Pending changes:",

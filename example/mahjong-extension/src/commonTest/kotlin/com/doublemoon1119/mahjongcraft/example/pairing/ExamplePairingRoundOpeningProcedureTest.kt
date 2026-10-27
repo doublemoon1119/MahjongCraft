@@ -54,4 +54,28 @@ class ExamplePairingRoundOpeningProcedureTest {
         )
         assertEquals(players[1], complete.result.dealerPlayerId)
     }
+
+    /** 不同牌面種類數與骰子結果都會產生牌牆可接受的開門位置。 */
+    @Test
+    fun `opening positions match variable wall layouts`() {
+        for (playerCount in 2..4) {
+            val players = List(playerCount) { Uuid.random() }
+            for (valueCount in playerCount..8) {
+                val procedure = ExamplePairingRoundOpeningProcedure(valueCount)
+                for (firstDie in 1..6) {
+                    for (secondDie in 1..6) {
+                        val context = RoundOpeningContext(players, false, players[0], players[0]).copy(
+                            rolls = listOf(OpeningDiceRoll(0, players[0], DiceRollResult.of(listOf(firstDie, secondDie)))),
+                        )
+                        val complete = assertIs<RoundOpeningStep.Complete>(procedure.next(context))
+                        val tiles = ExamplePairingWallFactory(playerCount, (1..valueCount).toSet()).create().getAllTiles()
+                        ExamplePairingWallLayout(playerCount, valueCount).resolve(
+                            tiles,
+                            checkNotNull(complete.result.wallOpening),
+                        )
+                    }
+                }
+            }
+        }
+    }
 }

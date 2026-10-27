@@ -28,7 +28,7 @@ import kotlin.uuid.Uuid
 
 /** 驗證範例 Minecraft 呈現元件可獨立登記並保留規則專屬設定。 */
 class ExamplePairingPresentationTest {
-    /** 規則設定包含範例自己的三個欄位與預期編輯範圍。 */
+    /** 規則設定包含範例自己的四個欄位與預期編輯範圍。 */
     @Test
     fun `game config presentation exposes pairing fields`() {
         val definition = examplePairingGameConfigPresentation()
@@ -36,6 +36,7 @@ class ExamplePairingPresentationTest {
         assertEquals(ExamplePairingIds.RULE_MODULE, definition.ruleModuleId)
         assertEquals(
             setOf(
+                ExampleMinecraftPresentationIds.WALL_TILE_VALUES_FIELD,
                 ExampleMinecraftPresentationIds.EXCHANGE_FIELD,
                 ExampleMinecraftPresentationIds.PAYMENT_FIELD,
                 ExampleMinecraftPresentationIds.ROUND_COUNT_FIELD,

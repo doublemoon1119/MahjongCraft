@@ -65,6 +65,10 @@ class RoomSettingsLayoutTest {
             640 - RoomSettingsLayout.WIDE_CONTROL_LEFT_INSET,
             layout.fieldControlLeft(GameConfigEditorSpec.IntegerInput(minimum = 0, maximum = 1)),
         )
+        assertEquals(
+            640 - RoomSettingsLayout.WIDE_CONTROL_LEFT_INSET,
+            layout.fieldControlLeft(GameConfigEditorSpec.MultiChoice(listOf("example:one"))),
+        )
     }
 
     /** 極矮視窗至少仍保留一列可見欄位。 */

@@ -56,6 +56,30 @@ object ExampleMinecraftMessageKeys {
     /** 對局局數欄位說明。 */
     const val CONFIG_ROUNDS_DESCRIPTION = "mahjongcraft_example.room.config.field.round_count.description"
 
+    /** 牌山使用點數的多選欄位名稱。 */
+    const val CONFIG_WALL_TILE_VALUES = "mahjongcraft_example.room.config.field.wall_tile_values"
+
+    /** 牌山使用點數的多選欄位說明。 */
+    const val CONFIG_WALL_TILE_VALUES_DESCRIPTION = "mahjongcraft_example.room.config.field.wall_tile_values.description"
+
+    /** 一般牌種選項的加入張數說明。 */
+    const val CONFIG_WALL_TILE_OPTION_DESCRIPTION = "mahjongcraft_example.room.config.option.tile.description"
+
+    /** 一萬選項包含倒置一萬的說明。 */
+    const val CONFIG_WALL_ONE_DESCRIPTION = "mahjongcraft_example.room.config.option.tile_one.description"
+
+    /** 一萬至八萬選項各自明確登記的翻譯鍵。 */
+    val WALL_TILE_VALUE_OPTIONS: Map<Int, String> = mapOf(
+        1 to "mahjongcraft_example.room.config.option.tile_one",
+        2 to "mahjongcraft_example.room.config.option.tile_two",
+        3 to "mahjongcraft_example.room.config.option.tile_three",
+        4 to "mahjongcraft_example.room.config.option.tile_four",
+        5 to "mahjongcraft_example.room.config.option.tile_five",
+        6 to "mahjongcraft_example.room.config.option.tile_six",
+        7 to "mahjongcraft_example.room.config.option.tile_seven",
+        8 to "mahjongcraft_example.room.config.option.tile_eight",
+    )
+
     /** 局況中顯示剩餘牌山數量的文字。 */
     const val ROUND_INFO_WALL_REMAINING = "mahjongcraft_example.round_info.wall_remaining"
 

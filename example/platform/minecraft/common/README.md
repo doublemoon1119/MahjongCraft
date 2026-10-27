@@ -11,6 +11,25 @@ The furniture models reuse vanilla oak and blue-wool textures; native behavior b
 The rule contributes only its own settings; MahjongCraft adds shared turn and spectating settings.
 The rule-decision time setting is present only while the optional two-tile exchange is enabled.
 
+## Multi-choice Room Setting
+
+The pairing rule uses the shared multi-choice editor for **Tiles to use**.
+Choose ranks, apply them to the room draft, then apply the room settings.
+The compact list places each name on the left and a small filled checkbox on the right.
+Hover a row to read its explanation. Closing without applying keeps the previous draft.
+Only selected ranks enter the wall; this is a rule setting, not a visual filter.
+The settings summary and history show the selected names in the registered order.
+
+The rule owns the selected values and their network and persistence DTOs.
+The presentation maps explicit namespaced option IDs to those values and translation keys;
+it does not add a second generic settings payload. See
+[`ExamplePairingGameConfigPresentation.kt`](src/commonMain/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/room/ExamplePairingGameConfigPresentation.kt).
+
+The default wall now contains all eight ranks for every supported player count.
+This changes the previous smaller two- and three-player default walls.
+The example's stored configuration has a required selection field. Older development
+saves without it are rejected safely; their format version is unchanged before release.
+
 ## Tile Resources
 
 The example owns its models and textures under `assets/mahjongcraft_example/`.
