@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.example.fabric
 
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.client.ExampleFurnitureRenderers
+import com.doublemoon1119.mahjongcraft.example.fabric.table.ExampleDeclarationChipRenderers
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import net.fabricmc.api.ClientModInitializer
 
@@ -12,6 +13,7 @@ class ExampleModClient : ClientModInitializer {
     /** 在客戶端註冊家具 renderer，不從伺服器入口載入繪圖類別。 */
     override fun onInitializeClient() {
         ExampleFurnitureRenderers.register()
+        ExampleDeclarationChipRenderers.register()
         logger.info("Example client initialized")
     }
 }

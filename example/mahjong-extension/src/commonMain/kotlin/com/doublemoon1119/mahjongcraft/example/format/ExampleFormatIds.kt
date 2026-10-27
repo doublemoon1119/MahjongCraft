@@ -22,4 +22,7 @@ object ExampleFormatIds {
 
     /** 玩家送出的示範宣告命令。 */
     const val DECLARATION_COMMAND = "mahjongcraft_example:pairing/declaration_command"
+
+    /** 簡易配對麻將本局動態狀態。 */
+    const val DYNAMIC_STATE = "mahjongcraft_example:pairing/dynamic_state"
 }

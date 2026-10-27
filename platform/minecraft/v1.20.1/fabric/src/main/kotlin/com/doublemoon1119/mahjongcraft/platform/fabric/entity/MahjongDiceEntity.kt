@@ -248,10 +248,9 @@ class MahjongDiceEntity(
      */
     override fun readCustomDataFromNbt(nbt: NbtCompound) {
         point = MahjongDicePoint.fromValueOrDefault(nbt.getInt(NBT_KEY_POINT))
-        managedByGame = nbt.getBoolean(NBT_KEY_MANAGED_BY_GAME)
-        managedTableId = nbt.getString(NBT_KEY_MANAGED_TABLE_ID)
-            .takeIf(String::isNotBlank)
-            ?.let { encoded -> runCatching { Uuid.parse(encoded) }.getOrNull() }
+        val management = GameManagedEntityNbt.read(nbt)
+        managedByGame = management.managedByGame
+        managedTableId = management.tableId
         dataTracker.set(ANIMATION_SEED, nbt.getLong(NBT_KEY_ANIMATION_SEED))
         dataTracker.set(ANIMATION_START_OFFSET_X, nbt.getFloat(NBT_KEY_ANIMATION_START_OFFSET_X))
         dataTracker.set(ANIMATION_START_OFFSET_Y, nbt.getFloat(NBT_KEY_ANIMATION_START_OFFSET_Y))
@@ -263,8 +262,7 @@ class MahjongDiceEntity(
     /** 將點數、管理狀態、動畫佇列與投擲動畫本身的參數寫入世界存檔，理由同 [readCustomDataFromNbt]。 */
     override fun writeCustomDataToNbt(nbt: NbtCompound) {
         nbt.putInt(NBT_KEY_POINT, point.value)
-        nbt.putBoolean(NBT_KEY_MANAGED_BY_GAME, managedByGame)
-        managedTableId?.let { tableId -> nbt.putString(NBT_KEY_MANAGED_TABLE_ID, tableId.toString()) }
+        GameManagedEntityNbt.write(nbt, managedByGame, managedTableId)
         nbt.putLong(NBT_KEY_ANIMATION_SEED, animationSeed)
         nbt.putFloat(NBT_KEY_ANIMATION_START_OFFSET_X, dataTracker[ANIMATION_START_OFFSET_X])
         nbt.putFloat(NBT_KEY_ANIMATION_START_OFFSET_Y, dataTracker[ANIMATION_START_OFFSET_Y])
@@ -278,12 +276,6 @@ class MahjongDiceEntity(
 
         /** 點數世界存檔 key。 */
         private const val NBT_KEY_POINT = "Point"
-
-        /** 正式牌局管理狀態世界存檔 key。 */
-        private const val NBT_KEY_MANAGED_BY_GAME = "ManagedByGame"
-
-        /** 正式骰子所屬桌子 UUID 的世界存檔 key。 */
-        private const val NBT_KEY_MANAGED_TABLE_ID = "ManagedTableId"
 
         /** 投擲動畫 seed 世界存檔 key。 */
         private const val NBT_KEY_ANIMATION_SEED = "AnimationSeed"

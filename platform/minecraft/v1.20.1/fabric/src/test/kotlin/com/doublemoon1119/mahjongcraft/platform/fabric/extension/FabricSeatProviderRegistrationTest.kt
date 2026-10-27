@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.Registered
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatProvider
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatRequest
 import com.doublemoon1119.mahjongcraft.platform.minecraft.api.seating.SeatTarget
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistryImpl
 import net.minecraft.entity.Entity
 import net.minecraft.server.world.ServerWorld
 import kotlin.test.Test
@@ -37,7 +38,7 @@ class FabricSeatProviderRegistrationTest {
     ) = FabricMahjongExtensionRegistrar.registerAndFreeze(
         extensions = extensions,
         registries = FabricExtensionRegistries(FabricTablePropKindRegistryImpl(), seatProviderRegistry),
-        builtIn = BuiltInFabricMahjongExtension(FakeProvider()),
+        builtIn = BuiltInFabricMahjongExtension(FakeProvider(), MinecraftTileAssetRegistryImpl()),
         failurePolicy = ExtensionFailurePolicy.Default,
     )
 
@@ -205,7 +206,7 @@ class FabricSeatProviderRegistrationTest {
             FabricMahjongExtensionRegistrar.registerAndFreeze(
                 extensions = listOf(extension),
                 registries = FabricExtensionRegistries(tablePropRegistry, seatRegistry),
-                builtIn = BuiltInFabricMahjongExtension(FakeProvider()),
+                builtIn = BuiltInFabricMahjongExtension(FakeProvider(), MinecraftTileAssetRegistryImpl()),
                 failurePolicy = ExtensionFailurePolicy.Default,
             )
         }

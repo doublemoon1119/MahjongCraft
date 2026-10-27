@@ -168,7 +168,7 @@ class ExhaustiveDrawSettlementPresentationEntity(
     }
 
     override fun readCustomDataFromNbt(nbt: NbtCompound) {
-        dataTracker.set(TABLE_ID, nbt.getString(NBT_TABLE_ID))
+        dataTracker.set(TABLE_ID, ManagedTableNbt.read(nbt)?.toString().orEmpty())
         dataTracker.set(START_GAME_TIME, nbt.getLong(NBT_START_GAME_TIME))
         dataTracker.set(END_GAME_TIME, nbt.getLong(NBT_END_GAME_TIME))
         dataTracker.set(REASON_ID, nbt.getString(NBT_REASON_ID))
@@ -177,7 +177,7 @@ class ExhaustiveDrawSettlementPresentationEntity(
     }
 
     override fun writeCustomDataToNbt(nbt: NbtCompound) {
-        nbt.putString(NBT_TABLE_ID, managedTableId?.toString().orEmpty())
+        ManagedTableNbt.write(nbt, managedTableId)
         nbt.putLong(NBT_START_GAME_TIME, startGameTime)
         nbt.putLong(NBT_END_GAME_TIME, endGameTime)
         nbt.putString(NBT_REASON_ID, reasonId)
@@ -201,7 +201,6 @@ class ExhaustiveDrawSettlementPresentationEntity(
         private const val FIELD_SEPARATOR = '\u001f'
         private const val ROW_SEPARATOR = '\u001e'
         private const val LIST_SEPARATOR = '\u001d'
-        private const val NBT_TABLE_ID = "ManagedTableId"
         private const val NBT_START_GAME_TIME = "StartGameTime"
         private const val NBT_END_GAME_TIME = "EndGameTime"
         private const val NBT_REASON_ID = "ReasonId"

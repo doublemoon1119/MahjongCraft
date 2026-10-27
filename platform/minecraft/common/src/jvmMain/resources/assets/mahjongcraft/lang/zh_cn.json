@@ -849,6 +849,7 @@
   "mahjongcraft.message.start_blocked_offline_players": "无法开始游戏：%s 目前离线",
   "mahjongcraft.message.table_animation_busy": "桌面正在播放动画，请稍候再试",
   "mahjongcraft.message.table_not_reachable": "找不到那张麻将桌，或距离太远无法互动",
+  "mahjongcraft.message.table_rule_props_unavailable": "牌桌上的规则标记（如加分牌、筹码或点棒）暂时无法显示。对局仍可继续，详细原因请查看服务器记录。",
   "mahjongcraft.message.target_not_ai": "该玩家不是 AI 玩家，无法更换策略",
   "mahjongcraft.message.tile_honor_east": "东",
   "mahjongcraft.message.tile_honor_green": "发",

@@ -5,7 +5,9 @@ import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPlayerState
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickDimensions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.BuiltInTablePropKinds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropContent
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropDescriber
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPlacement
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableSeatAnchor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableSeatOffset
@@ -69,11 +71,14 @@ object RiichiTableProps : TablePropDescriber {
 
     /** 立直棒：從牌河內緣再往桌子中心退半根棒子厚度與一道縫隙，沿排列方向置中。 */
     private fun riichiStick(seatIndex: Int) = TablePropPlacement(
+        id = "mahjongcraft:riichi-sticks/seat-$seatIndex",
         kind = BuiltInTablePropKinds.SCORING_STICK,
-        variant = STICK_POT_VARIANT,
-        seatIndex = seatIndex,
-        anchor = TableSeatAnchor.DISCARD_INNER_EDGE,
-        offset = TableSeatOffset(z = -(MahjongScoringStickDimensions.STICK_DEPTH / 2.0 + RIICHI_STICK_CLEARANCE_GAP)),
+        content = TablePropContent.CustomVariant(STICK_POT_VARIANT),
+        location = TablePropLocation.Seat(
+            seatIndex = seatIndex,
+            anchor = TableSeatAnchor.DISCARD_INNER_EDGE,
+            offset = TableSeatOffset(z = -(MahjongScoringStickDimensions.STICK_DEPTH / 2.0 + RIICHI_STICK_CLEARANCE_GAP)),
+        ),
     )
 
     /**
@@ -85,16 +90,19 @@ object RiichiTableProps : TablePropDescriber {
         val layer = stackIndex / STICKS_PER_ROW
         val layerHeight = MahjongScoringStickDimensions.STICK_HEIGHT + MahjongTileDimensions.TILE_SMALL_PADDING
         return TablePropPlacement(
+            id = "mahjongcraft:riichi-sticks/corner-$seatIndex-$stackIndex",
             kind = BuiltInTablePropKinds.SCORING_STICK,
-            variant = variant,
-            seatIndex = seatIndex,
-            anchor = TableSeatAnchor.MELD_CORNER,
-            offset = TableSeatOffset(
-                x = -(column + 0.5) * CORNER_STICK_STEP,
-                y = layer * layerHeight,
-                z = -MahjongScoringStickDimensions.STICK_WIDTH / 2.0,
+            content = TablePropContent.CustomVariant(variant),
+            location = TablePropLocation.Seat(
+                seatIndex = seatIndex,
+                anchor = TableSeatAnchor.MELD_CORNER,
+                offset = TableSeatOffset(
+                    x = -(column + 0.5) * CORNER_STICK_STEP,
+                    y = layer * layerHeight,
+                    z = -MahjongScoringStickDimensions.STICK_WIDTH / 2.0,
+                ),
+                yawOffset = MahjongTileTableLayout.SIDEWAYS_YAW_OFFSET,
             ),
-            yawOffset = MahjongTileTableLayout.SIDEWAYS_YAW_OFFSET,
         )
     }
 }

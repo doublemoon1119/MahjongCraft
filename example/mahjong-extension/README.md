@@ -31,6 +31,11 @@ This is a deliberately small demonstration rule, not a regional Mahjong rule.
 - A self-draw normally makes each other player pay 10 points. Exhausting the
   wall changes no scores; a three-tile hand containing a pair is ready.
   The dealer advances after each round. The default match has four rounds.
+- At the start of each round, the rule randomly selects one fewer bonus rank
+  than the number of ranks in the wall. The selected ranks are saved in the
+  round state. Each opponent pays one extra point per selected rank represented
+  in the winning hand; repeated copies of one rank count once. The Minecraft adapter displays
+  the same saved ranks in the centre of the table.
 - A player may make one public declaration after drawing. It changes a public
   marker and does not change scoring or concealed information.
 

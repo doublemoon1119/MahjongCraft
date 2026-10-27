@@ -9,6 +9,6 @@ class ExamplePairingHandValueCalculator : HandValueCalculator<ExamplePairingHand
         require(ExamplePairingShantenCalculator().calculate(context.hand) is ShantenResult.Complete) {
             "Example pairing hand value requires a completed two-pair hand"
         }
-        return ExamplePairingHandValueResult
+        return ExamplePairingHandValueResult()
     }
 }

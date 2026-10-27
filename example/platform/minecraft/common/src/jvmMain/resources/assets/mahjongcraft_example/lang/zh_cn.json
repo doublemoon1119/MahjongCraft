@@ -64,6 +64,8 @@
   "mahjongcraft_example.rule.pairing.description": "简易配对麻将设置。",
   "mahjongcraft_example.rule.pairing.name": "配对麻将",
   "mahjongcraft_example.rule_decision.exchange": "交换牌",
+  "mahjongcraft_example.settlement.bonus_tile_count": "加分牌加分",
+  "mahjongcraft_example.settlement.bonus_tile_kinds": "加分牌：每人另付 %s 分",
   "mahjongcraft_example.settlement.payment_per_player": "每位玩家付款点数",
   "mahjongcraft_example.settlement.points": "%s 点",
   "mahjongcraft_example.tile.inverted_one_man": "倒置一万"

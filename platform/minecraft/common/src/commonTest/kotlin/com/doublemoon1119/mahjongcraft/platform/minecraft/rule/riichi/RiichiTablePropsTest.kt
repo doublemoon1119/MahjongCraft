@@ -9,6 +9,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacin
 import com.doublemoon1119.mahjongcraft.platform.minecraft.stick.MahjongScoringStickDimensions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.BuiltInTablePropKinds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropContent
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropLocation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPlacement
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableSeatAnchor
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileDimensions
@@ -61,17 +63,20 @@ class RiichiTablePropsTest {
      * @param facing 桌子的世界朝向。
      * @return 物件的世界座標與朝向。
      */
-    private fun TablePropPlacement.place(facing: MahjongTableFacing): MahjongTileWallPlacement = MahjongTileTableLayout.seatAnchorPlacement(
-        controllerX = CONTROLLER_X,
-        controllerY = CONTROLLER_Y,
-        controllerZ = CONTROLLER_Z,
-        tableFacing = facing,
-        seatLayout = MahjongTableSeatLayout.FOUR_PLAYER,
-        seatIndex = seatIndex,
-        anchor = anchor,
-        offset = offset,
-        yawOffset = yawOffset,
-    )
+    private fun TablePropPlacement.place(facing: MahjongTableFacing): MahjongTileWallPlacement {
+        val location = this.location as TablePropLocation.Seat
+        return MahjongTileTableLayout.seatAnchorPlacement(
+            controllerX = CONTROLLER_X,
+            controllerY = CONTROLLER_Y,
+            controllerZ = CONTROLLER_Z,
+            tableFacing = facing,
+            seatLayout = MahjongTableSeatLayout.FOUR_PLAYER,
+            seatIndex = location.seatIndex,
+            anchor = location.anchor,
+            offset = location.offset,
+            yawOffset = location.yawOffset,
+        )
+    }
 
     /**
      * 以測試容差比較兩個世界座標與朝向。
@@ -92,8 +97,8 @@ class RiichiTablePropsTest {
     fun `each riichi player gets a thousand stick at their discards`() {
         val props = RiichiTableProps.describe(state(riichiSeatIndices = setOf(1, 3), stickPotCount = 2))
 
-        assertEquals(listOf(1, 3), props.map { it.seatIndex })
-        assertTrue(props.all { it.anchor == TableSeatAnchor.DISCARD_INNER_EDGE && it.variant == "1000" })
+        assertEquals(listOf(1, 3), props.map { (it.location as TablePropLocation.Seat).seatIndex })
+        assertTrue(props.all { (it.location as TablePropLocation.Seat).anchor == TableSeatAnchor.DISCARD_INNER_EDGE && it.content == TablePropContent.CustomVariant("1000") })
         assertTrue(props.all { it.kind == BuiltInTablePropKinds.SCORING_STICK })
     }
 
@@ -101,10 +106,10 @@ class RiichiTablePropsTest {
     @Test
     fun `the dealer corner stacks combo sticks before the carried-over pot`() {
         val props = RiichiTableProps.describe(state(riichiSeatIndices = setOf(0), dealerSeatIndex = 2, comboCount = 2, stickPotCount = 3))
-        val corner = props.filter { it.anchor == TableSeatAnchor.MELD_CORNER }
+        val corner = props.filter { (it.location as TablePropLocation.Seat).anchor == TableSeatAnchor.MELD_CORNER }
 
-        assertTrue(corner.all { it.seatIndex == 2 })
-        assertEquals(listOf("100", "100", "1000", "1000"), corner.map { it.variant })
+        assertTrue(corner.all { (it.location as TablePropLocation.Seat).seatIndex == 2 })
+        assertEquals(listOf("100", "100", "1000", "1000"), corner.map { (it.content as TablePropContent.CustomVariant).value })
     }
 
     /** 沒有連莊、沒有供託、沒有人立直時，桌上沒有任何點棒。 */

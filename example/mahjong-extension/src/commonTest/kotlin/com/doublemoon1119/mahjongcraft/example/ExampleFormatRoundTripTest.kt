@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.example
 import com.doublemoon1119.mahjongcraft.example.action.ExamplePairingDeclarationAction
 import com.doublemoon1119.mahjongcraft.example.action.ExamplePairingDeclarationCommand
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingDiscardPile
+import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingDynamicState
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingHandValueResult
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingIds
@@ -11,6 +12,7 @@ import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingRuleConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailValue
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DiscardPileDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DynamicRuleStateDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.ExtensionGameActionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.ExtensionGameCommandDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.MahjongRuleConfigDto
@@ -61,11 +63,15 @@ class ExampleFormatRoundTripTest {
     @Test
     fun `settlement detail records the configured payment`() {
         val table = FakeTableStateFactory.create(config = ExamplePairingRuleConfig(paymentPerPlayer = 20))
-        val field = ExamplePairingWinSettlementDetailResolver.resolve(table, ExamplePairingHandValueResult).single()
+        val fields = ExamplePairingWinSettlementDetailResolver.resolve(table, ExamplePairingHandValueResult())
+        val field = fields.first { it.id == ExamplePairingWinSettlementDetailResolver.PAYMENT_PER_PLAYER }
         assertEquals(ExamplePairingWinSettlementDetailResolver.PAYMENT_PER_PLAYER, field.id)
         val quantity = assertIs<WinSettlementDetailValue.Quantities>(field.value).quantities.single()
         assertEquals(ExamplePairingWinSettlementDetailResolver.POINTS, quantity.unitId)
         assertEquals(20, quantity.amount)
+        val bonus = fields.first { it.id == ExamplePairingWinSettlementDetailResolver.BONUS_TILE_COUNT }
+        val bonusQuantity = assertIs<WinSettlementDetailValue.Quantities>(bonus.value).quantities.single()
+        assertEquals(0, bonusQuantity.amount)
     }
 
     /** 網路多型格式必須保留設定、公開狀態、動作、命令及擴充牌種。 */
@@ -85,6 +91,14 @@ class ExampleFormatRoundTripTest {
         val stateSerializer = PolymorphicSerializer(PlayerRuleStateDto::class)
         val stateDto = format.decodeFromString(stateSerializer, format.encodeToString(stateSerializer, registries.playerRuleState.toDto(state)))
         assertEquals(state, registries.playerRuleState.toDomain(stateDto))
+
+        val dynamicState = ExamplePairingDynamicState(setOf(1, 3, 5))
+        val dynamicStateSerializer = PolymorphicSerializer(DynamicRuleStateDto::class)
+        val dynamicStateDto = format.decodeFromString(
+            dynamicStateSerializer,
+            format.encodeToString(dynamicStateSerializer, registries.dynamicRuleState.toDto(dynamicState)),
+        )
+        assertEquals(dynamicState, registries.dynamicRuleState.toDomain(dynamicStateDto))
 
         val actionSerializer = PolymorphicSerializer(ExtensionGameActionDto::class)
         val actionDto = format.decodeFromString(actionSerializer, format.encodeToString(actionSerializer, registries.extensionGameAction.toDto(ExamplePairingDeclarationAction)))
@@ -112,6 +126,8 @@ class ExampleFormatRoundTripTest {
         assertEquals(config, registries.ruleConfigs.decode(registries.ruleConfigs.encode(config)))
         val state = ExamplePairingPlayerState(declared = true)
         assertEquals(state, registries.playerRuleStates.decode(registries.playerRuleStates.encode(state)))
+        val dynamicState = ExamplePairingDynamicState(setOf(1, 3, 5))
+        assertEquals(dynamicState, registries.dynamicRuleStates.decode(registries.dynamicRuleStates.encode(dynamicState)))
         val encodedAction = registries.extensionGameActions.encode(ExamplePairingDeclarationAction)
         assertEquals(ExamplePairingIds.DECLARE_ACTION, encodedAction.typeKey)
         assertEquals(ExamplePairingDeclarationAction, registries.extensionGameActions.decode(encodedAction))

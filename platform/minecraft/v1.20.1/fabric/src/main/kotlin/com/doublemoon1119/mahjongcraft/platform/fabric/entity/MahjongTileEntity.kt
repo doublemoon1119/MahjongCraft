@@ -502,10 +502,9 @@ class MahjongTileEntity(
      * 還沒播完的 step 會在世界重新載入、entity 開始被 tick 之後自動接續播放，不需要另外觸發。
      */
     override fun readCustomDataFromNbt(nbt: NbtCompound) {
-        managedByGame = nbt.getBoolean(NBT_KEY_MANAGED_BY_GAME)
-        managedTableId = nbt.getString(NBT_KEY_MANAGED_TABLE_ID)
-            .takeIf(String::isNotBlank)
-            ?.let { encoded -> runCatching { Uuid.parse(encoded) }.getOrNull() }
+        val management = GameManagedEntityNbt.read(nbt)
+        managedByGame = management.managedByGame
+        managedTableId = management.tableId
         tileAssetKey = nbt.getString(NBT_KEY_TILE)
         tilePose = MahjongTilePose.fromNameOrDefault(nbt.getString(NBT_KEY_POSE))
         dataTracker.set(ACTION_POPUP_KIND, TileActionPopupKindNbt.read(nbt, NBT_KEY_ACTION_POPUP_KIND).name)
@@ -520,8 +519,7 @@ class MahjongTileEntity(
     override fun writeCustomDataToNbt(nbt: NbtCompound) {
         nbt.putString(NBT_KEY_TILE, tileAssetKey)
         nbt.putString(NBT_KEY_POSE, tilePose.name)
-        nbt.putBoolean(NBT_KEY_MANAGED_BY_GAME, managedByGame)
-        managedTableId?.let { tableId -> nbt.putString(NBT_KEY_MANAGED_TABLE_ID, tableId.toString()) }
+        GameManagedEntityNbt.write(nbt, managedByGame, managedTableId)
         TileActionPopupKindNbt.write(nbt, NBT_KEY_ACTION_POPUP_KIND, actionPopupKind)
         nbt.putLong(NBT_KEY_ACTION_POPUP_START_GAME_TIME, actionPopupStartGameTime)
         nbt.putLong(NBT_KEY_ACTION_POPUP_END_GAME_TIME, actionPopupEndGameTime)
@@ -545,12 +543,6 @@ class MahjongTileEntity(
 
         /** 姿態世界存檔 key。 */
         private const val NBT_KEY_POSE = "Pose"
-
-        /** 正式牌局管理狀態世界存檔 key。 */
-        private const val NBT_KEY_MANAGED_BY_GAME = "ManagedByGame"
-
-        /** 正式牌局所屬桌子 UUID 的世界存檔 key。 */
-        private const val NBT_KEY_MANAGED_TABLE_ID = "ManagedTableId"
 
         /** 捨牌或鳴牌提示種類的世界存檔 key。 */
         private const val NBT_KEY_ACTION_POPUP_KIND = "ActionPopupKind"

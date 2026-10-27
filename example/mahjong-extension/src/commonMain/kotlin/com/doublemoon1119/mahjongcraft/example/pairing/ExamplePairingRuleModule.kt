@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.logic.base.ExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.base.TileOrder
 import com.doublemoon1119.mahjongcraft.logic.config.DynamicRuleState
 import com.doublemoon1119.mahjongcraft.logic.judgment.HandValueCalculator
@@ -24,6 +25,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallLayout
 import com.doublemoon1119.mahjongcraft.logic.table.opening.RoundOpeningProcedure
 import com.doublemoon1119.mahjongcraft.logic.tile.TileInterpretationPolicy
+import kotlin.random.Random
 import kotlin.uuid.Uuid
 
 /**
@@ -56,9 +58,9 @@ class ExamplePairingRuleModule(
 
     override fun createHandValueContextCalculator(): HandValueContextCalculator<*, *> = ExamplePairingHandValueContextCalculator()
 
-    override fun createInitialDynamicState(): DynamicRuleState? = null
+    override fun createInitialDynamicState(): DynamicRuleState = createBonusState()
 
-    override fun createNextRoundDynamicState(previous: DynamicRuleState?): DynamicRuleState? = null
+    override fun createNextRoundDynamicState(previous: DynamicRuleState?): DynamicRuleState = createBonusState()
 
     override fun createInitialPlayerRuleState(): PlayerRuleState = ExamplePairingPlayerState()
 
@@ -66,6 +68,8 @@ class ExamplePairingRuleModule(
         val state = player.playerRuleState as? ExamplePairingPlayerState ?: return null
         return state.takeIf { player.id == observerId || it.declared }
     }
+
+    override fun projectDynamicRuleState(tableState: TableState, observerId: Uuid): DynamicRuleState? = (tableState.dynamicRuleState as? ExamplePairingDynamicState)?.let { it.copy(bonusTileValues = it.bonusTileValues.toSet()) }
 
     override fun getPublicPlayerIndicators(tableState: TableState, player: MahjongPlayer): List<PublicPlayerIndicator> = if ((player.playerRuleState as? ExamplePairingPlayerState)?.declared == true) {
         listOf(PublicPlayerIndicator(ExamplePairingIds.DECLARATION_INDICATOR))
@@ -90,11 +94,28 @@ class ExamplePairingRuleModule(
         if (player.hand.lastDrawn == null) return null
         val fullHand = player.hand
         if (ExamplePairingShantenCalculator().calculate(fullHand) !is ShantenResult.Complete) return null
-        val payments = tableState.players.filter { it.id != player.id }.associate { it.id to config.paymentPerPlayer }
+        val bonusTileValues = requireNotNull(tableState.dynamicRuleState as? ExamplePairingDynamicState) {
+            "Example pairing dynamic state is required for settlement"
+        }.bonusTileValues
+        val bonusTileCount = bonusTileValues.count { value -> player.hand.standingTiles.any { it.tile.examplePairingValue() == value } }
+        val payment = config.paymentPerPlayer + bonusTileCount
+        val payments = tableState.players.filter { it.id != player.id }.associate { it.id to payment }
         return WinResolutionResult(
-            settlement = WinSettlementResult(config.paymentPerPlayer * payments.size, payments),
-            handValueResult = ExamplePairingHandValueResult,
+            settlement = WinSettlementResult(payment * payments.size, payments),
+            handValueResult = ExamplePairingHandValueResult(bonusTileCount),
         )
+    }
+
+    /** 依本局設定隨機選出比牌山牌種少一種的固定加分牌集合。 */
+    private fun createBonusState(): ExamplePairingDynamicState = ExamplePairingDynamicState(
+        bonusTileValues = config.wallTileValues.shuffled(Random.Default).take(config.wallTileValues.size - 1).toSet(),
+    )
+
+    /** 將範例牌面轉成配對規則使用的萬子點數；倒置一萬也視為一萬。 */
+    private fun Tile.examplePairingValue(): Int? = when (this) {
+        is Tile.Numeric -> value
+        is Tile.Extension -> if (typeId == ExamplePairingIds.INVERTED_ONE_MAN) 1 else null
+        is Tile.Honor -> null
     }
 
     override fun declareRon(

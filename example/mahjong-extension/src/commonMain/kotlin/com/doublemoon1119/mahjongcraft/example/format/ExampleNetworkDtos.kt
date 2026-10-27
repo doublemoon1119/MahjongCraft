@@ -5,12 +5,14 @@ import com.doublemoon1119.mahjongcraft.example.action.ExamplePairingDeclarationC
 import com.doublemoon1119.mahjongcraft.example.format.network.ExamplePairingDeclarationActionDto
 import com.doublemoon1119.mahjongcraft.example.format.network.ExamplePairingDeclarationCommandDto
 import com.doublemoon1119.mahjongcraft.example.format.network.ExamplePairingDiscardPileDto
+import com.doublemoon1119.mahjongcraft.example.format.network.ExamplePairingDynamicStateDto
 import com.doublemoon1119.mahjongcraft.example.format.network.ExamplePairingExhaustiveDrawReasonDto
 import com.doublemoon1119.mahjongcraft.example.format.network.ExamplePairingGameLengthDto
 import com.doublemoon1119.mahjongcraft.example.format.network.ExamplePairingPlayerStateDto
 import com.doublemoon1119.mahjongcraft.example.format.network.ExamplePairingRuleConfigDto
 import com.doublemoon1119.mahjongcraft.example.format.network.ExamplePairingScoreConfigDto
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingDiscardPile
+import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingDynamicState
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingGameLength
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingPlayerState
@@ -68,6 +70,15 @@ fun registerExampleNetworkDtos(registries: NetworkDtoRegistries) {
             serializer = ExamplePairingPlayerStateDto.serializer(),
             toDto = { it.toNetworkDto() },
             toDomain = { it.toDomain() },
+        ),
+    )
+    registries.dynamicRuleState.register(
+        definition = DtoDefinition(
+            domainClass = ExamplePairingDynamicState::class,
+            dtoClass = ExamplePairingDynamicStateDto::class,
+            serializer = ExamplePairingDynamicStateDto.serializer(),
+            toDto = { ExamplePairingDynamicStateDto(it.bonusTileValues) },
+            toDomain = { ExamplePairingDynamicState(it.bonusTileValues) },
         ),
     )
     registries.exhaustiveDrawReason.register(

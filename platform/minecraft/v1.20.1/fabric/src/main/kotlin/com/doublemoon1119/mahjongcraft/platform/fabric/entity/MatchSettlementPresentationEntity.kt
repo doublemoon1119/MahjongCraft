@@ -145,7 +145,7 @@ class MatchSettlementPresentationEntity(
      * @param nbt entity 的持久化資料。
      */
     override fun readCustomDataFromNbt(nbt: NbtCompound) {
-        dataTracker.set(TABLE_ID, nbt.getString(NBT_TABLE_ID))
+        dataTracker.set(TABLE_ID, ManagedTableNbt.read(nbt)?.toString().orEmpty())
         dataTracker.set(START_GAME_TIME, nbt.getLong(NBT_START_GAME_TIME))
         dataTracker.set(END_GAME_TIME, nbt.getLong(NBT_END_GAME_TIME))
         dataTracker.set(TEMPLATE_KEY, nbt.getString(NBT_TEMPLATE_KEY))
@@ -162,7 +162,7 @@ class MatchSettlementPresentationEntity(
      * @param nbt 接收 entity 持久化資料的 NBT。
      */
     override fun writeCustomDataToNbt(nbt: NbtCompound) {
-        nbt.putString(NBT_TABLE_ID, managedTableId?.toString().orEmpty())
+        ManagedTableNbt.write(nbt, managedTableId)
         nbt.putLong(NBT_START_GAME_TIME, startGameTime)
         nbt.putLong(NBT_END_GAME_TIME, endGameTime)
         nbt.putString(NBT_TEMPLATE_KEY, templateKey)
@@ -200,9 +200,6 @@ class MatchSettlementPresentationEntity(
 
         /** 排定揭曉音效後仍接受播放的 tick 寬限。 */
         private const val EVENT_GRACE_TICKS = 2L
-
-        /** 所屬桌子 UUID 的世界存檔 key。 */
-        private const val NBT_TABLE_ID = "ManagedTableId"
 
         /** 舞台開始時間的世界存檔 key。 */
         private const val NBT_START_GAME_TIME = "StartGameTime"

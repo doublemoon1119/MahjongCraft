@@ -64,6 +64,8 @@
   "mahjongcraft_example.rule.pairing.description": "Simple pairing mahjong settings.",
   "mahjongcraft_example.rule.pairing.name": "Pairing Mahjong",
   "mahjongcraft_example.rule_decision.exchange": "Tile exchange",
+  "mahjongcraft_example.settlement.bonus_tile_count": "Bonus tile payment",
+  "mahjongcraft_example.settlement.bonus_tile_kinds": "Bonus tiles: +%s point(s) per payer",
   "mahjongcraft_example.settlement.payment_per_player": "Payment per player",
   "mahjongcraft_example.settlement.points": "%s points",
   "mahjongcraft_example.tile.inverted_one_man": "Inverted 1-man"

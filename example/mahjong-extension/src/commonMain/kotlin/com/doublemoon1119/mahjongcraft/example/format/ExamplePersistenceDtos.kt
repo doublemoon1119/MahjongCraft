@@ -3,10 +3,12 @@ package com.doublemoon1119.mahjongcraft.example.format
 import com.doublemoon1119.mahjongcraft.example.action.ExamplePairingDeclarationAction
 import com.doublemoon1119.mahjongcraft.example.format.persistence.ExamplePairingDeclarationActionPersistenceDto
 import com.doublemoon1119.mahjongcraft.example.format.persistence.ExamplePairingDiscardPilePersistenceDto
+import com.doublemoon1119.mahjongcraft.example.format.persistence.ExamplePairingDynamicStatePersistenceDto
 import com.doublemoon1119.mahjongcraft.example.format.persistence.ExamplePairingExhaustiveDrawReasonPersistenceDto
 import com.doublemoon1119.mahjongcraft.example.format.persistence.ExamplePairingPlayerStatePersistenceDto
 import com.doublemoon1119.mahjongcraft.example.format.persistence.ExamplePairingRuleConfigPersistenceDto
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingDiscardPile
+import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingDynamicState
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingExhaustiveDrawReason
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingIds
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingPlayerState
@@ -47,6 +49,16 @@ fun registerExamplePersistenceDtos(registries: PersistenceRegistries) {
             serializer = ExamplePairingPlayerStatePersistenceDto.serializer(),
             toDto = { it.toPersistenceDto() },
             toDomain = { it.toDomain() },
+            compactInReplay = true,
+        ),
+    )
+    registries.dynamicRuleStates.register(
+        definition = PersistenceDtoDefinition(
+            typeKey = ExampleFormatIds.DYNAMIC_STATE,
+            domainClass = ExamplePairingDynamicState::class,
+            serializer = ExamplePairingDynamicStatePersistenceDto.serializer(),
+            toDto = { ExamplePairingDynamicStatePersistenceDto(it.bonusTileValues) },
+            toDomain = { ExamplePairingDynamicState(it.bonusTileValues) },
             compactInReplay = true,
         ),
     )

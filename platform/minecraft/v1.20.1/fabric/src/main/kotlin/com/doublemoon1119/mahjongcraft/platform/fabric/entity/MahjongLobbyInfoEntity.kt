@@ -95,7 +95,7 @@ class MahjongLobbyInfoEntity(
         ruleModuleId = nbt.getString(NBT_RULE_MODULE_ID)
         playerCount = nbt.getInt(NBT_PLAYER_COUNT)
         maximumPlayerCount = nbt.getInt(NBT_MAXIMUM_PLAYER_COUNT)
-        managedTableId = nbt.getString(NBT_MANAGED_TABLE_ID).takeIf(String::isNotBlank)?.let { Uuid.parse(it) }
+        managedTableId = ManagedTableNbt.read(nbt)
         if (nbt.contains(NBT_CONTROLLER_X)) {
             controllerPos = BlockPos(nbt.getInt(NBT_CONTROLLER_X), nbt.getInt(NBT_CONTROLLER_Y), nbt.getInt(NBT_CONTROLLER_Z))
         }
@@ -105,7 +105,7 @@ class MahjongLobbyInfoEntity(
         nbt.putString(NBT_RULE_MODULE_ID, ruleModuleId)
         nbt.putInt(NBT_PLAYER_COUNT, playerCount)
         nbt.putInt(NBT_MAXIMUM_PLAYER_COUNT, maximumPlayerCount)
-        managedTableId?.let { nbt.putString(NBT_MANAGED_TABLE_ID, it.toString()) }
+        ManagedTableNbt.write(nbt, managedTableId)
         controllerPos?.let {
             nbt.putInt(NBT_CONTROLLER_X, it.x)
             nbt.putInt(NBT_CONTROLLER_Y, it.y)
@@ -120,7 +120,6 @@ class MahjongLobbyInfoEntity(
         private const val NBT_RULE_MODULE_ID = "RuleModuleId"
         private const val NBT_PLAYER_COUNT = "PlayerCount"
         private const val NBT_MAXIMUM_PLAYER_COUNT = "MaximumPlayerCount"
-        private const val NBT_MANAGED_TABLE_ID = "ManagedTableId"
         private const val NBT_CONTROLLER_X = "ControllerX"
         private const val NBT_CONTROLLER_Y = "ControllerY"
         private const val NBT_CONTROLLER_Z = "ControllerZ"

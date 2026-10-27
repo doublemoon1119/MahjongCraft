@@ -20,6 +20,7 @@ want to run the example in a game.
 | AI strategy | Tsumogiri strategy | [AI test](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/ai/ExampleTsumogiriAiStrategyTest.kt) | Automated |
 | Network and persistence registration | Example-owned DTOs and mappings | [round-trip test](mahjong-extension/src/commonTest/kotlin/com/doublemoon1119/mahjongcraft/example/ExampleFormatRoundTripTest.kt) | Automated |
 | Minecraft presentation | Names, settings, history text and tile assets | [common adapter](platform/minecraft/common/README.md) | Automated and game-tested |
+| Public table props | Saved bonus tiles and custom declaration tokens | [prop checks](platform/minecraft/README.md#bonus-tiles-and-table-props) | Automated; game check pending |
 | Native seating | Block chair and persistent cushion | [Fabric adapter](platform/minecraft/v1.20.1/fabric/README.md) | Game-tested; ABI baseline established |
 | Public game events | Administrator chat observer | [Fabric adapter](platform/minecraft/v1.20.1/fabric/README.md) | Game-tested |
 | Missing-extension recovery | Keep authoritative data and restore it after reinstall | [recovery procedure](platform/minecraft/README.md#safe-recovery-check) | Manual check pending |
@@ -28,6 +29,13 @@ Minecraft game checks in this table currently refer to the Fabric 1.20.1
 adapter. They do not establish coverage for another version or loader.
 The table is deliberately limited to capabilities this example actually uses.
 A successful compile is not evidence that every extension point works.
+
+The pairing example also demonstrates rule-owned public table props. At the start of each
+round it selects one fewer bonus kind than the number of kinds in the configured wall. The
+selection is saved in the round's dynamic rule state, so the centre display and self-draw
+settlement use the same values. Repeated copies of one kind count once; the inverted 1-man
+is treated as the 1-man kind for this example. Each opponent pays the configured base plus that
+number of matching kinds. Declared players also add custom gold tokens to the same central layout.
 
 ## Compatibility boundaries
 

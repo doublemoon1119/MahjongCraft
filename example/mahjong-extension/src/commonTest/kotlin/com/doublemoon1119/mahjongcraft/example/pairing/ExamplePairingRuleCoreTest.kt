@@ -14,6 +14,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
+import kotlin.test.assertNotSame
+import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
 /** 覆蓋簡易配對規則的牌型、牌山與固定自摸結算核心行為。 */
@@ -152,6 +154,7 @@ class ExamplePairingRuleCoreTest {
             config = ExamplePairingRuleConfig(),
             tileWall = TileWall(),
             dealerPlayerId = winnerId,
+            dynamicRuleState = ExamplePairingDynamicState(setOf(8)),
         )
 
         val result = ExamplePairingRuleModule(ExamplePairingIds.RULE_MODULE, ExamplePairingRuleConfig())
@@ -160,6 +163,113 @@ class ExamplePairingRuleCoreTest {
         assertNotNull(result)
         assertEquals(10, result.settlement.totalGained)
         assertEquals(10, result.settlement.paymentsByPlayerId[otherId])
+    }
+
+    /** 每局選出牌種數量比牌山少一種，且自摸時每種加分牌只計一次。 */
+    @Test
+    fun `round bonus tiles are distinct and counted once per kind`() {
+        val module = ExamplePairingRuleModule(
+            ExamplePairingIds.RULE_MODULE,
+            ExamplePairingRuleConfig(wallTileValues = setOf(1, 2, 3, 4)),
+        )
+        val randomlySelectedState = assertIs<ExamplePairingDynamicState>(module.createInitialDynamicState())
+        assertEquals(3, randomlySelectedState.bonusTileValues.size)
+        assertTrue(randomlySelectedState.bonusTileValues.all { it in 1..4 })
+        val nextRandomlySelectedState = assertIs<ExamplePairingDynamicState>(module.createNextRoundDynamicState(randomlySelectedState))
+        assertEquals(3, nextRandomlySelectedState.bonusTileValues.size)
+        assertTrue(nextRandomlySelectedState.bonusTileValues.all { it in 1..4 })
+
+        val scoringState = ExamplePairingDynamicState(setOf(1, 2, 3))
+
+        val winnerId = Uuid.random()
+        val otherId = Uuid.random()
+        val winner = MahjongPlayer(
+            id = winnerId,
+            initialSeatIndex = 0,
+            hand = Hand(
+                tiles = listOf(
+                    identified(Tile.Numeric(Tile.Suit.Character, 1)),
+                    identified(Tile.Numeric(Tile.Suit.Character, 1)),
+                    identified(Tile.Numeric(Tile.Suit.Character, 2)),
+                ),
+                lastDrawn = identified(Tile.Numeric(Tile.Suit.Character, 2)),
+            ),
+            discardPile = ExamplePairingDiscardPile(),
+            seatWind = Wind.EAST,
+        )
+        val table = TableState(
+            id = Uuid.random(),
+            players = listOf(
+                winner,
+                MahjongPlayer(
+                    id = otherId,
+                    initialSeatIndex = 1,
+                    discardPile = ExamplePairingDiscardPile(),
+                    seatWind = Wind.SOUTH,
+                ),
+            ),
+            config = module.config,
+            tileWall = TileWall(),
+            dealerPlayerId = winnerId,
+            dynamicRuleState = scoringState,
+        )
+
+        val result = assertNotNull(module.declareTsumo(table, winner))
+        assertEquals(2, (result.handValueResult as ExamplePairingHandValueResult).bonusTileCount)
+        assertEquals(12, result.settlement.paymentsByPlayerId[otherId])
+        val projectedState = assertIs<ExamplePairingDynamicState>(module.projectDynamicRuleState(table, winnerId))
+        assertEquals(scoringState, projectedState)
+        assertNotSame(scoringState, projectedState)
+    }
+
+    /** 只有兩種牌時仍會選出一種加分牌，並可把倒置一萬算作一萬。 */
+    @Test
+    fun `minimum wall selects one bonus kind and inverted one man matches`() {
+        val module = ExamplePairingRuleModule(
+            ExamplePairingIds.RULE_MODULE,
+            ExamplePairingRuleConfig(wallTileValues = setOf(1, 2)),
+        )
+        val randomlySelectedState = assertIs<ExamplePairingDynamicState>(module.createInitialDynamicState())
+        assertEquals(1, randomlySelectedState.bonusTileValues.size)
+        assertTrue(randomlySelectedState.bonusTileValues.all { it in 1..2 })
+        val scoringState = ExamplePairingDynamicState(setOf(1))
+
+        val winnerId = Uuid.random()
+        val otherId = Uuid.random()
+        val winner = MahjongPlayer(
+            id = winnerId,
+            initialSeatIndex = 0,
+            hand = Hand(
+                tiles = listOf(
+                    identified(ExamplePairingTileType.invertedOneMan()),
+                    identified(ExamplePairingTileType.invertedOneMan()),
+                    identified(Tile.Numeric(Tile.Suit.Character, 2)),
+                ),
+                lastDrawn = identified(Tile.Numeric(Tile.Suit.Character, 2)),
+            ),
+            discardPile = ExamplePairingDiscardPile(),
+            seatWind = Wind.EAST,
+        )
+        val table = TableState(
+            id = Uuid.random(),
+            players = listOf(
+                winner,
+                MahjongPlayer(
+                    id = otherId,
+                    initialSeatIndex = 1,
+                    discardPile = ExamplePairingDiscardPile(),
+                    seatWind = Wind.SOUTH,
+                ),
+            ),
+            config = module.config,
+            tileWall = TileWall(),
+            dealerPlayerId = winnerId,
+            dynamicRuleState = scoringState,
+        )
+
+        val result = assertNotNull(module.declareTsumo(table, winner))
+        assertEquals(1, (result.handValueResult as ExamplePairingHandValueResult).bonusTileCount)
+        assertEquals(11, result.settlement.paymentsByPlayerId[otherId])
     }
 
     /**

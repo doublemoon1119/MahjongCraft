@@ -41,6 +41,7 @@ class FabricTableLocationValidationService(
     private val tileWallPresenter: MahjongTileWallPresenter,
     private val playerAreaPresenter: MahjongPlayerAreaPresenter,
     private val tablePropPresenter: TablePropPresenter,
+    private val tablePropRefreshQueue: TablePropRefreshQueue,
     private val tableCornerWidths: TableCornerWidthTracker,
     private val discardPresenter: MahjongDiscardPresenter,
 ) {
@@ -78,16 +79,19 @@ class FabricTableLocationValidationService(
     fun startSession(server: MinecraftServer) {
         activeServer = server
         validationQueue.startSession(server)
+        tablePropRefreshQueue.startSession(server)
         logger.debug("Started Mahjong table location validation for the current server session")
     }
 
     /** 停止處理並清除所有屬於舊 session 的延遲工作。 */
     fun stopSession() {
         val pendingRequestCount = nextTableLoads.size + readyTableLoads.size + validationQueue.pendingCount
+        val oldServer = activeServer
         activeServer = null
         nextTableLoads.clear()
         readyTableLoads.clear()
         validationQueue.stopSession()
+        oldServer?.let(tablePropRefreshQueue::stopSession)
         logger.debug("Stopped Mahjong table location validation and cleared {} pending request(s)", pendingRequestCount)
     }
 
@@ -127,6 +131,7 @@ class FabricTableLocationValidationService(
                 current.location,
             )
         }
+        activeServer?.let { tablePropRefreshQueue.enqueue(it, table.tableId) }
     }
 
     /**

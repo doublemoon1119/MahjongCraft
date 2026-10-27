@@ -25,9 +25,7 @@ abstract class AnimatedVisualEffectEntity(
     TableOwnedPresentationEntity {
     /** 所屬麻將桌。 */
     override val managedTableId: Uuid?
-        get() = dataTracker[TABLE_ID]
-            .takeIf(String::isNotBlank)
-            ?.let { encoded -> runCatching { Uuid.parse(encoded) }.getOrNull() }
+        get() = dataTracker[TABLE_ID].takeIf(String::isNotBlank)?.let { encoded -> runCatching { Uuid.parse(encoded) }.getOrNull() }
 
     /** 選擇具體視覺公式的穩定 key。 */
     val effectKey: String
@@ -145,7 +143,7 @@ abstract class AnimatedVisualEffectEntity(
 
     /** 從世界存檔還原效果描述與絕對時間軸。 */
     override fun readCustomDataFromNbt(nbt: NbtCompound) {
-        dataTracker.set(TABLE_ID, nbt.getString(NBT_KEY_TABLE_ID))
+        dataTracker.set(TABLE_ID, ManagedTableNbt.read(nbt)?.toString().orEmpty())
         dataTracker.set(EFFECT_KEY, nbt.getString(NBT_KEY_EFFECT_KEY))
         dataTracker.set(TARGET_ENTITY_ID, nbt.getString(NBT_KEY_TARGET_ENTITY_ID))
         dataTracker.set(ANIMATION_SEED, nbt.getLong(NBT_KEY_ANIMATION_SEED))
@@ -156,7 +154,7 @@ abstract class AnimatedVisualEffectEntity(
 
     /** 將效果描述與絕對時間軸寫入世界存檔；位置與 entity UUID 由原版 entity 序列化負責。 */
     override fun writeCustomDataToNbt(nbt: NbtCompound) {
-        nbt.putString(NBT_KEY_TABLE_ID, managedTableId?.toString().orEmpty())
+        ManagedTableNbt.write(nbt, managedTableId)
         nbt.putString(NBT_KEY_EFFECT_KEY, effectKey)
         nbt.putString(NBT_KEY_TARGET_ENTITY_ID, targetEntityId?.toString().orEmpty())
         nbt.putLong(NBT_KEY_ANIMATION_SEED, animationSeed)
@@ -166,9 +164,6 @@ abstract class AnimatedVisualEffectEntity(
     }
 
     companion object {
-        /** 所屬麻將桌 UUID 的世界存檔 key。 */
-        private const val NBT_KEY_TABLE_ID: String = "ManagedTableId"
-
         /** 效果 key 的世界存檔 key。 */
         private const val NBT_KEY_EFFECT_KEY: String = "EffectKey"
 

@@ -154,7 +154,7 @@ class MahjongPlayerInfoEntity(
         dataTracker.set(PLAYERS, nbt.getString(NBT_PLAYERS).ifBlank { "[]" })
         dealerPlayerId = nbt.getString(NBT_DEALER).takeIf(String::isNotBlank)?.let { Uuid.parse(it) }
         dataTracker.set(TABLE_FACING, MahjongTableFacing.fromNameOrDefault(nbt.getString(NBT_FACING)).name)
-        managedTableId = nbt.getString(NBT_TABLE_ID).takeIf(String::isNotBlank)?.let { Uuid.parse(it) }
+        managedTableId = ManagedTableNbt.read(nbt)
         if (nbt.contains(NBT_CONTROLLER_X)) {
             controllerPos = BlockPos(nbt.getInt(NBT_CONTROLLER_X), nbt.getInt(NBT_CONTROLLER_Y), nbt.getInt(NBT_CONTROLLER_Z))
         }
@@ -166,7 +166,7 @@ class MahjongPlayerInfoEntity(
         nbt.putString(NBT_PLAYERS, dataTracker[PLAYERS])
         dealerPlayerId?.let { nbt.putString(NBT_DEALER, it.toString()) }
         nbt.putString(NBT_FACING, dataTracker[TABLE_FACING])
-        managedTableId?.let { nbt.putString(NBT_TABLE_ID, it.toString()) }
+        ManagedTableNbt.write(nbt, managedTableId)
         controllerPos?.let {
             nbt.putInt(NBT_CONTROLLER_X, it.x)
             nbt.putInt(NBT_CONTROLLER_Y, it.y)
@@ -183,7 +183,6 @@ class MahjongPlayerInfoEntity(
         private const val NBT_PLAYERS = "Players"
         private const val NBT_DEALER = "DealerPlayerId"
         private const val NBT_FACING = "TableFacing"
-        private const val NBT_TABLE_ID = "ManagedTableId"
         private const val NBT_CONTROLLER_X = "ControllerX"
         private const val NBT_CONTROLLER_Y = "ControllerY"
         private const val NBT_CONTROLLER_Z = "ControllerZ"

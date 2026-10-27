@@ -5,16 +5,20 @@ import kotlin.math.abs
 /**
  * 一個規則桌面物件在世界中的身分與落點。
  *
+ * @property id 物件在同一桌與呈現世代內的穩定識別碼。
+ * @property ruleModuleId 產生物件的規則模組識別碼，供原生種類選擇正確外觀。
  * @property kind 物件種類識別碼。
- * @property variant 種類內的變體。
+ * @property content 種類內要呈現的型別化內容。
  * @property x 世界 X 座標。
  * @property y 世界 Y 座標。
  * @property z 世界 Z 座標。
  * @property yaw 水平朝向（度）。
  */
 data class TablePropTarget(
+    val id: String,
+    val ruleModuleId: String,
     val kind: String,
-    val variant: String,
+    val content: TablePropContent,
     val x: Double,
     val y: Double,
     val z: Double,
@@ -26,8 +30,10 @@ data class TablePropTarget(
      * @param other 要比較的目標。
      * @return 種類、變體、座標與朝向都相符時為 `true`。
      */
-    fun matches(other: TablePropTarget): Boolean = kind == other.kind &&
-        variant == other.variant &&
+    fun matches(other: TablePropTarget): Boolean = id == other.id &&
+        ruleModuleId == other.ruleModuleId &&
+        kind == other.kind &&
+        content == other.content &&
         abs(x - other.x) <= POSITION_EPSILON &&
         abs(y - other.y) <= POSITION_EPSILON &&
         abs(z - other.z) <= POSITION_EPSILON &&

@@ -38,6 +38,7 @@ fun registerExamplePairingSettlementTemplates(registry: WinSettlementPresentatio
                         spacing = 5f,
                     ),
                     PresentationLayout.Text(PresentationFieldId(ExamplePairingWinSettlementDetailResolver.PAYMENT_PER_PLAYER)),
+                    PresentationLayout.Text(PresentationFieldId(ExamplePairingWinSettlementDetailResolver.BONUS_TILE_COUNT)),
                     PresentationLayout.Text(BuiltInWinSettlementFieldIds.PAYMENT_SUMMARY),
                     PresentationLayout.Text(BuiltInWinSettlementFieldIds.TOTAL_SCORE),
                 ),
@@ -46,6 +47,7 @@ fun registerExamplePairingSettlementTemplates(registry: WinSettlementPresentatio
             ),
             detailFieldLabelKeys = mapOf(
                 PresentationFieldId(ExamplePairingWinSettlementDetailResolver.PAYMENT_PER_PLAYER) to ExampleMinecraftMessageKeys.PAYMENT_PER_PLAYER,
+                PresentationFieldId(ExamplePairingWinSettlementDetailResolver.BONUS_TILE_COUNT) to ExampleMinecraftMessageKeys.BONUS_TILE_COUNT,
             ),
         ),
     )
@@ -61,6 +63,26 @@ fun registerExamplePairingSettlementTemplates(registry: WinSettlementPresentatio
             formatter = ExamplePairingPaymentFormatter,
         ),
     )
+    registry.register(
+        WinSettlementDetailTextFormatterDefinition(
+            fieldId = ExamplePairingWinSettlementDetailResolver.BONUS_TILE_COUNT,
+            formatter = ExamplePairingBonusTileFormatter,
+        ),
+    )
+}
+
+/** 將命中的加分牌種類數量轉成玩家容易理解的文字。 */
+private object ExamplePairingBonusTileFormatter : WinSettlementDetailTextFormatter {
+    override fun quantities(quantities: List<WinSettlementQuantity>): PresentationValue.TextValue {
+        val count = quantities.singleOrNull()?.takeIf { it.unitId == ExamplePairingWinSettlementDetailResolver.POINTS }
+            ?: return FallbackWinSettlementDetailTextFormatter.quantities(quantities)
+        return PresentationValue.TextValue(
+            translationKey = ExampleMinecraftMessageKeys.BONUS_TILE_KINDS,
+            arguments = listOf(count.amount.toString()),
+        )
+    }
+
+    override fun entries(entries: List<WinSettlementDetailEntry>): PresentationValue.EntryListValue = FallbackWinSettlementDetailTextFormatter.entries(entries)
 }
 
 /** 將簡易配對的付款點數轉成翻譯文字。 */

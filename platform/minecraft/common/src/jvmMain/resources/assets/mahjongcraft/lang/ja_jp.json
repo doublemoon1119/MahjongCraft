@@ -849,6 +849,7 @@
   "mahjongcraft.message.start_blocked_offline_players": "開始できません：%s がオフラインです",
   "mahjongcraft.message.table_animation_busy": "テーブルが演出を再生中です。しばらくお待ちください",
   "mahjongcraft.message.table_not_reachable": "そのテーブルが見つからないか、操作できる範囲外です",
+  "mahjongcraft.message.table_rule_props_unavailable": "卓上の加点牌・チップ・点棒などを表示できません。対局は続行できます。詳細はサーバーログを確認してください。",
   "mahjongcraft.message.target_not_ai": "そのプレイヤーはAIではないため、戦略を変更できません",
   "mahjongcraft.message.tile_honor_east": "東",
   "mahjongcraft.message.tile_honor_green": "發",

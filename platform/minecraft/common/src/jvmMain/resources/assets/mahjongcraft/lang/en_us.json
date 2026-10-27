@@ -849,6 +849,7 @@
   "mahjongcraft.message.start_blocked_offline_players": "Cannot start: offline: %s",
   "mahjongcraft.message.table_animation_busy": "The table is playing an animation, please wait a moment",
   "mahjongcraft.message.table_not_reachable": "That table does not exist or is out of reach",
+  "mahjongcraft.message.table_rule_props_unavailable": "Rule markers on the table (such as bonus tiles, tokens or scoring sticks) could not be displayed. The match can continue. See the server log for details.",
   "mahjongcraft.message.target_not_ai": "That player is not an AI player, cannot change its strategy",
   "mahjongcraft.message.tile_honor_east": "East",
   "mahjongcraft.message.tile_honor_green": "Green Dragon",

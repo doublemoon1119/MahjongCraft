@@ -4,6 +4,7 @@ import com.doublemoon1119.mahjongcraft.example.ExampleExtensionIds
 import com.doublemoon1119.mahjongcraft.example.fabric.event.ExampleGameEventChat
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.ExampleFurniture
 import com.doublemoon1119.mahjongcraft.example.fabric.registry.ExampleItemGroups
+import com.doublemoon1119.mahjongcraft.example.fabric.table.ExampleDeclarationChipEntities
 import com.doublemoon1119.mahjongcraft.platform.fabric.logging.mahjongCraftLogger
 import net.fabricmc.api.ModInitializer
 
@@ -15,6 +16,7 @@ class ExampleMod : ModInitializer {
     /** 先完成原生家具與分頁註冊，再訂閱此程序的遊戲事件。 */
     override fun onInitialize() {
         ExampleFurniture.register()
+        ExampleDeclarationChipEntities.register()
         ExampleItemGroups.register()
         ExampleGameEventChat.register()
         logger.info("Example mod loaded: {}", ExampleExtensionIds.MOD_ID)

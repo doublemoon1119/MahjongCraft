@@ -5,10 +5,30 @@ import kotlin.uuid.Uuid
 /**
  * 將規則描述的桌面物件同步到 Minecraft 世界的版本 adapter 邊界。
  *
- * 採差量同步：種類、變體、落點與朝向都相同的既有物件原樣保留，只替缺少的落點生成新物件，新物件全部生成
- * 成功後才移除多出來的舊物件。
+ * 採差量同步：身分、內容、落點與朝向相符的物件原樣保留。完整場景通過驗證後才替換變動物件；
+ * 無法完整呈現時清除失效顯示並回報，不留下部分成功結果。
  */
 interface TablePropPresenter {
+    /** 清除前一個伺服器 session 的中央區域保留與暫存狀態。 */
+    fun startSession() = Unit
+
+    /**
+     * 暫時保留本桌中央區域，避免開門擲骰期間重新擺放規則桌面物件。
+     *
+     * @param tableId 麻將桌 UUID。
+     * @param generation 開局呈現世代；舊世代不能影響新世代。
+     */
+    fun reserveCenter(tableId: Uuid, generation: Long) = Unit
+
+    /**
+     * 釋放指定開局世代的中央區域保留。
+     *
+     * @param tableId 麻將桌 UUID。
+     * @param generation 要釋放的開局呈現世代。
+     * @return 確實釋放目前保留時為 `true`。
+     */
+    fun releaseCenter(tableId: Uuid, generation: Long): Boolean = false
+
     /**
      * 把指定桌子的規則桌面物件同步為 [presentation] 描述的完整清單。
      *

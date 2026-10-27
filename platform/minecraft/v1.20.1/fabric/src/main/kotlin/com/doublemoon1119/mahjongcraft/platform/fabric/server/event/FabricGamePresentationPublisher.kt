@@ -106,6 +106,7 @@ import net.minecraft.server.world.ServerWorld
 import net.minecraft.state.property.Properties
 import net.minecraft.util.Identifier
 import net.minecraft.util.math.BlockPos
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.random.Random
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
@@ -201,6 +202,12 @@ class FabricGamePresentationPublisher(
     /** 伺服器 session 結束時清除尚未完成的開局呈現暫存資料。 */
     fun clearOpeningSession() {
         openingState.clearAll()
+        tablePropPresenter.startSession()
+    }
+
+    /** 清除新伺服器 session 不應沿用的桌面物件 reservation。 */
+    fun startTablePropSession() {
+        tablePropPresenter.startSession()
     }
 
     override fun publishGameActionDeclared(gameId: Uuid, actorId: Uuid, action: GameAction) {
@@ -387,48 +394,77 @@ class FabricGamePresentationPublisher(
         gameId: Uuid,
         rolls: List<OpeningDiceRoll>,
     ) {
-        if (rolls.isEmpty()) return
+        val openingOperation = openingOperations.getRegisteringTicket(gameId)
+        if (rolls.isEmpty()) {
+            openingOperation?.let { ticket ->
+                scope.launch(dispatchers.main) {
+                    if (tablePropPresenter.releaseCenter(gameId, ticket.generation)) publishRuleStateUpdated(gameId)
+                }
+            }
+            return
+        }
         if (serverHolder.current() == null) {
             logger.warn("publishOpeningRolls gameId={} skipped: no active server", gameId)
+            openingOperation?.let { ticket ->
+                scope.launch(dispatchers.main) { tablePropPresenter.releaseCenter(gameId, ticket.generation) }
+            }
             return
         }
         val wallDropTicks = openingState.wallDropTicks(gameId)
-        val openingOperation = openingOperations.getRegisteringTicket(gameId)
-        launchOpeningStage(gameId, "opening-dice-rolls", openingOperation, pendingOperation = "publishOpeningRolls") {
-            val timeline = MahjongDiceRollTimeline.segments(rolls.map { it.dice.values.size }, wallDropTicks)
-            val resolved = resolveTableContext(gameId, "publishOpeningRolls") ?: return@launchOpeningStage
-            val state = gameRepository.getTableState(gameId) ?: return@launchOpeningStage
-            val seatLayout = MahjongTableSeatLayout.forPlayerCount(state.players.size)
-            val timelineAnchor = openingState.awaitWallStartGameTime(gameId) ?: resolved.world.time
-            if (!openingOperations.mayRun(openingOperation)) return@launchOpeningStage
-
-            rolls.zip(timeline).forEachIndexed { index, (roll, segment) ->
-                worldTickWaiter.await(resolved.world, timelineAnchor + segment.startOffsetTicks)
-                if (!openingOperations.mayRun(openingOperation)) return@launchOpeningStage
-                val actorSeatIndex = state.players.indexOfFirst { it.id == roll.playerId }
-                check(actorSeatIndex >= 0) { "Opening dice roll actor is not seated: ${roll.playerId}" }
-                val presentation = MahjongDiceRollPresentation(
-                    tableId = gameId,
-                    tableLocation = resolved.location,
-                    tableFacing = resolved.facing,
-                    throwSide = seatLayout.sideOf(actorSeatIndex),
-                    rollSequence = openingState.openingRollSequence(gameId, roll.rollIndex) ?: index.toLong(),
-                    dice = roll.dice.values.map { point ->
-                        MahjongDicePresentation(
-                            point = point,
-                            animationSeed = Random.nextLong(),
-                        )
-                    },
-                    extraLeadDelayTicks = 0,
-                )
-                val result = diceRollPresenter.present(presentation)
-                if (result == MahjongDiceRollPresentationResult.SPAWN_FAILED) {
-                    error("Dice roll presentation failed to spawn")
+        val released = AtomicBoolean(false)
+        fun releaseCenter() {
+            val ticket = openingOperation ?: return
+            if (released.compareAndSet(false, true)) {
+                scope.launch(dispatchers.main) {
+                    if (tablePropPresenter.releaseCenter(gameId, ticket.generation)) publishRuleStateUpdated(gameId)
                 }
-                worldTickWaiter.await(resolved.world, timelineAnchor + segment.endOffsetTicks)
-                if (!openingOperations.mayRun(openingOperation)) return@launchOpeningStage
             }
         }
+        val job = launchOpeningStage(gameId, "opening-dice-rolls", openingOperation, pendingOperation = "publishOpeningRolls") {
+            try {
+                val timeline = MahjongDiceRollTimeline.segments(rolls.map { it.dice.values.size }, wallDropTicks)
+                val resolved = resolveTableContext(gameId, "publishOpeningRolls") ?: return@launchOpeningStage
+                val state = gameRepository.getTableState(gameId) ?: return@launchOpeningStage
+                val seatLayout = MahjongTableSeatLayout.forPlayerCount(state.players.size)
+                val timelineAnchor = openingState.awaitWallStartGameTime(gameId) ?: resolved.world.time
+                if (!openingOperations.mayRun(openingOperation)) return@launchOpeningStage
+
+                rolls.zip(timeline).forEachIndexed { index, (roll, segment) ->
+                    worldTickWaiter.await(resolved.world, timelineAnchor + segment.startOffsetTicks)
+                    if (!openingOperations.mayRun(openingOperation)) return@launchOpeningStage
+                    val actorSeatIndex = state.players.indexOfFirst { it.id == roll.playerId }
+                    check(actorSeatIndex >= 0) { "Opening dice roll actor is not seated: ${roll.playerId}" }
+                    val presentation = MahjongDiceRollPresentation(
+                        tableId = gameId,
+                        tableLocation = resolved.location,
+                        tableFacing = resolved.facing,
+                        throwSide = seatLayout.sideOf(actorSeatIndex),
+                        rollSequence = openingState.openingRollSequence(gameId, roll.rollIndex) ?: index.toLong(),
+                        dice = roll.dice.values.map { point ->
+                            MahjongDicePresentation(
+                                point = point,
+                                animationSeed = Random.nextLong(),
+                            )
+                        },
+                        extraLeadDelayTicks = 0,
+                    )
+                    val result = diceRollPresenter.present(presentation)
+                    if (result == MahjongDiceRollPresentationResult.SPAWN_FAILED) {
+                        error("Dice roll presentation failed to spawn")
+                    }
+                    worldTickWaiter.await(resolved.world, timelineAnchor + segment.endOffsetTicks)
+                    if (!openingOperations.mayRun(openingOperation)) return@launchOpeningStage
+                }
+            } finally {
+                if (openingOperation == null || openingOperations.mayRun(openingOperation)) {
+                    tableLocationRegistry.get(gameId)?.let { entry ->
+                        diceRollPresenter.clear(gameId, entry.location)
+                    }
+                }
+                releaseCenter()
+            }
+        }
+        job.invokeOnCompletion { releaseCenter() }
     }
 
     /**
@@ -463,6 +499,9 @@ class FabricGamePresentationPublisher(
             .maxOfOrNull { position -> position.stack + 1 } ?: 0
         val wallDropTicks = MahjongTileTableLayout.wallDropAnimationTicks(stacksPerSide)
         val openingOperation = if (isNewOpening) openingOperations.begin(gameId) else null
+        if (openingOperation != null && openingDiceCounts.isNotEmpty()) {
+            tablePropPresenter.reserveCenter(gameId, openingOperation.generation)
+        }
         openingState.beginWall(
             gameId = gameId,
             wallDropTicks = wallDropTicks,
@@ -623,11 +662,15 @@ class FabricGamePresentationPublisher(
         val openingOperation = openingOperations.getRegisteringTicket(gameId)
         launchOpeningStage(gameId, "table-props", openingOperation) {
             val resolved = resolveTableContext(gameId, "publishRuleStateUpdated") ?: return@launchOpeningStage
-            val tableState = gameRepository.getTableState(gameId) ?: return@launchOpeningStage
+            val tableState = gameRepository.getTableState(gameId) ?: run {
+                tablePropPresenter.clear(gameId, resolved.location)
+                return@launchOpeningStage
+            }
             val describer = describerFor(tableState)
             val plan = cornerLayout.planRuleStateUpdate(gameId, tableState, describer.cornerWidthsBySeat(tableState))
             val propsPresentation = TablePropPresentation(
                 tableId = gameId,
+                ruleModuleId = moduleRegistry.getModule(tableState.config).id,
                 tableLocation = resolved.location,
                 tableFacing = resolved.facing,
                 seatLayout = MahjongTableSeatLayout.forPlayerCount(tableState.players.size),
@@ -1160,8 +1203,8 @@ class FabricGamePresentationPublisher(
         openingOperation: TableOpeningPresentationOperationTracker.Ticket?,
         pendingOperation: String? = null,
         block: suspend () -> Unit,
-    ) {
-        launchPresentation(
+    ): Job {
+        return launchPresentation(
             gameId = gameId,
             operation = pendingOperation ?: stage,
             blocksTable = pendingOperation != null,

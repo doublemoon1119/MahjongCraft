@@ -46,3 +46,28 @@ local.
 
 - A new capability that changes what appears on the table comes with debug scenarios that show it in game,
   including the crowded cases: many melds, several set-aside tiles and a wide corner.
+
+## Rule-owned table props
+
+- A rule supplies the complete scene through `TablePropDescriber`. Give every object a stable,
+  namespaced ID. Keep that ID when its content or position changes; do not generate a new UUID on
+  each refresh. Objects missing from the next description are removed.
+- Use `TablePropLocation.Seat` for a standard seat anchor, or `Center(order)` for the shared centre.
+  The adapter chooses central coordinates. The centre comes from the four discard rows, independently
+  of the number of players or wall faces; no rule receives reserved space by default.
+- A native prop kind owns one `TablePropKindDefinition`: its ID, actual model dimensions and pure
+  content validator. Register that kind once through the existing extension callback. Use the same
+  dimensions for rendering and occupancy; an entity's selection box is not its model size.
+- The layout checks rotated bounds in all three dimensions, including collisions between seat and
+  central props. Touching layers are allowed. Central allocation is deterministic and bounded, not an
+  optimal packing solver. An invalid scene or failed spawn clears the failed scene and reports the
+  problem; do not silently keep stale rule indicators or drop selected objects.
+- `FaceUpTile` creates a public display copy. It never borrows an actual hand, discard or wall tile's
+  UUID and never participates in tile selection. Choose its appearance from the public rule context,
+  while keeping the normal tile visibility policy unchanged.
+- A rule selects and saves any score-affecting bonus tiles in authoritative state. Presentation only
+  reads that state; refreshes, reconnection and loading never reroll it or decide scoring.
+- Reserve the centre before opening dice work is queued. Release it after the whole multi-roll
+  timeline, then request a scene from current state. Old sessions and opening generations cannot
+  release a new reservation or restore an obsolete scene. Reload refreshes wait for the search
+  area's entity chunks without forcing chunks to load.

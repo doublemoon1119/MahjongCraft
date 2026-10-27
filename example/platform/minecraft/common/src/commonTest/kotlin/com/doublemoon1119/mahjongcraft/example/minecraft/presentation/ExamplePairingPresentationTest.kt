@@ -4,8 +4,11 @@ import com.doublemoon1119.mahjongcraft.example.ExamplePairingWinSettlementDetail
 import com.doublemoon1119.mahjongcraft.example.minecraft.room.examplePairingGameConfigPresentation
 import com.doublemoon1119.mahjongcraft.example.minecraft.text.ExampleMinecraftMessageKeys
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingDiscardPile
+import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingDynamicState
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingIds
+import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingPlayerState
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingRuleConfig
+import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingTileType
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
@@ -15,13 +18,23 @@ import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
+import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigEditorSpec
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationValue
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.BuiltInTablePropDefinitions
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.BuiltInTablePropKinds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoArgument
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistryImpl
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableLocation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropContent
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropLayoutResult
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropLocation
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPresentation
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
@@ -166,5 +179,155 @@ class ExamplePairingPresentationTest {
             PresentationValue.TextValue(ExampleMinecraftMessageKeys.POINTS, listOf("25")),
             formatter.quantities(listOf(WinSettlementQuantity(ExamplePairingWinSettlementDetailResolver.POINTS, 25))),
         )
+    }
+
+    /** 桌面中央展示讀取本局保存的加分牌，並以穩定順序包含倒置一萬。 */
+    @Test
+    fun `table props display saved bonus tiles in stable order`() {
+        val players = listOf(Wind.EAST, Wind.WEST).mapIndexed { index, wind ->
+            MahjongPlayer(
+                id = Uuid.random(),
+                initialSeatIndex = index,
+                discardPile = ExamplePairingDiscardPile(),
+                seatWind = wind,
+            )
+        }
+        val table = TableState(
+            id = Uuid.random(),
+            players = players,
+            config = ExamplePairingRuleConfig(wallTileValues = setOf(1, 2, 3)),
+            tileWall = TileWall(),
+            dealerPlayerId = players.first().id,
+            dynamicRuleState = ExamplePairingDynamicState(setOf(3, 1)),
+        )
+
+        val props = ExamplePairingTableProps.describe(table)
+
+        assertEquals(
+            listOf(0, 1),
+            props.map { (it.location as TablePropLocation.Center).order },
+        )
+        assertEquals(
+            listOf(
+                TablePropContent.FaceUpTile(ExamplePairingTileType.invertedOneMan()),
+                TablePropContent.FaceUpTile(Tile.Numeric(Tile.Suit.Character, 3)),
+            ),
+            props.map { it.content },
+        )
+    }
+
+    /** 同一份桌面描述同時包含中央加分牌與已宣告玩家的自訂晶片。 */
+    @Test
+    fun `table props include declaration chip beside bonus tiles`() {
+        val declaredPlayer = MahjongPlayer(
+            id = Uuid.random(),
+            initialSeatIndex = 0,
+            playerRuleState = ExamplePairingPlayerState(declared = true),
+            discardPile = ExamplePairingDiscardPile(),
+            seatWind = Wind.EAST,
+        )
+        val table = TableState(
+            id = Uuid.random(),
+            players = listOf(
+                declaredPlayer,
+                MahjongPlayer(
+                    id = Uuid.random(),
+                    initialSeatIndex = 1,
+                    discardPile = ExamplePairingDiscardPile(),
+                    seatWind = Wind.WEST,
+                ),
+            ),
+            config = ExamplePairingRuleConfig(wallTileValues = setOf(1, 2)),
+            tileWall = TileWall(),
+            dealerPlayerId = declaredPlayer.id,
+            dynamicRuleState = ExamplePairingDynamicState(setOf(1)),
+        )
+
+        val props = ExamplePairingTableProps.describe(table)
+
+        assertEquals(2, props.size)
+        assertEquals("mahjongcraft:face_up_tile", props.first().kind)
+        assertEquals("mahjongcraft_example:declaration_chip", props.last().kind)
+    }
+
+    /** 八種牌山加四名宣告玩家時，中央混合物件仍能通過共用幾何配置。 */
+    @Test
+    fun `maximum bonus tiles and declaration chips fit the center`() {
+        val players = (0 until 4).map { index ->
+            MahjongPlayer(
+                id = Uuid.random(),
+                initialSeatIndex = index,
+                playerRuleState = ExamplePairingPlayerState(declared = true),
+                discardPile = ExamplePairingDiscardPile(),
+                seatWind = Wind.entries[index],
+            )
+        }
+        val table = TableState(
+            id = Uuid.random(),
+            players = players,
+            config = ExamplePairingRuleConfig(),
+            tileWall = TileWall(),
+            dealerPlayerId = players.first().id,
+            dynamicRuleState = ExamplePairingDynamicState((1..7).toSet()),
+        )
+        val placements = ExamplePairingTableProps.describe(table)
+        val presentation = TablePropPresentation(
+            tableId = table.id,
+            ruleModuleId = ExamplePairingIds.RULE_MODULE,
+            tableLocation = TableLocation("minecraft:overworld", 0, 64, 0),
+            tableFacing = MahjongTableFacing.SOUTH,
+            seatLayout = MahjongTableSeatLayout.FOUR_PLAYER,
+            placements = placements,
+        )
+        val result = presentation.targets(
+            mapOf(
+                BuiltInTablePropKinds.FACE_UP_TILE to BuiltInTablePropDefinitions.FACE_UP_TILE,
+                ExampleMinecraftPresentationIds.DECLARATION_CHIP_KIND to ExampleTablePropDefinitions.DECLARATION_CHIP,
+            ),
+        )
+
+        assertTrue(result is TablePropLayoutResult.Success)
+    }
+
+    /** 所有玩家人數與莊家席位都面向正確桌邊，並隨桌子朝向旋轉。 */
+    @Test
+    fun `bonus tiles face the current dealer for every roster and table facing`() {
+        val expectedSeatYaws = mapOf(2 to listOf(0f, 180f), 3 to listOf(0f, 270f, 180f), 4 to listOf(0f, 270f, 180f, 90f))
+        val facingYaws = mapOf(MahjongTableFacing.NORTH to 0f, MahjongTableFacing.EAST to 90f, MahjongTableFacing.SOUTH to 180f, MahjongTableFacing.WEST to 270f)
+        for ((count, seatYaws) in expectedSeatYaws) {
+            val players = (0 until count).map { index ->
+                MahjongPlayer(
+                    id = Uuid.random(),
+                    initialSeatIndex = index,
+                    playerRuleState = ExamplePairingPlayerState(declared = true),
+                    discardPile = ExamplePairingDiscardPile(),
+                    seatWind = Wind.entries[index],
+                )
+            }
+            for (dealer in players.indices) {
+                val state = TableState(
+                    id = Uuid.random(),
+                    players = players,
+                    config = ExamplePairingRuleConfig(),
+                    tileWall = TileWall(),
+                    dealerPlayerId = players[dealer].id,
+                    dynamicRuleState = ExamplePairingDynamicState((1..7).toSet()),
+                )
+                val props = ExamplePairingTableProps.describe(state)
+                assertTrue(props.filter { it.kind == BuiltInTablePropKinds.FACE_UP_TILE }.all { (it.location as TablePropLocation.Center).yaw == seatYaws[dealer] })
+                for ((facing, facingYaw) in facingYaws) {
+                    val scene = TablePropPresentation(
+                        tableId = state.id,
+                        ruleModuleId = ExamplePairingIds.RULE_MODULE,
+                        tableLocation = TableLocation("minecraft:overworld", 5, 64, -8),
+                        tableFacing = facing,
+                        seatLayout = MahjongTableSeatLayout.forPlayerCount(count),
+                        placements = props,
+                    )
+                    val targets = assertIs<TablePropLayoutResult.Success>(scene.targets(mapOf(BuiltInTablePropKinds.FACE_UP_TILE to BuiltInTablePropDefinitions.FACE_UP_TILE, ExampleMinecraftPresentationIds.DECLARATION_CHIP_KIND to ExampleTablePropDefinitions.DECLARATION_CHIP))).targets
+                    assertTrue(targets.filter { it.kind == BuiltInTablePropKinds.FACE_UP_TILE }.all { it.yaw == (seatYaws[dealer] + facingYaw).mod(360f) })
+                }
+            }
+        }
     }
 }

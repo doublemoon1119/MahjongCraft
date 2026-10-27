@@ -228,9 +228,7 @@ class MahjongRoundInfoEntity(
      */
     override fun readCustomDataFromNbt(nbt: NbtCompound) {
         dataTracker.set(LINES, nbt.getString(NBT_KEY_LINES))
-        managedTableId = nbt.getString(NBT_KEY_MANAGED_TABLE_ID)
-            .takeIf(String::isNotBlank)
-            ?.let { encoded -> runCatching { Uuid.parse(encoded) }.getOrNull() }
+        managedTableId = ManagedTableNbt.read(nbt)
         hiddenUntilGameTime = nbt.getLong(NBT_KEY_HIDDEN_UNTIL_GAME_TIME).takeIf { it > 0L } ?: Long.MIN_VALUE
         readAnimationQueueFromNbt(nbt)
     }
@@ -242,7 +240,7 @@ class MahjongRoundInfoEntity(
      */
     override fun writeCustomDataToNbt(nbt: NbtCompound) {
         nbt.putString(NBT_KEY_LINES, dataTracker[LINES])
-        managedTableId?.let { tableId -> nbt.putString(NBT_KEY_MANAGED_TABLE_ID, tableId.toString()) }
+        ManagedTableNbt.write(nbt, managedTableId)
         if (hiddenUntilGameTime != Long.MIN_VALUE) nbt.putLong(NBT_KEY_HIDDEN_UNTIL_GAME_TIME, hiddenUntilGameTime)
         writeAnimationQueueToNbt(nbt)
     }
@@ -256,9 +254,6 @@ class MahjongRoundInfoEntity(
 
         /** 局況顯示行內容的世界存檔 key。 */
         private const val NBT_KEY_LINES = "Lines"
-
-        /** 正式牌局桌子 UUID 的世界存檔 key。 */
-        private const val NBT_KEY_MANAGED_TABLE_ID = "ManagedTableId"
 
         /** 隱形 lease 截止遊戲時間的世界存檔 key。 */
         private const val NBT_KEY_HIDDEN_UNTIL_GAME_TIME = "HiddenUntilGameTime"

@@ -3,6 +3,7 @@ package com.doublemoon1119.mahjongcraft.example.integration
 import com.doublemoon1119.mahjongcraft.example.ExampleMahjongExtension
 import com.doublemoon1119.mahjongcraft.example.action.ExamplePairingDeclarationAction
 import com.doublemoon1119.mahjongcraft.example.action.ExamplePairingDeclarationCommand
+import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingDynamicState
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingIds
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingRuleConfig
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.HistoryFact
@@ -200,6 +201,7 @@ class ExamplePairingPublicApiIntegrationTest {
                     players = tableState.players.map { player ->
                         if (player.id == actor) player.copy(hand = preparedHand) else player
                     },
+                    dynamicRuleState = ExamplePairingDynamicState(setOf(1)),
                 ),
             ) to Unit
         }
@@ -212,8 +214,8 @@ class ExamplePairingPublicApiIntegrationTest {
         val settledPlayers = fixtures.gameRepository.getGame(roomId)!!.tableState.players
         val settledPlayer = settledPlayers.first { it.id == actor }
         assertTrue(GameAction.Tsumo in settledPlayer.actionHistory)
-        assertEquals(110, settledPlayer.score)
-        assertEquals(90, settledPlayers.first { it.id != actor }.score)
+        assertEquals(111, settledPlayer.score)
+        assertEquals(89, settledPlayers.first { it.id != actor }.score)
     }
 
     /**

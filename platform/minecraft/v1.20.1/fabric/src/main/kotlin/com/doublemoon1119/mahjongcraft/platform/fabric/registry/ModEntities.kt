@@ -13,10 +13,12 @@ import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongStoolSeatGe
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileSelectionConfirmEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MatchSettlementPresentationEntity
+import com.doublemoon1119.mahjongcraft.platform.fabric.entity.TablePropTileEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationEffectEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinCelebrationShowcaseEntity
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.WinSettlementPresentationEntity
 import com.doublemoon1119.mahjongcraft.platform.minecraft.metadata.MinecraftModMetadata
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.BuiltInTablePropDefinitions
 import net.fabricmc.fabric.api.`object`.builder.v1.entity.FabricEntityTypeBuilder
 import net.minecraft.entity.EntityDimensions
 import net.minecraft.entity.EntityType
@@ -41,6 +43,10 @@ object ModEntities {
 
     /** 麻將牌 entity type；由 [register] 初始化。 */
     lateinit var mahjongTile: EntityType<MahjongTileEntity>
+        private set
+
+    /** 公開桌面展示牌的獨立實體類型。 */
+    lateinit var tablePropTile: EntityType<TablePropTileEntity>
         private set
 
     /** 多選選牌確認面板 entity type；由 [register] 初始化。 */
@@ -124,6 +130,16 @@ object ModEntities {
             Identifier(MinecraftModMetadata.MOD_ID, "mahjong_tile"),
             FabricEntityTypeBuilder.create(SpawnGroup.MISC, ::MahjongTileEntity)
                 .dimensions(EntityDimensions.fixed(MahjongTileEntity.TILE_WIDTH, MahjongTileEntity.TILE_HEIGHT))
+                .trackRangeBlocks(16)
+                .trackedUpdateRate(10)
+                .fireImmune()
+                .build(),
+        )
+        tablePropTile = Registry.register(
+            Registries.ENTITY_TYPE,
+            Identifier(MinecraftModMetadata.MOD_ID, "table_prop_tile"),
+            FabricEntityTypeBuilder.create(SpawnGroup.MISC, ::TablePropTileEntity)
+                .dimensions(EntityDimensions.fixed(BuiltInTablePropDefinitions.FACE_UP_TILE.dimensions.depth.toFloat(), BuiltInTablePropDefinitions.FACE_UP_TILE.dimensions.height.toFloat()))
                 .trackRangeBlocks(16)
                 .trackedUpdateRate(10)
                 .fireImmune()

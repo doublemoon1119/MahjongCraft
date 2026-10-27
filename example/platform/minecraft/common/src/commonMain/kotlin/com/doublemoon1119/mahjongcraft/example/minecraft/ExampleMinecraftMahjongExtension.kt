@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.example.minecraft
 
 import com.doublemoon1119.mahjongcraft.example.ExampleMahjongExtension
 import com.doublemoon1119.mahjongcraft.example.ai.ExampleAiStrategyIds
+import com.doublemoon1119.mahjongcraft.example.minecraft.presentation.ExamplePairingTableProps
 import com.doublemoon1119.mahjongcraft.example.minecraft.presentation.examplePairingCatalogue
 import com.doublemoon1119.mahjongcraft.example.minecraft.presentation.registerExamplePairingRoundInfo
 import com.doublemoon1119.mahjongcraft.example.minecraft.presentation.registerExamplePairingSettlementTemplates
@@ -30,6 +31,8 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveD
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExhaustiveDrawReasonDisplayNameRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.RoundInfoLineDisplayRegistry
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropDescriberDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropDescriberRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MinecraftTileAssetRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.TileDisplayNameRegistry
@@ -111,5 +114,9 @@ open class ExampleMinecraftMahjongExtension :
 
     override fun registerExhaustiveDrawReasonDisplayNames(registry: ExhaustiveDrawReasonDisplayNameRegistry) {
         registry.register(ExhaustiveDrawReasonDisplayNameDefinition(ExamplePairingIds.EXHAUSTIVE_DRAW, ExampleMinecraftMessageKeys.EXHAUSTIVE_DRAW))
+    }
+
+    override fun registerTablePropDescribers(registry: TablePropDescriberRegistry) {
+        registry.register(TablePropDescriberDefinition(ExamplePairingIds.RULE_MODULE, ExamplePairingTableProps))
     }
 }

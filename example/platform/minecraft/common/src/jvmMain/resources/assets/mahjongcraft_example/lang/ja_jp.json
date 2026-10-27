@@ -64,6 +64,8 @@
   "mahjongcraft_example.rule.pairing.description": "簡易ペア麻雀の設定です。",
   "mahjongcraft_example.rule.pairing.name": "ペア麻雀",
   "mahjongcraft_example.rule_decision.exchange": "牌交換",
+  "mahjongcraft_example.settlement.bonus_tile_count": "加点牌の加点",
+  "mahjongcraft_example.settlement.bonus_tile_kinds": "加点牌：各支払者に +%s 点",
   "mahjongcraft_example.settlement.payment_per_player": "プレイヤーごとの支払い点",
   "mahjongcraft_example.settlement.points": "%s 点",
   "mahjongcraft_example.tile.inverted_one_man": "反転した一萬"

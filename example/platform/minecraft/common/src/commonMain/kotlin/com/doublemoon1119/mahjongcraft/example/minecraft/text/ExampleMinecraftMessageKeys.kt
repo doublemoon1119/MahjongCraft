@@ -110,6 +110,12 @@ object ExampleMinecraftMessageKeys {
     /** 付款點數詳情欄位名稱。 */
     const val PAYMENT_PER_PLAYER = "mahjongcraft_example.settlement.payment_per_player"
 
+    /** 自摸命中的不同加分牌種類數量欄位名稱。 */
+    const val BONUS_TILE_COUNT = "mahjongcraft_example.settlement.bonus_tile_count"
+
+    /** 顯示命中的加分牌種類數量。 */
+    const val BONUS_TILE_KINDS = "mahjongcraft_example.settlement.bonus_tile_kinds"
+
     /** 顯示付款數字與點數單位的文字。 */
     const val POINTS = "mahjongcraft_example.settlement.points"
 }
