@@ -12,26 +12,29 @@
 
 ## Delegation Policy
 
-These guidelines are capability-based and do not require any specific AI provider, model, or
-delegation mechanism.
+- Work independently by default. Do not use subagents for searches, implementation, verification or review
+  unless the user explicitly requests delegation for the current task.
+- Requests such as "start implementation" or "review this change" do not authorize subagents. Available
+  tools and an expected time or context saving do not count as authorization either.
+- Authorization applies only to the specified task and scope. Do not carry it into later tasks or expand a
+  review request into permission to edit files or run builds.
+- A subagent asked to review works read-only. It must not modify files, run builds or execute tests unless
+  the user explicitly authorizes those additional actions.
+- When delegation is authorized, give each agent an explicit absolute workspace path and a bounded scope.
+  Avoid concurrent edits to the same files and keep build execution under one coordinator.
+- The primary agent remains responsible for inspecting actual changes, checking reported results and
+  verifying the final integrated result. A subagent's completion report alone is not proof of correctness.
 
-When agent delegation is available and materially useful:
+## Workspace and Build Discipline
 
-- Delegate codebase search, file discovery, dependency tracing, and other bounded exploratory work to an
-  appropriately scoped agent.
-- Delegate test execution, build verification, and concise error summarization when appropriate.
-- Delegate mechanical or low-risk refactors when the requested change is well-defined and the affected files
-  are clearly scoped.
-- Keep architecture decisions, ambiguous changes, high-risk modifications, integration decisions, and final
-  review with the primary agent.
-- Prefer delegation when it reduces unnecessary context usage or latency while preserving correctness.
-- Do not delegate trivial work when coordination would cost more than completing it directly.
-- Give each editing agent a clearly separated file or responsibility scope; avoid concurrent edits to the
-  same files.
-- Agents should return concise findings, relevant file locations, and actionable conclusions rather than
-  duplicating large amounts of repository context.
-- The primary agent remains responsible for reviewing delegated work, resolving conflicts, and verifying the
-  final integrated result.
+These rules apply to the primary agent and any explicitly authorized subagent.
+
+- Confirm the actual working directory and intended worktree before executing commands or editing files.
+  Use explicit absolute paths when multiple worktrees exist. Do not modify a different checkout.
+- Use the system user's Gradle user home. Do not create a project-local `.gradle-user-home` or redirect
+  `GRADLE_USER_HOME` or `--gradle-user-home` to a project-local directory.
+- Coordinate builds and tests through a single executor. Do not start concurrent Gradle invocations in the
+  same worktree, and do not run Gradle while the game client is open.
 
 ## Project Conventions
 
