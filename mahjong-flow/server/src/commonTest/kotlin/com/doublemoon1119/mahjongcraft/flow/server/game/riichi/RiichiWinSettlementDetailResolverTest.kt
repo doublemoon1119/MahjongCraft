@@ -8,6 +8,9 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetai
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiRoundOutcomeIds
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSettlementIds
+import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDynamicState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiHandValueResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiPointResult
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
@@ -21,6 +24,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.uuid.Uuid
 
 /** [RiichiWinSettlementDetailResolver] 輸出的日麻語意詳情與特殊 outcome 判別測試。 */
 class RiichiWinSettlementDetailResolverTest {
@@ -46,6 +50,17 @@ class RiichiWinSettlementDetailResolverTest {
             assertTrue(fields.any { it.id == RiichiWinSettlementIds.DORA_FIELD })
             assertFalse(fields.any { it.id == RiichiWinSettlementIds.URA_DORA_FIELD })
         }
+    }
+
+    /** 指示牌詳情保存牌面，包含重複指示牌，不依賴原牌張 UUID。 */
+    @Test
+    fun `dora and ura details preserve ordered faces without tile references`() {
+        val reserved = List(14) { index -> IdentifiedTile(Uuid.random(), if (index == 6) Tile.Honor.North else Tile.Numeric(Tile.Suit.Dot, 5)) }
+        val state = FakeTableStateFactory.create(config = config).copy(reservedWallTiles = reserved, dynamicRuleState = RiichiDynamicState(revealedKanDoraCount = 1))
+        val result = RiichiHandValueResult(listOf(YakuResult.han(YakuType.Riichi, 1)), 1, 30, RiichiPointResult.Ron(1000))
+        val fields = RiichiWinSettlementDetailResolver.riichiDetails(state, result)
+        assertEquals(WinSettlementDetailValue.TileFaces(listOf(Tile.Numeric(Tile.Suit.Dot, 5), Tile.Honor.North)), fields.value(RiichiWinSettlementIds.DORA_FIELD))
+        assertEquals(WinSettlementDetailValue.TileFaces(listOf(Tile.Numeric(Tile.Suit.Dot, 5), Tile.Numeric(Tile.Suit.Dot, 5))), fields.value(RiichiWinSettlementIds.URA_DORA_FIELD))
     }
 
     /** 一般和牌的役種條目依役種結果順序帶出役種 ID 與翻數，翻符欄位帶出總翻數與符數。 */

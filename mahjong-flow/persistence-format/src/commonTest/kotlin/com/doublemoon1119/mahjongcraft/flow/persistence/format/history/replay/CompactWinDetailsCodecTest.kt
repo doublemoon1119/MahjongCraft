@@ -14,7 +14,7 @@ class CompactWinDetailsCodecTest {
     /** 測試用 JSON 解析器。 */
     private val json = Json
 
-    /** 數值、牌參照與條目明細應保留多位贏家、有無數值的條目與空明細。 */
+    /** 數值、牌面與條目明細應保留多位贏家、有無數值的條目與空明細。 */
     @Test
     fun `all detail variants round trip for multiple winners`() {
         val details = json.parseToJsonElement(
@@ -24,7 +24,7 @@ class CompactWinDetailsCodecTest {
                 "playerId": 0,
                 "detailFields": [
                   {"id": "test:quantities", "value": {"type": "quantities", "quantities": [{"unitId": "test:han", "amount": 3}, {"unitId": "test:fu", "amount": 30}]}},
-                  {"id": "test:tiles", "value": {"type": "tiles", "tileIds": [1, 2]}},
+                  {"id": "test:faces", "value": {"type": "tile_faces", "faces": [{"type": "honor", "value": "NORTH"}]}},
                   {"id": "test:entries", "value": {"type": "entries", "entries": [
                     {"id": "test:plain"},
                     {"id": "test:counted", "quantity": {"unitId": "test:han", "amount": 2}}

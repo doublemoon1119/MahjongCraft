@@ -6,7 +6,6 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.DrawFollowUpPresen
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.ExhaustiveDrawSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.MatchSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinCelebrationRequest
-import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailValue
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementPresentationRequest
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.GamePresentationPublisher
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
@@ -1488,9 +1487,6 @@ class FabricGamePresentationPublisher(
                 addAll(winner.standingTileIds)
                 winner.melds.forEach { addAll(it.tileIds) }
                 winner.winningTileId?.let(::add)
-                winner.detailFields.forEach { field ->
-                    (field.value as? WinSettlementDetailValue.Tiles)?.let { addAll(it.tileIds) }
-                }
             }
         }
         val assets = state.tileAssetKeysById(tileIds, tileAssetRegistry)

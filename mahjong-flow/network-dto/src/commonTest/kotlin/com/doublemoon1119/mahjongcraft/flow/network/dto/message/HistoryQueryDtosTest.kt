@@ -5,13 +5,20 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRe
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayIdentity
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryReplayTransaction
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundEvents
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundOutcome
 import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryRoundTileCatalog
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryWinDetailField
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryWinDetailValue
+import com.doublemoon1119.mahjongcraft.flow.common.game.history.replay.HistoryWinnerDetails
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.RuleDecisionTiming
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.RuleDecisionTimingDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.SuitDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.model.WindDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.MatchRoundPhaseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.snapshot.MatchRoundPositionDto
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 import com.doublemoon1119.mahjongcraft.testing.flow.bundled.bundledNetworkJson
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -40,6 +47,32 @@ class HistoryQueryDtosTest {
         val dto = events.toDto().transactions.single().facts.single()
 
         assertEquals(RuleDecisionTimingDto.BEFORE_EXHAUSTIVE_DRAW, (dto as HistoryReplayFactDto.RuleDecision).timing)
+    }
+
+    /** 獨立牌面不需局內牌目錄，轉換與傳輸仍保留擴充牌種、順序及重複值。 */
+    @Test
+    fun `settlement faces map and round trip without tile catalog`() {
+        val faces = listOf(Tile.Extension(TileTypeId.parse("test:bonus")), Tile.Numeric(Tile.Suit.Character, 3), Tile.Numeric(Tile.Suit.Character, 3))
+        val outcome = HistoryRoundOutcome(
+            reasonId = "test:win",
+            beneficiarySeats = listOf(0),
+            scoresBySeat = mapOf(0 to 100),
+            winnerDetails = listOf(HistoryWinnerDetails(0, listOf(HistoryWinDetailField("test:faces", HistoryWinDetailValue.TileFaces(faces))))),
+        )
+        val events = HistoryRoundEvents(
+            identity = HistoryReplayIdentity(Uuid.random(), Uuid.random(), emptyList()),
+            roundNumber = 1,
+            transactions = listOf(HistoryReplayTransaction(0, 0L, false, listOf(HistoryReplayFact.Completion(HistoryFactTypeKeys.WIN_SETTLED, outcome)), 0)),
+            nextTransactionIndex = null,
+            tileCatalog = HistoryRoundTileCatalog(emptyList()),
+        )
+        val dto = events.toDto()
+        val format = bundledNetworkJson()
+        val restored = format.decodeFromString(HistoryRoundEventsDto.serializer(), format.encodeToString(HistoryRoundEventsDto.serializer(), dto))
+        assertEquals(dto, restored)
+        val win = restored.transactions.single().facts.single() as HistoryReplayFactDto.Completion
+        assertEquals(HistoryWinDetailValueDto.TileFaces(listOf(TileDto.Extension("test:bonus"), TileDto.Numeric(SuitDto.CHARACTER, 3), TileDto.Numeric(SuitDto.CHARACTER, 3))), win.outcome?.winnerDetails?.single()?.detailFields?.single()?.value)
+        assertTrue(restored.tileCatalog.isEmpty())
     }
 
     /** 單局事件請求保留範圍、局序號與有界頁參數。 */

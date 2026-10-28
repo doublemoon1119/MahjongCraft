@@ -25,6 +25,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.persistenceJ
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.MatchRoundPositionPersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.MeldTypePersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.RelativeDirectionPersistenceDto
+import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.TilePersistenceDto
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.game.toDomain
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.MeldTypeId
@@ -358,11 +359,16 @@ internal object HistoryReplayProjectionMapper {
      *
      * @param value 已保存的明細值。
      * @param context 座位與牌參照驗證上下文。
-     * @return 有單位數值、牌參照或有序條目。
+     * @return 有單位數值、公開牌面或有序條目。
      */
     private fun detailValue(value: JsonObject, context: HistoryReplayProjectionContext): HistoryWinDetailValue = when (string(value.getValue(ReplaySourceKeys.TYPE))) {
         HistoryDetailValueTypeKeys.QUANTITIES -> HistoryWinDetailValue.Quantities(array(value.getValue(ReplaySourceKeys.QUANTITIES)).map { quantity(obj(it)) })
-        HistoryDetailValueTypeKeys.TILES -> HistoryWinDetailValue.Tiles(refs(value.getValue(ReplaySourceKeys.TILE_IDS), context))
+        HistoryDetailValueTypeKeys.TILE_FACES -> HistoryWinDetailValue.TileFaces(
+            array(value.getValue(ReplaySourceKeys.TILE_FACES)).map { face ->
+                context.charge()
+                persistenceJson.decodeFromJsonElement(TilePersistenceDto.serializer(), face).toDomain()
+            },
+        )
         HistoryDetailValueTypeKeys.ENTRIES -> HistoryWinDetailValue.Entries(
             array(value.getValue(ReplaySourceKeys.ENTRIES)).map { raw ->
                 val entry = obj(raw)

@@ -87,6 +87,18 @@ class ExampleFormatRoundTripTest {
         assertEquals(0, bonusQuantity.amount)
     }
 
+    /** 加分牌以獨立牌面傳遞，付款包含命中種類的加分。 */
+    @Test
+    fun `settlement includes saved bonus faces and total payment`() {
+        val table = FakeTableStateFactory.create(config = ExamplePairingRuleConfig(paymentPerPlayer = 10))
+            .copy(dynamicRuleState = ExamplePairingDynamicState(setOf(3, 1)))
+        val fields = ExamplePairingWinSettlementDetailResolver.resolve(table, ExamplePairingHandValueResult(bonusTileCount = 2))
+        val faces = assertIs<WinSettlementDetailValue.TileFaces>(fields.single { it.id == ExamplePairingWinSettlementDetailResolver.BONUS_TILES }.value)
+        assertEquals(listOf(Tile.Extension(ExamplePairingIds.INVERTED_ONE_MAN), Tile.Numeric(Tile.Suit.Character, 3)), faces.faces)
+        assertEquals(12, assertIs<WinSettlementDetailValue.Quantities>(fields.single { it.id == ExamplePairingWinSettlementDetailResolver.PAYMENT_PER_PLAYER }.value).quantities.single().amount)
+        assertEquals(2, assertIs<WinSettlementDetailValue.Quantities>(fields.single { it.id == ExamplePairingWinSettlementDetailResolver.BONUS_TILE_COUNT }.value).quantities.single().amount)
+    }
+
     /** 網路多型格式必須保留設定、公開狀態、動作、命令及擴充牌種。 */
     @Test
     fun `network registries round trip custom data without bundled registrations`() {

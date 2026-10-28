@@ -40,6 +40,7 @@ internal class HistoryTileGroupRenderer(
      * @param taken 已被取走的牌索引；保留原槽位但不再畫牌面。
      * @param markers 牌張公開標記，僅用於提示與強調，不重新判斷規則。
      * @param appearance 該場公開規則指定的牌組外觀。
+     * @param showCatalogIndex 是否顯示局內牌索引；獨立展示牌面必須設為 false。
      * @return 指向牌面時的提示，或 null。
      */
     fun render(
@@ -53,6 +54,7 @@ internal class HistoryTileGroupRenderer(
         taken: Set<Int> = emptySet(),
         markers: Map<Int, Set<String>> = emptyMap(),
         appearance: MinecraftTileSetAppearanceDefinition = BuiltInMinecraftTileAppearances.DEFAULT,
+        showCatalogIndex: Boolean = true,
     ): List<Text>? {
         var tooltip: List<Text>? = null
         layout.placements.forEach { placement ->
@@ -80,7 +82,7 @@ internal class HistoryTileGroupRenderer(
             }
             if (mouseX >= x + placement.x && mouseX < x + placement.x + placement.width && mouseY >= y + placement.y && mouseY < y + placement.y + placement.height) {
                 tooltip = buildList {
-                    add(Text.translatable(MinecraftHistoryScreenKeys.STATE_TILE_INDEX, placement.tile).formatted(Formatting.GRAY))
+                    if (showCatalogIndex) add(Text.translatable(MinecraftHistoryScreenKeys.STATE_TILE_INDEX, placement.tile).formatted(Formatting.GRAY))
                     if (placement.tile in taken) add(Text.translatable(MinecraftHistoryScreenKeys.STATE_TAKEN)) else add(Text.literal(asset))
                     markers[placement.tile].orEmpty().sorted().forEach { marker ->
                         val label = markerDisplays.find(marker)?.let { Text.translatable(it.labelTranslationKey) } ?: Text.literal(marker)

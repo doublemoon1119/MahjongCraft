@@ -48,4 +48,7 @@ object ExampleMinecraftPresentationIds {
 
     /** 已攤牌玩家使用的桌面晶片變體。 */
     const val HAND_REVEAL_CHIP_VARIANT = "hand_revealed"
+
+    /** 結算面板加分牌列的標題欄位。 */
+    const val BONUS_TILES_LABEL = "mahjongcraft_example:pairing/bonus_tiles_label"
 }

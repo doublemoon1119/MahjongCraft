@@ -359,8 +359,8 @@ internal object ReplaySourceKeys {
     /** 有單位數值的數值。 */
     const val AMOUNT = "amount"
 
-    /** 明細牌參照陣列。 */
-    const val TILE_IDS = "tileIds"
+    /** 不引用局內牌張的結算展示牌面。 */
+    const val TILE_FACES = "faces"
 
     /** 明細條目清單。 */
     const val ENTRIES = "entries"

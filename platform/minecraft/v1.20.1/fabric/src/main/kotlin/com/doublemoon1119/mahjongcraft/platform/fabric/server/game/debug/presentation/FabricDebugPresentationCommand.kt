@@ -21,6 +21,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.riichi.RiichiWinSe
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.MeldPresentation
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInPaymentReasonIds
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
@@ -990,8 +991,8 @@ class FabricDebugPresentationCommand(
                             ),
                         )
                     }
-                    add(WinSettlementDetailField(RiichiWinSettlementIds.DORA_FIELD, WinSettlementDetailValue.Tiles(handIds.take(2))))
-                    add(WinSettlementDetailField(RiichiWinSettlementIds.URA_DORA_FIELD, WinSettlementDetailValue.Tiles(handIds.drop(2).take(1))))
+                    add(WinSettlementDetailField(RiichiWinSettlementIds.DORA_FIELD, WinSettlementDetailValue.TileFaces(listOf(Tile.Numeric(Tile.Suit.Character, 1), Tile.Numeric(Tile.Suit.Dot, 5)))))
+                    add(WinSettlementDetailField(RiichiWinSettlementIds.URA_DORA_FIELD, WinSettlementDetailValue.TileFaces(listOf(Tile.Numeric(Tile.Suit.Bamboo, 3)))))
                 },
             )
         }

@@ -12,6 +12,8 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStat
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateResponseDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinDetailValueDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinnerDetailsDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.toDomain
 import com.doublemoon1119.mahjongcraft.logic.base.NamespacedId
 import com.doublemoon1119.mahjongcraft.platform.fabric.network.HistoryQueryLimits
 import kotlin.uuid.Uuid
@@ -323,14 +325,16 @@ internal object HistoryRoundResponseValidator {
                         textBytes += quantity?.let { it.unitId.toByteArray(Charsets.UTF_8).size + Int.SIZE_BYTES } ?: 0
                     }
                 }
-                is HistoryWinDetailValueDto.Tiles -> {
-                    if (!validTileIndexes(tileCatalogSize, value.tiles) ||
-                        declaredTileCount != null &&
-                        value.tiles.any { it >= declaredTileCount }
-                    ) {
-                        return false
+                is HistoryWinDetailValueDto.TileFaces -> {
+                    if (value.faces.size > HistoryQueryLimits.RESPONSE_BYTES / Int.SIZE_BYTES) return false
+                    for (face in value.faces) {
+                        try {
+                            face.toDomain()
+                        } catch (_: IllegalArgumentException) {
+                            return false
+                        }
+                        textBytes += if (face is TileDto.Extension) face.typeId.toByteArray(Charsets.UTF_8).size.toLong() else 2L * Int.SIZE_BYTES
                     }
-                    textBytes += value.tiles.size.toLong() * Int.SIZE_BYTES
                 }
             }
         }

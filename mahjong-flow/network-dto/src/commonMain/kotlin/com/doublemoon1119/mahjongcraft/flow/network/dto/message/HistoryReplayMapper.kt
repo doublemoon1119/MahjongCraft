@@ -183,7 +183,7 @@ private fun HistoryWinDetailValue.toDto(): HistoryWinDetailValueDto = when (this
     is HistoryWinDetailValue.Entries -> HistoryWinDetailValueDto.Entries(
         entries.map { HistoryWinDetailValueDto.Entries.EntryDto(it.id, it.quantity?.toDto()) },
     )
-    is HistoryWinDetailValue.Tiles -> HistoryWinDetailValueDto.Tiles(tiles.map { it.tileIndex })
+    is HistoryWinDetailValue.TileFaces -> HistoryWinDetailValueDto.TileFaces(faces.map { it.toDto() })
 }
 
 /**

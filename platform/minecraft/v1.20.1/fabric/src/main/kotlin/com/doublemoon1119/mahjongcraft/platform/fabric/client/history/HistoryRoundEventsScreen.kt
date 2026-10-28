@@ -283,14 +283,17 @@ internal class HistoryRoundEventsScreen(
                         if (row.detailFields.isNotEmpty()) {
                             addText(Text.translatable(MinecraftHistoryScreenKeys.ROUND_WIN_DETAILS), MUTED_COLOR, 38)
                             row.detailFields.forEach detailField@{ field ->
-                                val tileValue = field.value as? HistoryWinDetailValueDto.Tiles
-                                if (tileValue != null && tileValue.tiles.isEmpty()) return@detailField
+                                val tileValue = field.value as? HistoryWinDetailValueDto.TileFaces
+                                if (tileValue != null && tileValue.faces.isEmpty()) return@detailField
                                 eventPresenter.detailLabel(ruleId, field.id, settlementTemplates)?.let {
                                     addText(it, MUTED_COLOR, 46, identifiers = listOf(field.id))
                                 }
                                 eventPresenter.detailText(field.id, field.value, settlementTemplates).forEach { addText(it, TEXT_COLOR, 46, identifiers = listOf(field.id)) }
-                                (field.value as? HistoryWinDetailValueDto.Tiles)?.tiles?.mapNotNull(events.tileCatalog::getOrNull)
-                                    ?.takeIf { it.isNotEmpty() }?.chunked(((layout.contentWidth - 54) / TILE_STEP).coerceAtLeast(1))?.forEach { rows += Row.Tiles(it, 46) }
+                                val faces = when (val value = field.value) {
+                                    is HistoryWinDetailValueDto.TileFaces -> value.faces
+                                    else -> emptyList()
+                                }
+                                faces.takeIf { it.isNotEmpty() }?.chunked(((layout.contentWidth - 54) / TILE_STEP).coerceAtLeast(1))?.forEach { rows += Row.Tiles(it, 46) }
                             }
                         } else if (row.beneficiary && outcome.classification == RoundCompletionClassification.WIN.name && !outcome.hasEarlierWinSettlement) {
                             addText(Text.translatable(MinecraftHistoryScreenKeys.ROUND_WIN_DETAILS_UNAVAILABLE), MUTED_COLOR, 38)

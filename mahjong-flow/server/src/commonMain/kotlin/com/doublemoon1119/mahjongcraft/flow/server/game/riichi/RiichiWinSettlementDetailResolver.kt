@@ -63,10 +63,10 @@ object RiichiWinSettlementDetailResolver : WinSettlementDetailResolver {
                     ),
                 )
             }
-            add(WinSettlementDetailField(RiichiWinSettlementIds.DORA_FIELD, WinSettlementDetailValue.Tiles(indicators?.first.orEmpty().map { it.id })))
+            add(WinSettlementDetailField(RiichiWinSettlementIds.DORA_FIELD, WinSettlementDetailValue.TileFaces(indicators?.first.orEmpty().map { it.tile })))
             // 只使用本次權威役種結果辨識立直資格，不從其他玩家的立直狀態推測。
             if (!result.isYakuman && result.yakuResults.any { it.yaku == YakuType.Riichi || it.yaku == YakuType.DoubleRiichi }) {
-                add(WinSettlementDetailField(RiichiWinSettlementIds.URA_DORA_FIELD, WinSettlementDetailValue.Tiles(indicators?.second.orEmpty().map { it.id })))
+                add(WinSettlementDetailField(RiichiWinSettlementIds.URA_DORA_FIELD, WinSettlementDetailValue.TileFaces(indicators?.second.orEmpty().map { it.tile })))
             }
         }
     }

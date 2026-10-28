@@ -19,6 +19,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetai
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 import com.doublemoon1119.mahjongcraft.logic.module.RevealedHandSettlement
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.taiwan.TaiwanRuleConfig
@@ -390,7 +391,7 @@ class HistoryRecordingPersistenceDtoTest {
                         ),
                     ),
                 ),
-                WinSettlementDetailField("mahjongcraft:tiles", WinSettlementDetailValue.Tiles(listOf(tile))),
+                WinSettlementDetailField("test:faces", WinSettlementDetailValue.TileFaces(listOf(Tile.Numeric(Tile.Suit.Character, 3), Tile.Extension(TileTypeId.parse("test:bonus_face")), Tile.Honor.North, Tile.Honor.North))),
             ),
             hand = HistoryWinningHand(standing, tile),
         )

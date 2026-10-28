@@ -353,7 +353,7 @@ private fun HistoryWinDetailsPersistenceDto.toDomain() = HistoryWinDetails(
  */
 private fun WinSettlementDetailValue.toPersistenceDto(): HistoryWinDetailValuePersistenceDto = when (this) {
     is WinSettlementDetailValue.Quantities -> HistoryWinDetailValuePersistenceDto.Quantities(quantities.map { it.toPersistenceDto() })
-    is WinSettlementDetailValue.Tiles -> HistoryWinDetailValuePersistenceDto.Tiles(tileIds.map(Uuid::toString))
+    is WinSettlementDetailValue.TileFaces -> HistoryWinDetailValuePersistenceDto.TileFaces(faces.map { it.toPersistenceDto() })
     is WinSettlementDetailValue.Entries -> HistoryWinDetailValuePersistenceDto.Entries(
         entries.map { entry -> HistoryWinDetailValuePersistenceDto.Entries.Entry(entry.id, entry.quantity?.toPersistenceDto()) },
     )
@@ -366,7 +366,7 @@ private fun WinSettlementDetailValue.toPersistenceDto(): HistoryWinDetailValuePe
  */
 private fun HistoryWinDetailValuePersistenceDto.toDomain(): WinSettlementDetailValue = when (this) {
     is HistoryWinDetailValuePersistenceDto.Quantities -> WinSettlementDetailValue.Quantities(quantities.map { it.toDomain() })
-    is HistoryWinDetailValuePersistenceDto.Tiles -> WinSettlementDetailValue.Tiles(tileIds.map(Uuid::parse))
+    is HistoryWinDetailValuePersistenceDto.TileFaces -> WinSettlementDetailValue.TileFaces(faces.map { it.toDomain() })
     is HistoryWinDetailValuePersistenceDto.Entries -> WinSettlementDetailValue.Entries(
         entries.map { entry -> WinSettlementDetailEntry(entry.id, entry.quantity?.toDomain()) },
     )

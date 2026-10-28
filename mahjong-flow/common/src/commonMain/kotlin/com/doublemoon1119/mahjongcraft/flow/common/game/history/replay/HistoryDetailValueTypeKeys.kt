@@ -5,8 +5,8 @@ object HistoryDetailValueTypeKeys {
     /** 有單位數值明細的種類識別碼。 */
     const val QUANTITIES: String = "quantities"
 
-    /** 牌種明細的種類識別碼。 */
-    const val TILES: String = "tiles"
+    /** 不含牌張參照的牌面清單種類。 */
+    const val TILE_FACES: String = "tile_faces"
 
     /** 條列明細的種類識別碼。 */
     const val ENTRIES: String = "entries"

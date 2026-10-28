@@ -20,7 +20,14 @@ import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.room.GameConfigEditorSpec
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.BuiltInWinSettlementFieldIds
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.ExtensionPresentationField
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationFieldId
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationLayout
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationLayoutSolver
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationTextMeasurer
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationValue
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationFieldSnapshot
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistryImpl
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.BuiltInTablePropDefinitions
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.BuiltInTablePropKinds
@@ -34,6 +41,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropLocatio
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TablePropPresentation
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
@@ -176,9 +184,51 @@ class ExamplePairingPresentationTest {
         assertTrue("rule:${ExamplePairingIds.RULE_MODULE}" in registry.registrationKeys)
         val formatter = assertNotNull(registry.findDetailTextFormatter(ExamplePairingWinSettlementDetailResolver.PAYMENT_PER_PLAYER))
         assertEquals(
-            PresentationValue.TextValue(ExampleMinecraftMessageKeys.POINTS, listOf("25")),
+            PresentationValue.TextValue(ExampleMinecraftMessageKeys.PAYMENT_AMOUNT, listOf("25")),
             formatter.quantities(listOf(WinSettlementQuantity(ExamplePairingWinSettlementDetailResolver.POINTS, 25))),
         )
+    }
+
+    /** 面板能解析加分與牌面並保留總得分，不重複顯示每人付款。 */
+    @Test
+    fun `settlement resolves bonus faces and points without per player payment row`() {
+        val registry = WinSettlementPresentationTemplateRegistryImpl().apply { registerExamplePairingSettlementTemplates(this) }
+        val paymentId = PresentationFieldId(ExamplePairingWinSettlementDetailResolver.PAYMENT_PER_PLAYER)
+        val bonusId = PresentationFieldId(ExamplePairingWinSettlementDetailResolver.BONUS_TILE_COUNT)
+        val facesId = PresentationFieldId(ExamplePairingWinSettlementDetailResolver.BONUS_TILES)
+        val faces = PresentationValue.TileListValue(listOf("mahjongcraft_example:inverted_one_man", "man3"))
+        val bonus = assertNotNull(registry.findDetailTextFormatter(bonusId.value)).quantities(listOf(WinSettlementQuantity(ExamplePairingWinSettlementDetailResolver.POINTS, 2)))
+        val snapshot = WinSettlementPresentationFieldSnapshot(
+            outcomeId = "test:tsumo",
+            isTsumo = true,
+            winnerId = "winner",
+            winnerDisplayName = "Winner",
+            winnerIsAi = false,
+            responsiblePlayerId = null,
+            responsiblePlayerDisplayName = null,
+            responsiblePlayerIsAi = null,
+            totalScore = 24,
+            tileAssetKeys = emptyList(),
+            tileAssetGroups = emptyList(),
+            winningTileAssetKey = null,
+            extensionFields = listOf(ExtensionPresentationField(bonusId, bonus), ExtensionPresentationField(facesId, faces)),
+        )
+        val solver = PresentationLayoutSolver(
+            registry,
+            object : PresentationTextMeasurer {
+                override fun measure(text: PresentationValue.TextValue): Float = 20f
+
+                override fun measurePlain(text: String): Float = 20f
+            },
+        )
+        val root = assertIs<PresentationLayout.Column>(assertNotNull(registry.findTemplate(ExampleMinecraftPresentationIds.SETTLEMENT_TEMPLATE)).root)
+        val tiles = root.children.filterIsInstance<PresentationLayout.TileList>().single { it.fieldId == facesId }
+        assertEquals(faces, solver.resolve(tiles, snapshot))
+        assertEquals(11f, solver.measure(tiles, snapshot).height)
+        val textFields = root.children.filterIsInstance<PresentationLayout.Text>().map { it.fieldId }
+        assertFalse(paymentId in textFields)
+        assertTrue(BuiltInWinSettlementFieldIds.TOTAL_SCORE in textFields)
+        assertEquals(PresentationValue.TextValue(ExampleMinecraftMessageKeys.BONUS_TILE_POINTS, listOf("2")), solver.resolve(root.children.filterIsInstance<PresentationLayout.Text>().single { it.fieldId == bonusId }, snapshot))
     }
 
     /** 桌面中央展示讀取本局保存的加分牌，並以穩定順序包含倒置一萬。 */

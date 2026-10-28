@@ -16,6 +16,7 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetai
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailField
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailValue
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleDefinition
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistryImpl
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiRuleConfig
@@ -92,13 +93,13 @@ class GameEventCapabilitiesTest {
         assertEquals(listOf(setOf(other), setOf(winner)), settled.winGroups.map { it.discarderPlayerIds })
     }
 
-    /** 相同條目 ID 在不同欄位保持分組，隱藏牌張詳情不跟著公開。 */
+    /** 相同條目 ID 在不同欄位保持分組，牌面展示欄位不混入事件的數值與條目詳情。 */
     @Test
     fun `detail groups preserve namespaces without tile identities`() {
         val fields = listOf(
             WinSettlementDetailField("example:first", WinSettlementDetailValue.Entries(listOf(WinSettlementDetailEntry("example:mark")))),
             WinSettlementDetailField("other:first", WinSettlementDetailValue.Entries(listOf(WinSettlementDetailEntry("example:mark")))),
-            WinSettlementDetailField("example:tiles", WinSettlementDetailValue.Tiles(listOf(Uuid.random()))),
+            WinSettlementDetailField("example:tiles", WinSettlementDetailValue.TileFaces(listOf(Tile.Honor.North))),
         )
         val result = projector().project(facts(HistoryEventDraft(null, HistoryFact.WinSettled("example:win", listOf(HistoryWinDetails(winner, fields))))))
             .filterIsInstance<RoundSettledEvent>().single().winGroups.single().winners.single()

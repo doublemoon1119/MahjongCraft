@@ -217,20 +217,33 @@ class HistoryRoundResponseValidatorTest {
         }
     }
 
-    /** 和牌詳情中的牌參照不得超出交易當下已宣告牌數量。 */
+    /** 和牌詳情的獨立牌面不依賴局內牌目錄與已宣告牌數。 */
     @Test
-    fun `test winner detail tiles respect declared tile count`() {
+    fun `test winner detail faces do not need catalog references`() {
         val request = HistoryRoundEventsRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
-        val details = listOf(HistoryWinnerDetailsDto(0, listOf(HistoryWinDetailFieldDto("test:tiles", HistoryWinDetailValueDto.Tiles(listOf(1)))), hand = null))
+        val details = listOf(HistoryWinnerDetailsDto(0, listOf(HistoryWinDetailFieldDto("test:tiles", HistoryWinDetailValueDto.TileFaces(listOf(TileDto.Numeric(SuitDto.CHARACTER, 9))))), hand = null))
         val outcome = HistoryRoundOutcomeDto("test:win", listOf(0), mapOf(0 to 25000), "WIN", emptyList(), null, nextDealerSeat = null, winnerDetails = details, scoreChangesBySeat = emptyMap(), hasEarlierWinSettlement = false)
-        val base = events().copy(tileCatalog = listOf(TileDto.Numeric(SuitDto.CHARACTER, 1), TileDto.Numeric(SuitDto.CHARACTER, 2)))
-        val invalid = base.copy(transactions = listOf(base.transactions.single().copy(facts = listOf(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.ROUND_COMPLETED, outcome)))))
+        val base = events().copy(tileCatalog = emptyList())
+        val valid = base.copy(transactions = listOf(base.transactions.single().copy(declaredTileCountAfter = 0, facts = listOf(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.ROUND_COMPLETED, outcome)))))
 
-        val result = HistoryRoundResponseValidator.validateEvents(request, HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, invalid, errorCode = null))
-        assertEquals(HistoryRoundValidationError.CONTENT_MISMATCH, assertIs<HistoryRoundValidationResult.Invalid>(result).reason)
+        val result = HistoryRoundResponseValidator.validateEvents(request, HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, valid, errorCode = null))
+        assertIs<HistoryRoundValidationResult.Success<*>>(result)
     }
 
-    /** 多名贏家可保留各自條目尾綴與局部牌參照，且完整資料通過驗證。 */
+    /** 無效的數字牌與擴充 ID 不得作為結算牌面進入歷史畫面。 */
+    @Test
+    fun `test malformed settlement faces are rejected`() {
+        val request = HistoryRoundEventsRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
+        listOf(TileDto.Numeric(SuitDto.CHARACTER, 0), TileDto.Extension("invalid")).forEach { face ->
+            val details = listOf(HistoryWinnerDetailsDto(0, listOf(HistoryWinDetailFieldDto("test:faces", HistoryWinDetailValueDto.TileFaces(listOf(face)))), hand = null))
+            val outcome = HistoryRoundOutcomeDto("test:win", listOf(0), mapOf(0 to 25000), "WIN", emptyList(), null, nextDealerSeat = null, winnerDetails = details, scoreChangesBySeat = emptyMap(), hasEarlierWinSettlement = false)
+            val base = events()
+            val invalid = base.copy(transactions = listOf(base.transactions.single().copy(facts = listOf(HistoryReplayFactDto.Completion(HistoryFactTypeKeys.ROUND_COMPLETED, outcome)))))
+            assertIs<HistoryRoundValidationResult.Invalid>(HistoryRoundResponseValidator.validateEvents(request, HistoryRoundEventsResponseDto("request", TEST_MATCH_ID, 1, 0, invalid, errorCode = null)))
+        }
+    }
+
+    /** 多名贏家可保留各自條目尾綴與獨立牌面，且完整資料通過驗證。 */
     @Test
     fun `test rich winner details are accepted`() {
         val request = HistoryRoundEventsRequestDto("request", TEST_MATCH_ID, roundNumber = 1, scope = HistoryQueryScopeDto.OWN, startTransactionIndex = 0, limit = 20)
@@ -257,13 +270,13 @@ class HistoryRoundResponseValidatorTest {
                         "test:quantities",
                         HistoryWinDetailValueDto.Quantities(listOf(HistoryWinDetailQuantityDto("test:han", 3), HistoryWinDetailQuantityDto("test:fu", 30))),
                     ),
-                    HistoryWinDetailFieldDto("test:tiles", HistoryWinDetailValueDto.Tiles(listOf(1))),
+                    HistoryWinDetailFieldDto("test:tiles", HistoryWinDetailValueDto.TileFaces(listOf(TileDto.Numeric(SuitDto.CHARACTER, 9)))),
                 ),
                 hand = null,
             ),
             HistoryWinnerDetailsDto(
                 1,
-                listOf(HistoryWinDetailFieldDto("test:tiles", HistoryWinDetailValueDto.Tiles(listOf(0)))),
+                listOf(HistoryWinDetailFieldDto("test:tiles", HistoryWinDetailValueDto.TileFaces(listOf(TileDto.Extension("test:bonus"))))),
                 hand = null,
             ),
         )

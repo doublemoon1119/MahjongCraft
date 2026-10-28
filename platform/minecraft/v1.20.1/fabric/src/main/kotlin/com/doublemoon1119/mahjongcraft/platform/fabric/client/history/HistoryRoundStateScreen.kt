@@ -5,6 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryReplayPla
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundPositionDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryRoundStateDto
 import com.doublemoon1119.mahjongcraft.flow.network.dto.message.HistoryWinDetailValueDto
+import com.doublemoon1119.mahjongcraft.flow.network.dto.model.TileDto
 import com.doublemoon1119.mahjongcraft.platform.minecraft.history.MinecraftHistoryScreenKeys
 import net.minecraft.client.gui.DrawContext
 import net.minecraft.client.gui.screen.Screen
@@ -172,7 +173,7 @@ internal class HistoryRoundStateScreen(
                         }
                         is Row.Group -> {
                             context.fill(layout.left, y, layout.cardRight, y + row.height - 4, if (hover) HOVER_COLOR else CARD_COLOR)
-                            val hit = groups.render(context, row.layout, state.tileCatalog, layout.left + 8, y + 4, mouseX, mouseY, row.taken, row.markers, session.tileAppearance(state.identity.matchId))
+                            val hit = groups.render(context, row.layout, row.faceCatalog ?: state.tileCatalog, layout.left + 8, y + 4, mouseX, mouseY, row.taken, row.markers, session.tileAppearance(state.identity.matchId), showCatalogIndex = row.faceCatalog == null)
                             if (hover) tooltip = hit?.plus(row.hint?.let(::listOf).orEmpty())
                         }
                         is Row.HandHeading -> Unit
@@ -207,7 +208,7 @@ internal class HistoryRoundStateScreen(
                                         if (actionHover || (!nested.actionEnabled && nestedHover)) tooltip = listOf(nested.tooltip)
                                     }
                                     is Row.Group -> {
-                                        val hit = groups.render(context, nested.layout, state.tileCatalog, layout.left + 16, nestedY + 4, mouseX, mouseY, nested.taken, nested.markers, session.tileAppearance(state.identity.matchId))
+                                        val hit = groups.render(context, nested.layout, nested.faceCatalog ?: state.tileCatalog, layout.left + 16, nestedY + 4, mouseX, mouseY, nested.taken, nested.markers, session.tileAppearance(state.identity.matchId), showCatalogIndex = nested.faceCatalog == null)
                                         if (nestedHover) tooltip = hit?.plus(nested.hint?.let(::listOf).orEmpty())
                                     }
                                     is Row.Space, is Row.PlayerCard, is Row.WallSection -> Unit
@@ -234,7 +235,7 @@ internal class HistoryRoundStateScreen(
                                     context.drawTextWithShadow(textRenderer, sectionLabel, layout.left + 16, nestedY, MUTED_COLOR)
                                     nestedY += LINE_HEIGHT
                                     val nestedHover = !dragging && layout.containsCard(mouseX.toDouble(), mouseY.toDouble(), nestedY, nested.height)
-                                    val hit = groups.render(context, nested.layout, state.tileCatalog, layout.left + 16, nestedY + 4, mouseX, mouseY, nested.taken, nested.markers, session.tileAppearance(state.identity.matchId))
+                                    val hit = groups.render(context, nested.layout, nested.faceCatalog ?: state.tileCatalog, layout.left + 16, nestedY + 4, mouseX, mouseY, nested.taken, nested.markers, session.tileAppearance(state.identity.matchId), showCatalogIndex = nested.faceCatalog == null)
                                     if (nestedHover) tooltip = hit?.plus(nested.hint?.let(::listOf).orEmpty())
                                     nestedY += nested.height
                                 }
@@ -317,10 +318,12 @@ internal class HistoryRoundStateScreen(
             if (winning == null) line(Text.translatable(MinecraftHistoryScreenKeys.STATE_WINNING_HAND_UNAVAILABLE), MUTED_COLOR) else group(winning)
             winner.detailFields.forEach detailField@{ field ->
                 val value = field.value
-                if (value is HistoryWinDetailValueDto.Tiles && value.tiles.isEmpty()) return@detailField
+                if (value is HistoryWinDetailValueDto.TileFaces && value.faces.isEmpty()) return@detailField
                 events.detailLabel(session.controller.state.value.summary?.detail?.summary?.ruleId, field.id, session.settlementTemplates)?.let { line(it, MUTED_COLOR) }
                 events.detailText(field.id, value, session.settlementTemplates).forEach { line(it) }
-                if (value is HistoryWinDetailValueDto.Tiles) group(HistoryTileGroupLayoutCalculator.hand(value.tiles, maxWidth = maxWidth))
+                if (value is HistoryWinDetailValueDto.TileFaces && value.faces.isNotEmpty()) {
+                    add(Row.Group(HistoryTileGroupLayoutCalculator.hand(value.faces.indices.toList(), maxWidth = maxWidth), faceCatalog = value.faces))
+                }
             }
             add(Row.Space(12))
         }
@@ -612,12 +615,14 @@ internal class HistoryRoundStateScreen(
          * @property hint 額外提示。
          * @property taken 已被取走的牌索引，保持空槽。
          * @property markers 各牌公開標記。
+         * @property faceCatalog 獨立展示牌面，使用列內位置而非局內牌索引；null 時使用本局牌目錄。
          */
         data class Group(
             val layout: HistoryTileGroupLayout,
             val hint: Text? = null,
             val taken: Set<Int> = emptySet(),
             val markers: Map<Int, Set<String>> = emptyMap(),
+            val faceCatalog: List<TileDto>? = null,
         ) : Row {
             /** 牌組高度與垂直內距。 */
             override val height: Int = ceil(layout.height).toInt() + 8

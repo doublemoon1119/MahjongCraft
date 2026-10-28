@@ -27,6 +27,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.history.replay.Re
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.logic.base.TileTypeId
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardEntry
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiDiscardPile
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RiichiExhaustiveDrawReason
@@ -314,10 +315,11 @@ class CompactReplayRoundReaderGenuineTest {
         assertEquals(mapOf(0 to 26000, 1 to 24000), win?.scoresBySeat)
         assertEquals(mapOf(0 to 2000, 1 to 0), win?.scoreChangesBySeat)
         assertEquals(1, win?.winnerDetails?.size)
-        assertEquals(2, win?.winnerDetails?.single()?.detailFields?.size)
-        val tiles = win?.winnerDetails?.single()?.detailFields?.last()?.value as HistoryWinDetailValue.Tiles
-        assertEquals(1, tiles.tiles.size)
-        assertTrue(tiles.tiles.single().tileIndex in page.tileCatalog.tiles.indices)
+        assertEquals(3, win?.winnerDetails?.single()?.detailFields?.size)
+        val faces = assertIs<HistoryWinDetailValue.TileFaces>(win?.winnerDetails?.single()?.detailFields?.single { it.id == "test:bonus_faces" }?.value)
+        assertEquals(listOf(Tile.Honor.North, Tile.Extension(TileTypeId.parse("test:bonus_face")), Tile.Numeric(Tile.Suit.Character, 9), Tile.Honor.North), faces.faces)
+        val tiles = assertIs<HistoryWinDetailValue.TileFaces>(win?.winnerDetails?.single()?.detailFields?.last()?.value)
+        assertEquals(listOf(Tile.Numeric(Tile.Suit.Character, 9)), tiles.faces)
 
         val state = assertIs<ReplayReadResult.Success<HistoryRoundState>>(
             reader().readState(fixture.document, fixture.matchId, 1, HistoryRoundPosition.AfterTransaction(2)),
@@ -679,7 +681,8 @@ class CompactReplayRoundReaderGenuineTest {
                     "mahjongcraft:yaku",
                     WinSettlementDetailValue.Entries(listOf(WinSettlementDetailEntry("mahjongcraft:yaku/test", WinSettlementQuantity("mahjongcraft:han", 1)))),
                 ),
-                WinSettlementDetailField("mahjongcraft:dora", WinSettlementDetailValue.Tiles(listOf(table.tileWall.getAllTiles().first().id))),
+                WinSettlementDetailField("test:bonus_faces", WinSettlementDetailValue.TileFaces(listOf(Tile.Honor.North, Tile.Extension(TileTypeId.parse("test:bonus_face")), Tile.Numeric(Tile.Suit.Character, 9), Tile.Honor.North))),
+                WinSettlementDetailField("mahjongcraft:dora", WinSettlementDetailValue.TileFaces(listOf(Tile.Numeric(Tile.Suit.Character, 9)))),
             ),
         )
         val matchId = Uuid.random()

@@ -21,10 +21,10 @@ object RiichiWinSettlementIds {
     /** 自然役滿的合計倍數欄位；值為 [WinSettlementDetailValue.Quantities]，只有役滿倍數。 */
     val YAKUMAN_TOTAL_FIELD: String = MahjongCraftMetadata.id("riichi/yakuman_total")
 
-    /** 寶牌指示牌欄位；值為 [WinSettlementDetailValue.Tiles]。 */
+    /** 寶牌指示牌欄位；值為 [WinSettlementDetailValue.TileFaces]。 */
     val DORA_FIELD: String = MahjongCraftMetadata.id("riichi/dora_indicators")
 
-    /** 裏寶牌指示牌欄位；只在立直和牌出現，值為 [WinSettlementDetailValue.Tiles]。 */
+    /** 裏寶牌指示牌欄位；只在立直和牌出現，值為 [WinSettlementDetailValue.TileFaces]。 */
     val URA_DORA_FIELD: String = MahjongCraftMetadata.id("riichi/ura_dora_indicators")
 
     /** 翻數單位。 */

@@ -132,10 +132,15 @@ or loader, and it does not cover unrelated rule, AI or appearance types.
 
 The pairing rule saves `m - 1` bonus ranks when a round starts, where `m` is the number of ranks
 selected for its wall. Two ranks produce one displayed bonus tile; eight ranks produce seven.
+The win panel shows all of that round's bonus faces, the bonus points earned, and the winner's
+total score. Per-player payment details remain available in history.
+Settlement details store faces directly through `WinSettlementDetailValue.TileFaces`;
+these display tiles do not borrow IDs from the wall or any player's hand. History keeps the
+same faces, including the inverted one-man tile.
 These are public display copies: no tile is removed from the wall and none acts as a wildcard.
 Bonus tiles face the current dealer, using the actual standard seat layout, and rotate with the table.
 Each different matching rank in a self-draw adds one point to **each opponent's payment**.
-Two matching copies of the same rank count once. The settlement shows the extra payment separately.
+Two matching copies of the same rank count once. The win panel lists the bonus points separately from the total score.
 
 The shared [prop describer](common/src/commonMain/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/presentation/ExamplePairingTableProps.kt)
 reads the saved selection. It also requests one custom gold hand-reveal token per revealed player.

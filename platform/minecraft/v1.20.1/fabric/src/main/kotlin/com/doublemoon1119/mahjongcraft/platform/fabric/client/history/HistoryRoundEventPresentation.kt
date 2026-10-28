@@ -305,7 +305,7 @@ internal class HistoryRoundEventPresenter(
                 } ?: entry.trailingText.takeIf(String::isNotBlank)?.let(Text::literal)
                 trailing?.let { text.append(" • ").append(it.copy().formatted(Formatting.GRAY)) } ?: text
             }
-            is HistoryWinDetailValueDto.Tiles -> emptyList()
+            is HistoryWinDetailValueDto.TileFaces -> emptyList()
         }
     }
 

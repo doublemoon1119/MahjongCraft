@@ -1,7 +1,9 @@
 package com.doublemoon1119.mahjongcraft.example
 
+import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingDynamicState
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingHandValueResult
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingRuleConfig
+import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingTileType
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailField
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailValue
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementQuantity
@@ -14,6 +16,9 @@ object ExamplePairingWinSettlementDetailResolver : WinSettlementDetailResolver {
     /** 每位付款者點數的詳情欄位。 */
     const val PAYMENT_PER_PLAYER = "mahjongcraft_example:pairing/payment_per_player"
 
+    /** 本局公開的加分牌面清單，不引用局內牌張。 */
+    const val BONUS_TILES = "mahjongcraft_example:pairing/bonus_tiles"
+
     /** 點數的語意單位。 */
     const val POINTS = "mahjongcraft_example:pairing/points"
 
@@ -23,7 +28,9 @@ object ExamplePairingWinSettlementDetailResolver : WinSettlementDetailResolver {
     override fun resolve(state: TableState, handValue: HandValueResult): List<WinSettlementDetailField> {
         val config = state.config as? ExamplePairingRuleConfig ?: return emptyList()
         val bonusTileCount = (handValue as? ExamplePairingHandValueResult)?.bonusTileCount ?: 0
+        val bonusFaces = (state.dynamicRuleState as? ExamplePairingDynamicState)?.bonusTileValues.orEmpty().sorted().map(ExamplePairingTileType::bonusFace)
         return listOf(
+            WinSettlementDetailField(BONUS_TILES, WinSettlementDetailValue.TileFaces(bonusFaces)),
             WinSettlementDetailField(
                 id = PAYMENT_PER_PLAYER,
                 value = WinSettlementDetailValue.Quantities(

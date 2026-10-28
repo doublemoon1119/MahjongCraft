@@ -4,7 +4,6 @@ import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingDynamicStat
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingIds
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingPlayerState
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingTileType
-import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.BuiltInTablePropKinds
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
@@ -32,7 +31,7 @@ object ExamplePairingTableProps : TablePropDescriber {
                 TablePropPlacement(
                     id = "${ExamplePairingIds.RULE_MODULE}/bonus_tile_$value",
                     kind = BuiltInTablePropKinds.FACE_UP_TILE,
-                    content = TablePropContent.FaceUpTile(value.toPhysicalTile()),
+                    content = TablePropContent.FaceUpTile(ExamplePairingTileType.bonusFace(value)),
                     location = TablePropLocation.Center(order = index, yaw = dealerYaw),
                 )
             }
@@ -47,12 +46,5 @@ object ExamplePairingTableProps : TablePropDescriber {
             )
         }
         return bonusProps + handRevealProps
-    }
-
-    /** 將設定中的牌面數值轉成桌面上要展示的實體牌面。 */
-    private fun Int.toPhysicalTile(): Tile = if (this == 1) {
-        ExamplePairingTileType.invertedOneMan()
-    } else {
-        Tile.Numeric(Tile.Suit.Character, this)
     }
 }

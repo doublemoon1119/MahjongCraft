@@ -13,6 +13,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.Presentatio
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.PresentationValue
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementDetailTextFormatter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementDetailTextFormatterDefinition
+import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationFieldProviderDefinition
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplate
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementPresentationTemplateRegistry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettlementRuleTemplateBindingDefinition
@@ -23,6 +24,18 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.settlement.WinSettleme
  * @param registry 要寫入結算模板與格式器的 registry。
  */
 fun registerExamplePairingSettlementTemplates(registry: WinSettlementPresentationTemplateRegistry) {
+    listOf(
+        ExamplePairingWinSettlementDetailResolver.BONUS_TILE_COUNT,
+        ExamplePairingWinSettlementDetailResolver.BONUS_TILES,
+    ).forEach { id ->
+        val fieldId = PresentationFieldId(id)
+        registry.register(WinSettlementPresentationFieldProviderDefinition(fieldId) { snapshot -> snapshot.extensionField(fieldId) })
+    }
+    registry.register(
+        WinSettlementPresentationFieldProviderDefinition(PresentationFieldId(ExampleMinecraftPresentationIds.BONUS_TILES_LABEL)) {
+            PresentationValue.TextValue(ExampleMinecraftMessageKeys.BONUS_TILES, emptyList())
+        },
+    )
     registry.register(
         WinSettlementPresentationTemplate(
             key = ExampleMinecraftPresentationIds.SETTLEMENT_TEMPLATE,
@@ -37,7 +50,13 @@ fun registerExamplePairingSettlementTemplates(registry: WinSettlementPresentatio
                         ),
                         spacing = 5f,
                     ),
-                    PresentationLayout.Text(PresentationFieldId(ExamplePairingWinSettlementDetailResolver.PAYMENT_PER_PLAYER)),
+                    PresentationLayout.Text(PresentationFieldId(ExampleMinecraftPresentationIds.BONUS_TILES_LABEL)),
+                    PresentationLayout.TileList(
+                        fieldId = PresentationFieldId(ExamplePairingWinSettlementDetailResolver.BONUS_TILES),
+                        tileWidth = 8f,
+                        tileHeight = 11f,
+                        spacing = 2f,
+                    ),
                     PresentationLayout.Text(PresentationFieldId(ExamplePairingWinSettlementDetailResolver.BONUS_TILE_COUNT)),
                     PresentationLayout.Text(BuiltInWinSettlementFieldIds.PAYMENT_SUMMARY),
                     PresentationLayout.Text(BuiltInWinSettlementFieldIds.TOTAL_SCORE),
@@ -46,6 +65,7 @@ fun registerExamplePairingSettlementTemplates(registry: WinSettlementPresentatio
                 style = PresentationContainerStyle(backgroundArgb = 0xCC101722.toInt(), padding = 8f),
             ),
             detailFieldLabelKeys = mapOf(
+                PresentationFieldId(ExamplePairingWinSettlementDetailResolver.BONUS_TILES) to ExampleMinecraftMessageKeys.BONUS_TILES,
                 PresentationFieldId(ExamplePairingWinSettlementDetailResolver.PAYMENT_PER_PLAYER) to ExampleMinecraftMessageKeys.PAYMENT_PER_PLAYER,
                 PresentationFieldId(ExamplePairingWinSettlementDetailResolver.BONUS_TILE_COUNT) to ExampleMinecraftMessageKeys.BONUS_TILE_COUNT,
             ),
@@ -71,13 +91,13 @@ fun registerExamplePairingSettlementTemplates(registry: WinSettlementPresentatio
     )
 }
 
-/** 將命中的加分牌種類數量轉成玩家容易理解的文字。 */
+/** 將自摸手牌命中的不同加分牌種類數量顯示為加分點數。 */
 private object ExamplePairingBonusTileFormatter : WinSettlementDetailTextFormatter {
     override fun quantities(quantities: List<WinSettlementQuantity>): PresentationValue.TextValue {
         val count = quantities.singleOrNull()?.takeIf { it.unitId == ExamplePairingWinSettlementDetailResolver.POINTS }
             ?: return FallbackWinSettlementDetailTextFormatter.quantities(quantities)
         return PresentationValue.TextValue(
-            translationKey = ExampleMinecraftMessageKeys.BONUS_TILE_KINDS,
+            translationKey = ExampleMinecraftMessageKeys.BONUS_TILE_POINTS,
             arguments = listOf(count.amount.toString()),
         )
     }
@@ -91,7 +111,7 @@ private object ExamplePairingPaymentFormatter : WinSettlementDetailTextFormatter
         val payment = quantities.singleOrNull()?.takeIf { it.unitId == ExamplePairingWinSettlementDetailResolver.POINTS }
             ?: return FallbackWinSettlementDetailTextFormatter.quantities(quantities)
         return PresentationValue.TextValue(
-            translationKey = ExampleMinecraftMessageKeys.POINTS,
+            translationKey = ExampleMinecraftMessageKeys.PAYMENT_AMOUNT,
             arguments = listOf(payment.amount.toString()),
         )
     }

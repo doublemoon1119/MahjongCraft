@@ -113,8 +113,14 @@ object ExampleMinecraftMessageKeys {
     /** 自摸命中的不同加分牌種類數量欄位名稱。 */
     const val BONUS_TILE_COUNT = "mahjongcraft_example.settlement.bonus_tile_count"
 
-    /** 顯示命中的加分牌種類數量。 */
-    const val BONUS_TILE_KINDS = "mahjongcraft_example.settlement.bonus_tile_kinds"
+    /** 顯示自摸手牌由加分牌取得的點數。 */
+    const val BONUS_TILE_POINTS = "mahjongcraft_example.settlement.bonus_tile_points"
+
+    /** 結算面板的本局加分牌標題。 */
+    const val BONUS_TILES = "mahjongcraft_example.settlement.bonus_tiles"
+
+    /** 每位玩家實際付款的點數文字。 */
+    const val PAYMENT_AMOUNT = "mahjongcraft_example.settlement.payment_amount"
 
     /** 顯示付款數字與點數單位的文字。 */
     const val POINTS = "mahjongcraft_example.settlement.points"

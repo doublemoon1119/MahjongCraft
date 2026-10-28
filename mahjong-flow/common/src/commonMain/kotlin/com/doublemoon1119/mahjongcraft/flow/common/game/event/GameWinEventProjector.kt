@@ -106,7 +106,7 @@ internal object GameWinEventProjector {
                     entries = emptyList(),
                     quantities = value.quantities.map { EventQuantity.create(it.unitId, it.amount) },
                 )
-                is WinSettlementDetailValue.Tiles -> null
+                is WinSettlementDetailValue.TileFaces -> null
             }
         },
         publicMarkers = markers,
