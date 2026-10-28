@@ -11,6 +11,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.animation.AnimationSte
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerInfoEntry
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongPlayerScoreChange
+import com.doublemoon1119.mahjongcraft.platform.minecraft.table.TableOverlayVisibility
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -104,11 +105,13 @@ class MahjongPlayerInfoEntity(
      */
     fun hideUntil(gameTime: Long) {
         check(!world.isClient) { "Player info visibility lease must be changed by the server" }
-        if (gameTime <= hiddenUntilGameTime) return
-        hiddenUntilGameTime = gameTime
+        val extendedUntil = TableOverlayVisibility.extend(hiddenUntilGameTime, gameTime)
+        if (extendedUntil == hiddenUntilGameTime) return
+        hiddenUntilGameTime = extendedUntil
         replaceAnimationQueue(
             listOf(AnimationStep.SetInvisible(true), AnimationStep.WaitUntil(gameTime), AnimationStep.SetInvisible(false)),
         )
+        applyVisibility()
     }
 
     /** 將玩家公開資訊隱藏至此 entity 被移除。 */
@@ -116,6 +119,7 @@ class MahjongPlayerInfoEntity(
         check(!world.isClient) { "Player info visibility lease must be changed by the server" }
         hiddenUntilGameTime = Long.MAX_VALUE
         replaceAnimationQueue(listOf(AnimationStep.SetInvisible(true)))
+        applyVisibility()
     }
 
     /** 新局已確定開始時解除所有舊 presentation lease，立即恢復玩家公開資訊。 */
@@ -128,7 +132,9 @@ class MahjongPlayerInfoEntity(
 
     override fun tick() {
         super.tick()
-        if (world.isClient || age % ORPHAN_CHECK_INTERVAL_TICKS != 0) return
+        if (world.isClient) return
+        applyVisibility()
+        if (age % ORPHAN_CHECK_INTERVAL_TICKS != 0) return
         val expectedId = managedTableId ?: return discard()
         val table = controllerPos?.let { world.getBlockEntity(it) as? MahjongTableBlockEntity }
         if (table?.tableId != expectedId) discard()
@@ -158,8 +164,9 @@ class MahjongPlayerInfoEntity(
         if (nbt.contains(NBT_CONTROLLER_X)) {
             controllerPos = BlockPos(nbt.getInt(NBT_CONTROLLER_X), nbt.getInt(NBT_CONTROLLER_Y), nbt.getInt(NBT_CONTROLLER_Z))
         }
-        hiddenUntilGameTime = nbt.getLong(NBT_HIDDEN_UNTIL).takeIf { it > 0L } ?: Long.MIN_VALUE
+        hiddenUntilGameTime = TableOverlayVisibilityNbt.read(nbt)
         readAnimationQueueFromNbt(nbt)
+        applyVisibility()
     }
 
     override fun writeCustomDataToNbt(nbt: NbtCompound) {
@@ -172,8 +179,13 @@ class MahjongPlayerInfoEntity(
             nbt.putInt(NBT_CONTROLLER_Y, it.y)
             nbt.putInt(NBT_CONTROLLER_Z, it.z)
         }
-        if (hiddenUntilGameTime != Long.MIN_VALUE) nbt.putLong(NBT_HIDDEN_UNTIL, hiddenUntilGameTime)
+        TableOverlayVisibilityNbt.write(nbt, hiddenUntilGameTime)
         writeAnimationQueueToNbt(nbt)
+    }
+
+    /** 以已保存的期限恢復伺服器隱藏狀態，不依賴動畫佇列是否仍含隱藏步驟。 */
+    private fun applyVisibility() {
+        if (!world.isClient) isInvisible = TableOverlayVisibility.isHidden(hiddenUntilGameTime, world.time)
     }
 
     companion object {
@@ -186,7 +198,7 @@ class MahjongPlayerInfoEntity(
         private const val NBT_CONTROLLER_X = "ControllerX"
         private const val NBT_CONTROLLER_Y = "ControllerY"
         private const val NBT_CONTROLLER_Z = "ControllerZ"
-        private const val NBT_HIDDEN_UNTIL = "HiddenUntilGameTime"
+
         private val JSON = Json
         private val logger = mahjongCraftLogger(MahjongPlayerInfoEntity::class)
         private val PLAYERS: TrackedData<String> = DataTracker.registerData(MahjongPlayerInfoEntity::class.java, TrackedDataHandlerRegistry.STRING)
