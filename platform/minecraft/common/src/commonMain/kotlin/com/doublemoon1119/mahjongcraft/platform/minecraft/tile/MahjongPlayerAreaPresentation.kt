@@ -1,6 +1,5 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
-import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.module.HandTileState
 import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacing
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
@@ -17,11 +16,8 @@ import kotlin.uuid.Uuid
  * @property tableFacing 麻將桌 controller 的世界水平朝向。
  * @property seatLayout 這桌玩家席位對應的固定桌面布局。
  * @property seatIndex 這位玩家在 `TableState.players` 的固定座位 index。
- * @property standingTileIds 這位玩家目前立牌張數，依加入手牌的時間軸排列（`Hand.tiles`，不含
- * [drawnTileId]；先加入的在前，例如非摸切捨牌時併入立牌的 `Hand.lastDrawn` 排在最後面），鍵為
- * [IdentifiedTile.id]；空清單代表這局結束，只需要清除舊牌。這個順序不是畫面上的左右順序——實作端會
- * 自行反過來對應到左右座標，讓最後加入的那張牌落在玩家自己右手邊，符合真實麻將摸牌後插入手牌的直覺
- * 方向，見 `FabricMahjongPlayerAreaPresenter.present` KDoc。
+ * @property standingTileIds 玩家不含摸牌位的立牌順序，由 Flow 依既有自動理牌偏好維護。完整公開平放時共享布局沿用此順序；
+ *   仍有未平放立牌時，共享布局改用不洩漏私人牌序的公開順序。
  * @property drawnTileId 這位玩家目前摸到、尚未併入立牌或打出的那張牌 Uuid（`Hand.lastDrawn`）；
  * `null` 代表目前沒有摸牌位要呈現。
  * @property melds 這位玩家目前所有副露，依宣告順序排列——第一組（最早宣告）位於副露區固定的桌角

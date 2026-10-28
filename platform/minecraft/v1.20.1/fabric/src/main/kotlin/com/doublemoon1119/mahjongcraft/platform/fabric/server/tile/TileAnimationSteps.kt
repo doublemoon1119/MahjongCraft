@@ -366,7 +366,7 @@ internal object TileAnimationSteps {
     )
 
     /**
-     * 「倒牌」的單張牌動畫（胡牌慶祝演出）：姿態從立牌轉平放牌面朝上，位置完全不動，只有姿態旋轉角
+     * 「倒牌」的單張牌動畫（胡牌慶祝演出）：姿態從佇列最後排定的姿態轉平放牌面朝上，位置完全不動，只有姿態旋轉角
      * 隨動畫進度內插——硬性限制要求所有姿態轉換都要走 [AnimationStep.Custom] + [AnimationStep.PlayMotion]，
      * 不直接賦值 [MahjongTileEntity.tilePose]。[startGameTime] 是呼叫端算好、同一批牌共用同一份的絕對
      * 開始時刻，與 [scheduleInstantReorder] 使用同一條時間軸。
@@ -376,28 +376,43 @@ internal object TileAnimationSteps {
      * @param playGroupSound 是否為整組播放一次翻牌聲。
      */
     fun scheduleLaydown(tile: MahjongTileEntity, startGameTime: Long, playGroupSound: Boolean = false) {
-        tile.enqueueAll(
-            buildList {
-                if (playGroupSound) {
-                    add(handTurnSound(startGameTime + MahjongTileTableLayout.WIN_LAYDOWN_DURATION_TICKS))
-                }
-                addAll(
-                    listOf(
-                        AnimationStep.WaitUntil(startGameTime),
-                        AnimationStep.Custom(MahjongTilePose.FACE_UP),
-                        AnimationStep.PlayMotion(
-                            durationTicks = MahjongTileTableLayout.WIN_LAYDOWN_DURATION_TICKS,
-                            arcHeight = 0.0,
-                            startOffsetX = 0.0,
-                            startOffsetY = 0.0,
-                            startOffsetZ = 0.0,
-                            startPoseRotationDegrees = MahjongTilePose.STANDING.rotationDegrees,
-                            endPoseRotationDegrees = MahjongTilePose.FACE_UP.rotationDegrees,
-                        ),
+        tile.enqueueAll(laydownSteps(tile.queuedTilePose, startGameTime, playGroupSound))
+    }
+
+    /**
+     * 從已排定的姿態建立倒牌步驟；已平放時不增加旋轉或翻牌聲。
+     *
+     * @param startPose 既有動畫結束後的姿態。
+     * @param startGameTime 倒牌開始的絕對遊戲時間。
+     * @param playGroupSound 是否播放整組翻牌聲。
+     * @return 必要的倒牌步驟；已正面朝上時為空清單。
+     */
+    fun laydownSteps(
+        startPose: MahjongTilePose,
+        startGameTime: Long,
+        playGroupSound: Boolean,
+    ): List<AnimationStep<MahjongTilePose>> {
+        if (startPose == MahjongTilePose.FACE_UP) return emptyList()
+        return buildList {
+            if (playGroupSound) {
+                add(handTurnSound(startGameTime + MahjongTileTableLayout.WIN_LAYDOWN_DURATION_TICKS))
+            }
+            addAll(
+                listOf(
+                    AnimationStep.WaitUntil(startGameTime),
+                    AnimationStep.Custom(MahjongTilePose.FACE_UP),
+                    AnimationStep.PlayMotion(
+                        durationTicks = MahjongTileTableLayout.WIN_LAYDOWN_DURATION_TICKS,
+                        arcHeight = 0.0,
+                        startOffsetX = 0.0,
+                        startOffsetY = 0.0,
+                        startOffsetZ = 0.0,
+                        startPoseRotationDegrees = startPose.rotationDegrees,
+                        endPoseRotationDegrees = MahjongTilePose.FACE_UP.rotationDegrees,
                     ),
-                )
-            },
-        )
+                ),
+            )
+        }
     }
 
     /**

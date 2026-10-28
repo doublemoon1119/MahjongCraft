@@ -30,8 +30,10 @@ object MahjongPlayerAreaLayout {
             reservedCornerWidth = reservedCornerWidth,
             hasDrawnTile = (input.drawnTileId != null),
         )
-        // 世界實體由所有觀察者共用，立牌只依公開順序擺放。
-        val standing = PublicHandOrder.arrange(input.standingTileIds).mapIndexed { orderIndex, tileId ->
+        // 只有全部立牌已公開平放時才使用玩家牌序；仍有隱藏或直立牌時不洩漏私人排序。
+        val faceUpIds = input.handTileStates.filter { it.pose == HandTilePose.FACE_UP }.mapTo(mutableSetOf()) { it.tileId }
+        val standingOrder = if (input.standingTileIds.all { it in faceUpIds }) input.standingTileIds else PublicHandOrder.arrange(input.standingTileIds)
+        val standing = standingOrder.mapIndexed { orderIndex, tileId ->
             MahjongAreaTilePlacement(
                 tileId = tileId,
                 placement = MahjongTileTableLayout.handPlacement(

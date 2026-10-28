@@ -1,6 +1,7 @@
 package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
+import com.doublemoon1119.mahjongcraft.logic.base.PublicHandOrder
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.module.HandTilePose
 import com.doublemoon1119.mahjongcraft.logic.module.HandTileState
@@ -8,22 +9,41 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.dice.MahjongTableFacin
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.MahjongTableSeatLayout
 import kotlin.math.abs
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.test.fail
 import kotlin.uuid.Uuid
 
 /** 以牌區的最終位置驗證牌與牌、牌與桌角物件之間不會重疊。 */
 class MahjongPlayerAreaLayoutTest {
-    /** 平放手牌使用平放 footprint，直立手牌維持原本的 footprint。 */
+    /** 完整平放手牌沿用玩家順序，未攤牌的共享布局維持公開順序。 */
     @Test
-    fun `hand pose changes hand footprint without changing tile order`() {
+    fun `fully face up hand keeps player order while concealed hand uses public order`() {
         val ids = List(13) { Uuid.random() }
         val standing = MahjongPlayerAreaLayout.compute(inputForPose(ids, handIsLaidDown = false))
         val laidDown = MahjongPlayerAreaLayout.compute(inputForPose(ids, handIsLaidDown = true))
 
         assertTrue(standing.standing.all { it.footprint == MahjongTileFootprint.STANDING })
         assertTrue(laidDown.standing.all { it.footprint == MahjongTileFootprint.LYING })
-        assertTrue(standing.standing.map { it.tileId } == laidDown.standing.map { it.tileId })
+        assertEquals(PublicHandOrder.arrange(ids), standing.standing.map { it.tileId })
+        assertEquals(ids, laidDown.standing.map { it.tileId })
+    }
+
+    /** 已攤牌的立牌遵循傳入牌序，關閉排序時不自作主張重排；摸牌位不加入立牌列。 */
+    @Test
+    fun `face up hand respects both supplied sorted and manual orders`() {
+        val ids = listOf(
+            Uuid.parse("00000000-0000-0000-0000-000000000003"),
+            Uuid.parse("00000000-0000-0000-0000-000000000001"),
+            Uuid.parse("00000000-0000-0000-0000-000000000002"),
+        )
+        val drawn = Uuid.random()
+        listOf(ids, ids.reversed()).forEach { order ->
+            val input = inputForPose(order, handIsLaidDown = true).copy(drawnTileId = drawn)
+            val result = MahjongPlayerAreaLayout.compute(input)
+            assertEquals(order, result.standing.map { it.tileId })
+            assertTrue(result.standing.none { it.tileId == drawn })
+        }
     }
 
     /** 同一手牌可同時有平放與直立牌，不將一張牌的姿態套用整手。 */
@@ -34,6 +54,7 @@ class MahjongPlayerAreaLayoutTest {
             handTileStates = listOf(HandTileState(ids.first(), HandTilePose.FACE_UP)),
         )
         val layout = MahjongPlayerAreaLayout.compute(input)
+        assertEquals(PublicHandOrder.arrange(ids), layout.standing.map { it.tileId })
         assertTrue(layout.standing.single { it.tileId == ids.first() }.footprint == MahjongTileFootprint.LYING)
         assertTrue(layout.standing.filterNot { it.tileId == ids.first() }.all { it.footprint == MahjongTileFootprint.STANDING })
     }

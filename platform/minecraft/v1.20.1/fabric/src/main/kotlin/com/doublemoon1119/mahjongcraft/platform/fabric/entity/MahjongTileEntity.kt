@@ -108,6 +108,13 @@ class MahjongTileEntity(
         get() = MahjongTilePose.fromNameOrDefault(dataTracker[TILE_POSE])
         set(value) = dataTracker.set(TILE_POSE, value.name)
 
+    /** 伺服器目前佇列最後排定的姿態；沒有排定姿態時使用當前姿態。 */
+    val queuedTilePose: MahjongTilePose
+        get() {
+            check(!world.isClient) { "Queued tile pose is only available on the server" }
+            return finalQueuedCustomState(tilePose)
+        }
+
     /** 是否阻擋玩家及其他非麻將牌 entity；由目前 server config 同步，不寫入世界存檔。 */
     var physicalCollisionEnabled: Boolean
         get() = dataTracker[PHYSICAL_COLLISION_ENABLED]

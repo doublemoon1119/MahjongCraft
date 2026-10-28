@@ -123,8 +123,32 @@ class SetHandSortPreferenceUseCaseTest {
         val newState = fixtures.gameRepo.getTableState(gameId)
         assertNotNull(newState)
         val organizedTiles = newState.players.first { it.id == playerId }.hand.tiles
-        assertEquals(unsortedTiles.sortedBy { it.tile.toString() }.size, organizedTiles.size)
-        assertNotNull(fixtures.presentationPublisher.getPublishedPlayerTiles(gameId))
+        val expectedTiles = listOf(unsortedTiles[1], unsortedTiles[0], unsortedTiles[2])
+        assertEquals(expectedTiles, organizedTiles)
+        assertEquals(expectedTiles.map { it.id }, fixtures.presentationPublisher.getPublishedPlayerTiles(gameId)?.standingTileIds)
+    }
+
+    /** 關閉自動整理不會將已有手牌改成另一種順序。 */
+    @Test
+    fun `test disabling keeps the current hand order unchanged`() = runTest {
+        val fixtures = Fixtures()
+        fixtures.preferenceStore.set(playerId, true)
+        val player = FakeMahjongPlayerFactory.create(
+            id = playerId,
+            initialSeat = Wind.EAST,
+            hand = Hand(tiles = unsortedTiles),
+        )
+        fixtures.gameRepo.setTableState(
+            FakeTableStateFactory.create(
+                id = gameId,
+                players = listOf(player),
+                config = RiichiRuleConfig(),
+            ),
+        )
+        fixtures.useCase(playerId, false, HandSortPreferenceUpdateMode.USER_CHANGE)
+        assertFalse(fixtures.preferenceStore.isEnabled(playerId))
+        assertEquals(unsortedTiles, fixtures.gameRepo.getTableState(gameId)?.players?.single()?.hand?.tiles)
+        assertNull(fixtures.presentationPublisher.getPublishedPlayerTiles(gameId))
     }
 
     /** 啟用但玩家手上還有一張尚未決定的摸牌時，這次先不整理，不打斷還沒做的決定。 */

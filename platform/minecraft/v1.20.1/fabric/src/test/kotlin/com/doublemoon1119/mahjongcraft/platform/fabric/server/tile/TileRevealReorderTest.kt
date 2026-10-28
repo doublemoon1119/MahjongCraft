@@ -11,6 +11,33 @@ import kotlin.test.assertTrue
 
 /** 驗證攤牌排序僅在指定時刻定位，不插入滑動或提早改變牌姿態。 */
 class TileRevealReorderTest {
+    /** 已平放或既有佇列將平放的牌，不再增加倒牌與音效。 */
+    @Test
+    fun `already face up or queued face up tiles do not lay down twice`() {
+        assertTrue(TileAnimationSteps.laydownSteps(MahjongTilePose.FACE_UP, 100L, true).isEmpty())
+        val queue = listOf(
+            AnimationStep.WaitUntil(90L),
+            AnimationStep.Custom(MahjongTilePose.FACE_UP),
+        )
+        val planned = AnimationQueueDriver.finalCustomState(queue, MahjongTilePose.STANDING)
+        assertTrue(TileAnimationSteps.laydownSteps(planned, 100L, true).isEmpty())
+        assertEquals(2, queue.size)
+    }
+
+    /** 正常立牌仍由原本角度倒下；其他姿態也以實際排定的角度為起點。 */
+    @Test
+    fun `laydown starts from the actual planned pose and keeps its timing`() {
+        listOf(MahjongTilePose.STANDING, MahjongTilePose.FACE_DOWN).forEach { pose ->
+            val steps = TileAnimationSteps.laydownSteps(pose, 100L, false)
+            val waiting = AnimationQueueDriver.tick(steps, null, 99L)
+            assertTrue(waiting.appliedInstantSteps.isEmpty())
+            val due = AnimationQueueDriver.tick(waiting.remainingQueue, waiting.activeStepEndGameTime, 100L)
+            assertEquals(listOf(AnimationStep.Custom(MahjongTilePose.FACE_UP)), due.appliedInstantSteps)
+            assertEquals(pose.rotationDegrees, due.startedPlayMotion?.startPoseRotationDegrees)
+            assertEquals(MahjongTilePose.FACE_UP.rotationDegrees, due.startedPlayMotion?.endPoseRotationDegrees)
+        }
+    }
+
     /** 排序步驟不依賴原生世界，可直接檢查共用的動畫佇列。 */
     @Test
     fun `reveal reorder waits and teleports without motion or pose changes`() {

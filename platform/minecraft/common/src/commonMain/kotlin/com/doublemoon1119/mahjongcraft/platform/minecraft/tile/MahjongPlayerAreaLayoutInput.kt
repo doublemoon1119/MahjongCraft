@@ -14,7 +14,7 @@ import kotlin.uuid.Uuid
  * @property tableFacing 麻將桌的世界朝向。
  * @property seatLayout 本局玩家座位 index 對應的標準桌面布局。
  * @property seatIndex 玩家在固定座位順序中的 index。
- * @property standingTileIds 立牌，不含摸牌位的牌。
+ * @property standingTileIds 玩家立牌順序，不含摸牌位；只有完整公開平放時才沿用於共享布局。
  * @property drawnTileId 摸牌位的牌 UUID；沒有時為 null。
  * @property melds 依宣告順序排列的副露。
  * @property setAsideTileIds 依移出順序排列、接在副露之後的移出牌。

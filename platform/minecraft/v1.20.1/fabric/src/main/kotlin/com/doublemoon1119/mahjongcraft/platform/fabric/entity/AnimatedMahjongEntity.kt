@@ -47,6 +47,14 @@ abstract class AnimatedMahjongEntity<C>(
         get() = queue.isNotEmpty()
 
     /**
+     * 查詢佇列尾端的自訂狀態，供附加動畫時確認其起始狀態。
+     *
+     * @param currentState 尚未排定自訂狀態時採用的目前值。
+     * @return 最後排定的狀態；不修改佇列或額外保存一份狀態。
+     */
+    protected fun finalQueuedCustomState(currentState: C): C = AnimationQueueDriver.finalCustomState(queue, currentState)
+
+    /**
      * 依序附加 [steps] 到佇列尾端；相鄰的絕對等待會自動合併為較晚時間，只能在 server 端呼叫。
      *
      * @param steps 要附加的動畫步驟。

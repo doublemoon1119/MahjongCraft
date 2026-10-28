@@ -54,7 +54,7 @@ class FabricMahjongPlayerAreaPresenter(
 
     /**
      * 依 [MahjongPlayerAreaLayout] 算出的最終位置擺放立牌、摸牌位、副露與移出的牌：
-     * 1. 立牌依公開順序擺放（[MahjongTilePose.STANDING]），不使用 [MahjongPlayerAreaPresentation.standingTileIds] 的私人順序；
+     * 1. 未完整公開平放的立牌使用公開順序；全部平放時沿用 [MahjongPlayerAreaPresentation.standingTileIds] 的玩家牌序；
      *    本人的排列由用戶端依本人快照顯示，不改變其他觀察者看到的座標。
      * 2. 摸牌位在 [MahjongPlayerAreaPresentation.animateDrawnTile] 為 `true` 時改排定 [TileAnimationSteps.scheduleDrawnTile]，
      *    不直接定格。有 [MahjongPlayerAreaPresentation.followUpSteps] 時依 [DrawFollowUpTimeline] 逐步排定：先摸到第一步要移出的牌，

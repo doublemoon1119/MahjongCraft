@@ -38,6 +38,14 @@ local.
 
 ## Settlement and revealed hands
 
+- Once all standing tiles are publicly face up, use the player's supplied hand order. Flow already
+  maintains that order according to the player's auto-sort preference; do not force sorting on reveal.
+  Keep the drawn tile separate. While any standing tile remains upright, keep the shared order independent
+  of the player's private order.
+- A laydown starts from the pose already scheduled at the end of the tile's animation queue. Do not stand
+  up and lay down a tile that is already face up or already scheduled to become face up. Keep the settlement
+  timeline unchanged when the redundant rotation is omitted.
+
 - Do not reorder a hand that is not shown to other players; lay it down or conceal it where it stands.
 - A tile still in the drawn slot when a round ends stays in its slot. Sort only the standing tiles that are
   revealed.
