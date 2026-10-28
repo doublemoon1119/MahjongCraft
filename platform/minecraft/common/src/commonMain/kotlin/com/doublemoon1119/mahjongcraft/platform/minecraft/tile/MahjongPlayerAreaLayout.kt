@@ -2,6 +2,7 @@ package com.doublemoon1119.mahjongcraft.platform.minecraft.tile
 
 import com.doublemoon1119.mahjongcraft.logic.base.MeldType
 import com.doublemoon1119.mahjongcraft.logic.base.PublicHandOrder
+import com.doublemoon1119.mahjongcraft.logic.module.HandTilePose
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.meldDisplayDirection
 import kotlin.uuid.Uuid
 
@@ -27,7 +28,7 @@ object MahjongPlayerAreaLayout {
         val cornerYieldShift = MahjongTileTableLayout.handCornerYieldShift(
             handSize = input.standingTileIds.size,
             reservedCornerWidth = reservedCornerWidth,
-            hasDrawnTile = input.hasDrawnTile,
+            hasDrawnTile = (input.drawnTileId != null),
         )
         // 世界實體由所有觀察者共用，立牌只依公開順序擺放。
         val standing = PublicHandOrder.arrange(input.standingTileIds).mapIndexed { orderIndex, tileId ->
@@ -44,7 +45,7 @@ object MahjongPlayerAreaLayout {
                     tileIndex = input.standingTileIds.size - 1 - orderIndex,
                     cornerYieldShift = cornerYieldShift,
                 ),
-                footprint = MahjongTileFootprint.STANDING,
+                footprint = if (input.handTileStates.any { it.tileId == tileId && it.pose == HandTilePose.FACE_UP }) MahjongTileFootprint.LYING else MahjongTileFootprint.STANDING,
                 alongOffsetFromCorner = null,
             )
         }

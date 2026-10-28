@@ -216,20 +216,20 @@ class ExamplePairingPresentationTest {
         )
     }
 
-    /** 同一份桌面描述同時包含中央加分牌與已宣告玩家的自訂晶片。 */
+    /** 同一份桌面描述同時包含中央加分牌與已攤牌玩家的自訂籌碼。 */
     @Test
-    fun `table props include declaration chip beside bonus tiles`() {
-        val declaredPlayer = MahjongPlayer(
+    fun `table props include hand reveal chip beside bonus tiles`() {
+        val revealedPlayer = MahjongPlayer(
             id = Uuid.random(),
             initialSeatIndex = 0,
-            playerRuleState = ExamplePairingPlayerState(declared = true),
+            playerRuleState = ExamplePairingPlayerState(handRevealed = true),
             discardPile = ExamplePairingDiscardPile(),
             seatWind = Wind.EAST,
         )
         val table = TableState(
             id = Uuid.random(),
             players = listOf(
-                declaredPlayer,
+                revealedPlayer,
                 MahjongPlayer(
                     id = Uuid.random(),
                     initialSeatIndex = 1,
@@ -239,7 +239,7 @@ class ExamplePairingPresentationTest {
             ),
             config = ExamplePairingRuleConfig(wallTileValues = setOf(1, 2)),
             tileWall = TileWall(),
-            dealerPlayerId = declaredPlayer.id,
+            dealerPlayerId = revealedPlayer.id,
             dynamicRuleState = ExamplePairingDynamicState(setOf(1)),
         )
 
@@ -247,17 +247,17 @@ class ExamplePairingPresentationTest {
 
         assertEquals(2, props.size)
         assertEquals("mahjongcraft:face_up_tile", props.first().kind)
-        assertEquals("mahjongcraft_example:declaration_chip", props.last().kind)
+        assertEquals("mahjongcraft_example:hand_reveal_chip", props.last().kind)
     }
 
-    /** 八種牌山加四名宣告玩家時，中央混合物件仍能通過共用幾何配置。 */
+    /** 八種牌山加四名攤牌玩家時，中央混合物件仍能通過共用幾何配置。 */
     @Test
-    fun `maximum bonus tiles and declaration chips fit the center`() {
+    fun `maximum bonus tiles and hand reveal chips fit the center`() {
         val players = (0 until 4).map { index ->
             MahjongPlayer(
                 id = Uuid.random(),
                 initialSeatIndex = index,
-                playerRuleState = ExamplePairingPlayerState(declared = true),
+                playerRuleState = ExamplePairingPlayerState(handRevealed = true),
                 discardPile = ExamplePairingDiscardPile(),
                 seatWind = Wind.entries[index],
             )
@@ -282,7 +282,7 @@ class ExamplePairingPresentationTest {
         val result = presentation.targets(
             mapOf(
                 BuiltInTablePropKinds.FACE_UP_TILE to BuiltInTablePropDefinitions.FACE_UP_TILE,
-                ExampleMinecraftPresentationIds.DECLARATION_CHIP_KIND to ExampleTablePropDefinitions.DECLARATION_CHIP,
+                ExampleMinecraftPresentationIds.HAND_REVEAL_CHIP_KIND to ExampleTablePropDefinitions.HAND_REVEAL_CHIP,
             ),
         )
 
@@ -299,7 +299,7 @@ class ExamplePairingPresentationTest {
                 MahjongPlayer(
                     id = Uuid.random(),
                     initialSeatIndex = index,
-                    playerRuleState = ExamplePairingPlayerState(declared = true),
+                    playerRuleState = ExamplePairingPlayerState(handRevealed = true),
                     discardPile = ExamplePairingDiscardPile(),
                     seatWind = Wind.entries[index],
                 )
@@ -324,7 +324,7 @@ class ExamplePairingPresentationTest {
                         seatLayout = MahjongTableSeatLayout.forPlayerCount(count),
                         placements = props,
                     )
-                    val targets = assertIs<TablePropLayoutResult.Success>(scene.targets(mapOf(BuiltInTablePropKinds.FACE_UP_TILE to BuiltInTablePropDefinitions.FACE_UP_TILE, ExampleMinecraftPresentationIds.DECLARATION_CHIP_KIND to ExampleTablePropDefinitions.DECLARATION_CHIP))).targets
+                    val targets = assertIs<TablePropLayoutResult.Success>(scene.targets(mapOf(BuiltInTablePropKinds.FACE_UP_TILE to BuiltInTablePropDefinitions.FACE_UP_TILE, ExampleMinecraftPresentationIds.HAND_REVEAL_CHIP_KIND to ExampleTablePropDefinitions.HAND_REVEAL_CHIP))).targets
                     assertTrue(targets.filter { it.kind == BuiltInTablePropKinds.FACE_UP_TILE }.all { it.yaw == (seatYaws[dealer] + facingYaw).mod(360f) })
                 }
             }

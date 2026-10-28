@@ -9,15 +9,15 @@ import net.minecraft.world.World
 import kotlin.uuid.Uuid
 
 /**
- * 範例宣告使用的桌面晶片 entity。
+ * 範例攤牌使用的桌面籌碼 entity。
  *
  * 它只由桌面物件同步器管理，不接受玩家互動，也不保存正式牌張身分。
  *
  * @param type Minecraft 實體類型。
  * @param world entity 所屬世界。
  */
-class ExampleDeclarationChipEntity(
-    type: EntityType<out ExampleDeclarationChipEntity>,
+class ExampleHandRevealChipEntity(
+    type: EntityType<out ExampleHandRevealChipEntity>,
     world: World,
 ) : Entity(type, world) {
     /** 所屬桌子 UUID。 */

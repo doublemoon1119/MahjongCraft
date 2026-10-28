@@ -21,7 +21,7 @@ This is a deliberately small demonstration rule, not a regional Mahjong rule.
   for four players. There must be enough tiles to deal three to each player
   and leave at least one draw. Reducing the selection also reduces the room's
   player limit; the server rejects a change below its current player count.
-- Each turn draws one tile and either declares a two-pair self-draw or discards.
+- Each turn draws one tile and either wins with two pairs or discards.
   Four identical tiles count as two pairs. Calls, Ron and Kans are not used.
 - The two-player wall uses two opposite faces. Three- and four-player games use
   four faces. The rule owns this layout; it is not a room option.
@@ -36,7 +36,7 @@ This is a deliberately small demonstration rule, not a regional Mahjong rule.
   round state. Each opponent pays one extra point per selected rank represented
   in the winning hand; repeated copies of one rank count once. The Minecraft adapter displays
   the same saved ranks in the centre of the table.
-- A player may make one public declaration after drawing. It changes a public
+- A player may reveal their hand once after drawing. It changes a public
   marker and does not change scoring or concealed information.
 
 The rule's settings can change the wall's ranks, payment, round count and the
@@ -67,13 +67,33 @@ is no drawn tile, it chooses the first standing tile. Reaction decisions use
 the legal actions supplied by the decision context, and rule decisions use the
 public default submission. It is an integration example, not a competitive AI.
 
+## Hand disclosure and pose
+
+The example saves one `handRevealed` flag per player. Its rule module implements
+`describeHandTiles(tableState)` and describes every tile currently held by that player as public
+and face up. It reads the current hand each time, so later draws follow the same rule.
+No second list of permanently revealed tile IDs is stored.
+
+A description identifies one physical tile, not a tile face. Visibility and pose are independent:
+public tiles may remain upright, and only public tiles may be placed face up. This example uses
+the full-hand case. The query describes standing and drawn hand tiles only, not tiles in other areas.
+
+Flow and platform consumers use the same `resolveHandTileDescriptions` validator. Duplicate tile
+IDs, tiles outside current hands and nonpublic face-up descriptions are rejected.
+The default empty description preserves normal play. Player state is reset for the next round.
+See [`ExamplePairingRuleModule.kt`](src/commonMain/kotlin/com/doublemoon1119/mahjongcraft/example/pairing/ExamplePairingRuleModule.kt)
+for the query and
+[`HandTileDescription.kt`](../../mahjong-logic/src/commonMain/kotlin/com/doublemoon1119/mahjongcraft/logic/module/HandTileDescription.kt)
+for the data contract.
+
 ## Public capability map
 
 | Capability | Example use |
 | --- | --- |
 | Rule and wall layout | Pairing rule and fixed two/four-wall layouts |
 | Rule decision | Optional simultaneous two-tile exchange |
-| Extension action and command | Once-per-round declaration |
+| Extension action and command | Once-per-round hand reveal |
+| Per-tile hand description | Current and future held tiles become public and face up |
 | AI strategy | Tsumogiri decision context |
 | Network and persistence codecs | Example configuration, state, action and tile data |
 | Settlement and history presentation | Supplied by the Minecraft adapter |
@@ -92,8 +112,8 @@ That codec test does not prove that a world or a disk file is recovered.
 
 ## Identifiers and compatibility
 
-The declaration action keeps one identity everywhere it is serialized or
-presented: `mahjongcraft_example:pairing/declare`. The declaration command is
+The hand-reveal action keeps one identity everywhere it is serialized or
+presented: `mahjongcraft_example:pairing/reveal_hand`. The hand-reveal command is
 a separate ID because it is a different serialized type.
 
 The example is not a released compatibility surface. Changing its development

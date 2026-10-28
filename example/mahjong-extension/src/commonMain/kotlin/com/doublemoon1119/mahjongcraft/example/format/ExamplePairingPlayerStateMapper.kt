@@ -5,29 +5,29 @@ import com.doublemoon1119.mahjongcraft.example.format.persistence.ExamplePairing
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingPlayerState
 
 /**
- * 將公開宣告標記轉成網路資料。
+ * 將公開攤牌標記轉成網路資料。
  *
  * @return 玩家的網路狀態。
  */
-fun ExamplePairingPlayerState.toNetworkDto(): ExamplePairingPlayerStateDto = ExamplePairingPlayerStateDto(declared)
+fun ExamplePairingPlayerState.toNetworkDto(): ExamplePairingPlayerStateDto = ExamplePairingPlayerStateDto(handRevealed)
 
 /**
- * 還原公開宣告標記。
+ * 還原公開攤牌標記。
  *
  * @return 玩家規則狀態。
  */
-fun ExamplePairingPlayerStateDto.toDomain(): ExamplePairingPlayerState = ExamplePairingPlayerState(declared)
+fun ExamplePairingPlayerStateDto.toDomain(): ExamplePairingPlayerState = ExamplePairingPlayerState(handRevealed)
 
 /**
- * 將公開宣告標記轉成保存資料。
+ * 將公開攤牌標記轉成保存資料。
  *
  * @return 玩家的保存狀態。
  */
-fun ExamplePairingPlayerState.toPersistenceDto(): ExamplePairingPlayerStatePersistenceDto = ExamplePairingPlayerStatePersistenceDto(declared)
+fun ExamplePairingPlayerState.toPersistenceDto(): ExamplePairingPlayerStatePersistenceDto = ExamplePairingPlayerStatePersistenceDto(handRevealed)
 
 /**
- * 還原已保存的公開宣告標記。
+ * 還原已保存的公開攤牌標記。
  *
  * @return 玩家規則狀態。
  */
-fun ExamplePairingPlayerStatePersistenceDto.toDomain(): ExamplePairingPlayerState = ExamplePairingPlayerState(declared)
+fun ExamplePairingPlayerStatePersistenceDto.toDomain(): ExamplePairingPlayerState = ExamplePairingPlayerState(handRevealed)

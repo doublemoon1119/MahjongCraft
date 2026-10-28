@@ -56,6 +56,8 @@ import com.doublemoon1119.mahjongcraft.logic.config.MultiRonPolicy
 import com.doublemoon1119.mahjongcraft.logic.config.RonResolution
 import com.doublemoon1119.mahjongcraft.logic.config.ScoreConfig
 import com.doublemoon1119.mahjongcraft.logic.judgment.WaitingTileAvailabilityIds
+import com.doublemoon1119.mahjongcraft.logic.module.HandTilePose
+import com.doublemoon1119.mahjongcraft.logic.module.HandTileState
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoLiability
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.PaoYaku
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.RIICHI_GAME_ACTION
@@ -278,6 +280,26 @@ class DtoRoundTripTest {
         val decoded = json.decodeFromString(TableStateSnapshotDto.serializer(), encoded).toDomain(registries)
 
         assertEquals(snapshot, decoded.players.single().playerRuleState)
+    }
+
+    /** 公開的手牌與平放姿態分別通過網路格式往返，不依動作名稱重建。 */
+    @Test
+    fun `revealed hand tiles and per tile poses round trip independently`() {
+        val tile = IdentifiedTile(Uuid.random(), Tile.Honor.East)
+        val player = FakeMahjongPlayerFactory.create(hand = Hand(tiles = listOf(tile)), discardPile = RiichiDiscardPile(emptyList()))
+        val snapshot = FakeTableStateFactory.create(
+            players = listOf(player),
+            config = RiichiRuleConfig(),
+        ).toSnapshot(emptySet(), setAsideTiles = { emptyList() }).copy(
+            revealedHandTiles = listOf(tile),
+            handTileStates = listOf(HandTileState(tile.id, HandTilePose.FACE_UP)),
+        )
+        val encoded = json.encodeToString(TableStateSnapshotDto.serializer(), snapshot.toDto(registries))
+        val decoded = json.decodeFromString(TableStateSnapshotDto.serializer(), encoded).toDomain(registries)
+
+        assertEquals(snapshot, decoded)
+        val upright = snapshot.copy(handTileStates = emptyList())
+        assertEquals(upright, upright.toDto(registries).toDomain(registries))
     }
 
     @Test

@@ -3,11 +3,11 @@ package com.doublemoon1119.mahjongcraft.example.format.persistence
 import kotlinx.serialization.Serializable
 
 /**
- * 玩家本局公開宣告標記的保存格式。
+ * 玩家本局攤牌標記的保存格式。
  *
- * @property declared 本局是否已完成示範宣告。
+ * @property handRevealed 本局是否已攤牌。
  */
 @Serializable
 data class ExamplePairingPlayerStatePersistenceDto(
-    val declared: Boolean,
+    val handRevealed: Boolean,
 )

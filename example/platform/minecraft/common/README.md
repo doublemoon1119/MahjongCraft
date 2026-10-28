@@ -2,7 +2,7 @@
 
 This library adds Minecraft presentation to the platform-independent extension.
 It contains no native Block or Entity implementations and no loader entrypoint.
-It registers the pairing rule's settings, names, rule guide, declaration and exchange prompts,
+It registers the pairing rule's settings, names, rule guide, hand-reveal and exchange prompts,
 settlement text and tile appearance through MahjongCraft's public extension callbacks.
 
 Translations are provided in Traditional Chinese, Simplified Chinese, English and Japanese.
@@ -28,7 +28,7 @@ These shared registrations do not depend on a particular Minecraft version or lo
 | Win settlement contents | `registerWinSettlementPresentationTemplates` | [Settlement presentation](src/commonMain/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/presentation/ExamplePairingSettlementPresentation.kt) |
 | Round information lines | `registerRoundInfoPresentations` | [Round information](src/commonMain/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/presentation/ExamplePairingRoundInfo.kt) |
 | Tile models, textures, corner labels and emoji | `registerTileAssets`, `registerTileLabels`, `registerTileEmojis` | [Tile registrations](src/commonMain/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/tile/ExampleMinecraftTileAssets.kt) |
-| Rule-owned objects on the table | `registerTablePropDescribers` | [Bonus tiles and declaration chips](src/commonMain/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/presentation/ExamplePairingTableProps.kt) |
+| Rule-owned objects on the table | `registerTablePropDescribers` | [Bonus tiles and hand-reveal chips](src/commonMain/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/presentation/ExamplePairingTableProps.kt) |
 
 A translated label supplies display text; it does not implement the underlying rule or action.
 Keep the rule and action IDs aligned with the platform-independent extension, and keep translation

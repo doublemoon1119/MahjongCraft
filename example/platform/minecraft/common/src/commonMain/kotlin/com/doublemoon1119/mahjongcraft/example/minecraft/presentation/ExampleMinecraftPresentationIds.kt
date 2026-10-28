@@ -43,9 +43,9 @@ object ExampleMinecraftPresentationIds {
     /** 結算模板。 */
     const val SETTLEMENT_TEMPLATE = "${ExampleExtensionIds.MOD_ID}:pairing/settlement"
 
-    /** 已宣告玩家使用的桌面晶片種類。 */
-    const val DECLARATION_CHIP_KIND = "${ExampleExtensionIds.MOD_ID}:declaration_chip"
+    /** 已攤牌玩家使用的桌面晶片種類。 */
+    const val HAND_REVEAL_CHIP_KIND = "${ExampleExtensionIds.MOD_ID}:hand_reveal_chip"
 
-    /** 已宣告玩家使用的桌面晶片變體。 */
-    const val DECLARATION_CHIP_VARIANT = "declared"
+    /** 已攤牌玩家使用的桌面晶片變體。 */
+    const val HAND_REVEAL_CHIP_VARIANT = "hand_revealed"
 }

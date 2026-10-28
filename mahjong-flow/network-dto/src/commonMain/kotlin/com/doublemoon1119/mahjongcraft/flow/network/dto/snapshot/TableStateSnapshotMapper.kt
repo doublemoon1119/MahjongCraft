@@ -29,6 +29,7 @@ fun TableStateSnapshot.toDto(registries: NetworkDtoRegistries): TableStateSnapsh
     physicalWallLayout = physicalWallLayout?.toDto(),
     openingDiceRolls = openingDiceRolls.map { it.toDto() },
     revealedHandTiles = revealedHandTiles.map { it.toDto() },
+    handTileStates = handTileStates.map { it.toDto() },
 )
 
 /**
@@ -53,4 +54,5 @@ fun TableStateSnapshotDto.toDomain(registries: NetworkDtoRegistries): TableState
     physicalWallLayout = physicalWallLayout?.toDomain(),
     openingDiceRolls = openingDiceRolls.map { it.toDomain() },
     revealedHandTiles = revealedHandTiles.map { it.toDomain() },
+    handTileStates = handTileStates.map { it.toDomain() },
 )

@@ -12,7 +12,7 @@ It uses the same compiler, Java and Minecraft version policies as the main proje
   [Fabric 1.20.1 adapter](v1.20.1/fabric/README.md) supplies native entrypoints and furniture.
 
 The common extension registers the pairing rule, custom tile and Tsumogiri strategy.
-Minecraft presentation adds room settings, declaration and exchange prompts, settlement text,
+Minecraft presentation adds room settings, hand-reveal and exchange prompts, settlement text,
 and the inverted one-character tile's resources in four languages.
 Native furniture demonstrates both block-backed and entity-backed seats. Public game events are
 printed to online administrators' chat so their supplied fields can be inspected in game.
@@ -138,7 +138,7 @@ Each different matching rank in a self-draw adds one point to **each opponent's 
 Two matching copies of the same rank count once. The settlement shows the extra payment separately.
 
 The shared [prop describer](common/src/commonMain/kotlin/com/doublemoon1119/mahjongcraft/example/minecraft/presentation/ExamplePairingTableProps.kt)
-reads the saved selection. It also requests one custom gold declaration token per declared player.
+reads the saved selection. It also requests one custom gold hand-reveal token per revealed player.
 Both kinds use the same central layout. The public tile kind comes from MahjongCraft; the token's
 native kind, entity and renderer belong entirely to the example adapter. For instance, the current
 Fabric adapter registers them in
@@ -148,7 +148,7 @@ After building, check the following in a disposable example world:
 
 1. Start with two selected ranks, then with all eight. Count the displayed bonus tiles.
 2. Check that the bonus tiles face the dealer, including after the next round changes dealers.
-   Make several declarations and confirm the gold tokens do not overlap tiles or one another.
+   Reveal several hands and confirm the gold tokens do not overlap tiles or one another.
 3. Watch the multi-roll opening: central props appear after the dice have finished.
 4. Self-draw and compare the displayed bonus ranks with the extra points. Repeated copies count once.
 5. Leave and reopen an active match. Its bonus ranks and scores must stay the same.

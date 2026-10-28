@@ -4,11 +4,17 @@ import com.doublemoon1119.mahjongcraft.logic.base.Hand
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
+import com.doublemoon1119.mahjongcraft.logic.module.HandTilePose
+import com.doublemoon1119.mahjongcraft.logic.module.HandTileVisibility
+import com.doublemoon1119.mahjongcraft.logic.table.GameInitializer
 import com.doublemoon1119.mahjongcraft.logic.table.MahjongPlayer
+import com.doublemoon1119.mahjongcraft.logic.table.RoundAdvancementResult
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.TileWall
 import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.logic.table.opening.WallOpening
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -20,6 +26,63 @@ import kotlin.uuid.Uuid
 
 /** 覆蓋簡易配對規則的牌型、牌山與固定自摸結算核心行為。 */
 class ExamplePairingRuleCoreTest {
+    /** 下一局透過正式初始化流程清除上一局攤牌狀態，重新恢復立牌與手牌保密。 */
+    @Test
+    fun `next round initializer clears previous hand reveal state`() {
+        val module = ExamplePairingRuleModule(ExamplePairingIds.RULE_MODULE, ExamplePairingRuleConfig())
+        val initial = GameInitializer.initialize(
+            id = Uuid.random(),
+            playerIds = listOf(Uuid.random(), Uuid.random()),
+            module = module,
+        ).tableState
+        val revealedPlayers = initial.players.map { it.copy(playerRuleState = ExamplePairingPlayerState(handRevealed = true)) }
+        val next = GameInitializer.startNextRound(
+            gameId = initial.id,
+            roundAdvancement = RoundAdvancementResult(
+                players = revealedPlayers,
+                dealerPlayerId = initial.dealerPlayerId,
+                roundNumber = 2,
+                comboCount = 0,
+                prevalentWind = initial.prevalentWind,
+            ),
+            previousDynamicRuleState = initial.dynamicRuleState,
+            module = module,
+        ).tableState
+
+        assertTrue(next.players.all { (it.playerRuleState as ExamplePairingPlayerState).handRevealed.not() })
+        assertTrue(module.describeHandTiles(next).isEmpty())
+    }
+
+    /** 攤牌玩家的現有手牌與摸牌位都公開，未攤牌玩家仍維持隱藏。 */
+    @Test
+    fun `revealed hand exposes standing and drawn tile ids without exposing another player`() {
+        val revealedId = Uuid.random()
+        val hiddenId = Uuid.random()
+        val standing = identified(Tile.Numeric(Tile.Suit.Character, 1))
+        val drawn = identified(Tile.Numeric(Tile.Suit.Dot, 1))
+        val hiddenTile = identified(Tile.Numeric(Tile.Suit.Bamboo, 1))
+        val table = FakeTableStateFactory.create(
+            config = ExamplePairingRuleConfig(),
+            players = listOf(
+                FakeMahjongPlayerFactory.create(
+                    id = revealedId,
+                    hand = Hand(tiles = listOf(standing), lastDrawn = drawn),
+                    playerRuleState = ExamplePairingPlayerState(handRevealed = true),
+                ),
+                FakeMahjongPlayerFactory.create(
+                    id = hiddenId,
+                    hand = Hand(tiles = listOf(hiddenTile)),
+                    playerRuleState = ExamplePairingPlayerState(),
+                ),
+            ),
+        )
+        val module = ExamplePairingRuleModule(ExamplePairingIds.RULE_MODULE, ExamplePairingRuleConfig())
+
+        val descriptions = module.describeHandTiles(table)
+        assertEquals(setOf(standing.id, drawn.id), descriptions.map { it.tileId }.toSet())
+        assertTrue(descriptions.all { it.visibility == HandTileVisibility.Public && it.pose == HandTilePose.FACE_UP })
+    }
+
     /** 四同牌可拆成兩對，不成對與非本規則牌面不可胡牌。 */
     @Test
     fun `four equal tiles complete while unsupported and unpaired hands do not`() {

@@ -40,6 +40,7 @@ class PrivateHandLayout {
      * @param drawnId 獨立摸牌位的牌；沒有時為 null。
      * @param inputs 目前已追蹤的共享牌張資料，以真實牌張 ID 索引。
      * @param releaseHand 和牌或完整攤牌時，立即交回共享呈現，不另外補間私人牌位；倒牌動畫由共享呈現播放。
+     * @param releaseTileIds 立即交回共享呈現的個別牌張，不使用缺少封包時的短暫保留機制。
      * @return 本幀由私人布局接管的最終絕對位置與姿態。
      */
     fun update(
@@ -48,6 +49,7 @@ class PrivateHandLayout {
         drawnId: Uuid?,
         inputs: Map<Uuid, TileDisplayInput>,
         releaseHand: Boolean,
+        releaseTileIds: Set<Uuid> = emptySet(),
     ): Map<Uuid, TileDisplayTransform> {
         if (releaseHand) {
             clear()
@@ -75,6 +77,10 @@ class PrivateHandLayout {
         }
         val frame = mutableMapOf<Uuid, TileDisplayTransform>()
         (entries.keys + privateIds).toList().forEach { id ->
+            if (id in releaseTileIds) {
+                entries.remove(id)
+                return@forEach
+            }
             val input = inputs[id]
             var entry = entries[id]
             if (input == null || !input.visible) {

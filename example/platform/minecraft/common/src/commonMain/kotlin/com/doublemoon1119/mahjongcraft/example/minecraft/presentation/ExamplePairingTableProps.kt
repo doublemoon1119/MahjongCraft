@@ -36,17 +36,17 @@ object ExamplePairingTableProps : TablePropDescriber {
                     location = TablePropLocation.Center(order = index, yaw = dealerYaw),
                 )
             }
-        val declarationProps = tableState.players.mapNotNull { player ->
-            val declared = player.playerRuleState as? ExamplePairingPlayerState
-            if (declared?.declared != true) return@mapNotNull null
+        val handRevealProps = tableState.players.mapNotNull { player ->
+            val playerState = player.playerRuleState as? ExamplePairingPlayerState
+            if (playerState?.handRevealed != true) return@mapNotNull null
             TablePropPlacement(
-                id = "${ExamplePairingIds.RULE_MODULE}/declaration_chip_${player.id}",
-                kind = ExampleMinecraftPresentationIds.DECLARATION_CHIP_KIND,
-                content = TablePropContent.CustomVariant(ExampleMinecraftPresentationIds.DECLARATION_CHIP_VARIANT),
+                id = "${ExamplePairingIds.RULE_MODULE}/hand_reveal_chip_${player.id}",
+                kind = ExampleMinecraftPresentationIds.HAND_REVEAL_CHIP_KIND,
+                content = TablePropContent.CustomVariant(ExampleMinecraftPresentationIds.HAND_REVEAL_CHIP_VARIANT),
                 location = TablePropLocation.Center(order = state.bonusTileValues.size + player.initialSeatIndex),
             )
         }
-        return bonusProps + declarationProps
+        return bonusProps + handRevealProps
     }
 
     /** 將設定中的牌面數值轉成桌面上要展示的實體牌面。 */

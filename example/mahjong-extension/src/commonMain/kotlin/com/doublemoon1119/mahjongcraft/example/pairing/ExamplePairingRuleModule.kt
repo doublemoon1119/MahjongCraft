@@ -13,6 +13,9 @@ import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionValidator
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenCalculator
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
 import com.doublemoon1119.mahjongcraft.logic.module.ExhaustiveDrawSettlementResult
+import com.doublemoon1119.mahjongcraft.logic.module.HandTileDescription
+import com.doublemoon1119.mahjongcraft.logic.module.HandTilePose
+import com.doublemoon1119.mahjongcraft.logic.module.HandTileVisibility
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
 import com.doublemoon1119.mahjongcraft.logic.module.PublicPlayerIndicator
 import com.doublemoon1119.mahjongcraft.logic.module.RevealedHandSettlement
@@ -66,13 +69,24 @@ class ExamplePairingRuleModule(
 
     override fun projectPlayerRuleState(tableState: TableState, player: MahjongPlayer, observerId: Uuid): PlayerRuleState? {
         val state = player.playerRuleState as? ExamplePairingPlayerState ?: return null
-        return state.takeIf { player.id == observerId || it.declared }
+        return state.takeIf { player.id == observerId || it.handRevealed }
     }
+
+    override fun describeHandTiles(tableState: TableState): List<HandTileDescription> = tableState.players
+        .filter { (it.playerRuleState as? ExamplePairingPlayerState)?.handRevealed == true }
+        .flatMap { player -> player.hand.standingTiles }
+        .map { tile ->
+            HandTileDescription(
+                tileId = tile.id,
+                visibility = HandTileVisibility.Public,
+                pose = HandTilePose.FACE_UP,
+            )
+        }
 
     override fun projectDynamicRuleState(tableState: TableState, observerId: Uuid): DynamicRuleState? = (tableState.dynamicRuleState as? ExamplePairingDynamicState)?.let { it.copy(bonusTileValues = it.bonusTileValues.toSet()) }
 
-    override fun getPublicPlayerIndicators(tableState: TableState, player: MahjongPlayer): List<PublicPlayerIndicator> = if ((player.playerRuleState as? ExamplePairingPlayerState)?.declared == true) {
-        listOf(PublicPlayerIndicator(ExamplePairingIds.DECLARATION_INDICATOR))
+    override fun getPublicPlayerIndicators(tableState: TableState, player: MahjongPlayer): List<PublicPlayerIndicator> = if ((player.playerRuleState as? ExamplePairingPlayerState)?.handRevealed == true) {
+        listOf(PublicPlayerIndicator(ExamplePairingIds.HAND_REVEALED_INDICATOR))
     } else {
         emptyList()
     }

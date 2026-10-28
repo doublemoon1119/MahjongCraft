@@ -358,6 +358,17 @@ interface MahjongRuleModule<T : MahjongRuleConfig> {
     fun projectDynamicRuleState(tableState: TableState, observerId: Uuid): DynamicRuleState? = null
 
     /**
+     * 描述目前手牌逐張的額外可見權限與共同姿態。
+     *
+     * 同一桌況必須回傳相同結果，且不修改狀態或使用外部可變資料。未回報的牌沿用原本權限並保持直立。
+     * 描述只涵蓋立牌與摸牌位；不能藉此公開暗槓、牌山或私有規則狀態。回報後先通過共用驗證，再由可見性政策裁切給各觀察者。
+     *
+     * @param tableState 權威桌況。
+     * @return 每張牌至多一筆描述；不額外公開或改變姿態時為空清單。
+     */
+    fun describeHandTiles(tableState: TableState): List<HandTileDescription> = emptyList()
+
+    /**
      * 因應「玩家摸牌」事件，套用規則特有的狀態變化。
      *
      * 只能修改 [MahjongPlayer.playerRuleState]；改動其他欄位時本局以規則錯誤中止。要收付點數請使用

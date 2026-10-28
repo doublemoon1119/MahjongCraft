@@ -47,6 +47,7 @@ internal object TileAnimationSteps {
      * @param flipAbsoluteGameTime 這批牌共用的翻牌絕對 tick。
      * @param playDealSound 是否為此牌播放發牌聲。
      * @param playFlipSound 是否為此牌播放翻牌聲。
+     * @param endPose 翻牌動畫結束後的姿態；一般發牌為直立。
      */
     fun scheduleDealBatch(
         tile: MahjongTileEntity,
@@ -56,6 +57,7 @@ internal object TileAnimationSteps {
         flipAbsoluteGameTime: Long,
         playDealSound: Boolean = false,
         playFlipSound: Boolean = false,
+        endPose: MahjongTilePose = MahjongTilePose.STANDING,
     ) {
         val wallX = tile.x
         val wallY = tile.y
@@ -102,7 +104,7 @@ internal object TileAnimationSteps {
                 if (playFlipSound) add(handTurnSound(flipAbsoluteGameTime))
                 addAll(
                     listOf(
-                        AnimationStep.Custom(MahjongTilePose.STANDING),
+                        AnimationStep.Custom(endPose),
                         AnimationStep.PlayMotion(
                             durationTicks = MahjongTileTableLayout.DEAL_FLIP_DURATION_TICKS,
                             arcHeight = 0.0,
@@ -110,7 +112,7 @@ internal object TileAnimationSteps {
                             startOffsetY = 0.0,
                             startOffsetZ = 0.0,
                             startPoseRotationDegrees = MahjongTilePose.FACE_DOWN.rotationDegrees,
-                            endPoseRotationDegrees = MahjongTilePose.STANDING.rotationDegrees,
+                            endPoseRotationDegrees = endPose.rotationDegrees,
                         ),
                         AnimationStep.WaitUntil(viewingEndGameTime),
                         AnimationStep.Teleport(
@@ -135,11 +137,13 @@ internal object TileAnimationSteps {
      * @param tile 要排定摸牌動畫的牌 entity。
      * @param finalPlacement 摸牌動畫的落定位置。
      * @param startDelayTicks 起飛前等待的 tick 數；0 時立即開始。
+     * @param endPose 動畫結束後的姿態；一般摸牌為直立，已攤牌的手牌為平放正面朝上。
      */
     fun scheduleDrawnTile(
         tile: MahjongTileEntity,
         finalPlacement: MahjongTileWallPlacement,
         startDelayTicks: Long = 0L,
+        endPose: MahjongTilePose = MahjongTilePose.STANDING,
     ) {
         val wallX = tile.x
         val wallY = tile.y
@@ -164,7 +168,7 @@ internal object TileAnimationSteps {
                 ),
                 AnimationStep.SetInvisible(true),
                 AnimationStep.Teleport(finalPlacement.x, finalPlacement.y, finalPlacement.z, finalPlacement.yaw),
-                AnimationStep.Custom(MahjongTilePose.STANDING),
+                AnimationStep.Custom(endPose),
                 AnimationStep.WaitUntil(snapGapEndGameTime),
                 AnimationStep.SetInvisible(false),
                 AnimationStep.PlayMotion(
@@ -173,8 +177,8 @@ internal object TileAnimationSteps {
                     startOffsetX = 0.0,
                     startOffsetY = peakY - finalPlacement.y,
                     startOffsetZ = 0.0,
-                    startPoseRotationDegrees = MahjongTilePose.STANDING.rotationDegrees,
-                    endPoseRotationDegrees = MahjongTilePose.STANDING.rotationDegrees,
+                    startPoseRotationDegrees = endPose.rotationDegrees,
+                    endPoseRotationDegrees = endPose.rotationDegrees,
                 ),
                 drawnTileLandingSound(snapGapEndGameTime + MahjongTileTableLayout.DRAW_DROP_DURATION_TICKS),
             ),

@@ -1,11 +1,11 @@
 package com.doublemoon1119.mahjongcraft.example.format
 
-import com.doublemoon1119.mahjongcraft.example.action.ExamplePairingDeclarationAction
-import com.doublemoon1119.mahjongcraft.example.format.persistence.ExamplePairingDeclarationActionPersistenceDto
+import com.doublemoon1119.mahjongcraft.example.action.ExamplePairingRevealHandAction
 import com.doublemoon1119.mahjongcraft.example.format.persistence.ExamplePairingDiscardPilePersistenceDto
 import com.doublemoon1119.mahjongcraft.example.format.persistence.ExamplePairingDynamicStatePersistenceDto
 import com.doublemoon1119.mahjongcraft.example.format.persistence.ExamplePairingExhaustiveDrawReasonPersistenceDto
 import com.doublemoon1119.mahjongcraft.example.format.persistence.ExamplePairingPlayerStatePersistenceDto
+import com.doublemoon1119.mahjongcraft.example.format.persistence.ExamplePairingRevealHandActionPersistenceDto
 import com.doublemoon1119.mahjongcraft.example.format.persistence.ExamplePairingRuleConfigPersistenceDto
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingDiscardPile
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingDynamicState
@@ -74,11 +74,11 @@ fun registerExamplePersistenceDtos(registries: PersistenceRegistries) {
     )
     registries.extensionGameActions.register(
         definition = PersistenceDtoDefinition(
-            typeKey = ExamplePairingIds.DECLARE_ACTION,
-            domainClass = ExamplePairingDeclarationAction::class,
-            serializer = ExamplePairingDeclarationActionPersistenceDto.serializer(),
-            toDto = { ExamplePairingDeclarationActionPersistenceDto },
-            toDomain = { ExamplePairingDeclarationAction },
+            typeKey = ExamplePairingIds.REVEAL_HAND_ACTION,
+            domainClass = ExamplePairingRevealHandAction::class,
+            serializer = ExamplePairingRevealHandActionPersistenceDto.serializer(),
+            toDto = { ExamplePairingRevealHandActionPersistenceDto },
+            toDomain = { ExamplePairingRevealHandAction },
             compactInReplay = true,
         ),
     )

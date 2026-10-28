@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.example.fabric
 
 import com.doublemoon1119.mahjongcraft.example.fabric.furniture.ExampleFurniture
-import com.doublemoon1119.mahjongcraft.example.fabric.table.ExampleDeclarationChipTablePropKind
+import com.doublemoon1119.mahjongcraft.example.fabric.table.ExampleHandRevealChipTablePropKind
 import com.doublemoon1119.mahjongcraft.example.minecraft.ExampleMinecraftMahjongExtension
 import com.doublemoon1119.mahjongcraft.platform.fabric.api.seating.FabricSeatProviderRegistry
 import com.doublemoon1119.mahjongcraft.platform.fabric.extension.FabricMahjongExtension
@@ -20,8 +20,8 @@ class ExampleFabricMahjongExtension :
         ExampleFurniture.seatProviders().forEach(registry::register)
     }
 
-    /** 登記範例宣告籌碼的桌面物件種類。 */
+    /** 登記範例攤牌籌碼的桌面物件種類。 */
     override fun registerTablePropKinds(registry: FabricTablePropKindRegistry) {
-        registry.register(ExampleDeclarationChipTablePropKind)
+        registry.register(ExampleHandRevealChipTablePropKind)
     }
 }

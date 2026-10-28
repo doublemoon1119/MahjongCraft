@@ -187,6 +187,22 @@ core extension behavior through one adapter. For example, see the Minecraft guid
 - Rule modules define what each observer may know through `projectPlayerRuleState` and
   `projectDynamicRuleState`. The visibility policy applies these hooks to both network snapshots and AI
   contexts. Do not send a raw `TableState.toSnapshot` result directly to either consumer.
+- Describe physical standing and drawn tiles through `describeHandTiles(tableState)`. Each
+  `HandTileDescription` has one tile UUID, an additional visibility grant and a shared pose. Use
+  `Default` for no extra access or `Public` for all authorized observers. Neither grants permission
+  to subscribe to a match.
+- Keep visibility independent from pose: a public tile may stay `UPRIGHT`, while `FACE_UP` requires
+  `Public`. A description affects only its named tile, not every matching face or the owner's whole hand.
+  Missing descriptions mean default access and upright pose. Existing owner, spectator and public
+  reveal permissions still apply; descriptions cannot revoke them or expose concealed melds.
+- All consumers use `resolveHandTileDescriptions` to reject duplicate tile UUIDs, tiles outside current
+  hands and nonpublic face-up poses. It captures detached data and omits explicit
+  default/upright entries. Do not add another validator in a platform adapter.
+- Derive descriptions from saved rule state without side effects or an observer-dependent pose.
+  Flow applies visibility before sending faces or building AI contexts. Snapshots carry only the
+  resulting faces and non-default per-tile pose overrides.
+- Re-evaluate the current hand so future draws follow the rule, and reset rule state for a new round.
+  Do not store a second authoritative flag in platform code or infer permission from a texture.
 - The default player projection exposes state only to its owner; the default dynamic projection exposes
   nothing. A spectator's permission to see tile faces does not grant access to private rule state.
 - Return immutable, explicitly public projections for other observers. Represent hidden fields as unknown,

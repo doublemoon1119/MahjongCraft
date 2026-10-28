@@ -87,13 +87,13 @@ open class ExampleMinecraftMahjongExtension :
         registry.register(
             GameActionVocabularyDefinition(
                 ruleModuleId = ExamplePairingIds.RULE_MODULE,
-                actionId = ExamplePairingIds.DECLARE_ACTION,
+                actionId = ExamplePairingIds.REVEAL_HAND_ACTION,
                 vocabulary = GameActionVocabulary(
-                    labelKey = ExampleMinecraftMessageKeys.DECLARE,
+                    labelKey = ExampleMinecraftMessageKeys.REVEAL_HAND,
                     order = 50,
-                    descriptionKey = ExampleMinecraftMessageKeys.DECLARE_DESCRIPTION,
-                    cardBodyKey = ExampleMinecraftMessageKeys.DECLARE_CARD_BODY,
-                    cardHintKey = ExampleMinecraftMessageKeys.DECLARE_CARD_HINT,
+                    descriptionKey = ExampleMinecraftMessageKeys.REVEAL_HAND_DESCRIPTION,
+                    cardBodyKey = ExampleMinecraftMessageKeys.REVEAL_HAND_CARD_BODY,
+                    cardHintKey = ExampleMinecraftMessageKeys.REVEAL_HAND_CARD_HINT,
                 ),
             ),
         )
@@ -102,8 +102,8 @@ open class ExampleMinecraftMahjongExtension :
     override fun registerPublicPlayerIndicatorDisplays(registry: PublicPlayerIndicatorDisplayRegistry) {
         registry.register(
             PublicPlayerIndicatorDisplayDefinition(
-                id = ExamplePairingIds.DECLARATION_INDICATOR,
-                display = PublicPlayerIndicatorDisplay(ExampleMinecraftMessageKeys.DECLARED),
+                id = ExamplePairingIds.HAND_REVEALED_INDICATOR,
+                display = PublicPlayerIndicatorDisplay(ExampleMinecraftMessageKeys.HAND_REVEALED),
             ),
         )
     }

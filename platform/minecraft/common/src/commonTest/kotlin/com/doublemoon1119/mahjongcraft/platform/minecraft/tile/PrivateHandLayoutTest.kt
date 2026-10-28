@@ -26,6 +26,42 @@ class PrivateHandLayoutTest {
     /** 第三張固定測試牌的識別碼。 */
     private val thirdId = Uuid.parse("00000000-0000-0000-0000-000000000003")
 
+    /** 逐張平放要求即刻交回該牌，即使原生姿態封包尚未抵達也不暫留私人牌位。 */
+    @Test
+    fun `individual release immediately yields one tile while other upright tiles stay private`() {
+        val layout = PrivateHandLayout()
+        val inputs = transforms(firstId to transform(0.0), secondId to transform(1.0))
+        val order = listOf(firstId, secondId)
+        val initial = layout.update(
+            time = 0.0,
+            standingOrder = order,
+            drawnId = null,
+            inputs = inputs,
+            releaseHand = false,
+        )
+        assertTrue(initial.keys.containsAll(order))
+        val released = layout.update(
+            time = 1.0,
+            standingOrder = order,
+            drawnId = null,
+            inputs = inputs,
+            releaseHand = false,
+            releaseTileIds = setOf(firstId),
+        )
+        assertFalse(firstId in released)
+        assertTrue(secondId in released)
+        val delayed = layout.update(
+            time = 2.0,
+            standingOrder = order,
+            drawnId = null,
+            inputs = inputs - firstId,
+            releaseHand = false,
+            releaseTileIds = setOf(firstId),
+        )
+        assertFalse(firstId in delayed)
+        assertTrue(secondId in delayed)
+    }
+
     /** 靜止牌張依私人牌序占用固定格位，並保留獨立摸牌位。 */
     @Test
     fun `static hand uses sorted private slots and drawn slot`() {

@@ -1,8 +1,8 @@
 package com.doublemoon1119.mahjongcraft.example.integration
 
 import com.doublemoon1119.mahjongcraft.example.ExampleMahjongExtension
-import com.doublemoon1119.mahjongcraft.example.action.ExamplePairingDeclarationAction
-import com.doublemoon1119.mahjongcraft.example.action.ExamplePairingDeclarationCommand
+import com.doublemoon1119.mahjongcraft.example.action.ExamplePairingRevealHandAction
+import com.doublemoon1119.mahjongcraft.example.action.ExamplePairingRevealHandCommand
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingDynamicState
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingIds
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingRuleConfig
@@ -52,7 +52,7 @@ import kotlin.test.assertTrue
 import kotlin.uuid.Uuid
 
 /**
- * 以範例擴充自己的 registry 建立一條最小對局流程，確認宣告、摸打、流局、終局與保存資料可串接。
+ * 以範例擴充自己的 registry 建立一條最小對局流程，確認攤牌、摸打、流局、終局與保存資料可串接。
  *
  * 測試不載入任何內建規則，也不建立完整伺服器模擬器；只使用正式的權威 store 與公開 use case。
  */
@@ -89,7 +89,7 @@ class ExamplePairingPublicApiIntegrationTest {
         }
     }
 
-    /** 驗證範例擴充能從開局走到終局，且宣告動作會進入保存資料。 */
+    /** 驗證範例擴充能從開局走到終局，且攤牌動作會進入保存資料。 */
     @Test
     fun `example extension completes isolated match and round trips authoritative history`() = runTest {
         val fixtures = Fixtures()
@@ -122,7 +122,7 @@ class ExamplePairingPublicApiIntegrationTest {
         val drawn = fixtures.gameRepository.getGame(roomId)!!.tableState.currentPlayer.hand.lastDrawn
         assertTrue(drawn != null)
         assertIs<Outcome.Success<*>>(
-            fixtures.extensionExecutor.execute(roomId, actor, ExamplePairingDeclarationCommand),
+            fixtures.extensionExecutor.execute(roomId, actor, ExamplePairingRevealHandCommand),
         )
         assertIs<Outcome.Success<*>>(fixtures.discardTileUseCase(roomId, actor, drawn.id))
 
@@ -144,7 +144,7 @@ class ExamplePairingPublicApiIntegrationTest {
         val facts = restored.historyRecordingState.pendingEvents.map { it.fact }
         assertTrue(
             facts.any { fact ->
-                fact is HistoryFact.ActionAccepted && fact.action == GameAction.Extension(ExamplePairingDeclarationAction)
+                fact is HistoryFact.ActionAccepted && fact.action == GameAction.Extension(ExamplePairingRevealHandAction)
             },
         )
         assertTrue(

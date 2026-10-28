@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.ExtensionGameComman
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-/** 送出示範宣告的網路命令。 */
+/** 送出攤牌動作的網路命令。 */
 @Serializable
-@SerialName(ExampleFormatIds.DECLARATION_COMMAND)
-data object ExamplePairingDeclarationCommandDto : ExtensionGameCommandDto
+@SerialName(ExampleFormatIds.REVEAL_HAND_COMMAND)
+data object ExamplePairingRevealHandCommandDto : ExtensionGameCommandDto

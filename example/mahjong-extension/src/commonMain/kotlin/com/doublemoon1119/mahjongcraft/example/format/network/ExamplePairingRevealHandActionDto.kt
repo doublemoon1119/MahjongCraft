@@ -5,7 +5,7 @@ import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.ExtensionGameAction
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-/** 已成立的示範宣告網路動作。 */
+/** 已成立的攤牌網路動作。 */
 @Serializable
-@SerialName(ExamplePairingIds.DECLARE_ACTION)
-data object ExamplePairingDeclarationActionDto : ExtensionGameActionDto
+@SerialName(ExamplePairingIds.REVEAL_HAND_ACTION)
+data object ExamplePairingRevealHandActionDto : ExtensionGameActionDto

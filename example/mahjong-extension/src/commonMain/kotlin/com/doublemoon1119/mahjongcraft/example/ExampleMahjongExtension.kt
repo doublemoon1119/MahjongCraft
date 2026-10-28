@@ -2,8 +2,8 @@ package com.doublemoon1119.mahjongcraft.example
 
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyDefinition
 import com.doublemoon1119.mahjongcraft.ai.MahjongAiStrategyRegistry
-import com.doublemoon1119.mahjongcraft.example.action.registerExamplePairingDeclarationFactory
-import com.doublemoon1119.mahjongcraft.example.action.registerExamplePairingDeclarationHandler
+import com.doublemoon1119.mahjongcraft.example.action.registerExamplePairingRevealHandFactory
+import com.doublemoon1119.mahjongcraft.example.action.registerExamplePairingRevealHandHandler
 import com.doublemoon1119.mahjongcraft.example.ai.ExampleAiStrategyIds
 import com.doublemoon1119.mahjongcraft.example.ai.ExampleTsumogiriAiStrategy
 import com.doublemoon1119.mahjongcraft.example.decision.ExamplePairingRuleDecisionResolver
@@ -56,11 +56,11 @@ open class ExampleMahjongExtension : MahjongExtension {
         registry.register(MahjongAiStrategyDefinition(key = ExampleAiStrategyIds.TSUMOGIRI) { ExampleTsumogiriAiStrategy() })
     }
 
-    /** 登記示範宣告的命令建立方式。 */
-    override fun registerGameActionCommandFactories(registry: ExtensionGameActionCommandFactoryRegistry) = registerExamplePairingDeclarationFactory(registry)
+    /** 登記攤牌動作的命令建立方式。 */
+    override fun registerGameActionCommandFactories(registry: ExtensionGameActionCommandFactoryRegistry) = registerExamplePairingRevealHandFactory(registry)
 
-    /** 登記示範宣告的權威處理器。 */
-    override fun registerGameCommandHandlers(registry: ExtensionGameCommandExecutorRegistry) = registerExamplePairingDeclarationHandler(registry)
+    /** 登記攤牌動作的權威處理器。 */
+    override fun registerGameCommandHandlers(registry: ExtensionGameCommandExecutorRegistry) = registerExamplePairingRevealHandHandler(registry)
 
     /** 登記依換牌選項決定是否啟用的規則選擇。 */
     override fun registerRuleDecisionResolvers(registry: RuleDecisionResolverRegistry) {

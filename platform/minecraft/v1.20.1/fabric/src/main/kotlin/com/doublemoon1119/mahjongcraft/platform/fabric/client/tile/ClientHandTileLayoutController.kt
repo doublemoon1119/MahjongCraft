@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.platform.fabric.client.tile
 
+import com.doublemoon1119.mahjongcraft.logic.module.HandTilePose
 import com.doublemoon1119.mahjongcraft.logic.table.MatchRoundPosition
 import com.doublemoon1119.mahjongcraft.platform.fabric.client.state.ClientMahjongStateStore
 import com.doublemoon1119.mahjongcraft.platform.fabric.entity.MahjongTileEntity
@@ -67,6 +68,9 @@ class ClientHandTileLayoutController(
             world = currentWorld
             scope = nextScope
         }
+        val faceUpIds = snapshot.handTileStates.filter { it.pose == HandTilePose.FACE_UP }.mapTo(mutableSetOf()) { it.tileId }
+        val handIds = (player.hand.standingTiles.map { it.id } + listOfNotNull(player.hand.lastDrawn?.id)).toSet()
+        val settlementRevealedIds = snapshot.revealedHandTiles.mapTo(mutableSetOf()) { it.id }
         val standingIds = player.hand.standingTiles.map { it.id }.filterNot { it == player.hand.lastDrawn?.id }
         val inputs = currentWorld.entities.asSequence().filterIsInstance<MahjongTileEntity>()
             .filter { !it.isRemoved && it.managedTableId == tableId }
@@ -94,14 +98,14 @@ class ClientHandTileLayoutController(
                     visible = !tile.isInvisible,
                 )
             }
-        val revealedIds = snapshot.revealedHandTiles.mapTo(mutableSetOf()) { it.id }
-        val handIds = standingIds + listOfNotNull(player.hand.lastDrawn?.id)
         frame = layout.update(
             time = currentWorld.time.toDouble() + tickDelta,
             standingOrder = standingIds,
             drawnId = player.hand.lastDrawn?.id,
             inputs = inputs,
-            releaseHand = playerId in snapshot.finishedPlayerIds || (handIds.isNotEmpty() && handIds.all { it in revealedIds }),
+            releaseHand = playerId in snapshot.finishedPlayerIds ||
+                (handIds.isNotEmpty() && (faceUpIds.containsAll(handIds) || settlementRevealedIds.containsAll(handIds))),
+            releaseTileIds = faceUpIds,
         )
     }
 

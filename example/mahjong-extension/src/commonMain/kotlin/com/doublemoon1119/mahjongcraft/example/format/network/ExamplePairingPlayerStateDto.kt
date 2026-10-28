@@ -6,12 +6,12 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * 玩家本局公開宣告標記的網路格式。
+ * 玩家本局攤牌標記的網路格式。
  *
- * @property declared 本局是否已完成示範宣告。
+ * @property handRevealed 本局是否已攤牌。
  */
 @Serializable
 @SerialName(ExampleFormatIds.PLAYER_STATE)
 data class ExamplePairingPlayerStateDto(
-    val declared: Boolean,
+    val handRevealed: Boolean,
 ) : PlayerRuleStateDto

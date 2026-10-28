@@ -17,46 +17,46 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import kotlin.uuid.Uuid
 
 /**
- * 登記簡易配對麻將宣告動作的命令工廠。
+ * 登記簡易配對麻將攤牌動作的命令工廠。
  *
- * @param registry 要接收宣告動作工廠的 registry。
+ * @param registry 要接收攤牌動作工廠的 registry。
  */
-fun registerExamplePairingDeclarationFactory(registry: ExtensionGameActionCommandFactoryRegistry) {
+fun registerExamplePairingRevealHandFactory(registry: ExtensionGameActionCommandFactoryRegistry) {
     registry.register(
-        ExtensionGameActionCommandFactoryDefinition(ExamplePairingDeclarationAction::class) { _, selectedTileIds ->
-            ExamplePairingDeclarationCommand.takeIf { selectedTileIds.isEmpty() }
+        ExtensionGameActionCommandFactoryDefinition(ExamplePairingRevealHandAction::class) { _, selectedTileIds ->
+            ExamplePairingRevealHandCommand.takeIf { selectedTileIds.isEmpty() }
         },
     )
 }
 
 /**
- * 登記簡易配對麻將宣告命令的權威 handler。
+ * 登記簡易配對麻將攤牌命令的權威 handler。
  *
- * @param registry 要接收宣告命令 handler 的 registry。
+ * @param registry 要接收攤牌命令 handler 的 registry。
  */
-fun registerExamplePairingDeclarationHandler(registry: ExtensionGameCommandExecutorRegistry) {
+fun registerExamplePairingRevealHandHandler(registry: ExtensionGameCommandExecutorRegistry) {
     registry.register(
-        ExtensionGameCommandHandlerDefinition(ExamplePairingDeclarationCommand::class) { context ->
-            ExamplePairingDeclarationHandler(context)
+        ExtensionGameCommandHandlerDefinition(ExamplePairingRevealHandCommand::class) { context ->
+            ExamplePairingRevealHandHandler(context)
         },
     )
 }
 
 /**
- * 在權威交易中驗證並提交簡易配對麻將的宣告命令。
+ * 在權威交易中驗證並提交簡易配對麻將的攤牌命令。
  *
  * @property context 執行擴充命令所需的權威流程服務。
  */
-private class ExamplePairingDeclarationHandler(
+private class ExamplePairingRevealHandHandler(
     private val context: ExtensionGameCommandContext,
-) : ExtensionGameCommandHandler<ExamplePairingDeclarationCommand> {
+) : ExtensionGameCommandHandler<ExamplePairingRevealHandCommand> {
     /**
      * 保存一次權威寫入的結果與寫入後桌況，供後續通知使用。
      *
      * @property outcome 權威驗證與寫入結果。
      * @property tableState 寫入成功後的桌況；拒絕命令時為當前桌況，找不到對局時為 null。
      */
-    private data class DeclarationUpdate(
+    private data class RevealHandUpdate(
         val outcome: Outcome<Unit, GameError>,
         val tableState: TableState?,
     )
@@ -64,7 +64,7 @@ private class ExamplePairingDeclarationHandler(
     override suspend fun execute(
         gameId: Uuid,
         playerId: Uuid,
-        command: ExamplePairingDeclarationCommand,
+        command: ExamplePairingRevealHandCommand,
     ): Outcome<Unit, GameError> {
         val result = context.gameRepository.updateGame(
             gameId,
@@ -73,7 +73,7 @@ private class ExamplePairingDeclarationHandler(
                     listOf(
                         acceptedActionHistoryDraft(
                             playerId,
-                            GameAction.Extension(ExamplePairingDeclarationAction),
+                            GameAction.Extension(ExamplePairingRevealHandAction),
                             before.tableState,
                             after.tableState,
                         ),
@@ -84,20 +84,20 @@ private class ExamplePairingDeclarationHandler(
             },
         ) { game ->
             if (game == null) {
-                return@updateGame null to DeclarationUpdate(
+                return@updateGame null to RevealHandUpdate(
                     outcome = Outcome.Error(GameError.GameNotFound(gameId)),
                     tableState = null,
                 )
             }
             val state = game.tableState
             if (state.config !is ExamplePairingRuleConfig) {
-                return@updateGame game to DeclarationUpdate(
+                return@updateGame game to RevealHandUpdate(
                     outcome = Outcome.Error(GameError.UnsupportedAction(gameId, playerId)),
                     tableState = state,
                 )
             }
             val player = state.players.firstOrNull { it.id == playerId }
-                ?: return@updateGame game to DeclarationUpdate(
+                ?: return@updateGame game to RevealHandUpdate(
                     outcome = Outcome.Error(GameError.PlayerNotInGame(playerId, gameId)),
                     tableState = state,
                 )
@@ -108,39 +108,39 @@ private class ExamplePairingDeclarationHandler(
                 !state.isOwnTurnWindowOpenFor(playerId) ||
                 state.currentPlayer.hand.lastDrawn == null
             ) {
-                return@updateGame game to DeclarationUpdate(
+                return@updateGame game to RevealHandUpdate(
                     outcome = Outcome.Error(GameError.UnsupportedAction(gameId, playerId)),
                     tableState = state,
                 )
             }
             val ruleState = player.playerRuleState as? ExamplePairingPlayerState
-                ?: return@updateGame game to DeclarationUpdate(
+                ?: return@updateGame game to RevealHandUpdate(
                     outcome = Outcome.Error(GameError.UnsupportedAction(gameId, playerId)),
                     tableState = state,
                 )
-            if (ruleState.declared) {
-                return@updateGame game to DeclarationUpdate(
+            if (ruleState.handRevealed) {
+                return@updateGame game to RevealHandUpdate(
                     outcome = Outcome.Error(GameError.UnsupportedAction(gameId, playerId)),
                     tableState = state,
                 )
             }
             val updatedPlayer = player.copy(
-                actionHistory = player.actionHistory + GameAction.Extension(ExamplePairingDeclarationAction),
-                playerRuleState = ruleState.copy(declared = true),
+                actionHistory = player.actionHistory + GameAction.Extension(ExamplePairingRevealHandAction),
+                playerRuleState = ruleState.copy(handRevealed = true),
             )
             val updatedState = state.copy(
                 players = state.players.map { if (it.id == playerId) updatedPlayer else it },
             )
-            game.copy(tableState = updatedState) to DeclarationUpdate(
+            game.copy(tableState = updatedState) to RevealHandUpdate(
                 outcome = Outcome.Success(Unit),
                 tableState = updatedState,
             )
         }
         if (result.outcome is Outcome.Error) return result.outcome
         val tableState = checkNotNull(result.tableState) {
-            "Successful declaration must include the updated table state"
+            "Successful hand reveal must include the updated table state"
         }
-        val action = GameAction.Extension(ExamplePairingDeclarationAction)
+        val action = GameAction.Extension(ExamplePairingRevealHandAction)
         context.snapshotSynchronizer.syncAll(gameId)
         context.eventPublisher.publishToAllObservers(
             gameId,

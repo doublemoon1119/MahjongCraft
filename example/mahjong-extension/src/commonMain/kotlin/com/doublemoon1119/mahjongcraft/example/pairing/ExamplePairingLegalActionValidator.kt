@@ -1,6 +1,6 @@
 package com.doublemoon1119.mahjongcraft.example.pairing
 
-import com.doublemoon1119.mahjongcraft.example.action.ExamplePairingDeclarationAction
+import com.doublemoon1119.mahjongcraft.example.action.ExamplePairingRevealHandAction
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
 import com.doublemoon1119.mahjongcraft.logic.base.RelativeDirection
 import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionContext
@@ -8,7 +8,7 @@ import com.doublemoon1119.mahjongcraft.logic.judgment.LegalActionValidator
 import com.doublemoon1119.mahjongcraft.logic.judgment.ShantenResult
 
 /**
- * 判定簡易配對麻將的自摸與每局一次的宣告動作。
+ * 判定簡易配對麻將的自摸與每局一次的攤牌動作。
  *
  * 判定時使用 [LegalActionContext.handWithIncoming]，由共用判定資料統一提供包含來源牌的手牌。
  */
@@ -26,8 +26,8 @@ class ExamplePairingLegalActionValidator : LegalActionValidator {
             if (ExamplePairingShantenCalculator().calculate(handWithDrawnTile) is ShantenResult.Complete) {
                 add(GameAction.Tsumo)
             }
-            if (ruleState?.declared != true) {
-                add(GameAction.Extension(ExamplePairingDeclarationAction))
+            if (ruleState?.handRevealed != true) {
+                add(GameAction.Extension(ExamplePairingRevealHandAction))
             }
         }
         return actions

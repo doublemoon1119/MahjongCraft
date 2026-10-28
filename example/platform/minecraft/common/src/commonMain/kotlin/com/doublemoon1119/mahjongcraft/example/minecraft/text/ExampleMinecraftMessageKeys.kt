@@ -14,20 +14,20 @@ object ExampleMinecraftMessageKeys {
     /** 倒置一萬牌種名稱。 */
     const val TILE_INVERTED_ONE_MAN = "mahjongcraft_example.tile.inverted_one_man"
 
-    /** 示範宣告動作名稱。 */
-    const val DECLARE = "mahjongcraft_example.action.declare"
+    /** 攤牌動作名稱。 */
+    const val REVEAL_HAND = "mahjongcraft_example.action.reveal_hand"
 
-    /** 示範宣告動作說明。 */
-    const val DECLARE_DESCRIPTION = "mahjongcraft_example.action.declare.description"
+    /** 攤牌動作說明。 */
+    const val REVEAL_HAND_DESCRIPTION = "mahjongcraft_example.action.reveal_hand.description"
 
-    /** 宣告操作卡中央的效果說明。 */
-    const val DECLARE_CARD_BODY = "mahjongcraft_example.action.declare.card_body"
+    /** 攤牌操作卡中央的效果說明。 */
+    const val REVEAL_HAND_CARD_BODY = "mahjongcraft_example.action.reveal_hand.card_body"
 
-    /** 宣告按鈕旁的使用次數提示。 */
-    const val DECLARE_CARD_HINT = "mahjongcraft_example.action.declare.card_hint"
+    /** 攤牌按鈕旁的使用次數提示。 */
+    const val REVEAL_HAND_CARD_HINT = "mahjongcraft_example.action.reveal_hand.card_hint"
 
-    /** 已完成示範宣告的公開標記。 */
-    const val DECLARED = "mahjongcraft_example.indicator.declared"
+    /** 已攤牌的公開標記。 */
+    const val HAND_REVEALED = "mahjongcraft_example.indicator.hand_revealed"
 
     /** 換牌選擇步驟名稱。 */
     const val EXCHANGE = "mahjongcraft_example.rule_decision.exchange"

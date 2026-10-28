@@ -11,11 +11,11 @@ object ExamplePairingIds {
     /** 一萬倒置牌的牌種識別碼。 */
     val INVERTED_ONE_MAN = TileTypeId(ExampleExtensionIds.MOD_ID, "inverted_one_man")
 
-    /** 玩家已完成示範宣告的公開狀態識別碼。 */
-    const val DECLARATION_INDICATOR = "${ExampleExtensionIds.MOD_ID}:pairing/declaration"
+    /** 玩家本局已攤牌的公開狀態識別碼。 */
+    const val HAND_REVEALED_INDICATOR = "${ExampleExtensionIds.MOD_ID}:pairing/hand_revealed"
 
-    /** 簡易配對麻將示範宣告動作的識別碼。 */
-    const val DECLARE_ACTION = "${ExampleExtensionIds.MOD_ID}:pairing/declare"
+    /** 簡易配對麻將攤牌動作的識別碼。 */
+    const val REVEAL_HAND_ACTION = "${ExampleExtensionIds.MOD_ID}:pairing/reveal_hand"
 
     /** 一般牌山耗盡流局的原因。 */
     const val EXHAUSTIVE_DRAW = "${ExampleExtensionIds.MOD_ID}:pairing/exhaustive_draw"

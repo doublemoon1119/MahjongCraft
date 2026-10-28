@@ -14,7 +14,10 @@ import com.doublemoon1119.mahjongcraft.flow.common.game.service.WinPresentationR
 import com.doublemoon1119.mahjongcraft.flow.common.game.service.toPresentation
 import com.doublemoon1119.mahjongcraft.flow.server.game.repository.GameRepository
 import com.doublemoon1119.mahjongcraft.logic.base.GameAction
+import com.doublemoon1119.mahjongcraft.logic.module.HandTileState
 import com.doublemoon1119.mahjongcraft.logic.module.MahjongModuleRegistry
+import com.doublemoon1119.mahjongcraft.logic.module.MahjongRuleModule
+import com.doublemoon1119.mahjongcraft.logic.module.resolveHandTileDescriptions
 import com.doublemoon1119.mahjongcraft.logic.table.TableState
 import com.doublemoon1119.mahjongcraft.logic.table.layout.PhysicalWallLayoutTransitionPhase
 import com.doublemoon1119.mahjongcraft.logic.table.layout.TileWallPhysicalLayout
@@ -76,6 +79,7 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.table.findTile
 import com.doublemoon1119.mahjongcraft.platform.minecraft.table.tileAssetKeysById
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.DrawFollowUpAnimationStep
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.DrawFollowUpTimeline
+import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.HandPoseUpdatePlanner
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPresentation
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongDiscardPresenter
 import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongInitialDealPresentation
@@ -190,6 +194,12 @@ class FabricGamePresentationPublisher(
     /** 呈現略過、生成失敗與排程狀態的診斷記錄。 */
     private val logger = mahjongCraftLogger(FabricGamePresentationPublisher::class)
 
+    /** 各牌區已成功套用的逐張姿態；避免普通狀態刷新重播既有牌區動畫。 */
+    private val handPoseUpdates = HandPoseUpdatePlanner()
+
+    /** 依共用契約驗證逐張描述，再取得不含授權名單的姿態。 */
+    private fun handTileStates(tableState: TableState, module: MahjongRuleModule<*>): List<HandTileState> = module.resolveHandTileDescriptions(tableState).map { HandTileState(it.tileId, it.pose) }
+
     /**
      * 開局四個階段之間的暫存資料。
      *
@@ -202,6 +212,7 @@ class FabricGamePresentationPublisher(
     /** 伺服器 session 結束時清除尚未完成的開局呈現暫存資料。 */
     fun clearOpeningSession() {
         openingState.clearAll()
+        synchronized(handPoseUpdates) { handPoseUpdates.reset() }
         tablePropPresenter.startSession()
     }
 
@@ -485,6 +496,7 @@ class FabricGamePresentationPublisher(
             logger.warn("publishWallStructure gameId={} skipped: no active server", gameId)
             return
         }
+        if (isNewOpening) synchronized(handPoseUpdates) { handPoseUpdates.clear(gameId) }
         if (assemblyStructure.isEmpty() && layout.placements.isEmpty()) {
             openingState.clear(gameId)
             openingOperations.invalidate(gameId)
@@ -666,6 +678,32 @@ class FabricGamePresentationPublisher(
                 tablePropPresenter.clear(gameId, resolved.location)
                 return@launchOpeningStage
             }
+            val module = moduleRegistry.getModule(tableState.config)
+            val desiredHandStates = handTileStates(tableState, module)
+            val poseChangedPlayers = synchronized(handPoseUpdates) {
+                handPoseUpdates.changedPlayers(
+                    gameId,
+                    tableState.players.associate { player ->
+                        val ids = player.hand.standingTiles.mapTo(mutableSetOf()) { it.id }
+                        player.id to desiredHandStates.filter { it.tileId in ids }
+                    },
+                )
+            }
+            // 只有姿態真的改變時才重新發布牌區，避免普通規則刷新取消正在播放的摸牌／移牌動畫。
+            tableState.players.forEachIndexed { seatIndex, player ->
+                if (player.id !in poseChangedPlayers) return@forEachIndexed
+                presentPlayerArea(
+                    gameId = gameId,
+                    seatIndex = seatIndex,
+                    standingTileIds = player.hand.tiles.map { it.id },
+                    drawnTileId = player.hand.lastDrawn?.id,
+                    melds = player.hand.melds.map { it.toPresentation(tableState.config.revealsClosedKanTiles) },
+                    setAsideTileIds = module.setAsideTiles(player).map { it.id },
+                    isNewlyDrawn = false,
+                    newlyClaimedMeldTileIds = emptySet(),
+                    newlySetAsideTileIds = emptySet(),
+                )
+            }
             val describer = describerFor(tableState)
             val plan = cornerLayout.planRuleStateUpdate(gameId, tableState, describer.cornerWidthsBySeat(tableState))
             val propsPresentation = TablePropPresentation(
@@ -745,6 +783,7 @@ class FabricGamePresentationPublisher(
                 drawnTileId = player.hand.lastDrawn?.id,
                 melds = player.hand.melds.map { it.toPresentation(tableState.config.revealsClosedKanTiles).toTileGroup() },
                 cornerWidth = cornerWidth,
+                handTileStates = handTileStates(tableState, module),
                 setAsideTileIds = module.setAsideTiles(player).map { it.id },
                 slideTicks = CORNER_SLIDE_TICKS,
             ),
@@ -906,6 +945,7 @@ class FabricGamePresentationPublisher(
                 postFlipHandTileIdsBySeatIndex = postFlipHandTileIdsBySeatIndex,
                 dealerSeatIndex = dealerSeatIndex,
                 cornerWidthBySeatIndex = cornerWidthBySeatIndex,
+                handTileStates = handTileStates(state, moduleRegistry.getModule(state.config)),
                 dealBatchSizes = dealBatchSizes,
                 extraLeadDelayTicks = (openingEndGameTime - resolved.world.time).coerceAtLeast(0L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt(),
             )
@@ -966,6 +1006,8 @@ class FabricGamePresentationPublisher(
         launchPendingPresentation(gameId, "publishPlayerTilesUpdated") {
             val resolved = resolveTableContext(gameId, "publishPlayerTilesUpdated") ?: return@launchPendingPresentation
             val tableState = gameRepository.getTableState(gameId) ?: return@launchPendingPresentation
+            val module = moduleRegistry.getModule(tableState.config)
+            val desiredHandStates = handTileStates(tableState, module)
             val cornerWidth = cornerLayout.widthForPlayerArea(gameId, tableState, seatIndex, describerFor(tableState).cornerWidthsBySeat(tableState))
             val presentation = MahjongPlayerAreaPresentation(
                 tableId = gameId,
@@ -982,8 +1024,18 @@ class FabricGamePresentationPublisher(
                 setAsideTileIds = setAsideTileIds,
                 animatedSetAsideTileIds = newlySetAsideTileIds,
                 followUpSteps = followUpSteps.map { DrawFollowUpAnimationStep(it.setAsideTileId, it.drawnTileIds) },
+                handTileStates = desiredHandStates,
             )
-            playerAreaPresenter.present(presentation)
+            val result = playerAreaPresenter.present(presentation)
+            if (result == MahjongPlayerAreaPresentationResult.PRESENTED) {
+                val playerId = tableState.players.getOrNull(seatIndex)?.id
+                if (playerId != null) {
+                    synchronized(handPoseUpdates) {
+                        val ids = tableState.players.get(seatIndex).hand.standingTiles.mapTo(mutableSetOf()) { it.id }
+                        handPoseUpdates.recordApplied(gameId, playerId, desiredHandStates.filter { it.tileId in ids })
+                    }
+                }
+            }
             if (followUpSteps.isNotEmpty()) {
                 val actorId = tableState.players.getOrNull(seatIndex)?.id ?: return@launchPendingPresentation
                 val presentationStart = resolved.world.time
@@ -1021,6 +1073,7 @@ class FabricGamePresentationPublisher(
                 return@launch
             }
             playerAreaPresenter.clear(gameId, location)
+            synchronized(handPoseUpdates) { handPoseUpdates.clear(gameId) }
             tablePropPresenter.clear(gameId, location)
             cornerLayout.clear(gameId)
             roundInfoPresenter.clear(gameId, location)

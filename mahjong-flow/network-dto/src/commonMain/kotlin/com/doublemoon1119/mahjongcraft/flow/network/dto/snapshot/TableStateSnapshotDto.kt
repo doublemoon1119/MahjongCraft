@@ -25,6 +25,7 @@ import kotlinx.serialization.Serializable
  * @property physicalWallLayout 實體牌牆布局；沒有時為 `null`。
  * @property openingDiceRolls 本局開局程序已完成的逐輪擲骰結果。
  * @property revealedHandTiles 對 observer 公開的額外手牌牌張。
+ * @property handTileStates 規則描述的逐張共同姿態，不含原始授權名單。
  */
 @Serializable
 data class TableStateSnapshotDto(
@@ -43,4 +44,5 @@ data class TableStateSnapshotDto(
     val physicalWallLayout: TileWallPhysicalLayoutDto?,
     val openingDiceRolls: List<OpeningDiceRollDto>,
     val revealedHandTiles: List<IdentifiedTileDto>,
+    val handTileStates: List<HandTileStateDto>,
 )

@@ -196,6 +196,7 @@ class TableStateSnapshotTest {
             .toSnapshot(emptySet(), setAsideTiles = { emptyList() })
 
         assertEquals(emptyList(), snapshot.revealedHandTiles)
+        assertEquals(emptyList(), snapshot.handTileStates)
     }
 
     /**

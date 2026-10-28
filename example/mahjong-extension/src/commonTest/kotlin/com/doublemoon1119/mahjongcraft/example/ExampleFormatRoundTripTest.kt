@@ -1,7 +1,7 @@
 package com.doublemoon1119.mahjongcraft.example
 
-import com.doublemoon1119.mahjongcraft.example.action.ExamplePairingDeclarationAction
-import com.doublemoon1119.mahjongcraft.example.action.ExamplePairingDeclarationCommand
+import com.doublemoon1119.mahjongcraft.example.action.ExamplePairingRevealHandAction
+import com.doublemoon1119.mahjongcraft.example.action.ExamplePairingRevealHandCommand
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingDiscardPile
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingDynamicState
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingExhaustiveDrawReason
@@ -9,6 +9,7 @@ import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingHandValueRe
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingIds
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingPlayerState
 import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingRuleConfig
+import com.doublemoon1119.mahjongcraft.example.pairing.ExamplePairingRuleModule
 import com.doublemoon1119.mahjongcraft.flow.common.game.model.WinSettlementDetailValue
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DefaultNetworkDtoRegistries
 import com.doublemoon1119.mahjongcraft.flow.network.dto.rule.DiscardPileDto
@@ -22,6 +23,7 @@ import com.doublemoon1119.mahjongcraft.flow.persistence.format.core.Unregistered
 import com.doublemoon1119.mahjongcraft.flow.persistence.format.registry.emptyPersistenceRegistries
 import com.doublemoon1119.mahjongcraft.logic.base.IdentifiedTile
 import com.doublemoon1119.mahjongcraft.logic.base.Tile
+import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeMahjongPlayerFactory
 import com.doublemoon1119.mahjongcraft.testing.logic.table.FakeTableStateFactory
 import kotlinx.serialization.PolymorphicSerializer
 import kotlin.test.Test
@@ -40,10 +42,10 @@ class ExampleFormatRoundTripTest {
         ExampleMahjongExtension().registerPersistenceDtos(original)
         original.freeze()
         val config = ExamplePairingRuleConfig(exchangeEnabled = true, paymentPerPlayer = 20, roundCount = 2, wallTileValues = setOf(1, 3, 5, 7))
-        val state = ExamplePairingPlayerState(declared = true)
+        val state = ExamplePairingPlayerState(handRevealed = true)
         val savedConfig = original.ruleConfigs.encode(config)
         val savedState = original.playerRuleStates.encode(state)
-        val savedAction = original.extensionGameActions.encode(ExamplePairingDeclarationAction)
+        val savedAction = original.extensionGameActions.encode(ExamplePairingRevealHandAction)
 
         val missing = emptyPersistenceRegistries()
         missing.freeze()
@@ -56,7 +58,18 @@ class ExampleFormatRoundTripTest {
         restored.freeze()
         assertEquals(config, restored.ruleConfigs.decode(savedConfig))
         assertEquals(state, restored.playerRuleStates.decode(savedState))
-        assertEquals(ExamplePairingDeclarationAction, restored.extensionGameActions.decode(savedAction))
+        assertEquals(ExamplePairingRevealHandAction, restored.extensionGameActions.decode(savedAction))
+
+        val restoredState = restored.playerRuleStates.decode(savedState)
+        val restoredTable = FakeTableStateFactory.create(
+            config = config,
+            players = listOf(FakeMahjongPlayerFactory.create(playerRuleState = restoredState)),
+        )
+        val module = ExamplePairingRuleModule(ExamplePairingIds.RULE_MODULE, config)
+        assertEquals(
+            restoredState,
+            module.projectPlayerRuleState(restoredTable, restoredTable.players.single(), Uuid.random()),
+        )
     }
 
     /** 結算詳情只記實際每人付款數值，不產生其他規則的役種或翻符。 */
@@ -87,7 +100,7 @@ class ExampleFormatRoundTripTest {
         assertTrue(encodedConfig.contains("mahjongcraft_example:pairing/rule_config"))
         assertEquals(config, registries.ruleConfig.toDomain(format.decodeFromString(configSerializer, encodedConfig)))
 
-        val state = ExamplePairingPlayerState(declared = true)
+        val state = ExamplePairingPlayerState(handRevealed = true)
         val stateSerializer = PolymorphicSerializer(PlayerRuleStateDto::class)
         val stateDto = format.decodeFromString(stateSerializer, format.encodeToString(stateSerializer, registries.playerRuleState.toDto(state)))
         assertEquals(state, registries.playerRuleState.toDomain(stateDto))
@@ -101,11 +114,11 @@ class ExampleFormatRoundTripTest {
         assertEquals(dynamicState, registries.dynamicRuleState.toDomain(dynamicStateDto))
 
         val actionSerializer = PolymorphicSerializer(ExtensionGameActionDto::class)
-        val actionDto = format.decodeFromString(actionSerializer, format.encodeToString(actionSerializer, registries.extensionGameAction.toDto(ExamplePairingDeclarationAction)))
-        assertEquals(ExamplePairingDeclarationAction, registries.extensionGameAction.toDomain(actionDto))
+        val actionDto = format.decodeFromString(actionSerializer, format.encodeToString(actionSerializer, registries.extensionGameAction.toDto(ExamplePairingRevealHandAction)))
+        assertEquals(ExamplePairingRevealHandAction, registries.extensionGameAction.toDomain(actionDto))
         val commandSerializer = PolymorphicSerializer(ExtensionGameCommandDto::class)
-        val commandDto = format.decodeFromString(commandSerializer, format.encodeToString(commandSerializer, registries.extensionGameCommand.toDto(ExamplePairingDeclarationCommand)))
-        assertEquals(ExamplePairingDeclarationCommand, registries.extensionGameCommand.toDomain(commandDto))
+        val commandDto = format.decodeFromString(commandSerializer, format.encodeToString(commandSerializer, registries.extensionGameCommand.toDto(ExamplePairingRevealHandCommand)))
+        assertEquals(ExamplePairingRevealHandCommand, registries.extensionGameCommand.toDomain(commandDto))
 
         val tile = IdentifiedTile(id = Uuid.random(), tile = Tile.Extension(ExamplePairingIds.INVERTED_ONE_MAN))
         val pile = ExamplePairingDiscardPile().discardTile(tile).takeLast()
@@ -116,7 +129,7 @@ class ExampleFormatRoundTripTest {
         assertTrue(restored.entries.single().isTaken)
     }
 
-    /** 保存型別使用獨立 DTO，並保留公開宣告與倒置一萬的穩定身分。 */
+    /** 保存型別使用獨立 DTO，並保留攤牌與倒置一萬的穩定身分。 */
     @Test
     fun `persistence registries preserve extension identities`() {
         val registries = emptyPersistenceRegistries()
@@ -124,13 +137,13 @@ class ExampleFormatRoundTripTest {
         registries.freeze()
         val config = ExamplePairingRuleConfig(exchangeEnabled = true)
         assertEquals(config, registries.ruleConfigs.decode(registries.ruleConfigs.encode(config)))
-        val state = ExamplePairingPlayerState(declared = true)
+        val state = ExamplePairingPlayerState(handRevealed = true)
         assertEquals(state, registries.playerRuleStates.decode(registries.playerRuleStates.encode(state)))
         val dynamicState = ExamplePairingDynamicState(setOf(1, 3, 5))
         assertEquals(dynamicState, registries.dynamicRuleStates.decode(registries.dynamicRuleStates.encode(dynamicState)))
-        val encodedAction = registries.extensionGameActions.encode(ExamplePairingDeclarationAction)
-        assertEquals(ExamplePairingIds.DECLARE_ACTION, encodedAction.typeKey)
-        assertEquals(ExamplePairingDeclarationAction, registries.extensionGameActions.decode(encodedAction))
+        val encodedAction = registries.extensionGameActions.encode(ExamplePairingRevealHandAction)
+        assertEquals(ExamplePairingIds.REVEAL_HAND_ACTION, encodedAction.typeKey)
+        assertEquals(ExamplePairingRevealHandAction, registries.extensionGameActions.decode(encodedAction))
         assertEquals(ExamplePairingExhaustiveDrawReason, registries.exhaustiveDrawReasons.decode(registries.exhaustiveDrawReasons.encode(ExamplePairingExhaustiveDrawReason)))
         val tile = IdentifiedTile(id = Uuid.random(), tile = Tile.Extension(ExamplePairingIds.INVERTED_ONE_MAN))
         val pile = ExamplePairingDiscardPile().discardTile(tile).takeLast()
