@@ -1,5 +1,6 @@
 package com.doublemoon1119.mahjongcraft.flow.server.game.riichi
 
+import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.metadata.MahjongCraftMetadata
 
 /** 日麻公開事件標記與數值單位的完整識別碼。 */
@@ -18,4 +19,12 @@ object RiichiGameEventPublicMarkerIds {
 
     /** 分數數值的單位。 */
     val POINTS_UNIT: String = MahjongCraftMetadata.id("riichi/points")
+
+    /**
+     * 公開事件中場風的識別碼。
+     *
+     * @param wind 場風。
+     * @return 該場風的完整識別碼。
+     */
+    fun prevalentWind(wind: Wind): String = MahjongCraftMetadata.id("wind/${wind.name.lowercase()}")
 }

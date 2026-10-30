@@ -14,6 +14,7 @@ import com.doublemoon1119.mahjongcraft.flow.server.game.riichi.RiichiGameEventPu
 import com.doublemoon1119.mahjongcraft.logic.module.BuiltInRuleModuleIds
 import com.doublemoon1119.mahjongcraft.logic.rules.riichi.yaku.YakuType
 import com.doublemoon1119.mahjongcraft.logic.table.BuiltInMatchEndReasonIds
+import com.doublemoon1119.mahjongcraft.logic.table.Wind
 import com.doublemoon1119.mahjongcraft.platform.minecraft.achievement.GameAchievementResolver
 import kotlin.uuid.Uuid
 
@@ -105,7 +106,7 @@ class RiichiGameAchievementResolver(
         add(RiichiAchievementIds.BUSTED)
         if (score <= RiichiAchievementIds.FAR_BUST_SCORE) add(RiichiAchievementIds.BUSTED_FAR)
         val context = event.roundContext
-        if (context?.prevalentWindId == "mahjongcraft:wind/east" && context.roundNumber == 1) {
+        if (context?.prevalentWindId == RiichiGameEventPublicMarkerIds.prevalentWind(Wind.EAST) && context.roundNumber == 1) {
             add(RiichiAchievementIds.BUSTED_IN_EAST_ONE)
         }
     }

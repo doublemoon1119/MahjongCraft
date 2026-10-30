@@ -12,7 +12,7 @@ import com.doublemoon1119.mahjongcraft.logic.table.TableState
 
 /** 提供日麻和牌公開狀態與終局擊飛資訊的事件標記解析器。 */
 object RiichiGameEventPublicMarkerResolver : GameEventPublicMarkerResolver {
-    override fun resolvePrevalentWindId(state: TableState): String = "mahjongcraft:wind/${state.prevalentWind.name.lowercase()}"
+    override fun resolvePrevalentWindId(state: TableState): String = RiichiGameEventPublicMarkerIds.prevalentWind(state.prevalentWind)
 
     override fun resolveWinMarkers(context: WinPublicMarkerContext): List<RulePublicEventMarker> {
         val state = context.previousState.players
