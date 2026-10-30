@@ -203,9 +203,9 @@ internal object CompactWinDetailsCodec {
     /** 有單位數值固定代碼。 */
     private const val QUANTITIES_CODE = 0
 
-    /** 條目值固定代碼。 */
-    private const val ENTRIES_CODE = 2
-
     /** 公開牌面值固定代碼。 */
     private const val TILE_FACES_CODE = 1
+
+    /** 條目值固定代碼。 */
+    private const val ENTRIES_CODE = 2
 }
