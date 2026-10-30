@@ -86,13 +86,11 @@ class PlayerConnectionLifecycleService(
      * 客戶端主動請求重建一份快照時呼叫（`mahjongcraft:request_snapshot` C2S 頻道）。
      *
      * 客戶端重新登入後沒有任何既有快照——牌局管理的麻將牌 entity 在收到快照前恆定顯示
-     * [UNKNOWN_TILE_ASSET_KEY] 占位貼圖（見 `MahjongTileEntity` KDoc）。過去這裡是伺服器在
-     * `ServerPlayConnectionEvents.JOIN` 當下 fire-and-forget 猜測「玩家剛連上、該補送了」，一旦
-     * membership／對局查詢在那個瞬間剛好還沒就緒就會靜默放棄、不會重試，玩家手牌會一直卡在
-     * unknown，直到下一次真正的遊戲事件（例如右鍵桌子觸發 [MahjongTableRoomService.interact]）重新
-     * 產生完整快照才補上——這是遊戲內實際回報過的問題。改成由客戶端自己決定「我剛加入、還沒收到任何
-     * 快照」這件事、主動送一個請求信號過來，伺服器單純依當下查得到的狀態重建，不需要再靠伺服器自己猜測
-     * 時機、也不需要重試邏輯。畫面資料本身由觀察者推送送達，這裡只確保倉庫內容是最新的。
+     * [UNKNOWN_TILE_ASSET_KEY] 占位貼圖（見 `MahjongTileEntity` KDoc）。由客戶端在「剛加入、還沒收到
+     * 任何快照」時主動送出請求，伺服器依當下查得到的狀態重建；不在 `ServerPlayConnectionEvents.JOIN`
+     * 當下猜測時機，因為那一刻 membership／對局查詢可能還沒就緒，手牌會一直停在 unknown，直到下一次
+     * 遊戲事件（例如右鍵桌子觸發 [MahjongTableRoomService.interact]）才補上。畫面資料本身由觀察者推送
+     * 送達，這裡只確保倉庫內容是最新的。
      *
      * @param playerId 要重建快照的玩家 UUID。
      */

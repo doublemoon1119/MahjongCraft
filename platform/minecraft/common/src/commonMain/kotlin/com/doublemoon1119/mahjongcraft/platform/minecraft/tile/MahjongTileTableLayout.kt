@@ -1048,7 +1048,7 @@ object MahjongTileTableLayout {
 
     /**
      * 牌牆生成掉落動畫中，同一面牌牆相鄰兩墩（`stack` 差 1）開始掉落的時間差，供 [wallDropAnimationTicks]
-     * 與呼叫端排定每墩延遲使用；遊戲內比對後整體再調快，從原本 2 調到現在的值。
+     * 與呼叫端排定每墩延遲使用；取遊戲內比對過仍看得出波浪感的最小值。
      */
     internal const val WAVE_STEP_TICKS: Int = 1
 

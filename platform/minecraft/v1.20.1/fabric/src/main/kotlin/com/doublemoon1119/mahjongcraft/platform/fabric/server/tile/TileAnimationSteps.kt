@@ -11,14 +11,13 @@ import com.doublemoon1119.mahjongcraft.platform.minecraft.tile.MahjongTileWallPl
 
 /**
  * 麻將牌各種既有動畫（開局發牌、摸牌、捨牌、鳴牌、胡牌慶祝演出的強制理牌重排／倒牌）的單張牌排程
- * 邏輯，從各自原本所屬的正式桌子綁定 presenter（[FabricMahjongPlayerAreaPresenter]／
- * [FabricMahjongDiscardPresenter]）抽成獨立、不帶任何實例狀態的共用函式——這些函式全部只吃
- * `tile`／位置／絕對時刻這幾個純粹的參數，完全不涉及桌子座標系、`TableLocation` 或任何對局概念。
+ * 邏輯，由正式桌子綁定的 presenter（[FabricMahjongPlayerAreaPresenter]／[FabricMahjongDiscardPresenter]）
+ * 與 debug 動畫指令共用；不帶任何實例狀態。這些函式只吃 `tile`／位置／絕對時刻這幾個純粹的參數，
+ * 不涉及桌子座標系、`TableLocation` 或任何對局概念。
  *
- * 抽出來的理由：`FabricDebugCommand` 的動畫測試指令群組需要在完全不掛任何桌子／對局的臨時
- * 牌 entity 上重播一模一樣的動畫，讓開發者不需要真的建房/加入/開局就能預覽演出效果——重新複製一份
- * 邏輯容易在兩處實際動畫調整時忘記同步，因此改成兩邊共用同一份實作。`internal` 而非 `public`：只給
- * 同模組內的呼叫端使用，不對外公開成正式 API。
+ * `FabricDebugCommand` 的動畫測試指令群組在不掛任何桌子／對局的臨時牌 entity 上重播同樣的動畫，
+ * 讓開發者不必建房、加入、開局就能預覽演出效果；兩邊共用同一份實作，動畫調整時不會不同步。
+ * `internal`：只給同模組內的呼叫端使用，不對外公開成正式 API。
  */
 internal object TileAnimationSteps {
     /**
@@ -31,9 +30,9 @@ internal object TileAnimationSteps {
      * 同時翻牌。
      *
      * 起飛終點高度（`peakY`）是這張牌目前所在高度（`wallY`）加上 [DEAL_LIFT_HEIGHT]，不是統一對齊到
-     * [finalPlacement] 的高度——同一批兩敦牌各自的上下兩層原本高度就不同，若起飛終點固定用同一個絕對
-     * 高度，上下兩層會在起飛途中收斂到同一個高度，看起來像下層那張牌憑空消失；改成「相對自己原高度
-     * 往上抬固定量」，兩層之間的相對高度差在起飛階段維持不變。
+     * [finalPlacement] 的高度：同一批兩敦牌的上下兩層高度不同，若起飛終點固定用同一個絕對高度，上下兩層
+     * 會在起飛途中收斂到同一個高度，看起來像下層那張牌憑空消失；相對自己原高度往上抬固定量，兩層之間的
+     * 相對高度差在起飛階段維持不變。
      *
      * 起飛播完的那一刻，隱形與瞬間重新排列到手牌列上空是同一個瞬間發生；接著額外維持
      * [MahjongTileTableLayout.DEAL_SNAP_GAP_TICKS] 的隱形，讓「重新排成一列」感覺像是刻意的一個轉場

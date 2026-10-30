@@ -99,9 +99,9 @@ abstract class AnimatedMahjongEntity<C>(
      * `world.time`，但世界重新載入後、佇列發現最前面剛好是一個「已經啟動中」的 [AnimationStep.PlayMotion]
      * 時（[readAnimationQueueFromNbt] 用 `activeStepEndGameTime - durationTicks` 反推出真正的起始
      * 時間），會用還原出的原始起始時間重新呼叫一次，讓 render 端算出的經過時間正確接續在動畫播到一半
-     * 的進度，而不是把動畫重播一次或直接跳到終點——這是實際踩過的問題：只持久化佇列本身（剩哪些
-     * step、到期時間）不夠，render 端用來內插的欄位（例如「動畫開始的 game time」）如果沒有同步還原，
-     * 世界重新載入後會讀到預設值，導致正在播到一半的動畫視覺上直接跳到終點。
+     * 的進度，而不是把動畫重播一次或直接跳到終點。只持久化佇列本身（剩哪些 step、到期時間）不夠：render
+     * 端用來內插的欄位（例如「動畫開始的 game time」）若沒有同步還原，世界重新載入後會讀到預設值，播到一半
+     * 的動畫會直接跳到終點。
      */
     protected abstract fun applyPlayMotion(step: AnimationStep.PlayMotion, startGameTime: Long)
 

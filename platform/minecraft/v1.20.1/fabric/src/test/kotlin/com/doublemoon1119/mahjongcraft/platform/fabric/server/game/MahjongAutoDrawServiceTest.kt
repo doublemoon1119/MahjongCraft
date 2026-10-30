@@ -318,8 +318,8 @@ class MahjongAutoDrawServiceTest {
     }
 
     /**
-     * 驗證真人莊家尚未摸牌時，`checkAndAutoDraw` 會實際幫他摸到一張牌。輪次與合法動作改由私人
-     * 操作 HUD prompt 呈現，因此不再驗證舊的自動聊天訊息。
+     * 驗證真人莊家尚未摸牌時，`checkAndAutoDraw` 會實際幫他摸到一張牌。輪次與合法動作由私人操作 HUD
+     * prompt 呈現，不經聊天訊息。
      */
     @Test
     fun `test checkAndAutoDraw draws for human player who has not drawn yet`() = runTest {
@@ -363,11 +363,8 @@ class MahjongAutoDrawServiceTest {
     }
 
     /**
-     * 驗證目前玩家是已進入強制自動操作的真人時，`checkAndAutoDraw` 不會介入（改由
-     * `ForcedAutoPlayDriver` 在自動推進中代打）。
-     *
-     * 迴歸測試：這個排除條件原本沒有，`checkAndAutoDraw` 會嘗試幫這種玩家摸牌，被
-     * [GameFlowCoordinator] 的強制自動操作守門檢查擋下、靜默失敗。
+     * 驗證目前玩家是已進入強制自動操作的真人時，`checkAndAutoDraw` 不會介入，由 `ForcedAutoPlayDriver`
+     * 在自動推進中代打；否則這次摸牌會被 [GameFlowCoordinator] 的強制自動操作守門檢查擋下、靜默失敗。
      */
     @Test
     fun `test checkAndAutoDraw skips when current player is forced auto play`() = runTest {

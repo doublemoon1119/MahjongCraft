@@ -1076,9 +1076,9 @@ class DiscardTileUseCaseTest {
     /**
      * 驗證玩家剛吃／碰成立、`lastDrawn` 仍為 null 時仍然可以捨牌。
      *
-     * 迴歸測試：`lastDrawn == null` 的驗證原本沒有排除「剛吃／碰，該直接捨牌」這種情境，導致這種
-     * 捨牌被誤判成「還沒摸牌」而拒絕——`AiTurnDriver`／`ForcedAutoPlayDriver` 都會在吃／碰成立後
-     * 送出捨牌指令，若被這裡拒絕，玩家的回合永遠無法推進，且不會拋出例外，只會靜默失敗。
+     * `lastDrawn == null` 的檢查必須排除「剛吃／碰，該直接捨牌」的情境，否則這種捨牌會被誤判成「還沒摸牌」：
+     * `AiTurnDriver`／`ForcedAutoPlayDriver` 都會在吃／碰成立後送出捨牌指令，若被拒絕，回合會無法推進，
+     * 而且不會拋出例外。
      */
     @Test
     fun `test discard tile succeeds right after claiming a meld with no lastDrawn`() = runTest {

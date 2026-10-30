@@ -116,7 +116,7 @@ class MahjongTileEntityRenderer(
         }
         matrices.push()
         if (localDisplay != null) {
-            // dispatcher 已移到原生插值位置；改成最終私人位置，不再疊加共享動畫。
+            // dispatcher 已移到原生插值位置；這裡換成最終私人位置，不疊加共享動畫。
             matrices.translate(
                 localDisplay.position.x - MathHelper.lerp(tickDelta.toDouble(), entity.lastRenderX, entity.x),
                 localDisplay.position.y - MathHelper.lerp(tickDelta.toDouble(), entity.lastRenderY, entity.y),
