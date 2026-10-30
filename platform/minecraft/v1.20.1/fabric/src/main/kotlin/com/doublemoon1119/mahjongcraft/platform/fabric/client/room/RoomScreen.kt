@@ -1608,19 +1608,10 @@ class RoomScreen(
      * 取得設定選項的本地化文字。
      *
      * @param optionId 選項識別碼。
-     * @param editor 單選欄位編輯器描述。
+     * @param editor 單選或多選欄位編輯器描述。
      * @return 已登記的本地化文字；未登記翻譯鍵時顯示完整選項 ID。
      */
-    private fun optionText(optionId: String, editor: GameConfigEditorSpec.SingleChoice): Text = editor.translationKeyFor(optionId)?.let(Text::translatable) ?: Text.literal(optionId)
-
-    /**
-     * 取得設定選項的本地化文字。
-     *
-     * @param optionId 選項識別碼。
-     * @param editor 多選欄位編輯器描述。
-     * @return 已登記的本地化文字；未登記翻譯鍵時顯示完整選項 ID。
-     */
-    private fun optionText(optionId: String, editor: GameConfigEditorSpec.MultiChoice): Text = editor.translationKeyFor(optionId)?.let(Text::translatable) ?: Text.literal(optionId)
+    private fun optionText(optionId: String, editor: GameConfigEditorSpec.ChoiceEditor): Text = editor.translationKeyFor(optionId)?.let(Text::translatable) ?: Text.literal(optionId)
 
     /**
      * Esc 在設定頁沒有可套用草稿時直接返回玩家頁；有尚未套用的合法草稿時改顯示「套用並返回／放棄

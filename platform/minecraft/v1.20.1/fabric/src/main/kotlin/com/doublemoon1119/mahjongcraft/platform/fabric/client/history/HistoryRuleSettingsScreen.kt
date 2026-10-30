@@ -330,19 +330,12 @@ internal class HistoryRuleSettingsScreen(
      */
     private fun fieldTooltip(editor: GameConfigEditorSpec, descriptionKey: String): List<Text> = buildList {
         add(Text.translatable(descriptionKey).formatted(Formatting.GRAY))
-        if (editor is GameConfigEditorSpec.SingleChoice || editor is GameConfigEditorSpec.MultiChoice) {
+        if (editor is GameConfigEditorSpec.ChoiceEditor) {
             add(Text.translatable(MinecraftHistoryScreenKeys.TOOLTIP_OPTIONS).formatted(Formatting.GOLD))
-            val optionIds = when (editor) {
-                is GameConfigEditorSpec.SingleChoice -> editor.optionIds
-                is GameConfigEditorSpec.MultiChoice -> editor.optionIds
-            }
-            optionIds.forEach { optionId ->
+            editor.optionIds.forEach { optionId ->
                 add(
                     Text.literal("• ").formatted(Formatting.DARK_GRAY).append(
-                        when (editor) {
-                            is GameConfigEditorSpec.SingleChoice -> editor.translationKeyFor(optionId)
-                            is GameConfigEditorSpec.MultiChoice -> editor.translationKeyFor(optionId)
-                        }?.let(Text::translatable) ?: Text.literal(optionId),
+                        editor.translationKeyFor(optionId)?.let(Text::translatable) ?: Text.literal(optionId),
                     ),
                 )
             }

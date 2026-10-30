@@ -27,6 +27,20 @@ sealed interface GameConfigEditorSpec {
     /** 布林切換編輯器。 */
     data object BooleanToggle : GameConfigEditorSpec
 
+    /** 從固定選項中選取的編輯器；單選與多選共用選項清單與選項文字查詢。 */
+    sealed interface ChoiceEditor : GameConfigEditorSpec {
+        /** 可選的完整 Namespaced ID，順序也是顯示順序。 */
+        val optionIds: List<String>
+
+        /**
+         * 取得選項的翻譯鍵。
+         *
+         * @param optionId 選項 ID。
+         * @return 已登記的翻譯鍵；未登記時為 null。
+         */
+        fun translationKeyFor(optionId: String): String?
+    }
+
     /**
      * 整數輸入編輯器。
      *
@@ -56,9 +70,9 @@ sealed interface GameConfigEditorSpec {
      * @property optionTranslationKeys 各選項 ID 對應的翻譯鍵；未提供時由呈現層顯示完整 ID。
      */
     data class SingleChoice(
-        val optionIds: List<String>,
+        override val optionIds: List<String>,
         val optionTranslationKeys: Map<String, String> = emptyMap(),
-    ) : GameConfigEditorSpec {
+    ) : ChoiceEditor {
         init {
             require(optionIds.isNotEmpty()) { "Config choice must contain at least one option" }
             require(optionIds.distinct().size == optionIds.size) { "Config choice options must be unique" }
@@ -71,8 +85,7 @@ sealed interface GameConfigEditorSpec {
             }
         }
 
-        /** 取得選項的翻譯鍵；未登記時回傳 null。 */
-        fun translationKeyFor(optionId: String): String? = optionTranslationKeys[optionId]
+        override fun translationKeyFor(optionId: String): String? = optionTranslationKeys[optionId]
     }
 
     /**
@@ -85,12 +98,12 @@ sealed interface GameConfigEditorSpec {
      * @property optionDescriptionTranslationKeys 各選項 ID 對應的補充說明翻譯鍵；未提供時不顯示說明。
      */
     data class MultiChoice(
-        val optionIds: List<String>,
+        override val optionIds: List<String>,
         val minimumCount: Int = 0,
         val maximumCount: Int = optionIds.size,
         val optionTranslationKeys: Map<String, String> = emptyMap(),
         val optionDescriptionTranslationKeys: Map<String, String> = emptyMap(),
-    ) : GameConfigEditorSpec {
+    ) : ChoiceEditor {
         init {
             require(optionIds.isNotEmpty()) { "Config multi-choice must contain at least one option" }
             require(optionIds.distinct().size == optionIds.size) { "Config multi-choice options must be unique" }
@@ -112,8 +125,7 @@ sealed interface GameConfigEditorSpec {
             }
         }
 
-        /** 取得選項的翻譯鍵；未登記時回傳 null。 */
-        fun translationKeyFor(optionId: String): String? = optionTranslationKeys[optionId]
+        override fun translationKeyFor(optionId: String): String? = optionTranslationKeys[optionId]
 
         /** 取得選項的補充說明翻譯鍵；未登記時回傳 null。 */
         fun descriptionTranslationKeyFor(optionId: String): String? = optionDescriptionTranslationKeys[optionId]
