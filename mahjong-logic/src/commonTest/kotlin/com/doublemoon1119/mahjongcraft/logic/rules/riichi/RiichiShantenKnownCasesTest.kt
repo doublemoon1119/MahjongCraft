@@ -94,6 +94,32 @@ class RiichiShantenKnownCasesTest {
         assertEquals(listOf(p(3), p(6)), result.winningTiles)
     }
 
+    /** 兩組面子、一組搭子與雀頭，其餘是孤張字牌：還差兩手，為 2 向聽。 */
+    @Test
+    fun `two complete groups with one partial group is two shanten`() {
+        val hand = FakeHandFactory.create(
+            listOf(
+                m(1), m(2), m(3), p(1), p(2), p(3), s(1), s(1), m(4), m(5),
+                Tile.Honor.East, Tile.Honor.South, Tile.Honor.West,
+            ),
+        )
+
+        assertEquals(2, assertIs<ShantenResult.NotTenpai>(calculator.calculate(hand)).shanten)
+    }
+
+    /** 一組面子、兩組嵌張搭子與雀頭，其餘是孤張字牌：七對子與國士無雙都更遠，為 3 向聽。 */
+    @Test
+    fun `one complete group with two partial groups is three shanten`() {
+        val hand = FakeHandFactory.create(
+            listOf(
+                m(1), m(2), m(3), s(1), s(1), m(5), m(7), p(4), p(6),
+                Tile.Honor.East, Tile.Honor.South, Tile.Honor.West, Tile.Honor.North,
+            ),
+        )
+
+        assertEquals(3, assertIs<ShantenResult.NotTenpai>(calculator.calculate(hand)).shanten)
+    }
+
     /** 副露與槓子的組數會納入標準型判定。 */
     @Test
     fun `open melds and kans count as completed groups`() {
