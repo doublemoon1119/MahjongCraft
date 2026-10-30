@@ -83,4 +83,15 @@ class TileRevealReorderTest {
             assertEquals(poseMotion, laidDown.startedPlayMotion)
         }
     }
+
+    /** 整組翻牌聲由真的要倒下的牌中位於中間的那張播放，已平放的牌不參與；全部已平放時不播放。 */
+    @Test
+    fun `group laydown sound comes from a tile that actually turns`() {
+        val up = MahjongTilePose.FACE_UP
+        val standing = MahjongTilePose.STANDING
+
+        assertEquals(3, TileAnimationSteps.groupLaydownSoundIndex(listOf(standing, up, up, standing, standing)))
+        assertEquals(1, TileAnimationSteps.groupLaydownSoundIndex(listOf(standing, standing, standing)))
+        assertNull(TileAnimationSteps.groupLaydownSoundIndex(listOf(up, up)))
+    }
 }

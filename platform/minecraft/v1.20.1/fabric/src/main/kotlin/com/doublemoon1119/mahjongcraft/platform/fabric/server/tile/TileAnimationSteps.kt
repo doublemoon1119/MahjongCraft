@@ -379,6 +379,28 @@ internal object TileAnimationSteps {
     }
 
     /**
+     * 為同一組牌排定倒牌，整組只播放一次翻牌聲。
+     *
+     * @param tiles 同組要倒下的牌，依呈現順序排列。
+     * @param startGameTime 同組牌共用的絕對開始 tick。
+     */
+    fun scheduleGroupLaydown(tiles: List<MahjongTileEntity>, startGameTime: Long) {
+        val soundIndex = groupLaydownSoundIndex(tiles.map { it.queuedTilePose })
+        tiles.forEachIndexed { index, tile -> scheduleLaydown(tile, startGameTime, playGroupSound = index == soundIndex) }
+    }
+
+    /**
+     * 選出負責播放整組翻牌聲的牌：在這次真的要倒下的牌中取中間那張，已平放的牌不參與。
+     *
+     * @param startPoses 各張牌既有動畫結束後的姿態，依呈現順序排列。
+     * @return 負責播放聲音的牌在清單中的位置；全部已平放時為 null。
+     */
+    internal fun groupLaydownSoundIndex(startPoses: List<MahjongTilePose>): Int? {
+        val turning = startPoses.indices.filter { startPoses[it] != MahjongTilePose.FACE_UP }
+        return turning.getOrNull(turning.size / 2)
+    }
+
+    /**
      * 從已排定的姿態建立倒牌步驟；已平放時不增加旋轉或翻牌聲。
      *
      * @param startPose 既有動畫結束後的姿態。

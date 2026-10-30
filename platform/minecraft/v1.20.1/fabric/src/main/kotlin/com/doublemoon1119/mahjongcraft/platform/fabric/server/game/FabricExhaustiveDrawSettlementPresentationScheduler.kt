@@ -96,6 +96,7 @@ class FabricExhaustiveDrawSettlementPresentationScheduler(
                 hasDrawnTile = drawnTileId != null,
             )
             val tileIds = handTileIds + listOfNotNull(drawnTileId)
+            val presentedTiles = mutableListOf<MahjongTileEntity>()
             tileIds.forEachIndexed { orderIndex, tileId ->
                 val tile = world.getEntity(tileId.toJavaUuid()) as? MahjongTileEntity
                 if (tile == null) {
@@ -117,20 +118,16 @@ class FabricExhaustiveDrawSettlementPresentationScheduler(
                     )
                     TileAnimationSteps.scheduleInstantReorder(tile, sortedPlacement, startGameTime + HAND_REORDER_START_TICK)
                 }
-                if (revealsHand) {
-                    TileAnimationSteps.scheduleLaydown(
-                        tile,
-                        startGameTime + HAND_LAYDOWN_START_TICK,
-                        playGroupSound = orderIndex == tileIds.size / 2,
-                    )
-                } else {
+                if (!revealsHand) {
                     TileAnimationSteps.scheduleConceal(
                         tile,
                         startGameTime + HAND_LAYDOWN_START_TICK,
                         playGroupSound = orderIndex == tileIds.size / 2,
                     )
                 }
+                presentedTiles += tile
             }
+            if (revealsHand) TileAnimationSteps.scheduleGroupLaydown(presentedTiles, startGameTime + HAND_LAYDOWN_START_TICK)
         }
         missingPresentationTilesText(missingBySeat)?.let { missing ->
             logger.warn("Exhaustive draw settlement on table {} skips hand tiles whose entities are missing ({})", tableId, missing)

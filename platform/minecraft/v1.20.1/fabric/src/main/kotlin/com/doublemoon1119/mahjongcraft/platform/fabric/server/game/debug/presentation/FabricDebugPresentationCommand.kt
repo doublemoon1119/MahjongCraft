@@ -1098,17 +1098,13 @@ class FabricDebugPresentationCommand(
             TileAnimationSteps.scheduleLaydown(winningTile, winTileLaydownStartGameTime, playGroupSound = true)
             val restLaydownStartGameTime = winTileLaydownEndGameTime + MahjongTileTableLayout.WIN_PRE_HAND_LAYDOWN_DELAY_TICKS
             val restTiles = handTiles - winningTile
-            restTiles.forEachIndexed { index, tile ->
-                TileAnimationSteps.scheduleLaydown(tile, restLaydownStartGameTime, playGroupSound = index == restTiles.size / 2)
-            }
+            TileAnimationSteps.scheduleGroupLaydown(restTiles, restLaydownStartGameTime)
             handLaydownEndGameTime = restLaydownStartGameTime + MahjongTileTableLayout.WIN_LAYDOWN_DURATION_TICKS
         } else {
             val discardedPlacement = layout.discardPlacement(discardIndex = 0)
             winningTile = tilePreviewSupport.spawnFreeTile(world, discardedPlacement, MahjongTilePose.FACE_UP, assetKey)
             val handLaydownStartGameTime = reorderEndGameTime + MahjongTileTableLayout.WIN_PRE_HAND_LAYDOWN_DELAY_TICKS
-            handTiles.forEachIndexed { index, tile ->
-                TileAnimationSteps.scheduleLaydown(tile, handLaydownStartGameTime, playGroupSound = index == handTiles.size / 2)
-            }
+            TileAnimationSteps.scheduleGroupLaydown(handTiles, handLaydownStartGameTime)
             handLaydownEndGameTime = handLaydownStartGameTime + MahjongTileTableLayout.WIN_LAYDOWN_DURATION_TICKS
         }
 

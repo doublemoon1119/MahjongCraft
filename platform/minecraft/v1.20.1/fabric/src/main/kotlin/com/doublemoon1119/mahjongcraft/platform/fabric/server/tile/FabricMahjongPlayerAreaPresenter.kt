@@ -400,16 +400,12 @@ class FabricMahjongPlayerAreaPresenter(
 
                 val restLaydownStartGameTime = winTileLaydownEndGameTime + MahjongTileTableLayout.WIN_PRE_HAND_LAYDOWN_DELAY_TICKS
                 val restTiles = (claimedStandingTiles - presentation.winningTileId).values.toList()
-                restTiles.forEachIndexed { index, tile ->
-                    TileAnimationSteps.scheduleLaydown(tile, restLaydownStartGameTime, playGroupSound = index == restTiles.size / 2)
-                }
+                TileAnimationSteps.scheduleGroupLaydown(restTiles, restLaydownStartGameTime)
                 restLaydownStartGameTime + MahjongTileTableLayout.WIN_LAYDOWN_DURATION_TICKS
             } else {
                 val handLaydownStartGameTime = reorderEndGameTime + MahjongTileTableLayout.WIN_PRE_HAND_LAYDOWN_DELAY_TICKS
                 val handTiles = claimedStandingTiles.values.toList()
-                handTiles.forEachIndexed { index, tile ->
-                    TileAnimationSteps.scheduleLaydown(tile, handLaydownStartGameTime, playGroupSound = index == handTiles.size / 2)
-                }
+                TileAnimationSteps.scheduleGroupLaydown(handTiles, handLaydownStartGameTime)
                 handLaydownStartGameTime + MahjongTileTableLayout.WIN_LAYDOWN_DURATION_TICKS
             }
         }
