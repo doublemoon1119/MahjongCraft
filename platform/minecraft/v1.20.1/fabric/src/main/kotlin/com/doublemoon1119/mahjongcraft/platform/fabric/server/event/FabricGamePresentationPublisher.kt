@@ -223,12 +223,12 @@ class FabricGamePresentationPublisher(
     fun clearOpeningSession() {
         openingState.clearAll()
         synchronized(handPoseUpdates) { handPoseUpdates.reset() }
-        tablePropPresenter.startSession()
+        tablePropPresenter.resetSession()
     }
 
     /** 清除新伺服器 session 不應沿用的桌面物件 reservation。 */
     fun startTablePropSession() {
-        tablePropPresenter.startSession()
+        tablePropPresenter.resetSession()
     }
 
     override fun publishGameActionDeclared(gameId: Uuid, actorId: Uuid, action: GameAction) {

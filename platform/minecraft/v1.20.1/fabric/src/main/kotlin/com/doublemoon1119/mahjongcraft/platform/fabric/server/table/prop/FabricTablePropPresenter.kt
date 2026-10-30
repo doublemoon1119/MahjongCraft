@@ -59,7 +59,7 @@ class FabricTablePropPresenter(
     /** 每桌最近一次顯示的錯誤，避免相同錯誤在每次更新時洗版。 */
     private val notifiedFailures = mutableMapOf<Uuid, String>()
 
-    override fun startSession() {
+    override fun resetSession() {
         scenes.clear()
         centerReservations.clear()
         notifiedFailures.clear()

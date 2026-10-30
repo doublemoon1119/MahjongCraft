@@ -32,7 +32,7 @@ class FabricTablePropReservationTest {
         presenter.reserveCenter(second, 4)
         assertTrue(presenter.releaseCenter(first, 3))
         assertFalse(presenter.releaseCenter(second, 3))
-        presenter.startSession()
+        presenter.resetSession()
         assertFalse(presenter.releaseCenter(second, 4))
     }
 
