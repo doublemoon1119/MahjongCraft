@@ -101,16 +101,13 @@ class MahjongPlayerInfoEntity(
     /**
      * 將玩家公開資訊隱藏至指定絕對遊戲時間。
      *
-     * @param gameTime 隱藏租約結束的 server game time；不晚於現有期限時不改變佇列。
+     * @param gameTime 隱藏租約結束的 server game time；不晚於現有期限時不改變期限。
      */
     fun hideUntil(gameTime: Long) {
         check(!world.isClient) { "Player info visibility lease must be changed by the server" }
         val extendedUntil = TableOverlayVisibility.extend(hiddenUntilGameTime, gameTime)
         if (extendedUntil == hiddenUntilGameTime) return
         hiddenUntilGameTime = extendedUntil
-        replaceAnimationQueue(
-            listOf(AnimationStep.SetInvisible(true), AnimationStep.WaitUntil(gameTime), AnimationStep.SetInvisible(false)),
-        )
         applyVisibility()
     }
 
@@ -118,7 +115,6 @@ class MahjongPlayerInfoEntity(
     fun hideUntilRemoved() {
         check(!world.isClient) { "Player info visibility lease must be changed by the server" }
         hiddenUntilGameTime = Long.MAX_VALUE
-        replaceAnimationQueue(listOf(AnimationStep.SetInvisible(true)))
         applyVisibility()
     }
 
@@ -126,8 +122,7 @@ class MahjongPlayerInfoEntity(
     fun showNow() {
         check(!world.isClient) { "Player info visibility lease must be changed by the server" }
         hiddenUntilGameTime = Long.MIN_VALUE
-        replaceAnimationQueue(emptyList())
-        setInvisible(false)
+        applyVisibility()
     }
 
     override fun tick() {
@@ -183,7 +178,7 @@ class MahjongPlayerInfoEntity(
         writeAnimationQueueToNbt(nbt)
     }
 
-    /** 以已保存的期限恢復伺服器隱藏狀態，不依賴動畫佇列是否仍含隱藏步驟。 */
+    /** 依已保存的期限設定伺服器隱藏狀態；每個伺服器 tick 與期限變更時套用，是隱藏狀態的唯一來源。 */
     private fun applyVisibility() {
         if (!world.isClient) isInvisible = TableOverlayVisibility.isHidden(hiddenUntilGameTime, world.time)
     }

@@ -152,7 +152,7 @@ class MahjongRoundInfoEntity(
     }
 
     /**
-     * 隱形到 [gameTime]；重複呼叫只能延長期限，並以單一可持久化動畫序列取代舊期限。
+     * 隱形到 [gameTime]；重複呼叫只能延長期限，期限隨 entity 保存。
      *
      * @param gameTime 隱形 lease 結束的 server game time。
      */
@@ -161,13 +161,6 @@ class MahjongRoundInfoEntity(
         val extendedUntil = TableOverlayVisibility.extend(hiddenUntilGameTime, gameTime)
         if (extendedUntil == hiddenUntilGameTime) return
         hiddenUntilGameTime = extendedUntil
-        replaceAnimationQueue(
-            listOf(
-                AnimationStep.SetInvisible(true),
-                AnimationStep.WaitUntil(gameTime),
-                AnimationStep.SetInvisible(false),
-            ),
-        )
         applyVisibility()
     }
 
@@ -179,7 +172,6 @@ class MahjongRoundInfoEntity(
     fun hideUntilRemoved() {
         check(!world.isClient) { "Round info visibility lease must be changed by the server" }
         hiddenUntilGameTime = Long.MAX_VALUE
-        replaceAnimationQueue(listOf(AnimationStep.SetInvisible(true)))
         applyVisibility()
     }
 
@@ -187,8 +179,7 @@ class MahjongRoundInfoEntity(
     fun showNow() {
         check(!world.isClient) { "Round info visibility lease must be changed by the server" }
         hiddenUntilGameTime = Long.MIN_VALUE
-        replaceAnimationQueue(emptyList())
-        setInvisible(false)
+        applyVisibility()
     }
 
     /**
@@ -251,7 +242,7 @@ class MahjongRoundInfoEntity(
         writeAnimationQueueToNbt(nbt)
     }
 
-    /** 以已保存的期限恢復伺服器隱藏狀態，不依賴動畫佇列是否仍含隱藏步驟。 */
+    /** 依已保存的期限設定伺服器隱藏狀態；每個伺服器 tick 與期限變更時套用，是隱藏狀態的唯一來源。 */
     private fun applyVisibility() {
         if (!world.isClient) isInvisible = TableOverlayVisibility.isHidden(hiddenUntilGameTime, world.time)
     }
